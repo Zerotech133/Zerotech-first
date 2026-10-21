@@ -2,7 +2,8 @@
 <#
 .SYNOPSIS
     Single-disk vault backup: git bundles for the four repos + a zip of the
-    workspace-root Markdown and HTML files, plus MANIFEST.txt and day-folder
+    workspace-root Markdown and HTML files + a read-only manifest of the data
+    root's shape (data_manifest.json), plus MANIFEST.txt and day-folder
     rotation.
 
 .DESCRIPTION
@@ -10,6 +11,7 @@
 
         <VaultRoot>\<yyyy-MM-dd>\<short>-<yyyyMMdd>.bundle   (git bundle --all)
         <VaultRoot>\<yyyy-MM-dd>\workspace-docs-<yyyyMMdd>.zip
+        <VaultRoot>\<yyyy-MM-dd>\data_manifest.json          (data-root shape)
         <VaultRoot>\<yyyy-MM-dd>\MANIFEST.txt
 
     * The workspace zip now carries two classes of root-level files: *.md
@@ -29,6 +31,34 @@
       that also matches unquoted URL-query values (token|api_key|secret|
       password followed by '=' and >=16 chars). Every prototype had zero
       hits; .mcp.json had one. HTML is safe to back up, JSON is not.
+    * data_manifest.json is the one artifact that describes something *outside*
+      the vault: the shape of the quant data root
+      (<repo>\quant_backtest\data, 43 top-level dirs / 268,044 files /
+      42.53 GiB on 2026-10-22), which no git repository tracks. The generator
+      tools\gen_data_manifest.py scans it read-only (~1.4 s warm) and records
+      per-directory file counts, byte totals and newest mtime, plus the size
+      and sha256 of catalog.json. Without it a restore rebuilds the code but
+      has no way to know what the data tree was supposed to look like. The
+      data itself is still not copied - this is a description, not a backup of
+      the bytes.
+    * The generator is invoked as
+      'python -B tools\gen_data_manifest.py --out <dayDir>\data_manifest.json'
+      and the product is registered in MANIFEST.txt like every other artifact
+      (same line format, counted in '#' summary, eligible for carry-over).
+      Python is looked up on PATH as 'python' and then as 'py -3'. Exit code 2
+      from the generator means its soft --time-budget was hit: the JSON is
+      still valid but the totals are partial (scan.partial=true), so it is
+      registered with a WARN rather than dropped. A missing python or a
+      missing generator is fail-open: WARN, an explicit '[skip]'/'skipped'
+      counter in the output, the remaining artifacts still run and the exit
+      code stays 0 - a shape manifest is not worth failing a backup over. A
+      genuine generator failure (non-zero exit and no file) is an ordinary
+      failed artifact, so the carry-over rule below can still register a
+      same-day file whose bytes are unchanged.
+    * -DryRun never runs python: it prints the plan line and an ETA only. The
+      ETA comes from scan.elapsed_sec of the newest data_manifest.json already
+      in the vault (fallback 2 s), because a dry run must not pay the 268k-file
+      scan cost.
     * Repos and the workspace root are derived from $PSScriptRoot
       (tools -> repo -> workspace), so no non-ASCII path literal is baked in.
     * A failing repo is reported and skipped; the remaining repos still run.
@@ -76,8 +106,10 @@
 
 .NOTES
     Exit code: 0 = success (dry-run always 0), 1 = at least one bundle /
-    workspace archive / rotation failure, or the day lock is held by another
-    instance / cannot be acquired.
+    workspace archive / data-manifest / rotation failure, or the day lock is
+    held by another instance / cannot be acquired. A data_manifest that was
+    skipped because python is missing is fail-open and does not change the
+    exit code.
     Rotation permanently deletes old backup folders (not Recycle Bin) because
     reclaiming vault space is its purpose; use -DryRun to preview.
 #>
@@ -126,15 +158,31 @@ $manifest = Join-Path $dayDir 'MANIFEST.txt'
 $lockPath = Join-Path $dayDir '.backup.lock'
 $cutoff   = $now.Date.AddDays(-$KeepDays)
 
+# Produced by tools\gen_data_manifest.py: describes the quant data root (dirs,
+# file counts, bytes, catalog.json sha256) without copying any of it.
+$dataManifestName   = 'data_manifest.json'
+$dataManifestPath   = Join-Path $dayDir $dataManifestName
+$dataManifestScript = Join-Path $toolsDir 'gen_data_manifest.py'
+
 # This script stays pure ASCII on purpose: Windows PowerShell 5.1 reads a
 # BOM-less .ps1 as the ANSI code page (CP936 on this host), so a literal Chinese
-# string would become mojibake in a -File run. The two Chinese strings the
+# string would become mojibake in a -File run. The Chinese strings the
 # acceptance criteria ask for are assembled from code points instead:
 #   $lockDryRunHint = "real run " + hui + jian + suo
 #   $carryNoteZh    = "carried over from the previous successful record"
+#   $dataManifestZh* = the -DryRun plan line for data_manifest.json:
+#                      "will generate data_manifest.json (estimated N s)"
 $lockDryRunHint = 'real run ' + [char]0x4F1A + [char]0x5EFA + [char]0x9501
 $carryNoteZh = -join ([char[]]@(
     0x6CBF, 0x7528, 0x4E0A, 0x4E00, 0x6B21, 0x6210, 0x529F, 0x8BB0, 0x5F55))
+
+# 0x5C06 0x751F 0x6210 0x6570 0x636E 0x6E05 0x5355 = "generate data manifest"
+# 0xFF08 0x9884 0x8BA1 = "(estimated"
+# 0x79D2 0xFF09       = "s)"
+$dataManifestZhPrefix = -join ([char[]]@(
+    0x5C06, 0x751F, 0x6210, 0x6570, 0x636E, 0x6E05, 0x5355))
+$dataManifestZhOpen   = -join ([char[]]@(0xFF08, 0x9884, 0x8BA1))
+$dataManifestZhClose  = -join ([char[]]@(0x79D2, 0xFF09))
 
 # Label is ASCII and is also the bundle filename prefix.
 $repos = @(
@@ -150,6 +198,7 @@ $repos = @(
 $expectedArtifacts = @(
     $repos | ForEach-Object { '{0}-{1}.bundle' -f $_.Label, $stamp }
     'workspace-docs-{0}.zip' -f $stamp
+    $dataManifestName
 )
 
 # ------------------------------------------------------- archive inputs -----
@@ -203,8 +252,10 @@ function Get-ExcludedSummary {
 $script:okCount        = 0
 $script:carriedCount   = 0
 $script:failCount      = 0
+$script:skipCount      = 0
 $script:backedUpBytes  = [long]0
 $script:failures       = New-Object System.Collections.Generic.List[string]
+$script:skips          = New-Object System.Collections.Generic.List[string]
 $script:manifestLines  = New-Object System.Collections.Generic.List[string]
 $script:okNames        = New-Object System.Collections.Generic.List[string]
 
@@ -222,6 +273,16 @@ function Add-Failure {
     $script:failCount++
     $script:failures.Add(('{0}: {1}' -f $Label, $Detail))
     Write-Host ("  [FAIL] {0}  {1}" -f $Label, $Detail)
+}
+
+# A skip is deliberately NOT a failure: -DryRun or a missing python must not
+# turn a good backup red. It is still printed and counted, so it is never
+# silent, and it is reported in the '#' summary line.
+function Add-Skip {
+    param([string]$Label, [string]$Detail)
+    $script:skipCount++
+    $script:skips.Add(('{0}: {1}' -f $Label, $Detail))
+    Write-Host ("  [WARN] {0}  {1}  (skipped)" -f $Label, $Detail)
 }
 
 function Add-ManifestEntry {
@@ -486,8 +547,13 @@ function Write-ManifestFile {
         $script:carriedCount++
     }
 
-    $lines.Add(('# summary ok={0} carried={1} failed={2} bytes={3}' -f `
-        $script:okCount, $script:carriedCount, $script:failCount, $script:backedUpBytes))
+    # '#' lines are ignored by every reader (verify_backups.parse_manifest,
+    # gen_health_card), so the extra skipped= field is metadata only and cannot
+    # break their parsing. ok= counts registered artifacts including
+    # data_manifest.json; bytes= is their summed size.
+    $lines.Add(('# summary ok={0} carried={1} failed={2} skipped={3} bytes={4}' -f `
+        $script:okCount, $script:carriedCount, $script:failCount,
+        $script:skipCount, $script:backedUpBytes))
     Set-Content -LiteralPath $manifest -Value $lines -Encoding UTF8 -Force
 }
 
@@ -655,6 +721,138 @@ function Invoke-DocsArchive {
         $item.Length, $added, $archiveFiles.Count, $docs.Count, $html.Count)
 }
 
+# ---------------------------------------------------- data-root manifest -----
+# The data root is the one asset no git repository tracks, so the vault stores a
+# *description* of it instead of its bytes. tools/gen_data_manifest.py does the
+# read-only scan; this wrapper only launches it, registers the file and keeps
+# every non-fatal case (python missing, budget exhausted) out of the failure
+# count so one missing description cannot fail an otherwise good backup.
+function Resolve-PythonLauncher {
+    # Get-Command only inspects PATH, it executes nothing, so this is safe to
+    # call from -DryRun. 'python' first, then the py launcher with -3.
+    foreach ($spec in @(
+            [pscustomobject]@{ Exe = 'python'; Prefix = @() }
+            [pscustomobject]@{ Exe = 'py'; Prefix = @('-3') }
+        )) {
+        $cmd = Get-Command $spec.Exe -CommandType Application -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($null -eq $cmd) { continue }
+        $exePath = [string]$cmd.Source
+        if (-not $exePath) { $exePath = [string]$cmd.Path }
+        if (-not $exePath) { continue }
+        return [pscustomobject]@{ Exe = $exePath; Prefix = @($spec.Prefix) }
+    }
+    return $null
+}
+
+function Get-DataManifestEstimateSeconds {
+    # Dry-run ETA only. The newest data_manifest.json already in the vault is the
+    # best measurement available (scan.elapsed_sec of the read-only scan); the
+    # extra second covers catalog.json's sha256 plus the JSON write. This
+    # function only reads, so it is safe under -DryRun.
+    param([string]$Root, [string]$Name)
+    $fallback = 2.0
+    if (-not (Test-Path -LiteralPath $Root -PathType Container)) { return $fallback }
+
+    $candidates = New-Object System.Collections.Generic.List[string]
+    try {
+        $dayDirs = @(Get-ChildItem -LiteralPath $Root -Directory -Force -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}$' } |
+            Sort-Object Name -Descending)
+        foreach ($dir in $dayDirs) { $candidates.Add((Join-Path $dir.FullName $Name)) }
+    } catch { }
+    $candidates.Add((Join-Path $Root $Name))
+
+    foreach ($path in $candidates) {
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        try {
+            $doc = Get-Content -LiteralPath $path -Raw -Encoding UTF8 -ErrorAction Stop |
+                ConvertFrom-Json
+        } catch {
+            continue
+        }
+        if ($null -eq $doc -or $null -eq $doc.scan -or $null -eq $doc.scan.elapsed_sec) { continue }
+        $value = [double]$doc.scan.elapsed_sec
+        if ($value -le 0 -or $value -gt 600) { continue }
+        # Round up, plus a second for the catalog hash and the write.
+        return [math]::Ceiling($value + 1.0)
+    }
+    return $fallback
+}
+
+function Get-DataManifestPlanZh {
+    # "<generate-data-manifest> data_manifest.json (<estimated> N <s>)" - all
+    # Chinese pieces come from code points, never from a literal (see the ASCII
+    # note near the top of this file).
+    param([string]$Name, [double]$Seconds)
+    return '{0} {1} {2} {3:N0} {4}' -f $dataManifestZhPrefix, $Name,
+        $dataManifestZhOpen, $Seconds, $dataManifestZhClose
+}
+
+function Invoke-DataManifest {
+    if (-not (Test-Path -LiteralPath $dataManifestScript -PathType Leaf)) {
+        Add-Skip 'data-manifest' ('generator not found: ' + $dataManifestScript)
+        return
+    }
+    $launcher = Resolve-PythonLauncher
+
+    if ($DryRun) {
+        # Never spend the 268k-file scan on a dry run: print the plan and stop.
+        $eta = Get-DataManifestEstimateSeconds -Root $VaultRoot -Name $dataManifestName
+        if ($null -eq $launcher) {
+            Write-Host '  [WARN] python not found on PATH; a real run would skip data_manifest.json (fail-open)'
+        }
+        Write-Host ("  [plan] data manifest: {0} -> {1}  (est. {2:N0} s; python is not run in dry-run)" -f `
+            $dataManifestScript, $dataManifestName, $eta)
+        Write-Host ("         {0}" -f (Get-DataManifestPlanZh -Name $dataManifestName -Seconds $eta))
+        return
+    }
+
+    if ($null -eq $launcher) {
+        Add-Skip 'data-manifest' 'python not found on PATH; artifact skipped (fail-open)'
+        return
+    }
+
+    $argv = @($launcher.Prefix) + @('-B', $dataManifestScript, '--out', $dataManifestPath)
+    Write-Host ("  [run]  data manifest: {0} {1}" -f $launcher.Exe, ($argv -join ' '))
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $oldEap = $ErrorActionPreference
+    $rc = -1
+    try {
+        # Native stderr must not become a terminating error (the generator
+        # prints its WARN lines there).
+        $ErrorActionPreference = 'Continue'
+        $out = @(& $launcher.Exe @argv 2>&1 | ForEach-Object { $_.ToString() })
+        $rc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $oldEap
+        $sw.Stop()
+    }
+    foreach ($line in $out) { Write-Host ("         {0}" -f $line) }
+
+    $exists = Test-Path -LiteralPath $dataManifestPath -PathType Leaf
+    # rc=2 is the generator's soft --time-budget signal: the JSON is complete
+    # and parseable, only its totals are partial (scan.partial=true). Dropping
+    # it would throw away a usable shape description, so register it and say so.
+    if ($rc -notin @(0, 2) -or -not $exists) {
+        $detail = 'gen_data_manifest.py rc={0}' -f $rc
+        if (-not $exists) { $detail = '{0}; {1} not written' -f $detail, $dataManifestName }
+        if ($out.Count -gt 0) {
+            $detail = '{0}; {1}' -f $detail, (($out | Select-Object -Last 3) -join ' | ')
+        }
+        Add-Failure 'data-manifest' $detail
+        return
+    }
+    if ($rc -eq 2) {
+        Write-Host '  [WARN] gen_data_manifest.py rc=2: scan hit --time-budget, totals are partial (scan.partial=true in the JSON)'
+    }
+
+    $item = Get-Item -LiteralPath $dataManifestPath
+    $hash = (Get-FileHash -LiteralPath $dataManifestPath -Algorithm SHA256).Hash
+    Add-ManifestEntry -Item $item -Hash $hash
+    Write-Host ("         {0:N0} bytes in {1:N1}s" -f $item.Length, $sw.Elapsed.TotalSeconds)
+}
+
 function Invoke-Rotation {
     param([string]$Root, [datetime]$Cutoff, [bool]$Preview)
     $result = [pscustomobject]@{ Removed = 0; Failed = 0; Candidates = 0 }
@@ -754,6 +952,9 @@ try {
     Write-Host 'workspace archive (md + html):'
     Invoke-DocsArchive
 
+    Write-Host 'data manifest (read-only data-root scan):'
+    Invoke-DataManifest
+
     Write-Host 'rotation:'
     $rot = Invoke-Rotation -Root $VaultRoot -Cutoff $cutoff -Preview:$DryRun.IsPresent
 
@@ -773,6 +974,8 @@ if ($DryRun) {
     Write-Host ("repos       : {0} planned, {1} problem(s)" -f $repos.Count, $script:failCount)
     Write-Host ("docs        : {0} md + {1} html = {2} file(s), {3:N0} bytes" -f `
         $docs.Count, $html.Count, $archiveFiles.Count, [long]$archiveBytes)
+    Write-Host ("data        : {0} planned (est. {1:N0} s, python not run)" -f `
+        $dataManifestName, (Get-DataManifestEstimateSeconds -Root $VaultRoot -Name $dataManifestName))
     Write-Host ("excluded    : {0}" -f (Get-ExcludedSummary))
     Write-Host ("rotation    : {0} folder(s) would be removed" -f $rot.Candidates)
     Write-Host 'writes      : none (dry-run)'
@@ -788,6 +991,10 @@ Write-Host ("excluded    : {0}" -f (Get-ExcludedSummary))
 Write-Host ("failed      : {0}" -f $script:failCount)
 if ($script:failCount -gt 0) {
     foreach ($f in $script:failures) { Write-Host ("  - {0}" -f $f) }
+}
+Write-Host ("skipped     : {0} artifact(s) skipped (fail-open, not a failure)" -f $script:skipCount)
+if ($script:skipCount -gt 0) {
+    foreach ($s in $script:skips) { Write-Host ("  - {0}" -f $s) }
 }
 Write-Host ("rotation    : {0} removed, {1} failed" -f $rot.Removed, $rot.Failed)
 Write-Host ("elapsed     : {0:N1}s" -f $swTotal.Elapsed.TotalSeconds)

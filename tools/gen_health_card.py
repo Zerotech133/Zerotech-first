@@ -19,6 +19,12 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
    （落后 >0 黄；落后且备份 >24h 红；无法判定计 null，不误判绿）。
 3. 仓库卫生：git status --porcelain 行数、git worktree list 数量、
    .worktrees/ 下的目录数（与 worktree list 交叉核对）。
+4. worktree TTL（ROADMAP 规则 9）：git worktree list --porcelain 取关联工作树，
+   用「分支是否已合并进 master/main」+「分支最后提交时间」判 7 天 TTL；
+   已合并且 >7 天计 violation 判黄（不危险但违反规则），读不到红。
+5. 文档索引新鲜度：子进程跑 `python -B tools/gen_docs_index.py --check`
+   （20s 超时，另设 3s 设计预算）；退出 0 绿 / 1 黄（索引落后）/
+   超时或退出 2 或脚本缺失红。差异行尽量解析，解析不了给原始输出前 200 字并标注未解析。
 
 用法：
     python -B tools/gen_health_card.py
@@ -27,7 +33,8 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
 
 退出码：0=绿/黄（可容忍），1=红（有硬问题），2=脚本自身错误（参数/写盘）。
 阈值：备份 >36h 黄 / >72h 红；审计 >24h 黄 / >72h 红；dirty>0 黄；
-工作树目录与 git worktree 不一致黄；任一块不可用红；备份落后 HEAD >0 黄 /
+工作树目录与 git worktree 不一致黄；worktree 已合并且 >7 天黄；
+文档索引落后黄；任一块不可用红；备份落后 HEAD >0 黄 /
 落后且备份 >24h 红；追平无法判定计 null（不误判绿）。
 """
 from __future__ import annotations
@@ -43,6 +50,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -60,6 +68,36 @@ BACKUP_RED_HOURS = 72.0
 CATCHUP_RED_HOURS = 24.0
 AUDIT_YELLOW_HOURS = 24.0
 AUDIT_RED_HOURS = 72.0
+
+# ROADMAP 规则 9：已合并且无未提交改动的工作树，合并后 7 天内必须 remove。
+WORKTREE_TTL_DAYS = 7.0
+WORKTREE_TTL_DETAIL_LIMIT = 5
+WORKTREE_TTL_ITEM_LIMIT = 20
+# 单次 git 调用上限；正常 worktree list/for-each-ref 都是毫秒级。
+WORKTREE_TTL_GIT_TIMEOUT_SECONDS = 5.0
+# 两项新增检查合计 3s 预算；超出按不可判定处理，绝不拖死健康卡。
+WORKTREE_TTL_BUDGET_SECONDS = 3.0
+WORKTREE_TTL_BRANCH_CANDIDATES = ("master", "main")
+
+DOCS_INDEX_SCRIPT_REL = Path("tools") / "gen_docs_index.py"
+DOCS_CHECK_TIMEOUT_SECONDS = 20.0
+DOCS_CHECK_BUDGET_SECONDS = 3.0
+DOCS_OUTPUT_EXCERPT_CHARS = 200
+# gen_docs_index.py --check 的固定汇总行：
+# 差异合计：新增 N / 删除 N / 标题变化 N / 日期变化 N / 节标题变化 N / 节说明变化 N
+DOCS_TOTALS_RE = re.compile(
+    r"差异合计：新增\s*(?P<added>\d+)\s*/\s*删除\s*(?P<removed>\d+)\s*/"
+    r"\s*标题变化\s*(?P<title>\d+)\s*/\s*日期变化\s*(?P<date>\d+)\s*/"
+    r"\s*节标题变化\s*(?P<heading>\d+)\s*/\s*节说明变化\s*(?P<note>\d+)"
+)
+DOCS_DIFF_LABELS = (
+    ("added", "新增"),
+    ("removed", "删除"),
+    ("title", "标题变化"),
+    ("date", "日期变化"),
+    ("heading", "节标题变化"),
+    ("note", "节说明变化"),
+)
 
 # 与 tools/backup_bundles.ps1 的 $repos 一一对应（label = bundle 文件名前缀）。
 CATCHUP_REPO_DIRS: tuple[tuple[str, str], ...] = (
@@ -711,6 +749,438 @@ def collect_repo(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# 3b) worktree TTL（ROADMAP 规则 9）
+# ---------------------------------------------------------------------------
+def _parse_worktree_porcelain(text: str) -> list[dict[str, Any]]:
+    """解析 `git worktree list --porcelain`；空行分块，返回按出现顺序的条目。"""
+    entries: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+
+    def flush() -> None:
+        nonlocal current
+        if current is not None:
+            entries.append(current)
+            current = None
+
+    for line in text.splitlines():
+        if not line.strip():
+            flush()
+            continue
+        key, _, value = line.partition(" ")
+        if key == "worktree":
+            flush()
+            current = {
+                "path": value,
+                "head": None,
+                "branch": None,
+                "detached": False,
+            }
+            continue
+        if current is None:
+            continue
+        if key == "HEAD":
+            current["head"] = value
+        elif key == "branch":
+            current["branch"] = value
+        elif key == "detached":
+            current["detached"] = True
+        elif key in ("bare", "locked", "prunable"):
+            # 只记录存在性；locked/prunable 的说明文本不参与判定。
+            current[key] = value or True
+    flush()
+    return entries
+
+
+def _worktree_display_path(path: str, repo_root: Path) -> str:
+    """尽量显示相对 repo_root 的 posix 路径；跨盘等无法相对时回退原路径。"""
+    try:
+        relative = os.path.relpath(path, str(repo_root))
+    except (OSError, ValueError):
+        return path.replace("\\", "/")
+    return Path(relative).as_posix()
+
+
+def _empty_worktree_ttl(repo_root: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "repo_root": str(repo_root),
+        "target_ref": None,
+        "age_source": "branch_commit_time",
+        "threshold_days": WORKTREE_TTL_DAYS,
+        "duration_seconds": None,
+        "budget_seconds": WORKTREE_TTL_BUDGET_SECONDS,
+        "main_worktree": None,
+        "worktrees_total": None,
+        "linked_worktrees": None,
+        "merged_worktrees": None,
+        "violations": None,
+        "unknown": None,
+        "status": None,
+        "level": None,
+        "expired": [],
+        "unknown_worktrees": [],
+        "items": [],
+    }
+
+
+def _branch_commit_times(
+    repo_root: Path, timeout: float
+) -> tuple[dict[str, int] | None, str | None]:
+    """一次性取所有本地分支的 tip 提交时间（committerdate unix 秒）。
+
+    选「分支最后提交时间」而不是目录 mtime：worktree 目录 mtime 会因增删
+    顶层文件而漂移（哪怕没有提交），无法代表「合并后过了多久」。
+    """
+    try:
+        proc = _git_run(
+            repo_root,
+            ["for-each-ref", "--format=%(refname:short)\t%(committerdate:unix)", "refs/heads"],
+            timeout=timeout,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return None, f"git for-each-ref 失败: {_short_exc(exc)}"
+    if proc.returncode != 0:
+        return None, "git for-each-ref 失败: " + (
+            _decode(proc.stderr).strip()[:300] or "git 返回非零"
+        )
+    refs: dict[str, int] = {}
+    for line in _decode(proc.stdout).splitlines():
+        name, sep, raw = line.partition("\t")
+        if not sep or not name:
+            continue
+        try:
+            refs[name] = int(raw.strip())
+        except ValueError:
+            continue
+    return refs, None
+
+
+def collect_worktree_ttl(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
+    """统计「已合并进 master/main + 分支最后提交 >7 天」的关联工作树。
+
+    只统计 `git worktree list` 中除主树（第一条）外的关联工作树；
+    detached HEAD / 分支引用缺失 / 取不到提交时间的树计 unknown，不冒充绿。
+    """
+    result = _empty_worktree_ttl(repo_root)
+    started = time.monotonic()
+    deadline = started + WORKTREE_TTL_BUDGET_SECONDS
+
+    def next_timeout() -> float:
+        """把剩余预算分给每一次 git 调用，避免 4-5 次调用各自超时拖过 3s。"""
+        remaining = deadline - time.monotonic()
+        if remaining <= 0.05:
+            raise subprocess.TimeoutExpired("git", WORKTREE_TTL_BUDGET_SECONDS)
+        return min(WORKTREE_TTL_GIT_TIMEOUT_SECONDS, remaining)
+
+    try:
+        if not repo_root.is_dir():
+            result["reason"] = f"仓库根不存在或不是目录: {repo_root}"
+            return result
+
+        try:
+            probe = _git_run(
+                repo_root,
+                ["rev-parse", "--is-inside-work-tree"],
+                timeout=next_timeout(),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            result["reason"] = f"git 探测失败: {_short_exc(exc)}"
+            return result
+        if probe.returncode != 0:
+            result["reason"] = "不是 git 工作树: " + (
+                _decode(probe.stderr).strip()[:300] or "git 返回非零"
+            )
+            return result
+
+        target_ref: str | None = None
+        for candidate in WORKTREE_TTL_BRANCH_CANDIDATES:
+            probe = _git_run(
+                repo_root,
+                ["rev-parse", "--verify", "--quiet", f"refs/heads/{candidate}"],
+                timeout=next_timeout(),
+            )
+            if probe.returncode == 0:
+                target_ref = candidate
+                break
+        if target_ref is None:
+            result["reason"] = (
+                "找不到本地分支 master/main，无法判定工作树是否已合并"
+            )
+            return result
+        result["target_ref"] = target_ref
+
+        try:
+            listing = _git_run(
+                repo_root,
+                ["worktree", "list", "--porcelain"],
+                timeout=next_timeout(),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            result["reason"] = f"git worktree list 失败: {_short_exc(exc)}"
+            return result
+        if listing.returncode != 0:
+            result["reason"] = "git worktree list 失败: " + (
+                _decode(listing.stderr).strip()[:300] or "git 返回非零"
+            )
+            return result
+
+        try:
+            merged_proc = _git_run(
+                repo_root,
+                [
+                    "branch",
+                    "--merged",
+                    target_ref,
+                    "--format=%(refname:short)",
+                ],
+                timeout=next_timeout(),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            result["reason"] = f"git branch --merged 失败: {_short_exc(exc)}"
+            return result
+        if merged_proc.returncode != 0:
+            result["reason"] = "git branch --merged 失败: " + (
+                _decode(merged_proc.stderr).strip()[:300] or "git 返回非零"
+            )
+            return result
+
+        refs, refs_error = _branch_commit_times(repo_root, next_timeout())
+        if refs is None:
+            result["reason"] = refs_error or "无法读取分支提交时间"
+            return result
+
+        entries = _parse_worktree_porcelain(_decode(listing.stdout))
+        if not entries:
+            result["reason"] = "git worktree list 未返回任何工作树"
+            return result
+
+        # 第一条是主树；规则 9 只约束可回收的关联工作树。
+        main_entry = entries[0]
+        linked = entries[1:]
+        result["main_worktree"] = _worktree_display_path(
+            str(main_entry.get("path") or ""), repo_root
+        )
+
+        merged_set = {
+            line.strip()
+            for line in _decode(merged_proc.stdout).splitlines()
+            if line.strip()
+        }
+        now_timestamp = now.timestamp()
+        expired: list[dict[str, Any]] = []
+        unknown: list[dict[str, Any]] = []
+        items: list[dict[str, Any]] = []
+        merged_count = 0
+
+        for entry in linked:
+            raw_branch = str(entry.get("branch") or "")
+            branch = (
+                raw_branch[len("refs/heads/") :]
+                if raw_branch.startswith("refs/heads/")
+                else (raw_branch or None)
+            )
+            display = _worktree_display_path(str(entry.get("path") or ""), repo_root)
+            merged: bool | None = None
+            age_days: float | None = None
+            last_commit_at: str | None = None
+            status = "unknown"
+            unknown_reason: str | None = None
+
+            if entry.get("detached") or not branch:
+                unknown_reason = "detached HEAD（无分支可判）"
+            elif branch not in refs:
+                unknown_reason = "分支引用不存在或读不到提交时间"
+            else:
+                merged = branch in merged_set
+                timestamp = refs[branch]
+                last_commit_at = _iso(
+                    dt.datetime.fromtimestamp(timestamp).astimezone()
+                )
+                age_days = round((now_timestamp - timestamp) / 86400.0, 2)
+                if merged:
+                    merged_count += 1
+                    status = "expired" if age_days > WORKTREE_TTL_DAYS else "merged_fresh"
+                else:
+                    status = "unmerged"
+
+            item: dict[str, Any] = {
+                "path": display,
+                "branch": branch,
+                "head": _short_sha(entry.get("head")),
+                "merged": merged,
+                "age_days": age_days,
+                "last_commit_at": last_commit_at,
+                "status": status,
+            }
+            if unknown_reason is not None:
+                item["unknown_reason"] = unknown_reason
+                unknown.append(item)
+            elif status == "expired":
+                expired.append(item)
+            if len(items) < WORKTREE_TTL_ITEM_LIMIT:
+                items.append(item)
+
+        result["worktrees_total"] = len(entries)
+        result["linked_worktrees"] = len(linked)
+        result["merged_worktrees"] = merged_count
+        result["violations"] = len(expired)
+        result["unknown"] = len(unknown)
+        result["expired"] = expired[:WORKTREE_TTL_DETAIL_LIMIT]
+        result["unknown_worktrees"] = unknown[:WORKTREE_TTL_DETAIL_LIMIT]
+        result["items"] = items
+        result["available"] = True
+        if expired:
+            result["status"] = "expired"
+            result["level"] = "yellow"
+        elif unknown:
+            result["status"] = "unknown"
+            # 未知态单列、判黄：不危险，但也不能冒充绿。
+            result["level"] = "yellow"
+        else:
+            result["status"] = "current"
+            result["level"] = "green"
+    except FileNotFoundError:
+        result["reason"] = "找不到 git 可执行文件"
+        return result
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["reason"] = f"git 探测失败: {_short_exc(exc)}"
+        return result
+    finally:
+        result["duration_seconds"] = round(time.monotonic() - started, 3)
+
+    elapsed = result["duration_seconds"] or 0.0
+    if elapsed > WORKTREE_TTL_BUDGET_SECONDS:
+        result["reason"] = (
+            f"检查耗时 {elapsed:.2f}s 超出 {WORKTREE_TTL_BUDGET_SECONDS:g}s 预算，结果不采信"
+        )
+        result["available"] = False
+        result["status"] = None
+        result["level"] = None
+        result["worktrees_total"] = None
+        result["linked_worktrees"] = None
+        result["merged_worktrees"] = None
+        result["violations"] = None
+        result["unknown"] = None
+        result["expired"] = []
+        result["unknown_worktrees"] = []
+        result["items"] = []
+    return result
+
+
+# ---------------------------------------------------------------------------
+# 3c) 文档索引新鲜度（gen_docs_index.py --check）
+# ---------------------------------------------------------------------------
+def _empty_docs_index(repo_root: Path) -> dict[str, Any]:
+    script = repo_root / DOCS_INDEX_SCRIPT_REL
+    return {
+        "available": False,
+        "reason": None,
+        "repo_root": str(repo_root),
+        "script": str(script),
+        "command": None,
+        "exit_code": None,
+        "status": None,
+        "level": None,
+        "parsed": False,
+        "diffs": None,
+        "diffs_total": None,
+        "duration_seconds": None,
+        "timeout_seconds": DOCS_CHECK_TIMEOUT_SECONDS,
+        "budget_seconds": DOCS_CHECK_BUDGET_SECONDS,
+        "timed_out": False,
+        "output_excerpt": "",
+        "output_truncated": False,
+    }
+
+
+def _docs_diff_text(diffs: dict[str, int]) -> str:
+    parts = [
+        f"{label} {diffs.get(key, 0)}" for key, label in DOCS_DIFF_LABELS
+    ]
+    return " / ".join(parts)
+
+
+def collect_docs_index(repo_root: Path) -> dict[str, Any]:
+    """用子进程跑 `gen_docs_index.py --check`；0=绿、1=黄、其余/超时=红。"""
+    result = _empty_docs_index(repo_root)
+    script = repo_root / DOCS_INDEX_SCRIPT_REL
+    result["script"] = str(script)
+    if not script.is_file():
+        result["reason"] = f"找不到索引脚本: {script}"
+        return result
+
+    command = [sys.executable, "-B", str(script), "--check"]
+    result["command"] = command
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    started = time.monotonic()
+    try:
+        proc = subprocess.run(
+            command,
+            capture_output=True,
+            timeout=DOCS_CHECK_TIMEOUT_SECONDS,
+            check=False,
+            cwd=str(repo_root),
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        result["duration_seconds"] = round(time.monotonic() - started, 3)
+        result["timed_out"] = True
+        result["reason"] = f"gen_docs_index.py --check 超时（>{DOCS_CHECK_TIMEOUT_SECONDS:g}s）"
+        return result
+    except (OSError, ValueError) as exc:
+        result["duration_seconds"] = round(time.monotonic() - started, 3)
+        result["reason"] = f"无法执行 gen_docs_index.py --check: {_short_exc(exc)}"
+        return result
+
+    elapsed = round(time.monotonic() - started, 3)
+    result["duration_seconds"] = elapsed
+    result["exit_code"] = proc.returncode
+    stdout = _decode(proc.stdout)
+    stderr = _decode(proc.stderr)
+    excerpt = stdout.strip()
+    if not excerpt:
+        excerpt = stderr.strip()
+    result["output_excerpt"] = excerpt[:DOCS_OUTPUT_EXCERPT_CHARS]
+    result["output_truncated"] = len(excerpt) > DOCS_OUTPUT_EXCERPT_CHARS
+
+    match = DOCS_TOTALS_RE.search(stdout)
+    if match is not None:
+        diffs = {key: int(value) for key, value in match.groupdict().items()}
+        result["parsed"] = True
+        result["diffs"] = diffs
+        result["diffs_total"] = sum(diffs.values())
+
+    if elapsed > DOCS_CHECK_BUDGET_SECONDS:
+        result["reason"] = (
+            f"--check 耗时 {elapsed:.2f}s 超出 {DOCS_CHECK_BUDGET_SECONDS:g}s 预算，结果不采信"
+        )
+        # 不可判定时计数一律置 null，不用半截结果冒充可用。
+        result["parsed"] = False
+        result["diffs"] = None
+        result["diffs_total"] = None
+        return result
+    if proc.returncode == 0:
+        result["available"] = True
+        result["status"] = "fresh"
+        result["level"] = "green"
+        return result
+    if proc.returncode == 1:
+        # 退出 1 是「索引落后」的业务信号，不是读不到：不判红，交给人重生成。
+        result["available"] = True
+        result["status"] = "stale"
+        result["level"] = "yellow"
+        return result
+
+    result["reason"] = f"gen_docs_index.py --check 退出码 {proc.returncode}"
+    if result["output_excerpt"]:
+        result["reason"] += "；输出：" + result["output_excerpt"]
+    return result
+
+
+# ---------------------------------------------------------------------------
 # 2b) 备份是否追平 HEAD（bundle 与仓库 HEAD 对比，只读）
 # ---------------------------------------------------------------------------
 def _short_sha(sha: Any) -> str:
@@ -1049,6 +1519,59 @@ def _catchup_behind_text(catchup: dict[str, Any]) -> str:
     return "；".join(parts) or "无法判定"
 
 
+def _worktree_ttl_detail(ttl: dict[str, Any]) -> str:
+    days = ttl.get("threshold_days") or WORKTREE_TTL_DAYS
+    expired = ttl.get("expired") or []
+    bits = [
+        "%s（%s，%.1f 天）"
+        % (item["path"], item.get("branch") or "?", item.get("age_days") or 0.0)
+        for item in expired
+    ]
+    detail = "%d 个已合并且超过 %g 天未清理：%s" % (
+        ttl.get("violations") or 0,
+        days,
+        "、".join(bits),
+    )
+    hidden = (ttl.get("violations") or 0) - len(bits)
+    if hidden > 0:
+        detail += "；另有 %d 个未列出" % hidden
+    if ttl.get("unknown"):
+        detail += "；另有 %d 个无法判定" % ttl["unknown"]
+    return detail + "（规则 9，需 git worktree remove）"
+
+
+def _worktree_ttl_unknown_detail(ttl: dict[str, Any]) -> str:
+    unknown = ttl.get("unknown_worktrees") or []
+    bits = [
+        "%s（%s）" % (item["path"], item.get("unknown_reason") or "未知")
+        for item in unknown
+    ]
+    detail = "%d 个关联工作树无法判定是否已合并/年龄：%s" % (
+        ttl.get("unknown") or 0,
+        "、".join(bits),
+    )
+    hidden = (ttl.get("unknown") or 0) - len(bits)
+    if hidden > 0:
+        detail += "；另有 %d 个未列出" % hidden
+    return detail + "；不判绿"
+
+
+def _docs_index_detail(freshness: dict[str, Any]) -> str:
+    if freshness.get("status") == "stale":
+        if freshness.get("parsed"):
+            diffs = freshness.get("diffs") or {}
+            return (
+                "DOCS_INDEX 落后：%s（差异合计 %d 处）；"
+                "运行 python -B tools/gen_docs_index.py 重生成"
+                % (_docs_diff_text(diffs), freshness.get("diffs_total") or 0)
+            )
+        excerpt = (freshness.get("output_excerpt") or "（无输出）").replace("\n", " ")
+        return "DOCS_INDEX 落后（退出码 1，未解析）；原始输出前 200 字：%s" % excerpt
+    duration = freshness.get("duration_seconds")
+    suffix = "，%.2fs" % duration if isinstance(duration, (int, float)) else ""
+    return "DOCS_INDEX 与生成结果一致（退出码 0%s）" % suffix
+
+
 # ---------------------------------------------------------------------------
 # 状态判定
 # ---------------------------------------------------------------------------
@@ -1244,6 +1767,46 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
                 f".worktrees 目录 {repo['worktree_dirs']} 与 git worktree 关联数 {repo['linked_worktrees']} 不一致",
             )
 
+    ttl = repo.get("worktree_ttl") or {}
+    if not ttl.get("available"):
+        add(
+            "repo.worktree_ttl",
+            "red",
+            "worktree TTL 不可用：" + (ttl.get("reason") or "未知原因"),
+        )
+    elif ttl.get("violations"):
+        add("repo.worktree_ttl", "yellow", _worktree_ttl_detail(ttl))
+    elif ttl.get("unknown"):
+        add("repo.worktree_ttl", "yellow", _worktree_ttl_unknown_detail(ttl))
+    else:
+        add(
+            "repo.worktree_ttl",
+            "green",
+            "关联工作树 %d 个，无「已合并且超过 %g 天」项（年龄按分支最后提交时间）"
+            % (
+                ttl.get("linked_worktrees") or 0,
+                ttl.get("threshold_days") or WORKTREE_TTL_DAYS,
+            ),
+        )
+
+    docs_freshness = (card.get("docs") or {}).get("index_freshness") or {}
+    if not docs_freshness.get("available"):
+        add(
+            "docs.index_freshness",
+            "red",
+            "文档索引检查不可用：" + (docs_freshness.get("reason") or "未知原因"),
+        )
+    elif docs_freshness.get("status") == "stale":
+        add("docs.index_freshness", "yellow", _docs_index_detail(docs_freshness))
+    elif docs_freshness.get("status") == "fresh":
+        add("docs.index_freshness", "green", _docs_index_detail(docs_freshness))
+    else:
+        add(
+            "docs.index_freshness",
+            "yellow",
+            "文档索引检查状态未知：" + str(docs_freshness.get("status") or "null"),
+        )
+
     rank = {"green": 0, "yellow": 1, "red": 2}
     status = max((check["level"] for check in checks), key=lambda level: rank[level])
     reasons = [
@@ -1263,6 +1826,8 @@ def build_card(
     semantics, semantics_error = _load_audit_semantics(repo_root)
     backup = collect_backup(vault_root, now)
     backup["catchup"] = collect_catchup(repo_root, backup, now)
+    repo_block = collect_repo(repo_root, now)
+    repo_block["worktree_ttl"] = collect_worktree_ttl(repo_root, now)
     card: dict[str, Any] = {
         "schema": SCHEMA,
         "generated_at": _iso(now),
@@ -1272,7 +1837,8 @@ def build_card(
         "checks": [],
         "task_audit": collect_task_audit(audit_root, now, semantics, semantics_error),
         "backup": backup,
-        "repo": collect_repo(repo_root, now),
+        "repo": repo_block,
+        "docs": {"index_freshness": collect_docs_index(repo_root)},
         "notes": [
             "本脚本只读：不扫描/启停计划任务、不触发备份、不改仓库。",
             "dirty_files 含未跟踪文件；本脚本自身在提交前也会被计入。",
@@ -1286,6 +1852,14 @@ def build_card(
             f"审计 >{AUDIT_YELLOW_HOURS:g}h 黄 / >{AUDIT_RED_HOURS:g}h 红；"
             "dirty>0 黄；工作树不一致黄；任一块不可用红。",
             "账本按落盘时间切分扫描会话，取最后一个会话；120s 内的连续记录视为同一次扫描。",
+            f"worktree TTL（规则 9）：只算关联工作树（排除主树），"
+            f"「已合并进 master/main + 分支最后提交 >{WORKTREE_TTL_DAYS:g} 天」黄；"
+            "年龄取分支 tip 的 committerdate（目录 mtime 会被增删文件带偏）；"
+            "detached/分支缺失计未知并判黄，git 不可用或读不到判红。",
+            f"文档索引：子进程跑 python -B tools/gen_docs_index.py --check，"
+            f"超时 {DOCS_CHECK_TIMEOUT_SECONDS:g}s、设计预算 {DOCS_CHECK_BUDGET_SECONDS:g}s；"
+            "退出 0 绿 / 1 黄（索引落后）/ 超时或退出 2 或脚本缺失红；"
+            "两条新检查合计目标 <3s，超预算按不可判定处理。",
         ],
     }
     checks, status, reasons = _evaluate(card)
@@ -1515,6 +2089,47 @@ def _render_html(card: dict[str, Any]) -> str:
         )
     else:
         parts.append(f'<p class="unavailable">不可用：{_e(repo["reason"])}</p>')
+    ttl = repo.get("worktree_ttl") or {}
+    if ttl.get("available"):
+        if ttl.get("violations"):
+            ttl_text = "超期 %d 个" % ttl["violations"]
+        elif ttl.get("unknown"):
+            ttl_text = "无法判定 %d 个" % ttl["unknown"]
+        else:
+            ttl_text = "无超期（关联树 %d 个）" % (ttl.get("linked_worktrees") or 0)
+        parts.append(f'<p class="note">worktree TTL：{_e(ttl_text)}</p>')
+    else:
+        parts.append(
+            f'<p class="note">worktree TTL 不可用：{_e(ttl.get("reason"))}</p>'
+        )
+    parts.append("</section>")
+
+    freshness = (card.get("docs") or {}).get("index_freshness") or {}
+    parts.append('<section class="block">')
+    parts.append("<h2>文档索引</h2>")
+    parts.append(f'<div class="sub">{_e(freshness.get("script"))}</div>')
+    if freshness.get("available"):
+        parts.append(
+            _kv(
+                "状态",
+                "落后（需重生成）"
+                if freshness.get("status") == "stale"
+                else "一致",
+            )
+        )
+        if freshness.get("parsed") and freshness.get("diffs") is not None:
+            parts.append(_kv("差异", _docs_diff_text(freshness["diffs"])))
+        parts.append(
+            _kv(
+                "退出码 / 耗时",
+                "%s / %ss"
+                % (freshness.get("exit_code"), freshness.get("duration_seconds")),
+            )
+        )
+    else:
+        parts.append(
+            f'<p class="unavailable">不可用：{_e(freshness.get("reason"))}</p>'
+        )
     parts.append("</section>")
 
     parts.append('<section class="block full"><h2>判定明细</h2><ul class="checks">')
