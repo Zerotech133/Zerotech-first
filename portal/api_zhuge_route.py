@@ -43,9 +43,26 @@ from api_zhuge_brief import BEIJING, SOURCES, build_brief
 PUSHFLOW_LEDGER = Path(__file__).resolve().parent / "work" / "push_flow.jsonl"
 
 
+def _is_policy_suppressed(row):
+    """是否为免打扰窗口的主动抑制（非投递失败）。
+
+    WO-OS-20-FIX（2026-10-21 实测口径纠错）：push_flow 里 channel=hub-gate
+    或 kind 含 "|deny:" 的行，是 push 闸门按「静默窗口」策略主动不发送，
+    属于设计内行为。若算成失败，会把 282 行里的 103 行抑制虚报成
+    53.9% 失败率（真实 27.4%），是典型的把策略当故障。
+    沿 api_notify.py:205 is_gate 判例保持同源口径。
+    """
+    if not isinstance(row, dict):
+        return False
+    if row.get("channel") == "hub-gate":
+        return True
+    return "|deny:" in str(row.get("kind") or "")
+
+
 def _pushflow_stats(path=None, day=None):
-    """统计当日（北京日期）投递成败：{ok, today, ok_count, fail_count,
-    fail_rate, channels}。文件缺失/读失败/当日无记录 → None（引擎记待核）。
+    """统计当日（北京日期）真实投递成败：{ok, today, attempted, ok_count,
+    fail_count, fail_rate, policy_suppressed, channels}。
+    文件缺失/读失败/当日无记录/当日全为策略抑制 → None（引擎记待核）。
 
     纯只读：只 read_text，不写账本、不改行。path/day 为测试注入点。
     """
@@ -57,7 +74,7 @@ def _pushflow_stats(path=None, day=None):
     except (OSError, UnicodeDecodeError):
         return None
 
-    total = ok_count = fail_count = 0
+    total = ok_count = fail_count = suppressed = 0
     channels: Dict[str, Dict[str, int]] = {}
     for line in text.splitlines():
         line = line.strip()
@@ -70,6 +87,9 @@ def _pushflow_stats(path=None, day=None):
         if not isinstance(row, dict) or row.get("date") != day:
             continue
         total += 1
+        if _is_policy_suppressed(row):
+            suppressed += 1  # 策略抑制：不进分母、不进通道成败
+            continue
         passed = row.get("ok") is True
         if passed:
             ok_count += 1
@@ -80,14 +100,17 @@ def _pushflow_stats(path=None, day=None):
         bucket = channels.setdefault(name, {"ok": 0, "fail": 0})
         bucket["ok" if passed else "fail"] += 1
 
-    if total == 0:
-        return None  # 当日无投递记录：不可推断正常，交引擎记待核
+    attempted = ok_count + fail_count
+    if attempted == 0:
+        return None  # 当日无真实投递尝试：不可推断正常，交引擎记待核
     return {
         "ok": True,
         "today": total,
+        "attempted": attempted,
         "ok_count": ok_count,
         "fail_count": fail_count,
-        "fail_rate": round(fail_count / total, 4),
+        "fail_rate": round(fail_count / attempted, 4),
+        "policy_suppressed": suppressed,
         "channels": channels,
     }
 

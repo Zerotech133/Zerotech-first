@@ -188,3 +188,62 @@ def test_pushflow_stats_missing_file_returns_none():
         missing.unlink()
     assert zr._pushflow_stats(path=missing, day="2026-10-21") is None
 
+
+# ── WO-OS-20-FIX 口径缺陷：免打扰窗口策略抑制不得算作投递失败 ──────
+def _gate_row(day, channel="hub-gate", kind="hub|deny:silent window"):
+    return {"ts": day + "T02:00:00", "date": day, "kind": kind,
+            "channel": channel, "target": "oc_test", "count": 1,
+            "ok": False, "tenant": "default"}
+
+
+def test_pushflow_stats_excludes_policy_suppressed_from_fail_rate():
+    """hub-gate / kind 含 |deny: 的行是免打扰窗口主动拦截，不是投递失败。
+
+    真实事实（2026-10-21 实测）：当日 282 行中 103 行是 hub-gate 抑制，
+    若计入失败会虚报 53.9%，排除后真实失败率 27.4%。
+    """
+    import api_zhuge_route as zr
+    rows = ([_row("2026-10-21", True) for _ in range(7)]
+            + [_row("2026-10-21", False) for _ in range(3)]
+            + [_gate_row("2026-10-21") for _ in range(10)])
+    path = _write_temp_ledger(rows, "wo_os_20fix_gate.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert stats is not None
+    # 分母只算真实投递尝试：7+3=10，不含 10 条抑制
+    assert stats["attempted"] == 10
+    assert stats["ok_count"] == 7 and stats["fail_count"] == 3
+    assert stats["fail_rate"] == 0.3, "失败率分母必须是真实尝试数，不是含抑制的总行数"
+    assert stats["policy_suppressed"] == 10
+    assert "hub-gate" not in stats["channels"], "抑制行不得混进通道成败统计"
+
+
+def test_pushflow_stats_all_suppressed_returns_none():
+    """当日若全部是抑制行（无真实尝试），失败率无意义 → 返回 None 交引擎待核。"""
+    import api_zhuge_route as zr
+    rows = [_gate_row("2026-10-21") for _ in range(5)]
+    path = _write_temp_ledger(rows, "wo_os_20fix_allgate.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert stats is None
+
+
+def test_pushflow_stats_gate_by_kind_without_channel():
+    """channel 非 hub-gate 但 kind 带 |deny: 也算抑制（matrix:us|deny:silent）。"""
+    import api_zhuge_route as zr
+    rows = ([_row("2026-10-21", True) for _ in range(2)]
+            + [_gate_row("2026-10-21", channel="openapi",
+                         kind="matrix:us|deny:silent window")])
+    path = _write_temp_ledger(rows, "wo_os_20fix_denykind.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert stats["policy_suppressed"] == 1
+    assert stats["attempted"] == 2
+    assert stats["fail_rate"] == 0.0
+

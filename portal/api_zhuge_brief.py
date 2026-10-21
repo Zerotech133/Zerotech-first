@@ -168,6 +168,8 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
 
     # pushflow（WO-OS-20 第七源）：当日通知投递失败率分级；
     # 口径红线——只看当日账本实际成败，不拿历史失败簇冒充当前状态。
+    # WO-OS-20-FIX：分母是真实投递尝试（attempted），免打扰窗口的策略抑制
+    # （policy_suppressed）既不算成功也不算失败，只作为附注说明。
     if usable("pushflow"):
         stats = raw["pushflow"]
         raw_rate = stats.get("fail_rate")
@@ -188,12 +190,16 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
             else:
                 priority = 0  # <10% 视为正常投递水平，不产建议
             if priority:
+                attempted = stats.get("attempted", stats.get("today"))
+                suppressed = stats.get("policy_suppressed") or 0
+                tail = ("；另有 %s 条静默窗口策略抑制，不计入失败"
+                        % _count_text(suppressed)) if suppressed else ""
                 suggestions.append(_suggestion(
                     "pushflow:daily_rate", "通知", priority,
-                    "今日投递失败率 %s%%（失败 %s/总 %s）：这是当日实际失败率，"
-                    "不是历史失败簇；来源 pushflow.jsonl"
+                    "今日真实投递失败率 %s%%（失败 %s/尝试 %s）：这是当日真实投递尝试的"
+                    "失败率，不是历史失败簇%s；来源 pushflow.jsonl"
                     % (_pct_text(rate), _count_text(stats.get("fail_count")),
-                       _count_text(stats.get("today"))),
+                       _count_text(attempted), tail),
                     "/api/zhuge/brief.pushflow", None))
 
     # os / home / capability：当前无个人事实可提炼，仅登记覆盖，不产建议

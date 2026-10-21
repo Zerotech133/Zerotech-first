@@ -28,8 +28,8 @@ GOOD_SIX = {
 
 # WO-OS-20 第七源 pushflow：当日通知投递成败统计（真实账本口径）
 PUSHFLOW_HIGH = {
-    "ok": True, "today": 276, "ok_count": 124, "fail_count": 152,
-    "fail_rate": 0.55,
+    "ok": True, "today": 276, "attempted": 276, "ok_count": 124, "fail_count": 152,
+    "fail_rate": 0.55, "policy_suppressed": 0,
     "channels": {"openapi": {"ok": 100, "fail": 150},
                  "lark-cli": {"ok": 24, "fail": 2}},
 }
@@ -148,11 +148,30 @@ def test_pushflow_high_rate_is_priority_1_with_percent():
     assert s["priority"] == 1, "≥50% 应为 P1"
     assert s["domain"] == "通知"
     assert s["confidence"] == "rule-based"
-    assert "今日投递失败率 55%" in s["reason"]
-    assert "失败 152/总 276" in s["reason"]
+    assert "今日真实投递失败率 55%" in s["reason"]
+    assert "失败 152/尝试 276" in s["reason"], "分母必须是真实投递尝试数"
     assert "不是历史失败簇" in s["reason"], "必须区分当日实际失败率与历史失败簇"
     assert s["source"] == "/api/zhuge/brief.pushflow"
     assert "pushflow.jsonl" in s["reason"], "建议需说明原始来源"
+
+
+def test_pushflow_policy_suppressed_excluded_and_noted():
+    """WO-OS-20-FIX：静默窗口策略抑制既不算成功也不算失败，只在文案附注。
+
+    真实口径（2026-10-21 实测账本）：总行 282、策略抑制 103、真实尝试 179、
+    失败 49 → 真实失败率 27.4%（若把抑制算进去会虚报 53.9%）。
+    """
+    m = _load()
+    stats = {"ok": True, "today": 282, "attempted": 179, "ok_count": 130,
+             "fail_count": 49, "fail_rate": 0.274, "policy_suppressed": 103,
+             "channels": {"openapi": {"ok": 64, "fail": 46},
+                          "lark-cli": {"ok": 65, "fail": 3}}}
+    out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
+    s = _pick(out)
+    assert s is not None and s["priority"] == 3, "27.4% 属 P3 区间"
+    assert "失败 49/尝试 179" in s["reason"], "分母不得包含 103 条抑制行"
+    assert "103 条静默窗口策略抑制" in s["reason"]
+    assert "不计入失败" in s["reason"]
 
 
 def test_pushflow_mid_rate_is_priority_2():

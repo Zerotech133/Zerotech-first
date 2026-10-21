@@ -163,7 +163,8 @@ const GOOD_SIX = {
 (function test_pushflow_high_rate_priority_1() {
   const raw = clone(GOOD_SIX);
   raw.pushflow = {
-    ok: true, today: 276, ok_count: 124, fail_count: 152, fail_rate: 0.55,
+    ok: true, today: 276, attempted: 276, ok_count: 124, fail_count: 152,
+    fail_rate: 0.55, policy_suppressed: 0,
     channels: { openapi: { ok: 100, fail: 150 }, 'lark-cli': { ok: 24, fail: 2 } },
   };
   const out = A.buildBrief(raw, CLOCK);
@@ -171,13 +172,29 @@ const GOOD_SIX = {
   check('pushflow 产建议', !!s);
   check('pushflow P1', s && s.priority === 1);
   check('pushflow domain=通知', s && s.domain === '通知');
-  check('pushflow 含百分比', s && s.reason.indexOf('今日投递失败率 55%') !== -1);
-  check('pushflow 含失败/总数', s && s.reason.indexOf('失败 152/总 276') !== -1);
+  check('pushflow 含百分比', s && s.reason.indexOf('真实投递失败率 55%') !== -1);
+  check('pushflow 含失败/尝试数', s && s.reason.indexOf('失败 152/尝试 276') !== -1);
   check('pushflow 区分历史簇', s && s.reason.indexOf('不是历史失败簇') !== -1);
   check('pushflow source', s && s.source === '/api/zhuge/brief.pushflow');
   check('pushflow 说明来源', s && s.reason.indexOf('pushflow.jsonl') !== -1);
   check('pushflow confidence', s && s.confidence === 'rule-based');
   check('pushflow 源可用不进 gaps', !out.gaps.some(g => g.source === 'pushflow'));
+})();
+
+/* 10b2. WO-OS-20-FIX：策略抑制不计失败，文案点名抑制条数 */
+(function test_pushflow_policy_suppressed_noted() {
+  const raw = clone(GOOD_SIX);
+  raw.pushflow = {
+    ok: true, today: 282, attempted: 179, ok_count: 130, fail_count: 49,
+    fail_rate: 0.274, policy_suppressed: 103,
+    channels: { openapi: { ok: 64, fail: 46 }, 'lark-cli': { ok: 65, fail: 3 } },
+  };
+  const out = A.buildBrief(raw, CLOCK);
+  const s = out.suggestions.find(x => x.id === 'pushflow:daily_rate');
+  check('FIX 27.4% 属 P3', s && s.priority === 3);
+  check('FIX 分母用尝试数', s && s.reason.indexOf('失败 49/尝试 179') !== -1);
+  check('FIX 点名抑制条数', s && s.reason.indexOf('103 条静默窗口策略抑制') !== -1);
+  check('FIX 抑制不计入失败', s && s.reason.indexOf('不计入失败') !== -1);
 })();
 
 /* 10c. WO-OS-20 缺 pushflow → gaps 待核、不产建议 */

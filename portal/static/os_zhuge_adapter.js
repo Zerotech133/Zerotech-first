@@ -193,11 +193,17 @@
         else if (rate >= 0.3) priority = 2;
         else if (rate >= 0.1) priority = 3;
         if (priority) {
+          var attempted = (stats.attempted === undefined || stats.attempted === null)
+            ? stats.today : stats.attempted;
+          var suppressed = stats.policy_suppressed || 0;
+          var tail = suppressed
+            ? '；另有 ' + countText(suppressed) + ' 条静默窗口策略抑制，不计入失败'
+            : '';
           suggestions.push(suggestion(
             'pushflow:daily_rate', '通知', priority,
-            '今日投递失败率 ' + pctText(rate) + '%（失败 ' + countText(stats.fail_count) +
-              '/总 ' + countText(stats.today) + '）：这是当日实际失败率，' +
-              '不是历史失败簇；来源 pushflow.jsonl',
+            '今日真实投递失败率 ' + pctText(rate) + '%（失败 ' + countText(stats.fail_count) +
+              '/尝试 ' + countText(attempted) + '）：这是当日真实投递尝试的失败率，' +
+              '不是历史失败簇' + tail + '；来源 pushflow.jsonl',
             '/api/zhuge/brief.pushflow', null));
         }
       }

@@ -238,8 +238,8 @@ def test_pushflow_suggestion_lands_in_artifact(tmp_path):
     zm = _zm()
     fs = _stub_fetchers()
     fs["pushflow"] = lambda: {
-        "ok": True, "today": 276, "ok_count": 124, "fail_count": 152,
-        "fail_rate": 0.55,
+        "ok": True, "today": 276, "attempted": 276, "ok_count": 124,
+        "fail_count": 152, "fail_rate": 0.55, "policy_suppressed": 0,
         "channels": {"openapi": {"ok": 100, "fail": 150},
                      "lark-cli": {"ok": 24, "fail": 2}},
     }
@@ -250,7 +250,7 @@ def test_pushflow_suggestion_lands_in_artifact(tmp_path):
               if x["id"] == "pushflow:daily_rate"), None)
     assert s is not None, "注入 pushflow 后产物应含 pushflow:daily_rate"
     assert s["priority"] == 1
-    assert "今日投递失败率 55%" in s["reason"]
+    assert "今日真实投递失败率 55%" in s["reason"]
     assert "不是历史失败簇" in s["reason"]
     assert s["source"] == "/api/zhuge/brief.pushflow"
     assert res["summary"]["top_priority"] >= 2
