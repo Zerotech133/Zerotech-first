@@ -172,5 +172,12 @@ check('linkFor 支持 pushflow 前缀', /id\.startsWith\('pushflow:'\)/.test(htm
 check('pushflow 映射通知指挥页', /pushflow:['"]?\s*\?\s*'\/notify-command'/.test(html)
   || /startsWith\('pushflow:'\)\s*\?\s*'\/notify-command'/.test(html));
 
+// 2m. WO-OS-27 真实证据源：静态 JSON 拉取 + 喂给 renderEvidence
+check('存在 fetchEvidence 加载器', html.includes('async function fetchEvidence'));
+check('静态证据端点', html.includes('/data/result_evidence/today.json'));
+check('证据喂入 renderEvidence', /renderEvidence\(evidenceItems\|\|window\.OS_RESULT_EVIDENCE\)/.test(html));
+check('证据源标注为静态不依赖8091', html.includes('nginx 直服，不依赖 8091'));
+check('新增加载器复用唯一 fetch 出口', html.includes("await get('/data/result_evidence/today.json')"));
+
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-01/08/10/11 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议/8091路由渐进消费本地兜底');

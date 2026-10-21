@@ -1,0 +1,136 @@
+# -*- coding: utf-8 -*-
+"""WO-OS-27 契约测试：真实证据供数器（先红后绿）。
+
+运行：python -m pytest portal/test_gen_result_evidence.py -q
+"""
+import json
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+BEIJING = timezone(timedelta(hours=8))
+DAY = "2026-10-21"
+
+
+def _gm(day=DAY, n=2):
+    """假 git 输出：n 条目标日提交 + 1 条前一日（应被过滤）。"""
+    import gen_result_evidence as g
+    rows = []
+    for i in range(n):
+        ts = "%sT%02d:1%d:00+08:00" % (day, 9 + i, i)
+        rows.append("abc1234%x\x1f%s\x1fWO 工单 %d" % (i, ts, i))
+    rows.append("deadbeef\x1f2026-10-20T23:00:00+08:00\x1f前一日不应计入")
+    return "\n".join(rows)
+
+
+def _runner_factory(out=None, rc=0):
+    calls = []
+
+    def runner(argv):
+        calls.append(argv)
+        return rc, (out if out is not None else "")
+
+    runner.calls = calls
+    return runner
+
+
+# ① 提交映射：六字段齐全 + receipt 必为 None（不冒充已验收）
+def test_commit_maps_to_unverified_evidence():
+    import gen_result_evidence as g
+    runner = _runner_factory(_gm(n=2))
+    rows = g.collect_commits(DAY, limit=20, runner=runner)
+    assert len(rows) == 2, "只应保留目标日的 2 条"
+    one = rows[0]
+    for key in ("id", "domain", "business_day", "producer_time",
+                "outcome", "evidence_uri"):
+        assert key in one and one[key], "缺关键字段 %s" % key
+    assert one["outcome"] == "done"
+    assert one["business_day"] == DAY
+    assert one["receipt_uri"] is None, "自证不是复核回执，必须留空"
+    assert one["evidence_uri"].startswith("commit:")
+
+
+# ② 跨日过滤：北京日边界外的提交不进
+def test_commit_filters_other_days():
+    import gen_result_evidence as g
+    out = ("aaa\x1f2026-10-20T23:59:59+08:00\x1f昨日\n"
+           "bbb\x1f2026-10-21T00:00:01+08:00\x1f今日凌晨\n"
+           "ccc\x1f2026-10-22T00:00:01+08:00\x1f明日\n")
+    rows = g.collect_commits(DAY, runner=_runner_factory(out))
+    assert [r["id"] for r in rows] == ["commit:bbb"], "只留北京日内的提交"
+
+
+# ③ git 失败 → 空列表（不抛、不造数）
+def test_commit_git_failure_returns_empty():
+    import gen_result_evidence as g
+    assert g.collect_commits(DAY, runner=_runner_factory("", rc=128)) == []
+
+
+# ④ 交付物按 mtime 归日
+def test_deliverables_by_mtime(tmp_path):
+    import gen_result_evidence as g
+    import os
+    today_file = tmp_path / "今日交付.md"
+    today_file.write_text("x", encoding="utf-8")
+    old_file = tmp_path / "昨日交付.md"
+    old_file.write_text("x", encoding="utf-8")
+    # 把旧文件 mtime 设为前一日
+    old_ts = datetime(2026, 10, 20, 12, 0, tzinfo=BEIJING).timestamp()
+    os.utime(old_file, (old_ts, old_ts))
+    rows = g.collect_deliverables(DAY, root=tmp_path)
+    names = [r["evidence_uri"] for r in rows]
+    assert "deliverables/今日交付.md" in names
+    assert "deliverables/昨日交付.md" not in names
+    assert rows[0]["outcome"] == "delivered"
+    assert rows[0]["receipt_uri"] is None
+
+
+# ⑤ 合并载荷：结构 + 诚实 note + 排序无关但条数对
+def test_build_payload_shape(tmp_path):
+    import gen_result_evidence as g
+    payload = g.build_payload(DAY, limit=5, runner=_runner_factory(_gm(n=2)),
+                              deliverables_root=tmp_path)
+    assert payload["ok"] is True
+    assert payload["business_day"] == DAY
+    assert payload["source"] == "git-commits+deliverables"
+    assert "unverified" in payload["note"] or "未走独立复核" in payload["note"]
+    assert isinstance(payload["items"], list) and len(payload["items"]) == 2
+    assert all(x["receipt_uri"] is None for x in payload["items"])
+
+
+# ⑥ dry-run 不写盘；正常写入 today.json
+def test_dry_run_and_write(tmp_path):
+    import gen_result_evidence as g
+    import gen_result_evidence
+    rc = gen_result_evidence.main(["--dry-run", "--day", DAY, "--out-dir", str(tmp_path)])
+    assert rc == 0
+    assert not (tmp_path / "today.json").exists(), "dry-run 不得写盘"
+
+    rc = gen_result_evidence.main(["--day", DAY, "--out-dir", str(tmp_path), "--limit", "3"])
+    assert rc == 0
+    target = tmp_path / "today.json"
+    assert target.exists()
+    data = json.loads(target.read_text(encoding="utf-8"))
+    assert data["business_day"] == DAY
+
+
+# ⑦ 坏参数拒绝
+def test_bad_args_rejected(tmp_path):
+    import gen_result_evidence
+    assert gen_result_evidence.main(["--day", "2026-13-40", "--dry-run"]) == 2
+    assert gen_result_evidence.main(["--day", DAY, "--limit", "0", "--dry-run"]) == 2
+
+
+# ⑧ 源码禁项：不写仓库、不碰业务账本、不发通知
+def test_source_has_no_write_side_effects():
+    src = (HERE / "gen_result_evidence.py").read_text(encoding="utf-8")
+    for banned in ("requests.", "urllib.request", "smtplib", "schedules.json",
+                   "push_flow.jsonl", "git commit", "git push", "os.remove",
+                   "shutil.rmtree"):
+        assert banned not in src, "生产代码不得出现 %s" % banned
+    # 唯一写盘点应是产物 JSON
+    assert src.count("write_text(") == 1
