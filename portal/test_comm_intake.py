@@ -265,7 +265,7 @@ def test_23_inbound_wiring_smart_branch(env, monkeypatch):
                         lambda path, row: ledgers.append(row))
     # 桩 LLM：判成 smalltalk（避免依赖真实模型）
     monkeypatch.setattr(ci, "smart_intake",
-                        lambda text, oid, mid="": {
+                        lambda text, oid, mid="", llm=None, async_sink=None: {
                             "intent": "smalltalk", "reply_text": "我是助手",
                             "action": ci.ACTION_REPLY, "meta": [],
                             "llm_ok": True, "route": {"target": "clarify"},
@@ -305,21 +305,37 @@ def test_24_inbound_wiring_off_unchanged(env, monkeypatch):
 
 
 # ── K6 咨询位接线 ────────────────────────────
-def test_25_consult_goes_to_zhuge(env, monkeypatch):
-    """smalltalk + 疑问词 + 咨询位开启 → 走诸葛亮，intent 变 consult。"""
+def test_25_consult_async_receipt_then_sink(env, monkeypatch):
+    """K6.1 军师异步：立即回「思考中」回执卡，算完经 async_sink 补发。"""
+    import time as _t
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     monkeypatch.setattr(ci.zhuge, "consult",
                         lambda q, open_id="", **k: {
                             "text": "结论先行：先看流动性。", "mode": "local_soul",
                             "llm_ok": True, "error": "local_fallback"})
+    got = {}
+    import threading as _th
+    ready = _th.Event()
+
+    def _sink(oid, q, zr, trace):
+        got.update(zr=zr, trace=trace)
+        ready.set()
+
     llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.9}')
+    t0 = _t.time()
     r = ci.smart_intake("为什么今天大盘跌", "ou_consult", msg_id="MC1",
-                        llm=llm)
+                        llm=llm, async_sink=_sink)
+    elapsed = _t.time() - t0
     assert r is not None
     assert r["intent"] == "consult"
-    assert "流动性" in r["reply_text"]
-    assert any("咨询位" in m for m in r["meta"])
+    # ① 主链不等模型：立即回执（<2s，桩咨询 0s 也应秒回）
+    assert elapsed < 2.0, "主链必须先回执，不得等军师算完（%.2fs）" % elapsed
+    assert "军师正在研判" in r["reply_text"]
+    assert any("异步" in m for m in r["meta"])
+    # ② 后台算完经 sink 补发答案
+    assert ready.wait(timeout=5), "async_sink 应被调用"
+    assert "流动性" in got["zr"]["text"]
 
 
 def test_26_plain_smalltalk_not_consult(env, monkeypatch):
@@ -334,15 +350,26 @@ def test_26_plain_smalltalk_not_consult(env, monkeypatch):
     assert called == [], "寒暄不得调用咨询位"
 
 
-def test_27_consult_channel_down_falls_back_clarify(env, monkeypatch):
-    """咨询位给不出答案 → 回落原链路（不再假装回答）。"""
+def test_27_consult_channel_down_sink_says_honest(env, monkeypatch):
+    """K6.1 行为变更：军师全挂也先回执（已承诺稍后送达），由 sink 发诚实
+    失败说明（不再回落澄清卡——客户已收到「思考中」不能装没看见）。"""
+    import threading as _th
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     monkeypatch.setattr(ci.zhuge, "consult",
                         lambda q, open_id="", **k: {
                             "text": None, "mode": None, "llm_ok": False,
                             "error": "all_channels_down"})
+    got = {}
+    ready = _th.Event()
+
+    def _sink(oid, q, zr, trace):
+        got.update(zr=zr)
+        ready.set()
+
     llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.85}')
-    r = ci.smart_intake("为什么今天大盘跌", "ou_fb", msg_id="MC3", llm=llm)
-    # 回落澄清卡 → smart_intake 返回 None（交回 handle_inbound 原流程）
-    assert r is None
+    r = ci.smart_intake("为什么今天大盘跌", "ou_fb", msg_id="MC3",
+                        llm=llm, async_sink=_sink)
+    assert r is not None, "异步模式先回执，不再回落澄清卡"
+    assert ready.wait(timeout=5)
+    assert got["zr"]["text"] is None, "sink 收到 None 才能发诚实失败卡"

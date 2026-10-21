@@ -34,6 +34,8 @@ import uuid
 import comm_dispatch as dispatch
 import comm_interest as interest
 import comm_memory as mem
+import threading
+
 import comm_router as cr
 import comm_zhuge as zhuge
 
@@ -170,7 +172,7 @@ def _subscription_summary(open_id):
 
 
 # ── K3.1 智能接话总入口 ──────────────────────────
-def smart_intake(text, open_id, msg_id="", llm=None):
+def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
     """→ dict | None。开关关闭或判不出时返回 None（交回原流程）。"""
     if not enabled():
         return None
@@ -198,19 +200,30 @@ def smart_intake(text, open_id, msg_id="", llm=None):
         res["intent"] == "smalltalk"
         or (res["intent"] == "stock_consult" and _no_code))
     if _to_zhuge:
-        zr = zhuge.consult(text, open_id=open_id)
-        if zr.get("text"):
-            tag = "诸葛亮（GPT6.0）" if zr["mode"] == "openclaw_gpt" \
-                else "诸葛亮（本地军师代理）"
-            rp = {"text": zr["text"], "action": ACTION_REPLY,
-                  "llm_ok": zr["llm_ok"],
-                  "meta": ["咨询位·" + tag, "mode:" + zr["mode"],
-                           "trace:" + res["trace_id"]]}
-            res["intent"] = "consult"
-            res["zhuge"] = {"mode": zr["mode"], "error": zr.get("error")}
-            dr = None
-        else:
-            rp = build_reply(res, open_id=open_id, dispatch_result=dr)
+        # K6.1（WO-FS-156）军师咨询改异步：本地 9b 推理实测 11~14 秒，
+        # 同步等待期间客户侧零反馈（飞书显示无响应）。改为：
+        # ①本函数立即回「军师思考中」回执卡（<1s）；
+        # ②后台线程真咨询，算完经 async_sink 回调补发结果卡；
+        # ③线程异常只降级为补发失败提示，不反噬消息主链。
+        trace = res["trace_id"]
+        rp = {"text": ("已收到您的问题，军师正在研判（通常 10~20 秒），"
+                       "答案稍后单独送达。工单 %s。"
+                       % ("ZG-" + trace[:6].upper())),
+              "action": ACTION_REPLY, "llm_ok": False,
+              "meta": ["咨询位·异步", "trace:" + trace]}
+        res["intent"] = "consult"
+        res["zhuge"] = {"mode": "async"}
+
+        def _bg_consult():
+            zr = zhuge.consult(text, open_id=open_id)
+            if async_sink:
+                try:
+                    async_sink(open_id, text, zr, trace)
+                except Exception:  # noqa: BLE001 —— 回调异常不反噬
+                    pass
+
+        threading.Thread(target=_bg_consult, daemon=True).start()
+        dr = None
     else:
         rp = build_reply(res, open_id=open_id, dispatch_result=dr)
     if rp["action"] is ACTION_FALLBACK:

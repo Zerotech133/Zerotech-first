@@ -649,6 +649,31 @@ def _result_card(ticket, detail):
     return card
 
 
+def _zhuge_async_sink(open_id, question, zr, trace):
+    """K6.1 军师异步补发（WO-FS-156）：后台咨询算完，把答案单独发一张卡。
+
+    与智能接话卡同通道（_send_card 同款参数）；失败只落日志不重试——
+    客户已有「稍后送达」回执，缺失可见（比静默重发好排查）。
+    """
+    try:
+        if zr.get("text"):
+            tag = "诸葛亮（GPT6.0）" if zr.get("mode") == "openclaw_gpt" \
+                else "诸葛亮（本地军师代理）"
+            md = ("**军师研判 · %s**\n\n%s" % (tag, zr["text"]))
+        else:
+            md = ("军师暂时给不出可靠答案（%s）。您可以直接追问细节，"
+                  "或发「投诉」转人工归口。" % (zr.get("error") or "通道不可用"))
+        from feishu_card_v2 import build_v3
+        card, _ = build_v3("interact", "军师研判 · ZG-%s" % trace[:6].upper(),
+                           "通信与客户服务部", md=md,
+                           tags="#comm #zhuge #async")
+        ok, why, mid = _send_card(card, open_id)
+        log("军师异步补发 %s ok=%s why=%s mid=%s"
+            % (trace[:8], ok, why, mid or "-"))
+    except Exception:  # noqa: BLE001 —— 补发失败不反噬消息主链
+        log("军师异步补发异常 " + __import__("traceback").format_exc()[-200:])
+
+
 def _public_base():
     """卡片按钮外链基址。飞书客户端打开需能访问到 8091：
     PC 端本机可用 127.0.0.1；手机/他人需配 COMM_PUBLIC_BASE（如 https://域名）。
@@ -881,7 +906,8 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
         try:
             import comm_intake as _ci
             if _ci.enabled():
-                smart = _ci.smart_intake(text, open_id, msg_id)
+                smart = _ci.smart_intake(text, open_id, msg_id,
+                                         async_sink=_zhuge_async_sink)
         except Exception as ex:  # noqa: BLE001 —— 降级必须留痕
             log("智能接话层异常，降级澄清卡：%s: %s"
                 % (type(ex).__name__, str(ex)[:120]))

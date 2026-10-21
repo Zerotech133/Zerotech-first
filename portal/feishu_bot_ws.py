@@ -1091,6 +1091,38 @@ def main():
     # 超过 15 分钟升级话术（升级动作本身仍是回卡，真正的归口由田丰侧处理）。
     # 开关 COMM_DISPATCH_ENABLED + COMM_DISPATCH_PATROL（默认 1）双闸；
     # 线程内任何异常只落日志，不影响 WS 主链（判例：辅助线程不得反噬主链）。
+    def _patrol_send(open_id, text, dispatch_id, stage):
+        """巡视提示直达客户：经 8097 闸门 openapi 直发（receive_id=open_id）。
+
+        WO-FS-156 修复：原实现误用 send_text(txt, "-")——message_id="-" 会
+        走「回复会话」语义，飞书必然拒发（message_id 无效），巡视提示从未
+        真正送达。改为与 inbound 回卡同通道（feishu_client.send_msg），
+        critical=True（超时提示不可被静默窗吞）。
+        """
+        try:
+            import json as _j
+            _nc = os.path.join(os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))), "news_collector")
+            if _nc not in sys.path:
+                sys.path.insert(0, _nc)
+            from feishu_client import send_msg as _sm
+            card = {"config": {"wide_screen_mode": True},
+                    "header": {"template": "orange" if stage == 1 else "red",
+                               "title": {"tag": "plain_text",
+                                         "content": "⏱ 处理进度提醒"}},
+                    "elements": [{"tag": "div",
+                                  "text": {"tag": "lark_md",
+                                           "content": text}}]}
+            ok, why = _sm(_j.dumps(card, ensure_ascii=False),
+                          "interactive", open_id,
+                          receive_id_type="open_id",
+                          kind="comm_patrol", critical=True)
+            log("巡视提示 %s stage=%d 发送 %s（%s）"
+                % (dispatch_id, stage, "成功" if ok else "失败", why))
+        except Exception as _ex:  # noqa: BLE001
+            log("巡视提示异常 %s: %s" % (dispatch_id,
+                                        traceback.format_exc()[-160:]))
+
     def _dispatch_patrol():
         import comm_dispatch as _cd
         import time as _t
@@ -1114,11 +1146,7 @@ def main():
                     else:
                         txt = ("工单 %s 已超过 15 分钟未处理，已升级至田丰归口督办，"
                                "稍后给您明确答复。" % it["dispatch_id"])
-                    try:
-                        send_text(txt, "-")
-                    except Exception as _ex:  # noqa: BLE001
-                        log("派单巡视回卡失败 %s: %s"
-                            % (it["dispatch_id"], type(_ex).__name__))
+                    _patrol_send(oid, txt, it["dispatch_id"], stage)
                     log("派单巡视 %s stage=%d waited=%.1fmin"
                         % (it["dispatch_id"], stage, it.get("waited_min", 0)))
             except Exception:  # noqa: BLE001 —— 巡视异常不得打死线程
