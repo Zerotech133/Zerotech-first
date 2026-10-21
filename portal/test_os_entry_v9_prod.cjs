@@ -53,6 +53,10 @@ check('大屏建议容器 board-brief', /id="board-brief"/.test(html));
 })();
 check('大屏与首页共用建议引擎标识', html.includes('大屏与首页共用建议引擎'));
 
+// 2e. WO-OS-11 渐进消费 8091 只读路由 /api/zhuge/brief：fetch 字符串 + 本地兜底降级文案
+check('fetch /api/zhuge/brief', html.includes("'/api/zhuge/brief'"));
+check('路由不可达本地兜底文案', html.includes('路由不可达，本地引擎兜底'));
+
 // 3. 只读 GET 端点齐备
 for (const ep of ['/api/os', '/api/home', '/api/alerts', '/api/notify/queue', '/api/org/tasks', '/api/capability/board'])
   check('端点 ' + ep, html.includes("'" + ep + "'"));
@@ -75,4 +79,4 @@ else {
 }
 
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
-console.log('PASS WO-OS-01/08/10 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议');
+console.log('PASS WO-OS-01/08/10/11 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议/8091路由渐进消费本地兜底');
