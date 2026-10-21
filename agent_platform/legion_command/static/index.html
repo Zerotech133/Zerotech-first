@@ -56,8 +56,22 @@ fetch('/api/snapshot').then(r => r.json()).then(s => {
   const q = s.summary;
   document.getElementById('stats').innerHTML =
     '<span>营 <b>' + q.departments + '</b></span><span>在编 <b>' + q.agents + '</b></span>' +
-    '<span>在途单 <b>' + q.doing + '</b></span><span>排程 <b>' + q.schedules + '</b></span>';
+    '<span>在途单 <b>' + q.doing + '</b></span><span>排程 <b>' + q.schedules + '</b></span>' +
+    '<span id="evostat">进化层 <b>…</b></span>';
 }).catch(() => { document.getElementById('ts').textContent = '快照端点不可达'; });
+
+fetch('/api/evolution').then(r => r.json()).then(e => {
+  const el = document.getElementById('evostat');
+  if (!el) return;
+  if (!e.ok) { el.innerHTML = '进化层 <b style="color:#E24B4A">不可用</b>'; return; }
+  const zero = e.entries_total === 0;
+  el.innerHTML = '进化层 经验 <b style="color:' + (zero ? '#EF9F27' : '#4FD1A5') + '">' +
+    e.entries_total + '</b> 条 · 实验 <b>' + e.experiments.length + '</b> 卡' +
+    (zero ? '<span style="color:#5A7190">（首条待签字）</span>' : '');
+}).catch(() => {
+  const el = document.getElementById('evostat');
+  if (el) el.innerHTML = '进化层 <b style="color:#E24B4A">不可达</b>';
+});
 </script>
 </body>
 </html>
