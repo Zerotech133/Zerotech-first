@@ -37,7 +37,7 @@ def store(tmp_path, monkeypatch):
 def test_snapshot_real_org(tmp_path):
     data = snap.build_snapshot()
     assert data["ok"] is True
-    assert data["schema_version"] == "1.1"  # S29 起 activity 结构升版
+    assert data["schema_version"] == "1.2"  # S34 起 agents 增 has_profile 等字段
     s = data["summary"]
     assert s["departments"] >= 13
     assert s["agents"] >= 25  # org 在编 29（hr 55 档含编外，org.json 为真源）

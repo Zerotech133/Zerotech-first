@@ -108,6 +108,18 @@ class Handler(BaseHTTPRequestHandler):
             # 形如 /api/meeting/../x 一律拒绝，不回显原始串（避免反射注入面）
             self._send_json({"ok": False, "error": "bad_meeting_id"}, 400)
             return
+        if path == "/api/org/audit":
+            # 编制完整性审计（只读）：回答「这个军团到底多少人、谁在干嘛」的前置事实。
+            # 不写任何真源；缺口清单不是档案，charter_detail 须田丰归口、老田裁定。
+            try:
+                from engine.org_audit import audit
+                self._send_json(audit(_PLATFORM))
+            except FileNotFoundError as e:
+                self._send_json({"ok": False, "error": "org_missing", "detail": str(e)[:200]}, 500)
+            except Exception as e:                       # noqa: BLE001
+                self._send_json({"ok": False, "error": "audit_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/health":
             self._send_json({"ok": True, "service": "legion-command", "version": "1.0"})
             return

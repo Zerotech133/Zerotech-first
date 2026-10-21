@@ -16,7 +16,7 @@ _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"   # S34: agents 增 has_profile/lead_profiled/seats_*
 
 # 在途工单归属规则（版本化）：tasks.json 的 owner 多为 unknown-agent，
 # 按 key 前缀 / 描述关键词把任务归到部门与席位，让沙盘能显示"谁在干什么"。
@@ -84,22 +84,40 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
         lead_id = d.get("lead") or ""
         if lead_id and lead_id not in lead_cache:
             lead_cache[lead_id] = _cn_name(lead_id) or lead_id
-        agents = []
+        # 席位口径：agents 名单 ∪ agent_profiles 档案。
+        # 只按 profiles 出人会把「有名无档」的席位整个藏起来（S34 前 intel 部显示 0 员，
+        # 实际名单里 5 人）——缺口看不见比缺口存在更糟。故名单优先、档案补全字段，
+        # 没有档案的标 has_profile=False，由前端显式画出差异。
+        prof_by_id = {}
         for p in d.get("agent_profiles") or []:
-            aid = p.get("agent_id") or ""
+            aid = str(p.get("agent_id") or "")
+            if aid:
+                prof_by_id[aid] = p
+        listed = [str(x) for x in (d.get("agents") or [])]
+        ordered = listed + [a for a in prof_by_id if a not in listed]
+        agents = []
+        for aid in ordered:
+            if not aid:
+                continue
+            p = prof_by_id.get(aid)
             agents.append({
                 "id": aid,
                 "cn": _cn_name(aid) or aid,
-                "binding": p.get("llm_binding") or "",
-                "role": p.get("role_profile") or "",
+                "binding": (p.get("llm_binding") or "") if p else "",
+                "role": (p.get("role_profile") or "") if p else "",
+                "has_profile": p is not None,
             })
         departments.append({
             "id": did,
             "name": d.get("name") or did,
             "cn_title": d.get("cn_title") or "",
             "lead": lead_cache.get(lead_id, "") if lead_id else "",
+            "lead_id": lead_id,
+            "lead_profiled": lead_id in prof_by_id if lead_id else False,
             "status": d.get("status") or "",
             "agents": agents,
+            "seats_listed": len(listed),
+            "seats_profiled": len(prof_by_id),
         })
 
     tasks = _load_json(root.parent / ".worktrees" / "tasks.json")

@@ -17,6 +17,9 @@
   .lg { display: flex; align-items: center; gap: 5px; }
   .lamp { width: 8px; height: 8px; border-radius: 50%; }
   .l-local { background: #4FD1A5; } .l-cyc { background: #4FA3E8; } .l-idle { background: #5A7190; } .l-none { background: #3A4A5E; }
+  .seat.noprof { border-style: dashed; border-color: #2A4058; opacity: .72; }
+  .seat.noprof .aid { color: #7C93AD; }
+  .dept-meta { font-size: 9.5px; color: #5A7190; margin-left: 8px; }
   .statbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .stat { background: #0F2440; border-radius: 10px; padding: 9px 13px; border: 0.5px solid #1E3A5F; }
   .stat-n { font-size: 21px; font-weight: 500; color: #4FD1A5; }
@@ -71,6 +74,7 @@
       <span class="lg"><span class="lamp l-cyc"></span>本营有活</span>
       <span class="lg"><span class="lamp l-idle"></span>待命</span>
       <span class="lg"><span class="lamp l-none"></span>未绑定</span>
+      <span class="lg"><span class="lamp" style="background:none;border:1px dashed #2A4058"></span>有名无档</span>
       <span class="lg" style="color:#5A7190">▭ 虚位可募</span>
     </div>
   </div>
@@ -146,12 +150,17 @@ function render(snap) {
       '<span class="camp-t">' + c.name + '</span><span class="camp-s">' + depts.length + ' 营 · ' + total + ' 员</span></div><div class="dept-grid">';
     depts.forEach(d => {
       html += '<div class="dept"><div class="dept-h"><span class="dept-n">' + esc(d.name) + (d.cn_title ? '<span style="color:#5A7190;font-size:10px"> · ' + esc(d.cn_title) + '</span>' : '') + '</span>' +
-        '<span class="dept-lead">' + (d.lead ? '主官 <b>' + esc(d.lead) + '</b>' : '主官待任') + '</span></div><div class="seats">';
+        '<span class="dept-lead">' + (d.lead
+          ? '主官 <b>' + esc(d.lead) + '</b>' + (d.lead_profiled ? '' : '<span style="color:#EF9F27">·无档</span>')
+          : '<span style="color:#EF9F27">主官待任</span>') +
+        '<span class="dept-meta">档案 ' + (d.seats_profiled || 0) + '/' + (d.seats_listed || d.agents.length) + '</span></span></div><div class="seats">';
       d.agents.forEach(a => {
         seatIndex[a.id] = a;
         const n = ((SNAP.activity && SNAP.activity.by_agent) || {})[a.id] || [];
-        html += '<div class="seat" onclick="showSeat(\'' + esc(a.id) + '\')"><div class="aid">' + esc(a.id) +
-          (n.length ? ' · ' + n.length + '单' : '') + '</div>' +
+        const noProf = a.has_profile === false;
+        html += '<div class="seat' + (noProf ? ' noprof' : '') + '" onclick="showSeat(\'' + esc(a.id) + '\')"' +
+          (noProf ? ' title="有名无档：组织真源未登记职责/模型/档级"' : '') + '><div class="aid">' + esc(a.id) +
+          (n.length ? ' · ' + n.length + '单' : '') + (noProf ? ' ·无档' : '') + '</div>' +
           '<div class="cn"><span class="slamp ' + lamp(a, d) + '"></span>' + esc(a.cn) + '</div></div>';
       });
       if (!d.agents.length) html += '<div class="seat vac" onclick="openRecruit(\'' + esc(d.name) + '\',true)">＋ 任命主官</div>';
@@ -166,6 +175,18 @@ function render(snap) {
 function showSeat(id) {
   const a = seatIndex[id]; if (!a) return;
   const dept = (SNAP.departments.find(d => d.agents.some(x => x.id === id)) || {});
+  const seat = seatIndex[id] || {};
+  if (seat.has_profile === false) {
+    document.getElementById('dBody').innerHTML =
+      '<div style="color:#EF9F27;font-size:11.5px;line-height:1.8">' +
+      '<b>有名无档</b><br>该席位在组织真源 org.json 的 <code>agents</code> 名单里，' +
+      '但<b>没有 agent_profiles 档案</b>——职责、模型绑定、档级、工具授权均未登记。<br><br>' +
+      '后果：无法回答「它在干什么」，也无法被派工。<br>' +
+      '补齐须由田丰归口、老田裁定职责后，走 <code>engine/org_enroll.py</code>（需签字）。' +
+      '<br><span style="color:#5A7190">工具不代填职责——造出来的职责比没有更糟。</span></div>';
+    document.getElementById('drawer').classList.add('open');
+    return;
+  }
   const byAgent = (SNAP.activity && SNAP.activity.by_agent) || {};
   const myKeys = byAgent[id] || [];
   const doing = (SNAP.activity.doing || []).filter(t => myKeys.indexOf(t.key) >= 0);
