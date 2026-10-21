@@ -100,6 +100,9 @@ def audit(root: Path) -> dict:
     extra_prof = {aid: v for aid, v in all_idx.items()
                   if v.get("source") != SRC_DEPT}  # 部门表之外的
     leads_elsewhere: set[str] = set()
+    # 同一席位可能同时挂在「常设部门」与「项目行营」两条名单上（DEV3 在 dev 与
+    # proj_backtest）。条目数会把一个人算两次——两个数都要报，否则「68 席」是虚的。
+    seat_depts: dict[str, list] = {}
 
     for d in depts:
         dept = str(d.get("dept"))
@@ -119,6 +122,8 @@ def audit(root: Path) -> dict:
         elsewhere_total += len(elsewhere_seats)
         in_org.update(ids)
         in_org.update(profs)
+        for i in ids:
+            seat_depts.setdefault(i, []).append(dept)
 
         if not profs:
             findings.append({"code": "DEPT_NO_PROFILE", "severity": SEV_P1, "dept": dept,
@@ -142,18 +147,29 @@ def audit(root: Path) -> dict:
         else:
             lid = str(lead)
             in_list, in_prof = lid in ids, lid in profs
-            elsewhere = extra_prof.get(lid)
+            # 查「组织里任何一处」有没有档案：本部门表之外还包括其他部门的部门表
+            # （跨部门兼任的主官，档案常落在自己主属部门的表里，如 A0A 迁入 chief_line）。
+            elsewhere = all_idx.get(lid)
             if not in_prof:
                 if elsewhere:
                     # 档案存在但不在部门档案表：职责/模型/档级答得出，但**按部门取档案的
                     # 调用方（如会议层 resolve_binding）取不到 → 静默回落默认档**。
+                    src_kind = elsewhere.get("source")
+                    # 档案在**别的部门档案表**里（跨部门兼任的常态：主官档案在自己主属部门）：
+                    # 统一取档口径能查到，不存在"回落默认档"，只是位置不在本部门——
+                    # 这是结构事实，P3 提示即可，不该按 P2 当成取档故障。
+                    other_dept = (src_kind == SRC_DEPT)
                     findings.append({
-                        "code": "LEAD_PROFILE_ELSEWHERE", "severity": SEV_P2, "dept": dept,
-                        "lead": lid,
-                        "detail": "主官 %s 有档案但登记在 %s（不在本部门档案表，绑定 %s）："
-                                  "按部门档案取档的调用方取不到，会静默回落默认档"
-                                  % (lid, elsewhere.get("source_detail") or elsewhere.get("source"),
-                                     elsewhere.get("llm_binding") or "未声明")})
+                        "code": "LEAD_PROFILE_ELSEWHERE",
+                        "severity": SEV_P3 if other_dept else SEV_P2,
+                        "dept": dept, "lead": lid,
+                        "detail": ("主官 %s 档案在其主属部门 %s（跨部门兼任，统一取档可查，绑定 %s）"
+                                   % (lid, (elsewhere.get("source_detail") or "").replace("dept:", ""),
+                                      elsewhere.get("llm_binding") or "未声明")) if other_dept
+                                  else ("主官 %s 有档案但登记在 %s（不在本部门档案表，绑定 %s）："
+                                        "按部门档案取档的旧调用方取不到，会静默回落默认档"
+                                        % (lid, elsewhere.get("source_detail") or src_kind,
+                                           elsewhere.get("llm_binding") or "未声明"))})
                     leads_elsewhere.add(lid)
                 else:
                     findings.append({
@@ -196,8 +212,19 @@ def audit(root: Path) -> dict:
                      "listed": len(ids), "profiled": len(profs),
                      "ghost": len(ghosts), "ghost_list": ghosts,
                      "profiled_elsewhere": elsewhere_seats,
+                     # 档案可能在本部门表、其他部门表、chief 或 team 文件——
+                     # 只要组织里任何一处有，就算「档案齐备」（位置问题由
+                     # LEAD_PROFILE_ELSEWHERE 单独提示，不重复算成不齐备）。
                      "lead_ok": bool(lead) and (str(lead) in profs
-                                                  or str(lead) in extra_prof)})
+                                                  or str(lead) in all_idx)})
+
+    multi = {k: v for k, v in seat_depts.items() if len(v) > 1}
+    if multi:
+        findings.append({"code": "SEAT_IN_MULTIPLE_DEPTS", "severity": SEV_P3,
+                         "agents": sorted(multi),
+                         "detail": "%d 席同时挂在多个部门名单（行营兼任：常设部门 + 项目行营）。"
+                                   "名单条目 %d ≠ 独立席位 %d，任何「共多少席」的表述都必须说清用的是哪个口径"
+                                   % (len(multi), listed_total, len(seat_depts))})
 
     # 中文名重复（历史 4 对，账面混淆）
     by_cn: dict[str, list[str]] = {}
@@ -244,6 +271,8 @@ def audit(root: Path) -> dict:
         "summary": {
             "depts": len(depts),
             "seats_listed": listed_total,
+            "seats_unique": len(seat_depts),
+            "seats_multi_dept": sum(1 for v in seat_depts.values() if len(v) > 1),
             "seats_profiled": profiled_total,
             "seats_ghost": ghost_total,
             "seats_profiled_elsewhere": elsewhere_total,
@@ -270,10 +299,12 @@ def _print_human(rep: dict) -> None:
     print("=" * 66)
     # 三态必须分行写清楚：名单 = 部门表 + 别处 + 真无档，否则「65 有档 / 0 无档 / 共 66 席」
     # 读者自己都算不平（S42 实测被问过）。
-    print("部门 %d 个 · 席位名单 %d = 部门档案表 %d + 档案在别处 %d + 真无档 %d（%.0f%%）"
-          % (s["depts"], s["seats_listed"], s["seats_profiled"],
-             s.get("seats_profiled_elsewhere", 0), s["seats_ghost"],
-             s["ghost_ratio"] * 100))
+    print("部门 %d 个 · 名单条目 %d（含 %d 席跨部门兼任 → 独立席位 %d）"
+          % (s["depts"], s["seats_listed"], s.get("seats_multi_dept", 0),
+             s.get("seats_unique", s["seats_listed"])))
+    print("            = 部门档案表 %d + 档案在别处 %d + 真无档 %d（%.0f%%）"
+          % (s["seats_profiled"], s.get("seats_profiled_elsewhere", 0),
+             s["seats_ghost"], s["ghost_ratio"] * 100))
     print("主官 %d 个 · 档案齐备 %d · 异常 %d" % (s["leads_total"], s["leads_ok"], s["leads_not_ok"]))
     print("重名 %d 对 · 编外 %d 员 · 主官未登记 %d · 缺口 P1=%d P2=%d P3=%d"
           % (s["duplicate_names"], s["orphan_staff"], s["leads_unregistered"],

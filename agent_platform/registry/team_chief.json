@@ -1,73 +1,75 @@
 {
- "_note": "参谋长办公室注册表（K-ORG-052 新设，K-ORG-051 田丰中枢治理模型 P1）。田丰的执行手：方案分发/汇总归集/命令跟踪。只调度不决策。",
- "team": "chiefoffice",
- "dept": "chief",
- "description": "参谋长办公室：田丰助理（方案分发·汇总归集·命令下发跟踪）",
- "agents": [
-  {
-   "agent_id": "A0A",
-   "role_profile": "chief_assistant",
-   "analysis_type": "dispatch_tracking",
-   "node_key": "a0a_dispatch",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "glm/glm-5.3-flash",
-   "binding_note": "10-18 修幽灵档：glm-4.5-flash 为旧档位，K-ORG-136 判例实测包年 key 的 coding 端点只通 5.3/5.3-flash——E1 轻量调度岗取 glm-5.3-flash（Lite 快档）；判读类一律上浮田丰，不占重模型",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/*",
-     "agent/A0A/*"
-    ],
-    "write": [
-     "agent/A0A/*"
-    ]
-   },
-   "grade": "E1",
-   "grade_note": "10年档：调度执行位·只调度不决策（判断类上浮田丰/SEC2）",
-   "charter_detail": "参谋长助理：研发方案按部门并发分发·各部门产出归集初筛（聚类/标红异常·宁松勿严）·田丰修改命令下发跟踪台账·晨会三件套预备",
-   "attributes": {
-    "experience": "10 年调度执行经验：研发方案按部门并发分发、产出归集初筛（聚类/异常标红·宁松勿严）、修改命令下发台账跟踪；只调度不决策，判断类一律上浮田丰/SEC2。",
-    "specialties": [
-     "方案并发分发与归集",
-     "产出初筛与异常标红",
-     "台账跟踪与晨会三件套预备"
-    ],
-    "knowledge": [
-     "企业分析与尽调知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "agent_platform/registry/**",
-      "docs/**"
-     ],
-     "execute": [
-      "devtask"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
+  "_note": "参谋长办公室注册表（K-ORG-052 新设，K-ORG-051 田丰中枢治理模型 P1）。田丰的执行手：方案分发/汇总归集/命令跟踪。只调度不决策。",
+  "team": "chiefoffice",
+  "dept": "chief",
+  "description": "参谋长办公室：田丰助理（方案分发·汇总归集·命令下发跟踪）",
+  "agents": [
     {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
-    },
-    {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "A0A",
+      "role_profile": "chief_assistant",
+      "analysis_type": "dispatch_tracking",
+      "node_key": "a0a_dispatch",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "glm/glm-5.3-flash",
+      "binding_note": "10-18 修幽灵档：glm-4.5-flash 为旧档位，K-ORG-136 判例实测包年 key 的 coding 端点只通 5.3/5.3-flash——E1 轻量调度岗取 glm-5.3-flash（Lite 快档）；判读类一律上浮田丰，不占重模型",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/*",
+          "agent/A0A/*"
+        ],
+        "write": [
+          "agent/A0A/*"
+        ]
+      },
+      "grade": "E1",
+      "grade_note": "10年档：调度执行位·只调度不决策（判断类上浮田丰/SEC2）",
+      "charter_detail": "参谋长助理：研发方案按部门并发分发·各部门产出归集初筛（聚类/标红异常·宁松勿严）·田丰修改命令下发跟踪台账·晨会三件套预备",
+      "attributes": {
+        "experience": "10 年调度执行经验：研发方案按部门并发分发、产出归集初筛（聚类/异常标红·宁松勿严）、修改命令下发台账跟踪；只调度不决策，判断类一律上浮田丰/SEC2。",
+        "specialties": [
+          "方案并发分发与归集",
+          "产出初筛与异常标红",
+          "台账跟踪与晨会三件套预备"
+        ],
+        "knowledge": [
+          "企业分析与尽调知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "agent_platform/registry/**",
+            "docs/**"
+          ],
+          "execute": [
+            "devtask"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "_superseded_by": "departments.chief_line.agent_profiles",
+      "_superseded_note": "S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护"
     }
-   ]
-  }
- ]
+  ]
 }

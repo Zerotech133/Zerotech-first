@@ -145,10 +145,16 @@ def test_audit_detects_lead_without_profile():
 
 
 def test_audit_detects_lead_out_of_dept():
-    """A0A 当 ops_runtime 主官却不在该部门名单——跨部门指挥链必须报出来。"""
+    """主官不在本部门名单＝跨部门指挥链，须与独立口径一致。
+
+    不写死部门名：S43 把 A0/A0A 正式并入 chief_line 后，chief_line 的 lead 已在本部门名单，
+    原先写死的 "chief_line" 立刻过期（这正是「断言真实盘面」的代价）。
+    """
     rep = A.audit(_PLATFORM)
     out = {f["dept"] for f in _by_code(rep, "LEAD_OUT_OF_DEPT")}
-    assert "ops_runtime" in out and "chief_line" in out
+    expect = {d["dept"] for d in _raw_org()["departments"]
+              if d.get("lead") and str(d["lead"]) not in (d.get("agents") or [])}
+    assert out == expect, "跨部门主官检出与实际不一致"
 
 
 def test_audit_detects_duplicate_names():
@@ -357,3 +363,39 @@ def test_audit_binding_missing_matches_independent_count():
     listed = {str(a) for d in _raw_org()["departments"] for a in (d.get("agents") or [])}
     expect = {a for a in listed if (idx.get(a) or {}).get("llm_binding", "") == ""}
     assert got == expect
+
+
+def test_audit_other_dept_profile_downgraded_to_p3():
+    """档案在**别的部门表**（跨部门兼任的常态）应是 P3，不能当成取档故障报 P2。
+
+    统一取档口径能查到这类档案，不存在"静默回落默认档"；把它算 P2 会让真实的
+    取档故障被噪音淹没。口径不写死部门：凡 source_detail 以 dept: 开头的都按 P3。
+    """
+    from engine.org_profiles import SRC_DEPT, profile_index
+    idx = profile_index(_PLATFORM)
+    rep = A.audit(_PLATFORM)
+    checked = 0
+    for f in _by_code(rep, "LEAD_PROFILE_ELSEWHERE"):
+        src = idx.get(str(f.get("lead"))) or {}
+        if src.get("source") == SRC_DEPT:
+            checked += 1
+            assert f["severity"] == "P3", "档案在主属部门的跨部门兼任不该报 P2：%r" % (f,)
+    assert checked > 0, "样本为空：没有「主官档案在别的部门表」的情形，用例失去承重"
+
+
+def test_audit_other_dept_profile_downgraded_to_p3():
+    """档案在**别的部门表**（跨部门兼任的常态）应是 P3，不能当成取档故障报 P2。
+
+    统一取档口径能查到这类档案，不存在"静默回落默认档"；把它算 P2 会让真实的
+    取档故障被噪音淹没。口径不写死部门：凡 source_detail 以 dept: 开头的都按 P3。
+    """
+    from engine.org_profiles import SRC_DEPT, profile_index
+    idx = profile_index(_PLATFORM)
+    rep = A.audit(_PLATFORM)
+    checked = 0
+    for f in _by_code(rep, "LEAD_PROFILE_ELSEWHERE"):
+        src = idx.get(str(f.get("lead"))) or {}
+        if src.get("source") == SRC_DEPT:
+            checked += 1
+            assert f["severity"] == "P3", "档案在主属部门的跨部门兼任不该报 P2：%r" % (f,)
+    assert checked > 0, "样本为空：没有「主官档案在别的部门表」的情形，用例失去承重"

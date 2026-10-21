@@ -40,12 +40,16 @@
       "role_profile": "comm_envoy",
       "analysis_type": "feishu_channel_relay",
       "node_key": "dengzhi_hub",
-      "parent_node_keys": ["kanze_lead"],
+      "parent_node_keys": [
+        "kanze_lead"
+      ],
       "level": 2,
       "cn_title": "使节",
       "duty": "Hermes 8787 通讯中枢（既有服务，编制划入零改动）：飞书 WS 长连接、消息卡出向、部门内消息中继",
       "service_endpoint": "http://127.0.0.1:8787/",
-      "note": "编制归属变更仅 org/team 注册层，Hermes 服务与代码不动（Q18 判例：服务零改动）"
+      "note": "编制归属变更仅 org/team 注册层，Hermes 服务与代码不动（Q18 判例：服务零改动）",
+      "_superseded_by": "departments.comm.agent_profiles",
+      "_superseded_note": "S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护"
     }
   ]
 }

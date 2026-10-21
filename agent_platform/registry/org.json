@@ -37,7 +37,9 @@
         "danger": "deny"
       }
     },
-    "office_title": "幕府"
+    "office_title": "幕府",
+    "_superseded_by": "departments.chief_line.agent_profiles",
+    "_superseded_note": "S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护"
   },
   "departments": [
     {
@@ -202,8 +204,8 @@
             "danger": "deny",
             "note": "受理后由量化交易层决定三路分发（飞书信息/投研研判/交易所观察）；W-Q1 建设中，本席位先挂名待模块落地"
           },
-          "llm_binding": "ollama/qwen3.5:9b",
-          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更"
+          "llm_binding": "none",
+          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更；改档 llm_binding→none（工单 WO-LEGION-S43 / 放行人 老田）：履历 identity.ack_semantics 明写「受理回执=ACK，受理不等于授权、不等于研判确认」，工具仅 upstream_inbox_ack；按规则执行体口径显式 none，不再回落 9b"
         },
         {
           "agent_id": "T1",
@@ -2276,6 +2278,21 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {}
+        },
+        {
+          "agent_id": "DENGZHI1",
+          "role_profile": "comm_envoy",
+          "analysis_type": "feishu_channel_relay",
+          "charter_detail": "Hermes 8787 通讯中枢（既有服务，编制划入零改动）：飞书 WS 长连接、消息卡出向、部门内消息中继",
+          "llm_binding": "none",
+          "binding_note": "",
+          "tools": [],
+          "memory_grants": [],
+          "grade": "",
+          "attributes": {},
+          "persona": {
+            "name": "邓芝"
+          }
         }
       ]
     },
@@ -2286,7 +2303,9 @@
       "status": "active",
       "charter": "直属参谋长田丰，独立表态（LEG1 判例）；MASS 喂养体系归口：流程优化（OPT1）与成对判读（A0 评估者席位）",
       "agents": [
-        "OPT1"
+        "OPT1",
+        "A0",
+        "A0A"
       ],
       "agent_profiles": [
         {
@@ -2327,6 +2346,89 @@
                 "registry/workflow_candidates/**"
               ],
               "execute": [],
+              "danger": "deny"
+            }
+          }
+        },
+        {
+          "agent_id": "A0",
+          "role_profile": "chief_of_staff",
+          "analysis_type": "",
+          "charter_detail": "参谋长：组织调度与任务仲裁、汇报聚合与简报出件、记忆治理与知识沉淀、风险亮牌与升级上报；全组织向其汇报",
+          "llm_binding": "glm/glm-5.3",
+          "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下",
+          "tools": [],
+          "memory_grants": [],
+          "grade": "",
+          "attributes": {
+            "experience": "20 年参谋长与组织运营经验：大型技术组织 PMO/参谋体系出身，擅长把决策意图翻译成可执行任务单并闭环追踪；现役 AI 组织参谋长——调度仲裁、汇报聚合、记忆治理三线并管。",
+            "specialties": [
+              "组织调度与任务仲裁",
+              "汇报聚合与简报出件",
+              "记忆治理与知识沉淀",
+              "风险亮牌与升级上报"
+            ],
+            "tools_allowed": {
+              "read": [
+                "*"
+              ],
+              "write": [
+                "agent_platform/registry/**",
+                "docs/**"
+              ],
+              "execute": [
+                "devtask"
+              ],
+              "danger": "deny"
+            }
+          },
+          "persona": {
+            "name": "田丰"
+          }
+        },
+        {
+          "agent_id": "A0A",
+          "role_profile": "chief_assistant",
+          "analysis_type": "dispatch_tracking",
+          "charter_detail": "参谋长助理：研发方案按部门并发分发·各部门产出归集初筛（聚类/标红异常·宁松勿严）·田丰修改命令下发跟踪台账·晨会三件套预备",
+          "llm_binding": "glm/glm-5.3-flash",
+          "binding_note": "10-18 修幽灵档：glm-4.5-flash 为旧档位，K-ORG-136 判例实测包年 key 的 coding 端点只通 5.3/5.3-flash——E1 轻量调度岗取 glm-5.3-flash（Lite 快档）；判读类一律上浮田丰，不占重模型",
+          "tools": [
+            "devtask",
+            "events"
+          ],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/*",
+              "agent/A0A/*"
+            ],
+            "write": [
+              "agent/A0A/*"
+            ]
+          },
+          "grade": "E1",
+          "attributes": {
+            "experience": "10 年调度执行经验：研发方案按部门并发分发、产出归集初筛（聚类/异常标红·宁松勿严）、修改命令下发台账跟踪；只调度不决策，判断类一律上浮田丰/SEC2。",
+            "specialties": [
+              "方案并发分发与归集",
+              "产出初筛与异常标红",
+              "台账跟踪与晨会三件套预备"
+            ],
+            "knowledge": [
+              "企业分析与尽调知识库.md"
+            ],
+            "tools_allowed": {
+              "read": [
+                "*"
+              ],
+              "write": [
+                "agent_platform/registry/**",
+                "docs/**"
+              ],
+              "execute": [
+                "devtask"
+              ],
               "danger": "deny"
             }
           }
