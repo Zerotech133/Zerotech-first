@@ -3,7 +3,7 @@
 comparison UI (M2 real read-only + M3 A/B shadow comparison).
 
 Hard constraints (must hold):
-  * Independent process bound ONLY to 127.0.0.1:8795. Never touches 8091 and
+  * Independent process bound ONLY to 127.0.0.1:8796. Never touches 8091 and
     never imports or modifies portal_api.py.
   * Exactly two routes:
         GET /watch-admin                -> serve watch_admin_page.html
