@@ -66,45 +66,68 @@ with open(flag, "w", encoding="utf-8") as f:
 del os.environ["FEISHU_EVENT_FLAG"]
 
 # ── T4（K-STOCK-399 F2 收紧）：事件分发路由 ───────────
-def _fake_handler():
+def _fake_handler(body_dict):
+    import time
     resp, routed = [], []
+    raw = json.dumps(body_dict).encode("utf-8")
+    ts, nc, key = str(int(time.time())), "test-nonce", "test-route-key"
+    sig = hashlib.sha256((ts + nc + key).encode("utf-8") + raw).hexdigest()
     h = types.SimpleNamespace(
-        headers={}, _json=lambda obj, code=200: resp.append((obj, code)),
+        headers={"X-Lark-Request-Timestamp": ts, "X-Lark-Request-Nonce": nc,
+                 "X-Lark-Signature": sig},
+        _json=lambda obj, code=200: resp.append((obj, code)),
         _handle_card_action=lambda ev: routed.append(ev),
-        _feishu_encrypt_key=lambda: None,
+        _feishu_encrypt_key=lambda: key,
         _feishu_unverified_alert=lambda: None,
         log_message=lambda *a, **k: None)
-    return h, resp, routed
+    return h, resp, routed, raw
 
 # T4a：外来事件含字符串 action 字段（如 contact/approval 变更）→ 不误路由
-h, resp, routed = _fake_handler()
-H._api_feishu_event(h, json.dumps({
+h, resp, routed, raw = _fake_handler({
     "header": {"event_type": "contact.user.updated_v3"},
-    "event": {"action": "created", "obj": {}}}).encode("utf-8"))
+    "event": {"action": "created", "obj": {}}})
+H._api_feishu_event(h, raw)
 assert not routed, "字符串 action 不得进卡片处理器"
 assert resp and resp[0][1] == 200, resp
 
 # T4b：旧 schema 卡按钮（body 顶层 action.value）→ 正常路由
-h, resp, routed = _fake_handler()
-H._api_feishu_event(h, json.dumps({
-    "action": {"value": {"tag": "subscribe", "kind": "intraday"}}}
-).encode("utf-8"))
+h, resp, routed, raw = _fake_handler({
+    "action": {"value": {"tag": "subscribe", "kind": "intraday"}}})
+H._api_feishu_event(h, raw)
 assert len(routed) == 1 and routed[0]["action"]["value"]["tag"] == "subscribe"
 
 # T4c：v2 schema card.action.trigger → 正常路由
-h, resp, routed = _fake_handler()
-H._api_feishu_event(h, json.dumps({
+h, resp, routed, raw = _fake_handler({
     "header": {"event_type": "card.action.trigger"},
-    "event": {"action": {"value": {"tag": "subscribe"}}, "operator": {}}
-}).encode("utf-8"))
+    "event": {"action": {"value": {"tag": "subscribe"}}, "operator": {}}})
+H._api_feishu_event(h, raw)
 assert len(routed) == 1
 
 # T4d：含 dict action 但无 value 键的外来事件 → 不误路由（收紧核心）
-h, resp, routed = _fake_handler()
-H._api_feishu_event(h, json.dumps({
-    "event": {"action": {"type": "unknown", "form": []}}}).encode("utf-8"))
+h, resp, routed, raw = _fake_handler({
+    "event": {"action": {"type": "unknown", "form": []}}})
+H._api_feishu_event(h, raw)
 assert not routed and resp and resp[0][1] == 200, resp
-print("T4 分发收紧 OK（字符串/无value action 不误路由；两种卡schema 正常路由）")
+
+# T4e：未配置 Key，包括合法 JSON 与畸形 JSON，均不得走降级 200。
+for raw in (b'{"type":"url_verification","challenge":"x"}', b'{'):
+    resp, routed, alerted = [], [], []
+    h = types.SimpleNamespace(
+        headers={}, _json=lambda obj, code=200: resp.append((obj, code)),
+        _handle_card_action=lambda ev: routed.append(ev),
+        _feishu_encrypt_key=lambda: None,
+        _feishu_unverified_alert=lambda: alerted.append(True),
+        log_message=lambda *a, **k: None)
+    H._api_feishu_event(h, raw)
+    assert resp and resp[0][1] == 503 and not routed and not alerted, resp
+
+# T4f：有 Key、无签名时，即便 body 为握手也必须 403。
+h, resp, routed, raw = _fake_handler({
+    "type": "url_verification", "challenge": "unsigned"})
+h.headers.pop("X-Lark-Signature")
+H._api_feishu_event(h, raw)
+assert resp and resp[0][1] == 403 and not routed, resp
+print("T4 分发与 fail-closed OK（无Key 503 / 无签名 403 / 合法签名正常路由）")
 
 # ── T5（K-STOCK-407 F1）：时间戳新鲜度窗口防重放 ───────────
 # 场景：攻击者截获一条完整合法回调（头+body 原样重发）——验签必过，

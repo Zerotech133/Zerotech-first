@@ -813,60 +813,57 @@ background:#000'></video>
 
         解密：若飞书后台启用了 Encrypt Key，body 是 {"encrypt": "..."}，
         用 AES-256-CBC 解密（key=sha256(encrypt_key)，IV=密文前 16 字节）。
-        未配置 encrypt_key 时明文直取。
-
-        安全：P0-1b（2026-10-08）起——配置了 Encrypt Key 则强制
-        X-Lark-Signature 验签；未配置则降级 + 当日一次飞书告警
-        （K-STOCK-397，原仅访问日志 warning 无人可观测）。
-        叠加 8091 已绑 127.0.0.1（P0-1a），局域网伪造须经 nginx，风险降级。
+        安全：未配置 Encrypt Key 时一律返回 503，不进入事件分发；
+        配置后强制 X-Lark-Signature 验签，并核验时间戳新鲜度。
+        未通过验签的输入不触发任何订阅/卡片动作。
         """
         import hashlib
         import base64
+        # 回调面 fail-closed：不论 body 是否能解析，未配 Key 一律拒绝。
+        # 否则 malformed JSON 可绕开验签分支返回 200；nginx 开口时会
+        # 把原先仅本机可达的降级行为暴露到局域网。
+        _ek = self._feishu_encrypt_key()
+        if not _ek:
+            self._json({"code": 0, "msg": "callback unavailable"}, 503)
+            return
         body = {}
         try:
             body = json.loads(raw.decode("utf-8")) if raw else {}
-        except Exception:
-            self._json({"code": 0}, 200)
+        except (UnicodeError, ValueError):
+            self._json({"code": 0, "msg": "invalid body"}, 400)
             return
 
         # ── 验签（P0-1b 配套，2026-10-08：飞书回调不走 portal token）──
-        # 配置了 Encrypt Key → 强制 X-Lark-Signature 校验（飞书 v2 事件签名：
-        # sha256(timestamp + nonce + encrypt_key + 原始 body)）；
-        # 未配置 → 无共享密钥无法验签，降级 + 当日一次飞书告警（K-STOCK-397）。
-        _ek = self._feishu_encrypt_key()
-        if _ek:
-            _ts = (self.headers.get("X-Lark-Request-Timestamp") or "").strip()
-            _nc = (self.headers.get("X-Lark-Request-Nonce") or "").strip()
-            _sig = (self.headers.get("X-Lark-Signature") or "").strip()
-            # K-STOCK-397：直接对原始字节拼接计算——原 raw.decode(
-            # "utf-8","replace") 往返在非 UTF-8 body 上会失真，验签必败；
-            # 合法 UTF-8 时与官方字符串拼接算法等价。
-            _calc = hashlib.sha256(
-                (_ts + _nc + _ek).encode("utf-8") + raw).hexdigest()
-            if not _sig or not hmac.compare_digest(_sig, _calc):
-                self._json({"code": 0, "msg": "invalid signature"}, 403)
-                return
-            # K-STOCK-407（审计 F1）：时间戳新鲜度窗口防重放——合法签名
-            # 只证来源不证新鲜，截获的完整回调（头+body 原样重发）仍能
-            # 通过验签。窗口外一律 403，与验签失败同响应（不泄露校验细节）。
-            # 默认 ±300s：飞书重推为秒级、容忍本机时钟偏差；握手/事件
-            # /卡片回调统一生效。FEISHU_EVENT_TOLERANCE（秒）可覆盖。
-            _tol = int(os.environ.get("FEISHU_EVENT_TOLERANCE", "300"))
-            try:
-                _fresh = abs(time.time() - int(_ts)) <= _tol
-            except ValueError:
-                _fresh = False  # 时间戳非数字：按超窗拒（int() 失败）
-            if not _fresh:
-                self._json({"code": 0, "msg": "invalid signature"}, 403)
-                return
-        else:
-            self._feishu_unverified_alert()
+        # 强制 X-Lark-Signature 校验（飞书 v2 事件签名：
+        # sha256(timestamp + nonce + encrypt_key + 原始 body)）。
+        # 能到这里说明 _ek 必非空（上方 503 早退已兜底）。
+        _ts = (self.headers.get("X-Lark-Request-Timestamp") or "").strip()
+        _nc = (self.headers.get("X-Lark-Request-Nonce") or "").strip()
+        _sig = (self.headers.get("X-Lark-Signature") or "").strip()
+        # K-STOCK-397：直接对原始字节拼接计算——原 raw.decode(
+        # "utf-8","replace") 往返在非 UTF-8 body 上会失真，验签必败；
+        # 合法 UTF-8 时与官方字符串拼接算法等价。
+        _calc = hashlib.sha256(
+            (_ts + _nc + _ek).encode("utf-8") + raw).hexdigest()
+        if not _sig or not hmac.compare_digest(_sig, _calc):
+            self._json({"code": 0, "msg": "invalid signature"}, 403)
+            return
+        # K-STOCK-407（审计 F1）：时间戳新鲜度窗口防重放——合法签名
+        # 只证来源不证新鲜，截获的完整回调（头+body 原样重发）仍能
+        # 通过验签。窗口外一律 403，与验签失败同响应（不泄露校验细节）。
+        # 默认 ±300s：飞书重推为秒级、容忍本机时钟偏差；握手/事件
+        # /卡片回调统一生效。FEISHU_EVENT_TOLERANCE（秒）可覆盖。
+        _tol = int(os.environ.get("FEISHU_EVENT_TOLERANCE", "300"))
+        try:
+            _fresh = abs(time.time() - int(_ts)) <= _tol
+        except ValueError:
+            _fresh = False  # 时间戳非数字：按超窗拒（int() 失败）
+        if not _fresh:
+            self._json({"code": 0, "msg": "invalid signature"}, 403)
+            return
 
         # ── 解密（如启用）────────────────────────────────
         if body.get("encrypt"):
-            if not _ek:  # K-STOCK-397：复用上面读到的 key，消除双读竞态
-                self._json({"code": 0, "msg": "encrypted but no key"}, 200)
-                return
             try:
                 from cryptography.hazmat.primitives.ciphers import (
                     Cipher, algorithms, modes)
