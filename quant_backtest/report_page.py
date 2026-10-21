@@ -412,6 +412,49 @@ SIGNALS = os.path.join(HERE, "reports", "signals.html")
 SIG_STRATS = ["trend_follow", "ma_cross", "boll_breakout", "rsi_reversal"]
 SIG_HEAD = {"trend_follow": "趋势跟随", "ma_cross": "均线交叉",
             "boll_breakout": "布林突破", "rsi_reversal": "RSI 反转"}
+# [20261021_wo-qt-072 来源列] 机器聚合选票池（portal /picks.html 数据源）。
+# watchlist code 经 resolve_watchlist 归一为 "301047.SZ"/"603580.SH"，
+# 与 todays_picks stocks[].code 同格式，可直接精确匹配。
+PICKS_JSON = os.path.abspath(
+    os.path.join(HERE, "..", "portal", "data", "todays_picks.json"))
+
+
+def _load_picks_index():
+    """读 todays_picks.json → ({code: (策略名缩写串, tier)}, 可用?）。
+
+    文件缺失/坏 JSON/结构异常时返回 ({}, False)，调用方整列降级，
+    信号页照常出——绝不让票池数据问题炸掉产线信号页。
+    """
+    try:
+        with open(PICKS_JSON, encoding="utf-8") as f:
+            stocks = (json.load(f) or {}).get("stocks") or []
+        idx = {}
+        for st in stocks:
+            if not isinstance(st, dict) or not st.get("code"):
+                continue
+            srcs = []
+            for s in st.get("sources") or []:
+                sn = s.get("s") if isinstance(s, dict) else None
+                if sn and sn not in srcs:
+                    srcs.append(sn)
+            idx[st["code"]] = ("·".join(srcs), st.get("tier") or "")
+        return idx, True
+    except Exception:
+        return {}, False
+
+
+def _src_cell(symbol, picks, picks_ok):
+    """来源列单元格：命中→策略缩写+tier 徽标；未命中→灰「观察名单」；
+    票池数据不可用→整列降级占位（不炸）。"""
+    if not picks_ok:
+        return '<td class="src0">（票池数据不可用）</td>'
+    hit = picks.get(symbol or "")
+    if hit and (hit[0] or hit[1]):
+        tcls = "t1" if hit[1] == "T1" else "t2"
+        return ('<td class="src1">%s<span class="tier %s">%s</span></td>'
+                % (html.escape(hit[0] or ""), tcls,
+                   html.escape(hit[1] or "—")))
+    return '<td class="src0">观察名单</td>'
 
 
 def write_signals_html(rows, gen_ts, hold_only=False):
@@ -422,6 +465,8 @@ def write_signals_html(rows, gen_ts, hold_only=False):
         '<th><a href="/bt/strategy/%s" style="%s" title="下钻到策略纵切页">'
         '%s</a></th>' % (s, _LK, SIG_HEAD[s])
         for s in SIG_STRATS)
+    picks, picks_ok = _load_picks_index()  # [来源列] 双池口径：join 选票池
+    n_picks = str(len(picks)) if picks_ok else "—"
     n_hold = sum(1 for r in rows if any(r["sigs"].values()))
     tr = []
     for r in rows:
@@ -433,10 +478,12 @@ def write_signals_html(rows, gen_ts, hold_only=False):
             ('<td class="s0" title="自 %s">○</td>' % r["since"][s])
             for s in SIG_STRATS)
         res_cls = ' class="hi"' if r["res"] >= 3 else ""
-        tr.append("<tr><td>%s</td><td>%s</td><td>%.4g</td><td>%s</td>%s"
-                  "<td%s>%d/4</td></tr>" % (
-                      _stock_link(r["name"], r.get("symbol", "")), r["market"],
-                      r["px"], r["date"], cells, res_cls, r["res"]))
+        tr.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%.4g</td>"
+                  "<td>%s</td>%s<td%s>%d/4</td></tr>" % (
+                      _stock_link(r["name"], r.get("symbol", "")),
+                      _src_cell(r.get("symbol", ""), picks, picks_ok),
+                      r["market"], r["px"], r["date"], cells,
+                      res_cls, r["res"]))
     page = """<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>全池策略信号</title><style>%s
@@ -449,18 +496,27 @@ table{border-collapse:collapse;width:100%%;font-size:13px}
 .filter a{display:inline-block;padding:5px 13px;border:1px solid #30363d;
 border-radius:14px;font-size:12px;text-decoration:none;color:#8b949e}
 .filter a.on{color:#e6edf3;border-color:#58a6ff;background:#1c2a3a}
+.src1{color:#c9d1d9;white-space:nowrap}.src0{color:#58606a;font-size:12px}
+.tier{display:inline-block;padding:0 6px;margin-left:5px;border-radius:9px;
+font-size:11px;line-height:17px;vertical-align:1px}
+.tier.t1{color:#f0883a;border:1px solid #f0883a}
+.tier.t2{color:#58a6ff;border:1px solid #58a6ff}
 </style></head><body><div class="wrap">
 <h1>🚦 全池策略信号（明日执行参照）</h1>
 <div class="meta">生成于 %s · %d 只 · 策略参数=当前 config（季度自动调参）</div>
+<div class="meta">本页=观察名单(%d)信号检查；机器聚合选票池见
+<a href="/picks.html" style="color:#58a6ff">/picks.html</a>（%s 只带来源评分）</div>
 %s
 <div class="filter"><a class="%s" href="/bt-signals">全部 %d</a>
 <a class="%s" href="/bt-signals?hold=1">只看持仓 %d</a></div>
-<table class="sticky"><tr><th>标的</th><th>市场</th><th>现价</th><th>数据日</th>
+<table class="sticky"><tr><th>标的</th><th>来源</th><th>市场</th><th>现价</th>
+<th>数据日</th>
 %s<th>共振</th></tr>%s</table>
 <div class="leg">● 持仓 ○ 空仓（悬停可见信号起始日）· 共振=4 策略同时持仓数（≥3 橙色）
 · 点标的 → 个股全景 · 点策略列头 → 策略纵切页
 · 信号基于最新收盘数据，按下一交易日执行（T+1）· 不构成投资建议</div>
-</div></body></html>""" % (CSS, gen_ts, len(rows),
+</div></body></html>""" % (CSS, gen_ts, len(rows), len(rows),
+                          n_picks,
                           _nav_html(exclude="signals"),
                           "on" if not hold_only else "", len(rows),
                           "on" if hold_only else "", n_hold,
