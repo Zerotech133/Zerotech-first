@@ -211,8 +211,27 @@ def us_pool_stats():
     return {"rows": n, "codes": len(codes), "mtime": mtime}
 
 
-def crypto_stats():
-    """币市行情仓：parquet 标的数 + BTC 时点。"""
+def _last_trade_date(path):
+    """读 parquet 最后一根交易日（YYYYMMDD）；文件缺失/读失败 → None。"""
+    try:
+        import pandas as pd
+        d = pd.read_parquet(path, columns=["trade_date"])
+        if d.empty:
+            return None
+        return str(d["trade_date"].max()).replace("-", "")[:8]
+    except Exception:
+        return None
+
+
+def crypto_stats(now=None):
+    """币市行情仓：parquet 标的数 + BTC 末根交易日 + 新鲜度。
+
+    WO-QT-20261021-094：`CryptoSync` 直连 Binance 已停用（供给层已含
+    CRYPTO 37 对，直连属双轨），本地 parquet 改由 `export_us_hk
+    --market CRYPTO` 从供给层导出维护。**若连续不再导出就会停更**——
+    停更必须看得见：此处显式判 stale（末根交易日距 now 超 3 个自然日），
+    并把展示口径从「文件 mtime」换成「数据时点」，否则旧行情会被当实时读。
+    """
     try:
         files = [f for f in os.listdir(CRYPTO_DIR)
                  if f.lower().endswith(".parquet")]
@@ -221,7 +240,16 @@ def crypto_stats():
     if not files:
         return None
     btc = os.path.join(CRYPTO_DIR, "BTC_USDT.parquet")
-    return {"n": len(files), "btc_mtime": _mtime_dt(btc)}
+    td = _last_trade_date(btc)
+    stale = True
+    if td:
+        try:
+            d0 = datetime.strptime(td, "%Y%m%d").replace(tzinfo=CST)
+            stale = ((now or datetime.now(CST)) - d0).days > 3
+        except Exception:
+            stale = True
+    return {"n": len(files), "btc_mtime": _mtime_dt(btc),
+            "btc_date": td, "stale": stale}
 
 
 def regime_stale(snap, now):
@@ -403,6 +431,8 @@ def render_html(ctx, now=None):
         "<span class=\"cell-sub\">数据达标后复跑再立项</span></td>"
         "<td class=\"go\"><span class=\"none\">探针已出 · 无页</span></td></tr>")
     if crypto:
+        _c_stale = ("<b style=\"color:#c0392b\"> ⚠停更</b>"
+                    if crypto.get("stale") else "")
         rows.append(
             "<tr><td class=\"mk\">虚拟币</td>"
             "<td><span class=\"lamp off\"><span class=\"dot\"></span><b>待判</b>"
@@ -410,12 +440,12 @@ def render_html(ctx, now=None):
             "</span></td>"
             "<td><span class=\"badge b-wait\">待建</span>"
             "<span class=\"cell-sub\">行情仓已在 · 策略/风控/账本未立项</span></td>"
-            "<td>行情仓 %d 标的<span class=\"cell-sub\">BTC_USDT %s · "
+            "<td>行情仓 %d 标的<span class=\"cell-sub\">BTC_USDT %s%s · "
             "WO-090 评估中</span></td>"
             "<td><span class=\"badge b-wait\">待建</span>"
             "<span class=\"cell-sub\">币市源是否入情报供给层待裁</span></td>"
             "<td class=\"go\"><span class=\"none\">未立项 · 无页</span></td></tr>"
-            % (crypto.get("n", 0), _fmt_dt(crypto.get("btc_mtime")) or "-"))
+            % (crypto.get("n", 0), crypto.get("btc_date") or "-", _c_stale))
     else:
         rows.append(
             "<tr><td class=\"mk\">虚拟币</td>"

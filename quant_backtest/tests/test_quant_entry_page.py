@@ -260,5 +260,85 @@ class TestRealDiskSmoke(unittest.TestCase):
         self.assertGreater(len(html), 3000)
 
 
+class TestCryptoFreshnessRendering(unittest.TestCase):
+    """WO-094：币市停更必须看得见——stale 标注与数据时点口径。
+
+    背景：CryptoSync 直连已停用，本地 parquet 改由供给层导出维护；
+    若不再导出则停更，此时若仍只显示文件 mtime，旧行情会被当实时读。
+    """
+
+    def _html(self, crypto):
+        return qep.render_html(
+            _ctx(picks=_PICKS, strategies=[], regime=None, xunyou=_XUNYOU,
+                 us_pool=_US, crypto=crypto), now=NOW)
+
+    def test_stale_marked(self):
+        h = self._html({"n": 37, "btc_date": "20261001", "stale": True})
+        self.assertIn("停更", h)
+
+    def test_fresh_not_marked(self):
+        h = self._html({"n": 37, "btc_date": "20261021", "stale": False})
+        self.assertNotIn("停更", h)
+
+    def test_shows_data_date_not_mtime(self):
+        """展示口径必须是数据时点（btc_date），不是文件 mtime。"""
+        h = self._html({"n": 37, "btc_date": "20261021", "stale": False,
+                        "btc_mtime": None})
+        self.assertIn("BTC_USDT 20261021", h)
+
+    def test_missing_btc_date_shows_dash(self):
+        h = self._html({"n": 37, "btc_date": None, "stale": True})
+        self.assertIn("BTC_USDT -", h)
+        self.assertIn("停更", h)
+
+
+class TestCryptoStatsFreshness(unittest.TestCase):
+    """crypto_stats 新鲜度判定（注入临时目录，不读真实 data/crypto）。"""
+
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.old = qep.CRYPTO_DIR
+        qep.CRYPTO_DIR = self.tmp.name
+        self.addCleanup(self._restore)
+
+    def _restore(self):
+        qep.CRYPTO_DIR = self.old
+
+    def _mk(self, td):
+        import pandas as pd
+        pd.DataFrame({"trade_date": [td], "close": [1.0]}).to_parquet(
+            os.path.join(self.tmp.name, "BTC_USDT.parquet"), index=False)
+
+    def test_fresh_within_three_days(self):
+        self._mk("20261021")
+        s = qep.crypto_stats(now=NOW)
+        self.assertFalse(s["stale"])
+        self.assertEqual(s["btc_date"], "20261021")
+        self.assertEqual(s["n"], 1)
+
+    def test_stale_after_three_days(self):
+        self._mk("20261001")
+        self.assertTrue(qep.crypto_stats(now=NOW)["stale"])
+
+    def test_boundary_exactly_three_days_is_fresh(self):
+        self._mk("20261018")                    # NOW=10-21 → 差 3 天，不算 stale
+        self.assertFalse(qep.crypto_stats(now=NOW)["stale"])
+
+    def test_empty_dir_returns_none(self):
+        self.assertIsNone(qep.crypto_stats(now=NOW))
+
+    def test_missing_btc_file_marks_stale(self):
+        """有别的 parquet 但缺 BTC → 数据时点未知 → 保守判 stale。"""
+        import pandas as pd
+        pd.DataFrame({"trade_date": ["20261021"], "close": [1.0]}).to_parquet(
+            os.path.join(self.tmp.name, "ETH_USDT.parquet"), index=False)
+        s = qep.crypto_stats(now=NOW)
+        self.assertIsNotNone(s)
+        self.assertTrue(s["stale"])
+        self.assertIsNone(s["btc_date"])
+
+
 if __name__ == "__main__":
     unittest.main()
