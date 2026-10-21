@@ -25,6 +25,14 @@ check('不含 iframe', !html.includes('<iframe'));
 check('不含 POST/PUT/DELETE', !/(method\s*:\s*['"](?:POST|PUT|DELETE)['"])/.test(html));
 check('不含 localStorage/sessionStorage', !/localStorage|sessionStorage/.test(html));
 
+// 2b. WO-OS-07 诸葛亮建议引擎接入：adapter 引用顺序 + 降级文案
+check('引用 os_zhuge_adapter.js', /<script\s+src="\/static\/os_zhuge_adapter\.js"\s+defer><\/script>/.test(html));
+check('adapter 在 os_integrated_projection.js 之后',
+  html.indexOf('/static/os_integrated_projection.js') !== -1 &&
+  html.indexOf('/static/os_zhuge_adapter.js') > html.indexOf('/static/os_integrated_projection.js'));
+check('建议引擎未加载降级文案', html.includes('建议引擎未加载'));
+check('消费 OSZhugeAdapter.buildBrief', html.includes('OSZhugeAdapter.buildBrief'));
+
 // 3. 只读 GET 端点齐备
 for (const ep of ['/api/os', '/api/home', '/api/alerts', '/api/notify/queue', '/api/org/tasks', '/api/capability/board'])
   check('端点 ' + ep, html.includes("'" + ep + "'"));
