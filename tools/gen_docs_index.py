@@ -506,12 +506,24 @@ def main(argv: list[str] | None = None) -> int:
         return check(workspace, out_path, built, old_text)
 
     timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
-    lines = build_lines(workspace, old_text, built, timestamp)
-    try:
-        write_output(out_path, lines)
-    except OSError as exc:
-        _say(f"错误：写入失败：{out_path}：{exc}")
-        return 2
+    # 首次从零生成（索引文件还不存在）时，索引自身在 §五 里也是一篇文档；
+    # 第一遍写盘后它才存在，所以必须再生成一遍，否则产物缺自己这一行、
+    # 紧跟其后的 --check 会报"新增 DOCS_INDEX.md"（退出码 1），自相矛盾。
+    # 已有索引时只需一遍。
+    passes = 1 if old_text else 2
+    lines: list[str] = []
+    for _pass in range(passes):
+        built = [
+            (spec, collect(spec, workspace, out_path if spec["num"] == "五" else None))
+            for spec in SECTIONS
+        ]
+        current = _read_text(out_path) if out_path.is_file() else ""
+        lines = build_lines(workspace, current, built, timestamp)
+        try:
+            write_output(out_path, lines)
+        except OSError as exc:
+            _say(f"错误：写入失败：{out_path}：{exc}")
+            return 2
 
     _say(f"已写入 {out_path}")
     _say(f"格式：UTF-8 无 BOM / LF 换行 / {len(lines)} 行")

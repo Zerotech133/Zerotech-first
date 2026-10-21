@@ -2,7 +2,8 @@
 <#
 .SYNOPSIS
     Single-disk vault backup: git bundles for the four repos + a zip of the
-    workspace-root markdown files, plus MANIFEST.txt and day-folder rotation.
+    workspace-root Markdown and HTML files, plus MANIFEST.txt and day-folder
+    rotation.
 
 .DESCRIPTION
     Layout written under <VaultRoot> (default: <workspace>\_vault):
@@ -11,9 +12,28 @@
         <VaultRoot>\<yyyy-MM-dd>\workspace-docs-<yyyyMMdd>.zip
         <VaultRoot>\<yyyy-MM-dd>\MANIFEST.txt
 
+    * The workspace zip now carries two classes of root-level files: *.md
+      (documents) and *.html/*.htm (standalone prototypes and previews). They
+      are archived together under the historical name
+      workspace-docs-<date>.zip, but planned and reported separately
+      ("N md + M html") with an input-byte total for each class.
+    * JSON is deliberately NOT archived. The workspace-root .mcp.json contains
+      a plaintext tushare token in a URL query string (token=<secret>), so a
+      root-wide *.json sweep would copy a live credential into every daily
+      backup. package.json / package-lock.json are small and regenerable.
+      .ps1 / .txt / .log files are code or log noise and can also carry
+      secrets, so only *.md + *.html + *.htm are selected. .env / .env.* are
+      excluded unconditionally as a second line of defence.
+    * Why include HTML but not JSON is evidence-based, not a hunch: on
+      2026-10-22 the root HTML prototypes were credential-scanned with a regex
+      that also matches unquoted URL-query values (token|api_key|secret|
+      password followed by '=' and >=16 chars). Every prototype had zero
+      hits; .mcp.json had one. HTML is safe to back up, JSON is not.
     * Repos and the workspace root are derived from $PSScriptRoot
       (tools -> repo -> workspace), so no non-ASCII path literal is baked in.
     * A failing repo is reported and skipped; the remaining repos still run.
+    * A single unreadable archive input is skipped with a warning and a failed
+      exit code, while the remaining files still go into the zip.
     * -DryRun prints the whole plan and creates/modifies/deletes nothing.
     * Rotation only touches child folders whose name is exactly yyyy-MM-dd,
       is strictly older than -KeepDays, and is not a reparse point.
@@ -30,9 +50,15 @@
 .PARAMETER DryRun
     Print the plan only. Nothing is created, overwritten or deleted.
 
+.PARAMETER Exclude
+    Extra filename globs (matched against the leaf name, case-insensitive) to
+    keep out of the workspace zip. The built-in guards - .mcp.json, .env,
+    .env.*, .env* - are always applied and cannot be removed, even when this
+    parameter is supplied.
+
 .NOTES
-    Exit code: 0 = success (dry-run always 0), 1 = at least one bundle / docs
-    archive / rotation failure.
+    Exit code: 0 = success (dry-run always 0), 1 = at least one bundle /
+    workspace archive / rotation failure.
     Rotation permanently deletes old backup folders (not Recycle Bin) because
     reclaiming vault space is its purpose; use -DryRun to preview.
 #>
@@ -40,7 +66,8 @@
 param(
     [string]$VaultRoot = '',
     [ValidateRange(0, 3650)][int]$KeepDays = 14,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [string[]]$Exclude = @('.mcp.json', '.env', '.env.*', '.env*')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -86,10 +113,53 @@ $repos = @(
     [pscustomobject]@{ Label = 'res-downloader'; Path = (Join-Path $workspace 'res-downloader-py') }
 )
 
-$docs = @(Get-ChildItem -LiteralPath $workspace -Filter '*.md' -File -Force -ErrorAction SilentlyContinue |
+# ------------------------------------------------------- archive inputs -----
+# Built-in guards are merged with -Exclude again (the default is not enough):
+# a caller-supplied list can never re-include the token-bearing .mcp.json or
+# a .env file by accident.
+$builtinExcludes = @('.mcp.json', '.env', '.env.*', '.env*')
+$excludePatterns = @($builtinExcludes + @($Exclude)) |
+    ForEach-Object { ([string]$_).Trim() } |
+    Where-Object { $_ } |
+    Select-Object -Unique
+
+function Test-ExcludedName {
+    param([string]$Name)
+    foreach ($pattern in $excludePatterns) {
+        if ($Name -like $pattern) { return $true }
+    }
+    return $false
+}
+
+# Enumerate every root file once, so the exclusion report can name .mcp.json
+# even though JSON is never a candidate for the archive.
+$rootFiles = @(Get-ChildItem -LiteralPath $workspace -File -Force -ErrorAction SilentlyContinue |
     Sort-Object Name)
-$docsBytes = ($docs | Measure-Object -Property Length -Sum).Sum
-if ($null -eq $docsBytes) { $docsBytes = [long]0 }
+$excludedFiles = @($rootFiles | Where-Object { Test-ExcludedName $_.Name })
+$archiveFiles = @($rootFiles | Where-Object {
+    ($_.Extension -in @('.md', '.html', '.htm')) -and
+    -not (Test-ExcludedName $_.Name)
+})
+$docs = @($archiveFiles | Where-Object { $_.Extension -ieq '.md' })
+$html = @($archiveFiles | Where-Object { $_.Extension -ine '.md' })
+
+function Get-TotalBytes {
+    param([object[]]$Files)
+    $sum = ($Files | Measure-Object -Property Length -Sum).Sum
+    if ($null -eq $sum) { return [long]0 }
+    return [long]$sum
+}
+
+$docsBytes    = Get-TotalBytes $docs
+$htmlBytes    = Get-TotalBytes $html
+$archiveBytes = [long]$docsBytes + [long]$htmlBytes
+
+function Get-ExcludedSummary {
+    if ($excludedFiles.Count -eq 0) {
+        return 'none present  (guards: {0})' -f ($excludePatterns -join ', ')
+    }
+    return (($excludedFiles | ForEach-Object { $_.Name }) -join ', ')
+}
 
 $script:okCount        = 0
 $script:failCount      = 0
@@ -182,40 +252,101 @@ function Invoke-Bundle {
 }
 
 function Invoke-DocsArchive {
-    if ($docs.Count -eq 0) {
-        Write-Host '  [skip] no *.md directly under the workspace root'
+    if ($excludedFiles.Count -gt 0) {
+        Write-Host ("  [skip] excluded by name: {0}  (guards: {1})" -f `
+            (($excludedFiles | ForEach-Object { $_.Name }) -join ', '),
+            ($excludePatterns -join ', '))
+    }
+    if ($archiveFiles.Count -eq 0) {
+        Write-Host '  [skip] no *.md / *.html / *.htm directly under the workspace root'
         return
     }
     $zipName = 'workspace-docs-{0}.zip' -f $stamp
     $zipPath = Join-Path $dayDir $zipName
 
     if ($DryRun) {
-        Write-Host ("  [plan] workspace docs {0} file(s), {1:N0} bytes  ->  {2}" -f `
-            $docs.Count, [long]$docsBytes, $zipName)
+        Write-Host ("  [plan] workspace archive: {0} md ({1:N0} bytes) + {2} html ({3:N0} bytes) = {4} file(s), {5:N0} bytes  ->  {6}" -f `
+            $docs.Count, [long]$docsBytes, $html.Count, [long]$htmlBytes,
+            $archiveFiles.Count, [long]$archiveBytes, $zipName)
         return
     }
 
-    Write-Host ("  [run]  workspace docs {0} file(s) -> {1}" -f $docs.Count, $zipPath)
+    Write-Host ("  [run]  workspace archive: {0} md + {1} html = {2} file(s), {3:N0} bytes -> {4}" -f `
+        $docs.Count, $html.Count, $archiveFiles.Count, [long]$archiveBytes, $zipPath)
     $zipTmp = Join-Path $dayDir ('workspace-docs-{0}.partial.zip' -f $stamp)
     if (Test-Path -LiteralPath $zipTmp) {
         Remove-Item -LiteralPath $zipTmp -Force -ErrorAction SilentlyContinue
     }
+
+    # Add one entry at a time instead of calling Compress-Archive over the whole
+    # list: a single locked/unreadable file then cannot lose the entire archive.
+    $added   = 0
+    $skipped = New-Object System.Collections.Generic.List[string]
+    $zip       = $null
+    $zipStream = $null
+    $zipError  = $null
     try {
-        Compress-Archive -LiteralPath $docs.FullName -DestinationPath $zipTmp `
-            -CompressionLevel Optimal -Force -ErrorAction Stop
+        # Windows PowerShell 5.1 needs both assemblies; pwsh already has them.
+        try { Add-Type -AssemblyName System.IO.Compression -ErrorAction Stop } catch { }
+        try { Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop } catch { }
+        $zipStream = [System.IO.File]::Open($zipTmp, [System.IO.FileMode]::Create,
+            [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        $zip = New-Object System.IO.Compression.ZipArchive -ArgumentList @(
+            $zipStream, [System.IO.Compression.ZipArchiveMode]::Create, $true)
+        foreach ($file in $archiveFiles) {
+            try {
+                [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                    $zip, $file.FullName, $file.Name,
+                    [System.IO.Compression.CompressionLevel]::Optimal)
+                $added++
+            } catch {
+                $skipped.Add($file.Name)
+                Write-Host ("  [WARN] {0}: {1}" -f $file.Name, $_.Exception.Message)
+            }
+        }
+    } catch {
+        $zipError = $_.Exception.Message
+    } finally {
+        # Dispose the FileShare.None handles before any cleanup of the partial
+        # file, otherwise Remove-Item on Windows would fail with a sharing error.
+        if ($null -ne $zip) { $zip.Dispose() }
+        if ($null -ne $zipStream) { $zipStream.Dispose() }
+    }
+
+    if ($null -ne $zipError) {
+        Add-Failure 'workspace-docs' ('cannot create zip: ' + $zipError)
+        if (Test-Path -LiteralPath $zipTmp) {
+            Remove-Item -LiteralPath $zipTmp -Force -ErrorAction SilentlyContinue
+        }
+        return
+    }
+
+    if ($added -eq 0) {
+        Add-Failure 'workspace-docs' 'no file could be added to the zip'
+        if (Test-Path -LiteralPath $zipTmp) {
+            Remove-Item -LiteralPath $zipTmp -Force -ErrorAction SilentlyContinue
+        }
+        return
+    }
+    if ($skipped.Count -gt 0) {
+        Add-Failure 'workspace-docs' ('{0} file(s) skipped: {1}' -f `
+            $skipped.Count, ($skipped -join ', '))
+    }
+
+    try {
         Move-Item -LiteralPath $zipTmp -Destination $zipPath -Force -ErrorAction Stop
     } catch {
-        Add-Failure 'workspace-docs' ('Compress-Archive failed: ' + $_.Exception.Message)
-        foreach ($leftover in @($zipTmp)) {
-            if (Test-Path -LiteralPath $leftover) {
-                Remove-Item -LiteralPath $leftover -Force -ErrorAction SilentlyContinue
-            }
+        Add-Failure 'workspace-docs' ('cannot finalize zip: ' + $_.Exception.Message)
+        if (Test-Path -LiteralPath $zipTmp) {
+            Remove-Item -LiteralPath $zipTmp -Force -ErrorAction SilentlyContinue
         }
         return
     }
     $item = Get-Item -LiteralPath $zipPath
     $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash
     Add-ManifestEntry -Item $item -Hash $hash
+    Write-Host ("         {0:N0} bytes, {1} of {2} file(s) added (md {3} + html {4})" -f `
+        $item.Length, $added, $archiveFiles.Count, $docs.Count, $html.Count)
 }
 
 function Invoke-Rotation {
@@ -304,7 +435,7 @@ if (-not $DryRun) {
 Write-Host 'repos:'
 foreach ($repo in $repos) { Invoke-Bundle -Repo $repo }
 
-Write-Host 'workspace docs:'
+Write-Host 'workspace archive (md + html):'
 Invoke-DocsArchive
 
 Write-Host 'rotation:'
@@ -327,7 +458,9 @@ Write-Host ''
 Write-Host '=== summary ==='
 if ($DryRun) {
     Write-Host ("repos       : {0} planned, {1} problem(s)" -f $repos.Count, $script:failCount)
-    Write-Host ("docs        : {0} file(s), {1:N0} bytes" -f $docs.Count, [long]$docsBytes)
+    Write-Host ("docs        : {0} md + {1} html = {2} file(s), {3:N0} bytes" -f `
+        $docs.Count, $html.Count, $archiveFiles.Count, [long]$archiveBytes)
+    Write-Host ("excluded    : {0}" -f (Get-ExcludedSummary))
     Write-Host ("rotation    : {0} folder(s) would be removed" -f $rot.Candidates)
     Write-Host 'writes      : none (dry-run)'
     Write-Host 'result      : OK (plan only)'
@@ -335,6 +468,9 @@ if ($DryRun) {
 }
 
 Write-Host ("entries     : {0} file(s), {1:N0} bytes" -f $script:okCount, $script:backedUpBytes)
+Write-Host ("archive     : {0} md + {1} html = {2} file(s), {3:N0} input bytes" -f `
+    $docs.Count, $html.Count, $archiveFiles.Count, [long]$archiveBytes)
+Write-Host ("excluded    : {0}" -f (Get-ExcludedSummary))
 Write-Host ("failed      : {0}" -f $script:failCount)
 if ($script:failCount -gt 0) {
     foreach ($f in $script:failures) { Write-Host ("  - {0}" -f $f) }

@@ -1,0 +1,705 @@
+# -*- coding: utf-8 -*-
+"""四个运维工具的 pytest 契约测试（只新增测试，不改被测代码）。
+
+被测对象（一律用 subprocess 调用，禁止 import —— 它们都有
+``if __name__ == "__main__"`` 与模块级副作用）::
+
+    tools/verify_backups.py     备份校验：MANIFEST/字节数/sha256/孤儿/新鲜度，退出码 0/1/2
+    tools/gen_health_card.py    健康卡：task_audit + backup + repo 三块、13 项检查
+    tools/gen_docs_index.py     DOCS_INDEX 生成与 --check
+    tools/daily_ops.ps1         PowerShell 编排：只测退出码与 JSON 契约
+
+隔离原则
+--------
+* 夹具全部落在 ``tmp_path``，不读不写真实 ``_vault``，不碰真实仓库状态；
+* 需要“仓库”的测试只建空目录：git 探测失败走 ``available:false`` 分支，
+  这正是被测工具“读不到 → 红”的契约路径，且不依赖宿主 git 状态；
+* 不启服务、不连数据库、不访问网络。
+
+运行（在仓库根）::
+
+    "C:\\Program Files\\Python311\\python.exe" -B -m pytest \
+        tools/tests/test_ops_tools.py -q -p no:cacheprovider
+"""
+
+from __future__ import annotations
+
+import datetime as dt
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+import pytest
+
+TOOLS = Path(__file__).resolve().parent.parent
+REPO = TOOLS.parent
+PYTHON = sys.executable
+
+VERIFY = TOOLS / "verify_backups.py"
+HEALTH = TOOLS / "gen_health_card.py"
+DOCS = TOOLS / "gen_docs_index.py"
+DAILY = TOOLS / "daily_ops.ps1"
+
+PROJECT_DIRNAME = "老田的AI助手"
+
+
+# ---------------------------------------------------------------------------
+# 通用执行与断言辅助
+# ---------------------------------------------------------------------------
+def _run_py(script: Path, *args: str, timeout: float = 120.0) -> subprocess.CompletedProcess:
+    """以当前解释器 + -B 跑一个工具；PYTHONUTF8 保证子进程 stdout 是 UTF-8。"""
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return subprocess.run(
+        [PYTHON, "-B", str(script), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+        cwd=str(REPO),
+        env=env,
+        check=False,
+    )
+
+
+def _json_stdout(proc: subprocess.CompletedProcess, label: str) -> dict:
+    """解析 stdout 的单一 JSON；失败时把 stdout/stderr 片段带进断言信息。"""
+    text = (proc.stdout or "").lstrip("\ufeff")
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        pytest.fail(
+            "%s: stdout 不是合法 JSON: %s\n"
+            "--- exit=%s ---\nstdout[:2000]=%r\nstderr[:2000]=%r"
+            % (label, exc, proc.returncode, text[:2000], (proc.stderr or "")[:2000])
+        )
+    assert isinstance(payload, dict), f"{label}: JSON 顶层应为对象，实际 {type(payload)!r}"
+    return payload
+
+
+def _sha256_upper(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest().upper()
+
+
+def _manifest_line(name: str, data: bytes) -> str:
+    """与 tools/backup_bundles.ps1 的 Add-ManifestEntry 完全同格式。"""
+    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return "%s  %s  %d bytes  sha256=%s" % (name, stamp, len(data), _sha256_upper(data))
+
+
+def _today_name() -> str:
+    return dt.datetime.now().strftime("%Y-%m-%d")
+
+
+def _make_vault(
+    root: Path,
+    files: dict[str, bytes],
+    *,
+    comments: bool = False,
+) -> Path:
+    """造一个 <root>/<today>/ 备份目录：实体文件 + MANIFEST.txt。
+
+    comments=True 时按 backup_bundles.ps1 的真实产物追加
+    ``# vault backup`` / ``# vault`` / ``# summary`` 三类注释行。
+    """
+    day = root / _today_name()
+    day.mkdir(parents=True, exist_ok=True)
+    lines: list[str] = []
+    if comments:
+        lines.append("# vault backup %s 03:15:00" % _today_name())
+        lines.append("# vault %s" % day)
+    for name, data in files.items():
+        (day / name).write_bytes(data)
+        lines.append(_manifest_line(name, data))
+    if comments:
+        lines.append(
+            "# summary ok=%d failed=0 bytes=%d"
+            % (len(files), sum(len(data) for data in files.values()))
+        )
+    (day / "MANIFEST.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return day
+
+
+def _run_verify(vault: Path, *args: str) -> subprocess.CompletedProcess:
+    return _run_py(VERIFY, "--root", str(vault), "--json", "--no-progress", *args)
+
+
+def _run_health(repo: Path, vault: Path, *args: str) -> subprocess.CompletedProcess:
+    return _run_py(
+        HEALTH,
+        "--repo",
+        str(repo),
+        "--vault-root",
+        str(vault),
+        "--task-audit-root",
+        str(repo / "portal" / "data" / "task_exit_audit"),
+        *args,
+    )
+
+
+def _make_health_repo(tmp_path: Path, name: str = "hc") -> tuple[Path, Path]:
+    """健康卡用的“仓库 + 备份仓”骨架；仓库故意不是 git，走 repo 不可用分支。"""
+    workspace = tmp_path / name
+    repo = workspace / "repo"
+    repo.mkdir(parents=True)
+    return repo, workspace / "_vault"
+
+
+# ---------------------------------------------------------------------------
+# 1) verify_backups.py
+# ---------------------------------------------------------------------------
+def test_verify_backups_ok_three_entries(tmp_path: Path) -> None:
+    """3 条清单、sha256 全对 → exit 0，summary 全 ok。"""
+    vault = tmp_path / "vault"
+    _make_vault(
+        vault,
+        {
+            "aios-20261022.bundle": b"bundle-A" * 37,
+            "workspace-docs-20261022.zip": b"zip-B" * 53,
+            "res-downloader-20261022.bundle": b"bundle-C" * 11,
+        },
+    )
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 0, proc.stderr
+    report = _json_stdout(proc, "verify_backups/ok")
+
+    assert report["schema"] == "vault-verify/1"
+    assert report["result"] == "ok"
+    assert report["exit_code"] == 0
+    assert report["mode"] == "latest"
+    assert report["problems"] == []
+    assert report["sample"] is None
+    assert report["summary"]["complete"] is True
+
+    summary = report["summary"]
+    assert summary["files"] == 3
+    assert summary["ok"] == 3
+    assert summary["mismatch"] == 0
+    assert summary["missing"] == 0
+    assert summary["unreadable"] == 0
+    assert summary["unverified"] == 0
+    assert summary["orphans"] == 0
+    assert summary["parse_errors"] == 0
+
+    entries = report["dirs"][0]["entries"]
+    assert {entry["status"] for entry in entries} == {"ok"}
+    assert all(entry["size_ok"] and entry["hash_ok"] for entry in entries)
+    assert report["freshness"]["status"] == "ok"
+
+
+def test_verify_backups_size_mismatch_exit1(tmp_path: Path) -> None:
+    """清单字节数与实体不符 → exit 1，counts.mismatch=1，problems 点名 mismatch。"""
+    vault = tmp_path / "vault"
+    day = _make_vault(vault, {"a.bundle": b"A" * 10, "b.bundle": b"B" * 20})
+    (day / "b.bundle").write_bytes(b"B" * 21)  # 大小变了（sha 也必然变）
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 1, proc.stderr
+    report = _json_stdout(proc, "verify_backups/mismatch")
+
+    assert report["result"] == "failed"
+    assert report["exit_code"] == 1
+    assert report["summary"]["mismatch"] == 1
+    assert report["summary"]["ok"] == 1
+    bad = [entry for entry in report["dirs"][0]["entries"] if entry["name"] == "b.bundle"][0]
+    assert bad["status"] == "mismatch"
+    assert bad["size_ok"] is False
+    assert bad["actual_size"] == 21 and bad["expected_size"] == 20
+    assert any("mismatch" in problem for problem in report["problems"])
+
+
+def test_verify_backups_missing_file_exit1(tmp_path: Path) -> None:
+    """清单列了但磁盘没有 → exit 1，counts.missing=1，problems 点名 missing。"""
+    vault = tmp_path / "vault"
+    day = _make_vault(vault, {"a.bundle": b"A" * 10, "c.bundle": b"C" * 30})
+    (day / "c.bundle").unlink()
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 1, proc.stderr
+    report = _json_stdout(proc, "verify_backups/missing")
+
+    assert report["summary"]["missing"] == 1
+    assert report["summary"]["ok"] == 1
+    assert report["summary"]["orphans"] == 0
+    bad = [entry for entry in report["dirs"][0]["entries"] if entry["name"] == "c.bundle"][0]
+    assert bad["status"] == "missing"
+    assert bad["actual_size"] is None
+    assert any("missing" in problem for problem in report["problems"])
+
+
+def test_verify_backups_orphan_file_exit1(tmp_path: Path) -> None:
+    """磁盘上有、清单未列 → exit 1，counts.orphans=1，problems 点名 orphan。"""
+    vault = tmp_path / "vault"
+    day = _make_vault(vault, {"a.bundle": b"A" * 10})
+    (day / "stray.bundle").write_bytes(b"not-in-manifest")
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 1, proc.stderr
+    report = _json_stdout(proc, "verify_backups/orphan")
+
+    assert report["summary"]["orphans"] == 1
+    assert report["summary"]["ok"] == 1
+    orphans = report["dirs"][0]["orphans"]
+    assert [item["name"] for item in orphans] == ["stray.bundle"]
+    assert any("orphan" in problem for problem in report["problems"])
+
+
+def test_verify_backups_comment_lines_are_not_parse_errors(tmp_path: Path) -> None:
+    """MANIFEST 里的 # 注释行必须跳过（刚修的口径），不能算 parse error。"""
+    vault = tmp_path / "vault"
+    _make_vault(
+        vault,
+        {
+            "a.bundle": b"A" * 8,
+            "b.bundle": b"B" * 16,
+            "c.bundle": b"C" * 32,
+        },
+        comments=True,
+    )
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 0, proc.stderr
+    report = _json_stdout(proc, "verify_backups/comments")
+
+    manifest = report["dirs"][0]["manifest"]
+    assert manifest["parse_errors"] == []
+    assert manifest["entries"] == 3
+    assert report["summary"]["parse_errors"] == 0
+    assert report["summary"]["files"] == 3
+    assert report["summary"]["ok"] == 3
+    assert report["problems"] == []
+    assert report["result"] == "ok"
+    assert report["exit_code"] == 0
+
+
+@pytest.mark.parametrize("bad_date", ["1999-01-01", "2026-13-01", "not-a-date"])
+def test_verify_backups_bad_date_exit2(tmp_path: Path, bad_date: str) -> None:
+    """坏 --date（格式非法或目录不存在）→ exit 2（脚本自身错误）。"""
+    vault = tmp_path / "vault"
+    _make_vault(vault, {"a.bundle": b"A" * 10})
+
+    proc = _run_verify(vault, "--date", bad_date)
+    assert proc.returncode == 2, "stdout=%r stderr=%r" % (proc.stdout, proc.stderr)
+    assert "ERROR" in proc.stderr
+
+
+def test_verify_backups_missing_root_exit2(tmp_path: Path) -> None:
+    """--root 指向不存在的目录 → exit 2。"""
+    proc = _run_verify(tmp_path / "no_such_vault")
+    assert proc.returncode == 2
+    assert "ERROR" in proc.stderr
+    assert "不存在" in proc.stderr or "not" in proc.stderr.lower()
+
+
+# ---------------------------------------------------------------------------
+# 2) gen_health_card.py
+# ---------------------------------------------------------------------------
+def _checks_by_id(card: dict) -> dict[str, dict]:
+    return {check["id"]: check for check in card["checks"]}
+
+
+def test_health_card_manifest_comments_not_malformed(tmp_path: Path) -> None:
+    """回归：MANIFEST 含 # 注释行时 backup.manifest_malformed 必须为 0。
+
+    旧口径把 backup_bundles.ps1 写的 ``# vault backup`` / ``# summary`` 当格式异常，
+    会把完整备份误判成黄。本测试锁死“注释不是条目、不算 malformed”。
+    """
+    repo, vault = _make_health_repo(tmp_path)
+    _make_vault(
+        vault,
+        {
+            "aios-20261022.bundle": b"A" * 64,
+            "workspace-docs-20261022.zip": b"Z" * 128,
+            "zerobound-kg-20261022.bundle": b"K" * 256,
+        },
+        comments=True,
+    )
+
+    proc = _run_health(repo, vault)
+    card = _json_stdout(proc, "health_card/comments")
+
+    backup = card["backup"]
+    assert backup["available"] is True
+    assert backup["manifest_malformed"] == 0
+    assert backup["manifest_malformed_samples"] == []
+    assert backup["manifest_entries"] == 3
+    assert backup["manifest_missing"] == 0
+    assert backup["size_mismatch"] == 0
+
+    integrity = _checks_by_id(card)["backup.integrity"]
+    assert integrity["level"] == "green", integrity
+    assert "格式异常" not in integrity["detail"]
+    assert "manifest_malformed" in backup
+
+
+def test_health_card_missing_vault_unavailable_red(tmp_path: Path) -> None:
+    """--vault-root 指向不存在目录 → backup.available=false、计数字段 null、overall 红。"""
+    repo, vault = _make_health_repo(tmp_path, "hc_missing")
+    assert not vault.exists()
+
+    proc = _run_health(repo, vault)
+    assert proc.returncode == 1, proc.stderr
+    card = _json_stdout(proc, "health_card/missing_vault")
+
+    assert card["status"] == "red"
+    assert card["exit_code"] == 1
+    backup = card["backup"]
+    assert backup["available"] is False
+    assert backup["reason"]
+    for key in (
+        "latest_date",
+        "age_hours",
+        "manifest_entries",
+        "manifest_malformed",
+        "manifest_missing",
+        "size_mismatch",
+        "manifest_bytes",
+        "total_bytes",
+        "total_human",
+        "files_count",
+    ):
+        assert backup[key] is None, "%s 应为 null，实际 %r" % (key, backup[key])
+    assert _checks_by_id(card)["backup.readable"]["level"] == "red"
+
+
+def test_health_card_normal_fixture_json_contract(tmp_path: Path) -> None:
+    """正常备份夹具 → 合法 JSON，含 schema/generated_at/status/checks 且三块齐全。"""
+    repo, vault = _make_health_repo(tmp_path, "hc_ok")
+    day = _make_vault(
+        vault,
+        {"a.bundle": b"A" * 100, "workspace-docs.zip": b"Z" * 50},
+    )
+    manifest_size = (day / "MANIFEST.txt").stat().st_size
+
+    proc = _run_health(repo, vault)
+    assert proc.returncode in (0, 1), proc.stderr
+    card = _json_stdout(proc, "health_card/normal")
+
+    assert card["schema"] == "governance_health_card/v1"
+    dt.datetime.fromisoformat(card["generated_at"])
+    assert card["status"] in {"green", "yellow", "red"}
+    assert card["exit_code"] == (1 if card["status"] == "red" else 0)
+
+    # 三块都在，且各自是 dict
+    for block in ("task_audit", "backup", "repo"):
+        assert isinstance(card[block], dict), block
+        assert "available" in card[block]
+
+    # 13 项检查是扁平列表，字段固定
+    assert isinstance(card["checks"], list) and card["checks"]
+    for check in card["checks"]:
+        assert set(check) == {"id", "level", "detail"}
+        assert check["level"] in {"green", "yellow", "red"}
+        assert isinstance(check["detail"], str) and check["detail"]
+    assert "backup.readable" in _checks_by_id(card)
+    assert "repo.readable" in _checks_by_id(card)
+    assert "task_audit.readable" in _checks_by_id(card)
+
+    backup = card["backup"]
+    assert backup["available"] is True
+    assert backup["latest_date"] == day.name
+    assert backup["manifest_entries"] == 2
+    assert backup["manifest_malformed"] == 0
+    assert backup["manifest_missing"] == 0
+    assert backup["size_mismatch"] == 0
+    assert backup["files_count"] == 3  # 2 个实体 + MANIFEST.txt
+    assert backup["manifest_bytes"] == 150
+    assert backup["total_bytes"] == 150 + manifest_size
+
+
+def test_health_card_task_audit_block_contract(tmp_path: Path) -> None:
+    """造一份账本 + 摘要 + EXIT_SEMANTICS → task_audit 可读，7 项审计检查按契约出齐。"""
+    repo, vault = _make_health_repo(tmp_path, "hc_audit")
+    _make_vault(vault, {"a.bundle": b"A" * 16})
+
+    module = repo / "agent_platform" / "tools" / "task_exit_audit.py"
+    module.parent.mkdir(parents=True, exist_ok=True)
+    module.write_text(
+        'EXIT_SEMANTICS = {0: "正常", 267011: "从未运行"}\n',
+        encoding="utf-8",
+    )
+
+    audit = repo / "portal" / "data" / "task_exit_audit"
+    audit.mkdir(parents=True, exist_ok=True)
+    stamp = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+    records = [
+        {
+            "at": stamp,
+            "name": "task_ok",
+            "state": "Ready",
+            "last_result": 0,
+            "exit_semantics": "正常",
+            "last_run": stamp,
+        },
+        {
+            "at": stamp,
+            "name": "task_never",
+            "state": "Ready",
+            "last_result": 267011,
+            "exit_semantics": "从未运行",
+            "last_run": "",
+        },
+    ]
+    (audit / "task_exit_ledger.jsonl").write_text(
+        "\n".join(json.dumps(item, ensure_ascii=False) for item in records) + "\n",
+        encoding="utf-8",
+    )
+    summary = {
+        "generated_at": stamp,
+        "total_scanned": 2,
+        "ok": 1,
+        "failed": 0,
+        "disabled": 0,
+        "never_run": 1,
+        "failures": [],
+    }
+    (audit / "task_exit_summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False), encoding="utf-8"
+    )
+
+    proc = _run_health(repo, vault)
+    assert proc.returncode == 1, proc.stderr  # repo 仍不可读 → 整体红
+    card = _json_stdout(proc, "health_card/audit")
+    task_audit = card["task_audit"]
+
+    assert task_audit["available"] is True
+    assert task_audit["total_scanned"] == 2
+    assert task_audit["ok"] == 1
+    assert task_audit["never_run"] == 1
+    assert task_audit["failed"] == 0
+    assert task_audit["running"] == 0
+    assert task_audit["counts_source"] == "ledger_latest_batch"
+    assert task_audit["summary_available"] is True
+    assert task_audit["summary_matches_ledger"] is True
+    assert task_audit["summary_count_drift"] == {}
+
+    checks = _checks_by_id(card)
+    for check_id in (
+        "task_audit.readable",
+        "task_audit.failures",
+        "task_audit.unknown",
+        "task_audit.freshness",
+        "task_audit.ledger_integrity",
+        "task_audit.summary_sync",
+        "task_audit.semantics",
+        "backup.readable",
+    ):
+        assert checks[check_id]["level"] == "green", checks[check_id]
+    assert checks["repo.readable"]["level"] == "red"
+    assert card["status"] == "red"
+    assert card["exit_code"] == 1
+
+
+def test_health_card_out_not_directory_exit2(tmp_path: Path) -> None:
+    """--out 指向一个已存在的文件 → 写盘失败，exit 2，且 stdout 不冒充成功卡片。"""
+    repo, vault = _make_health_repo(tmp_path, "hc_out")
+    _make_vault(vault, {"a.bundle": b"A" * 8})
+    blocker = tmp_path / "hc_out_blocker"
+    blocker.write_text("not a directory", encoding="utf-8")
+
+    proc = _run_health(repo, vault, "--out", str(blocker))
+    assert proc.returncode == 2, "stdout=%r\nstderr=%r" % (proc.stdout, proc.stderr)
+    assert proc.stdout.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# 3) gen_docs_index.py
+# ---------------------------------------------------------------------------
+def _write_doc(path: Path, title: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# " + title + "\n\n正文。\n", encoding="utf-8")
+
+
+def _make_docs_workspace(tmp_path: Path, name: str = "docs_ws") -> Path:
+    """假工作区：老田的AI助手/docs/{plans,audit,ops} + 根 .md + 既有 DOCS_INDEX.md。
+
+    预置一份最小索引（真实工作区本来就长期存在 DOCS_INDEX.md）。这不是为了
+    掩盖问题：工具对“首次从零生成”确实不自洽（首轮产物不含自己的行，紧接着
+    --check 返回 1），该缺陷在交付报告里单独说明；这里覆盖的是文档承诺的
+    “既有索引 → 生成/校验/幂等”契约。
+    """
+    workspace = tmp_path / name
+    project = workspace / PROJECT_DIRNAME
+    for parts in (("docs", "plans"), ("docs", "audit"), ("docs", "ops")):
+        (project.joinpath(*parts)).mkdir(parents=True, exist_ok=True)
+    (project / "deliverables").mkdir(parents=True, exist_ok=True)
+    (workspace / "deliverables").mkdir(parents=True, exist_ok=True)
+
+    _write_doc(project / "docs" / "plans" / "2026-10-01_方案.md", "方案一")
+    _write_doc(project / "docs" / "audit" / "2026-10-02_审计.md", "审计一")
+    _write_doc(project / "docs" / "ops" / "2026-10-03_操作单.md", "操作单一")
+    _write_doc(workspace / "README.md", "根 README")
+
+    # 预置索引的标题必须与生成后一致（工具读首行 # 作为标题），只让生成时间被改写。
+    (workspace / "DOCS_INDEX.md").write_text(
+        "# 文档索引 DOCS_INDEX\n"
+        "\n"
+        "- 生成时间：2026-10-01 00:00（脚本自动生成，手工编辑请写在「人工备注」段）\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return workspace
+
+
+def _run_docs(workspace: Path, *args: str) -> subprocess.CompletedProcess:
+    return _run_py(DOCS, "--workspace", str(workspace), *args)
+
+
+def _generate_index(workspace: Path) -> bytes:
+    proc = _run_docs(workspace)
+    assert proc.returncode == 0, "生成失败: %r" % (proc.stdout, proc.stderr)
+    index = workspace / "DOCS_INDEX.md"
+    assert index.is_file()
+    return index.read_bytes()
+
+
+def test_docs_index_generate_then_check_is_clean(tmp_path: Path) -> None:
+    """生成后立刻 --check 应一致 → exit 0。"""
+    workspace = _make_docs_workspace(tmp_path)
+
+    first = _generate_index(workspace)
+    assert first.startswith("# 文档索引 DOCS_INDEX".encode("utf-8"))
+    assert not first.startswith(b"\xef\xbb\xbf")  # UTF-8 无 BOM
+    assert b"\r\n" not in first  # LF 换行
+
+    proc = _run_docs(workspace, "--check")
+    assert proc.returncode == 0, "stdout=%r\nstderr=%r" % (proc.stdout, proc.stderr)
+    assert "一致" in proc.stdout
+
+
+def test_docs_index_check_detects_new_doc(tmp_path: Path) -> None:
+    """索引生成后新增一份文档 → --check exit 1，并报“新增”。"""
+    workspace = _make_docs_workspace(tmp_path, "docs_ws_drift")
+    _generate_index(workspace)
+
+    new_doc = (
+        workspace
+        / PROJECT_DIRNAME
+        / "docs"
+        / "plans"
+        / "2026-10-04_新方案.md"
+    )
+    _write_doc(new_doc, "新方案")
+
+    proc = _run_docs(workspace, "--check")
+    assert proc.returncode == 1, "stdout=%r\nstderr=%r" % (proc.stdout, proc.stderr)
+    assert "新增" in proc.stdout
+    assert "2026-10-04_新方案.md" in proc.stdout
+
+
+def test_docs_index_generation_is_byte_idempotent(tmp_path: Path) -> None:
+    """连续两次生成字节完全相同（幂等）。
+
+    唯一的时间戳精确到分钟；若测试恰好从 :45 之后起步，先等到下一分钟再跑，
+    避免两次生成跨分钟造成假红。
+    """
+    workspace = _make_docs_workspace(tmp_path, "docs_ws_idem")
+    if dt.datetime.now().second >= 45:
+        time.sleep(61 - dt.datetime.now().second)
+
+    first = _generate_index(workspace)
+    second = _generate_index(workspace)
+    assert first == second
+
+
+# ---------------------------------------------------------------------------
+# 4) daily_ops.ps1（PowerShell 编排，只测退出码 / JSON 契约）
+# ---------------------------------------------------------------------------
+def _powershell_exe() -> str:
+    exe = shutil.which("powershell.exe") or shutil.which("powershell")
+    if not exe:
+        pytest.skip("找不到 powershell.exe，跳过 daily_ops 契约测试")
+    return exe
+
+
+def _run_daily(repo: Path, *extra: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [
+            _powershell_exe(),
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(DAILY),
+            "-Repo",
+            str(repo),
+            "-Json",
+            *extra,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=180,
+        cwd=str(REPO),
+        check=False,
+    )
+
+
+def test_daily_ops_red_contract(tmp_path: Path) -> None:
+    """健康卡红（假仓库不可读）+ 备份 ok → 总判定红、exit 1、stdout 单一 JSON。"""
+    workspace = tmp_path / "daily_red"
+    repo = workspace / "repo"
+    repo.mkdir(parents=True)
+    # daily_ops 把备份仓固定推导为 <repo 的父目录>/_vault
+    _make_vault(workspace / "_vault", {"aios-20261022.bundle": b"B" * 96})
+
+    proc = _run_daily(repo)
+    assert proc.returncode == 1, "stdout=%r\nstderr=%r" % (proc.stdout[:2000], proc.stderr[:2000])
+    payload = _json_stdout(proc, "daily_ops/red")
+
+    assert payload["schema"] == "daily_ops/v1"
+    assert payload["status"] == "red"
+    assert payload["exit_code"] == 1
+    assert payload["summary"]["health"]["status"] == "red"
+    assert payload["summary"]["health"]["usable"] is True
+    assert payload["summary"]["health"]["exit_code"] == 1
+    assert payload["summary"]["backup"]["result"] == "ok"
+    assert payload["summary"]["backup"]["usable"] is True
+    assert payload["summary"]["backup"]["exit_code"] == 0
+    assert payload["summary"]["unable"] == []
+    # 合并后的 JSON 里带两份原始工具输出
+    assert payload["health_card"]["status"] == "red"
+    assert payload["backup_verify"]["summary"]["ok"] == 1
+
+
+def test_daily_ops_tool_error_contract(tmp_path: Path) -> None:
+    """备份仓不存在 → verify_backups exit 2 → 总判定 error、exit 2（fail-closed）。"""
+    workspace = tmp_path / "daily_error"
+    repo = workspace / "repo"
+    repo.mkdir(parents=True)
+    assert not (workspace / "_vault").exists()
+
+    proc = _run_daily(repo)
+    assert proc.returncode == 2, "stdout=%r\nstderr=%r" % (proc.stdout[:2000], proc.stderr[:2000])
+    payload = _json_stdout(proc, "daily_ops/error")
+
+    assert payload["schema"] == "daily_ops/v1"
+    assert payload["status"] == "error"
+    assert payload["exit_code"] == 2
+    assert payload["summary"]["backup"]["exit_code"] == 2
+    assert payload["summary"]["backup"]["usable"] is False
+    assert payload["summary"]["unable"], "应记录“无法判定”原因"
+    assert any("exit 2" in item for item in payload["summary"]["unable"])
+
+
+def test_daily_ops_rejects_log_outside_workspace(tmp_path: Path) -> None:
+    """-Log 只允许写工作区根：指向临时目录必须 exit 2 且不落文件。"""
+    workspace = tmp_path / "daily_log"
+    repo = workspace / "repo"
+    repo.mkdir(parents=True)
+    _make_vault(workspace / "_vault", {"a.bundle": b"A" * 8})
+    log_path = tmp_path / "outside.log"
+
+    proc = _run_daily(repo, "-Log", str(log_path))
+    assert proc.returncode == 2, "stdout=%r\nstderr=%r" % (proc.stdout[:2000], proc.stderr[:2000])
+    assert not log_path.exists()
