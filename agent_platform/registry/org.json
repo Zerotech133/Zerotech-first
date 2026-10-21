@@ -134,7 +134,8 @@
               "execute": [],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "程昱"
         },
         {
           "agent_id": "WA1",
@@ -1760,7 +1761,8 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "朱然"
         },
         {
           "agent_id": "JEV_QD",
@@ -2160,7 +2162,8 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "韦昭"
         },
         {
           "agent_id": "MANCHONG1",
@@ -2244,7 +2247,8 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "周泰"
         }
       ]
     },
@@ -2277,7 +2281,8 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "阚泽"
         },
         {
           "agent_id": "DENGZHI1",

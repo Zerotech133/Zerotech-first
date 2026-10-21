@@ -135,3 +135,45 @@ def test_roster_detects_duplicates_by_construction(tmp_path):
         json.dumps({"departments": []}, ensure_ascii=False), encoding="utf-8")
     dups = {k: v for k, v in R._roster(tmp_path).items() if len(v) > 1}
     assert dups == {"同名": ["X1", "X2"]}
+
+
+def test_name_seat_that_has_no_name_anywhere(root):
+    """授名：三处都没有人名时，必须能在 org 档案里新增 cn_name（而不是报「无从改名」）。
+
+    真实场景：LUSU1 只有 team_comm.json 里一个疑似笔误的名字，org/hr 全空，
+    指挥台因此显示成 id。工具要支持从「无」到「有」。
+    """
+    org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    org["departments"][0]["agents"].append("X9")
+    org["departments"][0]["agent_profiles"].append(
+        {"agent_id": "X9", "llm_binding": "none", "charter_detail": "无名席位职责描述文字"})
+    (root / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    plan = R.build_rename_plan(root, agent_id="X9", new_cn="某名",
+                               ticket="WO-LEGION-S45", signed_by="老田")
+    assert plan["action"] == "name" and plan["from_cn"] == ""
+    assert any("新增" in t["where"] for t in plan["targets"])
+    R.apply_rename_plan(root, plan, signed_by="老田")
+    assert _roster(root).get("某名") == ["X9"]
+
+
+def test_also_team_required_to_touch_team_name_when_naming(root):
+    """授名时默认不碰 team.name（那多半是岗位名）；确是人名要用 --also-team 显式要求。"""
+    org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    org["departments"][0]["agents"].append("X9")
+    org["departments"][0]["agent_profiles"].append(
+        {"agent_id": "X9", "llm_binding": "none", "charter_detail": "无名席位职责描述文字"})
+    (root / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    team = json.loads((root / "registry" / "team_d1.json").read_text(encoding="utf-8"))
+    team["agents"].append({"agent_id": "X9", "name": "疑似旧名", "llm_binding": "none"})
+    (root / "registry" / "team_d1.json").write_text(
+        json.dumps(team, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    p1 = R.build_rename_plan(root, agent_id="X9", new_cn="某名",
+                             ticket="WO-LEGION-S45", signed_by="老田")
+    assert not any("team_d1" in t["file"] for t in p1["targets"]), "默认不该动 team.name"
+    p2 = R.build_rename_plan(root, agent_id="X9", new_cn="某名", also_team=True,
+                             ticket="WO-LEGION-S45", signed_by="老田")
+    assert any("team_d1" in t["file"] for t in p2["targets"])

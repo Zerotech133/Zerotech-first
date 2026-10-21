@@ -6,7 +6,7 @@
   "agents": [
     {
       "agent_id": "LUSU1",
-      "name": "阌泽",
+      "name": "阚泽",
       "kind": "comm_dept_lead",
       "role_profile": "comm_lead",
       "analysis_type": "customer_intake_routing",
