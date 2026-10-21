@@ -743,8 +743,28 @@ def _gate_record(open_id, kind, allowed, reason):
         pass
 
 
-def _subscription_guide_card():
-    """订阅引导卡（灰卡 🔒 订阅服务）：M3 前无收银台，不放购买链接。"""
+def _subscription_guide_card(open_id=None):
+    """订阅引导卡（灰卡 🔒 订阅服务）：M3 前无收银台，不放购买链接。
+
+    K4.3（WO-FS-148-6）：有行为统计时个性化——引用该客户真实查询次数
+    与高频标的（数据来自 customer_interest 聚合，仅统计不含原文）；
+    无数据/聚合不可用时回原通用文案（不臆造数字）。
+    """
+    detail = None
+    if open_id:
+        try:
+            import comm_interest as _ci
+            detail = _ci.guide_text(open_id)
+        except Exception as ex:  # noqa: BLE001 —— 降级通用文案并留痕
+            log("个性化引导卡降级（%s），回通用文案" % type(ex).__name__)
+            detail = None
+    if detail:
+        return {"config": {"wide_screen_mode": True},
+                "header": {"template": "grey",
+                           "title": {"tag": "plain_text",
+                                     "content": "🔒 订阅服务"}},
+                "elements": [{"tag": "div",
+                              "text": {"tag": "lark_md", "content": detail}}]}
     try:
         from card_templates import apply_card_template
         card, _mt = apply_card_template(
@@ -793,7 +813,20 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
     if route != "unclear":  # P2 订阅闸：意图识别后、业务执行前（observe 默认零误伤）
         allowed, gate_reason = subscription_gate(open_id, route)
         if not allowed:  # enforce 拦截：回引导卡，业务不执行（留痕已由闸落一条）
-            ok, why = _send_card(_subscription_guide_card(), open_id)
+            # K4.1：被闸=最强商机信号，记入 customer_interest（只统计）。
+            # 意图按 W43 route 映射（不硬编 stock_consult，避免污染画像）：
+            #   ticker→个股咨询；text/url→投喂；confirm→订阅确认
+            try:
+                import comm_interest as _ci
+                _ci.record(open_id,
+                           intent={"ticker": "stock_consult", "text": "feed",
+                                   "url": "feed",
+                                   "confirm": "subscription_qa"}.get(
+                                       route, "unclear"),
+                           blocked=True)
+            except Exception as ex:  # noqa: BLE001
+                log("被闸行为落账失败（%s），继续拦截" % type(ex).__name__)
+            ok, why = _send_card(_subscription_guide_card(open_id), open_id)
             log("订阅闸拦截 %s route=%s reason=%s" % (
                 ticket, route, gate_reason))
             return {"consumed": True, "ticket": ticket, "route": route,

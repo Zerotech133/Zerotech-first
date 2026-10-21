@@ -31,6 +31,7 @@ import os
 import time
 import uuid
 
+import comm_interest as interest
 import comm_memory as mem
 import comm_router as cr
 
@@ -154,6 +155,12 @@ def smart_intake(text, open_id, msg_id="", llm=None):
                  code=(res.get("entities") or {}).get("code"))
     mem.remember(open_id, "bot", rp["text"] or "", intent=res["intent"])
 
+    # K4.1：行为统计落 customer_interest（只记统计不记原文）。
+    # 订阅闸拦下的（blocked）由调用方另行标记——本层只看意图侧事实。
+    ok_i, err_i = interest.record(
+        open_id, intent=res["intent"],
+        code=(res.get("entities") or {}).get("code"))
+
     return {
         "intent": res["intent"],
         "reply_text": rp["text"],
@@ -166,6 +173,8 @@ def smart_intake(text, open_id, msg_id="", llm=None):
         "channel": res["channel"],
         "entities": res.get("entities") or {},
         "resolved_from_memory": bool(res.get("resolved_from_memory")),
+        "interest_ok": ok_i,
+        "interest_error": err_i,
         "elapsed_ms": int((time.time() - t0) * 1000),
         "msg_id": str(msg_id or "")[:64],
         "open_id_masked": _mask(open_id),
