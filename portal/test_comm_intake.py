@@ -260,7 +260,7 @@ def test_23_inbound_wiring_smart_branch(env, monkeypatch):
 
     sent, ledgers = [], []
     monkeypatch.setattr(gw, "_send_card",
-                        lambda card, oid: (sent.append(card) or (True, "ok")))
+                        lambda card, oid: (sent.append(card) or (True, "ok", "om_stub")))
     monkeypatch.setattr(gw, "_append_ledger",
                         lambda path, row: ledgers.append(row))
     # 桩 LLM：判成 smalltalk（避免依赖真实模型）
@@ -291,7 +291,7 @@ def test_24_inbound_wiring_off_unchanged(env, monkeypatch):
     monkeypatch.setenv("LAOTIAN_OPEN_ID", "ou_wire_2")
     sent, ledgers = [], []
     monkeypatch.setattr(gw, "_send_card",
-                        lambda card, oid: (sent.append(card) or (True, "ok")))
+                        lambda card, oid: (sent.append(card) or (True, "ok", "om_stub")))
     monkeypatch.setattr(gw, "_append_ledger",
                         lambda path, row: ledgers.append(row))
     called = []

@@ -78,7 +78,8 @@ def gate_env(monkeypatch):
     monkeypatch.setattr(gw, "SUBSCRIPTION_GATE_MODE", "observe")
     monkeypatch.setattr(
         gw, "_send_card",
-        lambda card, oid: (sent.append((card, oid)) or (True, "stub_sent")))
+        lambda card, oid: (sent.append((card, oid))
+                           or (True, "stub_sent", "om_stub")))
     monkeypatch.setattr(gw, "_append_ledger",
                         lambda path, row: rows.append(row))
     yield {"sent": sent, "rows": rows}

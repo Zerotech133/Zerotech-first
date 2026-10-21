@@ -28,7 +28,10 @@ os.environ["LAOTIAN_OPEN_ID"] = LAO
 
 _SENT = []          # (card, open_id) 回执捕获
 _ORIG_SEND = gw._send_card
-gw._send_card = lambda card, oid: (_SENT.append((card, oid)) or (True, "t"))
+# WO-FS-155：_send_card 改 3 元组（ok, why, mid），桩同步；
+# mid 用固定假值即可（只为断言台账字段，不发真消息）
+gw._send_card = lambda card, oid: (_SENT.append((card, oid))
+                                   or (True, "t", "om_test_stub_mid"))
 _ORIG_INGEST = gw._ingest_links
 _ORIG_GET = gw._http_get
 # 全局网络打桩：单测全程零真实网络（施工红线）

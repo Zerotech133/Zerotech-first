@@ -566,16 +566,31 @@ def _route_confirm(ticket, payload, open_id):
 
 # ── 双回执卡（走 8097 闸门） ──────────────────────────────────
 def _send_card(card, open_id):
-    """回执统一过 8097 闸门（via_hub 默认；fail-closed 不回落直发）。
-    critical=True：投喂回执是发给投喂者本人的动作反馈，静默窗吞卡=投喂环
-    瘫痪（沿 K-ORG-201 审批卡 critical 豁免冒烟判例）。"""
-    import sys as _sys
-    _sys.path.insert(0, os.path.join(ROOT, "news_collector"))
-    import feishu_client
-    return feishu_client.send_msg(json.dumps(card, ensure_ascii=False),
-                                  "interactive", open_id,
-                                  receive_id_type="open_id",
-                                  kind="inbound:feed", critical=True)
+    """回卡 → (ok, why, mid)。WO-FS-155：改用 tracked 版拿 message_id。
+
+    K-ORG-201 的 send_msg 只回 2 元组（在役调用方零感知），但 inbound 台账
+    需要 message_id 才能反查「消息是否真到」（今日排障教训：只有 "sent"
+    字样无法证明送达）。mid 缺失不影响发送语义，调用方可忽略。
+    """
+    try:
+        import sys as _sys
+        _nc = __import__("os").path.join(
+            __import__("os").path.dirname(__import__("os").path.dirname(
+                __import__("os").path.abspath(__file__))), "news_collector")
+        if _nc not in _sys.path:
+            _sys.path.insert(0, _nc)
+        from feishu_client import send_msg_tracked
+        return send_msg_tracked(json.dumps(card, ensure_ascii=False),
+                                "interactive", open_id,
+                                receive_id_type="open_id",
+                                kind="inbound:feed", critical=True)
+    except Exception:
+        # 兜底走旧 2 元组接口（mid 记 None），发送语义不变
+        import feishu_client
+        ok, why = feishu_client.send_msg(
+            json.dumps(card, ensure_ascii=False), "interactive", open_id,
+            receive_id_type="open_id", kind="inbound:feed", critical=True)
+        return ok, why, None
 
 
 def _ack_card(ticket, route, payload):
@@ -851,7 +866,7 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
                            blocked=True)
             except Exception as ex:  # noqa: BLE001
                 log("被闸行为落账失败（%s），继续拦截" % type(ex).__name__)
-            ok, why = _send_card(_subscription_guide_card(open_id), open_id)
+            ok, why, _mid = _send_card(_subscription_guide_card(open_id), open_id)
             log("订阅闸拦截 %s route=%s reason=%s" % (
                 ticket, route, gate_reason))
             return {"consumed": True, "ticket": ticket, "route": route,
@@ -872,7 +887,7 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
                 % (type(ex).__name__, str(ex)[:120]))
             smart = None
         if smart:
-            ok, why = _send_card(_smart_card(ticket, smart), open_id)
+            ok, why, _mid = _send_card(_smart_card(ticket, smart), open_id)
             _append_ledger(_tickets_path(), {
                 "ticket": ticket, "ts": _now_iso(), "open_id": open_id,
                 "msg_id": str(msg_id or "")[:64], "chat_type": chat_type,
@@ -885,25 +900,26 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
                            "trace_id": smart.get("trace_id"),
                            "channel": smart.get("channel"),
                            "model_tier": (smart.get("model") or {}).get("tier")},
-                "receipt_ack": "-", "receipt_result": _rs(ok, why)})
-            log("智能接话 %s intent=%s action=%s" % (
-                ticket, smart.get("intent"), smart.get("action")))
+                "receipt_ack": _mid or "-",
+                "receipt_result": _rs(ok, why)})
+            log("智能接话 %s intent=%s action=%s mid=%s" % (
+                ticket, smart.get("intent"), smart.get("action"), _mid or "-"))
             return {"consumed": True, "ticket": ticket,
                     "route": "smart:%s" % smart.get("intent"),
                     "status": smart.get("action") or "-",
                     "detail": smart}
-        ok, why = _send_card(_clarify_card(ticket), open_id)
+        ok, why, _mid = _send_card(_clarify_card(ticket), open_id)
         _append_ledger(_tickets_path(), {
             "ticket": ticket, "ts": _now_iso(), "open_id": open_id,
             "msg_id": str(msg_id or "")[:64], "chat_type": chat_type,
             "route": route, "status": "clarified", "evidence": "clarified",
             "duplicate_of": "", "detail": {"preview": text[:80]},
-            "receipt_ack": "-", "receipt_result": _rs(ok, why)})
+            "receipt_ack": _mid or "-", "receipt_result": _rs(ok, why)})
         return {"consumed": True, "ticket": ticket, "route": route,
                 "status": "clarified", "detail": {}}
 
     if route == "ticker":  # B4：识别成功即回执+留痕，W44 未接线如实声明
-        ok, why = _send_card(
+        ok, why, _mid = _send_card(
             _ticker_card(ticket, payload.get("code", "")), open_id)
         _append_ledger(_tickets_path(), {
             "ticket": ticket, "ts": _now_iso(), "open_id": open_id,
@@ -911,11 +927,11 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
             "route": route, "status": "routed",
             "evidence": "strategy_ring_w44_pending",
             "duplicate_of": "", "detail": {"code": payload.get("code", "")},
-            "receipt_ack": "-", "receipt_result": _rs(ok, why)})
+            "receipt_ack": _mid or "-", "receipt_result": _rs(ok, why)})
         return {"consumed": True, "ticket": ticket, "route": route,
                 "status": "routed", "detail": {"code": payload.get("code", "")}}
 
-    ok, why = _send_card(_ack_card(ticket, route, payload), open_id)
+    ok, why, _mid = _send_card(_ack_card(ticket, route, payload), open_id)
     receipt_ack = _rs(ok, why)
     if route == "url":
         detail = _route_url(ticket, payload)
@@ -923,7 +939,7 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
         detail = _route_text(ticket, payload, open_id)
     else:
         detail = _route_confirm(ticket, payload, open_id)
-    ok2, why2 = _send_card(_result_card(ticket, detail), open_id)
+    ok2, why2, _mid2 = _send_card(_result_card(ticket, detail), open_id)
     _append_ledger(_tickets_path(), {
         "ticket": ticket, "ts": _now_iso(), "open_id": open_id,
         "msg_id": str(msg_id or "")[:64], "chat_type": chat_type,

@@ -93,16 +93,32 @@ def test_unregistered_kind_passthrough():
 # 6. inbound_gateway.py:578 kind="inbound:feed" 静态断言（本轮零改动锚点）
 
 def test_gateway_send_msg_kind_literal():
+    """静态锚点：kind 字面量与发送语义不得漂移。
+
+    WO-FS-155（2026-10-21）变更：_send_card 主路径由 `feishu_client.send_msg`
+    （2 元组，丢 message_id）改为 `send_msg_tracked`（3 元组，回 mid 入台账），
+    并保留 send_msg 作异常兜底。故本测试由「单点行号锚定」改为
+    「语义锚定」——断言 kind 字面量、msg_type、critical、receive_id_type
+    仍出现在 _send_card 函数体内（不再锁死行号，避免每次改动都假红）。
+    """
     with open(GATEWAY_PATH, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    hits = [i + 1 for i, ln in enumerate(lines)
-            if 'kind="inbound:feed"' in ln]
-    assert hits == [578]  # 有且仅有一处，行号锚点不漂移
-    call = "".join(lines[573:578])  # :574-578 send_msg 调用体
-    assert "feishu_client.send_msg" in call
-    assert '"interactive"' in call
-    assert "critical=True" in call
-    assert "receive_id_type=\"open_id\"" in call
+        src = f.read()
+
+    # ① kind 字面量必须存在（模板差异化与流水归因都依赖它）
+    assert 'kind="inbound:feed"' in src, "kind 字面量丢失"
+
+    # ② 抽出 _send_card 函数体做语义断言
+    start = src.index("def _send_card(")
+    end = src.index("\n\n\ndef ", start)
+    body = src[start:end]
+    assert "send_msg_tracked" in body, "主路径应为 tracked 版（需回 message_id）"
+    assert "feishu_client.send_msg" in body or "from feishu_client import send_msg" in body, \
+        "兜底路径缺失"
+    assert '"interactive"' in body
+    assert "critical=True" in body
+    assert 'receive_id_type="open_id"' in body
+    # ③ 返回必须够 3 元（调用方解包 ok/why/mid）
+    assert body.count("return") >= 2, "应有主路径与兜底两条 return"
 
 
 # 7. test_card_templates.py FC-C 快照同步（三快照均含 inbound:feed）
