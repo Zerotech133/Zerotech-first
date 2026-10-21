@@ -4059,6 +4059,55 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     import subscription_store as _sub_store
                     self._json(_sub_status_view(
                         _sub_store.get_subscriber_summary(_oid)))
+        elif path == "/api/comm/interest":
+            # K4.2 商机信号只读出口（WO-FS-148-9，2026-10-21）。
+            # 数据源 comm_interest 聚合表（只存行为统计，无原文）。
+            #
+            # 口径：
+            # - ?open_id= 可选。带则只回该客户 stats_7d + 个性化引导文案，
+            #   不带则回 7 日窗商机信号列表（按星级/被闸/咨询排序）。
+            # - 鉴权复用 sub_admin 同一把钥匙（PORTAL_SUB_ADMIN_KEY），
+            #   不再新增密钥变量：本端点与 /api/subscription/list 同属
+            #   内部域批量面，密钥分裂只会增加运维成本。
+            # - 未配密钥时 auth_mode="none" 照实自述（裸奔可见）。
+            # - 401 在读画像库之前短路；open_id 对外掩码（本端点服务内部
+            #   商务面展示，不需要明文回填，故与 list 的「不掩码」策略不同）。
+            # - 只读：不接受任何写参数，POST 不路由到本分支。
+            _want_cm = (os.environ.get("PORTAL_SUB_ADMIN_KEY") or "").strip()
+            _auth_cm = "key" if _want_cm else "none"
+            _got_cm = (self.headers.get("X-Portal-Key") or "").strip()
+            _ok_cm = True
+            if _want_cm:
+                _ok_cm = bool(_got_cm) and hmac.compare_digest(
+                    _got_cm.encode("utf-8"), _want_cm.encode("utf-8"))
+            if not _ok_cm:
+                self._json({"ok": False, "error": "unauthorized"}, 401)
+            else:
+                try:
+                    from urllib.parse import parse_qs as _pq_cm
+                    _q_cm = _pq_cm(qs, keep_blank_values=True)
+                    _oid_cm = (_q_cm.get("open_id") or [""])[0].strip()
+                    import comm_interest as _ci_cm
+                    if _oid_cm:
+                        _st_cm = _ci_cm.stats_7d(_oid_cm)
+                        _gd_cm = None
+                        try:
+                            _gd_cm = _ci_cm.guide_text(_oid_cm)
+                        except Exception:  # noqa: BLE001 —— 引导文案非必需
+                            _gd_cm = None
+                        self._json({"ok": True, "auth_mode": _auth_cm,
+                                    "open_id": _oid_cm,
+                                    "stats": _st_cm, "guide": _gd_cm})
+                    else:
+                        _sig_cm = _ci_cm.signals(limit=50)
+                        self._json({"ok": True, "auth_mode": _auth_cm,
+                                    "count": len(_sig_cm),
+                                    "signals": _sig_cm})
+                except Exception:  # noqa: BLE001 —— 稳定结构，不泄 traceback
+                    self._json({"ok": False, "auth_mode": _auth_cm,
+                                "error": "interest_unavailable",
+                                "signals": []}, 200)
+
         elif path == "/api/subscription/list":
             # P2.6 订阅批量列表（FE-B 2026-10-20）：订阅者全集只读出口。
             # ?limit= 可选（默认 50，钳制 [1,200]；非法值回落默认 50），

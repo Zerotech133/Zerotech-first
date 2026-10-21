@@ -117,6 +117,9 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <h2 class="sec">customer 域观察<small>/api/notify/queue · domain-observe 留痕 = 商机信号</small></h2>
 <div id="observe-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明。</div></div>
 
+<h2 class="sec">商机信号（customer_interest 聚合）<small>/api/comm/interest · 7 日窗 · 只统计不含原文</small></h2>
+<div id="interest-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明，不显示兜底数据。</div></div>
+
 <h2 class="sec">档位标注<small>SEED_PLANS 静态投影 · 定价不在本页</small></h2>
 <div class="notice"><b>价格不编造</b>——basic_monthly 档价格为 placeholder，待老田定价；定价前不构成真实报价，本页原样标注「待定价」。订阅开通/变更请往既有流程办理。</div>
 <div class="plans">
@@ -380,6 +383,36 @@ function renderObserve(q){
  }
 }
 
+const LEVEL_LABEL={hot:'★★★ 热客户',prospect:'★★ 潜客',expiring:'★★ 到期活跃',churning:'★ 静默流失'};
+function renderInterest(d){
+ const box=$('interest-card');box.replaceChildren();
+ const rows=Array.isArray(d&&d.signals)?d.signals:[];
+ if(!rows.length){
+  box.append(el('div','empty-state','7 日窗内暂无商机信号。空态只代表本时点聚合表无可展示条目——不等于「没有客户在问」，需与新消息留痕一并判读。'));
+  return;
+ }
+ box.append(el('div','empty-state','商机信号 '+rows.length+' 条（按星级与被闸次数排序；open_id 已掩码）。信号仅供商务跟进参考，本页不自动触达、不自动开通。'));
+ for(const r of rows.slice(0,12)){
+  const c=el('div','observe-item');
+  c.append(el('strong',null,(LEVEL_LABEL[r.level]||r.level||'—')));
+  c.append(el('div','facts','客户 '+(text(r.open_id_masked)||'—')+' · 咨询 '+text(r.consult_7d)+' 次 · 被闸 '+text(r.blocked_7d)+' 次 · 活跃 '+text(r.active_days)+' 天'));
+  if(Array.isArray(r.top_codes)&&r.top_codes.length)c.append(el('div','facts','高频标的：'+r.top_codes.join('、')));
+  if(text(r.hint))c.append(el('div','facts','建议：'+r.hint));
+  box.append(c);
+ }
+}
+
+async function loadInterest(){
+ let d=null,err=null;
+ try{d=await fetchJson('/api/comm/interest');}
+ catch(e){err=e&&e.message?e.message:'未知错误';}
+ if(err){
+  emptyCard('interest-card','/api/comm/interest 读取失败（'+err+'）——本卡不显示兜底数字；不可把「读取失败」当成「无商机信号」。');
+  return;
+ }
+ renderInterest(d);
+}
+
 async function loadObserve(){
  let q=null,err=null;
  try{q=await fetchJson('/api/notify/queue');}
@@ -402,6 +435,7 @@ function load(){
     出来的行悄悄清掉；要重取首屏请按「↻ 刷新」（走 reload）。 */
  if(subState.rows.length<=PAGE_SIZE)loadSubscribers();
  loadObserve();
+ loadInterest();
 }
 
 function reload(){

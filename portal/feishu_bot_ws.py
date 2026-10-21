@@ -1086,6 +1086,48 @@ def main():
     # 包装），重复调用幂等，且类级 patch 对环内重建的新 Client 实例
     # 天然生效——故环外调用一次即可，语义等价于每次 start 前已 patch。
     _patch_ws_card_route()
+    # K5.1 配套（WO-FS-148-9）：派单超时巡视线程。
+    # 每 5 分钟扫 bridge_inbox 中超过 deadline 的派单：首次超时回「稍等」卡，
+    # 超过 15 分钟升级话术（升级动作本身仍是回卡，真正的归口由田丰侧处理）。
+    # 开关 COMM_DISPATCH_ENABLED + COMM_DISPATCH_PATROL（默认 1）双闸；
+    # 线程内任何异常只落日志，不影响 WS 主链（判例：辅助线程不得反噬主链）。
+    def _dispatch_patrol():
+        import comm_dispatch as _cd
+        import time as _t
+        _seen = {}          # dispatch_id -> 已提示阶段（1=稍等, 2=升级）
+        while True:
+            try:
+                _t.sleep(300)
+                if not _cd.enabled():
+                    continue
+                for it in _cd.sweep_overdue():
+                    stage = 2 if it.get("escalate") else 1
+                    if _seen.get(it["dispatch_id"], 0) >= stage:
+                        continue
+                    _seen[it["dispatch_id"]] = stage
+                    oid = (it.get("payload") or {}).get("open_id") or ""
+                    if not oid:
+                        continue
+                    if stage == 1:
+                        txt = ("您的问题（工单 %s）还在处理中，预计稍后回复——"
+                               "已为您加急。" % it["dispatch_id"])
+                    else:
+                        txt = ("工单 %s 已超过 15 分钟未处理，已升级至田丰归口督办，"
+                               "稍后给您明确答复。" % it["dispatch_id"])
+                    try:
+                        send_text(txt, "-")
+                    except Exception as _ex:  # noqa: BLE001
+                        log("派单巡视回卡失败 %s: %s"
+                            % (it["dispatch_id"], type(_ex).__name__))
+                    log("派单巡视 %s stage=%d waited=%.1fmin"
+                        % (it["dispatch_id"], stage, it.get("waited_min", 0)))
+            except Exception:  # noqa: BLE001 —— 巡视异常不得打死线程
+                log("派单巡视异常 " + traceback.format_exc()[-200:])
+
+    if str(os.environ.get("COMM_DISPATCH_PATROL", "1")).strip().lower() in (
+            "1", "true", "yes", "on"):
+        threading.Thread(target=_dispatch_patrol, daemon=True).start()
+        log("dispatch patrol thread started (interval=300s)")
     log("bot ws starting (app=%s)" % app_id)
     # P2.7 内部重连环：原 cli.start() 为单次阻塞调用，WS 断线=进程退出，
     # 只能靠 watchdog 每 5min 整机拉起兜底（恢复延迟最长 5min）。本环把
