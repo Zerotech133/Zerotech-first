@@ -365,6 +365,8 @@ def main() -> int:
     try:
         tac, ing = load_rows(con, day)
         summ = summarize(tac)
+        # WO-069：ingest 口径同维度汇总（复用 summarize），供 tactical 榜空转时门户兜底
+        summ_ing = summarize(ing)
         anomalies = anomaly_signals(summ, con, day)
         tempo = word_tempo(con, day, today_words={"bearish": summ["bear_words"],
                                                   "bullish": summ["bull_words"]})
@@ -389,6 +391,14 @@ def main() -> int:
             "sentiment": dict(summ["senti"]),
             "content_type": dict(summ["ctype"]),  # v1.3 六类内容形态分布（门户条形消费）
             "top_codes": dict(summ["codes"].most_common(10)),
+            # WO-069 v1.8 ingest 口径面板：tactical（created_at）榜为空时门户兜底展示
+            # 当日入库（fetched_at，含历史回溯），解决"回溯采集日 tactical 榜空转"的口径错位
+            "ingested_panel": {
+                "total": len(ing),
+                "classified": len(ing) - summ_ing["pending"],
+                "top_codes": dict(summ_ing["codes"].most_common(10)),
+                "event_type": dict(summ_ing["ev"]),
+            },
             # v1.7 概念榜（fund=kind 标记上榜拍板落地）：指数/基金/unknown 隔离于个股榜
             "top_concepts": [{"code": c, "kind": k, "count": n}
                              for (c, k), n in summ["concepts"].most_common(8)],

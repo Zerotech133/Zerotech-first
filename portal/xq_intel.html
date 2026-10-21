@@ -180,7 +180,7 @@ tr:last-child td{border-bottom:none}
     </div>
 
     <div class="card panel">
-      <h2>热度个股 Top<span id="topn"></span> <span class="hint">点击代码下钻近 7 日</span></h2>
+      <h2>热度个股 Top<span id="topn"></span> <span id="codes-mode" class="hint"></span> <span class="hint">点击代码下钻近 7 日</span></h2>
       <table>
         <thead><tr><th>代码</th><th>提及</th><th>热度</th></tr></thead>
         <tbody id="codes-body"></tbody>
@@ -304,7 +304,7 @@ function renderError(msg){
   $("donut").style.background="#21262d";$("d-n").textContent="—";
   ["event-bars","ctype-bars","codes-body","tempo-bull","tempo-bear","signals","theme-bars","pipe"]
     .forEach(id=>{$(id).innerHTML='<div class="err">'+esc(msg)+"</div>"});
-  $("topn").textContent="";$("tickerCard").innerHTML="";$("pipe-hint").textContent="";
+  $("topn").textContent="";$("tickerCard").innerHTML="";$("pipe-hint").textContent="";$("codes-mode").textContent="";
 }
 
 function isBlankDay(d){
@@ -370,7 +370,14 @@ function render(d,mode){
 
   /* 热度个股（真实形态 {code:count}）+ 概念榜（top_concepts=[{code,kind,count}]，
      fund=kind 标记上榜语义 2026-10-19 拍板：指数/基金隔离于个股榜，带标记可见） */
-  const tc=d.top_codes||{};
+  /* WO-069 兜底：tactical（created_at）榜为空且当日确有入库时，回退展示 ingest 口径榜
+     （fetched_at，含历史回溯），并在卡片头显式标注口径，避免误读为当日发布热度 */
+  const ip=d.ingested_panel||null;
+  const hasTac=d.top_codes&&Object.keys(d.top_codes).some(k=>d.top_codes[k]>0);
+  const ipCodes=ip&&ip.top_codes&&Object.keys(ip.top_codes).some(k=>ip.top_codes[k]>0);
+  const tc=hasTac?d.top_codes:(ipCodes?ip.top_codes:{});
+  const ingestMode=!hasTac&&ipCodes;
+  if(ingestMode)$("codes-mode").textContent="当日入库口径（fetched_at，含历史回溯 "+fmt(ip.total)+" 帖）";
   const cl=Object.keys(tc).filter(k=>tc[k]>0).sort((a,b)=>tc[b]-tc[a]);
   const cc=Array.isArray(d.top_concepts)?d.top_concepts.filter(x=>x&&x.code):[];
   $("topn").textContent=cl.length?" "+cl.length:"";
