@@ -27,6 +27,10 @@ def root(tmp_path):
     (r / "registry").mkdir(parents=True)
     (r / "hr").mkdir()
     shutil.copy2(_PLATFORM / "registry" / "org.json", r / "registry" / "org.json")
+    # registry/team_*.json 也是档案真源之一（A0A 的档案只在 team_chief.json 里）：
+    # 不复制会让「主官有无档案」在测试里恒为无档，与真实盘面不符。
+    for f in (_PLATFORM / "registry").glob("team_*.json"):
+        shutil.copy2(f, r / "registry" / f.name)
     # 稳定化：把 intel 部还原成「名单有人、档案全空」的基准态。
     # 补档用例都以 intel 席位为样本，而真实 org.json 会随补档不断演进——
     # 不隔离就会「真数据一补档，测试全红」（2026-10-21 真实踩到）。
@@ -745,3 +749,42 @@ def test_set_lead_rolls_back_on_selfcheck_failure(root, monkeypatch):
         E.apply_set_lead_plan(root, plan, signed_by="老田")
     monkeypatch.undo()
     assert org_bytes(root) == before, "自检失败必须用备份还原，不留半成品"
+
+
+def test_set_lead_announce_cross_dept_without_changing_lead(root):
+    """主官没变、但缺兼任留痕时允许补登记（不改指挥关系，只补事实凭证）。
+
+    真实场景：A0/A0A 的 lead 早就填了，`lead_appointed` 一个字没有，
+    审计只能报「指挥链跨部门」。补登记后应降级为「已显式登记」。
+
+    ⚠️ 本用例**自己构造**前置状态，不依赖真实盘面是否已登记过兼任——
+    真实 org.json 一旦补过，复制出来的 fixture 就不再有「待补登记」这个前提
+    （2026-10-21 S42 真实踩到：修完 A0A 该用例立刻红）。
+    """
+    org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    dep = org["departments"][0]
+    members = {str(a) for a in (dep.get("agents") or [])}
+    outside = next(str(a) for d in org["departments"] for a in (d.get("agents") or [])
+                   if str(a) not in members)
+    dep["lead"] = outside
+    dep.pop("lead_appointed", None)
+    (root / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    note = "该席跨部门兼任本营主官，指挥链经真源显式登记"
+    plan = E.build_set_lead_plan(root, dept=dep["dept"], lead=outside,
+                                 ticket="WO-LEGION-S42", signed_by="老田",
+                                 cross_note=note)
+    assert plan["action"] == "announce_cross"
+    assert plan["from_lead"] == plan["to_lead"] == outside
+    res = E.apply_set_lead_plan(root, plan, signed_by="老田")
+    assert res["ok"] is True
+    after = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    ad = next(d for d in after["departments"] if d["dept"] == dep["dept"])
+    assert ad["lead"] == outside, "补登记不得改动主官"
+    assert ad["lead_appointed"]["cross_note"] == note
+    # 幂等：已有留痕再跑一次必须拒绝，不许刷时间戳
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_set_lead_plan(root, dept=dep["dept"], lead=outside,
+                              ticket="WO-LEGION-S42", signed_by="老田", cross_note=note)
+    assert "已登记" in str(ei.value)

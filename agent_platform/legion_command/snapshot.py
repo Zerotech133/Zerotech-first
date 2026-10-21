@@ -78,6 +78,11 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
                 "error": "org.json missing or corrupt"}
 
     lead_cache: dict[str, str] = {}
+    # 统一取档口径（S42）：档案可能在部门表 / 顶层 chief / team_*.json。
+    # 指挥台若只认部门表，邓芝（DENGZHI1，档案在 team_comm.json）会被画成"无档"虚线——
+    # 展示层显示的和真源里的事实相反，比不显示更糟。
+    from engine.org_profiles import profile_index
+    all_prof = profile_index(root)
     departments = []
     for d in org.get("departments", []):
         did = d.get("dept") or d.get("dept_id") or ""
@@ -100,12 +105,17 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
             if not aid:
                 continue
             p = prof_by_id.get(aid)
+            ext = all_prof.get(aid) or {}
             agents.append({
                 "id": aid,
-                "cn": _cn_name(aid) or aid,
-                "binding": (p.get("llm_binding") or "") if p else "",
+                # 名字优先级：hr 名册 > 档案自带 name（team_comm.json 写着「邓芝」，
+                # 但 DENGZHI1 没有 hr 目录；只认 hr 就会在指挥台上显示成 id）。
+                "cn": (_cn_name(aid) or ext.get("cn_name") or aid),
+                "binding": (p.get("llm_binding") if p else "") or ext.get("llm_binding", ""),
                 "role": (p.get("role_profile") or "") if p else "",
-                "has_profile": p is not None,
+                "has_profile": (p is not None) or bool(ext),
+                # 档案不在部门表时如实标出来源，前端可据此提示「档案登记在别处」
+                "profile_source": "dept" if p is not None else (ext.get("source_detail") or ""),
             })
         departments.append({
             "id": did,
@@ -113,7 +123,7 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
             "cn_title": d.get("cn_title") or "",
             "lead": lead_cache.get(lead_id, "") if lead_id else "",
             "lead_id": lead_id,
-            "lead_profiled": lead_id in prof_by_id if lead_id else False,
+            "lead_profiled": (lead_id in prof_by_id or lead_id in all_prof) if lead_id else False,
             "status": d.get("status") or "",
             "agents": agents,
             "seats_listed": len(listed),

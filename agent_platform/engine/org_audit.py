@@ -93,7 +93,7 @@ def audit(root: Path) -> dict:
 
     findings: list[dict] = []
     rows: list[dict] = []
-    listed_total = profiled_total = ghost_total = 0
+    listed_total = profiled_total = ghost_total = elsewhere_total = 0
     in_org: set[str] = set()
     extra_prof = _extra_profiles(root, org)          # 部门档案表之外的档案（chief / team_*）
     leads_elsewhere: set[str] = set()
@@ -103,12 +103,17 @@ def audit(root: Path) -> dict:
         lead = d.get("lead")
         ids = [str(x) for x in (d.get("agents") or [])]
         profs = [str(p.get("agent_id")) for p in (d.get("agent_profiles") or [])]
-        ghosts = [i for i in ids if i not in profs]
+        # 「有名无档」必须是**三处都查不到**才成立。DENGZHI1（邓芝）的档案在
+        # registry/team_comm.json（Hermes 8787 通讯中枢），只扫部门表就把它报成幽灵席位，
+        # 与 A0A 是同一个根因（S41 只修了主官判定，漏了席位统计——S42 补齐）。
+        ghosts = [i for i in ids if i not in profs and i not in extra_prof]
+        elsewhere_seats = [i for i in ids if i not in profs and i in extra_prof]
         extra = [i for i in profs if i not in ids]          # 有档案但名单里没有
 
         listed_total += len(ids)
         profiled_total += len(profs)
         ghost_total += len(ghosts)
+        elsewhere_total += len(elsewhere_seats)
         in_org.update(ids)
         in_org.update(profs)
 
@@ -120,6 +125,13 @@ def audit(root: Path) -> dict:
             findings.append({"code": "GHOST_SEAT", "severity": SEV_P2, "dept": dept,
                              "detail": "%d/%d 席位有名无档" % (len(ghosts), len(ids)),
                              "agents": ghosts})
+        if elsewhere_seats:
+            srcs = sorted({str(extra_prof[i].get("source_detail") or "") for i in elsewhere_seats})
+            findings.append({"code": "SEAT_PROFILE_ELSEWHERE", "severity": SEV_P3, "dept": dept,
+                             "detail": "%d 席档案登记在部门表之外（%s）：职责可答，"
+                                       "但按部门表取档的旧调用方会当成无档"
+                                       % (len(elsewhere_seats), "、".join(s for s in srcs if s)),
+                             "agents": elsewhere_seats})
 
         if lead is None:
             findings.append({"code": "LEAD_NULL", "severity": SEV_P1, "dept": dept,
@@ -167,6 +179,7 @@ def audit(root: Path) -> dict:
         rows.append({"dept": dept, "name": d.get("name"), "lead": lead,
                      "listed": len(ids), "profiled": len(profs),
                      "ghost": len(ghosts), "ghost_list": ghosts,
+                     "profiled_elsewhere": elsewhere_seats,
                      "lead_ok": bool(lead) and (str(lead) in profs
                                                   or str(lead) in extra_prof)})
 
@@ -217,6 +230,7 @@ def audit(root: Path) -> dict:
             "seats_listed": listed_total,
             "seats_profiled": profiled_total,
             "seats_ghost": ghost_total,
+            "seats_profiled_elsewhere": elsewhere_total,
             "ghost_ratio": round(ghost_total / listed_total, 3) if listed_total else 0.0,
             "leads_total": leads_total,
             "leads_ok": leads_ok,
@@ -238,9 +252,12 @@ def _print_human(rep: dict) -> None:
     s = rep["summary"]
     print("编制完整性审计（rules %s）" % rep["rules_version"])
     print("=" * 66)
-    print("部门 %d 个 · 席位名单 %d · 有档案 %d · 有名无档 %d（%.0f%%）"
+    # 三态必须分行写清楚：名单 = 部门表 + 别处 + 真无档，否则「65 有档 / 0 无档 / 共 66 席」
+    # 读者自己都算不平（S42 实测被问过）。
+    print("部门 %d 个 · 席位名单 %d = 部门档案表 %d + 档案在别处 %d + 真无档 %d（%.0f%%）"
           % (s["depts"], s["seats_listed"], s["seats_profiled"],
-             s["seats_ghost"], s["ghost_ratio"] * 100))
+             s.get("seats_profiled_elsewhere", 0), s["seats_ghost"],
+             s["ghost_ratio"] * 100))
     print("主官 %d 个 · 档案齐备 %d · 异常 %d" % (s["leads_total"], s["leads_ok"], s["leads_not_ok"]))
     print("重名 %d 对 · 编外 %d 员 · 主官未登记 %d · 缺口 P1=%d P2=%d P3=%d"
           % (s["duplicate_names"], s["orphan_staff"], s["leads_unregistered"],

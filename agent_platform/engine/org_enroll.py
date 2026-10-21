@@ -62,6 +62,12 @@ _TICKET_RE = re.compile(r"^(WO-|K-|LEGION-|WOLEGION-)", re.I)
 DUTY_MIN_LEN = 10
 
 
+try:                                     # 包内导入
+    from engine.org_profiles import profile_index
+except ImportError:                      # 直接 `python engine/org_enroll.py` 运行
+    from org_profiles import profile_index
+
+
 class EnrollError(ValueError):
     """编制校验失败（含凭据缺失、重名、词表越界）——一律 fail-visible，不静默降级。"""
 
@@ -582,9 +588,9 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
     where = idx.get(lid)
     if where is None:
         raise EnrollError("未知席位 %r：org 名单、档案与 hr 目录均无此 id" % lid)
-    profiled = {str(p.get("agent_id") or "")
-                for d in org.get("departments") or []
-                for p in d.get("agent_profiles") or []}
+    # 档案可以在三处：部门档案表 / 顶层 chief / team_*.json（S41 统一口径）。
+    # 只扫部门表会把 A0A（档案在 registry/team_chief.json）误判成"无档案"而拒任命。
+    profiled = set(profile_index(root))
     if lid not in profiled:
         raise EnrollError(
             "%s 尚无档案（当前仅见于 %s）。任命后该营会从「主官空悬」变成「主官无档」，"
@@ -605,8 +611,15 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
     if duty and len(duty) < DUTY_MIN_LEN:
         raise EnrollError("lead_duty 至少 %d 字（当前 %d 字）" % (DUTY_MIN_LEN, len(duty)))
     old_duty = str(target.get("lead_duty") or "")
-    if old_lead == lid and (not duty or duty == old_duty):
-        raise EnrollError("%s 的主官已是 %s，且 lead_duty 无变化，无需任命" % (dept, lid))
+    # 补登记兼任：主官没变、但真源里没有 lead_appointed 留痕（A0/A0A 就是这种历史状态——
+    # lead 早就填了，兼任说明一个字没有，审计只能报「指挥链跨部门」）。
+    # 这不改指挥关系，只补事实凭证，所以允许在「主官不变」时执行一次；已有留痕则幂等拒绝。
+    ap_cur = target.get("lead_appointed") or {}
+    already_noted = bool(ap_cur.get("cross_note")) and str(ap_cur.get("to") or "") == lid
+    announce = bool(cross and note_txt and not already_noted)
+    if old_lead == lid and (not duty or duty == old_duty) and not announce:
+        raise EnrollError("%s 的主官已是 %s%s，无需任命"
+                          % (dept, lid, "（兼任说明已登记）" if already_noted else ""))
     if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
         raise EnrollError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
     if not (signed_by or "").strip():
@@ -616,6 +629,7 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
         "schema_version": SCHEMA_VERSION,
         "rules_version": RULES_VERSION,
         "mode": "set_lead",
+        "action": "announce_cross" if (announce and old_lead == lid) else "appoint",
         "dept": dept,
         "dept_name": target.get("name"),
         "from_lead": old_lead,

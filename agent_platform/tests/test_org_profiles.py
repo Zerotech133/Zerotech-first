@@ -104,3 +104,67 @@ def test_real_org_has_chief_and_assistant():
     for aid in ("A0", "A0A"):
         assert aid in idx, "%s 的档案必须可查" % aid
         assert idx[aid]["llm_binding"], "%s 的绑定不得为空" % aid
+
+
+def test_snapshot_does_not_degrade_name_to_id():
+    """档案自带 name 时，指挥台不得把中文名显示成 id。
+
+    DENGZHI1 没有 hr 目录（名字无从 hr 取），但 team_comm.json 明写「邓芝」。
+    只认 hr 的实现会在指挥台上显示 DENGZHI1——名字就在真源里，展示层看不到。
+    口径不写死某个人：凡「档案在部门表之外且自带 cn_name」的席，cn 都不得等于 id。
+    """
+    from legion_command.snapshot import build_snapshot
+    idx = P.profile_index(_PLATFORM)
+    d = build_snapshot()
+    checked = 0
+    for dep in d["departments"]:
+        for a in dep["agents"]:
+            ext = idx.get(a["id"]) or {}
+            if ext.get("source") != P.SRC_DEPT and ext.get("cn_name"):
+                checked += 1
+                assert a["cn"] != a["id"], "%s 的中文名退化成 id（档案里明明有 %r）" % (
+                    a["id"], ext["cn_name"])
+    assert checked > 0, "样本为空：没有任何「档案在别处且自带名字」的席位，用例失去承重"
+
+
+def test_audit_ghost_requires_all_three_sources_missing():
+    """幽灵席位 = 三处都查不到；档案在 team 文件里不算幽灵。"""
+    from engine import org_audit as A
+    rep = A.audit(_PLATFORM)
+    idx = P.profile_index(_PLATFORM)
+    ghosts = {a for f in rep["findings"] if f["code"] == "GHOST_SEAT" for a in f["agents"]}
+    for aid in ghosts:
+        assert aid not in idx, "%s 有档案（%s）却被报成幽灵席位" % (
+            aid, (idx.get(aid) or {}).get("source_detail"))
+
+
+def test_snapshot_does_not_degrade_name_to_id():
+    """档案自带 name 时，指挥台不得把中文名显示成 id。
+
+    DENGZHI1 没有 hr 目录（名字无从 hr 取），但 team_comm.json 明写「邓芝」。
+    只认 hr 的实现会在指挥台上显示 DENGZHI1——名字就在真源里，展示层看不到。
+    口径不写死某个人：凡「档案在部门表之外且自带 cn_name」的席，cn 都不得等于 id。
+    """
+    from legion_command.snapshot import build_snapshot
+    idx = P.profile_index(_PLATFORM)
+    d = build_snapshot()
+    checked = 0
+    for dep in d["departments"]:
+        for a in dep["agents"]:
+            ext = idx.get(a["id"]) or {}
+            if ext.get("source") != P.SRC_DEPT and ext.get("cn_name"):
+                checked += 1
+                assert a["cn"] != a["id"], "%s 的中文名退化成 id（档案里明明有 %r）" % (
+                    a["id"], ext["cn_name"])
+    assert checked > 0, "样本为空：没有任何「档案在别处且自带名字」的席位，用例失去承重"
+
+
+def test_audit_ghost_requires_all_three_sources_missing():
+    """幽灵席位 = 三处都查不到；档案在 team 文件里不算幽灵。"""
+    from engine import org_audit as A
+    rep = A.audit(_PLATFORM)
+    idx = P.profile_index(_PLATFORM)
+    ghosts = {a for f in rep["findings"] if f["code"] == "GHOST_SEAT" for a in f["agents"]}
+    for aid in ghosts:
+        assert aid not in idx, "%s 有档案（%s）却被报成幽灵席位" % (
+            aid, (idx.get(aid) or {}).get("source_detail"))

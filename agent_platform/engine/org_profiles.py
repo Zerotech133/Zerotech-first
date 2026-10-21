@@ -30,19 +30,19 @@ SRC_TEAM = "team_file"
 
 
 def profile_index(root: Path) -> dict:
-    """返回 {agent_id: {"llm_binding": str, "source": str, "source_detail": str}}。
+    """返回 {agent_id: {"llm_binding", "source", "source_detail", "cn_name"}}。
 
     先到先得：部门档案表 > 顶层 chief > team_*.json。**不是覆盖写**——同一 id 出现
     在多处时，以更权威的位置为准，并保留来源便于排障。
     """
     out: dict[str, dict] = {}
 
-    def put(aid, binding, source, detail):
+    def put(aid, binding, source, detail, cn=""):
         aid = str(aid or "")
         if not aid or aid in out:
             return
         out[aid] = {"llm_binding": str(binding or ""), "source": source,
-                    "source_detail": detail}
+                    "source_detail": detail, "cn_name": str(cn or "")}
 
     org: dict = {}
     p = root / "registry" / "org.json"
@@ -54,12 +54,15 @@ def profile_index(root: Path) -> dict:
     for d in org.get("departments") or []:
         dept = str(d.get("dept") or "")
         for prof in d.get("agent_profiles") or []:
+            persona = prof.get("persona") or {}
             put(prof.get("agent_id"), prof.get("llm_binding"), SRC_DEPT,
-                "dept:%s" % dept)
+                "dept:%s" % dept,
+                cn=prof.get("cn_name") or persona.get("name") or "")
 
     chief = org.get("chief") or {}
     if isinstance(chief, dict):
-        put(chief.get("agent_id"), chief.get("llm_binding"), SRC_CHIEF, "chief")
+        put(chief.get("agent_id"), chief.get("llm_binding"), SRC_CHIEF, "chief",
+            cn=chief.get("name") or "")
 
     reg = root / "registry"
     if reg.exists():
@@ -70,7 +73,7 @@ def profile_index(root: Path) -> dict:
                 continue
             for a in t.get("agents") or []:
                 put(a.get("agent_id"), a.get("llm_binding"), SRC_TEAM,
-                    "registry/%s" % f.name)
+                    "registry/%s" % f.name, cn=a.get("name") or "")
     return out
 
 

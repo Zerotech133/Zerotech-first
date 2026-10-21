@@ -1444,7 +1444,7 @@
     {
       "dept": "proj_data",
       "name": "🅱 数据治理部",
-      "lead": null,
+      "lead": "DATA1",
       "type": "project",
       "status": "active",
       "charter": "【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建",
@@ -1484,7 +1484,17 @@
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {}
         }
-      ]
+      ],
+      "lead_duty": "数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理，只治理不造数",
+      "lead_appointed": {
+        "at": "2026-10-21T20:14:38+0800",
+        "from": null,
+        "to": "DATA1",
+        "cross_dept": false,
+        "cross_note": "",
+        "ticket": "WO-LEGION-S42",
+        "signed_by": "老田"
+      }
     },
     {
       "dept": "proj_next",
@@ -1796,7 +1806,16 @@
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {}
         }
-      ]
+      ],
+      "lead_appointed": {
+        "at": "2026-10-21T20:14:20+0800",
+        "from": "A0A",
+        "to": "A0A",
+        "cross_dept": true,
+        "cross_note": "参谋长助理 A0A 兼任运行体部主官，档案登记于 registry/team_chief.json，指挥链由本部门 lead 显式指向",
+        "ticket": "WO-LEGION-S42",
+        "signed_by": "老田"
+      }
     },
     {
       "dept": "academy",
@@ -2306,7 +2325,16 @@
       "teams": [],
       "source": "K-ORG-120 老田拍板（2026-10-17）：MASS 喂养体系批次1——优化者席位入职，直属参谋长线（LEG1 判例）；动态注册新部门免改码（K-ORG-053）",
       "lead_duty": "直属参谋长线（A0 兼管）：OPT1 候选提案须经 A0 成对判读 + 老田终审方可晋升；宪法见 registry/workflow_candidates/README.md",
-      "cn_title": "参军署"
+      "cn_title": "参军署",
+      "lead_appointed": {
+        "at": "2026-10-21T20:14:26+0800",
+        "from": "A0",
+        "to": "A0",
+        "cross_dept": true,
+        "cross_note": "参谋长田丰 A0 直辖直属参谋长线，档案登记于 org.json 顶层 chief 块，本线为其直属参谋单元",
+        "ticket": "WO-LEGION-S42",
+        "signed_by": "老田"
+      }
     },
     {
       "dept": "risk",

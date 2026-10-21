@@ -78,11 +78,15 @@ def _expect_leads_profile_elsewhere():
 
 
 def _expect_ghost_total():
+    """真无档 = 名单里有、但部门表/chief/team_* 三处都查不到。
+
+    邓芝 DENGZHI1 的档案在 registry/team_comm.json，只算部门表会把它误报成幽灵席位。
+    """
+    known = _known_profile_ids()
     n = 0
     for d in _raw_org()["departments"]:
         ids = [str(x) for x in (d.get("agents") or [])]
-        prof = [str(p.get("agent_id")) for p in (d.get("agent_profiles") or [])]
-        n += sum(1 for i in ids if i not in prof)
+        n += sum(1 for i in ids if i not in known)
     return n
 
 
@@ -103,10 +107,15 @@ def test_audit_real_summary():
     assert s["depts"] == 17
     assert s["seats_listed"] >= 60          # 名单口径
     assert s["seats_profiled"] >= 25
-    # 核心事实：席位名单远多于档案
-    assert s["seats_ghost"] == s["seats_listed"] - s["seats_profiled"]
-    assert 0 < s["ghost_ratio"] < 1
-    assert s["findings_p1"] > 0, "当前盘面确实存在 P1 缺口，审计不该报零"
+    # 三态必须自平：名单 = 部门档案表 + 档案在别处 + 真无档。
+    # 旧断言写的是二态（名单 = 有档 + 无档），档案在 team 文件里的席会被算成无档（S42 修）。
+    assert s["seats_listed"] == (s["seats_profiled"]
+                                 + s.get("seats_profiled_elsewhere", 0)
+                                 + s["seats_ghost"])
+    assert 0 <= s["ghost_ratio"] <= 1
+    # 成果锁（S42）：S35→S42 已把「有名无档」清零。回升只可能是有人绕过编制工具
+    # 往名单里塞 id 不补档——这正是要抓的，不是该放宽的。
+    assert s["seats_ghost"] == 0, "真无档席位应已清零（当前 %d）" % s["seats_ghost"]
 
 
 def test_audit_detects_depts_without_profile():
@@ -121,9 +130,11 @@ def test_audit_detects_depts_without_profile():
 
 
 def test_audit_detects_null_lead():
+    """空悬主官须与独立口径一致——不写死部门名（S42 已给 proj_data 任命主官）。"""
     rep = A.audit(_PLATFORM)
     depts = {f["dept"] for f in _by_code(rep, "LEAD_NULL")}
-    assert "proj_backtest" in depts and "proj_data" in depts
+    expect = {d["dept"] for d in _raw_org()["departments"] if not d.get("lead")}
+    assert depts == expect, "空悬主官检出与实际不一致"
 
 
 def test_audit_detects_lead_without_profile():
