@@ -35,6 +35,7 @@ import comm_dispatch as dispatch
 import comm_interest as interest
 import comm_memory as mem
 import comm_router as cr
+import comm_zhuge as zhuge
 
 # 处理动作 → 上游（inbound_gateway）据此决定回卡形态
 ACTION_REPLY = "reply"          # 直接回文本卡
@@ -56,6 +57,24 @@ def _mask(open_id):
 
 
 # ── K2.1 回复生成 ────────────────────────────────
+_CONSULT_RE = None
+
+
+def _is_consult(text):
+    """疑问/求判断类文本 → 交诸葛亮咨询位（K6）。
+
+    只在 smalltalk 意图下判（其余意图已有专属路由）；命中条件是疑问词
+    或「分析/建议/怎么办」等求判断表述，避免把寒暄也丢给军师。
+    """
+    global _CONSULT_RE
+    if _CONSULT_RE is None:
+        import re
+        _CONSULT_RE = re.compile(
+            r"(为什么|为啥|怎么办|如何|怎么|该不该|能不能|是不是|"
+            r"什么意思|讲讲|分析一下|建议|看法|意见|判断)")
+    return bool(_CONSULT_RE.search(text or ""))
+
+
 def build_reply(intent_result, open_id="", dispatch_result=None):
     """→ {text, meta(list), llm_ok(bool), action}。纯模板，零模型调用。"""
     intent = intent_result.get("intent")
@@ -166,7 +185,30 @@ def smart_intake(text, open_id, msg_id="", llm=None):
     dr = None
     if res["intent"] in ("stock_consult", "watch_setup", "complaint"):
         dr = dispatch.dispatch(res, open_id, msg_id=msg_id)
-    rp = build_reply(res, open_id=open_id, dispatch_result=dr)
+    # K6：小聊里夹着真问题（为什么/怎么办）→ 交诸葛亮咨询位；
+    # 咨询位给不出答案（key 缺失且本地不可用）则回落澄清卡，不硬编。
+    # 触发条件（细化）：smalltalk+疑问 → 军师；stock_consult 但**无具体标的**
+    # （大盘/趋势类判断）→ 也交军师；有标的的个股咨询仍走司马懿席（不抢单）。
+    _no_code = not (res.get("entities") or {}).get("code")
+    _to_zhuge = zhuge.enabled() and _is_consult(text) and (
+        res["intent"] == "smalltalk"
+        or (res["intent"] == "stock_consult" and _no_code))
+    if _to_zhuge:
+        zr = zhuge.consult(text, open_id=open_id)
+        if zr.get("text"):
+            tag = "诸葛亮（GPT6.0）" if zr["mode"] == "openclaw_gpt" \
+                else "诸葛亮（本地军师代理）"
+            rp = {"text": zr["text"], "action": ACTION_REPLY,
+                  "llm_ok": zr["llm_ok"],
+                  "meta": ["咨询位·" + tag, "mode:" + zr["mode"],
+                           "trace:" + res["trace_id"]]}
+            res["intent"] = "consult"
+            res["zhuge"] = {"mode": zr["mode"], "error": zr.get("error")}
+            dr = None
+        else:
+            rp = build_reply(res, open_id=open_id, dispatch_result=dr)
+    else:
+        rp = build_reply(res, open_id=open_id, dispatch_result=dr)
     if rp["action"] is ACTION_FALLBACK:
         # 仍判不出：记忆也记一笔（供后续代词消解），然后交回原链路
         mem.remember(open_id, "customer", text, intent=res["intent"],

@@ -286,3 +286,47 @@ def test_24_inbound_wiring_off_unchanged(env, monkeypatch):
     assert out["route"] == "unclear"
     assert called == [], "开关关闭时不得调用智能接话层"
     assert ledgers[-1]["status"] == "clarified"
+
+
+# ── K6 咨询位接线 ────────────────────────────
+def test_25_consult_goes_to_zhuge(env, monkeypatch):
+    """smalltalk + 疑问词 + 咨询位开启 → 走诸葛亮，intent 变 consult。"""
+    monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
+    monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
+    monkeypatch.setattr(ci.zhuge, "consult",
+                        lambda q, open_id="", **k: {
+                            "text": "结论先行：先看流动性。", "mode": "local_soul",
+                            "llm_ok": True, "error": "local_fallback"})
+    llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.9}')
+    r = ci.smart_intake("为什么今天大盘跌", "ou_consult", msg_id="MC1",
+                        llm=llm)
+    assert r is not None
+    assert r["intent"] == "consult"
+    assert "流动性" in r["reply_text"]
+    assert any("咨询位" in m for m in r["meta"])
+
+
+def test_26_plain_smalltalk_not_consult(env, monkeypatch):
+    """无疑问词的寒暄不丢给军师。"""
+    monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
+    monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
+    called = []
+    monkeypatch.setattr(ci.zhuge, "consult",
+                        lambda *a, **k: called.append(1) or {"text": "x"})
+    llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.9}')
+    ci.smart_intake("早上好", "ou_hello", llm=llm)
+    assert called == [], "寒暄不得调用咨询位"
+
+
+def test_27_consult_channel_down_falls_back_clarify(env, monkeypatch):
+    """咨询位给不出答案 → 回落原链路（不再假装回答）。"""
+    monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
+    monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
+    monkeypatch.setattr(ci.zhuge, "consult",
+                        lambda q, open_id="", **k: {
+                            "text": None, "mode": None, "llm_ok": False,
+                            "error": "all_channels_down"})
+    llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.85}')
+    r = ci.smart_intake("为什么今天大盘跌", "ou_fb", msg_id="MC3", llm=llm)
+    # 回落澄清卡 → smart_intake 返回 None（交回 handle_inbound 原流程）
+    assert r is None
