@@ -340,5 +340,31 @@ class TestCryptoStatsFreshness(unittest.TestCase):
         self.assertIsNone(s["btc_date"])
 
 
+class TestStatusTextMatchesExecutedState(unittest.TestCase):
+    """文案必须与已执行动作一致——动作变了文案不改，就是新的假信息。
+
+    · 港股扫描任务已于 WO-095（10-21 16:10）停用 → 不得再写「已现跑」
+    · 币市源已由 WO-094 收编供给层、直连停用 → 不得再写「是否入供给层待裁」
+    """
+
+    def setUp(self):
+        self.html = qep.render_html(
+            _ctx(picks=_PICKS, strategies=[], regime=None, xunyou=_XUNYOU,
+                 us_pool=_US, crypto=_CRYPTO), now=NOW)
+
+    def test_hk_says_scan_stopped(self):
+        self.assertIn("扫描已停", self.html)
+        self.assertIn("WO-095", self.html)
+
+    def test_hk_no_longer_claims_running(self):
+        self.assertNotIn("已现跑零产出", self.html)
+
+    def test_crypto_says_source_adopted(self):
+        self.assertIn("已收编供给层", self.html)
+
+    def test_crypto_no_stale_verdict_text(self):
+        self.assertNotIn("币市源是否入情报供给层待裁", self.html)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -425,8 +425,8 @@ def render_html(ctx, now=None):
         "<td><span class=\"badge b-wait\">待建</span>"
         "<span class=\"cell-sub\">缠论可复用 · 数据未达标</span></td>"
         "<td><span class=\"badge b-wait\">待接</span>"
-        "<span class=\"cell-sub\">已现跑零产出（WO-089 10-21 14:51）· 3408 只 0%"
-        " 过 120 根门槛（中位 94 行）· 待情报补历史</span></td>"
+        "<span class=\"cell-sub\">扫描已停（WO-095 10-21 16:10 任务停用）· 3408 只"
+        " 0% 过 120 根门槛（中位 94 行）· 待情报补历史</span></td>"
         "<td><span class=\"badge b-wait\">待建</span>"
         "<span class=\"cell-sub\">数据达标后复跑再立项</span></td>"
         "<td class=\"go\"><span class=\"none\">探针已出 · 无页</span></td></tr>")
@@ -443,7 +443,8 @@ def render_html(ctx, now=None):
             "<td>行情仓 %d 标的<span class=\"cell-sub\">BTC_USDT %s%s · "
             "WO-090 评估中</span></td>"
             "<td><span class=\"badge b-wait\">待建</span>"
-            "<span class=\"cell-sub\">币市源是否入情报供给层待裁</span></td>"
+            "<span class=\"cell-sub\">源已收编供给层 · 直连停用（WO-094）"
+            "</span></td>"
             "<td class=\"go\"><span class=\"none\">未立项 · 无页</span></td></tr>"
             % (crypto.get("n", 0), crypto.get("btc_date") or "-", _c_stale))
     else:
