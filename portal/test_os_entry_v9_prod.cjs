@@ -72,6 +72,21 @@ check('存在 jumpWork 函数', html.includes('function jumpWork'));
 check('建议条目可点击 data-work-domain', html.includes('data-work-domain'));
 check('能力目录支持 highlighted 高亮类', /cap-item\.highlighted\s*\{/.test(html));
 
+// 2i. WO-OS-15 ResultEvidence DEMO 样例：容器 + data-demo 标记 + 显式演示文案 + 三条样例走契约 entry()
+check('样例容器 evidence-sample', /id="evidence-sample"/.test(html));
+check('样例条目 data-demo=true 标记', html.includes("'data-demo','true'"));
+check('样例显式演示文案', html.includes('样例数据，仅演示分级样式'));
+check('样例分级预览标题', html.includes('分级样式预览（样例数据）'));
+check('三条样例 id 齐备', html.includes('demo-verified') && html.includes('demo-unverified') && html.includes('demo-pending'));
+check('样例渲染走契约 entry', /renderEvidenceSample[\s\S]*?OSResultContract\.entry/.test(html));
+(function () {
+  const a = html.indexOf('function renderEvidenceSample');
+  const b = html.indexOf('function renderEvidence(', a);
+  const body = a === -1 || b === -1 ? '' : html.slice(a, b);
+  check('样例函数体存在', body.length > 0);
+  check('样例禁 fetch 真实结果数据', !/\bfetch\(/.test(body));
+})();
+
 // 3. 只读 GET 端点齐备
 for (const ep of ['/api/os', '/api/home', '/api/alerts', '/api/notify/queue', '/api/org/tasks', '/api/capability/board'])
   check('端点 ' + ep, html.includes("'" + ep + "'"));
