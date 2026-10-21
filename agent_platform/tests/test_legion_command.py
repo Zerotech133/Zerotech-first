@@ -520,3 +520,68 @@ def test_minutes_page_served(meeting_server):
     st, body = _get(base, "/static/minutes.html")
     assert st == 200
     assert b"/api/meeting/list" in body
+
+
+# ------------------------------------------------- 编制预览端点（S33）
+
+def _post_err(base, path, obj):
+    """POST 并返回 (status, body_dict) —— 4xx 不抛，便于断言错误码与错误体。"""
+    req = urllib.request.Request(base + path, data=json.dumps(obj).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status, json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read().decode("utf-8"))
+
+
+def _org_sha():
+    import hashlib
+    return hashlib.sha256((_PLATFORM / "registry" / "org.json").read_bytes()).hexdigest()
+
+
+_ORG_PRE = dict(dept="dev", agent_id="DEV9", cn_name="蒋琬", role_profile="日志工程师",
+                duty="负责全链路运行日志治理与异常归因，维护日志规范与轮转策略",
+                binding="ollama/qwen3.5:9b", grade="E2",
+                ticket="WO-ORG-PREVIEW", signed_by="（预览·待老田签字）")
+
+
+def test_preview_enroll_ok_and_no_write(server):
+    before = _org_sha()
+    env = _post(server, "/api/org/preview-enroll", _ORG_PRE)
+    assert env["ok"] is True
+    pl = env["plan"]
+    assert pl["agent"]["agent_id"] == "DEV9"
+    assert pl["cn_name"] == "蒋琬"
+    assert pl["dept_name"]
+    assert "未写入任何字节" in env["note"]
+    assert _org_sha() == before, "预览端点绝不能写真实 org.json"
+
+
+def test_preview_enroll_duplicate_name_rejected(server):
+    before = _org_sha()
+    st, env = _post_err(server, "/api/org/preview-enroll", dict(_ORG_PRE, cn_name="田丰"))
+    assert st == 400 and env["ok"] is False and env["error"] == "enroll_invalid"
+    assert "重名" in env["detail"]
+    assert _org_sha() == before
+
+
+def test_preview_enroll_bad_binding_rejected(server):
+    st, env = _post_err(server, "/api/org/preview-enroll", dict(_ORG_PRE, binding="gpt-9/x"))
+    assert st == 400 and "词表" in env["detail"]
+
+
+def test_preview_enroll_short_duty_rejected(server):
+    st, env = _post_err(server, "/api/org/preview-enroll", dict(_ORG_PRE, duty="干活"))
+    assert st == 400 and "duty" in env["detail"]
+
+
+def test_preview_enroll_unknown_dept_rejected(server):
+    st, env = _post_err(server, "/api/org/preview-enroll", dict(_ORG_PRE, dept="nowhere"))
+    assert st == 400 and "unknown dept" in env["detail"]
+
+
+def test_preview_enroll_bad_body(server):
+    for bad in ({}, {"dept": "dev"}):
+        st, _ = _post_err(server, "/api/org/preview-enroll", bad)
+        assert st == 400, bad

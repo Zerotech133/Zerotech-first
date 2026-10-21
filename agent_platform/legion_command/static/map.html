@@ -83,15 +83,15 @@
 <div class="modal-mask" id="recruitMask">
   <div class="modal">
     <h3 id="recTitle">招募新 Agent</h3>
-    <div class="fitem"><label>岗位名（中文名）</label><input id="rName" placeholder="例：徐庶"></div>
+    <div class="fitem"><label>席位代号（大写，全局唯一）</label><input id="rId" placeholder="例：DEV9"></div>
+    <div class="fitem"><label>岗位名（中文名，不得重名）</label><input id="rName" placeholder="例：徐庶"></div>
     <div class="fitem"><label>干什么（职责一句话）</label><input id="rDuty" placeholder="例：舆情异动哨——盯雪球增量帖情感突变"></div>
     <div class="fitem"><label>模型档位</label>
       <select id="rModel">
-        <option>ollama/qwen3.5:9b（主力数据岗）</option>
-        <option>ollama/qwen3.6:35b-a3b（判读重档）</option>
-        <option>glm/glm-5.3（云端参谋档）</option>
-        <option>openai/gpt-6.0（异族档·需key）</option>
-        <option>DeepSeek（未来档·预留）</option>
+        <option value="ollama/qwen3.5:9b">ollama/qwen3.5:9b（主力数据岗）</option>
+        <option value="ollama/qwen3.6:35b-a3b">ollama/qwen3.6:35b-a3b（判读重档）</option>
+        <option value="glm/glm-5.3">glm/glm-5.3（云端参谋档）</option>
+        <option value="openai/gpt-6.0">openai/gpt-6.0（异族档·需key）</option>
       </select>
     </div>
     <div class="fitem"><label>隶属营</label><input id="rDept" readonly></div>
@@ -183,28 +183,51 @@ function openRecruit(dept, isChief) {
   document.getElementById('rDept').value = dept;
   document.getElementById('recTitle').textContent = isChief ? '任命主官 · ' + dept : '招募新 Agent · ' + dept;
   document.getElementById('recTip').style.display = 'none';
+  ['rId', 'rName', 'rDuty', 'rWhy'].forEach(k => { const el = document.getElementById(k); if (el) el.value = ''; });
   document.getElementById('recruitMask').classList.add('open');
 }
 function closeRecruit() { document.getElementById('recruitMask').classList.remove('open'); }
 function submitRecruit() {
-  const name = document.getElementById('rName').value.trim() || '（待填）';
-  const duty = document.getElementById('rDuty').value.trim() || '（待填）';
+  const aid = document.getElementById('rId').value.trim();
+  const name = document.getElementById('rName').value.trim();
+  const duty = document.getElementById('rDuty').value.trim();
   const model = document.getElementById('rModel').value;
   const dept = document.getElementById('rDept').value;
   const why = document.getElementById('rWhy').value.trim();
-  fetch('/api/dispatch', { method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ type:'work', title:'编制申请：' + dept + ' · ' + name,
-      attendees: [], note: '职责：' + duty + '；模型：' + model + '；理由：' + why }) })
+  const tip = document.getElementById('recTip');
+  tip.style.display = 'block';
+  tip.innerHTML = '<span style="color:#8FA8C0">正在做编制校验（只读，不写任何真源）…</span>';
+
+  // 第一步：只读校验预览 —— 重名/编号占用/职责过短/绑定越界都会在这里被拒
+  fetch('/api/org/preview-enroll', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ dept: dept, agent_id: aid, cn_name: name, role_profile: duty.slice(0, 20) || '（待定）',
+      duty: duty + (why ? '；设立理由：' + why : ''), binding: model, grade: 'E2',
+      ticket: 'WO-ORG-PREVIEW', signed_by: '（预览·待老田签字）' }) })
   .then(r => r.json()).then(env => {
-    const tip = document.getElementById('recTip');
-    tip.style.display = 'block';
-    tip.innerHTML = env.ok
-      ? '编制工单已投递军团门面：<b>' + (env.data.id || '') + '</b><br>流转：田丰登记去重 → 老田放行 → 建 hr 档案 + org 入编 → 沙盘自动落位。'
-      : '投递失败：' + ((env.error && env.error.message) || '未知');
-  }).catch(() => {
-    const tip = document.getElementById('recTip');
-    tip.style.display = 'block'; tip.textContent = '投递失败：服务不可达';
-  });
+    if (!env.ok) {
+      tip.innerHTML = '<b style="color:#E24B4A">校验未通过</b><br>' + esc(env.detail || env.error || '未知') +
+        '<br><span style="color:#5A7190">未投递任何工单，真源未被改动。</span>';
+      return;
+    }
+    const pl = env.plan;
+    // 第二步：校验通过才投编制工单
+    fetch('/api/dispatch', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'work', title:'编制申请：' + dept + ' · ' + name + '（' + aid + '）',
+        attendees: [], note: '职责：' + duty + '；模型：' + model + '；理由：' + why }) })
+    .then(r => r.json()).then(d => {
+      tip.innerHTML =
+        '<b style="color:#4FD1A5">校验通过（未写入任何字节）</b><br>' +
+        '将建立：<b>' + esc(pl.cn_name) + '</b>（' + esc(pl.agent.agent_id) + '）→ ' + esc(pl.dept_name) +
+        '<br>职责：' + esc(pl.agent.charter_detail.slice(0, 60)) +
+        '<br>绑定：' + esc(pl.agent.llm_binding) + ' · 档级 ' + esc(pl.agent.grade) +
+        '<br>工单：' + (d.ok ? '<b>' + esc((d.data && d.data.id) || '') + '</b> 已投门面' : '<span style="color:#E24B4A">投递失败</span>') +
+        '<br><br><span style="color:#EF9F27">真入编须老田在命令行签字执行：</span>' +
+        '<br><code style="font-size:10px;color:#8FA8C0">python engine/org_enroll.py --dept ' + esc(pl.dept) +
+        ' --id ' + esc(pl.agent.agent_id) + ' --name ' + esc(pl.cn_name) +
+        ' --role ' + esc(pl.agent.role_profile) + ' --ticket &lt;工单&gt; --signed-by 老田 --apply</code>' +
+        '<br><span style="color:#5A7190">组织真源（org.json）不经 HTTP 落地——这是红线，故此处只到计划为止。</span>';
+    }).catch(() => { tip.innerHTML = '校验通过，但工单投递失败：服务不可达'; });
+  }).catch(() => { tip.innerHTML = '校验请求失败：服务不可达'; });
 }
 document.getElementById('recruitMask').addEventListener('click', e => { if (e.target.id === 'recruitMask') closeRecruit(); });
 

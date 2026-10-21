@@ -286,6 +286,40 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"ok": True, "saved": rel,
                              "count": len(rows)})
             return
+        if path == "/api/org/preview-enroll":
+            # 编制预览（只读）：调 engine.org_enroll.build_plan 校验并返回计划，
+            # 一个字节都不写。真写入只能由人在命令行带 --apply + 签字执行——
+            # 组织真源变更不经 HTTP 落地，这是红线。
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                from engine.org_enroll import build_plan
+                plan = build_plan(
+                    _PLATFORM,
+                    dept=str(req.get("dept", "")),
+                    agent_id=str(req.get("agent_id", "")),
+                    cn_name=str(req.get("cn_name", "")),
+                    role_profile=str(req.get("role_profile", "")),
+                    duty=str(req.get("duty", "")),
+                    binding=str(req.get("binding", "")),
+                    grade=str(req.get("grade", "E2")),
+                    ticket=str(req.get("ticket", "")),
+                    signed_by=str(req.get("signed_by", "")))
+            except Exception as e:                       # noqa: BLE001
+                code = getattr(e, "__class__", type(e)).__name__
+                self._send_json({"ok": False, "error": "enroll_invalid",
+                                 "detail": str(e)[:400], "kind": code}, 400)
+                return
+            self._send_json({"ok": True, "plan": plan,
+                             "note": "仅预览：未写入任何字节。真入编须命令行 "
+                                     "--apply 并由老田签字（组织真源不经 HTTP 落地）"})
+            return
         if path != "/api/dispatch":
             self._send_json({"ok": False, "error": "not_found"}, 404)
             return
