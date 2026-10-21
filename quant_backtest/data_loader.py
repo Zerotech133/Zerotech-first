@@ -220,3 +220,33 @@ def latest_dates(market, symbols):
         if s:
             out[sym] = s
     return out
+
+
+def symbol_ranges(market, symbols):
+    """批量查每只标的的库内起止交易日 → {symbol: (min8, max8)}。
+
+    与 latest_dates 的区别：**同时给出头部起点**。增量导出若只看 max，
+    库内后来补灌的更早历史永远导不出来（本地文件头部空洞永不复原）——
+    WO-QT-20261021-092 判例。库内无该标的的键缺省。
+    """
+    if isinstance(symbols, str):
+        symbols = [symbols]
+    if not symbols:
+        return {}
+    sql = ("SELECT symbol, min(trade_date) AS d0, max(trade_date) AS d1 "
+           "FROM v2_bar_daily WHERE market=%s AND symbol = ANY(%s) "
+           "GROUP BY symbol")
+    params = [market, list(symbols)]
+    try:
+        _, rows = _query_direct(sql, params)
+    except Exception:
+        _, rows = _query_docker(sql, params)
+    out = {}
+    for row in rows:
+        if len(row) < 3 or row[1] is None or row[2] is None:
+            continue
+        d0 = str(row[1]).replace("-", "")[:8]
+        d1 = str(row[2]).replace("-", "")[:8]
+        if d0 and d1:
+            out[row[0]] = (d0, d1)
+    return out

@@ -765,7 +765,46 @@ def scan_all():
             print("hfq on: 全市场因子覆盖正常")
     print("scan done: ok=%d new=%d pool=%d" % (n_ok, len(new_rows),
                                                len(_load_pool())))
+    if n_ok == 0 and files:
+        _report_depth_gap(files)
     return new_rows
+
+
+def _parquet_rows(path):
+    """读 parquet 行数（pyarrow 元数据优先，回退 pandas）。失败返回 None。"""
+    try:
+        import pyarrow.parquet as pq
+        return int(pq.ParquetFile(path).metadata.num_rows)
+    except Exception:
+        try:
+            return int(len(pd.read_parquet(path, columns=["close"])))
+        except Exception:
+            return None
+
+
+def _report_depth_gap(files):
+    """全市场 0 只可扫时，显式报「数据深度缺口」，与「今日无信号」区分。
+
+    WO-QT-20261021-094 判例：HK 池恒空的真因是库内港股中位 94 根 <
+    MIN_BARS=120，而扫描器每天正常退出（returncode 0）、池恒 0——
+    返回码绿而产出恒零，属长期假绿，值班极易误读为「策略今日无机会」。
+    此处只在 n_ok==0 时触发（正常日零额外读盘开销），把两类零分开。
+    """
+    ns = []
+    for f in files:
+        n = _parquet_rows(os.path.join(ASHARE, f))
+        if n is not None:
+            ns.append(n)
+    if not ns:
+        print("depth check: 无法读取 parquet 行数，跳过")
+        return
+    ns.sort()
+    med = ns[len(ns) // 2]
+    n_pass = sum(1 for x in ns if x >= MIN_BARS)
+    print("DEPTH GAP [%s]: %d/%d 只低于 MIN_BARS=%d（中位 %d 根，最多 %d 根）"
+          % (_CUR_MKT, len(ns) - n_pass, len(ns), MIN_BARS, med, ns[-1]))
+    print("  -> 本市场处于「数据深度静默期」：ok=0 是**不可扫**，"
+          "不是今日无信号；数据源补齐历史前不得据此判断策略失效")
 
 
 def _pool_dual_write_sqlite(new_rows):

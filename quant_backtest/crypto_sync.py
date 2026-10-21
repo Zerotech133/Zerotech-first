@@ -67,7 +67,27 @@ def sync_pair(fname):
     return len(new)
 
 
+def _enabled():
+    """同步开关（默认 0 = 停用）。
+
+    WO-QT-20261021-094：统一供给层 zhice-db `v2_bar_daily` 已含 CRYPTO
+    37 对（130 根/只，跨度 2026-06-14 起）且自有活水（每日更新到当日），
+    本脚本直连 Binance 属**重复搬运同一批数据**，与 WO-085「量化所有
+    Agent 一律在情报部门读数据、不得另接数据源」冲突 → 默认停用。
+    数据改走 `export_us_hk.py --market CRYPTO` 从统一供给层导出。
+
+    回滚：置环境变量 CRYPTO_SYNC_ENABLED=1 即恢复旧行为，无需改代码。
+    """
+    v = os.environ.get("CRYPTO_SYNC_ENABLED", "0").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
 def main():
+    if not _enabled():
+        print("CRYPTO SYNC DISABLED (WO-QT-20261021-094): "
+              "数据统一走 export_us_hk.py --market CRYPTO（v2_bar_daily）；"
+              "置 CRYPTO_SYNC_ENABLED=1 可回滚")
+        return 0
     fs = sorted(f for f in os.listdir(DIR) if f.endswith(".parquet"))
     total = 0
     for f in fs:

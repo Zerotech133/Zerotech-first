@@ -53,6 +53,26 @@ def _fname(out_dir, symbol):
                       % symbol.replace("/", "_").replace(".", "_"))
 
 
+def _local_meta(fn):
+    """读本地 parquet 的 (行数, 首日8, 末日8)；不存在/读失败 → (0, '', '')。
+
+    WO-QT-20261021-092：原增量只判 old_max<db_max 便从 old_max+1 续拉，
+    **从不看 old_min**——首导时库里只有近端数据的标的，后续库补灌更早
+    历史也永远补不回本地，头部空洞永不复原（实测 45% 美股标的缺一半
+    历史）。故导出前必须读本地起点。"""
+    if not fn.exists():
+        return 0, "", ""
+    try:
+        d = pd.read_parquet(fn, columns=["trade_date"])
+    except Exception:
+        return 0, "", ""
+    if d.empty:
+        return 0, "", ""
+    lo = str(d["trade_date"].min()).replace("-", "")[:8]
+    hi = str(d["trade_date"].max()).replace("-", "")[:8]
+    return len(d), lo, hi
+
+
 def _topup_symbol(market, symbol, fn, db_max):
     """已有 parquet 但落后于库 → 增量拉缺口并与旧文件合并覆盖写。"""
     old = pd.read_parquet(fn)
@@ -80,33 +100,41 @@ def export_market(market, batch=200, force=False):
     out_dir.mkdir(parents=True, exist_ok=True)
     symbols = dl.available_symbols(market)
     print("%s: %d 只标的待导出" % (market, len(symbols)))
-    ok, skip, fail, upd = 0, 0, 0, 0
+    ok, skip, fail, upd, kept = 0, 0, 0, 0, 0
     t0 = time.time()
+    n_redo = 0
     for i in range(0, len(symbols), batch):
         batch_syms = symbols[i:i + batch]
-        # 增量比对：已有文件按每只标的最新交易日与库比对（K229 增量口径）
-        todo, topup = [], []
+        # 增量比对（WO-QT-20261021-092）：**两端**比对库内起止——
+        #   库内起点更早 → 头部空洞 → 整只重导（redo）
+        #   库内终点更新 → 尾部缺口 → 追加增量（topup）
+        #   两端齐 → skip
+        todo, topup, redo = [], [], {}
         if force:
             todo = batch_syms
         else:
             fresh = [s for s in batch_syms
                      if not _fname(out_dir, s).exists()]
-            todo = fresh
+            todo = list(fresh)
             have = [s for s in batch_syms if s not in todo]
             if have:
                 try:
-                    db_max = dl.latest_dates(market, have)
+                    rng = dl.symbol_ranges(market, have)
                 except Exception as e:
-                    print("  latest_dates 失败(本批按过期处理): %s" % str(e)[:80])
-                    db_max = {}
+                    print("  symbol_ranges 失败(本批按过期处理): %s" % str(e)[:80])
+                    rng = {}
                 for s in have:
-                    m = db_max.get(s)
-                    if not m:
+                    rg = rng.get(s)
+                    if not rg:
                         skip += 1          # 库无数据，无从增量
                         continue
-                    try:
-                        topup.append((s, m))
-                    except Exception:
+                    db_min, db_max = rg
+                    n_old, o_min, o_max = _local_meta(_fname(out_dir, s))
+                    if n_old and db_min < o_min:
+                        redo[s] = n_old    # 头部空洞：整只重导
+                    elif db_max > o_max:
+                        topup.append((s, db_max))
+                    else:
                         skip += 1
         for s, m in topup:
             try:
@@ -118,13 +146,14 @@ def export_market(market, batch=200, force=False):
             except Exception as e:
                 print("  %s 增量失败: %s" % (s, e))
                 fail += 1
-        if not todo:
+        if not todo and not redo:
             continue
+        load_syms = list(todo) + list(redo)
         try:
-            frames = dl.load_bars(market, todo)
+            frames = dl.load_bars(market, load_syms)
         except Exception as e:
-            print("  batch %d-%d 失败: %s" % (i, i + len(todo), e))
-            fail += len(todo)
+            print("  batch %d-%d 失败: %s" % (i, i + len(load_syms), e))
+            fail += len(load_syms)
             continue
         for s, df in frames.items():
             if df is None or df.empty:
@@ -132,16 +161,28 @@ def export_market(market, batch=200, force=False):
                 continue
             try:
                 out = _align_schema(df, s, market)
+                # 保护：重导反而变少（库内残片/回档）→ 保留旧文件不覆盖
+                old_n = redo.get(s)
+                if old_n is not None and len(out) < old_n:
+                    print("  %s 重导行数反而减少 %d<%d，保留旧文件"
+                          % (s, len(out), old_n))
+                    kept += 1
+                    continue
                 out.to_parquet(_fname(out_dir, s), index=False)
                 ok += 1
+                if s in redo:
+                    n_redo += 1
             except Exception as e:
                 print("  %s 写盘失败: %s" % (s, e))
                 fail += 1
         if (i // batch) % 10 == 0:
-            print("  进度 %d/%d，new=%d upd=%d skip=%d fail=%d"
-                  % (i, len(symbols), ok, upd, skip, fail))
-    print("%s 完成: new=%d upd=%d skip=%d fail=%d 耗时 %.1fs"
-          % (market, ok, upd, skip, fail, time.time() - t0))
+            print("  进度 %d/%d，new=%d redo=%d upd=%d skip=%d fail=%d kept=%d"
+                  % (i, len(symbols), ok - n_redo, n_redo, upd, skip, fail, kept))
+    print("%s 完成: new=%d redo=%d upd=%d skip=%d fail=%d kept=%d 耗时 %.1fs"
+          % (market, ok - n_redo, n_redo, upd, skip, fail, kept,
+             time.time() - t0))
+    return {"market": market, "new": ok - n_redo, "redo": n_redo,
+            "upd": upd, "skip": skip, "fail": fail, "kept": kept}
 
 
 def write_active(market, window_days=10):
