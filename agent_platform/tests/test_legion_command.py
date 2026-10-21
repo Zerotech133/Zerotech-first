@@ -140,3 +140,132 @@ def test_http_dispatch_bad_type(server, store):
         raised = e.code == 400
     assert raised
     assert not list((store / "inbox").glob("*.json"))
+
+
+# ---------------------------------------------------------------- 会议室真模型通道
+
+def test_http_chat_live_ok(server, monkeypatch):
+    from gateway import llm_gateway
+
+    class Stub:
+        def chat(self, system, user, model=None):
+            return "结论：先修心跳。", "normal"
+
+    captured = {}
+
+    def fake_chat(binding=None, system="", user=""):
+        captured["binding"] = binding
+        captured["user"] = user
+        return llm_gateway.make_envelope(kind="llm_chat", ok=True,
+                                         data={"text": "结论：先修心跳。", "status": "normal"})
+
+    monkeypatch.setattr(llm_gateway, "chat", fake_chat)
+    env = _post(server, "/api/chat",
+                {"agent": "A0", "system": "你是田丰", "user": "今日优先级？"})
+    assert env["ok"] is True
+    assert env["agent"] == "A0"
+    assert env["binding"] == "glm/glm-5.3"
+    assert captured["binding"] == "glm/glm-5.3"
+    assert "今日优先级" in captured["user"]
+
+
+def test_http_chat_degraded_and_failure_passthrough(server, monkeypatch):
+    from gateway import llm_gateway
+
+    def degraded(binding=None, system="", user=""):
+        return llm_gateway.make_envelope(kind="llm_chat", ok=True, degraded=True,
+                                         data={"text": "本地兜底", "status": "degraded"})
+
+    monkeypatch.setattr(llm_gateway, "chat", degraded)
+    env = _post(server, "/api/chat", {"agent": "R2", "system": "s", "user": "u"})
+    assert env["ok"] is True and env["degraded"] is True
+    assert env["binding"] == "ollama/qwen3.5:9b"
+
+    def dead(binding=None, system="", user=""):
+        return llm_gateway.make_envelope(kind="llm_chat", ok=False,
+                                         error={"code": "llm_error", "message": "key missing"})
+
+    monkeypatch.setattr(llm_gateway, "chat", dead)
+    env2 = _post(server, "/api/chat", {"agent": "AI1", "system": "s", "user": "u"})
+    assert env2["ok"] is False and env2["binding"] == "openai/gpt-6.0"
+
+
+def test_http_chat_bad_agent(server):
+    try:
+        _post(server, "/api/chat", {"agent": "../etc", "system": "", "user": "x"})
+        raised = False
+    except urllib.error.HTTPError as e:
+        raised = e.code == 400
+    assert raised
+
+
+def test_http_chat_unknown_agent_default_binding(server, monkeypatch):
+    from gateway import llm_gateway
+    seen = {}
+
+    def fake(binding=None, system="", user=""):
+        seen["b"] = binding
+        return llm_gateway.make_envelope(kind="llm_chat", ok=True,
+                                         data={"text": "t", "status": "normal"})
+
+    monkeypatch.setattr(llm_gateway, "chat", fake)
+    env = _post(server, "/api/chat", {"agent": "DEV7", "system": "", "user": "u"})
+    assert env["ok"] is True
+    assert seen["b"] == "ollama/qwen3.5:9b"
+
+
+def test_http_chat_glm_quota_fallback_to_local(server, monkeypatch):
+    """glm 限额/故障 → 会议通道显式降级本地 9b（degraded + fallback 原因，不静默）。"""
+    from gateway import llm_gateway
+    calls = []
+
+    def fake(binding=None, system="", user=""):
+        calls.append(binding)
+        if binding.startswith("glm/"):
+            return llm_gateway.make_envelope(kind="llm_chat", ok=False,
+                                             error={"code": "llm_error",
+                                                    "message": "HTTP 429 限额"})
+        return llm_gateway.make_envelope(kind="llm_chat", ok=True,
+                                         data={"text": "本地兜底答复",
+                                               "status": "normal",
+                                               "binding_resolved": binding})
+
+    monkeypatch.setattr(llm_gateway, "chat", fake)
+    env = _post(server, "/api/chat", {"agent": "A0", "system": "s", "user": "u"})
+    assert env["ok"] is True
+    assert env["degraded"] is True
+    assert env["fallback_from"] == "glm/glm-5.3"
+    assert "429" in env["fallback_reason"]
+    assert env["binding"] == "ollama/qwen3.5:9b"
+    assert calls == ["glm/glm-5.3", "ollama/qwen3.5:9b"]
+
+
+def test_http_chat_local_failure_no_fallback(server, monkeypatch):
+    """本地档失败不伪造降级（fail-visible 原样透传）。"""
+    from gateway import llm_gateway
+
+    def fake(binding=None, system="", user=""):
+        return llm_gateway.make_envelope(kind="llm_chat", ok=False,
+                                         error={"code": "llm_error", "message": "重试耗尽"})
+
+    monkeypatch.setattr(llm_gateway, "chat", fake)
+    env = _post(server, "/api/chat", {"agent": "R2", "system": "s", "user": "u"})
+    assert env["ok"] is False
+    assert env["error"]["code"] == "llm_error"
+
+
+def test_http_chat_openai_channel_not_ready(server, monkeypatch):
+    """openai 绑定未接 → 明确 channel_not_ready，不打 Ollama 兜底（避免误导 404）。"""
+    from gateway import llm_gateway
+    calls = []
+
+    def fake(binding=None, system="", user=""):
+        calls.append(binding)
+        return llm_gateway.make_envelope(kind="llm_chat", ok=True, data={"text": "x"})
+
+    monkeypatch.setattr(llm_gateway, "chat", fake)
+    env = _post(server, "/api/chat", {"agent": "AI1", "system": "s", "user": "u"})
+    assert env["ok"] is False
+    assert env["error"]["code"] == "channel_not_ready"
+    assert "Q12" in env["error"]["message"]
+    assert calls == []

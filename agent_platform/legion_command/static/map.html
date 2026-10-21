@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>数字军团 · 指挥沙盘（原型 v2）</title>
+<title>数字军团 · 指挥沙盘</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; padding: 18px; }
+  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; padding: 14px; }
   .wrap { max-width: 1380px; margin: 0 auto; }
   .hdr { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
   .hdr-l { display: flex; align-items: center; gap: 10px; }
@@ -16,281 +16,74 @@
   .legend { display: flex; gap: 12px; font-size: 11px; color: #8FA8C0; flex-wrap: wrap; }
   .lg { display: flex; align-items: center; gap: 5px; }
   .lamp { width: 8px; height: 8px; border-radius: 50%; }
-  .l-run { background: #4FD1A5; } .l-wait { background: #EF9F27; } .l-cyc { background: #4FA3E8; } .l-idle { background: #5A7190; } .l-bad { background: #E24B4A; }
-  .statbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 14px; }
-  .stat { background: #0F2440; border-radius: 10px; padding: 10px 14px; border: 0.5px solid #1E3A5F; }
-  .stat-n { font-size: 22px; font-weight: 500; color: #4FD1A5; }
+  .l-cloud { background: #EF9F27; } .l-local { background: #4FD1A5; } .l-none { background: #5A7190; }
+  .statbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat { background: #0F2440; border-radius: 10px; padding: 9px 13px; border: 0.5px solid #1E3A5F; }
+  .stat-n { font-size: 21px; font-weight: 500; color: #4FD1A5; }
   .stat-n.amber { color: #EF9F27; }
-  .stat-t { font-size: 11px; color: #8FA8C0; margin-top: 2px; }
-
-  .camp { background: #0A1A2F; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 14px 16px; margin-bottom: 14px; }
-  .camp-h { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-  .flag { width: 22px; height: 30px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; }
+  .stat-t { font-size: 10.5px; color: #8FA8C0; margin-top: 1px; }
+  .camp { background: #0A1A2F; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 13px 15px; margin-bottom: 12px; }
+  .camp-h { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; flex-wrap: wrap; }
+  .flag { width: 22px; height: 28px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex: none; }
   .camp-t { font-size: 14px; font-weight: 500; }
-  .camp-s { font-size: 11.5px; color: #8FA8C0; }
-
-  .central { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-  .seat-big { background: #0F2440; border-radius: 12px; padding: 12px 14px; border: 0.5px solid #1E3A5F; cursor: pointer; transition: border-color .15s; }
-  .seat-big:hover { border-color: #4FD1A5; }
-  .seat-big .row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .seat-n { font-size: 14px; font-weight: 500; }
-  .seat-m { font-size: 10.5px; color: #4FD1A5; border: 0.5px solid #1D9E75; border-radius: 5px; padding: 1px 6px; }
-  .seat-m.amber { color: #EF9F27; border-color: #854F0B; }
-  .seat-d { font-size: 11.5px; color: #8FA8C0; line-height: 1.6; }
-  .grade { font-size: 10px; color: #0A1A2F; background: #4FD1A5; border-radius: 4px; padding: 0 5px; margin-left: 6px; font-weight: 500; }
-  .grade.e2 { background: #4FA3E8; } .grade.e1 { background: #8FA8C0; }
-
-  .dept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
-  .dept { background: #0F2440; border-radius: 12px; padding: 12px 14px; border: 0.5px solid #1E3A5F; }
-  .dept-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
-  .dept-n { font-size: 13px; font-weight: 500; }
-  .dept-lead { font-size: 11px; color: #8FA8C0; }
+  .camp-s { font-size: 11px; color: #8FA8C0; }
+  .dept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 10px; }
+  .dept { background: #0F2440; border-radius: 12px; padding: 11px 13px; border: 0.5px solid #1E3A5F; }
+  .dept-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 6px; }
+  .dept-n { font-size: 12.5px; font-weight: 500; }
+  .dept-lead { font-size: 10.5px; color: #8FA8C0; text-align: right; }
   .dept-lead b { color: #E8F0F8; font-weight: 500; }
-  .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 6px; }
-  .seat { background: #0A1A2F; border-radius: 8px; padding: 7px 8px; cursor: pointer; transition: background .15s; position: relative; }
+  .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+  .seat { background: #0A1A2F; border-radius: 8px; padding: 7px 8px; cursor: pointer; transition: background .15s; }
   .seat:hover { background: #12294A; }
-  .seat .aid { font-size: 10.5px; color: #8FA8C0; }
-  .seat .cn { font-size: 12px; margin-top: 1px; display: flex; align-items: center; gap: 4px; }
-  .seat .slamp { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .seat.vac { border: 0.5px dashed #5A7190; background: transparent; display: flex; align-items: center; justify-content: center; min-height: 46px; color: #5A7190; font-size: 11px; cursor: pointer; }
+  .seat .aid { font-size: 10px; color: #8FA8C0; }
+  .seat .cn { font-size: 11.5px; margin-top: 1px; display: flex; align-items: center; gap: 4px; }
+  .slamp { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .seat.vac { border: 0.5px dashed #5A7190; background: transparent; display: flex; align-items: center; justify-content: center; min-height: 44px; color: #5A7190; font-size: 11px; }
   .seat.vac:hover { border-color: #EF9F27; color: #EF9F27; }
-  .more { font-size: 11px; color: #5A7190; padding: 7px 4px; }
-
-  .unattached { border-color: #854F0B; }
-  .drawer { position: fixed; top: 0; right: -420px; width: 400px; max-width: 92vw; height: 100vh; background: #0F2440; border-left: 0.5px solid #1E3A5F; padding: 20px; overflow-y: auto; transition: right .25s; z-index: 50; }
+  .drawer { position: fixed; top: 0; right: -400px; width: 380px; max-width: 92vw; height: 100vh; background: #0F2440; border-left: 0.5px solid #1E3A5F; padding: 20px; overflow-y: auto; transition: right .25s; z-index: 50; }
   .drawer.open { right: 0; }
   .drawer h3 { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
   .drawer .x { position: absolute; top: 14px; right: 16px; cursor: pointer; color: #8FA8C0; font-size: 18px; background: none; border: none; }
   .kv { display: flex; gap: 10px; font-size: 12.5px; margin: 7px 0; }
-  .kv .k { width: 72px; color: #8FA8C0; flex: none; }
-  .panel { background: #0A1A2F; border-radius: 10px; padding: 12px 14px; margin-top: 10px; font-size: 12.5px; color: #C7D6E8; line-height: 1.7; }
+  .kv .k { width: 70px; color: #8FA8C0; flex: none; }
+  .panel { background: #0A1A2F; border-radius: 10px; padding: 11px 13px; margin-top: 10px; font-size: 12px; color: #C7D6E8; line-height: 1.7; }
   .modal-mask { position: fixed; inset: 0; background: rgba(4,10,20,.72); display: none; align-items: center; justify-content: center; z-index: 60; }
   .modal-mask.open { display: flex; }
-  .modal { width: 460px; max-width: 94vw; background: #0F2440; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 20px; }
+  .modal { width: 440px; max-width: 94vw; background: #0F2440; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 18px; }
   .modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 12px; }
-  .fitem { margin-bottom: 10px; }
-  .fitem label { display: block; font-size: 11.5px; color: #8FA8C0; margin-bottom: 4px; }
-  .fitem input, .fitem select, .fitem textarea { width: 100%; background: #0A1A2F; border: 0.5px solid #1E3A5F; border-radius: 8px; color: #E8F0F8; font-size: 13px; padding: 8px 10px; font-family: inherit; }
-  .btnrow { display: flex; gap: 10px; margin-top: 14px; }
+  .fitem { margin-bottom: 9px; }
+  .fitem label { display: block; font-size: 11px; color: #8FA8C0; margin-bottom: 4px; }
+  .fitem input, .fitem select, .fitem textarea { width: 100%; background: #0A1A2F; border: 0.5px solid #1E3A5F; border-radius: 8px; color: #E8F0F8; font-size: 12.5px; padding: 8px 10px; font-family: inherit; }
+  .btnrow { display: flex; gap: 10px; margin-top: 12px; }
   .btn { flex: 1; border-radius: 8px; border: 0.5px solid #1D9E75; background: none; color: #4FD1A5; font-size: 13px; padding: 9px; cursor: pointer; font-family: inherit; }
   .btn.ghost { border-color: #5A7190; color: #8FA8C0; }
-  .btn:hover { background: #0A1A2F; }
-  .ok-tip { color: #4FD1A5; font-size: 12px; margin-top: 10px; display: none; line-height: 1.7; }
-  .ft { border-top: 0.5px solid #1E3A5F; margin-top: 4px; padding-top: 10px; display: flex; justify-content: space-between; font-size: 11px; color: #5A7190; flex-wrap: wrap; gap: 6px; }
+  .ok-tip { color: #4FD1A5; font-size: 11.5px; margin-top: 10px; display: none; line-height: 1.7; }
+  .ft { border-top: 0.5px solid #1E3A5F; margin-top: 4px; padding-top: 9px; display: flex; justify-content: space-between; font-size: 11px; color: #5A7190; flex-wrap: wrap; gap: 6px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="hdr">
-    <div class="hdr-l"><div class="dot"></div><h1>数字军团 · 指挥沙盘</h1><span class="sub">2026-10-21 13:08 快照 · 数据源 org.json / hr / tasks.json 实测</span></div>
+    <div class="hdr-l"><div class="dot"></div><h1>数字军团 · 指挥沙盘</h1><span class="sub" id="ts">拉取快照…</span></div>
     <div class="legend">
-      <span class="lg"><span class="lamp l-run"></span>在岗执行</span>
-      <span class="lg"><span class="lamp l-cyc"></span>周期任务</span>
-      <span class="lg"><span class="lamp l-wait"></span>待批/待资源</span>
-      <span class="lg"><span class="lamp l-idle"></span>待命</span>
-      <span class="lg"><span class="lamp l-bad"></span>故障挂账</span>
+      <span class="lg"><span class="lamp l-local"></span>本地模型</span>
+      <span class="lg"><span class="lamp l-cloud"></span>云端模型</span>
+      <span class="lg"><span class="lamp l-none"></span>未绑定</span>
       <span class="lg" style="color:#5A7190">▭ 虚位可募</span>
     </div>
   </div>
-
-  <div class="statbar">
-    <div class="stat"><div class="stat-n">16</div><div class="stat-t">营（部门）在编</div></div>
-    <div class="stat"><div class="stat-n">48+4</div><div class="stat-t">在编 agent + 编外待安置</div></div>
-    <div class="stat"><div class="stat-n">13</div><div class="stat-t">在途工单</div></div>
-    <div class="stat"><div class="stat-n">13</div><div class="stat-t">今日晨会已出</div></div>
-    <div class="stat"><div class="stat-n amber">2</div><div class="stat-t">主官空位（🅰🅱行营）</div></div>
-    <div class="stat"><div class="stat-n">21</div><div class="stat-t">调度任务实挂运行</div></div>
-  </div>
-
-  <div class="camp">
-    <div class="camp-h"><div class="flag" style="background:#534AB7;color:#EEEDFE">帅</div><span class="camp-t">中军帐 · 老田（董事长 · 唯一签准人 approval_gate）</span><span class="camp-s">三常任管理席（异族编制 · 10-51 裁决：不同模板硬隔离）</span></div>
-    <div class="central">
-      <div class="seat-big" onclick="showSeat('A0')">
-        <div class="row1"><span class="seat-n">田丰 A0<span class="grade e2">E3</span></span><span class="seat-m">智谱 glm-5.3</span></div>
-        <div class="seat-d">执行相 · 工单归口/验收/派工<br>状态：<span style="color:#4FD1A5">在岗</span> · 在途 13 单验收中</div>
-      </div>
-      <div class="seat-big" onclick="showSeat('AI1')">
-        <div class="row1"><span class="seat-n">诸葛亮 AI1<span class="grade e2">E3</span></span><span class="seat-m amber">GPT6.0 待Key</span></div>
-        <div class="seat-d">反向军师 · 零执行权 · 质询/抗辩/出题<br>状态：<span style="color:#EF9F27">待命 · Q12 key 注入即通</span></div>
-      </div>
-      <div class="seat-big" onclick="showSeat('R2')">
-        <div class="row1"><span class="seat-n">赵云 R2<span class="grade e2">E2</span></span><span class="seat-m">本地9b → DeepSeek</span></div>
-        <div class="seat-d">进化官 · 探试裁记 + 监督整改<br>状态：<span style="color:#4FD1A5">在岗</span> · 经验库五域 0 条目（Z2-Z5 待单）</div>
-      </div>
-      <div class="seat-big" onclick="showSeat('OPT1')">
-        <div class="row1"><span class="seat-n">枣祗 OPT1<span class="grade e2">E3</span></span><span class="seat-m">glm 云端</span></div>
-        <div class="seat-d">工作流进化官 · 汇报聚合与工单去重<br>状态：<span style="color:#4FD1A5">在岗</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="camp">
-    <div class="camp-h"><div class="flag" style="background:#993C1D;color:#FAECE7">前</div><span class="camp-t">前军 · 作战线</span><span class="camp-s">量化作战主力 · 盘前扫描 09:30 / 影子链 17:10 在跑</span></div>
-    <div class="dept-grid">
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">量化交易部</span><span class="dept-lead">主官 <b>鲁肃 D1</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('D1')"><div class="aid">D1 · E2</div><div class="cn"><span class="slamp l-run"></span>鲁肃</div></div>
-          <div class="seat" onclick="showSeat('ST1')"><div class="aid">ST1 · E3</div><div class="cn"><span class="slamp l-idle"></span>待授名</div></div>
-          <div class="seat" onclick="showSeat('QS1')"><div class="aid">QS1 · E2</div><div class="cn"><span class="slamp l-idle"></span>司马懿*</div></div>
-          <div class="seat" onclick="showSeat('WA1')"><div class="aid">WA1 · E2</div><div class="cn"><span class="slamp l-idle"></span>—</div></div>
-          <div class="seat vac" onclick="openRecruit('量化交易部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">交易部</span><span class="dept-lead">主官 <b>周瑜</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('trad')"><div class="aid">T·E2</div><div class="cn"><span class="slamp l-cyc"></span>周瑜</div></div>
-          <div class="seat vac" onclick="openRecruit('交易部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">风控部</span><span class="dept-lead">主官 <b>陆逊</b> · 盯盘营许褚辖张郃</span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('R1')"><div class="aid">R1 · E2</div><div class="cn"><span class="slamp l-run"></span>甘宁</div></div>
-          <div class="seat" onclick="showSeat('R2b')"><div class="aid">R2 · E2</div><div class="cn"><span class="slamp l-cyc"></span>赵云*</div></div>
-          <div class="seat" onclick="showSeat('R3')"><div class="aid">R3 · E2</div><div class="cn"><span class="slamp l-run"></span>陆逊*</div></div>
-          <div class="seat" onclick="showSeat('BACK1')"><div class="aid">BACK1</div><div class="cn"><span class="slamp l-idle"></span>—</div></div>
-          <div class="seat vac" onclick="openRecruit('风控部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">研究院</span><span class="dept-lead">主官 <b>司马徽</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('ACAD1')"><div class="aid">ACAD1</div><div class="cn"><span class="slamp l-run"></span>司马徽</div></div>
-          <div class="seat" onclick="showSeat('ARCH1')"><div class="aid">ARCH1 · E3</div><div class="cn"><span class="slamp l-run"></span>架构师</div></div>
-          <div class="seat vac" onclick="openRecruit('研究院')">＋ 虚席</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="camp">
-    <div class="camp-h"><div class="flag" style="background:#185FA5;color:#E6F1FB">左</div><span class="camp-t">左军 · 研发线</span><span class="camp-s">工单制 · 无单不写码 · 全部 9b 数据岗档</span></div>
-    <div class="dept-grid">
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">研发部（11 员 · 最大编制）</span><span class="dept-lead">主官 <b>曹操</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('DEV1')"><div class="aid">DEV1</div><div class="cn"><span class="slamp l-run"></span>曹操</div></div>
-          <div class="seat" onclick="showSeat('DEV2')"><div class="aid">DEV2</div><div class="cn"><span class="slamp l-cyc"></span>蒸馏席</div></div>
-          <div class="seat" onclick="showSeat('DEV4')"><div class="aid">DEV4</div><div class="cn"><span class="slamp l-run"></span>满宠*</div></div>
-          <div class="seat" onclick="showSeat('devmore')"><div class="aid" style="color:#5A7190">DEV3/5-8</div><div class="more">…共 11 员</div></div>
-          <div class="seat vac" onclick="openRecruit('研发部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">质量部</span><span class="dept-lead">主官 <b>于禁</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('SEC2')"><div class="aid">SEC2 · E3</div><div class="cn"><span class="slamp l-run"></span>安全审计</div></div>
-          <div class="seat vac" onclick="openRecruit('质量部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">数据部</span><span class="dept-lead">主官 <b>张松</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('DATA1')"><div class="aid">DATA1</div><div class="cn"><span class="slamp l-run"></span>张松</div></div>
-          <div class="seat vac" onclick="openRecruit('数据部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">产品部</span><span class="dept-lead">主官 <b>吕蒙</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('prod')"><div class="aid">P·E2</div><div class="cn"><span class="slamp l-run"></span>吕蒙</div></div>
-          <div class="seat vac" onclick="openRecruit('产品部')">＋ 虚席</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="camp">
-    <div class="camp-h"><div class="flag" style="background:#1D9E75;color:#E1F5EE">右</div><span class="camp-t">右军 · 支撑线</span><span class="camp-s">运行体引擎日更在跑 · 情报工厂 6 单在途（最忙战线）</span></div>
-    <div class="dept-grid">
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">运行体部</span><span class="dept-lead">主官 <b>董允 A0A</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('A0A')"><div class="aid">A0A · E2</div><div class="cn"><span class="slamp l-cyc"></span>董允</div></div>
-          <div class="seat" onclick="showSeat('HERMES_UI')"><div class="aid">HERMES_UI</div><div class="cn"><span class="slamp l-run"></span>邓芝桥</div></div>
-          <div class="seat vac" onclick="openRecruit('运行体部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">情报部（6 单在途 · 最忙）</span><span class="dept-lead">主官 <b>INTEL0（中文名待授）</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('INTEL0')"><div class="aid">INTEL0</div><div class="cn"><span class="slamp l-run"></span>主官</div></div>
-          <div class="seat" onclick="showSeat('INTEL1')"><div class="aid">INTEL1</div><div class="cn"><span class="slamp l-run"></span>情报员</div></div>
-          <div class="seat" onclick="showSeat('JEV')"><div class="aid" style="color:#5A7190">JEV×3</div><div class="more">判读/排队/复核</div></div>
-          <div class="seat" onclick="showSeat('LARK')"><div class="aid">LARK_CARDS</div><div class="cn"><span class="slamp l-run"></span>飞书卡</div></div>
-          <div class="seat vac" onclick="openRecruit('情报部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">市场部</span><span class="dept-lead">主官 <b>简雍</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('COMM1')"><div class="aid">COMM1</div><div class="cn"><span class="slamp l-run"></span>简雍</div></div>
-          <div class="seat vac" onclick="openRecruit('市场部')">＋ 虚席</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">法务部</span><span class="dept-lead">主官 <b>诸葛瑾 LEG1</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('LEG1')"><div class="aid">LEG1 · E3</div><div class="cn"><span class="slamp l-run"></span>诸葛瑾</div></div>
-          <div class="seat vac" onclick="openRecruit('法务部')">＋ 虚席</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="camp">
-    <div class="camp-h"><div class="flag" style="background:#BA7517;color:#FAEEDA">后</div><span class="camp-t">后军 · 专项行营</span><span class="camp-s">跨部兼任 · 🅰🅱 主官空悬待任命</span></div>
-    <div class="dept-grid">
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">🅰 回测行营</span><span class="dept-lead amber" style="color:#EF9F27">主官 <b style="color:#EF9F27">空悬</b></span></div>
-        <div class="seats">
-          <div class="seat vac" onclick="openRecruit('🅰 回测行营（主官位）', true)">＋ 任命主官</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">🅱 数据行营</span><span class="dept-lead" style="color:#EF9F27">主官 <b style="color:#EF9F27">空悬</b></span></div>
-        <div class="seats">
-          <div class="seat vac" onclick="openRecruit('🅱 数据行营（主官位）', true)">＋ 任命主官</div>
-        </div>
-      </div>
-      <div class="dept">
-        <div class="dept-h"><span class="dept-n">🅲 设计行营</span><span class="dept-lead">主官 <b>DSGN1/2 双席</b></span></div>
-        <div class="seats">
-          <div class="seat" onclick="showSeat('DSGN1')"><div class="aid">DSGN1</div><div class="cn"><span class="slamp l-run"></span>设计</div></div>
-          <div class="seat" onclick="showSeat('DSGN2')"><div class="aid">DSGN2</div><div class="cn"><span class="slamp l-run"></span>设计</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="camp unattached">
-    <div class="camp-h"><div class="flag" style="background:#854F0B;color:#FAEEDA">编</div><span class="camp-t">编外 · 待安置（量化旧编制，收编或注销二选一）</span><span class="camp-s">在 HR 名册但未挂任何部门</span></div>
-    <div class="seats" style="grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));">
-      <div class="seat" onclick="showSeat('F1')"><div class="aid">F1</div><div class="cn"><span class="slamp l-idle"></span>荀彧</div></div>
-      <div class="seat" onclick="showSeat('N1')"><div class="aid">N1</div><div class="cn"><span class="slamp l-idle"></span>许劭</div></div>
-      <div class="seat" onclick="showSeat('T1')"><div class="aid">T1</div><div class="cn"><span class="slamp l-idle"></span>庞统</div></div>
-      <div class="seat" onclick="showSeat('T2')"><div class="aid">T2</div><div class="cn"><span class="slamp l-idle"></span>司马懿</div></div>
-    </div>
-  </div>
-
-  <div class="ft">
-    <span>指挥沙盘 原型 v2 · 带 * 为重名对（账面易混，治理挂账）· 数据快照非实时</span>
-    <span>点席位看详情 · 点「＋虚席」招募新 Agent（走工单制：田丰登记 → 老田放行）</span>
-  </div>
+  <div class="statbar" id="statbar"></div>
+  <div id="camps"></div>
+  <div class="ft"><span>快照源 /api/snapshot · 只读聚合 org.json+hr+tasks+schedules</span><span>点席位看详情 · 点虚席招募（走工单制）</span></div>
 </div>
 
-<div class="drawer" id="drawer">
-  <button class="x" onclick="closeDrawer()">✕</button>
-  <div id="drawerBody"></div>
-</div>
-
+<div class="drawer" id="drawer"><button class="x" onclick="closeDrawer()">✕</button><div id="drawerBody"></div></div>
 <div class="modal-mask" id="recruitMask">
   <div class="modal">
     <h3 id="recTitle">招募新 Agent</h3>
     <div class="fitem"><label>岗位名（中文名）</label><input id="rName" placeholder="例：徐庶"></div>
-    <div class="fitem"><label>干什么（职责一句话）</label><input id="rDuty" placeholder="例：舆情异动哨——盯雪球增量帖的情感突变"></div>
+    <div class="fitem"><label>干什么（职责一句话）</label><input id="rDuty" placeholder="例：舆情异动哨——盯雪球增量帖情感突变"></div>
     <div class="fitem"><label>模型档位</label>
       <select id="rModel">
         <option>ollama/qwen3.5:9b（主力数据岗）</option>
@@ -302,69 +95,83 @@
     </div>
     <div class="fitem"><label>隶属营</label><input id="rDept" readonly></div>
     <div class="fitem"><label>设立理由（进工单）</label><textarea id="rWhy" rows="3" placeholder="为什么现在需要这个席位？解决什么阻塞？"></textarea></div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="closeRecruit()">取消</button>
-      <button class="btn" onclick="submitRecruit()">生成编制工单</button>
-    </div>
+    <div class="btnrow"><button class="btn ghost" onclick="closeRecruit()">取消</button><button class="btn" onclick="submitRecruit()">生成编制工单</button></div>
     <div class="ok-tip" id="recTip"></div>
   </div>
 </div>
 
 <script>
-const SEATS = {
-  A0: { aid:'A0', cn:'田丰', dept:'中军帐 · 常任管理席', model:'glm/glm-5.3 云端（10-18 拍板）', grade:'E3', status:'在岗执行', doing:'工单归口与验收（在途 13 单）；晨会/复盘/周报三引擎运转；Hermes profile（tianfeng）本体。', note:'执行相：把事办成。只对 Kanban 执行计划负责。' },
-  AI1: { aid:'AI1', cn:'诸葛亮', dept:'中军帐 · 常任管理席', model:'openai/gpt-6.0（OpenClaw 载体 · 待 Q12 key）', grade:'E3', status:'待资源', doing:'OpenClaw zhuge agent 已建档（S20）；SOUL 谋士人格四件套入仓；key 注入后即激活飞书咨询位（L5）。', note:'反向军师：先求败因再论胜机。零执行权。' },
-  R2: { aid:'R2', cn:'赵云', dept:'中军帐 · 进化官（编制在风控部）', model:'ollama/qwen3.5:9b → 未来 DeepSeek', grade:'E2', status:'在岗执行', doing:'经验库五域骨架已建（S19/Z1）；Z2-Z5 待工单（Z5 防穿越断言下一优先）；监督整改线待激活。', note:'进化官：把装置养好。只产出建议与证据，不产出决定。' },
-  OPT1: { aid:'OPT1', cn:'枣祗', dept:'参谋长线', model:'glm/glm-4.6 云端', grade:'E3', status:'在岗执行', doing:'汇报聚合与工单去重；MASS 工作流进化方法论（Sakana 引进）。', note:'流程优化师。' },
-  D1: { aid:'D1', cn:'鲁肃', dept:'前军 · 量化交易部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'盘前 weak 池三线扫描（09:30 周期单在跑）；选股 Agent Sprint A3 跑批中。' },
-  ST1: { aid:'ST1', cn:'待授名', dept:'前军 · 量化交易部', model:'glm/glm-5.3 云端', grade:'E3', status:'待命', doing:'策略研判（E3 判读档）；中文名待老田授名（治理挂账）。' },
-  QS1: { aid:'QS1', cn:'司马懿（重名对①）', dept:'前军 · 量化交易部', model:'绑定未挂（治理挂账）', grade:'E2', status:'待命', doing:'量化席位；与编外 T2 司马懿重名，账面易混。' },
-  WA1: { aid:'WA1', cn:'—', dept:'前军 · 量化交易部', model:'绑定未挂（治理挂账）', grade:'E2', status:'待命', doing:'席位在编待任务。' },
-  R1: { aid:'R1', cn:'甘宁', dept:'前军 · 风控部（盯盘营）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'盯盘三席之一（K-ORG-170 收编）；RiskGuard 前线。' },
-  R2b: { aid:'R2', cn:'赵云（重名位·风控编制）', dept:'前军 · 风控部', model:'ollama/qwen3.5:9b', grade:'E2', status:'周期任务', doing:'编制在风控部，进化官职能借调中军（10-51 异族裁决后主业为进化层）。' },
-  R3: { aid:'R3', cn:'陆逊（重名对②）', dept:'前军 · 风控部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'风控部主官；与 BACK1 陆逊重名。' },
-  BACK1: { aid:'BACK1', cn:'陆逊（重名对②）', dept:'前军 · 风控部', model:'ollama/qwen3.5:9b', grade:'E2', status:'待命', doing:'回测风控席位。' },
-  ACAD1: { aid:'ACAD1', cn:'司马徽', dept:'前军 · 研究院（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'策略研究与知识提炼；缠论学习环在役。' },
-  ARCH1: { aid:'ARCH1', cn:'架构师', dept:'前军 · 研究院', model:'glm/glm-5.3 云端', grade:'E3', status:'在岗执行', doing:'系统架构判读（E3 云端档五席之一）。' },
-  DEV1: { aid:'DEV1', cn:'曹操', dept:'左军 · 研发部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'研发部 11 员统筹；工单制执行。' },
-  DEV2: { aid:'DEV2', cn:'蒸馏席', dept:'左军 · 研发部', model:'ollama/qwen3.6:35b-a3b（唯一 35b 绑定）', grade:'E2', status:'周期任务', doing:'蒸馏/训练/长生成（本地重岗）。' },
-  DEV4: { aid:'DEV4', cn:'满宠（重名对③）', dept:'左军 · 研发部', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'研发执行；与编外 MANCHONG1 满宠重名。' },
-  devmore: { aid:'DEV3/5-8 等', cn:'研发部其余席位', dept:'左军 · 研发部', model:'ollama/qwen3.5:9b ×9', grade:'E2', status:'在岗执行', doing:'共 11 员（军团最大编制）；工单凭单实施。生产版点开逐员展开（hr/ 档案）。' },
-  SEC2: { aid:'SEC2', cn:'安全审计', dept:'左军 · 质量部', model:'glm/glm-5.3 云端', grade:'E3', status:'在岗执行', doing:'工单验收门 + 安全审计。' },
-  DATA1: { aid:'DATA1', cn:'张松', dept:'左军 · 数据部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'数据治理/抓取/入库（数据岗主力档）。' },
-  A0A: { aid:'A0A', cn:'董允', dept:'右军 · 运行体部（主官）', model:'按工单通道（5 通道 _persona）', grade:'E2', status:'周期任务', doing:'每日复盘三问 17:50 + 军团周报 08:00（排程实挂在跑）；参谋长助理。' },
-  HERMES_UI: { aid:'HERMES_UI', cn:'邓芝桥', dept:'右军 · 运行体部', model:'Hermes 本体（8787 在线）', grade:'E2', status:'在岗执行', doing:'飞书通讯中枢；今日晨会 13 场产出。' },
-  INTEL0: { aid:'INTEL0', cn:'中文名待授', dept:'右军 · 情报部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'情报工厂 6 单在途（多源投影/端口核定/KG只读/Hermes取证）——全军团最忙战线。' },
-  INTEL1: { aid:'INTEL1', cn:'情报员', dept:'右军 · 情报部', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'雪球源头采集（增量帖优先）；舆情分账验收。' },
-  JEV: { aid:'JEV_GATE/QD/REVIEW', cn:'jev 三席', dept:'右军 · 情报部', model:'jev-latest 云端', grade:'E2', status:'在岗执行', doing:'新闻判读/排队/复核三段管线（api.typesafe.ai 通道）。' },
-  LARK: { aid:'LARK_CARDS', cn:'飞书卡', dept:'右军 · 情报部', model:'模板渲染', grade:'E1', status:'在岗执行', doing:'飞书卡片出向（8097 体系）。' },
-  COMM1: { aid:'COMM1', cn:'简雍（重名对④）', dept:'右军 · 市场部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'市场与客户触达；与 COWBRIDGE 马良重名对同营。' },
-  LEG1: { aid:'LEG1', cn:'诸葛瑾', dept:'右军 · 法务部（主官）', model:'glm/glm-5.3 云端', grade:'E3', status:'在岗执行', doing:'合规判读（E3 云端档）。' },
-  DSGN1: { aid:'DSGN1', cn:'设计一席', dept:'后军 · 🅲 设计行营', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'页面/交互设计。' },
-  DSGN2: { aid:'DSGN2', cn:'设计二席', dept:'后军 · 🅲 设计行营', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'页面/交互设计。' },
-  F1: { aid:'F1', cn:'荀彧', dept:'编外 · 待安置', model:'—', grade:'—', status:'待安置', doing:'量化旧编制，未挂部门；收编或注销待老田裁决。' },
-  N1: { aid:'N1', cn:'许劭', dept:'编外 · 待安置', model:'—', grade:'—', status:'待安置', doing:'量化旧编制，未挂部门。' },
-  T1: { aid:'T1', cn:'庞统', dept:'编外 · 待安置', model:'—', grade:'—', status:'待安置', doing:'量化旧编制，未挂部门。' },
-  T2: { aid:'T2', cn:'司马懿（重名对①）', dept:'编外 · 待安置', model:'—', grade:'—', status:'待安置', doing:'与 QS1 司马懿重名；最近有决策记录（decision.jsonl 活跃）。' },
-  trad: { aid:'T', cn:'周瑜', dept:'前军 · 交易部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'周期任务', doing:'交易执行（模拟盘；生产门未放行）。' },
-  prod: { aid:'P', cn:'吕蒙', dept:'左军 · 产品部（主官）', model:'ollama/qwen3.5:9b', grade:'E2', status:'在岗执行', doing:'产品规划。' },
-};
-function showSeat(k) {
-  const s = SEATS[k]; if (!s) return;
+const CAMPS = [
+  { id:'zhong', name:'中军帐 · 参谋与管理席', flag:'帅', color:'#534AB7', match: d => /chief|参谋/.test(d.id + d.name) },
+  { id:'qian', name:'前军 · 作战线', flag:'前', color:'#993C1D', match: d => /invest|trad|risk|research|acad/.test(d.id) || /量化|交易|风控|研究/.test(d.name) },
+  { id:'zuo', name:'左军 · 研发线', flag:'左', color:'#185FA5', match: d => /dev|quality|data|product/.test(d.id) || /研发|质量|产品/.test(d.name) },
+  { id:'you', name:'右军 · 支撑线', flag:'右', color:'#1D9E75', match: d => /ops|intel|comm|market|legal|hermes/.test(d.id) || /运行|情报|市场|法务/.test(d.name) },
+  { id:'hou', name:'后军 · 专项行营', flag:'后', color:'#BA7517', match: d => /proj/.test(d.id) || /行营/.test(d.name) },
+];
+let SNAP = null;
+const seatIndex = {};
+
+function lamp(binding) {
+  if (!binding) return 'l-none';
+  return /glm|openai/.test(binding) ? 'l-cloud' : 'l-local';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function render(snap) {
+  SNAP = snap;
+  document.getElementById('ts').textContent = '快照 ' + snap.ts + ' · 只读聚合';
+  const q = snap.summary;
+  document.getElementById('statbar').innerHTML =
+    '<div class="stat"><div class="stat-n">' + q.departments + '</div><div class="stat-t">营（部门）</div></div>' +
+    '<div class="stat"><div class="stat-n">' + q.agents + '</div><div class="stat-t">在编 agent</div></div>' +
+    '<div class="stat"><div class="stat-n amber">' + q.doing + '</div><div class="stat-t">在途工单</div></div>' +
+    '<div class="stat"><div class="stat-n">' + q.schedules + '</div><div class="stat-t">注册排程</div></div>';
+  const buckets = {};
+  CAMPS.forEach(c => buckets[c.id] = []);
+  snap.departments.forEach(d => {
+    const camp = CAMPS.find(c => c.match(d)) || CAMPS[1];
+    buckets[camp.id].push(d);
+  });
+  let html = '';
+  CAMPS.forEach(c => {
+    const depts = buckets[c.id];
+    if (!depts.length) return;
+    const total = depts.reduce((n, d) => n + d.agents.length, 0);
+    html += '<div class="camp"><div class="camp-h"><div class="flag" style="background:' + c.color + ';color:#fff">' + c.flag + '</div>' +
+      '<span class="camp-t">' + c.name + '</span><span class="camp-s">' + depts.length + ' 营 · ' + total + ' 员</span></div><div class="dept-grid">';
+    depts.forEach(d => {
+      html += '<div class="dept"><div class="dept-h"><span class="dept-n">' + esc(d.name) + (d.cn_title ? '<span style="color:#5A7190;font-size:10px"> · ' + esc(d.cn_title) + '</span>' : '') + '</span>' +
+        '<span class="dept-lead">' + (d.lead ? '主官 <b>' + esc(d.lead) + '</b>' : '主官待任') + '</span></div><div class="seats">';
+      d.agents.forEach(a => {
+        seatIndex[a.id] = a;
+        html += '<div class="seat" onclick="showSeat(\'' + esc(a.id) + '\')"><div class="aid">' + esc(a.id) + '</div>' +
+          '<div class="cn"><span class="slamp ' + lamp(a.binding) + '"></span>' + esc(a.cn) + '</div></div>';
+      });
+      if (!d.agents.length) html += '<div class="seat vac" onclick="openRecruit(\'' + esc(d.name) + '\',true)">＋ 任命主官</div>';
+      html += '<div class="seat vac" onclick="openRecruit(\'' + esc(d.name) + '\')">＋ 虚席</div>';
+      html += '</div></div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('camps').innerHTML = html;
+}
+
+function showSeat(id) {
+  const a = seatIndex[id]; if (!a) return;
+  const dept = (SNAP.departments.find(d => d.agents.some(x => x.id === id)) || {});
+  const doing = (SNAP.activity.doing || []).filter(t => t.owner === id);
   document.getElementById('drawerBody').innerHTML =
-    '<h3>' + s.cn + ' <span style="color:#8FA8C0;font-size:12px;font-weight:400">' + s.aid + '</span></h3>' +
-    '<div class="kv"><span class="k">隶属</span><span>' + s.dept + '</span></div>' +
-    '<div class="kv"><span class="k">模型</span><span>' + s.model + '</span></div>' +
-    '<div class="kv"><span class="k">等级</span><span>' + s.grade + '</span></div>' +
-    '<div class="kv"><span class="k">状态</span><span style="color:#4FD1A5">' + s.status + '</span></div>' +
-    '<div class="panel"><b>正在做</b><br>' + s.doing + '</div>' +
-    (s.note ? '<div class="panel">' + s.note + '</div>' : '') +
-    '<div class="panel" style="color:#5A7190">生产版此处接：hr 档案全文 · decision/knowledge 记忆流 · 工单史 · 晨会记录（org API 实时）</div>';
+    '<h3>' + esc(a.cn) + ' <span style="color:#8FA8C0;font-size:12px;font-weight:400">' + esc(a.id) + '</span></h3>' +
+    '<div class="kv"><span class="k">隶属营</span><span>' + esc(dept.name || '—') + '</span></div>' +
+    '<div class="kv"><span class="k">职能</span><span>' + esc(a.role || '—') + '</span></div>' +
+    '<div class="kv"><span class="k">模型</span><span>' + esc(a.binding || '未绑定（治理挂账）') + '</span></div>' +
+    '<div class="kv"><span class="k">在途</span><span>' + (doing.length ? doing.map(t => esc(t.desc)).join('；') : '无归属本席的在途单') + '</span></div>' +
+    '<div class="panel" style="color:#5A7190">生产版可接：hr/' + esc(a.id) + '/resume.yaml 全文 · decision/knowledge 记忆流 · 工单史 · 晨会记录</div>';
   document.getElementById('drawer').classList.add('open');
 }
 function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
 function openRecruit(dept, isChief) {
-  document.getElementById('rDept').value = dept + (isChief ? '' : '');
+  document.getElementById('rDept').value = dept;
   document.getElementById('recTitle').textContent = isChief ? '任命主官 · ' + dept : '招募新 Agent · ' + dept;
   document.getElementById('recTip').style.display = 'none';
   document.getElementById('recruitMask').classList.add('open');
@@ -375,11 +182,27 @@ function submitRecruit() {
   const duty = document.getElementById('rDuty').value.trim() || '（待填）';
   const model = document.getElementById('rModel').value;
   const dept = document.getElementById('rDept').value;
-  const tip = document.getElementById('recTip');
-  tip.style.display = 'block';
-  tip.innerHTML = '编制工单草案已生成：<br>' + dept + ' · <b style="color:#E8F0F8">' + name + '</b> · ' + duty + '<br>模型：' + model + '<br><br>流转：田丰登记去重 → 老田放行 → 建 hr 档案 + org 入编 + 绑定模型 → 沙盘自动落位。<br><span style="color:#8FA8C0">（原型演示；生产版一键落 WO-ORG 单）</span>';
+  const why = document.getElementById('rWhy').value.trim();
+  fetch('/api/dispatch', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ type:'work', title:'编制申请：' + dept + ' · ' + name,
+      attendees: [], note: '职责：' + duty + '；模型：' + model + '；理由：' + why }) })
+  .then(r => r.json()).then(env => {
+    const tip = document.getElementById('recTip');
+    tip.style.display = 'block';
+    tip.innerHTML = env.ok
+      ? '编制工单已投递军团门面：<b>' + (env.data.id || '') + '</b><br>流转：田丰登记去重 → 老田放行 → 建 hr 档案 + org 入编 → 沙盘自动落位。'
+      : '投递失败：' + ((env.error && env.error.message) || '未知');
+  }).catch(() => {
+    const tip = document.getElementById('recTip');
+    tip.style.display = 'block'; tip.textContent = '投递失败：服务不可达';
+  });
 }
 document.getElementById('recruitMask').addEventListener('click', e => { if (e.target.id === 'recruitMask') closeRecruit(); });
+
+fetch('/api/snapshot').then(r => r.json()).then(env => {
+  if (!env.ok) { document.getElementById('ts').textContent = '快照不可用：' + (env.error || '?'); return; }
+  render(env);
+}).catch(() => { document.getElementById('ts').textContent = '快照端点不可达'; });
 </script>
 </body>
 </html>

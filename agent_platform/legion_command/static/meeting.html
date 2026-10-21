@@ -160,6 +160,30 @@
 </div>
 
 <script>
+const AGENT_BIND = { A0:'glm/glm-5.3', AI1:'openai/gpt-6.0', R2:'ollama/qwen3.5:9b', OPT1:'glm/glm-4.6' };
+const SOUL_HINT = {
+  A0: '你是田丰，数字军团执行相。风格：短句，结论先行，凡输出带下一步动作。不超过120字。',
+  AI1: '你是诸葛亮，反向军师。风格：先求败因再论胜机，指出对方没想到的三件事。不超过150字。',
+  R2: '你是赵云，进化官。风格：只认证据，任何建议须带对照验证方法，结尾声明等签字不自认通过。不超过120字。'
+};
+const MODEL_LIVE = { ok: 0, de: 0 };
+function chatLive(agentId, question, fallbackCb) {
+  const bind = AGENT_BIND[agentId];
+  if (!bind) { fallbackCb(); return; }
+  fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ agent: agentId, system: SOUL_HINT[agentId] || '你是数字军团成员，简短专业发言，不超过100字。',
+      user: '会议主持（老田）问：' + question + '（结合你的职能面回答）' }) })
+  .then(r => r.json())
+  .then(env => {
+    if (env.ok && env.data && env.data.text) {
+      MODEL_LIVE.ok++;
+      add(agentId, env.data.text.trim().slice(0, 600) + (env.degraded ? ' <span style="color:#EF9F27;font-size:10px">[降级]</span>' : ''));
+    } else { MODEL_LIVE.de++; fallbackCb(); }
+  })
+  .catch(() => { MODEL_LIVE.de++; fallbackCb(); });
+}
+</script>
+<script>
 const AGENTS = {
   A0:  { nm:'田丰', av:'田', c:'c-t', md:'glm-5.3', grp:'zhong', line:'<b>结论先行：</b>按证据排优先级，我来立单跟踪到验收。' },
   AI1: { nm:'诸葛亮', av:'葛', c:'c-z', md:'GPT6.0', grp:'zhong', line:'先求败因。这事有三个你可能没想到的坑，逐条说。' },
@@ -219,15 +243,23 @@ function add(id, text) {
 const QT = ['今日盘面怎么看？', '模拟盘要不要调仓？', '下周策略重点？'];
 function ask(i) {
   add('HOST', QT[i]);
-  if (!picked.length) { setTimeout(() => add('A0', '先从左側点名上桌，我再开单。'), 400); return; }
-  picked.forEach((id, k) => setTimeout(() => add(id, AGENTS[id].line), 500 + k * 650));
-  setTimeout(() => add('A0', '<b>汇总：</b>各方意见已齐。风险点交诸葛复核，实验归赵云，执行单我立。要下发点右侧「会终」。'), 500 + picked.length * 650);
+  if (!picked.length) { setTimeout(() => add('A0', '先从左侧点名上桌，我再开单。'), 400); return; }
+  const LIVE = ['A0', 'AI1', 'R2'];
+  picked.forEach((id, k) => setTimeout(() => {
+    if (LIVE.includes(id)) chatLive(id, QT[i], () => add(id, AGENTS[id].line));
+    else add(id, AGENTS[id].line);
+  }, 500 + k * 900));
+  setTimeout(() => add('A0', '<b>汇总：</b>各方意见已齐。风险点交诸葛复核，实验归赵云，执行单我立。要下发点右侧「会终」。'), 500 + picked.length * 900 + 1500);
 }
 function send() {
   const v = document.getElementById('say').value.trim(); if (!v) return;
   add('HOST', v); document.getElementById('say').value = '';
   if (!picked.length) return;
-  picked.forEach((id, k) => setTimeout(() => add(id, AGENTS[id].line), 400 + k * 600));
+  const LIVE = ['A0', 'AI1', 'R2'];
+  picked.forEach((id, k) => setTimeout(() => {
+    if (LIVE.includes(id)) chatLive(id, v, () => add(id, AGENTS[id].line));
+    else add(id, AGENTS[id].line);
+  }, 400 + k * 900));
 }
 let otype = 'work';
 document.querySelectorAll('.ot').forEach(el => el.onclick = () => {

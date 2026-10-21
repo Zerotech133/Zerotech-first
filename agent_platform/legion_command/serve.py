@@ -23,11 +23,25 @@ _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
-from gateway import inbox_gateway  # noqa: E402  S21 门面复用
+from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
 from legion_command.snapshot import build_snapshot  # noqa: E402
 
 _STATIC = Path(__file__).resolve().parent / "static"
 _KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
+
+# 参会席位 → 模型绑定（10-51 异族裁决 + org.json 主事实源；未列出席位默认本地 9b）
+AGENT_BINDING = {
+    "A0": "glm/glm-5.3",
+    "AI1": "openai/gpt-6.0",
+    "R2": "ollama/qwen3.5:9b",
+    "OPT1": "glm/glm-4.6",
+    "ST1": "glm/glm-5.3",
+    "ARCH1": "glm/glm-5.3",
+    "SEC2": "glm/glm-5.3",
+    "LEG1": "glm/glm-5.3",
+    "DEV2": "ollama/qwen3.6:35b-a3b",
+}
+_DEFAULT_BINDING = "ollama/qwen3.5:9b"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -77,6 +91,48 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         import json
         path = urlparse(self.path).path
+        if path == "/api/chat":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            agent = str(req.get("agent", "")).strip()
+            if not agent or not agent.replace("_", "").isalnum():
+                self._send_json({"ok": False, "error": "bad_agent"}, 400)
+                return
+            binding = AGENT_BINDING.get(agent, _DEFAULT_BINDING)
+            if binding.startswith("openai/"):
+                # openai 通道未接（engine 无该 provider，勿让 Ollama 兜底报 404 误导）
+                self._send_json({"schema_version": "1.0", "ok": False,
+                                 "kind": "llm_chat", "data": {},
+                                 "error": {"code": "channel_not_ready",
+                                           "message": "openai 通道待 Q12 OPENAI_API_KEY 注入"},
+                                 "degraded": False, "latency_ms": 0,
+                                 "ts": __import__("time").strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                 "agent": agent, "binding": binding})
+                return
+            env = llm_gateway.chat(
+                binding=binding,
+                system=str(req.get("system", ""))[:4000],
+                user=str(req.get("user", ""))[:8000])
+            # 云端限额/故障 → 会议展示层显式降级本地 9b（标 degraded + 原因，
+            # 不静默；判读席位语义在 engine 层不变，此处仅会议通道可用性兜底）
+            if not env.get("ok") and binding.startswith("glm/"):
+                fallback = llm_gateway.chat(
+                    binding="ollama/qwen3.5:9b",
+                    system=str(req.get("system", ""))[:4000],
+                    user=str(req.get("user", ""))[:8000])
+                if fallback.get("ok"):
+                    fallback["degraded"] = True
+                    fallback["fallback_from"] = binding
+                    fallback["fallback_reason"] = (env.get("error") or {}).get("message", "cloud unavailable")
+                    env = fallback
+            env["agent"] = agent
+            env["binding"] = env.get("data", {}).get("binding_resolved", binding)
+            self._send_json(env)
+            return
         if path != "/api/dispatch":
             self._send_json({"ok": False, "error": "not_found"}, 404)
             return
