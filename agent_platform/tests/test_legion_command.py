@@ -595,7 +595,12 @@ def test_resolve_binding_prefers_org_truth():
     srv_mod._BINDING_CACHE.update(mtime=None, map={})
     assert srv_mod.resolve_binding("BEACON1") == "none", "BEACON1 编制绑定 none"
     assert srv_mod.resolve_binding("KGMAP1") == "ollama/qwen3.5:9b"
-    assert srv_mod.resolve_binding("INTEL0") == "glm/glm-5.3-flash"
+    # INTEL0 的绑定会随改档演进（S39 曾由 glm-5.3-flash 改为 9b），不写死具体值，
+    # 改为与 org.json 真源动态比对——写死就会在每次改档后集体转红（今日第三次踩）。
+    _org = json.loads((_PLATFORM / "registry" / "org.json").read_text(encoding="utf-8"))
+    _truth = {p.get("agent_id"): str(p.get("llm_binding") or "")
+              for d in _org["departments"] for p in (d.get("agent_profiles") or [])}
+    assert srv_mod.resolve_binding("INTEL0") == _truth["INTEL0"]
     # org 无档者回退硬编码表，再回退默认
     assert srv_mod.resolve_binding("AI1") == "openai/gpt-6.0"
     assert srv_mod.resolve_binding("NOPE9") == "ollama/qwen3.5:9b"

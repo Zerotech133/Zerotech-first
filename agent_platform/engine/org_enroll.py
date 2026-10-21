@@ -369,7 +369,7 @@ def apply_backfill_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
 
     org = copy.deepcopy(before)
     t2 = _find_dept(org, dept)
-    t2.setdefault("agent_profiles", []).append(plan["agent"])
+    t2["agent_profiles"] = (t2.get("agent_profiles") or []) + [plan["agent"]]
     tmp = _org_path(root).with_suffix(".json.tmp")
     tmp.write_text(json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(_org_path(root))
@@ -385,8 +385,9 @@ def apply_backfill_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
             "note": "补档已落 org.json 并自检通过（名单未变）；回滚用 --rollback %s" % backup}
 
 
-def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str,
-                      ticket: str = "", signed_by: str = "", reason: str = "") -> dict:
+def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str = "",
+                      ticket: str = "", signed_by: str = "", reason: str = "",
+                      grade: str = "", duty: str = "", role_profile: str = "") -> dict:
     """改档计划：只改已有档案的 `llm_binding`（不动职责、不动名单）。
 
     为什么需要：S38 实测发现编制里写的 `glm/glm-5.3-flash` 实际调用返回 HTTP 400
@@ -400,16 +401,38 @@ def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str,
     cur = next((p for p in profs if str(p.get("agent_id")) == aid), None)
     if cur is None:
         raise EnrollError("%s 在 %s 尚无档案，改档无从谈起：请先用 --backfill 补档" % (aid or "?", dept))
-    if binding not in BINDING_ALLOW:
-        raise EnrollError("llm_binding 不在词表：%r（可选 %s）"
-                          % (binding, ", ".join(sorted(BINDING_ALLOW))))
+    changes: dict[str, str] = {}
+    if binding:
+        if binding not in BINDING_ALLOW:
+            raise EnrollError("llm_binding 不在词表：%r（可选 %s）"
+                              % (binding, ", ".join(sorted(BINDING_ALLOW))))
+        old_b = str(cur.get("llm_binding") or "")
+        if old_b != binding:
+            changes["llm_binding"] = binding
+    if grade:
+        if grade not in GRADE_ALLOW:
+            raise EnrollError("grade 不在词表：%r（可选 %s）" % (grade, ", ".join(sorted(GRADE_ALLOW))))
+        if str(cur.get("grade") or "") != grade:
+            changes["grade"] = grade
+    if duty:
+        d = duty.strip()
+        if len(d) < DUTY_MIN_LEN:
+            raise EnrollError("duty 至少 %d 字（当前 %d 字）" % (DUTY_MIN_LEN, len(d)))
+        if str(cur.get("charter_detail") or "") != d:
+            changes["charter_detail"] = d
+    if role_profile:
+        r = role_profile.strip()
+        if not r:
+            raise EnrollError("role_profile 不可为空")
+        if str(cur.get("role_profile") or "") != r:
+            changes["role_profile"] = r
+    if not changes:
+        raise EnrollError("%s 的目标字段与当前值相同，无需改档" % aid)
     if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
         raise EnrollError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
     if not (signed_by or "").strip():
         raise EnrollError("缺少放行人：改档改组织真源，须老田显式签字（--signed-by）")
     old = str(cur.get("llm_binding") or "")
-    if old == binding:
-        raise EnrollError("%s 当前已是 %r，无需改档" % (aid, binding))
     return {
         "schema_version": SCHEMA_VERSION,
         "rules_version": RULES_VERSION,
@@ -419,7 +442,8 @@ def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str,
         "agent_id": aid,
         "cn_name": _cn_of_id(root, aid),
         "from_binding": old,
-        "to_binding": binding,
+        "to_binding": changes.get("llm_binding", old),
+        "changes": changes,
         "ticket": ticket.strip(),
         "signed_by": signed_by.strip(),
         "reason": (reason or "").strip(),
@@ -454,9 +478,12 @@ def apply_rebind_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     org = copy.deepcopy(before)
     t2 = _find_dept(org, dept)
     prof = next(p for p in t2["agent_profiles"] if str(p.get("agent_id")) == aid)
-    prof["llm_binding"] = plan["to_binding"]
-    note = "改档 %s → %s（工单 %s / 放行人 %s）" % (
-        plan["from_binding"], plan["to_binding"], plan["ticket"], plan["signed_by"])
+    changes = plan.get("changes") or {"llm_binding": plan["to_binding"]}
+    for k, v in changes.items():
+        prof[k] = v
+    note = "改档 %s（工单 %s / 放行人 %s）" % (
+        "、".join("%s→%s" % (k, str(v)[:40]) for k, v in changes.items()),
+        plan["ticket"], plan["signed_by"])
     if plan.get("reason"):
         note += "：%s" % plan["reason"]
     prev_note = str(prof.get("binding_note") or "")
@@ -467,7 +494,7 @@ def apply_rebind_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     tmp.replace(_org_path(root))
 
     try:
-        _selfcheck_rebind(root, before, dept, aid, plan["to_binding"])
+        _selfcheck_rebind(root, before, dept, aid, plan["to_binding"], plan)
     except EnrollError:
         shutil.copy2(backup, _org_path(root))
         raise
@@ -479,7 +506,8 @@ def apply_rebind_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
             "note": "改档已落 org.json 并自检通过；回滚用 --rollback %s" % backup}
 
 
-def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding: str) -> None:
+def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding: str,
+                      plan: dict | None = None) -> None:
     """改档自检：目标 profile 两字段已改、其字段与其他一切未动。"""
     after = load_org(root)
     b = {d.get("dept"): d for d in before.get("departments") or []}
@@ -494,8 +522,11 @@ def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding
         raise EnrollError("自检失败：%s 档案丢失" % aid)
     if pa.get("llm_binding") != new_binding:
         raise EnrollError("自检失败：%s 绑定未改为 %r" % (aid, new_binding))
+    allowed = set((plan_changes_keys := set((plan.get("changes") or {}).keys()))) | {"binding_note"}
+    if pa.get("llm_binding") != plan["to_binding"] and "llm_binding" in allowed:
+        raise EnrollError("自检失败：%s 绑定未改为 %r" % (aid, plan["to_binding"]))
     for k, v in pb.items():
-        if k in ("llm_binding", "binding_note"):
+        if k in allowed:
             continue
         if pa.get(k) != v:
             raise EnrollError("自检失败：%s 的 %s 被意外改动" % (aid, k))
@@ -600,7 +631,9 @@ def apply_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     hr_path = _hr_dir(root) / aid / "resume.yaml"
     org = copy.deepcopy(before)
     target = _find_dept(org, dept)
-    target.setdefault("agent_profiles", []).append(plan["agent"])
+    # 注意：agent_profiles 可能是显式 null（非缺失），setdefault 对 None 不生效，
+    # 直接 .append 会 AttributeError——comm 部真实踩到。
+    target["agent_profiles"] = (target.get("agent_profiles") or []) + [plan["agent"]]
     if isinstance(target.get("agents"), list):
         target["agents"].append(aid)
     tmp = _org_path(root).with_suffix(".json.tmp")
@@ -685,7 +718,7 @@ def main(argv=None) -> int:
     ap.add_argument("--role")
     ap.add_argument("--duty")
     ap.add_argument("--binding", default="ollama/qwen3.5:9b")
-    ap.add_argument("--grade", default="E2")
+    ap.add_argument("--grade", default="", help="档级 E1/E2/E3（新建/补档默认 E2；改档不传则不改）")
     ap.add_argument("--analysis-type", default="")
     ap.add_argument("--ticket", default="")
     ap.add_argument("--signed-by", default="")
@@ -711,7 +744,7 @@ def main(argv=None) -> int:
                              ensure_ascii=False, indent=1))
             return 0
         if args.rebind:
-            need = ("dept", "agent_id", "binding")
+            need = ("dept", "agent_id")
         elif args.backfill:
             need = ("dept", "agent_id", "role", "duty")
         else:
@@ -722,8 +755,10 @@ def main(argv=None) -> int:
             return 2
         if args.rebind:
             plan = build_rebind_plan(root, dept=args.dept, agent_id=args.agent_id,
-                                     binding=args.binding, ticket=args.ticket,
-                                     signed_by=args.signed_by, reason=args.reason)
+                                     binding=args.binding or "", ticket=args.ticket,
+                                     signed_by=args.signed_by, reason=args.reason,
+                                     grade=args.grade or "", duty=args.duty or "",
+                                     role_profile=args.role or "")
             if not args.apply:
                 print(json.dumps(plan, ensure_ascii=False, indent=1))
                 print("\n【dry-run】以上为改档计划，未写入任何字节。确认无误加 --apply 执行。",
@@ -735,7 +770,7 @@ def main(argv=None) -> int:
         if args.backfill:
             plan = build_backfill_plan(root, dept=args.dept, agent_id=args.agent_id,
                                        role_profile=args.role, duty=args.duty,
-                                       binding=args.binding, grade=args.grade,
+                                       binding=args.binding, grade=args.grade or "E2",
                                        ticket=args.ticket, signed_by=args.signed_by,
                                        analysis_type=args.analysis_type)
         else:

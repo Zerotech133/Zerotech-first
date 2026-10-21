@@ -578,3 +578,26 @@ def test_probe_llm_ok_and_fail(monkeypatch):
                             error={"code": "llm_error", "message": "HTTP 400 Bad Request"}))
     r2 = E.probe_binding("glm/glm-5.3-flash")
     assert r2["ok"] is False and "400" in r2["error"]
+
+
+def test_backfill_handles_null_agent_profiles(tmp_path):
+    """agent_profiles 为显式 null（非缺失）时也必须能补档。
+
+    comm 部真实踩到：setdefault 对「键存在但值为 None」不生效，
+    取回 None 后 .append 直接 AttributeError。
+    """
+    r = tmp_path / "plat"
+    (r / "registry").mkdir(parents=True)
+    (r / "hr" / "Z9").mkdir(parents=True)
+    (r / "hr" / "Z9" / "resume.yaml").write_text("cn_name: 测试\n", encoding="utf-8")
+    org = {"departments": [{"dept": "x", "agents": ["Z9"], "agent_profiles": None}]}
+    (r / "registry" / "org.json").write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
+
+    plan = E.build_backfill_plan(r, dept="x", agent_id="Z9", role_profile="测试岗",
+                                 duty="这是一段足够长的职责描述用于测试补档健壮性",
+                                 binding="ollama/qwen3.5:9b", grade="E2",
+                                 ticket="WO-ORG-299", signed_by="老田")
+    res = E.apply_backfill_plan(r, plan, signed_by="老田")
+    assert res["ok"] is True
+    after = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
+    assert [p["agent_id"] for p in after["departments"][0]["agent_profiles"]] == ["Z9"]

@@ -200,6 +200,76 @@
             "danger": "deny",
             "note": "受理后由量化交易层决定三路分发（飞书信息/投研研判/交易所观察）；W-Q1 建设中，本席位先挂名待模块落地"
           }
+        },
+        {
+          "agent_id": "T1",
+          "role_profile": "aggressive_technical_analyst",
+          "analysis_type": "",
+          "charter_detail": "激进多头技术面分析：趋势分析（均线/通道）、动能判断（MACD/RSI）、量价配合、支撑阻力位、成长股挖掘、产能与订单拐点识别",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "T2",
+          "role_profile": "conservative_technical_analyst",
+          "analysis_type": "",
+          "charter_detail": "保守空头技术面分析：上方压力识别（前高/套牢盘）、顶背离、量价背离、破位风险、流动性冲击情景推演",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "N1",
+          "role_profile": "sentiment_analyst",
+          "analysis_type": "",
+          "charter_detail": "情绪面分析：公告与事件冲击判读、行业政策风向、市场情绪指数、资金偏好、舆情热度、传闻降权",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "F1",
+          "role_profile": "fundamental_analyst",
+          "analysis_type": "",
+          "charter_detail": "基本面分析：营收与利润趋势、盈利质量（现金流/应收）、估值分位（PE/PB）、行业景气位判断",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "D1",
+          "role_profile": "decision_chief",
+          "analysis_type": "",
+          "charter_detail": "最终决策官：多方权衡裁决、五档推荐输出、置信度校准、辩论质量评估；汇总 T1/T2/N1/F1 四线分析出最终结论，须署名与可追溯",
+          "llm_binding": "glm/glm-5.3",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E3",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
         }
       ]
     },
@@ -1321,7 +1391,51 @@
       ],
       "worktree_prefix": "proj_a_",
       "source": "K-ORG-018 老田原话「部门 A 现目前在完成我们的回测的开发」",
-      "cn_title": "🅰 回测行营"
+      "cn_title": "🅰 回测行营",
+      "agent_profiles": [
+        {
+          "agent_id": "DEV3",
+          "role_profile": "backtest_dev",
+          "analysis_type": "",
+          "charter_detail": "回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "DEV4",
+          "role_profile": "backtest_dev",
+          "analysis_type": "",
+          "charter_detail": "回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "QA1",
+          "role_profile": "qa_runner",
+          "analysis_type": "",
+          "charter_detail": "回测质量门：QA-RUN 执行、回归用例维护、fail-closed 只读纪律；不合格不签字",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        }
+      ]
     },
     {
       "dept": "proj_data",
@@ -1336,7 +1450,37 @@
       ],
       "worktree_prefix": "proj_b_",
       "source": "K-ORG-018 老田原话「部门 B 在完成我们的数据底层的治理」",
-      "cn_title": "🅱 数据行营"
+      "cn_title": "🅱 数据行营",
+      "agent_profiles": [
+        {
+          "agent_id": "DATA1",
+          "role_profile": "data_governance",
+          "analysis_type": "",
+          "charter_detail": "数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理；只治理不裁决业务口径",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-223 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "DEV1",
+          "role_profile": "data_dev",
+          "analysis_type": "",
+          "charter_detail": "数据治理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付数据管道代码",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-223 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        }
+      ]
     },
     {
       "dept": "proj_next",
@@ -1352,7 +1496,51 @@
       ],
       "worktree_prefix": "proj_c_",
       "source": "K-ORG-018 老田原话「部门 C 在完成我们下一个版本的设计。和推理」；v5 设想 C 线（图谱智能化）今日立项",
-      "cn_title": "🅲 设计行营"
+      "cn_title": "🅲 设计行营",
+      "agent_profiles": [
+        {
+          "agent_id": "PM1",
+          "role_profile": "next_version_pm",
+          "analysis_type": "",
+          "charter_detail": "下版本设计推理部主官：需求梳理、验收判据、路线图；把设计意图转成可验收条目",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "ARCH1",
+          "role_profile": "next_version_arch",
+          "analysis_type": "",
+          "charter_detail": "下版本设计推理部架构席：Python 产码、代码评审、工单执行、AST 静态门；负责设计推理链的架构落地",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "DEV2",
+          "role_profile": "next_version_dev",
+          "analysis_type": "",
+          "charter_detail": "下版本设计推理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付下版本功能代码",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        }
+      ]
     },
     {
       "dept": "marketing",
@@ -1504,7 +1692,107 @@
       ],
       "teams": [],
       "source": "K-ORG-116 一批收编（2026-10-16）：Jev四件套/cowbridge记忆桥/Hermes WebUI；kind=runtime，代码进程零改动",
-      "cn_title": "驿传署"
+      "cn_title": "驿传署",
+      "agent_profiles": [
+        {
+          "agent_id": "JEV_GATE",
+          "role_profile": "jev_alert_gate",
+          "analysis_type": "",
+          "charter_detail": "Jev 告警降噪网关：紧急度判读、方向判定、告警降噪聚合、企业微信推送路由；只降噪不改变告警事实",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "JEV_REVIEW",
+          "role_profile": "jev_signal_reviewer",
+          "analysis_type": "",
+          "charter_detail": "Jev 信号复核门：对入站信号做二次复核与判据校验，复核不通过不进入下游；只复核不生成信号",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "WATCH_TOWER",
+          "role_profile": "watchtower_arbiter",
+          "analysis_type": "",
+          "charter_detail": "盯盘中台值守：多方法仲裁、缠论/量能/RSI 方法插件治理、容量自检与分片、毕业权重闭环、T+5 前向归因",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "JEV_QD",
+          "role_profile": "jev_quantdinger_bridge",
+          "analysis_type": "",
+          "charter_detail": "Jev⇄QuantDinger 桥接组件：双向消息格式转换与投递，保证幂等与失败重试；纯工程桥接，无 LLM 依赖",
+          "llm_binding": "none",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "LARK_CARDS",
+          "role_profile": "lark_card_listener",
+          "analysis_type": "",
+          "charter_detail": "飞书卡片回调监听器：接收卡片交互回调、解析动作、回投处理结果；纯工程回调组件，无 LLM 依赖",
+          "llm_binding": "none",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "COWBRIDGE",
+          "role_profile": "cowbridge_memory_bridge",
+          "analysis_type": "",
+          "charter_detail": "cowbridge 记忆桥：跨层记忆读写与格式转换、幂等落库；纯工程桥接组件，无 LLM 依赖",
+          "llm_binding": "none",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "HERMES_UI",
+          "role_profile": "hermes_ui_gateway",
+          "analysis_type": "",
+          "charter_detail": "Hermes WebUI 门面：对外页面与接口门面、静态资源与路由；纯工程门面组件，无 LLM 依赖",
+          "llm_binding": "none",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        }
+      ]
     },
     {
       "dept": "academy",
@@ -1941,7 +2229,22 @@
       "source": "WO-FS-148-1",
       "lead_duty": "客户入口总管+模型底座调度+商业化触点",
       "cn_title": "信驿司",
-      "agent_profiles": null
+      "agent_profiles": [
+        {
+          "agent_id": "LUSU1",
+          "role_profile": "comm_entry_chief",
+          "analysis_type": "",
+          "charter_detail": "通信与客户服务部主官：客户入口总管、模型底座统一调度（本地 Ollama + 云端 GLM/GPT6.0/DeepSeek）、商业化触点；路由决策须留痕",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-226 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        }
+      ]
     },
     {
       "dept": "chief_line",
