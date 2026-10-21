@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字军团 · 指挥工作台（原型 v1）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; padding: 24px; min-height: 100vh; }
+  .wrap { max-width: 1280px; margin: 0 auto; background: #0A1A2F; border-radius: 16px; padding: 20px 22px; }
+  .hdr { display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid #1E3A5F; padding-bottom: 12px; margin-bottom: 16px; }
+  .hdr-l { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #4FD1A5; }
+  .title { font-size: 15px; font-weight: 500; }
+  .sub { font-size: 11.5px; color: #8FA8C0; }
+  .badge { font-size: 11.5px; border-radius: 6px; padding: 2px 8px; }
+  .badge-teal { color: #4FD1A5; border: 0.5px solid #1D9E75; }
+  .badge-amber { color: #EF9F27; border: 0.5px solid #854F0B; }
+  .grid { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr); gap: 14px; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .card { background: #0F2440; border-radius: 12px; border: 0.5px solid #1E3A5F; padding: 14px 16px; }
+  .card-amber { border-color: #854F0B; }
+  .card-red { border-color: #A32D2D; }
+  .card-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .hdot { width: 8px; height: 8px; border-radius: 50%; }
+  .hdot-teal { background: #4FD1A5; } .hdot-amber { background: #EF9F27; } .hdot-red { background: #E24B4A; }
+  .card-t { font-size: 13px; font-weight: 500; }
+  .card-s { font-size: 11px; color: #8FA8C0; }
+  .todo { display: flex; gap: 10px; align-items: flex-start; background: #0A1A2F; border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+  .todo:hover { background: #12294A; }
+  .cb { width: 14px; height: 14px; border-radius: 4px; border: 0.5px solid #4FD1A5; flex: none; margin-top: 2px; }
+  .cb-done { background: #1D9E75; }
+  .todo-t { font-size: 13px; }
+  .todo-d { font-size: 11.5px; color: #8FA8C0; margin-top: 2px; }
+  .qrow { display: flex; justify-content: space-between; align-items: center; background: #0A1A2F; border-radius: 8px; padding: 8px 11px; margin-bottom: 7px; font-size: 12.5px; cursor: pointer; transition: background .15s; }
+  .qrow:hover { background: #12294A; }
+  .q-tag { color: #EF9F27; font-size: 11px; border: 0.5px solid #854F0B; border-radius: 5px; padding: 1px 7px; }
+  .seat { background: #0A1A2F; border-radius: 8px; padding: 9px 11px; margin-bottom: 8px; cursor: pointer; transition: background .15s; }
+  .seat:hover { background: #12294A; }
+  .seat-h { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .seat-n { font-size: 13px; font-weight: 500; }
+  .seat-m { font-size: 11px; color: #4FD1A5; }
+  .seat-d { font-size: 11.5px; color: #8FA8C0; }
+  .seat-warn { color: #EF9F27; }
+  .depts { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .dept { background: #0A1A2F; border-radius: 8px; padding: 7px 10px; cursor: pointer; transition: background .15s; }
+  .dept:hover { background: #12294A; }
+  .dept-n { font-size: 12px; } .dept-d { font-size: 11px; color: #8FA8C0; }
+  .prog-row { margin-bottom: 9px; }
+  .prog-h { display: flex; justify-content: space-between; font-size: 11.5px; margin-bottom: 3px; }
+  .bar { height: 4px; background: #1E3A5F; border-radius: 2px; overflow: hidden; }
+  .bar-teal { height: 4px; background: #4FD1A5; } .bar-amber { height: 4px; background: #EF9F27; }
+  .ep { display: flex; justify-content: space-between; font-size: 11.5px; color: #8FA8C0; line-height: 1.8; }
+  .ok { color: #4FD1A5; } .wait { color: #EF9F27; }
+  .alert-body { font-size: 11.5px; color: #8FA8C0; line-height: 1.7; }
+  .ft { margin-top: 14px; border-top: 0.5px solid #1E3A5F; padding-top: 10px; display: flex; justify-content: space-between; font-size: 11px; color: #5A7190; flex-wrap: wrap; gap: 6px; }
+  @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="dot"></div>
+      <span class="title">数字军团 · 指挥工作台</span>
+      <span class="sub">2026-10-21 周三 13:00 · 调度面 21 任务运行中</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <span class="badge badge-teal">门面 :8795 在线</span>
+      <span class="badge badge-amber">5 项待您拍板</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="card">
+        <div class="card-h"><div class="hdot hdot-teal"></div><span class="card-t">诸葛亮 · 今日该做</span><span class="card-s">GPT6.0 · 每日 08:30 生成</span></div>
+        <div class="todo"><div class="cb"></div><div><div class="todo-t">批心跳修复单（H1 断三日，est_cost 解冻的根）</div><div class="todo-d">WO-081 修复已入库 c8d55b3 · 待批生产补跑</div></div></div>
+        <div class="todo"><div class="cb"></div><div><div class="todo-t">Q12 注入 OPENAI_API_KEY（诸葛亮通道最后一环）</div><div class="todo-d">注入后咨询位即刻可用</div></div></div>
+        <div class="todo"><div class="cb"></div><div><div class="todo-t">17:10 影子链收盘复盘确认（五标的模拟盘）</div><div class="todo-d">昨日全 done · 今日待跑</div></div></div>
+        <div class="todo"><div class="cb cb-done"></div><div><div class="todo-t" style="color:#8FA8C0">S21 对外门面已交付，飞书 agent 可随时接线</div><div class="todo-d">已完成 · 无需动作</div></div></div>
+      </div>
+      <div class="card card-amber">
+        <div class="card-h"><div class="hdot hdot-amber"></div><span class="card-t">待您拍板 · 决策队列</span><span class="card-s" style="color:#EF9F27">一句话可批</span></div>
+        <div class="qrow"><span>Q1 重置 Encrypt Key（对话明文已泄露）</span><span class="q-tag">必做</span></div>
+        <div class="qrow"><span>Q2 操作单 v2 批 A（8091 换血+nginx 开口）</span><span class="q-tag">待批</span></div>
+        <div class="qrow"><span>Q10 L1-L6 接线优先级圈选（建议 L1→L3）</span><span class="q-tag">待批</span></div>
+        <div class="qrow"><span>Q12 诸葛亮 OPENAI_API_KEY 注入</span><span class="q-tag">待给</span></div>
+        <div class="qrow" style="margin-bottom:0"><span>W42 挂载审批留痕追认（21 任务已实跑）</span><span class="q-tag">追认</span></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-h"><div class="hdot hdot-teal"></div><span class="card-t">三常任席（异族编制）</span></div>
+        <div class="seat"><div class="seat-h"><span class="seat-n">田丰 · 执行相</span><span class="seat-m">glm-5.3 云端</span></div><div class="seat-d">在岗 · 工单归口中 · 在途 13 单验收</div></div>
+        <div class="seat"><div class="seat-h"><span class="seat-n">诸葛亮 · 反向军师</span><span class="seat-m">GPT6.0 · OpenClaw</span></div><div class="seat-d seat-warn">待命 · Q12 key 注入后激活咨询位</div></div>
+        <div class="seat" style="margin-bottom:0"><div class="seat-h"><span class="seat-n">赵云 · 进化官</span><span class="seat-m">本地 9b · 未来 DeepSeek</span></div><div class="seat-d">在岗 · 五域经验库 0 条目 · Z2-Z5 待工单</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="hdot hdot-teal"></div><span class="card-t">16 部门 · 48 员</span><span class="card-s">16 场晨会今日已产出</span></div>
+        <div class="depts">
+          <div class="dept"><div class="dept-n">作战线</div><div class="dept-d">量化·交易·风控·研究院</div></div>
+          <div class="dept"><div class="dept-n">研发线</div><div class="dept-d">研发 11 员·质量·数据·产品</div></div>
+          <div class="dept"><div class="dept-n">支撑线</div><div class="dept-d">运行体·情报·市场·法务</div></div>
+          <div class="dept"><div class="dept-n">专项行营</div><div class="dept-d">回测·数据·设计（主官待任）</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-h"><div class="hdot hdot-teal"></div><span class="card-t">进化层</span><span class="card-s">Harness² 已装机</span></div>
+        <div class="card-s" style="margin-bottom:9px">经验库五域（0 条目 · 首条走 Z4 签字链）</div>
+        <div class="prog-row"><div class="prog-h"><span>Z5 防穿越断言（RiskGuard 治本）</span><span class="wait">下一优先</span></div><div class="bar"><div class="bar-amber" style="width:0%"></div></div></div>
+        <div class="prog-row"><div class="prog-h"><span>Z2/Z3 对照实验·横评</span><span style="color:#8FA8C0">待单</span></div><div class="bar"><div class="bar-teal" style="width:0%"></div></div></div>
+        <div class="prog-row" style="margin-bottom:0"><div class="prog-h"><span>Z1 profile+五域骨架</span><span class="ok">完成</span></div><div class="bar"><div class="bar-teal" style="width:100%"></div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="hdot hdot-teal"></div><span class="card-t">对外门面 · 飞书对接</span></div>
+        <div class="ep"><span>POST /llm/chat</span><span class="ok">就绪</span></div>
+        <div class="ep"><span>POST /inbox/submit</span><span class="ok">就绪</span></div>
+        <div class="ep"><span>GET /inbox/receipt</span><span class="ok">就绪</span></div>
+        <div class="ep" style="border-top:0.5px solid #1E3A5F;margin-top:6px;padding-top:6px"><span>飞书板块（另外 agent）</span><span class="wait">契约 v1 已交 · 待接线</span></div>
+      </div>
+      <div class="card card-red">
+        <div class="card-h"><div class="hdot hdot-red"></div><span class="card-t">挂账告警</span></div>
+        <div class="alert-body">
+          心跳 H1 断三日（修复已入库待批补跑）<br>
+          周一巡检 10-19 强杀 · 10-26 复验窗口<br>
+          影子账本零备份轮转方案待拍板
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ft">
+    <span>原型 v1 · 深海军蓝基调（张郃盯盘席参考）· 无顶部胶囊导航</span>
+    <span>下钻：点部门→工单流水 · 点席位→对话 · 点决策项→审批单</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字军团 · 指挥台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; min-height: 100vh; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-bottom: 0.5px solid #1E3A5F; flex-wrap: wrap; gap: 8px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #4FD1A5; }
+  h1 { font-size: 16px; font-weight: 500; }
+  .sub { font-size: 11px; color: #8FA8C0; }
+  nav { display: flex; gap: 8px; }
+  .tab { border: 0.5px solid #1E3A5F; background: none; color: #8FA8C0; font-size: 13px; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+  .tab:hover { color: #E8F0F8; }
+  .tab.on { color: #4FD1A5; border-color: #1D9E75; background: #0F2440; }
+  .stats { display: flex; gap: 16px; font-size: 11.5px; color: #8FA8C0; flex-wrap: wrap; }
+  .stats b { color: #4FD1A5; font-weight: 500; }
+  main { flex: 1; position: relative; }
+  iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: none; }
+  iframe.on { display: block; }
+  footer { padding: 8px 22px; border-top: 0.5px solid #1E3A5F; font-size: 11px; color: #5A7190; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="dot"></div><h1>数字军团 · 指挥台</h1><span class="sub" id="ts">加载中…</span></div>
+  <nav>
+    <button class="tab on" data-v="map">指挥沙盘</button>
+    <button class="tab" data-v="meeting">作战会议室</button>
+    <button class="tab" data-v="workbench">工作台</button>
+  </nav>
+  <div class="stats" id="stats"></div>
+</header>
+<main>
+  <iframe class="on" src="/static/map.html" id="v-map"></iframe>
+  <iframe src="/static/meeting.html" id="v-meeting"></iframe>
+  <iframe src="/static/workbench.html" id="v-workbench"></iframe>
+</main>
+<footer>
+  <span>WO-LEGION-S22 · 快照源 org.json/hr/tasks/schedules（只读）· 指令走 S21 门面 inbox</span>
+  <span>沙盒模式：模拟盘 · 真实交易生产门未放行</span>
+</footer>
+<script>
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('iframe').forEach(x => x.classList.remove('on'));
+  t.classList.add('on');
+  document.getElementById('v-' + t.dataset.v).classList.add('on');
+});
+fetch('/api/snapshot').then(r => r.json()).then(s => {
+  if (!s.ok) { document.getElementById('ts').textContent = '快照不可用：' + s.error; return; }
+  document.getElementById('ts').textContent = '快照 ' + s.ts + ' · 只读聚合';
+  const q = s.summary;
+  document.getElementById('stats').innerHTML =
+    '<span>营 <b>' + q.departments + '</b></span><span>在编 <b>' + q.agents + '</b></span>' +
+    '<span>在途单 <b>' + q.doing + '</b></span><span>排程 <b>' + q.schedules + '</b></span>';
+}).catch(() => { document.getElementById('ts').textContent = '快照端点不可达'; });
+</script>
+</body>
+</html>

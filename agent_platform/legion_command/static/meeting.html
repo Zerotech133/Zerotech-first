@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字军团 · 金融交易沙盒 · 作战会议室（原型 v4）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; padding: 14px; }
+  .wrap { max-width: 1460px; margin: 0 auto; display: grid; grid-template-columns: 250px minmax(0,1fr) 260px; gap: 12px; }
+  .top { grid-column: 1/-1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #4FD1A5; }
+  h1 { font-size: 16px; font-weight: 500; }
+  .sub { font-size: 11px; color: #8FA8C0; }
+  .market { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mk { background: #0F2440; border-radius: 8px; padding: 5px 12px; font-size: 11.5px; border: 0.5px solid #1E3A5F; }
+  .mk b { font-weight: 500; }
+  .up { color: #E24B4A; } .dn { color: #4FD1A5; }
+  .btn { border-radius: 8px; border: 0.5px solid #1D9E75; background: none; color: #4FD1A5; font-size: 13px; padding: 8px 16px; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: #0F2440; }
+  .btn.amber { border-color: #854F0B; color: #EF9F27; }
+  .panelbox { background: #0A1A2F; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 12px; }
+
+  .picker { max-height: 78vh; overflow-y: auto; }
+  .picker h3 { font-size: 12.5px; font-weight: 500; color: #8FA8C0; margin: 10px 6px 6px; }
+  .pgroup { margin-bottom: 6px; }
+  .pdept { background: #0F2440; border-radius: 9px; padding: 7px 9px; margin-bottom: 5px; }
+  .pdept .dn { font-size: 11.5px; font-weight: 500; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .pdept .dn span { color: #5A7190; font-size: 10px; font-weight: 400; }
+  .pags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pa { display: flex; align-items: center; gap: 4px; background: #0A1A2F; border: 0.5px solid #1E3A5F; border-radius: 14px; padding: 3px 9px 3px 4px; font-size: 11px; cursor: pointer; transition: all .15s; user-select: none; }
+  .pa:hover { border-color: #4FD1A5; }
+  .pa .m { width: 16px; height: 16px; border-radius: 50%; font-size: 9px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .pa.on { border-color: #4FD1A5; background: #0E2A3F; color: #4FD1A5; }
+  .pickfoot { font-size: 10.5px; color: #5A7190; margin-top: 8px; line-height: 1.6; }
+
+  .room { display: flex; flex-direction: column; min-height: 78vh; }
+  .tablezone { background: #0F2440; border-radius: 12px; border: 0.5px solid #1E3A5F; padding: 14px; margin-bottom: 10px; }
+  .tz-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
+  .tz-title { font-size: 13px; font-weight: 500; }
+  .tz-tip { font-size: 10.5px; color: #5A7190; }
+  .table { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .seat { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; width: 88px; }
+  .seat .av { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 500; border: 2px solid transparent; transition: border-color .15s; }
+  .seat:hover .av { border-color: #5A7190; }
+  .seat.host .av { border-color: #BA7517; }
+  .seat .nm { font-size: 11.5px; font-weight: 500; }
+  .seat .md { font-size: 9.5px; color: #8FA8C0; }
+  .seat .x { font-size: 9px; color: #5A7190; }
+  .seat:hover .x { color: #E24B4A; }
+  .c-t { background: #534AB7; color: #EEEDFE; } .c-z { background: #185FA5; color: #E6F1FB; } .c-y { background: #1D9E75; color: #E1F5EE; } .c-h { background: #BA7517; color: #FAEEDA; }
+  .c-r { background: #993C1D; color: #FAECE7; } .c-b { background: #185FA5; color: #E6F1FB; } .c-g { background: #0F6E56; color: #E1F5EE; } .c-i { background: #854F0B; color: #FAEEDA; }
+
+  .chat { flex: 1; background: #0F2440; border-radius: 12px; border: 0.5px solid #1E3A5F; padding: 12px; overflow-y: auto; min-height: 260px; max-height: 44vh; display: flex; flex-direction: column; gap: 9px; }
+  .msg { display: flex; gap: 8px; max-width: 94%; }
+  .msg .av2 { width: 26px; height: 26px; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; flex: none; margin-top: 2px; }
+  .msg .body { background: #0A1A2F; border-radius: 0 10px 10px 10px; padding: 8px 11px; font-size: 12px; line-height: 1.6; }
+  .msg .who { font-size: 10.5px; font-weight: 500; margin-bottom: 2px; color: #8FA8C0; }
+  .msg.host { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.host .body { background: #14283F; border: 0.5px solid #BA7517; border-radius: 10px 0 10px 10px; }
+  .msg.host .who { color: #EF9F27; }
+  .empty { margin: auto; text-align: center; color: #5A7190; font-size: 12px; line-height: 2; }
+  .inputbar { display: flex; gap: 8px; margin-top: 9px; }
+  .inputbar input { flex: 1; background: #0F2440; border: 0.5px solid #1E3A5F; border-radius: 10px; color: #E8F0F8; font-size: 13px; padding: 9px 14px; font-family: inherit; }
+  .inputbar input:focus { outline: none; border-color: #4FD1A5; }
+  .quick { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .qk { font-size: 11px; color: #8FA8C0; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 3px 9px; cursor: pointer; background: none; font-family: inherit; }
+  .qk:hover { color: #4FD1A5; border-color: #1D9E75; }
+
+  .orders { display: flex; flex-direction: column; gap: 8px; }
+  .orders h3 { font-size: 13px; font-weight: 500; }
+  .otype { display: flex; gap: 5px; margin: 6px 0; }
+  .ot { flex: 1; font-size: 10.5px; text-align: center; border: 0.5px solid #1E3A5F; border-radius: 7px; padding: 5px 2px; cursor: pointer; color: #8FA8C0; }
+  .ot.on { color: #4FD1A5; border-color: #1D9E75; background: #0A1A2F; }
+  .ocard { background: #0F2440; border-radius: 10px; padding: 9px 11px; border: 0.5px solid #1E3A5F; font-size: 11.5px; }
+  .ocard .dt { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .ocard .tn { font-size: 12px; font-weight: 500; }
+  .st { font-size: 10px; border-radius: 4px; padding: 1px 6px; }
+  .st-wait { color: #EF9F27; border: 0.5px solid #854F0B; }
+  .st-sent { color: #4FD1A5; border: 0.5px solid #1D9E75; }
+  .ocard .to { color: #8FA8C0; line-height: 1.6; }
+  .ocard .to b { color: #C7D6E8; font-weight: 500; }
+  .simstat { background: #0F2440; border-radius: 10px; padding: 9px 11px; border: 0.5px solid #1E3A5F; font-size: 11px; color: #8FA8C0; line-height: 1.8; }
+  .simstat b { color: #E8F0F8; font-weight: 500; }
+  .dfoot { font-size: 10.5px; color: #5A7190; line-height: 1.6; }
+  @media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } .picker { max-height: 38vh; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="dot"></div><h1>金融交易沙盒 · 作战会议室</h1><span class="sub">沙盒模式：模拟盘 · 不碰真实资金 · 生产门未放行</span></div>
+    <div class="market">
+      <div class="mk">上证 <b class="up">+0.42%</b></div>
+      <div class="mk">创业板 <b class="dn">-0.18%</b></div>
+      <div class="mk">模拟盘净值 <b>1.0368</b></div>
+      <div class="mk">今日盈亏 <b class="up">+1.24%</b></div>
+      <div class="mk">影子五标的 <b style="color:#4FD1A5">全 done</b></div>
+    </div>
+  </div>
+
+  <div class="panelbox picker">
+    <h3>选择参会 Agent（点选上桌 · 建议 3-6 席）</h3>
+    <div class="pgroup">
+      <div class="pdept"><div class="dn">中军帐 · 常任管理席</div><div class="pags" id="pick-zhong"></div></div>
+    </div>
+    <div class="pgroup"><h3>前军 · 作战线</h3>
+      <div class="pdept"><div class="dn">量化交易 <span>D1 主官</span></div><div class="pags" id="pick-quant"></div></div>
+      <div class="pdept"><div class="dn">风控（盯盘营） <span>R3 主官</span></div><div class="pags" id="pick-risk"></div></div>
+      <div class="pdept"><div class="dn">研究院 <span>ACAD1 主官</span></div><div class="pags" id="pick-acad"></div></div>
+    </div>
+    <div class="pgroup"><h3>右军 · 支撑线</h3>
+      <div class="pdept"><div class="dn">情报部 <span>6 单在途</span></div><div class="pags" id="pick-intel"></div></div>
+      <div class="pdept"><div class="dn">运行体 <span>引擎日更</span></div><div class="pags" id="pick-ops"></div></div>
+    </div>
+    <div class="pgroup"><h3>左军 · 研发线</h3>
+      <div class="pdept"><div class="dn">研发部 <span>11 员</span></div><div class="pags" id="pick-dev"></div></div>
+    </div>
+    <div class="pickfoot">已选 <b id="pickCount" style="color:#4FD1A5">0</b> 席 · 老田固定主持<br>每员按 SOUL 人格异声发言（正式版各接真实模型通道）</div>
+  </div>
+
+  <div class="panelbox room">
+    <div class="tablezone">
+      <div class="tz-h"><span class="tz-title">会议桌</span><span class="tz-tip">点席位头像可请离 · 老田居中主持</span></div>
+      <div class="table" id="table"></div>
+    </div>
+    <div class="chat" id="chat"><div class="empty">选择左侧 Agent 上桌<br>或点快捷议题开始</div></div>
+    <div class="inputbar">
+      <input id="say" placeholder="老田发言…（回车发送）" onkeydown="if(event.key==='Enter')send()">
+      <button class="btn" onclick="send()">说</button>
+    </div>
+    <div class="quick">
+      <button class="qk" onclick="ask(0)">今日盘面怎么看？</button>
+      <button class="qk" onclick="ask(1)">模拟盘要不要调仓？</button>
+      <button class="qk" onclick="ask(2)">下周策略重点？</button>
+    </div>
+  </div>
+
+  <div class="panelbox orders">
+    <h3>会终指令 · 待下发</h3>
+    <div class="otype" id="otype">
+      <div class="ot on" data-t="work">研发工单</div>
+      <div class="ot" data-t="trade">模拟交易单</div>
+      <div class="ot" data-t="study">研究单</div>
+    </div>
+    <div id="orderList">
+      <div class="ocard" id="o1"><div class="dt"><span class="tn">WO-EVO-102 Z5 对照实验</span><span class="st st-wait">待下发</span></div><div class="to">类型：<b>研发工单</b> · 主办按参会者分配</div></div>
+      <div class="ocard" id="o2"><div class="dt"><span class="tn">SIM-301 模拟调仓观察单</span><span class="st st-wait">待下发</span></div><div class="to">类型：<b>模拟交易单</b> · 只进影子盘，真实资金需 approval_gate</div></div>
+    </div>
+    <div class="simstat" style="margin-top:8px">
+      沙盒状态<br>
+      模拟交易所：<b>影子盘在役</b> · 五标的跟踪<br>
+      风控闸门：<b>RiskGuard 前置</b>（误杀治本 Z5 在途）<br>
+      真实交易：<b style="color:#EF9F27">生产门未放行</b>（五要素签准）
+    </div>
+    <div class="dfoot" style="margin-top:8px">会终下发 → 田丰登记去重 → 席位执行 → StatusPoint 回传沙盘。交易类指令永远先过 RiskGuard + 模拟盘验证。</div>
+    <button class="btn amber" style="width:100%;margin-top:10px" onclick="endMeeting()">会终 · 分发指令</button>
+  </div>
+</div>
+
+<script>
+const AGENTS = {
+  A0:  { nm:'田丰', av:'田', c:'c-t', md:'glm-5.3', grp:'zhong', line:'<b>结论先行：</b>按证据排优先级，我来立单跟踪到验收。' },
+  AI1: { nm:'诸葛亮', av:'葛', c:'c-z', md:'GPT6.0', grp:'zhong', line:'先求败因。这事有三个你可能没想到的坑，逐条说。' },
+  R2:  { nm:'赵云', av:'云', c:'c-y', md:'9b→DS', grp:'zhong', line:'只认证据。我设计双轨对照实验，拿行为差异回来，等签字。' },
+  OPT1:{ nm:'枣祗', av:'枣', c:'c-g', md:'glm-4.6', grp:'zhong', line:'从流程看：这步卡在哪个环节，我给工作流优化建议。' },
+  D1:  { nm:'鲁肃', av:'鲁', c:'c-r', md:'9b', grp:'quant', line:'选股面：weak 池今晨三线扫描已出，候选 X 只，评分前列是…' },
+  QS1: { nm:'司马懿', av:'司', c:'c-b', md:'9b', grp:'quant', line:'研判面：量价背离信号在积聚，仓位建议偏防御。' },
+  ST1: { nm:'策略研判', av:'策', c:'c-b', md:'glm-5.3', grp:'quant', line:'策略面：该信号历史胜率 58%，样本外衰减风险要提示。' },
+  R3:  { nm:'陆逊', av:'陆', c:'c-r', md:'9b', grp:'risk', line:'风控面：RiskGuard 昨拦 2 笔，误杀样本后验 +0.65%，判据该校了。' },
+  R1:  { nm:'甘宁', av:'甘', c:'c-r', md:'9b', grp:'risk', line:'盯盘面：张郃触发器盯双池，今晨无 G1 预警。' },
+  ACAD1:{nm:'司马徽', av:'徽', c:'c-g', md:'9b', grp:'acad', line:'研究面：缠论学习环最新一条经验提示本段中枢震荡概率大。' },
+  ARCH1:{ nm:'架构师', av:'架', c:'c-b', md:'glm-5.3', grp:'acad', line:'架构面：该改动影响链三条，建议先影子后主链。' },
+  INTEL0:{nm:'情报主官', av:'情', c:'c-i', md:'9b', grp:'intel', line:'情报面：雪球增量帖情感中性偏暖，无黑天鹅信号。' },
+  INTEL1:{nm:'情报员', av:'报', c:'c-i', md:'9b', grp:'intel', line:'采集面：今晨增量帖 N 条已入库，新鲜度达标。' },
+  JEV: { nm:'jev判读', av:'判', c:'c-i', md:'jev', grp:'intel', line:'判读面：异动帖集中在两板块，疑似游资预热。' },
+  A0A: { nm:'董允', av:'董', c:'c-g', md:'5通道', grp:'ops', line:'运营面：昨日复盘三问已归档，周报明早出。' },
+  HERMES_UI:{nm:'邓芝桥', av:'邓', c:'c-g', md:'8787', grp:'ops', line:'通讯面：会议纪要可实时推飞书卡。' },
+  DEV1:{ nm:'曹操', av:'曹', c:'c-b', md:'9b', grp:'dev', line:'研发面：凭单实施，无单不写码。工期一天内。' },
+  DEV2:{ nm:'蒸馏席', av:'蒸', c:'c-b', md:'35b', grp:'dev', line:'数据面：可先离线蒸馏一版判据样本再上。' },
+};
+const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
+let picked = [];
+
+Object.entries(AGENTS).forEach(([id, a]) => {
+  const el = document.createElement('div');
+  el.className = 'pa'; el.id = 'pk-' + id;
+  el.onclick = () => toggle(id);
+  el.innerHTML = '<span class="m ' + a.c + '">' + a.av + '</span>' + a.nm;
+  document.getElementById(GROUPS[a.grp]).appendChild(el);
+});
+
+function toggle(id) {
+  const i = picked.indexOf(id);
+  if (i >= 0) picked.splice(i, 1); else picked.push(id);
+  document.getElementById('pk-' + id).classList.toggle('on');
+  document.getElementById('pickCount').textContent = picked.length;
+  renderTable();
+}
+function renderTable() {
+  const t = document.getElementById('table');
+  t.innerHTML = '<div class="seat host"><div class="av c-h">田</div><div class="nm">老田 · 主持</div><div class="md">签准人</div></div>'
+    + picked.map(id => { const a = AGENTS[id]; return '<div class="seat" onclick="toggle(\'' + id + '\')"><div class="av ' + a.c + '">' + a.av + '</div><div class="nm">' + a.nm + '</div><div class="md">' + a.md + '</div><div class="x">点此请离</div></div>'; }).join('');
+}
+const chat = document.getElementById('chat');
+function ensureChat() { const e = chat.querySelector('.empty'); if (e) e.remove(); }
+function add(id, text) {
+  ensureChat();
+  const isHost = id === 'HOST';
+  const a = isHost ? null : AGENTS[id];
+  const d = document.createElement('div');
+  d.className = 'msg' + (isHost ? ' host' : '');
+  d.innerHTML = isHost
+    ? '<div class="av2 c-h">田</div><div class="body"><div class="who">老田 · 董事长</div>' + text + '</div>'
+    : '<div class="av2 ' + a.c + '">' + a.av + '</div><div class="body"><div class="who">' + a.nm + ' · ' + a.md + '</div>' + text + '</div>';
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+}
+const QT = ['今日盘面怎么看？', '模拟盘要不要调仓？', '下周策略重点？'];
+function ask(i) {
+  add('HOST', QT[i]);
+  if (!picked.length) { setTimeout(() => add('A0', '先从左側点名上桌，我再开单。'), 400); return; }
+  picked.forEach((id, k) => setTimeout(() => add(id, AGENTS[id].line), 500 + k * 650));
+  setTimeout(() => add('A0', '<b>汇总：</b>各方意见已齐。风险点交诸葛复核，实验归赵云，执行单我立。要下发点右侧「会终」。'), 500 + picked.length * 650);
+}
+function send() {
+  const v = document.getElementById('say').value.trim(); if (!v) return;
+  add('HOST', v); document.getElementById('say').value = '';
+  if (!picked.length) return;
+  picked.forEach((id, k) => setTimeout(() => add(id, AGENTS[id].line), 400 + k * 600));
+}
+let otype = 'work';
+document.querySelectorAll('.ot').forEach(el => el.onclick = () => {
+  document.querySelectorAll('.ot').forEach(x => x.classList.remove('on'));
+  el.classList.add('on'); otype = el.dataset.t;
+});
+function endMeeting() {
+  if (!picked.length) { alert('先选参会 Agent'); return; }
+  add('HOST', '【会终】指令下发。');
+  const tn = { work:'WO-', trade:'SIM-', study:'RS-' }[otype];
+  setTimeout(() => add('A0', picked.includes('A0') ? '指令已入 .worktrees（' + tn + '系列），登记去重完成，各席执行，StatusPoint 回传。' : '田丰代收：指令已入 .worktrees（' + tn + '系列），登记去重，各席执行，StatusPoint 回传沙盘。'), 400);
+  document.querySelectorAll('#orderList .st').forEach(s => { s.className = 'st st-sent'; s.textContent = '已下发'; });
+}
+renderTable();
+setTimeout(() => { add('HOST', '点左侧名册选人上桌，或直接点快捷议题开会。'); }, 300);
+</script>
+</body>
+</html>
