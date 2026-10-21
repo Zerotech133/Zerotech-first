@@ -280,3 +280,88 @@ def test_shadow_period_no_execution_chain_import():
             for token in ("signal_pool", "paper.db", "exec_run"):
                 assert token not in node.value, \
                     f"影子期红线：代码字符串不得引用执行链 {token}"
+
+
+# ==========================================================================
+# WO-QT-20261021-091：聚合席去人格化（鲁肃归客服，聚合改无名确定性引擎）
+# 验收口径：①组织者无任何人格字段 ②场次/纪要全文无人名残留
+#          ③聚合数值口径零变化（逻辑未动）④persona_registry 标注裁决
+# ==========================================================================
+
+NAMING_WO = "WO-QT-20261021-091"
+
+
+def test_wo091_organizer_is_anonymous_engine():
+    """组织者=无名确定性引擎：无 zi/字号等人格字段，id/kind 显式声明机器属性。"""
+    import invest_committee as ic
+    assert ic.ORGANIZER["id"] == "anonymous_engine"
+    assert ic.ORGANIZER["kind"] == "deterministic_engine"
+    assert "zi" not in ic.ORGANIZER, "组织者不得携带字号（人格字段）"
+    assert "子敬" not in json.dumps(ic.ORGANIZER, ensure_ascii=False)
+    assert "鲁肃" not in json.dumps(ic.ORGANIZER, ensure_ascii=False)
+    # 席权/精选线/风控席原值保留（改名不动数）
+    assert ic.SEAT_WEIGHTS == {"seat_jishu": 0.40, "seat_jiazhi": 0.30,
+                               "seat_fengkong": 0.30}
+    assert ic.V2_FLOOR == 0.62
+    assert ic.RISK_SEAT_ID == "seat_fengkong"
+
+
+def test_wo091_session_has_no_persona_naming():
+    """整场会审 JSON 无人名残留；minutes.host 为引擎名；带命名修订单号留痕。"""
+    import invest_committee as ic
+    s = ic.run_session(_picks(_sample_stocks()), now="2026-10-21T10:00:00")
+    blob = json.dumps(s, ensure_ascii=False)
+    for bad in ("鲁肃", "子敬", "lu_su"):
+        assert bad not in blob, f"场次残留人格命名: {bad}"
+    assert s["naming_revision"] == NAMING_WO
+    assert s["wo"] == WO          # 建单号不变（083 建的模块）
+    assert s["minutes"]["host"] == "确定性聚合引擎"
+    assert "确定性聚合引擎" in s["minutes"]["conclusion"]
+
+
+def test_wo091_aggregate_numeric_unchanged():
+    """聚合数值口径零变化：按 0.40/0.30/0.30 手工复算必与实现全等。
+
+    本用例对「改名顺手改了权重/线值」类回归承重（权重改则红）。
+    """
+    import invest_committee as ic
+    ops = [
+        {"seat_id": "seat_jishu", "score": 0.80, "rating": "BUY"},
+        {"seat_id": "seat_jiazhi", "score": 0.60, "rating": "HOLD"},
+        {"seat_id": "seat_fengkong", "score": 0.50, "rating": "HOLD"},
+    ]
+    got = ic.aggregate(ops)
+    expect = round(0.80 * 0.40 + 0.60 * 0.30 + 0.50 * 0.30, 4)   # 0.65
+    assert got["score"] == expect == 0.65
+    assert got["rating"] == "SELECT" and got["selected"] is True
+    # 风控席 AVOID 一票否决仍在（改名不动否决条款）
+    ops_veto = [dict(o) for o in ops]
+    ops_veto[2]["rating"] = "AVOID"
+    got2 = ic.aggregate(ops_veto)
+    assert got2["score"] == expect, "否决只影响 selected，不改聚合分"
+    assert got2["selected"] is False
+
+
+def test_wo091_persona_registry_annotated():
+    """人格册鲁肃条目带 091 标注与客服线归属；量化职能已剥离。"""
+    reg = json.loads((HERE.parent / "portal" / "persona_registry.json")
+                     .read_text(encoding="utf-8"))
+    dep = [x for x in reg["departments"] if x.get("name") == "鲁肃"][0]
+    assert dep["naming_revision"] == NAMING_WO
+    assert dep.get("service_line") == "communication_customer_service"
+    assert "去人格化" in dep["duties"] or "无名" in dep["duties"]
+    assert "二次筛选" not in dep["duties"], "量化聚合职能须已从该条目剥离"
+
+
+def test_wo091_no_persona_leak_in_module_code():
+    """代码层无残留：源码（剥离 docstring）不得再出现人名组织者。"""
+    tree = ast.parse((HERE / "paper" / "invest_committee.py")
+                     .read_text(encoding="utf-8"))
+    doc_node = (tree.body[0].value if tree.body
+                and isinstance(tree.body[0], ast.Expr)
+                and isinstance(tree.body[0].value, ast.Constant) else None)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) \
+                and node is not doc_node:
+            assert "鲁肃" not in node.value, \
+                f"代码字符串残留人名组织者: {node.value[:40]}"

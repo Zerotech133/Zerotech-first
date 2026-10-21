@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
-"""G3 投研会审三分析师席 + 鲁肃聚合二次筛选（WO-QT-20261020-083）。
+"""G3 投研会审三分析师席 + 确定性聚合引擎二次筛选。
+
+建单：WO-QT-20261020-083（三席 + 聚合 + v2 账本）。
+命名修订单：WO-QT-20261021-091——聚合席去人格化。
+
+  原实现把人名「鲁肃」挂在聚合席上（organizer/host/纪要行），与
+  WO-FS-148《鲁肃通信部》定鲁肃=通信与客户服务部（客服）冲突。
+  老田 2026-10-21 12:56 裁决：鲁肃在客服，不在量化策略面。本单据此
+  把聚合席改为**无名确定性引擎**：聚合本就是加权纯函数（Σ席分×席权），
+  不是一个人，也不需要 persona。**聚合逻辑与数值口径零变化**——只改
+  命名与表述；席权/精选线/一票否决全部原值保留。
 
 ★影子期红线（WO-QT-20261020-083）★
 本模块是投研意见产出与留痕层：只读股票池 v1、只落本工单新立的 v2 会审
@@ -10,9 +20,11 @@ combo 执行解锁（影子期 D14=2026-11-04 评审 + 老田签准）前绝不�
 
 ──────────────────────────────────────────────────────────────────────
 领域语义（deliverables/2026-10-19_量化板块三国命名体系 v1.2 §二）：
-  投顾团队（鲁肃·子敬）组织多种分析师对股票池 v1 分析判断 → 二次筛选
+  投顾团队组织多种分析师对股票池 v1 分析判断 → 二次筛选
   → 股票池 v2（精选）+ 投研会结论进 minutes。每日选股清单（todays_picks）
   是输入。策略 Agent 向郭嘉汇报，不归本模块管。
+  （WO-091：会审组织者不挂人名，聚合由无名确定性引擎执行；鲁肃归
+  通信与客户服务部，不参与量化策略面。）
 
 实现裁定（不另造框架）：
   - 三席分析师按命名体系人格化（persona 只影响权重/风格参数配置），
@@ -23,7 +35,7 @@ combo 执行解锁（影子期 D14=2026-11-04 评审 + 老田签准）前绝不�
     数值属性不构成策略评价）；席名取未被数字军团占用的三国谋士：
       技术面席 刘晔·子扬（ Chanlun/qpzm 信号证据 ），
       价值面席 满宠·伯宁（ 九维出分/tier 证据 ），
-      风控席   蒋济·子通（ weak/panic/q_toxic 证据，鲁肃给一票谨慎权 ）；
+      风控席   蒋济·子通（ weak/panic/q_toxic 证据，风控席持一票谨慎权 ）；
   - v2 账本落点：k_stock/data/invest_committee/pool_v2_sessions.jsonl
     （本工单新立独立文件，append-only，一行一会审场次，不 update 不
     delete——与 signal_pool/k_stock paper 拒单留痕同款铁律）；每行含
@@ -41,6 +53,7 @@ import os
 from datetime import datetime
 
 WO = "WO-QT-20261020-083"
+NAMING_WO = "WO-QT-20261021-091"       # 聚合席去人格化修订单
 
 LEDGER_SCHEMA_VERSION = 1
 POOL_ID = "todays_picks"
@@ -52,11 +65,13 @@ DEFAULT_LEDGER = os.path.join("k_stock", "data", "invest_committee",
 # 评级阈值（三席共用口径，persona 可覆盖）
 RATING_BUY = 0.65
 RATING_AVOID = 0.40
-# 鲁肃聚合：v2 精选线（稳健联判）
+# 聚合引擎：v2 精选线（稳健联判）
 V2_FLOOR = 0.62
 
-# 组织者：鲁肃（投顾团队），席权配置即其会审章程（persona 影响权重）
-ORGANIZER = {"id": "lu_su", "name": "鲁肃", "zi": "子敬", "org": "投顾团队"}
+# 会审组织者（WO-091 起为无名确定性引擎：聚合是加权纯函数，不是一个人；
+# 不带 zi/字号等人格字段。席权配置即会审章程，与人格无关）
+ORGANIZER = {"id": "anonymous_engine", "name": "确定性聚合引擎",
+             "kind": "deterministic_engine", "org": "投顾团队"}
 SEAT_WEIGHTS = {"seat_jishu": 0.40, "seat_jiazhi": 0.30, "seat_fengkong": 0.30}
 RISK_SEAT_ID = "seat_fengkong"
 
@@ -208,7 +223,7 @@ def rate_stock(seat, stock):
             "reasons": reasons}
 
 
-# ---------- 鲁肃聚合（确定性纯函数，可复算） ----------
+# ---------- 确定性聚合引擎（无名纯函数，可复算） ----------
 
 def aggregate(opinions, seat_weights=None, v2_floor=V2_FLOOR):
     """三席意见加权聚合：score=Σ(席分×席权)；精选=过 v2 线且风控席非 AVOID。
@@ -227,7 +242,7 @@ def aggregate(opinions, seat_weights=None, v2_floor=V2_FLOOR):
 # ---------- 会审场次构造与落账 ----------
 
 def run_session(picks, now=None, ledger_path=None):
-    """对股票池 v1 跑一场投研会审（三席意见→鲁肃聚合→v2 精选+minutes）。
+    """对股票池 v1 跑一场投研会审（三席意见→确定性聚合→v2 精选+minutes）。
 
     picks: 已 load 的 v1 dict（或路径 str，内部 load）。
     now: ISO 时刻文本（缺省取当前时刻；测试注入固定值保确定性）。
@@ -254,6 +269,7 @@ def run_session(picks, now=None, ledger_path=None):
     return {
         "ledger_schema_version": LEDGER_SCHEMA_VERSION,
         "wo": WO,
+        "naming_revision": NAMING_WO,      # WO-091 聚合席去人格化（字段只增不改）
         "session_id": f"poolv2.{scan_run_date}.r{n_round}",
         "kind": "invest_committee_v2",
         "ts": now,
@@ -270,8 +286,8 @@ def run_session(picks, now=None, ledger_path=None):
         "minutes": {
             "kind": "invest_committee",
             "title": f"投研会审 {mm_dd}",
-            "host": "鲁肃·子敬",
-            "conclusion": (f"{mm_dd} 投研会审｜鲁肃·子敬 组织三席会审｜"
+            "host": "确定性聚合引擎",
+            "conclusion": (f"{mm_dd} 投研会审｜确定性聚合引擎 汇总三席意见｜"
                            f"审 {len(reviews)} 只精选 {len(selected)} 只"
                            f"（v2 线 {V2_FLOOR}，风控席一票谨慎权）"),
             "boundary": ("本纪要仅用于模拟盘决策辅助，不涉及真实资金；"

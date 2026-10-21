@@ -375,9 +375,9 @@ def render_html(ctx, now=None):
             "A 股登记策略 · 本市场无记分卡</span></td>"
             "<td>缠论池 %d 行<span class=\"cell-sub\">%d 标的 · %s · 未入池"
             "</span></td>"
-            "<td>待建<span class=\"cell-sub\">探针先行（A4 范式）· WO-088 待放行"
-            "</span></td>"
-            "<td class=\"go\"><span class=\"none\">探针未立 · 无页</span></td></tr>"
+            "<td>待建<span class=\"cell-sub\">WO-088 已探测 · 5924 只 52%% 过门槛"
+            "· 无 Regime/舆情 · 待立项</span></td>"
+            "<td class=\"go\"><span class=\"none\">探针已出 · 无页</span></td></tr>"
             % (us_stance, us.get("rows", 0), us.get("codes", 0),
                _fmt_dt(us.get("mtime")) or "-"))
     else:
@@ -395,13 +395,13 @@ def render_html(ctx, now=None):
         "<td><span class=\"lamp off\"><span class=\"dot\"></span><b>待判</b>"
         "</span><span class=\"cell-sub\">无 Regime 通道 · 灯不亮不造数</span></td>"
         "<td><span class=\"badge b-wait\">待建</span>"
-        "<span class=\"cell-sub\">缠论待现跑</span></td>"
+        "<span class=\"cell-sub\">缠论可复用 · 数据未达标</span></td>"
         "<td><span class=\"badge b-wait\">待接</span>"
-        "<span class=\"cell-sub\">池文件不在盘 · 扫描脚本在 · WO-089 待放行"
-        "</span></td>"
+        "<span class=\"cell-sub\">已现跑零产出（WO-089 10-21 14:51）· 3408 只 0%"
+        " 过 120 根门槛（中位 94 行）· 待情报补历史</span></td>"
         "<td><span class=\"badge b-wait\">待建</span>"
-        "<span class=\"cell-sub\">现跑即可产出</span></td>"
-        "<td class=\"go\"><span class=\"none\">探针未立 · 无页</span></td></tr>")
+        "<span class=\"cell-sub\">数据达标后复跑再立项</span></td>"
+        "<td class=\"go\"><span class=\"none\">探针已出 · 无页</span></td></tr>")
     if crypto:
         rows.append(
             "<tr><td class=\"mk\">虚拟币</td>"

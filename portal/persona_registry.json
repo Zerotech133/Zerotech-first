@@ -59,7 +59,10 @@
       "zi": "子敬",
       "org": "投顾团队",
       "reason": "榻上策=全局研判；稳健联判、善聚众议——组织多种分析师会审正合其长",
-      "duties": "组织多种分析师对股票池 v1 分析判断 → 二次筛选"
+      "duties": "（WO-091 起）人格化登记保留；量化聚合席已去人格化，改由无名确定性聚合引擎执行",
+      "naming_revision": "WO-QT-20261021-091",
+      "naming_note": "老田 2026-10-21 12:56 裁决：鲁肃在通信与客户服务部（客服，见 WO-FS-148《鲁肃通信部》），不参与量化策略面。invest_committee.py 聚合席已改为 anonymous_engine（聚合本为加权纯函数，非人格）。本条目仅保留人格册登记，不再代表任何量化策略职能。",
+      "service_line": "communication_customer_service"
     },
     {
       "id": "watch_camp",
