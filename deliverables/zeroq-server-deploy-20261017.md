@@ -86,7 +86,7 @@
 > `agent_platform/data/*.jsonl` 台账一并剔掉。补传 198 个台账文件后 **275/275 全绿**。
 > 这 4 例是部署验证真正的价值点——它证明了"代码搬过去不等于系统搬过去"。
 
-## 五、踩过的坑（11 条，已固化进 skill）
+## 五、踩过的坑（24 条，已固化进 skill）
 
 1. Miniconda latest 要 glibc ≥2.28 → 只能用 `Miniconda3-py39_4.12.0`。
 2. pandas 3.x 无 manylinux_2_17 wheel → pip 回落源码编译 → 无 gcc 必炸；解法 `--only-binary + 锁版本`。
@@ -101,6 +101,16 @@
 10. `--exclude='*/data'` 对"数据即状态"的平台是危险排除项（连带剔掉台账）。
 11. 验证脚本的路由期望必须对着 handler / nginx 逐条核（`/api/unified/replay` 无参 400 才正确，
     `/api/flow` 不存在，页面是 `/col-audit` 不是 `/bt-view`）。
+12. `du -sm` 在 26 万小文件上会超时并给出**错误总量**（报 27.3GB，实为 26.4GB）→ 统计一律走 `tree_stat.py`。
+13. 单流 paramiko/SFTP 只有 1.2MB/s（不是带宽问题，是小文件 tar 流 + 单 Transport 窗口）→ 多连接并发。
+14. 大族不切会卡死单个 worker（`tushare/stk_mins` 3.2GB / 33,198 平铺文件）→ `--shard-mb` 按文件清单切片。
+15. 族粒度要防"碎族"（`guba/` 每票一 jsonl）→ 纯文件堆目录整体算一族。
+16. sshd 默认 `MaxStartups 10:30:100` + 145ms RTT → 10 路并发必被掐（WinError 10051/10060）→ 放开到 `40:50:120` + 客户端退避回队。
+17. 传输中 `du` 会**倒退**（tar 覆盖先截断），不能当进度条。
+18. 数据仓里的 `quant.db`/`tdx_info.db` 会把真源软链顶成实体文件 → 传完必须重跑 `09_layout.sh` 复原。
+19. `publication_guard` 只支持 Windows → 数据仓到位后 `/api/data/freshness` 必 500（见第七节）。
+20. root 解包的属主让 `zeroq` 读不了 `0o600` 锁文件 → 全量 `chown -R zeroq:zeroq`。
+21. `pytest.ini` 的 `--import-mode=importlib` 让同目录 `from test_x import` 失败 → 跑单文件加 `-o addopts=""`。
 
 ## 六、本次未上线（有意留白，非遗漏）
 
@@ -114,24 +124,158 @@
 
 对应 nginx 路由返回 502，验证记 N/A；补齐上游后即逐条转 200。
 
-## 七、数据仓同步（可续跑）
+## 七、数据仓全量同步（已完成）
 
-`quant_backtest/data` = **27.3 GB / 26 万 parquet 文件**，本次未全量搬运：
+`quant_backtest/data` = **26,378.7 MB / 263,742 文件**，已全量落到服务器并与本地一致。
 
-- 已传：`catalog.json`、`stock_names.json`、`portfolio_config.json`、`labels`、`tdx/`、`tushare`（约 1.9GB+，后台续传中）
-- 工具：`push_data.py` 按顶层条目分块 + 断点续传（已完成条目记 `C:/Temp/push_data_done.txt`）
-- 续跑一条命令即可，中断后重跑自动 SKIP；全量参考耗时：paramiko ≈6h，原生 ssh 管道 ≈70–90 分钟
+| 项 | 结果 |
+|---|---|
+| 传输 | 596 个单元 / 18,232 MB / **零失败** / 6384s（3 路并发 2.6–3.7MB/s） |
+| 一致性 | 552/554 族字节一致；仅 2 个 0 字节文件（`quant.db-shm`、`.warehouse-publication.lock`）按设计不传 |
+| 可读性 | 抽样 30 个 parquet **全部可读**（672 万行，RESULT PASS）；catalog 登记 230 表 |
+| 属主 | `find ! -user zeroq` = 0 |
+
+工具链（已固化进 skill）：`tree_stat.py`（族级统计）→ `diff_stat.py`（差异）→ `push_par.py`
+（族级分片 + 大族按文件清单切片 + 连接退避与单元回队 + 断点续传）。
+
+### 7.1 同步暴露的一个真实缺陷（已修复）
+
+数据仓一到位，`/api/data/freshness` 从 200 变 500：
+
+```
+RuntimeError: 发布锁仅支持Windows LockFileEx        # quant_backtest/warehouse_commit.py:75
+```
+
+`publication_guard` 只实现了 Windows `LockFileEx`，非 Windows 平台**主动拒绝**（原作者意图是"宁可不锁，
+也不能假装有锁"）。但数据仓消费者全部要走这把锁，等于 Linux 侧整个数据面不可用。
+
+修复方式不是绕过锁，而是**补上语义等价的 POSIX 实现**：`fcntl.flock` 的 `LOCK_SH`（共享读）/
+`LOCK_EX`（排他写）、读锁拿到后再 `_ensure_clear`（与 Windows 分支同构）、进程崩溃由内核释放。
+并用 `lock_probe.py` 做了反向验证——写锁持有 8 秒期间，读锁实测 **waited 4.97s / VERDICT BLOCKED_AS_EXPECTED**，
+证明拿到的是真锁。Windows 分支一行未改。
+
+> 附带发现：root 经 tar 解包生成的 `0o600` 锁文件 `zeroq` 读不了（`Permission denied`），
+> 必须对数据仓做一次全量 `chown -R zeroq:zeroq`。
+
+### 7.2 最终验收（数据仓 + 锁修复之后复跑）
+
+```
+验证汇总: PASS=55  FAIL=0  N/A=7        RESULT: ALL GREEN
+```
+
 
 ## 八、交付物
 
 | 文件 | 说明 |
 |---|---|
-| `C:\Users\t\.workbuddy\skills\zeroq-server-deploy\SKILL.md` | **部署 skill**：10 段流程 + 验收门 + 11 条坑 + 扩展位 + 回滚 |
-| `…\zeroq-server-deploy\scripts\` | 11 个可执行脚本 + 4 个工具（d.py / snap_dbs.py / push_data.py / make_*.py）+ payload |
-| `…\zeroq-server-deploy\references\findings.md` | 首次部署实证记录（时间线、失败原文、修复） |
+| `C:\Users\t\.workbuddy\skills\zeroq-server-deploy\SKILL.md` | **部署 skill**：11 段流程（00 预检 + 10 段主流程）+ 验收门 + **24 条坑** + 扩展位 + 回滚 + 断线收尾入口 |
+| `…\zeroq-server-deploy\scripts\` | **30 个脚本**：16 个 shell（`00_preflight` 预检 + 10 段主流程 + 07b 日志修正 + 99_resume 断线收尾 + **`12_cowagent`** + `payload/preflight_remote.sh`）+ 13 个 Python（d.py / snap_dbs.py / make_*.py / tree_stat / diff_stat / push_par / verify_parquet / lock_probe + payload 的迁移器/nginx 补丁/`warehouse_commit.py` 修复版）+ 1 个 nginx 站点模板 |
+| `…\zeroq-server-deploy\references\findings.md` | 首次部署实证记录（时间线、失败原文、修复、数据仓终态、加固实证） |
+| `C:\项目\.workbuddy\deploy\build\cowagent_code.tgz` | **CowAgent 部署包**（2.34 MB / 699 文件，已剔除 141MB Windows venv；网络恢复即可直推） |
+| `C:\项目\deliverables\zeroq-server-deploy-skill-20261017.tar.gz` | **skill 快照归档**（77 KB / 32 文件）——skill 位于用户级目录、不在 git 下，此档为防丢副本 |
+| `C:\项目\老田的AI助手\quant_backtest\warehouse_commit.py` | **跨平台发布锁修复**（POSIX `fcntl.flock` 分支，本地与服务器同步） |
 | `C:\项目\deliverables\zeroq-server-deploy-20261017.md` | 本报告 |
 | 服务器 `/home/zeroq/deploy/` | 全部脚本副本（现场可复跑） |
 | 服务器 `/home/zeroq/db_migration/` | `src_counts.json`、`manifest_p1.json`、`validation_p1.json` |
 
-**下次部署**：直接说「用 zeroq-server-deploy 部署到 xxx」，按 skill 的 10 段顺序执行，
-每段有明确验收门；全流程实测约 2 小时（不含数据仓）。
+**下次部署**：直接说「用 zeroq-server-deploy 部署到 xxx」。**第一个动作永远是 `00_preflight.sh`**
+（只读，1 分钟），它判定「全新 / 已部署 / 半成品」，分别路由到 01 起、`99_resume.sh`、或补段修复。
+全流程实测约 2 小时（不含数据仓 1h46m）。
+
+## 九、收尾状态与遗留
+
+### 9.1 代码修复已入仓
+
+| 项 | 值 |
+|---|---|
+| commit | `e3e5fc7` — publication_guard 补 POSIX 分支（fcntl.flock 替代仅 Windows 的 LockFileEx） |
+| 变更 | 1 file changed, 28 insertions(+), 2 deletions(-) |
+| 回退基线 | `git revert e3e5fc7`（仅影响 Linux 侧，Windows 分支零改动） |
+
+### 9.2 终态快照（最后一次成功探测：21:40）
+
+```
+zeroq-postgresql  active/enabled   PG 15.19 @ 127.0.0.1:5432
+zeroq-portal      active/enabled   portal_api @ 127.0.0.1:8091
+nginx             active/enabled   :80 → 73 条 location 反代
+/  →200   /api/health →200   /api/data/freshness →200   /api/unified/projection →200
+验证汇总: PASS=55  FAIL=0  N/A=7   →  RESULT: ALL GREEN
+数据仓: 26,433 MB 就位，软链三种库均指向 /home/zeroq/data/sqlite/
+```
+
+### 9.3 唯一未完成的动作（不影响功能）
+
+`warehouse_commit.py` 在提交时顺带修了一句过期 docstring（原文写"本候选只支持
+Windows，其他平台拒绝"，已改为"Windows 走 LockFileEx，POSIX 走 fcntl.flock，语义等价"）。
+这句只改注释、不改逻辑，服务器上跑的是功能完全相同的上一版。
+
+**原因**：同步这一刻本机网络从 `10.255.3.168` 切到了手机热点 `172.20.10.9`，
+`10.205.0.118` 属原内网网段，热点无路由 → ping 100% 丢包 / TCP 22 超时（见 skill 判例 22）。
+
+**回到原网段后一条命令补齐**（`99_resume.sh` 已把这套动作封装，含 md5 比对与复验）：
+
+```bash
+bash C:/Users/t/.workbuddy/skills/zeroq-server-deploy/scripts/99_resume.sh
+```
+
+### 9.4 离线加固（22:23–22:45，本机在 192.168.0.9 家用网，服务器不可达）
+
+不可达期间做完三件不依赖服务器的事：
+
+| 动作 | 结果 |
+|---|---|
+| 静态自检 | 14 个 shell `bash -n` 全通过；13 个 Python `py_compile` 全通过 |
+| **新增 `00_preflight.sh`** | 部署前只读预检：可达性 → 远程事实 → 前提核对 → 判定全新/已部署/半成品，并直接告出下一步该跑什么。**已用真实不可达网络验证：exit 2、准确指出"只有默认网关 192.168.0.1、无 10.205 明细路由"** |
+| 修过期文档 | `findings.md` 第 5 节原写"数据仓 27.3GB，已传 1.8GB 剩余续传"（早已全量完成）→ 重写为终态：596 单元 / 18,232 MB / 零失败 / 552-554 族一致 / 30 抽样可读；补第 6 节加固实证、第 7 节两次失联复盘 |
+| skill 归档 | `zeroq-server-deploy-skill-20261017.tar.gz`（31 文件）——skill 不在 git 下，补一份快照 |
+
+**新判例（已写入 SKILL.md 第 23/24 条）**：
+
+- `cmd //c "route print <IP>"` 在受管沙箱里被拦截并**挂起**（整条命令 SIGTERM、零输出），
+  看起来像"脚本坏了"而非"服务器不可达" → 诊断一律改 `netstat -rn | grep`。
+  **排障工具本身必须是"不可能被环境吞掉"的实现**，否则"查不出问题"会被误读成"没有问题"。
+- 判定"已部署"不能只看目录存在，要看 `unit=active/active` + 端口 `LISTEN` 双证据；
+  而只要 `apps/zeroq` 与 `data/sqlite` 都在，**绝不能重跑 01-08**（会覆盖配置、重建 schema、按旧快照重灌 PG）。
+
+### 9.5 CowAgent 9899 预置完成（22:50–23:05，stage 12）
+
+把留白上游里成本最低的一个推进到"只差一个 LLM 端点"。
+
+**推翻旧结论**：此前记录"CowAgent 依赖其 venv（301MB）、成本最低"。实测两点都需修正：
+
+| 旧说法 | 实测 |
+|---|---|
+| 需带 301MB venv | 服务器用 `envs/app` 即可，**代码包仅 2.34 MB / 699 文件**（剔除 141MB Windows venv） |
+| 依赖 click + requests | `requirements.txt` 有 20+ 包，但**渠道 SDK 全部惰性加载**；`channel_type="web"` 时闭包 = **12 个包**，全部命中 wheel、零编译 |
+
+**本地实证链**（py3.11 干净 venv，非推断）：
+
+```
+pip install --only-binary=:all: 12 个包   → EXIT=0（32 个包落地，无编译）
+import app                                → IMPORT_OK
+python app.py                             → 端口 19899 LISTENING
+GET /                                     → HTTP/1.1 200 OK
+```
+
+**产出**：`scripts/12_cowagent.sh`（stage 12）+ `cowagent_code.tgz`（2.34MB）。
+
+脚本固化三条安全红线（源码默认值在生产上都不能用）：
+
+| 项 | 源码默认 | 脚本 | 风险 |
+|---|---|---|---|
+| 监听 | `web_host=""` + 有密码 → **0.0.0.0** | `127.0.0.1` | 9899 直接对公网开放，仅一个弱口令 |
+| Agent 权限 | `full-access` | `workspace-write` | 模型可写整机任意文件 |
+| 自进化/工作区 | `~/cow` + `true` | `state/cow` + `false` | Agent 自动改自身代码 |
+
+config 改写逻辑已离线验证：三遍幂等（密码不变）、无端点时 `knowledge=false` 避免刷错、
+注入端点后 `model/base/bot_type/provider` 全部正确。
+
+**唯一卡点**：LLM 端点。本机指向 `127.0.0.1:11434`（Ollama），服务器没有。三条路实测：
+
+| 方案 | 判定 | 依据 |
+|---|---|---|
+| 云端 API key（DeepSeek 等） | ✅ 推荐 | 注入 `COW_LLM_API_*` 即可 |
+| 本地小模型 llama-cpp-python | ❌ 否决 | PyPI 0.3.36 **只有 sdist（76.6MB），无 Linux wheel**；服务器无 gcc + glibc 2.17 编不了 |
+| 反代回本机 Ollama | ❌ 否决 | 本机非常开服务端，且当前不同网段 |
+
+`10_verify.sh` 的 E 段同步增强：9899 已在跑时 `/cowagent/` 转为**硬门**（502 记 FAIL 而非 N/A）。
