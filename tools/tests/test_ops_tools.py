@@ -646,20 +646,28 @@ def _run_daily(repo: Path, *extra: str) -> subprocess.CompletedProcess:
 
 
 def test_daily_ops_red_contract(tmp_path: Path) -> None:
-    """健康卡红（假仓库不可读）+ 备份 ok → 总判定红、exit 1、stdout 单一 JSON。"""
+    """健康卡红（假仓库不可读）+ 备份 ok → 总判定红、exit 1、stdout 单一 JSON。
+
+    -SkipParity：本用例只验健康卡+备份两块的契约；文档一致性块在
+    test_daily_ops_parity_block 里单独验（夹具里没有 deliverables 双根，
+    不跳过会让 parity 工具 exit 2 把整体抬到 2）。
+    """
     workspace = tmp_path / "daily_red"
     repo = workspace / "repo"
     repo.mkdir(parents=True)
     # daily_ops 把备份仓固定推导为 <repo 的父目录>/_vault
     _make_vault(workspace / "_vault", {"aios-20261022.bundle": b"B" * 96})
 
-    proc = _run_daily(repo)
+    proc = _run_daily(repo, "-SkipParity")
     assert proc.returncode == 1, "stdout=%r\nstderr=%r" % (proc.stdout[:2000], proc.stderr[:2000])
     payload = _json_stdout(proc, "daily_ops/red")
 
     assert payload["schema"] == "daily_ops/v1"
     assert payload["status"] == "red"
     assert payload["exit_code"] == 1
+    assert payload["skip_parity"] is True
+    assert payload["parity"] is None, "跳过时 parity 原始 JSON 必须为 null"
+    assert payload["summary"]["parity"]["skipped"] is True
     assert payload["summary"]["health"]["status"] == "red"
     assert payload["summary"]["health"]["usable"] is True
     assert payload["summary"]["health"]["exit_code"] == 1
@@ -672,6 +680,39 @@ def test_daily_ops_red_contract(tmp_path: Path) -> None:
     assert payload["backup_verify"]["summary"]["ok"] == 1
 
 
+def test_daily_ops_parity_block(tmp_path: Path) -> None:
+    """文档一致性块：双根同名一致 → consistent；healthy 时它不改变红判定。"""
+    workspace = tmp_path / "daily_parity"
+    repo = workspace / "repo"
+    repo.mkdir(parents=True)
+    _make_vault(workspace / "_vault", {"aios-20261022.bundle": b"B" * 96})
+
+    a_root = workspace / "deliverables"
+    b_root = repo / "deliverables"
+    for root in (a_root, b_root):
+        root.mkdir(parents=True, exist_ok=True)
+        (root / "same-doc.md").write_text("# 同一份\n", encoding="utf-8")
+
+    proc = _run_daily(repo, "-ParityA", str(a_root), "-ParityB", str(b_root))
+    payload = _json_stdout(proc, "daily_ops/parity")
+    assert payload["skip_parity"] is False
+    assert payload["summary"]["parity"]["skipped"] is False
+    assert payload["summary"]["parity"]["verdict"] == "consistent"
+    assert payload["summary"]["parity"]["intersection"] == 1
+    assert payload["summary"]["parity"]["diverged"] == 0
+    assert payload["summary"]["parity"]["yellow"] is False
+    assert payload["parity"]["verdict"] == "consistent"
+
+    # 制造漂移：B 侧追加一行 → drifted 变黄，但不把整体判成 error
+    (b_root / "same-doc.md").write_text("# 同一份\n\n新增一行\n", encoding="utf-8")
+    proc = _run_daily(repo, "-ParityA", str(a_root), "-ParityB", str(b_root))
+    payload = _json_stdout(proc, "daily_ops/parity-drift")
+    assert payload["summary"]["parity"]["verdict"] == "drifted"
+    assert payload["summary"]["parity"]["diverged"] == 1
+    assert payload["summary"]["parity"]["yellow"] is True
+    assert payload["status"] != "error", "漂移是黄，不能升级成工具错误"
+
+
 def test_daily_ops_tool_error_contract(tmp_path: Path) -> None:
     """备份仓不存在 → verify_backups exit 2 → 总判定 error、exit 2（fail-closed）。"""
     workspace = tmp_path / "daily_error"
@@ -679,7 +720,7 @@ def test_daily_ops_tool_error_contract(tmp_path: Path) -> None:
     repo.mkdir(parents=True)
     assert not (workspace / "_vault").exists()
 
-    proc = _run_daily(repo)
+    proc = _run_daily(repo, "-SkipParity")
     assert proc.returncode == 2, "stdout=%r\nstderr=%r" % (proc.stdout[:2000], proc.stderr[:2000])
     payload = _json_stdout(proc, "daily_ops/error")
 

@@ -34,7 +34,19 @@
     * A failing repo is reported and skipped; the remaining repos still run.
     * A single unreadable archive input is skipped with a warning and a failed
       exit code, while the remaining files still go into the zip.
-    * -DryRun prints the whole plan and creates/modifies/deletes nothing.
+    * Concurrent runs are serialized by a per-day lock file
+      <dayDir>\.backup.lock containing pid + host + start time. If a fresh lock
+      is held, the second instance prints a FATAL message and exits 1 without
+      touching the day folder. A lock older than -LockTimeoutMinutes is
+      reported as stale and taken over. The lock is always released from a
+      finally block (success, failure, exception).
+    * When an artifact fails but the previous MANIFEST record and the file on
+      disk still agree (byte count + sha256), the old record is carried into
+      the new MANIFEST under a '#' comment. A partial failure therefore cannot
+      turn a good older bundle into an unregistered orphan. A missing file or
+      a changed hash is never carried ("prefer a gap over a lie").
+    * -DryRun prints the whole plan and creates/modifies/deletes nothing. It
+      also never creates the lock; it only prints where a real run would.
     * Rotation only touches child folders whose name is exactly yyyy-MM-dd,
       is strictly older than -KeepDays, and is not a reparse point.
     * No upload, no git config writes, no repo mutation (git bundle only reads).
@@ -47,8 +59,14 @@
     Keep date folders whose day is >= today - KeepDays. Default 14. 0 keeps
     only today's folder.
 
+.PARAMETER LockTimeoutMinutes
+    Age in minutes after which an existing lock file is considered stale and
+    may be taken over. Default 120. Raise it if a legitimate run can exceed two
+    hours (e.g. a very large aios bundle on a slow disk).
+
 .PARAMETER DryRun
-    Print the plan only. Nothing is created, overwritten or deleted.
+    Print the plan only. Nothing is created, overwritten or deleted, and no
+    lock file is created.
 
 .PARAMETER Exclude
     Extra filename globs (matched against the leaf name, case-insensitive) to
@@ -58,7 +76,8 @@
 
 .NOTES
     Exit code: 0 = success (dry-run always 0), 1 = at least one bundle /
-    workspace archive / rotation failure.
+    workspace archive / rotation failure, or the day lock is held by another
+    instance / cannot be acquired.
     Rotation permanently deletes old backup folders (not Recycle Bin) because
     reclaiming vault space is its purpose; use -DryRun to preview.
 #>
@@ -66,6 +85,7 @@
 param(
     [string]$VaultRoot = '',
     [ValidateRange(0, 3650)][int]$KeepDays = 14,
+    [ValidateRange(1, 10080)][int]$LockTimeoutMinutes = 120,
     [switch]$DryRun,
     [string[]]$Exclude = @('.mcp.json', '.env', '.env.*', '.env*')
 )
@@ -103,7 +123,18 @@ $dayName  = $now.ToString('yyyy-MM-dd')
 $stamp    = $now.ToString('yyyyMMdd')
 $dayDir   = Join-Path $VaultRoot $dayName
 $manifest = Join-Path $dayDir 'MANIFEST.txt'
+$lockPath = Join-Path $dayDir '.backup.lock'
 $cutoff   = $now.Date.AddDays(-$KeepDays)
+
+# This script stays pure ASCII on purpose: Windows PowerShell 5.1 reads a
+# BOM-less .ps1 as the ANSI code page (CP936 on this host), so a literal Chinese
+# string would become mojibake in a -File run. The two Chinese strings the
+# acceptance criteria ask for are assembled from code points instead:
+#   $lockDryRunHint = "real run " + hui + jian + suo
+#   $carryNoteZh    = "carried over from the previous successful record"
+$lockDryRunHint = 'real run ' + [char]0x4F1A + [char]0x5EFA + [char]0x9501
+$carryNoteZh = -join ([char[]]@(
+    0x6CBF, 0x7528, 0x4E0A, 0x4E00, 0x6B21, 0x6210, 0x529F, 0x8BB0, 0x5F55))
 
 # Label is ASCII and is also the bundle filename prefix.
 $repos = @(
@@ -111,6 +142,14 @@ $repos = @(
     [pscustomobject]@{ Label = 'zerobound-kg';   Path = (Join-Path $workspace 'zerobound-kg') }
     [pscustomobject]@{ Label = 'digital-legion'; Path = (Join-Path $workspace 'digital-legion') }
     [pscustomobject]@{ Label = 'res-downloader'; Path = (Join-Path $workspace 'res-downloader-py') }
+)
+
+# Every artifact a complete run should leave in $dayDir. The carry-over pass
+# uses this list: a name this run did not produce may keep its old MANIFEST
+# line when the file on disk still matches that line exactly.
+$expectedArtifacts = @(
+    $repos | ForEach-Object { '{0}-{1}.bundle' -f $_.Label, $stamp }
+    'workspace-docs-{0}.zip' -f $stamp
 )
 
 # ------------------------------------------------------- archive inputs -----
@@ -162,10 +201,20 @@ function Get-ExcludedSummary {
 }
 
 $script:okCount        = 0
+$script:carriedCount   = 0
 $script:failCount      = 0
 $script:backedUpBytes  = [long]0
 $script:failures       = New-Object System.Collections.Generic.List[string]
 $script:manifestLines  = New-Object System.Collections.Generic.List[string]
+$script:okNames        = New-Object System.Collections.Generic.List[string]
+
+$script:lockAcquired = $false
+$script:lockStarted  = $now.ToString('yyyy-MM-dd HH:mm:ss')
+$script:lockHost     = $env:COMPUTERNAME
+if (-not $script:lockHost) {
+    try { $script:lockHost = [System.Net.Dns]::GetHostName() }
+    catch { $script:lockHost = 'unknown-host' }
+}
 
 # -------------------------------------------------------------- helpers -----
 function Add-Failure {
@@ -180,9 +229,266 @@ function Add-ManifestEntry {
     $line = '{0}  {1}  {2} bytes  sha256={3}' -f `
         $Item.Name, $Item.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss'), $Item.Length, $Hash
     $script:manifestLines.Add($line)
+    $script:okNames.Add($Item.Name)
     $script:backedUpBytes += $Item.Length
     $script:okCount++
     Write-Host ("  [ok]   {0}  {1:N0} bytes  sha256={2}" -f $Item.Name, $Item.Length, $Hash.Substring(0, 12))
+}
+
+# ---------------------------------------------------------------- lock ------
+# A lock file is created with FileMode.CreateNew (atomic on Windows), so two
+# instances cannot both think they won. Contenders only read the existing file;
+# they never truncate it. A stale lock is removed only after its content is
+# re-read, so we do not delete a lock another instance just refreshed.
+function New-BackupLock {
+    param([string]$Path)
+    $content = @(
+        '# vault backup lock - created by tools/backup_bundles.ps1'
+        ('pid={0}' -f $PID)
+        ('host={0}' -f $script:lockHost)
+        ('started={0}' -f $script:lockStarted)
+        ('timeout_minutes={0}' -f $LockTimeoutMinutes)
+    ) -join [Environment]::NewLine
+
+    $utf8   = New-Object System.Text.UTF8Encoding -ArgumentList $false
+    $stream = $null
+    $created = $false
+    $complete = $false
+    try {
+        $stream = [System.IO.File]::Open(
+            $Path,
+            [System.IO.FileMode]::CreateNew,
+            [System.IO.FileAccess]::Write,
+            [System.IO.FileShare]::None)
+        $created = $true
+        $writer = New-Object System.IO.StreamWriter -ArgumentList @($stream, $utf8)
+        try { $writer.Write($content) }
+        finally { $writer.Dispose() }
+        $complete = $true
+    } finally {
+        if ($null -ne $stream) { $stream.Dispose() }
+        # Never leave a half-written lock behind if the write failed after this
+        # run created the file. Only touch it when *we* created it, so another
+        # instance's lock is never removed.
+        if ($created -and -not $complete) {
+            try { Remove-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue } catch { }
+        }
+    }
+}
+
+function Read-BackupLock {
+    param([string]$Path)
+    $info = [pscustomobject]@{
+        Pid        = $null
+        Host       = '?'
+        Started    = $null
+        StartText  = ''
+        AgeMinutes = $null
+    }
+    try {
+        $lines = @(Get-Content -LiteralPath $Path -ErrorAction Stop -TotalCount 20)
+    } catch {
+        return $info
+    }
+    $startedText = ''
+    foreach ($line in $lines) {
+        if ($line -match '^\s*pid\s*=\s*(\d+)\s*$') {
+            $info.Pid = [int]$Matches[1]
+        } elseif ($line -match '^\s*host\s*=\s*(.+?)\s*$') {
+            $info.Host = $Matches[1]
+        } elseif ($line -match '^\s*started\s*=\s*(.+?)\s*$') {
+            $startedText = $Matches[1]
+        }
+    }
+    $info.StartText = $startedText
+    $parsed = [datetime]::MinValue
+    if ($startedText -and [datetime]::TryParseExact(
+            $startedText, 'yyyy-MM-dd HH:mm:ss',
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::None, [ref]$parsed)) {
+        $info.Started = $parsed
+    } else {
+        # Malformed/partial lock: fall back to the file timestamp rather than
+        # declaring it fresh forever.
+        try { $info.Started = (Get-Item -LiteralPath $Path -ErrorAction Stop).LastWriteTime }
+        catch { $info.Started = $null }
+    }
+    if ($null -ne $info.Started) {
+        $info.AgeMinutes = ((Get-Date) - $info.Started).TotalMinutes
+    }
+    return $info
+}
+
+function Enter-BackupLock {
+    param([string]$Path)
+    $maxAttempts = 3
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        try {
+            New-BackupLock -Path $Path
+            $script:lockAcquired = $true
+            Write-Host ("lock        : acquired by pid={0} on {1} at {2}" -f `
+                $PID, $script:lockHost, $script:lockStarted)
+            return $true
+        } catch [System.IO.IOException] {
+            # Lock already exists (CreateNew) or is momentarily open: inspect it.
+        } catch {
+            Write-Host ("FATAL: cannot create lock file {0}: {1}" -f $Path, $_.Exception.Message)
+            return $false
+        }
+
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { continue }
+        $info = Read-BackupLock -Path $Path
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { continue }
+
+        $ageText = 'unknown age'
+        if ($null -ne $info.AgeMinutes) { $ageText = '{0:N1} min' -f $info.AgeMinutes }
+        $startedText = '?'
+        if ($null -ne $info.Started) { $startedText = $info.Started.ToString('yyyy-MM-dd HH:mm:ss') }
+
+        if ($null -eq $info.AgeMinutes -or $info.AgeMinutes -le $LockTimeoutMinutes) {
+            Write-Host 'FATAL: another backup instance holds the lock; refusing to overwrite it.'
+            Write-Host ("       lock file : {0}" -f $Path)
+            Write-Host ("       owner     : pid={0} host={1} started={2} (age {3})" -f `
+                $info.Pid, $info.Host, $startedText, $ageText)
+            Write-Host ("       timeout   : {0} min. Wait for it to finish, raise -LockTimeoutMinutes," -f $LockTimeoutMinutes)
+            Write-Host '                   or delete the lock file manually if you are certain it is dead.'
+            return $false
+        }
+
+        Write-Host ("  [WARN] stale lock (age {0} > timeout {1} min): pid={2} host={3} started={4}; taking over." -f `
+            $ageText, $LockTimeoutMinutes, $info.Pid, $info.Host, $info.StartText)
+        # Re-read right before deleting: another instance may have taken over in
+        # the meantime and this would otherwise destroy a fresh lock.
+        $confirm = Read-BackupLock -Path $Path
+        if (($null -ne $confirm.Pid -and $confirm.Pid -ne $info.Pid) -or
+            ($confirm.StartText -and $confirm.StartText -ne $info.StartText)) {
+            Write-Host '  [WARN] lock changed while inspecting it; retrying acquisition.'
+            continue
+        }
+        try {
+            Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
+        } catch {
+            Write-Host ("FATAL: stale lock exists but cannot be removed: {0}" -f $_.Exception.Message)
+            return $false
+        }
+    }
+    Write-Host ("FATAL: could not acquire lock after {0} attempts: {1}" -f $maxAttempts, $Path)
+    return $false
+}
+
+function Exit-BackupLock {
+    if (-not $script:lockAcquired) { return }
+    $script:lockAcquired = $false
+    if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
+        Write-Host 'lock        : release skipped (lock file already gone)'
+        return
+    }
+    $info = Read-BackupLock -Path $lockPath
+    if ($info.Pid -ne $PID -or $info.StartText -ne $script:lockStarted) {
+        # A stale takeover happened while this run was still alive. Never delete
+        # the new owner's lock.
+        Write-Host 'lock        : release skipped (lock now belongs to another instance)'
+        return
+    }
+    try {
+        Remove-Item -LiteralPath $lockPath -Force -ErrorAction Stop
+        Write-Host 'lock        : released'
+    } catch {
+        Write-Host ("  [WARN] cannot release lock {0}: {1}" -f $lockPath, $_.Exception.Message)
+    }
+}
+
+# ---------------------------------------------------- MANIFEST carry-over ----
+# Same shape as verify_backups.py / gen_health_card.py parse: name, two spaces,
+# timestamp, two spaces, bytes, two spaces, sha256. Keep this in sync with them.
+$manifestEntryPattern = '^(?<name>.+?)\s{2,}(?<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s{2,}(?<size>\d+)\s+bytes\s{2,}sha256=(?<sha>[0-9A-Fa-f]{64})\s*$'
+
+function Read-OldManifest {
+    param([string]$Path)
+    $entries = @{}
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $entries }
+    try {
+        $lines = @(Get-Content -LiteralPath $Path -Encoding UTF8 -ErrorAction Stop)
+    } catch {
+        Write-Host ("  [WARN] cannot read previous manifest {0}: {1}" -f $Path, $_.Exception.Message)
+        return $entries
+    }
+    foreach ($line in $lines) {
+        if ($line.TrimStart().StartsWith('#')) { continue }
+        $m = [regex]::Match($line, $manifestEntryPattern)
+        if (-not $m.Success) { continue }
+        $name = $m.Groups['name'].Value.Trim()
+        $key = $name.ToLowerInvariant()
+        if ($entries.ContainsKey($key)) { continue }
+        $entries[$key] = [pscustomobject]@{
+            Name      = $name
+            Timestamp = $m.Groups['ts'].Value
+            Size      = [long]$m.Groups['size'].Value
+            Sha256    = $m.Groups['sha'].Value.ToUpperInvariant()
+            Line      = $line.TrimEnd()
+        }
+    }
+    return $entries
+}
+
+function Get-CarriedManifestEntry {
+    param([string]$Name, [hashtable]$OldEntries, [string]$Dir)
+    $key = $Name.ToLowerInvariant()
+    if (-not $OldEntries.ContainsKey($key)) {
+        Write-Host ("  [carry] {0}: not in the previous MANIFEST; nothing to carry" -f $Name)
+        return $null
+    }
+    $entry = $OldEntries[$key]
+    $path = Join-Path $Dir $Name
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        Write-Host ("  [carry] {0}: previous entry exists but the file is gone; not carried" -f $Name)
+        return $null
+    }
+    try {
+        $item = Get-Item -LiteralPath $path -ErrorAction Stop
+        if ([long]$item.Length -ne [long]$entry.Size) {
+            Write-Host ("  [carry] {0}: size changed since the previous record ({1} -> {2}); not carried" -f `
+                $Name, $entry.Size, $item.Length)
+            return $null
+        }
+        $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256 -ErrorAction Stop).Hash
+    } catch {
+        Write-Host ("  [carry] {0}: cannot re-verify the file ({1}); not carried" -f $Name, $_.Exception.Message)
+        return $null
+    }
+    if ($hash -ine $entry.Sha256) {
+        Write-Host ("  [carry] {0}: sha256 changed since the previous record; not carried" -f $Name)
+        return $null
+    }
+    Write-Host ("  [carry] {0}: unchanged since {1}; previous MANIFEST line kept" -f $Name, $entry.Timestamp)
+    return $entry
+}
+
+function Write-ManifestFile {
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add(('# vault backup {0}' -f $now.ToString('yyyy-MM-dd HH:mm:ss')))
+    $lines.Add(('# vault {0}' -f $dayDir))
+    foreach ($line in $script:manifestLines) { $lines.Add($line) }
+
+    # A failed artifact must not silently drop an older, still-good file from
+    # the MANIFEST: verify_backups.py would flag it as an orphan and exit 1.
+    # Only carry a line when the file still matches that line byte for byte.
+    $oldEntries = Read-OldManifest -Path $manifest
+    Write-Host ("carry-over  : {0} usable entr{1} in the previous MANIFEST" -f `
+        $oldEntries.Count, $(if ($oldEntries.Count -eq 1) { 'y' } else { 'ies' }))
+    foreach ($name in $expectedArtifacts) {
+        if ($script:okNames -contains $name) { continue }
+        $entry = Get-CarriedManifestEntry -Name $name -OldEntries $oldEntries -Dir $dayDir
+        if ($null -eq $entry) { continue }
+        $lines.Add(('# {0}: {1} (file unchanged, size + sha256 re-verified)' -f `
+            $carryNoteZh, $entry.Name))
+        $lines.Add($entry.Line)
+        $script:carriedCount++
+    }
+
+    $lines.Add(('# summary ok={0} carried={1} failed={2} bytes={3}' -f `
+        $script:okCount, $script:carriedCount, $script:failCount, $script:backedUpBytes))
+    Set-Content -LiteralPath $manifest -Value $lines -Encoding UTF8 -Force
 }
 
 function Invoke-Bundle {
@@ -406,6 +712,11 @@ Write-Host ("repo root   : {0}" -f $repoRoot)
 Write-Host ("workspace   : {0}" -f $workspace)
 Write-Host ("vault root  : {0}  (exists: {1})" -f $VaultRoot, (Test-Path -LiteralPath $VaultRoot))
 Write-Host ("date folder : {0}  (exists: {1})" -f $dayDir, (Test-Path -LiteralPath $dayDir))
+if ($DryRun) {
+    Write-Host ("lock        : {0}  (DRY-RUN: not created; {1})" -f $lockPath, $lockDryRunHint)
+} else {
+    Write-Host ("lock        : {0}  (stale after {1} min)" -f $lockPath, $LockTimeoutMinutes)
+}
 Write-Host ("keep days   : {0}  (keep folders dated >= {1})" -f $KeepDays, $cutoff.ToString('yyyy-MM-dd'))
 Write-Host ''
 
@@ -430,27 +741,29 @@ if (-not $DryRun) {
         Write-Host ("FATAL: cannot create date folder {0}: {1}" -f $dayDir, $_.Exception.Message)
         exit 1
     }
+    if (-not (Enter-BackupLock -Path $lockPath)) {
+        Write-Host 'FATAL: backup aborted before touching any artifact or MANIFEST.'
+        exit 1
+    }
 }
 
-Write-Host 'repos:'
-foreach ($repo in $repos) { Invoke-Bundle -Repo $repo }
+try {
+    Write-Host 'repos:'
+    foreach ($repo in $repos) { Invoke-Bundle -Repo $repo }
 
-Write-Host 'workspace archive (md + html):'
-Invoke-DocsArchive
+    Write-Host 'workspace archive (md + html):'
+    Invoke-DocsArchive
 
-Write-Host 'rotation:'
-$rot = Invoke-Rotation -Root $VaultRoot -Cutoff $cutoff -Preview:$DryRun.IsPresent
+    Write-Host 'rotation:'
+    $rot = Invoke-Rotation -Root $VaultRoot -Cutoff $cutoff -Preview:$DryRun.IsPresent
 
-if (-not $DryRun) {
-    $lines = New-Object System.Collections.Generic.List[string]
-    $lines.Add(('# vault backup {0}' -f $now.ToString('yyyy-MM-dd HH:mm:ss')))
-    $lines.Add(('# vault {0}' -f $dayDir))
-    foreach ($line in $script:manifestLines) { $lines.Add($line) }
-    $lines.Add(('# summary ok={0} failed={1} bytes={2}' -f `
-        $script:okCount, $script:failCount, $script:backedUpBytes))
-    Set-Content -LiteralPath $manifest -Value $lines -Encoding UTF8 -Force
-    Write-Host ''
-    Write-Host ("manifest    : {0}" -f $manifest)
+    if (-not $DryRun) {
+        Write-ManifestFile
+        Write-Host ''
+        Write-Host ("manifest    : {0}" -f $manifest)
+    }
+} finally {
+    Exit-BackupLock
 }
 
 $swTotal.Stop()
@@ -468,6 +781,7 @@ if ($DryRun) {
 }
 
 Write-Host ("entries     : {0} file(s), {1:N0} bytes" -f $script:okCount, $script:backedUpBytes)
+Write-Host ("carried     : {0} file(s) kept from the previous MANIFEST" -f $script:carriedCount)
 Write-Host ("archive     : {0} md + {1} html = {2} file(s), {3:N0} input bytes" -f `
     $docs.Count, $html.Count, $archiveFiles.Count, [long]$archiveBytes)
 Write-Host ("excluded    : {0}" -f (Get-ExcludedSummary))
