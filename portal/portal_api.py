@@ -155,6 +155,7 @@ import api_brief        # 复盘简报只读投影 /api/brief/*（联动层二�
 import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，2026-10-19）
 import api_news_intel   # K-ORG-207 新闻情报台三栏聚合出口（速报/政策/舆情，只读 2026-10-19）
 import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量化/飞书双路径 2026-10-19）
+import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/brief（2026-10-21）
 
 
 
@@ -644,7 +645,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2561,9 +2562,37 @@ color:#fff;font-size:13.5px;cursor:pointer}
             r["mode_note"] = "轻量模式：无经理无复盘，随时可在策略详情升级雇佣"
         self._json(r, 200 if r.get("ok") else 400)
 
+    # WO-OS-09：/api/zhuge/brief 只读端点的非 GET 方法统一 405（BaseClass
+    # 默认 501，语义不准；POST 见 do_POST 顶部同款 405 块）
+    def _zhuge_brief_method_not_allowed(self):
+        self._json({"error": "method not allowed: 本端点只读，仅支持 GET"},
+                   405)
+
+    def do_OPTIONS(self):
+        if self.path.split("?", 1)[0] == '/api/zhuge/brief':
+            self._zhuge_brief_method_not_allowed()
+            return
+        self.send_error(501)
+
+    def do_PUT(self):
+        if self.path.split("?", 1)[0] == '/api/zhuge/brief':
+            self._zhuge_brief_method_not_allowed()
+            return
+        self.send_error(501)
+
+    def do_DELETE(self):
+        if self.path.split("?", 1)[0] == '/api/zhuge/brief':
+            self._zhuge_brief_method_not_allowed()
+            return
+        self.send_error(501)
+
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        if path == '/api/zhuge/brief':
+            # WO-OS-09 只读出口：非 GET 显式 405（不落 404 兜底，契约清晰）
+            self._zhuge_brief_method_not_allowed()
+            return
         # P0-1b：变更类 POST 鉴权闸门（本机放行；局域网须 X-Portal-Token）。
         # /feishu/event 不在 _MUTATION_POSTS，单独走验签（_api_feishu_event）。
         if path in _MUTATION_POSTS and not self._check_portal_token():
@@ -3065,6 +3094,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/notify/queue':
             # K-ORG-201 通知指挥四态队列（三本账只读聚合，零写入 2026-10-19）
             self.notify_queue(qs)
+            return
+        if path == '/api/zhuge/brief':
+            # WO-OS-09 诸葛亮建议引擎只读出口（六源聚合→规则草案，零写操作
+            # 2026-10-21；非 GET 由 do_POST/do_OPTIONS 统一 405）
+            self._zhuge_brief(qs)
             return
         if path == '/api/news/intel':
             # K-ORG-207 新闻情报台三栏聚合出口（速报/政策/舆情，只读零参数）
