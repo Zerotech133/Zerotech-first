@@ -1,0 +1,247 @@
+# -*- coding: utf-8 -*-
+"""WO-LEGION-S21 军团门面测试：信封/LLM 门面/投递幂等/HTTP 端点。
+
+承重纪律：先红后绿已在本文件编写过程中执行（envelope 校验各失败分支
+在实现前先写用例确认失败形态）；MockLLM 注入保证不依赖外部 Ollama。
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import threading
+import time
+import urllib.request
+from pathlib import Path
+
+import pytest
+
+_PLATFORM = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_PLATFORM))
+
+from engine.llm import LLMError  # noqa: E402
+from gateway import inbox_gateway, llm_gateway  # noqa: E402
+from gateway.envelope import (EnvelopeError, make_envelope,  # noqa: E402
+                              validate_envelope)
+from gateway.serve import build_server  # noqa: E402
+
+
+# ---------------------------------------------------------------- 信封
+
+def test_envelope_ok_shape():
+    env = make_envelope(kind="llm_chat", ok=True, data={"text": "hi"})
+    validate_envelope(env)
+    assert env["schema_version"] == "1.0"
+    assert env["degraded"] is False
+
+
+def test_envelope_reject_missing_key():
+    env = make_envelope(kind="x", ok=True)
+    del env["ts"]
+    with pytest.raises(EnvelopeError):
+        validate_envelope(env)
+
+
+def test_envelope_reject_ok_with_error():
+    env = make_envelope(kind="x", ok=True,
+                        error={"code": "c", "message": "m"})
+    with pytest.raises(EnvelopeError):
+        validate_envelope(env)
+
+
+def test_envelope_reject_fail_without_error():
+    env = make_envelope(kind="x", ok=False, data={"a": 1})
+    with pytest.raises(EnvelopeError):
+        validate_envelope(env)
+
+
+def test_envelope_reject_bad_version_and_latency():
+    env = make_envelope(kind="x", ok=True)
+    env["schema_version"] = "9.9"
+    with pytest.raises(EnvelopeError):
+        validate_envelope(env)
+    env2 = make_envelope(kind="x", ok=True, latency_ms=-1)
+    with pytest.raises(EnvelopeError):
+        validate_envelope(env2)
+
+
+# ---------------------------------------------------------------- LLM 门面
+
+def test_llm_chat_mock_roundtrip(monkeypatch):
+    class StubLLM:
+        def chat(self, system, user, model=None):
+            return "ok", "normal"
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: StubLLM())
+    env = llm_gateway.chat(binding="ollama/qwen3.5:9b",
+                           system="s", user="回声")
+    validate_envelope(env)
+    assert env["ok"] is True
+    assert env["data"]["text"] == "ok"
+    assert env["data"]["status"] == "normal"
+    assert env["latency_ms"] >= 0
+
+
+def test_llm_chat_degraded_passthrough(monkeypatch):
+    class DegradedLLM:
+        def chat(self, system, user, model=None):
+            return "fallback text", "degraded"
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: DegradedLLM())
+    env = llm_gateway.chat(binding="glm/glm-5.3", system="", user="u")
+    validate_envelope(env)
+    assert env["ok"] is True and env["degraded"] is True
+    assert env["data"]["status"] == "degraded"
+
+
+def test_llm_chat_error_no_throw(monkeypatch):
+    from engine.llm import LLMError
+    def boom(binding):
+        raise RuntimeError("构造坏")
+    monkeypatch.setattr(llm_gateway, "make_llm", boom)
+    env = llm_gateway.chat(binding="nova/not-a-port")
+    validate_envelope(env)
+    assert env["ok"] is False
+    assert env["error"]["code"] == "llm_error"
+
+    class DeadLLM:
+        def chat(self, system, user, model=None):
+            raise LLMError("重试耗尽")
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: DeadLLM())
+    env2 = llm_gateway.chat(binding="ollama/qwen3.5:9b", system="", user="x")
+    validate_envelope(env2)
+    assert env2["ok"] is False and "耗尽" in env2["error"]["message"]
+
+
+def test_llm_chat_default_binding_used(monkeypatch):
+    seen = {}
+    class Spy:
+        def chat(self, system, user, model=None):
+            seen["model"] = model
+            return "t", "normal"
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy())
+    llm_gateway.chat(system="", user="u")
+    assert seen["model"] == llm_gateway.DEFAULT_BINDING
+
+
+# ---------------------------------------------------------------- 投递门面
+
+@pytest.fixture()
+def store(tmp_path):
+    inbox_gateway.set_store(tmp_path)
+    yield tmp_path
+    inbox_gateway._DEFAULT_STORE = None
+
+
+def test_submit_and_receipt_roundtrip(store):
+    env = inbox_gateway.submit("question", {"q": "今天该干嘛"},
+                               source="feishu", idempotency_key="fs-001")
+    validate_envelope(env)
+    assert env["ok"] is True
+    msg_id = env["data"]["id"]
+    assert env["data"]["replayed"] is False
+
+    rec = inbox_gateway.receipt(msg_id)
+    validate_envelope(rec)
+    assert rec["data"]["state"] == "inbox"
+    assert rec["data"]["record"]["payload"]["q"] == "今天该干嘛"
+
+
+def test_submit_idempotent_replay(store):
+    e1 = inbox_gateway.submit("task_request", {"t": 1}, idempotency_key="dup-1")
+    e2 = inbox_gateway.submit("task_request", {"t": 1}, idempotency_key="dup-1")
+    assert e1["data"]["id"] == e2["data"]["id"]
+    assert e2["data"]["replayed"] is True
+    # 只落一份盘
+    files = list((store / "inbox").glob("*.json"))
+    assert len(files) == 1
+
+
+def test_submit_replay_after_processed(store):
+    e1 = inbox_gateway.submit("feedback", {"f": "x"}, idempotency_key="mv-1")
+    msg_id = e1["data"]["id"]
+    src = store / "inbox" / ("%s.json" % msg_id)
+    dst = store / "processed" / ("%s.json" % msg_id)
+    src.rename(dst)
+    e2 = inbox_gateway.submit("feedback", {"f": "x"}, idempotency_key="mv-1")
+    assert e2["data"]["replayed"] is True
+    assert e2["data"]["state"] == "processed"
+
+
+def test_submit_rejects_bad_kind_and_payload(store):
+    env = inbox_gateway.submit("not_a_kind", {})
+    assert env["ok"] is False and env["error"]["code"] == "bad_kind"
+    env2 = inbox_gateway.submit("question", ["not", "dict"])
+    assert env2["ok"] is False and env2["error"]["code"] == "bad_payload"
+
+
+def test_receipt_not_found(store):
+    env = inbox_gateway.receipt("lg-nonexistent")
+    validate_envelope(env)
+    assert env["ok"] is True
+    assert env["data"]["state"] == "not_found"
+
+
+# ---------------------------------------------------------------- HTTP 端点
+
+@pytest.fixture()
+def server(store, monkeypatch):
+    class StubLLM:
+        def chat(self, system, user, model=None):
+            return "pong", "normal"
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: StubLLM())
+    srv = build_server(port=0)  # 随机空闲端口
+    th = threading.Thread(target=srv.serve_forever, daemon=True)
+    th.start()
+    yield "http://127.0.0.1:%d" % srv.server_address[1]
+    srv.shutdown()
+    srv.server_close()
+
+
+def _post(base, path, obj):
+    req = urllib.request.Request(
+        base + path, data=json.dumps(obj).encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _get(base, path):
+    with urllib.request.urlopen(base + path, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def test_http_health(server):
+    out = _get(server, "/health")
+    assert out["ok"] is True and out["service"] == "legion-gateway"
+
+
+def test_http_llm_chat(server):
+    env = _post(server, "/llm/chat", {"system": "s", "user": "ping"})
+    validate_envelope(env)
+    assert env["ok"] is True and env["data"]["text"] == "pong"
+
+
+def test_http_inbox_flow(server):
+    env = _post(server, "/inbox/submit",
+                {"kind": "question", "payload": {"q": 1}, "source": "feishu"})
+    validate_envelope(env)
+    msg_id = env["data"]["id"]
+    rec = _get(server, "/inbox/receipt/%s" % msg_id)
+    validate_envelope(rec)
+    assert rec["data"]["state"] == "inbox"
+
+
+def test_http_404_and_400(server):
+    try:
+        urllib.request.urlopen(server + "/nope", timeout=10)
+        raised = False
+    except urllib.error.HTTPError as e:
+        raised = (e.code == 404)
+    assert raised
+    try:
+        urllib.request.urlopen(
+            server + "/llm/chat",
+            data=b"\xff\xfe not json", timeout=10)
+        raised = False
+    except urllib.error.HTTPError as e:
+        raised = (e.code == 400)
+    assert raised

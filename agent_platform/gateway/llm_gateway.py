@@ -1,0 +1,56 @@
+# -*- coding: utf-8 -*-
+"""LLM 稳定门面（WO-LEGION-S21）。
+
+给外部板块（飞书中台等）的唯一 LLM 调用入口：binding → engine/llm.py
+make_llm → chat。不建第二调用层——路由/降级三态/超时档位全部复用军团
+engine 语义，本层只做信封化与异常归一：
+
+  LLMError（重试耗尽）→ ok=False 信封（code="llm_error"），不抛穿；
+  status=="degraded"  → degraded=True 透传（云端故障自动落本地 9b 判例）。
+
+binding 词表（10-18 分工定案 + S20 异族裁决）：
+  "ollama/qwen3.5:9b"（默认主力）/ "ollama/qwen3.6:35b-a3b"（判读重档）
+  / "ollama/bge-m3"（嵌入）/ "glm/glm-5.3"（田丰参谋长云端）
+  / "openai/gpt-6.0"（诸葛亮异族，须 OPENAI_API_KEY）
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+_PLATFORM = str(Path(__file__).resolve().parents[1])
+if _PLATFORM not in sys.path:
+    sys.path.insert(0, _PLATFORM)
+
+from engine.llm import LLMError, make_llm  # noqa: E402
+
+from gateway.envelope import make_envelope, timed  # noqa: E402
+
+KIND = "llm_chat"
+
+DEFAULT_BINDING = "ollama/qwen3.5:9b"
+
+
+@timed
+def chat(binding=None, system="", user=""):
+    """LLM 调用信封门面。返回标准信封（见 envelope.make_envelope）。
+
+    data: {binding_resolved, text, status}
+    error: {code:"llm_error", message} —— 重试耗尽/通道不可用，调用方应回落自身兜底。
+    """
+    binding = binding or DEFAULT_BINDING
+    try:
+        llm = make_llm(binding)
+    except Exception as exc:  # 构造失败（如 nova 端口非法）也归一为信封
+        return make_envelope(kind=KIND, ok=False,
+                             error={"code": "llm_error",
+                                    "message": "make_llm failed: %s" % exc})
+    try:
+        text, status = llm.chat(system, user, model=binding)
+    except LLMError as exc:
+        return make_envelope(kind=KIND, ok=False,
+                             error={"code": "llm_error", "message": str(exc)})
+    return make_envelope(kind=KIND, ok=True, degraded=(status == "degraded"),
+                         data={"binding_resolved": binding,
+                               "text": text, "status": status})
