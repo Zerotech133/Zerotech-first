@@ -245,3 +245,23 @@ agent_platform/intel_inbox/processed/
 k_stock/data/*.jsonl
 k_stock/data/*.json
 k_stock/data/*.lock
+
+# 临时/探针/垃圾文件（D0卫生）
+.commit_msg_tmp.txt
+.tmp_cn_roster.json
+fix_garble_tmp.py
+popup_fix_result.txt
+quant_backtest/%s
+quant_backtest/_xq_hk_point_scan.out
+db_migration/snapshots/
+common/
+data_sources/
+legion_agents/
+logs/
+tmp/
+portal_backups/
+k_stock/paper/combo_registrations/
+quant_backtest/experiments/
+quant_backtest/portal/
+agent_platform/backup_20261018_team_quality.json
+agent_platform/intel_inbox/intel_inbox_ledger.jsonl
