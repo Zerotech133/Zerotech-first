@@ -8,7 +8,8 @@
   list                     任务单总览（谁在干什么/分支/进度）
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
   merge <TID> [--l2-ack --l2-reason "五要素"]
-                                    过评审门（三守卫 + L2 危险操作门）后合并回 master 并清场；
+                                    过评审门（Mixin/导航/端口/明文凭据 + L2 危险操作门）
+                                    后合并回 master；worktree 保留待人工回收；
                                     --l2-ack=人工确认豁免 L2 命中（K-STOCK-416，须带 --l2-reason）
   board [out.html]         生成看板 HTML（默认 docs/dev/devboard.html）
   drop <TID>               放弃任务（留原因，清 worktree）
@@ -18,6 +19,7 @@
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -30,6 +32,8 @@ PROJECTS = os.path.join(REPO, "agent_platform", "registry", "projects.json")
 ORG_JSON = os.path.join(REPO, "agent_platform", "registry", "org.json")
 OWNER_DOMAIN = os.path.join(REPO, "agent_platform", "registry",
                             "owner_domain.json")
+SCAN_SECRETS = os.path.join(REPO, "tools", "scan_secrets.py")
+SECRET_SCAN_BATCH = 50
 
 
 CPT_DB = os.path.join(REPO, "agent_platform", "data", "checkpoints.db")
@@ -97,6 +101,92 @@ def _emit(kind, task, detail=""):
                 task, detail))
     except Exception:  # noqa: BLE001
         pass
+
+
+def _materialize_branch_files(branch, files):
+    """worktree 缺失时的回退：把分支改动文件落到临时目录（调用方负责清理）。
+
+    仅供扫描器按路径模式读取**分支内容**；删除文件/子模块取不到 blob 时跳过。
+    """
+    root = tempfile.mkdtemp(prefix="devtask_secret_")
+    for rel in files:
+        r = subprocess.run(["git", "show", "%s:%s" % (branch, rel)],
+                           cwd=REPO, capture_output=True)
+        if r.returncode != 0:
+            continue
+        dest = os.path.join(root, rel)
+        parent = os.path.dirname(dest)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(dest, "wb") as f:
+            f.write(r.stdout)
+    return root
+
+
+def _secret_scan_gate(branch, worktree=""):
+    """第五道守卫：明文凭据扫描（只扫本分支相对 master 的改动文件）。
+
+    merge 时分支内容已 commit、暂存区为空，扫描器默认的 ``git diff --cached``
+    模式会永远返回干净，故这里显式取 ``master...<branch>`` 的文件清单分批传入。
+    优先以该工单的 worktree 为扫描根（分支检出内容）；worktree 缺失时从分支
+    blob 临时落盘回退，避免误扫 master 侧的旧内容。
+
+    扫描器缺失 → 跳过并告警（fail-open，不阻断合并）；任一未豁免命中 →
+    返回失败，由 merge 走既有 guard_fail 通道阻断。输出只透传扫描器已脱敏
+    报告，绝不回显凭据明文。
+    """
+    if not os.path.isfile(SCAN_SECRETS):
+        print("  [WARN] 明文凭据：扫描器不存在，跳过（fail-open，不阻断合并）：%s"
+              % SCAN_SECRETS)
+        return True, "扫描器不存在，已跳过（fail-open）"
+    try:
+        # -z：避免中文/特殊字符路径被 git 转义成带引号的字面量。
+        out = _git("diff", "--name-only", "-z", "master...%s" % branch)
+    except SystemExit as e:
+        return False, "无法获取分支改动清单：%s" % e
+    if "\0" in out:
+        files = [p for p in out.split("\0") if p.strip()]
+    else:  # 兼容测试桩/旧 git 输出：非 -z 时的逐行清单
+        files = [ln.strip() for ln in out.splitlines() if ln.strip()]
+    if not files:
+        return True, "无改动文件，视为通过（空改动）"
+    cleanup = None
+    scan_cwd = worktree or ""
+    if scan_cwd and not os.path.isabs(scan_cwd):
+        scan_cwd = os.path.join(REPO, scan_cwd)
+    if not (scan_cwd and os.path.isdir(scan_cwd)):
+        scan_cwd = _materialize_branch_files(branch, files)
+        cleanup = scan_cwd
+    failures = []
+    try:
+        for start in range(0, len(files), SECRET_SCAN_BATCH):
+            batch = files[start:start + SECRET_SCAN_BATCH]
+            try:
+                r = subprocess.run(
+                    [sys.executable, SCAN_SECRETS, "--"] + batch,
+                    cwd=scan_cwd, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace")
+            except OSError as e:
+                failures.append((start, -1, "扫描器启动失败：%s" % e))
+                continue
+            if r.returncode != 0:
+                failures.append((start, r.returncode,
+                                 (r.stdout or r.stderr).strip()))
+    finally:
+        if cleanup:
+            shutil.rmtree(cleanup, ignore_errors=True)
+    if not failures:
+        return True, "%d 个改动文件，无未豁免命中" % len(files)
+    total = (len(files) + SECRET_SCAN_BATCH - 1) // SECRET_SCAN_BATCH
+    summary = "未豁免命中（%d/%d 批退出码非 0）" % (len(failures), total)
+    reports = "\n".join(o for _, _, o in failures if o)
+    hits = [ln.strip() for ln in reports.splitlines()
+            if ln.strip().startswith("HIT ")]
+    if hits:  # 首条命中置于摘要，确保 guard_fail 的 120 字截断仍可见
+        summary += "；" + hits[0][:180]
+    return False, (summary + "\n" + reports).strip()
+
+
 GATES = [("Mixin方法集", [sys.executable,
                           os.path.join(REPO, "tools", "_mixin_integrity.py"),
                           "--check"]),
@@ -104,7 +194,8 @@ GATES = [("Mixin方法集", [sys.executable,
                        os.path.join(REPO, "tools", "unify_nav.py"),
                        "--check"]),
          ("端口注册", [sys.executable,
-                       os.path.join(REPO, "tools", "check_ports.py")])]
+                       os.path.join(REPO, "tools", "check_ports.py")]),
+         ("明文凭据", _secret_scan_gate)]
 
 
 def _git(*args, cwd=REPO):
@@ -552,13 +643,13 @@ def cmd_merge(tid, *flags):
         raise SystemExit("无此工单")
     # 防呆（K-ORG-139 / P0-1）：分支无提交即拒绝合并，保留 worktree。
     # 亲历事故：K-ORG-137 在 worktree 改了文件但未 commit 就跑 merge——
-    # 分支指向 master 使 `git merge --no-ff` 空转（Already up to date），
-    # 随后 --force 清场直接删除未提交改动，修复内容全丢。
+    # 分支指向 master 使 `git merge --no-ff` 空转（Already up to date）；
+    # 旧版随后 --force 清场直接删除未提交改动，修复内容全丢。
     ahead, _ = _ahead_behind(t["branch"])
     if ahead == 0:
         print("== 评审门 ==")
         print("  ✗ 防呆：分支 %s 无提交（master..%s = 0）——未 commit 即 merge "
-              "会空转并被 --force 清场丢内容" % (t["branch"], t["branch"]))
+              "会空转（无实际合并内容）" % (t["branch"], t["branch"]))
         print("  已拒绝合并，worktree 保留。请在 worktree 内先 commit，再重跑 merge。")
         t["status"] = "review"
         _save(tasks)
@@ -567,18 +658,23 @@ def cmd_merge(tid, *flags):
         return 1
     print("== 评审门 ==")
     for name, cmd in GATES:
-        r = subprocess.run(cmd, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace")
-        ok = r.returncode == 0
-        print("  %-8s %s" % (name, "✓" if ok else "✗ " +
-                             (r.stdout or r.stderr).strip()[:160]))
-        if not ok:
-            print("门未过，拒绝合并。修完重跑。")
-            t["status"] = "review"
-            _save(tasks)
-            _emit("guard_fail", tid, "门 %s 未过：%s"
-                  % (name, ((r.stdout or r.stderr).strip() or "")[:120]))
-            return 1
+        if callable(cmd):
+            ok, out = cmd(t["branch"], t.get("worktree"))
+        else:
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace")
+            ok = r.returncode == 0
+            out = (r.stdout or r.stderr).strip()
+        if ok:
+            print("  %-8s ✓%s" % (name, ("  " + out) if out else ""))
+            continue
+        out = (out or "").strip()
+        print("  %-8s ✗ %s" % (name, out[:160]))
+        print("门未过，拒绝合并。修完重跑。")
+        t["status"] = "review"
+        _save(tasks)
+        _emit("guard_fail", tid, "门 %s 未过：%s" % (name, out[:120]))
+        return 1
     # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
     r = subprocess.run([sys.executable,
                         os.path.join(REPO, "tools", "_l2_guard.py"),
@@ -611,22 +707,17 @@ def cmd_merge(tid, *flags):
             return 1
     _git("merge", "--no-ff", t["branch"], "-m",
          "merge task/%s: %s" % (tid, t["desc"]))
-    # 清场容错：并发环境下 worktree 可能已被 prune（prunable 状态）
-    subprocess.run(["git", "worktree", "prune"], cwd=REPO,
-                   capture_output=True)
-    for cmd in (["git", "worktree", "remove", t["worktree"], "--force"],
-                ["git", "branch", "-d", t["branch"]]):
-        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace")
-        if r.returncode != 0:
-            print("  （清场提示：%s——不影响合并结果）"
-                  % (r.stderr or "").strip()[:120])
+    # 合并后不自动删除 worktree/分支：删除不可逆，只提示、留给人确认执行。
     t["status"] = "done"
     t["merged"] = time.strftime("%F %T")
     _save(tasks)
     _ckpt(tid, "merge", t.get("owner", "devtask"), {"status": "done"})
-    _emit("merge_done", tid, "三守卫全绿，已合并 master")
-    print("工单 %s 已合并清场 ✓" % tid)
+    _emit("merge_done", tid,
+          "守卫全绿（含明文凭据扫描），已合并 master；worktree 保留待人工回收")
+    print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
+    if t.get("worktree"):
+        print("→ 分支已合并、工作区干净，可执行 `git worktree remove %s` 回收"
+              % t["worktree"])
     return 0
 
 
