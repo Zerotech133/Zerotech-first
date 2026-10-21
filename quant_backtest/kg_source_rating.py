@@ -50,6 +50,17 @@ SOURCES = {
         "grade": "C", "feeds": ["crypto"],
         "graph_sources": [],
         "basis": "单一辅助源（crypto_daily），无交叉验证对象"},
+    # WO-QT-20261021-108：cnopendata 源族补档（此前 catalog source="cnopendata"
+    # 无 feeds 认领 → 断流统计里落成 grade="?" 未定档）。这 6 张表不进知识
+    # 图谱（graph_sources=[]），只作为离线研究/回测的历史底料。
+    "cnopendata_open": {
+        "grade": "C", "feeds": ["cnopendata"],
+        "graph_sources": [],
+        "basis": ("公开/开放原始出处（GitHub / OSF / 人大财税所 / 白鲨在线）——"
+                  "无 SLA、无合同保障；接入方式为一次性批量落盘，非增量订阅"
+                  "（上游版本更新须人工重拉）；6 张表中 5 张是年度静态历史包、"
+                  "1 张无时间维，交付形态即静态。定 C 的依据是「无 SLA + 静态"
+                  "交付」，与是否收费无关")},
     "human_curation": {
         "grade": "A", "feeds": [],
         "graph_sources": ["youzi_registry", "manual", "m4_alias",
