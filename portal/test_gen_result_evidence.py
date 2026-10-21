@@ -102,6 +102,29 @@ def test_build_payload_shape(tmp_path):
     assert all(x["receipt_uri"] is None for x in payload["items"])
 
 
+# ⑤b. WO-OS-28 截断必须可见：total_available 是真实总量，limit 是产物上限
+def test_payload_reports_truncation_honestly(tmp_path):
+    """实测风险：真实规模 179 项而产物只 40 条，页面若不提示截断，
+    读者会把 40 条当成全天结果——与"不造数"基调自相矛盾。"""
+    import gen_result_evidence as g
+    payload = g.build_payload(DAY, limit=1, runner=_runner_factory(_gm(n=3)),
+                              deliverables_root=tmp_path)
+    assert payload["limit"] == 1
+    assert payload["total_available"] == 3, "总量须为未截断的真实条数"
+    assert len(payload["items"]) == 1, "items 受 limit 约束"
+    assert payload["total_available"] >= len(payload["items"])
+    assert "截断" in payload["note"], "note 必须显式说明这是截断视图"
+    assert "非当日全部工作" in payload["note"]
+
+
+# ⑤c. 无截断时总量与条数相等
+def test_payload_no_truncation_when_under_limit(tmp_path):
+    import gen_result_evidence as g
+    payload = g.build_payload(DAY, limit=50, runner=_runner_factory(_gm(n=2)),
+                              deliverables_root=tmp_path)
+    assert payload["total_available"] == len(payload["items"]) == 2
+
+
 # ⑥ dry-run 不写盘；正常写入 today.json
 def test_dry_run_and_write(tmp_path):
     import gen_result_evidence as g

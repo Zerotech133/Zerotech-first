@@ -175,9 +175,19 @@ check('pushflow 映射通知指挥页', /pushflow:['"]?\s*\?\s*'\/notify-command
 // 2m. WO-OS-27 真实证据源：静态 JSON 拉取 + 喂给 renderEvidence
 check('存在 fetchEvidence 加载器', html.includes('async function fetchEvidence'));
 check('静态证据端点', html.includes('/data/result_evidence/today.json'));
-check('证据喂入 renderEvidence', /renderEvidence\(evidenceItems\|\|window\.OS_RESULT_EVIDENCE\)/.test(html));
+check('证据喂入 renderEvidence（带元数据）',
+  /renderEvidence\(evidencePayload\?evidencePayload\.items:window\.OS_RESULT_EVIDENCE,evidencePayload\)/.test(html));
+check('refresh 取证据', html.includes('const evidencePayload=await fetchEvidence()'));
+check('render 签名含证据参数', html.includes('function render(states,projection,raw,routeBrief,evidencePayload)'));
 check('证据源标注为静态不依赖8091', html.includes('nginx 直服，不依赖 8091'));
 check('新增加载器复用唯一 fetch 出口', html.includes("await get('/data/result_evidence/today.json')"));
+
+// 2n. WO-OS-28 证据诚实呈现：过期态 + 渲染上限 + 截断可见
+check('证据业务日过期态常量', /EVIDENCE_MAX_ROWS\s*=/.test(html));
+check('证据渲染有上限', /slice\(0,\s*EVIDENCE_MAX_ROWS\)/.test(html));
+check('截断提示含总量与显示数', html.includes('共') && html.includes('项，本页显示最近'));
+check('非今日数据显式过期', html.includes('非今日数据') || html.includes('数据日期为'));
+check('证据源范围声明', html.includes('仅本仓提交与交付物'));
 
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-01/08/10/11 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议/8091路由渐进消费本地兜底');

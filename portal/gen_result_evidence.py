@@ -60,9 +60,11 @@ def _parse_git_iso(text: str) -> Optional[datetime]:
         return None
 
 
-def collect_commits(day: str, limit: int = 20,
-                    runner=None) -> List[Dict[str, Any]]:
-    """读取指定北京日内的提交，映射为 ResultEvidence（outcome=done，回执留空）。
+def _collect_commits_all(day: str, runner=None) -> List[Dict[str, Any]]:
+    """读取指定北京日内**全部**提交（不截断），供计数与截断共用。
+
+    WO-OS-28：必须知道当日真实总量，否则页面无法诚实说明"显示了多少/共多少"——
+    实测真实规模 179 项而产物只 40 条，若页面不提示截断，读者会当成全天结果。
 
     runner 为测试注入点：接收 argv 列表返回 (rc, stdout)。
     """
@@ -75,8 +77,9 @@ def collect_commits(day: str, limit: int = 20,
     # 用 --since/--until 收窄到目标日（北京日 → 本地时间字符串，git 按本地时区解释）
     since = "%s 00:00:00" % day
     until = "%s 23:59:59" % day
+    # 不设 -n：需要真实总量
     argv = ["git", "log", "--since", since, "--until", until,
-            "--pretty=format:%H%x1f%aI%x1f%s", "-n", str(limit * 3)]
+            "--pretty=format:%H%x1f%aI%x1f%s"]
     rc, out = runner(argv)
     if rc != 0 or not out:
         return []
@@ -103,14 +106,18 @@ def collect_commits(day: str, limit: int = 20,
             "receipt_uri": None,
             "title": subject[:120],
         })
-        if len(rows) >= limit:
-            break
     return rows
 
 
-def collect_deliverables(day: str, limit: int = 20,
-                         root: Optional[Path] = None) -> List[Dict[str, Any]]:
-    """读取当日落盘的交付文档（mtime 落在目标北京日）。"""
+def collect_commits(day: str, limit: int = 20,
+                    runner=None) -> List[Dict[str, Any]]:
+    """读取指定北京日内的提交（截断到 limit），映射为 ResultEvidence。"""
+    return _collect_commits_all(day, runner=runner)[:limit]
+
+
+def _collect_deliverables_all(day: str,
+                              root: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """读取当日落盘的全部交付文档（mtime 落在目标北京日，不截断）。"""
     base = Path(root) if root is not None else DELIVERABLES
     if not base.is_dir():
         return []
@@ -137,25 +144,37 @@ def collect_deliverables(day: str, limit: int = 20,
             "receipt_uri": None,
             "title": path.name,
         })
-        if len(rows) >= limit:
-            break
     return rows
+
+
+def collect_deliverables(day: str, limit: int = 20,
+                         root: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """读取当日落盘的交付文档（截断到 limit）。"""
+    return _collect_deliverables_all(day, root=root)[:limit]
 
 
 def build_payload(day: str, limit: int = 20, runner=None,
                   deliverables_root: Optional[Path] = None) -> Dict[str, Any]:
-    """合并两源并给出诚实标注。"""
-    items = collect_commits(day, limit, runner=runner)
-    items += collect_deliverables(day, limit, root=deliverables_root)
-    # 只在没有任何证据时才声明空——有数据就如实给
+    """合并两源并给出诚实标注。
+
+    WO-OS-28：payload 必带 total_available 与 limit，页面据此明说
+    "共 N 项，本产物含 M 项"——截断必须可见，否则读者会把 40 条当全天结果。
+    """
+    commits_all = _collect_commits_all(day, runner=runner)
+    docs_all = _collect_deliverables_all(day, root=deliverables_root)
+    items = commits_all[:limit] + docs_all[:limit]
+    total_available = len(commits_all) + len(docs_all)
     note = ("研发交付物与当日提交作为证据源；receipt 一律为空，"
-            "因未走独立复核，故状态为 unverified，不计入已验收。")
+            "因未走独立复核，故状态为 unverified，不计入已验收。"
+            "本产物为截断视图（每源至多 %d 条），非当日全部工作。" % limit)
     return {
         "ok": True,
         "business_day": day,
         "generated_at": _iso_beijing(datetime.now(BEIJING)),
         "source": "git-commits+deliverables",
         "note": note,
+        "total_available": total_available,
+        "limit": limit,
         "items": items,
     }
 
