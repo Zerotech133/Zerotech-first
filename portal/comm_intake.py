@@ -44,9 +44,13 @@ ACTION_FALLBACK = None          # 交回原流程（澄清卡/知识库）
 
 
 def enabled():
-    """开关：默认关。COMM_INTENT_ENABLED ∈ {1,true,yes,on} 才启用。"""
-    return str(os.environ.get("COMM_INTENT_ENABLED", "0")).strip().lower() in (
-        "1", "true", "yes", "on")
+    """开关：默认关。env COMM_INTENT_ENABLED 优先，comm_flags.json 兜底。
+
+    WO-FS-152：bot 由守护进程 spawn，环境变量继承不到旧进程之外的改动，
+    故新增本机标志文件通道（见 comm_flags.py 文档）。
+    """
+    import comm_flags
+    return comm_flags.get("intent")
 
 
 def _mask(open_id):

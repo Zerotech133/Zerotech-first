@@ -27,6 +27,7 @@ def inbox(tmp_path, monkeypatch):
     root = tmp_path / "bridge_inbox"
     ig.set_store(root)
     monkeypatch.setattr(cd, "_inbox", lambda: ig)
+    monkeypatch.setenv("COMM_FLAGS_PATH", str(tmp_path / "no_flags.json"))
     # 默认开：本文件除 test_11 外都测「开」路径；test_11 显式关
     monkeypatch.setenv("COMM_DISPATCH_ENABLED", "1")
     return root

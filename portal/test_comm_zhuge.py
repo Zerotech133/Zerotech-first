@@ -36,6 +36,9 @@ class _Boom:
 def _env(monkeypatch):
     monkeypatch.delenv("COMM_ZHUGE_ENABLED", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    import tempfile, os as _os
+    monkeypatch.setenv("COMM_FLAGS_PATH",
+                       _os.path.join(tempfile.mkdtemp(), "no_flags.json"))
     yield
 
 

@@ -57,8 +57,13 @@ _KIND_MAP = {
 
 
 def enabled():
-    return str(os.environ.get("COMM_DISPATCH_ENABLED", "0")).strip().lower() in (
-        "1", "true", "yes", "on")
+    """派单开关：env 优先，comm_flags.json 兜底（WO-FS-152）。"""
+    try:
+        import comm_flags
+        return comm_flags.get("dispatch")
+    except Exception:  # noqa: BLE001 —— 读不到按关，fail-closed
+        return str(os.environ.get("COMM_DISPATCH_ENABLED", "0")).strip().lower() \
+            in ("1", "true", "yes", "on")
 
 
 def _inbox():

@@ -35,6 +35,9 @@ class _Boom:
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
     monkeypatch.delenv("COMM_SUMMARY_ENABLED", raising=False)
+    import tempfile, os as _os
+    monkeypatch.setenv("COMM_FLAGS_PATH",
+                       _os.path.join(tempfile.mkdtemp(), "no_flags.json"))
     monkeypatch.setenv("COMM_SUMMARY_MAX_CHARS", "220")
     cs.clear_cache()
     yield

@@ -48,8 +48,13 @@ ZHUGE_SOUL = (
 
 
 def enabled():
-    return str(os.environ.get("COMM_ZHUGE_ENABLED", "0")).strip().lower() in (
-        "1", "true", "yes", "on")
+    """咨询位开关：env 优先，comm_flags.json 兜底（WO-FS-152）。"""
+    try:
+        import comm_flags
+        return comm_flags.get("zhuge")
+    except Exception:  # noqa: BLE001
+        return str(os.environ.get("COMM_ZHUGE_ENABLED", "0")).strip().lower() \
+            in ("1", "true", "yes", "on")
 
 
 def _openclaw_bin():

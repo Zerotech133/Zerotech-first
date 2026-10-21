@@ -42,8 +42,13 @@ _SYSTEM = (
 
 
 def enabled():
-    return str(os.environ.get("COMM_SUMMARY_ENABLED", "1")).strip().lower() in (
-        "1", "true", "yes", "on")
+    """摘要开关：env 优先，comm_flags.json 兜底（WO-FS-152，默认开）。"""
+    try:
+        import comm_flags
+        return comm_flags.get("summary")
+    except Exception:  # noqa: BLE001
+        return str(os.environ.get("COMM_SUMMARY_ENABLED", "1")).strip().lower() \
+            in ("1", "true", "yes", "on")
 
 
 def _default_llm():

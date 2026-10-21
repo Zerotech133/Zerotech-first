@@ -22,6 +22,22 @@ import comm_memory as mem  # noqa: E402
 def env(tmp_path, monkeypatch):
     monkeypatch.setenv("COMM_MEMORY_DIR", str(tmp_path / "mem"))
     monkeypatch.setenv("COMM_ROUTE_LOG", str(tmp_path / "route.jsonl"))
+    # 必须隔离画像库：smart_intake 会调 comm_interest.record，
+    # 漏设此项会让测试写进真实 portal/work/comm_interest.sqlite3
+    # （2026-10-21 实测事故：ou_p/ou_q/ou_t/ou_consult 四条测试数据污染真实画像）
+    monkeypatch.setenv("COMM_INTEREST_DB", str(tmp_path / "interest.db"))
+    # 隔离开关文件：生产 portal/work/comm_flags.json 已开闸(全 true)，
+    # 不隔离会让「默认关」用例读到真实开闸态而假红（2026-10-21 判例）
+    monkeypatch.setenv("COMM_FLAGS_PATH", str(tmp_path / "no_flags.json"))
+    # 隔离派单 inbox：smart_intake 的派单类意图会真投递到
+    # agent_platform/bridge_inbox（2026-10-21 实测事故第二例：
+    # ou_p/ou_q/ou_t 七张测试工单写进真实 inbox）。
+    # 复合函数的测试 fixture 必须覆盖**全部下游落盘路径**，只隔一部分=污染生产。
+    try:
+        from gateway import inbox_gateway as _ig
+        _ig.set_store(tmp_path / "bridge_inbox")
+    except Exception:  # noqa: BLE001 —— 无 agent_platform 路径时跳过（不静默改判）
+        pass
     monkeypatch.delenv("COMM_INTENT_ENABLED", raising=False)
     return tmp_path
 
