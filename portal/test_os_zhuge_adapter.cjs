@@ -255,6 +255,38 @@ const GOOD_SIX = {
   check('不自洽不产建议', !out.suggestions.some(s => s.id === 'pushflow:daily_rate'));
 })();
 
+/* 10f. WO-OS-25 趋势：改善/恶化/持平三档 */
+(function test_pushflow_trend_three_cases() {
+  const mk = (todayRate, prevRate) => {
+    const raw = clone(GOOD_SIX);
+    raw.pushflow = {
+      ok: true, today: 100, attempted: 100,
+      ok_count: Math.round(100 * (1 - todayRate)),
+      fail_count: Math.round(100 * todayRate), fail_rate: todayRate,
+      policy_suppressed: 0, channels: {},
+      recent: [
+        { day: '2026-10-20', attempted: 100, fail_count: Math.round(100 * prevRate), fail_rate: prevRate },
+        { day: '2026-10-21', attempted: 100, fail_count: Math.round(100 * todayRate), fail_rate: todayRate },
+      ],
+    };
+    return A.buildBrief(raw, CLOCK).suggestions.find(s => s.id === 'pushflow:daily_rate');
+  };
+  const improving = mk(0.24, 0.53);
+  check('趋势改善', improving && improving.reason.indexOf('改善') !== -1);
+  check('趋势带基准值', improving && improving.reason.indexOf('前一日 53%') !== -1);
+  const worsening = mk(0.55, 0.28);
+  check('趋势恶化', worsening && worsening.reason.indexOf('恶化') !== -1);
+  const flat = mk(0.30, 0.31);
+  check('趋势持平', flat && flat.reason.indexOf('基本持平') !== -1);
+  // 缺 recent 不给趋势
+  const raw = clone(GOOD_SIX);
+  raw.pushflow = { ok: true, today: 100, attempted: 100, ok_count: 70,
+    fail_count: 30, fail_rate: 0.30, policy_suppressed: 0, channels: {} };
+  const noTrend = A.buildBrief(raw, CLOCK).suggestions.find(s => s.id === 'pushflow:daily_rate');
+  check('缺 recent 不给趋势', noTrend && noTrend.reason.indexOf('改善') === -1
+    && noTrend.reason.indexOf('恶化') === -1);
+})();
+
 if (failures.length) { console.error('FAIL WO-OS-07 adapter 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-07 os_zhuge_adapter 契约：同语义9场景+pushflow2场景+UMD双端+无写副作用（' +
   A.buildBrief(GOOD_SIX, CLOCK).suggestions.length + ' 条建议样例）');

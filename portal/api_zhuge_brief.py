@@ -60,6 +60,36 @@ def _count_text(value: Any) -> str:
     return str(value)
 
 
+def _trend_text(recent: Any) -> str:
+    """近 4 日失败率趋势（WO-OS-25）：与前一有效日比较，±5pp 内视为持平。
+
+    目的：单看"今日 24%"读者无法判断在恶化还是恢复。此处在建议里直接给方向。
+    缺 recent / 不足两日 / 字段异常 → 返回空串（不给趋势，也不猜）。
+    """
+    if not isinstance(recent, list) or len(recent) < 2:
+        return ""
+    today = recent[-1]
+    prev = recent[-2]
+    if not isinstance(today, dict) or not isinstance(prev, dict):
+        return ""
+    try:
+        cur = float(today.get("fail_rate"))
+        before = float(prev.get("fail_rate"))
+    except (TypeError, ValueError):
+        return ""
+    if not (0 <= cur <= 1 and 0 <= before <= 1):
+        return ""
+    delta = cur - before
+    if delta <= -0.05:
+        verdict = "较前一日改善"
+    elif delta >= 0.05:
+        verdict = "较前一日恶化"
+    else:
+        verdict = "与前一日基本持平"
+    return "；%s（前一日 %s%%，变化 %+.1f 个百分点）" % (
+        verdict, _pct_text(before), delta * 100)
+
+
 def _pushflow_rate_or_none(stats: Dict[str, Any]) -> Optional[float]:
     """取当日真实投递失败率；口径不成立时返回 None（交调用方记待核）。
 
@@ -258,12 +288,13 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
                 suppressed = stats.get("policy_suppressed") or 0
                 tail = ("；另有 %s 条静默窗口策略抑制，不计入失败"
                         % _count_text(suppressed)) if suppressed else ""
+                trend = _trend_text(stats.get("recent"))
                 suggestions.append(_suggestion(
                     "pushflow:daily_rate", "通知", priority,
                     "今日真实投递失败率 %s%%（失败 %s/尝试 %s）：这是当日真实投递尝试的"
-                    "失败率，不是历史失败簇%s；来源 pushflow.jsonl"
+                    "失败率，不是历史失败簇%s%s；来源 pushflow.jsonl"
                     % (_pct_text(rate), _count_text(stats.get("fail_count")),
-                       _count_text(attempted), tail),
+                       _count_text(attempted), trend, tail),
                     "/api/zhuge/brief.pushflow", None))
 
     # os / home / capability：当前无个人事实可提炼，仅登记覆盖，不产建议

@@ -108,8 +108,7 @@ check('能力目录支持 highlighted 高亮类', /cap-item\.highlighted\s*\{/.t
     failures.push('briefCard 执行抛错（建议区会整块空白）：' + e.message);
   }
   // 2k. as_of 类型防御：非字符串（Date 对象等）不得渲染出错位文本
-  try {
-    const card = briefCard({
+  try {    const card = briefCard({
       id: 'task:t1', domain: '研发', priority: 4, reason: '工单进行中',
       source: '/api/org/tasks', as_of: new Date('2026-10-21T16:02:49+08:00'),
       confidence: 'rule-based',
@@ -123,8 +122,7 @@ check('能力目录支持 highlighted 高亮类', /cap-item\.highlighted\s*\{/.t
   }
 })();
 
-// 2i. WO-OS-15 ResultEvidence DEMO 样例：容器 + data-demo 标记 + 显式演示文案 + 三条样例走契约 entry()
-check('样例容器 evidence-sample', /id="evidence-sample"/.test(html));
+// 2i. WO-OS-15 ResultEvidence DEMO 样例：容器 + data-demo 标记 + 显式演示文案 + 三条样例走契约 entry()check('样例容器 evidence-sample', /id="evidence-sample"/.test(html));
 check('样例条目 data-demo=true 标记', html.includes("'data-demo','true'"));
 check('样例显式演示文案', html.includes('样例数据，仅演示分级样式'));
 check('样例分级预览标题', html.includes('分级样式预览（样例数据）'));
@@ -168,6 +166,11 @@ if (!jsMatch) { failures.push('未找到内联 script'); }
 else {
   try { new vm.Script(jsMatch[1]); } catch (e) { failures.push('JS 解析失败：' + e.message); }
 }
+
+// 2l. WO-OS-25 每条建议都能直达原账本：pushflow 建议必须映射到通知指挥页
+check('linkFor 支持 pushflow 前缀', /id\.startsWith\('pushflow:'\)/.test(html));
+check('pushflow 映射通知指挥页', /pushflow:['"]?\s*\?\s*'\/notify-command'/.test(html)
+  || /startsWith\('pushflow:'\)\s*\?\s*'\/notify-command'/.test(html));
 
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-01/08/10/11 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议/8091路由渐进消费本地兜底');

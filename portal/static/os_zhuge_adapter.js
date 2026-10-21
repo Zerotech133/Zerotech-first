@@ -82,6 +82,28 @@
     return rate;
   }
 
+  /* WO-OS-25 近 4 日趋势（与 Python _trend_text 同语义）：
+     与前一有效日比较，±5pp 内视为持平；缺数据返回空串，不猜方向。 */
+  function trendText(recent) {
+    if (!Array.isArray(recent) || recent.length < 2) return '';
+    var todayRow = recent[recent.length - 1];
+    var prevRow = recent[recent.length - 2];
+    if (!todayRow || !prevRow || typeof todayRow !== 'object' || typeof prevRow !== 'object') return '';
+    var cur = Number(todayRow.fail_rate);
+    var before = Number(prevRow.fail_rate);
+    if (!isFinite(cur) || !isFinite(before)) return '';
+    if (cur < 0 || cur > 1 || before < 0 || before > 1) return '';
+    var delta = cur - before;
+    var verdict;
+    if (delta <= -0.05) verdict = '较前一日改善';
+    else if (delta >= 0.05) verdict = '较前一日恶化';
+    else verdict = '与前一日基本持平';
+    var pp = (delta * 100);
+    var sign = pp >= 0 ? '+' : '';
+    return '；' + verdict + '（前一日 ' + pctText(before) + '%，变化 ' +
+      sign + pp.toFixed(1) + ' 个百分点）';
+  }
+
   function suggestion(sid, domain, priority, reason, source, asOf) {
     return {
       id: sid,
@@ -243,11 +265,12 @@
           var tail = suppressed
             ? '；另有 ' + countText(suppressed) + ' 条静默窗口策略抑制，不计入失败'
             : '';
+          var trend = trendText(stats.recent);
           suggestions.push(suggestion(
             'pushflow:daily_rate', '通知', priority,
             '今日真实投递失败率 ' + pctText(rate) + '%（失败 ' + countText(stats.fail_count) +
               '/尝试 ' + countText(attempted) + '）：这是当日真实投递尝试的失败率，' +
-              '不是历史失败簇' + tail + '；来源 pushflow.jsonl',
+              '不是历史失败簇' + trend + tail + '；来源 pushflow.jsonl',
             '/api/zhuge/brief.pushflow', null));
         }
       }

@@ -290,3 +290,47 @@ def test_pushflow_policy_word_variants():
     assert stats["attempted"] == 1
     assert stats["fail_count"] == 0
 
+
+# ── WO-OS-25 近 4 日趋势：让"25%"能看出是恶化还是恢复 ─────────────
+def test_pushflow_recent_trend_series():
+    """recent 应按日期升序给近 4 天真实失败率（排除政策行、跳过空日）。"""
+    import api_zhuge_route as zr
+    rows = []
+    # 10-18：2 成 1 败 → 33.3%
+    rows += [_row("2026-10-18", True), _row("2026-10-18", True),
+             _row("2026-10-18", False)]
+    # 10-19：全败 → 100%
+    rows += [_row("2026-10-19", False), _row("2026-10-19", False)]
+    # 10-20：全成 → 0%
+    rows += [_row("2026-10-20", True), _row("2026-10-20", True)]
+    # 10-21：1 成 1 败 + 2 条抑制（抑制不进统计）
+    rows += [_row("2026-10-21", True), _row("2026-10-21", False)]
+    rows += [_gate_row("2026-10-21") for _ in range(2)]
+    path = _write_temp_ledger(rows, "wo_os_25_trend.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    recent = stats["recent"]
+    assert [r["day"] for r in recent] == ["2026-10-18", "2026-10-19",
+                                         "2026-10-20", "2026-10-21"]
+    assert [round(r["fail_rate"], 3) for r in recent] == [0.333, 1.0, 0.0, 0.5]
+    assert [r["attempted"] for r in recent] == [3, 2, 2, 2]
+    assert recent[-1]["fail_rate"] == stats["fail_rate"], "末日应与当日口径一致"
+
+
+def test_pushflow_recent_capped_at_four_days():
+    """超过 4 天时只取最近 4 天（按日期升序）。"""
+    import api_zhuge_route as zr
+    rows = []
+    for day in ("2026-10-15", "2026-10-16", "2026-10-17",
+                "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21"):
+        rows.append(_row(day, True))
+    path = _write_temp_ledger(rows, "wo_os_25_cap.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert len(stats["recent"]) == 4
+    assert stats["recent"][0]["day"] == "2026-10-18"
+

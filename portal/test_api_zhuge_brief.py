@@ -257,6 +257,54 @@ def test_pushflow_consistent_counts_pass():
     assert all(g["source"] != "pushflow" for g in out["gaps"])
 
 
+# ── WO-OS-25 趋势：让"25%"能读出方向（改善/恶化/持平）──────────────
+def _trend_case(today_rate, prev_rate):
+    return dict(GOOD_SIX, pushflow={
+        "ok": True, "today": 100, "attempted": 100, "ok_count": int(100 * (1 - today_rate)),
+        "fail_count": int(100 * today_rate), "fail_rate": today_rate,
+        "policy_suppressed": 0, "channels": {},
+        "recent": [{"day": "2026-10-20", "attempted": 100, "fail_count": int(100 * prev_rate),
+                    "fail_rate": prev_rate},
+                   {"day": "2026-10-21", "attempted": 100, "fail_count": int(100 * today_rate),
+                    "fail_rate": today_rate}]})
+
+
+def test_pushflow_trend_improving():
+    m = _load()
+    out = m.build_brief(_trend_case(0.24, 0.53), CLOCK)
+    s = _pick(out)
+    assert s is not None
+    assert "较前一日" in s["reason"] or "改善" in s["reason"], "应给出趋势判断"
+    assert "改善" in s["reason"], "0.53→0.24 应判为改善"
+    assert "53" in s["reason"], "应带上对比基准数值"
+
+
+def test_pushflow_trend_worsening():
+    m = _load()
+    out = m.build_brief(_trend_case(0.55, 0.28), CLOCK)
+    s = _pick(out)
+    assert s is not None and "恶化" in s["reason"], "0.28→0.55 应判为恶化"
+
+
+def test_pushflow_trend_flat():
+    m = _load()
+    out = m.build_brief(_trend_case(0.30, 0.31), CLOCK)
+    s = _pick(out)
+    assert s is not None and "基本持平" in s["reason"], "±5pp 内应判为基本持平"
+
+
+def test_pushflow_trend_missing_recent_degrades_silently():
+    """无 recent 字段（旧载荷）不影响主结论，只是不给趋势。"""
+    m = _load()
+    stats = {"ok": True, "today": 100, "attempted": 100, "ok_count": 70,
+             "fail_count": 30, "fail_rate": 0.30, "policy_suppressed": 0,
+             "channels": {}}
+    out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
+    s = _pick(out)
+    assert s is not None and s["priority"] == 2
+    assert "改善" not in s["reason"] and "恶化" not in s["reason"]
+
+
 def test_pushflow_legacy_payload_without_attempted_guarded():
     """WO-OS-22：旧载荷(无 attempted/policy_suppressed)不得静默按 today 算。
 

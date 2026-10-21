@@ -85,6 +85,8 @@ def _pushflow_stats(path=None, day=None):
 
     total = ok_count = fail_count = suppressed = 0
     channels: Dict[str, Dict[str, int]] = {}
+    # WO-OS-25：按日累计真实成败，供"近 4 日趋势"（政策行一律不进）
+    per_day: Dict[str, list] = {}
     for line in text.splitlines():
         line = line.strip()
         if not line:
@@ -93,13 +95,19 @@ def _pushflow_stats(path=None, day=None):
             row = json.loads(line)
         except ValueError:
             continue  # 半行/坏行跳过，不拿残缺行推断成败
-        if not isinstance(row, dict) or row.get("date") != day:
+        if not isinstance(row, dict):
+            continue
+        if _is_policy_suppressed(row):
+            if row.get("date") == day:
+                suppressed += 1  # 策略抑制：不进分母、不进通道成败
+            continue
+        row_day = row.get("date")
+        passed = row.get("ok") is True
+        bucket_day = per_day.setdefault(str(row_day), [0, 0])  # [ok, fail]
+        bucket_day[0 if passed else 1] += 1
+        if row_day != day:
             continue
         total += 1
-        if _is_policy_suppressed(row):
-            suppressed += 1  # 策略抑制：不进分母、不进通道成败
-            continue
-        passed = row.get("ok") is True
         if passed:
             ok_count += 1
         else:
@@ -109,9 +117,26 @@ def _pushflow_stats(path=None, day=None):
         bucket = channels.setdefault(name, {"ok": 0, "fail": 0})
         bucket["ok" if passed else "fail"] += 1
 
+    # 当日总行数需含抑制行（today 是"账本行数"，与 attempted/suppressed 自洽）
+    total += suppressed
+
     attempted = ok_count + fail_count
     if attempted == 0:
         return None  # 当日无真实投递尝试：不可推断正常，交引擎记待核
+
+    recent = []
+    for day_key in sorted(per_day)[-4:]:
+        day_ok, day_fail = per_day[day_key]
+        day_attempted = day_ok + day_fail
+        if day_attempted <= 0:
+            continue
+        recent.append({
+            "day": day_key,
+            "attempted": day_attempted,
+            "fail_count": day_fail,
+            "fail_rate": round(day_fail / day_attempted, 4),
+        })
+
     return {
         "ok": True,
         "today": total,
@@ -120,6 +145,7 @@ def _pushflow_stats(path=None, day=None):
         "fail_count": fail_count,
         "fail_rate": round(fail_count / attempted, 4),
         "policy_suppressed": suppressed,
+        "recent": recent,
         "channels": channels,
     }
 
