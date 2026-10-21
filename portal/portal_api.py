@@ -4171,6 +4171,19 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._html_file(os.path.join(STATION, "quant_backtest",
                                          "reports", "signals.html"),
                             nav_key="signals")
+        elif path == "/pool-watch":
+            # 许褚营·双池触发监控台（WO-QT-20261020-078）：选票池×触发
+            # 事件。每请求尽力同步刷新（读 todays_picks + signal_pool
+            # 纯读渲染，廉价）；任何异常降级旧静态文件（再失败由
+            # _html_file 出「暂无报告」），影子期红线常驻页面内。
+            try:
+                if QBT_DIR not in sys.path:
+                    sys.path.insert(0, QBT_DIR)
+                import pool_watch_page as _pwp
+                self._html(_pwp.render_default())
+            except Exception:
+                self._html_file(os.path.join(STATION, "quant_backtest",
+                                             "reports", "pool_watch.html"))
         elif path == "/bt-positions":
             # 盘前作战计划卡「持仓跟踪」按钮目标页：纸面持仓账本
             self._html_file(os.path.join(STATION, "quant_backtest",
