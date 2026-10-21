@@ -44,6 +44,15 @@ check('空态声明不伪造完成', html.includes('不伪造完成记录'));
 check('契约字段说明行', /事项ID/.test(html) && /业务日/.test(html) && /回执/.test(html));
 check('消费 OSResultContract.entry', html.includes('OSResultContract.entry'));
 
+// 2d. WO-OS-10 大屏与首页同源消费建议引擎：#board-brief 容器位于大屏区 + 共用引擎标识
+check('大屏建议容器 board-brief', /id="board-brief"/.test(html));
+(function () {
+  const start = html.indexOf('id="view-screen"');
+  const seg = start === -1 ? '' : html.slice(start, html.indexOf('</section>', start));
+  check('board-brief 位于 view-screen 大屏区', seg.includes('board-brief'));
+})();
+check('大屏与首页共用建议引擎标识', html.includes('大屏与首页共用建议引擎'));
+
 // 3. 只读 GET 端点齐备
 for (const ep of ['/api/os', '/api/home', '/api/alerts', '/api/notify/queue', '/api/org/tasks', '/api/capability/board'])
   check('端点 ' + ep, html.includes("'" + ep + "'"));
@@ -66,4 +75,4 @@ else {
 }
 
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
-console.log('PASS WO-OS-01/08 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽');
+console.log('PASS WO-OS-01/08/10 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议');
