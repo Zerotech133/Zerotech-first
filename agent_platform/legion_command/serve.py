@@ -27,6 +27,7 @@ if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
 from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
+from engine.org_profiles import profile_index, stamp  # noqa: E402  S41 统一取档口径
 from legion_command.snapshot import build_snapshot  # noqa: E402
 
 _STATIC = Path(__file__).resolve().parent / "static"
@@ -62,28 +63,16 @@ def resolve_binding(agent: str, platform_dir: Path | None = None) -> str:
       - "none" 表示该席位为规则执行体，无 LLM 发言能力
     """
     base = platform_dir or _PLATFORM
-    org_path = base / "registry" / "org.json"
-    try:
-        mtime = org_path.stat().st_mtime
-    except OSError:
-        mtime = None
     cache = _BINDING_CACHE
-    if mtime is not None and cache["mtime"] != mtime:
-        mapping: dict[str, str] = {}
-        try:
-            org = json.loads(org_path.read_text(encoding="utf-8"))
-        except (ValueError, OSError):
-            org = {}
-        for d in org.get("departments") or []:
-            for prof in d.get("agent_profiles") or []:
-                aid = str(prof.get("agent_id") or "")
-                if aid:
-                    mapping[aid] = str(prof.get("llm_binding") or "")
-        cache["mtime"] = mtime
-        cache["map"] = mapping
-    from_org = cache["map"].get(agent)
-    if from_org:
-        return from_org
+    # 缓存指纹覆盖 org.json + 全部 team_*.json：A0A 的档案只在 team_chief.json 里，
+    # 只认 org.json 的 mtime 会让它的改档永远读不到（S41 实测）。
+    key = stamp(base)
+    if cache["mtime"] != key:
+        cache["map"] = profile_index(base)
+        cache["mtime"] = key
+    hit = cache["map"].get(agent) or {}
+    if hit.get("llm_binding"):
+        return hit["llm_binding"]
     return AGENT_BINDING.get(agent, _DEFAULT_BINDING)
 
 

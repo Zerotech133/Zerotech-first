@@ -31,12 +31,48 @@ def _expect_depts_without_profile():
             if d.get("agents") and not d.get("agent_profiles")}
 
 
+def _known_profile_ids():
+    """独立口径：自己扫「档案可能登记的三处」——部门档案表、顶层 chief、team_*.json。
+
+    2026-10-21 修正：A0/A0A 的档案本来就不在部门表（chief 块 / team_chief.json），
+    旧口径把「部门表里没有」直接当成「无档案」，等于把在位参谋长报成缺失。
+    """
+    org = _raw_org()
+    ids = {str(p.get("agent_id")) for d in org["departments"]
+           for p in (d.get("agent_profiles") or [])}
+    chief = org.get("chief") or {}
+    if chief.get("agent_id"):
+        ids.add(str(chief["agent_id"]))
+    for f in (_PLATFORM / "registry").glob("team_*.json"):
+        try:
+            t = json.loads(f.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        for a in t.get("agents") or []:
+            if a.get("agent_id"):
+                ids.add(str(a["agent_id"]))
+    return ids
+
+
 def _expect_leads_without_profile():
+    known = _known_profile_ids()
     out = set()
     for d in _raw_org()["departments"]:
         lead = d.get("lead")
         prof = [p.get("agent_id") for p in (d.get("agent_profiles") or [])]
-        if lead and lead not in prof:
+        if lead and lead not in prof and str(lead) not in known:
+            out.add(d["dept"])
+    return out
+
+
+def _expect_leads_profile_elsewhere():
+    """主官档案在部门表之外、但确实登记过的部门。"""
+    known = _known_profile_ids()
+    out = set()
+    for d in _raw_org()["departments"]:
+        lead = d.get("lead")
+        prof = [p.get("agent_id") for p in (d.get("agent_profiles") or [])]
+        if lead and lead not in prof and str(lead) in known:
             out.add(d["dept"])
     return out
 
@@ -198,3 +234,43 @@ def test_snapshot_shows_all_seats_not_just_profiles():
     assert intel["seats_profiled"] == intel["seats_listed"], "情报部满档成果退化"
     assert all(a.get("has_profile") is True for a in intel["agents"])
     assert intel["lead_profiled"] is True
+
+
+# ------------------------------------------- 档案登记位置（rules 1.1 / S41）
+
+def test_audit_detects_lead_profile_elsewhere():
+    """档案在部门表之外（chief / team_*）须单列，且不得再报成「无档案」。
+
+    2026-10-21 前 A0（田丰）与 A0A 一直被报 P1「主官无档案」——事实上两人档案
+    分别躺在 org.json 顶层 chief 与 registry/team_chief.json 里。
+    """
+    rep = A.audit(_PLATFORM)
+    got = {f["dept"] for f in _by_code(rep, "LEAD_PROFILE_ELSEWHERE")}
+    assert got == _expect_leads_profile_elsewhere(), "档案在别处的检出与实际不一致"
+    # 两类缺口必须互斥：同一部门不能既「无档案」又「档案在别处」
+    assert not (got & {f["dept"] for f in _by_code(rep, "LEAD_NO_PROFILE")})
+
+
+def test_audit_cross_dept_note_downgrades(tmp_path):
+    """跨部门主官未登记兼任说明 P2，登记后降 P3（不是消失——兼任仍是事实）。"""
+    plat = tmp_path / "plat"
+    (plat / "registry").mkdir(parents=True)
+    (plat / "hr").mkdir()
+    cases = {"no_note": None, "with_note": {"cross_dept": True,
+                                            "cross_note": "参谋长兼任直属线主官，指挥链经真源登记"}}
+    findings = {}
+    for tag, appointed in cases.items():
+        dept = {"dept": "x", "name": "测试营", "lead": "LEADX",
+                "agents": ["MEM1"], "agent_profiles": [
+                    {"agent_id": "MEM1", "charter_detail": "测试席"},
+                    {"agent_id": "LEADX", "charter_detail": "跨部门主官"}]}
+        if appointed:
+            dept["lead_appointed"] = appointed
+        org = {"departments": [dept]}
+        (plat / "registry" / "org.json").write_text(
+            json.dumps(org, ensure_ascii=False), encoding="utf-8")
+        findings[tag] = [f for f in A.audit(plat)["findings"]
+                         if f["code"] == "LEAD_OUT_OF_DEPT"]
+    assert findings["no_note"] and findings["no_note"][0]["severity"] == "P2"
+    assert findings["with_note"] and findings["with_note"][0]["severity"] == "P3"
+    assert "跨部门兼任" in findings["with_note"][0]["detail"]

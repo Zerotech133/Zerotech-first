@@ -31,6 +31,12 @@ KIND = "llm_chat"
 
 DEFAULT_BINDING = "ollama/qwen3.5:9b"
 
+# 这两类 provider 在 make_llm 构造时**已经**吃下了自己的模型/端口：
+#   "glm/<模型>" → GLMCloudLLM(model="<模型>")
+#   "nova/<端口>" → NovaMaxLLM(port=..., model=PORTS[端口])
+# 因此 chat 时不能再把整串 binding 当 model 传回去。
+_PREFIX_OWNS_MODEL = frozenset({"glm", "nova"})
+
 
 @timed
 def chat(binding=None, system="", user=""):
@@ -38,6 +44,13 @@ def chat(binding=None, system="", user=""):
 
     data: {binding_resolved, text, status}
     error: {code:"llm_error", message} —— 重试耗尽/通道不可用，调用方应回落自身兜底。
+
+    model 实参的口径（2026-10-21 修）：
+      旧实现一律 `llm.chat(system, user, model=binding)`，把 `glm/glm-5.3` 整串
+      当模型名发给智谱 → **HTTP 400「模型不存在」**。实测对照：
+      `GLMCloudLLM(model="glm-5.3").chat(..., model="glm/glm-5.3")` → 400；
+      同实例不传 model → 200（直连 `glm-5.3-flash` / `glm-4.6` 亦均 200）。
+      即 S38「glm-5.3-flash 模型名不存在」的判例**是这条传参缺陷造成的误判**。
     """
     binding = binding or DEFAULT_BINDING
     try:
@@ -46,8 +59,14 @@ def chat(binding=None, system="", user=""):
         return make_envelope(kind=KIND, ok=False,
                              error={"code": "llm_error",
                                     "message": "make_llm failed: %s" % exc})
+    prefix, sep, rest = binding.partition("/")
     try:
-        text, status = llm.chat(system, user, model=binding)
+        if prefix in _PREFIX_OWNS_MODEL and sep and rest:
+            text, status = llm.chat(system, user)
+        elif prefix == "ollama" and sep and rest:
+            text, status = llm.chat(system, user, model=rest)
+        else:
+            text, status = llm.chat(system, user, model=binding)
     except LLMError as exc:
         return make_envelope(kind=KIND, ok=False,
                              error={"code": "llm_error", "message": str(exc)})

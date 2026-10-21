@@ -166,7 +166,9 @@
             "execute": [],
             "danger": "deny",
             "note": "盯盘只观察/预警；所有上行仅走 QUANT_UPSTREAM_REPORT 单一上行路；不直连飞书/投研/交易所；三类动作权限恒 False"
-          }
+          },
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更"
         },
         {
           "agent_id": "QS1",
@@ -199,7 +201,9 @@
             "execute": [],
             "danger": "deny",
             "note": "受理后由量化交易层决定三路分发（飞书信息/投研研判/交易所观察）；W-Q1 建设中，本席位先挂名待模块落地"
-          }
+          },
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更"
         },
         {
           "agent_id": "T1",

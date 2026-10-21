@@ -119,7 +119,42 @@ def test_llm_chat_default_binding_used(monkeypatch):
             return "t", "normal"
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy())
     llm_gateway.chat(system="", user="u")
-    assert seen["model"] == llm_gateway.DEFAULT_BINDING
+    # 默认档是 ollama/*：必须把**剥掉前缀后的真模型名**传下去（本地才有这个模型）。
+    # 旧断言写死整串 DEFAULT_BINDING，等于把「前缀当模型名」的缺陷固化成契约。
+    assert llm_gateway.DEFAULT_BINDING.startswith("ollama/")
+    assert seen["model"] == llm_gateway.DEFAULT_BINDING.split("/", 1)[1]
+
+
+def test_llm_chat_glm_does_not_repass_prefixed_model(monkeypatch):
+    """glm/nova 的模型已在 make_llm 构造时绑定，chat 不得再传整串 binding。
+
+    2026-10-21 真实缺陷：`glm/glm-5.3` 整串被当模型名发往智谱 → HTTP 400，
+    进而把 S38「glm-5.3-flash 模型名不存在」误判成模型能力问题。
+    """
+    seen = {}
+    class Spy:
+        def __init__(self, binding):
+            self.binding = binding
+        def chat(self, system, user, model=None):
+            seen[self.binding] = model
+            return "t", "normal"
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy(binding))
+    for b in ("glm/glm-5.3", "glm/glm-5.3-flash", "nova/8080"):
+        env = llm_gateway.chat(binding=b, system="", user="u")
+        assert env["ok"] is True
+        assert seen[b] is None, "%s 不应把整串 binding 当 model 传入（实测会 400）" % b
+
+
+def test_llm_chat_unknown_prefix_passes_verbatim(monkeypatch):
+    """未知前缀（如 huihui_ai/xxx 这类真名带斜杠的本地模型）必须原样传，不许截断。"""
+    seen = {}
+    class Spy:
+        def chat(self, system, user, model=None):
+            seen["model"] = model
+            return "t", "normal"
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy())
+    llm_gateway.chat(binding="huihui_ai/qwen3-abliterated:9b", system="", user="u")
+    assert seen["model"] == "huihui_ai/qwen3-abliterated:9b"
 
 
 # ---------------------------------------------------------------- 投递门面

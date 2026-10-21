@@ -26,6 +26,10 @@
 
     # 回滚
     python engine/org_enroll.py --rollback registry/backups/org-20261021-161500.json --signed-by 老田
+
+    # 任命主官（只改部门 lead，不动名单与档案；跨部门兼任必须带 --cross-note）
+    python engine/org_enroll.py --set-lead --dept proj_data --lead DATA1 \
+        --ticket WO-LEGION-S41 --signed-by 老田 --apply
 """
 
 from __future__ import annotations
@@ -546,6 +550,173 @@ def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding
         raise EnrollError("自检失败：同部门其他席位被改动")
 
 
+LEAD_NOTE_MIN_LEN = 10
+
+
+def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
+                        signed_by: str = "", cross_note: str = "",
+                        lead_duty: str = "") -> dict:
+    """主官任命计划：只改部门 `lead`（可连带 `lead_duty`），不动名单、不动档案。
+
+    存在理由：org_audit 把「主官空悬 lead=None」「主官无档案」列为 P1（该营无签字人），
+    但编制工具此前只有四条腿——新建 / 补档 / 改档 / 冒烟，**任命主官只能手改真源**：
+    无备份、无自检、无痕迹。手改真源正是本项目反复踩过的坑，不能因为「只是改一个字符串」
+    就例外。
+
+    两条硬约束（都是拿 P1 的产生原因反推出来的）：
+      1. **主官必须有档案**：任命一个无档案者，只是把「主官空悬」换成「主官无档」，
+         该营照样没有可信签字人 —— 故硬拒，要求先 --backfill。
+      2. **跨部门兼任必须显式说明**：lead 不在本部门 agents 名单时，要求 cross_note
+         （≥10 字），并把兼任事实写进部门 `lead_appointed`。否则 audit 的
+         LEAD_OUT_OF_DEPT 就只能报「指挥链断在真源」——事实是断了没登记，不是不该兼。
+    """
+    org = load_org(root)
+    target = _find_dept(org, dept)
+    lid = (lead or "").strip()
+    if not lid:
+        raise EnrollError("主官不可为空（--lead）")
+    if not _ID_RE.match(lid):
+        raise EnrollError("主官 id 格式非法：%r（须大写字母开头、2-16 位大写字母数字）" % lid)
+
+    idx = _agent_id_index(org, root)
+    where = idx.get(lid)
+    if where is None:
+        raise EnrollError("未知席位 %r：org 名单、档案与 hr 目录均无此 id" % lid)
+    profiled = {str(p.get("agent_id") or "")
+                for d in org.get("departments") or []
+                for p in d.get("agent_profiles") or []}
+    if lid not in profiled:
+        raise EnrollError(
+            "%s 尚无档案（当前仅见于 %s）。任命后该营会从「主官空悬」变成「主官无档」，"
+            "签字人依旧不成立 —— 请先用 --backfill 补档再任命" % (lid, where))
+
+    members = [str(a) for a in (target.get("agents") or [])]
+    cross = lid not in members
+    note_txt = (cross_note or "").strip()
+    if cross:
+        if len(note_txt) < LEAD_NOTE_MIN_LEN:
+            raise EnrollError(
+                "%s 不在 %s 的名单内（属跨部门兼任），须用 --cross-note 显式说明兼任范围"
+                "（≥%d 字）：本条说明会写入部门 lead_appointed，"
+                "否则指挥链在真源里是断的" % (lid, dept, LEAD_NOTE_MIN_LEN))
+
+    old_lead = str(target.get("lead") or "")
+    duty = (lead_duty or "").strip()
+    if duty and len(duty) < DUTY_MIN_LEN:
+        raise EnrollError("lead_duty 至少 %d 字（当前 %d 字）" % (DUTY_MIN_LEN, len(duty)))
+    old_duty = str(target.get("lead_duty") or "")
+    if old_lead == lid and (not duty or duty == old_duty):
+        raise EnrollError("%s 的主官已是 %s，且 lead_duty 无变化，无需任命" % (dept, lid))
+    if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
+        raise EnrollError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
+    if not (signed_by or "").strip():
+        raise EnrollError("缺少放行人：任命主官改组织真源，须老田显式签字（--signed-by）")
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "rules_version": RULES_VERSION,
+        "mode": "set_lead",
+        "dept": dept,
+        "dept_name": target.get("name"),
+        "from_lead": old_lead,
+        "to_lead": lid,
+        "cn_name": _cn_of_id(root, lid),
+        "cross_dept": cross,
+        "cross_note": note_txt,
+        "from_lead_duty": old_duty,
+        "lead_duty": duty,
+        "ticket": ticket.strip(),
+        "signed_by": signed_by.strip(),
+        "writes": ["registry/org.json（仅 %s 的 lead%s 与 lead_appointed）"
+                   % (dept, "、lead_duty" if duty else "")],
+        "note": "dry-run 任命计划：未写入任何字节",
+    }
+
+
+def apply_set_lead_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
+    """执行任命：复核 → 备份 → 只改 lead/lead_duty + 留痕 → 自检 → 失败回滚。"""
+    if (signed_by or "").strip() != plan.get("signed_by"):
+        raise EnrollError("放行人与计划不一致：plan=%r apply=%r"
+                          % (plan.get("signed_by"), signed_by))
+    dept = plan["dept"]
+    before = load_org(root)
+    target = _find_dept(before, dept)
+    cur_lead = str(target.get("lead") or "")
+    if cur_lead != plan["from_lead"]:
+        raise EnrollError("执行前复核失败：%s 当前主官已变（%r → %r），请重新生成计划"
+                          % (dept, plan["from_lead"], cur_lead))
+
+    bdir = root / "registry" / "backups"
+    bdir.mkdir(parents=True, exist_ok=True)
+    backup = _unique_backup_path(bdir)
+    shutil.copy2(_org_path(root), backup)
+
+    org = copy.deepcopy(before)
+    t2 = _find_dept(org, dept)
+    t2["lead"] = plan["to_lead"]
+    if plan.get("lead_duty"):
+        t2["lead_duty"] = plan["lead_duty"]
+    t2["lead_appointed"] = {
+        "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "from": plan["from_lead"] or None,
+        "to": plan["to_lead"],
+        "cross_dept": bool(plan.get("cross_dept")),
+        "cross_note": plan.get("cross_note") or "",
+        "ticket": plan["ticket"],
+        "signed_by": plan["signed_by"],
+    }
+
+    tmp = _org_path(root).with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(_org_path(root))
+    try:
+        _selfcheck_set_lead(root, before, dept, plan)
+    except EnrollError:
+        shutil.copy2(backup, _org_path(root))
+        raise
+
+    return {"schema_version": SCHEMA_VERSION, "ok": True, "mode": "set_lead",
+            "dept": dept, "from_lead": plan["from_lead"], "to_lead": plan["to_lead"],
+            "cross_dept": bool(plan.get("cross_dept")), "backup": str(backup),
+            "note": "任命已落 org.json 并自检通过（名单与档案未动）；回滚用 --rollback %s"
+                    % backup}
+
+
+def _selfcheck_set_lead(root: Path, before: dict, dept: str, plan: dict) -> None:
+    """任命自检：lead 已改、留痕齐全，其余（名单/档案/他部门）一字未动。"""
+    after = load_org(root)
+    b = {d.get("dept"): d for d in before.get("departments") or []}
+    a = {d.get("dept"): d for d in after.get("departments") or []}
+    if list(b.keys()) != list(a.keys()):
+        raise EnrollError("自检失败：部门清单变化")
+    ad = a.get(dept)
+    if ad is None:
+        raise EnrollError("自检失败：目标部门丢失")
+    if str(ad.get("lead") or "") != plan["to_lead"]:
+        raise EnrollError("自检失败：主官未改为 %r" % plan["to_lead"])
+    if plan.get("lead_duty") and str(ad.get("lead_duty") or "") != plan["lead_duty"]:
+        raise EnrollError("自检失败：lead_duty 未改为计划值")
+    ap = ad.get("lead_appointed") or {}
+    if str(ap.get("to") or "") != plan["to_lead"]:
+        raise EnrollError("自检失败：lead_appointed.to 与主官不一致")
+    if str(ap.get("ticket") or "") != plan["ticket"]:
+        raise EnrollError("自检失败：lead_appointed 未记工单")
+    allowed = {"lead", "lead_duty", "lead_appointed"}
+
+    def strip(d):
+        return {k: v for k, v in (d or {}).items() if k not in allowed}
+
+    if json.dumps(strip(b[dept]), sort_keys=True, ensure_ascii=False) != \
+       json.dumps(strip(ad), sort_keys=True, ensure_ascii=False):
+        raise EnrollError("自检失败：本部门除主官字段外被改动（名单或档案被动）")
+    for name in b:
+        if name == dept:
+            continue
+        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != \
+           json.dumps(a.get(name), sort_keys=True, ensure_ascii=False):
+            raise EnrollError("自检失败：非目标部门 %r 被改动" % name)
+
+
 def probe_binding(binding: str, *, timeout_s: int = 40) -> dict:
     """连通性冒烟：验证一个绑定**真的能调通**，而不只是拼写合法。
 
@@ -730,6 +901,12 @@ def main(argv=None) -> int:
     ap.add_argument("--reason", default="", help="改档原因，写入 binding_note")
     ap.add_argument("--backfill", action="store_true",
                     help="补档模式：给已在名单但无档案的席位补档案（不动 agents 名单）")
+    ap.add_argument("--set-lead", action="store_true",
+                    help="主官任命模式：只改部门 lead（可带 lead_duty），不动名单与档案")
+    ap.add_argument("--lead", default="", help="任命模式：新主官 agent_id（须已有档案）")
+    ap.add_argument("--lead-duty", default="", help="任命模式：主官职责（≥10 字；不传则不动）")
+    ap.add_argument("--cross-note", default="",
+                    help="任命模式：跨部门兼任说明（≥10 字，写入部门 lead_appointed）")
     ap.add_argument("--rollback", help="用指定备份还原 org.json")
     args = ap.parse_args(argv)
 
@@ -743,7 +920,9 @@ def main(argv=None) -> int:
             print(json.dumps(rollback(root, args.rollback, signed_by=args.signed_by),
                              ensure_ascii=False, indent=1))
             return 0
-        if args.rebind:
+        if args.set_lead:
+            need = ("dept", "lead")
+        elif args.rebind:
             need = ("dept", "agent_id")
         elif args.backfill:
             need = ("dept", "agent_id", "role", "duty")
@@ -753,6 +932,19 @@ def main(argv=None) -> int:
         if missing:
             print("缺少必填参数：%s" % ", ".join("--" + m for m in missing), file=sys.stderr)
             return 2
+        if args.set_lead:
+            plan = build_set_lead_plan(root, dept=args.dept, lead=args.lead,
+                                       ticket=args.ticket, signed_by=args.signed_by,
+                                       cross_note=args.cross_note,
+                                       lead_duty=args.lead_duty)
+            if not args.apply:
+                print(json.dumps(plan, ensure_ascii=False, indent=1))
+                print("\n【dry-run】以上为任命计划，未写入任何字节。确认无误加 --apply 执行。",
+                      file=sys.stderr)
+                return 0
+            res = apply_set_lead_plan(root, plan, signed_by=args.signed_by)
+            print(json.dumps(res, ensure_ascii=False, indent=1))
+            return 0
         if args.rebind:
             plan = build_rebind_plan(root, dept=args.dept, agent_id=args.agent_id,
                                      binding=args.binding or "", ticket=args.ticket,

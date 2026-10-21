@@ -21,12 +21,18 @@ import json
 import sys
 from pathlib import Path
 
+try:                                     # 包内导入（serve/测试经 engine.* 进来）
+    from engine.org_profiles import SRC_DEPT, profile_index
+except ImportError:                      # 直接 `python engine/org_audit.py` 运行
+    from org_profiles import SRC_DEPT, profile_index
+
 SCHEMA_VERSION = "1.0"
-RULES_VERSION = "1.0"
+RULES_VERSION = "1.1"
 
 # 严重度口径（写死在此，避免各处解释不一）
-#   P1 无法指挥：主官空悬 / 主官无档 / 整部门零档案
-#   P2 指挥易错：主官跨部门引用 / 中文名重复 / 部分席位缺档
+#   P1 无法指挥：主官空悬 / 主官真无档案（部门表、chief、team_* 都没有）/ 整部门零档案
+#   P2 指挥易错：主官跨部门引用（未登记兼任说明）/ 主官档案登记在部门表之外
+#                （取档方可能静默回落默认档）/ 中文名重复 / 部分席位缺档
 #   P3 存量观察：编外人员、名单与档案数量不符但已有主官
 SEV_P1, SEV_P2, SEV_P3 = "P1", "P2", "P3"
 
@@ -63,6 +69,22 @@ def _hr_names(root: Path) -> dict:
     return out
 
 
+def _extra_profiles(root: Path, org: dict) -> dict:
+    """部门档案表之外**确实存在**的档案（chief 块 / team_*.json），带来源与绑定。
+
+    为什么要有它：A0（田丰，参谋长）与 A0A（参谋长助理）的档案根本不在
+    `departments[].agent_profiles` 里——A0 在 org.json 顶层 `chief` 块，A0A 在
+    `registry/team_chief.json`。旧版只扫部门档案表，于是把这两位报成
+    「主官无档案（P1）」，读数等于说「军团没有参谋长」——**空态要先核查源里有没有
+    该字段，不能把「我没找到」当成「不存在」**。
+
+    实现委托 engine/org_profiles（与 legion_command.resolve_binding 同一口径），
+    避免审计说「有档案」而会议层取不到、或反过来，两处各说各话。
+    """
+    idx = profile_index(root)
+    return {aid: v for aid, v in idx.items() if v.get("source") != SRC_DEPT}
+
+
 def audit(root: Path) -> dict:
     """只读审计。返回结构化缺口清单（不写任何字节）。"""
     org = _load_org(root)
@@ -73,6 +95,8 @@ def audit(root: Path) -> dict:
     rows: list[dict] = []
     listed_total = profiled_total = ghost_total = 0
     in_org: set[str] = set()
+    extra_prof = _extra_profiles(root, org)          # 部门档案表之外的档案（chief / team_*）
+    leads_elsewhere: set[str] = set()
 
     for d in depts:
         dept = str(d.get("dept"))
@@ -100,15 +124,41 @@ def audit(root: Path) -> dict:
         if lead is None:
             findings.append({"code": "LEAD_NULL", "severity": SEV_P1, "dept": dept,
                              "detail": "主官空悬（lead=None），该营无签字人"})
-        elif str(lead) not in profs:
-            in_list = str(lead) in ids
-            findings.append({"code": "LEAD_NO_PROFILE", "severity": SEV_P1, "dept": dept,
-                             "lead": str(lead),
-                             "detail": "主官 %s 无档案%s" % (lead, "（仅在本部门名单中）" if in_list else "（且不在本部门名单）")})
+        else:
+            lid = str(lead)
+            in_list, in_prof = lid in ids, lid in profs
+            elsewhere = extra_prof.get(lid)
+            if not in_prof:
+                if elsewhere:
+                    # 档案存在但不在部门档案表：职责/模型/档级答得出，但**按部门取档案的
+                    # 调用方（如会议层 resolve_binding）取不到 → 静默回落默认档**。
+                    findings.append({
+                        "code": "LEAD_PROFILE_ELSEWHERE", "severity": SEV_P2, "dept": dept,
+                        "lead": lid,
+                        "detail": "主官 %s 有档案但登记在 %s（不在本部门档案表，绑定 %s）："
+                                  "按部门档案取档的调用方取不到，会静默回落默认档"
+                                  % (lid, elsewhere.get("source_detail") or elsewhere.get("source"),
+                                     elsewhere.get("llm_binding") or "未声明")})
+                    leads_elsewhere.add(lid)
+                else:
+                    findings.append({
+                        "code": "LEAD_NO_PROFILE", "severity": SEV_P1, "dept": dept,
+                        "lead": lid,
+                        "detail": "主官 %s 无档案%s" % (lid, "（仅在本部门名单中）" if in_list
+                                                        else "（且不在本部门名单）")})
+            # 跨部门引用与「有无档案」是两件事：主官有档案却不在本部门名单同样是跨部门，
+            # 旧实现把它嵌在「无档案」分支里，导致这类情况整条漏报（S41 修）。
             if not in_list:
-                findings.append({"code": "LEAD_OUT_OF_DEPT", "severity": SEV_P2, "dept": dept,
-                                 "lead": str(lead),
-                                 "detail": "主官 %s 不在本部门名单，指挥链跨部门（须显式兼任说明）" % lead})
+                ap = d.get("lead_appointed") or {}
+                noted = bool(ap.get("cross_dept") and ap.get("cross_note"))
+                findings.append({
+                    "code": "LEAD_OUT_OF_DEPT",
+                    "severity": SEV_P3 if noted else SEV_P2,
+                    "dept": dept, "lead": lid,
+                    "detail": ("主官 %s 跨部门兼任，已在真源显式登记（%s）"
+                               % (lid, str(ap.get("cross_note"))[:40])) if noted
+                              else ("主官 %s 不在本部门名单，指挥链跨部门（须显式兼任说明，"
+                                    "用 org_enroll --set-lead --cross-note 登记）" % lid)})
 
         if extra:
             findings.append({"code": "PROFILE_NOT_LISTED", "severity": SEV_P3, "dept": dept,
@@ -117,7 +167,8 @@ def audit(root: Path) -> dict:
         rows.append({"dept": dept, "name": d.get("name"), "lead": lead,
                      "listed": len(ids), "profiled": len(profs),
                      "ghost": len(ghosts), "ghost_list": ghosts,
-                     "lead_ok": bool(lead) and str(lead) in profs})
+                     "lead_ok": bool(lead) and (str(lead) in profs
+                                                  or str(lead) in extra_prof)})
 
     # 中文名重复（历史 4 对，账面混淆）
     by_cn: dict[str, list[str]] = {}
@@ -133,14 +184,18 @@ def audit(root: Path) -> dict:
     #   有 hr 档案、组织真源里没有席位——若此人正是某部门主官，属「主官未登记档案」，
     #   不能笼统称"编外"（把参谋长说成编外是错的）；其余才算真编外，待收编或注销。
     leads_all = {str(d.get("lead")) for d in depts if d.get("lead")}
-    unregistered_leads = sorted(a for a in names if a not in in_org and a in leads_all)
+    # 「未登记」只算真没有档案的：档案在 chief / team_* 的已在 LEAD_PROFILE_ELSEWHERE 单列，
+    # 不能既说「有档案但位置不规范」又说「未登记档案」——两句话会互相打脸。
+    unregistered_leads = sorted(a for a in names
+                                if a not in in_org and a in leads_all and a not in extra_prof)
     if unregistered_leads:
         findings.append({"code": "LEAD_UNREGISTERED", "severity": SEV_P2,
                          "agents": unregistered_leads,
                          "detail": "%d 名主官持有 hr 档案但组织真源未登记席位档案"
                                    "（跨部门任职须在 org.json 显式登记，否则指挥链断在真源）"
                                    % len(unregistered_leads)})
-    orphans = sorted(a for a in names if a not in in_org and a not in leads_all)
+    orphans = sorted(a for a in names
+                     if a not in in_org and a not in leads_all and a not in extra_prof)
     if orphans:
         findings.append({"code": "ORPHAN_STAFF", "severity": SEV_P3,
                          "agents": orphans,
@@ -169,6 +224,7 @@ def audit(root: Path) -> dict:
             "duplicate_names": len(dups),
             "orphan_staff": len(orphans),
             "leads_unregistered": len(unregistered_leads),
+            "leads_profile_elsewhere": len(leads_elsewhere),
             "findings_p1": p1, "findings_p2": p2, "findings_p3": p3,
         },
         "dept_rows": rows,

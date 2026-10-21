@@ -601,3 +601,147 @@ def test_backfill_handles_null_agent_profiles(tmp_path):
     assert res["ok"] is True
     after = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
     assert [p["agent_id"] for p in after["departments"][0]["agent_profiles"]] == ["Z9"]
+
+
+# ------------------------------------------------ 主官任命（--set-lead / S41）
+#
+# 口径：一律取 fixture 里的真实结构做动态比对，不写死「某部门主官是谁」
+# ——2026-10-21 已因写死真实数据踩红三次。
+
+def _leadless_dept(r):
+    """找一个 lead 为空、且名单里有人的部门（不写死部门名）。"""
+    org = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
+    for d in org["departments"]:
+        if not d.get("lead") and d.get("agents"):
+            return d
+    pytest.skip("fixture 中已无 lead 空悬的部门")
+
+
+def _unprofiled_member(r):
+    """找一个「在名单但无档案」的席位 id（动态，不写死 DENGZHI1 之类）。"""
+    org = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
+    for d in org["departments"]:
+        profiled = {str(p.get("agent_id")) for p in (d.get("agent_profiles") or [])}
+        for a in d.get("agents") or []:
+            if str(a) not in profiled:
+                return d, str(a)
+    return None, None
+
+
+def test_set_lead_plan_writes_nothing(root):
+    d = _leadless_dept(root)
+    before = org_bytes(root)
+    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
+                                 ticket="WO-LEGION-S41", signed_by="老田")
+    assert org_bytes(root) == before, "dry-run 不得写入任何字节"
+    assert plan["mode"] == "set_lead" and plan["note"].startswith("dry-run")
+    assert plan["from_lead"] == "" and plan["to_lead"] == d["agents"][0]
+    assert plan["cross_dept"] is False
+
+
+def test_set_lead_requires_profiled_lead(root):
+    """无档案者不得任命：那只是把「主官空悬」换成「主官无档」。"""
+    d, aid = _unprofiled_member(root)
+    if aid is None:
+        pytest.skip("fixture 中已无名有实无的席位")
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_set_lead_plan(root, dept="dev", lead=aid,
+                              ticket="WO-LEGION-S41", signed_by="老田",
+                              cross_note="跨部门兼任测试说明需要足够长的一句话")
+    assert "尚无档案" in str(ei.value)
+
+
+def test_set_lead_cross_dept_needs_note(root):
+    d = _leadless_dept(root)
+    other = next(a for dep in json.loads(
+        (root / "registry" / "org.json").read_text(encoding="utf-8"))["departments"]
+        if dep["dept"] != d["dept"]
+        for a in (dep.get("agents") or []) if str(a) not in (d.get("agents") or []))
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_set_lead_plan(root, dept=d["dept"], lead=other,
+                              ticket="WO-LEGION-S41", signed_by="老田")
+    assert "跨部门兼任" in str(ei.value)
+    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=other,
+                                 ticket="WO-LEGION-S41", signed_by="老田",
+                                 cross_note="该席跨部门兼任本营主官，指挥链经真源显式登记")
+    assert plan["cross_dept"] is True and plan["cross_note"]
+
+
+def test_set_lead_rejects_noop_and_missing_creds(root):
+    org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    dep = next(d for d in org["departments"] if d.get("lead") and d.get("agents"))
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_set_lead_plan(root, dept=dep["dept"], lead=dep["lead"],
+                              ticket="WO-LEGION-S41", signed_by="老田")
+    assert "已是" in str(ei.value)
+    d = _leadless_dept(root)
+    with pytest.raises(E.EnrollError):
+        E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
+                              ticket="", signed_by="老田")
+    with pytest.raises(E.EnrollError):
+        E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
+                              ticket="WO-LEGION-S41", signed_by="")
+    with pytest.raises(E.EnrollError):
+        E.build_set_lead_plan(root, dept=d["dept"], lead="not-an-id",
+                              ticket="WO-LEGION-S41", signed_by="老田")
+
+
+def test_set_lead_apply_changes_only_lead_and_leaves_trace(root):
+    d = _leadless_dept(root)
+    dept_name, lead = d["dept"], d["agents"][0]
+    before_org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    plan = E.build_set_lead_plan(root, dept=dept_name, lead=lead,
+                                 ticket="WO-LEGION-S41", signed_by="老田")
+    res = E.apply_set_lead_plan(root, plan, signed_by="老田")
+    assert res["ok"] is True and Path(res["backup"]).exists()
+
+    after_org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    b = {x["dept"]: x for x in before_org["departments"]}
+    a = {x["dept"]: x for x in after_org["departments"]}
+    assert a[dept_name]["lead"] == lead
+    ap = a[dept_name]["lead_appointed"]
+    assert ap["to"] == lead and ap["ticket"] == "WO-LEGION-S41" and ap["signed_by"] == "老田"
+    # 名单与档案一字未动：任命不是入编
+    assert a[dept_name]["agents"] == b[dept_name]["agents"]
+    assert json.dumps(a[dept_name].get("agent_profiles"), sort_keys=True, ensure_ascii=False) == \
+           json.dumps(b[dept_name].get("agent_profiles"), sort_keys=True, ensure_ascii=False)
+    # 其他部门一字未动
+    for name in b:
+        if name == dept_name:
+            continue
+        assert json.dumps(b[name], sort_keys=True, ensure_ascii=False) == \
+               json.dumps(a[name], sort_keys=True, ensure_ascii=False)
+
+
+def test_set_lead_toctou_and_signer_mismatch(root):
+    d = _leadless_dept(root)
+    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
+                                 ticket="WO-LEGION-S41", signed_by="老田")
+    with pytest.raises(E.EnrollError):
+        E.apply_set_lead_plan(root, plan, signed_by="他人")
+    # 计划生成后真源被别人改了主官：执行前复核必须拦下
+    org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    for x in org["departments"]:
+        if x["dept"] == d["dept"]:
+            x["lead"] = "RIVAL1"
+    (root / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    with pytest.raises(E.EnrollError) as ei:
+        E.apply_set_lead_plan(root, plan, signed_by="老田")
+    assert "当前主官已变" in str(ei.value)
+
+
+def test_set_lead_rolls_back_on_selfcheck_failure(root, monkeypatch):
+    d = _leadless_dept(root)
+    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
+                                 ticket="WO-LEGION-S41", signed_by="老田")
+    before = org_bytes(root)
+
+    def boom(*a, **k):
+        raise E.EnrollError("自检失败：模拟")
+
+    monkeypatch.setattr(E, "_selfcheck_set_lead", boom)
+    with pytest.raises(E.EnrollError):
+        E.apply_set_lead_plan(root, plan, signed_by="老田")
+    monkeypatch.undo()
+    assert org_bytes(root) == before, "自检失败必须用备份还原，不留半成品"
