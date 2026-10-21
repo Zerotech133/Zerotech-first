@@ -529,8 +529,14 @@ class TestFinCockpit(unittest.TestCase):
 
     # ── 三段式骨架 ─────────────────────────────────────
     def test_three_zones_rendered(self):
-        h = self._render()
-        for frag in ("分析一只股票", "四市场闸门", "策略动态",
+        # WO-QT-20261020-080: K-STOCK-403（60479cb6）把闸门外层标题
+        # "四市场闸门"重构为 gatebar 横幅内嵌"市场闸门"，且空数据时
+        # 横幅降级为"暂无快照"。骨架断言随设计更新，并注入最小快照
+        # 使闸门区块真实渲染，覆盖不回退。
+        rps = {"latest": "2026-09-27 17:35", "envs": [
+            {"label": "A股环境", "safe": True, "score": 72, "state": "多头"}]}
+        h = self._render(rps=rps)
+        for frag in ("分析一只股票", "市场闸门", "策略动态",
                      "盘前五维明细", "工具与横切", "最近分析"):
             self.assertIn(frag, h)
         self.assertEqual(h.count("<details class='sec'>"), 3)  # C 区折叠

@@ -281,8 +281,12 @@ def _assert_claim_unchanged(pool):
 
 
 def test_binding_port_is_mandatory_b1():
+    # WO-QT-20261020-080: 764d631f relaxed binding_port to optional (controlled
+    # mode requires an absent binding_port to be valid), so a missing argument
+    # now follows the explicit always-fails-closed path instead of raising TypeError.
+    # The mandatory-binding contract is asserted via RECEIPT_VERIFIER_REQUIRED.
     pool, env = _claimed_pool()
-    with pytest.raises(TypeError):
+    with pytest.raises(SignalPoolError, match="RECEIPT_VERIFIER_REQUIRED"):
         pool.mark_accepted("sig-1", receipt=receipt())
     with pytest.raises(SignalPoolError, match="RECEIPT_VERIFIER_REQUIRED"):
         pool.mark_accepted("sig-1", receipt=receipt(), binding_port=None)
