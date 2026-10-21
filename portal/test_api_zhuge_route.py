@@ -247,3 +247,46 @@ def test_pushflow_stats_gate_by_kind_without_channel():
     assert stats["attempted"] == 2
     assert stats["fail_rate"] == 0.0
 
+
+# ── WO-OS-22 口径加固：政策行词表扩展（配额/策略类不得算失败）─────────
+def test_pushflow_quota_block_is_policy_not_failure():
+    """km_feishu_hub 的 quota_block:km_card 属配额拦截，不是投递失败。
+
+    验收席提示：旧判据只认 hub-gate 与 |deny:，会把配额拦截算成真实失败；
+    真实账本当前 0 条（未触发），一旦触发就会虚报，故按词表加固。
+    """
+    import api_zhuge_route as zr
+    rows = ([_row("2026-10-21", True) for _ in range(3)]
+            + [{"ts": "2026-10-21T11:00:00", "date": "2026-10-21",
+                "kind": "quota_block:km_card", "channel": "feishu",
+                "target": "oc_test", "count": 1, "ok": False,
+                "tenant": "default"}])
+    path = _write_temp_ledger(rows, "wo_os_22_quota.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert stats["policy_suppressed"] == 1, "配额拦截应计入抑制而非失败"
+    assert stats["fail_count"] == 0
+    assert stats["attempted"] == 3
+    assert stats["fail_rate"] == 0.0
+
+
+def test_pushflow_policy_word_variants():
+    """政策词表覆盖 deny/quota/policy/silent/hold 常见变体。"""
+    import api_zhuge_route as zr
+    kinds = ["hub|deny:silent window", "quota_block:km_card",
+             "policy:deferred", "hold:rate_limit", "silent:night"]
+    rows = ([_row("2026-10-21", True)]
+            + [{"ts": "2026-10-21T12:00:00", "date": "2026-10-21",
+                "kind": k, "channel": "feishu", "target": "oc_t",
+                "count": 1, "ok": False, "tenant": "default"} for k in kinds])
+    path = _write_temp_ledger(rows, "wo_os_22_kinds.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert stats["policy_suppressed"] == len(kinds), "五种政策行都应被识别"
+    assert stats["attempted"] == 1
+    assert stats["fail_count"] == 0
+

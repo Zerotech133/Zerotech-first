@@ -129,9 +129,11 @@ def test_no_write_side_effects_by_design():
 
 # ── WO-OS-20 第七源 pushflow：当日实际失败率（不是历史失败簇）──────────
 def _pushflow_case(rate, fail_count=11, today=20):
+    """构造自洽的 pushflow 夹具（WO-OS-22 起必须带 attempted/policy_suppressed）。"""
     return dict(GOOD_SIX, pushflow={
-        "ok": True, "today": today, "ok_count": today - fail_count,
-        "fail_count": fail_count, "fail_rate": rate,
+        "ok": True, "today": today, "attempted": today,
+        "ok_count": today - fail_count,
+        "fail_count": fail_count, "fail_rate": rate, "policy_suppressed": 0,
         "channels": {"openapi": {"ok": today - fail_count, "fail": fail_count}},
     })
 
@@ -194,5 +196,48 @@ def test_pushflow_missing_goes_to_gaps_pending():
     gap = next((g for g in out["gaps"] if g["source"] == "pushflow"), None)
     assert gap is not None, "缺 pushflow 必须进 gaps"
     assert gap["note"].startswith("待核")
+
+
+def test_pushflow_inconsistent_counts_goes_to_gaps():
+    """WO-OS-22 自洽校验：total - attempted 必须等于 policy_suppressed。
+
+    防的是"上游只给 today 不给 attempted"时静默退回旧口径（含抑制的假失败率）。
+    账本行数与尝试数对不上 = 口径不可信 → 记待核，不产失败率建议。
+    """
+    m = _load()
+    stats = {"ok": True, "today": 282, "attempted": 179, "ok_count": 130,
+             "fail_count": 49, "fail_rate": 0.274, "policy_suppressed": 50,
+             "channels": {}}
+    out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
+    gap = next((g for g in out["gaps"] if g["source"] == "pushflow"), None)
+    assert gap is not None, "行数不自洽必须进 gaps"
+    assert gap["note"].startswith("待核")
+    assert not _pick(out), "口径不可信时不得产出失败率建议"
+
+
+def test_pushflow_consistent_counts_pass():
+    """自洽时正常产建议（282=179+103）。"""
+    m = _load()
+    stats = {"ok": True, "today": 282, "attempted": 179, "ok_count": 130,
+             "fail_count": 49, "fail_rate": 0.274, "policy_suppressed": 103,
+             "channels": {}}
+    out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
+    s = _pick(out)
+    assert s is not None and s["priority"] == 3
+    assert all(g["source"] != "pushflow" for g in out["gaps"])
+
+
+def test_pushflow_legacy_payload_without_attempted_guarded():
+    """WO-OS-22：旧载荷(无 attempted/policy_suppressed)不得静默按 today 算。
+
+    today=276 但无 attempted 字段 → 无法区分抑制与失败 → 待核，不虚报。
+    """
+    m = _load()
+    legacy = {"ok": True, "today": 276, "ok_count": 124, "fail_count": 152,
+              "fail_rate": 0.55, "channels": {}}
+    out = m.build_brief(dict(GOOD_SIX, pushflow=legacy), CLOCK)
+    gap = next((g for g in out["gaps"] if g["source"] == "pushflow"), None)
+    assert gap is not None, "旧载荷缺 attempted 必须待核"
+    assert not _pick(out), "旧载荷不得静默产出含抑制的假失败率"
     assert _pick(out) is None, "缺源不得产建议"
 

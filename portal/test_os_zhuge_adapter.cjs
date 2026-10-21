@@ -206,6 +206,34 @@ const GOOD_SIX = {
   check('缺 pushflow 不产建议', !out.suggestions.some(s => s.id === 'pushflow:daily_rate'));
 })();
 
+/* 10d. WO-OS-22 自洽校验：旧载荷（无 attempted）不得静默按 today 算 */
+(function test_pushflow_legacy_payload_guarded() {
+  const raw = clone(GOOD_SIX);
+  raw.pushflow = {
+    ok: true, today: 276, ok_count: 124, fail_count: 152, fail_rate: 0.55,
+    channels: { openapi: { ok: 100, fail: 150 } },
+  };
+  const out = A.buildBrief(raw, CLOCK);
+  const gap = out.gaps.find(g => g.source === 'pushflow');
+  check('旧载荷缺 attempted 进 gaps', !!gap);
+  check('旧载荷 note 待核', gap && gap.note.indexOf('待核') === 0);
+  check('旧载荷不产假失败率建议', !out.suggestions.some(s => s.id === 'pushflow:daily_rate'));
+})();
+
+/* 10e. WO-OS-22 自洽校验：行数与尝试数对不上 → 待核 */
+(function test_pushflow_inconsistent_guarded() {
+  const raw = clone(GOOD_SIX);
+  raw.pushflow = {
+    ok: true, today: 282, attempted: 179, ok_count: 130, fail_count: 49,
+    fail_rate: 0.274, policy_suppressed: 50,   // 282-179=103 ≠ 50
+    channels: {},
+  };
+  const out = A.buildBrief(raw, CLOCK);
+  const gap = out.gaps.find(g => g.source === 'pushflow');
+  check('不自洽进 gaps', !!gap);
+  check('不自洽不产建议', !out.suggestions.some(s => s.id === 'pushflow:daily_rate'));
+})();
+
 if (failures.length) { console.error('FAIL WO-OS-07 adapter 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-07 os_zhuge_adapter 契约：同语义9场景+pushflow2场景+UMD双端+无写副作用（' +
   A.buildBrief(GOOD_SIX, CLOCK).suggestions.length + ' 条建议样例）');

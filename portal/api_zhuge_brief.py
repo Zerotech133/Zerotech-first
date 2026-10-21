@@ -60,6 +60,37 @@ def _count_text(value: Any) -> str:
     return str(value)
 
 
+def _pushflow_rate_or_none(stats: Dict[str, Any]) -> Optional[float]:
+    """取当日真实投递失败率；口径不成立时返回 None（交调用方记待核）。
+
+    WO-OS-22 自洽校验（防静默退回旧口径）：
+      1. fail_rate 必须是数值；
+      2. attempted 必须显式给出（旧载荷只有 today，无法区分抑制与失败）；
+      3. total - attempted 必须等于 policy_suppressed（账本行数自洽）。
+    任一不成立 → None：宁可待核，也不产出含策略抑制的假失败率。
+    """
+    raw_rate = stats.get("fail_rate")
+    try:
+        rate = float(raw_rate)
+    except (TypeError, ValueError):
+        return None
+    if rate != rate or rate < 0 or rate > 1:  # NaN / 越界一律不可信
+        return None
+    attempted = stats.get("attempted")
+    if isinstance(attempted, bool) or not isinstance(attempted, int) or attempted <= 0:
+        return None  # 缺 attempted 或为 0：口径不成立
+    total = stats.get("today")
+    if isinstance(total, bool) or not isinstance(total, int):
+        return None
+    suppressed = stats.get("policy_suppressed")
+    suppressed = 0 if suppressed is None else suppressed
+    if isinstance(suppressed, bool) or not isinstance(suppressed, int) or suppressed < 0:
+        return None
+    if total - attempted != suppressed:
+        return None  # 行数与尝试数对不上：账本口径不可信
+    return rate
+
+
 def _suggestion(sid: str, domain: str, priority: int, reason: str,
                 source: str, as_of: Optional[datetime]) -> Dict[str, Any]:
     return {
@@ -170,16 +201,15 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
     # 口径红线——只看当日账本实际成败，不拿历史失败簇冒充当前状态。
     # WO-OS-20-FIX：分母是真实投递尝试（attempted），免打扰窗口的策略抑制
     # （policy_suppressed）既不算成功也不算失败，只作为附注说明。
+    # WO-OS-22：先做账本自洽校验——total 必须等于 attempted+suppressed，
+    # 且必须提供 attempted；否则口径不可信（旧载荷会静默退回含抑制的分母，
+    # 把 27.4% 虚报成 53.9%），一律记待核、不产失败率建议。
     if usable("pushflow"):
         stats = raw["pushflow"]
-        raw_rate = stats.get("fail_rate")
-        try:
-            rate = float(raw_rate)
-        except (TypeError, ValueError):
-            rate = None
+        rate = _pushflow_rate_or_none(stats)
         if rate is None:
             gaps.append({"source": "pushflow",
-                         "note": "待核：fail_rate 非数值，当日失败率未知。"})
+                         "note": "待核：fail_rate 非数值或账本行数不自洽，当日失败率未知。"})
         else:
             if rate >= 0.5:
                 priority = 1
@@ -190,7 +220,7 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
             else:
                 priority = 0  # <10% 视为正常投递水平，不产建议
             if priority:
-                attempted = stats.get("attempted", stats.get("today"))
+                attempted = stats.get("attempted")
                 suppressed = stats.get("policy_suppressed") or 0
                 tail = ("；另有 %s 条静默窗口策略抑制，不计入失败"
                         % _count_text(suppressed)) if suppressed else ""

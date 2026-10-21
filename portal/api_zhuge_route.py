@@ -43,20 +43,29 @@ from api_zhuge_brief import BEIJING, SOURCES, build_brief
 PUSHFLOW_LEDGER = Path(__file__).resolve().parent / "work" / "push_flow.jsonl"
 
 
+# WO-OS-22：政策行词表——制造端用这些词标记"按策略不发送"，均非投递失败。
+# 覆盖：闸门静默窗口(|deny:)、配额拦截(quota_block)、策略延后(policy/hold)、
+# 夜间静默(silent)。新增制造端政策词时必须同步本表（见运维手册红线）。
+POLICY_KIND_WORDS = ("deny:", "quota", "policy", "hold", "silent")
+
+
 def _is_policy_suppressed(row):
-    """是否为免打扰窗口的主动抑制（非投递失败）。
+    """是否为策略性拦截（非投递失败）。
 
     WO-OS-20-FIX（2026-10-21 实测口径纠错）：push_flow 里 channel=hub-gate
-    或 kind 含 "|deny:" 的行，是 push 闸门按「静默窗口」策略主动不发送，
-    属于设计内行为。若算成失败，会把 282 行里的 103 行抑制虚报成
-    53.9% 失败率（真实 27.4%），是典型的把策略当故障。
+    或 kind 带政策词的，是推送闸门/配额按策略主动不发送，属设计内行为。
+    若算成失败，会把静默窗口抑制虚报成故障（实测 282 行中 103 行为抑制，
+    虚报 53.9% vs 真实 27.4%）。
+    WO-OS-22：判据从「hub-gate + |deny:」扩为政策词表，堵住配额拦截外溢
+    （km_feishu_hub.quota_block:km_card 当前未触发，但一旦触发不得算失败）。
     沿 api_notify.py:205 is_gate 判例保持同源口径。
     """
     if not isinstance(row, dict):
         return False
     if row.get("channel") == "hub-gate":
         return True
-    return "|deny:" in str(row.get("kind") or "")
+    kind = str(row.get("kind") or "").lower()
+    return any(word in kind for word in POLICY_KIND_WORDS)
 
 
 def _pushflow_stats(path=None, day=None):

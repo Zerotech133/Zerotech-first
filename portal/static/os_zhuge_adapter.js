@@ -59,6 +59,29 @@
     return String(value);
   }
 
+  /* WO-OS-22 自洽校验（与 Python _pushflow_rate_or_none 同语义）：
+     fail_rate 数值有效 + attempted 显式且>0 + today-attempted===suppressed，
+     任一不成立返回 null → 调用方记待核，绝不静默退回含抑制的旧分母。 */
+  function pushflowRateOrNull(stats) {
+    if (!stats || typeof stats !== 'object') return null;
+    var rawRate = stats.fail_rate;
+    var rate = null;
+    if (typeof rawRate === 'number' && isFinite(rawRate)) rate = rawRate;
+    else if (typeof rawRate === 'string' && rawRate.trim() !== '' && isFinite(Number(rawRate))) rate = Number(rawRate);
+    if (rate === null || rate < 0 || rate > 1) return null;
+    var attempted = stats.attempted;
+    if (typeof attempted !== 'number' || !isFinite(attempted) ||
+        Math.floor(attempted) !== attempted || attempted <= 0) return null;
+    var total = stats.today;
+    if (typeof total !== 'number' || !isFinite(total) || Math.floor(total) !== total) return null;
+    var suppressed = (stats.policy_suppressed === undefined || stats.policy_suppressed === null)
+      ? 0 : stats.policy_suppressed;
+    if (typeof suppressed !== 'number' || !isFinite(suppressed) ||
+        Math.floor(suppressed) !== suppressed || suppressed < 0) return null;
+    if (total - attempted !== suppressed) return null;
+    return rate;
+  }
+
   function suggestion(sid, domain, priority, reason, source, asOf) {
     return {
       id: sid,
@@ -175,26 +198,20 @@
 
     // pushflow（WO-OS-20 第七源）：当日通知投递失败率分级；
     // 口径红线——只看当日账本实际成败，不拿历史失败簇冒充当前状态。
+    // WO-OS-22：先做账本自洽校验（attempted 必填且 total=attempted+suppressed），
+    // 旧载荷缺 attempted 时一律待核，防静默退回含策略抑制的假失败率。
     if (usable('pushflow')) {
       var stats = raw.pushflow;
-      var rawRate = stats.fail_rate;
-      var rate = null;
-      if (typeof rawRate === 'number' && isFinite(rawRate)) {
-        rate = rawRate;
-      } else if (typeof rawRate === 'string' && rawRate.trim() !== '' &&
-                 isFinite(Number(rawRate))) {
-        rate = Number(rawRate);
-      }
+      var rate = pushflowRateOrNull(stats);
       if (rate === null) {
-        gaps.push({ source: 'pushflow', note: '待核：fail_rate 非数值，当日失败率未知。' });
+        gaps.push({ source: 'pushflow', note: '待核：fail_rate 非数值或账本行数不自洽，当日失败率未知。' });
       } else {
         var priority = 0;
         if (rate >= 0.5) priority = 1;
         else if (rate >= 0.3) priority = 2;
         else if (rate >= 0.1) priority = 3;
         if (priority) {
-          var attempted = (stats.attempted === undefined || stats.attempted === null)
-            ? stats.today : stats.attempted;
+          var attempted = stats.attempted;
           var suppressed = stats.policy_suppressed || 0;
           var tail = suppressed
             ? '；另有 ' + countText(suppressed) + ' 条静默窗口策略抑制，不计入失败'
