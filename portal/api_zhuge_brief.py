@@ -127,22 +127,56 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
             })
         return ok
 
-    # notify：blocked 优先级 1；review 优先级 3（非本人审批）
+    # notify：blocked 按「失败类型」聚合（WO-OS-23 降噪），review 优先级 3。
+    #
+    # 背景：notify 的 blocked 是 T+7 滚窗的历史失败簇，同一个通道故障会展开成
+    # 十几条（实测 21 条全是"发送流水 ok=0"）。逐条列 P1 会让首页变成噪声墙，
+    # 老田看到 22 条 P1 却无从下手。故：
+    #   - 同 kind 前缀（"投递失败"类）合并成 1 条簇建议，reason 给簇大小与类型数；
+    #   - 簇建议优先级降为 2（历史簇不等于当前故障；当前真实失败率由 pushflow 源
+    #     以 P1-P3 分级呈现，两口径分工明确，不再互相冒充）；
+    #   - deadline / 数据锚类（kind 含 'deadline'）属"到点未就绪"，保持 P1 单列；
+    #   - review 仍 P3 逐条（待确认事项需逐项处理，不能聚合）。
     if usable("notify"):
+        history_cluster: List[Dict[str, Any]] = []   # 历史投递失败簇成员
         for idx, row in enumerate(raw["notify"].get("items") or []):
             if not isinstance(row, dict):
                 continue
             state = row.get("state")
+            title = str(row.get("title") or "未命名")
             if state == "blocked":
-                suggestions.append(_suggestion(
-                    f"notify:{row.get('id', idx)}", "通知", 1,
-                    f"阻断通知《{row.get('title', '未命名')}》需优先核对：{row.get('reason', '原因未提供')}",
-                    "/api/notify/queue", _parse_as_of(row.get("created_at"))))
+                if "deadline" in title.lower() or "未就绪" in title:
+                    suggestions.append(_suggestion(
+                        f"notify:{row.get('id', idx)}", "通知", 1,
+                        f"到点未就绪《{title}》需优先核对：{row.get('reason', '原因未提供')}",
+                        "/api/notify/queue", _parse_as_of(row.get("created_at"))))
+                else:
+                    history_cluster.append(row)
             elif state == "review":
                 suggestions.append(_suggestion(
                     f"notify:{row.get('id', idx)}", "通知", 3,
-                    f"通知《{row.get('title', '未命名')}》待确认（非待本人审批）",
+                    f"通知《{title}》待确认（非待本人审批）",
                     "/api/notify/queue", _parse_as_of(row.get("created_at"))))
+        if history_cluster:
+            kinds = set()
+            latest = None
+            for row in history_cluster:
+                text = str(row.get("title") or "")
+                # "hub 投递失败" → "hub"；"auto:send_feishu 投递失败" → "auto:send_feishu"
+                kinds.add(text.replace(" 投递失败", "").strip() or "未命名")
+            for row in history_cluster:
+                ts = _parse_as_of(row.get("created_at"))
+                if ts and (latest is None or ts > latest):
+                    latest = ts
+            sample = "、".join(sorted(kinds)[:3])
+            more = "等" if len(kinds) > 3 else ""
+            suggestions.append(_suggestion(
+                "notify:history_cluster", "通知", 2,
+                "近 7 天投递失败簇 %s 条，涉及 %s 类（%s%s）：这是 T+7 滚窗的历史簇，"
+                "不代表此刻发不出去；当日真实失败率见另一条建议"
+                % (_count_text(len(history_cluster)), _count_text(len(kinds)),
+                   sample, more),
+                "/api/notify/queue", latest))
 
     # tasks：overdue 优先级 1；今日到期优先级 2；其余 open/doing 优先级 4
     if usable("tasks"):

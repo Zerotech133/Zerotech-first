@@ -67,11 +67,41 @@ def test_output_contract():
     assert len(ids) == len(set(ids)), "建议 id 不得重复"
 
 
-def test_blocked_and_overdue_rank_first():
+def test_overdue_ranks_first_and_blocked_is_clustered():
+    """WO-OS-23 语义变更：blocked 历史簇聚合为 1 条 P2，不再逐条占满 P1。
+
+    逾期工单仍是 P1 排最前；blocked 通知聚合为 notify:history_cluster（P2）。
+    设计理由：21 条同簇 P1 会把首页变成噪声墙，且"历史簇"不等于当前故障。
+    """
     m = _load()
     out = m.build_brief(GOOD_SIX, CLOCK)
-    top_ids = [s["id"] for s in out["suggestions"][:2]]
-    assert "notify:n1" in top_ids and "task:t2" in top_ids, "阻断通知与逾期工单应排最前"
+    ids = [s["id"] for s in out["suggestions"]]
+    assert ids[0] == "task:t2", "逾期工单应排最前"
+    assert "notify:history_cluster" in ids, "blocked 通知应聚合成簇建议"
+    assert "notify:n1" not in ids, "不应再逐条展开 blocked"
+    cluster = next(s for s in out["suggestions"] if s["id"] == "notify:history_cluster")
+    assert cluster["priority"] == 2, "历史簇降为 P2（当日真实失败率由 pushflow 源承担）"
+    assert "近 7 天" in cluster["reason"] and "不代表此刻发不出去" in cluster["reason"]
+
+
+def test_deadline_blocked_stays_p1():
+    """deadline 类（到点未就绪）是真 P1，不参与历史簇聚合。"""
+    m = _load()
+    raw = dict(GOOD_SIX)
+    raw["notify"] = {"ok": True, "errors": [], "items": [
+        {"id": "d1", "title": "数据锚到点未就绪 · us / postclose",
+         "state": "blocked", "created_at": "2026-10-21T08:00:00+08:00",
+         "reason": "锚 guojia 状态 stale"},
+        {"id": "n1", "title": "hub 投递失败", "state": "blocked",
+         "created_at": "2026-10-21T07:00:00+08:00", "reason": "ok=0"}]}
+    out = m.build_brief(raw, CLOCK)
+    d = next((s for s in out["suggestions"] if s["id"] == "notify:d1"), None)
+    assert d is not None and d["priority"] == 1, "deadline 必须单列 P1"
+    assert "到点未就绪" in d["reason"]
+    cluster = next((s for s in out["suggestions"]
+                    if s["id"] == "notify:history_cluster"), None)
+    assert cluster is not None and cluster["priority"] == 2
+    assert "1 条" in cluster["reason"], "簇只含非 deadline 的 blocked"
 
 
 def test_due_today_called_out():

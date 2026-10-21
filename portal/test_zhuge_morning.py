@@ -50,7 +50,10 @@ def _stub_fetchers():
         "tasks": lambda: {
             "ok": True,
             "tasks": [{"task_id": "t1", "status": "open", "title": "今日单",
-                       "due": DAY, "created_at": CLOCK_ISO}],
+                       "due": DAY, "created_at": CLOCK_ISO},
+                      # WO-OS-23 起 blocked 聚合成 P2，桩需一条真 P1（逾期）才能验 top_priority
+                      {"task_id": "t9", "status": "open", "title": "逾期单",
+                       "due": "2026-10-19", "created_at": CLOCK_ISO}],
         },
         "capability": lambda: {"ok": True},
     }

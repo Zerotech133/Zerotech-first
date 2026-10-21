@@ -63,13 +63,34 @@ const GOOD_SIX = {
   check('建议 id 去重', ids.length === new Set(ids).size);
 })();
 
-/* 3. blocked 通知与逾期工单排最前（priority 1） */
-(function test_blocked_and_overdue_rank_first() {
+/* 3. WO-OS-23：blocked 聚合成簇(P2)，逾期工单仍 P1 排最前 */
+(function test_cluster_and_overdue_rank() {
   const out = A.buildBrief(GOOD_SIX, CLOCK);
-  const top2 = out.suggestions.slice(0, 2).map(s => s.id);
-  check('blocked+overdue 排前', top2.includes('notify:n1') && top2.includes('task:t2'));
-  check('blocked 优先级 1', out.suggestions.find(s => s.id === 'notify:n1').priority === 1);
+  const ids = out.suggestions.map(s => s.id);
+  check('逾期工单排最前', ids[0] === 'task:t2');
+  check('blocked 聚合成簇', ids.includes('notify:history_cluster'));
+  check('blocked 不再逐条展开', !ids.includes('notify:n1'));
+  const cluster = out.suggestions.find(s => s.id === 'notify:history_cluster');
+  check('簇优先级 2', cluster && cluster.priority === 2);
+  check('簇文案含近7天', cluster && cluster.reason.indexOf('近 7 天') !== -1);
+  check('簇文案澄清非当前故障', cluster && cluster.reason.indexOf('不代表此刻发不出去') !== -1);
   check('overdue 优先级 1', out.suggestions.find(s => s.id === 'task:t2').priority === 1);
+})();
+
+/* 3b. WO-OS-23：deadline 类仍单列 P1 */
+(function test_deadline_stays_p1() {
+  const raw = clone(GOOD_SIX);
+  raw.notify = { ok: true, errors: [], items: [
+    { id: 'd1', title: '数据锚到点未就绪 · us / postclose', state: 'blocked',
+      created_at: '2026-10-21T08:00:00+08:00', reason: '锚 stale' },
+    { id: 'n1', title: 'hub 投递失败', state: 'blocked',
+      created_at: '2026-10-21T07:00:00+08:00', reason: 'ok=0' }] };
+  const out = A.buildBrief(raw, CLOCK);
+  const d = out.suggestions.find(s => s.id === 'notify:d1');
+  check('deadline 单列 P1', d && d.priority === 1);
+  check('deadline 文案到点未就绪', d && d.reason.indexOf('到点未就绪') !== -1);
+  const c = out.suggestions.find(s => s.id === 'notify:history_cluster');
+  check('簇不含 deadline', c && c.reason.indexOf('1 条') !== -1);
 })();
 
 /* 4. 今日到期点名（reason 含"今日"） */

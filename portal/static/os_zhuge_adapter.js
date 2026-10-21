@@ -116,24 +116,51 @@
       return ok;
     }
 
-    // notify：blocked 优先级 1；review 优先级 3（非本人审批）
+    // notify：blocked 按失败类型聚合（WO-OS-23 降噪）；review 优先级 3
+    // 历史失败簇不等于当前故障：聚合为 1 条 P2，当日真实失败率由 pushflow 源承担；
+    // deadline / 未就绪类是真 P1，单列不聚合。
     if (usable('notify')) {
       var notifyItems = raw.notify.items || [];
+      var historyCluster = [];
       for (var i = 0; i < notifyItems.length; i++) {
         var row = notifyItems[i];
         if (!row || typeof row !== 'object') continue;
         var id = row.id !== undefined ? row.id : i;
+        var title = String(row.title || '未命名');
         if (row.state === 'blocked') {
-          suggestions.push(suggestion(
-            'notify:' + id, '通知', 1,
-            '阻断通知《' + (row.title || '未命名') + '》需优先核对：' + (row.reason || '原因未提供'),
-            '/api/notify/queue', parseAsOf(row.created_at)));
+          if (title.toLowerCase().indexOf('deadline') !== -1 || title.indexOf('未就绪') !== -1) {
+            suggestions.push(suggestion(
+              'notify:' + id, '通知', 1,
+              '到点未就绪《' + title + '》需优先核对：' + (row.reason || '原因未提供'),
+              '/api/notify/queue', parseAsOf(row.created_at)));
+          } else {
+            historyCluster.push(row);
+          }
         } else if (row.state === 'review') {
           suggestions.push(suggestion(
             'notify:' + id, '通知', 3,
-            '通知《' + (row.title || '未命名') + '》待确认（非待本人审批）',
+            '通知《' + title + '》待确认（非待本人审批）',
             '/api/notify/queue', parseAsOf(row.created_at)));
         }
+      }
+      if (historyCluster.length) {
+        var kinds = {};
+        var latest = null;
+        for (var k = 0; k < historyCluster.length; k++) {
+          var t = String(historyCluster[k].title || '').replace(' 投递失败', '').trim() || '未命名';
+          kinds[t] = true;
+          var ts = parseAsOf(historyCluster[k].created_at);
+          if (ts && (latest === null || new Date(ts) > new Date(latest))) latest = ts;
+        }
+        var kindList = Object.keys(kinds).sort();
+        var sample = kindList.slice(0, 3).join('、');
+        var more = kindList.length > 3 ? '等' : '';
+        suggestions.push(suggestion(
+          'notify:history_cluster', '通知', 2,
+          '近 7 天投递失败簇 ' + countText(historyCluster.length) + ' 条，涉及 ' +
+            countText(kindList.length) + ' 类（' + sample + more + '）：这是 T+7 滚窗的历史簇，' +
+            '不代表此刻发不出去；当日真实失败率见另一条建议',
+          '/api/notify/queue', latest));
       }
     }
 
