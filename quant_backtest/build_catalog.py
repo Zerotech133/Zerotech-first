@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""数据中台目录构建器：扫描 data/tdx + data/tushare 两仓 → data/catalog.json。
+"""数据中台目录构建器：扫描 data/ 下各仓（tdx/tushare/xueqiu/cnopendata）
+→ data/catalog.json。
 
 按《数据中台架构设计.md》§5：
 - tables：物理表登记（source/store/layout/schema/date_col/code_col/freq/
@@ -28,6 +29,33 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "catalog.json")
+
+# ── CnOpenData 静态历史包（WO-QT-20261021-088）──
+# 免费外部源，一次落地 → 不再按日更新；每表一目录 + part_000N.parquet 分片，
+# 表级溯源（源链接/许可/抓取与解析时间/行数/逐文件 sha256）在包清单
+# _manifest.json 的内层 "tables"（双层壳，见 _load_manifest）。
+CNOD_SOURCE = "cnopendata"
+CNOD_DIR = os.path.join(HERE, "data", "cnopendata")
+CNOD_MANIFEST = os.path.join(CNOD_DIR, "_manifest.json")
+# 本批接入的 6 表（表名 = 目录名 = 包清单内层键；合计 151,421 行已回读核验）
+CNOD_TABLES = (
+    "chinese-dictionary-of-financial-sentiment",
+    "firm-level-climate-change-exposure",
+    "fepu", "czyx", "yspl", "gjzfssfc",
+)
+
+# freq 枚举（catalog 的节奏词表，唯一定义处）：
+#   D=日 / W=周 / M=月 / Q=季 / Y=年 / 1min=分钟
+# WO-QT-20261021-088 扩 Y：CnOpenData 6 表为 5 张省级年度面板 + 1 张年度
+# 主表（气候暴露另含季度 part）。扩 Y 的依据：
+#   ① 本文件此前无 freq 校验（_scan_dir 直接透传 TABLE_DEFS 值），扩枚举
+#      只是把既有隐式词表显式化，不改任何既有表取值 → 238 表零波及；
+#   ② 唯一按 freq 分档的下游 kg_source_rating.py L100 STALE_DAYS 已含
+#      {"Y": 400}（年度容忍档），未知值回落 Q，故 Y 无需改下游即可生效；
+#   ③ 全仓无「catalog freq ∈ 固定集合」的断言（test_kg_objectview 的
+#      D/M/Q/E/static 是 objectview 扇区静态配置，非 catalog 字段）。
+FREQ_ENUM = ("D", "W", "M", "Q", "Y", "1min")
+
 WAREHOUSES = [  # (source, 数据根, manifest 路径)
     ("xtcloud", os.path.join(HERE, "data", "tdx"),
      os.path.join(HERE, "data", "tdx", "_manifest.json")),
@@ -36,6 +64,10 @@ WAREHOUSES = [  # (source, 数据根, manifest 路径)
     # 雪球仓（xueqiu-collector，设计 xueqiu-collector-design-2026-10-16 §3.3）
     ("xueqiu", os.path.join(HERE, "data", "xueqiu"),
      os.path.join(HERE, "data", "xueqiu", "_manifest.json")),
+    # CnOpenData 静态历史包（WO-QT-20261021-088）：6 张表各一目录
+    # （part_000N.parquet），表级溯源在包清单 _manifest.json 内层 "tables"。
+    (CNOD_SOURCE, os.path.join(HERE, "data", "cnopendata"),
+     os.path.join(HERE, "data", "cnopendata", "_manifest.json")),
 ]
 LEGACY_US = os.path.join(HERE, "data", "us")       # 旧美股逐股（deprecated）
 CRYPTO_DIR = os.path.join(HERE, "data", "crypto")  # 加密货币日线
@@ -242,6 +274,58 @@ for _name in ('tdx_sector_def', 'tdx_sector_member', 'ts_ths_member',
     TABLE_DEFS[_name]['date_col'] = None
     TABLE_DEFS[_name]['date_status'] = 'not_applicable'
 
+# ── CnOpenData 静态历史包（WO-QT-20261021-088）──
+# 6 表一次落地即终态（非按日更新）：freshness 停在包内末年（或无可测日期），
+# _verify_status 因此判 verified_stale；desc 均写明覆盖区间与静态包属性。
+# date_col/code_col 只登记列名，不改写源数据形态（fepu.stkcd 等整数保持整数）。
+TABLE_DEFS.update({
+    "chinese-dictionary-of-financial-sentiment": {
+        "layout": "part", "date_col": None, "code_col": None,
+        "date_status": "not_applicable", "primary_key": [], "freq": "Y",
+        "desc": "中文金融情感词典（姜富伟等 2020，正向 3338 + 负向 5890 共 "
+                "9228 词，词表无时间维度；静态历史包，非按日更新）",
+    },
+    "firm-level-climate-change-exposure": {
+        "layout": "part", "date_col": "year", "code_col": "isin",
+        "primary_key": ["isin", "year", "quarter"], "freq": "Y",
+        "desc": "公司层面气候变化暴露指数（OSF 2024Q4 版，81759 行，"
+                "2001–2024；主表按年度 year 登记，同表另含季度面板 quarter"
+                "（firmquarter，年度片无该列）；静态历史包，非按日更新）",
+    },
+    "fepu": {
+        "layout": "part", "date_col": "year", "code_col": "stkcd",
+        "primary_key": ["stkcd", "year"], "freq": "Y",
+        "desc": "企业年报前瞻性信息披露（fepu 句子级/词级强度，A股 2006–2024，"
+                "57044 行，(stkcd,year) 唯一；静态历史包，非按日更新）",
+    },
+    "czyx": {
+        # 不声明主键：6 个分片是同一「省×年」网格上的 6 张维度表（收入/支出/
+        # 债务/社保/公共服务/均等化），分片间 (prov, year) 大量重复且没有维度
+        # 列可加入身份；声明 [prov, year] 会被 datamart._normalize 按主键去重，
+        # 实证 1995 行静默塌缩为 879 行（1860 可读分片行仅余 744 唯一对 + 135
+        # 宽表行）。空主键 = 不做去重、保留全部行（同 anns_d/research_report 口径）。
+        "layout": "part", "date_col": "year", "code_col": "prov",
+        "primary_key": [], "freq": "Y",
+        "desc": "中国财政可持续性指数（省级六维面板：收入/支出/债务/社保/"
+                "公共服务/均等化，6 分片同省年网格，2008–2019，31 省；末片"
+                "part_0005 为宽表无 year 列；prov 存在全角空格等命名变体"
+                "（原始 91 个取值）需归一后使用；静态历史包，非按日更新）",
+    },
+    "yspl": {
+        "layout": "part", "date_col": "年份", "code_col": "省份",
+        "primary_key": ["省份", "年份"], "freq": "Y",
+        "desc": "省级预算决算收支面板（四本预算：一般公共/政府性基金/国有资本/"
+                "社会保险，决算+预算口径，31 省 1994–2017，744 行；"
+                "静态历史包，非按日更新）",
+    },
+    "gjzfssfc": {
+        "layout": "part", "date_col": "年", "code_col": "省份代码",
+        "primary_key": ["省份代码", "年"], "freq": "Y",
+        "desc": "国家政府支出财政分成（中央/地方/省本级/市本级各税种占比，"
+                "31 省 1994–2014，651 行；静态历史包，非按日更新）",
+    },
+})
+
 # 财报主键保留同报告期的报表类型及披露版本；不存在的列在扫描时剔除。
 for _tbl in ("income", "balancesheet", "cashflow", "fina_indicator"):
     for _name in (_tbl, "ts_" + _tbl):
@@ -430,8 +514,18 @@ def _freshness(store, layout, dcol, files):
                     break
             return best
         # part：全分片只读日期列（分片数少，代价可忽略）
-        vals = [pd.read_parquet(os.path.join(store, f), columns=[dcol])[dcol]
-                for f in files]
+        # WO-QT-20261021-088：逐片容错——同一逻辑表的分片 schema 可以不一致
+        # （实证 CnOpenData czyx 尾片 part_0005 是 2008..2018 宽表，无 year
+        # 列），原列表推导一遇 ArrowInvalid 即抛到外层 → 整表 freshness=None，
+        # 「水位不可测」被误判为 verified。改为跳过缺列/损坏分片，用水位可测
+        # 的分片定日期；全部分片都测不到才回 None（语义与原来一致）。
+        vals = []
+        for f in files:
+            try:
+                vals.append(pd.read_parquet(os.path.join(store, f),
+                                            columns=[dcol])[dcol])
+            except Exception:
+                continue
         if not vals:
             return None
         return _dmax(pd.concat(vals, ignore_index=True))
@@ -523,6 +617,54 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
         "deprecated": d.get("deprecated", False),
         "desc": d.get("desc", ""),
     }
+
+
+def _load_manifest(path):
+    """读仓库/包清单 → {表名: 表级记录}；缺失或损坏返回 {}。
+
+    tdx/tushare/xueqiu 的 _manifest.json 是扁平结构（顶层即表名），CnOpenData
+    包是双层壳 {"version":1, "tables": {表名: 记录}}。此处统一摊平：带
+    "tables" 子字典则取其内层，否则原样返回（其余仓行为不变）。不摊平会让
+    mf.get(tbl) 恒为 None → rows/manifest_status 全失明（编造 manifest_missing）。
+    """
+    if not path or not os.path.exists(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    inner = raw.get("tables")
+    return inner if isinstance(inner, dict) else raw
+
+
+def _mark_static_done(tables, mf):
+    """CnOpenData 静态包：补齐 done / readiness_basis（WO-QT-20261021-088）。
+
+    包清单表级记录只有 rows/errors/fetched_at/parsed_at/files，没有增量仓的
+    done 字段；其语义是「一次落地、解析无错即终态」。故以 errors 空 + 有数据
+    判 done=True，并让 readiness_basis=manifest_status=closed 与登记口径一致。
+    datamart._ready_one 对 manifest 内无该表键时回落 entry['done']，置真即
+    让 ready()/read() 可达（无需改 datamart）。
+
+    返回置真的表数。
+    """
+    marked = 0
+    for name, e in tables.items():
+        if e.get("source") != CNOD_SOURCE:
+            continue
+        rec = mf.get(name) or {}
+        if rec.get("errors"):
+            continue                      # 解析留错：不认定终态
+        if (rec.get("rows") or 0) <= 0 and (e.get("files") or 0) <= 0:
+            continue                      # 无行且无分片：保持未完成
+        e["done"] = True
+        e["readiness_basis"] = "manifest"
+        e["manifest_status"] = "closed"
+        marked += 1
+    return marked
 
 
 def _scan_sqlite(mf):
@@ -753,12 +895,30 @@ def _register_intel_tables():
     return tables
 
 
-def _changelog(prev_tables, new_tables, version, path=None):
+def _changelog_note(prev_tables, new_tables):
+    """本次表集变化的溯源文案；无已知工单来源时返回 None（沿用历史文案）。
+
+    WO-QT-20261021-088：CnOpenData 6 表首次接入时写明工单号与 freq 选择，
+    审计时不必再从 added 反推动因。
+    """
+    added = set(new_tables) - set(prev_tables)
+    cnod_added = [t for t in CNOD_TABLES if t in added]
+    if cnod_added:
+        return ("WO-QT-20261021-088 CnOpenData %d 表接入 catalog"
+                "（freq=Y；静态历史包标 not_applicable/verified_stale）"
+                % len(cnod_added))
+    return None
+
+
+def _changelog(prev_tables, new_tables, version, path=None, note=None):
     """catalog_changelog 追加一条（注册/注销表集变化记录，设计 §3.2）。
 
     path 缺省跟随 OUT 同目录（生产=HERE/data/catalog_changelog.jsonl，
     行为不变）；测试注入 out_path 时随其目录落盘，避免污染生产审计日志
     （Bug：写死 HERE/data，warehouse fixture 触发 56 条垃圾记录）。
+
+    note 缺省沿用历史文案（未传时行为与改造前逐字节一致）；按工单接入的
+    表集填自述文案，便于审计时不必反查 added 推断原因。
     """
     added = sorted(set(new_tables) - set(prev_tables))
     removed = sorted(set(prev_tables) - set(new_tables))
@@ -770,7 +930,7 @@ def _changelog(prev_tables, new_tables, version, path=None):
     entry = {
         "ts": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "version": version, "added": added, "removed": removed,
-        "note": "kg-graph-storage-design §3 catalog 注册 xq_* 10 表 + guba_posts",
+        "note": note or "kg-graph-storage-design §3 catalog 注册 xq_* 10 表 + guba_posts",
     }
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -786,12 +946,7 @@ def build(data_root=None, out_path=None):
                                                "_manifest.json"))
                                  for s, n in (("xtcloud", "tdx"),
                                               ("tushare", "tushare"))]):
-        mf = {}
-        if os.path.exists(mpath):
-            try:
-                mf = json.load(open(mpath, encoding="utf-8"))
-            except Exception:
-                mf = {}
+        mf = _load_manifest(mpath)      # cnopendata 双层壳在此摊平
         for tbl in sorted(os.listdir(root)) if os.path.isdir(root) else []:
             # 点前缀=隐藏目录（.git 等 VCS 残留），误收会产出 placeholder
             # 垃圾表（2026-10-17 实证 data/tushare/.git 被收为 228 表之一）
@@ -803,6 +958,8 @@ def build(data_root=None, out_path=None):
             tables.update(_scan_sqlite(mf))
         if data_root is None and source == "xueqiu":    # 雪球舆情库三表
             tables.update(_scan_xq_info_db(mf))
+        if data_root is None and source == CNOD_SOURCE:  # 静态历史包终态标记
+            _mark_static_done(tables, mf)
     if data_root is None and os.path.isdir(LEGACY_US):
         tables["us_legacy"] = _scan_dir(
             "legacy", os.path.dirname(LEGACY_US), None, "us_legacy", {},
@@ -829,10 +986,18 @@ def build(data_root=None, out_path=None):
     stale_before = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
     for e in tables.values():
         e["verification_status"] = _verify_status(e, stale_before)
+    # freq 词表校验（软）：未登记值不阻断重建，但必须可见——静默接受拼写
+    # 错误（如 "Annual"）会让下游 kg_source_rating 回落 Q 档预算而无人知。
+    _bad_freq = sorted({str(e.get("freq")) for e in tables.values()
+                        if str(e.get("freq")) not in FREQ_ENUM})
+    if _bad_freq:
+        print("[catalog] 警告：freq 不在枚举 %s 内：%s"
+              % ("/".join(FREQ_ENUM), ", ".join(_bad_freq)))
     version = prev_version + 1 if set(tables) != prev_tables else max(prev_version, 1)
     _changelog(prev_tables, tables, version,
                os.path.join(os.path.dirname(out_path or OUT),
-                            "catalog_changelog.jsonl"))
+                            "catalog_changelog.jsonl"),
+               note=_changelog_note(prev_tables, tables))
     cat = {
         "version": version,
         "updated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
