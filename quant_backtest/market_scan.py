@@ -15,7 +15,7 @@ import json
 import os
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 
 BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else r"C:/项目/老田的AI助手/quant_backtest"
 QBT = BASE
@@ -72,6 +72,61 @@ def hist_st_set(d0, d1):
     ed = nc["end_date"].fillna("99999999").astype(str)
     hit = nc[(sd <= str(d1)) & (ed >= str(d0))]
     return set(hit["ts_code"])
+
+
+# ---- N3 ST 公告 PIT 化（K-STOCK 门② 子项，2026-10-21 老田拍板 P1-P5 后实施）----
+# 新增为「增量、零副作用」函数：不改变 hist_st_set / market_stocks 既有行为；
+# 生产默认仍走 legacy hist_st_set，直至 BACK1/STRAT1 签字采纳后才在引擎侧启用。
+_ST_PIT_INTERVALS_CACHE = None
+
+
+def _load_st_pit_intervals():
+    """PIT ST 区间（P1：public_start = max(start_date, ann_date)），进程内缓存。
+
+    返回 {code: [(public_start, end), ...]}，public_start 为「市场可见即剔」起点。
+    数据源同 hist_st_set：data/tdx/ts_namechange.parquet。文件缺失返回空 dict。
+    """
+    global _ST_PIT_INTERVALS_CACHE
+    if _ST_PIT_INTERVALS_CACHE is not None:
+        return _ST_PIT_INTERVALS_CACHE
+    import pandas as pd
+    if not os.path.exists(NC_FP):
+        _ST_PIT_INTERVALS_CACHE = {}
+        return _ST_PIT_INTERVALS_CACHE
+    nc = pd.read_parquet(NC_FP)
+    nc = nc[nc["name"].astype(str).str.upper().str.contains("ST")]
+    intervals = defaultdict(list)
+    for code, start, end, ann in zip(nc["ts_code"], nc["start_date"],
+                                    nc["end_date"], nc["ann_date"]):
+        s = str(start)
+        e = None if pd.isna(end) else str(end)
+        a = None if pd.isna(ann) else str(ann)
+        # P1：公开起点取 max(start, ann)；ann 缺失时退化为 start（等价原探针）
+        pub = s if (a is None or s >= a) else a
+        intervals[str(code)].append((pub, e))
+    _ST_PIT_INTERVALS_CACHE = intervals
+    return intervals
+
+
+def is_st_pit_blocked(code, day, intervals=None):
+    """N3 PIT 阻塞判定（逐事件交易日级）：事件交易日 day 当日或之前 ST 已公开 → 阻塞。
+
+    - P1 口径：public_start = max(start_date, ann_date)（可见即剔，绝不把未来
+      ST 状态回写删除过去事件）。
+    - 纯函数、零副作用、不触网/库；供引擎/评分侧「逐事件」调用，替代
+      hist_st_set 的整窗丢弃（后者是前视根因，见 a3_st_pit_diff_report.json）。
+    - intervals 可注入（测试用，绕过缓存与 parquet 依赖）；为 None 时懒加载缓存。
+    - 注意：本函数仅供研究副本 / 显式开启路径调用；生产默认仍走 legacy，
+      采纳门（BACK1/STRAT1 签字）后才在 backtest_engine_v2.calc_chanlun_signals_market
+      接入。引擎接入步因 backtest_engine_v2.py 当前受敏感审批门限制，列为 N3 后置项。
+    """
+    if intervals is None:
+        intervals = _load_st_pit_intervals()
+    day_s = str(day)
+    for pub, end in intervals.get(code, ()):
+        if pub <= day_s and (end is None or end > day_s):
+            return True
+    return False
 
 
 def score_3buy(close, zg, vr, bei, bei2):

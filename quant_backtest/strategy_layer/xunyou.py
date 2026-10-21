@@ -35,6 +35,9 @@ if _QUANT_BT not in sys.path:
 
 from strategy_layer import Registry, bootstrap_default_adapters  # noqa: E402
 from strategy_layer.aggregator import SignalAggregator  # noqa: E402
+# N1 universe 休眠开关（默认 False → build_pool 不改变任何行为；
+# 老田在 N1 门翻开关后才真正过滤样本域）。
+from strategy_layer.liudu_universe import LIUDU_UNIVERSE_ENABLED  # noqa: E402
 
 AGENT_NAME = "荀攸（公达）"
 REPORT_DIR = os.path.join(_QUANT_BT, "reports")
@@ -101,6 +104,13 @@ def build_pool(trade_date: str, combined: list, divergences: list) -> dict:
         (row for row in combined if row.get("action") == "buy"),
         key=lambda r: (-float(r.get("score", 0.0)),
                        str(r.get("symbol", ""))))
+    # ── N1 universe 过滤（休眠默认：LIUDU_UNIVERSE_ENABLED=False → 不生效）──
+    # 老田已拍板 universe=market；开关打开前本调用不执行，行为完全一致。
+    # 激活后：仅保留 A 股，从样本层面消除外源 ticker 污染（见 N3/STRAT1 证据）。
+    removed_by_universe = []
+    if LIUDU_UNIVERSE_ENABLED:
+        from strategy_layer.liudu_universe import apply_universe_filter
+        buys, removed_by_universe = apply_universe_filter(buys)
     tiered = assign_tiers(buys)
     superseded_total = sum(
         len(c.get("superseded", ()))
@@ -133,14 +143,23 @@ def build_pool(trade_date: str, combined: list, divergences: list) -> dict:
             "tier2_total": len(t2),
             "review_total": len(review),
         },
-        "notes": [
-            "分档按 2026-10-19 老田拍板落地：T1=score>99.0 且当日排名≤20"
-            "（告警档，触发盯盘/提醒）；T2=95≤score≤99.0（人工关注档）；"
-            "divergence=true 一律人工复核、不进任何档"
-            "（依据 deliverables/荀攸T1T2分档阈值研究_拍板备忘_20261019.md）",
-            "确认门②③未过：不切线上 picks、不改权重、不触交易",
-        ],
+        "notes": _build_pool_notes(removed_by_universe),
     }
+
+
+def _build_pool_notes(removed_by_universe: list) -> list:
+    notes = [
+        "分档按 2026-10-19 老田拍板落地：T1=score>99.0 且当日排名≤20"
+        "（告警档，触发盯盘/提醒）；T2=95≤score≤99.0（人工关注档）；"
+        "divergence=true 一律人工复核、不进任何档"
+        "（依据 deliverables/荀攸T1T2分档阈值研究_拍板备忘_20261019.md）",
+        "确认门②③未过：不切线上 picks、不改权重、不触交易",
+    ]
+    if removed_by_universe:
+        notes.append(
+            "N1 universe=market 已生效：剔除非A股/北交所 %d 只（样本层面防污染）"
+            % len(removed_by_universe))
+    return notes
 
 
 def write_upstream_report(trade_date: str, pool: dict,

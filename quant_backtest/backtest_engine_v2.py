@@ -276,7 +276,7 @@ def calc_chanlun_signals(d0, d1, progress=None, buy_filter="all"):
         pass
     return sig_buy, sig_sell, "自算(hfq+seen-ever)·%s" % BUY_FILTER_LABEL.get(buy_filter, buy_filter)
 
-def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3", hist_st=False):
+def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3", hist_st=False, pit_st=False):
     """全市场模式（K-STOCK-289 老田口径）：每日全网 5000+（剔 ST/北交所）缠论扫描，
     一/二/三买全部入池，交易只吃 buy_filter 允许的买点（默认仅三买）。
     事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。
@@ -293,7 +293,22 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3", hist_st=F
     j = json.load(open(cache_fp, encoding="utf-8"))
     events = j["events"]
     st_set, n_drop = set(), 0
-    if hist_st:
+    pit_blocked = 0
+    if pit_st:
+        # N3（ST 公告 PIT 化·WO-QT-20261021-N3）：逐事件 PIT 阻塞替代整窗丢弃，杜绝前视偏差。
+        # 保留 hist_st 对照开关（若同时开启，记录 legacy 整窗删除数用于 A-B diff，不重复删除）。
+        import market_scan as _ms
+        if hist_st:
+            st_set = _ms.hist_st_set(d0, d1)
+            n_drop = sum(1 for ev in events if ev.get("stock") in st_set)
+        kept = []
+        for ev in events:
+            if _ms.is_st_pit_blocked(ev.get("stock"), ev.get("day")):
+                pit_blocked += 1
+            else:
+                kept.append(ev)
+        events = kept
+    elif hist_st:
         import market_scan as _ms
         st_set = _ms.hist_st_set(d0, d1)
         if st_set:
@@ -330,12 +345,18 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3", hist_st=F
         progress("信号", 30, f"全市场事件缓存命中（{len(events)} 事件·{BUY_FILTER_LABEL.get(buy_filter, buy_filter)}·评分覆盖 {n_scored}）")
     src = "全市场扫描(market_scan v3·%d只·剔ST/北交所)·%s" % (j.get("meta", {}).get("universe", 0),
                                                       BUY_FILTER_LABEL.get(buy_filter, buy_filter))
-    if hist_st:
+    if pit_st:
+        src += "·PIT_ST阻塞%d事件(事件级·杜绝前视)" % pit_blocked
+        if hist_st:
+            src += "(legacy对照删%d)" % n_drop
+    elif hist_st:
         src += "·历史ST剔除%d只(事件%d条)" % (len(st_set), n_drop)
     return sig_buy, sig_sell, {"pool_daily": pool_daily, "scan_meta": j.get("meta", {}),
                                "signal_source": src, "sig_zg": sig_zg, "sig_meta": sig_meta,
                                "hist_st": {"on": bool(hist_st), "n_codes": len(st_set),
-                                           "n_events_drop": n_drop}}, None
+                                           "n_events_drop": n_drop},
+                               "pit_st": {"on": bool(pit_st), "n_events_blocked": pit_blocked,
+                                          "hist_st_legacy_drop": (n_drop if pit_st else 0)}}, None
 
 
 def calc_dknife_signals(d0, d1, profile="relaxed", progress=None):
