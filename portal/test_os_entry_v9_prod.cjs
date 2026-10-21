@@ -57,6 +57,11 @@ check('大屏与首页共用建议引擎标识', html.includes('大屏与首页�
 check('fetch /api/zhuge/brief', html.includes("'/api/zhuge/brief'"));
 check('路由不可达本地兜底文案', html.includes('路由不可达，本地引擎兜底'));
 
+// 2f. WO-OS-12 建议条目点击下钻工作平台：jumpWork 事件委托 + data-work-domain + 能力目录域匹配高亮
+check('存在 jumpWork 函数', html.includes('function jumpWork'));
+check('建议条目可点击 data-work-domain', html.includes('data-work-domain'));
+check('能力目录支持 highlighted 高亮类', /cap-item\.highlighted\s*\{/.test(html));
+
 // 3. 只读 GET 端点齐备
 for (const ep of ['/api/os', '/api/home', '/api/alerts', '/api/notify/queue', '/api/org/tasks', '/api/capability/board'])
   check('端点 ' + ep, html.includes("'" + ep + "'"));
