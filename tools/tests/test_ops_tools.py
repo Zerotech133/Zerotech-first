@@ -5,7 +5,7 @@
 ``if __name__ == "__main__"`` 与模块级副作用）::
 
     tools/verify_backups.py     备份校验：MANIFEST/字节数/sha256/孤儿/新鲜度，退出码 0/1/2
-    tools/gen_health_card.py    健康卡：task_audit + backup + repo + docs 四块、16 项检查
+    tools/gen_health_card.py    健康卡：task_audit + backup + data + repo + docs 五块、17 项检查
     tools/gen_docs_index.py     DOCS_INDEX 生成与 --check
     tools/daily_ops.ps1         PowerShell 编排：只测退出码与 JSON 契约
 
@@ -393,7 +393,7 @@ def test_health_card_normal_fixture_json_contract(tmp_path: Path) -> None:
         assert isinstance(card[block], dict), block
         assert "available" in card[block]
 
-    # 16 项检查是扁平列表，字段固定（新增 worktree TTL 与文档索引后）
+    # 17 项检查是扁平列表，字段固定（新增 worktree TTL / 文档索引 / 数据根漂移后）
     assert isinstance(card["checks"], list) and card["checks"]
     for check in card["checks"]:
         assert set(check) == {"id", "level", "detail"}
@@ -508,6 +508,302 @@ def test_health_card_out_not_directory_exit2(tmp_path: Path) -> None:
     proc = _run_health(repo, vault, "--out", str(blocker))
     assert proc.returncode == 2, "stdout=%r\nstderr=%r" % (proc.stdout, proc.stderr)
     assert proc.stdout.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# 2b) gen_health_card.py · data.root_drift（两期 data_manifest.json 对比）
+# ---------------------------------------------------------------------------
+DATA_ROOT = r"C:\fixture\data"
+DIRS_BASE = [("tdx", 400, 400_000), ("tushare", 500, 500_000), ("ashare", 100, 100_000)]
+SHA_A = "a" * 64
+SHA_B = "b" * 64
+
+
+def _days_ago(days: int) -> str:
+    return (dt.date.today() - dt.timedelta(days=days)).isoformat()
+
+
+def _data_manifest(
+    *,
+    day: str,
+    total_files: int,
+    total_bytes: int,
+    dirs: list[tuple[str, int, int]],
+    catalog_sha: str | None = SHA_A,
+    root: str = DATA_ROOT,
+    partial: bool = False,
+) -> dict:
+    """与 tools/gen_data_manifest.py 同形状的清单（字段名照抄真实产物）。"""
+    return {
+        "generated_at": "%sT07:14:45+08:00" % day,
+        "root": root,
+        "total_files": total_files,
+        "total_bytes": total_bytes,
+        "dirs": [
+            {
+                "name": name,
+                "files": files,
+                "bytes": size,
+                "latest_mtime": "%sT06:00:00+08:00" % day,
+                "scanned": not partial,
+            }
+            for name, files, size in dirs
+        ],
+        "catalog": {
+            "path": root + r"\catalog.json",
+            "present": catalog_sha is not None,
+            "size": 277915,
+            "mtime": "%sT06:26:43+08:00" % day,
+            "sha256": catalog_sha,
+        },
+        "schema": "data-manifest/v1",
+        "scan": {
+            "elapsed_sec": 1.45,
+            "max_depth": 0,
+            "time_budget_sec": 120.0,
+            "partial": partial,
+            "top_dirs": len(dirs),
+            "root_files": {"files": 0, "bytes": 0, "latest_mtime": None},
+            "errors": 0,
+            "skipped_symlinks": 0,
+            "truncated_dirs": 0,
+        },
+    }
+
+
+def _write_data_manifests(vault: Path, days: dict[str, dict | str]) -> None:
+    """把清单写进 <vault>/<yyyy-MM-dd>/data_manifest.json；值是字符串时按原文写（造坏 JSON）。"""
+    for day, payload in days.items():
+        target = vault / day
+        target.mkdir(parents=True, exist_ok=True)
+        text = (
+            payload
+            if isinstance(payload, str)
+            else json.dumps(payload, ensure_ascii=False, indent=2)
+        )
+        (target / "data_manifest.json").write_text(text, encoding="utf-8")
+
+
+def _drift_card(tmp_path: Path, name: str, days: dict[str, dict | str]) -> dict:
+    """造两份（或一份）清单并跑一次健康卡，返回完整 card。"""
+    repo, vault = _make_health_repo(tmp_path, name)
+    vault.mkdir(parents=True, exist_ok=True)
+    _write_data_manifests(vault, days)
+    proc = _run_health(repo, vault)
+    assert proc.returncode in (0, 1), proc.stderr
+    return _json_stdout(proc, "health_card/" + name)
+
+
+def test_data_root_drift_identical_manifests_is_green(tmp_path: Path) -> None:
+    """两期清单完全一致 → data.root_drift 绿、status=consistent、计数相等。"""
+    newer, older = _days_ago(1), _days_ago(2)
+    card = _drift_card(
+        tmp_path,
+        "hc_drift_same",
+        {
+            older: _data_manifest(
+                day=older, total_files=1000, total_bytes=1_000_000, dirs=DIRS_BASE
+            ),
+            newer: _data_manifest(
+                day=newer, total_files=1000, total_bytes=1_000_000, dirs=DIRS_BASE
+            ),
+        },
+    )
+
+    drift = card["data"]["root_drift"]
+    assert drift["available"] is True
+    assert drift["status"] == "consistent"
+    assert drift["level"] == "green"
+    assert drift["manifests_found"] == 2
+    assert drift["latest_date"] == newer
+    assert drift["previous_date"] == older
+    assert drift["counts"]["delta"] == {"files": 0, "bytes": 0, "dirs": 0}
+    assert drift["catalog"]["status"] == "same"
+    assert drift["root_changed"] is False
+    assert drift["dirs_added"] == [] and drift["dirs_removed"] == []
+
+    check = _checks_by_id(card)["data.root_drift"]
+    assert check["level"] == "green", check
+    assert "无漂移" in check["detail"]
+
+
+def test_data_root_drift_small_change_is_yellow(tmp_path: Path) -> None:
+    """+1% 文件 / +100KB → 黄，detail 点名变化最大的目录，不触发 20% 阈值。"""
+    newer, older = _days_ago(1), _days_ago(2)
+    card = _drift_card(
+        tmp_path,
+        "hc_drift_small",
+        {
+            older: _data_manifest(
+                day=older, total_files=1000, total_bytes=1_000_000, dirs=DIRS_BASE
+            ),
+            newer: _data_manifest(
+                day=newer,
+                total_files=1010,
+                total_bytes=1_100_000,
+                dirs=[("tdx", 400, 400_000), ("tushare", 510, 600_000), ("ashare", 100, 100_000)],
+            ),
+        },
+    )
+
+    drift = card["data"]["root_drift"]
+    assert drift["available"] is True
+    assert drift["status"] == "drift"
+    assert drift["level"] == "yellow"
+    assert drift["counts"]["delta"]["files"] == 10
+    assert drift["triggers"] == []
+    assert drift["file_delta_ratio"] == 0.01
+    assert drift["dirs_changed"][0]["name"] == "tushare"
+
+    check = _checks_by_id(card)["data.root_drift"]
+    assert check["level"] == "yellow", check
+    assert "tushare 500→510" in check["detail"]
+
+
+def test_data_root_drift_file_drop_over_threshold_is_red(tmp_path: Path) -> None:
+    """文件数 -60%（>20%）→ 红，triggers 点名 file_ratio。"""
+    newer, older = _days_ago(1), _days_ago(2)
+    card = _drift_card(
+        tmp_path,
+        "hc_drift_big",
+        {
+            older: _data_manifest(
+                day=older, total_files=1000, total_bytes=1_000_000, dirs=DIRS_BASE
+            ),
+            newer: _data_manifest(
+                day=newer,
+                total_files=400,
+                total_bytes=400_000,
+                dirs=[("tdx", 400, 400_000), ("tushare", 0, 0), ("ashare", 0, 0)],
+            ),
+        },
+    )
+
+    drift = card["data"]["root_drift"]
+    assert drift["status"] == "major_drift"
+    assert drift["level"] == "red"
+    assert drift["triggers"] == ["file_ratio"]
+    assert drift["counts"]["delta"]["files"] == -600
+    assert drift["catalog"]["status"] == "same"
+
+    check = _checks_by_id(card)["data.root_drift"]
+    assert check["level"] == "red", check
+    assert "剧烈漂移" in check["detail"]
+    assert "-60.00%" in check["detail"]
+
+
+def test_data_root_drift_dir_count_change_is_red(tmp_path: Path) -> None:
+    """总量不变、顶层目录 2 → 3 → 红，detail 点名新增目录。"""
+    newer, older = _days_ago(1), _days_ago(2)
+    card = _drift_card(
+        tmp_path,
+        "hc_drift_dirs",
+        {
+            older: _data_manifest(
+                day=older,
+                total_files=900,
+                total_bytes=900_000,
+                dirs=[("tdx", 400, 400_000), ("tushare", 500, 500_000)],
+            ),
+            newer: _data_manifest(
+                day=newer,
+                total_files=900,
+                total_bytes=900_000,
+                dirs=[("tdx", 400, 400_000), ("tushare", 500, 500_000), ("cnopendata", 0, 0)],
+            ),
+        },
+    )
+
+    drift = card["data"]["root_drift"]
+    assert drift["level"] == "red"
+    assert drift["triggers"] == ["dir_count"]
+    assert drift["dirs_added"] == ["cnopendata"]
+    check = _checks_by_id(card)["data.root_drift"]
+    assert check["level"] == "red", check
+    assert "cnopendata" in check["detail"]
+
+
+def test_data_root_drift_catalog_swap_is_yellow(tmp_path: Path) -> None:
+    """总量不动但 catalog.json 的 sha256 变了 → 黄（被换）。"""
+    newer, older = _days_ago(1), _days_ago(2)
+    card = _drift_card(
+        tmp_path,
+        "hc_drift_catalog",
+        {
+            older: _data_manifest(
+                day=older, total_files=1000, total_bytes=1_000_000, dirs=DIRS_BASE
+            ),
+            newer: _data_manifest(
+                day=newer,
+                total_files=1000,
+                total_bytes=1_000_000,
+                dirs=DIRS_BASE,
+                catalog_sha=SHA_B,
+            ),
+        },
+    )
+
+    drift = card["data"]["root_drift"]
+    assert drift["level"] == "yellow"
+    assert drift["catalog"]["status"] == "changed"
+    check = _checks_by_id(card)["data.root_drift"]
+    assert check["level"] == "yellow", check
+    assert "已被换" in check["detail"]
+
+
+def test_data_root_drift_single_manifest_unavailable_yellow(tmp_path: Path) -> None:
+    """只有一份清单 → available=false、计数全 null、黄（不是绿）。"""
+    newer = _days_ago(1)
+    card = _drift_card(
+        tmp_path,
+        "hc_drift_single",
+        {newer: _data_manifest(day=newer, total_files=1000, total_bytes=1_000_000, dirs=DIRS_BASE)},
+    )
+
+    drift = card["data"]["root_drift"]
+    assert drift["available"] is False
+    assert drift["status"] == "insufficient_history"
+    assert drift["level"] == "yellow"
+    assert drift["manifests_found"] == 1
+    for side in drift["counts"].values():
+        assert set(side.values()) == {None}, side
+
+    check = _checks_by_id(card)["data.root_drift"]
+    assert check["level"] == "yellow", check
+    assert "至少要两份" in check["detail"]
+
+
+def test_data_root_drift_both_unreadable_is_red(tmp_path: Path) -> None:
+    """两份清单都解析失败 → available=false + 红。"""
+    card = _drift_card(
+        tmp_path,
+        "hc_drift_broken",
+        {_days_ago(1): "{broken", _days_ago(2): "{broken"},
+    )
+
+    drift = card["data"]["root_drift"]
+    assert drift["available"] is False
+    assert drift["status"] == "unreadable"
+    assert drift["level"] == "red"
+    for side in drift["counts"].values():
+        assert set(side.values()) == {None}, side
+
+    check = _checks_by_id(card)["data.root_drift"]
+    assert check["level"] == "red", check
+    assert "都读不到" in check["detail"]
+
+
+def test_data_root_drift_no_manifest_is_red(tmp_path: Path) -> None:
+    """备份根下一个 data_manifest.json 都没有 → 红（这项检查要能被发现停摆）。"""
+    repo, vault = _make_health_repo(tmp_path, "hc_drift_none")
+    vault.mkdir(parents=True, exist_ok=True)
+
+    card = _json_stdout(_run_health(repo, vault), "health_card/no_manifest")
+    drift = card["data"]["root_drift"]
+    assert drift["available"] is False
+    assert drift["status"] == "no_manifest"
+    assert drift["level"] == "red"
+    assert _checks_by_id(card)["data.root_drift"]["level"] == "red"
 
 
 # ---------------------------------------------------------------------------

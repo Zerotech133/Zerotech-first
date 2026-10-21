@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gen_health_card.py — 治理健康卡（只读，零第三方依赖）。
 
-聚合三类治理信号，输出一张机器可消费的 JSON（默认 stdout）与可选的自包含
+聚合五类治理信号，输出一张机器可消费的 JSON（默认 stdout）与可选的自包含
 HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份、不改仓库。
 
 数据来源（均以实读为准，读不到就报 available=false，绝不静默当 0）：
@@ -25,6 +25,11 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
 5. 文档索引新鲜度：子进程跑 `python -B tools/gen_docs_index.py --check`
    （20s 超时，另设 3s 设计预算）；退出 0 绿 / 1 黄（索引落后）/
    超时或退出 2 或脚本缺失红。差异行尽量解析，解析不了给原始输出前 200 字并标注未解析。
+6. 数据根漂移：<vault-root>/<yyyy-MM-dd>/data_manifest.json（tools/gen_data_manifest.py
+   的产物，含 total_files/total_bytes/dirs[]/catalog.sha256/root）按日期目录名倒序
+   取最新两期，比对总文件数、总字节、顶层目录集合、catalog.json sha256 与数据根路径。
+   只有一份清单 → available=false（不判绿）；两份都读不到/解析失败 → 红；
+   文件数变化 >20% 或顶层目录数变化 → 升级为红（这个幅度通常是事故，不是日常增量）。
 
 用法：
     python -B tools/gen_health_card.py
@@ -35,7 +40,8 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
 阈值：备份 >36h 黄 / >72h 红；审计 >24h 黄 / >72h 红；dirty>0 黄；
 工作树目录与 git worktree 不一致黄；worktree 已合并且 >7 天黄；
 文档索引落后黄；任一块不可用红；备份落后 HEAD >0 黄 /
-落后且备份 >24h 红；追平无法判定计 null（不误判绿）。
+落后且备份 >24h 红；追平无法判定计 null（不误判绿）；数据根漂移只有一份清单黄
+（不判绿）、两份都读不到红、文件数变化 >20% 或目录数变化红。
 """
 from __future__ import annotations
 
@@ -122,6 +128,19 @@ MANIFEST_RE = re.compile(
     r"^(?P<name>.+?)\s{2,}(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})"
     r"\s+(?P<size>\d+)\s+bytes\s+sha256=(?P<sha>[0-9A-Fa-f]{64})\s*$"
 )
+
+# 数据根形态清单：备份脚本每天把它写进 <vault>/<yyyy-MM-dd>/，是「某一期」快照。
+# <vault>/data_manifest.json 是 gen_data_manifest.py 的默认 --out 位置（下一次
+# 默认生成就会覆盖），不是日期快照，不参与两期比对。
+DATA_MANIFEST_NAME = "data_manifest.json"
+# 文件数变化超过 20%（相对上一期）或顶层目录数变化 → 判红：这个幅度几乎只能是
+# 事故（目录被清空/换盘/只挂上一半），而不是日常增量（日常量级是千分之几）。
+DATA_DRIFT_FILE_RED_RATIO = 0.20
+# detail 里最多点名几个增删目录 / 变化最大的目录。
+DATA_DRIFT_DIR_LIMIT = 6
+DATA_DRIFT_DIR_CHANGED_LIMIT = 3
+# dates 里最多回显几个发现的日期目录。
+DATA_DRIFT_DATE_LIMIT = 5
 
 
 # ---------------------------------------------------------------------------
@@ -607,6 +626,558 @@ def collect_backup(vault_root: Path, now: dt.datetime) -> dict[str, Any]:
     result["total_human"] = _human_bytes(total_bytes)
     result["files_count"] = files_count
     return result
+
+
+# ---------------------------------------------------------------------------
+# 2c) 数据根漂移（两期 data_manifest.json 对比）
+# ---------------------------------------------------------------------------
+def _delta_or_none(latest: Any, previous: Any) -> int | None:
+    """新值 - 旧值；任一侧不是整数就返回 None（不拿 0 冒充差值为 0）。"""
+    if not isinstance(latest, int) or not isinstance(previous, int):
+        return None
+    return latest - previous
+
+
+def _norm_path_str(value: Any) -> str | None:
+    """规范化路径比较口径：统一斜杠、去尾斜杠、忽略大小写；非字符串返回 None。"""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip().replace("\\", "/").rstrip("/")
+    return text.casefold() or None
+
+
+def _pct_text(delta: int | None, previous: int | None) -> str | None:
+    if delta is None or not isinstance(previous, int) or previous == 0:
+        return None
+    return "%+.2f%%" % (delta / previous * 100.0)
+
+
+def _signed_bytes(value: int | None) -> str:
+    if value is None:
+        return "—"
+    if value == 0:
+        return "0 B"
+    return ("+" if value > 0 else "-") + _human_bytes(abs(value))
+
+
+def _manifest_dir_entry(entry: Any) -> tuple[str, dict[str, Any]] | None:
+    """归一化 dirs[] 的一条；name 缺失/不是字符串返回 None（由调用方计为读不懂）。
+
+    字段名容忍两种口径：files（gen_data_manifest.py 实际产物）/ file_count
+    （任务书里的叫法），避免上游改名直接把整项判成不可读。
+    """
+    if not isinstance(entry, dict):
+        return None
+    name = entry.get("name")
+    if not isinstance(name, str) or not name.strip():
+        return None
+    files = _as_int(entry.get("files"))
+    if files is None:
+        files = _as_int(entry.get("file_count"))
+    return name.strip(), {
+        "files": files,
+        "bytes": _as_int(entry.get("bytes")),
+        # scanned=false 只在扫描撞时间预算时出现（该目录文件数/字节为 null）。
+        "scanned": entry.get("scanned") is not False,
+    }
+
+
+def _load_data_manifest(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """读一份 data_manifest.json 并归一化成可比对的最小结构。
+
+    结构不认识就返回 None + 原因（调用方判红），绝不把读不懂的清单当「一致」。
+    """
+    payload, error = _read_json(path)
+    if payload is None:
+        return None, error
+
+    raw_dirs = payload.get("dirs")
+    if not isinstance(raw_dirs, list):
+        return None, f"不是 data_manifest（缺 dirs 数组）: {path}"
+
+    dirs: dict[str, dict[str, Any]] = {}
+    unparsed = 0
+    for entry in raw_dirs:
+        normalized = _manifest_dir_entry(entry)
+        if normalized is None:
+            unparsed += 1
+            continue
+        name, info = normalized
+        dirs.setdefault(name, info)
+
+    scan = payload.get("scan") if isinstance(payload.get("scan"), dict) else {}
+    root_files = scan.get("root_files") if isinstance(scan.get("root_files"), dict) else {}
+
+    total_files = _as_int(payload.get("total_files"))
+    total_bytes = _as_int(payload.get("total_bytes"))
+    totals_source = "declared"
+    if total_files is None or total_bytes is None:
+        # 兼容只给 dirs 的旧口径：能加就加；有条目未扫到（files/bytes 为 null）
+        # 就加不出总量 —— 直接判不可读，不做「部分之和冒充总量」。
+        part_files = [info["files"] for info in dirs.values()]
+        part_bytes = [info["bytes"] for info in dirs.values()]
+        if any(not isinstance(value, int) for value in part_files + part_bytes):
+            return None, f"清单缺总量字段，且 dirs 有条目未扫到，总量不可用: {path}"
+        if total_files is None:
+            total_files = sum(part_files) + (_as_int(root_files.get("files")) or 0)
+            totals_source = "derived"
+        if total_bytes is None:
+            total_bytes = sum(part_bytes) + (_as_int(root_files.get("bytes")) or 0)
+            totals_source = "derived"
+
+    raw_catalog = payload.get("catalog") if isinstance(payload.get("catalog"), dict) else {}
+    catalog_declared = isinstance(payload.get("catalog"), dict)
+    sha = raw_catalog.get("sha256")
+    if not isinstance(sha, str) or not SHA_RE.fullmatch(sha.strip()):
+        sha = None
+    present: bool | None
+    if isinstance(raw_catalog.get("present"), bool):
+        present = bool(raw_catalog.get("present"))
+    elif catalog_declared:
+        present = True
+    else:
+        # 整段 catalog 缺失：不是「catalog.json 不存在」，是「清单没记」。
+        present = None
+
+    partial = bool(scan.get("partial")) or unparsed > 0
+    if any(info["scanned"] is False for info in dirs.values()):
+        partial = True
+
+    return {
+        "path": str(path),
+        "generated_at": payload.get("generated_at"),
+        "schema": payload.get("schema"),
+        "root": payload.get("root"),
+        "total_files": total_files,
+        "total_bytes": total_bytes,
+        "totals_source": totals_source,
+        "dir_count": len(dirs),
+        "dirs": dirs,
+        "dirs_unparsed": unparsed,
+        "partial": partial,
+        "catalog": {
+            "present": present,
+            "size": _as_int(raw_catalog.get("size")),
+            "sha256": sha.strip().lower() if sha else None,
+        },
+    }, None
+
+
+def _discover_data_manifests(
+    vault_root: Path,
+) -> tuple[list[dict[str, Any]], int, str | None]:
+    """按日期目录名倒序返回含 data_manifest.json 的期次（新→旧）。
+
+    只认 <vault>/<yyyy-MM-dd>/data_manifest.json。返回 (期次列表, 扫过的日期目录数, 错误)。
+    """
+    try:
+        if not vault_root.is_dir():
+            return [], 0, f"备份根不存在或不是目录: {vault_root}"
+        date_dirs = sorted(
+            (
+                entry
+                for entry in vault_root.iterdir()
+                if entry.is_dir() and _valid_date_dir(entry.name)
+            ),
+            key=lambda entry: entry.name,
+            reverse=True,
+        )
+    except OSError as exc:
+        return [], 0, f"读取备份根失败: {_short_exc(exc)}"
+
+    found: list[dict[str, Any]] = []
+    for entry in date_dirs:
+        manifest = entry / DATA_MANIFEST_NAME
+        if manifest.is_file():
+            found.append({"date": entry.name, "path": manifest})
+    return found, len(date_dirs), None
+
+
+def _empty_data_root_drift(vault_root: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "vault_root": str(vault_root),
+        "manifest_name": DATA_MANIFEST_NAME,
+        "date_dirs": None,
+        "manifests_found": None,
+        "dates": [],
+        "latest_date": None,
+        "previous_date": None,
+        "manifests": [],
+        "counts": {
+            "latest": {"files": None, "bytes": None, "dirs": None},
+            "previous": {"files": None, "bytes": None, "dirs": None},
+            "delta": {"files": None, "bytes": None, "dirs": None},
+        },
+        "file_delta_ratio": None,
+        "dirs_added": [],
+        "dirs_removed": [],
+        "dirs_changed": [],
+        "roots": {"latest": None, "previous": None},
+        "root_changed": None,
+        "catalog": {
+            "latest": {"present": None, "size": None, "sha256": None},
+            "previous": {"present": None, "size": None, "sha256": None},
+            "changed": None,
+            "status": None,
+        },
+        "triggers": [],
+        "level": None,
+        "status": None,
+        "thresholds": {"file_red_ratio": DATA_DRIFT_FILE_RED_RATIO},
+    }
+
+
+def _catalog_change(latest: dict[str, Any], previous: dict[str, Any]) -> str:
+    """catalog.json 的两期关系：same / changed / absent_both / unknown。"""
+    latest_sha, previous_sha = latest.get("sha256"), previous.get("sha256")
+    if latest_sha and previous_sha:
+        return "same" if latest_sha == previous_sha else "changed"
+    latest_present, previous_present = latest.get("present"), previous.get("present")
+    if latest_present is False and previous_present is False:
+        return "absent_both"
+    if latest_present is not None and previous_present is not None:
+        return "changed" if latest_present != previous_present else "unknown"
+    return "unknown"
+
+
+def collect_data_root_drift(vault_root: Path) -> dict[str, Any]:
+    """比对 _vault 下最近两份 <date>/data_manifest.json，判断数据根是否漂移。
+
+    判不了就说判不了：只有一份清单、扫描未完成（scan.partial）、清单读不到，
+    一律走 available=false 且计数置 null，绝不把「没得比」当「一致」。
+    """
+    result = _empty_data_root_drift(vault_root)
+    found, date_dirs, discover_error = _discover_data_manifests(vault_root)
+    result["date_dirs"] = date_dirs
+    result["manifests_found"] = len(found)
+    result["dates"] = [item["date"] for item in found[:DATA_DRIFT_DATE_LIMIT]]
+
+    if discover_error:
+        result["reason"] = discover_error
+        result["status"] = "unreadable"
+        result["level"] = "red"
+        return result
+    if not found:
+        result["reason"] = (
+            "未找到任何 %s（扫过 %s 个日期目录），数据根形态没有被记录"
+            % (DATA_MANIFEST_NAME, date_dirs)
+        )
+        result["status"] = "no_manifest"
+        result["level"] = "red"
+        return result
+
+    result["latest_date"] = found[0]["date"]
+    if len(found) < 2:
+        result["reason"] = "只有 1 份 %s（%s），至少要两份才能比对漂移" % (
+            DATA_MANIFEST_NAME,
+            found[0]["date"],
+        )
+        result["status"] = "insufficient_history"
+        result["level"] = "yellow"
+        return result
+
+    result["previous_date"] = found[1]["date"]
+    loaded: list[dict[str, Any]] = []
+    for item in found[:2]:
+        manifest, load_error = _load_data_manifest(item["path"])
+        loaded.append(
+            {
+                "date": item["date"],
+                "path": str(item["path"]),
+                "manifest": manifest,
+                "error": load_error,
+            }
+        )
+        result["manifests"].append(
+            {
+                "date": item["date"],
+                "path": str(item["path"]),
+                "readable": manifest is not None,
+                "error": load_error,
+                "generated_at": manifest["generated_at"] if manifest else None,
+            }
+        )
+
+    unreadable = [
+        "%s（%s）" % (item["date"], item["error"] or "原因未知")
+        for item in loaded
+        if item["manifest"] is None
+    ]
+    if unreadable:
+        result["status"] = "unreadable"
+        result["level"] = "red"
+        scope = (
+            "最近两份清单都读不到/解析失败"
+            if len(unreadable) == len(loaded)
+            else "有一份清单读不到，两期无法比对"
+        )
+        result["reason"] = scope + "：" + "；".join(unreadable)
+        return result
+
+    latest: dict[str, Any] = loaded[0]["manifest"]  # type: ignore[assignment]
+    previous: dict[str, Any] = loaded[1]["manifest"]  # type: ignore[assignment]
+
+    incomplete = []
+    for item in loaded:
+        manifest = item["manifest"]
+        if manifest["partial"]:
+            detail = "scan.partial=true" if manifest["dirs_unparsed"] == 0 else "有目录条目读不懂"
+            incomplete.append("%s（%s）" % (item["date"], detail))
+    if incomplete:
+        result["status"] = "incomplete_scan"
+        result["level"] = "yellow"
+        result["reason"] = (
+            "清单记录的扫描不完整：" + "、".join(incomplete) + "，总量与目录集合不可比"
+        )
+        return result
+
+    latest_dirs: dict[str, dict[str, Any]] = latest["dirs"]
+    previous_dirs: dict[str, dict[str, Any]] = previous["dirs"]
+    added = sorted(set(latest_dirs) - set(previous_dirs))
+    removed = sorted(set(previous_dirs) - set(latest_dirs))
+
+    changed_dirs: list[dict[str, Any]] = []
+    for name in sorted(set(latest_dirs) & set(previous_dirs)):
+        new_info = latest_dirs[name]
+        old_info = previous_dirs[name]
+        if new_info["files"] == old_info["files"] and new_info["bytes"] == old_info["bytes"]:
+            continue
+        changed_dirs.append(
+            {
+                "name": name,
+                "files": {"previous": old_info["files"], "latest": new_info["files"]},
+                "bytes_delta": _delta_or_none(new_info["bytes"], old_info["bytes"]),
+            }
+        )
+
+    def _magnitude(item: dict[str, Any]) -> int:
+        files = item.get("files") or {}
+        delta = _delta_or_none(files.get("latest"), files.get("previous"))
+        if delta is None:
+            delta = item.get("bytes_delta") if isinstance(item.get("bytes_delta"), int) else None
+        return -1 if delta is None else abs(delta)
+
+    changed_dirs.sort(key=_magnitude, reverse=True)
+
+    latest_files, latest_bytes = latest["total_files"], latest["total_bytes"]
+    previous_files, previous_bytes = previous["total_files"], previous["total_bytes"]
+    latest_dir_count, previous_dir_count = latest["dir_count"], previous["dir_count"]
+
+    result["counts"] = {
+        "latest": {"files": latest_files, "bytes": latest_bytes, "dirs": latest_dir_count},
+        "previous": {
+            "files": previous_files,
+            "bytes": previous_bytes,
+            "dirs": previous_dir_count,
+        },
+        "delta": {
+            "files": _delta_or_none(latest_files, previous_files),
+            "bytes": _delta_or_none(latest_bytes, previous_bytes),
+            "dirs": _delta_or_none(latest_dir_count, previous_dir_count),
+        },
+    }
+    result["dirs_added"] = added
+    result["dirs_removed"] = removed
+    result["dirs_changed"] = changed_dirs[:DATA_DRIFT_DIR_LIMIT]
+
+    catalog_status = _catalog_change(latest["catalog"], previous["catalog"])
+    result["catalog"] = {
+        "latest": latest["catalog"],
+        "previous": previous["catalog"],
+        "changed": catalog_status == "changed",
+        "status": catalog_status,
+    }
+
+    latest_root, previous_root = latest["root"], previous["root"]
+    result["roots"] = {"latest": latest_root, "previous": previous_root}
+    root_changed = bool(
+        _norm_path_str(latest_root)
+        and _norm_path_str(previous_root)
+        and _norm_path_str(latest_root) != _norm_path_str(previous_root)
+    )
+    result["root_changed"] = root_changed
+
+    ratio: float | None = None
+    file_surge = False
+    if isinstance(previous_files, int) and isinstance(latest_files, int):
+        if previous_files == 0:
+            # 分母为 0：0 → 非 0 的变化率是无穷大，用标志位判红（不写 inf 进 JSON）。
+            file_surge = latest_files != 0
+        else:
+            ratio = abs(latest_files - previous_files) / previous_files
+            file_surge = ratio > DATA_DRIFT_FILE_RED_RATIO
+    dir_count_changed = (
+        isinstance(latest_dir_count, int)
+        and isinstance(previous_dir_count, int)
+        and latest_dir_count != previous_dir_count
+    )
+    result["file_delta_ratio"] = round(ratio, 6) if ratio is not None else None
+    result["triggers"] = [
+        name
+        for name, flag in (("file_ratio", file_surge), ("dir_count", dir_count_changed))
+        if flag
+    ]
+
+    changed = bool(
+        latest_files != previous_files
+        or latest_bytes != previous_bytes
+        or latest_dir_count != previous_dir_count
+        or added
+        or removed
+        or catalog_status == "changed"
+        or root_changed
+    )
+
+    result["available"] = True
+    if changed:
+        major = bool(result["triggers"])
+        result["status"] = "major_drift" if major else "drift"
+        result["level"] = "red" if major else "yellow"
+    elif catalog_status == "unknown":
+        # 总量与目录集合都一致，但 catalog 指纹读不到：「一致」只能说到这一步。
+        result["status"] = "catalog_unknown"
+        result["level"] = "yellow"
+    else:
+        result["status"] = "consistent"
+        result["level"] = "green"
+    return result
+
+
+def _catalog_drift_text(catalog: dict[str, Any]) -> str:
+    status = catalog.get("status")
+    latest = catalog.get("latest") or {}
+    previous = catalog.get("previous") or {}
+    new_sha = _short_sha(latest.get("sha256"))
+    old_sha = _short_sha(previous.get("sha256"))
+    if status == "same":
+        return "catalog.json sha256 未变（%s）" % new_sha
+    if status == "changed" and latest.get("sha256") and previous.get("sha256"):
+        size_delta = _delta_or_none(latest.get("size"), previous.get("size"))
+        extra = "，大小 %s 字节" % _signed_bytes(size_delta) if size_delta else ""
+        return "catalog.json 已被换（%s → %s%s）" % (old_sha, new_sha, extra)
+    if status == "changed" and latest.get("present") and previous.get("present") is False:
+        return "catalog.json 新出现（%s），上期没有" % new_sha
+    if status == "changed" and previous.get("present") and latest.get("present") is False:
+        return "catalog.json 消失了（上期 %s，本期没有）" % old_sha
+    if status == "changed":
+        return "catalog.json 指纹变了（%s → %s）" % (old_sha, new_sha)
+    if status == "absent_both":
+        return "catalog.json 两期都不存在"
+    return "catalog.json 指纹无法判定（清单缺 sha256）"
+
+
+def _data_root_drift_detail(drift: dict[str, Any]) -> str:
+    status = drift.get("status")
+    if not drift.get("available"):
+        tail = "；不判绿" if drift.get("level") == "yellow" else ""
+        return "数据根漂移不可判定：" + (drift.get("reason") or "未知原因") + tail
+
+    counts = drift.get("counts") or {}
+    latest = counts.get("latest") or {}
+    previous = counts.get("previous") or {}
+    delta = counts.get("delta") or {}
+    span = "%s → %s" % (drift.get("previous_date"), drift.get("latest_date"))
+    catalog_text = _catalog_drift_text(drift.get("catalog") or {})
+    roots = drift.get("roots") or {}
+    if drift.get("root_changed"):
+        root_text = "数据根路径变化：%s → %s" % (roots.get("previous"), roots.get("latest"))
+    elif roots.get("latest"):
+        root_text = "数据根路径未变"
+    else:
+        root_text = "数据根路径未记录"
+
+    if status == "consistent":
+        return "数据根无漂移：%s 文件 %s、%s、目录 %s 一致；%s；%s" % (
+            span,
+            _fmt_num(latest.get("files")),
+            _human_bytes(latest.get("bytes")),
+            _fmt_num(latest.get("dirs")),
+            catalog_text,
+            root_text,
+        )
+
+    pct = _pct_text(delta.get("files"), previous.get("files"))
+    if delta.get("files") == 0:
+        file_text = "文件 %s（未变）" % _fmt_num(latest.get("files"))
+    else:
+        file_text = "文件 %s → %s（%s%s）" % (
+            _fmt_num(previous.get("files")),
+            _fmt_num(latest.get("files")),
+            _signed_int(delta.get("files")),
+            "，" + pct if pct else "",
+        )
+    if delta.get("bytes") == 0:
+        bytes_text = "字节 %s（未变）" % _human_bytes(latest.get("bytes"))
+    else:
+        bytes_text = "字节 %s（%s → %s）" % (
+            _signed_bytes(delta.get("bytes")),
+            _human_bytes(previous.get("bytes")),
+            _human_bytes(latest.get("bytes")),
+        )
+    if delta.get("dirs") == 0:
+        dir_text = "目录 %s（未变）" % _fmt_num(latest.get("dirs"))
+    else:
+        dir_text = "目录 %s → %s（%s）" % (
+            _fmt_num(previous.get("dirs")),
+            _fmt_num(latest.get("dirs")),
+            _signed_int(delta.get("dirs")),
+        )
+
+    bits = ["%s %s" % (span, file_text), bytes_text, dir_text]
+    added = drift.get("dirs_added") or []
+    if added:
+        bits.append(
+            "新增目录 %s%s"
+            % (
+                "、".join(added[:DATA_DRIFT_DIR_LIMIT]),
+                " 等 %d 个" % len(added) if len(added) > DATA_DRIFT_DIR_LIMIT else "",
+            )
+        )
+    removed = drift.get("dirs_removed") or []
+    if removed:
+        bits.append(
+            "删除目录 %s%s"
+            % (
+                "、".join(removed[:DATA_DRIFT_DIR_LIMIT]),
+                " 等 %d 个" % len(removed) if len(removed) > DATA_DRIFT_DIR_LIMIT else "",
+            )
+        )
+    changed_dirs = drift.get("dirs_changed") or []
+    if changed_dirs:
+        shown = []
+        for item in changed_dirs[:DATA_DRIFT_DIR_CHANGED_LIMIT]:
+            files = item.get("files") or {}
+            shown.append(
+                "%s %s→%s"
+                % (item.get("name"), _fmt_num(files.get("previous")), _fmt_num(files.get("latest")))
+            )
+        bits.append("文件数变化最大的目录 " + "、".join(shown))
+    bits.extend([catalog_text, root_text])
+
+    if status == "major_drift":
+        triggers = []
+        if "file_ratio" in (drift.get("triggers") or []):
+            triggers.append(
+                "文件数变化 %s 超过 %g%% 阈值"
+                % (pct or "上期为 0", DATA_DRIFT_FILE_RED_RATIO * 100)
+            )
+        if "dir_count" in (drift.get("triggers") or []):
+            triggers.append(
+                "顶层目录数 %s → %s"
+                % (_fmt_num(previous.get("dirs")), _fmt_num(latest.get("dirs")))
+            )
+        return "数据根剧烈漂移（判红）：" + "；".join(bits) + "；触发：" + "、".join(triggers)
+    if status == "catalog_unknown":
+        return "数据根总量一致（%s 文件 %s、%s、目录 %s），但 %s；不判绿" % (
+            span,
+            _fmt_num(latest.get("files")),
+            _human_bytes(latest.get("bytes")),
+            _fmt_num(latest.get("dirs")),
+            catalog_text,
+        )
+    return "数据根漂移（判黄）：" + "；".join(bits)
 
 
 # ---------------------------------------------------------------------------
@@ -1816,6 +2387,18 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
                 add("backup.catchup", level, detail)
             # status == unknown：故意不新增 check。该项计 null，不误判绿。
 
+    data_drift = (card.get("data") or {}).get("root_drift") or {}
+    if not data_drift:
+        add("data.root_drift", "red", "数据根漂移检查未运行（data 块缺失）")
+    else:
+        # level 由采集侧给全（绿/黄/红）；缺失按红兜底，绝不冒充绿。
+        drift_level = data_drift.get("level")
+        add(
+            "data.root_drift",
+            drift_level if drift_level in ("green", "yellow", "red") else "red",
+            _data_root_drift_detail(data_drift),
+        )
+
     repo = card["repo"]
     if not repo["available"]:
         add("repo.readable", "red", "仓库卫生不可用：" + (repo["reason"] or "未知原因"))
@@ -1922,6 +2505,7 @@ def build_card(
         "checks": [],
         "task_audit": collect_task_audit(audit_root, now, semantics, semantics_error),
         "backup": backup,
+        "data": {"root_drift": collect_data_root_drift(vault_root)},
         "repo": repo_block,
         "docs": {"index_freshness": collect_docs_index(repo_root)},
         "notes": [
@@ -1945,6 +2529,13 @@ def build_card(
             f"超时 {DOCS_CHECK_TIMEOUT_SECONDS:g}s、设计预算 {DOCS_CHECK_BUDGET_SECONDS:g}s；"
             "退出 0 绿 / 1 黄（索引落后）/ 超时或退出 2 或脚本缺失红；"
             "两条新检查合计目标 <3s，超预算按不可判定处理。",
+            "数据根漂移：按日期目录名倒序取 _vault 下最新两份 <date>/data_manifest.json，"
+            "比对总文件数/总字节/顶层目录集合/catalog.json sha256/数据根路径；"
+            f"文件数变化 >{DATA_DRIFT_FILE_RED_RATIO * 100:g}% 或顶层目录数变化判红；"
+            "只有一份清单、清单读不到、扫描未完成（scan.partial）都计 available=false"
+            "（计数 null，不判绿；前两种除「只有一份」外均判红）。",
+            "<vault>/data_manifest.json（gen_data_manifest.py 的默认 --out）不是日期快照，"
+            "不参与比对，避免拿「实时文件」冒充历史。",
         ],
     }
     checks, status, reasons = _evaluate(card)
@@ -1984,6 +2575,12 @@ def _fmt_num(value: Any) -> str:
     if isinstance(value, int):
         return f"{value:,}"
     return str(value)
+
+
+def _signed_int(value: Any) -> str:
+    if not isinstance(value, int):
+        return "—"
+    return ("+%d" % value) if value > 0 else str(value)
 
 
 def _fmt_age(hours: float | None) -> str:
@@ -2155,6 +2752,74 @@ def _render_html(card: dict[str, Any]) -> str:
             parts.append('<p class="note">部分仓无法判定，本项不计绿。</p>')
     else:
         parts.append(f'<p class="unavailable">不可用：{_e(backup["reason"])}</p>')
+    parts.append("</section>")
+
+    drift = (card.get("data") or {}).get("root_drift") or {}
+    parts.append('<section class="block">')
+    parts.append("<h2>数据根漂移</h2>")
+    parts.append(f'<div class="sub">{_e(drift.get("vault_root"))}</div>')
+    if drift.get("available"):
+        counts = drift.get("counts") or {}
+        latest_counts = counts.get("latest") or {}
+        previous_counts = counts.get("previous") or {}
+        delta = counts.get("delta") or {}
+        verdicts = {
+            "consistent": "无漂移",
+            "drift": "漂移（黄）",
+            "major_drift": "剧烈漂移（红）",
+            "catalog_unknown": "总量一致，catalog 指纹不可判定",
+        }
+        parts.extend(
+            [
+                _kv(
+                    "对比期",
+                    "%s → %s" % (drift.get("previous_date"), drift.get("latest_date")),
+                ),
+                _kv(
+                    "文件数",
+                    "%s → %s（%s）"
+                    % (
+                        _fmt_num(previous_counts.get("files")),
+                        _fmt_num(latest_counts.get("files")),
+                        _signed_int(delta.get("files")),
+                    ),
+                ),
+                _kv(
+                    "总字节",
+                    "%s → %s（%s）"
+                    % (
+                        _human_bytes(previous_counts.get("bytes")),
+                        _human_bytes(latest_counts.get("bytes")),
+                        _signed_bytes(delta.get("bytes")),
+                    ),
+                ),
+                _kv(
+                    "目录数",
+                    "%s → %s（%s）"
+                    % (
+                        _fmt_num(previous_counts.get("dirs")),
+                        _fmt_num(latest_counts.get("dirs")),
+                        _signed_int(delta.get("dirs")),
+                    ),
+                ),
+                _kv("catalog.json", _catalog_drift_text(drift.get("catalog") or {})),
+                _kv("判定", verdicts.get(str(drift.get("status")), str(drift.get("status")))),
+            ]
+        )
+        added = drift.get("dirs_added") or []
+        removed = drift.get("dirs_removed") or []
+        if added or removed:
+            parts.append(
+                '<p class="note">新增目录：%s；删除目录：%s</p>'
+                % (_e("、".join(added) or "—"), _e("、".join(removed) or "—"))
+            )
+    else:
+        parts.append(f'<p class="unavailable">不可判定：{_e(drift.get("reason"))}</p>')
+        if drift.get("dates"):
+            parts.append(
+                '<p class="note">已发现的清单期次：%s（需要连续两份才能比对）</p>'
+                % _e("、".join(str(item) for item in drift["dates"]))
+            )
     parts.append("</section>")
 
     repo = card["repo"]

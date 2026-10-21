@@ -1,0 +1,171 @@
+# prepare_offsite.texts.txt
+#
+# Chinese copy for tools/prepare_offsite.ps1. Read with [IO.File]::ReadAllText,
+# which decodes UTF-8 (BOM-aware) regardless of the console code page.
+#
+# Why this file exists: tools/prepare_offsite.ps1 must stay pure ASCII, because
+# Windows PowerShell 5.1 decodes a BOM-less .ps1 as the ANSI code page (CP936 on
+# this host) and any Chinese literal in the script would turn into mojibake in a
+# -File run. Keeping the copy in a UTF-8 file that is read at runtime gives the
+# same guarantee without burying 12 KB of base64 inside the script.
+#
+# Rules:
+#   * Section markers are lines that look exactly like "=== offsite ===".
+#   * Everything between two markers belongs to the section above it.
+#   * {TOKENS} in the templates are filled in by the script; a token that
+#     survives substitution aborts the run (fail-closed).
+#   * The "map" section is key<TAB>value, one per line, no tabs in values.
+#   * Keep this file UTF-8. Do not add a BOM-only edit; the reader strips one.
+
+=== offsite ===
+异地备份打包清单 · {DATE}
+================================================================================
+
+源目录        : {SRC}
+MANIFEST 时间 : {MANIFEST_TIME}
+生成时间      : {GENERATED}
+生成工具      : tools\prepare_offsite.ps1
+
+【重要】这只是打包清单，不是上传，也不是异地副本。
+        _vault 仍然在本机同一块盘上，盘坏即全丢。真正的异地副本要等人把下面
+        6 个文件传走、并在落地端校验通过，才算存在。
+
+--------------------------------------------------------------------------------
+#    文件                                字节数        sha256（抄自 MANIFEST.txt）
+--------------------------------------------------------------------------------
+{ROWS}
+--------------------------------------------------------------------------------
+合计 : {COUNT} 个文件 / {TOTAL_BYTES} 字节（{MIB} MiB）
+
+核对结论
+  [x] 6 个产物逐项与 MANIFEST.txt 的字节数一致（本地实测，未重算 sha256）
+  [x] 上面的 sha256 全部原样抄自 MANIFEST.txt
+  [!] 未重算 sha256：本机实测把 683 MB 的 bundle 全量算一遍约 2.5 秒，不是算不动，
+      而是**刻意不算**——在同一个盘、同一台机器上算出来的哈希只能证明"盘没坏"，
+      不能证明"传过去的字节对"。独立核对必须在落地端做（那才叫独立），
+      命令见 README-上传说明.md。
+
+上传后请核对
+  1) 传这 6 个文件 + {DATE}-offsite.txt + SHA256SUMS.txt + README-上传说明.md，
+     共 9 个文件，文件名保持原样（SHA256SUMS.txt 里写死了名字，改名即失效）。
+  2) 先对字节数：落地端任何一个文件与上表不符，就是没传完，重传，不要"看着差不多"。
+  3) 再对哈希：在落地端跑 SHA256SUMS.txt 校验（命令见 README-上传说明.md 第二步），
+     6 行全 OK 才算过。
+  4) 最后记账：把落地端位置 / 上传日期 / 校验结果写回 _vault\README.md 的
+     「异地副本」那一行。不记账等于白传 —— 三个月后没人知道东西在哪。
+
+=== readme ===
+# 异地备份上传说明 · {DATE}
+
+> **这只是打包，不是上传。**
+> 生成本目录的脚本只做了三件事：核对字节数、写清单、写说明。它没有联网、没有登录
+> 任何账号、**没有把任何一个字节传到本机之外**。真正的异地副本，要等人把下面这 9 个
+> 文件传走、并在落地端校验通过，才算存在。在那之前，`_vault` 仍然是**同盘同机的唯一
+> 副本**——盘坏即全丢。
+
+| 项 | 值 |
+|---|---|
+| 源目录 | `{SRC}` |
+| 备份时间 | {MANIFEST_TIME} |
+| 打包时间 | {GENERATED} |
+| 产物 | 6 个：4 个 git bundle + 1 个 docs zip + 1 个 data_manifest.json |
+| 合计 | {TOTAL_BYTES} 字节（{MIB} MiB） |
+| 本目录清单 | `{DATE}-offsite.txt`、`SHA256SUMS.txt`、本文件 |
+
+{MODE_NOTE}
+
+---
+
+## 一、上传什么
+
+**9 个文件，一个都不能少**（6 个产物 + 3 个清单），文件名保持原样：
+
+| # | 文件 | 字节数 | 说明 |
+|---|---|---|---|
+{ROWS_TABLE}
+| - | `SHA256SUMS.txt` | 见文件 | 标准 sha256sum 格式，落地端整包校验用 |
+| - | `{DATE}-offsite.txt` | 见文件 | 人读清单：名称 + 字节数 + sha256 + 上传后核对步骤 |
+| - | `README-上传说明.md` | 见文件 | 本文件 |
+
+- 上传时**不要改名、不要加日期后缀、不要让网盘"智能压缩/改名去重"**——`SHA256SUMS.txt`
+  里写死了文件名和哈希，改一个名，整包校验就废了。
+- 落地端建议（任选其一）：
+  - **对象存储**（阿里云 OSS / 腾讯 COS / AWS S3）：单独建一个**私有** bucket，
+    路径 `vault/{DATE}/`，关掉公共读。
+  - **私有 Git 仓**：`git bundle` 能被 git 直接 clone；683 MB 需要走 LFS 或支持大文件的
+    私有托管，普通托管平台多半拒收。
+  - **网盘**：只认客户端原始上传；网页版容易改名、加 `(1)` 后缀。
+- 落地端**不要**共享、**不要**开公开链接——包里是全部代码历史和治理文档。
+
+## 二、怎么校验
+
+校验必须在**落地端**做（或把文件从落地端下载回来再做）。在源机器上校验等于自己证明自己。
+
+### 方式 A：Windows（PowerShell 5.1，本机同款）
+
+```powershell
+cd <落地端目录>
+Get-Content .\SHA256SUMS.txt | ForEach-Object {
+    if ($_ -match '^([0-9a-f]{64})\s+(.+)$') {
+        $want = $Matches[1]; $f = $Matches[2]
+        $got = (Get-FileHash -LiteralPath $f -Algorithm SHA256).Hash.ToLower()
+        if ($got -eq $want) { "OK   $f" } else { "FAIL $f" }
+    }
+}
+```
+
+### 方式 B：Linux / WSL / git-bash
+
+```bash
+cd <落地端目录>
+sha256sum -c SHA256SUMS.txt      # 6 行全 OK 才算过
+```
+
+### 判定标准
+
+- **6 行全 OK** → 校验通过。
+- 出现 `FAILED` / `FAIL` → 该文件字节坏了（多半是没传完，或网盘改过），**重传该文件**，
+  不要"就差一点"。
+- 先比字节数、再比哈希：字节数不对就不用算哈希了（`{DATE}-offsite.txt` 里有逐项字节数）。
+- `SHA256SUMS.txt` 是纯 ASCII + LF 换行，Windows/Linux 都能直接用。
+
+## 三、校验通过后做什么
+
+1. **记账**：打开 `_vault\README.md`，把「异地副本」那一行的"没有"改成
+   `对象存储 OSS://<bucket>/vault/{DATE}/ · 上传 <日期> · 6/6 SHA256 通过`。
+   不记账 = 三个月后没人知道东西在哪，等于白传。
+2. **改掉旧结论**：README 里"盘坏即全丢"的说明同步更新。留着不改比不写更糟——
+   下一次危机时你会按旧结论做错决定。
+3. **下次照做**：每次备份（`tools\backup_bundles.ps1`）之后跑一次
+   `tools\prepare_offsite.ps1`，再走一遍这三步。建议每周一次，和备份同一天。
+4. **每季度做一次还原演练**：把 bundle 从落地端下载回来，
+   `git clone --bare <bundle> <临时目录>` 再 `git -C <临时目录> fsck --no-progress`，
+   提交数与 HEAD 要和源仓对得上。只验证"文件在"、不验证"能用"的异地备份，
+   和没有备份差不多。
+
+## 常见坑
+
+- **网盘改名**：网页上传会自动加 `(1)`、改扩展名。校验前先看文件名对不对。
+- **对象存储的 `Content-MD5` 是 MD5**，不是 SHA256，别拿它跟 `SHA256SUMS.txt` 比。
+- **本包没有加密**，靠落地端的私有权限兜底。真要加密，先用 `age` / `7z -p` 包一层再传，
+  但那样哈希对不上，需要另立清单（别在同一个目录里混两种格式）。
+- **上传中断的文件看起来"在"**，字节数会少一截。所以第一步永远是比字节数。
+- **别把 `_offsite` 当异地副本**：它和 `_vault` 在同一块盘，只是上传前的暂存区。
+
+## 这个目录不是什么
+
+- **不是异地副本**：上传完成并校验通过之前，异地副本数量仍然是 **0**。
+- **不是加密包**：没做加密，落地端务必私有。
+- **不是增量**：每次都是全量 6 个产物，合计 {MIB} MiB。
+- **不是自动上传**：整个过程没有任何账号、cookie、token 被使用或保存。
+
+=== map ===
+readme_name	README-上传说明.md
+note_only	本次只生成了 3 个清单文件，没有复制 683 MB 的 bundle；产物本体仍在 `{SRC}` 里，上传时请直接从那里取（表里的字节数就是给上传后对照用的）。
+note_copied	本次用了 -Copy：6 个产物已复制到本目录（{MIB} MiB），可以整目录上传。注意它和 `_vault` 在同一块盘，这只是上传暂存，不是异地副本，传完即可删除。
+desc_aios	老田的AI助手：全部分支的完整 git 历史（最值钱的一个）
+desc_zerobound-kg	知识图谱引擎：完整 git 历史
+desc_digital-legion	军团组织层：完整 git 历史
+desc_res-downloader	资源嗅探下载器：完整 git 历史
+desc_workspace-docs	工作区根 md + html 文档归档
+desc_data_manifest	数据根形状清单，不是数据本体（恢复时用来判断该重建什么）
