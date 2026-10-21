@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-"""WO-OS-04 诸葛亮建议引擎（规则版 v1）
+"""WO-OS-04 诸葛亮建议引擎（规则版 v1）；WO-OS-20 扩第七源 pushflow。
 纯函数、零副作用：不调模型、不写库、不派单、不发请求。
-输入：六源只读投影原始 dict + 观察时钟；输出：结构化"今日建议草案"。
+输入：七源只读投影原始 dict + 观察时钟；输出：结构化"今日建议草案"。
+SOURCES = os / home / alerts / notify / tasks / capability / pushflow
+（pushflow = 当日通知投递成败统计，用于暴露"当日实际失败率"，与"历史失败簇"划清口径）。
 每条建议必须带 source 与 as_of（生产者时点，未知为 None）；
 缺源/坏源显式进 gaps（"待核"开头），绝不把接口可达当业务健康。
 依赖：WO-OS-03 增强后的 os_integrated_projection 语义（blocked=1/overdue=1/今日到期=2）。
@@ -13,7 +15,7 @@ from typing import Any, Dict, List, Optional
 
 BEIJING = timezone(timedelta(hours=8))
 ENGINE = "rule-based"
-SOURCES = ("os", "home", "alerts", "notify", "tasks", "capability")
+SOURCES = ("os", "home", "alerts", "notify", "tasks", "capability", "pushflow")
 
 
 def _beijing_day(clock: datetime) -> str:
@@ -43,6 +45,19 @@ def _freshness_bucket(as_of: Optional[datetime], clock: datetime) -> str:
     if age_hours <= 168:
         return "stale"
     return "unknown"
+
+
+def _pct_text(rate: float) -> str:
+    """失败率转百分比文本：0.55 → '55'，0.075 → '7.5'（不补无意义小数）。"""
+    text = "%.1f" % (rate * 100)
+    return text[:-2] if text.endswith(".0") else text
+
+
+def _count_text(value: Any) -> str:
+    """计数文本：非整数一律 '?'（缺字段不猜 0）。"""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return "?"
+    return str(value)
 
 
 def _suggestion(sid: str, domain: str, priority: int, reason: str,
@@ -150,6 +165,36 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
                         sid, "情报", 3,
                         f"信号源 {name} 数据新鲜度 {label}",
                         "/api/alerts", as_of))
+
+    # pushflow（WO-OS-20 第七源）：当日通知投递失败率分级；
+    # 口径红线——只看当日账本实际成败，不拿历史失败簇冒充当前状态。
+    if usable("pushflow"):
+        stats = raw["pushflow"]
+        raw_rate = stats.get("fail_rate")
+        try:
+            rate = float(raw_rate)
+        except (TypeError, ValueError):
+            rate = None
+        if rate is None:
+            gaps.append({"source": "pushflow",
+                         "note": "待核：fail_rate 非数值，当日失败率未知。"})
+        else:
+            if rate >= 0.5:
+                priority = 1
+            elif rate >= 0.3:
+                priority = 2
+            elif rate >= 0.1:
+                priority = 3
+            else:
+                priority = 0  # <10% 视为正常投递水平，不产建议
+            if priority:
+                suggestions.append(_suggestion(
+                    "pushflow:daily_rate", "通知", priority,
+                    "今日投递失败率 %s%%（失败 %s/总 %s）：这是当日实际失败率，"
+                    "不是历史失败簇；来源 pushflow.jsonl"
+                    % (_pct_text(rate), _count_text(stats.get("fail_count")),
+                       _count_text(stats.get("today"))),
+                    "/api/zhuge/brief.pushflow", None))
 
     # os / home / capability：当前无个人事实可提炼，仅登记覆盖，不产建议
     for key in ("os", "home", "capability"):

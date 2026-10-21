@@ -81,13 +81,13 @@ const GOOD_SIX = {
   check('今日到期优先级 2', s && s.priority === 2);
 })();
 
-/* 5. 六源全缺：逐一点名 gaps，note 以"待核"开头，不产建议 */
+/* 5. 七源全缺：逐一点名 gaps，note 以"待核"开头，不产建议 */
 (function test_missing_sources_degrade_explicitly() {
   const out = A.buildBrief({}, CLOCK);
-  check('六源全缺不产建议', out.suggestions.length === 0);
+  check('七源全缺不产建议', out.suggestions.length === 0);
   const gaps = new Set(out.gaps.map(g => g.source));
-  const want = ['os', 'home', 'alerts', 'notify', 'tasks', 'capability'];
-  check('六源逐一点名', want.every(k => gaps.has(k)) && out.gaps.length === 6);
+  const want = ['os', 'home', 'alerts', 'notify', 'tasks', 'capability', 'pushflow'];
+  check('七源逐一点名', want.every(k => gaps.has(k)) && out.gaps.length === 7);
   check('gaps note 以待核开头', out.gaps.every(g => typeof g.note === 'string' && g.note.indexOf('待核') === 0));
 })();
 
@@ -159,6 +159,36 @@ const GOOD_SIX = {
   }
 })();
 
+/* 10b. WO-OS-20 第七源 pushflow：当日失败率 55% → P1，文案区分"历史失败簇" */
+(function test_pushflow_high_rate_priority_1() {
+  const raw = clone(GOOD_SIX);
+  raw.pushflow = {
+    ok: true, today: 276, ok_count: 124, fail_count: 152, fail_rate: 0.55,
+    channels: { openapi: { ok: 100, fail: 150 }, 'lark-cli': { ok: 24, fail: 2 } },
+  };
+  const out = A.buildBrief(raw, CLOCK);
+  const s = out.suggestions.find(x => x.id === 'pushflow:daily_rate');
+  check('pushflow 产建议', !!s);
+  check('pushflow P1', s && s.priority === 1);
+  check('pushflow domain=通知', s && s.domain === '通知');
+  check('pushflow 含百分比', s && s.reason.indexOf('今日投递失败率 55%') !== -1);
+  check('pushflow 含失败/总数', s && s.reason.indexOf('失败 152/总 276') !== -1);
+  check('pushflow 区分历史簇', s && s.reason.indexOf('不是历史失败簇') !== -1);
+  check('pushflow source', s && s.source === '/api/zhuge/brief.pushflow');
+  check('pushflow 说明来源', s && s.reason.indexOf('pushflow.jsonl') !== -1);
+  check('pushflow confidence', s && s.confidence === 'rule-based');
+  check('pushflow 源可用不进 gaps', !out.gaps.some(g => g.source === 'pushflow'));
+})();
+
+/* 10c. WO-OS-20 缺 pushflow → gaps 待核、不产建议 */
+(function test_pushflow_missing_degrades() {
+  const out = A.buildBrief(clone(GOOD_SIX), CLOCK);
+  const gap = out.gaps.find(g => g.source === 'pushflow');
+  check('缺 pushflow 进 gaps', !!gap);
+  check('缺 pushflow note 待核', gap && gap.note.indexOf('待核') === 0);
+  check('缺 pushflow 不产建议', !out.suggestions.some(s => s.id === 'pushflow:daily_rate'));
+})();
+
 if (failures.length) { console.error('FAIL WO-OS-07 adapter 契约：' + failures.join('；')); process.exit(1); }
-console.log('PASS WO-OS-07 os_zhuge_adapter 契约：同语义9场景+UMD双端+无写副作用（' +
+console.log('PASS WO-OS-07 os_zhuge_adapter 契约：同语义9场景+pushflow2场景+UMD双端+无写副作用（' +
   A.buildBrief(GOOD_SIX, CLOCK).suggestions.length + ' 条建议样例）');

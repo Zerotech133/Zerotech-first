@@ -26,6 +26,14 @@ GOOD_SIX = {
     "capability": {"ok": True, "production_lines": []},
 }
 
+# WO-OS-20 第七源 pushflow：当日通知投递成败统计（真实账本口径）
+PUSHFLOW_HIGH = {
+    "ok": True, "today": 276, "ok_count": 124, "fail_count": 152,
+    "fail_rate": 0.55,
+    "channels": {"openapi": {"ok": 100, "fail": 150},
+                 "lark-cli": {"ok": 24, "fail": 2}},
+}
+
 
 def _load():
     spec.loader.exec_module(mod)
@@ -78,7 +86,8 @@ def test_missing_sources_degrade_explicitly():
     out = m.build_brief({}, CLOCK)
     assert out["suggestions"] == []
     gaps = {g["source"] for g in out["gaps"]}
-    assert gaps == {"os", "home", "alerts", "notify", "tasks", "capability"}, "六源全缺应逐一点名"
+    assert gaps == {"os", "home", "alerts", "notify", "tasks", "capability",
+                    "pushflow"}, "七源全缺应逐一点名（WO-OS-20 扩容）"
     for g in out["gaps"]:
         assert g["note"].startswith("待核"), "缺源说明必须以待核开头"
 
@@ -116,3 +125,55 @@ def test_no_write_side_effects_by_design():
     src = Path(__file__).with_name("api_zhuge_brief.py").read_text(encoding="utf-8")
     for banned in ("requests.post", "urllib.request", "subprocess", "sqlite3.connect", "open("):
         assert banned not in src, f"建议引擎源码不得出现 {banned}"
+
+
+# ── WO-OS-20 第七源 pushflow：当日实际失败率（不是历史失败簇）──────────
+def _pushflow_case(rate, fail_count=11, today=20):
+    return dict(GOOD_SIX, pushflow={
+        "ok": True, "today": today, "ok_count": today - fail_count,
+        "fail_count": fail_count, "fail_rate": rate,
+        "channels": {"openapi": {"ok": today - fail_count, "fail": fail_count}},
+    })
+
+
+def _pick(out, sid="pushflow:daily_rate"):
+    return next((s for s in out["suggestions"] if s["id"] == sid), None)
+
+
+def test_pushflow_high_rate_is_priority_1_with_percent():
+    m = _load()
+    out = m.build_brief(dict(GOOD_SIX, pushflow=PUSHFLOW_HIGH), CLOCK)
+    s = _pick(out)
+    assert s is not None, "fail_rate=0.55 必须产出 pushflow 建议"
+    assert s["priority"] == 1, "≥50% 应为 P1"
+    assert s["domain"] == "通知"
+    assert s["confidence"] == "rule-based"
+    assert "今日投递失败率 55%" in s["reason"]
+    assert "失败 152/总 276" in s["reason"]
+    assert "不是历史失败簇" in s["reason"], "必须区分当日实际失败率与历史失败簇"
+    assert s["source"] == "/api/zhuge/brief.pushflow"
+    assert "pushflow.jsonl" in s["reason"], "建议需说明原始来源"
+
+
+def test_pushflow_mid_rate_is_priority_2():
+    m = _load()
+    out = m.build_brief(_pushflow_case(0.3), CLOCK)
+    s = _pick(out)
+    assert s is not None and s["priority"] == 2, "≥30% 应为 P2"
+
+
+def test_pushflow_low_rate_emits_no_suggestion():
+    m = _load()
+    out = m.build_brief(_pushflow_case(0.05), CLOCK)
+    assert _pick(out) is None, "<10% 视为正常，不产建议"
+    assert all(g["source"] != "pushflow" for g in out["gaps"]), "源可用时不得进 gaps"
+
+
+def test_pushflow_missing_goes_to_gaps_pending():
+    m = _load()
+    out = m.build_brief(GOOD_SIX, CLOCK)  # 无 pushflow 键
+    gap = next((g for g in out["gaps"] if g["source"] == "pushflow"), None)
+    assert gap is not None, "缺 pushflow 必须进 gaps"
+    assert gap["note"].startswith("待核")
+    assert _pick(out) is None, "缺源不得产建议"
+

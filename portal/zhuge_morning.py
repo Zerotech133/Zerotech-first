@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """WO-OS-18 诸葛亮晨报生成器（06 的分层落地：仅生成器）。
 
-六源只读聚合 → api_zhuge_brief.build_brief 规则引擎 → 一份 JSON 落盘。
+七源只读聚合 → api_zhuge_brief.build_brief 规则引擎 → 一份 JSON 落盘。
 产物：<out-dir>/zhuge_brief_YYYY-MM-DD.json（北京日期），同日重生成覆盖同名文件。
 
 分层边界（本单只做第一层）：
   · 只生成，不外呼：不发送任何通知、不挂计划任务、不写控制面配置；
-  · 六源与引擎本体零改动：六源获取复用 api_zhuge_route.build_route_payload，
+  · 七源与引擎本体零改动：七源获取复用 api_zhuge_route.build_route_payload，
     单源失败按 None 下传，由引擎 usable() 归入 gaps（缺源即待核）；
+  · WO-OS-20 第七源 pushflow（当日通知投递成败）由 route 的 _pushflow_stats
+    统一注入 raw，本模块只透传、不另写一份实现（禁双实现，口径单点）。
   · 产物保留 engine='rule-based' / model_invoked=False / dispatched=False
     三个诚实标记，表示这是规则归集草案，不是模型推理、也未派单。
 
@@ -34,7 +36,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from api_zhuge_brief import BEIJING, SOURCES  # noqa: E402  引擎常量（只读复用）
-import api_zhuge_route  # noqa: E402  六源聚合（与 /api/zhuge/brief 同款口径）
+import api_zhuge_route  # noqa: E402  七源聚合（与 /api/zhuge/brief 同款口径）
 
 DEFAULT_OUT_DIR = HERE / "data" / "zhuge_brief"
 FILE_PREFIX = "zhuge_brief_"
@@ -83,10 +85,11 @@ def summarize(brief: Dict[str, Any]) -> Dict[str, int]:
 
 def generate(clock=None, out_dir=None, dry_run: bool = False,
              fetchers=None) -> Dict[str, Any]:
-    """聚合六源 → 规则引擎 → （非 dry-run 时）落盘一份 JSON。
+    """聚合七源 → 规则引擎 → （非 dry-run 时）落盘一份 JSON。
 
     返回 {ok, written, path, brief, summary}；dry_run 时 written=False 且不建目录。
-    fetchers 为测试注入点（{source: callable}），None 走六源真实函数。
+    fetchers 为测试注入点（{source: callable}），None 走七源真实函数
+    （pushflow 亦由 route 的 _pushflow_stats 提供，本模块不重复实现）。
     """
     clk = _coerce_clock(clock)
     target = brief_path(DEFAULT_OUT_DIR if out_dir is None else out_dir, clk)
@@ -143,7 +146,7 @@ def main(argv=None) -> int:
     print("诚实标记: engine=%s model_invoked=%s dispatched=%s"
           % (brief.get("engine"), brief.get("model_invoked"),
              brief.get("dispatched")))
-    print("口径: 六源 %d 个；缺口与建议同源可溯；未发送任何通知、未挂任何计划任务"
+    print("口径: 七源 %d 个；缺口与建议同源可溯；未发送任何通知、未挂任何计划任务"
           % len(SOURCES))
     return 0
 

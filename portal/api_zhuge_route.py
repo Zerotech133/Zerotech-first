@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 """WO-OS-09 诸葛亮建议引擎只读路由（GET /api/zhuge/brief，2026-10-21）。
+WO-OS-20 扩第七源 pushflow：当日通知投递成败（读 portal/work/push_flow.jsonl）。
 
 把 WO-OS-04 规则版引擎（api_zhuge_brief.build_brief）挂上 8091 门户 API：
-六源只读聚合 → build_brief → JSON。路由层零写操作（不 open 写、不 sqlite
+七源只读聚合 → build_brief → JSON。路由层零写操作（不 open 写、不 sqlite
 写、不派单、不发请求），与引擎「零副作用」语义一致。
 
-六源 raw 映射（复用既有 api 层内部函数，/api/os 等聚合读同款）：
+七源 raw 映射（复用既有 api 层内部函数，/api/os 等聚合读同款）：
   os         → api_misc.build_os_cockpit()
   home       → api_misc.build_home_cockpit()
   alerts     → api_common.build_alerts()          （含 source_health）
   notify     → api_notify.notify_queue_payload()
   tasks      → api_tickets.build_tickets_payload()
   capability → api_capability.build_capability_board()
+  pushflow   → _pushflow_stats()                  （只读投递账本当日行，见下）
+
+pushflow 口径（WO-OS-20）：按北京日期筛 work/push_flow.jsonl 当日行，统计
+ok_count/fail_count/fail_rate 与分通道成败；文件缺失、读失败、当日无记录一律
+返回 None → 引擎 gaps（待核），绝不推断「没失败就是正常」。
 
 降级纪律：单源获取抛异常/返回非 dict → 按 None 处理进 gaps（与引擎
 usable() 语义一致），绝不把「接口可达」当「业务健康」。
@@ -26,14 +32,68 @@ usable() 语义一致），绝不把「接口可达」当「业务健康」。
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, Dict
 
 from api_zhuge_brief import BEIJING, SOURCES, build_brief
 
+# 投递账本（只读）：portal/work/push_flow.jsonl，一行一次投递
+PUSHFLOW_LEDGER = Path(__file__).resolve().parent / "work" / "push_flow.jsonl"
+
+
+def _pushflow_stats(path=None, day=None):
+    """统计当日（北京日期）投递成败：{ok, today, ok_count, fail_count,
+    fail_rate, channels}。文件缺失/读失败/当日无记录 → None（引擎记待核）。
+
+    纯只读：只 read_text，不写账本、不改行。path/day 为测试注入点。
+    """
+    target = Path(path) if path is not None else PUSHFLOW_LEDGER
+    if day is None:
+        day = datetime.now(BEIJING).strftime("%Y-%m-%d")
+    try:
+        text = target.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+    total = ok_count = fail_count = 0
+    channels: Dict[str, Dict[str, int]] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue  # 半行/坏行跳过，不拿残缺行推断成败
+        if not isinstance(row, dict) or row.get("date") != day:
+            continue
+        total += 1
+        passed = row.get("ok") is True
+        if passed:
+            ok_count += 1
+        else:
+            fail_count += 1
+        name = row.get("channel")
+        name = name if isinstance(name, str) and name else "unknown"
+        bucket = channels.setdefault(name, {"ok": 0, "fail": 0})
+        bucket["ok" if passed else "fail"] += 1
+
+    if total == 0:
+        return None  # 当日无投递记录：不可推断正常，交引擎记待核
+    return {
+        "ok": True,
+        "today": total,
+        "ok_count": ok_count,
+        "fail_count": fail_count,
+        "fail_rate": round(fail_count / total, 4),
+        "channels": channels,
+    }
+
 
 def _default_fetchers() -> Dict[str, Callable[[], Any]]:
-    """六源默认获取函数（延迟绑定：import 放函数内防循环依赖）。"""
+    """七源默认获取函数（延迟绑定：import 放函数内防循环依赖）。"""
     import api_common
     import api_misc
     import api_capability
@@ -47,13 +107,14 @@ def _default_fetchers() -> Dict[str, Callable[[], Any]]:
         "notify": api_notify.notify_queue_payload,
         "tasks": api_tickets.build_tickets_payload,
         "capability": api_capability.build_capability_board,
+        "pushflow": _pushflow_stats,
     }
 
 
 def build_route_payload(fetchers=None, clock=None):
-    """聚合六源 → 引擎 build_brief → 载荷 dict。
+    """聚合七源 → 引擎 build_brief → 载荷 dict。
 
-    fetchers: {source: callable}（测试注入点；默认六源真实函数）。
+    fetchers: {source: callable}（测试注入点；默认七源真实函数）。
     clock:    tz-aware datetime（默认服务器当前北京时间）。
     单源异常/坏返回按 None 进 gaps，不让整卡 500。
     """

@@ -1,6 +1,8 @@
 /* WO-OS-07 前端诸葛亮建议适配器：与 portal/api_zhuge_brief.py（WO-OS-04 规则版）完全同语义。
  * 纯函数、零副作用：不 fetch/XHR/storage/eval/写库/派单。
- * 输入：六源只读投影原始对象 + 观察时钟（Date）；输出：结构化"今日建议草案"。
+ * WO-OS-20 扩第七源 pushflow：当日通知投递成败（raw.pushflow 由页面注入，
+ * 缺则 gaps 待核）；失败率分级只看当日账本，不拿历史失败簇冒充当前状态。
+ * 输入：七源只读投影原始对象 + 观察时钟（Date）；输出：结构化"今日建议草案"。
  * 每条建议必须带 source 与 as_of（生产者时点，未知为 null）；
  * 缺源/坏源显式进 gaps（"待核"开头），绝不把接口可达当业务健康。
  * UMD：浏览器挂 window.OSZhugeAdapter；Node 可 require。 */
@@ -43,6 +45,18 @@
     if (ageHours <= 48) return 'ok';
     if (ageHours <= 168) return 'stale';
     return 'unknown';
+  }
+
+  /* 失败率转百分比文本（与 Python _pct_text 同语义）：0.55→'55'，0.075→'7.5' */
+  function pctText(rate) {
+    var text = (rate * 100).toFixed(1);
+    return text.slice(-2) === '.0' ? text.slice(0, -2) : text;
+  }
+
+  /* 计数文本：非整数一律 '?'（缺字段不猜 0，与 Python _count_text 同语义） */
+  function countText(value) {
+    if (typeof value !== 'number' || !isFinite(value) || Math.floor(value) !== value) return '?';
+    return String(value);
   }
 
   function suggestion(sid, domain, priority, reason, source, asOf) {
@@ -155,6 +169,36 @@
               '信号源 ' + name + ' 数据新鲜度 ' + label,
               '/api/alerts', asOf));
           }
+        }
+      }
+    }
+
+    // pushflow（WO-OS-20 第七源）：当日通知投递失败率分级；
+    // 口径红线——只看当日账本实际成败，不拿历史失败簇冒充当前状态。
+    if (usable('pushflow')) {
+      var stats = raw.pushflow;
+      var rawRate = stats.fail_rate;
+      var rate = null;
+      if (typeof rawRate === 'number' && isFinite(rawRate)) {
+        rate = rawRate;
+      } else if (typeof rawRate === 'string' && rawRate.trim() !== '' &&
+                 isFinite(Number(rawRate))) {
+        rate = Number(rawRate);
+      }
+      if (rate === null) {
+        gaps.push({ source: 'pushflow', note: '待核：fail_rate 非数值，当日失败率未知。' });
+      } else {
+        var priority = 0;
+        if (rate >= 0.5) priority = 1;
+        else if (rate >= 0.3) priority = 2;
+        else if (rate >= 0.1) priority = 3;
+        if (priority) {
+          suggestions.push(suggestion(
+            'pushflow:daily_rate', '通知', priority,
+            '今日投递失败率 ' + pctText(rate) + '%（失败 ' + countText(stats.fail_count) +
+              '/总 ' + countText(stats.today) + '）：这是当日实际失败率，' +
+              '不是历史失败簇；来源 pushflow.jsonl',
+            '/api/zhuge/brief.pushflow', null));
         }
       }
     }

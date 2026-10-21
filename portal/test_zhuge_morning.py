@@ -23,7 +23,8 @@ CLOCK = datetime(2026, 10, 21, 9, 0, tzinfo=BEIJING)
 CLOCK_ISO = "2026-10-21T09:00:00+08:00"
 DAY = "2026-10-21"
 
-ALL_SOURCES = ("os", "home", "alerts", "notify", "tasks", "capability")
+ALL_SOURCES = ("os", "home", "alerts", "notify", "tasks", "capability",
+               "pushflow")  # WO-OS-20 起为七源
 
 
 def _zm():
@@ -230,3 +231,28 @@ def test_source_does_not_touch_six_sources_or_engine():
         assert f"import {mod}" in src or f"from {mod}" in src or mod not in src
     assert "open(" in src, "落盘应使用最小 open 写，便于审计"
     assert "__file__" in src
+
+
+# ── ⑪ WO-OS-20 第七源 pushflow：注入当日失败率 → 产物 JSON 含该建议 ─────
+def test_pushflow_suggestion_lands_in_artifact(tmp_path):
+    zm = _zm()
+    fs = _stub_fetchers()
+    fs["pushflow"] = lambda: {
+        "ok": True, "today": 276, "ok_count": 124, "fail_count": 152,
+        "fail_rate": 0.55,
+        "channels": {"openapi": {"ok": 100, "fail": 150},
+                     "lark-cli": {"ok": 24, "fail": 2}},
+    }
+    res = zm.generate(clock=CLOCK_ISO, out_dir=tmp_path, fetchers=fs)
+    data = json.loads((tmp_path / f"zhuge_brief_{DAY}.json")
+                      .read_text(encoding="utf-8"))
+    s = next((x for x in data["suggestions"]
+              if x["id"] == "pushflow:daily_rate"), None)
+    assert s is not None, "注入 pushflow 后产物应含 pushflow:daily_rate"
+    assert s["priority"] == 1
+    assert "今日投递失败率 55%" in s["reason"]
+    assert "不是历史失败簇" in s["reason"]
+    assert s["source"] == "/api/zhuge/brief.pushflow"
+    assert res["summary"]["top_priority"] >= 2
+    assert all(g["source"] != "pushflow" for g in data["gaps"])
+

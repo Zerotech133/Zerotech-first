@@ -64,7 +64,8 @@ def test_all_sources_missing_gaps_cover_six():
     import api_zhuge_route as zr
     out = zr.build_route_payload({k: (lambda: None) for k in zr.SOURCES})
     gaps = {g["source"] for g in out["gaps"]}
-    assert gaps == {"os", "home", "alerts", "notify", "tasks", "capability"}
+    assert gaps == {"os", "home", "alerts", "notify", "tasks", "capability",
+                    "pushflow"}
     for g in out["gaps"]:
         assert g["note"].startswith("待核")
 
@@ -139,3 +140,51 @@ def test_engine_module_still_importable_and_pure():
     out = m.build_brief({}, datetime(2026, 10, 21, 9, 0,
                                      tzinfo=m.BEIJING))
     assert out["engine"] == "rule-based" and out["suggestions"] == []
+
+
+# ── WO-OS-20 ⑨ _pushflow_stats：只读临时账本，按北京日期算当日成败 ──────
+TMP_DIR = Path("C:/Temp")  # 临时夹具目录，绝不碰 portal/work/push_flow.jsonl
+
+
+def _write_temp_ledger(rows, name=None):
+    TMP_DIR.mkdir(parents=True, exist_ok=True)
+    path = TMP_DIR / (name or "wo_os_20_push_flow_fixture.jsonl")
+    path.write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
+        encoding="utf-8")
+    return path
+
+
+def _row(day, ok, channel="openapi"):
+    return {"ts": day + "T10:00:00", "date": day, "kind": "hub",
+            "channel": channel, "target": "oc_test", "count": 1,
+            "ok": ok, "tenant": "default"}
+
+
+def test_pushflow_stats_counts_today_by_channel():
+    import api_zhuge_route as zr
+    rows = ([_row("2026-10-21", True) for _ in range(4)]
+            + [_row("2026-10-21", False) for _ in range(5)]
+            + [_row("2026-10-21", True, "lark-cli")]
+            + [_row("2026-10-20", False)])  # 非当日，必须忽略
+    path = _write_temp_ledger(rows)
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert stats is not None
+    assert stats["ok"] is True
+    assert stats["today"] == 10
+    assert stats["ok_count"] == 5 and stats["fail_count"] == 5
+    assert stats["fail_rate"] == 0.5
+    assert stats["channels"] == {"openapi": {"ok": 4, "fail": 5},
+                                 "lark-cli": {"ok": 1, "fail": 0}}
+
+
+def test_pushflow_stats_missing_file_returns_none():
+    import api_zhuge_route as zr
+    missing = TMP_DIR / "wo_os_20_not_exists.jsonl"
+    if missing.exists():
+        missing.unlink()
+    assert zr._pushflow_stats(path=missing, day="2026-10-21") is None
+
