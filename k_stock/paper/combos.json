@@ -36,6 +36,25 @@
         "watch_style": {"id": "daily_close", "version": "v1"},
         "trader": {"id": "trader_main", "version": "v1"}
       }
+    },
+    {
+      "combo_id": "combo_zhongxing",
+      "name": "中性组合（虚拟）",
+      "_wo": "WO-QT-20261020-083 影子期红线：本组合仅注册与意见留痕，combo 执行解锁（影子期 D14=2026-11-04 评审+老田签准）前绝不接 engine.exec_run/signal_consumer/交易链",
+      "quad": {
+        "pick_source": {"id": "poc_run", "version": "v1"},
+        "persona": {
+          "id": "persona_neutral", "version": "v1",
+          "params": {
+            "risk_appetite": "neutral",
+            "conf_floor": 0.60,
+            "max_pos_pct": 0.20,
+            "max_total_pct": 0.75
+          }
+        },
+        "watch_style": {"id": "daily_close", "version": "v1"},
+        "trader": {"id": "trader_main", "version": "v1"}
+      }
     }
   ]
 }
