@@ -144,7 +144,26 @@ def _budget_for(table, freq):
 
 
 def _days_since(fresh):
-    """freshness（YYYYMMDD 或 YYYYMM）→ 距今天数；月格式取月末近似。"""
+    """freshness（YYYYMMDD / YYYYMM / YYYY）→ 距今天数；月格式取月末近似。
+
+    WO-QT-20261021-102：补 4 位年份（年度表 freshness="2024"，CnOpenData
+    年度静态包 5 张）。此前 4 位年份落进 else → None → 该表在 stale_tables
+    里被静默 continue，年度表**既不会误报也永远不会被看见**（实测 rating
+    38 条断流里 cnopendata 命中 0，监控上等于不存在）。
+
+    基准日取**该年 12 月 31 日**，理由：年度数据的"最新可得时点"最保守的
+    取法是该年末——"2024 年度数据"最晚可以统计到 2024-12-31。若取年初
+    （2024-01-01）会把同一张表多算 364/365 天龄，年度表本已是低频源，
+    再把它们集体算老一岁 = 系统性误报（把"今年包"当成"去年包"）。
+
+    未来年份（如 now=2026-10-21 时的 "2026"、"2027"）：基准日尚未到达，
+    计龄**钳到 0**——数据不可能比"今天"更新，故不为负值（负值会让
+    lag > budget 恒假却污染下游展示/统计口径，且与 lag 的非负语义不一致），
+    也不排除（未来年份更不该报断流）。取 0 的理由：读法等同"年末之前
+    任何一天看它，最新可得数据就是当下能拿到的最新包"。
+
+    6 位（YYYYMM，取次月 1 日近似月末）与 8 位（YYYYMMDD）行为不变。
+    """
     f = str(fresh or "")
     try:
         if len(f) == 8:
@@ -154,6 +173,9 @@ def _days_since(fresh):
             if m == 13:
                 y, m = y + 1, 1
             d = datetime(y, m, 1)
+        elif len(f) == 4 and f.isdigit():
+            d = datetime(int(f), 12, 31)      # 年度表：基准日=该年末
+            return max((datetime.now() - d).days, 0)   # 当年/未来年 → 0
         else:
             return None
         return (datetime.now() - d).days

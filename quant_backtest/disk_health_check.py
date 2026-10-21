@@ -12,7 +12,9 @@ catalog.json（build_catalog.py 已落实测判级 verification_status）推导�
   persistent_no_data   no_data 持续 ≥7 天（升级，断供实锤）
   manifest_gap         有数据但 manifest 缺登记
   stale                freshness < 7 天前
-  ok                   正常（verified / verified_external）
+  ok                   正常（verified / verified_external / static_no_date）
+                      static_no_date=无时间维的静态数据（如情感词典词表），
+                      无日期是其正常属性，故不告警（WO-QT-20261021-102）
 
 first_seen 语义：首次进入非 ok 状态的时间，UPSERT 保留旧值——断供计时
 不因重复检查而清零；恢复 ok 时清空。
@@ -40,6 +42,13 @@ ALERT_BY_VERIFICATION = {
     "verified_stale": "stale",
     "verified": "ok",
     "verified_external": "ok",
+    # WO-QT-20261021-102：无时间维的静态数据（chinese-dictionary-of-financial-
+    # sentiment 词表等）→ 不告警。理由：这类资产"没有日期列"是数据本身的
+    # 正常属性，不是断供也不是质量缺陷；映射成 ok 之外的任何值都会把正常
+    # 资产永久钉在告警栏，久了就是狼来了。若它真出问题，会在 build_catalog
+    # 的更具体状态上先落地（schema_error/placeholder_empty/manifest_missing
+    # 在 _verify_status 里优先于 static_no_date），不会因本条映射而失明。
+    "static_no_date": "ok",
 }
 
 

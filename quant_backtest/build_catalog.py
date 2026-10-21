@@ -281,6 +281,12 @@ TABLE_DEFS.update({
     "chinese-dictionary-of-financial-sentiment": {
         "layout": "part", "date_col": None, "code_col": None,
         "date_status": "not_applicable", "primary_key": [], "freq": "Y",
+        # WO-QT-20261021-102：无时间维的**静态数据**（词表本身不带日期），
+        # 与 tdx_sector_def/stock_company 等「快照表」不是一回事：快照表有
+        # 采集时点语义、只是没登记日期列；词表永远没有时间维。显式打标 →
+        # _verify_status 判 static_no_date（正常态，disk_health 不告警），
+        # 不再借 verified 冒充「已验证有日期」。
+        "static_no_date": True,
         "desc": "中文金融情感词典（姜富伟等 2020，正向 3338 + 负向 5890 共 "
                 "9228 词，词表无时间维度；静态历史包，非按日更新）",
     },
@@ -541,10 +547,21 @@ def _verify_status(e, stale_before):
     """catalog 条目 verification_status 推导（2026-10-17 实装，结束全 unknown）。
 
     有序判定：schema_error > verified_external > placeholder_empty >
-    manifest_missing > verified_stale > verified。依据全部来自本次重建
-    实测信号（schema_errors/readiness_basis/rows/files/manifest_status/
-    freshness），不引入额外 IO；stale_before=YYYYMMDD（7 天口径，与
-    治理统计一致）。各写入点的 'unknown' 仅为初始值，build() 统一覆盖。
+    manifest_missing > static_no_date > verified_stale > verified。依据全部
+    来自本次重建实测信号（schema_errors/readiness_basis/rows/files/
+    manifest_status/freshness/static_no_date），不引入额外 IO；
+    stale_before=YYYYMMDD（7 天口径，与治理统计一致）。各写入点的
+    'unknown' 仅为初始值，build() 统一覆盖。
+
+    WO-QT-20261021-102 新增 static_no_date："无时间维的静态数据"
+    （目前仅 chinese-dictionary-of-financial-sentiment 词表）。它排在
+    schema_error/placeholder_empty/manifest_missing **之后**——真实故障
+    （footer 损坏 / 空表 / manifest 缺登记）必须继续盖过它，否则新状态会
+    变成把这些告警吞掉的洞；排在 verified_stale 之前——无日期列的表谈不上
+    "日期陈旧"，落 verified 又会冒充「已验证且新鲜」。判定只看 TABLE_DEFS
+    里的显式 opt-in 标记（条目字段 static_no_date），不做"date_col 为空即
+    静态"的猜测：catalog 里 date_col=None 的 36 张表多为快照/成分/新闻表，
+    一刀切会把它们的判定一起改掉。
     """
     if e.get("schema_errors"):
         return 'schema_error'
@@ -554,6 +571,8 @@ def _verify_status(e, stale_before):
         return 'placeholder_empty'
     if e.get("manifest_status") == 'missing':
         return 'manifest_missing'
+    if e.get("static_no_date"):
+        return 'static_no_date'
     f = str(e.get("freshness") or "")
     if f[:8].isdigit() and f[:8] < stale_before:
         return 'verified_stale'
@@ -606,6 +625,9 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
         "schema_scope": 'all_footers' if layout == 'part' and schema_inspected == len(files) and files and not schema_errors else 'sampled' if schema_inspected else 'unknown',
         "schema_files_inspected": schema_inspected, "schema_errors": schema_errors,
         "date_status": d.get('date_status', 'registered' if dcol else 'unknown'),
+        # WO-QT-20261021-102：静态无日期数据的显式标记（默认 False），由
+        # _verify_status 消费，决定 verification_status 是否判 static_no_date
+        "static_no_date": bool(d.get('static_no_date', False)),
         "primary_key": [c for c in primary_key if c in schema],
         "freq": d.get("freq", "D"),
         "priority": d.get("priority", 1),
