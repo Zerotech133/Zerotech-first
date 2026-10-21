@@ -1,0 +1,16 @@
+{
+  "id": "cnod-gjzfssfc",
+  "name": "中国各级政府税收分成数据",
+  "source_url": "http://ipft.ruc.edu.cn/docs/2022-06/f5a3249aee584cf4b83fb3112c37e23e.xls",
+  "landing_page": "http://ipft.ruc.edu.cn/cssjk/zwsj/index.htm",
+  "fetched_at": "2026-10-21T15:39:02+08:00",
+  "files": [
+    {
+      "name": "f5a3249aee584cf4b83fb3112c37e23e.xls",
+      "bytes": 441344,
+      "sha256": "db6346ba6bbaecebb2a66f1dd0a2a37af05cb7c812110b4085da2c84b789b327"
+    }
+  ],
+  "license_note": "中国人民大学财税研究所官网公开附件，站点未附明确许可协议；仅作研究留痕，不再分发。",
+  "notes": "BIFF8(.xls) 单表 Sheet1，76 个共享字符串，覆盖 1994-2014（标题自述）。同页另有 PDF 说明 http://ipft.ruc.edu.cn/docs/2022-06/ad5163fa33324485bb6b4612323f3d92.pdf（未下载）。字段名前缀为 中央本级/地方/省本级/市本级 四档占比。"
+}

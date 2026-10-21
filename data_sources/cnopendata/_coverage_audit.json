@@ -1,0 +1,355 @@
+{
+  "checked_at": "2026-10-21T21:12:24+08:00",
+  "counts": {
+    "档案高估新鲜度": 12,
+    "轻微滞后": 12,
+    "不一致": 0,
+    "页面未写时间区间": 3,
+    "取页失败": 0,
+    "一致": 11
+  },
+  "rows": [
+    {
+      "id": "cnod-land-transaction-data",
+      "name": "中国全部土地交易数据",
+      "shard": "cnod-e2",
+      "record": "2000年至今",
+      "page": "2000~2024",
+      "url": "https://www.cnopendata.com/data/m/land/land-transaction-data.html",
+      "verdict": "档案高估新鲜度（止期距今 22 个月）"
+    },
+    {
+      "id": "cnod-china-customs-statistics",
+      "name": "中国海关统计数据",
+      "shard": "cnod-e2",
+      "record": "1981年至今",
+      "page": "1981-2024.11",
+      "url": "https://www.cnopendata.com/data/m/customs/china-customs-statistics.html",
+      "verdict": "档案高估新鲜度（止期距今 23 个月）"
+    },
+    {
+      "id": "cnod-hjtjnj",
+      "name": "中国能源年鉴地区能源平衡表数据",
+      "shard": "cnod-e1",
+      "record": "1997-至今",
+      "page": "1998~2022",
+      "url": "https://www.cnopendata.com/data/m/regional/hjtjnj.html",
+      "verdict": "档案高估新鲜度（止期距今 46 个月）"
+    },
+    {
+      "id": "cnod-data-on-companies-registered-in-the-manufacturing-industry",
+      "name": "制造业工商注册企业数量统计数据",
+      "shard": "cnod-e1",
+      "record": "1950-至今",
+      "page": "1950-2021.12.31",
+      "url": "https://www.cnopendata.com/data/m/regional/data-on-companies-registered-in-the-manufacturing-industry.html",
+      "verdict": "档案高估新鲜度（止期距今 58 个月）"
+    },
+    {
+      "id": "cnod-gov-pro-gg",
+      "name": "政府采购公告数据",
+      "shard": "cnod-e2",
+      "record": "2013年至今",
+      "page": "基本信息表、公告源文件：已更新至 2024年12月 ；其他详细公告表：字段全新升级中",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/gov-pro-gg.html",
+      "verdict": "档案高估新鲜度（止期距今 22 个月）"
+    },
+    {
+      "id": "cnod-nyt",
+      "name": "纽约时报新闻文本数据",
+      "shard": "cnod-c",
+      "record": "1851-至今",
+      "page": "1851~2024.7.31",
+      "url": "https://www.cnopendata.com/data/m/international-news/nyt.html",
+      "verdict": "档案高估新鲜度（止期距今 27 个月）"
+    },
+    {
+      "id": "cnod-recall-of-defective-products",
+      "name": "缺陷产品召回数据",
+      "shard": "cnod-e2",
+      "record": "2004年至今",
+      "page": "汽车： 2007.11-2024.09.14 ；消费品： 2008.07-2024.09.12",
+      "url": "https://www.cnopendata.com/data/m/ESG/recall-of-defective-products.html",
+      "verdict": "档案高估新鲜度（止期距今 25 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-securities-firm-employee",
+      "name": "证券公司从业人员信息数据",
+      "shard": "cnod-b",
+      "record": "2003 至今",
+      "page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/securities-firm-employee.html",
+      "verdict": "档案高估新鲜度（止期距今 41 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-sub-cor-employee",
+      "name": "证券另类子公司从业人员信息数据",
+      "shard": "cnod-b",
+      "record": "2003 至今",
+      "page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/sub%26cor-employee.html",
+      "verdict": "档案高估新鲜度（止期距今 41 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-credit-rating-age-employee",
+      "name": "证券市场资信评级机构从业人员信息数据",
+      "shard": "cnod-b",
+      "record": "2003 至今",
+      "page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/credit-rating%26age-employee.html",
+      "verdict": "档案高估新鲜度（止期距今 41 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-msic-employee",
+      "name": "证券投资咨询机构从业人员信息数据",
+      "shard": "cnod-b",
+      "record": "2003 至今",
+      "page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/MSIC-employee.html",
+      "verdict": "档案高估新鲜度（止期距今 41 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-asset-management-cor-employee",
+      "name": "证券资产管理公司从业人员信息数据",
+      "shard": "cnod-b",
+      "record": "2003 至今",
+      "page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/asset-management%26cor-employee.html",
+      "verdict": "档案高估新鲜度（止期距今 41 个月）"
+    },
+    {
+      "id": "cnod-listedco-yggc",
+      "name": "A股上市公司员工构成数据",
+      "shard": "cnod-a2",
+      "record": "2004年至今",
+      "page": "2004-2025年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-yggc.html",
+      "verdict": "轻微滞后（止期距今 10 个月）"
+    },
+    {
+      "id": "cnod-futures-jy",
+      "name": "中国期货交易日历数据",
+      "shard": "cnod-b",
+      "record": "1998 至今",
+      "page": "1998年8月18日-2025年12月30日",
+      "url": "https://www.cnopendata.com/data/m/Futures/Futures%2Fjy.html",
+      "verdict": "轻微滞后（止期距今 10 个月）"
+    },
+    {
+      "id": "cnod-futures-hy",
+      "name": "中国期货合约信息数据",
+      "shard": "cnod-b",
+      "record": "1995-04-17 至今",
+      "page": "1995年4月17日-2025年7月1日",
+      "url": "https://www.cnopendata.com/data/m/Futures/Futures%2Fhy.html",
+      "verdict": "轻微滞后（止期距今 15 个月）"
+    },
+    {
+      "id": "cnod-futures-futuresmarket",
+      "name": "中国期货行情数据",
+      "shard": "cnod-b",
+      "record": "1995 至今",
+      "page": "1995年4月~2025年7月",
+      "url": "https://www.cnopendata.com/data/m/Futures/FuturesMarket.html",
+      "verdict": "轻微滞后（止期距今 15 个月）"
+    },
+    {
+      "id": "cnod-lgjjacct",
+      "name": "中国零工经济线上招聘数据",
+      "shard": "cnod-e2",
+      "record": "2014年至今",
+      "page": "2014.05~2025",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/lgjjacct.html",
+      "verdict": "轻微滞后（止期距今 10 个月）"
+    },
+    {
+      "id": "cnod-annual-reports",
+      "name": "全球企业年报数据",
+      "shard": "cnod-c",
+      "record": "1957-至今",
+      "page": "1957-2025.10",
+      "url": "https://www.cnopendata.com/data/m/international-news/annual%20reports.html",
+      "verdict": "轻微滞后（止期距今 12 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-fund-value",
+      "name": "公募基金净值数据",
+      "shard": "cnod-b",
+      "record": "1999 至今",
+      "page": "1999-2025.6.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-value.html",
+      "verdict": "轻微滞后（止期距今 16 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-funds-list",
+      "name": "公募基金列表数据",
+      "shard": "cnod-b",
+      "record": "1991 至今",
+      "page": "1991-2025.5.27",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/funds-list.html",
+      "verdict": "轻微滞后（止期距今 17 个月）"
+    },
+    {
+      "id": "cnod-fund-broker-fund-size",
+      "name": "公募基金规模数据",
+      "shard": "cnod-b",
+      "record": "1998 至今",
+      "page": "1998-2025.7.1",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-size.html",
+      "verdict": "轻微滞后（止期距今 15 个月）"
+    },
+    {
+      "id": "cnod-futures-futuresmarket-nh",
+      "name": "南华期货指数日线行情数据",
+      "shard": "cnod-b",
+      "record": "2004-06 至今",
+      "page": "2004年6月1日~2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/Futures/FuturesMarket%2FNH.html",
+      "verdict": "轻微滞后（止期距今 16 个月）"
+    },
+    {
+      "id": "cnod-government-procurement-data",
+      "name": "政府采购数据",
+      "shard": "cnod-e2",
+      "record": "2004年至今",
+      "page": "2004-2025.12.31",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/government-procurement-data.html",
+      "verdict": "轻微滞后（止期距今 10 个月）"
+    },
+    {
+      "id": "cnod-swhycfgc",
+      "name": "申万行业成分构成数据",
+      "shard": "cnod-a2",
+      "record": "1989年至今",
+      "page": "1989年11月1日-2025年5月23日",
+      "url": "https://www.cnopendata.com/data/m/trading/swhycfgc.html",
+      "verdict": "轻微滞后（止期距今 17 个月）"
+    },
+    {
+      "id": "cnod-api-ashare-periodic-rep",
+      "name": "A股上市公司定期报告数据API",
+      "shard": "cnod-api",
+      "record": "可回溯至2000年至今的全部公告记录。",
+      "page": "",
+      "url": "https://www.cnopendata.com/api-store/ashare-periodic-rep",
+      "verdict": "页面未写时间区间"
+    },
+    {
+      "id": "cnod-api-ashare-basic-api",
+      "name": "A股基础信息数据API",
+      "shard": "cnod-api",
+      "record": "上市日期：回溯至中国股市最早的上市公司（1990年12月至今）；退市日期：包含所有已退市公司的退市记录",
+      "page": "",
+      "url": "https://www.cnopendata.com/api-store/ashare-basic-api",
+      "verdict": "页面未写时间区间"
+    },
+    {
+      "id": "cnod-api-hkshare-periodic-rep",
+      "name": "港股上市公司定期报告数据API",
+      "shard": "cnod-api",
+      "record": "可回溯至2005年至今的全部公告记录。",
+      "page": "",
+      "url": "https://www.cnopendata.com/api-store/hkshare-periodic-rep",
+      "verdict": "页面未写时间区间"
+    },
+    {
+      "id": "cnod-ybsj",
+      "name": "A股上市公司研报数据",
+      "shard": "cnod-a2",
+      "record": "2016年至今",
+      "page": "2016/1/1-至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/ybsj.html",
+      "verdict": "一致（页面写到至今）"
+    },
+    {
+      "id": "cnod-a-market-quotes",
+      "name": "A股上市公司行情数据",
+      "shard": "cnod-a2",
+      "record": "1991年至今",
+      "page": "1990.12~2026.6 （实时更新，各表区间略有差异）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/A-market-quotes.html",
+      "verdict": "一致（页面标实时更新）"
+    },
+    {
+      "id": "cnod-esg-env-punish",
+      "name": "ESG环保处罚信息数据",
+      "shard": "cnod-e2",
+      "record": "2007年至今",
+      "page": "2007.08.02-至今",
+      "url": "https://www.cnopendata.com/data/m/ESG/esg_env_punish.html",
+      "verdict": "一致（页面写到至今）"
+    },
+    {
+      "id": "cnod-fdmt",
+      "name": "中国上市公司主营业务构成数据",
+      "shard": "cnod-a2",
+      "record": "2007年至今",
+      "page": "明细表： 2007.06.30~至今 ；趋势表： 2007.03.31~至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/fdmt.html",
+      "verdict": "一致（页面写到至今）"
+    },
+    {
+      "id": "cnod-trading",
+      "name": "中国上市公司交易信息数据",
+      "shard": "cnod-a2",
+      "record": "2002年至今",
+      "page": "2002~至今",
+      "url": "https://www.cnopendata.com/data/m/trading/trading.html",
+      "verdict": "一致"
+    },
+    {
+      "id": "cnod-equ",
+      "name": "中国上市公司基本信息数据",
+      "shard": "cnod-a2",
+      "record": "1992年至今",
+      "page": "特殊状态表： 1998.04.28-至今 ；竞争企业表： 2019.03.22-至今 ；股东户数表： 1992.03.3",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/equ.html",
+      "verdict": "一致（页面写到至今）"
+    },
+    {
+      "id": "cnod-fdmt-tax",
+      "name": "中国上市公司税费情况数据",
+      "shard": "cnod-a2",
+      "record": "2016年至今",
+      "page": "税率明细表： 2016.12.31-至今 ；所得税费用表： 2016.03.31-至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/fdmt-tax.html",
+      "verdict": "一致（页面写到至今）"
+    },
+    {
+      "id": "cnod-hqys",
+      "name": "中国上市公司行情衍生数据",
+      "shard": "cnod-a2",
+      "record": "2006年至今",
+      "page": "2006/1/4-至今",
+      "url": "https://www.cnopendata.com/data/m/trading/hqys.html",
+      "verdict": "一致（页面写到至今）"
+    },
+    {
+      "id": "cnod-bond-cngovernment-bonds",
+      "name": "中国地方政府债券信息数据",
+      "shard": "cnod-b",
+      "record": "2009 至今",
+      "page": "2009~2026.6.30",
+      "url": "https://www.cnopendata.com/data/m/bond/CNgovernment-bonds.html",
+      "verdict": "一致（止期距当前 4 个月）"
+    },
+    {
+      "id": "cnod-zssj",
+      "name": "中国股票指数数据",
+      "shard": "cnod-a2",
+      "record": "1928年至今",
+      "page": "1928/10/2-至今",
+      "url": "https://www.cnopendata.com/data/m/trading/zssj.html",
+      "verdict": "一致（页面写到至今）"
+    },
+    {
+      "id": "cnod-hk-basic-information",
+      "name": "港股上市公司基础信息数据",
+      "shard": "cnod-a2",
+      "record": "1921年至今",
+      "page": "1921年至今",
+      "url": "https://www.cnopendata.com/data/m/hongkong/HK-basic-information.html",
+      "verdict": "一致"
+    }
+  ]
+}

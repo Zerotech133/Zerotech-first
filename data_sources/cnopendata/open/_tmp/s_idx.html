@@ -1,0 +1,1235 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ch">
+<head>
+    <title>&#x4e2d;&#x56fd;&#x4eba;&#x6c11;&#x5927;&#x5b66;&#x5168;&#x6587;&#x641c;&#x7d22;</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta http-equiv="X-UA-Compatible" content="IE=9"/>
+    <!-- VENDOR CSS -->
+    <link rel="stylesheet" href="/cms/resource/web/search/assets/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/cms/resource/web/search/assets/vendor/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/cms/resource/web/search/assets/vendor/font-awesome/css/font-awesome-ie7.min.css">
+    <!-- MAIN CSS -->
+    <link rel="stylesheet" href="/cms/resource/web/search/assets/css/main.css">
+    <link rel="stylesheet" href="/cms/resource/web/search/assets/css/datepicker3.css">
+
+
+    
+    <link rel="icon" type="image/png" sizes="96x96" href="/publish/gPublic/systemLogo/842b473b51b0462e88389af00c65e2cf.ico">
+    
+    <link rel="apple-touch-icon" sizes="76x76" href="/cms/resource/web/search/assets/img/apple-icon.png">
+    
+    <!--[if lt IE 9]>
+    <script src="/cms/resource/web/search/assets/scripts/html5.js" type="text/javascript"></script>
+    <script language="javascript" type="text/javascript">
+        self.location = 'brower.html';
+    </script>
+    <![endif]-->
+    <!--[if IE 9]>
+    <div id="ie9tips" style="position:fixed;top:120px;left:0;width:100%;text-align:center;color:#ccc;z-index:999999">
+        您的浏览器版本过低，请升级到ie10以上或更换Chrome浏览器获得流畅的浏览效果！
+    </div>
+    <![endif]-->
+    <style>
+        .searchColumns {}
+        .searchColumns.currents {
+            box-shadow: 0 0 5px #888;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #fff;
+            z-index: 9800;
+            width: 100%;
+            padding: 10px 0;
+        }
+        .searchColumns.currents .advance-title{display: none!important;}
+        .searchColumns.currents>div {
+            margin: 0 auto;
+        }
+
+        #resultDiv.currents {
+            /*margin-top: 52px;*/
+        }
+        /* 站点样式调整*/
+        .custom {
+            padding: 0px 7px !important;
+        }
+        .box-border1{
+            border-right: 1px solid #ccc;
+        }
+        .custom button{
+            border:none;
+        }
+        .caret{
+            color: #0c0c0c;
+        }
+        .search-box{
+            display: flex;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, .08), 0 0 8px rgba(0, 0, 0, .3);
+            border-radius: 10px;
+            background-color: #FFFFFF;
+        }
+        .content .input-group input{
+            padding: 6px 14px;
+            border-radius: 4px;
+        }
+        .content .dropdown-toggle span{
+            padding-left: 0px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            text-align: left;
+            width: 90%;
+        }
+        .glyphicon {
+            color: black;
+            top: 5%;
+            left: 85%;
+            z-index: 10;
+            position: absolute;
+        }
+        .content .dropdown {
+            width:100%;
+            border: none;
+            margin-top: 0px;
+            height: 52px;
+            line-height: 52px;
+            background-color: unset;
+
+        }
+        .content .input-group input.dropdown-toggle {
+            background-color: unset;
+        }
+        .searchInfoList ul li{
+            padding-bottom: 0px;
+        }
+        .content .input-group-btn {
+            background-color: transparent;
+            /*margin-left: -15px;*/
+            max-width: 100px;
+            float: right;
+            margin-right: 5px;
+            z-index: 3;
+        }
+        .content .col-sm-1 {
+            width: 90px;
+            margin: 0px 10px;
+        }
+        .content .dropdown-menu{
+            height: 230px;
+            overflow-y: hidden;
+            overflow-x: hidden;
+        }
+        /*精确模糊下拉*/
+        .content .query-border{
+            width: 15%;
+            border-left: 1px solid #ccc;
+        }
+        .content .query-border .caret{
+            top: 10px;
+            position: relative;
+            display: unset;
+        }
+        .content .querySelection{
+            width: unset;
+            height: 80px;
+            min-width: 75px;
+            right: 0;
+            left:unset;
+            text-align: center;
+        }
+        .content .querySelection .menulist {
+            max-height: 80px;
+        }
+        .content .querySelection .menulist li {
+            line-height: 40px;
+            color: black;
+        }
+        .content .querySelection li:hover {
+            background: #eee;
+            cursor: pointer;
+        }
+        /*高级检索下拉*/
+        .row .senior-search{
+            width: 25%;
+            border: 1px solid #ccc;
+            border-left:unset;
+        }
+        .row .senior-search .custom{
+            padding:0px !important;
+        }
+        .row .senior-search .dropdown{
+            height: 32px;
+        }
+        .row .senior-search .caret{
+            top:0px !important;
+            right: 3px;
+        }
+        .row .senior-search .dropdownValue {
+            font-size: 15px;
+            text-align: right;
+            padding-right: 10px;
+            line-height: 32px;
+            width:80%
+        }
+        .menulist {
+            max-height: 200px;
+            width: 100%;
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+        .menulist::-webkit-scrollbar{
+            width: 3px;
+            height: 3px;
+            background-color: #fff;
+        }
+        .menulist::-webkit-scrollbar-thumb{
+            background-color: #eee;
+        }
+        .menulist li{
+            line-height: 20px;
+        }
+        .menuImg{
+            display: flex;
+            flex-direction: column;
+        }
+        .model-button{
+            border: none;
+            background-color: #fff;
+            width: 100%;
+            position: relative;
+            padding: 0px;
+        }
+        .content .input-group-btn button {
+            padding: 8px 0;
+        }
+        .content .dropdown-menu li a{
+            display: block;
+            color: #333333;
+        }
+        .NoSearchCon{
+            padding: 20px 0px;
+        }
+        .resultbox{
+            display: flex;
+        }
+        .content .dropdown-menu li a:hover {
+            background: #eee;
+            color: #676a6d;
+        }
+        .dropdown-menu .form-control {
+            height: auto;
+        }
+        .input-group-btn:last-child>.btn {
+            border-radius: 10px;
+            padding: 0;
+            line-height: 40px;
+            height: 52px;
+            font-size: 16px;
+            background: rgba(24, 144, 255, 1);
+        }
+        .small-search{
+            display: none;
+        }
+        .content a:hover{
+            cursor: pointer;
+        }
+        .content .icon-search {
+            margin-left: 20px;
+            line-height: 100%;
+            margin-top: 12%;
+            font-size: 16px;
+            width: 14px;
+            background-size: contain;
+        }
+        .search-select{
+            float: left;
+        }
+        .content .dropdown .split {
+            margin-right: 40px;
+        }
+
+        .content .dropdown .split::after {
+            content: "";
+            width: 1px;
+            height: 30px;
+            display: block;
+            background: rgba(0, 0, 0, 0.1);
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            margin-top: -15px;
+        }
+
+        .input-group .form-control:focus {
+            z-index: unset;
+            box-shadow: unset;
+        }
+
+        .searchRow {
+            /*background-color: #FFFFFF;*/
+            position: relative;
+        }
+        .seniorSearch {
+            position: absolute;
+            right: -100px;
+            top: 50%;
+            color: #1890ff;
+            width: 90px;
+            border: 1px solid;
+            line-height: 30px;
+            padding: 8px 15px;
+            transform: translate(0, -50%);
+            cursor: pointer;
+            border-radius: 2px;
+            font-size: 14px;
+            line-height: 1;
+            font-weight: 500;
+        }
+        .text-direction{
+            transform: rotate(90deg);
+            display: none;
+        }
+        .navbar-nav > li > a {
+            padding: 20px 20px 20px 40px;
+        }
+        .seniorSearch:hover {
+            background-color: #1890ff;
+            color: white;
+        }
+
+        .advance-title {
+            font-size: 25px;
+            font-weight: 600;
+            color: #666666;
+            text-align: center;
+            font-weight: normal;
+        }
+
+        .flexitem {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+            justify-content: flex-end;
+        }
+
+        .flexitem .label {
+            width: 25%;
+            text-align: right;
+        }
+
+        .flexitem .label:after {
+            content: ':'
+        }
+
+        .flexitem input {
+            padding: 0 5px !important;
+            box-shadow: 0 0 2px #ccc;
+            font-size: 16px !important;
+        }
+
+        #searchHistoryDiv #showOrHideBtn{
+            padding-right: 0px;
+        }
+
+        .black-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #5c5c5c;
+        }
+
+        .submit {
+            background-color: #1890ff;
+        }
+
+        .cancel {
+            color: #595959;
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+
+        .advance-dropdown {
+            border: 0px;
+            margin-top: 1px !important;
+            height: 34px !important;
+            line-height: 34px !important;
+            width: auto !important;
+            background-color: unset;
+            position: relative;
+        }
+
+        .advance-dropdown .icon-angle-down {
+            margin-top: 10px !important;
+        }
+
+        .searchCriteria {
+            padding: 30px 0;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .searchCriteria .content {
+            margin: 0 auto;
+        }
+
+        .searchResult {
+            overflow: hidden;
+            background: #f8f8f8;
+        }
+
+        .searchResult .content {
+            margin: 0 auto;
+        }
+        .content .container{
+            margin-bottom: 0;
+        }
+        .searchResult .content .container {
+            margin-bottom: 0;
+            padding: 0 24px !important;
+            background: #fff;
+            margin: 30px auto;
+            min-height:500px;
+        }
+
+        .searchResult .content .container .searchInfoList {
+            padding-left: 0;
+        }
+        /*.Listheight{*/
+        /*    height: 400px;*/
+        /*    overflow-y: scroll;*/
+        /*}*/
+        /*.Listheight::-webkit-scrollbar{*/
+        /*    width: 3px;*/
+        /*    height: 3px;*/
+        /*    background-color: #fff;*/
+        /*}*/
+        /*.Listheight::-webkit-scrollbar-thumb{*/
+        /*    background-color: #eee;*/
+        /*}*/
+        .searchResult .Criteria .search-number {
+            margin: 0;
+            float: right;
+        }
+
+        .searchResult .Criteria .search-number p {
+            margin: 0;
+            color: rgba(153, 153, 153, 1);
+            font-size: 16px;
+        }
+
+        .searchResult .Criteria .dropdown {
+            line-height: 1.2 !important;
+            height: auto !important;
+            display: inline-block;
+            width: auto;
+            margin-right: 25px;
+            font-size: 16px;
+        }
+        .searchResult .Criteria .dropdown .icon-angle-down{display: inline-block;position: relative;right: 0;top: initial;margin: 0;margin-left: 10px;width: 12px;transition: all 0.2s ease-in-out;background-position: center center;}
+        .searchResult .Criteria .dropdown.open .icon-angle-down{transform: rotate(180deg);}
+
+        .searchResult .Criteria .dropdown-menu {
+            height: auto;
+            width: auto;
+            min-width: 120px;
+            margin-top: 5px;
+        }
+
+        .searchResult .Criteria .dropdown-menu p {
+            color: #333;
+            margin: 0;
+            padding: 5px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .searchResult .Criteria .dropdown-menu p:hover {
+            background: #f5f5f5;
+            /* color: #f5f5f5; */
+        }
+
+        .searchResult .Criteria .select select {
+            cursor: pointer;
+            font-size: 16px;
+            color: #333;
+            border: none;
+            outline: none;
+            background: none;
+            border: 0;
+            /*隐藏select的下拉图标*/
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 20px;
+            box-shadow: none;
+            padding: 0 20px 0 0 !important;
+            height: auto;
+        }
+
+        .searchResult .Criteria .select::after {
+            content: "";
+            display: block;
+            width: 11px;
+            height: 6px;
+            background: url(images/123.png) no-repeat;
+            transform: rotate(90deg);
+            background-size: cover;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            margin-top: -3px;
+            /*给自定义的图标实现点击下来功能*/
+            pointer-events: none;
+        }
+
+        .searchResult .Criteria .select select:focus {
+            background: red;
+        }
+        /*    文件悬浮 加下划线 字体颜色改变*/
+        .fileCss{
+            display: flex;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .fileCss > span {
+            display: block;
+            min-width: 123px;
+            border-left: 1px solid #ccc;
+            padding-left: 5px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .fileCss > span:first-child {
+            border: none;
+        }
+        .fileCss > span > a {
+            color: #0c0c0c;
+        }
+        .fileCss > span > a:hover{
+            text-decoration: underline;
+            color: #007fcc;
+        }
+        #seniorSearch a{
+            color:rgba(159, 193, 224, 1);
+        }
+        /* loading*/
+        #loading-spinner {
+            border: 10px solid #f3f3f3; /* Light grey */
+            border-top: 10px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            animation: spin 2s linear infinite;
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading {
+            width: 100%;
+            z-index: 100;
+            height: 100%;
+            position: absolute;
+            background-color: rgb(0 0 0 / 20%);
+        }
+        .loading-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        #seniorSearch a{
+            color: #ae0c2a;
+        }
+        .submit {
+            background-color: #ae0c2a;
+        }
+        .submit:hover {
+            color: #fff;
+        }
+        .navbar-default{
+            background: #ae0c2a;
+        }
+        .footer  {
+            border-top:4px solid #ae0c2a;
+        }
+        .content .btn-primary{
+            background-color: #ae0c2a;
+        }
+        #searchHistoryDiv #showOrHideBtn {
+            color: #ae0c2a;
+        }
+        #showOrHideBtn:before {
+            border-top: 6px solid #ae0c2a;
+        }
+        .pages a.on_pages {
+            background-color: #ae0c2a;
+        }
+        .pages a:hover {
+            color: #ae0c2a;
+        }
+        .searchInfoList ul li .search01 h2{
+            color:#ae0c2a;
+        }
+        .input-group-btn:last-child>.btn {
+            background: #ae0c2a;
+        }
+    </style>
+    <link rel="stylesheet" href="/cms/resource/web/search/assets/icon/iconfont.css">
+    <link rel="stylesheet" href="/cms/resource/web/search/assets/css/mediaSearch.css">
+</head>
+
+<body>
+<!-- WRAPPER -->
+<div id="wrapper" style="overflow-x: clip">
+    
+    <div class="loading" id="loading" style="display:block;">
+        <div id="loading-spinner"></div>
+        <div class="loading-text">加载中....</div>
+    </div>
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <div class="row" style="display: flex;">
+                <div class="col-sm-6">
+                    <div class="brand" style="padding: 18px 0;">
+                        <a href="http&#x3a;&#x2f;&#x2f;ipft.ruc.edu.cn">
+                            <img src="/publish/gPublic/systemLogo/6bdff9d6cb8b429ea116678a6b5a7add.png" alt="Gpowersoft Logo" class="img-responsive logo"
+                                 style="max-width: 90%;"></a>
+                    </div>
+                </div>
+                <div class="col-sm-6" style="width: 100%;">
+                    <div class="brand menuImg" style="padding: 18px 0;float: right;">
+                        <a href="http&#x3a;&#x2f;&#x2f;ipft.ruc.edu.cn" style="text-align: center;"><i>
+                            <img src="/cms/resource/web/search/assets/img/collect.png" style="max-width: 80%;"></i><div style="margin-top: 10px">返回首页</div></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- END NAVBAR -->
+    <!-- content start-->
+    <div class="searchCriteria">
+        <div class="content" >
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="searchColumns">
+                            <div class="container">
+                                <div class="input-group" style="display: block">
+                                    <form name="searchForm" id="searchForm" action="index.jsp" method="post"
+                                          onsubmit="return verifyForm()">
+                                        <script type="text/javascript" src="token.jsp"></script>
+                                        <input type="hidden" name="siteID" id="siteID"
+                                               value="8aaafe89bbf34fab8ee142122f4a942a"/>
+                                        <input type="hidden" name="channelID" id="channelID"
+                                               value=""/>
+                                        <input type="hidden" name="searchScope" value="0"/>
+                                        <div class="advance-title" id="advance-title" style="display: none;color: #666666;">复合检索</div>
+                                        <input type="hidden" name="matchType" id="matchType" value='0'/>
+                                        <div class="advance-title" id="advance-title" style="display: none;color: #666666;">复合检索</div>
+                                        <div class='row searchRow' id="default-search" style="display: flex">
+                                            <div class="search-box col-sm-10" style="padding-left: unset; margin-right: 10px">
+                                                <div class="col-sm-3 col-xs-7 box-border1">
+                                                    
+                                                    <div class="dropdown custom " id="dropdown" >
+                                                        <button id="selectText" type="button" class="dropdown-toggle" data-toggle="dropdown" onclick="siteMenu('dropdown','selectMenu')">
+                                                            <span>全部站点</span>
+                                                            <i class="caret"></i></button>
+                                                        <ul class="dropdown-menu" >
+                                                            <div style="height: 33px;">
+                                                                <input class="form-control seach_name" style="font-size: 15px" placeholder="请输入搜索内容" id="selectMenuInput" />
+                                                                <i class="glyphicon glyphicon-search"></i>
+                                                            </div>
+                                                            <div id="selectMenu" class="menulist"></div>
+                                                        </ul>
+
+                                                    </div>
+                                                    
+                                                </div>
+                                                <div class="col-sm-8 col-xs-12 box-border2">
+                                                    <input type="text" name="query" id="queryInput" style="padding-right: 5px;height: 52px;border: 0px;" value="&#x5730;&#x65b9;&#x8d22;&#x653f;&#x53d1;&#x5c55;&#x6307;&#x6570;" class="form-control" placeholder="请输入搜索内容">
+                                                </div>
+                                                <div class="query-border">
+                                                    <div class="dropdown custom ">
+                                                        <button type="button" class="dropdown-toggle" data-toggle="dropdown" id="querySelect">
+                                                            <span style="text-align: right;padding-right: 10px;width:80%">精确</span>
+                                                            <i class="caret" style="display: inline"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu querySelection">
+                                                            <div class="menulist">
+                                                                <li onclick="checkType('querySelect',0)">精确</li>
+                                                                <li onclick="checkType('querySelect',1)">模糊</li>
+                                                            </div>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-1 search-box-btn">
+                                                <span class="input-group-btn">
+                                                    <button type="submit" class="btn btn-primary" id="submitBtn" onclick="btnClick()">
+                                                        <i class="icon-search"></i>
+                                                        <span class="searchText">搜索</span>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                            <div style="align-self: center;" class="col-sm-1" id="seniorSearch">
+                                                <a >复合检索 ></a>
+                                            </div>
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                        </div>
+                                        
+                                        <div class="row searchRow" id="advance-search" style="display: none">
+                                            <input type="hidden" name="combinedSearch" id="adv" value="0"/>
+                                            <div class="row">
+                                                <div class="col-sm-4 col-xs-10 flexitem">
+                                                    <div class="label black-text" >站点</div>
+                                                    <div class="input" style="width: 100%; padding: 0 5px; box-shadow: 0 0 2px #ccc; border: 1px solid #ccc;" id="dropdown1">
+                                                        <button id="selectText1" type="button" class="form-control model-button" data-toggle="dropdown" onclick="siteMenu('dropdown1','selectMenu1')">
+                                                            <span style="float: left;color: #999;font-size: 17px;padding-left: 0px; overflow: hidden; height:25px">所有站点</span>
+                                                            <i class="caret" style="color: #0c0c0c;position: absolute;right: 0px;top:40%;"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu" style="width: 80%;margin-left: 20%;" >
+                                                            <div style="height: 33px;">
+                                                                <input class="form-control seach_name" style="font-size: 15px" placeholder="请输入搜索内容" id="selectMenu1Input" />
+                                                                <i class="glyphicon glyphicon-search" style="left: 95%;top: 3%"></i>
+                                                            </div>
+                                                            <div id="selectMenu1" class="menulist"></div>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-xs-10 flexitem">
+                                                    <div class="label black-text">关键词</div>
+                                                    <div class="input" style="width: 80%;">
+                                                        <input type="hidden" name="keyword_matchType" id="keyword_matchType" value="0"/>
+                                                        <input type="text" class="form-control" placeholder="请输入关键词" name="keyword" value="" />
+                                                    </div>
+                                                    <div class="query-border senior-search">
+                                                        <div class="dropdown custom ">
+                                                            <button type="button" class="dropdown-toggle" data-toggle="dropdown" id="keyWord">
+                                                                <span class="dropdownValue">精确</span>
+                                                                <i class="caret" style="display: inline"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu querySelection">
+                                                                <div class="menulist">
+                                                                    <li onclick="checkType('keyWord',0)">精确</li>
+                                                                    <li onclick="checkType('keyWord',1)">模糊</li>
+                                                                </div>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-xs-10 flexitem">
+                                                    <div class="label black-text">时间</div>
+                                                    <div class="col-sm-6">
+                                                        <input type="text" class="form-control date-picker" id="startTime" autocomplete="off" name="startDate" placeholder="请输入开始时间" value="null">
+                                                    </div>
+                                                    <div style="color: black">——</div>
+                                                    <div class="col-sm-6">
+                                                        <input type="text" class="form-control date-picker" id="endTime" autocomplete="off" name="endDate" placeholder="请输入结束时间" value="null">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-sm-4 col-xs-10 flexitem">
+                                                    <div class="label black-text">标题</div>
+                                                    <div class="input" style="width: 80%;">
+                                                        <input type="hidden" name="title_matchType" id="title_matchType" value="0"/>
+                                                        <input type="text" class="form-control" placeholder="请输入标题" name="title" value=""/>
+                                                    </div>
+                                                    <div class="query-border senior-search">
+                                                        <div class="dropdown custom ">
+                                                            <button type="button" class="dropdown-toggle" data-toggle="dropdown" id="title">
+                                                                <span class="dropdownValue">精确</span>
+                                                                <i class="caret" style="display: inline"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu querySelection">
+                                                                <div class="menulist">
+                                                                    <li onclick="checkType('title',0)">精确</li>
+                                                                    <li onclick="checkType('title',1)">模糊</li>
+                                                                </div>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4 col-xs-10 flexitem">
+                                                    <div class="label black-text">正文</div>
+                                                    <div class="input " style="width: 80%;">
+                                                        <input type="hidden" name="content_matchType" id="content_matchType" value="0"/>
+                                                        <input type="text" class="form-control" placeholder="请输入正文" name="content" value=""/>
+                                                    </div>
+                                                    <div class="query-border senior-search">
+                                                        <div class="dropdown custom ">
+                                                            <button type="button" class="dropdown-toggle" data-toggle="dropdown" id="content">
+                                                                <span class="dropdownValue">精确</span>
+                                                                <i class="caret" style="display: inline"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu querySelection">
+                                                                <div class="menulist">
+                                                                    <li onclick="checkType('content',0)">精确</li>
+                                                                    <li onclick="checkType('content',1)">模糊</li>
+                                                                </div>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2 col-xs-5 flexitem">
+                                                    <div class="label black-text" style="width: 50%;">每页条数:<i
+                                                            class="fa fa-fw fa-question-circle" data-toggle="tooltip"
+                                                                                                                  data-placement="top" title="为优化页面加载速率，该参数限制最大值为：500"></i></div>
+                                                    <div class="input " style="width: 50%;">
+                                                        <input type="number" class="form-control" name="rows" value="10"/>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2 col-xs-5 flexitem">
+                                                    <div class="btns">
+                                                        <button class="btn submit" id="submit">检索</button>
+                                                        <button class="btn cancel" type='button' id="cancel">返回</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="searchResult">
+        <div class="content">
+            <div class="container">
+                <div style="display: none;" id="resultDiv"><!-- begin -->
+                    <div class="row Criteria" style="padding: 24px 0!important;">
+                        <div class="search-select">
+                            <div class="dropdown active">
+                                <a href="javascript:;" id="myTabDrop1" class="dropdown-toggle"
+                                   data-toggle="dropdown" aria-expanded="false" style="color: #333;"> 时间不限
+                                    <i class="icon-angle-down"></i>
+                                </a>
+                                <ul class="dropdown-menu" role="menu" aria-labelledby="myTabDrop1">
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val:''},{param:'date', val:''},{param:'page', val: 1}])">时间不限</p>
+                                    </li>
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val:''},{param:'date', val:'3'},{param:'page', val: 1}])">最近3个月</p>
+                                    </li>
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val:''},{param:'date', val:'6'},{param:'page', val: 1}])">最近6个月</p>
+                                    </li>
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val:''},{param:'date', val:'12'},{param:'page', val: 1}])">最近一年</p>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="dropdown active">
+                                <a href="javascript:;" id="myTabDrop1" class="dropdown-toggle"
+                                   data-toggle="dropdown" aria-expanded="false" style="color: #333;"> 任何地方
+                                    <i class="icon-angle-down"></i>
+                                </a>
+                                <ul class="dropdown-menu" role="menu" aria-labelledby="myTabDrop1">
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val:''},{param:'date', val:''},{param:'page', val: 1}])">任何地方</p>
+                                    </li>
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val: 'title'},{param:'date', val:''},{param:'page', val: 1}])">仅标题</p>
+                                    </li>
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val: 'content'},{param:'date', val:''},{param:'page', val: 1}])">仅正文</p>
+                                    </li>
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val: 'keyword'},{param:'date', val:''},{param:'page', val: 1}])">仅关键词</p>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="dropdown active">
+                                <a href="javascript:;" id="myTabDrop1" class="dropdown-toggle"
+                                   data-toggle="dropdown" aria-expanded="false" style="color: #333;"> 发布日期倒序
+                                    <i class="icon-angle-down"></i>
+                                </a>
+                                <ul class="dropdown-menu" role="menu" aria-labelledby="myTabDrop1">
+                                    
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'1'},{param:'position', val: ''},{param:'date', val:''},{param:'page', val: 1}])">按发布时间倒序</p>
+                                    </li>
+                                    <li class="">
+                                        <p tabindex="-1" data-toggle="tab" aria-expanded="false" onclick="changePage([{param: 'sortField', val: 'publishDate'},{param:'order',val:'2'},{param:'position', val: ''},{param:'date', val:''},{param:'page', val: 1}])">按发布时间顺序</p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="search-number">
+                            <div class="search-number"><p>【共有约0条查询结果
+                                搜索用时0.36秒】</p></div>
+                        </div>
+                    </div>
+
+
+                    <div class="row resultbox" style="background-color: #fff;border-top: 1px solid rgba(0,0,0,0.1);">
+
+                        <div id="searchResultList" class="col-md-9">
+
+                            <div class="row">
+                                <div class="col-sm-12" id="betelgeuse">
+
+                                    
+                                    <div class="searchInfoList">
+                                        <div class="NoSearchCon">对不起！没有发现你要找的内容。
+
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3" id="searchHistoryDiv">
+                            <div class="row" style="font-size: 16px;display: flex;">
+                                <div class="col-md-8" >
+                                    <p style="margin-right: 10px;">搜索历史</p>
+                                </div>
+                                <div class="col-md-3" ><a onclick="showOrHideAllSearchHistory()" id="showOrHideBtn">展开&nbsp;&nbsp;&nbsp;&nbsp;</a></div><!--fa-caret-up-->
+                            </div>
+                            <div>
+                                <ul id="searchHistoryList"></ul>
+                                <div><button class="btn" onclick="clearSearchHistory()">清空搜索历史</button></div>
+                            </div>
+                            
+
+                        </div>
+
+                    </div>
+                </div><!-- end -->
+
+            </div>
+        </div>
+    </div>
+    <!-- content end -->
+    <div class="footer">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="copyRight">
+                    版权所有Copyright ©2018 中国人民大学信息技术中心 京ICP备05066828号-1
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END MAIN -->
+    <div class="clearfix"></div>
+</div>
+<!-- END WRAPPER -->
+<!-- Javascript -->
+
+<script src="/cms/resource/web/search/assets/vendor/jquery/jquery.min.js"></script>
+<script src="/cms/resource/web/search/assets/vendor/jquery/jquery.cookie.js" ></script>
+<script src="/cms/resource/web/search/assets/vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="/cms/resource/web/search/utils/advancedSearch.js"></script>
+<script src="/cms/resource/web/search/assets/vendor/datepicker/bootstrap-datepicker.js"></script>
+<script type="text/javascript">
+    $(function () {
+        $('#startTime').datepicker({
+            format: 'yyyy-mm-dd', //格式
+            autoclose: true, //选中之后自动隐藏日期选择框
+            todayHighlight: true, //当日  高亮  自动定位到当日
+            orientation: 'button',
+            language:'cn'
+        }).on("click",function(){
+            if($("#endTime").val()==""){
+                return;
+            }
+            $("#startTime").datepicker("setEndDate",$("#endTime").val())
+        });
+        $('#endTime').datepicker({
+            format: 'yyyy-mm-dd', //格式
+            autoclose: true, //选中之后自动隐藏日期选择框
+            todayHighlight: true, //当日  高亮  自动定位到当日
+            orientation: 'button',
+            language:'cn'
+        }).on("click",function(){
+            $("#endTime").datepicker("setStartDate",$("#startTime").val())
+        });
+    });
+
+
+    function verifyForm() {
+        $("#submitBtn").attr("disabled", "disabled");
+        var queryValue = $("#queryInput").val();
+        if (queryValue == null || queryValue == "") {
+            //alert("请输入搜索内容");
+            $("#submitBtn").removeAttr("disabled");
+            //return false;
+        }
+        return true;
+
+    }
+    function showOrHideAllSearchHistory() {
+        searchHistoryOpen = !searchHistoryOpen;
+        var size = 0;
+        var html = "";
+        if (searchHistoryOpen) {
+            size = Math.min(maxStoreSize, SearchHistoryArray.length);
+            $("#showOrHideBtn").html("收起").addClass("on");
+            $('#searchHistoryList').css('display','none')
+        } else {
+            size = Math.min(showSize, SearchHistoryArray.length)
+            $("#showOrHideBtn").html("展开").removeClass("on");
+            $('#searchHistoryList').css('display','block')
+        }
+
+        listSearchHistory(size);
+    }
+    function clearSearchHistory() {
+        var r = confirm("您确定清空搜索历史吗？");
+        if (r == true) {
+            Cookies.set(cookieKey, "", {path:"/cms/web/search"});
+            $("#searchHistoryList").html("");
+            $("#searchHistoryDiv").remove();
+            $("#searchResultList").removeClass("col-md-10").addClass("col-md-12");
+        }
+
+    }
+    function escapeOutput(toOutput) {
+        return toOutput.replace(/\&/g, '')
+            .replace(/\</g, '')
+            .replace(/\>/g, '')
+            .replace(/\"/g, '')
+            .replace(/\'/g, '')
+            .replace(/\//g, '');
+    }
+    function listSearchHistory(size) {
+        var html = "";
+        var tmpArray = $.extend(true, [], SearchHistoryArray);
+        tmpArray.reverse();
+        for (var i = 0; i < size; i++) {
+            if(tmpArray[i]){
+                html += "<li><a href='index.jsp?query=" + escapeOutput(tmpArray[i]) + "'>" + escapeOutput(tmpArray[i]) + "</a></li>";
+            }
+        }
+        $("#searchHistoryList").html(html);
+    }
+    var searchValue = '';
+    var cookieKey = "Gpower_Search_History";
+    var maxStoreSize = 10;
+    var showSize = 5;
+    var searchHistoryOpen = false;
+    var SearchHistoryArray = [];
+    function doHistory(queryValue) {
+        var SearchHistoryInCookie = Cookies.get(cookieKey);
+        if (SearchHistoryInCookie != null && SearchHistoryInCookie != "") {
+            var tmpArray = SearchHistoryInCookie.split("@_@");
+            for (var i = 0; i < tmpArray.length; i++) {
+                if (tmpArray[i] != queryValue) {
+                    SearchHistoryArray.push(tmpArray[i]);
+                }
+            }
+            if (SearchHistoryArray.length >= maxStoreSize) {
+                SearchHistoryArray.splice(0, (SearchHistoryArray.length - maxStoreSize - 1));
+            }
+        }
+
+        SearchHistoryArray.push(queryValue);
+        Cookies.set(cookieKey, SearchHistoryArray.join("@_@"), { path:"/cms/web/search"})
+        listSearchHistory(Math.min(showSize, SearchHistoryArray.length));
+    }
+    function btnClick(){
+        sessionStorage.setItem('siteName',$("#selectText1").val())
+    }
+    $(document).ready(function (){
+        var queryValue = '地方财政发展指数';
+        $("#resultDiv").show();
+        document.getElementById("loading").style.cssText = "display: none"
+        doHistory(queryValue);
+        var siteId = "8aaafe89bbf34fab8ee142122f4a942a";
+        var searchSiteName = $("#" + siteId).text();
+        if(sessionStorage.getItem('siteName') !== null && sessionStorage.getItem('siteName') !== '' && sessionStorage.getItem('siteName') !== 'undefined' ){
+            $('#selectText').find("span").html(siteName);
+        }
+        chooseSite(siteId,searchSiteName,'selectText');
+
+        searchFix();
+        $("#selectMenu1Input").on("input", function(e){
+            dropdownSearch("selectMenu1",this.value);
+        });
+        $("#selectMenuInput").on("input", function(e){
+            dropdownSearch("selectMenu",this.value);
+        });
+    });
+    // 修改后---搜索站点
+    function dropdownSearch(menuId,searchValue) {
+        if (searchValue!=null) {
+            // 去除掉' "
+            searchValue=searchValue.replace(/'/g, "").replace(/"/g, "");
+        }
+        if(searchValue==''){
+            $('#'+menuId+' li').show();
+        }else{
+            $('#'+menuId+' li').hide();
+            $('#'+menuId).find("li[data*='"+searchValue+"']").show();
+        }
+    };
+    // 修改后---站点数据在这里
+    var siteList = [{"name":"所有站点","id":"0"},{"fullName":"首都发展与战略研究院官网","name":"首都发展与战略研究院官网cdgi2026","id":"0e850380d36748ecace4f0e4f05bbac0"},{"fullName":"离退休工作处、离退休党委、关心下一代工作委员会网站","name":"离退休工作处、离退休党委、关心下一代工作委员会网站ltx2026","id":"d5e3288657ad4188a19cc40e3ac6b7e4"},{"fullName":"吴玉章学院官方网站","name":"吴玉章学院官方网站wyz","id":"d3221b54c9e44b0ab3ca3948d1ad3e9c"},{"fullName":"社会发展与管理大数据中心","name":"信息学院社会发展与管理大数据中心sdm","id":"44e5a900346b49cdac0ac08d72884535"},{"fullName":"中国人民大学国际金融学院（卓越社科人才培养基地）","name":"中国人民大学国际金融学院（卓越社科人才培养基地）sif","id":"ca7849a6eb214613a9ef5697ce0fc4af"},{"fullName":"中国人民大学历史学院官方网站","name":"中国人民大学历史学院lsxy2026","id":"804b4352891842f3a42a5d84c6fe24d8"},{"fullName":"中国人民大学刘灿课题组","name":"物理学院刘灿课题组cangroup","id":"4a5bcd537cc84f7780075a23bc1806d4"},{"fullName":"北京接诉即办改革与社会治理创新中心","name":"北京接诉即办改革与社会治理创新中心cipgr","id":"422f11316bf8454f81f5f1f8cd63589d"},{"fullName":"中国人民大学非全日制研究生教育管理中心","name":"中国人民大学非全日制研究生教育管理中心pgmc","id":"6f67a39d69fc4c4cb57824a0fed9e8c2"},{"fullName":"中国人民大学与法国诺曼底经济管理学院合作举办环境、社会、治理与可持续金融理学硕士学位教育项目","name":"中国人民大学与法国诺曼底经济管理学院合作举办环境、社会、治理与可持续金融理学硕士学位教育项目esg","id":"941f3eaf80ee4d759540270c4f8dc69f"},{"fullName":"中国人民大学雄安未来智造产业研究院","name":"雄安未来智造产业研究院xiongan","id":"2b8deadaa0aa424ba94fe604bf1ffcd8"},{"fullName":"中国人民大学社会学院官网","name":"中国人民大学社会学院官网ssr2026","id":"aee950586f734f7daebdcf180fc9833d"},{"name":"测试","id":"c3a61a09b9ee4c2497e2c3bfa1389f1d"},{"fullName":"中国人民大学智慧校园研究中心","name":"中国人民大学智慧校园研究中心信息学院zhxy","id":"ad9198be6d6742af89c280c2d1164c5a"},{"fullName":"中国人民大学财政金融学院MBA官网","name":"中国人民大学财政金融学院MBA官网mbasf","id":"0cdb647c81854b3e9f070c57a798280f"},{"fullName":"北京市人口发展与治理研究创新中心","name":"人口与健康学院北京市人口发展与治理研究创新中心bjpop","id":"68f23aa8f46746658d7e07ac7820761b"},{"fullName":"中国人民大学高瓴人工智能学院","name":"高瓴人工智能学院ai2026","id":"9c8735631eaa4673aa1fdccfeb5674b5"},{"fullName":"中国人民大学校友会官网","name":"中国人民大学校友会官网alumni","id":"88e0c8a71e5f40da9d4f3754fd5053d8"},{"fullName":"物理学院卢仲毅课题组","name":"物理学院卢仲毅课题组lzy","id":"411457c6e7ce4ffaa2bedc23616825b1"},{"fullName":"中国人民大学校史馆","name":"中国人民大学校史馆2025xsg","id":"cffb469c583d4fd2bab81458d7a74f83"},{"fullName":"中国人民大学党委教师工作部（人才办）","name":"中国人民大学党委教师工作部（人才办）2025jsgzb","id":"7e3be546551a4386855bcfcc9029348a"},{"fullName":"国际文化交流学院官网","name":"国际文化交流学院官网scsce2025","id":"43b11ece8cfd4140b4a450ca103a5120"},{"fullName":"中国人民大学未来金融工程创新中心","name":"财政金融学院中国人民大学未来金融工程创新中心cffi","id":"8f0a7fd2f781429f8a64884b0fed057c"},{"fullName":"中国人民大学佛教与宗教学理论研究所","name":"哲学院中国人民大学佛教与宗教学理论研究所isbrt","id":"c4227d700f50416c825158c8c5cca54e"},{"fullName":"高瓴人工智能学院教师工作平台","name":"高瓴人工智能学院教师工作平台gsai","id":"3a3506a816144f2998fd17d45acd9375"},{"fullName":"中国人民大学理化分析测试中心官网","name":"中国人民大学理化分析测试中心官网iac","id":"673ea109a8ff4e4a85d3e49cfedaaafa"},{"fullName":"中国人民大学化学信息学课程主页","name":"中国人民大学化学信息学课程主页chemai","id":"fa0e7798ca394d8e8c0c2b932459b919"},{"fullName":"中国人民大学中国调查与数据中心官网","name":"中国人民大学中国调查与数据中心nsrc2025","id":"2d0ac293019d4c7fb3c5d4ca7cd7ac0b"},{"fullName":"中国人民大学新闻学院官网","name":"中国人民大学新闻学院官网jcr2025","id":"2d54a2ec2f584dde9378d7361cb914b6"},{"fullName":"中国人民大学公共管理学院官网","name":"中国人民大学公共管理学院官网2025spap","id":"4b21c37ce22446b480b918b4afd8ff45"},{"fullName":"中国人民大学信息学院官网","name":"中国人民大学信息学院官网info2025","id":"99c08d09ad4e4f509d0fd6837ca591c4"},{"fullName":"中国伦理在线","name":"哲学院中国伦理在线ethics2025","id":"8339b4981c9b4bb8af82c3614c1c4b4e"},{"fullName":"未来经济研究院官网","name":"未来经济研究院官网经济学院ife","id":"e713353c1e88479589852028af1828ea"},{"fullName":"RENMIN BUSINESS SCHOOL","name":"中国人民大学商学院英文官网2025en_rmbs","id":"15bbfc0f03e04b35bc7c0c65547b4091"},{"fullName":"中国人民大学和平与发展学院","name":"中国人民大学和平与发展学院pd","id":"1042767c83d44d9689faad40b2262c09"},{"fullName":"中国人民大学教材委员会办公室","name":"中国人民大学教材委员会办公室jcb","id":"47ca196542ab4910bb9fa7e65865df5f"},{"fullName":"中国人民大学人类学影像库","name":"中国人民大学人类学影像库efa","id":"219919aebb8d46edae89fc4f451c8ee8"},{"fullName":"明德公法网","name":"明德公法网calaw","id":"08d9aee5726c4725a3271041b13b2615"},{"fullName":"全球领导力学院官网","name":"全球领导力学院官网sgl","id":"1e174644597a4db0b7bbe82260354e2e"},{"fullName":"中国人民大学通州校区网站","name":"通州校区网站tzxq","id":"56288cb6e5004aaf92ad75a080ec78b0"},{"fullName":"数据工程与知识工程教育部重点实验室","name":"数据工程与知识工程教育部重点实验室deke2025","id":"e2f2bb88a00844f8904954433aeb61e4"},{"fullName":"中国人民大学深圳研究院英文站点","name":"中国人民大学深圳研究院英文站点ensz","id":"c2459955b23d4c1bbb9a899bdda80863"},{"fullName":"中国人民大学深圳研究院","name":"中国人民大学深圳研究院2025sz","id":"c3497b9b13f94579a00436aa93e64b9d"},{"fullName":"中国人民大学统计学院官网","name":"中国人民大学统计学院官网2025stat","id":"c1b056ef85554d009c06dd4909e787ee"},{"fullName":"中国人民大学校友服务与资源拓展部","name":"中国人民大学校友服务与资源拓展部aseds","id":"890f69ac1098429cbc253e312f586aca"},{"fullName":"中国人民大学国家治理工程学院","name":"中国人民大学国家治理工程学院继续教育学院ang","id":"6508e0e9f81b432a8a392c379dd83144"},{"fullName":"Academy of National Governance (RUC)","name":"Academy of National Governance (RUC)继续教育学院","id":"a05fd08f2ea24ab39d777448cf7fe6d2"},{"fullName":"中国人民大学中国财政金融政策研究中心","name":"中国财政金融政策研究中心frc2024","id":"d66357d79b3c4bcdbb445c974fd2e9fa"},{"fullName":"中国人民大学学术期刊管理与发展中心","name":"中国人民大学期刊管理中心官网rucjournals","id":"4e2dbd5cb4a147ab94c490f434f952bd"},{"fullName":"School of Information Resource Management, Renmin University of China","name":"信息资源管理学院英文网站sirm","id":"61859d9c88d848a4bfe3682e5a87bbe6"},{"fullName":"北京地区高校图书馆文献资源保障体系（balis）统一检索平台","name":"北京地区高校图书馆文献资源保障系统balis2024","id":"994afac492cc45058475698a99486bb1"},{"fullName":"中国人民大学清史研究所","name":"中国人民大学清史研究所2024iqh","id":"cd36b73b46d64b49a74c7fcceeb76e59"},{"fullName":"Global BBA | Renmin Business School","name":"中国人民大学商学院Global BBA项目官网globalbba","id":"c12d10872bcb44e8865ea9bfe1667d1b"},{"fullName":"北京地区高校图书馆文献资源保障系统","name":"北京地区高校图书馆文献资源保障系统balis","id":"a03f85bd2132492ea616ba697c08bf0b"},{"fullName":"中国人民大学田野课堂教学中心","name":"中国人民大学田野课堂教学中心fs","id":"7d21e8dabf6743128c02816124772434"},{"fullName":"国社会科学质性资料数据库平台","name":"中国社会科学质性资料数据库平台qdssc","id":"b22d951100c34180becef9e8009b3861"},{"fullName":"高等学校社会学（含人口学）国家教材建设重点研究基地","name":"社会学院高等学校社会学（含人口学）国家教材建设重点研究基地Shxjcyj","id":"070090c7a3294504a80db8ee22752add"},{"fullName":"中国人民大学健康中国研究院","name":"人口与健康学院中国人民大学健康中国研究院","id":"0c06392fde1644ba8afdeaaf893504a0"},{"fullName":"机关党委官网","name":"人大机关党委官网jgdw2024","id":"5c20fb076d1647f6a449e0434c44086a"},{"fullName":"中国人民大学铸牢基地","name":"中国人民大学铸牢基地人口与健康学院zhulao","id":"e4e4bf9521f644e6ae1f2c94f95d320a"},{"fullName":"国学院官网","name":"国学院官网guoxue","id":"f2cda5d410824d2dabe28b2e15e7bca7"},{"fullName":"国家治理大数据和人工智能创新平台","name":"国家治理大数据和人工智能创新平台brain","id":"bff243265e284923ad0f608d0d0b3f19"},{"fullName":"党委统战部官网","name":"党委统战部tzb2024","id":"d3d6270e3caf4b69a96ae112ba75ee89"},{"fullName":"bjgxtgw.ruc.edu.cn","name":"北京地区高等学校图书馆工作委员会主页bjgxtgw2024","id":"fc2a2549c69247f7b08fb9bbaf07d278"},{"fullName":"国发院网站nads","name":"国发院网站nads2024","id":"a391e4ced1844528a5c40ac40bd92c40"},{"fullName":"教育部涉外法治人才协同培养创新基地","name":"法学院教育部涉外法治人才协同培养创新基地frlt工作平台","id":"e993f3708a1f4771963256e6c30efe1d"},{"fullName":"全国数字经济专业学位研究生教育指导委员会官网","name":"全国数字经济专业学位研究生教育指导委员会官网cnde","id":"b279f748d2b545f99eb466fcfccb7e2d"},{"fullName":"澄海全球安全与发展高等研究院","name":"国际关系学院澄海全球安全与发展高等研究院chenghai","id":"302a405a5d8f4b6095ae258b8eabe185"},{"fullName":"中国人民大学中华法治文明高等研究院官网","name":"中国人民大学中华法治文明高等研究院官网ccrl","id":"6c076babb1684dcca98cf879e20ab30f"},{"fullName":"中国人民大学人口与健康学院官网","name":"中国人民大学人口与健康学院官网sph","id":"7b60a2b3419143bcb0ebf20e6a679190"},{"fullName":"Renmin Business School","name":"商学院EE项目英文官网exedrmbs","id":"c9cc50ed73a7498ebc7d4035d5b32537"},{"fullName":"商学院MBA项目英文官网","name":"商学院MBA项目英文官网mbaenrmbs","id":"9f1b54a48314472cb223d73a7497ff75"},{"fullName":"商学院cc网站","name":"商学院cc网站ccrmbs","id":"8b18430cdad54a1793ed6c9eee4a8f98"},{"fullName":"商学院mba官网","name":"商学院mba官网mbarmbs","id":"d4ebcd1c44f749d4ab49d496c4e870da"},{"fullName":"中国人民大学商学院EMBA中心官方网站","name":"商学院emba官网embarmbs","id":"b41a53dc923b4f4097e72df437b6cfc2"},{"fullName":"中国人民大学化学与生命资源学院官网","name":"中国人民大学化学与生命资源学院官网clr","id":"c5b6b8561d4044b7a20f9c9511d2f11f"},{"fullName":"中国人民大学教育学院英文网站","name":"中国人民大学教育学院英文网站ensoe","id":"da1462a76dbc45268ca5f374462c8898"},{"fullName":"中国人民大学苏州校区外文网站","name":"中国人民大学苏州校区外文网站ensc","id":"9a99999f20df473a91d34301bada775e"},{"fullName":"人大商学院EE中心网站","name":"商学院EE官网eermbs","id":"cfa4675ec40b4770935d118c8186ab48"},{"fullName":"中国人民大学生态环境学院","name":"中国人民大学生态环境学院see","id":"d435425a0a5247c18e6f021db03125c4"},{"fullName":"农业与农村发展学院英文网站","name":"农业与农村发展学院英文网站ensard","id":"af39bc1a57bb44da85d750713c69cfc1"},{"fullName":"经济学院英文网站","name":"经济学院英文网站enecon","id":"7a57378d3819440e9e95ea455df0d0e2"},{"fullName":"中国人民大学综合服务保障体系官方网站","name":"中国人民大学综合服务保障体系官方网站zhbz","id":"b30614471ae74c64871c4c91229625d0"},{"fullName":"中国人民大学继续教育学院英文网站","name":"中国人民大学继续教育学院英文网站ensce","id":"8b5ede0f4fbd4dbb87130f0624f73dd1"},{"fullName":"中国人民大学区域国别研究院网站","name":"中国人民大学区域国别研究院网站sgas","id":"fb3275af6e1b49118cc79dad3e3a3aab"},{"fullName":"中国人民大学深圳研究院官方网站","name":"中国人民大学深圳研究院官方网站sz2024","id":"bc72e2ef9f914db1806000515effdd23"},{"fullName":"全球长期投入产出表","name":"应用经济学院全球长期投入产出表gliod","id":"0d3e73ec8fce47189e037bcce974ad7f"},{"fullName":"中国人民大学全球治理与发展研究院官网","name":"科研处中国人民大学全球治理与发展研究院官网iggd","id":"c3b4ec8701fe4d2d9c4e7d8bc970b04f"},{"fullName":"中国人民大学财政金融学院-教学项目-全英文硕士","name":"中国人民大学财政金融学院-教学项目-全英文硕士msf","id":"27f7aacc536a424eb315941443bf5c50"},{"fullName":"中国人民大学财政金融学院-高级工商管理硕士","name":"中国人民大学财政金融学院-高级工商管理硕士sfemba","id":"8548345b0a4444e4aa50416790712632"},{"fullName":"中国人民大学财政金融学院-教学项目-高层管理教育","name":"中国人民大学财政金融学院-教学项目-高层管理教育ggjy","id":"353a94ddead94ba19b4780b336e69379"},{"fullName":"中国人民大学财政金融学院-教学项目-课程研修班","name":"中国人民大学财政金融学院-教学项目-课程研修班kcyxb","id":"fce4334ab9e74c9982816595a7fa4755"},{"fullName":"中国人民大学财政金融学院主站","name":"中国人民大学财政金融学院主站sf","id":"428af74418f5492293e07270c7506890"},{"fullName":"哲学院孔子在线","name":"哲学院孔子在线confucian2023","id":"54f93c19345248ceb4f03638ff34b7f2"},{"fullName":"健康大数据研究院官网","name":"统计学院健康大数据研究院health","id":"4750ce862ac7460faddb80dc2144c62b"},{"fullName":"中国人民大学书院建设与管理中心","name":"中国人民大学书院建设与管理中心shuyuan","id":"bf7b378a41604e7eb9a4bb303c824837"},{"fullName":"化学系王亚培课题组主页","name":"化学系王亚培课题组主页yapeigroup-chem","id":"1f88b108f9d74ad1b650864e78e7778e"},{"fullName":"化学系金朝霞课题组主页","name":"化学系金朝霞课题组主页jingroup-chem","id":"317bb479f7b546889843d05e389744df"},{"fullName":"化学系牟天成课题组主页","name":"化学系牟天成课题组主页mugroup-chem","id":"cfb1801a019a4790a80a13ae87a982c0"},{"fullName":"人大化学系SDMM课题组","name":"人大化学系SDMM课题组sdmm","id":"15cf7684e4c949f59436c7a8a7983fbe"},{"fullName":"化学系赖文珍课题组","name":"化学系赖文珍课题组laigroup-chem","id":"fc7facad170341ce83a4e39678da0e74"},{"fullName":"人大女王金融硕士","name":"人大女王金融硕士nvwangwx","id":"53163e2ed09441e0bed56009644560cd"},{"fullName":"化学系李志平课题组主页","name":"化学系李志平课题组主页ligroup-chem","id":"0d2432bd71f2482997adbe6586048d51"},{"fullName":"财政金融学院国家金融研究院","name":"财政金融学院国家金融研究院nafr","id":"c0a68248544c4619b09ba9103aed3d5e"},{"fullName":"化学系张美宁教授课题组网站","name":"化学系张美宁教授课题组网站mngroup-chem","id":"d6f6dcde95f747bc91680b2c632794f3"},{"fullName":"化学系闫晓宇课题组主页","name":"化学系闫晓宇课题组主页yanxygroup-chem","id":"670520d5866d4058825cbf3a9851598a"},{"fullName":"化学系王志永课题组主页","name":"化学系王志永课题组主页zywanggrp-chem","id":"00786a4490a944a283c122654089bcb9"},{"fullName":"国家发展与战略研究院欧亚研究院","name":"国家发展与战略研究院欧亚研究院eurasia","id":"93c9c32f5a0e4e789aba49377b8bc5c2"},{"fullName":"中国人民大学哲学与认知科学跨学科交叉平台","name":"哲学院哲学与认知科学跨学科交叉平台pcs","id":"cc4b61d7509d4d548161f800bbf0dc32"},{"fullName":"亚洲信息检索学术会议网站","name":"高瓴人工智能学院亚洲信息检索学术会议网站airs2016","id":"65120f7075e84d60beeaa210c8a838d4"},{"fullName":"数学学院英文版官方网站","name":"数学学院英文版官方网站enmath","id":"fd9ceb91d7534476b92e70652d82bd5d"},{"fullName":"中国人民大学区块链研究院","name":"国家发展与战略研究院区块链研究院blockchain","id":"19019979ae764e91bd4420cd1740009e"},{"fullName":"社会与人口学院官网英文版","name":"社会与人口学院官网英文版ssren","id":"70742caa62164fa09eff27b0f1796929"},{"fullName":"社会与人口学院官网","name":"社会与人口学院官网ssr","id":"567c3269c53f4a33ad72b36494d94769"},{"fullName":"中国人民大学马克思主义学院官网","name":"中国人民大学马克思主义学院官网marx","id":"c984003e642a49999ac79bfe805e3a90"},{"fullName":"中国人民大学哲学院官网","name":"中国人民大学哲学院官网phi2023","id":"46d67a5a41c549f7a53fb7a392fc8f71"},{"fullName":"国际关系学院培训网","name":"国际关系学院培训网guoguanpx","id":"accc32fbefdb414ca72d993cd28f138e"},{"fullName":"中国人民大学校史馆","name":"中国人民大学校史馆xsg","id":"e1ef6dbd0a6b461cb0711e35f945657a"},{"fullName":"新闻传播学案例库","name":"新闻学院新闻传播学案例库xwalk","id":"c87e7f947e4e4939a4c420c55e2af430"},{"fullName":"中国人民大学纪检监察学院","name":"纪检监察学院dis","id":"468a573cb2284fbf86903a6fdf6349dc"},{"fullName":"中国人民大学国际统计论坛官方网站","name":"统计学院中国人民大学国际统计论坛官方网站ifs","id":"0f4626f21c9c4c55806a23e1d3be4ef3"},{"fullName":"中国人民大学中共党史党建学院","name":"中共党史党建学院dsdj","id":"1159c1455e2346879bcb844365b1f605"},{"fullName":"中华文史研究院网站","name":"历史学院中华文史研究院网站ciash","id":"cc1871f9b77b471b95dda5ed2dbff1a1"},{"fullName":"中国人民大学智慧图书馆门户","name":"中国人民大学智慧图书馆门户lib","id":"72f1053e02b94496917378a2109f2cb4"},{"fullName":"国际关系学院英文网站","name":"国际关系学院英文网站sisl","id":"4f384f14371a4d2199eb065e70c12d33"},{"fullName":"中国人民大学中国乡村振兴研究院","name":"农业与农村发展学院中国人民大学中国乡村振兴研究院carv","id":"751e5886634446b085590f4c22b5d00c"},{"fullName":"国有经济研究院","name":"国家发展与战略研究院国有经济研究院rise","id":"8edf1acbf6e0497db75b24c3004b1900"},{"fullName":"中国人民大学国家级教学成果奖展示网站","name":"教务处中国人民大学国家级教学成果奖展示网站jxcgj","id":"3fb9a1f51948464ea6f66b3f17295f59"},{"fullName":"世界记忆项目北京学术中心","name":"信息资源管理学院世界记忆项目北京学术中心mowkcbj","id":"21b3077cc92644f589557f42a2cb351f"},{"fullName":"中国空间数据智能学术会议","name":"信息学院中国空间数据智能学术会议SpatialDI","id":"f9d7ece4aef541b28b1e1252ef183be9"},{"fullName":"全国大数据与社会计算学术会议","name":"信息学院全国大数据与社会计算学术会议bdsc","id":"24c8e927bfb44b06a950d1e5f4f3fa6a"},{"fullName":"教育基金会官方网站","name":"教育基金会官方网站rucef2022","id":"3dda70622f0a4781bab88f974a8a773b"},{"fullName":"中国人民大学元宇宙研究中心","name":"发展规划处中国人民大学元宇宙研究中心metaverse","id":"74482aaae640490e8782b5ea8057c44a"},{"fullName":"中国人民大学本科精品课程--国际法学","name":"法学院中国人民大学本科精品课程--国际法学rucil","id":"04b2074829c1439d906d87528e58a74d"},{"fullName":"国家庭能源消费调查项目官网","name":"应用经济学院中国家庭能源消费调查项目官网crecs","id":"916bc8eeb01f49c5a97f02a7bc9d649b"},{"fullName":"中国人民大学金融信息中心网站","name":"公共管理学院中国人民大学金融信息中心网站fic","id":"8710b9e905934a83ae2718ef4c0d123d"},{"fullName":"低维量子材料与扫描探针显微学课题组","name":"物理系低维量子材料与扫描探针显微学课题组spm","id":"01e00444c1a045448340f32fb41e999f"},{"fullName":"高瓴人工智能学院AIBox小组主页","name":"高瓴人工智能学院AIBox小组主页AIBox","id":"d7300df3ebdb48a0823a1bf32757e86b"},{"fullName":"信管学生党支部党史知识图谱网站","name":"信息资源管理学院学生党支部党史知识图谱网站dskg","id":"69243f0546a3454aa02d092bdbfccd48"},{"fullName":"信息资源管理学院中文官网","name":"信息资源管理学院中文官网irm","id":"f7175de45c3c4199ae0ba5ee40dd7f78"},{"fullName":"网络与移动数据管理实验室","name":"信息学院网络与移动数据管理实验室idke","id":"5cd80b9c561a432a9f2c98f598607e06"},{"fullName":"信息学院学术空间","name":"信息学院学术空间cdblp","id":"aa71cfc73b1e431f8dcb353f312eaa90"},{"fullName":"中国人民大学博士后","name":"人才办中国人民大学博士后postdoctor2024","id":"c91a6445b481486eaa0f31065dd3df77"},{"fullName":"中国人民大学人才工作领导小组办公室","name":"中国人民大学人才工作领导小组办公室rcb2022","id":"837883652c4b48e7af3b38563f1ef26f"},{"fullName":"中国人民大学本科生院主页","name":"中国人民大学本科生院主页jiaowu2022","id":"7aacfe04d87848d291f420ba8752ecc4"},{"fullName":"中国人民大学统计咨询研究中心","name":"中国人民大学统计咨询研究中心scc","id":"2531a98935c94b069c9600c2881ead36"},{"fullName":"中国人民大学丝路学院官网","name":"中国人民大学丝路学院srs2022","id":"447778655135499fb4ad78c0fc401871"},{"fullName":"中国人民大学商学院英文官网","name":"中国人民大学商学院英文官网en_rmbs","id":"0be90a7eb159490db4ac3aed2354bf92"},{"fullName":"中国人民大学商学院中文官网","name":"中国人民大学商学院中文官网www_rmbs","id":"fa8b3757a75649eab77656f76737267c"},{"fullName":"中国人民大学人事处","name":"中国人民大学人事处2022-hr","id":"c4cfab9fefc34bd6b7a65c6d5854d00e"},{"fullName":"中国人民大学新校区建设办公室","name":"中国人民大学新校区建设办公室2022-xxq","id":"bf68f71669a74ba9b1b42e9cea0e8e8b"},{"fullName":"重阳金融研究院人大重阳网","name":"重阳金融研究院人大重阳网rdcy","id":"03c8368baae64f8094f52a48733e381e"},{"fullName":"中国人民大学心理学系官网","name":"中国人民大学心理学系官网psy","id":"fabffa0fa6564989a28e3d18fab37123"},{"fullName":"经济学院EDP项目官网","name":"经济学院EDP项目官网edp","id":"0d99721110464d26bd14019adc85ffb0"},{"fullName":"中国人民大学公共管理学院官网","name":"中国人民大学公共管理学院官网spap","id":"b19496364fc9445ebb2d089333763213"},{"fullName":"交叉科学研究院官网","name":"交叉科学研究院官网sids","id":"51ff24cf32f34d53bf6829a08f233112"},{"fullName":"宣传部官网","name":"宣传部新版网站xcb","id":"2a164a3e67914a9e8f44e53f2f49eed7"},{"fullName":"中国人民大学智慧校园研究中心","name":"信息技术中心中国人民大学智慧校园研究中心scrc","id":"56f9c8ef7e9d46d5b9567545ec56dc69"},{"fullName":"中国人民大学统计学院官网","name":"中国人民大学统计学院官网stat","id":"02b9ced96a5947869259108f45d9c940"},{"fullName":"中国人民大学信息学院官网","name":"中国人民大学信息学院官网info","id":"3df19a155e024efa9b3feed01fd0ad55"},{"fullName":"中国人民大学党委研究生工作部官网","name":"中国人民大学党委研究生工作部官网ygb","id":"e141a2fc08f74aff8414475d85d456bd"},{"fullName":"高礼研究院官网","name":"高瓴人工智能学院高礼研究院官网gaoli","id":"f2fb3a2b6df846edaed39f4fa8e194fc"},{"fullName":"国际关系学院当代中国研究项目网站","name":"国际关系学院当代中国研究项目网站chinastudies","id":"e43b75263086452188ed08f32a75357d"},{"fullName":"经济学院校友会网站","name":"经济学院校友会网站alumni_econ","id":"e0863e7e7e0840e8a3a23bdb2f511b98"},{"fullName":"中国人民大学国际关系学院官网","name":"中国人民大学国际关系学院官网sis","id":"3f178d9a174f472fa258292a026ac18f"},{"fullName":"中国人民大学统计学院智能数据云及全面量化开发跨学科交叉平台","name":"统计学院中国人民大学统计学院智能数据云及全面量化开发跨学科交叉平台ds","id":"49dddaa1d341491f8253e9a9d40a16db"},{"fullName":"中国人民大学国家中小企业研究院","name":"国家发展与战略研究院中国人民大学国家中小企业研究院nisme","id":"7861da756b5948a99f635c95408d61e7"},{"fullName":"中国人民大学信息学院信息系统与大数据应用实验室","name":"中国人民大学信息学院信息系统与大数据应用实验室lisa","id":"a4a12c22b95041b298a6bad301667671"},{"fullName":"劳动人事学院官网新版网站","name":"劳动人事学院官网新版网站newslhr","id":"6c296d99e14e413bba81d478ea618b63"},{"fullName":"智能网络与优化实验室网站","name":"信息学院智能网络与优化实验室网站in","id":"04c864eae7d84902b1a7e192368df595"},{"fullName":"采购与招标管理中心官网","name":"采购与招标管理中心官网cgzx","id":"1a785f064c68421fa9c18bc6baea0d3b"},{"fullName":"中国人民大学中国经济改革与发展研究院","name":"经济学院中国人民大学中国经济改革与发展研究院(新）yjy","id":"d8fc942125ac4471bb860545d25b4d4c"},{"fullName":"《青年人大》电子报","name":"团委《青年人大》电子报qnrd","id":"46214162dc6d4e11be8e493fb7533481"},{"fullName":"中国人民大学应用经济学院应用经济学评论","name":"中国人民大学应用经济学院应用经济学评论www_aer","id":"1fc4664eab844350a9783096046277f1"},{"fullName":"中国人民大学理学院","name":"中国人民大学理学院lxy","id":"5c5407532130413180f5a0e59be03a03"},{"fullName":"中国人民大学教育基金会官方网站","name":"教育基金会官方网站rucef","id":"717f16e79c114687ab252fa85b2350fa"},{"fullName":"中国投入产出学会网站","name":"应用经济学院中国投入产出学会网站cioa","id":"059bdbbf63aa44ed88f3556b1f525c33"},{"fullName":"中国人民大学医院管理研究中心","name":"中国人民大学医院管理研究中心ihm","id":"f9a110016ac2458697c1f42c4aafe261"},{"fullName":"物理系谢志远课题组主页","name":"物理系谢志远课题组主页qingtao","id":"714cf5ab115f47b6abc04dd49156c7c4"},{"fullName":"孔子在线","name":"哲学院孔子在线confucian","id":"d10bd0059a604433b10f7f2d7d8ba8c4"},{"fullName":"行为财政跨学科平台官网","name":"财政金融学院行为财政跨学科平台官网bf","id":"eb7b82abe5b8456fab43cefb3bd4a35d"},{"fullName":"农业与农村发展学院官方网站","name":"农业与农村发展学院官方网站sard","id":"30f56de579f044e1899559d93aebdd0c"},{"fullName":"亚洲研究中心网站","name":"亚洲研究中心网站arc","id":"cdb3085b1c5940dc8763280ba1e282b4"},{"fullName":"孔子学院工作办公室网站","name":"孔子学院工作办公室网站ci","id":"9bf6da962bce47f79644090ab0200804"},{"fullName":"港澳台侨学生教育管理研究分会","name":"港澳台侨学生教育管理研究分会yjh","id":"dc7f96a1dbdc48ba92084bf2cd227b76"},{"fullName":"港澳台办公室网站","name":"港澳台办公室网站hmt","id":"16a1e552c7b14034ade4fd591d6ca8e0"},{"fullName":"国际交流处网站","name":"国际交流处网站io","id":"0dd2d9341e3743d2915e271737354826"},{"fullName":"中国人民大学哲学院官网","name":"中国人民大学哲学院官网phi","id":"56bfa5ca502a45b5a6960935873c590b"},{"fullName":"中国人民大学留学生办公室网站","name":"中国人民大学留学生办公室网站iso","id":"ddbf8a4a14e249bbac5834179dc09fd5"},{"fullName":"中国人民大学公共资源交易研究中心","name":"中国人民大学公共资源交易研究中心ggzy","id":"4c4c3aa8e432406190784273f8b9b30a"},{"fullName":"中国人民大学继续教育学院官网","name":"中国人民大学继续教育学院sce","id":"f47610f18e334cf7ad62c08eaa1063a7"},{"fullName":"中国人民大学国际暑期学校","name":"教务处中国人民大学国际暑期学校iss","id":"0dfa2c1125fa4b4ebdd4e0435e2ad7ad"},{"fullName":"中国人民大学发展规划处","name":"发展规划处主页plan","id":"a593893b18ca4537a747729f7d19b8da"},{"fullName":"人大学生资助","name":"学生处人大学生资助zz","id":"220fecd2003646c7890a7cc7649e907c"},{"fullName":"区域经济地理学会官网","name":"应用经济学院区域经济地理学会官网ceg","id":"f9b7b15fb0f04b0ebe730ee6a966bf98"},{"fullName":"清史研究国际通讯","name":"清史所清史研究国际通讯aciqh","id":"35c17d5add1a434a8cf7ec64ce33e271"},{"fullName":"PPE官方网站","name":"哲学院PPE官方网站ppe","id":"8f52d7544230425291a9f74847f52b6e"},{"fullName":"中国人民大学中国调查与数据中心","name":"社会人口学院中国人民大学中国调查与数据中心nsrc","id":"e83a9cb802014536af09ed6633367b6c"},{"fullName":"信息系统协会中国分会","name":"商学院信息系统协会中国分会cnais.rmbs","id":"ecaa1f8f52ba4a989549fd3ac3185f4c"},{"fullName":"中国人民大学新闻学院官网","name":"中国人民大学新闻学院官网jcr","id":"0e408bfc11364c39a9c50f4c5b52ccce"},{"fullName":"马克思主义新闻观研究中心官网","name":"新闻学院马克思主义新闻观研究中心官网myzx","id":"f743010b3abf488480e8a8868cd18f93"},{"fullName":"人大首发院","name":"人大首发院新版站点cdgi","id":"be97f801ac44426895f88383867255cc"},{"fullName":"信息学院云计算和大数据实验室","name":"信息学院云计算和大数据实验室cloudlab","id":"21dd43d5ec324637bda31dbe6aa16a46"},{"fullName":"中国人民大学中国经济改革与发展研究院","name":"经济学院中国人民大学中国经济改革与发展研究院yjy","id":"8acebfa2b89040f79c0db2334a88f6b2"},{"fullName":"中国人民大学博士后","name":"人才办中国人民大学博士后postdoctor","id":"1d139007997e4b51a7d8178f17b141d7"},{"fullName":"基督教文化学刊","name":"文学院基督教文化学刊jscc","id":"8e185c7f4fd1439799daa341c90c2214"},{"fullName":"中国人民大学文学院官网","name":"中国人民大学文学院wenxueyuan","id":"73eb18d72b1e442b8d2a1133f5fbcdcd"},{"fullName":"中国人民大学区块链研究院","name":"法学院中国人民大学区块链研究院coken","id":"c95a593c0ccf49a4afd72f77fe265847"},{"fullName":"中国人民大学公共治理研究院","name":"中国人民大学公共治理研究院pgi","id":"60348c64d9174f268aca2449c21ca7fc"},{"fullName":"清史研究所网站","name":"清史研究所网站iqhold","id":"d065b7fb719c47e996bbc380b12e7aa9"},{"fullName":"中国人民大学评价研究中心","name":"中国人民大学评价研究中心erc","id":"c8a4f1b2cff148b39042dffb41648f3f"},{"fullName":"唐宋史研究中心","name":"历史学院唐宋史研究中心tslsxy","id":"e09a13f2afba4103817d15ea3dfd9073"},{"fullName":"经济学院实验室官网","name":"经济学院实验室官网econlab","id":"899466dfcf62449ea6f8d394a200b14d"},{"fullName":"中国人民大学数学科学研究院","name":"中国人民大学数学科学研究院ims","id":"716c5e9ad1de4c7e8faaa397e2012edc"},{"fullName":"中国人民大学卫生政策研究与评价中心","name":"公共管理学院中国人民大学卫生政策研究与评价中心hpre","id":"7ca394b1ae0743a5b35b406b682a6c2f"},{"fullName":"中国人民大学保卫处官网","name":"中国人民大学保卫处新版newbwb","id":"f43b379f9bf74d4dbb284d74b8dd32b3"},{"fullName":"全国应用统计专业学位研究生教育指导委员会官网","name":"全国应用统计专业学位研究生教育指导委员会官网mas","id":"e2cde00b8300423bb3109d0503ca41cf"},{"fullName":"中国人民大学公共政策实验室官网","name":"中国人民大学公共政策实验室官网dt","id":"ba5353a80a04475aaf45842f9af1fdc3"},{"fullName":"中国人民大学数字人文研究中心官方网站","name":"中国人民大学数字人文研究中心官方网站dh","id":"849227c0404b44b18b3d4368db6833ea"},{"fullName":"社会学视野网","name":"社会人口学院社会学视野网sociologyol","id":"ed94107ea1bf4f04b4b555a486b71b21"},{"fullName":"汉语国际推广研究所官网","name":"国际文化交流学院-汉语国际推广研究所官网hantui","id":"275bb5a943c148708bd299342e8d188b"},{"fullName":"中国人民大学明德书院官方网站","name":"中国人民大学明德书院官方网站mdc","id":"3722210351fc42dcaf89e4eccaa18436"},{"fullName":"中国人民大学中国特色社会主义理论体系研究中心","name":"马克主义学院-中国人民大学中国特色社会主义理论体系研究中心rctsc.","id":"0804af2fb4ff4cbea1a8c99a6d026059"},{"fullName":"中国人民大学家书博物馆网站","name":"档案馆中国人民大学家书博物馆网站jiashu","id":"98a3fa81d9a045abb9d16830ad959377"},{"fullName":"中国人民大学-加拿大女王大学金融硕士项目","name":"中国人民大学-加拿大女王大学金融硕士项目nvwang_hanqing","id":"9c96d77bb711493999ed144e9f8a3784"},{"fullName":"中国人民大学数学学院","name":"数学学院math","id":"e3c77ac984084129a729d6d92a79e73d"},{"fullName":"党委统战部","name":"党委统战部（新）tzb","id":"ed85e5e8a28c4cd8bf1280fae1932399"},{"fullName":"数据工程与知识工程教育部重点实验室","name":"数据工程与知识工程教育部重点实验室deke","id":"2974871e45d34caeaae7ffface0fcc4d"},{"fullName":"中国人民大学“拔尖人才”实验班项目官网","name":"经济学院-中国人民大学“拔尖人才”实验班项目官网emp","id":"49ae9bb380544acf9fdc5f1c6c8b9be3"},{"fullName":"北京农业经济学会","name":"农业与农村发展学院-北京农业经济学会baae","id":"84b6984b8fee4d27b7bc13216e306fed"},{"fullName":"教育部高等学校农业经济管理类专业教学指导委员会","name":"农业与农村发展学院-教育部高等学校农业经济管理类专业教学指导委员会tgcaem","id":"e99d4d2839164a9c8efbb76b689fa21f"},{"fullName":"中国社会学教学网","name":"社会人口学院中国社会学教学网st","id":"e70a62e53d0e40ae87d8a176a898047f"},{"fullName":"美育中心官方网站","name":"美育中心官方网站meiyu","id":"1f05e40da3674c459b50dcefd8d5d4e7"},{"fullName":"国家统计局－中国人民大学数据开发中心","name":"统计学院-国家统计局－中国人民大学数据开发中心nrrdc","id":"8d05eb0950444d1884fca4eb48e77cb7"},{"fullName":"明理书院","name":"明理书院mlc","id":"b0b227af16f94d6cad30aa33e12d9eb4"},{"fullName":"中国人民大学苏州校区","name":"国际学院苏州校区门户sc","id":"0a5cb1db8cbd46bca4f7d7bb8273a27b"},{"fullName":"中国人民大学创业学院","name":"中国人民大学创业学院iei","id":"c7c8c20f0bdf46b5b5b6db651ff7b677"},{"fullName":"中国人民大学应用统计科学研究中心","name":"统计学院中国人民大学应用统计科学研究中心cfas","id":"908fc0ad654d436c97c51c2fda1eede1"},{"fullName":"吴玉章基金网","name":"科研处吴玉章基金网wuyuzhangprize","id":"c0faf5c0a29840eaa0abd3aa966dc7f7"},{"fullName":"中国人民大学科研处","name":"中国人民大学科研处keyan","id":"0adfa1438c26494f90483faf3432a121"},{"fullName":"中国人民大学中国扶贫研究院","name":"中国人民大学中国扶贫研究院capri","id":"583bcbfa2b8d47b692bf91eebe0f1556"},{"fullName":"党委巡察工作领导小组办公室","name":"党委巡察工作领导小组办公室xunchaban","id":"41ed7b33e0f645a5a32282dd6e4d8dc1"},{"fullName":"中国人民大学国际组织学院","name":"国际交流处中国人民大学国际组织学院sgg","id":"addc53a1d8c34ca2bba43570c533d9ca"},{"fullName":"大型科学仪器共享平台官方网站","name":"大型科学仪器共享平台官方网站pingtai","id":"7643cea569ab48c494dc5c90d3dff40d"},{"fullName":"公共管理学院英文网站","name":"公共管理学院英文网站enspap","id":"67a46b5023204d1b81f993247a5efb1f"},{"fullName":"中国人民大学亚太法学研究院","name":"法学院亚太法学研究院apil","id":"95f8377daef34d0c8e1043b528744f8b"},{"fullName":"食品安全治理协同创新中心","name":"法学院食品安全治理协同创新中心chinafoodsecurity","id":"77f730461f5349eb85179cf5f4dce0b7"},{"fullName":"中国人民大学人权研究中心","name":"法学院人权研究中心humanrights","id":"980db19990b344fd9db88ebc7b6e8f47"},{"fullName":"中国人民大学律师学院","name":"法学院律师学院lawyer","id":"a95cf111d6094e7d803bc37add25f3ec"},{"fullName":"中人民大学普通法中心","name":"法学院中国人民大学普通法中心commonlaw","id":"94a2284f1f8042b6a6af838a2848862d"},{"fullName":"国际货币网","name":"财政金融学院国际货币网imi","id":"aa10c7eba3be44a9897522cf5cc2714f"},{"fullName":"创意产业研究院","name":"创意产业研究院icit","id":"63c496e23ec64d4f9e15f1d795d3e4a5"},{"fullName":"中国民营企业研究中心","name":"经济学院中国民营企业研究中心rcpec","id":"704f0589964446d193e66043af94f918"},{"fullName":"俄罗斯研究中心","name":"国发院俄罗斯研究中心rus","id":"771a335eb81e45808ecfeac850932aeb"},{"fullName":"经济研究所网站","name":"国发院经济研究所网站ier","id":"58dc5f777fdb43e780745d7aa7612396"},{"fullName":"长江经济带研究院","name":"国发院长江经济带研究院cjjjd","id":"af864c664ffc448c8fb652a1531ae052"},{"fullName":"首发院网站","name":"国发院首发院网站bjads","id":"3b377f982ac643f0914733a48cc5c186"},{"fullName":"国发院英文网站","name":"国发院英文网站en.nads","id":"e7e9669618994f4da1a6ddfc5058a51c"},{"fullName":"国发院网站","name":"国发院网站nads","id":"d9b319f3bed241db96e444ca7e060c30"},{"fullName":"新闻传播实验中心","name":"新闻传播实验中心jcrlab","id":"3abd7795cbae47138da1ddd933a467e4"},{"fullName":"中国人民大学劳动人事学院","name":"中国人民大学劳动人事学院slhr","id":"3b5bf49636cd4cf1af086c8648724047"},{"fullName":"中国人民大学综合服务中心","name":"中国人民大学综合服务中心isc","id":"7281424848e74e93bf4a9fe34b957355"},{"fullName":"中国人民大学化学系官网","name":"中国人民大学化学系官网chem","id":"07e570d3eee2489b9b430e5bd269794e"},{"fullName":"中国人民大学国有资产管理办公室","name":"中国人民大学国有资产管理办公室gzb","id":"47e9e2574b954202b5008b2c2c9df585"},{"fullName":"中国人民大学资产与后勤管理处官网","name":"中国人民大学资产与后勤管理处官网assets","id":"e07780a676a74a24900450a89e338d92"},{"fullName":"国际文化交流学院","name":"国际文化交流学院scsce","id":"393f031232124117afe939606840e4d4"},{"fullName":"人大世纪科技发展有限公司","name":"人大世纪科技发展有限公司zcgs","id":"a5eeb48fe5b0499c897b2ab438d5ffa4"},{"fullName":"财政金融学院案例中心","name":"财政金融学院案例中心case.sf","id":"03a5606fb4c64a2ca44e67bbcf016d9e"},{"fullName":"深圳研究院主页","name":"深圳研究院sz","id":"e2e0418625d74250a77b60ebffac2341"},{"fullName":"离退休党委工作处关工委","name":"离退休党委工作处关工委ltx","id":"672a2628925f4077974ba50440870831"},{"fullName":"中国人民大学历史学院","name":"中国人民大学历史学院lsxy","id":"c55e1316099a4df9a1684e6196ae3348"},{"fullName":"历史学院民国史研究院","name":"民国史研究院mg.lsxy","id":"45304a9df433464ab2f17da682c83799"},{"fullName":"历史学院考古文博系","name":"历史学院考古文博系kg.lsxy","id":"945537a8b3494a45ac1f2072288e4ecf"},{"fullName":"中国人民大学历史学院历史学系","name":"中国人民大学历史学院历史学系history","id":"804bdce117ed4dfc902d17f02b2f7840"},{"fullName":"中国人民大学网站群服务平台","name":"中国人民大学网站群服务平台wcm","id":"478c3e6d24bf484cb21b4214049af532"},{"fullName":"中国人民大学社会保险管理中心","name":"中国人民大学社会保险管理中心si","id":"5211c0accc96428bb6b2ef69284b5052"},{"fullName":"中国人民大学教职工之家","name":"校工会网站gh","id":"4e3dcb778c364d1fba2bfcd79f2304bb"},{"fullName":"中国环境社会学网","name":"中国环境社会学网ces","id":"09f36ff5714542a29e7fedf27c7e6374"},{"fullName":"循证治理与公共绩效研究中心","name":"循证治理与公共绩效研究中心egpp","id":"0459301a847f473c93e4ed026605bf64"},{"name":"党委统战部tzb","id":"deca1e339ccc4dccb81361f8757b10ed"},{"name":"中国伦理在线ethics","id":"817e5f06a5bb4e55a1ca8ae9d00135ab"},{"fullName":"中国人民大学体育部","name":"中国人民大学体育部tiyu","id":"4385e61eb0684b21a8e49c2defa04c6c"},{"fullName":"中国人民大学全国中国特色社会主义政治经济学研究中心","name":"中国人民大学全国中国特色社会主义政治经济学研究中心ztzx","id":"0083bd3d4b6a4a15b755325649adbd89"},{"fullName":"国家经济学教材建设重点研究基地官方网站","name":"国家教 材建设重点研究基地（高等学校哲学社会科学教材研究）zsjd","id":"e7cf11afc24b4d6ebe59bd3a081eafd6"},{"fullName":"中国人民大学统计与大数据研究院","name":"中国人民大学统计与大数据研究院isbd","id":"dcbc99b2089e432ab70f7cc0722dbac9"},{"fullName":"校医院主页","name":"校医院主页xyy","id":"60c3a9aa1d6c4fe9993aa14c014916d0"},{"fullName":"中国人民大学学术委员会","name":"中国人民大学学术委员会xswyh","id":"3208c58cb492448f909d29f430863e0a"},{"fullName":"校园建设管理处","name":"校园建设管理处jjc","id":"474f949d40384100823879507e9405c7"},{"fullName":"中国人民大学企业管理哲学与组织生态研究中心","name":"中国人民大学企业管理哲学与组织生态研究中心mpoe","id":"66c88fbad94647ac916b0349411cfd56"},{"fullName":"中国人民大学国家传播战略研究中心（官网）","name":"中国人民大学国家传播战略研究中心ncsrc","id":"aeea2e5e4c3b48eca2beb8bbe660dcc5"},{"fullName":"国医学院筹建工作领导小组办公室官方网站","name":"国医学院筹建工作领导小组办公室guoyi","id":"d421bb8e12314b8cb190885184a712ba"},{"fullName":"中国财政金融政策研究中心","name":"中国财政金融政策研究中心frc","id":"dd44f1bca3d040e0a2a59926af39f4a8"},{"fullName":"中国财政金融案例中心","name":"财政金融学院案例中心sf","id":"0c7bbf0f9ae049b087cc2075491c5fbb"},{"fullName":"新闻与社会发展中心","name":"新闻与社会发展研究中心xwjd","id":"79f7a4cdeaa94e81b08f6704b1d937a5"},{"fullName":"中国人民大学文化产业研究院","name":"文化产业研究院cncci","id":"9dc5e1f686064351aeda2fcaabf7ce42"},{"fullName":"中国人民大学国学院","name":"国学院2024guoxue","id":"70fcf3fa33f0470a9ada2a8bb4e7eafc"},{"fullName":"中国人民大学习近平新时代中国特色社会主义思想研究院","name":"习近平新时代中国特色社会主义思想研究院newera","id":"8dea8de9fbeb4bb88f7c244aba8adffa"},{"fullName":"教务处季刊专栏","name":"教务处季刊专栏jikan","id":"6a04e7e1749e45e685b9c966e20c7df9"},{"fullName":"党委教师工作部","name":"党委教师工作部jsgzb","id":"35124eada8b24904b3fd5004cba34fbe"},{"fullName":"高瓴人工智能学院","name":"高瓴人工智能学院aiold","id":"899f394ab4dd4a3eb491dae626e7d6ad"},{"fullName":"中国人民大学北京社会建设研究院","name":"中国人民大学北京社会建设研究院bjsci","id":"3cad5fc9686c4f5591d9e1b9f78c4a39"},{"fullName":"中国人民大学人口与发展研究中心","name":"中国人民大学人口与发展研究中心pdsc","id":"b067e48d31554b1c83f2e6d27fe99b67"},{"name":"人民大学信息公开网xxgk","id":"ac0c8d286f6941fe989900c34ae6e244"},{"fullName":"中国人民大学应用经济学院","name":"应用经济学院ae","id":"97835fe7ac494f808546f1aba6a5730e"},{"fullName":"中国公益创新研究院","name":"中国公益创新研究院cipsi","id":"9566f381908a4cde923d3982a160e19a"},{"fullName":"中国人民大学财税研究所","name":"中国人民大学财税研究所ipft","id":"8aaafe89bbf34fab8ee142122f4a942a"},{"fullName":"党委组织部","name":"党委组织部新站点zzb","id":"9eda1177a0144010ae2d7d1b3a88f81b"},{"fullName":"信息技术中心","name":"信息技术中心it（新）","id":"add9cca4a39c46f7a9a0b6f7039b7a80"},{"fullName":"文学院古代文本文化国际研究中心","name":"文学院古代文本文化国际研究中心icsat","id":"63ad9af132474f09a2105a03c7d53153"},{"fullName":"中国人民大学外国语学院","name":"外国语学院fl","id":"e86ef7990339484484f2b150ce18111d"},{"fullName":"中国人民大学未来法治研究院","name":"中国人民大学未来法治研究院lti","id":"02afb67734c24fe1b47854be52e47f08"},{"fullName":"后勤集团-酒店管理部","name":"后勤集团-酒店管理部hqjd","id":"72e93754586640edb018f14a076f6dc4"},{"fullName":"后勤集团-餐饮管理部","name":"后勤集团-餐饮管理部hqcy","id":"b01668af707e47449e009e13a1232dfe"},{"fullName":"中国人民大学丝路学院","name":"中国人民大学丝路学院srs","id":"18452f9f789d48a0bf7d5f445f29be78"},{"fullName":"中国人民大学博物馆","name":"中国人民大学博物馆museum","id":"e383afc17227412e932d140af5228602"},{"fullName":"中国人民大学保卫处","name":"中国人民大学保卫处bwb","id":"160382e696a14654856b1ac039a1739d"},{"fullName":"校团委人大青年网","name":"校团委人大青年网youth","id":"0b001a0115c74ac5844a2a858a38d480"},{"fullName":"中国人民大学后勤集团","name":"中国人民大学后勤集团hqjt","id":"c3529d768af34f2286d59d3b011a333a"},{"fullName":"中国人民大学党委宣传部","name":"中国人民大学党委宣传部xcb","id":"76742183b8d940589151e6fd9a6a0f7f"},{"fullName":"中国人民大学档案馆","name":"中国人民大学档案馆dag","id":"4fda6fd6489148ecbee1aba6d2c477d5"},{"fullName":"审计处","name":"审计处shenji","id":"d6dbfcf9b1fe491282de0ed579df819d"},{"fullName":"教务处","name":"教务处jiaowu","id":"81d59d2ed2f74152ada9b94c582b3a4f"},{"fullName":"中国人民大学机关党委","name":"中国人民大学机关党委jgdw","id":"e8b71f69e04342f8af8ece2f07563115"},{"fullName":"离退休工作处","name":"离退休工作处ltx","id":"e787fe95e66745a88915f9d959e62267"},{"fullName":"中国人民大学理工学科建设处","name":"中国人民大学理工学科建设处se-office","id":"8561f1e300584defb5a26176b9893982"},{"fullName":"新校区建设办公室","name":"新校区建设办公室xxq","id":"25a5c44c9c0c43199e08e25ea1203bdc"},{"fullName":"中共中国人民大学委员会党校","name":"中共中国人民大学委员会党校dangxiao","id":"9b14f55a928e4bd19763e73a0b5177ca"},{"fullName":"招生就业处","name":"招生就业处zsjyc","id":"4c9011e059f1427ab3705ace82cfde05"},{"fullName":"中国人民大学财务处","name":"中国人民大学财务处fo","id":"3b19903e35e74f5ba6d3513807ed64c4"},{"fullName":"信息公开网","name":"信息公开网xxgk（旧_已关闭）","id":"3abcbed131b8463d944037ffdc8f065e"},{"fullName":"经济与管理实验教学中心","name":"经济与管理实验教学中心emlab","id":"80a6f0af5a8740e69df7d08508c22f52"},{"fullName":"创新方法范例研究网","name":"创新方法范例研究网imr","id":"527e85debdd2487daa4dfc191b032987"},{"fullName":"北京高教学会图书馆工会研究会","name":"北京高教学会图书馆工会研究会bjtyh","id":"c9e11f96ef7846078abee5133f6d6bbd"},{"fullName":"北京地区高校图书馆工作委员会","name":"北京地区高校图书馆工作委员会bjgxtgw","id":"22d83d2fc36044f78e81c8a9788cc2d5"},{"fullName":"纪委办公室 监察处","name":"纪委办公室 监察处jwjcc","id":"1980e9c6ff8443f09440decf79e144fb"},{"fullName":"产业管理处","name":"产业管理处industry","id":"f41cded5644d4cbfb8181ab609fc5379"},{"fullName":"党委组织部","name":"党委组织部zzb","id":"0b04907a9d5a42cda8ed17a915fcbfb4"}]
+    // 初始化两个列表
+    for(var i=0;i<siteList.length;i++){
+        var siteData = siteList[i];
+        var name=(siteData.fullName==null || siteData.fullName==undefined || siteData.fullName=='')?siteData.name: siteData.fullName;
+        $("#selectMenu").append('<li id="' + siteData.id +'" data="' + name
+            +'" onclick="chooseSite(\'' + siteData.id + '\',\'' + name + '\',\'' + 'selectText' +
+            '\')"><a>' + name +'</a></li>');
+        $("#selectMenu1").append('<li id="' + siteData.id +'" data="' + name +'" onclick="chooseSite(\'' + siteData.id + '\',\'' + name + '\',\'' + 'selectText1' + '\')"><a>' + name +'</a></li>');
+    }
+    function siteMenu(textId,menuId){
+        $("#"+ textId).find("input").val('');
+        $('#'+menuId+' li').show();
+    }
+    function chooseSite(itemId,itemName,textId){
+        // 选中之后赋值到元素上
+        var siteName = itemName
+        var siteId = itemId.toString()
+        $("#"+ textId).find("span").html(siteName);
+        $("#"+ textId).find("span").attr("title",siteName);
+        $("#"+ textId).children("span").css('color','#333');
+        $("#siteID").val(siteId);
+    }
+    // 精确，模糊查询
+    function checkType(el,type){
+        $('#'+ el).find("span").html(type==0? '精确' : '模糊');
+        if(el=="querySelect"){
+            $("#matchType").val(type);
+        }else if(el=="content"){
+            $("#content_matchType").val(type);
+        }else if(el=="title"){
+            $("#title_matchType").val(type);
+        }else if(el=="keyWord"){
+            $("#keyword_matchType").val(type);
+        }
+    }
+
+</script>
+<script>
+    searchFix();
+    function searchFix() {
+        var $windowHeight = $(window).height();
+        var bodyHeight = $(document.body).height()
+        var $headerHeight = $('.navbar').eq(0).height() * 2;
+    }
+    $(window).resize(function () {
+        searchFix()
+    });
+    function changePage(list) {
+        const target = $('#searchForm');
+        for (var i = 0; i < list.length; i++) {
+            var node = list[i];
+            target.append($('<input type="hidden" name="' + node.param + '" value="' + node.val + '"/>'));
+        }
+        $('#submitBtn').click()
+    }
+    function gotoPage(list) {
+        let pageValue = $('#gotoPageValue').val()
+        let params = { param:'page', val: pageValue }
+        list.unshift(params)
+        changePage(list)
+    }
+    function makeForm(url, sitename) {
+        // 创建一个 form
+        const tempForm = document.createElement("form");
+        tempForm.id = "tempForm";
+        tempForm.name = "tempForm";
+        // 添加到 body 中
+        document.body.appendChild(tempForm);
+        // 创建一个用户名输入
+        const nameinput = document.createElement("input");
+        // 设置相应参数
+        nameinput.type = "text";
+        nameinput.name = "name";
+        nameinput.value = sitename;
+        tempForm.appendChild(nameinput);
+        // form 的提交方式
+        tempForm.method = "POST";
+        // form 提交路径
+        tempForm.action = url;
+        // 对该 form 执行提交
+        tempForm.submit();
+        // 删除该 form
+        document.body.removeChild(tempForm);
+    }
+</script>
+</body>
+
+</html>

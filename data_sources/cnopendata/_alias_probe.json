@@ -1,0 +1,410 @@
+{
+  "checked_at": "2026-10-21T21:05:08+08:00",
+  "rows": [
+    {
+      "name": "中国小区信息数据",
+      "canonical": "cnod-api-housing-estate-china",
+      "alias": "cnod-chinese-community-information",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/api-store/housing-estate-china",
+          "page": {
+            "coverage": "",
+            "frequency": "",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "截至2024年11月",
+            "frequency": "年度",
+            "volume": "28 个省级行政区、102 个重点城市"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "页面未写该字段",
+            "frequency": "页面未写该字段",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/china-real-estate/chinese-community-information.html",
+          "page": {
+            "coverage": "截至2024.11",
+            "frequency": "年度",
+            "volume": "28个省级行政区 、 102个重点城市"
+          },
+          "record": {
+            "coverage": "28个省级行政区、102个重点城市",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "一致",
+            "volume": "不一致"
+          }
+        }
+      }
+    },
+    {
+      "name": "证券资产管理公司从业人员信息数据",
+      "canonical": "cnod-asset-management-cor-employee",
+      "alias": "cnod-fund-broker-asset-management-cor-employee",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/listedcompany-special/asset-management%26cor-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/fund%26broker/asset-management%26cor-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003 至今",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    },
+    {
+      "name": "A股上市金融机构财务报表数据",
+      "canonical": "cnod-bank-fin-fs",
+      "alias": "cnod-fin-fs",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/bank/Fin-FS.html",
+          "page": {
+            "coverage": "按报告期：截至2025年3月",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "按报告期至2025-03",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/listedcompany-basic/Fin-FS.html",
+          "page": {
+            "coverage": "按报告期：截至2025年3月",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "更新至2025年3月",
+            "frequency": "年度",
+            "volume": "5张表"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    },
+    {
+      "name": "金融业工商注册企业基本信息数据",
+      "canonical": "cnod-bank-finance-basic",
+      "alias": "cnod-finance-basic",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/bank/finance-basic.html",
+          "page": {
+            "coverage": "1950-2024.10",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "1950 至 2024-10",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/fund%26broker/finance-basic.html",
+          "page": {
+            "coverage": "1950-2024.10",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "未标注",
+            "frequency": "未标注",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "不一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    },
+    {
+      "name": "证券市场资信评级机构从业人员信息数据",
+      "canonical": "cnod-credit-rating-age-employee",
+      "alias": "cnod-fund-broker-credit-rating-age-employee",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/listedcompany-special/credit-rating%26age-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/fund%26broker/credit-rating%26age-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003 至今",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    },
+    {
+      "name": "A股上市公司分析师研报及评论数据",
+      "canonical": "cnod-fund-broker-report",
+      "alias": "cnod-report",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/fund%26broker/report.html",
+          "page": {
+            "coverage": "个股研究报告基本信息表： 2021.07~2026.1.31 ；个股研究报告评论表： 2021.07~2024.06",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "未标注",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/listedcompany-special/report.html",
+          "page": {
+            "coverage": "个股研究报告基本信息表： 2021.07~2026.1.31 ；个股研究报告评论表： 2021.07~2024.06",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "个股研究报告基本信息表：2021.07~2026.1.31；个股研究报告评论表：2021.07~2024.06",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    },
+    {
+      "name": "证券投资咨询机构从业人员信息数据",
+      "canonical": "cnod-msic-employee",
+      "alias": "cnod-fund-broker-msic-employee",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/listedcompany-special/MSIC-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/fund%26broker/MSIC-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003 至今",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    },
+    {
+      "name": "证券公司从业人员信息数据",
+      "canonical": "cnod-securities-firm-employee",
+      "alias": "cnod-fund-broker-securities-firm-employee",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/listedcompany-special/securities-firm-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/fund%26broker/securities-firm-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003 至今",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    },
+    {
+      "name": "证券另类子公司从业人员信息数据",
+      "canonical": "cnod-sub-cor-employee",
+      "alias": "cnod-fund-broker-sub-cor-employee",
+      "pages": {
+        "canonical": {
+          "url": "https://www.cnopendata.com/data/m/listedcompany-special/sub%26cor-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        },
+        "alias": {
+          "url": "https://www.cnopendata.com/data/m/fund%26broker/sub%26cor-employee.html",
+          "page": {
+            "coverage": "2003.08-2023.5.30",
+            "frequency": "年度",
+            "volume": ""
+          },
+          "record": {
+            "coverage": "2003 至今",
+            "frequency": "年度",
+            "volume": "未标注"
+          },
+          "ok": true,
+          "verdict": {
+            "coverage": "不一致",
+            "frequency": "一致",
+            "volume": "页面未写该字段"
+          }
+        }
+      }
+    }
+  ]
+}

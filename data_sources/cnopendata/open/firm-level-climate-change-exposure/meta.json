@@ -1,0 +1,21 @@
+{
+  "id": "firm-level-climate-change-exposure",
+  "name": "公司层面气候变化暴露指数",
+  "source_url": "https://osf.io/fd6jq/",
+  "landing_page": "https://osf.io/fd6jq/",
+  "fetched_at": "2026-10-21T14:45:00+08:00",
+  "files": [
+    {
+      "name": "firmquarter_score_2024Q4_Version_2025_Jul_03.csv",
+      "bytes": 7274496,
+      "sha256": "311d72c64d47c8b1c6602ece10fc0b1c8e94bb6430a61a1d15a0f944990e5f8a"
+    },
+    {
+      "name": "firmyear_score_2024Q4_Version_2025_Jul_03.csv",
+      "bytes": 6422528,
+      "sha256": "f3fdb5dfe98188c7bb11e89b2d62f42c88e5e61d2b3df6a08eede2d379080b37"
+    }
+  ],
+  "license_note": "OSF 项目页 README 要求署名（CC-BY 类）；具体条款见 readme.rtf，需人工复核",
+  "notes": "由 S0 取数席下载；该席在收尾报告阶段因模型端点 DNS 失败中断，文件完整性经主控复核（CSV 可正常解析、行数与列数一致）。版本标识 2024Q4_Version_2025_Jul_03。"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "cnod-fepu",
+  "name": "企业的经济政策不确定性感知指数 FEPU",
+  "source_url": "http://www.niehuihua.com/uploads/soft/260330/1_1246334541.zip",
+  "landing_page": "http://www.niehuihua.com/a/zuopin/521.html",
+  "fetched_at": "2026-10-21T15:39:02+08:00",
+  "files": [
+    {
+      "name": "FEPU2006-2024_1_1246334541.zip",
+      "bytes": 2091681,
+      "sha256": "f416bf87a9d64b91133fc5f6a8c182b5565c133e6c3900e7cb84e31e3ff9346c"
+    },
+    {
+      "name": "FEPU2006-2024_qiye_buquedingxing_ganzhi.xlsx",
+      "bytes": 2094269,
+      "sha256": "05243ac3f9530a3c5652f211a81c248e1b94e1ae3803433a99527acf6b982589"
+    },
+    {
+      "name": "FEPU_qiye_buqedinxing_ganzhi_zhishu.rar",
+      "bytes": 464784,
+      "sha256": "e56a5f2d012d4ef411c758d0ed52cba5e0aa46a06212216e6a0465ef9246f621"
+    }
+  ],
+  "license_note": "作者（聂辉华等）在白鲨在线页面明示：使用本数据须注明来源——1) 聂辉华、阮睿、沈吉，2020，《企业不确定性感知、投资决策和金融资产配置》，《世界经济》第6期；2) 方明月、聂辉华、阮睿、沈昕毅，2023，《企业数字化转型与经济政策不确定性感知》，《金融研究》第2期。",
+  "notes": "页面以“FEPU2006-2024（持续更新）”挂出 zip，内含单个 xlsx《企业的不确定性感知指数2006-2024（公开）.xlsx》，已解出并列目；两张表：firm-levelEPUIndex20240113(57045行/4列: stkcd,year,fepu_sentence,fepu_word)、说明(9行)。另附同页 rar“企业的不确定性感知指数”（2007-2018 论文版）原包保留，未解压（无 unrar 环境）。"
+}

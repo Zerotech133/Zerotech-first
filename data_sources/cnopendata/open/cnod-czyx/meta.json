@@ -1,0 +1,16 @@
+{
+  "id": "cnod-czyx",
+  "name": "中国财政运行数据",
+  "source_url": "http://ipft.ruc.edu.cn/docs/2021-01/6034b3bd9aa042ff83df7c55d830e70c.xlsx",
+  "landing_page": "http://ipft.ruc.edu.cn/cssjk/zgczyxsjk/index.htm",
+  "fetched_at": "2026-10-21T15:39:02+08:00",
+  "files": [
+    {
+      "name": "6034b3bd9aa042ff83df7c55d830e70c.xlsx",
+      "bytes": 1776087,
+      "sha256": "51bb32a58b0b5571f490e1e9e5c9a88f686fd9e3d6c5c3c608a48015f63c148b"
+    }
+  ],
+  "license_note": "中国人民大学财税研究所官网公开附件，站点未附明确许可协议；仅作研究留痕，不再分发。",
+  "notes": "7 张工作表：数据说明(49行)、财政收入稳健指数数据(378行/41列)、财政支出结构数据(373行/33列)、债务可持续指数数据(373行/16列)、社保基金可持续指数数据(373行/15列)、基本公共服务指数数据(373行/28列)、省内财政均衡性指数数据(200行/99列)。数据说明页标题《中国各地区财政发展指数报告 2020》，口径年份 2008-2019 省级。同页另有 PDF http://ipft.ruc.edu.cn/docs/2021-02/6bb74e2620fc48cba3967c38dd097394.pdf（未下载）。"
+}

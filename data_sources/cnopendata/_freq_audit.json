@@ -1,0 +1,5066 @@
+{
+  "checked_at": "2026-10-22T01:29:00+08:00",
+  "checked": 506,
+  "rows": [
+    {
+      "id": "cnod-api-guba-reply",
+      "name": "股吧回帖实时数据查询 API",
+      "priority": "P0",
+      "freq_record": "实时",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/guba-reply",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-guba-posts",
+      "name": "股吧帖子实时数据查询 API",
+      "priority": "P0",
+      "freq_record": "实时",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/guba-posts",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-xueqiu-posts",
+      "name": "雪球帖子实时数据查询 API",
+      "priority": "P0",
+      "freq_record": "实时",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/xueqiu-posts",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-chinese-listed-company-stocks-comment",
+      "name": "A股上市公司股吧文本数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025（实时更新）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-company-stocks-comment.html",
+      "conflict": "频率低频但区间标实时"
+    },
+    {
+      "id": "cnod-guba-stat",
+      "name": "A股上市公司股吧文本统计数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "发帖时间 1988-2024 ，回帖时间 2007-2024",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/guba-stat.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-company-transactions",
+      "name": "雪球网上市公司个人投资者关注和实盘模拟盘交易数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025年12月31日 （实时更新中）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-company-transactions.html",
+      "conflict": "频率低频但区间标实时"
+    },
+    {
+      "id": "cnod-a-listedco-investorpost",
+      "name": "雪球网上市公司个人投资者发帖实时更新数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至 2025年12月31日 （实时更新中）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/A-listedco-investorpost.html",
+      "conflict": "频率低频但区间标实时"
+    },
+    {
+      "id": "cnod-xueqiu-news",
+      "name": "雪球网上市公司新闻实时更新数据",
+      "priority": "P0",
+      "freq_record": "实时",
+      "freq_page": "实时",
+      "cov_page": "截至2025年12月31日 （实时更新中）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/xueqiu-news.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-a-market-quotes",
+      "name": "A股上市公司行情数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990.12~2026.6 （实时更新，各表区间略有差异）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/A-market-quotes.html",
+      "conflict": "频率低频但区间标实时"
+    },
+    {
+      "id": "cnod-us-listedco-investorpost",
+      "name": "美股上市公司雪球投资者发帖评论数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2026年-（实时更新）",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/US-listedco-investorpost.html",
+      "conflict": "频率低频但区间标实时"
+    },
+    {
+      "id": "cnod-gpfqhq",
+      "name": "中国上市公司股票复权行情数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "截至至今",
+      "url": "https://www.cnopendata.com/data/m/trading/gpfqhq.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-clcnrr",
+      "name": "中国上市公司股票未复权行情数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "截至至今",
+      "url": "https://www.cnopendata.com/data/m/trading/clcnrr.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-hk-listedco-investorpost",
+      "name": "港股上市公司雪球投资者发帖评论数据",
+      "priority": "P0",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2026年-（实时更新）",
+      "url": "https://www.cnopendata.com/data/m/hongkong/HK-listedco-investorpost.html",
+      "conflict": "频率低频但区间标实时"
+    },
+    {
+      "id": "cnod-cjbkxw",
+      "name": "中国财经报纸电子报文本数据",
+      "priority": "P0",
+      "freq_record": "实时",
+      "freq_page": "实时",
+      "cov_page": "1946~2025",
+      "url": "https://www.cnopendata.com/data/m/financial-news/cjbkxw.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-finance-corpus",
+      "name": "中国财经文本语料数据",
+      "priority": "P0",
+      "freq_record": "实时",
+      "freq_page": "实时",
+      "cov_page": "截止2025年9月",
+      "url": "https://www.cnopendata.com/data/m/financial-news/finance-corpus.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cjwzxw",
+      "name": "中国财经新闻网站文本数据",
+      "priority": "P0",
+      "freq_record": "实时",
+      "freq_page": "实时",
+      "cov_page": "2003~2025",
+      "url": "https://www.cnopendata.com/data/m/financial-news/cjwzxw.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-public-opinion",
+      "name": "舆情云数据",
+      "priority": "P0",
+      "freq_record": "日",
+      "freq_page": "日度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/financial-news/public-opinion.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-api-ssgsxxxx-posts",
+      "name": "上市公司帖子实时数据查询 API",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/ssgsxxxx-posts",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-financial-website-news",
+      "name": "财经网站新闻实时数据查询 API",
+      "priority": "P1",
+      "freq_record": "实时",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/financial-website-news",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-etf-basic",
+      "name": "ETF 基础信息数据API",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/etf-basic",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-etf-adjustment-factor",
+      "name": "ETF 复权因子数据API",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/etf-adjustment-factor",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-etf-real-time-daily",
+      "name": "ETF 实时日线数据API",
+      "priority": "P1",
+      "freq_record": "实时",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/etf-real-time-daily",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-etf-daily-ohlcv",
+      "name": "ETF 日线行情数据API",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/etf-daily-ohlcv",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-listedco-income",
+      "name": "A股上市公司利润表数据API",
+      "priority": "P1",
+      "freq_record": "季度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/listedco-income",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-ashare-periodic-rep",
+      "name": "A股上市公司定期报告数据API",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/ashare-periodic-rep",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-ashare-daily-indicator",
+      "name": "A股上市公司每日指数数据",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/ashare-daily-indicator",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-listedco-cashflow",
+      "name": "A股上市公司现金表数据API",
+      "priority": "P1",
+      "freq_record": "季度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/listedco-cashflow",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-listedco-balance",
+      "name": "A股上市公司资产负债表数据API",
+      "priority": "P1",
+      "freq_record": "季度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/listedco-balance",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-ashare-basic-api",
+      "name": "A股基础信息数据API",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/ashare-basic-api",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-hkshare-basic-api",
+      "name": "港股上市公司基础信息数据API",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/hkshare-basic-api",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-hkshare-periodic-rep",
+      "name": "港股上市公司定期报告数据API",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/hkshare-periodic-rep",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-hkshare-d1",
+      "name": "港股上市公司实时日线API",
+      "priority": "P1",
+      "freq_record": "实时",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/hkshare-d1",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-hkshare-d2",
+      "name": "港股上市公司日线行情API",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/hkshare-d2",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-hk-financials",
+      "name": "港股上市公司财务报表数据API",
+      "priority": "P1",
+      "freq_record": "季度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/hk-financials",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-report",
+      "name": "A股上市公司分析师研报及评论数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "个股研究报告基本信息表： 2021.07~2026.1.31 ；个股研究报告评论表： 2021.07~2024.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/report.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-report-all",
+      "name": "A股上市公司分析师研报文本数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2006-2024年初",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/report-all.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-jyfw",
+      "name": "A股上市公司及其前十大股东经营范围数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2023年底",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-jyfw.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-wxgzh",
+      "name": "A股上市公司微信公众号全文数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "截至2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/wxgzh.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-listed-companies-and-investor-relations",
+      "name": "A股上市公司投资者关系管理数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "上交所e互动： 2012-2024.02 及2025.04-2025.05；深交所互动易： 2011-2025.05 ；",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-and-investor-relations.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-survey",
+      "name": "A股上市公司机构调研数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2025.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-survey.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ashare-complaint",
+      "name": "A股上市公司消费者投诉文本数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2018-2024年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/ashare-complaint.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ashare-zhihu-post",
+      "name": "A股上市公司知乎发帖文本数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2026年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/ashare-zhihu-post.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-listed-companies-opa",
+      "name": "A股上市公司社交媒体账号数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-opa.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-md-a",
+      "name": "A股上市公司管理层讨论与分析数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001-2024",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-MD%26A.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-gpjy",
+      "name": "A股上市公司股票高频交易数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "",
+      "cov_page": "2017-2025 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-gpjy.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-listedco-ggcs",
+      "name": "A股上市公司高管出生地出生日期数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2007-2023",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-ggcs.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-suspend",
+      "name": "A股上市公司停复牌信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2025.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-suspend.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-announcement",
+      "name": "A股上市公司全部公告数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-announcement.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-jbxx",
+      "name": "A股上市公司基本信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止 2026.07",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-jbxx.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-dzjy",
+      "name": "A股上市公司大宗交易数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2002.03.19-2025.06.30",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-dzjy.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-shareholder",
+      "name": "A股上市公司股东信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-shareholder.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-freport",
+      "name": "A股上市公司财务报表数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025年第一季度",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-freport.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fin-fs",
+      "name": "A股上市金融机构财务报表数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "按报告期：截至2025年3月",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/Fin-FS.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-equ",
+      "name": "中国上市公司基本信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "特殊状态表： 1998.04.28-至今 ；竞争企业表： 2019.03.22-至今 ；股东户数表： 1992.03.3",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/equ.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-us-stocks-basic-transaction",
+      "name": "美股上市公司交易日历数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025年9月",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/Us-stocks-basic-transaction.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-us-stocks-basic",
+      "name": "美股上市公司基础信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至 2025年9月",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/Us-stocks-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-us-stocks-basic-market-conditions",
+      "name": "美股上市公司行情数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025年9月",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/Us-stocks-basic-market-conditions.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-us-stocks-finance",
+      "name": "美股上市公司财务报表数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025年9月",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/Us-stocks-finance.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-eft-jzzs",
+      "name": "ETF基准指数数据",
+      "priority": "P1",
+      "freq_record": "按需",
+      "freq_page": "按需",
+      "cov_page": "截至2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/trading/eft-jzzs.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-etf-basic-information",
+      "name": "ETF基础信息数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "按需",
+      "cov_page": "2004-2024",
+      "url": "https://www.cnopendata.com/data/m/trading/etf-basic-information.html",
+      "conflict": "档案与页面频率不一致"
+    },
+    {
+      "id": "cnod-etf-fqyz",
+      "name": "ETF复权因子数据",
+      "priority": "P1",
+      "freq_record": "按需",
+      "freq_page": "按需",
+      "cov_page": "截至2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/trading/etf-fqyz.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-etf-rxhq",
+      "name": "ETF日线行情数据",
+      "priority": "P1",
+      "freq_record": "按需",
+      "freq_page": "按需",
+      "cov_page": "截至2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/trading/etf-rxhq.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-trading",
+      "name": "中国上市公司交易信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "2002~至今",
+      "url": "https://www.cnopendata.com/data/m/trading/trading.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-mkt-bond",
+      "name": "中国债券行情数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "1993.02~2023.10 （各子表起始时间不同）",
+      "url": "https://www.cnopendata.com/data/m/trading/mkt-bond.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-mkt-fund",
+      "name": "中国基金行情数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998.04.07-2023.10.13",
+      "url": "https://www.cnopendata.com/data/m/trading/mkt-fund.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-zssj",
+      "name": "中国股票指数数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1928/10/2-至今",
+      "url": "https://www.cnopendata.com/data/m/trading/zssj.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-swhyfl",
+      "name": "申万行业分类数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "截至2025年6月",
+      "url": "https://www.cnopendata.com/data/m/trading/swhyfl.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-swhycfgc",
+      "name": "申万行业成分构成数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "1989年11月1日-2025年5月23日",
+      "url": "https://www.cnopendata.com/data/m/trading/swhycfgc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-zsjbxx",
+      "name": "股票指数基本信息数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "1927-2024",
+      "url": "https://www.cnopendata.com/data/m/trading/zsjbxx.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-zscfhqz",
+      "name": "股票指数成分和权重数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "截至2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/trading/zscfhqz.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-zshq",
+      "name": "股票指数行情数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "股票指数日线行情表：1990年12月19日-2025年6月30日；股票指数周线行情表：1991年7月5日-2025年6月",
+      "url": "https://www.cnopendata.com/data/m/trading/zshq.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hk-trading-calendar",
+      "name": "港股上市公司交易日历数据",
+      "priority": "P1",
+      "freq_record": "按需",
+      "freq_page": "按需",
+      "cov_page": "截至 2025年9月 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/hongkong/HK-trading-calendar.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hk-basic-information",
+      "name": "港股上市公司基础信息数据",
+      "priority": "P1",
+      "freq_record": "按需",
+      "freq_page": "按需",
+      "cov_page": "1921年至今",
+      "url": "https://www.cnopendata.com/data/m/hongkong/HK-basic-information.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hk-market-quotes",
+      "name": "港股上市公司行情数据",
+      "priority": "P1",
+      "freq_record": "按需",
+      "freq_page": "按需",
+      "cov_page": "截至2025年9月（可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/hongkong/HK-market-quotes.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hk-financial-statements",
+      "name": "港股上市公司财务报表数据",
+      "priority": "P1",
+      "freq_record": "按需",
+      "freq_page": "按需",
+      "cov_page": "1999-2025",
+      "url": "https://www.cnopendata.com/data/m/hongkong/HK-financial-statements.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-wsj-news",
+      "name": "华尔街日报新闻文本数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1997-2025",
+      "url": "https://www.cnopendata.com/data/m/international-news/wsj-news.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-nyt",
+      "name": "纽约时报新闻文本数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1851~2024.7.31",
+      "url": "https://www.cnopendata.com/data/m/international-news/nyt.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cctv-news",
+      "name": "CCTV新闻联播文本数据",
+      "priority": "P1",
+      "freq_record": "季度",
+      "freq_page": "季度",
+      "cov_page": "2006.06.15-2025.07.01",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/cctv-news.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-csrb",
+      "name": "中国各城市日报数据",
+      "priority": "P1",
+      "freq_record": "日",
+      "freq_page": "日度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/csrb.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cond-pro",
+      "name": "中国各省份官方报纸数据",
+      "priority": "P1",
+      "freq_record": "实时",
+      "freq_page": "实时",
+      "cov_page": "2006~2026.9",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/cond-pro.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-xf-tousu",
+      "name": "中国消费者在线投诉文本数据",
+      "priority": "P1",
+      "freq_record": "月",
+      "freq_page": "月度",
+      "cov_page": "截止2024年8月 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/xf-tousu.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-yjyg",
+      "name": "A股上市公司业绩预告公告数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至 2026.07",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-yjyg.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-regulatory-measures",
+      "name": "A股上市公司交易所监管措施数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "上交所： 2013.6.28-2026.8.5 ；深交所： 2014.4.11-2026.8.5",
+      "url": "https://www.cnopendata.com/data/m/financial-news/regulatory-measures.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-dictionary-of-financial-sentiment",
+      "name": "中文金融情感词典",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/financial-news/chinese-dictionary-of-financial-sentiment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bond-bond-credit-rating",
+      "name": "中国债券信用评级公告数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998~2025.11",
+      "url": "https://www.cnopendata.com/data/m/bond/bond-credit-rating.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bond-bond-issuing-body",
+      "name": "中国债券发行主体信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2008-2022年",
+      "url": "https://www.cnopendata.com/data/m/bond/bond-issuing-body.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bond-bond-issue",
+      "name": "中国债券发行信息数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2008-2022年",
+      "url": "https://www.cnopendata.com/data/m/bond/bond-issue.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bond-mkt-bond",
+      "name": "中国债券行情数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "1993.02~2023.10 （各子表起始时间不同）",
+      "url": "https://www.cnopendata.com/data/m/bond/mkt-bond.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-fund-broker-report",
+      "name": "A股上市公司分析师研报及评论数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "个股研究报告基本信息表： 2021.07~2026.1.31 ；个股研究报告评论表： 2021.07~2024.06",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/report.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-report-all",
+      "name": "A股上市公司分析师研报文本数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2006-2024年初",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/report-all.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-fund-commission",
+      "name": "中国基金交易分仓与佣金明细数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1999-2024",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-commission.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-jijin-stocks-comment",
+      "name": "中国基金产品股吧文本数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998-2025.10",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/jijin-stocks-comment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-mkt-fund",
+      "name": "中国基金行情数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998.04.07-2023.10.13",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/mkt-fund.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-macros-reports",
+      "name": "中国证券分析师宏观研究报告数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.08.15-2025.10",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/Macros-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-profitforecast-reports",
+      "name": "中国证券分析师盈利预测研究数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2023.09/2024.06/2025.10/2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/Profitforecast-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-cl-reports",
+      "name": "中国证券分析师策略报告数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.08.18-2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/cl-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-industry-reports",
+      "name": "中国证券分析师行业研究报告数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.07-2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/Industry-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-fund-value",
+      "name": "公募基金净值数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1999-2025.6.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-value.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-funds-list",
+      "name": "公募基金列表数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1991-2025.5.27",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/funds-list.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-fund-holdings",
+      "name": "公募基金持仓数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001~2025.6.20",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-holdings.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-fund-size",
+      "name": "公募基金规模数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998-2025.7.1",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-size.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-futures-cjpm",
+      "name": "中国期货每日成交持仓排名数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "为2002年至2025年，",
+      "url": "https://www.cnopendata.com/data/m/Futures/Futures%2Fcjpm.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-futures-futuresmarket",
+      "name": "中国期货行情数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "1995年4月~2025年7月",
+      "url": "https://www.cnopendata.com/data/m/Futures/FuturesMarket.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-futures-futuresmarket-nh",
+      "name": "南华期货指数日线行情数据",
+      "priority": "P1",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2004年6月1日~2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/Futures/FuturesMarket%2FNH.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-fin-fs",
+      "name": "A股上市金融机构财务报表数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "按报告期：截至2025年3月",
+      "url": "https://www.cnopendata.com/data/m/bank/Fin-FS.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-fund-factor",
+      "name": "公募基金场内技术面因子数据",
+      "priority": "P1",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2004-2025.6.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-factor.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-patent-citation",
+      "name": "A股上市公司专利及引用被引用数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "发明公布按申请公布日统计： 2000-2025 ；授权类按授权公布日统计： 2000-2025",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-co-patent-citation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-lwwbbc",
+      "name": "A股上市公司劳务外包报酬数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2012年至2023年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-lwwbbc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-varpenalty",
+      "name": "A股上市公司各类型行政处罚数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2015-2023",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-varpenalty.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-company-trademark",
+      "name": "A股上市公司商标数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2000-2023年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-company%20trademark.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-exercise",
+      "name": "A股上市公司投服中心行权数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2025年7月初",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-exercise.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ss-dig-eco-patyyby",
+      "name": "A股上市公司数字经济专利及引用被引用数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990-2025 （发明公布按申请公布日；授权按授权公布日）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/ss-dig-eco-patyyby.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ssdigeco-patstat",
+      "name": "A股上市公司数字经济专利数量统计数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990-2025年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/ssdigeco-patstat.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ss-dig-eco-pat",
+      "name": "A股上市公司数字经济专利申请与授权数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990~2025年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/ss-dig-eco-pat.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-standard",
+      "name": "A股上市公司标准数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1963.09~2026.07",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-standard.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-random-check",
+      "name": "A股上市公司现场检查随机抽查数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2016-2025.2.17",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-random-check.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-companies-green-patent-citation",
+      "name": "A股上市公司绿色专利及引用被引用数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990-2024年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-companies-green-patent-citation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ashare-cyber-security-recruitment",
+      "name": "A股上市公司网络安全岗位招聘数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014-2024",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/Ashare-cyber-security-recruitment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-judgement-doc",
+      "name": "A股上市公司裁判文书数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014-2020",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-co-judgement-doc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bjdbr",
+      "name": "保荐代表人信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08~2025.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/bjdbr.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cpasws",
+      "name": "注册会计师及事务所数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1986.08~2023.01",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/cpasws.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-securities-firm-employee",
+      "name": "证券公司从业人员信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/securities-firm-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-sub-cor-employee",
+      "name": "证券另类子公司从业人员信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/sub%26cor-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-credit-rating-age-employee",
+      "name": "证券市场资信评级机构从业人员信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/credit-rating%26age-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-msic-employee",
+      "name": "证券投资咨询机构从业人员信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/MSIC-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-asset-management-cor-employee",
+      "name": "证券资产管理公司从业人员信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/asset-management%26cor-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-dcg",
+      "name": "A股上市企业数字化转型指数数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2007-2020 （指标统计）， 2016-2020 （评级结果）",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/DCG.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-econf-call",
+      "name": "A股上市公司业绩说明会数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2016-2025",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/EConf-Call.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-yjpl",
+      "name": "A股上市公司业绩预告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025.12.31",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-yjpl.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-zyywxq",
+      "name": "A股上市公司主营业务详情数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-zyywxq.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-comment-letter",
+      "name": "A股上市公司交易所问询函数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "至2025.6.30之前",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/comment-letter.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-gyl",
+      "name": "A股上市公司供应链数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001-2025",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-gyl.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-listed-company-information-disclosure-score",
+      "name": "A股上市公司信息披露评分数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "上交所：2016-2024；深交所：2005-2024",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/chinese-listed-company-information-disclosure-score.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-related-transaction",
+      "name": "A股上市公司关联交易数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2000-2026.06.11",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-related-transaction.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-in-transaction",
+      "name": "A股上市公司内部交易数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2004.11-2025.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-in-transaction.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-dividend",
+      "name": "A股上市公司分红送股数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990-2025.06.30",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-dividend.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-add-issue",
+      "name": "A股上市公司增发信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1994.03~2025.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-add-issue.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-guarantee",
+      "name": "A股上市公司担保数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001-2024",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-guarantee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-zgsm",
+      "name": "A股上市公司招股说明书公告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-zgsm.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-zfbz",
+      "name": "A股上市公司政府补助数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2006-2024年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-zfbz.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ybsj",
+      "name": "A股上市公司研报数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2016/1/1-至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/ybsj.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-shzr",
+      "name": "A股上市公司社会责任报告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-shzr.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ssgsjyyb",
+      "name": "A股上市公司经营月报数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2007年-2025年7月",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/ssgsjyyb.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-equ-inc",
+      "name": "A股上市公司股权激励数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2006-2026.06.11",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-equ-inc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-repurchase",
+      "name": "A股上市公司股票回购数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2005.06~2025.06",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-repurchase.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-executive",
+      "name": "A股上市公司董监高信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1999-2026.07.22",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-executive.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-sszc",
+      "name": "A股上市公司诉讼仲裁数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2018~20260611",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-sszc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-audit",
+      "name": "A股上市公司财务报告审计意见数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "财务审计意见表： 1990-2025 ；关键审计事项表： 2016-2025",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-audit.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-zdht",
+      "name": "A股上市公司重大合同数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2013-2026.06.11",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-zdht.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-share-float",
+      "name": "A股上市公司限售解禁数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2006-2026.07.24",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-share-float.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fdmt",
+      "name": "中国上市公司主营业务构成数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "明细表： 2007.06.30~至今 ；趋势表： 2007.03.31~至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/fdmt.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-xinzhi-a",
+      "name": "中国上市公司新质生产力指数数据",
+      "priority": "P2",
+      "freq_record": "未标注",
+      "freq_page": "",
+      "cov_page": "2011-2022年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/xinzhi-A.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-layline-insider-trading",
+      "name": "Layline美股内幕交易数据",
+      "priority": "P2",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/Layline-insider-trading.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-twitter",
+      "name": "美国上市公司Twitter账户详情数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2024.3 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/twitter.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-uslcar",
+      "name": "美国上市公司全部报告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1993-2023",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/USLCAR.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-uslcar-10-k-qd",
+      "name": "美国上市公司财务报告信息披露质量数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2017",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/USLCAR-10-K-qd.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-dpzsmrzb",
+      "name": "A股大盘指数每日指标数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2004年1月2日-2025年6月30日",
+      "url": "https://www.cnopendata.com/data/m/trading/dpzsmrzb.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hqys",
+      "name": "中国上市公司行情衍生数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "2006/1/4-至今",
+      "url": "https://www.cnopendata.com/data/m/trading/hqys.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-ggzg-zp",
+      "name": "港股中概公司族谱数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024年12月31日",
+      "url": "https://www.cnopendata.com/data/m/hongkong/ggzg-zp.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cnn-news",
+      "name": "CNN新闻文本数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2000年-2022年",
+      "url": "https://www.cnopendata.com/data/m/international-news/cnn-news.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-government-work-report",
+      "name": "中国各地区政府工作报告文本数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "中央 2000-2025、 省级 1979-2025、 市级 1983-2025（各地区时间不一）",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/chinese-government-work-report.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-china-provinces-cities-wechat",
+      "name": "中国各省市官方媒体微信公众号数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025年",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/china-provinces-cities-Wechat.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gov-dfzf",
+      "name": "中国地方政府规章数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1970.01.01-2026.07.23",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/gov-dfzf.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tax-onlinemessage",
+      "name": "中国税务留言板信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2018.03.29-2023",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/tax-onlinemessage.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-jwjc-news",
+      "name": "中国纪委监察新闻报纸文本数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2015.12.1-2024.12.1 （暂不更新）",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/jwjc-news.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gov-bm",
+      "name": "中国部门规章数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1980-2024.6",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/gov-bm.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-mofcom-onlinemessage",
+      "name": "商务部留言板信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2019-2026.2",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/mofcom-onlinemessage.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-law",
+      "name": "国家法律法规数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.6",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/law.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-rumor",
+      "name": "谣言数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2006.04-2020.02",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/rumor.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-reddit-all",
+      "name": "Reddit全社区发帖评论数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024年",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/reddit-all.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-jijin-stocks-comment",
+      "name": "中国基金产品股吧文本数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998-2025.10",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/jijin-stocks-comment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-gqjl",
+      "name": "A股上市公司股权激励公告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gqjl.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-report",
+      "name": "A股上市公司财报公告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-report.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bond-credit-rating",
+      "name": "中国债券信用评级公告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998~2025.11",
+      "url": "https://www.cnopendata.com/data/m/financial-news/bond-credit-rating.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ch-reports",
+      "name": "中国证券公司晨会报告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.08.18-2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/financial-news/ch-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-macros-reports",
+      "name": "中国证券分析师宏观研究报告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.08.15-2025.10",
+      "url": "https://www.cnopendata.com/data/m/financial-news/Macros-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-profitforecast-reports",
+      "name": "中国证券分析师盈利预测研究数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2023.09/2024.06/2025.10/2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/financial-news/Profitforecast-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cl-reports",
+      "name": "中国证券分析师策略报告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.08.18-2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/financial-news/cl-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-industry-reports",
+      "name": "中国证券分析师行业研究报告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.07-2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/financial-news/Industry-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cjbzgzh",
+      "name": "中国财经报刊微信公众号数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025年",
+      "url": "https://www.cnopendata.com/data/m/financial-news/cjbzgzh.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cjwxgzh",
+      "name": "中国财经新闻微信公众号数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025 （可更新）",
+      "url": "https://www.cnopendata.com/data/m/financial-news/cjwxgzh.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bond-cngovernment-bonds",
+      "name": "中国地方政府债券信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2009~2026.6.30",
+      "url": "https://www.cnopendata.com/data/m/bond/CNgovernment-bonds.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-ch-reports",
+      "name": "中国证券公司晨会报告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2021.08.18-2026.1.31",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/ch-Reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-fund-dividends",
+      "name": "公募基金分红数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998-2025.7.1",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-dividends.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-futures-jy",
+      "name": "中国期货交易日历数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "1998年8月18日-2025年12月30日",
+      "url": "https://www.cnopendata.com/data/m/Futures/Futures%2Fjy.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-futures-cd",
+      "name": "中国期货仓单日报数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2012年1月4日-2025年6月24日",
+      "url": "https://www.cnopendata.com/data/m/Futures/Futures%2Fcd.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-futures-hy",
+      "name": "中国期货合约信息数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "1995年4月17日-2025年7月1日",
+      "url": "https://www.cnopendata.com/data/m/Futures/Futures%2Fhy.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-futures-js",
+      "name": "中国期货每日结算参数数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2012年11月1日-2025年6月24日",
+      "url": "https://www.cnopendata.com/data/m/Futures/Futures%2Fjs.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-bill-acceptance-information",
+      "name": "上海票据交易所票据承兑信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2020.01-2021.11",
+      "url": "https://www.cnopendata.com/data/m/bank/bill-acceptance-information.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-zxzb",
+      "name": "中国全部银行专项指标数据",
+      "priority": "P2",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2012-2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-zxzb.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-sdjkr",
+      "name": "中国全部银行十大借款人数据",
+      "priority": "P2",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2016~2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-sdjkr.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-ofdi",
+      "name": "中国全部银行对外投资信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2023.8.31 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-ofdi.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-change",
+      "name": "中国全部银行工商信息变更数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至 2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-change.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-basic",
+      "name": "中国全部银行工商注册基本信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至 2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-branch",
+      "name": "中国全部银行网点数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年6月 前",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-branch.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-shareholder",
+      "name": "中国全部银行股东信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-shareholder.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-cfe",
+      "name": "中国全部银行财务报表数据",
+      "priority": "P2",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "截至2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-cfe.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-dkwjfl",
+      "name": "中国全部银行贷款五级分类数据",
+      "priority": "P2",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2016-2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-dkwjfl.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-chinese-wealth-management-product",
+      "name": "中国理财产品数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001年-2021年",
+      "url": "https://www.cnopendata.com/data/m/bank/chinese-wealth-management-product.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-penalty",
+      "name": "中国银行分支机构违规被处罚数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2004~2020",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-penalty.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-api-resold-apartment-turnover",
+      "name": "中国二手房成交数据API",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/resold-apartment-turnover",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-land-result-base-info",
+      "name": "中国土地交易数据API",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/land-result-base-info",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-fapaifang-api",
+      "name": "中国法拍房数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/fapaifang-api",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-historical-debt-outstanding",
+      "name": "美国历史未偿公共债务余额数据API",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/historical-debt-outstanding",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-debt-to-the-penny",
+      "name": "美国每日国债未偿余额数据API",
+      "priority": "P2",
+      "freq_record": "日",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/debt-to-the-penny",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-schedules-of-federal-debt",
+      "name": "美国联邦债务月度明细数据API",
+      "priority": "P2",
+      "freq_record": "月",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/schedules-of-federal-debt",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-listedco-envlpenalty",
+      "name": "A股上市公司环保处罚数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003-2024年",
+      "url": "https://www.cnopendata.com/data/m/ESG/listedco-envlpenalty.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-csr-report",
+      "name": "A股上市公司社会责任评价数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2010-2021",
+      "url": "https://www.cnopendata.com/data/m/ESG/CSR-Report.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-violation",
+      "name": "A股上市公司违规处罚数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1994.04~2026.5",
+      "url": "https://www.cnopendata.com/data/m/ESG/listedco-violation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-esg-env-punish",
+      "name": "ESG环保处罚信息数据",
+      "priority": "P2",
+      "freq_record": "按需",
+      "freq_page": "",
+      "cov_page": "2007.08.02-至今",
+      "url": "https://www.cnopendata.com/data/m/ESG/esg_env_punish.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-esg-news",
+      "name": "ESG舆情标签信息数据",
+      "priority": "P2",
+      "freq_record": "按需",
+      "freq_page": "",
+      "cov_page": "2018.01.01-2023.10.16",
+      "url": "https://www.cnopendata.com/data/m/ESG/esg_news.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-envl-penalty",
+      "name": "中国企业环保行政处罚数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001-2025年 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/ESG/envl-penalty.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tax-penalty",
+      "name": "中国企业税务行政处罚数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2000-2023",
+      "url": "https://www.cnopendata.com/data/m/ESG/tax-penalty.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-green-manuf",
+      "name": "中国绿色制造名单数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2017~2023",
+      "url": "https://www.cnopendata.com/data/m/ESG/green-manuf.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-firm-level-climate-change-exposure",
+      "name": "公司层面气候变化暴露指数",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "",
+      "cov_page": "2001-2020",
+      "url": "https://www.cnopendata.com/data/m/ESG/firm-level-climate-change-exposure.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-product-quality-supervision",
+      "name": "市场监管总局产品质量监督抽查数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2017.09-2024.12",
+      "url": "https://www.cnopendata.com/data/m/ESG/product-quality-supervision.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-food-safety",
+      "name": "市场监管总局食品安全抽检数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014-2025.3",
+      "url": "https://www.cnopendata.com/data/m/ESG/food-safety.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-recall-of-defective-products",
+      "name": "缺陷产品召回数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "汽车： 2007.11-2024.09.14 ；消费品： 2008.07-2024.09.12",
+      "url": "https://www.cnopendata.com/data/m/ESG/recall-of-defective-products.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-stbyindustry",
+      "name": "中国专利分行业统计数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-stbyindustry.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-citation-global",
+      "name": "中国专利及引用被引用数据（世界版）",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2025年",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-citation-global.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-china-invalidated-patent",
+      "name": "中国专利无效宣告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "A来源：各表时间不尽相同，详见分表；B来源： 1990-2023年 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/patent/china-invalidated-patent.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-transfer-patent-right",
+      "name": "中国专利申请权和专利权转移数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "中文版 2001~2023 ；英文版 1987~2025",
+      "url": "https://www.cnopendata.com/data/m/patent/Transfer-patent-right.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-key-figures-application-rgzn",
+      "name": "中国人工智能专利申请与授权数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-rgzn.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-innovation",
+      "name": "中国全部专利申请与授权数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985~2025",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-innovation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-key-figures-application",
+      "name": "中国关键数字技术专利申请与授权数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "发明公布按申请公布日： 1985-2024 ；发明授权/实用新型按授权公布日： 1985-2024",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-green-patent-innovation",
+      "name": "中国绿色专利申请与授权数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "发明公布按申请公布日： 1985-2024年 ；发明授权/实用新型/外观设计按授权公告日： 1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/green-patent-innovation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-hte",
+      "name": "中国高新技术企业专利统计数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-hte.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ai-recruitment",
+      "name": "AI岗位线上招聘数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.5-2024年",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/AI-recruitment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-ai-recruitment",
+      "name": "A股上市公司AI岗位线上招聘数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.5-2024年",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/listedco-AI-recruitment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-ygpj",
+      "name": "A股上市公司员工评价数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "员工评价内容表： 2014.07-2022.09 ；薪资岗位评价表： 2014.06-2023.04",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/listedco-ygpj.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-listed-companies-onlinerect",
+      "name": "A股上市公司招聘数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.05-2024 ，不同数据源时间详见分表。",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/chinese-listed-companies-onlinerect.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-lw-penalty",
+      "name": "中国企业劳动争议行政处罚数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014-2025",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/lw-penalty.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-lgjjacct",
+      "name": "中国零工经济线上招聘数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.05~2025",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/lgjjacct.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-recruitment",
+      "name": "线上招聘网站信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014年中旬至今",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/recruitment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-companies-and-subsidiaries-data",
+      "name": "A股上市公司及子公司基本信息扩展数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2000-2024",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/listed-companies-and-subsidiaries-data.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-industry-chain-mapping",
+      "name": "中国产业链上下游行业映射数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "截至2025年",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/industry-chain-mapping.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-soe",
+      "name": "中国国有企业名单数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2025.1",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/SOE.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ind-cfe",
+      "name": "中国工商注册企业财务报表数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2013-2024",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/ind-cfe.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-untrustworthy-data",
+      "name": "失信企业基本信息扩展数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2013-2020",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/untrustworthy-data.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-second-hand-housing-transaction",
+      "name": "中国二手房交易数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "成交信息表： 截至2026.06 ； 挂牌信息表： 截至2025.06",
+      "url": "https://www.cnopendata.com/data/m/china-real-estate/chinese-second-hand-housing-transaction.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-housing-tx",
+      "name": "中国重点城市新房供应与成交详细数据",
+      "priority": "P2",
+      "freq_record": "月",
+      "freq_page": "日度/周度/月度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/china-real-estate/housing-tx.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-wg",
+      "name": "外国在华专利及引用被引用数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2025年",
+      "url": "https://www.cnopendata.com/data/m/global-patent/patent-wg.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fapaifang",
+      "name": "法拍房数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2012~2025",
+      "url": "https://www.cnopendata.com/data/m/judicial-auction/fapaifang.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-equity-auction",
+      "name": "股权司法拍卖数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2016.04-2025.06.30",
+      "url": "https://www.cnopendata.com/data/m/judicial-auction/equity-auction.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-list-company-land-transaction",
+      "name": "A股上市公司土地交易数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2000-2024",
+      "url": "https://www.cnopendata.com/data/m/land/list-company-land-transaction.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-land-transaction-data",
+      "name": "中国全部土地交易数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "2000~2024",
+      "url": "https://www.cnopendata.com/data/m/land/land-transaction-data.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-housing-tx-td",
+      "name": "中国重点城市土地出让与受让详细数据表",
+      "priority": "P2",
+      "freq_record": "日",
+      "freq_page": "日度",
+      "cov_page": "2005年起",
+      "url": "https://www.cnopendata.com/data/m/land/housing-tx%2Ftd.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-listed-companies-ztb",
+      "name": "A股上市公司招投标数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2021",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/chinese-listed-companies-ztb.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gov-pro-gg",
+      "name": "政府采购公告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "基本信息表、公告源文件：已更新至 2024年12月 ；其他详细公告表：字段全新升级中",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/gov-pro-gg.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gov-cgyx",
+      "name": "政府采购意向公告数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "按中央公告： 2020.05~2024.05 ；按地方公告： 2024.04~2024.05",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/gov-cgyx.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-government-procurement-data",
+      "name": "政府采购数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2004-2025.12.31",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/government-procurement-data.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-a-hg",
+      "name": "A股上市公司海关进出口交易明细数据",
+      "priority": "P2",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2007-2016年",
+      "url": "https://www.cnopendata.com/data/m/customs/A-hg.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-china-indexes-of-foreign-trade",
+      "name": "中国对外贸易指数数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2018.01-2024.11",
+      "url": "https://www.cnopendata.com/data/m/customs/china-indexes-of-foreign-trade.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-china-customs-statistics",
+      "name": "中国海关统计数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1981-2024.11",
+      "url": "https://www.cnopendata.com/data/m/customs/china-customs-statistics.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cn-hg",
+      "name": "中国海关进出口交易明细数据",
+      "priority": "P2",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2000-2016年",
+      "url": "https://www.cnopendata.com/data/m/customs/CN-hg.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-overseas-investment-enterprise-list",
+      "name": "境外投资企业（机构）名录数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/customs/overseas-investment-enterprise-list.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-stats",
+      "name": "中国专利分地区统计数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/patent-stats.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-minimum-wage-by-region",
+      "name": "中国各区县最低工资数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1999.06.01-2023.03.01",
+      "url": "https://www.cnopendata.com/data/m/regional/minimum-wage-by-region.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-regional-bidding-data-across-china",
+      "name": "中国各地区招投标数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "A来源截止2022.8，B来源截止2024.12 （各地区时间不一）",
+      "url": "https://www.cnopendata.com/data/m/regional/regional-bidding-data-across-china.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-carbon-trading-data-by-region",
+      "name": "中国各地区碳交易数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2013.8~2026.7",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-carbon-trading-data-by-region.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-stats-enterprises",
+      "name": "中国工商企业进入退出信息统计数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1980-2025",
+      "url": "https://www.cnopendata.com/data/m/regional/stats-enterprises.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-lottery-sales",
+      "name": "中国彩票销售数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2008.01~2025.12",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-lottery-sales.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ncpjg",
+      "name": "农产品批发价格数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "A来源： 2011.01.01-2025.09.01 ；B来源： 2014.02.07-2023.08.23",
+      "url": "https://www.cnopendata.com/data/m/regional/ncpjg.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-psi",
+      "name": "中国城市层面电力短缺指数",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2001-2017",
+      "url": "https://www.cnopendata.com/data/m/macro/PSI.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-qgyjdg",
+      "name": "中国省市县夜间灯光栅格数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1992-2023",
+      "url": "https://www.cnopendata.com/data/m/macro/qgyjdg.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-epu",
+      "name": "中国省级层面经济政策不确定性指数",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2000-2017",
+      "url": "https://www.cnopendata.com/data/m/macro/EPU.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gzlyjdg",
+      "name": "中国高质量夜间灯光数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2012年4月-2023年12月 （数据空间分辨率500米）",
+      "url": "https://www.cnopendata.com/data/m/macro/gzlyjdg.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fepu",
+      "name": "企业的经济政策不确定性感知指数",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/macro/FEPU.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-global-economy",
+      "name": "全球宏观经济数据",
+      "priority": "P2",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1960-2023",
+      "url": "https://www.cnopendata.com/data/m/global-macro/global-economy.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-czfzzs",
+      "name": "中国各地区财政发展指数",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2008~2020",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/czfzzs.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-yspl",
+      "name": "中国各省及省本级预算偏离数据",
+      "priority": "P2",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "1994-2017年",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/yspl.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ctgszp",
+      "name": "中国城投公司上下三层企业族谱数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026年7月",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/ctgszp.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-pat",
+      "name": "中国全部银行专利申请与授权数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-pat.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-recruitment",
+      "name": "中国商业银行线上招聘数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.05-2025",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-recruitment.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-rkzfl",
+      "name": "中国各城市栅格层面人口支付力数据",
+      "priority": "P2",
+      "freq_record": "实时",
+      "freq_page": "实时",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/regional/rkzfl.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-store",
+      "name": "全国店铺点评网站全信息数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/Store.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-supermarket",
+      "name": "全国超市便利店数据",
+      "priority": "P2",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-supermarket.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-bp-26ite",
+      "name": "A股上市公司会计利润与所得税费用调整过程数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2005-2022",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-bp%26ite.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-gsz",
+      "name": "A股上市公司公司债公告数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gsz.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-yggc",
+      "name": "A股上市公司员工构成数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2004-2025年",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-yggc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-gddh",
+      "name": "A股上市公司股东大会公告数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gddh.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-exe-com",
+      "name": "A股上市公司高管薪酬数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2004~2025",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-exe-com.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fdmt-jk",
+      "name": "中国上市公司借款明细数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "2016.06.30-至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/fdmt-jk.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-equ-invest-finance",
+      "name": "中国上市公司投资理财数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "2010.04.23-至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/equ_invest_finance.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-fdmt-tax",
+      "name": "中国上市公司税费情况数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "税率明细表： 2016.12.31-至今 ；所得税费用表： 2016.03.31-至今",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/fdmt-tax.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-annual-reports",
+      "name": "全球企业年报数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1957-2025.10",
+      "url": "https://www.cnopendata.com/data/m/international-news/annual%20reports.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-responsibility-report",
+      "name": "全球企业社会责任报告数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1989-2025.10",
+      "url": "https://www.cnopendata.com/data/m/international-news/Responsibility%20Report.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-uslcar-10-k",
+      "name": "美国上市公司年度报告数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1993-2023",
+      "url": "https://www.cnopendata.com/data/m/international-news/USLCAR-10-K.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-us-responsibility-report",
+      "name": "美国企业社会责任报告数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998-2025.10",
+      "url": "https://www.cnopendata.com/data/m/international-news/US%20Responsibility%20Report.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-english-paper",
+      "name": "英文学术期刊论文发表数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "A源截至2025.07，B源截至2023.10，C源截至2023.11",
+      "url": "https://www.cnopendata.com/data/m/international-news/English-Paper.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-all-level-textbooks",
+      "name": "中国全学段教材数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/Chinese%20all-level%20textbooks.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-cn-xz",
+      "name": "中国各地区县志数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/cn-xz.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-cn-jp",
+      "name": "中国各地区家谱数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/cn-jp.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-chinese-couplet",
+      "name": "中国对联数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/chinese-couplet.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-treaty",
+      "name": "中国条约数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1875-2018 （签署）； 1876-2023.2 （生效）",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/treaty.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-env-news",
+      "name": "中国环境报数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2013.8.14-2023.6.16",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/env-news.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-recipe-of-chinese-cuisine",
+      "name": "中餐食谱数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/recipe-of-chinese-cuisine.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-poetry",
+      "name": "唐诗宋词数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/government-corpus/poetry.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-moive-imdb",
+      "name": "IMDb电影评论数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024.6.30 的电影及对应 截至2024.12 的评论",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/moive-imdb.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-reddit",
+      "name": "Reddit社区WSB板块发帖评论数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2017.12-2024",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/reddit.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-movie-rating",
+      "name": "豆瓣网电影评论数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/movie-rating.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-ipo-issuance",
+      "name": "A股上市公司IPO发行文本数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001~2026",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listedco-IPO-issuance.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-ipo-letter",
+      "name": "A股上市公司IPO问询函文本数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "深市IPO问询函文件： 2020.7.14-2026.6.30 ；沪市IPO问询函文件： 2019.4.23-2026.",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listedco-IPO-letter.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-ipo-pre",
+      "name": "A股上市公司IPO预披露文本数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.4.18~2026.6.30",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listedco-IPO-pre.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listed-co-gszc",
+      "name": "A股上市公司公司章程公告数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2026.07",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gszc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-text-data",
+      "name": "中国专利文本数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985~2025年",
+      "url": "https://www.cnopendata.com/data/m/financial-news/patent-text-data.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-insurance-agc",
+      "name": "中国保险中介机构网点信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2022.05",
+      "url": "https://www.cnopendata.com/data/m/bank/insurance-agc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-insurance",
+      "name": "中国保险机构网点全集数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2020.05",
+      "url": "https://www.cnopendata.com/data/m/bank/insurance.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-ywjy",
+      "name": "中国全部银行业务经营数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2018-2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-ywjy.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-sx",
+      "name": "中国全部银行供应商客户数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "截至 2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-sx.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-fzjg",
+      "name": "中国全部银行分支机构数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "截至2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-fzjg.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-dkjg",
+      "name": "中国全部银行贷款结构数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2017-2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-dkjg.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-overdueloan",
+      "name": "中国全部银行逾期贷款数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2017-2023.8.31",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-overdueloan.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-bank-chinese-postal-savings-bank",
+      "name": "中国邮政储蓄银行网点信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2023.5.15 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/bank/chinese-postal-savings-bank.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-api-resold-apartment-sell",
+      "name": "中国二手房售卖数据API",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/resold-apartment-sell",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-apartment-china",
+      "name": "中国各城市新房数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/apartment-china",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-api-housing-estate-china",
+      "name": "中国小区信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/api-store/housing-estate-china",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-chinese-industrial-enterprise-green-patent-citation",
+      "name": "中国工业企业绿色专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "发明公布： 1985-2024年 ；发明授权/实用新型： 1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/ESG/chinese-industrial-enterprise-green-patent-citation.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-wwtp",
+      "name": "中国污水处理厂数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "地下污水处理厂： 1995~2024 ；地上无建设年份数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/wwtp.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-amec",
+      "name": "中国汽车能源消耗量数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2010.1.1-2025.2.28",
+      "url": "https://www.cnopendata.com/data/m/ESG/AMEC.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-green-patyyby",
+      "name": "中国绿色专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/ESG/green-patyyby.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-low-carbon-patent-stats",
+      "name": "中国绿色低碳专利分地区统计数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-stats.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-low-carbon-patent-citation",
+      "name": "中国绿色低碳专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-citation.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-low-carbon-patent-innovation",
+      "name": "中国绿色低碳专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024年",
+      "url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-innovation.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-emergency",
+      "name": "全球紧急事件数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1900-2025年3月",
+      "url": "https://www.cnopendata.com/data/m/ESG/emergency.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-windfarm",
+      "name": "全球风电可持续发展能源项目信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截至2024年11月 （产能表为 2023年 ）",
+      "url": "https://www.cnopendata.com/data/m/ESG/Windfarm.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-zszyhs",
+      "name": "再生资源回收企业信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1952-2025.9.25",
+      "url": "https://www.cnopendata.com/data/m/ESG/zszyhs.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-licence-of-industrial-products",
+      "name": "工业产品生产许可证数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2014-2020.10",
+      "url": "https://www.cnopendata.com/data/m/ESG/licence-of-industrial-products.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-wb-benefit",
+      "name": "微博微公益平台数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "",
+      "cov_page": "2012~2025年 （各表区间不同）",
+      "url": "https://www.cnopendata.com/data/m/ESG/wb-benefit.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-msw-incineration-plant",
+      "name": "生活垃圾焚烧厂数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2000-2024年 （焚烧炉信息表）； 2020-2025年 （排放物检测表、炉膛温度检测表）",
+      "url": "https://www.cnopendata.com/data/m/ESG/msw-incineration-plant.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-dzcpyhwzsm",
+      "name": "电器电子产品有害物质声明数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2019年10月~2023年1月 （声明）； 2010年7月~2023年1月 （认证）",
+      "url": "https://www.cnopendata.com/data/m/ESG/dzcpyhwzsm.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-donation",
+      "name": "轻松筹公益捐赠项目数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2017.01.13-2024.07.12",
+      "url": "https://www.cnopendata.com/data/m/ESG/donation.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-ai-patentyyby",
+      "name": "中国AI人工智能专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/ai-patentyyby.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-ai-patentbasic",
+      "name": "中国AI人工智能专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/ai-patentbasic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-patent-shareholder",
+      "name": "中国专利权人工商股东信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截止至2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Patent-shareholder.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted-rgzn",
+      "name": "中国人工智能专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "发明公布按申请公布日统计： 1985-2024年 ；发明授权/实用新型按授权公布日统计： 1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-rgzn.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted-yyz",
+      "name": "中国元宇宙专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-yyz.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-application-yyz",
+      "name": "中国元宇宙专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-yyz.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-china-patent-address",
+      "name": "中国全部专利详细地址数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2025",
+      "url": "https://www.cnopendata.com/data/m/patent/china-patent-address.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted",
+      "name": "中国关键数字技术专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted-qkl",
+      "name": "中国区块链专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-qkl.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-application-qkl",
+      "name": "中国区块链专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-qkl.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-chgjzlxmzl",
+      "name": "中国国家著录项目专利数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2022",
+      "url": "https://www.cnopendata.com/data/m/patent/chgjzlxmzl.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted-gyhlw",
+      "name": "中国工业互联网专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-gyhlw.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-application-gyhlw",
+      "name": "中国工业互联网专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-gyhlw.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-industrial-patent",
+      "name": "中国工业企业专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/industrial-patent.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-pt-ct-yjgl",
+      "name": "中国应急管理专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "为1986年至2024年12月31日，可用于分析应急管理技术演进、创新主体关联等研究。 # 应急管理 # 专利数据 # ",
+      "url": "https://www.cnopendata.com/data/m/patent/pt-ct-yjgl.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-pt-yjgl",
+      "name": "中国应急管理专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1986-2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/patent/pt-yjgl.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-dig-eco-patyyby",
+      "name": "中国数字经济专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截至2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/dig-eco-patyyby.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-dig-eco-patjbsw",
+      "name": "中国数字经济专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024",
+      "url": "https://www.cnopendata.com/data/m/patent/dig-eco-patjbsw.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted-wlw",
+      "name": "中国物联网专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年 （发明公布按申请公布日，发明授权/实用新型按授权公布日）",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-wlw.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-application-wlw",
+      "name": "中国物联网专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "发明公布按照申请公布日统计： 1985-2024年 ；发明授权/实用新型按照授权公布日统计： 1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-wlw.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-researchinstt-patentyyby",
+      "name": "中国科研院所专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/researchinstt-patentyyby.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-researchinstt-patentbasic",
+      "name": "中国科研院所专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/researchinstt-patentbasic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-chinese-green-patent-text-data",
+      "name": "中国绿色专利文本数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/patent/Chinese-green-patent-text-data.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted-lzxx",
+      "name": "中国量子信息专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "发明公布： 1985~2024年 ；发明授权/实用新型： 1985~2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-lzxx.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-application-lzxx",
+      "name": "中国量子信息专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "发明公布按申请公布日： 1985~2024年 ；发明授权/实用新型按授权公布日： 1985~2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-lzxx.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-fintech-patentyyby",
+      "name": "中国金融科技专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/fintech-patentyyby.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-fintech-patentbasic",
+      "name": "中国金融科技专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/fintech-patentbasic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-gx-dig-eco-patyyby",
+      "name": "中国高校数字经济专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/gx-dig-eco-patyyby.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-gx-dig-eco-pat",
+      "name": "中国高校数字经济专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/gx-dig-eco-pat.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-quoted-gdxp",
+      "name": "中国高端芯片专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "发明公布按申请公布日： 1985-2024 ；发明授权/实用新型按授权公布日： 1985-2024",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-gdxp.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-key-figures-application-gdxp",
+      "name": "中国高端芯片专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "发明公布： 1985-2024年 ；发明授权/实用新型： 1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-gdxp.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-xsb-co-patent-citation",
+      "name": "新三板公司专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1990~2024",
+      "url": "https://www.cnopendata.com/data/m/patent/xsb-co-patent-citation.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-zdh-patentyy",
+      "name": "自动化专利引用与被引数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/zdh-patentyy.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-zdh-patentbasic",
+      "name": "自动化专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985~2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/zdh-patentbasic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-re-acct",
+      "name": "中国会计与财务类岗位线上招聘数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2014.5-2024年",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/re-acct.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-dz",
+      "name": "中国党政类岗位线上招聘数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2014.5-2024年",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/dz.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-jzfw",
+      "name": "中国家政服务信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2017.08-2026.6",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/jzfw.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-lgjjjbxx",
+      "name": "中国零工经济线上招聘公司基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截止2023年 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/lgjjjbxx.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-aba-recruitment",
+      "name": "会计师事务所线上招聘数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2014.05-2025",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/ABA-recruitment.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-hspt-recruitment",
+      "name": "医疗行业线上招聘数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2014.5-2024年",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/hspt-recruitment.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-lgjj",
+      "name": "零工经济搜索指数数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "零工经济搜索指数： 2011.01.01-2023.04.30 ；零工经济资讯指数： 2017-2023.04.30 ；",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/lgjj.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-5g-basic",
+      "name": "5G行业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2022年",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/5G-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-little-giant-freport",
+      "name": "专精特新“小巨人”企业财务报表数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2020-2023年",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/little-giant-freport.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-patent-basic",
+      "name": "中国专利权人基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/patent-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-tic-basic",
+      "name": "中国工业企业基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/tic-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-hte-freport",
+      "name": "中国高新技术企业财务报表数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2020-2023年",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/hte-freport.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-zzysk",
+      "name": "中征应收款融资服务平台数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截止2025年12月",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/zzysk.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-traffic-basic",
+      "name": "交通运输、仓储和邮政业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/traffic-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-accommodation-catering-basic",
+      "name": "住宿和餐饮业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950~2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/accommodation%26catering-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-technology-basic",
+      "name": "信息传输、软件和信息技术服务业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/technology-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-agricul-company-reg-basic",
+      "name": "农业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2025",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/agricul-company-reg-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-manufacturing-individual-champion",
+      "name": "制造业单项冠军企业工商注册基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截止2023",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/manufacturing-individual-champion.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-manufacture-basic",
+      "name": "制造业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/manufacture-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-laborsub-basic",
+      "name": "劳务分包企业工商注册基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950~2024.10中旬",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/laborsub-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-laboros-basic",
+      "name": "劳务外包企业工商注册基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950~2024.10中旬",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/laborOS-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-hospital-basic",
+      "name": "医院医疗机构工商注册基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2021.12.31",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/hospital-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-health-social-basic",
+      "name": "卫生和社会工作业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/health%26social-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-residential-basic",
+      "name": "居民服务、修理和其他服务业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/residential-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-construction-basic",
+      "name": "建筑业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/construction-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-wholesale-retail-basic",
+      "name": "批发和零售业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/wholesale%26retail-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-education-basic",
+      "name": "教育业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/education-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-cul-spo-ent-basic",
+      "name": "文化、体育和娱乐业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/cul%26spo%26ent-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-robot-basic",
+      "name": "机器人行业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2022年",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/robot-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-nat-icr",
+      "name": "核酸检测机构工商注册数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "",
+      "cov_page": "截至 2023.7.31 （不更新）",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/NAT-ICR.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-water-env-basic",
+      "name": "水利、环境和公共设施管理业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/water%26env-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-electricity-basic",
+      "name": "电力、热力、燃气及水生产和供应业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/electricity-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-live-basic",
+      "name": "直播行业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2025年",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/live-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-scientific-basic",
+      "name": "科学研究和技术服务业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/scientific-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-leasing-bu-service-basic",
+      "name": "租赁和商务服务业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/leasing%26bu-service-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-rcrt-basic",
+      "name": "线上招聘公司基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截至2024年",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/rcrt-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-cyber-security-gs",
+      "name": "网络安全企业工商注册基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/cyber-security-gs.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-mining-basic",
+      "name": "采矿业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/mining-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-food-industry-basic",
+      "name": "食品业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/food-industry-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-eupatent-citation-global",
+      "name": "欧洲专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/global-patent/eupatent-citation-global.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-gbpatent-citation-global",
+      "name": "英国专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/global-patent/gbpatent-citation-global.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-krpatent-citation-global",
+      "name": "韩国专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1985-2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/global-patent/krpatent-citation-global.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-customs-pt",
+      "name": "中国专利权人海关进出口信用数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "截至2021年",
+      "url": "https://www.cnopendata.com/data/m/customs/customs-pt.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-kasf",
+      "name": "中国口岸收费清单数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2020年-2023年6月21日",
+      "url": "https://www.cnopendata.com/data/m/customs/kasf.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-gq-hg",
+      "name": "中国工业企业海关进出口交易明细数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "",
+      "cov_page": "2007-2016年",
+      "url": "https://www.cnopendata.com/data/m/customs/gq-hg.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-intl-freight-forwarding",
+      "name": "国际货运代理信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "截止至2025年8月",
+      "url": "https://www.cnopendata.com/data/m/customs/intl-freight-forwarding.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-manufacturer-directory",
+      "name": "外贸供应商名录数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2020年/2022年/2023年/2024年",
+      "url": "https://www.cnopendata.com/data/m/customs/Manufacturer-Directory.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-jkjwsp",
+      "name": "大陆进口境外食品生产企业",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "2018-2025.3.31",
+      "url": "https://www.cnopendata.com/data/m/customs/jkjwsp.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-gljk",
+      "name": "鼓励进口技术和产品目录数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "国家级：2007~2017；省份：2015~2022",
+      "url": "https://www.cnopendata.com/data/m/customs/gljk.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-fund-broker-qsacct",
+      "name": "中国券商线上招聘数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.5-2024年",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/qsacct.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-finance-basic",
+      "name": "金融业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "未标注",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/finance-basic.html",
+      "conflict": "档案未填可补齐"
+    },
+    {
+      "id": "cnod-bank-patyyby",
+      "name": "中国全部银行专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "发明公布按照申请公布日统计： 1985-2024年 ；发明授权/实用新型按照授权公布日统计： 1985-2024年",
+      "url": "https://www.cnopendata.com/data/m/bank/bank-patyyby.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-permit-mee",
+      "name": "中国排污许可证信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/ESG/permit-mee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-statistics-for-chinese-universities",
+      "name": "中国高校专利统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2025",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-statistics-for-chinese-universities.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-xjr-dxgj-patent-citation",
+      "name": "小巨人和单项冠军企业专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2025 （发明公布按申请公布日，发明授权/实用新型/外观设计按授权公布日）",
+      "url": "https://www.cnopendata.com/data/m/patent/xjr%26dxgj-patent-citation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-xsb-co-patent-innovation",
+      "name": "新三板公司专利申请与授权数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "发明公布 1990-2024年 ；发明授权/实用新型/外观设计 1990-2024年",
+      "url": "https://www.cnopendata.com/data/m/patent/xsb-co-patent-innovation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-qsacct",
+      "name": "中国券商线上招聘数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014.5-2024年",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/qsacct.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-aibasic",
+      "name": "AI人工智能企业工商注册基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/aibasic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-listedco-gsdj",
+      "name": "A股上市公司工商登记分支机构数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/listedco-gsdj.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-little-giant-ent-basic",
+      "name": "专精特新“小巨人”企业工商注册基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2019-2025",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/little-giant%26ent-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-industrial-and-commercial-enterprises-registered-information",
+      "name": "中国工商注册企业全信息",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "部分表格截止至 2025.12.31",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/chinese-industrial-and-commercial-enterprises-registered-information%2Fchinese-industrial-enterprise-patent-citation.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-backtracking-ind-com",
+      "name": "中国工商注册企业全生命周期统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990-2024.10",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/backtracking-ind%26com.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hte-basic",
+      "name": "中国高新技术企业基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至 2023",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/hte-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-newhousing",
+      "name": "中国各城市新房信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2010-2023.6",
+      "url": "https://www.cnopendata.com/data/m/china-real-estate/newhousing.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-community-information",
+      "name": "中国小区信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024.11",
+      "url": "https://www.cnopendata.com/data/m/china-real-estate/chinese-community-information.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-realestate-basic",
+      "name": "房地产业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/china-real-estate/realestate-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-global-patent",
+      "name": "全球专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024年",
+      "url": "https://www.cnopendata.com/data/m/global-patent/global-patent.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-jppatent-citation-global",
+      "name": "日本专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/global-patent/jppatent-citation-global.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-patent-epo",
+      "name": "欧洲专利局专利数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/global-patent/patent-epo.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-uspatent-citation-global",
+      "name": "美国专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985~2024.12.31",
+      "url": "https://www.cnopendata.com/data/m/global-patent/uspatent-citation-global.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-vehicle-auction",
+      "name": "交通工具司法拍卖数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2012.07-2025.06.30",
+      "url": "https://www.cnopendata.com/data/m/judicial-auction/vehicle-auction.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-land-basic",
+      "name": "中国土地权人基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990-2024年",
+      "url": "https://www.cnopendata.com/data/m/land/land-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-land-agri",
+      "name": "全球土地与农资数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1961~2023 （各表不同）",
+      "url": "https://www.cnopendata.com/data/m/land/land%26agri.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tender-bidd-unit",
+      "name": "中国各地区招投标单位基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2021年",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/tender%26bidd-unit.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-in-bidding",
+      "name": "中国工业企业招投标数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2010-2022.8",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/in-bidding.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-dlztb",
+      "name": "中国电缆招投标数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2010-2022.8 （以公开日期）",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/dlztb.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-govprocurement-zbdw",
+      "name": "政府采购中标单位基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024年10月",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/govprocurement-zbdw.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-govprocurement-ann-zbdw",
+      "name": "政府采购公告中标单位基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2021年",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/govprocurement-ann-zbdw.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-sino-foreign-bilateral-trade",
+      "name": "中外双边贸易数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2005-2019",
+      "url": "https://www.cnopendata.com/data/m/customs/sino-foreign-bilateral-trade.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-international-trade-in-goods",
+      "name": "国际货物贸易数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2001-2019",
+      "url": "https://www.cnopendata.com/data/m/customs/international-trade-in-goods.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-shcity-basic",
+      "name": "上海市工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2023年",
+      "url": "https://www.cnopendata.com/data/m/regional/shcity-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-zgfyxx",
+      "name": "中国各地区方言信息数据",
+      "priority": "P3",
+      "freq_record": "不定期",
+      "freq_page": "",
+      "cov_page": "1986版与2012版",
+      "url": "https://www.cnopendata.com/data/m/regional/zgfyxx.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-birdsts2025",
+      "name": "中国各地区观鸟数量统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2002-2024",
+      "url": "https://www.cnopendata.com/data/m/regional/birdsts2025.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-rkfb",
+      "name": "中国各城市栅格层面人口分布数据",
+      "priority": "P3",
+      "freq_record": "实时",
+      "freq_page": "实时",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/regional/rkfb.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-yklyg",
+      "name": "中国各城市游客来源国统计数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2001-2017",
+      "url": "https://www.cnopendata.com/data/m/regional/yklyg.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-statspts-enterprises",
+      "name": "中国合伙企业进入退出信息统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2021.12.31",
+      "url": "https://www.cnopendata.com/data/m/regional/statspts-enterprises.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-trademark-sts",
+      "name": "中国商标分地区统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/trademark-sts.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-zgkfq",
+      "name": "中国开发区行政区划数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年12月",
+      "url": "https://www.cnopendata.com/data/m/regional/zgkfq.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-china-testing-agency-point-of-covid-19",
+      "name": "中国核酸检测机构及采样点数据",
+      "priority": "P3",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "截止至2022.10",
+      "url": "https://www.cnopendata.com/data/m/regional/China-testing-agency%26point-of-COVID-19.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-qgrcx",
+      "name": "中国省市县日间热成像数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2018-2023",
+      "url": "https://www.cnopendata.com/data/m/regional/qgrcx.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-qgtpf",
+      "name": "中国省市县碳排放量栅格数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1970-2023",
+      "url": "https://www.cnopendata.com/data/m/regional/qgtpf.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-qgwgrk",
+      "name": "中国省市县网格人口数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1990-2022",
+      "url": "https://www.cnopendata.com/data/m/regional/qgwgrk.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-shzz",
+      "name": "中国社会组织名录数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10.31",
+      "url": "https://www.cnopendata.com/data/m/regional/shzz.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-green-patent-volume-data-by-region",
+      "name": "中国绿色专利分地区统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985-2025.12.31",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-green-patent-volume-data-by-region.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hjtjnj",
+      "name": "中国能源年鉴地区能源平衡表数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1998~2022",
+      "url": "https://www.cnopendata.com/data/m/regional/hjtjnj.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-chinese-administrative-divisions-shp",
+      "name": "中国行政区划shp数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "",
+      "cov_page": "2013-2023年2月",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-administrative-divisions-shp.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-chinese-administrative-divisions",
+      "name": "中国行政区划数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "历年县以上行政区划： 1981-2020 ；历年县以下行政区划变更： 2014-2020 ；历年省市县乡镇街道及居委行政",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-administrative-divisions.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-hotel",
+      "name": "中国酒店数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2024.6",
+      "url": "https://www.cnopendata.com/data/m/regional/hotel.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gaokao",
+      "name": "中国高考录取分数线数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2014-2026 （批次）、 2014-2025 （学校/专业）",
+      "url": "https://www.cnopendata.com/data/m/regional/gaokao.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-spa",
+      "name": "全国Spa门店数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-SPA.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-zskc",
+      "name": "全国中式快餐店分布数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-zskc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-tcc",
+      "name": "全国停车场分布数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-tcc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-jsf",
+      "name": "全国健身房分布数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-jsf.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-cdz",
+      "name": "全国充电站分布数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-cdz.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-cnpoi-stat",
+      "name": "全国兴趣点分地区分类型统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/CNpoi-stat.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi",
+      "name": "全国兴趣点（POI）数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/regional/POI.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-jyz",
+      "name": "全国加油站分布数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-jyz.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-lottery",
+      "name": "全国彩票店数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-lottery.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-scenic-spot",
+      "name": "全国景区数据",
+      "priority": "P3",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "截止至 2024.6（可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/regional/scenic-spot.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-car-dealer",
+      "name": "全国汽车经销商数据",
+      "priority": "P3",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "",
+      "url": "https://www.cnopendata.com/data/m/regional/car-dealer.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-hgd",
+      "name": "全国火锅店分布数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-hgd.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-poi-xskc",
+      "name": "全国西式快餐店分布数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2024年",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-xskc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-agricul-company-reg-statistical",
+      "name": "农业工商注册企业数量统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1980-2025.12",
+      "url": "https://www.cnopendata.com/data/m/regional/agricul-company-reg-statistical.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-data-on-companies-registered-in-the-manufacturing-industry",
+      "name": "制造业工商注册企业数量统计数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2021.12.31",
+      "url": "https://www.cnopendata.com/data/m/regional/data-on-companies-registered-in-the-manufacturing-industry.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bjcity-basic",
+      "name": "北京市工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2024.10",
+      "url": "https://www.cnopendata.com/data/m/regional/bjcity-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gzcity-basic",
+      "name": "广州市工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2023年",
+      "url": "https://www.cnopendata.com/data/m/regional/gzcity-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-court",
+      "name": "法院名录数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2026.07",
+      "url": "https://www.cnopendata.com/data/m/regional/court.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-taobao-township",
+      "name": "淘宝村淘宝镇名单数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2017-2022年 （不包含2018年）",
+      "url": "https://www.cnopendata.com/data/m/regional/taobao-township.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-szcity-basic",
+      "name": "深圳市工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截止2024.10",
+      "url": "https://www.cnopendata.com/data/m/regional/szcity-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-zgkfq-tj",
+      "name": "中国开发区基础统计指标数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2017-2023年",
+      "url": "https://www.cnopendata.com/data/m/macro/zgkfq-tj.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-xyjj",
+      "name": "中国县域统计年鉴数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1997-2018",
+      "url": "https://www.cnopendata.com/data/m/yearbooks/xyjj.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-audit",
+      "name": "中国审计年鉴数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1999-2017",
+      "url": "https://www.cnopendata.com/data/m/yearbooks/audit.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-environmental-statistics",
+      "name": "中国环境统计年鉴数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "为2004-2023年，提供全国各省、自治区、直辖市的环境统计资料，适用于环境研究、政策评估与学术分析。 # 环境统计 ",
+      "url": "https://www.cnopendata.com/data/m/yearbooks/environmental-statistics.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-gjzfssfc",
+      "name": "中国各级政府税收分成数据",
+      "priority": "P3",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "1994-2014年",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/gjzfssfc.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-ssjg",
+      "name": "中国涉税专业服务机构名单",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至2025.5.31 （可根据需要进行更新）",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/ssjg.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tax-survey",
+      "name": "中国税收调查企业数据",
+      "priority": "P3",
+      "freq_record": "不定期",
+      "freq_page": "不定期",
+      "cov_page": "2008年-2020年",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/Tax-Survey.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-czyx",
+      "name": "中国财政运行数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2008~2020",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/czyx.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-tax-patent",
+      "name": "税收调查企业专利及引用被引用数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1985~2023年",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-patent.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tax-basic",
+      "name": "税收调查企业基本信息扩展数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2008~2016",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-basic.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tax-idtchange",
+      "name": "税收调查企业工商变更数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2008-2016",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-idtchange.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tax-hg",
+      "name": "税收调查企业海关进出口交易明细数据",
+      "priority": "P3",
+      "freq_record": "不支持更新",
+      "freq_page": "",
+      "cov_page": "2007-2016年",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-hg.html",
+      "conflict": "未取到证据需重抓"
+    },
+    {
+      "id": "cnod-tax-stockholder",
+      "name": "税收调查企业股东信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2008-2016",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-stockholder.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-tax-jddm",
+      "name": "税收调查企业裁判文书数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2008-2016",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-jddm.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-fund-and-practitioners-information",
+      "name": "基金公司及其从业人员信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "截至 2025年8月30日",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/fund-and-practitioners-information.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-securities-firm-employee",
+      "name": "证券公司从业人员信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/securities-firm-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-sub-cor-employee",
+      "name": "证券另类子公司从业人员信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/sub%26cor-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-credit-rating-age-employee",
+      "name": "证券市场资信评级机构从业人员信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/credit-rating%26age-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-msic-employee",
+      "name": "证券投资咨询机构从业人员信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/MSIC-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-fund-broker-asset-management-cor-employee",
+      "name": "证券资产管理公司从业人员信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "2003.08-2023.5.30",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/asset-management%26cor-employee.html",
+      "conflict": ""
+    },
+    {
+      "id": "cnod-bank-finance-basic",
+      "name": "金融业工商注册企业基本信息数据",
+      "priority": "P3",
+      "freq_record": "年度",
+      "freq_page": "年度",
+      "cov_page": "1950-2024.10",
+      "url": "https://www.cnopendata.com/data/m/bank/finance-basic.html",
+      "conflict": ""
+    }
+  ]
+}

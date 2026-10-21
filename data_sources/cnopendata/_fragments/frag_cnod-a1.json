@@ -1,0 +1,1219 @@
+{
+ "shard": "cnod-a1",
+ "category_group": "SSRD上市公司与资本市场",
+ "category": "A股上市公司另类数据",
+ "records": [
+  {
+   "id": "cnod-wxgzh",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司微信公众号全文数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/wxgzh.html",
+   "desc": "A股上市公司微信公众号全文信息：股票代码、公众号简介、文章标题、作者、发布时间与全文，用于非财务信息披露与品牌传播研究。",
+   "coverage": "截至2025年6月30日",
+   "volume": "未标注",
+   "frequency": "不定期",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "微信公众号",
+    "上市公司",
+    "非财务信息",
+    "文本数据"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "情报/公告",
+    "量化/投研"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "截至2025-06-30且不定期更新，无固定增量节奏，不适合追新；分类页未标量级与API"
+  },
+  {
+   "id": "cnod-chinese-listed-company-stocks-comment",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司股吧文本数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-company-stocks-comment.html",
+   "desc": "收录A股股吧发帖、回帖、用户信息及社交关系，含超7.8亿条发帖与15.2亿条回帖，是投资者情绪与行为金融研究的基础文本库。",
+   "coverage": "截至2025（实时更新）",
+   "volume": "发帖7.78亿条、回帖15.20亿条，用户超2600万",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": true,
+   "tags": [
+    "股吧文本",
+    "投资者情绪",
+    "行为金融",
+    "社交媒体",
+    "A股市场"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "量化/因子"
+   ],
+   "priority": "P0",
+   "auth_status": "未授权-需采购",
+   "notes": "简介称实时更新、字段标注年度更新，增量口径需向卖方确认；股吧帖子另有API商店实时查询接口"
+  },
+  {
+   "id": "cnod-guba-stat",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司股吧文本统计数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/guba-stat.html",
+   "desc": "股吧发帖与回帖统计表：证券代码、时间段、数量、情感占比等字段，已按时间段聚合，可直接构造情绪与热度因子。",
+   "coverage": "发帖时间 1988-2024，回帖时间 2007-2024",
+   "volume": "发帖3.3亿条、回帖4.2亿条",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": true,
+   "tags": [
+    "股吧文本",
+    "情感分析",
+    "投资者情绪",
+    "文本统计",
+    "金融研究"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "量化/因子"
+   ],
+   "priority": "P0",
+   "auth_status": "未授权-需采购",
+   "notes": "统计表非原文，不能回溯单帖；发帖3.3亿/回帖4.2亿与文本库7.78亿/15.2亿量级差一倍以上，两库口径不同不可混用"
+  },
+  {
+   "id": "cnod-ashare-complaint",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司消费者投诉文本数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/ashare-complaint.html",
+   "desc": "与A股上市公司实体匹配的消费者投诉文本，含投诉标题、问题、要求等字段，可用于声誉风险、ESG与政策研究。",
+   "coverage": "2018-2024年",
+   "volume": "332万条",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "消费者投诉",
+    "上市公司",
+    "文本数据",
+    "实体匹配",
+    "面板数据"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "风控/事件"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "2018-2024且年度更新；依赖实体匹配，未匹配到公司主体的投诉不在此库"
+  },
+  {
+   "id": "cnod-listedco-gpjy",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司股票高频交易数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-gpjy.html",
+   "desc": "逐笔成交与逐笔委托两表，毫秒级时间戳记录A股上市公司股票交易流水，面向微观结构与量化策略。",
+   "coverage": "2017-2025（可根据需要进行更新）",
+   "volume": "未标注",
+   "frequency": "不定期",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "高频交易",
+    "逐笔成交",
+    "逐笔委托",
+    "市场微观结构",
+    "量化交易"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "量化/选票"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "更新方式为「特殊需求另行联系」，非标准周期交付、需单独议价；数据量极大，落地成本高"
+  },
+  {
+   "id": "cnod-a-listedco-investorpost",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "雪球网上市公司个人投资者发帖实时更新数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/A-listedco-investorpost.html",
+   "desc": "雪球个股板块个人投资者发帖文本及互动数据：股票代码、发帖者、发布时间、点赞转发等，用于社媒情绪研究。",
+   "coverage": "截至2025年12月31日（实时更新中）",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": true,
+   "tags": [
+    "投资者发帖",
+    "社交媒体",
+    "金融大数据",
+    "文本数据",
+    "股票市场"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "量化/因子"
+   ],
+   "priority": "P0",
+   "auth_status": "未授权-需采购",
+   "notes": "称实时更新中但标注年度更新，需确认增量口径；API商店有雪球帖子实时查询，覆盖字段需核对"
+  },
+  {
+   "id": "cnod-listed-company-transactions",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "雪球网上市公司个人投资者关注和实盘模拟盘交易数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-company-transactions.html",
+   "desc": "雪球个股交易板块投资者发帖与互动，含用户昵称、发帖内容、来源股票、发布时间、点赞量，偏行为与情绪口径。",
+   "coverage": "截至2025年12月31日（实时更新中）",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": true,
+   "tags": [
+    "投资者行为",
+    "市场情绪",
+    "交易数据",
+    "公司舆情",
+    "微观结构"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "量化/因子"
+   ],
+   "priority": "P0",
+   "auth_status": "未授权-需采购",
+   "notes": "标题含「关注和实盘模拟盘交易」，实际以发帖文本为主，交易明细口径需核实；年度更新"
+  },
+  {
+   "id": "cnod-xueqiu-news",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "雪球网上市公司新闻实时更新数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/xueqiu-news.html",
+   "desc": "雪球网上市公司新闻库，涵盖资讯与公告，保留全文，主打实时更新，适合舆情与文本挖掘。",
+   "coverage": "截至2025年12月31日（实时更新中）",
+   "volume": "未标注",
+   "frequency": "实时",
+   "access_mode": "direct_sale",
+   "api_available": true,
+   "tags": [
+    "上市公司新闻",
+    "实时更新",
+    "舆情分析",
+    "文本挖掘"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "情报/公告"
+   ],
+   "priority": "P0",
+   "auth_status": "未授权-需采购",
+   "notes": "全站唯一明确标「实时更新」的条目；API商店的「财经网站新闻实时查询」是否覆盖雪球新闻需核实"
+  },
+  {
+   "id": "cnod-listed-co-patent-citation",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司专利及引用被引用数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-co-patent-citation.html",
+   "desc": "A股上市公司专利数量统计、质量统计与专利详情三表，含发明/实用新型/外观设计的申请授权及引用被引信息。",
+   "coverage": "发明公布按申请公布日统计：2000-2025；授权类按授权公布日统计：2000-2025",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "上市公司",
+    "专利数据",
+    "引用被引用",
+    "专利质量"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "两个时间口径不一致：发明公布按申请公布日、授权类按授权公布日统计，做面板时须统一；年度更新"
+  },
+  {
+   "id": "cnod-listed-companies-green-patent-citation",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司绿色专利及引用被引用数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-companies-green-patent-citation.html",
+   "desc": "A股上市公司及子公司、联营合营企业的绿色专利：发明公布、授权、实用新型与外观设计，含引用被引用与事务信息。",
+   "coverage": "1990-2024年",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "上市公司",
+    "绿色专利",
+    "专利引用",
+    "专利被引",
+    "绿色创新"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "宏观/环境"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "绿色专利识别依赖专利分类映射，口径变更会断序列；年度更新"
+  },
+  {
+   "id": "cnod-ssdigeco-patstat",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司数字经济专利数量统计数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/ssdigeco-patstat.html",
+   "desc": "按《数字经济核心产业分类与国际专利分类参照关系表(2023)》统计A股及子公司数字经济专利数量，细分到专利小类。",
+   "coverage": "1990-2025年",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "数字经济",
+    "专利统计",
+    "A股上市公司",
+    "专利分类"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "参照关系表为2023版，2023年前序列为回算值，跨年可比性有限；仅为数量统计无明细"
+  },
+  {
+   "id": "cnod-ss-dig-eco-pat",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司数字经济专利申请与授权数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/ss-dig-eco-pat.html",
+   "desc": "同参照关系表匹配A股及子公司，提供发明公布、发明授权、实用新型三类数字经济专利的申请与授权明细。",
+   "coverage": "1990~2025年",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "数字经济",
+    "专利数据",
+    "上市公司",
+    "产业数字化"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "与数字经济专利统计表同源，二者择一即可；年度更新"
+  },
+  {
+   "id": "cnod-ss-dig-eco-patyyby",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司数字经济专利及引用被引用数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/ss-dig-eco-patyyby.html",
+   "desc": "A股及子公司数字经济专利的引用与被引用数据，覆盖发明公布、发明授权、实用新型三类。",
+   "coverage": "1990-2025（发明公布按申请公布日；授权按授权公布日）",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "数字经济",
+    "专利引用",
+    "A股上市公司",
+    "专利被引用"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "引用数据存在前向截断，近年被引偏低；年度更新"
+  },
+  {
+   "id": "cnod-chinese-listed-companies-onlinerect",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司招聘数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-onlinerect.html",
+   "desc": "A股上市公司分来源的岗位招聘统计：职位、薪资、学历、经验、地区等，用于招聘行为与就业研究。",
+   "coverage": "2014.05-2024，不同数据源时间详见分表。",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "上市公司",
+    "招聘数据",
+    "A股",
+    "就业"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "更新时间截至2024，已滞后；不同数据源时间口径不同，须按分表对齐"
+  },
+  {
+   "id": "cnod-listedco-ai-recruitment",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司AI岗位线上招聘数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-AI-recruitment.html",
+   "desc": "A股上市公司AI岗位线上招聘信息，含公司、职位、薪资、学历等字段，反映企业AI人才需求。",
+   "coverage": "2014.5-2024年",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "AI岗位",
+    "招聘数据",
+    "上市公司",
+    "人工智能"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "AI岗位靠关键词识别，存在漏召与误召；2014.5-2024，已滞后"
+  },
+  {
+   "id": "cnod-ashare-cyber-security-recruitment",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司网络安全岗位招聘数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/Ashare-cyber-security-recruitment.html",
+   "desc": "A股上市公司及关联企业在三大招聘平台发布的网络安全岗位信息，含结构化字段，衡量网安人力投入。",
+   "coverage": "2014-2024",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "网络安全",
+    "招聘数据",
+    "上市公司",
+    "人力资源"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "仅覆盖三大招聘平台，样本非全量；年度更新且止于2024"
+  },
+  {
+   "id": "cnod-listed-company-trademark",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司商标数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-company%20trademark.html",
+   "desc": "A股上市公司及关联主体的商标注册全周期数据，含5,123家公司实体与126万条商标信息。",
+   "coverage": "2000-2023年",
+   "volume": "126万条",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "上市公司",
+    "商标数据",
+    "知识产权",
+    "品牌战略"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "覆盖2000-2023，已停更近两年；商标注册到公告有时滞"
+  },
+  {
+   "id": "cnod-listedco-lwwbbc",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司劳务外包报酬数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-lwwbbc.html",
+   "desc": "A股上市公司劳务外包报酬数据，含工时总数、报酬总额、平均时薪等字段，反映用工结构与人力成本。",
+   "coverage": "2012年至2023年",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "劳务外包",
+    "上市公司",
+    "报酬数据",
+    "A股"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "2012-2023，仅年报披露口径，披露不全的公司缺失"
+  },
+  {
+   "id": "cnod-listedco-jyfw",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司及其前十大股东经营范围数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-jyfw.html",
+   "desc": "A股上市公司及其前十大股东的经营范围信息，含关联公司名称、曾用名、股东名称、持股比例等，共65万余行。",
+   "coverage": "截至2023年底",
+   "volume": "265485行（经营范围表）、383316行（前十大股东经营范围表）",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "经营范围",
+    "上市公司",
+    "前十大股东",
+    "信息披露"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "量化/投研"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "仅截至2023年底，股东口径为前十大不覆盖全股东；经营范围文本需自行归一"
+  },
+  {
+   "id": "cnod-listedco-ygpj",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司员工评价数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-ygpj.html",
+   "desc": "A股上市公司员工评价数据，含公司实力、评分、评价内容、薪资整体与岗位评价五类，来自雇主点评类平台。",
+   "coverage": "员工评价内容表：2014.07-2022.09；薪资岗位评价表：2014.06-2023.04",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "员工评价",
+    "上市公司",
+    "薪资评价",
+    "雇主点评",
+    "员工满意度"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "情报/舆情"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "两表时间不同步（评价止2022.09、薪资止2023.04）；点评样本自选择偏差明显"
+  },
+  {
+   "id": "cnod-listedco-ggcs",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司高管出生地出生日期数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-ggcs.html",
+   "desc": "基于招股说明书等披露整理的A股高管出生地、出生日期，含股票代码、披露日期、姓名、职务、所在地。",
+   "coverage": "2007-2023",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "高管出生地",
+    "出生日期",
+    "A股上市公司",
+    "高管特征",
+    "地缘特征"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "量化/投研"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "仅2007-2023，新上市公司高管覆盖不全；出生日期靠人工/文本抽取，缺失率较高"
+  },
+  {
+   "id": "cnod-chinese-listed-companies-ztb",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司招投标数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-ztb.html",
+   "desc": "通过精确与模糊匹配识别A股上市公司及子公司作为招标/中标单位的招投标记录，含流程状态等字段。",
+   "coverage": "截止2021",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "招投标",
+    "上市公司",
+    "精确匹配",
+    "经济研究"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "时间仅到2021，已停更4年以上，做当期因子不可用；模糊匹配存在误挂"
+  },
+  {
+   "id": "cnod-listedco-envlpenalty",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司环保处罚数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-envlpenalty.html",
+   "desc": "A股上市公司及关联企业的环保行政处罚记录，含处罚日期、违规类型、罚款金额，可作ESG与环境风险因子。",
+   "coverage": "2003-2024年",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "环保处罚",
+    "上市公司",
+    "A股",
+    "ESG",
+    "环境合规"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "风控/事件"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "2003-2024但年度更新，事件发生到入库有明显时滞，不适合做实时风控"
+  },
+  {
+   "id": "cnod-report-all",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司分析师研报文本数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/report-all.html",
+   "desc": "A股上市公司分析师研报，含发布机构、股票代码、标题、发布日期等字段，提供结构化表与PDF原文。",
+   "coverage": "2006-2024年初",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "研报数据",
+    "A股",
+    "分析师",
+    "文本数据"
+   ],
+   "maps_to": [
+    "量化/投研",
+    "情报/公告"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "覆盖2006-2024初，之后无增量；PDF原文需自行解析"
+  },
+  {
+   "id": "cnod-report",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司分析师研报及评论数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/report.html",
+   "desc": "个股研报基本信息表与评论表，含报告标题、分析师、发布机构、回帖内容等，可做研报情绪与分歧度。",
+   "coverage": "个股研究报告基本信息表：2021.07~2026.1.31；个股研究报告评论表：2021.07~2024.06",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "研报数据",
+    "分析师",
+    "评论数据",
+    "投资研究"
+   ],
+   "maps_to": [
+    "量化/投研"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "评论表止于2024.06而基本信息表到2026.1.31，两表时间不对齐；年度更新"
+  },
+  {
+   "id": "cnod-industry-reports",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "中国证券分析师行业研究报告数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/Industry-Reports.html",
+   "desc": "中国证券分析师行业研究报告，含行业名称、报告名称、分析师、机构、发布日期、涉及上市公司，附PDF原文。",
+   "coverage": "2021.07-2026.1.31",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "行业研究",
+    "证券分析师",
+    "上市公司",
+    "研报数据"
+   ],
+   "maps_to": [
+    "量化/投研"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "行业口径而非个股，需自行映射到个股；2021.07起才有"
+  },
+  {
+   "id": "cnod-listedco-standard",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司标准数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-standard.html",
+   "desc": "A股上市公司及关联公司参与的国家标准、行业标准、地方标准、团体标准数据，可衡量技术话语权。",
+   "coverage": "1963.09~2026.07",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "上市公司",
+    "标准数据",
+    "国家标准",
+    "行业标准",
+    "团体标准"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "简介写1964-2025、字段写1963.09~2026.07，两处口径不一致；标准参与方匹配存在歧义"
+  },
+  {
+   "id": "cnod-listed-co-judgement-doc",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司裁判文书数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-co-judgement-doc.html",
+   "desc": "A股上市公司及子公司、联营合营企业的裁判文书信息，用于司法风险与法律实证研究。",
+   "coverage": "2014-2020",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "裁判文书",
+    "上市公司",
+    "司法数据",
+    "法律风险"
+   ],
+   "maps_to": [
+    "风控/事件",
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "仅2014-2020且年度更新，2021年后裁判文书公开量骤降，此库已不反映当前诉讼"
+  },
+  {
+   "id": "cnod-a-hg",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司海关进出口交易明细数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/A-hg.html",
+   "desc": "A股上市公司及子公司与中国海关进出口交易明细，含证券代码、HS商品编码、金额等字段，粒度到商品。",
+   "coverage": "2007-2016年",
+   "volume": "未标注",
+   "frequency": "不支持更新",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "海关数据",
+    "进出口贸易",
+    "上市公司",
+    "微观数据"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "宏观/环境"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "明确标「不支持更新」，数据止于2016，只可做历史研究不可用于当期"
+  },
+  {
+   "id": "cnod-list-company-land-transaction",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司土地交易数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/list-company-land-transaction.html",
+   "desc": "A股上市公司及关联方全国土地交易信息，含交易主体、地块属性、规划指标、合同条款与支付约定。",
+   "coverage": "2000-2024",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "土地交易",
+    "上市公司",
+    "企业投资",
+    "合同履约"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "2000-2024年度更新；土地拿地与公告存在时滞，且关联方认定口径需核实"
+  },
+  {
+   "id": "cnod-listedco-survey",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司机构调研数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-survey.html",
+   "desc": "A股机构调研公开披露信息：公告日期、接待人员、时间、方式、地点、接待对象等，可用于调研热度因子。",
+   "coverage": "截止2025.06",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "机构调研",
+    "A股",
+    "信息披露",
+    "上市公司"
+   ],
+   "maps_to": [
+    "情报/公告",
+    "量化/因子"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "披露为自愿性，未披露不等于未调研；截止2025.06"
+  },
+  {
+   "id": "cnod-listedco-md-a",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司管理层讨论与分析数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-MD%26A.html",
+   "desc": "A股年报「管理层讨论与分析」的结构化指标与原始文本，长周期覆盖，可做前瞻性文本与情感分析。",
+   "coverage": "2001-2024",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "管理层讨论",
+    "文本分析",
+    "情感极性",
+    "上市公司",
+    "年报披露"
+   ],
+   "maps_to": [
+    "情报/公告",
+    "量化/因子"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "2001-2024，随年报节奏年度更新，最长滞后约一年；文本需自行断句与向量化"
+  },
+  {
+   "id": "cnod-chinese-listed-companies-and-investor-relations",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司投资者关系管理数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-and-investor-relations.html",
+   "desc": "上交所e互动、深交所互动易、全景网投资者问答，加上投资者关系活动记录表，覆盖2011-2025年文本。",
+   "coverage": "上交所e互动：2012-2024.02及2025.04-2025.05；深交所互动易：2011-2025.05；全景网：2011-2025.06；投资者关系活动记录表：2016-2025.05",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "投资者关系",
+    "互动问答",
+    "上市公司",
+    "A股市场",
+    "调研记录"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "情报/公告"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "四个来源时间区间各不相同且e互动有断档（2024.02后跳至2025.04），合并时须按来源分列"
+  },
+  {
+   "id": "cnod-listed-random-check",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司现场检查随机抽查数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-random-check.html",
+   "desc": "A股上市公司现场检查随机抽查记录，含省市、发文日期、抽查公司等，属于监管执法口径。",
+   "coverage": "2016-2025.2.17",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "现场检查",
+    "随机抽查",
+    "上市公司",
+    "证券监管"
+   ],
+   "maps_to": [
+    "风控/事件"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "仅抽查名单，不含检查结论；2016-2025.2.17"
+  },
+  {
+   "id": "cnod-listedco-varpenalty",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司各类型行政处罚数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-varpenalty.html",
+   "desc": "A股上市公司及子公司在税务、知识产权、党纪、价格违规、劳动争议、资金违规六类行政处罚信息。",
+   "coverage": "2015-2023",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "行政处罚",
+    "上市公司",
+    "税务处罚",
+    "市场监管"
+   ],
+   "maps_to": [
+    "风控/事件",
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "2015-2023且年度更新，已滞后；仅六类处罚，非全量行政处罚"
+  },
+  {
+   "id": "cnod-chinese-listed-companies-opa",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司社交媒体账号数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-opa.html",
+   "desc": "A股上市公司在APP、微博、公众号、短视频、小程序的账号信息，多维度账号属性，可做公司-账号映射底表。",
+   "coverage": "截至2025年6月",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "上市公司",
+    "社交媒体",
+    "账号数据",
+    "信息披露"
+   ],
+   "maps_to": [
+    "情报/舆情"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "结构化字段未标时间范围，简介称截至2025年6月；账号匹配准确率决定下游舆情覆盖"
+  },
+  {
+   "id": "cnod-listedco-exercise",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司投服中心行权数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-exercise.html",
+   "desc": "投服中心行权数据：行权情况、问答、新闻三张表，用于中小投资者保护与公司治理研究。",
+   "coverage": "截止2025年7月初",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "投服中心",
+    "上市公司",
+    "行权数据",
+    "中小投资者",
+    "公司治理"
+   ],
+   "maps_to": [
+    "风控/事件"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "仅覆盖被投服中心行权的公司，样本高度选择；截止2025年7月初"
+  },
+  {
+   "id": "cnod-cpasws",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "注册会计师及事务所数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/cpasws.html",
+   "desc": "注册会计师与事务所信息：注师、分所、事务所处罚等，含执业文号、证书编号、行政区划、注师数量等字段。",
+   "coverage": "1986.08~2023.01",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "注册会计师",
+    "事务所",
+    "审计",
+    "执业信息",
+    "处罚记录"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "止于2023.01，会计师事务所排名与合并变动频繁，需外部对齐；无证券业务标识"
+  },
+  {
+   "id": "cnod-securities-firm-employee",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "证券公司从业人员信息数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/securities-firm-employee.html",
+   "desc": "2003年以来证券公司执业人员基本信息与职业经历变化，含姓名、学历、登记编号、岗位、执业机构、登记离职日期。",
+   "coverage": "2003.08-2023.5.30",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "证券公司",
+    "从业人员",
+    "执业信息",
+    "职业经历"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "止于2023.5.30；人员表可用于关系网络，但同名同姓需消歧"
+  },
+  {
+   "id": "cnod-asset-management-cor-employee",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "证券资产管理公司从业人员信息数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/asset-management%26cor-employee.html",
+   "desc": "2003年以来证券资产管理公司执业人员的基本信息与职业经历变化，字段与证券公司从业人员表同构。",
+   "coverage": "2003.08-2023.5.30",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "证券从业人员",
+    "资产管理",
+    "登记信息",
+    "职业经历"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "止于2023.5.30；资管子公司主体变更多，机构ID需自行维护"
+  },
+  {
+   "id": "cnod-msic-employee",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "证券投资咨询机构从业人员信息数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/MSIC-employee.html",
+   "desc": "2003年以来证券投资咨询机构从业人员的个人信息、执业岗位、登记状态与流动经历。",
+   "coverage": "2003.08-2023.5.30",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "证券从业",
+    "执业人员",
+    "投资咨询",
+    "登记信息"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "止于2023.5.30；投询机构规模小、名单变动快"
+  },
+  {
+   "id": "cnod-credit-rating-age-employee",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "证券市场资信评级机构从业人员信息数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/credit-rating%26age-employee.html",
+   "desc": "2003年以来证券市场资信评级机构从业人员的基本信息与职业经历变化，含登记与离职日期。",
+   "coverage": "2003.08-2023.5.30",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "证券从业",
+    "资信评级",
+    "从业人员",
+    "职业信息",
+    "行业数据"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "止于2023.5.30；评级机构数量少，样本有限"
+  },
+  {
+   "id": "cnod-sub-cor-employee",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "证券另类子公司从业人员信息数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/sub%26cor-employee.html",
+   "desc": "2003年以来证券另类子公司从业人员执业信息，含姓名、学历、登记编号、岗位、机构、登记与离职日期。",
+   "coverage": "2003.08-2023.5.30",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "证券从业",
+    "另类子公司",
+    "从业人员",
+    "职业经历"
+   ],
+   "maps_to": [
+    "量化/因子"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "止于2023.5.30；另类子公司口径随监管调整变化"
+  },
+  {
+   "id": "cnod-bjdbr",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "保荐代表人信息数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/bjdbr.html",
+   "desc": "保荐代表人综合执业、机构验证、处罚处分、执业变更与保荐项目等多维信息。",
+   "coverage": "2003.08~2025.06",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "保荐代表人",
+    "执业信息",
+    "处罚记录",
+    "保荐项目",
+    "资本市场"
+   ],
+   "maps_to": [
+    "量化/因子",
+    "风控/事件"
+   ],
+   "priority": "P2",
+   "auth_status": "未授权-需采购",
+   "notes": "2003.08~2025.06，年度更新；保荐项目与IPO事件需自行关联"
+  },
+  {
+   "id": "cnod-ashare-zhihu-post",
+   "layer": "core",
+   "category_group": "SSRD上市公司与资本市场",
+   "category": "A股上市公司另类数据",
+   "name": "A股上市公司知乎发帖文本数据",
+   "url": "https://www.cnopendata.com/data/m/listedcompany-special/ashare-zhihu-post.html",
+   "desc": "以A股上市公司为检索主体采集知乎问答文本，保留问题标题、回答正文、赞同/评论数、发布时间与作者身份标签。",
+   "coverage": "截止2026年",
+   "volume": "未标注",
+   "frequency": "年度",
+   "access_mode": "direct_sale",
+   "api_available": false,
+   "tags": [
+    "知乎",
+    "上市公司",
+    "网络舆情",
+    "投资者情绪",
+    "文本数据",
+    "另类数据"
+   ],
+   "maps_to": [
+    "情报/舆情",
+    "量化/因子"
+   ],
+   "priority": "P1",
+   "auth_status": "未授权-需采购",
+   "notes": "平台标记「上新」；年度更新无法追新，只能做单股历史补全；检索式采集会漏掉未点名公司的帖子"
+  }
+ ]
+}

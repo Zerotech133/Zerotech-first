@@ -1,0 +1,10 @@
+{
+  "id": "layline-insider-trading",
+  "name": "Layline 美股内幕交易数据",
+  "source_url": "https://doi.org/10.7910/DVN/VH6GVH",
+  "landing_page": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VH6GVH",
+  "fetched_at": "2026-10-21T15:05:00+08:00",
+  "files": [],
+  "license_note": "Harvard Dataverse 数据集条款，需人工复核",
+  "notes": "未完成：lit_panel.zip 实际 445,235,314 字节，下载在 8,265,728 字节处中断（无 EOCD，判定截断），已移至 raw/_incomplete/ 保留证据，未删除。该数据集另含 8 个 zip（最大 887MB）与两个脚本；属美股 P2 背景数据，S0 不为此付带宽，暂缓。"
+}

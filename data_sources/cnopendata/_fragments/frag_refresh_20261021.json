@@ -1,0 +1,5480 @@
+{
+  "shard": "refresh-2026-10-21",
+  "records": [
+    {
+      "id": "cnod-wwtp",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国污水处理厂数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/wwtp.html",
+      "desc": "中国污水处理厂数据库涵盖地上与地下污水处理厂的类型、位置、规模、工艺、排放标准等信息，时间跨度长，包含建设年份等指标，为污水处理行业研究、管理和政策制定提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-msw-incineration-plant",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "生活垃圾焚烧厂数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/msw-incineration-plant.html",
+      "desc": "该数据集系统整理了我国生活垃圾焚烧发电企业及焚烧炉的详细信息，涵盖企业基础信息、焚烧炉技术参数、炉膛温度监测和污染物排放检测，覆盖2000-2025年，年度更新，为环境、能源及产业研究提供量化数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-green-patent-innovation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国绿色专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/green-patent-innovation.html",
+      "desc": "中国绿色专利申请与授权数据库涵盖发明公布、发明授权和实用新型专利，时间跨度为1985-2024年，按年度更新，可用于分析绿色技术创新趋势与分布特征。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-green-patyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国绿色专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/green-patyyby.html",
+      "desc": "本数据涵盖中国绿色专利的引用与被引用信息，时间范围为1985年至2024年12月31日，按年度更新。数据覆盖发明申请、发明授权及实用新型三类专利，为绿色技术创新、环境规制政策评估等研究提供支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-green-patent-volume-data-by-region",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国绿色专利分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/chinese-green-patent-volume-data-by-region.html",
+      "desc": "本数据基于IPC分类号识别绿色专利，涵盖废弃物管理、能源节约等7大主分类，分省份及城市维度，按发明申请、授权两阶段统计，时间覆盖1985年至2025年，为绿色创新研究提供宏观数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-low-carbon-patent-innovation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国绿色低碳专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-innovation.html",
+      "desc": "中国绿色低碳专利申请与授权数据由CnOpenData推出，涵盖发明公布、发明授权、实用新型三类专利，基于国际专利分类与绿色低碳技术对照体系，时间跨度1985至2024年，为绿色低碳技术研究提供全面数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-low-carbon-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国绿色低碳专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-citation.html",
+      "desc": "中国绿色低碳专利及引用被引用数据，基于国际专利分类体系，涵盖发明公布、发明授权和实用新型专利，分设专利引用表与被引用表，时间覆盖1985-2024年，年度更新，适用于绿色技术创新研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-low-carbon-patent-stats",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国绿色低碳专利分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-stats.html",
+      "desc": "中国绿色低碳专利分地区统计数据基于国际专利分类，覆盖1985-2024年，分省分城市展示发明公布、发明授权、实用新型三类专利，包含化石能源降碳、清洁能源等五大技术分支，适用于区域绿色技术创新和政策评估研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-companies-green-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "A股上市公司绿色专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/listed-companies-green-patent-citation.html",
+      "desc": "本数据提供A股上市公司及其子公司、联营、合营公司的绿色专利信息，涵盖发明公布、授权及实用新型、外观设计的申请与授权数据，并包含专利引用、被引用及事务信息，时间覆盖1990-2024年，为绿色创新研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-hjtjnj",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国能源年鉴地区能源平衡表数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/hjtjnj.html",
+      "desc": "本数据源自《中国能源统计年鉴》地区能源平衡表，覆盖1997年以来全国30个省份的能源生产、消费与平衡情况，包含煤、油、气等30余个指标，为能源经济与政策研究提供权威数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-industrial-enterprise-green-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国工业企业绿色专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/chinese-industrial-enterprise-green-patent-citation.html",
+      "desc": "该数据库将中国工业企业数据与绿色专利精准匹配，涵盖发明公布、发明授权、实用新型三大专利类型，提供从基本信息、引用被引用关系到法律事务的完整信息链条，并包含专利全文文本数据，为研究中国工业绿色创新提供全面的数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-carbon-trading-data-by-region",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国各地区碳交易数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/chinese-carbon-trading-data-by-region.html",
+      "desc": "本数据库整合我国八大碳交易试点（北京、上海、天津、广州、深圳、重庆、四川、湖北）官方市场交易明细，覆盖2013至2026年每日交易数据，含两万余条记录，为碳市场研究与政策评估提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-windfarm",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "全球风电可持续发展能源项目信息数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/Windfarm.html",
+      "desc": "全球风电可持续发展能源项目信息数据涵盖风电场、涡轮机制造商、涡轮机、市场参与者及各国风电产能五类信息，覆盖130多个国家和近2.8万个风电场，是风电产业研究和投资决策的重要参考。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-dzcpyhwzsm",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "电器电子产品有害物质声明数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/dzcpyhwzsm.html",
+      "desc": "本数据涵盖电器电子产品有害物质声明及国推自愿性认证信息，包括声明类型、认证机构、产品类别、证书状态等字段，时间跨度从2010年至2023年，为环保合规与绿色消费研究提供数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-zszyhs",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "再生资源回收企业信息数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/zszyhs.html",
+      "desc": "本数据系统整理了自1952年以来中国再生资源回收企业的备案信息与工商注册数据，涵盖企业基本信息、备案状态、资本结构、行业分类、经营范围等维度，包含5.5万余家企业记录，为循环经济研究与企业决策提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-donation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "轻松筹公益捐赠项目数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/donation.html",
+      "desc": "轻松筹公益捐赠项目数据包含公益项目基本信息表和进展追溯表，涵盖项目ID、名称、筹款金额、捐款人数等字段，时间跨度为2017至2024年，可用于分析网络众筹公益捐赠行为与项目成功影响因素。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-emergency",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "全球紧急事件数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/emergency.html",
+      "desc": "全球紧急事件数据收录1900年至今全球自然灾害与技术事故，覆盖200余国家/地区，包含灾害类型、定位、伤亡损失等多维指标，为灾害研究、风险评估与政策制定提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-wb-benefit",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "微博微公益平台数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/wb-benefit.html",
+      "desc": "本数据源自微博微公益平台，涵盖微拍卖、转发求助、短期项目、长期项目及出价记录五类表，提供项目信息、参与主体、动态数据等丰富内容，可用于公益研究、政策治理与公益创新。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-licence-of-industrial-products",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "工业产品生产许可证数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/licence-of-industrial-products.html",
+      "desc": "工业产品生产许可证数据涵盖全国31省市，包含公司名称、主导产品、证书编号、发证日期等关键字段，时间跨度为2014年至2020年10月，按年度更新。该数据可用于分析生产许可发放情况、地域分布及行业特征，为市场监管和政策研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-amec",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国汽车能源消耗量数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/AMEC.html",
+      "desc": "中国汽车能源消耗量数据涵盖2010年以来传统能源与新能源汽车的能耗信息，包括生产企业、车辆型号、排量、燃料消耗量等关键字段，为汽车节能减排研究及政策制定提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-responsibility-report",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "全球企业社会责任报告数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/Responsibility%20Report.html",
+      "desc": "本数据库系统收集全球企业社会责任报告，包含公司名称、股票代码、所属行业等结构化元数据及原始PDF文件，覆盖多年份多地区，为研究企业非财务绩效与可持续发展提供高价值数据资源。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-qgtpf",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "ESG数据",
+      "name": "中国省市县碳排放量栅格数据",
+      "url": "https://www.cnopendata.com/data/m/ESG/qgtpf.html",
+      "desc": "该数据集提供中国省市县乡镇四级行政区划的碳排放量栅格数据，覆盖1970至2023年，并按年度更新，为低碳经济研究、区域碳减排政策制定及行业碳信息披露等提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-uslcar-10-k",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "美股上市公司数据",
+      "name": "美国上市公司年度报告数据",
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/USLCAR-10-K.html",
+      "desc": "本数据集整理了1993-2023年间美国上市公司披露的20.9万份10-K年度报告，包含报告原始文本及索引表格，提供CIK、公司名称、报告类型等关键字段，为金融会计研究和市场分析提供丰富数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-jijin-stocks-comment",
+      "layer": "factor",
+      "category_group": "金融行业数据",
+      "category": "债券数据",
+      "name": "中国基金产品股吧文本数据",
+      "url": "https://www.cnopendata.com/data/m/bond/jijin-stocks-comment.html",
+      "desc": "该数据集提供中国基金产品股吧的文本数据，涵盖帖子、回帖及用户信息，反映投资者情绪与市场互动，可用于金融研究、舆情分析等。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-fapaifang",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国房地产数据",
+      "name": "法拍房数据",
+      "url": "https://www.cnopendata.com/data/m/china-real-estate/fapaifang.html",
+      "desc": "该数据集涵盖法拍房从房屋基本信息、竞买记录到拍卖公告、标的物信息及拍卖须知的全面数据，时间跨度2012-2025，为分析司法拍卖市场、信贷资源配置及房地产研究提供有力支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-manufacturer-directory",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "海关与国际贸易数据",
+      "name": "外贸供应商名录数据",
+      "url": "https://www.cnopendata.com/data/m/customs/Manufacturer-Directory.html",
+      "desc": "该数据集收录外贸供应商名录信息，涵盖企业名称、所在地区、经纬度、联系方式、诚信通年份、主营产品及经营模式等，提供2020年、2022年、2023年、2024年四个年度版本，为研究进出口贸易与企业出口行为提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gq-hg",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "海关与国际贸易数据",
+      "name": "中国工业企业海关进出口交易明细数据",
+      "url": "https://www.cnopendata.com/data/m/customs/gq-hg.html",
+      "desc": "中国工业企业海关进出口交易明细数据，基于海关进出口数据与工业企业名单匹配而成，涵盖2007-2016年间的企业进出口交易记录，包含企业名称、年份、HS编码、金额、数量等字段，为研究企业贸易行为提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-tax-hg",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "海关与国际贸易数据",
+      "name": "税收调查企业海关进出口交易明细数据",
+      "url": "https://www.cnopendata.com/data/m/customs/tax-hg.html",
+      "desc": "本数据将税收调查企业名单与中国海关进出口数据匹配，形成2007-2016年企业海关进出口交易明细，涵盖HS编码、金额、产消国等字段，为企业贸易和全球价值链研究提供微观数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-intl-freight-forwarding",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "海关与国际贸易数据",
+      "name": "国际货运代理信息数据",
+      "url": "https://www.cnopendata.com/data/m/customs/intl-freight-forwarding.html",
+      "desc": "该数据库整合了中国境内国际货运代理企业的基本信息与工商扩展信息，涵盖运营七大维度及注册、资本、分类等增强字段，适用于物流研究、行业分析、政策制定等场景。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gljk",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "海关与国际贸易数据",
+      "name": "鼓励进口技术和产品目录数据",
+      "url": "https://www.cnopendata.com/data/m/customs/gljk.html",
+      "desc": "该数据集整理了国家及多省《鼓励进口技术和产品目录》，涵盖版本、商品编码、技术名称等字段，反映先进技术、关键装备等鼓励进口类别，支持产业政策研究与创新效应分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-jkjwsp",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "海关与国际贸易数据",
+      "name": "大陆进口境外食品生产企业",
+      "url": "https://www.cnopendata.com/data/m/customs/jkjwsp.html",
+      "desc": "本数据涵盖2018年至2025年3月大陆进口境外食品生产企业的注册信息，包括企业名称、在华注册编号、产品类别等字段，总量超9万条，为进口食品供应链合规研究提供标准化数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-kasf",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "海关与国际贸易数据",
+      "name": "中国口岸收费清单数据",
+      "url": "https://www.cnopendata.com/data/m/customs/kasf.html",
+      "desc": "中国口岸收费清单数据覆盖31个省级行政区，包含省份、收费主体、口岸类型、收费项目等字段，反映口岸收费明码标价情况，有助于研究口岸营商环境与贸易便利化。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-tax-onlinemessage",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国税务留言板信息数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-onlinemessage.html",
+      "desc": "税务留言板信息数据来源于国家税务总局网上留言板块，记录了纳税人咨询留言与税务部门答复内容，涵盖留言地区、时间等字段，可用于涉税问题分析与纳税服务研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-wxgzh",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司微信公众号全文数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/wxgzh.html",
+      "desc": "本数据汇聚A股上市公司微信公众号全文信息，涵盖股票代码、公众号简介、文章标题、作者、发布时间与全文内容等，为研究企业非财务信息披露、品牌传播与投资者关系提供详实文本资料。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-report-all",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司分析师研报文本数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/report-all.html",
+      "desc": "本数据收录A股上市公司分析师研报，时间覆盖2006年至2024年初，包含发布机构、股票代码、标题、发布日期等字段，以结构化表格和PDF原文形式呈现，适用于投资研究、学术文本分析等场景。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-announcement",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司全部公告数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-announcement.html",
+      "desc": "本数据集收录A股上市公司全部公告，涵盖年报、半年报、三季报、公司治理、股东大会、日常经营等29个类型公告，囊括股票代码、名称、标题、公告时间、分类、板块、行业、年度等信息。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ssgsjyyb",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司经营月报数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/ssgsjyyb.html",
+      "desc": "本数据收录2007年以来A股上市公司经营月报信息，涵盖股票代码、公告标题、日期、行业等核心字段，长时段覆盖且头部行业密集，可用于经营监测、行业景气研究、投资分析及战略决策。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-gddh",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司股东大会公告数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gddh.html",
+      "desc": "该数据集提供A股上市公司股东大会公告数据，涵盖股票代码、公司名称、公告标题、公告时间等字段，为证券市场研究与上市公司信息披露分析提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-zgsm",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司招股说明书公告数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-zgsm.html",
+      "desc": "该数据汇总A股上市公司招股说明书公告信息，涵盖股票代码、名称、公告时间、分类、行业等字段，时间截至2026年7月，年度更新，为证券市场研究提供有力支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-gsz",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司公司债公告数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gsz.html",
+      "desc": "该数据涵盖A股上市公司公司债公告信息，包括股票代码、公告标题、时间、分类、行业等字段，为证券市场研究与投资者分析提供有力支撑。数据时间截至2026年7月，按年度更新。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-shzr",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司社会责任报告数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-shzr.html",
+      "desc": "本数据集提供A股上市公司社会责任报告信息，涵盖股票代码、名称、公告标题、时间等字段，支持证券市场研究与投资者分析，数据更新至2026年7月，年度更新。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-listed-companies-and-investor-relations",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司投资者关系管理数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/chinese-listed-companies-and-investor-relations.html",
+      "desc": "本数据集收录上交所e互动、深交所互动易、全景网三大平台的投资者问答数据，以及上市公司投资者关系活动记录表，覆盖2011-2025年，为研究A股上市公司投资者关系管理提供全面文本资料。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-exercise",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "财经新闻舆情",
+      "name": "A股上市公司投服中心行权数据",
+      "url": "https://www.cnopendata.com/data/m/financial-news/listedco-exercise.html",
+      "desc": "本数据提供A股上市公司投服中心行权相关信息，涵盖行权情况、问答及新闻三张表，时间截至2025年7月初，年度更新，可用于研究投服中心行权行为及中小投资者保护。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-fin-fs",
+      "layer": "factor",
+      "category_group": "金融行业数据",
+      "category": "券商与基金数据",
+      "name": "A股上市金融机构财务报表数据",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/Fin-FS.html",
+      "desc": "本数据集提供A股上市金融机构的财务报表数据，涵盖年报、季报和半年报，包括资产负债表、利润表、现金流量表、财务指标表及披露时间表，按报告期更新至2025年3月，适用于金融研究、投资分析和监管监测。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-finance-basic",
+      "layer": "factor",
+      "category_group": "金融行业数据",
+      "category": "券商与基金数据",
+      "name": "金融业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/finance-basic.html",
+      "desc": "本数据基于国民经济行业分类，整理了1950年至2024年10月我国金融业工商注册企业基本信息，覆盖货币金融、资本市场、保险及其他金融四大类，生动展现建国以来金融业发展历程，可用于行业研究与经济分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gbpatent-citation-global",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "全球专利数据",
+      "name": "英国专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/global-patent/gbpatent-citation-global.html",
+      "desc": "提供英国专利及引用被引用数据，涵盖专利基本信息、引用关系、法律状态等，时间范围为1985年至2024年底，年度更新，为创新研究和专利质量分析提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-eupatent-citation-global",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "全球专利数据",
+      "name": "欧洲专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/global-patent/eupatent-citation-global.html",
+      "desc": "本数据集提供欧洲专利的引用与被引用详细信息，覆盖1985年至2024年12月31日，年度更新。数据包含专利基本信息、引用关系及法律状态，可用于追踪技术知识流动、评估专利质量与创新价值，为创新研究和专利分析提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-krpatent-citation-global",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "全球专利数据",
+      "name": "韩国专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/global-patent/krpatent-citation-global.html",
+      "desc": "CnOpenData整理的韩国专利及引用被引用数据，涵盖1985年至2024年12月31日的专利信息，包括专利引用与被引用详情、法律状态等，为创新质量评估和技术知识流动研究提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-industrial-and-commercial-enterprises-registered-information-chinese-industrial-enterprise-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国工商注册企业全信息",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/chinese-industrial-and-commercial-enterprises-registered-information%2Fchinese-industrial-enterprise-patent-citation.html",
+      "desc": "本数据提供中国工商注册企业全信息，涵盖基本信息、重点关注、知识产权、企业发展、经营状况五方面，总数据量超1.7亿，为研究企业生存、行业覆盖与市场活力提供支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-stats-enterprises",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国工商企业进入退出信息统计数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/stats-enterprises.html",
+      "desc": "本数据基于工商注册企业基本信息，统计了1980年至2025年中国32个省份各行业的企业注册、注销及存续数量，从多维角度提供统计数据，为研究企业生存状况、市场活力和行业分布提供支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-statspts-enterprises",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国合伙企业进入退出信息统计数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/statspts-enterprises.html",
+      "desc": "该数据集统计了中国合伙企业自1950年至2021年的进入退出信息，按地区、行业、企业性质等多维度提供注册、注销、存续企业数量，为研究企业生存状况与市场活力提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-hospital-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "医院医疗机构工商注册基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/hospital-basic.html",
+      "desc": "本数据汇集我国医院、卫生院等医疗机构的工商注册基本信息，包含企业名称、注册资本、注册时间等关键字段，覆盖1950年至2021年，可用于医疗机构分布与行业趋势研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-5g-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "5G行业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/5G-basic.html",
+      "desc": "该数据基于16个5G相关关键词，从工商注册企业中筛选出189万条5G行业企业基本信息，涵盖企业名称、注册资本、注册时间等核心字段，时间跨度为1950-2022年，为5G产业研究提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-live-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "直播行业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/live-basic.html",
+      "desc": "本数据基于全国工商注册企业基本信息库，通过关键词分层匹配方法，构建覆盖直播行业核心层、生态层与关联层的企业数据集。数据包含企业名称、注册时间、注册资本等基本信息，时间跨度1950-2025年，支持数字经济、区域经济及跨界融合研究，为学术分析",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-robot-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "机器人行业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/robot-basic.html",
+      "desc": "本数据基于CnOpenData工商注册数据，通过10个关键词筛选出139万条机器人行业企业基本信息，剔除个体工商户，时间覆盖1950-2022年，为行业研究提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ctgszp",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国城投公司上下三层企业族谱数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/ctgszp.html",
+      "desc": "本数据系统整合全国3600+城投公司的上下三级股权穿透数据，覆盖31省，通过公示股东与控制企业信息，揭示真实控制权结构与资本运作路径，为地方政府债务和城投治理研究提供底层支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ggzg-zp",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "港股中概公司族谱数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/ggzg-zp.html",
+      "desc": "该数据涵盖港股中概公司的族谱信息，通过9张表单构建多层股权架构图谱，反映企业间控股关系，可用于公司治理、风险评估及行业竞争格局研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-tic-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国工业企业基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/tic-basic.html",
+      "desc": "本数据基于国家工商企业信息，对中国工业企业基本信息进行精确和模糊匹配增强，精确匹配近78万条、模糊匹配84万条，为学术研究提供更完整的企业基础信息。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-tax-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "税收调查企业基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/tax-basic.html",
+      "desc": "本数据汇总全国税收调查企业名单，包含注册资本、注册年份、所在省市区等基本信息，覆盖2008-2016年，按年度更新，为财税改革研究及经济形势分析提供扎实数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-patent-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国专利权人基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/patent-basic.html",
+      "desc": "本数据整合中国专利数据与工商注册企业信息，提供专利权人/申请人的详细基本信息，包括社会信用代码、注册时间等，为创新研究提供全样本支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-hte-freport",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国高新技术企业财务报表数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/hte-freport.html",
+      "desc": "中国高新技术企业财务报表数据覆盖2020-2023年全国高新技术企业核心财务指标，包括资产、负债、营收、利润等关键信息，为非公开财务数据提供独家资源，支持学术研究、商业决策与政策评估。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-cyber-security-gs",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "网络安全企业工商注册基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/cyber-security-gs.html",
+      "desc": "本数据库收录中国大陆经营范围包含网络安全业务的企业工商注册信息，时间跨度1950-2024年，约960万条记录，基于200余个核心关键词筛选，为研究网络安全产业提供系统微观数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-little-giant-freport",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "专精特新“小巨人”企业财务报表数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/little-giant-freport.html",
+      "desc": "本数据集聚焦中国专精特新“小巨人”企业，提供2020-2023年资产总额、负债总额、营业总收入、净利润等核心财务指标，为非公开企业财务数据，填补市场空白，适用于学术研究、商业决策与政策评估。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-manufacturing-individual-champion",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "制造业单项冠军企业工商注册基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/manufacturing-individual-champion.html",
+      "desc": "该数据整理了2016-2023年间工信部认定的八批制造业单项冠军企业的工商注册基本信息，包含企业名称、注册号、注册时间等关键字段，可用于分析区域制造业发展水平与冠军企业特征。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-rcrt-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "线上招聘公司基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/rcrt-basic.html",
+      "desc": "线上招聘公司基本信息扩展数据基于主流招聘平台与工商注册信息匹配构建企业基础信息库，涵盖注册信息、地理、行业、经营状态等结构化字段，形成全国招聘企业全景画像，为劳动力市场研究与企业动态分析提供微观数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-land-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国土地权人基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/land-basic.html",
+      "desc": "中国土地权人基本信息扩展数据将土地出让数据中的土地权人名单与中国工商注册企业基本信息数据进行匹配，提供社会信用代码、注册资本、企业性质等详细信息，覆盖1990-2024年土地交易，每年更新，便于研究者分析土地交易与企业行为。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-govprocurement-zbdw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "政府采购中标单位基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/govprocurement-zbdw.html",
+      "desc": "政府采购中标单位基本信息扩展数据整合了全国政府采购合同公告的中标单位工商与股东信息，包含供应商工商基本信息与股东结构，提供企业名称、信用代码、注册资本、股东构成等字段，适用于政企关系、供应链和股权研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-govprocurement-ann-zbdw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "政府采购公告中标单位基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/govprocurement-ann-zbdw.html",
+      "desc": "该数据基于政府采购公告中的中标供应商，匹配最新工商数据，提供中标单位的基本信息及股东信息，包括纳税人识别号、注册资本、股东持股比例等，为研究政府采购与企业行为提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-tender-bidd-unit",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国各地区招投标单位基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/tender%26bidd-unit.html",
+      "desc": "本数据基于中国各地区招投标数据，匹配工商信息，提供招标单位与中标单位的基本信息及股东信息，覆盖截至2021年的年度更新数据，适用于企业背景研究和招投标领域分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-laboros-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "劳务外包企业工商注册基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/laborOS-basic.html",
+      "desc": "该数据整理了中国1950年至2024年10月中旬的劳务外包企业工商注册基本信息，涵盖企业名称、注册时间、注册资本、企业性质等字段，为研究劳务外包行业发展及人力资源管理提供了基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-laborsub-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "劳务分包企业工商注册基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/laborsub-basic.html",
+      "desc": "本数据收录我国1950年至2024年10月期间注册的劳务分包企业工商注册基本信息，涵盖企业名称、注册资本、注册时间、企业性质等关键字段，为建筑行业劳务分包研究及企业分析提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-bank-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中国全部银行工商注册基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/bank-basic.html",
+      "desc": "该数据涵盖中国三千九百多家银行的工商注册基本信息，包括银行名称、企业性质、信用等级、统一社会信用代码等字段，为银行业研究与区域金融分析提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-nat-icr",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "核酸检测机构工商注册数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/NAT-ICR.html",
+      "desc": "本数据基于全国核酸检测机构名单，整理了核酸检测机构的工商注册、股东、对外投资及工商变更等信息，为研究第三方检测机构合规性与疫情常态化防控提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-bjcity-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "北京市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/bjcity-basic.html",
+      "desc": "该数据涵盖北京市工商注册企业的基本信息，包括企业注册时间、注册资本、企业性质、法定代表人、所属行业、所属区域等重要字段，为研究北京企业生存发展状况及创新创业相关议题提供数据支持，数据更新至2024年10月。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-shcity-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "上海市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/shcity-basic.html",
+      "desc": "该数据集提供上海市工商注册企业基本信息，涵盖企业注册时间、注册资本、企业性质、法定代表人、所属行业、所属区域等重要字段，时间范围为1950-2023年，年度更新，为研究上海企业生存发展及创新创业提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gzcity-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "广州市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/gzcity-basic.html",
+      "desc": "广州市工商注册企业基本信息数据，涵盖企业注册时间、注册资本、企业性质等核心字段，时间跨度1950-2023年，年度更新。数据可用于研究广州企业生存发展状况与创新创业活力，为经济分析提供有力支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-szcity-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "深圳市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/szcity-basic.html",
+      "desc": "本数据提供深圳市工商注册企业基本信息，涵盖企业注册时间、注册资本、企业性质、法定代表人、所属行业、所属区域等重要字段，为研究深圳企业生存发展状况与创新创业问题提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-food-industry-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "食品业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/food-industry-basic.html",
+      "desc": "本数据涵盖食品制造相关企业的工商注册基本信息，包括注册资本、统一社会信用代码、工商注册号、企业名称、成立日期等关键字段，时间范围自1950年至2024年10月，可反映食品行业的企业增量与发展状态，为行业分析与研究提供数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-manufacture-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "制造业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/manufacture-basic.html",
+      "desc": "本数据涵盖我国31省363市2933区县自1950年至2024年10月的制造业工商注册企业基本信息，包含企业名称、社会信用代码、注册资本等关键字段，是研究制造业发展历程与区域产业格局的重要数据资源。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-data-on-companies-registered-in-the-manufacturing-industry",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "制造业工商注册企业数量统计数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/data-on-companies-registered-in-the-manufacturing-industry.html",
+      "desc": "该数据统计了中国31个省级地区、363个城市、2933个区县制造业工商注册企业数量，涵盖1950年至今的企业注册、注销与存续情况，并按行业门类、大类、企业性质等维度进行细分，为研究制造业发展历程和区域产业格局提供翔实的数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-agricul-company-reg-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "农业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/agricul-company-reg-basic.html",
+      "desc": "本数据涵盖1950-2025年农业工商注册企业的基本信息，包括企业名称、注册资本、注册时间等，并按农林牧渔行业分类统计，反映我国农业企业发展历程与趋势，为农业经济研究提供基础数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-agricul-company-reg-statistical",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "农业工商注册企业数量统计数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/agricul-company-reg-statistical.html",
+      "desc": "农业工商注册企业数量统计数据覆盖中国31个省级行政区，基于国民经济行业分类，从多维度统计农业企业的注册、注销及存续数量，时间跨度为1980年至2025年12月，为农业产业研究与经济分析提供全面的数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-mining-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "采矿业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/mining-basic.html",
+      "desc": "本数据涵盖1950年至2024年10月中国采矿业工商注册企业基本信息，包括企业名称、社会信用代码、注册资本等关键字段，覆盖煤炭、石油等七大类行业，反映建国以来采矿业发展历程，为行业研究提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-electricity-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "电力、热力、燃气及水生产和供应业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/electricity-basic.html",
+      "desc": "CnOpenData依据国民经济行业分类，整理了1950年至2024年10月电力、热力、燃气及水生产和供应业工商注册企业基本信息，涵盖电力、热力、燃气、水的生产和供应三大类，展现行业发展历程。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-construction-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "建筑业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/construction-basic.html",
+      "desc": "本数据集涵盖了1950年至2024年10月的建筑业工商注册企业基本信息，包括企业名称、注册资本、注册时间等关键字段，可用于分析建筑业发展历程与行业生态。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-wholesale-retail-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "批发和零售业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/wholesale%26retail-basic.html",
+      "desc": "本数据涵盖1950年至2024年10月我国批发和零售业工商注册企业基本信息，包括企业名称、社会信用代码、注册资本等核心字段，按国民经济行业分类划分批发业与零售业，生动展现行业发展历程，为经济研究与商业分析提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-traffic-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "交通运输、仓储和邮政业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/traffic-basic.html",
+      "desc": "本数据涵盖1950年至2024年10月我国交通运输、仓储和邮政业工商注册企业基本信息，包括企业名称、注册资本、注册时间等关键字段，可用于行业分析与区域经济研究，为理解该行业发展历程提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-accommodation-catering-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "住宿和餐饮业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/accommodation%26catering-basic.html",
+      "desc": "本数据提供住宿业和餐饮业工商注册企业的基本信息，覆盖1950年至2024年10月，包含统一社会信用代码、注册资本、注册年份等关键字段，反映近七十年行业企业增量与发展状态，为行业研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-technology-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "信息传输、软件和信息技术服务业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/technology-basic.html",
+      "desc": "本数据收录我国1950年至2024年10月信息传输、软件和信息技术服务业工商注册企业基本信息，覆盖电信、互联网、软件三大行业类别，共计三百多万家企业，年度更新，为行业研究与决策提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-finance-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "金融业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/finance-basic.html",
+      "desc": "本数据基于国民经济行业分类，整理了1950年至2024年10月我国金融业工商注册企业基本信息，覆盖货币金融、资本市场、保险及其他金融四大类，生动展现建国以来金融业发展历程，可用于行业研究与经济分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-realestate-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "房地产业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/realestate-basic.html",
+      "desc": "本数据涵盖1950年至2024年10月我国房地产业工商注册企业的基本信息，包括企业名称、注册资本、注册时间等核心字段，反映行业发展历程，为学术研究及产业分析提供重要数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-leasing-bu-service-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "租赁和商务服务业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/leasing%26bu-service-basic.html",
+      "desc": "本数据收录中国1950年至2024年10月租赁和商务服务业工商注册企业基本信息，涵盖一千多万家企业，包含注册资本、注册时间等核心字段，为行业研究与发展历程分析提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-scientific-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "科学研究和技术服务业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/scientific-basic.html",
+      "desc": "该数据涵盖1950年至2024年10月我国科学研究和技术服务业工商注册企业基本信息，分为三大行业类别，反映建国以来该产业发展历程，对行业分析与政策研究具有重要参考价值。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-water-env-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "水利、环境和公共设施管理业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/water%26env-basic.html",
+      "desc": "该数据集涵盖我国1950年至2024年10月水利、环境和公共设施管理业的工商注册企业基本信息，包括水利管理业、生态保护和环境治理业等四大类，为研究行业发展历程和企业注册动态提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-residential-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "居民服务、修理和其他服务业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/residential-basic.html",
+      "desc": "该数据集整理了我国1950年至2024年10月居民服务、修理和其他服务业工商注册企业基本信息，涵盖餐饮、住宿、家政等民生行业，对研究行业发展历程和民生改善具有重要价值。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-education-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "教育业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/education-basic.html",
+      "desc": "该数据集收录了我国1950年至2024年10月教育行业工商注册企业的基本信息，涵盖企业名称、社会信用代码、注册资本等关键字段，为研究教育产业发展历程、企业注册趋势及行业结构提供了翔实的数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-health-social-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "卫生和社会工作业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/health%26social-basic.html",
+      "desc": "本数据涵盖我国卫生和社会工作业（卫生业、社会工作业）的工商注册企业基本信息，时间范围为1950年至2024年10月，按年度更新。数据有助于分析行业发展趋势和社会资本进入情况，为医疗健康与社会服务领域研究提供基础支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-cul-spo-ent-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "文化、体育和娱乐业工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/cul%26spo%26ent-basic.html",
+      "desc": "该数据集收录了我国1950年至今文化、体育和娱乐业的工商注册企业基本信息，涵盖新闻出版、广播影视、文化艺术、体育、娱乐五大行业，为相关产业研究和政策制定提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-zzysk",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国工商注册企业全信息",
+      "name": "中征应收款融资服务平台数据",
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/zzysk.html",
+      "desc": "本数据集收录中征应收款融资服务平台的参与主体信息，涵盖融资需求方与资金供给方名单，反映供应链金融生态，为研究企业融资与金融布局提供底层名录支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-uslcar",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "国际新闻舆情",
+      "name": "美国上市公司全部报告数据",
+      "url": "https://www.cnopendata.com/data/m/international-news/USLCAR.html",
+      "desc": "该数据集收录了美国上市公司近30年（1993-2023）披露的全部报告，共计约2300万份，涵盖报告原始文本及索引，为美股市场、财务会计与信息披露等研究提供全面数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-rcrt-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "线上招聘公司基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/rcrt-basic.html",
+      "desc": "线上招聘公司基本信息扩展数据基于主流招聘平台与工商注册信息匹配构建企业基础信息库，涵盖注册信息、地理、行业、经营状态等结构化字段，形成全国招聘企业全景画像，为劳动力市场研究与企业动态分析提供微观数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-lwwbbc",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "A股上市公司劳务外包报酬数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/listedco-lwwbbc.html",
+      "desc": "该数据涵盖A股上市公司2012年至2023年劳务外包报酬相关信息，包括工时总数、报酬总额及平均时薪等字段，为研究企业用工结构、成本控制及监管分析提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-aba-recruitment",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "会计师事务所线上招聘数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/ABA-recruitment.html",
+      "desc": "本数据汇集了2014年5月以来全国主要城市会计师事务所的线上招聘信息，涵盖岗位、待遇、学历等关键字段，为研究审计行业人才需求和劳动力市场动态提供了微观数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-bank-recruitment",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "中国商业银行线上招聘数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/bank-recruitment.html",
+      "desc": "中国商业银行线上招聘数据系统记录了2014年5月至2025年间银行在主流招聘平台发布的岗位需求，涵盖岗位名称、薪酬、学历、地区等丰富信息，为研究金融人才市场、就业结构及区域金融布局提供实证数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-lgjjjbxx",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "中国零工经济线上招聘公司基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/lgjjjbxx.html",
+      "desc": "本数据将中国零工经济线上招聘信息中的公司名单与工商注册企业基本信息进行模糊匹配，形成扩展数据集，包含公司名称、注册年份、信用代码等字段，覆盖多个招聘数据来源，为研究零工经济及灵活用工提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-re-acct",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "中国会计与财务类岗位线上招聘数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/re-acct.html",
+      "desc": "本数据涵盖2014年5月至2024年中国会计与财务类岗位的线上招聘信息，包含公司名称、工作地点、岗位、待遇等关键字段，可用于分析财务人才需求、薪资水平及地域分布，为经济管理研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-dz",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "中国党政类岗位线上招聘数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/dz.html",
+      "desc": "该数据通过系统化关键词匹配，从招聘数据库中精准识别党政类岗位信息，并记录匹配路径，覆盖2014年5月至2024年的线上招聘数据，为研究党政人才需求结构提供了微观实证基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ashare-cyber-security-recruitment",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "A股上市公司网络安全岗位招聘数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/Ashare-cyber-security-recruitment.html",
+      "desc": "本数据整合了A股上市公司及其关联企业发布的网络安全岗位招聘信息，覆盖三大主流招聘平台，时间跨度2014-2024年，提供丰富的结构化字段，为研究企业网络安全人力资本投入提供微观数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-hspt-recruitment",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "医疗行业线上招聘数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/hspt-recruitment.html",
+      "desc": "该数据库汇总全国医疗行业线上招聘信息，涵盖B、C、E三源数据，包含公司、岗位、地点、薪酬等多维字段，时间覆盖2014-2024年，年度更新，适用于学术研究、行业分析与政策评估。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-lgjj",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "零工经济搜索指数数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/lgjj.html",
+      "desc": "（刷新脚本自动收录，描述待补）",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-minimum-wage-by-region",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "中国各区县最低工资数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/minimum-wage-by-region.html",
+      "desc": "本数据涵盖中国各区县最低工资划分标准、金额及调整日期，时间跨度1999年至2023年，可用于研究最低工资制度对就业、企业用工及区域经济发展的影响。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-jzfw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国劳动招聘与就业数据",
+      "name": "中国家政服务信息数据",
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/jzfw.html",
+      "desc": "该数据涵盖中国家政服务行业的保姆信息与门店信息，覆盖住家保姆、月嫂、育儿嫂等多个服务类型，包含所在地区、期望薪资、个人特长等关键字段，时间范围为2017年8月至2026年6月，为家政市场研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-hqys",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "中国上市公司行情衍生数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/hqys.html",
+      "desc": "该数据库为CnOpenData与通联数据合作的中国上市公司行情衍生数据，核心为AH比价数据表，提供每日A股与H股同时上市股票的比价信息，包括A股收盘价、H股收盘价及H股占A股比例等，时间覆盖2006年至今，适用于跨市场分析与策略研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-trading",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "中国上市公司交易信息数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/trading.html",
+      "desc": "该数据库涵盖中国上市公司交易相关的18张数据表，包括投资者情况、大宗交易、融资融券、转融通、境外投资者持股等，时间跨度自2002年至今，为资本市场研究和投资决策提供全面数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-report",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司财报公告数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-report.html",
+      "desc": "本数据提供A股上市公司财报公告，涵盖季度、半年度和年报报告，包括股票代码、公司名称、公告标题、公告时间等字段，信息全面，适用于证券市场研究与公司业绩分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-yjyg",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司业绩预告公告数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-yjyg.html",
+      "desc": "A股上市公司业绩预告公告数据，涵盖股票代码、公司名称、公告标题、公告时间、分类、行业、年度等字段，为上市公司研究、证券市场分析及投资者情绪研究提供有力数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-gqjl",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司股权激励公告数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gqjl.html",
+      "desc": "该数据集收录A股上市公司股权激励公告信息，涵盖股票代码、公司名称、公告标题、公告时间、分类、行业、年度等关键字段，为证券市场研究及公司治理分析提供数据支撑，时间截至2026年7月。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-gszc",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司公司章程公告数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gszc.html",
+      "desc": "该数据收录A股上市公司公司章程公告，涵盖股票代码、公司名称、公告标题、公告时间等信息，为上市公司治理和证券市场研究提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-violation",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司违规处罚数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-violation.html",
+      "desc": "本数据收录A股上市公司违规处罚信息，涵盖证券代码、公告日期、违规类型、处罚对象、违规行为、处理人等关键字段，时间跨度1994年4月至2026年5月，为监管研究和市场分析提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-regulatory-measures",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司交易所监管措施数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/regulatory-measures.html",
+      "desc": "本数据涵盖上交所与深交所对A股上市公司及相关主体的监管措施，时间跨度2013年至2026年，包含监管类型、处理事由、涉及对象等核心字段，并附原文链接，为资本市场监管研究与企业合规分析提供权威数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-companies-and-subsidiaries-data",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司及子公司基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-companies-and-subsidiaries-data.html",
+      "desc": "本数据整合A股上市公司及其子公司、联营公司、合营公司的关联关系与工商注册信息，通过双重匹配技术构建覆盖2000-2024年的结构化数据库，适用于学术研究、商业决策与政策评估。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-gsdj",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司工商登记分支机构数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-gsdj.html",
+      "desc": "本数据提供A股上市公司工商登记分支机构信息，涵盖股东、分支机构和对外投资三张表，截至2024年12月31日，年度更新，为研究上市公司组织架构与投资布局提供基础数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-ipo-pre",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司IPO预披露文本数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-IPO-pre.html",
+      "desc": "本数据收集了A股上市公司IPO预披露文件，覆盖深市和沪市2014年4月至2026年6月，包含公司名称、披露类型、上市板块、保荐机构、披露时间等字段，为资本市场实证研究提供了重要的文本数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-ipo-letter",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司IPO问询函文本数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-IPO-letter.html",
+      "desc": "A股上市公司IPO问询函文本数据完整覆盖了中国资本市场中各公司IPO上市流程中的各类文件，包含公司名称、披露类型、上市板块、推荐机构、披露时间、公告、URL等字段。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-ipo-issuance",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司IPO发行文本数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-IPO-issuance.html",
+      "desc": "A股上市公司IPO发行文本数据收录沪深两市首次公开发行全套披露文件，涵盖招股说明书、发行公告等，覆盖2001至2026年，支持企业融资行为、信息披露质量及政策演变研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-csr-report",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "A股上市公司社会责任评价数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/CSR-Report.html",
+      "desc": "A股上市公司社会责任评价数据由和讯网独家推出，是国内首家上市公司社会责任专业测评产品，从股东、员工、供应商客户、环境和社会五方面综合评价，覆盖2010-2021年，年度更新，为学术研究和社会责任评估提供基础数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-fepu",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司基础数据",
+      "name": "企业的经济政策不确定性感知指数",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/FEPU.html",
+      "desc": "本数据为聂辉华教授团队公开的企业经济政策不确定性感知指数（FEPU），基于A股上市公司年报文本挖掘构建，发表于《世界经济》2020年，可用于研究企业投资、融资及金融资产配置等主题。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-listed-companies-onlinerect",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "A股上市公司招聘数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-onlinerect.html",
+      "desc": "本数据整理了A股上市公司发布的不同岗位招聘统计信息，区分多种来源，包含职位、薪资、学历、经验、地区等字段，为研究上市公司招聘行为与就业市场提供了高质量数据资源。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-ai-recruitment",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "A股上市公司AI岗位线上招聘数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-AI-recruitment.html",
+      "desc": "本数据汇集A股上市公司AI岗位线上招聘信息，覆盖2014年5月至2024年，包含公司、职位、薪资、学历等字段，为研究企业AI人才需求和劳动力结构提供支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-ygpj",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "A股上市公司员工评价数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-ygpj.html",
+      "desc": "本数据收录A股上市公司员工评价相关数据，涵盖公司实力、评分、评价内容、薪资整体与岗位评价等五类信息，时间跨度自2014年至2023年，可用于研究员工满意度与企业竞争力关系，为应聘者、研究者及监管部门提供参考。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-listed-companies-ztb",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "A股上市公司招投标数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-ztb.html",
+      "desc": "A股上市公司招投标数据，通过精确匹配与模糊匹配识别上市公司及其子公司作为招标或中标单位，涵盖证券代码、关联公司名称、招标单位、中标单位、流程状态等字段，为研究政府背景客户关系及企业供应链等提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listedco-envlpenalty",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "A股上市公司环保处罚数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-envlpenalty.html",
+      "desc": "本数据收录A股上市公司及其关联企业环保行政处罚记录，涵盖处罚日期、违规类型、罚款金额等关键信息，支持环境合规与风险监测研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-industry-reports",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "中国证券分析师行业研究报告数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/Industry-Reports.html",
+      "desc": "本数据提供中国证券分析师行业研究报告，涵盖行业名称、报告名称、分析师、发布机构、发布日期及涉及上市公司等字段，并附研报PDF原文，为行业趋势分析和证券分析师行为研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-a-hg",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "A股上市公司海关进出口交易明细数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/A-hg.html",
+      "desc": "本数据整合A股上市公司及子公司与中国海关进出口交易明细，涵盖证券代码、HS商品编码、金额等字段，时间范围为2007-2016年，为研究企业进出口行为与贸易策略提供微观数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-list-company-land-transaction",
+      "layer": "factor",
+      "category_group": "SSRD上市公司与资本市场",
+      "category": "A股上市公司另类数据",
+      "name": "A股上市公司土地交易数据",
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/list-company-land-transaction.html",
+      "desc": "该数据库系统收录了A股上市公司及其关联方在全国范围内的土地交易信息，整合交易主体、地块属性、规划指标、合同条款及支付约定等，为研究上市公司土地投资、区域布局及合同履约提供微观数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-xyjj",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国县域统计年鉴数据",
+      "url": "https://www.cnopendata.com/data/m/macro/xyjj.html",
+      "desc": "县域经济是国民经济的基本单元，《中国县域统计年鉴》数据汇总了全国2000多个县域的社会经济指标，涵盖人口、产值、财政等核心变量，为分析县域经济发展、乡村振兴等研究提供基础数据，时间覆盖1997-2018年，按年度更新。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-czfzzs",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国各地区财政发展指数",
+      "url": "https://www.cnopendata.com/data/m/macro/czfzzs.html",
+      "desc": "中国各地区财政发展指数由财政收入稳健、财政支出优化、债务可持续、社会保障可持续、预算管理规范、公共服务提供、省内财政均衡七个方面构成，反映各地区财政发展差异与趋势，为构建现代财政制度提供决策依据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gjzfssfc",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国各级政府税收分成数据",
+      "url": "https://www.cnopendata.com/data/m/macro/gjzfssfc.html",
+      "desc": "该数据基于吕冰洋等学者的研究，测算1994-2014年中国政府间财政收入分配状况，涵盖总体财政及重要税种在中央、省、县等各级政府的分成比例，为研究财政分权与政府行为提供数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-czyx",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国财政运行数据",
+      "url": "https://www.cnopendata.com/data/m/macro/czyx.html",
+      "desc": "中国财政运行数据基于《中国财政运行报告（2019/2020）》，涵盖财政收入稳健、支出优化、债务可持续、社保基金、基本公共服务及省内均衡化六大指数，数据来源权威，反映中国财政运行全貌，为学术研究与政策评估提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-yspl",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国各省及省本级预算偏离数据",
+      "url": "https://www.cnopendata.com/data/m/macro/yspl.html",
+      "desc": "本数据基于吕冰洋与李岩（2020）的研究，构建了1994-2017年31个省份及2008-2017年252个地级市的预算偏离指标，涵盖决算收入、支出等关键字段，为分析财政预算超收超支规律及影响因素提供重要支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-macros-reports",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国证券分析师宏观研究报告数据",
+      "url": "https://www.cnopendata.com/data/m/macro/Macros-Reports.html",
+      "desc": "该数据集为中国证券分析师宏观研究报告数据，涵盖报告名称、分析师、发布机构等信息，时间跨度为2021年8月至2025年10月，以结构化表格和PDF原文形式提供，适用于宏观经济分析、投资策略研究及学术研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-patent-basic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国专利权人基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-basic.html",
+      "desc": "本数据整合中国专利数据与工商注册企业信息，提供专利权人/申请人的详细基本信息，包括社会信用代码、注册时间等，为创新研究提供全样本支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-patent-shareholder",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国专利权人工商股东信息数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Patent-shareholder.html",
+      "desc": "中国专利权人工商股东信息数据库整合了专利申请人/专利权人的工商股东基本信息及历史变更记录，涵盖股东名称、出资额、股东类型等关键字段，支撑股权结构分析、创新资本研究等场景，提供跨域关联的专利与资本数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-china-patent-address",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国全部专利详细地址数据",
+      "url": "https://www.cnopendata.com/data/m/patent/china-patent-address.html",
+      "desc": "本数据涵盖1985-2025年中国全部专利的申请人与专利权人详细地址信息，经深度解析统一细化至街道一级并附带经纬度，为区域创新活跃度统计及学术研究提供完备数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-patent-text-data",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国专利文本数据",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-text-data.html",
+      "desc": "中国专利文本数据涵盖专利描述文本与权利要求文本信息，总数据量超过2300万条，时间覆盖1985至2025年，为专利研究和创新分析提供大规模文本基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-customs-pt",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国专利权人海关进出口信用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/customs-pt.html",
+      "desc": "该数据提供中国专利权人企业的海关进出口信用信息，涵盖企业名称、注册海关、经营类别、报关日期等字段，时间截至2021年，不更新，适用于企业信用评估和创新贸易分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chgjzlxmzl",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国国家著录项目专利数据",
+      "url": "https://www.cnopendata.com/data/m/patent/chgjzlxmzl.html",
+      "desc": "中国国家著录项目专利数据详细记录专利文件中的著录信息，涵盖申请号、申请日、CPC分类号等关键字段，时间范围1985-2022年，按年度更新，为专利检索与技术创新研究提供重要数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-patent-stats",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国专利分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/patent/patent-stats.html",
+      "desc": "本数据依据2020年行政区域代码，提供1985-2024年全国分省份、城市、区县的专利申请与授权统计，时间精确到月度，覆盖发明、实用新型、外观设计三类专利，为区域创新研究提供细粒度数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-green-patyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国绿色专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/green-patyyby.html",
+      "desc": "本数据涵盖中国绿色专利的引用与被引用信息，时间范围为1985年至2024年12月31日，按年度更新。数据覆盖发明申请、发明授权及实用新型三类专利，为绿色技术创新、环境规制政策评估等研究提供支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-green-patent-text-data",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国绿色专利文本数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Chinese-green-patent-text-data.html",
+      "desc": "该数据收录中国绿色专利的完整文本信息与多维属性，涵盖专利基本信息、绿色技术分类及详细描述与权利要求，支持绿色技术创新研究、产业分析与政策评估，为相关领域提供结构化高质量数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-green-patent-volume-data-by-region",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国绿色专利分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/patent/chinese-green-patent-volume-data-by-region.html",
+      "desc": "本数据基于IPC分类号识别绿色专利，涵盖废弃物管理、能源节约等7大主分类，分省份及城市维度，按发明申请、授权两阶段统计，时间覆盖1985年至2025年，为绿色创新研究提供宏观数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-low-carbon-patent-innovation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国绿色低碳专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/low-carbon-patent-innovation.html",
+      "desc": "中国绿色低碳专利申请与授权数据由CnOpenData推出，涵盖发明公布、发明授权、实用新型三类专利，基于国际专利分类与绿色低碳技术对照体系，时间跨度1985至2024年，为绿色低碳技术研究提供全面数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-low-carbon-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国绿色低碳专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/low-carbon-patent-citation.html",
+      "desc": "中国绿色低碳专利及引用被引用数据，基于国际专利分类体系，涵盖发明公布、发明授权和实用新型专利，分设专利引用表与被引用表，时间覆盖1985-2024年，年度更新，适用于绿色技术创新研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-low-carbon-patent-stats",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国绿色低碳专利分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/patent/low-carbon-patent-stats.html",
+      "desc": "中国绿色低碳专利分地区统计数据基于国际专利分类，覆盖1985-2024年，分省分城市展示发明公布、发明授权、实用新型三类专利，包含化石能源降碳、清洁能源等五大技术分支，适用于区域绿色技术创新和政策评估研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-dig-eco-patjbsw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国数字经济专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/dig-eco-patjbsw.html",
+      "desc": "本数据基于《数字经济核心产业分类与国际专利分类参照关系表（2023）》构建，涵盖1985-2024年中国数字经济相关专利的申请与授权信息，分为基础信息表和事务信息表，按专利类型及数字产业细分，为数字经济研究提供高质量数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-dig-eco-patyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国数字经济专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/dig-eco-patyyby.html",
+      "desc": "本数据基于2023年新版标准，收录中国数字经济核心产业专利的引用与被引用信息，覆盖数字产品制造业、服务业、技术应用业和要素驱动业，为数字经济创新研究提供专题数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国关键数字技术专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted.html",
+      "desc": "中国关键数字技术专利及引用被引用数据系统整合了发明公布、发明授权和实用新型三类专利的申请、授权及引用被引用信息，依据《关键数字技术专利分类体系（2023）》细分技术分支，覆盖1985至2024年，年度更新，支撑技术创新分析与战略决策。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted-rgzn",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国人工智能专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-rgzn.html",
+      "desc": "中国人工智能专利及引用被引用数据系统整理了发明公布、发明授权和实用新型三大专利类型，依据《关键数字技术专利分类体系（2023）》划分一级技术分支，覆盖1985-2024年，年度更新，为技术研究与市场分析提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-application-gdxp",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国高端芯片专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-gdxp.html",
+      "desc": "中国高端芯片专利申请与授权数据系统收录了1985-2024年高端芯片领域专利信息，涵盖发明公布、授权及实用新型，按一级技术分支分类，支持创新监测与产业研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted-gdxp",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国高端芯片专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-gdxp.html",
+      "desc": "中国高端芯片专利及引用被引用数据系统整理了高端芯片领域的专利信息，涵盖发明公布、发明授权和实用新型三大类型，细分至一级技术分支，并记录专利引用关系，为技术研究与市场分析提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-application-lzxx",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国量子信息专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-lzxx.html",
+      "desc": "中国量子信息专利申请与授权数据全面收录量子信息技术领域的专利信息，依据《关键数字技术专利分类体系（2023）》细分至一级技术分支，涵盖量子测量、量子计算、量子通信三大方向，为创新监测与政策研究提供标准化数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted-lzxx",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国量子信息专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-lzxx.html",
+      "desc": "中国量子信息专利及引用被引用数据系统整理量子信息领域专利及其引用关系，覆盖发明公布、发明授权和实用新型三类专利，基于《关键数字技术专利分类体系（2023）》细分技术分支，年度更新，为技术创新研究和市场分析提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-application-wlw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国物联网专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-wlw.html",
+      "desc": "中国物联网专利申请与授权数据全面收录了中国在物联网技术领域的专利申请与授权信息。数据严格依据《关键数字技术专利分类体系（2023）》进行细分至一级技术分支层面，涵盖专利基本信息、事务记录、申请人、发明人、IPC分类号等核心字段。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted-wlw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国物联网专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-wlw.html",
+      "desc": "中国物联网专利及引用被引用数据系统整理了1985-2024年物联网领域的发明公布、发明授权及实用新型专利，依据《关键数字技术专利分类体系（2023）》细分技术分支，并涵盖引用关系，为技术研究与市场分析提供全面数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-application-qkl",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国区块链专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-qkl.html",
+      "desc": "中国区块链专利申请与授权数据全面收录区块链领域专利信息，依据《关键数字技术专利分类体系（2023）》细分至一级技术分支，涵盖专利名称、申请公布号、授权公告号等核心字段，年度更新，为数字技术创新监测与研究提供标准数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted-qkl",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国区块链专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-qkl.html",
+      "desc": "中国区块链专利及引用被引用数据系统整理了区块链领域的专利数据及引用关系，覆盖发明公布、发明授权和实用新型专利，依据《关键数字技术专利分类体系（2023）》细分技术分支，年度更新，为技术研究和市场分析提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-application-gyhlw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国工业互联网专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-gyhlw.html",
+      "desc": "中国工业互联网专利申请与授权数据收录了1985-2024年工业互联网技术领域的专利信息，依据《关键数字技术专利分类体系（2023）》细分技术分支，包含专利基本信息与事务记录，为创新监测和政策研究提供标准化数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted-gyhlw",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国工业互联网专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-gyhlw.html",
+      "desc": "中国工业互联网专利及引用被引用数据系统整理了工业互联网技术领域的专利信息，覆盖发明公布、发明授权和实用新型三大类型，依据《关键数字技术专利分类体系（2023）》划分一级技术分支，并提供引用与被引用关系，年度更新，为技术研究、市场分析等提供可",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-application-yyz",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国元宇宙专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Application-yyz.html",
+      "desc": "中国元宇宙专利申请与授权数据全面收录了中国元宇宙技术领域的专利信息，依据《关键数字技术专利分类体系（2023）》细分至一级技术分支，涵盖申请、授权及法律状态等核心字段，为数字技术创新监测与研究提供标准化数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-key-figures-quoted-yyz",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国元宇宙专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/Key-figures-Quoted-yyz.html",
+      "desc": "中国元宇宙专利及引用被引用数据系统整理了元宇宙技术领域的发明公布、发明授权及实用新型专利信息，并依据关键数字技术专利分类体系细分至一级技术分支，覆盖1985-2024年的专利动态，为技术研究与市场分析提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ai-patentbasic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国AI人工智能专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/ai-patentbasic.html",
+      "desc": "本数据聚焦中国AI人工智能专利申请与授权信息，涵盖发明、实用新型、外观设计等多类型专利，提供专利属性、法律状态及国际同族关联，支持技术趋势分析、竞争情报与政策研究，是覆盖1985年至今的权威AI专利数据集。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ai-patentyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国AI人工智能专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/ai-patentyyby.html",
+      "desc": "本数据库聚焦中国人工智能领域专利，整合专利基础信息与引用被引关系，覆盖1985-2024年，采用双重判定标准，可用于技术趋势分析、竞争情报等研究，为AI技术创新生态提供数据基础设施。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-fintech-patentbasic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国金融科技专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/fintech-patentbasic.html",
+      "desc": "中国金融科技专利申请与授权数据库覆盖1985-2024年间金融科技领域专利，基于ABCD+技术体系分类，提供专利全生命周期信息，适用于学术研究与商业分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-fintech-patentyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国金融科技专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/fintech-patentyyby.html",
+      "desc": "中国金融科技专利及引用被引用数据库，覆盖1985-2024年发明公布及授权专利，基于金融科技专利词典和“ABCD+”技术体系分类，提供专利全生命周期信息及引用关系，适用于学术研究与商业分析。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-zdh-patentbasic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "自动化专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/zdh-patentbasic.html",
+      "desc": "自动化专利申请与授权数据涵盖1985-2024年全国自动化领域发明公布、发明授权、实用新型和外观设计专利信息，分为基本表和事务表，可用于技术趋势分析、竞争力评估与政策研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-zdh-patentyy",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "自动化专利引用与被引数据",
+      "url": "https://www.cnopendata.com/data/m/patent/zdh-patentyy.html",
+      "desc": "该数据集提供自动化专利的引用与被引数据，覆盖发明公布、发明授权和实用新型三类专利，时间范围为1985-2024年，可用于技术创新趋势分析、竞争力评估与政策研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-bank-pat",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国全部银行专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/bank-pat.html",
+      "desc": "中国全部银行专利申请与授权数据，涵盖发明公布、发明授权、实用新型、外观设计四类专利，包含基础信息与法律状态事务数据，时间跨度为1985至2024年，为学术研究与商业决策提供全面数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-bank-patyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国全部银行专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/bank-patyyby.html",
+      "desc": "中国全部银行专利及引用被引用数据，分为发明公布专利、发明授权专利、实用新型专利三部分，分设专利引用表和专利被引用表。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gx-dig-eco-pat",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国高校数字经济专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/gx-dig-eco-pat.html",
+      "desc": "该数据依据国家《数字经济核心产业分类与国际专利分类参照关系表（2023）》，匹配教育部全国高校名单，提供1985-2024年中国高校发明公布、发明授权、实用新型等数字经济专利的基本信息与法律状态信息，为数字经济创新研究提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gx-dig-eco-patyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国高校数字经济专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/gx-dig-eco-patyyby.html",
+      "desc": "中国高校数字经济专利及引用被引用数据，基于2023年《数字经济核心产业分类与国际专利分类参照关系表》及全国高校名单，涵盖发明公布、发明授权、实用新型等专利类型及其引用与被引用信息，反映高校数字经济专利技术脉络，为数字经济研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ssdigeco-patstat",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "A股上市公司数字经济专利数量统计数据",
+      "url": "https://www.cnopendata.com/data/m/patent/ssdigeco-patstat.html",
+      "desc": "本数据基于《数字经济核心产业分类与国际专利分类参照关系表（2023）》，统计A股上市公司及其子公司的数字经济专利数量，按专利申请与授权两部分展示，并细分至专利小类，为数字经济与创新研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ss-dig-eco-pat",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "A股上市公司数字经济专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/ss-dig-eco-pat.html",
+      "desc": "本数据基于《数字经济核心产业分类与国际专利分类参照关系表（2023）》，匹配A股上市公司及子公司，提供1990-2025年数字经济相关专利的发明公布、发明授权、实用新型三类信息，为数字经济研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ss-dig-eco-patyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "A股上市公司数字经济专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/ss-dig-eco-patyyby.html",
+      "desc": "该数据基于《数字经济核心产业分类与国际专利分类参照关系表（2023）》，提供A股上市公司数字经济专利的引用与被引用数据，覆盖发明公布、发明授权、实用新型三类，时间范围为1990-2025年，年度更新，适用于数字经济与企业创新的学术研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-co-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "A股上市公司专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/listed-co-patent-citation.html",
+      "desc": "本数据提供A股上市公司专利数量统计、质量统计及专利详情三大子表，涵盖发明、实用新型、外观设计专利的申请、授权、引用及被引用信息，是评估上市公司核心竞争力和创新能力的重要数据资源。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-companies-green-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "A股上市公司绿色专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/listed-companies-green-patent-citation.html",
+      "desc": "本数据提供A股上市公司及其子公司、联营、合营公司的绿色专利信息，涵盖发明公布、授权及实用新型、外观设计的申请与授权数据，并包含专利引用、被引用及事务信息，时间覆盖1990-2024年，为绿色创新研究提供数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-xsb-co-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "新三板公司专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/xsb-co-patent-citation.html",
+      "desc": "新三板公司专利及引用被引用数据涵盖发明申请、发明授权、实用新型等专利信息，并分设专利引用与被引用表，覆盖1990-2024年，为研究企业创新与政策评估提供基础数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-industrial-patent",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国工业企业专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/industrial-patent.html",
+      "desc": "中国工业企业专利及引用被引用数据基于CnOpenData团队科学匹配方法，将1998-2014年规模以上工业企业与1985-2024年专利数据精细关联，涵盖专利数量、质量、详情及引用被引信息，为研究企业创新提供全面数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-industrial-enterprise-green-patent-citation",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国工业企业绿色专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/chinese-industrial-enterprise-green-patent-citation.html",
+      "desc": "该数据库将中国工业企业数据与绿色专利精准匹配，涵盖发明公布、发明授权、实用新型三大专利类型，提供从基本信息、引用被引用关系到法律事务的完整信息链条，并包含专利全文文本数据，为研究中国工业绿色创新提供全面的数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-tax-patent",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "税收调查企业专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/tax-patent.html",
+      "desc": "本数据整合全国税收调查企业信息与1985-2023年专利数据，涵盖发明、实用新型、外观设计的申请、授权、引用及被引信息，并包含技术复杂度等质量指标，为财税研究与企业创新分析提供独特支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-researchinstt-patentbasic",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国科研院所专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/researchinstt-patentbasic.html",
+      "desc": "中国科研院所专利申请与授权数据，涵盖发明公布、发明授权、实用新型和外观设计四类专利，时间跨度为1985至2024年，采用年度更新，为挖掘科研院所创新成果、分析专利布局提供基础数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-researchinstt-patentyyby",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国科研院所专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/researchinstt-patentyyby.html",
+      "desc": "中国科研院所专利及引用被引用数据，涵盖发明申请、发明授权、实用新型三类专利的引用与被引用关系，时间跨度1985至2024年，为分析科研院所技术创新与知识流动提供基础数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-pt-yjgl",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国应急管理专利申请与授权数据",
+      "url": "https://www.cnopendata.com/data/m/patent/pt-yjgl.html",
+      "desc": "该数据集涵盖1986至2024年中国应急管理领域的专利申请与授权信息，按专利类型分表整理，包含专利名称、申请人、IPC分类号等核心字段，为应急管理技术研发与政策研究提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-pt-ct-yjgl",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "中国专利数据",
+      "name": "中国应急管理专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/patent/pt-ct-yjgl.html",
+      "desc": "本数据集涵盖中国应急管理专利的申请与授权信息，包括专利引用与被引用数据，时间区间为1986年至2024年12月31日，可用于分析应急管理技术演进、创新主体关联等研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-zgkfq-tj",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国开发区基础统计指标数据",
+      "url": "https://www.cnopendata.com/data/m/regional/zgkfq-tj.html",
+      "desc": "中国开发区基础统计指标数据涵盖2017-2023年开发区的GDP、固定资产投资、工业总产值等核心经济指标，为区域经济学与产业经济学研究提供基础数据支撑，具有重要研究价值。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-backtracking-ind-com",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国工商注册企业全生命周期统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/backtracking-ind%26com.html",
+      "desc": "中国工商注册企业全生命周期统计数据基于超3.5亿条全量工商注册明细，采用“固定时点，回溯队列”模型，构建覆盖全国31省份、全行业、所有企业类型的1990-2024年企业生存面板数据，用于研究企业生存动态、评估区域营商环境。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-cond-pro",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各省份官方报纸数据",
+      "url": "https://www.cnopendata.com/data/m/regional/cond-pro.html",
+      "desc": "该数据集系统收录全国31个省级行政区官方报纸的新闻报道全文，涵盖发文时间、板块、标题、作者、正文等结构化管理字段，为政策解读、舆情分析和区域研究提供权威文本数据，适用于学术研究与商业洞察。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-government-work-report",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区政府工作报告文本数据",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-government-work-report.html",
+      "desc": "中国各地区政府工作报告文本数据汇集2000-2025年间中央、省级、市级三级政府工作报告全文，总计9595份，覆盖PDF与TXT格式，为政策研究、区域比较和文本挖掘提供权威、长期连续的一手数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-cn-jp",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区家谱数据",
+      "url": "https://www.cnopendata.com/data/m/regional/cn-jp.html",
+      "desc": "CnOpenData整理两千余册中国各地区家谱PDF文档，涵盖族谱、宗谱等，为历史学、民俗学、人口学等研究提供重要史料，是研究宗族文化与社会变迁的珍贵资料。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-cn-xz",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区县志数据",
+      "url": "https://www.cnopendata.com/data/m/regional/cn-xz.html",
+      "desc": "本数据集收录中国各地区六千多册县志PDF，时间覆盖康乾时期至民国及少量现代版本，内容涵盖地理、历史、风俗、物产等，跨越三十余省份及历史行政区，为历史经济与社会文化研究提供珍贵史料。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-czfzzs",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区财政发展指数",
+      "url": "https://www.cnopendata.com/data/m/regional/czfzzs.html",
+      "desc": "中国各地区财政发展指数由财政收入稳健、财政支出优化、债务可持续、社会保障可持续、预算管理规范、公共服务提供、省内财政均衡七个方面构成，反映各地区财政发展差异与趋势，为构建现代财政制度提供决策依据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gjzfssfc",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各级政府税收分成数据",
+      "url": "https://www.cnopendata.com/data/m/regional/gjzfssfc.html",
+      "desc": "该数据基于吕冰洋等学者的研究，测算1994-2014年中国政府间财政收入分配状况，涵盖总体财政及重要税种在中央、省、县等各级政府的分成比例，为研究财政分权与政府行为提供数据基础。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-czyx",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国财政运行数据",
+      "url": "https://www.cnopendata.com/data/m/regional/czyx.html",
+      "desc": "中国财政运行数据基于《中国财政运行报告（2019/2020）》，涵盖财政收入稳健、支出优化、债务可持续、社保基金、基本公共服务及省内均衡化六大指数，数据来源权威，反映中国财政运行全貌，为学术研究与政策评估提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-yspl",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各省及省本级预算偏离数据",
+      "url": "https://www.cnopendata.com/data/m/regional/yspl.html",
+      "desc": "本数据基于吕冰洋与李岩（2020）的研究，构建了1994-2017年31个省份及2008-2017年252个地级市的预算偏离指标，涵盖决算收入、支出等关键字段，为分析财政预算超收超支规律及影响因素提供重要支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-psi",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国城市层面电力短缺指数",
+      "url": "https://www.cnopendata.com/data/m/regional/PSI.html",
+      "desc": "该数据集提供了2001-2017年中国218个城市层面的电力短缺指数，基于报纸文本分析构建，包含计划与计划外停电指数等，可用于研究电力短缺对经济的影响。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-epu",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国省级层面经济政策不确定性指数",
+      "url": "https://www.cnopendata.com/data/m/regional/EPU.html",
+      "desc": "该数据集基于31个省份的日报文本，构建了2000-2017年中国省级经济政策不确定性指数，可用于研究区域经济政策不确定性对宏观经济与企业行为的影响，为政策评估和学术研究提供量化参考。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-qgyjdg",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国省市县夜间灯光栅格数据",
+      "url": "https://www.cnopendata.com/data/m/regional/qgyjdg.html",
+      "desc": "本数据提供1992-2023年中国省、市、县三级夜间灯光栅格均值数据，反映人类活动强度与城市化水平，适用于城镇扩展、社会经济因子估算等研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-gzlyjdg",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国高质量夜间灯光数据",
+      "url": "https://www.cnopendata.com/data/m/regional/gzlyjdg.html",
+      "desc": "本数据为中国高质量夜间灯光数据，基于多源夜间灯光卫星遥感影像，经科学降噪修正，以省市县三级行政区划为统计单元，提供年度、月度更新的Excel统计表和Shp矢量文件，含总亮度值、平均亮度值等指标，可应用于城市规划、经济研究、环境监测、灾害应对",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-chinese-listed-company-stocks-comment",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "A股上市公司股吧文本数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/chinese-listed-company-stocks-comment.html",
+      "desc": "CnOpenData A股上市公司股吧文本数据库收录自1992年至今的股吧发帖、回帖、用户信息及社交关系数据，涵盖超7.8亿条发帖与15.2亿条回帖，为投资者情绪、信息传播及行为金融研究提供海量基础数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-guba-stat",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "A股上市公司股吧文本统计数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/guba-stat.html",
+      "desc": "本数据覆盖A股上市公司在股吧平台的发帖与回帖统计信息，包含证券代码、时间段、数量、情感占比等字段，时间跨度至2024年，按年度更新，适用于投资者情绪与市场预测等学术研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-a-listedco-investorpost",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "雪球网上市公司个人投资者发帖实时更新数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/A-listedco-investorpost.html",
+      "desc": "雪球网上市公司个人投资者发帖实时更新数据，以文本信息为主，展现投资者发帖内容及互动数据，涵盖股票代码、发帖者信息、发布时间、点赞转发等字段，可为金融决策研究提供社交媒体大数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-hk-listedco-investorpost",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "港股上市公司雪球投资者发帖评论数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/HK-listedco-investorpost.html",
+      "desc": "本数据为港股上市公司在雪球平台的投资者发帖评论数据，直观展现各贴内容，包含股票代码、帖子内容、点赞量、转发量等关键信息，可用于分析投资者情绪与市场行为。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-us-listedco-investorpost",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "美股上市公司雪球投资者发帖评论数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/US-listedco-investorpost.html",
+      "desc": "该数据集提供美股上市公司在雪球平台上的投资者发帖评论数据，涵盖股票代码、发帖者信息、帖子内容、发布时间及互动指标，为研究社交媒体对金融市场影响提供文本数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-listed-company-transactions",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "雪球网上市公司个人投资者关注和实盘模拟盘交易数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/listed-company-transactions.html",
+      "desc": "该数据集收录雪球网上市公司个股交易板块的投资者发帖及互动信息，涵盖用户昵称、发帖内容、来源股票、发布时间、点赞量等字段，为研究投资者情绪、市场微观结构与公司舆情提供高价值微观数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-xueqiu-news",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "雪球网上市公司新闻实时更新数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/xueqiu-news.html",
+      "desc": "雪球网上市公司新闻实时更新数据库，涵盖资讯与公告，实时更新，保留全文，支持资本市场研究、舆情分析、文本挖掘等应用。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ashare-complaint",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "A股上市公司消费者投诉文本数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/ashare-complaint.html",
+      "desc": "本数据整合与A股上市公司关联的消费者投诉文本，共332万条，通过实体匹配精准关联至公司主体，覆盖2018-2024年。数据包含投诉标题、问题、要求等字段，可用于声誉风险、ESG及政策研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-report",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "A股上市公司分析师研报及评论数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/report.html",
+      "desc": "CnOpenData推出的A股上市公司分析师研报及评论数据，包含个股研究报告基本信息表和评论表，涵盖报告标题、分析师、发布机构、回帖内容等字段，为投资研究和学术分析提供基础数据支持。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-ashare-zhihu-post",
+      "layer": "factor",
+      "category_group": "新闻舆情与文本语料",
+      "category": "社交媒体文本语料",
+      "name": "A股上市公司知乎发帖文本数据",
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/ashare-zhihu-post.html",
+      "desc": "本数据以 A 股上市公司为检索主体，系统采集知乎平台上与上市公司相关的问答发帖文本，完整保留问题标题、回答正文、赞同数与评论数、发布时间，以及发帖作者公开的身份标签，为上市公司声誉、投资者情绪与公众认知研究提供非结构化另类数据。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-regional-bidding-data-across-china",
+      "layer": "factor",
+      "category_group": "因子与事件数据",
+      "category": "招投标数据",
+      "name": "中国各地区招投标数据",
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/regional-bidding-data-across-china.html",
+      "desc": "中国各地区招投标数据综合百余个招投标网站，总规模达1.2亿条，覆盖各地区官方及非官方平台，完整展现招标投标过程，可用于政府采购、企业融资等研究，年度更新。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    },
+    {
+      "id": "cnod-yklyg",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "年鉴数据",
+      "name": "中国各城市游客来源国统计数据",
+      "url": "https://www.cnopendata.com/data/m/yearbooks/yklyg.html",
+      "desc": "该数据集涵盖2001-2017年我国60个城市的游客来源国统计信息，包含城市、年份、游客数、住宿收入等关键指标，为入境旅游研究及政策制定提供数据支撑。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "待分类"
+      ],
+      "maps_to": [
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "增量刷新自动收录（2026-10-21），名称取自分类页 h3，描述取自卡片首段；获取方式与优先级**未经人工核实**，不得直接采购或接入。",
+      "first_seen": "2026-10-21",
+      "status": "new_untriaged"
+    }
+  ]
+}

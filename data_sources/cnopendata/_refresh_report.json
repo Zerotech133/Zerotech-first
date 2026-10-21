@@ -1,0 +1,731 @@
+{
+  "checked_at": "2026-10-21T20:46:49+08:00",
+  "categories_scanned": 28,
+  "failed_categories": [],
+  "registry_total": 506,
+  "seen_on_site": 626,
+  "added": [],
+  "cross_listed": [
+    {
+      "url": "https://www.cnopendata.com/data/m/ESG/green-patent-innovation.html",
+      "merged_into": "cnod-green-patent-innovation",
+      "existing_url": "https://www.cnopendata.com/data/m/patent/green-patent-innovation.html",
+      "category": "ESG"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/ESG/chinese-green-patent-volume-data-by-region.html",
+      "merged_into": "cnod-chinese-green-patent-volume-data-by-region",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/chinese-green-patent-volume-data-by-region.html",
+      "category": "ESG"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/ESG/listed-companies-green-patent-citation.html",
+      "merged_into": "cnod-listed-companies-green-patent-citation",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-companies-green-patent-citation.html",
+      "category": "ESG"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/ESG/hjtjnj.html",
+      "merged_into": "cnod-hjtjnj",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/hjtjnj.html",
+      "category": "ESG"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/ESG/chinese-carbon-trading-data-by-region.html",
+      "merged_into": "cnod-chinese-carbon-trading-data-by-region",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/chinese-carbon-trading-data-by-region.html",
+      "category": "ESG"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/ESG/Responsibility%20Report.html",
+      "merged_into": "cnod-responsibility-report",
+      "existing_url": "https://www.cnopendata.com/data/m/international-news/Responsibility%20Report.html",
+      "category": "ESG"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/ESG/qgtpf.html",
+      "merged_into": "cnod-qgtpf",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/qgtpf.html",
+      "category": "ESG"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/Us-listed-company/USLCAR-10-K.html",
+      "merged_into": "cnod-uslcar-10-k",
+      "existing_url": "https://www.cnopendata.com/data/m/international-news/USLCAR-10-K.html",
+      "category": "Us-listed-company"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/bond/jijin-stocks-comment.html",
+      "merged_into": "cnod-jijin-stocks-comment",
+      "existing_url": "https://www.cnopendata.com/data/m/social-media-corpus/jijin-stocks-comment.html",
+      "category": "bond"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/china-real-estate/fapaifang.html",
+      "merged_into": "cnod-fapaifang",
+      "existing_url": "https://www.cnopendata.com/data/m/judicial-auction/fapaifang.html",
+      "category": "china-real-estate"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/customs/tax-hg.html",
+      "merged_into": "cnod-tax-hg",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/tax-hg.html",
+      "category": "customs"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-onlinemessage.html",
+      "merged_into": "cnod-tax-onlinemessage",
+      "existing_url": "https://www.cnopendata.com/data/m/government-corpus/tax-onlinemessage.html",
+      "category": "finance-tax"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/wxgzh.html",
+      "merged_into": "cnod-wxgzh",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/wxgzh.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/report-all.html",
+      "merged_into": "cnod-report-all",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/report-all.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-announcement.html",
+      "merged_into": "cnod-listed-co-announcement",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-announcement.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/ssgsjyyb.html",
+      "merged_into": "cnod-ssgsjyyb",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-basic/ssgsjyyb.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gddh.html",
+      "merged_into": "cnod-listed-co-gddh",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gddh.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-zgsm.html",
+      "merged_into": "cnod-listed-co-zgsm",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-zgsm.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gsz.html",
+      "merged_into": "cnod-listed-co-gsz",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gsz.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/listed-co-shzr.html",
+      "merged_into": "cnod-listed-co-shzr",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-shzr.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/chinese-listed-companies-and-investor-relations.html",
+      "merged_into": "cnod-chinese-listed-companies-and-investor-relations",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-and-investor-relations.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/financial-news/listedco-exercise.html",
+      "merged_into": "cnod-listedco-exercise",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-exercise.html",
+      "category": "financial-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/fund%26broker/Fin-FS.html",
+      "merged_into": "cnod-fin-fs",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-basic/Fin-FS.html",
+      "category": "fund%26broker"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/stats-enterprises.html",
+      "merged_into": "cnod-stats-enterprises",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/stats-enterprises.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/statspts-enterprises.html",
+      "merged_into": "cnod-statspts-enterprises",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/statspts-enterprises.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/ctgszp.html",
+      "merged_into": "cnod-ctgszp",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/ctgszp.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/ggzg-zp.html",
+      "merged_into": "cnod-ggzg-zp",
+      "existing_url": "https://www.cnopendata.com/data/m/hongkong/ggzg-zp.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/tax-basic.html",
+      "merged_into": "cnod-tax-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/tax-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/land-basic.html",
+      "merged_into": "cnod-land-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/land/land-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/govprocurement-zbdw.html",
+      "merged_into": "cnod-govprocurement-zbdw",
+      "existing_url": "https://www.cnopendata.com/data/m/tender%26bid/govprocurement-zbdw.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/govprocurement-ann-zbdw.html",
+      "merged_into": "cnod-govprocurement-ann-zbdw",
+      "existing_url": "https://www.cnopendata.com/data/m/tender%26bid/govprocurement-ann-zbdw.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/tender%26bidd-unit.html",
+      "merged_into": "cnod-tender-bidd-unit",
+      "existing_url": "https://www.cnopendata.com/data/m/tender%26bid/tender%26bidd-unit.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/bank-basic.html",
+      "merged_into": "cnod-bank-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/bank/bank-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/bjcity-basic.html",
+      "merged_into": "cnod-bjcity-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/bjcity-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/shcity-basic.html",
+      "merged_into": "cnod-shcity-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/shcity-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/gzcity-basic.html",
+      "merged_into": "cnod-gzcity-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/gzcity-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/szcity-basic.html",
+      "merged_into": "cnod-szcity-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/szcity-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/data-on-companies-registered-in-the-manufacturing-industry.html",
+      "merged_into": "cnod-data-on-companies-registered-in-the-manufacturing-industry",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/data-on-companies-registered-in-the-manufacturing-industry.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/agricul-company-reg-statistical.html",
+      "merged_into": "cnod-agricul-company-reg-statistical",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/agricul-company-reg-statistical.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/finance-basic.html",
+      "merged_into": "cnod-finance-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/fund%26broker/finance-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/industry_commerce/realestate-basic.html",
+      "merged_into": "cnod-realestate-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/china-real-estate/realestate-basic.html",
+      "category": "industry_commerce"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/international-news/USLCAR.html",
+      "merged_into": "cnod-uslcar",
+      "existing_url": "https://www.cnopendata.com/data/m/Us-listed-company/USLCAR.html",
+      "category": "international-news"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/rcrt-basic.html",
+      "merged_into": "cnod-rcrt-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/industry_commerce/rcrt-basic.html",
+      "category": "labour%26recruit"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/listedco-lwwbbc.html",
+      "merged_into": "cnod-listedco-lwwbbc",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-lwwbbc.html",
+      "category": "labour%26recruit"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/bank-recruitment.html",
+      "merged_into": "cnod-bank-recruitment",
+      "existing_url": "https://www.cnopendata.com/data/m/bank/bank-recruitment.html",
+      "category": "labour%26recruit"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/Ashare-cyber-security-recruitment.html",
+      "merged_into": "cnod-ashare-cyber-security-recruitment",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/Ashare-cyber-security-recruitment.html",
+      "category": "labour%26recruit"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/labour%26recruit/minimum-wage-by-region.html",
+      "merged_into": "cnod-minimum-wage-by-region",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/minimum-wage-by-region.html",
+      "category": "labour%26recruit"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/hqys.html",
+      "merged_into": "cnod-hqys",
+      "existing_url": "https://www.cnopendata.com/data/m/trading/hqys.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/trading.html",
+      "merged_into": "cnod-trading",
+      "existing_url": "https://www.cnopendata.com/data/m/trading/trading.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-report.html",
+      "merged_into": "cnod-listed-co-report",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/listed-co-report.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-yjyg.html",
+      "merged_into": "cnod-listed-co-yjyg",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/listed-co-yjyg.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gqjl.html",
+      "merged_into": "cnod-listed-co-gqjl",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gqjl.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-co-gszc.html",
+      "merged_into": "cnod-listed-co-gszc",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/listed-co-gszc.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-violation.html",
+      "merged_into": "cnod-listedco-violation",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/listedco-violation.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/regulatory-measures.html",
+      "merged_into": "cnod-regulatory-measures",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/regulatory-measures.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listed-companies-and-subsidiaries-data.html",
+      "merged_into": "cnod-listed-companies-and-subsidiaries-data",
+      "existing_url": "https://www.cnopendata.com/data/m/industry_commerce/listed-companies-and-subsidiaries-data.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-gsdj.html",
+      "merged_into": "cnod-listedco-gsdj",
+      "existing_url": "https://www.cnopendata.com/data/m/industry_commerce/listedco-gsdj.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-IPO-pre.html",
+      "merged_into": "cnod-listedco-ipo-pre",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/listedco-IPO-pre.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-IPO-letter.html",
+      "merged_into": "cnod-listedco-ipo-letter",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/listedco-IPO-letter.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/listedco-IPO-issuance.html",
+      "merged_into": "cnod-listedco-ipo-issuance",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/listedco-IPO-issuance.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/CSR-Report.html",
+      "merged_into": "cnod-csr-report",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/CSR-Report.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-basic/FEPU.html",
+      "merged_into": "cnod-fepu",
+      "existing_url": "https://www.cnopendata.com/data/m/macro/FEPU.html",
+      "category": "listedcompany-basic"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-onlinerect.html",
+      "merged_into": "cnod-chinese-listed-companies-onlinerect",
+      "existing_url": "https://www.cnopendata.com/data/m/labour%26recruit/chinese-listed-companies-onlinerect.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-AI-recruitment.html",
+      "merged_into": "cnod-listedco-ai-recruitment",
+      "existing_url": "https://www.cnopendata.com/data/m/labour%26recruit/listedco-AI-recruitment.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-ygpj.html",
+      "merged_into": "cnod-listedco-ygpj",
+      "existing_url": "https://www.cnopendata.com/data/m/labour%26recruit/listedco-ygpj.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-companies-ztb.html",
+      "merged_into": "cnod-chinese-listed-companies-ztb",
+      "existing_url": "https://www.cnopendata.com/data/m/tender%26bid/chinese-listed-companies-ztb.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/listedco-envlpenalty.html",
+      "merged_into": "cnod-listedco-envlpenalty",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/listedco-envlpenalty.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/Industry-Reports.html",
+      "merged_into": "cnod-industry-reports",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/Industry-Reports.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/A-hg.html",
+      "merged_into": "cnod-a-hg",
+      "existing_url": "https://www.cnopendata.com/data/m/customs/A-hg.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/listedcompany-special/list-company-land-transaction.html",
+      "merged_into": "cnod-list-company-land-transaction",
+      "existing_url": "https://www.cnopendata.com/data/m/land/list-company-land-transaction.html",
+      "category": "listedcompany-special"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/macro/xyjj.html",
+      "merged_into": "cnod-xyjj",
+      "existing_url": "https://www.cnopendata.com/data/m/yearbooks/xyjj.html",
+      "category": "macro"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/macro/czfzzs.html",
+      "merged_into": "cnod-czfzzs",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/czfzzs.html",
+      "category": "macro"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/macro/gjzfssfc.html",
+      "merged_into": "cnod-gjzfssfc",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/gjzfssfc.html",
+      "category": "macro"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/macro/czyx.html",
+      "merged_into": "cnod-czyx",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/czyx.html",
+      "category": "macro"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/macro/yspl.html",
+      "merged_into": "cnod-yspl",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/yspl.html",
+      "category": "macro"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/macro/Macros-Reports.html",
+      "merged_into": "cnod-macros-reports",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/Macros-Reports.html",
+      "category": "macro"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/patent-basic.html",
+      "merged_into": "cnod-patent-basic",
+      "existing_url": "https://www.cnopendata.com/data/m/industry_commerce/patent-basic.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/patent-text-data.html",
+      "merged_into": "cnod-patent-text-data",
+      "existing_url": "https://www.cnopendata.com/data/m/financial-news/patent-text-data.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/customs-pt.html",
+      "merged_into": "cnod-customs-pt",
+      "existing_url": "https://www.cnopendata.com/data/m/customs/customs-pt.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/patent-stats.html",
+      "merged_into": "cnod-patent-stats",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/patent-stats.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/green-patyyby.html",
+      "merged_into": "cnod-green-patyyby",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/green-patyyby.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/chinese-green-patent-volume-data-by-region.html",
+      "merged_into": "cnod-chinese-green-patent-volume-data-by-region",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/chinese-green-patent-volume-data-by-region.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/low-carbon-patent-innovation.html",
+      "merged_into": "cnod-low-carbon-patent-innovation",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-innovation.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/low-carbon-patent-citation.html",
+      "merged_into": "cnod-low-carbon-patent-citation",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-citation.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/low-carbon-patent-stats.html",
+      "merged_into": "cnod-low-carbon-patent-stats",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/low-carbon-patent-stats.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/bank-pat.html",
+      "merged_into": "cnod-bank-pat",
+      "existing_url": "https://www.cnopendata.com/data/m/bank/bank-pat.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/bank-patyyby.html",
+      "merged_into": "cnod-bank-patyyby",
+      "existing_url": "https://www.cnopendata.com/data/m/bank/bank-patyyby.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/ssdigeco-patstat.html",
+      "merged_into": "cnod-ssdigeco-patstat",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/ssdigeco-patstat.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/ss-dig-eco-pat.html",
+      "merged_into": "cnod-ss-dig-eco-pat",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/ss-dig-eco-pat.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/ss-dig-eco-patyyby.html",
+      "merged_into": "cnod-ss-dig-eco-patyyby",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/ss-dig-eco-patyyby.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/listed-co-patent-citation.html",
+      "merged_into": "cnod-listed-co-patent-citation",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-co-patent-citation.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/listed-companies-green-patent-citation.html",
+      "merged_into": "cnod-listed-companies-green-patent-citation",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-companies-green-patent-citation.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/chinese-industrial-enterprise-green-patent-citation.html",
+      "merged_into": "cnod-chinese-industrial-enterprise-green-patent-citation",
+      "existing_url": "https://www.cnopendata.com/data/m/ESG/chinese-industrial-enterprise-green-patent-citation.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/patent/tax-patent.html",
+      "merged_into": "cnod-tax-patent",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/tax-patent.html",
+      "category": "patent"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/zgkfq-tj.html",
+      "merged_into": "cnod-zgkfq-tj",
+      "existing_url": "https://www.cnopendata.com/data/m/macro/zgkfq-tj.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/backtracking-ind%26com.html",
+      "merged_into": "cnod-backtracking-ind-com",
+      "existing_url": "https://www.cnopendata.com/data/m/industry_commerce/backtracking-ind%26com.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/cond-pro.html",
+      "merged_into": "cnod-cond-pro",
+      "existing_url": "https://www.cnopendata.com/data/m/government-corpus/cond-pro.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-government-work-report.html",
+      "merged_into": "cnod-chinese-government-work-report",
+      "existing_url": "https://www.cnopendata.com/data/m/government-corpus/chinese-government-work-report.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/cn-jp.html",
+      "merged_into": "cnod-cn-jp",
+      "existing_url": "https://www.cnopendata.com/data/m/government-corpus/cn-jp.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/cn-xz.html",
+      "merged_into": "cnod-cn-xz",
+      "existing_url": "https://www.cnopendata.com/data/m/government-corpus/cn-xz.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/czfzzs.html",
+      "merged_into": "cnod-czfzzs",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/czfzzs.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/gjzfssfc.html",
+      "merged_into": "cnod-gjzfssfc",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/gjzfssfc.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/czyx.html",
+      "merged_into": "cnod-czyx",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/czyx.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/yspl.html",
+      "merged_into": "cnod-yspl",
+      "existing_url": "https://www.cnopendata.com/data/m/finance-tax/yspl.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/PSI.html",
+      "merged_into": "cnod-psi",
+      "existing_url": "https://www.cnopendata.com/data/m/macro/PSI.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/EPU.html",
+      "merged_into": "cnod-epu",
+      "existing_url": "https://www.cnopendata.com/data/m/macro/EPU.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/qgyjdg.html",
+      "merged_into": "cnod-qgyjdg",
+      "existing_url": "https://www.cnopendata.com/data/m/macro/qgyjdg.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/regional/gzlyjdg.html",
+      "merged_into": "cnod-gzlyjdg",
+      "existing_url": "https://www.cnopendata.com/data/m/macro/gzlyjdg.html",
+      "category": "regional"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/chinese-listed-company-stocks-comment.html",
+      "merged_into": "cnod-chinese-listed-company-stocks-comment",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/chinese-listed-company-stocks-comment.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/guba-stat.html",
+      "merged_into": "cnod-guba-stat",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/guba-stat.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/A-listedco-investorpost.html",
+      "merged_into": "cnod-a-listedco-investorpost",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/A-listedco-investorpost.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/HK-listedco-investorpost.html",
+      "merged_into": "cnod-hk-listedco-investorpost",
+      "existing_url": "https://www.cnopendata.com/data/m/hongkong/HK-listedco-investorpost.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/US-listedco-investorpost.html",
+      "merged_into": "cnod-us-listedco-investorpost",
+      "existing_url": "https://www.cnopendata.com/data/m/Us-listed-company/US-listedco-investorpost.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/listed-company-transactions.html",
+      "merged_into": "cnod-listed-company-transactions",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/listed-company-transactions.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/xueqiu-news.html",
+      "merged_into": "cnod-xueqiu-news",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/xueqiu-news.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/ashare-complaint.html",
+      "merged_into": "cnod-ashare-complaint",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/ashare-complaint.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/report.html",
+      "merged_into": "cnod-report",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/report.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/social-media-corpus/ashare-zhihu-post.html",
+      "merged_into": "cnod-ashare-zhihu-post",
+      "existing_url": "https://www.cnopendata.com/data/m/listedcompany-special/ashare-zhihu-post.html",
+      "category": "social-media-corpus"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/tender%26bid/regional-bidding-data-across-china.html",
+      "merged_into": "cnod-regional-bidding-data-across-china",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/regional-bidding-data-across-china.html",
+      "category": "tender%26bid"
+    },
+    {
+      "url": "https://www.cnopendata.com/data/m/yearbooks/yklyg.html",
+      "merged_into": "cnod-yklyg",
+      "existing_url": "https://www.cnopendata.com/data/m/regional/yklyg.html",
+      "category": "yearbooks"
+    }
+  ],
+  "not_seen": []
+}

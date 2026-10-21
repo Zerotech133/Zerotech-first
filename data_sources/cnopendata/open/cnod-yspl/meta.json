@@ -1,0 +1,16 @@
+{
+  "id": "cnod-yspl",
+  "name": "中国各省及省本级预算偏离数据",
+  "source_url": "http://ipft.ruc.edu.cn/docs/2021-08/cb98c5dde6d24fbc938c8ebfcbb181ad.xlsx",
+  "landing_page": "http://ipft.ruc.edu.cn/cssjk/zggsjsbjysplsj/index.htm",
+  "fetched_at": "2026-10-21T15:39:02+08:00",
+  "files": [
+    {
+      "name": "cb98c5dde6d24fbc938c8ebfcbb181ad.xlsx",
+      "bytes": 301643,
+      "sha256": "1a2705f9244336b655c8d559a3c2d95a9ea4ace99e055df55bbbc9b74670768f"
+    }
+  ],
+  "license_note": "中国人民大学财税研究所官网公开附件，站点未附明确许可协议；仅作研究留痕，不再分发。",
+  "notes": "栏目页同一附件同时挂为“文章预览/数据下载”；同页另有 PDF 说明 http://ipft.ruc.edu.cn/docs/2021-08/0c51d34028c9489f9155acc53ea1caf5.pdf（未下载）。单表 Sheet1，745 行（含表头）、60 列，覆盖 1994-2017。"
+}

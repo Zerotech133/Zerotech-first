@@ -254,8 +254,6 @@ popup_fix_result.txt
 quant_backtest/%s
 quant_backtest/_xq_hk_point_scan.out
 db_migration/snapshots/
-common/
-data_sources/
 legion_agents/
 logs/
 tmp/

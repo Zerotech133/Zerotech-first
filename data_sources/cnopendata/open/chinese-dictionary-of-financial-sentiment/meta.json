@@ -1,0 +1,21 @@
+{
+  "id": "chinese-dictionary-of-financial-sentiment",
+  "name": "中文金融情感词典",
+  "source_url": "https://github.com/MengLingchao/Chinese_financial_sentiment_dictionary",
+  "landing_page": "https://github.com/MengLingchao/Chinese_financial_sentiment_dictionary",
+  "fetched_at": "2026-10-21T14:46:00+08:00",
+  "files": [
+    {
+      "name": "中文金融情感词典_姜富伟等(2020).xlsx",
+      "bytes": 153036,
+      "sha256": "0d2078ff28d2d38d3784a1c791c7efd220b5d9c40b46b2e358c0e6323ee384e4"
+    },
+    {
+      "name": "README.md",
+      "bytes": 7101,
+      "sha256": "256744028fb86956057987d4658dffd34fd9e2f6173d5aa106971af1ae9bb287"
+    }
+  ],
+  "license_note": "仓库 README 原文：「在尊重知识产权的前提下，读者可以免费使用该词典，请引用下列文献：Fuwei Jiang, Joshua Lee, Xiumin Martin, and Guofu Zhou. \"Manager Sentiment and Stock Returns\" Journal of Financial Economics 132(1), 2019, 126-149；姜富伟、孟令超、唐国豪，「媒体文本情绪与股票回报预测」，《经济学(季刊)》，2021年第4期，第1323-1344页。」xlsx 内「说明」工作表重复同一句话及两篇引用文献，其中中文文献标注为「已接受待发表」。仓库未附 LICENSE 文件，属署名即用（attribution-only），非标准开源许可。",
+  "notes": "1) 取数方式：git clone --depth 1（仓库无 release/无二进制附件），克隆后仅保留实际词表 xlsx 与 README.md，删除 .git 与 images/ 图片目录，未取任何其他文件。2) 仓库与提交：commit f41ea380f0cd27f2d5faf3f825701cad399b270f（2021-08-21 20:03:44 +0800，Update README.md），仓库内仅此一个提交可见（浅克隆）。3) 格式：xlsx 含 3 个工作表——「说明」(3 行署明文字)、「negative」(5891 行 = 表头 'Negative Word' + 5890 词)、「positive」(3339 行 = 表头 'Positive Word' + 3338 词)；与 README「共9228个词语，消极5890、积极3338」完全一致。4) 口径提醒：词条单元格值末尾带换行符 \\n（如「败坏名声\\n」），入库前需 strip；词表为单列无词性/权重字段。5) CnOpenData 页面注明该 GitHub 源「需翻墙」，本次直连可达，未使用任何代理。"
+}

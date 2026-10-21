@@ -1,0 +1,139 @@
+{
+  "generated_at": "2026-10-21T21:03:45+08:00",
+  "b_content_conflict": [
+    {
+      "canonical": "cnod-api-housing-estate-china",
+      "alias": "cnod-chinese-community-information",
+      "name": "中国小区信息数据",
+      "fields": [
+        "时间覆盖",
+        "量级",
+        "获取方式"
+      ]
+    },
+    {
+      "canonical": "cnod-asset-management-cor-employee",
+      "alias": "cnod-fund-broker-asset-management-cor-employee",
+      "name": "证券资产管理公司从业人员信息数据",
+      "fields": [
+        "时间覆盖"
+      ]
+    },
+    {
+      "canonical": "cnod-bank-fin-fs",
+      "alias": "cnod-fin-fs",
+      "name": "A股上市金融机构财务报表数据",
+      "fields": [
+        "量级"
+      ]
+    },
+    {
+      "canonical": "cnod-bank-finance-basic",
+      "alias": "cnod-finance-basic",
+      "name": "金融业工商注册企业基本信息数据",
+      "fields": [
+        "时间覆盖",
+        "更新频率"
+      ]
+    },
+    {
+      "canonical": "cnod-credit-rating-age-employee",
+      "alias": "cnod-fund-broker-credit-rating-age-employee",
+      "name": "证券市场资信评级机构从业人员信息数据",
+      "fields": [
+        "时间覆盖"
+      ]
+    },
+    {
+      "canonical": "cnod-fund-broker-report",
+      "alias": "cnod-report",
+      "name": "A股上市公司分析师研报及评论数据",
+      "fields": [
+        "时间覆盖"
+      ]
+    },
+    {
+      "canonical": "cnod-msic-employee",
+      "alias": "cnod-fund-broker-msic-employee",
+      "name": "证券投资咨询机构从业人员信息数据",
+      "fields": [
+        "时间覆盖"
+      ]
+    },
+    {
+      "canonical": "cnod-securities-firm-employee",
+      "alias": "cnod-fund-broker-securities-firm-employee",
+      "name": "证券公司从业人员信息数据",
+      "fields": [
+        "时间覆盖"
+      ]
+    },
+    {
+      "canonical": "cnod-sub-cor-employee",
+      "alias": "cnod-fund-broker-sub-cor-employee",
+      "name": "证券另类子公司从业人员信息数据",
+      "fields": [
+        "时间覆盖"
+      ]
+    }
+  ],
+  "c_triage_only": [
+    {
+      "canonical": "cnod-bond-bond-credit-rating",
+      "alias": "cnod-bond-credit-rating",
+      "name": "中国债券信用评级公告数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-cl-reports",
+      "alias": "cnod-cl-reports",
+      "name": "中国证券分析师策略报告数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-industry-reports",
+      "alias": "cnod-industry-reports",
+      "name": "中国证券分析师行业研究报告数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-jijin-stocks-comment",
+      "alias": "cnod-jijin-stocks-comment",
+      "name": "中国基金产品股吧文本数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-macros-reports",
+      "alias": "cnod-macros-reports",
+      "name": "中国证券分析师宏观研究报告数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-profitforecast-reports",
+      "alias": "cnod-profitforecast-reports",
+      "name": "中国证券分析师盈利预测研究数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-qsacct",
+      "alias": "cnod-qsacct",
+      "name": "中国券商线上招聘数据"
+    }
+  ],
+  "a_identical": [
+    {
+      "canonical": "cnod-bond-mkt-bond",
+      "alias": "cnod-mkt-bond",
+      "name": "中国债券行情数据"
+    },
+    {
+      "canonical": "cnod-ch-reports",
+      "alias": "cnod-fund-broker-ch-reports",
+      "name": "中国证券公司晨会报告数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-mkt-fund",
+      "alias": "cnod-mkt-fund",
+      "name": "中国基金行情数据"
+    },
+    {
+      "canonical": "cnod-fund-broker-report-all",
+      "alias": "cnod-report-all",
+      "name": "A股上市公司分析师研报文本数据"
+    }
+  ]
+}

@@ -1,0 +1,1971 @@
+{
+  "shard": "cnod-e1",
+  "category_group": "宏观与区域背景",
+  "records": [
+    {
+      "id": "cnod-qgyjdg",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国省市县夜间灯光栅格数据",
+      "url": "https://www.cnopendata.com/data/m/macro/qgyjdg.html",
+      "desc": "1992-2023年中国省、市、县三级夜间灯光栅格均值，反映人类活动强度与城市化水平，可用于城镇扩展、社会经济因子估算。",
+      "coverage": "1992-2023",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "夜间灯光",
+        "遥感栅格",
+        "城市化",
+        "区域经济",
+        "代理变量"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "夜间灯光常作经济活动代理变量做省级因子；栅格需先聚合到省市县才能与其他面板对齐"
+    },
+    {
+      "id": "cnod-gzlyjdg",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国高质量夜间灯光数据",
+      "url": "https://www.cnopendata.com/data/m/macro/gzlyjdg.html",
+      "desc": "基于多源夜间灯光卫星影像降噪修正，以省市县三级区划为统计单元，提供年度/月度更新的Excel统计表与Shp矢量，含总亮度与平均亮度。",
+      "coverage": "未标注",
+      "volume": "Excel统计表 + Shp矢量",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "夜间灯光",
+        "遥感",
+        "省市县",
+        "月度",
+        "城市化"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "简介写年度/月度均更新，实际页面只标年度；若需月度需向运营方确认口径"
+    },
+    {
+      "id": "cnod-zgkfq-tj",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国开发区基础统计指标数据",
+      "url": "https://www.cnopendata.com/data/m/macro/zgkfq-tj.html",
+      "desc": "2017-2023年开发区GDP、固定资产投资、工业总产值等核心经济指标，服务区域经济学与产业经济学研究。",
+      "coverage": "2017-2023",
+      "volume": "未标注",
+      "frequency": "不支持更新",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "开发区",
+        "区域经济",
+        "固定资产投资",
+        "工业总产值"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/投研"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "页面明示不更新，2017-2023为断档区间；同一数据集在分地区页重复出现"
+    },
+    {
+      "id": "cnod-fepu",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "企业的经济政策不确定性感知指数",
+      "url": "https://www.cnopendata.com/data/m/macro/FEPU.html",
+      "desc": "聂辉华团队公开FEPU指数，基于A股上市公司年报文本挖掘构建，发表于《世界经济》2020，可用于投资、融资与金融资产配置研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "不定期",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "经济政策不确定性",
+        "年报文本",
+        "上市公司",
+        "FEPU",
+        "学术数据"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "风控/事件"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "页面标OPEN但仍是打包下载，非API；企业级年度面板，可做政策不确定性暴露因子"
+    },
+    {
+      "id": "cnod-psi",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国城市层面电力短缺指数",
+      "url": "https://www.cnopendata.com/data/m/macro/PSI.html",
+      "desc": "2001-2017年218个城市电力短缺指数，基于报纸文本分析构建，含计划与计划外停电指数，可研究电力短缺对经济的影响。",
+      "coverage": "2001-2017",
+      "volume": "218个城市",
+      "frequency": "不定期",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "电力短缺",
+        "城市面板",
+        "文本分析",
+        "PSI",
+        "供给冲击"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "风控/事件"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "样本止于2017，时效性差；城市级停电冲击可与本地制造业公司做交叉因子"
+    },
+    {
+      "id": "cnod-epu",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国宏观经济数据",
+      "name": "中国省级层面经济政策不确定性指数",
+      "url": "https://www.cnopendata.com/data/m/macro/EPU.html",
+      "desc": "基于31个省份日报文本构建2000-2017年省级经济政策不确定性指数，用于研究区域政策不确定性对宏观与企业行为的影响。",
+      "coverage": "2000-2017",
+      "volume": "31个省份",
+      "frequency": "不定期",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "经济政策不确定性",
+        "省级EPU",
+        "日报文本",
+        "政策风险"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "止于2017，需自行延伸至当前年份才能当实时因子；月度/年度口径页面未写明"
+    },
+    {
+      "id": "cnod-global-economy",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "全球宏观经济数据",
+      "name": "全球宏观经济数据",
+      "url": "https://www.cnopendata.com/data/m/global-macro/global-economy.html",
+      "desc": "汇总200多个国家/地区的500多个统计指标，涵盖GDP、消费、投资、货币、劳动力、贸易、能源、环境等，时间跨度1960-2023。",
+      "coverage": "1960-2023",
+      "volume": "200+国家/地区 × 500+指标",
+      "frequency": "未标注",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "全球宏观",
+        "跨国面板",
+        "GDP",
+        "贸易",
+        "货币政策"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "全球分类页仅此1条，实质是超大宽表；页面未写更新频率，海外指标通常滞后1-2季"
+    },
+    {
+      "id": "cnod-chinese-administrative-divisions",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国行政区划数据",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-administrative-divisions.html",
+      "desc": "三张子表：历年县以上行政区划信息、历年县以下区划变更信息、历年省市县乡镇街道及居委区划。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "行政区划",
+        "区划代码",
+        "地名变更",
+        "基础底表"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "做区域面板时的主键底表；区划代码历史变更是最大坑，需按年对齐"
+    },
+    {
+      "id": "cnod-chinese-administrative-divisions-shp",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国行政区划shp数据",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-administrative-divisions-shp.html",
+      "desc": "2013-2023年可开放获取的行政区划矢量数据，覆盖省市县、国界、九段线等要素，基于国家基础地理信息及高德、天地图等来源制作。",
+      "coverage": "2013-2023",
+      "volume": "省市县多级要素",
+      "frequency": "年度",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "行政区划",
+        "shp矢量",
+        "GIS",
+        "地图底图"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "地图类数据用于对外可视化需过合规审查；历史版本会不定期修订"
+    },
+    {
+      "id": "cnod-rkzfl",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各城市栅格层面人口支付力数据",
+      "url": "https://www.cnopendata.com/data/m/regional/rkzfl.html",
+      "desc": "以geohash7（约150×150米）为单元的人口支付力数据，给出区域内支付力在全市前x%的人口占比，区分工作与居住人口，可追溯十年。",
+      "coverage": "近十年",
+      "volume": "全国城市栅格",
+      "frequency": "实时",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "人口支付力",
+        "栅格",
+        "消费能力",
+        "geohash",
+        "线下客流"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "第三方支付口径，非官方统计；可做消费类公司门店商圈需求代理，但授权与合规成本高"
+    },
+    {
+      "id": "cnod-rkfb",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各城市栅格层面人口分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/rkfb.html",
+      "desc": "全国城市250×250米栅格人口分布，细分性别、年龄阶段及日夜间人口，更新频率最高每2分钟一次，服务人口经济学研究。",
+      "coverage": "未标注",
+      "volume": "全国城市250米栅格",
+      "frequency": "实时",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "人口分布",
+        "栅格",
+        "日夜间人口",
+        "高时效",
+        "城市"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "2分钟级更新意味着极大数据量与高成本，实际研究多用日/月聚合"
+    },
+    {
+      "id": "cnod-qgwgrk",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国省市县网格人口数据",
+      "url": "https://www.cnopendata.com/data/m/regional/qgwgrk.html",
+      "desc": "1990-2022年1公里×1公里高分辨率人口时空分布，覆盖省市县三级，可用于政策制定、灾害应急、公共卫生与城市规划。",
+      "coverage": "1990-2022",
+      "volume": "1km栅格 × 省市县",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "网格人口",
+        "高分辨率",
+        "人口密度",
+        "省市县"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "常与夜间灯光、碳排放栅格做联合空间分析"
+    },
+    {
+      "id": "cnod-qgrcx",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国省市县日间热成像数据",
+      "url": "https://www.cnopendata.com/data/m/regional/qgrcx.html",
+      "desc": "2018-2023年省市县三级日间热成像数据，基于500米分辨率地表温度栅格计算，含均值与总值，支撑城市热岛与气候变化研究。",
+      "coverage": "2018-2023",
+      "volume": "省市县三级",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "地表温度",
+        "热成像",
+        "遥感",
+        "城市热岛",
+        "气候"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "偏生态/气候研究，与股价关联弱，仅作环境背景"
+    },
+    {
+      "id": "cnod-birdsts2025",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区观鸟数量统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/birdsts2025.html",
+      "desc": "整合34个省级区、344个地级市、2672个区县的观鸟记录，2002-2024年连续观测，提供省市县三级鸟种数、报告数与记录总量。",
+      "coverage": "2002-2024",
+      "volume": "34省/344市/2672区县",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "观鸟",
+        "生物多样性",
+        "生态",
+        "区县"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "ESG/生态主题叙事用得上，与财务因子关联弱"
+    },
+    {
+      "id": "cnod-zgkfq",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国开发区行政区划数据",
+      "url": "https://www.cnopendata.com/data/m/regional/zgkfq.html",
+      "desc": "涵盖高新区、经济开发区、边境经济合作区等类型，按国家级与省级分类，含省市区三级行政区划信息。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "开发区",
+        "行政区划",
+        "国家级",
+        "产业园区"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "可与开发区统计指标、企业注册数据按园区名匹配，做园区级产业面板"
+    },
+    {
+      "id": "cnod-shzz",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国社会组织名录数据",
+      "url": "https://www.cnopendata.com/data/m/regional/shzz.html",
+      "desc": "覆盖31个省级区、约111万社会组织名单，含社会团体、民办非企业单位与基金会，记录名称、登记日期、信用代码等。",
+      "coverage": "未标注",
+      "volume": "31省 / 111万条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "社会组织",
+        "基金会",
+        "名录",
+        "NGO",
+        "信用代码"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "可辅助识别股东/关联方中的社会组织，作尽调底表"
+    },
+    {
+      "id": "cnod-store",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国店铺点评网站全信息数据",
+      "url": "https://www.cnopendata.com/data/m/regional/Store.html",
+      "desc": "覆盖400多个城市、截至2024年4000多万家在营线下门店，含基础信息、详情与衍生信息，分汽车、美食、酒店等15大类。",
+      "coverage": "截至2024",
+      "volume": "4000多万家门店",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "线下门店",
+        "点评数据",
+        "消费",
+        "城市覆盖",
+        "门店数"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "可做连锁品牌门店数增速因子（消费/餐饮上市公司），需自建品牌名到股票代码映射"
+    },
+    {
+      "id": "cnod-poi",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国兴趣点（POI）数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI.html",
+      "desc": "涵盖汽车、餐饮、生活、住宿等17大类兴趣点，提供地点名称、地址、电话等基础字段，服务城市商业分析与选址评估。",
+      "coverage": "未标注",
+      "volume": "17大类",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "POI",
+        "地理数据",
+        "商业分析",
+        "选址"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "原始POI需自行聚合到城市/区县，再做商业活跃度指标"
+    },
+    {
+      "id": "cnod-cnpoi-stat",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国兴趣点分地区分类型统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/CNpoi-stat.html",
+      "desc": "全国POI按年度、省份、城市、区县及多级分类汇总的统计数据，为城市研究、商业布局与消费分析提供现成面板。",
+      "coverage": "未标注",
+      "volume": "省/市/区县 × 多级分类",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "POI统计",
+        "城市面板",
+        "商业布局",
+        "消费"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "比原始POI更实用：已是聚合面板，可直接算城市商业密度变化"
+    },
+    {
+      "id": "cnod-poi-hgd",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国火锅店分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-hgd.html",
+      "desc": "2024年全国火锅店分布，覆盖34个省级区、约36万家门店，含详细地址、经纬度、消费金额、评分等字段。",
+      "coverage": "2024",
+      "volume": "34省 / 约36万家",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "火锅",
+        "餐饮",
+        "门店分布",
+        "POI",
+        "消费金额"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "单品类切片，只有单年快照，无法直接算增速"
+    },
+    {
+      "id": "cnod-poi-zskc",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国中式快餐店分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-zskc.html",
+      "desc": "覆盖34个省级区、十万多家中式快餐连锁门店，含品牌、地址、经纬度、消费金额等字段，服务餐饮市场分析与选址决策。",
+      "coverage": "未标注",
+      "volume": "34省 / 10万+条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "中式快餐",
+        "连锁门店",
+        "餐饮",
+        "品牌",
+        "POI"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "含品牌字段，可聚合到上市连锁餐饮公司门店数"
+    },
+    {
+      "id": "cnod-poi-xskc",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国西式快餐店分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-xskc.html",
+      "desc": "覆盖34个省级区5万多家门店，涵盖麦当劳、肯德基等六大品牌，含地址、经纬度、消费金额等字段。",
+      "coverage": "未标注",
+      "volume": "34省 / 5万+家",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "西式快餐",
+        "连锁品牌",
+        "麦当劳",
+        "肯德基",
+        "POI"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "六大品牌口径，适合做外资餐饮在华扩张观察"
+    },
+    {
+      "id": "cnod-poi-jsf",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国健身房分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-jsf.html",
+      "desc": "覆盖34个省份11万个健身场所网点，含名称、位置、经纬度等详细信息，服务健身行业研究与商业决策。",
+      "coverage": "未标注",
+      "volume": "34省 / 11万个",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "健身房",
+        "体育消费",
+        "POI",
+        "网点"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "体育用品/健身连锁主题的辅助数据，单年快照"
+    },
+    {
+      "id": "cnod-poi-tcc",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国停车场分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-tcc.html",
+      "desc": "覆盖34个省份、164万条停车场记录，含名称、地址、经纬度等字段，支撑城市停车规划与商业选址。",
+      "coverage": "未标注",
+      "volume": "34省 / 164万条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "停车场",
+        "城市设施",
+        "交通",
+        "POI"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "可做城市汽车保有量/商圈活跃度代理，精度有限"
+    },
+    {
+      "id": "cnod-poi-cdz",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国充电站分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-cdz.html",
+      "desc": "覆盖34个省份约3万条充电站记录，含地点名称、省市、区域、详细地址、经纬度等，服务城市规划与新能源研究。",
+      "coverage": "未标注",
+      "volume": "34省 / 约3万条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "充电站",
+        "新能源",
+        "充电基础设施",
+        "POI"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "新能源车产业链跟踪的候选代理；只有单年快照，缺增速信息"
+    },
+    {
+      "id": "cnod-poi-jyz",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国加油站分布数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-jyz.html",
+      "desc": "全国34个省份14万个加油站分布信息，含名称、地址、经纬度等字段，数据更新至2024年，按年度更新。",
+      "coverage": "截至2024",
+      "volume": "34省 / 14万条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "加油站",
+        "成品油",
+        "地理信息",
+        "POI"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "成品油零售网点布局观察，对石化板块仅有背景意义"
+    },
+    {
+      "id": "cnod-poi-spa",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国Spa门店数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-SPA.html",
+      "desc": "覆盖34个省级区83万家Spa/水疗门店，字段含门店名称、地址、经纬度、消费金额等，服务行业研究与商业选址。",
+      "coverage": "未标注",
+      "volume": "34省 / 83万家",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "Spa",
+        "水疗",
+        "生活服务",
+        "门店",
+        "POI"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "与服务消费/美妆主题相关，投资相关性弱"
+    },
+    {
+      "id": "cnod-poi-lottery",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国彩票店数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-lottery.html",
+      "desc": "覆盖34个省级区17万家彩票店，含门店名称、省市、区域、商圈、详细地址、经纬度等字段。",
+      "coverage": "未标注",
+      "volume": "34省 / 17万家",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "彩票店",
+        "福彩",
+        "网点分布",
+        "商业分布"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "可与彩票销售数据配合看渠道密度；需注意彩票销售与博彩偏好类研究存在内生性"
+    },
+    {
+      "id": "cnod-poi-supermarket",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国超市便利店数据",
+      "url": "https://www.cnopendata.com/data/m/regional/POI-supermarket.html",
+      "desc": "覆盖34个省级区190多万家超市便利店门店，含地址、经纬度、消费金额等字段，服务零售研究。",
+      "coverage": "未标注",
+      "volume": "34省 / 190多万家",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "超市",
+        "便利店",
+        "零售业态",
+        "门店密度"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "零售板块（商超/便利店连锁）门店扩张跟踪的候选数据，需多年份才能算出增速"
+    },
+    {
+      "id": "cnod-minimum-wage-by-region",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各区县最低工资数据",
+      "url": "https://www.cnopendata.com/data/m/regional/minimum-wage-by-region.html",
+      "desc": "涵盖各区县最低工资划分标准、金额及调整日期，时间跨度1999-2023年，可研究最低工资制度对就业、企业用工与区域经济的影响。",
+      "coverage": "1999-2023",
+      "volume": "区县级",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "最低工资",
+        "劳动成本",
+        "区县",
+        "用工成本",
+        "劳动力"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "劳动密集型公司成本冲击因子；含调整日期，可做事件式设计"
+    },
+    {
+      "id": "cnod-hjtjnj",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国能源年鉴地区能源平衡表数据",
+      "url": "https://www.cnopendata.com/data/m/regional/hjtjnj.html",
+      "desc": "源自《中国能源统计年鉴》地区能源平衡表，覆盖1997年以来30个省份的能源生产、消费与平衡，含煤、油、气等30余个指标。",
+      "coverage": "1997-至今",
+      "volume": "30省 × 30余指标",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "能源平衡表",
+        "能源消费",
+        "省级",
+        "煤炭",
+        "电力"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "省级能源强度可做高耗能行业成本背景；年鉴数据通常滞后1-2年"
+    },
+    {
+      "id": "cnod-zgfyxx",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区方言信息数据",
+      "url": "https://www.cnopendata.com/data/m/regional/zgfyxx.html",
+      "desc": "基于《中国语言地图集》1986版与2012版整理，覆盖各省市区县乡镇街道的方言分类及细分片区，并附加区县经纬度。",
+      "coverage": "1986/2012两版",
+      "volume": "省/市/区县/乡镇/街道",
+      "frequency": "不定期",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "方言",
+        "语言地图",
+        "文化地理",
+        "区县"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "纯人文背景，投资用途极弱"
+    },
+    {
+      "id": "cnod-stats-enterprises",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国工商企业进入退出信息统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/stats-enterprises.html",
+      "desc": "基于工商注册信息，统计1980-2025年中国32个省份各行业企业注册、注销及存续数量，多维度反映企业生存状况与市场活力。",
+      "coverage": "1980-2025",
+      "volume": "32省 × 行业 × 年",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "企业进入退出",
+        "工商注册",
+        "行业景气",
+        "市场活力",
+        "省级"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "行业级净进入数可做行业景气/产能扩张因子，与申万行业可映射"
+    },
+    {
+      "id": "cnod-backtracking-ind-com",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国工商注册企业全生命周期统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/backtracking-ind%26com.html",
+      "desc": "基于3.5亿条工商注册明细，用“固定时点、回溯队列”模型构建覆盖31省份、全行业、1990-2024年的企业生存面板。",
+      "coverage": "1990-2024",
+      "volume": "3.5亿条底层明细",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "企业生存率",
+        "队列分析",
+        "营商环境",
+        "面板数据",
+        "工商注册"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "队列口径比企业进入退出统计更严谨，适合区域营商环境与行业存活率研究"
+    },
+    {
+      "id": "cnod-statspts-enterprises",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国合伙企业进入退出信息统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/statspts-enterprises.html",
+      "desc": "统计中国合伙企业1950-2021年进入退出信息，按地区、行业、企业性质等多维度给出注册、注销、存续数量。",
+      "coverage": "1950-2021",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "合伙企业",
+        "进入退出",
+        "企业注册",
+        "行业统计"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "止于2021，时效性弱；合伙企业多为投资载体，可作私募/创投活跃度旁证"
+    },
+    {
+      "id": "cnod-patent-stats",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国专利分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/patent-stats.html",
+      "desc": "依据2020年行政区划代码，提供1985-2024年分省、市、区县专利申请与授权统计，精确到月度，覆盖发明、实用新型、外观设计。",
+      "coverage": "1985-2024（月度）",
+      "volume": "省/市/区县 × 三类专利",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "专利统计",
+        "区域创新",
+        "月度",
+        "发明专利",
+        "研发"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "区域创新代理变量；月度粒度但页面标年度更新，增量滞后需确认"
+    },
+    {
+      "id": "cnod-chinese-green-patent-volume-data-by-region",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国绿色专利分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-green-patent-volume-data-by-region.html",
+      "desc": "基于IPC分类号识别绿色专利，涵盖废弃物管理、能源节约等7大主分类，分省份与城市，按发明申请、授权两阶段统计，1985-2025年。",
+      "coverage": "1985-2025",
+      "volume": "省/市 × 7大主分类",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "绿色专利",
+        "ESG",
+        "低碳技术",
+        "区域创新"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "ESG绿色主题叙事与区域产业政策评估用；IPC识别口径需与公司级专利库对齐"
+    },
+    {
+      "id": "cnod-trademark-sts",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国商标分地区统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/trademark-sts.html",
+      "desc": "1950-2024年中国各省份及城市商标申请与核准统计，含月度、年度及省市级维度，底层7700万条申请与5400万条核准记录。",
+      "coverage": "1950-2024",
+      "volume": "申请7700万条/核准5400万条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "商标",
+        "知识产权",
+        "品牌布局",
+        "省市级",
+        "月度"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "商标申请量可作区域创业活跃度代理；与股价关联需自行验证"
+    },
+    {
+      "id": "cnod-regional-bidding-data-across-china",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区招投标数据",
+      "url": "https://www.cnopendata.com/data/m/regional/regional-bidding-data-across-china.html",
+      "desc": "综合百余个招投标网站，总规模1.2亿条，覆盖各地区官方及非官方平台，完整展现招标投标过程，可用于政府采购与企业融资研究。",
+      "coverage": "未标注",
+      "volume": "1.2亿条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "招投标",
+        "中标",
+        "政府采购",
+        "订单前瞻",
+        "基建"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "风控/事件"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "中标金额是基建/建筑/电力设备公司订单前瞻因子；需做中标主体到上市公司映射"
+    },
+    {
+      "id": "cnod-data-on-companies-registered-in-the-manufacturing-industry",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "制造业工商注册企业数量统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/data-on-companies-registered-in-the-manufacturing-industry.html",
+      "desc": "统计31个省级区、363个城市、2933个区县制造业工商注册企业数量，含1950年至今注册、注销与存续，按行业门类与企业性质细分。",
+      "coverage": "1950-至今",
+      "volume": "31省/363市/2933区县",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "制造业",
+        "企业注册",
+        "区域产业",
+        "产能扩张"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "制造业产能扩张的区域旁证；到行业指数映射较粗"
+    },
+    {
+      "id": "cnod-agricul-company-reg-statistical",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "农业工商注册企业数量统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/agricul-company-reg-statistical.html",
+      "desc": "覆盖31个省级行政区，基于国民经济行业分类，从多维度统计农业企业注册、注销及存续数量，时间跨度1980年至2025年12月。",
+      "coverage": "1980-2025",
+      "volume": "31省 × 行业",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "农业企业",
+        "工商注册",
+        "乡村振兴",
+        "行业统计"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "农业主题背景数据；页面写覆盖到2025年12月，需确认是否含预测口径"
+    },
+    {
+      "id": "cnod-bjcity-basic",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "北京市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/regional/bjcity-basic.html",
+      "desc": "北京工商注册企业基本信息，含注册时间、注册资本、企业性质、法定代表人、所属行业与区域等字段，数据更新至2024年10月。",
+      "coverage": "截至2024-10",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "北京",
+        "工商注册",
+        "企业基本信息",
+        "注册资本"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "单城市切片，仅北京；可做区域企业密度底表"
+    },
+    {
+      "id": "cnod-shcity-basic",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "上海市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/regional/shcity-basic.html",
+      "desc": "上海工商注册企业基本信息，含注册时间、注册资本、企业性质、法定代表人、所属行业与区域等，时间范围1950-2023年。",
+      "coverage": "1950-2023",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "上海",
+        "工商注册",
+        "企业基本信息",
+        "创新创业"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "止于2023，与北京版口径/截止时点不一致，横向比较需注意"
+    },
+    {
+      "id": "cnod-gzcity-basic",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "广州市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/regional/gzcity-basic.html",
+      "desc": "广州工商注册企业基本信息，含注册时间、注册资本、企业性质等核心字段，时间跨度1950-2023年，年度更新。",
+      "coverage": "1950-2023",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "广州",
+        "工商注册",
+        "企业信息",
+        "区域经济"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "单城市，止于2023"
+    },
+    {
+      "id": "cnod-szcity-basic",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "深圳市工商注册企业基本信息数据",
+      "url": "https://www.cnopendata.com/data/m/regional/szcity-basic.html",
+      "desc": "深圳工商注册企业基本信息，含注册时间、注册资本、企业性质、法定代表人、所属行业与区域等字段。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "深圳",
+        "工商注册",
+        "企业信息",
+        "创新创业"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "页面未写时间覆盖，采购前需向运营方确认截止年份"
+    },
+    {
+      "id": "cnod-ncpjg",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "农产品批发价格数据",
+      "url": "https://www.cnopendata.com/data/m/regional/ncpjg.html",
+      "desc": "A、B两个来源的农产品批发价格，覆盖31个省，含45种及326种主要农产品，字段含省份、市场、分类、日期与价格。",
+      "coverage": "未标注",
+      "volume": "45种/326种农产品 × 31省",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "农产品价格",
+        "批发市场",
+        "通胀",
+        "农业",
+        "高频价格"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "含日期字段，本可做高频食品通胀/农业股成本因子；但页面标年度更新，需确认明细是否仍为日频"
+    },
+    {
+      "id": "cnod-car-dealer",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国汽车经销商数据",
+      "url": "https://www.cnopendata.com/data/m/regional/car-dealer.html",
+      "desc": "覆盖全国四万余家汽车经销商，含名称、电话、地址、经纬度及省市区县区划字段，服务汽车市场布局与区域经济研究。",
+      "coverage": "未标注",
+      "volume": "四万余家",
+      "frequency": "不定期",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "汽车经销商",
+        "渠道网络",
+        "汽车销售",
+        "区划信息"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "渠道网点底表，可做车企渠道下沉度观察；单时点快照"
+    },
+    {
+      "id": "cnod-chinese-carbon-trading-data-by-region",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各地区碳交易数据",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-carbon-trading-data-by-region.html",
+      "desc": "整合八大碳交易试点（北京、上海、天津、广州、深圳、重庆、四川、湖北）官方市场交易明细，覆盖2013至2026年每日数据，两万余条。",
+      "coverage": "2013-2026（日频）",
+      "volume": "两万多条",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "碳交易",
+        "碳价",
+        "试点市场",
+        "日频",
+        "碳中和"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "碳价可做高耗能行业成本因子；八试点价格不统一，跨市场需自行构造加权碳价"
+    },
+    {
+      "id": "cnod-chinese-lottery-sales",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国彩票销售数据",
+      "url": "https://www.cnopendata.com/data/m/regional/chinese-lottery-sales.html",
+      "desc": "整理全国、分类型、分地区三个维度的彩票销售数据，时间跨度2008-2025年，可研究博彩偏好与企业创新、股票市场等关系。",
+      "coverage": "2008-2025",
+      "volume": "全国/分类型/分地区",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "彩票销售",
+        "博彩偏好",
+        "风险偏好",
+        "省级",
+        "消费"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "常被用作散户风险偏好/投机情绪代理；注意反向因果，仅作情绪旁证"
+    },
+    {
+      "id": "cnod-china-testing-agency-point-of-covid-19",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国核酸检测机构及采样点数据",
+      "url": "https://www.cnopendata.com/data/m/regional/China-testing-agency%26point-of-COVID-19.html",
+      "desc": "汇总31个省份及直辖市核酸检测机构与采样点信息，含机构名称、地址、电话、经纬度等，数据截止2022年10月。",
+      "coverage": "截至2022-10",
+      "volume": "31省机构/采样点",
+      "frequency": "不定期",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "核酸检测",
+        "公共卫生",
+        "疫情",
+        "机构名录"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "疫情期数据，已过时效，仅存档价值"
+    },
+    {
+      "id": "cnod-scenic-spot",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "全国景区数据",
+      "url": "https://www.cnopendata.com/data/m/regional/scenic-spot.html",
+      "desc": "汇总31个省份及直辖市A级及以上旅游景区基础信息，含景区名称、省份、级别、地址、经纬度、简介等。",
+      "coverage": "未标注",
+      "volume": "31省 A级及以上景区",
+      "frequency": "不定期",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "景区",
+        "旅游",
+        "A级景区",
+        "文旅"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "旅游板块背景；无门票/客流字段，不能直接做收入预测"
+    },
+    {
+      "id": "cnod-hotel",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国酒店数据",
+      "url": "https://www.cnopendata.com/data/m/regional/hotel.html",
+      "desc": "收录32个省市及2个特别行政区的酒店详细信息，含基础信息与房型明细，如名称、地址、星级、评分、房价、设施等。",
+      "coverage": "未标注",
+      "volume": "32省市+2特别行政区",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "酒店",
+        "房型",
+        "房价",
+        "星级",
+        "旅游"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "含房价字段，可做酒店业价格水平横截面；非时间序列，难做趋势"
+    },
+    {
+      "id": "cnod-taobao-township",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "淘宝村淘宝镇名单数据",
+      "url": "https://www.cnopendata.com/data/m/regional/taobao-township.html",
+      "desc": "收录2017-2022年（不含2018）全国淘宝村与淘宝镇名单，含省市、区县、村名、经纬度，覆盖7780个淘宝村与2429个淘宝镇。",
+      "coverage": "2017-2022（缺2018）",
+      "volume": "7780村/2429镇",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "淘宝村",
+        "农村电商",
+        "县域经济",
+        "名单"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "缺2018年，做面板时需插补或跳过；县级电商活跃度代理"
+    },
+    {
+      "id": "cnod-qgtpf",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国省市县碳排放量栅格数据",
+      "url": "https://www.cnopendata.com/data/m/regional/qgtpf.html",
+      "desc": "提供省市县乡镇四级行政区划的碳排放量栅格数据，覆盖1970至2023年并按年度更新，服务低碳经济与区域减排政策研究。",
+      "coverage": "1970-2023",
+      "volume": "省市县乡镇四级栅格",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "碳排放",
+        "栅格",
+        "行政区划",
+        "低碳",
+        "双碳"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "区域碳排放背景；细到乡镇，需聚合后再与省级能耗数据交叉校验"
+    },
+    {
+      "id": "cnod-court",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "法院名录数据",
+      "url": "https://www.cnopendata.com/data/m/regional/court.html",
+      "desc": "汇集31个省份及直辖市法院名录信息，含法院层级、法院名称及省市县代码等核心字段，服务法学研究与社会治理。",
+      "coverage": "未标注",
+      "volume": "31省法院名录",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "法院名录",
+        "司法",
+        "法院层级",
+        "区划代码"
+      ],
+      "maps_to": [
+        "风控/事件"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "司法数据清洗的映射底表（裁判文书法院名→层级/地域），本身不是数据内容"
+    },
+    {
+      "id": "cnod-gaokao",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国高考录取分数线数据",
+      "url": "https://www.cnopendata.com/data/m/regional/gaokao.html",
+      "desc": "按批次、学校、专业三个维度，提供2014-2026年生源地、年份、分类、批次、文理分科、分数线、录取人数等字段。",
+      "coverage": "2014-2026",
+      "volume": "批次×学校×专业",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "高考",
+        "录取分数线",
+        "教育",
+        "生源",
+        "招生"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "教育主题背景（民办教育/高教板块）；2026为最新一年，需确认是否含未公布年份占位"
+    },
+    {
+      "id": "cnod-yklyg",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "中国分地区数据",
+      "name": "中国各城市游客来源国统计数据",
+      "url": "https://www.cnopendata.com/data/m/regional/yklyg.html",
+      "desc": "2001-2017年60个城市的游客来源国统计信息，含城市、年份、游客数、住宿收入等关键指标，服务入境旅游研究。",
+      "coverage": "2001-2017",
+      "volume": "60个城市",
+      "frequency": "不支持更新",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "入境旅游",
+        "游客来源国",
+        "住宿收入",
+        "城市"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "页面标暂不更新，止于2017；同一数据集也出现在年鉴分类下"
+    },
+    {
+      "id": "cnod-ctgszp",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国城投公司上下三层企业族谱数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/ctgszp.html",
+      "desc": "整合全国3600+城投公司上下三级股权穿透数据，覆盖31省，通过公示股东与控制企业信息揭示真实控制权结构与资本运作路径。",
+      "coverage": "未标注",
+      "volume": "3600+城投公司 / 31省",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "城投",
+        "股权穿透",
+        "地方政府债务",
+        "企业族谱",
+        "控制权"
+      ],
+      "maps_to": [
+        "风控/事件",
+        "量化/投研"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "地方债务风险传导链的核心底表；可用于识别上市公司与城投的关联担保/应收风险"
+    },
+    {
+      "id": "cnod-czfzzs",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国各地区财政发展指数",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/czfzzs.html",
+      "desc": "由财政收入稳健、支出优化、债务可持续、社保可持续、预算管理规范、公共服务、省内财政均衡七个维度构成，反映各地区财政发展差异。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "不定期",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "财政发展指数",
+        "地方财政",
+        "债务可持续",
+        "预算管理",
+        "省级"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "省级财政质量打分，可用于地方国企/城投信用与区域beta筛选；2021后可能停更"
+    },
+    {
+      "id": "cnod-gjzfssfc",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国各级政府税收分成数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/gjzfssfc.html",
+      "desc": "基于吕冰洋等研究，测算1994-2014年中国政府间财政收入分配状况，涵盖总体财政及重要税种在中央、省、县等各级政府的分成比例。",
+      "coverage": "1994-2014",
+      "volume": "中央/省/县等多级",
+      "frequency": "不定期",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "税收分成",
+        "财政分权",
+        "政府间财政关系",
+        "税种"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "止于2014，制度研究用；不能直接做当前因子"
+    },
+    {
+      "id": "cnod-czyx",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国财政运行数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/czyx.html",
+      "desc": "基于《中国财政运行报告（2019/2020）》，含财政收入稳健、支出优化、债务可持续、社保基金、基本公共服务及省内均衡化六大指数。",
+      "coverage": "2019/2020报告期",
+      "volume": "六大指数",
+      "frequency": "不支持更新",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "财政运行",
+        "债务可持续",
+        "社保基金",
+        "公共服务",
+        "省级"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "一次性报告数据，明确不更新，只适合做历史截面"
+    },
+    {
+      "id": "cnod-yspl",
+      "layer": "factor",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国各省及省本级预算偏离数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/yspl.html",
+      "desc": "基于吕冰洋与李岩（2020），构建1994-2017年31省及2008-2017年252个地级市的预算偏离指标，含决算收入、支出等关键字段。",
+      "coverage": "1994-2017（省级）/2008-2017（地级市）",
+      "volume": "31省 + 252市",
+      "frequency": "不定期",
+      "access_mode": "open",
+      "api_available": false,
+      "tags": [
+        "预算偏离",
+        "超收超支",
+        "决算",
+        "地方财政",
+        "地级市"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P2",
+      "auth_status": "未授权-需采购",
+      "notes": "预算偏离度是地方财政纪律代理变量；止于2017，需自行按决算公报延伸"
+    },
+    {
+      "id": "cnod-ssjg",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国涉税专业服务机构名单",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/ssjg.html",
+      "desc": "整合7.8万个TSC5级机构、19万个纳入监管机构及500多个未登记事务所，含名称、信用代码、地址、法定代表人、信用积分、服务规模等。",
+      "coverage": "截至2025-05",
+      "volume": "7.8万TSC5 + 19万监管机构",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "涉税服务机构",
+        "税务师事务所",
+        "TSC5",
+        "信用积分",
+        "名录"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "机构名录类数据，投资用途弱；可用于识别财税服务商生态"
+    },
+    {
+      "id": "cnod-tax-survey",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "中国税收调查企业数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/Tax-Survey.html",
+      "desc": "整合2008-2020年全国税收调查数据，覆盖增值税、企业所得税等十余税种及企业财务指标，为税制改革、企业税负与政策效应研究提供微观基础。",
+      "coverage": "2008-2020",
+      "volume": "每年60-70万条样本",
+      "frequency": "不定期",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "税收调查",
+        "企业税负",
+        "微观数据",
+        "增值税",
+        "所得税"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/投研"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "微观企业税负面板，学术价值高；非上市全覆盖，与A股匹配率需验证"
+    },
+    {
+      "id": "cnod-tax-basic",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "税收调查企业基本信息扩展数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-basic.html",
+      "desc": "汇总全国税收调查企业名单，含注册资本、注册年份、所在省市区等基本信息，覆盖2008-2016年。",
+      "coverage": "2008-2016",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "税收调查",
+        "企业基本信息",
+        "注册资本",
+        "税源"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "税调系列的子表，需与主表按企业标识连接；止于2016"
+    },
+    {
+      "id": "cnod-tax-idtchange",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "税收调查企业工商变更数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-idtchange.html",
+      "desc": "基于全国税收调查企业名单，整合工商信息变更及股东信息变更，覆盖2008-2016年，为财税研究提供基础数据。",
+      "coverage": "2008-2016",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "税收调查",
+        "工商变更",
+        "股东变更",
+        "企业事件"
+      ],
+      "maps_to": [
+        "风控/事件",
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "变更事件可做信号，但样本仅税调企业且止于2016"
+    },
+    {
+      "id": "cnod-tax-jddm",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "税收调查企业裁判文书数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-jddm.html",
+      "desc": "整合全国税收调查企业的裁判文书信息，含文书编号、案件名称、裁决法院等，覆盖2008-2016年，服务涉诉分析。",
+      "coverage": "2008-2016",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "税收调查",
+        "裁判文书",
+        "涉诉",
+        "司法风险"
+      ],
+      "maps_to": [
+        "风控/事件"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "覆盖窗口过旧，风控实用性有限"
+    },
+    {
+      "id": "cnod-tax-stockholder",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "税收调查企业股东信息数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-stockholder.html",
+      "desc": "基于全国税收调查工作整理的企业级股东数据，涵盖股东名称、持股比例、实际控制等关键信息，服务税源分析与治理研究。",
+      "coverage": "未标注",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "税收调查",
+        "股东信息",
+        "股权结构",
+        "实际控制人"
+      ],
+      "maps_to": [
+        "风控/事件",
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "股权穿透辅助；非上市口径，与A股实控人库需交叉校验"
+    },
+    {
+      "id": "cnod-tax-patent",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "税收调查企业专利及引用被引用数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-patent.html",
+      "desc": "整合税调企业名单与1985-2023年专利数据，含发明、实用新型、外观设计的申请、授权、引用与被引信息，并提供技术复杂度等质量指标。",
+      "coverage": "1985-2023",
+      "volume": "未标注",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "税收调查",
+        "专利引用",
+        "技术复杂度",
+        "创新质量"
+      ],
+      "maps_to": [
+        "量化/因子",
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "技术复杂度/被引指标可作创新因子，但需企业标识映射到股票"
+    },
+    {
+      "id": "cnod-tax-hg",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "财政税务数据",
+      "name": "税收调查企业海关进出口交易明细数据",
+      "url": "https://www.cnopendata.com/data/m/finance-tax/tax-hg.html",
+      "desc": "将税收调查企业名单与中国海关进出口数据匹配，形成2007-2016年企业海关进出口交易明细，含HS编码、金额、产消国等字段。",
+      "coverage": "2007-2016",
+      "volume": "未标注",
+      "frequency": "不支持更新",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "海关数据",
+        "进出口",
+        "HS编码",
+        "贸易",
+        "企业微观"
+      ],
+      "maps_to": [
+        "宏观/环境",
+        "量化/因子"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "明确不支持更新，止于2016；做出口景气因子必须另找现行海关数据源"
+    },
+    {
+      "id": "cnod-environmental-statistics",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "年鉴数据",
+      "name": "中国环境统计年鉴数据",
+      "url": "https://www.cnopendata.com/data/m/yearbooks/environmental-statistics.html",
+      "desc": "《中国环境统计年鉴》整理数据，涵盖自然状况、水环境、海洋环境、大气环境等十二个方面，2004-2023年，覆盖全国各省区市。",
+      "coverage": "2004-2023",
+      "volume": "31省 × 十二方面",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "环境统计",
+        "污染排放",
+        "年鉴",
+        "省级",
+        "ESG"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "高耗能行业环保约束背景；年鉴数据通常滞后1-2年"
+    },
+    {
+      "id": "cnod-audit",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "年鉴数据",
+      "name": "中国审计年鉴数据",
+      "url": "https://www.cnopendata.com/data/m/yearbooks/audit.html",
+      "desc": "《中国审计年鉴》整理数据，汇总1999-2017年全国审计机关、派出审计局、特派办及地方审计机关的综合审计情况。",
+      "coverage": "1999-2017",
+      "volume": "全国+地方审计机关",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "审计年鉴",
+        "政府审计",
+        "审计署",
+        "地方审计"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "止于2017，制度研究用；与上市公司审计无直接关系"
+    },
+    {
+      "id": "cnod-xyjj",
+      "layer": "context",
+      "category_group": "宏观、区域经济与财政税收",
+      "category": "年鉴数据",
+      "name": "中国县域统计年鉴数据",
+      "url": "https://www.cnopendata.com/data/m/yearbooks/xyjj.html",
+      "desc": "《中国县域统计年鉴》数据汇总全国2000多个县域社会经济指标，含人口、产值、财政等核心变量，时间覆盖1997-2018年。",
+      "coverage": "1997-2018",
+      "volume": "2000多个县域",
+      "frequency": "年度",
+      "access_mode": "direct_sale",
+      "api_available": false,
+      "tags": [
+        "县域经济",
+        "统计年鉴",
+        "县级面板",
+        "乡村振兴"
+      ],
+      "maps_to": [
+        "宏观/环境"
+      ],
+      "priority": "P3",
+      "auth_status": "未授权-需采购",
+      "notes": "县级面板，与上市公司注册地/产能地可匹配；止于2018，需外推"
+    }
+  ]
+}
