@@ -238,3 +238,10 @@ quant_backtest/.venv_czsc/
 # WO-QT-20261020-061: trial-grade private keys must never be tracked,
 # regardless of caller-chosen work_dir outside work/
 *_private.pem
+
+# ===== 2026-10-22 卫生清零：运行产物/数据账本显式忽略（决策书D0）=====
+agent_platform/intel_inbox/ledger.jsonl
+agent_platform/intel_inbox/processed/
+k_stock/data/*.jsonl
+k_stock/data/*.json
+k_stock/data/*.lock
