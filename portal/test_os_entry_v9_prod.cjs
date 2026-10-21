@@ -198,6 +198,7 @@ check('证据源范围声明', html.includes('仅本仓提交与交付物'));
   const makeEl = (t, c, x) => ({
     tag: t, cls: c || '', text: x === undefined ? '' : String(x), children: [],
     append(...k) { this.children.push(...k); },
+    setAttribute(k, v) { this[k] = v; },
   });
   const box = { children: [], replaceChildren() { this.children = []; }, append(n) { this.children.push(n); } };
   // 契约 stub：足够判级即可（status 由字段齐全度决定）
@@ -251,6 +252,94 @@ check('证据源范围声明', html.includes('仅本仓提交与交付物'));
   // e) 时区固定北京：源码不得用裸 sv-SE（会随浏览器本地时区漂移）
   check('行为·时区固定北京', html.indexOf("toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'})") !== -1);
 })();
+
+// 2p. WO-OS-30 真浏览器巡检（CDP 驱动本机 Edge）发现的三处问题
+// 背景：stub 测试全绿，但整页在真实浏览器里有三个假陈述——
+//   ① 首屏约 1 秒显示"证据契约未加载，不展示任何完成记录"（defer 未执行时同步调用就下了结论）；
+//   ② 证据接口读失败会落成"证据槽暂无数据"，把"读不到"说成"没有"；
+//   ③ 汇总文案写死"全部为 unverified"，一旦有回执就变成假话。
+check('契约脚本单次引入且带 defer',
+  (html.match(/<script src="\/static\/os_result_contract\.js"/g) || []).length === 1
+  && /<script src="\/static\/os_result_contract\.js" defer>/.test(html));
+check('静态占位不得断言暂无数据',
+  !/<div id="evidence-list"><div class="empty">证据槽暂无数据/.test(html));
+check('静态占位为正在读取', /<div id="evidence-list"><div class="empty">正在读取证据源/.test(html));
+check('初始调用改为待读取态', html.includes('renderEvidencePending();'));
+
+(function test_evidence_honesty() {
+  // 取段起点必须在 renderEvidenceSample 之前，否则样例函数不在作用域内
+  const s = html.indexOf('function renderEvidenceSample');
+  const e = html.indexOf('async function get(url)');
+  if (s < 0 || e < 0 || e < s) { failures.push('诚实性测试片段定位失败'); return; }
+  const src = html.slice(s, e);
+  const makeEl = (t, c, x) => ({
+    tag: t, cls: c || '', text: x === undefined ? '' : String(x), children: [],
+    append(...k) { this.children.push(...k); },
+    setAttribute(k, v) { this[k] = v; },
+  });
+  const box = { children: [], replaceChildren() { this.children = []; }, append(n) { this.children.push(n); } };
+  const contractStub = {
+    entry(raw) {
+      const ok = raw && raw.id && raw.domain && raw.business_day && raw.producer_time && raw.evidence_uri;
+      return ok ? { status: raw.receipt_uri ? 'verified' : 'unverified' } : { status: 'pending', display: '缺项' };
+    },
+  };
+  let render, pending, sample;
+  try {
+    const f = new Function('window', '$', 'el',
+      src + '; return { render: renderEvidence, pending: renderEvidencePending, sample: renderEvidenceSample };')(
+      { OSResultContract: contractStub, OS_RESULT_EVIDENCE: [] }, () => box, makeEl);
+    render = f.render; pending = f.pending; sample = f.sample;
+  } catch (err) {
+    failures.push('诚实性测试构造失败：' + err.message); return;
+  }
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Shanghai' });
+  const allText = () => box.children.map(n => String(n.text || '')).join(' | ');
+
+  // f) 证据接口读失败：必须说"读取失败"，不得落成"暂无数据"
+  box.replaceChildren();
+  render([], { __failed: true, reason: '模拟 404' });
+  check('行为·失败态说明读取失败', allText().indexOf('证据源读取失败') !== -1);
+  check('行为·失败态带原因', allText().indexOf('模拟 404') !== -1);
+  check('行为·失败态不推断为零', allText().indexOf('不推断为零') !== -1);
+  check('行为·失败态不得说暂无数据', allText().indexOf('证据槽暂无数据') === -1);
+
+  // g) 混合分级：汇总必须按真实结果算，不得写死"全部为 unverified"
+  const mixed = [
+    { id: 'a', domain: '研发', business_day: today, producer_time: today + 'T10:00:00+08:00', outcome: 'done', evidence_uri: 'x', receipt_uri: 'receipt:1' },
+    { id: 'b', domain: '研发', business_day: today, producer_time: today + 'T10:01:00+08:00', outcome: 'done', evidence_uri: 'y', receipt_uri: null },
+    { id: 'c', domain: '研发', business_day: today, producer_time: today + 'T10:02:00+08:00', outcome: 'done', evidence_uri: '', receipt_uri: null },
+  ];
+  box.replaceChildren();
+  render(mixed, { business_day: today, total_available: 3 });
+  const tail = String(box.children[box.children.length - 1].text);
+  check('行为·汇总统计已验证', tail.indexOf('已验证 1 项') !== -1);
+  check('行为·汇总统计缺回执', tail.indexOf('缺回执 1 项') !== -1);
+  check('行为·汇总统计待核', tail.indexOf('待核 1 项') !== -1);
+  check('行为·汇总不写死全部unverified', tail.indexOf('全部为 unverified') === -1);
+
+  // h) 待读取态：JS 刚启动时的诚实表达
+  box.replaceChildren();
+  pending();
+  check('行为·待读取态文案', allText().indexOf('正在读取证据源') !== -1);
+  check('行为·待读取态不下结论',
+    allText().indexOf('暂无数据') === -1 && allText().indexOf('契约未加载') === -1);
+
+  // i) 分级样式预览：契约可用时必须真渲染 3 条样例（截图曾显示"契约未加载"恒空）
+  box.replaceChildren();
+  sample();
+  check('行为·样例预览渲染3条', box.children.length === 3);
+  check('行为·样例预览按契约分三级',
+    box.children.map(n => n.cls).join(',').indexOf('ev-verified') !== -1
+    && box.children.map(n => n.cls).join(',').indexOf('ev-unverified') !== -1
+    && box.children.map(n => n.cls).join(',').indexOf('ev-pending') !== -1);
+  check('行为·样例预览不显示契约未加载', allText().indexOf('契约未加载') === -1);
+})();
+
+// 2q. WO-OS-30 补充：样例渲染必须延后到 DOMContentLoaded（defer 脚本晚于内联脚本执行）
+check('样例渲染延后到 DOMContentLoaded',
+  /document\.readyState==='loading'[\s\S]{0,120}renderEvidenceSample/.test(html));
+check('样例契约缺载文案指向真实文件', html.includes('/static/os_result_contract.js）未加载'));
 
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-01/08/10/11 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议/8091路由渐进消费本地兜底');
