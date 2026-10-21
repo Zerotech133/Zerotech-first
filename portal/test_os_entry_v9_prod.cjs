@@ -107,6 +107,20 @@ check('能力目录支持 highlighted 高亮类', /cap-item\.highlighted\s*\{/.t
   } catch (e) {
     failures.push('briefCard 执行抛错（建议区会整块空白）：' + e.message);
   }
+  // 2k. as_of 类型防御：非字符串（Date 对象等）不得渲染出错位文本
+  try {
+    const card = briefCard({
+      id: 'task:t1', domain: '研发', priority: 4, reason: '工单进行中',
+      source: '/api/org/tasks', as_of: new Date('2026-10-21T16:02:49+08:00'),
+      confidence: 'rule-based',
+    });
+    const small = card.children[card.children.length - 1];
+    const txt = String(small && small.text || '');
+    check('as_of=Date 不泄漏错位文本', txt.indexOf('ct 2') === -1 && txt.indexOf('Invalid') === -1);
+    check('as_of=Date 仍标规则归集', txt.indexOf('规则归集') !== -1);
+  } catch (e) {
+    failures.push('as_of=Date 场景抛错：' + e.message);
+  }
 })();
 
 // 2i. WO-OS-15 ResultEvidence DEMO 样例：容器 + data-demo 标记 + 显式演示文案 + 三条样例走契约 entry()
