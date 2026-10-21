@@ -1701,7 +1701,10 @@
         "TDX1",
         "BEACON1",
         "INTEL0",
-        "MANCHONG1"
+        "MANCHONG1",
+        "KGMAP1",
+        "WORDC1",
+        "LINEAGE1"
       ],
       "teams": [],
       "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口",
@@ -1748,6 +1751,48 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "KGMAP1",
+          "role_profile": "情报知识图谱构建席",
+          "analysis_type": "",
+          "charter_detail": "负责把分散情报要素连成可查询的关系图谱：实体识别、关系抽取、图谱构建与维护、按标的与主体双向检索；只呈现事实关联，不做因果推断",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 按工单 WO-ORG-214 入编（放行人：老田）",
+          "tools": [],
+          "tools_note": "入编初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "入编初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "WORDC1",
+          "role_profile": "文本词云挖掘席",
+          "analysis_type": "",
+          "charter_detail": "负责多源文本挖掘与词云图生成：分词与词频统计、热度趋势、异动词捕捉、停用词与同义词表维护；只报词频事实与异动，不解释成因",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 按工单 WO-ORG-215 入编（放行人：老田）",
+          "tools": [],
+          "tools_note": "入编初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "入编初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "LINEAGE1",
+          "role_profile": "数据血缘治理席",
+          "analysis_type": "",
+          "charter_detail": "负责数据血缘关系治理：字段级血缘溯源、上下游链路登记、口径变更影响面分析、血缘与实际产物对账；只登记与报差异，不裁决口径归属",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 按工单 WO-ORG-216 入编（放行人：老田）",
+          "tools": [],
+          "tools_note": "入编初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "入编初始档，待 KPI 观察后调整",
           "attributes": {}
         }
       ]
