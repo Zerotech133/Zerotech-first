@@ -85,6 +85,59 @@ def _export_public_key(key: Ed25519PrivateKey, path: Path) -> None:
     path.write_bytes(pem)
 
 
+def freeze_pool_point_in_time(source_path: str | Path, work_dir: str | Path,
+                              business_day: str, *, now: datetime | None = None,
+                              source_bytes: bytes | None = None) -> dict:
+    """段 1 因子化（WO-QT-20261020-056 机制复用；N7 独立冻结入口共用）。
+
+    信号池点时冻结：唯一一次读取源字节，冻结副本落
+    work_dir/source_batch.jsonl，manifest 落 work_dir/manifest.json
+    （freeze_basis=point_in_time_freeze_of_live_pool_file）。
+
+    Parameters
+    ----------
+    source_path : 真实信号池 JSONL 路径（只读；mtime 为冻结时点证据）。
+    work_dir : 冻结产物目录（不存在则创建）。
+    business_day : 业务日 YYYYMMDD（仅记入 manifest；行级业务日一致性
+        不由本函数强制——该守护在验签层显式 surfaced，见
+        r0_source_attestation 全行 detect_date 校验与 r0_readonly_e2e
+        的 WRONG_DAY 反例；调用方需要 fail-visible 时应先自行校验）。
+    now : 冻结时钟（None 取当前 UTC）；observed_date 取其日期。
+    source_bytes : 调用方已读取的源字节。提供时以之为唯一字节源
+        （mtime 仍实时取），使对齐校验与冻结共用同一次读取、消除
+        TOCTOU 窗口；不提供则本函数自行读取（唯一一次）。
+
+    Returns
+    -------
+    dict manifest（与人工试运行段 1 逐字节一致）：
+    source_path/business_date/observed_date/source_mtime_utc/
+    source_sha256/event_count/freeze_basis。
+    """
+    clock = _now_utc() if now is None else now
+    work = Path(work_dir)
+    work.mkdir(parents=True, exist_ok=True)
+    source = Path(source_path)
+    source_mtime_utc = os.path.getmtime(source)
+    raw = source.read_bytes() if source_bytes is None else source_bytes
+    (work / _SOURCE_COPY).write_bytes(raw)
+    lines = raw.decode("utf-8").split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    manifest = {
+        "source_path": str(work / _SOURCE_COPY),
+        "business_date": business_day,
+        "observed_date": clock.date().isoformat(),
+        "source_mtime_utc": source_mtime_utc,
+        "source_sha256": hashlib.sha256(raw).hexdigest(),
+        "event_count": len(lines),
+        "freeze_basis": "point_in_time_freeze_of_live_pool_file",
+    }
+    (work / _MANIFEST).write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8")
+    return manifest
+
+
 def run_real_trial(source_path: str | Path, work_dir: str | Path,
                    business_day: str, *, pubkey_out_dir: str | Path,
                    issuer_id: str = TRIAL_ISSUER_ID,
@@ -135,26 +188,11 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
     try:
         # 段 1：点时冻结（唯一读取源字节；冻结副本与 manifest 落 work_dir）
         source = Path(source_path)
-        source_mtime_utc = os.path.getmtime(source)
         raw = source.read_bytes()
-        (work / _SOURCE_COPY).write_bytes(raw)
-        lines = raw.decode("utf-8").split("\n")
-        if lines and lines[-1] == "":
-            lines.pop()
-        manifest = {
-            "source_path": str(work / _SOURCE_COPY),
-            "business_date": business_day,
-            "observed_date": clock.date().isoformat(),
-            "source_mtime_utc": source_mtime_utc,
-            "source_sha256": hashlib.sha256(raw).hexdigest(),
-            "event_count": len(lines),
-            "freeze_basis": "point_in_time_freeze_of_live_pool_file",
-        }
-        (work / _MANIFEST).write_text(
-            json.dumps(manifest, ensure_ascii=False, indent=2),
-            encoding="utf-8")
+        manifest = freeze_pool_point_in_time(
+            source_path, work, business_day, now=clock, source_bytes=raw)
         report["segments"]["freeze"] = {
-            "status": "FROZEN", "event_count": len(lines),
+            "status": "FROZEN", "event_count": manifest["event_count"],
             "sha256": manifest["source_sha256"]}
 
         # 段 2：真实签发（os.urandom 一次性密钥）+ 独立验签
