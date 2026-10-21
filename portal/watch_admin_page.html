@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>盯盘多 Agent 管理与模型对比界面 · M2/M3 只读管理页</title>
+<style>
+:root{
+  --navy:#0e1b2a; --navy2:#13243a; --navy3:#1b3354;
+  --cyan:#27c9c9; --cyan-d:#0e8f8f;
+  --amber:#e0a23c; --amber-d:#b57d1e;
+  --ink:#e9eff6; --sub:#9fb2c8; --line:#243a57;
+  --ok:#39c08a; --wait:#e0a23c; --no:#e8736a; --chip:#16283f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0c1726,#0e1b2a 240px);color:var(--ink);font:14px/1.7 "Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:30px 32px 70px}
+header{border-bottom:2px solid var(--cyan);padding-bottom:16px;margin-bottom:18px}
+.eyebrow{color:var(--cyan);letter-spacing:.22em;font-size:11px;font-weight:700}
+h1{font-size:23px;margin:8px 0 6px}
+.sub{color:var(--sub);font-size:12.5px}
+.badge{display:inline-block;border:1px solid var(--amber);color:var(--amber);border-radius:4px;padding:1px 9px;font-size:11px;margin-left:8px;vertical-align:2px}
+.m0{background:var(--chip);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:12px 16px;margin:16px 0;font-size:12.5px;color:var(--sub)}
+.m0 b{color:var(--amber)}
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 16px}
+.toolbar label{color:var(--sub);font-size:12.5px}
+.toolbar select{background:var(--navy3);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px}
+.toolbar .btn{background:var(--cyan-d);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12.5px;cursor:pointer}
+.toolbar .btn:hover{background:var(--cyan)}
+.toolbar .stamp{color:var(--sub);font-size:11.5px;margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.zone{background:var(--navy2);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column}
+.zone h3{margin:0 0 12px;font-size:15.5px;color:var(--cyan);display:flex;align-items:center;gap:8px}
+.ztag{font-size:10.5px;color:var(--sub);border:1px solid var(--line);border-radius:3px;padding:0 6px;margin-left:auto}
+.card{background:var(--navy3);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:9px}
+.card .nm{font-weight:700;color:var(--ink)}
+.card .rl{color:var(--cyan);font-size:12px}
+.card .meta{color:var(--sub);font-size:11.5px;margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+th{background:var(--chip);text-align:left;padding:7px 9px;border:1px solid var(--line);color:var(--sub);font-weight:700}
+td{padding:7px 9px;border:1px solid var(--line);vertical-align:top}
+.ok{color:var(--ok);font-weight:700}.wait{color:var(--wait);font-weight:700}.no{color:var(--no);font-weight:700}
+.note{background:var(--navy3);border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-size:11.5px;color:var(--sub);margin-top:8px}
+.funnel{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
+.fstep{flex:1 1 140px;background:var(--navy3);border:1px solid var(--line);border-top:3px solid var(--cyan);border-radius:8px;padding:10px 12px;font-size:12px}
+.fstep b{display:block;color:var(--ink);margin-bottom:2px}
+.fstep small{color:var(--sub)}
+.arrow{align-self:center;color:var(--sub);font-size:18px}
+.tl{display:flex;flex-direction:column}
+.tlstep{display:flex;gap:12px;align-items:flex-start}
+.tldot{width:14px;height:14px;border-radius:50%;background:var(--cyan);margin-top:5px;flex:none;box-shadow:0 0 0 3px rgba(39,201,201,.18)}
+.tlbody{background:var(--navy3);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:8px;flex:1}
+.tlbody b{color:var(--ink)}
+.tlbody small{color:var(--sub)}
+.badge-ok{color:var(--ok);border:1px solid var(--ok);border-radius:4px;padding:0 7px;font-size:10.5px}
+.badge-wait{color:var(--wait);border:1px solid var(--wait);border-radius:4px;padding:0 7px;font-size:10.5px}
+.badge-no{color:var(--no);border:1px solid var(--no);border-radius:4px;padding:0 7px;font-size:10.5px;font-weight:700}
+.demo{background:rgba(232,115,106,.12);border:1px solid var(--no);border-radius:6px;padding:8px 11px;font-size:11.5px;color:var(--no);margin-top:8px}
+.locked{background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--sub)}
+.locked .btndis{background:#33445c;color:#7e8ca0;border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:12px;margin-right:8px;cursor:not-allowed}
+footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--sub)}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">QUANT / WATCH DOMAIN / M2 REAL READ-ONLY + M3 A/B SHADOW</div>
+  <h1>盯盘多 Agent 管理与模型对比界面<span class="badge">M2/M3 只读管理页</span></h1>
+  <div class="sub">真实只读接入（fail-visible）· 不替换任何生产页 · 不修改 portal_api.py · 独立端口 8796 · 飞书/真实通知/交易 维持 BLOCK</div>
+</header>
+
+<div class="m0">
+  <b>M0 契约冻结（已按研发计划默认口径锁定）：</b>① 席位：盯盘域 watch_monitor 仅 WA1 许褚；张郃为许褚辖下执行体（组织层无独立注册项）；QS1 司马懿（量化上行受理）、ST1 缠论分析师（策略判读）不计入盯盘 Agent。② 模型：默认本地 Ollama qwen 系 + 一个云通道（glm-5.3 强判读），云不可用降级本地 9b。③ 组合注册表字段：agent_id × model_id × combo_version → run_id。④ 上行单路 QUANT_UPSTREAM_REPORT、受理=agent 级 ACK、飞书不直连。阻断项（飞书真实下发 / GAP-4 / 051 时序缺口 / 真实通知 / 交易）维持 BLOCK，本页不解锁。
+</div>
+
+<div class="toolbar">
+  <label for="replay">历史回放 replay_at：</label>
+  <select id="replay"><option value="">实时 (live)</option></select>
+  <button class="btn" id="reload">刷新快照</button>
+  <span class="stamp" id="stamp"></span>
+</div>
+
+<div class="grid" id="zones">
+  <div class="note">加载中…</div>
+</div>
+
+<footer>
+  交付：M2 真实只读接入 + M3 A/B 影子对比只读视图（本次）。纯加法、只读、fail-visible；任何单源缺失仅该源标 SOURCE_UNVERIFIED，绝不编造。不替换 /pool-watch 或 /quant 等任何生产路由；不触碰 8091 与 portal_api.py。研发计划评审稿 V1 为唯一口径依据。
+  <div id="sig" style="margin-top:6px;color:var(--cyan)"></div>
+</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var API = "/api/watch-admin/snapshot";
+  function esc(v){
+    return String(v==null?"":v).replace(/[&<>"]/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
+    });
+  }
+  function stateClass(s){ return s==="healthy"?"ok":(s==="stale"?"wait":"no"); }
+  function badge(src){
+    if(src.verified){
+      var c = src.state==="healthy"?"badge-ok":(src.state==="stale"?"badge-wait":"badge-no");
+      var t = src.state==="healthy"?"已接真源":(src.state==="stale"?"STALE":"UNKNOWN");
+      return '<span class="'+c+'">'+t+'</span>';
+    }
+    return '<span class="badge-no">SOURCE_UNVERIFIED</span>';
+  }
+
+  // Render a generic data object (dict / list) into HTML.
+  function renderData(data){
+    if(data==null) return "";
+    if(Array.isArray(data) && data.length && typeof data[0]==="object"){
+      return tableOf(data);
+    }
+    if(typeof data==="object"){
+      // rows / combos shortcuts
+      if(Array.isArray(data.rows) && data.rows.length && typeof data.rows[0]==="object")
+        return tableOf(data.rows);
+      if(Array.isArray(data.combos) && data.combos.length)
+        return tableOf(data.combos);
+      var html="<table>";
+      Object.keys(data).forEach(function(k){
+        if(k==="note") return;
+        html+="<tr><th>"+esc(k)+"</th><td>"+esc(typeof data[k]==="object"?JSON.stringify(data[k]):data[k])+"</td></tr>";
+      });
+      html+="</table>";
+      return html;
+    }
+    return '<pre style="white-space:pre-wrap;color:var(--sub);font-size:11.5px">'+esc(data)+'</pre>';
+  }
+  function tableOf(rows){
+    if(!rows.length) return '<div class="note">空</div>';
+    var cols=Object.keys(rows[0]);
+    var h="<tr>"+cols.map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+"</tr>";
+    var b=rows.map(function(r){
+      return "<tr>"+cols.map(function(c){return "<td>"+esc(r[c])+"</td>";}).join("")+"</tr>";
+    }).join("");
+    return "<table><thead>"+h+"</thead><tbody>"+b+"</tbody></table>";
+  }
+
+  function renderSource(src){
+    if(src.name==="backtest_outputs" && src.data && src.data.meta){
+      var d=src.data, m=d.meta||{};
+      var html='<div class="card">';
+      html+='<div class="nm">'+esc(src.name)+' '+badge(src)+'</div>';
+      html+='<div class="meta">'+esc(src.note||"")+'</div>';
+      html+='<div class="card" style="margin-top:6px"><div class="rl">回测元信息（真实只读）</div><div class="meta">';
+      html+='ts='+esc(m.ts)+' · strategy='+esc(m.strategy)+' · market='+esc(m.market)+
+            ' · mode='+esc(m.mode)+' · 结果数='+esc(m.result_count)+'</div></div>';
+      if(d.missing_dimensions && d.missing_dimensions.length){
+        html+='<div class="demo" style="margin-top:6px">⚠ 缺维度字段：'+esc(d.missing_dimensions.join(" / "))+
+              '（仅策略级扫描结果，无法按 agent / model / combo 分面）</div>';
+      }
+      if(d.by_market){
+        html+='<div class="meta" style="margin-top:6px">按市场归并：';
+        html+=Object.keys(d.by_market).map(function(k){return esc(k)+'='+esc(d.by_market[k]);}).join(' · ');
+        html+='</div>';
+      }
+      if(d.top_by_sharpe && d.top_by_sharpe.length) html+=tableOf(d.top_by_sharpe);
+      html+='</div>';
+      return html;
+    }
+    if(src.name==="production_trade_pool" && src.data){
+      var d=src.data, html='<div class="card">';
+      html+='<div class="nm">'+esc(src.name)+' '+badge(src)+'</div>';
+      html+='<div class="meta">'+esc(src.note||"")+'</div>';
+      var active=d.active||{}, pending=d.pending||{};
+      html+='<div class="fstep" style="margin-top:6px"><b>active_watch / watch_alert（盯盘轮询）</b><small>count='+esc(active.count)+'</small></div>';
+      html+='<div class="fstep" style="margin-top:6px"><b>pending_research（投研拿票）</b><small>count='+esc(pending.count)+'</small></div>';
+      html+='<div class="meta">db_health='+esc(JSON.stringify(d.db_health||{}))+'</div>';
+      html+='</div>';
+      return html;
+    }
+    var html='<div class="card">';
+    html+='<div class="nm">'+esc(src.name)+' '+badge(src)+'</div>';
+    html+='<div class="meta">'+esc(src.note||"")+'</div>';
+    if(!src.verified && src.data==null){
+      html+='<div class="demo">SOURCE_UNVERIFIED · 未接真源（'+esc(src.error_code||"unverified")+'）</div>';
+    } else if(src.data!=null){
+      if(src.data.is_demo){
+        html+='<div class="demo">[演示值] 占位 · 不可验证 · 绝不伪造真实数字</div>';
+      }
+      html+=renderData(src.data);
+    }
+    html+='</div>';
+    return html;
+  }
+
+  function renderZone(zone){
+    var z='<div class="zone">';
+    z+='<h3>'+esc(zone.title)+' <span class="ztag">'+esc(zone.state)+
+        ' · 真源 '+zone.verified_count+'/'+ (zone.verified_count+zone.unverified_count) +'</span></h3>';
+    if(zone.zone_id==="zone3"){
+      z+='<div class="note">生产三池（股票/信号/用户盯盘结果池）真实源 = PostgreSQL（quant-pg:5442 '+
+         'quant_system.trade_pool），经 <b>8097 中台只读 GET</b> 接入（active_watch/pending_research）；'+
+         '本页仅 SELECT、不写回。离线影子 StockPoolSource/SignalPool（OFFLINE_SHADOW / RESEARCH_ONLY / '+
+         'production_permitted=False）非生产、已排除。ST1 缠论信号池（quant_backtest/data/chanlun_pool.jsonl）'+
+         '为唯一真实可读的池文件。</div>';
+    }
+    if(zone.zone_id==="zone4"){
+      z+='<div class="funnel" style="flex-direction:column"><div class="fstep"><b>多 Agent 各自研判</b><small>许褚(主) + 张郃(执行) + 可扩展席位</small></div></div>';
+      z+='<div class="card" style="margin-top:8px"><div class="rl">组合器规则</div><div class="meta">简单多数投票；弃权不计票；冲突 → 降级为“分歧上报”，不强行合成信号。</div></div>';
+    }
+    if(zone.zone_id==="zone6"){
+      z+='<div class="tl">'+
+         '<div class="tlstep"><div class="tldot"></div><div class="tlbody"><b>组合信号生成</b><br><small>组合器产出，run_id 归因</small></div></div>'+
+         '<div class="tlstep"><div class="tldot"></div><div class="tlbody"><b>WA1 许褚（盯盘域）</b><br><small>上行 → QUANT_UPSTREAM_REPORT</small></div></div>'+
+         '<div class="tlstep"><div class="tldot"></div><div class="tlbody"><b>QS1 司马懿（量化层受理）</b><br><small>agent 级 ACK；受理 ≠ 授权 ≠ 研判</small></div></div>'+
+         '<div class="tlstep"><div class="tldot"></div><div class="tlbody"><b>飞书（由量化层出口）</b><br><small>盯盘不直连飞书</small></div></div></div>';
+    }
+    (zone.sources||[]).forEach(function(s){ z+=renderSource(s); });
+    if(zone.zone_id==="zone7"){
+      z+='<div class="locked">🔒 影子对比只读视图 · 受 run_shadow --rehearsal 预演阀约束，拒绝真仓'+
+         '<br><button class="btndis" disabled>跟随</button><button class="btndis" disabled>下单</button>'+
+         '<span style="color:var(--no)">（恒置灰 · trading_permitted=false）</span></div>';
+      if(zone.rehearsal_note) z+='<div class="note">'+esc(zone.rehearsal_note)+'</div>';
+    }
+    if(zone.note) z+='<div class="note">'+esc(zone.note)+'</div>';
+    z+='</div>';
+    return z;
+  }
+
+  function load(replay){
+    var url=API+(replay?"?replay_at="+encodeURIComponent(replay):"");
+    fetch(url).then(function(r){return r.json();}).then(function(snap){
+      var zones=snap.zones||{};
+      var order=["zone1","zone2","zone3","zone4","zone5","zone6","zone7"];
+      var html="";
+      order.forEach(function(id){
+        if(zones[id]) html+=renderZone(zones[id]);
+      });
+      // any zone missing from payload
+      Object.keys(zones).forEach(function(id){
+        if(order.indexOf(id)<0) html+=renderZone(zones[id]);
+      });
+      document.getElementById("zones").innerHTML=html;
+      var stamp="schema="+esc(snap.schema||"?");
+      stamp+=" · replay="+(snap.replay?"是 ("+esc(snap.replay_at||"")+")":"否");
+      stamp+=" · overall="+(snap.overall||"?");
+      if(snap.generated_at) stamp+=" · @ "+esc(snap.generated_at);
+      if(snap.warnings && snap.warnings.length) stamp+=" · ⚠ "+snap.warnings.length+" 未接真源";
+      document.getElementById("stamp").textContent=stamp;
+    }).catch(function(err){
+      document.getElementById("zones").innerHTML=
+        '<div class="demo">快照获取失败：'+esc(err)+'（服务是否在 8795 运行？）</div>';
+    });
+  }
+
+  // populate replay dropdown (live + last 7 days)
+  (function(){
+    var sel=document.getElementById("replay");
+    var now=new Date();
+    for(var i=0;i<7;i++){
+      var d=new Date(now); d.setDate(now.getDate()-i);
+      var v=d.toISOString().slice(0,10);
+      var o=document.createElement("option"); o.value=v; o.textContent="回放 "+v;
+      sel.appendChild(o);
+    }
+    sel.addEventListener("change",function(){ load(sel.value); });
+    document.getElementById("reload").addEventListener("click",function(){ load(sel.value); });
+  })();
+
+  document.getElementById("sig").textContent="M2/M3 只读管理页 · 来源 fail-visible · 未接真源一律 SOURCE_UNVERIFIED";
+  load("");
+})();
+</script>
+</body>
+</html>
