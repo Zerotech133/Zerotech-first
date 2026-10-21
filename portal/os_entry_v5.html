@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>老田的个人 OS · 主节点工作台 v5 · 业务重组版（评审稿 · 非生产页）</title>
+<style>
+/* ============ 设计基线：对齐 2026-10-19 quant_home_v3 / 2026-10-18 xq_intel_redesign ============
+   定位：OS 入口层（板块首页之上的一层）+ 板块全貌下钻层。
+   铁律：固定单屏分区、页面级禁下拉长图、总览→板块→域→策略→标的逐级下钻；
+        状态灯三态（ok/warn/unk），探测不可信绝不假绿；演示兜底必须显著标注。 */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#11161d;
+  --border:#2a3140; --txt:#e6edf3; --sub:#8b949e; --dim:#57606a;
+  --accent:#e3b341; --blue:#58a6ff; --teal:#39d2c0; --purple:#bc8cff;
+  --up:#f8514f; --down:#3fb950; /* 中国约定：涨红跌绿 */
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  font-size:14px; overflow:hidden; /* 页面级禁滚动：单屏铁律 */
+  background-image:radial-gradient(1200px 500px at 70% -10%, rgba(88,166,255,.07), transparent),
+                   radial-gradient(900px 400px at 10% 110%, rgba(227,179,65,.05), transparent);
+}
+.wrap{min-width:1180px;max-width:1440px;height:100vh;margin:0 auto;padding:10px 22px 12px;display:flex;flex-direction:column}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ============ 顶栏（常驻） ============ */
+.topbar{display:flex;align-items:center;gap:16px;padding:6px 4px 10px;border-bottom:1px solid var(--border);flex-wrap:nowrap}
+.brand{font-size:20px;font-weight:700;letter-spacing:1px;white-space:nowrap}
+.brand .os{color:var(--accent)}
+.brand small{color:var(--sub);font-weight:400;font-size:12px;margin-left:10px;letter-spacing:0}
+.demo-flag{border:1px dashed var(--accent);color:var(--accent);border-radius:6px;padding:3px 9px;font-size:11px;white-space:nowrap}
+.sysdots{display:flex;gap:13px;margin-left:auto;flex-wrap:nowrap;align-items:center}
+.sysdot{display:flex;align-items:center;gap:6px;color:var(--sub);font-size:12px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)}
+.dot.ok{background:var(--down);box-shadow:0 0 6px var(--down)}
+.dot.warn{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.dot.err{background:var(--up);box-shadow:0 0 6px var(--up)}
+.dot.unk{background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)} /* 探测不可信：不假绿 */
+.datechip{color:var(--dim);font-size:12px;white-space:nowrap;font-family:Consolas,monospace}
+
+/* ============ 标签栏 ============ */
+.tabbar{display:flex;align-items:center;gap:8px;padding:9px 2px 0;border-bottom:1px solid var(--border)}
+.tabbar.hidden{display:none}
+.tab{appearance:none;background:transparent;border:1px solid transparent;border-bottom:none;color:var(--sub);
+  font:inherit;font-size:13.5px;padding:8px 16px;border-radius:10px 10px 0 0;cursor:pointer;position:relative;top:1px}
+.tab:hover{color:var(--txt)}
+.tab[aria-selected="true"]{background:var(--panel);border-color:var(--border);color:var(--accent);font-weight:600}
+.tab:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.scrollhint{margin-left:auto;color:var(--dim);font-size:11px;white-space:nowrap}
+
+/* ============ 内容区（固定高度，分区内部滚动） ============ */
+.panels{flex:1;min-height:0;position:relative}
+.panel{display:none;height:100%;overflow:auto;padding:12px 2px 8px}
+.panel.active{display:block}
+
+/* ============ 板块入口卡（OS 入口层核心） ============ */
+.boards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.board{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 12px 10px;display:flex;flex-direction:column;cursor:pointer;transition:border-color .15s,transform .15s;position:relative}
+.board:hover{border-color:var(--accent);transform:translateY(-2px)}
+.board:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.board .bh{display:flex;align-items:center;gap:9px}
+.bicon{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+.board h3{font-size:14px;font-weight:600;flex:1;white-space:nowrap}
+.board .en{color:var(--dim);font-size:9.5px;font-family:Consolas,monospace;letter-spacing:.06em;white-space:nowrap}
+.board p{color:var(--sub);font-size:11px;line-height:1.55;margin:7px 0 6px;min-height:44px}
+.board .metrics{display:flex;flex-wrap:wrap;gap:4px 5px;margin-top:auto}
+.board .metrics i{font-style:normal;font-size:10px;background:#1c2b36;border:1px solid #2e4454;color:#a9cbd8;border-radius:5px;padding:2px 6px;white-space:nowrap}
+.board .go{margin-top:8px;font-size:10.5px;color:var(--blue);display:flex;justify-content:space-between;align-items:center}
+.board .go .rt{font-family:Consolas,monospace;color:var(--dim)}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:5px;white-space:nowrap;font-weight:400;flex:none}
+.b-live{background:#1f3524;color:#9fd8a8}
+.b-run{background:#3f2d20;color:#f0c78a}
+.b-plan{background:#2b3645;color:#aac1dc}
+.b-wait{background:#33273d;color:#c9a8e8}
+
+/* ============ 重大预警区（置顶 · 不等拍板 · 先处置/先观察） ============ */
+.alertzone{background:#2a1a1c;border:1px solid #5c2b2e;border-radius:var(--radius);padding:12px 16px;margin-bottom:12px}
+.alertzone .az-head{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
+.alertzone .az-head b{color:#f0a9a4;font-size:14px;letter-spacing:.05em}
+.alertzone .az-head small{color:#d8b6b2;font-size:11px}
+.alertzone .az-head .cnt{margin-left:auto;font:700 11px Consolas,monospace;color:#f0a9a4;background:#3a1d1f;border:1px solid #5c2b2e;border-radius:5px;padding:2px 9px;white-space:nowrap}
+.alertgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.alert{display:flex;gap:9px;background:#221517;border:1px solid #4a262a;border-radius:9px;padding:8px 11px;line-height:1.55}
+.alert .lv{flex:none;font:700 10px Consolas,monospace;border-radius:4px;padding:1px 7px;height:fit-content;margin-top:2px}
+.alert .lv.p0{background:#3a1d1f;color:#f0a9a4;border:1px solid #6e3438}
+.alert .lv.p1{background:#3f2d20;color:#f0c78a;border:1px solid #6b4d2a}
+.alert .tx{font-size:11.5px;color:#d8b6b2}
+.alert .tx b{color:#f0c8c4;display:block;margin-bottom:1px}
+.alert .tx .act{color:#e8a9a4}
+.alertchip{appearance:none;background:#3a1d1f;border:1px solid #6e3438;color:#f0a9a4;font:inherit;font-size:11.5px;padding:4px 11px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.alertchip:hover{border-color:#f0a9a4}
+.balert{margin-bottom:10px;background:#2a1a1c;border:1px solid #5c2b2e;border-radius:9px;padding:8px 13px;display:flex;align-items:center;gap:10px;font-size:11.5px;color:#d8b6b2;cursor:pointer}
+.balert:hover{border-color:#f0a9a4}
+.balert .n{font:700 11px Consolas,monospace;color:#f0a9a4;background:#3a1d1f;border:1px solid #5c2b2e;border-radius:5px;padding:2px 8px;flex:none}
+
+/* ============ 分区标题 ============ */
+.sect{display:flex;align-items:baseline;gap:10px;margin:16px 0 10px;flex-wrap:wrap}
+.sect h2{font-size:15px;font-weight:600;letter-spacing:.05em}
+.sect small{color:var(--dim);font-size:11px;font-weight:400}
+
+/* ============ 今日要事 / 拍板 ============ */
+.split{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;align-items:start}
+.tl{position:relative;padding-left:24px}
+.tl:before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:#2c3d47}
+.tl-item{position:relative;padding:7px 0 9px}
+.tl-item:before{content:"";position:absolute;left:-22px;top:13px;width:10px;height:10px;border-radius:50%;background:var(--teal);border:2px solid var(--bg)}
+.tl-item.w:before{background:var(--accent)}
+.tl-item.r:before{background:var(--up)}
+.tl-item .t{font:700 12px Consolas,monospace;color:var(--teal);margin-right:8px}
+.tl-item.w .t{color:var(--accent)}
+.tl-item.r .t{color:var(--up)}
+.tl-item b{font-size:13px}
+.tl-item p{margin:3px 0 0;color:var(--sub);font-size:11.5px;line-height:1.6}
+/* 时点感知：past=已过 dim+✓ / now=进行中脉冲高亮 / upcoming=待办（默认） */
+.tl-item.past{opacity:.45}
+.tl-item.past:before{background:#4a5b66!important}
+.tl-item.past .t:after{content:" ✓";color:var(--teal)}
+.tl-item.now{background:linear-gradient(90deg,rgba(248,81,79,.10),transparent 70%);border-radius:8px;box-shadow:inset 2px 0 0 var(--up)}
+.tl-item.now:before{background:var(--up)!important;animation:pulse 1.6s ease-in-out infinite}
+.tl-item.now b{color:var(--up)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,81,79,.55)}50%{box-shadow:0 0 0 6px rgba(248,81,79,0)}}
+.nexttp{font:600 10.5px Consolas,monospace;color:var(--up);background:rgba(248,81,79,.12);border:1px solid rgba(248,81,79,.35);border-radius:5px;padding:1px 7px;margin-left:auto;white-space:nowrap}
+.mini{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px}
+.mini h4{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.mini h4 .n{font:700 11px Consolas,monospace;color:var(--accent)}
+.mini ol{margin-left:18px;color:var(--sub);font-size:11.5px;line-height:1.85}
+.mini ol b{color:var(--txt);font-weight:600}
+
+/* ============ 表格 ============ */
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top;line-height:1.55}
+th{background:#17222b;color:#a9bfc9;font-weight:600;white-space:nowrap}
+td{color:#cfdee5}
+td b{color:var(--amber,#eac57e)}
+td .mono{font:11px Consolas,monospace;color:var(--blue)}
+td .dim2{color:var(--dim)}
+tr:hover td{background:#182028}
+
+/* ============ 计划时间线 ============ */
+.stages{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stage{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px;position:relative}
+.stage .ph{font:700 11px Consolas,monospace;letter-spacing:.1em;color:var(--accent)}
+.stage h3{font-size:14.5px;font-weight:600;margin:5px 0 2px}
+.stage .dt{font:11px Consolas,monospace;color:var(--dim);margin-bottom:8px}
+.stage ul{margin-left:16px;color:var(--sub);font-size:11.5px;line-height:1.8}
+.stage .exit{margin-top:9px;padding-top:8px;border-top:1px dashed var(--border);font-size:11px;color:var(--teal);line-height:1.6}
+.stage .exit b{color:var(--teal)}
+.stage.now{border-color:var(--accent)}
+.stage.now .ph{color:var(--up)}
+
+.principles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.pr{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:11.5px;color:var(--sub);line-height:1.6}
+.pr b{display:block;color:var(--txt);font-size:12.5px;margin-bottom:3px}
+.pr .no{font:700 10px Consolas,monospace;color:var(--accent);margin-right:6px}
+
+.northstar{margin-top:14px;background:linear-gradient(120deg,rgba(227,179,65,.10),rgba(57,210,192,.06));border:1px solid #4a4225;border-radius:var(--radius);padding:14px 18px;font-size:13px;line-height:1.8;color:#e8dfc8}
+.northstar b{color:var(--accent)}
+
+/* ============ 拍板与红线 ============ */
+.redline{background:#2a1a1c;border:1px solid #5c2b2e;border-radius:var(--radius);padding:13px 16px}
+.redline h4{font-size:13px;font-weight:600;color:#f0a9a4;margin-bottom:8px}
+.redline ol{margin-left:18px;color:#d8b6b2;font-size:11.5px;line-height:1.9}
+.redline ol b{color:#f0c8c4}
+
+/* ============ 底栏 ============ */
+.statusbar{margin-top:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+  padding:9px 18px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:center;
+  font-family:Consolas,monospace;font-size:11px;color:var(--dim);flex:none}
+.statusbar b{color:var(--sub);font-weight:600}
+
+/* ============ 下钻路径条 ============ */
+.drill{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim);margin:2px 0 10px;flex-wrap:wrap}
+.drill b{color:var(--accent);font-weight:600}
+.drill .sep{color:#3d4a57}
+.drill .cur{color:var(--txt)}
+
+/* ============ 板块全貌页（下钻层） ============ */
+.bhead{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:4px}
+.bhead .row1{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bhead .bicon{width:38px;height:38px;border-radius:10px;font-size:19px}
+.bhead h2{font-size:19px;font-weight:700;letter-spacing:.5px}
+.bhead .en{color:var(--dim);font-size:11px;font-family:Consolas,monospace;letter-spacing:.08em}
+.bhead .back{margin-left:auto;appearance:none;background:#1c2b36;border:1px solid #2e4454;color:#a9cbd8;
+  font:inherit;font-size:12px;padding:7px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.bhead .back:hover{border-color:var(--accent);color:var(--accent)}
+.bhead .pos{margin:10px 0 8px;color:var(--sub);font-size:12.5px;line-height:1.7}
+.bhead .kpis{display:flex;flex-wrap:wrap;gap:5px}
+.bhead .kpis i{font-style:normal;font-size:11px;background:#1c2b36;border:1px solid #2e4454;color:#a9cbd8;border-radius:5px;padding:3px 9px;white-space:nowrap}
+.bgrid{display:grid;grid-template-columns:1.55fr 1fr;gap:12px;align-items:start}
+.dcards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dcard{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:border-color .15s}
+a.dcard{display:block;color:inherit;text-decoration:none}
+a.dcard:hover{text-decoration:none}
+.dcard:hover{border-color:var(--blue)}
+.dcard b{display:block;font-size:12.5px;margin-bottom:3px}
+.dcard span{color:var(--sub);font-size:11px;line-height:1.55;display:block}
+.dcard .rt{font:10.5px Consolas,monospace;color:var(--dim);margin-top:5px;display:block}
+.probes{display:flex;flex-wrap:wrap;gap:6px 14px}
+.sev{font:700 10px Consolas,monospace;padding:1px 7px;border-radius:4px;margin-right:7px;white-space:nowrap}
+.sev-P0{background:#3a1d1f;color:#f0a9a4}
+.sev-P1{background:#3f2d20;color:#f0c78a}
+.sev-P2{background:#2b3645;color:#aac1dc}
+.mini ol li{margin-bottom:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<style>/* S2 门户落位适配：nav.js 统一顶栏注入后让出高度，单屏铁律不变 */
+.wrap{height:calc(100vh - 48px)}</style>
+<script src="/static/nav.js" defer></script>
+
+<style>
+/* ===== v4 精简版：主节点工作台（结果优先 · 大屏降为 Tab · 去装饰） ===== */
+.v4-top{display:flex;align-items:center;gap:14px;padding:4px 2px 10px;border-bottom:1px solid var(--border)}
+.v4-brand{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:.5px;white-space:nowrap}
+.v4-brand .v4-sub{color:var(--dim);font-weight:400;font-size:11.5px;margin-left:9px;letter-spacing:0}
+.v4-top .sysdots{margin-left:auto}
+.alertchip{border:1px solid var(--border);background:var(--panel);color:var(--sub);
+  border-radius:6px;padding:3px 9px;font:inherit;font-size:11.5px;cursor:pointer;white-space:nowrap}
+.alertchip b{color:var(--accent)}
+
+.v4-sect{display:flex;align-items:baseline;gap:10px;margin:12px 0 7px}
+.v4-sect h3{font-size:13px;font-weight:700;color:var(--txt)}
+.v4-sect small{color:var(--dim);font-size:11.5px}
+.v4-stamp{margin-left:auto;color:var(--accent);font-size:11px;border:1px dashed var(--accent);
+  border-radius:5px;padding:1px 7px;white-space:nowrap}
+
+/* 今日结果：只给结论，一行一条 */
+.v4-res{border:1px solid var(--border);border-radius:10px;background:var(--panel2);overflow:hidden}
+.v4-resrow{display:grid;grid-template-columns:110px 1fr 76px;gap:12px;align-items:baseline;
+  padding:8px 12px;border-bottom:1px solid rgba(42,49,64,.6);font-size:12.5px}
+.v4-resrow:last-child{border-bottom:none}
+.v4-resrow .v4-b{color:var(--txt);font-weight:600;white-space:nowrap}
+.v4-resrow .v4-r{color:var(--sub);line-height:1.5}
+.v4-resrow .v4-tag{text-align:right;font-size:11px;white-space:nowrap}
+.v4-tag.ok{color:var(--down)}
+.v4-tag.new{color:var(--blue)}
+.v4-tag.warn{color:var(--accent)}
+.v4-tag.wait{color:var(--dim)}
+
+/* 板块入口：紧凑行卡，去图标/去英文副标题/去标签云 */
+.v4-boards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.v4-boards .board{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;
+  gap:3px 10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;
+  background:var(--panel);cursor:pointer}
+.v4-boards .board:hover{border-color:var(--accent)}
+.v4-boards .board:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.v4-boards .board b{font-size:13px;font-weight:600;color:var(--txt)}
+.v4-boards .board .v4-p{grid-column:1;font-size:11.5px;color:var(--dim);line-height:1.45}
+.v4-boards .board .v4-rt{grid-column:2;grid-row:1;color:var(--blue);font-size:11px;
+  font-family:Consolas,monospace;white-space:nowrap}
+
+/* 预警区压扁 */
+.v4-alertwrap{border:1px solid var(--border);border-radius:10px;background:var(--panel2);padding:8px 12px}
+.v4-azhead{display:flex;align-items:baseline;gap:10px;font-size:12px;color:var(--txt);margin-bottom:6px}
+.v4-azhead span{color:var(--dim);font-size:11px}
+.v4-azhead .cnt{margin-left:auto;color:var(--accent)}
+
+/* 大屏 Tab：内嵌现役指挥大屏 */
+.v4-dashbar{display:flex;align-items:center;gap:10px;padding:2px 2px 8px;font-size:12px}
+.v4-dashbar b{color:var(--txt)}
+.v4-dashbar span{color:var(--dim);font-size:11.5px}
+.v4-dashbar a{margin-left:auto}
+.v4-frame{width:100%;height:calc(100% - 30px);border:1px solid var(--border);
+  border-radius:10px;background:var(--panel2)}
+
+/* 底部 Tab 栏（原在顶部，v4 下移） */
+.tabbar{border-bottom:none;border-top:1px solid var(--border);padding:6px 2px 0;
+  margin-top:8px;gap:6px;min-height:auto!important}
+.tab{border-radius:0 0 10px 10px;border-bottom:1px solid transparent;top:auto;
+  font-size:13px;padding:7px 15px}
+.tab[aria-selected="true"]{border-bottom-color:var(--panel)}
+.v4-foot{display:flex;gap:16px;padding:7px 2px 0;color:var(--dim);font-size:11px}
+</style>
+
+<style>
+/* ===== v5 · 业务重组版：交易日节奏（盘前→盘中→盘后）+ 业务域胶囊 ===== */
+.v5-lamp{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--sub);
+  border:1px solid var(--border);border-radius:20px;padding:2px 10px;white-space:nowrap}
+.v5-lamp .dot{width:7px;height:7px}
+.v5-lamp.on{color:var(--accent);border-color:var(--accent)}
+
+.v5-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:2px}
+.v5-stage{border:1px solid var(--border);border-radius:10px;background:var(--panel2);
+  padding:9px 11px;display:flex;flex-direction:column;gap:7px}
+.v5-stage.on{border-color:var(--accent)}
+.v5-stage.done{opacity:.92}
+.v5-stage.wait{opacity:.72}
+.v5-sh{display:flex;align-items:baseline;gap:8px}
+.v5-sh b{font-size:12.5px;color:var(--txt)}
+.v5-sh span{font-size:11px;color:var(--dim);font-family:Consolas,monospace}
+.v5-sh em{margin-left:auto;font-style:normal;font-size:10.5px;color:var(--dim)}
+.v5-stage.on .v5-sh em{color:var(--accent)}
+.v5-note{font-size:11px;color:var(--dim);border-top:1px dashed var(--border);padding-top:6px;line-height:1.5}
+.v5-note.warn{color:var(--accent)}
+
+.v5-group{margin:11px 0 7px;display:flex;align-items:baseline;gap:9px}
+.v5-group h4{font-size:12px;color:var(--txt);font-weight:700}
+.v5-group small{color:var(--dim);font-size:11px}
+.v5-pills{display:flex;flex-wrap:wrap;gap:7px}
+.v5-pill{display:inline-flex;flex-direction:column;gap:2px;min-width:150px;max-width:230px;
+  border:1px solid var(--border);border-radius:9px;background:var(--panel);padding:7px 10px;
+  color:var(--txt);font-size:12px;text-decoration:none}
+.v5-pill:hover{border-color:var(--accent);text-decoration:none}
+.v5-pill span{color:var(--dim);font-size:10.5px;line-height:1.4}
+.v5-pill i{font-style:normal;color:var(--blue);font-size:10px;font-family:Consolas,monospace}
+.v5-pill.off{color:var(--sub);border-style:dashed}
+.v5-pill.off i{color:var(--dim)}
+.v5-pill.off:hover{border-color:var(--sub)}
+.v5-hint{color:var(--dim);font-size:11px;margin-top:8px}
+</style>
+</head><body>
+<div class="wrap">
+
+  <header class="v4-top">
+    <div class="v4-brand">老田的个人 OS<span class="v4-sub">零界工作站 · 主节点</span></div>
+    <span class="v5-lamp" id="stage-lamp"><span class="dot unk"></span><span id="stage-lamp-t">时段判定中</span></span>
+    <button class="alertchip" id="alert-jump" title="回到今日页查看重大预警">重大预警 <b id="alert-count">0</b></button>
+    <div class="sysdots" id="sysdots">
+      <span class="sysdot"><span class="dot unk" id="p-8091"></span>门户 8091</span>
+      <span class="sysdot"><span class="dot unk" id="p-8791"></span>仪表盘 8791</span>
+      <span class="sysdot"><span class="dot unk" id="p-8787"></span>Hermes 8787</span>
+      <span class="sysdot"><span class="dot unk" id="p-8097"></span>推送 8097</span>
+      <span class="sysdot"><span class="dot unk" id="p-11434"></span>Ollama 11434</span>
+      <span class="sysdot"><span class="dot unk" id="p-zeroq"></span>zeroq</span>
+    </div>
+    <span class="datechip" id="clock">--:--:--</span>
+  </header>
+
+  <div class="panels">
+
+    <div class="panel active" id="panel-today">
+      <div class="v5-group"><h4>今日节奏</h4><small>盘前选股池 → 盘中盯盘风控 → 盘后复盘总结（投研子功能）· 亮灯=当前时段</small></div>
+      <div class="v5-flow">
+      <div class="v5-stage" data-stage="pre">
+        <div class="v5-sh"><b>盘前 · 选股与股票池</b><span>07:00-09:30</span><em data-lamp="pre">--</em></div>
+        <div class="v5-pills">
+          <a class="v5-pill" href="/quant-drill"><b>六度选股池</b><span>多维选股 + 人工投放池（xunyou_pool_{date}.json）</span><i>/quant-drill</i></a>
+          <a class="v5-pill" href="/quant"><b>盘前信号 / 候选</b><span>Scanner→Screener→Signal 候选生成</span><i>/quant</i></a>
+          <a class="v5-pill" href="/market.html"><b>市场盘面</b><span>全市场总览与准入环境</span><i>/market.html</i></a>
+        </div>
+        <div class="v5-note warn">最近产出 2026-10-20 · 今日(10-21)未产出</div>
+      </div>
+      <div class="v5-stage" data-stage="in">
+        <div class="v5-sh"><b>盘中 · 盯盘与风控</b><span>09:30-15:00</span><em data-lamp="in">--</em></div>
+        <div class="v5-pills">
+          <a class="v5-pill" href="/screen.html"><b>盘面盯盘</b><span>实时盘面大屏（只读投影）</span><i>/screen.html</i></a>
+          <a class="v5-pill" href="/notify_command.html"><b>告警指挥</b><span>预警分级与投递（通知指挥面）</span><i>/notify_command.html</i></a>
+          <a class="v5-pill" href="/quant-drill"><b>策略下钻</b><span>板块→票→信号→证据 四级下钻</span><i>/quant-drill</i></a>
+        </div>
+        
+      </div>
+      <div class="v5-stage" data-stage="post">
+        <div class="v5-sh"><b>盘后 · 复盘与总结</b><span>15:00-</span><em data-lamp="post">--</em></div>
+        <div class="v5-pills">
+          <div class="v5-pill off" title="页面待接：真源/产物在磁盘或他仓，尚未有门户页"><b>盘后复盘</b><span>afterhours 复盘（afterhours_latest.json）</span><i>页面待接</i></div>
+          <a class="v5-pill" href="/audit.html"><b>后验判定</b><span>pick_layer_verdicts 后验与审计</span><i>/audit.html</i></a>
+          <a class="v5-pill" href="/notify_command.html"><b>总结简报</b><span>简报与推送（受控出口 8097）</span><i>/notify_command.html</i></a>
+        </div>
+        <div class="v5-note warn">最近 ts 2026-10-13 · 数据陈旧</div>
+      </div>
+      </div>
+      <div class="v5-hint">结果口径：产物来自各板块真源（reports / 数据库），无产物标灰，绝不造数。</div>
+    </div>
+
+    <div class="panel" id="panel-research">
+      <div class="v5-group"><h4>选股与股票池</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/quant-drill"><b>六度选股（多维）</b><span>量化下钻 L1板块→L2票→L3信号→L4证据</span><i>/quant-drill</i></a>
+          <div class="v5-pill off" title="页面待接：真源/产物在磁盘或他仓，尚未有门户页"><b>人工投放池</b><span>外部/人工推入的标的池（与选股池同源落盘）</span><i>页面待接</i></div>
+          <div class="v5-pill off" title="页面待接：真源/产物在磁盘或他仓，尚未有门户页"><b>池快照与沉淀</b><span>reports/xunyou_pool_*.json · liudu_sink 沉淀库</span><i>页面待接</i></div>
+      </div>
+      <div class="v5-group"><h4>策略研究</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/methods.html"><b>策略方法库</b><span>方法与因子口径</span><i>/methods.html</i></a>
+          <a class="v5-pill" href="/market_strategy.html"><b>策略市场</b><span>策略与市场对照</span><i>/market_strategy.html</i></a>
+          <div class="v5-pill off" title="页面待接：真源/产物在磁盘或他仓，尚未有门户页"><b>回测视图</b><span>回测结果视图（页面待接）</span><i>页面待接</i></div>
+      </div>
+      <div class="v5-group"><h4>盘后复盘与总结 · 投研子功能</h4></div>
+      <div class="v5-pills">
+          <div class="v5-pill off" title="页面待接：真源/产物在磁盘或他仓，尚未有门户页"><b>盘后复盘</b><span>afterhours 复盘（页面待接 · 产物在磁盘）</span><i>页面待接</i></div>
+          <a class="v5-pill" href="/audit.html"><b>后验判定</b><span>后验与证据审计</span><i>/audit.html</i></a>
+          <a class="v5-pill" href="/notify_command.html"><b>复盘简报</b><span>简报与受控推送</span><i>/notify_command.html</i></a>
+      </div>
+      <div class="v5-group"><h4>研究规约与学习</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/academy.html"><b>课件与学习</b><span>缠论 / 方法库 / 学习成长</span><i>/academy.html</i></a>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-trade">
+      <div class="v5-group"><h4>盘中执行（只观察 · 不代交易）</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/screen.html"><b>盘面盯盘</b><span>实时盘面（只读）</span><i>/screen.html</i></a>
+          <a class="v5-pill" href="/notify_command.html"><b>告警指挥</b><span>预警分级与投递</span><i>/notify_command.html</i></a>
+          <a class="v5-pill" href="/quant-drill"><b>策略下钻</b><span>信号与证据下钻</span><i>/quant-drill</i></a>
+      </div>
+      <div class="v5-group"><h4>模拟盘与账本</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/quant-drill"><b>模拟盘下钻</b><span>模拟持仓与信号溯源</span><i>/quant-drill</i></a>
+          <a class="v5-pill" href="/ledger.html"><b>账本</b><span>流水与台账（只读）</span><i>/ledger.html</i></a>
+          <a class="v5-pill" href="/approvals.html"><b>审批</b><span>审批与放行记录</span><i>/approvals.html</i></a>
+      </div>
+      <div class="v5-group"><h4>风控</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/audit.html"><b>风控与红线</b><span>RiskGuard 规则与红线台账</span><i>/audit.html</i></a>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-intel">
+      <div class="v5-group"><h4>情报产线</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/intel_workbench.html"><b>情报工场</b><span>采集→研判→入图</span><i>/intel_workbench.html</i></a>
+          <a class="v5-pill" href="/news_intel.html"><b>新闻情报</b><span>新闻与事件证据流</span><i>/news_intel.html</i></a>
+          <a class="v5-pill" href="/lineage.html"><b>血缘对账</b><span>证据血缘与对账</span><i>/lineage.html</i></a>
+      </div>
+      <div class="v5-group"><h4>源头采集</h4></div>
+      <div class="v5-pills">
+          <div class="v5-pill off" title="页面待接：真源/产物在磁盘或他仓，尚未有门户页"><b>雪球主源</b><span>xueqiu_info.db · liudu_sink 沉淀库（页面待接）</span><i>页面待接</i></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-legion">
+      <div class="v5-group"><h4>指挥与编制</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/legion"><b>军团指挥台</b><span>工单 / 会议 / 门禁</span><i>/legion</i></a>
+          <a class="v5-pill" href="/org.html"><b>组织架构</b><span>部门与席位编制</span><i>/org.html</i></a>
+          <a class="v5-pill" href="/flow.html"><b>流程</b><span>运行流程与制度</span><i>/flow.html</i></a>
+          <a class="v5-pill" href="/capability.html"><b>能力清单</b><span>Agent 能力登记</span><i>/capability.html</i></a>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-system">
+      <div class="v5-group"><h4>运行与数据</h4></div>
+      <div class="v5-pills">
+          <a class="v5-pill" href="/ops"><b>系统运维</b><span>服务 / 计划任务 / 备份</span><i>/ops</i></a>
+          <a class="v5-pill" href="/dataops.html"><b>数据链</b><span>数据链与采集健康</span><i>/dataops.html</i></a>
+          <a class="v5-pill" href="/data_daily.html"><b>数据日报</b><span>每日数据产出</span><i>/data_daily.html</i></a>
+          <a class="v5-pill" href="/audit.html"><b>审计</b><span>审计与证据</span><i>/audit.html</i></a>
+      </div>
+      <div class="v5-group"><h4>计划与拍板</h4></div>
+      <div class="v5-pills">
+          <button class="v5-pill" type="button" data-jumptab="plan"><b>整体研发计划</b><span>研发计划全景</span><i>切换面板</i></button>
+          <button class="v5-pill" type="button" data-jumptab="decision"><b>拍板与红线</b><span>待拍板项与六条红线</span><i>切换面板</i></button>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-dash">
+      <div class="v5-group"><h4>指挥大屏</h4><small>现役 /os-board 内嵌 · 只读投影</small></div>
+      <iframe class="v4-frame" src="/os-board" title="个人 OS 指挥大屏（只读投影）"></iframe>
+    </div>
+
+    <div class="panel" id="panel-boards">
+      <div class="drill"><b>个人 OS</b><span class="sep">›</span><span class="cur">板块与子项目归类</span><span class="sep">›</span>实证口径：文档规划 ≠ 代码存在 ≠ 磁盘产物 ≠ 已部署；各板明细见总览卡片下钻</div>
+      <div class="sect"><h2>🗂 八大板块 × 子项目归类</h2><small>状态口径：在产 = 有代码有产物有常驻；开工 = 本周动工；预留 = 规划位。端口/入口以门户 8080 路由为准</small></div>
+      <table>
+        <thead><tr><th style="width:92px">板块</th><th>子项目 / 仓库 · 目录</th><th style="width:150px">端口 / 入口</th><th style="width:74px">状态</th><th>本周关键动作（2026-10-19 周）</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>📈 量化智能交易</b></td>
+            <td><span class="mono">quant_backtest/</span>（缠论 ChanlunScan · 九维 K33 · weak 产线 · 三线联动 · 雪球线）· <span class="mono">strategy_layer</span>（Signal/Registry/Adapter 15+ 插件）· <span class="mono">k_stock/paper</span>（Phase3 订单/状态机）· RiskGuard 四规则 · execution_engine · datamart</td>
+            <td><span class="mono">/quant</span> · 8091 · 8791 仪表盘 · 8098 网关 · 8001 QuantAPI</td>
+            <td><span class="badge b-live">在产</span></td>
+            <td>量化首页 H1 实况化（健康探针/单屏/聚合信号卡）→ H2 六环徽标；RiskGuard 误杀校准拍板会（周二）</td>
+          </tr>
+          <tr>
+            <td><b>📡 情报工厂</b></td>
+            <td><span class="mono">news_collector/</span>（新闻+JEV）· <span class="mono">jev-eval/</span>（四件套 9101-9104）· 雪球爬虫（xq_status/classified 5,586）· 股吧 · TDX 资讯 · <span class="mono">osint_video/</span>（链接/视频 OSINT）· <span class="mono">zerobound-kg/</span>（Neo4j 156.98 万节点 + PG 血缘三表）</td>
+            <td><span class="mono">/intel</span> · <span class="mono">/xq_intel.html</span> · <span class="mono">/kg</span> · <span class="mono">/stack</span> · <span class="mono">/lineage.html</span></td>
+            <td><span class="badge b-live">在产</span></td>
+            <td>P0 基线与口径（五源 owner/原文真源对账）；intel_link 显式边补齐（B2 未闭合）；07:40 数据健康复盘</td>
+          </tr>
+          <tr>
+            <td><b>🛡 数字军团</b></td>
+            <td><span class="mono">digital-legion/</span>（contracts 四协议 v1 待建）· Paperclip（战略层 Docker 待起）· 军师府（田丰 Hermes profile / 诸葛亮 OpenClaw+GPT6.0）· <span class="mono">agent_platform/</span>（M0→M6 观察执行季 · 11 域 wiring · 954 测试）</td>
+            <td><span class="mono">/legion</span> · <span class="mono">/org</span> · <span class="mono">/academy</span></td>
+            <td><span class="badge b-run">M0 开工</span></td>
+            <td>周三~四：digital-legion 仓 + contracts v1 四协议 + Paperclip 容器 + 双 profile 壳；周五影子周判读</td>
+          </tr>
+          <tr>
+            <td><b>🦸 Hermes 助手</b></td>
+            <td><span class="mono">Hermes/</span>（WebUI/Kanban/cron/记忆/branch 沙盘）· <span class="mono">CowAgent/</span>（三层中文记忆，M4 接入）· Khoj MCP（知识检索，M4）· 模型路由 <span class="mono">AI/111111/model_routing.py</span></td>
+            <td><span class="mono">/hermes/</span> · <span class="mono">/mission</span> · <span class="mono">/console</span></td>
+            <td><span class="badge b-live">在产</span></td>
+            <td>周一三时点护航（17:10 后 pre_observation 一键件）；M4 能力层接入设计（CowAgent/Khoj/Qdrant）</td>
+          </tr>
+          <tr>
+            <td><b>✍️ 内容创作</b></td>
+            <td><span class="mono">gzh/</span>（公众号草稿 + preview.html + gzh_writer）· <span class="mono">video/</span>（短视频 pipeline）· 草稿登记账本 drafts/index.json</td>
+            <td><span class="mono">/creator</span></td>
+            <td><span class="badge b-live">在产</span></td>
+            <td>选题→成稿流水线维持；成片库入库规范（与 OSINT 媒体留存边界对齐）</td>
+          </tr>
+          <tr>
+            <td><b>⚙️ 系统运维</b></td>
+            <td><span class="mono">portal/</span>（8091 API + 20+ 页面 + nginx 8080）· <span class="mono">ops/</span>（health_check / R1 总线）· <span class="mono">backups/</span>（B4 备份链）· zeroq 生产服务器（10.205.0.118 · 55 PASS）· DashboardGuard（保 8791）</td>
+            <td><span class="mono">/ops</span> · <span class="mono">/sys-health</span> · <span class="mono">/audit</span> · <span class="mono">/flow</span></td>
+            <td><span class="badge b-live">在产</span></td>
+            <td>存量收编第 1 批（docs 31 + gzh 6 零风险批次）；AgentWatchdog 0x8007010b 待管理员跑 fix 脚本</td>
+          </tr>
+          <tr>
+            <td><b>🔬 研发者</b></td>
+            <td>多 Agent 并行工位（scanner-dev / integration-dev 等）· worktree 隔离 + 三守卫合并 · Dify/WebUI 在线基建（规划位）</td>
+            <td><span class="mono">/dev</span> · <span class="mono">/ide</span> · <span class="mono">/sandbox</span></td>
+            <td><span class="badge b-plan">预留</span></td>
+            <td>量化首页四批工位并行（H1-H4 可拆 3+2+1 工位）；撞车按互斥协议（untracked 当日 commit）</td>
+          </tr>
+          <tr>
+            <td><b>🧪 蒸馏与小模型</b></td>
+            <td><span class="mono">蒸馏/</span>（训练路线/样本）· <span class="mono">ollama_service/</span>（qwen3.5 9b/4b + bge-m3 tuned）· 小模型影子路由（QT-M8 / P2-06）</td>
+            <td><span class="mono">/model_admin</span> · 11434</td>
+            <td><span class="badge b-live">在产</span></td>
+            <td>蒸馏样本可回指原始证据的流程设计；小模型上线前必须影子对照（禁直替生产 Agent）</td>
+          </tr>
+          <tr>
+            <td><b>📚 学习成长</b></td>
+            <td><span class="mono">chanlun-learn-report/</span>（缠论课件）· <span class="mono">czsc-eval/</span>（CZSC 评估）· 开源助理雷达（Hermes/OpenClaw/CowAgent/Khoj 对标）· 量化方法库（XGB+LightGBM/PCA）· 北理工联合实验室材料</td>
+            <td><span class="mono">/learn</span></td>
+            <td><span class="badge b-live">在产</span></td>
+            <td>学习产物可回指原始证据流程；开源对标结论须留痕；方法库与 quant 板块联动</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="split" style="margin-top:14px">
+        <div class="mini">
+          <h4>🧬 三条主线的不重叠分工 <span class="n">文档三依据</span></h4>
+          <ol>
+            <li><b>军团排期唯一依据</b> = 《最优解决方案与研发计划 2026-10-18》（P0-P3 四阶段）</li>
+            <li><b>军团架构唯一依据</b> = 数字军团总定稿 V2（五部门编制 + 三铁律 + M0-M5）</li>
+            <li><b>QP 项定义唯一依据</b> = 《量化智能交易功能优先级与路线图 2026-10-18》（QT-M0…M8 / QP-001…026）</li>
+          </ol>
+        </div>
+        <div class="mini">
+          <h4>📥 存量收编进度 <span class="n">312 收编 + 87 ignore + 3,685 待定</span></h4>
+          <ol>
+            <li><b>第 0 步</b>：补 .gitignore（vendor/ 300MB ffmpeg、.models/ 181.8MB）——消除误收编风险</li>
+            <li><b>第 1 步</b>：零风险批（docs 31 + gzh 6 + jev-eval docs 2 + feedback_flow 等）</li>
+            <li><b>第 2 步</b>：源码批（雪球 26 → tools 18 → agent_platform 98 人设档案）</li>
+            <li><b>第 4 步</b>：待定拍板（portal 10 新 / osint_video / zerobound-kg submodule 先清密钥）</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Tab 3 · 整体最优研发计划 ================= -->
+    <div class="panel" id="panel-plan">
+      <div class="drill"><b>个人 OS</b><span class="sep">›</span><span class="cur">整体最优研发计划</span><span class="sep">›</span>锚定真实日历 · 每阶段出口标准用账本/测试数据判</div>
+      <div class="sect"><h2>📋 四阶段主计划（军团线 · 唯一排期依据）</h2><small>原则：先证据后扩编；P0 不绿，M1 不开；组织层不依赖首跑结果，契约层可以先写</small></div>
+      <div class="stages">
+        <div class="stage now">
+          <div class="ph">P0 · 验证周</div>
+          <h3>让影子先开口</h3>
+          <div class="dt">10-19 ~ 10-25</div>
+          <ul>
+            <li>周一 17:10/17:25/17:35 三时点护航 + pre_observation 一键件</li>
+            <li>周二 QT-M0 开工会：QP-001/005 派工 + 总裁决 8 项速拍</li>
+            <li>周三~四 军团 M0 骨架：digital-legion 仓 + contracts v1 + Paperclip + 双 profile 壳</li>
+            <li>周五 17:45 AgentShadowWeekly 首判读</li>
+          </ul>
+          <div class="exit"><b>出口：</b>影子链连续 5 个交易日真实落账、0 人工干预、巡检全 PASS。</div>
+        </div>
+        <div class="stage">
+          <div class="ph">P1 · 军团上线</div>
+          <h3>组织跑起来</h3>
+          <div class="dt">10-26 ~ 11-01</div>
+          <ul>
+            <li>M1：Hermes cron 心跳接入军团（田丰 profile 拉 Kanban）；Paperclip 预算接口只读观察</li>
+            <li>M2：3 个影子上岗（趋势/动量/均值回归，strategy 第十一域现成三插件）</li>
+            <li>诸葛亮质询通道：OpenClaw + GPT6.0（零执行权三件套；跨境断链降级田丰自审）</li>
+            <li>合流件：QP-001 Schema 对齐 contracts v1（一次适配，不双轨）</li>
+          </ul>
+          <div class="exit"><b>出口：</b>Verdict 契约入情报库；每日一轮反向质询留痕。</div>
+        </div>
+        <div class="stage">
+          <div class="ph">P2 · 模拟盘</div>
+          <h3>控辩审全开</h3>
+          <div class="dt">11-02 ~ 11-15</div>
+          <ul>
+            <li>M3：swarm 模拟盘流水线（影子批量 → RiskGuard 验收 → 控辩审仲裁）</li>
+            <li>QP 第二波 QP-002~005 进影子流水线实盘模拟（真数据 + 零真钱）</li>
+            <li>RiskGuard 校准数据积累（盯盘 213 误杀样本 +0.65% vs 放行 -0.25% 再校准）</li>
+          </ul>
+          <div class="exit"><b>出口：</b>risk_passed 件首次进入执行组；校准样本量 ≥30。</div>
+        </div>
+        <div class="stage">
+          <div class="ph">P3 · 能力与灰度</div>
+          <h3>上生产</h3>
+          <div class="dt">11-16 ~ 11-30</div>
+          <ul>
+            <li>M4：CowAgent 三层记忆 + Khoj MCP + Qdrant 绩效档案接入</li>
+            <li>M5：RiskGuard 阈值校准完成 + 灰度（单策略小仓位）</li>
+            <li>迁移评估：军团控制面择机上 zeroq（20C62G，影子验证盈利逻辑后再议）</li>
+          </ul>
+          <div class="exit"><b>出口：</b>证据链完整率 100%；授权外交易 0；灰度策略可一键回退。</div>
+        </div>
+      </div>
+
+      <div class="sect" style="margin-top:16px"><h2>🔀 并行线与依赖</h2><small>五条线同时推进，互不阻塞；依赖在表中显式登记</small></div>
+      <table>
+        <thead><tr><th style="width:170px">并行线</th><th>本周动作</th><th style="width:150px">归属文档</th><th style="width:210px">硬依赖 / 门槛</th></tr></thead>
+        <tbody>
+          <tr><td><b>AP-M6 观察执行季</b>（agent_platform）</td><td>周一三时点；日期锚点 bug 10-20 独立生效；门3 假绿（e52f87a3）列 P1 必修——5 票全降级仍 PASS 靠人工四计数兜底</td><td><span class="mono">研发方案 10-17</span></td><td>门3 后必修 degraded 联动语义；测试夹具同步</td></tr>
+          <tr><td><b>QT-M0</b>（量化路线）</td><td>周二开工会；QP-001 Schema / QP-005 映射表开工；26 项路线图零实施起步</td><td><span class="mono">量化路线图 10-18</span></td><td>没有 Schema 不接入新 Agent；四模式隔离（BACKTEST/REPLAY/SHADOW/SIM_MARKET）</td></tr>
+          <tr><td><b>情报工厂</b></td><td>P0 基线与口径（五源 owner/真源/任务对照）；intel_link 显式边补齐</td><td><span class="mono">情报工厂规划</span></td><td>breaks=0 ≠ 无缺边；未登记边单列，不伪称血缘闭环</td></tr>
+          <tr><td><b>量化首页 H1-H4</b></td><td>H1 实况化（8791 /api/health 聚合探针 + 单屏标签页 + 聚合信号卡）→ H2 六环徽标 → H3 收编面板动态化 → H4 挂载联调</td><td><span class="mono">2026-10-19 首页计划</span></td><td>废除 no-cors 假绿；任一环缺源 fail-visible 标灰</td></tr>
+          <tr><td><b>OS 入口层（本 Demo）</b></td><td>概念演示稿 v1（总览）→ v2 板块下钻全貌（本次）→ 门户落位（/os 升级或新建）→ nav 真源 export_nav.py 挂入口 → 实况化复用 H1-a 探针 → 逐级下钻链接通</td><td><span class="mono">本计划 §二</span></td><td>演示兜底显著标注；单屏铁律；不建第二套审批器</td></tr>
+        </tbody>
+      </table>
+
+      <div class="sect" style="margin-top:16px"><h2>🧭 七条铁原则（研发思路）</h2><small>来自《最优解决方案与研发计划》§五，全局有效</small></div>
+      <div class="principles">
+        <div class="pr"><b><span class="no">01</span>组织与引擎分离</b>数字军团只做组织层；执行引擎复用 agent_platform/Hermes 现有件。新代码只允许出现在 contracts 和 Paperclip 壳。</div>
+        <div class="pr"><b><span class="no">02</span>策略是插件</b>QT 任何策略产物必须是 StrategyAgent 插件形态（注册表+超时包裹+影子账本），不建第二套策略运行时。</div>
+        <div class="pr"><b><span class="no">03</span>影子无执行权</b>执行组只认 risk_passed 件——账本、巡检、验收链已代码化，保持物理分离。</div>
+        <div class="pr"><b><span class="no">04</span>先证据后扩编</b>每个里程碑出口用账本/测试数据判，不用会议感觉判。P0 不绿，M1 不开。</div>
+        <div class="pr"><b><span class="no">05</span>模型异族容灾</b>军师府两把椅子必须不同家族模型；免费池永不进主链；本地 Ollama 承担蜂群，API 费用只花在决策点。</div>
+        <div class="pr"><b><span class="no">06</span>文档直落+快照纪律</b>新决策文档直落仓内 docs/；旧计划标 SUPERSEDED 不回写；每批施工先登记 kg_sync_task.log。</div>
+        <div class="pr"><b><span class="no">07</span>测试即合同</b>所有契约先有测试后有实现；954 绿基线只升不降；加判据必同步测试夹具（防假红镜像面）。</div>
+        <div class="pr" style="border-color:#4a4225"><b><span class="no">★</span>北极星</b>有多少交易决策能被真实数据、明确授权、完整证据和最终结果共同解释，并转化为下一轮更好的策略和 Agent。</div>
+      </div>
+
+      <div class="northstar">
+        <b>关键路径（不可跳过门槛）：</b>Schema → 事件账本+trace+幂等 → 授权单+风控阻断+虚拟账户 → 股票池+滚动回测 → 数据/情报接入+盯盘触发 → 投研授权+组合预算 → 单风格模拟执行+结算 → 反事实+日报 → 多 N Agent 路由 → 蒸馏样本+小模型影子 → <b>生产化治理；真实交易另立评审，不自动进入</b>。
+      </div>
+    </div>
+
+    <!-- ================= Tab 4 · 拍板与红线 ================= -->
+    <div class="panel" id="panel-decision">
+      <div class="drill"><b>个人 OS</b><span class="sep">›</span><span class="cur">拍板与红线</span><span class="sep">›</span>未决项不阻塞主链的按默认推进，阻塞项列会后速拍</div>
+      <div class="sect"><h2>⚖️ 待拍板清单（6 项）</h2><small>来源：三份研发计划 + 情报工厂规划 + P0-4 调查报告；每项附建议口径</small></div>
+      <table>
+        <thead><tr><th style="width:56px">#</th><th style="width:190px">事项</th><th>背景与影响</th><th style="width:300px">建议口径</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td><b>Ollama 并行参数</b></td><td>蜂群吞吐瓶颈：单队列多消费者后到者 60s 超时；NUM_PARALLEL=2 已被 tuned 配置预留未生效</td><td>设 OLLAMA_NUM_PARALLEL=2 + KEEP_ALIVE=2h，重启一次（建议今天 13:30 前）；校验唯一闸门 <span class="mono">start_tuned_ollama.py --status</span></td></tr>
+          <tr><td><b>2</b></td><td><b>爬虫 trust_env 护栏</b></td><td>代理曾致「假快+假 403/假 502」；计划任务链已免疫，代码级护栏未加</td><td>爬虫进程 trust_env=False 代码级强制 + 环境变量双保险；带/禁代理对照留痕</td></tr>
+          <tr><td><b>3</b></td><td><b>fund 类概念词语义</b></td><td>概念词上榜污染策略信号；norm_tickers 已分 kind=fund/stock_a/hk/index</td><td>白名单排除上榜 or kind=concept 标记后过滤——与下游统计口径一并定</td></tr>
+          <tr><td><b>4</b></td><td><b>org.json OPT1 线绑定</b></td><td>P0-4 调查报告结论：「死绑定」判定不成立；本质是双 key 双通道错配（379b… 资源包耗尽，静默降档 5.3-flash 是隐患）</td><td>方案 A（推荐）：模型名不改，补 binding_note + 统一 zhipu_key 优先，淘汰 379b… 兜底；方案 B 改动面大且未根治</td></tr>
+          <tr><td><b>5</b></td><td><b>情报工厂命名与首页归口</b></td><td>「情报工场」/数据运营指挥台/量化情报中枢不是同一个已验收产品；/intel 为现网入口</td><td>子项目名确认「情报工厂」；首页只聚合现有页可追踪入口，不新建第二套审批器</td></tr>
+          <tr><td><b>6</b></td><td><b>雪球子源登记</b></td><td>sources.yaml 仅列 xq_status/classified 两表；KG 注册表声明三个原始表；评论=帖子还是楼层回复存歧义</td><td>以 live 只读表清单 + manifest 对齐后再登记；不自增未证实来源（禁「血气旺」虚构）</td></tr>
+        </tbody>
+      </table>
+
+      <div class="split" style="margin-top:14px">
+        <div class="redline">
+          <h4>🚫 六条红线（不可逾越）</h4>
+          <ol>
+            <li><b>策略 Agent 不直接交易</b>：只输出候选观点；交易必须有投研授权 + 风控通过；影子只有建议权，执行组只认 risk_passed 件。</li>
+            <li><b>证据链 100%</b>：授权外交易 0、风控绕过 0、买卖链路可回放率 100%、关键事件静默缺失 0。</li>
+            <li><b>真实资金不在当前路线图</b>：证据完整、风险阻断、模拟连续运行、回放能力通过前，只做研究/回测/纸面/模拟；真实交易另行评审。</li>
+            <li><b>不虚构状态</b>：演示兜底显著标注；状态灯三态（ok/warn/unk）绝不假绿；产物存在 ≠ 源健康 ≠ 已上线。</li>
+            <li><b>前端单屏铁律</b>：固定单屏分区、禁下拉长图；总览 → 池 → 策略 → 标的 → 归因/退出逐级下钻。</li>
+            <li><b>文档三依据不重叠</b>：军团排期=最优解决方案；军团架构=总定稿 V2；QP 定义=量化路线图；旧计划标 SUPERSEDED 不回写。</li>
+          </ol>
+        </div>
+        <div class="mini">
+          <h4>🧯 未修 P1/P2 bug 台账 <span class="n">门3 后必修优先</span></h4>
+          <ol>
+            <li><b>门3 假绿</b>（e52f87a3）：degraded 联动只罚「解析失败没标降级」不罚「真降级」——5 票全降级仍 10/10 PASS；现靠人工四计数兜底</li>
+            <li><b>日期锚点 bug</b>：todays 取账本 latest 非今天；10-20 起独立生效，需观察</li>
+            <li><b>AgentWatchdog 0x8007010b</b>：fix_agentwatchdog.ps1 待管理员执行</li>
+            <li><b>CowAgent LLM API key</b>：stage12 卡点</li>
+            <li><b>雪球分类旧版本残留</b>：v1.6 口径遗留 20000×2 / 31000 等，待对方升 v1.7 后 --reticker 全量重算</li>
+            <li><b>ashare 指数 parquet 停 2026-04-01</b>：个股正常，指数线断链待补</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="panel" id="panel-board">
+      <div class="drill" id="b-drill"></div>
+      <div class="bhead" id="b-head"></div>
+      <div class="balert" id="b-alert" title="点击返回 OS 总览查看全部重大预警"></div>
+      <div class="bgrid">
+        <div>
+          <div class="sect"><h2>🧩 子项目全貌</h2><small>实证口径：文档规划 ≠ 代码存在 ≠ 磁盘产物 ≠ 已部署</small></div>
+          <table id="b-subs"></table>
+          <div class="sect" style="margin-top:16px"><h2>⤵ 再下一级 · 下钻出口</h2><small>从本板继续下钻（演示稿标注目标路由，门户落位后生效）</small></div>
+          <div class="dcards" id="b-drills"></div>
+        </div>
+        <div>
+          <div class="mini"><h4>🚦 端口探针 <span class="n">三态 · 不假绿</span></h4><div class="probes" id="b-probes"></div></div>
+          <div class="mini" style="margin-top:12px"><h4>🕐 近期要事 / 里程碑</h4><div class="tl" id="b-tl"></div></div>
+          <div class="mini" style="margin-top:12px" id="b-issues-box"><h4>🧯 问题台账</h4><ol id="b-issues"></ol></div>
+          <div class="mini" style="margin-top:12px" id="b-dec-box"><h4>⚖️ 板块口径 / 拍板</h4><ol id="b-dec"></ol></div>
+        </div>
+      </div>
+    </div>  </div>
+
+  <div class="tabbar" role="tablist" id="tabbar">
+    <button class="tab" role="tab" aria-selected="true" data-tab="today">今日</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="research">投研</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="trade">交易</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="intel">情报</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="legion">军团</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="system">系统</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="dash">大屏</button>
+  </div>
+
+  <div class="v4-foot">
+    <span>单屏 1440×900 · 分区内滚动</span>
+    <span>状态灯三态 · 探测不可信不假绿</span>
+    <span>胶囊路由经 8080 实测 · 未通者灰标「页面待接」</span>
+  </div>
+</div>
+
+<script>(function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ================= 板块全貌数据（配置面：新板块 = 加一条记录） ================= */
+  var BOARDS = {
+    quant: {
+      icon:'📈', name:'量化智能交易', en:'QUANT · SCANNER→SIGNAL', badge:['在产','b-live'], route:'/quant',
+      color:'rgba(227,179,65,.14);color:var(--accent)',
+      pos:'Scanner→Screener→Signal 三阶段流水线 + 策略插件注册表 + 模拟仓 + RiskGuard。盯盘只做观察/预警/候选触发，不把候选信号等同执行指令。',
+      kpis:['策略插件 15+','4 模拟账户','RiskGuard 4 规则','XGB+LightGBM 40+ 特征','首页 v3 已出'],
+      probes:[{id:'q-8091',url:'http://127.0.0.1:8091/api/health',label:'门户 8091'},
+              {id:'q-8791',url:'http://127.0.0.1:8791/api/health',label:'仪表盘 8791'},
+              {id:'q-11434',url:'http://127.0.0.1:11434/api/tags',label:'Ollama 11434'}],
+      subs:[
+        ['quant_backtest/','/quant · 8091 · 8791','在产','缠论 ChanlunScan · 九维 K33 · weak 产线 · 三线联动 · 雪球线；AI 层 Gateway 8098 + QuantAPI 8001 路由 Ollama/Claude/FastChat'],
+        ['strategy_layer','Signal/Registry/Adapter','在产','策略插件注册表：15+ 插件统一超时包裹 + 影子账本（策略是插件，不是框架）'],
+        ['k_stock / paper','Phase3 订单/状态机','在产','订单/经纪/状态机；4 模拟账户；四模式隔离 BACKTEST/REPLAY/SHADOW/SIM_MARKET'],
+        ['盯盘 quant_engine','双池 A/B','在产','池 A=上游多策略已选股票只盯买点/异动；池 B=用户指定股票；前端固定单屏逐级下钻'],
+        ['RiskGuard','四规则','校准中','市场质量/流动性冲击/事件风险/仓位集中度；误杀校准拍板会（周二）'],
+        ['基础设施','Redis 6379 · Qdrant 6333 · PG 5432','在产','Redis 短期记忆 + Qdrant 长期向量 + PG 审计日志']
+      ],
+      timeline:[
+        ['w','周二','QT-M0 开工会：QP-001 Schema / QP-005 映射表派工；总裁决 8 项速拍'],
+        ['r','周二','RiskGuard 误杀校准拍板会：critical 拦截 213 样本后验 +0.65% vs 放行 -0.25%'],
+        ['','本周','量化首页 H1 实况化（8791 /api/health 聚合探针 + 单屏 + 聚合信号卡）→ H2 六环徽标'],
+        ['','本周','H3 收编面板动态化 → H4 挂载联调（四批工位拆 3+2+1）']
+      ],
+      issues:[
+        ['P1','RiskGuard 误杀：critical 拦截样本后验 +0.65% 高于放行 -0.25%，四规则逻辑与阈值亟需重新校准'],
+        ['P1','quant.html href 属性/URL 注入：TDZ 与失联清旧数据已修（3f00f3a1/fb8a9949），安全回修待重开，真实浏览器 E2E 未完成'],
+        ['P2','ashare 指数 parquet 停 2026-04-01：个股正常，指数线断链待补']
+      ],
+      decisions:[
+        ['RiskGuard 校准口径','以盯盘 213 误杀样本 +0.65%/-0.25% 为再校准依据；校准样本量 ≥30 才进灰度'],
+        ['候选信号定性','策略命中≠持久成员≠模拟持仓≠组合订阅；当前无可验逐策略退出事件账本，自动退出默认关闭']
+      ],
+      drills:[
+        ['策略域','/quant/scanner','Scanner 扫描 → Screener 筛选 → Signal 信号，三阶段流水线'],
+        ['盯盘双池','/quant/watch','池 A 上游多策略 / 池 B 用户指定；只观察/预警/候选触发'],
+        ['模拟仓','/quant/paper','Phase3 订单/状态机；四模式隔离；零真实资金'],
+        ['仪表盘','/dashboard','8791 只读总览（302 外跳本机真实服务）']
+      ]
+    },
+    intel: {
+      icon:'📡', name:'情报工厂', en:'INTEL · SOURCE→EVIDENCE', badge:['在产','b-live'], route:'/intel',
+      color:'rgba(57,210,192,.14);color:var(--teal)',
+      pos:'五源采集（新闻/雪球/股吧/TDX/OSINT）→ JEV 研判 → KG 入图 → 血缘对账 → 授权分发。jev 情绪标注只是候选，须与行情互证。',
+      kpis:['KG 节点 1,569,799','雪球 classified 5,586','raw 23,474','tushare 主源 522ms','双实例 w1/w2'],
+      probes:[{id:'i-8091',url:'http://127.0.0.1:8091/api/health',label:'门户 8091'},
+              {id:'i-8787',url:'http://127.0.0.1:8787/',label:'Hermes 8787'},
+              {id:'i-11434',url:'http://127.0.0.1:11434/api/tags',label:'Ollama 11434'}],
+      subs:[
+        ['news_collector/','新闻 + JEV','在产','新闻采集与情绪研判；日报产出入库'],
+        ['jev-eval/','四件套 9101-9104','在产','JEV 评估四件套；情绪标注只是候选（10-13 标利空实涨 3.72% 判例）'],
+        ['雪球爬虫','xq_status / classified','在产','timeline 游标采集已修（f4fdbea）；v1.6-b2 已堵「整数关口」形（b270b6bc）'],
+        ['股吧 / TDX 资讯','行情替代源','在产','tushare 主源 522ms > akshare 备 > 本地 TDX（.day 空待盘后下载）'],
+        ['osint_video/','链接/视频 OSINT','在产','媒体留存与创作成片库边界对齐'],
+        ['zerobound-kg/','Neo4j + PG 血缘三表','在产','neo4j-kg 容器；离卷备份 321MB，RESTORE DRILL PASS；PG5442 血缘三表']
+      ],
+      timeline:[
+        ['','每天 07:40','数据健康复盘 automation（xq_data_review）：freshness + label_drift 探针'],
+        ['','本周','P0 基线与口径：五源 owner/原文真源对账；intel_link 显式边补齐（B2 未闭合）'],
+        ['','本周','norm_tickers 按 kind 过滤（stock_a/hk/index/fund）切下游统计与门户 top_codes'],
+        ['w','周五','AgentShadowEvalWeekly 与情报线数据新鲜度联动观察']
+      ],
+      issues:[
+        ['P0','近期线 2024-2026 = 0 帖：帖窗 2012-06-28~2023-11-11，近期线是最大缺口'],
+        ['P1','2013-2018 标注 0%：20.3k 未标；label_drift 广告口径 3%→9% 漂移实锤（MIN_SAMPLES=30 排除小样本）'],
+        ['P1','雪球 v1.6 旧口径残留 20000×2 / 31000 等：待对方升 v1.7 后 --reticker 全量重算 → 再重跑 evidence 扫描'],
+        ['P2','行情域整域拉黑（快代理无效）；雪球子源登记三表 manifest 待对齐（拍板项 6）']
+      ],
+      decisions:[
+        ['fund 类概念词','白名单排除上榜 vs kind=concept 标记后过滤——与下游统计口径一并定（拍板项 3）'],
+        ['爬虫 trust_env','代码级禁代理注入 + 环境变量双保险；带/禁代理对照留痕（拍板项 2）']
+      ],
+      drills:[
+        ['五源采集','/intel/sources','新闻/雪球/股吧/TDX/OSINT owner + 原文真源'],
+        ['JEV 研判','/intel/jev','情绪标注候选 → 与行情互证 → 才成证据'],
+        ['KG 入图','/kg','Neo4j 156.98 万节点；实体血缘卡 v2'],
+        ['血缘对账','/lineage.html','PG5442 三表；血缘=关联可证，传导=血缘+时间线']
+      ]
+    },
+    legion: {
+      icon:'🛡', name:'数字军团', en:'LEGION · ORG→VERDICT', badge:['M0 开工','b-run'], route:'/legion',
+      color:'rgba(188,140,255,.14);color:var(--purple)',
+      pos:'Paperclip 战略层 + 五部门编制 + 军师府；影子军团 = agent_platform strategy 系现成底座。三铁律：策略是插件 / 影子只有建议权 / 研究执行风控物理分离。',
+      kpis:['954 测试绿','影子链 5 交易日','ECC 68 人','五部门','contracts v1 待建'],
+      probes:[{id:'l-8787',url:'http://127.0.0.1:8787/',label:'Hermes 8787'},
+              {id:'l-8791',url:'http://127.0.0.1:8791/api/health',label:'仪表盘 8791'}],
+      subs:[
+        ['digital-legion/','contracts 四协议','M0 开工','v1 待建：QP-001 Schema 对齐后一次适配，不双轨'],
+        ['Paperclip','战略层 Docker','待起','预算接口只读观察；不上执行链'],
+        ['军师府','田丰 / 诸葛亮','壳就绪','田丰（Hermes）管执行；诸葛亮（OpenClaw+GPT6.0）反向质询零执行权；两把椅子必须不同家族模型'],
+        ['情报部','策略影子军团','在产','每个 QT 策略产物定义为 StrategyAgent 插件'],
+        ['agent_platform/','M0→M6','在产','11 域 wiring · 954 测试 · 四门制收官，M6 观察执行季']
+      ],
+      timeline:[
+        ['','周三~四','M0 骨架：digital-legion 仓 + contracts v1 + Paperclip 容器 + 双 profile 壳'],
+        ['r','周五 17:45','AgentShadowWeekly 首判读：影子链真实数据第二点'],
+        ['','10-26 起','M1 心跳：Hermes cron 接入军团；M2 三影子上岗（趋势/动量/均值回归）']
+      ],
+      issues:[
+        ['P1','W16 三查脚本假绿（b8cf37c7）：SKIPPED 与实查数 0 均判 PASS；须补 --scan-dir 必填 + INCONCLUSIVE 三态 + --self-test 阳性对照才可收口'],
+        ['P2','诸葛亮落位归 P1 军团上线周；跨境断链降级田丰自审']
+      ],
+      decisions:[
+        ['合流点','QT 策略产物 = StrategyAgent 插件；QT 出策略、影子出建议、执行组只认 risk_passed'],
+        ['组织层边界','只做组织层；执行引擎复用 agent_platform/Hermes；新代码只允许出现在 contracts 和 Paperclip 壳']
+      ],
+      drills:[
+        ['军团指挥台','/legion','五部门编制 + 编制图 + 任务流'],
+        ['组织部','/org','org.json 编制；OPT1 线绑定方案 A（拍板项 4）'],
+        ['军校','/academy','Agent 培训与纪律'],
+        ['影子账本','agent_platform','strategy 第十一域现成三插件']
+      ]
+    },
+    hermes: {
+      icon:'🦸', name:'Hermes 助手', en:'HERMES · SPINE OF OS', badge:['在产','b-live'], route:'/hermes/',
+      color:'rgba(88,166,255,.14);color:var(--blue)',
+      pos:'军团脊柱：WebUI 8787 / Kanban / Gateway / cron / 记忆 / branch 沙盘；本地 qwen3.5:9b（ctx 65536 tuned，stream:false 必留）。',
+      kpis:['MCP 18 工具','8787 WebUI','qwen3.5:9b ctx 65536','8791 仪表盘','零 LLM 纪律'],
+      probes:[{id:'h-8787',url:'http://127.0.0.1:8787/',label:'Hermes 8787'},
+              {id:'h-8791',url:'http://127.0.0.1:8791/api/health',label:'仪表盘 8791'},
+              {id:'h-11434',url:'http://127.0.0.1:11434/api/tags',label:'Ollama 11434'}],
+      subs:[
+        ['Hermes/','WebUI 8787','在产','Kanban / Gateway / cron / 记忆 / branch 沙盘'],
+        ['MCP 层','18 工具','在产','工具面统一出口；8791 仪表盘数据源'],
+        ['仪表盘 8791','/api/kg/lineage','在产','DashboardGuard 计划任务保活（830838d）；旧 KgDataDashboard 待裁决停用'],
+        ['血缘三表','PG5442','在产','quant-pg 容器；pointer/run/catalog 静态账本'],
+        ['CowAgent','三层中文记忆','M4 接入','stage12 卡点 = LLM API key'],
+        ['Khoj MCP','知识检索','M4 接入','与 CowAgent/Qdrant 绩效档案同批']
+      ],
+      timeline:[
+        ['r','周一 17:10 后','三时点护航：pre_observation 一键件（d52a3d32）'],
+        ['','本周','M4 能力层接入设计：CowAgent/Khoj/Qdrant 绩效档案'],
+        ['','本周','org.json OPT1 线：方案 A 补 binding_note 最小改动（拍板项 4）']
+      ],
+      issues:[
+        ['P1','CowAgent LLM API key：zeroq stage12 卡点'],
+        ['P1','org.json 双 key 错配：379b… 资源包耗尽会静默降档 5.3-flash；方案 A 统一 zhipu_key 优先'],
+        ['P2','LLM 网关 192.168.5.155:8081 本机不可达（无路由，勿再排密钥）']
+      ],
+      decisions:[
+        ['模型纪律','stream:false 必留；tuned 校验唯一闸门 = start_tuned_ollama.py --status'],
+        ['容灾','军师府两把椅子不同家族模型；免费池永不进主链']
+      ],
+      drills:[
+        ['Hermes 对话','/hermes/','WebUI 8787 · 田丰 profile'],
+        ['任务台','/mission','Kanban / cron 心跳'],
+        ['控制台','/console','MCP 18 工具 + 模型路由'],
+        ['branch 沙盘','/hermes/branch','分支沙盘推演']
+      ]
+    },
+    creator: {
+      icon:'✍️', name:'内容创作', en:'CREATOR · DRAFT→VIDEO', badge:['在产','b-live'], route:'/creator',
+      color:'rgba(240,199,138,.14);color:#f0c78a',
+      pos:'选题→成稿→发布流水线：公众号草稿库 + 短视频成片库 + 「录一段」速录通道。',
+      kpis:['草稿 3 篇在库','成片库','速录通道','drafts/index.json 账本'],
+      probes:[],
+      subs:[
+        ['gzh/','公众号','在产','gzh_writer + preview.html；草稿登记账本 drafts/index.json'],
+        ['video/','短视频 pipeline','在产','成片库；入库规范与 OSINT 媒体留存边界对齐'],
+        ['「录一段」','速录通道','在产','语音速录 → 文字素材']
+      ],
+      timeline:[
+        ['','本周','选题→成稿流水线维持；成片库入库规范立项']
+      ],
+      issues:[
+        ['P2','成片库入库规范待定：与情报板块 OSINT 媒体留存边界对齐']
+      ],
+      decisions:[
+        ['边界','创作成片与 OSINT 取证媒体分流留存，不混库']
+      ],
+      drills:[
+        ['选题库','/creator/topics','线索 → 选题'],
+        ['草稿工作台','/creator/draft','成稿 + preview'],
+        ['成片库','/creator/video','短视频 pipeline']
+      ]
+    },
+    ops: {
+      icon:'⚙️', name:'系统运维', en:'OPS · TASKS→HEALTH', badge:['在产','b-live'], route:'/ops',
+      color:'rgba(63,185,80,.14);color:var(--down)',
+      pos:'计划任务矩阵 + 门户 + 备份链 + 生产服务器 zeroq + DashboardGuard；对外只开 80/443，内部服务绑 127.0.0.1。',
+      kpis:['53 计划任务','zeroq 55 PASS','备份链 B4','stage11 已落地','8091 API'],
+      probes:[{id:'o-8091',url:'http://127.0.0.1:8091/api/health',label:'门户 8091'},
+              {id:'o-8791',url:'http://127.0.0.1:8791/api/health',label:'仪表盘 8791'}],
+      subs:[
+        ['portal/','8091 + nginx 8080','在产','20+ 页面；nav 真源 = export_nav.py 重生成；api_unified 60s 缓存'],
+        ['ops/','health_check / R1 总线','在产','计划任务 Execute 非 shell：重定向不生效，巡检自写日志看字节增长'],
+        ['backups/','B4 备份链','在产','Neo4j 离卷备份 321MB；RESTORE DRILL PASS'],
+        ['zeroq','10.205.0.118','在产','CentOS7.4 20C62G；PG15 + portal 8091 + nginx 80；stage11 加固已落地'],
+        ['DashboardGuard','保 8791','在产','计划任务上线（830838d）；旧 KgDataDashboard 待裁决停用']
+      ],
+      timeline:[
+        ['','本周','存量收编第 1 批：docs 31 + gzh 6 零风险批次'],
+        ['w','待管理员','AgentWatchdog 0x8007010b：fix_agentwatchdog.ps1 待跑'],
+        ['','门3 后','K-RESTART 三连纪律：Stop→flag→Start，flag 残留须手清']
+      ],
+      issues:[
+        ['P1','AgentWatchdog 0x8007010b：fix 脚本待管理员执行'],
+        ['P1','zeroq stage12 卡点 = CowAgent LLM key'],
+        ['P1','8791 反复宕机（10-19 05:29-05:36 实证）：DashboardGuard 05:30:27 自动重启成功（health-ok），新实例约 4 分钟内无声死亡（无 traceback = 外部信号杀掉，疑沙箱 job-kill 收割 detached 子进程）；已升级老田，勿从代理会话手动拉起'],
+        ['P2','C:\\aios\\portal 为 junction；旧 KgDataDashboard 停用待裁决']
+      ],
+      decisions:[
+        ['写权限矩阵','S4U 须提权；InteractiveToken 当前用户可注册；触发器 Repetition Duration 过期=静默停摆'],
+        ['失联判据','先查换网，再查服务']
+      ],
+      drills:[
+        ['OS 控制台','/ops','计划任务矩阵 + 服务健康'],
+        ['系统健康','/sys-health','各服务探针三态'],
+        ['数据仪表盘','/dashboard','8791 只读总览（302 外跳；05:36 实证目标宕机中，探针落 unk 不假绿）'],
+        ['审计','/audit','门禁/巡检留痕'],
+        ['生产服务器','zeroq 远程','SSH paramiko remote.py']
+      ]
+    },
+    dev: {
+      icon:'🔬', name:'研发者', en:'DEV · CODE→MODEL', badge:['预留','b-plan'], route:'/dev',
+      color:'rgba(170,193,220,.12);color:#aac1dc',
+      pos:'多 Agent 并行开发工位 + worktree 隔离 + 三守卫合并；Dify/WebUI 在线基建规划位。',
+      kpis:['工位 4 个','worktree 隔离','954 基线只升不降','互斥协议'],
+      probes:[],
+      subs:[
+        ['并行工位','scanner-dev 等','在产','共享仓库 commit 非原子：untracked 当日 commit + 路径错开'],
+        ['worktree 隔离','三守卫合并','在产','测试红先查对方 mtime；不删对方文件'],
+        ['Dify/WebUI','在线基建','规划位','本地模型 IDE 适配']
+      ],
+      timeline:[
+        ['','本周','量化首页四批工位并行（H1-H4 拆 3+2+1）']
+      ],
+      issues:[
+        ['P2','测试污染判例：全局 patch time.sleep 会引爆别处 daemon 僵尸线程（千万级假红 + 整批 SIGTERM）'],
+        ['P2','加判据必同步测试夹具：夹具缺件会把「夹具缺件」误报成「产品坏了」']
+      ],
+      decisions:[
+        ['合并纪律','测试即合同：954 绿基线只升不降；pytest 用系统 Python311 裸 -q']
+      ],
+      drills:[
+        ['工位板','/dev','并行任务分派'],
+        ['IDE','/ide','在线基建规划位'],
+        ['沙箱','/sandbox','branch 沙盘']
+      ]
+    },
+    distill: {
+      icon:'🧪', name:'蒸馏与小模型', en:'DISTILL · DATA→MODEL', badge:['在产','b-live'], route:'/model_admin',
+      color:'rgba(57,210,192,.12);color:var(--teal)',
+      pos:'数据结构化铁律落地：数据→结构化→图库→切最小颗粒（一个科目×一个报告期×一个金额）→ 拼接即查询；蒸馏样本可回指原始证据。',
+      kpis:['ctx 65536','KV q8_0','par=2 待生效','keep 30m','nomic-embed-text'],
+      probes:[{id:'d-11434',url:'http://127.0.0.1:11434/api/tags',label:'Ollama 11434'}],
+      subs:[
+        ['蒸馏/','训练路线/样本','在产','样本必须可回指原始证据；最小颗粒切片后台自动切'],
+        ['ollama_service/','qwen3.5 9b/4b + bge-m3','在产','tuned：ctx 65536 / KV q8_0 / par=2 / keep 30m'],
+        ['小模型影子路由','QT-M8 / P2-06','规划','上线前必须影子对照，禁直替生产 Agent'],
+        ['本地模型','nomic-embed-text · qwen2.5:7b','在产','VS Code + 本地 Ollama 工作流']
+      ],
+      timeline:[
+        ['w','今天 13:30 前','Ollama 并行参数拍板：NUM_PARALLEL=2 + KEEP_ALIVE=2h 重启一次（拍板项 1）'],
+        ['','本周','蒸馏样本回指原始证据流程设计']
+      ],
+      issues:[
+        ['P2','OLLAMA_NUM_PARALLEL=2 已被 tuned 预留未生效（par=2）'],
+        ['P2','App/CLI 抢 11434 互踢；桌面 server.log 是旧的（判例：config 行在日志开头）']
+      ],
+      decisions:[
+        ['校验唯一闸门','start_tuned_ollama.py --status（/api/ps 实测 ctx 为真相）']
+      ],
+      drills:[
+        ['模型管理','/model_admin','模型清单 + tuned 状态'],
+        ['蒸馏样本','/distill','样本 → 回指证据'],
+        ['影子对照','/distill/shadow','小模型 vs 生产 Agent']
+      ]
+    },
+    learn: {
+      icon:'📚', name:'学习成长', en:'LEARN · INPUT→ASSET', badge:['在产','b-live'], route:'/learn',
+      color:'rgba(88,166,255,.12);color:var(--blue)',
+      pos:'个人知识资产板：缠论/CZSC 量化方法课件、开源 AI 助理架构雷达、量化方法库、产教协同材料。学习产物必须可回指原始证据（同数据铁律），与生产代码边界清晰。',
+      kpis:['缠论学习报告','CZSC 评估','4 个开源助理对标','联合实验室材料','本地 Ollama 工作流'],
+      probes:[{id:'n-11434',url:'http://127.0.0.1:11434/api/tags',label:'Ollama 11434'}],
+      subs:[
+        ['chanlun-learn-report/','缠论课件','在产','缠论学习报告（交互 html + js 课件）'],
+        ['czsc-eval/','CZSC 评估','在产','czsc 工具链评估报告'],
+        ['开源助理雷达','Hermes/OpenClaw/CowAgent/Khoj','持续','社区高 star 项目架构与定位对比；目标=集成超级助理，对外统一口号'],
+        ['量化方法库','XGB+LightGBM/PCA','在产','40+ 特征工程与回测方法笔记；与 quant 板块联动'],
+        ['联合实验室','北理工边缘计算算力','进行中','共建材料；对外口径剔除军方背景；先试点后扩产'],
+        ['本地模型工作流','VS Code + Ollama','在产','nomic-embed-text · qwen2.5:7b 学习/验证环境']
+      ],
+      timeline:[
+        ['','持续','开源助理雷达周更：新 release / 架构变化对比留痕'],
+        ['','本周','缠论课件与 quant 缠论产线（ChanlunScan）互相回指'],
+        ['','排期中','联合实验室材料按「产业落地」口径维护（非创业叙事）']
+      ],
+      issues:[
+        ['P2','学习产物与生产代码边界：课件/笔记禁混入生产仓，走 docs 或独立目录'],
+        ['P2','开源对标结论须留痕：只纳已验证结论，禁「血气旺」式虚构']
+      ],
+      decisions:[
+        ['知识资产纪律','学习产物可回指原始证据；最小颗粒化后进图库（同蒸馏铁律）'],
+        ['对口径','对外传播统一口号，不多线 slogan']
+      ],
+      drills:[
+        ['缠论课件','/chanlun-learn-report/chanlun-learn-report.html','交互课件 + 学习报告（已入 webroot）'],
+        ['CZSC 评估','/czsc-eval/czsc-p0-eval.html','P0 评估 + Phase1 计划/报告'],
+        ['助理雷达','/radar','四大开源助理架构对比（专页已上线）'],
+        ['方法库','/methods','特征工程/回测方法笔记（专页已上线）']
+      ]
+    },
+    more: {
+      icon:'➕', name:'更多领域', en:'MORE · RESERVED', badge:['预留','b-wait'], route:'docs/standards',
+      color:'rgba(139,148,158,.12);color:var(--sub)',
+      pos:'扩展预留位：新板块 = 门户注册一张入口卡 + nav 真源 export_nav.py 重生成，前端零改动（同策略插件纪律）。',
+      kpis:['配置面增减','三源纪律','只读投影'],
+      probes:[],
+      subs:[
+        ['扩展规范','docs/standards','规范','领域卡三源一致（文档/代码/产物）才标在产；只读投影不进审批链']
+      ],
+      timeline:[
+        ['','随时','新领域按规范登记，不新建第二套审批器']
+      ],
+      issues:[],
+      decisions:[
+        ['命名归口','子项目名先确认再登记（情报工厂命名拍板项 5）']
+      ],
+      drills:[
+        ['领域扩展规范','docs/standards','入口卡 + nav 真源']
+      ]
+    }
+  };
+
+  /* ================= 重大预警（置顶 · 不等拍板） ================= */
+  var ALERTS = [
+    ['p0','今天 16:40→17:35','门3 外部触发链首跑','16:40 自动预检 → 17:10 AgentShadowDaily 影子首跑 → 17:25 检查点 → 17:35 SEND_OK。','不要手动跑 AgentShadowDaily；17:10 后跑 pre_observation 一键件（d52a3d32）'],
+    ['p0','今天','RiskGuard 误杀实锤','critical 拦截 213 样本后验 +0.65% vs 放行样本 -0.25%，四规则方向反了。','周二校准拍板会；校准样本量 ≥30 才进灰度'],
+    ['p0','本周','情报近期线缺口','雪球帖窗止于 2023-11-11，2024-2026 = 0 帖，策略信号缺近期舆情支撑。','随 07:40 数据复盘跟踪；补源方案排队列'],
+    ['p1','门3 后必修','门3 假绿未修（e52f87a3）','degraded 联动只罚「解析失败没标降级」不罚「真降级」——5 票全降级仍 10/10 PASS。','现靠人工四计数兜底；门3 后必修联动语义'],
+    ['p1','今天 13:30 前','Ollama 并行参数窗口','NUM_PARALLEL=2 + KEEP_ALIVE=2h 需重启一次；过期顺延但不阻塞 17:10 观察点。','校验唯一闸门 start_tuned_ollama.py --status'],
+    ['p1','待处置','zeroq stage12 卡点','CowAgent LLM API key 未配；AgentWatchdog 0x8007010b fix 脚本待管理员跑。','stage11 加固已落地；stage12 解锁依赖 key']
+  ];
+  var ALERT_STAT = { p0: 0, p1: 0 };
+  function renderAlerts(){
+    ALERT_STAT.p0 = ALERTS.filter(function(a){ return a[0] === 'p0'; }).length;
+    ALERT_STAT.p1 = ALERTS.filter(function(a){ return a[0] === 'p1'; }).length;
+    $('alertgrid').innerHTML = ALERTS.map(function(a){
+      var lv = a[0] === 'p0' ? 'p0' : 'p1'; /* class 白名单：非 p0 一律归 p1（统计口径同） */
+      return '<div class="alert"><span class="lv ' + lv + '">' + (lv === 'p0' ? 'P0' : 'P1') + '</span>' +
+        '<span class="tx"><b>' + esc(a[1]) + ' · ' + esc(a[2]) + '</b>' + esc(a[3]) + '<br><span class="act">▸ ' + esc(a[4]) + '</span></span></div>';
+    }).join('');
+    $('az-count').textContent = 'P0×' + ALERT_STAT.p0 + ' · P1×' + ALERT_STAT.p1 + ' · 共 ' + ALERTS.length + ' 项';
+    $('alert-count').textContent = ALERTS.length;
+  }
+
+  /* ================= 时钟 ================= */
+  function tick(){
+    var d = new Date();
+    var p = function(n){ return (n < 10 ? '0' : '') + n; };
+    $('clock').textContent =
+      d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ================= 标签切换 ================= */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = { today: 'panel-today', research: 'panel-research', trade: 'panel-trade', intel: 'panel-intel', legion: 'panel-legion', system: 'panel-system', dash: 'panel-dash', boards: 'panel-boards', plan: 'panel-plan', decision: 'panel-decision' };
+  function showTab(name){
+    tabs.forEach(function(x){ x.setAttribute('aria-selected', x.dataset.tab === name ? 'true' : 'false'); });
+    Object.keys(panels).forEach(function(k){ $(panels[k]).classList.toggle('active', k === name); });
+    $('panel-board').classList.remove('active');
+    $('tabbar').classList.remove('hidden');
+  }
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){ showTab(t.dataset.tab); });
+  });
+
+  /* ================= 探针（三态：ok=真响应 / warn=非2xx / unk=不可达，绝不假绿） ================= */
+  function probe(id, url){
+    var el = $(id);
+    if (!el) return;
+    if (!url) { el.className = 'dot unk'; el.title = '远端或不探测'; return; }
+    var ctl = new AbortController();
+    var timer = setTimeout(function(){ ctl.abort(); }, 1500);
+    fetch(url, { signal: ctl.signal, cache: 'no-store', mode: 'cors' })
+      .then(function(r){ clearTimeout(timer); el.className = 'dot ' + (r.ok ? 'ok' : 'warn'); el.title = 'HTTP ' + r.status; })
+      .catch(function(){ clearTimeout(timer); el.className = 'dot unk'; el.title = '探测不可达（跨域/未启动）→ 未探测态'; });
+  }
+
+  /* ---- 门户落位版：8091/8787/8097 走同源 /api/health 聚合拿真实状态；
+         其余（8791/11434）跨域直连，不可达 → unk 诚实降级，绝不假绿 ---- */
+  var HEALTH_MAP = { 'p-8091':'portal api', 'p-8787':'hermes', 'p-8097':'push hub',
+                     'q-8091':'portal api', 'i-8091':'portal api', 'i-8787':'hermes',
+                     'h-8787':'hermes', 'l-8787':'hermes', 'o-8091':'portal api' };
+  /* S5/S4 收口（2026-10-19）：8791 与 11434 不在 8091 /api/health 覆盖内，
+     且真实端点与 8091 口径不同（8791=/health；11434=/api/tags）——走同源代理路由探测：
+     /probe/dash（nginx → 8791/health）与 /ollama/api/tags（nginx ^~ /ollama/ → 11434）。
+     探测不可达 → unk 诚实降级，绝不假绿。 */
+  var PROBE_SPECIAL = {
+    'p-8791': { url:'/probe/dash',   name:'kg_data_dashboard' },
+    'o-8791': { url:'/probe/dash',   name:'kg_data_dashboard' },
+    'p-11434':{ url:'/ollama/api/tags', name:'ollama' },
+    'd-11434':{ url:'/ollama/api/tags', name:'ollama' },
+    'n-11434':{ url:'/ollama/api/tags', name:'ollama' }
+  };
+  function probeSameOrigin(id, path, name){
+    var el = document.getElementById(id); if (!el) return;
+    /* 超时中断（2026-10-19 审计修复）：原无 AbortController，上游挂起时 pending 永不 settle；
+       8791 今日两次宕机实证——上游拒连时 nginx 快速 502，但慢死场景必须自保 */
+    var ctl = new AbortController();
+    var timer = setTimeout(function(){ ctl.abort(); }, 2500);
+    fetch(path, { signal: ctl.signal, cache:'no-store' }).then(function(r){
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json().catch(function(){ return { ok:true }; }); /* 11434 /api/tags 无 ok 字段，200 即在产 */
+    }).then(function(d){
+      clearTimeout(timer);
+      if (d && d.ok === false) throw new Error('svc not ok');
+      el.className = 'dot ok'; el.title = name + ' OK（同源 ' + path + '）';
+    }).catch(function(){
+      clearTimeout(timer);
+      el.className = 'dot unk'; el.title = '同源探测不可达 → 未探测态（不假绿）';
+    });
+  }
+  /* HEALTH_CACHE 短 TTL + 失败不粘（2026-10-19 审计修复）：
+     原版 Promise 永久复用且失败(null)也缓存——服务状态变化（8791 今日宕了又起）
+     在页面生命周期内灯不刷新；/api/health 短暂抖动后恢复也永远 unk。 */
+  var HEALTH_CACHE = null, HEALTH_TS = 0, HEALTH_TTL = 15000;
+  function fetchHealth(){
+    var now = Date.now();
+    if (HEALTH_CACHE && now - HEALTH_TS < HEALTH_TTL) return HEALTH_CACHE;
+    HEALTH_TS = now;
+    HEALTH_CACHE = fetch('/api/health', { cache: 'no-store' }).then(function(r){ return r.json(); })
+      .catch(function(){ HEALTH_CACHE = null; HEALTH_TS = 0; return null; });
+    return HEALTH_CACHE;
+  }
+  function probeViaHealth(id, svcName){
+    var el = document.getElementById(id); if (!el) return;
+    fetchHealth().then(function(d){
+      if (!d) { el.className = 'dot unk'; el.title = '/api/health 不可达 → 未探测态'; return; }
+      var s = null; (d.services || []).forEach(function(x){ if (x.name === svcName) s = x; });
+      if (s && s.ok) { el.className = 'dot ok'; el.title = svcName + ' OK · ' + s.ms + 'ms（同源 /api/health）'; }
+      else if (s) { el.className = 'dot warn'; el.title = svcName + ' 在线但状态异常'; }
+      else { el.className = 'dot unk'; el.title = 'health 未覆盖该服务 → 未探测态'; }
+    });
+  }
+  function probeAny(id, url){
+    if (PROBE_SPECIAL[id]) { probeSameOrigin(id, PROBE_SPECIAL[id].url, PROBE_SPECIAL[id].name); return; }
+    if (HEALTH_MAP[id]) { probeViaHealth(id, HEALTH_MAP[id]); } else { probe(id, url); }
+  }
+  [{id:'p-8091',url:'http://127.0.0.1:8091/api/health'},{id:'p-8791',url:'http://127.0.0.1:8791/api/health'},
+   {id:'p-8787',url:'http://127.0.0.1:8787/'},{id:'p-8097',url:'http://127.0.0.1:8097/'},
+   {id:'p-11434',url:'http://127.0.0.1:11434/api/tags'},{id:'p-zeroq',url:null}].forEach(function(p){ probeAny(p.id, p.url); });
+
+  /* ================= 板块全貌渲染 ================= */
+  /* esc：真 HTML 转义（2026-10-19 审计修复：原为恒等函数 String(s)，全部插值点实际裸奔——
+     当前配置是页面内静态数据未酿险，但函数名撒谎会让后人放心接入动态数据，必须根治） */
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  /* class/style 上下文白名单（2026-10-19 审计修复）：esc 管不了 class 与 style——
+     class 注入=冒名样式；style 注入=CSS 逃逸（引号闭合在 HTML 属性里会被实体解码，
+     必须值级校验而非转义）。badge/tl/lv 用类名白名单，color 用 rgba() 格式校验。 */
+  var BADGE_CLS = { 'b-live':1, 'b-run':1, 'b-plan':1, 'b-wait':1 };
+  function badgeCls(c){ return BADGE_CLS[c] ? c : 'b-run'; }
+  var TL_CLS = { '':'tl-item', 'w':'tl-item w', 'r':'tl-item r' };
+  function tlCls(c){ return TL_CLS[c] || 'tl-item'; }
+  var COLOR_RE = /^rgba?\([0-9.,\s%]+\)$/;
+  function safeColor(c){ return COLOR_RE.test(String(c || '')) ? c : '#8b949e'; }
+  /* 下钻目标可点判定：/ 开头且非协议相对 URL（//evil.com 也以 / 开头，须排除）；
+     其余（zeroq 远程 / 127.0.0.1:8791 / javascript: 等）返回 null → 展示卡不装链接 */
+  function drillTarget(d){
+    return (d && d[1] && d[1].charAt(0) === '/' && d[1].charAt(1) !== '/') ? d[1] : null;
+  }
+  function renderBoard(id){
+    var b = BOARDS[id];
+    if (!b) { location.hash = '#/today'; return; }
+    $('b-drill').innerHTML = '<b>个人 OS</b><span class="sep">›</span><span style="color:var(--blue)">' + esc(b.name) +
+      '</span><span class="sep">›</span><span class="cur">板块全貌</span><span class="sep">›</span>子项目 / 域 / 策略 / 标的（出口卡 = 真实路由，可点直达）';
+    $('b-head').innerHTML =
+      '<div class="row1"><span class="bicon" style="background:' + safeColor(b.color) + '">' + esc(b.icon) + '</span>' +
+      '<div><h2>' + esc(b.name) + ' <span class="badge ' + badgeCls(b.badge[1]) + '" style="margin-left:8px;vertical-align:4px">' + b.badge[0] + '</span></h2>' +
+      '<span class="en">' + esc(b.en) + ' · 目标路由 ' + esc(b.route) + '</span></div>' +
+      '<button class="back" id="b-back">← 返回 OS 总览（Esc）</button></div>' +
+      '<p class="pos">' + esc(b.pos) + '</p>' +
+      '<div class="kpis">' + b.kpis.map(function(k){ return '<i>' + esc(k) + '</i>'; }).join('') + '</div>';
+    $('b-back').addEventListener('click', function(){ location.hash = '#/today'; });
+    $('b-alert').innerHTML = '<span class="n">🚨 ' + ALERTS.length + '</span><span>重大预警置顶待关注（P0×' + ALERT_STAT.p0 + ' · P1×' + ALERT_STAT.p1 + '）——<b style="color:var(--blue)">点击返回 OS 总览查看全部</b></span>';
+
+    var subs = '<thead><tr><th style="width:150px">子项目 / 仓库</th><th style="width:150px">端口 / 入口</th><th style="width:64px">状态</th><th>说明（实证口径）</th></tr></thead><tbody>' +
+      b.subs.map(function(s){
+        var st = s[2] === '在产' ? '<span class="badge b-live">在产</span>' :
+                 s[2] === '校准中' ? '<span class="badge b-run">校准中</span>' :
+                 s[2] === '规划' ? '<span class="badge b-plan">规划</span>' :
+                 s[2] === '规划位' ? '<span class="badge b-plan">规划位</span>' :
+                 s[2] === '待起' ? '<span class="badge b-wait">待起</span>' :
+                 s[2] === '壳就绪' ? '<span class="badge b-wait">壳就绪</span>' :
+                 '<span class="badge b-run">' + esc(s[2]) + '</span>';
+        return '<tr><td><b>' + esc(s[0]) + '</b></td><td><span class="mono">' + esc(s[1]) + '</span></td><td>' + st + '</td><td>' + esc(s[3]) + '</td></tr>';
+      }).join('') + '</tbody>';
+    $('b-subs').innerHTML = subs;
+
+    $('b-drills').innerHTML = b.drills.map(function(d){
+      /* S5 收口：/ 开头的目标路由均为已实测可达的真实路由 → 渲染为真链接；
+         非 / 目标（zeroq 远程 / agent_platform / 127.0.0.1:8791 等）保持展示卡，诚实不装链接。
+         协议相对 URL 防护（2026-10-19 审计加固）：//evil.com 也以 / 开头，
+         必须同时排除第二字符也是 / 的情况（javascript: 等非 / 开头本就走展示卡）。 */
+      var link = drillTarget(d);
+      var rt = esc(d[1]);
+      if (link) {
+        return '<a class="dcard" href="' + esc(link) + '" title="下钻目标（真实路由，已实测可达）"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + rt + ' ↗</span></a>';
+      }
+      return '<div class="dcard" title="下钻目标（非门户路由 · 演示标注）"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + rt + '</span></div>';
+    }).join('');
+
+    if (b.probes.length) {
+      $('b-probes').innerHTML = b.probes.map(function(p){
+        return '<span class="sysdot"><span class="dot unk" id="' + p.id + '"></span>' + esc(p.label) + '</span>';
+      }).join('');
+      b.probes.forEach(function(p){ probeAny(p.id, p.url); });
+    } else {
+      $('b-probes').innerHTML = '<span style="color:var(--dim);font-size:11.5px">本板无独立端口（复用门户 / OS 共用件）</span>';
+    }
+
+    $('b-tl').innerHTML = b.timeline.map(function(t){
+      return '<div class="' + tlCls(t[0]) + '"><span class="t">' + esc(t[1]) + '</span><b>' + esc(t[2]) + '</b></div>';
+    }).join('');
+
+    if (b.issues.length) {
+      $('b-issues-box').style.display = '';
+      $('b-issues').innerHTML = b.issues.map(function(i){
+        return '<li><span class="sev sev-' + i[0] + '">' + i[0] + '</span>' + esc(i[1]) + '</li>';
+      }).join('');
+    } else { $('b-issues-box').style.display = 'none'; }
+
+    if (b.decisions.length) {
+      $('b-dec-box').style.display = '';
+      $('b-dec').innerHTML = b.decisions.map(function(d){
+        return '<li><b>' + esc(d[0]) + '</b>：' + esc(d[1]) + '</li>';
+      }).join('');
+    } else { $('b-dec-box').style.display = 'none'; }
+  }
+
+  /* ================= 路由（hash：可分享；Esc 返回） ================= */
+  /* 原型污染防护（2026-10-19 审计修复）：BOARDS[h] 直接查找时，
+     h='constructor'/'toString'/'valueOf' 等会命中 Object.prototype 上的函数（truthy），
+     进 renderBoard 后 b.subs.map 抛 TypeError 把页面卡死在半渲染态。
+     必须用 hasOwnProperty 校验自有属性。 */
+  function boardOf(h){
+    return (h && Object.prototype.hasOwnProperty.call(BOARDS, h)) ? BOARDS[h] : null;
+  }
+  function route(){
+    var h = (location.hash || '').replace(/^#\/?/, '');
+    if (h && h !== 'overview' && boardOf(h)) {
+      showTab('today'); // 先隐藏 tabbar 逻辑由下面覆盖
+      Object.keys(panels).forEach(function(k){ $(panels[k]).classList.remove('active'); });
+      $('tabbar').classList.add('hidden');
+      $('panel-board').classList.add('active');
+      renderBoard(h);
+    } else {
+      $('panel-board').classList.remove('active');
+      $('tabbar').classList.remove('hidden');
+      if (!document.querySelector('.panel.active')) showTab('today');
+    }
+  }
+  window.addEventListener('hashchange', route);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && location.hash && location.hash !== '#/today') location.hash = '#/today';
+  });
+
+  /* ================= 入口卡点击 / 回车 ================= */
+  Array.prototype.forEach.call(document.querySelectorAll('.board[data-drill]'), function(card){
+    function go(){ location.hash = '#/' + card.dataset.drill; }
+    card.addEventListener('click', go);
+    card.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+
+  function jumpAlerts(){
+    showTab('today');
+    if (location.hash && location.hash !== '#/today') location.hash = '#/today';
+  }
+  $('alert-jump').addEventListener('click', jumpAlerts);
+  $('b-alert').addEventListener('click', jumpAlerts);
+  renderAlerts();
+  route();
+
+  /* ================= 时点时钟：今日要事 past/now/upcoming + 下一个时点倒计时 ================= */
+  /* 规则：past = 已到时点+20min；now 窗 = [时点前 10min, 时点后 20min]；
+     唯一性竞选——多个落窗时保留「最晚已到时点（正在进行）」，否则保留「最近未来时点」，其余降 upcoming；
+     倒计时优先指向最近 future 时点；无 future 但有正在进行的时点 → 显示「正在进行」；全 past → 全部完成。 */
+  function applyTimelineClock(){
+    var now = new Date();
+    var nowMin = now.getHours() * 60 + now.getMinutes();
+    var nodes = [], running = null, nextFuture = null;
+    Array.prototype.forEach.call(document.querySelectorAll('.tl-item[data-time]'), function(el){
+      var p = el.getAttribute('data-time').split(':');
+      var tMin = parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+      var label = (el.querySelector('b') || {}).textContent || el.getAttribute('data-time');
+      var state = 'upcoming';
+      if (nowMin >= tMin + 20) state = 'past';
+      else if (nowMin >= tMin - 10 && nowMin <= tMin + 20) state = 'now';
+      el.classList.remove('past', 'now');
+      if (state === 'past') el.classList.add('past');
+      var node = { el: el, tMin: tMin, label: label, state: state };
+      nodes.push(node);
+      if (state !== 'past' && tMin <= nowMin && (!running || tMin > running.tMin)) running = node;
+      if (tMin > nowMin && (!nextFuture || tMin < nextFuture.tMin)) nextFuture = { tMin: tMin, label: label };
+    });
+    // 唯一性竞选（keep 必须是 nodes 元素本体，引用同一性否则 now 全被误降级——本判例由单测抓出）
+    var keep = running;
+    if (!keep) {
+      nodes.forEach(function(n){
+        if (n.state === 'now' && (!keep || n.tMin < keep.tMin)) keep = n;
+      });
+    }
+    nodes.forEach(function(n){
+      if (n.state === 'now' && (!keep || n !== keep)) { n.state = 'upcoming'; n.el.classList.remove('now'); }
+      else if (n.state === 'now') n.el.classList.add('now');
+    });
+    var tp = document.getElementById('next-tp');
+    if (tp) {
+      if (nextFuture) {
+        var diff = nextFuture.tMin - nowMin;
+        var h = Math.floor(diff / 60), m = diff % 60;
+        tp.textContent = (diff <= 15 ? '即将到时 ' : '下一个时点 ') + (h ? h + 'h' : '') + m + 'm 后：' + nextFuture.label;
+      } else if (running) {
+        tp.textContent = '正在进行：' + running.label;
+      } else {
+        tp.textContent = '今日时点已全部完成';
+      }
+      tp.title = '时点时钟按本机时间判定（past=已过 20min / now=前后 10~20min 窗口，同时只高亮一个当前时段）；护航期 16:40-17:35 全员只读';
+    }
+  }
+  applyTimelineClock();
+  setInterval(applyTimelineClock, 60000);
+})();
+
+</script>
+
+<script>
+/* v5 · 交易日时段判定（盘前 07:00-09:30 / 盘中 09:30-15:00 / 盘后 15:00-24:00，之前=休市） */
+(function(){
+  var NAMES = {pre:'盘前', in:'盘中', post:'盘后'};
+  var ORDER = ['pre','in','post'];
+  function paint(){
+    var now = new Date();
+    var m = now.getHours() * 60 + now.getMinutes();
+    var cur = null;
+    if (m >= 420 && m < 570) cur = 'pre';
+    else if (m >= 570 && m < 900) cur = 'in';
+    else if (m >= 900) cur = 'post';
+    Array.prototype.forEach.call(document.querySelectorAll('.v5-stage'), function(el){
+      var k = el.getAttribute('data-stage');
+      var idx = ORDER.indexOf(k), ci = cur ? ORDER.indexOf(cur) : -1;
+      el.classList.remove('on','done','wait');
+      var lamp = el.querySelector('em[data-lamp]');
+      if (!cur) { el.classList.add('wait'); if (lamp) lamp.textContent = '休市'; }
+      else if (idx === ci) { el.classList.add('on'); if (lamp) lamp.textContent = '进行中'; }
+      else if (idx < ci) { el.classList.add('done'); if (lamp) lamp.textContent = '已过'; }
+      else { el.classList.add('wait'); if (lamp) lamp.textContent = '未开始'; }
+    });
+    var top = document.getElementById('stage-lamp-t');
+    var box = document.getElementById('stage-lamp');
+    if (top && box) {
+      top.textContent = cur ? (NAMES[cur] + '时段') : '休市';
+      box.classList.toggle('on', !!cur);
+      box.querySelector('.dot').className = 'dot ' + (cur ? 'ok' : 'unk');
+    }
+  }
+  paint();
+  setInterval(paint, 60000);
+
+  /* 计划/拍板胶囊：切到保留面板（v2.1 内容，未重排） */
+  Array.prototype.forEach.call(document.querySelectorAll('.v5-pill[data-jumptab]'), function(btn){
+    btn.addEventListener('click', function(){
+      var t = btn.getAttribute('data-jumptab');
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(x){
+        if (x.dataset.tab === t) x.click();
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
