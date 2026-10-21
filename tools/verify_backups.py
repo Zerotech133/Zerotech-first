@@ -18,12 +18,37 @@
 2. 字节数是否一致；
 3. sha256 是否一致（700 MB 级文件耗时，支持 `--sample N` 抽样，默认全量）；
 4. 反向：目录里有、MANIFEST 里没列 —— 孤儿文件；
-5. 新鲜度：最新备份距今小时数（默认 >36h 警告、>72h 判失败）。
+5. 新鲜度：最新备份距今小时数（默认 >36h 警告、>72h 判失败）；
+6. 追平：bundle 里记录的提交是否等于对应仓的 HEAD（见下）。
+
+追平检查（catchup）
+-------------------
+`backup_bundles.ps1` 只在"跑备份那一刻"把仓库打成 bundle，之后 HEAD 前进它
+不会自动重备。本脚本用**只读**命令补上这个缺口：
+
+* 对最新日期目录里的每个 `*.bundle`，用
+  `git -C <repo> bundle list-heads <bundle>` 读取引用，再与
+  `git -C <repo> rev-parse HEAD` 比较；
+* 引用选择顺序：当前分支 `refs/heads/<branch>` → `refs/heads/master`
+  → `refs/heads/main` → bundle 的 `HEAD` 行 → bundle 内唯一引用。
+  后两者是为"分支改名 / 演练用旧引用 bundle"留的退路，会写进 `ref` 字段；
+* `behind_commits` 用 `git rev-list --count <bundle_sha>..HEAD`；若
+  bundle 的提交不在本仓对象库里（典型：该分支已被 rebase/force-push 掉，
+  或 bundle 来自另一个仓），无法计算，记字符串 `"unknown"`，**不当作通过**；
+* 任一仓 `match=false` 且 `behind_commits > 0` → 计入 problems，exit 1；
+* 解析失败只进 `catchup.unknown`，不伪装成 `match=true`；它也不改变退出码
+  （错误由原有 sha256/存在性检查兜底），但人类摘要会显式打印 `UNKNOWN`；
+* 只判定"本次范围内最新那个日期目录"：默认就是最新备份；`--date` 判指定日；
+  `--all` 仍只把最新一天当作当前备份，历史日期是快照，不按今天的 HEAD 判。
+* 不传 `--repo` 时自动探测工作区里的四个仓（`老田的AI助手` / `zerobound-kg`
+  / `digital-legion` / `res-downloader-py`）；探测不到就打印一条 WARN，
+  `catchup` 为空对象且不影响原有退出码。
 
 退出码
 ------
 0 = 全过（含"抽样未覆盖全部文件"但已知项全对）；
-1 = 有不一致 / 缺失 / 孤儿 / 新鲜度超 72h / 无任何日期目录；
+1 = 有不一致 / 缺失 / 孤儿 / 新鲜度超 72h / 无任何日期目录 /
+    最新备份落后 HEAD（behind_commits > 0）；
 2 = 脚本自身错误（参数、路径、意外异常）。
 
 用法
@@ -33,6 +58,8 @@
     python -B tools/verify_backups.py --date 2026-10-22    # 指定日期目录
     python -B tools/verify_backups.py --sample 2           # 只对最大的 2 个文件算 sha256
     python -B tools/verify_backups.py --root D:\\fake_vault  # 指定 vault 根（演练用）
+    python -B tools/verify_backups.py --repo C:\\项目\\zerobound-kg
+    python -B tools/verify_backups.py --repo A --repo B    # --repo 可重复，只查指定仓
 
 输出约定
 --------
@@ -49,6 +76,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 import traceback
@@ -76,6 +105,19 @@ HEADER_RE = re.compile(
 PROBLEM_STATUSES = {"mismatch", "missing", "unreadable"}
 # 已知项全对，但抽样模式没跑 sha256。
 UNVERIFIED_STATUS = "unverified"
+
+# 与 tools/backup_bundles.ps1 的 $repos 一一对应：label 也是 bundle 文件名前缀。
+DEFAULT_REPOS: tuple[tuple[str, str], ...] = (
+    ("aios", "老田的AI助手"),
+    ("zerobound-kg", "zerobound-kg"),
+    ("digital-legion", "digital-legion"),
+    ("res-downloader", "res-downloader-py"),
+)
+LABEL_BY_DIRNAME = {dirname: label for label, dirname in DEFAULT_REPOS}
+# 期望引用的兜底顺序（当前分支会插到最前面，见 _pick_bundle_ref）。
+REF_CANDIDATES = ("refs/heads/master", "refs/heads/main", "HEAD")
+CATCHUP_GIT_TIMEOUT = 120.0
+SHA_RE = re.compile(r"^[0-9a-fA-F]{40,64}$")
 
 
 # --------------------------------------------------------------- 小工具 -----
@@ -389,6 +431,390 @@ def verify_dir(
     return result
 
 
+# ------------------------------------------------------------- 追平 HEAD -----
+def _text(data: bytes) -> str:
+    return data.decode("utf-8", errors="replace")
+
+
+def _short_sha(sha: str | None) -> str:
+    return sha[:8] if isinstance(sha, str) and sha else "-"
+
+
+def _git_run(
+    repo: Path, args: list[str], timeout: float = CATCHUP_GIT_TIMEOUT
+) -> subprocess.CompletedProcess[bytes]:
+    """只读 git 调用：--no-optional-locks + 禁止交互，绝不写仓库。"""
+    env = os.environ.copy()
+    env["GIT_OPTIONAL_LOCKS"] = "0"
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    return subprocess.run(
+        [
+            "git",
+            "--no-optional-locks",
+            "-c",
+            "core.quotepath=false",
+            "-C",
+            str(repo),
+            *args,
+        ],
+        capture_output=True,
+        timeout=timeout,
+        check=False,
+        env=env,
+    )
+
+
+def resolve_repos(explicit: list[str] | None) -> tuple[list[dict], str | None]:
+    """解析 --repo；不传则探测工作区里的四仓。返回 (specs, warning)。"""
+    if shutil.which("git") is None:
+        return [], "找不到 git 可执行文件，跳过追平检查（catchup 为空）"
+    if explicit:
+        specs: list[dict] = []
+        for raw in explicit:
+            path = Path(raw).expanduser()
+            try:
+                path = path.resolve()
+            except OSError as exc:
+                specs.append(
+                    {
+                        "label": path.name or raw,
+                        "path": path,
+                        "explicit": True,
+                        "error": "%s: %s" % (type(exc).__name__, exc),
+                    }
+                )
+                continue
+            specs.append(
+                {
+                    "label": LABEL_BY_DIRNAME.get(path.name, path.name),
+                    "path": path,
+                    "explicit": True,
+                    "error": None,
+                }
+            )
+        return specs, None
+
+    workspace = default_root().parent
+    specs = []
+    for label, dirname in DEFAULT_REPOS:
+        path = workspace / dirname
+        if path.is_dir():
+            specs.append(
+                {"label": label, "path": path, "explicit": False, "error": None}
+            )
+    if not specs:
+        return [], (
+            "未在 %s 下探测到备份四仓中的任何一个，跳过追平检查（catchup 为空）"
+            % workspace
+        )
+    return specs, None
+
+
+def _find_bundle(entries: list[dict], label: str) -> str | None:
+    prefix = label + "-"
+    candidates = sorted(
+        entry["name"]
+        for entry in entries
+        if entry["name"].startswith(prefix) and entry["name"].lower().endswith(".bundle")
+    )
+    return candidates[0] if candidates else None
+
+
+def _parse_bundle_heads(text: str) -> dict[str, str]:
+    """把 `git bundle list-heads` 的 `<sha> <ref>` 行解析成 {ref: sha}。"""
+    heads: dict[str, str] = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 2 or not SHA_RE.match(parts[0]):
+            continue
+        heads[" ".join(parts[1:])] = parts[0].lower()
+    return heads
+
+
+def _pick_bundle_ref(
+    heads: dict[str, str], branch: str | None
+) -> tuple[str | None, str | None, str | None]:
+    """按 当前分支 → master → main → HEAD → 唯一引用 选一个引用。
+
+    返回 (ref, sha, note)。note 非空表示用了兜底，会写进 JSON 方便追责。
+    """
+    candidates: list[str] = []
+    if branch and branch not in ("HEAD", ""):
+        candidates.append("refs/heads/" + branch)
+        candidates.extend(REF_CANDIDATES)
+    else:
+        # detached HEAD：bundle 的 HEAD 行才是备份时真正检出的提交。
+        candidates.append("HEAD")
+        candidates.extend(ref for ref in REF_CANDIDATES if ref != "HEAD")
+    seen: set[str] = set()
+    for ref in candidates:
+        if ref in seen:
+            continue
+        seen.add(ref)
+        if ref in heads:
+            return ref, heads[ref], None
+    if len(heads) == 1:
+        ref, sha = next(iter(heads.items()))
+        return ref, sha, "bundle 缺少期望分支引用，退化为唯一引用 %s" % ref
+    return (
+        None,
+        None,
+        "bundle 缺少期望分支引用（现有: %s）" % (", ".join(sorted(heads)) or "none"),
+    )
+
+
+def _empty_catchup(enabled: bool, checked_date: str | None, note: str | None) -> dict:
+    return {
+        "enabled": enabled,
+        "checked_date": checked_date,
+        "status": "disabled" if not enabled else "unknown",
+        "repos": [],
+        "entries": [],
+        "behind": [],
+        "unknown": [],
+        "max_behind_commits": None,
+        "complete": False,
+        "note": note,
+    }
+
+
+def collect_catchup(
+    day: str,
+    day_dir: Path,
+    entries: list[dict],
+    specs: list[dict],
+) -> dict:
+    """逐仓比较 bundle 内记录的分支 SHA 与仓的 HEAD（只读）。"""
+    result = _empty_catchup(bool(specs), day, None)
+    if not specs:
+        return result
+
+    for spec in specs:
+        repo_path: Path = spec["path"]
+        label: str = spec["label"]
+        repo_info = {
+            "label": label,
+            "path": str(repo_path),
+            "explicit": bool(spec.get("explicit")),
+            "is_git": False,
+            "branch": None,
+            "head_sha": None,
+            "reason": None,
+        }
+        entry = {
+            "label": label,
+            "date": day,
+            "repo": str(repo_path),
+            "bundle": None,
+            "bundle_name": None,
+            "ref": None,
+            "ref_note": None,
+            "bundle_sha": None,
+            "bundle_sha_short": None,
+            "head_sha": None,
+            "head_sha_short": None,
+            "match": None,
+            "behind_commits": "unknown",
+            "status": "unknown",
+            "reason": None,
+        }
+
+        # 1) 仓本身能否读、HEAD 是什么
+        if spec.get("error"):
+            entry["reason"] = "无法解析 repo 路径: %s" % spec["error"]
+        elif not repo_path.is_dir():
+            entry["reason"] = "repo 路径不存在或不是目录: %s" % repo_path
+        else:
+            try:
+                probe = _git_run(repo_path, ["rev-parse", "--is-inside-work-tree"])
+            except FileNotFoundError:
+                entry["reason"] = "找不到 git 可执行文件"
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                entry["reason"] = "git 探测失败: %s: %s" % (type(exc).__name__, exc)
+            else:
+                if probe.returncode != 0:
+                    entry["reason"] = "不是 git 工作树: " + (
+                        _text(probe.stderr).strip()[:200] or "git 返回非零"
+                    )
+                else:
+                    repo_info["is_git"] = True
+                    try:
+                        head_proc = _git_run(repo_path, ["rev-parse", "HEAD"])
+                        branch_proc = _git_run(
+                            repo_path, ["rev-parse", "--abbrev-ref", "HEAD"]
+                        )
+                    except (OSError, subprocess.TimeoutExpired) as exc:
+                        entry["reason"] = "git rev-parse 失败: %s: %s" % (
+                            type(exc).__name__,
+                            exc,
+                        )
+                    else:
+                        if head_proc.returncode == 0:
+                            head = _text(head_proc.stdout).strip().splitlines()
+                            if head:
+                                entry["head_sha"] = head[0].lower()
+                                entry["head_sha_short"] = _short_sha(head[0])
+                                repo_info["head_sha"] = entry["head_sha"]
+                        else:
+                            entry["reason"] = "git rev-parse HEAD 失败: " + (
+                                _text(head_proc.stderr).strip()[:200] or "git 返回非零"
+                            )
+                        if branch_proc.returncode == 0:
+                            branch = _text(branch_proc.stdout).strip()
+                            if branch:
+                                repo_info["branch"] = branch
+        repo_info["reason"] = entry["reason"]
+        result["repos"].append(repo_info)
+
+        # 2) 找到该仓对应的 bundle
+        bundle_name = _find_bundle(entries, label)
+        if bundle_name is None:
+            if entry["reason"] is None:
+                entry["reason"] = "MANIFEST 里没有 %s-*.bundle" % label
+        else:
+            bundle_path = day_dir / bundle_name
+            entry["bundle_name"] = bundle_name
+            entry["bundle"] = str(bundle_path)
+            if not bundle_path.is_file():
+                if entry["reason"] is None:
+                    entry["reason"] = "MANIFEST 列了 bundle 但文件不存在"
+            elif entry["reason"] is None:
+                # 3) 只读 list-heads + 比较
+                try:
+                    heads_proc = _git_run(
+                        repo_path, ["bundle", "list-heads", str(bundle_path)]
+                    )
+                except (OSError, subprocess.TimeoutExpired) as exc:
+                    entry["reason"] = "git bundle list-heads 失败: %s: %s" % (
+                        type(exc).__name__,
+                        exc,
+                    )
+                else:
+                    if heads_proc.returncode != 0:
+                        entry["reason"] = "git bundle list-heads 失败: " + (
+                            _text(heads_proc.stderr).strip()[:240] or "git 返回非零"
+                        )
+                    else:
+                        heads = _parse_bundle_heads(_text(heads_proc.stdout))
+                        if not heads:
+                            entry["reason"] = "bundle 里解析不到任何引用"
+                        else:
+                            ref, bundle_sha, ref_note = _pick_bundle_ref(
+                                heads, repo_info["branch"]
+                            )
+                            entry["ref"] = ref
+                            entry["ref_note"] = ref_note
+                            entry["bundle_sha"] = bundle_sha
+                            entry["bundle_sha_short"] = _short_sha(bundle_sha)
+                            if bundle_sha is None or entry["head_sha"] is None:
+                                entry["reason"] = ref_note or "缺少 bundle/HEAD 的 SHA"
+                            elif bundle_sha == entry["head_sha"]:
+                                entry["match"] = True
+                                entry["behind_commits"] = 0
+                                entry["status"] = "current"
+                            else:
+                                entry["match"] = False
+                                exists = _git_run(
+                                    repo_path,
+                                    ["cat-file", "-e", bundle_sha + "^{commit}"],
+                                )
+                                if exists.returncode != 0:
+                                    entry["reason"] = (
+                                        "bundle 提交 %s 不在本仓对象库，无法计算落后数"
+                                        "（需先 fetch 该 bundle）" % _short_sha(bundle_sha)
+                                    )
+                                else:
+                                    count_proc = _git_run(
+                                        repo_path,
+                                        ["rev-list", "--count", bundle_sha + "..HEAD"],
+                                    )
+                                    if count_proc.returncode != 0:
+                                        entry["reason"] = (
+                                            "git rev-list --count 失败: "
+                                            + (
+                                                _text(count_proc.stderr).strip()[:200]
+                                                or "git 返回非零"
+                                            )
+                                        )
+                                    else:
+                                        try:
+                                            count = int(
+                                                _text(count_proc.stdout).strip().splitlines()[0]
+                                            )
+                                        except (ValueError, IndexError):
+                                            entry["reason"] = "git rev-list 输出无法解析"
+                                        else:
+                                            entry["behind_commits"] = count
+                                            if count > 0:
+                                                entry["status"] = "behind"
+                                            else:
+                                                # SHA 不同但计数为 0：不是"落后"
+                                                # （典型是 bundle 比 HEAD 还新/已分叉），
+                                                # 记 unknown，绝不冒充 current。
+                                                entry["status"] = "unknown"
+                                                entry["reason"] = (
+                                                    "bundle 提交与 HEAD 不同且 "
+                                                    "rev-list 计数为 0（非落后/可能分叉）"
+                                                )
+
+        if entry["status"] == "behind":
+            result["behind"].append(entry)
+        elif entry["status"] == "unknown":
+            result["unknown"].append(entry)
+        result["entries"].append(entry)
+
+    behind_counts = [
+        entry["behind_commits"]
+        for entry in result["behind"]
+        if isinstance(entry["behind_commits"], int)
+    ]
+    result["max_behind_commits"] = max(behind_counts) if behind_counts else None
+    result["complete"] = bool(result["entries"]) and not result["unknown"]
+    if result["behind"]:
+        result["status"] = "behind"
+    elif result["unknown"]:
+        result["status"] = "unknown"
+    elif result["entries"]:
+        result["status"] = "current"
+    if result["unknown"]:
+        result["note"] = "%d 个仓无法判定" % len(result["unknown"])
+    return result
+
+
+def _catchup_line(catchup: dict) -> str:
+    """人类摘要用的一行（多个仓用 ; 分隔）。"""
+    if not catchup.get("enabled"):
+        return "not checked (%s)" % (
+            catchup.get("note") or "no repo detected or git unavailable"
+        )
+    entries = catchup.get("entries") or []
+    if not entries:
+        return "not checked (%s)" % (catchup.get("note") or "no bundle")
+    parts: list[str] = []
+    for entry in entries:
+        label = entry["label"]
+        if entry["status"] == "behind":
+            parts.append(
+                "%s behind %s commits (backup %s < head %s)"
+                % (
+                    label,
+                    entry["behind_commits"],
+                    entry["bundle_sha_short"],
+                    entry["head_sha_short"],
+                )
+            )
+        elif entry["status"] == "current":
+            parts.append(
+                "%s current (backup %s == head %s)"
+                % (label, entry["bundle_sha_short"], entry["head_sha_short"])
+            )
+        else:
+            parts.append(
+                "%s UNKNOWN (%s)" % (label, entry.get("reason") or "无法判定")
+            )
+    return "; ".join(parts)
+
+
 def compute_freshness(
     dirs: list[dict], now: datetime, warn_hours: float, fail_hours: float
 ) -> dict:
@@ -532,6 +958,7 @@ def emit_human(report: dict, stream) -> None:
         )
 
     summary = report["summary"]
+    out("catchup     : %s\n" % _catchup_line(report.get("catchup") or {}))
     out("\nsummary     : %d file(s): %d ok, %d mismatch, %d missing, %d unreadable, "
         "%d unverified; %d orphan(s); %d parse error(s)\n"
         % (
@@ -569,8 +996,11 @@ def emit_json(report: dict) -> None:
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="verify_backups.py",
-        description="只读校验 _vault 下的 MANIFEST.txt 与备份文件（存在/字节数/sha256/孤儿/新鲜度）",
-        epilog="退出码：0=全过，1=不一致或缺失，2=脚本错误",
+        description=(
+            "只读校验 _vault 下的 MANIFEST.txt 与备份文件"
+            "（存在/字节数/sha256/孤儿/新鲜度/bundle 是否追平 HEAD）"
+        ),
+        epilog="退出码：0=全过，1=不一致/缺失/落后 HEAD，2=脚本错误",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     ap.add_argument(
@@ -586,6 +1016,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="N",
         help="只对最大的 N 个文件算 sha256（存在性与字节数仍然全查）",
+    )
+    ap.add_argument(
+        "--repo",
+        action="append",
+        default=None,
+        metavar="PATH",
+        help=(
+            "追平检查用的仓根，可重复；默认自动探测工作区里的四个仓"
+            "（老田的AI助手/zerobound-kg/digital-legion/res-downloader-py）"
+        ),
     )
     ap.add_argument("--json", action="store_true", help="stdout 输出机器可读 JSON（摘要改走 stderr）")
     ap.add_argument(
@@ -657,6 +1097,41 @@ def run(args: argparse.Namespace) -> int:
         item.pop("newest_mtime_epoch", None)
         item.pop("newest_mtime_source", None)
 
+    # 追平检查只针对本次范围内最新那个日期目录（默认就是最新备份）。
+    repo_specs, repo_warning = resolve_repos(args.repo)
+    if repo_warning:
+        _p("WARN: " + repo_warning)
+    latest_report = dir_reports[-1] if dir_reports else None
+    if not repo_specs:
+        # 向后兼容：探测不到仓时 catchup 就是空对象，绝不改变原有退出码。
+        catchup = {}
+    elif latest_report is None:
+        catchup = _empty_catchup(True, None, "没有任何日期目录，追平检查未执行")
+    elif not latest_report["manifest"]["present"]:
+        catchup = _empty_catchup(
+            True,
+            latest_report["date"],
+            "最新日期目录没有 MANIFEST.txt，追平检查未执行",
+        )
+    else:
+        catchup = collect_catchup(
+            latest_report["date"],
+            Path(latest_report["path"]),
+            latest_report["entries"],
+            repo_specs,
+        )
+    if catchup.get("unknown"):
+        _p(
+            "WARN: catchup 有 %d 个仓无法判定：%s"
+            % (
+                len(catchup["unknown"]),
+                "; ".join(
+                    "%s (%s)" % (entry["label"], entry.get("reason") or "无法判定")
+                    for entry in catchup["unknown"]
+                )[:600],
+            )
+        )
+
     problems: list[str] = []
     totals = {
         "files": 0,
@@ -725,6 +1200,23 @@ def run(args: argparse.Namespace) -> int:
             % (freshness["age_hours"], args.warn_hours, args.fail_hours)
         )
 
+    # 落后是硬判定：bundle 明确落后 >0 个提交 → problems + exit 1。
+    for entry in catchup.get("behind") or []:
+        count = entry.get("behind_commits")
+        if isinstance(count, int) and count > 0:
+            problems.append(
+                "catchup: %s/%s is behind HEAD by %d commit(s) "
+                "(backup %s < head %s, ref %s)"
+                % (
+                    entry["date"],
+                    entry["bundle_name"],
+                    count,
+                    entry["bundle_sha_short"],
+                    entry["head_sha_short"],
+                    entry.get("ref") or "?",
+                )
+            )
+
     if not date_dirs:
         problems.append("no yyyy-MM-dd date folder found under %s" % root)
 
@@ -746,6 +1238,7 @@ def run(args: argparse.Namespace) -> int:
         },
         "dirs": dir_reports,
         "freshness": freshness,
+        "catchup": catchup,
         "summary": {
             **totals,
             "elapsed_s": round(time.perf_counter() - started, 2),

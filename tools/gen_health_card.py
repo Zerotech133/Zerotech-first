@@ -14,7 +14,9 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
    一致性交叉核对；
    EXIT_SEMANTICS 通过只读 import 复用（禁止复制一份口径）。
 2. 备份仓 <vault-root>/<yyyy-MM-dd>/MANIFEST.txt 与日期目录 mtime；
-   manifest 行格式：`<name>  <ts>  <bytes> bytes  sha256=<hex>`。
+   manifest 行格式：`<name>  <ts>  <bytes> bytes  sha256=<hex>`；
+   并用 `git bundle list-heads` + `git rev-parse HEAD` 检查备份包是否追平
+   （落后 >0 黄；落后且备份 >24h 红；无法判定计 null，不误判绿）。
 3. 仓库卫生：git status --porcelain 行数、git worktree list 数量、
    .worktrees/ 下的目录数（与 worktree list 交叉核对）。
 
@@ -25,7 +27,8 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
 
 退出码：0=绿/黄（可容忍），1=红（有硬问题），2=脚本自身错误（参数/写盘）。
 阈值：备份 >36h 黄 / >72h 红；审计 >24h 黄 / >72h 红；dirty>0 黄；
-工作树目录与 git worktree 不一致黄；任一块不可用红。
+工作树目录与 git worktree 不一致黄；任一块不可用红；备份落后 HEAD >0 黄 /
+落后且备份 >24h 红；追平无法判定计 null（不误判绿）。
 """
 from __future__ import annotations
 
@@ -36,6 +39,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -52,8 +56,20 @@ SUMMARY_NAME = "task_exit_summary.json"
 
 BACKUP_YELLOW_HOURS = 36.0
 BACKUP_RED_HOURS = 72.0
+# 备份仍在、只是旧：落后 HEAD 记黄；落后且超过 24h 未重备才红。
+CATCHUP_RED_HOURS = 24.0
 AUDIT_YELLOW_HOURS = 24.0
 AUDIT_RED_HOURS = 72.0
+
+# 与 tools/backup_bundles.ps1 的 $repos 一一对应（label = bundle 文件名前缀）。
+CATCHUP_REPO_DIRS: tuple[tuple[str, str], ...] = (
+    ("aios", "老田的AI助手"),
+    ("zerobound-kg", "zerobound-kg"),
+    ("digital-legion", "digital-legion"),
+    ("res-downloader", "res-downloader-py"),
+)
+CATCHUP_REF_CANDIDATES = ("refs/heads/master", "refs/heads/main", "HEAD")
+SHA_RE = re.compile(r"^[0-9a-fA-F]{40,64}$")
 
 UNKNOWN_SEMANTICS = "未知退出码"
 NEVER_RUN_CODE = 267011
@@ -418,7 +434,9 @@ def _empty_backup(vault_root: Path) -> dict[str, Any]:
         "total_bytes": None,
         "total_human": None,
         "files_count": None,
+        "bundle_files": [],
         "sha256_verified": False,
+        "catchup": _empty_catchup(),
         "thresholds_hours": {
             "yellow": BACKUP_YELLOW_HOURS,
             "red": BACKUP_RED_HOURS,
@@ -507,6 +525,9 @@ def collect_backup(vault_root: Path, now: dt.datetime) -> dict[str, Any]:
     result["manifest_entries"] = len(entries)
     result["manifest_malformed"] = len(malformed)
     result["manifest_malformed_samples"] = malformed[:10]
+    result["bundle_files"] = sorted(
+        name for name in entries if name.lower().endswith(".bundle")
+    )
 
     if not entries:
         result["reason"] = f"MANIFEST 无可解析条目: {manifest}"
@@ -690,6 +711,345 @@ def collect_repo(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# 2b) 备份是否追平 HEAD（bundle 与仓库 HEAD 对比，只读）
+# ---------------------------------------------------------------------------
+def _short_sha(sha: Any) -> str:
+    return sha[:8] if isinstance(sha, str) and sha else "-"
+
+
+def _empty_catchup() -> dict[str, Any]:
+    return {
+        "available": False,
+        "complete": False,
+        "reason": None,
+        "checked_date": None,
+        "status": None,
+        "level": None,
+        "behind_count": None,
+        "unknown_count": None,
+        "max_behind_commits": None,
+        "backup_age_hours": None,
+        "thresholds_hours": {"red": CATCHUP_RED_HOURS},
+        "repos": [],
+        "entries": [],
+        "behind": [],
+        "unknown": [],
+    }
+
+
+def _discover_catchup_repos(repo_root: Path) -> list[dict[str, Any]]:
+    """四个备份仓固定在工作区（repo_root 的父目录）下；缺目录也要列出来。
+
+    缺目录不能静默略过：略过会让"3 个仓追平"冒充"全部追平"。缺的那个会以
+    unknown 计入，从而让 catchup 不判绿。
+    """
+    workspace = repo_root.parent
+    repos: list[dict[str, Any]] = []
+    for label, dirname in CATCHUP_REPO_DIRS:
+        path = workspace / dirname
+        if label == "aios" and not path.is_dir() and repo_root.name in (
+            "老田的AI助手",
+            "aios",
+        ):
+            path = repo_root
+        repos.append({"label": label, "path": path, "exists": path.is_dir()})
+    return repos
+
+
+def _bundle_for_label(bundle_files: list[str], label: str) -> str | None:
+    prefix = label + "-"
+    for name in bundle_files:
+        if name.startswith(prefix) and name.lower().endswith(".bundle"):
+            return name
+    return None
+
+
+def _parse_bundle_heads(text: str) -> dict[str, str]:
+    heads: dict[str, str] = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 2 or not SHA_RE.match(parts[0]):
+            continue
+        heads[" ".join(parts[1:])] = parts[0].lower()
+    return heads
+
+
+def _pick_bundle_ref(
+    heads: dict[str, str], branch: str | None
+) -> tuple[str | None, str | None, str | None]:
+    """当前分支 → master → main → HEAD → 唯一引用；返回 (ref, sha, note)。"""
+    candidates: list[str] = []
+    if branch and branch not in ("HEAD", ""):
+        candidates.append("refs/heads/" + branch)
+        candidates.extend(CATCHUP_REF_CANDIDATES)
+    else:
+        # detached HEAD：bundle 的 HEAD 行才是备份时真正检出的提交。
+        candidates.append("HEAD")
+        candidates.extend(
+            ref for ref in CATCHUP_REF_CANDIDATES if ref != "HEAD"
+        )
+    seen: set[str] = set()
+    for ref in candidates:
+        if ref in seen:
+            continue
+        seen.add(ref)
+        if ref in heads:
+            return ref, heads[ref], None
+    if len(heads) == 1:
+        ref, sha = next(iter(heads.items()))
+        return ref, sha, f"bundle 缺少期望分支引用，退化为唯一引用 {ref}"
+    return (
+        None,
+        None,
+        "bundle 缺少期望分支引用（现有: %s）"
+        % (", ".join(sorted(heads)) or "none"),
+    )
+
+
+def collect_catchup(
+    repo_root: Path, backup: dict[str, Any], now: dt.datetime
+) -> dict[str, Any]:
+    """用最新备份里的 bundle 逐仓比较 HEAD；结果可供 _evaluate 判黄/红。"""
+    del now  # 落后时长用备份目录 age_hours，不另算当前时间
+    result = _empty_catchup()
+    result["backup_age_hours"] = backup.get("age_hours")
+    if not backup.get("available"):
+        result["reason"] = "备份不可用：" + (backup.get("reason") or "未知原因")
+        return result
+    bundle_files = backup.get("bundle_files") or []
+    if not bundle_files:
+        result["reason"] = "最新 MANIFEST 没有 *.bundle 条目"
+        return result
+    if shutil.which("git") is None:
+        result["reason"] = "找不到 git 可执行文件"
+        return result
+
+    latest_dir = Path(backup["dir"]) if backup.get("dir") else None
+    repos = _discover_catchup_repos(repo_root)
+    if latest_dir is None:
+        result["reason"] = "无法定位最新备份目录"
+        return result
+    result["checked_date"] = backup.get("latest_date")
+    result["repos"] = [
+        {
+            "label": spec["label"],
+            "path": str(spec["path"]),
+            "exists": spec["exists"],
+        }
+        for spec in repos
+    ]
+
+    for spec in repos:
+        label = spec["label"]
+        repo_path: Path = spec["path"]
+        entry: dict[str, Any] = {
+            "label": label,
+            "date": backup.get("latest_date"),
+            "repo": str(repo_path),
+            "bundle": None,
+            "bundle_name": None,
+            "ref": None,
+            "ref_note": None,
+            "bundle_sha": None,
+            "bundle_sha_short": None,
+            "head_sha": None,
+            "head_sha_short": None,
+            "match": None,
+            "behind_commits": "unknown",
+            "status": "unknown",
+            "reason": None,
+        }
+        branch: str | None = None
+
+        if not spec["exists"]:
+            entry["reason"] = f"仓目录不存在: {repo_path}"
+        else:
+            try:
+                probe = _git_run(repo_path, ["rev-parse", "--is-inside-work-tree"])
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                entry["reason"] = f"git 探测失败: {_short_exc(exc)}"
+            else:
+                if probe.returncode != 0:
+                    entry["reason"] = "不是 git 工作树: " + (
+                        _decode(probe.stderr).strip()[:200] or "git 返回非零"
+                    )
+                else:
+                    try:
+                        head_proc = _git_run(repo_path, ["rev-parse", "HEAD"])
+                        branch_proc = _git_run(
+                            repo_path, ["rev-parse", "--abbrev-ref", "HEAD"]
+                        )
+                    except (OSError, subprocess.TimeoutExpired) as exc:
+                        entry["reason"] = f"git rev-parse 失败: {_short_exc(exc)}"
+                    else:
+                        if head_proc.returncode == 0:
+                            lines = _decode(head_proc.stdout).strip().splitlines()
+                            if lines:
+                                entry["head_sha"] = lines[0].lower()
+                                entry["head_sha_short"] = _short_sha(lines[0])
+                        else:
+                            entry["reason"] = "git rev-parse HEAD 失败: " + (
+                                _decode(head_proc.stderr).strip()[:200]
+                                or "git 返回非零"
+                            )
+                        if branch_proc.returncode == 0:
+                            branch = _decode(branch_proc.stdout).strip() or None
+
+        bundle_name = _bundle_for_label(bundle_files, label)
+        if bundle_name is None:
+            if entry["reason"] is None:
+                entry["reason"] = f"MANIFEST 里没有 {label}-*.bundle"
+        else:
+            bundle_path = latest_dir / bundle_name
+            entry["bundle_name"] = bundle_name
+            entry["bundle"] = str(bundle_path)
+            if not bundle_path.is_file():
+                if entry["reason"] is None:
+                    entry["reason"] = "MANIFEST 列了 bundle 但文件不存在"
+            elif entry["reason"] is None:
+                try:
+                    heads_proc = _git_run(
+                        repo_path, ["bundle", "list-heads", str(bundle_path)]
+                    )
+                except (OSError, subprocess.TimeoutExpired) as exc:
+                    entry["reason"] = f"git bundle list-heads 失败: {_short_exc(exc)}"
+                else:
+                    if heads_proc.returncode != 0:
+                        entry["reason"] = "git bundle list-heads 失败: " + (
+                            _decode(heads_proc.stderr).strip()[:240]
+                            or "git 返回非零"
+                        )
+                    else:
+                        heads = _parse_bundle_heads(_decode(heads_proc.stdout))
+                        if not heads:
+                            entry["reason"] = "bundle 里解析不到任何引用"
+                        else:
+                            ref, bundle_sha, ref_note = _pick_bundle_ref(
+                                heads, branch
+                            )
+                            entry["ref"] = ref
+                            entry["ref_note"] = ref_note
+                            entry["bundle_sha"] = bundle_sha
+                            entry["bundle_sha_short"] = _short_sha(bundle_sha)
+                            if bundle_sha is None or entry["head_sha"] is None:
+                                entry["reason"] = ref_note or "缺少 bundle/HEAD 的 SHA"
+                            elif bundle_sha == entry["head_sha"]:
+                                entry["match"] = True
+                                entry["behind_commits"] = 0
+                                entry["status"] = "current"
+                            else:
+                                entry["match"] = False
+                                exists = _git_run(
+                                    repo_path,
+                                    ["cat-file", "-e", bundle_sha + "^{commit}"],
+                                )
+                                if exists.returncode != 0:
+                                    entry["reason"] = (
+                                        "bundle 提交 %s 不在本仓对象库，无法计算落后数"
+                                        % _short_sha(bundle_sha)
+                                    )
+                                else:
+                                    count_proc = _git_run(
+                                        repo_path,
+                                        ["rev-list", "--count", bundle_sha + "..HEAD"],
+                                    )
+                                    if count_proc.returncode != 0:
+                                        entry["reason"] = (
+                                            "git rev-list --count 失败: "
+                                            + (
+                                                _decode(count_proc.stderr).strip()[:200]
+                                                or "git 返回非零"
+                                            )
+                                        )
+                                    else:
+                                        try:
+                                            count = int(
+                                                _decode(count_proc.stdout)
+                                                .strip()
+                                                .splitlines()[0]
+                                            )
+                                        except (ValueError, IndexError):
+                                            entry["reason"] = "git rev-list 输出无法解析"
+                                        else:
+                                            entry["behind_commits"] = count
+                                            if count > 0:
+                                                entry["status"] = "behind"
+                                            else:
+                                                # SHA 不同但计数为 0：不是"落后"
+                                                # （典型是 bundle 比 HEAD 还新/已分叉），
+                                                # 记 unknown，绝不冒充 current。
+                                                entry["status"] = "unknown"
+                                                entry["reason"] = (
+                                                    "bundle 提交与 HEAD 不同且 "
+                                                    "rev-list 计数为 0（非落后/可能分叉）"
+                                                )
+
+        if entry["status"] == "behind":
+            result["behind"].append(entry)
+        elif entry["status"] == "unknown":
+            result["unknown"].append(entry)
+        result["entries"].append(entry)
+
+    behind_counts = [
+        entry["behind_commits"]
+        for entry in result["behind"]
+        if isinstance(entry["behind_commits"], int)
+    ]
+    result["behind_count"] = len(result["behind"])
+    result["unknown_count"] = len(result["unknown"])
+    result["max_behind_commits"] = max(behind_counts) if behind_counts else None
+    result["complete"] = bool(result["entries"]) and not result["unknown"]
+
+    age = backup.get("age_hours")
+    if result["behind"]:
+        result["status"] = "behind"
+        result["level"] = (
+            "red"
+            if isinstance(age, (int, float)) and age > CATCHUP_RED_HOURS
+            else "yellow"
+        )
+        # 已经判出"落后"就是可判定；即使另有仓 unknown，这项也要报黄/红。
+        result["available"] = True
+    elif result["unknown"] or not result["entries"]:
+        # 没有落后、但还有仓判不了 → 整项计 null，绝不冒充绿。
+        result["status"] = "unknown"
+        result["level"] = None
+        result["available"] = False
+        if not result["reason"]:
+            determinable = [
+                entry
+                for entry in result["entries"]
+                if entry["status"] in ("current", "behind")
+            ]
+            result["reason"] = (
+                "部分仓无法判定" if determinable else "所有仓都无法判定"
+            )
+    else:
+        result["status"] = "current"
+        result["level"] = "green"
+        result["available"] = True
+    return result
+
+
+def _catchup_behind_text(catchup: dict[str, Any]) -> str:
+    parts = []
+    for entry in catchup.get("behind") or []:
+        parts.append(
+            "%s 落后 %s 个提交（backup %s < head %s）"
+            % (
+                entry["label"],
+                entry["behind_commits"],
+                entry["bundle_sha_short"],
+                entry["head_sha_short"],
+            )
+        )
+    unknown = catchup.get("unknown") or []
+    if unknown:
+        parts.append("另有 %d 个仓无法判定" % len(unknown))
+    return "；".join(parts) or "无法判定"
+
+
+# ---------------------------------------------------------------------------
 # 状态判定
 # ---------------------------------------------------------------------------
 def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str]]:
@@ -832,6 +1192,26 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         else:
             add("backup.integrity", "green", "清单条目齐全、大小一致（未重算 sha256）")
 
+        catchup = backup.get("catchup") or {}
+        if catchup.get("available"):
+            if catchup.get("status") == "current":
+                add(
+                    "backup.catchup",
+                    "green",
+                    "%d 个仓的 bundle 均追平 HEAD"
+                    % len(catchup.get("entries") or []),
+                )
+            elif catchup.get("status") == "behind":
+                level = catchup.get("level")
+                if level not in ("yellow", "red"):
+                    level = "yellow"
+                detail = _catchup_behind_text(catchup)
+                age = catchup.get("backup_age_hours")
+                if level == "red" and isinstance(age, (int, float)):
+                    detail = "备份已 %.1fh 未更新且落后：%s" % (age, detail)
+                add("backup.catchup", level, detail)
+            # status == unknown：故意不新增 check。该项计 null，不误判绿。
+
     repo = card["repo"]
     if not repo["available"]:
         add("repo.readable", "red", "仓库卫生不可用：" + (repo["reason"] or "未知原因"))
@@ -881,6 +1261,8 @@ def build_card(
     now: dt.datetime,
 ) -> dict[str, Any]:
     semantics, semantics_error = _load_audit_semantics(repo_root)
+    backup = collect_backup(vault_root, now)
+    backup["catchup"] = collect_catchup(repo_root, backup, now)
     card: dict[str, Any] = {
         "schema": SCHEMA,
         "generated_at": _iso(now),
@@ -889,15 +1271,18 @@ def build_card(
         "reasons": [],
         "checks": [],
         "task_audit": collect_task_audit(audit_root, now, semantics, semantics_error),
-        "backup": collect_backup(vault_root, now),
+        "backup": backup,
         "repo": collect_repo(repo_root, now),
         "notes": [
             "本脚本只读：不扫描/启停计划任务、不触发备份、不改仓库。",
             "dirty_files 含未跟踪文件；本脚本自身在提交前也会被计入。",
             "备份未重算 sha256（体积可达数百 MiB）；只核对清单条目、文件存在性与大小。",
+            "备份追平：用 git bundle list-heads 把 bundle 内分支 SHA 与各仓 HEAD 比较；"
+            "落后 >0 黄、落后且 >24h 未重备红；无法判定计 null，不误判绿。",
             "task_audit 失败口径沿用其账本：Disabled 不计、267011 记未运行、其余非零（含 267009/267014）记失败。",
             "未知退出码同时计入 failed（沿用审计口径），此处单独列示以便区分「已知失败」与「未知退出码」。",
             f"阈值：备份 >{BACKUP_YELLOW_HOURS:g}h 黄 / >{BACKUP_RED_HOURS:g}h 红；"
+            "备份落后 HEAD >0 黄 / 落后且 >24h 红；"
             f"审计 >{AUDIT_YELLOW_HOURS:g}h 黄 / >{AUDIT_RED_HOURS:g}h 红；"
             "dirty>0 黄；工作树不一致黄；任一块不可用红。",
             "账本按落盘时间切分扫描会话，取最后一个会话；120s 内的连续记录视为同一次扫描。",
@@ -1075,6 +1460,22 @@ def _render_html(card: dict[str, Any]) -> str:
             f"缺 {backup['manifest_missing']} / 格式异常 {backup['manifest_malformed']}"
             f" / 大小不符 {backup['size_mismatch']}"
         )
+        catchup = backup.get("catchup") or {}
+        if catchup.get("available"):
+            if catchup.get("status") == "current":
+                catchup_text = "%d 个仓均追平 HEAD（%s）" % (
+                    len(catchup["entries"]),
+                    ", ".join(
+                        "%s=%s" % (entry["label"], entry["head_sha_short"])
+                        for entry in catchup["entries"]
+                    ),
+                )
+            elif catchup.get("status") == "behind":
+                catchup_text = _catchup_behind_text(catchup)
+            else:
+                catchup_text = "无法判定"
+        else:
+            catchup_text = "无法判定"
         parts.extend(
             [
                 _kv("最近备份", backup["latest_date"]),
@@ -1082,10 +1483,17 @@ def _render_html(card: dict[str, Any]) -> str:
                 _kv("MANIFEST 条目", _fmt_num(backup["manifest_entries"])),
                 _kv("目录总体积（含清单）", backup["total_human"]),
                 _kv("完整性", integrity),
+                _kv("追平 HEAD", catchup_text),
                 _kv("目录 mtime", backup["dir_mtime"]),
             ]
         )
         parts.append('<p class="note">未重算 sha256；只核对条目、存在性与大小。</p>')
+        if not catchup.get("available"):
+            parts.append(
+                f'<p class="note">追平检查不可用：{_e(catchup.get("reason"))}</p>'
+            )
+        elif catchup.get("status") == "unknown":
+            parts.append('<p class="note">部分仓无法判定，本项不计绿。</p>')
     else:
         parts.append(f'<p class="unavailable">不可用：{_e(backup["reason"])}</p>')
     parts.append("</section>")
@@ -1187,6 +1595,7 @@ def main(argv: list[str] | None = None) -> int:
         epilog=(
             "退出码：0=绿/黄，1=红，2=脚本自身错误。"
             f"阈值：备份 >{BACKUP_YELLOW_HOURS:g}h 黄 / >{BACKUP_RED_HOURS:g}h 红；"
+            f"备份落后 HEAD >0 黄 / 落后且 >{CATCHUP_RED_HOURS:g}h 红；"
             f"审计 >{AUDIT_YELLOW_HOURS:g}h 黄 / >{AUDIT_RED_HOURS:g}h 红。"
         ),
     )
