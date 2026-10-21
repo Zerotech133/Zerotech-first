@@ -208,10 +208,15 @@ function submitRecruit() {
 }
 document.getElementById('recruitMask').addEventListener('click', e => { if (e.target.id === 'recruitMask') closeRecruit(); });
 
-fetch('/api/snapshot').then(r => r.json()).then(env => {
-  if (!env.ok) { document.getElementById('ts').textContent = '快照不可用：' + (env.error || '?'); return; }
-  render(env);
-}).catch(() => { document.getElementById('ts').textContent = '快照端点不可达'; });
+if (window.__SNAP__) {
+  render(window.__SNAP__);
+  document.getElementById('ts').textContent = '静态快照 ' + (window.__SNAP__.ts || '') + ' · 导出件（无需服务）';
+} else {
+  fetch('/api/snapshot').then(r => r.json()).then(env => {
+    if (!env.ok) { document.getElementById('ts').textContent = '快照不可用：' + (env.error || '?'); return; }
+    render(env);
+  }).catch(() => { document.getElementById('ts').textContent = '快照端点不可达'; });
+}
 </script>
 </body>
 </html>

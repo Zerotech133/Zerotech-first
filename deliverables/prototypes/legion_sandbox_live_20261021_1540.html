@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字军团 · 指挥沙盘</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; padding: 14px; }
+  .wrap { max-width: 1380px; margin: 0 auto; }
+  .hdr { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .hdr-l { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #4FD1A5; }
+  h1 { font-size: 16px; font-weight: 500; }
+  .sub { font-size: 11.5px; color: #8FA8C0; }
+  .legend { display: flex; gap: 12px; font-size: 11px; color: #8FA8C0; flex-wrap: wrap; }
+  .lg { display: flex; align-items: center; gap: 5px; }
+  .lamp { width: 8px; height: 8px; border-radius: 50%; }
+  .l-local { background: #4FD1A5; } .l-cyc { background: #4FA3E8; } .l-idle { background: #5A7190; } .l-none { background: #3A4A5E; }
+  .statbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat { background: #0F2440; border-radius: 10px; padding: 9px 13px; border: 0.5px solid #1E3A5F; }
+  .stat-n { font-size: 21px; font-weight: 500; color: #4FD1A5; }
+  .stat-n.amber { color: #EF9F27; }
+  .stat-t { font-size: 10.5px; color: #8FA8C0; margin-top: 1px; }
+  .camp { background: #0A1A2F; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 13px 15px; margin-bottom: 12px; }
+  .camp-h { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; flex-wrap: wrap; }
+  .flag { width: 22px; height: 28px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex: none; }
+  .camp-t { font-size: 14px; font-weight: 500; }
+  .camp-s { font-size: 11px; color: #8FA8C0; }
+  .dept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 10px; }
+  .dept { background: #0F2440; border-radius: 12px; padding: 11px 13px; border: 0.5px solid #1E3A5F; }
+  .dept-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 6px; }
+  .dept-n { font-size: 12.5px; font-weight: 500; }
+  .dept-lead { font-size: 10.5px; color: #8FA8C0; text-align: right; }
+  .dept-lead b { color: #E8F0F8; font-weight: 500; }
+  .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+  .seat { background: #0A1A2F; border-radius: 8px; padding: 7px 8px; cursor: pointer; transition: background .15s; }
+  .seat:hover { background: #12294A; }
+  .seat .aid { font-size: 10px; color: #8FA8C0; }
+  .seat .cn { font-size: 11.5px; margin-top: 1px; display: flex; align-items: center; gap: 4px; }
+  .slamp { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .seat.vac { border: 0.5px dashed #5A7190; background: transparent; display: flex; align-items: center; justify-content: center; min-height: 44px; color: #5A7190; font-size: 11px; }
+  .seat.vac:hover { border-color: #EF9F27; color: #EF9F27; }
+  .drawer { position: fixed; top: 0; right: -400px; width: 380px; max-width: 92vw; height: 100vh; background: #0F2440; border-left: 0.5px solid #1E3A5F; padding: 20px; overflow-y: auto; transition: right .25s; z-index: 50; }
+  .drawer.open { right: 0; }
+  .drawer h3 { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .drawer .x { position: absolute; top: 14px; right: 16px; cursor: pointer; color: #8FA8C0; font-size: 18px; background: none; border: none; }
+  .kv { display: flex; gap: 10px; font-size: 12.5px; margin: 7px 0; }
+  .kv .k { width: 70px; color: #8FA8C0; flex: none; }
+  .panel { background: #0A1A2F; border-radius: 10px; padding: 11px 13px; margin-top: 10px; font-size: 12px; color: #C7D6E8; line-height: 1.7; }
+  .modal-mask { position: fixed; inset: 0; background: rgba(4,10,20,.72); display: none; align-items: center; justify-content: center; z-index: 60; }
+  .modal-mask.open { display: flex; }
+  .modal { width: 440px; max-width: 94vw; background: #0F2440; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 18px; }
+  .modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 12px; }
+  .fitem { margin-bottom: 9px; }
+  .fitem label { display: block; font-size: 11px; color: #8FA8C0; margin-bottom: 4px; }
+  .fitem input, .fitem select, .fitem textarea { width: 100%; background: #0A1A2F; border: 0.5px solid #1E3A5F; border-radius: 8px; color: #E8F0F8; font-size: 12.5px; padding: 8px 10px; font-family: inherit; }
+  .btnrow { display: flex; gap: 10px; margin-top: 12px; }
+  .btn { flex: 1; border-radius: 8px; border: 0.5px solid #1D9E75; background: none; color: #4FD1A5; font-size: 13px; padding: 9px; cursor: pointer; font-family: inherit; }
+  .btn.ghost { border-color: #5A7190; color: #8FA8C0; }
+  .ok-tip { color: #4FD1A5; font-size: 11.5px; margin-top: 10px; display: none; line-height: 1.7; }
+  .ft { border-top: 0.5px solid #1E3A5F; margin-top: 4px; padding-top: 9px; display: flex; justify-content: space-between; font-size: 11px; color: #5A7190; flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-l"><div class="dot"></div><h1>数字军团 · 指挥沙盘</h1><span class="sub" id="ts">拉取快照…</span></div>
+    <div class="legend">
+      <span class="lg"><span class="lamp l-local"></span>本席在跑</span>
+      <span class="lg"><span class="lamp l-cyc"></span>本营有活</span>
+      <span class="lg"><span class="lamp l-idle"></span>待命</span>
+      <span class="lg"><span class="lamp l-none"></span>未绑定</span>
+      <span class="lg" style="color:#5A7190">▭ 虚位可募</span>
+    </div>
+  </div>
+  <div class="statbar" id="statbar"></div>
+  <div id="camps"></div>
+  <div class="ft"><span>快照源 /api/snapshot · 只读聚合 org.json+hr+tasks+schedules</span><span>点席位看详情 · 点虚席招募（走工单制）</span></div>
+</div>
+
+<div class="drawer" id="drawer"><button class="x" onclick="closeDrawer()">✕</button><div id="drawerBody"></div></div>
+<div class="modal-mask" id="recruitMask">
+  <div class="modal">
+    <h3 id="recTitle">招募新 Agent</h3>
+    <div class="fitem"><label>岗位名（中文名）</label><input id="rName" placeholder="例：徐庶"></div>
+    <div class="fitem"><label>干什么（职责一句话）</label><input id="rDuty" placeholder="例：舆情异动哨——盯雪球增量帖情感突变"></div>
+    <div class="fitem"><label>模型档位</label>
+      <select id="rModel">
+        <option>ollama/qwen3.5:9b（主力数据岗）</option>
+        <option>ollama/qwen3.6:35b-a3b（判读重档）</option>
+        <option>glm/glm-5.3（云端参谋档）</option>
+        <option>openai/gpt-6.0（异族档·需key）</option>
+        <option>DeepSeek（未来档·预留）</option>
+      </select>
+    </div>
+    <div class="fitem"><label>隶属营</label><input id="rDept" readonly></div>
+    <div class="fitem"><label>设立理由（进工单）</label><textarea id="rWhy" rows="3" placeholder="为什么现在需要这个席位？解决什么阻塞？"></textarea></div>
+    <div class="btnrow"><button class="btn ghost" onclick="closeRecruit()">取消</button><button class="btn" onclick="submitRecruit()">生成编制工单</button></div>
+    <div class="ok-tip" id="recTip"></div>
+  </div>
+</div>
+
+<script>
+const CAMPS = [
+  { id:'zhong', name:'中军帐 · 参谋与管理席', flag:'帅', color:'#534AB7', match: d => /chief|参谋/.test(d.id + d.name) },
+  { id:'qian', name:'前军 · 作战线', flag:'前', color:'#993C1D', match: d => /invest|trad|risk|research|acad/.test(d.id) || /量化|交易|风控|研究/.test(d.name) },
+  { id:'zuo', name:'左军 · 研发线', flag:'左', color:'#185FA5', match: d => /dev|quality|data|product/.test(d.id) || /研发|质量|产品/.test(d.name) },
+  { id:'you', name:'右军 · 支撑线', flag:'右', color:'#1D9E75', match: d => /ops|intel|comm|market|legal|hermes/.test(d.id) || /运行|情报|市场|法务/.test(d.name) },
+  { id:'hou', name:'后军 · 专项行营', flag:'后', color:'#BA7517', match: d => /proj/.test(d.id) || /行营/.test(d.name) },
+];
+let SNAP = null;
+const seatIndex = {};
+
+function lamp(a, dept) {
+  const act = (SNAP && SNAP.activity) || {};
+  const byAgent = act.by_agent || {}, byDept = act.by_dept || {};
+  if ((byAgent[a.id] || []).length) return 'l-local';
+  if (dept && (byDept[dept.id] || []).length) return 'l-cyc';
+  if (!a.binding) return 'l-none';
+  return 'l-idle';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function render(snap) {
+  SNAP = snap;
+  document.getElementById('ts').textContent = '快照 ' + snap.ts + ' · 只读聚合';
+  const q = snap.summary;
+  document.getElementById('statbar').innerHTML =
+    '<div class="stat"><div class="stat-n">' + q.departments + '</div><div class="stat-t">营（部门）</div></div>' +
+    '<div class="stat"><div class="stat-n">' + q.agents + '</div><div class="stat-t">在编 agent</div></div>' +
+    '<div class="stat"><div class="stat-n amber">' + q.doing + '</div><div class="stat-t">在途工单</div></div>' +
+    '<div class="stat"><div class="stat-n">' + q.schedules + '</div><div class="stat-t">注册排程</div></div>';
+  const buckets = {};
+  CAMPS.forEach(c => buckets[c.id] = []);
+  snap.departments.forEach(d => {
+    const camp = CAMPS.find(c => c.match(d)) || CAMPS[1];
+    buckets[camp.id].push(d);
+  });
+  let html = '';
+  CAMPS.forEach(c => {
+    const depts = buckets[c.id];
+    if (!depts.length) return;
+    const total = depts.reduce((n, d) => n + d.agents.length, 0);
+    html += '<div class="camp"><div class="camp-h"><div class="flag" style="background:' + c.color + ';color:#fff">' + c.flag + '</div>' +
+      '<span class="camp-t">' + c.name + '</span><span class="camp-s">' + depts.length + ' 营 · ' + total + ' 员</span></div><div class="dept-grid">';
+    depts.forEach(d => {
+      html += '<div class="dept"><div class="dept-h"><span class="dept-n">' + esc(d.name) + (d.cn_title ? '<span style="color:#5A7190;font-size:10px"> · ' + esc(d.cn_title) + '</span>' : '') + '</span>' +
+        '<span class="dept-lead">' + (d.lead ? '主官 <b>' + esc(d.lead) + '</b>' : '主官待任') + '</span></div><div class="seats">';
+      d.agents.forEach(a => {
+        seatIndex[a.id] = a;
+        const n = ((SNAP.activity && SNAP.activity.by_agent) || {})[a.id] || [];
+        html += '<div class="seat" onclick="showSeat(\'' + esc(a.id) + '\')"><div class="aid">' + esc(a.id) +
+          (n.length ? ' · ' + n.length + '单' : '') + '</div>' +
+          '<div class="cn"><span class="slamp ' + lamp(a, d) + '"></span>' + esc(a.cn) + '</div></div>';
+      });
+      if (!d.agents.length) html += '<div class="seat vac" onclick="openRecruit(\'' + esc(d.name) + '\',true)">＋ 任命主官</div>';
+      html += '<div class="seat vac" onclick="openRecruit(\'' + esc(d.name) + '\')">＋ 虚席</div>';
+      html += '</div></div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('camps').innerHTML = html;
+}
+
+function showSeat(id) {
+  const a = seatIndex[id]; if (!a) return;
+  const dept = (SNAP.departments.find(d => d.agents.some(x => x.id === id)) || {});
+  const byAgent = (SNAP.activity && SNAP.activity.by_agent) || {};
+  const myKeys = byAgent[id] || [];
+  const doing = (SNAP.activity.doing || []).filter(t => myKeys.indexOf(t.key) >= 0);
+  document.getElementById('drawerBody').innerHTML =
+    '<h3>' + esc(a.cn) + ' <span style="color:#8FA8C0;font-size:12px;font-weight:400">' + esc(a.id) + '</span></h3>' +
+    '<div class="kv"><span class="k">隶属营</span><span>' + esc(dept.name || '—') + '</span></div>' +
+    '<div class="kv"><span class="k">职能</span><span>' + esc(a.role || '—') + '</span></div>' +
+    '<div class="kv"><span class="k">模型</span><span>' + esc(a.binding || '未绑定（治理挂账）') + '</span></div>' +
+    '<div class="kv"><span class="k">在途</span><span>' + (doing.length ? doing.map(t => esc(t.desc)).join('；') : '无归属本席的在途单') + '</span></div>' +
+    '<div class="panel" style="color:#5A7190">生产版可接：hr/' + esc(a.id) + '/resume.yaml 全文 · decision/knowledge 记忆流 · 工单史 · 晨会记录</div>';
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
+function openRecruit(dept, isChief) {
+  document.getElementById('rDept').value = dept;
+  document.getElementById('recTitle').textContent = isChief ? '任命主官 · ' + dept : '招募新 Agent · ' + dept;
+  document.getElementById('recTip').style.display = 'none';
+  document.getElementById('recruitMask').classList.add('open');
+}
+function closeRecruit() { document.getElementById('recruitMask').classList.remove('open'); }
+function submitRecruit() {
+  const name = document.getElementById('rName').value.trim() || '（待填）';
+  const duty = document.getElementById('rDuty').value.trim() || '（待填）';
+  const model = document.getElementById('rModel').value;
+  const dept = document.getElementById('rDept').value;
+  const why = document.getElementById('rWhy').value.trim();
+  fetch('/api/dispatch', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ type:'work', title:'编制申请：' + dept + ' · ' + name,
+      attendees: [], note: '职责：' + duty + '；模型：' + model + '；理由：' + why }) })
+  .then(r => r.json()).then(env => {
+    const tip = document.getElementById('recTip');
+    tip.style.display = 'block';
+    tip.innerHTML = env.ok
+      ? '编制工单已投递军团门面：<b>' + (env.data.id || '') + '</b><br>流转：田丰登记去重 → 老田放行 → 建 hr 档案 + org 入编 → 沙盘自动落位。'
+      : '投递失败：' + ((env.error && env.error.message) || '未知');
+  }).catch(() => {
+    const tip = document.getElementById('recTip');
+    tip.style.display = 'block'; tip.textContent = '投递失败：服务不可达';
+  });
+}
+document.getElementById('recruitMask').addEventListener('click', e => { if (e.target.id === 'recruitMask') closeRecruit(); });
+
+if (window.__SNAP__) {
+  render(window.__SNAP__);
+  document.getElementById('ts').textContent = '静态快照 ' + (window.__SNAP__.ts || '') + ' · 导出件（无需服务）';
+} else {
+  fetch('/api/snapshot').then(r => r.json()).then(env => {
+    if (!env.ok) { document.getElementById('ts').textContent = '快照不可用：' + (env.error || '?'); return; }
+    render(env);
+  }).catch(() => { document.getElementById('ts').textContent = '快照端点不可达'; });
+}
+</script>
+<script>window.__SNAP__ = {"schema_version": "1.1", "ok": true, "ts": "2026-10-21T15:40:55+0800", "summary": {"departments": 17, "agents": 29, "doing": 13, "schedules": 3}, "chief": {"agent_id": "A0", "binding": "glm/glm-5.3"}, "departments": [{"id": "invest", "name": "量化交易部", "cn_title": "谋略府", "lead": "鲁肃", "status": "active", "agents": [{"id": "ST1", "cn": "\"PENDING（待人工授名）\"", "binding": "glm/glm-5.3", "role": "quant_analyst"}, {"id": "WA1", "cn": "许褚", "binding": "", "role": "watch_monitor"}, {"id": "QS1", "cn": "司马懿", "binding": "", "role": "quant_sector_receiver"}]}, {"id": "dev", "name": "研发部", "cn_title": "将作监", "lead": "曹操", "status": "active", "agents": [{"id": "DEV1", "cn": "马钧", "binding": "ollama/qwen3.5:9b", "role": "code_engineer"}, {"id": "DEV6", "cn": "胡昭", "binding": "ollama/qwen3.5:9b", "role": "code_engineer"}, {"id": "DEV7", "cn": "姜维", "binding": "ollama/qwen3.5:9b", "role": "code_engineer"}, {"id": "DEV2", "cn": "刘晔", "binding": "ollama/qwen3.6:35b-a3b", "role": "model_trainer"}, {"id": "DEV3", "cn": "蒋济", "binding": "ollama/qwen3.5:9b", "role": "strategy_engineer"}, {"id": "DEV4", "cn": "满宠", "binding": "ollama/qwen3.5:9b", "role": "backtest_engineer"}, {"id": "DEV5", "cn": "邓艾", "binding": "ollama/qwen3.5:9b", "role": "frontend_engineer"}, {"id": "DEV8", "cn": "郝昭", "binding": "ollama/qwen3.5:9b", "role": "frontend_engineer"}, {"id": "ARCH1", "cn": "曹操", "binding": "glm/glm-5.3", "role": "solution_architect"}, {"id": "OPS1", "cn": "王基", "binding": "ollama/qwen3.5:9b", "role": "devops_engineer"}, {"id": "DOC1", "cn": "陈寿", "binding": "ollama/qwen3.5:9b", "role": "tech_writer"}]}, {"id": "trading", "name": "交易部", "cn_title": "先登营", "lead": "周瑜", "status": "active", "agents": [{"id": "TR1", "cn": "周瑜", "binding": "ollama/qwen3.5:9b", "role": "trade_executor"}]}, {"id": "data", "name": "数据智能部", "cn_title": "兰台", "lead": "张松", "status": "active", "agents": [{"id": "DATA1", "cn": "张松", "binding": "ollama/qwen3.5:9b", "role": "data_engineer"}]}, {"id": "product", "name": "产品管理部", "cn_title": "度支府", "lead": "吕蒙", "status": "active", "agents": [{"id": "PM1", "cn": "吕蒙", "binding": "ollama/qwen3.5:9b", "role": "product_manager"}, {"id": "DSGN1", "cn": "曹植", "binding": "ollama/qwen3.5:9b", "role": "ui_designer"}, {"id": "DSGN2", "cn": "杨修", "binding": "ollama/qwen3.5:9b", "role": "ui_designer"}]}, {"id": "quality", "name": "质量工程部", "cn_title": "监军府", "lead": "于禁", "status": "active", "agents": [{"id": "QA1", "cn": "于禁", "binding": "ollama/qwen3.5:9b", "role": "qa_engineer"}, {"id": "SEC1", "cn": "李严", "binding": "ollama/qwen3.5:9b", "role": "security_auditor"}, {"id": "QA2", "cn": "郭淮", "binding": "ollama/qwen3.5:9b", "role": "qa_engineer"}, {"id": "SEC2", "cn": "法正", "binding": "glm/glm-5.3", "role": "security_lead"}]}, {"id": "proj_backtest", "name": "🅰 回测开发部", "cn_title": "🅰 回测行营", "lead": "", "status": "active", "agents": []}, {"id": "proj_data", "name": "🅱 数据治理部", "cn_title": "🅱 数据行营", "lead": "", "status": "active", "agents": []}, {"id": "proj_next", "name": "🅲 下版本设计推理部", "cn_title": "🅲 设计行营", "lead": "吕蒙", "status": "active", "agents": []}, {"id": "marketing", "name": "市场部", "cn_title": "鸿胪署", "lead": "简雍", "status": "active", "agents": [{"id": "MKT1", "cn": "简雍", "binding": "ollama/qwen3.5:9b", "role": "mkt1_marketer"}]}, {"id": "legal", "name": "合规法务部", "cn_title": "廷尉府", "lead": "诸葛瑾", "status": "active", "agents": [{"id": "LEG1", "cn": "诸葛瑾", "binding": "glm/glm-5.3", "role": "leg1_legal"}]}, {"id": "ops_runtime", "name": "运行体部", "cn_title": "驿传署", "lead": "董允", "status": "active", "agents": []}, {"id": "academy", "name": "研究院", "cn_title": "太学", "lead": "司马徽", "status": "active", "agents": []}, {"id": "intel", "name": "情报部", "cn_title": "军情司", "lead": "INTEL0", "status": "active", "agents": []}, {"id": "comm", "name": "通信与客户服务部", "cn_title": "信驿司", "lead": "LUSU1", "status": "active", "agents": []}, {"id": "chief_line", "name": "直属参谋长线", "cn_title": "参军署", "lead": "田丰", "status": "active", "agents": [{"id": "OPT1", "cn": "枣祗", "binding": "glm/glm-5.3", "role": "opt1_workflow_optimizer"}]}, {"id": "risk", "name": "风控部", "cn_title": "大都督府", "lead": "陆逊", "status": "active", "agents": [{"id": "R1", "cn": "甘宁", "binding": "ollama/qwen3.5:9b", "role": "risk_aggressive_sentinel"}, {"id": "R2", "cn": "赵云", "binding": "ollama/qwen3.5:9b", "role": "risk_conservative_sentinel"}, {"id": "R3", "cn": "陆逊", "binding": "ollama/qwen3.5:9b", "role": "risk_arbiter"}]}], "activity": {"doing": [{"key": "K-INTEL-20261018-RO", "desc": "Hermes情报只读取证闭环", "owner": "unknown-agent", "dept": "intel", "agent": ""}, {"key": "K-ORG-180", "desc": "Hermes总控入口路由鉴权与健康灯修复；验收门户直连路径、写请求鉴权与采集失败不误绿；非目标不改调度底座", "owner": "unknown-agent", "dept": "ops", "agent": ""}, {"key": "K-INTEL-20261018-SOURCES", "desc": "多源情报工厂松耦合来源投影", "owner": "unknown-agent", "dept": "intel", "agent": ""}, {"key": "K-INTEL-20261018-PORTS", "desc": "核定8098模型管理和9105回写服务端口归属并修复严格守卫，不宽泛豁免1455", "owner": "TraeCode", "dept": "intel", "agent": ""}, {"key": "K-INTEL-20261018-KG-SOURCES", "desc": "隔离修复KG只读来源接口同名模块误导入", "owner": "TraeCode", "dept": "intel", "agent": ""}, {"key": "legion-1019093011", "desc": "[T1] 盘前 weak 池三线扫描", "owner": "unknown-agent", "dept": "invest", "agent": "D1"}, {"key": "legion-1019093110", "desc": "[T1] 盘前 weak 池三线扫描", "owner": "unknown-agent", "dept": "invest", "agent": "D1"}, {"key": "legion-1019175009", "desc": "[A0A] 每日复盘三问汇总", "owner": "unknown-agent", "dept": "ops", "agent": "A0A"}, {"key": "legion-1020080009", "desc": "[A0A] 军团周报生成（weekly_report.py，账本投影只读；周窗=上周一~上周日）", "owner": "unknown-agent", "dept": "ops", "agent": "A0A"}, {"key": "legion-1020094614", "desc": "[T1] 盘前 weak 池三线扫描", "owner": "unknown-agent", "dept": "invest", "agent": "D1"}, {"key": "legion-1020175009", "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]", "owner": "unknown-agent", "dept": "ops", "agent": "A0A"}, {"key": "legion-1021080009", "desc": "[A0A] 军团周报生成（weekly_report.py，账本投影只读；周窗=上周一~上周日） [UNOWNED]", "owner": "unknown-agent", "dept": "ops", "agent": "A0A"}, {"key": "legion-1021093009", "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]", "owner": "unknown-agent", "dept": "invest", "agent": "D1"}], "by_dept": {"intel": ["K-INTEL-20261018-RO", "K-INTEL-20261018-SOURCES", "K-INTEL-20261018-PORTS", "K-INTEL-20261018-KG-SOURCES"], "ops": ["K-ORG-180", "legion-1019175009", "legion-1020080009", "legion-1020175009", "legion-1021080009"], "invest": ["legion-1019093011", "legion-1019093110", "legion-1020094614", "legion-1021093009"]}, "by_agent": {"D1": ["legion-1019093011", "legion-1019093110", "legion-1020094614", "legion-1021093009"], "A0A": ["legion-1019175009", "legion-1020080009", "legion-1020175009", "legion-1021080009"]}, "unmapped": [], "rules_version": "1.0"}, "schedules": [{"id": "sch-1792172371", "spec": "daily 09:30", "desc": "盘前 weak 池三线扫描"}, {"id": "sch-1792172372", "spec": "daily 17:50", "desc": "每日复盘三问汇总"}, {"id": "sch-weekly-report-001", "spec": "daily 08:00", "desc": "军团周报生成（weekly_report.py，账本投影只读；周窗=上周一~上周日）"}]}; window.__EVO__ = {"experiments": [], "experience_domains": {"stock_screen": {"entries": 0, "readonly": false}, "execution": {"entries": 0, "readonly": false}, "tooling": {"entries": 0, "readonly": false}, "riskguard": {"entries": 0, "readonly": true}, "supervision": {"entries": 0, "readonly": false}}, "entries_total": 0};</script>
+</body>
+</html>
