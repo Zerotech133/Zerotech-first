@@ -47,6 +47,44 @@ AGENT_BINDING = {
     "DEV2": "ollama/qwen3.6:35b-a3b",
 }
 _DEFAULT_BINDING = "ollama/qwen3.5:9b"
+_BINDING_CACHE = {"mtime": None, "map": {}}
+
+
+def resolve_binding(agent: str, platform_dir: Path | None = None) -> str:
+    """席位 → 模型绑定。**org.json 是真源，优先于本文件的硬编码表**。
+
+    为什么必须查真源：S37 给 BEACON1 填了 `llm_binding: none`（规则巡检哨，无 LLM 依赖），
+    而会议层若只查硬编码表就会给它默认 9b —— 于是「档案写明无 LLM、会议却能发言」自相矛盾。
+    编制造出来的事实，展示层必须认。
+
+    返回：
+      - 具体绑定串（如 ollama/qwen3.5:9b）
+      - "none" 表示该席位为规则执行体，无 LLM 发言能力
+    """
+    base = platform_dir or _PLATFORM
+    org_path = base / "registry" / "org.json"
+    try:
+        mtime = org_path.stat().st_mtime
+    except OSError:
+        mtime = None
+    cache = _BINDING_CACHE
+    if mtime is not None and cache["mtime"] != mtime:
+        mapping: dict[str, str] = {}
+        try:
+            org = json.loads(org_path.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            org = {}
+        for d in org.get("departments") or []:
+            for prof in d.get("agent_profiles") or []:
+                aid = str(prof.get("agent_id") or "")
+                if aid:
+                    mapping[aid] = str(prof.get("llm_binding") or "")
+        cache["mtime"] = mtime
+        cache["map"] = mapping
+    from_org = cache["map"].get(agent)
+    if from_org:
+        return from_org
+    return AGENT_BINDING.get(agent, _DEFAULT_BINDING)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -225,7 +263,18 @@ class Handler(BaseHTTPRequestHandler):
             if not agent or not agent.replace("_", "").isalnum():
                 self._send_json({"ok": False, "error": "bad_agent"}, 400)
                 return
-            binding = AGENT_BINDING.get(agent, _DEFAULT_BINDING)
+            binding = resolve_binding(agent)
+            if binding == "none":
+                # 规则执行体：编制上就没给它 LLM。不能兜底成 9b，
+                # 那会让一个「判例手册驱动的巡检哨」凭空开口说话。
+                self._send_json({"schema_version": "1.0", "ok": False,
+                                 "kind": "llm_chat", "data": {},
+                                 "error": {"code": "no_llm_capability",
+                                           "message": "%s 为规则执行体（编制绑定 none），无 LLM 发言能力" % agent},
+                                 "degraded": False, "latency_ms": 0,
+                                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                 "agent": agent, "binding": binding})
+                return
             if binding.startswith("openai/"):
                 # openai 通道未接（engine 无该 provider，勿让 Ollama 兜底报 404 误导）
                 self._send_json({"schema_version": "1.0", "ok": False,

@@ -222,6 +222,10 @@ function chatLive(agentId, question, fallbackCb) {
       MODEL_LIVE.ok++;
       add(agentId, esc(env.data.text.trim().slice(0, 600)),
           env.degraded ? 'degraded' : 'live');
+    } else if (env.error && env.error.code === 'no_llm_capability') {
+      // 规则执行体（编制绑定 none）：不回落演示台词——那会让人以为它在发言
+      MODEL_LIVE.noLlm = (MODEL_LIVE.noLlm || 0) + 1;
+      add(agentId, '<span style="color:#7C93AD">（本席为规则执行体，编制绑定 none，无 LLM 发言能力——不代它生成意见）</span>', 'script');
     } else { MODEL_LIVE.fail++; fallbackCb(); }
   }).catch(() => { clearTimeout(timer); MODEL_LIVE.fail++; fallbackCb(); }));
 }

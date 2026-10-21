@@ -21,6 +21,35 @@ sys.path.insert(0, str(_PLATFORM))
 from engine import org_audit as A  # noqa: E402
 
 
+def _raw_org():
+    return json.loads((_PLATFORM / "registry" / "org.json").read_text(encoding="utf-8"))
+
+
+def _expect_depts_without_profile():
+    """独立口径：自己从 org.json 数「名单有人但零档案」的部门，不借用审计代码。"""
+    return {d["dept"] for d in _raw_org()["departments"]
+            if d.get("agents") and not d.get("agent_profiles")}
+
+
+def _expect_leads_without_profile():
+    out = set()
+    for d in _raw_org()["departments"]:
+        lead = d.get("lead")
+        prof = [p.get("agent_id") for p in (d.get("agent_profiles") or [])]
+        if lead and lead not in prof:
+            out.add(d["dept"])
+    return out
+
+
+def _expect_ghost_total():
+    n = 0
+    for d in _raw_org()["departments"]:
+        ids = [str(x) for x in (d.get("agents") or [])]
+        prof = [str(p.get("agent_id")) for p in (d.get("agent_profiles") or [])]
+        n += sum(1 for i in ids if i not in prof)
+    return n
+
+
 def _codes(rep):
     return [f["code"] for f in rep["findings"]]
 
@@ -45,11 +74,14 @@ def test_audit_real_summary():
 
 
 def test_audit_detects_depts_without_profile():
+    """零档案部门须与独立口径完全一致。
+
+    不硬编码部门名：S35–S37 已把 intel 补满 8/8，写死「intel 必须零档案」会随补档过时
+    （2026-10-21 真实踩到——补档后这条断言直接红）。
+    """
     rep = A.audit(_PLATFORM)
-    depts = {f["dept"] for f in _by_code(rep, "DEPT_NO_PROFILE")}
-    # 这 7 个部门当前整部门零档案，必须被检出
-    for d in ("proj_backtest", "proj_data", "proj_next", "ops_runtime", "academy", "intel", "comm"):
-        assert d in depts, "%s 零档案未被检出" % d
+    got = {f["dept"] for f in _by_code(rep, "DEPT_NO_PROFILE")}
+    assert got == _expect_depts_without_profile(), "审计结果与实际零档案部门不一致"
 
 
 def test_audit_detects_null_lead():
@@ -59,10 +91,10 @@ def test_audit_detects_null_lead():
 
 
 def test_audit_detects_lead_without_profile():
+    """主官无档须与独立口径完全一致（同样不硬编码部门名）。"""
     rep = A.audit(_PLATFORM)
     got = {f["dept"] for f in _by_code(rep, "LEAD_NO_PROFILE")}
-    # invest/ops_runtime/intel/comm 等主官都无档
-    assert {"invest", "ops_runtime", "intel", "comm"} <= got
+    assert got == _expect_leads_without_profile(), "主官无档检出与实际不一致"
 
 
 def test_audit_detects_lead_out_of_dept():
@@ -159,10 +191,10 @@ def test_snapshot_shows_all_seats_not_just_profiles():
     ghost = sum(1 for x in d["departments"] for a in x["agents"] if a.get("has_profile") is False)
     assert total == d["summary"]["agents"]
     assert total >= 60, "名单口径应 60+ 席"
-    assert ghost >= 30, "当前盘面 34 个有名无档，必须全部出现在快照里"
-    # 情报部此前显示 0 员，实际名单 5 人
+    # 幽灵席位总数须与独立口径一致（不写死数字，随补档演进）
+    assert ghost == _expect_ghost_total(), "快照的 has_profile 判定与实际档案缺口不一致"
+    # 回归锁：情报部已补满 8/8（S37 成果），不得退化
     intel = next(x for x in d["departments"] if "情报" in x["name"])
-    assert len(intel["agents"]) == 5
-    assert all(a.get("has_profile") is False for a in intel["agents"])
-    assert intel["seats_profiled"] == 0
-    assert intel["lead_profiled"] is False
+    assert intel["seats_profiled"] == intel["seats_listed"], "情报部满档成果退化"
+    assert all(a.get("has_profile") is True for a in intel["agents"])
+    assert intel["lead_profiled"] is True

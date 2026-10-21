@@ -585,3 +585,68 @@ def test_preview_enroll_bad_body(server):
     for bad in ({}, {"dept": "dev"}):
         st, _ = _post_err(server, "/api/org/preview-enroll", bad)
         assert st == 400, bad
+
+
+# ------------------------------------------------- 绑定查真源 + 规则执行体（S38）
+
+def test_resolve_binding_prefers_org_truth():
+    """org.json 是真源：编制造出的绑定必须压过本文件的硬编码表。"""
+    from legion_command import serve as srv_mod
+    srv_mod._BINDING_CACHE.update(mtime=None, map={})
+    assert srv_mod.resolve_binding("BEACON1") == "none", "BEACON1 编制绑定 none"
+    assert srv_mod.resolve_binding("KGMAP1") == "ollama/qwen3.5:9b"
+    assert srv_mod.resolve_binding("INTEL0") == "glm/glm-5.3-flash"
+    # org 无档者回退硬编码表，再回退默认
+    assert srv_mod.resolve_binding("AI1") == "openai/gpt-6.0"
+    assert srv_mod.resolve_binding("NOPE9") == "ollama/qwen3.5:9b"
+
+
+def test_chat_rule_only_seat_rejected_without_llm_call(server, monkeypatch):
+    """规则执行体必须拒答，且**一次 LLM 都不许调**（否则就是硬绑 9b 的老毛病）。"""
+    from gateway import llm_gateway
+    from legion_command import serve as srv_mod
+    srv_mod._BINDING_CACHE.update(mtime=None, map={})
+    calls = []
+    monkeypatch.setattr(llm_gateway, "chat",
+                        lambda **k: calls.append(k) or llm_gateway.make_envelope(
+                            kind="llm_chat", ok=True, data={"text": "不该出现"}))
+    env = _post(server, "/api/chat", {"agent": "BEACON1", "system": "s", "user": "u"})
+    assert env["ok"] is False
+    assert env["error"]["code"] == "no_llm_capability"
+    assert "规则执行体" in env["error"]["message"]
+    assert env["binding"] == "none"
+    assert calls == [], "规则执行体不得触发任何 LLM 调用"
+
+
+def test_chat_normal_seat_still_works(server, monkeypatch):
+    """改动不能误伤：普通席位仍走 LLM。"""
+    from gateway import llm_gateway
+    from legion_command import serve as srv_mod
+    srv_mod._BINDING_CACHE.update(mtime=None, map={})
+    monkeypatch.setattr(llm_gateway, "chat",
+                        lambda **k: llm_gateway.make_envelope(
+                            kind="llm_chat", ok=True,
+                            data={"text": "真回复", "status": "normal"}))
+    env = _post(server, "/api/chat", {"agent": "KGMAP1", "system": "s", "user": "u"})
+    assert env["ok"] is True and env["data"]["text"] == "真回复"
+    assert env["binding"] == "ollama/qwen3.5:9b"
+
+
+def test_binding_cache_refreshes_on_org_change(tmp_path):
+    """org.json 改动后缓存须失效——否则补档/改档后会议层仍按旧绑定说话。"""
+    from legion_command import serve as srv_mod
+    r = tmp_path / "plat"
+    (r / "registry").mkdir(parents=True)
+    org = {"departments": [{"dept": "x", "agents": ["Z1"],
+                            "agent_profiles": [{"agent_id": "Z1", "llm_binding": "ollama/qwen3.5:9b"}]}]}
+    p = r / "registry" / "org.json"
+    p.write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
+    srv_mod._BINDING_CACHE.update(mtime=None, map={})
+    assert srv_mod.resolve_binding("Z1", platform_dir=r) == "ollama/qwen3.5:9b"
+    # 改档为 none（并确保 mtime 变化）
+    org["departments"][0]["agent_profiles"][0]["llm_binding"] = "none"
+    p.write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
+    import os
+    st = p.stat()
+    os.utime(p, (st.st_atime, st.st_mtime + 10))
+    assert srv_mod.resolve_binding("Z1", platform_dir=r) == "none", "org 改动后缓存未失效"

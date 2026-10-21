@@ -117,6 +117,7 @@ let SNAP = null;
 const seatIndex = {};
 
 function lamp(a, dept) {
+  if (a.binding === 'none') return 'l-none';   // 规则执行体：编制上就没有 LLM
   const act = (SNAP && SNAP.activity) || {};
   const byAgent = act.by_agent || {}, byDept = act.by_dept || {};
   if ((byAgent[a.id] || []).length) return 'l-local';
