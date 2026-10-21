@@ -83,10 +83,48 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
             return
+        if path == "/api/evolution":
+            self._send_json(self._evolution())
+            return
         if path == "/api/health":
             self._send_json({"ok": True, "service": "legion-command", "version": "1.0"})
             return
         self._send_json({"ok": False, "error": "not_found: %s" % path}, 404)
+
+    @staticmethod
+    def _evolution():
+        """进化层只读视图：实验卡清单 + 经验库五域统计（不读不写经验正文）。"""
+        import json as _json
+        exp_dir = _PLATFORM / "data" / "experiments"
+        cards = []
+        if exp_dir.exists():
+            for p in sorted(exp_dir.glob("*.json"))[-20:]:
+                try:
+                    d = _json.loads(p.read_text(encoding="utf-8"))
+                except (ValueError, OSError):
+                    continue
+                cards.append({"card_id": d.get("card_id"), "hypothesis": str(d.get("hypothesis", ""))[:60],
+                              "status": d.get("status"), "arms": list((d.get("arms") or {}).keys())})
+        lib = Path.home() / ".hermes" / "profiles" / "zhaoyun" / "experience"
+        domains = {}
+        index_rows = []
+        idx = lib / "_index.jsonl"
+        if idx.exists():
+            for line in idx.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.strip():
+                    try:
+                        index_rows.append(_json.loads(line))
+                    except ValueError:
+                        continue
+        for d in ("stock_screen", "execution", "tooling", "riskguard", "supervision"):
+            domains[d] = {
+                "entries": sum(1 for r in index_rows if r.get("domain") == d),
+                "has_dir": (lib / d).exists(),
+                "readonly": d == "riskguard",
+            }
+        return {"ok": True, "experiments": cards, "experience_domains": domains,
+                "entries_total": len(index_rows),
+                "note": "只读视图；经验入库须签字（Z4）"}
 
     def do_POST(self):
         import json
