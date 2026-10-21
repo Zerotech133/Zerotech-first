@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import sys
 import threading
+import time
 import urllib.request
 from pathlib import Path
 
@@ -400,3 +401,122 @@ def test_minutes_bad_length_rejected(meeting_server):
         raised = e.code == 400
     assert raised
     assert not list(mdir.glob("*.json")) if mdir.exists() else True
+
+
+# ------------------------------------------------- 会议纪要回看（S32）
+
+def _seed_meeting(base, participants, texts):
+    rows = [{"id": "HOST", "text": texts[0], "src": "host"}]
+    for aid, t, src in texts[1]:
+        rows.append({"id": aid, "text": t, "src": src})
+    return _post(base, "/api/meeting/minutes",
+                 {"participants": participants, "minutes": rows,
+                  "model_stats": {"ok": 1, "fail": 0}})
+
+
+def test_meeting_list_empty_dir(meeting_server):
+    base, mdir = meeting_server
+    st, body = _get(base, "/api/meeting/list")
+    env = json.loads(body.decode("utf-8"))
+    assert st == 200 and env["ok"] is True
+    assert env["meetings"] == [] and env["total"] == 0
+
+
+def test_meeting_list_after_save(meeting_server):
+    base, mdir = meeting_server
+    _seed_meeting(base, ["A0", "D1"], ["今日盘面怎么看？", [("D1", "需查证池源", "live")]])
+    env = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))
+    assert env["total"] == 1
+    m = env["meetings"][0]
+    assert m["id"].startswith("warroom-") and m["broken"] is False
+    assert m["count"] == 2
+    assert m["participants"] == ["A0", "D1"]
+    # 来源分账必须精确：这是"别把台词当模型结论"的唯一依据
+    assert m["src_stats"] == {"live": 1, "degraded": 0, "script": 0, "host": 1}
+
+
+def test_meeting_list_sorted_desc(meeting_server):
+    base, mdir = meeting_server
+    _seed_meeting(base, ["A0"], ["第一场", [("D1", "a", "live")]])
+    time.sleep(1.1)                      # 时间戳秒级精度，保证 id 不同
+    _seed_meeting(base, ["R3"], ["第二场", [("R3", "b", "script")]])
+    env = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))
+    assert env["total"] == 2
+    ids = [m["id"] for m in env["meetings"]]
+    assert ids == sorted(ids, reverse=True), "清单必须时间倒序"
+
+
+def test_meeting_list_ignores_broken_file(meeting_server):
+    """损坏文件不炸清单，标 broken=True（fail-visible 不静默）。"""
+    base, mdir = meeting_server
+    mdir.mkdir(parents=True, exist_ok=True)
+    (mdir / "warroom-20200101-000000.json").write_text("{not json", encoding="utf-8")
+    env = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))
+    assert env["ok"] is True and env["total"] == 1
+    assert env["meetings"][0]["broken"] is True
+
+
+def test_meeting_get_roundtrip(meeting_server):
+    base, mdir = meeting_server
+    _seed_meeting(base, ["A0", "R3"], ["调不调仓？", [("R3", "缺乏回撤数据，无法判断", "live")]])
+    mid = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))["meetings"][0]["id"]
+    st, body = _get(base, "/api/meeting/" + mid)
+    env = json.loads(body.decode("utf-8"))
+    assert st == 200 and env["ok"] is True
+    doc = env["meeting"]
+    assert doc["minutes"][1]["text"] == "缺乏回撤数据，无法判断"
+    assert [m["src"] for m in doc["minutes"]] == ["host", "live"]
+
+
+def test_meeting_get_unknown_is_404(meeting_server):
+    base, mdir = meeting_server
+    try:
+        _get(base, "/api/meeting/warroom-19990101-000000")
+        raised = False
+    except urllib.error.HTTPError as e:
+        raised = e.code == 404
+    assert raised, "合法格式但不存在的纪要应 404，不得拿 200 装成功"
+
+
+def test_meeting_get_bad_id_is_400(meeting_server):
+    base, mdir = meeting_server
+    for bad in ("/api/meeting/warroom-2026-1-1",
+                "/api/meeting/org.json",
+                "/api/meeting/..%2f..%2fregistry%2forg.json"):
+        try:
+            _get(base, bad)
+            raised = False
+        except urllib.error.HTTPError as e:
+            raised = e.code in (400, 404)
+        assert raised, bad
+
+
+def test_meeting_traversal_blocked_two_layers(meeting_server):
+    """双保险：路由正则 + relative_to 各自都能拦；直调底层仍拒（证明第二道独立成立）。"""
+    from legion_command import serve as srv_mod
+    base, mdir = meeting_server
+    secret = mdir.parent / "secret.json"
+    secret.parent.mkdir(parents=True, exist_ok=True)
+    secret.write_text('{"secret": "MUST_NOT_LEAK"}', encoding="utf-8")
+
+    # 路由层：未编码 .. 直接 400
+    try:
+        st, body = _get(base, "/api/meeting/../../secret")
+        leaked = b"MUST_NOT_LEAK" in body
+    except urllib.error.HTTPError as e:
+        leaked = False
+        assert e.code == 400
+    assert leaked is False
+
+    # 底层第二道：绕过路由正则直调，仍须拒且不返回内容
+    for evil in ("../../secret", "../secret", "..\\..\\secret"):
+        res = srv_mod.Handler._meeting_get(evil)
+        assert res["ok"] is False, evil
+        assert "MUST_NOT_LEAK" not in json.dumps(res, ensure_ascii=False), evil
+
+
+def test_minutes_page_served(meeting_server):
+    base, mdir = meeting_server
+    st, body = _get(base, "/static/minutes.html")
+    assert st == 200
+    assert b"/api/meeting/list" in body

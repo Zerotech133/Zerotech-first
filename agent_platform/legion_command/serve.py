@@ -14,6 +14,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -89,10 +91,78 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/evolution":
             self._send_json(self._evolution())
             return
+        if path == "/api/meeting/list":
+            self._send_json(self._meeting_list())
+            return
+        m2 = re.fullmatch(r"/api/meeting/(warroom-\d{8}-\d{6})", path)
+        if m2:
+            res = self._meeting_get(m2.group(1))
+            if res.get("ok"):
+                self._send_json(res)
+            elif res.get("error") == "meeting_not_found":
+                self._send_json(res, 404)
+            else:
+                self._send_json(res, 400)      # 非法 id / 不可读一律 4xx，不拿 200 装成功
+            return
+        if path.startswith("/api/meeting/"):
+            # 形如 /api/meeting/../x 一律拒绝，不回显原始串（避免反射注入面）
+            self._send_json({"ok": False, "error": "bad_meeting_id"}, 400)
+            return
         if path == "/api/health":
             self._send_json({"ok": True, "service": "legion-command", "version": "1.0"})
             return
         self._send_json({"ok": False, "error": "not_found: %s" % path}, 404)
+
+    @staticmethod
+    def _meeting_list():
+        """纪要清单（只元信息，不带正文）：时间倒序，供回看页左侧列表。
+
+        只读；目录不存在返回空清单而非报错（新建环境不应因无纪要而红）。
+        """
+        rows = []
+        if MEETINGS_DIR.exists():
+            for p in sorted(MEETINGS_DIR.glob("warroom-*.json"), reverse=True)[:200]:
+                if not re.fullmatch(r"warroom-\d{8}-\d{6}\.json", p.name):
+                    continue
+                try:
+                    d = json.loads(p.read_text(encoding="utf-8"))
+                except (ValueError, OSError):
+                    rows.append({"id": p.stem, "ts": "", "broken": True,
+                                 "count": 0, "participants": [], "src_stats": {}})
+                    continue
+                ms = d.get("minutes") or []
+                stats = {"live": 0, "degraded": 0, "script": 0, "host": 0}
+                for m in ms:
+                    k = str(m.get("src", ""))
+                    if k in stats:
+                        stats[k] += 1
+                rows.append({"id": p.stem, "ts": d.get("ts", ""),
+                             "count": len(ms),
+                             "participants": d.get("participants") or [],
+                             "src_stats": stats,
+                             "broken": False})
+        return {"ok": True, "schema_version": "1.0", "meetings": rows,
+                "total": len(rows),
+                "note": "只读清单；src_stats 区分真模型/降级/台词，避免把演示台词当模型结论"}
+
+    @staticmethod
+    def _meeting_get(mid: str):
+        """单份纪要正文。mid 已由路由正则限定为 warroom-YYYYMMDD-HHMMSS。"""
+        target = (MEETINGS_DIR / (mid + ".json")).resolve()
+        # 双保险：即便正则被绕过，也不允许越出纪要目录
+        try:
+            target.relative_to(MEETINGS_DIR.resolve())
+        except ValueError:
+            return {"ok": False, "error": "bad_meeting_id"}
+        if not target.exists():
+            return {"ok": False, "error": "meeting_not_found", "id": mid}
+        try:
+            doc = json.loads(target.read_text(encoding="utf-8"))
+        except (ValueError, OSError) as e:
+            return {"ok": False, "error": "meeting_unreadable: %s" % type(e).__name__,
+                    "id": mid}
+        return {"ok": True, "schema_version": "1.0", "id": mid, "meeting": doc,
+                "note": "只读回看；线程内模型发言原文，不重新生成、不二次润色"}
 
     @staticmethod
     def _evolution():
