@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工单详情 · 阚泽部</title>
+<style>
+  :root{
+    --bg:#0a1628; --panel:#0f1f38; --panel2:#132844; --line:#1e3a5f;
+    --cyan:#2dd4bf; --amber:#f59e0b; --red:#f87171; --green:#4ade80;
+    --text:#e2e8f0; --dim:#64748b; --dim2:#94a3b8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  body{background:var(--bg);color:var(--text);min-height:100vh;padding:14px;
+       font-size:15px;line-height:1.6;}
+  .wrap{max-width:620px;margin:0 auto;}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .badge{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid;}
+  .b-pending{color:var(--amber);border-color:var(--amber);background:rgba(245,158,11,.1);}
+  .b-done{color:var(--green);border-color:var(--green);background:rgba(74,222,128,.1);}
+  .b-unknown{color:var(--dim2);border-color:var(--line);}
+  h1{font-size:18px;font-weight:600;}
+  .sub{font-size:12px;color:var(--dim);margin-top:2px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:16px;margin-bottom:12px;}
+  .card h2{font-size:13px;color:var(--cyan);font-weight:600;margin-bottom:12px;
+           display:flex;align-items:center;gap:7px;}
+  .card h2::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--cyan);}
+  .kv{display:flex;padding:7px 0;border-bottom:1px dashed rgba(30,58,95,.7);font-size:14px;}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--dim2);width:88px;flex-shrink:0;}
+  .kv .v{color:var(--text);word-break:break-all;}
+  .kv .v b{color:var(--cyan);font-weight:600;}
+  .tl{position:relative;padding-left:22px;}
+  .tl::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;
+              width:2px;background:var(--line);}
+  .ti{position:relative;padding-bottom:16px;font-size:14px;}
+  .ti:last-child{padding-bottom:0;}
+  .ti::before{content:"";position:absolute;left:-20px;top:6px;width:10px;height:10px;
+              border-radius:50%;background:var(--panel);border:2px solid var(--cyan);}
+  .ti.pending::before{border-color:var(--amber);}
+  .ti .t{color:var(--dim);font-size:12px;margin-top:2px;}
+  .hint{background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.3);
+        border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.65;}
+  .hint b{color:var(--cyan);}
+  .btn{display:block;width:100%;padding:13px;border-radius:10px;text-align:center;
+       font-size:15px;font-weight:600;text-decoration:none;margin-top:10px;
+       background:linear-gradient(135deg,#0d9488,#0891b2);color:#fff;}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--dim2);
+             font-weight:400;font-size:14px;}
+  .foot{font-size:11px;color:var(--dim);line-height:1.7;margin-top:16px;
+        padding-top:12px;border-top:1px solid var(--line);}
+  .empty{color:var(--dim2);font-size:14px;padding:10px 0;}
+  .err{color:var(--red);font-size:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div style="flex:1">
+      <h1 id="title">工单详情</h1>
+      <div class="sub" id="subline">读取中…</div>
+    </div>
+    <span class="badge b-unknown" id="status-badge">加载中</span>
+  </div>
+
+  <div class="card" id="basic-card">
+    <h2>基本信息</h2>
+    <div id="basic"><div class="empty">读取中……</div></div>
+  </div>
+
+  <div class="card" id="timeline-card">
+    <h2>处理进度</h2>
+    <div class="tl" id="timeline"><div class="empty">读取中……</div></div>
+  </div>
+
+  <div class="card" id="next-card" hidden>
+    <h2>接下来</h2>
+    <div class="hint" id="next-hint"></div>
+  </div>
+
+  <div class="card" id="sub-card">
+    <h2>我的订阅</h2>
+    <div id="sub"><div class="empty">读取中……</div></div>
+    <a class="btn ghost" href="/my-subscription" id="sub-link">查看订阅详情</a>
+  </div>
+
+  <div class="foot">
+    · 本页只读，展示你本人提交的这一个工单；不含他人数据。<br>
+    · 数据处理口径：意图与路由用于把你的问题转给对应席位；画像仅统计次数与标的，不存聊天原文。<br>
+    · 若工单长时间未更新，可在飞书里直接回复「催一下」或发「投诉」，会升级到人工归口。
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const txt = v => (v === null || v === undefined || v === '') ? '—' : String(v);
+  const params = new URLSearchParams(location.search);
+  const id = (params.get('id') || '').trim();
+
+  const INTENT_LABEL = {
+    stock_consult: '个股咨询', watch_setup: '盯票设置',
+    subscription_qa: '订阅查询', billing: '账单/发票',
+    complaint: '投诉', feed: '内容投喂',
+    smalltalk: '闲聊', consult: '咨询（军师）', unclear: '待澄清',
+  };
+
+  function setStatus(state) {
+    const b = $('status-badge');
+    b.className = 'badge ' + (state === 'pending' ? 'b-pending'
+      : state === 'done' ? 'b-done' : 'b-unknown');
+    b.textContent = state === 'pending' ? '处理中'
+      : state === 'done' ? '已处理' : '状态未知';
+  }
+
+  function kv(k, v, isHTML) {
+    const d = document.createElement('div');
+    d.className = 'kv';
+    const kk = document.createElement('div');
+    kk.className = 'k'; kk.textContent = k;
+    const vv = document.createElement('div');
+    vv.className = 'v';
+    if (isHTML) vv.innerHTML = v; else vv.textContent = txt(v);
+    d.append(kk, vv);
+    return d;
+  }
+
+  async function getJSON(url) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const r = await fetch(url, {cache: 'no-store', signal: ctl.signal,
+                                  credentials: 'same-origin'});
+      const d = await r.json();
+      return d;
+    } finally { clearTimeout(timer); }
+  }
+
+  async function load() {
+    if (!id) {
+      $('basic').innerHTML = '<div class="err">缺少工单号（URL 需要 ?id=lg-…）。请从飞书卡片重新进入。</div>';
+      $('timeline').innerHTML = '<div class="empty">—</div>';
+      $('sub').innerHTML = '<div class="empty">—</div>';
+      return;
+    }
+    let d = null, err = null;
+    try { d = await getJSON('/api/comm/ticket?id=' + encodeURIComponent(id)); }
+    catch (e) { err = (e && e.name === 'AbortError') ? '超时' : (e.message || '网络错误'); }
+
+    if (err || !d || d.ok === false) {
+      const why = err || (d && d.error) || '未知';
+      $('basic').innerHTML = '<div class="err">读取失败（' + why
+        + '）。本页不显示兜底数据——不可把「读取失败」当成「工单不存在」。</div>';
+      $('timeline').innerHTML = '<div class="empty">—</div>';
+      $('sub').innerHTML = '<div class="empty">—</div>';
+      return;
+    }
+
+    const t = d.ticket || {};
+    $('title').textContent = '工单 ' + txt(t.dispatch_id);
+    $('subline').textContent = '提交于 ' + txt(t.submitted_at) + ' · 阚泽部通信与客户服务部';
+    setStatus(t.state === 'processed' ? 'done' : (t.state === 'inbox' ? 'pending' : 'unknown'));
+
+    const basic = $('basic');
+    basic.replaceChildren(
+      kv('工单号', txt(t.dispatch_id)),
+      kv('类型', txt(t.kind_label)),
+      kv('你的问题', txt(t.intent_label)),
+      kv('标的', t.code ? ('<b>' + t.code + '</b>') : '—', true),
+      kv('转派给', txt(t.route_desc)),
+      kv('处理时限', txt(t.deadline_min) + (t.deadline_min ? ' 分钟' : '')),
+      kv('当前状态', t.state === 'processed' ? '已处理' : (t.state === 'inbox' ? '排队中/处理中' : '未知'))
+    );
+
+    const tl = $('timeline');
+    tl.replaceChildren();
+    (d.timeline || []).forEach(step => {
+      const el = document.createElement('div');
+      el.className = 'ti' + (step.pending ? ' pending' : '');
+      const s = document.createElement('div');
+      s.textContent = step.label;
+      const tm = document.createElement('div');
+      tm.className = 't';
+      tm.textContent = step.time || '';
+      el.append(s, tm);
+      tl.append(el);
+    });
+    if (!(d.timeline || []).length) {
+      tl.innerHTML = '<div class="empty">暂无进度记录。</div>';
+    }
+
+    if (d.next_hint) {
+      $('next-card').hidden = false;
+      $('next-hint').innerHTML = d.next_hint;
+    }
+
+    // 订阅摘要（服务端已做字段最小化 + open_id 掩码）
+    const sub = $('sub');
+    if (d.subscription && d.subscription.ok) {
+      const s = d.subscription;
+      if (s.has_active) {
+        sub.replaceChildren(
+          kv('当前档位', txt(s.plan_id)),
+          kv('有效期至', txt(s.end)),
+          kv('今日额度', txt(s.used_today) + (s.quota ? ('/' + s.quota) : ''))
+        );
+      } else {
+        sub.innerHTML = '<div class="hint">你当前还没有生效的订阅。'
+          + '订阅后可享实时盯盘与自动提醒——<b>发消息问个股时不再排队</b>。</div>';
+      }
+    } else {
+      sub.innerHTML = '<div class="empty">订阅信息暂时读不到（不影响本工单处理）。</div>';
+    }
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

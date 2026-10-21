@@ -634,22 +634,47 @@ def _result_card(ticket, detail):
     return card
 
 
+def _public_base():
+    """卡片按钮外链基址。飞书客户端打开需能访问到 8091：
+    PC 端本机可用 127.0.0.1；手机/他人需配 COMM_PUBLIC_BASE（如 https://域名）。
+    未配置时按钮仍生成，但手机端点开不可达——UI 上不承诺跨端可用。
+    """
+    return (os.environ.get("COMM_PUBLIC_BASE") or "http://127.0.0.1:8091").rstrip("/")
+
+
 def _smart_card(ticket, smart):
-    """K3.1 智能接话卡：意图/路由/模型档位/回执文案一屏（诚实标注降级）。"""
+    """K3.1 智能接话卡（WO-FS-154 增：下钻按钮 + 去重复标题）。
+
+    版式：正文（回执）→ 分隔 → 意图/路由/档位 → 按钮（查看详情/催一下）。
+    标题只在 header 出现一次（此前 md 开头重复了一遍标题，视觉冗余）。
+    """
     from feishu_card_v2 import build_v3
     rt = smart.get("route") or {}
+    intent = smart.get("intent")
     md = (smart.get("reply_text") or "") + "\n\n---\n"
     md += "**意图** %s（%.2f · %s）" % (
-        smart.get("intent"), smart.get("confidence") or 0,
+        intent, smart.get("confidence") or 0,
         smart.get("channel") or "-")
     md += "\n**路由** %s ｜ **档位** %s" % (
         rt.get("desc") or rt.get("target") or "-",
         (smart.get("model") or {}).get("tier") or "-")
     if not smart.get("llm_ok") and smart.get("channel") == "fallback":
         md += "\n> 模型通道降级中，本条按规则处理；准确率以人工复核为准。"
+
+    # 下钻：派单类给工单详情页（URL 按钮，点击在飞书内置浏览器打开）
+    buttons = None
+    disp = smart.get("dispatch") or {}
+    did = disp.get("dispatch_id")
+    if did:
+        buttons = [
+            ("查看处理详情", ("url", "%s/comm/ticket?id=%s" % (_public_base(), did)),
+             "primary"),
+            ("查看我的订阅", ("url", "%s/my-subscription" % _public_base()), "default"),
+        ]
     card, _ = build_v3("interact", "阚泽部 · 受理 %s" % ticket,
                        "通信与客户服务部",
-                       md=md, tags="#comm #intake #%s" % (smart.get("intent"),))
+                       md=md, tags="#comm #intake #%s" % (intent,),
+                       buttons=buttons)
     return card
 
 

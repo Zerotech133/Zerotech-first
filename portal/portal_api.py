@@ -4059,6 +4059,95 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     import subscription_store as _sub_store
                     self._json(_sub_status_view(
                         _sub_store.get_subscriber_summary(_oid)))
+        elif path == "/api/comm/ticket":
+            # K4.4 工单详情只读端点（WO-FS-154，卡片下钻用）。
+            # 数据源 agent_platform/bridge_inbox（inbox/processed）+ 订阅账本。
+            # 安全口径：
+            # - id 必须是 lg-[a-z0-9]{12}（服务端生成的高熵 id），不接受路径穿越；
+            # - 返回体 open_id 一律掩码，不含聊天原文（inbox 里本就没有原文）；
+            # - 只读，无写参数；读不到就如实报 not_found，不造数据。
+            import re as _re_t
+            from urllib.parse import parse_qs as _pq_t
+            _q_t = _pq_t(qs, keep_blank_values=True)
+            _tid = (_q_t.get("id") or [""])[0].strip()
+            if not _re_t.match(r"^lg-[a-z0-9]{6,24}$", _tid):
+                self._json({"ok": False, "error": "bad_id"}, 400)
+            else:
+                try:
+                    from pathlib import Path as _P_t
+                    import json as _j_t
+                    _root = _P_t(__file__).resolve().parent.parent / "agent_platform" / "bridge_inbox"
+                    _rec = None
+                    _state = None
+                    for _sub, _st in (("inbox", "inbox"), ("processed", "processed")):
+                        _f = _root / _sub / ("%s.json" % _tid)
+                        if _f.exists():
+                            _rec = _j_t.loads(_f.read_text(encoding="utf-8"))
+                            _state = _st
+                            break
+                    if _rec is None:
+                        self._json({"ok": False, "error": "not_found"}, 404)
+                    else:
+                        _pl = _rec.get("payload") or {}
+                        _kind = _rec.get("kind") or ""
+                        _kind_label = {"task_request": "派单请求", "feedback": "投诉反馈",
+                                       "question": "咨询提问"}.get(_kind, _kind)
+                        _intent = _pl.get("intent") or ""
+                        _intent_label = {"stock_consult": "个股咨询", "watch_setup": "盯票设置",
+                                         "subscription_qa": "订阅查询", "billing": "账单/发票",
+                                         "complaint": "投诉", "feed": "内容投喂",
+                                         "smalltalk": "闲聊", "consult": "咨询（军师）",
+                                         "unclear": "待澄清"}.get(_intent, _intent or "—")
+                        _route_desc = {"stock_consult": "司马懿席（盯盘官）",
+                                       "watch_setup": "许褚营 G1 触发器",
+                                       "complaint": "田丰归口（最高优先级）"}.get(_intent, "客服席位")
+                        _oid = str(_pl.get("open_id") or "")
+                        _sub_info = {"ok": False}
+                        try:
+                            import subscription_store as _ss_t
+                            _sum = _ss_t.get_subscriber_summary(_oid) or {}
+                            _subs = _sum.get("subscriptions") or []
+                            _plan = (_subs[-1].get("plan_id") if _subs else "")
+                            _end = ((_subs[-1].get("end") or "")[:10] if _subs else "")
+                            _qmap = _sum.get("daily_quota_by_plan") or {}
+                            _used = _sum.get("today_used_by_prefix") or {}
+                            _sub_info = {
+                                "ok": True, "has_active": bool(_subs),
+                                "plan_id": _plan, "end": _end,
+                                "used_today": sum(int(v or 0) for v in _used.values()),
+                                "quota": int(_qmap.get(_plan) or 0),
+                            }
+                        except Exception:
+                            _sub_info = {"ok": False}
+                        _tl = [{"label": "已提交", "time": str(_rec.get("submitted_at") or "")[:19]}]
+                        if _state == "inbox":
+                            _tl.append({"label": "已转派 · 排队处理中", "time": "",
+                                        "pending": True})
+                        else:
+                            _tl.append({"label": "已处理完成", "time": ""})
+                        _hint = ("预计 %s 分钟内回复。若超时，可在飞书回复「催一下」加急。"
+                                 % (_pl.get("deadline_min") or 5)) \
+                            if _state == "inbox" else "本工单已处理完成。"
+                        self._json({
+                            "ok": True,
+                            "ticket": {
+                                "dispatch_id": _rec.get("id"),
+                                "state": _state,
+                                "kind": _kind, "kind_label": _kind_label,
+                                "intent": _intent, "intent_label": _intent_label,
+                                "code": _pl.get("code") or "",
+                                "route_desc": _route_desc,
+                                "deadline_min": _pl.get("deadline_min") or 5,
+                                "submitted_at": str(_rec.get("submitted_at") or "")[:19],
+                                "open_id_masked": (_oid[:6] + "**" + _oid[-2:]) if len(_oid) > 8 else "**",
+                            },
+                            "timeline": _tl,
+                            "next_hint": _hint,
+                            "subscription": _sub_info,
+                        })
+                except Exception:
+                    self._json({"ok": False, "error": "ticket_unavailable"}, 200)
+
         elif path == "/api/comm/interest":
             # K4.2 商机信号只读出口（WO-FS-148-9，2026-10-21）。
             # 数据源 comm_interest 聚合表（只存行为统计，无原文）。
@@ -4203,6 +4292,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 零参数只读 GET，零写操作。
             self._html_file(os.path.join(ROOT, "static",
                                           "my_subscription.html"))
+        elif path == "/comm/ticket":
+            # K4.4 工单详情页（卡片「查看详情」按钮落点）
+            self._html_file(os.path.join(ROOT, "static", "comm_ticket.html"))
         elif path == "/intel/stream":
             self._intel_page()
         elif path == "/gzh":
