@@ -16,7 +16,7 @@
   .legend { display: flex; gap: 12px; font-size: 11px; color: #8FA8C0; flex-wrap: wrap; }
   .lg { display: flex; align-items: center; gap: 5px; }
   .lamp { width: 8px; height: 8px; border-radius: 50%; }
-  .l-cloud { background: #EF9F27; } .l-local { background: #4FD1A5; } .l-none { background: #5A7190; }
+  .l-local { background: #4FD1A5; } .l-cyc { background: #4FA3E8; } .l-idle { background: #5A7190; } .l-none { background: #3A4A5E; }
   .statbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .stat { background: #0F2440; border-radius: 10px; padding: 9px 13px; border: 0.5px solid #1E3A5F; }
   .stat-n { font-size: 21px; font-weight: 500; color: #4FD1A5; }
@@ -67,8 +67,9 @@
   <div class="hdr">
     <div class="hdr-l"><div class="dot"></div><h1>数字军团 · 指挥沙盘</h1><span class="sub" id="ts">拉取快照…</span></div>
     <div class="legend">
-      <span class="lg"><span class="lamp l-local"></span>本地模型</span>
-      <span class="lg"><span class="lamp l-cloud"></span>云端模型</span>
+      <span class="lg"><span class="lamp l-local"></span>本席在跑</span>
+      <span class="lg"><span class="lamp l-cyc"></span>本营有活</span>
+      <span class="lg"><span class="lamp l-idle"></span>待命</span>
       <span class="lg"><span class="lamp l-none"></span>未绑定</span>
       <span class="lg" style="color:#5A7190">▭ 虚位可募</span>
     </div>
@@ -111,9 +112,13 @@ const CAMPS = [
 let SNAP = null;
 const seatIndex = {};
 
-function lamp(binding) {
-  if (!binding) return 'l-none';
-  return /glm|openai/.test(binding) ? 'l-cloud' : 'l-local';
+function lamp(a, dept) {
+  const act = (SNAP && SNAP.activity) || {};
+  const byAgent = act.by_agent || {}, byDept = act.by_dept || {};
+  if ((byAgent[a.id] || []).length) return 'l-local';
+  if (dept && (byDept[dept.id] || []).length) return 'l-cyc';
+  if (!a.binding) return 'l-none';
+  return 'l-idle';
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -144,8 +149,10 @@ function render(snap) {
         '<span class="dept-lead">' + (d.lead ? '主官 <b>' + esc(d.lead) + '</b>' : '主官待任') + '</span></div><div class="seats">';
       d.agents.forEach(a => {
         seatIndex[a.id] = a;
-        html += '<div class="seat" onclick="showSeat(\'' + esc(a.id) + '\')"><div class="aid">' + esc(a.id) + '</div>' +
-          '<div class="cn"><span class="slamp ' + lamp(a.binding) + '"></span>' + esc(a.cn) + '</div></div>';
+        const n = ((SNAP.activity && SNAP.activity.by_agent) || {})[a.id] || [];
+        html += '<div class="seat" onclick="showSeat(\'' + esc(a.id) + '\')"><div class="aid">' + esc(a.id) +
+          (n.length ? ' · ' + n.length + '单' : '') + '</div>' +
+          '<div class="cn"><span class="slamp ' + lamp(a, d) + '"></span>' + esc(a.cn) + '</div></div>';
       });
       if (!d.agents.length) html += '<div class="seat vac" onclick="openRecruit(\'' + esc(d.name) + '\',true)">＋ 任命主官</div>';
       html += '<div class="seat vac" onclick="openRecruit(\'' + esc(d.name) + '\')">＋ 虚席</div>';
@@ -159,7 +166,9 @@ function render(snap) {
 function showSeat(id) {
   const a = seatIndex[id]; if (!a) return;
   const dept = (SNAP.departments.find(d => d.agents.some(x => x.id === id)) || {});
-  const doing = (SNAP.activity.doing || []).filter(t => t.owner === id);
+  const byAgent = (SNAP.activity && SNAP.activity.by_agent) || {};
+  const myKeys = byAgent[id] || [];
+  const doing = (SNAP.activity.doing || []).filter(t => myKeys.indexOf(t.key) >= 0);
   document.getElementById('drawerBody').innerHTML =
     '<h3>' + esc(a.cn) + ' <span style="color:#8FA8C0;font-size:12px;font-weight:400">' + esc(a.id) + '</span></h3>' +
     '<div class="kv"><span class="k">隶属营</span><span>' + esc(dept.name || '—') + '</span></div>' +

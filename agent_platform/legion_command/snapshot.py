@@ -16,7 +16,39 @@ _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
+
+# 在途工单归属规则（版本化）：tasks.json 的 owner 多为 unknown-agent，
+# 按 key 前缀 / 描述关键词把任务归到部门与席位，让沙盘能显示"谁在干什么"。
+# 只做标签映射，不改 tasks.json 任何字段。
+ACTIVITY_RULES_VERSION = "1.0"
+ACTIVITY_RULES = (
+    # (匹配函数名, 部门 id, 席位 id 或 "")
+    ("desc", "盘前", "invest", "D1"),
+    ("desc", "三线扫描", "invest", "D1"),
+    ("desc", "复盘三问", "ops", "A0A"),
+    ("desc", "军团周报", "ops", "A0A"),
+    ("desc", "晨会", "ops", "A0A"),
+    ("key_prefix", "legion-", "invest", "D1"),
+    ("key_prefix", "K-INTEL", "intel", ""),
+    ("key_prefix", "K-ORG", "ops", ""),
+    ("key_contains", "hermes", "ops", ""),
+    ("key_contains", "Hermes", "ops", ""),
+)
+
+
+def _map_task(key: str, desc: str) -> tuple:
+    """返回 (dept_id, agent_id) 或 ("", "")。命中即停（顺序即优先级）。"""
+    k = str(key)
+    d = str(desc)
+    for mode, pat, dept, agent in ACTIVITY_RULES:
+        if mode == "desc" and pat in d:
+            return dept, agent
+        if mode == "key_prefix" and k.startswith(pat):
+            return dept, agent
+        if mode == "key_contains" and pat in k:
+            return dept, agent
+    return "", ""
 
 
 def _load_json(path: Path):
@@ -75,9 +107,23 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
     if isinstance(tasks, dict):
         for k, v in tasks.items():
             if isinstance(v, dict) and v.get("status") == "doing":
+                dept, agent = _map_task(k, v.get("desc", ""))
                 doing.append({"key": k,
                               "desc": str(v.get("desc", ""))[:80],
-                              "owner": v.get("owner", "")})
+                              "owner": v.get("owner", ""),
+                              "dept": dept,
+                              "agent": agent})
+
+    by_dept: dict = {}
+    by_agent: dict = {}
+    unmapped = []
+    for t in doing:
+        if t["dept"]:
+            by_dept.setdefault(t["dept"], []).append(t["key"])
+        else:
+            unmapped.append(t["key"])
+        if t["agent"]:
+            by_agent.setdefault(t["agent"], []).append(t["key"])
 
     schedules = _load_json(root / "data" / "schedules.json")
     sched = []
@@ -104,6 +150,10 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
             "binding": (org.get("chief") or {}).get("llm_binding", ""),
         },
         "departments": departments,
-        "activity": {"doing": doing},
+        "activity": {"doing": doing,
+                     "by_dept": by_dept,
+                     "by_agent": by_agent,
+                     "unmapped": unmapped,
+                     "rules_version": ACTIVITY_RULES_VERSION},
         "schedules": sched,
     }

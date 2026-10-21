@@ -20,6 +20,7 @@ sys.path.insert(0, str(_PLATFORM))
 
 from gateway import inbox_gateway  # noqa: E402
 from legion_command import snapshot as snap  # noqa: E402
+from legion_command.snapshot import build_snapshot  # noqa: E402
 from legion_command.serve import build_server  # noqa: E402
 
 
@@ -35,7 +36,7 @@ def store(tmp_path, monkeypatch):
 def test_snapshot_real_org(tmp_path):
     data = snap.build_snapshot()
     assert data["ok"] is True
-    assert data["schema_version"] == "1.0"
+    assert data["schema_version"] == "1.1"  # S29 起 activity 结构升版
     s = data["summary"]
     assert s["departments"] >= 13
     assert s["agents"] >= 25  # org 在编 29（hr 55 档含编外，org.json 为真源）
@@ -269,3 +270,44 @@ def test_http_chat_openai_channel_not_ready(server, monkeypatch):
     assert env["error"]["code"] == "channel_not_ready"
     assert "Q12" in env["error"]["message"]
     assert calls == []
+
+
+# ---------------------------------------------------------------- 在途归属映射（S29）
+
+def test_activity_mapping_covers_real_tasks():
+    """真实 tasks.json 的 doing 应全部可归属到部门（0 unmapped）。"""
+    data = build_snapshot()
+    act = data["activity"]
+    assert act["rules_version"] == "1.0"
+    if act["doing"]:
+        assert act["unmapped"] == [], "存在未归属在途单：%s" % act["unmapped"]
+        assert sum(len(v) for v in act["by_dept"].values()) == len(act["doing"])
+
+
+def test_activity_maps_known_prefixes():
+    data = build_snapshot()
+    act = data["activity"]
+    if not act["doing"]:
+        pytest.skip("当前无在途单")
+    for t in act["doing"]:
+        assert t["dept"], "任务 %s 未归属" % t["key"]
+    if any(t["key"].startswith("K-INTEL") for t in act["doing"]):
+        assert "intel" in act["by_dept"]
+
+
+def test_activity_mapping_does_not_touch_tasks_json():
+    from pathlib import Path as _P
+    p = _P(__file__).resolve().parents[2] / ".worktrees" / "tasks.json"
+    before = p.read_bytes() if p.exists() else None
+    build_snapshot()
+    after = p.read_bytes() if p.exists() else None
+    assert before == after
+
+
+def test_map_task_rules():
+    from legion_command.snapshot import _map_task
+    assert _map_task("legion-1021093009", "盘前 weak 池三线扫描") == ("invest", "D1")
+    assert _map_task("x", "每日复盘三问汇总") == ("ops", "A0A")
+    assert _map_task("K-INTEL-20261018-RO", "") == ("intel", "")
+    assert _map_task("K-ORG-180", "") == ("ops", "")
+    assert _map_task("random-task", "无关键词") == ("", "")
