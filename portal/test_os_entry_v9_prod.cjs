@@ -72,6 +72,43 @@ check('存在 jumpWork 函数', html.includes('function jumpWork'));
 check('建议条目可点击 data-work-domain', html.includes('data-work-domain'));
 check('能力目录支持 highlighted 高亮类', /cap-item\.highlighted\s*\{/.test(html));
 
+// 2j. WO-OS-24 执行级渲染断言：briefCard 必须能真跑通（防未声明变量致建议区空白）
+// 静态字符串断言抓不到 ReferenceError——验收席实测页面 briefCard 引用了未声明的
+// meta，只要建议非空就抛错、整块建议区渲染中断。此处构造最小 DOM stub 真执行一次。
+(function test_briefCard_actually_renders() {
+  const m = html.match(/function briefCard\(s\)\{[\s\S]*?return n\}/);
+  if (!m) { failures.push('未找到 briefCard 函数体'); return; }
+  const makeEl = () => ({
+    tag: '', cls: '', text: '', children: [], dataset: {}, title: '',
+    append(...kids) { this.children.push(...kids); },
+    setAttribute() {},
+  });
+  const elStub = (tag, cls, text) => {
+    const n = makeEl();
+    n.tag = tag; n.cls = cls || ''; n.text = text === undefined ? '' : String(text);
+    return n;
+  };
+  const linkForStub = () => null;
+  let factory;
+  try {
+    factory = new Function('el', 'linkFor', 'return (' + m[0] + ');');
+  } catch (e) {
+    failures.push('briefCard 无法构造：' + e.message);
+    return;
+  }
+  const briefCard = factory(elStub, linkForStub);
+  try {
+    const card = briefCard({
+      id: 'notify:history_cluster', domain: '通知', priority: 2,
+      reason: '近 7 天投递失败簇 21 条', source: '/api/notify/queue', as_of: null,
+    });
+    check('briefCard 执行成功返回节点', !!card && typeof card.append === 'function');
+    check('briefCard 渲染出内容', !!card && card.children.length >= 2);
+  } catch (e) {
+    failures.push('briefCard 执行抛错（建议区会整块空白）：' + e.message);
+  }
+})();
+
 // 2i. WO-OS-15 ResultEvidence DEMO 样例：容器 + data-demo 标记 + 显式演示文案 + 三条样例走契约 entry()
 check('样例容器 evidence-sample', /id="evidence-sample"/.test(html));
 check('样例条目 data-demo=true 标记', html.includes("'data-demo','true'"));
