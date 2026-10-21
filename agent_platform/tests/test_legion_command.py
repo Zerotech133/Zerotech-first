@@ -311,3 +311,92 @@ def test_map_task_rules():
     assert _map_task("K-INTEL-20261018-RO", "") == ("intel", "")
     assert _map_task("K-ORG-180", "") == ("ops", "")
     assert _map_task("random-task", "无关键词") == ("", "")
+
+
+# ------------------------------------------------- 会终纪要落盘（S31）
+
+@pytest.fixture()
+def meeting_server(store, tmp_path, monkeypatch):
+    """纪要端点定向到 tmp，绝不写真实 data/meetings。"""
+    from legion_command import serve as srv_mod
+    mdir = tmp_path / "warroom"
+    monkeypatch.setattr(srv_mod, "MEETINGS_DIR", mdir)
+    srv = build_server(port=0)
+    th = threading.Thread(target=srv.serve_forever, daemon=True)
+    th.start()
+    yield "http://127.0.0.1:%d" % srv.server_address[1], mdir
+    srv.shutdown()
+    srv.server_close()
+
+
+def test_minutes_saved_with_source_tags(meeting_server):
+    base, mdir = meeting_server
+    env = _post(base, "/api/meeting/minutes", {
+        "participants": ["A0", "D1", "R3"],
+        "orders": [{"title": "心跳修复", "state": "已下发"}],
+        "model_stats": {"ok": 2, "fail": 1},
+        "minutes": [
+            {"id": "HOST", "text": "今日盘面怎么看？", "src": "host"},
+            {"id": "D1", "text": "选股面：需查证池源后再报。", "src": "live"},
+            {"id": "R3", "text": "演示台词内容", "src": "script"},
+        ]})
+    assert env["ok"] is True and env["count"] == 3
+    files = list(mdir.glob("warroom-*.json"))
+    assert len(files) == 1
+    doc = json.loads(files[0].read_text(encoding="utf-8"))
+    assert doc["schema_version"] == "1.0"
+    assert doc["participants"] == ["A0", "D1", "R3"]
+    assert doc["model_stats"] == {"ok": 2, "fail": 1}
+    # 来源标记必须原样保留——纪要的价值就在能分辨真模型/降级/台词
+    assert [m["src"] for m in doc["minutes"]] == ["host", "live", "script"]
+    assert doc["minutes"][1]["text"].startswith("选股面")
+
+
+def test_minutes_empty_rejected_no_file(meeting_server):
+    base, mdir = meeting_server
+    for bad in ({}, {"minutes": []}, {"minutes": "notalist"}):
+        try:
+            _post(base, "/api/meeting/minutes", bad)
+            raised = False
+        except urllib.error.HTTPError as e:
+            raised = e.code == 400
+        assert raised, bad
+    assert not list(mdir.glob("*.json")) if mdir.exists() else True
+
+
+def test_minutes_truncates_oversize(meeting_server):
+    base, mdir = meeting_server
+    # 230 条 × 2000 字 ≈ 460KB，在 512KB 长度门之内，专门验条数与单条截断
+    rows = [{"id": "D1", "text": "x" * 2000, "src": "live"} for _ in range(230)]
+    env = _post(base, "/api/meeting/minutes", {"minutes": rows})
+    assert env["ok"] is True and env["count"] == 200
+    doc = json.loads(next(mdir.glob("warroom-*.json")).read_text(encoding="utf-8"))
+    assert len(doc["minutes"]) == 200
+    assert len(doc["minutes"][0]["text"]) == 2000   # 单条截断上限
+
+
+def test_minutes_filename_is_server_generated(meeting_server):
+    """不信任客户端路径：传 filename/path 字段一律忽略，落盘只在 MEETINGS_DIR 内。"""
+    base, mdir = meeting_server
+    env = _post(base, "/api/meeting/minutes", {
+        "filename": "../../evil.json", "path": "C:/Windows/evil.json",
+        "minutes": [{"id": "A0", "text": "ok", "src": "live"}]})
+    assert env["ok"] is True
+    assert env["saved"].split("\\")[-1].startswith("warroom-")
+    assert not (mdir.parent / "evil.json").exists()
+    assert len(list(mdir.glob("warroom-*.json"))) == 1
+
+
+def test_minutes_bad_length_rejected(meeting_server):
+    """超 512KB 请求体直接 400（不当内存炸弹）。"""
+    base, mdir = meeting_server
+    big = json.dumps({"minutes": [{"id": "A0", "text": "y" * 600000, "src": "live"}]}).encode()
+    req = urllib.request.Request(base + "/api/meeting/minutes", data=big,
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        urllib.request.urlopen(req, timeout=10)
+        raised = False
+    except urllib.error.HTTPError as e:
+        raised = e.code == 400
+    assert raised
+    assert not list(mdir.glob("*.json")) if mdir.exists() else True

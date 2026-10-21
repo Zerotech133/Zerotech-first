@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -27,6 +28,8 @@ from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
 from legion_command.snapshot import build_snapshot  # noqa: E402
 
 _STATIC = Path(__file__).resolve().parent / "static"
+# 作战会议室纪要落盘目录（模块级，测试可 monkeypatch 到 tmp）
+MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "warroom"
 _KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 
 # 参会席位 → 模型绑定（10-51 异族裁决 + org.json 主事实源；未列出席位默认本地 9b）
@@ -148,7 +151,7 @@ class Handler(BaseHTTPRequestHandler):
                                  "error": {"code": "channel_not_ready",
                                            "message": "openai 通道待 Q12 OPENAI_API_KEY 注入"},
                                  "degraded": False, "latency_ms": 0,
-                                 "ts": __import__("time").strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                                  "agent": agent, "binding": binding})
                 return
             env = llm_gateway.chat(
@@ -170,6 +173,48 @@ class Handler(BaseHTTPRequestHandler):
             env["agent"] = agent
             env["binding"] = env.get("data", {}).get("binding_resolved", binding)
             self._send_json(env)
+            return
+        if path == "/api/meeting/minutes":
+            # 会终纪要落盘：真模型发言是真实资产，停在前端内存里就丢了。
+            # 只接受对话内容与参会名单，文件名一律服务端生成（不收用户路径）。
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 512 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            raw = req.get("minutes")
+            if not isinstance(raw, list) or not raw:
+                self._send_json({"ok": False, "error": "empty_minutes"}, 400)
+                return
+            rows = []
+            for m in raw[:200]:
+                if not isinstance(m, dict):
+                    continue
+                rows.append({"by": str(m.get("id", ""))[:24],
+                             "src": str(m.get("src", ""))[:12],
+                             "text": str(m.get("text", ""))[:2000]})
+            stamp = time.strftime("%Y%m%d-%H%M%S")
+            out_dir = MEETINGS_DIR
+            out_dir.mkdir(parents=True, exist_ok=True)
+            doc = {"schema_version": "1.0", "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                   "participants": [str(p)[:24] for p in (req.get("participants") or [])][:30],
+                   "orders": req.get("orders") if isinstance(req.get("orders"), list) else [],
+                   "model_stats": req.get("model_stats") if isinstance(req.get("model_stats"), dict) else {},
+                   "minutes": rows,
+                   "note": "指挥台作战会议室会终纪要；src=live 为真模型应答 / degraded 降级通道 / script 演示台词"}
+            target = out_dir / ("warroom-%s.json" % stamp)
+            tmp = target.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+            tmp.replace(target)
+            try:
+                rel = str(target.relative_to(_PLATFORM))
+            except ValueError:
+                rel = str(target)
+            self._send_json({"ok": True, "saved": rel,
+                             "count": len(rows)})
             return
         if path != "/api/dispatch":
             self._send_json({"ok": False, "error": "not_found"}, 404)
@@ -215,11 +260,11 @@ def main(argv=None):
             break
         except OSError as exc:
             print("[legion-command] bind %s:%d failed (attempt %d/3): %s"
-                  % (args.host, args.port, attempt, exc), file=__import__("sys").stderr)
-            __import__("time").sleep(2)
+                  % (args.host, args.port, attempt, exc), file=sys.stderr)
+            time.sleep(2)
     if srv is None:
         print("[legion-command] giving up: port %d unavailable" % args.port,
-              file=__import__("sys").stderr)
+              file=sys.stderr)
         return 3
     print("legion-command serving on %s:%d" % (args.host, args.port), flush=True)
     try:

@@ -85,6 +85,11 @@
   .simstat b { color: #E8F0F8; font-weight: 500; }
   .dfoot { font-size: 10.5px; color: #5A7190; line-height: 1.6; }
   @media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } .picker { max-height: 38vh; } }
+  .src { font-size: 9px; padding: 1px 5px; border-radius: 3px; margin-left: 6px; vertical-align: 1px; font-weight: 600; }
+  .s-live { background: rgba(79,209,165,.16); color: #4FD1A5; }
+  .s-deg { background: rgba(239,159,39,.16); color: #EF9F27; }
+  .s-script { background: rgba(90,113,144,.20); color: #7C93AD; }
+  .gatebar { font-size: 10px; color: #7C93AD; padding: 3px 10px; }
 </style>
 </head>
 <body>
@@ -160,27 +165,69 @@
 </div>
 
 <script>
-const AGENT_BIND = { A0:'glm/glm-5.3', AI1:'openai/gpt-6.0', R2:'ollama/qwen3.5:9b', OPT1:'glm/glm-4.6' };
-const SOUL_HINT = {
-  A0: '你是田丰，数字军团执行相。风格：短句，结论先行，凡输出带下一步动作。不超过120字。',
-  AI1: '你是诸葛亮，反向军师。风格：先求败因再论胜机，指出对方没想到的三件事。不超过150字。',
-  R2: '你是赵云，进化官。风格：只认证据，任何建议须带对照验证方法，结尾声明等签字不自认通过。不超过120字。'
+// ---- 席位 → 模型绑定（与后端 AGENT_BINDING 同口径；未列席位后端默认本地 9b）----
+const AGENT_BIND = {
+  A0:'glm/glm-5.3', AI1:'openai/gpt-6.0', OPT1:'glm/glm-4.6',
+  ST1:'glm/glm-5.3', ARCH1:'glm/glm-5.3', SEC2:'glm/glm-5.3', LEG1:'glm/glm-5.3',
+  R2:'ollama/qwen3.5:9b', DEV2:'ollama/qwen3.6:35b-a3b'
 };
-const MODEL_LIVE = { ok: 0, de: 0 };
+const DEPT_FACE = {
+  zhong:'中军帐（决策与归口）', quant:'量化交易营（选股与研判）', risk:'风控与盯盘营',
+  acad:'研究院（研究方法与架构）', intel:'情报营（信源与判读）',
+  ops:'运行体（机制运行与汇报）', dev:'研发营（工程质量）'
+};
+// 三常任席保留 SOUL 人格；其余按营职能面发言
+const SOUL_HINT = {
+  A0: '你是田丰，数字军团执行相。短句，结论先行，凡输出带下一步动作。',
+  AI1: '你是诸葛亮，反向军师。先求败因再论胜机，指出对方没想到的三件事。',
+  R2: '你是赵云，进化官。只认证据，任何建议须带对照验证方法，结尾声明等签字不自认通过。'
+};
+// 【铁律·防造数】本层没有实时行情/工单/账本读数，模型一律不得编造具体数字
+const NO_FABRICATION = '\n【铁律】你手上没有实时行情、工单、账本数据。凡是具体数字（价格、收益率、' +
+  '单数、胜率、样本量、持仓金额）一律不得编造；缺数据就明说"需查证"并指出该查哪个源。' +
+  '你可以在会上表态、提方法、指风险，但不能假装已经跑过计算。不超过 120 字。';
+
+function buildSystem(id) {
+  if (SOUL_HINT[id]) return SOUL_HINT[id] + NO_FABRICATION;
+  const a = AGENTS[id] || {};
+  const face = DEPT_FACE[a.grp] || '数字军团';
+  return '你是数字军团「' + face + '」的 ' + (a.nm || id) + '。会上只代表你的职能面发言，' +
+    '给判断和方法，不越界替别的营讲话。' + NO_FABRICATION;
+}
+
+// ---- 并发闸：本地 9b 单机排队，同时最多 2 个 in-flight ----
+const LLM_GATE = { max: 2, cur: 0, q: [] };
+function gateRun(fn) {
+  return new Promise(res => {
+    const tryRun = () => {
+      if (LLM_GATE.cur < LLM_GATE.max) { LLM_GATE.cur++; fn().then(res).finally(() => { LLM_GATE.cur--; const n = LLM_GATE.q.shift(); if (n) n(); }); }
+      else LLM_GATE.q.push(tryRun);
+    };
+    tryRun();
+  });
+}
+const MODEL_LIVE = { ok: 0, deg: 0, fail: 0 };
+const TIMEOUT_MS = 25000;
+
 function chatLive(agentId, question, fallbackCb) {
-  const bind = AGENT_BIND[agentId];
-  if (!bind) { fallbackCb(); return; }
-  fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ agent: agentId, system: SOUL_HINT[agentId] || '你是数字军团成员，简短专业发言，不超过100字。',
-      user: '会议主持（老田）问：' + question + '（结合你的职能面回答）' }) })
-  .then(r => r.json())
-  .then(env => {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  gateRun(() => fetch('/api/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
+    body: JSON.stringify({ agent: agentId, system: buildSystem(agentId),
+      user: '会议主持（老田）问：' + question + '（只从你职能面回答，不知道就说需查证）' })
+  }).then(r => r.json()).then(env => {
+    clearTimeout(timer);
     if (env.ok && env.data && env.data.text) {
       MODEL_LIVE.ok++;
-      add(agentId, env.data.text.trim().slice(0, 600) + (env.degraded ? ' <span style="color:#EF9F27;font-size:10px">[降级]</span>' : ''));
-    } else { MODEL_LIVE.de++; fallbackCb(); }
-  })
-  .catch(() => { MODEL_LIVE.de++; fallbackCb(); });
+      add(agentId, esc(env.data.text.trim().slice(0, 600)),
+          env.degraded ? 'degraded' : 'live');
+    } else { MODEL_LIVE.fail++; fallbackCb(); }
+  }).catch(() => { clearTimeout(timer); MODEL_LIVE.fail++; fallbackCb(); }));
+}
+
+function esc(t) {
+  return String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 </script>
 <script>
@@ -229,45 +276,68 @@ function renderTable() {
 }
 const chat = document.getElementById('chat');
 function ensureChat() { const e = chat.querySelector('.empty'); if (e) e.remove(); }
-function add(id, text) {
+const SRC_CHIP = {
+  live:    '<span class="src s-live">真模型</span>',
+  degraded:'<span class="src s-deg">降级通道</span>',
+  script:  '<span class="src s-script">演示台词</span>'
+};
+function add(id, text, src) {
   ensureChat();
   const isHost = id === 'HOST';
   const a = isHost ? null : AGENTS[id];
   const d = document.createElement('div');
   d.className = 'msg' + (isHost ? ' host' : '');
+  const chip = isHost ? '' : (SRC_CHIP[src || 'script'] || '');
   d.innerHTML = isHost
     ? '<div class="av2 c-h">田</div><div class="body"><div class="who">老田 · 董事长</div>' + text + '</div>'
-    : '<div class="av2 ' + a.c + '">' + a.av + '</div><div class="body"><div class="who">' + a.nm + ' · ' + a.md + '</div>' + text + '</div>';
+    : '<div class="av2 ' + a.c + '">' + a.av + '</div><div class="body"><div class="who">' + a.nm + ' · ' + a.md + chip + '</div>' + text + '</div>';
   chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+  MINUTES.push({ id: id, text: text, src: src || (isHost ? 'host' : 'script') });
 }
+const MINUTES = [];
 const QT = ['今日盘面怎么看？', '模拟盘要不要调仓？', '下周策略重点？'];
 function ask(i) {
   add('HOST', QT[i]);
-  if (!picked.length) { setTimeout(() => add('A0', '先从左侧点名上桌，我再开单。'), 400); return; }
-  const LIVE = ['A0', 'AI1', 'R2'];
+  if (!picked.length) { setTimeout(() => add('A0', '先从左侧点名上桌，我再开单。', 'script'), 400); return; }
   picked.forEach((id, k) => setTimeout(() => {
-    if (LIVE.includes(id)) chatLive(id, QT[i], () => add(id, AGENTS[id].line));
-    else add(id, AGENTS[id].line);
-  }, 500 + k * 900));
+    chatLive(id, QT[i], () => add(id, AGENTS[id].line, 'script'));
+  }, 400 + k * 260));
   setTimeout(() => add('A0', '<b>汇总：</b>各方意见已齐。风险点交诸葛复核，实验归赵云，执行单我立。要下发点右侧「会终」。'), 500 + picked.length * 900 + 1500);
 }
 function send() {
   const v = document.getElementById('say').value.trim(); if (!v) return;
   add('HOST', v); document.getElementById('say').value = '';
   if (!picked.length) return;
-  const LIVE = ['A0', 'AI1', 'R2'];
   picked.forEach((id, k) => setTimeout(() => {
-    if (LIVE.includes(id)) chatLive(id, v, () => add(id, AGENTS[id].line));
-    else add(id, AGENTS[id].line);
-  }, 400 + k * 900));
+    chatLive(id, v, () => add(id, AGENTS[id].line, 'script'));
+  }, 300 + k * 260));
 }
 let otype = 'work';
 document.querySelectorAll('.ot').forEach(el => el.onclick = () => {
   document.querySelectorAll('.ot').forEach(x => x.classList.remove('on'));
   el.classList.add('on'); otype = el.dataset.t;
 });
+function saveMinutes() {
+  const orders = [];
+  document.querySelectorAll('#orderList .oi').forEach(el => {
+    orders.push({ title: (el.querySelector('.ot2') || el).textContent.trim().slice(0, 80),
+                  state: (el.querySelector('.st') || {}).textContent || '' });
+  });
+  fetch('/api/meeting/minutes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ participants: picked.slice(), orders: orders,
+      model_stats: MODEL_LIVE, minutes: MINUTES }) })
+  .then(r => r.json())
+  .then(env => {
+    if (env.ok) add('HOST', '<span style="color:#4FD1A5;font-size:11px">纪要已存档：' +
+      esc(env.saved) + '（' + env.count + ' 条 · 真模型 ' + MODEL_LIVE.ok + ' 次）</span>');
+    else add('HOST', '<span style="color:#EF9F27;font-size:11px">纪要存档失败：' +
+      esc(env.error || '?') + '（对话仍在页面内，可截图留证）</span>');
+  })
+  .catch(() => add('HOST', '<span style="color:#EF9F27;font-size:11px">纪要存档失败：端点不可达</span>'));
+}
 function endMeeting() {
   if (!picked.length) { alert('先选参会 Agent'); return; }
+  saveMinutes();
   add('HOST', '【会终】指令下发。');
   const tn = { work:'WO-', trade:'SIM-', study:'RS-' }[otype];
   setTimeout(() => add('A0', picked.includes('A0') ? '指令已入 .worktrees（' + tn + '系列），登记去重完成，各席执行，StatusPoint 回传。' : '田丰代收：指令已入 .worktrees（' + tn + '系列），登记去重，各席执行，StatusPoint 回传沙盘。'), 400);
