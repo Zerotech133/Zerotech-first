@@ -341,5 +341,64 @@ check('样例渲染延后到 DOMContentLoaded',
   /document\.readyState==='loading'[\s\S]{0,120}renderEvidenceSample/.test(html));
 check('样例契约缺载文案指向真实文件', html.includes('/static/os_result_contract.js）未加载'));
 
+// 2r. WO-OS-31 D5 地基状态灯：结构断言 + 真执行 renderFoundation 行为断言
+check('地基灯面板存在', html.includes('id="board-foundation"'));
+check('地基灯数据源为审计摘要',
+  html.includes("get('/data/task_exit_audit/task_exit_summary.json')"));
+check('地基灯并入refresh链', /renderFoundation\(foundationPayload\)/.test(html));
+(function test_renderFoundation_behaviour() {
+  const s = html.indexOf('function renderFoundation(');
+  const e = html.indexOf('async function fetchFoundation(');
+  if (s < 0 || e < 0 || e < s) { failures.push('renderFoundation 片段定位失败'); return; }
+  const src = html.slice(s, e);
+  const makeEl = (t, c, x) => ({
+    tag: t, cls: c || '', text: x === undefined ? '' : String(x), children: [],
+    append(...k) { this.children.push(...k); },
+    setAttribute(k, v) { this[k] = v; },
+  });
+  const box = { children: [], replaceChildren() { this.children = []; }, append(n) { this.children.push(n); } };
+  let render;
+  try {
+    render = new Function('window', '$', 'el', src + '; return renderFoundation;')(
+      {}, () => box, makeEl);
+  } catch (err) {
+    failures.push('renderFoundation 构造失败：' + err.message); return; }
+  const allText = () => box.children.map(n => n.text + ' ' + n.children.map(c => c.text).join(' ')).join(' ');
+
+  // a) 失败态：读取失败必须显式说，不得推断为正常
+  box.replaceChildren();
+  render({ __failed: true, reason: 'HTTP 404' });
+  check('地基·读取失败显式', allText().indexOf('读取失败') !== -1 && allText().indexOf('不推断为正常') !== -1);
+
+  // b) 真实摘要（当前盘面 9 失败）：红灯 + 失败数 + 首三个任务名 + 超3条截断
+  box.replaceChildren();
+  render({ generated_at: '2026-10-22T01:39:00+08:00', total_scanned: 42, ok: 29,
+           failed: 9, disabled: 2, never_run: 2,
+           failures: [
+             { name: 'QuantWatchdog', last_result: 2 },
+             { name: 'AlertWatch', last_result: 1 },
+             { name: 'AgentMondayCheckpoint', last_result: 3221225786 },
+             { name: 'HermesBriefPush', last_result: 267014 },
+           ] });
+  const txt = allText();
+  check('地基·失败态红灯', txt.indexOf('● 红') !== -1);
+  check('地基·失败数与任务名', txt.indexOf('失败 9/42') !== -1 && txt.indexOf('QuantWatchdog exit=2') !== -1);
+  check('地基·超出3条截断提示', txt.indexOf('AgentMondayCheckpoint') !== -1 && txt.indexOf(' 等') !== -1);
+
+  // c) 全绿态：0 失败给绿灯 + 正常退出≠有产出 caveat
+  box.replaceChildren();
+  render({ generated_at: '2026-10-22T01:39:00+08:00', total_scanned: 42, ok: 42,
+           failed: 0, disabled: 0, never_run: 0, failures: [] });
+  const green = allText();
+  check('地基·全绿态绿灯', green.indexOf('● 绿') !== -1 && green.indexOf('● 红') === -1);
+  check('地基·绿灯 caveat 正常退出≠有产出', green.indexOf('正常退出≠有产出') !== -1);
+
+  // d) 覆盖不全：有禁用/未跑给黄灯
+  box.replaceChildren();
+  render({ generated_at: '2026-10-22T01:39:00+08:00', total_scanned: 42, ok: 38,
+           failed: 0, disabled: 2, never_run: 2, failures: [] });
+  check('地基·覆盖不全黄灯', allText().indexOf('● 黄') !== -1);
+})();
+
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-01/08/10/11 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议/8091路由渐进消费本地兜底');

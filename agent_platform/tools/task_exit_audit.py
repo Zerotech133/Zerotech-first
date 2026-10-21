@@ -42,7 +42,9 @@ EXIT_SEMANTICS: dict[int, str] = {
 KNOWN_SCHED_FAMILIES = ("Legion", "Agent", "Quant", "Alert", "Xueqiu", "Hermes",
                         "KgChain", "Space", "KG-", "Ollama", "CnOpenData", "Daily")
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "task_exit_audit")
+# 落盘到 portal/data（与 result_evidence 同域）：nginx 静态直服 /data/task_exit_audit/*，
+# OS 首页零后端依赖可消费（D5 地基状态灯数据源）；不走 8091（避免 SYSTEM 进程重启滞后）。
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "portal", "data", "task_exit_audit")
 LEDGER_NAME = "task_exit_ledger.jsonl"
 SUMMARY_NAME = "task_exit_summary.json"
 
