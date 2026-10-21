@@ -147,11 +147,30 @@ def test_14_complaint_has_ticket_and_priority(env):
     assert "最高优先级" in r["text"]
 
 
-def test_15_stock_dispatch_stub_honest(env):
-    r = ci.build_reply(_res("stock_consult", code="605100"), "ou_m")
+def test_15_stock_dispatch_honest_when_channel_off(env):
+    """派单通道未启用时如实告知「登记中」，不假称已转。"""
+    r = ci.build_reply(_res("stock_consult", code="605100"), "ou_m",
+                       dispatch_result={"ok": False, "reason": "disabled"})
     assert r["action"] == ci.ACTION_DISPATCH
     assert "605100" in r["text"]
+    assert "登记中" in r["text"] and "未启用" in r["text"]
+    assert any("如实告知" in m for m in r["meta"])
+
+
+def test_15b_stock_dispatch_real_ticket(env, monkeypatch):
+    """派单成功：文案带真实 lg- 单号 + 5 分钟时限。"""
+    r = ci.build_reply(_res("stock_consult", code="605100"), "ou_m",
+                       dispatch_result={"ok": True, "dispatch_id": "lg-abc123"})
+    assert "lg-abc123" in r["text"]
     assert "5 分钟" in r["text"]
+
+
+def test_15c_dispatch_failure_honest(env):
+    """派单异常：如实说不可用，不说已转。"""
+    r = ci.build_reply(_res("watch_setup", code="300750"), "ou_m",
+                       dispatch_result={"ok": False, "reason": "submit_exception"})
+    assert "暂时不可用" in r["text"]
+    assert "lg-" not in r["text"]
 
 
 def test_16_feed_falls_back_to_original(env):

@@ -31,6 +31,7 @@ import os
 import time
 import uuid
 
+import comm_dispatch as dispatch
 import comm_interest as interest
 import comm_memory as mem
 import comm_router as cr
@@ -55,7 +56,7 @@ def _mask(open_id):
 
 
 # ── K2.1 回复生成 ────────────────────────────────
-def build_reply(intent_result, open_id=""):
+def build_reply(intent_result, open_id="", dispatch_result=None):
     """→ {text, meta(list), llm_ok(bool), action}。纯模板，零模型调用。"""
     intent = intent_result.get("intent")
     ents = intent_result.get("entities") or {}
@@ -82,19 +83,36 @@ def build_reply(intent_result, open_id=""):
                 "action": ACTION_REPLY, "llm_ok": False,
                 "meta": ["田丰归口", "最高优先级", "永不受闸限", "trace:" + trace]}
 
-    if intent == "stock_consult":
-        return {"text": ("已收到您对 %s 的咨询，正在转接盯盘官（司马懿席）分析，"
-                         "预计 5 分钟内回复。工单 %s。"
-                         % (code or "该标的", "AN-" + trace[:6].upper())),
+    if intent in ("stock_consult", "watch_setup"):
+        # K5.1：真投递成功用真实工单号（lg-xxx）；投递未启用/失败如实说明，
+        # 不假装「已转」——诚实口径优于话术漂亮。
+        dr = dispatch_result or {}
+        real_id = dr.get("dispatch_id") if dr.get("ok") else None
+        if real_id:
+            ticket_txt = real_id
+            state_txt = "预计 5 分钟内回复" if intent == "stock_consult" \
+                else "确认卡稍后送达"
+            extra = []
+        elif dr.get("reason") == "disabled":
+            ticket_txt = "登记中（派单通道未启用，稍后确认）"
+            state_txt = "已记录您的需求"
+            extra = ["通道未启用·如实告知"]
+        else:
+            ticket_txt = "登记中（派单暂时不可用，稍后确认）"
+            state_txt = "已记录您的需求"
+            extra = ["派单异常·如实告知"]
+        if intent == "stock_consult":
+            return {"text": ("已收到您对 %s 的咨询，正在转接盯盘官（司马懿席）"
+                             "分析，%s。工单 %s。"
+                             % (code or "该标的", state_txt, ticket_txt)),
+                    "action": ACTION_DISPATCH, "llm_ok": False,
+                    "meta": ["派单·司马懿席", "时限5min",
+                             "trace:" + trace] + extra}
+        return {"text": ("已收到：为 %s 设置盯盘提醒。已转许褚营设置触发器，%s。"
+                         "工单 %s。" % (code or "该标的", state_txt, ticket_txt)),
                 "action": ACTION_DISPATCH, "llm_ok": False,
-                "meta": ["派单·司马懿席", "时限5min", "trace:" + trace]}
-
-    if intent == "watch_setup":
-        return {"text": ("已收到：为 %s 设置盯盘提醒。已转许褚营设置触发器，"
-                         "确认卡稍后送达。工单 %s。"
-                         % (code or "该标的", "WT-" + trace[:6].upper())),
-                "action": ACTION_DISPATCH, "llm_ok": False,
-                "meta": ["派单·许褚G1", "操作确认", "trace:" + trace]}
+                "meta": ["派单·许褚G1", "操作确认",
+                         "trace:" + trace] + extra}
 
     # feed / smalltalk / unclear：交回原链路
     return {"text": None, "action": ACTION_FALLBACK, "llm_ok": False,
@@ -144,7 +162,11 @@ def smart_intake(text, open_id, msg_id="", llm=None):
         res["entities"]["code"] = ref["injected_code"]
         res["resolved_from_memory"] = True
 
-    rp = build_reply(res, open_id=open_id)
+    # K5.1：派单类意图先真投递（开关内置于 comm_dispatch），回执单号进文案
+    dr = None
+    if res["intent"] in ("stock_consult", "watch_setup", "complaint"):
+        dr = dispatch.dispatch(res, open_id, msg_id=msg_id)
+    rp = build_reply(res, open_id=open_id, dispatch_result=dr)
     if rp["action"] is ACTION_FALLBACK:
         # 仍判不出：记忆也记一笔（供后续代词消解），然后交回原链路
         mem.remember(open_id, "customer", text, intent=res["intent"],
@@ -175,6 +197,7 @@ def smart_intake(text, open_id, msg_id="", llm=None):
         "resolved_from_memory": bool(res.get("resolved_from_memory")),
         "interest_ok": ok_i,
         "interest_error": err_i,
+        "dispatch": dr,
         "elapsed_ms": int((time.time() - t0) * 1000),
         "msg_id": str(msg_id or "")[:64],
         "open_id_masked": _mask(open_id),
