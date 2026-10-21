@@ -296,7 +296,7 @@ def guide_text(open_id, top_n=2):
     parts = []
     if st["top_codes"]:
         codes = "、".join(list(st["top_codes"])[:top_n])
-        parts.append("查询 %s" % codes)
+        parts.append(codes)
     text = ("您本周已咨询 %d 次%s——订阅「盯盘档」后，这类问题由盯盘官"
             "实时解答，还能设自动提醒。"
             % (st["consult_count"],
