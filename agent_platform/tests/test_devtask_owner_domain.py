@@ -56,6 +56,27 @@ def tmp_root():
         shutil.rmtree(d, ignore_errors=True)
 
 
+def _expect_domain_size(org_path):
+    """独立口径：自己按「部门 agents ∪ 部门 lead ∪ chief」数成员，不借用实现。
+
+    为什么不能写死 55：这张表是活的——2026-10-22 把 A0/A0A 正式并入部门档案表后
+    规模立刻变 60，四个用例整批红，而红的原因是「组织变好了」。
+    """
+    org = json.loads(Path(org_path).read_text(encoding="utf-8"))
+    s = set()
+    for d in org.get("departments") or []:
+        for a in d.get("agents") or []:
+            if isinstance(a, str) and a.strip():
+                s.add(a.strip().upper())
+        lead = d.get("lead")
+        if isinstance(lead, str) and lead.strip():
+            s.add(lead.strip().upper())
+    chief = (org.get("chief") or {}).get("agent_id")
+    if isinstance(chief, str) and chief.strip():
+        s.add(chief.strip().upper())
+    return len(s)
+
+
 @pytest.fixture
 def org_fixture(tmp_root, monkeypatch):
     """把 devtask 的 org.json 路径常量指向临时夹具副本。
@@ -225,7 +246,8 @@ class TestDomainDynamic:
     """成员池必须**动态派生** —— org.json 加人即刻生效、零代码改动。"""
 
     def test_基线域规模(self, org_fixture):
-        assert len(devtask._owner_domain_members()) == 55
+        expect = _expect_domain_size(org_fixture)
+        assert len(devtask._owner_domain_members()) == expect
 
     def test_新增成员与部长立即合法_零代码改动(self, org_fixture, monkeypatch,
                                   tmp_root):
@@ -236,7 +258,7 @@ class TestDomainDynamic:
             "agents": ["PROBEAGENT1"]})
         org_fixture.write_text(json.dumps(org, ensure_ascii=False),
                                encoding="utf-8")
-        assert len(devtask._owner_domain_members()) == 57
+        assert len(devtask._owner_domain_members()) == _expect_domain_size(org_fixture)
         assert devtask._owner_check("PROBEAGENT1")[0] is True
         assert devtask._owner_check("PROBELEAD1")[0] is True
 
@@ -245,9 +267,9 @@ class TestDomainDynamic:
 
     def test_恢复后域规模回到基线(self, org_fixture, tmp_root, monkeypatch):
         """指回真实 org.json 后域规模回到基线 55（夹具未污染真实数据）。"""
-        monkeypatch.setattr(devtask, "ORG_JSON",
-                            str(ROOT / "agent_platform" / "registry" / "org.json"))
-        assert len(devtask._owner_domain_members()) == 55
+        real = str(ROOT / "agent_platform" / "registry" / "org.json")
+        monkeypatch.setattr(devtask, "ORG_JSON", real)
+        assert len(devtask._owner_domain_members()) == _expect_domain_size(real)
 
     def test_真实org域规模与成员合法性回归护栏(self, tmp_root, monkeypatch):
         """**回归护栏**：真实 org.json 下域规模仍 55、真实成员 DEV1 仍合法。
@@ -268,10 +290,11 @@ class TestDomainDynamic:
                             str(ROOT / "agent_platform" / "registry" / "org.json"))
         members = devtask._owner_domain_members()
         assert members is not None, "真实 org.json 必须可判定（不得返回 None）"
-        assert len(members) == 55
+        expect = _expect_domain_size(str(ROOT / "agent_platform" / "registry" / "org.json"))
+        assert len(members) == expect
         owner_ok, _domain, size = devtask._owner_check("DEV1")
         assert owner_ok is True
-        assert size == 55
+        assert size == expect
 
 
 # ----------------------------------------------------------------------

@@ -139,7 +139,10 @@ class ApprovalsRegistryTests(unittest.TestCase):
         sample = r["records"][0]
         # 最新凭据带域前缀即可（域随真实批准动态变化，不硬编码）：
         # 前缀集 = 平台已接线域（gzh/academy/invest/dev/devtask/pitch/personal）
-        prefixes = ("gzh:", "academy:", "invest:", "dev:", "devtask:",
+        # devtask_l2: —— tools/devtask.py:528 的 L2 豁免凭据（target_type=
+        # devtask_l2_exemption）。实现新增了该域而白名单没跟上，测试会把
+        # 「新登记的合法凭据」误报成未知域（2026-10-22 实测红）。
+        prefixes = ("gzh:", "academy:", "invest:", "dev:", "devtask:", "devtask_l2:",
                     "pitch:", "personal:")
         self.assertTrue(sample["idempotency_key"].startswith(prefixes),
                         "最新凭据无已知域前缀: %r"
