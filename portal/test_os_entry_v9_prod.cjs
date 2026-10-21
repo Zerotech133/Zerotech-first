@@ -22,6 +22,7 @@ for (const v of ['ai', 'work', 'results', 'screen']) check('view-' + v + ' 存�
 // 2. 禁项：全站胶囊导航、iframe、写请求、本地存储
 check('不含 nav.js', !html.includes('static/nav.js'));
 check('不含 iframe', !html.includes('<iframe'));
+check('全文件零 iframe 字样', !html.includes('iframe'));
 check('不含 POST/PUT/DELETE', !/(method\s*:\s*['"](?:POST|PUT|DELETE)['"])/.test(html));
 check('不含 localStorage/sessionStorage', !/localStorage|sessionStorage/.test(html));
 
@@ -56,6 +57,15 @@ check('大屏与首页共用建议引擎标识', html.includes('大屏与首页�
 // 2e. WO-OS-11 渐进消费 8091 只读路由 /api/zhuge/brief：fetch 字符串 + 本地兜底降级文案
 check('fetch /api/zhuge/brief', html.includes("'/api/zhuge/brief'"));
 check('路由不可达本地兜底文案', html.includes('路由不可达，本地引擎兜底'));
+
+// 2g. WO-OS-13 G2 补强：唯一 fetch 出口与唯一 buildBrief 调用点（字符串计数===1）
+check('fetch( 计数===1', (html.match(/fetch\(/g) || []).length === 1);
+check('buildBrief( 计数===1', (html.match(/buildBrief\(/g) || []).length === 1);
+
+// 2h. WO-OS-13 G1 补强：fetchRouteBrief 结构闸门三条件
+check('G1 结构闸门 r.engine', /fetchRouteBrief[\s\S]*?r\.engine/.test(html));
+check('G1 结构闸门 Array.isArray(r.suggestions)', /fetchRouteBrief[\s\S]*?Array\.isArray\(r\.suggestions\)/.test(html));
+check('G1 结构闸门 Array.isArray(r.gaps)', /fetchRouteBrief[\s\S]*?Array\.isArray\(r\.gaps\)/.test(html));
 
 // 2f. WO-OS-12 建议条目点击下钻工作平台：jumpWork 事件委托 + data-work-domain + 能力目录域匹配高亮
 check('存在 jumpWork 函数', html.includes('function jumpWork'));
