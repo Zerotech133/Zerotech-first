@@ -273,3 +273,117 @@ def test_real_org_untouched_by_tests():
     E.load_org(_PLATFORM)                      # 只读加载一次
     E.build_plan(_PLATFORM, **dict(OK, agent_id="ZZTOP1", cn_name="测试不写字"))
     assert hashlib.sha256(p.read_bytes()).hexdigest() == h, "真实 org.json 被改动！"
+
+
+# ---------------------------------------------------------------- 补档模式（S35）
+
+BF = dict(dept="intel", agent_id="XQ1", role_profile="雪球与股吧舆情采集哨",
+          duty="负责雪球与股吧社媒舆情采集：游标深翻、cookie 注入、幂等落库、停轮判据自治",
+          binding="ollama/qwen3.5:9b", grade="E2",
+          ticket="WO-ORG-211", signed_by="老田")
+
+
+def test_backfill_plan_ok_and_no_write(root):
+    before = org_bytes(root)
+    plan = E.build_backfill_plan(root, **BF)
+    assert org_bytes(root) == before, "补档 dry-run 不得写入"
+    assert plan["mode"] == "backfill"
+    assert plan["agent"]["agent_id"] == "XQ1"
+    assert "不改 agents 名单" in plan["writes"][0]
+
+
+def test_backfill_requires_listed_agent(root):
+    """不在名单的 id 应提示走新入编，而不是硬塞。"""
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_backfill_plan(root, **dict(BF, agent_id="NOPE9"))
+    assert "agents 名单" in str(ei.value)
+
+
+def test_backfill_rejects_existing_profile(root):
+    """已有档案者不得补档（避免覆盖他人成果）。dev 部 DEV1 有档案。"""
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_backfill_plan(root, **dict(BF, dept="dev", agent_id="DEV1"))
+    assert "已有档案" in str(ei.value)
+
+
+def test_backfill_validation_mirrors_enroll(root):
+    for kw, kw_assert in (
+        (dict(duty="干活"), "duty"),
+        (dict(binding="gpt-9/x"), "词表"),
+        (dict(grade="E9"), "词表"),
+        (dict(ticket=""), "工单"),
+        (dict(signed_by="  "), "放行人"),
+        (dict(role_profile=""), "role_profile"),
+    ):
+        with pytest.raises(E.EnrollError) as ei:
+            E.build_backfill_plan(root, **dict(BF, **kw))
+        assert kw_assert in str(ei.value), kw
+
+
+def test_backfill_apply_keeps_agents_list_unchanged(root):
+    """**承重**：补档只加 profile，agents 名单必须一字不动。"""
+    before = json.loads(org_bytes(root).decode("utf-8"))
+    intel_before = next(d for d in before["departments"] if d["dept"] == "intel")
+    agents_before = list(intel_before["agents"])
+    res = E.apply_backfill_plan(root, E.build_backfill_plan(root, **BF), signed_by="老田")
+    assert res["ok"] is True and res["mode"] == "backfill"
+
+    after = json.loads(org_bytes(root).decode("utf-8"))
+    intel_after = next(d for d in after["departments"] if d["dept"] == "intel")
+    assert intel_after["agents"] == agents_before, "补档不得改动名单"
+    prof = next(p for p in intel_after["agent_profiles"] if p["agent_id"] == "XQ1")
+    assert prof["role_profile"] == BF["role_profile"]
+    assert "WO-ORG-211" in prof["binding_note"]
+
+
+def test_backfill_other_depts_and_hr_untouched(root):
+    hr_before = (root / "hr" / "XQ1" / "resume.yaml").read_bytes()
+    before = json.loads(org_bytes(root).decode("utf-8"))
+    E.apply_backfill_plan(root, E.build_backfill_plan(root, **BF), signed_by="老田")
+    after = json.loads(org_bytes(root).decode("utf-8"))
+    b = {d["dept"]: d for d in before["departments"]}
+    a = {d["dept"]: d for d in after["departments"]}
+    for k in b:
+        if k == "intel":
+            continue
+        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == \
+               json.dumps(a[k], sort_keys=True, ensure_ascii=False), "%s 被误改" % k
+    # 补档不重写履历
+    assert (root / "hr" / "XQ1" / "resume.yaml").read_bytes() == hr_before
+
+
+def test_backfill_rolls_back_on_selfcheck_failure(root, monkeypatch):
+    before = org_bytes(root)
+
+    def boom(*a, **k):
+        raise E.EnrollError("自检失败（模拟）")
+
+    monkeypatch.setattr(E, "_selfcheck_backfill", boom)
+    with pytest.raises(E.EnrollError):
+        E.apply_backfill_plan(root, E.build_backfill_plan(root, **BF), signed_by="老田")
+    assert org_bytes(root) == before, "自检失败必须回滚"
+
+
+def test_backfill_signer_mismatch(root):
+    plan = E.build_backfill_plan(root, **BF)
+    with pytest.raises(E.EnrollError):
+        E.apply_backfill_plan(root, plan, signed_by="别人")
+
+
+def test_backfill_consecutive_same_second_keeps_distinct_backups(root):
+    """同秒连补多席不得覆盖彼此的备份——否则回滚只能回到最近一次之前。"""
+    ids = ["XQ1", "TDX1", "MANCHONG1"]
+    paths = []
+    for i, aid in enumerate(ids):
+        plan = E.build_backfill_plan(root, **dict(BF, agent_id=aid,
+                                                  ticket="WO-ORG-2%02d" % (11 + i)))
+        res = E.apply_backfill_plan(root, plan, signed_by="老田")
+        paths.append(Path(res["backup"]))
+    assert len({str(p) for p in paths}) == 3, "三次补档产生了重复备份路径：%s" % paths
+    for p in paths:
+        assert p.exists()
+    # 第一个备份必须仍是「三席都没补」的原始状态
+    first = json.loads(paths[0].read_text(encoding="utf-8"))
+    intel = next(d for d in first["departments"] if d["dept"] == "intel")
+    # 该部门原本没有 agent_profiles 键（None），故用假值判断而非 == []
+    assert not intel.get("agent_profiles"), "首次备份已被后续补档污染"

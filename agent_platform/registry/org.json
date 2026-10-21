@@ -1706,7 +1706,51 @@
       "teams": [],
       "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口",
       "cn_title": "军情司",
-      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；INTEL0 负责签收满宠的 INTEL_UPSTREAM_REPORT 并出具受理回执——只受理不裁决"
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；INTEL0 负责签收满宠的 INTEL_UPSTREAM_REPORT 并出具受理回执——只受理不裁决",
+      "agent_profiles": [
+        {
+          "agent_id": "XQ1",
+          "role_profile": "雪球与股吧舆情采集哨",
+          "analysis_type": "",
+          "charter_detail": "负责股吧与雪球社媒数据挖掘：游标深翻采集、完整cookie注入、动态代理轮换、幂等落库、停轮判据自治；只采集与报实况，不决策",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-211 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "TDX1",
+          "role_profile": "接口新闻面挖掘史官",
+          "analysis_type": "",
+          "charter_detail": "负责接口新闻面数据挖掘：news/notice/report 三表增量同步与时序落库、影子库治理、多源资讯采集口径核对",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-212 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "MANCHONG1",
+          "role_profile": "全量数据串联与治理席",
+          "analysis_type": "",
+          "charter_detail": "负责把各线数据串联成可用事实：连接数据、清洗数据、关联数据、治理赋能、每日情报汇报；串联结论只报实况不裁决",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-213 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        }
+      ]
     },
     {
       "dept": "comm",

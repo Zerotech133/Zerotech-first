@@ -63,6 +63,21 @@ def _org_path(root: Path) -> Path:
     return root / "registry" / "org.json"
 
 
+def _unique_backup_path(bdir: Path) -> Path:
+    """同秒内多次写入不得互相覆盖备份。
+
+    备份是回滚的唯一依据，被覆盖等于把早期状态永久丢失。时间戳只有秒级精度，
+    连续补档多席必然撞在同一秒，故冲突时追加序号。
+    """
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    cand = bdir / ("org-%s.json" % stamp)
+    i = 1
+    while cand.exists():
+        cand = bdir / ("org-%s-%d.json" % (stamp, i))
+        i += 1
+    return cand
+
+
 def _hr_dir(root: Path) -> Path:
     return root / "hr"
 
@@ -208,6 +223,153 @@ def build_plan(root: Path, *, dept: str, agent_id: str, cn_name: str,
     }
 
 
+def build_backfill_plan(root: Path, *, dept: str, agent_id: str, role_profile: str,
+                        duty: str, binding: str, grade: str = "E2",
+                        ticket: str = "", signed_by: str = "",
+                        analysis_type: str = "", tools: list | None = None) -> dict:
+    """补档计划：给**已列入部门 agents 名单、但没有 agent_profiles 档案**的席位补档案。
+
+    为什么不走 build_plan：build_plan 是「新增席位」，会因 id 已在名单而拒绝。
+    而 S34 审计出的 34 个「有名无档」席位需要的是「补档案不动名单」——
+    名单里已经有人，缺的是职责/模型/档级/工具这些可指挥的信息。
+
+    差异点：
+      - 要求 agent_id **必须**在该部门 agents 名单里（否则应走 build_plan 新入编）；
+      - 要求该部门**尚无**此 id 的 profile（已有档案请走改档流程，本工具不改既有档案）；
+      - **不做中文名重名校验**：席位既已存在，名字是既成事实，重名问题另单治理。
+    """
+    org = load_org(root)
+    target = _find_dept(org, dept)
+
+    aid = (agent_id or "").strip()
+    listed = [str(x) for x in (target.get("agents") or [])]
+    prof_ids = [str(p.get("agent_id")) for p in (target.get("agent_profiles") or [])]
+    if aid not in listed:
+        raise EnrollError(
+            "补档要求 %s 已在 %s 的 agents 名单中（当前名单：%s）。"
+            "新席位请改用建计划（不加 --backfill）。" % (aid or "?", dept, ", ".join(listed)))
+    if aid in prof_ids:
+        raise EnrollError("%s 在 %s 已有档案，本工具不改既有档案（避免覆盖他人成果）" % (aid, dept))
+
+    role = (role_profile or "").strip()
+    if not role:
+        raise EnrollError("role_profile 不可为空（这是「这个 Agent 到底干嘛」的答案，不能留白）")
+    duty_s = (duty or "").strip()
+    if len(duty_s) < DUTY_MIN_LEN:
+        raise EnrollError("duty 至少 %d 字：必须写清职责边界，否则该席位无法被指挥（当前 %d 字）"
+                          % (DUTY_MIN_LEN, len(duty_s)))
+    if binding not in BINDING_ALLOW:
+        raise EnrollError("llm_binding 不在词表：%r（可选 %s）"
+                          % (binding, ", ".join(sorted(BINDING_ALLOW))))
+    if grade not in GRADE_ALLOW:
+        raise EnrollError("grade 不在词表：%r（可选 %s）" % (grade, ", ".join(sorted(GRADE_ALLOW))))
+    if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
+        raise EnrollError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
+    if not (signed_by or "").strip():
+        raise EnrollError("缺少放行人：补档改组织真源，须老田显式签字（--signed-by）")
+
+    profile = {
+        "agent_id": aid,
+        "role_profile": role,
+        "analysis_type": (analysis_type or "").strip(),
+        "charter_detail": duty_s,
+        "llm_binding": binding,
+        "binding_note": "由 org_enroll 补档（工单 %s / 放行人 %s）"
+                        % (ticket.strip(), signed_by.strip()),
+        "tools": list(tools or []),
+        "tools_note": "补档初始为空，按工单另行授予",
+        "memory_grants": [],
+        "grade": grade,
+        "grade_note": "补档初始档，待 KPI 观察后调整",
+        "attributes": {},
+    }
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "rules_version": RULES_VERSION,
+        "mode": "backfill",
+        "dept": dept,
+        "dept_name": target.get("name"),
+        "cn_name": _cn_of_id(root, aid),
+        "agent": profile,
+        "ticket": ticket.strip(),
+        "signed_by": signed_by.strip(),
+        "writes": ["registry/org.json（仅追加 agent_profiles，**不改 agents 名单**）"],
+        "note": "dry-run 补档计划：未写入任何字节；hr 档案已存在，不新建",
+    }
+
+
+def _cn_of_id(root: Path, aid: str) -> str:
+    f = _hr_dir(root) / aid / "resume.yaml"
+    if not f.exists():
+        return ""
+    for ln in f.read_text(encoding="utf-8", errors="replace").splitlines():
+        if ln.startswith("cn_name:"):
+            return ln.split(":", 1)[1].strip().strip("'\"")
+        if ln.startswith("name:") and "·" not in ln:
+            return ln.split(":", 1)[1].strip().strip("'\"")
+    return ""
+
+
+def _selfcheck_backfill(root: Path, before: dict, dept: str, aid: str) -> None:
+    """补档自检：profile 到位、总数 +1、**名单未变**、其他部门一字未动。"""
+    after = load_org(root)
+    b = {d.get("dept"): d for d in before.get("departments") or []}
+    a = {d.get("dept"): d for d in after.get("departments") or []}
+    if b[dept].get("agents") != a[dept].get("agents"):
+        raise EnrollError("自检失败：补档不得改动 %s 的 agents 名单" % dept)
+    prof_ids = [p.get("agent_id") for p in (a[dept].get("agent_profiles") or [])]
+    if aid not in prof_ids:
+        raise EnrollError("自检失败：%s 的档案未落到 %s" % (aid, dept))
+    n0 = sum(len(d.get("agent_profiles") or []) for d in before.get("departments") or [])
+    n1 = sum(len(d.get("agent_profiles") or []) for d in after.get("departments") or [])
+    if n1 != n0 + 1:
+        raise EnrollError("自检失败：档案总数 %d → %d（期望 +1）" % (n0, n1))
+    for k, d0 in b.items():
+        if k == dept:
+            continue
+        if json.dumps(d0, sort_keys=True, ensure_ascii=False) != \
+           json.dumps(a.get(k), sort_keys=True, ensure_ascii=False):
+            raise EnrollError("自检失败：非目标部门 %r 被意外改动" % k)
+
+
+def apply_backfill_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
+    """执行补档：备份 → 原子写（只追加 profile）→ 自检；失败自动回滚。"""
+    if (signed_by or "").strip() != plan.get("signed_by"):
+        raise EnrollError("放行人与计划不一致：plan=%r apply=%r"
+                          % (plan.get("signed_by"), signed_by))
+    dept = plan["dept"]
+    aid = plan["agent"]["agent_id"]
+
+    before = load_org(root)
+    target = _find_dept(before, dept)
+    if aid not in [str(x) for x in (target.get("agents") or [])]:
+        raise EnrollError("执行前复核失败：%s 不在 %s 名单——真源在计划后被改动" % (aid, dept))
+    if aid in [str(p.get("agent_id")) for p in (target.get("agent_profiles") or [])]:
+        raise EnrollError("执行前复核失败：%s 已有档案" % aid)
+
+    bdir = root / "registry" / "backups"
+    bdir.mkdir(parents=True, exist_ok=True)
+    backup = _unique_backup_path(bdir)
+    shutil.copy2(_org_path(root), backup)
+
+    org = copy.deepcopy(before)
+    t2 = _find_dept(org, dept)
+    t2.setdefault("agent_profiles", []).append(plan["agent"])
+    tmp = _org_path(root).with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(_org_path(root))
+
+    try:
+        _selfcheck_backfill(root, before, dept, aid)
+    except EnrollError:
+        shutil.copy2(backup, _org_path(root))
+        raise
+
+    return {"schema_version": SCHEMA_VERSION, "ok": True, "mode": "backfill",
+            "dept": dept, "agent_id": aid, "backup": str(backup),
+            "note": "补档已落 org.json 并自检通过（名单未变）；回滚用 --rollback %s" % backup}
+
+
 def _selfcheck(root: Path, before: dict, dept: str, aid: str) -> None:
     """写后自检：新员在目标部门、总数 +1、**其他部门一字未动**。不符即抛错触发回滚。"""
     after = load_org(root)
@@ -250,7 +412,7 @@ def apply_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     # 1) 备份
     bdir = root / "registry" / "backups"
     bdir.mkdir(parents=True, exist_ok=True)
-    backup = bdir / ("org-%s.json" % time.strftime("%Y%m%d-%H%M%S"))
+    backup = _unique_backup_path(bdir)
     shutil.copy2(_org_path(root), backup)
 
     # 2) 改内存并原子写
@@ -349,6 +511,8 @@ def main(argv=None) -> int:
     ap.add_argument("--ticket", default="")
     ap.add_argument("--signed-by", default="")
     ap.add_argument("--apply", action="store_true", help="真写入（默认只打印计划）")
+    ap.add_argument("--backfill", action="store_true",
+                    help="补档模式：给已在名单但无档案的席位补档案（不动 agents 名单）")
     ap.add_argument("--rollback", help="用指定备份还原 org.json")
     args = ap.parse_args(argv)
 
@@ -358,20 +522,30 @@ def main(argv=None) -> int:
             print(json.dumps(rollback(root, args.rollback, signed_by=args.signed_by),
                              ensure_ascii=False, indent=1))
             return 0
-        missing = [k for k in ("dept", "agent_id", "cn_name", "role", "duty") if not getattr(args, k)]
+        need = ("dept", "agent_id", "role", "duty") if args.backfill else \
+               ("dept", "agent_id", "cn_name", "role", "duty")
+        missing = [k for k in need if not getattr(args, k)]
         if missing:
             print("缺少必填参数：%s" % ", ".join("--" + m for m in missing), file=sys.stderr)
             return 2
-        plan = build_plan(root, dept=args.dept, agent_id=args.agent_id, cn_name=args.cn_name,
-                          role_profile=args.role, duty=args.duty, binding=args.binding,
-                          grade=args.grade, ticket=args.ticket, signed_by=args.signed_by,
-                          analysis_type=args.analysis_type)
+        if args.backfill:
+            plan = build_backfill_plan(root, dept=args.dept, agent_id=args.agent_id,
+                                       role_profile=args.role, duty=args.duty,
+                                       binding=args.binding, grade=args.grade,
+                                       ticket=args.ticket, signed_by=args.signed_by,
+                                       analysis_type=args.analysis_type)
+        else:
+            plan = build_plan(root, dept=args.dept, agent_id=args.agent_id, cn_name=args.cn_name,
+                              role_profile=args.role, duty=args.duty, binding=args.binding,
+                              grade=args.grade, ticket=args.ticket, signed_by=args.signed_by,
+                              analysis_type=args.analysis_type)
         if not args.apply:
             print(json.dumps(plan, ensure_ascii=False, indent=1))
             print("\n【dry-run】以上为计划，未写入任何字节。确认无误加 --apply 执行。",
                   file=sys.stderr)
             return 0
-        res = apply_plan(root, plan, signed_by=args.signed_by)
+        res = (apply_backfill_plan if args.backfill else apply_plan)(
+            root, plan, signed_by=args.signed_by)
         print(json.dumps(res, ensure_ascii=False, indent=1))
         return 0
     except EnrollError as e:
