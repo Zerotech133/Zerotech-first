@@ -48,6 +48,7 @@ _FEATURE_MODULES = [
     "watch_admin_route_combos",
     "watch_admin_route_contract",
     "watch_admin_route_alert",
+    "watch_admin_route_ackdash",
 ]
 
 
