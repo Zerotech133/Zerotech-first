@@ -16,7 +16,7 @@ function renderEvidence(list,meta){
     return
   }
   const items=Array.isArray(list)?list:(Array.isArray(window.OS_RESULT_EVIDENCE)?window.OS_RESULT_EVIDENCE:[]);
-  const todayStr=new Date().toLocaleDateString('sv-SE');
+  const todayStr=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'});
   // WO-OS-28 时效校验：数据业务日不是今天必须显式标过期，不得顶着「今日结果」冒充
   const day=(meta&&typeof meta.business_day==='string')?meta.business_day:null;
   if(day&&day!==todayStr){
@@ -28,7 +28,7 @@ function renderEvidence(list,meta){
     return
   }
   const shown=items.slice(0,EVIDENCE_MAX_ROWS);
-  const total=(meta&&typeof meta.total_available==='number')?meta.total_available:items.length;
+  const rawTotal=(meta&&typeof meta.total_available==='number'&&isFinite(meta.total_available))?meta.total_available:items.length;const total=rawTotal;
   shown.forEach(raw=>{
     let r;
     try{r=window.OSResultContract.entry(raw,new Date())}

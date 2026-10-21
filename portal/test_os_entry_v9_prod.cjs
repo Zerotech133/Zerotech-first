@@ -189,5 +189,68 @@ check('截断提示含总量与显示数', html.includes('共') && html.includes
 check('非今日数据显式过期', html.includes('非今日数据') || html.includes('数据日期为'));
 check('证据源范围声明', html.includes('仅本仓提交与交付物'));
 
+// 2o. WO-OS-29 行为断言固化：真执行 renderEvidence 验证行数与降级（不再只靠字符串 grep）
+(function test_renderEvidence_behaviour() {
+  const s = html.indexOf('const EVIDENCE_MAX_ROWS');
+  const e = html.indexOf('async function get(url)');
+  if (s < 0 || e < 0 || e < s) { failures.push('renderEvidence 片段定位失败'); return; }
+  const src = html.slice(s, e);
+  const makeEl = (t, c, x) => ({
+    tag: t, cls: c || '', text: x === undefined ? '' : String(x), children: [],
+    append(...k) { this.children.push(...k); },
+  });
+  const box = { children: [], replaceChildren() { this.children = []; }, append(n) { this.children.push(n); } };
+  // 契约 stub：足够判级即可（status 由字段齐全度决定）
+  const contractStub = {
+    entry(raw) {
+      const ok = raw && raw.id && raw.domain && raw.business_day && raw.producer_time && raw.evidence_uri;
+      return ok ? { status: raw.receipt_uri ? 'verified' : 'unverified' } : { status: 'pending', display: '缺项' };
+    },
+  };
+  let render;
+  try {
+    render = new Function('window', '$', 'el', src + '; return renderEvidence;')(
+      { OSResultContract: contractStub, OS_RESULT_EVIDENCE: [] }, () => box, makeEl);
+  } catch (err) {
+    failures.push('renderEvidence 构造失败：' + err.message); return;
+  }
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Shanghai' });
+  const mkItem = (i) => ({
+    id: 'commit:' + i, domain: '研发', business_day: today,
+    producer_time: today + 'T10:0' + (i % 10) + ':00+08:00', outcome: 'done',
+    evidence_uri: 'commit:' + i, receipt_uri: null,
+  });
+  const items = Array.from({ length: 20 }, (_, i) => mkItem(i));
+
+  // a) 正常：8 条上限 + 1 行汇总
+  box.replaceChildren();
+  render(items, { business_day: today, total_available: 183 });
+  check('行为·截断到8条+汇总行', box.children.length === 9);
+  check('行为·汇总含总量', String(box.children[8].text).indexOf('共 183 项') !== -1);
+  check('行为·汇总含显示数', String(box.children[8].text).indexOf('显示最近 8 项') !== -1);
+
+  // b) 过期：只 1 行提示，零证据行
+  box.replaceChildren();
+  render(items, { business_day: '2026-10-20', total_available: 183 });
+  check('行为·过期只1行', box.children.length === 1);
+  check('行为·过期文案', String(box.children[0].text).indexOf('非今日数据') !== -1);
+  check('行为·过期零证据行', box.children.every(n => String(n.text || '').indexOf('commit:') === -1));
+
+  // c) total_available=NaN 不得渲染脏值
+  box.replaceChildren();
+  render(items, { business_day: today, total_available: NaN });
+  const tail = String(box.children[box.children.length - 1].text);
+  check('行为·NaN 不泄漏', tail.indexOf('NaN') === -1);
+  check('行为·NaN 回落 items 数', tail.indexOf('共 20 项') !== -1);
+
+  // d) 空数据
+  box.replaceChildren();
+  render([], null);
+  check('行为·空态1行', box.children.length === 1);
+
+  // e) 时区固定北京：源码不得用裸 sv-SE（会随浏览器本地时区漂移）
+  check('行为·时区固定北京', html.indexOf("toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'})") !== -1);
+})();
+
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-01/08/10/11 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽/大屏board-brief同源建议/8091路由渐进消费本地兜底');

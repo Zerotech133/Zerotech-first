@@ -162,11 +162,16 @@ def build_payload(day: str, limit: int = 20, runner=None,
     """
     commits_all = _collect_commits_all(day, runner=runner)
     docs_all = _collect_deliverables_all(day, root=deliverables_root)
-    items = commits_all[:limit] + docs_all[:limit]
+    # WO-OS-29：两源按生产者时点倒序交错后再截断。原写法 commits[:limit] +
+    # docs[:limit] 会让忙碌日（实测 145 提交）的窗口全被提交占满，交付物证据在
+    # 页面上永不出现，读者会误以为交付物为零。
+    merged = commits_all + docs_all
+    merged.sort(key=lambda x: str(x.get("producer_time") or ""), reverse=True)
+    items = merged[:limit]
     total_available = len(commits_all) + len(docs_all)
     note = ("研发交付物与当日提交作为证据源；receipt 一律为空，"
             "因未走独立复核，故状态为 unverified，不计入已验收。"
-            "本产物为截断视图（每源至多 %d 条），非当日全部工作。" % limit)
+            "本产物为截断视图（两源合并按时间倒序取前 %d 条），非当日全部工作。" % limit)
     return {
         "ok": True,
         "business_day": day,

@@ -125,6 +125,36 @@ def test_payload_no_truncation_when_under_limit(tmp_path):
     assert payload["total_available"] == len(payload["items"]) == 2
 
 
+# ⑤d. WO-OS-29 两源必须交错：忙碌日不能全被提交占满、交付物永不出现
+def test_payload_interleaves_commits_and_docs(tmp_path):
+    """实测风险：items = commits[:limit] + docs[:limit] 时，忙碌日（145 提交）
+    前 8 条全是提交，交付物证据在页面上永不出现，读者会以为交付物为零。
+    修法：合并后按 producer_time 倒序，两源按真实时间交错。
+    """
+    import gen_result_evidence as g
+    import os
+    # 造 5 份交付物（时点分散在 08:00~12:00）
+    for i in range(5):
+        p = tmp_path / ("交付%d.md" % i)
+        p.write_text("x", encoding="utf-8")
+        ts = datetime(2026, 10, 21, 8 + i, 0, tzinfo=BEIJING).timestamp()
+        os.utime(p, (ts, ts))
+    # 造 5 条提交（时点 09:10~13:10，与交付物交错）
+    lines = []
+    for i in range(5):
+        lines.append("abc%02d\x1f2026-10-21T%02d:10:00+08:00\x1f提交 %d" % (i, 9 + i, i))
+    payload = g.build_payload(DAY, limit=4, runner=_runner_factory("\n".join(lines)),
+                              deliverables_root=tmp_path)
+    kinds = ["commit" if x["id"].startswith("commit:") else "doc"
+             for x in payload["items"]]
+    assert "doc" in kinds, "交付物必须有代表进入前 limit 条，实得：" + str(kinds)
+    assert "commit" in kinds, "提交也必须有代表"
+    # 时间必须严格倒序
+    times = [x["producer_time"] for x in payload["items"]]
+    assert times == sorted(times, reverse=True), "合并后应按生产者时点倒序"
+    assert len(payload["items"]) == 4
+
+
 # ⑥ dry-run 不写盘；正常写入 today.json
 def test_dry_run_and_write(tmp_path):
     import gen_result_evidence as g
