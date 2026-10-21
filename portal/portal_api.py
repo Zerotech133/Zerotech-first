@@ -4218,6 +4218,20 @@ color:#fff;font-size:13.5px;cursor:pointer}
             except Exception:
                 self._html_file(os.path.join(STATION, "quant_backtest",
                                              "reports", "pool_watch.html"))
+        elif path == "/quant-entry":
+            # 量化交易板块入口（WO-QT-20261021-087）：四市场总表
+            # （今日多空·策略货架·股票池·Agent 席）+ 席位门户。每请求
+            # 尽力同步刷新（只读聚合盘上产物，纯渲染层，零写）；任何
+            # 异常降级静态报告文件（再失败由 _html_file 出「暂无报告」），
+            # 影子期红线常驻页面内。缺源格显式「待接」不造数。
+            try:
+                if QBT_DIR not in sys.path:
+                    sys.path.insert(0, QBT_DIR)
+                import quant_entry_page as _qep
+                self._html(_qep.render_default())
+            except Exception:
+                self._html_file(os.path.join(STATION, "quant_backtest",
+                                             "reports", "quant_entry.html"))
         elif path == "/bt-positions":
             # 盘前作战计划卡「持仓跟踪」按钮目标页：纸面持仓账本
             self._html_file(os.path.join(STATION, "quant_backtest",
