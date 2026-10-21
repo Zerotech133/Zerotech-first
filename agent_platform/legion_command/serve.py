@@ -206,8 +206,22 @@ def main(argv=None):
     ap.add_argument("--port", type=int, default=8796)
     ap.add_argument("--host", default="127.0.0.1")
     args = ap.parse_args(argv)
-    srv = build_server(args.host, args.port)
-    print("legion-command serving on %s:%d" % (args.host, args.port))
+    # 端口占用自愈：上一次实例退出后 TIME_WAIT 未释放时 bind 会失败，
+    # 重试 3 次（每次 2s），仍失败则明确报错退出（不静默死掉）
+    srv = None
+    for attempt in range(1, 4):
+        try:
+            srv = build_server(args.host, args.port)
+            break
+        except OSError as exc:
+            print("[legion-command] bind %s:%d failed (attempt %d/3): %s"
+                  % (args.host, args.port, attempt, exc), file=__import__("sys").stderr)
+            __import__("time").sleep(2)
+    if srv is None:
+        print("[legion-command] giving up: port %d unavailable" % args.port,
+              file=__import__("sys").stderr)
+        return 3
+    print("legion-command serving on %s:%d" % (args.host, args.port), flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
