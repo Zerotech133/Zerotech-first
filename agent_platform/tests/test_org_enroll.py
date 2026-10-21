@@ -27,6 +27,15 @@ def root(tmp_path):
     (r / "registry").mkdir(parents=True)
     (r / "hr").mkdir()
     shutil.copy2(_PLATFORM / "registry" / "org.json", r / "registry" / "org.json")
+    # 稳定化：把 intel 部还原成「名单有人、档案全空」的基准态。
+    # 补档用例都以 intel 席位为样本，而真实 org.json 会随补档不断演进——
+    # 不隔离就会「真数据一补档，测试全红」（2026-10-21 真实踩到）。
+    org = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
+    for d in org.get("departments") or []:
+        if d.get("dept") == "intel":
+            d.pop("agent_profiles", None)
+    (r / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
     for d in (_PLATFORM / "hr").iterdir():
         f = d / "resume.yaml"
         if d.is_dir() and f.exists():
@@ -387,3 +396,42 @@ def test_backfill_consecutive_same_second_keeps_distinct_backups(root):
     intel = next(d for d in first["departments"] if d["dept"] == "intel")
     # 该部门原本没有 agent_profiles 键（None），故用假值判断而非 == []
     assert not intel.get("agent_profiles"), "首次备份已被后续补档污染"
+
+
+def test_cn_of_id_prefers_cn_name_over_positional_name(tmp_path):
+    """履历里 name 常是岗位名（如「军情司上行受理席」）、cn_name 才是人名，且顺序不定。
+
+    一遍扫描会在遇到 name 时提前返回，把岗位名当人名——INTEL0 授名时真实踩到过。
+    """
+    r = tmp_path / "plat"
+    (r / "hr" / "X1").mkdir(parents=True)      # _cn_of_id 只读 hr，不需 registry
+    f = r / "hr" / "X1" / "resume.yaml"
+    f.write_text("agent_id: X1\nname: 某岗位名\ncn_name: 真名\n", encoding="utf-8")
+    assert E._cn_of_id(r, "X1") == "真名"
+
+    # cn_name 在前也要对
+    f.write_text("agent_id: X1\ncn_name: 真名二\nname: 某岗位名\n", encoding="utf-8")
+    assert E._cn_of_id(r, "X1") == "真名二"
+
+    # 无 cn_name 时退回 name，且岗位式「烽燧·平台巡检哨」取 · 前那段
+    f.write_text("agent_id: X1\nname: 烽燧·平台巡检哨\n", encoding="utf-8")
+    assert E._cn_of_id(r, "X1") == "烽燧"
+
+
+def test_binding_allow_covers_rule_only_seat():
+    """规则执行体必须能显式声明「无 LLM」，不能被逼着填 9b（那是虚构能力）。"""
+    assert "none" in E.BINDING_ALLOW
+    assert "glm/glm-5.3-flash" in E.BINDING_ALLOW
+
+
+def test_backfill_accepts_rule_only_binding(root):
+    """BEACON1 式规则巡检席：binding=none 必须能补档成功。"""
+    plan = E.build_backfill_plan(root, **dict(BF, agent_id="BEACON1", binding="none",
+                                              grade="E2", ticket="WO-ORG-218"))
+    assert plan["agent"]["llm_binding"] == "none"
+    res = E.apply_backfill_plan(root, plan, signed_by="老田")
+    assert res["ok"] is True
+    org = json.loads(org_bytes(root).decode("utf-8"))
+    intel = next(d for d in org["departments"] if d["dept"] == "intel")
+    p = next(x for x in intel["agent_profiles"] if x["agent_id"] == "BEACON1")
+    assert p["llm_binding"] == "none", "不得把规则执行体硬绑成 9b"

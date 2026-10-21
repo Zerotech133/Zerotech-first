@@ -46,8 +46,11 @@ BINDING_ALLOW = frozenset({
     "ollama/qwen3.5:9b",
     "ollama/qwen3.6:35b-a3b",
     "glm/glm-5.3",
+    "glm/glm-5.3-flash",      # E1 调度/受理岗轻快档（INTEL0 履历即为该档）
     "glm/glm-4.6",
     "openai/gpt-6.0",
+    "none",                  # 规则执行体：无 LLM 依赖（如 BEACON1 巡检哨）。
+                             # 给这类席位硬填 9b 等于虚构能力，必须允许显式声明「无」。
 })
 GRADE_ALLOW = frozenset({"E1", "E2", "E3"})
 _ID_RE = re.compile(r"^[A-Z][A-Z0-9]{1,15}$")
@@ -299,14 +302,26 @@ def build_backfill_plan(root: Path, *, dept: str, agent_id: str, role_profile: s
 
 
 def _cn_of_id(root: Path, aid: str) -> str:
+    """取席位中文名。
+
+    两遍扫描：**先找 cn_name，找不到才退回 name**。
+    （一遍扫描会把「name: 军情司上行受理席」当成中文名返回——履历里 name 是岗位名、
+    cn_name 才是人名，顺序不固定，一遍扫必错。）
+    """
     f = _hr_dir(root) / aid / "resume.yaml"
     if not f.exists():
         return ""
-    for ln in f.read_text(encoding="utf-8", errors="replace").splitlines():
+    lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+    for ln in lines:
         if ln.startswith("cn_name:"):
-            return ln.split(":", 1)[1].strip().strip("'\"")
-        if ln.startswith("name:") and "·" not in ln:
-            return ln.split(":", 1)[1].strip().strip("'\"")
+            v = ln.split(":", 1)[1].strip().strip("'\"")
+            if v:
+                return v
+    for ln in lines:
+        if ln.startswith("name:"):
+            v = ln.split(":", 1)[1].strip().strip("'\"")
+            # 「烽燧·平台巡检哨」这种岗位式 name 不作人名，取 · 前那段
+            return v.split("·")[0].strip()
     return ""
 
 

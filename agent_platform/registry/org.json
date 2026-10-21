@@ -1794,6 +1794,34 @@
           "grade": "E2",
           "grade_note": "入编初始档，待 KPI 观察后调整",
           "attributes": {}
+        },
+        {
+          "agent_id": "INTEL0",
+          "role_profile": "军情司上行受理席",
+          "analysis_type": "",
+          "charter_detail": "情报板块唯一上行受理口：专职签收上游情报报告（INTEL_UPSTREAM_REPORT）、哈希幂等核验、出具 ACK 受理回执、维护受理台账；只受理不裁决，受理后分发与研判归情报板块与参谋长线",
+          "llm_binding": "glm/glm-5.3-flash",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-217 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E1",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
+        },
+        {
+          "agent_id": "BEACON1",
+          "role_profile": "平台内务巡检哨",
+          "analysis_type": "",
+          "charter_detail": "负责 agent_platform 内务巡检：周一观察点、影子日报、周度评估、看门狗四计划任务的定时巡检与断言判据、告警升级、判例留痕；只报实况不掺判断，变更走审批；规则执行体无 LLM 依赖",
+          "llm_binding": "none",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-218 / 放行人 老田）",
+          "tools": [],
+          "tools_note": "补档初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {}
         }
       ]
     },
