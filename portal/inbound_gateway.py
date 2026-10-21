@@ -634,6 +634,25 @@ def _result_card(ticket, detail):
     return card
 
 
+def _smart_card(ticket, smart):
+    """K3.1 智能接话卡：意图/路由/模型档位/回执文案一屏（诚实标注降级）。"""
+    from feishu_card_v2 import build_v3
+    rt = smart.get("route") or {}
+    md = (smart.get("reply_text") or "") + "\n\n---\n"
+    md += "**意图** %s（%.2f · %s）" % (
+        smart.get("intent"), smart.get("confidence") or 0,
+        smart.get("channel") or "-")
+    md += "\n**路由** %s ｜ **档位** %s" % (
+        rt.get("desc") or rt.get("target") or "-",
+        (smart.get("model") or {}).get("tier") or "-")
+    if not smart.get("llm_ok") and smart.get("channel") == "fallback":
+        md += "\n> 模型通道降级中，本条按规则处理；准确率以人工复核为准。"
+    card, _ = build_v3("interact", "阚泽部 · 受理 %s" % ticket,
+                       "通信与客户服务部",
+                       md=md, tags="#comm #intake #%s" % (smart.get("intent"),))
+    return card
+
+
 def _clarify_card(ticket):
     from feishu_card_v2 import build_v3
     md = ("这条内容我没法确定怎么处理——按铁律**不猜**。\n"
@@ -782,6 +801,39 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
                     "receipt": _rs(ok, why)}
 
     if route == "unclear":
+        # K3.1（WO-FS-148-5，2026-10-21）：unclear 前先过阚泽部智能接话层。
+        # 开关 COMM_INTENT_ENABLED 默认关（关时行为与旧版逐字节一致）；
+        # 任何异常一律降级回澄清卡，不让智能层成为消息链的单点故障。
+        smart = None
+        try:
+            import comm_intake as _ci
+            if _ci.enabled():
+                smart = _ci.smart_intake(text, open_id, msg_id)
+        except Exception as ex:  # noqa: BLE001 —— 降级必须留痕
+            log("智能接话层异常，降级澄清卡：%s: %s"
+                % (type(ex).__name__, str(ex)[:120]))
+            smart = None
+        if smart:
+            ok, why = _send_card(_smart_card(ticket, smart), open_id)
+            _append_ledger(_tickets_path(), {
+                "ticket": ticket, "ts": _now_iso(), "open_id": open_id,
+                "msg_id": str(msg_id or "")[:64], "chat_type": chat_type,
+                "route": "smart:%s" % smart.get("intent"),
+                "status": smart.get("action") or "-",
+                "evidence": "smart_intake",
+                "duplicate_of": "",
+                "detail": {"intent": smart.get("intent"),
+                           "confidence": smart.get("confidence"),
+                           "trace_id": smart.get("trace_id"),
+                           "channel": smart.get("channel"),
+                           "model_tier": (smart.get("model") or {}).get("tier")},
+                "receipt_ack": "-", "receipt_result": _rs(ok, why)})
+            log("智能接话 %s intent=%s action=%s" % (
+                ticket, smart.get("intent"), smart.get("action")))
+            return {"consumed": True, "ticket": ticket,
+                    "route": "smart:%s" % smart.get("intent"),
+                    "status": smart.get("action") or "-",
+                    "detail": smart}
         ok, why = _send_card(_clarify_card(ticket), open_id)
         _append_ledger(_tickets_path(), {
             "ticket": ticket, "ts": _now_iso(), "open_id": open_id,
