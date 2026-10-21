@@ -147,6 +147,30 @@ def test_read_only_query_never_creates_tables(tmp_path):
         assert conn.execute("SELECT name FROM sqlite_master").fetchall() == []
 
 
+def test_write_connections_closed_after_success_and_block(tmp_path, monkeypatch):
+    real_connect = review.sqlite3.connect
+    opened = []
+
+    class TrackedConnection(sqlite3.Connection):
+        def close(self):
+            self.was_closed = True
+            return super().close()
+
+    def tracked_connect(*args, **kwargs):
+        conn = real_connect(*args, factory=TrackedConnection, **kwargs)
+        conn.was_closed = False
+        opened.append(conn)
+        return conn
+
+    monkeypatch.setattr(review.sqlite3, "connect", tracked_connect)
+    db = tmp_path / "ledger.sqlite3"
+    prepared = review.prepare(artifact(tmp_path), db, now=STAMP)
+    assert prepared["ok"]
+    assert not review.approve(db, "missing", {}, now=STAMP)["ok"]
+    assert review.approve(db, prepared["idempotency_key"], approval(prepared), now=STAMP)["ok"]
+    assert opened and all(conn.was_closed for conn in opened)
+
+
 def test_no_transport_or_scheduler_imports():
     src = Path(review.__file__).read_text(encoding="utf-8")
     for banned in ("urllib", "requests", "socket", "subprocess", "schtasks", "send_msg", "PUSH_DECISION_EXECUTE"):

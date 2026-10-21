@@ -44,7 +44,7 @@ def _event(db, key, state, reason, at):
 
 def _failure(db_path, key, reason, at):
     try:
-        with _connect(db_path) as db:
+        with closing(_connect(db_path)) as db, db:
             db.execute("BEGIN IMMEDIATE")
             _event(db, key, "blocked", reason[:240], at)
     except (OSError, sqlite3.Error) as exc:
@@ -88,7 +88,7 @@ def prepare(artifact_path, db_path, *, now):
     except (OSError, UnicodeError, ValueError, TypeError) as exc:
         return _failure(db_path, "invalid-artifact", "晨报不可审核：%s" % exc, now)
     try:
-        with _connect(db_path) as db:
+        with closing(_connect(db_path)) as db, db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT * FROM reviews WHERE idem=?", (key,)).fetchone()
             if row:
@@ -117,7 +117,7 @@ def approve(db_path, key, attestation, *, now):
     """离线核对人工提供的签批字段，不验证操作者身份，也不触发发送。"""
     try:
         _time(now)
-        with _connect(db_path) as db:
+        with closing(_connect(db_path)) as db, db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT * FROM reviews WHERE idem=?", (key,)).fetchone()
             if not row:
@@ -153,7 +153,7 @@ def test_receipt(db_path, key, receipt, *, now):
     """只认可绑定产物的 simulated 回执；绝不接受 API 受理或真实送达声称。"""
     try:
         _time(now)
-        with _connect(db_path) as db:
+        with closing(_connect(db_path)) as db, db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT * FROM reviews WHERE idem=?", (key,)).fetchone()
             if not row or row["state"] not in ("approved_offline", "receipt_tested_offline"):

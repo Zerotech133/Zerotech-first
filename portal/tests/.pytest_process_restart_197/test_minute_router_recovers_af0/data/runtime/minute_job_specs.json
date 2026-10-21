@@ -1,0 +1,31 @@
+{
+  "process_fixture": {
+    "source_ref": "process_fixture",
+    "source_version": "v1",
+    "source_kind": "bar_store",
+    "market": "CN",
+    "timezone": "Asia/Shanghai",
+    "timeframe": "1m",
+    "store_config_ref": "runtime:process_fixture",
+    "intent_batch_ref": "runtime:process_fixture-intents",
+    "provider_policy_ref": "registry:market-cn",
+    "registered_at": "2026-10-18T08:46:27.896758+00:00",
+    "expires_at": null,
+    "fee_mode": "PER_FILL",
+    "fee_schedule_ref": null,
+    "fee_schedule_version": null,
+    "fee_schedule_hash": null,
+    "fee_provider_ref": null,
+    "fee_calculator_ref": null,
+    "time_in_force": "DAY",
+    "max_attempts": null,
+    "expire_at": null,
+    "partial_fill_params": null,
+    "market_rule_ref": null,
+    "market_rule_version": null,
+    "calendar_ref": null,
+    "calendar_version": null,
+    "availability": "source_unavailable",
+    "error": "SOURCE_UNAVAILABLE"
+  }
+}

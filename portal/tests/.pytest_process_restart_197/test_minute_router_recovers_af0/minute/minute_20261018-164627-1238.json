@@ -1,0 +1,128 @@
+{
+ "schema": "minute-exec-v1",
+ "job_id": "20261018-164627-1238",
+ "fills": [
+  {
+   "order_id": "order-1",
+   "symbol": "000001.SZ",
+   "side": "BUY",
+   "quantity": 100,
+   "price": 10.0,
+   "gross_value": 1000.0,
+   "fee": 0.0,
+   "slippage": 0.0,
+   "dt": "2026-10-16 01:31:00+00:00",
+   "source": "fixture",
+   "fill_model_ref": null,
+   "fill_model_version": null,
+   "fill_reason": "FILLED",
+   "fill_source_trace": [],
+   "fee_mode": "LEGACY_BPS",
+   "fee_source": "legacy_bps",
+   "fee_schedule_ref": null,
+   "fee_schedule_version": null,
+   "fee_schedule_identity": null,
+   "fee_schedule_hash": null,
+   "fee_breakdown": {}
+  }
+ ],
+ "audits": [
+  {
+   "order_id": "order-1",
+   "symbol": "000001.SZ",
+   "side": "BUY",
+   "requested_quantity": 100.0,
+   "status": "filled",
+   "reason": "FILLED",
+   "submitted_at": "2026-10-16 01:30:00+00:00",
+   "eligible_at": "2026-10-16 01:31:00+00:00",
+   "fill_at": "2026-10-16 01:31:00+00:00",
+   "source_trace": [
+    "fixture"
+   ],
+   "query_metadata": {
+    "start": "2026-10-15T16:00:00+00:00",
+    "end": "2026-10-16T15:59:59.999999+00:00",
+    "as_of": null,
+    "closed_only": true,
+    "rows": 2,
+    "market": "CN",
+    "timeframe": "1m",
+    "eligibility_policy_ref": "strict_next_bar_v1",
+    "calendar": null,
+    "fee_mode": "LEGACY_BPS",
+    "fee_source": "legacy_bps"
+   },
+   "fill_model_ref": null,
+   "fill_model_version": null,
+   "fill_reason": "FILLED",
+   "fill_source_trace": [],
+   "filled_quantity": 100,
+   "remaining_quantity": 0.0,
+   "fill_count": 1,
+   "fee_mode": "LEGACY_BPS",
+   "fee_source": "legacy_bps",
+   "fee_schedule_ref": null,
+   "fee_schedule_version": null,
+   "fee_schedule_identity": null,
+   "fee_schedule_hash": null,
+   "fee_breakdown": {}
+  }
+ ],
+ "orders": [
+  {
+   "symbol": "000001.SZ",
+   "side": "BUY",
+   "quantity": 100,
+   "submitted_at": "2026-10-16 01:30:00+00:00",
+   "order_id": "",
+   "limit_price": null,
+   "market": null,
+   "timeframe": null,
+   "signal_at": "2026-10-16 01:30:00+00:00",
+   "order_type": "MARKET",
+   "stop_price": null,
+   "exchange": null,
+   "asset_class": "equity",
+   "time_in_force": "DAY",
+   "expire_at": null,
+   "max_attempts": null
+  }
+ ],
+ "cash": 1000.0,
+ "positions": {
+  "000001.SZ": 100.0
+ },
+ "equity": 2000.0,
+ "metrics": {
+  "submitted": 1,
+  "filled": 1,
+  "unfilled": 0,
+  "unfilled_rate": 0.0,
+  "partial_count": 0,
+  "fully_filled_count": 1,
+  "filled_quantity": 100.0,
+  "partial_filled_qty": 0,
+  "remaining_quantity": 0.0
+ },
+ "source_metadata": {
+  "sources": [
+   "fixture"
+  ],
+  "rows": 2,
+  "coverage": "complete",
+  "missing": []
+ },
+ "query_metadata": {
+  "start": "2026-10-15T16:00:00+00:00",
+  "end": "2026-10-16T15:59:59.999999+00:00",
+  "as_of": null,
+  "closed_only": true,
+  "rows": 2,
+  "market": "CN",
+  "timeframe": "1m",
+  "eligibility_policy_ref": "strict_next_bar_v1",
+  "calendar": null
+ },
+ "artifact": "C:\\项目\\老田的AI助手\\portal\\tests\\.pytest_process_restart_197\\test_minute_router_recovers_af0\\minute\\minute_20261018-164627-1238.json"
+}
