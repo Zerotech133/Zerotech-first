@@ -16,8 +16,10 @@ watch-daemon/提权进程/杀毒软件毫秒级握持）→ 5 标的零落账（
      路径/尝试次数/末次 errno；
   5. 仅 OSError 系重试：PermissionError 重试；ValueError 等非 OSError
      原样立即上抛（重试无意义，不白等 7.5s）；
-  6. 主链 fail-visible：last_run.log 打开耗尽 → main() 退 3 且 stderr 留
-     [FATAL] 诊断（禁静默跳过=禁零落账假绿，正是 10-19 事故形态）。
+  6. 主链 fail-visible：**账本**追加打开耗尽 → main() 退 3 且 stderr 留
+     [FATAL] 诊断（禁静默跳过=禁零落账假绿，正是 10-19 事故形态）；
+     last_run.log 打开被外层占用为降级沿用，不设 FATAL（WO-TF-02 语义，
+     WO-LEGION-S18-01 对齐）。
 
 纪律：全部 tmp 隔离（本测试组不落任何 agent_platform/data/ 文件）；
 sleep 注入零等待；builtins.open 打桩经 monkeypatch 自动还原。
@@ -158,21 +160,52 @@ def test_non_oserror_propagates_immediately_no_retry(monkeypatch, log_file):
 # ---------------------------------------------------------------- 主链 fail-visible
 
 def test_main_fatal_exit_3_when_log_open_exhausted(monkeypatch, tmp_path):
-    """契约 6：last_run.log 打开耗尽 → main() 返回 3（非零=计划任务历史
-    可见，经 shadow_automation.ps1 exit $LASTEXITCODE 透传）且 stderr 留
-    [FATAL] 诊断——禁静默跳过（跳过=零落账假绿，正是 10-19 事故形态）。"""
+    """契约 6（WO-LEGION-S18-01 对齐 WO-TF-02 现契约）：**账本**（LEDGER）追加
+    打开重试耗尽 → main() 返回 3（非零=计划任务历史可见，经 shadow_automation.ps1
+    exit $LASTEXITCODE 透传）且 stderr 留 [FATAL] 诊断——禁静默跳过（跳过=零落账
+    假绿，正是 10-19 事故形态）。
+
+    WO-TF-02 语义：``last_run.log`` 打开被外层重定向占用是**预期形态**，
+    ``_redirect_run_log`` 降级沿用既有 stdout/stderr 返回 None，不设 FATAL；
+    FATAL 只属于账本追加打开路径（run_shadow._open_log_append 唯一调用点）。
+    本用例桩掉 _redirect_run_log 走降级分支，使 stderr 保持注入的 err_buf，
+    FATAL 文案可断言；与「无锁零差异」「瞬时恢复」两用例互证无锁路径不变。
+
+    S18 追加隔离（2026-10-21 审计判例）：本用例曾未桩 make_context/
+    Interpreter/quote_snapshot/kline_daily，main() 会真跑首标的完整影子轮
+    （真实 Ollama 推理 + 真实行情读取）——环境好时早异常秒级通过、环境
+    差时 30 分钟级（延迟炸弹，批跑/单跑行为分裂的根因）。现全部桩定，
+    用例只验证 FATAL 路径本身，与外部网络态零耦合。"""
     ledger = tmp_path / "shadow" / "shadow_ledger.jsonl"
     monkeypatch.setattr(run_shadow, "LEDGER", ledger)
     monkeypatch.setattr(run_shadow, "REHEARSAL", True)  # 隔离阀：不碰真仓 data/
+    monkeypatch.setattr(run_shadow, "_redirect_run_log", lambda: None)  # 外层占用=降级
+    # S18 隔离桩：重型组件全部钉死（决策走 parse_decision 真实解析，其余确定性）
+    monkeypatch.setattr(run_shadow, "make_context",
+                        lambda s: {"symbol": s, "name": "桩标的"})
+
+    class _StubInterpreter:
+        def __init__(self, *a, **k):
+            pass
+
+        def run(self, symbol, data_ctx=None):
+            return {"decision": '{"recommendation": "hold", "confidence": 0.5}',
+                    "run_id": "stub-run", "status": "done"}
+
+    monkeypatch.setattr(run_shadow, "Interpreter", _StubInterpreter)
+    monkeypatch.setattr(run_shadow, "OllamaLLM", lambda *a, **k: object())
+    monkeypatch.setattr(run_shadow, "quote_snapshot", lambda s: {"price": 1.0})
+    monkeypatch.setattr(run_shadow, "kline_daily", lambda s, n: None)
 
     def boom(*a, **k):
         raise run_shadow._LogOpenError("stub: locked after 5 attempts")
 
     monkeypatch.setattr(run_shadow, "_open_log_append", boom)
     err_buf = _FakeStream()
-    monkeypatch.setattr(sys, "stdout", _FakeStream())  # isatty=False → 重定向分支
+    monkeypatch.setattr(sys, "stdout", _FakeStream())
     monkeypatch.setattr(sys, "stderr", err_buf)
     rc = run_shadow.main()
     assert rc == 3
     out = "".join(err_buf.buf)
-    assert "[FATAL]" in out and "last_run.log" in out and "非假绿" in out
+    assert "[FATAL]" in out and "影子账本" in out and "未落账" in out \
+        and "本次运行中止" in out
