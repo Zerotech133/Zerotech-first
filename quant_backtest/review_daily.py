@@ -76,6 +76,76 @@ def _cost_ledger_state(ledger=None) -> dict:
         return {"path": str(p), "exists": None}
 
 
+def _cost_state(ledger_path, combo_id, month) -> tuple:
+    """单组合「成本口径三态」判定（WO-107）。
+
+    returns (state, detail)，state ∈
+      · `ledger_missing`     账本文件不在盘 → 报表里的 0 是**缺失**，不是零成本
+      · `zero_cost_confirmed` 账本在盘，但该组合本月确实 0 条成本记录（真零）
+      · `has_cost`           账本在盘且本月有记录（detail 给条数与金额）
+      · `ledger_corrupt`     账本行损坏（无法判定），显式标出不放行
+    只读，不写账、不改 combo_review 的计算口径。
+    """
+    try:
+        p = Path(ledger_path) if ledger_path is not None \
+            else Path(cr.combo_factory.DEFAULT_BUDGET_LEDGER)
+    except Exception:                                # noqa: BLE001
+        return "ledger_missing", {"path": None}
+    if not p.exists():
+        return "ledger_missing", {"path": str(p)}
+    n, total = 0, 0.0
+    try:
+        text = p.read_text(encoding="utf-8")
+    except OSError as e:
+        return "ledger_corrupt", {"path": str(p), "error": str(e)[:120]}
+    for lineno, line in enumerate(text.splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            e = json.loads(line)
+        except ValueError:
+            return "ledger_corrupt", {"path": str(p),
+                                     "error": "第 %d 行非法 JSON" % lineno}
+        if not isinstance(e, dict):
+            return "ledger_corrupt", {"path": str(p),
+                                     "error": "第 %d 行非对象" % lineno}
+        if e.get("combo_id") != combo_id or e.get("kind") != "llm_cost":
+            continue
+        if str(e.get("ts", ""))[:7] != month:
+            continue
+        n += 1
+        try:
+            total += float(e.get("cost") or 0.0)
+        except (TypeError, ValueError):
+            return "ledger_corrupt", {"path": str(p),
+                                     "error": "第 %d 行 cost 非法" % lineno}
+    if n == 0:
+        return "zero_cost_confirmed", {"path": str(p), "records": 0,
+                                       "month": month}
+    return "has_cost", {"path": str(p), "records": n,
+                        "cost": round(total, 6), "month": month}
+
+
+COST_WARN = """
+---
+
+> ⚠️ **成本口径提示**（review_daily 追加，非 combo_review 原文）
+> 成本账 `%s` **不在盘**，上文「当月累计 0」是**账本缺失**所致，
+> 不代表当月真零成本（`ledger_missing`）。ROI 计算前须先补齐账本口径，
+> 否则「收益 − 0」会高估。详见 WO-011 成本账调用链调查。
+"""
+
+
+def _count_states(cost_states: dict) -> dict:
+    """三态计数（summary 用，便于一眼看出有没有 ledger_missing）。"""
+    out = {}
+    for v in (cost_states or {}).values():
+        s = (v or {}).get("state") or "unknown"
+        out[s] = out.get(s, 0) + 1
+    return out
+
+
 def run(date=None, combo_ids=None, out_root=None, registry_path=None,
         ledger=None, receipts=None, snapshot_db=None, month=None) -> dict:
     """跑一轮盘后复盘，返回 summary dict（同时落盘）。
@@ -90,12 +160,16 @@ def run(date=None, combo_ids=None, out_root=None, registry_path=None,
     if combo_ids is None:
         combo_ids = load_combo_ids(registry_path)      # 注册表坏了就抛，不装空
 
-    written, errors, roi_counts = [], [], {}
+    # 归月口径与 combo_review 对齐：显式 month > 归档日所属月 > 当月
+    cur_month = month or (day[:7] if len(day) >= 7 else
+                          time.strftime("%Y-%m"))
+
+    written, errors, roi_counts, cost_states = [], [], {}, {}
     for cid in combo_ids:
         try:
             rev = cr.build_review(cid, registry_path=registry_path,
                                   ledger=ledger, receipts=receipts,
-                                  month=month, snapshot_db=snapshot_db)
+                                  month=cur_month, snapshot_db=snapshot_db)
         except Exception as e:                          # noqa: BLE001
             # 失败组合**不产出 md**——给它写一份报告就是造数
             errors.append({
@@ -105,6 +179,12 @@ def run(date=None, combo_ids=None, out_root=None, registry_path=None,
             })
             continue
         md = cr.render_markdown(rev)
+        # 成本口径三态（WO-107）：账本不在盘时报表里的 0 是缺失不是零成本，
+        # 必须在正文醒目追加提示，否则值班读正文会被误导。
+        cstate, cdetail = _cost_state(ledger, cid, cur_month)
+        cost_states[cid] = {"state": cstate, "detail": cdetail}
+        if cstate == "ledger_missing":
+            md = md + (COST_WARN % (cdetail.get("path") or "（未知路径）"))
         (out_dir / ("%s.md" % cid)).write_text(md, encoding="utf-8")
         written.append(cid)
         st = (rev.get("roi") or {}).get("status") or "unknown"
@@ -131,12 +211,17 @@ def run(date=None, combo_ids=None, out_root=None, registry_path=None,
         "compare_written": compare_written,
         "empty_state": len(combo_ids) == 0,
         "cost_ledger": _cost_ledger_state(ledger),
+        "cost_states": cost_states,
+        "cost_state_counts": _count_states(cost_states),
+        "cost_month": cur_month,
         "out_dir": str(out_dir),
         "notes": [
             "本文件只搬运 combo_review 的结论，不自行计算收益/成本/ROI",
             "后验收益缺失时 ROI=pending_backfill，不以 0 充数",
             "失败组合不产出 md，原因见 errors",
-            "cost_ledger.exists=false 时，成本累计 0 不代表真零成本（账本不在盘）",
+            "cost_states 三态：ledger_missing（账本不在盘，报表 0 是缺失）/"
+            "zero_cost_confirmed（账本在、本月确实 0 条）/has_cost；"
+            "ledger_missing 的报表正文会追加醒目提示",
         ],
     }
     (out_dir / "_summary.json").write_text(

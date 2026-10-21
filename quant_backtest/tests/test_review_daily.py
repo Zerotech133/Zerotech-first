@@ -168,5 +168,89 @@ class TestRegistryReadFailure(unittest.TestCase):
                    ledger=Path(tmp.name) / "x.jsonl")
 
 
+class TestCostStates(_Base):
+    """WO-107：成本口径三态——报表里的 0 必须能区分「缺失」与「真零」。"""
+
+    def _ledger_with(self, entries, name="ledger.jsonl"):
+        p = Path(self.tmp.name) / name
+        p.write_text("\n".join(json.dumps(e, ensure_ascii=False) for e in entries)
+                     + "\n", encoding="utf-8")
+        return p
+
+    def _entry(self, cid, cost=4.0, ts="2026-10-15T10:00:00", kind="llm_cost"):
+        return {"ts": ts, "kind": kind, "combo_id": cid, "cost": cost}
+
+    def _md(self, cid, day="2026-10-21"):
+        return (self._dir(day) / ("%s.md" % cid)).read_text(encoding="utf-8")
+
+    def test_ledger_missing_marks_state_and_warns_in_body(self):
+        """账本不在盘 → ledger_missing，且**正文**必须醒目提示（不能只在 summary）。"""
+        cid = self.ids[0]
+        s = self._summary(combo_ids=[cid], date="2026-10-21")
+        self.assertEqual(s["cost_states"][cid]["state"], "ledger_missing")
+        md = self._md(cid)
+        self.assertIn("成本口径提示", md)
+        self.assertIn("账本缺失", md)
+        self.assertIn("ledger_missing", md)
+
+    def test_zero_cost_confirmed_no_warning(self):
+        """账本在盘但本月该组合 0 条 → 真零，不追加警示（避免狼来了）。"""
+        cid = self.ids[0]
+        p = self._ledger_with([self._entry("other_combo")])
+        s = self._summary(combo_ids=[cid], date="2026-10-21", ledger=p)
+        self.assertEqual(s["cost_states"][cid]["state"], "zero_cost_confirmed")
+        self.assertNotIn("成本口径提示", self._md(cid))
+
+    def test_has_cost_reports_records(self):
+        cid = self.ids[0]
+        p = self._ledger_with([self._entry(cid, 4.0), self._entry(cid, 6.5)])
+        s = self._summary(combo_ids=[cid], date="2026-10-21", ledger=p)
+        st = s["cost_states"][cid]
+        self.assertEqual(st["state"], "has_cost")
+        self.assertEqual(st["detail"]["records"], 2)
+        self.assertAlmostEqual(st["detail"]["cost"], 10.5)
+        self.assertNotIn("成本口径提示", self._md(cid))
+
+    def test_other_month_not_counted(self):
+        """上月记录不得算进本月（归月口径与 combo_review 一致）。"""
+        cid = self.ids[0]
+        p = self._ledger_with([self._entry(cid, 9.0, ts="2026-09-30T23:00:00")])
+        s = self._summary(combo_ids=[cid], date="2026-10-21", ledger=p)
+        self.assertEqual(s["cost_states"][cid]["state"], "zero_cost_confirmed")
+
+    def test_other_kind_not_counted(self):
+        """非 llm_cost 的 kind 不得计入（口径同 combo_review）。"""
+        cid = self.ids[0]
+        p = self._ledger_with([self._entry(cid, 9.0, kind="other_cost")])
+        s = self._summary(combo_ids=[cid], date="2026-10-21", ledger=p)
+        self.assertEqual(s["cost_states"][cid]["state"], "zero_cost_confirmed")
+
+    def test_corrupt_ledger_blocks_combo_and_records_error(self):
+        """账本坏行 → combo_review 的 closed-on-failure 先抛，该组合不产出报告。
+
+        `_cost_state` 里的 ledger_corrupt 分支只是兜底（正常路径被 build_review
+        先拦住）；此处验证的是承重语义：**坏账本不得产出假报告**。
+        """
+        cid = self.ids[0]
+        p = Path(self.tmp.name) / "bad.jsonl"
+        p.write_text("{not json\n", encoding="utf-8")
+        s = self._summary(combo_ids=[cid], date="2026-10-21", ledger=p)
+        self.assertEqual(s["combos"], 0, "账本坏时不得产出组合报告")
+        self.assertEqual(len(s["errors"]), 1)
+        self.assertEqual(s["errors"][0]["reason_code"], "ledger_corrupt")
+        self.assertFalse((self._dir("2026-10-21") / ("%s.md" % cid)).exists())
+
+    def test_state_counts_in_summary(self):
+        p = self._ledger_with([self._entry(self.ids[0], 1.0)])
+        s = self._summary(combo_ids=self.ids, date="2026-10-21", ledger=p)
+        counts = s["cost_state_counts"]
+        self.assertEqual(sum(counts.values()), len(self.ids))
+        self.assertEqual(counts.get("has_cost"), 1)
+
+    def test_cost_month_recorded(self):
+        s = self._summary(combo_ids=[self.ids[0]], date="2026-10-21")
+        self.assertEqual(s["cost_month"], "2026-10")
+
+
 if __name__ == "__main__":
     unittest.main()
