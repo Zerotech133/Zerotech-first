@@ -87,6 +87,16 @@ check('样例渲染走契约 entry', /renderEvidenceSample[\s\S]*?OSResultContra
   check('样例禁 fetch 真实结果数据', !/\bfetch\(/.test(body));
 })();
 
+// 2j. WO-OS-16 移动端触控：590px 断点内 nav button 与 .actions a/button 触控目标 ≥44px
+(function () {
+  const m = /@media\s*\(max-width:\s*590px\)\s*\{([\s\S]*?)\}\}/.exec(html);
+  check('存在 @media(max-width:590px) 断点', !!m);
+  const seg = m ? m[1] : '';
+  check('590px 断点内 nav button 触控 min-height:44px', /\.nav\s+button\s*\{[^}]*min-height:\s*44px/.test(seg));
+  check('590px 断点内 .actions a/button 触控 min-height:44px', /\.actions\s+(?:a|button)\s*\{[^}]*min-height:\s*44px/.test(seg));
+  check('590px 断点内触控 padding 增强', /\.nav\s+button\s*\{[^}]*padding/.test(seg) && /\.actions\s+(?:a|button)\s*\{[^}]*padding/.test(seg));
+})();
+
 // 3. 只读 GET 端点齐备
 for (const ep of ['/api/os', '/api/home', '/api/alerts', '/api/notify/queue', '/api/org/tasks', '/api/capability/board'])
   check('端点 ' + ep, html.includes("'" + ep + "'"));
