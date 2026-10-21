@@ -486,6 +486,11 @@ def collect_backup(vault_root: Path, now: dt.datetime) -> dict[str, Any]:
         stripped = line.strip()
         if not stripped:
             continue
+        # 注释行：# 开头是备份脚本写的头/尾摘要（`# vault backup <time>` /
+        # `# vault <dir>` / `# summary ok=..`），不是条目，不能算格式异常。
+        # 与 tools/verify_backups.py 的口径保持一致（它同样跳过 # 行）。
+        if stripped.startswith("#"):
+            continue
         match = MANIFEST_RE.match(stripped)
         if match is None:
             malformed.append({"line": lineno, "text": stripped[:120]})
