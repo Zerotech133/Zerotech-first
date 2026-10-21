@@ -66,8 +66,7 @@ WAREHOUSES = [  # (source, 数据根, manifest 路径)
      os.path.join(HERE, "data", "xueqiu", "_manifest.json")),
     # CnOpenData 静态历史包（WO-QT-20261021-088）：6 张表各一目录
     # （part_000N.parquet），表级溯源在包清单 _manifest.json 内层 "tables"。
-    (CNOD_SOURCE, os.path.join(HERE, "data", "cnopendata"),
-     os.path.join(HERE, "data", "cnopendata", "_manifest.json")),
+    (CNOD_SOURCE, CNOD_DIR, CNOD_MANIFEST),
 ]
 LEGACY_US = os.path.join(HERE, "data", "us")       # 旧美股逐股（deprecated）
 CRYPTO_DIR = os.path.join(HERE, "data", "crypto")  # 加密货币日线
