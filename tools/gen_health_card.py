@@ -815,13 +815,42 @@ def _empty_worktree_ttl(repo_root: Path) -> dict[str, Any]:
         "linked_worktrees": None,
         "merged_worktrees": None,
         "violations": None,
+        "dirty_expired": None,
         "unknown": None,
         "status": None,
         "level": None,
         "expired": [],
+        "dirty_expired_worktrees": [],
         "unknown_worktrees": [],
         "items": [],
     }
+
+
+def _worktree_has_changes(
+    path_str: str, next_timeout
+) -> tuple[bool | None, str | None]:
+    """判断一个关联工作树是否还带着未提交改动。
+
+    规则 9 的原文是「分支已合并**并且无未提交改动**的工作树，合并后 7 天内
+    必须 remove」。只判「已合并 + 超期」会把还带着未提交工作的树报成“该回收”，
+    所以超期候选必须实测脏不脏。
+
+    返回 (是否脏, 失败原因)：无法判定时返回 (None, 原因)，**绝不冒充干净**。
+    """
+    raw = (path_str or "").strip().strip('"')
+    if not raw:
+        return None, "工作树路径为空"
+    path = Path(raw)
+    if not path.is_dir():
+        return None, f"工作树目录不存在: {raw}"
+    try:
+        proc = _git_run(path, ["status", "--porcelain"], timeout=next_timeout())
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return None, f"git status 失败: {_short_exc(exc)}"
+    if proc.returncode != 0:
+        detail = _decode(proc.stderr).strip()[:200] or "git 返回非零"
+        return None, "git status 失败: " + detail
+    return bool(_decode(proc.stdout).strip()), None
 
 
 def _branch_commit_times(
@@ -969,6 +998,7 @@ def collect_worktree_ttl(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
         }
         now_timestamp = now.timestamp()
         expired: list[dict[str, Any]] = []
+        dirty_expired: list[dict[str, Any]] = []
         unknown: list[dict[str, Any]] = []
         items: list[dict[str, Any]] = []
         merged_count = 0
@@ -986,6 +1016,7 @@ def collect_worktree_ttl(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
             last_commit_at: str | None = None
             status = "unknown"
             unknown_reason: str | None = None
+            item_dirty: bool | None = None
 
             if entry.get("detached") or not branch:
                 unknown_reason = "detached HEAD（无分支可判）"
@@ -1000,7 +1031,22 @@ def collect_worktree_ttl(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
                 age_days = round((now_timestamp - timestamp) / 86400.0, 2)
                 if merged:
                     merged_count += 1
-                    status = "expired" if age_days > WORKTREE_TTL_DAYS else "merged_fresh"
+                    if age_days > WORKTREE_TTL_DAYS:
+                        # 规则 9 还要求「无未提交改动」——超期候选实测脏不脏，
+                        # 脏的树不能建议回收（它的改动还没进任何提交）。
+                        dirty, dirty_reason = _worktree_has_changes(
+                            str(entry.get("path") or ""), next_timeout
+                        )
+                        if dirty is None:
+                            unknown_reason = dirty_reason or "无法读取工作树状态"
+                            status = "unknown"
+                        elif dirty:
+                            status = "expired_dirty"
+                            item_dirty = True
+                        else:
+                            status = "expired"
+                    else:
+                        status = "merged_fresh"
                 else:
                     status = "unmerged"
 
@@ -1013,11 +1059,15 @@ def collect_worktree_ttl(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
                 "last_commit_at": last_commit_at,
                 "status": status,
             }
+            if item_dirty is not None:
+                item["uncommitted_changes"] = item_dirty
             if unknown_reason is not None:
                 item["unknown_reason"] = unknown_reason
                 unknown.append(item)
             elif status == "expired":
                 expired.append(item)
+            elif status == "expired_dirty":
+                dirty_expired.append(item)
             if len(items) < WORKTREE_TTL_ITEM_LIMIT:
                 items.append(item)
 
@@ -1025,13 +1075,20 @@ def collect_worktree_ttl(repo_root: Path, now: dt.datetime) -> dict[str, Any]:
         result["linked_worktrees"] = len(linked)
         result["merged_worktrees"] = merged_count
         result["violations"] = len(expired)
+        result["dirty_expired"] = len(dirty_expired)
         result["unknown"] = len(unknown)
         result["expired"] = expired[:WORKTREE_TTL_DETAIL_LIMIT]
+        result["dirty_expired_worktrees"] = dirty_expired[:WORKTREE_TTL_DETAIL_LIMIT]
         result["unknown_worktrees"] = unknown[:WORKTREE_TTL_DETAIL_LIMIT]
         result["items"] = items
         result["available"] = True
         if expired:
             result["status"] = "expired"
+            result["level"] = "yellow"
+        elif dirty_expired:
+            # 已合并 + 超期，但仍带着未提交改动：不能建议 remove（规则 9 的
+            # 前提是「无未提交改动」），必须人先决定这些改动去哪。判黄不判绿。
+            result["status"] = "expired_dirty"
             result["level"] = "yellow"
         elif unknown:
             result["status"] = "unknown"
@@ -1522,22 +1579,46 @@ def _catchup_behind_text(catchup: dict[str, Any]) -> str:
 def _worktree_ttl_detail(ttl: dict[str, Any]) -> str:
     days = ttl.get("threshold_days") or WORKTREE_TTL_DAYS
     expired = ttl.get("expired") or []
-    bits = [
-        "%s（%s，%.1f 天）"
-        % (item["path"], item.get("branch") or "?", item.get("age_days") or 0.0)
-        for item in expired
-    ]
-    detail = "%d 个已合并且超过 %g 天未清理：%s" % (
-        ttl.get("violations") or 0,
-        days,
-        "、".join(bits),
-    )
-    hidden = (ttl.get("violations") or 0) - len(bits)
-    if hidden > 0:
-        detail += "；另有 %d 个未列出" % hidden
+    dirty = ttl.get("dirty_expired_worktrees") or []
+    parts: list[str] = []
+    if expired:
+        bits = [
+            "%s（%s，%.1f 天）"
+            % (item["path"], item.get("branch") or "?", item.get("age_days") or 0.0)
+            for item in expired
+        ]
+        text = "%d 个已合并且超过 %g 天未清理：%s" % (
+            ttl.get("violations") or 0,
+            days,
+            "、".join(bits),
+        )
+        hidden = (ttl.get("violations") or 0) - len(bits)
+        if hidden > 0:
+            text += "；另有 %d 个未列出" % hidden
+        parts.append(text)
+    if dirty:
+        # 规则 9 的前提是「无未提交改动」。这些树已合并、已超期，但还带着
+        # 没进任何提交的改动，直接 remove 会丢工作 —— 必须人来决定去向。
+        dbits = [
+            "%s（%s，%.1f 天）"
+            % (item["path"], item.get("branch") or "?", item.get("age_days") or 0.0)
+            for item in dirty
+        ]
+        text = "%d 个已合并且超过 %g 天，但仍持有未提交改动，不可自动回收：%s" % (
+            ttl.get("dirty_expired") or 0,
+            days,
+            "、".join(dbits),
+        )
+        hidden = (ttl.get("dirty_expired") or 0) - len(dbits)
+        if hidden > 0:
+            text += "；另有 %d 个未列出" % hidden
+        parts.append(text)
+    detail = "；".join(parts)
     if ttl.get("unknown"):
         detail += "；另有 %d 个无法判定" % ttl["unknown"]
-    return detail + "（规则 9，需 git worktree remove）"
+    if expired:
+        return detail + "（规则 9，需 git worktree remove）"
+    return detail + "（规则 9 前提是「无未提交改动」：先决定这些改动的去向，再回收）"
 
 
 def _worktree_ttl_unknown_detail(ttl: dict[str, Any]) -> str:
@@ -1775,6 +1856,10 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             "worktree TTL 不可用：" + (ttl.get("reason") or "未知原因"),
         )
     elif ttl.get("violations"):
+        add("repo.worktree_ttl", "yellow", _worktree_ttl_detail(ttl))
+    elif ttl.get("dirty_expired"):
+        # 超期但仍持有未提交改动：判黄（不是绿，规则 9 没满足；也不是红，
+        # 因为没有东西坏掉）。detail 明确写"不可自动回收"，避免照抄 remove。
         add("repo.worktree_ttl", "yellow", _worktree_ttl_detail(ttl))
     elif ttl.get("unknown"):
         add("repo.worktree_ttl", "yellow", _worktree_ttl_unknown_detail(ttl))

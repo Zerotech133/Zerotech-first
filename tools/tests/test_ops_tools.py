@@ -5,7 +5,7 @@
 ``if __name__ == "__main__"`` 与模块级副作用）::
 
     tools/verify_backups.py     备份校验：MANIFEST/字节数/sha256/孤儿/新鲜度，退出码 0/1/2
-    tools/gen_health_card.py    健康卡：task_audit + backup + repo 三块、13 项检查
+    tools/gen_health_card.py    健康卡：task_audit + backup + repo + docs 四块、16 项检查
     tools/gen_docs_index.py     DOCS_INDEX 生成与 --check
     tools/daily_ops.ps1         PowerShell 编排：只测退出码与 JSON 契约
 
@@ -393,7 +393,7 @@ def test_health_card_normal_fixture_json_contract(tmp_path: Path) -> None:
         assert isinstance(card[block], dict), block
         assert "available" in card[block]
 
-    # 13 项检查是扁平列表，字段固定
+    # 16 项检查是扁平列表，字段固定（新增 worktree TTL 与文档索引后）
     assert isinstance(card["checks"], list) and card["checks"]
     for check in card["checks"]:
         assert set(check) == {"id", "level", "detail"}
