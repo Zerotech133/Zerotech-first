@@ -39,6 +39,7 @@
 直接拒绝写，**不以空态覆盖丢数据**（closed on failure）。
 """
 
+import hashlib
 import json
 import os
 from datetime import date, datetime, timedelta, timezone
@@ -233,13 +234,24 @@ def state_path(path=None):
     return DEFAULT_STATE_PATH
 
 
-def sent_key(open_id, plan_id, stage, day):
-    """去重键：``open_id|plan_id|stage|day``（day 为 YYYY-MM-DD）。
+def _oid_fp(open_id):
+    """open_id 指纹：md5 前 16 位（不可逆、稳定、够防撞）。
 
-    口径写死为字面拼接；若 open_id / plan_id 自身含 ``|``，键仍唯一性可保，
-    但人工排查时需按最后一段 day 反推（正常飞书 open_id 与 plan_id 不含 ``|``）。
+    checklist 34 隐私加固（2026-10-21）：原键与条目直接落明文 open_id，
+    portal/work/renewal_state.json 本机可读即等于身份明文可读。改指纹后
+    去重语义不变（同客同档同阶段同天仍同键），但文件不再含身份明文。
+    该文件此前从未落盘（checklist 19），故零迁移成本。
     """
-    return "%s|%s|%s|%s" % (open_id, plan_id, stage, day)
+    return hashlib.md5((open_id or "").encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def sent_key(open_id, plan_id, stage, day):
+    """去重键：``<open_id指纹>|plan_id|stage|day``（day 为 YYYY-MM-DD）。
+
+    指纹=md5(open_id)[:16]，不可逆；同客稳定、异客相异，去重语义与旧版
+    一致。人工排查时按最后一段 day 反推，用 _oid_fp() 现算比对即可。
+    """
+    return "%s|%s|%s|%s" % (_oid_fp(open_id), plan_id, stage, day)
 
 
 def _norm_day(day):
@@ -400,7 +412,8 @@ def mark_sent(state, item, day, path=None):
     if not isinstance(sent, dict):
         sent = {}
     sent[key] = {
-        "open_id": open_id,
+        # checklist 34：不落明文 open_id，只留指纹（与键同源）
+        "oid_fp": _oid_fp(open_id),
         "plan_id": str(plan_id),
         "stage": str(stage),
         "day": day_str,

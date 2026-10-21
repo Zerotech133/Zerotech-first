@@ -49,7 +49,12 @@ def test_mark_sent_then_already_sent(tmp_path):
 
     out = st.mark_sent(state, ITEM, DAY, path=path)
     assert out["ok"] is True and out["written"] is True and out["error"] is None
-    assert out["key"] == "ou_alice001|basic_monthly|t3|2026-11-16"
+    # checklist 34 改造后键为 <md5指纹16>|plan|stage|day（不再含明文）
+    _parts = out["key"].split("|")
+    assert len(_parts) == 4
+    assert _parts[0] == st._oid_fp("ou_alice001")
+    assert _parts[1:] == ["basic_monthly", "t3", "2026-11-16"]
+    assert "ou_alice001" not in out["key"]
     assert st.already_sent(state, "ou_alice001", "basic_monthly", "t3", DAY) is True
 
     again = st.load(path)
@@ -99,13 +104,13 @@ def test_prune_drops_old_records(tmp_path):
     removed = st.prune(state, keep_days=30, today="2026-11-16")
     assert removed == 1
     keys = set(state["sent"])
-    assert not any("ou_old00001" in k for k in keys)
-    assert any("ou_recent02" in k for k in keys)
-    assert any("ou_today003" in k for k in keys)
+    assert not any(st._oid_fp("ou_old00001") in k for k in keys)
+    assert any(st._oid_fp("ou_recent02") in k for k in keys)
+    assert any(st._oid_fp("ou_today003") in k for k in keys)
 
     # keep_days=0：只留今天
     assert st.prune(state, keep_days=0, today="2026-11-16") == 1
-    assert all("ou_today003" in k for k in state["sent"])
+    assert all(st._oid_fp("ou_today003") in k for k in state["sent"])
 
 
 # 6. 坏 JSON：load 不抛、标 corrupt；mark 拒绝写，原文件一字未改
@@ -126,7 +131,12 @@ def test_corrupt_state_reported_and_not_overwritten(tmp_path):
     out = st.mark_sent(state, ITEM, DAY, path=path)
     assert out["ok"] is False and out["error"] == "state_corrupt"
     assert out["written"] is False
-    assert out["key"] == "ou_alice001|basic_monthly|t3|2026-11-16"
+    # checklist 34 改造后键为 <md5指纹16>|plan|stage|day（不再含明文）
+    _parts = out["key"].split("|")
+    assert len(_parts) == 4
+    assert _parts[0] == st._oid_fp("ou_alice001")
+    assert _parts[1:] == ["basic_monthly", "t3", "2026-11-16"]
+    assert "ou_alice001" not in out["key"]
     with open(path, "r", encoding="utf-8") as fh:
         assert fh.read() == broken          # 不覆盖、不丢已发数据
 
@@ -223,3 +233,49 @@ def test_empty_file_treated_as_empty_state(tmp_path):
     assert state["ok"] is True and state["corrupt"] is False
     assert state["sent"] == {}
     assert [p["reason"] for p in state["problems"]] == ["state_empty"]
+
+
+# ── 隐私加固（checklist 34）：键与值不落明文 open_id ──────────
+def test_oid_never_plaintext_in_key_or_entry(tmp_path):
+    """状态文件全文不得出现明文 open_id；键仍须一客一档一阶段一天唯一。"""
+    raw_oid = "ou_privacy_check_9f3a"
+    p = tmp_path / "state.json"
+    _state = st.load(str(p))
+    r = st.mark_sent(_state, {"open_id": raw_oid, "plan_id": "basic_monthly",
+                          "stage": "d7"}, "2026-10-21", path=str(p))
+    assert r["ok"] is True
+    body = p.read_text(encoding="utf-8")
+    assert raw_oid not in body, "状态文件不得出现明文 open_id"
+    assert raw_oid not in (r["key"] or ""), "键不得含明文 open_id"
+
+
+def test_sent_key_stable_and_unique():
+    a = st.sent_key("ou_A", "basic_monthly", "d7", "2026-10-21")
+    b = st.sent_key("ou_A", "basic_monthly", "d7", "2026-10-21")
+    c = st.sent_key("ou_B", "basic_monthly", "d7", "2026-10-21")
+    d = st.sent_key("ou_A", "basic_monthly", "d1", "2026-10-21")
+    assert a == b, "同一客同一档同一阶段同一天必须同键（去重有效）"
+    assert a != c and a != d, "不同客/不同阶段必须不同键"
+
+
+def test_already_sent_roundtrip_after_hash(tmp_path):
+    _state = st.load(str(tmp_path / "s0.json"))
+    item = {"open_id": "ou_RT", "plan_id": "basic_monthly", "stage": "d3"}
+    assert st.already_sent(_state, "ou_RT", "basic_monthly", "d3",
+                           "2026-10-21") is False
+    p = str(tmp_path / "s.json")
+    st.mark_sent(_state, item, "2026-10-21", path=p)
+    assert st.already_sent(_state, "ou_RT", "basic_monthly", "d3",
+                           "2026-10-21") is True
+
+
+def test_prune_still_works_with_hashed_keys(tmp_path):
+    _state = st.load(str(tmp_path / "s0b.json"))
+    p = str(tmp_path / "s.json")
+    st.mark_sent(_state, {"open_id": "ou_old", "plan_id": "p", "stage": "d7"},
+                 "2026-01-01", path=p)
+    st.mark_sent(_state, {"open_id": "ou_new", "plan_id": "p", "stage": "d7"},
+                 "2026-10-21", path=p)
+    removed = st.prune(_state, keep_days=7, today="2026-10-21")
+    assert removed == 1
+    assert len(_state["sent"]) == 1
