@@ -1,0 +1,38 @@
+sequenceDiagram
+    participant CON as Console页(8787)
+    participant HR as Hermes routes.py
+    participant HX as api/execution.py
+    participant PT as 8091 portal_api.do_GET
+    participant EC as api_execution.build_execution_health
+    participant PS as powershell.exe
+    participant SCH as Task Scheduler
+    participant WD as execution_watchdog.py(计划任务 10min)
+    participant TS as TaskStore(dev工单)
+    participant FS as send_feishu.py
+
+    Note over CON,PS: R1 读路径（console 30s 轮询）
+    CON->>HR: GET /api/execution/health
+    HR->>HX: handle_health（routes.py L16719 后挂载）
+    HX->>PT: GET /api/execution/health?caller=hermes-execution（无代理 opener）
+    PT->>EC: _execution_health(qs)
+    alt 缓存 <30s
+        EC-->>PT: 命中缓存直接返回
+    else 缓存过期
+        EC->>EC: load_manifest（坏→manifest_ok:false）
+        EC->>PS: 单次批量 Get-ScheduledTask+Info→ConvertTo-Json
+        PS->>SCH: 读 LastRunTime/LastTaskResult
+        EC->>EC: classify 逐任务 + log mtime + fail_scan
+        EC->>EC: 写 30s TTL 缓存（Lock 保护）
+    end
+    PT-->>CON: {tasks, summary}（8091 挂→HX 502 fail-visible）
+
+    Note over WD,FS: R3 写路径（只写工单+飞书，不回写总线）
+    WD->>WD: 读 manifest → poll（force=True 新鲜值）
+    WD->>WD: 逐任务判 fail/stale/fail_scan_hit
+    WD->>WD: 查节流 automation_runs/<任务名>.json（24h）
+    alt 异常且未节流
+        WD->>TS: TaskStore.open("dev", …, P0, p0=True)（同日同标题去重）
+        WD->>FS: subprocess 推 P0 卡（outbox 临时文件 UTF-8）
+        WD->>WD: 更新节流状态 + last_run.json
+    end
+    WD->>WD: exit 0（自身异常才 exit 1 → N1 可探）

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes 中枢驾驶舱 · UI 原型 v1（2026-10-18 待拍板）</title>
+<style>
+  :root{
+    --bg:#f5f4f0; --card:#ffffff; --ink:#2c2c2a; --muted:#5f5e5a; --line:#d3d1c7;
+    --blue:#185fa5; --blue-bg:#e6f1fb; --teal:#0f6e56; --teal-bg:#e1f5ee;
+    --purple:#534ab7; --purple-bg:#eeedfe; --green:#3b6d11; --green-bg:#eaf3de;
+    --amber:#854f0b; --amber-bg:#faeeda; --red:#a32d2d; --red-bg:#fcebeb;
+    --coral:#993c1d; --coral-bg:#faece7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.6;padding:16px}
+  .banner{background:var(--coral-bg);border:1px solid var(--coral);border-radius:12px;padding:10px 16px;margin-bottom:14px}
+  .banner b{color:var(--coral)}
+  header{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  header h1{font-size:18px;font-weight:500}
+  header .sub{color:var(--muted);font-size:12px}
+  nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  nav button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 16px;cursor:pointer;font-size:13px;color:var(--muted)}
+  nav button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .card h2{font-size:14px;font-weight:500;margin-bottom:8px}
+  .card h2 .src{font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+  .grid{display:grid;gap:12px}
+  .g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .lamp{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+  .dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .ok{background:var(--green)} .warn{background:#ef9f27} .bad{background:#e24b4a} .idle{background:#b4b2a9}
+  .lamp .t{font-weight:500} .lamp .d{color:var(--muted);font-size:12px}
+  .kpi{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .kpi .v{font-size:20px;font-weight:500} .kpi .k{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;color:var(--muted);font-weight:400;border-bottom:1px solid var(--line);padding:5px 8px}
+  td{padding:5px 8px;border-bottom:1px solid #eeede8}
+  .tag{display:inline-block;border-radius:6px;padding:1px 8px;font-size:11px;border:1px solid}
+  .tg-ok{color:var(--green);border-color:var(--green);background:var(--green-bg)}
+  .tg-warn{color:var(--amber);border-color:var(--amber);background:var(--amber-bg)}
+  .tg-bad{color:var(--red);border-color:var(--red);background:var(--red-bg)}
+  .tg-gray{color:var(--muted);border-color:var(--line)}
+  .tg-blue{color:var(--blue);border-color:var(--blue);background:var(--blue-bg)}
+  .tg-purple{color:var(--purple);border-color:var(--purple);background:var(--purple-bg)}
+  .tg-teal{color:var(--teal);border-color:var(--teal);background:var(--teal-bg)}
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+  .cnode{border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;background:var(--bg)}
+  .cnode.hot{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+  .arr{color:var(--muted)}
+  .flow{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+  .flow:last-child{border-bottom:none}
+  .flow .fname{font-weight:500;margin-bottom:2px}
+  .note{color:var(--muted);font-size:11.5px;margin-top:8px}
+  .bar{height:8px;border-radius:4px;background:var(--green-bg);overflow:hidden;margin:4px 0}
+  .bar i{display:block;height:100%;border-radius:4px}
+  .funnel{display:flex;gap:8px;align-items:stretch;text-align:center}
+  .funnel .step{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 6px}
+  .funnel .v{font-size:18px;font-weight:500} .funnel .k{font-size:11.5px;color:var(--muted)}
+  .funnel .fa{align-self:center;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .mono{font-family:Consolas,monospace;font-size:12px}
+  .pilot{display:flex;gap:8px;flex-wrap:wrap}
+  .pilot .p{border:1px solid var(--purple);border-radius:8px;padding:6px 10px;background:var(--purple-bg);font-size:12px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <b>UI 原型 v1 · 2026-10-18 待拍板</b>：本页为静态原型（数据为当日真实值快照，非活数据）。拍板点：① 五舱信息架构是否成立 ② 哪些舱进一期施工 ③ 现有 console.html 卡片如何归位（并入总览舱 / 保留兼容）。
+</div>
+
+<header>
+  <h1>Hermes 中枢驾驶舱</h1>
+  <span class="sub">原型 v1 · 数据快照 2026-10-18 10:00 · 8787 薄代理 → 8091 只读总线</span>
+</header>
+
+<nav>
+  <button class="on" data-tab="t1">① 总览中枢</button>
+  <button data-tab="t2">② 自动化动线</button>
+  <button data-tab="t3">③ 数据治理</button>
+  <button data-tab="t4">④ 自进化</button>
+  <button data-tab="t5">⑤ 复盘中心</button>
+</nav>
+
+<!-- ═══ 舱1 总览 ═══ -->
+<section id="t1">
+  <div class="grid g4">
+    <div class="card"><h2>执行面 <span class="src">R1 总线 8091</span></h2>
+      <div class="lamp"><span class="dot warn"></span><div><div class="t">FAIL 2 · STALE 1</div><div class="d">20 任务：ok 16 / never 2（影子链周一首跑）</div></div></div>
+    </div>
+    <div class="card"><h2>数据面 <span class="src">账本体检</span></h2>
+      <div class="lamp"><span class="dot ok"></span><div><div class="t">账本全绿</div><div class="d">shadow 25 行 · 损坏 0 · 血缘三表在位</div></div></div>
+    </div>
+    <div class="card"><h2>进化面 <span class="src">shadow_eval</span></h2>
+      <div class="lamp"><span class="dot idle"></span><div><div class="t">观察季 · 等待首跑</div><div class="d">今日 17:10 影子链首落账（周一）</div></div></div>
+    </div>
+    <div class="card"><h2>服务面 <span class="src">端口探活</span></h2>
+      <div class="lamp"><span class="dot warn"></span><div><div class="t">8787 待重启</div><div class="d">8091 / nginx / registry 8093 正常</div></div></div>
+    </div>
+  </div>
+
+  <div class="grid g3">
+    <div class="card"><h2>今日动线时间线</h2>
+      <table>
+        <tr><td class="mono">07:30</td><td>N1 晨检 <span class="tag tg-ok">PASS</span></td></tr>
+        <tr><td class="mono">08:30</td><td>HermesBriefPush <span class="tag tg-ok">已推送</span></td></tr>
+        <tr><td class="mono">09:18</td><td>R3 必响首跑 → 抓 3 哑火 <span class="tag tg-warn">P0×3</span></td></tr>
+        <tr><td class="mono">10:02</td><td>8091 K-RESTART 载入审查修复 <span class="tag tg-ok">200</span></td></tr>
+        <tr><td class="mono">17:10</td><td>影子链首跑 <span class="tag tg-blue">计划</span></td></tr>
+      </table>
+    </div>
+    <div class="card"><h2>P0 工单速览 <span class="src">org tasks</span></h2>
+      <table>
+        <tr><td>T-20261018-011</td><td><span class="tag tg-warn">doing</span></td><td>Guard stale</td></tr>
+        <tr><td>T-20261018-012</td><td><span class="tag tg-warn">doing</span></td><td>Nginx rc=1</td></tr>
+        <tr><td>T-20261018-013</td><td><span class="tag tg-warn">doing</span></td><td>回测 0x800710E0</td></tr>
+      </table>
+      <div class="note">开单方：execution-watchdog 自动开单（R3 失败必响）</div>
+    </div>
+    <div class="card"><h2>资产速览</h2>
+      <div class="grid g3" style="gap:8px">
+        <div class="kpi"><div class="v">26.3<span style="font-size:12px">GB</span></div><div class="k">行情数据仓</div></div>
+        <div class="kpi"><div class="v">715</div><div class="k">平台测试全绿</div></div>
+        <div class="kpi"><div class="v">8</div><div class="k">领域知识库</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 舱2 动线 ═══ -->
+<section id="t2" class="hidden">
+  <div class="card"><h2>五链动线（调度 → 执行 → 证据 → 账本 → 看板 → 必响）<span class="src">R1 总线 + manifest 白名单</span></h2>
+    <div class="flow"><div class="fname">影子链（核心 · 观察季主角）</div>
+      <div class="chain"><span class="cnode hot">AgentShadowDaily 17:10</span><span class="arr">→</span><span class="cnode">run_shadow 5票×3策略</span><span class="arr">→</span><span class="cnode">evidence_collect 11源</span><span class="arr">→</span><span class="cnode">shadow_ledger 落账</span><span class="arr">→</span><span class="cnode">本周五 eval 17:45</span></div>
+    </div>
+    <div class="flow"><div class="fname">守护链</div>
+      <div class="chain"><span class="cnode hot">AgentWatchdog ×2 每5min</span><span class="arr">→</span><span class="cnode">自愈栈 aw-stack</span><span class="arr">→</span><span class="cnode">fail_scan 扫 FAILED:</span><span class="arr">→</span><span class="cnode">R3 必响</span><span class="tag tg-warn">T-011 stale 在办</span></div>
+    </div>
+    <div class="flow"><div class="fname">情报链</div>
+      <div class="chain"><span class="cnode hot">xq_classify / xq_backfill</span><span class="arr">→</span><span class="cnode">雪球情报日报 M-RT3</span><span class="arr">→</span><span class="cnode">8091 /api/xq/intel</span><span class="arr">→</span><span class="cnode">HermesBriefPush 08:30</span></div>
+    </div>
+    <div class="flow"><div class="fname">回测链</div>
+      <div class="chain"><span class="cnode hot">调优回测批次 20:00</span><span class="arr">→</span><span class="cnode">BacktestEngine v2</span><span class="arr">→</span><span class="cnode">perf_ledger</span><span class="tag tg-bad">T-013 rc=0x800710E0 在办</span></div>
+    </div>
+    <div class="flow"><div class="fname">必响链（元层：看住所有链）</div>
+      <div class="chain"><span class="cnode hot">R3 巡检 每10min</span><span class="arr">→</span><span class="cnode">异常判定 fail/stale/fail_scan</span><span class="arr">→</span><span class="cnode">24h 节流</span><span class="arr">→</span><span class="cnode">飞书 P0 + 自动开单</span><span class="arr">→</span><span class="cnode">N1 晨检探活</span></div>
+    </div>
+    <div class="note">拍板点：链路分组是否按此五链定稿？新链加入 = manifest 加一行 + 本舱加一条流。</div>
+  </div>
+  <div class="card"><h2>R1 总线明细（20 任务）<span class="src">GET /api/execution/health</span></h2>
+    <table>
+      <tr><th>任务</th><th>链</th><th>节奏</th><th>最近运行</th><th>结果码</th><th>状态</th></tr>
+      <tr><td>AgentShadowDaily</td><td><span class="tag tg-teal">影子</span></td><td>每 1440 分</td><td class="mono">—</td><td>267011</td><td><span class="tag tg-gray">never</span></td></tr>
+      <tr><td>HermesWebUI-Guard</td><td><span class="tag tg-blue">守护</span></td><td>每 30 分</td><td class="mono">10:12:41</td><td class="mono">267009</td><td><span class="tag tg-warn">stale</span></td></tr>
+      <tr><td>AI工作站门户Nginx</td><td><span class="tag tg-purple">服务</span></td><td>登录触发</td><td class="mono">08:03:11</td><td class="mono">1</td><td><span class="tag tg-bad">fail</span></td></tr>
+      <tr><td>AI工作站执行失败巡检</td><td><span class="tag tg-bad">必响</span></td><td>每 10 分</td><td class="mono">10:02:03</td><td class="mono">0</td><td><span class="tag tg-ok">ok</span></td></tr>
+      <tr><td class="muted">…（其余 16 条折叠）</td><td colspan="5" class="muted">原型折叠，实做时全量平铺 + 链筛选器</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 舱3 数据治理 ═══ -->
+<section id="t3" class="hidden">
+  <div class="card"><h2>六大数据资产目录<span class="src">新鲜度 = mtime 距今；体检 = 损坏行/血缘/污染标记</span></h2>
+    <table>
+      <tr><th>资产</th><th>类别</th><th>体量</th><th>新鲜度</th><th>体检</th><th>治理动作</th></tr>
+      <tr><td>quant_backtest/data（ashare parquet 26万件）</td><td>行情仓</td><td>26.3 GB</td><td class="mono">最新 10-14</td><td><span class="tag tg-ok">字节一致</span></td><td>生产机增量同步（tree_stat→push）</td></tr>
+      <tr><td>catalog.json + changelog</td><td>数据目录</td><td>—</td><td class="mono">今日</td><td><span class="tag tg-warn">.bak×3 残留</span></td><td>备份轮转 / 污染快照归档</td></tr>
+      <tr><td>shadow_ledger / trace_links / perf_ledger</td><td>执行账本</td><td class="mono">25+ 行</td><td class="mono">今日 09:18</td><td><span class="tag tg-ok">损坏 0</span></td><td>append-only 冻结读</td></tr>
+      <tr><td>知识库 8 域（缠论/主力行为/尽调…）</td><td>知识沉淀</td><td class="mono">8 md</td><td class="mono">—</td><td><span class="tag tg-ok">pending 队列在管</span></td><td>knowledge_pending → 入库审</td></tr>
+      <tr><td>org tasks 工单账本</td><td>流程账本</td><td class="mono">13+ 单</td><td class="mono">今日</td><td><span class="tag tg-ok">去重生效</span></td><td>同日同标题自动去重</td></tr>
+      <tr><td>automation_runs 产物</td><td>自动化产物</td><td>5 任务目录</td><td class="mono">今日</td><td><span class="tag tg-ok">_archive 归档在管</span></td><td>统一落点约定（10-18 拍板）</td></tr>
+    </table>
+    <div class="note">拍板点：治理指标（体积/新鲜度/损坏行/污染标记）是否齐备？还要加什么——如「数据成本（GB/日增速）」「血缘覆盖」？</div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><h2>血缘体检 <span class="src">PG5442 三表 + chain_watch</span></h2>
+      <div class="lamp"><span class="dot ok"></span><div><div class="t">晨报第五段体检通过</div><div class="d">MCP 两工具 + SOUL.md 快路径三条通道在位</div></div></div>
+    </div>
+    <div class="card"><h2>陈旧数据 R2 投影 <span class="src">health_latest 退役链</span></h2>
+      <div class="lamp"><span class="dot ok"></span><div><div class="t">deprecated:true 已收口</div><div class="d">6 消费方全部改走新总线，exit 2 断旧</div></div></div>
+    </div>
+    <div class="card"><h2>雪球域状态</h2>
+      <div class="lamp"><span class="dot warn"></span><div><div class="t">行情域整域拉黑中</div><div class="d">快代理无效，timeline 游标已修等解封</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 舱4 自进化 ═══ -->
+<section id="t4" class="hidden">
+  <div class="card"><h2>自进化回路：证据 → 评估 → 晋升 → 校准<span class="src">影子链观察季 · 零真仓风险</span></h2>
+    <div class="pilot">
+      <div class="p">① 影子试跑：5票×3策略/日，只记账不下单</div>
+      <div class="p">② 周五 eval：11 项判据 + 结论落档</div>
+      <div class="p">③ strategy discovery → promotion 漏斗</div>
+      <div class="p">④ RiskGuard 校准：误杀样本回流重训阈值</div>
+    </div>
+    <div class="note">当前阶段 = ① 观察季（今日 17:10 首跑）。②③④ 依赖首周数据积累，二期内逐步点亮。</div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><h2>策略漏斗 <span class="src">strategy_registry</span></h2>
+      <div class="funnel">
+        <div class="step"><div class="v">3</div><div class="k">注册策略</div></div><div class="fa">→</div>
+        <div class="step"><div class="v">20</div><div class="k">影子 run</div></div><div class="fa">→</div>
+        <div class="step"><div class="v">0</div><div class="k">晋级候选</div></div><div class="fa">→</div>
+        <div class="step"><div class="v">0</div><div class="k">真仓上线</div></div>
+      </div>
+      <div class="note">TrendFollow / Momentum / MeanReversion；晋级门=eval 连续达标 N 周（待拍板 N）</div>
+    </div>
+    <div class="card"><h2>RiskGuard 校准回路 <span class="src">盯盘 213 样本后验</span></h2>
+      <div class="kpi"><div class="v" style="color:var(--red)">+0.65% vs -0.25%</div><div class="k">拦截样本后验收益 vs 放行样本 → 误杀实证，四规则待重校准</div></div>
+      <div class="bar"><i style="width:72%;background:#e24b4a"></i></div>
+      <div class="note">critical 误杀率 72%（待重算）；校准后误杀率曲线进本舱周趋势</div>
+    </div>
+    <div class="card"><h2>告警闭环计数 <span class="src">v2_alert → 工单 → 复盘</span></h2>
+      <table>
+        <tr><td>本周 P0 告警</td><td class="mono">3</td></tr>
+        <tr><td>自动开单</td><td class="mono">3</td></tr>
+        <tr><td>已复盘关闭</td><td class="mono">0</td></tr>
+        <tr><td>平均闭环时长</td><td class="mono">—</td></tr>
+      </table>
+      <div class="note">闭环率是自进化核心 KPI：告警只进不出 = 假进化</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 舱5 复盘 ═══ -->
+<section id="t5" class="hidden">
+  <div class="grid g3">
+    <div class="card"><h2>工单看板 <span class="src">org tasks</span></h2>
+      <table>
+        <tr><th>单号</th><th>标题</th><th>态</th></tr>
+        <tr><td class="mono">T-011</td><td>HermesWebUI-Guard stale</td><td><span class="tag tg-warn">doing</span></td></tr>
+        <tr><td class="mono">T-012</td><td>Nginx rc=1</td><td><span class="tag tg-warn">doing</span></td></tr>
+        <tr><td class="mono">T-013</td><td>回测 0x800710E0</td><td><span class="tag tg-warn">doing</span></td></tr>
+      </table>
+      <div class="note">拍板点：工单卡要不要加「一键改派 / 一键关闭」写操作？（当前全只读红线）</div>
+    </div>
+    <div class="card"><h2>周一门判 11 项 <span class="src">monday_checkpoint 17:25</span></h2>
+      <table>
+        <tr><td>当日 5 条 done</td><td><span class="tag tg-ok">PASS</span></td></tr>
+        <tr><td>m5.v1 账本行</td><td><span class="tag tg-ok">PASS</span></td></tr>
+        <tr><td>dk 六字段</td><td><span class="tag tg-ok">PASS</span></td></tr>
+        <tr><td>strategy 观察项×2（新增）</td><td><span class="tag tg-blue">观察</span></td></tr>
+        <tr><td class="muted">…其余 7 项折叠</td><td></td></tr>
+      </table>
+    </div>
+    <div class="card"><h2>eval / 日报摘要</h2>
+      <div class="kpi" style="margin-bottom:8px"><div class="k">最新 eval：等待首周数据（周五 17:45）</div></div>
+      <div class="kpi"><div class="k">最新日报：晨报 08:30 已推送 · 观察季体检通过</div></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const btns=document.querySelectorAll("nav button");
+  btns.forEach(b=>b.addEventListener("click",()=>{
+    btns.forEach(x=>x.classList.remove("on"));b.classList.add("on");
+    document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+    document.getElementById(b.dataset.tab).classList.remove("hidden");
+  }));
+</script>
+</body>
+</html>

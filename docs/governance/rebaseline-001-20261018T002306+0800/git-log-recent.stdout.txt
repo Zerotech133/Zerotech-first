@@ -1,0 +1,20 @@
+2f54ca81 2026-10-18T00:08:52+08:00 laotian K-ORG-162 jev_drift 晨链调度挂接：新增 jev_drift_task.ps1 包装器(python 全路径解析/退出码透传/review_data 日志轮转)与 deploy_jev_drift.ps1 幂等部署脚本；JevDriftDaily 计划任务注册成功(t/S4U/Limited/Daily 07:10, 形态对齐 JevBackfill)；手动触发实测 LastTaskResult=0, scope 漂移 JS=0.235 检出, alert_id 幂等唯一约束冲突豁免无重复告警
+f59a0738 2026-10-18T00:07:55+08:00 laotian-agent D1 输出契约收口：决策节点改 JSON 专用尾句 + LLM 留存 done_reason（截断显式降级）
+6d06c68d 2026-10-17T23:58:50+08:00 Trae Worker M6 侦察热修：eval_shadow persist 链路径错位——ps1 传 --persist-root=$here(AP 根)，LinkStore 却拼 persist_root/trace/trace_links.jsonl 少 data 段，23:29 真跑把 23 条链写进 agent_platform/trace/ 错位目录（perf 幂等零污染、链与真仓同键冗余，幂等性救场）；修为 persist_root/data/trace/（对齐 LINKS_FILE 真仓约定）；test_demo_guard 旧断言固化了错位路径一并修正+补 assertFalse 防回归；错位 23 链备份后删目录(C:/Temp/m5_demopollution_backup/trace_misplaced_23links_20261017.jsonl)；全仓 437 绿。判例：安全阀 root 语义必须与各写函数既有约定逐一对表(ledger_path=根拼 data/，LinkStore 同)；阀生效≠路径正确，测试把 bug 固化成契约是最危险验收
+39cce175 2026-10-17T23:51:26+08:00 laotian-agent M5 缺口收口：run_shadow 加隔离根 + 预演默认拒绝阀（周一 run 路径首次可零污染预演）
+b5d31b01 2026-10-17T23:49:44+08:00 laotian-agent monday_checkpoint 时序加固：周一 PENDING 重试（数据驱动）
+d638d97e 2026-10-17T23:33:30+08:00 laotian K-ORG-161(M4): 报告引用溯源——快讯编号引用规则+守卫补标+news_refs映射
+92d6673d 2026-10-17T23:32:55+08:00 laotian K-ORG-161(M4): 报告引用溯源——快讯编号引用规则+守卫补标+news_refs映射
+a8db6485 2026-10-17T23:31:44+08:00 Trae Worker T1 尾巴收口（M3 总验收遗留）：五处模块级路径常量 _resolve(root) 化——盘点实锤仅 personal(SCHED_FILE)/pitch(DECKS_FILE) 两处读写面无参数注入（TASKS_BASE/APPROVALS_DB/EVIDENCE_DB 消费点已是 store or Default 形态免改）；_sched_file/_decks_file 函数化+load/save 加可选 root；缺省分支运行时读模块属性兼容既有 setattr patch 面（首版闭包定值绕过 patch 致 26 例红，判例重演即修）；+6 测试例。顺手：evidence_collect pitch.decks 读侧脏行防御（artifact 非 dict 显式 finding 不中断，真仓 decks.json 曾被演示写入 str 路径串崩读侧）+真仓 decks 清空（备份 C:/Temp/m5_demopollution_backup/decks_polluted_20261017.json）。8091 全端点终验点亮（perf/capability/platform/replay/approvals+HTML 三页，K-RESTART 由并行会话完成）。全仓 430 绿
+aa42e740 2026-10-17T23:21:37+08:00 laotian-agent M5 刀4 回归测试：巡检自写日志契约 4 例（防计划任务证据链静默断链）
+f85013ee 2026-10-17T23:19:41+08:00 laotian K-ORG-160(M7): JEV判定漂移监控 jev_drift.py 周窗口JS散度告警进jev_gate
+84995127 2026-10-17T23:19:37+08:00 laotian-agent eval 带阀生产冒烟预演 PASS + monday_checkpoint 两边界判定修正
+74282dd7 2026-10-17T23:19:05+08:00 laotian K-ORG-160(M7): JEV判定漂移监控 jev_drift.py 周窗口JS散度告警进jev_gate
+73922121 2026-10-17T23:11:10+08:00 laotian K-ORG-159(M1+M8): JEV判定链扩展事件类型+公司绑定+schema校验回退
+82f3615a 2026-10-17T23:10:21+08:00 laotian K-ORG-159(M1+M8): JEV判定链扩展事件类型+公司绑定+schema校验回退
+5b69e06a 2026-10-17T23:08:15+08:00 Trae Worker M5 总验收（四门制）：可判门 2/2 PASS（门1 test_shadow_schema 16/16、门2 test_demo_guard 7/7）+两外部门显式 PENDING（门3 周一观察点=monday_checkpoint 周六预演 6/7 唯一未过=首跑未发生的正确语义；门4 老田评审刀3提纲签字）。四刀收口证据链 85153f4/62cca0e+23602e9b/66feec4/ed389bcd；第三次污染事故与判例沉淀（安全阀按污染路径布防/opt-out 非 fail-safe/计划任务与安全阀同提交联动/schema 演进新行新规旧行豁免/degraded 自描述一次到位）；全仓 420 绿；遗留移交 M6（周五 eval 首次带阀生产跑冒烟判据）
+ed389bcd 2026-10-17T23:00:05+08:00 laotian-agent M5 刀4 护航件：monday_checkpoint 只读巡检脚本（验收门判据固化）
+23602e9b 2026-10-17T22:59:07+08:00 Trae Worker M5 刀 2 补口收口：eval_shadow persist 安全阀（污染源本体）——62cca0e 只阀了 perf_ledger CLI stats，eval_shadow 默认 persist（--no-persist 是 opt-out）演示 --limit 照样写真仓；改三分支：--no-persist 显式关/无 --persist-root 缺省拒写（评估结论照出）/显式 root 才落账；persist 段抽 persist_eval_rows 持显式 root（record/link_store/auto_draft 全部脱离真仓常量）+None root raise 双保险；shadow_automation.ps1 eval 模式同步 --persist-root $here（生产显式传参，fail-safe=未同步则静默少沉淀宁可误拒）；test_demo_guard +3 例共 7 绿，全仓 420 绿
+a9cb4280 2026-10-17T22:53:12+08:00 laotian merge task/K-ORG-158: JEV实证报告沉淀docs (2026-10-17)
+04832fa6 2026-10-17T22:52:46+08:00 Trae·Worker fix execution identity and governance gates
+a91c29ce 2026-10-17T22:52:33+08:00 laotian K-ORG-158 JEV实证报告沉淀docs: conf分层命中率/T+1+3+5事件研究/scope分布实证结论 + 低置信治理与时效衰减落地记录(快照09-25~10-17 n=2308)

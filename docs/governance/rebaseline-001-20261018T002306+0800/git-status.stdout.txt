@@ -1,0 +1,28 @@
+## master
+ M AGENTS.md
+ M agent_platform/monday_checkpoint.py
+ D hunt.ps1
+ D popup_check.ps1
+ M portal/api_backtest.py
+ M portal/job_spec_registry.py
+ M portal/push_admin_server.py
+ M portal/test_portal_compat_regressions.py
+ M portal/tune_gate.py
+ M quant_backtest/backtest_engine_v2.py
+ M quant_backtest/calendar_provider.py
+ M quant_backtest/start_kg_sync.ps1
+ M quant_backtest/tests/test_execution_calendar_gate.py
+ M quant_backtest/tune_bt_batch.ps1
+ M quant_backtest/xq_collect_1000.py
+ M s4u_guard.ps1
+?? agent_platform/tests/test_monday_checkpoint_timing.py
+?? docs/governance/evidence-index-2026-10-17.md
+?? docs/governance/rebaseline-001-20261018T002306+0800/
+?? docs/system_design.md
+?? popup_fix_result.txt
+?? quant_backtest/bar_aggregate.py
+?? quant_backtest/bt2_auto_compare.py
+?? quant_backtest/bt2_tune_batch.py
+?? quant_backtest/bt2_tune_compare.py
+?? quant_backtest/market_rules.py
+?? quant_backtest/start_kg_leiden_summary.ps1

@@ -1,0 +1,615 @@
+{
+ "generated_at": "2026-10-12T09:53:02",
+ "source": "portal_api.py",
+ "source_sha256": "bc6d35fb048aa0a4",
+ "n_routes": 72,
+ "routes": [
+  {
+   "path": "/api/alert/push",
+   "lines": [
+    199,
+    3611
+   ],
+   "count": 2,
+   "first_line": 199
+  },
+  {
+   "path": "/api/alerts",
+   "lines": [
+    2791
+   ],
+   "count": 1,
+   "first_line": 2791
+  },
+  {
+   "path": "/api/analyst-report",
+   "lines": [
+    3559
+   ],
+   "count": 1,
+   "first_line": 3559
+  },
+  {
+   "path": "/api/audit_chat",
+   "lines": [
+    2061
+   ],
+   "count": 1,
+   "first_line": 2061
+  },
+  {
+   "path": "/api/audit_recent",
+   "lines": [
+    3465
+   ],
+   "count": 1,
+   "first_line": 3465
+  },
+  {
+   "path": "/api/audit_status",
+   "lines": [
+    2466
+   ],
+   "count": 1,
+   "first_line": 2466
+  },
+  {
+   "path": "/api/batch-backtest",
+   "lines": [
+    183,
+    2418,
+    3608
+   ],
+   "count": 3,
+   "first_line": 183
+  },
+  {
+   "path": "/api/bridge/summary",
+   "lines": [
+    3574
+   ],
+   "count": 1,
+   "first_line": 3574
+  },
+  {
+   "path": "/api/bridge/table_preview",
+   "lines": [
+    3581
+   ],
+   "count": 1,
+   "first_line": 3581
+  },
+  {
+   "path": "/api/brief",
+   "lines": [
+    2785
+   ],
+   "count": 1,
+   "first_line": 2785
+  },
+  {
+   "path": "/api/chanlun/backtest",
+   "lines": [
+    2875
+   ],
+   "count": 1,
+   "first_line": 2875
+  },
+  {
+   "path": "/api/chanlun/card/feedback",
+   "lines": [
+    173,
+    2212
+   ],
+   "count": 2,
+   "first_line": 173
+  },
+  {
+   "path": "/api/chanlun/kline",
+   "lines": [
+    2818
+   ],
+   "count": 1,
+   "first_line": 2818
+  },
+  {
+   "path": "/api/chanlun/label/load",
+   "lines": [
+    2991
+   ],
+   "count": 1,
+   "first_line": 2991
+  },
+  {
+   "path": "/api/chanlun/label/save",
+   "lines": [
+    164,
+    2160
+   ],
+   "count": 2,
+   "first_line": 164
+  },
+  {
+   "path": "/api/chanlun/pool/push",
+   "lines": [
+    174,
+    2222
+   ],
+   "count": 2,
+   "first_line": 174
+  },
+  {
+   "path": "/api/chanlun/structure",
+   "lines": [
+    2830
+   ],
+   "count": 1,
+   "first_line": 2830
+  },
+  {
+   "path": "/api/chips",
+   "lines": [
+    3562
+   ],
+   "count": 1,
+   "first_line": 3562
+  },
+  {
+   "path": "/api/council/confirm",
+   "lines": [
+    180,
+    2275
+   ],
+   "count": 2,
+   "first_line": 180
+  },
+  {
+   "path": "/api/council/simrun",
+   "lines": [
+    181,
+    2285
+   ],
+   "count": 2,
+   "first_line": 181
+  },
+  {
+   "path": "/api/data/daily",
+   "lines": [
+    2437
+   ],
+   "count": 1,
+   "first_line": 2437
+  },
+  {
+   "path": "/api/data/freshness",
+   "lines": [
+    3591
+   ],
+   "count": 1,
+   "first_line": 3591
+  },
+  {
+   "path": "/api/data/job",
+   "lines": [
+    3603
+   ],
+   "count": 1,
+   "first_line": 3603
+  },
+  {
+   "path": "/api/data/runs/",
+   "lines": [
+    2437
+   ],
+   "count": 1,
+   "first_line": 2437
+  },
+  {
+   "path": "/api/data/sync",
+   "lines": [
+    198,
+    3598
+   ],
+   "count": 2,
+   "first_line": 198
+  },
+  {
+   "path": "/api/data/update",
+   "lines": [
+    159,
+    2050
+   ],
+   "count": 2,
+   "first_line": 159
+  },
+  {
+   "path": "/api/data/update-plan",
+   "lines": [
+    158,
+    2050
+   ],
+   "count": 2,
+   "first_line": 158
+  },
+  {
+   "path": "/api/debate/say",
+   "lines": [
+    182,
+    2295
+   ],
+   "count": 2,
+   "first_line": 182
+  },
+  {
+   "path": "/api/devops",
+   "lines": [
+    3485
+   ],
+   "count": 1,
+   "first_line": 3485
+  },
+  {
+   "path": "/api/home",
+   "lines": [
+    2794
+   ],
+   "count": 1,
+   "first_line": 2794
+  },
+  {
+   "path": "/api/kline",
+   "lines": [
+    3537
+   ],
+   "count": 1,
+   "first_line": 3537
+  },
+  {
+   "path": "/api/kline_qy",
+   "lines": [
+    3548
+   ],
+   "count": 1,
+   "first_line": 3548
+  },
+  {
+   "path": "/api/manager_fire",
+   "lines": [
+    187,
+    2077
+   ],
+   "count": 2,
+   "first_line": 187
+  },
+  {
+   "path": "/api/manager_hire",
+   "lines": [
+    186,
+    2073
+   ],
+   "count": 2,
+   "first_line": 186
+  },
+  {
+   "path": "/api/manager_roster",
+   "lines": [
+    2484
+   ],
+   "count": 1,
+   "first_line": 2484
+  },
+  {
+   "path": "/api/market_performance",
+   "lines": [
+    2574
+   ],
+   "count": 1,
+   "first_line": 2574
+  },
+  {
+   "path": "/api/minutes_inbox",
+   "lines": [
+    2488
+   ],
+   "count": 1,
+   "first_line": 2488
+  },
+  {
+   "path": "/api/nlquery",
+   "lines": [
+    3390
+   ],
+   "count": 1,
+   "first_line": 3390
+  },
+  {
+   "path": "/api/onboard",
+   "lines": [
+    189,
+    2085
+   ],
+   "count": 2,
+   "first_line": 189
+  },
+  {
+   "path": "/api/overview",
+   "lines": [
+    2456
+   ],
+   "count": 1,
+   "first_line": 2456
+  },
+  {
+   "path": "/api/paper_direct_open",
+   "lines": [
+    188,
+    2081
+   ],
+   "count": 2,
+   "first_line": 188
+  },
+  {
+   "path": "/api/paper_history",
+   "lines": [
+    2551
+   ],
+   "count": 1,
+   "first_line": 2551
+  },
+  {
+   "path": "/api/paper_order",
+   "lines": [
+    184,
+    2065
+   ],
+   "count": 2,
+   "first_line": 184
+  },
+  {
+   "path": "/api/paper_status",
+   "lines": [
+    2492
+   ],
+   "count": 1,
+   "first_line": 2492
+  },
+  {
+   "path": "/api/paper_stop",
+   "lines": [
+    185,
+    2069
+   ],
+   "count": 2,
+   "first_line": 185
+  },
+  {
+   "path": "/api/plan_review",
+   "lines": [
+    2532
+   ],
+   "count": 1,
+   "first_line": 2532
+  },
+  {
+   "path": "/api/portfolio_adjust",
+   "lines": [
+    178,
+    2255
+   ],
+   "count": 2,
+   "first_line": 178
+  },
+  {
+   "path": "/api/portfolio_close",
+   "lines": [
+    177,
+    2245
+   ],
+   "count": 2,
+   "first_line": 177
+  },
+  {
+   "path": "/api/portfolio_csv",
+   "lines": [
+    2801
+   ],
+   "count": 1,
+   "first_line": 2801
+  },
+  {
+   "path": "/api/portfolio_hire",
+   "lines": [
+    161,
+    2319
+   ],
+   "count": 2,
+   "first_line": 161
+  },
+  {
+   "path": "/api/portfolio_market",
+   "lines": [
+    2815
+   ],
+   "count": 1,
+   "first_line": 2815
+  },
+  {
+   "path": "/api/portfolio_open",
+   "lines": [
+    179,
+    2265
+   ],
+   "count": 2,
+   "first_line": 179
+  },
+  {
+   "path": "/api/portfolio_set",
+   "lines": [
+    175,
+    2232
+   ],
+   "count": 2,
+   "first_line": 175
+  },
+  {
+   "path": "/api/portfolio_status",
+   "lines": [
+    2595
+   ],
+   "count": 1,
+   "first_line": 2595
+  },
+  {
+   "path": "/api/portfolio_subscribe",
+   "lines": [
+    160,
+    2305
+   ],
+   "count": 2,
+   "first_line": 160
+  },
+  {
+   "path": "/api/portfolio_undo",
+   "lines": [
+    176,
+    2242
+   ],
+   "count": 2,
+   "first_line": 176
+  },
+  {
+   "path": "/api/portfolios",
+   "lines": [
+    2588
+   ],
+   "count": 1,
+   "first_line": 2588
+  },
+  {
+   "path": "/api/reception",
+   "lines": [
+    2480
+   ],
+   "count": 1,
+   "first_line": 2480
+  },
+  {
+   "path": "/api/recv_add",
+   "lines": [
+    169,
+    2185
+   ],
+   "count": 2,
+   "first_line": 169
+  },
+  {
+   "path": "/api/report_push",
+   "lines": [
+    165,
+    2169
+   ],
+   "count": 2,
+   "first_line": 165
+  },
+  {
+   "path": "/api/research",
+   "lines": [
+    3371
+   ],
+   "count": 1,
+   "first_line": 3371
+  },
+  {
+   "path": "/api/review_minutes",
+   "lines": [
+    2732
+   ],
+   "count": 1,
+   "first_line": 2732
+  },
+  {
+   "path": "/api/screen",
+   "lines": [
+    2798
+   ],
+   "count": 1,
+   "first_line": 2798
+  },
+  {
+   "path": "/api/strategies",
+   "lines": [
+    2788
+   ],
+   "count": 1,
+   "first_line": 2788
+  },
+  {
+   "path": "/api/strategy_detail",
+   "lines": [
+    2750
+   ],
+   "count": 1,
+   "first_line": 2750
+  },
+  {
+   "path": "/api/strategy_market",
+   "lines": [
+    2567
+   ],
+   "count": 1,
+   "first_line": 2567
+  },
+  {
+   "path": "/api/sub_del",
+   "lines": [
+    167,
+    2177
+   ],
+   "count": 2,
+   "first_line": 167
+  },
+  {
+   "path": "/api/sub_test",
+   "lines": [
+    168,
+    2181
+   ],
+   "count": 2,
+   "first_line": 168
+  },
+  {
+   "path": "/api/sub_toggle",
+   "lines": [
+    166,
+    2173
+   ],
+   "count": 2,
+   "first_line": 166
+  },
+  {
+   "path": "/api/trader_detail",
+   "lines": [
+    2693
+   ],
+   "count": 1,
+   "first_line": 2693
+  },
+  {
+   "path": "/api/trader_fire",
+   "lines": [
+    162,
+    2364
+   ],
+   "count": 2,
+   "first_line": 162
+  },
+  {
+   "path": "/api/trader_roster",
+   "lines": [
+    2658
+   ],
+   "count": 1,
+   "first_line": 2658
+  }
+ ]
+}

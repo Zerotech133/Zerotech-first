@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>六度选股 · R1 真实数据试运行呈现（20261020）</title>
+<style>
+  body { font-family: "Microsoft YaHei", sans-serif; background:#f6f7f9; color:#1c2733; margin:0; padding:24px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color:#5b6b7b; font-size: 13px; margin-bottom: 18px; }
+  .banner { background:#fff4e5; border:1px solid #f0c896; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:18px; }
+  h2 { font-size: 17px; margin: 26px 0 10px; }
+  .chips { margin: 6px 0; }
+  .chip { display:inline-block; background:#e8eef4; border-radius:12px; padding:2px 10px; font-size:12px; margin:2px 4px 2px 0; }
+  .chip.ok { background:#e2f3e5; color:#1c6b2d; }
+  .meta { color:#5b6b7b; font-size:12.5px; }
+  .flow { display:flex; align-items:center; gap:8px; margin:14px 0; flex-wrap:wrap; }
+  .fbox { background:#fff; border:1px solid #d7dee6; border-radius:8px; padding:10px 16px; text-align:center; }
+  .fbox b { display:block; font-size:20px; }
+  .fbox span { font-size:12px; color:#5b6b7b; }
+  .fbox.hl { border-color:#b7d8bc; background:#eef8f0; }
+  .arrow { color:#8a97a5; font-size:18px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #d7dee6; border-radius:8px; overflow:hidden; font-size:12.5px; }
+  th { background:#eef2f6; text-align:left; padding:7px 10px; }
+  td { padding:6px 10px; border-top:1px solid #edf1f5; }
+  code { background:#eef2f6; padding:1px 5px; border-radius:4px; }
+  .foot { color:#7b8794; font-size:12px; margin-top:22px; line-height:1.7; }
+</style>
+</head>
+<body><div class="wrap">
+<h1>六度选股 · R1 真实数据试运行呈现（业务日 20261020）</h1>
+<div class="sub">工单 WO-QT-20261020-056 · 生成 2026-10-21 08:30 · 池冻结 sha256 b37b6c36… · 推送落点 quant_backtest/reports/r0_m3_evidence_20261020.json</div>
+<div class="banner">⚠️ 定性：RESEARCH_ONLY_NOT_PRODUCTION。这是<b>证据数据</b>不是交易信号清单——真实交易仍须独立 RiskGuard PASS + 老田签准；盯盘席仅观察/复盘，不据此触发。</div>
+
+        <h2>业务日 20261020（主跑）</h2>
+        <div class="chips"><span class='chip ok'>freeze·FROZEN</span><span class='chip ok'>source_attestation·VERIFIED</span><span class='chip mid'>probe·UNVERIFIED</span><span class='chip ok'>receipt·VERIFIED_RECEIPT_ONLY</span><span class='chip ok'>replay_guard·ENFORCED</span><span class='chip mid'>reconciliation·NOT_VERIFIED</span></div>
+        <p class="meta">终态 <b>NOT_VERIFIED</b> · 门位 real_source=BLOCKED_REAL_DATA / cutover=BLOCK_CUTOVER · 回执 r0-m3-trial-20261020-receipt-0001 · Replay CLAIMED/DUPLICATE</p>
+        <div class="flow">
+          <div class="fbox"><b>160</b><span>真实源事件</span></div>
+          <div class="arrow">→</div>
+          <div class="fbox"><b>160</b><span>匹配→信号</span></div>
+          <div class="arrow">→</div>
+          <div class="fbox"><b>147</b><span>预聚合保留</span></div>
+          <div class="arrow">→</div>
+          <div class="fbox hl"><b>32</b><span>buy 档入池（T1 0 / T2 26）</span></div>
+        </div>
+        <p class="meta">归口席 荀攸（公达） · superseded 13 条 · 分歧 0 · 源 sha256 <code>3b7c09efabb7…</code></p>
+        <table>
+          <thead><tr><th>代码</th><th>动作</th><th>评分</th><th>置信</th><th>档</th><th>依据</th></tr></thead>
+          <tbody>
+        <tr><td>001312.SZ</td><td>buy</td><td>99.0</td><td>0.80</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 16.4</td></tr>
+<tr><td>002819.SZ</td><td>buy</td><td>99.0</td><td>0.80</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 18.22</td></tr>
+<tr><td>002866.SZ</td><td>buy</td><td>99.0</td><td>0.80</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-07-14，价 13.3</td></tr>
+<tr><td>300673.SZ</td><td>buy</td><td>99.0</td><td>0.80</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-07-24，价 11.02</td></tr>
+<tr><td>000006.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 5.58（mbei=False）</td></tr>
+<tr><td>002217.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 1.37（mbei=False）</td></tr>
+<tr><td>002576.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 12.33（mbei=False）</td></tr>
+<tr><td>002795.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 4.62（mbei=False）</td></tr>
+<tr><td>300143.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-16，价 7.1（mbei=False）</td></tr>
+<tr><td>300272.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-16，价 5.52（mbei=False）</td></tr>
+<tr><td>300463.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-16，价 8.88（mbei=False）</td></tr>
+<tr><td>300482.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-16，价 15.4（mbei=False）</td></tr>
+<tr><td>300683.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-14，价 22.37（mbei=False）</td></tr>
+<tr><td>300765.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-17，价 42.51（mbei=False）</td></tr>
+<tr><td>301189.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-07-21，价 37.92（mbei=False）</td></tr>
+<tr><td>301303.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-15，价 12.8364（mbei=False）</td></tr>
+<tr><td>301372.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-07-30，价 25.5（mbei=False）</td></tr>
+<tr><td>600410.SH</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 11.95（vv=False）</td></tr>
+<tr><td>600735.SH</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-06-26，价 5.51（mbei=False）</td></tr>
+<tr><td>603711.SH</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-16，价 10.8（mbei=False）</td></tr>
+<tr><td>603803.SH</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 8.12（mbei=False）</td></tr>
+<tr><td>688099.SH</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-07-20，价 81.1（vv=False）</td></tr>
+<tr><td>688667.SH</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 75.0（mbei=False）</td></tr>
+<tr><td>688707.SH</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-07-21，价 9.29（mbei=False）</td></tr>
+<tr><td>300687.SZ</td><td>buy</td><td>95.0</td><td>0.60</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 18.5（mbei=False，vv=False）</td></tr>
+<tr><td>688558.SH</td><td>buy</td><td>95.0</td><td>0.60</td><td>T2</td><td>[chan_monitor] 缠论1买·range：信号日 2026-07-21，价 23.85（mbei=False，vv=False）</td></tr>
+<tr><td>601686.SH</td><td>buy</td><td>87.0</td><td>0.70</td><td></td><td>[chan_monitor] 缠论2买·down：信号日 2026-08-14，价 5.06</td></tr>
+<tr><td>688538.SH</td><td>buy</td><td>85.0</td><td>0.60</td><td></td><td>[chan_monitor] 缠论2买·down：信号日 2026-06-11，价 2.24（vv=False）</td></tr>
+<tr><td>601811.SH</td><td>buy</td><td>77.0</td><td>0.70</td><td></td><td>[chan_monitor] 缠论3买·up：信号日 2026-10-09，价 18.19（bei2=False，vv=False）</td></tr>
+<tr><td>300579.SZ</td><td>buy</td><td>60.0</td><td>0.70</td><td></td><td>[chan_monitor] 缠论3买·range：信号日 2026-10-08，价 22.07（毒层降档：3买∧bei=False）（bei=False，vv=False）</td></tr>
+<tr><td>603128.SH</td><td>buy</td><td>60.0</td><td>0.60</td><td></td><td>[chan_monitor] 缠论3买·down：信号日 2026-09-23，价 5.19（毒层降档：3买∧bei=False）（bei=False，bei2=False，vv=False）</td></tr>
+<tr><td>603288.SH</td><td>buy</td><td>60.0</td><td>0.70</td><td></td><td>[chan_monitor] 缠论2买·range：信号日 2026-08-28，价 33.5（毒层降档：2买∧trend=range）</td></tr>
+          </tbody>
+        </table>
+        
+
+        <h2>业务日 20261019（主跑）</h2>
+        <div class="chips"><span class='chip ok'>freeze·FROZEN</span><span class='chip ok'>source_attestation·VERIFIED</span><span class='chip mid'>probe·UNVERIFIED</span><span class='chip ok'>receipt·VERIFIED_RECEIPT_ONLY</span><span class='chip ok'>replay_guard·ENFORCED</span><span class='chip mid'>reconciliation·NOT_VERIFIED</span></div>
+        <p class="meta">终态 <b>NOT_VERIFIED</b> · 门位 real_source=BLOCKED_REAL_DATA / cutover=BLOCK_CUTOVER · 回执 r0-m3-trial-20261019-receipt-0001 · Replay CLAIMED/DUPLICATE</p>
+        <div class="flow">
+          <div class="fbox"><b>33</b><span>真实源事件</span></div>
+          <div class="arrow">→</div>
+          <div class="fbox"><b>33</b><span>匹配→信号</span></div>
+          <div class="arrow">→</div>
+          <div class="fbox"><b>28</b><span>预聚合保留</span></div>
+          <div class="arrow">→</div>
+          <div class="fbox hl"><b>12</b><span>buy 档入池（T1 0 / T2 3）</span></div>
+        </div>
+        <p class="meta">归口席 荀攸（公达） · superseded 5 条 · 分歧 0 · 源 sha256 <code>d832d37621f3…</code></p>
+        <table>
+          <thead><tr><th>代码</th><th>动作</th><th>评分</th><th>置信</th><th>档</th><th>依据</th></tr></thead>
+          <tbody>
+        <tr><td>002007.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-16，价 12.59（mbei=False）</td></tr>
+<tr><td>300451.SZ</td><td>buy</td><td>97.0</td><td>0.70</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-09-16，价 3.26（mbei=False）</td></tr>
+<tr><td>002434.SZ</td><td>buy</td><td>95.0</td><td>0.60</td><td>T2</td><td>[chan_monitor] 缠论1买·up：信号日 2026-07-22，价 5.12（mbei=False，vv=False）</td></tr>
+<tr><td>300022.SZ</td><td>buy</td><td>87.0</td><td>0.70</td><td></td><td>[chan_monitor] 缠论2买·down：信号日 2026-07-24，价 7.38</td></tr>
+<tr><td>920190.BJ</td><td>buy</td><td>85.0</td><td>0.60</td><td></td><td>[chan_monitor] 缠论2买·down：信号日 2026-06-29，价 21.38（vv=False）</td></tr>
+<tr><td>003013.SZ</td><td>buy</td><td>81.0</td><td>0.90</td><td></td><td>[chan_monitor] 缠论3买·range：信号日 2026-09-28，价 15.39</td></tr>
+<tr><td>603230.SH</td><td>buy</td><td>77.0</td><td>0.70</td><td></td><td>[chan_monitor] 缠论3买·range：信号日 2026-10-09，价 11.97（bei2=False，vv=False）</td></tr>
+<tr><td>920895.BJ</td><td>buy</td><td>77.0</td><td>0.70</td><td></td><td>[chan_monitor] 缠论3买·range：信号日 2026-10-08，价 19.81（bei2=False，vv=False）</td></tr>
+<tr><td>002486.SZ</td><td>buy</td><td>60.0</td><td>0.60</td><td></td><td>[chan_monitor] 缠论3买·down：信号日 2026-10-09，价 2.59（毒层降档：3买∧bei=False）（bei=False，bei2=False，vv=False）</td></tr>
+<tr><td>300550.SZ</td><td>buy</td><td>60.0</td><td>0.80</td><td></td><td>[chan_monitor] 缠论3买·down：信号日 2026-10-08，价 12.85（毒层降档：3买∧bei=False）（bei=False）</td></tr>
+<tr><td>600713.SH</td><td>buy</td><td>60.0</td><td>0.60</td><td></td><td>[chan_monitor] 缠论2买·range：信号日 2026-07-27，价 4.7832（毒层降档：2买∧trend=range）（vv=False）</td></tr>
+<tr><td>603232.SH</td><td>buy</td><td>60.0</td><td>0.60</td><td></td><td>[chan_monitor] 缠论2买·range：信号日 2026-08-21，价 14.33（毒层降档：2买∧trend=range）（vv=False）</td></tr>
+          </tbody>
+        </table>
+        
+<div class="foot">链路：真实源点时冻结 → Ed25519 真实签发（一次性密钥）→ 独立验签 → 荀攸探针 → 研究简报 → 田丰归口席回签（VERIFIED_RECEIPT_ONLY）→ ReplayLedger（CLAIMED→DUPLICATE）→ 对账终报。终态 NOT_VERIFIED/BLOCKED 双门位，无 READY 出口，口径正确。<br>
+事件明细与逐票证据见 evidence JSON；池明细由冻结源确定性重推导（与试运行计数一致）。</div>
+</div></body></html>

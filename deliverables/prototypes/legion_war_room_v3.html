@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字军团 · 中军帐四方会议（原型 v3）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; padding: 16px; }
+  .wrap { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 230px minmax(0,1fr) 250px; gap: 12px; }
+  .hdr { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 2px; }
+  .hdr-l { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #4FD1A5; }
+  h1 { font-size: 16px; font-weight: 500; }
+  .sub { font-size: 11.5px; color: #8FA8C0; }
+  .btn { border-radius: 8px; border: 0.5px solid #1D9E75; background: none; color: #4FD1A5; font-size: 13px; padding: 8px 18px; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: #0F2440; }
+  .btn.amber { border-color: #854F0B; color: #EF9F27; }
+  .panelbox { background: #0A1A2F; border-radius: 14px; border: 0.5px solid #1E3A5F; padding: 12px; }
+
+  .roster { max-height: 82vh; overflow-y: auto; }
+  .roster h3 { font-size: 12.5px; font-weight: 500; color: #8FA8C0; margin: 10px 6px 6px; }
+  .rgroup { margin-bottom: 4px; }
+  .rdept { background: #0F2440; border-radius: 8px; padding: 6px 9px; margin-bottom: 5px; }
+  .rdept .dn { font-size: 12px; font-weight: 500; display: flex; justify-content: space-between; }
+  .rdept .dn span { color: #5A7190; font-size: 10.5px; font-weight: 400; }
+  .rdept .ag { font-size: 10.5px; color: #8FA8C0; margin-top: 2px; line-height: 1.5; }
+
+  .warroom { display: flex; flex-direction: column; min-height: 82vh; }
+  .table { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .seatcard { background: #0F2440; border-radius: 12px; padding: 10px 12px; border: 0.5px solid #1E3A5F; }
+  .seatcard.host { border-color: #BA7517; background: #14283F; }
+  .seatcard .r1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .seatcard .nm { font-size: 13.5px; font-weight: 500; }
+  .seatcard .md { font-size: 10px; color: #4FD1A5; border: 0.5px solid #1D9E75; border-radius: 5px; padding: 1px 6px; }
+  .seatcard .md.a { color: #EF9F27; border-color: #854F0B; }
+  .seatcard .rl { font-size: 11px; color: #8FA8C0; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; margin-right: 7px; flex: none; }
+  .av-t { background: #534AB7; color: #EEEDFE; } .av-z { background: #185FA5; color: #E6F1FB; } .av-y { background: #1D9E75; color: #E1F5EE; } .av-h { background: #BA7517; color: #FAEEDA; }
+
+  .chat { flex: 1; background: #0F2440; border-radius: 12px; border: 0.5px solid #1E3A5F; padding: 14px; overflow-y: auto; min-height: 320px; max-height: 52vh; display: flex; flex-direction: column; gap: 10px; }
+  .msg { display: flex; gap: 9px; max-width: 92%; }
+  .msg .body { background: #0A1A2F; border-radius: 0 10px 10px 10px; padding: 9px 12px; font-size: 12.5px; line-height: 1.65; }
+  .msg .who { font-size: 11px; font-weight: 500; margin-bottom: 3px; }
+  .msg.host { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.host .body { background: #14283F; border-radius: 10px 0 10px 10px; border: 0.5px solid #BA7517; }
+  .w-tian { color: #AFA9EC; } .w-zhuge { color: #85B7EB; } .w-zhao { color: #5DCAA5; } .w-host { color: #EF9F27; }
+  .typing { font-size: 11px; color: #5A7190; padding: 2px 6px; }
+  .think { display: none; }
+
+  .inputbar { display: flex; gap: 8px; margin-top: 10px; }
+  .inputbar input { flex: 1; background: #0F2440; border: 0.5px solid #1E3A5F; border-radius: 10px; color: #E8F0F8; font-size: 13px; padding: 10px 14px; font-family: inherit; }
+  .inputbar input:focus { outline: none; border-color: #4FD1A5; }
+  .quick { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .qk { font-size: 11px; color: #8FA8C0; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 3px 9px; cursor: pointer; background: none; font-family: inherit; }
+  .qk:hover { color: #4FD1A5; border-color: #1D9E75; }
+
+  .dispatch { display: flex; flex-direction: column; gap: 8px; }
+  .dispatch h3 { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .dcard { background: #0F2440; border-radius: 10px; padding: 9px 11px; border: 0.5px solid #1E3A5F; font-size: 11.5px; }
+  .dcard .dt { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .dcard .tn { font-size: 12px; font-weight: 500; }
+  .st { font-size: 10px; border-radius: 4px; padding: 1px 6px; }
+  .st-wait { color: #EF9F27; border: 0.5px solid #854F0B; }
+  .st-sent { color: #4FD1A5; border: 0.5px solid #1D9E75; }
+  .dcard .to { color: #8FA8C0; line-height: 1.6; }
+  .dcard .to b { color: #C7D6E8; font-weight: 500; }
+  .target { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+  .tg { font-size: 10px; color: #8FA8C0; border: 0.5px solid #1E3A5F; border-radius: 5px; padding: 2px 7px; }
+  .tg.hit { color: #4FD1A5; border-color: #1D9E75; background: #0A1A2F; }
+  .dfoot { font-size: 10.5px; color: #5A7190; line-height: 1.6; margin-top: 4px; }
+  @media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } .roster { max-height: 40vh; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-l"><div class="dot"></div><h1>中军帐 · 四方会议</h1><span class="sub">老田 × 田丰 × 诸葛亮 × 赵云 · 对话定策 → 会终派单下发</span></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn amber" onclick="endMeeting()">会终 · 分发任务</button>
+      <button class="btn" onclick="location.reload()">重开会议</button>
+    </div>
+  </div>
+
+  <div class="panelbox roster">
+    <h3>军团全名册 · 16 营 48+4 员</h3>
+    <div class="rgroup"><div class="rdept"><div class="dn">中军帐 · 常任席 <span>4</span></div><div class="ag">田丰A0 · 诸葛亮AI1 · 赵云R2 · 枣祗OPT1</div></div></div>
+    <div class="rgroup"><h3>前军 · 作战线</h3>
+      <div class="rdept"><div class="dn">量化交易 <span>4</span></div><div class="ag">鲁肃D1 · 待授名ST1 · 司马懿QS1* · WA1</div></div>
+      <div class="rdept"><div class="dn">交易 <span>1</span></div><div class="ag">周瑜</div></div>
+      <div class="rdept"><div class="dn">风控（盯盘营） <span>4</span></div><div class="ag">甘宁R1 · 赵云R2* · 陆逊R3* · BACK1</div></div>
+      <div class="rdept"><div class="dn">研究院 <span>2</span></div><div class="ag">司马徽ACAD1 · 架构师ARCH1</div></div>
+    </div>
+    <div class="rgroup"><h3>左军 · 研发线</h3>
+      <div class="rdept"><div class="dn">研发部 <span>11</span></div><div class="ag">曹操DEV1 · 蒸馏席DEV2 · 满宠DEV4* · DEV3/5-8等</div></div>
+      <div class="rdept"><div class="dn">质量 <span>1</span></div><div class="ag">安全审计SEC2（E3云端）</div></div>
+      <div class="rdept"><div class="dn">数据 <span>1</span></div><div class="ag">张松DATA1</div></div>
+      <div class="rdept"><div class="dn">产品 <span>1</span></div><div class="ag">吕蒙</div></div>
+    </div>
+    <div class="rgroup"><h3>右军 · 支撑线</h3>
+      <div class="rdept"><div class="dn">运行体 <span>2</span></div><div class="ag">董允A0A · 邓芝桥HERMES_UI</div></div>
+      <div class="rdept"><div class="dn">情报（最忙6单） <span>6</span></div><div class="ag">INTEL0 · INTEL1 · jev三席 · 飞书卡</div></div>
+      <div class="rdept"><div class="dn">市场 <span>1</span></div><div class="ag">简雍COMM1*</div></div>
+      <div class="rdept"><div class="dn">法务 <span>1</span></div><div class="ag">诸葛瑾LEG1（E3云端）</div></div>
+    </div>
+    <div class="rgroup"><h3>后军 · 专项行营</h3>
+      <div class="rdept"><div class="dn">🅰回测 <span>主官空悬</span></div><div class="ag">跨部兼任</div></div>
+      <div class="rdept"><div class="dn">🅱数据 <span>主官空悬</span></div><div class="ag">跨部兼任</div></div>
+      <div class="rdept"><div class="dn">🅲设计 <span>2</span></div><div class="ag">DSGN1 · DSGN2</div></div>
+    </div>
+    <div class="rgroup"><h3>编外 · 待安置</h3>
+      <div class="rdept"><div class="dn">量化旧编制 <span>4</span></div><div class="ag">荀彧F1 · 许劭N1 · 庞统T1 · 司马懿T2*</div></div>
+    </div>
+    <div class="dfoot">* 重名对标记 · 点沙盘 v2 看单员详情</div>
+  </div>
+
+  <div class="panelbox warroom">
+    <div class="table">
+      <div class="seatcard"><div class="r1"><span class="nm"><span class="avatar av-t">田</span>田丰 · 执行相</span><span class="md">glm-5.3</span></div><div class="rl">把事办成 · 短句结论先行</div></div>
+      <div class="seatcard host"><div class="r1"><span class="nm"><span class="avatar av-h">田</span>老田 · 董事长</span><span class="md a">签准人</span></div><div class="rl">主持 · approval_gate 唯一签字</div></div>
+      <div class="seatcard"><div class="r1"><span class="nm"><span class="avatar av-z">葛</span>诸葛亮 · 反向军师</span><span class="md a">GPT6.0</span></div><div class="rl">把坑找出来 · 先求败因再论胜机</div></div>
+      <div class="seatcard" style="grid-column: 1 / -1; display:flex; justify-content:center;"><div style="text-align:center"><div class="r1" style="justify-content:center"><span class="nm"><span class="avatar av-y">云</span>赵云 · 进化官</span><span class="md">9b→DeepSeek</span></div><div class="rl">只认证据 · 探试裁记等签字</div></div></div>
+    </div>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="inputbar">
+      <input id="say" placeholder="老田发言…（回车发送）" onkeydown="if(event.key==='Enter')send()">
+      <button class="btn" onclick="send()">说</button>
+    </div>
+    <div class="quick">
+      <button class="qk" onclick="ask(0)">今日优先级怎么排？</button>
+      <button class="qk" onclick="ask(1)">Z5 该不该现在动？</button>
+      <button class="qk" onclick="ask(2)">谁去盯影子链备份？</button>
+    </div>
+  </div>
+
+  <div class="panelbox dispatch">
+    <h3>会终派单 · 待下发</h3>
+    <div class="dcard" id="d1"><div class="dt"><span class="tn">WO-OPS-101 心跳修复</span><span class="st st-wait">待下发</span></div><div class="to">主办：<b>田丰归口</b> → 左军·研发部</div><div class="target"><span class="tg" id="t1">研发部</span><span class="tg">运行体部</span></div></div>
+    <div class="dcard" id="d2"><div class="dt"><span class="tn">WO-EVO-102 Z5 对照实验</span><span class="st st-wait">待下发</span></div><div class="to">主办：<b>赵云</b> → 进化层（出方案等签字）</div><div class="target"><span class="tg" id="t2">进化层</span><span class="tg">研究院</span></div></div>
+    <div class="dcard" id="d3"><div class="dt"><span class="tn">WO-RISK-103 风险清单</span><span class="st st-wait">待下发</span></div><div class="to">主办：<b>诸葛亮</b> → 出题（备份/降标准/补跑三风险）</div><div class="target"><span class="tg" id="t3">风控部</span><span class="tg">质量部</span></div></div>
+    <div class="dfoot">下发流转：工单落 .worktrees → 田丰登记去重 → 各营席位执行 → StatusPoint 回传沙盘。生产门/交易类仍走 approval_gate。</div>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+function add(who, cls, text) {
+  const av = { t:'田', z:'葛', y:'云', h:'田' }[who] || '';
+  const nm = { t:'田丰 · 执行相', z:'诸葛亮 · 反向军师', y:'赵云 · 进化官', h:'老田 · 董事长' }[who];
+  const d = document.createElement('div');
+  d.className = 'msg' + (who === 'h' ? ' host' : '');
+  d.innerHTML = '<span class="avatar ' + ({t:'av-t',z:'av-z',y:'av-y',h:'av-h'})[who] + '">' + av + '</span><div class="body"><div class="who ' + ({t:'w-tian',z:'w-zhuge',y:'w-zhao',h:'w-host'})[who] + '">' + nm + '</div>' + text + '</div>';
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+}
+function typeNext() {}
+const SCRIPT = [
+  ['h','今日三件事：心跳修复、影子账本备份、Z5 防穿越断言——优先级怎么排？'],
+  ['t','<b>结论：心跳先行。</b>依据：H1 断三日，卡 est_cost 解冻两个下游。修复已入库（c8d55b3），差生产补跑一批。<br>下一步：我今日立单，补跑+验收一单到底。'],
+  ['z','先求败因——三件你没想到的：<br>① <b>修复≠验证</b>：补跑后影子晨批 S0 若仍无痕迹，就是修了个寂寞——要有二次失败预案；<br>② <b>心跳与备份同源风险</b>：影子账本零备份无轮转，先修心跳不修备份是按下葫芦浮起瓢；<br>③ <b>Z5 动 RiskGuard 判据</b>：critical 拦截样本后验 +0.65% 高于放行——若断言把仅存的正确拦截也放掉，进化层就成降标准通道。样本外不达标必须回滚。'],
+  ['y','证据对齐：RiskGuard 误杀研究在案（+0.65% vs -0.25%）。<br>Z5 我出对照实验：基线组 vs 断言组，同批样本跑双轨，拿行为差异表回来，<b>等签字，不自认通过</b>。备份方案我先写进 execution 域观察，不动风控阈值。'],
+  ['t','分工确认：我立 WO-OPS-101（心跳补跑）；赵云 WO-EVO-102（Z5 双轨方案）；诸葛 WO-RISK-103（三风险清单+复核点）。<br>三单今日入簿，等老田放行。'],
+  ['h','同意。会终派单——下发。']
+];
+let si = 0, playing = false;
+function play() {
+  if (si >= SCRIPT.length) return;
+  playing = true;
+  const [w, t] = SCRIPT[si++];
+  add(w, '', t);
+  setTimeout(play, 900);
+}
+function send() {
+  const v = document.getElementById('say').value.trim();
+  if (!v) return;
+  add('h', '', v); document.getElementById('say').value = '';
+  setTimeout(() => add('t', '', '<b>收到。</b>（原型演示：正式版由 glm-5.3 实时应答；诸葛=GPT6.0、赵云=9b 各按 SOUL 人格回复）'), 600);
+}
+function ask(i) {
+  const qs = ['今日优先级怎么排？','Z5 防穿越断言现在动不动？','谁去盯影子账本备份？'];
+  add('h', '', qs[i]);
+  const re = [
+    ['t','<b>心跳 → 备份 → Z5。</b>前置卡下游，先解冻。'],
+    ['z','动，但带三条件：双轨对照、样本外验证、回滚预案。'],
+    ['y','备份归 execution 域，我出方案；轮转策略等签字。']
+  ][i];
+  setTimeout(() => add(re[0], '', re[1]), 500);
+}
+function endMeeting() {
+  add('h', '', '【会终】三单下发。');
+  setTimeout(() => add('t', '', '三单已入 .worktrees：<b>WO-OPS-101 → 研发部</b>（灯已亮）；<b>WO-EVO-102 → 进化层</b>；<b>WO-RISK-103 → 风控/质量复核</b>。各席回执走 StatusPoint，沙盘实时可见。'), 500);
+  [1,2,3].forEach(i => {
+    document.getElementById('d'+i).querySelector('.st').className = 'st st-sent';
+    document.getElementById('d'+i).querySelector('.st').textContent = '已下发';
+    document.getElementById('t'+i).classList.add('hit');
+  });
+}
+setTimeout(play, 400);
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+classDiagram
+    class ExecutionManifest {
+        <<portal/execution_manifest.json 数据文件>>
+        +str version
+        +str updated
+        +list tasks
+    }
+    class ExecutionCore {
+        <<portal/api_execution.py>>
+        +dict _CACHE
+        +Lock _LOCK
+        +int CACHE_TTL=30
+        +load_manifest$ tuple~dict,int~
+        +poll_tasks$ tuple~dict,str~ names
+        +classify$ dict cfg, ps_row, now
+        +build_execution_health$ dict force=False
+    }
+    class Handler {
+        <<mixin 8091>>
+        +_execution_health(qs)
+    }
+    class PortalHandler {
+        <<portal_api.Handler 多继承链>>
+    }
+    class ExecutionWatchdog {
+        <<tools/execution_watchdog.py 独立进程>>
+        +main()
+        -throttled(name, code) bool
+        -push_feishu(text) bool
+        -open_ticket(item) str
+        -scan_fail_scan(cfg, now) dict
+    }
+    class TaskStore {
+        <<agent_platform/engine/tasks.py 既有>>
+        +open(to_dept, title, body, severity, opened_by, p0) dict
+        +ls(dept, status) list
+    }
+    class SendFeishuCLI {
+        <<news_collector/send_feishu.py 既有>>
+        +main(msg_file) exit_code
+    }
+    class HermesExecutionConnector {
+        <<api/execution.py thin proxy>>
+        +handle_health(handler, parsed) bool
+    }
+    PortalHandler --|> Handler : mixin 继承（portal_api L555 MRO 追加）
+    ExecutionCore --> ExecutionManifest : json 只读加载
+    ExecutionWatchdog --> ExecutionCore : 复用 poll（force=True 绕缓存）
+    ExecutionWatchdog --> TaskStore : TaskStore.open 自动开单 P0
+    ExecutionWatchdog --> SendFeishuCLI : subprocess 推送（outbox 临时文件）
+    HermesExecutionConnector ..> Handler : GET /api/execution/health → 8091（无代理 opener）

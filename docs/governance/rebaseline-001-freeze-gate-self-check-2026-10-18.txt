@@ -1,0 +1,7 @@
+REBASELINE-001 freeze-gate self-check
+BLOCKED: PASS
+UNVERIFIED/PENDING: PASS
+两者当前均不得用于批准: PASS
+不触发账本执行: PASS
+不读取或修改账本: PASS
+Final: BLOCKED; no ledger I/O authorized.

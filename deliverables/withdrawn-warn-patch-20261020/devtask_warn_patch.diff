@@ -1,0 +1,68 @@
+diff --git a/tools/devtask.py b/tools/devtask.py
+index 45f216ce..185f9cf0 100644
+--- a/tools/devtask.py
++++ b/tools/devtask.py
+@@ -335,6 +335,46 @@ def _owner_domain_members():
+     return members
+ 
+ 
++# external_tools.status 的两个已知取值：legal=已裁定合法（外部工具代号纳入合法域）；
++# pending_ruling=未裁定（外部代号一律不合法，当前状态）。其余取值一律按「未裁定」
++# 处理（判定语义不变），但属**未知取值**——原先这类写法静默失效（改了登记表却不生效
++# 且无任何提示，最难自查），故改为显式告警。
++_OWNER_STATUS_LEGAL = "legal"
++_OWNER_STATUS_PENDING = "pending_ruling"
++# 每进程每种未知取值只告警一次（模块级去重集合，避免每次建单刷屏）
++_WARNED_OWNER_STATUS = set()
++
++
++def _owner_status_state(status):
++    """判定 ``external_tools.status`` 取值，返回 ``(是否已裁定合法, 归一化取值)``。
++
++    已知取值只有两个：``legal``（外部工具代号纳入合法域）与 ``pending_ruling``
++    （未裁定，外部代号一律不合法——当前状态）。
++
++    **未知取值**（既非 legal 也非 pending_ruling，如 ``approved`` / ``accepted`` /
++    ``true`` / ``""`` / ``None``）**判定语义不变**：仍按「外部代号不合法」处理，
++    不拒写、不改判定、不改标签行为；只是**显式告警**一次到 stderr，写明该取值
++    原值与「仅 legal 生效」提示——把原先的静默失效点变成可观测。
++
++    去重按**取值原值**（``repr``）：同一份登记表配置只告警一次；配置改成另一个
++    未知取值时属新问题、重新告警。
++    """
++    norm = str(status).strip().lower() if status is not None else ""
++    if norm == _OWNER_STATUS_LEGAL:
++        return True, norm
++    if norm == _OWNER_STATUS_PENDING:
++        return False, norm
++    key = repr(status)
++    if key not in _WARNED_OWNER_STATUS:
++        _WARNED_OWNER_STATUS.add(key)
++        print("[warn] owner_domain.external_tools.status=%r 未知取值——"
++              "登记表仅接受 %r（外部工具代号纳入合法域）或 %r（未裁定，外部代号"
++              "不合法）；本次按「外部代号不合法」处理（判定不变）。"
++              % (status, _OWNER_STATUS_LEGAL, _OWNER_STATUS_PENDING),
++              file=sys.stderr)
++    return False, norm
++
++
+ def _owner_check(owner):
+     """owner 落账取值域校验（WO-TF-03：老田裁定「先立取值域，再校验」）。
+ 
+@@ -349,11 +389,14 @@ def _owner_check(owner):
+         无法判定 ≠ 非法，调用方**不判非法、不打标签**，仅留痕 ``owner_domain_unavailable=1``。
+     """
+     domain = _load_owner_domain()
++    ext = domain.get("external_tools") or {}
++    # status 判定先做：登记表取值域与 org.json 成员池是两处独立缺陷，org.json 坏了
++    # 不该掩盖 status 写错的事实（未知取值→告警一次，判定语义不变）。
++    status_legal, _norm = _owner_status_state(ext.get("status"))
+     members = _owner_domain_members()
+     if members is None:
+         return None, domain, 0            # 不可判定：不下非法结论
+-    ext = domain.get("external_tools") or {}
+-    if str(ext.get("status", "")).strip().lower() == "legal":
++    if status_legal:
+         for c in ext.get("observed") or []:
+             if isinstance(c, str) and c.strip():
+                 members.add(c.strip().upper())

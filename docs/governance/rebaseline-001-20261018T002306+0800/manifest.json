@@ -1,0 +1,109 @@
+{
+  "ticket": "REBASELINE-001",
+  "status": "DRIFT_DETECTED / HUMAN_REVIEW_REQUIRED / BLOCKED",
+  "owner": "老田",
+  "executor": "WorkBuddy",
+  "observer": "老田",
+  "authorization": "one-time read-only archival",
+  "collected_at_local": "2026-10-18T00:23:06.663683+08:00",
+  "package": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800",
+  "sources": [
+    {
+      "path": "C:\\项目\\老田的AI助手\\portal\\route_baseline.json",
+      "size": 8710,
+      "mtime_local": "2026-10-17T17:34:23.973329+08:00",
+      "sha256": "9b933645839d65295e235cf0d3a600094442f9d880cad477324508d0f82acf2f",
+      "snapshot_path": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\snapshot-route-baseline.json",
+      "snapshot_sha256": "9b933645839d65295e235cf0d3a600094442f9d880cad477324508d0f82acf2f"
+    },
+    {
+      "path": "C:\\项目\\老田的AI助手\\.worktrees\\tasks.json",
+      "size": 151201,
+      "mtime_local": "2026-10-18T00:07:51.062043+08:00",
+      "sha256": "08760a2602e064aadd45dfe36415143aa1e4ba9b99f96ca7b0ddb5ab846f712c",
+      "snapshot_path": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\snapshot-tasks.json",
+      "snapshot_sha256": "08760a2602e064aadd45dfe36415143aa1e4ba9b99f96ca7b0ddb5ab846f712c"
+    },
+    {
+      "path": "C:\\项目\\老田的AI助手\\docs\\governance\\evidence-index-2026-10-17.md",
+      "size": 20595,
+      "mtime_local": "2026-10-17T21:53:41.295079+08:00",
+      "sha256": "617a72bd9d093e33dcc6f14a2af4fb0bc7663e23f10d192e09e4d49e9adf2f7a",
+      "snapshot_path": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\snapshot-evidence-index.md",
+      "snapshot_sha256": "617a72bd9d093e33dcc6f14a2af4fb0bc7663e23f10d192e09e4d49e9adf2f7a"
+    },
+    {
+      "path": "C:\\项目\\老田的AI助手\\docs\\governance\\GOV-FIX-004-recheck-2026-10-17.md",
+      "size": 3628,
+      "mtime_local": "2026-10-17T19:22:57.063272+08:00",
+      "sha256": "bc5040cf3c44276e1b025c1bc0f8f3d39d82d86fe3d11aa3643c283b35d2bcfb",
+      "snapshot_path": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\snapshot-old-recheck.md",
+      "snapshot_sha256": "bc5040cf3c44276e1b025c1bc0f8f3d39d82d86fe3d11aa3643c283b35d2bcfb"
+    },
+    {
+      "path": "C:\\项目\\老田的AI助手\\docs\\governance\\portal-qa-2026-10-17.txt",
+      "size": 8098,
+      "mtime_local": "2026-10-17T19:19:58.403297+08:00",
+      "sha256": "f00d26139ad62f804e74ca4e22a1f83bec722c0a1322d4026efbe941b452ef24",
+      "snapshot_path": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\snapshot-portal-qa.txt",
+      "snapshot_sha256": "f00d26139ad62f804e74ca4e22a1f83bec722c0a1322d4026efbe941b452ef24"
+    }
+  ],
+  "commands": [
+    {
+      "command": [
+        "C:\\Users\\t\\.workbuddy\\binaries\\python\\versions\\3.13.12\\python.exe",
+        "C:\\项目\\老田的AI助手\\portal\\route_baseline.py",
+        "--check"
+      ],
+      "returncode": 0,
+      "stdout": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\route-baseline-check.stdout.txt",
+      "stderr": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\route-baseline-check.stderr.txt"
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--short",
+        "--branch"
+      ],
+      "returncode": 0,
+      "stdout": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\git-status.stdout.txt",
+      "stderr": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\git-status.stderr.txt"
+    },
+    {
+      "command": [
+        "git",
+        "log",
+        "-20",
+        "--date=iso-strict",
+        "--format=%h %ad %an %s"
+      ],
+      "returncode": 0,
+      "stdout": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\git-log-recent.stdout.txt",
+      "stderr": "C:\\项目\\老田的AI助手\\docs\\governance\\rebaseline-001-20261018T002306+0800\\git-log-recent.stderr.txt"
+    }
+  ],
+  "findings": [
+    "Archival package only; no formal baseline changed/generated.",
+    "Route RC=0 is not approval; additions require human review.",
+    "Ledger snapshot is timestamped observation, not stable current baseline.",
+    "Historical 216 and 217 remain in prior evidence; no reconciliation performed.",
+    "No writer attribution made."
+  ],
+  "ledger_observation": {
+    "raw_objects": 226,
+    "statuses": {
+      "aborted": 45,
+      "done": 180,
+      "doing": 1
+    },
+    "note": "in-memory derivation; source untouched"
+  },
+  "route_baseline_observation": {
+    "n_routes": 72,
+    "generated_at": "2026-10-12T09:53:02",
+    "source": "portal_api.py",
+    "source_sha256": "bc6d35fb048aa0a4"
+  }
+}

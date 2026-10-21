@@ -1,0 +1,2236 @@
+{
+ "--help-aborted-084818": {
+  "desc": "(无描述)",
+  "branch": "task/--help",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\--help",
+  "status": "aborted",
+  "created": "2026-10-14 08:44:28",
+  "project": "general",
+  "owner": "unknown-agent",
+  "abort_reason": "(未填)"
+ },
+ "--title-aborted-084817": {
+  "desc": "F6a-1 人设注入按岗区分：chat_auto 拉起子代理时把岗卡 charter_detail+attributes(experience/specialties) 拼进人设上下文，消除同部门岗自报隔壁岗（探针实锤：DEV7 自报 DEV1·QA2 自报 QA1·复现脚本 data/korg061b_f6a_probe.py） --owner DEV1",
+  "branch": "task/--title",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\--title",
+  "status": "aborted",
+  "created": "2026-10-14 08:44:14",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "(未填)"
+ },
+ "K-ORG-015a": {
+  "desc": "组合制新方案v6(K-STOCK-269底档)代码面评审:三层架构(组合层再平衡/个股层最小干预/信号层影子池)实施影响面梳理+风险清单,产出评审意见写agent/DEV1/decision",
+  "branch": "task/K-ORG-015a",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-015a (已清场 K-STOCK-371)",
+  "status": "aborted",
+  "created": "2026-10-13 07:07:39",
+  "owner": "DEV1",
+  "note": "K-ORG-015 闭环首单：通道已通(A0派发->DEV1认领)；评审执行待 DEV1 worker 接管(晨会/automation 派单)，产出写 agent/DEV1/decision 后 merge",
+  "abort_reason": "零成果空转29h(worker未接管·分支零提交零脏文件)·K-STOCK-371清场:worktree已移除+分支-d删除(已并入master)"
+ },
+ "K-ORG-025a": {
+  "desc": "review积压19单质检分派:四批分组R1·RAG索引检索7单(146/153/154/155/156/157/213)/R2·Ollama运维4单(145/158/159/160)/R3·Web聊天体验5单(147/152/212/222/227)/R4·数据与发布审计3单(136/162/209);每批QA1人化复核+三守卫,涉数据只读(162)与发布审计(209)SEC1加审;产出质检意见写dept/quality/observation,通过单进merge队列",
+  "branch": "task/K-ORG-025a",
+  "worktree": "E://老田的AI助手//.worktrees//K-ORG-025a",
+  "status": "done",
+  "created": "2026-10-13 08:41:00",
+  "owner": "QA1",
+  "note": "K-ORG-025 派单链首单：田小皮(A0)派发->QA1认领并四批分组->每批质检意见落dept/quality/observation->通过单由团队线跑devtask merge三守卫(主控只登记不代跑merge)；验收=19单全部有质检结论",
+  "merged": "2026-10-13 10:05 (QA1四批质检完毕:19单全出结论·通过11/部分通过3/整改2/SEC1加审3)"
+ },
+ "K-ORG-027a": {
+  "desc": "C3记忆面板:agent/<id>/*只读视图进IDE——bundle脚本烘各岗记忆摘要(jsonl行数+最近2条decision/observation)到agent_ide_bundle.json,ide.html岗卡显示记忆活动块;只读不写",
+  "branch": "task/K-ORG-027a",
+  "worktree": "E://老田的AI助手//.worktrees//K-ORG-027a",
+  "status": "done",
+  "created": "2026-10-13 09:42:19",
+  "owner": "DEV8",
+  "note": "K-ORG-027 并行实施单1：田小皮派发DEV8(E1批量执行位)——主控代实施，产出写agent/DEV8/decision后销账",
+  "merged": "2026-10-13 09:45 (主控代实施)"
+ },
+ "K-ORG-027b": {
+  "desc": "E4事件schema扩类:events.py KINDS白名单+dispatch/accept/review_verdict/patrol_verdict四类(派单域事件进统一账本),文档头与today汇总同步;向后兼容不破坏旧四类",
+  "branch": "task/K-ORG-027b",
+  "worktree": "E://老田的AI助手//.worktrees//K-ORG-027b",
+  "status": "done",
+  "created": "2026-10-13 09:42:19",
+  "owner": "OPS1",
+  "note": "K-ORG-027 并行实施单2：田小皮派发OPS1——主控代实施，产出写agent/OPS1/decision后销账",
+  "merged": "2026-10-13 09:45 (主控代实施)"
+ },
+ "K-ORG-030a": {
+  "desc": "D1 prompt版本化登记:prompt_version_registry.py从git log自动提取22份人设版本历史生成prompt_versions.json(version=提交次数·幂等再生)——ARCH1位·主控代实施",
+  "branch": "task/K-ORG-030a",
+  "worktree": "E://老田的AI助手//.worktrees//K-ORG-030a",
+  "status": "done",
+  "created": "2026-10-13 10:06",
+  "owner": "ARCH1",
+  "merged": "2026-10-13 10:08 (主控代实施)",
+  "note": "批D首项：田小皮派发ARCH1——22份committed全登记"
+ },
+ "K-ORG-031a": {
+  "desc": "D2双Agent对练首轮:DEV3(strategy_engineer人设)生成尾盘过滤规则(8.2s)→DEV4(backtest_engineer人设)复核抓前视偏差真问题结论需修改(33.3s)——qwen3.5:4b经/ollama反代think:false真模型两轮·产出落双岗黑板",
+  "branch": "task/K-ORG-031a",
+  "worktree": "E://老田的AI助手//.worktrees//K-ORG-031a",
+  "status": "done",
+  "created": "2026-10-13 10:14",
+  "owner": "DEV3",
+  "merged": "2026-10-13 10:16 (对练机制建立·首轮完成)",
+  "note": "DEV4复核与前视偏差同频K-STOCK-263终审主线=对练价值实锤;ide.html调试台同步修think:false判例"
+ },
+ "K-ORG-032a": {
+  "desc": "Agent编码真实化通道:tools/agent_coder.py(人设bundle+9b think:false+验收器+落盘)——159/160整改由DEV2/DOC1真生成直接入仓(config/ollama_model_route.json+docs/ops/Ollama_RAG_运行手册.md)·主控只派发验收不代写",
+  "branch": "task/K-ORG-032a",
+  "worktree": "E://老田的AI助手//.worktrees//K-ORG-032a",
+  "status": "done",
+  "created": "2026-10-13 10:22",
+  "owner": "DEV2",
+  "merged": "2026-10-13 10:22 (双产物过验收入仓)",
+  "note": "老田10-13 10:20指令:这个团队是真的要需要开发代码的——通道建立并首单实证"
+ },
+ "K-ORG-033a": {
+  "desc": "云端编码实证:DEV2(glm-4-flash)写tools/model_route.py=159路由配置配套加载器·py_compile+五项冒烟全过·21s",
+  "branch": "task/K-ORG-033a",
+  "worktree": "E://老田的AI助手//.worktrees//K-ORG-033a",
+  "status": "done",
+  "created": "2026-10-13 10:30",
+  "owner": "DEV2",
+  "merged": "2026-10-13 10:30 (云端模型产出·验收入仓)",
+  "note": "agent_coder双backend:CODER_BACKEND=cloud默认/ollama兜底;付费旗舰余额不足待充值"
+ },
+ "K-ORG-034a": {
+  "desc": "写代码板块全线重梳+开源调研(Aider/SWE-agent/OpenHands/ClaudeCode四路范式)——最大收获:智谱Anthropic兼容端点(open.bigmodel.cn/api/anthropic+智谱Key=Claude Code跑GLM-4.6,两条K合流一条路)——蓝图docs/plans/2026-10-13_104500_·六批评P0通道合流~P5子代理化",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 10:45",
+  "owner": "A0",
+  "merged": "2026-10-13 10:45 (蓝图落档·待老田拍板P0开工)",
+  "note": "现状定性=单发补全器非编码Agent;五缺口=仓库上下文/编辑协议/执行验证/迭代回路/工具通道;接口>模型(SWE-agent同GPT-4 3.8%vs12.5%)"
+ },
+ "K-ORG-035a": {
+  "desc": "编码生产线研发计划:K-ORG-034蓝图六批评落成工单F1~F6(责任岗DEV2/ARCH1/OPS1/DEV8/QA1·排期10-13~10-17·判据与回退逐单明确)——基线批F登记进org_baseline.json chief_patrol可判读",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 10:52",
+  "owner": "A0",
+  "merged": "2026-10-13 10:52 (计划落档·待老田令按计划实施)",
+  "note": "docs/plans/2026-10-13_105000_编码生产线研发计划_K-ORG-035.md;验收线10-17:三通道对比+5工单全自动链+轨迹回放+巡检批F全绿"
+ },
+ "K-ORG-036a-aborted-182456": {
+  "desc": "F1通道合流:agent_coder.chat_claude(Claude Code CLI headless×智谱Anthropic端点·--append-system-prompt人设·--allowedTools工具环·claude_glm→cloud→ollama三级降级)——🔴阻塞:安全中心程序黑名单拦reg.exe(claude CLI内部读注册表·沙箱解除后仍拦·命令侧不可绕·需老田安全中心解禁)",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-13 10:54",
+  "owner": "DEV2",
+  "note": "代码就位+判例:claude.cmd垫片裸名WinError2→shutil.which修;冒烟脚本work/f1_claude_smoke.py待解禁后worker侧复跑;降级预案(纯API自研工具环)备而未启",
+  "abort_reason": "销案:F1通道合流的CLI路径(Claude Code CLI headless)被安全中心拦reg.exe长期阻塞——已被K-ORG-043纯HTTP anthropic端点(open.bigmodel.cn/api/anthropic/v1/messages)绕行替代并投产(降级链gpt6→anthropic→cloud→ollama实证)·036a使命由043承接·非放弃"
+ },
+ "K-ORG-036b": {
+  "desc": "F2仓库地图:tools/repo_map.py(AST签名压缩·关键词择邻命中排前·预算8000字~2K token·零相关预算过半丢弃)——冒烟过:关键词route model把model_route.py排首位·22文件1634token",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 10:56",
+  "owner": "ARCH1",
+  "merged": "2026-10-13 10:56 (交付+冒烟过·开关地图A/B对照随首批编码工单落)",
+  "note": "借Aider RepoMap范式自研;SKIP_DIRS防爬全仓;坏语法文件跳过不炸"
+ },
+ "K-ORG-036c": {
+  "desc": "F3编辑协议+lint门:agent_coder落SR_RE/strip_fences/lint_py_text/apply_edit_protocol(sr块唯一命中逐块替换·未命中=sr_fail禁落盘带错重试)+run()验证门回路(py语法错/块未命中喂回重试max2·提前于计划10-14完成)——🔴判例:块未命中若兜底整文件写回会把协议标记原文写进目标(垃圾落盘)·冒烟抓出后改sr_fail语义",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:00",
+  "owner": "DEV2",
+  "merged": "2026-10-13 11:00 (五项冒烟全过)",
+  "note": "work/f3_edit_smoke.py:块编辑/未命中sr_fail/围栏剥离/lint行号/落盘复lint全PASS;lint门对md等非py文件不生效(按计划py先行)"
+ },
+ "K-ORG-036d": {
+  "desc": "F4按单自动提交+冒烟钩子(提前于计划10-15):agent_coder.commit_work(只add目标文件禁-A禁.·独立commit消息=K编号:工单—by岗位via通道·按单可回滚·dry_run参数供冒烟)+run()增smoke钩子(落盘后callable·抛异常=FAIL文件留调用方决定)——判例:git commit --dry-run插入位错成git --dry-run commit→unknown option",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:02",
+  "owner": "OPS1",
+  "merged": "2026-10-13 11:02 (三项冒烟全过·dry-run不污染历史)",
+  "note": "真实链路验证随F1解禁后首个编码工单:run→smoke→commit_work(dry_run=False)"
+ },
+ "K-ORG-036e": {
+  "desc": "F5轨迹事件流核心(提前于计划10-16):events.py KINDS 9→11类(+code_action/code_observation·OpenHands事件流范式)+agent_coder.trace_log(按单jsonl落shadow/coder_traces/日期/·generate/edit/lint轮次/smoke/write/commit/fail全程留痕·匿名k_id不落盘)·run()/commit_work()全链路接线",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:06",
+  "owner": "OPS1",
+  "merged": "2026-10-13 11:06 (三项冒烟过+F3/F4回归过)",
+  "note": "IDE轨迹块(DEV8·复用记忆面板模式)待bundle重烘随下轮落·F5整项转doing余IDE视图"
+ },
+ "K-ORG-036f": {
+  "desc": "F6子代理化导出+F5-IDE轨迹块(老田10-13 11:03按计划组织实施·F1仍blocked一次探测后不重试)——export_claude_agents.py:bundle 27人设→claude --agents JSON(registry/claude_agents.json·description/prompt+工作边界段/tools三档/QA1·SEC1只读Read,Grep·模型分层glm-4.6×15+glm-4-flash×12)+bundle增coder_traces_digest+ide.html轨迹块上线(真实数据:036d dry-run边缘fail被如实回显=F5可回放判据机制全链走通)",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:12",
+  "owner": "ARCH1",
+  "merged": "2026-10-13 11:12 (导出+IDE双交付·F5整项done·F6余真spawn验证随F1)",
+  "note": "F1探测两次仍拦reg.exe(老田未解禁)·按黑名单纪律不硬闯·批次F只剩F1解禁+真spawn验证两项"
+ },
+ "K-ORG-036g": {
+  "desc": "首个真实编码工单全自动链(F1降级预案):cloud通道glm-4.5-flash×repo_map×SR编辑协议×lint门×行为冒烟×按单commit×轨迹——挂账需求model_route绝对路径重写交付c0d0343",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:14",
+  "owner": "DEV2",
+  "merged": "2026-10-13 11:15 (FULL-CHAIN PASS·最小diff 2行·陌生CWD行为复检过·F3/F4回归过)",
+  "note": "判据实证:闸门栈三轮拦三种真缺陷(截水重写/pass桩/改坏逻辑/吞关键编辑)·冒烟失败反馈重试回路补全F4最后一环·flash档会吞编辑4.5-flash首发即中→模型分层判据"
+ },
+ "K-ORG-036h": {
+  "desc": "全自动链第2单:export_claude_agents.py轻量档glm-4-flash→glm-4.5-flash(036g判据实证flash档不能编码·12轻量岗导出配置跟进)+claude_agents.json重导出",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:22",
+  "owner": "DEV2",
+  "merged": "2026-10-13 11:25 (f702d87+0d89a0f·QA1复核通过·分档15/12)",
+  "note": "催生支撑件升级:sr_fail结构化诊断(块序号/命中数/SEARCH原文=SWE-agent错误结构化落地)+目标文件内容注入prompt(Aider范式·盲猜锚=hit0判例)+timeout_cloud 120→240"
+ },
+ "K-ORG-036i": {
+  "desc": "全自动链第3单:f4_commit_smoke.py轨迹去噪(k_id改K-SMOKE-F4)+probe保鲜(时间戳保每次复跑有真实变更·修复036d入库后dry-run必败真缺陷)",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:22",
+  "owner": "DEV2",
+  "merged": "2026-10-13 11:26 (0d93649·QA1复核通过·专属轨迹落盘验证)",
+  "note": "🔴连带抓出判例:上午回归|tail管道吞退出码=假PASS·probe无变更dry-run必败被掩盖半天"
+ },
+ "K-ORG-037": {
+  "desc": "验收线三前置项(10-17大限前):①三通道对比归档docs/ops/编码生产线三通道对比_2026-10-13.md(cloud-4.5flash主力3/3/flash禁编/9b兜底/claude_glm待解禁)②轨迹回放+按单回滚实证(K-ORG-037-RR:bca320a→revert c5385d4·add成功留痕补全)③巡检批F判读🔵超前4/6",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:49",
+  "owner": "OPS1",
+  "merged": "2026-10-13 11:51 (REPLAY-ROLLBACK ALL PASS·probe保鲜再验036i判例·修改型提交revert断言=验改动戳非验文件存在)",
+  "note": "F1四探仍拦reg.exe(纪律停止探测维持blocked)·全线验收只剩F1解禁→claude_glm复跑→F6真spawn"
+ },
+ "K-ORG-038": {
+  "desc": "老田披露智谱包年→调研确认Coding Plan额度与API钱包分开(1113≠套餐耗尽)·chat_anthropic纯API直连open.bigmodel.cn/api/anthropic跑GLM-4.6(零spawn绕开reg.exe)·F1判据达成",
+  "branch": "master",
+  "worktree": "E://老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 11:55",
+  "owner": "DEV2",
+  "merged": "2026-10-13 12:02 (3a2c59f判据工单·agent_coder三升级·F1转done·验收线只剩F6真spawn)",
+  "note": "判例:glm-4.6恒思考(disabled被忽略)·content=[thinking,text]块只拼text·max_tokens≥32768(8192截断)·先散文后围栏→strip_fences升级为围栏内提取·配额纪律=分时发放省着用"
+ },
+ "K-ORG-039a": {
+  "desc": "GPT-6.0密钥入列产线:chat_openai通道+判据工单(qa1_review三处修复·cf2134b)",
+  "branch": "task/K-ORG-039a",
+  "worktree": "E:\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 12:12",
+  "owner": "DEV2",
+  "merged": "2026-10-13 12:28 (cf2134b by DEV2 via gpt6·四项探测全过·SR精确编辑·行为冒烟含退出码一致性)",
+  "note": "🔴038a产物带str→dict潜伏bug出生且038a冒烟假PASS(只验字样不验行为)·GPT-6链行为冒烟当场抓住;GPT-6当QA1更严(翻旧账判3a2c59f退回=正确);Key存config/model_keys.local.json(gitignored)"
+ },
+ "K-ORG-040a": {
+  "desc": "D3影子评测:shadow_eval.py人设×黑板账对齐判读(gpt6)·14岗均分66·ARCH1高险",
+  "branch": "task/K-ORG-040a",
+  "worktree": "E:\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 12:55",
+  "owner": "QA1",
+  "merged": "2026-10-13 12:58 (报告shadow/shadow_eval_2026-10-13.md·基线D3销账)",
+  "note": "判例:枚举切片须剥agent__前缀(首跑全跳过);低分三档定性=真缺口(ARCH1缺ADR终审)/旧代留守(T1/T2/N1/D1/F1记录占位·建议休眠)/活跃岗高对齐(DEV4 92)"
+ },
+ "K-ORG-041": {
+  "desc": "ADR流程落地:adr.py工具+ADR-001/002补写+ARCH1人设产出必留痕铁律",
+  "branch": "主工作区",
+  "worktree": "E:\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-13 13:22",
+  "owner": "ARCH1",
+  "merged": "2026-10-13 13:24 (docs/adr/入git·bundle重烘·040评测缺口闭环)"
+ },
+ "K-ORG-061a": {
+  "desc": "人设注入按岗区分:chat_auto拉起子代理时把岗卡charter_detail+attributes(experience/specialties)拼进人设上下文,消除同部门岗自报隔壁岗;探针实锤DEV7自报DEV1·QA2自报QA1,复现脚本data/korg061b_f6a_probe.py;修完重跑探针须两岗自报工号与档位正确 --owner DEV1",
+  "branch": "task/K-ORG-061a",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-061a",
+  "status": "done",
+  "created": "2026-10-14 08:48:32",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 08:59:55"
+ },
+ "K-ORG-062a": {
+  "desc": "F6b: qa1_review复核升级claude -p只读审查——review_one主路径改chat_claude(QA1)限只读三件套allowed_tools=Read,Grep,Glob(无Edit/Bash写面),附只读审查纪律addendum(可直读仓库核现状,根治042判例diff减号为旧内容痛点),CLI缺失/超时/rc非零降级chat_auto留痕;验收:实测真实sha复核出结论+review_verdict落账+只读面断言(allowed_tools串不含Edit/Bash/Write) --owner DEV1",
+  "branch": "task/K-ORG-062a",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-062a",
+  "status": "done",
+  "created": "2026-10-14 09:27:11",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 09:45:26"
+ },
+ "K-ORG-064": {
+  "desc": "【硬约束·先读】全部代码中字符串字面量之外禁止出现任何全角/中文标点（：，、；（）「」等）；中文只允许出现在 # 注释和字符串内；前几轮产码反复栽在全角标点进代码区，写每一行时保持半角。（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-064",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-064",
+  "status": "done",
+  "created": "2026-10-14 10:41:58",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 11:02:27"
+ },
+ "K-ORG-064-aborted-100505": {
+  "desc": "新建单文件只读工具 tools/devtask_audit.py，审计工单看板中卡在 review 的存量单是否已实际 merge（真实需求：监督判读发现 19 张 K-STOCK review 存量单，疑似已实际 merge 仅状态未流转）。功能条目：（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-064",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-064",
+  "status": "aborted",
+  "created": "2026-10-14 09:55:52",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e彩排第1轮产码关停(全角冒号进代码区)·清场重跑"
+ },
+ "K-ORG-064-aborted-102214": {
+  "desc": "新建单文件只读工具 tools/devtask_audit.py，审计工单看板中卡在 review 的存量单是否已实际 merge（真实需求：监督判读发现 19 张 K-STOCK review 存量单，疑似已实际 merge 仅状态未流转）。功能条目：（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-064",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-064",
+  "status": "aborted",
+  "created": "2026-10-14 10:05:19",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e彩排第2轮smoke关停(SR对空文件必败·基建已修)·清场重跑"
+ },
+ "K-ORG-064-aborted-104143": {
+  "desc": "新建单文件只读工具 tools/devtask_audit.py，审计工单看板中卡在 review 的存量单是否已实际 merge（真实需求：监督判读发现 19 张 K-STOCK review 存量单，疑似已实际 merge 仅状态未流转）。功能条目：（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-064",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-064",
+  "status": "aborted",
+  "created": "2026-10-14 10:22:30",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e彩排第3轮产码关停(anthropic顿号+超时降级cloud残缺·043判例复现)·清场"
+ },
+ "K-ORG-066": {
+  "desc": "【硬约束·先读】全部代码中字符串字面量之外禁止出现任何全角/中文标点（：，、；（）「」等）；中文只允许出现在 # 注释和（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-066",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-066",
+  "status": "done",
+  "created": "2026-10-14 11:05:34",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 11:23:56"
+ },
+ "K-ORG-068-aborted-123109": {
+  "desc": "【硬约束·先读】全部代码中字符串字面量之外禁止出现任何全角/中文标点（：，、；（）「」等）；中文只允许出现在 # 注释和（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-068",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-068",
+  "status": "aborted",
+  "created": "2026-10-14 12:08:34",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e第6轮:QA1退回(附证模板064残留自相矛盾+产码锚定回退)·返修轮anthropic双超时未跑·驱动器三修后清场重跑"
+ },
+ "K-ORG-068-aborted-124713": {
+  "desc": "【硬约束·先读】全部代码中字符串字面量之外禁止出现任何全角/中文标点（：，、；（）「」等）；中文只允许出现在 # 注释和（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-068",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-068",
+  "status": "aborted",
+  "created": "2026-10-14 12:31:39",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e第6轮c:SEC2返修分支glob双后缀bug修复·清场重跑"
+ },
+ "K-ORG-068-aborted-130821": {
+  "desc": "【硬约束·先读】全部代码中字符串字面量之外禁止出现任何全角/中文标点（：，、；（）「」等）；中文只允许出现在 # 注释和（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-068",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-068",
+  "status": "aborted",
+  "created": "2026-10-14 12:47:31",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e第6轮d:基建先提交后重跑(worktree基线判例)"
+ },
+ "K-ORG-068-aborted-132448": {
+  "desc": "【硬约束·先读】全部代码中字符串字面量之外禁止出现任何全角/中文标点（：，、；（）「」等）；中文只允许出现在 # 注释和（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-068",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-068",
+  "status": "aborted",
+  "created": "2026-10-14 13:08:38",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e第6轮e收口:QA1实质退回三点整改·stdout无结论包裹·账本兜底层已补·正验留模型稳定时段"
+ },
+ "K-ORG-071-aborted-140504": {
+  "desc": "# K-ORG-071 e2e 彩排单（增量型）：e2e_report 增加 --csv 导出（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-071",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-071",
+  "status": "aborted",
+  "created": "2026-10-14 13:50:58",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e第7轮b/c:解析格式假设错位已修(8ccdc40)·清场重跑"
+ },
+ "K-ORG-071-aborted-144216": {
+  "desc": "# K-ORG-071 e2e 彩排单（增量型）：e2e_report 增加 --csv 导出（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-071",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-071",
+  "status": "aborted",
+  "created": "2026-10-14 14:08:39",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "e2e第7轮c:全链自动化首次走通至返修轮·SEC2缺失0+QA1退回解析+理由回流1500字全通·返修产码败于anthropic午后超时三连(coding正确拒降级)·正验留稳定窗口"
+ },
+ "K-ORG-072-aborted-100128": {
+  "desc": "# K-ORG-072 e2e 正验单（增量型）：e2e_report 增加 --csv 导出（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-072",
+  "worktree": "e:\\老田的AI助手\\.worktrees\\K-ORG-072",
+  "status": "aborted",
+  "created": "2026-10-15 09:39:04",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "正验失败清场"
+ },
+ "K-ORG-072-aborted-155644": {
+  "desc": "# K-ORG-071 e2e 彩排单（增量型）：e2e_report 增加 --csv 导出（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-072",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-072",
+  "status": "aborted",
+  "created": "2026-10-14 15:34:52",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "正验首跑:QA1抓增量违规·verdict锚点三代统一(929cf6f)后重跑"
+ },
+ "K-ORG-072-aborted-162742": {
+  "desc": "# K-ORG-071 e2e 彩排单（增量型）：e2e_report 增加 --csv 导出（e2e彩排单·驱动器全自动派单）",
+  "branch": "task/K-ORG-072",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-072",
+  "status": "aborted",
+  "created": "2026-10-14 15:59:51",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "正验第二次:QA1退回解析+回流1415字全通·返修产码再撞anthropic下午窗口三连超时·正验留给明早09:35晨间稳定窗口(automation ccb37a69)"
+ },
+ "K-ORG-073-aborted-101502": {
+  "desc": "催办：K-STOCK-211 doing单57h无流转(田小皮晨巡2026-10-15点名)——该单实质已由K-STOCK-372于10-14抢救收口(33提交已merge·36绿)，疑状态未翻转的滞后账，请Codex·A核对worktree实况后说明进度或按实情收口(done/aborted)",
+  "branch": "task/K-ORG-073",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-073",
+  "status": "aborted",
+  "created": "2026-10-15 09:24:30",
+  "project": "general",
+  "owner": "Codex·A",
+  "note": "K-ORG-025 派单链催办单：田小皮(A0)晨巡🟡滞后点名->owner原岗Codex·A认领；纯催办单未建场(worktree不落盘)，处置=核对K-STOCK-211状态后原单收口或转blocked说明；验收=K-STOCK-211不再挂doing超时",
+  "abort_reason": "K-ORG-141清场:催办单目的已达成(K-STOCK-211实质已由K-STOCK-372于10-14收口,33提交已merge·36绿),仅状态未翻转,催办无待办"
+ },
+ "K-ORG-112": {
+  "desc": "Hermes总控判例档+K-ORG-095欠账清零端到端演练",
+  "branch": "task/K-ORG-112",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-ORG-112",
+  "status": "done",
+  "created": "2026-10-15 11:19:01",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 11:24:38"
+ },
+ "K-ORG-120": {
+  "desc": "MASS喂养体系批次1:OPT1流程优化师入职(HR档案+org.json登记chief_line直属参谋长线)+A0成对判读模式+workflow_candidates候选区建制",
+  "branch": "task/K-ORG-120",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-120",
+  "status": "done",
+  "created": "2026-10-17 00:06:36",
+  "finished": "2026-10-17 01:10:00",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "commit": "3e90f2a",
+  "note": "交付齐:hr/OPT1两件套+prompts/opt1_workflow_optimizer+prompts/a0_compare+a0_agent.py成对判读(mock验证PASS)+registry/workflow_candidates(README宪法+_schema)+org.json chief_line登记(14部门,onboard --check 52人档案齐备);git新机装好,windows 2.55.0,主仓master就地提交(未建worktree,循K-STOCK-414判例补提交)"
+ },
+ "K-ORG-127": {
+  "desc": "MASS喂养体系批次2:OPT1首例候选案cand_a0_daily_review_20261017_01(instruction加[回看]闭环段+缺陷判读[P0|P1|P2]定级标注,hop附昨日点评档)+a0_agent.py加--persona/--with-prev影子对比参数+live成对判读(vs 10-14冠军档)",
+  "branch": "task/K-ORG-127",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-127",
+  "status": "done",
+  "created": "2026-10-17 01:30:00",
+  "finished": "2026-10-17 16:05:00",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "note": "补证重判完毕待老田终审。补证三发现:D1校准=T-20261008-003单10-08已开至今open(未执行实锤);任务单故障根因=K-STOCK-162事件行混入tasks账本无severity字段,看板10-12起挂3天,10张open单不可见;因果=判读与工单系统信息孤岛。重判(9b+补证档)winner=champion/high自检PASS,但复核发现评估者两处归因错误(把工单存在误当闭环+把补证档根因归功冠军)——机器判决存疑已记review_note;工程新增:--evidence参数+a0_compare人设补证规则+检查器补证档数字合法化;终审仍三选promoted/rejected/再补证 | 终审收口(2026-10-17)：K-ORG-130 glm通道落地后席位升级重判round3（glm-4-flash·同两份产出同补证档控制变量）winner=candidate/high自检PASS——判定反转，round2两处归因错误均被纠正，田丰席复核存疑被证实（key实录：老田提供49位智谱key·User级持久化；4.6因coding计划key资源包429，按拍板材料判例降改4-flash双端点通用档一次通过）。老田终审三选一裁promoted：候选案status->promoted+review块回填+champion_snapshot留档旧冠军（K-ORG-006骨架，481字），生产冠军prompts/a0_chief.md已换血为候选instruction（[回看]闭环段+缺陷判读[P0|P1|P2]定级+--with-prev hop）。MASS首例全闭环：OPT1提案->影子对比->三轮判读（tie->champion存疑->candidate反转）->田丰复核->强模型重判->老田终审promoted。遗留：quality_check补「缺陷类判读须含[P?]」代码判据（proposal.risk③随同工单待开）；glm-4.6需资源包或coding端点支持后再议席位升级"
+ },
+ "K-ORG-128": {
+  "desc": "任务单账本修复:K-STOCK-162事件行混入tasks_202610.jsonl(无severity/status字段)致TaskStore.ls()读挂,a0_chief.py看板t[severity]KeyError,日报10-12起连续3天[warn]任务单读取失败,10张open单不可见(K-ORG-127补证档实锤);修法:ls()过滤event行(append-only不删行)+看板t.get兜底;验收EARS:当账本含事件行时ls()应跳过不抛错,当存在open任务时日报看板应列全单,A0判读可引用工单状态;关联催办:T-20261008-003(D1保守度校准P1,10-08开至今open)",
+  "branch": "task/K-ORG-128",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-128",
+  "status": "done",
+  "created": "2026-10-17 06:09:02",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-17 06:11:38"
+ },
+ "K-ORG-129": {
+  "desc": "D1保守度校准(T-20261008-003关联,B8:全篮子HOLD使J2失效,以5日样本为据):病灶实锤=run_shadow.py L79 score=REC_SCORE纯枚举(HOLD恒0,WATCH漏档与HOLD同分,confidence连续信息被丢弃),25行账本18个并列0致Spearman无分辨;修法:score连续化=枚举基数×confidence(STRONG_BUY+2/BUY+1/HOLD0/SELL-1/STRONG_SELL-2,新档WATCH=-0.5弱负证据),存量25行不重写(append-only),新决策起生效;EARS验收:当D1输出BUY conf=0.7时落账score=0.7,当输出WATCH时score<0且不与HOLD同分,当全篮子HOLD时J2明确报告并列零而非静默失效;关联:T-20261008-003(TaskStore侧同步置doing)",
+  "branch": "task/K-ORG-129",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-129",
+  "status": "done",
+  "created": "2026-10-17 06:17:06",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-17 06:19:16"
+ },
+ "K-ORG-130": {
+  "desc": "判读席位升级:MASS评估者瓶颈实录(K-ORG-127 round2复核发现9b两处归因错误)→a0_agent.py加glm通道(智谱包年anthropic兼容端点,--model glm/glm-4.6路由,判例:thinking块只拼text/max_tokens给足16k/围栏由parse_json_block剥)+第三轮重判(同补证档同两份产出,控制变量换模型);EARS验收:当--model glm/glm-4.6时判读走智谱端点并返回合法JSON,当GLM_API_KEY缺失时报错不降档静默,当round3判读产出时回填候选JSON judgement.history[2]并给终审建议",
+  "branch": "task/K-ORG-130",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-130",
+  "status": "done",
+  "created": "2026-10-17 06:21:52",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-17 06:33:10"
+ },
+ "K-ORG-131": {
+  "desc": "辩论质量基线校准(T-20261008-001+002双修,同源靶点docs/plans/2026-10-08_Day0辩论质量基线):[T-001]t1_bull.md加立场强制四条——r0强制多头视角开场陈述最有力多头论据/全程禁宣布对立立场(担忧只作风险提示附加)/立场是角色职责不是数据结论/保留L4纪律原条款;[T-002]interpreter.py收敛判据双条件——纯函数converge_state(a,b)返回(sim,converged,collapsed):sim>0.8且立场对立仍在(看多vs看空,口径同eval_shadow.stance_groups)才算提前收敛,sim>0.8但立场塌缩(同向或缺失)则走轮次上限且trace/node标记collapsed(B10:601318末轮0.78距阈值0.02,倒戈致立场塌缩被误判共识风险);EARS验收:当sim>0.8且T1看多T2看空时提前收敛(行为不变),当sim>0.8且立场同向时converged=False且collapsed=True,当立场词缺失时不误判收敛;TaskStore两单同步置doing",
+  "branch": "task/K-ORG-131",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-131",
+  "status": "done",
+  "created": "2026-10-17 06:37:01",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-17 06:56:17"
+ },
+ "K-ORG-132": {
+  "desc": "收编遗留untracked存量（K-ORG-131清场发现）：①K-ORG-117风控辩论三席prompt r1/r2/r3_risk.md（tools/legion_debate.py R1/R2/R3席在用，untracked未入库）②K-ORG-121交付物portal/legion.html（unify_nav注入nav.js版）——同e4fc3b4收编纪律：如实入库防丢失。## 验收判据 -WHEN git ls-files查4文件则全tracked -WHEN 导航守卫unify_nav --check则22页全绿含legion.html -WHEN git status对比则4文件不再untracked ## 非目标 不改任何文件内容（纯收编）不扩范围到其他untracked ## QA1 判读指令 逐条核对验收判据与git事实",
+  "branch": "task/K-ORG-132",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-132",
+  "status": "done",
+  "created": "2026-10-17 06:59:24",
+  "project": "general",
+  "owner": "dev/Trae",
+  "merged": "2026-10-17 07:14:23"
+ },
+ "K-ORG-133": {
+  "desc": "quality_check补判据④:链路/脚本缺陷类判读(读取失败/字段缺失/超时/失败等)末尾须含[P0|P1|P2]定级标注——K-ORG-127 promoted的proposal.risk③随同工单;对齐a0_chief.md新冠军输出契约;缺陷类行命中关键词但无[P?]即违规;验证:缺陷句含[P1]=PASS/缺陷句无标注=FAIL/无缺陷文本=不受影响 --owner Trae·Worker",
+  "branch": "task/K-ORG-133",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-133",
+  "status": "done",
+  "created": "2026-10-17 08:08:57",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 08:12:50"
+ },
+ "K-ORG-134": {
+  "desc": "DEFECT_KEYWORDS词表扩展+边界验证:补K-ORG-127补证档/任务单缺陷表述词(未闭环/未执行/阻断/报错/崩溃/出错等),正面语境豁免扩展(零降级等防误报——日报惯用'五票全done零降级');边界场景验证矩阵全量EARS:新词命中/旧词回归/否定语境/[回看]段/闭环结论/正面零X语境;K-ORG-133判据④行为不变 --owner Trae·Worker",
+  "branch": "task/K-ORG-134",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-134",
+  "status": "done",
+  "created": "2026-10-17 08:34:29",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 08:36:20"
+ },
+ "K-ORG-135": {
+  "desc": "defect_check误报修复:①回看豁免前缀修正(支持'- **[回看]**'列表前缀)②明日关注段豁免③标题行豁免(#'开头)④日志引用豁免([warn]/[skip])⑤否定隔词+条件假设豁免(无/零/若+间隔≤10字+关键词正则)——真实语料21份全扫实证,修复后误报行转PASS、真缺陷保留FAIL --owner Trae·Worker",
+  "branch": "task/K-ORG-135",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-135",
+  "status": "done",
+  "created": "2026-10-17 08:45:53",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 08:48:01"
+ },
+ "K-ORG-136": {
+  "desc": "判读席位升级glm-5.3:glm_chat接入coding端点(/api/coding/paas/v4,OpenAI兼容)替代anthropic端点(4.6通道对coding计划key报429/404);key优先级zhipu_key(audit_ai_config.json)>GLM_API_KEY——实测6546b系coding key跑5.3/5.3-flash全通;思考型解析(reasoning_content与content块,只拼正文);席位模型默认glm-5.3;EARS:同key实测5.3出稿+anthropic旧路径兼容回归 --owner Trae·Worker",
+  "branch": "task/K-ORG-136",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-136",
+  "status": "done",
+  "created": "2026-10-17 09:06:13",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 09:08:11"
+ },
+ "K-ORG-137": {
+  "desc": "判读链三真bug修复:glm_chat网络错误未包装LLMError(429/404/超时裸traceback,降档提示失效);run_compare判读席位缺省仍回退9b弱评估者(round2两处归因错误会复发);run_shadow.parse_decision正则遇嵌套花括号JSON失配样本静默缩水。修法:urlopen+json.load包try/except转LLMError;run_compare缺省模型glm/glm-5.3(点评主链仍chief binding 9b不动);parse_decision改花括号计数法提取JSON。 --project portal",
+  "branch": "task/K-ORG-137",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-137",
+  "status": "aborted",
+  "abort_reason": "merge 空转丢内容：worker 未在 worktree commit 即跑 merge，分支无提交、merge no-op 后 --force 清场删除未提交改动；修复内容由 K-ORG-138 重建落地（commit 5444472）",
+  "created": "2026-10-17 09:51:29",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 09:56:34"
+ },
+ "K-ORG-138": {
+  "desc": "K-ORG-137内容重建并正确合并:K-ORG-137工单merge空转(worker未commit致--force清场丢内容),本单重施三修复并先commit再merge——glm_chat网络错误转LLMError(429/404/超时/非JSON);run_compare缺省模型glm/glm-5.3(点评主链仍chief binding);parse_decision花括号计数法提取JSON(嵌套花括号失配修复)。 --project portal",
+  "branch": "task/K-ORG-138",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-138",
+  "status": "done",
+  "created": "2026-10-17 09:58:13",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 10:00:03"
+ },
+ "K-ORG-139": {
+  "desc": "devtask merge防呆(P0-1):merge前校验分支是否有提交(master..branch计数),分支无提交即拒绝合并并保留worktree——K-ORG-137亲历:未commit即merge致no-op+--force清场丢内容。实现:cmd_merge开头复用_ahead_behind, ahead==0时置review状态+guard_fail事件回流+不清场。 --project tools",
+  "branch": "task/K-ORG-139",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-139",
+  "status": "done",
+  "created": "2026-10-17 10:05:35",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 10:07:05"
+ },
+ "K-ORG-140-aborted-100734": {
+  "desc": "防呆验证专用(验证后drop):不开任何改动不commit,直接merge应被防呆拒绝且worktree保留",
+  "branch": "task/K-ORG-140",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-140",
+  "status": "aborted",
+  "created": "2026-10-17 10:07:21",
+  "project": "general",
+  "owner": "unknown-agent",
+  "abort_reason": "防呆端到端验证通过,清理验证工单"
+ },
+ "K-ORG-141": {
+  "desc": "僵尸单清场:TaskStore 6张open(10-08/09开出零流转)cancel留痕转devtask队列;devtask 10张死记录drop(K-PUSH-003/004空数据单、K-ORG-073催办达成、K-STOCK-211已由372收口、K-STOCK-374/legion-1017004821分支worktree已失、K-PUSH-001/K-STOCK-412/413/414有工作描述但痕迹已失无法核验);清理K-STOCK-374残留worktree目录;产出清场报告随单merge。 --project portal",
+  "branch": "task/K-ORG-141",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-141",
+  "status": "done",
+  "created": "2026-10-17 10:14:38",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 10:17:50"
+ },
+ "K-ORG-142": {
+  "desc": "存量收编·零风险批次:第0步补.gitignore规则(vendor/.models/ffmpeg/db_migration日志等86项消噪+sa_push_queue.jsonl untrack)+第1步收编docs31+gzh6+jev-eval/docs2+feedback_flow+config/ports.md+data/e2e+k_stock plan_review+db_migration6(纯文档/账本/脚本);git add按精确路径禁-A,待定项(osint_video/portal/registry/zerobound-kg)不动。 --project portal",
+  "branch": "task/K-ORG-142",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-142",
+  "status": "done",
+  "created": "2026-10-17 10:40:02",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 10:53:55"
+ },
+ "K-ORG-143": {
+  "desc": "存量收编第2步源码批:quant_backtest雪球子系统25项(26项-数据库模块草案.md已不在盘)+tools军团工具链18项+根目录散件5项(_run_hidden.vbs/s4u_guard.ps1/probe1.ps1/start_jev_feed.ps1/start_legion_ops.ps1);纯源码/脚本/模板,不碰待定项(osint_video/portal/registry/zerobound-kg);git add精确路径禁-A",
+  "branch": "task/K-ORG-143",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-143",
+  "status": "done",
+  "created": "2026-10-17 11:14:34",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 11:17:24"
+ },
+ "K-ORG-144": {
+  "desc": "安全补漏:quant_backtest/config/xq_tokens.json雪球真凭据已落盘(盘点时未落盘,现已被xueqiu工具链生成),补.gitignore规则quant_backtest/config/xq_*.json防误入库,merge防呆三守卫",
+  "branch": "task/K-ORG-144",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-144",
+  "status": "done",
+  "created": "2026-10-17 11:18:01",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 11:18:35"
+ },
+ "K-ORG-145": {
+  "desc": "存量收编第3步:agent_platform 98项(hr人设档案85+prompts6+源码契约13);剔除并行施工4文件(adapters/event_adapter+task_adapter+tests2)与待定registry/team_academy.json;与K-ORG-116/117/119/121规划文档核对;git add精确路径禁-A",
+  "branch": "task/K-ORG-145",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-145",
+  "status": "done",
+  "created": "2026-10-17 11:24:00",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 11:56:24"
+ },
+ "K-PUSH-001-aborted-101503": {
+  "desc": "推送分发中台·双引擎架构一期：P0换机断链修复(push_liveness/push_eval_reminder/pg_robot_watchdog两份/p_g_robot LARK_ROOT)+P1数据引擎底座埋点(feishu_client/send_feishu接push_flow全量流水)",
+  "branch": "task/K-PUSH-001",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-PUSH-001",
+  "status": "aborted",
+  "created": "2026-10-16",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "note": "Trae就地修复未建场(循K-ORG-073判例)。架构拍板(2026-10-16与老板确认)：双引擎——数据引擎=8097+底座埋点(确定性,零单点,现在就做)；智能引擎=Hermes治理面(venv重建后上岗)。三接口：pulse转调/HITL审批卡/治理闭环。借鉴Novu概念模型(Gate链/digest/HITL)不引入其多服务架构。审计依据：70+推送点经feishu_client/send_feishu收敛点(K-STOCK-228)，底座埋点=全量流水覆盖且业务方零改动。范围P0+P1；P2商业化(H5深链/分享token)与P3 Hermes(venv/pulse连接器)另行排期。判例遵循：K-ORG-112(Hermes只做门面转调,调度本体绝不进门面) | 完工(2026-10-16)：P0实际修7处=tools/quant_backtest各push_liveness+push_eval_reminder+pg_robot_watchdog(SEND_FEISHU改__file__推导,共6处)+p_g_robot.py LARK_ROOT改expanduser；P1=push_flow.py增infer_kind()+stats排除auto:行(追溯账/计费账隔离防双计)+feishu_client.py真实POST成败两处埋点(channel=openapi,预检失败不记)+send_feishu.py三处埋点(channel=lark-cli:无回退/回退成功/双身份败)，_flow_record全try/except吞异常不伤主链路。验证：10文件py_compile全过；push_flow.py自测stats正常；端到端干跑feishu_client与send_feishu各写入auto:行后清理；tasks.json JSON校验过。遗留：P2商业化(H5深链/分享token)、P3 Hermes(venv重建/pulse连接器/HITL推广/治理循环)另行排期",
+  "abort_reason": "K-ORG-141清场:有工作描述但分支/worktree已失无法核验merge,推送中台修复如需落地请重开并走守卫合并"
+ },
+ "K-PUSH-002": {
+  "desc": "推送中台二期·商业化：H5深链/分享token + 语音反馈调优闭环(并入P2一起开发,老板2026-10-16拍板)",
+  "branch": "task/K-PUSH-002",
+  "worktree": "C:\\\\项目\\\\老田的AI助手\\\\.worktrees\\\\K-PUSH-002",
+  "status": "done",
+  "created": "2026-10-16",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "note": "承接K-PUSH-001挂账的P2范围并扩容。A.商业化基座：股票下沉H5详情页深链+分享token(可分享/可追溯/为付费分层预留)。B.语音反馈调优闭环：客户语音(H5入口+ASR)→LLM结构化为调优请求单(客户不直改模型,只投单)→审核闸门(规则初筛+人工复审,驳回即回执,主方案=飞书审批卡人工批,P3 Hermes上岗后升级,循K-ORG-112判例不硬依赖Hermes)→沙盒验证(回测新vs现行差异报告)→灰度落地(VIP私有参数空间先行,共享模型调整走全链审核)→效果追踪流水回流(feedback_flow照抄push_flow auto:双账模式)。缠论理解差异等主观逻辑调整强制走沙盒回测。依赖：H5页面为本单自有范围；审批卡走飞书现有能力零新增服务。状态todo未开工,待K-PUSH-001 review后启动 | 完工(2026-10-16)：新建3模块——feedback_flow.py(根目录,白名单schema+O_APPEND原子账+requests_view状态机,receipt不计入状态)+portal/share_tokens.py(HMAC令牌,密钥work/share_secret.json独立于apikey,issue/visit账)+portal/tune_gate.py(submit/approve/reject/deploy四动作+意图规则解析chanlun|risk|freq|param|opinion+scope私有/共享判定+审批卡/回执卡fail-safe+沙盒草案bt2_params_hint+VIP空间vip_overrides.json原子写)。接入——8097 dispatch挂tune_submit/approve/reject/deploy/list+share_gen六action,/api/state增tune/share概览;feishu_bot挂调优/审批两指令(语音=飞书客户端转文字,零自建ASR,K-STOCK-411绕行),HELP_MD更新;server_gate增/s/<token>GET(302带码进板)+POST(beacon204);subscribe订阅卡挂2.0原生按钮(K-STOCK-354判例,behaviors.open_url)带key+st;sync_publish白名单未动(st纯前端降级)。验证:7文件py_compile全过;端到端干跑26断言ALL PASS(意图3例/闭环submit→approve→deploy全程/驳回不可再审/白名单3态/令牌gen-verify-visit-坏token拒绝/dispatch接线),修2真bug(receipt污染状态机+verify误检body前缀);干跑数据全清理,share_secret.json保留。生效需重启:feishu_bot_ws+8097+server_gate三常驻;subscribe下次任务自动生效。待老板:tune_admins.json配白名单open_ids+chat_id(不配=内测开放,上线收费前必须);遗留:沙盒自动并行回测(P3 Hermes治理循环)、H5语音按钮(公网静态站无后端,K-STOCK-411)、VIP空间策略侧消费接线 | 部署收尾(2026-10-16晚)：tune_admins.json已配(白名单=老板bot域id ou_5c9c4f3c,chat_id留空走个人降级,每次现读热生效);真链路冒烟PASS(TUNE-261016-7232:submit→审批卡送达→approve→回执→deploy写入vip_overrides,冒烟账/流水/vip已全清)。坑1·飞书双app域分裂:发卡/推送走发送app域,bot长连走cli_aa3e4f1b58f85cdd域,两域open_id不互通(API报99992361 cross app)——发送域老板=ou_50a95455(bot指令校验用此id不通过)/bot域老板=ou_5c9c4f3c(发送app投递此人不达),bot域p2p发卡必败ok:false→chat_id留空降级send_feishu旧域个人实测送达(push_flow铁证),两域id勿混用;坑2·FeishuBotWatchdog电池限制:任务设'不用电池启动+电池时停止',笔记本放电中(55%)致15:16后触发全静默排队=watchdog假死根因(schtasks /run报成功也不执行,任务卡Queued),已提权移除两条电池限制(DisallowStartIfOnBatteries/StopIfGoingOnBatteries→False)。SYSTEM重启完成:bot 20:24拉起20:28 connected新码(调优/审批指令激活),8097新码tune_list验证ok;附注:venv pythonw为launcher→worker两层父子进程(同cmdline),非双实例,冷启动约3分钟;老板飞书发'调优 …'终验通过后可关单\n终验PASS(2026-10-17 00:02)：飞书真实消息全链闭环 TUNE-261016-bb91 received→parsed(chanlun/000001)→approved→verified(沙盒草案)→receipt→deployed(vip_overrides 写入\"飞书客户\")。审批卡/回执卡经降级通道真实送达。注意：bot 群聊消息需 @bot 才处理（终验中曾因此跳过）。终验数据留档为生产首单，未清理。"
+ },
+ "K-PUSH-003-aborted-101800": {
+  "title": "推送中台收口与动线管理（hub 统一入口 + 动线总览）",
+  "status": "aborted",
+  "created": "2026-10-17",
+  "plan": "P1（2026-10-17 用户拍板按原型开工）",
+  "note": "P1 四项全落地并 E2E 验证（2026-10-17）：① 8097 /api/send 闸门（静默时段 critical 豁免/配额 quota_check 四元组判例/拦截落流水 ok=false）② feishu_client 内置 _hub_send fail-safe（hub 不可达返回 None 回落直发，实测死端口直发成功；HUB_BYPASS 环境变量逃生门）③ send_msg 一处收口（send_feishu/feishu_card_v2/全站子进程自动过闸；闸内 via_hub=False 防环）④ /api/state 挂 flowmx + PAGE 动线总览分区（源/HUB 闸门/触点三列条形 + 拦截明细表，5s 刷新）。真发验证：via:hub 过闸送达 openapi code=0，流水 kind=push_admin|hub-test 归准；400 失败单也落账进 deny 表。部署判例：8097 宿主 SYSTEM 计划任务旧进程用户态杀不掉且守护不换血 → launch_push_admin.py 加 marker 一次性强重置（touch C:/Temp/push_admin_restart.marker，下一跳 SYSTEM 杀旧拉新，用后即删）。PS5 判例再证：JSON body 用 UTF8.GetBytes 无 BOM；/api/send content 需 OpenAPI 格式 JSON 字符串（text 包 {\"text\":...}）。P2 按钮/模板、P3 调度全量、商业化分发矩阵后续工单。",
+  "abort_reason": "K-ORG-141清场:空数据单(branch/worktree/desc全空),开单未落地,僵尸记录"
+ },
+ "K-PUSH-004-aborted-101800": {
+  "title": "按钮注册表与卡片模板 v3 规范（交互统一归档）",
+  "status": "aborted",
+  "created": "2026-10-17",
+  "plan": "P2（原型 btns/tpl 两分区落地）",
+  "note": "勘察实证三断点：卡片回调三条互不相通消费链（feishu_bot_ws tag 前缀 er:*/ctl:*/dim:*、api_misc HTTP act:、lark_card_handler action:）+ 按钮 value 三套命名并存 + 无集中注册表。P2 范围：① portal/card_actions.py 统一注册表（登记现有全部动作）+ action_log.jsonl 审计（who/when/card/result）+ bot 侧统一分发入口（老前缀兼容）+ HUB /api/send 卡片按钮校验（默认 warn 观察不误伤，可切 enforce）② feishu_card_v2.build_v3 五域色模板（蓝媒/紫交互/绿例行/金回执/红预警），动作区仅注册按钮 + footer 审计号 ③ 样板链路：tune_gate 审批卡升 v3 紫域 + 通过/驳回回调按钮（走 bot WS 链手机可点，破'8097 绑 127.0.0.1 点不开'局限——回调按钮不经 8097）④ 8097 按钮归档分区（注册表/今日触发/事件流水/启停）。存量发卡方（news/jev/km）迁移 v3 留 P3+。P2 四项全落地并 E2E 验证（2026-10-17）：① card_actions.py 31 动作注册+action_log.jsonl 审计+dispatch 分发（正例 tune_approve 落行 ok、反例未注册拒截）② build_v3 五域色模板（紫审批/金回执卡实证送达）③ tune_gate 两卡升 v3+回调按钮（2.0 behaviors callback 与 1.0 tag:action 卡二分实验均零回调，定论为飞书后台 card.action.trigger 事件订阅未开通，暂走文本指令兜底'审批 <id> 通过|驳回'，P3 修复）④ 8097 actmx 分区（today 计数+events 流水实证 tune_approve today+1）；E2E：真实审批 TUNE-261017-024f approved→verified→receipt 回执卡送达。部署判例：守护8097 计划任务 2min 执行上限+CIM 慢查询超限→任务被强杀且 Job 连坐杀掉刚 Popen 的 bot（launch_push_admin 单次 CIM 25s+整段 try/except 修复，8097/bot 双灭实证翻案）；用户终端 CIM 读不到 SYSTEM 进程 CommandLine（bot 判活以 proc_dump.txt/443 扫描为准）；bot marker 换血+树根 dedup 实战收敛外部拉起的双树竞争；hub 400 随旧 8097 实例换血消失；start_feishu_bot running() CIM 超时未捕获致无声崩溃（已 try/except 留痕）；on_msg sender 提取恒空（msg.sender.sender_id.open_id 取值失败，recv 恒 sender=-）→白名单内测降级为空=开放（tune_admins.json note 记录，P3 修复 sender 后必须重配，上线收费前必须）。",
+  "abort_reason": "K-ORG-141清场:空数据单(branch/worktree/desc全空),开单未落地,僵尸记录（K-PUSH-005 更正：'开单未落地'不实——P2 四项已落地并 E2E 验证，commit 2c2a9ea 在库，详见 K-PUSH-005 note）"
+ },
+ "K-PUSH-005": {
+  "title": "卡片回调接通 + sender 提取修复（K-PUSH-004 P3 遗留双项）",
+  "status": "done",
+  "created": "2026-10-17",
+  "plan": "P3（SDK 实证翻案 + monkey-patch 路由 + 白名单重配）",
+  "note": "前情更正：K-PUSH-004 P2 已全落地并 E2E（commit 2c2a9ea：card_actions 31 动作注册/build_v3 五域/actmx 分区/E2E 真实审批 024f 全链），清场单 abort 标注'开单未落地'不实。本单立项即翻案 K-PUSH-004 另一结论：'飞书后台 card.action.trigger 订阅断'不准——真凶是本 venv lark_oapi ws client _handle_data_frame 对 CARD 帧直接 return 静默丢弃（SDK 源码实证），register_p2_card_action_trigger 的 handler 永远收不到；dispatcher 侧 _do_without_validation 本就支持 p2.card.action.trigger 键路由。sender 恒空同源可修：P2ImMessageReceiveV1Data._types={sender,message} 平级，旧代码 msg.sender 必 AttributeError 被吞。落地：① _patch_ws_card_route 方法级替换 _handle_data_frame（CARD 与 EVENT 同路派发，须在 cli.start 前）② on_msg sender 改 data.event.sender.sender_id.open_id ③ on_card 入口留痕（断链定位三态：帧未达/解析后静默/handler 内异常）④ sender 修复后重配 tune_admins.json 白名单（撤内测空开放降级）⑤ E2E：按钮点击→dispatch→action_log→actmx。若补丁后仍零回调再查飞书后台订阅（控制台：事件与回调→卡片回传交互）。11:25 阶段收尾：①补丁实战实证——10:27:37 bde0 卡回调 card cb recv 落日志、action_log 归档 who=operator open_id（ou_50a9...），SDK 丢 CARD 帧判例坐实；②sender 修复已上线但文本链验证被事件黑洞挡住：10:40 后五次新连接+用户四次操作零到达，本地全排除（单实例 11:11:35 connected、唯一 443、探针 API 直发成功且 message_id 反查落 oc_3d55... p2p 会话用户已读、后台订阅用户确认正常）→判定飞书服务端对当日 14 次重连的推送限流，等自愈窗口复测后补验 recv sender 字段；③白名单已重配（open_ids=用户 ou_50a9...，is_admin 逐次现读文件写盘即生效）；④判例：探针判定法——send code=0≠送达，须 message_id 反查 chat_id+用户确认；p2p 会话 owner 反查可验 open_id 归属；PS5.1 无 BOM GBK 乱码致 schtasks 假报'找不到文件'，含中文命令 inline 直传。12:15 终验（黑洞全解除，四件套归档）：EVENT 通道 12:05:32 恢复且 recv sender=ou_50a9... 首次完整落地（sender 修复实证）；CARD 通道 12:12:58 恢复（比 EVENT 晚 7 分钟，坐实分通道限流）——card cb recv(f6a5)→card v3:tune_approve ok=True（成功路径首验）→action_log 12:13:00 result=ok→f6a5 stage parsed→verified→回执卡送达用户；白名单（12:0x 重配）校验通过（open_id 非空走 is_admin 精确匹配）。五项范围全闭环，含 K-PUSH-004 结论双翻案（后台订阅断→SDK 丢 CARD 帧；sender 恒空→字段平级路径错）。",
+  "last_wiring_key": "devtask:K-PUSH-005:review>done",
+  "merged": "2026-10-17 14:57:36"
+ },
+ "K-STOCK-114a": {
+  "desc": "指挥台加Agent工时榜(按事件数排序)",
+  "branch": "task/K-STOCK-114a",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-114a",
+  "status": "done",
+  "created": "2026-10-11 09:03:07",
+  "owner": "unknown-agent",
+  "merged": "2026-10-11 09:07:02"
+ },
+ "K-STOCK-114b": {
+  "desc": "check_ports 加 --json 输出：注册表+实 listening+差异输出为 JSON（M4 彩排实弹工单）",
+  "branch": "task/K-STOCK-114b",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-114b",
+  "status": "done",
+  "created": "2026-10-11 12:01:31",
+  "owner": "CodeBuddy",
+  "merged": "2026-10-11 13:00 (巡检补登记: b2fb8c8+dde2939 已并入 master)"
+ },
+ "K-STOCK-116-aborted-145108": {
+  "desc": "学院原型门禁与RAG评测修复：time_split、端口、时序证据",
+  "branch": "detached@a0bcb57",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\k-stock-116-time-split\\老田的AI助手 (已注销·残件已进回收站 2026-10-11 18:07)",
+  "status": "aborted",
+  "created": "2026-10-11 12:20:00",
+  "owner": "Codex",
+  "note": "含严格 ISO 日期解析；devtask 分支创建受 E:\\老田的AI助手\\.git ACL 阻断，修复落在 new-chat-2 原型目录；训练与交易门禁未开启。",
+  "abort_reason": "空转待回收(bf4ac94主控定调)·worktree零成果·原型产物留Documents new-chat-2未收编"
+ },
+ "K-STOCK-116-history": {
+  "desc": "历史数据分片回补与可恢复 staging 入口",
+  "branch": "(detached worktree: codex/k-stock-116-history)",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\k-stock-116-history\\老田的AI助手 (已注销·整树隔离于 C:\\Temp\\k116_history_quarantine, 空壳已回收 2026-10-11; staging 数据已归主仓 quant_backtest/data/tushare_staging)",
+  "status": "done",
+  "created": "2026-10-11 13:00:00",
+  "owner": "Codex",
+  "merged": "2026-10-11 14:50 (巡检补登记: 8357afd 已代收口并入 master)",
+  "note": "隔离 worktree 已完成；提交/merge 曾被共享 .git/worktrees index.lock 权限阻断，成果由主控以 8357afd 代收口并入 master，状态补登归档",
+  "cleanup_hold": "2026-10-11 18:10 全部收口：①orchestrator 击杀后曾复活并跑到 2025 批次, 已整树端窝——worktree 目录搬入 C:\\Temp\\k116_history_quarantine (其下条命令必踩空), 空壳进回收站; ②数据终捞完成: 主仓 staging 2401 文件/487.8MB/29 批 (2023×10+2024×12+2025×7, 超集), 隔离区留 2130 文件备份; ③盘上残件清理: .worktrees T-DEMO/114a/114b 与 codex k-stock-116-time-split 已进回收站; k-stock-122-port-json 疑似被主控复用注册, 未动。唯一移交项已完成(2026-10-11 18:5x 本线代执行): runstore 路径重指——文本 1097 文件/6062 处 + sqlite 四路径列 24126 行(units.plan/events.payload 各12040, runs.resource/plan 各23)全部改指 E:\\老田的AI助手; 故意保留 runs.request_id 28 行(含'k-stock-116-history'为ID语义非路径)与 resource_locks 1 行过期锁(无害); sqlite 原版备份 warehouse_runs.sqlite3.bak_k116, 文本原版在隔离区。日志: C:\\Temp\\k116_staging_salvage.log"
+ },
+ "K-STOCK-117": {
+  "desc": "本地 Ollama 工具集核心库与测试重整",
+  "branch": "task/K-STOCK-117",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\k-stock-117-core\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-11 12:40:00",
+  "owner": "Codex·Core",
+  "merged": "2026-10-11 15:08:52"
+ },
+ "K-STOCK-118": {
+  "desc": "本地 Ollama 工具集 Web 聊天恢复与验证",
+  "branch": "task/K-STOCK-118",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\k-stock-118-web\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-11 12:40:00",
+  "owner": "Codex·Web",
+  "merged": "2026-10-11 15:04:37"
+ },
+ "K-STOCK-119": {
+  "desc": "本地 Ollama RAG 知识库实现与测试",
+  "branch": "task/K-STOCK-119",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\k-stock-119-rag\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-11 12:40:00",
+  "owner": "Codex·RAG",
+  "merged": "2026-10-11 15:11:39"
+ },
+ "K-STOCK-122": {
+  "desc": "修复 check_ports JSON strict_fail 字段类型",
+  "branch": "task/K-STOCK-122",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\k-stock-122-port-json\\老田的AI助手 (实际干活地, 原误记 .worktrees\\K-STOCK-122; 已注销·目录已清 2026-10-11)",
+  "status": "done",
+  "created": "2026-10-11 15:13:54",
+  "owner": "unknown-agent",
+  "merged": "2026-10-11 15:17:20"
+ },
+ "K-STOCK-123": {
+  "desc": "修复 check_ports 回归测试根目录导入路径",
+  "branch": "task/K-STOCK-123",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-123",
+  "status": "done",
+  "created": "2026-10-11 15:19:00",
+  "owner": "unknown-agent",
+  "merged": "2026-10-11 15:22:09"
+ },
+ "K-STOCK-124": {
+  "desc": "审计并修复 E 盘项目下一处可复现代码缺陷",
+  "branch": "task/K-STOCK-124",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-124",
+  "status": "done",
+  "created": "2026-10-11 15:39:38",
+  "owner": "Codex·Audit",
+  "merged": "2026-10-11 15:56:41"
+ },
+ "K-STOCK-125": {
+  "desc": "RAG-Web 联动：知识库问答接口与网页模式",
+  "branch": "task/K-STOCK-125",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-125",
+  "status": "done",
+  "created": "2026-10-11 15:45:00",
+  "owner": "Codex·主控",
+  "merged": "2026-10-11 17:29:56"
+ },
+ "K-STOCK-126-aborted-173201": {
+  "desc": "RAG-Web 后端适配层",
+  "branch": "task/K-STOCK-126",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-126-backend",
+  "status": "aborted",
+  "created": "2026-10-11 15:50:00",
+  "owner": "Codex·RAG后端",
+  "abort_reason": "成果已由 K-STOCK-125 集成收口"
+ },
+ "K-STOCK-127-aborted-173203": {
+  "desc": "RAG-Web 页面交互层",
+  "branch": "task/K-STOCK-127",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-127-ui",
+  "status": "aborted",
+  "created": "2026-10-11 15:50:00",
+  "owner": "Codex·Web UI",
+  "abort_reason": "成果已由 K-STOCK-125 集成收口"
+ },
+ "K-STOCK-128": {
+  "desc": "知识库治理与只读RAG基线评测",
+  "branch": "detached@7153479",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\k-stock-128-rag-governance\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-11 17:40:00",
+  "owner": "Codex·主控",
+  "note": "隔离 worktree 提交受共享 .git index.lock ACL 阻断；已完成测试并由主控在 master 代收口，训练与金融执行门禁保持关闭。",
+  "merged": "2026-10-11 18:24:16 (主控代收口: 0704751)"
+ },
+ "K-STOCK-129": {
+  "desc": "接线 todays-picks 告警包装并补回归断言",
+  "branch": "task/K-STOCK-129",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-129",
+  "status": "done",
+  "created": "2026-10-11 18:50:52",
+  "owner": "Codex·主控",
+  "merged": "2026-10-11 19:00:52"
+ },
+ "K-STOCK-130": {
+  "desc": "RAG 使用 think=false 降低 qwen3.5 首次回答延迟",
+  "branch": "task/K-STOCK-130",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-130",
+  "status": "done",
+  "created": "2026-10-11 18:52:55",
+  "owner": "unknown-agent",
+  "merged": "2026-10-11 19:03:19"
+ },
+ "K-STOCK-131": {
+  "desc": "event_shadow 日更调度补缺——K266 收线漏配调度致态势页事件停更自10-09",
+  "branch": "task/K-STOCK-131",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-131",
+  "status": "done",
+  "created": "2026-10-11 18:58:25",
+  "owner": "unknown-agent",
+  "merged": "2026-10-11 18:59:36"
+ },
+ "K-STOCK-132": {
+  "desc": "接入只读 market 绩效账本页与 API",
+  "branch": "task/K-STOCK-132",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-132",
+  "status": "done",
+  "created": "2026-10-11 19:36:22",
+  "owner": "Codex·主控",
+  "merged": "2026-10-11 19:50:41"
+ },
+ "K-STOCK-135": {
+  "desc": "飞书卡片按钮控制回路-手机端控制后端四域(量化/推送/告警/门户)",
+  "branch": "task/K-STOCK-135",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-135",
+  "status": "done",
+  "owner": "Trae·Worker",
+  "created": "2026-10-11 22:08:11",
+  "merged": "2026-10-11 22:47:32"
+ },
+ "K-STOCK-136-aborted-171125": {
+  "desc": "补齐来源证据并重建训练候选快照",
+  "branch": "detached@e3870fe",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\source-evidence-snapshot\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-11 23:05:17",
+  "owner": "Codex·Evidence",
+  "note": "devtask new 因共享 .git refs ACL 失败，改用已注册 native detached worktree；产物同步回主仓 work 目录 | QA1-R4质检:通过(待merge)——work/academy-source-evidence-v0.1/证据目录+构建脚本在场",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/codex_worktrees_backup_20261014.bundle)"
+ },
+ "K-STOCK-137": {
+  "desc": "飞书卡片按钮联动审计修复:_esc缺失+on_card线程化",
+  "branch": "task/K-STOCK-137",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-137",
+  "status": "done",
+  "created": "2026-10-11 23:12:27",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-11 23:15:52"
+ },
+ "K-STOCK-138": {
+  "desc": "验证发现回归：_handle_card平移丢send_card名——按钮发卡分支NameError被吞",
+  "branch": "task/K-STOCK-138",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-138",
+  "status": "done",
+  "created": "2026-10-11 23:30:28",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-11 23:44:13"
+ },
+ "K-STOCK-139": {
+  "desc": "修复feishu_bot_ws过时注释——L9宣称dim按钮交互与schema2.0实际不符",
+  "branch": "task/K-STOCK-139",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-139",
+  "status": "done",
+  "created": "2026-10-12 00:00:46",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-12 00:05:16"
+ },
+ "K-STOCK-140": {
+  "desc": "门户详情页链接打不开——PORTAL_BASE指向8080旧口且Tailscale接口无监听，收敛8734",
+  "branch": "task/K-STOCK-140",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-140",
+  "status": "done",
+  "created": "2026-10-12 00:13:15",
+  "owner": "Trae·Worker",
+  "merged": "2026-10-12 00:16:16"
+ },
+ "K-STOCK-141": {
+  "desc": "修复 bot 回复路径 ImportError：ReplyMessageBody→ReplyMessageRequestBody（send_text/reply_card 两处）",
+  "branch": "task/K-STOCK-141",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-141",
+  "status": "done",
+  "created": "2026-10-12 00:59:58",
+  "owner": "CodeBuddy·A",
+  "merged": "2026-10-12 01:05:44"
+ },
+ "K-STOCK-145-aborted-171126": {
+  "desc": "Ollama 工具集启动与健康检查",
+  "branch": "managed worktree: ollama-health",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\ollama-health\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·Health",
+  "commit": "6bc5d85",
+  "note": " | QA1-R2质检:部分通过——ollama_rag_smoke.py+test在场,AI/111111/ollama_client.py已修改未提交;建议merge时一并入库",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/codex_worktrees_backup_20261014.bundle)"
+ },
+ "K-STOCK-146-aborted-171235": {
+  "desc": "RAG 增量索引、持久化与文档元数据",
+  "branch": "managed worktree: rag-index",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\rag-index\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·RAG",
+  "note": "主控接管隔离 worktree 完成；Git 提交未生成 | QA1-R1质检:通过(待merge)——产物回流AI/111111(rag_web_backend+web_chat+web_ui+3test共368行实质改动,与R3批共享载体整体验证·测试同增)",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/codex_worktrees_backup_20261014.bundle)"
+ },
+ "K-STOCK-147-aborted-171338": {
+  "desc": "Web 聊天历史、状态与来源展示体验",
+  "branch": "managed worktree: web-ux",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\web-ux\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·Web",
+  "note": "Agent 完成；Git 提交受 index.lock 权限阻断 | QA1-R3质检:通过(待merge)——同载体AI/111111回流368行+test_web_ui/test_web_chat同增,五单耦合验证整体通过",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/codex_worktrees_backup_20261014.bundle)"
+ },
+ "K-STOCK-148": {
+  "desc": "代码审查、可复现BUG修复与研发路线制定",
+  "branch": "task/K-STOCK-148",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-148",
+  "status": "done",
+  "created": "2026-10-12 01:34:23",
+  "owner": "Codex·A",
+  "merged": "2026-10-12 01:55:20"
+ },
+ "K-STOCK-151": {
+  "desc": "训练候选治理与只读证据缺口报告",
+  "branch": "task/K-STOCK-151",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-151",
+  "status": "done",
+  "created": "2026-10-12 06:20:21",
+  "owner": "Codex·A",
+  "merged": "2026-10-12 06:32:50"
+ },
+ "K-STOCK-152-aborted-171430": {
+  "desc": "Ollama Web 启动前自检与一键启动入口",
+  "branch": "managed worktree: ollama-launcher",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\ollama-launcher\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·主控",
+  "note": "实现与 6/6 测试已完成；提交受 .git/index.lock 权限阻断 | QA1-R3质检:通过(待merge)——同载体AI/111111回流368行+test_web_ui/test_web_chat同增,五单耦合验证整体通过",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-153": {
+  "desc": "将增量 RAG 索引接入 Web 服务并展示来源元数据",
+  "branch": "managed worktree: rag-web-incremental",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\rag-web-incremental\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-12",
+  "owner": "Codex·主控",
+  "note": "RAG-Web 增量索引接线完成；37 个联合测试通过；待 Git 收口 | QA1-R1质检:通过(待merge)——产物回流AI/111111(rag_web_backend+web_chat+web_ui+3test共368行实质改动,与R3批共享载体整体验证·测试同增)",
+  "merged": "2026-10-14 17:07:12"
+ },
+ "K-STOCK-154-aborted-171521": {
+  "desc": "RAG 索引持久化与服务重启恢复",
+  "branch": "managed worktree: rag-index-persistence",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\rag-index-persistence\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·主控",
+  "note": "RAG 索引持久化完成；39 个联合测试通过；8899 已重启 | QA1-R1质检:通过(待merge)——产物回流AI/111111(rag_web_backend+web_chat+web_ui+3test共368行实质改动,与R3批共享载体整体验证·测试同增)",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-155": {
+  "desc": "RAG 离线评测回归与质量报告",
+  "branch": "managed worktree: rag-eval",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\rag-eval\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-12",
+  "owner": "Codex·Eval",
+  "note": "离线评测回归与报告完成；51 项联合测试通过 | QA1-R1质检:通过(待merge)——产物回流AI/111111(rag_web_backend+web_chat+web_ui+3test共368行实质改动,与R3批共享载体整体验证·测试同增)",
+  "merged": "2026-10-14 17:07:15"
+ },
+ "K-STOCK-156-aborted-171614": {
+  "desc": "Web 配置与 RAG 索引状态展示",
+  "branch": "managed worktree: web-status",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\web-status\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·Web",
+  "note": "Web 运行状态区完成；51 项联合测试通过 | QA1-R1质检:通过(待merge)——产物回流AI/111111(rag_web_backend+web_chat+web_ui+3test共368行实质改动,与R3批共享载体整体验证·测试同增)",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-157-aborted-171615": {
+  "desc": "RAG 索引管理 CLI：状态、重建与校验",
+  "branch": "managed worktree: index-cli",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\index-cli\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·Tools",
+  "commit": "1281fb4",
+  "note": "索引管理 CLI 完成；21 项 CLI/RAG 测试通过 | QA1-R1质检:通过(待merge)——产物回流AI/111111(rag_web_backend+web_chat+web_ui+3test共368行实质改动,与R3批共享载体整体验证·测试同增)",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-158-aborted-171741": {
+  "desc": "将 Ollama 健康检查接入 ops health_check",
+  "branch": "managed worktree: ops-health-integration",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\ops-health-integration\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·Ops",
+  "note": "实现与离线测试已回流主工作区；5项专项/健康测试通过；提交/merge 受 .git index.lock 写权限阻断 | QA1-R2质检:通过(待merge)——ops/health_check.py实证在场;原index.lock阻断点已消失,可走团队线merge门禁",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-159-aborted-171830": {
+  "desc": "统一 Ollama 模型路由与降级配置",
+  "branch": "managed worktree: model-routing",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\model-routing\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·Model",
+  "note": "集中模型路由与降级已回流主工作区；AI/111111 55项、tests 3项通过；新增文件需 git add -f；提交/merge 受 .git index.lock 写权限阻断 | QA1-R2质检:整改——声称\"集中路由配置\"实为fallback散在a0_agent/a0_chief/morning_check三处,无集中配置文件;交付物patch在work/未合入;退回补集中路由配置后再审 | K-ORG-032整改交付：在编岗DEV2经agent_coder真模型重做产物已落仓库待复检",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-160-aborted-171941": {
+  "desc": "本地 Ollama/RAG 运行手册与 smoke 验证",
+  "branch": "managed worktree: runbook-smoke",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\runbook-smoke\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·Docs",
+  "note": "运行手册与离线/真实 smoke 已回流主工作区；主页 HTML、可选索引判定已修复；真实 smoke 通过；提交/merge 受 .git index.lock 写权限阻断 | QA1-R2质检:整改——docs/无运行手册落点,仅work/ollama_cainiao_delivery_manifest交付清单;退回把运行手册落docs/后再审 | K-ORG-032整改交付：在编岗DOC1经agent_coder真模型重做产物已落仓库待复检",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-161": {
+  "desc": "训练候选治理与策略分层验收只读门禁",
+  "branch": "task/K-STOCK-161",
+  "worktree": "C:\\Users\\Administrator\\.codex\\worktrees\\strategy-acceptance\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-12 07:32:48",
+  "owner": "Codex·主控",
+  "note": "策略分层验收审计器 fail-closed 修复已合并到 master（a11e2e0）；27 项联合测试与三道评审门通过",
+  "merged": "2026-10-12 08:10:22"
+ },
+ "K-STOCK-162-aborted-171943": {
+  "desc": "三年历史数据只读 staging 计划、审计与可恢复执行器",
+  "branch": "主工作区（Git 元数据写权限阻断）",
+  "worktree": "E:\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·主控",
+  "note": "计划三任务实现、审计报告 CLI 接入与聚焦测试完成；10项 pytest、dry-run 242交易日/7批次通过；首批 28日 staging 尝试被沙箱 WinError 10013 阻断；production_write=false/global_activation=false；Git 提交/merge 受 .git/index.lock 阻断 | QA1-R4质检:部分通过——staging审计probe json在场(ts_daily_target_20261009_staging_probe),可恢复执行器脚本未落quant_backtest/;SEC1加审中",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-163": {
+  "desc": "daily_report 日报改三目标推送并注册20:30计划任务",
+  "branch": "task/K-STOCK-163",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-163",
+  "status": "done",
+  "created": "2026-10-12 10:00:40",
+  "owner": "unknown-agent",
+  "merged": "2026-10-12 10:04:53"
+ },
+ "K-STOCK-164": {
+  "desc": "退役8094注册一致性修复与端口守卫复核",
+  "branch": "task/K-STOCK-164",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-164",
+  "status": "done",
+  "created": "2026-10-12 10:22:58",
+  "owner": "Codex·主控",
+  "note": "已完成：8094 按 B-05 移除；TdxW 只读证据确认 D:\\new_tdx64\\TdxW.exe（通达信第三方）后加入豁免；严格端口守卫、Mixin、导航、2项回归测试全通过；提交 bcad7e2，合并 a06e071。",
+  "reviewed": "2026-10-12 10:49:24",
+  "merged": "2026-10-12 11:24:37",
+  "verified": "2026-10-12 11:25"
+ },
+ "K-STOCK-177": {
+  "desc": "平台整合前置核验复跑与门禁报告更新",
+  "branch": "task/K-STOCK-177",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-177",
+  "status": "done",
+  "created": "2026-10-12 11:36:10",
+  "owner": "Codex·主控",
+  "merged": "2026-10-12 11:53:46"
+ },
+ "K-STOCK-180": {
+  "desc": "P1告警直调用迁移到alert_fail_wrap并补审计回归",
+  "branch": "task/K-STOCK-180",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-180",
+  "status": "done",
+  "created": "2026-10-12 14:23:52",
+  "owner": "Codex·主控",
+  "merged": "2026-10-12 16:04:45"
+ },
+ "K-STOCK-181": {
+  "desc": "菜鸟角色联动与 Ollama RAG Web 体验收口",
+  "branch": "主工作区（Git ACL 阻断）",
+  "worktree": "E:\\老田的AI助手",
+  "status": "done",
+  "created": "2026-10-12",
+  "owner": "Codex·主控",
+  "note": "角色配置、真实多轮历史、RAG profile/source metadata、角色名称展示已完成；63项测试、真实 chat/RAG smoke、Mixin 与导航守卫通过；端口 strict 仍受 6 个注册服务离线与 2 个第三方未登记监听影响，未擅自改注册表。",
+  "merged": "2026-10-12 19:30:00 (成果已由 b58b364 自动快照吸收)"
+ },
+ "K-STOCK-185": {
+  "desc": "拆分策略训练与金融执行门禁",
+  "branch": "task/K-STOCK-185",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-185",
+  "status": "done",
+  "created": "2026-10-12 19:23:28",
+  "owner": "unknown-agent",
+  "merged": "2026-10-12 20:03:30"
+ },
+ "K-STOCK-209-aborted-171945": {
+  "desc": "缺口发布审计阻断 pending/blocked 回执并完成盘前 dry-run",
+  "branch": "主工作区（Git ACL 阻断）",
+  "worktree": "E:\\老田的AI助手",
+  "status": "aborted",
+  "created": "2026-10-12",
+  "owner": "Codex·主控",
+  "note": "Task5 专项测试4/4与缺口联合测试28/28通过；盘前 dry-run ready、production_write=false；gap_release_audit 新增 pending_keys 门禁并实审 staging 阻断 2532 条回执；2026-10-12 远端 TCP 48088 重试失败，证据见 work/remote_recheck_blocked_20261012_v2.json；待网络恢复和 Git 收口。 | QA1-R4质检:通过(待merge)——gap_release_audit.py+test+10-12/13/14三日审计json实证在场;SEC1加审进行中,通过结论以SEC1复核为最终",
+  "abort_reason": "老田拍板方案B整批废弃(Codex时代遗产·备份=backup/codex-*分支+backups/bundle)"
+ },
+ "K-STOCK-210": {
+  "desc": "登记 D 盘量子双刀来源证据并运行只读评测",
+  "branch": "task/K-STOCK-210",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-210",
+  "status": "done",
+  "created": "2026-10-12 22:22:25",
+  "owner": "unknown-agent",
+  "merged": "2026-10-12 23:32:25"
+ },
+ "K-STOCK-211-aborted-101503": {
+  "desc": "修复A股估值字段缺失并建立JEV 51条可恢复核验",
+  "branch": "task/K-STOCK-211",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211",
+  "status": "aborted",
+  "created": "2026-10-12 23:30:24",
+  "owner": "Codex·A",
+  "abort_reason": "K-ORG-141清场:doing 5天无流转,实质已由K-STOCK-372收口(K-ORG-073催办单已确认),死记录"
+ },
+ "K-STOCK-212": {
+  "desc": "菜鸟与开源智能对话模式对照及Ollama聊天体验设计记录",
+  "branch": "task/K-STOCK-212",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-212",
+  "status": "done",
+  "created": "2026-10-12 23:52:22",
+  "owner": "Codex·主控",
+  "commit": "8192a8a",
+  "note": "设计记录已完成；13项页面契约测试、68项AI全量测试、py_compile、diff check、Mixin完整性与导航统一均通过；端口 strict 仅因 2 个外部未登记进程(5283/8475)失败；提交 8192a8a，待评审门收口 | QA1-R3质检:通过(待merge)——同载体AI/111111回流368行+test_web_ui/test_web_chat同增,五单耦合验证整体通过",
+  "merged": "2026-10-14 13:37:01"
+ },
+ "K-STOCK-213": {
+  "desc": "RAG来源卡片详情与引用复制",
+  "branch": "task/K-STOCK-213",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-213 (已清场 K-STOCK-373)",
+  "status": "done",
+  "created": "2026-10-13 00:58:18",
+  "owner": "Codex·主控",
+  "commit": "92222e0",
+  "note": "RAG来源事件新增text片段；Web来源卡片支持展开详情与复制引用；专项26项、AI全量69项、py_compile、diff check通过；8899已重启并确认新控件；Mixin/导航通过，端口strict仍受外部5283/8475阻断 | QA1-R1质检:通过(待merge)——产物回流AI/111111(rag_web_backend+web_chat+web_ui+3test共368行实质改动,与R3批共享载体整体验证·测试同增)"
+ },
+ "K-STOCK-214": {
+  "desc": "量子双刀来源证据补交模板与训练候选字段准备",
+  "branch": "task/K-STOCK-214",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-214",
+  "status": "done",
+  "created": "2026-10-13 01:18:51",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 01:23:49"
+ },
+ "K-STOCK-220": {
+  "desc": "平行空间策略智能体隔离训练配置与评测协议",
+  "branch": "task/K-STOCK-220",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-220",
+  "status": "done",
+  "created": "2026-10-13 01:46:46",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 01:51:07"
+ },
+ "K-STOCK-221": {
+  "desc": "生成平行空间策略场景数据并运行教师蒸馏基线",
+  "branch": "task/K-STOCK-221",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-221",
+  "status": "done",
+  "created": "2026-10-13 01:56:21",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 02:07:04"
+ },
+ "K-STOCK-222": {
+  "desc": "菜鸟式消息内嵌来源与快捷提问布局",
+  "branch": "task/K-STOCK-222",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-222 (已清场 K-STOCK-373)",
+  "status": "done",
+  "created": "2026-10-13 02:20:17",
+  "owner": "Codex·主控",
+  "commit": "b97c2a1",
+  "note": "页面改为左侧会话上下文+右侧聊天工作区；来源卡片内嵌助手回答下方；新增总结要点/解释依据/行动清单快捷提问。70项AI全量测试、py_compile、diff check通过；8899硬刷新后确认新布局。 | QA1-R3质检:通过(待merge)——同载体AI/111111回流368行+test_web_ui/test_web_chat同增,五单耦合验证整体通过"
+ },
+ "K-STOCK-223": {
+  "desc": "平行空间策略智能体 AI 对 AI 蒸馏离线评测",
+  "branch": "task/K-STOCK-223",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-223",
+  "status": "done",
+  "created": "2026-10-13 02:28:43",
+  "owner": "Codex·主控",
+  "merged": "2026-10-13 02:32:18"
+ },
+ "K-STOCK-224": {
+  "desc": "修复 Windows post-commit 事件回流钩子外部命令依赖",
+  "branch": "task/K-STOCK-224",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-224",
+  "status": "done",
+  "created": "2026-10-13 02:33:53",
+  "owner": "Codex·主控",
+  "merged": "2026-10-13 02:40:27"
+ },
+ "K-STOCK-225": {
+  "desc": "扩展平行空间策略智能体全场景蒸馏与风险校准评测",
+  "branch": "task/K-STOCK-225",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-225",
+  "status": "done",
+  "created": "2026-10-13 02:43:28",
+  "owner": "Codex·主控",
+  "merged": "2026-10-13 02:45:58"
+ },
+ "K-STOCK-226": {
+  "desc": "校准PS-002/PS-003教师标签并重跑全量蒸馏评测",
+  "branch": "task/K-STOCK-226",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-226",
+  "status": "done",
+  "created": "2026-10-13 02:49:35",
+  "owner": "Codex·主控",
+  "merged": "2026-10-13 02:55:28"
+ },
+ "K-STOCK-227": {
+  "desc": "本地聊天性能优化：思考开关、常驻模型与上下文预算",
+  "branch": "task/K-STOCK-227",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-227",
+  "status": "done",
+  "created": "2026-10-13 06:46:03",
+  "owner": "Codex·主控",
+  "commit": "668b1c3",
+  "note": "普通聊天默认 think=false；Ollama keep_alive=30m；会话模型锁定并提示切换冷启动；前后端上下文预算约12000字符；35B仅手动高级选项。76项AI测试、py_compile、diff check通过；8899真实请求200且约0.25秒，浏览器已确认深度思考开关、35B选项和模型切换提示。 | QA1-R3质检:通过(待merge)——同载体AI/111111回流368行+test_web_ui/test_web_chat同增,五单耦合验证整体通过",
+  "merged": "2026-10-14 13:43:33"
+ },
+ "K-STOCK-228": {
+  "desc": "飞书出口收敛P1：抽feishu_client统一API底座",
+  "branch": "task/K-STOCK-228",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-228",
+  "status": "done",
+  "created": "2026-10-13 09:40:13",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 09:44:59"
+ },
+ "K-STOCK-292": {
+  "desc": "修复训练候选审计器兼容 entries 清单并补回归测试",
+  "branch": "task/K-STOCK-292",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-292",
+  "status": "done",
+  "created": "2026-10-13 09:46:51",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 10:19:38",
+  "commit": "feb129c",
+  "note": "已通过 Mixin、导航、端口评审门并合并；候选清单审计兼容 records/entries；9项回归测试通过。"
+ },
+ "K-STOCK-298": {
+  "desc": "修复训练候选审计器对 source 字段的安全路径回退",
+  "branch": "task/K-STOCK-298",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-298",
+  "status": "done",
+  "created": "2026-10-13 11:00:46",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 11:24:21",
+  "commit": "7446ef7",
+  "note": "已通过 Mixin、导航、端口评审门并合并；source 缺失时安全回退相对 source 文件名；10项回归测试通过。"
+ },
+ "K-STOCK-299": {
+  "desc": "飞书双bot三路径修复:旧bot群@过滤防抢答+新bot私聊p2p支持",
+  "branch": "task/K-STOCK-299",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-299",
+  "status": "done",
+  "created": "2026-10-13 15:12:21",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 15:15:30"
+ },
+ "K-STOCK-300": {
+  "desc": "旧bot兜底收口:非本bot的at原文全局沉默+未识别指令文案指路问答bot",
+  "branch": "task/K-STOCK-300",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-300",
+  "status": "done",
+  "created": "2026-10-13 15:38:43",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 15:46:48"
+ },
+ "K-STOCK-302": {
+  "desc": "PG-Robot看门狗:进程存活+WS重连卡死检测+自动重启+飞书告警",
+  "branch": "task/K-STOCK-302",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-302",
+  "status": "done",
+  "created": "2026-10-13 18:42:00",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 18:44:04"
+ },
+ "K-STOCK-303": {
+  "desc": "问答质量:新增market_snapshot市场总量工具,修复北交所成交额类拒答",
+  "branch": "task/K-STOCK-303",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-303",
+  "status": "done",
+  "created": "2026-10-13 18:51:57",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 18:57:44"
+ },
+ "K-STOCK-304": {
+  "desc": "推送联动收口:时刻表总账+活性巡检告警+出口统一",
+  "branch": "task/K-STOCK-304",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-304",
+  "status": "done",
+  "created": "2026-10-13 19:32:55",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 19:40:49"
+ },
+ "K-STOCK-304b": {
+  "desc": "C项挂账:立项档评估日程更新+一周后私聊评估提醒任务+MEMORY回写",
+  "branch": "task/K-STOCK-304b",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-304b",
+  "status": "done",
+  "created": "2026-10-13 20:30:19",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 20:34:03"
+ },
+ "K-STOCK-305": {
+  "desc": "卡片按钮统一切公网域名——PORTAL_BASE从Tailscale死链切quant-picks-board带key直达",
+  "branch": "task/K-STOCK-305",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-305",
+  "status": "done",
+  "created": "2026-10-13 21:10:29",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 21:13:25"
+ },
+ "K-STOCK-306": {
+  "desc": "个股直达锚点403治理——/kg/stock/*.SH被WAF拦定位与白名单/URL形态改造",
+  "branch": "task/K-STOCK-306",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-306",
+  "status": "done",
+  "created": "2026-10-13 22:44:54",
+  "owner": "unknown-agent",
+  "merged": "2026-10-13 22:53:15"
+ },
+ "K-STOCK-307": {
+  "desc": "云反代全门户公网发布B方案-frp隧道+云nginx白名单",
+  "branch": "task/K-STOCK-307",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-307 (已清场)",
+  "status": "done",
+  "created": "2026-10-14 01:05:33",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 13:55:08",
+  "note": "K-STOCK-373 代收口：本单实际交付=B方案拍板档（docs/plans/2026-10-13_云反代全门户公网B方案，frp+云nginx白名单default-deny+采购决策）；M1 实施未启动（无frpc进程/服务/配置实证）拆后续单，同档 M2/M3 惯例"
+ },
+ "K-STOCK-348": {
+  "desc": "新闻日报卡片化升级:舆论风向聚合+飞书互动卡+中台联动",
+  "branch": "task/K-STOCK-348",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-348",
+  "status": "done",
+  "created": "2026-10-14 01:54:49",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 01:58:21"
+ },
+ "K-STOCK-349": {
+  "desc": "统一日报彻底简化-砍健康与内容产出+修持仓浮盈口径为等权平均+加舆论风向一行",
+  "branch": "task/K-STOCK-349",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-349",
+  "status": "done",
+  "created": "2026-10-14 02:05:39",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 02:07:49"
+ },
+ "K-STOCK-350": {
+  "desc": "统一日报风向块加高置信信号摘要(复用新闻日报v2同款口径)",
+  "branch": "task/K-STOCK-350",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-350",
+  "status": "done",
+  "created": "2026-10-14 02:12:33",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 02:14:10"
+ },
+ "K-STOCK-351": {
+  "desc": "统一日报高置信信号条数4改5(阈值0.80维持)",
+  "branch": "task/K-STOCK-351",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-351",
+  "status": "done",
+  "created": "2026-10-14 02:16:20",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 02:16:59"
+ },
+ "K-STOCK-353": {
+  "desc": "交易台账页:在仓/待买/平仓三台账+每日浮盈轨迹+公网快照+日报卡按钮",
+  "branch": "task/K-STOCK-353",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-353",
+  "status": "done",
+  "created": "2026-10-14 02:22:01",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 02:25:14"
+ },
+ "K-STOCK-354": {
+  "desc": "日报卡按钮撞v2判例拒发-改回v1兼容模式(schema2与action按钮互斥)",
+  "branch": "task/K-STOCK-354",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-354",
+  "status": "done",
+  "created": "2026-10-14 02:26:35",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 02:27:40"
+ },
+ "K-STOCK-355": {
+  "desc": "金融新闻速报同步到内部测试群(oc_6b97...):速报推送追加群目标+修正配置家人群注释漂移",
+  "branch": "task/K-STOCK-355",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-355",
+  "status": "done",
+  "created": "2026-10-14 06:59:43",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 07:01:16"
+ },
+ "K-STOCK-356": {
+  "desc": "盘前晨报重设计:纯文本升级v1互动卡(五节分区+台账/看板双按钮,降级文本保底)",
+  "branch": "task/K-STOCK-356",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-356",
+  "status": "done",
+  "created": "2026-10-14 07:13:42",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 07:15:24"
+ },
+ "K-STOCK-357": {
+  "desc": "盘前晨报同步到内部测试群(oc_6b97):卡/文本追加群发,失败不影响个人,判例同K-STOCK-355",
+  "branch": "task/K-STOCK-357",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-357",
+  "status": "done",
+  "created": "2026-10-14 07:21:03",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 07:21:52"
+ },
+ "K-STOCK-358": {
+  "desc": "盘前晨报追加量化群同步(oc_16ed):群发目标由单值改列表,判例同K-STOCK-357",
+  "branch": "task/K-STOCK-358",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-358",
+  "status": "done",
+  "created": "2026-10-14 07:25:22",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 07:26:19"
+ },
+ "K-STOCK-359": {
+  "desc": "事件色标纠偏:A股红涨绿跌口径(bull=红bear=绿),修晨报+事件图谱,对齐premarket既有判例",
+  "branch": "task/K-STOCK-359",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-359",
+  "status": "done",
+  "created": "2026-10-14 07:31:50",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 07:32:49"
+ },
+ "K-STOCK-360": {
+  "desc": "KG情报简报重设计:纯文本升级v1互动卡(六段分区+台账/看板按钮)+同步双群,判例同晨报356/358",
+  "branch": "task/K-STOCK-360",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-360",
+  "status": "done",
+  "created": "2026-10-14 07:36:30",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 07:37:56"
+ },
+ "K-STOCK-361": {
+  "desc": "统一日报卡补看板按钮:单按钮(交易台账)升级双按钮(台账primary+看板default),与晨报/KG简报判例一致,只改卡不动网页",
+  "branch": "task/K-STOCK-361",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-361",
+  "status": "done",
+  "created": "2026-10-14 07:57:22",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 07:58:07"
+ },
+ "K-STOCK-362": {
+  "desc": "今日简报文档改版:码块风格对齐股票池doc_board表格判例(市场速览/自选/板块热力/关注命中全部表格化),news_ai.format_*保留给纯文本降级",
+  "branch": "task/K-STOCK-362",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-362",
+  "status": "done",
+  "created": "2026-10-14 08:08:39",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 08:09:48"
+ },
+ "K-STOCK-363": {
+  "desc": "修日报卡红涨绿跌色标:awk_failed=_green西式配色(green=涨/red=跌)违反premarket判例(bull=red/bear=green),修正为红涨绿跌",
+  "branch": "task/K-STOCK-363",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-363",
+  "status": "done",
+  "created": "2026-10-14 15:18:35",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 15:19:29"
+ },
+ "K-STOCK-365": {
+  "desc": "JEV复核门P0修复:unreviewed补判通道+毕业条件口径统一(剔CN为准)+REJECT/CN-FOCUS样本缺位归因",
+  "branch": "task/K-STOCK-365",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-365",
+  "status": "done",
+  "created": "2026-10-14 08:17:22",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 08:33:44"
+ },
+ "K-STOCK-366": {
+  "desc": "JEV复核门typesafe出站接TS_PROXY代理(084判例:CF对大陆出口geo-block致451),timeout升25s,jev_gate/qd_bridge后续单",
+  "branch": "task/K-STOCK-366",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-366",
+  "status": "done",
+  "created": "2026-10-14 08:35:41",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 08:39:07"
+ },
+ "K-STOCK-367": {
+  "desc": "feishu_bot_ws 注册已读回执 no-op 处理器消噪（processor not found 1099 条）",
+  "branch": "task/K-STOCK-367",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-367",
+  "status": "done",
+  "created": "2026-10-14 09:30:33",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 09:38:16"
+ },
+ "K-STOCK-368": {
+  "desc": "jev card handler 换绑独立 app 告警卡片助手（env 覆盖单点换绑+deploy 链）",
+  "branch": "task/K-STOCK-368",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-368",
+  "status": "done",
+  "created": "2026-10-14 09:55:00",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 10:44:04"
+ },
+ "K-STOCK-369": {
+  "desc": "卡片更新切换 im/v1/messages PATCH（旧 token API 换绑后 300090）",
+  "branch": "task/K-STOCK-369",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-369",
+  "status": "done",
+  "created": "2026-10-14 11:08:37",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 11:10:17"
+ },
+ "K-STOCK-370": {
+  "desc": "jev 卡片切 v1 协议（新 app 下 schema2.0 behaviors 回调零投递）",
+  "branch": "task/K-STOCK-370",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-370",
+  "status": "done",
+  "created": "2026-10-14 11:30:32",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 11:33:07"
+ },
+ "K-STOCK-371": {
+  "desc": "旧 worktree 清场（13 个历史工单残场审计+安全清理）",
+  "branch": "task/K-STOCK-371",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-371",
+  "status": "done",
+  "created": "2026-10-14 12:11:31",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 12:17:42"
+ },
+ "K-STOCK-372": {
+  "desc": "K-STOCK-211 抢救：33 提交未合并（A股估值修复+JEV 51条核验）审计收口",
+  "branch": "task/K-STOCK-372",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-372",
+  "status": "done",
+  "created": "2026-10-14 12:20:11",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 13:33:19"
+ },
+ "K-STOCK-373": {
+  "desc": "212/213/222/227 四张 QA 已过收口单批量 merge 清场",
+  "branch": "task/K-STOCK-373",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-373",
+  "status": "done",
+  "created": "2026-10-14 13:35:58",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 13:52:05"
+ },
+ "K-STOCK-374-aborted-101503": {
+  "desc": "B方案M1实施:本机frpc隧道+云nginx白名单落地(307拍板档执行单)",
+  "branch": "task/K-STOCK-374",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-374",
+  "status": "aborted",
+  "created": "2026-10-14 13:55:56",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "abort_reason": "K-ORG-141清场:分支已不存在仅残留worktree目录,执行痕迹不可核验,如需frpc隧道方案请重开"
+ },
+ "K-STOCK-375": {
+  "desc": "清场战役总结报告入库(371-374审计收官)",
+  "branch": "task/K-STOCK-375",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-375",
+  "status": "done",
+  "created": "2026-10-14 15:40:12",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 15:41:15"
+ },
+ "K-STOCK-376": {
+  "desc": "战役总结档补375收官章+终态快照(371-375收官)",
+  "branch": "task/K-STOCK-376",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-376",
+  "status": "done",
+  "created": "2026-10-14 15:46:28",
+  "project": "portal",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 15:48:28"
+ },
+ "K-STOCK-386": {
+  "desc": "策略扫描推送卡片化:38只榜单着色+奖牌+超额列+nan修复,文本降级保底",
+  "branch": "task/K-STOCK-386",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-386",
+  "status": "done",
+  "created": "2026-10-14 16:39:08",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 16:47:48"
+ },
+ "K-STOCK-387": {
+  "desc": "扫描卡列序调整:基准列移收益后(收益|基准|超额|回撤),文本版同序",
+  "branch": "task/K-STOCK-387",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-387",
+  "status": "done",
+  "created": "2026-10-14 17:01:23",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 17:03:37"
+ },
+ "K-STOCK-388": {
+  "desc": "扫描卡股票名可下钻:链接门户个股全景页/kg/stock,base读report.portal_url(局域网8080,B方案落地换公网即全卡升级),无配置回落纯文本",
+  "branch": "task/K-STOCK-388",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-388",
+  "status": "done",
+  "created": "2026-10-14 17:06:26",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 17:09:00"
+ },
+ "K-STOCK-389": {
+  "desc": "盘前镜像文档股票可下钻:涨停Top5/公告/解禁/研报名称链接/kg/stock(复用388 _stock_drill),政策新闻补关联个股列,portal_url缺省回落纯文本",
+  "branch": "task/K-STOCK-389",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-389",
+  "status": "done",
+  "created": "2026-10-14 17:18:02",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 17:28:21"
+ },
+ "K-STOCK-390": {
+  "desc": "页脚时区文案修复:盘前页/卡/文档 08:30→14:30(北京)并注巴黎08:30,灭3天推送中断期文案漂移",
+  "branch": "task/K-STOCK-390",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-390",
+  "status": "done",
+  "created": "2026-10-14 17:39:05",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-14 17:53:29"
+ },
+ "K-STOCK-394": {
+  "desc": "飞书侧全量审计修复-死链按钮收敛8734+端口注册补登+KM页日志错读",
+  "branch": "task/K-STOCK-394",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-394",
+  "status": "done",
+  "created": "2026-10-15 04:02:38",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 04:05:13"
+ },
+ "K-STOCK-395": {
+  "desc": "飞书自建底座与Lark插件分工边界拍板档-四通道现状+划界五红线+exe解耦行动项",
+  "branch": "task/K-STOCK-395",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-395",
+  "status": "done",
+  "created": "2026-10-15 04:08:13",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 04:09:35"
+ },
+ "K-STOCK-396": {
+  "desc": "lark-cli exe解耦Trae插件目录+9104 stderr落盘(K-STOCK-395 A1/A2)",
+  "branch": "task/K-STOCK-396",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-396",
+  "status": "done",
+  "created": "2026-10-15 04:24:53",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 04:29:11"
+ },
+ "K-STOCK-397": {
+  "desc": "飞书回调验签链审计修复-编码失真+降级告警同日节流+key双读竞态(K-STOCK-394建议2)",
+  "branch": "task/K-STOCK-397",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-397",
+  "status": "done",
+  "created": "2026-10-15 04:39:11",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 04:49:20"
+ },
+ "K-STOCK-398": {
+  "desc": "分工边界档v2修订-A1解耦落地后事实刷新-纠缠解除红线3改版+396/397判例入链",
+  "branch": "task/K-STOCK-398",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-398",
+  "status": "done",
+  "created": "2026-10-15 04:51:52",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 04:53:26"
+ },
+ "K-STOCK-399": {
+  "desc": "建议2收尾-F2回调分发收紧action须dict带value+recycle_delete坏占位修复+portal重启使397/399生效",
+  "branch": "task/K-STOCK-399",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-399",
+  "status": "done",
+  "created": "2026-10-15 05:01:55",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 05:03:30"
+ },
+ "K-STOCK-400": {
+  "desc": "三轮深审修复-920北交所段市场误判(根normalize_code+stock_card)+push_flow解码缺口致配额静默失效+选股tier小写+回退通道stdout解析脆",
+  "branch": "task/K-STOCK-400",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-400",
+  "status": "done",
+  "created": "2026-10-15 05:21:19",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 05:23:37"
+ },
+ "K-STOCK-401": {
+  "desc": "四轮深审-jev死信升级告警(通道B文本,17天24条漏告警无人知)+dry污染seen修复+subscribe去重指纹回环/配额导入路径/失败也记状态三修+lark_cli_json截断150→300",
+  "branch": "task/K-STOCK-401",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-401",
+  "status": "done",
+  "created": "2026-10-15 05:42:29",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 05:47:53"
+ },
+ "K-STOCK-402": {
+  "desc": "BUG-3三元组崩溃窗口重复样本按candidate_id去重(报告/毕业/覆盖率消费侧+backfill自愈) + BUG-4覆盖守卫日历日改交易日口径(周末/长假假欠账误报)",
+  "branch": "task/K-STOCK-402",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-402",
+  "status": "done",
+  "created": "2026-10-15 05:53:17",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 05:56:36"
+ },
+ "K-STOCK-403": {
+  "desc": "A4落地-open_id/chat_id硬编码收敛push_targets单一事实源(8处改resolver,401判例:open_id为app维度,jev app视角收件人由env管理不越权;miss响亮告警无字面量回退;USER_ID_LARK user域与p_g_robot自id不属收件人范畴保留)",
+  "branch": "task/K-STOCK-403",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-403",
+  "status": "done",
+  "created": "2026-10-15 05:59:54",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 06:02:24"
+ },
+ "K-STOCK-404": {
+  "desc": "R3忽略语义闭环-gate_ignored从无效alert_id集合升级为title模式抑制(handler/control写侧带title+ts,gate读侧title精确匹配抑制WARN/INFO,CRITICAL例外安全侧,14天TTL防无限期静默漏告警),修正feishu_control描述不存在行为的注释",
+  "branch": "task/K-STOCK-404",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-404",
+  "status": "done",
+  "created": "2026-10-15 06:17:35",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 06:19:48"
+ },
+ "K-STOCK-405": {
+  "desc": "R12死信/triples轮转清理——push_dead_letter TTL30天按日节流清理(仅追加审计日志无生产读方);triples终端记录(status=reviewed且ret_nd已回填)超30天归档triples_archive.jsonl:毕业统计run_report改读归档+活文件保样本完整,run_backfill热路径(10min全量读改写)只读活文件内存受界,coverage_guard只看活文件且未回填记录永不归档真实断档继续告警;坏/缺ts保守保留",
+  "branch": "task/K-STOCK-405",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-405",
+  "status": "done",
+  "created": "2026-10-15 07:02:00",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 07:04:40"
+ },
+ "K-STOCK-406": {
+  "desc": "守卫测试路径锚修复：4个test_*.py的worktree硬编码改为相对__file__定位",
+  "branch": "task/K-STOCK-406",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-406",
+  "status": "done",
+  "created": "2026-10-15 07:46:17",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 07:52:39"
+ },
+ "K-STOCK-407": {
+  "desc": "F1回调防重放：/feishu/event验签后加时间戳新鲜度窗口±300s（FEISHU_EVENT_TOLERANCE可覆盖）+T5守卫",
+  "branch": "task/K-STOCK-407",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-407",
+  "status": "done",
+  "created": "2026-10-15 08:04:34",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 08:10:24"
+ },
+ "K-STOCK-408": {
+  "desc": "PORTAL_KEY轮换底座：发码侧读work配置+校验侧server_gate源头纳管双口令14天过渡+sync映射+守卫",
+  "branch": "task/K-STOCK-408",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-408",
+  "status": "done",
+  "created": "2026-10-15 08:13:15",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 08:17:44"
+ },
+ "K-STOCK-409": {
+  "desc": "PORTAL_KEY轮换执行：server_gate.NEW_PW默认值换新码+主仓work配置落地+sync刷新快照",
+  "branch": "task/K-STOCK-409",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-409",
+  "status": "done",
+  "created": "2026-10-15 08:18:22",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 08:22:29"
+ },
+ "K-STOCK-410": {
+  "desc": "守卫修复：test_portal_key_rotation两源一致性被自身monkeypatch污染，存原值比对",
+  "branch": "task/K-STOCK-410",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-410",
+  "status": "done",
+  "created": "2026-10-15 08:23:47",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 08:24:51"
+ },
+ "K-STOCK-411": {
+  "desc": "公网站止血：发布清单剔除敏感件(ledger/pick_details/server.py口令明文)+快照残留移档归档+守卫防回归",
+  "branch": "task/K-STOCK-411",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\K-STOCK-411",
+  "status": "done",
+  "created": "2026-10-15 09:23:20",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-15 09:31:48"
+ },
+ "K-STOCK-412-aborted-101504": {
+  "desc": "飞书bot性能修复：reply_card/send_text每条消息新建lark.Client→抽_lark_client()键控缓存复用（凭证轮换自动重建；Client跨线程共享已核lark_oapi源码）",
+  "branch": "task/K-STOCK-412",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-412",
+  "status": "aborted",
+  "created": "2026-10-16",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "note": "Trae就地修复未建场(worktree不落盘，循K-ORG-073判例)：改动仅portal/feishu_bot_ws.py发送段；待带本工单号提交后置done。已过全真运行验证（3.13.12基座+venv site-packages：缓存复用/凭证轮换重建断言通过，ExecutionPolicy已修 RemoteSigned@CurrentUser）",
+  "abort_reason": "K-ORG-141清场:有工作描述(飞书bot性能修复)但痕迹已失无法核验,如需落地请重开"
+ },
+ "K-STOCK-413-aborted-101504": {
+  "desc": "迁移后飞书bot全线停机修复：venv shim指向旧机Administrator基座+计划任务FeishuBotWatchdog丢失",
+  "branch": "task/K-STOCK-413",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-413",
+  "status": "aborted",
+  "created": "2026-10-16",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "note": "Trae就地修复未建场。已修：venv pyvenv.cfg改指本机3.13基座；start_feishu_bot.py补import sys+PY改venv；register脚本路径更新；FeishuBotWatchdog已重建(SYSTEM/5min/HIGHEST)。代码审核(双子代理交叉验证)4项已修3.5项：#2启动器PY缺失/Popen失败留痕out.log(_fail+try)；#3 register改__file__相对推导；#4删tasklist死代码快路径；#1 venv基座锚定.workbuddy目录仅做最小修(留痕)，根治(装系统Python3.13重建venv)延后。验证：编译过+模拟PY缺失留痕实测通过+路径推导断言过。遗留已清+新发现：①appSecret已由浏览器自动化从开放平台取回完整32位(2026-10-16)，用户目录config.json已写入并验证有效(前台直跑bot两次connected)；②新根因——TaskScheduler用Job对象托管任务进程树，start_feishu_bot.py父进程退出即收割detached孙进程(bot无痕死，复现4次；09:25旧凭证批能起只是因2秒内自行崩溃未及收割)，Popen detached路径为死路；③修复方案：任务/TR改为直接托管bot本体(python -u feishu_bot_ws.py)+每5min触发器IgnoreNew即看门狗，任务10:43已重建为永续5min版(仍指start脚本，需最后一次UAC换TR)；④systemprofile镜像第一次UAC已批，待bot本体托管后以连接日志验证；⑤当前产线由用户会话前台bot保活(10:50 connected)。⑥后段排查：SYSTEM任务触发全静默(手动+到点/用户级+SYSTEM全灭,测试任务TraeDiag实证)，定性为任务调度引擎整机故障(约11:00起,Restart-Service被拒-受保护服务,非Defender拦截)，11:52重启机器根治；重启前提权校验systemprofile镜像=ALREADY-OK(32位在位)。⑦终态落地(2026-10-16 13:2x)：机器重启后调度复活，watchdog 13:19:53自动触发包装脚本C:\\Users\\t\\fbw_run.ps1(ASCII路径规避任务TR中文编码风险,输出落C:\\Users\\t\\fbw_task.log)，SYSTEM bot 13:20:21 starting(首次连接因重启后DNS未就绪失败,SDK自愈重连)→13:22:25 connected并持续存活，Task Scheduler直管bot本体无Job收割，自愈闭环=bot崩5min内重拉+开机自动跑。已收官。遗留(不阻塞)：a.start_feishu_bot.py的Popen detached收割缺陷(已不在产线链上,手动跑仍会无痕死,后续要么删要么改CREATE_NO_WINDOW+stdout落盘)；b.venv基座锚.workbuddy目录(Major,根治延后)；c.用户级config.json已由用户主动删除(SYSTEM侧systemprofile为唯一凭证源)",
+  "abort_reason": "K-ORG-141清场:有工作描述(飞书bot停机修复)但痕迹已失无法核验,如需落地请重开"
+ },
+ "K-STOCK-414-aborted-101504": {
+  "desc": "全项目四路并行代码审计(portal飞书链/news_collector推送链/k_stock模拟盘/ops+jev-eval+ollama值守链)+高危修复",
+  "branch": "task/K-STOCK-414",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-414",
+  "status": "aborted",
+  "created": "2026-10-16",
+  "project": "general",
+  "owner": "Trae·Worker",
+  "note": "Trae就地修复未建场(循K-ORG-073判例)。审计结论：高危10/中危~30/低危~50。本轮修复范围=高危全修+中危精选(产线活跃且低风险)；backup_daily.ps1 AES key账户分裂与镜像同盘等需老板拍板项另行列出。修复清单：A.km_feishu_hub:251 send_card元组误用(失败计成功污染计费) B.news_collector:366 K266 e:\\硬编码(功能已死) C.engine:727 fill_date用plan_date(T+1绕过) D.trainee:194选片字典序+前缀排除不全 E.serve_wrapper Administrator/D盘残留 F.keepalive_bg路径残留+spawn无保护 G.keepalive_9899 E盘+guard_port无try H.start_cowagent_bg E盘 I.health_check:85 junction期望E盘恒误报 J.feishu_card_v2:54 PORTAL_KEY模块级固化(轮换不生效) K.exit_rules重复分发+非原子写 L.alert_watch推送失败丢基线 M.engine sqlite busy_timeout N.send_feishu LARK_ROOT Administrator残留 O.jev_gate无key吞告警 P.db_dump_daily pipefail(因postgres/neo4j容器sh=dash不支持pipefail，改宿主侧gzip收流rc直取)。全部16处已修，每处带K-STOCK-414注释。验证：15文件py_compile全过+k_stock tests 50 passed(exit_rules/paper_engine/tier_gate/hires)。低危项登记遗留不本轮修。待拍板：①五服务(8787/9899/8095-8097)下线待拉起(keepalive代码已修)②hermes venv缺失③backup_daily.ps1 AES key账户分裂④start_feishu_bot.py死码。机器无git无法提交，就地置review",
+  "abort_reason": "K-ORG-141清场:全项目四路审计单痕迹已失无法核验(审计结论已由2026-10-17复盘吸收),如需继续请重开"
+ },
+ "T-DEMO": {
+  "desc": "devtask 全链自测（演示单）",
+  "branch": "task/T-DEMO",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\T-DEMO",
+  "status": "done",
+  "created": "2026-10-11 07:47:20",
+  "owner": "unknown-agent",
+  "merged": "2026-10-11 (演示)"
+ },
+ "legion-1017004821-aborted-101503": {
+  "desc": "[DATA1] legion ops 端到端验证单：账本心跳审计抽查",
+  "branch": "task/legion-1017004821",
+  "worktree": "C:\\aios\\.worktrees\\legion-1017004821",
+  "status": "aborted",
+  "created": "2026-10-17 00:48:25",
+  "project": "general",
+  "owner": "unknown-agent",
+  "abort_reason": "K-ORG-141清场:legion端到端验证单分支/worktree均已不存在,死记录"
+ },
+ "legion-1017064344": {
+  "desc": "[ACAD1] intake：确认研究问题、对象、范围和风险边界（课题 LCS-1 图形先行策略的可复现性与产品化评估）",
+  "branch": "task/legion-1017064344",
+  "worktree": "C:\\aios\\.worktrees\\legion-1017064344",
+  "status": "done",
+  "created": "2026-10-17 06:43:46",
+  "project": "general",
+  "owner": "unknown-agent",
+  "legion_worker": true,
+  "execution_status": "done",
+  "execution_attempts": 3,
+  "agent": "ACAD1",
+  "acceptance": [
+   "产出文件存在且非空",
+   "结论引用输入事实",
+   "列出限制和后续动作",
+   "执行过程有 heartbeat 记录"
+  ],
+  "execution_started": "2026-10-17T06:59:39",
+  "updated": "2026-10-17T07:00:23",
+  "execution_finished": "2026-10-17T07:00:23",
+  "execution_retry_reason": "已重建 Agent bundle，修复 ACAD1 身份投影缺失",
+  "output": "C:\\项目\\老田的AI助手\\agent_platform\\data\\worker_outputs\\legion-1017064344.md",
+  "output_meta": {
+   "ok": true,
+   "agent": "ACAD1",
+   "channel": "ollama",
+   "chars": 1325
+  },
+  "acceptance_result": {
+   "passed": true,
+   "findings": [],
+   "checked_at": "2026-10-17T07:00:23"
+  }
+ },
+ "proj_c_nlq_001": {
+  "desc": "nl_query图谱自然语言问答最小闭环立项:范围=图谱只读问答(单跳查询),验收口径由PM1定义->ARCH1技术终审->DEV2推理侧实施;产出验收口径文档写dept/product/observation",
+  "branch": "task/proj_c_nlq_001",
+  "worktree": "E:\\老田的AI助手\\.worktrees\\proj_c_nlq_001 (已清场 K-STOCK-371)",
+  "status": "aborted",
+  "created": "2026-10-13 07:24:46",
+  "owner": "PM1",
+  "note": "K-ORG-018 项目C组首单：nl_query 最小闭环（K-ORG-018 §4/§6-R3 口径先行纪律）；链路 PM1口径->ARCH1终审->DEV2实施",
+  "abort_reason": "零成果空转29h(worker未接管·分支零提交零脏文件)·K-STOCK-371清场:worktree已移除+分支-d删除(已并入master)"
+ },
+ "K-ORG-146": {
+  "desc": "存量收编·已跟踪批:提交盘点清单§2.2的113项已跟踪改动(112收编+1删除quant_backtest/ts_global_fut/_manifest.json);剔除并行新增6项(agent_platform/run_shadow.py、quant_backtest/kg_analysis.py、strategy_layer的kg_boost.py/management_console.html/test_kg_boost.py、quant_backtest/tdx_sync.py)与§4.2待定32项(portal22+registry8+sa_history.jsonl+n1_check.txt)不提交;git add精确路径禁-A,先commit再merge防呆",
+  "branch": "task/K-ORG-146",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-146",
+  "status": "done",
+  "created": "2026-10-17 12:08:33",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 12:16:37"
+ },
+ "K-ORG-147": {
+  "desc": "存量收编·osint_video剥离式:补.gitignore规则(osint_video/data/含browser_profile Cookies+admin_ui/node_modules+admin_ui/dist构建产物+tsconfig.tsbuildinfo),收编源码面约250文件(collectors/common/config/docs/extraction/hermes_adapter/integration/knowledge/queue_link/resdl_adapter/scripts/store/tests/workers+admin_ui/src+README/requirements/.env.example);config/secrets空目录不入库;git add精确路径禁-A,先commit再merge防呆 --project portal",
+  "branch": "task/K-ORG-147",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-147",
+  "status": "done",
+  "created": "2026-10-17 12:21:13",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 12:33:42"
+ },
+ "K-PUSH-006": {
+  "title": "推送基建收敛：fbw 双源禁用 + C:\\aios 生产链部署漂移记档",
+  "status": "done",
+  "created": "2026-10-17",
+  "plan": "遗留基建单（K-PUSH-005 收尾移交）：①fbw_run.ps1 竞争源禁用②C:\\aios 生产链勘察记档③bot 常驻验证",
+  "note": "背景：当日 14 次 bot 重连 churn 触发飞书分通道限流（K-PUSH-005 判例），根源=双守护源竞争。勘察结论：①「守护8097」任务实测 5min 一跳（非 30min 旧判例），launch_push_admin.py bot 段职责完备（marker 换血+dedup 树根判据+ensure start_feishu_bot，stdout 走 out.log 链）；②fbw_run.ps1（C:\\Users\\t\\，2026-10-16 11:26 创建，历史会话调试工具）为第二拉活源，bot 死后被调起（10:56:01/11:11:01 两次 wrapper start 实证），stdout 走 fbw_task.log 链——两源在换血窗口赛跑成双树。处置：fbw_run.ps1 改名 .disabled（可观测禁用：若真有隐藏宿主，fbw_task.log 停更即暴露；全量计划任务/Run键/启动文件夹/循环powershell 均已排查无宿主）。③重大记档：C:\\aios 为完整生产部署（portal/news_collector/ops/jev-eval/quant_backtest 全目录），由 7 个计划任务守护（AI工作站门户API/LegionOps/NewsCollect/Quote/PG-Robot 5min+JevStack 10min+AgentWatchdog 已损坏TR指向\\），与仓库 c:\\项目\\老田的AI助手 构成生产/开发双部署漂移——p_g_robot.py chatId 含用户 p2p 会话 oc_3d55...（在发消息的线上服务，禁止清理）；C:\\aios\\jev-eval\\lark_card_handler.py 属 JevStack 生产栈成员（无 443 无害，清了下跳又拉），维持红鲱鱼判定不清理。【2026-10-17 K-OPS-001 判例修正：'双部署漂移'作废——C:\\aios 是 Junction→仓库同一物理目录（docs/migration/2026-10-08_C盘aios-junction说明.md 早已定案'勿再查双副本漂移'），本单勘察漏查 LinkType；p_g_robot/lark_card_handler 判定仍有效（进程与占用分析不受影响），仅'生产/开发两份代码'表述错】④bot 36356（fbw 链拉起，K-PUSH-005 补丁已加载）稳定运行中不换血（避免再触发限流），若其死亡由守护8097 ensure 接管（out.log 单链）。12:28 终验全绿：跨过 12:25:23 守护跳后 feishu_bot.log 零新 starting（无 churn）、bot 单实例 36356（443 另两个 pid 为 zhice scheduler/workbuddy 下载器无关）、fbw_task.log 停更于 12:13:04（禁用生效无宿主复活）。本单零库内代码变更（改动均在库外或 gitignore），无 commit。后续建议（需用户拍板，另立单）：C:\\aios 生产链与仓库版合并/迁移方案。",
+  "last_wiring_key": "devtask:K-PUSH-006:review>done",
+  "merged": "2026-10-17 14:57:37"
+ },
+ "K-PUSH-007": {
+  "title": "调度全量：schedule.json 时间矩阵 + 闸门豁免 + PAGE 调度中心（K-PUSH-003 P3 挂账）",
+  "status": "done",
+  "created": "2026-10-17",
+  "plan": "P3 调度全量（K-PUSH-003 note 挂账'P2 按钮/模板、P3 调度全量'——P2 已由 K-PUSH-004 完成）：①schedule.json 全量 schema+缺省文件②/api/schedule GET/POST③静默闸 per-kind 豁免④PAGE 调度中心分区（24h 时间轴+矩阵+保存）⑤E2E+换血部署",
+  "note": "勘察（2026-10-17 13:2x，search 子代理全量）：①8097 闸门三道在位（静默 push_admin_server.py:515-518 → 配额 :520-531 → 按钮校验 :533-544），load_schedule() :469-475 每次即时读（天然热加载）但 SCHEDULE_PATH 指向的 portal/work/schedule.json 不存在→静默闸空转不拦任何推送；critical 豁免全仓无调用方传 True；②schema 现仅 silent_start/silent_end 两键被消费（闸门+flowmx.gate.silent :664+前端 :992）；③通知源触发时间全在 Windows 计划任务（03:00 统一日报/07:10 预警晨/08:30 新闻日报/16:05 预警晚/15:30 eod/09:00 intraday PT30M 等，deploy_*.ps1 注册），8097 已有 set_task_time→Set-ScheduledTask 通道 :740-742（TASK_MANAGEABLE 白名单 :61-65）；④publish_schedule_server.py 的 15s tick+fired 去重是面板内调度器范本；⑤原型 proto_push_hub.html sched 分区 :304-328（24h 时间轴+矩阵表+保存 alert mock）；生产 PAGE 无 sched 分区。方案：矩阵字段 time/frequency/window/excess 为描述性配置（面板展示+后续调度器消费），闸门可执行行为=silent 全局+per-kind 静默豁免名单；保存=写 schedule.json（原子）+TASK_MANAGEABLE 任务经 set_task_time 改计划任务时间。12:55 完工五项全落地并 E2E：①DEFAULT_SCHEDULE 8 源矩阵常量（schema 进库：kind 精确/前缀:* 通配、exempt 豁免、task 联动白名单任务、tune_bt 默认停用）+load_schedule 缺失/坏文件自愈写盘（深拷贝防常量污染）②_in_silent_window(now,kind) per-kind 豁免（预警晨晚/盘中 subscribe:* 免吞）、api_send 闸 1 传 kind ③dispatch save_schedule（silent 两键+sources 原子写盘；apply_tasks=true 联动 Set-ScheduledTask 仅白名单 4 任务；坏时间 TIME_RE 拒）④/api/state 挂 sched（矩阵+in_silent_now+任务实况）⑤PAGE 调度中心分区（navi tab+24h 时间轴：斜纹静默/蓝点跟随/琥珀豁免/灰停用/绿线当前时刻+矩阵表 time/exempt/enabled 可编辑+双保存按钮）。验证：py_compile+import 过；干跑 14/14（豁免 8 例含通配/空 kind/停用行，窗口 6 例含跨午夜 23:30/03:00/06:59/07:00 端点）；marker 换血部署后 health ok/sched 8 源/页面 tab 齐活；HTTP 冒烟 save ok=True updated_at 落盘、bad time 25:99 正确拒。判例：schedule.json 首次由 import 级调用自愈写盘（12:45:39 实证）；静默闸自此真实生效 23:00-07:00（此前空转一年——配置指向但文件从未创建）；预警/盘中类豁免兜底风险提示不可吞。",
+  "last_wiring_key": "devtask:K-PUSH-007:review>done",
+  "merged": "2026-10-17 14:57:37"
+ },
+ "K-ORG-148": {
+  "desc": "存量收编·portal/registry验收收编:提交已跟踪29项(portal21+registry8,盘点§4.2)+收编未跟踪13项(portal 12新文件+registry/team_academy.json);剔除并行施工GHOST push_admin_server.py(12:42施工中);feishu_bot_ws.py已被K-PUSH-005入库无需处理;sa_history.jsonl/n1_check.txt不属本批;hash对比0差异才移出副本,有差异剔除留待收口;git add精确路径禁-A,先commit再merge防呆",
+  "branch": "task/K-ORG-148",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-148",
+  "status": "done",
+  "created": "2026-10-17 12:47:49",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 12:52:41"
+ },
+ "K-ORG-149": {
+  "desc": "存量收编·zerobound-kg整目录ignore(K-ORG-149):嵌入式独立git仓库(自带.git,源码kg_*系已自管理版本控制,3611文件/3.7GB含.env.local密钥面+logs/data/outputs/backups运行态),主仓git不递归其内容;整目录ignore不入主仓,不submodule;git add精确路径禁-A,先commit再merge防呆",
+  "branch": "task/K-ORG-149",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-149",
+  "status": "done",
+  "created": "2026-10-17 13:02:33",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 13:03:35"
+ },
+ "K-ORG-150": {
+  "desc": "存量收编·sa_history.jsonl与n1_check.txt留痕处置(K-ORG-150):老田拍板untrack+ignore磁盘保留(推荐项):git rm --cached两文件磁盘不动+worktree补.gitignore(与n1_report_*.txt/sa_push_queue.jsonl同族B3治理惯例,消除每日翻腾diff噪音);git add精确路径禁-A,先commit再merge防呆",
+  "branch": "task/K-ORG-150",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-150",
+  "status": "done",
+  "created": "2026-10-17 13:51:38",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 13:53:20"
+ },
+ "K-PUSH-008": {
+  "title": "存量发卡方迁移 v3：news 四点 + km 统一卡（K-PUSH-004 挂账 P3+；jev 范围收缩记档）",
+  "status": "done",
+  "created": "2026-10-17",
+  "plan": "P3 第四单（用户选单）：①build_v3 加 subtitle/extra_els 两参数（km 折叠面板与 news 多块 md 透传）②card_build.build_card3 适配器③news 域四调用点迁移（域色映射：即时预警/预警全量→alert 红、空报→daily 绿、新闻日报→news 蓝、统一日报 violet→daily 绿）④km_feishu_hub.build_card 手拼 2.0 改调 build_v3（有更新蓝/无更新绿）⑤E2E 干跑+真发样卡",
+  "note": "范围拍板：jev 不迁，三理由记档——①K-STOCK-370 判例'jev 卡片 app 域 2.0 behaviors callback 点击零投递（平台侧）'未被 K-PUSH-005 翻案（那是 bot ws 域 Python SDK 丢 CARD 帧，链路不同：jev 回调走 lark-cli event consume 独立子进程）；②v1 tag:action 按钮装进 2.0 卡拒发（K-STOCK-354）+jev 卡迁 v3 则按钮必走 behaviors callback，若 370 判例仍真按钮即死——死结需先实测翻案；③jev 生产在 C:\\aios 副本跑（K-PUSH-006 判例禁动），改仓库版不自动生效。后续另立单：先翻案 370 再迁。2026-10-17 14:0x 完工七文件：①feishu_card_v2.build_v3 +subtitle（header 副标题保留迁移方信息）+extra_els（md 后 buttons 前插任意 2.0 元素）②card_build.build_card3(domain,title,subtitle,md_blocks,footer,buttons)——md_blocks 逐块 markdown+hr 交错保原视觉；footer 原文案并入 v3 source 位零丢失；url 按钮升 2.0 原生 behaviors open_url（subscribe 卡判例可点——顺带翻新 K-STOCK-354'按钮卡勿用 v2'坑）；判例注记 v3 卡禁 img 二维码、迁移方勿传 qr_portal ③alert_watch 即时预警红→alert ④alert_push 空报 grey→daily+全量 orange→alert ⑤news_digest turquoise→news（今日选股看板按钮保留）⑥daily_report violet→daily+判例注释更新 ⑦km_feishu_hub 手拼卡→build_v3（news/daily 两态域色+collapsible_panel 经 extra_els 透传+footer 信息并 source）。E2E：py_compile 7 文件过；干跑 19/19（card3 构型 6/域色 2/build_v3 新参 4/闸门 scan url 按钮跳过不误报 2/km 真函数两态 4/老 build_card v1 回归 1）；真发双样卡（news 蓝带按钮走 push_card 链 True + km 蓝带折叠面板走 send_card openapi code=0）用户确认两张均送达渲染正常。部署：news 四点为计划任务脚本下次触发自动生效；km 8099 服务现未运行（无监听/无任务/无守护拉活），改动随下次启动生效。判例：存量发卡方 v1/v2 混格式时代结束，news/km 全量 v3 五域构型（tune 卡 004 已迁+本单=四大发卡方唯 jev 存量 v1）；老 build_card 保留给未迁方（quant/k_stock 域零回归）。",
+  "last_wiring_key": "devtask:K-PUSH-008:review>done",
+  "merged": "2026-10-17 14:57:38"
+ },
+ "K-ORG-151": {
+  "desc": "存量收编·遗留并行施工剔除项收编(K-ORG-151):收编12项已收口文件(download_dflash2_hybrid+osint_video 4项browser_mapper系+agent_platform 7项adapters/idempotency系),mtime均停滞1.5h+无活跃迹象;剔除docs/plans/K-STOCK-211(14:03活跃施工);push_admin_server.py已入库无需处理;hash对比0差异移出副本,有差异剔除留待收口;git add精确路径禁-A,先commit再merge防呆",
+  "branch": "task/K-ORG-151",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-151",
+  "status": "done",
+  "created": "2026-10-17 14:05:05",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 14:25:14"
+ },
+ "K-PUSH-009": {
+  "title": "jev 翻案 + v3 迁移：K-STOCK-370 判例推翻 + 告警卡升 v3 红域（K-PUSH-008 预留单）",
+  "status": "done",
+  "created": "2026-10-17",
+  "plan": "P3 第五单（用户选单）：①翻案实验——jev 域 2.0 behaviors callback 样卡（双键 value）发出+点击双观测点验证（bot ws feishu_bot.log + 生产 lark-cli consume card.log）②翻案成立则 jev_gate._build_alert_card 升 build_v3（alert 红域+双键按钮+审计号）③E2E 干跑+真发",
+  "note": "翻案实证（2026-10-17 14:25:06 铁证）：KP9-TEST-001 实验卡（发送域 apps[0] 发出）点击后 C:\\aios 生产 lark_card_handler card.log 实收——'未授权操作者点击，已拒绝 alert_id=KP9-TEST-001 operator=ou_50a9...'——事件正常投递且解析出 alert_id/operator，K-STOCK-370'平台侧零投递'正式推翻（同期 SDK 丢 CARD 帧误诊，与 K-PUSH-005 同根因）；点击被拒仅因 operator 白名单域错配（实验卡走发送域目标→operator 发送域 id，白名单只认 jev 域收件人 id——生产卡若走 apps[0]+'个人'主通道同样存在此存量配置坑，非迁移引入）。投递链判例：14:31 后两张卡两次点击（已处理+忽略）双观测点均零到达——与 K-PUSH-005 分通道限流同模式（当日 CARD 通道高频：12:12 f6a5 ✓→14:25 实验卡 ✓→其后 ✗✗），非构型问题（第一张同构型卡实收）；v1 按钮走同一 card.action.trigger 事件链，链不稳时同样不可达——迁移零回归。落地（仓库版 jev-eval/jev_gate.py 单文件）：_build_alert_card→build_v3('alert')——header 🚨预警红域+标题带级别/rows 紧急度·类别·级别/md 标题+消息(300 截断)/双按钮双键 value（action_id=jev_ack|jev_ignore 供 bot ws card_actions.dispatch 审计放行+action=ack|ignore 供 lark_card_handler 老链零改动消费）/footer #jev #alert·jev-eval 盯盘预警·act 审计号；v1 死代码清理（_EMOJI/_LARK_COLOR）；WARN/INFO 级统一红域（域色=卡片语义非级别，级别进 rows）。E2E：py_compile 过；干跑 14/14（构型 6/双键 value 2/老链解析兼容 2/scan 归一 jev_ack+jev_ignore/dispatch 放行老链/INFO 级红域）；真发迁移卡 openapi code=0。生效边界：仓库版改动不自动生效到 C:\\aios 生产副本（jev_gate 32456 在跑）——生产同步（拷贝 jev_gate.py+重启）待老板拍板；lark_card_handler 零改动（双键 value 老解析路径天然兼容）。遗留记档：①生产同步+重启单（拍板后执行）②operator 白名单域错配存量坑（apps[0] 主通道投递时点击必拒——LARK_ALLOWED_OPERATORS 需补发送域 ou_50a9，C:\\aios 侧配置）③CARD 通道限流冷却窗口观察（今日 14:25 后进入，恢复时间待观察）。【2026-10-17 15:0x K-OPS-001 判例修正】'仓库版不自动生效 C:\\aios 生产'作废——C:\\aios 是 Junction→仓库同一物理目录，v3 代码已在生产路径；遗留①消解为'仅重启 jev_gate 32456 即载 v3'（JevStack 守护 10min 内重拉）；遗留②白名单在 jev-eval DPAPI 加密 .env，路径仍有效（经 junction 同一文件）。",
+  "note_addendum_2026_10_17_kops001": "junction 修正详见 K-OPS-001；15:01 收盘后重启实证：杀 32456→手动 start_jev_stack.ps1 重拉新进程 51948（15:01:29 起，单实例，gate.log 网关启动正常事件驱动+飞书推送已配置）——v3 红域卡已在生产生效，遗留①闭环"
+ },
+ "K-OPS-001": {
+  "title": "C:\\aios 生产链合并：勘察定案——Junction 同源，不存在合并（K-PUSH-006 记档误判翻案）",
+  "status": "done",
+  "created": "2026-10-17",
+  "plan": "P3 第六单（用户选单'生产链合并'）：①生产任务全景盘点（路径指向分拣）②双栈文件级 drift 盘点（六目录 hash 对比）③据差异出合并方案",
+  "note": "勘察链（2026-10-17 14:4x-15:0x）：①自建计划任务全景 ~90 个，其中 ~85 个指向 C:\\aios（quant_backtest 几十个+news/jev/portal/ops/tools/zerobound-kg/Hermes 守护），仓库路径仅'AI工作站推送中台守护8097'一个——体量远超 K-PUSH-006 记档的 7 任务。②drift 脚本对比六目录（portal/news_collector/jev-eval/ops/tools/quant_backtest）1548 个同名文件 hash：全部一致零 drift——与'今日 K-PUSH 全改在仓库'矛盾，唯一解释 junction。③实锤：(Get-Item C:\\aios).LinkType=Junction,Target=C:\\项目\\老田的AI助手——两条路径同一物理目录。④文档定案早在：docs/migration/2026-10-08_C盘aios-junction说明.md（标题即'勿再查双副本漂移'，2026-09-11 建，原指 E 盘；2026-10-16 换机归位脚本重建指向 C:\\项目，'51 个 start 脚本零改动生效'为设计意图）；ops/health_check.py check_junction() 每日 03:00 巡检兜底。结论：'C:\\aios 生产链合并'问题不存在——junction 即合并态，今日 K-PUSH-005~009 全部改动已在生产路径（脚本型任务下次触发自动用新代码）。判例修正两处：K-PUSH-006'C:\\aios 生产部署漂移，迁移需拍板另立单'作废（勘察漏查 LinkType/漏读既有文档，本单教训）；K-PUSH-009'生产同步待拍板'消解为仅重启 jev_gate。残留真挂账：①jev_gate 32456 重启载 v3（盘中盯盘服务，重启时机拍板）②operator 白名单域错配（DPAPI .env，另立单）③AgentWatchdog 任务 TR 损坏（K-PUSH-006 记档，未修）④zerobound-kg/Hermes 部分任务目标文件经 junction 仍需确认存在性（chain_watchdog.py/start_hermes_bg.py 等未见——属'任务指向已删组件'类，待巡检单）。本单零代码变更，临时文件 C:\\Temp\\kops_drift.py/json 已清。"
+ },
+ "K-ORG-152": {
+  "desc": "P0-4落地·判读席位资源包调查方案A(K-ORG-152):org.json两处(SEC2/OPT1)补binding_note注明模型名=注册语义实际通道由调用方key决定,zhipu_key包年4.6/5.3双通道实测可用(2026-10-17),不改llm_binding模型名;agent_coder.py三处key获取(chat_anthropic/chat_cloud/claude_glm)收敛为zhipu_key优先(audit_ai_config.json)GLM_API_KEY兜底,淘汰379b耗尽key兜底位;实测已证:zhipu_key(6546)anthropic端点4.6 OK+coding端点5.3全通,GLM_API_KEY(379b)anthropic 429[1113]余额不足;git add精确路径,先commit再merge防呆",
+  "branch": "task/K-ORG-152",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-152",
+  "status": "done",
+  "created": "2026-10-17 15:32:13",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 15:36:45"
+ },
+ "K-ORG-153": {
+  "desc": "固化devtask.py尾逗号自愈防御(K-ORG-153):tasks.json被并行会话手工写坏三现(K-ORG-149/151/152尾逗号JSONDecodeError致new/merge崩溃);新增_heal_trailing_commas(引号感知,字符串内逗号不误伤,esc处理反斜杠)与_load_tasks_json(自愈不写盘,非尾逗号类损坏fail-visible照常抛错);_tasks与_save两处读取统一走_load_tasks_json,避免_save读到坏JSON时current空字典静默丢单;6用例冒烟全PASS含对象/数组/嵌套尾逗号+字符串含逗号括号不误伤;py_compile通过;先commit再merge防呆",
+  "branch": "task/K-ORG-153",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-153",
+  "status": "done",
+  "created": "2026-10-17 15:40:51",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 15:42:01"
+ },
+ "K-STOCK-415": {
+  "desc": "datamart HTTP 门面收编进 portal：zerobound-kg 新增 datamart_api.py 只读查询服务(read/latest/ready/columns/explain/freshness)绑回环新端口，nginx ^~ /dm 反代收编，service_catalog 登记，check_ports REGISTRY 同步注册",
+  "branch": "task/K-STOCK-415",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-415",
+  "status": "done",
+  "created": "2026-10-17 15:48:21",
+  "project": "quant",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 17:53:46"
+ },
+ "K-ORG-154": {
+  "desc": "收编并行施工新产出的已收口文件(K-ORG-154):mtime分类扫描已停滞(>=60min)非运行态非outputs待定类候选79项=已跟踪19(portal 6+quant_backtest strategy_layer 8+osint_video 2+run_shadow+docs audit M0)+未跟踪60(agent_platform 接线/适配器/tests+quant_backtest bar_store/chain_watch/bar_dto+docs M1/M2 系列+jev-eval 探针4+tools plan 2+deliverables m0 diff);排除活跃75项并行施工不干预;K-STOCK-375判例hash对比0差异才移出;git add精确路径先commit再merge防呆",
+  "branch": "task/K-ORG-154",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-ORG-154",
+  "status": "done",
+  "created": "2026-10-17 16:01:28",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 17:52:32"
+ },
+ "K-PUSH-010": {
+  "desc": "Hermes 治理面·半自动验收收口（K-PUSH-001 挂账 P3 第四项治理循环）：勘察定案 venv/pulse/HITL 已被 K-ORG-113/K-PUSH-005/002 覆盖；本次补人工对比阶段显形——approve 后追加 pending_manual + deploy 前置放宽(verified/pending_manual) + 私有落地补 receipt/回执卡 + /api/state tune.action_needed 分桶(wait_compare/on_hold)；顺带修两真缺陷：submit received 不带 scope→requests_view scope 恒 private 根因、approve/reject/deploy receipt 不带 scope；随单提交 BOM 修复 4 个 ps1(start_jev_stack/jev_backfill_task/start_kg_sync/03_snapshot_datasources 多 BOM 叠堆 PS5.1 报错)；自动跑批 tune_bt 保持 enabled:false 另立单",
+  "branch": "task/K-PUSH-010",
+  "worktree": "c:\\项目\\老田的AI助手\\.worktrees\\K-PUSH-010",
+  "status": "done",
+  "created": "2026-10-17 15:20:00",
+  "project": "general",
+  "owner": "worker",
+  "merged": "2026-10-17 16:18:03",
+  "note": "E2E 全绿：py_compile 三文件过；干跑 16/16（状态机含 pending_manual 链/共享挂账不写 VIP/action_needed 分桶 wait_compare+on_hold/已部署出桶/已驳回不出桶）；8097 marker 换血(41352→54196)后 /api/state action_needed 上线且纯净——只剩 3 真实历史单 f6a5/bde0/024f 待人工对比（K-PUSH-005 时代审批通过的私有单，正是本单显形价值）；schedule tune_bt 仍 enabled:false。真缺陷修复实证：共享单 deploy 原误判走私有分支写 VIP（requests_view scope 取首条 received 行，而 submit received 从不传 scope→恒 private；receipt 行同样缺失）——修后共享单正确挂账 on_hold。干跑数据已按 req_id 全清(12 单/58 行/VIP/store)。commit 含 portal 2 文件(tune_gate/push_admin_server)+jev_backfill_task.ps1 共 3 文件；BOM 另 3 文件不入库：start_kg_sync.ps1 修复后与 git 版本零 diff 无需提交、start_jev_stack.ps1 未跟踪(历史遗留)、03_snapshot_datasources.ps1 在 gitignore zerobound-kg/ 下；精确路径禁 -A。【16:17 follow-up 完结三待对比历史单：三单均为 E2E 链路测试单（f6a5=K-PUSH-005 按钮复测/bde0=dispatch 审计链验证/024f=K-PUSH-004 按钮链路测试，draft 仅方向 note 无实际参数），用户拍板归档关闭；PENDING_STAGES 放宽(+\"verified\",\"pending_manual\")允许对比态 reject 归档 + approve 防重复审批（仅 received/parsed），commit 155b847；三单 rejected+receipt 落账、action_needed.wait_compare 清空、防重复实证 rejected 态 approve 被拒；tune_bt 仍 disabled。治理循环半自动收口至此全闭环：待对比桶空、归档通道可用"
+ },
+ "K-STOCK-416": {
+  "desc": "config.json db 端口漂移修复 5432→5446（zhice-db 容器宿主映射实证）",
+  "branch": "task/K-STOCK-416",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-416",
+  "status": "done",
+  "created": "2026-10-17 17:12:41",
+  "project": "quant",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 17:54:32"
+ },
+ "K-ORG-155": {
+  "desc": "8091冷启动断链升级守卫:start_portal_api.ps1加import冒烟预检(断链即拒启)+AGENTS.md §7加临时红线(job_spec_registry/api_misc收口前禁重启8091)",
+  "branch": "task/K-ORG-155",
+  "worktree": "C:\\aios\\.worktrees\\K-ORG-155",
+  "status": "done",
+  "created": "2026-10-17 18:04:58",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 18:2x (merge b9b2176, 三守卫全绿, 手动补登)"
+ },
+ "K-ORG-156": {
+  "desc": "JEV优化·回测验证闭环扩展(sentiment_backtest.py):conf分层命中率验证(逐层命中率/方向一致性/单调性)+判定后T+3/T+5收益窗口+scope分布统计,开源借鉴Qlib事件研究+finBERT置信度验证,先证伪/证实conf价值再定消费端阈值,数据说话",
+  "branch": "task/K-ORG-156",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-156",
+  "status": "done",
+  "created": "2026-10-17 20:1x",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 20:1x (merge 341cc8d, 三守卫全绿, 手工合并)"
+ },
+ "K-ORG-157": {
+  "desc": "JEV优化·低置信治理+时效衰减(news_ai.py jev_summary + news_jev_chart.py):低置信(conf<0.7)不参与净倾向信号,图表24h方向计数拆高置信/低置信两段+置信直方图标注0.7待观察线,净倾向改w=exp(-λΔt)时衰加权(半衰期6h,λ≈0.1155/h),实证支撑K-ORG-156:0.5-0.7段命中32-43%而0.7+稳定41-54%",
+  "branch": "task/K-ORG-157",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-157",
+  "status": "done",
+  "created": "2026-10-17 20:3x",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 20:4x (merge task/K-ORG-157, 三守卫全绿, 手工合并)"
+ },
+ "K-ORG-158": {
+  "desc": "JEV实证报告沉淀docs:2026-10-17_JEV舆情判定实证报告_K-ORG-156-157.md,含conf分层命中率/T+1+3+5事件研究/scope分布实证结论+低置信治理与时效衰减落地+后续建议,数据快照2026-09-25~10-17 n=2308",
+  "branch": "task/K-ORG-158",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-158",
+  "status": "done",
+  "created": "2026-10-17 20:5x",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 20:6x (merge task/K-ORG-158, 三守卫全绿, 手工合并)"
+ },
+ "K-ORG-159": {
+  "desc": "JEV优化二批·事件+公司绑定与校验回退(news_ai.py):判定输出扩展event_type枚举(15类)+companies代码,云/本地prompt口径同步,加schema校验(bias枚举/conf∈[0,1]/event_type枚举/代码格式)解析失败带错重发1次仍败挂降级链,jev_summary加事件分布top段,复用news.db/幂等/降级链资产",
+  "branch": "task/K-ORG-159",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-159",
+  "status": "done",
+  "created": "2026-10-17 21:0x",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 (merge task/K-ORG-159 -> 73922121, 三守卫全绿, 实测:本地判定schema通过/存量1423条无事件段/注入top3=业绩2政策1价格1, worktree已清场)"
+ },
+ "K-STOCK-418": {
+  "desc": "OM 补 Neo4j/MySQL 连接器：neo4j-kg 图谱 + quant-mysql/quant-cainiao-mysql 元数据编目，只读",
+  "branch": "task/K-STOCK-418",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-418",
+  "status": "done",
+  "created": "2026-10-17 19:37:47",
+  "merged": "2026-10-17 21:50:00",
+  "project": "quant",
+  "owner": "unknown-agent",
+  "close_note": "施工经容器内 metadata ingest CLI 完成：mysql_thunder_restore/mysql_cainiao_live 各 233 表零错误入库；Neo4j 段因 OM 2.0.5 ingestion 镜像无连接器受阻（审计记录，待 OM 升级另立）；内容已随 de03661 保护性提交并入 master，分支 0 ahead 无待合并提交"
+ },
+ "K-OPS-002": {
+  "desc": "OM 栈崩溃循环恢复：openmetadata_mysql InnoDB dict_foreign_add_to_cache 断言崩溃（dict0dict.cc:3452），server/ES/ingestion 连锁挂起，恢复四容器可用（运维工单归 quant 线）",
+  "branch": "task/K-OPS-002",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-OPS-002",
+  "status": "doing",
+  "created": "2026-10-17 22:39:46",
+  "project": "quant",
+  "owner": "unknown-agent"
+ },
+ "K-ORG-160": {
+  "desc": "JEV优化二批·判定漂移监控M7(新模块jev-eval/jev_drift.py):bias/scope/event_type/conf分桶周窗口分布对比(当前7天vs前7天),JS散度超阈值→v2_alert INSERT(WARN/OPEN)→jev_gate轮询降噪推送,借鉴开源概念漂移监控(Evidently/漂移检测),--dry演练/阈值与最小样本可配",
+  "branch": "task/K-ORG-160",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-160",
+  "status": "done",
+  "created": "2026-10-17",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 (merge task/K-ORG-160, 三守卫全绿, 全链路实测:scope漂移JS=0.235告警已入v2_alert,gate轮询拾取但Jev缺key未推送保持OPEN, worktree已清场)"
+ },
+ "K-ORG-161": {
+  "desc": "JEV优化二批·报告引用溯源M4(news_ai.py):快讯编号引用规则入prompt(关键主题/盘面驱动/关注个股动态/今日关注/明日关注每条后标来源#序号,无对应快讯写暂无明确信息来源),_audit_citations守卫补标未引用claim,payload增加news_refs序号→news_id映射,借鉴开源RAG引用溯源(证据链/无证据标记)",
+  "branch": "task/K-ORG-161",
+  "worktree": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-161",
+  "status": "done",
+  "created": "2026-10-17",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 (merge task/K-ORG-161 -> d638d97e, 三守卫全绿, E2E实测:qwen3.5:9b新规则下关键主题5条/重点关注3条全部带来源#N引用,守卫0补标0误伤, fetch_news news_id冒烟通过, worktree已清场)"
+ },
+ "K-ORG-162": {
+  "desc": "JEV优化二批·jev_drift晨链调度挂接(K-ORG-160遗留项收尾):新增jev-eval/jev_drift_task.ps1包装器(python全路径解析C:\\Program Files\\Python311\\python.exe兜底Get-Command,退出码透传,review_data日志,400KB轮转,纯ASCII无BOM)与deploy_jev_drift.ps1幂等部署脚本(先Unregister再Register);JevDriftDaily计划任务注册(t/S4U/Limited/Daily 07:10,powershell -NoProfile -ExecutionPolicy Bypass -File形态对齐JevBackfill,MultiInst=IgnoreNew/ExecLimit PT30M/StartIfAvail);注册经UAC提权完成(沙箱/非管理员Register-ScheduledTask均Access denied判例),手动Start-ScheduledTask验证LastTaskResult=0,scope漂移JS=0.235检出(未知92%vs基线28%持续),幂等生效:同周期alert_id触发ix_v2_alert_alert_id唯一约束冲突被C2批2豁免捕获无重复告警",
+  "branch": "main(直接提交)",
+  "status": "done",
+  "created": "2026-10-17",
+  "project": "general",
+  "owner": "unknown-agent",
+  "merged": "2026-10-17 (main直提交, 计划任务注册+全链路实测通过)"
+ }
+}
