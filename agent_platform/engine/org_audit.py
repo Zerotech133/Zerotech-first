@@ -27,12 +27,13 @@ except ImportError:                      # 直接 `python engine/org_audit.py` �
     from org_profiles import SRC_DEPT, profile_index
 
 SCHEMA_VERSION = "1.0"
-RULES_VERSION = "1.1"
+RULES_VERSION = "1.2"
 
 # 严重度口径（写死在此，避免各处解释不一）
 #   P1 无法指挥：主官空悬 / 主官真无档案（部门表、chief、team_* 都没有）/ 整部门零档案
 #   P2 指挥易错：主官跨部门引用（未登记兼任说明）/ 主官档案登记在部门表之外
 #                （取档方可能静默回落默认档）/ 中文名重复 / 部分席位缺档
+#                / 有档案但未声明 llm_binding（回落默认档＝替它假定有 LLM 能力）
 #   P3 存量观察：编外人员、名单与档案数量不符但已有主官
 SEV_P1, SEV_P2, SEV_P3 = "P1", "P2", "P3"
 
@@ -95,7 +96,9 @@ def audit(root: Path) -> dict:
     rows: list[dict] = []
     listed_total = profiled_total = ghost_total = elsewhere_total = 0
     in_org: set[str] = set()
-    extra_prof = _extra_profiles(root, org)          # 部门档案表之外的档案（chief / team_*）
+    all_idx = profile_index(root)                  # 三处档案全量（dept / chief / team_*）
+    extra_prof = {aid: v for aid, v in all_idx.items()
+                  if v.get("source") != SRC_DEPT}  # 部门表之外的
     leads_elsewhere: set[str] = set()
 
     for d in depts:
@@ -175,6 +178,19 @@ def audit(root: Path) -> dict:
         if extra:
             findings.append({"code": "PROFILE_NOT_LISTED", "severity": SEV_P3, "dept": dept,
                              "detail": "有档案但未列入部门名单", "agents": extra})
+
+        # 有档案却没说绑什么模型：取档方会回落默认档，等于**替这个席位假定有 LLM 能力**。
+        # 规则执行体（桥接/回调/门面）本该是 none，回落 9b 就是虚构能力；
+        # 真需要 LLM 的席位则缺了能力声明。两种都不该由工具猜——只报缺口。
+        no_bind = [i for i in ids if (all_idx.get(i) or {}).get("llm_binding", "") == ""]
+        if no_bind:
+            findings.append({"code": "BINDING_MISSING", "severity": SEV_P2, "dept": dept,
+                             "agents": no_bind,
+                             "detail": "%d 席有档案但未声明 llm_binding（%s）：取档方会回落默认档，"
+                                       "等于替它假定有 LLM 能力"
+                                       % (len(no_bind),
+                                          "、".join(sorted({(all_idx.get(i) or {}).get("source_detail", "")
+                                                            for i in no_bind})))})
 
         rows.append({"dept": dept, "name": d.get("name"), "lead": lead,
                      "listed": len(ids), "profiled": len(profs),

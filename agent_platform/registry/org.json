@@ -1384,7 +1384,7 @@
     {
       "dept": "proj_backtest",
       "name": "🅰 回测开发部",
-      "lead": null,
+      "lead": "DEV3",
       "type": "project",
       "status": "active",
       "charter": "【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建",
@@ -1439,7 +1439,17 @@
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {}
         }
-      ]
+      ],
+      "lead_duty": "回测开发部主官：主持逐日账、组合制v6评审与影子验收交付，对回测产物可追溯性与验收签字负责",
+      "lead_appointed": {
+        "at": "2026-10-21T20:52:42+0800",
+        "from": null,
+        "to": "DEV3",
+        "cross_dept": false,
+        "cross_note": "",
+        "ticket": "WO-LEGION-S43",
+        "signed_by": "老田"
+      }
     },
     {
       "dept": "proj_data",
@@ -2211,8 +2221,8 @@
           "role_profile": "军情司上行受理席",
           "analysis_type": "",
           "charter_detail": "情报板块唯一上行受理口：专职签收上游情报报告（INTEL_UPSTREAM_REPORT）、哈希幂等核验、出具 ACK 受理回执、维护受理台账；只受理不裁决，受理后分发与研判归情报板块与参谋长线",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "binding_note": "由 org_enroll 补档（工单 WO-ORG-217 / 放行人 老田）；改档 glm/glm-5.3-flash → ollama/qwen3.5:9b（工单 WO-ORG-219 / 放行人 老田）：glm-5.3-flash 实调 HTTP 400（模型名不存在）；E1 受理岗只做签收/回执，本地 9b 足够且不耗云端额度",
+          "llm_binding": "glm/glm-5.3-flash",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-217 / 放行人 老田）；改档 glm/glm-5.3-flash → ollama/qwen3.5:9b（工单 WO-ORG-219 / 放行人 老田）：glm-5.3-flash 实调 HTTP 400（模型名不存在）；E1 受理岗只做签收/回执，本地 9b 足够且不耗云端额度；改档 llm_binding→glm/glm-5.3-flash（工单 WO-LEGION-S43 / 放行人 老田）：S38判例作废：glm 400 真因是 gateway 把整串 binding 当 model 传参（S41 已修），flash 探针实测 ok(3943ms)，恢复 S37 原档",
           "tools": [],
           "tools_note": "补档初始为空，按工单另行授予",
           "memory_grants": [],

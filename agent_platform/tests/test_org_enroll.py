@@ -612,28 +612,34 @@ def test_backfill_handles_null_agent_profiles(tmp_path):
 # 口径：一律取 fixture 里的真实结构做动态比对，不写死「某部门主官是谁」
 # ——2026-10-21 已因写死真实数据踩红三次。
 
-def _leadless_dept(r):
-    """找一个 lead 为空、且名单里有人的部门（不写死部门名）。"""
+def _make_leadless(r):
+    """在 tmp 副本里**造**一个主官空悬的部门并可写回。
+
+    为什么不去真实盘面找：S43 已把最后一个空悬部门（proj_backtest）任命掉，
+    「找一个 lead 为空的部门」会直接 skip——**测试因盘面变好而静默失去覆盖**，
+    比红更危险（2026-10-21 真实踩到：6 个任命用例整批 skip）。
+    """
     org = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
-    for d in org["departments"]:
-        if not d.get("lead") and d.get("agents"):
-            return d
-    pytest.skip("fixture 中已无 lead 空悬的部门")
+    d = next(x for x in org["departments"] if x.get("agents"))
+    d["lead"] = None
+    d.pop("lead_appointed", None)
+    (r / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    return d
 
 
-def _unprofiled_member(r):
-    """找一个「在名单但无档案」的席位 id（动态，不写死 DENGZHI1 之类）。"""
+def _make_ghost_member(r):
+    """在 tmp 里造一个「在名单但三处都无档案」的席位（同理，不找真实盘面）。"""
     org = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
-    for d in org["departments"]:
-        profiled = {str(p.get("agent_id")) for p in (d.get("agent_profiles") or [])}
-        for a in d.get("agents") or []:
-            if str(a) not in profiled:
-                return d, str(a)
-    return None, None
+    d = next(x for x in org["departments"] if x.get("agents"))
+    d["agents"].append("GHOST9")
+    (r / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    return d, "GHOST9"
 
 
 def test_set_lead_plan_writes_nothing(root):
-    d = _leadless_dept(root)
+    d = _make_leadless(root)
     before = org_bytes(root)
     plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
                                  ticket="WO-LEGION-S41", signed_by="老田")
@@ -645,9 +651,7 @@ def test_set_lead_plan_writes_nothing(root):
 
 def test_set_lead_requires_profiled_lead(root):
     """无档案者不得任命：那只是把「主官空悬」换成「主官无档」。"""
-    d, aid = _unprofiled_member(root)
-    if aid is None:
-        pytest.skip("fixture 中已无名有实无的席位")
+    d, aid = _make_ghost_member(root)
     with pytest.raises(E.EnrollError) as ei:
         E.build_set_lead_plan(root, dept="dev", lead=aid,
                               ticket="WO-LEGION-S41", signed_by="老田",
@@ -656,7 +660,7 @@ def test_set_lead_requires_profiled_lead(root):
 
 
 def test_set_lead_cross_dept_needs_note(root):
-    d = _leadless_dept(root)
+    d = _make_leadless(root)
     other = next(a for dep in json.loads(
         (root / "registry" / "org.json").read_text(encoding="utf-8"))["departments"]
         if dep["dept"] != d["dept"]
@@ -678,7 +682,7 @@ def test_set_lead_rejects_noop_and_missing_creds(root):
         E.build_set_lead_plan(root, dept=dep["dept"], lead=dep["lead"],
                               ticket="WO-LEGION-S41", signed_by="老田")
     assert "已是" in str(ei.value)
-    d = _leadless_dept(root)
+    d = _make_leadless(root)
     with pytest.raises(E.EnrollError):
         E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
                               ticket="", signed_by="老田")
@@ -691,7 +695,7 @@ def test_set_lead_rejects_noop_and_missing_creds(root):
 
 
 def test_set_lead_apply_changes_only_lead_and_leaves_trace(root):
-    d = _leadless_dept(root)
+    d = _make_leadless(root)
     dept_name, lead = d["dept"], d["agents"][0]
     before_org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
     plan = E.build_set_lead_plan(root, dept=dept_name, lead=lead,
@@ -718,7 +722,7 @@ def test_set_lead_apply_changes_only_lead_and_leaves_trace(root):
 
 
 def test_set_lead_toctou_and_signer_mismatch(root):
-    d = _leadless_dept(root)
+    d = _make_leadless(root)
     plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
                                  ticket="WO-LEGION-S41", signed_by="老田")
     with pytest.raises(E.EnrollError):
@@ -736,7 +740,7 @@ def test_set_lead_toctou_and_signer_mismatch(root):
 
 
 def test_set_lead_rolls_back_on_selfcheck_failure(root, monkeypatch):
-    d = _leadless_dept(root)
+    d = _make_leadless(root)
     plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
                                  ticket="WO-LEGION-S41", signed_by="老田")
     before = org_bytes(root)

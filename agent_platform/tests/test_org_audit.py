@@ -285,3 +285,75 @@ def test_audit_cross_dept_note_downgrades(tmp_path):
     assert findings["no_note"] and findings["no_note"][0]["severity"] == "P2"
     assert findings["with_note"] and findings["with_note"][0]["severity"] == "P3"
     assert "跨部门兼任" in findings["with_note"][0]["detail"]
+
+
+# ------------------------------------------- 绑定声明（rules 1.2 / S43）
+
+def test_audit_detects_binding_missing(tmp_path):
+    """有档案但没写 llm_binding 必须报出来：取档方会回落默认档。
+
+    为什么算缺口而不是"默认就行"：规则执行体（桥接/回调/门面）本该 none，
+    回落 9b 等于替它虚构 LLM 能力；真需要 LLM 的席位则缺了能力声明。两种都不该由工具猜。
+    """
+    plat = tmp_path / "plat"
+    (plat / "registry").mkdir(parents=True)
+    (plat / "hr").mkdir()
+    org = {"departments": [{
+        "dept": "x", "name": "测试营", "lead": "P1",
+        "agents": ["P1", "Q1"],
+        "agent_profiles": [
+            {"agent_id": "P1", "llm_binding": "ollama/qwen3.5:9b"},
+            {"agent_id": "Q1"},                      # 有档案、没写绑定
+        ]}]}
+    (plat / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False), encoding="utf-8")
+    rep = A.audit(plat)
+    got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
+    assert got == {"Q1"}, "未声明绑定的席位必须被检出（实际 %r）" % got
+
+
+def test_audit_binding_missing_matches_independent_count():
+    """真实盘面：检出的未声明绑定席位须与独立口径一致（不写死人名）。"""
+    from engine.org_profiles import profile_index
+    rep = A.audit(_PLATFORM)
+    got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
+    idx = profile_index(_PLATFORM)
+    listed = {str(a) for d in _raw_org()["departments"] for a in (d.get("agents") or [])}
+    expect = {a for a in listed if (idx.get(a) or {}).get("llm_binding", "") == ""}
+    assert got == expect
+
+
+# ------------------------------------------- 绑定声明（rules 1.2 / S43）
+
+def test_audit_detects_binding_missing(tmp_path):
+    """有档案但没写 llm_binding 必须报出来：取档方会回落默认档。
+
+    为什么算缺口而不是"默认就行"：规则执行体（桥接/回调/门面）本该 none，
+    回落 9b 等于替它虚构 LLM 能力；真需要 LLM 的席位则缺了能力声明。两种都不该由工具猜。
+    """
+    plat = tmp_path / "plat"
+    (plat / "registry").mkdir(parents=True)
+    (plat / "hr").mkdir()
+    org = {"departments": [{
+        "dept": "x", "name": "测试营", "lead": "P1",
+        "agents": ["P1", "Q1"],
+        "agent_profiles": [
+            {"agent_id": "P1", "llm_binding": "ollama/qwen3.5:9b"},
+            {"agent_id": "Q1"},                      # 有档案、没写绑定
+        ]}]}
+    (plat / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False), encoding="utf-8")
+    rep = A.audit(plat)
+    got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
+    assert got == {"Q1"}, "未声明绑定的席位必须被检出（实际 %r）" % got
+
+
+def test_audit_binding_missing_matches_independent_count():
+    """真实盘面：检出的未声明绑定席位须与独立口径一致（不写死人名）。"""
+    from engine.org_profiles import profile_index
+    rep = A.audit(_PLATFORM)
+    got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
+    idx = profile_index(_PLATFORM)
+    listed = {str(a) for d in _raw_org()["departments"] for a in (d.get("agents") or [])}
+    expect = {a for a in listed if (idx.get(a) or {}).get("llm_binding", "") == ""}
+    assert got == expect
