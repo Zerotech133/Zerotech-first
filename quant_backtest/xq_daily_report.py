@@ -163,6 +163,73 @@ def summarize(rows):
                 bear_words=words["bearish"], bull_words=words["bullish"])
 
 
+def _parse_ts(v):
+    """WO-QT-20261020-077：宽松解析时点证据（'YYYY-MM-DD[ HH:MM:SS]'，容忍 T 分隔/毫秒尾巴）。
+    date-only（无时刻）也算当日发布的充分证据（新鲜判定只需日期部分）；
+    两者皆缺/不可解析返回 None——调用方失败关闭，不造时间。"""
+    if not v:
+        return None
+    s = str(v).strip().replace("T", " ")
+    m = re.match(r"^(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2}:\d{2}))?", s)
+    if not m or not m.group(1):
+        return None
+    try:
+        return datetime.strptime(m.group(1) + " " + (m.group(2) or "00:00:00"),
+                                 "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
+
+
+def split_fresh(rows, day):
+    """WO-QT-20261020-077：按 created_at 可证时点把窗口行拆为 (fresh, stale)。
+
+    fresh = created_at 可解析且日期部分 == day（当日发布，可进当前热度面板）；
+    stale = 其余（含 created_at 缺失/不可解析——失败关闭，绝不因缺时间被当作新鲜）。
+    行形态与 load_rows 一致：r[1] = s.created_at。
+    """
+    fresh, stale = [], []
+    for r in rows:
+        dt = _parse_ts(r[1])
+        if dt is not None and dt.strftime("%Y-%m-%d") == day:   # WO-QT-20261020-077：失败关闭守卫（M1 已还原）
+            fresh.append(r)
+        else:
+            stale.append(r)
+    return fresh, stale
+
+
+def build_panels(tac, ing, day):
+    """WO-QT-20261020-077：当前热度与历史回溯隔离的面板构建（纯函数，可合成测试）。
+
+    current_panel：仅当日发布（created_at 时点可证）的帖——"当前热度"唯一来源；
+    ingested_panel：当日入库全量计数（管道口径）+ 回溯参考榜（top_codes 只计
+    历史回溯帖），backfill_only=True 明确降级为"回溯参考"，不得冒充当前热度。
+    """
+    cur_rows, _ = split_fresh(tac, day)       # tac 本是 created_at 窗口，逐行复核（失败关闭）
+    _ing_fresh, bf_rows = split_fresh(ing, day)
+    s_cur = summarize(cur_rows)
+    s_bf = summarize(bf_rows)
+    s_ing_all = summarize(ing)
+    return {
+        "current": {
+            "total": len(cur_rows),
+            "classified": len(cur_rows) - s_cur["pending"],
+            "top_codes": dict(s_cur["codes"].most_common(10)),
+            "event_type": dict(s_cur["ev"]),
+            "sentiment": dict(s_cur["senti"]),
+            "fresh_basis": "created_at",
+        },
+        "ingested": {
+            "total": len(ing),
+            "classified": len(ing) - s_ing_all["pending"],
+            "fresh_count": len(ing) - len(bf_rows),
+            "backfill_count": len(bf_rows),
+            "top_codes": dict(s_bf["codes"].most_common(10)),
+            "event_type": dict(s_bf["ev"]),
+            "backfill_only": True,
+        },
+    }
+
+
 def anomaly_signals(summ, con, day):
     """异动侦测：当日 bearish 突增/高占比，对比前 6 日同 ticker 基线"""
     base_lo = (datetime.strptime(day, "%Y-%m-%d") - timedelta(days=6)).strftime("%Y-%m-%d")
@@ -365,8 +432,8 @@ def main() -> int:
     try:
         tac, ing = load_rows(con, day)
         summ = summarize(tac)
-        # WO-069：ingest 口径同维度汇总（复用 summarize），供 tactical 榜空转时门户兜底
-        summ_ing = summarize(ing)
+        # WO-QT-20261020-077：当前热度（仅当日发布）与历史回溯（入库降级为参考）隔离
+        panels = build_panels(tac, ing, day)
         anomalies = anomaly_signals(summ, con, day)
         tempo = word_tempo(con, day, today_words={"bearish": summ["bear_words"],
                                                   "bullish": summ["bull_words"]})
@@ -391,14 +458,11 @@ def main() -> int:
             "sentiment": dict(summ["senti"]),
             "content_type": dict(summ["ctype"]),  # v1.3 六类内容形态分布（门户条形消费）
             "top_codes": dict(summ["codes"].most_common(10)),
-            # WO-069 v1.8 ingest 口径面板：tactical（created_at）榜为空时门户兜底展示
-            # 当日入库（fetched_at，含历史回溯），解决"回溯采集日 tactical 榜空转"的口径错位
-            "ingested_panel": {
-                "total": len(ing),
-                "classified": len(ing) - summ_ing["pending"],
-                "top_codes": dict(summ_ing["codes"].most_common(10)),
-                "event_type": dict(summ_ing["ev"]),
-            },
+            # WO-QT-20261020-077 面板拆分（纠偏 WO-069 口径错位）：
+            # current_panel = 仅当日发布（created_at 可证），当前热度唯一来源；
+            # ingested_panel = 管道入库计数 + 回溯参考榜（仅历史帖），不再兜底冒充当前热度
+            "current_panel": panels["current"],
+            "ingested_panel": panels["ingested"],
             # v1.7 概念榜（fund=kind 标记上榜拍板落地）：指数/基金/unknown 隔离于个股榜
             "top_concepts": [{"code": c, "kind": k, "count": n}
                              for (c, k), n in summ["concepts"].most_common(8)],

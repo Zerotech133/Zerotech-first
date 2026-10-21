@@ -161,7 +161,7 @@ tr:last-child td{border-bottom:none}
 
   <div class="kpis">
     <div class="kpi"><div class="k">今日帖子（战术情报）</div><div class="v" id="k-posts">—</div><div class="s">created_at 当日新帖口径</div></div>
-    <div class="kpi"><div class="k">当日采集入库（管道）</div><div class="v" id="k-ing">—</div><div class="s">fetched_at 口径 · 含播种/回填</div></div>
+    <div class="kpi"><div class="k">当日采集入库（管道）</div><div class="v" id="k-ing">—</div><div class="s" id="k-ing-s">fetched_at 口径 · 含播种/回填</div></div>
     <div class="kpi accent"><div class="k">已分类（当日口径）</div><div class="v" id="k-cls">—</div><div class="s" id="k-cls-s">历史追平另计</div></div>
     <div class="kpi"><div class="k">高置信信号</div><div class="v" id="k-hc">—</div><div class="s">confidence ≥ 0.8 · 带标的</div></div>
   </div>
@@ -214,6 +214,15 @@ tr:last-child td{border-bottom:none}
       <h2>主题热度</h2>
       <div class="bars" id="theme-bars"></div>
     </div>
+    <!-- WO-QT-20261020-077：回溯参考独立分区——当日入库的历史帖榜降级展示，不冒充当前热度 -->
+    <div class="card panel" id="bf-card" style="display:none">
+      <h2>回溯参考 · 当日入库榜 <span class="hint">历史帖回溯入库 · 非当前热度</span></h2>
+      <div class="hint" id="bf-meta" style="font-size:11px;color:var(--dim);margin-bottom:10px"></div>
+      <table>
+        <thead><tr><th>代码</th><th>提及</th><th>热度</th></tr></thead>
+        <tbody id="bf-body"></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="foot">
@@ -234,6 +243,14 @@ const DEMO = {
               "公告解读":164,"行业研究":132,"问董秘":88},
   content_type:{fundamental:812, news:704, community:533, edu:96, ad:70},
   top_codes:{"00700":87,"600519":64,"300750":58,"601127":51,"002594":47,"688981":39,"09988":35},
+  /* WO-QT-20261020-077 演示契约：current_panel=当日发布（created_at 可证）；ingested_panel=管道入库+回溯参考榜 */
+  current_panel:{total:412, classified:412, fresh_basis:"created_at",
+    top_codes:{"00700":87,"600519":64,"300750":58,"601127":51,"002594":47,"688981":39,"09988":35},
+    event_type:{"个股研判":120,"行情观点":98,"闲聊杂谈":76,"交易策略":61,"公告解读":31,"行业研究":26}},
+  ingested_panel:{total:16156, classified:15800, fresh_count:412, backfill_count:15744,
+    backfill_only:true,
+    top_codes:{"00700":210,"600519":183,"601899":166,"600036":151,"000725":139,"601127":120,"002594":114},
+    event_type:{"行情观点":4102,"闲聊杂谈":3866,"个股研判":3310,"交易策略":2104,"公告解读":1011,"行业研究":933,"问董秘":520}},
   /* 概念榜（top_concepts=[{code,kind,count}]）：指数/基金/unknown kind 标记上榜，与个股榜统一热度刻度 */
   top_concepts:[{code:"510300",kind:"fund",count:28},{code:"000300",kind:"index",count:19},
                 {code:"513100",kind:"fund",count:12},{code:"200001",kind:"unknown",count:6}],
@@ -305,6 +322,8 @@ function renderError(msg){
   ["event-bars","ctype-bars","codes-body","tempo-bull","tempo-bear","signals","theme-bars","pipe"]
     .forEach(id=>{$(id).innerHTML='<div class="err">'+esc(msg)+"</div>"});
   $("topn").textContent="";$("tickerCard").innerHTML="";$("pipe-hint").textContent="";$("codes-mode").textContent="";
+  $("k-ing-s").textContent="fetched_at 口径 · 含播种/回填";   /* WO-QT-20261020-077 */
+  $("bf-card").style.display="none";                          /* WO-QT-20261020-077 */
 }
 
 function isBlankDay(d){
@@ -329,6 +348,9 @@ function render(d,mode){
   /* KPI */
   $("k-posts").textContent=fmt(d.posts_today);
   $("k-ing").textContent=fmt(d.ingested_today);
+  /* WO-QT-20261020-077：入库 KPI 副标透出回溯量，管道进度与热度分区内不混读 */
+  $("k-ing-s").textContent=(d.ingested_panel&&d.ingested_panel.backfill_count!=null)?
+    ("fetched_at 口径 · 含历史回溯 "+fmt(d.ingested_panel.backfill_count)+" 帖"):"fetched_at 口径 · 含播种/回填";
   $("k-cls").textContent=fmt(d.classified_today);
   $("k-cls-s").textContent=blank?"历史追平另计（见管线覆盖率）":"当日新帖口径 · 历史追平另计";
   $("k-hc").textContent=fmt((d.high_confidence||[]).length);
@@ -370,14 +392,16 @@ function render(d,mode){
 
   /* 热度个股（真实形态 {code:count}）+ 概念榜（top_concepts=[{code,kind,count}]，
      fund=kind 标记上榜语义 2026-10-19 拍板：指数/基金隔离于个股榜，带标记可见） */
-  /* WO-069 兜底：tactical（created_at）榜为空且当日确有入库时，回退展示 ingest 口径榜
-     （fetched_at，含历史回溯），并在卡片头显式标注口径，避免误读为当日发布热度 */
+  /* WO-QT-20261020-077 纠偏 WO-069：当前热度与历史回溯隔离——
+     当前热度只认 current_panel（仅当日发布 created_at 可证），空态显式"暂无新鲜原帖"，
+     不再回退 ingest 历史榜顶票；历史回溯榜降级至下方"回溯参考"独立卡片。
+     旧版日报 JSON 无 current_panel 时回退顶层 top_codes（同为 created_at 口径，兼容日期导航） */
+  const cp=d.current_panel||null;
   const ip=d.ingested_panel||null;
-  const hasTac=d.top_codes&&Object.keys(d.top_codes).some(k=>d.top_codes[k]>0);
-  const ipCodes=ip&&ip.top_codes&&Object.keys(ip.top_codes).some(k=>ip.top_codes[k]>0);
-  const tc=hasTac?d.top_codes:(ipCodes?ip.top_codes:{});
-  const ingestMode=!hasTac&&ipCodes;
-  if(ingestMode)$("codes-mode").textContent="当日入库口径（fetched_at，含历史回溯 "+fmt(ip.total)+" 帖）";
+  const curSrc=(cp&&cp.top_codes)?cp.top_codes:(d.top_codes||{});
+  const hasCur=Object.keys(curSrc).some(k=>curSrc[k]>0);
+  $("codes-mode").textContent=hasCur?"当前热度 · 当日发布（created_at）口径":"暂无新鲜原帖（当日发布 created_at 口径）";
+  const tc=hasCur?curSrc:{};
   const cl=Object.keys(tc).filter(k=>tc[k]>0).sort((a,b)=>tc[b]-tc[a]);
   const cc=Array.isArray(d.top_concepts)?d.top_concepts.filter(x=>x&&x.code):[];
   $("topn").textContent=cl.length?" "+cl.length:"";
@@ -393,8 +417,30 @@ function render(d,mode){
     "<td>"+fmt(tc[k])+"</td>"+
     '<td><span class="heat"><i style="width:'+(tc[k]/cmaxAll*100)+'%"></i></span></td></tr>').join("")
     +conceptRows)
-    ||'<tr><td colspan="3"><div class="empty">当日空态</div></td></tr>';
+    ||'<tr><td colspan="3"><div class="empty">暂无新鲜原帖（当日发布口径 · 历史回溯入库见"回溯参考"）</div></td></tr>';
   $("tickerCard").innerHTML="";
+
+  /* WO-QT-20261020-077：回溯参考独立分区——管道入库（fetched_at）里的历史帖榜，
+     明确标注"非当前热度"；旧版日报无 ingested_panel 时整卡隐藏（不造假） */
+  const bfCard=$("bf-card");
+  if(ip){
+    bfCard.style.display="";
+    const bk=Object.keys(ip.top_codes||{}).filter(k=>ip.top_codes[k]>0)
+      .sort((a,b)=>ip.top_codes[b]-ip.top_codes[a]);
+    $("bf-meta").textContent="fetched_at 当日入库 "+fmt(ip.total)+" 帖 · 其中历史回溯 "+
+      fmt(ip.backfill_count||0)+" 帖 · 仅供回看参考，不代表当前热度";
+    if(bk.length){
+      const bmax=Math.max(1,...bk.map(k=>ip.top_codes[k]));
+      $("bf-body").innerHTML=bk.map(k=>
+        "<tr><td><b style='color:var(--sub)'>"+esc(k)+"</b></td>"+
+        "<td>"+fmt(ip.top_codes[k])+"</td>"+
+        '<td><span class="heat"><i style="width:'+(ip.top_codes[k]/bmax*100)+'%;background:var(--dim)"></i></span></td></tr>').join("");
+    }else{
+      $("bf-body").innerHTML='<tr><td colspan="3"><div class="empty">当日无历史回溯入库榜</div></td></tr>';
+    }
+  }else{
+    bfCard.style.display="none";
+  }
 
   /* 升温词（真实形态 {bullish:[{word,today,base_avg,ratio}]}），ratio 比例条（真数据，非装饰） */
   const T=d.word_tempo||{};
