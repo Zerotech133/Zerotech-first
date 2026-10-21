@@ -447,3 +447,52 @@ def test_persist_docker_exec_rejects_bad_trade_date():
     import pytest as _pytest
     with _pytest.raises(ValueError):
         _persist_docker_exec([row])
+
+
+# ── N2（dt 契约方案甲反例测试，2026-11 计划）─────────────────────────────
+class TestDtContract:
+    """经 SignalAggregator().run() 触发 preaggregate_symbol 路径，验证 dt
+    契约（WO-QT-20261020-055 方案甲，2026-10-21 老田拍板）：非 None 非
+    字符串 dt 显式 ValueError（fail-visible，不降级吞掉，不隐式转换）；
+    None 与合法 'YYYY-MM-DD' 字符串放行。
+
+    使用本文件已有 StubSignal/StubAdapter 桩；写库由 autouse
+    _mock_db_write 拦截，测试不触库。signal.dt 通过桩实例属性注入
+    （StubSignal 默认无 dt → 等价 None）。
+    """
+
+    def test_int_dt_raises_valueerror_via_run(self):
+        """dt 为整数（如 20260101）→ run() 经 preaggregate_symbol 触发
+        契约 ValueError，消息须含 'dt' 与 '契约违例'。"""
+        s = StubSignal("000338.SZ", "buy", 80, 0.9)
+        s.dt = 20260101  # 整数 dt 契约违例
+        a1 = StubAdapter("s1", [s])
+        with pytest.raises(ValueError, match="契约违例") as ei:
+            SignalAggregator().run("20260101", adapters=[a1])
+        msg = str(ei.value)
+        assert "dt" in msg and "契约违例" in msg
+
+    def test_datetime_dt_raises_valueerror_via_run(self):
+        """dt 为 datetime 对象 → 期望 ValueError（同契约拒收）。"""
+        import datetime
+        s = StubSignal("000338.SZ", "buy", 80, 0.9)
+        s.dt = datetime.datetime(2026, 1, 1, 9, 30, 0)
+        a1 = StubAdapter("s1", [s])
+        with pytest.raises(ValueError, match="契约违例"):
+            SignalAggregator().run("20260101", adapters=[a1])
+
+    def test_none_dt_passes_via_run(self):
+        """对照组：dt=None（桩未设 dt）→ 正常通过，产出组合行。"""
+        s = StubSignal("000338.SZ", "buy", 80, 0.9)  # 无 dt 属性 → None
+        a1 = StubAdapter("s1", [s])
+        res = SignalAggregator().run("20260101", adapters=[a1])
+        assert len(res.combined) == 1
+        assert res.combined[0]["symbol"] == "000338.SZ"
+
+    def test_valid_str_dt_passes_via_run(self):
+        """对照组：dt 为合法 'YYYY-MM-DD' 字符串 → 正常通过。"""
+        s = StubSignal("000338.SZ", "buy", 80, 0.9)
+        s.dt = "2026-01-01"  # 合法 YYYY-MM-DD
+        a1 = StubAdapter("s1", [s])
+        res = SignalAggregator().run("20260101", adapters=[a1])
+        assert len(res.combined) == 1
