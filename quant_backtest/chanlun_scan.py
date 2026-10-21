@@ -785,9 +785,24 @@ def scan_all():
             print("hfq on: 全市场因子覆盖正常")
     print("scan done: ok=%d new=%d pool=%d" % (n_ok, len(new_rows),
                                                len(_load_pool())))
-    if n_ok == 0 and files:
-        _report_depth_gap(files)
+    if n_ok == 0:
+        _report_zero_scan(files)
     return new_rows
+
+
+def _report_zero_scan(files):
+    """n_ok==0 的唯一出口：必须把原因说清，不能静默空转。
+
+    三种零各不相同，日志要分开：
+      · files 空          → 根本没扫（数据目录空 / active 清单全裁）
+      · files 非空但全浅  → 不可扫（数据深度不足，DEPTH GAP）
+    两者都不是「今日无信号」——混为一谈会让值班误判策略失效或以为在盯。
+    """
+    if files:
+        _report_depth_gap(files)
+        return
+    print("scan: 0 只标的可扫（数据目录为空或 active 清单全被裁掉）"
+          "——本轮未分析任何标的，**不是**「今日无信号」")
 
 
 def _parquet_rows(path):

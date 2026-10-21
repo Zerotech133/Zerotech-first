@@ -41,10 +41,18 @@ def _align_schema(df, symbol, market):
         "high": df["high"],
         "low": df["low"],
         "volume": df["volume"],
-        "amount": df.get("turnover", df["volume"]),  # db turnover 即成交额
+        # 不依赖 DataFrame.get（pandas 3.x 才有的方法，2.x 会 AttributeError）
+        "amount": df["turnover"] if "turnover" in df.columns else df["volume"],
         "pre_close": df["pre_close"],
     })
-    out["pct_chg"] = (out["close"] / out["pre_close"] - 1).round(4) * 100
+    # WO-QT-20261021-104 审计修复：pre_close 为 0 时 (close/pre_close-1) 得 inf，
+    # 会把 inf 写进 parquet 污染下游（均值/排序/归一会全盘失真）。CN 实测已有
+    # 609 行 pre_close=0。统一把 0 与非数值置 NaN —— NaN 表示「未知涨跌幅」，
+    # 不伪造数值（不造数红线）。pre_close 本身缺失（US 实测 2935 只标的全空）
+    # 同样得 NaN，属如实反映源数据缺口，需情报侧补。
+    pc = pd.to_numeric(out["pre_close"], errors="coerce")
+    pc = pc.where(pc != 0)
+    out["pct_chg"] = (out["close"] / pc - 1).round(4) * 100
     return out
 
 

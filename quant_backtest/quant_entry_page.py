@@ -517,21 +517,26 @@ def render_html(ctx, now=None):
                banner, table_rows, seats_html, appendix))
 
 
-def load_context():
-    """聚合全部只读数据源（portal 路由每请求调用）。"""
+def load_context(now=None):
+    """聚合全部只读数据源（portal 路由每请求调用）。
+
+    now 必须透传到 crypto_stats：否则 regime 的 stale 用注入时间、币市的
+    stale 用真实时间，同一页面出现两套时间基准——测试固定日期时会因真实
+    日期漂移而随机红（日期敏感测试缺陷族，WO-103 审计发现）。
+    """
     return {
         "picks": load_picks(),
         "strategies": load_strategies(),
         "regime": load_regime(),
         "xunyou": load_xunyou(),
         "us_pool": us_pool_stats(),
-        "crypto": crypto_stats(),
+        "crypto": crypto_stats(now=now),
     }
 
 
 def render_default(now=None):
     """读真实产物渲染（portal 路由用）：纯读，失败由调用方降级。"""
-    return render_html(load_context(), now=now)
+    return render_html(load_context(now=now), now=now)
 
 
 def write_html(now=None, out_path=None):
