@@ -113,7 +113,17 @@
         Object.keys(alerts.source_health.sources).slice(0, 6).forEach(function (name) {
           var row = alerts.source_health.sources[name];
           var status = obj(row) && row.status === 'ok' ? 'limited-ok' : obj(row) && text(row.status) ? row.status : 'unknown';
-          result.focus.push(item('alert:source:' + name, '信号源 ' + name, '六源范围内的健康信号', status, '/api/alerts.source_health', obj(row) ? businessTime(row.as_of) : null, obj(row) ? text(row.reason, '仅为信号源状态') : '未取得该源状态', null, status === 'limited-ok' ? 3 : 2));
+          /* WO-OS-03: as_of 新鲜度分层——48h 内=ok；48h-7d=stale；>7d 或无 as_of=unknown */
+          var asOf = obj(row) ? businessTime(row.as_of) : null;
+          var freshness = 'unknown';
+          if (asOf) {
+            var ageH = (clock.getTime() - new Date(asOf).getTime()) / 3600000;
+            if (ageH <= 48) freshness = 'ok';
+            else if (ageH <= 168) freshness = 'stale';
+            else freshness = 'unknown';
+          }
+          var level = status === 'limited-ok' ? (freshness === 'ok' ? 'limited-ok' : 'stale') : status;
+          result.focus.push(item('alert:source:' + name, '信号源 ' + name + (freshness !== 'ok' ? ' · 数据新鲜度 ' + (freshness === 'stale' ? '偏旧(>48h)' : '未知/过期') : ''), '六源范围内的健康信号', level, '/api/alerts.source_health', asOf, obj(row) ? text(row.reason, '仅为信号源状态') : '未取得该源状态', null, level === 'limited-ok' ? 3 : 2));
         });
       }
     }
@@ -128,7 +138,9 @@
           var when = businessTime(row.created_at);
           var scheduled = businessTime(row.send_at);
           if (scheduled && new Date(scheduled) < clock && row.state === 'review') return;
-          result.focus.push(item('notify:' + text(row.id, String(i)), text(row.title, '通知决策'), row.state === 'review' ? '通知待确认 · 非待我审批' : '通知异常/阻断', row.state, '/api/notify/queue', when, text(row.reason, '通知决策账本记录；不可推断审批队列数量'), null, row.state === 'review' ? 1 : 2));
+          /* WO-OS-03: review/blocked 细分——review=待确认(非本人审批)，blocked=异常阻断需优先核对 */
+          var isBlocked = row.state === 'blocked';
+          result.focus.push(item('notify:' + text(row.id, String(i)), text(row.title, '通知决策'), isBlocked ? '通知异常/阻断 · 需优先核对原因' : (row.retry_count > 0 ? '通知待确认 · 曾重试 ' + row.retry_count + ' 次' : '通知待确认 · 非待我审批'), row.state, '/api/notify/queue', when, text(row.reason, isBlocked ? '阻断项不可忽略；重试次数与阻断原因须回原账本核对' : '通知决策账本记录；不可推断审批队列数量'), null, isBlocked ? 1 : 2));
         });
       }
     }
@@ -140,8 +152,12 @@
         tasks.tasks.forEach(function (row, i) {
           if (!obj(row) || (row.status !== 'open' && row.status !== 'doing')) return;
           var due = day(row.due) || (typeof row.due === 'string' ? day(row.due.slice(0, 10)) : null);
-          if (due && due < today) return;
-          result.focus.push(item('task:' + text(row.task_id, String(i)), text(row.title, '最近工单'), due ? '截止 ' + due + ' · 最近工单' : '最近工单 · 截止未知', row.status, '/api/org/tasks', businessTime(row.created_at), '只读最近列表；未证实属于本人或代表全部待办。', null, 2));
+          /* WO-OS-03: 截止日分层——今日到期=2，逾期回补=1（原逻辑直接丢弃逾期项，改为显式标注） */
+          if (due && due < today) {
+            result.focus.push(item('task:' + text(row.task_id, String(i)), text(row.title, '逾期工单'), '逾期至 ' + due + ' · 需核对是否阻塞', 'overdue', '/api/org/tasks', businessTime(row.created_at), '已过截止的最近工单被原逻辑隐藏；此处显式列出但不推断责任归属。', null, 1));
+            return;
+          }
+          result.focus.push(item('task:' + text(row.task_id, String(i)), text(row.title, '最近工单'), due ? (due === today ? '今日到期 · 优先核对' : '截止 ' + due + ' · 最近工单') : '最近工单 · 截止未知', row.status, '/api/org/tasks', businessTime(row.created_at), '只读最近列表；未证实属于本人或代表全部待办。', null, due === today ? 2 : 3));
         });
       }
     }
