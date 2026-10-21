@@ -435,3 +435,146 @@ def test_backfill_accepts_rule_only_binding(root):
     intel = next(d for d in org["departments"] if d["dept"] == "intel")
     p = next(x for x in intel["agent_profiles"] if x["agent_id"] == "BEACON1")
     assert p["llm_binding"] == "none", "不得把规则执行体硬绑成 9b"
+
+
+# ---------------------------------------------------------------- 改档 rebind（S39）
+
+def _intel_prof(root, aid):
+    org = json.loads(org_bytes(root).decode("utf-8"))
+    intel = next(d for d in org["departments"] if d["dept"] == "intel")
+    return next(p for p in intel["agent_profiles"] if p["agent_id"] == aid), intel
+
+
+def _prep_intel(root, aid="XQ1"):
+    """先补一档，供改档用例使用。"""
+    E.apply_backfill_plan(root, E.build_backfill_plan(root, **dict(BF, agent_id=aid)),
+                          signed_by="老田")
+
+
+def test_rebind_requires_existing_profile(root):
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
+                            ticket="WO-ORG-219", signed_by="老田")
+    assert "尚无档案" in str(ei.value)
+
+
+def test_rebind_rejects_bad_binding_and_missing_creds(root):
+    _prep_intel(root)
+    with pytest.raises(E.EnrollError):
+        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="gpt-9/x",
+                            ticket="WO-ORG-219", signed_by="老田")
+    with pytest.raises(E.EnrollError):
+        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
+                            ticket="", signed_by="老田")
+    with pytest.raises(E.EnrollError):
+        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
+                            ticket="WO-ORG-219", signed_by="  ")
+
+
+def test_rebind_rejects_same_binding(root):
+    _prep_intel(root)
+    with pytest.raises(E.EnrollError) as ei:
+        E.build_rebind_plan(root, dept="intel", agent_id="XQ1",
+                            binding="ollama/qwen3.5:9b", ticket="WO-ORG-219", signed_by="老田")
+    assert "无需改档" in str(ei.value)
+
+
+def test_rebind_apply_changes_only_binding_fields(root):
+    """**承重**：改档只动 llm_binding 与 binding_note，其余字段逐项不变。"""
+    _prep_intel(root)
+    before_prof, _ = _intel_prof(root, "XQ1")
+    plan = E.build_rebind_plan(root, dept="intel", agent_id="XQ1",
+                               binding="glm/glm-5.3", ticket="WO-ORG-219",
+                               signed_by="老田", reason="flash 档实调 400")
+    assert plan["from_binding"] == "ollama/qwen3.5:9b"
+    res = E.apply_rebind_plan(root, plan, signed_by="老田")
+    assert res["ok"] is True and res["to_binding"] == "glm/glm-5.3"
+
+    after_prof, _ = _intel_prof(root, "XQ1")
+    assert after_prof["llm_binding"] == "glm/glm-5.3"
+    assert "WO-ORG-219" in after_prof["binding_note"]
+    assert "flash 档实调 400" in after_prof["binding_note"]
+    for k, v in before_prof.items():
+        if k in ("llm_binding", "binding_note"):
+            continue
+        assert after_prof[k] == v, "字段 %s 被改档误伤" % k
+
+
+def test_rebind_leaves_other_seats_and_depts_untouched(root):
+    _prep_intel(root, "XQ1")
+    _prep_intel(root, "TDX1")
+    before = json.loads(org_bytes(root).decode("utf-8"))
+    E.apply_rebind_plan(root, E.build_rebind_plan(
+        root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
+        ticket="WO-ORG-219", signed_by="老田"), signed_by="老田")
+    after = json.loads(org_bytes(root).decode("utf-8"))
+    b = {d["dept"]: d for d in before["departments"]}
+    a = {d["dept"]: d for d in after["departments"]}
+    for k in b:
+        if k == "intel":
+            continue
+        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == \
+               json.dumps(a[k], sort_keys=True, ensure_ascii=False), "%s 被改档误伤" % k
+    # 同部门另一席不动
+    t1 = next(p for p in b["intel"]["agent_profiles"] if p["agent_id"] == "TDX1")
+    t2 = next(p for p in a["intel"]["agent_profiles"] if p["agent_id"] == "TDX1")
+    assert json.dumps(t1, sort_keys=True, ensure_ascii=False) == \
+           json.dumps(t2, sort_keys=True, ensure_ascii=False)
+
+
+def test_rebind_rolls_back_on_selfcheck_failure(root, monkeypatch):
+    _prep_intel(root)
+    before = org_bytes(root)
+
+    def boom(*a, **k):
+        raise E.EnrollError("自检失败（模拟）")
+
+    monkeypatch.setattr(E, "_selfcheck_rebind", boom)
+    with pytest.raises(E.EnrollError):
+        E.apply_rebind_plan(root, E.build_rebind_plan(
+            root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
+            ticket="WO-ORG-219", signed_by="老田"), signed_by="老田")
+    assert org_bytes(root) == before, "自检失败必须回滚"
+
+
+def test_rebind_toctou_binding_changed_after_plan(root):
+    _prep_intel(root)
+    plan = E.build_rebind_plan(root, dept="intel", agent_id="XQ1",
+                               binding="glm/glm-5.3", ticket="WO-ORG-219", signed_by="老田")
+    # 模拟别处先改过绑定
+    org = json.loads(org_bytes(root).decode("utf-8"))
+    intel = next(d for d in org["departments"] if d["dept"] == "intel")
+    next(p for p in intel["agent_profiles"] if p["agent_id"] == "XQ1")["llm_binding"] = "glm/glm-4.6"
+    (root / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    taken = org_bytes(root)
+    with pytest.raises(E.EnrollError) as ei:
+        E.apply_rebind_plan(root, plan, signed_by="老田")
+    assert "复核失败" in str(ei.value)
+    assert org_bytes(root) == taken
+
+
+# ---------------------------------------------------------------- 连通性冒烟
+
+def test_probe_none_is_rule_only():
+    r = E.probe_binding("none")
+    assert r["ok"] is True and r["kind"] == "rule_only"
+    assert r["latency_ms"] == 0, "规则执行体不应发起任何调用"
+
+
+def test_probe_llm_ok_and_fail(monkeypatch):
+    """冒烟须能分辨通与不通——这正是 S38 踩的坑（词表合法但实调 400）。"""
+    from gateway import llm_gateway
+
+    monkeypatch.setattr(llm_gateway, "chat",
+                        lambda **k: llm_gateway.make_envelope(
+                            kind="llm_chat", ok=True, data={"text": "OK"}))
+    r = E.probe_binding("ollama/qwen3.5:9b")
+    assert r["ok"] is True and r["kind"] == "llm" and r["text"] == "OK"
+
+    monkeypatch.setattr(llm_gateway, "chat",
+                        lambda **k: llm_gateway.make_envelope(
+                            kind="llm_chat", ok=False,
+                            error={"code": "llm_error", "message": "HTTP 400 Bad Request"}))
+    r2 = E.probe_binding("glm/glm-5.3-flash")
+    assert r2["ok"] is False and "400" in r2["error"]

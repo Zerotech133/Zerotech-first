@@ -385,6 +385,170 @@ def apply_backfill_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
             "note": "补档已落 org.json 并自检通过（名单未变）；回滚用 --rollback %s" % backup}
 
 
+def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str,
+                      ticket: str = "", signed_by: str = "", reason: str = "") -> dict:
+    """改档计划：只改已有档案的 `llm_binding`（不动职责、不动名单）。
+
+    为什么需要：S38 实测发现编制里写的 `glm/glm-5.3-flash` 实际调用返回 HTTP 400
+    （模型名不存在）。**词表只保证拼写合法，不保证能力可用**。改档是常规运维动作，
+    不能靠手改真源——手改无备份、无自检、无痕迹。
+    """
+    org = load_org(root)
+    target = _find_dept(org, dept)
+    aid = (agent_id or "").strip()
+    profs = target.get("agent_profiles") or []
+    cur = next((p for p in profs if str(p.get("agent_id")) == aid), None)
+    if cur is None:
+        raise EnrollError("%s 在 %s 尚无档案，改档无从谈起：请先用 --backfill 补档" % (aid or "?", dept))
+    if binding not in BINDING_ALLOW:
+        raise EnrollError("llm_binding 不在词表：%r（可选 %s）"
+                          % (binding, ", ".join(sorted(BINDING_ALLOW))))
+    if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
+        raise EnrollError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
+    if not (signed_by or "").strip():
+        raise EnrollError("缺少放行人：改档改组织真源，须老田显式签字（--signed-by）")
+    old = str(cur.get("llm_binding") or "")
+    if old == binding:
+        raise EnrollError("%s 当前已是 %r，无需改档" % (aid, binding))
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "rules_version": RULES_VERSION,
+        "mode": "rebind",
+        "dept": dept,
+        "dept_name": target.get("name"),
+        "agent_id": aid,
+        "cn_name": _cn_of_id(root, aid),
+        "from_binding": old,
+        "to_binding": binding,
+        "ticket": ticket.strip(),
+        "signed_by": signed_by.strip(),
+        "reason": (reason or "").strip(),
+        "writes": ["registry/org.json（仅改 %s 的 llm_binding 与 binding_note）" % aid],
+        "note": "dry-run 改档计划：未写入任何字节",
+    }
+
+
+def apply_rebind_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
+    """执行改档：备份 → 只改两字段 → 自检（其余一字未动）→ 失败回滚。"""
+    if (signed_by or "").strip() != plan.get("signed_by"):
+        raise EnrollError("放行人与计划不一致：plan=%r apply=%r"
+                          % (plan.get("signed_by"), signed_by))
+    dept = plan["dept"]
+    aid = plan["agent_id"]
+
+    before = load_org(root)
+    target = _find_dept(before, dept)
+    cur = next((p for p in (target.get("agent_profiles") or [])
+                if str(p.get("agent_id")) == aid), None)
+    if cur is None:
+        raise EnrollError("执行前复核失败：%s 无档案" % aid)
+    if str(cur.get("llm_binding") or "") != plan["from_binding"]:
+        raise EnrollError("执行前复核失败：%s 当前绑定已变（%r → %r），请重新生成计划"
+                          % (aid, plan["from_binding"], cur.get("llm_binding")))
+
+    bdir = root / "registry" / "backups"
+    bdir.mkdir(parents=True, exist_ok=True)
+    backup = _unique_backup_path(bdir)
+    shutil.copy2(_org_path(root), backup)
+
+    org = copy.deepcopy(before)
+    t2 = _find_dept(org, dept)
+    prof = next(p for p in t2["agent_profiles"] if str(p.get("agent_id")) == aid)
+    prof["llm_binding"] = plan["to_binding"]
+    note = "改档 %s → %s（工单 %s / 放行人 %s）" % (
+        plan["from_binding"], plan["to_binding"], plan["ticket"], plan["signed_by"])
+    if plan.get("reason"):
+        note += "：%s" % plan["reason"]
+    prev_note = str(prof.get("binding_note") or "")
+    prof["binding_note"] = (prev_note + "；" + note) if prev_note else note
+
+    tmp = _org_path(root).with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(_org_path(root))
+
+    try:
+        _selfcheck_rebind(root, before, dept, aid, plan["to_binding"])
+    except EnrollError:
+        shutil.copy2(backup, _org_path(root))
+        raise
+
+    return {"schema_version": SCHEMA_VERSION, "ok": True, "mode": "rebind",
+            "dept": dept, "agent_id": aid,
+            "from_binding": plan["from_binding"], "to_binding": plan["to_binding"],
+            "backup": str(backup),
+            "note": "改档已落 org.json 并自检通过；回滚用 --rollback %s" % backup}
+
+
+def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding: str) -> None:
+    """改档自检：目标 profile 两字段已改、其字段与其他一切未动。"""
+    after = load_org(root)
+    b = {d.get("dept"): d for d in before.get("departments") or []}
+    a = {d.get("dept"): d for d in after.get("departments") or []}
+    if list(b.keys()) != list(a.keys()):
+        raise EnrollError("自检失败：部门清单变化")
+    pb = next(p for p in (b[dept].get("agent_profiles") or [])
+              if str(p.get("agent_id")) == aid)
+    pa = next((p for p in (a[dept].get("agent_profiles") or [])
+               if str(p.get("agent_id")) == aid), None)
+    if pa is None:
+        raise EnrollError("自检失败：%s 档案丢失" % aid)
+    if pa.get("llm_binding") != new_binding:
+        raise EnrollError("自检失败：%s 绑定未改为 %r" % (aid, new_binding))
+    for k, v in pb.items():
+        if k in ("llm_binding", "binding_note"):
+            continue
+        if pa.get(k) != v:
+            raise EnrollError("自检失败：%s 的 %s 被意外改动" % (aid, k))
+    # 其他部门与其他席位必须一字未动
+    for name in b:
+        if name == dept:
+            continue
+        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != \
+           json.dumps(a.get(name), sort_keys=True, ensure_ascii=False):
+            raise EnrollError("自检失败：非目标部门 %r 被改动" % name)
+    others_b = [p for p in (b[dept].get("agent_profiles") or [])
+                if str(p.get("agent_id")) != aid]
+    others_a = [p for p in (a[dept].get("agent_profiles") or [])
+                if str(p.get("agent_id")) != aid]
+    if json.dumps(others_b, sort_keys=True, ensure_ascii=False) != \
+       json.dumps(others_a, sort_keys=True, ensure_ascii=False):
+        raise EnrollError("自检失败：同部门其他席位被改动")
+
+
+def probe_binding(binding: str, *, timeout_s: int = 40) -> dict:
+    """连通性冒烟：验证一个绑定**真的能调通**，而不只是拼写合法。
+
+    存在理由：S38 实测 `glm/glm-5.3-flash` 词表合法却返回 HTTP 400（模型名不存在）。
+    词表只能保证拼写，能力要靠实调。编制工具应能在补档/改档后顺手验一次。
+
+    `binding == "none"`（规则执行体）不算失败，返回 kind=rule_only。
+    """
+    out = {"binding": binding, "ok": False, "kind": "", "latency_ms": 0, "error": ""}
+    if binding == "none":
+        out.update(ok=True, kind="rule_only",
+                   error="规则执行体，无 LLM 依赖（无需连通性）")
+        return out
+    t0 = time.time()
+    try:
+        plat = Path(__file__).resolve().parents[1]
+        if str(plat) not in sys.path:
+            sys.path.insert(0, str(plat))
+        from gateway import llm_gateway
+        env = llm_gateway.chat(binding=binding, system="连通性冒烟，只回一个词：OK",
+                              user="OK")
+        out["latency_ms"] = int((time.time() - t0) * 1000)
+        if env.get("ok"):
+            out.update(ok=True, kind="llm",
+                       text=str((env.get("data") or {}).get("text", ""))[:40])
+        else:
+            err = env.get("error") or {}
+            out["error"] = "%s: %s" % (err.get("code", "?"), str(err.get("message", ""))[:160])
+    except Exception as e:                                  # noqa: BLE001
+        out["latency_ms"] = int((time.time() - t0) * 1000)
+        out["error"] = "%s: %s" % (type(e).__name__, str(e)[:160])
+    return out
+
+
 def _selfcheck(root: Path, before: dict, dept: str, aid: str) -> None:
     """写后自检：新员在目标部门、总数 +1、**其他部门一字未动**。不符即抛错触发回滚。"""
     after = load_org(root)
@@ -526,6 +690,11 @@ def main(argv=None) -> int:
     ap.add_argument("--ticket", default="")
     ap.add_argument("--signed-by", default="")
     ap.add_argument("--apply", action="store_true", help="真写入（默认只打印计划）")
+    ap.add_argument("--rebind", action="store_true",
+                    help="改档模式：只改已有档案的 llm_binding（不动职责与名单）")
+    ap.add_argument("--probe", metavar="BINDING",
+                    help="连通性冒烟：实测该 binding 能否调通（只读，不写任何真源）")
+    ap.add_argument("--reason", default="", help="改档原因，写入 binding_note")
     ap.add_argument("--backfill", action="store_true",
                     help="补档模式：给已在名单但无档案的席位补档案（不动 agents 名单）")
     ap.add_argument("--rollback", help="用指定备份还原 org.json")
@@ -533,16 +702,36 @@ def main(argv=None) -> int:
 
     root = Path(args.root)
     try:
+        if args.probe:
+            res = probe_binding(args.probe)
+            print(json.dumps(res, ensure_ascii=False, indent=1))
+            return 0 if res["ok"] else 1
         if args.rollback:
             print(json.dumps(rollback(root, args.rollback, signed_by=args.signed_by),
                              ensure_ascii=False, indent=1))
             return 0
-        need = ("dept", "agent_id", "role", "duty") if args.backfill else \
-               ("dept", "agent_id", "cn_name", "role", "duty")
+        if args.rebind:
+            need = ("dept", "agent_id", "binding")
+        elif args.backfill:
+            need = ("dept", "agent_id", "role", "duty")
+        else:
+            need = ("dept", "agent_id", "cn_name", "role", "duty")
         missing = [k for k in need if not getattr(args, k)]
         if missing:
             print("缺少必填参数：%s" % ", ".join("--" + m for m in missing), file=sys.stderr)
             return 2
+        if args.rebind:
+            plan = build_rebind_plan(root, dept=args.dept, agent_id=args.agent_id,
+                                     binding=args.binding, ticket=args.ticket,
+                                     signed_by=args.signed_by, reason=args.reason)
+            if not args.apply:
+                print(json.dumps(plan, ensure_ascii=False, indent=1))
+                print("\n【dry-run】以上为改档计划，未写入任何字节。确认无误加 --apply 执行。",
+                      file=sys.stderr)
+                return 0
+            res = apply_rebind_plan(root, plan, signed_by=args.signed_by)
+            print(json.dumps(res, ensure_ascii=False, indent=1))
+            return 0
         if args.backfill:
             plan = build_backfill_plan(root, dept=args.dept, agent_id=args.agent_id,
                                        role_profile=args.role, duty=args.duty,
