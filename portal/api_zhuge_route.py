@@ -49,6 +49,16 @@ PUSHFLOW_LEDGER = Path(__file__).resolve().parent / "work" / "push_flow.jsonl"
 POLICY_KIND_WORDS = ("deny:", "quota", "policy", "hold", "silent")
 
 
+def _is_day(text):
+    """严格 YYYY-MM-DD 且为真实日历日（2026-02-30 / 2026-10-21T10:00:01 均拒绝）。"""
+    if not isinstance(text, str) or len(text) != 10:
+        return False
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").strftime("%Y-%m-%d") == text
+    except ValueError:
+        return False
+
+
 def _is_policy_suppressed(row):
     """是否为策略性拦截（非投递失败）。
 
@@ -102,8 +112,12 @@ def _pushflow_stats(path=None, day=None):
                 suppressed += 1  # 策略抑制：不进分母、不进通道成败
             continue
         row_day = row.get("date")
+        # WO-OS-25-FIX：只认合法日期且不晚于统计日。缺 date 会落成 "None" 桶并
+        # 因字符串序排到最后，污染 recent[-1]（趋势拿它跟今天比）；未来日期同理。
+        if not isinstance(row_day, str) or not _is_day(row_day) or row_day > day:
+            continue
         passed = row.get("ok") is True
-        bucket_day = per_day.setdefault(str(row_day), [0, 0])  # [ok, fail]
+        bucket_day = per_day.setdefault(row_day, [0, 0])  # [ok, fail]
         bucket_day[0 if passed else 1] += 1
         if row_day != day:
             continue

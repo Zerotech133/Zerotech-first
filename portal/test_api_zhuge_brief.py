@@ -293,6 +293,43 @@ def test_pushflow_trend_flat():
     assert s is not None and "基本持平" in s["reason"], "±5pp 内应判为基本持平"
 
 
+def test_pushflow_trend_boundary_symmetric():
+    """WO-OS-25-FIX：所有正好 ±5pp 的组合必须判定一致（注释口径：±5pp 内含边界→持平）。
+
+    实测缺陷：40 组 5pp 边界里 20 组判"恶化/改善"、20 组判"持平"——同为上升
+    5 个百分点，结果取决于浮点表示（0.05 精确 vs 0.25-0.20 有误差）。
+    修法：先把百分点差四舍五入到 4 位再比较。
+    """
+    m = _load()
+    verdicts = []
+    for a in range(0, 101, 5):
+        for b in range(0, 101, 5):
+            if abs(a - b) != 5:
+                continue
+            if b < 10:
+                continue  # <10% 本就不产建议（正常投递水平），无趋势可言
+            s = _pick(m.build_brief(_trend_case(b / 100, a / 100), CLOCK))
+            assert s is not None, "5pp 边界(%d→%d)应仍产建议" % (a, b)
+            if "持平" in s["reason"]:
+                verdicts.append("持平")
+            elif "恶化" in s["reason"]:
+                verdicts.append("恶化")
+            else:
+                verdicts.append("改善")
+    assert len(set(verdicts)) == 1, (
+        "5pp 边界判定不一致，出现 %s 共 %d 组" % (sorted(set(verdicts)), len(verdicts)))
+    assert verdicts[0] == "持平", "按注释 ±5pp 内含边界应判持平，实得 " + verdicts[0]
+
+
+def test_pushflow_trend_beyond_boundary():
+    """越过 ±5pp 才判改善/恶化（6pp 必须生效）。"""
+    m = _load()
+    worse = _pick(m.build_brief(_trend_case(0.31, 0.25), CLOCK))
+    better = _pick(m.build_brief(_trend_case(0.25, 0.31), CLOCK))
+    assert "恶化" in worse["reason"], "+6.0pp 应判恶化"
+    assert "改善" in better["reason"], "-6.0pp 应判改善"
+
+
 def test_pushflow_trend_missing_recent_degrades_silently():
     """无 recent 字段（旧载荷）不影响主结论，只是不给趋势。"""
     m = _load()

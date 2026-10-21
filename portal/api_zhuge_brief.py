@@ -80,14 +80,18 @@ def _trend_text(recent: Any) -> str:
     if not (0 <= cur <= 1 and 0 <= before <= 1):
         return ""
     delta = cur - before
-    if delta <= -0.05:
+    # WO-OS-25-FIX：先量化到 0.01 个百分点再比较。直接比 float 会因二进制表示
+    # 让同为 5pp 的变化随机落两侧（0.05 精确 vs 0.25-0.20 有误差），实测 40 组
+    # 5pp 边界里 20 组判非持平、20 组判持平，属不可复现的判定。
+    pp = round(delta * 100, 4)
+    if pp < -5:
         verdict = "较前一日改善"
-    elif delta >= 0.05:
+    elif pp > 5:
         verdict = "较前一日恶化"
     else:
         verdict = "与前一日基本持平"
     return "；%s（前一日 %s%%，变化 %+.1f 个百分点）" % (
-        verdict, _pct_text(before), delta * 100)
+        verdict, _pct_text(before), pp)
 
 
 def _pushflow_rate_or_none(stats: Dict[str, Any]) -> Optional[float]:

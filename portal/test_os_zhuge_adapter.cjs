@@ -287,6 +287,46 @@ const GOOD_SIX = {
     && noTrend.reason.indexOf('恶化') === -1);
 })();
 
+/* 10g. WO-OS-25-FIX：①5pp 边界一致判持平 ②null fail_rate 不得凭空造趋势 */
+(function test_trend_boundary_and_null_guard() {
+  const mk = (todayRate, prevRate) => {
+    const raw = clone(GOOD_SIX);
+    raw.pushflow = {
+      ok: true, today: 100, attempted: 100,
+      ok_count: Math.round(100 * (1 - todayRate)),
+      fail_count: Math.round(100 * todayRate), fail_rate: todayRate,
+      policy_suppressed: 0, channels: {},
+      recent: [
+        { day: '2026-10-20', attempted: 100, fail_count: Math.round(100 * prevRate), fail_rate: prevRate },
+        { day: '2026-10-21', attempted: 100, fail_count: Math.round(100 * todayRate), fail_rate: todayRate },
+      ],
+    };
+    return A.buildBrief(raw, CLOCK).suggestions.find(s => s.id === 'pushflow:daily_rate');
+  };
+  // 边界：+5pp 与 -5pp 都必须持平
+  const up5 = mk(0.25, 0.20);
+  const down5 = mk(0.25, 0.30);
+  check('+5pp 判持平(含边界)', up5 && up5.reason.indexOf('持平') !== -1);
+  check('-5pp 判持平(含边界)', down5 && down5.reason.indexOf('持平') !== -1);
+  // 越界：6pp 才判
+  const up6 = mk(0.31, 0.25);
+  const down6 = mk(0.25, 0.31);
+  check('+6pp 判恶化', up6 && up6.reason.indexOf('恶化') !== -1);
+  check('-6pp 判改善', down6 && down6.reason.indexOf('改善') !== -1);
+
+  // null / '' fail_rate 不得被 Number() 当 0
+  const raw = clone(GOOD_SIX);
+  raw.pushflow = {
+    ok: true, today: 100, attempted: 100, ok_count: 70, fail_count: 30,
+    fail_rate: 0.30, policy_suppressed: 0, channels: {},
+    recent: [{ day: '2026-10-20', attempted: 100, fail_count: 30, fail_rate: null },
+             { day: '2026-10-21', attempted: 100, fail_count: 30, fail_rate: 0.30 }],
+  };
+  const s = A.buildBrief(raw, CLOCK).suggestions.find(x => x.id === 'pushflow:daily_rate');
+  check('null fail_rate 不凭空造改善', s && s.reason.indexOf('改善') === -1);
+  check('null fail_rate 不给趋势', s && s.reason.indexOf('个百分点') === -1);
+})();
+
 if (failures.length) { console.error('FAIL WO-OS-07 adapter 契约：' + failures.join('；')); process.exit(1); }
 console.log('PASS WO-OS-07 os_zhuge_adapter 契约：同语义9场景+pushflow2场景+UMD双端+无写副作用（' +
   A.buildBrief(GOOD_SIX, CLOCK).suggestions.length + ' 条建议样例）');

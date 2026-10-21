@@ -334,3 +334,33 @@ def test_pushflow_recent_capped_at_four_days():
     assert len(stats["recent"]) == 4
     assert stats["recent"][0]["day"] == "2026-10-18"
 
+
+# ── WO-OS-25-FIX：recent 只收合法且不晚于当日的日期 ──────────────
+def test_pushflow_recent_rejects_missing_and_future_dates():
+    """缺 date 行会落成 day:'None' 桶并排到最后，污染趋势基准；未来日期同理。
+
+    实测缺陷：今日 2 条 + 无 date 2 条 → recent[-1] = day:'None'，
+    趋势拿"None"日与今日比，且末日≠顶层口径。
+    """
+    import api_zhuge_route as zr
+    rows = [_row("2026-10-21", True), _row("2026-10-21", False),
+            {"ts": "2026-10-21T10:00:00", "kind": "hub", "channel": "openapi",
+             "target": "oc_t", "count": 1, "ok": False, "tenant": "default"},  # 无 date
+            {"ts": "2026-10-21T10:00:01", "date": "2026-10-21T10:00:01",
+             "kind": "hub", "channel": "openapi", "target": "oc_t",
+             "count": 1, "ok": False, "tenant": "default"},  # 非法 date 格式
+            {"ts": "2026-10-25T10:00:00", "date": "2026-10-25",
+             "kind": "hub", "channel": "openapi", "target": "oc_t",
+             "count": 1, "ok": True, "tenant": "default"}]  # 未来日期
+    path = _write_temp_ledger(rows, "wo_os_25fix_dates.jsonl")
+    try:
+        stats = zr._pushflow_stats(path=path, day="2026-10-21")
+    finally:
+        path.unlink()
+    assert stats is not None
+    days = [r["day"] for r in stats["recent"]]
+    assert "None" not in days, "缺 date 行不得进 recent"
+    assert "2026-10-25" not in days, "未来日期不得进 recent"
+    assert days[-1] == "2026-10-21", "末日必须是当日"
+    assert stats["recent"][-1]["fail_rate"] == stats["fail_rate"]
+
