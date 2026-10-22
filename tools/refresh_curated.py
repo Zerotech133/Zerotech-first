@@ -257,6 +257,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-log", action="store_true", help="不写 kg_sync_task.log")
     parser.add_argument("--skip-verify", action="store_true",
                         help="跳过逐文件 footer 复核（不推荐）")
+    parser.add_argument("--guard-minutes", type=float, default=10.0,
+                        help="kg_sync 日志在这么多分钟内有写入就拒绝开工（默认 10；0 关闭）")
+    parser.add_argument("--force", action="store_true",
+                        help="无视 kg_sync 活跃守卫（--guard-minutes 0 的显式替代）")
     args = parser.parse_args(argv)
 
     src = Path(args.src)
@@ -276,6 +280,20 @@ def main(argv: list[str] | None = None) -> int:
     if not src.is_dir():
         _say(f"错误：源目录不存在 {src}")
         return 2
+
+    # ---- 开工守卫（每周 routine 的关键闸门）：kg_sync 正在写原始层时重建，
+    # 会读到写了一半的数据集（写一半的 parquet 读不出 footer → F5 会拦，但那时
+    # 已经浪费 52 分钟）。所以用「kg_sync 日志最近有写入」作为活跃信号。
+    if args.guard_minutes > 0 and not args.force and KG_LOG.is_file():
+        try:
+            idle = (time.time() - KG_LOG.stat().st_mtime) / 60.0
+        except OSError:
+            idle = None
+        if idle is not None and idle < args.guard_minutes:
+            _say(f"拒绝开工：{KG_LOG} 在 {idle:.1f} 分钟前还有写入"
+                 f"（阈值 {args.guard_minutes:g} 分钟），kg_sync 可能正在写原始层。")
+            _say("  等同步结束后重跑；确认无风险可加 --force（或 --guard-minutes 0）。")
+            return 2
 
     # ---- 硬约束 2（审查 F4）：out / tmp 与 src 的三种重叠关系逐一显式拒绝。
     # 没这条时 `--out ...\quant_backtest\data` 能通过全部校验，替换时 rmtree 会把
