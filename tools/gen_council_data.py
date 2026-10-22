@@ -15,6 +15,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -163,23 +164,110 @@ def probe_seats() -> list[dict]:
     return seats
 
 
+# ---------------- v2：六阶段工作流 ----------------
+STAGES = ["立题", "表态", "试工", "监读", "定稿", "分发收口"]
+
+# 议题注册表：新议题先在此登记（或从立题文书解析 tags）
+TOPIC_REGISTRY = [
+    {
+        "topic": "互审单 #001（OS 调度方案）",
+        "tags": ["govern", "design"],
+        "stage": "分发收口",
+        "originator": "laotian",
+        "summary": "OS 唯一调度面方案经四轮互审收敛：v1.1 六修订+S-0 双条件门禁。收口遗留：0x80070003 根因独立挂账。",
+    },
+    {
+        "topic": "议会厅工作流 SOP 试行（首个全流程任务）",
+        "tags": ["govern", "docs"],
+        "stage": "表态",
+        "originator": "laotian",
+        "summary": "SOP v1 已落地（d02f40a2）；待首个真实任务全流程走一遍（候选：明日警报源 as_of 复核）后定 v1.1。",
+    },
+]
+
+
+def build_stage_view() -> list[dict]:
+    """议题 × 六阶段视图：每阶段列出已发生的发言席位与文书数。"""
+    speeches_by_topic = {}
+    for root in [DELIVERABLES, os.path.normpath(os.path.join(REPO, ".."))]:
+        if not os.path.isdir(root):
+            continue
+        for fn in sorted(os.listdir(root)):
+            if not fn.endswith(".md") or "2026-10-22" not in fn:
+                continue
+            has_council = ("互审" in fn) or ("回执" in fn and "P1" not in fn and "到点" not in fn) or ("评审" in fn and "OS" in fn)
+            if not has_council:
+                continue
+            path = os.path.join(root, fn)
+            try:
+                text = open(path, encoding="utf-8").read(6000)
+            except OSError:
+                continue
+            seat = _seat_of(text, fn)
+            speeches_by_topic.setdefault("互审单 #001（OS 调度方案）", []).append(
+                {"seat": seat, "at": _mtime_iso(path), "title": fn[:-3]})
+
+    out = []
+    for reg in TOPIC_REGISTRY:
+        sp = sorted(speeches_by_topic.get(reg["topic"], []), key=lambda x: x["at"])
+        # 阶段推进判定：表态=有≥2席位发言；试工/监读由文书阶段标注或注册表给定
+        stage_index = STAGES.index(reg["stage"]) if reg["stage"] in STAGES else 0
+        seats_spoken = sorted({s["seat"] for s in sp} - {"unknown"})
+        out.append({
+            "topic": reg["topic"],
+            "tags": reg["tags"],
+            "stage": reg["stage"],
+            "stage_index": stage_index,
+            "stages": STAGES,
+            "originator": reg["originator"],
+            "summary": reg["summary"],
+            "speeches": sp,
+            "seats_spoken": seats_spoken,
+            "light": "green" if stage_index >= STAGES.index("定稿") else ("red" if seats_spoken and len(seats_spoken) < 2 and stage_index >= 1 else "yellow"),
+        })
+    return out
+
+
+def route_suggestions() -> list[dict]:
+    """对未到分发阶段的议题预给路由建议（council_route.ROUTE_TABLE 复用）。"""
+    sys.path.insert(0, HERE)
+    try:
+        import council_route as cr
+    except ImportError:
+        return []
+    out = []
+    for t in TOPIC_REGISTRY:
+        if t["stage"] in ("分发收口", "定稿"):
+            continue
+        r = cr.route(t["tags"])
+        if "error" not in r:
+            out.append({"topic": t["topic"], "route": r})
+    return out
+
+
 def main() -> int:
     topics = scan_topics()
     seats = probe_seats()
+    stage_view = build_stage_view()
+    routes = route_suggestions()
     payload = {
         "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
-        "schema": "os_council/v1",
+        "schema": "os_council/v2",
         "topics": topics,
+        "stage_view": stage_view,
+        "route_suggestions": routes,
         "seats": seats,
+        "workflow_stages": STAGES,
         "note": "会议厅只读投影：发言=已落盘文书（git 可溯）；状态灯由文书 STATUS 行驱动；"
-                "在线检测只报可测信号（端口/运行证据），不可测席位诚实标注，不猜。",
+                "六阶段视图对齐议会厅 SOP v1；路由建议由 council_route.py 产（只建议不派单）；"
+                "在线检测只报可测信号，不可测席位诚实标注，不猜。",
     }
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(OUT_PATH), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
     os.replace(tmp, OUT_PATH)
-    print(f"council.json -> {os.path.relpath(OUT_PATH, REPO)}: {len(topics)} 议题 / {len(seats)} 席位")
+    print(f"council.json -> {os.path.relpath(OUT_PATH, REPO)}: {len(topics)} 议题 / {len(stage_view)} 阶段视图 / {len(routes)} 路由建议 / {len(seats)} 席位")
     return 0
 
 

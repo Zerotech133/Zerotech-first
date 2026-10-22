@@ -65,5 +65,19 @@ def test_payload_schema(tmp_path, monkeypatch):
     monkeypatch.setattr(gcd, "probe_seats", lambda: [])
     assert gcd.main() == 0
     payload = json.load(open(tmp_path / "out" / "council.json", encoding="utf-8"))
-    assert payload["schema"] == "os_council/v1"
+    assert payload["schema"] == "os_council/v2"
     assert "generated_at" in payload and "note" in payload
+    assert "stage_view" in payload and "route_suggestions" in payload  # v2 新增
+
+
+def test_stage_view_and_routes(tmp_path, monkeypatch):
+    """六阶段视图与路由建议联动（v2 核心）。"""
+    monkeypatch.setattr(gcd, "TOPIC_REGISTRY", [
+        {"topic": "试点任务", "tags": ["dev"], "stage": "表态",
+         "originator": "laotian", "summary": "SOP 试点"}])
+    monkeypatch.setattr(gcd, "DELIVERABLES", str(tmp_path))
+    view = gcd.build_stage_view()
+    assert view[0]["stage_index"] == 1 and view[0]["stages"][0] == "立题"
+    # dev 标签应产出路由建议（lead=workbuddy）
+    routes = gcd.route_suggestions()
+    assert routes and routes[0]["route"]["lead"] == "workbuddy"
