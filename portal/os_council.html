@@ -1,59 +1,105 @@
 <!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>老田的个人 OS · 会议厅</title><style>
-:root{color-scheme:dark;--bg:#090f1c;--paper:#111e31;--ink:#eef5ff;--muted:#a7b8cc;--line:#30445d;--blue:#6bd7e5;--pale:#17324a;--amber:#eac48b;--red:#ff9b91;--green:#7fd8a4}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),var(--bg);color:var(--ink);font:14px/1.65 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}a{color:inherit;text-decoration:none}.shell{max-width:1280px;margin:auto;padding:0 26px 60px}.top{display:flex;align-items:center;gap:16px;min-height:70px;border-bottom:1px solid var(--line)}.brand{font-size:18px;font-weight:750;letter-spacing:.035em}.badge{font-size:11px;color:var(--blue);border:1px solid #456b82;background:#163047;border-radius:8px;padding:4px 10px}.top .nav{margin-left:auto;font-size:12px;color:var(--muted)}.top .nav a{color:var(--blue);margin-left:14px}h1{font-size:26px;margin:30px 0 6px}.sub{color:var(--muted);font-size:13px;margin:0 0 22px}.layout{display:grid;grid-template-columns:300px 1fr 270px;gap:16px;align-items:start}.panel{background:linear-gradient(145deg,#15243a,var(--paper) 76%);border:1px solid var(--line);border-radius:14px;padding:18px}.panel h2{font-size:15px;margin:0 0 10px;color:var(--blue);letter-spacing:.08em}.eyebrow{font-size:11px;color:var(--blue);font-weight:700;letter-spacing:.12em}.topic{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#0e1a2b}.topic b{display:block;font-size:13px}.topic .light{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px}.light.g{background:var(--green)}.light.y{background:var(--amber)}.light.r{background:var(--red)}.topic small{color:var(--muted);font-size:11px}.speech{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:#0e1a2b}.speech .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.seat{font-size:11px;font-weight:700;border-radius:14px;padding:3px 11px;letter-spacing:.05em}.seat.tianfeng{color:#7fd8a4;border:1px solid #2c6e52;background:#0f2620}.seat.zhaoyun{color:#eac48b;border:1px solid #8a6a3a;background:#2a2113}.seat.zhuge{color:#8fb7f0;border:1px solid #3a5a8a;background:#131f33}.seat.laotian{color:#f0b7c4;border:1px solid #8a3a4e;background:#2b131d}.seat.unknown{color:var(--muted);border:1px dashed var(--line)}.speech .at{color:var(--muted);font-size:11px}.speech b.t{display:block;font-size:14px;margin:8px 0 4px}.speech small{color:var(--muted);font-size:12px;display:block}.speech .note{margin-top:6px;font-size:12px;color:var(--amber)}.stagetrack{display:flex;gap:5px;margin:10px 0 6px;flex-wrap:wrap}.stage{flex:1;min-width:64px;text-align:center;border:1px solid var(--line);border-radius:7px;padding:5px 4px;background:#0c1727;position:relative}.stage.done{border-color:#2c6e52;background:#0f2620}.stage .sname{font-size:11px;color:var(--muted);display:block}.stage.done .sname{color:#7fd8a4;font-weight:700}.stage .snow{font-size:10px;color:var(--amber);display:block;margin-top:1px}seatcard{border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:9px;background:#0e1a2b}.seatcard .row1{display:flex;justify-content:space-between;align-items:center;gap:8px}.seatcard b{font-size:13px}.dot{width:10px;height:10px;border-radius:50%;flex:none}.dot.g{background:var(--green);box-shadow:0 0 6px #7fd8a466}.dot.r{background:var(--red)}.dot.q{background:var(--muted)}.seatcard small{color:var(--muted);font-size:11px;display:block;margin-top:4px}.verdict{border:1px solid #8a6a3a;background:#221a10;border-radius:10px;padding:12px 14px;color:#e8d5b5;font-size:12px}.verdict b{color:var(--amber)}.stamp{color:var(--muted);font-size:11px;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.empty{padding:18px;border:1px dashed #436078;border-radius:10px;background:#132136;color:var(--muted);font-size:12px}@media(max-width:1020px){.layout{grid-template-columns:1fr}.panel{padding:14px}}
-</style></head><body><div class="shell"><header class="top"><div class="brand">老田的个人 OS</div><span class="badge">会议厅 · 只读投影</span><div class="nav"><a href="/os-entry">← 返回 OS 首页</a></div></header>
+:root{color-scheme:dark;--bg:#090f1c;--paper:#111e31;--ink:#eef5ff;--muted:#a7b8cc;--line:#30445d;--blue:#6bd7e5;--pale:#17324a;--amber:#eac48b;--red:#ff9b91;--green:#7fd8a4}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),var(--bg);color:var(--ink);font:14px/1.65 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}a{color:inherit;text-decoration:none}.shell{max-width:1380px;margin:auto;padding:0 26px 70px}.top{display:flex;align-items:center;gap:16px;min-height:70px;border-bottom:1px solid var(--line)}.brand{font-size:18px;font-weight:750}.badge{font-size:11px;color:var(--blue);border:1px solid #456b82;background:#163047;border-radius:8px;padding:4px 10px}.top .nav{margin-left:auto;font-size:12px}.top .nav a{color:var(--blue)}h1{font-size:24px;margin:24px 0 4px}.sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+.layout{display:grid;grid-template-columns:320px 1fr 280px;gap:16px;align-items:start}.panel{background:linear-gradient(145deg,#15243a,var(--paper) 76%);border:1px solid var(--line);border-radius:14px;padding:16px}.panel h2{font-size:14px;margin:0 0 10px;color:var(--blue)}.eyebrow{font-size:11px;color:var(--blue);font-weight:700;letter-spacing:.12em}
+.btn{cursor:pointer;border:1px solid #456b82;background:#17344a;color:#dffaff;border-radius:8px;padding:7px 14px;font-size:13px}.btn:hover{background:#20516a}.btn.primary{background:#0f3a4a;border-color:var(--blue);font-weight:700}.btn.small{padding:4px 10px;font-size:12px}.btn.rec{background:#4a1a1a;border-color:#8a3a3a;color:#ffc9c9;animation:pulse 1.2s infinite}@keyframes pulse{50%{background:#6a2222}}
+input,select,textarea{background:#0c1727;border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:8px 10px;font-size:13px;width:100%}textarea{resize:vertical;min-height:74px}input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue)}
+.field{margin-bottom:10px}.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.topic{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#0e1a2b;cursor:pointer}.topic:hover{border-color:var(--blue)}.topic.active{border-color:var(--blue);background:var(--pale)}.topic b{display:block;font-size:13px}.light{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.light.g{background:var(--green)}.light.y{background:var(--amber)}.light.r{background:var(--red)}.topic small{color:var(--muted);font-size:11px}
+.stagetrack{display:flex;gap:4px;margin:8px 0 4px;flex-wrap:wrap}.stage{flex:1;min-width:52px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:3px 2px;background:#0c1727}.stage.done{border-color:#2c6e52;background:#0f2620}.stage .sname{font-size:10px;color:var(--muted)}.stage.done .sname{color:#7fd8a4;font-weight:700}
+.chatbox{display:flex;flex-direction:column;height:540px;border:1px solid var(--line);border-radius:12px;background:#0b1524;overflow:hidden}.chathead{padding:9px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-size:13px;background:#101f33}.chathead b{color:var(--blue);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50%}.chathead .rstat{margin-left:auto;font-size:11px;color:var(--muted)}
+.msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px}.msg{max-width:86%;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:#101f33;font-size:13px}.msg .who{font-size:11px;color:var(--blue);margin-bottom:3px}.msg .tm{color:var(--muted);font-size:10px;margin-left:6px}.msg.mine{align-self:flex-end;background:#12303f;border-color:#2c6e52}.msg.sys{align-self:center;color:var(--amber);font-size:11px;background:transparent;border-style:dashed}.msg .att{display:block;margin-top:5px;font-size:11px;color:var(--amber)}
+.composer{border-top:1px solid var(--line);padding:10px 12px;background:#101f33}.crow{display:flex;gap:8px;align-items:flex-end}.crow textarea{min-height:44px;flex:1}.tools{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}.tools .hint{font-size:11px;color:var(--muted);margin-left:auto}
+.seat-sel{width:auto;padding:4px 8px;font-size:12px}
+.seatcard{border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:7px;background:#0e1a2b}.seatcard .r1{display:flex;justify-content:space-between;align-items:center}.seatcard b{font-size:12px}.dot{width:9px;height:9px;border-radius:50%}.dot.g{background:var(--green);box-shadow:0 0 6px #7fd8a466}.dot.r{background:var(--red)}.dot.q{background:var(--muted)}.seatcard small{color:var(--muted);font-size:10px;display:block;margin-top:3px}
+.verdict{border:1px solid #8a6a3a;background:#221a10;border-radius:10px;padding:10px 12px;color:#e8d5b5;font-size:11px;margin-top:10px}.verdict b{color:var(--amber)}
+.sched-item{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;background:#0c1727}.sched-item b{display:block}.sched-item small{color:var(--muted)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#17344a;border:1px solid var(--blue);border-radius:10px;padding:10px 20px;font-size:13px;display:none;z-index:9}.toast.show{display:block}
+.empty{padding:14px;border:1px dashed #436078;border-radius:10px;background:#132136;color:var(--muted);font-size:12px}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+</style></head><body><div class="shell"><header class="top"><div class="brand">老田的个人 OS</div><span class="badge">会议厅 v3 · 交互工作台</span><div class="nav"><a href="/os-entry">← OS 首页</a></div></header>
 <h1>会议厅</h1>
-<p class="sub">多方异步交锋的可视化重放：发言 = 已落盘文书（git 可溯），本页只读投影不存源；状态灯由文书 STATUS 驱动；在线检测只报可测信号，不可测诚实标注。</p>
+<p class="sub">发起会议 → 多席位复辩 → 定稿分发。留言=落盘账本（git 可溯）；文档上传只存证不执行；语音本机转写。交互桥 <span id="bridge" style="color:var(--muted)">检测中…</span></p>
 <div class="layout">
-<section class="panel"><span class="eyebrow">TOPICS</span><h2>议题</h2><div id="topics"><div class="empty">正在读取会议数据…</div></div></section>
-<section class="panel"><span class="eyebrow">WORKFLOW · 六阶段</span><h2>议题流程</h2><div id="stages"><div class="empty">正在读取…</div></div></section>
-<section class="panel"><span class="eyebrow">SPEECH FLOW</span><h2>发言流</h2><div id="speeches"><div class="empty">正在读取会议数据…</div></div></section>
-<section class="panel"><span class="eyebrow">SEATS</span><h2>席位在线</h2><div id="seats"><div class="empty">正在探测…（未取到之前不断言离线）</div></div><div style="height:12px"></div><div class="verdict"><b>裁决区（老田专属）</b><br>未决分歧自动归集于此。签准走 approval_gate；沉默 = 议题保持开放，不默认通过。当前待签：五判例 Z4 卡（含检测器自证）。</div></section>
-</div>
-<p class="stamp" id="stamp">数据读取中…</p></div>
+<section class="panel"><span class="eyebrow">NEW · 发起</span><h2>发起 / 预约会议</h2>
+<div class="field"><label>议题标题</label><input id="n-title" placeholder="例：watchdog 推送预算独立"></div>
+<div class="field"><label>标签（逗号分隔）</label><input id="n-tags" placeholder="dev,ops" value="govern"></div>
+<button class="btn primary" id="btn-new" style="width:100%">⚡ 立即发起</button>
+<div class="field" style="margin-top:12px"><label>预约时间</label><input id="s-at" type="datetime-local"></div>
+<button class="btn" id="btn-sched" style="width:100%">📅 预约（草案入账,到点立题）</button>
+<div style="height:10px"></div><span class="eyebrow">TOPICS</span><h2 style="margin-top:4px">议题 · 六阶段</h2><div id="topics"></div>
+<div class="verdict"><b>裁决区（老田）</b><br>议题定稿一句批语即可；沉默=议题保持开放。待签：B2 双锚轮 / B3 六判例 Z2 卡。</div>
+</section>
+<section class="panel" style="padding:12px"><div class="chatbox">
+<div class="chathead"><b id="cur-topic">（选择左侧议题，或发起新会议）</b><span class="rstat" id="chat-stat"></span></div>
+<div class="msgs" id="msgs"><div class="empty">对话流：选议题看历史留言；底部输入框发言（文字/语音/文档）。</div></div>
+<div class="composer"><div class="crow">
+<select class="seat-sel" id="seat"><option value="laotian">老田</option><option value="tianfeng">田丰</option><option value="zhaoyun">赵云</option><option value="zhuge">诸葛亮</option><option value="workbuddy">WorkBuddy</option></select>
+<textarea id="say" placeholder="文字输入：想说的话…（Enter 发送 / Shift+Enter 换行）"></textarea>
+<button class="btn primary" id="btn-say">发送</button></div>
+<div class="tools">
+<button class="btn small" id="btn-mic">🎙 语音输入</button><button class="btn small" id="btn-file" title="上传文档入议题">📎 上传文档</button><input type="file" id="file-in" hidden>
+<button class="btn small" id="btn-refresh">↻ 刷新</button>
+<span class="hint" id="mic-hint">语音：点击开始→说话→再点停止→转写进输入框</span></div></div>
+</div></section>
+<section class="panel"><span class="eyebrow">SEATS</span><h2>席位在线</h2><div id="seats"></div><div style="height:8px"></div><span class="eyebrow">SCHEDULED</span><h2 style="margin-top:4px">已预约</h2><div id="sched-list"><div class="empty">暂无预约</div></div></section>
+</div><p style="color:var(--muted);font-size:11px;margin-top:14px" id="stamp"></p></div>
+<div class="toast" id="toast"></div>
 <script>
-(()=>{'use strict';const SEAT_LABEL={tianfeng:'田丰',zhaoyun:'赵云',zhuge:'诸葛亮',laotian:'老田',unknown:'未署名'};
+(()=>{'use strict';const OPS='http://127.0.0.1:8798';const SEAT_LABEL={tianfeng:'田丰',zhaoyun:'赵云',zhuge:'诸葛亮',laotian:'老田',workbuddy:'WorkBuddy',unknown:'未署名'};
+const STAGES=['立题','表态','试工','监读','定稿','分发收口'];
 const $=s=>document.querySelector(s);
 function el(t,c,x){const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=String(x);return n}
-function render(d){
-const topics=$('#topics');topics.replaceChildren();
-(d.topics||[]).forEach(t=>{const box=el('div','topic');const head=el('b');const lt=el('span','light '+(t.light==='green'?'g':t.light==='red'?'r':'y'));head.append(lt,document.createTextNode(t.topic));box.append(head,el('small',(t.speeches.length||0)+' 条发言 · 最近 '+(t.last_speech_at||'?').slice(5,16).replace('T',' ')));
-if(!t.speeches.length)box.append(el('small','——该议题暂无发言（解析失败单列，不静默）'));topics.append(box)});
-if(!(d.topics||[]).length)topics.append(el('div','empty','暂无议题；会议厅只投影已落盘文书，没有文书就没有议题（不造样例）。'));
-const sp=$('#speeches');sp.replaceChildren();
-const all=(d.topics||[]).flatMap(t=>t.speeches||[]);
-all.sort((a,b)=>(a.at||'').localeCompare(b.at||''));
-if(!all.length)sp.append(el('div','empty','未取得任何发言文书；不推断为零。'));
-all.forEach(s=>{const card=el('div','speech');const head=el('div','head');const seat=el('span','seat '+(s.seat||'unknown'),SEAT_LABEL[s.seat]||s.seat||'未署名');head.append(seat,el('span','at',(s.at||'?').slice(5,16).replace('T',' ')));card.append(head,el('b','t',s.title||'（无标题）'));
-if(s.file)card.append(el('small','文书：'+s.file));
-if(s.status_note)card.append(el('div','note','状态：'+s.status_note));sp.append(card)});
+function toast(t){const n=$('#toast');n.textContent=t;n.classList.add('show');setTimeout(()=>n.classList.remove('show'),2600)}
+let curTopic='',windowMsgs=[];
+async function opsGet(p){const r=await fetch(OPS+p,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return r.json()}
+async function opsPost(p,body){const r=await fetch(OPS+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||('HTTP '+r.status));return d}
+async function loadAll(){let st=null;try{st=await opsGet('/api/council/state')}catch(e){$('#bridge').textContent='离线（需启动 council_ops.py）';$('#bridge').style.color='var(--red)';return}
+$('#bridge').textContent='在线';$('#bridge').style.color='var(--green)';
+const topicsBox=$('#topics');const keep=topicsBox.querySelector('.topic.active');topicsBox.replaceChildren();
+const extra=(st.extra_topics||[]).map(t=>({topic:t.topic,tags:t.tags,stage:t.stage,light:'y',summary:t.summary}));
+const reg=(st.topics||[]);
+[...extra,...reg].forEach(t=>{const d=el('div','topic'+(t.topic===curTopic?' active':''));
+const lt=el('span','light '+(t.light==='green'?'g':t.light==='red'?'r':'y'));const b=el('b');b.append(lt,document.createTextNode(t.topic));d.append(b);
+const tr=el('div','stagetrack');const si=STAGES.indexOf(t.stage);STAGES.forEach((s,j)=>{const c=el('div','stage'+(j<=si?' done':''));c.append(el('span','sname',s));tr.append(c)});d.append(tr);
+d.append(el('small','标签 '+((t.tags)||[]).join('、')+' · '+String(t.summary||'').slice(0,30)));
+d.addEventListener('click',()=>{curTopic=t.topic;loadAll()});topicsBox.append(d)});
+if(!extra.length&&!reg.length)topicsBox.append(el('div','empty','暂无议题——左上「立即发起」开一个'));
 const seats=$('#seats');seats.replaceChildren();
-(d.seats||[]).forEach(s=>{const card=el('div','seatcard');const row=el('div','row1');let dot='q',txt='无法探活';
-if(s.verifiable){dot=s.online?'g':'r';txt=s.online?'在线':'离线'}
-row.append(el('b',null,s.name||s.seat),el('span','dot '+dot),el('small',null,txt));card.append(row);
-card.append(el('small',(s.method||'')+(s.note?' · '+s.note:'')));seats.append(card)});
-$('#stamp').textContent='数据生成 '+((d.generated_at||'?').slice(5,16).replace('T',' '))+'（生成器时刻，非实时） · 发言 '+all.length+' 条 · 议题 '+(d.topics||[]).length+' 个 · 本页只读，刷新即重读';}
-function renderStages(d){
-const box=$('#stages');box.replaceChildren();
-(d.stage_view||[]).forEach(t=>{
-const card=el('div','speech');
-const head=el('div','head');const lt=el('span','light '+(t.light==='green'?'g':t.light==='red'?'r':'y'));
-head.append(lt,el('b','t',t.topic));card.append(head);
-card.append(el('small',(t.summary||'')+''));
-const track=el('div','stagetrack');
-(t.stages||[]).forEach((s,i)=>{
-const step=el('div','stage'+(i<=t.stage_index?' done':''));
-step.append(el('span','sname',s));
-if(i===t.stage_index)step.append(el('span','snow','当前'));
-track.append(step)});
-card.append(track);
-card.append(el('small','标签：'+(t.tags||[]).join('、')+' · 已表态：'+((t.seats_spoken||[]).map(x=>SEAT_LABEL[x]||x).join('、')||'无人')+' · 发起：'+(SEAT_LABEL[t.originator]||t.originator||'?')));
-box.append(card)});
-(d.route_suggestions||[]).forEach(r=>{
-const card=el('div','speech');card.append(el('b','t','路由建议 · '+r.topic));
-const rt=r.route||{};card.append(el('small','主执行 '+(SEAT_LABEL[rt.lead]||rt.lead||'?')+' · 协同 '+((rt.assist||[]).map(x=>SEAT_LABEL[x]||x).join('、')||'无')+' · 监读 '+((rt.review||[]).map(x=>SEAT_LABEL[x]||x).join('、')||'无')+' · 闸 '+(SEAT_LABEL[rt.gate]||rt.gate||'?')));
-card.append(el('div','note','建议非派单：定稿后由田丰/老田执 devtask new 建单'));box.append(card)});
-if(!(d.stage_view||[]).length)box.append(el('div','empty','暂无注册议题（TOPIC_REGISTRY 登记）'));}
-async function load(){try{const r=await fetch('/data/council.json',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();render(d);renderStages(d)}catch(e){const topics=$('#topics');topics.replaceChildren();topics.append(el('div','empty','会议数据读取失败（'+e.message+'）：不推断为空，请先运行 tools/gen_council_data.py'))}}
-load();setInterval(load,60000);
+[['田丰 · Hermes','g','8787 真席位 · 上午已复核'],['赵云 · 真席位','g','8787 真席位 · 上午已表态'],['诸葛亮 · 建议面','q','OpenClaw key 未注入·代行'],['军团指挥台','g','8796'],['WorkBuddy 工位','g','会话级']].forEach(([n,c,note])=>{const card=el('div','seatcard');const r1=el('div','r1');r1.append(el('b',null,n),el('span','dot '+c));card.append(r1,el('small',note));seats.append(card)});
+windowMsgs=st.messages||[];renderMsgs();
+$('#stamp').textContent='数据 '+String(st.generated_at||'').slice(5,16).replace('T',' ')+' · 留言 '+windowMsgs.length+' 条 · 本页 30s 自动刷新'}
+function renderMsgs(){const box=$('#msgs');box.replaceChildren();
+$('#cur-topic').textContent=curTopic||'（选择左侧议题，或发起新会议）';
+const shown=curTopic?windowMsgs.filter(m=>{const a=curTopic.slice(0,10),b=String(m.topic||'').slice(0,10);return b.includes(a.slice(0,6))||a.includes(b.slice(0,6))}):windowMsgs.slice(-8);
+if(!shown.length)box.append(el('div','empty',curTopic?'本议题暂无留言——你来说第一句':'最近留言（选议题看上下文）'));
+shown.forEach(m=>{const c=el('div','msg'+(m.seat==='laotian'?' mine':'')+((m.kind==='new'||m.kind==='upload')?' sys':''));
+const who=el('div','who');who.append(document.createTextNode(SEAT_LABEL[m.seat]||m.seat||'未署名'),el('span','tm',String(m.at||'').slice(5,16).replace('T',' ')));c.append(who);
+c.append(el('div',null,m.text||''));
+if(m.path)c.append(el('span','att','📎 存证：'+String(m.path).split(/[\\/]/).pop()));
+box.append(c)});box.scrollTop=box.scrollHeight}
+async function say(){const t=$('#say').value.trim();if(!t){toast('先写内容');return}
+if(!curTopic){toast('先选择或发起一个议题');return}
+try{await opsPost('/api/council/message',{topic:curTopic,seat:$('#seat').value,text:t});$('#say').value='';await loadAll()}catch(e){toast('失败：'+e.message)}}
+$('#btn-say').addEventListener('click',say);
+$('#say').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();say()}});
+$('#btn-new').addEventListener('click',async()=>{const title=$('#n-title').value.trim();if(!title){toast('填议题标题');return}
+try{const d=await opsPost('/api/council/new',{title,tags:$('#n-tags').value.split(/[,，]/).map(x=>x.trim()).filter(Boolean)});
+curTopic=d.topic.topic;$('#n-title').value='';await loadAll();toast('已发起：'+d.topic.topic)}catch(e){toast('失败：'+e.message)}});
+$('#btn-sched').addEventListener('click',async()=>{const title=$('#n-title').value.trim()||'（未命名预约）';const at=$('#s-at').value;if(!at){toast('先选时间');return}
+try{await opsPost('/api/council/schedule',{title,at});toast('已预约入账（到点自动立题开发中,现为草案）');await loadAll()}catch(e){toast('失败：'+e.message)}});
+$('#btn-file').addEventListener('click',()=>$('#file-in').click());
+$('#file-in').addEventListener('change',async()=>{const f=$('#file-in').files[0];if(!f)return;
+const fd=new FormData();fd.append('f',f);try{const r=await fetch(OPS+'/api/council/upload',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
+await opsPost('/api/council/message',{topic:curTopic||'(未选议题)',seat:$('#seat').value,text:'📎 上传文档：'+d.upload.name+'（'+d.upload.size+'B）',kind:'upload',path:d.upload.file});
+await loadAll();toast('已上传存证')}catch(e){toast('上传失败：'+e.message)}finally{$('#file-in').value=''}});
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,recOn=false;
+if(SR){rec=new SR();rec.lang='zh-CN';rec.continuous=true;rec.interimResults=false;
+rec.onresult=e=>{const r=Array.from(e.results).slice(-1)[0];if(r)$('#say').value+=r[0].transcript};
+rec.onend=()=>{recOn=false;$('#btn-mic').classList.remove('rec');$('#btn-mic').textContent='🎙 语音输入';$('#mic-hint').textContent='已停：转写文本在输入框,可编辑后发送'}}
+$('#btn-mic').addEventListener('click',()=>{if(!rec){toast('当前浏览器不支持语音API——用 WorkBuddy 内置浏览器打开本页可用');return}
+if(recOn){rec.stop();return}
+try{rec.start();recOn=true;$('#btn-mic').classList.add('rec');$('#btn-mic').textContent='⏹ 停止录音';$('#mic-hint').textContent='录音中…说话即转写到输入框'}catch(e){toast('录音启动失败：'+e.message)}});
+$('#btn-refresh').addEventListener('click',loadAll);
+loadAll();setInterval(loadAll,30000);
 })();
 </script></body></html>
