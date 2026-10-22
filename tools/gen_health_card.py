@@ -2233,6 +2233,13 @@ TASK_LAUNCH_FAILURE_CODES = {
     2147942401: "0x80070001 无效功能",
     2147942402: "0x80070002 文件未找到",
     2147942403: "0x80070003 路径未找到",
+    # 2026-10-22 实测确认：powershell.exe 的 `-File` 指向不存在的脚本时，
+    # 进程会起来、立刻退出、返回 0xFFFD0000（有符号 -196608）。
+    # 与上面三个码的区别：那三个是**动作没起来**，这个是**动作起来了但目标不存在**。
+    # 两者对使用者的意义一样——任务等于没跑，所以并入同一判据。
+    # 实证：FeishuBotWatchdog 与 JevStack 每 10 分钟各来一次，一天 213 次；
+    # JevStack 指向的 jev-eval\start_jev_stack.ps1 在 git 历史里从未存在过。
+    4294770688: "0xFFFD0000 PowerShell 找不到 -File 脚本",
 }
 
 _TASK_LAUNCH_LOG = "Microsoft-Windows-TaskScheduler/Operational"
