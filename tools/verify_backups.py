@@ -19,7 +19,14 @@
 3. sha256 是否一致（700 MB 级文件耗时，支持 `--sample N` 抽样，默认全量）；
 4. 反向：目录里有、MANIFEST 里没列 —— 孤儿文件；
 5. 新鲜度：最新备份距今小时数（默认 >36h 警告、>72h 判失败）；
-6. 追平：bundle 里记录的提交是否等于对应仓的 HEAD（见下）。
+6. 追平：bundle 里记录的提交是否等于对应仓的 HEAD（见下）；
+7. 应有产物覆盖：**最新日期目录**必须把 `backup_bundles.ps1` 的
+   `$expectedArtifacts`（每个默认仓一个 `<label>-<yyyymmdd>.bundle`、
+   `workspace-docs-<yyyymmdd>.zip`、`data_manifest.json`）**全部**登记进
+   MANIFEST，缺一项即 problems；`entries` 为 0 也算失败。
+   理由：备份脚本无论成败都无条件写 MANIFEST，所以「MANIFEST 存在」不等于
+   「备成了」—— 旧版会让「0 条登记 + 四个 bundle 全丢」照样 exit 0。
+   `--all` 的历史日期目录是快照，放宽；只对本次范围内最新那个目录强制。
 
 追平检查（catchup）
 -------------------
@@ -36,19 +43,21 @@
   bundle 的提交不在本仓对象库里（典型：该分支已被 rebase/force-push 掉，
   或 bundle 来自另一个仓），无法计算，记字符串 `"unknown"`，**不当作通过**；
 * 任一仓 `match=false` 且 `behind_commits > 0` → 计入 problems，exit 1；
-* 解析失败只进 `catchup.unknown`，不伪装成 `match=true`；它也不改变退出码
-  （错误由原有 sha256/存在性检查兜底），但人类摘要会显式打印 `UNKNOWN`；
+* 解析失败（bundle 被截断 / 打不开 / 解析不出引用）进 `catchup.unknown`，
+  不伪装成 `match=true`；**默认计入 problems（exit 1）** —— restore 不了的
+  bundle 不能判通过。`--lenient-catchup` 保留旧的「只 WARN、不改退出码」行为；
 * 只判定"本次范围内最新那个日期目录"：默认就是最新备份；`--date` 判指定日；
   `--all` 仍只把最新一天当作当前备份，历史日期是快照，不按今天的 HEAD 判。
-* 不传 `--repo` 时自动探测工作区里的四个仓（`老田的AI助手` / `zerobound-kg`
-  / `digital-legion` / `res-downloader-py`）；探测不到就打印一条 WARN，
-  `catchup` 为空对象且不影响原有退出码。
+* 不传 `--repo` 时自动探测"本次 vault 的上级目录"里的四个仓（默认推导就是工作区；
+  给了 `--root` 就只在那个夹具的上级目录里找，演练不会再去误比真实仓）；
+  探测不到就打印一条 WARN，`catchup` 为空对象且不影响原有退出码。
 
 退出码
 ------
 0 = 全过（含"抽样未覆盖全部文件"但已知项全对）；
 1 = 有不一致 / 缺失 / 孤儿 / 新鲜度超 72h / 无任何日期目录 /
-    最新备份落后 HEAD（behind_commits > 0）；
+    最新备份落后 HEAD（behind_commits > 0）/ 最新目录缺应有产物 /
+    MANIFEST 登记 0 条 / catchup 有仓无法判定（除非 --lenient-catchup）；
 2 = 脚本自身错误（参数、路径、意外异常）。
 
 用法
@@ -60,6 +69,7 @@
     python -B tools/verify_backups.py --root D:\\fake_vault  # 指定 vault 根（演练用）
     python -B tools/verify_backups.py --repo C:\\项目\\zerobound-kg
     python -B tools/verify_backups.py --repo A --repo B    # --repo 可重复，只查指定仓
+    python -B tools/verify_backups.py --lenient-catchup    # catchup unknown 只 WARN（旧行为）
 
 输出约定
 --------
@@ -114,6 +124,12 @@ DEFAULT_REPOS: tuple[tuple[str, str], ...] = (
     ("res-downloader", "res-downloader-py"),
 )
 LABEL_BY_DIRNAME = {dirname: label for label, dirname in DEFAULT_REPOS}
+# 与 tools/backup_bundles.ps1 的 $repos 同步（改那边必须同一批改这里）：
+# label 决定 bundle 文件名前缀，期望产物清单从它推导 —— 不要在这里写死 4 个。
+EXPECTED_BUNDLE_LABELS: tuple[str, ...] = tuple(label for label, _ in DEFAULT_REPOS)
+# 与 tools/backup_bundles.ps1 的 $expectedArtifacts 同步：当天目录应有的另外两个产物。
+WORKSPACE_DOCS_NAME = "workspace-docs-{stamp}.zip"
+DATA_MANIFEST_NAME = "data_manifest.json"
 # 期望引用的兜底顺序（当前分支会插到最前面，见 _pick_bundle_ref）。
 REF_CANDIDATES = ("refs/heads/master", "refs/heads/main", "HEAD")
 CATCHUP_GIT_TIMEOUT = 120.0
@@ -244,6 +260,24 @@ def list_date_dirs(root: Path) -> list[tuple[str, Path]]:
     return found
 
 
+def expected_artifacts(day: str) -> list[str]:
+    """由日期目录名 `<yyyy-MM-dd>` 反推当天应有的全部产物。
+
+    与 `tools/backup_bundles.ps1` 的 `$expectedArtifacts` 对齐：
+    每个默认仓一个 `<label>-<yyyymmdd>.bundle`，外加
+    `workspace-docs-<yyyymmdd>.zip` 和 `data_manifest.json`。
+    目录名不是合法日期 → 返回空表（无从推断，不做覆盖断言）。
+    """
+    try:
+        stamp = datetime.strptime(day, "%Y-%m-%d").strftime("%Y%m%d")
+    except ValueError:
+        return []
+    names = ["%s-%s.bundle" % (label, stamp) for label in EXPECTED_BUNDLE_LABELS]
+    names.append(WORKSPACE_DOCS_NAME.format(stamp=stamp))
+    names.append(DATA_MANIFEST_NAME)
+    return names
+
+
 def pick_sample(entries: list[dict], sample: int | None) -> set[str]:
     """抽样规则：按字节数从大到小取前 N 个（大文件风险最高，且确定性可复现）。"""
     if sample is None or sample >= len(entries):
@@ -271,6 +305,8 @@ def verify_dir(
         },
         "entries": [],
         "orphans": [],
+        # 应有产物（F6）：required 由目录名反推，missing = 未登记进 MANIFEST 的。
+        "expected": {"required": [], "missing": []},
         "counts": {
             "listed": 0,
             "ok": 0,
@@ -301,9 +337,14 @@ def verify_dir(
             result["newest_mtime_epoch"] = st.st_mtime
             result["newest_mtime_source"] = name
 
+    # 应有产物（F6）：先把期望清单按目录名算出来，两个分支都要用它。
+    expected = expected_artifacts(day)
+    result["expected"]["required"] = expected
+
     if not manifest_path.is_file():
         # 没有 MANIFEST 就没有"应该有什么"的判据：直接判失败，不再猜孤儿。
         result["manifest"]["present"] = False
+        result["expected"]["missing"] = list(expected)
         result["counts"]["orphans"] = len(present)
         result["orphans"] = [
             {"name": n, "status": "orphan", "size": st.st_size}
@@ -332,6 +373,9 @@ def verify_dir(
     to_hash = pick_sample(entries, sample)
     listed_names = {e["name"] for e in entries}
     total = len(entries)
+    # 覆盖判定看的是「MANIFEST 登记了没有」，不是「磁盘上有没有」：
+    # 磁盘上有但没登记 = 孤儿（另一条 problems），这里只抓「根本没备」。
+    result["expected"]["missing"] = [n for n in expected if n not in listed_names]
 
     for index, entry in enumerate(entries, start=1):
         name = entry["name"]
@@ -464,8 +508,14 @@ def _git_run(
     )
 
 
-def resolve_repos(explicit: list[str] | None) -> tuple[list[dict], str | None]:
-    """解析 --repo；不传则探测工作区里的四仓。返回 (specs, warning)。"""
+def resolve_repos(
+    explicit: list[str] | None, workspace: Path | None = None
+) -> tuple[list[dict], str | None]:
+    """解析 --repo；不传则探测 workspace 里的四仓。返回 (specs, warning)。
+
+    `workspace` 由 `--root` 的上级目录传入：演练用的假 vault 不会再去比对真实
+    仓（否则 --root 演练必然把 catchup 判成 unknown，F7 之后等于必然红）。
+    """
     if shutil.which("git") is None:
         return [], "找不到 git 可执行文件，跳过追平检查（catchup 为空）"
     if explicit:
@@ -494,7 +544,7 @@ def resolve_repos(explicit: list[str] | None) -> tuple[list[dict], str | None]:
             )
         return specs, None
 
-    workspace = default_root().parent
+    workspace = workspace or default_root().parent
     specs = []
     for label, dirname in DEFAULT_REPOS:
         path = workspace / dirname
@@ -894,6 +944,15 @@ def emit_human(report: dict, stream) -> None:
                 "  manifest  : %d entr(y/ies), %d parse error(s)\n"
                 % (man["entries"], len(man["parse_errors"]))
             )
+            exp = item.get("expected") or {}
+            required = exp.get("required") or []
+            missing = exp.get("missing") or []
+            if required:
+                detail = "" if not missing else ", MISSING: " + ", ".join(missing)
+                out(
+                    "  expected  : %d/%d artifact(s) registered%s\n"
+                    % (len(required) - len(missing), len(required), detail)
+                )
         for err in man["parse_errors"]:
             out("  [parse]   line %s: %s\n" % (err.get("line"), err.get("reason")))
         for rec in item["entries"]:
@@ -1029,6 +1088,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--json", action="store_true", help="stdout 输出机器可读 JSON（摘要改走 stderr）")
     ap.add_argument(
+        "--lenient-catchup",
+        action="store_true",
+        help=(
+            "catchup 无法判定的仓只 WARN、不计入 problems/退出码"
+            "（旧行为；默认计入 problems → exit 1）"
+        ),
+    )
+    ap.add_argument(
         "--no-progress", action="store_true", help="关闭 stderr 进度输出"
     )
     ap.add_argument(
@@ -1098,7 +1165,7 @@ def run(args: argparse.Namespace) -> int:
         item.pop("newest_mtime_source", None)
 
     # 追平检查只针对本次范围内最新那个日期目录（默认就是最新备份）。
-    repo_specs, repo_warning = resolve_repos(args.repo)
+    repo_specs, repo_warning = resolve_repos(args.repo, root.parent)
     if repo_warning:
         _p("WARN: " + repo_warning)
     latest_report = dir_reports[-1] if dir_reports else None
@@ -1120,15 +1187,19 @@ def run(args: argparse.Namespace) -> int:
             latest_report["entries"],
             repo_specs,
         )
-    if catchup.get("unknown"):
+    catchup_unknown = catchup.get("unknown") or []
+    if catchup_unknown:
         _p(
-            "WARN: catchup 有 %d 个仓无法判定：%s"
+            "WARN: catchup 有 %d 个仓无法判定（bundle 可能被截断/损坏，restore 未验证）：%s%s"
             % (
-                len(catchup["unknown"]),
+                len(catchup_unknown),
                 "; ".join(
                     "%s (%s)" % (entry["label"], entry.get("reason") or "无法判定")
-                    for entry in catchup["unknown"]
+                    for entry in catchup_unknown
                 )[:600],
+                "  [--lenient-catchup：只告警，不计入 problems]"
+                if args.lenient_catchup
+                else "  [默认计入 problems → exit 1]",
             )
         )
 
@@ -1186,6 +1257,22 @@ def run(args: argparse.Namespace) -> int:
                 "%s: MANIFEST.txt is missing, nothing to verify against" % item["date"]
             )
 
+    # 应有产物覆盖（F6）：MANIFEST 存在 ≠ 备成了 —— backup_bundles.ps1 无论成败都
+    # 无条件写 MANIFEST，所以「0 条登记」「四个 bundle 全丢」必须在退出码上变红。
+    # --all 的历史日期目录是快照，放宽；只对本次范围内最新那个目录强制。
+    if latest_report is not None and latest_report["manifest"]["present"]:
+        day_label = latest_report["date"]
+        if latest_report["manifest"]["entries"] == 0:
+            problems.append(
+                "%s: MANIFEST.txt registers 0 entries — a backup that wrote nothing "
+                "must not pass" % day_label
+            )
+        for name in latest_report["expected"]["missing"]:
+            problems.append(
+                "%s/%s: expected artifact is not registered in MANIFEST.txt "
+                "(backup_bundles.ps1 $expectedArtifacts)" % (day_label, name)
+            )
+
     if freshness["status"] == "fail":
         problems.append(
             "freshness: newest backup is %s h old (fail threshold %s h)"
@@ -1199,6 +1286,21 @@ def run(args: argparse.Namespace) -> int:
             "WARN: 最新备份已 %.2f 小时，超过警告阈值 %g 小时（未到失败阈值 %g 小时）"
             % (freshness["age_hours"], args.warn_hours, args.fail_hours)
         )
+
+    # 无法判定同样是硬判定（F7）：bundle 被截断/打不开/解析不出引用 → status=unknown。
+    # 旧版只 WARN → exit 0，等于「restore 不了的 bundle 判通过」；
+    # --lenient-catchup 退回旧行为（只告警）。
+    if catchup_unknown and not args.lenient_catchup:
+        for entry in catchup_unknown:
+            problems.append(
+                "catchup: %s/%s cannot be verified (%s) — an unreadable or truncated "
+                "bundle cannot be restored"
+                % (
+                    entry.get("date") or "?",
+                    entry.get("bundle_name") or entry.get("label") or "?",
+                    entry.get("reason") or "unknown",
+                )
+            )
 
     # 落后是硬判定：bundle 明确落后 >0 个提交 → problems + exit 1。
     for entry in catchup.get("behind") or []:

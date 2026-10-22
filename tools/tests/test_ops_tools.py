@@ -98,6 +98,50 @@ def _today_name() -> str:
     return dt.datetime.now().strftime("%Y-%m-%d")
 
 
+# 与 tools/backup_bundles.ps1 的 $repos / $expectedArtifacts 对齐：一次完整备份
+# 当天必须留下 4 个 <label>-<yyyymmdd>.bundle + workspace-docs-<yyyymmdd>.zip
+# + data_manifest.json，共 6 个产物（verify_backups.py 的 F6 覆盖断言）。
+BUNDLE_LABELS = ("aios", "zerobound-kg", "digital-legion", "res-downloader")
+
+
+def _complete_artifacts() -> dict[str, bytes]:
+    """一份「完整备份」应有的 6 个产物（文件名用今天的 stamp）。"""
+    stamp = dt.datetime.now().strftime("%Y%m%d")
+    files = {
+        "%s-%s.bundle" % (label, stamp): ("bundle-%s" % label).encode("utf-8") * 3
+        for label in BUNDLE_LABELS
+    }
+    files["workspace-docs-%s.zip" % stamp] = b"zip-payload" * 4
+    files["data_manifest.json"] = b'{"schema": "data-manifest/1"}'
+    return files
+
+
+def _init_git_repo(path: Path) -> None:
+    """建一个只有 1 个提交的真 git 仓（catchup 要读 HEAD）。"""
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "readme.txt").write_text("fixture\n", encoding="utf-8")
+    for args in (
+        ("init", "-q"),
+        ("add", "readme.txt"),
+        (
+            "-c",
+            "user.name=t16",
+            "-c",
+            "user.email=t16@example.invalid",
+            "commit",
+            "-q",
+            "-m",
+            "fixture",
+        ),
+    ):
+        subprocess.run(
+            ["git", "-C", str(path), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+
 def _make_vault(
     root: Path,
     files: dict[str, bytes],
@@ -155,17 +199,11 @@ def _make_health_repo(tmp_path: Path, name: str = "hc") -> tuple[Path, Path]:
 # ---------------------------------------------------------------------------
 # 1) verify_backups.py
 # ---------------------------------------------------------------------------
-def test_verify_backups_ok_three_entries(tmp_path: Path) -> None:
-    """3 条清单、sha256 全对 → exit 0，summary 全 ok。"""
+def test_verify_backups_ok_complete_artifacts(tmp_path: Path) -> None:
+    """6 个应有产物齐全、sha256 全对 → exit 0，problems 为空。"""
     vault = tmp_path / "vault"
-    _make_vault(
-        vault,
-        {
-            "aios-20261022.bundle": b"bundle-A" * 37,
-            "workspace-docs-20261022.zip": b"zip-B" * 53,
-            "res-downloader-20261022.bundle": b"bundle-C" * 11,
-        },
-    )
+    files = _complete_artifacts()
+    _make_vault(vault, files)
 
     proc = _run_verify(vault)
     assert proc.returncode == 0, proc.stderr
@@ -180,8 +218,8 @@ def test_verify_backups_ok_three_entries(tmp_path: Path) -> None:
     assert report["summary"]["complete"] is True
 
     summary = report["summary"]
-    assert summary["files"] == 3
-    assert summary["ok"] == 3
+    assert summary["files"] == len(files) == 6
+    assert summary["ok"] == 6
     assert summary["mismatch"] == 0
     assert summary["missing"] == 0
     assert summary["unreadable"] == 0
@@ -192,6 +230,7 @@ def test_verify_backups_ok_three_entries(tmp_path: Path) -> None:
     entries = report["dirs"][0]["entries"]
     assert {entry["status"] for entry in entries} == {"ok"}
     assert all(entry["size_ok"] and entry["hash_ok"] for entry in entries)
+    assert report["dirs"][0]["expected"]["missing"] == []
     assert report["freshness"]["status"] == "ok"
 
 
@@ -255,15 +294,8 @@ def test_verify_backups_orphan_file_exit1(tmp_path: Path) -> None:
 def test_verify_backups_comment_lines_are_not_parse_errors(tmp_path: Path) -> None:
     """MANIFEST 里的 # 注释行必须跳过（刚修的口径），不能算 parse error。"""
     vault = tmp_path / "vault"
-    _make_vault(
-        vault,
-        {
-            "a.bundle": b"A" * 8,
-            "b.bundle": b"B" * 16,
-            "c.bundle": b"C" * 32,
-        },
-        comments=True,
-    )
+    files = _complete_artifacts()
+    _make_vault(vault, files, comments=True)
 
     proc = _run_verify(vault)
     assert proc.returncode == 0, proc.stderr
@@ -271,13 +303,81 @@ def test_verify_backups_comment_lines_are_not_parse_errors(tmp_path: Path) -> No
 
     manifest = report["dirs"][0]["manifest"]
     assert manifest["parse_errors"] == []
-    assert manifest["entries"] == 3
+    assert manifest["entries"] == 6
     assert report["summary"]["parse_errors"] == 0
-    assert report["summary"]["files"] == 3
-    assert report["summary"]["ok"] == 3
+    assert report["summary"]["files"] == 6
+    assert report["summary"]["ok"] == 6
     assert report["problems"] == []
     assert report["result"] == "ok"
     assert report["exit_code"] == 0
+
+
+def test_verify_backups_missing_expected_artifacts_exit1(tmp_path: Path) -> None:
+    """F6 回归：MANIFEST 只登记 2 个、缺 4 个应有产物 → exit 1 并点名缺失项。"""
+    vault = tmp_path / "vault"
+    files = _complete_artifacts()
+    keep = sorted(files)[:2]
+    _make_vault(vault, {name: files[name] for name in keep})
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 1, proc.stderr
+    report = _json_stdout(proc, "verify_backups/missing_expected")
+
+    expected = report["dirs"][0]["expected"]
+    assert len(expected["required"]) == 6
+    assert sorted(expected["missing"]) == sorted(set(files) - set(keep))
+    assert report["result"] == "failed"
+    blob = "\n".join(report["problems"])
+    for name in expected["missing"]:
+        assert name in blob, "problems 必须点名缺失产物 %s，实际:\n%s" % (name, blob)
+    # 文件级校验本身全过，只有覆盖断言红 —— 这正是旧版漏掉的场景。
+    assert report["summary"]["ok"] == 2
+    assert report["summary"]["missing"] == 0
+
+
+def test_verify_backups_empty_manifest_exit1(tmp_path: Path) -> None:
+    """F6 回归：MANIFEST 存在但 0 条登记 → exit 1（存在 ≠ 备成了）。"""
+    vault = tmp_path / "vault"
+    _make_vault(vault, {}, comments=True)
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 1, proc.stderr
+    report = _json_stdout(proc, "verify_backups/empty_manifest")
+
+    assert report["dirs"][0]["manifest"]["entries"] == 0
+    assert any(
+        "registers 0 entries" in problem for problem in report["problems"]
+    ), report["problems"]
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git 不可用，跳过 catchup 契约")
+def test_verify_backups_truncated_bundle_is_hard_fail(tmp_path: Path) -> None:
+    """F7 回归：bundle 被截断 → catchup unknown；默认 exit 1，--lenient-catchup exit 0。"""
+    vault = tmp_path / "vault"
+    files = _complete_artifacts()
+    stamp = dt.datetime.now().strftime("%Y%m%d")
+    trunc_name = "res-downloader-%s.bundle" % stamp
+    files[trunc_name] = b"TRUNCATED-NOT-A-BUNDLE\n"
+    _make_vault(vault, files)
+    _init_git_repo(tmp_path / "res-downloader-py")
+
+    proc = _run_verify(vault)
+    assert proc.returncode == 1, proc.stderr
+    report = _json_stdout(proc, "verify_backups/truncated_bundle")
+    assert report["catchup"]["status"] == "unknown", report["catchup"]
+    assert len(report["catchup"]["unknown"]) == 1
+    assert report["catchup"]["unknown"][0]["bundle_name"] == trunc_name
+    assert any(
+        "cannot be verified" in problem and "res-downloader" in problem
+        for problem in report["problems"]
+    ), report["problems"]
+
+    proc2 = _run_verify(vault, "--lenient-catchup")
+    assert proc2.returncode == 0, proc2.stderr
+    report2 = _json_stdout(proc2, "verify_backups/truncated_bundle_lenient")
+    assert report2["problems"] == []
+    assert report2["catchup"]["status"] == "unknown"
+    assert "WARN: catchup" in (proc2.stderr or "")
 
 
 @pytest.mark.parametrize("bad_date", ["1999-01-01", "2026-13-01", "not-a-date"])
@@ -952,7 +1052,8 @@ def test_daily_ops_red_contract(tmp_path: Path) -> None:
     repo = workspace / "repo"
     repo.mkdir(parents=True)
     # daily_ops 把备份仓固定推导为 <repo 的父目录>/_vault
-    _make_vault(workspace / "_vault", {"aios-20261022.bundle": b"B" * 96})
+    # 夹具必须是「完整备份」（6 个应有产物），否则 verify_backups 的 F6 覆盖断言会判红。
+    _make_vault(workspace / "_vault", _complete_artifacts())
 
     proc = _run_daily(repo, "-SkipParity")
     assert proc.returncode == 1, "stdout=%r\nstderr=%r" % (proc.stdout[:2000], proc.stderr[:2000])
@@ -973,7 +1074,7 @@ def test_daily_ops_red_contract(tmp_path: Path) -> None:
     assert payload["summary"]["unable"] == []
     # 合并后的 JSON 里带两份原始工具输出
     assert payload["health_card"]["status"] == "red"
-    assert payload["backup_verify"]["summary"]["ok"] == 1
+    assert payload["backup_verify"]["summary"]["ok"] == 6
 
 
 def test_daily_ops_parity_block(tmp_path: Path) -> None:

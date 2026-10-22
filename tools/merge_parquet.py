@@ -29,7 +29,10 @@ quarantine_prod_overwrite），本脚本会识别并拒绝，不会硬合（stk_
    null 类型（或用 ``--null-as string`` 落成 string）。
 3. **写入**：逐文件读 → 按统一 schema 重排列/补齐缺失列 → 逐列 cast → 攒够一个
    row group 再落盘（``ParquetWriter`` 流式，不整目录进内存）。
-4. **容错**：单文件读失败或 cast 失败，跳过 + 计数 + 继续，绝不中断整体。
+4. **容错，但如实报**：单文件读失败或 cast 失败，跳过 + 计数 + 继续，绝不中断整体；
+   但**该表不再报 `merged`**——只要有失败文件、或实际写入行数少于计划行数，状态置
+   `partial`（产物不完整），`totals.files_failed` 非零，退出码 1。上层
+   （``refresh_curated.py``）必须能看见「缺行」，否则会拿缺行的产物去顶替正式层。
 5. **空文件侧车**（``--empty-sidecar``）：0 行文件被跳过，“该票在该表无数据”的语义
    就丢了。扫描阶段顺手记下每个 0 行文件的相对路径、所属目录、推断实体名（文件名去掉
    ``.parquet`` 与 ``_detail``），真跑时写成一个 JSON 侧车；``--dry-run`` 不落盘，只在
@@ -58,7 +61,8 @@ quarantine_prod_overwrite），本脚本会识别并拒绝，不会硬合（stk_
     python -B merge_parquet.py --dirs stk_pledge --split-suffix --out ...
     python -B merge_parquet.py --out ... --empty-sidecar ...\\empty.json --empty-sidecar-limit 500
 
-退出码：0 全部成功；1 有目录失败/被跳过；2 参数或环境错误；3 空间不足。
+退出码：0 全部成功；1 有目录失败（含产物不完整的 `partial`）、有任何单文件失败、
+或有目录被跳过；2 参数或环境错误；3 空间不足。
 """
 
 from __future__ import annotations
@@ -97,6 +101,7 @@ DEFAULT_SPLIT_SUFFIX = "_detail"
 #: 状态常量
 ST_PLANNED = "planned"
 ST_MERGED = "merged"
+ST_PARTIAL = "partial"          # 写了盘，但缺文件/缺行——产物不完整，不可顶替正式层
 ST_EMPTY = "skipped_all_empty"
 ST_CONFLICT = "skipped_schema_conflict"
 ST_FAILED = "failed"
@@ -624,8 +629,11 @@ def _merge_group(dir_name, part, args, log, started):
 
     if not part["per_file"]:
         stats["status"] = ST_EMPTY
-        stats["error"] = "没有任何非空 parquet"
-        log("  [%s] 跳过：该组文件全是 0 行" % label)
+        n_bad = len(part["scan_failed"])
+        stats["error"] = ("没有任何非空 parquet%s"
+                          % ("（其中 %d 个文件读不出 footer）" % n_bad if n_bad else ""))
+        log("  [%s] 跳过：该组没有可合并非空文件%s"
+            % (label, "；%d 个读不出 footer" % n_bad if n_bad else ""))
         return _finish(stats, started)
 
     summary = summarize(part["per_file"])
@@ -741,12 +749,27 @@ def _merge_group(dir_name, part, args, log, started):
     stats["failed_samples"] = (part["scan_failed"] + failed)[:5]
     stats["bytes_out"] = os.path.getsize(out_path) if os.path.exists(out_path) else 0
     stats["row_groups"] = pq.ParquetFile(out_path).metadata.num_row_groups
-    stats["status"] = ST_MERGED
-    log("  [%s] 完成：%d 行，%s → %s（压缩比 %.2fx），失败 %d"
-        % (label, written_rows, human_bytes(part["bytes_in"]),
-           human_bytes(stats["bytes_out"]),
-           (part["bytes_in"] / stats["bytes_out"]) if stats["bytes_out"] else 0.0,
-           stats["files_failed"]))
+
+    # ---- 如实报：有文件失败 / 写入行数少于计划行数 → 不能算 merged
+    # 单文件容错保留（跳过坏文件继续合），但产物缺行必须让上游看得见：
+    # 状态置 partial + 退出码 1，否则「缺行产物 + exit 0 + status=merged」会被刷新脚本
+    # 拿去顶替正式整理层（2026-10-22 代码审查 F1）。
+    rows_planned = int(part["rows_planned"] or 0)
+    rows_lost = rows_planned - written_rows
+    if stats["files_failed"] or written_rows != rows_planned:
+        stats["status"] = ST_PARTIAL
+        stats["error"] = ("产物不完整：失败文件 %d 个（扫描阶段 %d / 写入阶段 %d），"
+                          "写入 %d 行 / 计划 %d 行（差 %d）——不可当作完整产物使用"
+                          % (stats["files_failed"], len(part["scan_failed"]),
+                             len(failed), written_rows, rows_planned, rows_lost))
+        log("  [%s] 不完整：%s" % (label, stats["error"]))
+    else:
+        stats["status"] = ST_MERGED
+        log("  [%s] 完成：%d 行，%s → %s（压缩比 %.2fx），失败 %d"
+            % (label, written_rows, human_bytes(part["bytes_in"]),
+               human_bytes(stats["bytes_out"]),
+               (part["bytes_in"] / stats["bytes_out"]) if stats["bytes_out"] else 0.0,
+               stats["files_failed"]))
     return _finish(stats, started)
 
 
@@ -764,13 +787,17 @@ def merge_dir(dir_name, files, args, log, collector=None):
 
     if not scan["per_file"]:
         stats = _new_stats(dir_name)
+        n_bad = len(scan["scan_failed"])
         stats.update(files_in=len(files),
                      files_skipped_empty=scan["files_skipped_empty"],
-                     files_failed=len(scan["scan_failed"]),
+                     files_failed=n_bad,
                      failed_samples=scan["scan_failed"][:5],
                      bytes_in=0, rows_out=0, bytes_out=0,
-                     status=ST_EMPTY, error="没有非空 parquet")
-        log("  [%s] 跳过：%d 个文件全是 0 行" % (dir_name, len(files)))
+                     status=ST_EMPTY,
+                     error=("没有非空 parquet%s"
+                            % ("（其中 %d 个文件读不出 footer）" % n_bad if n_bad else "")))
+        log("  [%s] 跳过：%d 个文件全是 0 行%s"
+            % (dir_name, len(files), "；%d 个读不出 footer" % n_bad if n_bad else ""))
         return [_finish(stats, started)]
 
     summary = summarize(scan["per_file"])
@@ -1051,6 +1078,7 @@ def main(argv=None):
         "dirs_skipped": sum(1 for r in results
                             if r["status"] in (ST_EMPTY, ST_CONFLICT, ST_EXISTS)),
         "dirs_failed": sum(1 for r in results if r["status"] == ST_FAILED),
+        "dirs_partial": sum(1 for r in results if r["status"] == ST_PARTIAL),
         "files_in": sum(r["files_in"] for r in results),
         "files_skipped_empty": sum(r["files_skipped_empty"] for r in results),
         "files_failed": sum(r["files_failed"] for r in results),
@@ -1090,16 +1118,21 @@ def main(argv=None):
     else:
         _print_human(payload)
 
-    log("汇总：%d 目录 / %d 输出表 / %d 文件 / 跳过空文件 %d / 失败 %d / %d 行 / %s → %s / 耗时 %.1fs"
-        % (totals["dirs_selected"], totals["tables"], totals["files_in"],
-           totals["files_skipped_empty"], totals["files_failed"],
+    log("汇总：%d 目录 / %d 输出表（不完整 %d）/ %d 文件 / 跳过空文件 %d / 失败 %d / "
+        "%d 行 / %s → %s / 耗时 %.1fs"
+        % (totals["dirs_selected"], totals["tables"], totals["dirs_partial"],
+           totals["files_in"], totals["files_skipped_empty"], totals["files_failed"],
            totals["rows_out"], human_bytes(totals["bytes_in"]),
            human_bytes(totals["bytes_out"]), elapsed))
     log.close()
 
     if sidecar_failed:
         return 2
-    if totals["dirs_failed"]:
+    if totals["dirs_failed"] or totals["dirs_partial"]:
+        return 1
+    # 单文件失败即使没把整张表打成 partial（例如目录判 skipped_all_empty），也必须非零：
+    # 上游只认退出码与 totals，缺行不能静默通过（审查 F1）。
+    if totals["files_failed"]:
         return 1
     if totals["dirs_skipped"] and not args.dry_run:
         return 1
@@ -1138,9 +1171,9 @@ def _print_human(payload):
             print("    说明：%s" % r["error"].strip().splitlines()[0])
     print("-" * 114)
     t = payload["totals"]
-    print("合计：%d 目录 / %d 输出表（合并 %d / 计划 %d / 跳过 %d / 失败 %d）"
+    print("合计：%d 目录 / %d 输出表（合并 %d / 计划 %d / 不完整 %d / 跳过 %d / 失败 %d）"
           % (t["dirs_selected"], t["tables"], t["dirs_merged"], t["dirs_planned"],
-             t["dirs_skipped"], t["dirs_failed"]))
+             t.get("dirs_partial", 0), t["dirs_skipped"], t["dirs_failed"]))
     if t.get("split_dirs"):
         print("     其中按后缀拆开的两表目录 %d 个" % t["split_dirs"])
     print("     文件 %d，跳过空文件 %d，失败 %d，输出行数 %d"
