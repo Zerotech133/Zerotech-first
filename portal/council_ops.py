@@ -30,6 +30,7 @@ UPLOAD_DIR = os.path.join(DATA_DIR, "council_uploads")
 MESSAGES = os.path.join(DATA_DIR, "council_messages.jsonl")
 SCHEDULED = os.path.join(DATA_DIR, "council_scheduled.jsonl")
 REGISTRY_SNIPPET = os.path.join(DATA_DIR, "council_new_topics.json")
+ARCHIVE_ROOT = os.path.join(DATA_DIR, "council_meetings")  # 建档：月/会议号/五件套
 
 ALLOWED_EXT = {".md", ".txt", ".pdf", ".png", ".jpg", ".jpeg", ".json", ".csv", ".docx", ".xlsx", ".log", ".py", ".js", ".html"}
 MAX_UPLOAD = 10 * 1024 * 1024
@@ -177,6 +178,140 @@ def parse_natural(text: str) -> dict:
             "raw": text}
 
 
+# ---------------- 会议建档 · 纪要 · 决议 · 检索 ----------------
+
+def _sanitize(name: str) -> str:
+    return SAN.sub("_", name)[:40] or "meeting"
+
+
+def archive_meeting(topic: str, decision: str = "", tasks: list | None = None) -> dict:
+    """会议定稿建档：月/会议号/五件套（meta.json/minutes.md/decision.md/tasks.jsonl/README）。
+
+    纪要=该议题全部留言+文书聚合（AI 归纳骨架 + 原文流水，不丢原始记录）。
+    决议=老田定稿文字。任务=决议分解的督促条目（status 驱动复用 devtask 习惯）。
+    """
+    msgs = [m for m in _load_messages() if topic[:8] in (m.get("topic") or "")]
+    now = dt.datetime.now()
+    mid = now.strftime("%Y%m%d-%H%M")
+    folder = os.path.join(ARCHIVE_ROOT, now.strftime("%Y-%m"), f"{mid}_{_sanitize(topic)}")
+    os.makedirs(folder, exist_ok=True)
+    seats = sorted({m.get("seat", "?") for m in msgs})
+    meta = {"meeting_id": mid, "topic": topic, "archived_at": _now(),
+            "seats": seats, "message_count": len(msgs),
+            "decision": bool(decision), "task_count": len(tasks or [])}
+    minutes = [f"# 会议纪要 · {topic}", "",
+               f"- 会议号：{mid} · 归档：{meta['archived_at']}",
+               f"- 参与：{'、'.join(seats) or '（无留言记录）'} · 发言 {len(msgs)} 条", ""]
+    if decision:
+        minutes += ["## 决议（定稿）", "", f"> {decision}", ""]
+    if tasks:
+        minutes += ["## 任务分解", ""]
+        for i, t in enumerate(tasks or [], 1):
+            minutes.append(f"{i}. [{t.get('owner', '?')}] {t.get('text', '')} —— {t.get('due', '无期限')}")
+        minutes.append("")
+    minutes += ["## 发言流水（原文，未删改）", ""]
+    for m in msgs:
+        minutes.append(f"- **{m.get('seat', '?')}** {str(m.get('at', ''))[5:16]}：{m.get('text', '')}"
+                       + (f"（📎 {os.path.basename(m.get('path', ''))}）" if m.get("path") else ""))
+    fd, tmp = tempfile.mkstemp(dir=folder)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write("\n".join(minutes))
+    os.replace(tmp, os.path.join(folder, "minutes.md"))
+    with open(os.path.join(folder, "meta.json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=1)
+    with open(os.path.join(folder, "tasks.jsonl"), "w", encoding="utf-8") as f:
+        for t in tasks or []:
+            t = dict(t, meeting_id=mid, topic=topic, created=_now(),
+                     status=t.get("status", "todo"))
+            f.write(json.dumps(t, ensure_ascii=False) + "\n")
+    _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "laotian",
+                       "kind": "archive", "text": f"📦 会议定稿建档 {mid}（纪要+决议+任务{len(tasks or [])}项）",
+                       "path": folder})
+    return {"ok": True, "meeting_id": mid, "folder": folder, "meta": meta}
+
+
+def _load_messages() -> list[dict]:
+    out = []
+    if os.path.isfile(MESSAGES):
+        with open(MESSAGES, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    out.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    return out
+
+
+def load_archives() -> list[dict]:
+    """全部会议档案索引（月/会议号/meta）。"""
+    out = []
+    if not os.path.isdir(ARCHIVE_ROOT):
+        return out
+    for month in sorted(os.listdir(ARCHIVE_ROOT), reverse=True):
+        mdir = os.path.join(ARCHIVE_ROOT, month)
+        if not os.path.isdir(mdir):
+            continue
+        for name in sorted(os.listdir(mdir), reverse=True):
+            mp = os.path.join(mdir, name, "meta.json")
+            if os.path.isfile(mp):
+                try:
+                    out.append(json.load(open(mp, encoding="utf-8")))
+                except (OSError, json.JSONDecodeError):
+                    continue
+    return out
+
+
+def load_tasks() -> list[dict]:
+    """督促视图：全部档案的任务汇总。"""
+    out = []
+    if not os.path.isdir(ARCHIVE_ROOT):
+        return out
+    for month in os.listdir(ARCHIVE_ROOT):
+        mdir = os.path.join(ARCHIVE_ROOT, month)
+        if not os.path.isdir(mdir):
+            continue
+        for name in os.listdir(mdir):
+            tp = os.path.join(mdir, name, "tasks.jsonl")
+            if os.path.isfile(tp):
+                with open(tp, encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            out.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+    return out
+
+
+def search_all(q: str) -> list[dict]:
+    """快速查询：留言账本 + 全部会议纪要全文（子串匹配，返回命中上下文）。"""
+    q = q.strip()
+    if not q:
+        return []
+    hits: list[dict] = []
+
+    def _scan_text(text: str, src: str, ref: str):
+        idx = text.find(q)
+        if idx >= 0:
+            hits.append({"src": src, "ref": ref,
+                         "ctx": text[max(0, idx - 30):idx + len(q) + 50].replace("\n", " ")})
+
+    for m in _load_messages():
+        _scan_text(str(m.get("text", "")), "留言", f"{m.get('seat')} {str(m.get('at',''))[5:16]}")
+    if os.path.isdir(ARCHIVE_ROOT):
+        for month in os.listdir(ARCHIVE_ROOT):
+            mdir = os.path.join(ARCHIVE_ROOT, month)
+            if not os.path.isdir(mdir):
+                continue
+            for name in os.listdir(mdir):
+                fp = os.path.join(mdir, name, "minutes.md")
+                if os.path.isfile(fp):
+                    try:
+                        _scan_text(open(fp, encoding="utf-8").read(), "会议纪要", f"{month}/{name}")
+                    except OSError:
+                        continue
+    return hits[:30]
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 静默
         pass
@@ -202,7 +337,13 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/healthz":
             return self._json({"ok": True, "at": _now()})
         if u.path == "/api/council/state":
-            return self._json(load_state())
+            st = load_state()
+            st["archives"] = load_archives()
+            st["tasks"] = load_tasks()
+            return self._json(st)
+        q = urllib.parse.parse_qs(u.query).get("q", [""])[0]
+        if u.path == "/api/council/search":
+            return self._json({"q": q, "hits": search_all(q)})
         return self._json({"error": "not found"}, 404)
 
     def do_POST(self):
@@ -215,6 +356,45 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             return self._json({"error": "bad json"}, 400)
+        if u.path == "/api/council/archive":
+            topic = str(data.get("topic") or "").strip()[:120]
+            if not topic:
+                return self._json({"error": "topic required"}, 400)
+            decision = str(data.get("decision") or "").strip()[:2000]
+            tasks = data.get("tasks") or []
+            if not isinstance(tasks, list):
+                tasks = []
+            tasks = [{"owner": str(t.get("owner", "?"))[:20],
+                      "text": str(t.get("text", ""))[:300],
+                      "due": str(t.get("due", ""))[:20]} for t in tasks[:20] if isinstance(t, dict)]
+            return self._json(archive_meeting(topic, decision, tasks))
+        if u.path == "/api/council/task_update":
+            meeting_id = str(data.get("meeting_id") or "").strip()
+            idx = data.get("idx")
+            status = str(data.get("status") or "").strip()[:12]
+            if not meeting_id or idx is None or status not in ("todo", "doing", "done", "dropped"):
+                return self._json({"error": "meeting_id/idx/status 合法值 required"}, 400)
+            for month in os.listdir(ARCHIVE_ROOT) if os.path.isdir(ARCHIVE_ROOT) else []:
+                mdir = os.path.join(ARCHIVE_ROOT, month)
+                if not os.path.isdir(mdir):
+                    continue
+                for name in os.listdir(mdir):
+                    fdir = os.path.join(mdir, name)
+                    tp = os.path.join(fdir, "tasks.jsonl")
+                    if not os.path.isfile(tp) or not meeting_id in name:
+                        continue
+                    lines = open(tp, encoding="utf-8").read().splitlines()
+                    if 0 <= int(idx) < len(lines):
+                        rec = json.loads(lines[idx])
+                        rec["status"] = status
+                        rec["updated"] = _now()
+                        lines[idx] = json.dumps(rec, ensure_ascii=False)
+                        fd, tmp = tempfile.mkstemp(dir=fdir)
+                        with os.fdopen(fd, "w", encoding="utf-8") as f:
+                            f.write("\n".join(lines) + "\n")
+                        os.replace(tmp, tp)
+                        return self._json({"ok": True, "task": rec})
+            return self._json({"error": "task not found"}, 404)
         if u.path == "/api/council/natural":
             text = str(data.get("text") or "").strip()[:500]
             if not text:

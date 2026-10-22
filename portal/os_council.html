@@ -46,9 +46,18 @@ input,select,textarea{background:#0c1727;border:1px solid var(--line);border-rad
 <div class="tools">
 <button class="btn small" id="btn-mic">🎙 语音输入</button><button class="btn small" id="btn-file" title="上传文档入议题">📎 上传文档</button><input type="file" id="file-in" hidden>
 <button class="btn small" id="btn-refresh">↻ 刷新</button>
+<button class="btn small" id="btn-archive" title="议题定稿：填决议+分解任务,生成纪要档案">📦 定稿归档</button>
 <span class="hint" id="mic-hint">语音：点击开始→说话→再点停止→转写进输入框</span></div></div>
 </div></section>
-<section class="panel"><span class="eyebrow">SEATS</span><h2>席位在线</h2><div id="seats"></div><div style="height:8px"></div><span class="eyebrow">SCHEDULED</span><h2 style="margin-top:4px">已预约</h2><div id="sched-list"><div class="empty">暂无预约</div></div></section>
+<section class="panel"><span class="eyebrow">RESULTS · 成果</span><h2>会议成果</h2>
+<div style="display:grid;gap:6px;margin-bottom:10px">
+<button class="btn" id="go-minutes" style="text-align:left">📚 会议纪要库 <small style="color:var(--muted)">（定稿档案·复盘）</small></button>
+<button class="btn" id="go-tasks" style="text-align:left">✅ 任务督促台 <small style="color:var(--muted)">（分解·进度）</small></button>
+</div>
+<div style="display:flex;gap:6px"><input id="q" placeholder="🔍 全文检索：留言+纪要"><button class="btn small" id="btn-q">查</button></div>
+<div id="q-hits" style="margin-top:6px;max-height:180px;overflow:auto"></div>
+<div id="result-panel" style="margin-top:8px;max-height:300px;overflow:auto"></div>
+<div style="height:10px"></div><span class="eyebrow">SEATS</span><h2 style="margin-top:4px">席位在线</h2><div id="seats"></div><div style="height:8px"></div><span class="eyebrow">SCHEDULED</span><h2 style="margin-top:4px">已预约</h2><div id="sched-list"><div class="empty">暂无预约</div></div></section>
 </div><p style="color:var(--muted);font-size:11px;margin-top:14px" id="stamp"></p></div>
 <div class="toast" id="toast"></div>
 <script>
@@ -73,7 +82,7 @@ d.addEventListener('click',()=>{curTopic=t.topic;loadAll()});topicsBox.append(d)
 if(!extra.length&&!reg.length)topicsBox.append(el('div','empty','暂无议题——左上「立即发起」开一个'));
 const seats=$('#seats');seats.replaceChildren();
 [['田丰 · Hermes','g','8787 真席位 · 上午已复核'],['赵云 · 真席位','g','8787 真席位 · 上午已表态'],['诸葛亮 · 建议面','q','OpenClaw key 未注入·代行'],['军团指挥台','g','8796'],['WorkBuddy 工位','g','会话级']].forEach(([n,c,note])=>{const card=el('div','seatcard');const r1=el('div','r1');r1.append(el('b',null,n),el('span','dot '+c));card.append(r1,el('small',note));seats.append(card)});
-windowMsgs=st.messages||[];renderMsgs();
+window._state=st;windowMsgs=st.messages||[];renderMsgs();
 $('#stamp').textContent='数据 '+String(st.generated_at||'').slice(5,16).replace('T',' ')+' · 留言 '+windowMsgs.length+' 条 · 本页 30s 自动刷新'}
 function renderMsgs(){const box=$('#msgs');box.replaceChildren();
 $('#cur-topic').textContent=curTopic||'（选择左侧议题，或发起新会议）';
@@ -126,6 +135,28 @@ $('#btn-mic').addEventListener('click',()=>{if(!rec){toast('当前浏览器不�
 if(recOn){rec.stop();return}
 try{rec.start();recOn=true;$('#btn-mic').classList.add('rec');$('#btn-mic').textContent='⏹ 停止录音';$('#mic-hint').textContent='录音中…说话即转写到输入框'}catch(e){toast('录音启动失败：'+e.message)}});
 $('#btn-refresh').addEventListener('click',loadAll);
+/* 成果区：纪要库/任务督促/检索/定稿归档 */
+function renderArchives(){const box=$('#result-panel');box.replaceChildren();box.append(el('b',null,'📚 会议纪要库'));
+let st=window._state;if(!st||!(st.archives||[]).length){box.append(el('div','empty','暂无定稿档案——议题走完后点「📦定稿归档」'));return}
+(st.archives||[]).forEach(a=>{const d=el('div','sched-item');d.append(el('b',null,'【'+a.meeting_id+'】'+String(a.topic).slice(0,22)));d.append(el('small',(a.seats||[]).join('、')+' · 发言'+a.message_count+' · 任务'+a.task_count+(a.decision?' · 已决议':'')));box.append(d)})}
+function renderTasks(){const box=$('#result-panel');box.replaceChildren();box.append(el('b',null,'✅ 任务督促台'));
+let st=window._state;if(!st||!(st.tasks||[]).length){box.append(el('div','empty','暂无任务——定稿归档时分解'));return}
+(st.tasks||[]).forEach(t=>{const d=el('div','sched-item');const b=el('b');const mk={'todo':'⚪','doing':'🔵','done':'✅','dropped':'❌'}[t.status]||'⚪';b.append(document.createTextNode(mk+' ['+t.owner+'] '+String(t.text).slice(0,30)+' — '+(t.due||'无期')));d.append(b);
+if(t.status!=='done'){const btn=el('button','btn small','完成');btn.style.marginTop='4px';btn.addEventListener('click',async()=>{try{await opsPost('/api/council/task_update',{meeting_id:t.meeting_id,idx:window._state.tasks.indexOf(t),status:'done'});await loadAll();renderTasks()}catch(e){toast('失败:'+e.message)}});d.append(btn)}
+box.append(d)})}
+$('#go-minutes').addEventListener('click',renderArchives);
+$('#go-tasks').addEventListener('click',renderTasks);
+async function doSearch(){const q=$('#q').value.trim();if(!q){toast('输入关键词');return}
+try{const d=await opsGet('/api/council/search?q='+encodeURIComponent(q));const box=$('#q-hits');box.replaceChildren();
+if(!d.hits.length){box.append(el('div','empty','零命中（不凑样本）'))}
+d.hits.forEach(h=>{const it=el('div','sched-item');it.append(el('b',null,'['+h.src+'] '+h.ref.slice(0,26)),el('small',h.ctx))});box.append(box.children.length?el('small','命中 '+d.hits.length+' 条'):null)}catch(e){toast('检索失败:'+e.message)}}
+$('#btn-q').addEventListener('click',doSearch);
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+$('#btn-archive').addEventListener('click',async()=>{if(!curTopic){toast('先选中要定稿的议题');return}
+const decision=prompt('决议（定稿文字,可空）:');if(decision===null)return;
+const raw=prompt('任务分解,每行一条:[谁] 做什么 期限(可省)\n例:INTEL0 定位写入端 2026-10-24','')||'';
+const tasks=raw.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const m=l.match(/^\[([^\]]+)\]\s*(.+?)(?:\s+(\d{4}-\d\d-\d\d))?$/);return m?{owner:m[1],text:m[2],due:m[3]||''}:{owner:'?',text:l,due:''}});
+try{const d=await opsPost('/api/council/archive',{topic:curTopic,decision,tasks});toast('📦 已建档 '+d.meeting_id+'（纪要+决议+'+tasks.length+'任务）');await loadAll()}catch(e){toast('失败:'+e.message)}});
 loadAll();setInterval(loadAll,30000);
 })();
 </script></body></html>
