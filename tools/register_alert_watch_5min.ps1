@@ -65,7 +65,15 @@ $ErrorActionPreference = 'Stop'
 
 $taskName = 'AlertWatch'
 $xmlDir = Join-Path $PSScriptRoot 'schtasks_xml'
-$xmlNew = Join-Path $xmlDir 'AlertWatch_PT5M.xml'
+# v2 (2026-10-22 16:20): the live task is failing at CreateProcess with
+# 0x80070003 (ERROR_PATH_NOT_FOUND) in its S4U session, twice observed
+# (15:45:05 and 16:16:00). All paths exist and are readable interactively,
+# and python launches fine - so the failure is specific to the S4U token.
+# The one structural difference we can see is that <WorkingDirectory> points at
+# the junction path C:\aios\news_collector. The PT5M_physpath variant changes
+# BOTH the interval and that working directory to the physical path.
+$xmlNew = Join-Path $xmlDir 'AlertWatch_PT5M_physpath.xml'
+$xmlNewNoPhys = Join-Path $xmlDir 'AlertWatch_PT5M.xml'
 $xmlOld = Join-Path $xmlDir 'AlertWatch_original_PT30M.xml'
 $liveXml = Join-Path $env:WINDIR 'System32\Tasks\AlertWatch'
 
