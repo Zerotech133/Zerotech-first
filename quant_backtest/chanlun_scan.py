@@ -442,6 +442,13 @@ def _make_row(code, name, sig, detect_date, lag, entry_px, reg, source,
             "gray_v": "v4",
             # 数据深度分档（WO-099）：只标注不拦截；历史行无此字段 → None
             "depth_bars": depth, "depth_tier": _depth_tier(depth),
+            # `completed_at` 是 /api/alerts 的 source_health 契约要求的字段
+            # （portal/api_common.py 的 dated() 用 max(该批各行的 completed_at)
+            # 作为"这一批扫完了"的证据）。_now_iso() 返回 `...Z`（UTC），
+            # 正是 producer_time() 认的 tz-aware ISO 形式。
+            # 2026-10-22 之前这一行没有该字段，缠论源被判
+            # stale/unproven_completion，AlertWatch 因此拒跑。
+            "completed_at": _now_iso(),
             "source": source, "first_seen": _now_iso()}
 
 

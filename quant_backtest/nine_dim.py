@@ -1324,7 +1324,14 @@ def run_scan(dryrun=False):
     n_full = sum(1 for r in rows_out if r["full"])
     n_buy = sum(1 for r in rows_out if (r["score"] or 0) >= BUY_TH)
     n_alert = sum(1 for r in rows_out if r["band"] in ("alert", "alert2"))
-    snap = {"generated_at": _now_iso(), "trade_date": latest,
+    # `generated_at` 必须是**带时区偏移的 ISO**：/api/alerts 的 source_health
+    # （portal/api_common.py producer_time）只认 `...+08:00` 或 `...Z`，
+    # 裸本地串会被判 unproven_completion，进而使 AlertWatch 拒跑。
+    # 2026-10-22 之前这里用 _now_iso()（"%Y-%m-%d %H:%M:%S"，无时区）。
+    # 只改这一处生成时间，不动 _now_iso 本身——它还被别处用着，
+    # 全局改格式会波及其它消费方对旧格式的假设。
+    snap = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "trade_date": latest,
             "env": env, "wdelta": wdelta, "funnel": funnel,
             "n_cand": len(cand), "n_full": n_full, "n_buy": n_buy,
             "n_alert": n_alert, "alert_th": ALERT_TH,
