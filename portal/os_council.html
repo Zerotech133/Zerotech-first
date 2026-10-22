@@ -18,7 +18,12 @@ input,select,textarea{background:#0c1727;border:1px solid var(--line);border-rad
 @media(max-width:1080px){.layout{grid-template-columns:1fr}}
 </style></head><body><div class="shell"><header class="top"><div class="brand">老田的个人 OS</div><span class="badge">会议厅 v3 · 交互工作台</span><div class="nav"><a href="/os-entry">← OS 首页</a></div></header>
 <h1>会议厅</h1>
-<p class="sub">发起会议 → 多席位复辩 → 定稿分发。留言=落盘账本（git 可溯）；文档上传只存证不执行；语音本机转写。交互桥 <span id="bridge" style="color:var(--muted)">检测中…</span></p>
+<p class="sub">留言=落盘账本（git 可溯）；文档/截图上传存证；语音本机转写。交互桥 <span id="bridge" style="color:var(--muted)">检测中…</span></p>
+<div style="display:flex;gap:8px;margin:0 0 14px;padding:12px;border:1px solid var(--blue);border-radius:12px;background:linear-gradient(145deg,#0f2733,#11202f)">
+<span style="font-size:20px">🎤</span>
+<input id="nat" placeholder='一句话发起：「预约10月25号的会，田丰赵云参加，主题watchdog预算」或「现在开会讨论KgChain修复」' style="font-size:14px;padding:10px 12px">
+<button class="btn primary" id="btn-nat" style="white-space:nowrap;font-size:14px;padding:10px 18px">AI 解析 → 开单</button>
+</div>
 <div class="layout">
 <section class="panel"><span class="eyebrow">NEW · 发起</span><h2>发起 / 预约会议</h2>
 <div class="field"><label>议题标题</label><input id="n-title" placeholder="例：watchdog 推送预算独立"></div>
@@ -88,10 +93,19 @@ curTopic=d.topic.topic;$('#n-title').value='';await loadAll();toast('已发起�
 $('#btn-sched').addEventListener('click',async()=>{const title=$('#n-title').value.trim()||'（未命名预约）';const at=$('#s-at').value;if(!at){toast('先选时间');return}
 try{await opsPost('/api/council/schedule',{title,at});toast('已预约入账（到点自动立题开发中,现为草案）');await loadAll()}catch(e){toast('失败：'+e.message)}});
 $('#btn-file').addEventListener('click',()=>$('#file-in').click());
+$('#file-in').setAttribute('accept','.md,.txt,.pdf,.png,.jpg,.jpeg,.json,.csv,.docx,.xlsx,.log,.py,.js,.html');
 $('#file-in').addEventListener('change',async()=>{const f=$('#file-in').files[0];if(!f)return;
+const isImg=/\.(png|jpe?g)$/i.test(f.name);
 const fd=new FormData();fd.append('f',f);try{const r=await fetch(OPS+'/api/council/upload',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
-await opsPost('/api/council/message',{topic:curTopic||'(未选议题)',seat:$('#seat').value,text:'📎 上传文档：'+d.upload.name+'（'+d.upload.size+'B）',kind:'upload',path:d.upload.file});
-await loadAll();toast('已上传存证')}catch(e){toast('上传失败：'+e.message)}finally{$('#file-in').value=''}});
+await opsPost('/api/council/message',{topic:curTopic||'(未选议题)',seat:$('#seat').value,text:(isImg?'🖼 截图/照片':'📎 文档')+'：'+d.upload.name+'（'+d.upload.size+'B）'+(isImg?'——已存证,识别请在 WorkBuddy 会话说「读 portal/data/council_uploads/'+String(d.upload.file).split(/[\\/]/).pop()+' 识别要点」':''),kind:'upload',path:d.upload.file});
+await loadAll();toast(isImg?'图片已存证(识别引路见留言)':'已上传存证')}catch(e){toast('上传失败：'+e.message)}finally{$('#file-in').value=''}});
+async function natural(){const t=$('#nat').value.trim();if(!t){toast('说一句话,我来解析');return}
+try{const d=await opsPost('/api/council/natural',{text:t});
+if(d.executed==='scheduled'){toast('✅ 已预约：'+d.parsed.title+' · '+d.parsed.at+' · '+(d.parsed.seats.join('、')||'全体'))}
+else{curTopic=d.topic.topic;toast('✅ 已发起：'+d.topic.topic)}
+$('#nat').value='';await loadAll()}catch(e){toast('失败：'+e.message)}}
+$('#btn-nat').addEventListener('click',natural);
+$('#nat').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();natural()}});
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,recOn=false;
 if(SR){rec=new SR();rec.lang='zh-CN';rec.continuous=true;rec.interimResults=false;
 rec.onresult=e=>{const r=Array.from(e.results).slice(-1)[0];if(r)$('#say').value+=r[0].transcript};
