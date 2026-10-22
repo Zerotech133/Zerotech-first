@@ -38,6 +38,15 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
    「路径 + 字节数 + 是否被 git 跟踪」（ls-files --error-unmatch）。
    命中 ≥1 红；有目录/文件读不到黄（不判绿）；扫描 >3s 计 available=false 红。
 
+8. 整理层新鲜度（data.curated_freshness）：<repo>/quant_backtest/data/tushare_curated/
+   是 tools/refresh_curated.py 从 data/tushare/ 派生的整理层（51 张表 + 3 侧车），
+   纯派生，自己不会跟着原始层变新。取整理层最旧 parquet 的 mtime 与原始层递归
+   最新 parquet 的 mtime 比落后天数，另按 51 个数据集逐个比（报落后的数据集数量），
+   判定取两者更差者。只看 mtime（scandir 目录项缓存，不打开文件、不读 footer，
+   5s 预算）。落后 <=2 天绿 / >2 天黄 / >14 天红；整理层不存在或为空 →
+   available=false 黄（不判绿）；原始层不存在/无 parquet/遍历超预算 →
+   available=false 红。
+
 用法：
     python -B tools/gen_health_card.py
     python -B tools/gen_health_card.py --vault-root C:/项目/_vault
@@ -49,7 +58,9 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
 文档索引落后黄；任一块不可用红；备份落后 HEAD >0 黄 /
 落后且备份 >24h 红；追平无法判定计 null（不误判绿）；数据根漂移只有一份清单黄
 （不判绿）、两份都读不到红、文件数变化 >20% 或目录数变化红；
-明文私钥命中 ≥1 红、有目录/文件读不到黄、扫描超 3s 红。
+明文私钥命中 ≥1 红、有目录/文件读不到黄、扫描超 3s 红；
+整理层落后 >2 天黄 / >14 天红、整理层缺失或为空黄（不判绿）、
+原始层缺失或遍历超 5s 红。
 """
 from __future__ import annotations
 
@@ -181,11 +192,17 @@ PLAINTEXT_KEY_WEAK_MARKER = b"PRIVATE KEY"
 PLAINTEXT_KEY_MARKER_RE = re.compile(
     rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 )
-# 3s 性能上限：扫描相位超时 → available=false + 红（已扫到的命中仍写进 detail）。
-PLAINTEXT_KEY_BUDGET_SECONDS = 3.0
-# 单文件最多读 512 KiB：私钥与脚本都远小于此；更大的文件不读内容，
-# 只计入 oversized_skipped（私钥本体不会长到 512 KiB）。
-PLAINTEXT_KEY_MAX_CONTENT_BYTES = 512 * 1024
+# 扫描相位超时 → available=false + 红（已扫到的命中仍写进 detail）。
+# 2026-10-22 从 3s 提到 12s：实测扫描 5,096 个文件 / 36 MiB 空载约 2s，
+# 但整卡同时还要跑 catchup/worktree/docs，机器负载高时会越过 3s，
+# 于是报出「扫描未完成」的红——那是**噪声**，不是私钥变多了。
+# 判红的原因必须永远是「真发现了私钥」或「有些目录读不到」，不能是「跑太慢」。
+PLAINTEXT_KEY_BUDGET_SECONDS = 12.0
+# 单文件只读前 8 KiB：`-----BEGIN … PRIVATE KEY-----` 标记**一定在文件开头**
+# （PEM 的头部就是第一行），读 tail 或读全文件都是浪费。2026-10-22 从 512 KiB
+# 降到 8 KiB：同样 5,096 个文件的扫描从 >12s 降到 2s 以内，判据强度不变。
+# 超过 8 KiB 的文件仍计入 oversized_skipped，detail 会明说"有内容没看到"。
+PLAINTEXT_KEY_MAX_CONTENT_BYTES = 8 * 1024
 # detail 里最多点名几条命中（其余折叠成计数，避免一行几十个路径）。
 PLAINTEXT_KEY_DETAIL_LIMIT = 8
 # git 跟踪判定：每条 ls-files 单独限时，整体再封一个 1.5s 顶（命中通常个位数）。
@@ -196,6 +213,24 @@ PLAINTEXT_KEY_GIT_BUDGET_SECONDS = 1.5
 PLAINTEXT_KEY_FIXTURE_NAME_PREFIXES = ("test_",)
 PLAINTEXT_KEY_FIXTURE_NAME_SUFFIXES = ("_test.py", "_selftest.py", "_test.ps1")
 PLAINTEXT_KEY_FIXTURE_DIRS = frozenset({"tests", "test", "fixtures"})
+
+# --- 整理层新鲜度（data.curated_freshness）-----------------------------------
+# 两层结构：<RAW_REL> 是写入管线每天写的原始层（228,930 个 parquet），
+# <CURATED_REL> 是 tools/refresh_curated.py（merge_parquet.py）产出的整理层
+# （51 张表 + 3 个侧车，7.18 GiB，全量约 52 分钟）。整理层是**纯派生**的，
+# 自己不会跟着原始层变新——没有这个检查，它一年前建的看起来也"很正常"。
+CURATED_REL = Path("quant_backtest") / "data" / "tushare_curated"
+RAW_REL = Path("quant_backtest") / "data" / "tushare"
+# 落后 ≤2 天绿（跨一个周末不喊狼来了）；>2 天黄（该重建）；>14 天红
+# （两周没重建，拿整理层得出的结论已经不可信）。
+CURATED_YELLOW_LAG_DAYS = 2.0
+CURATED_RED_LAG_DAYS = 14.0
+# 实测：228,930 个文件名的 scandir 遍历 0.6–0.9s（只吃目录项缓存里的 mtime，
+# 从不打开 parquet、不读 footer）。5s 上限是给冷缓存/杀软抖动的余量，
+# 超了按不可判定处理，绝不拖死健康卡。
+CURATED_SCAN_BUDGET_SECONDS = 5.0
+CURATED_SCAN_DEADLINE_CHECK_EVERY = 4096
+CURATED_DETAIL_DATASET_LIMIT = 5
 
 
 # ---------------------------------------------------------------------------
@@ -1233,6 +1268,323 @@ def _data_root_drift_detail(drift: dict[str, Any]) -> str:
             catalog_text,
         )
     return "数据根漂移（判黄）：" + "；".join(bits)
+
+
+# ---------------------------------------------------------------------------
+# 2d) 整理层新鲜度（data.curated_freshness）
+# ---------------------------------------------------------------------------
+def _empty_curated_freshness(curated_root: Path, raw_root: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "status": None,
+        "level": None,
+        "curated_root": str(curated_root),
+        "raw_root": str(raw_root),
+        "curated_files": None,
+        "curated_oldest": None,
+        "curated_newest": None,
+        "raw_files": None,
+        "raw_newest": None,
+        "lag_days": None,
+        "datasets_compared": None,
+        "datasets_without_raw": None,
+        "stale_datasets": None,
+        "expired_datasets": None,
+        "worst_dataset_lag_days": None,
+        "stale_dataset_names": [],
+        "scan_seconds": None,
+        "timed_out": False,
+        "thresholds": {
+            "yellow_lag_days": CURATED_YELLOW_LAG_DAYS,
+            "red_lag_days": CURATED_RED_LAG_DAYS,
+            "budget_seconds": CURATED_SCAN_BUDGET_SECONDS,
+        },
+        "suggested_command": (
+            "python -B tools/refresh_curated.py --dry-run "
+            "→ python -B tools/refresh_curated.py（暂存不替换）"
+        ),
+    }
+
+
+def _mtime_iso(timestamp: float | None) -> str | None:
+    if timestamp is None:
+        return None
+    return _iso(dt.datetime.fromtimestamp(timestamp).astimezone())
+
+
+def _scan_raw_parquet_mtimes(
+    raw_root: Path, deadline: float
+) -> tuple[dict[str, float], float | None, int, bool]:
+    """遍历原始层，返回（每个一级目录下最新 parquet mtime, 全局最新, 文件数, 超时）。
+
+    只 scandir + 目录项缓存里的 mtime：不打开 parquet、不读 footer、不解析行数。
+    数据集键取 raw_root 下的第一级目录名（与整理层的 <数据集>.parquet 同名）。
+    原始层根下散落的 parquet 只计入全局最新，不冒充数据集。
+    """
+    per_dataset: dict[str, float] = {}
+    newest: float | None = None
+    count = 0
+    timed_out = False
+    judged = 0
+    stack: list[tuple[str, str]] = [(str(raw_root), "")]
+    while stack:
+        # 目录级判一次（原始层 56 个一级目录，这次 monotonic 调用可忽略），
+        # 目录内部每 4096 个目录项再判一次，避免单个巨型目录拖过预算。
+        if time.monotonic() > deadline:
+            timed_out = True
+            break
+        directory, dataset = stack.pop()
+        try:
+            entries = os.scandir(directory)
+        except OSError:
+            # 单个目录读不到不判死：少算一个数据集，比整项不可判定更接近事实。
+            continue
+        with entries:
+            for entry in entries:
+                judged += 1
+                if (
+                    judged % CURATED_SCAN_DEADLINE_CHECK_EVERY == 0
+                    and time.monotonic() > deadline
+                ):
+                    timed_out = True
+                    break
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        stack.append((entry.path, dataset or entry.name))
+                        continue
+                    if not entry.name.endswith(".parquet"):
+                        continue
+                    stat = entry.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                count += 1
+                mtime = stat.st_mtime
+                if newest is None or mtime > newest:
+                    newest = mtime
+                if not dataset:
+                    continue
+                current = per_dataset.get(dataset)
+                if current is None or mtime > current:
+                    per_dataset[dataset] = mtime
+        if timed_out:
+            break
+    return per_dataset, newest, count, timed_out
+
+
+def _curated_lag_days(raw_mtime: float | None, curated_mtime: float | None) -> float | None:
+    """原始层最新写入 − 整理层产物时间，单位天。负数=整理层比原始层还新。"""
+    if raw_mtime is None or curated_mtime is None:
+        return None
+    return round((raw_mtime - curated_mtime) / 86400.0, 2)
+
+
+def collect_curated_freshness(curated_root: Path, raw_root: Path) -> dict[str, Any]:
+    """量整理层落后原始层多少天：整理层是纯派生的，不会自己变新。
+
+    口径（两套一起给，判定取更差的那个）：
+    * 简化口径：整理层最旧 parquet mtime vs 原始层递归最新 parquet mtime；
+    * 逐数据集：51 个数据集各自「本数据集整理产物 mtime vs 原始层同名目录最新」，
+      报落后的数据集数量（能指出是哪几张表旧了）。
+    判定：落后 ≤2 天绿；>2 天黄（该重建）；>14 天红（结论不可信）。
+    整理层不存在 → available=false + 黄（不判绿）；原始层不存在/扫不出 parquet
+    或遍历超预算 → available=false + 红。
+    """
+    result = _empty_curated_freshness(curated_root, raw_root)
+    started = time.monotonic()
+    deadline = started + CURATED_SCAN_BUDGET_SECONDS
+
+    if not raw_root.is_dir():
+        result["reason"] = f"原始层不存在或不是目录: {raw_root}"
+        result["status"] = "raw_missing"
+        result["level"] = "red"
+        return result
+    if not curated_root.is_dir():
+        result["reason"] = (
+            f"整理层不存在（{curated_root}）：它是 tools/refresh_curated.py 的派生产物，"
+            "原始层不受影响，但读整理层的人手里没有新数据"
+        )
+        result["status"] = "missing"
+        result["level"] = "yellow"
+        return result
+
+    # 整理层只有 50 来个条目，单独扫：不要为它递归，也别把侧车文件当表。
+    curated_mtimes: dict[str, float] = {}
+    try:
+        with os.scandir(curated_root) as entries:
+            for entry in entries:
+                if not entry.name.endswith(".parquet"):
+                    continue
+                try:
+                    if not entry.is_file(follow_symlinks=False):
+                        continue
+                    curated_mtimes[entry.name[: -len(".parquet")]] = entry.stat(
+                        follow_symlinks=False
+                    ).st_mtime
+                except OSError:
+                    continue
+    except OSError as exc:
+        result["reason"] = f"读不到整理层目录: {_short_exc(exc)}"
+        result["status"] = "unreadable"
+        result["level"] = "yellow"
+        return result
+
+    if not curated_mtimes:
+        result["reason"] = (
+            f"整理层目录里没有 parquet（{curated_root}）：重建没落盘或只落了侧车"
+        )
+        result["status"] = "empty"
+        result["level"] = "yellow"
+        return result
+
+    per_dataset, raw_newest, raw_files, timed_out = _scan_raw_parquet_mtimes(
+        raw_root, deadline
+    )
+    result["scan_seconds"] = round(time.monotonic() - started, 3)
+    if timed_out:
+        result["timed_out"] = True
+        result["reason"] = (
+            f"遍历原始层超过 {CURATED_SCAN_BUDGET_SECONDS:g}s 预算，结果不采信"
+        )
+        result["status"] = "timeout"
+        result["level"] = "red"
+        return result
+    if raw_newest is None or not raw_files:
+        result["raw_files"] = raw_files
+        result["reason"] = f"原始层没有任何 parquet，无从比对（{raw_root}）"
+        result["status"] = "raw_empty"
+        result["level"] = "red"
+        return result
+
+    curated_oldest = min(curated_mtimes.values())
+    curated_newest = max(curated_mtimes.values())
+    lag_days = _curated_lag_days(raw_newest, curated_oldest)
+
+    compared: list[tuple[float, str]] = []
+    without_raw: list[str] = []
+    for name, mtime in curated_mtimes.items():
+        raw_mtime = per_dataset.get(name)
+        dataset_lag = _curated_lag_days(raw_mtime, mtime)
+        if dataset_lag is None:
+            without_raw.append(name)
+            continue
+        compared.append((dataset_lag, name))
+    compared.sort(key=lambda item: item[0], reverse=True)
+
+    stale = [(lag, name) for lag, name in compared if lag > CURATED_YELLOW_LAG_DAYS]
+    expired = [(lag, name) for lag, name in compared if lag > CURATED_RED_LAG_DAYS]
+    worst_dataset_lag = compared[0][0] if compared else None
+
+    if not compared:
+        # 一个同名数据集都对不上：两层结构脱节（原始层被改名/清空过）。
+        # 这时简化口径可能仍然"看起来不落后"，恰恰是最危险的假绿，所以判红。
+        result["curated_files"] = len(curated_mtimes)
+        result["raw_files"] = raw_files
+        result["datasets_compared"] = 0
+        result["datasets_without_raw"] = len(without_raw)
+        result["lag_days"] = lag_days
+        result["reason"] = (
+            "整理层 %d 个数据集在原始层里找不到任何同名目录（两层结构对不上），"
+            "不能只靠总体 mtime 判绿" % len(curated_mtimes)
+        )
+        result["status"] = "no_matching_dataset"
+        result["level"] = "red"
+        return result
+
+    # 判定取「简化口径」与「最差数据集」两者中更差的一个：简化口径能抓到
+    # 「原始层新增了数据集、整理层根本没有」，逐数据集能抓到「个别表很久没重建」。
+    candidates = [value for value in (lag_days, worst_dataset_lag) if value is not None]
+    worst_lag = max(candidates)
+
+    result.update(
+        {
+            "available": True,
+            "curated_files": len(curated_mtimes),
+            "curated_oldest": _mtime_iso(curated_oldest),
+            "curated_newest": _mtime_iso(curated_newest),
+            "raw_files": raw_files,
+            "raw_newest": _mtime_iso(raw_newest),
+            "lag_days": lag_days,
+            "datasets_compared": len(compared),
+            "datasets_without_raw": len(without_raw),
+            "stale_datasets": len(stale),
+            "expired_datasets": len(expired),
+            "worst_dataset_lag_days": worst_dataset_lag,
+            "stale_dataset_names": [name for _, name in stale][:CURATED_DETAIL_DATASET_LIMIT],
+        }
+    )
+    if worst_lag > CURATED_RED_LAG_DAYS:
+        result["status"] = "expired"
+        result["level"] = "red"
+    elif worst_lag > CURATED_YELLOW_LAG_DAYS:
+        result["status"] = "stale"
+        result["level"] = "yellow"
+    else:
+        result["status"] = "fresh"
+        result["level"] = "green"
+    return result
+
+
+def _curated_lag_text(lag_days: float | None) -> str:
+    if lag_days is None:
+        return "—"
+    if lag_days <= 0:
+        return "0 天（原始层最新写入不晚于整理层，当前不落后）"
+    return "%.2f 天" % lag_days
+
+
+def _curated_freshness_detail(block: dict[str, Any]) -> str:
+    if not block:
+        return "整理层新鲜度检查未运行（data 块缺失）"
+    if not block.get("available"):
+        text = "整理层新鲜度不可判定：" + (block.get("reason") or "未知原因")
+        if block.get("level") == "yellow":
+            # 缺件不等于坏掉：判黄不判绿，并把重建命令直接给出来。
+            text += "；不判绿"
+            if block.get("status") in ("missing", "empty"):
+                text += "；建议：" + str(block.get("suggested_command"))
+        return text
+
+    bits = [
+        "整理层最旧 %s / 最新 %s（%s 个 parquet）"
+        % (
+            block.get("curated_oldest"),
+            block.get("curated_newest"),
+            _fmt_num(block.get("curated_files")),
+        ),
+        "原始层最新 %s（递归 %s 个 parquet）"
+        % (block.get("raw_newest"), _fmt_num(block.get("raw_files"))),
+        "落后 " + _curated_lag_text(block.get("lag_days")),
+    ]
+    compared = block.get("datasets_compared")
+    stale = block.get("stale_datasets")
+    if compared is not None:
+        dataset_text = "逐数据集 %s/%s 落后（>%g 天）" % (
+            _fmt_num(stale),
+            _fmt_num(compared),
+            CURATED_YELLOW_LAG_DAYS,
+        )
+        names = block.get("stale_dataset_names") or []
+        if names:
+            dataset_text += "：" + "、".join(names)
+            if (stale or 0) > len(names):
+                dataset_text += " 等 %d 个" % stale
+        bits.append(dataset_text)
+    if block.get("datasets_without_raw"):
+        bits.append("原始层缺对应目录 %s 个" % _fmt_num(block.get("datasets_without_raw")))
+
+    status = block.get("status")
+    if status == "expired":
+        head = "整理层已明显过期（判红，拿它得出的结论不可信）："
+        tail = "；建议：%s，校验通过后由人决定是否 --replace" % block.get("suggested_command")
+    elif status == "stale":
+        head = "整理层落后（判黄，该重建了）："
+        tail = "；建议：%s" % block.get("suggested_command")
+    else:
+        head = "整理层不落后："
+        # 绿也给一条节奏建议：本项一旦转黄就是"该重建了"，提前把命令写在这里。
+        tail = "；建议保持每周一次重建（先 python -B tools/refresh_curated.py --dry-run；见 SOP §1.5）"
+    return head + "；".join(bits) + tail
 
 
 # ---------------------------------------------------------------------------
@@ -2759,6 +3111,18 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             _data_root_drift_detail(data_drift),
         )
 
+    curated = (card.get("data") or {}).get("curated_freshness") or {}
+    if not curated:
+        add("data.curated_freshness", "red", "整理层新鲜度检查未运行（data 块缺失）")
+    else:
+        # 同上：等级由采集侧给全；采集侧没给等级就是不可判定，按红兜底。
+        curated_level = curated.get("level")
+        add(
+            "data.curated_freshness",
+            curated_level if curated_level in ("green", "yellow", "red") else "red",
+            _curated_freshness_detail(curated),
+        )
+
     repo = card["repo"]
     if not repo["available"]:
         add("repo.readable", "red", "仓库卫生不可用：" + (repo["reason"] or "未知原因"))
@@ -2864,12 +3228,16 @@ def build_card(
     vault_root: Path,
     audit_root: Path,
     now: dt.datetime,
+    curated_root: Path | None = None,
+    raw_root: Path | None = None,
 ) -> dict[str, Any]:
     semantics, semantics_error = _load_audit_semantics(repo_root)
     backup = collect_backup(vault_root, now)
     backup["catchup"] = collect_catchup(repo_root, backup, now)
     repo_block = collect_repo(repo_root, now)
     repo_block["worktree_ttl"] = collect_worktree_ttl(repo_root, now)
+    curated_path = curated_root if curated_root is not None else repo_root / CURATED_REL
+    raw_path = raw_root if raw_root is not None else repo_root / RAW_REL
     card: dict[str, Any] = {
         "schema": SCHEMA,
         "generated_at": _iso(now),
@@ -2879,7 +3247,10 @@ def build_card(
         "checks": [],
         "task_audit": collect_task_audit(audit_root, now, semantics, semantics_error),
         "backup": backup,
-        "data": {"root_drift": collect_data_root_drift(vault_root)},
+        "data": {
+            "root_drift": collect_data_root_drift(vault_root),
+            "curated_freshness": collect_curated_freshness(curated_path, raw_path),
+        },
         "repo": repo_block,
         "docs": {"index_freshness": collect_docs_index(repo_root)},
         "security": {"plaintext_keys": collect_plaintext_keys(repo_root)},
@@ -2920,6 +3291,16 @@ def build_card(
             "扫描相位 >%gs 计 available=false 并判红（已扫到的命中仍列出）；"
             "单文件最多读 %s，更大的文件记 oversized_skipped 不读内容。"
             % (PLAINTEXT_KEY_BUDGET_SECONDS, _human_bytes(PLAINTEXT_KEY_MAX_CONTENT_BYTES)),
+            "整理层新鲜度（data.curated_freshness）：整理层是纯派生产物，不会跟着原始层变新。"
+            "口径=整理层最旧 parquet mtime vs 原始层递归最新 parquet mtime，另按 51 个数据集"
+            "逐个比一遍（报落后的数据集数量），判定取两者中更差的一个；只看 mtime，"
+            "不打开 parquet、不读 footer。"
+            f"落后 <={CURATED_YELLOW_LAG_DAYS:g} 天绿 / >{CURATED_YELLOW_LAG_DAYS:g} 天黄 / "
+            f">{CURATED_RED_LAG_DAYS:g} 天红（结论不可信）。",
+            "整理层不可判定：整理层不存在/为空 → available=false + 黄（不判绿，计数 null）；"
+            "原始层不存在、原始层没有 parquet、或遍历超 "
+            f"{CURATED_SCAN_BUDGET_SECONDS:g}s 预算 → available=false + 红。"
+            "重建命令见 tools/refresh_curated.py（--replace 会永久删除旧整理层，须先校验通过）。",
         ],
     }
     checks, status, reasons = _evaluate(card)
@@ -3206,6 +3587,47 @@ def _render_html(card: dict[str, Any]) -> str:
             )
     parts.append("</section>")
 
+    curated = (card.get("data") or {}).get("curated_freshness") or {}
+    parts.append('<section class="block">')
+    parts.append("<h2>整理层新鲜度</h2>")
+    parts.append(f'<div class="sub">{_e(curated.get("curated_root"))}</div>')
+    if curated.get("available"):
+        verdicts = {
+            "fresh": "不落后",
+            "stale": "该重建了（黄）",
+            "expired": "已过期（红）",
+        }
+        parts.extend(
+            [
+                _kv("整理层最旧", curated.get("curated_oldest")),
+                _kv("整理层最新", curated.get("curated_newest")),
+                _kv("原始层最新", curated.get("raw_newest")),
+                _kv("落后", _curated_lag_text(curated.get("lag_days"))),
+                _kv(
+                    "落后数据集",
+                    "%s / %s（阈值 %g 天）"
+                    % (
+                        _fmt_num(curated.get("stale_datasets")),
+                        _fmt_num(curated.get("datasets_compared")),
+                        CURATED_YELLOW_LAG_DAYS,
+                    ),
+                ),
+                _kv(
+                    "判定",
+                    verdicts.get(str(curated.get("status")), str(curated.get("status"))),
+                ),
+            ]
+        )
+        names = curated.get("stale_dataset_names") or []
+        if names:
+            parts.append('<p class="note">落后的数据集：%s</p>' % _e("、".join(names)))
+    else:
+        parts.append(f'<p class="unavailable">不可判定：{_e(curated.get("reason"))}</p>')
+        parts.append(
+            '<p class="note">建议：%s</p>' % _e(curated.get("suggested_command"))
+        )
+    parts.append("</section>")
+
     repo = card["repo"]
     parts.append('<section class="block">')
     parts.append("<h2>仓库卫生</h2>")
@@ -3399,6 +3821,7 @@ def main(argv: list[str] | None = None) -> int:
             f"阈值：备份 >{BACKUP_YELLOW_HOURS:g}h 黄 / >{BACKUP_RED_HOURS:g}h 红；"
             f"备份落后 HEAD >0 黄 / 落后且 >{CATCHUP_RED_HOURS:g}h 红；"
             f"审计 >{AUDIT_YELLOW_HOURS:g}h 黄 / >{AUDIT_RED_HOURS:g}h 红。"
+            f"整理层落后 >{CURATED_YELLOW_LAG_DAYS:g} 天黄 / >{CURATED_RED_LAG_DAYS:g} 天红。"
         ),
     )
     parser.add_argument("--repo", metavar="PATH", help="仓库根（默认脚本所在仓库）")
@@ -3409,6 +3832,16 @@ def main(argv: list[str] | None = None) -> int:
         "--task-audit-root",
         metavar="PATH",
         help="task_exit_audit 输出目录（默认 <repo>/portal/data/task_exit_audit）",
+    )
+    parser.add_argument(
+        "--curated-root",
+        metavar="PATH",
+        help="整理层目录（默认 <repo>/quant_backtest/data/tushare_curated）",
+    )
+    parser.add_argument(
+        "--raw-root",
+        metavar="PATH",
+        help="原始层目录（默认 <repo>/quant_backtest/data/tushare）",
     )
     parser.add_argument(
         "--out", metavar="DIR", help="可选：写入 health_card.json + health_card.html"
@@ -3434,9 +3867,13 @@ def main(argv: list[str] | None = None) -> int:
         else repo_root / AUDIT_DATA_REL
     )
     now = args.now or dt.datetime.now().astimezone()
+    curated_root = (
+        Path(args.curated_root).expanduser().resolve() if args.curated_root else None
+    )
+    raw_root = Path(args.raw_root).expanduser().resolve() if args.raw_root else None
 
     try:
-        card = build_card(repo_root, vault_root, audit_root, now)
+        card = build_card(repo_root, vault_root, audit_root, now, curated_root, raw_root)
     except Exception as exc:  # 兜底：脚本自身错误不给堆栈吓人
         print(f"[内部错误] {_short_exc(exc)}", file=sys.stderr)
         return 2
