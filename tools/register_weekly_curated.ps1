@@ -143,10 +143,25 @@ if ($Unregister) {
 
 if (-not (Test-Elevated)) {
     Write-Host ''
-    Write-Host 'ERROR: must run in an ELEVATED PowerShell.'
-    Write-Host '       Right-click PowerShell -> Run as Administrator, then:'
-    Write-Host ('       powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $PSCommandPath)
-    exit 2
+    Write-Host 'not elevated -> re-launching with a UAC prompt ...'
+    Write-Host '  (answer Yes in the Windows prompt; the elevated window stays open'
+    Write-Host '   and prints the result. This window can be closed.)'
+    $fwd = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-NoExit', '-File', $PSCommandPath)
+    if ($RunNow) { $fwd += '-RunNow' }
+    if ($Force) { $fwd += '-Force' }
+    if ($PSBoundParameters.ContainsKey('Time')) { $fwd += @('-Time', $Time) }
+    try {
+        Start-Process -FilePath 'powershell.exe' -ArgumentList $fwd -Verb RunAs -ErrorAction Stop
+        Write-Host ''
+        Write-Host 'elevated instance started. Watch the new window.'
+        exit 0
+    } catch {
+        Write-Host ''
+        Write-Host ('ERROR: could not elevate automatically: {0}' -f $_.Exception.Message)
+        Write-Host '       Do it by hand: right-click PowerShell -> Run as Administrator, then:'
+        Write-Host ('       powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{0}" -RunNow' -f $PSCommandPath)
+        exit 2
+    }
 }
 
 if (-not (Test-Path -LiteralPath $runner)) {
