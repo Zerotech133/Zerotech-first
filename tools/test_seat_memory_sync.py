@@ -22,7 +22,7 @@ def test_plan_covers_three_seats():
 
 def test_card_schema_and_layers():
     card = sms.build_card("zhaoyun")
-    assert card["schema"] == "seat_memory_card/v1"
+    assert card["schema"] == "seat_memory_card/v1.1"
     assert "L1_work" in card["layers"] and "L2_seat" in card["layers"] and "L3_org" in card["layers"]
     # 赵云职责含 V3.1 红线
     assert "只产建议与证据" in card["layers"]["L2_seat"]["duty"]
@@ -33,6 +33,23 @@ def test_card_schema_and_layers():
     rules = " ".join(card["layers"]["L3_org"]["hard_rules"])
     for kw in ("检测器自证", "假成功", "快照假绿", "五要素"):
         assert kw in rules
+
+
+def test_capability_summary_linkage(tmp_path, monkeypatch):
+    """C2 联动：能力清单注入后，席位卡自动并入摘要。"""
+    monkeypatch.setitem(sms.SEATS, "zhaoyun", dict(sms.SEATS["zhaoyun"], home=str(tmp_path)))
+    # 未注入时如实报
+    card0 = sms.build_card("zhaoyun")
+    assert isinstance(card0["capabilities_summary"], str) and "未注入" in card0["capabilities_summary"]
+    # 注入后并摘要
+    skills = tmp_path / "skills"; skills.mkdir(parents=True)
+    (skills / "CAPABILITIES.json").write_text(json.dumps({
+        "total": 2, "ready": 1, "pending_key": 1, "pending_wiring": 0,
+        "capabilities": [{"name": "aa", "status": "ready"}, {"name": "bb", "status": "pending_key"}],
+        "generated_at": "2026-10-23T04:00:00+08:00"}), encoding="utf-8")
+    card1 = sms.build_card("zhaoyun")
+    cs = card1["capabilities_summary"]
+    assert cs["ready"] == 1 and cs["ready_names"] == ["aa"] and cs["pending_names"] == ["bb"]
 
 
 def test_dry_run_no_write(tmp_path, monkeypatch, capsys):

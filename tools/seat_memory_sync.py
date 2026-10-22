@@ -67,14 +67,38 @@ HARD_RULES = [
 ]
 
 
+def _capability_summary(home: str) -> dict:
+    """C2 联动：读 skills/CAPABILITIES.json 摘要（读不到如实报 None，不猜）。"""
+    p = os.path.join(home, "skills", "CAPABILITIES.json")
+    if not os.path.isfile(p):
+        return None
+    try:
+        cap = json.load(open(p, encoding="utf-8"))
+        return {
+            "total": cap.get("total"),
+            "ready": cap.get("ready"),
+            "pending_key": cap.get("pending_key"),
+            "pending_wiring": cap.get("pending_wiring"),
+            "ready_names": [c["name"] for c in cap.get("capabilities", [])
+                            if c.get("status") == "ready"],
+            "pending_names": [c["name"] for c in cap.get("capabilities", [])
+                              if c.get("status") != "ready"],
+            "source_generated_at": cap.get("generated_at"),
+        }
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 def build_card(seat_id: str) -> dict:
     cfg = SEATS[seat_id]
+    cap = _capability_summary(cfg["home"])
     return {
-        "schema": "seat_memory_card/v1",
+        "schema": "seat_memory_card/v1.1",
         "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "seat": seat_id,
         "cn_name": cfg["cn"],
         "base": cfg["base"],
+        "capabilities_summary": cap if cap is not None else "（能力清单未注入：先跑 seat_capability_inject.py）",
         "layers": {
             "L1_work": {
                 "what": "会话级运行时：任务单、会话记录、临时笔记",

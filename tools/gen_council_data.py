@@ -183,6 +183,14 @@ TOPIC_REGISTRY = [
         "originator": "laotian",
         "summary": "SOP v1 已落地（d02f40a2）；待首个真实任务全流程走一遍（候选：明日警报源 as_of 复核）后定 v1.1。",
     },
+    {
+        "topic": "SOP 试点：警报源 as_of 复核 + 0x80070003 定性",
+        "tags": ["ops", "govern"],
+        "stage": "试工",
+        "originator": "laotian",
+        "summary": "B1 首流程试点（2026-10-23 立）：①07:00 后 /api/alerts 各源 as_of 判定；②0x80070003 昨夜复现今晨消失的环境性定性复核。试工=赵云晨间扫描轮（A5/A7 已在跑），监读=田丰复核战报，定稿=老田裁 S-0 门禁判定口径。",
+        "tickets": ["A1", "A4", "A7"],
+    },
 ]
 
 
