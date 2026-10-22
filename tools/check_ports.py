@@ -42,7 +42,7 @@ REGISTRY = {
     11434: "Ollama",
     3307: "菜鸟MySQL(Docker)",
     8093: "数据仓管理预览(daily_ui_preview_server.py)",
-    8096: "KM飞书联动(km_feishu_hub.py)",  # K-STOCK-394 归因纠正：原登记 Codex实验已废弃，实际长期持有者=km_hub
+    8096: "军团作战大屏API(api_legion_ops.py/v2)",  # 2026-10-22 TF-AUDIT 归因纠正：K-STOCK-394 原登记 km_feishu_hub 已迁 8099，现持有者=军团大屏（/api/legion/ops 实测返回 roster），legion_scheduler/academy_worker_plan 均调用此口
     8095: "picks定时发布调度(publish_schedule_server.py)",
     8097: "推送中台总览(push_admin_server.py)",
     8100: "datamart-api(数仓读层HTTP门面,K-STOCK-415)",
@@ -63,6 +63,13 @@ REGISTRY = {
     # （此前仅靠进程未撞豁免名单而未报，属注册表治理盲区收编）。
     8100: "zerobound-kg 数据市集API(datamart_api.py)",
     8788: "Hermes WebUI v2(hermes-webui-next)",
+    # 2026-10-22 老田裁端口处置（K-INTEL 情报线守卫收口）：
+    # 8099=KM知识库飞书联动(portal/km_feishu_hub.py)，推送中台8097 iframe引用、
+    # CowAgent看门狗(ops/keepalive_9899.py)保活、inbound_gateway幂等注册——自研常驻；
+    # 8096 注册名同为 km_feishu_hub 系历史漂移，当前持有者待 TF-AUDIT 核对，不改名。
+    8099: "KM知识库飞书联动(portal/km_feishu_hub.py)",
+    # 8796=军团指挥台(agent_platform/legion_command/serve.py)，HKCU Run 用户级自启。
+    8796: "军团指挥台(legion_command/serve.py)",  # 按需自启（HKCU Run），同 8030 手动语义：strict 只防抢占，不因未运行判负
     8791: "图谱数据看板(kg_data_dashboard.py)",
     8898: "res-downloader 自用工具(uvicorn)",
     18899: "res-downloader 自用工具(uvicorn)",
@@ -147,7 +154,9 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "mqsvc", "androwsstore", "androwssvr",
              # 2026-10-18 K-ORG-191：codex=Codex CLI 本地认证服务（用户桌面
              # 第三方工具，1455），同 trae 先例入豁免，否则 strict 必挂。
-             "codex")
+             # 2026-10-22 老田裁端口处置：androws=Androws 主进程（5555/15118）；
+             # tencent.androw=腾讯办公安卓扩展（14900）——均桌面第三方非平台栈。
+             "codex", "androws", "tencent.androws")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免
@@ -159,7 +168,7 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
 # 卡片回调疑被 feishu_bot_ws 长连接替代；转按需语义，strict 仍防被抢）
 # 2026-10-14 K-STOCK-394：8787 Hermes WebUI 无 keepalive 链，start_hermes_bg.py
 # 幂等按需拉起（K271 配方），同 lark_card 按需语义入列，否则 strict 必挂。
-OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8787, 8899, 9104}
+OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8099, 8787, 8796, 8899, 9104}  # 8099/8796 加入：看门狗/HKCU 自启的按需常驻，strict 防抢占不判离线（2026-10-22 老田裁端口）
 # 2026-10-16 数据仓止血：PG/Neo4j 容器按需启停，
 # strict 语义=防抢占不判离线；库内健康由 kg_check / freshness_report / xmap 水位各自监控。
 # 2026-10-16 二次勘误：5442 实为 quant-pg 容器口；5443 误建容器已删、条目移除。
