@@ -54,6 +54,14 @@ DEFAULT_OUT = REPO / "quant_backtest" / "data" / "tushare_curated"
 MERGE_TOOL = Path(__file__).resolve().parent / "merge_parquet.py"
 KG_LOG = Path(r"C:\Temp\kg_sync_task.log")
 
+# 全量重建时必须排除的目录（否则 exit 1，永远走不到 --replace）：
+# `stk_pledge` 一个目录放了两张表（<code>.parquet 7 列 stat / <code>_detail.parquet
+# 14 列 detail），merge 判 multi_table 拒绝合并。它总共 10 个文件 / 104 KB，而下游
+# 有 6 处按"一只票一个文件"读它，拆表属跨仓重构——所以整理层从一开始就不含它。
+# 不排除的话：全量 refresh → dirs_skipped=1 → exit 1 → 无法 --replace，
+# 每周 routine 永远是"能暂存、不能切换"的半截状态（2026-10-22 实测）。
+DEFAULT_EXCLUDES = ("stk_pledge",)
+
 
 def _say(msg: str = "") -> None:
     print(msg, flush=True)
@@ -100,6 +108,8 @@ def run_merge(src: Path, out: Path, dirs: list[str] | None,
     """
     argv = [sys.executable, "-B", str(MERGE_TOOL),
             "--src", str(src), "--out", str(out), "--json"]
+    for name in DEFAULT_EXCLUDES:
+        argv += ["--exclude", name]
     if dirs:
         argv += ["--dirs", *dirs]
     if dry_run:
