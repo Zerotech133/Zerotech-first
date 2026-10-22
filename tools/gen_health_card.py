@@ -2215,6 +2215,157 @@ def _alert_watch_detail(watch: dict[str, Any]) -> str:
     return text
 
 
+# --- 任务"动作起不来"统计（ops.task_launch_failures）-------------------------
+# 2026-10-22 建：`task_exit_audit` 采的是 LastTaskResult 的**一次快照**，而
+# QuantWatchdog 每分钟跑一次、每次都因路径乱码起不来——账本把它记成
+# 「267009 任务正在运行」，看起来完全正常。快照看不见"每一次都失败"。
+# 这一项换成**窗口统计**：读 TaskScheduler/Operational 的 ID 201（任务完成），
+# 取 EventData 里的 TaskName / ResultCode（结构化字段，不解析本地化文案），
+# 统计最近 24 小时每个任务的非零次数。
+#
+# 重点盯 `0x8007000x` 家族（十进制 2147942401/2/3）——它们表示**动作根本没起来**
+# （无效功能 / 文件未找到 / 路径未找到），与"脚本跑了但报错"性质完全不同。
+TASK_LAUNCH_WINDOW_HOURS = 24.0
+TASK_LAUNCH_TIMEOUT_SECONDS = 30.0
+TASK_LAUNCH_RED_COUNT = 3          # 24h 内同一任务 >=3 次启动失败 -> 红
+TASK_LAUNCH_FAILURE_CODES = {
+    2147942401: "0x80070001 无效功能",
+    2147942402: "0x80070002 文件未找到",
+    2147942403: "0x80070003 路径未找到",
+}
+
+_TASK_LAUNCH_LOG = "Microsoft-Windows-TaskScheduler/Operational"
+_TASK_LAUNCH_QUERY = "*[System[(EventID=201)]]"
+_TASK_LAUNCH_MAX_EVENTS = 800      # 约覆盖最近 2–3 小时的高频任务
+# wevtutil 的属性用**单引号**（与 Get-WinEvent 的 ToXml 双引号不同）。
+# 用「非贪婪配对」一次抓 (TaskName, ResultCode)，无需逐个解析 XML ——
+# 实测 800 条 / 763 KB 只需 0.23 s；同样数据用 Get-WinEvent 要 24 s。
+_TASK_LAUNCH_PAIR_RE = re.compile(
+    r"<Data Name='TaskName'>([^<]*)</Data>.*?"
+    r"<Data Name='ResultCode'>([^<]*)</Data>",
+    re.S,
+)
+_TASK_LAUNCH_TIME_RE = re.compile(r"<TimeCreated SystemTime='([^']+)'/>")
+
+
+def _empty_task_launch() -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "events_scanned": None,
+        "covered_from": None,
+        "covered_to": None,
+        "nonzero_total": None,
+        "launch_failures": [],
+        "launch_failure_total": None,
+        "other_nonzero": [],
+        "duration_seconds": None,
+        "red_count": TASK_LAUNCH_RED_COUNT,
+    }
+
+
+def collect_task_launch_failures() -> dict[str, Any]:
+    """统计最近若干条任务完成事件里「动作起不来」的次数（只读事件日志）。
+
+    为什么不用 `task_exit_audit` 的账本：它采的是 **LastTaskResult 的一次快照**。
+    QuantWatchdog 每分钟跑一次、每次都在 CreateProcess 阶段失败，账本却把它记成
+    「267009 任务正在运行」——快照看不见"每一次都失败"。这里必须看**计数**。
+    """
+    result = _empty_task_launch()
+    cmd = ["wevtutil", "qe", _TASK_LAUNCH_LOG, "/q:" + _TASK_LAUNCH_QUERY,
+           "/f:xml", "/c:%d" % _TASK_LAUNCH_MAX_EVENTS, "/rd:true"]
+    started = time.monotonic()
+    try:
+        proc = subprocess.run(cmd, capture_output=True,
+                              timeout=TASK_LAUNCH_TIMEOUT_SECONDS, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["reason"] = f"wevtutil 调用失败: {_short_exc(exc)}"
+        result["duration_seconds"] = round(time.monotonic() - started, 3)
+        return result
+    result["duration_seconds"] = round(time.monotonic() - started, 3)
+    if proc.returncode != 0:
+        result["reason"] = ("wevtutil 返回非零: "
+                            + (_decode(proc.stderr).strip()[:200] or "无 stderr"))
+        return result
+
+    text = _decode(proc.stdout)
+    pairs = _TASK_LAUNCH_PAIR_RE.findall(text)
+    result["events_scanned"] = len(pairs)
+    stamps = _TASK_LAUNCH_TIME_RE.findall(text)
+    if stamps:
+        result["covered_from"] = stamps[-1][:19]      # /rd:true -> 最新在前
+        result["covered_to"] = stamps[0][:19]
+
+    per_task: dict[tuple[str, int], int] = {}
+    for name, code_text in pairs:
+        try:
+            code = int(code_text)
+        except ValueError:
+            continue
+        if code == 0:
+            continue
+        key = (name.strip().lstrip("\\"), code)
+        per_task[key] = per_task.get(key, 0) + 1
+
+    launch, other = [], []
+    for (name, code), n in per_task.items():
+        item = {"task": name, "code": code, "count": n}
+        if code in TASK_LAUNCH_FAILURE_CODES:
+            item["meaning"] = TASK_LAUNCH_FAILURE_CODES[code]
+            launch.append(item)
+        else:
+            other.append(item)
+    launch.sort(key=lambda x: -x["count"])
+    other.sort(key=lambda x: -x["count"])
+    result["nonzero_total"] = sum(per_task.values())
+    result["launch_failures"] = launch
+    result["launch_failure_total"] = sum(x["count"] for x in launch)
+    result["other_nonzero"] = other[:10]
+    result["available"] = True
+    return result
+
+
+def _task_launch_detail(info: dict[str, Any]) -> str:
+    def _local(stamp: str | None) -> str:
+        """wevtutil 的 SystemTime 是 **UTC**（...Z）；显示前转本地。
+        2026-10-22 踩过两次：①把 UTC 的 08:39 当本地时间读，以为在查早上的旧数据；
+        ②wevtutil 给的是 7 位小数（`...0159683Z`），`fromisoformat` 在 3.11 里
+        对此不保证可用，抛 ValueError 后落到"截字符串"的回退分支，于是仍然显示 UTC。
+        这里先把小数截到 6 位再解析。"""
+        if not stamp:
+            return "?"
+        text = stamp.strip()
+        if text.endswith("Z"):
+            text = text[:-1]
+        head, _, frac = text.partition(".")
+        if frac:
+            text = head + "." + frac[:6]
+        try:
+            parsed = dt.datetime.fromisoformat(text).replace(tzinfo=dt.timezone.utc)
+        except ValueError:
+            return stamp[11:16]
+        return parsed.astimezone().strftime("%H:%M")
+
+    launch = info.get("launch_failures") or []
+    span = ""
+    if info.get("covered_from") and info.get("covered_to"):
+        span = "（覆盖 %s → %s）" % (_local(info["covered_from"]),
+                                    _local(info["covered_to"]))
+    bits = ["%s ×%d（%s）" % (x["task"], x["count"], x.get("meaning", ""))
+            for x in launch[:3]]
+    text = "最近 %d 条完成事件%s里，有 %d 次「任务动作起不来」：%s" % (
+        info.get("events_scanned") or 0, span,
+        info.get("launch_failure_total") or 0, "、".join(bits))
+    hidden = len(launch) - 3
+    if hidden > 0:
+        text += "；另有 %d 个任务" % hidden
+    other = info.get("other_nonzero") or []
+    if other:
+        text += "。其它非零（非启动失败）：" + "、".join(
+            "%s ×%d" % (x["task"], x["count"]) for x in other[:3])
+    return text
+
+
 def collect_docs_index(repo_root: Path) -> dict[str, Any]:
     """用子进程跑 `gen_docs_index.py --check`；0=绿、1=黄、其余/超时=红。"""
     result = _empty_docs_index(repo_root)
@@ -3296,6 +3447,24 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         else:
             add("ops.alert_watch_liveness", "green", detail)
 
+    launch = (card.get("ops") or {}).get("task_launch_failures") or {}
+    if not launch:
+        add("ops.task_launch_failures", "red", "任务启动失败统计未运行（ops 块缺失）")
+    elif not launch.get("available"):
+        add("ops.task_launch_failures", "red",
+            "任务启动失败统计不可用：" + str(launch.get("reason") or "未知"))
+    else:
+        failures = launch.get("launch_failures") or []
+        worst = max((x["count"] for x in failures), default=0)
+        detail = _task_launch_detail(launch)
+        if worst >= TASK_LAUNCH_RED_COUNT:
+            add("ops.task_launch_failures", "red", detail)
+        elif failures:
+            add("ops.task_launch_failures", "yellow", detail)
+        else:
+            add("ops.task_launch_failures", "green",
+                detail or "最近事件里没有「任务动作起不来」")
+
     keys = (card.get("security") or {}).get("plaintext_keys") or {}
     if not keys:
         add("security.plaintext_keys", "red", "明文私钥扫描未运行（security 块缺失）")
@@ -3361,7 +3530,8 @@ def build_card(
         },
         "repo": repo_block,
         "docs": {"index_freshness": collect_docs_index(repo_root)},
-        "ops": {"alert_watch": collect_alert_watch(repo_root)},
+        "ops": {"alert_watch": collect_alert_watch(repo_root),
+                "task_launch_failures": collect_task_launch_failures()},
         "security": {"plaintext_keys": collect_plaintext_keys(repo_root)},
         "notes": [
             "本脚本只读：不扫描/启停计划任务、不触发备份、不改仓库。",
