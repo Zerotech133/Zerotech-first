@@ -193,11 +193,12 @@ PLAINTEXT_KEY_MARKER_RE = re.compile(
     rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 )
 # 扫描相位超时 → available=false + 红（已扫到的命中仍写进 detail）。
-# 2026-10-22 从 3s → 12s → 25s：实测该扫描要开约 5,000 个文件读 8 KiB，
+# 2026-10-22 从 3s → 12s → 25s → 45s：实测该扫描要开约 5,000 个文件读 8 KiB，
 # 空载 2s，但整卡同时跑 catchup/worktree/docs、机器上还有并行会话时，
 # 12s 也会被撞穿并报"扫描未完成"的红——那是**负载噪声**，不是私钥变多。
-# 25s 是"宁可慢也不误报"的折中；真要更快，应减少扫描面而不是压预算。
-PLAINTEXT_KEY_BUDGET_SECONDS = 25.0
+# 22:20 又撞了一次：冷缓存下 25s 超时，而同一份数据热缓存重跑只要 4.0s。
+# 45s 是"宁可慢也不误报"的折中；真要更快，应减少扫描面而不是压预算。
+PLAINTEXT_KEY_BUDGET_SECONDS = 45.0
 # 单文件只读前 8 KiB：`-----BEGIN … PRIVATE KEY-----` 标记**一定在文件开头**
 # （PEM 的头部就是第一行），读 tail 或读全文件都是浪费。2026-10-22 从 512 KiB
 # 降到 8 KiB：同样 5,096 个文件的扫描从 >12s 降到 2s 以内，判据强度不变。
