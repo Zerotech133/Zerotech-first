@@ -2229,43 +2229,26 @@ def _alert_watch_detail(watch: dict[str, Any]) -> str:
 TASK_LAUNCH_TIMEOUT_SECONDS = 30.0
 TASK_LAUNCH_RED_COUNT = 3          # 30 分钟内同一任务 >=3 次启动失败 -> 红
 TASK_LAUNCH_RECENT_MINUTES = 30.0  # 判级只看最近这么久（窗口总量仍照实报）
-TASK_LAUNCH_FAILURE_CODES = {
-    2147942401: "0x80070001 无效功能",
-    2147942402: "0x80070002 文件未找到",
-    2147942403: "0x80070003 路径未找到",
-    # 2026-10-22 实测确认：powershell.exe 的 `-File` 指向不存在的脚本时，
-    # 进程会起来、立刻退出、返回 0xFFFD0000（有符号 -196608）。
-    # 与上面三个码的区别：那三个是**动作没起来**，这个是**动作起来了但目标不存在**。
-    # 两者对使用者的意义一样——任务等于没跑，所以并入同一判据。
-    # 实证：FeishuBotWatchdog 与 JevStack 每 10 分钟各来一次，一天 213 次；
-    # JevStack 指向的 jev-eval\start_jev_stack.ps1 在 git 历史里从未存在过。
-    4294770688: "0xFFFD0000 PowerShell 找不到 -File 脚本",
+# 2026-10-23 重大更正：Task Scheduler 的 201 事件把**进程退出码**塞进 HRESULT 形态
+# （`0x80070000 | exitCode`），于是 exit=3 与 ERROR_PATH_NOT_FOUND 编码完全相同。
+# 实测 11/11：Last Result 1/2/3 ↔ 事件码 0x80070001/2/3。
+# 所以本检查**只信 `schtasks` 的 Last Result**，事件码一律不作为判据。
+# 代价：2026-10-22 那晚把"任务退出 3（按设计拒跑）"误读成"CreateProcess 失败"，
+# 白追了六个假设、误停了一个正常任务。详见 重大更正_退出码不是错误码_2026-10-23.md。
+TASK_LAUNCH_EXIT_CODE_MAX = 0xFFFF
+# PowerShell 的 `-File` 指向不存在的脚本时返回 -196608（= 0xFFFD0000）。
+TASK_LAUNCH_POWERSHELL_MISSING = {-196608, 4294770688}
+# 调度器自身的状态码，不是任务失败。
+TASK_LAUNCH_SCHED_STATES = {
+    267009: "任务正在运行",
+    267011: "任务尚未运行",
+    267014: "任务被强制终止",
 }
 
-_TASK_LAUNCH_LOG = "Microsoft-Windows-TaskScheduler/Operational"
-_TASK_LAUNCH_QUERY = "*[System[(EventID=201)]]"
-_TASK_LAUNCH_MAX_EVENTS = 800      # 约覆盖最近 2–3 小时的高频任务
-# 解析方式说明：wevtutil 的属性用**单引号**（Get-WinEvent 的 ToXml 是双引号）。
-# 现在按 <Event> 分块逐块取 TaskName/ResultCode/TimeCreated（要算"最近一次"
-# 就必须拿到每个事件自己的时间），不再用一条非贪婪配对正则。
-# 实测整份日志 3337 条 / 3 MB，wevtutil 取数 ~0.2 s。
-_TASK_LAUNCH_TIME_RE = re.compile(r"<TimeCreated SystemTime='([^']+)'/>")
-
-
-def _parse_wevt_time(stamp: str) -> dt.datetime | None:
-    """wevtutil 的 SystemTime 是 UTC 且带 7 位小数；先截到 6 位再解析。
-    （2026-10-22 踩过：7 位小数让 fromisoformat 抛错，落进"截字符串"分支，
-     于是时区没转，把 UTC 的 08:39 当成本地时间读。）"""
-    text = stamp.strip()
-    if text.endswith("Z"):
-        text = text[:-1]
-    head, _, frac = text.partition(".")
-    if frac:
-        text = head + "." + frac[:6]
-    try:
-        return dt.datetime.fromisoformat(text).replace(tzinfo=dt.timezone.utc)
-    except ValueError:
-        return None
+# 2026-10-23：本采集器已改为读 `schtasks` 的 Last Result，
+# 不再解析事件日志——原先那套 wevtutil 常量与时间解析函数一并删除。
+# 保留这段注释是为了让后来者知道"为什么这里没有事件查询代码"：
+# 事件码会把退出码编码成 0x80070000|N，无法与真正的 Win32 错误区分。
 
 
 def _empty_task_launch() -> dict[str, Any]:
@@ -2283,138 +2266,140 @@ def _empty_task_launch() -> dict[str, Any]:
 
 
 def collect_task_launch_failures() -> dict[str, Any]:
-    """统计最近若干条任务完成事件里「动作起不来」的次数（只读事件日志）。
+    """检查「任务到底有没有真的跑起来」——只读 `schtasks`，不信事件码。
 
-    为什么不用 `task_exit_audit` 的账本：它采的是 **LastTaskResult 的一次快照**。
-    QuantWatchdog 每分钟跑一次、每次都在 CreateProcess 阶段失败，账本却把它记成
-    「267009 任务正在运行」——快照看不见"每一次都失败"。这里必须看**计数**。
+    为什么要分三类而不是只数"非零"：
+      · 退出码 1..65535：**进程跑过了**，返回的是它自己的语义（例如 exit 3 = 主动拒跑）
+      · -196608 / 0xFFFD0000：PowerShell 找不到 `-File` 脚本 —— 进程起来了但目标不存在
+      · 其它：可能是真正的启动失败，需要人看
+    2026-10-22 那晚把第一类当成第三类，代价是 4.5 小时 + 九个探针 + 一次错误停用。
     """
     result = _empty_task_launch()
-    cmd = ["wevtutil", "qe", _TASK_LAUNCH_LOG, "/q:" + _TASK_LAUNCH_QUERY,
-           "/f:xml", "/c:%d" % _TASK_LAUNCH_MAX_EVENTS, "/rd:true"]
+    cmd = ["schtasks", "/query", "/fo", "CSV", "/nh", "/v"]
     started = time.monotonic()
     try:
         proc = subprocess.run(cmd, capture_output=True,
                               timeout=TASK_LAUNCH_TIMEOUT_SECONDS, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
-        result["reason"] = f"wevtutil 调用失败: {_short_exc(exc)}"
+        result["reason"] = f"schtasks 调用失败: {_short_exc(exc)}"
         result["duration_seconds"] = round(time.monotonic() - started, 3)
         return result
     result["duration_seconds"] = round(time.monotonic() - started, 3)
-    if proc.returncode != 0:
-        result["reason"] = ("wevtutil 返回非零: "
-                            + (_decode(proc.stderr).strip()[:200] or "无 stderr"))
+    if proc.returncode != 0 or not proc.stdout.strip():
+        result["reason"] = ("schtasks 返回非零或无输出: "
+                            + (_decode(proc.stderr).strip()[:160] or "无 stderr"))
         return result
 
-    text = _decode(proc.stdout)
-    blocks = text.split("<Event ")[1:]
-    per_task: dict[tuple[str, int], int] = {}
-    last_seen: dict[str, dt.datetime] = {}
-    last_ok: dict[str, dt.datetime] = {}
-    recent: dict[str, int] = {}
-    now = dt.datetime.now(dt.timezone.utc)
-    cutoff = now - dt.timedelta(minutes=TASK_LAUNCH_RECENT_MINUTES)
-    scanned = 0
-    for block in blocks:
-        m_name = re.search(r"<Data Name='TaskName'>([^<]*)</Data>", block)
-        m_code = re.search(r"<Data Name='ResultCode'>([^<]*)</Data>", block)
-        if not (m_name and m_code):
+    # schtasks 的 CSV 是 GBK 输出；先用 utf-8 试，失败回落 gbk。
+    text = proc.stdout.decode("utf-8", "replace")
+    if "\\" not in text[:200] and "\ufffd" in text[:2000]:
+        text = proc.stdout.decode("gbk", "replace")
+
+    # schtasks /v 会对某些任务输出多行（多触发器），按任务名去重取最后一次运行。
+    best: dict[str, list[str]] = {}
+    for line in text.splitlines():
+        cells = line.strip().strip('"').split('","')
+        if len(cells) < 8:
             continue
-        scanned += 1
+        name = cells[1].strip().lstrip("\\")
+        if not name:
+            continue
+        prev = best.get(name)
+        # "2026/10/23 6:41:01" 这种格式可以直接字符串比大小（同宽度可在补齐后比较）
+        if prev is None or cells[5].strip() > prev[5].strip():
+            best[name] = cells
+
+    now = dt.datetime.now(dt.timezone.utc)
+    scanned = 0
+    issues: list[dict[str, Any]] = []      # 动作起来了但目标不存在
+    unknown: list[dict[str, Any]] = []     # 未知返回码，需人看
+    exits: list[dict[str, Any]] = []       # 跑了但返回非零（业务失败）
+    for name, cells in best.items():
+        status = cells[3].strip()
+        last_run_text = cells[5].strip()
         try:
-            code = int(m_code.group(1))
+            code = int(cells[6])
         except ValueError:
             continue
-        name = m_name.group(1).strip().lstrip("\\")
-        m_time = _TASK_LAUNCH_TIME_RE.search(block)
-        stamp = _parse_wevt_time(m_time.group(1)) if m_time else None
+        scanned += 1
         if code == 0:
-            # 记下最近一次**成功**：用它判定"是否已恢复"，比等窗口滚出快得多。
-            if stamp is not None and stamp > last_ok.get(
-                    name, dt.datetime.min.replace(tzinfo=dt.timezone.utc)):
-                last_ok[name] = stamp
             continue
-        key = (name, code)
-        per_task[key] = per_task.get(key, 0) + 1
-        if stamp is not None:
-            if stamp > last_seen.get(name, dt.datetime.min.replace(tzinfo=dt.timezone.utc)):
-                last_seen[name] = stamp
-            if stamp >= cutoff:
-                recent[name] = recent.get(name, 0) + 1
-
-    result["events_scanned"] = scanned
-    launch, other = [], []
-    floor = dt.datetime.min.replace(tzinfo=dt.timezone.utc)
-    for (name, code), n in per_task.items():
-        failed_at = last_seen.get(name)
-        ok_at = last_ok.get(name)
-        recovered = bool(ok_at and failed_at and ok_at > failed_at)
-        item = {"task": name, "code": code, "count": n,
-                "recent": recent.get(name, 0),
-                "recovered": recovered,
-                "last_seen": (failed_at.astimezone().isoformat(timespec="seconds")
-                              if failed_at else None),
-                "minutes_ago": (round((now - failed_at).total_seconds() / 60.0, 1)
-                                if failed_at else None),
-                "last_ok": (ok_at.astimezone().isoformat(timespec="seconds")
-                            if ok_at else None)}
-        if code in TASK_LAUNCH_FAILURE_CODES:
-            item["meaning"] = TASK_LAUNCH_FAILURE_CODES[code]
-            launch.append(item)
+        minutes_ago = None
+        try:
+            last_run = dt.datetime.strptime(last_run_text, "%Y/%m/%d %H:%M:%S")
+            minutes_ago = round((dt.datetime.now() - last_run).total_seconds() / 60.0, 1)
+        except ValueError:
+            pass
+        item = {"task": name, "code": code, "status": status,
+                "last_run": last_run_text, "minutes_ago": minutes_ago,
+                "count": 1, "recovered": False,
+                "recent": (1 if minutes_ago is not None
+                           and minutes_ago <= TASK_LAUNCH_RECENT_MINUTES else 0)}
+        if code in TASK_LAUNCH_SCHED_STATES:
+            item["meaning"] = TASK_LAUNCH_SCHED_STATES[code] + "（非失败）"
+            continue
+        if code in TASK_LAUNCH_POWERSHELL_MISSING:
+            item["meaning"] = "PowerShell 找不到 -File 脚本（动作起来了但目标不存在）"
+            issues.append(item)
+        elif 0 < code <= TASK_LAUNCH_EXIT_CODE_MAX:
+            item["meaning"] = f"退出码 {code}（进程跑过了，这是它自己的返回值）"
+            exits.append(item)
         else:
-            other.append(item)
-    for bucket in (launch, other):
-        bucket.sort(key=lambda x: (x.get("recovered") is True,
-                                   -(x.get("recent") or 0), -x["count"]))
-    result["nonzero_total"] = sum(per_task.values())
-    result["launch_failures"] = launch
-    result["launch_failure_total"] = sum(x["count"] for x in launch)
+            item["meaning"] = f"未知返回码 {code}（需人看，不一定是启动失败）"
+            unknown.append(item)
+
+    for bucket in (issues, unknown, exits):
+        bucket.sort(key=lambda x: (x.get("status") == "Disabled",
+                                   -(x.get("recent") or 0),
+                                   x.get("minutes_ago") or 0))
+    result["events_scanned"] = scanned
+    result["launch_failures"] = issues
+    result["launch_failure_total"] = len(issues)
     result["launch_failure_recent"] = sum(
-        x.get("recent") or 0 for x in launch if not x.get("recovered"))
+        1 for x in issues if x.get("recent") and x.get("status") != "Disabled")
     result["launch_failure_active"] = sum(
-        1 for x in launch if not x.get("recovered"))
-    result["other_nonzero"] = other[:10]
+        1 for x in issues if x.get("status") != "Disabled")
+    result["unknown_codes"] = unknown[:12]
+    result["other_nonzero"] = exits[:12]
+    result["nonzero_total"] = len(issues) + len(unknown) + len(exits)
     result["available"] = True
     return result
 
 
 def _task_launch_detail(info: dict[str, Any]) -> str:
-    launch = info.get("launch_failures") or []
-    window = int(TASK_LAUNCH_RECENT_MINUTES)
-    active = [x for x in launch if not x.get("recovered")]
-    recovered = [x for x in launch if x.get("recovered")]
-    if not active:
-        text = "无进行中的启动失败"
-        if recovered:
-            names = "、".join("%s（曾 %d 次，已恢复）" % (x["task"], x["count"])
-                             for x in recovered[:3])
-            text += "；窗口内仍留有已恢复的历史记录：" + names
-            hidden = len(recovered) - 3
-            if hidden > 0:
-                text += "，另有 %d 个" % hidden
-        return text
+    issues = [x for x in (info.get("launch_failures") or [])
+              if x.get("status") != "Disabled"]
+    disabled = [x for x in (info.get("launch_failures") or [])
+                if x.get("status") == "Disabled"]
+    unknown = info.get("unknown_codes") or []
+    exits = info.get("other_nonzero") or []
 
-    bits = []
-    for x in active[:3]:
-        piece = "%s（近 %d 分钟 %d 次，累计 %d 次" % (
-            x["task"], window, x.get("recent") or 0, x["count"])
-        ago = x.get("minutes_ago")
-        if ago is not None:
-            piece += "，最近一次 %.0f 分钟前" % ago
-        piece += "）"
-        bits.append(piece)
-    text = "最近 %d 条完成事件里，有 %d 个任务正在「动作起不来」：%s" % (
-        info.get("events_scanned") or 0, len(active), "；".join(bits))
-    hidden = len(active) - 3
-    if hidden > 0:
-        text += "；另有 %d 个" % hidden
-    if recovered:
-        text += "；已恢复：%s" % "、".join(x["task"] for x in recovered[:3])
-    other = info.get("other_nonzero") or []
-    if other:
-        text += "。其它非零（非启动失败）：" + "、".join(
-            "%s ×%d" % (x["task"], x["count"]) for x in other[:3])
-    return text
+    parts = []
+    if issues:
+        parts.append("动作起来了但目标不存在：" + "、".join(
+            "%s（rc=%d）" % (x["task"], x["code"]) for x in issues[:3]))
+    if unknown:
+        # 同一秒出现的一批通常是休眠/关机打断，不是逐个故障——这个提示很关键。
+        stamps = {x.get("last_run") for x in unknown if x.get("last_run")}
+        hint = ""
+        if len(stamps) == 1 and len(unknown) > 2:
+            hint = "（且全部落在同一秒 %s，多半是休眠/关机打断，不是 %d 个独立故障）" % (
+                next(iter(stamps)), len(unknown))
+        parts.append("未知返回码 %d 个%s：%s" % (
+            len(unknown), hint,
+            "、".join("%s(%d)" % (x["task"][-18:], x["code"]) for x in unknown[:3])))
+    if exits:
+        parts.append("退出码非零 %d 个（进程跑过了，是业务返回值）：%s" % (
+            len(exits),
+            "、".join("%s=%d" % (x["task"][-18:], x["code"]) for x in exits[:4])))
+    if disabled:
+        parts.append("已停用不计：%s" % "、".join(x["task"] for x in disabled[:3]))
+
+    head = "扫描 %d 个任务（口径=schtasks Last Result；事件码不作为判据）" % (
+        info.get("events_scanned") or 0)
+    if not parts:
+        return head + "；无异常"
+    return head + "。" + "；".join(parts)
 
 
 def _summary_age_hours(audit: dict[str, Any]) -> float | None:
@@ -3535,21 +3520,22 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         add("ops.task_launch_failures", "red",
             "任务启动失败统计不可用：" + str(launch.get("reason") or "未知"))
     else:
-        failures = [x for x in (launch.get("launch_failures") or [])
-                    if not x.get("recovered")]
-        # 判级只看**最近 N 分钟内仍在失败**的任务：
-        #   · 按窗口总量判，任务修好后还要红很久，分不清"还在坏"和"已经好了在等记录滚出"
-        #     （2026-10-22 QuantWatchdog 16:58:59 修好，按 800 条窗口要红到 19:30）；
-        #   · "最近一次结果是成功"的任务直接不算进行中——比等窗口滚出快得多。
-        worst = max((x.get("recent") or 0 for x in failures), default=0)
+        # 2026-10-23 新口径（旧口径把"退出码 N"误当"启动失败"，已废弃）：
+        #   red    = 动作起来了但目标不存在（如 PowerShell -File 脚本缺失）且任务在启用中
+        #   yellow = 有未知返回码，需人看一眼（同一秒的一批通常是休眠/关机打断）
+        #   绿     = 两者皆无；"退出码非零"只在 detail 里陈述，不驱动颜色——
+        #            那属于业务失败，归 task_audit.failures 管，不在这里重复计数
+        issues = [x for x in (launch.get("launch_failures") or [])
+                  if x.get("status") != "Disabled"]
+        unknown = [x for x in (launch.get("unknown_codes") or [])
+                   if x.get("status") != "Disabled"]
         detail = _task_launch_detail(launch)
-        if worst >= TASK_LAUNCH_RED_COUNT:
+        if issues:
             add("ops.task_launch_failures", "red", detail)
-        elif failures:
+        elif unknown:
             add("ops.task_launch_failures", "yellow", detail)
         else:
-            add("ops.task_launch_failures", "green",
-                detail or "最近事件里没有「任务动作起不来」")
+            add("ops.task_launch_failures", "green", detail)
 
     keys = (card.get("security") or {}).get("plaintext_keys") or {}
     if not keys:
