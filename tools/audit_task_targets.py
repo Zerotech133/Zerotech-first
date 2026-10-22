@@ -45,14 +45,22 @@ def task_names() -> list[str]:
     return sorted(names)
 
 
-def read_xml(name: str) -> str | None:
+def read_xml(name: str) -> tuple[str | None, str]:
+    """返回 (xml, 状态)。状态区分三种，别混为一谈（2026-10-22 实测）：
+      'ok'          读到了
+      'missing'     任务根本不存在（schtasks /query 也报 cannot find）
+      'denied'      任务存在但当前身份读不到（多为 SYSTEM 属主）
+    三者意义完全不同：missing 说明账本里的名字陈旧，denied 说明真的需要管理员。
+    """
     for cand in (TASKS_DIR / name, TASKS_DIR / "ZeroBound" / name):
         try:
             if cand.is_file():
-                return cand.read_text(encoding="utf-16")
-        except (OSError, UnicodeError):
+                return cand.read_text(encoding="utf-16"), "ok"
+        except FileNotFoundError:
             continue
-    return None
+        except (OSError, UnicodeError, PermissionError):
+            return None, "denied"
+    return None, "missing"
 
 
 def field(xml: str, tag: str) -> str:
@@ -73,10 +81,14 @@ def main() -> int:
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     missing, unreadable, no_target, ok = [], [], [], []
+    absent_tasks = []
     for name in task_names():
-        xml = read_xml(name)
+        xml, status = read_xml(name)
         if xml is None:
-            unreadable.append(name)
+            if status == "missing":
+                absent_tasks.append(name)
+            else:
+                unreadable.append(name)
             continue
         cmd = field(xml, "Command")
         args = field(xml, "Arguments")
@@ -91,36 +103,51 @@ def main() -> int:
             continue
         absent = [t for t in targets if not Path(to_phys(t)).exists()]
         if absent:
-            missing.append((name, absent, cwd))
+            # 已停用的任务目标缺失不算"必然失败"——它根本不会跑。
+            # 2026-10-22：JevStack 停用后仍被报成失败，属于口径太粗。
+            enabled = "<Enabled>true</Enabled>" in xml or "<Enabled>True</Enabled>" in xml
+            missing.append((name, absent, cwd, enabled))
         else:
             ok.append(name)
 
+    total = len(ok) + len(missing) + len(no_target) + len(unreadable) + len(absent_tasks)
+    live_missing = [x for x in missing if x[3]]
     if a.json:
         print(json.dumps({
-            "total": len(ok) + len(missing) + len(no_target) + len(unreadable),
+            "total": total,
             "ok": sorted(ok),
-            "missing": [{"task": n, "absent": abs_, "cwd": cwd}
-                        for n, abs_, cwd in missing],
+            "missing": [{"task": n, "absent": abs_, "cwd": cwd, "enabled": en}
+                        for n, abs_, cwd, en in missing],
             "no_target": [{"task": n, "args": s} for n, s in no_target],
             "unreadable": sorted(unreadable),
+            "not_exist": sorted(absent_tasks),
         }, ensure_ascii=False, indent=2))
-        return 1 if missing else 0
+        # 只有**启用中**的任务目标缺失才算失败；已停用的不触发，仅留档。
+        return 1 if live_missing else 0
 
-    print("任务总数: %d" % (len(ok) + len(missing) + len(no_target) + len(unreadable)))
+    print("任务总数: %d" % total)
     print("  目标存在        : %d" % len(ok))
     print("  **目标缺失**    : %d" % len(missing))
     print("  认不出文件目标  : %d（可能是 -m 模块 / 内嵌命令）" % len(no_target))
-    print("  定义读不到      : %d" % len(unreadable))
+    print("  定义读不到      : %d（存在但无权限，需管理员）" % len(unreadable))
+    print("  任务不存在      : %d（账本里的名字已陈旧）" % len(absent_tasks))
     print()
 
-    if missing:
-        print("=== 目标缺失（这些任务每次运行都必然失败）===")
-        for name, absent, cwd in missing:
+    live_missing = [x for x in missing if x[3]]
+    dormant = [x for x in missing if not x[3]]
+    if live_missing:
+        print("=== 目标缺失且**启用中**（这些任务每次运行都必然失败）===")
+        for name, absent, cwd, _en in live_missing:
             print("  %s" % name)
             for t in absent:
                 print("      缺: %s" % t)
             if cwd:
                 print("      cwd: %s%s" % (cwd, "" if Path(to_phys(cwd)).exists() else "  <- 目录也不存在"))
+        print()
+    if dormant:
+        print("=== 目标缺失但**已停用**（不会触发，仅留档）===")
+        for name, absent, _cwd, _en in dormant:
+            print("  %-24s 缺: %s" % (name, ", ".join(absent)))
         print()
 
     if unreadable:
@@ -135,7 +162,7 @@ def main() -> int:
             print("  %-26s args=%s" % (name, args))
         print()
 
-    return 1 if missing else 0
+    return 1 if live_missing else 0
 
 
 if __name__ == "__main__":
