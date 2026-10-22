@@ -2423,6 +2423,25 @@ def _task_launch_detail(info: dict[str, Any]) -> str:
     return text
 
 
+def _summary_age_hours(audit: dict[str, Any]) -> float | None:
+    """账本摘要有多大年纪（小时）。
+
+    摘要里的 failed 是**扫描那一刻**的 LastTaskResult 快照，不会自己更新。
+    隔了半天再看，其中一些失败可能早已自愈——把年龄写进结论，读的人才不会
+    把陈旧数字当成现状（2026-10-22：01:55 的快照到 17:25 已有两条过期）。
+    """
+    stamp = audit.get("last_scan_at")
+    if not isinstance(stamp, str) or not stamp:
+        return None
+    try:
+        when = dt.datetime.fromisoformat(stamp)
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.astimezone()
+    return max(0.0, (dt.datetime.now(when.tzinfo) - when).total_seconds() / 3600.0)
+
+
 def collect_docs_index(repo_root: Path) -> dict[str, Any]:
     """用子进程跑 `gen_docs_index.py --check`；0=绿、1=黄、其余/超时=红。"""
     result = _empty_docs_index(repo_root)
@@ -3242,10 +3261,21 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             f"账本可读，最后一个扫描会话 {audit['total_scanned']} 个任务 @ {audit['last_scan_at']}",
         )
         if audit["failed"]:
+            # 摘要是一次**快照**：账本里记的是扫描那一刻各任务的 LastTaskResult。
+            # 隔了半天再看，有些失败可能已经自愈（例如 AgentLegionHeartbeat 10-21
+            # 推理超时 rc=2，10-22 08:46 已 status=ok），但摘要不会自己更新。
+            # 所以把"这份摘要多大年纪"直接写在结论里，避免把陈旧数字当现状。
+            age = _summary_age_hours(audit)
+            age_note = ""
+            if age is not None:
+                age_note = f"；摘要生成于 {age:.1f} 小时前"
+                if age >= 6:
+                    age_note += "，其中的失败可能已自愈，需重跑 task_exit_audit --scan 复核"
             add(
                 "task_audit.failures",
                 "red",
-                f"{audit['failed']} 个任务非零退出（口径同 task_exit_audit，含运行中/强杀）",
+                f"{audit['failed']} 个任务非零退出（口径同 task_exit_audit，含运行中/强杀）"
+                + age_note,
             )
         else:
             add("task_audit.failures", "green", "无失败任务")
