@@ -1059,7 +1059,15 @@ def run(push=False):
                "偏空（开盘折价概率较大）" if overall <= -10 else
                "中性（按个股信号执行）") if overall is not None else "—"
     alerts = _risk_alerts(l1, l3, l5)
-    data = {"ts": datetime.now().strftime("%Y-%m-%d %H:%M"), "l1": l1,
+    # `trade_date` + 带时区的 `ts` 是 /api/alerts 的 source_health 契约要求的
+    # 两个字段（portal/api_common.py:_alert_source_health 的 dated()）：
+    # 只有业务日 + 生产者给出的 tz-aware 完成时间，才算"当期证据"。
+    # 2026-10-22 之前这里没有 trade_date、ts 也是裸本地串，于是 premarket 被
+    # 判 stale/unproven_completion，AlertWatch 因此连续 4 天拒跑。
+    _now = datetime.now().astimezone()
+    data = {"ts": _now.isoformat(timespec="seconds"),
+            "trade_date": _now.strftime("%Y%m%d"),
+            "l1": l1,
             "l2": l2, "l3": l3, "l4": l4, "l4f": l4f, "l5": l5,
             "l6": l6, "vals": vals,
             "overall": overall, "prob": prob, "verdict": verdict,

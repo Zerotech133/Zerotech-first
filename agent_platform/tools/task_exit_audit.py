@@ -33,11 +33,19 @@ EXIT_SEMANTICS: dict[int, str] = {
     0: "正常退出",
     1: "一般失败",
     2: "一般错误/文件找不到/degraded",
+    # 2026-10-22 新增：脚本**主动拒跑**，因为上游证据不足（不是它自己坏了）。
+    # 缘起 AlertWatch 连续 4 天 rc=1——它每次都正确拒绝基于"无法证明完成"的
+    # 上游数据报警，但账本把这种"正确拒跑"和"脚本崩溃"记成同一个 1，
+    # 于是静默 4 天没人分得出来。约定：exit 3 = 上游不可信，不计失败、单列。
+    3: "上游不可信(主动拒跑，非故障)",
     267009: "任务正在运行(0x41001)",
     267011: "任务尚未运行(0x41303)",
     267014: "任务被强制终止(0x41306)",
     3221225786: "Ctrl-C 类强杀(0xC000013A)",
 }
+
+# exit 3 的语义：拒跑不是故障。单列出来，既不进 failures，也不假装成功。
+UPSTREAM_UNTRUSTED_EXIT = 3
 
 KNOWN_SCHED_FAMILIES = ("Legion", "Agent", "Quant", "Alert", "Xueqiu", "Hermes",
                         "KgChain", "Space", "KG-", "Ollama", "CnOpenData", "Daily",
@@ -126,6 +134,7 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
     summary_path = os.path.join(DATA_DIR, SUMMARY_NAME)
 
     failures: list[dict[str, Any]] = []
+    upstream_hold: list[dict[str, Any]] = []
     ok_count = 0
     disabled_count = 0
     never_run = 0
@@ -152,6 +161,8 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             ok_count += 1
         elif code == 267011:  # 尚未运行：不是失败
             never_run += 1
+        elif code == UPSTREAM_UNTRUSTED_EXIT:  # 主动拒跑：不是失败，单独记账
+            upstream_hold.append(rec)
         else:
             failures.append(rec)
 
@@ -161,6 +172,7 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
         "total_scanned": len(tasks),
         "ok": ok_count,
         "failed": len(failures),
+        "upstream_hold": len(upstream_hold),
         "disabled": disabled_count,
         "never_run": never_run,
         "failures": [
@@ -169,8 +181,15 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
              "next_run": f["next_run"]}
             for f in failures
         ],
+        "upstream": [
+            {"name": f["name"], "last_result": f["last_result"],
+             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            for f in upstream_hold
+        ],
         "note": "LastTaskResult=0 只证明正常退出不证明有产出；产出核对仍需人工或产物探针。"
-                "Disabled 任务未计失败（它没失败，只是没开）。账本 append-only 可回放。",
+                "Disabled 任务未计失败（它没失败，只是没开）。"
+                "exit 3 = 脚本主动拒跑（上游证据不足），不计失败、单列 upstream；"
+                "它的处置方向在数据管线，不在脚本本身。账本 append-only 可回放。",
         "ledger": os.path.relpath(ledger_path, os.path.join(DATA_DIR, "..", "..", "..")),
     }
     _atomic_write_json(summary_path, summary)

@@ -1144,6 +1144,16 @@ def _alert_business_day(value):
     return day
 
 
+# 警报源新鲜窗口：源的完成时间戳距今多久内算"当期"。
+# 默认 5 分钟（原设计；不设环境变量时行为完全不变）。
+# 2026-10-22 做成可配置：AlertWatch 每 30 分钟才采一次，而窗口只有 5 分钟，
+# 两次采样之间批次必然"过期"，判据永远不成立（实测停摆 4 天）。
+# 必须与 news_collector/alert_push.py 的 ALERT_FRESH_WINDOW 用同一个环境变量，
+# 否则客户端与服务端口径不一致，会互相判对方的结论无效。
+ALERT_FRESH_WINDOW = datetime.timedelta(
+    minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "5")))
+
+
 def _alert_source_health():
     """Report independently verified source evidence, not display-card counts.
 
@@ -1189,10 +1199,10 @@ def _alert_source_health():
             mark(name, "stale", "unproven_completion")
         elif anchor.astimezone(now.tzinfo).date() < day:
             mark(name, "error", "invalid_anchor")
-        elif anchor > now + datetime.timedelta(minutes=5):
+        elif anchor > now + ALERT_FRESH_WINDOW:
             mark(name, "error", "future_anchor")
         elif (day != today or anchor.astimezone(now.tzinfo).date() != today or
-              now - anchor > datetime.timedelta(minutes=5)):
+              now - anchor > ALERT_FRESH_WINDOW):
             # Without a per-source schedule/completion proof, a same-calendar-
             # day but older batch is not necessarily the due/current batch.
             mark(name, "stale", "stale_anchor", anchor)

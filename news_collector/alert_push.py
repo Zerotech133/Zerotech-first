@@ -40,6 +40,17 @@ SOURCE_ERROR_REASONS = {
     "upstream_degraded", "source_error",
 }
 SHANGHAI = timezone(timedelta(hours=8))
+
+# 新鲜窗口：源的完成时间戳距今多久内算"当期"。
+# 默认 5 分钟是原设计（贴合"批次刚落盘"的语义），**不设这个环境变量时行为完全不变**。
+# 2026-10-22 把它做成可配置，是因为发现一个结构性死结：AlertWatch 的触发是
+# 每 30 分钟一次，而窗口是 5 分钟——两次采样之间批次早就"过期"了，判据永远
+# 不成立。两条出路：①把任务轮询压到窗口内（推荐，语义不变）；②把窗口放宽到
+# 覆盖轮询间隔（等于承认"半小时内的数据还算当期"，要人拍板）。
+# 同款常量必须与 portal/api_common.py 的 ALERT_FRESH_WINDOW 保持一致，
+# 否则客户端与服务端会互相对不上。
+ALERT_FRESH_WINDOW = timedelta(
+    minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "5")))
 IDX_CODES = [("sh000001", "上证"), ("sz399001", "深成"), ("sz399006", "创业板")]
 
 
@@ -249,7 +260,7 @@ def validated_alerts(res, morning=False, include_baseline=False):
         return None
     checked = _parse_source_time(health.get("checked_at"))
     now = datetime.now(SHANGHAI)
-    if checked is None or not timedelta(0) <= now - checked <= timedelta(minutes=5):
+    if checked is None or not timedelta(0) <= now - checked <= ALERT_FRESH_WINDOW:
         return None
     sources = health.get("sources")
     if not isinstance(sources, dict) or set(sources) != set(SOURCE_NAMES):
@@ -273,7 +284,7 @@ def validated_alerts(res, morning=False, include_baseline=False):
             return None
         if status in ("ok", "empty") and (
                 parsed is None or parsed.date() != now.date()
-                or parsed > checked + timedelta(minutes=5)):
+                or parsed > checked + ALERT_FRESH_WINDOW):
             # checked_at is observation time, never a substitute for as_of.
             outdated.add(source)
     scope = MORNING_SOURCES if morning else EOD_SOURCES

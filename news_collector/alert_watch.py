@@ -28,6 +28,12 @@ ALERTS_URL = "http://127.0.0.1:8091/api/alerts"
 STATE_PATH = os.path.join(HERE, "outbox", "alert_watch_state.json")
 DAILY_CAP = 3
 
+# 主动拒跑用的退出码：上游证据不足，本脚本选择不工作——这不是故障。
+# 与 1（一般失败）分开，账本/健康卡才能一眼区分"我坏了"和"数据不可信"。
+# 约定值必须与 agent_platform/tools/task_exit_audit.py 的
+# EXIT_SEMANTICS[3] 保持一致。
+EXIT_UPSTREAM_UNTRUSTED = 3
+
 RULES = {
     "盘前倾向": {"kind": "flip"},
     "缠论信号": {"kind": "num", "diff": 5, "abs": 40},
@@ -95,11 +101,15 @@ def main():
         validated = alert_push.validated_alerts(res, include_baseline=True)
     if validated is None:
         print("ALERT_WATCH_SOURCE_UNAVAILABLE invalid source_health")
-        return 1
+        # exit 3 = 主动拒跑（上游证据不足），不是故障。
+        # 用 1 会让它在账本里和"脚本崩溃"长得一模一样——2026-10-22 实测它
+        # 因此静默了 4 天（10-18 18:15 之后状态文件再没更新，而卡上只显示
+        # "9 个任务非零退出"）。约定见 task_exit_audit.EXIT_SEMANTICS。
+        return EXIT_UPSTREAM_UNTRUSTED
     res, bad = validated
     if bad and not res["alerts"]:
         print("ALERT_WATCH_SOURCE_UNAVAILABLE partial coverage without alerts")
-        return 1
+        return EXIT_UPSTREAM_UNTRUSTED
 
     st = _load_state()
     if st.get("date") != today:            # 跨日：重置熔断计数，保留基线值
