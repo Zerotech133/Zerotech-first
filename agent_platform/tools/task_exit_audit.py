@@ -211,20 +211,96 @@ def summary_only() -> dict[str, Any]:
         return json.load(f)
 
 
+def window_diff(hours: float = 24.0) -> dict[str, Any]:
+    """基于账本历史做窗口对比：新增失败 / 持续失败 / 已修复。
+
+    P3-2（2026-10-22 审计「快照→窗口统计」）：快照只答「现在几个失败」，
+    窗口对比才能答「变好还是变坏」。取窗口起点前后各一次扫描的失败集合
+    做差集；账本不足两次扫描时如实报 insufficient，不硬算。
+    """
+    ledger_path = os.path.join(DATA_DIR, LEDGER_NAME)
+    if not os.path.isfile(ledger_path):
+        return {"error": "账本不存在，请先 --scan"}
+    cutoff = dt.datetime.now().astimezone() - dt.timedelta(hours=hours)
+    scans: list[tuple[dt.datetime, dict[str, int]]] = []
+    with open(ledger_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            at = rec.get("at", "")
+            try:
+                ts = dt.datetime.fromisoformat(at)
+            except ValueError:
+                continue
+            if ts.tzinfo is None:
+                ts = ts.astimezone()
+            scans.append((ts, rec))
+    if len(scans) < 2:
+        return {"error": f"账本仅 {len(scans)} 条，不足两次扫描，无法窗口对比"}
+
+    # 窗口内最后一次 vs 窗口外最后一次（各按任务名取末次退出码）
+    def failures_upto(limit_ts: dt.datetime) -> set[str]:
+        last: dict[str, int] = {}
+        state: dict[str, str] = {}
+        for ts, rec in scans:
+            if ts > limit_ts:
+                break
+            name = str(rec.get("name", ""))
+            last[name] = int(rec.get("last_result", -1))
+            state[name] = str(rec.get("state", ""))
+        return {n for n, code in last.items()
+                if state.get(n, "").lower() != "disabled"
+                and code != 0 and code != 267011}
+
+    now = dt.datetime.now().astimezone()
+    in_window = [(ts, r) for ts, r in scans if ts > cutoff]
+    if not in_window:
+        return {"error": f"窗口 {hours}h 内无扫描记录"}
+    before = [(ts, r) for ts, r in scans if ts <= cutoff]
+    if not before:
+        return {"error": "窗口外无更早扫描，无法对比"}
+
+    latest_fail = failures_upto(max(ts for ts, _ in scans))
+    prior_fail = failures_upto(max(ts for ts, _ in before))
+    return {
+        "window_hours": hours,
+        "compared": {
+            "latest_scan_at": str(max(ts for ts, _ in scans)),
+            "prior_scan_at": str(max(ts for ts, _ in before)),
+        },
+        "new_failures": sorted(latest_fail - prior_fail),
+        "persisting_failures": sorted(latest_fail & prior_fail),
+        "fixed_in_window": sorted(prior_fail - latest_fail),
+        "note": "new=窗口内新失败；fixed=上窗口失败现已恢复；persisting=两窗口都失败。",
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="计划任务退出码告警闭环（只读扫描+账本+摘要）")
     ap.add_argument("--scan", action="store_true", help="执行扫描并落账本与摘要")
     ap.add_argument("--summary-only", action="store_true", help="只读已有摘要")
+    ap.add_argument("--window", type=float, metavar="HOURS", nargs="?", const=24.0,
+                    help="窗口对比：新增/持续/已修复失败（默认 24h，可传小时数）")
     ap.add_argument("--all-families", action="store_true", help="扫描全部计划任务（默认仅军团系前缀）")
     ap.add_argument("--json", action="store_true", help="打印摘要 JSON")
     args = ap.parse_args(argv)
 
-    if not args.scan and not args.summary_only:
+    if not args.scan and not args.summary_only and args.window is None:
         ap.print_help()
         return 2
 
     try:
-        result = scan(audit_family_only=not args.all_families) if args.scan else summary_only()
+        if args.scan:
+            result = scan(audit_family_only=not args.all_families)
+        elif args.window is not None:
+            result = window_diff(hours=args.window)
+        else:
+            result = summary_only()
     except RuntimeError as e:
         print(f"[FAIL] {e}", file=sys.stderr)
         return 1
@@ -235,10 +311,16 @@ def main(argv: list[str] | None = None) -> int:
         if "error" in result:
             print(result["error"])
             return 1
-        print(f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
-              f"禁用 {result['disabled']} / 未跑 {result['never_run']}")
-        for f in result["failures"]:
-            print(f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+        if "window_hours" in result:
+            print(f"窗口 {result['window_hours']}h 对比（{result['compared']['prior_scan_at']} → {result['compared']['latest_scan_at']}）")
+            print(f"  新增失败 {len(result['new_failures'])}：{'、'.join(result['new_failures']) or '无'}")
+            print(f"  持续失败 {len(result['persisting_failures'])}：{'、'.join(result['persisting_failures']) or '无'}")
+            print(f"  窗口内修复 {len(result['fixed_in_window'])}：{'、'.join(result['fixed_in_window']) or '无'}")
+        else:
+            print(f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
+                  f"禁用 {result['disabled']} / 未跑 {result['never_run']}")
+            for f in result["failures"]:
+                print(f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
     return 0
 
 

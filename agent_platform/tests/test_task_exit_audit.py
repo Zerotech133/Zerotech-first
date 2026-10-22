@@ -99,3 +99,54 @@ def test_ledger_append_only(isolated_data_dir, monkeypatch):
     ledger = os.path.join(isolated_data_dir, ta.LEDGER_NAME)
     lines = [x for x in open(ledger, encoding="utf-8") if x.strip()]
     assert len(lines) == 4  # 2 任务 × 2 轮
+
+
+def _seed_ledger(isolated_data_dir, rounds):
+    """自造多轮账本：rounds = [ {任务名: exit码}, ... ] 按时间顺序。"""
+    import datetime as dt
+    ledger = os.path.join(isolated_data_dir, ta.LEDGER_NAME)
+    os.makedirs(isolated_data_dir, exist_ok=True)
+    base = dt.datetime.now().astimezone() - dt.timedelta(hours=len(rounds) + 1)
+    with open(ledger, "w", encoding="utf-8") as f:
+        for i, snapshot in enumerate(rounds):
+            ts = base + dt.timedelta(hours=i + 1)
+            for name, code in snapshot.items():
+                f.write(json.dumps({
+                    "at": ts.isoformat(timespec="seconds"),
+                    "name": name, "state": "Ready",
+                    "last_result": code, "exit_semantics": "",
+                    "last_run": "", "next_run": "",
+                }, ensure_ascii=False) + "\n")
+
+
+def test_window_diff_classifies(isolated_data_dir, monkeypatch):
+    """窗口对比三分类：QuantWatchdog 全程失败（persisting）、心跳 2→0（fixed）、Nginx 0→1（new）。
+    时序：旧状态两轮（cutoff 前）→ 新状态一轮（cutoff 后），保证转换发生在窗口内。"""
+    _seed_ledger(isolated_data_dir, [
+        {"QuantWatchdog": 2, "AgentLegionHeartbeat": 2, "AI工作站门户Nginx": 0},
+        {"QuantWatchdog": 2, "AgentLegionHeartbeat": 2, "AI工作站门户Nginx": 0},
+        {"QuantWatchdog": 2, "AgentLegionHeartbeat": 0, "AI工作站门户Nginx": 1},
+    ])
+    r = ta.window_diff(hours=1.5)
+    assert "error" not in r
+    assert r["new_failures"] == ["AI工作站门户Nginx"]
+    assert r["persisting_failures"] == ["QuantWatchdog"]
+    assert r["fixed_in_window"] == ["AgentLegionHeartbeat"]
+
+
+def test_window_diff_insufficient(isolated_data_dir):
+    """账本不足两次扫描：如实报错，不硬算。"""
+    _seed_ledger(isolated_data_dir, [{"A": 0}])
+    r = ta.window_diff(hours=1.0)
+    assert "error" in r
+
+
+def test_window_diff_disabled_not_failure(isolated_data_dir):
+    """Disabled 与 267011（未跑）不计失败。"""
+    _seed_ledger(isolated_data_dir, [
+        {"KG-QuantRetune": 267011, "SpaceTask": 1},
+        {"KG-QuantRetune": 267011, "SpaceTask": 1},
+    ])
+    # state 字段在 _seed_ledger 固定为 Ready，这里直接验证 267011 排除逻辑
+    r = ta.window_diff(hours=1.5)
+    assert "KG-QuantRetune" not in r.get("persisting_failures", [])
