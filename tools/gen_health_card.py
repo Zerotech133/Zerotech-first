@@ -30,6 +30,13 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
    取最新两期，比对总文件数、总字节、顶层目录集合、catalog.json sha256 与数据根路径。
    只有一份清单 → available=false（不判绿）；两份都读不到/解析失败 → 红；
    文件数变化 >20% 或顶层目录数变化 → 升级为红（这个幅度通常是事故，不是日常增量）。
+7. 明文私钥扫描（security.plaintext_keys）：只扫限定范围——<repo>/outputs、
+   <repo>/tools、<repo>/portal 递归，加工作区根一级 *.pem/*.key/id_rsa*/.env*；
+   跳过 .git/node_modules/.venv/.worktrees（另跳 __pycache__ 等编译缓存）。
+   识别只看文件名与内容特征：*.pem/*.key/id_rsa*/.env* 内容含 PRIVATE KEY 字样，
+   或任意文件内容含 PEM 私钥起始行；不解析密钥格式、不回显任何内容，命中只报
+   「路径 + 字节数 + 是否被 git 跟踪」（ls-files --error-unmatch）。
+   命中 ≥1 红；有目录/文件读不到黄（不判绿）；扫描 >3s 计 available=false 红。
 
 用法：
     python -B tools/gen_health_card.py
@@ -41,7 +48,8 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
 工作树目录与 git worktree 不一致黄；worktree 已合并且 >7 天黄；
 文档索引落后黄；任一块不可用红；备份落后 HEAD >0 黄 /
 落后且备份 >24h 红；追平无法判定计 null（不误判绿）；数据根漂移只有一份清单黄
-（不判绿）、两份都读不到红、文件数变化 >20% 或目录数变化红。
+（不判绿）、两份都读不到红、文件数变化 >20% 或目录数变化红；
+明文私钥命中 ≥1 红、有目录/文件读不到黄、扫描超 3s 红。
 """
 from __future__ import annotations
 
@@ -141,6 +149,53 @@ DATA_DRIFT_DIR_LIMIT = 6
 DATA_DRIFT_DIR_CHANGED_LIMIT = 3
 # dates 里最多回显几个发现的日期目录。
 DATA_DRIFT_DATE_LIMIT = 5
+
+# --- 明文私钥扫描（security.plaintext_keys）---------------------------------
+# 只扫限定范围，不做全盘扫：<repo>/outputs、<repo>/tools、<repo>/portal 递归，
+# 加工作区根（<repo> 的父目录）一级的 *.pem / *.key / .env* 文件。
+# 识别只看「文件名 + 内容特征」：不解析 PEM/DER、不回显任何文件内容。
+PLAINTEXT_KEY_SCAN_REL_DIRS: tuple[Path, ...] = (
+    Path("outputs"),
+    Path("tools"),
+    Path("portal"),
+)
+# 规定跳过的 4 类；另跳 python/工具链编译缓存——.pyc 是同一源码的副本，
+# 不跳会把一个测试夹具按 .py/.pyc 重复计入（纯噪音，见 T9 报告边界说明）。
+PLAINTEXT_KEY_SKIP_DIRS = frozenset(
+    {
+        ".git",
+        "node_modules",
+        ".venv",
+        ".worktrees",
+        "__pycache__",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".mypy_cache",
+    }
+)
+# 名称命中：*.pem / *.key / id_rsa* / .env*（.env* 按需求单独点名）。
+PLAINTEXT_KEY_NAME_SUFFIXES = (".pem", ".key")
+# 名称命中的文件用弱特征（内容含 PRIVATE KEY 字样即可，PEM 头/主体都含）；
+# 其余任意文件用强特征（必须出现 PEM 私钥起始行）。
+PLAINTEXT_KEY_WEAK_MARKER = b"PRIVATE KEY"
+PLAINTEXT_KEY_MARKER_RE = re.compile(
+    rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
+)
+# 3s 性能上限：扫描相位超时 → available=false + 红（已扫到的命中仍写进 detail）。
+PLAINTEXT_KEY_BUDGET_SECONDS = 3.0
+# 单文件最多读 512 KiB：私钥与脚本都远小于此；更大的文件不读内容，
+# 只计入 oversized_skipped（私钥本体不会长到 512 KiB）。
+PLAINTEXT_KEY_MAX_CONTENT_BYTES = 512 * 1024
+# detail 里最多点名几条命中（其余折叠成计数，避免一行几十个路径）。
+PLAINTEXT_KEY_DETAIL_LIMIT = 8
+# git 跟踪判定：每条 ls-files 单独限时，整体再封一个 1.5s 顶（命中通常个位数）。
+PLAINTEXT_KEY_GIT_TIMEOUT_SECONDS = 2.0
+PLAINTEXT_KEY_GIT_BUDGET_SECONDS = 1.5
+# 测试夹具识别：只写进 JSON 的 findings[].test_fixture 做 triage，
+# 不改变判定（命中 ≥1 仍判红），避免「看着像夹具」成为漏判借口。
+PLAINTEXT_KEY_FIXTURE_NAME_PREFIXES = ("test_",)
+PLAINTEXT_KEY_FIXTURE_NAME_SUFFIXES = ("_test.py", "_selftest.py", "_test.ps1")
+PLAINTEXT_KEY_FIXTURE_DIRS = frozenset({"tests", "test", "fixtures"})
 
 
 # ---------------------------------------------------------------------------
@@ -2225,6 +2280,311 @@ def _docs_index_detail(freshness: dict[str, Any]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# 明文私钥扫描（security.plaintext_keys）
+# ---------------------------------------------------------------------------
+# 只看「文件名 + 内容特征」，不解析密钥格式、不打印文件内容；命中只回显
+# 「路径 + 字节数 + 是否被 git 跟踪」。判定口径在 _evaluate 里，采集侧只报事实。
+def _empty_plaintext_keys(repo_root: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "repo_root": str(repo_root),
+        "workspace_root": str(repo_root.parent),
+        "scan_dirs": [str(repo_root / rel) for rel in PLAINTEXT_KEY_SCAN_REL_DIRS],
+        "missing_dirs": [],
+        "scanned_files": 0,
+        "scanned_bytes": 0,
+        "oversized_skipped": 0,
+        "findings": [],
+        "skipped_dirs": [],
+        "unreadable_files": [],
+        "git_checked": False,
+        "budget_seconds": PLAINTEXT_KEY_BUDGET_SECONDS,
+        "max_content_bytes": PLAINTEXT_KEY_MAX_CONTENT_BYTES,
+        "elapsed_ms": None,
+        "over_budget": None,
+    }
+
+
+def _plaintext_key_display_path(path: Path, repo_root: Path) -> str:
+    """命中路径：仓内给相对 POSIX 路径，仓外（工作区根）给绝对路径。"""
+    try:
+        return path.relative_to(repo_root).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _plaintext_key_name_rule(name: str) -> str | None:
+    """按文件名判定「弱特征」候选：*.pem / *.key、id_rsa*、.env*。"""
+    lower = name.lower()
+    if lower.endswith(PLAINTEXT_KEY_NAME_SUFFIXES):
+        return "name"
+    if lower.startswith(".env"):
+        return "env"
+    if lower.startswith("id_rsa"):
+        return "id_rsa"
+    return None
+
+
+def _looks_like_test_fixture(path: Path) -> bool:
+    """triage 用：test_* / *_test.py / _selftest.py 或 tests/fixtures 目录下的命中。"""
+    name = path.name.lower()
+    if any(name.startswith(prefix) for prefix in PLAINTEXT_KEY_FIXTURE_NAME_PREFIXES):
+        return True
+    if any(name.endswith(suffix) for suffix in PLAINTEXT_KEY_FIXTURE_NAME_SUFFIXES):
+        return True
+    return any(
+        parent.name.lower() in PLAINTEXT_KEY_FIXTURE_DIRS
+        for parent in list(path.parents)[:4]
+    )
+
+
+def _scan_for_plaintext_keys(repo_root: Path, result: dict[str, Any]) -> None:
+    """限定范围扫描：只累计计数/命中/跳过项，判定留给 _evaluate。"""
+    deadline = time.monotonic() + PLAINTEXT_KEY_BUDGET_SECONDS
+    findings: list[dict[str, Any]] = result["findings"]
+    skipped_dirs: list[str] = result["skipped_dirs"]
+    unreadable_files: list[str] = result["unreadable_files"]
+    timeout_reason = "扫描超时（>%gs，已扫到的命中仍列在 detail）" % (
+        PLAINTEXT_KEY_BUDGET_SECONDS
+    )
+
+    def _mark_timeout() -> bool:
+        if time.monotonic() <= deadline:
+            return False
+        result["available"] = False
+        result["reason"] = timeout_reason
+        return True
+
+    def _display(path: Path) -> str:
+        return _plaintext_key_display_path(path, repo_root)
+
+    def _record(path: Path, size: int, rule: str) -> None:
+        findings.append(
+            {
+                "path": _display(path),
+                "bytes": size,
+                # 只报「是否被 git 跟踪」；内容一个字节都不落进 JSON。
+                "in_git": None,
+                "rule": rule,
+                "test_fixture": _looks_like_test_fixture(path),
+            }
+        )
+
+    def _inspect(path: Path, size: int) -> None:
+        rule = _plaintext_key_name_rule(path.name)
+        if rule is None and size > PLAINTEXT_KEY_MAX_CONTENT_BYTES:
+            result["oversized_skipped"] += 1
+            return
+        try:
+            with path.open("rb") as handle:
+                content = handle.read(PLAINTEXT_KEY_MAX_CONTENT_BYTES + 1)
+        except OSError:
+            unreadable_files.append(_display(path))
+            return
+        result["scanned_files"] += 1
+        result["scanned_bytes"] += len(content)
+        if rule is not None:
+            # 名称命中：内容含 PRIVATE KEY 字样即算（真 PEM 的头和主体都含）。
+            if PLAINTEXT_KEY_WEAK_MARKER in content:
+                _record(path, size, rule)
+            return
+        if PLAINTEXT_KEY_MARKER_RE.search(content):
+            _record(path, size, "marker")
+
+    def _walk(root: Path) -> bool:
+        """递归扫一个限定目录；False = 已超时中止。"""
+        stack = [root]
+        while stack:
+            current = stack.pop()
+            if _mark_timeout():
+                return False
+            try:
+                with os.scandir(current) as entries:
+                    for entry in entries:
+                        if _mark_timeout():
+                            return False
+                        try:
+                            if entry.is_dir(follow_symlinks=False):
+                                if entry.name in PLAINTEXT_KEY_SKIP_DIRS:
+                                    continue
+                                stack.append(Path(entry.path))
+                            elif entry.is_file(follow_symlinks=False):
+                                _inspect(
+                                    Path(entry.path),
+                                    entry.stat(follow_symlinks=False).st_size,
+                                )
+                        except OSError:
+                            # 单个条目 stat 失败：记文件级不可读，不中断整目录
+                            unreadable_files.append(_display(Path(entry.path)))
+            except OSError:
+                # 目录读不到（ACL 拒绝等）：记下来，最后判黄而不是判绿
+                skipped_dirs.append(_display(current))
+        return True
+
+    for rel_dir in PLAINTEXT_KEY_SCAN_REL_DIRS:
+        root = repo_root / rel_dir
+        try:
+            exists = root.is_dir()
+        except OSError:
+            exists = False
+        if not exists:
+            result["missing_dirs"].append(_display(root))
+            continue
+        if not _walk(root):
+            return
+
+    # 工作区根一级：只看候选名（*.pem/*.key/id_rsa*/.env*），不递归、不读其它文件。
+    workspace = repo_root.parent
+    if workspace == repo_root:
+        return
+    try:
+        with os.scandir(workspace) as entries:
+            for entry in entries:
+                if _mark_timeout():
+                    return
+                if _plaintext_key_name_rule(entry.name) is None:
+                    continue
+                try:
+                    if not entry.is_file(follow_symlinks=False):
+                        continue
+                    _inspect(Path(entry.path), entry.stat(follow_symlinks=False).st_size)
+                except OSError:
+                    unreadable_files.append(_display(Path(entry.path)))
+    except OSError:
+        skipped_dirs.append(_display(workspace))
+
+
+def _fill_git_state(repo_root: Path, findings: list[dict[str, Any]]) -> bool:
+    """给命中补 in_git（True/False/None）；只读 git，失败一律留 None=未知。"""
+    if not findings:
+        return False
+    deadline = time.monotonic() + PLAINTEXT_KEY_GIT_BUDGET_SECONDS
+    try:
+        probe = _git_run(
+            repo_root,
+            ["rev-parse", "--is-inside-work-tree"],
+            timeout=PLAINTEXT_KEY_GIT_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if probe.returncode != 0 or _decode(probe.stdout).strip() != "true":
+        return False
+    checked = False
+    for finding in findings:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        rel = str(finding.get("path") or "")
+        if not rel or Path(rel).is_absolute():
+            continue  # 仓外文件不做 git 判定，保持 None
+        try:
+            proc = _git_run(
+                repo_root,
+                ["ls-files", "--error-unmatch", "--", rel],
+                timeout=max(0.2, min(PLAINTEXT_KEY_GIT_TIMEOUT_SECONDS, remaining)),
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        checked = True
+        if proc.returncode == 0:
+            finding["in_git"] = True
+        elif proc.returncode == 1:
+            finding["in_git"] = False
+        # 其它退出码（非仓库/异常）保持 None，不冒充「未跟踪」
+    return checked
+
+
+def collect_plaintext_keys(repo_root: Path) -> dict[str, Any]:
+    """明文私钥采集：范围/识别/性能上限见模块 docstring 第 7 条。"""
+    started = time.monotonic()
+    result = _empty_plaintext_keys(repo_root)
+    try:
+        if not repo_root.is_dir():
+            result["reason"] = f"仓库根不存在或不是目录: {repo_root}"
+            return result
+    except OSError as exc:
+        result["reason"] = "读取仓库根失败: " + _short_exc(exc)
+        return result
+    result["available"] = True
+    try:
+        _scan_for_plaintext_keys(repo_root, result)
+    except Exception as exc:  # 兜底：体检项不许把整张卡带崩，读不到就判不可用（红）
+        result["available"] = False
+        result["reason"] = "扫描异常: " + _short_exc(exc)
+    result["git_checked"] = _fill_git_state(repo_root, result["findings"])
+    result["elapsed_ms"] = round((time.monotonic() - started) * 1000.0, 1)
+    result["over_budget"] = result["elapsed_ms"] > PLAINTEXT_KEY_BUDGET_SECONDS * 1000.0
+    return result
+
+
+def _git_state_text(in_git: Any) -> str:
+    if in_git is True:
+        return "已跟踪"
+    if in_git is False:
+        return "未跟踪"
+    return "未知"
+
+
+def _plaintext_keys_detail(keys: dict[str, Any]) -> str:
+    """detail 只写路径 / 字节数 / git 状态；绝不写文件内容。"""
+    findings = keys.get("findings") or []
+    skipped_dirs = keys.get("skipped_dirs") or []
+    unreadable_files = keys.get("unreadable_files") or []
+    bits: list[str] = []
+    if not keys.get("available"):
+        bits.append("明文私钥扫描未完成：" + (keys.get("reason") or "未知原因"))
+    if findings:
+        shown = findings[:PLAINTEXT_KEY_DETAIL_LIMIT]
+        hidden = len(findings) - len(shown)
+        items = "、".join(
+            "%s（%s，git:%s）"
+            % (item["path"], _human_bytes(item["bytes"]), _git_state_text(item.get("in_git")))
+            for item in shown
+        )
+        bits.append(
+            "发现 %d 个明文私钥%s：%s"
+            % (len(findings), "（另有 %d 个未列出）" % hidden if hidden > 0 else "", items)
+        )
+    elif not keys.get("available"):
+        bits.append(
+            "已扫 %d 个文件（%s），扫描不完整，不能判定无明文私钥"
+            % (
+                keys.get("scanned_files") or 0,
+                _human_bytes(keys.get("scanned_bytes") or 0),
+            )
+        )
+    else:
+        bits.append(
+            "已扫 %d 个文件（%s），未见明文私钥"
+            % (
+                keys.get("scanned_files") or 0,
+                _human_bytes(keys.get("scanned_bytes") or 0),
+            )
+        )
+    if skipped_dirs:
+        bits.append(
+            "%d 个目录读不到：%s" % (len(skipped_dirs), "、".join(skipped_dirs[:3]))
+        )
+    if unreadable_files:
+        bits.append(
+            "%d 个文件读不到：%s"
+            % (len(unreadable_files), "、".join(unreadable_files[:3]))
+        )
+    if skipped_dirs or unreadable_files:
+        bits.append("有内容没看到，不判绿")
+    if keys.get("oversized_skipped"):
+        bits.append(
+            "%d 个 >%s 的文件未读内容"
+            % (
+                keys["oversized_skipped"],
+                _human_bytes(PLAINTEXT_KEY_MAX_CONTENT_BYTES),
+            )
+        )
+    return "；".join(bits)
+
+
+# ---------------------------------------------------------------------------
 # 状态判定
 # ---------------------------------------------------------------------------
 def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str]]:
@@ -2475,6 +2835,20 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             "文档索引检查状态未知：" + str(docs_freshness.get("status") or "null"),
         )
 
+    keys = (card.get("security") or {}).get("plaintext_keys") or {}
+    if not keys:
+        add("security.plaintext_keys", "red", "明文私钥扫描未运行（security 块缺失）")
+    else:
+        if not keys.get("available") or keys.get("findings"):
+            # 扫描没跑完（超时/异常）或命中 ≥1：都判红，绝不当绿。
+            key_level = "red"
+        elif keys.get("skipped_dirs") or keys.get("unreadable_files"):
+            # 有目录/文件读不到：等于没看全，不判绿。
+            key_level = "yellow"
+        else:
+            key_level = "green"
+        add("security.plaintext_keys", key_level, _plaintext_keys_detail(keys))
+
     rank = {"green": 0, "yellow": 1, "red": 2}
     status = max((check["level"] for check in checks), key=lambda level: rank[level])
     reasons = [
@@ -2508,6 +2882,7 @@ def build_card(
         "data": {"root_drift": collect_data_root_drift(vault_root)},
         "repo": repo_block,
         "docs": {"index_freshness": collect_docs_index(repo_root)},
+        "security": {"plaintext_keys": collect_plaintext_keys(repo_root)},
         "notes": [
             "本脚本只读：不扫描/启停计划任务、不触发备份、不改仓库。",
             "dirty_files 含未跟踪文件；本脚本自身在提交前也会被计入。",
@@ -2536,6 +2911,15 @@ def build_card(
             "（计数 null，不判绿；前两种除「只有一份」外均判红）。",
             "<vault>/data_manifest.json（gen_data_manifest.py 的默认 --out）不是日期快照，"
             "不参与比对，避免拿「实时文件」冒充历史。",
+            "明文私钥扫描（security.plaintext_keys）：只扫 <repo>/outputs、<repo>/tools、"
+            "<repo>/portal 递归 + 工作区根一级 *.pem/*.key/id_rsa*/.env*；"
+            "跳过 .git/node_modules/.venv/.worktrees（另跳 __pycache__ 等编译缓存，"
+            "避免 .pyc 把同一测试夹具重复计入）。只看文件名与内容特征，不解析密钥、"
+            "不回显任何文件内容：命中只报「路径 + 字节数 + 是否被 git 跟踪」。",
+            "明文私钥判定：命中 ≥1 红；扫描范围内有目录/文件读不到黄（不判绿）；"
+            "扫描相位 >%gs 计 available=false 并判红（已扫到的命中仍列出）；"
+            "单文件最多读 %s，更大的文件记 oversized_skipped 不读内容。"
+            % (PLAINTEXT_KEY_BUDGET_SECONDS, _human_bytes(PLAINTEXT_KEY_MAX_CONTENT_BYTES)),
         ],
     }
     checks, status, reasons = _evaluate(card)
@@ -2880,6 +3264,59 @@ def _render_html(card: dict[str, Any]) -> str:
         parts.append(
             f'<p class="unavailable">不可用：{_e(freshness.get("reason"))}</p>'
         )
+    parts.append("</section>")
+
+    keys = (card.get("security") or {}).get("plaintext_keys") or {}
+    parts.append('<section class="block">')
+    parts.append("<h2>明文私钥扫描</h2>")
+    parts.append(
+        '<div class="sub">%s（+ 工作区根一级 *.pem/*.key/id_rsa*/.env*）</div>'
+        % _e("、".join(keys.get("scan_dirs") or []))
+    )
+    if keys.get("available") is False:
+        parts.append(f'<p class="unavailable">不可用：{_e(keys.get("reason"))}</p>')
+    else:
+        parts.append(_kv("命中", "%d 个明文私钥" % len(keys.get("findings") or [])))
+        for item in (keys.get("findings") or [])[:PLAINTEXT_KEY_DETAIL_LIMIT]:
+            parts.append(
+                '<p class="note">%s（%s，git:%s）</p>'
+                % (
+                    _e(item.get("path")),
+                    _e(_human_bytes(item.get("bytes"))),
+                    _e(_git_state_text(item.get("in_git"))),
+                )
+            )
+        parts.append(
+            _kv(
+                "已扫文件 / 字节",
+                "%s / %s"
+                % (
+                    _fmt_num(keys.get("scanned_files")),
+                    _human_bytes(keys.get("scanned_bytes")),
+                ),
+            )
+        )
+        if keys.get("elapsed_ms") is not None:
+            parts.append(
+                _kv(
+                    "耗时 / 预算",
+                    "%sms / %ss"
+                    % (keys.get("elapsed_ms"), keys.get("budget_seconds")),
+                )
+            )
+    if keys.get("skipped_dirs"):
+        parts.append(
+            '<p class="note">读不到的目录：%s</p>'
+            % _e("、".join(keys["skipped_dirs"][:5]))
+        )
+    if keys.get("unreadable_files"):
+        parts.append(
+            '<p class="note">读不到的文件：%s</p>'
+            % _e("、".join(keys["unreadable_files"][:5]))
+        )
+    parts.append(
+        '<p class="note">只报路径 / 字节数 / git 状态，不回显任何文件内容。</p>'
+    )
     parts.append("</section>")
 
     parts.append('<section class="block full"><h2>判定明细</h2><ul class="checks">')
