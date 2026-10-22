@@ -61,7 +61,8 @@
 [CmdletBinding()]
 param(
     [switch]$Enable,
-    [switch]$VerifyOnly
+    [switch]$VerifyOnly,
+    [string]$LogPath = (Join-Path $env:TEMP 'aios_zombie_tasks.log')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -108,23 +109,37 @@ if ($VerifyOnly) {
 
 if (-not (Test-Elevated)) {
     Write-Host ''
-    Write-Host 'not elevated -> re-launching with a UAC prompt ...'
-    $fwd = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-NoExit', '-File', $PSCommandPath)
+    Write-Host 'not elevated -> re-launching with a UAC prompt (waiting for it) ...'
+    $fwd = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
     if ($Enable) { $fwd += '-Enable' }
+    if ($LogPath) { $fwd += '-LogPath'; $fwd += $LogPath }
+    # 2026-10-22 fix: same trap as apply_task_path_fix.ps1 - the old code used
+    # -NoExit and did NOT wait, then returned 0, so the parent looked fine while
+    # nothing was actually changed. Now we wait and surface the real outcome.
     try {
-        Start-Process -FilePath 'powershell.exe' -ArgumentList $fwd -Verb RunAs -ErrorAction Stop
-        Write-Host 'elevated instance started. Watch the new window.'
-        exit 0
+        $proc = Start-Process -FilePath 'powershell.exe' -ArgumentList $fwd `
+            -Verb RunAs -Wait -PassThru -ErrorAction Stop
     } catch {
         Write-Host ('ERROR: could not elevate: {0}' -f $_.Exception.Message)
+        Write-Host '       Run this in an Administrator PowerShell by hand.'
         exit 2
     }
+    Write-Host ''
+    Write-Host ('elevated child exit code : {0}' -f $proc.ExitCode)
+    if ($LogPath -and (Test-Path -LiteralPath $LogPath)) {
+        Write-Host ('--- tail of {0} ---' -f $LogPath)
+        Get-Content -LiteralPath $LogPath -Tail 25 | ForEach-Object { Write-Host ('  ' + $_) }
+    } else {
+        Write-Host 'no child log found - the elevated run probably never started.'
+    }
+    exit $proc.ExitCode
 }
 
 $verb = if ($Enable) { '/enable' } else { '/disable' }
 $failed = 0
 Write-Host ''
 Write-Host ('--- applying ({0}) ---' -f $verb)
+try { Start-Transcript -LiteralPath $LogPath -Force | Out-Null } catch { }
 
 foreach ($n in $tasks) {
     $out = & schtasks /change /tn $n $verb 2>&1
@@ -146,5 +161,6 @@ Write-Host ''
 Write-Host 'After this, 0xFFFD0000 should stop appearing in the event log.'
 Write-Host 'Expect the health card check ops.task_launch_failures to drop within'
 Write-Host 'the 30-minute grading window.'
+try { Stop-Transcript | Out-Null } catch { }
 if ($failed -gt 0) { exit 1 }
 exit 0

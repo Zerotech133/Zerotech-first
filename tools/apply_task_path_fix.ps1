@@ -81,7 +81,8 @@ param(
     [switch]$Restore,
     [switch]$VerifyOnly,
     [string[]]$Only,
-    [switch]$IncludeHardening
+    [switch]$IncludeHardening,
+    [string]$LogPath = (Join-Path $env:TEMP 'aios_task_fix.log')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -171,24 +172,51 @@ if ($VerifyOnly) {
 
 if (-not (Test-Elevated)) {
     Write-Host ''
-    Write-Host 'not elevated -> re-launching with a UAC prompt ...'
-    $fwd = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-NoExit', '-File', $PSCommandPath)
+    Write-Host 'not elevated -> re-launching with a UAC prompt (waiting for it) ...'
+    $fwd = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
     if ($Restore) { $fwd += '-Restore' }
     if ($Only) { $fwd += '-Only'; $fwd += $Only }
+    if ($IncludeHardening) { $fwd += '-IncludeHardening' }
+    if ($LogPath) { $fwd += '-LogPath'; $fwd += $LogPath }
+    # 2026-10-22 fix: the old code started the elevated child WITHOUT -Wait,
+    # gave it -NoExit, and returned exit 0 immediately. Net effect: the parent
+    # window looked successful, the child window sat on an error nobody read,
+    # and the task definitions were never touched (their timestamps proved it).
+    # Now: wait for the child, surface its exit code and its transcript tail.
     try {
-        Start-Process -FilePath 'powershell.exe' -ArgumentList $fwd -Verb RunAs -ErrorAction Stop
-        Write-Host 'elevated instance started. Watch the new window.'
-        exit 0
+        $proc = Start-Process -FilePath 'powershell.exe' -ArgumentList $fwd `
+            -Verb RunAs -Wait -PassThru -ErrorAction Stop
     } catch {
         Write-Host ('ERROR: could not elevate: {0}' -f $_.Exception.Message)
+        Write-Host '       Run this in an Administrator PowerShell by hand.'
         exit 2
     }
+    Write-Host ''
+    Write-Host ('elevated child exit code : {0}' -f $proc.ExitCode)
+    if ($LogPath -and (Test-Path -LiteralPath $LogPath)) {
+        Write-Host ('--- tail of {0} ---' -f $LogPath)
+        Get-Content -LiteralPath $LogPath -Tail 25 | ForEach-Object { Write-Host ('  ' + $_) }
+    } else {
+        Write-Host 'no child log found - the elevated run probably never started.'
+    }
+    exit $proc.ExitCode
 }
 
 $suffix = if ($Restore) { '_original.xml' } else { '_fixed.xml' }
 $failed = 0
 Write-Host ''
 Write-Host ('--- applying ({0}) ---' -f $suffix)
+
+# Transcript: the parent waits for this child and then prints the tail of this
+# file, so a failure scene is never lost when the window closes.
+try { Start-Transcript -LiteralPath $LogPath -Force | Out-Null } catch { }
+
+# schtasks.exe is unreliable with non-ASCII paths, and this repo lives under a
+# path with Chinese characters (AGENTS.md section 0 forbids that inside scripts
+# for the same reason). So stage the XML into a pure-ASCII temp dir first.
+# This is the second plausible cause of "the script ran but nothing changed".
+$asciiXmlDir = Join-Path $env:TEMP 'aios_task_xml'
+New-Item -ItemType Directory -Path $asciiXmlDir -Force | Out-Null
 
 foreach ($n in $targets) {
     $xml = Join-Path $xmlDir ($n + $suffix)
@@ -199,7 +227,15 @@ foreach ($n in $targets) {
         $failed++
         continue
     }
-    $out = & schtasks /create /tn $n /xml $xml /f 2>&1
+    $staged = Join-Path $asciiXmlDir ($n + $suffix)
+    try {
+        Copy-Item -LiteralPath $xml -Destination $staged -Force -ErrorAction Stop
+    } catch {
+        Write-Host ('  {0,-18} FAIL: cannot stage xml to {1}' -f $n, $staged)
+        $failed++
+        continue
+    }
+    $out = & schtasks /create /tn $n /xml $staged /f 2>&1
     $rc = $LASTEXITCODE
     if ($rc -ne 0) {
         Write-Host ('  {0,-18} FAIL rc={1}' -f $n, $rc)
@@ -231,5 +267,6 @@ Write-Host 'rollback : tools\apply_task_path_fix.ps1 -Restore'
 Write-Host ''
 Write-Host 'NOTE: these tasks were failing to START. After this, expect rc=0 or a'
 Write-Host '      real script exit code; 0x8007000x should disappear from the log.'
+try { Stop-Transcript | Out-Null } catch { }
 if ($failed -gt 0) { exit 1 }
 exit 0
