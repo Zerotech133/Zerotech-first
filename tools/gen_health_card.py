@@ -2227,7 +2227,8 @@ def _alert_watch_detail(watch: dict[str, Any]) -> str:
 # （无效功能 / 文件未找到 / 路径未找到），与"脚本跑了但报错"性质完全不同。
 TASK_LAUNCH_WINDOW_HOURS = 24.0
 TASK_LAUNCH_TIMEOUT_SECONDS = 30.0
-TASK_LAUNCH_RED_COUNT = 3          # 24h 内同一任务 >=3 次启动失败 -> 红
+TASK_LAUNCH_RED_COUNT = 3          # 30 分钟内同一任务 >=3 次启动失败 -> 红
+TASK_LAUNCH_RECENT_MINUTES = 30.0  # 判级只看最近这么久（窗口总量仍照实报）
 TASK_LAUNCH_FAILURE_CODES = {
     2147942401: "0x80070001 无效功能",
     2147942402: "0x80070002 文件未找到",
@@ -2246,6 +2247,22 @@ _TASK_LAUNCH_PAIR_RE = re.compile(
     re.S,
 )
 _TASK_LAUNCH_TIME_RE = re.compile(r"<TimeCreated SystemTime='([^']+)'/>")
+
+
+def _parse_wevt_time(stamp: str) -> dt.datetime | None:
+    """wevtutil 的 SystemTime 是 UTC 且带 7 位小数；先截到 6 位再解析。
+    （2026-10-22 踩过：7 位小数让 fromisoformat 抛错，落进"截字符串"分支，
+     于是时区没转，把 UTC 的 08:39 当成本地时间读。）"""
+    text = stamp.strip()
+    if text.endswith("Z"):
+        text = text[:-1]
+    head, _, frac = text.partition(".")
+    if frac:
+        text = head + "." + frac[:6]
+    try:
+        return dt.datetime.fromisoformat(text).replace(tzinfo=dt.timezone.utc)
+    except ValueError:
+        return None
 
 
 def _empty_task_launch() -> dict[str, Any]:
@@ -2289,76 +2306,109 @@ def collect_task_launch_failures() -> dict[str, Any]:
         return result
 
     text = _decode(proc.stdout)
-    pairs = _TASK_LAUNCH_PAIR_RE.findall(text)
-    result["events_scanned"] = len(pairs)
-    stamps = _TASK_LAUNCH_TIME_RE.findall(text)
-    if stamps:
-        result["covered_from"] = stamps[-1][:19]      # /rd:true -> 最新在前
-        result["covered_to"] = stamps[0][:19]
-
+    blocks = text.split("<Event ")[1:]
     per_task: dict[tuple[str, int], int] = {}
-    for name, code_text in pairs:
+    last_seen: dict[str, dt.datetime] = {}
+    last_ok: dict[str, dt.datetime] = {}
+    recent: dict[str, int] = {}
+    now = dt.datetime.now(dt.timezone.utc)
+    cutoff = now - dt.timedelta(minutes=TASK_LAUNCH_RECENT_MINUTES)
+    scanned = 0
+    for block in blocks:
+        m_name = re.search(r"<Data Name='TaskName'>([^<]*)</Data>", block)
+        m_code = re.search(r"<Data Name='ResultCode'>([^<]*)</Data>", block)
+        if not (m_name and m_code):
+            continue
+        scanned += 1
         try:
-            code = int(code_text)
+            code = int(m_code.group(1))
         except ValueError:
             continue
+        name = m_name.group(1).strip().lstrip("\\")
+        m_time = _TASK_LAUNCH_TIME_RE.search(block)
+        stamp = _parse_wevt_time(m_time.group(1)) if m_time else None
         if code == 0:
+            # 记下最近一次**成功**：用它判定"是否已恢复"，比等窗口滚出快得多。
+            if stamp is not None and stamp > last_ok.get(
+                    name, dt.datetime.min.replace(tzinfo=dt.timezone.utc)):
+                last_ok[name] = stamp
             continue
-        key = (name.strip().lstrip("\\"), code)
+        key = (name, code)
         per_task[key] = per_task.get(key, 0) + 1
+        if stamp is not None:
+            if stamp > last_seen.get(name, dt.datetime.min.replace(tzinfo=dt.timezone.utc)):
+                last_seen[name] = stamp
+            if stamp >= cutoff:
+                recent[name] = recent.get(name, 0) + 1
 
+    result["events_scanned"] = scanned
     launch, other = [], []
+    floor = dt.datetime.min.replace(tzinfo=dt.timezone.utc)
     for (name, code), n in per_task.items():
-        item = {"task": name, "code": code, "count": n}
+        failed_at = last_seen.get(name)
+        ok_at = last_ok.get(name)
+        recovered = bool(ok_at and failed_at and ok_at > failed_at)
+        item = {"task": name, "code": code, "count": n,
+                "recent": recent.get(name, 0),
+                "recovered": recovered,
+                "last_seen": (failed_at.astimezone().isoformat(timespec="seconds")
+                              if failed_at else None),
+                "minutes_ago": (round((now - failed_at).total_seconds() / 60.0, 1)
+                                if failed_at else None),
+                "last_ok": (ok_at.astimezone().isoformat(timespec="seconds")
+                            if ok_at else None)}
         if code in TASK_LAUNCH_FAILURE_CODES:
             item["meaning"] = TASK_LAUNCH_FAILURE_CODES[code]
             launch.append(item)
         else:
             other.append(item)
-    launch.sort(key=lambda x: -x["count"])
-    other.sort(key=lambda x: -x["count"])
+    for bucket in (launch, other):
+        bucket.sort(key=lambda x: (x.get("recovered") is True,
+                                   -(x.get("recent") or 0), -x["count"]))
     result["nonzero_total"] = sum(per_task.values())
     result["launch_failures"] = launch
     result["launch_failure_total"] = sum(x["count"] for x in launch)
+    result["launch_failure_recent"] = sum(
+        x.get("recent") or 0 for x in launch if not x.get("recovered"))
+    result["launch_failure_active"] = sum(
+        1 for x in launch if not x.get("recovered"))
     result["other_nonzero"] = other[:10]
     result["available"] = True
     return result
 
 
 def _task_launch_detail(info: dict[str, Any]) -> str:
-    def _local(stamp: str | None) -> str:
-        """wevtutil 的 SystemTime 是 **UTC**（...Z）；显示前转本地。
-        2026-10-22 踩过两次：①把 UTC 的 08:39 当本地时间读，以为在查早上的旧数据；
-        ②wevtutil 给的是 7 位小数（`...0159683Z`），`fromisoformat` 在 3.11 里
-        对此不保证可用，抛 ValueError 后落到"截字符串"的回退分支，于是仍然显示 UTC。
-        这里先把小数截到 6 位再解析。"""
-        if not stamp:
-            return "?"
-        text = stamp.strip()
-        if text.endswith("Z"):
-            text = text[:-1]
-        head, _, frac = text.partition(".")
-        if frac:
-            text = head + "." + frac[:6]
-        try:
-            parsed = dt.datetime.fromisoformat(text).replace(tzinfo=dt.timezone.utc)
-        except ValueError:
-            return stamp[11:16]
-        return parsed.astimezone().strftime("%H:%M")
-
     launch = info.get("launch_failures") or []
-    span = ""
-    if info.get("covered_from") and info.get("covered_to"):
-        span = "（覆盖 %s → %s）" % (_local(info["covered_from"]),
-                                    _local(info["covered_to"]))
-    bits = ["%s ×%d（%s）" % (x["task"], x["count"], x.get("meaning", ""))
-            for x in launch[:3]]
-    text = "最近 %d 条完成事件%s里，有 %d 次「任务动作起不来」：%s" % (
-        info.get("events_scanned") or 0, span,
-        info.get("launch_failure_total") or 0, "、".join(bits))
-    hidden = len(launch) - 3
+    window = int(TASK_LAUNCH_RECENT_MINUTES)
+    active = [x for x in launch if not x.get("recovered")]
+    recovered = [x for x in launch if x.get("recovered")]
+    if not active:
+        text = "无进行中的启动失败"
+        if recovered:
+            names = "、".join("%s（曾 %d 次，已恢复）" % (x["task"], x["count"])
+                             for x in recovered[:3])
+            text += "；窗口内仍留有已恢复的历史记录：" + names
+            hidden = len(recovered) - 3
+            if hidden > 0:
+                text += "，另有 %d 个" % hidden
+        return text
+
+    bits = []
+    for x in active[:3]:
+        piece = "%s（近 %d 分钟 %d 次，累计 %d 次" % (
+            x["task"], window, x.get("recent") or 0, x["count"])
+        ago = x.get("minutes_ago")
+        if ago is not None:
+            piece += "，最近一次 %.0f 分钟前" % ago
+        piece += "）"
+        bits.append(piece)
+    text = "最近 %d 条完成事件里，有 %d 个任务正在「动作起不来」：%s" % (
+        info.get("events_scanned") or 0, len(active), "；".join(bits))
+    hidden = len(active) - 3
     if hidden > 0:
-        text += "；另有 %d 个任务" % hidden
+        text += "；另有 %d 个" % hidden
+    if recovered:
+        text += "；已恢复：%s" % "、".join(x["task"] for x in recovered[:3])
     other = info.get("other_nonzero") or []
     if other:
         text += "。其它非零（非启动失败）：" + "、".join(
@@ -3454,8 +3504,13 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         add("ops.task_launch_failures", "red",
             "任务启动失败统计不可用：" + str(launch.get("reason") or "未知"))
     else:
-        failures = launch.get("launch_failures") or []
-        worst = max((x["count"] for x in failures), default=0)
+        failures = [x for x in (launch.get("launch_failures") or [])
+                    if not x.get("recovered")]
+        # 判级只看**最近 N 分钟内仍在失败**的任务：
+        #   · 按窗口总量判，任务修好后还要红很久，分不清"还在坏"和"已经好了在等记录滚出"
+        #     （2026-10-22 QuantWatchdog 16:58:59 修好，按 800 条窗口要红到 19:30）；
+        #   · "最近一次结果是成功"的任务直接不算进行中——比等窗口滚出快得多。
+        worst = max((x.get("recent") or 0 for x in failures), default=0)
         detail = _task_launch_detail(launch)
         if worst >= TASK_LAUNCH_RED_COUNT:
             add("ops.task_launch_failures", "red", detail)

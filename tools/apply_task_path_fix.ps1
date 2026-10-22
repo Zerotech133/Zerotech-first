@@ -92,6 +92,13 @@ $ErrorActionPreference = 'Stop'
 # their 1-2 failures look transient. Rewriting them is harmless hardening, not
 # a bug fix, hence opt-in. See the "task path failure - correction" doc in the
 # workspace root (dated 2026-10-22).
+# NOTE (2026-10-22 17:00): -IncludeHardening is NOT recommended.
+# AGENTS.md section 8 registers C:\aios as the official ASCII alias for this
+# repo, and section 0 forbids Chinese paths inside .ps1/.bat because PS 5.1
+# misreads them as CP936. Rewriting six working tasks from the ASCII alias to
+# C:\<chinese>\... would swim against both rules and risks re-creating the very
+# mojibake that broke QuantWatchdog. The switch stays only as an escape hatch
+# for a future case where the alias itself is proven broken.
 $allTasks = @('QuantWatchdog')
 if ($IncludeHardening) {
     $allTasks += @('JevStack', 'KgChainWatchdog', 'StrongEod', 'XmapSync',
