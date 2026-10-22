@@ -2136,6 +2136,85 @@ def _docs_diff_text(diffs: dict[str, int]) -> str:
     return " / ".join(parts)
 
 
+# --- 警报监控存活（ops.alert_watch_liveness）---------------------------------
+# 2026-10-22 建：`AlertWatch` 每 30 分钟跑一次，但它的状态文件从 10-18 起就没再
+# 更新过——连续 4 天失败，而账本上只体现为「又一个 rc=1」。
+# 那次失败的**原因是正确的**：上游 6 个源的完成时间证据缺失（premarket 无
+# trade_date、chanlun 无 completed_at、nine_dim 的 generated_at 无时区），
+# 所以脚本拒绝基于不可信数据报警。问题不在脚本，在于**没人看得见它停了**。
+# 这一项只做一件事：把「最后一次成功写入状态」的时刻量出来，停摆多久一眼可见。
+ALERT_STATE_REL = "news_collector/outbox/alert_watch_state.json"
+ALERT_RED_HOURS = 26.0     # 每 30 分钟一轮，>26h 说明整天都没成功过
+ALERT_YELLOW_HOURS = 2.0   # >2h 说明已经连续 4 轮没写状态
+
+
+def _empty_alert_watch(repo_root: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "path": str(Path(repo_root) / ALERT_STATE_REL),
+        "age_hours": None,
+        "last_write": None,
+        "state_date": None,
+        "state_routes": None,
+        "red_hours": ALERT_RED_HOURS,
+        "yellow_hours": ALERT_YELLOW_HOURS,
+    }
+
+
+def collect_alert_watch(repo_root: Path) -> dict[str, Any]:
+    """量「警报监控最后一次成功写状态」距今多久（只读文件，不发请求）。"""
+    result = _empty_alert_watch(repo_root)
+    path = Path(result["path"])
+    started = time.monotonic()
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        result["reason"] = f"状态文件不存在: {path}"
+        result["duration_seconds"] = round(time.monotonic() - started, 3)
+        return result
+    except OSError as exc:
+        result["reason"] = f"读不到状态文件: {_short_exc(exc)}"
+        result["duration_seconds"] = round(time.monotonic() - started, 3)
+        return result
+
+    age_hours = (time.time() - stat.st_mtime) / 3600.0
+    result["age_hours"] = round(age_hours, 2)
+    result["last_write"] = _iso(dt.datetime.fromtimestamp(stat.st_mtime).astimezone())
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        data = None
+    if isinstance(data, dict):
+        result["state_date"] = data.get("date")
+        routes = data.get("routes")
+        result["state_routes"] = len(routes) if isinstance(routes, dict) else None
+    result["available"] = True
+    result["duration_seconds"] = round(time.monotonic() - started, 3)
+    return result
+
+
+def _alert_watch_detail(watch: dict[str, Any]) -> str:
+    age = watch.get("age_hours")
+    last = watch.get("last_write") or "?"
+    date = watch.get("state_date") or "?"
+    routes = watch.get("state_routes")
+    bits = [f"最后一次成功写状态 {last}（状态内日期 {date}"]
+    if routes is not None:
+        bits[0] += f"，{routes} 条路由"
+    bits[0] += "）"
+    text = "".join(bits)
+    if age is not None:
+        text += f"，距今 {age:.1f} 小时"
+    if age is not None and age > ALERT_RED_HOURS:
+        text += (
+            "；警报监控已停摆，期间任何真警报都不会被推送。"
+            "注意这是**上游不可信**导致的正确拒跑（6 个源的完成时间证据缺失），"
+            "不是脚本崩溃——处置方向是补齐生产者时间戳或调整轮询与新鲜窗口"
+        )
+    return text
+
+
 def collect_docs_index(repo_root: Path) -> dict[str, Any]:
     """用子进程跑 `gen_docs_index.py --check`；0=绿、1=黄、其余/超时=红。"""
     result = _empty_docs_index(repo_root)
@@ -3199,6 +3278,24 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             "文档索引检查状态未知：" + str(docs_freshness.get("status") or "null"),
         )
 
+    watch = (card.get("ops") or {}).get("alert_watch") or {}
+    if not watch:
+        add("ops.alert_watch_liveness", "red", "警报监控存活检查未运行（ops 块缺失）")
+    elif not watch.get("available"):
+        add("ops.alert_watch_liveness", "red",
+            "警报监控状态不可判定：" + str(watch.get("reason") or "未知"))
+    else:
+        age = watch.get("age_hours")
+        detail = _alert_watch_detail(watch)
+        if age is None:
+            add("ops.alert_watch_liveness", "red", "警报监控状态时间不可读：" + detail)
+        elif age > ALERT_RED_HOURS:
+            add("ops.alert_watch_liveness", "red", detail)
+        elif age > ALERT_YELLOW_HOURS:
+            add("ops.alert_watch_liveness", "yellow", detail)
+        else:
+            add("ops.alert_watch_liveness", "green", detail)
+
     keys = (card.get("security") or {}).get("plaintext_keys") or {}
     if not keys:
         add("security.plaintext_keys", "red", "明文私钥扫描未运行（security 块缺失）")
@@ -3264,6 +3361,7 @@ def build_card(
         },
         "repo": repo_block,
         "docs": {"index_freshness": collect_docs_index(repo_root)},
+        "ops": {"alert_watch": collect_alert_watch(repo_root)},
         "security": {"plaintext_keys": collect_plaintext_keys(repo_root)},
         "notes": [
             "本脚本只读：不扫描/启停计划任务、不触发备份、不改仓库。",
