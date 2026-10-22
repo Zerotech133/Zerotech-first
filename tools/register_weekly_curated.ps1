@@ -4,50 +4,50 @@
     Register (or remove) the weekly curated-layer rebuild task.
 
 .DESCRIPTION
-    This script exists because the DSH agent session CANNOT register scheduled
-    tasks: schtasks /create returns "The system cannot find the path specified"
-    and New-ScheduledTaskAction returns Access denied (0x80041003) - the session
-    is not elevated and the Task Scheduler CIM provider is unreachable.
+    Run this from an ELEVATED PowerShell (Run as Administrator).
 
-    So the registration is a one-command manual step:
+    Why this file exists: the agent session cannot register tasks
+    (schtasks -> "path not found", New-ScheduledTaskAction -> Access denied
+    0x80041003 - not elevated). Registration is a one-command manual step.
 
-        powershell.exe -NoProfile -ExecutionPolicy Bypass `
-            -File tools\register_weekly_curated.ps1
-
-    Run it from an ELEVATED PowerShell (Run as Administrator).
+    v2 (2026-10-22): the v1 used `schtasks /create /tr "<cmd with quotes>"`,
+    which is fragile - PowerShell re-splits the /tr value and the task either
+    fails to create or gets a truncated action. v2 uses Register-ScheduledTask
+    and passes -Execute and -Argument as SEPARATE parameters, so there is no
+    quoting to get wrong. It also verifies the task right after creating it
+    and prints the query result, so "did it work?" is answered in the same run.
 
     ---- FIVE ELEMENTS (AGENTS.md section 7 blocker-approval format) ----
 
     1. Full command
-         schtasks /create /tn "ZeroBound\CuratedWeekly" /sc weekly /d SUN
-                  /st 09:00 /f /ru <current user> /rl LIMITED
-                  /tr "powershell.exe -NoProfile -ExecutionPolicy Bypass
-                       -File <repo>\tools\curated_weekly_run.ps1"
+         Register-ScheduledTask -TaskName CuratedWeekly -TaskPath '\ZeroBound\'
+             -Action (New-ScheduledTaskAction -Execute powershell.exe
+                      -Argument '-NoProfile -ExecutionPolicy Bypass
+                                 -File <repo>\tools\curated_weekly_run.ps1')
+             -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 09:00)
+             -Description 'ZeroBound weekly curated-layer rebuild (stage-only)'
 
     2. Blast radius
-         Writes only under <repo>\quant_backtest\data\tushare_curated.tmp\
-         (a staging directory). It does NOT touch:
-           - the raw layer  data\tushare\          (read-only)
-           - the live curated layer data\tushare_curated\  (never replaced)
-           - the vault       _vault\
-         Logs go to <repo>\logs\curated_weekly.log.
+         Writes only <repo>\quant_backtest\data\tushare_curated.tmp\ (staging)
+         and <repo>\logs\curated_weekly.log. Never touches:
+           data\tushare\ (raw, read-only), data\tushare_curated\ (live layer),
+           _vault\ (backups).
 
     3. Irreversible point
-         None. The task runs STAGE-ONLY: it rebuilds .tmp and verifies, then
-         stops. Switching to the new layer (--replace) stays a manual step.
-         Deleting .tmp next week is the only irreversible action, and .tmp is
-         a pure derivative that costs ~15 minutes to regenerate.
+         None at registration time. The task itself runs STAGE-ONLY: it
+         rebuilds .tmp, verifies row counts, stops. Switching the live layer
+         (--replace) remains a manual step.
 
     4. Alternatives tried
-         - Agent-session registration: blocked (0x80041003, see above).
-         - Daily-ops integration: rejected, it would make the 3-second daily
-           card take 15 minutes.
-         - Manual weekly reminder: rejected, it depends on someone remembering.
+         - Agent-session registration: blocked (0x80041003).
+         - schtasks /create with quoted /tr: fragile, produced no task (v1).
+         - Putting it inside daily_ops: rejected - turns a 3-second card into
+           a 15-minute one.
 
     5. Rollback
          powershell.exe -NoProfile -ExecutionPolicy Bypass `
              -File tools\register_weekly_curated.ps1 -Unregister
-         That removes the task. Nothing else is touched.
+         Removes the task. Nothing else is touched.
 
 .PARAMETER Unregister
     Remove the task instead of creating it.
@@ -57,17 +57,28 @@
 
 .PARAMETER Force
     Overwrite an existing task of the same name.
+
+.PARAMETER RunNow
+    Start the task immediately after registering (so you do not have to wait
+    for Sunday to find out whether it works).
+
+.PARAMETER VerifyOnly
+    Only query and print the task; do not create or remove anything.
 #>
 [CmdletBinding()]
 param(
     [switch]$Unregister,
     [string]$Time = '09:00',
-    [switch]$Force
+    [switch]$Force,
+    [switch]$RunNow,
+    [switch]$VerifyOnly
 )
 
 $ErrorActionPreference = 'Stop'
 
-$taskName = 'ZeroBound\CuratedWeekly'
+$taskName = 'CuratedWeekly'
+$taskPath = '\ZeroBound\'
+$fullName = $taskPath + $taskName
 $repo = Split-Path -Parent $PSScriptRoot
 $runner = Join-Path $PSScriptRoot 'curated_weekly_run.ps1'
 
@@ -77,67 +88,120 @@ function Test-Elevated {
     return $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-Write-Host '=== weekly curated rebuild task ==='
+function Show-Task {
+    Write-Host ''
+    Write-Host '--- verification ---'
+    # Two traps avoided here:
+    #  1. Do NOT regex-match the LIST labels: they are localized (the zh-CN
+    #     build prints localized label names), and embedding those literals
+    #     would make this file non-ASCII, which PS 5.1 then decodes as CP936
+    #     -> mojibake. We print the raw block instead and let the human read it.
+    #  2. A native command writing to stderr raises NativeCommandError when
+    #     $ErrorActionPreference is 'Stop', so we relax it around the call.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $q = & schtasks /query /tn $fullName /v /fo LIST 2>&1
+        $rc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($rc -eq 0) {
+        $q | ForEach-Object { Write-Host ('  ' + $_.ToString()) }
+        Write-Host ''
+        Write-Host 'RESULT: task exists. Registration verified.'
+        return $true
+    }
+    Write-Host ('  schtasks /query {0} -> exit {1}' -f $fullName, $rc)
+    $q | Select-Object -First 2 | ForEach-Object { Write-Host ('  ' + $_.ToString()) }
+    Write-Host ''
+    Write-Host 'RESULT: task NOT found (error 2 / file-not-found means no such task path).'
+    return $false
+}
+
+Write-Host '=== ZeroBound weekly curated rebuild task ==='
 Write-Host ("repo     : {0}" -f $repo)
-Write-Host ("task     : {0}" -f $taskName)
+Write-Host ("task     : {0}" -f $fullName)
 Write-Host ("runner   : {0}" -f $runner)
+Write-Host ("elevated : {0}" -f (Test-Elevated))
+
+if ($VerifyOnly) {
+    [void](Show-Task)
+    exit 0
+}
 
 if ($Unregister) {
     Write-Host ''
     Write-Host 'removing task ...'
-    $out = & schtasks /delete /tn $taskName /f 2>&1
+    $out = & schtasks /delete /tn $fullName /f 2>&1
     $rc = $LASTEXITCODE
-    $out | ForEach-Object { Write-Host ("  " + $_) }
-    if ($rc -eq 0) {
-        Write-Host 'result   : removed'
-        exit 0
-    }
-    Write-Host 'result   : not removed (see message above)'
+    $out | ForEach-Object { Write-Host ('  ' + $_) }
+    if ($rc -eq 0) { Write-Host 'result   : removed'; exit 0 }
+    Write-Host 'result   : not removed'
     exit $rc
 }
 
 if (-not (Test-Elevated)) {
     Write-Host ''
-    Write-Host 'ERROR: this script must run in an ELEVATED PowerShell.'
-    Write-Host '       Right-click PowerShell -> Run as Administrator, then re-run:'
-    Write-Host ("       powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"{0}`"" -f $PSCommandPath)
+    Write-Host 'ERROR: must run in an ELEVATED PowerShell.'
+    Write-Host '       Right-click PowerShell -> Run as Administrator, then:'
+    Write-Host ('       powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $PSCommandPath)
     exit 2
 }
 
 if (-not (Test-Path -LiteralPath $runner)) {
-    Write-Host ("ERROR: runner not found: {0}" -f $runner)
+    Write-Host ('ERROR: runner not found: {0}' -f $runner)
     exit 2
 }
 
-$python = 'C:\Program Files\Python311\python.exe'
-if (-not (Test-Path -LiteralPath $python)) {
-    Write-Host ("WARN: python not found at {0}; the task will fall back to PATH." -f $python)
-}
-
-$tr = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $runner
-Write-Host ''
-Write-Host 'creating task ...'
-$args = @('/create', '/tn', $taskName, '/tr', $tr, '/sc', 'weekly', '/d', 'SUN',
-          '/st', $Time, '/rl', 'LIMITED')
-if ($Force) { $args += '/f' }
-
-$out = & schtasks @args 2>&1
-$rc = $LASTEXITCODE
-$out | ForEach-Object { Write-Host ("  " + $_) }
-
-if ($rc -ne 0) {
+$existing = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
+if ($existing -and -not $Force) {
     Write-Host ''
-    Write-Host 'result   : FAILED (see message above)'
-    Write-Host 'hint     : if it says the task already exists, re-run with -Force'
-    exit $rc
+    Write-Host 'task already exists; re-run with -Force to overwrite.'
+    [void](Show-Task)
+    exit 1
+}
+
+# --- build with the native cmdlets: -Execute and -Argument stay separate,
+#     so a path with spaces can never be re-split by the command line. ---
+Write-Host ''
+Write-Host 'registering ...'
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' `
+    -Argument ('-NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $runner) `
+    -WorkingDirectory $repo
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At $Time
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable `
+    -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
+    -MultipleInstances IgnoreNew
+
+try {
+    $task = Register-ScheduledTask -TaskName $taskName -TaskPath $taskPath `
+        -Action $action -Trigger $trigger -Settings $settings `
+        -Description 'ZeroBound weekly curated-layer rebuild (stage-only, kg_sync guarded)' `
+        -Force:$Force -ErrorAction Stop
+    Write-Host ('  registered: {0}{1}  state={2}' -f $taskPath, $task.TaskName, $task.State)
+} catch {
+    Write-Host ('ERROR: Register-ScheduledTask failed: {0}' -f $_.Exception.Message)
+    exit 1
+}
+
+$ok = Show-Task
+
+if ($RunNow) {
+    Write-Host ''
+    Write-Host 'starting the task now (so you can see the log today) ...'
+    $s = Start-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
+    if ($?) {
+        Write-Host ('  started. log: {0}' -f (Join-Path $repo 'logs\curated_weekly.log'))
+        Write-Host '  it takes ~15 minutes; watch the log or: Get-ScheduledTaskInfo -TaskName CuratedWeekly -TaskPath "\ZeroBound\"'
+    } else {
+        Write-Host '  could not start it now; it will still run Sunday.'
+    }
 }
 
 Write-Host ''
-Write-Host 'result   : created'
-Write-Host ("schedule : weekly, Sunday {0}, limited privileges" -f $Time)
-Write-Host 'verify   : schtasks /query /tn "ZeroBound\CuratedWeekly" /v /fo LIST'
+Write-Host 'schedule : weekly, Sunday ' + $Time + ', limited privileges'
 Write-Host 'rollback : tools\register_weekly_curated.ps1 -Unregister'
-Write-Host ''
-Write-Host 'NOTE: the task runs STAGE-ONLY (rebuild .tmp + verify).'
-Write-Host '      Switching to the new layer stays a manual --replace step.'
+Write-Host 'NOTE     : stage-only. Switching the live layer stays manual (--replace).'
+if (-not $ok) { exit 1 }
 exit 0
