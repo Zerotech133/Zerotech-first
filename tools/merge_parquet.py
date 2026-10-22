@@ -15,7 +15,9 @@
 某个分片里恰好全为空 → arrow 把它推成 null 类型”，列名和顺序其实完全一致，没有字段
 增删。所以正确姿势是：先把各分片每列的物理类型收集起来算一个统一 schema，再把每个
 分片 cast 过去。剩下 2 个失败的是“一个目录装了两张不同的表”（stk_pledge、
-quarantine_prod_overwrite），本脚本会识别并拒绝，不会硬合。
+quarantine_prod_overwrite），本脚本会识别并拒绝，不会硬合（stk_pledge 那种
+``<code>.parquet`` + ``<code>_detail.parquet`` 的，1.1.0 起可用 ``--split-suffix``
+按后缀拆成两张表各自合并）。
 
 流程
 ----
@@ -28,10 +30,21 @@ quarantine_prod_overwrite），本脚本会识别并拒绝，不会硬合。
 3. **写入**：逐文件读 → 按统一 schema 重排列/补齐缺失列 → 逐列 cast → 攒够一个
    row group 再落盘（``ParquetWriter`` 流式，不整目录进内存）。
 4. **容错**：单文件读失败或 cast 失败，跳过 + 计数 + 继续，绝不中断整体。
+5. **空文件侧车**（``--empty-sidecar``）：0 行文件被跳过，“该票在该表无数据”的语义
+   就丢了。扫描阶段顺手记下每个 0 行文件的相对路径、所属目录、推断实体名（文件名去掉
+   ``.parquet`` 与 ``_detail``），真跑时写成一个 JSON 侧车；``--dry-run`` 不落盘，只在
+   JSON 汇总里给 ``empty_sidecar_preview``（每目录计数 + 前 5 个实体）。
+   ``--empty-sidecar-limit N`` 控制每目录最多记多少个实体（``us_fina_indicator``
+   有 1.8 万个，全量写进去侧车会很大）。
+6. **两表目录拆分**（``--split-suffix``）：目录被判 ``skipped_schema_conflict`` 时，按
+   文件名是否以该后缀结尾分成 base / detail 两组，各自推断 schema、各自流式合并，输出
+   ``<dir>.parquet`` 与 ``<dir>__detail.parquet``；任一组内仍有多组列集合就仍拒绝该组并
+   记原因。目录本来不冲突时该开关不生效（不额外拆分）。不给 SUFFIX 时默认 ``_detail``。
 
 硬约束
 ------
 * ``--out`` 不得等于 ``--src``（防就地覆盖）；
+* ``--empty-sidecar`` 的 realpath 不得落在 ``--src`` 下（禁止覆盖源数据）；
 * 写盘前检查目标目录存在、剩余空间够；
 * **只读源文件**，脚本内没有任何删除/改名源文件的代码路径。
 
@@ -41,6 +54,9 @@ quarantine_prod_overwrite），本脚本会识别并拒绝，不会硬合。
     python -B merge_parquet.py --dry-run --json > plan.json
     python -B merge_parquet.py --dirs index_weight --out C:\\项目\\_tmp_T8\\out
     python -B merge_parquet.py --dirs daily-部分 --out ... --max-files 500
+    python -B merge_parquet.py --dry-run --split-suffix          # 看两表目录拆不拆得动
+    python -B merge_parquet.py --dirs stk_pledge --split-suffix --out ...
+    python -B merge_parquet.py --out ... --empty-sidecar ...\\empty.json --empty-sidecar-limit 500
 
 退出码：0 全部成功；1 有目录失败/被跳过；2 参数或环境错误；3 空间不足。
 """
@@ -64,13 +80,19 @@ except Exception as exc:  # pragma: no cover - 环境缺库时给一句人话
     sys.stderr.write("需要 pyarrow（请用装了 pyarrow 的 Python）：%s\n" % exc)
     raise SystemExit(2)
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 #: 默认数据根
 DEFAULT_SRC = r"C:\项目\老田的AI助手\quant_backtest\data\tushare"
 
 #: 默认排除（上一轮普查结论：与同目录代码文件重复 / 探针 / 隔离区）
 DEFAULT_EXCLUDES = ("*_probe", "quarantine_*", "irm_qa_sh")
+
+#: 空文件侧车的默认文件名（--empty-sidecar 只给目录/开关时用它）
+DEFAULT_SIDECAR_NAME = "_empty_tickers.json"
+
+#: 两表目录拆分时，detail 组文件名的默认后缀
+DEFAULT_SPLIT_SUFFIX = "_detail"
 
 #: 状态常量
 ST_PLANNED = "planned"
@@ -283,21 +305,179 @@ def check_free_space(out_dir, need_bytes):
     return free >= need_bytes, free
 
 
+def _is_under(path, root):
+    """path 的 realpath 是否落在 root 的 realpath 里（跨盘符返回 False）。"""
+    try:
+        return (os.path.commonpath([os.path.realpath(path), os.path.realpath(root)])
+                == os.path.realpath(root))
+    except ValueError:
+        return False
+
+
+def _rel_path(path, src=None):
+    """相对 --src 的路径（侧车/日志用；统一成正斜杠，跨平台读起来一致）。"""
+    if src:
+        try:
+            rel = os.path.relpath(path, src)
+        except ValueError:
+            rel = os.path.basename(path)
+    else:
+        rel = os.path.basename(path)
+    return rel.replace(os.sep, "/")
+
+
+def infer_entity(filename):
+    """从分片文件名推断实体名：去掉 ``.parquet`` 与 ``_detail`` 后缀。
+
+    ``AAPL.parquet`` → ``AAPL``；``600000.SH_detail.parquet`` → ``600000.SH``。
+    推断不出就返回去掉扩展名的原串，绝不返回空串。
+    """
+    name = filename
+    if name.lower().endswith(".parquet"):
+        name = name[:-len(".parquet")]
+    if name.lower().endswith("_detail"):
+        name = name[:-len("_detail")]
+    return name or filename
+
+
+def normalize_split_suffix(raw):
+    """把 --split-suffix 的取值规范成“文件名主干后缀”。
+
+    返回 ``(后缀, 错误说明)``；后缀为 ``None`` 表示没启用。允许带 ``.parquet``
+    （会被剥掉），不允许空串/路径分隔符/Windows 非法字符。
+    """
+    if raw is None:
+        return None, None
+    suffix = str(raw).strip()
+    if not suffix:
+        return None, "--split-suffix 不能是空串"
+    if suffix.lower().endswith(".parquet"):
+        suffix = suffix[:-len(".parquet")]
+    if not suffix:
+        return None, "--split-suffix 不能只是 .parquet"
+    bad = [ch for ch in "\\/:*?\"<>|" if ch in suffix]
+    if bad:
+        return None, "--split-suffix 含非法字符：%s" % "".join(bad)
+    return suffix, None
+
+
+def file_has_suffix(filename, suffix):
+    """文件名主干（去掉 .parquet）是否以 suffix 结尾（不区分大小写）。"""
+    stem = filename
+    if stem.lower().endswith(".parquet"):
+        stem = stem[:-len(".parquet")]
+    return stem.lower().endswith(suffix.lower())
+
+
+# ---------------------------------------------------------------- 空文件侧车
+
+
+class EmptyCollector(object):
+    """收集被跳过的 0 行文件，按目录聚合成“该表无数据的实体”清单。
+
+    ``limit > 0`` 时每目录只在内存里留前 ``max(limit, 5)`` 个实体（前 5 个给 dry-run
+    预览用），序列化时再按 ``limit`` 截断并打 ``truncated`` 标记——``us_fina_indicator``
+    那种 1.8 万实体的目录不至于把侧车写成几十 MB。
+    """
+
+    def __init__(self, limit=0):
+        self.limit = int(limit or 0)
+        self._keep = max(self.limit, 5) if self.limit > 0 else 0
+        self.dirs = {}      # dir_name -> {"count", "entities", "samples"}
+        self.total = 0
+
+    def add(self, dir_name, rel_path, entity):
+        slot = self.dirs.get(dir_name)
+        if slot is None:
+            slot = {"count": 0, "entities": [], "samples": []}
+            self.dirs[dir_name] = slot
+        slot["count"] += 1
+        self.total += 1
+        if self._keep == 0 or len(slot["entities"]) < self._keep:
+            slot["entities"].append(entity)
+        if len(slot["samples"]) < 5:
+            slot["samples"].append(rel_path)
+
+    def preview(self, head=5):
+        """每目录 {count, entities[:head]}——dry-run 的 empty_sidecar_preview。"""
+        out = {}
+        for name in sorted(self.dirs):
+            slot = self.dirs[name]
+            out[name] = {
+                "count": slot["count"],
+                "entities": list(slot["entities"][:head]),
+            }
+        return out
+
+    def payload(self, src, generated_at, limit=None):
+        """真跑落盘的侧车 JSON（等价于带元数据的 `_empty_tickers.json`）。"""
+        limit = self.limit if limit is None else int(limit)
+        dirs = {}
+        for name in sorted(self.dirs):
+            slot = self.dirs[name]
+            entities = list(slot["entities"] if limit <= 0 else slot["entities"][:limit])
+            item = {"count": slot["count"], "entities": entities}
+            if len(entities) < slot["count"]:
+                item["truncated"] = True
+            if slot["samples"]:
+                item["samples"] = list(slot["samples"])
+            dirs[name] = item
+        return {
+            "generated_at": generated_at,
+            "src": src,
+            "total_empty_files": self.total,
+            "total_dirs": len(dirs),
+            "limit": limit,
+            "dirs": dirs,
+        }
+
+
+def resolve_sidecar_path(raw, out):
+    """把 --empty-sidecar 的取值解析成文件路径。
+
+    * ``raw`` 为 ``None`` → 功能未启用，返回 ``(None, None)``；
+    * 裸开关（``raw == ""``）→ ``<out>/_empty_tickers.json``，没有 out 就用当前目录；
+    * 给的是目录 / 以分隔符结尾 / 没有扩展名 → 当成目录，补默认文件名。
+    """
+    if raw is None:
+        return None, None
+    raw = str(raw).strip()
+    if not raw:
+        return os.path.join(out or os.getcwd(), DEFAULT_SIDECAR_NAME), None
+    path = os.path.abspath(raw)
+    if os.path.isdir(path) or raw.endswith(("\\", "/")) or not os.path.splitext(path)[1]:
+        path = os.path.join(path, DEFAULT_SIDECAR_NAME)
+    return path, None
+
+
+def write_sidecar(path, payload):
+    """原子写侧车：先写同目录 .tmp 再 os.replace，避免半截 JSON。"""
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent and not os.path.isdir(parent):
+        os.makedirs(parent, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(payload, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+    os.replace(tmp, path)
+    return os.path.getsize(path)
+
+
 # ---------------------------------------------------------------- 核心
 
 
-def scan_dir(dir_name, files, progress_every, log):
-    """只读 footer，算行数 / 统一 schema 素材。"""
-    empty = 0
+def scan_dir(dir_name, files, progress_every, log, src=None):
+    """只读 footer，算行数 / 统一 schema 素材 / 被跳过的 0 行文件清单。"""
     per_file = []
     failed = []
+    empty_files = []          # [(相对路径, 推断实体名)]
     total_rows = 0
     bytes_in = 0
 
     for idx, (path, size) in enumerate(files, 1):
         if progress_every and idx % progress_every == 0:
             log("  [%s] scan %d/%d 行数=%d 空文件=%d"
-                % (dir_name, idx, len(files), total_rows, empty))
+                % (dir_name, idx, len(files), total_rows, len(empty_files)))
         try:
             with pq.ParquetFile(path) as pf:
                 rows = pf.metadata.num_rows
@@ -306,21 +486,36 @@ def scan_dir(dir_name, files, progress_every, log):
                 types = tuple(schema.types)
         except Exception as exc:  # 坏文件 / 半截文件
             failed.append({"file": os.path.basename(path),
+                           "rel": _rel_path(path, src),
                            "error": "%s: %s" % (type(exc).__name__, exc)})
             continue
 
         if rows == 0:
-            empty += 1
+            # 0 行文件不参与合并，但“该票在该表无数据”的语义要留给侧车
+            empty_files.append((_rel_path(path, src),
+                                infer_entity(os.path.basename(path))))
             continue
 
-        per_file.append((path, rows, names, types))
+        per_file.append((path, rows, names, types, size))
         total_rows += rows
         bytes_in += size
 
+    return {
+        "per_file": per_file,
+        "rows_planned": total_rows,
+        "bytes_in": bytes_in,
+        "files_skipped_empty": len(empty_files),
+        "empty_files": empty_files,
+        "scan_failed": failed,
+    }
+
+
+def summarize(per_file):
+    """由非空文件元数据算列顺序 / 列类型集合 / 是否像“两张表”。"""
     col_order = []
     col_types = {}
     col_sets = set()
-    for _path, _rows, names, types in per_file:
+    for _path, _rows, names, types, _size in per_file:
         col_sets.add(frozenset(names))
         for name, dtype in zip(names, types):
             if name not in col_types:
@@ -335,26 +530,64 @@ def scan_dir(dir_name, files, progress_every, log):
         multi_table = len(maximal) > 1
 
     return {
-        "per_file": per_file,
         "col_order": col_order,
         "col_types": col_types,
         "col_sets": col_sets,
         "multi_table": multi_table,
-        "rows_planned": total_rows,
-        "bytes_in": bytes_in,
-        "files_skipped_empty": empty,
-        "scan_failed": failed,
     }
 
 
-def merge_dir(dir_name, files, args, log):
-    """处理一个目录：扫描 → 统一 schema → 流式写单文件。"""
-    started = time.time()
-    stats = {
+def partition_scan(scan, suffix):
+    """按文件名后缀把扫描结果分成 base / detail 两组。
+
+    两组都必须有文件才返回 ``{"base": part, "detail": part}``，否则返回 ``None``
+    （拆不出两张表时退回“拒绝该目录”的老行为）。
+    """
+    parts = {}
+    for table in ("base", "detail"):
+        parts[table] = {
+            "table": table,
+            "out_name": None,
+            "files_in": 0,
+            "per_file": [],
+            "empty_files": [],
+            "scan_failed": [],
+            "bytes_in": 0,
+            "rows_planned": 0,
+        }
+
+    for item in scan["per_file"]:
+        table = ("detail" if file_has_suffix(os.path.basename(item[0]), suffix)
+                 else "base")
+        parts[table]["per_file"].append(item)
+        parts[table]["files_in"] += 1
+        parts[table]["bytes_in"] += item[4]
+        parts[table]["rows_planned"] += item[1]
+
+    for rel, _entity in scan["empty_files"]:
+        table = "detail" if file_has_suffix(os.path.basename(rel), suffix) else "base"
+        parts[table]["empty_files"].append((rel, _entity))
+        parts[table]["files_in"] += 1
+
+    for item in scan["scan_failed"]:
+        table = ("detail" if file_has_suffix(item["file"], suffix) else "base")
+        parts[table]["scan_failed"].append(item)
+        parts[table]["files_in"] += 1
+
+    if not parts["base"]["files_in"] or not parts["detail"]["files_in"]:
+        return None
+    return parts
+
+
+def _new_stats(dir_name):
+    """一个输出表（普通目录 / 拆分后的 base / detail）的统计骨架。"""
+    return {
         "dir": dir_name,
+        "table": None,          # 普通目录为 null；--split-suffix 拆开时为 base / detail
+        "out_name": dir_name,
         "status": ST_PLANNED,
         "out_path": None,
-        "files_in": len(files),
+        "files_in": 0,
         "files_skipped_empty": 0,
         "files_failed": 0,
         "rows_out": 0,
@@ -370,29 +603,42 @@ def merge_dir(dir_name, files, args, log):
         "elapsed_sec": 0.0,
     }
 
-    scan = scan_dir(dir_name, files, args.progress_every, log)
-    stats["files_skipped_empty"] = scan["files_skipped_empty"]
-    stats["files_failed"] = len(scan["scan_failed"])
-    stats["failed_samples"] = scan["scan_failed"][:5]
-    stats["bytes_in"] = scan["bytes_in"]
-    stats["rows_out"] = scan["rows_planned"]
 
-    if not scan["per_file"]:
+def _finish(stats, started):
+    stats["elapsed_sec"] = round(time.time() - started, 3)
+    return stats
+
+
+def _merge_group(dir_name, part, args, log, started):
+    """合并一个“表分组”：统一 schema → 流式写单文件。"""
+    stats = _new_stats(dir_name)
+    stats["table"] = part["table"]
+    stats["out_name"] = part["out_name"]
+    stats["files_in"] = part["files_in"]
+    stats["files_skipped_empty"] = len(part["empty_files"])
+    stats["files_failed"] = len(part["scan_failed"])
+    stats["failed_samples"] = part["scan_failed"][:5]
+    stats["bytes_in"] = part["bytes_in"]
+    stats["rows_out"] = part["rows_planned"]
+    label = dir_name if not part["table"] else "%s[%s]" % (dir_name, part["table"])
+
+    if not part["per_file"]:
         stats["status"] = ST_EMPTY
-        stats["error"] = "没有非空 parquet"
-        stats["elapsed_sec"] = round(time.time() - started, 3)
-        return stats
+        stats["error"] = "没有任何非空 parquet"
+        log("  [%s] 跳过：该组文件全是 0 行" % label)
+        return _finish(stats, started)
 
-    if scan["multi_table"] and not args.force_union:
+    summary = summarize(part["per_file"])
+    if summary["multi_table"] and not args.force_union:
         stats["status"] = ST_CONFLICT
-        stats["error"] = ("目录内有 %d 组互不包含的列集合（像是两张表）；"
+        stats["error"] = ("该组内仍有 %d 组互不包含的列集合（按后缀拆完还是两张表）；"
                           "确认要硬合请加 --force-union"
-                          % len(scan["col_sets"]))
-        stats["elapsed_sec"] = round(time.time() - started, 3)
-        return stats
+                          % len(summary["col_sets"]))
+        log("  [%s] 拒绝：%s" % (label, stats["error"]))
+        return _finish(stats, started)
 
     schema, promotions, conflicts, null_cols = build_schema(
-        scan["col_order"], scan["col_types"], args.null_as)
+        summary["col_order"], summary["col_types"], args.null_as)
     stats["promotions"] = promotions
     stats["conflicts"] = conflicts
     stats["null_cols"] = null_cols
@@ -400,41 +646,39 @@ def merge_dir(dir_name, files, args, log):
 
     col_names = schema.names
     # --dry-run 时 --out 可以省略，此时不拼输出路径（也就不做存在性检查）
-    out_path = os.path.join(args.out, "%s.parquet" % dir_name) if args.out else None
+    out_path = (os.path.join(args.out, "%s.parquet" % part["out_name"])
+                if args.out else None)
     stats["out_path"] = out_path
 
     if args.dry_run:
-        stats["bytes_out"] = scan["bytes_in"]  # 上界估计：合并不新增数据
+        stats["bytes_out"] = part["bytes_in"]  # 上界估计：合并不新增数据
         stats["status"] = ST_PLANNED
-        stats["elapsed_sec"] = round(time.time() - started, 3)
-        log("  [%s] 计划：%d 文件 → %d 行 / %d 列，源 %s，跳过空文件 %d"
-            % (dir_name, len(scan["per_file"]), stats["rows_out"], len(schema),
-               human_bytes(scan["bytes_in"]), stats["files_skipped_empty"]))
-        return stats
+        log("  [%s] 计划：%d 文件 → %d 行 / %d 列，源 %s，跳过空文件 %d%s"
+            % (label, len(part["per_file"]), stats["rows_out"], len(schema),
+               human_bytes(part["bytes_in"]), stats["files_skipped_empty"],
+               "" if not part["table"] else "，输出 %s.parquet" % part["out_name"]))
+        return _finish(stats, started)
 
     if os.path.exists(out_path) and not args.overwrite:
         stats["status"] = ST_EXISTS
         stats["error"] = "输出已存在（加 --overwrite 覆盖）：%s" % out_path
-        stats["elapsed_sec"] = round(time.time() - started, 3)
-        return stats
+        return _finish(stats, started)
 
     # ---- 硬约束 2：写盘前确认输出目录存在 + 空间够
     try:
         if ensure_out_dir(args.out):
-            log("  [%s] 创建输出目录 %s" % (dir_name, args.out))
-        need = int(scan["bytes_in"] * 1.05) + (16 << 20)
+            log("  [%s] 创建输出目录 %s" % (label, args.out))
+        need = int(part["bytes_in"] * 1.05) + (16 << 20)
         ok, free = check_free_space(args.out, need)
     except OSError as exc:
         stats["status"] = ST_FAILED
         stats["error"] = "输出目录不可用：%s" % exc
-        stats["elapsed_sec"] = round(time.time() - started, 3)
-        return stats
+        return _finish(stats, started)
     if not ok:
         stats["status"] = ST_FAILED
         stats["error"] = ("空间不足：需要约 %s，目标盘剩 %s"
                           % (human_bytes(need), human_bytes(free)))
-        stats["elapsed_sec"] = round(time.time() - started, 3)
-        return stats
+        return _finish(stats, started)
 
     # ---- 真正写盘
     written_rows = 0
@@ -444,10 +688,10 @@ def merge_dir(dir_name, files, args, log):
     writer = None
     try:
         writer = pq.ParquetWriter(out_path, schema)
-        for idx, (path, _rows, _names, _types) in enumerate(scan["per_file"], 1):
+        for idx, (path, _rows, _names, _types, _size) in enumerate(part["per_file"], 1):
             if args.progress_every and idx % args.progress_every == 0:
                 log("  [%s] write %d/%d 已写行数=%d"
-                    % (dir_name, idx, len(scan["per_file"]), written_rows))
+                    % (label, idx, len(part["per_file"]), written_rows))
             try:
                 table = pq.read_table(path)
                 arrays = []
@@ -484,8 +728,7 @@ def merge_dir(dir_name, files, args, log):
             stats["bytes_out"] = os.path.getsize(out_path)
             stats["error"] = ("写盘中断，已留下半截产物 %s；重跑请加 --overwrite\n%s"
                               % (human_bytes(stats["bytes_out"]), stats["error"]))
-        stats["elapsed_sec"] = round(time.time() - started, 3)
-        return stats
+        return _finish(stats, started)
     finally:
         if writer is not None:
             try:
@@ -495,17 +738,86 @@ def merge_dir(dir_name, files, args, log):
 
     stats["rows_out"] = written_rows
     stats["files_failed"] += len(failed)
-    stats["failed_samples"] = (scan["scan_failed"] + failed)[:5]
+    stats["failed_samples"] = (part["scan_failed"] + failed)[:5]
     stats["bytes_out"] = os.path.getsize(out_path) if os.path.exists(out_path) else 0
     stats["row_groups"] = pq.ParquetFile(out_path).metadata.num_row_groups
     stats["status"] = ST_MERGED
-    stats["elapsed_sec"] = round(time.time() - started, 3)
     log("  [%s] 完成：%d 行，%s → %s（压缩比 %.2fx），失败 %d"
-        % (dir_name, written_rows, human_bytes(scan["bytes_in"]),
+        % (label, written_rows, human_bytes(part["bytes_in"]),
            human_bytes(stats["bytes_out"]),
-           (scan["bytes_in"] / stats["bytes_out"]) if stats["bytes_out"] else 0.0,
+           (part["bytes_in"] / stats["bytes_out"]) if stats["bytes_out"] else 0.0,
            stats["files_failed"]))
-    return stats
+    return _finish(stats, started)
+
+
+def merge_dir(dir_name, files, args, log, collector=None):
+    """处理一个目录：扫描 → (可能按后缀拆两表) → 每张表各自统一 schema + 写单文件。
+
+    返回 stats 列表：普通目录 1 条；``--split-suffix`` 真的拆开的两表目录 2 条
+    （``table`` 分别为 ``base`` / ``detail``）。
+    """
+    started = time.time()
+    scan = scan_dir(dir_name, files, args.progress_every, log, src=args.src)
+    if collector is not None:
+        for rel, entity in scan["empty_files"]:
+            collector.add(dir_name, rel, entity)
+
+    if not scan["per_file"]:
+        stats = _new_stats(dir_name)
+        stats.update(files_in=len(files),
+                     files_skipped_empty=scan["files_skipped_empty"],
+                     files_failed=len(scan["scan_failed"]),
+                     failed_samples=scan["scan_failed"][:5],
+                     bytes_in=0, rows_out=0, bytes_out=0,
+                     status=ST_EMPTY, error="没有非空 parquet")
+        log("  [%s] 跳过：%d 个文件全是 0 行" % (dir_name, len(files)))
+        return [_finish(stats, started)]
+
+    summary = summarize(scan["per_file"])
+
+    if summary["multi_table"] and not args.force_union:
+        parts = partition_scan(scan, args.split_suffix) if args.split_suffix else None
+        if parts:
+            log("  [%s] 检出两张表 → 按后缀 %r 拆成 base / detail 各自合并"
+                % (dir_name, args.split_suffix))
+            return _merge_split_dir(dir_name, parts, args, log, started)
+        stats = _new_stats(dir_name)
+        stats.update(files_in=len(files),
+                     files_skipped_empty=scan["files_skipped_empty"],
+                     files_failed=len(scan["scan_failed"]),
+                     failed_samples=scan["scan_failed"][:5],
+                     bytes_in=scan["bytes_in"], rows_out=scan["rows_planned"])
+        stats["status"] = ST_CONFLICT
+        stats["error"] = ("目录内有 %d 组互不包含的列集合（像是两张表）；"
+                          "确认要硬合请加 --force-union；"
+                          "同名两表可加 --split-suffix %r 按后缀拆开"
+                          % (len(summary["col_sets"]),
+                             args.split_suffix or DEFAULT_SPLIT_SUFFIX))
+        log("  [%s] 拒绝：%s" % (dir_name, stats["error"]))
+        return [_finish(stats, started)]
+
+    part = {
+        "table": None,
+        "out_name": dir_name,
+        "files_in": len(files),
+        "per_file": scan["per_file"],
+        "empty_files": scan["empty_files"],
+        "scan_failed": scan["scan_failed"],
+        "bytes_in": scan["bytes_in"],
+        "rows_planned": scan["rows_planned"],
+    }
+    return [_merge_group(dir_name, part, args, log, started)]
+
+
+def _merge_split_dir(dir_name, parts, args, log, started):
+    """两表目录：base / detail 各走一遍统一 schema + 写盘。"""
+    tail = (args.split_suffix or DEFAULT_SPLIT_SUFFIX).lstrip("_")
+    entries = []
+    for key in ("base", "detail"):
+        part = parts[key]
+        part["out_name"] = dir_name if key == "base" else "%s__%s" % (dir_name, tail)
+        entries.append(_merge_group(dir_name, part, args, log, started))
+    return entries
 
 
 # ---------------------------------------------------------------- CLI
@@ -535,6 +847,19 @@ def parse_args(argv=None):
     parser.add_argument("--overwrite", action="store_true", help="允许覆盖已存在的输出文件")
     parser.add_argument("--force-union", action="store_true",
                         help="即使目录像“两张表”也强行并成并集（不推荐）")
+    parser.add_argument("--split-suffix", nargs="?", const=DEFAULT_SPLIT_SUFFIX,
+                        default=None, metavar="SUFFIX",
+                        help="目录被判 skipped_schema_conflict 时，按文件名是否以该后缀"
+                             "结尾拆成 base / detail 两张表分别合并（输出 <dir>.parquet "
+                             "与 <dir>__detail.parquet）；不给值默认 %s" % DEFAULT_SPLIT_SUFFIX)
+    parser.add_argument("--empty-sidecar", nargs="?", const="", default=None,
+                        metavar="PATH",
+                        help="把被跳过的 0 行文件写成实体清单侧车 JSON（dry-run 不落盘，"
+                             "只给预览）；只给开关不给路径时用 <out>/%s"
+                             % DEFAULT_SIDECAR_NAME)
+    parser.add_argument("--empty-sidecar-limit", type=int, default=0, metavar="N",
+                        help="侧车每个目录最多记 N 个实体，0=全部（默认 %(default)s）；"
+                             "超出时该目录带 truncated=true")
     parser.add_argument("--null-as", choices=("null", "string"), default="null",
                         help="全空列的输出类型：null（保真，默认）或 string（兼容性更好）")
     parser.add_argument("--row-group-rows", type=int, default=512000,
@@ -585,6 +910,38 @@ def main(argv=None):
         log.close()
         return 2
     args.out = out
+    args.src = src
+
+    # --split-suffix 规范化：None = 不启用；裸开关用 _detail
+    suffix, err = normalize_split_suffix(args.split_suffix)
+    if err:
+        log("错误：%s" % err)
+        log.close()
+        return 2
+    args.split_suffix = suffix
+
+    if args.empty_sidecar_limit < 0:
+        log("错误：--empty-sidecar-limit 不能是负数：%d" % args.empty_sidecar_limit)
+        log.close()
+        return 2
+    if args.empty_sidecar_limit and args.empty_sidecar is None:
+        log("提示：给了 --empty-sidecar-limit 但没给 --empty-sidecar，该限制不会生效")
+
+    # 空文件侧车：路径解析 + 硬约束「不得落在 --src 下」
+    sidecar_path, err = resolve_sidecar_path(args.empty_sidecar, out)
+    if err:
+        log("错误：%s" % err)
+        log.close()
+        return 2
+    if sidecar_path:
+        if _is_under(sidecar_path, src):
+            log("错误：--empty-sidecar 不得落在 --src 下（会覆盖源数据）：%s" % sidecar_path)
+            log.close()
+            return 2
+        if out and _is_under(sidecar_path, out):
+            log("提示：--empty-sidecar 落在 --out 内（允许，别和合并产物同名即可）：%s"
+                % sidecar_path)
+    args.empty_sidecar_path = sidecar_path
 
     if out:
         try:
@@ -629,8 +986,12 @@ def main(argv=None):
         log.close()
         return 0
 
-    log("merge_parquet %s | src=%s | out=%s | 目录 %d 个 | dry_run=%s"
-        % (__version__, src, out or "-", len(names), args.dry_run))
+    log("merge_parquet %s | src=%s | out=%s | 目录 %d 个 | dry_run=%s | split_suffix=%s"
+        % (__version__, src, out or "-", len(names), args.dry_run,
+           args.split_suffix or "-"))
+
+    collector = (EmptyCollector(args.empty_sidecar_limit)
+                 if sidecar_path else None)
 
     started = time.time()
     results = []
@@ -641,22 +1002,50 @@ def main(argv=None):
             files = files[:args.max_files]
         log("[%d/%d] %s：%d 个 parquet" % (idx, len(names), name, len(files)))
         if not files:
-            results.append({
-                "dir": name, "status": ST_EMPTY, "out_path": None,
-                "files_in": 0, "files_skipped_empty": 0, "files_failed": 0,
-                "rows_out": 0, "bytes_out": 0, "bytes_in": 0, "columns": 0,
-                "row_groups": None, "promotions": {}, "conflicts": [],
-                "null_cols": [], "error": "目录内没有 parquet", "failed_samples": [],
-                "elapsed_sec": 0.0,
-            })
+            entry = _new_stats(name)
+            entry.update(status=ST_EMPTY, bytes_out=0,
+                         error="目录内没有 parquet")
+            results.append(entry)
             continue
-        results.append(merge_dir(name, files, args, log))
+        # 两表目录会返回两条（base / detail），普通目录一条
+        results.extend(merge_dir(name, files, args, log, collector))
 
     elapsed = round(time.time() - started, 3)
+    generated_at = datetime.now().isoformat(timespec="seconds")
+
+    # ---- 空文件侧车：真跑才落盘；dry-run 只给预览
+    sidecar_info = None
+    sidecar_failed = False
+    if sidecar_path:
+        sidecar_info = {
+            "path": sidecar_path,
+            "limit": args.empty_sidecar_limit,
+            "total_empty_files": collector.total,
+            "total_dirs": len(collector.dirs),
+            "written": False,
+            "bytes": None,
+            "error": None,
+        }
+        if args.dry_run:
+            sidecar_info["dry_run"] = True
+        else:
+            try:
+                size = write_sidecar(sidecar_path, collector.payload(src, generated_at))
+                sidecar_info["written"] = True
+                sidecar_info["bytes"] = size
+                log("空文件侧车：%d 个实体 / %d 目录 → %s（%s）"
+                    % (collector.total, len(collector.dirs), sidecar_path,
+                       human_bytes(size)))
+            except OSError as exc:
+                sidecar_info["error"] = "%s: %s" % (type(exc).__name__, exc)
+                sidecar_failed = True
+                log("错误：空文件侧车写入失败：%s" % sidecar_info["error"])
 
     # 汇总
     totals = {
-        "dirs_selected": len(results),
+        "dirs_selected": len(names),
+        "tables": len(results),
+        "split_dirs": len({r["dir"] for r in results if r.get("table")}),
         "dirs_merged": sum(1 for r in results if r["status"] == ST_MERGED),
         "dirs_planned": sum(1 for r in results if r["status"] == ST_PLANNED),
         "dirs_skipped": sum(1 for r in results
@@ -681,13 +1070,17 @@ def main(argv=None):
     payload = {
         "script": "merge_parquet.py",
         "version": __version__,
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "generated_at": generated_at,
         "dry_run": bool(args.dry_run),
         "src": src,
         "out": out,
         "excludes": excludes,
         "max_files": args.max_files,
         "null_as": args.null_as,
+        "split_suffix": args.split_suffix,
+        "empty_sidecar_limit": args.empty_sidecar_limit,
+        "empty_sidecar": sidecar_info,
+        "empty_sidecar_preview": (collector.preview(5) if collector is not None else None),
         "totals": totals,
         "dirs": results,
     }
@@ -697,13 +1090,15 @@ def main(argv=None):
     else:
         _print_human(payload)
 
-    log("汇总：%d 目录 / %d 文件 / 跳过空文件 %d / 失败 %d / %d 行 / %s → %s / 耗时 %.1fs"
-        % (totals["dirs_selected"], totals["files_in"],
+    log("汇总：%d 目录 / %d 输出表 / %d 文件 / 跳过空文件 %d / 失败 %d / %d 行 / %s → %s / 耗时 %.1fs"
+        % (totals["dirs_selected"], totals["tables"], totals["files_in"],
            totals["files_skipped_empty"], totals["files_failed"],
            totals["rows_out"], human_bytes(totals["bytes_in"]),
            human_bytes(totals["bytes_out"]), elapsed))
     log.close()
 
+    if sidecar_failed:
+        return 2
     if totals["dirs_failed"]:
         return 1
     if totals["dirs_skipped"] and not args.dry_run:
@@ -717,14 +1112,19 @@ def _print_human(payload):
           % (payload["version"], payload["generated_at"], payload["dry_run"]))
     print("src : %s" % payload["src"])
     print("out : %s" % (payload["out"] or "-"))
+    if payload.get("split_suffix"):
+        print("拆表: 冲突目录按后缀 %r 拆 base / detail" % payload["split_suffix"])
     print("")
     head = ("目录", "状态", "文件", "跳过空", "失败", "行数", "源大小", "产物")
-    print("%-22s %-24s %7s %6s %5s %12s %11s %11s"
+    print("%-28s %-24s %7s %6s %5s %12s %11s %11s"
           % (head[0], head[1], head[2], head[3], head[4], head[5], head[6], head[7]))
-    print("-" * 108)
+    print("-" * 114)
     for r in payload["dirs"]:
-        print("%-22s %-24s %7d %6d %5d %12d %11s %11s"
-              % (r["dir"], r["status"], r["files_in"], r["files_skipped_empty"],
+        label = r["dir"]
+        if r.get("table"):
+            label = "%s[%s]" % (label, r["table"])
+        print("%-28s %-24s %7d %6d %5d %12d %11s %11s"
+              % (label, r["status"], r["files_in"], r["files_skipped_empty"],
                  r["files_failed"], r["rows_out"], human_bytes(r["bytes_in"]),
                  human_bytes(r["bytes_out"])))
         if r["conflicts"]:
@@ -736,16 +1136,31 @@ def _print_human(payload):
             print("    全空列(%d)：%s" % (len(r["null_cols"]), ", ".join(r["null_cols"][:8])))
         if r["error"]:
             print("    说明：%s" % r["error"].strip().splitlines()[0])
-    print("-" * 108)
+    print("-" * 114)
     t = payload["totals"]
-    print("合计：%d 目录（合并 %d / 计划 %d / 跳过 %d / 失败 %d）"
-          % (t["dirs_selected"], t["dirs_merged"], t["dirs_planned"],
+    print("合计：%d 目录 / %d 输出表（合并 %d / 计划 %d / 跳过 %d / 失败 %d）"
+          % (t["dirs_selected"], t["tables"], t["dirs_merged"], t["dirs_planned"],
              t["dirs_skipped"], t["dirs_failed"]))
+    if t.get("split_dirs"):
+        print("     其中按后缀拆开的两表目录 %d 个" % t["split_dirs"])
     print("     文件 %d，跳过空文件 %d，失败 %d，输出行数 %d"
           % (t["files_in"], t["files_skipped_empty"], t["files_failed"], t["rows_out"]))
     print("     源 %s → 产物 %s%s，耗时 %ss"
           % (human_bytes(t["bytes_in"]), human_bytes(t["bytes_out"]),
              "（估计）" if t["bytes_out_is_estimate"] else "", t["elapsed_sec"]))
+    side = payload.get("empty_sidecar")
+    if side:
+        print("空文件侧车：%s（%d 个实体 / %d 目录，limit=%d，%s）"
+              % (side["path"], side["total_empty_files"], side["total_dirs"],
+                 side["limit"],
+                 "已写入" if side["written"] else "dry-run 未写"))
+        preview = payload.get("empty_sidecar_preview") or {}
+        for name in sorted(preview, key=lambda n: -preview[n]["count"])[:3]:
+            item = preview[name]
+            print("     %-22s %5d 个：%s"
+                  % (name, item["count"], ", ".join(item["entities"])))
+        if side.get("error"):
+            print("     错误：%s" % side["error"])
 
 
 if __name__ == "__main__":

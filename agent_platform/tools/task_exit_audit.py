@@ -40,7 +40,10 @@ EXIT_SEMANTICS: dict[int, str] = {
 }
 
 KNOWN_SCHED_FAMILIES = ("Legion", "Agent", "Quant", "Alert", "Xueqiu", "Hermes",
-                        "KgChain", "Space", "KG-", "Ollama", "CnOpenData", "Daily")
+                        "KgChain", "Space", "KG-", "Ollama", "CnOpenData", "Daily",
+                        # 2026-10-22 补：这两个任务当天都被 ExecutionTimeLimit 杀掉
+                        # （Event ID 329 实证），却因前缀不在名单而从未入账。
+                        "AI工作站门户", "Notice")
 
 # 落盘到 portal/data（与 result_evidence 同域）：nginx 静态直服 /data/task_exit_audit/*，
 # OS 首页零后端依赖可消费（D5 地基状态灯数据源）；不走 8091（避免 SYSTEM 进程重启滞后）。
