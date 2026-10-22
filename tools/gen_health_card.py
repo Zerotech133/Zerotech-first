@@ -193,11 +193,11 @@ PLAINTEXT_KEY_MARKER_RE = re.compile(
     rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 )
 # 扫描相位超时 → available=false + 红（已扫到的命中仍写进 detail）。
-# 2026-10-22 从 3s 提到 12s：实测扫描 5,096 个文件 / 36 MiB 空载约 2s，
-# 但整卡同时还要跑 catchup/worktree/docs，机器负载高时会越过 3s，
-# 于是报出「扫描未完成」的红——那是**噪声**，不是私钥变多了。
-# 判红的原因必须永远是「真发现了私钥」或「有些目录读不到」，不能是「跑太慢」。
-PLAINTEXT_KEY_BUDGET_SECONDS = 12.0
+# 2026-10-22 从 3s → 12s → 25s：实测该扫描要开约 5,000 个文件读 8 KiB，
+# 空载 2s，但整卡同时跑 catchup/worktree/docs、机器上还有并行会话时，
+# 12s 也会被撞穿并报"扫描未完成"的红——那是**负载噪声**，不是私钥变多。
+# 25s 是"宁可慢也不误报"的折中；真要更快，应减少扫描面而不是压预算。
+PLAINTEXT_KEY_BUDGET_SECONDS = 25.0
 # 单文件只读前 8 KiB：`-----BEGIN … PRIVATE KEY-----` 标记**一定在文件开头**
 # （PEM 的头部就是第一行），读 tail 或读全文件都是浪费。2026-10-22 从 512 KiB
 # 降到 8 KiB：同样 5,096 个文件的扫描从 >12s 降到 2s 以内，判据强度不变。
@@ -3203,9 +3203,20 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
     if not keys:
         add("security.plaintext_keys", "red", "明文私钥扫描未运行（security 块缺失）")
     else:
-        if not keys.get("available") or keys.get("findings"):
-            # 扫描没跑完（超时/异常）或命中 ≥1：都判红，绝不当绿。
+        findings = keys.get("findings") or []
+        # 命中里是否**全部**是测试夹具：仓里有两个按设计嵌入假私钥字样的自测文件
+        # （tools/_scan_secrets_selftest.py、portal/test_auto_commit_secret.py）。
+        # 原规则「命中 ≥1 即红」会让这两条永久染红整张卡——红信号被训练成噪音，
+        # 真出事时反而没人看。2026-10-22 改：只命中夹具 → 绿（detail 说明是夹具）；
+        # 只要有一个非夹具命中 → 红。绝不放宽「真凭据即红」。
+        fixture_only = bool(findings) and all(f.get("test_fixture") for f in findings)
+        if not keys.get("available"):
+            # 扫描没跑完（超时/异常）：等于没看全，判红。
             key_level = "red"
+        elif findings and not fixture_only:
+            key_level = "red"
+        elif fixture_only:
+            key_level = "green"
         elif keys.get("skipped_dirs") or keys.get("unreadable_files"):
             # 有目录/文件读不到：等于没看全，不判绿。
             key_level = "yellow"
