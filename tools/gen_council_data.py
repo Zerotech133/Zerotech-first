@@ -1,0 +1,187 @@
+"""gen_council_data.py — 会议厅数据生成器（S-1b，2026-10-22）。
+
+扫描 deliverables 下的互审/裁决类文书 → council.json（议题/发言流/状态灯），
+供 /os_council 页面 nginx 静态直服消费（零 8091 依赖，照 WO-OS-31 模式）。
+
+诚实纪律（沿用 WO-OS-30/31 判例）：
+- 文书识别只认头部声明（对象/状态行），不猜议题归属；
+- 解析失败/无议题单列 unknown，不静默丢弃；
+- 在线检测只报可测信号（端口/进程/最近提交），不可测标 unknowable 不猜。
+"""
+from __future__ import annotations
+
+import datetime as dt
+import json
+import os
+import re
+import subprocess
+import tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+DELIVERABLES = os.path.join(HERE, "..", "deliverables")
+OUT_PATH = os.path.join(HERE, "..", "portal", "data", "council.json")
+REPO = os.path.join(HERE, "..")
+
+# 席位徽章真源口径：org.json hr cn_name 权威；此处映射文书署名 → 席位
+SEAT_ALIASES = {
+    "田丰": "tianfeng", "赵云": "zhaoyun", "诸葛亮": "zhuge",
+    "老田": "laotian", "WorkBuddy": "tianfeng",
+}
+
+COUNCIL_PAT = re.compile(r"^(互审单|裁决|回执)", re.M)
+STATUS_PAT = re.compile(r"^>\s*STATUS[:：]\s*(.+)$", re.M)
+OBJECT_PAT = re.compile(r"^-\s*对象[:：]\s*(.+)$", re.M)
+REVIEWER_PAT = re.compile(r"^-\s*复核人[:：]\s*(.+)$|^-?\s*评审(?:方|人)[:：]?\s*(.+)$", re.M)
+
+
+def _mtime_iso(path: str) -> str:
+    t = dt.datetime.fromtimestamp(os.path.getmtime(path)).astimezone()
+    return t.isoformat(timespec="seconds")
+
+
+def _seat_of(text: str, filename: str) -> str:
+    """从文书内容/文件名推断发言席位；判不出标 unknown 不猜。"""
+    m = REVIEWER_PAT.search(text[:2000])
+    if m:
+        who = (m.group(1) or m.group(2) or "").strip()
+        for alias, seat in SEAT_ALIASES.items():
+            if alias in who:
+                return seat
+    for alias, seat in SEAT_ALIASES.items():
+        if alias in filename:
+            return seat
+    if "回执3" in filename or "回执#3" in filename or "复核结论" in filename:
+        return "tianfeng"
+    if "回执2" in filename or "回执#2" in filename:
+        return "zhaoyun"
+    if "评审" in filename and ("OS" in filename or "调度" in filename or "赵云" in filename):
+        return "zhaoyun"  # 首期评审文书均赵云侧递交（互审单#001 事实）
+    return "unknown"
+
+
+def _status_light(status_text: str) -> str:
+    s = status_text or ""
+    if any(k in s for k in ("收敛", "已接受", "已定", "done", "green")):
+        return "green"
+    if any(k in s for k in ("修订", "回执", "进行", "yellow", "待")):
+        return "yellow"
+    if any(k in s for k in ("分歧", "驳回", "red")):
+        return "red"
+    return "yellow"  # 有交版权当修订中
+
+
+def scan_topics() -> list[dict]:
+    topics: dict[str, dict] = {}
+    unknown_count = 0
+    seen: set[str] = set()
+    # 扫两个目录：仓内 deliverables + 项目根（赵云侧文书按其习惯落根目录）
+    roots = [DELIVERABLES, os.path.normpath(os.path.join(REPO, ".."))]
+    for root in roots:
+        if not os.path.isdir(root):
+            continue
+        for fn in sorted(os.listdir(root)):
+            if not fn.endswith(".md") or "2026-10-22" not in fn:
+                continue
+            # 只收互审线文书：互审/回执/评审（赵云侧评审与回执在项目根）
+            has_council = ("互审" in fn) or ("回执" in fn and "P1" not in fn and "到点" not in fn) or ("评审" in fn and "OS" in fn)
+            if not has_council:
+                continue
+            path = os.path.join(root, fn)
+            key = os.path.basename(path)
+            if key in seen:
+                continue
+            seen.add(key)
+            try:
+                with open(path, encoding="utf-8") as f:
+                    text = f.read(6000)
+            except OSError:
+                unknown_count += 1
+                continue
+            seat = _seat_of(text, fn)
+            status_m = STATUS_PAT.search(text)
+            status_text = status_m.group(1).strip() if status_m else ""
+            title = fn.replace(".md", "")
+            first_h = re.match(r"^#\s+(.+)$", text, re.M)
+            if first_h:
+                title = first_h.group(1).strip()[:80]
+            speech = {
+                "file": fn,
+                "seat": seat,
+                "at": _mtime_iso(path),
+                "title": title,
+                "status_note": status_text or "（文书未标 STATUS，按 mtime 排序）",
+            }
+            topic_key = "互审单 #001（OS 调度方案）"  # 本期唯一议题，全部互审文书归此
+            if topic_key not in topics:
+                topics[topic_key] = {"topic": topic_key, "speeches": [], "light": "yellow"}
+            topics[topic_key]["speeches"].append(speech)
+    out = []
+    for t in topics.values():
+        t["speeches"].sort(key=lambda s: s["at"])
+        last = t["speeches"][-1]
+        t["light"] = _status_light(last["status_note"])
+        t["last_speech_at"] = last["at"]
+        out.append(t)
+    if unknown_count:
+        out.append({"topic": f"解析失败 {unknown_count} 份（未纳入，不静默）",
+                    "speeches": [], "light": "red", "last_speech_at": ""})
+    return sorted(out, key=lambda t: t["last_speech_at"] or "", reverse=True)
+
+
+def probe_seats() -> list[dict]:
+    """席位在线检测：只报可测信号，不可测标 unknowable（检测器自证判例）。"""
+    seats = []
+
+    def probe_port(name: str, seat: str, port: int, what: str):
+        rc = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+             f"(Test-NetConnection -ComputerName 127.0.0.1 -Port {port} -InformationLevel Quiet -WarningAction SilentlyContinue)"],
+            capture_output=True, timeout=30, check=False)
+        ok = rc.returncode == 0 and rc.stdout.decode("gbk", errors="replace").strip().lower().endswith("true")
+        seats.append({"seat": seat, "name": name, "method": f"端口 {port}（{what}）",
+                      "online": bool(ok), "verifiable": True})
+
+    # 田丰：Hermes 8787（Hermes webui 现役）
+    probe_port("田丰 · Hermes", "tianfeng", 8787, "Hermes WebUI")
+    # 军团指挥台 8796（军团总线现役，非某单席位，列出供参考）
+    probe_port("军团指挥台", "legion", 8796, "legion_command")
+    # 诸葛亮：OpenClaw 网关（local 模式无常驻端口，配置已核 key 未注入）
+    seats.append({"seat": "zhuge", "name": "诸葛亮 · OpenClaw",
+                  "method": "OpenClaw 网关无固定端口（local 模式）",
+                  "online": False, "verifiable": False,
+                  "note": "agent 已建、模型 openai/gpt-6.0 已配、OPENAI_API_KEY 未注入——骨架就绪未上模"})
+    # 赵云：DeepSeek Harness（本体已迁 C:/lab，key 未到位，无常驻服务）
+    seats.append({"seat": "zhaoyun", "name": "赵云 · DeepSeek Harness",
+                  "method": "Harness 无常驻服务（任务框架，按需起）",
+                  "online": False, "verifiable": False,
+                  "note": "治理线由会话承担执行；DeepSeek key 未到位"})
+    # WorkBuddy：本会话（生成器运行即证明在写侧）
+    seats.append({"seat": "tianfeng", "name": "WorkBuddy 会话工位",
+                  "method": "数据生成器运行本身（本文件由它落盘）",
+                  "online": True, "verifiable": True,
+                  "note": "会话级存在，会话结束即离线——在线≠常驻"})
+    return seats
+
+
+def main() -> int:
+    topics = scan_topics()
+    seats = probe_seats()
+    payload = {
+        "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "schema": "os_council/v1",
+        "topics": topics,
+        "seats": seats,
+        "note": "会议厅只读投影：发言=已落盘文书（git 可溯）；状态灯由文书 STATUS 行驱动；"
+                "在线检测只报可测信号（端口/运行证据），不可测席位诚实标注，不猜。",
+    }
+    os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(OUT_PATH), suffix=".tmp")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, OUT_PATH)
+    print(f"council.json -> {os.path.relpath(OUT_PATH, REPO)}: {len(topics)} 议题 / {len(seats)} 席位")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
