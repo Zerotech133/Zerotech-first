@@ -65,6 +65,12 @@ def to_phys(path: str) -> str:
 
 
 def main() -> int:
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="逐个验证计划任务的动作目标文件是否存在（只读）")
+    ap.add_argument("--json", action="store_true",
+                    help="以 JSON 输出（便于其他脚本消费）")
+    a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     missing, unreadable, no_target, ok = [], [], [], []
     for name in task_names():
@@ -88,6 +94,17 @@ def main() -> int:
             missing.append((name, absent, cwd))
         else:
             ok.append(name)
+
+    if a.json:
+        print(json.dumps({
+            "total": len(ok) + len(missing) + len(no_target) + len(unreadable),
+            "ok": sorted(ok),
+            "missing": [{"task": n, "absent": abs_, "cwd": cwd}
+                        for n, abs_, cwd in missing],
+            "no_target": [{"task": n, "args": s} for n, s in no_target],
+            "unreadable": sorted(unreadable),
+        }, ensure_ascii=False, indent=2))
+        return 1 if missing else 0
 
     print("任务总数: %d" % (len(ok) + len(missing) + len(no_target) + len(unreadable)))
     print("  目标存在        : %d" % len(ok))

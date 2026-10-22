@@ -47,11 +47,21 @@ def fix_text(text: str) -> tuple[str, list[str]]:
 
 
 def main() -> int:
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="为动作起不来的计划任务生成修正版 XML（只读线上定义，只写工作区）")
+    ap.add_argument("--out-dir", default=str(OUT_DIR),
+                    help="输出目录（默认 tools/schtasks_xml）")
+    ap.add_argument("--tasks", nargs="*", default=None,
+                    help="只处理这些任务名（默认全部）")
+    a = ap.parse_args()
+    out_dir = Path(a.out_dir)
+    wanted = a.tasks or TASKS
     sys.stdout.reconfigure(encoding="utf-8")
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    print("输出目录:", OUT_DIR)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    print("输出目录:", out_dir)
     print()
-    for name in TASKS:
+    for name in wanted:
         src = TASKS_DIR / name
         if not src.is_file():
             print("  %-18s 读不到定义，跳过" % name)
@@ -70,8 +80,8 @@ def main() -> int:
         cwd = re.search(r"<WorkingDirectory>([^<]+)</WorkingDirectory>", fixed)
 
         # 写修正版 + 原始版，均为 UTF-16LE with BOM（Task Scheduler 的原生格式）
-        (OUT_DIR / ("%s_fixed.xml" % name)).write_text(fixed, encoding="utf-16")
-        (OUT_DIR / ("%s_original.xml" % name)).write_text(original, encoding="utf-16")
+        (out_dir / ("%s_fixed.xml" % name)).write_text(fixed, encoding="utf-16")
+        (out_dir / ("%s_original.xml" % name)).write_text(original, encoding="utf-16")
 
         print("  %-18s 改动: %s" % (name, ", ".join(changes) or "(无需改动)"))
         if cmd:

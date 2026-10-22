@@ -2225,7 +2225,6 @@ def _alert_watch_detail(watch: dict[str, Any]) -> str:
 #
 # 重点盯 `0x8007000x` 家族（十进制 2147942401/2/3）——它们表示**动作根本没起来**
 # （无效功能 / 文件未找到 / 路径未找到），与"脚本跑了但报错"性质完全不同。
-TASK_LAUNCH_WINDOW_HOURS = 24.0
 TASK_LAUNCH_TIMEOUT_SECONDS = 30.0
 TASK_LAUNCH_RED_COUNT = 3          # 30 分钟内同一任务 >=3 次启动失败 -> 红
 TASK_LAUNCH_RECENT_MINUTES = 30.0  # 判级只看最近这么久（窗口总量仍照实报）
@@ -2245,14 +2244,10 @@ TASK_LAUNCH_FAILURE_CODES = {
 _TASK_LAUNCH_LOG = "Microsoft-Windows-TaskScheduler/Operational"
 _TASK_LAUNCH_QUERY = "*[System[(EventID=201)]]"
 _TASK_LAUNCH_MAX_EVENTS = 800      # 约覆盖最近 2–3 小时的高频任务
-# wevtutil 的属性用**单引号**（与 Get-WinEvent 的 ToXml 双引号不同）。
-# 用「非贪婪配对」一次抓 (TaskName, ResultCode)，无需逐个解析 XML ——
-# 实测 800 条 / 763 KB 只需 0.23 s；同样数据用 Get-WinEvent 要 24 s。
-_TASK_LAUNCH_PAIR_RE = re.compile(
-    r"<Data Name='TaskName'>([^<]*)</Data>.*?"
-    r"<Data Name='ResultCode'>([^<]*)</Data>",
-    re.S,
-)
+# 解析方式说明：wevtutil 的属性用**单引号**（Get-WinEvent 的 ToXml 是双引号）。
+# 现在按 <Event> 分块逐块取 TaskName/ResultCode/TimeCreated（要算"最近一次"
+# 就必须拿到每个事件自己的时间），不再用一条非贪婪配对正则。
+# 实测整份日志 3337 条 / 3 MB，wevtutil 取数 ~0.2 s。
 _TASK_LAUNCH_TIME_RE = re.compile(r"<TimeCreated SystemTime='([^']+)'/>")
 
 
@@ -2277,8 +2272,6 @@ def _empty_task_launch() -> dict[str, Any]:
         "available": False,
         "reason": None,
         "events_scanned": None,
-        "covered_from": None,
-        "covered_to": None,
         "nonzero_total": None,
         "launch_failures": [],
         "launch_failure_total": None,
