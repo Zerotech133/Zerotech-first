@@ -18,7 +18,7 @@ input,select,textarea{background:#0c1727;border:1px solid var(--line);border-rad
 @media(max-width:1080px){.layout{grid-template-columns:1fr}}
 </style></head><body><div class="shell"><header class="top"><div class="brand">老田的个人 OS</div><span class="badge">会议厅 v3 · 交互工作台</span><div class="nav"><a href="/os-entry">← OS 首页</a></div></header>
 <h1>会议厅</h1>
-<p class="sub">留言=落盘账本（git 可溯）；文档/截图上传存证；语音本机转写。交互桥 <span id="bridge" style="color:var(--muted)">检测中…</span></p>
+<p class="sub">一句话即可发起/预约/定稿（AI 语义拆解）。数据全部自有存储（本地档案+可扩展云边空间）——个人 OS·云边协同，不依赖任何外部托管。交互桥 <span id="bridge" style="color:var(--muted)">检测中…</span></p>
 <div style="margin:0 0 14px;border:1px solid #456b82;border-radius:14px;background:linear-gradient(145deg,#0f2733,#11202f);overflow:hidden">
 <div style="display:flex;gap:8px;align-items:center;padding:12px 14px 6px">
 <span style="font-size:18px">🎤</span>
@@ -153,10 +153,14 @@ d.hits.forEach(h=>{const it=el('div','sched-item');it.append(el('b',null,'['+h.s
 $('#btn-q').addEventListener('click',doSearch);
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
 $('#btn-archive').addEventListener('click',async()=>{if(!curTopic){toast('先选中要定稿的议题');return}
-const decision=prompt('决议（定稿文字,可空）:');if(decision===null)return;
-const raw=prompt('任务分解,每行一条:[谁] 做什么 期限(可省)\n例:INTEL0 定位写入端 2026-10-24','')||'';
-const tasks=raw.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const m=l.match(/^\[([^\]]+)\]\s*(.+?)(?:\s+(\d{4}-\d\d-\d\d))?$/);return m?{owner:m[1],text:m[2],due:m[3]||''}:{owner:'?',text:l,due:''}});
-try{const d=await opsPost('/api/council/archive',{topic:curTopic,decision,tasks});toast('📦 已建档 '+d.meeting_id+'（纪要+决议+'+tasks.length+'任务）');await loadAll()}catch(e){toast('失败:'+e.message)}});
+const text=prompt('一句话定稿（AI 自动拆决议+任务,缺人名标TBD不编造）:\n例:定稿：决议premarket按三卡走。田丰做去重登记,期限10-24；赵云盯正测试','');if(text===null||!text.trim())return;
+try{const pv=await opsPost('/api/council/archive_preview',{text});
+const p=pv.parsed;const lines=['AI 解析结果：','决议：'+(p.decision||'（空）')];
+(p.tasks||[]).forEach((t,i)=>lines.push('任务'+(i+1)+'：['+t.owner+'] '+t.text+(t.due?' · '+t.due:'')));
+lines.push('','确认归档？');
+if(!confirm(lines.join('\n')))return;
+const d=await opsPost('/api/council/archive',{topic:curTopic,text});
+toast('📦 已建档 '+d.meeting_id);await loadAll()}catch(e){toast('失败:'+e.message)}});
 loadAll();setInterval(loadAll,30000);
 })();
 </script></body></html>

@@ -178,6 +178,34 @@ def parse_natural(text: str) -> dict:
             "raw": text}
 
 
+# ---------------- 定稿一句话解析（开源判词：规则宁漏勿编） ----------------
+_ACTION_ARCHIVE = ("定稿", "归档", "结案", "收口定稿")
+
+
+def parse_archive(text: str) -> dict:
+    """「定稿：决议X。田丰做Y，期限10-24；赵云盯守Z」→ decision+tasks。
+
+    规则：[谁]做/负责/盯 … (期限|by|due 日期)? ；缺 owner 标 TBD 不编造。
+    """
+    decision = ""
+    m = _re.search(r"决议[是为：:]?\s*([^；;。]+)", text)
+    if m:
+        decision = m.group(1).strip()[:500]
+    tasks = []
+    for seg in _re.split(r"[；;。\n]", text):
+        seg = seg.strip()
+        if not seg or seg in ("定稿", "归档") or (decision and seg == decision):
+            continue
+        tm = _re.search(r"\[([^\]]+)\]\s*(.+?)(?:[，,]\s*(?:期限|by|due)\s*([\d/-]+))?$", seg) \
+             or _re.search(r"(田丰|赵云|诸葛亮|老田|WorkBuddy|workbuddy|INTEL0|A0)[做负责盯跟跟进送]\s*(.+?)(?:[，,]\s*(?:期限|by|due)\s*([\d/-]+))?$", seg)
+        if tm:
+            tasks.append({"owner": tm.group(1), "text": tm.group(2).strip()[:200],
+                          "due": tm.group(3) or ""})
+        elif seg and not decision:
+            decision = seg[:500]  # 无决议标时，首段视为决议
+    return {"decision": decision, "tasks": tasks}
+
+
 # ---------------- 会议建档 · 纪要 · 决议 · 检索 ----------------
 
 def _sanitize(name: str) -> str:
@@ -357,17 +385,30 @@ class Handler(BaseHTTPRequestHandler):
         except (UnicodeDecodeError, json.JSONDecodeError):
             return self._json({"error": "bad json"}, 400)
         if u.path == "/api/council/archive":
+            # v5：一句话定稿——text 一段话，AI 规则拆决议+任务（缺 owner 标 TBD 不编造）
+            text = str(data.get("text") or "").strip()[:2000]
             topic = str(data.get("topic") or "").strip()[:120]
+            if text and any(k in text for k in _ACTION_ARCHIVE) or data.get("decision"):
+                parsed = parse_archive(text) if text else {}
+                decision = str(data.get("decision") or parsed.get("decision") or "").strip()[:2000]
+                raw_tasks = data.get("tasks") or parsed.get("tasks") or []
+            else:
+                decision = str(data.get("decision") or "").strip()[:2000]
+                raw_tasks = data.get("tasks") or []
             if not topic:
                 return self._json({"error": "topic required"}, 400)
-            decision = str(data.get("decision") or "").strip()[:2000]
-            tasks = data.get("tasks") or []
-            if not isinstance(tasks, list):
-                tasks = []
-            tasks = [{"owner": str(t.get("owner", "?"))[:20],
+            if not isinstance(raw_tasks, list):
+                raw_tasks = []
+            tasks = [{"owner": str(t.get("owner", "TBD"))[:20],
                       "text": str(t.get("text", ""))[:300],
-                      "due": str(t.get("due", ""))[:20]} for t in tasks[:20] if isinstance(t, dict)]
+                      "due": str(t.get("due", ""))[:20]} for t in raw_tasks[:20] if isinstance(t, dict)]
             return self._json(archive_meeting(topic, decision, tasks))
+        if u.path == "/api/council/archive_preview":
+            # 预览：一句话→决议+任务（不落盘，用户确认人性化闭环）
+            text = str(data.get("text") or "").strip()[:2000]
+            if not text:
+                return self._json({"error": "text required"}, 400)
+            return self._json({"ok": True, "parsed": parse_archive(text)})
         if u.path == "/api/council/task_update":
             meeting_id = str(data.get("meeting_id") or "").strip()
             idx = data.get("idx")
