@@ -80,13 +80,23 @@
 param(
     [switch]$Restore,
     [switch]$VerifyOnly,
-    [string[]]$Only
+    [string[]]$Only,
+    [switch]$IncludeHardening
 )
 
 $ErrorActionPreference = 'Stop'
 
-$allTasks = @('QuantWatchdog', 'JevStack', 'KgChainWatchdog', 'StrongEod',
-              'XmapSync', 'AlertWatch', 'DeadlineWatch')
+# DEFAULT: only the one with a PROVEN broken path (UTF-8 -> GBK mojibake in
+# <Arguments>, 712 launch failures today). The other six use the C:\aios alias
+# exactly like 27 tasks that run fine, so the alias is NOT the discriminator -
+# their 1-2 failures look transient. Rewriting them is harmless hardening, not
+# a bug fix, hence opt-in. See the "task path failure - correction" doc in the
+# workspace root (dated 2026-10-22).
+$allTasks = @('QuantWatchdog')
+if ($IncludeHardening) {
+    $allTasks += @('JevStack', 'KgChainWatchdog', 'StrongEod', 'XmapSync',
+                   'AlertWatch', 'DeadlineWatch')
+}
 $xmlDir = Join-Path $PSScriptRoot 'schtasks_xml'
 $tasksRoot = Join-Path $env:WINDIR 'System32\Tasks'
 
