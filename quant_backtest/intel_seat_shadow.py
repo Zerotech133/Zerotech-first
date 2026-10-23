@@ -7,12 +7,34 @@ D2 batch_co_occurrence 升级为真两两席位共现 (同日同票, 买卖方�
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 import pandas as pd
 
+from intel_disambig_rules import EntityMention, disambiguate
 from intel_relation_rules import RelationCandidate, RelationRejected, co_occurrence
 
 _REQUIRED = ("ts_code", "trade_date", "exalter", "side")
+_BRANCH_NUMBER = re.compile(r"(?<=第)[0-9一二三四五六七八九十]+(?=营业部)")
+
+
+def _seat_key(name: str) -> str:
+    """来源作用域内的暂定键；没有原生席位 ID 时绝不跨来源确权。"""
+    return f"seat:tdx:{name}"
+
+
+def _seat_verdict(a: str, b: str) -> str:
+    """接 D1 S1/S2：分支号差异只算候选，不能自动折叠为同席。"""
+    if a == b:
+        return "same"
+    stem_a = _BRANCH_NUMBER.sub("第*", a)
+    stem_b = _BRANCH_NUMBER.sub("第*", b)
+    maybe_branch = stem_a == stem_b and stem_a != a and stem_b != b
+    return disambiguate(
+        EntityMention("seat", a, "tdx", a),
+        EntityMention("seat", b, "tdx", b),
+        prefix_match=maybe_branch,
+    )
 
 
 def load_seat_rows(repo_root: str | Path, *, limit_parts: int | None = None) -> pd.DataFrame:
@@ -50,7 +72,7 @@ def seat_pairs(df: pd.DataFrame, *, max_pairs_per_day: int = 40) -> list[Relatio
         key = f"top_inst:{d}:{code}"
         if len(seats) > 10:
             out.append(RelationCandidate(
-                "co_occurrence", seats[0], f"{len(seats)}席群体", key,
+                "co_occurrence", _seat_key(seats[0]), f"{len(seats)}席群体", key,
                 question=f"{d} {code} 有 {len(seats)} 家营业部同榜——群体交易日, 逐对明细见数据",
                 basis=f"top_inst_group:{d}:{code}:{len(seats)}"))
             continue
@@ -66,8 +88,18 @@ def seat_pairs(df: pd.DataFrame, *, max_pairs_per_day: int = 40) -> list[Relatio
                         basis=f"top_inst_trunc:{d}:{code}"))
                     break
                 a, b = sorted((seats[i], seats[j]))
-                c = co_occurrence(a, b, str(code), str(d), key)
-                # 增强问题: 方向组合
+                verdict = _seat_verdict(a, b)
+                if verdict == "candidate":
+                    # S2：可能只是同一营业部的分支号写法，不能声称两席共现。
+                    out.append(RelationCandidate(
+                        "co_occurrence", _seat_key(a), _seat_key(b), key,
+                        question=f"{d} {code} 出现 {a} / {b}，分支号差异仅候选同席；"
+                                 "须核地址及原生ID，暂不计入两席共现",
+                        basis=f"seat_S2_candidate:{d}:{code}"))
+                    made += 1
+                    continue
+                c = co_occurrence(_seat_key(a), _seat_key(b), str(code), str(d), key)
+                # 增强问题: 方向组合；展示原始席位名而非暂定实体键。
                 combo = f"{sides.get(a,'?')}{sides.get(b,'?')}"
                 c = RelationCandidate(c.rel_type, c.left, c.right, c.evidence_key,
                                       f"{c.question}（方向: {a[:10]}={sides.get(a,'?')}/"
