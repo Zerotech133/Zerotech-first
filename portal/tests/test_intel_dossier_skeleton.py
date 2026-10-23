@@ -42,6 +42,20 @@ def test_offline_boundary_has_no_network_or_claimed_facts():
     assert "Tushare 等" in html
 
 
+def test_dossier_untrusted_fields_are_text_only():
+    html = _page()
+    match = re.search(r"fetch\('/api/intel-graph/dossier\?code='.*?\}\);\s*</script>", html, re.S)
+    assert match, "dossier rendering block missing"
+    renderer = match.group(0)
+    assert "out.innerHTML" not in renderer
+    for field in ("e.rel_type", "e.pair", "e.evidence_key", "e.question"):
+        assert field in renderer
+    assert "title.textContent" in renderer
+    assert "key.textContent" in renderer
+    assert "question.textContent" in renderer
+    assert "out.replaceChildren()" in renderer
+
+
 def test_historical_eligibility_fails_closed():
     html = _page()
     match = re.search(r"// eligibility:start\s*(.*?)\s*// eligibility:end", html, re.S)
