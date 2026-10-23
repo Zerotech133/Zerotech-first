@@ -22,7 +22,7 @@ input,select,textarea{background:#0c1727;border:1px solid var(--line);border-rad
 <div style="margin:0 0 14px;border:1px solid #456b82;border-radius:14px;background:linear-gradient(145deg,#0f2733,#11202f);overflow:hidden">
 <div style="display:flex;gap:8px;align-items:center;padding:12px 14px 6px">
 <span style="font-size:18px">🎤</span>
-<input id="nat" placeholder='一句话发起/预约：「预约10月25号田丰赵云开会，主题watchdog预算」·「现在开会讨论KgChain修复」' style="font-size:14px;padding:10px 12px">
+<input id="nat" placeholder='随心一句话——「现在开会讨论X」「预约10月25号田丰赵云谈Y」「定稿：决议Z,田丰做W期限10-25」「查一下上次说的0x8007」' style="font-size:14px;padding:10px 12px">
 <button class="btn primary" id="btn-nat" style="white-space:nowrap;font-size:14px;padding:10px 16px">AI 开单</button>
 </div>
 <div style="display:flex;gap:6px;padding:6px 14px 12px;align-items:center;flex-wrap:wrap">
@@ -105,10 +105,11 @@ const isImg=/\.(png|jpe?g)$/i.test(f.name);
 const fd=new FormData();fd.append('f',f);try{const r=await fetch(OPS+'/api/council/upload',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
 await opsPost('/api/council/message',{topic:curTopic||'(未选议题)',seat:$('#seat').value,text:(isImg?'🖼 截图/照片':'📎 文档')+'：'+d.upload.name+'（'+d.upload.size+'B）'+(isImg?'——已存证,识别请在 WorkBuddy 会话说「读 portal/data/council_uploads/'+String(d.upload.file).split(/[\\/]/).pop()+' 识别要点」':''),kind:'upload',path:d.upload.file});
 await loadAll();toast(isImg?'图片已存证(识别引路见留言)':'已上传存证')}catch(e){toast('上传失败：'+e.message)}finally{$('#file-in').value=''}});
-async function natural(){const t=$('#nat').value.trim();if(!t){toast('说一句话,我来解析');return}
-try{const d=await opsPost('/api/council/natural',{text:t});
-if(d.executed==='scheduled'){toast('✅ 已预约：'+d.parsed.title+' · '+d.parsed.at+' · '+(d.parsed.seats.join('、')||'全体'))}
-else{curTopic=d.topic.topic;toast('✅ 已发起：'+d.topic.topic)}
+async function natural(){const t=$('#nat').value.trim();if(!t){toast('说一句话,我来办');return}
+try{const d=await opsPost('/api/council/natural',{text:t,current_topic:curTopic,seat:$('#seat').value});
+toast('🤖 '+d.routed);
+if(d.intent==='new'&&d.topic){curTopic=d.topic.topic}
+if(d.intent==='say'){}
 $('#nat').value='';await loadAll()}catch(e){toast('失败：'+e.message)}}
 $('#btn-nat').addEventListener('click',natural);
 $('#nat').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();natural()}});

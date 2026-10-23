@@ -340,6 +340,17 @@ def search_all(q: str) -> list[dict]:
     return hits[:30]
 
 
+def _latest_active_topic() -> str:
+    """最近一次「开会」的议题名（定稿无当前议题时兜底）。"""
+    if not os.path.isfile(REGISTRY_SNIPPET):
+        return ""
+    try:
+        cur = json.load(open(REGISTRY_SNIPPET, encoding="utf-8"))
+        return cur[-1]["topic"] if cur else ""
+    except (OSError, json.JSONDecodeError):
+        return ""
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 静默
         pass
@@ -438,24 +449,68 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"error": "task not found"}, 404)
         if u.path == "/api/council/natural":
             text = str(data.get("text") or "").strip()[:500]
+            current_topic = str(data.get("current_topic") or "").strip()[:120]
             if not text:
                 return self._json({"error": "text required"}, 400)
+            # ── 统一意图路由：定稿归档 > 查询 > 预约 > 发言(有当前议题) > 开新会议 ──
+            intent = None
+            if any(k in text for k in _ACTION_ARCHIVE):
+                intent = "archive"
+            elif any(k in text for k in ("查一下", "查查", "搜索", "搜一下", "谁说", "找回", "检索")):
+                intent = "search"
+            elif any(k in text for k in _ACTION_SCHED) or ("预约" in text):
+                intent = "schedule"
+            elif current_topic and not any(k in text for k in ("开会", "发起", "新会议", "开个会")):
+                intent = "say"
+            else:
+                intent = "new"
+            if intent == "archive":
+                topic = current_topic or _latest_active_topic()
+                if not topic:
+                    return self._json({"error": "没有可定稿的议题——先开会"}, 400)
+                parsed = parse_archive(text)
+                tasks = [{"owner": t["owner"], "text": t["text"], "due": t["due"]}
+                         for t in parsed["tasks"]]
+                rec = archive_meeting(topic, parsed["decision"], tasks)
+                return self._json({"ok": True, "intent": "archive", "routed": "已定稿归档 " + rec["meeting_id"],
+                                   "detail": {"decision": parsed["decision"], "tasks": tasks}})
+            if intent == "search":
+                q = _re.sub(r"^(查一下|查查|搜索|搜一下|检索|帮我|找回)", "", text)
+                q = _re.sub(r"(谁说过?|一下|什么|吗|呢)", "", q).strip() or text[:20]
+                hits = search_all(q)
+                _append(MESSAGES, {"at": _now(), "topic": current_topic or "(查询)", "seat": "laotian",
+                                   "kind": "sys", "text": f"🔍 检索「{q}」：命中 {len(hits)} 条" +
+                                   ("".join("\n· [" + h["src"] + "] " + h["ctx"][:60] for h in hits[:3]))})
+                return self._json({"ok": True, "intent": "search", "routed": f"检索命中 {len(hits)} 条（对话流见结果）", "hits": hits[:5]})
+            if intent == "schedule":
+                parsed = parse_natural(text)
+                if not parsed["at"]:
+                    intent, parsed = "new", parse_natural(text)
+                else:
+                    rec = {"at": _now(), "title": parsed["title"], "for": parsed["at"],
+                           "seats": parsed["seats"], "raw": text, "status": "scheduled"}
+                    _append(SCHEDULED, rec)
+                    _append(MESSAGES, {"at": _now(), "topic": parsed["title"], "seat": "laotian",
+                                       "kind": "new", "text": f"🎤 预约：「{text}」→ {parsed['at']}，参与：{'、'.join(parsed['seats']) or '全体'}"})
+                    return self._json({"ok": True, "intent": "schedule",
+                                       "routed": f"已预约 {parsed['at']} · {'、'.join(parsed['seats']) or '全体'} · {parsed['title']}"})
+            if intent == "say":
+                _append(MESSAGES, {"at": _now(), "topic": current_topic, "seat": str(data.get("seat") or "laotian")[:20],
+                                   "kind": "say", "text": text})
+                return self._json({"ok": True, "intent": "say", "routed": "已发言（" + current_topic[:16] + "…）"})
+            # new：防抖——同句 10 秒内不重复建会
+            nowts = dt.datetime.now().timestamp()
+            if getattr(Handler, "_last_new", None) and Handler._last_new[0] == text and nowts - Handler._last_new[1] < 10:
+                return self._json({"ok": True, "intent": "new", "routed": "（重复指令已忽略）", "dup": True,
+                                   "topic": {"topic": Handler._last_new[2]}})
             parsed = parse_natural(text)
-            # 自动执行：schedule→预约账本；new→立题（留言记录解析结果）
-            if parsed["action"] == "schedule" and parsed["at"]:
-                rec = {"at": _now(), "title": parsed["title"], "for": parsed["at"],
-                       "seats": parsed["seats"], "raw": text, "status": "scheduled"}
-                _append(SCHEDULED, rec)
-                _append(MESSAGES, {"at": _now(), "topic": parsed["title"], "seat": "laotian",
-                                   "kind": "new", "text": f"🎤 一句话预约：「{text}」→ {parsed['at']}，参与：{'、'.join(parsed['seats']) or '全体'}"})
-                return self._json({"ok": True, "parsed": parsed, "executed": "scheduled"})
             tid = dt.datetime.now().strftime("%m%d-%H%M")
             topic = {"topic": f"{parsed['title']}（#{tid}）",
                     "tags": parsed["seats"] or ["govern"], "stage": "立题",
-                    "originator": "laotian", "summary": f"🎤 语音发起 {tid}" + (f" · {parsed['at']}" if parsed["at"] else ""),
+                    "originator": "laotian", "summary": f"🎤 发起 {tid}" + (f" · {parsed['at']}" if parsed["at"] else ""),
                     "created_at": _now()}
             _append(MESSAGES, {"at": _now(), "topic": topic["topic"], "seat": "laotian",
-                               "kind": "new", "text": f"🎤 一句话发起：「{text}」" + (f" · 时间 {parsed['at']}" if parsed["at"] else "")})
+                               "kind": "new", "text": f"🎤 开会：「{text}」" + (f" · {parsed['at']}" if parsed["at"] else "")})
             cur = []
             if os.path.isfile(REGISTRY_SNIPPET):
                 try:
@@ -467,7 +522,8 @@ class Handler(BaseHTTPRequestHandler):
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(cur, f, ensure_ascii=False, indent=1)
             os.replace(tmp, REGISTRY_SNIPPET)
-            return self._json({"ok": True, "parsed": parsed, "executed": "new", "topic": topic})
+            Handler._last_new = (text, nowts, topic["topic"])
+            return self._json({"ok": True, "intent": "new", "routed": "已开会：" + topic["topic"], "topic": topic})
         if u.path == "/api/council/new":
             title = str(data.get("title") or "").strip()[:80]
             tags = [str(t)[:20] for t in (data.get("tags") or []) if str(t).strip()][:5]
