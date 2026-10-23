@@ -1,0 +1,125 @@
+<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · OS 全板块作战图</title><style>
+:root{color-scheme:light;--bg:#f4f7fa;--paper:#fff;--ink:#1e3348;--muted:#5a6f83;--line:#dbe5ee;--blue:#0e7490;--bluebg:#e8f4f7;--amber:#936224;--red:#b3402e;--green:#227a4b;--violet:#5b3a9e}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.65 "Microsoft YaHei",system-ui,sans-serif}
+.top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:12px;height:54px;padding:0 22px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:17px;font-weight:800;color:var(--blue)}.seg{display:flex;gap:4px;margin-left:auto;overflow-x:auto}.seg button{cursor:pointer;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:5px 12px;font-size:13px;font-weight:600;white-space:nowrap}.seg button.on{color:var(--blue);background:var(--bluebg);border-color:#bcd8e2}
+main{max-width:1220px;margin:auto;padding:20px 22px 80px}.sec{display:none}.sec.on{display:block;animation:in .2s}@keyframes in{from{opacity:0}to{opacity:1}}
+.head{margin:0 0 14px}.head h1{font-size:21px;margin:0 0 3px}.head p{margin:0;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.g2{grid-template-columns:1fr 1fr}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:15px 17px}.card h2{font-size:15px;margin:0 0 8px;color:var(--blue);display:flex;align-items:center;gap:8px}
+.kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}.kpi .c{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 13px}.kpi .n{font-size:22px;font-weight:800;color:var(--blue)}.kpi .n.g{color:var(--green)}.kpi .n.h{color:var(--red)}.kpi .t{font-size:11.5px;color:var(--muted)}
+.krow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid #eaf0f5;font-size:13px}.krow:last-child{border-bottom:none}.krow b{font-weight:600}.krow small{color:var(--muted);font-size:11.5px;display:block}
+.pill{font-size:10.5px;padding:2px 8px;border-radius:9px;font-weight:700;white-space:nowrap}.pill.done{background:#e9f5ee;color:var(--green);border:1px solid #bcdcc9}.pill.half{background:#faf3e6;color:var(--amber);border:1px solid #e6d5b0}.pill.todo{background:#f3eefb;color:var(--violet);border:1px solid #d5c9ec}.pill.dead{background:#fdeeea;color:var(--red);border:1px solid #eec5bd}
+.tag{font-size:10.5px;padding:1px 7px;border-radius:5px;background:#eef3f7;color:var(--muted);font-weight:600}
+.iss{border-left:3px solid var(--red);background:#fdf6f4;padding:8px 12px;border-radius:4px;margin:7px 0;font-size:12.5px}
+.hint{border-left:3px solid var(--amber);background:#fdf9ef;padding:8px 12px;border-radius:4px;margin:7px 0;font-size:12.5px}
+.foot{margin-top:20px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+a{color:var(--blue);text-decoration:none}
+@media(max-width:960px){.grid,.kpi{grid-template-columns:1fr 1fr}}
+</style></head><body><header class="top"><div class="brand">零界 · OS 全板块作战图</div><nav class="seg">
+<button class="on" data-s="map">总图</button><button data-s="done">已建成</button><button data-s="half">半成品</button><button data-s="todo">未做</button><button data-s="gran">数据颗粒度</button>
+</nav></header><main>
+
+<section class="sec on" id="s-map"><div class="head"><h1>58 页 × 六数据端点 · 全板块完成度</h1><p>2026-10-23 21:30 盘点 · 状态口径：现网200且功能可用=done / 页面在但缺数据或半实现=half / 规划中无页面=todo</p></div>
+<div class="kpi">
+<div class="c"><div class="n g">9</div><div class="t">建成板块</div></div>
+<div class="c"><div class="n" style="color:var(--amber)">8</div><div class="t">半成品（问题池）</div></div>
+<div class="c"><div class="n" style="color:var(--violet)">6</div><div class="t">规划未做</div></div>
+<div class="c"><div class="n">6</div><div class="t">8091 数据端点全活</div></div>
+<div class="c"><div class="n">5</div><div class="t">8798 情报/内容端点</div></div>
+</div>
+<div class="grid">
+<div class="card"><h2>🏛️ 会议指挥线 <span class="pill done">done</span></h2>
+<div class="krow"><b>os_council.html</b><small>五路路由/辩论/归档/工单/飞书</small><span class="tag">v11</span></div>
+<div class="krow"><b>通知指挥 notify</b><small>队列+审批隔离</small><span class="pill done">done</span></div></div>
+<div class="card"><h2>🌐 情报全谱 <span class="pill done">done</span></h2>
+<div class="krow"><b>zero_proto 六域</b><small>盘面/政策/科技/商业/知识/环境</small><span class="tag">今晚转正</span></div>
+<div class="krow"><b>news_intel / xq_intel</b><small>接口新闻台+雪球舆情台</small><span class="pill done">done</span></div>
+<div class="krow"><b>intel_workbench</b><small>三级工作台</small><span class="pill half">half</span></div></div>
+<div class="card"><h2>📈 量化投研 <span class="pill done">done</span></h2>
+<div class="krow"><b>quant_drill / quant_v2</b><small>多源选股/双轨</small><span class="pill done">done</span></div>
+<div class="krow"><b>paper / bt_view / picks</b><small>模拟盘/回测/选票</small><span class="pill done">done</span></div>
+<div class="krow"><b>radar / watch_admin</b><small>雷达/盯盘管理</small><span class="pill done">done</span></div></div>
+<div class="card"><h2>🧪 研发线 <span class="pill done">done</span></h2>
+<div class="krow"><b>dev.html</b><small>工单/项目/分支</small><span class="pill done">done</span></div>
+<div class="krow"><b>ide / sandbox / stack</b><small>开发台家族</small><span class="pill half">half</span></div>
+<div class="krow"><b>flow / perf / strong</b><small>流程/性能</small><span class="pill half">half</span></div></div>
+<div class="card"><h2>✍️ 内容生产 <span class="pill done">done</span></h2>
+<div class="krow"><b>creator.html</b><small>选题/草稿/交付</small><span class="pill done">done</span></div>
+<div class="krow"><b>驾驶舱内容卡</b><small>近7天产出+状态</small><span class="tag">今晚</span></div></div>
+<div class="card"><h2>🏛️ 组织军团 <span class="pill done">done</span></h2>
+<div class="krow"><b>legion.html</b><small>68席编制/在线</small><span class="pill done">done</span></div>
+<div class="krow"><b>审批 approvals</b><small>approval_gate 面</small><span class="pill done">done</span></div></div>
+<div class="card"><h2>🔍 审计复核 <span class="pill done">done</span></h2>
+<div class="krow"><b>audit.html</b><small>结论回证据</small><span class="pill done">done</span></div>
+<div class="krow"><b>ledger / dataops</b><small>账本/数据运营</small><span class="pill half">half</span></div></div>
+<div class="card"><h2>🖥️ 驾驶舱层 <span class="pill done">done</span></h2>
+<div class="krow"><b>zero_proto（新）</b><small>AI对话+情报+六板块</small><span class="tag">候选主入口</span></div>
+<div class="krow"><b>os_entry_v9</b><small>四视图+大屏（深屏）</small><span class="pill done">done</span></div>
+<div class="krow"><b>screen.html</b><small>指挥大屏</small><span class="pill done">done</span></div></div>
+</div></section>
+
+<section class="sec" id="s-done"><div class="head"><h1>已建成 · 逐板块数据颗粒度</h1><p>每个建成板块：数据源 → 端点 → 颗粒度现状</p></div>
+<div class="grid">
+<div class="card"><h2>会议指挥</h2>
+<div class="krow"><b>源</b><small>council_messages/topics/scheduled/meetings archive</small></div>
+<div class="krow"><b>颗粒度</b><small>留言/议题/阶段/决议/任务/纪要全文</small><span class="pill done">细</span></div>
+<div class="hint">待补：辩论轮次结构化（现为文本流）</div></div>
+<div class="card"><h2>情报全谱</h2>
+<div class="krow"><b>盘面</b><small>premarket overall+警报条目</small><span class="pill half">中</span></div>
+<div class="krow"><b>政策</b><small>6223+12812条 标题/日期/URL</small><span class="pill half">中</span></div>
+<div class="krow"><b>科技</b><small>trending+arXiv 标题/描述</small><span class="pill half">中</span></div>
+<div class="hint">待补：政策/科技**全文入库可检索**；影响标注（政策→板块）</div></div>
+<div class="card"><h2>量化</h2>
+<div class="krow"><b>源</b><small>8091 /api/os（collect/agents/paper/accounts/qd）</small></div>
+<div class="krow"><b>颗粒度</b><small>选票/回测/模拟盘逐笔</small><span class="pill done">细</span></div></div>
+<div class="card"><h2>内容生产</h2>
+<div class="krow"><b>源</b><small>gzh/drafts index 27篇</small></div>
+<div class="krow"><b>颗粒度</b><small>标题/栏目/status/日期</small><span class="pill half">中</span></div>
+<div class="hint">待补：选题变更历史、对标热点记录、发布后数据回流</div></div>
+<div class="card"><h2>商业关系</h2>
+<div class="krow"><b>源</b><small>contacts.jsonl（2种子）</small></div>
+<div class="krow"><b>颗粒度</b><small>姓名/角色/备注</small><span class="pill half">粗</span></div>
+<div class="hint">待补：跟进事件流、下次见面、投资人 BP 发送记录</div></div>
+<div class="card"><h2>环境日程</h2>
+<div class="krow"><b>天气</b><small>wttr.in 当前+今高低温</small><span class="pill half">中</span></div>
+<div class="krow"><b>日程</b><small>议会厅预约列表</small><span class="pill half">中</span></div>
+<div class="hint">待补：未来3天预报、出行城市联动、日历合并</div></div>
+</div></section>
+
+<section class="sec" id="s-half"><div class="head"><h1>半成品 · 问题池（逐个找问题）</h1><p>按伤害排序——前端评审的第一轮靶子</p></div>
+<div class="grid g2">
+<div class="card"><h2>① intel_workbench <span class="pill half">half</span></h2><div class="iss">三级工作台+证据流 E2E 工单在途——数据链未闭环，页面在但证据流断</div><div class="hint">评审点：是否并入情报全谱，还是独立深工作台</div></div>
+<div class="card"><h2>② ide/sandbox/stack <span class="pill half">half</span></h2><div class="iss">开发台家族页面在，与 dev 工单线数据未通——两套视图</div><div class="hint">评审点：合并为「研发工作台」单入口</div></div>
+<div class="card"><h2>③ flow/perf/strong <span class="pill half">half</span></h2><div class="iss">流程/性能页半实现，数据源薄</div><div class="hint">评审点：留还是砍（少而准原则）</div></div>
+<div class="card"><h2>④ ledger/dataops <span class="pill half">half</span></h2><div class="iss">账本/数据运营页在，健康卡数据未直连</div><div class="hint">评审点：接 gen_health_card 真数据</div></div>
+<div class="card"><h2>⑤ 案卷五屏骨架 <span class="pill half">half</span></h2><div class="iss">intel_dossier 五屏空态未挂路由</div><div class="hint">评审点：E3 OS 供给联动时机</div></div>
+<div class="card"><h2>⑥ os_entry v6/v8 评审稿 <span class="pill half">half</span></h2><div class="iss">三份旧版评审稿仍在线，入口混乱风险</div><div class="hint">评审点：归档下线，只留 v9+zero_proto</div></div>
+<div class="card"><h2>⑦ home/index 旧首页 <span class="pill half">half</span></h2><div class="iss">home.html/index.html 与驾驶舱并存在</div><div class="hint">评审点：重定向到主入口</div></div>
+<div class="card"><h2>⑧ demo 族页面 <span class="pill half">half</span></h2><div class="iss">quant_v2_demo/os_integrated_demo 等演示稿混在现网</div><div class="hint">评审点：移 _archive 或标 demo</div></div>
+</div></section>
+
+<section class="sec" id="s-todo"><div class="head"><h1>未做 · 规划池</h1><p>原型上占位，逐个排期</p></div>
+<div class="grid g2">
+<div class="card"><h2>会议与日程（个人日历）<span class="pill todo">todo</span></h2><small style="color:var(--muted)">议会厅预约≠日历视图；周视图/提醒联动未做</small></div>
+<div class="card"><h2>学习与知识 <span class="pill todo">todo</span></h2><small style="color:var(--muted)">learn.html 在但资料归集入口未接知识库检索</small></div>
+<div class="card"><h2>系统运维面 <span class="pill todo">todo</span></h2><small style="color:var(--muted)">服务/数据链运维页未建（健康卡已有数据源）</small></div>
+<div class="card"><h2>飞书随身端 <span class="pill todo">todo</span></h2><small style="color:var(--muted)">frp/机器人耳朵方案已定待拍板</small></div>
+<div class="card"><h2>决策卡接线 <span class="pill dead">闸门</span></h2><small style="color:var(--muted)">五闸全红维持隔离（产品架构定稿条款）</small></div>
+<div class="card"><h2>多租户/主题市场落地页 <span class="pill todo">todo</span></h2><small style="color:var(--muted)">主题引擎已就绪，客户管理面未做</small></div>
+</div></section>
+
+<section class="sec" id="s-gran"><div class="head"><h1>数据颗粒度融合表</h1><p>目标：每个板块从「有数据」到「可决策颗粒度」——缺口即下一步工单</p></div>
+<div class="card" style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">
+<tr style="background:#edf4f7"><th style="padding:8px;text-align:left">板块</th><th>现状颗粒度</th><th>决策级颗粒度（目标）</th><th>缺口动作</th></tr>
+<tr><td style="padding:8px"><b>盘面</b></td><td>overall+警报条</td><td>逐指标贡献/历史对比</td><td>l1-l6 层展开入端点</td></tr>
+<tr style="background:#fbfdff"><td style="padding:8px"><b>政策</b></td><td>标题/日期/URL</td><td>全文可检索+影响标注</td><td>content 抓取入库+AI 影响标注</td></tr>
+<tr><td style="padding:8px"><b>科技</b></td><td>标题/描述</td><td>与我产品关联评分</td><td>关键词匹配→AI 研判入会</td></tr>
+<tr style="background:#fbfdff"><td style="padding:8px"><b>商业关系</b></td><td>名片级</td><td>跟进事件流+下次动作</td><td>contacts 加 events 子账本</td></tr>
+<tr><td style="padding:8px"><b>内容生产</b></td><td>篇目状态</td><td>选题变更史+热点对标记录</td><td>topics.jsonl 增量账本</td></tr>
+<tr style="background:#fbfdff"><td style="padding:8px"><b>环境日程</b></td><td>当前天气+预约</td><td>3日预报+出行联动</td><td>weather 抓 3 日+城市订阅</td></tr>
+<tr><td style="padding:8px"><b>会议</b></td><td>全文纪要</td><td>辩论轮次结构化+决议执行追踪</td><td>debate transcript 入结构</td></tr>
+</table></div></section>
+
+<p class="foot">OS 全板块作战图 v1 · 2026-10-23 21:30 · 盘点源：portal 58 页实测 + 8091 六端点 + 8798 五端点 · 与老田逐板块过图找问题用</p>
+</main><script>
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+b.dataset.s));window.scrollTo(0,0)}));
+</script></body></html>
