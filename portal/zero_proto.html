@@ -21,7 +21,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:14px}.foot a{color:var(--muted)}
 @media(max-width:900px){.g2,.g4,.caps{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
 </style><script src="/static/nav.js" defer></script></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
-<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报全谱</button><button data-s="domains">模块</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
+<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报全谱</button><button data-s="cap">能力</button><button data-s="domains">模块</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
 </nav></header><main>
 
 <section class="sec on" id="s-home">
@@ -46,7 +46,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="caps">
 <div class="cap" data-jump="council"><div class="ic">🏛️</div><h3>会议指挥</h3><small>一句话开会议 · 多 AI 复辩收敛 · 定稿即工单行动</small></div>
 <div class="cap" data-jump="intelall"><div class="ic">🌐</div><h3>情报全谱</h3><small>盘面·政策地缘·科技·商业关系·知识库·日程</small></div>
-<div class="cap" data-jump="domains"><div class="ic">🗺️</div><h3>模块 × 能力</h3><small>八大模块+能力层收口</small></div>
+<div class="cap" data-jump="cap"><div class="ic">🧩</div><h3>能力</h3><small>OS 全部能力主页</small></div>
 <div class="cap" data-jump="product"><div class="ic">🏗️</div><h3>产品建设</h3><small>商业化架构 · 首场景 · 阶段闸门如实可视</small></div>
 <div class="cap" data-jump="system"><div class="ic">⚙️</div><h3>系统健康</h3><small>服务状态 · 任务红项 · 一眼知安危</small></div>
 </div>
@@ -109,9 +109,8 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 </div></div>
 </section>
 
-<section class="sec" id="s-domains"><div class="head"><h1>模块 × 能力</h1><p>模块=业务归属（模块下挂能力）；能力层=板块能力的收口——含已实现与思考中未实现的（未实现标「构想」，不伪装）</p></div>
-
-<div class="card" style="margin-bottom:13px"><h2>🧩 能力层（跨模块能力收口）</h2>
+<section class="sec" id="s-cap"><div class="head"><h1>能力</h1><p>OS 全部能力的主页——现役 8 / 构想 3 / 闸门 1（能力属此页，不摊主页面）</p></div>
+<div class="card" style="margin-bottom:0"><h2>🧩 能力层（跨模块能力收口）</h2>
 <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
 <div class="krow"><b>自然语言指挥</b><small>一句话→意图路由→执行</small><span class="pill ok">现役</span></div>
 <div class="krow"><b>多席位复辩</b><small>召唤/轮值主席/投票收敛</small><span class="pill ok">现役</span></div>
@@ -126,6 +125,10 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="krow"><b>跨源知识图谱</b><small>人地事物组织证关联</small><span class="pill wait">构想</span></div>
 <div class="krow"><b>决策卡受控执行</b><small>五闸过后接线</small><span class="pill wait">闸门</span></div>
 </div></div>
+
+</section>
+
+<section class="sec" id="s-domains"><div class="head"><h1>模块</h1><p>八大业务模块 · 各挂能力子项（能力主页在顶栏「能力」）</p></div>
 
 <div class="grid g4">
 <div class="card"><h2>🏛️ 情报模块</h2>
@@ -197,7 +200,7 @@ document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('.cap').forEach(c=>c.addEventListener('click',()=>jump(c.dataset.jump)));
 async function aiSay(){const q=document.getElementById('ai-say').value.trim();if(!q)return;
 const echo=document.getElementById('ai-echo');echo.style.display='block';echo.textContent='⏳ '+q+' — 零界正在处理…';
-if(/^(打开|进入|去|看看)/.test(q)){const m={'模块':'domains','业务域':'domains','会议':'council','产品':'product','系统':'system'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」板块';document.getElementById('ai-say').value='';return}}
+if(/^(打开|进入|去|看看)/.test(q)){const m={'能力':'cap','模块':'domains','业务域':'domains','会议':'council','产品':'product','系统':'system'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」板块';document.getElementById('ai-say').value='';return}}
 try{const r=await fetch(OPS+'/api/council/natural',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q,current_topic:'',seat:'laotian'})});
 const d=await r.json();echo.textContent='✅ '+(d.routed||'完成');load();}catch(e){echo.textContent='⚠️ 指挥桥未连（议会厅 8798）——导航可用，直连功能受限'}
 document.getElementById('ai-say').value=''}
