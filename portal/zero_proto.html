@@ -21,7 +21,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:14px}.foot a{color:var(--muted)}
 @media(max-width:900px){.g2,.g4,.caps{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
 </style><script src="/static/nav.js" defer></script></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
-<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报全谱</button><button data-s="domains">业务域</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
+<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报全谱</button><button data-s="domains">模块</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
 </nav></header><main>
 
 <section class="sec on" id="s-home">
@@ -46,7 +46,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="caps">
 <div class="cap" data-jump="council"><div class="ic">🏛️</div><h3>会议指挥</h3><small>一句话开会议 · 多 AI 复辩收敛 · 定稿即工单行动</small></div>
 <div class="cap" data-jump="intelall"><div class="ic">🌐</div><h3>情报全谱</h3><small>盘面·政策地缘·科技·商业关系·知识库·日程</small></div>
-<div class="cap" data-jump="domains"><div class="ic">🗺️</div><h3>业务域</h3><small>研发/量化/情报/审计/创作——现役入口直达</small></div>
+<div class="cap" data-jump="domains"><div class="ic">🗺️</div><h3>模块 × 能力</h3><small>八大模块+能力层收口</small></div>
 <div class="cap" data-jump="product"><div class="ic">🏗️</div><h3>产品建设</h3><small>商业化架构 · 首场景 · 阶段闸门如实可视</small></div>
 <div class="cap" data-jump="system"><div class="ic">⚙️</div><h3>系统健康</h3><small>服务状态 · 任务红项 · 一眼知安危</small></div>
 </div>
@@ -109,20 +109,54 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 </div></div>
 </section>
 
-<section class="sec" id="s-domains"><div class="head"><h1>业务域</h1><p>现役直达 · 待接灰显不伪装</p></div>
+<section class="sec" id="s-domains"><div class="head"><h1>模块 × 能力</h1><p>模块=业务归属（模块下挂能力）；能力层=板块能力的收口——含已实现与思考中未实现的（未实现标「构想」，不伪装）</p></div>
+
+<div class="card" style="margin-bottom:13px"><h2>🧩 能力层（跨模块能力收口）</h2>
+<div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+<div class="krow"><b>自然语言指挥</b><small>一句话→意图路由→执行</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>多席位复辩</b><small>召唤/轮值主席/投票收敛</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>定稿→工单直通</b><small>决议自动建单+飞书通知</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>问题生命周期</b><small>登记→认领→解决→归档</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>全文检索</b><small>留言+纪要+政策标题</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>飞书多端通知</b><small>卡片+直达按钮</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>换肤主题市场</b><small>三国/商务/科技三套</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>每日自动采集</b><small>07:35 政策/科技/天气</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>智能体自运作领单</b><small>席位按 owner 领任务</small><span class="pill wait">构想</span></div>
+<div class="krow"><b>个人日历视图</b><small>预约+日程+提醒合并</small><span class="pill wait">构想</span></div>
+<div class="krow"><b>跨源知识图谱</b><small>人地事物组织证关联</small><span class="pill wait">构想</span></div>
+<div class="krow"><b>决策卡受控执行</b><small>五闸过后接线</small><span class="pill wait">闸门</span></div>
+</div></div>
+
 <div class="grid g4">
-<a class="tile" href="/dev"><h3>软件开发</h3><small>项目 / 工单</small><span class="pill now">现役</span></a>
-<a class="tile" href="/quant-drill"><h3>量化投研</h3><small>选股 / 复盘</small><span class="pill now">现役</span></a>
-<a class="tile" href="/intel"><h3>情报研究</h3><small>信源与判断</small><span class="pill now">现役</span></a>
-<a class="tile" href="/audit"><h3>审计复核</h3><small>结论回证据</small><span class="pill now">现役</span></a>
-<a class="tile" href="/creator"><h3>自媒体创作</h3><small>选题 / 交付</small><span class="pill now">现役</span></a>
-<a class="tile" href="/legion"><h3>数字军团</h3><small>组织状态</small><span class="pill now">现役</span></a>
-<a class="tile" href="/notify-command"><h3>通知指挥</h3><small>通知队列</small><span class="pill now">现役</span></a>
-<a class="tile" href="/os_council.html"><h3>议会厅</h3><small>会议指挥</small><span class="pill now">现役</span></a>
-<div class="tile" style="opacity:.55"><h3>学习与知识</h3><small>归集待接</small><span class="pill wait">待接</span></div>
-<div class="tile" style="opacity:.55"><h3>系统运维</h3><small>数据链待接</small><span class="pill wait">待接</span></div>
-<div class="tile" style="opacity:.55"><h3>会议与日程</h3><small>日历待接</small><span class="pill wait">待接</span></div>
-<div class="tile" style="opacity:.55"><h3>VB</h3><small>定义待确认</small><span class="pill wait">待定义</span></div>
+<div class="card"><h2>🏛️ 情报模块</h2>
+<div class="krow" style="cursor:pointer" onclick="location='/intel'"><b>情报研究台</b><small>信源与判断</small><span class="pill ok">现役</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/zero_proto.html'"><b>情报全谱</b><small>六域真数据</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>证据流工作台</b><small>E2E 在途</small><span class="pill wait">半成</span></div></div>
+<div class="card"><h2>📈 量化交易模块</h2>
+<div class="krow" style="cursor:pointer" onclick="location='/quant-drill'"><b>量化投研</b><small>选股/复盘</small><span class="pill ok">现役</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/paper'"><b>模拟盘</b><small>paper trading</small><span class="pill ok">现役</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/radar'"><b>盯盘雷达</b><small>watch</small><span class="pill ok">现役</span></div></div>
+<div class="card"><h2>🤖 数字军团模块</h2>
+<div class="krow" style="cursor:pointer" onclick="location='/legion'"><b>军团编制</b><small>68席组织状态</small><span class="pill ok">现役</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/os_council.html'"><b>议会厅</b><small>会议指挥</small><span class="pill ok">现役</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/notify-command'"><b>通知指挥</b><small>队列/审批</small><span class="pill ok">现役</span></div></div>
+<div class="card"><h2>🛠️ 研发模块</h2>
+<div class="krow" style="cursor:pointer" onclick="location='/dev'"><b>研发工作台</b><small>项目/工单</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>开发台家族</b><small>ide/sandbox/stack 待并</small><span class="pill wait">半成</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/audit'"><b>审计复核</b><small>结论回证据</small><span class="pill ok">现役</span></div></div>
+<div class="card"><h2>✍️ 内容模块</h2>
+<div class="krow" style="cursor:pointer" onclick="location='/creator'"><b>创作工作台</b><small>选题/草稿/交付</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>热点对标雷达</b><small>选题×热点联动</small><span class="pill wait">构想</span></div></div>
+<div class="card"><h2>🧾 商业模块</h2>
+<div class="krow"><b>商业关系库</b><small>客户/投资人/BP</small><span class="pill ok">起步</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/zero_home.html'"><b>产品工作台</b><small>架构/闸门/商业</small><span class="pill ok">现役</span></div></div>
+<div class="card"><h2>🎓 学习模块</h2>
+<div class="krow"><b>知识沉淀</b><small>纪要/工单/文档</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>归集入口</b><small>learn 待接</small><span class="pill wait">待接</span></div></div>
+<div class="card"><h2>⚙️ 运维模块</h2>
+<div class="krow" style="cursor:pointer" onclick="location='/os_issues.html'"><b>问题账本</b><small>生命周期管理</small><span class="pill ok">现役</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/os_map.html'"><b>板块作战图</b><small>盘点/颗粒度</small><span class="pill ok">现役</span></div>
+<div class="krow"><b>系统运维面</b><small>服务/数据链</small><span class="pill wait">待接</span></div></div>
 </div></section>
 
 <section class="sec" id="s-product"><div class="head"><h1>产品建设</h1><p>商业化：架构 / 首场景 / 闸门 / 模式</p></div>
@@ -163,7 +197,7 @@ document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('.cap').forEach(c=>c.addEventListener('click',()=>jump(c.dataset.jump)));
 async function aiSay(){const q=document.getElementById('ai-say').value.trim();if(!q)return;
 const echo=document.getElementById('ai-echo');echo.style.display='block';echo.textContent='⏳ '+q+' — 零界正在处理…';
-if(/^(打开|进入|去|看看)/.test(q)){const m={'业务域':'domains','会议':'council','产品':'product','系统':'system'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」板块';document.getElementById('ai-say').value='';return}}
+if(/^(打开|进入|去|看看)/.test(q)){const m={'模块':'domains','业务域':'domains','会议':'council','产品':'product','系统':'system'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」板块';document.getElementById('ai-say').value='';return}}
 try{const r=await fetch(OPS+'/api/council/natural',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q,current_topic:'',seat:'laotian'})});
 const d=await r.json();echo.textContent='✅ '+(d.routed||'完成');load();}catch(e){echo.textContent='⚠️ 指挥桥未连（议会厅 8798）——导航可用，直连功能受限'}
 document.getElementById('ai-say').value=''}
