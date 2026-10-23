@@ -58,14 +58,12 @@ def disambiguate(a: EntityMention, b: EntityMention,
         raise DisambigRejected("cross-type comparison rejected")
     if same_native_id:
         return "same"
+    if type_conflict:
+        return "different"     # P4 先于同名: 产品与其管理人强制分离
     if a.raw_name == b.raw_name:
-        if a.etype == "person":
-            return "candidate" if a.source_id == b.source_id else "candidate"  # P2 同名一律候选
         if a.etype == "seat":
             return "same"      # S1
-        return "candidate"     # O3 跨源同名组织
+        return "candidate"     # P2 同名人候选 / O3 跨源同名组织候选
     if prefix_match:
         return "candidate"     # P3/S2/O2
-    if type_conflict:
-        return "different"     # P4
     return "different"         # P1 默认保守
