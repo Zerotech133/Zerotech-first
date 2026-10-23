@@ -4028,6 +4028,19 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-MDC-R03 批次①b：案卷五屏评审路由（骨架态——空态不接真源，
             # 老田 2026-10-23 批准挂载；合并自 K-INTEL-20261022-FE）
             self._html_file(os.path.join(ROOT, "intel_dossier_skeleton.html"))
+        elif path == "/api/intel-graph/dossier":
+            # K-MDC-E2/#2：第六屏数据端点转生产（只读，A4/A5 影子+D2 规则实时构建；
+            # 老田 2026-10-23 下一步方案#2 批准；8091 不重启，随冷启动生效）
+            import urllib.parse
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            code = (qs.get("code") or [""])[0]
+            sys.path.insert(0, os.path.join(ROOT, "..", "quant_backtest"))
+            sys.path.insert(0, ROOT)
+            from api_intel_graph import dossier
+            try:
+                self._json(dossier(code))
+            except Exception as error:  # 失败关闭: 端点异常返回结构化错误而非 500 白页
+                self._json({"error": f"dossier_unavailable: {error}"})
         elif path == "/notify-command":
             # K-ORG-201 通知指挥只读投影页（FB-C 2026-10-19 个人 OS 入口三件套：
             # api_common.py intel 域导航「📨 通知指挥」落地页，零参数只读 GET）
