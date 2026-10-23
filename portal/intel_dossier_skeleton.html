@@ -63,8 +63,23 @@ document.getElementById('drill-go').addEventListener('click', () => {
   fetch('/api/intel-graph/dossier?code=' + encodeURIComponent(code)).then(r => r.json()).then(d => {
     if (!d || d.total_edges === undefined) { out.className='empty'; out.textContent='接口不可达或响应异常——第六屏保持空态，不凑样例。'; return; }
     if (d.total_edges === 0) { out.className='empty'; out.textContent='该票暂无候选边（空态=无候选，不是无情报）。'; return; }
-    const rows = d.edges.map(e => '<div class="card"><strong>[' + e.rel_type + '] ' + e.pair + '</strong><div>证据键：<code>' + e.evidence_key + '</code></div><div class="muted">' + e.question + '</div></div>').join('');
-    out.className='grid'; out.innerHTML = rows + '<p class="muted">共 ' + d.total_edges + ' 条候选边，显示 ' + d.shown + ' 条' + (d.truncated ? '（截断）' : '') + ' · 全部 candidate 调查方向，非事实</p>';
+    // Render source-derived fields as text, never as HTML. 席位名/股东名/问题可来自数据源。
+    out.className='grid'; out.replaceChildren();
+    for (const e of d.edges) {
+      const card = document.createElement('div'); card.className='card';
+      const title = document.createElement('strong');
+      title.textContent = '[' + e.rel_type + '] ' + e.pair;
+      const source = document.createElement('div');
+      source.append(document.createTextNode('证据键：'));
+      const key = document.createElement('code'); key.textContent = e.evidence_key;
+      source.append(key);
+      const question = document.createElement('div'); question.className='muted';
+      question.textContent = e.question;
+      card.append(title, source, question); out.append(card);
+    }
+    const summary = document.createElement('p'); summary.className='muted';
+    summary.textContent = '共 ' + d.total_edges + ' 条候选边，显示 ' + d.shown + ' 条' + (d.truncated ? '（截断）' : '') + ' · 全部 candidate 调查方向，非事实';
+    out.append(summary);
   }).catch(() => { out.className='empty'; out.textContent='接口不可达——第六屏保持空态，不凑样例。'; });
 });
 </script>
