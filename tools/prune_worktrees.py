@@ -9,8 +9,8 @@
   2. 提交已并入主分支：`git rev-list --count <主分支>..<HEAD>` == 0
   3. 空闲超过 --days 天（按该树最后一次提交时间算）
 
-⚠️ 本机回收站不可用（进程为 Low IL，`C:\\$Recycle.Bin` 无写权限），
-   `git worktree remove` 是**永久删除**。所以：
+⚠️ `git worktree remove` 是**永久删除**（不走回收站）——这一点 2026-10-24 已实测确认：
+   回收站本身可用（SHFileOperationW 能进），但 git 的删除不经它。所以：
      · 默认 dry-run，只打印
      · 只有加 --apply 才真删
      · 删除前会再验一次 clean + merged（防 race）
@@ -124,7 +124,7 @@ def main(argv=None) -> int:
     if not a.apply:
         print()
         print("dry-run：未删除任何东西。加 --apply 才真删")
-        print("注意：本机回收站不可用，--apply 是永久删除；删除前会再验一次 clean+merged")
+        print("注意：--apply 是永久删除（不走回收站）；删除前会再验一次 clean+merged")
         return 0
 
     removed = failed = 0
