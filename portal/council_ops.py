@@ -566,26 +566,43 @@ OUTBOX = os.path.join(DATA_DIR, "council_outbox.jsonl")     # 未配 webhook 时
 
 
 def notify(title: str, body: str, deep_link: str = "") -> dict:
-    """多端通知：优先飞书 webhook 卡片；未配置则落待发队列（诚实降级，不丢）。"""
+    """多端通知：飞书 OpenAPI 卡片直发老田个人（既有应用凭据+历史 open_id）；失败落待发队列。"""
     import urllib.request as _ur
-    card = {"msg_type": "interactive", "card": {
-        "header": {"title": {"tag": "plain_text", "content": title[:60]},
-                   "template": "blue"},
-        "elements": [
-            {"tag": "div", "text": {"tag": "lark_md", "content": body[:1800]}},
-            {"tag": "action", "actions": [
-                {"tag": "button", "text": {"tag": "plain_text", "content": "打开指挥联动台"},
-                 "type": "primary", "url": deep_link or "http://127.0.0.1:8080/os_council.html"}]}]}}
     rec = {"at": _now(), "title": title, "body": body[:600], "sent": False, "channel": "outbox"}
-    if FEISHU_HOOK:
+    try:
+        cfg = json.load(open(os.path.expanduser("~/.lark-cli/config.json"), encoding="utf-8"))
+        app = next((a for a in cfg.get("apps", []) if a.get("appId", "").startswith("cli_aa3e4f1b")), None)
+        news = json.load(open(os.path.join(os.path.dirname(REPO), "..", "aios", "news_collector", "news_config.json"), encoding="utf-8")) if False else None
+        import sys as _sys
+        _sys.path.insert(0, "C:/项目/老田的AI助手/news_collector")
+        os.environ.setdefault("LARK_CLI_CHDIR_DONE", "1")
+        old_cwd = os.getcwd()
+        os.chdir("C:/aios/news_collector")
         try:
-            req = _ur.Request(FEISHU_HOOK, data=json.dumps(card).encode("utf-8"),
-                              headers={"Content-Type": "application/json"}, method="POST")
+            import feishu_client as _fc
+            tat = _fc.get_tat(app["appId"], app["appSecret"])
+        finally:
+            os.chdir(old_cwd)
+        if app and tat:
+            uid = "ou_50a95455c7dffec1090ade400886d0d4"  # 老田个人（news_config 历史投递目标）
+            payload = {"receive_id": uid, "msg_type": "interactive",
+                       "content": json.dumps({
+                           "config": {"wide_screen_mode": True},
+                           "header": {"title": {"tag": "plain_text", "content": title[:60]}, "template": "blue"},
+                           "elements": [
+                               {"tag": "div", "text": {"tag": "lark_md", "content": body[:1700]}},
+                               {"tag": "action", "actions": [{"tag": "button", "text": {"tag": "plain_text", "content": "打开指挥联动台"}, "type": "primary", "url": deep_link or "http://127.0.0.1:8080/os_council.html"}]}]})}
+            req = _ur.Request("https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id",
+                              data=json.dumps(payload).encode("utf-8"),
+                              headers={"Content-Type": "application/json", "Authorization": "Bearer " + tat},
+                              method="POST")
             with _ur.urlopen(req, timeout=15) as r:
-                rec["sent"] = r.status == 200
-                rec["channel"] = "feishu"
-        except Exception as e:
-            rec["err"] = str(e)[:120]
+                d = json.loads(r.read().decode("utf-8"))
+                rec["sent"] = d.get("code") == 0
+                rec["channel"] = "feishu-openapi"
+                rec["code"] = d.get("code")
+    except Exception as e:
+        rec["err"] = str(e)[:150]
     _append(OUTBOX, rec)
     return rec
 
