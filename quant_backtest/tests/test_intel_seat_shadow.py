@@ -38,9 +38,33 @@ def test_same_day_same_stock_produces_real_pairs():
     out = seat_pairs(frame)
     assert len(out) == 1  # 只有 1021×600001 成对
     e = out[0]
-    assert {e.left, e.right} == {"席位A", "席位B"}
+    assert {e.left, e.right} == {"seat:tdx:席位A", "seat:tdx:席位B"}
     assert "买" in e.question and "卖" in e.question  # 方向组合进了问题
     assert e.evidence_key.startswith("top_inst:20261021:600001")
+
+
+def test_branch_number_only_is_s2_candidate_not_two_confirmed_seats():
+    frame = pd.DataFrame([
+        {"ts_code": "600001.SH", "trade_date": "20261021",
+         "exalter": "甲证券北京第1营业部", "side": "0"},
+        {"ts_code": "600001.SH", "trade_date": "20261021",
+         "exalter": "甲证券北京第2营业部", "side": "1"},
+    ])
+    edge = seat_pairs(frame)[0]
+    assert edge.basis.startswith("seat_S2_candidate:")
+    assert "暂不计入两席共现" in edge.question
+    assert {edge.left, edge.right} == {
+        "seat:tdx:甲证券北京第1营业部", "seat:tdx:甲证券北京第2营业部"}
+
+
+def test_different_names_stay_distinct_under_d1():
+    frame = pd.DataFrame([
+        {"ts_code": "600001.SH", "trade_date": "20261021",
+         "exalter": "甲证券北京营业部", "side": "0"},
+        {"ts_code": "600001.SH", "trade_date": "20261021",
+         "exalter": "乙证券上海营业部", "side": "1"},
+    ])
+    assert seat_pairs(frame)[0].basis.startswith("lhb_same_day_same_stock:")
 
 
 def test_big_group_folds_to_population_question():
