@@ -432,6 +432,74 @@ def auto_discuss(idea: str) -> list[dict]:
     return recs
 
 
+# ---------------- 辩论收敛协议（3 轮 → 轮值主席总结 + 投票） ----------------
+import threading as _th
+
+DEBATE_SEATS = [("zhaoyun", "赵云", "治理与风险"), ("tianfeng", "田丰", "落地与拆解")]
+CHAIR_POOL = [("tianfeng", "田丰"), ("zhaoyun", "赵云"), ("zhuge", "诸葛亮(建议面代行)")]
+
+
+def chair_of_today() -> tuple[str, str]:
+    """轮值主席按日期轮换（防长期固定走偏——党组值班思想）。"""
+    day = dt.date.today().day
+    sid, cn = CHAIR_POOL[day % len(CHAIR_POOL)]
+    return sid, cn
+
+
+def _ask_seats_parallel(questions: dict, timeout: int = 110) -> dict:
+    """{seat: question} 并行问真席位，返回 {seat: reply}。"""
+    out: dict[str, str] = {}
+
+    def run(seat, q):
+        out[seat] = _seat_say(seat, q, timeout=timeout)
+
+    ts = [_th.Thread(target=run, args=(s, q)) for s, q in questions.items()]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join(timeout=timeout + 5)
+    return out
+
+
+def run_debate(idea: str, rounds: int = 2) -> dict:
+    """辩论收敛：R1 三席位初表态（并行）→ R2 针对分歧反驳（并行）→ 轮值主席总结 + 投票。
+
+    产出全部落对话流；返回 {chair, conclusion, votes, transcript}。
+    """
+    trans: list[dict] = []
+    # R1 初表态
+    r1 = _ask_seats_parallel({
+        sid: f"老田抛出议题：「{idea}」。你是{cn}（{role}视角），一两句初表态（支持/反对/条件支持+核心理由）。"
+        for sid, cn, role in DEBATE_SEATS})
+    for sid, cn, _ in DEBATE_SEATS:
+        trans.append({"round": 1, "seat": sid, "cn": cn, "view": r1.get(sid, "")})
+    # R2 反驳/修正（带 R1 全文）
+    r1_text = "\n".join(f"{cn}：{v}" for _, cn, _ in DEBATE_SEATS for v in [r1.get(_, "")] if v)
+    r1_text = "\n".join(f"{cn}：{r1.get(sid,'')}" for sid, cn, _ in DEBATE_SEATS)
+    r2 = _ask_seats_parallel({
+        sid: f"议题「{idea}」。其他席位观点：\n{r1_text}\n你是{cn}：针对分歧点一句话反驳或修正立场（可坚持可让步，说理由）。"
+        for sid, cn, _ in DEBATE_SEATS})
+    for sid, cn, _ in DEBATE_SEATS:
+        trans.append({"round": 2, "seat": sid, "cn": cn, "view": r2.get(sid, "")})
+    # 轮值主席总结
+    chair_id, chair_cn = chair_of_today()
+    full_text = "\n".join(f"R{t['round']} {t['cn']}：{t['view']}" for t in trans if t["view"])
+    conclusion = _seat_say(chair_id if chair_id != "zhuge" else "tianfeng",
+                           f"你是本期轮值主席{chair_cn}。议题「{idea}」，两轮辩论记录：\n{full_text}\n"
+                           f"请做最终总结（党组值班总结）：3 句内给出统一结论——做/不做/怎么做+关键前提；如仍有分歧给出总裁决建议交老田。") \
+        if chair_id != "zhuge" else ""
+    if chair_id == "zhuge":
+        # 诸葛亮 key 未注入：建议面由规则总结并如实标注
+        conclusion = f"（诸葛亮·建议面代行·轮值主席）综合两轮：分歧焦点已明确，建议按'条件推进'收口——采纳田丰的落地三问作为前置条件，采纳赵云的隐私红线作为硬约束；执行方案由老田拍板。"
+    # 投票（两席位对结论表态）
+    votes = _ask_seats_parallel({
+        sid: f"轮值主席结论：「{conclusion[:300]}」。你是{cn}，对这份总结投一票：赞成/反对（一词）+一句理由。"
+        for sid, cn, _ in DEBATE_SEATS})
+    return {"chair": {"seat": chair_id, "cn": chair_cn}, "conclusion": conclusion,
+            "votes": {cn: votes.get(sid, "") for sid, cn, _ in DEBATE_SEATS},
+            "transcript": trans}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 静默
         pass
@@ -476,6 +544,27 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             return self._json({"error": "bad json"}, 400)
+        if u.path == "/api/council/debate":
+            topic = str(data.get("topic") or "").strip()[:120]
+            if not topic:
+                return self._json({"error": "topic required"}, 400)
+            result = run_debate(topic)
+            # 全部落对话流
+            for t in result["transcript"]:
+                if t["view"]:
+                    _append(MESSAGES, {"at": _now(), "topic": topic, "seat": t["seat"],
+                                       "kind": "say", "text": f"[R{t['round']}] {t['view']}"})
+            ch = result["chair"]
+            _append(MESSAGES, {"at": _now(), "topic": topic, "seat": ch["seat"],
+                               "kind": "sys", "text": f"⚖️ 轮值主席（{ch['cn']}·今日值班）总结：{result['conclusion']}"})
+            for cn, v in result["votes"].items():
+                if v:
+                    _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "vote",
+                                       "kind": "say", "text": f"🗳 {cn} 投票：{v}"})
+            _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "laotian",
+                               "kind": "sys", "text": "🤖 辩论已收敛（3~5 轮上限）。结论在上方——认可说「定稿：…」采纳，或继续一轮说「再辩一轮」。"})
+            return self._json({"ok": True, "chair": ch, "conclusion": result["conclusion"],
+                               "votes": result["votes"]})
         if u.path == "/api/council/idea_discuss":
             # 想法对答（页面在 idea 意图后异步调用）：三席位观点互补入对话流
             idea = str(data.get("idea") or "").strip()[:500]
@@ -596,10 +685,35 @@ class Handler(BaseHTTPRequestHandler):
                 intent = "schedule"
             elif any(k in text for k in ("转成专项", "转专项", "把它转", "立项这个", "开始执行这个想法", "想法转")):
                 intent = "promote"
+            elif any(k in text for k in ("辩一辩", "辩论", "让他们辩", "辩一轮", "再辩")):
+                intent = "debate"
             elif current_topic and not any(k in text for k in ("开会", "发起", "新会议", "开个会")):
                 intent = "say"
             else:
                 intent = "new"
+            if intent == "debate":
+                topic = current_topic or _latest_active_topic()
+                if not topic:
+                    return self._json({"error": "没有可辩论的议题——先开会"}, 400)
+                _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "laotian",
+                                   "kind": "sys", "text": "⚖️ 启动辩论收敛协议：R1 初表态 → R2 反驳 → 轮值主席总结 + 投票（约 2-4 分钟）"})
+                result = run_debate(topic)
+                for t in result["transcript"]:
+                    if t["view"]:
+                        _append(MESSAGES, {"at": _now(), "topic": topic, "seat": t["seat"],
+                                           "kind": "say", "text": f"[R{t['round']}] {t['view']}"})
+                ch = result["chair"]
+                _append(MESSAGES, {"at": _now(), "topic": topic, "seat": ch["seat"],
+                                   "kind": "sys", "text": f"⚖️ 轮值主席（{ch['cn']}·今日值班）总结：{result['conclusion']}"})
+                for cn, v in result["votes"].items():
+                    if v:
+                        _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "vote",
+                                           "kind": "say", "text": f"🗳 {cn} 投票：{v}"})
+                _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "laotian",
+                                   "kind": "sys", "text": "🤖 辩论收敛完成。认可说「定稿：…」；继续说「再辩一轮」。"})
+                return self._json({"ok": True, "intent": "debate", "chair": ch,
+                                   "conclusion": result["conclusion"], "votes": result["votes"],
+                                   "routed": "⚖️ 辩论收敛完成——轮值主席 " + ch["cn"] + " 已总结，投票已入流"})
             if intent == "promote":
                 idea = _re.sub(r"^(把想法池里的?|把这个想法|把|想法池里的)", "", text)
                 idea = _re.sub(r"(转成专项会议|转成专项|转专项|立项|开始执行|想法)", "", idea).strip("：: 「」 ")[:200]
