@@ -255,7 +255,24 @@ def archive_meeting(topic: str, decision: str = "", tasks: list | None = None) -
     _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "laotian",
                        "kind": "archive", "text": f"📦 会议定稿建档 {mid}（纪要+决议+任务{len(tasks or [])}项）",
                        "path": folder})
+    try:
+        post_archive_hooks(topic, mid, decision, tasks or [])
+    except Exception:
+        pass  # 联动失败不阻塞建档（回执在对话流可见）
     return {"ok": True, "meeting_id": mid, "folder": folder, "meta": meta}
+
+
+def post_archive_hooks(topic: str, meeting_id: str, decision: str, tasks: list) -> dict:
+    """定稿后联动：①飞书/队列通知 ②任务→devtask 直通 ③回执入对话流。"""
+    body = f"**{topic}** 已定稿\n决议：{decision or '（无）'}\n任务 {len(tasks)} 项：\n" + \
+           "\n".join(f"- [{t.get('owner')}] {t.get('text','')}" + (f" · {t['due']}" if t.get("due") else "") for t in tasks[:8])
+    n = notify(f"📦 会议定稿 {meeting_id}", body)
+    d = dispatch_to_devtask(tasks, meeting_id) if tasks else []
+    ok_n = sum(1 for x in d if x.get("dispatched"))
+    _append(MESSAGES, {"at": _now(), "topic": topic, "seat": "sys",
+                       "kind": "sys", "text": f"🔔 多端通知：{n['channel']}" + ("（已发飞书）" if n.get("sent") else "（待发队列——未配 COUNCIL_FEISHU_WEBHOOK）") +
+                       (f"\n🚀 工单直通：{ok_n}/{len(d)} 已建 devtask" + ("\n· " + "\n· ".join(f"❌ {x['task'][:20]}：{x.get('why','')[:40]}" for x in d if not x.get("dispatched")) if ok_n < len(d) else "") if d else "")})
+    return {"notify": n, "dispatch": d}
 
 
 def _load_messages() -> list[dict]:
@@ -541,6 +558,64 @@ def summon_experts(text: str) -> list[dict]:
         if any(c in text for c in cues):
             out.append({"domain": domain, "who": who})
     return out
+
+
+# ---------------- 多端通知层（飞书卡片/待发队列） ----------------
+FEISHU_HOOK = os.environ.get("COUNCIL_FEISHU_WEBHOOK", "")  # 客户部署时配置
+OUTBOX = os.path.join(DATA_DIR, "council_outbox.jsonl")     # 未配 webhook 时落待发队列
+
+
+def notify(title: str, body: str, deep_link: str = "") -> dict:
+    """多端通知：优先飞书 webhook 卡片；未配置则落待发队列（诚实降级，不丢）。"""
+    import urllib.request as _ur
+    card = {"msg_type": "interactive", "card": {
+        "header": {"title": {"tag": "plain_text", "content": title[:60]},
+                   "template": "blue"},
+        "elements": [
+            {"tag": "div", "text": {"tag": "lark_md", "content": body[:1800]}},
+            {"tag": "action", "actions": [
+                {"tag": "button", "text": {"tag": "plain_text", "content": "打开指挥联动台"},
+                 "type": "primary", "url": deep_link or "http://127.0.0.1:8080/os_council.html"}]}]}}
+    rec = {"at": _now(), "title": title, "body": body[:600], "sent": False, "channel": "outbox"}
+    if FEISHU_HOOK:
+        try:
+            req = _ur.Request(FEISHU_HOOK, data=json.dumps(card).encode("utf-8"),
+                              headers={"Content-Type": "application/json"}, method="POST")
+            with _ur.urlopen(req, timeout=15) as r:
+                rec["sent"] = r.status == 200
+                rec["channel"] = "feishu"
+        except Exception as e:
+            rec["err"] = str(e)[:120]
+    _append(OUTBOX, rec)
+    return rec
+
+
+# ---------------- 工单直通桥（定稿 tasks → devtask） ----------------
+DEVTASK = os.path.join(REPO, "tools", "devtask.py")
+
+
+def dispatch_to_devtask(tasks: list[dict], meeting_id: str) -> list[dict]:
+    """定稿任务→devtask 工单（执行侧落地；失败如实记录不静默）。"""
+    import subprocess
+    results = []
+    for t in tasks:
+        owner = t.get("owner", "TBD")
+        if owner in ("TBD", "?", ""):
+            results.append({"task": t.get("text", ""), "dispatched": False,
+                            "why": "owner 未定——留督促台人工认领"})
+            continue
+        tid = f"CM-{meeting_id}-{owner[:6].upper()}"
+        desc = f"[{meeting_id}] {t.get('text','')}" + (f"（期限 {t['due']}）" if t.get("due") else "")
+        try:
+            r = subprocess.run(["python", DEVTASK, "new", tid, desc],
+                               capture_output=True, timeout=60, check=False,
+                               cwd=REPO)
+            ok = r.returncode == 0 and "已开" in r.stdout.decode("utf-8", errors="replace")
+            results.append({"task": t.get("text", ""), "tid": tid, "dispatched": ok,
+                            "why": "" if ok else r.stderr.decode("utf-8", errors="replace")[:120]})
+        except Exception as e:
+            results.append({"task": t.get("text", ""), "dispatched": False, "why": str(e)[:120]})
+    return results
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -844,6 +919,7 @@ class Handler(BaseHTTPRequestHandler):
                     _append(SCHEDULED, rec)
                     _append(MESSAGES, {"at": _now(), "topic": parsed["title"], "seat": "laotian",
                                        "kind": "new", "text": f"🎤 预约：「{text}」→ {parsed['at']}，参与：{'、'.join(parsed['seats']) or '全体'}"})
+                    notify(f"📅 会议已预约 {parsed['at']}", f"**{parsed['title']}**\n参与：{'、'.join(parsed['seats']) or '全体'}\n到点自动立题开会")
                     return self._json({"ok": True, "intent": "schedule",
                                        "routed": f"已预约 {parsed['at']} · {'、'.join(parsed['seats']) or '全体'} · {parsed['title']}"})
             if intent == "say":
