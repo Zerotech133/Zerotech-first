@@ -4024,6 +4024,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._strategies_page()
         elif path == "/intel":
             self._html_file(os.path.join(ROOT, "intel_workbench.html"))
+        elif path == "/intel-dossier":
+            # K-MDC-R03 批次①b：案卷五屏评审路由（骨架态——空态不接真源，
+            # 老田 2026-10-23 批准挂载；合并自 K-INTEL-20261022-FE）
+            self._html_file(os.path.join(ROOT, "intel_dossier_skeleton.html"))
         elif path == "/notify-command":
             # K-ORG-201 通知指挥只读投影页（FB-C 2026-10-19 个人 OS 入口三件套：
             # api_common.py intel 域导航「📨 通知指挥」落地页，零参数只读 GET）
