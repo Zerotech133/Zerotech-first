@@ -772,7 +772,19 @@
               "danger": "deny"
             }
           },
-          "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）"
+          "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+          "cn_name": "曹操",
+          "coordination_roles": [
+            {
+              "role": "intel_board_lead",
+              "board": "intel",
+              "appointed_at": "2026-10-22T18:20:00+0800",
+              "basis": "老田 2026-10-22 会话裁定「曹操正式统筹整个情报板块」；分线计划 D1 节记载",
+              "ticket": "K-INTEL-20261022-TF-AUDIT",
+              "signed_by": "老田",
+              "scope_note": "跨部门统筹角色，不替代 intel.lead=INTEL0 受理职责，不自动取得源权利、飞书发送、生产或交易权限；dev.lead 不变；取消统筹仅删本字段"
+            }
+          ]
         },
         {
           "agent_id": "OPS1",
