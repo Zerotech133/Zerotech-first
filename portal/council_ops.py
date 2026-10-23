@@ -500,6 +500,23 @@ def run_debate(idea: str, rounds: int = 2) -> dict:
             "transcript": trans}
 
 
+# ---------------- 主题层（商业化：皮肤与机制解耦） ----------------
+THEME_PATH = os.path.join(DATA_DIR, "council_theme.json")
+
+
+def load_theme() -> dict:
+    """读主题配置（缺省=三国皮肤；客户复制改字段即换品牌）。"""
+    try:
+        return json.load(open(THEME_PATH, encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"product_name": "会议厅", "owner_display": "老田", "seats": {}, "experts": []}
+
+
+def seat_display(seat: str) -> str:
+    t = load_theme()
+    return (t.get("seats") or {}).get(seat, {}).get("display", seat)
+
+
 # ---------------- 领域专家智能召唤（议题主题 → 军团编制席位） ----------------
 # 词表→领域→列席 AI（真席位走 8787，未建席位以"召唤卡"形式列席显示）
 EXPERT_ROUTES = [
@@ -515,9 +532,12 @@ EXPERT_ROUTES = [
 
 
 def summon_experts(text: str) -> list[dict]:
-    """按议题词召回列席专家（多领域可叠加；命中即召，不刻意全召）。"""
+    """按议题词召回列席专家（主题层优先——客户可自定义领域路由；多域叠加）。"""
+    theme = load_theme()
+    routes = [(e.get("cues", []), e.get("domain", "?"), e.get("who", "?"))
+              for e in theme.get("experts", [])] or EXPERT_ROUTES
     out = []
-    for cues, domain, who in EXPERT_ROUTES:
+    for cues, domain, who in routes:
         if any(c in text for c in cues):
             out.append({"domain": domain, "who": who})
     return out
