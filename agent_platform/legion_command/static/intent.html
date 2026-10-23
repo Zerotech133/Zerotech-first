@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>席位意图卡 · 契约渲染（legion.os.intent_card/v1）</title>
+<style>
+:root{--bg:#0a1424;--panel:#101f33;--p2:#152a44;--line:#1e3a5f;--txt:#e6eef8;--dim:#8fa8c6;
+--cyan:#38d6d6;--amber:#f0b429;--red:#ef5b6b;--green:#3fbf8f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+header{padding:18px 22px;background:linear-gradient(120deg,#0d2036,#123253 60%,#0d2036);border-bottom:1px solid var(--line)}
+h1{margin:0 0 4px;font-size:18px}.sub{color:var(--dim);font-size:12.5px}
+.wrap{max-width:1120px;margin:0 auto;padding:16px 22px 60px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
+section>h2{margin:0;padding:11px 15px;font-size:14px;background:var(--p2);border-bottom:1px solid var(--line)}
+.body{padding:13px 15px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#12283f;border:1px solid #24507c;border-radius:10px;padding:10px 12px}
+.kpi b{display:block;font-size:20px;color:var(--cyan)}.kpi span{font-size:11.5px;color:var(--dim)}
+.kpi.bad b{color:var(--red)}.kpi.warn b{color:var(--amber)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #16304d;vertical-align:top}
+th{color:var(--dim);font-size:12px;background:#102338}
+tr.clickable{cursor:pointer}tr.clickable:hover{background:#152a44}
+.bdg{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;border:1px solid;white-space:nowrap}
+.g{color:#8fe8c4;border-color:#2c7a5e;background:#0f2b23}
+.r{color:#f7a8b3;border-color:#7a2f3a;background:#2b1218}
+.a{color:#f6d38a;border-color:#7a5f22;background:#2b2411}
+.b{color:#a9d4ff;border-color:#2c5a86;background:#11253a}
+.note{background:#0e2136;border-left:3px solid var(--cyan);padding:9px 12px;border-radius:6px;font-size:12.5px;margin:9px 0;color:#cfe3f4}
+.warn{background:#2b1218;border-left:3px solid var(--red);padding:9px 12px;border-radius:6px;font-size:12.5px;margin:9px 0;color:#f8cdd3}
+code{background:#0b1728;border:1px solid #1b3450;border-radius:4px;padding:1px 5px;font-size:12px}
+.drawer{position:fixed;top:0;right:0;width:min(520px,94vw);height:100%;background:#0c1a2c;border-left:1px solid var(--line);transform:translateX(102%);transition:transform .18s;z-index:60;overflow:auto;padding:18px 20px 60px}
+.drawer.open{transform:none}
+.drawer .x{position:absolute;top:10px;right:14px;background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer}
+.kv{display:grid;grid-template-columns:80px 1fr;gap:4px 10px;font-size:12.5px;margin:6px 0}
+.kv dt{color:var(--dim)}.kv dd{margin:0}
+.sec-t{color:var(--cyan);font-size:12.5px;margin:14px 0 4px;font-weight:600}
+.fl{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.mut{color:var(--dim);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>席位意图卡 · 契约渲染</h1>
+  <div class="sub">数据源 <code>GET /api/intent</code>（<span id="schema">legion.os.intent_card/v1</span>）｜<span id="ts">加载中…</span>｜本页不做任何派生计算</div>
+</header>
+<div class="wrap"><div id="view">加载中…</div></div>
+<div class="drawer" id="drawer"><button class="x" onclick="closeDrawer()">✕</button><div id="dBody"></div></div>
+
+<script>
+"use strict";
+var D = null;
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function bdg(t,c){ return '<span class="bdg '+c+'">'+esc(t)+'</span>'; }
+function kpi(v,l,cls){ return '<div class="kpi '+(cls||"")+'"><b>'+esc(v)+'</b><span>'+esc(l)+'</span></div>'; }
+function kindBadge(k){
+  if(k==="local") return bdg("本地","b");
+  if(k==="cloud") return bdg("云端","g");
+  if(k==="none") return bdg("无模型","r");
+  return bdg("其他","a");
+}
+
+fetch("/api/intent").then(function(r){
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}).then(function(d){
+  D = d;
+  document.getElementById("schema").textContent = d.schema;
+  document.getElementById("ts").textContent = "数据时点 "+(d.ts||"");
+  render();
+}).catch(function(e){
+  document.getElementById("view").innerHTML =
+    '<div class="warn">契约端点不可用：'+esc(e && e.message ? e.message : e)+
+    '<br>（这是失败关闭：不渲染半份卡，避免把缺数据当成全量）</div>';
+});
+
+function render(){
+  var c = D.counts, r = D.rulings;
+  var h = '<div class="kpis">'
+    + kpi(c.seats+" / "+c.entries,"独立席位 / 名单条目","")
+    + kpi(c.doing+"（+review "+c.review+"）","在途（口径已锁）","")
+    + kpi(c.unmapped,"未归属任务",c.unmapped?"bad":"")
+    + kpi(c.unclaimed_keys,"未认领（显式）","warn")
+    + kpi(c.verified+" / "+c.seats,"已验收","bad")
+    + kpi(c.lead_signed+" / "+c.lead_total,"主官已签","warn")
+    + '</div>';
+
+  h += '<section><h2>口径声明（写进契约，不是口头约定）</h2><div class="body"><dl class="kv">'
+    + '<dt>在途定义</dt><dd>只算 <code>'+esc(r.doing_definition.in_transit_status.join(","))+'</code>；'
+    + '<code>'+esc(r.doing_definition.excluded_status.join(","))+'</code> 单列不计入</dd>'
+    + '<dt>前缀版本</dt><dd><code>'+esc(r.prefix_map_version)+'</code> '+esc(Object.keys(r.prefix_map).join(" "))+'</dd>'
+    + '<dt>最低模型档</dt><dd>'+esc(Object.keys(r.task_class_min_model).map(function(k){return k+"→"+r.task_class_min_model[k].tier;}).join("  "))+'</dd>'
+    + '<dt>换壳策略</dt><dd>'+esc(r.shell_policy.primary)+'；小程序：'+esc(r.shell_policy.mini_program)+'</dd>'
+    + '</dl><div class="note">能力台账：<b>'+(c.ledger_missing?'缺失（所以“已验收”为 0，这是诚实结果）':'存在')+'</b></div></div></section>';
+
+  h += '<section><h2>六行卡<span class="mut" style="margin-left:8px">'+D.cards.length+' 席</span></h2><div class="body">'
+    + '<table><thead><tr><th>席位</th><th>L1 作用</th><th>L2 在办</th><th>L3 模型</th><th>L4 三态</th><th>L6 缺口</th></tr></thead><tbody>';
+  D.cards.forEach(function(x){
+    var cap = x.L4_capability;
+    var tri = (cap.declared?bdg("声明","b"):bdg("无声明","r"))+" "
+            + (cap.evidence.has?bdg("有证据","g"):bdg("无证据","a"))+" "
+            + (cap.verified?bdg("已验收","g"):bdg("未验收","r"));
+    h += '<tr class="clickable" onclick="showCard(\''+esc(x.seat.id)+'\')">'
+      + '<td><b>'+esc(x.seat.cn||x.seat.id)+'</b><div class="mut">'
+      + (x.seat.emp_no? '#'+esc(x.seat.emp_no)+' · ' : '')
+      + esc(x.seat.id)+' · '+esc(x.seat.home)+'</div></td>'
+      + '<td class="mut">'+(x.L1_role.declared? esc(String(x.L1_role.text).slice(0,26)) : bdg("未登记","r"))+'</td>'
+      + '<td>'+(x.L2_doing.count? '<b>'+x.L2_doing.count+'</b>' : '<span class="mut">0</span>')+'</td>'
+      + '<td>'+esc(x.L3_model.tier)+' <span class="mut">'+esc(x.L3_model.binding)+'</span></td>'
+      + '<td>'+tri+'</td><td>'+(x.L6_gaps.length? '<b>'+x.L6_gaps.length+'</b>' : '<span class="mut">0</span>')+'</td></tr>';
+  });
+  h += '</tbody></table></div></section>';
+  document.getElementById("view").innerHTML = h;
+}
+
+function showCard(id){
+  var x = (D.cards||[]).filter(function(k){ return k.seat.id===id; })[0];
+  if(!x) return;
+  var h = '<h3 style="margin-top:26px">'+esc(x.seat.cn||x.seat.id)+' <span class="mut">'+esc(x.seat.id)+'</span></h3>';
+  if(x.seat.emp_no){
+    h += '<dl class="kv"><dt>工号</dt><dd><b>#'+esc(x.seat.emp_no)+'</b></dd>'
+       + '<dt>编制号</dt><dd><code>'+esc(x.seat.enroll_no)+'</code></dd></dl>';
+  }
+  h += '<div class="fl">'+kindBadge(x.L3_model.kind)+(x.seat.grade?bdg("档级 "+x.seat.grade,"b"):"")
+     + (x.seat.has_profile?bdg("在册有档","g"):bdg("有名无档","r"))+'</div>';
+
+  h += '<div class="sec-t">L1 主要作用</div><div>'+(x.L1_role.declared? esc(x.L1_role.text):bdg("未登记","r"))+'</div>';
+
+  h += '<div class="sec-t">L2 当前在办（dept → lead → seat）</div>';
+  h += '<dl class="kv"><dt>链条</dt><dd><code>'+esc(x.L2_doing.chain.dept)+' → '+esc(x.L2_doing.chain.lead||"UNSIGNED_LEAD")+' → '+esc(x.L2_doing.chain.seat)+'</code></dd>'
+     + '<dt>主官已签</dt><dd>'+(x.L2_doing.chain.lead_signed?bdg("是","g"):bdg("否（断在真源）","r"))+'</dd>'
+     + '<dt>部门未认领</dt><dd>'+x.L2_doing.unclaimed_in_dept+' 单</dd></dl>';
+  if(x.L2_doing.count) h += '<ul style="margin:4px 0 0 18px">'+x.L2_doing.items.map(function(k){return '<li><code>'+esc(k)+'</code></li>';}).join("")+'</ul>';
+  else h += '<div class="mut">'+esc(x.L2_doing.note)+'</div>';
+
+  h += '<div class="sec-t">L3 模型（按任务分级，不按人）</div>';
+  h += '<dl class="kv"><dt>绑定/档位</dt><dd><code>'+esc(x.L3_model.binding)+'</code> → <b>'+esc(x.L3_model.tier)+'</b></dd>'
+     + '<dt>能干</dt><dd>'+x.L3_model.fits.map(function(t){return bdg(t,"g");}).join(" ")+'</dd>'
+     + '<dt>干不了</dt><dd>'+(x.L3_model.cannot.length? x.L3_model.cannot.map(function(t){return bdg(t,"r");}).join(" "):'<span class="mut">无</span>')+'</dd></dl>';
+
+  h += '<div class="sec-t">L4 能力三态（不合并）</div><table><tbody>'
+     + '<tr><td>声明</td><td>'+(x.L4_capability.declared?bdg("有","g"):bdg("无","r"))+'</td></tr>'
+     + '<tr><td>产出证据</td><td>'+(x.L4_capability.evidence.has?bdg("有","g"):bdg("无","a"))+' <span class="mut">'+esc(x.L4_capability.evidence.note)+'</span></td></tr>'
+     + '<tr><td>已验收</td><td>'+(x.L4_capability.verified?bdg("是","g"):bdg("否","r"))+' <span class="mut">'+(x.L4_capability.ledger_missing?"台账缺失":"" )+'</span></td></tr>'
+     + '</tbody></table>';
+
+  h += '<div class="sec-t">L5 数据边界与汇报边</div><dl class="kv">'
+     + '<dt>可读</dt><dd>'+(x.L5_boundary.read.length? x.L5_boundary.read.map(function(t){return '<code>'+esc(t)+'</code>';}).join(" ") : bdg("未登记","r"))+'</dd>'
+     + '<dt>可写</dt><dd>'+(x.L5_boundary.write.length? x.L5_boundary.write.map(function(t){return '<code>'+esc(t)+'</code>';}).join(" ") : '<span class="mut">无</span>')+'</dd>'
+     + '<dt>汇报链</dt><dd><code>'+esc(x.L5_boundary.report_to.chain.join(" → "))+'</code> '+(x.L5_boundary.report_to.quality==="ok"?bdg("完好","g"):bdg("断在主官","r"))+'</dd></dl>';
+
+  h += '<div class="sec-t">L6 缺口与下一步</div>';
+  if(x.L6_gaps.length){
+    h += '<table><tbody>';
+    x.L6_gaps.forEach(function(g){
+      h += '<tr><td>'+bdg(g.t, g.lv==="high"?"r":"a")+'</td><td class="mut">'+esc(g.solve)+'<div>需：'+esc(g.requires.join(" + "))+'</div></td></tr>';
+    });
+    h += '</tbody></table>';
+  } else h += '<div class="note">六项均无缺口。</div>';
+
+  document.getElementById("dBody").innerHTML = h;
+  document.getElementById("drawer").classList.add("open");
+}
+function closeDrawer(){ document.getElementById("drawer").classList.remove("open"); }
+document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeDrawer(); });
+</script>
+</body>
+</html>

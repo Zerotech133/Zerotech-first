@@ -3,6 +3,7 @@
 
 端口 8796（独立于 8795 门面）。端点（全部只读 GET，除会终指令）：
   GET /api/snapshot        —— org/hr/tasks/schedules 聚合快照（沙盘数据源）
+  GET /api/intent          —— 席位意图卡契约（六行一次算好，前端只渲染）
   GET /api/health          —— 服务与健康
   GET /                    —— 指挥界面（index.html，沙盘+会议室+工作台三视图）
   POST /api/dispatch       —— 会终指令：写军团门面 inbox（走 S21 投递协议）
@@ -114,6 +115,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
+            return
+        if path == "/api/intent":
+            # 席位意图卡契约（只读）：六行一次算好，任何壳只渲染，不做二次派生。
+            # 失败关闭：构建异常一律 500 + 错误码，绝不返回半份卡——
+            # 半份卡会被前端当成全量渲染，比报错更危险。
+            try:
+                from legion_command.intent import build_cards
+                self._send_json(build_cards(_PLATFORM))
+            except Exception as e:                       # noqa: BLE001
+                self._send_json({"ok": False, "error": "intent_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())

@@ -1,5 +1,8 @@
 # 运行时数据不入库（checkpoint/trace/记忆均为本地运行产物）
-data/
+data/*
+# 例外：员工编号台账是人事真源（工号永不复用），必须入库。
+# 它丢了 = 60 个工号无从追溯，比运行时产物严重得多。
+!data/emp_ledger.json
 __pycache__/
 *.pyc
 

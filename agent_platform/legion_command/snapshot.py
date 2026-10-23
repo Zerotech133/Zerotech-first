@@ -32,6 +32,15 @@ ACTIVITY_RULES = (
     ("key_prefix", "legion-", "invest", "D1"),
     ("key_prefix", "K-INTEL", "intel", ""),
     ("key_prefix", "K-ORG", "ops", ""),
+    # S29 补漏（2026-10-23）：K-QUANT 为量化专项前缀，此前无规则 → 在途单一律
+    # 归入 unmapped，沙盘上表现为"有人干活但不知道是谁的活"。
+    ("key_prefix", "K-QUANT", "invest", ""),
+    # K-MDC = 情报侧多源数据归集（现存单产出 intel_lhb_shadow.py，龙虎榜/十大股东影子归集），
+    # 语义落在情报域而非量化域——归因为据，不按“看起来像数据分析”就塞给 invest。
+    ("key_prefix", "K-MDC", "intel", ""),
+    # CM- = 交办给参谋长线席位的会议/交办单（现存 key 均指向 INTEL0 / 田丰），
+    # 无更细席位证据时不硬派到人，只归部门，避免造出"某人负责"的假归属。
+    ("key_prefix", "CM-", "chief_line", ""),
     ("key_contains", "hermes", "ops", ""),
     ("key_contains", "Hermes", "ops", ""),
 )

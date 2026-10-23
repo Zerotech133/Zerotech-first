@@ -1,0 +1,569 @@
+{
+  "schema": "legion.emp.ledger/v1",
+  "rules_version": "1.0",
+  "next_emp": 61,
+  "daily": {
+    "20261023": {
+      "total": 60,
+      "depts": {
+        "参": 3,
+        "量": 8,
+        "研": 11,
+        "交": 1,
+        "智": 1,
+        "产": 3,
+        "质": 4,
+        "市": 1,
+        "法": 1,
+        "运": 7,
+        "院": 7,
+        "情": 8,
+        "通": 2,
+        "风": 3
+      }
+    }
+  },
+  "employees": {
+    "A0": {
+      "emp_no": "000001",
+      "enroll_no": "20261023-参-01",
+      "dept": "chief_line",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-参-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "ST1": {
+      "emp_no": "000002",
+      "enroll_no": "20261023-量-01",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "WA1": {
+      "emp_no": "000003",
+      "enroll_no": "20261023-量-02",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "QS1": {
+      "emp_no": "000004",
+      "enroll_no": "20261023-量-03",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "T1": {
+      "emp_no": "000005",
+      "enroll_no": "20261023-量-04",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-04",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "T2": {
+      "emp_no": "000006",
+      "enroll_no": "20261023-量-05",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-05",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "N1": {
+      "emp_no": "000007",
+      "enroll_no": "20261023-量-06",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-06",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "F1": {
+      "emp_no": "000008",
+      "enroll_no": "20261023-量-07",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-07",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "D1": {
+      "emp_no": "000009",
+      "enroll_no": "20261023-量-08",
+      "dept": "invest",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-量-08",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV1": {
+      "emp_no": "000010",
+      "enroll_no": "20261023-研-01",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV6": {
+      "emp_no": "000011",
+      "enroll_no": "20261023-研-02",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV7": {
+      "emp_no": "000012",
+      "enroll_no": "20261023-研-03",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV2": {
+      "emp_no": "000013",
+      "enroll_no": "20261023-研-04",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-04",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV3": {
+      "emp_no": "000014",
+      "enroll_no": "20261023-研-05",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-05",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV4": {
+      "emp_no": "000015",
+      "enroll_no": "20261023-研-06",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-06",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV5": {
+      "emp_no": "000016",
+      "enroll_no": "20261023-研-07",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-07",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DEV8": {
+      "emp_no": "000017",
+      "enroll_no": "20261023-研-08",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-08",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "ARCH1": {
+      "emp_no": "000018",
+      "enroll_no": "20261023-研-09",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-09",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "OPS1": {
+      "emp_no": "000019",
+      "enroll_no": "20261023-研-10",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-10",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DOC1": {
+      "emp_no": "000020",
+      "enroll_no": "20261023-研-11",
+      "dept": "dev",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-研-11",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "TR1": {
+      "emp_no": "000021",
+      "enroll_no": "20261023-交-01",
+      "dept": "trading",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-交-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DATA1": {
+      "emp_no": "000022",
+      "enroll_no": "20261023-智-01",
+      "dept": "data",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-智-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "PM1": {
+      "emp_no": "000023",
+      "enroll_no": "20261023-产-01",
+      "dept": "product",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-产-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DSGN1": {
+      "emp_no": "000024",
+      "enroll_no": "20261023-产-02",
+      "dept": "product",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-产-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DSGN2": {
+      "emp_no": "000025",
+      "enroll_no": "20261023-产-03",
+      "dept": "product",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-产-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "QA1": {
+      "emp_no": "000026",
+      "enroll_no": "20261023-质-01",
+      "dept": "quality",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-质-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "SEC1": {
+      "emp_no": "000027",
+      "enroll_no": "20261023-质-02",
+      "dept": "quality",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-质-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "QA2": {
+      "emp_no": "000028",
+      "enroll_no": "20261023-质-03",
+      "dept": "quality",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-质-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "SEC2": {
+      "emp_no": "000029",
+      "enroll_no": "20261023-质-04",
+      "dept": "quality",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-质-04",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "MKT1": {
+      "emp_no": "000030",
+      "enroll_no": "20261023-市-01",
+      "dept": "marketing",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-市-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "LEG1": {
+      "emp_no": "000031",
+      "enroll_no": "20261023-法-01",
+      "dept": "legal",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-法-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "JEV_GATE": {
+      "emp_no": "000032",
+      "enroll_no": "20261023-运-01",
+      "dept": "ops_runtime",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-运-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "JEV_REVIEW": {
+      "emp_no": "000033",
+      "enroll_no": "20261023-运-02",
+      "dept": "ops_runtime",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-运-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "WATCH_TOWER": {
+      "emp_no": "000034",
+      "enroll_no": "20261023-运-03",
+      "dept": "ops_runtime",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-运-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "JEV_QD": {
+      "emp_no": "000035",
+      "enroll_no": "20261023-运-04",
+      "dept": "ops_runtime",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-运-04",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "LARK_CARDS": {
+      "emp_no": "000036",
+      "enroll_no": "20261023-运-05",
+      "dept": "ops_runtime",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-运-05",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "COWBRIDGE": {
+      "emp_no": "000037",
+      "enroll_no": "20261023-运-06",
+      "dept": "ops_runtime",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-运-06",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "HERMES_UI": {
+      "emp_no": "000038",
+      "enroll_no": "20261023-运-07",
+      "dept": "ops_runtime",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-运-07",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "ACAD1": {
+      "emp_no": "000039",
+      "enroll_no": "20261023-院-01",
+      "dept": "academy",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-院-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "STRAT1": {
+      "emp_no": "000040",
+      "enroll_no": "20261023-院-02",
+      "dept": "academy",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-院-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "BACK1": {
+      "emp_no": "000041",
+      "enroll_no": "20261023-院-03",
+      "dept": "academy",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-院-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "COMM1": {
+      "emp_no": "000042",
+      "enroll_no": "20261023-院-04",
+      "dept": "academy",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-院-04",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "INTEL1": {
+      "emp_no": "000043",
+      "enroll_no": "20261023-院-05",
+      "dept": "academy",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-院-05",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "AI1": {
+      "emp_no": "000044",
+      "enroll_no": "20261023-院-06",
+      "dept": "academy",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-院-06",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "PROD1": {
+      "emp_no": "000045",
+      "enroll_no": "20261023-院-07",
+      "dept": "academy",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-院-07",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "XQ1": {
+      "emp_no": "000046",
+      "enroll_no": "20261023-情-01",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "TDX1": {
+      "emp_no": "000047",
+      "enroll_no": "20261023-情-02",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "MANCHONG1": {
+      "emp_no": "000048",
+      "enroll_no": "20261023-情-03",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "KGMAP1": {
+      "emp_no": "000049",
+      "enroll_no": "20261023-情-04",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-04",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "WORDC1": {
+      "emp_no": "000050",
+      "enroll_no": "20261023-情-05",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-05",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "LINEAGE1": {
+      "emp_no": "000051",
+      "enroll_no": "20261023-情-06",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-06",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "INTEL0": {
+      "emp_no": "000052",
+      "enroll_no": "20261023-情-07",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-07",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "BEACON1": {
+      "emp_no": "000053",
+      "enroll_no": "20261023-情-08",
+      "dept": "intel",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-情-08",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "LUSU1": {
+      "emp_no": "000054",
+      "enroll_no": "20261023-通-01",
+      "dept": "comm",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-通-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "DENGZHI1": {
+      "emp_no": "000055",
+      "enroll_no": "20261023-通-02",
+      "dept": "comm",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-通-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "OPT1": {
+      "emp_no": "000056",
+      "enroll_no": "20261023-参-02",
+      "dept": "chief_line",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-参-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "A0A": {
+      "emp_no": "000057",
+      "enroll_no": "20261023-参-03",
+      "dept": "chief_line",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-参-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "R1": {
+      "emp_no": "000058",
+      "enroll_no": "20261023-风-01",
+      "dept": "risk",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-风-01",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "R2": {
+      "emp_no": "000059",
+      "enroll_no": "20261023-风-02",
+      "dept": "risk",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-风-02",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    },
+    "R3": {
+      "emp_no": "000060",
+      "enroll_no": "20261023-风-03",
+      "dept": "risk",
+      "at": "2026-10-23T22:55:16",
+      "ticket": "LEGION-20261023-风-03",
+      "signed_by": "老田",
+      "batch": "LEGION-EMP-20261023-B1"
+    }
+  },
+  "retired": {}
+}

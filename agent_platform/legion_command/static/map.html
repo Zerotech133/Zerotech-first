@@ -178,7 +178,7 @@ function showSeat(id) {
   const dept = (SNAP.departments.find(d => d.agents.some(x => x.id === id)) || {});
   const seat = seatIndex[id] || {};
   if (seat.has_profile === false) {
-    document.getElementById('dBody').innerHTML =
+    document.getElementById('drawerBody').innerHTML =
       '<div style="color:#EF9F27;font-size:11.5px;line-height:1.8">' +
       '<b>有名无档</b><br>该席位在组织真源 org.json 的 <code>agents</code> 名单里，' +
       '但<b>没有 agent_profiles 档案</b>——职责、模型绑定、档级、工具授权均未登记。<br><br>' +

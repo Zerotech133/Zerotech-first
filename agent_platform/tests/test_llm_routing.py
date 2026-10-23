@@ -25,7 +25,11 @@ import llm as llm_mod  # noqa: E402
 
 def test_profile_exact():
     p = llm_mod.resolve_profile("qwen3.6:35b-a3b")
-    assert p["num_predict"] == 4000 and p["timeout"] == 600
+    # 守下限而不是锁死具体值：35b 实测生成 559s + 冷加载 38.5s，600s 只剩 41s 余量，
+    # 因此 timeout 不得低于 600（当前实现为 900，判例见 engine/llm.py 注释）。
+    # 不写死 900：超时是会随实测演进的运行参数，写死会让本测试与未提交的实现改动互相锁死。
+    assert p["num_predict"] == 4000
+    assert p["timeout"] >= 600, "35b 超时不得低于实测下限 600s（生成559s+冷加载38.5s）"
 
 
 def test_profile_fuzzy_tag_variant():
@@ -168,7 +172,7 @@ def test_chat_body_uses_profile(monkeypatch):
     llm = llm_mod.OllamaLLM()
     llm.chat("s", "u", model="qwen3.6:35b-a3b")
     assert captured["body"]["options"]["num_predict"] == 4000
-    assert captured["timeout"] == 600
+    assert captured["timeout"] >= 600, "35b 超时不得低于实测下限 600s"
 
     llm.chat("s", "u", model="qwen3.5:9b")
     assert captured["body"]["options"]["num_predict"] == 400
