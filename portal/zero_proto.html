@@ -1,99 +1,135 @@
-<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · 统一原型</title><style>
-:root{color-scheme:dark;--bg:#090f1c;--paper:#111e31;--ink:#eef5ff;--muted:#a7b8cc;--line:#2b3d55;--blue:#6bd7e5;--amber:#eac48b;--red:#ff9b91;--green:#7fd8a4}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#14283f 0%,transparent 45%),var(--bg);color:var(--ink);font:15px/1.7 "Microsoft YaHei",system-ui,sans-serif}
-.top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:14px;height:58px;padding:0 24px;background:#0b1524ee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:18px;font-weight:800;color:var(--blue)}.seg{display:flex;gap:4px;margin-left:auto}.seg button{cursor:pointer;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:6px 14px;font-size:13.5px;font-weight:600}.seg button.on{color:var(--blue);background:#12303f;border-color:#33607a}
-main{max-width:1180px;margin:auto;padding:26px 24px 80px}
+<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · AI 驾驶舱</title><style>
+:root{color-scheme:light;--bg:#f4f7fa;--paper:#ffffff;--ink:#1e3348;--muted:#5a6f83;--line:#dbe5ee;--blue:#0e7490;--bluebg:#e8f4f7;--amber:#936224;--red:#b3402e;--green:#227a4b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 "Microsoft YaHei",system-ui,sans-serif}
+.top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:14px;height:56px;padding:0 24px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:18px;font-weight:800;color:var(--blue)}.seg{display:flex;gap:4px;margin-left:auto}.seg button{cursor:pointer;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:6px 14px;font-size:13.5px;font-weight:600}.seg button.on{color:var(--blue);background:var(--bluebg);border-color:#bcd8e2}
+main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 .sec{display:none;animation:in .25s}.sec.on{display:block}@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
-.head{margin:2px 0 18px}.head h1{font-size:22px;margin:0 0 4px}.head p{margin:0;color:var(--muted);font-size:13px}
-.grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
-.card{background:linear-gradient(150deg,#15243a,var(--paper) 80%);border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-height:0}.card h2{font-size:15px;margin:0 0 8px;color:var(--blue)}.card .more{font-size:12px;color:var(--blue);text-decoration:none;float:right}
-.krow{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid #1e2f47;font-size:13.5px}.krow:last-child{border-bottom:none}.krow b{font-weight:600}.krow small{color:var(--muted);font-size:12px;display:block}
-.pill{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:700;white-space:nowrap}.pill.hot{background:#3a1d1d;color:var(--red);border:1px solid #6b3434}.pill.now{background:#12303f;color:var(--blue);border:1px solid #33607a}.pill.ok{background:#123128;color:var(--green);border:1px solid #2c6e52}.pill.wait{background:#2b2416;color:var(--amber);border:1px solid #6b5634}
-.tile{display:block;text-decoration:none;color:var(--ink);background:linear-gradient(150deg,#15243a,var(--paper) 80%);border:1px solid var(--line);border-radius:14px;padding:16px 18px}.tile:hover{border-color:var(--blue)}.tile h3{margin:0 0 4px;font-size:15px}.tile small{color:var(--muted);font-size:12px}.tile .pill{margin-top:8px;display:inline-block}
-.layer{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #1e2f47;align-items:flex-start}.layer:last-child{border-bottom:none}.layer .no{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:#12303f;color:var(--blue)}.layer.ok .no{background:#123128;color:var(--green)}.layer b{font-size:13.5px}.layer small{display:block;color:var(--muted);font-size:12px}
+.head{margin:2px 0 16px}.head h1{font-size:22px;margin:0 0 4px}.head p{margin:0;color:var(--muted);font-size:13px}
+.aihero{background:linear-gradient(140deg,#ffffff,#eef6f9);border:1px solid #c6dbe5;border-radius:16px;padding:20px 22px;margin:0 0 16px}
+.airow{display:flex;gap:10px;align-items:center}.airow .ava{flex:none;width:40px;height:40px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+.airow input{flex:1;font-size:15px;padding:12px 14px;border:1.5px solid #bfd6e2;border-radius:12px;background:#fff;color:var(--ink)}.airow input:focus{outline:none;border-color:var(--blue)}
+.airow button{flex:none;cursor:pointer;background:var(--blue);color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:14.5px;font-weight:700}.airow button:hover{background:#0a5f77}
+.ai-echo{margin:10px 0 0;padding:9px 13px;border-radius:10px;background:var(--bluebg);border:1px dashed #9fc5d3;font-size:13.5px;color:#134e5e;display:none}
+.ai-tips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.tip{cursor:pointer;font-size:12px;color:var(--blue);background:#fff;border:1px solid #c6dbe5;border-radius:16px;padding:4px 12px}.tip:hover{background:var(--bluebg)}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px}.card h2{font-size:15px;margin:0 0 8px;color:var(--blue)}
+.caps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 16px}
+.cap{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer}.cap:hover{border-color:var(--blue)}.cap .ic{font-size:22px}.cap h3{margin:6px 0 2px;font-size:14.5px}.cap small{color:var(--muted);font-size:12px;line-height:1.5;display:block}
+.krow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #eaf0f5;font-size:13.5px}.krow:last-child{border-bottom:none}.krow b{font-weight:600}.krow small{color:var(--muted);font-size:12px;display:block}
+.pill{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:700;white-space:nowrap}.pill.hot{background:#fdeeea;color:var(--red);border:1px solid #eec5bd}.pill.now{background:var(--bluebg);color:var(--blue);border:1px solid #bcd8e2}.pill.ok{background:#e9f5ee;color:var(--green);border:1px solid #bcdcc9}.pill.wait{background:#faf3e6;color:var(--amber);border:1px solid #e6d5b0}
+.tile{display:block;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px}.tile:hover{border-color:var(--blue)}.tile h3{margin:0 0 4px;font-size:15px}.tile small{color:var(--muted);font-size:12px}.tile .pill{margin-top:8px;display:inline-block}
+.layer{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #eaf0f5;align-items:flex-start}.layer:last-child{border-bottom:none}.layer .no{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:var(--bluebg);color:var(--blue)}.layer.ok .no{background:#e9f5ee;color:var(--green)}.layer b{font-size:13.5px}.layer small{display:block;color:var(--muted);font-size:12px}
 .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:14px}.foot a{color:var(--muted)}
-@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
+@media(max-width:900px){.g2,.g4,.caps{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
 </style></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
-<button class="on" data-s="today">今日</button><button data-s="council">会议指挥</button><button data-s="domains">业务域</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
+<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="domains">业务域</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
 </nav></header><main>
 
-<section class="sec on" id="s-today"><div class="head"><h1>今日</h1><p>息息相关的先看：待决、告警、进行中——一屏完</p></div>
+<section class="sec on" id="s-home">
+<div class="aihero">
+<div class="airow"><div class="ava">亮</div>
+<input id="ai-say" placeholder="对零界说一句话——我来指挥整个系统（开会/预约/想法/查询/定稿都行）">
+<button id="ai-go">说 → 执行</button></div>
+<div class="ai-echo" id="ai-echo"></div>
+<div class="ai-tips">
+<span class="tip" data-q="现在开会讨论本周量化复盘">开会</span>
+<span class="tip" data-q="预约明天9点半田丰赵云谈警报治理">预约</span>
+<span class="tip" data-q="我有个想法：盯盘预警加情绪因子">抛想法</span>
+<span class="tip" data-q="查一下0x80070003">查记录</span>
+<span class="tip" data-q="打开业务域">导航</span>
+</div></div>
+<div class="caps">
+<div class="cap" data-jump="council"><div class="ic">🏛️</div><h3>会议指挥</h3><small>一句话开会议 · 多 AI 复辩收敛 · 定稿即工单行动</small></div>
+<div class="cap" data-jump="domains"><div class="ic">🗺️</div><h3>业务域</h3><small>研发/量化/情报/审计/创作——现役入口直达</small></div>
+<div class="cap" data-jump="product"><div class="ic">🏗️</div><h3>产品建设</h3><small>商业化架构 · 首场景 · 阶段闸门如实可视</small></div>
+<div class="cap" data-jump="system"><div class="ic">⚙️</div><h3>系统健康</h3><small>服务状态 · 任务红项 · 一眼知安危</small></div>
+</div>
 <div class="grid g2">
-<div class="card"><h2>待老田决定<span class="more" id="t-link1"></span></h2><div id="t-decide"><div class="krow"><b>读取中…</b><small>议会厅桥</small></div></div></div>
-<div class="card"><h2>告警 / 健康红项</h2>
-<div class="krow"><b>KgChainWatchdog 推送预算修复</b><small>今晚 19:40 首验证</small><span class="pill now">观察</span></div>
-<div class="krow"><b>premarket 已恢复</b><small>ts 16:43 · 纳指/恒指隔夜警报</small><span class="pill ok">已修</span></div>
-<div class="krow"><b>飞书外网控制</b><small>方案已定（frp/机器人），待拍板</small><span class="pill hot">待决</span></div></div>
-<div class="card"><h2>进行中会议 / 任务</h2><div id="t-tasks"><div class="krow"><b>读取中…</b></div></div></div>
+<div class="card"><h2>待老田决定（真数据）</h2><div id="t-decide"><div class="krow"><b>读取中…</b></div></div></div>
+<div class="card"><h2>告警 / 观察</h2>
+<div class="krow"><b>推送链修复首验</b><small>KgChainWatchdog 今晚 19:40</small><span class="pill now">观察</span></div>
+<div class="krow"><b>premarket 已恢复</b><small>16:43 产报 · 隔夜警报 2 条</small><span class="pill ok">已修</span></div>
+<div class="krow"><b>飞书外网控制</b><small>方案定，待拍板</small><span class="pill hot">待决</span></div></div>
+<div class="card"><h2>进行中任务（真数据）</h2><div id="t-tasks"><div class="krow"><b>读取中…</b></div></div></div>
 <div class="card"><h2>今日结果</h2>
-<div class="krow"><b>议会厅 v3→v11 全链</b><small>一句话→辩论→归档→工单→飞书</small><span class="pill ok">达成</span></div>
-<div class="krow"><b>R1/R2 修复</b><small>警报停摆+推送链预算</small><span class="pill ok">达成</span></div>
-<div class="krow"><b>零界产品工作台 v0.1</b><small>评审稿可视化</small><span class="pill now">评审中</span></div></div>
+<div class="krow"><b>会议→指挥→执行全链通</b><small>议会厅 v11 + 工单直通 + 飞书闭环</small><span class="pill ok">达成</span></div>
+<div class="krow"><b>R1/R2 健康红项修复</b><small>警报停摆 + 推送预算</small><span class="pill ok">达成</span></div>
+<div class="krow"><b>零界统一原型</b><small>本页 · 待验收</small><span class="pill now">评审中</span></div></div>
 </div></section>
 
-<section class="sec" id="s-council"><div class="head"><h1>会议指挥</h1><p>一句话发起 → 复辩收敛 → 定稿归档 → 工单行动</p></div>
+<section class="sec" id="s-council"><div class="head"><h1>会议指挥</h1><p>AI 全程引导：发起 → 复辩收敛 → 定稿 → 行动</p></div>
 <div class="grid g2">
-<div class="card"><h2>进入议会厅</h2><p style="color:var(--muted);font-size:13px">一条对话框：开会 / 预约 / 想法 / 定稿 / 查询五路自动路由；想法池承载不执行；轮值主席辩论收敛。</p><a class="tile" style="display:block;text-align:center;margin-top:6px" href="/os_council.html">打开议会厅 →</a></div>
-<div class="card"><h2>机制速览</h2>
-<div class="layer ok"><div class="no">✓</div><div><b>日常 / 专项自动归类</b><small>☕ 轻流程 · 🎯 六阶段</small></div></div>
+<div class="card"><h2>进入议会厅</h2><p style="color:var(--muted);font-size:13px">一条对话框五路路由；想法池承载不执行；轮值主席辩论收敛；定稿自动建工单并飞书通知。</p><a class="tile" style="display:block;text-align:center;margin-top:6px" href="/os_council.html">打开议会厅 →</a></div>
+<div class="card"><h2>机制</h2>
+<div class="layer ok"><div class="no">✓</div><div><b>日常/专项自动归类</b><small>☕ 轻流程 · 🎯 六阶段</small></div></div>
 <div class="layer ok"><div class="no">✓</div><div><b>智能召唤列席</b><small>议题涉什么领域召什么专家</small></div></div>
-<div class="layer"><div class="no">⚖</div><div><b>轮值主席 + 投票</b><small>3~5 轮收敛，防单一 AI 走偏</small></div></div>
-<div class="layer"><div class="no">📦</div><div><b>定稿即行动</b><small>归档 + 工单直通 + 飞书通知</small></div></div></div>
+<div class="layer"><div class="no">⚖</div><div><b>轮值主席 + 投票</b><small>3~5 轮收敛防走偏</small></div></div>
+<div class="layer"><div class="no">📦</div><div><b>定稿即行动</b><small>归档+工单+飞书</small></div></div></div>
 </div></section>
 
-<section class="sec" id="s-domains"><div class="head"><h1>业务域</h1><p>现役入口与待接——不堆料，一屏尽</p></div>
+<section class="sec" id="s-domains"><div class="head"><h1>业务域</h1><p>现役直达 · 待接灰显不伪装</p></div>
 <div class="grid g4">
-<a class="tile" href="/dev"><h3>软件开发</h3><small>项目 / 代码 / 研发工单</small><span class="pill now">现役</span></a>
-<a class="tile" href="/quant-drill"><h3>量化投研</h3><small>选股池 / 模拟盘 / 复盘</small><span class="pill now">现役</span></a>
+<a class="tile" href="/dev"><h3>软件开发</h3><small>项目 / 工单</small><span class="pill now">现役</span></a>
+<a class="tile" href="/quant-drill"><h3>量化投研</h3><small>选股 / 复盘</small><span class="pill now">现役</span></a>
 <a class="tile" href="/intel"><h3>情报研究</h3><small>信源与判断</small><span class="pill now">现役</span></a>
-<a class="tile" href="/audit"><h3>审计复核</h3><small>从结论回到证据</small><span class="pill now">现役</span></a>
-<a class="tile" href="/creator"><h3>自媒体创作</h3><small>选题 / 草稿 / 交付</small><span class="pill now">现役</span></a>
-<a class="tile" href="/legion"><h3>数字军团</h3><small>组织与任务源状态</small><span class="pill now">现役</span></a>
-<a class="tile" href="/notify-command"><h3>通知指挥</h3><small>通知队列 · 非本人审批</small><span class="pill now">现役</span></a>
-<a class="tile" href="/os_council.html"><h3>议会厅</h3><small>会议指挥执行面</small><span class="pill now">现役</span></a>
-<div class="tile" style="opacity:.55"><h3>学习与知识</h3><small>资料归集入口</small><span class="pill wait">待接</span></div>
-<div class="tile" style="opacity:.55"><h3>系统运维</h3><small>服务与数据链</small><span class="pill wait">待接</span></div>
-<div class="tile" style="opacity:.55"><h3>会议与日程</h3><small>个人日历</small><span class="pill wait">待接</span></div>
-<div class="tile" style="opacity:.55"><h3>VB</h3><small>业务定义待确认</small><span class="pill wait">待定义</span></div>
+<a class="tile" href="/audit"><h3>审计复核</h3><small>结论回证据</small><span class="pill now">现役</span></a>
+<a class="tile" href="/creator"><h3>自媒体创作</h3><small>选题 / 交付</small><span class="pill now">现役</span></a>
+<a class="tile" href="/legion"><h3>数字军团</h3><small>组织状态</small><span class="pill now">现役</span></a>
+<a class="tile" href="/notify-command"><h3>通知指挥</h3><small>通知队列</small><span class="pill now">现役</span></a>
+<a class="tile" href="/os_council.html"><h3>议会厅</h3><small>会议指挥</small><span class="pill now">现役</span></a>
+<div class="tile" style="opacity:.55"><h3>学习与知识</h3><small>归集待接</small><span class="pill wait">待接</span></div>
+<div class="tile" style="opacity:.55"><h3>系统运维</h3><small>数据链待接</small><span class="pill wait">待接</span></div>
+<div class="tile" style="opacity:.55"><h3>会议与日程</h3><small>日历待接</small><span class="pill wait">待接</span></div>
+<div class="tile" style="opacity:.55"><h3>VB</h3><small>定义待确认</small><span class="pill wait">待定义</span></div>
 </div></section>
 
-<section class="sec" id="s-product"><div class="head"><h1>产品建设</h1><p>零界商业化：架构 / 首场景 / 闸门 / 商业模式</p></div>
+<section class="sec" id="s-product"><div class="head"><h1>产品建设</h1><p>商业化：架构 / 首场景 / 闸门 / 模式</p></div>
 <div class="grid g2">
-<div class="card"><h2>进度一屏</h2>
-<div class="layer ok"><div class="no">A</div><div><b>产品确权</b><small>首包+访谈对象+事项字段 → 流程样本×2</small><span class="pill wait" style="margin-left:8px">待启</span></div></div>
-<div class="layer"><div class="no">B</div><div><b>内核合同</b><small>事件契约+租户隔离+服务端身份（测试环境）</small><span class="pill wait" style="margin-left:8px">待启</span></div></div>
-<div class="layer"><div class="no">C</div><div><b>试点交付</b><small>受控动作灰度+成本记录</small><span class="pill wait" style="margin-left:8px">待启</span></div></div>
-<div class="layer ok"><div class="no">✓</div><div><b>首场景内部验证</b><small>会议→任务→回执 4.00 分 · 今日全链真机跑通</small></div></div>
-<a class="tile" style="display:block;text-align:center" href="/zero_home.html">打开完整产品工作台 →</a></div>
+<div class="card"><h2>阶段</h2>
+<div class="layer"><div class="no">A</div><div><b>产品确权</b><small>首包+访谈+事项字段 → 样本×2</small></div></div>
+<div class="layer"><div class="no">B</div><div><b>内核合同</b><small>契约+租户隔离+服务端身份</small></div></div>
+<div class="layer"><div class="no">C</div><div><b>试点交付</b><small>受控灰度+成本记录</small></div></div>
+<div class="layer ok"><div class="no">✓</div><div><b>首场景内部验证</b><small>会议→任务→回执 · 今日全链真机</small></div></div>
+<a class="tile" style="display:block;text-align:center" href="/zero_home.html">完整产品工作台 →</a></div>
 <div class="card"><h2>硬边界（如实）</h2>
-<div class="krow"><b>本地桥未鉴权</b><small>不可原样对客户开放 → 阶段 B 补</small><span class="pill hot">红线</span></div>
-<div class="krow"><b>决策卡五闸未过</b><small>维持隔离卡与 BLOCK</small><span class="pill hot">闸门</span></div>
-<div class="krow"><b>未获外部客户</b><small>只称内部验证，不称 PMF</small><span class="pill wait">如实</span></div></div>
+<div class="krow"><b>本地桥未鉴权</b><small>不可对客户开放→阶段B</small><span class="pill hot">红线</span></div>
+<div class="krow"><b>决策卡五闸未过</b><small>维持隔离与BLOCK</small><span class="pill hot">闸门</span></div>
+<div class="krow"><b>无外部客户</b><small>只称内部验证</small><span class="pill wait">如实</span></div></div>
 </div></section>
 
-<section class="sec" id="s-system"><div class="head"><h1>系统</h1><p>运维与健康——少而准</p></div>
-<div class="grid g3">
+<section class="sec" id="s-system"><div class="head"><h1>系统</h1><p>少而准</p></div>
+<div class="grid g4">
 <div class="card"><h2>服务</h2>
 <div class="krow"><b>驾驶舱 8080</b><span class="pill ok">运行</span></div>
 <div class="krow"><b>议会厅桥 8798</b><span class="pill" id="sys-bridge">探测</span></div>
-<div class="krow"><b>Hermes 8787</b><span class="pill now">真席位</span></div>
-<div class="krow"><b>军团门面 8795</b><span class="pill wait">按需</span></div></div>
+<div class="krow"><b>Hermes 8787</b><span class="pill now">真席位</span></div></div>
 <div class="card"><h2>任务健康</h2>
-<div class="krow"><b>失败 9 → 观察中</b><small>R2 修复今晚 19:40 首验</small><span class="pill now">观察</span></div>
-<div class="krow"><b>警报源恢复</b><small>premarket ts 16:43</small><span class="pill ok">已修</span></div></div>
-<div class="card"><h2>旧驾驶舱</h2><p style="color:var(--muted);font-size:13px">v9 生产页（四视图+大屏）保留为深屏工作台。</p><a class="tile" style="display:block;text-align:center" href="/os-entry">打开 v9 →</a></div>
+<div class="krow"><b>失败 9 → 观察</b><span class="pill now">19:40 首验</span></div>
+<div class="krow"><b>警报源</b><span class="pill ok">已恢复</span></div></div>
+<div class="card" style="grid-column:span 2"><h2>深屏工作台</h2><p style="color:var(--muted);font-size:13px">v9 生产页（四视图+大屏）保留。</p><a class="tile" style="display:block;text-align:center" href="/os-entry">打开 v9 →</a></div>
 </div></section>
 
-<div class="foot"><span>零界统一原型 v0.1 · 板块分屏 · 不堆砌</span><a href="/os-entry">v9 驾驶舱</a><a href="/os_council.html">议会厅</a><a href="/zero_home.html">产品工作台</a></div>
+<div class="foot"><span>零界 AI 驾驶舱 v0.2 · 浅色</span><a href="/os-entry">v9</a><a href="/os_council.html">议会厅</a><a href="/zero_home.html">产品台</a></div>
 </main>
 <script>
 const OPS=(location.protocol.startsWith('http')&&location.hostname)?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';
-document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+b.dataset.s).classList.add('on');window.scrollTo(0,0)}));
-async function load(){let st=null;try{st=await(await fetch(OPS+'/api/council/state',{cache:'no-store'})).json();document.getElementById('sys-bridge').className='pill ok';document.getElementById('sys-bridge').textContent='在线'}catch(e){document.getElementById('sys-bridge').className='pill hot';document.getElementById('sys-bridge').textContent='离线';return}
+function jump(s){document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.s===s));document.querySelectorAll('.sec').forEach(x=>x.classList.toggle('on',x.id==='s-'+s));window.scrollTo(0,0)}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>jump(b.dataset.s)));
+document.querySelectorAll('.cap').forEach(c=>c.addEventListener('click',()=>jump(c.dataset.jump)));
+async function aiSay(){const q=document.getElementById('ai-say').value.trim();if(!q)return;
+const echo=document.getElementById('ai-echo');echo.style.display='block';echo.textContent='⏳ '+q+' — 零界正在处理…';
+if(/^(打开|进入|去|看看)/.test(q)){const m={'业务域':'domains','会议':'council','产品':'product','系统':'system'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」板块';document.getElementById('ai-say').value='';return}}
+try{const r=await fetch(OPS+'/api/council/natural',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q,current_topic:'',seat:'laotian'})});
+const d=await r.json();echo.textContent='✅ '+(d.routed||'完成');load();}catch(e){echo.textContent='⚠️ 指挥桥未连（议会厅 8798）——导航可用，直连功能受限'}
+document.getElementById('ai-say').value=''}
+document.getElementById('ai-go').addEventListener('click',aiSay);
+document.getElementById('ai-say').addEventListener('keydown',e=>{if(e.key==='Enter')aiSay()});
+document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',()=>{document.getElementById('ai-say').value=t.dataset.q;aiSay()}));
+async function load(){let st=null;try{st=await(await fetch(OPS+'/api/council/state',{cache:'no-store'})).json();const b=document.getElementById('sys-bridge');b.className='pill ok';b.textContent='在线'}catch(e){const b=document.getElementById('sys-bridge');b.className='pill hot';b.textContent='离线';return}
 const dec=document.getElementById('t-decide');dec.innerHTML='';
-(st.extra_topics||[]).slice(-2).reverse().forEach(t=>{dec.insertAdjacentHTML('beforeend','<div class="krow"><b>'+t.topic.slice(0,22)+'</b><small>'+(t.summary||'')+'</small><span class="pill now">'+t.stage+'</span></div>')});
+(st.extra_topics||[]).slice(-2).reverse().forEach(t=>dec.insertAdjacentHTML('beforeend','<div class="krow"><b>'+t.topic.slice(0,22)+'</b><small>'+(t.summary||'')+'</small><span class="pill now">'+t.stage+'</span></div>'));
 const tk=document.getElementById('t-tasks');tk.innerHTML='';
-(st.tasks||[]).slice(-3).reverse().forEach(t=>{tk.insertAdjacentHTML('beforeend','<div class="krow"><b>['+t.owner+'] '+String(t.text).slice(0,18)+'</b><small>期限 '+(t.due||'无')+'</small><span class="pill '+(t.status==='done'?'ok':'now')+'">'+t.status+'</span></div>')});
-if(!dec.children.length)dec.innerHTML='<div class="krow"><b>无待决议题</b><small>在议会厅一句话发起</small></div>';
+(st.tasks||[]).slice(-3).reverse().forEach(t=>tk.insertAdjacentHTML('beforeend','<div class="krow"><b>['+t.owner+'] '+String(t.text).slice(0,18)+'</b><small>期限 '+(t.due||'无')+'</small><span class="pill '+(t.status==='done'?'ok':'now')+'">'+t.status+'</span></div>'));
+if(!dec.children.length)dec.innerHTML='<div class="krow"><b>无待决议题</b><small>上方对零界说一句即开</small></div>';
 if(!tk.children.length)tk.innerHTML='<div class="krow"><b>无进行中任务</b><small>定稿归档时自动分解</small></div>'}
 load();setInterval(load,30000);
 </script></body></html>
