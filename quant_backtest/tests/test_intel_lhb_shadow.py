@@ -13,10 +13,16 @@ from intel_lhb_shadow import (  # noqa: E402
     ShadowRejected, cross_signal_shadow, holders_shadow, lhb_shadow,
 )
 
-REAL = Path(__file__).resolve().parents[2] / "data" / "tushare_curated"
-if not REAL.exists():
-    # worktree 无 gitignore 的 data 目录 — 回退主仓 (worktree 在 .worktrees/<单号>/ 下)
-    REAL = Path(__file__).resolve().parents[4] / "quant_backtest" / "data" / "tushare_curated"
+def _find_data_root() -> Path:
+    """逐级向上找 quant_backtest/data/tushare_curated（worktree 与主仓层级不同）."""
+    for base in [Path(__file__).resolve().parents[2]] + list(Path(__file__).resolve().parents[2].parents)[:4]:
+        cand = base / "quant_backtest" / "data" / "tushare_curated"
+        if cand.exists():
+            return cand
+    raise SystemExit("tushare_curated 数据根未定位")
+
+
+REAL = _find_data_root()
 import os
 _env = os.environ.get("INTEL_LHB_DATA_ROOT")
 if _env:
