@@ -347,11 +347,6 @@ def validated_alerts(res, morning=False, include_baseline=False):
     return {"alerts": filtered, "source_health": health}, bad
 
 
-def _valid_alerts(res):
-    """Compatibility boolean: validity requires independently dated source health."""
-    return validated_alerts(res) is not None
-
-
 def main():
     morning = "--morning" in sys.argv
     try:

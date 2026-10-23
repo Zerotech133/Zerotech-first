@@ -1,4 +1,4 @@
-# jev_feed_verify launcher (ASCII only, junction path)
+﻿# jev_feed_verify launcher (ASCII only, junction path)
 # 20261018 OPS: daily 00:15 verify last night 23:45 JevFeed-Daily result
 # + Feishu summary to quant group (success too). Retire after 2 stable weeks.
 $log = 'C:\Temp\jev_verify_task.log'

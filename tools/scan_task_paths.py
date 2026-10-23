@@ -71,6 +71,12 @@ def analyse(xml: str) -> dict:
 
 
 def main() -> int:
+    # 2026-10-23 审计：本脚本原先没有 argparse，`--help` 会直接开跑。
+    # 它只读、危害小，但"只读命令不该有副作用"是统一纪律（SOP §6.13）。
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="扫描计划任务定义的路径隐患（只读）：junction 别名 / 乱码 / 读不到")
+    ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     names = load_task_names()
     print("候选任务: %d 个（账本 + 已知兜底）" % len(names))
