@@ -689,6 +689,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
             return self._json(out)
+        if u.path == "/api/issues":
+            try:
+                import issues_store as _is
+                return self._json({"ok": True, "stats": _is.stats(),
+                                   "open": _is.load("open"), "doing": _is.load("doing"),
+                                   "fixed": _is.load("fixed", n=15), "archived": _is.load("archived", n=10)})
+            except Exception as e:
+                return self._json({"error": str(e)[:120]}, 500)
         if u.path == "/api/contacts/brief":
             # 商业关系库：联系人(contacts.jsonl)+文档盘点(deliverables)
             out = {"at": _now(), "contacts": [], "docs": []}
@@ -1086,6 +1094,31 @@ class Handler(BaseHTTPRequestHandler):
             os.replace(tmp, REGISTRY_SNIPPET)
             Handler._last_new = (text, nowts, topic["topic"])
             return self._json({"ok": True, "intent": "new", "kind": kind, "routed": ("☕ 日常会议（轻流程，随聊随记）：" if kind == "daily" else "🎯 专项会议（六阶段）：") + topic["topic"], "topic": topic})
+        if u.path == "/api/issues":
+            act = data.get("act")
+            try:
+                import issues_store as _is
+                if act == "add":
+                    r = _is.add(str(data.get("title", "")), str(data.get("severity", "P2")),
+                                str(data.get("board", "OS")), str(data.get("owner", "")),
+                                str(data.get("evidence", "")))
+                    _append(MESSAGES, {"at": _now(), "topic": "OS问题账本", "seat": str(data.get("seat", "laotian"))[:20],
+                                       "kind": "sys",
+                                       "text": "🆕 问题登记 " + r["id"] + " [" + r["severity"] + "] " + r["title"][:40]})
+                    return self._json({"ok": True, "issue": r})
+                if act == "update":
+                    r = _is.update(str(data.get("id", "")), status=data.get("status"),
+                                   owner=data.get("owner"), note=str(data.get("note", "")))
+                    ev = {"fixed": "✅ 已解决（待归档）", "archived": "📦 已清除归档",
+                          "doing": "🔧 转进行中"}.get(str(data.get("status") or ""), "更新")
+                    note_s = str(data.get("note") or "")[:60]
+                    _append(MESSAGES, {"at": _now(), "topic": "OS问题账本", "seat": str(data.get("seat", "laotian"))[:20],
+                                       "kind": "sys",
+                                       "text": ev + " " + r["id"] + " " + r["title"][:32] + ((" · " + note_s) if note_s else "")})
+                    return self._json({"ok": True, "issue": r})
+                return self._json({"error": "act?"}, 400)
+            except Exception as e:
+                return self._json({"error": str(e)[:120]}, 400)
         if u.path == "/api/council/new":
             title = str(data.get("title") or "").strip()[:80]
             tags = [str(t)[:20] for t in (data.get("tags") or []) if str(t).strip()][:5]

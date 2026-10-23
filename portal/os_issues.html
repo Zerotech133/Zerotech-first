@@ -1,0 +1,72 @@
+<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · 问题驾驶舱</title><style>
+:root{color-scheme:light;--bg:#f4f7fa;--paper:#fff;--ink:#1e3348;--muted:#5a6f83;--line:#dbe5ee;--blue:#0e7490;--bluebg:#e8f4f7;--amber:#936224;--red:#b3402e;--green:#227a4b;--violet:#5b3a9e}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.65 "Microsoft YaHei",system-ui,sans-serif}
+.top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:12px;height:54px;padding:0 22px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:17px;font-weight:800;color:var(--blue)}.top a{margin-left:auto;color:var(--muted);font-size:12.5px;text-decoration:none}
+main{max-width:1180px;margin:auto;padding:20px 22px 80px}
+.head h1{font-size:21px;margin:0 0 3px}.head p{margin:0 0 14px;color:var(--muted);font-size:13px}
+.kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}.kpi .c{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 13px}.kpi .n{font-size:22px;font-weight:800}.kpi .t{font-size:11.5px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.col h2{font-size:14.5px;margin:0 0 8px;color:var(--blue);display:flex;gap:8px;align-items:center}
+.issue{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:10px 13px;margin-bottom:8px}.issue.doing{border-color:var(--amber)}.issue.fixed{border-color:var(--green);opacity:.75}
+.issue b{font-size:13.5px;font-weight:600}.issue .meta{display:flex;gap:6px;margin:3px 0 5px;flex-wrap:wrap}
+.issue small{color:var(--muted);font-size:11.5px;display:block}
+.pill{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:700}.pill.P1{background:#fdeeea;color:var(--red)}.pill.P2{background:#faf3e6;color:var(--amber)}.pill.P3{background:#eef3f7;color:var(--muted)}.pill.bd{background:var(--bluebg);color:var(--blue)}.pill.own{background:#f3eefb;color:var(--violet)}
+.btns{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}.btns button{cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:7px;padding:3px 10px;font-size:11.5px}.btns button:hover{border-color:var(--blue);color:var(--blue)}
+.addbar{display:flex;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.addbar input,.addbar select{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px}
+.addbar input#t{flex:1;min-width:200px}.addbar button{cursor:pointer;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700}
+.archived-col .issue{opacity:.6}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#12303f;color:#fff;border-radius:10px;padding:9px 18px;font-size:13px;display:none;z-index:9}
+.foot{margin-top:18px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:10px}
+@media(max-width:960px){.cols,.kpi{grid-template-columns:1fr}}
+</style></head><body><header class="top"><div class="brand">零界 · 问题驾驶舱</div><a href="/os_map.html">← 全板块作战图</a><a href="/zero_proto.html">← AI 驾驶舱</a></header><main>
+<div class="head"><h1>问题生命周期 · 标准化管理</h1><p>发现 → 认领 → 解决 → 清除归档（archived=账本保留可溯，永不物理删）· 每条带证据路径 · 席位可领单 · 未来智能体自运作的任务基座</p></div>
+<div class="kpi">
+<div class="c"><div class="n" style="color:var(--red)" id="k-p1">—</div><div class="t">P1 待决</div></div>
+<div class="c"><div class="n" style="color:var(--amber)" id="k-open">—</div><div class="t">待处理 open</div></div>
+<div class="c"><div class="n" style="color:var(--amber)" id="k-doing">—</div><div class="t">进行中 doing</div></div>
+<div class="c"><div class="n" style="color:var(--green)" id="k-fixed">—</div><div class="t">已解决待归档</div></div>
+<div class="c"><div class="n" style="color:var(--muted)" id="k-arch">—</div><div class="t">已清除归档</div></div>
+</div>
+<div class="addbar"><input id="t" placeholder="登记新问题：一句话说清现象（例：XX页面数据没刷新）">
+<select id="sev"><option>P1</option><option selected>P2</option><option>P3</option></select>
+<select id="board"><option>OS</option><option>情报</option><option>研发</option><option>量化</option><option>驾驶舱</option><option>商业</option><option>内容</option><option>会议</option></select>
+<select id="own"><option value="">待认领</option><option>田丰</option><option>赵云</option><option>诸葛亮</option><option>WorkBuddy</option><option>老田</option></select>
+<button onclick="addIssue()">＋ 登记问题</button></div>
+<div class="cols">
+<div class="col"><h2>📮 待处理 <span class="pill P2" id="n-open">0</span></h2><div id="col-open"></div></div>
+<div class="col"><h2>🔧 进行中 <span class="pill P2" id="n-doing">0</span></h2><div id="col-doing"></div></div>
+<div class="col"><h2>✅ 已解决 <small style="color:var(--muted);font-weight:400">（确认后归档）</small> <span class="pill P3" id="n-fixed">0</span></h2><div id="col-fixed"></div>
+<h2 style="margin-top:14px">📦 已清除归档 <span class="pill P3" id="n-arch">0</span></h2><div id="col-archived" class="archived-col"></div></div>
+</div>
+<p class="foot">问题驾驶舱 v1 · issues.jsonl 账本 · 生命周期事件入议会厅对话流 · 智能体自运作任务基座 · 2026-10-23</p>
+</main><div class="toast" id="toast"></div>
+<script>
+const OPS=(location.protocol.startsWith('http')&&location.hostname)?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';
+const $=s=>document.querySelector(s);
+function toast(t){const n=$('#toast');n.textContent=t;n.style.display='block';setTimeout(()=>n.style.display='none',2400)}
+async function api(path,body){const r=await fetch(OPS+path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||r.status);return d}
+function card(i,stage){const n=document.createElement('div','issue');n.className='issue '+(stage||'');
+const m=document.createElement('div');m.className='meta';
+m.innerHTML=`<span class="pill ${i.severity}">${i.severity}</span><span class="pill bd">${i.board}</span><span class="pill own">${i.owner}</span><span style="font-size:10.5px;color:var(--muted)">${i.id} · ${String(i.raised||'').slice(5,10)}</span>`;
+n.append(Object.assign(document.createElement('b'),{textContent:i.title}));
+n.append(m,Object.assign(document.createElement('small'),{textContent:(i.evidence||'')+(i.note?(' · '+i.note):'')}));
+const btns=document.createElement('div');btns.className='btns';
+if(stage==='open'){btns.append(mb('认领',()=>upd(i.id,{owner:'老田',status:'doing',note:'人工认领'})),
+mb('派·田丰',()=>upd(i.id,{owner:'田丰',status:'doing',note:'派单'})),
+mb('派·赵云',()=>upd(i.id,{owner:'赵云',status:'doing',note:'派单'})),
+mb('直接解决',()=>upd(i.id,{status:'fixed',note:'即决'})));}
+if(stage==='doing'){btns.append(mb('标记解决',()=>upd(i.id,{status:'fixed',note:'完成'})));}
+if(stage==='fixed'){btns.append(mb('📦 清除归档',()=>upd(i.id,{status:'archived',note:'验收归档'})));}
+n.append(btns);return n;
+function mb(t,fn){const b=document.createElement('button');b.textContent=t;b.onclick=fn;return b}}
+function render(list,el,stage){const box=$(el);box.innerHTML='';(list||[]).forEach(i=>box.append(card(i,stage)));if(!(list||[]).length)box.innerHTML='<div style="color:var(--muted);font-size:12.5px;padding:10px">（空）</div>'}
+async function load(){let d;try{d=await api('/api/issues')}catch(e){toast('桥未连');return}
+const s=d.stats;$('#k-p1').textContent=s.P1_open||0;$('#k-open').textContent=s.open||0;$('#k-doing').textContent=s.doing||0;$('#k-fixed').textContent=s.fixed||0;$('#k-arch').textContent=s.archived||0;
+$('#n-open').textContent=s.open||0;$('#n-doing').textContent=s.doing||0;$('#n-fixed').textContent=s.fixed||0;$('#n-arch').textContent=s.archived||0;
+render(d.open,'#col-open','open');render(d.doing,'#col-doing','doing');render(d.fixed,'#col-fixed','fixed');render(d.archived,'#col-archived','')}
+async function upd(id,body){try{await api('/api/issues',{act:'update',id,...body});toast('✅ '+id+' 已流转（议会厅已记账）');load()}catch(e){toast('失败:'+e.message)}}
+async function addIssue(){const t=$('#t').value.trim();if(!t){toast('写问题现象');return}
+try{await api('/api/issues',{act:'add',title:t,severity:$('#sev').value,board:$('#board').value,owner:$('#own').value,evidence:'前端登记'});
+$('#t').value='';toast('🆕 已登记（议会厅已记账）');load()}catch(e){toast('失败:'+e.message)}}
+load();setInterval(load,30000);
+</script></body></html>
