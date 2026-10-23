@@ -10,7 +10,15 @@ from intel_seat_shadow import (  # noqa: E402
     RelationRejected, load_seat_rows, seat_pairs, top_net_buy_seats,
 )
 
-REPO = Path(__file__).resolve().parents[3]
+def _repo_root() -> Path:
+    """逐级向上找含 quant_backtest/data/tdx 的根（主仓/worktree 层级通吃）."""
+    for base in [Path(__file__).resolve().parents[2]] + list(Path(__file__).resolve().parents[2].parents):
+        if (base / "quant_backtest" / "data" / "tdx").exists():
+            return base
+    return Path(__file__).resolve().parents[3]  # 找不到也要给个值让失败可见
+
+
+REPO = _repo_root()
 
 
 def test_load_reads_all_partitions_with_schema():
