@@ -116,6 +116,27 @@ def test_visibility_receipt_and_consumer_required(tmp_path):
         store.mark_visible(item(9), "consumer-A", "rcpt")  # unknown item rejected
 
 
+@pytest.mark.parametrize("state", [OFFERED, ACCEPTED])
+def test_rejected_visibility_jump_does_not_poison_receipts(tmp_path, state):
+    store = EvidenceStore(tmp_path)
+    it = item(11)
+    store.offer(it)
+    if state == ACCEPTED:
+        store.accept(it)
+    with pytest.raises(StoreRejected, match="STATE_INVALID"):
+        store.mark_visible(it, "os", "fake-receipt")
+    assert store.state_of(it) == state
+    assert store._record_of(it.key_json)["visibility"] == {}
+    revived = store.replay()
+    assert revived.state_of(it) == state
+    assert revived._record_of(it.key_json)["visibility"] == {}
+    # A subsequent legitimate transition must not carry the rejected receipt.
+    if state == OFFERED:
+        store.accept(it)
+    store.persist(it)
+    assert store.mark_visible(it, "os", "real-receipt")["visibility"] == {"os": "real-receipt"}
+
+
 def test_bad_items_and_capacity_rejected(tmp_path):
     with pytest.raises(StoreRejected, match="provenance"):
         EvidenceItem("s1", "post", "x", "h", "", "r")

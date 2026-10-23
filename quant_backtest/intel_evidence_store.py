@@ -162,6 +162,10 @@ class EvidenceStore:
         if not isinstance(receipt, str) or not receipt.strip():
             raise StoreRejected("VISIBILITY_RECEIPT_REQUIRED")
         record = self._record_of(item.key_json)
+        # Reject before mutating the receipt map: _advance would otherwise
+        # reject offered/accepted -> visible *after* recording a false receipt.
+        if record["state"] not in (PERSISTED, VISIBLE):
+            raise StoreRejected(f"STATE_INVALID: cannot jump {record['state']} -> {VISIBLE}")
         record["visibility"][consumer_id] = receipt
         return self._advance(item, VISIBLE)
 
