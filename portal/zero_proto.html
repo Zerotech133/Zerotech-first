@@ -81,11 +81,8 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="krow" style="cursor:pointer" data-ai="查一下恒生指数隔夜"><b>雪球舆情 14212 帖</b><small>问AI：查一下恒生指数隔夜</small></div>
 <div class="krow"><b>龙虎榜 / 前100股东 / 席位共现</b><small>总谱 C2/C4/C5 · 待归集</small><span class="pill wait">规划</span></div></div>
 
-<div class="card"><h2>🏛️ 政策与地缘 <span class="pill wait">原型</span></h2>
-<div class="krow"><b>〔示例〕两办发文支持数据要素 ×市场影响</b><small>政策 → 相关板块传导 · 今日 09:12</small><span class="pill now">高关注</span></div>
-<div class="krow"><b>〔示例〕美联储议息夜：降息 25bp 落地</b><small>地缘资金面 → 明日 A 股开盘映射</small><span class="pill now">影响开盘</span></div>
-<div class="krow"><b>〔示例〕某省算力补贴细则公示</b><small>与涪陵 OPC 场景相关 · 提示 BP 引用</small><span class="pill wait">关联我</span></div>
-<div class="krow"><b>政策库 / 地缘日历</b><small>公开源接入规划中</small><span class="pill wait">待接</span></div></div>
+<div class="card"><h2>🏛️ 政策与地缘 <span class="pill ok">真数据</span></h2><div id="policy-box"><div class="krow"><b>读取中…</b></div></div>
+<div class="krow" style="cursor:pointer" data-ai="现在开会讨论最新国务院AI就业政策对我们的影响"><b>▸ 开会研判最新政策</b><small>点这里 AI 立会分析影响</small></div></div>
 
 <div class="card"><h2>🔬 科技前沿 <span class="pill wait">原型</span></h2>
 <div class="krow"><b>〔示例〕开源 Agent 框架 X 发布 3.0</b><small>竞品动态 · 与指挥联动台对标</small><span class="pill now">竞品</span></div>
@@ -214,6 +211,15 @@ document.getElementById('cp-week').className='pill '+(d.week_n>=5?'ok':'wait');
 box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(x.title).slice(0,20)+'</b><small>'+x.date+' · '+x.col+'</small><span class="pill '+st+'">'+(x.status==='reviewed'?'已审':'草稿')+'</span></div>')});
 if(!box.children.length)box.innerHTML='<div class="krow"><b>近 7 天无产出</b><small>该写了</small></div>'}
 loadCP();setInterval(loadCP,60000);
+async function loadPolicy(){let d=null;try{d=await(await fetch(OPS+'/api/intel/policy',{cache:'no-store'})).json()}catch(e){return}
+const box=document.getElementById('policy-box');if(!box)return;box.innerHTML='';
+const rows=d.recent||[];
+if(!rows.length){box.innerHTML='<div class="krow"><b>政策线暂无数据</b><small>源未采集（如实）</small></div>';return}
+const kw=['人工智能','智能','数据','算力','科技','投资','出口','能源','金融'];
+rows.slice(0,4).forEach(r=>{const hit=kw.find(k=>(r.title||'').includes(k));
+box.insertAdjacentHTML('beforeend','<div class="krow" style="cursor:pointer" data-ai=\'查一下政策 ">'+(hit?'<span class="pill now">关联</span> ':'')+'<span style="flex:1"><b>'+String(r.title).slice(0,26)+'</b><small>'+r.date+' · gov.cn · 点击开会研判</small></span></div>')});
+box.querySelectorAll('[data-ai]').forEach((n,i)=>{n.dataset.ai='现在开会研判政策影响：'+(rows[i]||{}).title;n.addEventListener('click',()=>{document.getElementById('ai-say').value=n.dataset.ai;jump('home');document.getElementById('ai-say').focus()})})}
+loadPolicy();setInterval(loadPolicy,300000);
 loadIntel();setInterval(loadIntel,60000);
 load();setInterval(load,30000);
 </script></body></html>

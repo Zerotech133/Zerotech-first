@@ -688,6 +688,15 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
             return self._json(out)
+        if u.path == "/api/intel/policy":
+            # 政策地缘域真数据（gov.cn 政策文件库采集账本）
+            out = {"at": _now(), "recent": []}
+            try:
+                import policy_geo_collector as _pg
+                out["recent"] = _pg.load_recent(8)
+            except Exception:
+                pass
+            return self._json(out)
         if u.path == "/api/intel/brief":
             # 情报一屏：盘面(premarket) + 情报对账(guojia) + 最新裁定(verdicts) —— 情报视角驾驶舱
             out = {"at": _now(), "market": None, "intel": None, "verdicts": []}
