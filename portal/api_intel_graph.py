@@ -18,7 +18,6 @@ _SEAT_COLS = ("trade_date", "ts_code")
 
 def _data_root() -> Path:
     for base in [Path(__file__).resolve().parents[1]] + list(Path(__file__).resolve().parents[1].parents)[:4]:
-        cand = base / "quant_backtest" / "data" " /tushare_curated"
         cand = base / "quant_backtest" / "data" / "tushare_curated"
         if cand.exists():
             return cand
