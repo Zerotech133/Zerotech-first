@@ -56,10 +56,12 @@ _HTTP_TIMEOUT: float = 3.0
 # --------------------------------------------------------------------------- #
 # M0 默认绑定（契约冻结口径，与 watch_admin_snapshot.zone2 对齐）。
 # 仅这些席位存在 M0 默认对照；其余席位按 org 实际绑定，无 M0 默认。
+# 2026-10-23 P2：移除 QS1 行——WO-LEGION-S43 已显式裁定 QS1 llm_binding=none
+# （无模型绑定）。保留旧行使对照区永久显示 deviation 噪声；也不得把 default 改成
+# "none" 伪装命中（那会把「显式无绑定」洗成「与默认一致」，属静默造数）。
 M0_DEFAULT_BINDING: Dict[str, Dict[str, str]] = {
     "WA1": {"default": "ollama/qwen3.5:9b", "fallback": "云 glm-5.3 强判读"},
     "张郃": {"default": "ollama/qwen3.6:35b-a3b", "fallback": "本地 9b"},
-    "QS1": {"default": "glm/glm-5.3", "fallback": "本地 9b"},
     "ST1": {"default": "glm/glm-5.3", "fallback": "—"},
 }
 

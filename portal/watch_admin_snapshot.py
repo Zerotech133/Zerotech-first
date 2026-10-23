@@ -413,11 +413,12 @@ class WatchAdminAggregator:
                     aid = p.get("agent_id")
                     if aid in ("WA1", "QS1", "ST1"):
                         bindings[aid] = p.get("llm_binding")
-        # M0 默认（契约冻结口径）
+        # M0 默认（契约冻结口径）。2026-10-23 P2：移除 QS1 行，与
+        # watch_admin_route_contract.M0_DEFAULT_BINDING 对齐——WO-LEGION-S43 已显式
+        # 裁定 QS1 llm_binding=none，不设默认对照，也不把默认改成 none 伪装命中。
         m0_default = {
             "WA1": {"default": "ollama/qwen3.5:9b", "fallback": "云 glm-5.3 强判读"},
             "张郃": {"default": "ollama/qwen3.6:35b-a3b", "fallback": "本地 9b"},
-            "QS1": {"default": "glm/glm-5.3", "fallback": "本地 9b"},
             "ST1": {"default": "glm/glm-5.3", "fallback": "—"},
         }
         rows = []
@@ -436,10 +437,12 @@ class WatchAdminAggregator:
             state="healthy" if org is not None else "unknown",
             source_mode="file", error_code=err,
             note=("org.json llm_binding + model_tiers.json 静态档位表。"
-                  "运行时实际用量不可查，仅静态配置；WA1/QS1 注册表未提供绑定 → 回落 M0 默认并标"
-                  " SOURCE_UNVERIFIED；ST1=glm/glm-5.3 已绑定。"),
+                  "运行时实际用量不可查，仅静态配置；WA1=ollama/qwen3.5:9b、"
+                  "ST1=glm/glm-5.3 已在册；QS1 已由 WO-LEGION-S43 显式裁定 "
+                  "llm_binding=none（无模型绑定，不设 M0 默认对照、不再回落默认）；"
+                  "M0 默认仅作契约建议，非运行时路由。"),
             data={"rows": rows,
-                  "note": "WA1/QS1 未接真源=SOURCE_UNVERIFIED；M0 默认仅作建议，非真实运行时路由。",
+                  "note": "运行时实际用量未接真源=SOURCE_UNVERIFIED（静态绑定字段在册可读）；M0 默认仅作建议，非真实运行时路由。",
                   "tiers_file": str(self.registry_dir / "model_tiers.json")},
             source=str(self.registry_dir / "org.json"), verified=(org is not None)))
 
