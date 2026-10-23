@@ -29,6 +29,7 @@ TUNED_FULL = {
     "OLLAMA_FLASH_ATTENTION": "true",
     "OLLAMA_KV_CACHE_TYPE": "q8_0",
     "OLLAMA_IGPU_ENABLE": "1",
+    "OLLAMA_VULKAN": "true",   # 2026-10-24 第 7 项：缺它则 iGPU 不生效
     "OLLAMA_CONTEXT_LENGTH": "65536",
     "OLLAMA_KEEP_ALIVE": "30m0s",
     "OLLAMA_NUM_PARALLEL": "2",
@@ -38,6 +39,7 @@ DEFAULT_CFG = {
     "OLLAMA_FLASH_ATTENTION": "false",
     "OLLAMA_KV_CACHE_TYPE": "",
     "OLLAMA_IGPU_ENABLE": "",
+    "OLLAMA_VULKAN": "false",
     "OLLAMA_CONTEXT_LENGTH": "0",
     "OLLAMA_KEEP_ALIVE": "5m0s",
     "OLLAMA_NUM_PARALLEL": "1",

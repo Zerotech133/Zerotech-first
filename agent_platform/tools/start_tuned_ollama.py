@@ -96,6 +96,12 @@ TUNED_ENV = {
     "OLLAMA_FLASH_ATTENTION": "1",
     "OLLAMA_KV_CACHE_TYPE": "q8_0",
     "OLLAMA_IGPU_ENABLE": "1",
+    # 2026-10-24 补第 7 项：OLLAMA_IGPU_ENABLE=1 单独存在时 iGPU **不会**进候选设备。
+    # 本机用户级环境曾把 OLLAMA_VULKAN 显式设为 0（关掉 Vulkan 后端），
+    # 于是"tuned 已生效、ctx 已 65536"却仍 100% CPU 推理——
+    # `ollama ps` 的 PROCESSOR 列是唯一能看穿它的判据。
+    # 2026-10-18 的勘误文档已把它列为 watchdog 额外设置的第 7 项，本启动器此前漏了。
+    "OLLAMA_VULKAN": "1",
     "OLLAMA_CONTEXT_LENGTH": "65536",
     "OLLAMA_KEEP_ALIVE": "2h",
     "OLLAMA_NUM_PARALLEL": "2",
@@ -111,6 +117,7 @@ TUNED_CRITICAL = (
     "OLLAMA_FLASH_ATTENTION",
     "OLLAMA_NUM_PARALLEL",
     "OLLAMA_IGPU_ENABLE",
+    "OLLAMA_VULKAN",      # 缺它则 iGPU 不生效（见上）
 )
 # ctx 达标线：默认 4096，tuned 65536；取 32768 容忍 watchdog 定版差异
 CTX_OK_FLOOR = 32768
@@ -210,7 +217,10 @@ def tuned_deviations(cfg: dict) -> list:
         if got is None:
             bad.append("%s 缺失" % key)
             continue
-        if key == "OLLAMA_FLASH_ATTENTION":
+        # 2026-10-24：Vulkan 与 FlashAttention 都是布尔量，日志里可能写 "true"、
+        # 也可能写 "1"（取决于注入的是 bat 还是 launch 环境），必须归一比较。
+        # 用严格相等会让"实际已开"的实例被判成偏差，进而误触发重启。
+        if key in ("OLLAMA_FLASH_ATTENTION", "OLLAMA_VULKAN"):
             ok = str(got).lower() in ("true", "1")
         elif key == "OLLAMA_CONTEXT_LENGTH":
             try:
