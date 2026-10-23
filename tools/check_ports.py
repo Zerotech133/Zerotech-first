@@ -82,6 +82,11 @@ REGISTRY = {
     # （议会厅交互桥 v3，127.0.0.1 单线程 HTTP，落盘本仓，git 可溯）。
     # 评审门 non-strict 曾示警"未登记监听"——按 8796 同语义入册。
     8798: "议会厅交互桥(council_ops.py)",
+    # 2026-10-23 K-MDC-20261023-REV：8101=情报交付评审实例。portal_api.py 的
+    # PORT=8091 硬编码，评审实例以导入方式另起（127.0.0.1:8101，同一 Handler），
+    # 用于冷启动前零停机验证 /intel-dossier 与 /api/intel-graph/dossier；
+    # 不触 8091 现役进程。按需起停，同 8796 语义入 OPTIONAL_OFFLINE。
+    8101: "情报交付评审实例(portal_api导入式)",
 }
 
 
@@ -172,7 +177,7 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
 # 卡片回调疑被 feishu_bot_ws 长连接替代；转按需语义，strict 仍防被抢）
 # 2026-10-14 K-STOCK-394：8787 Hermes WebUI 无 keepalive 链，start_hermes_bg.py
 # 幂等按需拉起（K271 配方），同 lark_card 按需语义入列，否则 strict 必挂。
-OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8099, 8787, 8796, 8798, 8899, 9104}  # 8099/8796/8798 加入：看门狗/HKCU 自启/会话级后台的按需常驻，strict 防抢占不判离线（2026-10-22 老田裁端口；8798 于 2026-10-23 P8798 入列）
+OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8099, 8101, 8787, 8796, 8798, 8899, 9104}  # 8099/8796/8798/8101 加入：看门狗/HKCU 自启/会话级后台/评审按需实例，strict 防抢占不判离线（2026-10-22 老田裁端口；8798 于 2026-10-23 P8798 入列；8101 于 2026-10-23 REV 入列）
 # 2026-10-16 数据仓止血：PG/Neo4j 容器按需启停，
 # strict 语义=防抢占不判离线；库内健康由 kg_check / freshness_report / xmap 水位各自监控。
 # 2026-10-16 二次勘误：5442 实为 quant-pg 容器口；5443 误建容器已删、条目移除。
