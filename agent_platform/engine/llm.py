@@ -21,9 +21,18 @@ import urllib.request
 # ---- 模型自动路由表（10-18 调优：按模型名自动配置，调用方零感知）----
 # num_predict：35b 重岗（A0 判读/日报长文）需长输出；9b 判读位 400 够用（JSON/短评）
 # timeout：35b 冷加载+长生成实测 >300s，给 600s；9b 沿用 300s（live 首跑教训值）
+#
+# 2026-10-23 实测修订（AI 底层能力审计）：
+#   · 吞吐：4b/9b 23.5 tok/s，35b 7.15 tok/s（纯 CPU，无 GPU）
+#   · 35b 的 num_predict=4000 需 559s，原 timeout=600 只剩 41s 余量（还含 38.5s 冷加载）
+#     → timeout 提到 900s。不改 num_predict：A0 日报长文确实需要长输出。
+#   · num_ctx 原先**谁都没设**，于是取模型默认值：4b/35b 是 65536，而 **9b 只有 4096**
+#     ——9b 恰是平台默认模型，任何超长提示会被静默截断（不报错、只是答偏）。
+#     现在给 9b 显式设 32768。其它模型保持模型默认（它们本来就是 65536）。
 MODEL_PROFILES = {
-    "qwen3.6:35b-a3b": {"num_predict": 4000, "timeout": 600, "temperature": 0.4},
-    "qwen3.5:9b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
+    "qwen3.6:35b-a3b": {"num_predict": 4000, "timeout": 900, "temperature": 0.4},
+    "qwen3.5:9b": {"num_predict": 400, "timeout": 300, "temperature": 0.4,
+                   "num_ctx": 32768},
     "qwen3.5:4b": {"num_predict": 400, "timeout": 240, "temperature": 0.4},  # T2 轻量层(10-18 补下载落位)
     "qwen3:8b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
     "qwen2.5:7b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
@@ -103,6 +112,14 @@ class OllamaLLM:
             if prefix == "ollama":
                 model = rest
         prof = resolve_profile(model)
+        options = {
+            "temperature": prof["temperature"],
+            "num_predict": prof["num_predict"],
+        }
+        # num_ctx 只在 profile 显式给了才下发：不给时 Ollama 用模型自带默认值，
+        # 而各模型默认差异极大（9b 只有 4096）。少下发一个键，就会让长提示静默截断。
+        if prof.get("num_ctx"):
+            options["num_ctx"] = prof["num_ctx"]
         body = {
             "model": model,
             "messages": [
@@ -111,10 +128,7 @@ class OllamaLLM:
             ],
             "stream": False,
             "think": False,  # qwen3.5 思考模型：必须关思考（实测 400 token 全被 thinking 吃掉，content 为空）
-            "options": {
-                "temperature": prof["temperature"],
-                "num_predict": prof["num_predict"],
-            },
+            "options": options,
         }
         per_call_timeout = prof["timeout"] or self.timeout
         last = None

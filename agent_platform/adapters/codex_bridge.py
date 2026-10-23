@@ -266,9 +266,18 @@ _G["__name__"] = "codex_plugin"
 
 
 def _emit(payload):
-    sys.stdout.write("__BRIDGE_RESULT__" +
-                     json.dumps(payload, ensure_ascii=False) + "\n")
-    sys.stdout.flush()
+    # 2026-10-23 修：必须写 UTF-8 **字节**，不能走 sys.stdout.write。
+    # Windows 上子进程 stdout 被重定向时默认编码是 cp936，而父进程
+    # （sandbox_trial L365）按 utf-8 + errors="replace" 解码 —— 中文错误信息
+    # 全部变成 U+FFFD，`非 Verdict` 这类断言随即失败（长期红的根因）。
+    data = ("__BRIDGE_RESULT__" + json.dumps(payload, ensure_ascii=False) + "\n")
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is not None:
+        buffer.write(data.encode("utf-8"))
+        buffer.flush()
+    else:  # 极端情形（stdout 被替换成非字节流），退回文本写
+        sys.stdout.write(data)
+        sys.stdout.flush()
 
 
 def main():
