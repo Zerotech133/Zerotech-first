@@ -594,10 +594,37 @@ class Handler(BaseHTTPRequestHandler):
                 intent = "search"
             elif any(k in text for k in _ACTION_SCHED) or ("预约" in text):
                 intent = "schedule"
+            elif any(k in text for k in ("转成专项", "转专项", "把它转", "立项这个", "开始执行这个想法", "想法转")):
+                intent = "promote"
             elif current_topic and not any(k in text for k in ("开会", "发起", "新会议", "开个会")):
                 intent = "say"
             else:
                 intent = "new"
+            if intent == "promote":
+                idea = _re.sub(r"^(把想法池里的?|把这个想法|把|想法池里的)", "", text)
+                idea = _re.sub(r"(转成专项会议|转成专项|转专项|立项|开始执行|想法)", "", idea).strip("：: 「」 ")[:200]
+                if not idea:
+                    idea = "（未指明——用池中最新想法）"
+                r = {"idea": idea}
+                tid = dt.datetime.now().strftime("%m%d-%H%M")
+                topic = {"topic": f"💡→🎯 {idea[:30]}（#{tid}）", "kind": "project",
+                        "tags": ["govern"], "stage": "立题", "originator": "laotian",
+                        "summary": f"想法转专项 {tid}", "created_at": _now()}
+                _append(MESSAGES, {"at": _now(), "topic": topic["topic"], "seat": "laotian",
+                                   "kind": "new", "text": f"🎯 想法转专项（老田指令）：「{idea}」——按赵云/田丰对答意见推进"})
+                cur = []
+                if os.path.isfile(REGISTRY_SNIPPET):
+                    try:
+                        cur = json.load(open(REGISTRY_SNIPPET, encoding="utf-8"))
+                    except (OSError, json.JSONDecodeError):
+                        cur = []
+                cur.append(topic)
+                fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(cur, f, ensure_ascii=False, indent=1)
+                os.replace(tmp, REGISTRY_SNIPPET)
+                return self._json({"ok": True, "intent": "promote", "topic": topic,
+                                   "routed": "🎯 已转专项：" + topic["topic"] + "（对答观点随行）"})
             # 想法识别：想法词 + 无当前议题 或 显式开想法会 → idea（承载不执行，三席位自动对答）
             if any(k in text for k in _IDEA_CUES) and intent in ("new", "say"):
                 intent = "idea"
