@@ -591,7 +591,7 @@ def notify(title: str, body: str, deep_link: str = "") -> dict:
                            "header": {"title": {"tag": "plain_text", "content": title[:60]}, "template": "blue"},
                            "elements": [
                                {"tag": "div", "text": {"tag": "lark_md", "content": body[:1700]}},
-                               {"tag": "action", "actions": [{"tag": "button", "text": {"tag": "plain_text", "content": "打开指挥联动台"}, "type": "primary", "url": deep_link or "http://127.0.0.1:8080/os_council.html"}]}]})}
+                               {"tag": "action", "actions": [{"tag": "button", "text": {"tag": "plain_text", "content": "打开指挥联动台"}, "type": "primary", "url": deep_link or "http://192.168.43.240:8080/os_council.html"}]}]})}
             req = _ur.Request("https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id",
                               data=json.dumps(payload).encode("utf-8"),
                               headers={"Content-Type": "application/json", "Authorization": "Bearer " + tat},
@@ -1077,7 +1077,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> int:
-    srv = ThreadingHTTPServer(("127.0.0.1", 8798), Handler)
+    bind = os.environ.get("COUNCIL_OPS_BIND", "0.0.0.0")  # 手机同网访问；仅本机用时设 127.0.0.1
+    srv = ThreadingHTTPServer((bind, 8798), Handler)
     print("council_ops listening http://127.0.0.1:8798 (会话级进程，Ctrl+C 退出)", flush=True)
     srv.serve_forever()
     return 0

@@ -64,7 +64,7 @@ input,select,textarea{background:#0c1727;border:1px solid var(--line);border-rad
 <div class="toast" id="toast"></div>
 <div class="overlay" id="ov-minutes"><div class="modal"><span class="x" onclick="document.getElementById('ov-minutes').classList.remove('show')">✕</span><h3 id="m-title">会议纪要</h3><pre id="m-body"></pre></div></div>
 <script>
-(()=>{'use strict';const OPS='http://127.0.0.1:8798';const SEAT_LABEL={tianfeng:'田丰',zhaoyun:'赵云',zhuge:'诸葛亮',laotian:'老田',workbuddy:'WorkBuddy',unknown:'未署名'};
+(()=>{'use strict';const OPS=(location.protocol.startsWith('http')&&location.hostname&&!location.hostname.startsWith('file'))?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';const SEAT_LABEL={tianfeng:'田丰',zhaoyun:'赵云',zhuge:'诸葛亮',laotian:'老田',workbuddy:'WorkBuddy',unknown:'未署名'};
 const STAGES=['立题','表态','试工','监读','定稿','分发收口'];
 const $=s=>document.querySelector(s);
 function el(t,c,x){const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=String(x);return n}
