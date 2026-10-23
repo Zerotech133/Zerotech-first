@@ -37,6 +37,13 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <span class="tip" data-q="查一下0x80070003">查记录</span>
 <span class="tip" data-q="打开业务域">导航</span>
 </div></div>
+<div class="grid g2" style="margin-bottom:16px">
+<div class="card" style="border-color:#bcd8e2;background:linear-gradient(140deg,#fff,#eef6f9)"><h2>🌐 今日情报 · 快速决策</h2><div id="intel-box"><div class="krow"><b>读取中…</b><small>盘面 × 情报线</small></div></div></div>
+<div class="card"><h2>🧭 情报怎么用</h2>
+<div class="krow"><b>看影响，不看新闻流</b><small>全球事件 → 对股市/地缘的影响 → 是否动</small></div>
+<div class="krow"><b>问一句就深挖</b><small>上方对零界说「查一下恒指」</small></div>
+<div class="krow"><b>裁定有对账</b><small>情报命中率 52%（14905 条实盘对账）——如实展示不吹</small></div></div>
+</div>
 <div class="caps">
 <div class="cap" data-jump="council"><div class="ic">🏛️</div><h3>会议指挥</h3><small>一句话开会议 · 多 AI 复辩收敛 · 定稿即工单行动</small></div>
 <div class="cap" data-jump="domains"><div class="ic">🗺️</div><h3>业务域</h3><small>研发/量化/情报/审计/创作——现役入口直达</small></div>
@@ -131,5 +138,15 @@ const tk=document.getElementById('t-tasks');tk.innerHTML='';
 (st.tasks||[]).slice(-3).reverse().forEach(t=>tk.insertAdjacentHTML('beforeend','<div class="krow"><b>['+t.owner+'] '+String(t.text).slice(0,18)+'</b><small>期限 '+(t.due||'无')+'</small><span class="pill '+(t.status==='done'?'ok':'now')+'">'+t.status+'</span></div>'));
 if(!dec.children.length)dec.innerHTML='<div class="krow"><b>无待决议题</b><small>上方对零界说一句即开</small></div>';
 if(!tk.children.length)tk.innerHTML='<div class="krow"><b>无进行中任务</b><small>定稿归档时自动分解</small></div>'}
+async function loadIntel(){let d=null;try{d=await(await fetch(OPS+'/api/intel/brief',{cache:'no-store'})).json()}catch(e){document.getElementById('intel-box').innerHTML='<div class="krow"><b>情报桥未连</b><small>8798</small></div>';return}
+const box=document.getElementById('intel-box');box.innerHTML='';
+const m=d.market;const i=d.intel;
+if(m){const tone=(m.overall||0)<=-10?'hot':((m.overall||0)>=10?'ok':'now');
+box.insertAdjacentHTML('beforeend','<div class="krow"><b>盘面 overall '+(m.overall??'—')+'</b><small>premarket · '+String(m.ts||'').slice(5,16).replace('T',' ')+'</small><span class="pill '+tone+'">'+((m.overall||0)<=-10?'偏空':((m.overall||0)>=10?'偏多':'中性'))+'</span></div>');
+(m.alerts||[]).forEach(a=>box.insertAdjacentHTML('beforeend','<div class="krow"><b style="color:var(--red)">⚠ '+a+'</b><small>隔夜警报</small></div>'))}
+if(i){box.insertAdjacentHTML('beforeend','<div class="krow"><b>情报线命中率 '+(i.hit_rate!=null?(i.hit_rate*100).toFixed(1)+'%':'—')+'</b><small>'+(i.n||0)+' 条实盘对账 · '+Object.values(i.markets||{}).join('/')+'</small><span class="pill now">对账</span></div>')}
+(d.verdicts||[]).slice(0,2).forEach(v=>box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+(v.scope=='us'?'美股':'市场')+' '+(v.bias=='bull'?'看多':v.bias=='bear'?'看空':'中性')+'</b><small>裁定 '+v.day+' · conf '+(v.conf!=null?(+v.conf).toFixed(2):'—')+'</small><span class="pill '+(v.bias=='bull'?'ok':v.bias=='bear'?'hot':'wait')+'">'+v.bias+'</span></div>'));
+if(!box.children.length)box.innerHTML='<div class="krow"><b>情报线暂无当日数据</b><small>源未更新（如实）</small></div>'}
+loadIntel();setInterval(loadIntel,60000);
 load();setInterval(load,30000);
 </script></body></html>

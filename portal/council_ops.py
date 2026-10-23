@@ -675,6 +675,38 @@ class Handler(BaseHTTPRequestHandler):
         q = urllib.parse.parse_qs(u.query).get("q", [""])[0]
         if u.path == "/api/council/search":
             return self._json({"q": q, "hits": search_all(q)})
+        if u.path == "/api/intel/brief":
+            # 情报一屏：盘面(premarket) + 情报对账(guojia) + 最新裁定(verdicts) —— 情报视角驾驶舱
+            out = {"at": _now(), "market": None, "intel": None, "verdicts": []}
+            try:
+                pm = os.path.join(REPO, "quant_backtest", "reports", "premarket_latest.json")
+                d = json.load(open(pm, encoding="utf-8"))
+                alerts = [str(x)[:70] for x in (d.get("alerts") or [])[:4]]
+                out["market"] = {"ts": d.get("ts"), "overall": d.get("overall"), "alerts": alerts}
+            except Exception:
+                pass
+            try:
+                g = json.load(open(r"C://aios//news_collector//data//guojia//summary.json", encoding="utf-8"))
+                o = g.get("overall", {})
+                mk = g.get("markets", {})
+                out["intel"] = {"generated_at": g.get("generated_at"),
+                                "hit_rate": o.get("hit_rate"), "n": o.get("n_reconciled"),
+                                "markets": {k: v.get("name", k) for k, v in mk.items() if isinstance(v, dict)}}
+            except Exception:
+                pass
+            try:
+                vs = []
+                with open(r"C://aios//news_collector//data//guojia//verdicts.jsonl", encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            vs.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+                out["verdicts"] = [{"day": v.get("day"), "scope": v.get("scope"),
+                                    "bias": v.get("bias"), "conf": v.get("conf")} for v in vs[-6:]][::-1]
+            except Exception:
+                pass
+            return self._json(out)
         mid = urllib.parse.parse_qs(u.query).get("mid", [""])[0]
         if u.path == "/api/council/minutes":
             import re as _re2
