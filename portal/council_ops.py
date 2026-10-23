@@ -365,6 +365,73 @@ def classify_meeting(text: str) -> str:
     return "daily"
 
 
+# ---------------- 想法池 + 三席位自动对答 ----------------
+IDEA_POOL = os.path.join(DATA_DIR, "council_ideas.jsonl")
+
+_IDEA_CUES = ("想法", "点子", "灵感", "我觉得可以", "要是能", "不如", "可以搞", "说不定", "或许可以")
+
+
+def _seat_say(profile: str, question: str, timeout: int = 100) -> str:
+    """经 8787 真席位问一句（精简版 client；失败返回空串如实降级）。"""
+    import urllib.request as _ur
+    try:
+        def _post(path, payload):
+            req = _ur.Request("http://127.0.0.1:8787" + path,
+                              data=json.dumps(payload).encode("utf-8"),
+                              headers={"Content-Type": "application/json",
+                                       "Cookie": f"hermes_profile={profile}"}, method="POST")
+            with _ur.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8"))
+        ses = _post("/api/session/new", {"name": "council-auto"})
+        sid = ses["session"]["session_id"]
+        st = _post("/api/chat/start", {"session_id": sid, "message": question})
+        stream_id = st.get("stream_id")
+        if not stream_id:
+            return ""
+        req = _ur.Request(
+            f"http://127.0.0.1:8787/api/chat/stream?session_id={sid}&stream_id={stream_id}&replay=1",
+            headers={"Cookie": f"hermes_profile={profile}"})
+        chunks, ev = [], ""
+        with _ur.urlopen(req, timeout=timeout) as r:
+            for raw in r:
+                line = raw.decode("utf-8", errors="replace").rstrip("\n")
+                if line.startswith("event:"):
+                    ev = line.split(":", 1)[1].strip()
+                elif line.startswith("data:"):
+                    try:
+                        d = json.loads(line[5:].strip())
+                    except json.JSONDecodeError:
+                        continue
+                    if ev == "token":
+                        chunks.append(str(d.get("text") or d.get("token") or ""))
+                    elif ev in ("stream_end", "done"):
+                        break
+        return "".join(chunks).strip()[:400]
+    except Exception:
+        return ""
+
+
+def auto_discuss(idea: str) -> list[dict]:
+    """三席位自动对答：赵云（风险/治理视角）+ 田丰（落地/拆解视角）并行各一句。"""
+    import threading
+    out = {}
+
+    def ask(seat, cn, role):
+        txt = _seat_say(seat, f"老田随口抛出一个想法：「{idea}」。你是{cn}（{role}视角）。只用一两句话给观点：值不值得做/最大风险或最大价值/下一步建议。不确定就说不确定。")
+        out[seat] = txt
+
+    ts = [threading.Thread(target=ask, args=a) for a in
+          (("zhaoyun", "赵云", "治理与风险"), ("tianfeng", "田丰", "落地与拆解"))]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join(timeout=110)
+    recs = []
+    for seat, cn in (("zhaoyun", "赵云"), ("tianfeng", "田丰")):
+        recs.append({"seat": seat, "cn": cn, "view": out.get(seat, "")})
+    return recs
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 静默
         pass
@@ -409,6 +476,59 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             return self._json({"error": "bad json"}, 400)
+        if u.path == "/api/council/idea_discuss":
+            # 想法对答（页面在 idea 意图后异步调用）：三席位观点互补入对话流
+            idea = str(data.get("idea") or "").strip()[:500]
+            if not idea:
+                return self._json({"error": "idea required"}, 400)
+            views = auto_discuss(idea)
+            for v in views:
+                if v["view"]:
+                    _append(MESSAGES, {"at": _now(), "topic": "💡 想法池", "seat": v["seat"],
+                                       "kind": "say", "text": v["view"]})
+            # 诸葛亮建议面由规则兜底（key 未注入，如实标注）
+            _append(MESSAGES, {"at": _now(), "topic": "💡 想法池", "seat": "zhuge",
+                               "kind": "say", "text": "（诸葛亮·建议面代行）想法价值在于先承载：入池后不定进度，与现有工作不抢资源；若后续要执行，从池中一键转专项会议即可。"})
+            _append(MESSAGES, {"at": _now(), "topic": "💡 想法池", "seat": "laotian",
+                               "kind": "sys", "text": "🤖 归档确认：这个想法已存「💡想法池」。要不要挂到某个专项？直接说「把它转成专项会议」或就留在池里——留池即默认，无需操作。"})
+            return self._json({"ok": True, "views": views})
+        if u.path == "/api/council/idea_promote":
+            # 池中想法 → 专项会议（后面想执行时）
+            idea = str(data.get("idea") or "").strip()[:500]
+            if not idea:
+                return self._json({"error": "idea required"}, 400)
+            tid = dt.datetime.now().strftime("%m%d-%H%M")
+            topic = {"topic": f"💡→🎯 {idea[:30]}（#{tid}）", "kind": "project",
+                    "tags": ["govern"], "stage": "立题", "originator": "laotian",
+                    "summary": f"想法转专项 {tid}", "created_at": _now()}
+            _append(MESSAGES, {"at": _now(), "topic": topic["topic"], "seat": "laotian",
+                               "kind": "new", "text": f"🎯 想法转专项：「{idea}」"})
+            cur = []
+            if os.path.isfile(REGISTRY_SNIPPET):
+                try:
+                    cur = json.load(open(REGISTRY_SNIPPET, encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    cur = []
+            cur.append(topic)
+            fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(cur, f, ensure_ascii=False, indent=1)
+            os.replace(tmp, REGISTRY_SNIPPET)
+            # 池中状态翻转
+            if os.path.isfile(IDEA_POOL):
+                lines = open(IDEA_POOL, encoding="utf-8").read().splitlines()
+                for i, line in enumerate(lines):
+                    try:
+                        r = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if r.get("idea") == idea:
+                        r["status"] = "promoted"; r["promoted_at"] = _now()
+                        lines[i] = json.dumps(r, ensure_ascii=False)
+                _ = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+                with open(IDEA_POOL, "w", encoding="utf-8") as f:
+                    f.write("\n".join(lines) + "\n")
+            return self._json({"ok": True, "topic": topic, "routed": "已转专项：" + topic["topic"]})
         if u.path == "/api/council/archive":
             # v5：一句话定稿——text 一段话，AI 规则拆决议+任务（缺 owner 标 TBD 不编造）
             text = str(data.get("text") or "").strip()[:2000]
@@ -466,7 +586,7 @@ class Handler(BaseHTTPRequestHandler):
             current_topic = str(data.get("current_topic") or "").strip()[:120]
             if not text:
                 return self._json({"error": "text required"}, 400)
-            # ── 统一意图路由：定稿归档 > 查询 > 预约 > 发言(有当前议题) > 开新会议 ──
+            # ── 统一意图路由：定稿归档 > 查询 > 预约 > 想法(对答) > 发言 > 开新会议 ──
             intent = None
             if any(k in text for k in _ACTION_ARCHIVE):
                 intent = "archive"
@@ -478,6 +598,19 @@ class Handler(BaseHTTPRequestHandler):
                 intent = "say"
             else:
                 intent = "new"
+            # 想法识别：想法词 + 无当前议题 或 显式开想法会 → idea（承载不执行，三席位自动对答）
+            if any(k in text for k in _IDEA_CUES) and intent in ("new", "say"):
+                intent = "idea"
+            if intent == "idea":
+                idea_text = _re.sub(r"^(我有个想法|有个想法|想法[:：]|我觉得可以|要是能|不如|可以搞)", "", text).strip() or text
+                rec = {"at": _now(), "idea": idea_text, "status": "parked",
+                       "note": "随口想法·承载不执行——后面想做时再启动"}
+                _append(IDEA_POOL, rec)
+                _append(MESSAGES, {"at": _now(), "topic": "💡 想法池", "seat": "laotian",
+                                   "kind": "new", "text": f"💡 想法入池：「{idea_text}」（只承载，不执行）"})
+                return self._json({"ok": True, "intent": "idea",
+                                   "routed": "💡 想法已入池（承载不执行）——正在请赵云/田丰进场对答…",
+                                   "idea": rec, "discuss_async": True})
             if intent == "archive":
                 topic = current_topic or _latest_active_topic()
                 if not topic:

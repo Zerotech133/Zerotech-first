@@ -109,7 +109,8 @@ async function natural(){const t=$('#nat').value.trim();if(!t){toast('说一句�
 try{const d=await opsPost('/api/council/natural',{text:t,current_topic:curTopic,seat:$('#seat').value});
 toast('🤖 '+d.routed);
 if(d.intent==='new'&&d.topic){curTopic=d.topic.topic}
-if(d.intent==='say'){}
+if(d.intent==='idea'&&d.discuss_async){
+opsPost('/api/council/idea_discuss',{idea:d.idea.idea}).then(()=>loadAll()).catch(()=>{})}
 $('#nat').value='';await loadAll()}catch(e){toast('失败：'+e.message)}}
 $('#btn-nat').addEventListener('click',natural);
 $('#nat').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();natural()}});
