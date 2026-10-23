@@ -6,8 +6,9 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "quant_backtest"))
-from api_intel_graph import _repo_root, _seat_stock_code, build_view, dossier  # noqa: E402
-from intel_seat_shadow import load_seat_rows, seat_pairs  # noqa: E402
+import api_intel_graph  # noqa: E402
+from api_intel_graph import _seat_stock_code, build_view, dossier  # noqa: E402
+from intel_seat_shadow import seat_pairs  # noqa: E402
 
 
 def test_dossier_returns_candidate_only_with_traceable_keys():
@@ -46,21 +47,21 @@ def test_seat_stock_code_parsing_covers_all_candidate_shapes():
     assert _seat_stock_code(None) is None
 
 
-def test_seat_edges_queryable_by_stock_real_data():
-    """E2FIX 集成断言: 席位共现边必须按票可查.
-
-    历史缺口: 旧测试只取 ``next(iter(g._by_stock))``——该票码来自 holdings,
-    seat 边从未按票登记也无断言, 端点对有席位数据的票恒返回空案卷.
-    """
-    seats = load_seat_rows(_repo_root(), limit_parts=2)
-    per_stock = seats.groupby(["trade_date", "ts_code"])["exalter"].nunique()
-    hot = per_stock[per_stock >= 2]
-    assert len(hot) > 0, "末 2 分区应存在同日同票多席位数据"
-    code = str(hot.index[0][1])
-    d = build_view().dossier(code)
-    assert d["total_edges"] > 0, f"{code} 有席位数据但案卷 0 边——席位边未按票登记"
-    assert any("seat:tdx:" in e["pair"] for e in d["edges"]), \
-        f"{code} 案卷应含席位共现边(seat:tdx: 键)"
+def test_seat_edges_queryable_by_stock_with_isolated_fixture(monkeypatch):
+    """自造两席一票：验证消费端确实按票索引，不依赖会演进的真实分区。"""
+    frame = pd.DataFrame([
+        {"ts_code": "600001.SH", "trade_date": "20261021", "exalter": "A部", "side": "0"},
+        {"ts_code": "600001.SH", "trade_date": "20261021", "exalter": "B部", "side": "1"},
+    ])
+    monkeypatch.setattr(api_intel_graph, "load_seat_rows", lambda *_args, **_kwargs: frame)
+    monkeypatch.setattr(api_intel_graph.pd, "read_parquet", lambda *_args, **_kwargs:
+                        pd.DataFrame(columns=["holder_name", "ts_code", "end_date",
+                                              "hold_ratio", "ann_date"]))
+    d = build_view().dossier("600001.SH")
+    assert d["total_edges"] == 1
+    assert d["verdict"] == "candidate_only"
+    assert d["edges"][0]["evidence_key"] == "top_inst:20261021:600001.SH"
+    assert "seat:tdx:" in d["edges"][0]["pair"]
 
 
 def test_dossier_empty_is_honest_for_unknown_code():
