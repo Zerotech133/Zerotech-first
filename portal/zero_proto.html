@@ -40,10 +40,8 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 </div></div>
 <div class="grid g2" style="margin-bottom:16px">
 <div class="card" style="border-color:#bcd8e2;background:linear-gradient(140deg,#fff,#eef6f9)"><h2>🌐 今日情报 · 快速决策</h2><div id="intel-box"><div class="krow"><b>读取中…</b><small>盘面 × 情报线</small></div></div></div>
-<div class="card"><h2>🧭 情报怎么用</h2>
-<div class="krow"><b>看影响，不看新闻流</b><small>全球事件 → 对股市/地缘的影响 → 是否动</small></div>
-<div class="krow"><b>问一句就深挖</b><small>上方对零界说「查一下恒指」</small></div>
-<div class="krow"><b>裁定有对账</b><small>情报命中率 52%（14905 条实盘对账）——如实展示不吹</small></div></div>
+<div class="card"><h2>✍️ 内容生产 · 今日自媒体 <span class="pill" id="cp-week">—</span></h2><div id="cp-box"><div class="krow"><b>读取中…</b></div></div>
+<div class="krow" style="cursor:pointer" data-ai="现在开会定明天公众号选题,对标今日热点"><b>▸ 定选题 · 对标热点</b><small>点这里 AI 开选题会</small></div></div>
 </div>
 <div class="caps">
 <div class="cap" data-jump="council"><div class="ic">🏛️</div><h3>会议指挥</h3><small>一句话开会议 · 多 AI 复辩收敛 · 定稿即工单行动</small></div>
@@ -208,6 +206,14 @@ const box=document.getElementById('pp-market');if(!box)return;box.innerHTML='';
 const m=d.market;if(m){box.insertAdjacentHTML('beforeend','<div class="krow"><b>盘面 overall '+(m.overall??'—')+'</b><small>'+String(m.ts||'').slice(5,16).replace('T',' ')+'</small><span class="pill '+((m.overall||0)<=-10?'hot':(m.overall||0)>=10?'ok':'now')+'">'+((m.overall||0)<=-10?'偏空':(m.overall||0)>=10?'偏多':'中性')+'</span></div>');
 (m.alerts||[]).forEach(a=>box.insertAdjacentHTML('beforeend','<div class="krow"><b style="color:var(--red)">⚠ '+a+'</b><small>隔夜警报</small></div>'))}}
 loadPP();setInterval(loadPP,60000);
+async function loadCP(){let d=null;try{d=await(await fetch(OPS+'/api/content/brief',{cache:'no-store'})).json()}catch(e){return}
+const box=document.getElementById('cp-box');if(!box)return;box.innerHTML='';
+document.getElementById('cp-week').textContent='近7天 '+(d.week_n||0)+' 篇';
+document.getElementById('cp-week').className='pill '+(d.week_n>=5?'ok':'wait');
+(d.recent||[]).slice(0,4).forEach(x=>{const st=x.status==='reviewed'?'ok':'now';
+box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(x.title).slice(0,20)+'</b><small>'+x.date+' · '+x.col+'</small><span class="pill '+st+'">'+(x.status==='reviewed'?'已审':'草稿')+'</span></div>')});
+if(!box.children.length)box.innerHTML='<div class="krow"><b>近 7 天无产出</b><small>该写了</small></div>'}
+loadCP();setInterval(loadCP,60000);
 loadIntel();setInterval(loadIntel,60000);
 load();setInterval(load,30000);
 </script></body></html>

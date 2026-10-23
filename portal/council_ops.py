@@ -675,6 +675,19 @@ class Handler(BaseHTTPRequestHandler):
         q = urllib.parse.parse_qs(u.query).get("q", [""])[0]
         if u.path == "/api/council/search":
             return self._json({"q": q, "hits": search_all(q)})
+        if u.path == "/api/content/brief":
+            # 内容生产线一屏：gzh/drafts 真数据（推文/选题/状态）+ 待办动作
+            out = {"at": _now(), "recent": [], "week_n": 0, "total": 0}
+            try:
+                idx = json.load(open(os.path.join(REPO, "gzh", "drafts", "index.json"), encoding="utf-8"))
+                week = [x for x in idx if str(x.get("date", "")) >= (dt.date.today() - dt.timedelta(days=7)).isoformat()]
+                out["week_n"] = len(week)
+                out["total"] = len(idx)
+                out["recent"] = [{"date": x.get("date"), "title": str(x.get("title", ""))[:30],
+                                  "col": x.get("col"), "status": x.get("status")} for x in idx[:6]]
+            except Exception:
+                pass
+            return self._json(out)
         if u.path == "/api/intel/brief":
             # 情报一屏：盘面(premarket) + 情报对账(guojia) + 最新裁定(verdicts) —— 情报视角驾驶舱
             out = {"at": _now(), "market": None, "intel": None, "verdicts": []}
