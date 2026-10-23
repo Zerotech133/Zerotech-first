@@ -2179,9 +2179,10 @@
         },
         {
           "agent_id": "MANCHONG1",
+          "cn_name": "满宠",
           "role_profile": "全量数据串联与治理席",
           "analysis_type": "",
-          "charter_detail": "负责把各线数据串联成可用事实：连接数据、清洗数据、关联数据、治理赋能、每日情报汇报；串联结论只报实况不裁决",
+          "charter_detail": "负责把各线数据串联成可用事实：连接数据、清洗数据、关联数据、治理赋能、每日情报汇报；串联结论只报实况不裁决。兼 MDC-R03 证据持久层存储责任席（任峻位，2026-10-23 老田裁定）：offered/accepted/persisted/visible 四态分账、幂等键与血缘完整性、崩溃回放一致、连续水位不提前；持久产出未经独立验收不得宣称已入库",
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-213 / 放行人 老田）",
           "tools": [],
