@@ -210,16 +210,20 @@ def check_invariants() -> None:
     if fev.is_file():
         rows_ev = json.loads(fev.read_text(encoding="utf-8")).get("rows", [])
         # 纯 JSON 内部不变量：**不依赖报告文件、也不依赖锁**。
-        # 「未取到证据需重抓」这一档的定义就是「页面抓到了但 freq_page 没抽到」，
-        # 所以它在 JSON 里的条数必须恒等于 freq_page 为空的条数。
-        # 为什么单列这条：把这一档的 conflict 全部置空（伪装成「与档案一致」）再重锁，
-        # 哈希锁自洽、分档计数照样能对上 registry，闸门会全绿——但 74 条无证据记录
+        # `freq_page` 为空只有两类来源，性质完全不同，不能混算：
+        #   未取到证据需重抓  页面抓到了但没抽到频率 —— 是结论，必须单独成档
+        #   取页失败          页面根本没抓到       —— 没有结论，也不能算一致
+        # 所以恒等式是「这两类相加 == freq_page 为空」。只写 n_noev == n_empty_page 时，
+        # 联网审计一出现失败页就会天天假阳，跑几次之后人就学会忽略这条闸门了。
+        # 为什么单列这条：把无证据那一档的 conflict 全部置空（伪装成「与档案一致」）
+        # 再重锁，哈希锁自洽、分档计数照样能对上 registry，闸门会全绿——但那些记录
         # 已经被静默当成「有结论」。这条直接抓「没证据被当成有结论」，绕不过去。
         n_noev = sum(1 for r in rows_ev if r.get("conflict") == "未取到证据需重抓")
+        n_failed = sum(1 for r in rows_ev if r.get("conflict") == "取页失败")
         n_empty_page = sum(1 for r in rows_ev if not str(r.get("freq_page") or "").strip())
-        if n_noev != n_empty_page:
-            problems.append(f"未取到证据档 {n_noev} 条 != freq_page 为空的 {n_empty_page} 条"
-                            "（该档可能被旧版脚本回退）")
+        if n_noev + n_failed != n_empty_page:
+            problems.append(f"未取到证据档 {n_noev} 条 + 取页失败 {n_failed} 条"
+                            f" != freq_page 为空的 {n_empty_page} 条（该档可能被旧版脚本回退）")
     if flock.is_file():
         import hashlib
 

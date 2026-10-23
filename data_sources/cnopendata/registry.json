@@ -2,7 +2,7 @@
   "meta": {
     "source": "CnOpenData",
     "source_operator": "河南汉数信息技术有限公司",
-    "generated_at": "2026-10-22T01:31:56+08:00",
+    "generated_at": "2026-10-22T01:38:26+08:00",
     "scope": "股票/金融相关数据集与 API（含因子与背景层）",
     "boundary": "仅登记公开目录页元信息，不含任何数据内容；未采购、未调用接口",
     "total_records": 506,
