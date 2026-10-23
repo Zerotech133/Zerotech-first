@@ -106,11 +106,8 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 </div></div>
 <div class="krow" style="cursor:pointer" data-ai="现在开会讨论投资人跟进"><b>▸ 开个会推进任何一条</b><small>点这里 → AI 直接立会</small></div></div>
 
-<div class="card"><h2>🗓️ 环境与日程 · AI 规划 <span class="pill wait">原型</span></h2>
-<div class="krow"><b>〔例〕下周一 赴涪陵</b><small>多云 18-24°C · 政府协调会 14:00</small><span class="pill now">出行</span></div>
-<div class="krow"><b>〔例〕未来三天 AI 排程</b><small>①警报治理验收(明) ②飞书外网拍板(后) ③BP v4 修订(下周一)</small><span class="pill ok">AI 生成</span></div>
-<div class="krow" style="cursor:pointer" data-ai="帮我规划下周的工作"><b>▸ 让 AI 规划我的下周</b><small>点这里直接说</small></div>
-<div class="krow"><b>天气源 / 日历合并</b><small>议会厅预约已入账 · 待并视图</small><span class="pill wait">待接</span></div></div>
+<div class="card"><h2>🗓️ 环境与日程 <span class="pill ok">真数据</span></h2><div id="env-box"><div class="krow"><b>读取中…</b></div></div>
+<div class="krow" style="cursor:pointer" data-ai="帮我规划下周的工作"><b>▸ 让 AI 规划我的下周</b><small>点这里直接说</small></div></div>
 </div>
 
 <div class="card" style="margin-top:14px"><h2>📚 知识库累积 <span class="pill ok">现役</span></h2>
@@ -220,6 +217,14 @@ rows.slice(0,4).forEach(r=>{const hit=kw.find(k=>(r.title||'').includes(k));
 box.insertAdjacentHTML('beforeend','<div class="krow" style="cursor:pointer" data-ai=\'查一下政策 ">'+(hit?'<span class="pill now">关联</span> ':'')+'<span style="flex:1"><b>'+String(r.title).slice(0,26)+'</b><small>'+r.date+' · gov.cn · 点击开会研判</small></span></div>')});
 box.querySelectorAll('[data-ai]').forEach((n,i)=>{n.dataset.ai='现在开会研判政策影响：'+(rows[i]||{}).title;n.addEventListener('click',()=>{document.getElementById('ai-say').value=n.dataset.ai;jump('home');document.getElementById('ai-say').focus()})})}
 loadPolicy();setInterval(loadPolicy,300000);
+async function loadEnv(){let d=null;try{d=await(await fetch(OPS+'/api/env/brief',{cache:'no-store'})).json()}catch(e){return}
+const box=document.getElementById('env-box');if(!box)return;box.innerHTML='';
+const w=d.weather;if(w&&w.cities){Object.entries(w.cities).forEach(([c,v])=>{
+if(v.err){box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c+' 天气获取失败</b><small>保留上次</small></div>');return}
+box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c+' '+(v.temp_c||'?')+'°C '+(v.desc||'')+'</b><small>体感'+(v.feels||'?')+'° · '+(v.max_min||'')+'° · '+(w.stale?'旧数据':'当前')+'</small><span class="pill now">天气</span></div>')})}
+(d.sched||[]).forEach(r=>{if(r&&r.for)box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(r.title||'会议').slice(0,20)+'</b><small>'+r.for+' · 议会厅预约</small><span class="pill ok">已约</span></div>')});
+if(!box.children.length)box.innerHTML='<div class="krow"><b>暂无天气/日程</b><small>07:35 每日自动刷新</small></div>'}
+loadEnv();setInterval(loadEnv,300000);
 loadIntel();setInterval(loadIntel,60000);
 load();setInterval(load,30000);
 </script></body></html>

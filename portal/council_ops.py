@@ -20,6 +20,7 @@ import json
 import os
 import re
 import tempfile
+import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -688,6 +689,27 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
             return self._json(out)
+        if u.path == "/api/env/brief":
+            # 环境日程域：天气(账本)+议会厅预约(未来日程)
+            out = {"at": _now(), "weather": None, "sched": []}
+            try:
+                import weather_store as _ws
+                out["weather"] = _ws.load()
+            except Exception:
+                pass
+            try:
+                rows = []
+                if os.path.isfile(SCHEDULED):
+                    with open(SCHEDULED, encoding="utf-8") as f:
+                        for line in f:
+                            try:
+                                rows.append(json.loads(line))
+                            except json.JSONDecodeError:
+                                continue
+                out["sched"] = [{"title": r.get("title"), "for": r.get("for")} for r in rows[-5:]][::-1]
+            except Exception:
+                pass
+            return self._json(out)
         if u.path == "/api/intel/policy":
             # 政策地缘域真数据（gov.cn 政策文件库采集账本）
             out = {"at": _now(), "recent": []}
@@ -1130,8 +1152,33 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"ok": True, "upload": rec})
 
 
+def _daily_collector_loop():
+    """每日 07:35 采集：政策域(gov.cn)+天气(本地账本)。桥常驻自带调度，零系统任务。
+    失败只打日志不影响服务；次日重试。"""
+    import logging
+    while True:
+        try:
+            now = dt.datetime.now()
+            nxt = (now + dt.timedelta(days=1)).replace(hour=7, minute=35, second=0)
+            time.sleep(max(1.0, (nxt - now).total_seconds()))
+            try:
+                import policy_geo_collector as _pg
+                _pg.main()
+            except Exception as e:
+                print("[daily-collect] policy FAIL:", str(e)[:100], flush=True)
+            try:
+                import weather_store as _ws
+                _ws.refresh()
+            except Exception as e:
+                print("[daily-collect] weather FAIL:", str(e)[:100], flush=True)
+        except Exception:
+            time.sleep(3600)
+
+
 def main() -> int:
     bind = os.environ.get("COUNCIL_OPS_BIND", "0.0.0.0")  # 手机同网访问；仅本机用时设 127.0.0.1
+    import threading as _th2
+    _th2.Thread(target=_daily_collector_loop, daemon=True).start()
     srv = ThreadingHTTPServer((bind, 8798), Handler)
     print("council_ops listening http://127.0.0.1:8798 (会话级进程，Ctrl+C 退出)", flush=True)
     srv.serve_forever()
