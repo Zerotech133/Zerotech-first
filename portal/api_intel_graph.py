@@ -19,6 +19,21 @@ _SEAT_COLS = ("trade_date", "ts_code")
 # 端点规模护栏: 只取末 2 分区(近数日), 全量归集属离线任务另跑.
 
 
+def _seat_stock_code(cand) -> str | None:
+    """从席位候选回源键取股票码 (E2FIX).
+
+    seat_pairs 统一以 ``top_inst:<trade_date>:<ts_code>`` 作 evidence_key,
+    与候选类型无关. **不能从 basis 取**: basis 因类型而异——
+    ``lhb_same_day_same_stock:D:CODE`` (确认对, 前缀不匹配→曾恒 None)、
+    ``top_inst_group:D:CODE:N`` (群体, 尾段是席位数→曾错注册成 "12")、
+    ``seat_S2_candidate:D:CODE`` (N6 候选). 三者都曾使席位边不按票登记,
+    dossier 对只有席位边的票恒返回空 (8101 评审实例实证: 688121.SH
+    末 2 分区 32 行席位数据, 修复前 0 边).
+    """
+    key = getattr(cand, "evidence_key", "") or ""
+    return key.split(":")[-1] if key.startswith("top_inst:") else None
+
+
 def _repo_root() -> Path:
     for base in [Path(__file__).resolve().parents[1]] + list(Path(__file__).resolve().parents[1].parents)[:3]:
         if (base / "quant_backtest" / "data" / "tushare_curated").exists():
@@ -37,8 +52,7 @@ def build_view(limit: int = 300) -> GraphView:
     # 真席位共现 (A5): ts_top_inst 末 2 分区
     seats = load_seat_rows(_repo_root(), limit_parts=2)
     for cand in seat_pairs(seats):
-        code = cand.basis.split(":")[-1] if cand.basis.startswith("top_inst:") else None
-        g.add(cand, stock_code=code)
+        g.add(cand, stock_code=_seat_stock_code(cand))
     # 持股候选 (A4): 十大股东影子 tail
     hold = pd.read_parquet(root / "top10_holders.parquet").tail(limit)
     for _, r in hold.iterrows():
