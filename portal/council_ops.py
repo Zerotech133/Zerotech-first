@@ -689,6 +689,25 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
             return self._json(out)
+        if u.path == "/api/contacts/brief":
+            # 商业关系库：联系人(contacts.jsonl)+文档盘点(deliverables)
+            out = {"at": _now(), "contacts": [], "docs": []}
+            try:
+                import contacts_store as _cs
+                out["contacts"] = _cs.load(12)
+                out["docs"] = _cs.docs_inventory()[:6]
+            except Exception:
+                pass
+            return self._json(out)
+        if u.path == "/api/tech/brief":
+            # 科技前沿：github trending + arXiv cs.AI
+            out = {"at": _now(), "recent": []}
+            try:
+                import tech_feed as _tf
+                out["recent"] = _tf.load_recent(10)
+            except Exception:
+                pass
+            return self._json(out)
         if u.path == "/api/env/brief":
             # 环境日程域：天气(账本)+议会厅预约(未来日程)
             out = {"at": _now(), "weather": None, "sched": []}
@@ -1171,6 +1190,17 @@ def _daily_collector_loop():
                 _ws.refresh()
             except Exception as e:
                 print("[daily-collect] weather FAIL:", str(e)[:100], flush=True)
+            try:
+                import tech_feed as _tf
+                _tf.main()
+            except Exception as e:
+                print("[daily-collect] tech FAIL:", str(e)[:100], flush=True)
+            try:
+                import contacts_store as _cs2
+                for c in _cs2.mine_meetings():
+                    _cs2.add(c)
+            except Exception as e:
+                print("[daily-collect] contacts-mine FAIL:", str(e)[:100], flush=True)
         except Exception:
             time.sleep(3600)
 

@@ -84,27 +84,17 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="card"><h2>🏛️ 政策与地缘 <span class="pill ok">真数据</span></h2><div id="policy-box"><div class="krow"><b>读取中…</b></div></div>
 <div class="krow" style="cursor:pointer" data-ai="现在开会讨论最新国务院AI就业政策对我们的影响"><b>▸ 开会研判最新政策</b><small>点这里 AI 立会分析影响</small></div></div>
 
-<div class="card"><h2>🔬 科技前沿 <span class="pill wait">原型</span></h2>
-<div class="krow"><b>〔示例〕开源 Agent 框架 X 发布 3.0</b><small>竞品动态 · 与指挥联动台对标</small><span class="pill now">竞品</span></div>
-<div class="krow"><b>〔示例〕国产 NPU 新品算力/功耗比提升 40%</b><small>硬件供应链 · 3588 盒子选型参考</small><span class="pill wait">关联我</span></div>
-<div class="krow"><b>〔示例〕RAG 长上下文成本半月降 30%</b><small>影响知识库检索方案</small><span class="pill wait">技术雷达</span></div>
-<div class="krow"><b>科技源订阅</b><small>GitHub Trending / arXiv / 业媒</small><span class="pill wait">待接</span></div></div>
+<div class="card"><h2>🔬 科技前沿 <span class="pill ok">真数据</span></h2><div id="tech-box"><div class="krow"><b>读取中…</b></div></div>
+<div class="krow" style="cursor:pointer" data-ai="现在开会分析今日arXiv和GitHub趋势里与我们产品相关的"><b>▸ 开会研判今日趋势</b><small>点这里 AI 分析关联</small></div></div>
 </div>
 
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
-<div class="card"><h2>🤝 商业关系 <span class="pill wait">原型</span></h2>
+<div class="card"><h2>🤝 商业关系 <span class="pill ok">真数据</span></h2>
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
-<div>
-<div class="krow"><b>〔例〕张总 · 潜在客户</b><small>AI 平台采购意向 · 上次 10-18</small><span class="pill hot">本周见</span></div>
-<div class="krow"><b>〔例〕李博士 · 投资人</b><small>关注云边协同 · 已发 BP v3</small><span class="pill now">跟进中</span></div>
-<div class="krow"><b>〔例〕王工 · 合作 VP</b><small>北理工联合实验室对接</small><span class="pill wait">待约</span></div>
+<div id="ct-box"><div class="krow"><b>读取中…</b></div></div>
+<div id="ct-docs"><div class="krow"><b>读取中…</b></div></div>
 </div>
-<div>
-<div class="krow"><b>BP · 商业计划书</b><small>v3 · 10-20 更新</small><span class="pill ok">在库</span></div>
-<div class="krow"><b>项目书 · 涪陵 OPC</b><small>政府协调材料 · 税率口径对齐中</small><span class="pill now">在办</span></div>
-<div class="krow"><b>研发方案</b><small>ROADMAP v2 · 唯一战略源</small><span class="pill ok">在库</span></div>
-</div></div>
-<div class="krow" style="cursor:pointer" data-ai="现在开会讨论投资人跟进"><b>▸ 开个会推进任何一条</b><small>点这里 → AI 直接立会</small></div></div>
+<div class="krow" style="cursor:pointer" data-ai="现在开会讨论商业关系跟进"><b>▸ 开个会推进任何一条</b><small>点这里 → AI 直接立会</small></div></div>
 
 <div class="card"><h2>🗓️ 环境与日程 <span class="pill ok">真数据</span></h2><div id="env-box"><div class="krow"><b>读取中…</b></div></div>
 <div class="krow" style="cursor:pointer" data-ai="帮我规划下周的工作"><b>▸ 让 AI 规划我的下周</b><small>点这里直接说</small></div></div>
@@ -224,6 +214,19 @@ if(v.err){box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c+' 天气�
 box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c+' '+(v.temp_c||'?')+'°C '+(v.desc||'')+'</b><small>体感'+(v.feels||'?')+'° · '+(v.max_min||'')+'° · '+(w.stale?'旧数据':'当前')+'</small><span class="pill now">天气</span></div>')})}
 (d.sched||[]).forEach(r=>{if(r&&r.for)box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(r.title||'会议').slice(0,20)+'</b><small>'+r.for+' · 议会厅预约</small><span class="pill ok">已约</span></div>')});
 if(!box.children.length)box.innerHTML='<div class="krow"><b>暂无天气/日程</b><small>07:35 每日自动刷新</small></div>'}
+async function loadTech(){let d=null;try{d=await(await fetch(OPS+'/api/tech/brief',{cache:'no-store'})).json()}catch(e){return}
+const box=document.getElementById('tech-box');if(!box)return;box.innerHTML='';
+const rows=d.recent||[];
+if(!rows.length){box.innerHTML='<div class="krow"><b>科技线暂无数据</b><small>07:35 每日采集</small></div>';return}
+rows.slice(0,4).forEach(r=>{const isGh=r.src.includes('github');
+box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(r.title).slice(0,30)+'</b><small>'+(isGh?'GitHub Trending':'arXiv cs.AI')+' · '+r.date+'</small><span class="pill '+(isGh?'now':'wait')+'">'+(isGh?'开源':'论文')+'</span></div>')})}
+async function loadCt(){let d=null;try{d=await(await fetch(OPS+'/api/contacts/brief',{cache:'no-store'})).json()}catch(e){return}
+const b=document.getElementById('ct-box'),db=document.getElementById('ct-docs');if(!b)return;b.innerHTML='';db.innerHTML='';
+(d.contacts||[]).slice(0,4).forEach(c=>{b.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c.name.slice(0,16)+'</b><small>'+String(c.note||'').slice(0,22)+'</small><span class="pill '+(c.role==='客户'?'hot':'now')+'">'+c.role+'</span></div>')});
+if(!(d.contacts||[]).length)b.innerHTML='<div class="krow"><b>暂无联系人</b><small>对AI说或--add登记</small></div>';
+(d.docs||[]).slice(0,4).forEach(x=>{db.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(x.file).slice(0,20)+'</b><small>deliverables 在库</small><span class="pill ok">文档</span></div>')});
+if(!(d.docs||[]).length)db.innerHTML='<div class="krow"><b>暂无关联文档</b></div>'}
+loadTech();setInterval(loadTech,300000);loadCt();
 loadEnv();setInterval(loadEnv,300000);
 loadIntel();setInterval(loadIntel,60000);
 load();setInterval(load,30000);
