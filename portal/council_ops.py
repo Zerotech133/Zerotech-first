@@ -351,6 +351,20 @@ def _latest_active_topic() -> str:
         return ""
 
 
+# ---------------- 会议类型自动归类（不刻意：词表判日常/专项） ----------------
+_DAILY_CUES = ("聊聊", "聊一下", "碰一下", "碰个头", "同步", "sync", "晨会", "周会", "日报",
+               "看看", "过一下", "随手", "日常", "随便聊聊", "打招呼", "状态", "站会", "例会")
+_PROJECT_CUES = ("修复", "开发", "方案", "评审", "立项", "工单", "重构", "上线", "部署",
+                 "设计", "改造", "排查", "根因", "恢复", "迁移", "定稿")
+
+
+def classify_meeting(text: str) -> str:
+    """日常/专项自动归类：专项词命中→project；日常词命中→daily；都没中→daily（默认轻流程，不刻意）。"""
+    if any(k in text for k in _PROJECT_CUES):
+        return "project"
+    return "daily"
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 静默
         pass
@@ -504,13 +518,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": True, "intent": "new", "routed": "（重复指令已忽略）", "dup": True,
                                    "topic": {"topic": Handler._last_new[2]}})
             parsed = parse_natural(text)
+            kind = classify_meeting(text)
             tid = dt.datetime.now().strftime("%m%d-%H%M")
             topic = {"topic": f"{parsed['title']}（#{tid}）",
-                    "tags": parsed["seats"] or ["govern"], "stage": "立题",
+                    "kind": kind,
+                    "tags": parsed["seats"] or (["daily"] if kind == "daily" else ["govern"]), "stage": "立题",
                     "originator": "laotian", "summary": f"🎤 发起 {tid}" + (f" · {parsed['at']}" if parsed["at"] else ""),
                     "created_at": _now()}
             _append(MESSAGES, {"at": _now(), "topic": topic["topic"], "seat": "laotian",
-                               "kind": "new", "text": f"🎤 开会：「{text}」" + (f" · {parsed['at']}" if parsed["at"] else "")})
+                               "kind": "new", "text": ("☕" if kind == "daily" else "🎯") + (" 日常会议" if kind == "daily" else " 专项会议") + f"自动归类：「{text}」" + (f" · {parsed['at']}" if parsed["at"] else "")})
             cur = []
             if os.path.isfile(REGISTRY_SNIPPET):
                 try:
@@ -523,7 +539,7 @@ class Handler(BaseHTTPRequestHandler):
                 json.dump(cur, f, ensure_ascii=False, indent=1)
             os.replace(tmp, REGISTRY_SNIPPET)
             Handler._last_new = (text, nowts, topic["topic"])
-            return self._json({"ok": True, "intent": "new", "routed": "已开会：" + topic["topic"], "topic": topic})
+            return self._json({"ok": True, "intent": "new", "kind": kind, "routed": ("☕ 日常会议（轻流程，随聊随记）：" if kind == "daily" else "🎯 专项会议（六阶段）：") + topic["topic"], "topic": topic})
         if u.path == "/api/council/new":
             title = str(data.get("title") or "").strip()[:80]
             tags = [str(t)[:20] for t in (data.get("tags") or []) if str(t).strip()][:5]
