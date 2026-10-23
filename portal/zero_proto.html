@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · AI 驾驶舱</title><style>
+<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · AI 驾驶舱</title><!-- 定型主版本(老田 2026-10-23 裁定)：本页自带四入口浅色导航，故不加载 /static/nav.js —— 否则会叠加深色二条导航(动线8+五下拉)，正是"导航太复杂"的来源。深屏工作台经首页「系统」与页脚进入。 --><style>
 :root{color-scheme:light;--bg:#f4f7fa;--paper:#ffffff;--ink:#1e3348;--muted:#5a6f83;--line:#dbe5ee;--blue:#0e7490;--bluebg:#e8f4f7;--amber:#936224;--red:#b3402e;--green:#227a4b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 "Microsoft YaHei",system-ui,sans-serif}
 .top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:14px;height:56px;padding:0 24px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:18px;font-weight:800;color:var(--blue)}.seg{display:flex;gap:4px;margin-left:auto}.seg button{cursor:pointer;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:6px 14px;font-size:13.5px;font-weight:600}.seg button.on{color:var(--blue);background:var(--bluebg);border-color:#bcd8e2}
 main{max-width:1120px;margin:auto;padding:22px 24px 80px}
@@ -18,10 +18,12 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 .pill{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:700;white-space:nowrap}.pill.hot{background:#fdeeea;color:var(--red);border:1px solid #eec5bd}.pill.now{background:var(--bluebg);color:var(--blue);border:1px solid #bcd8e2}.pill.ok{background:#e9f5ee;color:var(--green);border:1px solid #bcdcc9}.pill.wait{background:#faf3e6;color:var(--amber);border:1px solid #e6d5b0}
 .tile{display:block;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px}.tile:hover{border-color:var(--blue)}.tile h3{margin:0 0 4px;font-size:15px}.tile small{color:var(--muted);font-size:12px}.tile .pill{margin-top:8px;display:inline-block}
 .layer{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #eaf0f5;align-items:flex-start}.layer:last-child{border-bottom:none}.layer .no{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:var(--bluebg);color:var(--blue)}.layer.ok .no{background:#e9f5ee;color:var(--green)}.layer b{font-size:13.5px}.layer small{display:block;color:var(--muted);font-size:12px}
+.more-grid{grid-template-columns:repeat(3,1fr);gap:12px}.stack .krow{display:grid;grid-template-columns:1fr auto;gap:1px 8px;align-items:center}.stack .krow b{grid-area:1/1;min-width:0}.stack .krow small{grid-area:2/1/3/3}.stack .krow .pill{grid-area:1/2;justify-self:end}.summary-grid{grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:13px}.ability-grid{grid-template-columns:repeat(2,1fr);gap:8px}.ability-grid .krow{display:block;padding:10px 12px;border:1px solid #eaf0f5;border-radius:10px;background:#fbfdff}.ability-grid .krow b{display:block;font-size:13.5px}.ability-grid .krow small{display:block;margin-top:2px}.ability-grid .krow .pill{display:inline-block;margin-top:6px}.intel-grid{grid-template-columns:repeat(3,1fr);gap:14px}.detail-grid{grid-template-columns:repeat(3,1fr);gap:10px}.subnav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}.subnav button{cursor:pointer;border:1px solid #c6dbe5;background:#fff;color:var(--blue);border-radius:9px;padding:8px 13px;font:600 13px "Microsoft YaHei",system-ui,sans-serif}.subnav button.on{background:var(--bluebg);border-color:#9fc5d3}.subnav button:hover{border-color:var(--blue)}
 .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:14px}.foot a{color:var(--muted)}
-@media(max-width:900px){.g2,.g4,.caps{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
-</style><script src="/static/nav.js" defer></script></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
-<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报全谱</button><button data-s="cap">能力</button><button data-s="domains">模块</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
+@media(max-width:900px){.g2,.g4,.caps,.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
+@media(max-width:600px){.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid{grid-template-columns:1fr}.top{padding:0 12px;gap:6px}.brand{font-size:16px}.seg{gap:0}.seg button{padding:6px 8px;font-size:12px;white-space:nowrap}main{padding:16px 14px 60px}.g2,.g4,.caps{grid-template-columns:1fr}.airow{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center}.airow .ava{grid-area:1/1}.airow input{grid-area:1/2;font-size:14px}.airow button{grid-area:2/1/3/3;padding:12px}.aihero{padding:16px}.krow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}.krow b{grid-area:1/1;min-width:0}.krow small{grid-area:2/1/3/3}.krow .pill{grid-area:1/2;justify-self:end}.foot{flex-wrap:wrap}}
+</style></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
+<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报</button><button data-s="system">系统</button>
 </nav></header><main>
 
 <section class="sec on" id="s-home">
@@ -36,7 +38,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <span class="tip" data-q="我有个想法：盯盘预警加情绪因子">抛想法</span>
 <span class="tip" data-q="查一下0x80070003">查记录</span>
 <span class="tip" data-q="帮我规划下周的工作">规划下周</span>
-<span class="tip" data-q="打开业务域">导航</span>
+<span class="tip" data-q="打开能力总库">找能力</span>
 </div></div>
 <div class="grid g2" style="margin-bottom:16px">
 <div class="card" style="border-color:#bcd8e2;background:linear-gradient(140deg,#fff,#eef6f9)"><h2>🌐 今日情报 · 快速决策</h2><div id="intel-box"><div class="krow"><b>读取中…</b><small>盘面 × 情报线</small></div></div></div>
@@ -44,11 +46,10 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="krow" style="cursor:pointer" data-ai="现在开会定明天公众号选题,对标今日热点"><b>▸ 定选题 · 对标热点</b><small>点这里 AI 开选题会</small></div></div>
 </div>
 <div class="caps">
-<div class="cap" data-jump="council"><div class="ic">🏛️</div><h3>会议指挥</h3><small>一句话开会议 · 多 AI 复辩收敛 · 定稿即工单行动</small></div>
-<div class="cap" data-jump="intelall"><div class="ic">🌐</div><h3>情报全谱</h3><small>盘面·政策地缘·科技·商业关系·知识库·日程</small></div>
-<div class="cap" data-jump="cap"><div class="ic">🧩</div><h3>能力</h3><small>OS 全部能力主页</small></div>
-<div class="cap" data-jump="product"><div class="ic">🏗️</div><h3>产品建设</h3><small>商业化架构 · 首场景 · 阶段闸门如实可视</small></div>
-<div class="cap" data-jump="system"><div class="ic">⚙️</div><h3>系统健康</h3><small>服务状态 · 任务红项 · 一眼知安危</small></div>
+<div class="cap" data-jump="council"><div class="ic">🏛️</div><h3>会议指挥</h3><small>一句话开会 · 多 AI 讨论 · 决议与行动</small></div>
+<div class="cap" data-jump="intelall"><div class="ic">🌐</div><h3>情报</h3><small>盘面 · 政策 · 科技 · 商业关系 · 环境</small></div>
+<div class="cap" data-jump="system"><div class="ic">⚙️</div><h3>系统</h3><small>服务状态 · 任务健康 · 治理入口</small></div>
+<div class="cap" data-jump="more"><div class="ic">🧩</div><h3>更多能力</h3><small>能力总库 · 业务模块 · 产品建设</small></div>
 </div>
 <div class="grid g2">
 <div class="card"><h2>待老田决定（真数据）</h2><div id="t-decide"><div class="krow"><b>读取中…</b></div></div></div>
@@ -75,7 +76,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 
 <section class="sec" id="s-intelall"><div class="head"><h1>情报全谱</h1><p>经营者要看的一切 · 原型推演版（现役真数据 / 规划给样例样式并标「原型」——不装真）</p></div>
 
-<div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:14px">
+<div class="grid intel-grid">
 <div class="card"><h2>📈 盘面与交易 <span class="pill ok">现役</span></h2>
 <div id="pp-market"><div class="krow"><b>读取中…</b></div></div>
 <div class="krow" style="cursor:pointer" data-ai="查一下恒生指数隔夜"><b>雪球舆情 14212 帖</b><small>问AI：查一下恒生指数隔夜</small></div>
@@ -102,40 +103,49 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 
 <div class="card" style="margin-top:14px"><h2>📚 知识库累积 <span class="pill ok">现役</span></h2>
 <p style="color:var(--muted);font-size:13px;margin:4px 0 8px">今天说的每句话、开的每个会、产的每份文档都在沉淀——这是情报口最厚的家底。</p>
-<div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:10px">
+<div class="grid detail-grid">
 <div class="krow"><b>会议纪要库</b><small>定稿档案+决议+任务</small><span class="pill ok">检索已通</span></div>
 <div class="krow"><b>工单任务账</b><small>devtask 全量</small><span class="pill ok">现役</span></div>
 <div class="krow"><b>文档沉淀</b><small>deliverables/ 按主题</small><span class="pill ok">在库</span></div>
 </div></div>
 </section>
 
-<section class="sec" id="s-cap"><div class="head"><h1>能力总库</h1><p>OS 全部能力都在这个模块——生产就绪可直接用；建设中的按批次推进；未实现的构想收编在此</p></div>
-<div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:13px">
-<div class="card"><h2>🟢 生产就绪 <span class="pill ok">8</span></h2><small style="color:var(--muted);font-size:12px">今天在跑、可直接使用</small></div>
-<div class="card"><h2>🟡 建设中（自动化批次）<span class="pill wait">3</span></h2><small style="color:var(--muted);font-size:12px">智能体自运作 / 日历 / 知识图谱——批量产能推进</small></div>
-<div class="card"><h2>🔴 闸门锁定 <span class="pill hot">1</span></h2><small style="color:var(--muted);font-size:12px">决策卡：五闸过后接线</small></div>
+<section class="sec" id="s-more"><div class="head"><h1>更多能力</h1><p>首页保持聚焦；这里统一收纳跨模块能力、业务归属和产品建设，不把未闭环功能放进顶栏</p></div>
+<div class="grid more-grid">
+<div class="cap" data-jump="cap"><div class="ic">🧩</div><h3>能力总库 →</h3><small>按可用、建设中、闸门分层；构想在此登记，不等同已上线</small></div>
+<div class="cap" data-jump="domains"><div class="ic">🗂️</div><h3>业务模块 →</h3><small>情报、量化、数字军团、研发、内容、商业、学习、运维</small></div>
+<div class="cap" data-jump="product"><div class="ic">🏗️</div><h3>产品建设 →</h3><small>架构、试点和交付闸门；与现役能力分开看</small></div>
+</div></section>
+
+<section class="sec" id="s-cap"><div class="head"><h1>能力总库</h1><p>跨模块能力的统一收口；原型可见不代表自动化闭环或客户版可用</p></div>
+<div class="subnav" aria-label="更多能力子页面"><button data-jump="more">← 更多能力</button><button class="on" data-jump="cap">能力总库</button><button data-jump="domains">业务模块</button><button data-jump="product">产品建设</button></div>
+<div class="grid summary-grid">
+<div class="card"><h2>🟢 内部可用 <span class="pill ok">6</span></h2><small style="color:var(--muted);font-size:12px">内部已接通，不代表客户版就绪</small></div>
+<div class="card"><h2>🟡 待闭环 <span class="pill wait">5</span></h2><small style="color:var(--muted);font-size:12px">跨网触达、调度验收、自运作、日历与知识关联</small></div>
+<div class="card"><h2>🔴 闸门锁定 <span class="pill hot">1</span></h2><small style="color:var(--muted);font-size:12px">决策卡：授权和风控前置未齐</small></div>
 </div>
 <div class="card" style="margin-bottom:0"><h2>🧩 全部能力（唯一收口）</h2>
-<div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
-<div class="krow"><b>自然语言指挥</b><small>一句话→意图路由→执行</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>多席位复辩</b><small>召唤/轮值主席/投票收敛</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>定稿→工单直通</b><small>决议自动建单+飞书通知</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>问题生命周期</b><small>登记→认领→解决→归档</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>全文检索</b><small>留言+纪要+政策标题</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>飞书多端通知</b><small>卡片+直达按钮</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>换肤主题市场</b><small>三国/商务/科技三套</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>每日自动采集</b><small>07:35 政策/科技/天气</small><span class="pill ok">现役</span></div>
-<div class="krow"><b>智能体自运作领单</b><small>席位按 owner 领任务</small><span class="pill wait">构想</span></div>
-<div class="krow"><b>个人日历视图</b><small>预约+日程+提醒合并</small><span class="pill wait">构想</span></div>
-<div class="krow"><b>跨源知识图谱</b><small>人地事物组织证关联</small><span class="pill wait">构想</span></div>
-<div class="krow"><b>决策卡受控执行</b><small>五闸过后接线</small><span class="pill wait">闸门</span></div>
+<div class="grid ability-grid">
+<div class="krow"><b>自然语言指挥</b><small>内部桥接意图路由；公网未鉴权</small><span class="pill ok">内部可用</span></div>
+<div class="krow"><b>多席位会议</b><small>按议题召唤与轮值收敛</small><span class="pill ok">内部可用</span></div>
+<div class="krow"><b>定稿→工单</b><small>内部会议决议进入行动链</small><span class="pill ok">内部可用</span></div>
+<div class="krow"><b>问题生命周期</b><small>登记→处理→归档，保留账本</small><span class="pill ok">内部可用</span></div>
+<div class="krow"><b>记录检索</b><small>留言、纪要与已接入标题</small><span class="pill ok">内部可用</span></div>
+<div class="krow"><b>主题配置</b><small>三国 / 商务 / 科技界面配置</small><span class="pill ok">内部可用</span></div>
+<div class="krow"><b>飞书跨网触达</b><small>内网卡片已实测；异网与可靠语音未解决</small><span class="pill wait">待闭环</span></div>
+<div class="krow"><b>每日自动采集</b><small>07:35 代码已接；自然日可靠性待验收</small><span class="pill wait">待验收</span></div>
+<div class="krow"><b>智能体自运作领单</b><small>席位按 owner 自主领任务</small><span class="pill wait">构想</span></div>
+<div class="krow"><b>个人日历视图</b><small>预约、日程与提醒合并</small><span class="pill wait">构想</span></div>
+<div class="krow"><b>跨源知识关联</b><small>人、事、文档、证据关联</small><span class="pill wait">构想</span></div>
+<div class="krow"><b>决策卡受控执行</b><small>本人签准 / 身份 / 版本 / 工单 / 风控需核验</small><span class="pill hot">闸门</span></div>
 </div></div>
 
 </section>
 
-<section class="sec" id="s-domains"><div class="head"><h1>模块</h1><p>八大业务模块 · 各挂能力子项（能力主页在顶栏「能力」）</p></div>
+<section class="sec" id="s-domains"><div class="head"><h1>业务模块</h1><p>八个业务归属；跨模块的通用能力统一在能力总库，未接通的入口只展示状态</p></div>
+<div class="subnav" aria-label="更多能力子页面"><button data-jump="more">← 更多能力</button><button data-jump="cap">能力总库</button><button class="on" data-jump="domains">业务模块</button><button data-jump="product">产品建设</button></div>
 
-<div class="grid g4">
+<div class="grid g4 stack">
 <div class="card"><h2>🏛️ 情报模块</h2>
 <div class="krow" style="cursor:pointer" onclick="location='/intel'"><b>情报研究台</b><small>信源与判断</small><span class="pill ok">现役</span></div>
 <div class="krow" style="cursor:pointer" onclick="location='/zero_proto.html'"><b>情报全谱</b><small>六域真数据</small><span class="pill ok">现役</span></div>
@@ -167,7 +177,8 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="krow"><b>系统运维面</b><small>服务/数据链</small><span class="pill wait">待接</span></div></div>
 </div></section>
 
-<section class="sec" id="s-product"><div class="head"><h1>产品建设</h1><p>商业化：架构 / 首场景 / 闸门 / 模式</p></div>
+<section class="sec" id="s-product"><div class="head"><h1>产品建设</h1><p>商业化建设视图：架构、首场景、交付闸门；不等同现役能力</p></div>
+<div class="subnav" aria-label="更多能力子页面"><button data-jump="more">← 更多能力</button><button data-jump="cap">能力总库</button><button data-jump="domains">业务模块</button><button class="on" data-jump="product">产品建设</button></div>
 <div class="grid g2">
 <div class="card"><h2>阶段</h2>
 <div class="layer"><div class="no">A</div><div><b>产品确权</b><small>首包+访谈+事项字段 → 样本×2</small></div></div>
@@ -182,7 +193,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 </div></section>
 
 <section class="sec" id="s-system"><div class="head"><h1>系统</h1><p>少而准</p></div>
-<div class="grid g4">
+<div class="grid g4 stack">
 <div class="card"><h2>服务</h2>
 <div class="krow"><b>驾驶舱 8080</b><span class="pill ok">运行</span></div>
 <div class="krow"><b>议会厅桥 8798</b><span class="pill" id="sys-bridge">探测</span></div>
@@ -200,12 +211,14 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 </main>
 <script>
 const OPS=(location.protocol.startsWith('http')&&location.hostname)?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';
-function jump(s){document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.s===s));document.querySelectorAll('.sec').forEach(x=>x.classList.toggle('on',x.id==='s-'+s));window.scrollTo(0,0)}
+function jump(s){const section=document.getElementById('s-'+s);if(!section)return;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.s===s));document.querySelectorAll('.sec').forEach(x=>x.classList.toggle('on',x===section));if(history.replaceState)history.replaceState(null,'','#'+s);window.scrollTo(0,0)}
+const H0=location.hash.slice(1);if(H0&&document.getElementById('s-'+H0))jump(H0);
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h&&document.getElementById('s-'+h))jump(h)});
 document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>jump(b.dataset.s)));
-document.querySelectorAll('.cap').forEach(c=>c.addEventListener('click',()=>jump(c.dataset.jump)));
+document.querySelectorAll('[data-jump]').forEach(c=>c.addEventListener('click',()=>jump(c.dataset.jump)));
 async function aiSay(){const q=document.getElementById('ai-say').value.trim();if(!q)return;
 const echo=document.getElementById('ai-echo');echo.style.display='block';echo.textContent='⏳ '+q+' — 零界正在处理…';
-if(/^(打开|进入|去|看看)/.test(q)){const m={'能力':'cap','模块':'domains','业务域':'domains','会议':'council','产品':'product','系统':'system'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」板块';document.getElementById('ai-say').value='';return}}
+if(/^(打开|进入|去|看看|找)/.test(q)){const m={'能力':'cap','模块':'domains','业务域':'domains','产品':'product','系统':'system','情报':'intelall','会议':'council','更多':'more'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」页面';document.getElementById('ai-say').value='';return}}
 try{const r=await fetch(OPS+'/api/council/natural',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q,current_topic:'',seat:'laotian'})});
 const d=await r.json();echo.textContent='✅ '+(d.routed||'完成');load();}catch(e){echo.textContent='⚠️ 指挥桥未连（议会厅 8798）——导航可用，直连功能受限'}
 document.getElementById('ai-say').value=''}
@@ -226,7 +239,10 @@ if(m){const tone=(m.overall||0)<=-10?'hot':((m.overall||0)>=10?'ok':'now');
 box.insertAdjacentHTML('beforeend','<div class="krow"><b>盘面 overall '+(m.overall??'—')+'</b><small>premarket · '+String(m.ts||'').slice(5,16).replace('T',' ')+'</small><span class="pill '+tone+'">'+((m.overall||0)<=-10?'偏空':((m.overall||0)>=10?'偏多':'中性'))+'</span></div>');
 (m.alerts||[]).forEach(a=>box.insertAdjacentHTML('beforeend','<div class="krow"><b style="color:var(--red)">⚠ '+a+'</b><small>隔夜警报</small></div>'))}
 if(i){box.insertAdjacentHTML('beforeend','<div class="krow"><b>情报线命中率 '+(i.hit_rate!=null?(i.hit_rate*100).toFixed(1)+'%':'—')+'</b><small>'+(i.n||0)+' 条实盘对账 · '+Object.values(i.markets||{}).join('/')+'</small><span class="pill now">对账</span></div>')}
-(d.verdicts||[]).slice(0,2).forEach(v=>box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+(v.scope=='us'?'美股':'市场')+' '+(v.bias=='bull'?'看多':v.bias=='bear'?'看空':'中性')+'</b><small>裁定 '+v.day+' · conf '+(v.conf!=null?(+v.conf).toFixed(2):'—')+'</small><span class="pill '+(v.bias=='bull'?'ok':v.bias=='bear'?'hot':'wait')+'">'+v.bias+'</span></div>'));
+const vg={};(d.verdicts||[]).forEach(v=>{const k=(v.scope||'mkt')+'|'+(v.day||'');(vg[k]=vg[k]||[]).push(v)});
+Object.values(vg).slice(0,2).forEach(arr=>{arr.sort((a,b)=>(b.conf||0)-(a.conf||0));const v=arr[0];const cnt={};arr.forEach(x=>cnt[x.bias]=(cnt[x.bias]||0)+1);
+const conflict=Object.keys(cnt).length>1;
+box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+(v.scope=='us'?'美股':'市场')+' '+(v.bias=='bull'?'看多':v.bias=='bear'?'看空':'中性')+'</b><small>裁定 '+v.day+' · 最高 conf '+(v.conf!=null?(+v.conf).toFixed(2):'—')+(conflict?' · 当日 '+arr.length+' 源分歧，非一致':'')+'</small><span class="pill '+(v.bias=='bull'?'ok':v.bias=='bear'?'hot':'wait')+'">'+v.bias+'</span></div>')});
 if(!box.children.length)box.innerHTML='<div class="krow"><b>情报线暂无当日数据</b><small>源未更新（如实）</small></div>'}
 function bindAI(){document.querySelectorAll('[data-ai]').forEach(n=>n.addEventListener('click',()=>{document.getElementById('ai-say').value=n.dataset.ai;jump('home');document.getElementById('ai-say').focus()}))}
 bindAI();
