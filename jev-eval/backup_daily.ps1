@@ -1,4 +1,4 @@
-# =====================================================================
+﻿# =====================================================================
 # backup_daily.ps1 - AI workstation daily backup (hardened)
 # 1 postgres dump + 4 archives, gzip verify, AES-256-CBC+HMAC-SHA256
 # encryption of sensitive dumps, mirror to C:\backups_mirror, keep-4
@@ -293,8 +293,21 @@ $CodeArc = Join-Path $DayDir 'quant_code.tar.gz'
 Push-Location $BaseDir; & tar.exe czf $CodeArc --exclude 'quant_backtest/data' @CNames; Pop-Location
 $CGot = 0
 & tar.exe tzf $CodeArc | ForEach-Object { if (-not $_.EndsWith('/')) { $CGot++ } }
-if (($CGot -eq $CExpect) -and ($CGot -gt 0)) { LogOk ("quant_code.tar.gz files=" + $CGot) }
-else { LogFail ("quant_code.tar.gz files=" + $CGot + " expect=" + $CExpect) }
+# 2026-10-23：代码树是**活树**——多个会话在算 $CExpect 与 tar 之间仍在写文件，
+# 差 1~2 个是必然的。原来要求精确相等，于是 2026-10-23 那次因
+# "files=28196 expect=28195" 判 FAIL、写 BACKUP_FAILED 告警旗，
+# 让真正的备份上云风险被一条假警淹掉（备份本身是成功的）。
+# 判据改为：允许 $CCodeDrift 以内的漂移（活树正常抖动），
+# 但丢失超过该值仍判 FAIL —— bsdtar 因 ACL 静默跳过文件时会一下子少很多，
+# 那才是这个检查真正要抓的东西。
+$CCodeDrift = 8
+$CDelta = $CGot - $CExpect
+if ($CGot -gt 0 -and [math]::Abs($CDelta) -le $CCodeDrift) {
+    $note = if ($CDelta -eq 0) { "" } else { " (live-tree drift " + $CDelta + ")" }
+    LogOk ("quant_code.tar.gz files=" + $CGot + $note)
+} else {
+    LogFail ("quant_code.tar.gz files=" + $CGot + " expect=" + $CExpect + " delta=" + $CDelta)
+}
 
 # ---------------- 2. gzip integrity check on all archives ----------------
 foreach ($f in @(Get-ChildItem $DayDir -Filter "*.gz")) {
