@@ -11,29 +11,35 @@ import pandas as pd
 from pathlib import Path
 
 from intel_graph_view import GraphView
-from intel_relation_rules import co_occurrence, holding
+from intel_relation_rules import holding
+from intel_seat_shadow import load_seat_rows, seat_pairs
 
 _SEAT_COLS = ("trade_date", "ts_code")
+# A5 升级: 近似演示(榜单信号×原因)退役, 走 ts_top_inst 真席位两两共现.
+# 端点规模护栏: 只取末 2 分区(近数日), 全量归集属离线任务另跑.
+
+
+def _repo_root() -> Path:
+    for base in [Path(__file__).resolve().parents[1]] + list(Path(__file__).resolve().parents[1].parents)[:3]:
+        if (base / "quant_backtest" / "data" / "tushare_curated").exists():
+            return base
+    raise RuntimeError("data root not found")
 
 
 def _data_root() -> Path:
-    for base in [Path(__file__).resolve().parents[1]] + list(Path(__file__).resolve().parents[1].parents)[:4]:
-        cand = base / "quant_backtest" / "data" / "tushare_curated"
-        if cand.exists():
-            return cand
-    raise RuntimeError("tushare_curated 数据根未定位")
+    root = _repo_root()
+    return root / "quant_backtest" / "data" / "tushare_curated"
 
 
 def build_view(limit: int = 300) -> GraphView:
     root = _data_root()
     g = GraphView()
-    lhb = pd.read_parquet(root / "top_list.parquet").tail(limit)
-    # 龙虎榜无席位明细列 — 影子阶段用 reason 分组近似共现演示, 如实标注
-    for (d, code), grp in lhb.groupby(["trade_date", "ts_code"]):
-        n = len(grp)
-        if n >= 1:
-            g.add(co_occurrence(f"榜单信号#{n}", f"原因:{grp.iloc[0]['reason'][:18]}",
-                                str(code), str(d), f"lhb:{d}:{code}"), stock_code=str(code))
+    # 真席位共现 (A5): ts_top_inst 末 2 分区
+    seats = load_seat_rows(_repo_root(), limit_parts=2)
+    for cand in seat_pairs(seats):
+        code = cand.basis.split(":")[-1] if cand.basis.startswith("top_inst:") else None
+        g.add(cand, stock_code=code)
+    # 持股候选 (A4): 十大股东影子 tail
     hold = pd.read_parquet(root / "top10_holders.parquet").tail(limit)
     for _, r in hold.iterrows():
         g.add(holding(f"p:{r['holder_name']}", f"s:{r['ts_code']}", str(r["end_date"]),
