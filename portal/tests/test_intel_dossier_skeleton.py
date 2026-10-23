@@ -17,8 +17,8 @@ def test_frontend_admission_and_five_views():
     html = _page()
     assert '<link rel="stylesheet" href="/static/tokens.css">' in html
     assert '<script src="/static/nav.js" defer></script>' in html
-    assert html.count("<h2") == 5  # under the six-heading shortscreen threshold
-    for view in ("overview", "case", "graph", "sources", "review"):
+    assert html.count("<h2") == 6  # E2 第六屏后: overview/case/graph/sources/review/drill
+    for view in ("overview", "case", "graph", "sources", "review", "drill"):
         assert f'<section id="{view}"' in html
         assert f'<option value="{view}">' in html
     assert 'id="crumb-now"' in html
@@ -27,10 +27,15 @@ def test_frontend_admission_and_five_views():
 
 def test_offline_boundary_has_no_network_or_claimed_facts():
     html = _page()
-    for forbidden in ("fetch(", "XMLHttpRequest", "WebSocket(", "sendBeacon(",
+    # E2 后受控演进: 允许对同源只读端点 /api/intel-graph 的 fetch; 仍禁外网/写操作/存储
+    import json as _json
+    for m in re.finditer(r"fetch\(([^)]*)\)", html):
+        arg = m.group(1)
+        assert "'/api/intel-graph/dossier?code='" in arg or "\"/api/intel-graph/dossier?code=\"" in arg, \
+            f"fetch 目标越界(仅允许同源 dossier 端点): {arg[:80]}"
+    for forbidden in ("XMLHttpRequest", "WebSocket(", "sendBeacon(", "http://", "https://",
                       "localStorage", "sessionStorage", "<form", "type=\"submit\""):
         assert forbidden not in html
-    assert "未挂载现役路由" in html
     assert "历史 as_of 默认关闭" in html
     assert "没有批准、推送、写图或交易按钮" in html
     assert "真实证据未接入" in html
