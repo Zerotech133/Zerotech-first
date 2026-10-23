@@ -262,34 +262,210 @@ def cmd_verify(args) -> int:
     return 0 if v["ok"] else 1
 
 
-def cmd_mark(args) -> int:
-    e = _engine(args)
-    r = e.mark()
-    ok = "✅" if r["verify_ok"] else "❌"
-    print(f"{ok} 快照 {r['date']}: 总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
-          f"待撮合 {r['pending']}")
-    # US 独立账本快照（K-STOCK-044 M3）：us_% 账本各记一行（USD 原币口径）；
-    # do_refresh=False——缓存已在 settle 段刷新，mark 不重复全史拉取（045a FIX-3）
-    us = _us_pass(args, do_refresh=False)
-    if us:
-        for aid, e_us in us["engines"]:
-            try:
-                r2 = e_us.mark()
-            except Exception as ex:  # noqa: BLE001
-                print(f"⚠️ US {aid} 快照失败（不阻塞备份）: {ex}")
-                continue
-            ok2 = "✅" if r2["verify_ok"] else "❌"
-            print(f"{ok2} US {aid} 快照: 总资产 {r2['total']:,.2f} 仓位 {r2['pos_pct']:.1%} "
-                  f"待撮合 {r2['pending']}")
-    # 账本轻量灾备：*.db 不入 git 也不在 B4 备份链，mark 成功后保留最近一份副本
+def _mark_accounts(db: Path, requested: list[str] | None = None) -> list[str]:
+    """只从已开户实体取账户；显式目标不存在时拒绝，绝不隐式注资开户。"""
+    import sqlite3
+    if not db.is_file():
+        raise Reject(f"账本不存在: {db}")
+    con = sqlite3.connect(str(db))
     try:
-        import shutil
-        bak = Path(str(e.db_path) + ".bak")
-        shutil.copy2(e.db_path, bak)
+        existing = {row[0] for row in con.execute("SELECT account_id FROM account")}
+    except sqlite3.Error as ex:
+        raise Reject(f"读取账户表失败: {ex}") from ex
+    finally:
+        con.close()
+    if requested is None:
+        return sorted(existing)
+    missing = set(requested) - existing
+    if missing:
+        raise Reject(f"账户未开户（不会自动创建）: {', '.join(sorted(missing))}")
+    return sorted(set(requested))
+
+
+# 2026 年度证券日历：上交所上证公告〔2025〕45号、HKEX
+# cc_SEHK_CT_075_2025、NYSE Holidays & Trading Hours。年度外一律失败关闭，
+# 特别临时休市/收市须运维核交易所当日公告，不以本静态基线冒充实时权威。
+_MARK_HOLIDAYS_2026 = {
+    "CN": {"0101", "0102", *[f"02{d:02d}" for d in range(15, 24)],
+           "0406", *[f"05{d:02d}" for d in range(1, 6)], "0619",
+           "0925", *[f"10{d:02d}" for d in range(1, 8)]},
+    "HK": {"0101", "0217", "0218", "0219", "0403", "0406", "0407",
+           "0501", "0525", "0619", "0701", "1001", "1019", "1225"},
+    "US": {"0101", "0119", "0216", "0403", "0525", "0619", "0703",
+           "0907", "1126", "1225"},
+}
+_MARK_EARLY_2026 = {"HK": {"0216", "1224", "1231"}, "US": {"1127", "1224"}}
+
+
+def _mark_market(aid: str) -> tuple[str, str, str]:
+    if aid.startswith("us_"):
+        return "US", "America/New_York", "USD"
+    if aid.startswith("hk_"):
+        return "HK", "Asia/Hong_Kong", "HKD"
+    return "CN", "Asia/Shanghai", "CNY"
+
+
+def _expected_mark_day(aid: str, now=None) -> str:
+    """独立于行情湖的已完成市场日；日期越界/时区数据库缺失则拒绝。"""
+    from datetime import datetime, time, timedelta
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    market, zone, _ = _mark_market(aid)
+    try:
+        bj = ZoneInfo("Asia/Shanghai")
+        local = ZoneInfo(zone)
+        if now is None:
+            now = datetime.now(bj)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise Reject("快照时钟必须带时区")
+        at = now.astimezone(local)
+    except ZoneInfoNotFoundError as ex:
+        raise Reject(f"缺交易所时区数据库: {ex}") from ex
+    if at.year != 2026:
+        raise Reject(f"市场日历未覆盖 {at.year} 年，禁止估值")
+    for delta in range(0, 12):
+        day = at.date() - timedelta(days=delta)
+        if day.year != 2026:
+            # 年初合法交易日可能在去年；当前仅有 2026 年日历，不跨年猜测。
+            raise Reject(f"市场日历未覆盖 {day.year} 年，禁止估值")
+        mmdd = day.strftime("%m%d")
+        if day.weekday() >= 5 or mmdd in _MARK_HOLIDAYS_2026[market]:
+            continue
+        end = (time(13, 0) if mmdd in _MARK_EARLY_2026.get(market, ()) else time(16, 0)) if market == "US" else (
+            time(12, 10) if market == "HK" and mmdd in _MARK_EARLY_2026["HK"] else
+            time(16, 10) if market == "HK" else time(15, 0))
+        # 等到收市价生成后预留 10 分钟，不把刚收市而数据尚未固化的值认作可用。
+        closed = datetime.combine(day, end, tzinfo=local) + timedelta(minutes=10)
+        if at >= closed:
+            return day.strftime("%Y%m%d")
+    raise Reject(f"{market} 最近已完成交易日不可确定")
+
+
+def _check_mark_ready(e: PaperEngine, aid: str, now=None) -> tuple[str, dict]:
+    """写前资金闸+独立市场目标日+湖日历+逐仓价日；返回估值日及冻结价格。"""
+    import math
+    if not e.verify(aid)["ok"]:
+        raise Reject(f"{aid} 资金或持仓对账失败，不写权益快照")
+    expected = _expected_mark_day(aid, now)
+    positions = e.positions(aid)
+    days = e.market.trading_days()
+    if not days or any(not isinstance(d, str) or len(d) != 8 or not d.isdigit() for d in days):
+        raise Reject(f"{aid} 市场交易日历缺失或格式异常，不写权益快照")
+    if max(days) != expected:
+        raise Reject(f"{aid} 行情湖日历最新 {max(days)} 与市场目标日 {expected} 不符，不写权益快照")
+    checked = {}
+    for pos in positions:
+        bar = e.market.last_bar(pos["stock"])
+        if not bar or not isinstance(bar.get("close"), (int, float)) or not math.isfinite(bar["close"]) or bar["close"] <= 0:
+            raise Reject(f"{aid} {pos['stock']} 缺有效收盘价，不写权益快照")
+        actual = bar.get("trade_date")
+        if not isinstance(actual, str) or actual != expected:
+            raise Reject(f"{aid} {pos['stock']} 行情日期滞后或异常: {actual!r}，"
+                         f"市场目标日 {expected}，不写权益快照")
+        checked[pos["stock"]] = dict(bar)
+    return expected, checked
+
+
+def _mark_selected(args, db: Path, accounts: list[str]) -> int:
+    """按账户市场原币估值；单账户失败须退出非零，不以部分成功冒充全绿。"""
+    from us_market import UsMarket
+    from hk_market import HkMarket
+    from market import ParquetMarket
+
+    if not accounts:
+        print("❌ 无已开户账户，未生成任何快照", file=sys.stderr)
+        return 1
+    from datetime import datetime
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    try:
+        captured = datetime.now(ZoneInfo("Asia/Shanghai"))
+    except ZoneInfoNotFoundError as ex:
+        print(f"❌ 缺北京时间数据库: {ex}", file=sys.stderr)
+        return 1
+    snapshot_day = captured.date().isoformat()
+    failed = []
+    for aid in accounts:
+        e = None
+        try:
+            market = UsMarket() if aid.startswith("us_") else (
+                HkMarket() if aid.startswith("hk_") else ParquetMarket())
+            e = PaperEngine(db, market, account=aid)
+            valuation_day, checked_bars = _check_mark_ready(e, aid, captured)
+            # mark/equity 会再次读取 last_bar；必须只读到本轮已验证的价格，
+            # 否则湖在预检与落库间更新会发生 TOCTOU（含成本价兜底）。
+            original_market = e.market
+            class _FrozenMarket:
+                def last_bar(self, stock):
+                    return checked_bars.get(stock)
+                def __getattr__(self, name):
+                    return getattr(original_market, name)
+            e.market = _FrozenMarket()
+            try:
+                r = e.mark(day=snapshot_day)
+            finally:
+                e.market = original_market
+            if not r["verify_ok"]:
+                failed.append(aid)
+            _, _, currency = _mark_market(aid)
+            print(f"{'✅' if r['verify_ok'] else '❌'} [{aid}] 北京快照日 {r['date']} "
+                  f"市场估值日 {valuation_day} 原币 {currency}: "
+                  f"总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
+                  f"待撮合 {r['pending']}")
+        except Exception as ex:  # noqa: BLE001 - 逐账户报错，完整尝试后返回非零
+            failed.append(aid)
+            print(f"❌ [{aid}] 快照失败: {ex}", file=sys.stderr)
+        finally:
+            if e is not None:
+                try:
+                    e.con.close()
+                except Exception as ex:  # noqa: BLE001
+                    if aid not in failed:
+                        failed.append(aid)
+                    print(f"❌ [{aid}] 账本连接关闭失败: {ex}", file=sys.stderr)
+    if failed:
+        print(f"❌ 快照未完成 {len(failed)}/{len(accounts)} 账户: {', '.join(failed)}",
+              file=sys.stderr)
+        return 1
+    # 全账户均成功才交付备份；SQLite backup API 保证一致快照（含 WAL）。
+    # 失败前已成功账户已提交，不能将返回非零误解为整批回滚。
+    try:
+        import sqlite3
+        import tempfile
+        bak = Path(str(db) + ".bak")
+        fd, temp_name = tempfile.mkstemp(prefix="mark_backup_", suffix=".db", dir=db.parent)
+        import os
+        os.close(fd)
+        temp = Path(temp_name)
+        try:
+            source = sqlite3.connect(str(db))
+            target = sqlite3.connect(str(temp))
+            try:
+                source.backup(target)
+            finally:
+                target.close()
+                source.close()
+            temp.replace(bak)
+        finally:
+            temp.unlink(missing_ok=True)
         print(f"💾 账本已备份 -> {bak.name}")
-    except Exception as ex:  # 备份失败不阻塞主流程
-        print(f"⚠️ 账本备份失败（不影响快照）: {ex}", file=sys.stderr)
+    except Exception as ex:  # noqa: BLE001
+        print(f"❌ 账本备份失败: {ex}", file=sys.stderr)
+        return 1
     return 0
+
+
+def cmd_mark(args) -> int:
+    db = Path(args.db) if args.db else DEFAULT_DB
+    explicit_account = getattr(args, "account_explicit", False)
+    if explicit_account and (args.all_accounts or args.mark_accounts):
+        raise Reject("--account 不能与 --all-accounts/--mark-account 并用")
+    if args.all_accounts or args.mark_accounts or explicit_account:
+        requested = None if args.all_accounts else (
+            [args.account] if explicit_account else args.mark_accounts)
+        return _mark_selected(args, db, _mark_accounts(db, requested))
+    # 保留原覆盖范围 main + us_*，但统一走写前对账/行情闸与失败非零通道。
+    # 不自动开户，缺 main 显式拒绝；不再把 US 缺价/失败吞掉并报全绿。
+    requested = ["main", *_us_accounts(db)]
+    return _mark_selected(args, db, _mark_accounts(db, requested))
 
 
 def cmd_curve(args) -> int:
@@ -453,11 +629,13 @@ def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     # v0.3 多交易员子账本：--account 全局透传（位置不限，缺省 main=主交易台）
     account = "main"
-    if "--account" in argv:
+    account_explicit = "--account" in argv
+    if account_explicit:
         i = argv.index("--account")
-        if i + 1 < len(argv):
-            account = argv[i + 1]
-            del argv[i:i + 2]
+        if i + 1 >= len(argv) or not argv[i + 1] or argv[i + 1].startswith("-"):
+            raise SystemExit("--account 需要有效账户 ID")
+        account = argv[i + 1]
+        del argv[i:i + 2]
     ap = argparse.ArgumentParser(prog="paper", description="K-STOCK 模拟仓（纸面交易账本）")
     ap.add_argument("--db", default=None, help="账本 SQLite 路径（默认 k_stock/data/paper.db）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -508,6 +686,11 @@ def main(argv=None) -> int:
     p.set_defaults(fn=cmd_verify)
 
     p = sub.add_parser("mark", help="记录当日权益快照（automation 每日收尾调用）")
+    targets = p.add_mutually_exclusive_group()
+    targets.add_argument("--all-accounts", action="store_true",
+                         help="按已开户实体遍历全部账户（按市场原币估值）")
+    targets.add_argument("--mark-account", dest="mark_accounts", action="append",
+                         help="仅快照指定账户，可重复；不存在则拒绝且不自动开户")
     p.set_defaults(fn=cmd_mark)
 
     p = sub.add_parser("curve", help="查看权益曲线（历史快照）")
@@ -551,6 +734,7 @@ def main(argv=None) -> int:
 
     args = ap.parse_args(argv)
     args.account = account   # v0.3 子账本透传（_engine 消费）
+    args.account_explicit = account_explicit
     try:
         return args.fn(args)
     except Reject as e:

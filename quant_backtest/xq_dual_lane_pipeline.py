@@ -166,6 +166,14 @@ class OutputRecord:
 
 
 @dataclass(frozen=True)
+class RelationUpdate:
+    """重复原帖中新发现的关系；不作为第二条原帖发布。"""
+
+    post_id: str
+    added_cashtags: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class SubmitResult:
     """一次页提交的结果：queued / stale_page / failed_closed / segment_closed。"""
 
@@ -177,7 +185,7 @@ class SubmitResult:
 
 @dataclass(frozen=True)
 class RunSummary:
-    """一次 run_all 的处理摘要。"""
+    """一次 run_all 的处理摘要；关系增量仅列出成功进入缓冲的事件。"""
 
     processed_order: tuple[OutputRecord, ...]
     processed_count: int
@@ -187,6 +195,7 @@ class RunSummary:
     pages_failed_closed: int
     buffer_dropped: int
     segments_failed_closed: tuple[tuple[Lane, str, str], ...]
+    relation_updates: tuple[RelationUpdate, ...] = ()
 
 
 class BoundedOutputBuffer:
@@ -209,6 +218,7 @@ class BoundedOutputBuffer:
         self._lock = threading.Lock()
         self._space = threading.Condition(self._lock)
         self._writer_active = False
+        self._writer_thread: int | None = None
         self._published = 0
         self._dropped = 0
 
@@ -233,21 +243,29 @@ class BoundedOutputBuffer:
             if self._writer_active:
                 raise RuntimeError("output buffer admits exactly one writer")
             self._writer_active = True
+            self._writer_thread = threading.get_ident()
         try:
             yield self
         finally:
             with self._lock:
                 self._writer_active = False
+                self._writer_thread = None
                 self._space.notify_all()
 
     def drain(self, handler: Callable[[object], None]) -> None:
         """仅在单写者会话内排空缓冲并逐条交给 handler。"""
-        with self._lock:
-            if not self._writer_active:
-                raise RuntimeError("drain requires the single writer context")
-            while self._items:
-                handler(self._items.popleft())
-            self._space.notify_all()
+        while True:
+            with self._lock:
+                if not self._writer_active or self._writer_thread != threading.get_ident():
+                    raise RuntimeError("drain requires the owning single writer context")
+                if not self._items:
+                    return
+                item = self._items[0]
+            # 不持内部锁调用外部回调；失败时队首不变，可安全重试。
+            handler(item)
+            with self._lock:
+                self._items.popleft()
+                self._space.notify_all()
 
     def stats(self) -> dict[str, object]:
         """缓冲运行统计：capacity/size/published/dropped/写者状态。"""
@@ -276,6 +294,9 @@ class DualLanePipeline:
         self._records: dict[str, EntryRecord] = {}
         self.buffer = output_buffer if output_buffer is not None else BoundedOutputBuffer()
         self._dedup_hits = 0
+        self._run_lock = threading.Lock()
+        self._published_tags: dict[str, set[str]] = {}
+        self._pending_original: dict[str, OutputRecord] = {}
 
     # ------------------------------------------------------------------
     # 提交侧：页级断档失败关闭
@@ -344,17 +365,30 @@ class DualLanePipeline:
 
     def run_all(self, judged_at_ms: int,
                 freshness_window_ms: int) -> RunSummary:
-        """按配额轮次处理全部待处理页并返回摘要。"""
+        """串行处理待处理页；并发调用直接拒绝而非重复发布。"""
+        if not self._run_lock.acquire(blocking=False):
+            raise RuntimeError("run_all already active")
+        try:
+            return self._run_all(judged_at_ms, freshness_window_ms)
+        finally:
+            self._run_lock.release()
+
+    def _run_all(self, judged_at_ms: int,
+                 freshness_window_ms: int) -> RunSummary:
         _nonneg_int(judged_at_ms, "judged_at_ms")
         _nonneg_int(freshness_window_ms, "freshness_window_ms")
         processed: list[OutputRecord] = []
+        updates: list[RelationUpdate] = []
         fresh: list[str] = []
+        self._flush_pending(updates)
         while True:
             batch = self._take_round()
             if not batch:
                 break
             for task in batch:
-                for record in self._process(task, judged_at_ms, freshness_window_ms):
+                emitted, added = self._process(task, judged_at_ms, freshness_window_ms)
+                updates.extend(added)
+                for record in emitted:
                     processed.append(record)
                     if record.freshness == "fresh":
                         fresh.append(record.post_id)
@@ -370,6 +404,7 @@ class DualLanePipeline:
             segments_failed_closed=tuple(
                 seg.key for seg in self._segments.values()
                 if seg.state == "failed_closed"),
+            relation_updates=tuple(updates),
         )
 
     # ------------------------------------------------------------------
@@ -386,13 +421,43 @@ class DualLanePipeline:
             return "fresh"
         return "stale"
 
+    def _flush_pending(self, updates: list[RelationUpdate]) -> None:
+        """先补原帖再补关系；满缓冲留下待办供下次 run_all 重试。"""
+        for post_id, original in tuple(self._pending_original.items()):
+            record = self._records[post_id]
+            final_original = OutputRecord(
+                post_id=original.post_id, source_key=original.source_key,
+                lane=original.lane, segment_id=original.segment_id,
+                page_no=original.page_no, created_at_ms=original.created_at_ms,
+                cashtags=tuple(sorted(record.cashtags)),
+                fetched_at_ms=original.fetched_at_ms,
+                available_at_ms=original.available_at_ms,
+                freshness=original.freshness)
+            if self.buffer.offer(final_original):
+                self._published_tags[post_id] = set(record.cashtags)
+                del self._pending_original[post_id]
+            else:
+                return
+        for post_id, record in self._records.items():
+            if post_id not in self._published_tags:
+                continue
+            added = record.cashtags - self._published_tags[post_id]
+            if added:
+                update = RelationUpdate(post_id, tuple(sorted(added)))
+                if self.buffer.offer(update):
+                    self._published_tags[post_id].update(added)
+                    updates.append(update)
+                else:
+                    return
+
     def _process(self, task: PageTask, judged_at_ms: int,
-                 window_ms: int) -> list[OutputRecord]:
-        """处理一页：新 ID 建档并发布一次，重复 ID 只合并多股关系。"""
+                 window_ms: int) -> tuple[list[OutputRecord], list[RelationUpdate]]:
+        """原帖只发布一次；重复 ID 的新增关系以独立事件发布。"""
         page = task.page
         if task.state != "pending":
-            return []
+            return [], []
         emitted: list[OutputRecord] = []
+        updates: list[RelationUpdate] = []
         for entry in page.entries:
             record = self._records.get(entry.post_id)
             if record is None:
@@ -419,14 +484,18 @@ class DualLanePipeline:
                     freshness=record.freshness,
                 )
                 emitted.append(output)
-                self.buffer.offer(output)
+                if self.buffer.offer(output):
+                    self._published_tags[entry.post_id] = set(record.cashtags)
+                else:
+                    self._pending_original[entry.post_id] = output
             else:
-                # 去重：只处理一次，但多股关系并集全量保留。
+                # 原帖只发布一次；尚未入缓冲的原帖先补发，关系差集后发。
                 self._dedup_hits += 1
                 record.cashtags |= set(entry.cashtags)
                 record.seen_count += 1
+                self._flush_pending(updates)
         task.state = "done"
-        return emitted
+        return emitted, updates
 
     # ------------------------------------------------------------------
     # 观测侧

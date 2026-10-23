@@ -142,6 +142,78 @@ def test_dedup_processes_once_and_preserves_all_cashtag_relations():
     assert record.cashtags == {"SH600000", "SZ000001", "SZ300750"}
     assert record.seen_count == 2
     assert p.entry_record("Y").cashtags == {"SH600519"}
+    assert len(summary.relation_updates) == 1
+    assert summary.relation_updates[0].post_id == "X"
+    assert summary.relation_updates[0].added_cashtags == ("SZ300750",)
+    delivered = []
+    with p.buffer.single_writer():
+        p.buffer.drain(delivered.append)
+    assert [type(item) for item in delivered] == [
+        pipeline.OutputRecord, pipeline.RelationUpdate, pipeline.OutputRecord]
+
+
+def test_late_relation_is_delivered_after_first_output_was_drained():
+    p = pipeline.DualLanePipeline()
+    p.submit_page(page("new", "same", 1, [entry("X", ("A",), 100, 5, 6)]))
+    first = p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    delivered = []
+    with p.buffer.single_writer():
+        p.buffer.drain(delivered.append)
+    assert [item.post_id for item in delivered] == ["X"]
+    assert first.relation_updates == ()
+
+    p.submit_page(page("new", "same", 2, [entry("X", ("A", "B"), 100, 5, 6)]))
+    second = p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    with p.buffer.single_writer():
+        p.buffer.drain(delivered.append)
+    assert second.processed_order == ()
+    assert [(item.post_id, item.added_cashtags) for item in second.relation_updates] == [
+        ("X", ("B",))]
+    assert [type(item) for item in delivered] == [
+        pipeline.OutputRecord, pipeline.RelationUpdate]
+    assert p.entry_record("X").cashtags == {"A", "B"}
+
+
+def test_full_buffer_counts_undelivered_relation_update():
+    buf = pipeline.BoundedOutputBuffer(maxsize=1, overflow_policy="drop_count")
+    p = pipeline.DualLanePipeline(output_buffer=buf)
+    p.submit_page(page("new", "same", 1, [entry("X", ("A",), 100, 5, 6)]))
+    p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    p.submit_page(page("new", "same", 2, [entry("X", ("B",), 100, 5, 6)]))
+    second = p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    assert second.relation_updates == ()
+    assert second.buffer_dropped == 1
+    assert buf.stats()["dropped"] == 1
+    assert p.entry_record("X").cashtags == {"A", "B"}
+    drained = []
+    with buf.single_writer():
+        buf.drain(drained.append)
+    retry = p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    with buf.single_writer():
+        buf.drain(drained.append)
+    assert retry.relation_updates == (pipeline.RelationUpdate("X", ("B",)),)
+    assert [type(item) for item in drained] == [
+        pipeline.OutputRecord, pipeline.RelationUpdate]
+
+
+def test_dropped_original_is_retried_before_any_relation_update():
+    buf = pipeline.BoundedOutputBuffer(maxsize=1, overflow_policy="drop_count")
+    assert buf.offer("occupied")
+    p = pipeline.DualLanePipeline(output_buffer=buf)
+    p.submit_page(page("new", "same", 1, [entry("X", ("A",), 100, 5, 6)]))
+    first = p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    assert first.buffer_dropped == 1
+    p.submit_page(page("new", "same", 2, [entry("X", ("B",), 100, 5, 6)]))
+    p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    drained = []
+    with buf.single_writer():
+        buf.drain(drained.append)
+    assert drained == ["occupied"]
+    p.run_all(judged_at_ms=NOW, freshness_window_ms=WINDOW)
+    with buf.single_writer():
+        buf.drain(drained.append)
+    assert [type(item) for item in drained] == [str, pipeline.OutputRecord]
+    assert drained[1].cashtags == ("A", "B")
 
 
 # ---------------------------------------------------------------------------
@@ -203,6 +275,44 @@ def test_bounded_output_drop_count_exposed_and_single_writer_exclusive():
     # 非 write 会话内 drain 被拒绝
     with pytest.raises(RuntimeError):
         buf.drain(drained.append)
+
+
+def test_failed_writer_callback_retains_item_and_can_inspect_stats():
+    buf = pipeline.BoundedOutputBuffer(maxsize=1)
+    buf.offer("keep")
+
+    def fail(item):
+        assert buf.stats()["size"] == 1
+        raise ValueError("write failed")
+
+    with buf.single_writer():
+        with pytest.raises(ValueError, match="write failed"):
+            buf.drain(fail)
+        received = []
+        buf.drain(received.append)
+    assert received == ["keep"]
+    assert buf.stats()["size"] == 0
+
+
+def test_writer_session_cannot_be_borrowed_by_another_thread():
+    import threading
+    buf = pipeline.BoundedOutputBuffer(maxsize=1)
+    buf.offer("keep")
+    errors = []
+    with buf.single_writer():
+        thread = threading.Thread(target=lambda: _capture_drain_error(buf, errors))
+        thread.start()
+        thread.join(timeout=2)
+        assert not thread.is_alive()
+        assert errors == ["RuntimeError"]
+        assert buf.stats()["size"] == 1
+
+
+def _capture_drain_error(buf, errors):
+    try:
+        buf.drain(lambda item: None)
+    except RuntimeError as exc:
+        errors.append(type(exc).__name__)
 
 
 def test_buffer_rejects_invalid_configuration():
