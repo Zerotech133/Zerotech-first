@@ -64,6 +64,18 @@ def test_seat_edges_queryable_by_stock_with_isolated_fixture(monkeypatch):
     assert "seat:tdx:" in d["edges"][0]["pair"]
 
 
+def test_missing_holder_ratio_does_not_fabricate_value(monkeypatch):
+    monkeypatch.setattr(api_intel_graph, "load_seat_rows", lambda *_args, **_kwargs:
+                        pd.DataFrame(columns=["trade_date", "ts_code", "exalter", "side"]))
+    monkeypatch.setattr(api_intel_graph.pd, "read_parquet", lambda *_args, **_kwargs:
+                        pd.DataFrame([{"holder_name": "甲", "ts_code": "600001.SH",
+                                       "end_date": "20260930", "hold_ratio": None,
+                                       "ann_date": "20261020"}]))
+    d = build_view().dossier("600001.SH")
+    assert d["total_edges"] == 0
+    assert d["edges"] == []  # Unknown ratio must never be rendered as 0.01%.
+
+
 def test_dossier_empty_is_honest_for_unknown_code():
     d = dossier("999999.XX")
     assert d["total_edges"] == 0 and d["edges"] == [] and not d["truncated"]

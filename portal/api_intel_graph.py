@@ -56,8 +56,12 @@ def build_view(limit: int = 300) -> GraphView:
     # 持股候选 (A4): 十大股东影子 tail
     hold = pd.read_parquet(root / "top10_holders.parquet").tail(limit)
     for _, r in hold.iterrows():
+        # Missing ratio is unknown, not 0.01%: do not fabricate a number in
+        # a candidate question. Retain the source row for separate audit.
+        if pd.isna(r["hold_ratio"]):
+            continue
         g.add(holding(f"p:{r['holder_name']}", f"s:{r['ts_code']}", str(r["end_date"]),
-                      float(r["hold_ratio"]) if pd.notna(r["hold_ratio"]) else 0.01,
+                      float(r["hold_ratio"]),
                       f"top10:{r['ann_date']}:{r['ts_code']}"), stock_code=str(r["ts_code"]))
     return g
 
