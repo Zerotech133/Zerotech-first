@@ -14,14 +14,15 @@
 <main>
 <div class="crumb" aria-label="面包屑">个人 OS / 情报 / <span id="crumb-now">工作总览</span></div>
 <header class="hero"><span class="eyebrow">INTELLIGENCE / EVIDENCE FIRST</span><h1>情报中枢 · 对象案卷</h1><p>以人、地、事、物、组织与证券为索引，分开记录来源证据、候选连接、反证和复核结果。</p><span class="status">离线空态 · 不连接真实来源 · 未挂载现役路由</span></header>
-<div class="toolbar"><label>对象上下文<input id="subject" maxlength="70" autocomplete="off" placeholder="输入证券代码、实体或事件（仅本页显示）"></label><button type="button" id="set-subject">设置对象</button><label>工作视图<select id="view" aria-label="切换情报中枢工作视图"><option value="overview">工作总览</option><option value="case">对象案卷</option><option value="graph">本体关系</option><option value="sources">来源与血缘</option><option value="review">复核与输出</option></select></label></div>
+<div class="toolbar"><label>对象上下文<input id="subject" maxlength="70" autocomplete="off" placeholder="输入证券代码、实体或事件（仅本页显示）"></label><button type="button" id="set-subject">设置对象</button><label>工作视图<select id="view" aria-label="切换情报中枢工作视图"><option value="overview">工作总览</option><option value="case">对象案卷</option><option value="graph">本体关系</option><option value="sources">来源与血缘</option><option value="review">复核与输出</option><option value="drill">候选关系下钻</option></select></label></div>
 <p id="feedback" role="status" aria-live="polite" class="muted">没有加载对象或证据。对象输入只改变当前页面的显示上下文。</p>
 <section id="overview" class="panel" aria-labelledby="overview-title"><h2 id="overview-title">工作总览</h2><p class="muted">以对象案卷作为主业务线，现有六域工作台继续作为工具下钻；这里不伪造今日进度或来源水位。</p><div class="grid"><div class="card"><strong>可授权证据</strong><span class="warn">待接：权利、身份、版本及实际可消费时间尚未验收。</span></div><div class="card"><strong>关系与结论</strong>0 条经审事实；未加载候选、支持或反证。空态不是“无情报”。</div></div></section>
 <section id="case" class="panel" aria-labelledby="case-title" hidden><h2 id="case-title">对象案卷</h2><p>当前对象：<strong class="subject-label">未选择</strong></p><div class="grid"><div class="card"><strong>支持 / 精确提及</strong><div class="empty">未加载证据。结构化代码提及只能证明提及，不能证明股价影响或业务关系。</div></div><div class="card"><strong>反证 / 替代解释</strong><div class="empty">待核同名主体、原始版本修订、权利撤回和时间穿越；不可将“未发现”写成“已排除”。</div></div></div><p class="warn">历史 as_of 默认关闭：披露、首见、指定消费者可用和来源许可未由可信源确认；发生时间也须单独记录。</p></section>
 <section id="graph" class="panel" aria-labelledby="graph-title" hidden><h2 id="graph-title">本体关系</h2><div class="empty">暂无授权且经审阅的关系边。共同股东、龙虎榜席位共现或相近时点仅能提出调查问题，不能自动证明合作与因果。</div><p class="muted">关系卡未来应逐跳呈现类型、方向、主体消歧、有效期、证据键与版本、支持和反证；不声称全图覆盖。</p></section>
 <section id="sources" class="panel" aria-labelledby="sources-title" hidden><h2 id="sources-title">来源与血缘</h2><ul class="facts"><li>新闻 / JEV：现有只读接缝不等于真实四时钟或来源授权。</li><li>Tushare 等 / TDX：接口数据须保留来源子类、版本及披露口径。</li><li>雪球 / 股吧 / OSINT：原帖展示、留存及再分发须逐源核准。</li><li>知识图谱 / 血缘：已登记边、应有边和生产消费水位分账。</li></ul><div class="empty">尚无可验证的真源水位与授权结果；不生成“已同步”状态。</div></section>
 <section id="review" class="panel" aria-labelledby="review-title" hidden><h2 id="review-title">复核与输出</h2><div class="grid"><div class="card"><strong>是仪 · 情报受理</strong>ACK 只代表接收案卷，不代表来源、关系或事实通过核验。</div><div class="card"><strong>个人 OS / 通信部</strong>OS 只读引用案卷；真实飞书入站、出站与回卡仍须经通信部鉴权及许可。</div></div><p class="warn">没有批准、推送、写图或交易按钮；候选、展示、尝试、接受和确认送达须分账。</p></section>
-<footer class="foot">独立前端工单 K-INTEL-20261022-FE · 工作树开发稿，不接网络、不读新闻库、不改变 /intel；不构成证券事实或投资判断。</footer>
+<section id="drill" class="panel" aria-labelledby="drill-title" hidden><h2 id="drill-title">候选关系下钻</h2><p>输入证券代码（如 600519.SH），加载 GraphView 候选邻域。每条边都是 <strong>candidate 调查方向</strong>，不是事实。</p><div class="toolbar"><label>证券代码<input id="drill-code" placeholder="600519.SH" maxlength="12"></label><button type="button" id="drill-go">查候选边</button></div><div id="drill-out" class="empty">未查询。输入票码后返回该票的全部候选关系（共现/持股/供应链），每边带证据键与调查问题。</div></section>
+<footer class="foot">独立前端工单 K-INTEL-20261022-FE + K-MDC-20261023-E2 第六屏 · 不接网络采集、不读新闻库；候选边不构成证券事实或投资判断。</footer>
 </main>
 <script>
 'use strict';
@@ -40,7 +41,7 @@ function historicalEligibility(record, asOf) {
   return true;
 }
 // eligibility:end
-const views = {overview:'工作总览',case:'对象案卷',graph:'本体关系',sources:'来源与血缘',review:'复核与输出'};
+const views = {overview:'工作总览',case:'对象案卷',graph:'本体关系',sources:'来源与血缘',review:'复核与输出',drill:'候选关系下钻'};
 const picker = document.getElementById('view');
 picker.addEventListener('change', () => {
   const next = Object.hasOwn(views, picker.value) ? picker.value : 'overview';
@@ -53,6 +54,18 @@ document.getElementById('set-subject').addEventListener('click', () => {
   document.getElementById('feedback').textContent = value ? '仅设置“' + value + '”的本地上下文；真实证据未接入。' : '对象为空；未发起查询。';
   picker.value = 'case';
   picker.dispatchEvent(new Event('change'));
+});
+document.getElementById('drill-go').addEventListener('click', () => {
+  const code = document.getElementById('drill-code').value.trim();
+  const out = document.getElementById('drill-out');
+  if (!/^\d{6}\.(SH|SZ|BJ)$/.test(code)) { out.className='empty'; out.textContent='票码格式应为 600519.SH 式（6位数字.交易所）；未发起查询。'; return; }
+  out.className='empty'; out.textContent='查询中…（/api/intel-graph/dossier?code=' + code + '）';
+  fetch('/api/intel-graph/dossier?code=' + encodeURIComponent(code)).then(r => r.json()).then(d => {
+    if (!d || d.total_edges === undefined) { out.className='empty'; out.textContent='接口不可达或响应异常——第六屏保持空态，不凑样例。'; return; }
+    if (d.total_edges === 0) { out.className='empty'; out.textContent='该票暂无候选边（空态=无候选，不是无情报）。'; return; }
+    const rows = d.edges.map(e => '<div class="card"><strong>[' + e.rel_type + '] ' + e.pair + '</strong><div>证据键：<code>' + e.evidence_key + '</code></div><div class="muted">' + e.question + '</div></div>').join('');
+    out.className='grid'; out.innerHTML = rows + '<p class="muted">共 ' + d.total_edges + ' 条候选边，显示 ' + d.shown + ' 条' + (d.truncated ? '（截断）' : '') + ' · 全部 candidate 调查方向，非事实</p>';
+  }).catch(() => { out.className='empty'; out.textContent='接口不可达——第六屏保持空态，不凑样例。'; });
 });
 </script>
 </body>
