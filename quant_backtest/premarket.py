@@ -1972,10 +1972,16 @@ def _cal_open(day):
 
 
 def _next_open():
-    """K97：次日是否 A 股交易日（盘前战报服务于次日开盘）。
-    任务层周几门禁管不到周中节假日——10-01/10-02 国庆休市日照跑照推。"""
-    tmr = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
-    return _cal_open(tmr)
+    """K97：未来 7 天内是否存在下一个 A 股交易日（盘前战报服务于下一开盘）。
+    2026-10-23 修复（K-QUANT-20261023-PRE 根因二）：原实现只查"明天"——
+    周五跑次日必周六 → is_open=0 → 永远 skip，周五盘前战报系统性缺产
+    （10-23 判例：今日开市、下一交易日周一，旧逻辑误判休市）。
+    改为扫描未来 7 天，任一开市即 True；日历防线异常时仍放行（判例同 K96）。"""
+    for i in range(1, 8):
+        d = (datetime.now() + timedelta(days=i)).strftime("%Y%m%d")
+        if _cal_open(d):
+            return True
+    return False
 
 
 def main():
