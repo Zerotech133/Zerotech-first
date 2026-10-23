@@ -17,12 +17,12 @@ _REQUIRED = ("ts_code", "trade_date", "exalter", "side")
 
 def load_seat_rows(repo_root: str | Path, *, limit_parts: int | None = None) -> pd.DataFrame:
     root = Path(repo_root)
-    for base in [root] + list(root.parents)[:3]:
-        d = base / "quant_backtest" / "data" / "tdx" / "ts_top_inst"
-        if d.exists():
-            root_dir = d
-            break
-    else:
+    candidates = [root / "quant_backtest" / "data" / "tdx" / "ts_top_inst",
+                  root / "data" / "tdx" / "ts_top_inst"]
+    candidates += [p / "quant_backtest" / "data" / "tdx" / "ts_top_inst"
+                   for p in root.parents]
+    root_dir = next((c for c in candidates if c.exists()), None)
+    if root_dir is None:
         raise RelationRejected("DATASET_MISSING: ts_top_inst not found")
     parts = sorted(root_dir.glob("part_*.parquet"))
     if limit_parts:
