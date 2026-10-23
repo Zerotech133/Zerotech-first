@@ -139,6 +139,8 @@ NEVER_RUN_CODE = 267011
 RUNNING_CODE = 267009
 # 一次扫描写 42 条账本会跨秒（at 是每条记录落盘时刻）；以 120s 间隔切分扫描批次。
 SCAN_SESSION_GAP_SECONDS = 120.0
+# 窗口对比的回看小时数（与 task_exit_audit --window 默认口径一致）
+AUDIT_WINDOW_HOURS = 24.0
 KNOWN_TASK_STATES = {"ready", "running", "disabled", "queued"}
 CONFLICT_CODES = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
 
@@ -331,6 +333,11 @@ def _empty_task_audit(audit_root: Path) -> dict[str, Any]:
         "ledger_parse_error_samples": [],
         "undated_records": None,
         "ledger_sessions": None,
+        "window_hours": None,
+        "window_baseline_at": None,
+        "new_failures": [],
+        "persisting_failures": [],
+        "fixed_in_window": [],
         "last_scan_at": None,
         "age_hours": None,
         "clock_skew": None,
@@ -450,6 +457,32 @@ def collect_task_audit(
     batch = [record for _, record in sessions[-1]]
     latest_at = sessions[-1][-1][0]
     result["ledger_sessions"] = len(sessions)
+
+    # ---- 窗口对比（2026-10-23 接入）--------------------------------------
+    # 只报"现在几个失败"是**快照**，回答不了"在变好还是变坏"。
+    # 这里把最新一次扫描的失败集合与窗口起点那次做差集，给出
+    # 新增 / 持续 / 窗口内已修复 —— 与 task_exit_audit.window_diff 同口径。
+    def _fail_names(recs) -> set[str]:
+        names = set()
+        for _at, rec in recs:
+            state_key = str(rec.get("state") or "").lower()
+            code = _as_int(rec.get("last_result"))
+            if state_key == "disabled" or code in (0, NEVER_RUN_CODE):
+                continue
+            names.add(str(rec.get("name") or "?"))
+        return names
+
+    cutoff = latest_at - dt.timedelta(hours=AUDIT_WINDOW_HOURS)
+    prior = [s for s in sessions[:-1] if s[-1][0] <= cutoff]
+    base_session = prior[-1] if prior else (sessions[0] if len(sessions) > 1 else None)
+    now_fail = _fail_names(sessions[-1])
+    base_fail = _fail_names(base_session) if base_session else set()
+    result["window_hours"] = AUDIT_WINDOW_HOURS
+    result["window_baseline_at"] = (
+        base_session[-1][0].isoformat(timespec="seconds") if base_session else None)
+    result["new_failures"] = sorted(now_fail - base_fail)
+    result["persisting_failures"] = sorted(now_fail & base_fail)
+    result["fixed_in_window"] = sorted(base_fail - now_fail)
 
     ok = failed = disabled = never_run = running = 0
     unknown_exit = 0
@@ -3250,11 +3283,28 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
                 age_note = f"；摘要生成于 {age:.1f} 小时前"
                 if age >= 6:
                     age_note += "，其中的失败可能已自愈，需重跑 task_exit_audit --scan 复核"
+            # 2026-10-23：从"快照"升级为"窗口对比"——只报"现在几个失败"回答不了
+            # "在变好还是变坏"。三类计数直接回答，且已用真实账本验证过
+            # （fixed 里确实有 AgentLegionHeartbeat 与 QuantWatchdog 两个已修好的）。
+            window_note = ""
+            new_n = len(audit.get("new_failures") or [])
+            fix_n = len(audit.get("fixed_in_window") or [])
+            keep_n = len(audit.get("persisting_failures") or [])
+            if audit.get("window_baseline_at"):
+                window_note = (
+                    f"；{audit.get('window_hours', 24):g}h 窗口内："
+                    f"新增 {new_n} / 持续 {keep_n} / **已修复 {fix_n}**")
+                if new_n:
+                    window_note += "（新增：" + "、".join(
+                        (audit.get("new_failures") or [])[:3]) + "）"
+                if fix_n:
+                    window_note += "（已修复：" + "、".join(
+                        (audit.get("fixed_in_window") or [])[:3]) + "）"
             add(
                 "task_audit.failures",
                 "red",
                 f"{audit['failed']} 个任务非零退出（口径同 task_exit_audit，含运行中/强杀）"
-                + age_note,
+                + age_note + window_note,
             )
         else:
             add("task_audit.failures", "green", "无失败任务")
