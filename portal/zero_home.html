@@ -1,0 +1,114 @@
+<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · 产品工作台</title><style>
+:root{color-scheme:light;--bg:#f5f7fa;--paper:#fff;--ink:#20334a;--muted:#53677a;--line:#d9e2ea;--teal:#0d7582;--tealbg:#eaf4f6;--amber:#936224;--warn:#a14535;--green:#2c7a4b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 system-ui,"Microsoft YaHei",sans-serif}.wrap{max-width:1280px;margin:auto;padding:0 22px 70px}.top{display:flex;align-items:center;gap:14px;min-height:64px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:5;padding:0 22px;max-width:1280px;margin:auto}.brand{font-size:19px;font-weight:800;color:var(--teal)}.badge{font-size:11px;color:var(--teal);border:1px solid var(--teal);border-radius:8px;padding:3px 9px;background:var(--tealbg)}.top .nav{margin-left:auto;display:flex;gap:16px;font-size:13px}.top .nav a{color:var(--muted);text-decoration:none;cursor:pointer}.top .nav a.on{color:var(--teal);font-weight:700}
+h1{font-size:26px;margin:22px 0 4px}.sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+.view{display:none}.view.on{display:block}
+.cols{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 20px}.panel h2{font-size:16px;margin:0 0 10px;color:var(--teal)}.panel h3{font-size:13.5px;margin:10px 0 6px}.eyebrow{font-size:11px;letter-spacing:.12em;color:var(--teal);font-weight:700}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}.kpi .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px}.kpi .n{font-size:26px;font-weight:800;color:var(--teal)}.kpi .n.warn{color:var(--warn)}.kpi .n.green{color:var(--green)}.kpi .t{font-size:12px;color:var(--muted)}
+.layer{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#fbfdff}.layer .no{flex:none;width:34px;height:34px;border-radius:50%;background:var(--teal);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}.layer.ok .no{background:var(--green)}.layer.part .no{background:var(--amber)}.layer b{font-size:14px}.layer .st{float:right;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700}.st.ok{background:#e8f5ee;color:var(--green)}.st.part{background:#fdf3e4;color:var(--amber)}.st.gap{background:#fbeae6;color:var(--warn)}.layer small{color:var(--muted);display:block;font-size:12px;margin-top:2px}
+.stage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0}.stage .s{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fbfdff;position:relative}.stage .s b{font-size:12.5px;color:var(--teal);display:block}.stage .s small{font-size:11px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{border-bottom:1px solid var(--line);text-align:left;padding:8px 6px;vertical-align:top}th{background:#edf4f7;color:var(--ink)}
+.item{display:flex;gap:8px;align-items:flex-start;padding:9px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:7px;background:#fbfdff;font-size:13px}.item .dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:6px}.dot.g{background:var(--green)}.dot.y{background:var(--amber)}.dot.r{background:var(--warn)}.item b{font-size:13px}.item small{color:var(--muted);display:block;font-size:11.5px}
+.gate{border-left:4px solid var(--amber);background:#fdf8ef;padding:10px 14px;border-radius:4px;margin:8px 0;font-size:13px}
+.callout{border-left:4px solid var(--teal);background:#eef8f9;padding:11px 14px;border-radius:4px;margin:10px 0;font-size:13.5px}
+.risk{border-left-color:var(--warn);background:#fff4f1}
+.mbtn{cursor:pointer;border:1px solid var(--teal);background:var(--tealbg);color:var(--teal);border-radius:8px;padding:5px 12px;font-size:12.5px;font-weight:700}.mbtn:hover{background:var(--teal);color:#fff}
+.footer{font-size:12px;color:var(--muted);margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}.stage{grid-template-columns:1fr 1fr}}
+</style></head><body><header class="top"><div class="brand">零界</div><span class="badge">产品工作台 v0.1</span><nav class="nav"><a class="on" data-v="home">总览</a><a data-v="arch">产品架构</a><a data-v="scene">首场景</a><a data-v="plan">分期与闸门</a><a data-v="biz">商业模式</a></nav></header>
+<main class="wrap">
+
+<section class="view on" id="v-home">
+<h1>软硬一体 · 云边协同的 AI 能力平台</h1>
+<p class="sub">个人 OS 为唯一入口 · 一个内核多个工作包 · 战略源：PRODUCT_ROADMAP_v2（本页为可视化评审台，不构成生产授权）</p>
+<div class="kpi">
+<div class="card"><div class="n" id="k-items">—</div><div class="t">在办事项（含议会厅议题）</div></div>
+<div class="card"><div class="n green" id="k-arch">6 层</div><div class="t">产品架构分层（2 层就绪 / 4 层建设）</div></div>
+<div class="card"><div class="n" id="k-gates">5</div><div class="t">决策卡接线闸门（未过 ≠ 放行）</div></div>
+<div class="card"><div class="n warn">4.00</div><div class="t">首场景加权分（会议→任务→回执）</div></div>
+</div>
+<div class="cols">
+<div class="panel" style="grid-column:span 7"><span class="eyebrow">LIVE · 现役联动</span><h2>正在跑的闭环（真数据）</h2><div id="live-items"><div class="item"><span class="dot y"></span><div><b>读取中…</b><small>议会厅桥 8798</small></div></div></div>
+<div class="callout">今天已验证：一句话发起 → 多席位复辩 → 定稿归档 → 工单直通（2/2）→ 飞书卡片通知。首场景闭环的内部证据链已存在。</div></div>
+<div class="panel" style="grid-column:span 5"><span class="eyebrow">NEXT</span><h2>下一步（可点）</h2>
+<div class="item"><span class="dot y"></span><div><b>阶段 A · 产品确权</b><small>确认首包 + 目标客户访谈对象 + 统一事项字段 → 出口：流程样本×2</small></div></div>
+<div class="item"><span class="dot y"></span><div><b>阶段 B · 内核合同</b><small>事件/状态契约 + 租户隔离 + 服务端身份（测试环境，只读适配现有系统）</small></div></div>
+<div class="item"><span class="dot y"></span><div><b>阶段 C · 试点交付</b><small>受控动作灰度 + 人力成本/失败率/回滚记录</small></div></div>
+<button class="mbtn" onclick="go('plan')">查看全部闸门 →</button></div>
+</div>
+</section>
+
+<section class="view" id="v-arch">
+<h1>产品架构：一个内核，多个工作包</h1><p class="sub">统一能力与最小契约 × 当前证据与建设缺口（如实标注）</p>
+<div class="panel">
+<div class="layer part"><div class="no">1</div><div style="flex:1"><span class="st part">部分就绪</span><b>触点层 · OS PC/手机同源视图</b><small>消息渠道只提醒/跳转/收输入；所有卡携 tenant_id / item_id / version。<b>现状：</b>OS v9 只读归集已上产；跨端强身份与决策队列未贯通。</small></div></div>
+<div class="layer part"><div class="no">2</div><div style="flex:1"><span class="st gap">建设</span><b>事项与状态内核 · 一个 item_id 串全程</b><small>发起→分派→证据→决定→执行→验收→回执；状态变更留生产者时点/版本/幂等键。<b>现状：</b>任务账与会议纪要分立，跨账唯一事项 ID 未形成。</small></div></div>
+<div class="layer part"><div class="no">3</div><div style="flex:1"><span class="st gap">建设</span><b>组织与策略 · 按租户配置</b><small>角色=模板（“田丰”是本租户显示名）；执行身份来自服务端。<b>现状：</b>RBAC 状态机已有雏形，by="A0" 不足以当多租户强身份。</small></div></div>
+<div class="layer part"><div class="no">4</div><div style="flex:1"><span class="st part">部分就绪</span><b>证据与执行 · 建议/决定/执行分离</b><small>动作绑定材料版本+审批作用域+工具权限，缺源失败关闭。<b>现状：</b>ResultEvidence 与规则建议已有；跨域现役审批链未成。</small></div></div>
+<div class="layer ok"><div class="no">5</div><div style="flex:1"><span class="st ok">先行验证</span><b>工作包与适配 · 首包「会议到交付」</b><small>议会厅已有发起/留言/归档/任务/工单直通/飞书通知（今日全链真机验证）。<b>边界：</b>本地桥未鉴权，不可原样对客户开放——正是阶段 B 要补的。</small></div></div>
+<div class="layer part"><div class="no">6</div><div style="flex:1"><span class="st gap">建设</span><b>运行与部署 · 租户隔离/可观测/备份回滚</b><small>按部署包交付同一验收清单。盒子部署包 README 已起步。</small></div></div>
+<div class="gate"><b>非目标：</b>不做通用 Agent 市场；不把会议系统当完整产品；不把量化/支付高风险动作嵌入首场景；决策卡是受控动作 UI 组件，不是产品中心。</div>
+</div>
+</section>
+
+<section class="view" id="v-scene">
+<h1>首场景选择：先验复用性，后验市场</h1><p class="sub">内部筛选（非客户调研结论）；权重：频率25% 验收25% 基础20% 安全20% 复制10%</p>
+<div class="panel">
+<table><tr><th>候选工作包</th><th>频率</th><th>验收</th><th>基础</th><th>安全</th><th>复制</th><th>加权</th><th>裁定</th></tr>
+<tr style="background:#eef8f9"><td><b>会议/意图 → 任务 → 证据回执</b></td><td>4</td><td>4</td><td>4</td><td>4</td><td>4</td><td><b>4.00</b></td><td><span class="st ok">首场景</span></td></tr>
+<tr><td>数据/情报 → 判断 → 复核</td><td>4</td><td>3</td><td>3</td><td>3</td><td>3</td><td>3.25</td><td><span class="st part">第二候选</span></td></tr>
+<tr><td>投研/模拟交易 → 风控 → 执行</td><td>4</td><td>4</td><td>3</td><td>1</td><td>2</td><td>3.00</td><td><span class="st gap">高阶保留</span></td></tr></table>
+<div class="callout"><b>首包闭环五步：</b>发起（一句话，待核字段不伪造）→ 确权（归口席确认 item/负责人/期限）→ 推进（仅授权能力，模型意见≠完成）→ 验收（非作者依证据，漏证不自动过）→ 回执（同一 item_id 全时点，通知≠签准）。</div>
+<div class="gate risk"><b>反证条件：</b>若访谈显示流程频率低 / 责任人不愿在系统内验收 / 每单仍需大量人工代写 → 停止作为首包，转评第二候选，而不是继续加页面。</div>
+</div>
+</section>
+
+<section class="view" id="v-plan">
+<h1>研发分期与接线闸门</h1><p class="sub">先内核后接线；未过闸 ≠ 放行</p>
+<div class="cols">
+<div class="panel" style="grid-column:span 7">
+<div class="stage">
+<div class="s"><b>A · 产品确权</b><small>首包+访谈对象+事项字段+权限矩阵；流程样本×2。<br><b>出口：</b>场景问题真实且愿用可验收结果衡量</small></div>
+<div class="s"><b>B · 内核合同</b><small>事件/状态契约+租户隔离+服务端身份+证据回执（独立测试环境，现有系统只读适配）。<br><b>出口：</b>越权/重复/缺源负例+恢复测试通过</small></div>
+<div class="s"><b>C · 试点交付</b><small>受控动作灰度；记录人力成本/失败率/使用率/回滚。<br><b>出口：</b>外部试点可复现且交付成本可控</small></div>
+<div class="s"><b>闸 · 决策卡接线</b><small>五条件全过才恢复（右列）</small></div>
+<div class="s"><b>闸 · 军团专项</b><small>田丰正式单号+权威源+老田裁定+N01-N12 负例+本人签准；首包过关≠放行模拟交易</small></div>
+</div></div>
+<div class="panel" style="grid-column:span 5"><span class="eyebrow">GATES</span><h2>决策卡接线五闸</h2>
+<div class="item"><span class="dot r"></span><div><b>① 正式工单</b><small>唯一写者 + 独立验收者</small></div></div>
+<div class="item"><span class="dot r"></span><div><b>② 事项与授权版本化</b><small>统一 item_id + 作用域版本</small></div></div>
+<div class="item"><span class="dot r"></span><div><b>③ 本人身份与签名策略</b><small>OS 会话策略经独立验收</small></div></div>
+<div class="item"><span class="dot r"></span><div><b>④ 负例通过</b><small>跨租户/旧版/重放/通知误认</small></div></div>
+<div class="item"><span class="dot r"></span><div><b>⑤ 回滚与部署边界</b><small>完整回滚预案明确</small></div></div>
+<div class="gate">当前状态：维持隔离卡与 BLOCK，不改现役服务。</div>
+</div></div>
+</section>
+
+<section class="view" id="v-biz">
+<h1>商业模式假设与真实待决</h1><p class="sub">假设需试点验证；不以 Token 为主叙事</p>
+<div class="cols">
+<div class="panel" style="grid-column:span 6"><h2>产品形态</h2>
+<div class="item"><span class="dot g"></span><div><b>软件平台许可 / 订阅</b><small>+ 按工作包交付服务</small></div></div>
+<div class="item"><span class="dot g"></span><div><b>本地 / 边缘部署选项</b><small>面向数据驻留客户（3588/AMD 盒子部署包已起步）</small></div></div>
+<h2>增长判据</h2><small style="color:var(--muted)">第二个工作流能否复用同一内核 · 部署是否免研发驻场 · 负责人是否持续在系统内验收 · 客户是否愿为结果与合规付费</small></div>
+<div class="panel" style="grid-column:span 6"><h2>先导客户（假设）</h2><small>经营者小团队 / 跨角色跟进事项的专业服务团队。不得把老田个人使用效果直接外推。</small>
+<h2>未决问题（如实）</h2>
+<div class="gate risk">客户画像 · 渠道 · 行业合规 · 部署成本 · 服务边界 · 合同与数据责任 · 定价与税务。商业化检查清单 v0.3 的收银台/OAuth/条款/生产部署仍有阻断——<b>不能声称已可收费上线。</b></div></div>
+</div>
+</section>
+
+<p class="footer">零界产品工作台 v0.1 · 评审稿可视化 · 战略源 docs/plans/2026-10-22_PRODUCT_ROADMAP_v2 · 议会厅桥数据实时 · 2026-10-23</p>
+</main>
+<script>
+const OPS=(location.protocol.startsWith('http')&&location.hostname&&!location.hostname.startsWith('file'))?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';
+function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));window.scrollTo(0,0)}
+document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));
+async function loadLive(){let st;try{st=await(await fetch(OPS+'/api/council/state',{cache:'no-store'})).json()}catch(e){document.getElementById('live-items').innerHTML='<div class="item"><span class="dot r"></span><div><b>议会厅桥离线</b><small>start portal/council_ops.py</small></div></div>';return}
+const items=[];
+(st.extra_topics||[]).slice(-3).reverse().forEach(t=>items.push(['y','🎯 '+t.topic.slice(0,24),(t.summary||'')+' · '+t.stage]));
+(st.archives||[]).slice(-2).reverse().forEach(a=>items.push(['g','📦 '+a.meeting_id+' '+String(a.topic).slice(0,16),'已归档 · 任务'+a.task_count+'项'+(a.decision?' · 已决议':'')]));
+(st.tasks||[]).slice(-3).reverse().forEach(t=>items.push([t.status==='done'?'g':'y',(t.status==='done'?'✅ ':'⚪ ')+'['+t.owner+'] '+String(t.text).slice(0,20),'期限 '+(t.due||'无')+' · '+t.status]));
+document.getElementById('k-items').textContent=items.length;
+document.getElementById('live-items').innerHTML=items.map(([c,t,s])=>'<div class="item"><span class="dot '+c+'"></span><div><b>'+t+'</b><small>'+s+'</small></div></div>').join('')||'<div class="item"><span class="dot y"></span><div><b>暂无事项</b><small>在议会厅一句话发起</small></div></div>'}
+loadLive();setInterval(loadLive,30000);
+</script></body></html>
