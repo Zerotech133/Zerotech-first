@@ -56,7 +56,9 @@ class EvidenceVersion:
     permitted_actions: frozenset[str]
     permitted_use: str
     first_seen_at: datetime | None
-    source_published_at: datetime | None
+    source_published_at: datetime | None = None
+    source_ref: str = ""          # A6 fix: provenance must be auditable on the version itself
+    receipt_id: str = ""          # A6 fix: collection receipt lineage, same rule
 
 
 def _time(value: datetime) -> None:
@@ -136,11 +138,20 @@ class EvidenceBook:
         key = (candidate.source_id, candidate.content_type, candidate.source_record_id)
         records = self._versions.setdefault(key, [])
         if records and records[-1].content_hash == candidate.content_hash and records[-1].rights_ref == rights.evidence_ref:
+            # A6 fix: identical content under identical rights must also carry identical
+            # provenance. A moved source_ref or a new receipt_id with the same hash is a
+            # lineage drift, not a no-op — fail closed instead of silently returning the
+            # old version whose stored pointers no longer describe where content came from.
+            if records[-1].source_ref != candidate.source_ref or records[-1].receipt_id != candidate.receipt_id:
+                raise ContractDenied(
+                    "PROVENANCE_CONFLICT: same content hash with changed source_ref/receipt_id "
+                    "requires explicit versioning decision, not silent reuse")
             return records[-1]
         item = EvidenceVersion(*key, candidate.content_hash, len(records) + 1,
                                rights.evidence_ref, _utc(rights.valid_from),
                                _utc(rights.valid_until), rights.permitted_actions,
-                               rights.permitted_use, _utc(observed_at), candidate.source_published_at)
+                               rights.permitted_use, _utc(observed_at), candidate.source_published_at,
+                               candidate.source_ref, candidate.receipt_id)
         records.append(item)
         self._active_scopes[scope_key] = rights
         self._issued[id(item)] = item
