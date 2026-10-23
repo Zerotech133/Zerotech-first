@@ -188,6 +188,41 @@ def test_same_reference_cannot_silently_narrow_rights():
 
 def test_candidate_requires_stable_identity_and_hash():
     book = EvidenceBook()
-    for bad in [candidate(source_record_id=""), candidate(content_hash=""), candidate(source_ref="")]:
+    for bad in [candidate(source_record_id="", receipt_id=""), candidate(content_hash=""), candidate(source_ref="")]:
         with pytest.raises(ContractDenied, match="EVIDENCE_INVALID"):
             book.accept(scope(), bad, action="index", use="research", observed_at=NOW)
+
+
+def test_a6_same_hash_changed_provenance_is_rejected_not_silently_reused():
+    # A6 regression: same key + same hash + same rights, but source_ref or receipt_id
+    # drifted. Old code silently returned the stored version, hiding the lineage change.
+    book = EvidenceBook()
+    first = book.accept(scope(), candidate(), action="index", use="research", observed_at=NOW)
+    assert first.source_ref == "source-A/record-1" and first.receipt_id == "receipt-1"
+    # identical re-submission stays idempotent
+    assert book.accept(scope(), candidate(), action="index", use="research", observed_at=NOW) is first
+    # moved pointer under same hash -> fail closed
+    with pytest.raises(ContractDenied, match="PROVENANCE_CONFLICT"):
+        book.accept(scope(), candidate(source_ref="source-A/record-1-moved"),
+                    action="index", use="research", observed_at=NOW)
+    # new collection receipt under same hash -> fail closed
+    with pytest.raises(ContractDenied, match="PROVENANCE_CONFLICT"):
+        book.accept(scope(), candidate(receipt_id="receipt-2"),
+                    action="index", use="research", observed_at=NOW)
+    # no phantom versions were created by the rejected attempts
+    assert len(book.versions("source-A", "post", "record-1")) == 1
+    # a real content change still versions normally and carries new provenance
+    second = book.accept(scope(), candidate(content_hash="h2", source_ref="source-A/record-1@v2",
+                                            receipt_id="receipt-3"),
+                         action="index", use="research", observed_at=NOW)
+    assert second.version == 2 and second.source_ref.endswith("@v2") and second.receipt_id == "receipt-3"
+
+
+def test_a6_provenance_fields_are_auditable_on_every_version():
+    book = EvidenceBook()
+    one = book.accept(scope(), candidate(), action="index", use="research", observed_at=NOW)
+    two = book.accept(scope(), candidate(content_hash="h2", source_ref="r2", receipt_id="rc2"),
+                      action="index", use="research", observed_at=NOW)
+    for item, ref, rcpt in ((one, "source-A/record-1", "receipt-1"), (two, "r2", "rc2")):
+        assert item.source_ref == ref and item.receipt_id == rcpt
+
