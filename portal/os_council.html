@@ -16,6 +16,7 @@ input,select,textarea{background:#0c1727;border:1px solid var(--line);border-rad
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#17344a;border:1px solid var(--blue);border-radius:10px;padding:10px 20px;font-size:13px;display:none;z-index:9}.toast.show{display:block}
 .empty{padding:14px;border:1px dashed #436078;border-radius:10px;background:#132136;color:var(--muted);font-size:12px}
 @media(max-width:1080px){.layout{grid-template-columns:1fr}}
+.overlay{position:fixed;inset:0;background:#050a14e6;z-index:8;display:none;align-items:center;justify-content:center;padding:30px}.overlay.show{display:flex}.modal{max-width:860px;width:100%;max-height:86vh;overflow:auto;background:linear-gradient(145deg,#15243a,#111e31);border:1px solid var(--blue);border-radius:16px;padding:26px 30px}.modal h3{margin:0 0 6px;color:var(--blue)}.modal pre{white-space:pre-wrap;font:13px/1.7 "Microsoft YaHei",monospace;color:var(--ink);background:#0b1524;border:1px solid var(--line);border-radius:10px;padding:16px}.modal .x{float:right;cursor:pointer;color:var(--muted);font-size:18px}
 </style></head><body><div class="shell"><header class="top"><div class="brand">老田的个人 OS</div><span class="badge">会议厅 v3 · 交互工作台</span><div class="nav"><a href="/os-entry">← OS 首页</a></div></header>
 <h1>会议厅</h1>
 <p class="sub">一句话即可发起/预约/定稿（AI 语义拆解）。数据全部自有存储（本地档案+可扩展云边空间）——个人 OS·云边协同，不依赖任何外部托管。交互桥 <span id="bridge" style="color:var(--muted)">检测中…</span></p>
@@ -60,6 +61,7 @@ input,select,textarea{background:#0c1727;border:1px solid var(--line);border-rad
 <div style="height:10px"></div><span class="eyebrow">SEATS</span><h2 style="margin-top:4px">席位在线</h2><div id="seats"></div><div style="height:8px"></div><span class="eyebrow">SCHEDULED</span><h2 style="margin-top:4px">已预约</h2><div id="sched-list"><div class="empty">暂无预约</div></div></section>
 </div><p style="color:var(--muted);font-size:11px;margin-top:14px" id="stamp"></p></div>
 <div class="toast" id="toast"></div>
+<div class="overlay" id="ov-minutes"><div class="modal"><span class="x" onclick="document.getElementById('ov-minutes').classList.remove('show')">✕</span><h3 id="m-title">会议纪要</h3><pre id="m-body"></pre></div></div>
 <script>
 (()=>{'use strict';const OPS='http://127.0.0.1:8798';const SEAT_LABEL={tianfeng:'田丰',zhaoyun:'赵云',zhuge:'诸葛亮',laotian:'老田',workbuddy:'WorkBuddy',unknown:'未署名'};
 const STAGES=['立题','表态','试工','监读','定稿','分发收口'];
@@ -81,8 +83,10 @@ d.append(el('small','标签 '+((t.tags)||[]).join('、')+' · '+String(t.summary
 d.addEventListener('click',()=>{curTopic=t.topic;loadAll()});topicsBox.append(d)});
 if(!extra.length&&!reg.length)topicsBox.append(el('div','empty','暂无议题——左上「立即发起」开一个'));
 const seats=$('#seats');seats.replaceChildren();
-[['田丰 · Hermes','g','8787 真席位 · 上午已复核'],['赵云 · 真席位','g','8787 真席位 · 上午已表态'],['诸葛亮 · 建议面','q','OpenClaw key 未注入·代行'],['军团指挥台','g','8796'],['WorkBuddy 工位','g','会话级']].forEach(([n,c,note])=>{const card=el('div','seatcard');const r1=el('div','r1');r1.append(el('b',null,n),el('span','dot '+c));card.append(r1,el('small',note));seats.append(card)});
+[['田丰 · Hermes','g','8787 真席位'],['赵云 · 真席位','g','8787 真席位'],['诸葛亮 · 建议面','q','key 未注入·代行'],['军团指挥台','g','8796'],['WorkBuddy 工位','g','会话级']].forEach(([n,c,note])=>{const card=el('div','seatcard');const r1=el('div','r1');r1.append(el('b',null,n),el('span','dot '+c));card.append(r1,el('small',note));seats.append(card)});
 window._state=st;windowMsgs=st.messages||[];renderMsgs();
+const ex=(st.experts||[]);
+ex.forEach(e=>{const card=el('div','seatcard');card.style.borderColor='#8a6a3a';const r1=el('div','r1');r1.append(el('b',null,'🔔 '+e.who),el('span','dot y'));card.append(r1,el('small','智能召唤 · '+e.domain+' · 议题相关列席'));seats.append(card)});
 $('#stamp').textContent='数据 '+String(st.generated_at||'').slice(5,16).replace('T',' ')+' · 留言 '+windowMsgs.length+' 条 · 本页 30s 自动刷新'}
 function renderMsgs(){const box=$('#msgs');box.replaceChildren();
 $('#cur-topic').textContent=curTopic||'（选择左侧议题，或发起新会议）';
@@ -140,7 +144,7 @@ $('#btn-refresh').addEventListener('click',loadAll);
 /* 成果区：纪要库/任务督促/检索/定稿归档 */
 function renderArchives(){const box=$('#result-panel');box.replaceChildren();box.append(el('b',null,'📚 会议纪要库'));
 let st=window._state;if(!st||!(st.archives||[]).length){box.append(el('div','empty','暂无定稿档案——议题走完后点「📦定稿归档」'));return}
-(st.archives||[]).forEach(a=>{const d=el('div','sched-item');d.append(el('b',null,'【'+a.meeting_id+'】'+String(a.topic).slice(0,22)));d.append(el('small',(a.seats||[]).join('、')+' · 发言'+a.message_count+' · 任务'+a.task_count+(a.decision?' · 已决议':'')));box.append(d)})}
+(st.archives||[]).forEach(a=>{const d=el('div','sched-item');d.style.cursor='pointer';d.title='点击查看全文';d.append(el('b',null,'🔍【'+a.meeting_id+'】'+String(a.topic).slice(0,22)));d.append(el('small',(a.seats||[]).join('、')+' · 发言'+a.message_count+' · 任务'+a.task_count+(a.decision?' · 已决议':'')+' · 点击放大'));d.addEventListener('click',async()=>{try{const r=await fetch(OPS+'/api/council/minutes?mid='+encodeURIComponent(a.meeting_id));const md=await r.json();if(!md.ok){toast(md.error||'读取失败');return}$('#m-title').textContent='会议纪要 · '+a.meeting_id;$('#m-body').textContent=md.minutes;$('#ov-minutes').classList.add('show')}catch(e){toast('失败:'+e.message)}});box.append(d)})}
 function renderTasks(){const box=$('#result-panel');box.replaceChildren();box.append(el('b',null,'✅ 任务督促台'));
 let st=window._state;if(!st||!(st.tasks||[]).length){box.append(el('div','empty','暂无任务——定稿归档时分解'));return}
 (st.tasks||[]).forEach(t=>{const d=el('div','sched-item');const b=el('b');const mk={'todo':'⚪','doing':'🔵','done':'✅','dropped':'❌'}[t.status]||'⚪';b.append(document.createTextNode(mk+' ['+t.owner+'] '+String(t.text).slice(0,30)+' — '+(t.due||'无期')));d.append(b);

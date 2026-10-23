@@ -500,6 +500,29 @@ def run_debate(idea: str, rounds: int = 2) -> dict:
             "transcript": trans}
 
 
+# ---------------- 领域专家智能召唤（议题主题 → 军团编制席位） ----------------
+# 词表→领域→列席 AI（真席位走 8787，未建席位以"召唤卡"形式列席显示）
+EXPERT_ROUTES = [
+    (["量化", "策略", "回测", "选股", "持仓", "交易"], "量化线", "司马懿（量化总管·OS 板块代表）"),
+    (["缠论", "chanlun", "笔段", "中枢", "背驰"], "缠论专项", "缠论值守 AI（chanlun 线）"),
+    (["UI", "界面", "页面", "设计稿", "交互"], "设计线", "设计值守（UI 专项）"),
+    (["前端", "框架", "React", "Vue", "组件"], "前端架构", "前端架构值守"),
+    (["后端", "API", "服务", "数据库", "SQL"], "后端架构", "后端架构值守"),
+    (["爬虫", "采集", "数据源"], "数据线", "采集值守"),
+    (["安全", "漏洞", "合规", "隐私", "权限"], "安全线", "赵云（治理面·安全对口）"),
+    (["情报", "信源", "舆情"], "情报线", "曹操统筹线（情报受理）"),
+]
+
+
+def summon_experts(text: str) -> list[dict]:
+    """按议题词召回列席专家（多领域可叠加；命中即召，不刻意全召）。"""
+    out = []
+    for cues, domain, who in EXPERT_ROUTES:
+        if any(c in text for c in cues):
+            out.append({"domain": domain, "who": who})
+    return out
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 静默
         pass
@@ -528,10 +551,31 @@ class Handler(BaseHTTPRequestHandler):
             st = load_state()
             st["archives"] = load_archives()
             st["tasks"] = load_tasks()
+            if os.path.isfile(REGISTRY_SNIPPET):
+                try:
+                    cur = json.load(open(REGISTRY_SNIPPET, encoding="utf-8"))
+                    if cur:
+                        st["experts"] = summon_experts(cur[-1].get("topic", "") + " " + cur[-1].get("summary", ""))
+                except (OSError, json.JSONDecodeError):
+                    pass
             return self._json(st)
         q = urllib.parse.parse_qs(u.query).get("q", [""])[0]
         if u.path == "/api/council/search":
             return self._json({"q": q, "hits": search_all(q)})
+        mid = urllib.parse.parse_qs(u.query).get("mid", [""])[0]
+        if u.path == "/api/council/minutes":
+            import re as _re2
+            if not mid or not _re2.match(r"^[\w-]+$", mid):
+                return self._json({"error": "mid required"}, 400)
+            for month in os.listdir(ARCHIVE_ROOT) if os.path.isdir(ARCHIVE_ROOT) else []:
+                mdir2 = os.path.join(ARCHIVE_ROOT, month)
+                for name in os.listdir(mdir2) if os.path.isdir(mdir2) else []:
+                    if mid in name:
+                        fp = os.path.join(mdir2, name, "minutes.md")
+                        if os.path.isfile(fp):
+                            with open(fp, encoding="utf-8") as f:
+                                return self._json({"ok": True, "mid": mid, "minutes": f.read()[:20000]})
+            return self._json({"error": "not found"}, 404)
         return self._json({"error": "not found"}, 404)
 
     def do_POST(self):
@@ -801,6 +845,10 @@ class Handler(BaseHTTPRequestHandler):
                     "created_at": _now()}
             _append(MESSAGES, {"at": _now(), "topic": topic["topic"], "seat": "laotian",
                                "kind": "new", "text": ("☕" if kind == "daily" else "🎯") + (" 日常会议" if kind == "daily" else " 专项会议") + f"自动归类：「{text}」" + (f" · {parsed['at']}" if parsed["at"] else "")})
+            experts = summon_experts(text)
+            if experts:
+                _append(MESSAGES, {"at": _now(), "topic": topic["topic"], "seat": "summon",
+                                   "kind": "sys", "text": "🔔 智能召唤列席：" + "；".join(e["who"] + "〔" + e["domain"] + "〕" for e in experts) + "——相关领域席位请入场表态"})
             cur = []
             if os.path.isfile(REGISTRY_SNIPPET):
                 try:
