@@ -8,3 +8,6 @@ __pycache__/
 
 # org_command_api 运行时自动备份产物，不入库（2026-10-19 WS-E 分诊判例）
 registry/binding_backups/
+
+# org.json 变更前的自动备份（内含完整组织档案，不入库，按需回滚）
+registry/*.bak.*

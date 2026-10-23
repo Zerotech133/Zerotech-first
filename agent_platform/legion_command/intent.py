@@ -132,6 +132,19 @@ def classify_key(key: str):
     return "", "", True
 
 
+def _dedup_chain(raw: list) -> list:
+    """汇报链相邻去重：本人即主官、主官即 A0 时不重复出现。
+
+    只去相邻重复，不做全局去重——全局去重会把"跨部门兼任回到同一个人"
+    这类真实结构抹掉，链就不再反映实际路径。
+    """
+    out: list = []
+    for x in raw:
+        if not out or out[-1] != x:
+            out.append(x)
+    return out
+
+
 def build_cards(platform_dir: pathlib.Path | None = None,
                 ledger_path: pathlib.Path | None = None) -> dict:
     """一次算好所有席位的意图卡 + 任务归属 + 口径声明。"""
@@ -297,9 +310,14 @@ def build_cards(platform_dir: pathlib.Path | None = None,
             },
             "L5_boundary": {
                 "read": g_read, "write": g_write,
-                "report_to": {"chain": [aid, led or "UNSIGNED_LEAD", "A0", "human"],
-                              "quality": ("ok" if signed else "broken_at_lead"),
-                              "note": "" if signed else "本部门主官未正式任命，链条在真源处断开"},
+                "report_to": {
+                    # 链语义：本人 → 主官（若本人就是主官则跳过）→ A0（若已是 A0 则跳过）→ human。
+                    # 不去重会让主官自己显示成 "D1 → D1 → A0 → human"、A0 显示成 "A0 → A0 → A0 → human"，
+                    # 看起来像链条有环，实际是自己指向自己。这里按相邻去重收敛。
+                    "chain": _dedup_chain([aid, led or "UNSIGNED_LEAD", "A0", "human"]),
+                    "quality": ("ok" if signed else "broken_at_lead"),
+                    "note": "" if signed else "本部门主官未正式任命，链条在真源处断开",
+                },
             },
             "L6_gaps": gaps,
         })
