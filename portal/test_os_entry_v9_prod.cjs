@@ -19,8 +19,10 @@ const ids = [...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
 check('ID 唯一', ids.length === new Set(ids).size);
 for (const v of ['ai', 'work', 'results', 'screen']) check('view-' + v + ' 存在', ids.includes('view-' + v));
 
-// 2. 禁项：全站胶囊导航、iframe、写请求、本地存储
-check('不含 nav.js', !html.includes('static/nav.js'));
+// 2. 禁项：iframe、写请求、本地存储。
+// 2026-10-23 更新：K-INTEL-20261023-NAV 已定「全站统一顶栏 nav.js」方向并注入 7 页
+//（含本页，守卫 55 页全带顶栏）；旧断言「不含 nav.js」随之过时，改为必须带统一顶栏。
+check('带统一顶栏 nav.js', html.includes('static/nav.js'));
 check('不含 iframe', !html.includes('<iframe'));
 check('全文件零 iframe 字样', !html.includes('iframe'));
 check('不含 POST/PUT/DELETE', !/(method\s*:\s*['"](?:POST|PUT|DELETE)['"])/.test(html));
