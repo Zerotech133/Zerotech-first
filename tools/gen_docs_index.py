@@ -207,12 +207,25 @@ class Doc:
 
 
 def iter_markdown(base: Path, recursive: bool) -> list[Path]:
+    """收集 markdown 文件，**跳过路径中任何以 . 开头的段**。
+
+    2026-10-23：只判文件名不够。`deliverables/legion-admin-prototype/.pytest_cache/README.md`
+    的文件名是 README.md，但它在隐藏目录里；而这个目录在当前上下文中读不到
+    （PermissionError），`Path.glob` 对无权限目录是**静默跳过**的——
+    结果就是"看起来被删了"，`--check` 永远差一条，健康卡长期标黄。
+
+    判据从"文件名是否以点开头"改成"路径里有没有点是开头的目录"，
+    这样无论有没有权限，隐藏目录下的文件都不会进入索引，结果才可复现。
+    """
     if not base.is_dir():
         return []
     pattern = "**/*.md" if recursive else "*.md"
     found = []
     for path in base.glob(pattern):
-        if path.is_file() and not path.name.startswith("."):
+        rel_parts = path.relative_to(base).parts
+        if any(part.startswith(".") for part in rel_parts):
+            continue
+        if path.is_file():
             found.append(path)
     return found
 
