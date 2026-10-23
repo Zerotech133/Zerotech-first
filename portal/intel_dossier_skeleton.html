@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>情报中枢 · 对象案卷离线骨架｜零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}body{background:var(--bg-page);color:var(--text);font:14px/1.65 var(--font-ui)}button,input,select{font:inherit}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--link);outline-offset:2px}main{max-width:var(--page-w);margin:auto;padding:22px clamp(16px,4vw,38px) 60px}.crumb{color:var(--text-dim);font-size:12px}.hero{margin:24px 0 18px;padding:24px;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-l)}h1{font-size:clamp(25px,3.5vw,38px);line-height:1.3;margin:5px 0}h2{font-size:21px;margin:0 0 7px}.eyebrow{color:var(--link);font:700 11px var(--font-mono);letter-spacing:.12em}.muted{color:var(--text-dim)}.warn{color:var(--color-warn)}.hero p,.panel p{margin:5px 0 12px}.status{display:inline-block;padding:4px 9px;border:1px solid var(--color-warn);border-radius:var(--r-s);color:var(--color-warn);font-size:12px}.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:16px 0}.toolbar label{display:grid;gap:5px;color:var(--gray-6);font-size:12px}.toolbar input,.toolbar select{background:var(--bg-surface);color:var(--text);border:1px solid var(--border);border-radius:var(--r-s);padding:8px;min-height:38px}.toolbar input{width:min(290px,80vw)}.toolbar button{background:var(--accent);border:0;color:var(--text);border-radius:var(--r-s);padding:8px 14px;min-height:38px}.panel{padding:22px;margin:14px 0;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-l)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{padding:16px;background:var(--bg-surface);border:1px solid var(--border-weak);border-radius:var(--r-m)}.card strong{display:block;margin-bottom:5px}.empty{border:1px dashed var(--border);padding:16px;border-radius:var(--r-s);color:var(--gray-6)}.facts{margin:0;padding-left:21px}.facts li{margin:7px 0}.foot{font-size:12px;color:var(--text-dim);margin-top:25px;border-top:1px solid var(--border);padding-top:14px}[hidden]{display:none!important}@media(max-width:680px){.grid{grid-template-columns:1fr}.hero,.panel{padding:16px}}
+</style>
+</head>
+<body>
+<main>
+<div class="crumb" aria-label="面包屑">个人 OS / 情报 / <span id="crumb-now">工作总览</span></div>
+<header class="hero"><span class="eyebrow">INTELLIGENCE / EVIDENCE FIRST</span><h1>情报中枢 · 对象案卷</h1><p>以人、地、事、物、组织与证券为索引，分开记录来源证据、候选连接、反证和复核结果。</p><span class="status">离线空态 · 不连接真实来源 · 未挂载现役路由</span></header>
+<div class="toolbar"><label>对象上下文<input id="subject" maxlength="70" autocomplete="off" placeholder="输入证券代码、实体或事件（仅本页显示）"></label><button type="button" id="set-subject">设置对象</button><label>工作视图<select id="view" aria-label="切换情报中枢工作视图"><option value="overview">工作总览</option><option value="case">对象案卷</option><option value="graph">本体关系</option><option value="sources">来源与血缘</option><option value="review">复核与输出</option></select></label></div>
+<p id="feedback" role="status" aria-live="polite" class="muted">没有加载对象或证据。对象输入只改变当前页面的显示上下文。</p>
+<section id="overview" class="panel" aria-labelledby="overview-title"><h2 id="overview-title">工作总览</h2><p class="muted">以对象案卷作为主业务线，现有六域工作台继续作为工具下钻；这里不伪造今日进度或来源水位。</p><div class="grid"><div class="card"><strong>可授权证据</strong><span class="warn">待接：权利、身份、版本及实际可消费时间尚未验收。</span></div><div class="card"><strong>关系与结论</strong>0 条经审事实；未加载候选、支持或反证。空态不是“无情报”。</div></div></section>
+<section id="case" class="panel" aria-labelledby="case-title" hidden><h2 id="case-title">对象案卷</h2><p>当前对象：<strong class="subject-label">未选择</strong></p><div class="grid"><div class="card"><strong>支持 / 精确提及</strong><div class="empty">未加载证据。结构化代码提及只能证明提及，不能证明股价影响或业务关系。</div></div><div class="card"><strong>反证 / 替代解释</strong><div class="empty">待核同名主体、原始版本修订、权利撤回和时间穿越；不可将“未发现”写成“已排除”。</div></div></div><p class="warn">历史 as_of 默认关闭：披露、首见、指定消费者可用和来源许可未由可信源确认；发生时间也须单独记录。</p></section>
+<section id="graph" class="panel" aria-labelledby="graph-title" hidden><h2 id="graph-title">本体关系</h2><div class="empty">暂无授权且经审阅的关系边。共同股东、龙虎榜席位共现或相近时点仅能提出调查问题，不能自动证明合作与因果。</div><p class="muted">关系卡未来应逐跳呈现类型、方向、主体消歧、有效期、证据键与版本、支持和反证；不声称全图覆盖。</p></section>
+<section id="sources" class="panel" aria-labelledby="sources-title" hidden><h2 id="sources-title">来源与血缘</h2><ul class="facts"><li>新闻 / JEV：现有只读接缝不等于真实四时钟或来源授权。</li><li>Tushare 等 / TDX：接口数据须保留来源子类、版本及披露口径。</li><li>雪球 / 股吧 / OSINT：原帖展示、留存及再分发须逐源核准。</li><li>知识图谱 / 血缘：已登记边、应有边和生产消费水位分账。</li></ul><div class="empty">尚无可验证的真源水位与授权结果；不生成“已同步”状态。</div></section>
+<section id="review" class="panel" aria-labelledby="review-title" hidden><h2 id="review-title">复核与输出</h2><div class="grid"><div class="card"><strong>是仪 · 情报受理</strong>ACK 只代表接收案卷，不代表来源、关系或事实通过核验。</div><div class="card"><strong>个人 OS / 通信部</strong>OS 只读引用案卷；真实飞书入站、出站与回卡仍须经通信部鉴权及许可。</div></div><p class="warn">没有批准、推送、写图或交易按钮；候选、展示、尝试、接受和确认送达须分账。</p></section>
+<footer class="foot">独立前端工单 K-INTEL-20261022-FE · 工作树开发稿，不接网络、不读新闻库、不改变 /intel；不构成证券事实或投资判断。</footer>
+</main>
+<script>
+'use strict';
+// eligibility:start
+function historicalEligibility(record, asOf) {
+  if (!record || record.rights !== 'verified' || !record.reviewed) return false;
+  if (!record.clockAuthorityVerified || !record.sourceKey || !record.version) return false;
+  if (!record.occurred || !record.published || !record.firstSeen || !record.available) return false;
+  if (typeof asOf !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/.test(asOf)) return false;
+  const at = Date.parse(asOf);
+  if (!Number.isFinite(at)) return false;
+  const clocks = [record.occurred, record.published, record.firstSeen, record.available];
+  if (record.validFrom) clocks.push(record.validFrom);
+  if (clocks.some(value => typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/.test(value) || !Number.isFinite(Date.parse(value)) || Date.parse(value) > at)) return false;
+  if (record.validTo && (!Number.isFinite(Date.parse(record.validTo)) || Date.parse(record.validTo) < at)) return false;
+  return true;
+}
+// eligibility:end
+const views = {overview:'工作总览',case:'对象案卷',graph:'本体关系',sources:'来源与血缘',review:'复核与输出'};
+const picker = document.getElementById('view');
+picker.addEventListener('change', () => {
+  const next = Object.hasOwn(views, picker.value) ? picker.value : 'overview';
+  for (const id of Object.keys(views)) document.getElementById(id).hidden = id !== next;
+  document.getElementById('crumb-now').textContent = views[next];
+});
+document.getElementById('set-subject').addEventListener('click', () => {
+  const value = document.getElementById('subject').value.trim();
+  for (const label of document.querySelectorAll('.subject-label')) label.textContent = value || '未选择';
+  document.getElementById('feedback').textContent = value ? '仅设置“' + value + '”的本地上下文；真实证据未接入。' : '对象为空；未发起查询。';
+  picker.value = 'case';
+  picker.dispatchEvent(new Event('change'));
+});
+</script>
+</body>
+</html>
