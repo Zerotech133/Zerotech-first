@@ -653,6 +653,7 @@ class Handler(BaseHTTPRequestHandler):
                         st["experts"] = summon_experts(cur[-1].get("topic", "") + " " + cur[-1].get("summary", ""))
                 except (OSError, json.JSONDecodeError):
                     pass
+            st["theme"] = load_theme()
             return self._json(st)
         q = urllib.parse.parse_qs(u.query).get("q", [""])[0]
         if u.path == "/api/council/search":
@@ -704,6 +705,21 @@ class Handler(BaseHTTPRequestHandler):
                                "kind": "sys", "text": "🤖 辩论已收敛（3~5 轮上限）。结论在上方——认可说「定稿：…」采纳，或继续一轮说「再辩一轮」。"})
             return self._json({"ok": True, "chair": ch, "conclusion": result["conclusion"],
                                "votes": result["votes"]})
+        if u.path == "/api/council/theme":
+            name = str(data.get("name") or "").strip()[:40]
+            if not name:
+                # 列出可用主题
+                tdir = os.path.join(HERE, "themes")
+                names = [f[:-5] for f in os.listdir(tdir) if f.endswith(".json")] if os.path.isdir(tdir) else ["sanguo"]
+                return self._json({"ok": True, "themes": names, "current": load_theme().get("name", "sanguo")})
+            src = os.path.join(HERE, "themes", name + ".json")
+            if not os.path.isfile(src):
+                return self._json({"error": "主题不存在：" + name}, 404)
+            fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(open(src, encoding="utf-8").read())
+            os.replace(tmp, THEME_PATH)
+            return self._json({"ok": True, "applied": name})
         if u.path == "/api/council/idea_discuss":
             # 想法对答（页面在 idea 意图后异步调用）：三席位观点互补入对话流
             idea = str(data.get("idea") or "").strip()[:500]

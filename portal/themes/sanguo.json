@@ -1,0 +1,25 @@
+{
+  "schema": "council_theme/v1",
+  "_comment": "商业化主题层：三国只是默认皮肤。客户换品牌=复制此文件改字段。机制（意图路由/辩论收敛/召唤/归档督促）与皮肤完全解耦。",
+  "product_name": "指挥联动台",
+  "owner_display": "主理人",
+  "seats": {
+    "laotian": {"display": "老田", "role": "决策面"},
+    "tianfeng": {"display": "田丰", "role": "归口面"},
+    "zhaoyun": {"display": "赵云", "role": "治理面"},
+    "zhuge": {"display": "诸葛亮", "role": "建议面"},
+    "workbuddy": {"display": "WorkBuddy", "role": "施工面"}
+  },
+  "experts": [
+    {"cues": ["量化", "策略", "回测", "选股", "持仓", "交易"], "domain": "量化线", "who": "司马懿（量化总管）"},
+    {"cues": ["缠论", "chanlun", "笔段", "中枢", "背驰"], "domain": "缠论专项", "who": "缠论值守"},
+    {"cues": ["UI", "界面", "页面", "设计稿", "交互"], "domain": "设计线", "who": "设计值守"},
+    {"cues": ["前端", "框架", "React", "Vue", "组件"], "domain": "前端架构", "who": "前端架构值守"},
+    {"cues": ["后端", "API", "服务", "数据库", "SQL"], "domain": "后端架构", "who": "后端架构值守"},
+    {"cues": ["爬虫", "采集", "数据源"], "domain": "数据线", "who": "采集值守"},
+    {"cues": ["安全", "漏洞", "合规", "隐私", "权限"], "domain": "安全线", "who": "赵云（安全对口）"},
+    {"cues": ["情报", "信源", "舆情"], "domain": "情报线", "who": "曹操统筹线"}
+  ],
+  "chair_rotation": ["tianfeng", "zhaoyun", "zhuge"],
+  "style_hint": "深海军蓝+青+琥珀（客户可换品牌色，见 os_council CSS 变量）"
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "council_theme/v1",
+  "product_name": "NEXUS 指挥中枢",
+  "_comment": "皮肤三：科技暗夜——面向科技/极客客户。霓虹紫青。",
+  "owner_display": "Operator",
+  "palette": {"bg": "#08060f", "paper": "#120e1f", "ink": "#eae6ff", "muted": "#8f86b8", "line": "#2e2650", "accent": "#a78bfa", "amber": "#fbbf24", "green": "#34d399", "red": "#f87171"},
+  "seats": {
+    "laotian": {"display": "Operator", "role": "决策"},
+    "tianfeng": {"display": "ARCH-1", "role": "归口"},
+    "zhaoyun": {"display": "SEC-1", "role": "治理"},
+    "zhuge": {"display": "ADV-1", "role": "建议"},
+    "workbuddy": {"display": "EXEC-1", "role": "施工"}
+  },
+  "experts": [
+    {"cues": ["量化", "策略", "回测", "quant"], "domain": "Quant", "who": "Quant Lead"},
+    {"cues": ["UI", "interface", "design", "界面"], "domain": "Design", "who": "Design Lead"},
+    {"cues": ["前端", "frontend", "React", "Vue"], "domain": "Frontend", "who": "FE Lead"},
+    {"cues": ["后端", "backend", "API", "数据库"], "domain": "Backend", "who": "BE Lead"},
+    {"cues": ["安全", "security", "合规"], "domain": "Security", "who": "Sec Lead"}
+  ],
+  "chair_rotation": ["tianfeng", "zhaoyun", "zhuge"],
+  "style_hint": "深紫霓虹：科技暗夜风，英文席位代号"
+}

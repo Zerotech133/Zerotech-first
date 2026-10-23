@@ -1,0 +1,23 @@
+{
+  "schema": "council_theme/v1",
+  "product_name": "协同指挥台",
+  "_comment": "皮肤二：极简商务——面向政企客户。机制不变，换名换色。",
+  "owner_display": "负责人",
+  "palette": {"bg": "#f7f9fc", "paper": "#ffffff", "ink": "#1a2533", "muted": "#5b6b7d", "line": "#dde4ec", "accent": "#2563eb", "amber": "#b45309", "green": "#15803d", "red": "#b91c1c"},
+  "seats": {
+    "laotian": {"display": "负责人", "role": "决策"},
+    "tianfeng": {"display": "统筹席", "role": "归口"},
+    "zhaoyun": {"display": "质控席", "role": "治理"},
+    "zhuge": {"display": "顾问席", "role": "建议"},
+    "workbuddy": {"display": "执行席", "role": "施工"}
+  },
+  "experts": [
+    {"cues": ["量化", "策略", "回测", "持仓"], "domain": "量化业务", "who": "量化负责人"},
+    {"cues": ["UI", "界面", "设计"], "domain": "设计组", "who": "设计负责人"},
+    {"cues": ["前端", "页面", "组件"], "domain": "前端组", "who": "前端负责人"},
+    {"cues": ["后端", "API", "数据库"], "domain": "后端组", "who": "后端负责人"},
+    {"cues": ["安全", "合规", "权限"], "domain": "安全组", "who": "安全负责人"}
+  ],
+  "chair_rotation": ["tianfeng", "zhaoyun", "zhuge"],
+  "style_hint": "浅色商务风：白底蓝主色，政企审美"
+}
