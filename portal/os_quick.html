@@ -132,19 +132,22 @@ async function checkAsr(){
     $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn';
   }catch(e){ $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn'; }
 }
+const DIALECT_WORDS={"啷个":"怎么","啥子":"什么","咋个":"怎么","晓得":"知道","莫":"不要","要得":"好","巴适":"满意","巴适得板":"满意","一哈":"一下","崽儿":"人","勒个":"这个","那哈儿":"那里","要不得":"不行","不得行":"不行","莫得":"没有"};
+function dialectNormalize(t){ let out=String(t||''); for(const k in DIALECT_WORDS){ out=out.split(k).join(DIALECT_WORDS[k]); } return out; }
 function norm(t){ return String(t||'').replace(/[\s，。！？、,.!?;；:："'“”‘’()（）~～]/g,''); }
 function isFiller(t){ const s=norm(t); if(!s) return true; return /^[嗯啊哦呃唔唉呀吧嘛哈]+$/.test(s); }
 function isStop(t){ return /^(停|停止|暂停|先停|别听|别说了|停一下)/.test(norm(t)); }
 const ECHO_RE=/我理解您|默认授权|您说|如果没问题|就说行|要改就|第 [123] 句|怎么算成|做好了|改好了|满意就|这里改|直接说哪里|没听清|请说/;
 function isEcho(t){ const s=norm(t); if(!s) return false; if(ECHO_RE.test(String(t))) return true; if(LAST_SPEECH_NORM && s.length>=2 && LAST_SPEECH_NORM.includes(s)) return true; return false; }
 function isAccept(t){ const s=norm(t); if(isFiller(s)||isEcho(t)) return false;
+  if(/要得|要的|可以噻|行噻|巴适/.test(s) && !/要不得|不巴适/.test(s)) return true;
   if(/^(行|好|可以|对|嗯|是的|没问题|按这个办|开始吧|执行|确认|就这么办|就这样|ok)$/i.test(s)) return true;
   return s.length<=12 && /按这个办|开始吧|就这么办|没问题|可以|确认/.test(s); }
 function isAcceptVerdict(t){ const s=norm(t); if(isFiller(s)||isEcho(t)) return false;
   if(/^(接受|可以|好|行|满意|不错|行吧|嗯|对)$/.test(s)) return true;
   return s.length<=10 && /接受|满意|不错/.test(s); }
-function looksLikeChange(t){ const s=norm(t); if(!s||isFiller(s)) return false; return /改|换|调整|加上|去掉|不要|不对|不行|重新|删|增加|减少|第二|第[一二三]/.test(s); }
-function isNegative(t){ return /不行|不对|不好|不要|别|改|换|重来|重说/.test(norm(t)); }
+function looksLikeChange(t){ const s=norm(t); if(!s||isFiller(s)) return false; return /改|换|调整|加上|去掉|不要|不对|不行|重新|删|增加|减少|第二|第[一二三]|改一哈|改噻/.test(s); }
+function isNegative(t){ return /要不得|不得行|莫得|不巴适|不行|不对|不好|不要|别|改|换|重来|重说/.test(norm(t)); }
 function encodeWav16k(samples){
   const len=samples.length, ab=new ArrayBuffer(44+len*2), dv=new DataView(ab);
   const w=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
@@ -340,7 +343,8 @@ function appendVerdictActions(){
 }
 async function handleIdea(text){
   startTimer(); say('user', esc(text));
-  try{ const d=await api('/api/os/quickstart',{text}); DRAFT=d.card;
+  const normalized=dialectNormalize(text);
+  try{ const d=await api('/api/os/quickstart',{text:normalized}); DRAFT=d.card;
     $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
     (document.querySelectorAll('.card')||[]).length && document.querySelectorAll('.card')[document.querySelectorAll('.card').length-1].scrollIntoView({block:'end',behavior:'smooth'});
     speakThen('第 2 句：一张卡。'+cardSpeech(d.card), handleCardReply);
