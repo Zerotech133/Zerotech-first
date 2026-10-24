@@ -123,3 +123,12 @@ def test_quick_page_voice_guided():
     for kw in ("SpeechRecognition", "speechSynthesis", "🎤", "说“行”", "点一下，说想法"):
         assert kw in text, kw
     assert "X-OS-Page" in text
+
+def test_voice_eval_page_ten_items_and_gate():
+    page = os.path.join(PORTAL, "os_voice_eval.html")
+    assert os.path.isfile(page)
+    text = open(page, encoding="utf-8").read()
+    for kw in ("真人 10 条", "命令 5/5", "CER", "/api/os/asr", "X-OS-Page"):
+        assert kw in text, kw
+    assert text.count("kind:'long'") == 5
+    assert text.count("kind:'cmd'") == 5
