@@ -38,8 +38,8 @@
 <body>
 <main class="wrap">
   <h1>语音质量门槛 · 真人 10 条</h1>
-  <p class="sub">5 条长句 + 5 条命令。每条点 🎤 说一遍，页面自动识别并计分；录音只发给本机 8091，不出本机。</p>
-  <div class="banner">门槛：**命令 5/5 全对** 且 **长句平均 CER ≤ 10%**。通过后语音才转正；未通过仍可用纯文字（不阻塞做事）。<span id="asr-badge" class="tag">检测中…</span></div>
+  <p class="sub">5 条长句 + 5 条标准命令 + 3 条重庆方言命令。每条点 🎤 说一遍，页面自动识别并计分；录音只发给本机 8091，不出本机。</p>
+  <div class="banner">门槛：**标准命令 5/5** 且 **方言命令 3/3** 且 **长句平均 CER ≤ 10%**。通过后语音才转正；未通过仍可用纯文字（不阻塞做事）。<span id="asr-badge" class="tag">检测中…</span></div>
 
   <section class="card">
     <div class="row" style="justify-content:space-between">
@@ -79,7 +79,10 @@ const ITEMS=[
   {kind:'cmd', text:'可以，按这个办'},
   {kind:'cmd', text:'接受'},
   {kind:'cmd', text:'这里改，标题改成今日简报'},
-  {kind:'cmd', text:'停止'}
+  {kind:'cmd', text:'停止'},
+  {kind:'dial', text:'要得', canon:'accept'},
+  {kind:'dial', text:'要不得', canon:'reject'},
+  {kind:'dial', text:'巴适得板', canon:'accept'}
 ];
 let IDX=0, RESULTS=[], RECORDING=false, REC_STOP=null;
 function norm(t){ const s=String(t||'').replace(/[\s，。！？、,.!?;；:："'“”‘’()（）~～-]/g,'');
@@ -90,6 +93,12 @@ function cer(ref,hyp){ ref=norm(ref); hyp=norm(hyp); if(!ref) return hyp?1:0;
   for(let i=1;i<=m;i++){ let prev=dp[0]; dp[0]=i;
     for(let j=1;j<=n;j++){ const cur=dp[j]; dp[j]=Math.min(dp[j]+1,dp[j-1]+1,prev+(ref[i-1]===hyp[j-1]?0:1)); prev=cur; } }
   return dp[n]/m; }
+function dialectCanon(t){
+  const s=norm(t);
+  if(/要不得|不得行|莫得|不巴适|不行|不对/.test(s)) return 'reject';
+  if(/要得|要的|可以噻|行噻|巴适|满意|不错/.test(s)) return 'accept';
+  return '';
+}
 function setStatus(m){ $('score-line').textContent=m||''; }
 function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); }
 function clearErr(){ $('err').hidden=true; }
@@ -150,9 +159,13 @@ async function recordOnce(){
     const all=new Float32Array(chunks.reduce((a,c)=>a+c.length,0)); let off=0; chunks.forEach(c=>{all.set(c,off);off+=c.length;});
     $('heard').textContent='识别中…';
     try{ const text=await transcribe(encodeWav16k(resampleTo16k(all,rate)));
-      const c=cer(item.text,text); const exact=norm(item.text)===norm(text);
+      const c=cer(item.text,text);
+      const isDial=item.kind==='dial';
+      const exact=isDial ? (dialectCanon(text)===item.canon) : (norm(item.text)===norm(text));
       $('heard').innerHTML='我听到：<b>'+esc(text||'（空）')+'</b>';
-      $('score-line').textContent=exact?'✅ 与目标完全一致':'⚠ 有差异 · CER '+(c*100).toFixed(1)+'%';
+      $('score-line').textContent=exact
+        ? (isDial ? '✅ 方言命令理解正确（'+esc(text)+'）' : '✅ 与目标完全一致')
+        : (isDial ? '⚠ 方言命令未理解（听到：'+esc(text)+'）' : '⚠ 有差异 · CER '+(c*100).toFixed(1)+'%');
       $('b-next').disabled=false; $('b-retry').disabled=false;
       RESULTS[IDX]={text:item.text,heard:text,cer:c,exact,kind:item.kind};
     }catch(e){
@@ -177,8 +190,8 @@ async function recordOnce(){
 function render(){
   const item=ITEMS[IDX];
   $('progress').textContent='第 '+(IDX+1)+' / '+ITEMS.length+' 条';
-  $('kind-tag').textContent=item.kind==='cmd'?'命令（必须全对）':'长句（看 CER）';
-  $('kind-tag').className='tag'+(item.kind==='cmd'?' miss':'');
+  $('kind-tag').textContent=item.kind==='cmd'?'命令（必须全对）':(item.kind==='dial'?'方言命令（理解对即可）':'长句（看 CER）');
+  $('kind-tag').className='tag'+(item.kind!=='long'?' miss':'');
   $('prompt').textContent=item.text;
   $('heard').textContent='点下面 🎤 开始说，说完自动停止。';
   $('score-line').textContent=''; $('b-next').disabled=true; $('b-retry').disabled=true;
@@ -187,12 +200,14 @@ function render(){
 }
 function summary(){
   const longs=RESULTS.filter(r=>r&&r.kind==='long'); const cmds=RESULTS.filter(r=>r&&r.kind==='cmd');
+  const dials=RESULTS.filter(r=>r&&r.kind==='dial');
   const cmdOk=cmds.filter(r=>r.exact).length;
+  const dialOk=dials.filter(r=>r.exact).length;
   const longCer=longs.length?longs.reduce((a,r)=>a+r.cer,0)/longs.length:1;
-  const pass=(cmdOk===5 && longCer<=0.10);
+  const pass=(cmdOk===5 && dialOk===3 && longCer<=0.10);
   $('summary').hidden=false;
   $('verdict').innerHTML='<span class="'+(pass?'pass':'fail')+'">'+(pass?'✅ 通过：语音可以转正':'❌ 未通过：继续用纯文字 + 调优')+'</span>'
-    +'<div class="muted">命令全对 '+cmdOk+'/5 · 长句平均 CER '+(longCer*100).toFixed(1)+'%（≤10% 达标）</div>';
+    +'<div class="muted">标准命令 '+cmdOk+'/5 · 方言命令 '+dialOk+'/3 · 长句平均 CER '+(longCer*100).toFixed(1)+'%（≤10% 达标）</div>';
   let rows='<table><tr><th>#</th><th>类型</th><th>目标</th><th>听到</th><th>结果</th></tr>';
   ITEMS.forEach((it,i)=>{ const r=RESULTS[i]||{heard:'（未录）',cer:1,exact:false};
     rows+='<tr><td>'+(i+1)+'</td><td>'+(it.kind==='cmd'?'命令':'长句')+'</td><td>'+esc(it.text)+'</td><td>'+esc(r.heard)+'</td><td>'+(r.exact?'✅':'⚠ '+(r.cer*100).toFixed(1)+'%')+'</td></tr>'; });
