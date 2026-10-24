@@ -38,7 +38,8 @@
   <div class="turn">第 1 句 · 说想法</div>
   <section class="card">
     <textarea id="ask" placeholder="例：做个页面，让我每天打开就能看三条简报摘要"></textarea>
-    <div class="row"><button id="b-draft">看看会给我什么卡</button><span class="muted">不用填任何参数</span></div>
+    <div class="row"><button id="b-draft">看看会给我什么卡</button><button class="ghost" id="b-selfcheck">接口自检</button><span class="muted">不用填任何参数</span></div>
+    <p class="muted" id="status">计时从您第一次点按钮开始（目标 ≤120s）；点"接口自检"可先确认后端通不通。</p>
   </section>
 
   <section class="card" id="card-box" hidden>
@@ -68,10 +69,12 @@
 </main>
 <script>
 const $=id=>document.getElementById(id); const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let DRAFT=null, ITEM=null, START=Date.now();
-setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s（目标 ≤120s）'; },1000);
+let DRAFT=null, ITEM=null, START=null, TICK=null;
+$('timer').textContent='计时从您第一次点“看看会给我什么卡”开始（目标 ≤120s）';
+function startTimer(){ if(START!==null) return; START=Date.now(); TICK=setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s（目标 ≤120s）'; },1000); }
+function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
 const showErr=m=>{const e=$('err');e.hidden=false;e.textContent=String(m);e.scrollIntoView({block:'center'});document.title='⚠ 需要处理 · 一句话';}; const clearErr=()=>{$('err').hidden=true;document.title='零界 · 一句话（Quickstart）';};
-async function api(path,body){const opt=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify(body)};const r=await fetch(path,opt);const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));if(!r.ok||d.ok===false)throw new Error((d.error||r.status)+': '+(d.message||''));return d;}
+async function api(path,body){const opt=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify(body)};setStatus('请求 '+path+' …');const r=await fetch(path,opt);setStatus(path+' → HTTP '+r.status);const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));if(!r.ok||d.ok===false)throw new Error((d.error||r.status)+': '+(d.message||''));return d;}
 function scopeText(sc){return `环境 ${esc(sc.env)} · 动作 ${sc.actions.length} 个（${sc.actions.map(esc).join(' / ')}） · 有效至 ${esc(sc.valid_until)} · ${sc.reversible?'可撤回':'不可撤回'}`;}
 function renderCard(card){
   DRAFT=card; $('card-box').hidden=false; $('result-box').hidden=true;
@@ -86,8 +89,8 @@ function renderCard(card){
     <div class="muted" style="margin-top:6px">${esc(card.honesty.note)}</div></div>`;
 }
 async function draft(edits){
-  clearErr();
-  try{ const d=await api('/api/os/quickstart',{text:$('ask').value, edits: edits||undefined}); renderCard(d.card); }
+  clearErr(); startTimer();
+  try{ const d=await api('/api/os/quickstart',{text:$('ask').value, edits: edits||undefined}); renderCard(d.card); setStatus('已出卡：'+d.card.draft_id); }
   catch(e){ showErr(e.message); }
 }
 async function confirm(edits){
@@ -115,6 +118,9 @@ $('b-draft').onclick=()=>draft();
 $('b-redraw').onclick=()=>draft($('edit').value.trim()?{changes:$('edit').value.trim()}:undefined);
 $('b-confirm').onclick=()=>confirm();
 $('b-confirm-edit').onclick=()=>confirm($('edit').value.trim()?{changes:$('edit').value.trim()}:undefined);
+$('b-selfcheck').onclick=async()=>{ try{ const r=await fetch('/api/os/health'); const t=await r.text(); setStatus('自检 /api/os/health = '+r.status+' '+t.slice(0,80)); }catch(e){ setStatus('自检失败：'+e.message); } };
+window.addEventListener('error',e=>showErr('页面脚本错误：'+(e.message||e.type)));
+window.addEventListener('unhandledrejection',e=>showErr('未处理错误：'+((e.reason&&e.reason.message)||e.reason)));
 loadCardFromUrl();
 async function loadCardFromUrl(){ /* 预留：从 URL 恢复 draft（当前仅内存草稿） */ }
 </script>
