@@ -147,6 +147,9 @@ def handle_get(store: S.OsGoalStore, path: str,
             return 200, {"ok": True, **store.get_goal(m.group(1))}
         except KeyError as exc:
             return _err(404, "not_found", str(exc))
+    if path == "/api/os/asr/status":
+        import os_asr
+        return 200, {"ok": True, **os_asr.engine_status()}
     m = QK_DRAFT_RE.match(path)
     if m:
         try:
@@ -238,8 +241,40 @@ def handle_post(store: S.OsGoalStore, path: str,
 
 
 def _handle_quick(store, path, body):
-    """Quickstart 路由；未命中返回 None。"""
+    """Quickstart / 本地 ASR 路由；未命中返回 None。"""
     import os_quickstart as Q
+    if path == "/api/os/asr":
+        import base64
+        import tempfile
+        import os as _os
+        import os_asr
+        b64 = str(body.get("audio_b64") or "")
+        if not b64:
+            return _err(422, "bad_audio", "缺少 audio_b64")
+        if len(b64) > 12 * 1024 * 1024:
+            return _err(413, "audio_too_large", "音频过大")
+        try:
+            raw = base64.b64decode(b64)
+        except Exception:
+            return _err(422, "bad_audio", "base64 解码失败")
+        if len(raw) < 44 or not raw.startswith(b"RIFF"):
+            return _err(422, "bad_audio", "需要 16k 单声道 WAV")
+        fd, tmp = tempfile.mkstemp(suffix=".wav")
+        try:
+            with _os.fdopen(fd, "wb") as fh:
+                fh.write(raw)
+            text = os_asr.transcribe_wav(tmp, lang=str(body.get("lang") or "zh"))
+        except os_asr.AsrUnavailable as exc:
+            return _err(503, "asr_unavailable", str(exc))
+        finally:
+            try:
+                _os.unlink(tmp)
+            except OSError:
+                pass
+        return 200, {"ok": True, "text": text, "engine": "sensevoice_local"}
+    if path == "/api/os/asr/status":
+        import os_asr
+        return 200, {"ok": True, **os_asr.engine_status()}
     if path == QK_START:
         card = Q.create_draft(str(body.get("text") or ""),
                               edits=body.get("edits") or None)

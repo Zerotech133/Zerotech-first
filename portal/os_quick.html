@@ -10,13 +10,14 @@
 <style>
   .wrap{max-width:760px;margin:0 auto;padding:14px 18px 130px}
   h1{font-size:21px;margin:4px 0 2px}
-  .sub{color:#5a6f83;font-size:13px;margin:0 0 10px}
+  .sub{color:#5a6f83;font-size:13px;margin:0 0 8px}
+  .badge{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:999px;background:#e6f4f8;color:#0e7490;font-weight:700;margin-left:6px}
+  .badge.warn{background:#faf3e6;color:#936224}
   .banner{border-left:4px solid #936224;background:#faf3e6;padding:7px 11px;border-radius:6px;font-size:12px;margin:6px 0 12px}
   .chat{display:flex;flex-direction:column;gap:10px}
   .msg{border-radius:16px;padding:12px 15px;font-size:14.5px;line-height:1.7;max-width:92%}
   .sys{background:#f4f9fb;border:1px solid #dbe5ee;align-self:flex-start}
   .user{background:#0e7490;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
-  .sys b{color:#0e7490}
   .card{border:1.5px solid #bcd8e2;background:#fff;align-self:stretch;max-width:100%}
   .card h3{margin:0 0 6px;font-size:16px;color:#0e7490}
   .list{margin:2px 0;padding-left:19px;font-size:13.5px;line-height:1.75}
@@ -33,17 +34,17 @@
   button:disabled{opacity:.5;cursor:not-allowed}
   #status{font-size:12.5px;color:#5a6f83;flex:1;min-width:140px}
   .say{font-size:12px;color:#936224}
-  details{font-size:12px;color:#5a6f83;margin-top:6px}
+  textarea{width:100%;box-sizing:border-box;min-height:54px;margin-top:6px;font:inherit;padding:8px 10px;border:1.5px solid #bfd6e2;border-radius:10px}
 </style>
 </head>
 <body>
 <main class="wrap">
   <h1>说一句话，剩下的我来</h1>
-  <p class="sub">按一下开始后，我自动听、自动做、自动念给您听——<b>不用一次次点按钮</b>。您只说"行""接受""这里改"就行。</p>
+  <p class="sub">点一下开始后自动听、自动做、自动念——<b>不用反复点按钮</b>。<span class="badge" id="asr-badge">识别方式检测中…</span></p>
   <div class="banner">默认授权：隔离环境 · 4 个可逆动作 · 24 小时 · 可撤回。推荐卡为规则辅助（非模型结论）；认领为模拟认领（未获真实认领）；不接生产/交易/外发。<span class="say" id="timer"></span></div>
 
   <div class="chat" id="chat">
-    <div class="msg sys">您好。第 1 句说想法，第 2 句听我把卡念出来，第 3 句看试用说接受或这里改。点下面的 🎤 <b>点一下，说想法</b>，之后就像跟人说话一样，不用再点按钮。</div>
+    <div class="msg sys">您好。第 1 句说想法，第 2 句听卡说"行"，第 3 句看试用说"接受"或"这里改"。点下面的 🎤 <b>点一下，说想法</b>，之后就像聊天一样。</div>
   </div>
 
   <p class="err" id="err" hidden></p>
@@ -51,15 +52,15 @@
 
 <div class="dock"><div class="in">
   <button class="mic" id="b-start">🎤 点一下，说想法</button>
-  <button class="ghost" id="b-type">⌨️ 改成打字</button>
-  <button class="ghost" id="b-stop" hidden>⏹ 暂停听</button>
+  <button class="ghost" id="b-type">⌨️ 打字</button>
+  <button class="ghost" id="b-stop" hidden>⏹ 暂停</button>
   <span id="status">就绪</span>
 </div></div>
 
 <template id="type_panel_tpl">
   <div class="msg sys" id="type_panel">
-    <div><b>打字模式（可随时切回语音）</b></div>
-    <textarea id="ask" style="width:100%;box-sizing:border-box;min-height:54px;margin-top:6px;font:inherit;padding:8px 10px;border:1.5px solid #bfd6e2;border-radius:10px" placeholder="例：做个页面，让我每天打开就能看三条简报摘要"></textarea>
+    <div><b>打字模式</b>（可随时切回语音）</div>
+    <textarea id="ask" placeholder="例：做个页面，让我每天打开就能看三条简报摘要"></textarea>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
       <button class="ghost" id="t-draft">出卡</button>
       <button class="ghost" id="t-ok" hidden>按这个办</button>
@@ -73,7 +74,8 @@
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false, REC=null, BUSY=false, DONE=false;
+let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false, BUSY=false, DONE=false;
+let ASR_MODE='browser', REC=null, VOICE_READY=false;
 function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
 function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); }
 function clearErr(){ const e=$('err'); e.hidden=true; }
@@ -82,24 +84,101 @@ function say(role, html){ const d=document.createElement('div'); d.className='ms
 function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.04; speechSynthesis.speak(u); }catch(e){} }
 function stopVoice(){ try{ if(REC){ REC.onresult=null; REC.onerror=null; REC.onend=null; REC.abort(); } }catch(e){} REC=null; BUSY=false; $('b-start').classList.remove('listening'); }
 function finish(){ DONE=true; stopVoice(); $('b-start').textContent='🎤 说下一件事'; $('b-start').classList.remove('listening'); setStatus('完成'); }
-/* —— 核心：一次点击后自动“听→答→听” —— */
-function listen(handler){
-  if(!SR){ setStatus('此浏览器不支持语音，请用 Edge/Chrome，或点“改成打字”。'); return; }
-  if(BUSY||DONE) return;
-  BUSY=true; $('b-start').classList.add('listening'); setStatus('我在听…（直接说，不用点按钮）');
-  const r=new SR(); r.lang='zh-CN'; r.interimResults=false; r.maxAlternatives=1; REC=r;
-  let got=false;
-  const done=()=>{ BUSY=false; $('b-start').classList.remove('listening'); setStatus(''); REC=null; };
-  r.onresult=e=>{ got=true; const t=String(e.results[0][0].transcript||'').trim(); done(); if(t){ handler(t); } else { retry(handler); } };
-  r.onerror=e=>{ done(); if(e.error==='no-speech'||e.error==='aborted'){ retry(handler); } else { showErr('没听清（'+e.error+'），请再说一次'); retry(handler); } };
-  r.onend=()=>{ if(!got){ done(); retry(handler); } };
-  try{ r.start(); }catch(err){ done(); setTimeout(()=>listen(handler),700); }
+/* ============ 识别方式：优先本地 SenseVoice（离线、高精度），失败回退浏览器 ============ */
+async function checkAsr(){
+  try{
+    const r=await fetch('/api/os/asr/status'); const d=await r.json();
+    if(d && d.engine==='sensevoice_local'){
+      ASR_MODE='local'; $('asr-badge').textContent='本地高精度 · SenseVoice（离线）'; $('asr-badge').className='badge';
+      setStatus('就绪（本地高精度识别；首次加载模型约 20-30 秒）');
+      return;
+    }
+    $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn';
+  }catch(e){ $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn'; }
 }
-let RETRY=0;
-function retry(handler){ if(DONE) return; if(++RETRY>3){ RETRY=0; say('sys','没听到您说话。点 🎤 或改成打字都行。'); setStatus('等待您再说一次'); return; } setTimeout(()=>listen(handler),500); }
+function norm(t){ return String(t||'').replace(/[\s，。！？、,.!?;；:："'“”‘’()（）]/g,''); }
+function isEcho(t){ return t.length>22 && /我理解您|默认授权|您说|第 [123] 句|做好了|改好了|怎么算成/.test(t); }
+function isAccept(t){ const s=norm(t); if(isEcho(t)) return false;
+  if(/^(行|好|可以|对|嗯|是的|没问题|按这个办|开始吧|执行|确认|就这么办|就这样|ok)$/i.test(s)) return true;
+  return s.length<=12 && /按这个办|开始吧|就这么办|没问题|可以|确认/.test(s); }
+function isAcceptVerdict(t){ const s=norm(t); if(isEcho(t)) return false;
+  if(/^(接受|可以|好|行|满意|不错|行吧|嗯|对)$/.test(s)) return true;
+  return s.length<=10 && /接受|满意|不错/.test(s); }
+function isNegative(t){ return /不行|不对|不好|不要|别|改|换|重来|重说/.test(norm(t)); }
+/* 录音 → 16k 单声道 WAV → base64 → 本地 ASR */
+function resampleTo16k(buf, inRate){
+  if(inRate===16000) return buf;
+  const ratio=inRate/16000, outLen=Math.max(1,Math.floor(buf.length/ratio)), out=new Float32Array(outLen);
+  for(let i=0;i<outLen;i++){ const pos=i*ratio, i0=Math.floor(pos), i1=Math.min(buf.length-1,i0+1), frac=pos-i0; out[i]=buf[i0]*(1-frac)+buf[i1]*frac; }
+  return out;
+}
+function encodeWav16k(samples){
+  const len=samples.length, ab=new ArrayBuffer(44+len*2), dv=new DataView(ab);
+  const w=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,'RIFF'); dv.setUint32(4,36+len*2,true); w(8,'WAVE'); w(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,16000,true); dv.setUint32(28,32000,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  w(36,'data'); dv.setUint32(40,len*2,true);
+  for(let i=0;i<len;i++){ let v=Math.max(-1,Math.min(1,samples[i])); dv.setInt16(44+i*2, v<0?v*0x8000:v*0x7FFF, true); }
+  return ab;
+}
+function abToB64(ab){ const bytes=new Uint8Array(ab); let bin=''; for(let i=0;i<bytes.length;i+=0x8000){ bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); } return btoa(bin); }
+async function recordTurn(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.AudioContext){ return browserListen(); }
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ setStatus('麦克风不可用：'+(e.message||e)); return browserListen(); }
+  $('b-start').classList.add('listening'); setStatus('我在听…（说完自动停）');
+  return new Promise(resolve=>{
+    const ctx=new AudioContext(); const rate=ctx.sampleRate;
+    const src=ctx.createMediaStreamSource(stream); const proc=ctx.createScriptProcessor(4096,1,1);
+    const chunks=[]; const t0=performance.now(); let lastLoud=0, loudSeen=false, stopped=false;
+    const cleanup=()=>{ try{ proc.disconnect(); src.disconnect(); ctx.close(); }catch(e){} try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){} $('b-start').classList.remove('listening'); };
+    const stopNow=async()=>{ if(stopped) return; stopped=true; clearInterval(watch); cleanup();
+      try{
+        const all=new Float32Array(chunks.reduce((a,c)=>a+c.length,0)); let off=0; chunks.forEach(c=>{ all.set(c,off); off+=c.length; });
+        if(!loudSeen || all.length<rate*0.25){ setStatus('没听到声音，再说一次'); resolve(null); return; }
+        const s16=resampleTo16k(all, rate); const b64=abToB64(encodeWav16k(s16));
+        setStatus('识别中…（本地 SenseVoice）');
+        const r=await fetch('/api/os/asr',{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify({audio_b64:b64,lang:'zh'})});
+        const d=await r.json().catch(()=>({}));
+        if(!r.ok || d.ok===false){ setStatus('本地识别不可用，切浏览器识别'); ASR_MODE='browser'; $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn'; resolve(await browserListen()); return; }
+        const text=String(d.text||'').trim();
+        if(!text){ setStatus('没听清，再说一次'); resolve(null); return; }
+        resolve(text);
+      }catch(e){ setStatus('识别失败，切浏览器识别'); ASR_MODE='browser'; resolve(await browserListen()); }
+    };
+    proc.onaudioprocess=e=>{
+      const d=new Float32Array(e.inputBuffer.getChannelData(0)); chunks.push(d);
+      let sum=0; for(let i=0;i<d.length;i++) sum+=d[i]*d[i];
+      const rms=Math.sqrt(sum/d.length), now=performance.now();
+      if(rms>0.012){ loudSeen=true; lastLoud=now; }
+    };
+    src.connect(proc); proc.connect(ctx.destination);
+    const watch=setInterval(()=>{ const now=performance.now();
+      if(loudSeen && now-lastLoud>1100){ stopNow(); }
+      else if(now-t0>15000 || (!loudSeen && now-t0>8000)){ stopNow(); }
+    },120);
+  });
+}
+/* 浏览器识别（回退，也用于“点一下说想法”的第一次） */
+function browserListen(){
+  return new Promise((resolve)=>{
+    if(!SR){ setStatus('此浏览器不支持语音，请用 Edge/Chrome，或点“打字”。'); resolve(null); return; }
+    if(BUSY){ resolve(null); return; }
+    BUSY=true; $('b-start').classList.add('listening'); setStatus('我在听…（浏览器识别）');
+    const r=new SR(); r.lang='zh-CN'; r.interimResults=false; r.maxAlternatives=5; REC=r; let got=false;
+    const done=()=>{ BUSY=false; $('b-start').classList.remove('listening'); REC=null; };
+    r.onresult=e=>{ got=true; const alts=[]; for(let i=0;i<e.results[0].length;i++) alts.push(String(e.results[0][i].transcript||'').trim()); const t=alts.find(x=>x)||''; done(); resolve(t||null);
+      if(alts.length>1) say('sys','（备选听法：'+alts.slice(1,3).map(esc).join(' / ')+'）'); };
+    r.onerror=e=>{ done(); if(e.error==='no-speech'||e.error==='aborted'){ resolve(null); } else { showErr('没听清（'+e.error+'）'); resolve(null); } };
+    r.onend=()=>{ if(!got){ done(); resolve(null); } };
+    try{ r.start(); }catch(e){ done(); resolve(null); }
+  });
+}
 function speakThen(text, handler){
-  say('sys', esc(text).replace(/您说|请说/g,'<b>$&</b>'));
-  const go=()=>{ RETRY=0; if(handler) setTimeout(()=>listen(handler),300); };
+  say('sys', esc(text));
+  const go=()=>{ if(handler) setTimeout(()=>nextTurn(handler),650); };
   if(!('speechSynthesis' in window)){ setTimeout(go,600); return; }
   try{
     speechSynthesis.cancel();
@@ -110,12 +189,21 @@ function speakThen(text, handler){
     speechSynthesis.speak(u);
   }catch(e){ go(); }
 }
-/* —— 业务动作 —— */
+async function nextTurn(handler){
+  if(DONE) return;
+  let t=null;
+  for(let attempt=0; attempt<3 && !t; attempt++){
+    t = (ASR_MODE==='local') ? await recordTurn() : await browserListen();
+    if(!t) setStatus('没听清，我再说一次，您再说一句');
+    else if(isEcho(t)){ say('sys','（听到的是我刚才的话，略过）'); t=null; }
+  }
+  if(t){ clearErr(); handler(t); }
+  else { setStatus('没听到您说话。点 🎤 或改成打字。'); }
+}
+/* ============ 业务动作 ============ */
 async function api(path,body){
   const opt=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify(body)};
-  setStatus('请求 '+path);
   const r=await fetch(path,opt);
-  setStatus(path+' → HTTP '+r.status);
   const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));
   if(!r.ok||d.ok===false) throw new Error((d.error||r.status)+': '+(d.message||''));
   return d;
@@ -133,16 +221,17 @@ function cardSpeech(card){
     +'。 默认授权是隔离环境、四个可逆动作、二十四小时、可撤回。 如果没问题，就说“行”，我马上办；要改就直接说要改哪句。';
 }
 async function handleIdea(text){
-  startTimer(); say('user', esc(text)); RETRY=0;
-  try{ const d=await api('/api/os/quickstart',{text}); DRAFT=d.card; $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
-    const bubble=[...document.querySelectorAll('.card')].pop(); bubble.scrollIntoView({block:'end',behavior:'smooth'});
+  startTimer(); say('user', esc(text));
+  try{ const d=await api('/api/os/quickstart',{text}); DRAFT=d.card;
+    $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
+    (document.querySelectorAll('.card')||[]).length && document.querySelectorAll('.card')[document.querySelectorAll('.card').length-1].scrollIntoView({block:'end',behavior:'smooth'});
     speakThen('第 2 句：一张卡。'+cardSpeech(d.card), handleCardReply);
   }catch(e){ showErr(e.message); say('sys','这一步失败了：'+esc(e.message)); }
 }
 async function handleCardReply(t){
   say('user', esc(t));
-  if(/行|好|可以|按这个办|确认|没问题|嗯|ok/i.test(t)){ return doConfirm(); }
-  if(/重新|重来|换个/i.test(t)){ return speakThen('好，我们重来。您想做什么？', handleIdea); }
+  if(isAccept(t)) return doConfirm();
+  if(/重新|重来|换个/i.test(t)) return speakThen('好，我们重来。您想做什么？', handleIdea);
   try{ const d=await api('/api/os/quickstart',{text:(DRAFT?DRAFT.text:'')+'；按您的修改：'+t, edits:{changes:t}}); DRAFT=d.card;
     $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
     speakThen('改好了。'+cardSpeech(d.card), handleCardReply);
@@ -151,7 +240,7 @@ async function handleCardReply(t){
 async function doConfirm(){
   say('sys','好，按这个办。');
   try{ const d=await api('/api/os/quickstart/'+encodeURIComponent(DRAFT.draft_id)+'/confirm',{}); ITEM=d.item_id;
-    say('sys','已经隔离执行好了：产物 <b>'+esc(d.artifact.version)+'</b>。试用窗口就在下面，您可以看，也可以直接说。');
+    say('sys','已经隔离执行好了：产物 <b>'+esc(d.artifact.version)+'</b>。试用就在下面。');
     $('chat').insertAdjacentHTML('beforeend','<iframe class="pv" id="pv" src="'+esc(d.preview_url)+'"></iframe>');
     document.getElementById('pv').scrollIntoView({block:'center',behavior:'smooth'});
     speakThen('第 3 句：做好了，试用就在下面。满意就说“接受”，要改就说“这里改”，直接说哪里不满意。', handleVerdict);
@@ -179,27 +268,24 @@ async function doChange(t){
 }
 async function handleVerdict(t){
   say('user', esc(t));
-  if(/接受|可以|好|行|满意|不错/i.test(t)) return doAccept();
+  if(isAcceptVerdict(t) && !isNegative(t)) return doAccept();
   return doChange(t);
 }
-/* —— 打字兜底 —— */
+/* 打字兜底 */
 function showTypePanel(){ const tpl=$('type_panel_tpl'); $('chat').appendChild(tpl.content.cloneNode(true)); $('type_panel').scrollIntoView({block:'end'}); }
-/* —— 按钮 —— */
-$('b-start').onclick=()=>{ clearErr(); if(DONE){ DONE=false; $('b-start').textContent='🎤 点一下，说想法'; } stopVoice(); if(!SR){ showTypePanel(); return; } RETRY=0; say('sys','好，我在听。您想做什么？'); listen(handleIdea); };
-$('b-stop').onclick=()=>{ stopVoice(); setStatus('已暂停'); $('b-stop').hidden=true; $('b-start').hidden=false; };
+$('b-start').onclick=async()=>{ clearErr(); if(DONE){ DONE=false; $('b-start').textContent='🎤 我继续说'; } stopVoice(); say('sys','好，我在听。您想做什么？'); startTimer(); nextTurn(handleIdea); };
+$('b-stop').onclick=()=>{ stopVoice(); setStatus('已暂停'); $('b-start').textContent='🎤 继续'; };
 $('b-type').onclick=()=>{ showTypePanel(); };
-$('b-start').hidden=false;
-window.addEventListener('error',e=>showErr('页面脚本错误：'+(e.message||e.type)));
-window.addEventListener('unhandledrejection',e=>showErr('未处理错误：'+((e.reason&&e.reason.message)||e.reason)));
-/* 打字面板内的按钮（事件委托，兼容动态克隆） */
 document.addEventListener('click',ev=>{
   const id=ev.target&&ev.target.id;
-  if(id==='t-draft'){ handleIdea(($('ask')&&$('ask').value||'').trim()); }
+  if(id==='t-draft'){ handleIdea((($('ask')&&$('ask').value)||'').trim()); }
   if(id==='t-ok'){ doConfirm(); }
   if(id==='t-accept'){ doAccept(); }
   if(id==='t-change'){ doChange((($('ask')&&$('ask').value)||'改一下').trim()); }
 });
-if(!SR){ $('b-start').textContent='⌨️ 此浏览器不支持语音，点这里打字'; }
+window.addEventListener('error',e=>showErr('页面脚本错误：'+(e.message||e.type)));
+window.addEventListener('unhandledrejection',e=>showErr('未处理错误：'+((e.reason&&e.reason.message)||e.reason)));
+checkAsr();
 </script>
 </body>
 </html>
