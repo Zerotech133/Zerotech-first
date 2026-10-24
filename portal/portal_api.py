@@ -156,6 +156,7 @@ import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，20
 import api_news_intel   # K-ORG-207 新闻情报台三栏聚合出口（速报/政策/舆情，只读 2026-10-19）
 import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量化/飞书双路径 2026-10-19）
 import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/brief（2026-10-21）
+import api_os_goal      # OS-CLOSE-G0 目标/事项/成果 G0 骨架（/api/os/*，2026-10-24）
 
 
 
@@ -645,7 +646,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -679,7 +680,7 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
         # （默认 degraded=放行，保产线）。未命中则落到原常量比对，兼容。
         import cainiao_auth
         if cainiao_auth.verify_request(self.headers, self.client_address[0],
-                                       portal_token=_PORTAL_TOKEN).ok:
+                                       _PORTAL_TOKEN).ok:
             return True
         got = (self.headers.get("X-Portal-Token") or "").strip()
         return bool(got) and hmac.compare_digest(got, _PORTAL_TOKEN)
@@ -2589,6 +2590,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        if path.startswith('/api/os/'):
+            self._os_goal_post(path)
+            return
         if path == '/api/zhuge/brief':
             # WO-OS-09 只读出口：非 GET 显式 405（不落 404 兜底，契约清晰）
             self._zhuge_brief_method_not_allowed()
@@ -3084,6 +3088,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path.startswith('/api/os/'):
+            self._os_goal_get(path, qs)
+            return
         if path == '/api/intel/evidence-targets':
             self._intel_evidence_targets(qs)
             return

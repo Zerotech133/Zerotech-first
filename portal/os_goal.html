@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>零界 · 目标与事项（G0 骨架）</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js"></script>
+<script src="/static/shortscreen.js"></script>
+<style>
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 20px 60px}
+  .banner{border-left:4px solid #936224;background:#faf3e6;padding:10px 14px;border-radius:6px;margin:10px 0 16px;font-size:13px;color:#5a4a2a}
+  .muted{color:#5a6f83;font-size:13px}
+  .card{background:#fff;border:1px solid #dbe5ee;border-radius:12px;padding:14px 16px;margin:10px 0}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .row label{display:grid;gap:4px;font-size:12px;color:#5a6f83}
+  input,select,textarea{font:inherit;padding:8px 10px;border:1px solid #bfd6e2;border-radius:8px;min-width:180px}
+  textarea{min-width:320px;min-height:60px}
+  button{cursor:pointer;background:#0e7490;color:#fff;border:0;border-radius:8px;padding:8px 14px;font:600 13px inherit}
+  button.ghost{background:#fff;color:#0e7490;border:1px solid #bcd8e2}
+  pre{background:#f7fafc;border:1px solid #e3ecf2;border-radius:8px;padding:10px;overflow:auto;font-size:12px}
+  code{font-size:12px;background:#edf2f5;padding:1px 4px;border-radius:4px}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:#e8f4f7;color:#0e7490;font-weight:700}
+  .err{color:#b3402e;font-size:13px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>零界 · 目标与事项</h1>
+  <p class="muted">G0 内核骨架：事业目标 → 事项 → 成果（四类）→ 引用。本页只写隔离账本
+    <code>portal/data/os_goals/</code>，不触碰现役服务与真实账本。</p>
+  <div class="banner">边界：本机单用户；授权/工单/执行/验收在 G1+ 接入。当前 PASS 只表示"账本与判据骨架可用"，<b>不表示 B 阶段通过</b>。</div>
+
+  <section class="card">
+    <h2>新建目标</h2>
+    <div class="row">
+      <label>我在建立什么事业<input id="g-statement" placeholder="例：把零界做成持续创业者的个人事业 OS"></label>
+      <label>服务谁<input id="g-user" placeholder="例：连续创业者/超级个体"></label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>假设（一行一条，状态默认 hypothesis）<textarea id="g-assumptions" placeholder="用户愿为长期团队付费"></textarea></label>
+      <label>成功信号（一行一条）<textarea id="g-signals" placeholder="四类成果各验收一次"></textarea></label>
+      <button id="g-create">创建目标</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>目标列表 <span class="pill" id="g-count">—</span></h2>
+    <div id="goals" class="muted">读取中…</div>
+  </section>
+
+  <section class="card" id="goal-detail" hidden>
+    <h2>目标详情</h2>
+    <div id="goal-body"></div>
+    <div class="row" style="margin-top:10px">
+      <label>事项标题<input id="i-title" placeholder="例：做一页可试用原型"></label>
+      <label>为什么现在做<input id="i-why" placeholder="例：老田今天要试用"></label>
+      <label>成果类型<select id="i-kind"><option>software</option><option>business_plan</option><option>content</option><option>research</option></select></label>
+      <label>第几次尝试<input id="i-attempt" type="number" value="1" min="1"></label>
+      <button id="i-create">新建事项</button>
+    </div>
+    <div id="items"></div>
+  </section>
+
+  <section class="card" id="item-detail" hidden>
+    <h2>事项详情</h2>
+    <div id="item-body"></div>
+    <div class="row" style="margin-top:10px">
+      <label>成果版本<input id="o-version" value="v1"></label>
+      <label>产物路径/引用<input id="o-ref" placeholder="portal/data/os_goals/.../a1.html"></label>
+      <label>sha256<input id="o-sha" placeholder="sha256:…"></label>
+      <button id="o-create">登记成果</button>
+    </div>
+    <label class="muted" style="display:block;margin-top:8px">引用 citations（JSON 数组；software 可为空，其它三类至少 1 条）
+      <textarea id="o-citations" placeholder='[{"source_surface":"research","source_ref":"RES-001","source_kind":"data","claim":"样本内胜率55%","confidence":"fact"}]'></textarea>
+    </label>
+    <button class="ghost" id="o-evidence" style="margin-top:8px">查看证据包</button>
+    <pre id="o-evidence-box" hidden></pre>
+  </section>
+
+  <p class="err" id="err" hidden></p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const showErr = m => { const e=$('err'); e.hidden=false; e.textContent=String(m); };
+const clearErr = () => { $('err').hidden=true; };
+let currentGoal=null, currentItem=null;
+async function api(path, body){
+  const opt = body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {};
+  const r = await fetch(path, opt);
+  const d = await r.json().catch(()=>({ok:false,error:'bad_json'}));
+  if(!r.ok || d.ok===false) throw new Error((d.error||r.status)+': '+(d.message||''));
+  return d;
+}
+function lines(id){ return $(id).value.split('\n').map(s=>s.trim()).filter(Boolean); }
+async function loadGoals(){
+  clearErr(); const d = await api('/api/os/goals');
+  $('g-count').textContent = d.goals.length + ' 个';
+  $('goals').innerHTML = d.goals.length ? d.goals.map(g=>
+    `<div class="card"><b>${esc(g.statement)}</b><div class="muted">${esc(g.goal_id)} · 服务：${esc(g.target_user)} · 事项 ${g.items.length}</div>
+     <button class="ghost" data-g="${esc(g.goal_id)}">打开</button></div>`).join('')
+    : '<span class="muted">还没有目标——先创建一个。</span>';
+  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>openGoal(b.dataset.g));
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function openGoal(gid){
+  clearErr(); currentGoal = await api('/api/os/goal/'+gid);
+  $('goal-detail').hidden=false; $('item-detail').hidden=true;
+  $('goal-body').innerHTML = `<b>${esc(currentGoal.statement)}</b><div class="muted">${esc(currentGoal.goal_id)} · ${esc(currentGoal.target_user)}</div>
+    <div>假设：${(currentGoal.assumptions||[]).map(a=>`<span class="pill">${esc(a.id)} ${esc(a.status)}</span> ${esc(a.text)}`).join('<br>')}</div>
+    <div class="muted">成功信号：${(currentGoal.success_signals||[]).map(esc).join('；')}</div>`;
+  $('items').innerHTML = (currentGoal.items||[]).map(i=>`<div class="card"><b>${esc(i.title)}</b>
+    <div class="muted">${esc(i.item_id)} · ${esc(i.outcome_kind)} · 第 ${i.attempt_no} 次尝试 · why_now：${esc(i.why_now)}</div>
+    <button class="ghost" data-i="${esc(i.item_id)}">打开事项</button></div>`).join('') || '<span class="muted">暂无事项</span>';
+  document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>openItem(b.dataset.i));
+}
+async function openItem(iid){
+  clearErr(); currentItem = await api('/api/os/item/'+iid);
+  $('item-detail').hidden=false;
+  $('item-body').innerHTML = `<b>${esc(currentItem.title)}</b><div class="muted">${esc(currentItem.item_id)} · ${esc(currentItem.outcome_kind)}</div>
+    <div>成果：${(currentItem.outcomes||[]).map(o=>`<div class="card"><span class="pill">${esc(o.version)}</span> ${esc(o.content_ref)}<br>
+      <span class="muted">${esc(o.sha256)} · 引用 ${(o.citations||[]).length} 条</span></div>`).join('') || '<span class="muted">暂无成果</span>'}</div>`;
+}
+$('g-create').onclick = async () => { try{
+  clearErr();
+  const assumptions = lines('g-assumptions').map((t,n)=>({id:'A'+(n+1),text:t,status:'hypothesis'}));
+  const signals = lines('g-signals');
+  const d = await api('/api/os/goal',{statement:$('g-statement').value.trim(),target_user:$('g-user').value.trim(),assumptions,success_signals:signals});
+  await loadGoals(); await openGoal(d.goal_id);
+}catch(e){ showErr(e.message); } };
+$('i-create').onclick = async () => { try{
+  clearErr();
+  const d = await api('/api/os/item',{goal_id:currentGoal.goal_id,title:$('i-title').value.trim(),why_now:$('i-why').value.trim(),outcome_kind:$('i-kind').value,attempt_no:parseInt($('i-attempt').value||'1',10)});
+  await openGoal(currentGoal.goal_id); await openItem(d.item_id);
+}catch(e){ showErr(e.message); } };
+$('o-create').onclick = async () => { try{
+  clearErr();
+  const cites = JSON.parse($('o-citations').value.trim() || '[]');
+  await api('/api/os/item/'+currentItem.item_id+'/outcome',{outcome_kind:currentItem.outcome_kind,version:$('o-version').value.trim(),content_ref:$('o-ref').value.trim(),sha256:$('o-sha').value.trim(),citations:cites});
+  await openItem(currentItem.item_id);
+}catch(e){ showErr(e.message); } };
+$('o-evidence').onclick = async () => { try{
+  clearErr(); const d = await api('/api/os/item/'+currentItem.item_id+'/evidence');
+  const box=$('o-evidence-box'); box.hidden=false; box.textContent=JSON.stringify(d,null,1);
+}catch(e){ showErr(e.message); } };
+loadGoals().catch(e=>showErr(e.message));
+</script>
+</body>
+</html>
