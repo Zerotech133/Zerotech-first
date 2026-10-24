@@ -856,7 +856,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                 return
 
         def probe(spec):
-            name, port, http_path = spec
+            name, port, http_path = spec[:3]
+            optional = bool(spec[3]) if len(spec) > 3 else False
             t0 = time.time()
             try:
                 if http_path:
@@ -871,15 +872,18 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
             except Exception:
                 ok = False
             return {"name": name, "port": port, "ok": ok,
+                    "optional": optional,
                     "ms": int((time.time() - t0) * 1000)}
 
+        # W3 清债（2026-10-25）：9104 card 已按 W3 回执退役（按需拉起，
+        # OPTIONAL_OFFLINE）；不再作为整体健康阻断，仅保留观测位。
         _spec = [("portal api", 8091, "/health"),
                  ("push hub", 8097, None),
                  ("hermes", 8787, None),
                  ("gate", 9101, None),
                  ("review", 9102, None),
                  ("qd bridge", 9103, None),
-                 ("card", 9104, None)]
+                 ("card", 9104, None, True)]
         with ThreadPoolExecutor(max_workers=7) as _ex:
             services = list(_ex.map(probe, _spec))
 
@@ -949,7 +953,7 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
         with ThreadPoolExecutor(max_workers=5) as _ex:
             tasks = list(_ex.map(task_one, _TASKS))
 
-        data = {"ok": all(s["ok"] for s in services),
+        data = {"ok": all(s["ok"] or s.get("optional") for s in services),
                 "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "services": services, "tasks": tasks}
         with _lock:
