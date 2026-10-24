@@ -111,7 +111,7 @@ async function openGoal(gid){
     <div class="muted">成功信号：${(currentGoal.success_signals||[]).map(esc).join('；')}</div>`;
   $('items').innerHTML = (currentGoal.items||[]).map(i=>`<div class="card"><b>${esc(i.title)}</b>
     <div class="muted">${esc(i.item_id)} · ${esc(i.outcome_kind)} · 第 ${i.attempt_no} 次尝试 · why_now：${esc(i.why_now)}</div>
-    <button class="ghost" data-i="${esc(i.item_id)}">打开事项</button></div>`).join('') || '<span class="muted">暂无事项</span>';
+    <button class="ghost" data-i="${esc(i.item_id)}">打开事项</button> <a class="ghost" style="text-decoration:none;padding:7px 12px;border:1px solid #bcd8e2;border-radius:8px;color:#0e7490" href="/os_software.html?item=${encodeURIComponent(i.item_id)}" target="_blank">软件面工作台</a></div>`).join('') || '<span class="muted">暂无事项</span>';
   document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>openItem(b.dataset.i));
 }
 async function openItem(iid){
