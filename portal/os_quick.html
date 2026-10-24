@@ -85,13 +85,32 @@ function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.c
 function stopVoice(){ try{ if(REC){ REC.onresult=null; REC.onerror=null; REC.onend=null; REC.abort(); } }catch(e){} REC=null; BUSY=false; $('b-start').classList.remove('listening'); }
 function finish(){ DONE=true; stopVoice(); $('b-start').textContent='🎤 说下一件事'; $('b-start').classList.remove('listening'); setStatus('完成'); }
 /* ============ 识别方式：优先本地 SenseVoice（离线、高精度），失败回退浏览器 ============ */
+async function fetchWithTimeout(url,opt,ms){
+  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),ms);
+  try{ return await fetch(url,Object.assign({signal:ctrl.signal},opt||{})); }
+  finally{ clearTimeout(to); }
+}
 async function checkAsr(){
   try{
     const r=await fetch('/api/os/asr/status'); const d=await r.json();
     if(d && d.engine==='sensevoice_local'){
-      ASR_MODE='local'; $('asr-badge').textContent='本地高精度 · SenseVoice（离线）'; $('asr-badge').className='badge';
-      setStatus('就绪（本地高精度识别；首次加载模型约 20-30 秒）');
-      return;
+      ASR_MODE='local';
+      if(d.loaded){
+        $('asr-badge').textContent='本地高精度 · SenseVoice（离线）'; $('asr-badge').className='badge';
+        setStatus('就绪（本地高精度识别）'); return;
+      }
+      $('asr-badge').textContent='本地模型加载中…'; $('asr-badge').className='badge';
+      setStatus('本地模型加载中（约 20-30 秒；加载好我会提示）');
+      for(let i=0;i<45;i++){
+        await new Promise(r2=>setTimeout(r2,2000));
+        try{
+          const st=await (await fetch('/api/os/asr/status')).json();
+          if(st.loaded){ $('asr-badge').textContent='本地高精度 · SenseVoice（离线）'; $('asr-badge').className='badge'; setStatus('本地高精度识别就绪'); say('sys','本地高精度识别就绪，可以说话了。'); return; }
+          if(st.engine!=='sensevoice_local') break;
+        }catch(e){ break; }
+      }
+      $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn';
+      setStatus('本地模型加载超时，已切浏览器识别'); return;
     }
     $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn';
   }catch(e){ $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn'; }
@@ -123,6 +142,52 @@ function encodeWav16k(samples){
   return ab;
 }
 function abToB64(ab){ const bytes=new Uint8Array(ab); let bin=''; for(let i=0;i<bytes.length;i+=0x8000){ bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); } return btoa(bin); }
+async function postAsr(b64, timeoutMs){
+  const r=await fetchWithTimeout('/api/os/asr',{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify({audio_b64:b64,lang:'zh'})}, timeoutMs||60000);
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok || d.ok===false) throw new Error(d.error||('HTTP '+r.status));
+  return String(d.text||'').trim();
+}
+function splitWavChunks(wavAb){
+  const bytes=new Uint8Array(wavAb); const data=bytes.subarray(44); const MAXDATA=44000;
+  if(data.length<=MAXDATA) return [bytes];
+  const out=[];
+  for(let off=0; off<data.length; off+=MAXDATA){
+    const part=data.subarray(off, Math.min(off+MAXDATA,data.length));
+    const buf=new Uint8Array(44+part.length); buf.set(bytes.subarray(0,44),0);
+    const dv=new DataView(buf.buffer); dv.setUint32(4,36+part.length,true); dv.setUint32(40,part.length,true);
+    buf.set(part,44); out.push(buf);
+  }
+  return out;
+}
+function mergeChunkTexts(texts){
+  let acc='';
+  for(let t of texts){
+    t=String(t||'').replace(/[嗯呃哦啊]+[。，]?$/,'').trim();
+    if(!t) continue;
+    if(acc && acc.slice(-1)===t.charAt(0)) t=t.slice(1);
+    acc+=t;
+  }
+  return acc.trim();
+}
+async function transcribeWav(wavAb){
+  const whole=new Uint8Array(wavAb);
+  // 服务端允许大请求时优先整段识别（更准）；否则回退分片
+  if(whole.length>44){
+    try{ const t=await postAsr(abToB64(whole.buffer), 90000); if(t) return t; }catch(e){ /* fallback chunks */ }
+  }
+  const chunks=splitWavChunks(wavAb); const texts=[];
+  for(const ch of chunks){
+    const b64=abToB64(ch.buffer);
+    let text=null;
+    for(let attempt=0; attempt<2 && text===null; attempt++){
+      try{ text=await postAsr(b64); }
+      catch(e){ if(attempt===0){ await new Promise(r=>setTimeout(r,2000)); } else throw e; }
+    }
+    if(text) texts.push(text);
+  }
+  return mergeChunkTexts(texts);
+}
 async function recordTurn(){
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.AudioContext){ return browserListen(); }
   let stream;
@@ -138,12 +203,11 @@ async function recordTurn(){
       try{
         const all=new Float32Array(chunks.reduce((a,c)=>a+c.length,0)); let off=0; chunks.forEach(c=>{ all.set(c,off); off+=c.length; });
         if(!loudSeen || all.length<rate*0.25){ setStatus('没听到声音，再说一次'); resolve(null); return; }
-        const s16=resampleTo16k(all, rate); const b64=abToB64(encodeWav16k(s16));
+        const wav=encodeWav16k(resampleTo16k(all, rate));
         setStatus('识别中…（本地 SenseVoice）');
-        const r=await fetch('/api/os/asr',{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify({audio_b64:b64,lang:'zh'})});
-        const d=await r.json().catch(()=>({}));
-        if(!r.ok || d.ok===false){ setStatus('本地识别不可用，切浏览器识别'); ASR_MODE='browser'; $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn'; resolve(await browserListen()); return; }
-        const text=String(d.text||'').trim();
+        let text=null;
+        try{ text=await transcribeWav(wav); }
+        catch(e){ setStatus('本地识别不可用，切浏览器识别'); ASR_MODE='browser'; $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn'; resolve(await browserListen()); return; }
         if(!text){ setStatus('没听清，再说一次'); resolve(null); return; }
         resolve(text);
       }catch(e){ setStatus('识别失败，切浏览器识别'); ASR_MODE='browser'; resolve(await browserListen()); }
