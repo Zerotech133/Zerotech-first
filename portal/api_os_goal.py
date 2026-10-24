@@ -38,6 +38,18 @@ GOAL_ASSUME_RE = re.compile(r"^/api/os/goal/([A-Za-z0-9-]+)/assumption$")
 ITEM_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)$")
 ITEM_OUTCOME_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/outcome$")
 ITEM_EVIDENCE_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/evidence$")
+# G1 软件面流程路由
+BRIEF_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/brief$")
+CARD_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/card$")
+CARD_SELECT_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/card/select$")
+GRANT_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/grant$")
+WO_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/workorder$")
+CLAIM_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/claim$")
+EXEC_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/execute$")
+TRIAL_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/trial$")
+VERDICT_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/verdict$")
+REWORK_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/rework$")
+CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain$")
 
 
 def get_store(base_dir: Optional[str] = None) -> S.OsGoalStore:
@@ -65,6 +77,13 @@ def handle_get(store: S.OsGoalStore, path: str,
             return 200, {"ok": True, **store.get_goal(m.group(1))}
         except KeyError as exc:
             return _err(404, "not_found", str(exc))
+    m = CHAIN_RE.match(path)
+    if m:
+        try:
+            import os_software_flow as F
+            return 200, {"ok": True, **F.chain_report(store, m.group(1))}
+        except (KeyError, C.ContractError) as exc:
+            return _err(404, "not_found", str(exc))
     m = ITEM_EVIDENCE_RE.match(path)
     if m:
         try:
@@ -85,6 +104,9 @@ def handle_post(store: S.OsGoalStore, path: str,
     if not isinstance(body, dict):
         return _err(400, "bad_body", "body 必须是 JSON 对象")
     try:
+        handled = _handle_flow(store, path, body)
+        if handled is not None:
+            return handled
         if path == "/api/os/goal":
             ev = store.create_goal(
                 statement=str(body.get("statement") or ""),
@@ -134,6 +156,77 @@ def handle_post(store: S.OsGoalStore, path: str,
     except S.LedgerError as exc:
         return _err(500, "ledger_error", str(exc))
 
+
+def _handle_flow(store, path, body):
+    """G1 软件面流程路由（同一账本、隔离链）；未命中返回 None。"""
+    import os_software_flow as F
+    m = BRIEF_RE.match(path)
+    if m:
+        ev = F.freeze_brief(store, m.group(1), body.get("goals") or [],
+                            body.get("success_criteria") or [],
+                            non_goals=body.get("non_goals"),
+                            constraints=body.get("constraints"),
+                            idem=body.get("idempotency_key"))
+        return 201, {"ok": True, "event_id": ev["event_id"]}
+    m = CARD_RE.match(path)
+    if m:
+        ev = F.freeze_card(store, m.group(1), body.get("recommended") or {},
+                           body.get("discarded") or [],
+                           str(body.get("acceptance_method") or ""),
+                           risks=body.get("risks"),
+                           evidence_refs=body.get("evidence_refs"),
+                           card_version=str(body.get("card_version") or "c1"),
+                           idem=body.get("idempotency_key"))
+        return 201, {"ok": True, "event_id": ev["event_id"]}
+    m = CARD_SELECT_RE.match(path)
+    if m:
+        ev = F.select_card(store, m.group(1),
+                           str(body.get("card_version") or ""),
+                           idem=body.get("idempotency_key"))
+        return 200, {"ok": True, "event_id": ev["event_id"]}
+    m = GRANT_RE.match(path)
+    if m:
+        ev = F.sign_grant(store, m.group(1),
+                          str(body.get("card_version") or ""),
+                          body.get("actions") or [],
+                          valid_until=body.get("valid_until"),
+                          idem=body.get("idempotency_key"))
+        return 200, {"ok": True, "event_id": ev["event_id"]}
+    m = WO_RE.match(path)
+    if m:
+        ev = F.create_workorder(store, m.group(1),
+                                idem=body.get("idempotency_key"))
+        return 201, {"ok": True, "event_id": ev["event_id"]}
+    m = CLAIM_RE.match(path)
+    if m:
+        ev = F.claim(store, m.group(1),
+                     consumer_id=str(body.get("consumer_id") or "DEV-ISOLATED"),
+                     method=str(body.get("method") or "simulated"),
+                     isolation_label=body.get("isolation_label"),
+                     idem=body.get("idempotency_key"))
+        return 200, {"ok": True, "event_id": ev["event_id"]}
+    m = EXEC_RE.match(path)
+    if m:
+        result = F.execute(store, m.group(1), idem=body.get("idempotency_key"))
+        return 201, {"ok": True, **result}
+    m = TRIAL_RE.match(path)
+    if m:
+        ev = F.open_trial(store, m.group(1), idem=body.get("idempotency_key"))
+        return 200, {"ok": True, "event_id": ev["event_id"]}
+    m = VERDICT_RE.match(path)
+    if m:
+        ev = F.record_verdict(store, m.group(1),
+                              str(body.get("decision") or ""),
+                              str(body.get("feedback") or ""),
+                              idem=body.get("idempotency_key"))
+        return 201, {"ok": True, "event_id": ev["event_id"]}
+    m = REWORK_RE.match(path)
+    if m:
+        result = F.rework(store, m.group(1),
+                          str(body.get("feedback") or ""),
+                          idem=body.get("idempotency_key"))
+        return 201, {"ok": True, **result}
+    return None
 
 class Handler:
     """portal_api.Handler 多继承 mixin（模块名绑定：portal_api 里 import api_os_goal）。"""
