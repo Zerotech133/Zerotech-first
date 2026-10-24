@@ -118,6 +118,19 @@ async function checkAsr(){
     else { $('asr-badge').textContent='本地 ASR 不可用'; }
   }catch(e){ $('asr-badge').textContent='本地 ASR 不可用'; }
 }
+async function recoverAsr(){
+  try{
+    setStatus('本地识别熔断，正在自动恢复（约 10-30 秒）…');
+    await fetch('/api/os/asr/recover',{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:'{}'});
+    for(let i=0;i<30;i++){
+      await new Promise(r=>setTimeout(r,2000));
+      const d=await (await fetch('/api/os/asr/status')).json();
+      if(d.loaded && !d.broken){ $('asr-badge').textContent='本地 ASR 就绪'; setStatus('本地识别已恢复，请点“重录本句”'); return; }
+      if(d.broken){ break; }
+    }
+    setStatus('自动恢复未完成，请刷新页面或稍后再试');
+  }catch(e){ setStatus('自动恢复失败：'+e.message); }
+}
 async function recordOnce(){
   if(RECORDING) return;
   const item=ITEMS[IDX];
@@ -142,7 +155,12 @@ async function recordOnce(){
       $('score-line').textContent=exact?'✅ 与目标完全一致':'⚠ 有差异 · CER '+(c*100).toFixed(1)+'%';
       $('b-next').disabled=false; $('b-retry').disabled=false;
       RESULTS[IDX]={text:item.text,heard:text,cer:c,exact,kind:item.kind};
-    }catch(e){ $('heard').textContent='识别失败：'+e.message; showErr('本地识别失败：'+e.message+'（可点重录本句）'); $('b-retry').disabled=false; }
+    }catch(e){
+      $('heard').textContent='识别失败：'+e.message;
+      showErr('本地识别失败：'+e.message+'（可点重录本句）');
+      $('b-retry').disabled=false;
+      if(String(e.message).includes('asr_unavailable')) recoverAsr();
+    }
   };
   REC_STOP=finish;
   proc.onaudioprocess=e=>{ const d=new Float32Array(e.inputBuffer.getChannelData(0)); chunks.push(d);
