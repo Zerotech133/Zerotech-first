@@ -44,7 +44,7 @@
   <div class="banner">默认授权：隔离环境 · 4 个可逆动作 · 24 小时 · 可撤回。推荐卡为规则辅助（非模型结论）；认领为模拟认领（未获真实认领）；不接生产/交易/外发。<span class="say" id="timer"></span></div>
 
   <div class="chat" id="chat">
-    <div class="msg sys">您好。第 1 句说想法（做个页面，或一份商业计划），第 2 句听卡说"行"，第 3 句看成果说"接受"或"这里改"。点下面 🎤 <b>点一下，说想法</b>，之后像聊天一样。</div>
+    <div class="msg sys">您好。点 🎤 <b>点一下，说想法</b>，说完我会提示您再点；不会自动开麦，也不会自己回声循环。之后按提示点 🎤 说话、看结果点按钮即可。</div>
   </div>
 
   <p class="err" id="err" hidden></p>
@@ -79,6 +79,7 @@ let ASR_MODE='browser', REC=null, VOICE_READY=false;
 let LAST_SPEECH_NORM='', CARD_ROUNDS=0, VERDICT_ROUNDS=0, PAUSED=false;
 let RECORDING=false, RECORD_STOP=null;
 let TEXT_ONLY=false;
+let PENDING_HANDLER=null;
 let FAILS=0;
 function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
 function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); }
@@ -273,16 +274,19 @@ function browserListen(){
 function speakThen(text, handler){
   if(TEXT_ONLY){ setStatus(''); if(String(text).length<=80) say('sys', esc(text)); return; }
   say('sys', esc(text));
-  const go=()=>{ if(DONE||PAUSED) return; if(handler) setTimeout(()=>nextTurn(handler),900); };
-  if(!('speechSynthesis' in window)){ setTimeout(go,600); return; }
+  const done=()=>{ if(DONE||PAUSED) return;
+    if(handler){ PENDING_HANDLER=handler;
+      setStatus('说完了。点 🎤 该您说了（不会自动开麦）');
+      $('b-start').textContent='🎤 该您说了（点一下）'; } };
+  if(!('speechSynthesis' in window)){ setTimeout(done,300); return; }
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.04;
-    let ended=false; const once=()=>{ if(ended) return; ended=true; go(); };
+    let ended=false; const once=()=>{ if(ended) return; ended=true; done(); };
     u.onend=once; u.onerror=once;
     setTimeout(once, Math.max(8000, Math.min(45000, 5000 + text.length*220)));
     speechSynthesis.speak(u);
-  }catch(e){ go(); }
+  }catch(e){ done(); }
 }
 async function nextTurn(handler){
   if(DONE||PAUSED) return;
@@ -411,6 +415,7 @@ async function repromptVerdict(msg){
 function showTypePanel(){ const tpl=$('type_panel_tpl'); $('chat').appendChild(tpl.content.cloneNode(true)); $('type_panel').scrollIntoView({block:'end'}); }
 $('b-start').onclick=async()=>{
   if(TEXT_ONLY){ showTypePanel(); setStatus('纯文字模式：在输入框写一句，点“出卡”'); return; }
+  if(PENDING_HANDLER){ const h=PENDING_HANDLER; PENDING_HANDLER=null; $('b-start').textContent='🎤 正在听…'; nextTurn(h); return; }
   if(RECORDING){ try{ RECORD_STOP&&RECORD_STOP(); }catch(e){} setStatus('已停止录音；再点一次重新开始'); return; }
   clearErr(); PAUSED=false; CARD_ROUNDS=0; VERDICT_ROUNDS=0; LAST_SPEECH_NORM=''; FAILS=0; await ensureAsrMode(); if(DONE){ DONE=false; $('b-start').textContent='🎤 点一下，说想法'; } stopVoice(); say('sys','好，我在听。您想做什么？'); startTimer(); nextTurn(handleIdea); };
 $('b-stop').onclick=()=>{ pauseListening('已暂停自动听'); };
