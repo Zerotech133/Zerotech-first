@@ -1,0 +1,164 @@
+# -*- coding: utf-8 -*-
+"""OS 目标/事项/成果接口（G0 骨架）
+
+- 纯函数 `handle_get/handle_post`：可单测，不依赖 HTTP；
+- `Handler` mixin：供 portal_api.Handler 多继承；portal_api 只加 1 行 import + 2 行分发；
+- 仅本机单用户（沿用 portal_api 本机放行；8091 绑 127.0.0.1）；非本机须 X-Portal-Token；
+- 本模块只写 `portal/data/os_goals/`（gitignored），不碰真实账本/现役服务。
+
+路由：
+  GET  /api/os/health                    健康与计数
+  GET  /api/os/goals                     目标列表
+  GET  /api/os/goal/{gid}                目标详情（含事项）
+  GET  /api/os/item/{iid}                事项详情（含成果）
+  GET  /api/os/item/{iid}/evidence       证据包（事件 + 判据报告）
+  POST /api/os/goal                      建目标（statement/target_user/assumptions/success_signals）
+  POST /api/os/goal/{gid}/assumption     假设状态迁移
+  POST /api/os/item                      建事项（goal_id/title/why_now/outcome_kind/attempt_no）
+  POST /api/os/item/{iid}/outcome        产出成果（outcome_kind/version/content_ref/sha256/citations）
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+from typing import Any, Dict, Optional, Tuple
+
+try:
+    import os_goal_contract as C
+    import os_goal_store as S
+except ImportError:  # pragma: no cover - 包内导入
+    from . import os_goal_contract as C  # type: ignore
+    from . import os_goal_store as S  # type: ignore
+
+_STORE: Optional[S.OsGoalStore] = None
+MAX_BODY = 64 * 1024
+GOAL_RE = re.compile(r"^/api/os/goal/([A-Za-z0-9-]+)$")
+GOAL_ASSUME_RE = re.compile(r"^/api/os/goal/([A-Za-z0-9-]+)/assumption$")
+ITEM_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)$")
+ITEM_OUTCOME_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/outcome$")
+ITEM_EVIDENCE_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/evidence$")
+
+
+def get_store(base_dir: Optional[str] = None) -> S.OsGoalStore:
+    global _STORE
+    if base_dir:
+        return S.OsGoalStore(base_dir)
+    if _STORE is None:
+        _STORE = S.OsGoalStore()
+    return _STORE
+
+
+def _err(status: int, code: str, message: str) -> Tuple[int, Dict[str, Any]]:
+    return status, {"ok": False, "error": code, "message": message}
+
+
+def handle_get(store: S.OsGoalStore, path: str,
+               qs: str = "") -> Tuple[int, Dict[str, Any]]:
+    if path == "/api/os/health":
+        return 200, {"ok": True, **store.health()}
+    if path == "/api/os/goals":
+        return 200, {"ok": True, "goals": store.list_goals()}
+    m = GOAL_RE.match(path)
+    if m:
+        try:
+            return 200, {"ok": True, **store.get_goal(m.group(1))}
+        except KeyError as exc:
+            return _err(404, "not_found", str(exc))
+    m = ITEM_EVIDENCE_RE.match(path)
+    if m:
+        try:
+            return 200, {"ok": True, **store.evidence_bundle(m.group(1))}
+        except KeyError as exc:
+            return _err(404, "not_found", str(exc))
+    m = ITEM_RE.match(path)
+    if m:
+        try:
+            return 200, {"ok": True, **store.get_item(m.group(1))}
+        except KeyError as exc:
+            return _err(404, "not_found", str(exc))
+    return _err(404, "not_found", "no such route: %s" % path)
+
+
+def handle_post(store: S.OsGoalStore, path: str,
+                body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    if not isinstance(body, dict):
+        return _err(400, "bad_body", "body 必须是 JSON 对象")
+    try:
+        if path == "/api/os/goal":
+            ev = store.create_goal(
+                statement=str(body.get("statement") or ""),
+                target_user=str(body.get("target_user") or ""),
+                assumptions=body.get("assumptions") or [],
+                success_signals=body.get("success_signals") or [],
+                idem=body.get("idempotency_key"))
+            return 201, {"ok": True, "goal_id": ev["payload"]["goal_id"],
+                         "event_id": ev["event_id"], "seq": ev["seq"]}
+        m = GOAL_ASSUME_RE.match(path)
+        if m:
+            ev = store.update_assumption(
+                goal_id=m.group(1),
+                assumption_id=str(body.get("assumption_id") or ""),
+                status=str(body.get("status") or ""),
+                evidence_refs=body.get("evidence_refs") or [],
+                reason=str(body.get("reason") or ""),
+                idem=body.get("idempotency_key"))
+            return 200, {"ok": True, "event_id": ev["event_id"], "seq": ev["seq"]}
+        if path == "/api/os/item":
+            ev = store.create_item(
+                goal_id=str(body.get("goal_id") or ""),
+                title=str(body.get("title") or ""),
+                why_now=str(body.get("why_now") or ""),
+                outcome_kind=str(body.get("outcome_kind") or ""),
+                attempt_no=int(body.get("attempt_no") or 1),
+                idem=body.get("idempotency_key"))
+            return 201, {"ok": True, "item_id": ev["payload"]["item_id"],
+                         "event_id": ev["event_id"], "seq": ev["seq"]}
+        m = ITEM_OUTCOME_RE.match(path)
+        if m:
+            ev = store.produce_outcome(
+                item_id=m.group(1),
+                outcome_kind=str(body.get("outcome_kind") or ""),
+                version=str(body.get("version") or ""),
+                content_ref=str(body.get("content_ref") or ""),
+                sha256=str(body.get("sha256") or ""),
+                citations=body.get("citations") or [],
+                evidence_refs=body.get("evidence_refs") or [],
+                idem=body.get("idempotency_key"))
+            return 201, {"ok": True, "event_id": ev["event_id"], "seq": ev["seq"]}
+        return _err(404, "not_found", "no such route: %s" % path)
+    except C.DuplicateKey as exc:
+        return _err(409, "duplicate_idempotency_key", str(exc))
+    except C.ContractError as exc:
+        return _err(422, "contract_violation", str(exc))
+    except S.LedgerError as exc:
+        return _err(500, "ledger_error", str(exc))
+
+
+class Handler:
+    """portal_api.Handler 多继承 mixin（模块名绑定：portal_api 里 import api_os_goal）。"""
+
+    def _os_goal_get(self, path: str, qs: str = "") -> None:
+        status, payload = handle_get(self._os_goal_store(), path, qs)
+        self._json(payload, status)
+
+    def _os_goal_post(self, path: str) -> None:
+        if not self._check_portal_token():
+            return self._json({"ok": False, "error": "forbidden",
+                               "message": "非本机请求需 X-Portal-Token"}, 403)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            return self._json({"ok": False, "error": "bad_length"}, 400)
+        if length < 0 or length > MAX_BODY:
+            return self._json({"ok": False, "error": "bad_length"}, 400)
+        raw = self.rfile.read(length) if length else b"{}"
+        try:
+            body = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return self._json({"ok": False, "error": "bad_json"}, 400)
+        status, payload = handle_post(self._os_goal_store(), path, body)
+        self._json(payload, status)
+
+    def _os_goal_store(self) -> S.OsGoalStore:
+        return get_store(os.environ.get("OS_GOAL_DATA_DIR") or None)
