@@ -50,6 +50,8 @@ TRIAL_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/trial$")
 VERDICT_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/verdict$")
 REWORK_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/rework$")
 CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain$")
+PREVIEW_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/workspace/([A-Za-z0-9._-]+)$")
+PREVIEW_ALLOWED = ("index.html", "test.log")
 
 
 def get_store(base_dir: Optional[str] = None) -> S.OsGoalStore:
@@ -63,6 +65,28 @@ def get_store(base_dir: Optional[str] = None) -> S.OsGoalStore:
 
 def _err(status: int, code: str, message: str) -> Tuple[int, Dict[str, Any]]:
     return status, {"ok": False, "error": code, "message": message}
+
+
+def read_workspace_file(store, item_id, filename):
+    """只读预览：白名单文件 + 路径限定在账本根内（G1b）。"""
+    if filename not in PREVIEW_ALLOWED:
+        return 404, "text/plain; charset=utf-8", b"not allowed"
+    try:
+        store.get_item(item_id)
+    except KeyError:
+        return 404, "text/plain; charset=utf-8", b"item not found"
+    base = os.path.realpath(store.base_dir)
+    ws = os.path.realpath(os.path.join(base, "items", item_id, "workspace"))
+    if not ws.startswith(base + os.sep):
+        return 403, "text/plain; charset=utf-8", b"forbidden"
+    path = os.path.realpath(os.path.join(ws, filename))
+    if not path.startswith(ws + os.sep) or not os.path.isfile(path):
+        return 404, "text/plain; charset=utf-8", b"not found"
+    ctype = ("text/html; charset=utf-8" if filename.endswith(".html")
+             else "text/plain; charset=utf-8")
+    with open(path, "rb") as fh:
+        data = fh.read(1024 * 1024)
+    return 200, ctype, data
 
 
 def handle_get(store: S.OsGoalStore, path: str,
@@ -232,6 +256,20 @@ class Handler:
     """portal_api.Handler 多继承 mixin（模块名绑定：portal_api 里 import api_os_goal）。"""
 
     def _os_goal_get(self, path: str, qs: str = "") -> None:
+        m = PREVIEW_RE.match(path)
+        if m:
+            status, ctype, body = read_workspace_file(
+                self._os_goal_store(), m.group(1), m.group(2))
+            self.send_response(status)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except OSError:
+                pass
+            return
         status, payload = handle_get(self._os_goal_store(), path, qs)
         self._json(payload, status)
 

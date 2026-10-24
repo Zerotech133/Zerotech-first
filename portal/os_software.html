@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>零界 · 软件面工作台（G1b）</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  .wrap{max-width:1080px;margin:0 auto;padding:16px 20px 70px}
+  .banner{border-left:4px solid #936224;background:#faf3e6;padding:10px 14px;border-radius:6px;margin:10px 0 16px;font-size:13px}
+  .muted{color:#5a6f83;font-size:13px}
+  .card{background:#fff;border:1px solid #dbe5ee;border-radius:12px;padding:14px 16px;margin:10px 0}
+  .gates{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .g{padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;background:#eef2f5;color:#54677a;border:1px solid #dbe5ee}
+  .g.PASS{background:#e9f5ee;color:#227a4b;border-color:#bcdcc9}
+  .g.ISOLATED_ONLY{background:#faf3e6;color:#936224;border-color:#e6d5b0}
+  .g.BLOCKED,.g.FAIL{background:#fdeeea;color:#b3402e;border-color:#eec5bd}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:6px 0}
+  label{display:grid;gap:4px;font-size:12px;color:#5a6f83}
+  input,textarea,select{font:inherit;padding:8px 10px;border:1px solid #bfd6e2;border-radius:8px;min-width:170px}
+  textarea{min-width:300px;min-height:54px}
+  button{cursor:pointer;background:#0e7490;color:#fff;border:0;border-radius:8px;padding:8px 13px;font:600 13px inherit}
+  button.ghost{background:#fff;color:#0e7490;border:1px solid #bcd8e2}
+  button.warn{background:#b3402e}
+  .step{border-left:3px solid #0e7490;padding:6px 0 6px 12px;margin:12px 0}
+  .step h3{margin:0 0 6px;font-size:15px}
+  .err{color:#b3402e;white-space:pre-wrap;font-size:13px}
+  pre{background:#f7fafc;border:1px solid #e3ecf2;border-radius:8px;padding:10px;overflow:auto;font-size:12px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>软件面工作台 · G1b</h1>
+  <p class="muted">同一本账上的软件面五步：需求 → 推荐卡 → 本人授权 → 隔离执行/自检 → 本人试用与验收。本页只调用本机 <code>/api/os/*</code>；不触碰现役服务与真实账本。</p>
+  <div class="banner">隔离环境：认领为<b>模拟认领（未获真实认领）</b>；推荐卡为<b>规则辅助（非模型结论）</b>；不接生产/真实交易/外发。页面可直接打开，但接口需 8091 重启后才在现网生效。</div>
+
+  <section class="card">
+    <div class="row">
+      <label>事项 ID<input id="iid" placeholder="ITM-20261024-0001"></label>
+      <button id="load">载入</button>
+      <span class="muted" id="title">—</span>
+    </div>
+    <div class="gates" id="gates"></div>
+    <pre id="chain" hidden></pre>
+  </section>
+
+  <section class="card">
+    <div class="step">
+      <h3>① 需求：冻结目标与验收标准</h3>
+      <div class="row">
+        <label>目标（一行一条）<textarea id="goals">把一句需求做成可试用单页</textarea></label>
+        <label>验收标准（一行一条：标准 | 验证方式）<textarea id="criteria">页面可打开且含版本标记 | 静态自检 data-artifact</textarea></label>
+      </div>
+      <button id="b-brief">本人冻结需求</button>
+    </div>
+    <div class="step">
+      <h3>② 推荐卡：方案与舍弃理由（规则辅助，非模型结论）</h3>
+      <div class="row">
+        <label>推荐方案<input id="card-option" value="A｜隔离单页"></label>
+        <label>为什么<input id="card-why" value="可逆、可试用"></label>
+        <label>舍弃方案<input id="card-drop" value="B｜改现网首页"></label>
+        <label>舍弃理由<input id="card-drop-why" value="不可逆"></label>
+        <label>验收办法<input id="card-accept" value="本人打开试用并给一句反馈"></label>
+        <label>卡版本<input id="card-version" value="c1"></label>
+      </div>
+      <button id="b-card">生成推荐卡</button>
+    </div>
+    <div class="step">
+      <h3>③ 本人选卡 + 收窄授权（只可取消，不可新增）</h3>
+      <div class="row">
+        <label>选卡版本<input id="sel-version" value="c1"></label>
+        <button id="b-select">本人选卡</button>
+      </div>
+      <div class="row" id="actions">
+        <label><input type="checkbox" class="act" value="prototype.generate" checked> prototype.generate</label>
+        <label><input type="checkbox" class="act" value="prototype.preview" checked> prototype.preview</label>
+        <label><input type="checkbox" class="act" value="prototype.test" checked> prototype.test</label>
+        <label><input type="checkbox" class="act" value="workspace.cleanup" checked> workspace.cleanup</label>
+      </div>
+      <button id="b-grant">本人签授权（隔离环境）</button>
+    </div>
+    <div class="step">
+      <h3>④ 工单 / 隔离认领 / 执行自检</h3>
+      <div class="row">
+        <button class="ghost" id="b-wo">建工单</button>
+        <button class="ghost" id="b-claim">隔离认领（模拟）</button>
+        <button id="b-exec">执行并做静态自检</button>
+        <button class="ghost" id="b-preview" disabled>打开产物</button>
+      </div>
+      <p class="muted" id="artifact">尚未产出</p>
+    </div>
+    <div class="step">
+      <h3>⑤ 本人试用与反馈</h3>
+      <div class="row">
+        <button id="b-trial">本人打开试用</button>
+        <label>反馈（返工时必填）<textarea id="feedback" placeholder="哪一点要改"></textarea></label>
+        <button id="b-accept">接受</button>
+        <button class="warn" id="b-rework">要求返工</button>
+      </div>
+      <p class="muted">返工后需本人重新走 ③④⑤（需求 v2 / 卡 c2 由返工生成；不代签）。</p>
+    </div>
+  </section>
+
+  <p class="err" id="err" hidden></p>
+  <p class="muted">快捷提示：本页所有动作均为本机会话；页面打不开或接口 404 说明 8091 尚未重启加载新路由。</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const showErr = m => { const e=$('err'); e.hidden=false; e.textContent=String(m); };
+const clearErr = () => { $('err').hidden=true; };
+let ITEM=null, LAST_ART=null;
+function lines(id){ return $(id).value.split('\n').map(s=>s.trim()).filter(Boolean); }
+async function api(path, body){
+  const opt = body===undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+  const r = await fetch(path, opt);
+  const d = await r.json().catch(()=>({ok:false,error:'bad_json'}));
+  if(!r.ok || d.ok===false) throw new Error((d.error||r.status)+': '+(d.message||''));
+  return d;
+}
+async function load(){
+  clearErr(); ITEM = $('iid').value.trim(); if(!ITEM){ showErr('先填事项 ID'); return; }
+  const item = await api('/api/os/item/'+encodeURIComponent(ITEM));
+  $('title').textContent = item.title + ' · ' + item.outcome_kind + ' · 第' + item.attempt_no + '次尝试';
+  try{ const ch = await api('/api/os/item/'+encodeURIComponent(ITEM)+'/chain'); renderGates(ch); }catch(e){ renderGates(null, e.message); }
+  if(item.outcomes && item.outcomes.length){ LAST_ART = item.outcomes[item.outcomes.length-1]; showArtifact(LAST_ART); }
+}
+function renderGates(ch, err){
+  const el=$('gates'); el.innerHTML='';
+  if(!ch){ el.innerHTML='<span class="g">chain 不可用：'+ (err||'') +'</span>'; return; }
+  Object.entries(ch.gates||{}).forEach(([k,v])=>{ const s=document.createElement('span'); s.className='g '+(v.status||''); s.textContent=k+' '+(v.status||''); el.appendChild(s); });
+  const c=$('chain'); c.hidden=false; c.textContent=JSON.stringify({verdict:ch.verdict,exit_code:ch.exit_code,checks:ch.checks,honesty:ch.honesty},null,1);
+}
+function showArtifact(a){
+  if(!a) return;
+  LAST_ART=a; $('artifact').textContent='产物 '+a.version+' · '+a.sha256+' · 预览：/api/os/item/'+ITEM+'/workspace/index.html';
+  $('b-preview').disabled=false;
+}
+function actPost(suffix, body){ return api('/api/os/item/'+encodeURIComponent(ITEM)+suffix, body||{}); }
+$('load').onclick=()=>load().catch(e=>showErr(e.message));
+$('b-brief').onclick=()=>{ const criteria=lines('criteria').map((s,n)=>{const p=s.split('|');return {id:'SC'+(n+1),statement:(p[0]||'').trim(),verify_method:(p[1]||'人工确认').trim()};});
+  actPost('/brief',{goals:lines('goals'),success_criteria:criteria}).then(load).catch(e=>showErr(e.message)); };
+$('b-card').onclick=()=>{ actPost('/card',{recommended:{option:$('card-option').value,why:$('card-why').value},discarded:[{option:$('card-drop').value,why:$('card-drop-why').value}],acceptance_method:$('card-accept').value,card_version:$('card-version').value}).then(load).catch(e=>showErr(e.message)); };
+$('b-select').onclick=()=>{ actPost('/card/select',{card_version:$('sel-version').value}).then(load).catch(e=>showErr(e.message)); };
+$('b-grant').onclick=()=>{ const actions=[...document.querySelectorAll('.act:checked')].map(x=>x.value); if(!actions.length) return showErr('至少保留 1 个动作'); actPost('/grant',{card_version:$('sel-version').value,actions}).then(load).catch(e=>showErr(e.message)); };
+$('b-wo').onclick=()=>{ actPost('/workorder').then(load).catch(e=>showErr(e.message)); };
+$('b-claim').onclick=()=>{ actPost('/claim',{method:'simulated',isolation_label:'隔离验证/未获真实认领'}).then(load).catch(e=>showErr(e.message)); };
+$('b-exec').onclick=()=>{ actPost('/execute').then(d=>{ showArtifact(d.artifact|| (d.artifact= {version:'a?', sha256:'—'})); return load(); }).catch(e=>showErr(e.message)); };
+$('b-preview').onclick=()=>{ if(!ITEM) return; window.open('/api/os/item/'+encodeURIComponent(ITEM)+'/workspace/index.html','_blank'); };
+$('b-trial').onclick=()=>{ actPost('/trial').then(()=>{ $('b-preview').disabled=false; return load(); }).catch(e=>showErr(e.message)); };
+$('b-accept').onclick=()=>{ actPost('/verdict',{decision:'accepted',feedback:$('feedback').value}).then(load).catch(e=>showErr(e.message)); };
+$('b-rework').onclick=()=>{ const fb=$('feedback').value.trim(); if(!fb) return showErr('返工必须写一句修改意见'); actPost('/verdict',{decision:'changes_requested',feedback:fb}).then(()=>actPost('/rework',{feedback:fb})).then(load).catch(e=>showErr(e.message)); };
+const q=new URLSearchParams(location.search); if(q.get('item')){ $('iid').value=q.get('item'); load().catch(e=>showErr(e.message)); }
+</script>
+</body>
+</html>
