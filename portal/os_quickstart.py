@@ -51,7 +51,10 @@ def _valid_until() -> str:
 
 def _next_id() -> str:
     _SEQ[0] += 1
-    return "QK-%s-%03d" % (time.strftime("%Y%m%d"), _SEQ[0])
+    # 2026-10-24 QUICKFIX3: 进程重启后 _SEQ 归零会复用旧草稿 ID，导致确认时
+    # 幂等键撞上账本旧事件（duplicate_idempotency_key）。加入进程内时间片。
+    return "QK-%s-%s-%03d" % (time.strftime("%Y%m%d"), time.strftime("%H%M%S"),
+                             _SEQ[0])
 
 
 def build_card(text: str, edits: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

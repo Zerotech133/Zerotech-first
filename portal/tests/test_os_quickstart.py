@@ -105,3 +105,9 @@ def test_quick_page_three_piece_and_turns():
     assert 'nav.js" defer' in text and "tokens.css" in text and "shortscreen.js" in text
     for kw in ("第 1 句", "第 2 句", "第 3 句", "按这个办", "这里改"):
         assert kw in text
+
+def test_draft_ids_unique_after_seq_reset(store):
+    a = Q.create_draft("第一件事")["draft_id"]
+    Q._SEQ[0] = 0  # 模拟进程重启后的序号归零
+    b = Q.create_draft("第二件事")["draft_id"]
+    assert a != b
