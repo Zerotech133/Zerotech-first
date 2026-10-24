@@ -105,7 +105,7 @@ function fetchTimeout(url,opt,ms){ const c=new AbortController(); const t=setTim
   return fetch(url,Object.assign({signal:c.signal},opt||{})).finally(()=>clearTimeout(t)); }
 async function transcribe(wavAb, timeoutMs){
   const b64=abToB64(wavAb);
-  const r=await fetchTimeout('/api/os/asr',{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'eval'},body:JSON.stringify({audio_b64:b64,lang:'zh'})}, timeoutMs||90000);
+  const r=await fetchTimeout('/api/os/asr',{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify({audio_b64:b64,lang:'zh'})}, timeoutMs||90000);
   const d=await r.json().catch(()=>({}));
   if(!r.ok||d.ok===false) throw new Error(d.error||('HTTP '+r.status));
   return String(d.text||'').trim();
@@ -140,7 +140,7 @@ async function recordOnce(){
       $('score-line').textContent=exact?'✅ 与目标完全一致':'⚠ 有差异 · CER '+(c*100).toFixed(1)+'%';
       $('b-next').disabled=false; $('b-retry').disabled=false;
       RESULTS[IDX]={text:item.text,heard:text,cer:c,exact,kind:item.kind};
-    }catch(e){ $('heard').textContent='识别失败：'+e.message; showErr('本地识别失败：'+e.message); }
+    }catch(e){ $('heard').textContent='识别失败：'+e.message; showErr('本地识别失败：'+e.message+'（可点重录本句）'); $('b-retry').disabled=false; }
   };
   REC_STOP=finish;
   proc.onaudioprocess=e=>{ const d=new Float32Array(e.inputBuffer.getChannelData(0)); chunks.push(d);
@@ -152,7 +152,7 @@ async function recordOnce(){
     else if(!loud && now-t0>4000 && !warned){ warned=true; $('heard').textContent='没收到声音（音量 '+Math.round(level*400)+'），请靠近麦克风或检查系统输入设备…'; }
     else if(now-t0>15000 || (!loud && now-t0>9000)) finish();
   },120);
-  $('b-rec').onclick=()=>{ if(RECORDING && REC_STOP) { RECORDING=false; REC_STOP(); } };
+
 }
 function render(){
   const item=ITEMS[IDX];
@@ -180,7 +180,10 @@ function summary(){
   $('detail').innerHTML=rows;
   window.__RESULT__={pass,cmdOk,longCer,rows:RESULTS,at:new Date().toISOString()};
 }
-$('b-rec').onclick=()=>recordOnce();
+$('b-rec').onclick=()=>{
+  if(RECORDING){ RECORDING=false; try{ REC_STOP&&REC_STOP(); }catch(e){} return; }
+  recordOnce();
+};
 $('b-retry').onclick=()=>{ RESULTS[IDX]=null; render(); };
 $('b-next').onclick=()=>{ IDX++; if(IDX>=ITEMS.length){ summary(); } else { render(); } };
 $('b-copy').onclick=async()=>{ const t=JSON.stringify(window.__RESULT__||{},null,1); try{ await navigator.clipboard.writeText(t); $('b-copy').textContent='已复制'; }catch(e){ showErr(t); } };
