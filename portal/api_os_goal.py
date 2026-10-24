@@ -33,6 +33,7 @@ except ImportError:  # pragma: no cover - 包内导入
 
 _STORE: Optional[S.OsGoalStore] = None
 MAX_BODY = 64 * 1024
+ASR_MAX_BODY = 12 * 1024 * 1024
 GOAL_RE = re.compile(r"^/api/os/goal/([A-Za-z0-9-]+)$")
 GOAL_ASSUME_RE = re.compile(r"^/api/os/goal/([A-Za-z0-9-]+)/assumption$")
 ITEM_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)$")
@@ -149,6 +150,10 @@ def handle_get(store: S.OsGoalStore, path: str,
             return _err(404, "not_found", str(exc))
     if path == "/api/os/asr/status":
         import os_asr
+        try:
+            os_asr.ensure_preload()
+        except Exception:
+            pass
         return 200, {"ok": True, **os_asr.engine_status()}
     m = QK_DRAFT_RE.match(path)
     if m:
@@ -389,7 +394,8 @@ class Handler:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             return self._json({"ok": False, "error": "bad_length"}, 400)
-        if length < 0 or length > MAX_BODY:
+        limit = ASR_MAX_BODY if path == "/api/os/asr" else MAX_BODY
+        if length < 0 or length > limit:
             return self._json({"ok": False, "error": "bad_length"}, 400)
         raw = self.rfile.read(length) if length else b"{}"
         try:
