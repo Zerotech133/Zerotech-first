@@ -116,3 +116,10 @@ def test_draft_ids_unique_after_restart(store):
     finally:
         Q._PROC_TAG = old_tag
     assert a != b
+
+def test_quick_page_voice_guided():
+    page = os.path.join(PORTAL, "os_quick.html")
+    text = open(page, encoding="utf-8").read()
+    for kw in ("SpeechRecognition", "speechSynthesis", "🎤", "说“行”", "点一下，说想法"):
+        assert kw in text, kw
+    assert "X-OS-Page" in text
