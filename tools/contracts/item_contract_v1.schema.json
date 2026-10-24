@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/os-item/v1.schema.json",
+  "title": "OS 单事项闭环事件合约 v1（每条 events.jsonl 行按本 schema 校验）",
+  "description": "合同正文见 03_事项合同_v1.md。首版只允许隔离环境与 4 个动作；本人动作仅限 brief.frozen / card.selected / grant.signed / trial.opened / verdict.recorded。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "seq", "event_id", "item_id", "type", "at", "actor", "refs", "payload", "hash"],
+  "properties": {
+    "schema_version": { "const": "os-item/1.0" },
+    "seq": { "type": "integer", "minimum": 1 },
+    "event_id": {
+      "type": "string",
+      "pattern": "^EVT-ITM-[0-9]{8}-[0-9]{4}-[0-9]{3}$"
+    },
+    "item_id": {
+      "type": "string",
+      "pattern": "^ITM-[0-9]{8}-[0-9]{4}$"
+    },
+    "type": {
+      "enum": [
+        "item.created",
+        "brief.drafted",
+        "brief.frozen",
+        "argument.recorded",
+        "card.drafted",
+        "card.frozen",
+        "card.selected",
+        "grant.signed",
+        "gate.blocked",
+        "workorder.created",
+        "workorder.claimed",
+        "artifact.produced",
+        "test.recorded",
+        "workorder.failed",
+        "trial.opened",
+        "verdict.recorded",
+        "item.cancelled"
+      ]
+    },
+    "at": { "type": "string", "format": "date-time" },
+    "actor": { "$ref": "#/$defs/Actor" },
+    "source": { "type": "object" },
+    "refs": { "type": "object" },
+    "payload": { "type": "object" },
+    "idempotency_key": { "type": "string", "maxLength": 128 },
+    "prev_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "item.created" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["title", "source_text"],
+            "properties": {
+              "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "source_text": { "type": "string", "minLength": 1, "maxLength": 500 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "brief.frozen" } }, "required": ["type"] },
+      "then": {
+        "properties": { "payload": { "$ref": "#/$defs/Brief" } },
+        "required": ["actor"]
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "argument.recorded" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["argument_id", "brief_version", "roles"],
+            "properties": {
+              "roles": {
+                "type": "array",
+                "minItems": 3,
+                "items": { "$ref": "#/$defs/Role" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "card.frozen" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["card_version", "brief_version", "recommended", "discarded",
+                         "acceptance_method", "evidence_refs", "disconfirm_refs"],
+            "properties": {
+              "recommended": {
+                "type": "object",
+                "required": ["option", "why"]
+              },
+              "discarded": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["option", "why"]
+                }
+              },
+              "acceptance_method": { "type": "string", "minLength": 4 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "grant.signed" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["grant_id", "card_version", "actions", "env", "valid_until", "signer"],
+            "properties": {
+              "actions": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "enum": ["prototype.generate", "prototype.preview", "prototype.test", "workspace.cleanup"]
+                }
+              },
+              "env": { "const": "isolated" },
+              "valid_until": { "type": "string", "format": "date-time" },
+              "signer": { "$ref": "#/$defs/Signer" },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "paths": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "workorder.claimed" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["workorder_id", "claim"],
+            "properties": {
+              "claim": {
+                "type": "object",
+                "required": ["consumer_id", "method"],
+                "properties": {
+                  "consumer_id": { "type": "string", "minLength": 1 },
+                  "method": { "enum": ["real", "simulated"] }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": { "const": "workorder.claimed" },
+          "payload": { "properties": { "claim": { "properties": { "method": { "const": "simulated" } } } } }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "properties": {
+          "payload": { "required": ["isolation_label"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "artifact.produced" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["artifact_id", "workorder_id", "version", "path", "sha256", "rollback"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^portal/data/os_items/[^/\\\\]+/"
+              },
+              "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+              "rollback": {
+                "type": "object",
+                "required": ["method", "recipe"],
+                "properties": { "recipe": { "type": "string", "minLength": 8 } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "test.recorded" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["evidence_id", "artifact_id", "type", "command", "result", "output_sha256", "executed_by"],
+            "properties": {
+              "type": { "enum": ["unit", "contract", "browser", "manual"] },
+              "result": { "enum": ["pass", "fail"] },
+              "output_sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "trial.opened" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["artifact_id", "opened_by"],
+            "properties": { "opened_by": { "const": "laotian" } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "verdict.recorded" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["verdict_id", "artifact_id", "decision"],
+            "properties": {
+              "decision": { "enum": ["accepted", "changes_requested", "rejected"] },
+              "feedback": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "gate.blocked" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["gate", "reason_code"],
+            "properties": {
+              "gate": { "type": "string" },
+              "reason_code": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "Actor": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["user", "agent", "system", "consumer"] },
+        "id": { "type": "string", "minLength": 1 },
+        "seat": { "type": "string" }
+      }
+    },
+    "Signer": {
+      "type": "object",
+      "required": ["id", "method", "nonce_id"],
+      "properties": {
+        "id": { "const": "laotian" },
+        "method": { "enum": ["session_nonce", "local_password_session"] },
+        "nonce_id": { "type": "string", "minLength": 8 }
+      }
+    },
+    "Brief": {
+      "type": "object",
+      "required": ["brief_version", "goals", "success_criteria"],
+      "properties": {
+        "brief_version": { "type": "string", "pattern": "^v[0-9]+$" },
+        "goals": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "non_goals": { "type": "array", "items": { "type": "string" } },
+        "constraints": { "type": "array", "items": { "type": "string" } },
+        "success_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "statement", "verify_method"],
+            "properties": {
+              "id": { "type": "string" },
+              "statement": { "type": "string", "minLength": 1 },
+              "verify_method": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "open_questions": { "type": "array" }
+      }
+    },
+    "Role": {
+      "type": "object",
+      "required": ["role", "source_kind"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "source_kind": { "enum": ["model_call", "rule_assisted", "missing"] },
+        "call": { "type": "object" },
+        "rules_ref": { "type": "string" },
+        "failure_reason": { "type": "string" },
+        "evidence_refs": { "type": "array" },
+        "counter_arguments": { "type": "array" },
+        "unknowns": { "type": "array" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "source_kind": { "const": "model_call" } }, "required": ["source_kind"] },
+          "then": {
+            "required": ["call"],
+            "properties": {
+              "call": {
+                "type": "object",
+                "required": ["provider", "model", "call_id", "prompt_sha256", "response_sha256", "raw_available"],
+                "properties": {
+                  "raw_available": { "type": "boolean" },
+                  "latency_ms": { "type": "number", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "source_kind": { "const": "rule_assisted" } }, "required": ["source_kind"] },
+          "then": { "required": ["rules_ref"] }
+        },
+        {
+          "if": { "properties": { "source_kind": { "const": "missing" } }, "required": ["source_kind"] },
+          "then": { "required": ["failure_reason"] }
+        }
+      ]
+    }
+  }
+}
