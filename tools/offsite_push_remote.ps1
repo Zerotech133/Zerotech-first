@@ -43,7 +43,10 @@ $ErrorActionPreference = 'Continue'
 $RepoRoot   = Split-Path -Parent $PSScriptRoot
 $BackupRoot = Join-Path $RepoRoot 'backups'
 $Key        = 'C:\Users\t\.ssh\zeroq_deploy'
-$RemoteHost = 'root@10.205.0.118'
+# 2026-10-24: switched to the dedicated account aiosbackup (no longer root).
+# Its authorized_keys carries from="192.168.204.12", and /home/aios-offsite is
+# owned by it. root is now only used for one-off admin (creating users, sshd).
+$RemoteHost = 'aiosbackup@10.205.0.118'
 $RemoteRoot = '/home/aios-offsite'
 $SshOpts    = @('-i', $Key, '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15')
 
@@ -65,7 +68,8 @@ $localDir = Get-ChildItem -LiteralPath $BackupRoot -Directory -ErrorAction Silen
     Where-Object { $_.Name -like "$Date*" } | Sort-Object Name -Descending | Select-Object -First 1
 if (-not $localDir) { Write-Host "ERROR: snapshot for $Date not found"; exit 2 }
 
-$files = Get-ChildItem -LiteralPath $localDir.FullName -File -ErrorAction SilentlyContinue
+$files = Get-ChildItem -LiteralPath $localDir.FullName -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -notmatch '^offsite_remote_receipt' }
 $bytes = ($files | Measure-Object -Property Length -Sum).Sum
 Write-Host '=== offsite push (remote) ==='
 Write-Host ("source : {0}" -f $localDir.FullName)

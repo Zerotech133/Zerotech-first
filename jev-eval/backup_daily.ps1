@@ -383,4 +383,48 @@ if ($script:Failed -gt 0) {
     } catch { Log ("ALERT flag error: " + $_.Exception.Message) }
 }
 
-if ($script:Failed -gt 0) { exit 1 } else { exit 0 }
+# ------------------------------------------------------------------ offsite
+# 2026-10-24: push today's set to the offsite host (10.205.0.118, /home 1.9TB free).
+# Rationale: until this date the project had ZERO offsite copies; C:\backups_mirror
+# is a byte-identical copy on the SAME disk (sha256-verified) - a false comfort.
+#
+# Design notes:
+#   * A LOCAL backup failure aborts here: never ship a known-bad set offsite.
+#   * A NETWORK failure must not be reported as "the backup failed" - it gets its
+#     own OFFSITE_FAILED flag so the alert text names the real culprit.
+#   * The push verifies sha256 on BOTH sides; size equality is not evidence here.
+$OffsiteRc = -1
+if ($script:Failed -gt 0) {
+    Log "OFFSITE skipped (local backup had failures)"
+} else {
+    $pushScript = Join-Path $BaseDir "tools\offsite_push_remote.ps1"
+    if (-not (Test-Path -LiteralPath $pushScript)) {
+        Log ("OFFSITE skipped (missing " + $pushScript + ")")
+    } else {
+        try {
+            $pushOut = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $pushScript 2>&1
+            $OffsiteRc = $LASTEXITCODE
+            $tail = @($pushOut | Select-Object -Last 2) -join ' | '
+            Log ("OFFSITE rc=" + $OffsiteRc + " " + $tail)
+        } catch {
+            $OffsiteRc = 99
+            Log ("OFFSITE error: " + $_.Exception.Message)
+        }
+        if ($OffsiteRc -ne 0) {
+            try {
+                $alertDir = Join-Path $BaseDir "jev-eval\alerts"
+                if (-not (Test-Path $alertDir)) { New-Item -ItemType Directory -Path $alertDir -Force | Out-Null }
+                $flag = Join-Path $alertDir ("OFFSITE_FAILED_" + $stamp + ".flag")
+                @(
+                    "type=ai_workstation_offsite_failed",
+                    ("stamp=" + $stamp),
+                    ("rc=" + $OffsiteRc),
+                    ("backup_log=" + $LogFile)
+                ) | Set-Content -LiteralPath $flag -Encoding UTF8
+                Log ("OFFSITE alert flag written " + $flag)
+            } catch { Log ("OFFSITE alert flag error: " + $_.Exception.Message) }
+        }
+    }
+}
+
+if ($script:Failed -gt 0) { exit 1 } else { if ($OffsiteRc -eq 0 -or $OffsiteRc -eq -1) { exit 0 } else { exit 1 } }
