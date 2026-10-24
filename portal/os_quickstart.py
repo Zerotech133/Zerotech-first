@@ -49,13 +49,15 @@ def _valid_until() -> str:
         timespec="seconds")
 
 
+_PROC_TAG = "%05d" % os.getpid()
+
+
 def _next_id() -> str:
     _SEQ[0] += 1
-    # 2026-10-24 QUICKFIX3: 进程重启后 _SEQ 归零会复用旧草稿 ID，导致确认时
-    # 幂等键撞上账本旧事件（duplicate_idempotency_key）。加入进程内时间片。
-    return "QK-%s-%s-%03d" % (time.strftime("%Y%m%d"), time.strftime("%H%M%S"),
-                             _SEQ[0])
-
+    # 2026-10-24 QUICKFIX3/4: 进程重启后 _SEQ 归零会复用旧草稿 ID，导致确认时
+    # 幂等键撞上账本旧事件（duplicate_idempotency_key）。用进程 PID 保证跨重启唯一。
+    return "QK-%s-%s-%s-%03d" % (time.strftime("%Y%m%d"), time.strftime("%H%M%S"),
+                                 _PROC_TAG, _SEQ[0])
 
 def build_card(text: str, edits: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """一句话 → 一张卡（纯规则草案；不写账、不执行）。"""
