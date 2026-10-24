@@ -3,214 +3,203 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>零界 · 一句话（语音版）</title>
+<title>零界 · 说一句话</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
 <style>
-  .wrap{max-width:760px;margin:0 auto;padding:16px 18px 90px}
-  h1{font-size:22px;margin:6px 0 2px}
-  .sub{color:#5a6f83;font-size:13.5px;margin:0 0 12px}
-  .banner{border-left:4px solid #936224;background:#faf3e6;padding:8px 12px;border-radius:6px;font-size:12.5px;margin:8px 0 14px}
-  .card{background:#fff;border:1px solid #dbe5ee;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 2px 10px rgba(14,116,144,.05)}
-  .stepTag{display:inline-block;background:#e6f4f8;color:#0e7490;font-weight:700;font-size:12px;padding:3px 10px;border-radius:999px;margin-bottom:10px}
-  .big{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-  button{cursor:pointer;font:600 16px/1.2 inherit;border:0;border-radius:14px;padding:14px 20px}
-  button.primary{background:#0e7490;color:#fff}
-  button.ghost{background:#fff;color:#0e7490;border:1.5px solid #bcd8e2}
-  button.warn{background:#b3402e;color:#fff}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .mic{font-size:18px;padding:18px 26px;border-radius:999px;box-shadow:0 4px 14px rgba(14,116,144,.25)}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 18px 130px}
+  h1{font-size:21px;margin:4px 0 2px}
+  .sub{color:#5a6f83;font-size:13px;margin:0 0 10px}
+  .banner{border-left:4px solid #936224;background:#faf3e6;padding:7px 11px;border-radius:6px;font-size:12px;margin:6px 0 12px}
+  .chat{display:flex;flex-direction:column;gap:10px}
+  .msg{border-radius:16px;padding:12px 15px;font-size:14.5px;line-height:1.7;max-width:92%}
+  .sys{background:#f4f9fb;border:1px solid #dbe5ee;align-self:flex-start}
+  .user{background:#0e7490;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .sys b{color:#0e7490}
+  .card{border:1.5px solid #bcd8e2;background:#fff;align-self:stretch;max-width:100%}
+  .card h3{margin:0 0 6px;font-size:16px;color:#0e7490}
+  .list{margin:2px 0;padding-left:19px;font-size:13.5px;line-height:1.75}
+  .muted{color:#5a6f83;font-size:12px}
+  .pv{width:100%;height:340px;border:1px solid #dbe5ee;border-radius:12px;background:#fff;margin-top:8px}
+  .err{color:#b3402e;font-size:13px;white-space:pre-wrap}
+  .dock{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid #dbe5ee;padding:10px 14px;backdrop-filter:blur(6px);z-index:50}
+  .dock .in{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{cursor:pointer;font:600 15px/1.2 inherit;border:0;border-radius:14px;padding:12px 18px}
+  .mic{font-size:17px;padding:15px 24px;border-radius:999px;background:#0e7490;color:#fff;box-shadow:0 4px 14px rgba(14,116,144,.28)}
   .mic.listening{background:#b3402e;animation:pulse 1s infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(179,64,46,.5)}100%{box-shadow:0 0 0 16px rgba(179,64,46,0)}}
-  .say{font-size:15px;color:#173a4d;background:#f4f9fb;border-radius:10px;padding:12px 14px;margin:10px 0;min-height:44px}
-  .muted{color:#5a6f83;font-size:12.5px}
-  .err{color:#b3402e;font-size:13.5px;white-space:pre-wrap}
-  .list{margin:4px 0 0;padding-left:20px;font-size:14px;line-height:1.8}
-  .scope{background:#f4f9fb;border:1px dashed #bcd8e2;border-radius:10px;padding:10px 12px;font-size:12.5px;margin-top:8px}
-  .gates{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-  .g{padding:2px 9px;border-radius:9px;font-size:12px;font-weight:700;background:#eef2f5;color:#54677a}
-  .g.PASS{background:#e9f5ee;color:#227a4b}.g.ISOLATED_ONLY{background:#faf3e6;color:#936224}.g.BLOCKED,.g.FAIL{background:#fdeeea;color:#b3402e}
-  .dots{display:flex;gap:8px;margin:2px 0 10px}
-  .dot{flex:1;height:6px;border-radius:4px;background:#e3ecf2}
-  .dot.on{background:#0e7490}
-  .timing{font-size:12px;color:#936224;margin-left:auto}
-  details{margin-top:8px;font-size:12.5px;color:#5a6f83}
-  textarea{width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:10px 12px;border:1.5px solid #bfd6e2;border-radius:10px;min-height:52px}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(179,64,46,.5)}100%{box-shadow:0 0 0 14px rgba(179,64,46,0)}}
+  button.ghost{background:#fff;color:#0e7490;border:1.5px solid #bcd8e2}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  #status{font-size:12.5px;color:#5a6f83;flex:1;min-width:140px}
+  .say{font-size:12px;color:#936224}
+  details{font-size:12px;color:#5a6f83;margin-top:6px}
 </style>
 </head>
 <body>
 <main class="wrap">
-  <h1>一句话 · 说出来就行</h1>
-  <p class="sub">不用打字、不用填参数。您说一句 → 我出一张卡念给您听 → 您说"行"就办 → 看试用说"接受"或"这里改"。</p>
-  <div class="banner">默认授权：隔离环境 · 4 个可逆动作 · 24 小时 · 可撤回。推荐卡为规则辅助（非模型结论）；认领为模拟认领（未获真实认领）；不接生产/交易/外发。<span class="timing" id="timer"></span></div>
-  <div class="dots"><span class="dot on" id="d1"></span><span class="dot" id="d2"></span><span class="dot" id="d3"></span></div>
-  <p class="muted" id="status">就绪：点下面的大按钮，开口说您想做什么。</p>
+  <h1>说一句话，剩下的我来</h1>
+  <p class="sub">按一下开始后，我自动听、自动做、自动念给您听——<b>不用一次次点按钮</b>。您只说"行""接受""这里改"就行。</p>
+  <div class="banner">默认授权：隔离环境 · 4 个可逆动作 · 24 小时 · 可撤回。推荐卡为规则辅助（非模型结论）；认领为模拟认领（未获真实认领）；不接生产/交易/外发。<span class="say" id="timer"></span></div>
 
-  <!-- 第 1 句 -->
-  <section class="card" id="step1">
-    <span class="stepTag">第 1 句 · 说想法</span>
-    <div class="big">
-      <button class="primary mic" id="b-mic-idea">🎤 点一下，说想法</button>
-      <button class="ghost" id="b-type-toggle">不方便说话，改成打字</button>
-    </div>
-    <div id="type-box" hidden style="margin-top:10px">
-      <textarea id="ask" placeholder="例：做个页面，让我每天打开就能看三条简报摘要"></textarea>
-      <div class="big" style="margin-top:8px"><button class="primary" id="b-draft">就用这句，出卡</button></div>
-    </div>
-    <p class="say" id="heard1" hidden></p>
-    <p class="muted">提示：第一次用浏览器会问"允许使用麦克风"，点允许即可；推荐 Edge / Chrome。</p>
-  </section>
-
-  <!-- 第 2 句 -->
-  <section class="card" id="step2" hidden>
-    <span class="stepTag">第 2 句 · 一张卡（念给您听）</span>
-    <div id="card-body"></div>
-    <div class="big" style="margin-top:14px">
-      <button class="primary mic" id="b-mic-ok">🎤 说"行"，就按这个办</button>
-      <button class="ghost" id="b-mic-change">🎤 说一句要改的</button>
-      <button class="ghost" id="b-content">🔊 再念一遍</button>
-      <button class="ghost" id="b-redraw">重新来</button>
-    </div>
-    <details><summary>授权与证据细节</summary><div id="scope-box"></div></details>
-  </section>
-
-  <!-- 第 3 句 -->
-  <section class="card" id="step3" hidden>
-    <span class="stepTag">第 3 句 · 试用后说"接受"或"这里改"</span>
-    <div id="result-body"></div>
-    <div class="big" style="margin-top:12px">
-      <button class="primary" id="b-open">👉 打开试用</button>
-      <button class="primary mic" id="b-mic-verdict">🎤 说"接受"或"我要改"</button>
-      <button class="ghost" id="b-accept">接受</button>
-      <button class="ghost" id="b-change">这里改</button>
-    </div>
-    <p class="muted" id="verdict-hint">如果自动没弹开试用页，点"打开试用"。</p>
-  </section>
+  <div class="chat" id="chat">
+    <div class="msg sys">您好。第 1 句说想法，第 2 句听我把卡念出来，第 3 句看试用说接受或这里改。点下面的 🎤 <b>点一下，说想法</b>，之后就像跟人说话一样，不用再点按钮。</div>
+  </div>
 
   <p class="err" id="err" hidden></p>
 </main>
+
+<div class="dock"><div class="in">
+  <button class="mic" id="b-start">🎤 点一下，说想法</button>
+  <button class="ghost" id="b-type">⌨️ 改成打字</button>
+  <button class="ghost" id="b-stop" hidden>⏹ 暂停听</button>
+  <span id="status">就绪</span>
+</div></div>
+
+<template id="type_panel_tpl">
+  <div class="msg sys" id="type_panel">
+    <div><b>打字模式（可随时切回语音）</b></div>
+    <textarea id="ask" style="width:100%;box-sizing:border-box;min-height:54px;margin-top:6px;font:inherit;padding:8px 10px;border:1.5px solid #bfd6e2;border-radius:10px" placeholder="例：做个页面，让我每天打开就能看三条简报摘要"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="ghost" id="t-draft">出卡</button>
+      <button class="ghost" id="t-ok" hidden>按这个办</button>
+      <button class="ghost" id="t-accept" hidden>接受</button>
+      <button class="ghost" id="t-change" hidden>这里改</button>
+    </div>
+  </div>
+</template>
+
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false, LISTENING=false;
+let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false, REC=null, BUSY=false, DONE=false;
 function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
-function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); e.scrollIntoView({block:'center'}); }
+function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); }
 function clearErr(){ const e=$('err'); e.hidden=true; }
-function startTimer(){ if(START!==null) return; START=Date.now(); TICK=setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s（目标 ≤120s）'; },1000); }
-function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.05; speechSynthesis.speak(u); }catch(e){} }
-function step(n){ [1,2,3].forEach(i=>{ $('step'+i).hidden=(i!==n); $('d'+i).classList.toggle('on', i<=n); }); }
-function ensureVoice(){
-  if(SR) return true;
-  ['b-mic-idea','b-mic-ok','b-mic-change','b-mic-verdict'].forEach(id=>{ const b=$(id); if(b){ b.disabled=true; b.textContent='此浏览器不支持语音（请用 Edge/Chrome）'; } });
-  $('type-box').hidden=false; $('b-type-toggle').hidden=true;
-  setStatus('您的浏览器不支持语音输入，已切到打字模式。');
-  return false;
+function startTimer(){ if(START!==null) return; START=Date.now(); TICK=setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s'; },1000); }
+function say(role, html){ const d=document.createElement('div'); d.className='msg '+(role==='user'?'user':'sys'); d.innerHTML=html; $('chat').appendChild(d); d.scrollIntoView({block:'end',behavior:'smooth'}); return d; }
+function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.04; speechSynthesis.speak(u); }catch(e){} }
+function stopVoice(){ try{ if(REC){ REC.onresult=null; REC.onerror=null; REC.onend=null; REC.abort(); } }catch(e){} REC=null; BUSY=false; $('b-start').classList.remove('listening'); }
+function finish(){ DONE=true; stopVoice(); $('b-start').textContent='🎤 说下一件事'; $('b-start').classList.remove('listening'); setStatus('完成'); }
+/* —— 核心：一次点击后自动“听→答→听” —— */
+function listen(handler){
+  if(!SR){ setStatus('此浏览器不支持语音，请用 Edge/Chrome，或点“改成打字”。'); return; }
+  if(BUSY||DONE) return;
+  BUSY=true; $('b-start').classList.add('listening'); setStatus('我在听…（直接说，不用点按钮）');
+  const r=new SR(); r.lang='zh-CN'; r.interimResults=false; r.maxAlternatives=1; REC=r;
+  let got=false;
+  const done=()=>{ BUSY=false; $('b-start').classList.remove('listening'); setStatus(''); REC=null; };
+  r.onresult=e=>{ got=true; const t=String(e.results[0][0].transcript||'').trim(); done(); if(t){ handler(t); } else { retry(handler); } };
+  r.onerror=e=>{ done(); if(e.error==='no-speech'||e.error==='aborted'){ retry(handler); } else { showErr('没听清（'+e.error+'），请再说一次'); retry(handler); } };
+  r.onend=()=>{ if(!got){ done(); retry(handler); } };
+  try{ r.start(); }catch(err){ done(); setTimeout(()=>listen(handler),700); }
 }
-function listenOnce(){
-  return new Promise((resolve,reject)=>{
-    if(!SR){ reject(new Error('此浏览器不支持语音')); return; }
-    if(LISTENING){ reject(new Error('正在听，请稍候')); return; }
-    const r=new SR(); LISTENING=true;
-    r.lang='zh-CN'; r.interimResults=false; r.maxAlternatives=1;
-    const stop=()=>{ LISTENING=false; };
-    r.onresult=e=>{ stop(); resolve(String(e.results[0][0].transcript||'').trim()); };
-    r.onerror=e=>{ stop(); reject(new Error('没听清（'+e.error+'），请再说一次')); };
-    r.onend=()=>{ stop(); };
-    try{ r.start(); }catch(e){ stop(); reject(e); }
-  });
+let RETRY=0;
+function retry(handler){ if(DONE) return; if(++RETRY>3){ RETRY=0; say('sys','没听到您说话。点 🎤 或改成打字都行。'); setStatus('等待您再说一次'); return; } setTimeout(()=>listen(handler),500); }
+function speakThen(text, handler){
+  say('sys', esc(text).replace(/您说|请说/g,'<b>$&</b>'));
+  const go=()=>{ RETRY=0; if(handler) setTimeout(()=>listen(handler),300); };
+  if(!('speechSynthesis' in window)){ setTimeout(go,600); return; }
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.04;
+    let ended=false; const once=()=>{ if(ended) return; ended=true; go(); };
+    u.onend=once; u.onerror=once;
+    setTimeout(once, Math.min(25000, 4000 + text.length*170));
+    speechSynthesis.speak(u);
+  }catch(e){ go(); }
 }
-async function speakButton(btn, fn){
-  if(!SR){ await fn(); return; }
-  btn.classList.add('listening'); setStatus('正在听您说…（说完稍等）');
-  try{ const t=await listenOnce(); btn.classList.remove('listening'); setStatus('听到：'+t); await fn(t); }
-  catch(e){ btn.classList.remove('listening'); setStatus(''); showErr(e.message); }
-}
-function cardSpeech(card){
-  return '我理解您要做：'+card.goals.join('；')+'。 我建议：'+card.recommended.option+'。 成功标准：'
-    +(card.success_criteria||[]).map(s=>s.statement).join('；')+'。 默认授权：隔离环境，四个可逆动作，二十四小时有效，可撤回。 '
-    +'您说"行"，我就按这个办；说要改，就告诉我改哪句。';
-}
-function renderCard(card){
-  DRAFT=card; step(2);
-  $('card-body').innerHTML='<div style="font-size:17px;font-weight:700;margin-bottom:6px">'+esc(card.title)+'</div>'
-    +'<div><b>要做的</b><ul class="list">'+(card.goals||[]).map(g=>'<li>'+esc(g)+'</li>').join('')+'</ul></div>'
-    +'<div><b>怎么算成</b><ul class="list">'+(card.success_criteria||[]).map(s=>'<li>'+esc(s.statement)+'（'+esc(s.verify_method)+'）</li>').join('')+'</ul></div>'
-    +'<div style="margin-top:6px"><b>我建议</b>：'+esc(card.recommended.option)+' — '+esc(card.recommended.why)+'</div>'
-    +'<div class="muted" style="margin-top:4px"><b>不做</b>：'+esc((card.non_goals||[]).join('、'))+'</div>';
-  const sc=card.scope;
-  $('scope-box').textContent='默认授权：'+sc.env+' / '+sc.actions.join('、')+' / 有效至 '+sc.valid_until+' / '+(sc.reversible?'可撤回':'不可撤回')+'。'+(sc.note||'');
-  speak(cardSpeech(card));
-  document.title='第 2 句 · 请说“行”或“改”';
-}
+/* —— 业务动作 —— */
 async function api(path,body){
   const opt=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify(body)};
-  setStatus('请求 '+path+' …');
+  setStatus('请求 '+path);
   const r=await fetch(path,opt);
   setStatus(path+' → HTTP '+r.status);
   const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));
   if(!r.ok||d.ok===false) throw new Error((d.error||r.status)+': '+(d.message||''));
   return d;
 }
-async function draft(text){
-  clearErr(); startTimer(); text=(text||$('ask').value||'').trim();
-  if(!text) return showErr('请先说一句您想做什么');
-  $('ask').value=text; $('heard1').hidden=false; $('heard1').textContent='您说：'+text;
-  try{ const d=await api('/api/os/quickstart',{text}); renderCard(d.card); }
-  catch(e){ showErr(e.message); }
+function cardHtml(card){
+  return '<div class="msg card"><h3>'+esc(card.title)+'</h3>'
+    +'<div><b>要做的</b><ul class="list">'+(card.goals||[]).map(g=>'<li>'+esc(g)+'</li>').join('')+'</ul></div>'
+    +'<div><b>怎么算成</b><ul class="list">'+(card.success_criteria||[]).map(s=>'<li>'+esc(s.statement)+'（'+esc(s.verify_method)+'）</li>').join('')+'</ul></div>'
+    +'<div style="margin-top:4px"><b>我建议</b>：'+esc(card.recommended.option)+'</div>'
+    +'<div class="muted">默认授权：'+esc(card.scope.env)+' / '+card.scope.actions.length+' 个可逆动作 / 有效至 '+esc(card.scope.valid_until)+' / 可撤回</div></div>';
 }
-async function confirm(edits){
-  clearErr();
-  try{
-    const d=await api('/api/os/quickstart/'+encodeURIComponent(DRAFT.draft_id)+'/confirm',{edits:edits||undefined});
-    ITEM=d.item_id; step(3);
-    $('result-body').innerHTML='<div>已经隔离执行好了：新产物 <b>'+esc(d.artifact.version)+'</b></div>'
-      +'<div class="gates">'+Object.entries(d.chain.gates).map(([k,v])=>'<span class="g '+esc(v)+'">'+esc(k)+' '+esc(v)+'</span>').join('')+'</div>'
-      +'<div class="muted">判定：'+esc(d.chain.verdict)+'（隔离边界内）</div>';
-    $('b-open').onclick=()=>window.open(d.preview_url,'_blank');
-    try{ window.open(d.preview_url,'_blank'); }catch(e){}
-    speak('做好了，已经在隔离环境里生成。请看试用：满意就说“接受”，要改就说“我要改”。');
-    setStatus('试用已生成：看完说“接受”或“我要改”。');
+function cardSpeech(card){
+  return '我理解您要做：'+card.goals.join('；')+'。 我的建议：'+card.recommended.option+'。 怎么算成：'
+    +(card.success_criteria||[]).map(s=>s.statement).join('；')
+    +'。 默认授权是隔离环境、四个可逆动作、二十四小时、可撤回。 如果没问题，就说“行”，我马上办；要改就直接说要改哪句。';
+}
+async function handleIdea(text){
+  startTimer(); say('user', esc(text)); RETRY=0;
+  try{ const d=await api('/api/os/quickstart',{text}); DRAFT=d.card; $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
+    const bubble=[...document.querySelectorAll('.card')].pop(); bubble.scrollIntoView({block:'end',behavior:'smooth'});
+    speakThen('第 2 句：一张卡。'+cardSpeech(d.card), handleCardReply);
+  }catch(e){ showErr(e.message); say('sys','这一步失败了：'+esc(e.message)); }
+}
+async function handleCardReply(t){
+  say('user', esc(t));
+  if(/行|好|可以|按这个办|确认|没问题|嗯|ok/i.test(t)){ return doConfirm(); }
+  if(/重新|重来|换个/i.test(t)){ return speakThen('好，我们重来。您想做什么？', handleIdea); }
+  try{ const d=await api('/api/os/quickstart',{text:(DRAFT?DRAFT.text:'')+'；按您的修改：'+t, edits:{changes:t}}); DRAFT=d.card;
+    $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
+    speakThen('改好了。'+cardSpeech(d.card), handleCardReply);
   }catch(e){ showErr(e.message); }
 }
-function renderAccepted(){
-  ACCEPTED=true; $('b-accept').disabled=true; $('verdict-hint').textContent='已验收 ✅ 如需修改，点“这里改”会先返工再出新版本。';
-  setStatus('已验收 ✅ 这条链完成。');
+async function doConfirm(){
+  say('sys','好，按这个办。');
+  try{ const d=await api('/api/os/quickstart/'+encodeURIComponent(DRAFT.draft_id)+'/confirm',{}); ITEM=d.item_id;
+    say('sys','已经隔离执行好了：产物 <b>'+esc(d.artifact.version)+'</b>。试用窗口就在下面，您可以看，也可以直接说。');
+    $('chat').insertAdjacentHTML('beforeend','<iframe class="pv" id="pv" src="'+esc(d.preview_url)+'"></iframe>');
+    document.getElementById('pv').scrollIntoView({block:'center',behavior:'smooth'});
+    speakThen('第 3 句：做好了，试用就在下面。满意就说“接受”，要改就说“这里改”，直接说哪里不满意。', handleVerdict);
+  }catch(e){ showErr(e.message); say('sys','执行失败：'+esc(e.message)); }
 }
-async function accept(){
-  try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'accepted',feedback:'接受'}); renderAccepted(); speak('已记录：您接受。'); }
-  catch(e){ showErr(e.message); }
+async function doAccept(){
+  try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'accepted',feedback:'接受'}); ACCEPTED=true;
+    say('sys','✅ 已验收。这条链完成，证据已经记在同一本账上。'); speak('已记录，您接受。完成。'); finish();
+  }catch(e){ showErr(e.message); }
 }
-async function change(fb){
+async function doChange(t){
   try{
-    fb=(fb||'').trim(); if(!fb) return showErr('请说一句要改什么');
     let needRework=ACCEPTED;
     if(!needRework){
-      try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'changes_requested',feedback:fb}); }
+      try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'changes_requested',feedback:t}); }
       catch(e){ if(String(e.message).includes('已验收')||String(e.message).includes('contract_violation')) needRework=true; else throw e; }
     }
-    const r=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/rework',{feedback:fb});
+    const r=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/rework',{feedback:t});
     await api('/api/os/item/'+encodeURIComponent(ITEM)+'/trial',{});
-    ACCEPTED=false; $('b-accept').disabled=false;
-    try{ window.open('/api/os/item/'+encodeURIComponent(ITEM)+'/workspace/index.html','_blank'); }catch(e){}
-    $('verdict-hint').textContent='已生成新版本 '+r.artifact.version+'，看完满意就点“接受”。';
-    speak('改好了，新版本已打开。满意就说“接受”，还要改就说“我要改”。');
+    ACCEPTED=false;
+    if($('pv')) $('pv').src='/api/os/item/'+encodeURIComponent(ITEM)+'/workspace/index.html';
+    say('sys','改好了，新版本 <b>'+esc(r.artifact.version)+'</b> 已经更新在下面的试用窗口里。');
+    speakThen('第 3 句：改好了，新版本在下面。满意就说“接受”，还要改就继续说。', handleVerdict);
   }catch(e){ showErr(e.message); }
 }
-$('b-type-toggle').onclick=()=>{ $('type-box').hidden=false; $('b-type-toggle').hidden=true; setStatus('已切到打字模式，输入后点“就用这句，出卡”。'); };
-$('b-draft').onclick=()=>draft();
-$('b-mic-idea').onclick=()=>speakButton($('b-mic-idea'), t=>draft(t));
-$('b-mic-ok').onclick=()=>speakButton($('b-mic-ok'), t=>{ if(/行|好|可以|按这个办|确认|没问题|ok/i.test(t)) return confirm(); return confirm({changes:t}); });
-$('b-mic-change').onclick=()=>speakButton($('b-mic-change'), t=>confirm({changes:t}));
-$('b-content').onclick=()=>{ if(DRAFT) speak(cardSpeech(DRAFT)); };
-$('b-redraw').onclick=()=>{ DRAFT=null; step(1); setStatus('重新来：请再说或输入一个想法。'); };
-$('b-accept').onclick=()=>accept();
-$('b-change').onclick=()=>speakButton($('b-change'), t=>change(t));
-$('b-mic-verdict').onclick=()=>speakButton($('b-mic-verdict'), t=>{ if(/接受|可以|好|行|满意/i.test(t)) return accept(); return change(t); });
+async function handleVerdict(t){
+  say('user', esc(t));
+  if(/接受|可以|好|行|满意|不错/i.test(t)) return doAccept();
+  return doChange(t);
+}
+/* —— 打字兜底 —— */
+function showTypePanel(){ const tpl=$('type_panel_tpl'); $('chat').appendChild(tpl.content.cloneNode(true)); $('type_panel').scrollIntoView({block:'end'}); }
+/* —— 按钮 —— */
+$('b-start').onclick=()=>{ clearErr(); if(DONE){ DONE=false; $('b-start').textContent='🎤 点一下，说想法'; } stopVoice(); if(!SR){ showTypePanel(); return; } RETRY=0; say('sys','好，我在听。您想做什么？'); listen(handleIdea); };
+$('b-stop').onclick=()=>{ stopVoice(); setStatus('已暂停'); $('b-stop').hidden=true; $('b-start').hidden=false; };
+$('b-type').onclick=()=>{ showTypePanel(); };
+$('b-start').hidden=false;
 window.addEventListener('error',e=>showErr('页面脚本错误：'+(e.message||e.type)));
 window.addEventListener('unhandledrejection',e=>showErr('未处理错误：'+((e.reason&&e.reason.message)||e.reason)));
-ensureVoice();
+/* 打字面板内的按钮（事件委托，兼容动态克隆） */
+document.addEventListener('click',ev=>{
+  const id=ev.target&&ev.target.id;
+  if(id==='t-draft'){ handleIdea(($('ask')&&$('ask').value||'').trim()); }
+  if(id==='t-ok'){ doConfirm(); }
+  if(id==='t-accept'){ doAccept(); }
+  if(id==='t-change'){ doChange((($('ask')&&$('ask').value)||'改一下').trim()); }
+});
+if(!SR){ $('b-start').textContent='⌨️ 此浏览器不支持语音，点这里打字'; }
 </script>
 </body>
 </html>
