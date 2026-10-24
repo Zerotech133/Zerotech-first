@@ -110,6 +110,17 @@ def ensure_preload() -> None:
     threading.Thread(target=_work, name="os-asr-preload", daemon=True).start()
 
 
+def recover() -> None:
+    """清除熔断并后台重新加载模型（无需重启 8091）。注意：若旧推理线程卡死无法杀死，
+    本操作可能仍恢复失败，此时仍需重启服务。"""
+    with _LOAD_LOCK:
+        _STATE["broken"] = False
+        _STATE["error"] = ""
+        _STATE["fails"] = 0
+        _CACHE.pop("sv", None)
+    ensure_preload()
+
+
 def _wait_ready(timeout: float = 45.0) -> bool:
     import time as _t
     end = _t.time() + timeout
@@ -122,24 +133,27 @@ def _wait_ready(timeout: float = 45.0) -> bool:
     return False
 
 
-def _infer(path: str, lang: str) -> str:
+def _infer(arr, lang: str) -> str:
     with _GEN_LOCK:
         model = _CACHE.get("sv")
         if model is None:
             raise AsrUnavailable("模型尚未加载")
-        result = model.generate(input=path, cache={}, language=lang or "zh",
-                                use_itn=True, batch_size_s=60)
+        result = model.generate(input=arr, fs=16000, cache={},
+                                language=lang or "zh", use_itn=True,
+                                batch_size_s=60)
     text = ""
     if isinstance(result, list) and result:
         text = str(result[0].get("text") or "")
     return _TAG_RE.sub("", text).strip()
 
 
-def _normalize_wav(src: str) -> str:
-    """把输入 WAV 规范成 16-bit PCM 单声道（保留原采样率），避免畸形头导致 EINVAL。"""
+def _load_wav_array(src: str):
+    """读 WAV → numpy float32 单声道 16k（内存直达，不落临时文件，规避文件相关 EINVAL）。"""
+    import numpy as np
     try:
         with wave.open(src, "rb") as w:
-            ch, sw, fr, n = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+            ch, sw, fr, n = (w.getnchannels(), w.getsampwidth(),
+                             w.getframerate(), w.getnframes())
             raw = w.readframes(n)
     except Exception as exc:
         raise AsrUnavailable("WAV 无法解析: %s" % exc)
@@ -147,21 +161,14 @@ def _normalize_wav(src: str) -> str:
         raise AsrUnavailable("仅支持 16-bit PCM WAV（收到 %s-bit）" % (sw * 8))
     if n <= 0:
         raise AsrUnavailable("音频为空")
-    max_frames = 16000 * 30
-    if ch == 2:
-        samples = struct.unpack("<%dh" % (len(raw) // 2), raw)
-        mono = [(samples[i] + samples[i + 1]) // 2 for i in range(0, len(samples), 2)]
-        mono = mono[:max_frames]
-    else:
-        mono = list(struct.unpack("<%dh" % (len(raw) // 2), raw))[:max_frames]
-    fd, tmp = tempfile.mkstemp(suffix=".wav", prefix="os_asr_")
-    os.close(fd)
-    with wave.open(tmp, "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(fr)
-        w.writeframes(struct.pack("<%dh" % len(mono), *mono))
-    return tmp
+    a = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+    if ch == 2 and a.size >= 2:
+        a = a.reshape(-1, 2).mean(axis=1).astype(np.float32)
+    if fr != 16000 and a.size > 1:
+        new_len = max(1, int(a.size * 16000 / fr))
+        idx = np.linspace(0, a.size - 1, new_len)
+        a = np.interp(idx, np.arange(a.size), a).astype(np.float32)
+    return a[:16000 * 30]
 
 
 def transcribe_wav(path: str, lang: str = "zh") -> str:
@@ -175,9 +182,11 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
         ensure_preload()
         if not _wait_ready(45.0):
             raise AsrUnavailable("模型加载中或失败：%s" % (_STATE.get("error") or "请稍后再试"))
-    clean = _normalize_wav(path)
+    arr = _load_wav_array(path)
+    if arr.size < 4000:  # <0.25s 视为无有效语音
+        raise AsrUnavailable("音频太短（不到 0.25 秒），请重说")
     try:
-        fut = _EXEC.submit(_infer, clean, lang or "zh")
+        fut = _EXEC.submit(_infer, arr, lang or "zh")
         out = fut.result(timeout=60.0)
         _STATE["fails"] = 0
         return out
@@ -188,7 +197,14 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
     except AsrUnavailable:
         raise
     except Exception as exc:  # pragma: no cover
-        # 单次异常不永久熔断：连续 3 次才熔断（避免一次畸形请求锁死服务）
+        # 单次异常不永久熔断：连续 3 次才熔断；留 traceback 便于定位
+        try:
+            import traceback
+            with open(r"C:\Temp\os_asr_err.log", "a", encoding="utf-8") as fh:
+                fh.write("\n=== %s ===\n%s\n" % (time.strftime("%F %T"),
+                                                   traceback.format_exc()))
+        except Exception:
+            pass
         fails = int(_STATE.get("fails") or 0) + 1
         _STATE["fails"] = fails
         _STATE["error"] = "推理异常(第%s次): %s" % (fails, exc)
@@ -196,9 +212,3 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
             _STATE["broken"] = True
             raise AsrUnavailable("本地 ASR 连续推理异常，已熔断；重启 8091 可恢复")
         raise AsrUnavailable("本地 ASR 本次识别失败（%s），请重试" % exc)
-    finally:
-        try:
-            if clean != path:
-                os.unlink(clean)
-        except OSError:
-            pass

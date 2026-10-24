@@ -280,6 +280,10 @@ def _handle_quick(store, path, body):
     if path == "/api/os/asr/status":
         import os_asr
         return 200, {"ok": True, **os_asr.engine_status()}
+    if path == "/api/os/asr/recover":
+        import os_asr
+        os_asr.recover()
+        return 200, {"ok": True, **os_asr.engine_status()}
     if path == QK_START:
         card = Q.create_draft(str(body.get("text") or ""),
                               edits=body.get("edits") or None)

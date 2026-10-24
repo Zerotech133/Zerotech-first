@@ -53,28 +53,23 @@ def test_page_local_asr_wiring():
                "X-OS-Page", "SenseVoice"):
         assert kw in text, kw
 
-def test_normalize_stereo_wav(tmp_path):
+def test_load_wav_array_stereo_to_mono(tmp_path):
     import struct
     import wave
     p = tmp_path / "stereo.wav"
     with wave.open(str(p), "wb") as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(22050)
         w.writeframes(struct.pack("<8h", 1, 1, 2, 2, 3, 3, 4, 4))
-    out = os_asr._normalize_wav(str(p))
-    try:
-        with wave.open(out, "rb") as w:
-            assert w.getnchannels() == 1 and w.getsampwidth() == 2
-            frames = w.readframes(w.getnframes())
-        assert struct.unpack("<4h", frames) == (1, 2, 3, 4)
-    finally:
-        os.unlink(out)
+    arr = os_asr._load_wav_array(str(p))
+    assert arr.ndim == 1 and abs(float(arr[0]) - 1.0 / 32768) < 1e-6
+    assert len(arr) > 0
 
 
-def test_normalize_empty_rejected(tmp_path):
+def test_load_wav_array_empty_rejected(tmp_path):
     import wave
     p = tmp_path / "empty.wav"
     with wave.open(str(p), "wb") as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
         w.writeframes(b"")
     with pytest.raises(os_asr.AsrUnavailable):
-        os_asr._normalize_wav(str(p))
+        os_asr._load_wav_array(str(p))
