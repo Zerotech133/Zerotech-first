@@ -77,6 +77,7 @@ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false, BUSY=false, DONE=false;
 let ASR_MODE='browser', REC=null, VOICE_READY=false;
 let LAST_SPEECH_NORM='', CARD_ROUNDS=0, VERDICT_ROUNDS=0, PAUSED=false;
+let RECORDING=false, RECORD_STOP=null;
 let FAILS=0;
 function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
 function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); }
@@ -209,12 +210,19 @@ async function recordTurn(){
     FAILS++; if(FAILS>=2) showTypePanel();
     return null;
   }
-  $('b-start').classList.add('listening'); setStatus('我在听…（说完自动停）');
+  $('b-start').classList.add('listening'); setStatus('麦克风已打开，请说话（说完自动停）');
+  const ctx=new AudioContext();
+  try{ if(ctx.state==='suspended') await ctx.resume(); }catch(e){}
+  const label=(stream.getAudioTracks()[0]||{}).label||'默认麦克风';
+  say('sys','🎤 使用设备：'+esc(label)+'（请直接说话）');
   return new Promise(resolve=>{
-    const ctx=new AudioContext(); const rate=ctx.sampleRate;
+    const rate=ctx.sampleRate;
     const src=ctx.createMediaStreamSource(stream); const proc=ctx.createScriptProcessor(4096,1,1);
     const chunks=[]; const t0=performance.now(); let lastLoud=0, loudSeen=false, stopped=false;
-    const cleanup=()=>{ try{ proc.disconnect(); src.disconnect(); ctx.close(); }catch(e){} try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){} $('b-start').classList.remove('listening'); };
+    let lastStatus=0, level=0, warned=false;
+    const cleanup=()=>{ RECORDING=false; RECORD_STOP=null; try{ proc.disconnect(); src.disconnect(); ctx.close(); }catch(e){} try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){} $('b-start').classList.remove('listening'); };
+    RECORDING=true;
+    RECORD_STOP=()=>{ if(!stopped){ stopped=true; resolve(null); cleanup(); } };
     const stopNow=async()=>{ if(stopped) return; stopped=true; clearInterval(watch); cleanup();
       try{
         const all=new Float32Array(chunks.reduce((a,c)=>a+c.length,0)); let off=0; chunks.forEach(c=>{ all.set(c,off); off+=c.length; });
@@ -233,12 +241,16 @@ async function recordTurn(){
       const d=new Float32Array(e.inputBuffer.getChannelData(0)); chunks.push(d);
       let sum=0; for(let i=0;i<d.length;i++) sum+=d[i]*d[i];
       const rms=Math.sqrt(sum/d.length), now=performance.now();
-      if(rms>0.012){ loudSeen=true; lastLoud=now; }
+      level=rms;
+      if(rms>0.004){ if(!loudSeen){ say('sys','听到声音了，继续说…'); } loudSeen=true; lastLoud=now; }
+      if(now-lastStatus>300){ lastStatus=now; setStatus('我在听… 音量 '+Math.max(0,Math.min(99,Math.round(level*400)))+'（直接说话，说完自动停）'); }
     };
     src.connect(proc); proc.connect(ctx.destination);
     const watch=setInterval(()=>{ const now=performance.now();
       if(loudSeen && now-lastLoud>1100){ stopNow(); }
-      else if(now-t0>15000 || (!loudSeen && now-t0>8000)){ stopNow(); }
+      else if(!loudSeen && now-t0>4000 && !warned){ warned=true;
+        say('sys','麦克风没有收到声音（音量 '+Math.round(level*400)+'）：请确认系统输入设备/未静音；或点“⌨️ 打字”。'); }
+      else if(now-t0>15000 || (!loudSeen && now-t0>9000)){ stopNow(); }
     },120);
   });
 }
@@ -374,7 +386,9 @@ async function repromptVerdict(msg){
 }
 /* 打字兜底 */
 function showTypePanel(){ const tpl=$('type_panel_tpl'); $('chat').appendChild(tpl.content.cloneNode(true)); $('type_panel').scrollIntoView({block:'end'}); }
-$('b-start').onclick=async()=>{ clearErr(); PAUSED=false; CARD_ROUNDS=0; VERDICT_ROUNDS=0; LAST_SPEECH_NORM=''; FAILS=0; await ensureAsrMode(); if(DONE){ DONE=false; $('b-start').textContent='🎤 点一下，说想法'; } stopVoice(); say('sys','好，我在听。您想做什么？'); startTimer(); nextTurn(handleIdea); };
+$('b-start').onclick=async()=>{
+  if(RECORDING){ try{ RECORD_STOP&&RECORD_STOP(); }catch(e){} setStatus('已停止录音；再点一次重新开始'); return; }
+  clearErr(); PAUSED=false; CARD_ROUNDS=0; VERDICT_ROUNDS=0; LAST_SPEECH_NORM=''; FAILS=0; await ensureAsrMode(); if(DONE){ DONE=false; $('b-start').textContent='🎤 点一下，说想法'; } stopVoice(); say('sys','好，我在听。您想做什么？'); startTimer(); nextTurn(handleIdea); };
 $('b-stop').onclick=()=>{ pauseListening('已暂停自动听'); };
 $('b-type').onclick=()=>{ showTypePanel(); };
 document.addEventListener('click',ev=>{
