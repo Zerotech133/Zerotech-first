@@ -22,6 +22,10 @@ wait_s 内轮询，超时本轮让位，靠各自调度周期自愈追平。
 - 持锁方须周期 heartbeat（仅 touch mtime，原子无撕裂读风险）
 - 心跳超过 STALE_S（20 分钟）或持锁进程已死 → 视为遗留锁可抢占回收；
   M3 看门狗单条上限 600s < STALE_S，正常持锁不会被误抢
+- **租约制（2026-10-25 K-ORG-20261025-LOCK）**：holder 每握满 LEASE_S（300s）须在
+  处理完一条/一组后调用 tick()——release → 冷却 YIELD_S（20s）→ 重新抢锁。
+  背景：M3 长跑连续独占数小时且全程 heartbeat，STALE_S 永远不触发，JEV 回填
+  2026-10-25 00:34–06:00 连续 9 轮让位、零推进。租约制让两个批处理轮流持有。
 - 仅供长跑批处理使用；交互式/单次调用（门户问答等）不加锁，排队几秒可容忍
 """
 import contextlib
@@ -33,6 +37,9 @@ import time
 _ROOT = os.path.dirname(os.path.abspath(__file__))
 LOCK_PATH = os.path.join(_ROOT, "locks", "ollama_batch.lock")
 STALE_S = 1200            # 无心跳超此秒数视为遗留死锁
+LEASE_S = 300             # 单次持锁租约：握满即让位一次（防长跑独占到底）
+YIELD_S = 20              # 让位冷却：交出后空出这么久给对方抢
+TICK_WAIT_S = 900         # 让位后重新抢锁的单次等待上限
 _POLL_S = 5
 
 
@@ -62,8 +69,9 @@ def _try_create(purpose):
     except FileExistsError:
         return False
     with os.fdopen(fd, "w", encoding="utf-8") as f:
+        now = time.time()          # since 存浮点：round 会丢亚秒精度，
         f.write(json.dumps({"pid": os.getpid(), "purpose": purpose,
-                            "ts": round(time.time())}))
+                            "ts": round(now), "since": now}))  # 令刚持锁时算出 0
     return True
 
 
@@ -121,6 +129,49 @@ def release():
         os.remove(LOCK_PATH)
     except OSError:
         pass
+
+
+def _read_lock():
+    try:
+        with open(LOCK_PATH, encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception:
+        return {}
+
+
+def held_seconds():
+    """本进程已连续持锁秒数；没持锁返回 0。"""
+    d = _read_lock()
+    if int(d.get("pid") or 0) != os.getpid():
+        return 0.0
+    try:
+        since = float(d.get("since") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, time.time() - since) if since > 0 else 0.0
+
+
+def should_yield(lease_s=None):
+    """是否已握满租约。调用方应在每处理完一条/一组后检查。"""
+    return held_seconds() >= (LEASE_S if lease_s is None else lease_s)
+
+
+def tick(purpose, lease_s=None, yield_s=None, wait_s=None, max_tries=6):
+    """租约检查：握满就交还一手，冷却后抢回来。返回 True 表示仍持锁。
+
+    抢锁失败会重试 max_tries 次（每次 wait_s，默认 900s）；仍失败返回 False，
+    由调用方决定告警策略——绝不能"以为还持锁"地继续跑。
+    """
+    if not should_yield(lease_s):
+        return True
+    release()
+    time.sleep(YIELD_S if yield_s is None else yield_s)
+    wait = TICK_WAIT_S if wait_s is None else wait_s
+    for _ in range(max(1, max_tries)):
+        if acquire(purpose, wait_s=wait):
+            return True
+        time.sleep(_POLL_S)
+    return False
 
 
 @contextlib.contextmanager
