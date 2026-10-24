@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>零界 · 一句话（Quickstart）</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  .wrap{max-width:880px;margin:0 auto;padding:18px 20px 80px}
+  .banner{border-left:4px solid #936224;background:#faf3e6;padding:10px 14px;border-radius:6px;margin:10px 0 16px;font-size:13px}
+  .muted{color:#5a6f83;font-size:13px}
+  .card{background:#fff;border:1px solid #dbe5ee;border-radius:14px;padding:16px 18px;margin:12px 0}
+  .card h3{margin:0 0 8px;font-size:15px;color:#0e7490}
+  .turn{font-size:12px;color:#936224;font-weight:700;margin:18px 0 6px}
+  textarea{width:100%;font:inherit;padding:10px 12px;border:1.5px solid #bfd6e2;border-radius:10px;min-height:64px;box-sizing:border-box}
+  button{cursor:pointer;background:#0e7490;color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 14px inherit}
+  button.ghost{background:#fff;color:#0e7490;border:1px solid #bcd8e2}
+  button.warn{background:#b3402e}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .list{margin:6px 0 0;padding-left:20px;font-size:13.5px;line-height:1.8}
+  .scope{background:#f4f9fb;border:1px dashed #bcd8e2;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:8px}
+  .gates{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .g{padding:2px 9px;border-radius:9px;font-size:12px;font-weight:700;background:#eef2f5;color:#54677a}
+  .g.PASS{background:#e9f5ee;color:#227a4b}.g.ISOLATED_ONLY{background:#faf3e6;color:#936224}.g.BLOCKED,.g.FAIL{background:#fdeeea;color:#b3402e}
+  .err{color:#b3402e;white-space:pre-wrap;font-size:13px}
+  .pill{font-size:12px;color:#5a6f83;margin-left:8px}
+  .timing{font-size:12px;color:#936224}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>一句话 · 想到就能试</h1>
+  <p class="muted">您只说一句；系统把这几个条件自动加上去（目标/边界/成功标准/默认授权），回您一张卡。<b>按这个办</b>即自动隔离执行，打开试用后说<b>接受</b>或<b>这里改</b>。</p>
+  <div class="banner">默认授权：隔离环境 · 4 个可逆动作 · 24 小时内有效 · 可撤回。推荐卡为规则辅助（非模型结论）；认领为模拟认领（未获真实认领）；不接生产/交易/外发。<span class="timing" id="timer"></span></div>
+
+  <div class="turn">第 1 句 · 说想法</div>
+  <section class="card">
+    <textarea id="ask" placeholder="例：做个页面，让我每天打开就能看三条简报摘要"></textarea>
+    <div class="row"><button id="b-draft">看看会给我什么卡</button><span class="muted">不用填任何参数</span></div>
+  </section>
+
+  <section class="card" id="card-box" hidden>
+    <div class="turn">第 2 句 · 一张卡（改就一句话，不改就按这个办）</div>
+    <div id="card-body"></div>
+    <textarea id="edit" placeholder="要改哪一句？例：标题改成“今日简报”，只显示两条" style="margin-top:10px"></textarea>
+    <div class="row">
+      <button id="b-confirm">按这个办</button>
+      <button class="ghost" id="b-confirm-edit">带上我的修改，按这个办</button>
+      <button class="ghost" id="b-redraw">重新出卡</button>
+    </div>
+  </section>
+
+  <section class="card" id="result-box" hidden>
+    <div class="turn">第 3 句 · 打开试用，说接受或这里改</div>
+    <div id="result-body"></div>
+    <div class="row">
+      <button class="ghost" id="b-open">打开试用</button>
+      <button id="b-accept">接受</button>
+      <button class="warn" id="b-change">这里改</button>
+    </div>
+    <textarea id="feedback" placeholder="要改什么？一句话（返工时必填）" style="margin-top:10px"></textarea>
+    <textarea id="edit2" placeholder="返工后生成新版本；这里写具体修改（同上一句）" style="margin-top:8px"></textarea>
+  </section>
+
+  <p class="err" id="err" hidden></p>
+</main>
+<script>
+const $=id=>document.getElementById(id); const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let DRAFT=null, ITEM=null, START=Date.now();
+setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s（目标 ≤120s）'; },1000);
+const showErr=m=>{const e=$('err');e.hidden=false;e.textContent=String(m);}; const clearErr=()=>{$('err').hidden=true;};
+async function api(path,body){const opt=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};const r=await fetch(path,opt);const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));if(!r.ok||d.ok===false)throw new Error((d.error||r.status)+': '+(d.message||''));return d;}
+function scopeText(sc){return `环境 ${esc(sc.env)} · 动作 ${sc.actions.length} 个（${sc.actions.map(esc).join(' / ')}） · 有效至 ${esc(sc.valid_until)} · ${sc.reversible?'可撤回':'不可撤回'}`;}
+function renderCard(card){
+  DRAFT=card; $('card-box').hidden=false; $('result-box').hidden=true;
+  const st=card.success_criteria||[];
+  $('card-body').innerHTML=`<div class="card" style="margin:0;border-color:#bcd8e2"><h3>${esc(card.title)}</h3>
+    <div><b>目标</b><ul class="list">${(card.goals||[]).map(g=>`<li>${esc(g)}</li>`).join('')}</ul></div>
+    <div><b>成功标准（可核验）</b><ul class="list">${st.map(s=>`<li>${esc(s.statement)} —— 验证：${esc(s.verify_method)}</li>`).join('')}</ul></div>
+    <div><b>推荐</b>：${esc(card.recommended.option)} <span class="muted">— ${esc(card.recommended.why)}</span></div>
+    <div><b>舍弃</b><ul class="list">${(card.discarded||[]).map(d=>`<li>${esc(d.option)}：${esc(d.why)}</li>`).join('')}</ul></div>
+    <div><b>风险</b><ul class="list">${(card.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
+    <div class="scope"><b>默认授权</b>：${scopeText(card.scope)}<br><span class="pill">改范围请直接说；越权或不可逆会自动停住</span></div>
+    <div class="muted" style="margin-top:6px">${esc(card.honesty.note)}</div></div>`;
+}
+async function draft(edits){
+  clearErr();
+  try{ const d=await api('/api/os/quickstart',{text:$('ask').value, edits: edits||undefined}); renderCard(d.card); }
+  catch(e){ showErr(e.message); }
+}
+async function confirm(edits){
+  clearErr();
+  try{
+    const d=await api('/api/os/quickstart/'+encodeURIComponent(DRAFT.draft_id)+'/confirm',{edits: edits||undefined});
+    ITEM=d.item_id; $('result-box').hidden=false;
+    $('result-body').innerHTML=`<div>已隔离执行完成：产物 <b>${esc(d.artifact.version)}</b> · ${esc(d.artifact.sha256.slice(0,22))}…</div>
+      <div class="gates">${Object.entries(d.chain.gates).map(([k,v])=>`<span class="g ${esc(v)}">${esc(k)} ${esc(v)}</span>`).join('')}</div>
+      <div class="muted">判定：${esc(d.chain.verdict)}（隔离边界内）· 这一步没有让您做任何工程操作</div>`;
+    window.open(d.preview_url,'_blank'); // 确认即执行 → 自动打开试用
+    $('b-open').onclick=()=>window.open(d.preview_url,'_blank');
+    $('b-accept').onclick=async()=>{ try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'accepted',feedback:'接受'}); showErr('已记录：本人接受（B 阶段隔离链一条完成）'); }catch(e){showErr(e.message);} };
+    $('b-change').onclick=async()=>{ try{
+      const fb=($('feedback').value||$('edit2').value||'').trim(); if(!fb) return showErr('写一句要改什么');
+      await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'changes_requested',feedback:fb});
+      const r=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/rework',{feedback:fb});
+      await api('/api/os/item/'+encodeURIComponent(ITEM)+'/trial',{});
+      window.open('/api/os/item/'+encodeURIComponent(ITEM)+'/workspace/index.html','_blank');
+      showErr('已生成新版本 '+r.artifact.version+'，已自动打开；满意就点“接受”。');
+    }catch(e){showErr(e.message);} };
+  }catch(e){ showErr(e.message); }
+}
+$('b-draft').onclick=()=>draft();
+$('b-redraw').onclick=()=>draft($('edit').value.trim()?{changes:$('edit').value.trim()}:undefined);
+$('b-confirm').onclick=()=>confirm();
+$('b-confirm-edit').onclick=()=>confirm($('edit').value.trim()?{changes:$('edit').value.trim()}:undefined);
+loadCardFromUrl();
+async function loadCardFromUrl(){ /* 预留：从 URL 恢复 draft（当前仅内存草稿） */ }
+</script>
+</body>
+</html>

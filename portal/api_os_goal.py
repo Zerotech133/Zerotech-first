@@ -52,6 +52,10 @@ REWORK_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/rework$")
 CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain$")
 PREVIEW_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/workspace/([A-Za-z0-9._-]+)$")
 PREVIEW_ALLOWED = ("index.html", "test.log")
+# Quickstart：一句话→一张卡→确认即执行
+QK_START = "/api/os/quickstart"
+QK_DRAFT_RE = re.compile(r"^/api/os/quickstart/([A-Za-z0-9-]+)$")
+QK_CONFIRM_RE = re.compile(r"^/api/os/quickstart/([A-Za-z0-9-]+)/confirm$")
 
 
 def get_store(base_dir: Optional[str] = None) -> S.OsGoalStore:
@@ -101,6 +105,13 @@ def handle_get(store: S.OsGoalStore, path: str,
             return 200, {"ok": True, **store.get_goal(m.group(1))}
         except KeyError as exc:
             return _err(404, "not_found", str(exc))
+    m = QK_DRAFT_RE.match(path)
+    if m:
+        try:
+            import os_quickstart as Q
+            return 200, {"ok": True, "card": Q.get_draft(m.group(1))}
+        except KeyError as exc:
+            return _err(404, "not_found", str(exc))
     m = CHAIN_RE.match(path)
     if m:
         try:
@@ -128,6 +139,9 @@ def handle_post(store: S.OsGoalStore, path: str,
     if not isinstance(body, dict):
         return _err(400, "bad_body", "body 必须是 JSON 对象")
     try:
+        quick = _handle_quick(store, path, body)
+        if quick is not None:
+            return quick
         handled = _handle_flow(store, path, body)
         if handled is not None:
             return handled
@@ -179,6 +193,20 @@ def handle_post(store: S.OsGoalStore, path: str,
         return _err(422, "contract_violation", str(exc))
     except S.LedgerError as exc:
         return _err(500, "ledger_error", str(exc))
+
+
+def _handle_quick(store, path, body):
+    """Quickstart 路由；未命中返回 None。"""
+    import os_quickstart as Q
+    if path == QK_START:
+        card = Q.create_draft(str(body.get("text") or ""),
+                              edits=body.get("edits") or None)
+        return 201, {"ok": True, "card": card}
+    m = QK_CONFIRM_RE.match(path)
+    if m:
+        out = Q.confirm(m.group(1), store, edits=body.get("edits") or None)
+        return 201, {"ok": True, **out}
+    return None
 
 
 def _handle_flow(store, path, body):
