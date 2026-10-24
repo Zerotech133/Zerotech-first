@@ -448,6 +448,9 @@ def main():
               f"{p.get('doc_type', '')} {p.get('direction', '')} "
               f"tags={','.join(p.get('tags', [])[:5])}", flush=True)
         ollama_lock.heartbeat()
+        # 租约制（K-ORG-20261025-LOCK）：握满 300s 交还一手，防长跑把 JEV 饿死
+        if not ollama_lock.tick("k266_m3"):
+            print("[lock] tick 未抢回锁（重试 6 次），继续跑并告警", flush=True)
 
     def judge_news_batch(items):
         """合批判一组新闻（K266-W7）：一次 LLM 出 JSON 数组逐条落影子；
@@ -488,6 +491,9 @@ def main():
                   f"{p.get('direction', '')} tags={','.join(p.get('tags', [])[:5])}"
                   f" (batch{len(items)})", flush=True)
             ollama_lock.heartbeat()
+            # 租约制（K-ORG-20261025-LOCK）：组间让位，JEV 回填才有窗口
+            if not ollama_lock.tick("k266_m3"):
+                print("[lock] tick 未抢回锁（重试 6 次），继续跑并告警", flush=True)
 
     # 合批缓冲：攒够 BATCH_K 条或 BATCH_CHAR_CAP 字即冲一组（跨批次文件混组
     # 无妨——每条自带 doc_id/name；极限 1100+最长一条 414 字，trunc 预算已留）

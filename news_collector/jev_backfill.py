@@ -99,7 +99,7 @@ def main():
     import atexit
     import ollama_lock
     atexit.register(ollama_lock.release)
-    if not ollama_lock.acquire("jev_backfill", wait_s=660):
+    if not ollama_lock.acquire("jev_backfill", wait_s=900):   # K-ORG-20261025-LOCK 覆盖 M3 一个租约周期
         print("BACKFILL skip: ollama 锁被 M3 持有超 660s，本轮让位（小时轮自愈）")
         return
     items = []
@@ -144,6 +144,10 @@ def main():
         else:
             empty_streak = 0
         ollama_lock.heartbeat()
+        # 租约制（K-ORG-20261025-LOCK）：也让一手，M3 才不会被长期挤占
+        if not ollama_lock.tick("jev_backfill"):
+            print("BACKFILL lock lost: tick 重试 6 次未抢回，本轮收工", flush=True)
+            break
     left = db.execute(
         "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''").fetchone()[0]
     alerted = 0
