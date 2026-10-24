@@ -71,6 +71,43 @@ def _err(status: int, code: str, message: str) -> Tuple[int, Dict[str, Any]]:
     return status, {"ok": False, "error": code, "message": message}
 
 
+PRIVATE_IP_PREFIXES = ("127.", "10.", "172.", "192.168.", "::1")
+
+
+def _origin_is_local_entry(origin: str) -> bool:
+    """只接受 http + 8734 + 回环/私网主机的 Origin（本机浏览器经 8734 入口）。"""
+    try:
+        scheme, rest = origin.split("://", 1)
+        host, _, port = rest.partition(":")
+    except ValueError:
+        return False
+    if scheme != "http" or port != "8734":
+        return False
+    if host in ("127.0.0.1", "localhost", "::1"):
+        return True
+    return host.startswith(("10.", "172.", "192.168."))
+
+
+def is_local_page_request(headers, proxy_hdr="X-Portal-Proxy") -> bool:
+    """8734 反代下"本机页面"POST 判定（OS-CLOSE-QUICKFIX1）。
+
+    - 直连 8091（无 X-Portal-Proxy）：本机放行（portal_api 既有语义）；
+    - 经 8734 反代（nginx 置 X-Portal-Proxy=1 / X-Real-IP=网关）：要求
+      Origin 为本机入口，且 X-Real-IP 为回环/私网（本机浏览器经 docker 发布口）；
+    - 他源页面/局域网直连不带该 Origin，仍走 X-Portal-Token。
+    首版账本为隔离目录，故按"本机入口 + 私网来源"收敛，不放松其他 API。
+    """
+    if not (headers.get(proxy_hdr) or "").strip():
+        return True
+    origin = (headers.get("Origin") or "").strip().lower()
+    if not _origin_is_local_entry(origin):
+        return False
+    rip = (headers.get("X-Real-IP") or "").strip()
+    if not rip:
+        return True
+    return rip.startswith(PRIVATE_IP_PREFIXES)
+
+
 def read_workspace_file(store, item_id, filename):
     """只读预览：白名单文件 + 路径限定在账本根内（G1b）。"""
     if filename not in PREVIEW_ALLOWED:
@@ -302,9 +339,12 @@ class Handler:
         self._json(payload, status)
 
     def _os_goal_post(self, path: str) -> None:
-        if not self._check_portal_token():
-            return self._json({"ok": False, "error": "forbidden",
-                               "message": "非本机请求需 X-Portal-Token"}, 403)
+        if not (is_local_page_request(self.headers) or self._check_portal_token()):
+            self._json({"ok": False, "error": "forbidden",
+                        "message": "非本机请求需 X-Portal-Token",
+                        "origin": self.headers.get("Origin"),
+                        "real_ip": self.headers.get("X-Real-IP")}, 403)
+            return
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
