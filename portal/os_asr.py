@@ -16,7 +16,10 @@ from __future__ import annotations
 import concurrent.futures
 import os
 import re
+import struct
+import tempfile
 import threading
+import wave
 from typing import Any, Dict, Optional
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -132,6 +135,35 @@ def _infer(path: str, lang: str) -> str:
     return _TAG_RE.sub("", text).strip()
 
 
+def _normalize_wav(src: str) -> str:
+    """把输入 WAV 规范成 16-bit PCM 单声道（保留原采样率），避免畸形头导致 EINVAL。"""
+    try:
+        with wave.open(src, "rb") as w:
+            ch, sw, fr, n = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+            raw = w.readframes(n)
+    except Exception as exc:
+        raise AsrUnavailable("WAV 无法解析: %s" % exc)
+    if sw != 2:
+        raise AsrUnavailable("仅支持 16-bit PCM WAV（收到 %s-bit）" % (sw * 8))
+    if n <= 0:
+        raise AsrUnavailable("音频为空")
+    max_frames = 16000 * 30
+    if ch == 2:
+        samples = struct.unpack("<%dh" % (len(raw) // 2), raw)
+        mono = [(samples[i] + samples[i + 1]) // 2 for i in range(0, len(samples), 2)]
+        mono = mono[:max_frames]
+    else:
+        mono = list(struct.unpack("<%dh" % (len(raw) // 2), raw))[:max_frames]
+    fd, tmp = tempfile.mkstemp(suffix=".wav", prefix="os_asr_")
+    os.close(fd)
+    with wave.open(tmp, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(fr)
+        w.writeframes(struct.pack("<%dh" % len(mono), *mono))
+    return tmp
+
+
 def transcribe_wav(path: str, lang: str = "zh") -> str:
     """把 16k 单声道 WAV 转成文本；不可用时抛 AsrUnavailable（调用方回退）。"""
     if not os.path.isfile(path):
@@ -143,9 +175,12 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
         ensure_preload()
         if not _wait_ready(45.0):
             raise AsrUnavailable("模型加载中或失败：%s" % (_STATE.get("error") or "请稍后再试"))
+    clean = _normalize_wav(path)
     try:
-        fut = _EXEC.submit(_infer, path, lang or "zh")
-        return fut.result(timeout=60.0)
+        fut = _EXEC.submit(_infer, clean, lang or "zh")
+        out = fut.result(timeout=60.0)
+        _STATE["fails"] = 0
+        return out
     except concurrent.futures.TimeoutError:
         _STATE["broken"] = True
         _STATE["error"] = "推理超时(>60s)"
@@ -153,6 +188,17 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
     except AsrUnavailable:
         raise
     except Exception as exc:  # pragma: no cover
-        _STATE["broken"] = True
-        _STATE["error"] = "推理异常: %s" % exc
-        raise AsrUnavailable("本地 ASR 推理异常，已熔断；重启 8091 可恢复")
+        # 单次异常不永久熔断：连续 3 次才熔断（避免一次畸形请求锁死服务）
+        fails = int(_STATE.get("fails") or 0) + 1
+        _STATE["fails"] = fails
+        _STATE["error"] = "推理异常(第%s次): %s" % (fails, exc)
+        if fails >= 3:
+            _STATE["broken"] = True
+            raise AsrUnavailable("本地 ASR 连续推理异常，已熔断；重启 8091 可恢复")
+        raise AsrUnavailable("本地 ASR 本次识别失败（%s），请重试" % exc)
+    finally:
+        try:
+            if clean != path:
+                os.unlink(clean)
+        except OSError:
+            pass
