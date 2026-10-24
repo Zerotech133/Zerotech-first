@@ -61,3 +61,14 @@ def test_public_entry_origin_rejected():
     assert A.is_local_page_request(h(
         **{"X-Portal-Proxy": "1", "X-Real-IP": "192.168.204.12",
            "Origin": "http://evil.example:8734"})) is False
+
+def test_page_marker_header_allowed_even_without_origin():
+    assert A.is_local_page_request(h(
+        **{"X-Portal-Proxy": "1", "X-Real-IP": "172.17.0.1",
+           "X-OS-Page": "quick"})) is True
+
+
+def test_page_marker_header_from_public_ip_rejected():
+    assert A.is_local_page_request(h(
+        **{"X-Portal-Proxy": "1", "X-Real-IP": "8.8.8.8",
+           "X-OS-Page": "quick"})) is False

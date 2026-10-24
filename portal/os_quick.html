@@ -71,7 +71,7 @@ const $=id=>document.getElementById(id); const esc=s=>String(s==null?'':s).repla
 let DRAFT=null, ITEM=null, START=Date.now();
 setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s（目标 ≤120s）'; },1000);
 const showErr=m=>{const e=$('err');e.hidden=false;e.textContent=String(m);e.scrollIntoView({block:'center'});document.title='⚠ 需要处理 · 一句话';}; const clearErr=()=>{$('err').hidden=true;document.title='零界 · 一句话（Quickstart）';};
-async function api(path,body){const opt=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};const r=await fetch(path,opt);const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));if(!r.ok||d.ok===false)throw new Error((d.error||r.status)+': '+(d.message||''));return d;}
+async function api(path,body){const opt=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-OS-Page':'quick'},body:JSON.stringify(body)};const r=await fetch(path,opt);const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));if(!r.ok||d.ok===false)throw new Error((d.error||r.status)+': '+(d.message||''));return d;}
 function scopeText(sc){return `环境 ${esc(sc.env)} · 动作 ${sc.actions.length} 个（${sc.actions.map(esc).join(' / ')}） · 有效至 ${esc(sc.valid_until)} · ${sc.reversible?'可撤回':'不可撤回'}`;}
 function renderCard(card){
   DRAFT=card; $('card-box').hidden=false; $('result-box').hidden=true;
