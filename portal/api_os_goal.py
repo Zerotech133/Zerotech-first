@@ -99,6 +99,11 @@ def is_local_page_request(headers, proxy_hdr="X-Portal-Proxy") -> bool:
     """
     if not (headers.get(proxy_hdr) or "").strip():
         return True
+    # 页面同源标记头（同源 fetch 无需预检；仅配合私网反代来源使用）
+    rip0 = (headers.get("X-Real-IP") or "").strip()
+    if (headers.get("X-OS-Page") or "").strip() == "quick" and (
+            not rip0 or rip0.startswith(PRIVATE_IP_PREFIXES)):
+        return True
     origin = (headers.get("Origin") or "").strip().lower()
     if not _origin_is_local_entry(origin):
         return False
