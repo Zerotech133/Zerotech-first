@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
@@ -60,43 +61,68 @@ def _next_id() -> str:
                                  _PROC_TAG, _SEQ[0])
 
 def build_card(text: str, edits: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """一句话 → 一张卡（纯规则草案；不写账、不执行）。"""
+    """一句话 → 一张卡（纯规则草案；不写账、不执行）。
+
+    类型自动识别：含"商业计划/BP/商业方案/计划书/商业模式/融资"等 → business_plan，
+    否则 software。两种类型同一交互（说一句→一张卡→确认即执行）。
+    """
     text = str(text or "").strip()[:500]
     if not text:
         raise C.ContractError("说一句话，我才好出卡")
     edits = edits or {}
     changes = str(edits.get("changes") or "").strip()
+    kind = "business_plan" if re.search(
+        r"商业计划|商业方案|计划书|商业模式|商业规划|BP|融资|路演", text, re.I) else "software"
     goals = ["（原话）" + text]
     if changes:
         goals.append("（按你的修改）" + changes)
-    criteria = [
-        {"id": "SC1", "statement": "成果能打开、能操作，符合这句话的要求",
-         "verify_method": "本人打开试用"},
-        {"id": "SC2", "statement": "我说“这里改”后能生成新版本",
-         "verify_method": "返工后对比新版本"},
-    ]
-    acceptance = changes or "本人打开试用：说“接受”或“这里改”"
+    if kind == "business_plan":
+        title = "商业计划 v1：" + text[:30]
+        criteria = [
+            {"id": "SC1", "statement": "包含目标/用户/价值主张/假设台账/风险/里程碑",
+             "verify_method": "本人通读核对"},
+            {"id": "SC2", "statement": "所有论断标注事实/假设/推断，无外部编造",
+             "verify_method": "逐条核对标注（假设必须可见）"},
+        ]
+        recommended = {"option": "A｜商业计划 v1（假设版）",
+                       "why": "一句话先出可修订的假设版，不编造外部事实"}
+        discarded = [{"option": "B｜先编外部数据", "why": "首版无证据来源，编造违规"},
+                     {"option": "C｜直接对外融资投放", "why": "越权且不可逆，首版不做"}]
+        risks = ["A1–A4 全部为假设，尚未验证", "无外部数据/引用，不作为对外融资材料"]
+        non_goals = ["不编造外部事实/数字", "不对外发送/投放", "不做真实交易"]
+        acceptance = changes or "本人通读：说“接受”或“这里改”"
+    else:
+        title = text[:40]
+        criteria = [
+            {"id": "SC1", "statement": "成果能打开、能操作，符合这句话的要求",
+             "verify_method": "本人打开试用"},
+            {"id": "SC2", "statement": "我说“这里改”后能生成新版本",
+             "verify_method": "返工后对比新版本"},
+        ]
+        recommended = {"option": "A｜隔离单页原型（按这句话自动生成）",
+                       "why": "可逆、能立刻打开试用、失败可撤回"}
+        discarded = [{"option": "B｜直接改现网", "why": "不可逆，首版不做"},
+                     {"option": "C｜只出文档", "why": "不可试用，无法验收"}]
+        risks = ["产物是隔离样本，不代表生产可用", "推荐卡为规则辅助，非模型结论"]
+        non_goals = ["不接生产数据", "不对外发布", "不做真实交易"]
+        acceptance = changes or "本人打开试用：说“接受”或“这里改”"
     card = {
         "draft_id": _next_id(),
+        "kind": kind,
         "text": text,
-        "title": text[:40],
+        "title": title,
         "goals": goals,
-        "non_goals": ["不接生产数据", "不对外发布", "不做真实交易"],
+        "non_goals": non_goals,
         "success_criteria": criteria,
-        "recommended": {"option": "A｜隔离单页原型（按这句话自动生成）",
-                        "why": "可逆、能立刻打开试用、失败可撤回"},
-        "discarded": [
-            {"option": "B｜直接改现网", "why": "不可逆，首版不做"},
-            {"option": "C｜只出文档", "why": "不可试用，无法验收"},
-        ],
-        "risks": ["产物是隔离样本，不代表生产可用",
-                  "推荐卡为规则辅助，非模型结论"],
+        "recommended": recommended,
+        "discarded": discarded,
+        "risks": risks,
         "acceptance_method": acceptance,
         "scope": {"actions": list(DEFAULT_ACTIONS), "env": DEFAULT_ENV,
                   "valid_until": _valid_until(), "reversible": True,
                   "note": "默认授权：隔离 4 动作 / 24h / 可撤回；越权或不可逆才打断本人"},
         "honesty": {"card_source": "rule_assisted", "claim": "simulated",
-                    "note": "规则辅助 + 模拟认领；不接真实消费者/交易/外发"},
+                    "note": "规则辅助 + 模拟认领；BP 首版不含外部证据、不编造"},
         "created_at": _now(),
     }
     if edits.get("extra_goal"):
@@ -147,7 +173,8 @@ def confirm(draft_id: str, store: S.OsGoalStore,
     item_ev = store.create_item(
         goal_id, card["title"] or card["text"][:40],
         "用户一句话提出（quickstart %s）" % card["draft_id"],
-        "software", attempt_no=1, idem="QUICK-ITEM-%s" % card["draft_id"])
+        card.get("kind") or "software", attempt_no=1,
+        idem="QUICK-ITEM-%s" % card["draft_id"])
     iid = item_ev["payload"]["item_id"]
     F.freeze_brief(store, iid, card["goals"], card["success_criteria"],
                    non_goals=card["non_goals"],

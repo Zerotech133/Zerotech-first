@@ -239,20 +239,46 @@ def execute(store, item_id, idem=None):
     last_verdict = _find(evs, "verdict.recorded")
     if last_verdict and last_verdict["payload"].get("feedback"):
         feedback = str(last_verdict["payload"]["feedback"])
-    page = _render_page(title, goals, criteria, recommended, feedback, version)
+    kind = str(item.get("outcome_kind") or "software")
+    if kind == "business_plan":
+        import os_bp
+        draft_ref = "conversation/quickstart"
+        try:
+            draft_ref = "conversation/quickstart/%s" % str(item.get("why_now") or "").split("quickstart ")[-1].split("）")[0]
+        except Exception:
+            pass
+        page = os_bp.render_bp(
+            title=title, goals=goals, criteria=criteria, recommended=recommended,
+            risks=(card["payload"].get("risks") or []),
+            non_goals=(brief["payload"].get("non_goals") or []),
+            constraints=(brief["payload"].get("constraints") or []),
+            feedback=feedback, version=version, source_ref=draft_ref)
+    else:
+        page = _render_page(title, goals, criteria, recommended, feedback, version)
     path = os.path.join(ws, "index.html")
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(page)
     data = page.encode("utf-8")
     sha = "sha256:" + hashlib.sha256(data).hexdigest()
     # 隔离自检：不依赖浏览器/网络，只做静态断言
-    checks = [("file_exists", os.path.isfile(path)),
-              ("size>200", len(data) > 200),
-              ("has_artifact_marker", ('data-artifact="%s"' % version) in page),
-              ("has_first_goal", (goals[0] in page) if goals else False),
-              ("has_feedback_attr", "data-feedback=" in page),
-              ("feedback_consistent", (html.escape(feedback) in page) if feedback
-               else ("暂无返工反馈" in page))]
+    if kind == "business_plan":
+        checks = [("file_exists", os.path.isfile(path)),
+                  ("size>1200", len(data) > 1200),
+                  ("has_artifact_marker", ('data-artifact="%s"' % version) in page),
+                  ("has_first_goal", (goals[0] in page) if goals else False),
+                  ("has_bp_sections", all(k in page for k in
+                   ("假设台账", "依据与引用", "风险", "里程碑", "修订理由"))),
+                  ("has_feedback_attr", "data-feedback=" in page),
+                  ("feedback_consistent", (html.escape(feedback) in page) if feedback
+                   else ("暂无返工反馈" in page))]
+    else:
+        checks = [("file_exists", os.path.isfile(path)),
+                  ("size>200", len(data) > 200),
+                  ("has_artifact_marker", ('data-artifact="%s"' % version) in page),
+                  ("has_first_goal", (goals[0] in page) if goals else False),
+                  ("has_feedback_attr", "data-feedback=" in page),
+                  ("feedback_consistent", (html.escape(feedback) in page) if feedback
+                   else ("暂无返工反馈" in page))]
     ok = all(passed for _, passed in checks)
     log = json.dumps({"checks": checks, "ok": ok, "version": version,
                       "sha256": sha}, ensure_ascii=False, indent=1)

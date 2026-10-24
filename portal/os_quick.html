@@ -44,7 +44,7 @@
   <div class="banner">默认授权：隔离环境 · 4 个可逆动作 · 24 小时 · 可撤回。推荐卡为规则辅助（非模型结论）；认领为模拟认领（未获真实认领）；不接生产/交易/外发。<span class="say" id="timer"></span></div>
 
   <div class="chat" id="chat">
-    <div class="msg sys">您好。第 1 句说想法，第 2 句听卡说"行"，第 3 句看试用说"接受"或"这里改"。点下面的 🎤 <b>点一下，说想法</b>，之后就像聊天一样。</div>
+    <div class="msg sys">您好。第 1 句说想法（做个页面，或一份商业计划），第 2 句听卡说"行"，第 3 句看成果说"接受"或"这里改"。点下面 🎤 <b>点一下，说想法</b>，之后像聊天一样。</div>
   </div>
 
   <p class="err" id="err" hidden></p>
@@ -209,7 +209,8 @@ async function api(path,body){
   return d;
 }
 function cardHtml(card){
-  return '<div class="msg card"><h3>'+esc(card.title)+'</h3>'
+  const kindLabel=(card.kind==='business_plan')?'商业计划（BP v1，假设版）':'软件原型';
+  return '<div class="msg card"><h3>'+esc(card.title)+'</h3>'+'<div class="muted">类型：'+kindLabel+'</div>'
     +'<div><b>要做的</b><ul class="list">'+(card.goals||[]).map(g=>'<li>'+esc(g)+'</li>').join('')+'</ul></div>'
     +'<div><b>怎么算成</b><ul class="list">'+(card.success_criteria||[]).map(s=>'<li>'+esc(s.statement)+'（'+esc(s.verify_method)+'）</li>').join('')+'</ul></div>'
     +'<div style="margin-top:4px"><b>我建议</b>：'+esc(card.recommended.option)+'</div>'
