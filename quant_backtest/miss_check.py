@@ -10,6 +10,12 @@
   生效日（之前不检，防新任务首日前误报）。
 · 判定：now >= expect + GRACE 且 Last Run < 今日 expect → MISS。
   Last Run 从 schtasks /v 实测（不信任日志）。
+· 2026-10-24 加「刚醒宽限」：机器从挂起恢复后的 RESUME_SETTLE_MIN 分钟内，判定
+  窗口顺延。理由：挂起结束时机器的系统时间会被硬件钟一次性纠正（实测 +600437ms
+  / +1084752ms），一跳就跨过 deadline，而 Task Scheduler 的 StartWhenAvailable
+  还在补跑，此刻 _task_last_run 仍是旧值 → 假 MISS（WO-20261024-02）。
+  锚点仍取任务自己的 Last Run（输出字段 last_success_at），now 只回答"够不够久、
+  能不能下结论"；过了结算窗口还没跑，照报 MISS，真漏不放走。
 · 首期只收「交易日无关」子集 8 任务（休市也必须跑的同步/巡检/抽取/
   告警类）；交易日依赖任务（缠论扫描/回填/复盘类）休市日会 miss，属
   K221 判例的正常跳过，二期接交易日判定后纳入。
@@ -32,6 +38,26 @@ sys.path.insert(0, HERE)
 
 OUT = os.path.join(HERE, "data", "miss_check_last.json")
 GRACE_MIN = 90          # 排程后宽限（错过补跑 AIColAudit 实测隔 4h，先 90min 起步）
+
+# 2026-10-24 加：机器刚醒时的结算窗口（分钟）。
+# 为什么需要：本哨兵用 `now` 判断"是否已过宽限期"，而 `now` 会被挂起/睡醒打乱。
+# 实测（2026-10-24，WO-20261024-02）：13:50:35→14:08:40 挂起 18.1 分钟、
+# 15:32:45→15:42:45 挂起 10.0 分钟，醒来后系统时间被硬件钟一次纠正 +600437ms。
+# 副作用：一跳就跨过 deadline，而 Task Scheduler 的 StartWhenAvailable 还在补跑，
+# `_task_last_run` 此刻仍是旧值 → 判 MISS → 假告警。
+# 口径：若最近一次挂起/唤醒在 SETTLE 分钟以内，把判定窗口顺延到补跑结算完，
+# 不在"刚醒"这一刻下结论；过了窗口仍没跑，才报 MISS（真漏不放走）。
+RESUME_SETTLE_MIN = 45
+# 单次时钟纠正 ≥ 60s 才算挂起（与 tools/gen_health_card.py 的 machine_suspend 同口径）
+SUSPEND_DELTA_MIN_SECONDS = 60.0
+_RESUME_QUERY_TIMEOUT = 25.0
+_RESUME_PS = (
+    "Get-WinEvent -FilterHashtable @{LogName='System'; Id=107,1;"
+    "StartTime=(Get-Date).AddHours(-6)} -ErrorAction SilentlyContinue |"
+    "Select-Object Id,@{n='at';e={$_.TimeCreated.ToString('yyyy-MM-dd HH:mm:ss')}}"
+    ",Message | ConvertTo-Json -Compress -Depth 3"
+)
+
 # 交易日无关子集：白名单底册（显式 expect，since=生效日）
 REGISTRY = {
     "KG-TushareSync":    {"expect": "00:10", "since": "2026-10-06"},
@@ -105,6 +131,75 @@ def _task_last_run(name):
         return None
 
 
+def _recent_resume_minutes(now=None):
+    """最近一次"从挂起/睡眠恢复"距今多少分钟；查不到返回 None（不判、不加宽限）。
+
+    判据（只认结构化 ID，不解析本地化文案）：
+      · Kernel-Power 107：系统已从睡眠状态恢复
+      · Kernel-General 1 且消息含 ≥60s 的毫秒增量：时间被硬件钟纠正，
+        增量本身就是刚才那次挂起的时长（醒来瞬间写入）。
+    两者取时间最大者。查不到 = 这台机器近 6 小时没睡过 → 返回 None。
+    """
+    now = now or datetime.now()
+    try:
+        p = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", _RESUME_PS],
+            capture_output=True, timeout=_RESUME_QUERY_TIMEOUT)
+    except Exception:
+        return None
+    raw = p.stdout.decode("utf-8", errors="replace").strip()
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except ValueError:
+        return None
+    events = parsed if isinstance(parsed, list) else [parsed]
+    latest = None
+    for ev in events:
+        if not isinstance(ev, dict):
+            continue
+        try:
+            event_id = int(ev.get("Id"))
+        except (TypeError, ValueError):
+            continue
+        candidate = False
+        if event_id == 107:
+            candidate = True
+        elif event_id == 1:
+            deltas = re.findall(r"(-?\d[\d,]*)\s*ms", str(ev.get("Message") or ""))
+            for d in deltas:
+                try:
+                    if abs(float(d.replace(",", ""))) / 1000.0 >= SUSPEND_DELTA_MIN_SECONDS:
+                        candidate = True
+                        break
+                except ValueError:
+                    continue
+        if not candidate:
+            continue
+        try:
+            when = datetime.strptime(str(ev.get("at")), "%Y-%m-%d %H:%M:%S")
+        except (TypeError, ValueError):
+            continue
+        if latest is None or when > latest:
+            latest = when
+    if latest is None:
+        return None
+    return max(0.0, (now - latest).total_seconds() / 60.0)
+
+
+def wake_grace_minutes(minutes_since_resume):
+    """机器刚醒 → 把本轮判定窗口顺延，避免时钟跳变造成误报。
+
+    纯函数，便于单测：None（没睡过）或已超结算窗口 → 0；否则返回剩余分钟数。
+    """
+    if minutes_since_resume is None:
+        return 0.0
+    if minutes_since_resume >= RESUME_SETTLE_MIN:
+        return 0.0
+    return RESUME_SETTLE_MIN - max(0.0, float(minutes_since_resume))
+
+
 def _trade_today(now=None):
     """今天是否为 A 股交易日：行情湖 ts_daily 最新日 == 今天。
 
@@ -124,9 +219,17 @@ def _trade_today(now=None):
         return False
 
 
-def run():
-    now = datetime.now()
+def run(now=None):
+    now = now or datetime.now()
     today = now.strftime("%Y-%m-%d")
+    # 2026-10-24：先把"机器是不是刚醒"算出来。刚醒时 Task Scheduler 的
+    # StartWhenAvailable 正在补跑，此刻下 MISS 结论 = 必然误报（时钟刚跳完）。
+    minutes_since_resume = _recent_resume_minutes(now)
+    wake_grace = wake_grace_minutes(minutes_since_resume)
+    if wake_grace > 0:
+        print("机器 %.1f 分钟前从挂起恢复：本轮判定窗口顺延 %.0f 分钟"
+              "（补跑结算中，先不下 MISS 结论）"
+              % (minutes_since_resume, wake_grace))
     miss, checked = [], 0
     for name, cfg in REGISTRY.items():
         if cfg.get("since") and today < cfg["since"]:
@@ -137,23 +240,31 @@ def run():
             continue                     # 周任务：仅指定星期检查（十三审）
         exp_h, exp_m = map(int, cfg["expect"].split(":"))
         expect = now.replace(hour=exp_h, minute=exp_m, second=0)
-        deadline = expect + timedelta(minutes=GRACE_MIN)
+        deadline = expect + timedelta(minutes=GRACE_MIN + wake_grace)
         if now < deadline:
             continue                     # 未到宽限期不检
         checked += 1
-        last = _task_last_run(name)
-        if last is None or last < expect:
+        # 锚点是任务自己的「最后成功时间」（schtasks Last Run），不是 now；
+        # now 只回答一个问题：过去够久了吗、现在能不能下结论。
+        last_success = _task_last_run(name)
+        if last_success is None or last_success < expect:
+            stamp = (last_success.strftime("%Y-%m-%d %H:%M")
+                     if last_success else "never")
             miss.append({"task": name, "expect": cfg["expect"],
-                         "last_run": last.strftime("%Y-%m-%d %H:%M")
-                         if last else "never"})
+                         "last_success_at": stamp,
+                         "last_run": stamp})   # last_run 保留：既有消费方兼容
     for m_ in miss:
         print("MISS  %s  expect %s  last %s"
               % (m_["task"], m_["expect"], m_["last_run"]))
-    print("checked %d / miss %d（交易日无关子集 · 宽限 %d 分钟）"
-          % (checked, len(miss), GRACE_MIN))
+    print("checked %d / miss %d（交易日无关子集 · 宽限 %d+%.0f 分钟）"
+          % (checked, len(miss), GRACE_MIN, wake_grace))
     res = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
-        "grace_min": GRACE_MIN, "checked": checked,
+        "grace_min": GRACE_MIN,
+        "minutes_since_resume": (round(minutes_since_resume, 1)
+                                 if minutes_since_resume is not None else None),
+        "wake_grace_min": round(wake_grace, 1),
+        "checked": checked,
         "n_miss": len(miss), "miss": miss,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

@@ -49,12 +49,17 @@ LLM_PROMPT = ("判断两个词在金融资讯词云场景是否为同一主题�
 def ask_llm(cand, base, timeout=30):
     """本地 Ollama 判同义：YES/NO/ERR。"""
     import requests
-    # num_ctx 必须 4096：本机 Ollama 非默认 ctx 值病态（2048 实测挂死 45s+，
-    # 与 M3 的 8192/16384 毒药同族，唯一健康值 4096——2026-10-08 对照实验：
-    # ctx2048 超时 / ctx4096+think:False 0.2s 返回）。think:False 抑制 qwen3.5
-    # 思考链（否则 num_predict 全被 thinking 吃掉，content 恒空）。
+    # num_ctx 统一 16384（2026-10-24 收口）：本机所有调用方必须共用一个 ctx——
+    # Ollama 每次 num_ctx 变化都会**整模型重载**（实测 15~46s），10-24 一天重载
+    # 99 次。此处原先钉 4096，依据是 2026-10-08 的"2048 挂死 45s+/8192·16384
+    # 病态"对照实验；那是 **CPU 推理 + f16 KV cache** 时代的结论。iGPU/Vulkan +
+    # KV q8_0 之后复测：16384 与 4096 生成吞吐相同（33.5 vs 33.8 tok/s），
+    # 加载代价 4096=0s（已驻留）/16384≈15~46s（只在换 ctx 时付一次）。故统一到
+    # 16384，换掉"唯一健康值 4096"的旧口径。
+    # think:False 抑制 qwen3.5 思考链（否则 num_predict 全被 thinking 吃掉，
+    # content 恒空）。
     body = {"model": "qwen3.5:9b", "think": False, "stream": False,
-            "options": {"num_ctx": 4096, "num_predict": 8},
+            "options": {"num_ctx": 16384, "num_predict": 8},
             "messages": [{"role": "user",
                           "content": LLM_PROMPT % (cand, base)}]}
     try:

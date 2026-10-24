@@ -71,8 +71,13 @@ BODY_CHARS = 300           # 正文截断（短文本分类足够）
 DEGRADED_MAX_RETRY = 3     # v1.4 degraded 重试封顶：≥3 次不再重试（防死循环耗 token）
 
 # v1.5 速率旋钮（rate-opt 工位 2026-10-18）：环境变量可覆盖 LLM options，
-# 未设置时取值与现状完全一致（默认行为零变化——追平轮进行中，红线）。
-DEFAULT_NUM_CTX = 2048
+# 未设置时取下面常量。
+# 2026-10-24 收口：DEFAULT_NUM_CTX 2048 → 16384。全仓统一 ctx 的理由是
+# Ollama 每次 num_ctx 变化都会**整模型重载**（实测 15~46s/次，10-24 一天
+# 99 次）；分类任务本身用不了 16K，但它和 M3/报告/平台共用同一个常驻实例，
+# 单独要小 ctx 会把模型反复拉进拉出。iGPU/Vulkan + KV q8_0 下 16384 与 4096
+# 生成吞吐相同（33.5 vs 33.8 tok/s），故统一小值不必省。
+DEFAULT_NUM_CTX = 16384
 DEFAULT_NUM_PREDICT = 256
 
 
@@ -113,9 +118,14 @@ def ollama_probe_busy(thresh_s, timeout_s=PEAK_SHIFT_PROBE_TIMEOUT_S):
     """单次占用探测：最小推理 ping（num_predict=1，think 关），延迟超阈判 busy。
     禁代理开 opener（A1 报告判例：环境代理会污染 127.0.0.1 探测）。
     返回 (busy, latency_s)；探测异常（超时/拒绝）按 busy 计——fail-safe 不硬挤。"""
+    # num_ctx 必须与 DEFAULT_NUM_CTX 一致（2026-10-24 收口）：这里原先是 512
+    # 的"最小占用"探针，但 ctx 与主调用不一致时，探测本身就会让 Ollama 重载一次
+    # 模型（15~46s），既污染延迟读数、又把模型拉成 512 驻留、害下一条正式请求
+    # 再重载。统一 16384 后，探针只是"同一实例上的极短请求"，测的才是真占用。
     payload = json.dumps({"model": MODEL, "prompt": "ping", "stream": False,
                           "think": False,
-                          "options": {"num_ctx": 512, "num_predict": 1}}).encode("utf-8")
+                          "options": {"num_ctx": DEFAULT_NUM_CTX,
+                                      "num_predict": 1}}).encode("utf-8")
     req = urllib.request.Request(PEAK_SHIFT_PING_URL, data=payload,
                                  headers={"Content-Type": "application/json"})
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))

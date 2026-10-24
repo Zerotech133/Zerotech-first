@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """gen_health_card.py — 治理健康卡（只读，零第三方依赖）。
 
-聚合五类治理信号，输出一张机器可消费的 JSON（默认 stdout）与可选的自包含
-HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份、不改仓库。
+聚合治理信号，输出一张机器可消费的 JSON（默认 stdout）与可选的自包含
+HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读：不扫描计划任务、
+不触发备份、不改仓库。
 
 数据来源（均以实读为准，读不到就报 available=false，绝不静默当 0）：
 1. task_exit_audit 的账本/摘要（默认 <repo>/portal/data/task_exit_audit/，
@@ -47,6 +48,57 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
    available=false 黄（不判绿）；原始层不存在/无 parquet/遍历超预算 →
    available=false 红。
 
+9. 本地推理能力（ai.inference）：这张卡原来 21 项全在管任务/备份/数据/仓库，
+   产品本体（AI 推理）零监控，而推理故障全是静默的——上下文截断不报错、思考
+   模型返回空串不报错、通道死了只有调用时才 500、变慢只是「很慢」。本项只测
+   qwen3.5:9b 一个模型（全量三模型探针在 tools/probe_llm_capability.py，约 2
+   分钟，不进健康卡）：
+   ① GET /api/tags（3s 超时）判 Ollama 可达，并确认 9b 已安装；
+   ② GET /api/ps（3s 超时）看 9b 是否已驻留——未驻留只判黄并跳过生成，
+      绝不为「测一下」把模型冷加载起来（那是几秒到十几秒的额外代价）；
+   ③ 已驻留才 POST /api/chat：think=false、num_ctx=16384、num_predict=16、
+      temperature=0，问「只回答一个字：好」，20s 超时；记录 message.content
+      长度、thinking 长度、/api/ps 里该模型的 context_length、以及
+      eval_count÷eval_duration 吞吐。整项预算 30s。
+   这是全卡唯一的写动作：那条 16 token 的短生成会在 num_ctx 不匹配时让 Ollama
+   以 16384 重载 9b——只观测、不刻意造数，其余一切仍是只读。
+   全部请求经 ProxyHandler({}) 直连：系统代理会劫持 127.0.0.1，把「本机没开
+   服务」伪装成「代理连不上」。
+
+10. 机器挂起（ops.machine_suspend）：2026-10-24 发现 6 条互不相干的日志在同一
+    分钟内集体断档（watchdog 120 分钟、k266_services 100 分钟、portal_api 120
+    分钟…）。根因不是调度器、不是某个守护脚本，是**机器在睡 / 掉电**——应用层
+    日志醒来就继续写，看不出中间那段空洞，于是「机器没开」被误读成「任务失败」。
+    本项读 Windows 系统事件日志（结构化 ID，不解析本地化文案）：
+    ① Kernel-General 1 且消息含毫秒增量：系统时间被硬件钟纠正的毫秒数，就是本次
+       挂起的真实时长（>60s 才计，避免把普通 NTP 微调算成挂起）——这是唯一能给出
+       「睡了多少」的直接读数；
+    ② Kernel-Power 42：进入睡眠次数；
+    ③ Kernel-Power 41 / EventLog 6008：意外关机（无 BugCheck 的掉电/硬复位）。
+    判级：有意外关机 → 红；今日累计挂起 >60 分钟 → 红；>10 分钟 → 黄；
+    读不到/查询失败 → 红（不判绿）；无事件也是 0 次（可判绿，但要写明「今日无挂起」）。
+    本项纯只读，不启停服务、不改电源设置。
+    （2026-10-24 21:30 修订：本机是开发笔记本，睡眠/断电属使用方式，**改为一律只报黄**；
+    生产环境不适用此现象。只有"读不到"仍判红。）
+
+11. 推理错误率（ai.error_rate）：读 Ollama 自己写的 GIN 访问日志（尾部 8 MB），
+    统计最近 60 分钟 2xx/3xx、4xx、5xx 的分布。建项起因：2026-10-24 日志里出现
+    每分钟 25–30 次 `POST /api/chat` 404，而业务侧被「降级三态/规则兜底」吞掉，
+    健康卡上完全看不见——失败在，信号没了。判级：有 5xx → 红；失败率 >20% 红、
+    >5% 黄；样本 <20 不判绿（读不到就是没看见）；窗口内 0 请求 → 绿并写明 0。
+
+12. 智能体点名册（agent.census）：复用 `tools/agent_census.py --json`（单一真相源，
+    本卡不重复实现口径），把四本账（编制/事件/产出/工单）的结论收成一行：
+    在册几席、干活几个、有单未动几个、待命几个、静默占比、压单席位。
+    判级：有单未动 ≥3 席 → 红；1–2 席或静默占比 ≥70% → 黄；否则绿。
+    读不到/子进程失败 → 红（不判绿）。
+
+13. 每日工作项（agent.daily）：复用 `tools/agent_daily.py --json`，
+    读 `agent_platform/registry/daily_work.json`（事项目录），按频率判定"今天该做的
+    事做了没有"，证据只认三类硬事实：产物文件新鲜度 / 日志成功标记 / 审计账本动作。
+    判级：有未交付 → 红；只有待接线 → 黄；全部交付或今日无到期 → 绿。
+    没有可检查证据的事**不收录**（type=manual 的标"待接线"，既不算过也不算欠）。
+
 用法：
     python -B tools/gen_health_card.py
     python -B tools/gen_health_card.py --vault-root C:/项目/_vault
@@ -61,6 +113,9 @@ HTML（--out DIR）。本脚本只读：不扫描计划任务、不触发备份�
 明文私钥命中 ≥1 红、有目录/文件读不到黄、扫描超 3s 红；
 整理层落后 >2 天黄 / >14 天红、整理层缺失或为空黄（不判绿）、
 原始层缺失或遍历超 5s 红。
+本地推理：Ollama 不可达红、9b 未安装红、读不到 /api/ps 黄、未驻留黄（不判绿）、
+content 为空红、答案不含「好」黄、驻留 ctx≠16384 黄、吞吐 <20 tok/s 黄、
+请求 20s 未返回黄；读不到的指标一律写进 detail，绝不静默当 0 也不判绿。
 """
 from __future__ import annotations
 
@@ -76,6 +131,8 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -234,6 +291,31 @@ CURATED_RED_LAG_DAYS = 14.0
 CURATED_SCAN_BUDGET_SECONDS = 5.0
 CURATED_SCAN_DEADLINE_CHECK_EVERY = 4096
 CURATED_DETAIL_DATASET_LIMIT = 5
+
+# --- 本地推理能力（ai.inference）---------------------------------------------
+# 2026-10-24 建：本卡原来 21 项全在管任务/备份/数据/仓库，**产品本体（AI 推理）
+# 零监控**。而推理故障全是静默的：上下文截断不报错、思考模型返回空串不报错、
+# 通道死了只有调用时才 500、变慢只是「很慢」。
+# 只测 9b 一个模型、只发一条 num_predict=16 的短请求（整项 ≤30s）；全量三模型
+# 探针是 tools/probe_llm_capability.py 的事（约 2 分钟），不塞进每日健康卡。
+AI_OLLAMA_HOST = "http://127.0.0.1:11434"
+AI_MODEL = "qwen3.5:9b"
+AI_MODEL_SHORT = AI_MODEL.split(":", 1)[-1]  # 绿卡 detail 里的短名：9b
+AI_PROMPT = "只回答一个字：好"
+AI_EXPECTED_ANSWER = "好"
+AI_NUM_CTX = 16384
+AI_NUM_PREDICT = 16
+# 三跳各自封顶：3 + 3 + 20 = 26s，留 4s 余量给 HTTP/JSON 开销，整项预算 30s。
+AI_TAGS_TIMEOUT_SECONDS = 3.0
+AI_PS_TIMEOUT_SECONDS = 3.0
+AI_CHAT_TIMEOUT_SECONDS = 45.0
+AI_BUDGET_SECONDS = 60.0
+# 9b（Q4_K_M，约 5.5 GiB 显存）正常 30–60 tok/s；<20 基本是掉到 CPU 或显存不足。
+# num_predict 只有 16，单次 eval 样本小，阈值取 20 而不是 5（探针脚本）：健康卡里
+# 这一项是「每天都看」的，宁可把「明显变慢」提前亮出来，也不要等它慢到掉底。
+AI_MIN_TOKS_PER_SECOND = 20.0
+# detail / JSON 只留答案开头几十字，不把整段生成塞进卡片。
+AI_CONTENT_EXCERPT_CHARS = 40
 
 
 # ---------------------------------------------------------------------------
@@ -3255,6 +3337,629 @@ def _plaintext_keys_detail(keys: dict[str, Any]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# 4) 本地推理能力（ai.inference）
+# ---------------------------------------------------------------------------
+# 采集侧只报事实（可达/已装/已驻留/ctx/content 长度/吞吐），判级口径在 _evaluate。
+# 全部请求 build_opener(ProxyHandler({})) 直连：系统代理会把 127.0.0.1 也接管，
+# 「服务没开」于是长出「代理连不上」的假原因（仓里多份判例，见 tools/qa_run.py）。
+def _empty_ai_inference() -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "host": AI_OLLAMA_HOST,
+        "model": AI_MODEL,
+        "reachable": None,
+        "installed": None,
+        "installed_models": None,
+        "ps_ok": None,
+        "ps_error": None,
+        "resident": None,
+        "ctx": None,
+        "expected_ctx": AI_NUM_CTX,
+        "chat_ok": None,
+        "chat_error": None,
+        "content_excerpt": None,
+        "content_len": None,
+        "thinking_len": None,
+        "answer_matches": None,
+        "eval_count": None,
+        "eval_duration_seconds": None,
+        "toks_per_second": None,
+        "done_reason": None,
+        "timed_out": False,
+        "elapsed_seconds": None,
+        "budget_seconds": AI_BUDGET_SECONDS,
+        "over_budget": False,
+    }
+
+
+def _ai_http_json(
+    url: str, timeout: float, payload: dict[str, Any] | None = None
+) -> tuple[dict[str, Any] | None, str | None, bool]:
+    """直连 Ollama 取/送 JSON：返回 (对象, 错误文案, 是否超时)。"""
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    headers = {"Accept": "application/json"}
+    data = None
+    if payload is not None:
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(url, data=data, headers=headers)
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            raw = response.read()
+    except urllib.error.HTTPError as exc:
+        # 4xx/5xx：通道在、调用失败（模型没拉/显存爆/参数不认）。读不到就说读不到。
+        return None, "HTTP %s %s" % (exc.code, exc.reason), False
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        reason = getattr(exc, "reason", exc)
+        if isinstance(exc, TimeoutError) or isinstance(reason, TimeoutError):
+            return None, "%gs 未返回" % timeout, True
+        return None, "%s: %s" % (type(exc).__name__, reason), False
+    try:
+        parsed = json.loads(raw.decode("utf-8", "replace"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return None, "响应不是 JSON: " + _short_exc(exc), False
+    if not isinstance(parsed, dict):
+        return None, "响应不是 JSON 对象（%s）" % type(parsed).__name__, False
+    return parsed, None, False
+
+
+def _ai_model_entry(models: Any, model: str) -> dict[str, Any] | None:
+    """在 /api/tags 或 /api/ps 的 models[] 里找同名条目。"""
+    if not isinstance(models, list):
+        return None
+    for entry in models:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("name") == model or entry.get("model") == model:
+            return entry
+    return None
+
+
+def collect_ai_inference() -> dict[str, Any]:
+    """探测一次本地推理（口径与阈值见模块 docstring 第 9 条）。"""
+    started = time.monotonic()
+    result = _empty_ai_inference()
+
+    def finish() -> dict[str, Any]:
+        result["elapsed_seconds"] = round(time.monotonic() - started, 2)
+        result["over_budget"] = result["elapsed_seconds"] > AI_BUDGET_SECONDS
+        return result
+
+    tags, tags_error, tags_timeout = _ai_http_json(
+        AI_OLLAMA_HOST + "/api/tags", AI_TAGS_TIMEOUT_SECONDS
+    )
+    if tags is None:
+        result["reason"] = "Ollama 不可达（%s）：%s" % (AI_OLLAMA_HOST, tags_error)
+        result["timed_out"] = tags_timeout
+        return finish()
+    result["reachable"] = True
+    models = tags.get("models")
+    result["installed_models"] = len(models) if isinstance(models, list) else None
+    result["installed"] = _ai_model_entry(models, AI_MODEL) is not None
+
+    ps, ps_error, ps_timeout = _ai_http_json(
+        AI_OLLAMA_HOST + "/api/ps", AI_PS_TIMEOUT_SECONDS
+    )
+    if ps is None:
+        # tags 刚通过，说明服务活着；只是驻留状态读不到 —— 不知道就不判绿。
+        result["ps_ok"] = False
+        result["ps_error"] = ps_error
+        result["timed_out"] = ps_timeout
+        return finish()
+    result["ps_ok"] = True
+    # tags/ps 都通了：探测本身已经跑起来。后面生成失败是「通道活着但调用失败」，
+    # 不能再退回 available=false（那会被判成「Ollama 不可达」，掩盖真因）。
+    result["available"] = True
+    resident = _ai_model_entry(ps.get("models"), AI_MODEL)
+    result["resident"] = resident is not None
+    if resident is None:
+        # 关键取舍：不为「测一下」把 5.5 GiB 的模型冷加载起来，那会把健康卡拖慢
+        # 十几秒，而健康卡是要每天每分钟看的。
+        result["reason"] = "未驻留，跳过生成以免冷加载拖慢健康卡"
+        return finish()
+
+    ctx = resident.get("context_length")
+    result["ctx"] = ctx if isinstance(ctx, int) else None
+
+    payload = {
+        "model": AI_MODEL,
+        "stream": False,
+        # 思考模型不关思考时 message.content 恒为空串——这是 2026-10-23 审计里
+        # 「调用成功但答案空白」的根因，所以必须显式关掉并单独记录 thinking 长度。
+        "think": False,
+        "messages": [{"role": "user", "content": AI_PROMPT}],
+        "options": {
+            "num_ctx": AI_NUM_CTX,
+            "num_predict": AI_NUM_PREDICT,
+            "temperature": 0,
+        },
+    }
+    chat, chat_error, chat_timeout = _ai_http_json(
+        AI_OLLAMA_HOST + "/api/chat", AI_CHAT_TIMEOUT_SECONDS, payload
+    )
+    result["timed_out"] = chat_timeout
+    result["chat_error"] = chat_error
+    if chat is None:
+        return finish()
+
+    result["chat_ok"] = True
+    message = chat.get("message") if isinstance(chat.get("message"), dict) else {}
+    content = str(message.get("content") or "")
+    thinking = str(message.get("thinking") or "")
+    result["content_len"] = len(content)
+    result["content_excerpt"] = content.strip()[:AI_CONTENT_EXCERPT_CHARS]
+    result["thinking_len"] = len(thinking)
+    result["answer_matches"] = AI_EXPECTED_ANSWER in content
+    eval_count = chat.get("eval_count")
+    eval_duration_ns = chat.get("eval_duration")
+    if isinstance(eval_count, int):
+        result["eval_count"] = eval_count
+    if isinstance(eval_duration_ns, (int, float)) and eval_duration_ns > 0:
+        seconds = float(eval_duration_ns) / 1e9
+        result["eval_duration_seconds"] = round(seconds, 3)
+        if isinstance(eval_count, int) and eval_count > 0:
+            result["toks_per_second"] = round(eval_count / seconds, 1)
+    result["done_reason"] = chat.get("done_reason")
+    return finish()
+
+
+def _ai_inference_not_resident_detail(ai: dict[str, Any]) -> str:
+    return (
+        "%s 未驻留，跳过生成以免冷加载拖慢健康卡"
+        "（/api/tags 可读，已装 %s 个模型；ctx 与吞吐本轮无样本，不判绿）"
+        % (AI_MODEL, _fmt_num(ai.get("installed_models")))
+    )
+
+
+def _ai_inference_verdict(ai: dict[str, Any]) -> tuple[str, str]:
+    """已驻留且已发过生成请求后的事实判定；detail 必须带真实数字。"""
+    if ai.get("timed_out"):
+        # 2026-10-24 修订：NUM_PARALLEL 已降为 1（qwen35 架构不支持并行），
+        # 请求是**严格串行**的——批处理（M3 合批一次 15~33s）在跑时，
+        # 这条 16 token 的探针只能排队。所以超时≠通道坏，判黄并写清原因；
+        # 超时阈值同步提到 45s，避免把"排队"误报成"卡死"。
+        return "yellow", (
+            "%s 已驻留，但 /api/chat %gs 未返回（NUM_PARALLEL=1 串行，"
+            "多半排在批处理之后；不能据此判定通道卡死）"
+            % (AI_MODEL, AI_CHAT_TIMEOUT_SECONDS)
+        )
+    if ai.get("chat_ok") is not True:
+        return "red", "调用 /api/chat 失败：%s（%s 已驻留，不是冷加载问题）" % (
+            ai.get("chat_error") or "未知原因",
+            AI_MODEL,
+        )
+
+    content_len = ai.get("content_len") or 0
+    thinking_len = ai.get("thinking_len") or 0
+    eval_count = ai.get("eval_count")
+    eval_text = eval_count if eval_count is not None else "—"
+    if not content_len:
+        # 空串是这类故障里最贵的一种：HTTP 200、done_reason=stop，调用方拿到空答案，
+        # 不抛错，静默污染下游判定。thinking 长度直接指认「思考没关」这一类。
+        return "red", (
+            "message.content 为空（thinking %d 字符，eval_count=%s，done_reason=%s）："
+            "思考模型未关思考（think=false 未生效）或 num_predict=%d 被思考吃光"
+            % (thinking_len, eval_text, ai.get("done_reason") or "—", AI_NUM_PREDICT)
+        )
+
+    level = "green"
+    problems: list[str] = []
+    if not ai.get("answer_matches"):
+        level = "yellow"
+        problems.append(
+            "答案不切题（%d 字：「%s」），质量退化"
+            % (content_len, ai.get("content_excerpt") or "")
+        )
+    ctx = ai.get("ctx")
+    if ctx is None:
+        level = "yellow"
+        problems.append("/api/ps 未给出 context_length，ctx 不可判定（不判绿）")
+    elif ctx != AI_NUM_CTX:
+        level = "yellow"
+        problems.append(
+            "ctx 实际 %d ≠ %d，num_ctx 漂移会触发全模型重载" % (ctx, AI_NUM_CTX)
+        )
+    toks = ai.get("toks_per_second")
+    if toks is None:
+        level = "yellow"
+        problems.append(
+            "吞吐不可读（eval_count=%s，eval_duration 缺失），不判绿" % eval_text
+        )
+    elif toks < AI_MIN_TOKS_PER_SECOND:
+        level = "yellow"
+        problems.append(
+            "吞吐 %.1f tok/s < %g（eval_count=%s）"
+            % (toks, AI_MIN_TOKS_PER_SECOND, eval_text)
+        )
+
+    if ai.get("over_budget"):
+        problems.append(
+            "整项 %.1fs 超 %gs 预算" % (ai.get("elapsed_seconds") or 0.0, AI_BUDGET_SECONDS)
+        )
+        if level == "green":
+            level = "yellow"
+    if problems:
+        return level, "；".join(problems)
+    return "green", "%s ok · ctx=%d · %.1f tok/s" % (
+        AI_MODEL_SHORT,
+        AI_NUM_CTX,
+        toks,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 5) 机器挂起（ops.machine_suspend）
+# ---------------------------------------------------------------------------
+# 只认 Windows 系统事件日志里的结构化 ID，不解析本地化文案。
+# 关键洞察：Kernel-General 1 的"时间被硬件钟纠正 +N ms"里那个 N，就是挂起时长——
+# 机器睡眠期间硬件时钟在走、系统时钟不走，醒来后被纠正，增量即真实空洞。
+# 其它日志（应用侧守护）醒来就接着写，只能看到"少了几行"，给不出时长。
+SUSPEND_QUERY_TIMEOUT_SECONDS = 25.0
+SUSPEND_RED_SECONDS = 3600.0     # 今日累计挂起 >60 分钟 -> 红
+SUSPEND_YELLOW_SECONDS = 600.0   # >10 分钟 -> 黄
+SUSPEND_MIN_EVENT_SECONDS = 60.0  # 单次纠正 <60s 视为普通对时，不算挂起
+
+_SUSPEND_PS = (
+    "Get-WinEvent -FilterHashtable @{LogName='System'; Id=1,41,42,6008;"
+    "StartTime=(Get-Date).Date} -ErrorAction SilentlyContinue |"
+    "Select-Object Id,@{n='TimeCreated';"
+    "e={$_.TimeCreated.ToString('yyyy-MM-dd HH:mm:ss')}},Message |"
+    "ConvertTo-Json -Compress -Depth 3"
+)
+
+
+def _empty_machine_suspend() -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "date": None,
+        "suspend_count": None,
+        "suspend_seconds": None,
+        "largest_suspend_seconds": None,
+        "sleep_events": None,
+        "unexpected_shutdowns": [],
+        "duration_seconds": None,
+    }
+
+
+def _suspend_delta_seconds(message: str) -> float | None:
+    """从 Kernel-General 时间纠正文案里取毫秒增量（本地化无关：只认数字+ms）。
+
+    「时间增量更改为 …：600437 ms」/「Time changed … by 600437 ms」都能命中。
+    取所有候选里绝对值最大的一个（一条消息可能同时含旧值/新值/增量）。
+    """
+    best = None
+    for match in re.finditer(r"(-?\d[\d,]*)\s*ms", message or ""):
+        try:
+            value = abs(float(match.group(1).replace(",", "")))
+        except ValueError:
+            continue
+        if best is None or value > best:
+            best = value
+    return None if best is None else best / 1000.0
+
+
+def collect_machine_suspend() -> dict[str, Any]:
+    """统计今日挂起次数/累计时长/意外关机（只读系统事件日志）。"""
+    result = _empty_machine_suspend()
+    result["date"] = dt.date.today().isoformat()
+    started = time.monotonic()
+    try:
+        proc = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", _SUSPEND_PS],
+            capture_output=True, timeout=SUSPEND_QUERY_TIMEOUT_SECONDS, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["reason"] = "powershell 调用失败: " + _short_exc(exc)
+        result["duration_seconds"] = round(time.monotonic() - started, 3)
+        return result
+    result["duration_seconds"] = round(time.monotonic() - started, 3)
+
+    raw = (proc.stdout or b"").decode("utf-8", "replace").strip()
+    if proc.returncode != 0:
+        err = (proc.stderr or b"").decode("utf-8", "replace").strip()[:160]
+        result["reason"] = "事件查询失败(rc=%s): %s" % (proc.returncode, err or "无 stderr")
+        return result
+    if not raw:
+        # 今天一条相关事件都没有：合法状态（没睡过），计 0 而不是"读不到"。
+        result.update(available=True, suspend_count=0, suspend_seconds=0.0,
+                      largest_suspend_seconds=0.0, sleep_events=0)
+        return result
+
+    try:
+        parsed = json.loads(raw)
+    except ValueError as exc:
+        result["reason"] = "事件输出不是 JSON: " + _short_exc(exc)
+        return result
+    events = parsed if isinstance(parsed, list) else [parsed]
+
+    suspends: list[float] = []
+    sleep_events = 0
+    shutdowns: list[dict[str, Any]] = []
+    for ev in events:
+        if not isinstance(ev, dict):
+            continue
+        try:
+            event_id = int(ev.get("Id"))
+        except (TypeError, ValueError):
+            continue
+        when = str(ev.get("TimeCreated") or "")
+        if event_id == 42:
+            sleep_events += 1
+        elif event_id in (41, 6008):
+            # 41=内核电源"未正常关机"，6008=上一次关闭是意外的。同一件事常两条都记。
+            if not any(s["id"] == event_id for s in shutdowns):
+                shutdowns.append({"id": event_id, "at": when})
+        elif event_id == 1:
+            delta = _suspend_delta_seconds(str(ev.get("Message") or ""))
+            if delta is not None and delta >= SUSPEND_MIN_EVENT_SECONDS:
+                suspends.append(delta)
+
+    result.update(
+        available=True,
+        suspend_count=len(suspends),
+        suspend_seconds=round(sum(suspends), 1),
+        largest_suspend_seconds=round(max(suspends), 1) if suspends else 0.0,
+        sleep_events=sleep_events,
+        unexpected_shutdowns=shutdowns,
+    )
+    return result
+
+
+def _machine_suspend_detail(sus: dict[str, Any]) -> str:
+    seconds = sus.get("suspend_seconds") or 0.0
+    count = sus.get("suspend_count") or 0
+    bits = []
+    if count:
+        bits.append("今日挂起 %d 次共 %.1f 分钟（最长 %.1f）"
+                    % (count, seconds / 60.0, (sus.get("largest_suspend_seconds") or 0.0) / 60.0))
+    else:
+        bits.append("今日无挂起记录")
+    bits.append("睡眠事件 %s" % _fmt_num(sus.get("sleep_events")))
+    shutdowns = sus.get("unexpected_shutdowns") or []
+    if shutdowns:
+        # 41 与 6008 是同一次事故的两条证据（内核电源 + 事件日志），不是两次事故。
+        ids = "、".join(sorted({str(s.get("id")) for s in shutdowns}))
+        first_at = shutdowns[0].get("at") or "?"
+        bits.append("意外关机（ID %s，最近 %s）" % (ids, first_at))
+    else:
+        bits.append("无意外关机")
+    return "；".join(bits)
+
+
+# ---------------------------------------------------------------------------
+# 6) 推理错误率（ai.error_rate）
+# ---------------------------------------------------------------------------
+# 2026-10-24 建：ollama 日志里出现过每分钟 25–30 次 `POST /api/chat` 404，
+# 而业务侧被"降级三态/规则兜底"吞掉，健康卡上完全看不出来。
+# 本项只读 Ollama 自己写的 GIN 访问日志，统计最近一小时 4xx/5xx 占比。
+AI_ERROR_WINDOW_MINUTES = 60.0
+AI_ERROR_YELLOW_RATIO = 0.05
+AI_ERROR_RED_RATIO = 0.20
+AI_ERROR_MIN_SAMPLES = 20
+# GIN 行格式：`[GIN] 2026/10/24 - 21:04:39 | 200 |  1.2ms | 127.0.0.1 | POST "/api/chat"`
+_GIN_RE = re.compile(
+    r"\[GIN\]\s+(\d{4})/(\d{2})/(\d{2})\s+-\s+(\d{2}):(\d{2}):(\d{2})\s*\|\s*(\d{3})\s*\|"
+)
+
+
+def _empty_ai_error_rate() -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "source": None,
+        "window_minutes": AI_ERROR_WINDOW_MINUTES,
+        "total": None,
+        "ok": None,
+        "client_errors": None,
+        "server_errors": None,
+        "ratio": None,
+    }
+
+
+def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> dict[str, Any]:
+    """统计最近一小时 Ollama 访问日志里的 HTTP 状态分布（只读，最多读尾部 4 万行）。"""
+    result = _empty_ai_error_rate()
+    now = now or dt.datetime.now()
+    candidates = [
+        repo_root / "automation_runs" / "ollama_guard" / "serve_tuned.log",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "tuned.log",
+    ]
+    cutoff = now - dt.timedelta(minutes=AI_ERROR_WINDOW_MINUTES)
+    total = ok = client_err = server_err = 0
+    used = None
+    for path in candidates:
+        try:
+            if not path.exists():
+                continue
+            with path.open("rb") as fh:
+                fh.seek(0, os.SEEK_END)
+                size = fh.tell()
+                fh.seek(max(0, size - 8 * 1024 * 1024))
+                tail = fh.read().decode("utf-8", "replace")
+        except OSError:
+            continue
+        hits = 0
+        for match in _GIN_RE.finditer(tail):
+            try:
+                when = dt.datetime(
+                    int(match.group(1)), int(match.group(2)), int(match.group(3)),
+                    int(match.group(4)), int(match.group(5)), int(match.group(6)),
+                )
+            except ValueError:
+                continue
+            if when < cutoff:
+                continue
+            status = int(match.group(7))
+            hits += 1
+            total += 1
+            if 200 <= status < 400:
+                ok += 1
+            elif 400 <= status < 500:
+                client_err += 1
+            elif status >= 500:
+                server_err += 1
+        if hits and used is None:
+            used = path.name
+    if total == 0:
+        result.update(available=True, source=used, total=0, ok=0,
+                      client_errors=0, server_errors=0, ratio=0.0)
+        return result
+    bad = client_err + server_err
+    result.update(
+        available=True, source=used, total=total, ok=ok,
+        client_errors=client_err, server_errors=server_err,
+        ratio=round(bad / total, 4),
+    )
+    return result
+
+
+def _ai_error_detail(err: dict[str, Any]) -> str:
+    total = err.get("total") or 0
+    if total == 0:
+        return "近 %d 分钟无 API 请求（日志可读，计数 0）" % AI_ERROR_WINDOW_MINUTES
+    bits = [
+        "近 %d 分钟 %d 次请求：2xx/3xx %d · 4xx %d · 5xx %d"
+        % (AI_ERROR_WINDOW_MINUTES, total, err.get("ok") or 0,
+           err.get("client_errors") or 0, err.get("server_errors") or 0),
+    ]
+    ratio = err.get("ratio") or 0.0
+    if ratio > 0:
+        bits.append("失败率 %.1f%%" % (ratio * 100))
+    return "；".join(bits)
+
+
+# ---------------------------------------------------------------------------
+# 7) 智能体点名册（agent.census）
+# ---------------------------------------------------------------------------
+# 2026-10-24 建：军团有 60 席，但"谁在干活"要看四本账（org.json 编制 /
+# llm_tool_audit 事件 / checkpoints.traces 产出 / tasks.json 工单），合不起来
+# 就看不出"组织在转、业务空转"。本项直接复用 tools/agent_census.py 的结论，
+# 只读、不重复实现口径（单一真相源）。
+AGENT_CENSUS_TIMEOUT_SECONDS = 30.0
+AGENT_CENSUS_RED_OPEN = 3        # 有单未动的席位数 ≥ 此值判红
+AGENT_CENSUS_YELLOW_SILENT = 0.70
+
+
+def _empty_agent_census() -> dict[str, Any]:
+    return {
+        "available": False, "reason": None, "generated_at": None,
+        "summary": None, "open_agents": [],
+    }
+
+
+def collect_agent_census(repo_root: Path) -> dict[str, Any]:
+    """子进程跑 tools/agent_census.py --json，取汇总 + 有单未动的席位。"""
+    result = _empty_agent_census()
+    script = repo_root / "tools" / "agent_census.py"
+    if not script.exists():
+        result["reason"] = "tools/agent_census.py 不存在"
+        return result
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-B", str(script), "--json"],
+            capture_output=True, timeout=AGENT_CENSUS_TIMEOUT_SECONDS, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["reason"] = "调用失败: " + _short_exc(exc)
+        return result
+    raw = (proc.stdout or b"").decode("utf-8", "replace").strip()
+    if proc.returncode != 0 or not raw:
+        err = (proc.stderr or b"").decode("utf-8", "replace").strip()[:160]
+        result["reason"] = "退出码 %s：%s" % (proc.returncode, err or "无输出")
+        return result
+    try:
+        card = json.loads(raw)
+    except ValueError as exc:
+        result["reason"] = "输出不是 JSON: " + _short_exc(exc)
+        return result
+    summary = card.get("summary") or {}
+    result.update(
+        available=True,
+        generated_at=card.get("generated_at"),
+        summary=summary,
+        open_agents=[r for r in (card.get("rows") or [])
+                     if r.get("level") == "有单未动"][:6],
+    )
+    return result
+
+
+def _agent_census_detail(cen: dict[str, Any]) -> str:
+    s = cen.get("summary") or {}
+    bits = ["在册 %s" % _fmt_num(s.get("在册")),
+            "干活 %s" % _fmt_num(s.get("干活中")),
+            "有单未动 %s" % _fmt_num(s.get("有单未动")),
+            "待命 %s" % _fmt_num(s.get("在岗待命")),
+            "静默 %s（%.0f%%）" % (_fmt_num(s.get("静默")),
+                                 (s.get("静默占比") or 0) * 100)]
+    if s.get("在手工单"):
+        bits.append("在手工单 %s" % _fmt_num(s.get("在手工单")))
+    names = [r.get("agent") for r in (cen.get("open_agents") or [])]
+    if names:
+        bits.append("压单席位：" + "、".join(n for n in names if n))
+    return "；".join(bits)
+
+
+# ---------------------------------------------------------------------------
+# 8) 每日工作项（agent.daily）
+# ---------------------------------------------------------------------------
+# 2026-10-24 建：配合 agent_platform/registry/daily_work.json（事项目录）。
+# "谁在干活"（agent.census）之外还要回答"该干的干了没有"——没有事的组织只会
+# 巡检和催办（当天实测：351 条催办 vs 1 单派工）。本项复用 tools/agent_daily.py
+# --json，不重复实现判定口径。
+AGENT_DAILY_TIMEOUT_SECONDS = 30.0
+
+
+def _empty_agent_daily() -> dict[str, Any]:
+    return {"available": False, "reason": None, "generated_at": None,
+            "summary": None, "missed": []}
+
+
+def collect_agent_daily(repo_root: Path) -> dict[str, Any]:
+    result = _empty_agent_daily()
+    script = repo_root / "tools" / "agent_daily.py"
+    if not script.exists():
+        result["reason"] = "tools/agent_daily.py 不存在"
+        return result
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-B", str(script), "--json", "--no-ledger"],
+            capture_output=True, timeout=AGENT_DAILY_TIMEOUT_SECONDS, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["reason"] = "调用失败: " + _short_exc(exc)
+        return result
+    raw = (proc.stdout or b"").decode("utf-8", "replace").strip()
+    if proc.returncode != 0 or not raw:
+        err = (proc.stderr or b"").decode("utf-8", "replace").strip()[:160]
+        result["reason"] = "退出码 %s：%s" % (proc.returncode, err or "无输出")
+        return result
+    try:
+        card = json.loads(raw)
+    except ValueError as exc:
+        result["reason"] = "输出不是 JSON: " + _short_exc(exc)
+        return result
+    missed = [r for r in (card.get("rows") or []) if r.get("status") == "未交付"]
+    result.update(available=True, generated_at=card.get("generated_at"),
+                  summary=card.get("summary") or {}, missed=missed[:8])
+    return result
+
+
+def _agent_daily_detail(d: dict[str, Any]) -> str:
+    s = d.get("summary") or {}
+    bits = ["事项 %s" % _fmt_num(s.get("总事项")),
+            "交付 %s" % _fmt_num(s.get("已交付")),
+            "未交付 %s" % _fmt_num(s.get("未交付")),
+            "不适用 %s" % _fmt_num(s.get("不适用")),
+            "待接线 %s" % _fmt_num(s.get("待接线"))]
+    miss = d.get("missed") or []
+    if miss:
+        bits.append("欠账：" + "、".join("%s(%s)" % (m.get("id"), m.get("agent")) for m in miss))
+    return "；".join(bits)
+
+
+# ---------------------------------------------------------------------------
 # 状态判定
 # ---------------------------------------------------------------------------
 def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str]]:
@@ -3612,6 +4317,115 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             key_level = "green"
         add("security.plaintext_keys", key_level, _plaintext_keys_detail(keys))
 
+    inference = (card.get("ai") or {}).get("inference") or {}
+    if not inference:
+        add("ai.inference", "red", "本地推理检查未运行（ai 块缺失）")
+    elif not inference.get("available"):
+        add(
+            "ai.inference",
+            "red",
+            "本地推理不可达：" + str(inference.get("reason") or "未知原因"),
+        )
+    elif inference.get("installed") is False:
+        # 服务活着但模型不在：调用方才 500，健康卡不能因为 /api/tags 能连就判绿。
+        add(
+            "ai.inference",
+            "red",
+            "Ollama 可达（已装 %s 个模型）但没有 %s：agent 调用会直接 500"
+            % (_fmt_num(inference.get("installed_models")), AI_MODEL),
+        )
+    elif inference.get("ps_ok") is False:
+        add(
+            "ai.inference",
+            "yellow",
+            "读不到 /api/ps，无法判定 %s 是否驻留：%s"
+            % (AI_MODEL, inference.get("ps_error") or "未知原因"),
+        )
+    elif not inference.get("resident"):
+        add("ai.inference", "yellow", _ai_inference_not_resident_detail(inference))
+    else:
+        ai_level, ai_detail = _ai_inference_verdict(inference)
+        add("ai.inference", ai_level, ai_detail)
+
+    err = (card.get("ai") or {}).get("error_rate") or {}
+    if not err:
+        add("ai.error_rate", "red", "推理错误率检查未运行（ai 块缺失）")
+    elif not err.get("available"):
+        add("ai.error_rate", "red",
+            "推理错误率不可用：" + str(err.get("reason") or "未知原因"))
+    else:
+        # 5xx 一票红；4xx 看占比。样本不足不判绿（读不到就是没看见）。
+        detail = _ai_error_detail(err)
+        ratio = err.get("ratio") or 0.0
+        total = err.get("total") or 0
+        if (err.get("server_errors") or 0) > 0:
+            add("ai.error_rate", "red", detail)
+        elif total < AI_ERROR_MIN_SAMPLES:
+            add("ai.error_rate", "yellow",
+                detail + "（样本 <%d，不判绿）" % AI_ERROR_MIN_SAMPLES)
+        elif ratio > AI_ERROR_RED_RATIO:
+            add("ai.error_rate", "red", detail)
+        elif ratio > AI_ERROR_YELLOW_RATIO:
+            add("ai.error_rate", "yellow", detail)
+        else:
+            add("ai.error_rate", "green", detail)
+
+    cen = (card.get("agent") or {}).get("census") or {}
+    if not cen:
+        add("agent.census", "red", "智能体点名册未运行（agent 块缺失）")
+    elif not cen.get("available"):
+        add("agent.census", "red",
+            "智能体点名册不可用：" + str(cen.get("reason") or "未知原因"))
+    else:
+        # 判级只认两件事：有没有人"名下有单却不动"，以及整体静默比例。
+        s = cen.get("summary") or {}
+        detail = _agent_census_detail(cen)
+        open_count = s.get("有单未动") or 0
+        silent_ratio = s.get("静默占比") or 0.0
+        if open_count >= AGENT_CENSUS_RED_OPEN:
+            add("agent.census", "red", detail)
+        elif open_count > 0 or silent_ratio >= AGENT_CENSUS_YELLOW_SILENT:
+            add("agent.census", "yellow", detail)
+        else:
+            add("agent.census", "green", detail)
+
+    daily = (card.get("agent") or {}).get("daily") or {}
+    if not daily:
+        add("agent.daily", "red", "每日工作项检查未运行（agent 块缺失）")
+    elif not daily.get("available"):
+        add("agent.daily", "red",
+            "每日工作项不可用：" + str(daily.get("reason") or "未知原因"))
+    else:
+        # 有欠账 → 红（该交的没交）；只有"待接线" → 黄（没判据，不算过）。
+        s = daily.get("summary") or {}
+        detail = _agent_daily_detail(daily)
+        if (s.get("未交付") or 0) > 0:
+            add("agent.daily", "red", detail)
+        elif (s.get("待接线") or 0) > 0:
+            add("agent.daily", "yellow", detail)
+        else:
+            add("agent.daily", "green", detail)
+
+    sus = (card.get("ops") or {}).get("machine_suspend") or {}
+    if not sus:
+        add("ops.machine_suspend", "red", "机器挂起检查未运行（ops 块缺失）")
+    elif not sus.get("available"):
+        add("ops.machine_suspend", "red",
+            "机器挂起统计不可用：" + str(sus.get("reason") or "未知原因"))
+    else:
+        # 判据优先级：意外关机 / 累计挂起时长。两者语义不同——
+        # 挂起是"机器慢了"，意外关机是"机器没了"，不能合并成一个数。
+        #
+        # 2026-10-24 21:30 老田定调：这**是开发笔记本**，合盖/拔电/睡眠是使用方式，
+        # 不是产品缺陷；生产环境不会复现。故挂起与断电一律**只报黄**（说明性），
+        # 保留数字与明细供观察，不作为阻断项。只有"读不到"才判红（下面分支）。
+        # 若将来跑在生产机上真复现，再按需恢复红级——别让开发机每天训练出"忽略红灯"。
+        detail = _machine_suspend_detail(sus) + "（开发机特性，不计入产品判据）"
+        if (sus.get("suspend_seconds") or 0) > 0 or sus.get("unexpected_shutdowns"):
+            add("ops.machine_suspend", "yellow", detail)
+        else:
+            add("ops.machine_suspend", "green", _machine_suspend_detail(sus))
+
     rank = {"green": 0, "yellow": 1, "red": 2}
     status = max((check["level"] for check in checks), key=lambda level: rank[level])
     reasons = [
@@ -3653,8 +4467,13 @@ def build_card(
         "repo": repo_block,
         "docs": {"index_freshness": collect_docs_index(repo_root)},
         "ops": {"alert_watch": collect_alert_watch(repo_root),
-                "task_launch_failures": collect_task_launch_failures()},
+                "task_launch_failures": collect_task_launch_failures(),
+                "machine_suspend": collect_machine_suspend()},
         "security": {"plaintext_keys": collect_plaintext_keys(repo_root)},
+        "ai": {"inference": collect_ai_inference(),
+               "error_rate": collect_ai_error_rate(repo_root)},
+        "agent": {"census": collect_agent_census(repo_root),
+                  "daily": collect_agent_daily(repo_root)},
         "notes": [
             "本脚本只读：不扫描/启停计划任务、不触发备份、不改仓库。",
             "dirty_files 含未跟踪文件；本脚本自身在提交前也会被计入。",
@@ -3702,6 +4521,22 @@ def build_card(
             "原始层不存在、原始层没有 parquet、或遍历超 "
             f"{CURATED_SCAN_BUDGET_SECONDS:g}s 预算 → available=false + 红。"
             "重建命令见 tools/refresh_curated.py（--replace 会永久删除旧整理层，须先校验通过）。",
+            "本地推理（ai.inference）：只测 qwen3.5:9b，不跑三模型全量探针。"
+            f"/api/tags {AI_TAGS_TIMEOUT_SECONDS:g}s 判可达、/api/ps "
+            f"{AI_PS_TIMEOUT_SECONDS:g}s 判驻留（未驻留判黄且不发请求，绝不为测而冷加载）；"
+            f"已驻留才发一条 think=false / num_ctx={AI_NUM_CTX} / "
+            f"num_predict={AI_NUM_PREDICT} / temperature=0 的短生成，"
+            f"{AI_CHAT_TIMEOUT_SECONDS:g}s 超时。message.content 为空红（带 thinking 长度）；"
+            f"答案不含「{AI_EXPECTED_ANSWER}」黄（不切题=质量退化）；"
+            f"/api/ps 的 context_length≠{AI_NUM_CTX} 黄（num_ctx 漂移会触发全模型重载）；"
+            f"吞吐 <{AI_MIN_TOKS_PER_SECOND:g} tok/s 黄；请求 {AI_CHAT_TIMEOUT_SECONDS:g}s "
+            f"未返回黄。整项预算 {AI_BUDGET_SECONDS:g}s；请求全部经 ProxyHandler({{}}) 直连；"
+            "读不到的指标写进 detail，不静默当 0、不判绿。",
+            "机器挂起（ops.machine_suspend）：读系统事件日志的 Kernel-General 1"
+            "（时间被硬件钟纠正的毫秒数=挂起时长，>60s 才计）、Kernel-Power 42（睡眠次数）、"
+            "41/6008（意外关机）。有意外关机 → 红；今日累计挂起 >60 分钟红 / >10 分钟黄；"
+            "查询失败红（不判绿）。这是全卡唯一能把「机器没开」与「任务失败」分开的读数——"
+            "2026-10-24 六条日志同时断档，应用侧只能看到少了几行，给不出时长。",
         ],
     }
     checks, status, reasons = _evaluate(card)
@@ -4140,6 +4975,60 @@ def _render_html(card: dict[str, Any]) -> str:
     parts.append(
         '<p class="note">只报路径 / 字节数 / git 状态，不回显任何文件内容。</p>'
     )
+    parts.append("</section>")
+
+    ai = (card.get("ai") or {}).get("inference") or {}
+    parts.append('<section class="block">')
+    parts.append("<h2>本地推理</h2>")
+    parts.append(
+        '<div class="sub">%s · %s（只发一条 num_predict=%d 的短生成，整项 ≤%gs）</div>'
+        % (
+            _e(ai.get("host")),
+            _e(ai.get("model")),
+            AI_NUM_PREDICT,
+            AI_BUDGET_SECONDS,
+        )
+    )
+    if not ai.get("available"):
+        parts.append(f'<p class="unavailable">不可用：{_e(ai.get("reason"))}</p>')
+    elif ai.get("installed") is False:
+        parts.append(
+            '<p class="unavailable">Ollama 可达（已装 %s 个模型），但没有 %s：调用会直接 500</p>'
+            % (_fmt_num(ai.get("installed_models")), _e(AI_MODEL))
+        )
+    elif not ai.get("resident"):
+        parts.append(_kv("驻留", "否（未驻留，跳过生成以免冷加载）"))
+        parts.append(_kv("已装模型数", _fmt_num(ai.get("installed_models"))))
+        parts.append('<p class="note">本轮没有生成样本，ctx 与吞吐不可判定，不判绿。</p>')
+    else:
+        toks = ai.get("toks_per_second")
+        toks_text = "未测到" if toks is None else "%.1f tok/s" % toks
+        parts.extend(
+            [
+                _kv("驻留", "是"),
+                _kv("ctx / 期望", "%s / %d" % (_fmt_num(ai.get("ctx")), AI_NUM_CTX)),
+                _kv(
+                    "content / thinking 字数",
+                    "%s / %s"
+                    % (
+                        _fmt_num(ai.get("content_len")),
+                        _fmt_num(ai.get("thinking_len")),
+                    ),
+                ),
+                _kv("答对「%s」" % AI_EXPECTED_ANSWER, "是" if ai.get("answer_matches") else "否"),
+                _kv("吞吐", "%s（eval_count=%s）" % (toks_text, _fmt_num(ai.get("eval_count")))),
+                _kv(
+                    "耗时 / 预算",
+                    "%ss / %ss" % (ai.get("elapsed_seconds"), ai.get("budget_seconds")),
+                ),
+            ]
+        )
+        if ai.get("content_excerpt"):
+            parts.append('<p class="note">返回：%s</p>' % _e(ai["content_excerpt"]))
+        if ai.get("chat_error"):
+            parts.append(
+                '<p class="unavailable">调用失败：%s</p>' % _e(ai["chat_error"])
+            )
     parts.append("</section>")
 
     parts.append('<section class="block full"><h2>判定明细</h2><ul class="checks">')

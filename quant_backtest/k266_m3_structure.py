@@ -223,12 +223,14 @@ def ask_ollama(text, prompt=PROMPT, num_predict=600, trunc=1200,
 
     def _worker():
         body = {"model": MODEL, "think": False, "stream": False,
-                # num_ctx 4096：本机 8192/16384 的 runner 已病态（同文本 4096
-                # 实测 3-5s，8192 卡死 240s+，2026-10-08 对照实验）。4096 装不下
-                # 超长文，配截断（新闻 tags 靠标题导语足够）；若日后
-                # Ollama 服务重启修复大 ctx，可再调大截断。num_predict 防病态
-                # 长生成。
-                "options": {"num_ctx": 4096, "num_predict": num_predict},
+                # num_ctx 统一 16384（2026-10-24 收口）：全仓共用一个 ctx，
+                # 避免 Ollama 因 num_ctx 变化整模型重载（实测 15~46s/次，10-24
+                # 一天 99 次）。原先钉 4096 的依据是 2026-10-08 的"8192 卡死
+                # 240s+"对照实验——那是 CPU 推理 + f16 KV cache 时代；iGPU/Vulkan
+                # + KV q8_0 后复测 16384 与 4096 吞吐相同（33.5 vs 33.8 tok/s）。
+                # 正文截断（trunc/BATCH_CHAR_CAP）保持不变：加大 ctx 只放宽上限，
+                # 不改批次口径。num_predict 仍防病态长生成。
+                "options": {"num_ctx": 16384, "num_predict": num_predict},
                 "messages": [{"role": "user",
                               "content": prompt + "\n\n=== 文档文本（截断）===\n" + text[:trunc]}]}
         for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
