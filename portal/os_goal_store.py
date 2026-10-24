@@ -199,6 +199,22 @@ class OsGoalStore:
         raise LedgerError("%s id 空间用尽" % prefix)
 
     # ------------------------------------------------------------ 领域操作
+    def append_event(self, etype, refs, payload, actor=None, idem=None):
+        """通用追加（G1 流程事件；语义校验由 os_software_flow 负责）。"""
+        if etype not in C.EVENT_TYPES:
+            raise C.ContractError("未知事件类型：%r" % etype)
+        return self._append(etype, refs, payload, actor=actor, idem=idem)
+
+    def events_for(self, item_id):
+        """取某事项相关事件（按 seq 升序，含目标级事件）。"""
+        item = self._items.get(item_id) or {}
+        gid = item.get("goal_id")
+        return [ev for ev in self._events
+                if ev["refs"].get("item_id") == item_id
+                or ev["payload"].get("item_id") == item_id
+                or (gid and (ev["refs"].get("goal_id") == gid
+                             or ev["payload"].get("goal_id") == gid))]
+
     def create_goal(self, statement: str, target_user: str,
                     assumptions: List[Dict[str, Any]],
                     success_signals: List[str],

@@ -28,7 +28,15 @@ SOURCE_KINDS = ("data", "document", "commit", "conversation", "inference")
 CONFIDENCES = ("fact", "hypothesis")
 ASSUMPTION_STATES = ("hypothesis", "validated", "falsified")
 EVENT_TYPES = ("goal.created", "goal.updated", "item.created",
-               "outcome.produced", "item.cancelled")
+               "outcome.produced", "item.cancelled",
+               "brief.frozen", "brief.revised", "card.frozen",
+               "card.selected", "grant.signed", "workorder.created",
+               "workorder.claimed", "artifact.produced", "test.recorded",
+               "trial.opened", "verdict.recorded")
+FLOW_TYPES = ("brief.frozen", "brief.revised", "card.frozen",
+              "card.selected", "grant.signed", "workorder.created",
+              "workorder.claimed", "artifact.produced", "test.recorded",
+              "trial.opened", "verdict.recorded")
 CITATION_REQUIRED = ("business_plan", "content", "research")
 REQUIRED_GOAL_FIELDS = ("goal_id", "statement", "target_user", "assumptions",
                         "success_signals")
@@ -233,6 +241,8 @@ def evaluate(events: List[Dict[str, Any]]) -> Dict[str, Any]:
                 iid = refs.get("item_id")
                 _need(iid in items, "事项不存在：%r" % iid)
                 items[iid]["cancelled"] = True
+            elif etype in FLOW_TYPES:
+                pass  # G1 流程语义由 os_software_flow 判定；G0 判据不越权
         except ContractError as exc:
             fail("SEMANTIC", "%s: %s" % (etype, exc), seq)
 
