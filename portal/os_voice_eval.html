@@ -82,7 +82,9 @@ const ITEMS=[
   {kind:'cmd', text:'停止'}
 ];
 let IDX=0, RESULTS=[], RECORDING=false, REC_STOP=null;
-function norm(t){ return String(t||'').replace(/[\s，。！？、,.!?;；:："'“”‘’()（）~～-]/g,''); }
+function norm(t){ const s=String(t||'').replace(/[\s，。！？、,.!?;；:："'“”‘’()（）~～-]/g,'');
+  const map={'零':'0','〇':'0','一':'1','二':'2','两':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
+  return s.replace(/[零〇一二两三四五六七八九]/g, ch=>map[ch]||ch); }
 function cer(ref,hyp){ ref=norm(ref); hyp=norm(hyp); if(!ref) return hyp?1:0;
   const m=ref.length,n=hyp.length; const dp=Array.from({length:n+1},(_,j)=>j);
   for(let i=1;i<=m;i++){ let prev=dp[0]; dp[0]=i;
