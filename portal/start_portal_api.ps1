@@ -9,10 +9,29 @@ $log = 'C:\Temp\portal_api_task.log'
 # One-shot: flag is consumed by the next script run.
 if (Test-Path 'C:\Temp\PORTAL_API_RESTART.flag') {
     Remove-Item 'C:\Temp\PORTAL_API_RESTART.flag' -Force -ErrorAction SilentlyContinue
-    ('restart-flag: killing orphans ' + (Get-Date -Format s)) |
-        Out-File $log -Append -Encoding utf8
+    # 2026-10-24 OS-CLOSE-INFRA1: S4U/Session0 CIM CommandLine is null; old filter
+    # missed the live PID so the health lock skipped restart. Kill by listen port first.
+    $killed = @()
+    try {
+        Get-NetTCPConnection -LocalPort 8091 -State Listen -ErrorAction Stop |
+            ForEach-Object {
+                $p = $_.OwningProcess
+                if ($p -and $p -ne $PID) {
+                    Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
+                    $killed += $p
+                }
+            }
+    } catch { }
     Get-CimInstance -Query "SELECT ProcessId FROM Win32_Process WHERE Name = 'python.exe' AND CommandLine LIKE '%portal_api%'" |
-        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        ForEach-Object {
+            $p = $_.ProcessId
+            if ($p -and $p -notin $killed) {
+                Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
+                $killed += $p
+            }
+        }
+    ('restart-flag: killed [' + (($killed | Sort-Object -Unique) -join ',') + '] ' + (Get-Date -Format s)) |
+        Out-File $log -Append -Encoding utf8
     Start-Sleep -Seconds 1
 }
 # K234 idempotent lock: if 8091 already serves /health, SKIP entirely.
