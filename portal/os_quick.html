@@ -52,7 +52,7 @@
 
 <div class="dock"><div class="in">
   <button class="mic" id="b-start">🎤 点一下，说想法</button>
-  <button class="ghost" id="b-type">⌨️ 打字</button>
+  <button class="ghost" id="b-type">⌨️ 打字</button> <button class="ghost" id="b-textmode">⌨️ 纯文字验收</button>
   <button class="ghost" id="b-stop" hidden>⏹ 暂停</button>
   <span id="status">就绪</span>
 </div></div>
@@ -78,6 +78,7 @@ let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false, BUSY=false, DO
 let ASR_MODE='browser', REC=null, VOICE_READY=false;
 let LAST_SPEECH_NORM='', CARD_ROUNDS=0, VERDICT_ROUNDS=0, PAUSED=false;
 let RECORDING=false, RECORD_STOP=null;
+let TEXT_ONLY=false;
 let FAILS=0;
 function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
 function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); }
@@ -270,6 +271,7 @@ function browserListen(){
   });
 }
 function speakThen(text, handler){
+  if(TEXT_ONLY){ setStatus(''); if(String(text).length<=80) say('sys', esc(text)); return; }
   say('sys', esc(text));
   const go=()=>{ if(DONE||PAUSED) return; if(handler) setTimeout(()=>nextTurn(handler),900); };
   if(!('speechSynthesis' in window)){ setTimeout(go,600); return; }
@@ -315,12 +317,30 @@ function cardSpeech(card){
     +(card.success_criteria||[]).map(s=>s.statement).join('；')
     +'。 默认授权是隔离环境、四个可逆动作、二十四小时、可撤回。 如果没问题，就说“行”，我马上办；要改就直接说要改哪句。';
 }
+function appendCardActions(){
+  if(!TEXT_ONLY) return;
+  const d=document.createElement('div'); d.className='msg sys';
+  d.innerHTML='<button class="ghost" id="tx-ok">✅ 按这个办</button> <span class="muted">要改就在下面输入框重写一句，再点“出卡”</span>';
+  $('chat').appendChild(d); d.scrollIntoView({block:'end'});
+  $('tx-ok').onclick=()=>handleCardReply('行');
+}
+function appendVerdictActions(){
+  if(!TEXT_ONLY) return;
+  const d=document.createElement('div'); d.className='msg sys';
+  d.innerHTML='<div>满意点“接受”；要改就写下改什么再提交。</div>'
+    +'<input id="tx-fb" placeholder="要改什么？例：标题改成今日简报" style="width:100%;box-sizing:border-box;padding:8px;border:1.5px solid #bfd6e2;border-radius:8px;margin-top:6px">'
+    +'<div style="margin-top:6px"><button class="ghost" id="tx-accept">✅ 接受</button> <button class="ghost" id="tx-change">✏️ 提交修改</button></div>';
+  $('chat').appendChild(d); d.scrollIntoView({block:'end'});
+  $('tx-accept').onclick=()=>handleVerdict('接受');
+  $('tx-change').onclick=()=>{ const v=(($('tx-fb')&&$('tx-fb').value)||'').trim(); if(!v) return setStatus('请写一句要改什么'); handleVerdict(v); };
+}
 async function handleIdea(text){
   startTimer(); say('user', esc(text));
   try{ const d=await api('/api/os/quickstart',{text}); DRAFT=d.card;
     $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
     (document.querySelectorAll('.card')||[]).length && document.querySelectorAll('.card')[document.querySelectorAll('.card').length-1].scrollIntoView({block:'end',behavior:'smooth'});
     speakThen('第 2 句：一张卡。'+cardSpeech(d.card), handleCardReply);
+    appendCardActions();
   }catch(e){ showErr(e.message); say('sys','这一步失败了：'+esc(e.message)); }
 }
 async function handleCardReply(t){
@@ -334,6 +354,7 @@ async function handleCardReply(t){
   try{ const d=await api('/api/os/quickstart',{text:(DRAFT?DRAFT.text:'')+'；按您的修改：'+t, edits:{changes:t}}); DRAFT=d.card;
     $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
     speakThen('改好了。'+cardSpeech(d.card), handleCardReply);
+    appendCardActions();
   }catch(e){ showErr(e.message); }
 }
 async function repromptCard(msg){
@@ -348,6 +369,7 @@ async function doConfirm(){
     $('chat').insertAdjacentHTML('beforeend','<iframe class="pv" id="pv" src="'+esc(d.preview_url)+'"></iframe>');
     document.getElementById('pv').scrollIntoView({block:'center',behavior:'smooth'});
     speakThen('第 3 句：做好了，试用就在下面。满意就说“接受”，要改就说“这里改”，直接说哪里不满意。', handleVerdict);
+    appendVerdictActions();
   }catch(e){ showErr(e.message); say('sys','执行失败：'+esc(e.message)); }
 }
 async function doAccept(){
@@ -368,6 +390,7 @@ async function doChange(t){
     if($('pv')) $('pv').src='/api/os/item/'+encodeURIComponent(ITEM)+'/workspace/index.html';
     say('sys','改好了，新版本 <b>'+esc(r.artifact.version)+'</b> 已经更新在下面的试用窗口里。');
     speakThen('第 3 句：改好了，新版本在下面。满意就说“接受”，还要改就继续说。', handleVerdict);
+    appendVerdictActions();
   }catch(e){ showErr(e.message); }
 }
 async function handleVerdict(t){
@@ -387,10 +410,14 @@ async function repromptVerdict(msg){
 /* 打字兜底 */
 function showTypePanel(){ const tpl=$('type_panel_tpl'); $('chat').appendChild(tpl.content.cloneNode(true)); $('type_panel').scrollIntoView({block:'end'}); }
 $('b-start').onclick=async()=>{
+  if(TEXT_ONLY){ showTypePanel(); setStatus('纯文字模式：在输入框写一句，点“出卡”'); return; }
   if(RECORDING){ try{ RECORD_STOP&&RECORD_STOP(); }catch(e){} setStatus('已停止录音；再点一次重新开始'); return; }
   clearErr(); PAUSED=false; CARD_ROUNDS=0; VERDICT_ROUNDS=0; LAST_SPEECH_NORM=''; FAILS=0; await ensureAsrMode(); if(DONE){ DONE=false; $('b-start').textContent='🎤 点一下，说想法'; } stopVoice(); say('sys','好，我在听。您想做什么？'); startTimer(); nextTurn(handleIdea); };
 $('b-stop').onclick=()=>{ pauseListening('已暂停自动听'); };
 $('b-type').onclick=()=>{ showTypePanel(); };
+$('b-textmode').onclick=()=>{ TEXT_ONLY=!TEXT_ONLY; showTypePanel();
+  if(TEXT_ONLY){ setStatus('已切换纯文字验收模式（不用麦克风）'); $('b-start').textContent='⌨️ 纯文字：在输入框写一句'; }
+  else { setStatus('已切回语音模式'); $('b-start').textContent='🎤 点一下，说想法'; } };
 document.addEventListener('click',ev=>{
   const id=ev.target&&ev.target.id;
   if(id==='t-draft'){ handleIdea((($('ask')&&$('ask').value)||'').trim()); }
@@ -400,6 +427,8 @@ document.addEventListener('click',ev=>{
 });
 window.addEventListener('error',e=>showErr('页面脚本错误：'+(e.message||e.type)));
 window.addEventListener('unhandledrejection',e=>showErr('未处理错误：'+((e.reason&&e.reason.message)||e.reason)));
+try{ if(new URLSearchParams(location.search).get('text')==='1'){ TEXT_ONLY=true; } }catch(e){}
+if(TEXT_ONLY){ $('b-start').textContent='⌨️ 纯文字：在输入框写一句'; showTypePanel(); setStatus('纯文字验收模式：写一句→出卡→按这个办→接受/改'); }
 checkAsr();
 </script>
 </body>
