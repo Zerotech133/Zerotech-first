@@ -69,7 +69,7 @@
 </main>
 <script>
 const $=id=>document.getElementById(id); const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let DRAFT=null, ITEM=null, START=null, TICK=null;
+let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false;
 $('timer').textContent='计时从您第一次点“看看会给我什么卡”开始（目标 ≤120s）';
 function startTimer(){ if(START!==null) return; START=Date.now(); TICK=setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s（目标 ≤120s）'; },1000); }
 function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
@@ -103,14 +103,19 @@ async function confirm(edits){
       <div class="muted">判定：${esc(d.chain.verdict)}（隔离边界内）· 这一步没有让您做任何工程操作</div>`;
     window.open(d.preview_url,'_blank'); // 确认即执行 → 自动打开试用
     $('b-open').onclick=()=>window.open(d.preview_url,'_blank');
-    $('b-accept').onclick=async()=>{ try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'accepted',feedback:'接受'}); showErr('已记录：本人接受（B 阶段隔离链一条完成）'); }catch(e){showErr(e.message);} };
+    $('b-accept').onclick=async()=>{ try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'accepted',feedback:'接受'}); ACCEPTED=true; $('b-accept').disabled=true; $('b-accept').textContent='已接受 ✅'; setStatus('已验收 ✅ 如需修改，点“这里改”会先返工再出新版本'); }catch(e){showErr(e.message);} };
     $('b-change').onclick=async()=>{ try{
       const fb=($('feedback').value||$('edit2').value||'').trim(); if(!fb) return showErr('写一句要改什么');
-      await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'changes_requested',feedback:fb});
+      let needRework=ACCEPTED;
+      if(!needRework){
+        try{ await api('/api/os/item/'+encodeURIComponent(ITEM)+'/verdict',{decision:'changes_requested',feedback:fb}); }
+        catch(e){ if(String(e.message).includes('已验收')||String(e.message).includes('contract_violation')) needRework=true; else throw e; }
+      }
       const r=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/rework',{feedback:fb});
       await api('/api/os/item/'+encodeURIComponent(ITEM)+'/trial',{});
       window.open('/api/os/item/'+encodeURIComponent(ITEM)+'/workspace/index.html','_blank');
-      showErr('已生成新版本 '+r.artifact.version+'，已自动打开；满意就点“接受”。');
+      ACCEPTED=false; $('b-accept').disabled=false; $('b-accept').textContent='接受';
+      setStatus('已返工生成 '+r.artifact.version+'，已自动打开；满意就点“接受”。');
     }catch(e){showErr(e.message);} };
   }catch(e){ showErr(e.message); }
 }
