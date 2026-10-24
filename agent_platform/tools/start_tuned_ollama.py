@@ -102,9 +102,18 @@ TUNED_ENV = {
     # `ollama ps` 的 PROCESSOR 列是唯一能看穿它的判据。
     # 2026-10-18 的勘误文档已把它列为 watchdog 额外设置的第 7 项，本启动器此前漏了。
     "OLLAMA_VULKAN": "1",
-    "OLLAMA_CONTEXT_LENGTH": "65536",
-    "OLLAMA_KEEP_ALIVE": "2h",
-    "OLLAMA_NUM_PARALLEL": "2",
+    "OLLAMA_CONTEXT_LENGTH": "16384",   # 2026-10-24 全仓收口（原 65536），与 watchdog 同值
+    # 2026-10-24 收口：本启动器此前缺 MAX_LOADED_MODELS / DEBUG，且 KEEP_ALIVE 与
+    # 看门狗不一致（2h vs 30m）——同一个服务换个入口拉起就是另一套参数，
+    # 重启一次丢两项（当天实际丢了 MAX_LOADED_MODELS=3 与 DEBUG=1）。现全部对齐看门狗。
+    "OLLAMA_MAX_LOADED_MODELS": "3",     # 35b + 9b + 轻量层三班（10-18 架构调优）
+    "OLLAMA_KEEP_ALIVE": "30m",          # 与 watchdog 同值（原 2h，不合理地长）
+    # 2026-10-24 并行度 2 → 1：qwen35 架构明确不支持并行请求（服务日志 423 条
+    # "model architecture does not currently support parallel requests"）。
+    # 并行度 2 等于把 KV 槽翻倍、只占内存不提升吞吐，还会诱发 runner 重建。
+    "OLLAMA_NUM_PARALLEL": "1",
+    # DEBUG=1 除排障外还兼有"让 GPU discovery 稳定快速完成"的作用（10-16 判例）。
+    "OLLAMA_DEBUG": "1",
 }
 
 DETACHED_PROCESS = 0x00000008
@@ -119,8 +128,9 @@ TUNED_CRITICAL = (
     "OLLAMA_IGPU_ENABLE",
     "OLLAMA_VULKAN",      # 缺它则 iGPU 不生效（见上）
 )
-# ctx 达标线：默认 4096，tuned 65536；取 32768 容忍 watchdog 定版差异
-CTX_OK_FLOOR = 32768
+# ctx 达标线：默认 4096；tuned 历史 65536，2026-10-24 全仓收口后为 16384。
+# 取 16384 与 TUNED_ENV 同值：低于它即判 NOT_TUNED（旧值 32768 会让新配置误报）
+CTX_OK_FLOOR = 16384
 
 
 def log(msg: str) -> None:

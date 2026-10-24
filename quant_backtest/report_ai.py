@@ -132,12 +132,15 @@ def _balance_json(s):
 
 def extract(text, timeout=TIMEOUT):
     """单篇正文 → 结构化 dict 或 None（两次解析机会）。"""
+    # num_ctx 统一 16384（2026-10-24 收口）：全仓共用一个 ctx，避免 Ollama 因
+    # num_ctx 变化整模型重载（实测 15~46s/次）。原值 8192 属"各调用方各设各的"
+    # 历史遗留，iGPU/Vulkan + KV q8_0 后 16384 与 4096 生成吞吐相同。
     body = {
         "model": MODEL, "stream": False, "think": False,
         "messages": [{"role": "user",
                       "content": PROMPT % digest_text(text)[:INPUT_CHARS]}],
         "options": {"temperature": 0.1, "num_predict": 600,
-                    "num_ctx": 8192},
+                    "num_ctx": 16384},
     }
     for _ in range(2):
         try:

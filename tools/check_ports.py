@@ -165,7 +165,12 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              # 第三方工具，1455），同 trae 先例入豁免，否则 strict 必挂。
              # 2026-10-22 老田裁端口处置：androws=Androws 主进程（5555/15118）；
              # tencent.androw=腾讯办公安卓扩展（14900）——均桌面第三方非平台栈。
-             "codex", "androws", "tencent.androws")
+             "codex", "androws", "tencent.androws",
+             # 2026-10-24 收编：DeepSeek Harness（本机 AI 编码工具，桌面第三方
+             # 非平台栈）监听 9230/18080。同 trae / codex 先例入豁免——
+             # 它是工具不是我们的服务，登记进 REGISTRY 反而是错误事实。
+             # 触发背景：OPS1 每日事项「端口注册表零漂移」判红，查明是这两口。
+             "deepseek")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免
@@ -194,6 +199,11 @@ OPTIONAL_OFFLINE |= {8100, 8788, 8791, 8898, 18899, 11440, 1234, 1238}
 # 8734 portproxy→8080 规则已被系统 reset 清空（v4tov4 空），8080 本体在线，
 # 规则若重建仍防抢占。
 OPTIONAL_OFFLINE |= {3000, 8095, 8123, 8734, 8888, 9899, 15000, 15432, 16379}
+# 2026-10-25 K-ORG-20261025-BATCH：合并门实测定性——1234/1238 是手动 llama-server
+# 同族口、8898/18899 是 res-downloader 自用工具、15000/15432/16379 为历史占位；
+# 这些都是「按需启停」语义，strict 只该防抢占，不该因闲置判负。
+# 教训：把「未登记」与「在册服务离线」混在一个返回码里，会让合并门天天误报。
+OPTIONAL_OFFLINE |= {1234, 1238, 8898, 18899}
 
 
 def main():

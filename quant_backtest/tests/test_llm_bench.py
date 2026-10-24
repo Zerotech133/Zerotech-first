@@ -29,8 +29,8 @@ def _clean_llm_env(monkeypatch):
 
 
 def test_knob_unset_is_status_quo():
-    # 红线：未设置时与现状完全一致（2048/256）
-    assert xq.build_llm_options() == {"temperature": 0.1, "num_ctx": 2048,
+    # 红线：未设置时与现状完全一致（16384/256，2026-10-24 全仓统一 ctx）
+    assert xq.build_llm_options() == {"temperature": 0.1, "num_ctx": 16384,
                                       "num_predict": 256}
 
 
@@ -48,7 +48,7 @@ def test_knob_invalid_falls_back_with_stderr(monkeypatch):
     err = io.StringIO()
     with redirect_stderr(err):
         opts = xq.build_llm_options()
-    assert opts["num_ctx"] == 2048 and opts["num_predict"] == 256
+    assert opts["num_ctx"] == 16384 and opts["num_predict"] == 256
     out = err.getvalue()
     assert "XQ_LLM_NUM_CTX" in out and "WARN" in out
     assert "XQ_LLM_NUM_PREDICT" in out
@@ -67,7 +67,7 @@ def test_knob_negative_and_float_invalid(monkeypatch):
     err = io.StringIO()
     with redirect_stderr(err):
         opts = xq.build_llm_options()
-    assert opts["num_ctx"] == 2048 and opts["num_predict"] == 256
+    assert opts["num_ctx"] == 16384 and opts["num_predict"] == 256
 
 
 # ── ② bench 纯逻辑（假 client） ─────────────────────────────
@@ -96,7 +96,7 @@ def test_run_bench_fake_client_call_counts():
     def fake_sender(url, payload, timeout):
         calls.append(payload)
         ctx = payload["options"]["num_ctx"]
-        return {"message": {"content": "行情观点" if ctx == 2048 else "个股研判"},
+        return {"message": {"content": "行情观点" if ctx == 16384 else "个股研判"},
                 "eval_duration": 1_000_000_000, "eval_count": 100}
 
     samples = [{"status_id": "s1", "body": "abc", "chars": 3},
@@ -107,7 +107,7 @@ def test_run_bench_fake_client_call_counts():
     # 配置A=现状默认，配置B=1024/128
     a = next(r for r in records if r["config"] == "A")
     b = next(r for r in records if r["config"] == "B")
-    assert a["options"]["num_ctx"] == 2048 and a["options"]["num_predict"] == 256
+    assert a["options"]["num_ctx"] == 16384 and a["options"]["num_predict"] == 256
     assert b["options"]["num_ctx"] == 1024 and b["options"]["num_predict"] == 128
     # eval 口径换算（ns→s）
     assert a["eval_duration_s"] == 1.0 and a["eval_count"] == 100
