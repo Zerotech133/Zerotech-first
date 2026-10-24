@@ -76,14 +76,16 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let DRAFT=null, ITEM=null, START=null, TICK=null, ACCEPTED=false, BUSY=false, DONE=false;
 let ASR_MODE='browser', REC=null, VOICE_READY=false;
+let LAST_SPEECH_NORM='', CARD_ROUNDS=0, VERDICT_ROUNDS=0, PAUSED=false;
 function setStatus(m){ const s=$('status'); if(s) s.textContent=String(m); }
 function showErr(m){ const e=$('err'); e.hidden=false; e.textContent=String(m); }
 function clearErr(){ const e=$('err'); e.hidden=true; }
 function startTimer(){ if(START!==null) return; START=Date.now(); TICK=setInterval(()=>{ $('timer').textContent='已用 '+Math.round((Date.now()-START)/1000)+'s'; },1000); }
 function say(role, html){ const d=document.createElement('div'); d.className='msg '+(role==='user'?'user':'sys'); d.innerHTML=html; $('chat').appendChild(d); d.scrollIntoView({block:'end',behavior:'smooth'}); return d; }
-function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.04; speechSynthesis.speak(u); }catch(e){} }
+function speak(text){ try{ LAST_SPEECH_NORM=norm(String(text||'')); }catch(e){} try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.04; speechSynthesis.speak(u); }catch(e){} }
 function stopVoice(){ try{ if(REC){ REC.onresult=null; REC.onerror=null; REC.onend=null; REC.abort(); } }catch(e){} REC=null; BUSY=false; $('b-start').classList.remove('listening'); }
 function finish(){ DONE=true; stopVoice(); $('b-start').textContent='🎤 说下一件事'; $('b-start').classList.remove('listening'); setStatus('完成'); }
+function pauseListening(msg){ PAUSED=true; stopVoice(); setStatus(msg||'已暂停'); say('sys', esc(msg||'已暂停')+' 点 🎤 继续，或点“打字”。'); $('b-start').textContent='🎤 继续'; }
 /* ============ 识别方式：优先本地 SenseVoice（离线、高精度），失败回退浏览器 ============ */
 async function fetchWithTimeout(url,opt,ms){
   const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),ms);
@@ -115,22 +117,19 @@ async function checkAsr(){
     $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn';
   }catch(e){ $('asr-badge').textContent='浏览器识别'; $('asr-badge').className='badge warn'; }
 }
-function norm(t){ return String(t||'').replace(/[\s，。！？、,.!?;；:："'“”‘’()（）]/g,''); }
-function isEcho(t){ return t.length>22 && /我理解您|默认授权|您说|第 [123] 句|做好了|改好了|怎么算成/.test(t); }
-function isAccept(t){ const s=norm(t); if(isEcho(t)) return false;
+function norm(t){ return String(t||'').replace(/[\s，。！？、,.!?;；:："'“”‘’()（）~～]/g,''); }
+function isFiller(t){ const s=norm(t); if(!s) return true; return /^[嗯啊哦呃唔唉呀吧嘛哈]+$/.test(s); }
+function isStop(t){ return /^(停|停止|暂停|先停|别听|别说了|停一下)/.test(norm(t)); }
+const ECHO_RE=/我理解您|默认授权|您说|如果没问题|就说行|要改就|第 [123] 句|怎么算成|做好了|改好了|满意就|这里改|直接说哪里|没听清|请说/;
+function isEcho(t){ const s=norm(t); if(!s) return false; if(ECHO_RE.test(String(t))) return true; if(LAST_SPEECH_NORM && s.length>=2 && LAST_SPEECH_NORM.includes(s)) return true; return false; }
+function isAccept(t){ const s=norm(t); if(isFiller(s)||isEcho(t)) return false;
   if(/^(行|好|可以|对|嗯|是的|没问题|按这个办|开始吧|执行|确认|就这么办|就这样|ok)$/i.test(s)) return true;
   return s.length<=12 && /按这个办|开始吧|就这么办|没问题|可以|确认/.test(s); }
-function isAcceptVerdict(t){ const s=norm(t); if(isEcho(t)) return false;
+function isAcceptVerdict(t){ const s=norm(t); if(isFiller(s)||isEcho(t)) return false;
   if(/^(接受|可以|好|行|满意|不错|行吧|嗯|对)$/.test(s)) return true;
   return s.length<=10 && /接受|满意|不错/.test(s); }
+function looksLikeChange(t){ const s=norm(t); if(!s||isFiller(s)) return false; return /改|换|调整|加上|去掉|不要|不对|不行|重新|删|增加|减少|第二|第[一二三]/.test(s); }
 function isNegative(t){ return /不行|不对|不好|不要|别|改|换|重来|重说/.test(norm(t)); }
-/* 录音 → 16k 单声道 WAV → base64 → 本地 ASR */
-function resampleTo16k(buf, inRate){
-  if(inRate===16000) return buf;
-  const ratio=inRate/16000, outLen=Math.max(1,Math.floor(buf.length/ratio)), out=new Float32Array(outLen);
-  for(let i=0;i<outLen;i++){ const pos=i*ratio, i0=Math.floor(pos), i1=Math.min(buf.length-1,i0+1), frac=pos-i0; out[i]=buf[i0]*(1-frac)+buf[i1]*frac; }
-  return out;
-}
 function encodeWav16k(samples){
   const len=samples.length, ab=new ArrayBuffer(44+len*2), dv=new DataView(ab);
   const w=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
@@ -242,19 +241,19 @@ function browserListen(){
 }
 function speakThen(text, handler){
   say('sys', esc(text));
-  const go=()=>{ if(handler) setTimeout(()=>nextTurn(handler),650); };
+  const go=()=>{ if(DONE||PAUSED) return; if(handler) setTimeout(()=>nextTurn(handler),900); };
   if(!('speechSynthesis' in window)){ setTimeout(go,600); return; }
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.04;
     let ended=false; const once=()=>{ if(ended) return; ended=true; go(); };
     u.onend=once; u.onerror=once;
-    setTimeout(once, Math.min(25000, 4000 + text.length*170));
+    setTimeout(once, Math.max(8000, Math.min(45000, 5000 + text.length*220)));
     speechSynthesis.speak(u);
   }catch(e){ go(); }
 }
 async function nextTurn(handler){
-  if(DONE) return;
+  if(DONE||PAUSED) return;
   let t=null;
   for(let attempt=0; attempt<3 && !t; attempt++){
     t = (ASR_MODE==='local') ? await recordTurn() : await browserListen();
@@ -262,7 +261,7 @@ async function nextTurn(handler){
     else if(isEcho(t)){ say('sys','（听到的是我刚才的话，略过）'); t=null; }
   }
   if(t){ clearErr(); handler(t); }
-  else { setStatus('没听到您说话。点 🎤 或改成打字。'); }
+  else { pauseListening('没听到您说话，我先暂停自动听。'); }
 }
 /* ============ 业务动作 ============ */
 async function api(path,body){
@@ -295,12 +294,21 @@ async function handleIdea(text){
 }
 async function handleCardReply(t){
   say('user', esc(t));
-  if(isAccept(t)) return doConfirm();
-  if(/重新|重来|换个/i.test(t)) return speakThen('好，我们重来。您想做什么？', handleIdea);
+  if(isStop(t)){ return pauseListening('已暂停自动听。'); }
+  if(isEcho(t)||isFiller(t)){ return repromptCard('没听清（可能是回声或噪音）'); }
+  if(isAccept(t)){ CARD_ROUNDS=0; return doConfirm(); }
+  if(/重新|重来|换个/.test(t)){ return speakThen('好，我们重来。您想做什么？', handleIdea); }
+  if(!looksLikeChange(t) && norm(t).length<6){ return repromptCard('没听清您是“行”还是要改'); }
+  if(++CARD_ROUNDS>3){ CARD_ROUNDS=0; return pauseListening('改了几轮，我先暂停自动听；点🎤继续。'); }
   try{ const d=await api('/api/os/quickstart',{text:(DRAFT?DRAFT.text:'')+'；按您的修改：'+t, edits:{changes:t}}); DRAFT=d.card;
     $('chat').insertAdjacentHTML('beforeend', cardHtml(d.card));
     speakThen('改好了。'+cardSpeech(d.card), handleCardReply);
   }catch(e){ showErr(e.message); }
+}
+async function repromptCard(msg){
+  if(++CARD_ROUNDS>3){ CARD_ROUNDS=0; return pauseListening('我先暂停自动听；点🎤继续。'); }
+  setStatus(msg||'没听清');
+  speakThen('没听清。请说“行”，我就按这个办；要改就直接说要改哪句。', handleCardReply);
 }
 async function doConfirm(){
   say('sys','好，按这个办。');
@@ -333,13 +341,22 @@ async function doChange(t){
 }
 async function handleVerdict(t){
   say('user', esc(t));
-  if(isAcceptVerdict(t) && !isNegative(t)) return doAccept();
+  if(isStop(t)){ return pauseListening('已暂停自动听。'); }
+  if(isEcho(t)||isFiller(t)){ return repromptVerdict('没听清（可能是回声或噪音）'); }
+  if(isAcceptVerdict(t) && !isNegative(t)){ VERDICT_ROUNDS=0; return doAccept(); }
+  if(!looksLikeChange(t) && norm(t).length<6){ return repromptVerdict('没听清您是要接受还是要改'); }
+  if(++VERDICT_ROUNDS>3){ VERDICT_ROUNDS=0; return pauseListening('改了几轮，我先暂停自动听；点🎤继续。'); }
   return doChange(t);
+}
+async function repromptVerdict(msg){
+  if(++VERDICT_ROUNDS>3){ VERDICT_ROUNDS=0; return pauseListening('我先暂停自动听；点🎤继续。'); }
+  setStatus(msg||'没听清');
+  speakThen('没听清。满意就说“接受”；要改就说“这里改”，并说要改哪里。', handleVerdict);
 }
 /* 打字兜底 */
 function showTypePanel(){ const tpl=$('type_panel_tpl'); $('chat').appendChild(tpl.content.cloneNode(true)); $('type_panel').scrollIntoView({block:'end'}); }
-$('b-start').onclick=async()=>{ clearErr(); if(DONE){ DONE=false; $('b-start').textContent='🎤 我继续说'; } stopVoice(); say('sys','好，我在听。您想做什么？'); startTimer(); nextTurn(handleIdea); };
-$('b-stop').onclick=()=>{ stopVoice(); setStatus('已暂停'); $('b-start').textContent='🎤 继续'; };
+$('b-start').onclick=async()=>{ clearErr(); PAUSED=false; CARD_ROUNDS=0; VERDICT_ROUNDS=0; LAST_SPEECH_NORM=''; if(DONE){ DONE=false; $('b-start').textContent='🎤 点一下，说想法'; } stopVoice(); say('sys','好，我在听。您想做什么？'); startTimer(); nextTurn(handleIdea); };
+$('b-stop').onclick=()=>{ pauseListening('已暂停自动听'); };
 $('b-type').onclick=()=>{ showTypePanel(); };
 document.addEventListener('click',ev=>{
   const id=ev.target&&ev.target.id;
