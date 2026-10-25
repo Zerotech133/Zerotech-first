@@ -61,6 +61,13 @@
       <span class="sub" id="asr">识别方式检测中…</span>
       <button id="asr-retry" class="ghost" style="padding:6px 10px;font-size:12px" hidden>重试本地 ASR</button>
     </div>
+    <div id="confirm-bar" hidden style="margin:10px 0;padding:10px 12px;border:1px solid #e6d5b0;background:#faf3e6;border-radius:10px">
+      <b>待确认操作</b>：<span id="confirm-text"></span>
+      <span style="margin-left:10px">
+        <button id="b-confirm" class="ok" style="padding:8px 14px">✅ 确认执行</button>
+        <button id="b-cancel" class="ghost" style="padding:8px 14px">取消</button>
+      </span>
+    </div>
     <div class="row" style="margin-top:10px">
       <input id="txt" placeholder="也可以打字：注册消费者，叫小灵 / 申请发布审批 / 批准 / 确认执行 / 记录 outbox / 看链">
       <button id="send" class="ghost">发送</button>
@@ -160,7 +167,24 @@ async function recordTurn(){
         const wav=encodeWav16k(resampleTo16k(all,rate));
         $('asr').textContent='识别中…';
         let text=null;
-        try{ text=await postAsr(abToB64(wav)); }catch(e){ ASR_MODE='browser'; $('asr').textContent='本地识别失败，转浏览器'; resolve(await browserListen()); return; }
+        try{ text=await postAsr(abToB64(wav)); }
+        catch(e){
+          logline('⚠️ 本地识别失败：'+(e.message||e));
+          $('asr').textContent='本地识别失败，尝试恢复…';
+          try{ await fetch('/api/os/asr/recover',{method:'POST',headers:H,body:'{}'}); }catch(_){}
+          let recovered=false;
+          for(let i=0;i<30;i++){ await new Promise(r=>setTimeout(r,1000));
+            try{ const d=await (await fetch('/api/os/asr/status')).json();
+              if(d.loaded && !d.broken){ recovered=true; break; } }catch(_){}
+          }
+          if(recovered){
+            try{ const t2=await postAsr(abToB64(wav)); $('asr').textContent='本地高精度 · SenseVoice（离线）'; resolve(t2); return; }
+            catch(e2){ logline('⚠️ 恢复后重试仍失败：'+(e2.message||e2)); }
+          }
+          ASR_MODE='local'; $('asr').textContent='本地 ASR 异常';
+          say('本地语音识别异常：请点「重试本地 ASR」，或让助手重启 8091。浏览器识别需要联网，本页不自动切换。');
+          resolve(null); return;
+        }
         $('asr').textContent='本地高精度 · SenseVoice（离线）';
         if(!text){ say('没听清，请再说一次。'); resolve(null); return; }
         resolve(text);
@@ -182,7 +206,7 @@ function browserListen(){
     if(!SR){ say('此浏览器不支持语音识别，请用 Edge/Chrome，或打字。'); resolve(null); return; }
     const r=new SR(); r.lang='zh-CN'; r.interimResults=false; r.maxAlternatives=5; let got=false;
     r.onresult=e=>{ got=true; resolve((e.results[0][0]||{}).transcript||''); };
-    r.onerror=e=>{ err('语音识别错误：'+e.error); if(!got) resolve(null); };
+    r.onerror=e=>{ err('浏览器识别错误：'+e.error+'（浏览器识别需联网；请用本地 ASR：点「重试本地 ASR」）'); if(!got) resolve(null); };
     r.onend=()=>{ if(!got) resolve(null); };
     try{ r.start(); }catch(e){ err('浏览器识别启动失败'); resolve(null); }
   });
@@ -241,11 +265,13 @@ async function requestApproval(actionWord, summary){
 function confirmApprove(decision){
   const apr=pendingApproval(); if(!apr){ say('现在没有待批的审批单，请说「申请发布审批」。'); return; }
   PENDING_CONFIRM={type:'decide',aid:apr.approval_id,decision};
-  say('确认'+(decision==='approved'?'批准':'拒绝')+' '+apr.approval_id+'（'+apr.action+'，'+(apr.summary||'')+'）吗？说「确认执行」或「取消」。');
+  $('confirm-text').textContent=(decision==='approved'?'批准':'拒绝')+' '+apr.approval_id+'（'+apr.action+'，'+(apr.summary||'')+'）';
+  $('confirm-bar').hidden=false;
+  say('确认'+(decision==='approved'?'批准':'拒绝')+' '+apr.approval_id+'（'+apr.action+'，'+(apr.summary||'')+'）吗？说「确认执行」或「取消」，也可以直接点按钮。');
 }
 async function doDecide(){
   if(!PENDING_CONFIRM) return;
-  const {aid,decision}=PENDING_CONFIRM; PENDING_CONFIRM=null;
+  const {aid,decision}=PENDING_CONFIRM; PENDING_CONFIRM=null; $('confirm-bar').hidden=true;
   const nonce='voice-'+Date.now()+'-'+Math.floor(Math.random()*1e6);
   const d=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/approval/decide',{approval_id:aid,decision,nonce,note:'语音确认（本机语音审批台）'},'POST');
   say((decision==='approved'?'已批准：':'已拒绝：')+aid+'。'+(decision==='approved'?'下一步说「记录 outbox」。':''));
@@ -270,7 +296,7 @@ async function handleCommand(raw){
   $('heard').textContent=t; logline('🗣️ '+t);
   const ls=norm(LAST_SPOKEN);
   if(ls && (s===ls || (s.length>=4 && ls.includes(s)))){ logline('（听到的是我自己的回读，略过）'); return; }
-  if(/取消|算了|不做了/.test(s)){ PENDING_CONFIRM=null; say('好，取消。'); return; }
+  if(/取消|算了|不做了/.test(s)){ PENDING_CONFIRM=null; $('confirm-bar').hidden=true; say('好，取消。'); return; }
   if(/确认|确定|执行/.test(s) && PENDING_CONFIRM){ await doDecide(); return; }
   if(/看链|查看链|结果|刷新|审计/.test(s)){ await showChain(); return; }
   if(/记录|存档|留痕|outbox/i.test(s)){ await doOutbox(); return; }
@@ -291,6 +317,8 @@ async function handleCommand(raw){
 $('asr-retry').onclick=async()=>{ try{ $('asr').textContent='正在尝试恢复本地 ASR…'; say('正在恢复本地 ASR，请稍等。', true); await fetch('/api/os/asr/recover',{method:'POST',headers:H,body:'{}'}); for(let i=0;i<40;i++){ await new Promise(r=>setTimeout(r,1500)); const d=await (await fetch('/api/os/asr/status')).json(); if(d.loaded && !d.broken){ ASR_MODE='local'; $('asr').textContent='本地高精度 · SenseVoice（离线）'; $('asr-retry').hidden=true; say('本地 ASR 恢复成功，可以说话了。'); return; } if(d.broken) break; } ASR_MODE='browser'; $('asr').textContent='本地 ASR 仍异常 → 浏览器识别'; say('本地 ASR 还没恢复，先用浏览器识别；或让老田重启 8091。'); }catch(e){ err('恢复失败：'+e.message); } };
 $('auto').onclick=()=>{ AUTO=!AUTO; USER_STARTED=true; $('auto').textContent=(AUTO?'🔁 连续对话：开':'🔁 连续对话：关'); if(AUTO){ say('连续对话已开：说完我会自动再听。', true); setTimeout(()=>{ if(!BUSY) listen(); }, 300); } else { say('连续对话已关。', true); } };
 window.addEventListener('keydown',e=>{ if(e.code==='Space' && !/INPUT|TEXTAREA|SELECT/.test((e.target||{}).tagName||'')){ e.preventDefault(); USER_STARTED=true; if(!BUSY) listen(); } else if(e.code==='Escape'){ PENDING_CONFIRM=null; say('已取消当前确认。', true); } });
+$('b-confirm').onclick=()=>{ if(PENDING_CONFIRM){ doDecide().catch(e=>err(e.message)); } };
+$('b-cancel').onclick=()=>{ PENDING_CONFIRM=null; $('confirm-bar').hidden=true; say('已取消。'); };
 $('copyh').onclick=async()=>{ try{ await navigator.clipboard.writeText($('heard').textContent||''); say('识别原文已复制。', true); }catch(e){ err('复制失败，请手动选中复制'); } };
 $('mic').onclick=()=>{ USER_STARTED=true; if(RECORDING){ RECORD_STOP&&RECORD_STOP(); return; } listen(); };
 $('stop').onclick=()=>{ RECORD_STOP&&RECORD_STOP(); if(PENDING_CONFIRM) PENDING_CONFIRM=null; };
