@@ -1032,7 +1032,9 @@ def push_message(text):
 
 def run(mode, dry):
     m = MODES[mode]
-    cfg = json.load(open(CFG_PATH, encoding="utf-8"))
+    # 2026-10-25 SEC 收口（EXEC-R14）：敏感字段（portal/doc/jev_*）读 env/本地私有覆盖
+    from config_local import load_news_config
+    cfg = load_news_config()
     model = cfg.get("ai_model", "qwen3.5:9b")
     window = int(cfg.get(m["win_cfg"], m["win_def"]))
     limit = int(cfg.get("ai_max_news", 50))

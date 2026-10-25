@@ -104,6 +104,14 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
     判级：有未交付 → 红；只有待接线 → 黄；全部交付或今日无到期 → 绿。
     没有可检查证据的事**不收录**（type=manual 的标"待接线"，既不算过也不算欠）。
 
+14. 夜间批处理积压（ops.batch_backlog）：只读 `C:/Temp/night_batch.log` 尾部，
+    解析 START/ROUND/`JEV rc=`/`XQ rc=` 行，输出两条队列积压、最近两轮 rc、
+    每轮墙钟/吞吐、按当前吞吐预计清完小时。积压较上一轮上升 → 红；连续 rc=124
+    ≥2 轮 → 红；仅 1 轮 rc=124、ETA >48h 或日志 >3h 无新轮次 → 黄；ETA >96h →
+    红；读不到日志/无 ROUND → 红（不判绿）。建项起因：2026-10-25 白天 6 轮
+    JEV rc=124 1620s + XQ rc=124 1800s，每轮仍有 ~100 条推进——"有进展但清不动"
+    在卡上完全看不见。
+
 用法：
     python -B tools/gen_health_card.py
     python -B tools/gen_health_card.py --vault-root C:/项目/_vault
@@ -121,6 +129,8 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
 本地推理：Ollama 不可达红、9b 未安装红、读不到 /api/ps 黄、未驻留黄（不判绿）、
 content 为空红、答案不含「好」黄、驻留 ctx≠16384 黄、吞吐 <20 tok/s 黄、
 请求 20s 未返回黄；读不到的指标一律写进 detail，绝不静默当 0 也不判绿。
+夜间批处理积压（ops.batch_backlog）：积压较上一轮上升红；连续 rc=124 ≥2 轮红；
+仅 1 轮 rc=124 黄；ETA >48h 黄 / >96h 红；日志 >3h 无新轮次黄；读不到红。
 """
 from __future__ import annotations
 
@@ -3712,6 +3722,205 @@ def _ai_inference_verdict(ai: dict[str, Any]) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
+# 4b) 夜间批处理积压（ops.batch_backlog，2026-10-25 EXEC-R13）
+# ---------------------------------------------------------------------------
+# 背景：2026-10-25 白天 night_batch 连续 6 轮 JEV rc=124 1620s + XQ rc=124 1800s，
+# 每轮仍推进 ~100 条——"有进展但清不动"在卡上完全看不见。本项只读
+# C:\Temp\night_batch.log 尾部，解析 START/ROUND/子任务 rc 行，输出两条队列积压、
+# 最近两轮 rc、每轮墙钟/吞吐、按当前吞吐预计清完小时。
+# 判级：积压比上一轮上升 → 红（只降不升是目标）；连续 rc=124 ≥2 轮 → 红；
+#      仅 1 轮 rc=124 或 ETA >48h → 黄；ETA >96h / 日志 >3h 无新轮 → 红/黄。
+BATCH_LOG_PATH = os.environ.get("NIGHT_BATCH_LOG", r"C:\Temp\night_batch.log")
+BATCH_LOG_TAIL_BYTES = 256 * 1024
+BATCH_RECENT_ROUNDS = 2
+BATCH_TIMEOUT_STREAK_RED = 2
+BATCH_ETA_YELLOW_HOURS = 48.0
+BATCH_ETA_RED_HOURS = 96.0
+BATCH_STALE_YELLOW_MIN = 180.0
+_BATCH_ROUND_RE = re.compile(
+    r"\]\s+ROUND\s+(\d+)\s*\|\s*剩余\s*JEV=(-?\d+)\s*雪球=(-?\d+)")
+_BATCH_RC_RE = re.compile(r"\]\s+(JEV|XQ)\s+rc=(-?\d+)\s+([\d.]+)s")
+
+
+def _empty_batch_backlog() -> dict[str, Any]:
+    return {
+        "available": False, "reason": None, "path": BATCH_LOG_PATH,
+        "log_age_min": None, "rounds_seen": None,
+        "jev_backlog": None, "xq_backlog": None,
+        "recent_rc": [], "timeout_streak": None,
+        "jev_delta": None, "xq_delta": None,   # 正=下降(有进展)，负=上升(恶化)
+        "round_hours": None, "eta_jev_hours": None, "eta_xq_hours": None,
+        "eta_hours": None, "last_round_at": None,
+        "unfinished_last_round": None,
+    }
+
+
+def _read_batch_log_tail(path: Path, max_bytes: int = BATCH_LOG_TAIL_BYTES) -> str:
+    try:
+        with path.open("rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - max_bytes))
+            return fh.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
+
+
+def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
+    """读 night_batch 日志尾部，量两条队列积压 / 最近两轮 rc / 预计清完小时。"""
+    path = Path(log_path or BATCH_LOG_PATH)
+    result = _empty_batch_backlog()
+    result["path"] = str(path)
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        result["reason"] = f"日志不存在: {path}"
+        return result
+    except OSError as exc:
+        result["reason"] = f"读不到日志: {_short_exc(exc)}"
+        return result
+    result["log_age_min"] = round((time.time() - stat.st_mtime) / 60.0, 1)
+    text = _read_batch_log_tail(path)
+    if not text:
+        result["reason"] = f"日志为空/读不到: {path}"
+        return result
+
+    rounds: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        m = _BATCH_ROUND_RE.search(line)
+        if m:
+            at = None
+            if line.startswith("[") and len(line) > 21:
+                try:
+                    at = dt.datetime.strptime(line[1:20], "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    at = None
+            rounds.append({
+                "round": int(m.group(1)),
+                "jev": int(m.group(2)),
+                "xq": int(m.group(3)),
+                "at": at,
+                "rc": {},
+            })
+            continue
+        mr = _BATCH_RC_RE.search(line)
+        if mr and rounds:
+            rounds[-1]["rc"][mr.group(1)] = int(mr.group(2))
+    result["rounds_seen"] = len(rounds)
+    if not rounds:
+        result["available"] = False
+        result["reason"] = "日志里没有 ROUND 行（可能尚未运行）"
+        return result
+    result["available"] = True
+    last = rounds[-1]
+    result["jev_backlog"] = last["jev"]
+    result["xq_backlog"] = last["xq"]
+    result["last_round_at"] = last["at"].strftime("%Y-%m-%d %H:%M:%S") if last["at"] else None
+    result["recent_rc"] = [
+        {"round": r["round"], "jev_rc": r["rc"].get("JEV"),
+         "xq_rc": r["rc"].get("XQ")}
+        for r in rounds[-BATCH_RECENT_ROUNDS:]
+    ]
+    # 连续超时轮数：从尾部往前数；末轮可能"已 ROUND 但子任务还没收口"，跳过它再数。
+    streak = 0
+    for r in reversed(rounds):
+        rcs = list(r["rc"].values())
+        if not rcs:
+            continue
+        if any(rc == 124 for rc in rcs):
+            streak += 1
+        else:
+            break
+    result["timeout_streak"] = streak
+    result["unfinished_last_round"] = not last["rc"]
+    if len(rounds) >= 2:
+        prev = rounds[-2]
+        result["jev_delta"] = prev["jev"] - last["jev"]
+        result["xq_delta"] = prev["xq"] - last["xq"]
+    # 吞吐/ETA：取最近 ≤4 个带时间戳与 rc 的轮次，按平均每轮墙钟与净下降折算。
+    window = [r for r in rounds if r["at"] and r["rc"]][-4:]
+    if len(window) >= 2:
+        hours = (window[-1]["at"] - window[0]["at"]).total_seconds() / 3600.0
+        rounds_span = max(1, window[-1]["round"] - window[0]["round"])
+        if hours > 0:
+            round_hours = hours / rounds_span
+            jev_drop = (window[0]["jev"] - window[-1]["jev"]) / rounds_span
+            xq_drop = (window[0]["xq"] - window[-1]["xq"]) / rounds_span
+            result["round_hours"] = round(round_hours, 2)
+            if jev_drop > 0 and last["jev"] > 0:
+                result["eta_jev_hours"] = round(last["jev"] / jev_drop * round_hours, 1)
+            if xq_drop > 0 and last["xq"] > 0:
+                result["eta_xq_hours"] = round(last["xq"] / xq_drop * round_hours, 1)
+            etas = [e for e in (result["eta_jev_hours"], result["eta_xq_hours"])
+                    if e is not None]
+            result["eta_hours"] = max(etas) if etas else None
+    return result
+
+
+def _batch_backlog_detail(bl: dict[str, Any]) -> str:
+    if not bl.get("available"):
+        return "夜间批处理积压不可判定：" + str(bl.get("reason") or "未知")
+    bits = ["JEV 积压 %s · 雪球 %s" % (bl.get("jev_backlog"), bl.get("xq_backlog"))]
+    recent = bl.get("recent_rc") or []
+    if recent:
+        def _rc_text(value):
+            return "未收口" if value is None else value
+        bits.append("最近 rc：" + "，".join(
+            "R%s JEV=%s/XQ=%s" % (item.get("round"), _rc_text(item.get("jev_rc")),
+                                  _rc_text(item.get("xq_rc"))) for item in recent))
+    if bl.get("unfinished_last_round"):
+        bits.append("最近一轮未收口（进行中或意外退出，无 END/rc 行）")
+    if bl.get("timeout_streak"):
+        bits.append("连续 rc=124 轮数 %d" % bl["timeout_streak"])
+    jd, xd = bl.get("jev_delta"), bl.get("xq_delta")
+    if jd is not None or xd is not None:
+        bits.append("较上轮变化 JEV=%s 雪球=%s（正=下降）"
+                    % ("—" if jd is None else jd, "—" if xd is None else xd))
+    if bl.get("eta_hours") is not None:
+        bits.append("按当前吞吐预计 %.1f 小时清完（JEV %s / 雪球 %s）"
+                    % (bl["eta_hours"], bl.get("eta_jev_hours"),
+                       bl.get("eta_xq_hours")))
+    else:
+        bits.append("预计清完小时：不可计算（无净下降）")
+    if bl.get("log_age_min") is not None:
+        bits.append("日志 %.0f 分钟前更新" % bl["log_age_min"])
+    return "；".join(bits)
+
+
+def _batch_backlog_level(bl: dict[str, Any]) -> tuple[str, str]:
+    """ops.batch_backlog 判级（2026-10-25 EXEC-R13）。
+
+    red    ：积压较上一轮上升（任一队列 delta<0），或连续 rc=124 ≥2 轮。
+    yellow ：仅最近 1 轮 rc=124；ETA >48h；日志 >3h 无新 ROUND（可能已收工/失联）。
+    green  ：无超时、积压只降不升、ETA ≤48h。
+    读不到 / 无 ROUND → red（不判绿）。
+    """
+    detail = _batch_backlog_detail(bl)
+    if not bl.get("available"):
+        return "red", detail
+    jd, xd = bl.get("jev_delta"), bl.get("xq_delta")
+    if (jd is not None and jd < 0) or (xd is not None and xd < 0):
+        return "red", "积压较上一轮上升；" + detail
+    streak = int(bl.get("timeout_streak") or 0)
+    if streak >= BATCH_TIMEOUT_STREAK_RED:
+        return "red", "连续 %d 轮 rc=124；" % streak + detail
+    if streak == 1:
+        return "yellow", "最近 1 轮 rc=124；" + detail
+    eta = bl.get("eta_hours")
+    if eta is None:
+        return "yellow", "无净下降，预计清完不可计算；" + detail
+    if eta > BATCH_ETA_RED_HOURS:
+        return "red", "预计清完 %.1fh > %.0fh；" % (eta, BATCH_ETA_RED_HOURS) + detail
+    if eta > BATCH_ETA_YELLOW_HOURS:
+        return ("yellow",
+                "预计清完 %.1fh > %.0fh；" % (eta, BATCH_ETA_YELLOW_HOURS) + detail)
+    age = bl.get("log_age_min")
+    if age is not None and age > BATCH_STALE_YELLOW_MIN:
+        return "yellow", "日志 %.0f 分钟无新轮次（可能已收工/失联）；" % age + detail
+    return "green", detail
+
+
+# ---------------------------------------------------------------------------
 # 5) 机器挂起（ops.machine_suspend）
 # ---------------------------------------------------------------------------
 # 只认 Windows 系统事件日志里的结构化 ID，不解析本地化文案。
@@ -4465,6 +4674,15 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         else:
             add("ops.task_launch_failures", "green", detail)
 
+    batch = (card.get("ops") or {}).get("batch_backlog") or {}
+    if not batch:
+        add("ops.batch_backlog", "red", "夜间批处理积压检查未运行（ops 块缺失）")
+    else:
+        # 2026-10-25 EXEC-R13：积压趋势/连续 rc=124 判级集中在 _batch_backlog_level，
+        # 便于反例测试；读不到/无 ROUND 一律红（不判绿）。
+        level, detail = _batch_backlog_level(batch)
+        add("ops.batch_backlog", level, detail)
+
     keys = (card.get("security") or {}).get("plaintext_keys") or {}
     if not keys:
         add("security.plaintext_keys", "red", "明文私钥扫描未运行（security 块缺失）")
@@ -4648,6 +4866,7 @@ def build_card(
         "docs": {"index_freshness": collect_docs_index(repo_root)},
         "ops": {"alert_watch": collect_alert_watch(repo_root),
                 "task_launch_failures": collect_task_launch_failures(),
+                "batch_backlog": collect_batch_backlog(),
                 "machine_suspend": collect_machine_suspend()},
         "security": {"plaintext_keys": collect_plaintext_keys(repo_root)},
         "ai": {"inference": collect_ai_inference(),
@@ -4717,6 +4936,11 @@ def build_card(
             "41/6008（意外关机）。有意外关机 → 红；今日累计挂起 >60 分钟红 / >10 分钟黄；"
             "查询失败红（不判绿）。这是全卡唯一能把「机器没开」与「任务失败」分开的读数——"
             "2026-10-24 六条日志同时断档，应用侧只能看到少了几行，给不出时长。",
+            "夜间批处理积压（ops.batch_backlog）：只读 C:\\Temp\\night_batch.log 尾部，"
+            "解析 ROUND/rc 行取两条队列积压、最近两轮 rc、墙钟/吞吐与预计清完小时；"
+            "积压较上一轮上升或连续 rc=124 ≥2 轮 → 红；仅 1 轮 rc=124 / ETA >48h / "
+            "日志 >3h 无新轮 → 黄；ETA >96h 或读不到 → 红（不判绿）。"
+            "对应修复单 2026-10-25 EXEC-R13（单实例锁 + 每轮软预算收口 + 告警旗）。",
         ],
     }
     checks, status, reasons = _evaluate(card)

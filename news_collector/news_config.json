@@ -1,6 +1,7 @@
 {
- "portal_url": "http://192.168.0.3:8080/",
- "doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/PVPFdRERyoSKU4x5yG0cVqllnAe",
+ "_secrets_note": "2026-10-25 SEC 收口（EXEC-R14）：portal_url/doc_url/jev_* 为敏感或内部字段，真值已移出本文件；优先读环境变量（NEWS_PORTAL_URL/NEWS_DOC_URL/JEV_DOC_URL/JEV_BASE_URL/JEV_BASE_TOKEN/NEWS_SA_FORM_URL）或本地私有文件 C:\\项目\\_vault\\secrets\\news_config_private.json（见 news_collector/config_local.py）。禁止把真值写回本文件。",
+ "portal_url": "",
+ "doc_url": "",
  "k266_export": true,
  "watch_keywords": [
   "美联储",
@@ -510,25 +511,28 @@
  "quote_alert_pct": 3.0,
  "quote_alert_cooldown_min": 30,
  "quote_keep_days": 30,
- "jev_doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/QEfJdArZdo0oN2x2tRDcDxhUnQg",
- "jev_base_url": "https://fcnfiqjbtb8d.feishu.cn/base/MQdLb1eNJadskWs9w8OcHQCYnze",
- "jev_base_token": "MQdLb1eNJadskWs9w8OcHQCYnze",
+ "jev_doc_url": "",
+ "jev_base_url": "",
+ "jev_base_token": "",
  "sa_table_id": "tblu9YmZsDixWKAV",
- "sa_form_url": "https://fcnfiqjbtb8d.feishu.cn/share/base/shrcn1DYIJUysvzTRQdvNwKPMiq",
+ "sa_form_url": "",
  "push_targets": [
   {
    "name": "个人",
    "type": "open_id",
+   "app": "cli_aa3e4f1b58f85cdd",
    "id": "ou_50a95455c7dffec1090ade400886d0d4"
   },
   {
    "name": "内部测试",
    "type": "chat_id",
+   "app": "cli_aa3e4f1b58f85cdd",
    "id": "oc_6b97bee8b5340e071d0fc10cc6c8569f"
   },
   {
    "name": "量化群",
    "type": "chat_id",
+   "app": "cli_aa3e4f1b58f85cdd",
    "id": "oc_16ed759795430734a90a7850ba33bec1"
   }
  ]

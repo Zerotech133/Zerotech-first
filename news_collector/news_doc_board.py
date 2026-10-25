@@ -33,11 +33,9 @@ def _find_cli():
 
 
 def _cfg():
-    try:
-        with open(CFG_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}  # 豁免（C2批2）：配置缺失→默认 doc id，refresh 返回值由调用方记录
+    # 2026-10-25 SEC 收口（EXEC-R14）：doc_url 读 env/本地私有覆盖，见 config_local.py
+    from config_local import load_news_config
+    return load_news_config()
 
 
 def _latest_report(db, table):

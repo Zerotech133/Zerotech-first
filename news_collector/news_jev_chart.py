@@ -16,6 +16,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 from news_time import parse_full_time, parse_news_time
+# 2026-10-25 SEC 收口（EXEC-R14）：news_config 敏感字段读 env/本地私有覆盖，见 config_local.py
+from config_local import load_news_config, save_jev_doc_url
 
 import matplotlib
 matplotlib.use("Agg")
@@ -238,14 +240,17 @@ def _lark(args, timeout=90):
 
 def sync_base(items):
     """判断记录增量写入 Base 表（幂等：跳过已写入的判断时间）。
-    Base 坐标存 news_config.json jev_base_token。"""
+    2026-10-25 SEC 收口（EXEC-R14）：Base token 不再存 tracked config，
+    取值优先级 env JEV_BASE_TOKEN > 本地私有文件 > news_config.json（应已空）。"""
     try:
-        cfg = json.load(open(os.path.join(HERE, "news_config.json"),
-                             encoding="utf-8"))
+        cfg = load_news_config()
     except Exception:
         cfg = {}
     base = cfg.get("jev_base_token")
     if not base:
+        # 明确报错而不是静默退化：缺 token 时 Base 增量停更，主卡片仍推送
+        print("JEV_CHART base SKIP: JEV_BASE_TOKEN 未配置"
+              "（env 或 _vault/secrets/news_config_private.json）")
         return 0
     tbl = "判断记录"
     r = _lark(["base", "+record-list", "--as", "user", "--base-token", base,
@@ -302,9 +307,7 @@ def _md_h5(now, items):
          "不构成投资建议" % now.strftime("%Y-%m-%d %H:%M"),
          ""]
     try:
-        base_url = json.load(open(
-            os.path.join(HERE, "news_config.json"),
-            encoding="utf-8")).get("jev_base_url")
+        base_url = load_news_config().get("jev_base_url")
     except Exception:
         base_url = ""
     if base_url:
@@ -364,10 +367,10 @@ def _search_url(title):
 
 def refresh_doc(now, items):
     """确保文档存在 → overwrite markdown → 文档尾部插图。
-    文档 URL 存 news_config.json jev_doc_url。成功返回 URL。"""
-    cfg_path = os.path.join(HERE, "news_config.json")
+    2026-10-25 SEC 收口（EXEC-R14）：文档 URL 属敏感字段，读 env/本地私有覆盖，
+    首次建成后只写私有文件，绝不回写 tracked 的 news_config.json。成功返回 URL。"""
     try:
-        cfg = json.load(open(cfg_path, encoding="utf-8"))
+        cfg = load_news_config()
     except Exception:
         cfg = {}
     doc = cfg.get("jev_doc_url") or ""
@@ -387,9 +390,7 @@ def refresh_doc(now, items):
                    .get("url") or "")
             if not doc:
                 return None
-            cfg["jev_doc_url"] = doc
-            with open(cfg_path, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, ensure_ascii=False, indent=2)
+            save_jev_doc_url(doc)  # 2026-10-25 SEC 收口：写私有覆盖，不回写 tracked config
         else:
             r = subprocess.run(
                 [exe, "docs", "+update", "--as", "user", "--doc", doc,
@@ -479,8 +480,7 @@ def main():
     except Exception as e:
         print("JEV_CHART base sync ERR %s" % str(e)[:100])
     try:
-        base_url = json.load(open(os.path.join(HERE, "news_config.json"),
-                                  encoding="utf-8")).get("jev_base_url")
+        base_url = load_news_config().get("jev_base_url")
     except Exception:
         base_url = ""
     doc_url = refresh_doc(now, items)  # 先刷文档，卡片按钮才能带上链接

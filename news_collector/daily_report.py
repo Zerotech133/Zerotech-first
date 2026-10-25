@@ -201,7 +201,9 @@ def main():
     push = "--push" in sys.argv
     today = datetime.now().strftime("%Y-%m-%d")
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    cfg = _j(os.path.join(HERE, "news_config.json")) or {}
+    # 2026-10-25 SEC 收口（EXEC-R14）：敏感字段（portal/doc URL）优先 env/本地私有覆盖
+    from config_local import load_news_config
+    cfg = load_news_config()
     portal = cfg.get("portal_url")
     doc = cfg.get("doc_url", "")
     blocks = build_blocks(today)
@@ -218,14 +220,15 @@ def main():
     buttons = None
     try:
         sys.path.insert(0, os.path.join(STATION, "portal"))
-        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
+        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY, m_url
         # K-ORG-186 M2 按钮改版：「📊 数据日报」升 primary（公网快照链
         # picks_public/data_daily.html）；台账按钮移除——K-STOCK-411
         # ledger.html 已停发，现网该按钮本就是死链
-        buttons = [("📊 数据日报", "%s/data_daily.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
-                    "primary"),
-                   ("📈 选股看板", "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
-                    "default")]
+        # 2026-10-25：优先用 /m 自动签发（H5 统一），未启用回退旧公网链。
+        _daily = m_url("daily") or "%s/data_daily.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
+        _picks = m_url("picks") or "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
+        buttons = [("📊 数据日报", _daily, "primary"),
+                   ("📈 选股看板", _picks, "default")]
     except Exception:
         pass
     card = card_build.build_card3(  # K-PUSH-008：v3 绿域例行

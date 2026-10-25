@@ -548,7 +548,9 @@ def build_card_digest(shown, judges, total, intel_url):
 
 def main():
     dry = "--dry" in sys.argv
-    cfg = json.load(open(CFG_PATH, encoding="utf-8"))
+    # 2026-10-25 SEC 收口（EXEC-R14）：敏感字段（jev_doc_url 等）读 env/本地私有覆盖
+    from config_local import load_news_config
+    cfg = load_news_config()
     size = int(cfg.get("collect_page_size", 30))
     macro_terms = list(cfg.get("watch_keywords", [])) + list(cfg.get("watch_stocks", []))
     # 自选股：名称 + 别名 → 标准名（一只票多个别名只标一次）

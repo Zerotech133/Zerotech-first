@@ -58,8 +58,9 @@ def log(msg):
 
 
 def _cfg():
-    with open(os.path.join(HERE, "news_config.json"), encoding="utf-8") as f:
-        return json.load(f) or {}
+    # 2026-10-25 SEC 收口（EXEC-R14）：敏感字段读 env/本地私有覆盖，见 config_local.py
+    from config_local import load_news_config
+    return load_news_config()
 
 
 def now_cst():
