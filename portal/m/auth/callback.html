@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>飞书授权 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/m/assets/m.css?v=20261026b">
+<link rel="stylesheet" href="/m/assets/m-os.css?v=20261026os">
+</head>
+<body class="m-page" data-page="auth">
+<div class="m-header"><span style="width:44px"></span><h1>飞书授权</h1><span style="width:44px"></span></div>
+<div id="app"><div class="m-skel">正在验证授权…</div></div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var code = q.get('code') || '';
+  var state = q.get('state') || '';
+  var app = document.getElementById('app');
+  if (!code) {
+    app.innerHTML = '<div class="m-error">缺少授权码（code），请重新从订阅页发起授权。</div>';
+    return;
+  }
+  fetch('/api/m/auth/exchange', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({code: code, state: state})
+  }).then(function (r) { return r.json(); }).then(function (j) {
+    if (j && j.ok) {
+      app.innerHTML = '<div class="m-card"><p>✓ 授权成功（' +
+        (j.open_id_masked || '') + '），正在跳转…</p></div>';
+      setTimeout(function () {
+        location.href = j.redirect || '/m/subscription';
+      }, 600);
+    } else {
+      app.innerHTML = '<div class="m-error">授权失败：' +
+        ((j && j.error) || '未知错误') + '</div>';
+    }
+  }).catch(function (e) {
+    app.innerHTML = '<div class="m-error">网络异常：' + e.message + '</div>';
+  });
+})();
+</script>
+</body>
+</html>
