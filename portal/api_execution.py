@@ -44,6 +44,14 @@ CACHE_TTL = 30
 #: 4294967295(0xFFFFFFFF) 等不在表内，必报 bad。
 BENIGN_RC = {0, 267009, 267011, 267014}
 
+#: 非失败单列退出码（2026-10-25 EXEC-R7 / 2026-10-26 OS-FIX-MEASURE 口径统一）：
+#: 这三个码与 agent_platform/tools/task_exit_audit.py 的 EXIT_SEMANTICS /
+#: NON_FAILURE_RC 同口径——result_ok 仍为 False（= 没成功执行），但 status 单列，
+#: **不进 fail、不进 worst 红灯统计**；R3 watchdog 只对 fail/stale 响，天然不误报。
+RC_UPSTREAM_UNTRUSTED = 3          # 上游证据不可信 → 脚本主动拒跑（exit 3）
+RC_CANCELLED = 3221225786          # 0xC000013A STATUS_CONTROL_C_EXIT：被取消/强杀
+RC_LAUNCHER_REFUSED = 2147946720   # 0x800710E0 启动器已在运行/启动请求被拒
+
 #: 0x41303 尚未跑：配合 1999-11-30 LastRunTime 哨兵判定 never（从未运行）
 _RC_NOT_RUN = 267011
 #: 1999 哨兵年（PS LastRunTime 从未运行时为 1999-11-30 本地投影）
@@ -404,7 +412,7 @@ def _log_state(cfg):
 # ── 状态机 classify ───────────────────────────────────────────────────────
 
 def classify(cfg, ps_row, now):
-    """单任务状态判定（优先级：disabled > fail > never > stale > ok）。
+    """单任务状态判定（优先级：disabled > 非失败单列码 > fail > never > stale > ok）。
 
     Args:
         cfg: manifest 条目 dict。
@@ -456,6 +464,22 @@ def classify(cfg, ps_row, now):
         if last_run_dt > now:
             last_run_dt = now  # 时钟漂移防御：未来时间不算负陈旧
 
+    # 0) 非失败单列码（2026-10-25 EXEC-R7 / 2026-10-26 OS-FIX-MEASURE）：
+    #    "没成功执行"≠"服务失败"。三个码单列 status、不进 fail/worst：
+    #    · rc=3           上游证据不可信 → 脚本主动拒跑（alert_watch 的设计行为）
+    #    · 0xC000013A     任务被取消/强杀（STATUS_CONTROL_C_EXIT：关机/注销打断、
+    #                     ExecutionTimeLimit 强杀）
+    #    · 0x800710E0     启动器已在运行/启动请求被拒（IgnoreNew 并发保护）
+    #    result_ok 仍为 False（确实没成功执行），只是不染色。
+    if entry["last_result"] == RC_UPSTREAM_UNTRUSTED:
+        entry["status"] = "upstream_untrusted"
+        return entry
+    if entry["last_result"] == RC_CANCELLED:
+        entry["status"] = "cancelled"
+        return entry
+    if entry["last_result"] == RC_LAUNCHER_REFUSED:
+        entry["status"] = "launcher_refused"
+        return entry
     # 1) fail：rc 非良性必报（fail 优先级高于 never——267011 良性不会进此支）
     if not entry["result_ok"]:
         entry["status"] = "fail"
@@ -483,8 +507,13 @@ _WORST_ORDER = ("fail", "stale", "never")  # 红 > 黄 > 灰
 
 
 def _summary_of(entries):
-    """汇总 enabled 任务的四态计数与 worst（disabled 不入红绿）。"""
+    """汇总 enabled 任务的状态计数与 worst（disabled 与非失败单列码不入红绿）。"""
     summary = {"ok": 0, "fail": 0, "stale": 0, "never": 0, "disabled": 0,
+               # 2026-10-25 EXEC-R7：rc=3 主动拒跑单列，不进 fail/worst。
+               # 2026-10-26 OS-FIX-MEASURE：0xC000013A 取消 / 0x800710E0 启动器
+               # 已在运行，与 task_exit_audit 的 cancelled/launcher_refused 同口径，
+               # 同样只计数、不进 _WORST_ORDER。
+               "upstream_untrusted": 0, "cancelled": 0, "launcher_refused": 0,
                "worst": None}
     for e in entries:
         if e["status"] in summary and e["status"] != "worst":
@@ -569,6 +598,8 @@ class Handler:
                 "ps_elapsed_ms": 0,
                 "tasks": [],
                 "summary": {"ok": 0, "fail": 0, "stale": 0, "never": 0,
-                            "disabled": 0, "worst": None},
+                            "disabled": 0, "upstream_untrusted": 0,
+                            "cancelled": 0, "launcher_refused": 0,
+                            "worst": None},
             }
         self._json(payload)

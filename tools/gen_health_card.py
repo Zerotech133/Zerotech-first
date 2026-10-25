@@ -2665,35 +2665,60 @@ def _alert_watch_detail(watch: dict[str, Any]) -> str:
     return text
 
 
-def _alert_watch_level(watch: dict[str, Any]) -> tuple[str, str]:
-    """ops.alert_watch_liveness 判级（2026-10-25 EXEC-R8 新口径）。
+def _is_non_trading_day(now: dt.datetime) -> bool:
+    """周末/非交易日判定（2026-10-26 统一测量口径）。
+
+    当前只判周末（weekday>=5）；A 股节假日日历尚未接入
+    （留口见 docs/ops/MEASUREMENT_CANON_2026-10-26.md）。因此这里只用来给
+    "上游不可信"的 detail 追加"可能属预期"，**不用于判绿/判红**——
+    无法证明的日子不能拿来给故障开脱。
+    """
+    return now.weekday() >= 5
+
+
+def _alert_watch_level(watch: dict[str, Any],
+                       now: dt.datetime | None = None) -> tuple[str, str]:
+    """ops.alert_watch_liveness 判级（2026-10-25 EXEC-R8；2026-10-26 统一测量修订）。
 
     优先级：
-      1) 执行心跳新鲜（<15min）→ green「本体在跑」；rc=3/upstream_ok=False 时
-         detail 注明「上游不可信已 X」，不误报停摆；心跳新鲜但 rc∉{0,3} →
-         yellow（本体在跑但本轮脚本自身失败）。
+      1) 执行心跳新鲜（<15min）→ 本体在跑：
+         · rc=3 或 upstream_ok=False → **yellow**：本体在跑、脚本按设计拒跑，
+           不是停摆；但上游 6 源 stale → 告警内容不可用，处置在数据上游。
+           周末/非交易日追加「可能属预期，交易日需补源时间戳」。
+         · rc=0 且 upstream_ok=True → green（上游校验通过）；
+         · rc 非 0/3 → yellow（本体在跑但本轮脚本自身失败）。
       2) 心跳缺失/过期 → 回退旧状态文件口径（>26h red / >2h yellow / else green），
          detail 标注心跳过期/缺失——过期样本仍会红（反例保留）。
+
+    2026-10-26 口径修订：此前心跳新鲜 + rc=3 判**绿**，把「本体在跑」当成了
+    「告警面健康」；实际上 6 个源全 stale，告警内容不可用——绿是误报，
+    改为黄（黄 = 有已知问题但不阻断；红留给真故障）。
     """
+    now = now or dt.datetime.now()
     hb = watch.get("heartbeat") or {}
     hb_age = hb.get("age_min")
     hb_fresh = (hb.get("available") and hb_age is not None
                 and hb_age <= ALERT_HEARTBEAT_FRESH_MIN)
     if hb_fresh:
         rc = hb.get("rc")
-        if rc == 3:
+        upstream_ok = hb.get("upstream_ok")
+        if rc == 3 or upstream_ok is False:
             state_age = watch.get("age_hours")
             waited = f"{state_age:.1f} 小时" if state_age is not None else "未知时长"
-            return (
-                "green",
-                f"本体在跑（心跳 {hb_age:.1f} 分钟前，rc=3）；"
-                f"上游不可信已 {waited}（{_alert_watch_state_brief(watch)}），"
-                "脚本按设计正确拒跑、不推即时预警——这不是停摆，处置在数据上游",
+            detail = (
+                f"本体在跑（心跳 {hb_age:.1f} 分钟前，rc={rc}）、脚本按设计正确拒跑——"
+                "不是停摆、不是崩溃；但上游不可信已 "
+                f"{waited}（6 源 stale）→ 告警内容不可用，"
+                "处置方向是补齐生产者时间戳或调整轮询与新鲜窗口"
             )
+            if _is_non_trading_day(now):
+                detail += "。当前为周末/非交易日：可能属预期，交易日需补源时间戳"
+            return "yellow", detail
         if rc in (0, None):
+            verified = "上游校验通过" if upstream_ok is True else "未记录上游校验结果"
             return (
                 "green",
-                f"本体在跑（心跳 {hb_age:.1f} 分钟前，rc={rc}，上游校验通过）；"
+                f"本体在跑（心跳 {hb_age:.1f} 分钟前，rc={rc}，{verified}）；"
                 + _alert_watch_state_brief(watch),
             )
         # 心跳新鲜但 rc 非 0/3（1=脚本失败、2=错误…）→ 本体在跑但本轮自身异常，黄。
@@ -2904,6 +2929,39 @@ def _task_launch_detail(info: dict[str, Any]) -> str:
     if not parts:
         return head + "；无异常"
     return head + "。" + "；".join(parts)
+
+
+def _task_launch_level(info: dict[str, Any]) -> tuple[str, str]:
+    """ops.task_launch_failures 判级（2026-10-26 统一测量口径）。
+
+    采集不可用（典型：沙箱/权限会话里 `schtasks` 报错 → available=False）
+    是**测量缺口**，不是任务故障：判黄 N/A、不计红，需管理员会话复核。
+    只有两种情形判红：ops 块缺失（采集器未运行），或真正拿到 available=True
+    且有「动作起来了但目标不存在」的启动失败。
+    """
+    if not info:
+        return "red", "任务启动失败统计未运行（ops 块缺失）"
+    if not info.get("available"):
+        return (
+            "yellow",
+            "N/A（不可采集：schtasks 不可用——沙箱/权限会话；不计红，"
+            "需管理员会话复核）：" + str(info.get("reason") or "未知"),
+        )
+    # 2026-10-23 口径（旧口径把"退出码 N"误当"启动失败"，已废弃）：
+    #   red    = 动作起来了但目标不存在（如 PowerShell -File 脚本缺失）且任务在启用中
+    #   yellow = 有未知返回码，需人看一眼（同一秒的一批通常是休眠/关机打断）
+    #   green  = 两者皆无；"退出码非零"只在 detail 里陈述，不驱动颜色——
+    #            那属于业务失败，归 task_audit.failures 管，不在这里重复计数
+    issues = [x for x in (info.get("launch_failures") or [])
+              if x.get("status") != "Disabled"]
+    unknown = [x for x in (info.get("unknown_codes") or [])
+               if x.get("status") != "Disabled"]
+    detail = _task_launch_detail(info)
+    if issues:
+        return "red", detail
+    if unknown:
+        return "yellow", detail
+    return "green", detail
 
 
 def _summary_age_hours(audit: dict[str, Any]) -> float | None:
@@ -4992,28 +5050,10 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         add("ops.alert_watch_liveness", level, detail)
 
     launch = (card.get("ops") or {}).get("task_launch_failures") or {}
-    if not launch:
-        add("ops.task_launch_failures", "red", "任务启动失败统计未运行（ops 块缺失）")
-    elif not launch.get("available"):
-        add("ops.task_launch_failures", "red",
-            "任务启动失败统计不可用：" + str(launch.get("reason") or "未知"))
-    else:
-        # 2026-10-23 新口径（旧口径把"退出码 N"误当"启动失败"，已废弃）：
-        #   red    = 动作起来了但目标不存在（如 PowerShell -File 脚本缺失）且任务在启用中
-        #   yellow = 有未知返回码，需人看一眼（同一秒的一批通常是休眠/关机打断）
-        #   绿     = 两者皆无；"退出码非零"只在 detail 里陈述，不驱动颜色——
-        #            那属于业务失败，归 task_audit.failures 管，不在这里重复计数
-        issues = [x for x in (launch.get("launch_failures") or [])
-                  if x.get("status") != "Disabled"]
-        unknown = [x for x in (launch.get("unknown_codes") or [])
-                   if x.get("status") != "Disabled"]
-        detail = _task_launch_detail(launch)
-        if issues:
-            add("ops.task_launch_failures", "red", detail)
-        elif unknown:
-            add("ops.task_launch_failures", "yellow", detail)
-        else:
-            add("ops.task_launch_failures", "green", detail)
+    # 2026-10-26 统一测量：判级集中在 _task_launch_level（N/A 不判红），
+    # 便于反例测试；此处只负责把 level/detail 挂到 checks。
+    launch_level, launch_detail = _task_launch_level(launch)
+    add("ops.task_launch_failures", launch_level, launch_detail)
 
     batch = (card.get("ops") or {}).get("batch_backlog") or {}
     if not batch:
@@ -5282,6 +5322,15 @@ def build_card(
             "积压较上一轮上升或连续 rc=124 ≥2 轮 → 红；仅 1 轮 rc=124 / ETA >48h / "
             "日志 >3h 无新轮 → 黄；ETA >96h 或读不到 → 红（不判绿）。"
             "对应修复单 2026-10-25 EXEC-R13（单实例锁 + 每轮软预算收口 + 告警旗）。",
+            "任务启动失败统计（ops.task_launch_failures）N/A 口径（2026-10-26 统一测量）："
+            "schtasks 不可用（沙箱/权限会话）→ 采集不到 ≠ 任务故障，判黄 N/A、不计红，"
+            "detail 写明「需管理员会话复核」；只有 ops 块缺失（采集器未运行）或真正采到 "
+            "available=true 且发现「动作起来了但目标不存在」才红。",
+            "警报监控存活（ops.alert_watch_liveness）：心跳新鲜（<=15 分钟）且 rc=3 / "
+            "upstream_ok=false → 判黄（不是绿）：本体在跑、脚本按设计拒跑不是停摆，"
+            "但上游 6 源 stale → 告警内容不可用，处置在数据上游；周末/非交易日追加"
+            "「可能属预期，交易日需补源时间戳」。rc=0 且 upstream_ok=true 才绿；"
+            "rc 非 0/3 黄；心跳缺失/过期回退状态文件旧口径（>26h 红）。",
         ],
     }
     checks, status, reasons = _evaluate(card)
