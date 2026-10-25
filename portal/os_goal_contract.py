@@ -34,13 +34,15 @@ EVENT_TYPES = ("goal.created", "goal.updated", "item.created",
                "workorder.claimed", "artifact.produced", "test.recorded",
                "trial.opened", "verdict.recorded",
                "consumer.registered", "grant.revoked", "workorder.formal",
-               "risk.verdict")
+               "risk.verdict", "approval.requested", "approval.decided",
+               "l2.outbox.recorded")
 FLOW_TYPES = ("brief.frozen", "brief.revised", "card.frozen",
               "card.selected", "grant.signed", "workorder.created",
               "workorder.claimed", "artifact.produced", "test.recorded",
               "trial.opened", "verdict.recorded",
               "consumer.registered", "grant.revoked", "workorder.formal",
-              "risk.verdict")
+              "risk.verdict", "approval.requested", "approval.decided",
+              "l2.outbox.recorded")
 CITATION_REQUIRED = ("business_plan", "content", "research")
 REQUIRED_GOAL_FIELDS = ("goal_id", "statement", "target_user", "assumptions",
                         "success_signals")

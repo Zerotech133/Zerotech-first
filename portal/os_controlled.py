@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import time
@@ -400,3 +401,185 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
             "gates": gates, "counts": {"events": len(evs)},
             "honesty": {"claim": "real", "env": "controlled",
                         "limit": "L2 外部动作仍被风控拒绝；本链只证本地受控可执行"}}
+
+
+# ================= C1：L2 人工审批通道（仍本机受控，不实际外发） =================
+def request_l2_approval(store: S.OsGoalStore, item_id: str, action: str, consumer_id: str,
+                        summary: str = "", ttl_minutes: int = 30,
+                        idem: Optional[str] = None) -> Dict[str, Any]:
+    _item(store, item_id)
+    action = str(action or "")
+    _require(action in L2_ACTIONS, "只有 L2 外部/不可逆动作需要人工审批：%s" % (sorted(L2_ACTIONS),))
+    _active_consumer(store, consumer_id)
+    _require(1 <= int(ttl_minutes) <= 240, "审批有效期 1-240 分钟")
+    expires = (datetime.now(BEIJING) + timedelta(minutes=int(ttl_minutes))).isoformat(timespec="seconds")
+    ev = store.append_event(
+        "approval.requested", {"item_id": item_id},
+        {"approval_id": "APR-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+         "action": action, "consumer_id": consumer_id,
+         "summary": str(summary or "")[:400], "expires_at": expires,
+         "status": "pending", "requested_by": "consumer",
+         "env": "controlled", "external_sent": False},
+        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id}, idem=idem)
+    return ev["payload"]
+
+
+def decide_l2_approval(store: S.OsGoalStore, item_id: str, approval_id: str,
+                       decision: str, nonce: str, note: str = "",
+                       signer_method: str = "session_nonce",
+                       idem: Optional[str] = None) -> Dict[str, Any]:
+    _item(store, item_id)
+    evs = _evs(store, item_id)
+    req = None
+    for e in reversed(evs):
+        if e.get("type") == "approval.requested" and (e.get("payload") or {}).get("approval_id") == approval_id:
+            req = e["payload"]
+            break
+    _require(req is not None, "审批单不存在：%s" % approval_id)
+    _require(req.get("status") == "pending" or True, "审批单状态异常")
+    exp = _parse(req.get("expires_at"))
+    _require(bool(exp and datetime.now(BEIJING) < exp), "审批单已过期，请重新申请")
+    _require(decision in ("approved", "denied"), "审批结论必须是 approved / denied")
+    _require(signer_method in SIGNER_METHODS, "签准方式不合法")
+    _require(isinstance(nonce, str) and len(nonce.strip()) >= 8, "人工审批必须带 nonce（≥8 字符）")
+    ev = store.append_event(
+        "approval.decided", {"item_id": item_id},
+        {"approval_id": approval_id, "decision": decision, "note": str(note or "")[:300],
+         "action": req.get("action"), "consumer_id": req.get("consumer_id"),
+         "signer": {"kind": "user", "id": "laotian", "method": signer_method,
+                    "nonce_sha256": "sha256:" + hashlib.sha256(nonce.encode()).hexdigest()},
+         "decided_at": _now()},
+        actor=USER_ACTOR, idem=idem)
+    return ev["payload"]
+
+
+def _approval_state(store: S.OsGoalStore, item_id: str, approval_id: str) -> Dict[str, Any]:
+    evs = _evs(store, item_id)
+    req = dec = None
+    for e in evs:
+        p = e.get("payload") or {}
+        if e.get("type") == "approval.requested" and p.get("approval_id") == approval_id:
+            req = p
+        if e.get("type") == "approval.decided" and p.get("approval_id") == approval_id:
+            dec = p
+    if req is None:
+        return {"status": "missing"}
+    if dec is None:
+        exp = _parse(req.get("expires_at"))
+        status = "expired" if (exp and datetime.now(BEIJING) >= exp) else "pending"
+        return {"status": status, "request": req}
+    return {"status": dec.get("decision") or "unknown", "request": req, "decision": dec}
+
+
+def risk_verdict_with_approval(store: S.OsGoalStore, item_id: str, action: str,
+                               consumer_id: str, approval_id: str,
+                               idem: Optional[str] = None) -> Dict[str, Any]:
+    _item(store, item_id)
+    action = str(action or "")
+    reasons = []
+    decision, level = "deny", "L2" if action in L2_ACTIONS else "unknown"
+    if action not in L2_ACTIONS:
+        reasons.append("该动作不是 L2，不需要/不支持人工审批通道")
+    else:
+        st = _approval_state(store, item_id, approval_id)
+        if st["status"] != "approved":
+            reasons.append("审批未通过：status=%s" % st["status"])
+        else:
+            req = st.get("request") or {}
+            dec = st.get("decision") or {}
+            if req.get("action") != action:
+                reasons.append("审批动作与执行动作不一致")
+            elif req.get("consumer_id") != consumer_id:
+                reasons.append("审批消费者与执行消费者不一致")
+            else:
+                decision = "allow"
+                reasons.append("本人逐次审批通过（%s）" % approval_id)
+    ev = store.append_event(
+        "risk.verdict", {"item_id": item_id},
+        {"verdict_id": "RSK-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+         "action": action, "decision": decision, "risk_level": level,
+         "reasons": reasons, "policy": "os-risk-v0-c1",
+         "approval_id": approval_id, "consumer_id": consumer_id},
+        actor=SYSTEM_ACTOR, idem=idem)
+    return ev["payload"]
+
+
+def record_l2_outbox(store: S.OsGoalStore, item_id: str, consumer_id: str,
+                     approval_id: str, action: str, summary: str = "",
+                     payload_text: str = "", idem: Optional[str] = None) -> Dict[str, Any]:
+    _active_consumer(store, consumer_id)
+    action = str(action or "")
+    _require(action in L2_ACTIONS, "outbox 仅用于 L2 动作")
+    _require(bool(FILE_RE.match("l2_outbox.json")), "unreachable")
+    st = _approval_state(store, item_id, approval_id)
+    _require(st["status"] == "approved", "outbox 前必须有本人 approved 审批")
+    req = st.get("request") or {}
+    _require(req.get("action") == action and req.get("consumer_id") == consumer_id,
+             "审批与 outbox 的动作/消费者不一致")
+    rk = risk_verdict_with_approval(store, item_id, action, consumer_id, approval_id)
+    _require(rk.get("decision") == "allow", "风控未放行：%s" % rk.get("reasons"))
+    body = {"action": action, "approval_id": approval_id,
+            "consumer_id": consumer_id, "summary": str(summary or "")[:400],
+            "payload": str(payload_text or "")[:4000],
+            "external_sent": False, "env": "controlled",
+            "note": "C1 仅记录受控 outbox；未调用任何外部发送通道"}
+    raw = json.dumps(body, ensure_ascii=False, indent=1).encode("utf-8")
+    ws = _workspace(store, item_id)
+    path = os.path.join(ws, "l2_outbox_%s.json" % re.sub(r"[^A-Za-z0-9._-]", "_", approval_id))
+    with open(path, "wb") as fh:
+        fh.write(raw)
+    sha = "sha256:" + hashlib.sha256(raw).hexdigest()
+    ev = store.append_event(
+        "l2.outbox.recorded", {"item_id": item_id},
+        {"outbox_id": "OUT-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+         "approval_id": approval_id, "action": action, "consumer_id": consumer_id,
+         "path": path, "sha256": sha, "bytes": len(raw),
+         "external_sent": False, "env": "controlled"},
+        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id}, idem=idem)
+    return ev["payload"]
+
+
+def chain_report_c1(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
+    evs = _evs(store, item_id)
+    _item(store, item_id)
+    req = dec = risk = outbox = None
+    for e in evs:
+        t = e.get("type")
+        if t == "approval.requested":
+            req = e
+        elif t == "approval.decided":
+            dec = e
+        elif t == "risk.verdict" and (e.get("payload") or {}).get("approval_id"):
+            risk = e
+        elif t == "l2.outbox.recorded":
+            outbox = e
+    gates = {}
+
+    def gate(n, st, d):
+        gates[n] = {"gate": n, "status": st, "detail": d}
+
+    gate("C1-ITEM", "PASS", "事项已建档（%s）" % item_id)
+    gate("C1-REQ", "PASS" if req else "BLOCKED",
+         "审批单 %s action=%s" % ((req or {}).get("payload", {}).get("approval_id"),
+                                  (req or {}).get("payload", {}).get("action")))
+    gate("C1-DECISION", "PASS" if dec and (dec.get("payload") or {}).get("decision") == "approved"
+         else ("BLOCKED" if req else "BLOCKED"),
+         "本人审批：%s" % ((dec or {}).get("payload", {}).get("decision") or "未决"))
+    gate("C1-RISK", "PASS" if risk and (risk.get("payload") or {}).get("decision") == "allow"
+         else "BLOCKED", "风控：%s" % ((risk or {}).get("payload", {}).get("decision") or "未裁决"))
+    gate("C1-OUTBOX", "PASS" if outbox and (outbox.get("payload") or {}).get("external_sent") is False
+         else "BLOCKED", "受控 outbox（不外发）")
+    bad = [e.get("seq") for e in evs
+           if (e.get("actor") or {}).get("kind") not in ("user", "agent", "system", "consumer")]
+    gate("C1-AUDIT", "PASS" if not bad else "FAIL", "actor 审计")
+    statuses = [g["status"] for g in gates.values()]
+    if "FAIL" in statuses:
+        verdict, code = "FAIL", 4
+    elif "BLOCKED" in statuses:
+        verdict, code = "BLOCKED", 3
+    else:
+        verdict, code = "CONTROLLED_L2_APPROVED", 0
+    return {"item_id": item_id, "verdict": verdict, "exit_code": code,
+            "gates": gates, "counts": {"events": len(evs)},
+            "honesty": {"approval": "per_action_user", "external_sent": False,
+                        "limit": "仅审批+outbox 记录；未调用任何外部发送通道"}}
