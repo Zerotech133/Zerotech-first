@@ -30,11 +30,18 @@ import datetime
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 LATEST_JSON = r"C:\aios\automation_runs\xq_report\latest.json"
 STATUS_LOG = r"C:\aios\automation_runs\xq_report\verify_status.log"
 ALERT_LOG = r"C:\aios\automation_runs\xq_report\verify_alert.log"
+# 采集侧降级事实（xueqiu_crawl.py 写）：hot 是新帖唯一来源，hot 失败时
+# 日报文件可以照常「新鲜」，但内容必然为空（2026-10-19~25 断更 6 天教训）。
+MANIFEST_JSON = r"C:\项目\老田的AI助手\quant_backtest\data\xueqiu\_manifest.json"
+# 重启后任务补跑时 verify 可能先于 report 完成（2026-10-24 20:23 verify、
+# 20:48 report 才写完 → 假失败）。等待上限 30 分钟，每 30 秒重看一次。
+FRESHNESS_WAIT_SECONDS = 1800
 
 # 15 键（实测 2026-10-18 latest.json 与 daily/xq_intel_20200513.json 完全一致）
 REQUIRED_KEYS = [
@@ -147,6 +154,63 @@ def check_freshness(mtime_ts: float, now: datetime.datetime) -> list:
     return []
 
 
+def check_source_health(manifest_path: str = MANIFEST_JSON) -> list:
+    """采集侧降级检查（full 模式）：hot 是新帖唯一来源。
+
+    只看文件新鲜度不够：2026-10-19~25 latest.json 天天更新（verify 10-25 rc=0），
+    但 posts_today 恒为 0，因为 xq_hot_post 一直 failed（token 400016/出口黑名单）。
+    manifest 读不到时 fail-open（不误报老环境）。
+    """
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            m = json.load(f)
+    except Exception:
+        return []
+    hot = m.get("xq_hot_post") or {}
+    st = hot.get("status")
+    if st in ("failed", "ip_blocked"):
+        note = str(hot.get("note") or "")[:120]
+        return [("source_degraded",
+                 "xq_hot_post status=%s (%s): no fresh posts source"
+                 % (st, note))]
+    return []
+
+
+def _wait_for_report(latest_path: str, now: datetime.datetime,
+                     max_wait_s: int = None) -> float:
+    """重启补跑场景：若今天有 cron_r_*.out 报告进程痕迹而 latest.json 还没更新，
+    轮询等待（默认 30s 间隔，上限 FRESHNESS_WAIT_SECONDS）。返回最新的 mtime。
+    """
+    if max_wait_s is None:
+        max_wait_s = FRESHNESS_WAIT_SECONDS
+    threshold = now.replace(hour=19, minute=0, second=0, microsecond=0)
+    mt = os.path.getmtime(latest_path)
+    if datetime.datetime.fromtimestamp(mt) >= threshold:
+        return mt
+    report_dir = os.path.dirname(latest_path)
+    waited = 0
+    while waited < max_wait_s:
+        running = False
+        try:
+            for fn in os.listdir(report_dir):
+                if not fn.startswith("cron_r_"):
+                    continue
+                p = os.path.join(report_dir, fn)
+                if time.time() - os.path.getmtime(p) < 3600:
+                    running = True
+                    break
+        except OSError:
+            break
+        if not running:
+            break
+        time.sleep(30)
+        waited += 30
+        mt = os.path.getmtime(latest_path)
+        if datetime.datetime.fromtimestamp(mt) >= threshold:
+            break
+    return mt
+
+
 def run(latest_path: str = LATEST_JSON, mode: str = "full",
         now: datetime.datetime = None, expect: tuple = None,
         status_log: str = None, alert_log: str = None) -> int:
@@ -191,10 +255,11 @@ def run(latest_path: str = LATEST_JSON, mode: str = "full",
         print("[verify] rc=0 smoke ok (chain only, semantics skipped)")
         return 0
 
-    # full 模式：键齐全性 + 内容语义 + 新鲜度
+    # full 模式：键齐全性 + 内容语义 + 采集降级 + 新鲜度（带补跑等待）
     fails = check_payload(data, expect)
-    mt = os.path.getmtime(latest_path)
+    mt = _wait_for_report(latest_path, now)
     fails += check_freshness(mt, now)
+    fails += check_source_health()
 
     if fails:
         _write_alert(alert_log, ts, mode, fails)

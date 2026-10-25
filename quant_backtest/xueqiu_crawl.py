@@ -549,7 +549,8 @@ def takeover_quote(symbols: list[str]) -> int:
 
 # ── CLI ──────────────────────────────────────────────────────
 def main(argv: list[str] | None = None) -> int:
-    """argparse CLI。rc：全失败=1；单表 failed 继续（部分失败=0）。"""
+    """argparse CLI。rc：全失败=1；hot 单表失败=3（可见降级）；仅 timeline
+    成功且 hot 也成功=0；单表 failed 继续但 hot 失败会升 rc=3（2026-10-26 R25）。"""
     ap = argparse.ArgumentParser(description="雪球 L3 直爬器")
     ap.add_argument("--mode", default="all",
                     choices=["timeline", "hot", "comments", "all",
@@ -605,7 +606,18 @@ def main(argv: list[str] | None = None) -> int:
         print("[main] crawl 异常：%s" % str(e)[:120])
         return 1
     expect = 2 if a.mode in ("all", "hot") else 1
-    return 1 if len(res.get("failed_tables") or []) >= expect else 0
+    failed = res.get("failed_tables") or []
+    if len(failed) >= expect:
+        return 1
+    # P1（2026-10-26 EXEC-R25）：hot 是「当日新帖」的唯一来源。此前 hot 单表
+    # 失败时因 timeline 成功即 rc=0（部分失败设计），计划任务 LastResult=0、
+    # 无告警 → 10-19 起「日报当日新帖=0」断更 6 天无人发现。升 rc=3 让
+    # 计划任务/alert_fail 可见；timeline 已正常落库，rc=3 不代表数据损毁。
+    if a.mode in ("all", "hot") and "xq_hot_post" in failed:
+        print("[ALERT][degraded] xq_hot_post failed -> 今日无新帖来源"
+              "（rc=3 可见降级，消费方勿当数据损毁）")
+        return 3
+    return 0
 
 
 if __name__ == "__main__":

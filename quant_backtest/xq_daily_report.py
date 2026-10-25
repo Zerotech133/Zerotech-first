@@ -34,6 +34,29 @@ SIG_EVENT = ("个股研判", "交易策略", "行情观点")   # 高置信信号
 BEARISH_MIN = 3          # 异动信号：bearish 绝对数阈值
 BEARISH_SHARE = 0.6      # 异动信号：bearish 占比阈值（样本 >= BEARISH_MIN）
 CONF_FLOOR = 0.8         # 高置信信号阈值
+# 采集侧降级事实（xueqiu_crawl.py 每轮写）：hot 失败时日报即使文件新鲜，
+# 「当日新帖」必然为 0 —— 2026-10-19~25 断更就是这里没人说清（R25 修）。
+MANIFEST = r"C:/项目/老田的AI助手/quant_backtest/data/xueqiu/_manifest.json"
+
+
+def load_source_health() -> dict:
+    """只读采集 manifest 的降级事实；读不到返回 {}（fail-open，不阻断出报）。"""
+    try:
+        with open(MANIFEST, "r", encoding="utf-8") as f:
+            m = json.load(f)
+        hot = m.get("xq_hot_post") or {}
+        health = m.get("health") or {}
+        quotec = health.get("quotec_probe") or {}
+        return {
+            "xq_hot_post_status": hot.get("status"),
+            "xq_hot_post_note": str(hot.get("note") or "")[:160],
+            "xq_hot_post_last_run": hot.get("last_run"),
+            "token_present": health.get("token_present"),
+            "quotec_probe_ok": quotec.get("ok"),
+            "quotec_probe_err": str(quotec.get("err") or "")[:120],
+        }
+    except Exception:
+        return {}
 # 多空标题分词停用词表：只过滤完整停用词，不按单字过滤。
 STOP_WORDS = {"它们", "更多", "还能", "可以", "没有", "这个",
               "那个", "自己", "不是", "什么", "如何", "怎么",
@@ -313,8 +336,16 @@ def render(day, tac, ing, summ_t, anomalies, tempo=None) -> str:
              (cls_t, "%.0f%%" % (100.0 * cls_t / n_tac) if n_tac else "-"))
     if n_tac == 0:
         L.append("")
-        L.append("⚠️ 当日新帖窗口为空——18:00 生产轮（XueqiuCrawl）首跑后才有战术数据，属预期；"
-                 "本报告其余段落按当前入库数据渲染。")
+        health = load_source_health()
+        if health.get("xq_hot_post_status") in ("failed", "ip_blocked"):
+            L.append("⚠️ 上游采集降级：xq_hot_post status=%s（%s）——当日新帖为 0 "
+                     "不是空窗口日，是采集失败（token/出口/风控）；恢复后需补采。"
+                     "详见 data/xueqiu/_manifest.json。"
+                     % (health.get("xq_hot_post_status"),
+                        str(health.get("xq_hot_post_note") or "")[:80]))
+        else:
+            L.append("⚠️ 当日新帖窗口为空——18:00 生产轮（XueqiuCrawl）首跑后才有战术数据，属预期；"
+                     "本报告其余段落按当前入库数据渲染。")
     L.append("")
     L.append("## 二、事件分布（当日新帖 · parse_ok）")
     L.append("")
@@ -474,6 +505,8 @@ def main() -> int:
                                  "event_type": e, "title": t}
                                 for cf, c, s, e, t in summ["sig"]],
         }
+        # R25：把采集降级事实写进 latest.json（附加键，老消费方忽略未知键）
+        payload["source_health"] = load_source_health()
         for sn, w, n, b, rt in tempo:
             payload["word_tempo"][sn].append(
                 {"word": w, "today": n, "base_avg": round(b, 2), "ratio": round(rt, 2)})
