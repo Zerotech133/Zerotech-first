@@ -102,7 +102,9 @@ _PORTAL_API = "http://127.0.0.1:8091"   # 门户 API（/api/kg/lineage 血缘体
 # State=="Running" 判常驻进程健康 → dashboard 活着却三连误报 DOWN。
 # 修法：对服务本体发 HTTP GET，2xx=UP；任务态降为 detail 辅助注记。
 # 无端点条目的常驻任务降级沿用旧任务态判定（保持向后兼容）。
-_HTTP_PROBE_TIMEOUT = 4.0   # 探活超时秒数（watchdog 调用方容忍窗口内）
+# 2026-10-25 K-ORG-20261025-PROBETO：/api/overview 聚合查询实测 2.9s（批量跑批时更慢），
+# 4.0s 会让 KgDataDashboard 频繁误判 DOWN（22:00 夜间独占时必现）。放宽到 10s。
+_HTTP_PROBE_TIMEOUT = 10.0  # 探活超时秒数（watchdog 调用方容忍窗口内）
 
 _RESIDENT_PROBES = {
     "KgDataDashboard": _DASH_PORT + "/api/overview",
