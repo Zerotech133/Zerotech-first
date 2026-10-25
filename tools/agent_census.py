@@ -492,6 +492,10 @@ def _status_health() -> dict:
             age = time.time() - cache.stat().st_mtime
             if age < 1800:
                 j = _json.loads(cache.read_text(encoding="utf-8"))
+                # 缓存必须属于同一个仓库根：工作树跑过一次会把"数据不可读"缓存下来，
+                # master 再读就会显示一堆假红灯（2026-10-25 实测踩过）。
+                if str(j.get("_cache_root") or "") != str(_REPO_ROOT):
+                    j = None
             else:
                 j = None
         else:
@@ -501,6 +505,7 @@ def _status_health() -> dict:
             r = subprocess.run([sys.executable, "-B", str(gen)], capture_output=True,
                                timeout=90, cwd=str(_REPO_ROOT))
             j = _json.loads(r.stdout.decode("utf-8", "replace"))
+            j["_cache_root"] = str(_REPO_ROOT)
             cache.write_text(_json.dumps(j, ensure_ascii=False), encoding="utf-8")
         checks = j.get("checks") or []
         reds = [c.get("id") for c in checks if c.get("level") == "red"]
