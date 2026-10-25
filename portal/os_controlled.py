@@ -371,7 +371,7 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
         signer_ok = (p.get("signer") or {}).get("kind") == "user"
         if art is not None:
             # 历史链：按产物产生时刻判定授权（之后的撤销/过期不追溯翻案）
-            produced = _parse(art.get("ts")) or datetime.now(BEIJING)
+            produced = _parse(art.get("at")) or datetime.now(BEIJING)
             until = _parse(p.get("valid_until"))
             revoke_before_art = any(
                 art.get("seq") is not None and e.get("seq") is not None
