@@ -1,4 +1,4 @@
-# ai-portal 反代容器启动脚本（挂载源钉死 C:\项目\老田的AI助手\portal）
+﻿# ai-portal 反代容器启动脚本（挂载源钉死 C:\项目\老田的AI助手\portal）
 # 用法：powershell -ExecutionPolicy Bypass -File start_portal_nginx.ps1
 # 行为：等引擎就绪 -> 幂等重建容器 -> nginx -t 自检 -> 打印状态与 resolver 核对
 $ErrorActionPreference = "Stop"
@@ -10,10 +10,10 @@ $Image  = "nginx:alpine"
 $Port   = "8080:80"
 
 Write-Host "[1/4] 等待 Docker 引擎就绪…" -ForegroundColor Cyan
-for ($i = 1; $i -le 30; $i++) {
+for ($i = 1; $i -le 90; $i++) {
     docker info *> $null
     if ($LASTEXITCODE -eq 0) { Write-Host "      引擎就绪" -ForegroundColor Green; break }
-    if ($i -eq 30) { throw "Docker 引擎 60s 内未就绪，请先启动 Docker Desktop" }
+    if ($i -eq 90) { throw "Docker 引擎 180s 内未就绪，请先启动 Docker Desktop" }
     Start-Sleep -Seconds 2
 }
 
