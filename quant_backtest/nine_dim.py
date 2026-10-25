@@ -142,6 +142,139 @@ def _atomic_append(path, rows):
     os.replace(tmp, path)
 
 
+# ── ⓪ 运行级历史账本（2026-10-26 OS-FIX-NINEDIM，JEV/九维审计缺口）──────
+# data/nine_dim_history.jsonl 是 **append-only 混合账本**（两种行，按 schema 区分）：
+#   · 运行级行（本段新增）：{"schema":"nine_dim_history/v1","generated_at",
+#     "trade_date","n_alert","n_cand","n_full","bands":{band:count},
+#     "history":[{code,score,band}...最多20]} —— 每轮成功算完后由 run_scan
+#     出口 append_history() 追加一行；给复盘/审计回答"当天 336 候选里 alert 几个、
+#     都是谁、各 band 多少"（此前 nine_dim_scores.json 只保留最新一份，无法回溯）。
+#   · legacy/警报池行：{"code","dt","score","band","pool_type":"alert",...}
+#     —— 既有 run_scan 入池段（_atomic_append）写入，k33/日报/门户按
+#     pool_type=="alert" 读取；本段不改其语义。
+# 读取纪律：运行级用 load_history()；警报池族按 pool_type 过滤（均已兼容未知行，
+# update_perf 已显式跳过运行级行）。写失败只告警、不阻断主计算。
+HIST_SCHEMA = "nine_dim_history/v1"
+HIST_TOP_N = 20
+
+
+def build_history_record(snap, rows):
+    """由九维快照 + 评分行构造一行运行级历史记录（纯函数，便于单测）。"""
+    bands = {}
+    for r in rows or ():
+        b = (r or {}).get("band") or "na"
+        bands[b] = bands.get(b, 0) + 1
+    history = [{"code": r.get("code"), "score": r.get("score"),
+                "band": r.get("band")}
+               for r in list(rows or ())[:HIST_TOP_N]]
+    return {"schema": HIST_SCHEMA,
+            "generated_at": snap.get("generated_at"),
+            "trade_date": snap.get("trade_date"),
+            "n_alert": snap.get("n_alert"),
+            "n_cand": snap.get("n_cand"),
+            "n_full": snap.get("n_full"),
+            "bands": bands,
+            "history": history}
+
+
+def _history_records(path=None):
+    """流式读历史账本：返回 (v1 运行级记录列表, 坏行数, 非 v1 行数)。"""
+    path = path or HIST
+    out, bad, other = [], 0, 0
+    if not os.path.exists(path):
+        return out, bad, other
+    try:
+        fh = open(path, encoding="utf-8", errors="replace")
+    except OSError:
+        return out, bad + 1, other
+    with fh:
+        for line in fh:
+            line = line.strip().lstrip("\ufeff")
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                bad += 1
+                continue
+            if not isinstance(rec, dict):
+                bad += 1
+                continue
+            if rec.get("schema") == HIST_SCHEMA:
+                out.append(rec)
+            else:
+                other += 1
+    return out, bad, other
+
+
+def append_history(record, path=None):
+    """追加一行运行级历史（O_APPEND 单行写 + fsync）；同 generated_at 幂等。
+
+    返回 True=已追加 / False=幂等跳过或写失败（失败只告警，绝不阻断主计算）。
+    """
+    path = path or HIST
+    try:
+        gen = (record or {}).get("generated_at")
+        if not gen:
+            print("9DIM history WARN 缺 generated_at，拒绝追加", file=sys.stderr)
+            return False
+        records, _bad, _other = _history_records(path)
+        if any(r.get("generated_at") == gen for r in records):
+            print("9DIM history skip: 同 generated_at 已存在（%s）" % gen)
+            return False
+        payload = (json.dumps(record, ensure_ascii=False) + "\n").encode("utf-8")
+        try:
+            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        except OSError:
+            pass                     # 目录已存在/不可建：交给 open 抛错走告警分支
+        fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
+        try:
+            os.write(fd, payload)
+            os.fsync(fd)             # 单行写完即落盘；崩溃最多留一行坏行（读取跳过）
+        finally:
+            os.close(fd)
+        return True
+    except Exception as e:           # noqa: BLE001 - 账本失败不得影响主计算
+        print("9DIM history WARN 追加失败 %r（不阻断主计算）" % e,
+              file=sys.stderr)
+        return False
+
+
+def load_history(limit=None, path=None):
+    """只读加载运行级历史账本（仅 nine_dim_history/v1 行）。
+
+    · 返回 list[dict]（文件顺序；legacy 警报池行不属于本账本，跳过且不计坏行）；
+    · 坏行（JSON 解析失败/非对象行）跳过并在 stderr 汇总计数；
+    · limit=N（>0）只返回最近 N 条（复盘常用）；None=全部；0=空列表。
+    """
+    records, bad, _other = _history_records(path)
+    if bad:
+        sys.stderr.write("9DIM history load: 坏行=%d（已跳过）\n" % bad)
+    if limit is None:
+        return records
+    try:
+        n = int(limit)
+    except (TypeError, ValueError):
+        return records
+    if n <= 0:
+        return []
+    return records[-n:]
+
+
+def record_run_history(snap, rows, path=None):
+    """run_scan 成功出口：构造并追加一行运行级历史；任何异常只告警。
+
+    返回 True=已追加 / False=幂等跳过或失败。抽成函数的目的是可单测
+    （不必跑完整 run_scan 的行情/API 链路）。
+    """
+    try:
+        return append_history(build_history_record(snap, rows), path=path)
+    except Exception as e:           # noqa: BLE001 - 历史账本失败不得影响主计算
+        print("9DIM history WARN %r（历史账本未追加，不影响主计算结果）" % e,
+              file=sys.stderr)
+        return False
+
+
 # ── ① 本地底座：全市场行情 + RPS + 粗筛 ────────────────────
 def _load_market():
     """{code: df[tail 260 行]} + 最新交易日（候选池与本地因子共用）。"""
@@ -1350,6 +1483,9 @@ def run_scan(dryrun=False):
         return snap
 
     _write_json(SNAP, snap)
+    # OS-FIX-NINEDIM-20261026：运行级历史账本（append-only；失败只告警不阻断）。
+    # 位置=「成功算出分数/警报后的出口」：dryrun 不写快照也不写历史，保持一致。
+    record_run_history(snap, rows_out)
     # 入池（K33 反转语义：≥75 拥挤警报池，跟踪验证负收益即警报有效；
     # 原 ≥90 买入池退役——V3 复评两仪 2 年 1 票且 r20 -34%）
     have = set()
@@ -1409,12 +1545,39 @@ def _exdiv(bars, ei, xi):
 
 
 def update_perf():
-    """逐条 history 计算 r5/r20（成熟实现 / 未成熟盯市），聚合缓存。"""
+    """逐条 history 计算 r5/r20（成熟实现 / 未成熟盯市），聚合缓存。
+
+    OS-FIX-NINEDIM：nine_dim_history.jsonl 现为混合 append-only 账本，运行级
+    记录（schema=nine_dim_history/v1）与坏行必须跳过，否则本函数 r["code"]
+    会 KeyError；文件只有运行级行时提前返回，不覆盖既有战绩缓存。
+    """
     if not os.path.exists(HIST):
         print("perf: no history yet")
         return
-    with open(HIST, encoding="utf-8") as f:
-        rows = [json.loads(l) for l in f if l.strip()]
+    rows, skipped = [], 0
+    with open(HIST, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            line = line.strip().lstrip("\ufeff")
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                skipped += 1
+                continue
+            if not isinstance(r, dict):
+                skipped += 1
+                continue
+            if r.get("schema"):       # 运行级记录（有 schema 字段）不进战绩
+                skipped += 1
+                continue
+            if "code" not in r or "dt" not in r:
+                skipped += 1          # 字段不全/未知行：当坏行跳过
+                continue
+            rows.append(r)
+    if not rows:
+        print("perf: no pool rows yet（history 跳过 %d 行运行级/坏行）" % skipped)
+        return
     cache, out = {}, []
     for r in rows:
         code = r["code"]
