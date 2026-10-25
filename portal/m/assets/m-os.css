@@ -1,0 +1,96 @@
+/* ============================================================
+   零界移动端 · 个人 OS 定版风格对齐（2026-10-26）
+   定版基准：portal/os_entry_v9_prod.html（深海军蓝 + 青蓝强调 + 琥珀元信息）
+   - 底色 #090f1c，纸面 #111e31，抬升 #15243a，描边 #30445d
+   - 强调青蓝 #6bd7e5，元信息琥珀 #eac48b，主文字 #eef5ff，次文字 #a7b8cc
+   - 卡片 145° 渐变 + 14~17px 圆角 + 顶部径向光晕
+   ============================================================ */
+body.m-page{
+  --bg-page:#090f1c; --bg-surface:#111e31; --bg-raised:#15243a;
+  --border:#30445d; --border-weak:#243a52;
+  --text:#eef5ff; --text-dim:#a7b8cc;
+  --link:#6bd7e5; --accent:#6bd7e5;
+  --gray-5:#a7b8cc; --gray-6:#c9d6e6; --gray-7:#eef5ff;
+  --blu-500:#6bd7e5; --blu-600:#2b7f96;
+  --color-up:#ff7b72; --color-up-bg:#3a1b1e; --color-up-bd:#6b2b2f;
+  --color-dn:#3fb950; --color-dn-bg:#12261e; --color-dn-bd:#1f4d2b;
+  --color-ok:#3fb950; --color-err:#ff7b72; --color-warn:#eac48b;
+  --r-s:10px; --r-m:14px; --r-l:17px;
+  background: radial-gradient(ellipse at 78% -12%, #15314c 0%, transparent 46%), var(--bg-page);
+  color: var(--text);
+}
+html,body{background:#090f1c;color:#eef5ff}
+body.m-page .m-header{
+  background:rgba(9,15,28,.92);border-bottom:1px solid #35536b;
+  backdrop-filter:blur(10px);
+}
+body.m-page .m-header h1{letter-spacing:.02em}
+body.m-page .m-crumbs{color:var(--text-dim);letter-spacing:.02em}
+body.m-page .m-crumbs b{color:var(--text)}
+body.m-page .m-hero{border-bottom:1px solid var(--border)}
+body.m-page .m-card,
+body.m-page .m-collapse,
+body.m-page .m-an-block{
+  background:linear-gradient(145deg,#15243a,#111e31 76%);
+  border:1px solid var(--border);
+  border-radius:var(--r-m);
+  box-shadow:0 12px 32px #02071125;
+}
+body.m-page .m-an-block{border-radius:var(--r-l);padding:16px 16px 14px}
+body.m-page .m-an-banner{
+  background:linear-gradient(145deg,#15243a,#111e31 76%);
+  border:1px solid var(--border);border-radius:var(--r-l);
+  box-shadow:0 12px 32px #02071125;
+}
+body.m-page .m-an-banner b{color:var(--text)}
+body.m-page .m-an-banner p{color:var(--text-dim)}
+body.m-page .m-an-h{color:var(--text);letter-spacing:.02em}
+body.m-page .m-an-stat{
+  background:linear-gradient(145deg,#17304a,#111e31 82%);
+  border:1px solid #2c4763;border-radius:12px;
+}
+body.m-page .m-an-stat .lbl{color:var(--text-dim)}
+body.m-page .m-an-stat .val{color:var(--text)}
+body.m-page .m-an-stat .sub{color:var(--text-dim)}
+body.m-page .m-an-md{color:var(--gray-6)}
+body.m-page .m-an-note{color:var(--text-dim)}
+body.m-page .m-an-row{border-color:var(--border)}
+body.m-page .m-kv{background:var(--border);border-color:var(--border)}
+body.m-page .m-kv>div{background:#111e31}
+body.m-page .m-kv label{color:var(--text-dim)}
+body.m-page .m-kv b{color:var(--text)}
+body.m-page .m-tabs{background:var(--bg-page);border-bottom:1px solid var(--border)}
+body.m-page .m-chip{border:1px solid var(--border);color:var(--text-dim);border-radius:8px}
+body.m-page .m-chip.on{
+  background:#17344a;border-color:#4d8095;color:#dffaff;
+}
+body.m-page .m-row{border-bottom:1px solid var(--border)}
+body.m-page .m-row:active{background:#132136}
+body.m-page .m-row .val b{color:var(--text)}
+body.m-page .m-card p{color:var(--gray-6)}
+body.m-page .m-actionbar{
+  background:rgba(9,15,28,.95);border-top:1px solid #35536b;
+}
+body.m-page .m-btn{
+  background:#17374a;color:#dffaff;border:1px solid #4d8095;
+  border-radius:10px;font-weight:650;
+}
+body.m-page .m-btn.primary{
+  background:#20516a;border-color:#4d8095;color:#eaffff;
+}
+body.m-page .m-btn:active{opacity:.85}
+body.m-page .m-tag{
+  background:#163047;border-color:#456b82;color:#6bd7e5;
+}
+body.m-page .m-stale{
+  background:#132136;border:1px solid #436078;color:#eac48b;
+}
+body.m-page .m-note{color:var(--text-dim)}
+body.m-page .m-skel{color:var(--text-dim)}
+body.m-page .m-empty{color:var(--text-dim)}
+body.m-page a{color:#6bd7e5}
+body.m-page .m-btn,
+body.m-page .m-chip{min-height:38px}
+body.m-page input,body.m-page textarea{
+  background:#111e31;border:1px solid #30445d;color:#eef5ff;
+}
