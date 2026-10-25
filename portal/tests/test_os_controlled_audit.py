@@ -206,6 +206,25 @@ def test_c0_chain_history_stable_after_deactivate(store):
     assert rep["verdict"] == "CONTROLLED_ONLY", rep
 
 
+def test_c0_chain_history_stable_after_grant_expiry(store, monkeypatch):
+    """签准真实过期后，历史产物仍按产物产生时刻判定（不追溯翻案）。
+
+    回归：曾误读事件字段 art["ts"]（实际字段是 at），恒回落 now()，
+    导致真实签准过期后历史链被判定超期 → 现网 C0-AUTH 翻 FAIL。
+    """
+    iid, _ = _happy_produce(store)
+
+    class _FutureDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime.now(tz) + timedelta(hours=3)
+
+    monkeypatch.setattr(X, "datetime", _FutureDatetime)
+    rep = X.chain_report_controlled(store, iid)
+    assert rep["gates"]["C0-AUTH"]["status"] == "PASS", rep["gates"]["C0-AUTH"]
+    assert rep["verdict"] == "CONTROLLED_ONLY", rep
+
+
 def test_c1_chain_history_stable_after_expiry(store):
     iid, _ = setup(store)
     aid = "APR-HIST-001"
