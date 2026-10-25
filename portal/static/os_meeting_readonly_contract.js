@@ -68,16 +68,26 @@
           var partial = false;
           var stale = false;
           var earliest = null;
+          var earliestBiz = null;
+          var bizMissing = false;
           names.forEach(function (name) {
             var row = rows[name];
             var time = obj(row) ? businessTime(row.as_of) : null;
             if (time && (!earliest || time < earliest)) earliest = time;
             if (!obj(row) || !time || (row.status !== 'ok' && row.status !== 'stale')) partial = true;
             if (obj(row) && row.status === 'stale' || (time && (Date.parse(time) > clock.getTime() || clock.getTime() - Date.parse(time) > 86400000))) stale = true;
+            var biz = obj(row) && day(row.business_date) ? row.business_date : null;
+            if (biz && (!earliestBiz || biz < earliestBiz)) earliestBiz = biz;
+            if (!biz) bizMissing = true;
           });
           asOf = earliest;
           status = partial ? 'partial' : stale ? 'stale' : 'limited';
           evidence = [partial ? '逐源状态或业务时间不完整' : stale ? '逐源标记过期、时间超出 24 小时或晚于观察时间' : '六源范围内状态与业务时间可核对；不代表全域健康'];
+          // 2026-10-26 OS-FIX-SMALL2：as_of 是生产者完成时间，business_date 才是业务日；
+          // 旧业务日 + 新完成时间时两者必须同时展示，避免把"刚聚合"误读成"数据新"。
+          evidence.push(earliestBiz
+            ? '业务日最早 ' + earliestBiz + (bizMissing ? '；部分源缺业务日' : '')
+            : '业务日缺失（不得据此判断数据新鲜）');
         } else if (names.length > 6) {
           status = 'partial';
           evidence = ['逐源范围超过六项；不可据此宣称完整覆盖'];
