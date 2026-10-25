@@ -41,6 +41,46 @@ SOURCE_ERROR_REASONS = {
 }
 SHANGHAI = timezone(timedelta(hours=8))
 
+# 2026-10-26 EXEC-R35：交易日历口径（周末/节后开盘前，EOD 源天然只有上一交易
+# 日批次，服务端会标 stale_anchor；若消费端坚持"as_of 必须当天"，AlertWatch
+# 每个周末+周一上午都会按设计拒跑 60h+，健康卡 ops.alert_watch_liveness 长期黄。
+# 这里只放宽"可接受的业务日期 = 今天 ∪ 上一交易日"；business_date 更早（真断更）
+# 仍然 stale，不会被洗绿。日历缺失时退回 weekday 口径，绝不阻断告警链。
+try:
+    import trading_cal as _tcal
+except Exception:  # noqa: BLE001 - 告警链不能被日历依赖弄死
+    _tcal = None
+
+
+def _prev_weekday(day):
+    probe = day
+    while probe.weekday() >= 5:
+        probe -= timedelta(days=1)
+    return probe
+
+
+def _acceptable_source_days(now):
+    """当期可接受业务日期集合：今天 + 上一交易日（R35，见上）。"""
+    days = {now.date()}
+    prev = now.date() - timedelta(days=1)
+    try:
+        days.add(_tcal.last_trading_day(prev) if _tcal is not None
+                 else _prev_weekday(prev))
+    except Exception:  # noqa: BLE001
+        days.add(_prev_weekday(prev))
+    return days
+
+
+def _parse_day(value):
+    """business_date 字符串 → date；非法/缺失返回 None（不判死，交给原逻辑）。"""
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
 # 新鲜窗口：源的完成时间戳距今多久内算"当期"。
 # 2026-10-26 OS-FIX-ALERT2：默认 5 → **1080 分钟（18 小时）**，与
 # portal/api_common.py 的 ALERT_FRESH_WINDOW 对齐（服务端已先合入 18h）。
@@ -142,6 +182,23 @@ def market_block(idx):
         return None
     return "**🌏 大盘** " + " · ".join(parts)
 
+
+
+def _unified_alert(legacy, title, blocks, now, level="warn"):
+    """2026-10-25 P2：预警卡统一分装（失败回落旧卡）。"""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))), "portal"))
+        from push_unified_adapter import adapt as _adapt
+        from feishu_card_v2 import m_url as _m
+        _u = _m("entry")
+        _btn = [("📱 移动端总览（H5）", _u, "primary")] if _u else None
+        return _adapt("alert", legacy, "alert", title, blocks, ts=now,
+                      source="预警引擎",
+                      footer="AI工作站 · 飞书预警输出 · 不构成投资建议",
+                      buttons=_btn, level=level)
+    except Exception:
+        return legacy
 
 def build_blocks(res, morning, idx):
     """大盘层（首块）+ 五路预警块（delta 红涨绿跌）。"""
@@ -267,6 +324,8 @@ def validated_alerts(res, morning=False, include_baseline=False):
     if not isinstance(sources, dict) or set(sources) != set(SOURCE_NAMES):
         return None
     outdated = set()
+    reconciled = set()  # EXEC-R35：交易日历复核通过的"上一交易日批次"源
+    acceptable_days = _acceptable_source_days(now)
     for source in SOURCE_NAMES:
         item = sources[source]
         if not isinstance(item, dict) or item.get("status") not in ("ok", "empty", "error", "stale"):
@@ -284,13 +343,25 @@ def validated_alerts(res, morning=False, include_baseline=False):
         if source_time is not None and parsed is None:
             return None
         if status in ("ok", "empty") and (
-                parsed is None or parsed.date() != now.date()
+                parsed is None or parsed.date() not in acceptable_days
                 or parsed > checked + ALERT_FRESH_WINDOW):
             # checked_at is observation time, never a substitute for as_of.
             outdated.add(source)
+            continue
+        # EXEC-R35：服务端口径"business_date 必须=今天"，周末/节后开盘前会把
+        # 上一交易日批次判 stale_anchor。消费端按交易日历复核：business_date 在
+        # {今天, 上一交易日} 且 as_of 不早于该业务日、不超前 → 视为当期。
+        # business_date 更早（真断更）不在此列，仍由 bad 路径拒跑。
+        if status == "stale" and reason in ("stale_anchor", "unproven_completion"):
+            biz = _parse_day(item.get("business_date"))
+            if (biz is not None and biz in acceptable_days and parsed is not None
+                    and parsed.date() >= biz
+                    and parsed <= now + ALERT_FRESH_WINDOW):
+                reconciled.add(source)
     scope = MORNING_SOURCES if morning else EOD_SOURCES
     good = {source for source in scope
-            if sources[source]["status"] in ("ok", "empty") and source not in outdated}
+            if (sources[source]["status"] in ("ok", "empty")
+                and source not in outdated) or source in reconciled}
     # Weak/cross are UI summaries; without a direct core feed they cannot
     # establish actionable partial coverage even if their status says ok.
     if not good or (not morning and not good.intersection(CORE_SOURCES)):
@@ -391,6 +462,7 @@ def main():
         card = card_build.build_card3(  # K-PUSH-008：空报走 v3 绿域例行
             "daily", ititle, isub, blocks,
             footer="AI工作站 · 飞书预警输出 · 不构成投资建议")
+        card = _unified_alert(card, ititle, blocks, now, level="info")
         try:
             tres = push_card_multi(card, targets=targets)
         except Exception as e:
@@ -431,6 +503,7 @@ def main():
     card = card_build.build_card3(  # K-PUSH-008：全量报走 v3 红域预警
         "alert", title, sub, blocks,
         footer="AI工作站 · 飞书预警输出 · 不构成投资建议")
+    card = _unified_alert(card, title, blocks, now, level="bad")
     try:
         tres = push_card_multi(card, targets=targets)
     except Exception as e:
