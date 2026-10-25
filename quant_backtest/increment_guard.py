@@ -31,6 +31,33 @@ import subprocess
 import sys
 from pathlib import Path
 
+
+def _configure_stdio() -> None:
+    """2026-10-26 EXEC-R38：计划任务在 GBK 控制台下 print 捕获输出（含 U+FFFD）
+    会 UnicodeEncodeError 崩溃——TushareIncrementGuard 自 10-17 起每日 rc=1，
+    ts_daily/adj_factor/daily_basic/margin_detail/index_daily/moneyflow 六表
+    自 10-16 起停止更新。统一 stdout/stderr 为 UTF-8 + errors=replace。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass
+
+
+def _safe_print(text: str, limit: int, file=None) -> None:
+    chunk = (text or "")[-limit:]
+    if not chunk:
+        return
+    try:
+        print(chunk, end="", file=file)
+    except UnicodeEncodeError:
+        print(chunk.encode("ascii", "replace").decode("ascii"),
+              end="", file=file)
+
+
+_configure_stdio()
+
 QB = Path(__file__).resolve().parent
 STAGING = QB / "data" / "tushare_staging"
 TAIL = STAGING / "tail_fill"
@@ -104,9 +131,9 @@ def main() -> int:
                "--tables", ",".join(tables)])
     rc_cap = cap.returncode
     report["capture_rc"] = rc_cap
-    print(cap.stdout[-2000:] if cap.stdout else "", end="")
+    _safe_print(cap.stdout, 2000)
     if cap.stderr:
-        print(cap.stderr[-1000:], file=sys.stderr, end="")
+        _safe_print(cap.stderr, 1000, file=sys.stderr)
 
     # 2. 质量门禁：新 receipt 行数阈值 + duplicate_keys
     passed, held = [], []
