@@ -209,6 +209,15 @@ SHA_RE = re.compile(r"^[0-9a-fA-F]{40,64}$")
 UNKNOWN_SEMANTICS = "未知退出码"
 NEVER_RUN_CODE = 267011
 RUNNING_CODE = 267009
+# 2026-10-25 K-ORG-20261025-TASKMETA：以下返回码不是服务失败，不计入 failed。
+# 与 agent_platform/tools/task_exit_audit.py 的 NON_FAILURE_RC 同口径。
+NON_FAILURE_TASK_CODES = frozenset({
+    3,            # 上游不可信/主动拒跑（exit 3）
+    267009,       # 0x41001 上一轮实例仍在跑（IgnoreNew 并发保护）
+    267014,       # 0x41306 被强制终止（超时/手动结束/关机打断）
+    2147946720,   # 0x800710E0 启动器已在运行/启动请求被拒
+    3221225786,   # 0xC000013A 任务被取消/强杀
+})
 # 一次扫描写 42 条账本会跨秒（at 是每条记录落盘时刻）；以 120s 间隔切分扫描批次。
 SCAN_SESSION_GAP_SECONDS = 120.0
 # 窗口对比的回看小时数（与 task_exit_audit --window 默认口径一致）
@@ -564,7 +573,8 @@ def collect_task_audit(
         for _at, rec in recs:
             state_key = str(rec.get("state") or "").lower()
             code = _as_int(rec.get("last_result"))
-            if state_key == "disabled" or code in (0, NEVER_RUN_CODE):
+            if (state_key == "disabled" or code in (0, NEVER_RUN_CODE)
+                    or code in NON_FAILURE_TASK_CODES):
                 continue
             names.add(str(rec.get("name") or "?"))
         return names
@@ -610,6 +620,8 @@ def collect_task_audit(
             continue
         if code == NEVER_RUN_CODE:
             never_run += 1
+            continue
+        if code in NON_FAILURE_TASK_CODES:  # 跑批中/被终止/取消/上游拒跑：单列不计失败
             continue
 
         # 与 task_exit_audit 同口径：非 0、非 267011、非 Disabled 即失败
@@ -4399,7 +4411,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             add(
                 "task_audit.failures",
                 "red",
-                f"{audit['failed']} 个任务非零退出（口径同 task_exit_audit，含运行中/强杀）"
+                f"{audit['failed']} 个任务真失败（口径同 task_exit_audit；跑批中/被终止/取消/上游拒跑已单列不计）"
                 + age_note + window_note,
             )
         else:

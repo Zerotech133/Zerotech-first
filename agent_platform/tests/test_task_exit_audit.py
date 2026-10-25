@@ -177,3 +177,26 @@ def test_window_diff_excludes_non_failure_rc(isolated_data_dir):
     r = ta.window_diff(hours=1.5)
     assert "error" not in r
     assert r["persisting_failures"] == ["RealFail"]
+
+def test_running_and_terminated_not_failure(isolated_data_dir, monkeypatch):
+    """EXEC-2026-10-25：0x41001 跑批中 / 0x41306 被终止 均不计 failed。
+
+    实测背景：2026-10-25 审计 8 个 failed 里，AI工作站门户API(267009)、
+    XueqiuBackfillSprint(267009)、NoticeBackfill(267014) 三个是语义误计。
+    """
+    fake = [
+        {"name": "AI工作站门户API", "state": "Ready", "last_result": 267009,
+         "last_run": "2026-10-25 15:10:57", "next_run": "2026-10-25 15:15:00"},
+        {"name": "NoticeBackfill", "state": "Ready", "last_result": 267014,
+         "last_run": "2026-10-25 06:45:01", "next_run": "2026-10-26 06:45:00"},
+    ]
+    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: fake)
+    s = ta.scan(audit_family_only=False)
+
+    assert s["failed"] == 0
+    assert s["running"] == 1
+    assert s["terminated"] == 1
+    assert [f["name"] for f in s["running_tasks"]] == ["AI工作站门户API"]
+    assert [f["name"] for f in s["terminated_tasks"]] == ["NoticeBackfill"]
+    assert "0x41001" in s["running_tasks"][0]["exit_semantics"]
+    assert "0x41306" in s["terminated_tasks"][0]["exit_semantics"]
