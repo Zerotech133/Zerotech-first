@@ -421,6 +421,22 @@ class RouteOutbox:
                             return updated
                     else:
                         current_window = False
+                    # R1 re-check (D2 ruling 2026-10-23: fix, R1 first): the
+                    # authority decision is a one-shot snapshot; when a
+                    # revocation lands between that decision and the ledger
+                    # write, the previous implementation still published a
+                    # verified receipt for a revoked ACK (the gap recorded by
+                    # strict xfail [same]/[cross]). Re-check inbox liveness for
+                    # the same fingerprint before constructing the receipt;
+                    # the re-check is read-only and never mutates state.
+                    if current_window and outcome == ACCEPTED_VERIFIED:
+                        try:
+                            current_window = (authority.active_ack(
+                                fingerprint, external_message_id,
+                                verification_source, observed_at,
+                                now=now) is True)
+                        except Exception:
+                            current_window = False
                 if current_window:
                     receipt = RouteReceipt(
                         route=intent.route, intent_id=intent.intent_id,

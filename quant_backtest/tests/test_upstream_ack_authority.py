@@ -350,11 +350,6 @@ def test_callback_epoch_drift_after_real_ack_is_stored_unknown(generation: str) 
     assert not box.trading_permitted
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="current_gap: inbox ACK revocation during active_ack is not atomic with outbox.finish",
-)
 @pytest.mark.parametrize("generation", ["same", "cross"])
 def test_inbox_revoke_during_real_ack_must_not_publish_verified_receipt(
         generation: str) -> None:
@@ -418,11 +413,15 @@ def test_inbox_revoke_during_real_ack_must_not_publish_verified_receipt(
         raise RuntimeError("OUTBOX_SETTLEMENT_NOT_STORED")
     if result.outcome == ACCEPTED_VERIFIED and result.receipt is None:
         raise RuntimeError("OUTBOX_VERIFIED_WITHOUT_RECEIPT")
-    # Existing behavior demonstrably publishes a verified receipt for a revoked
-    # upstream ACK; the safety assertion remains strict-xfail until atomicity is fixed.
-    assert result.outcome == UNKNOWN and result.receipt is None, (
+    # R1 (D2 ruling 2026-10-23): finish() re-checks inbox liveness for the
+    # same fingerprint before publishing a receipt, so a revocation landing
+    # inside the active_ack callback can no longer settle as verified.
+    assert result.outcome == UNKNOWN, (
         f"revoked receipt_id={original_receipt.receipt_id} "
-        f"settled as {result.outcome}, outbox_receipt={result.receipt is not None}")
+        f"settled as {result.outcome}")
+    assert result.receipt is None, (
+        f"revoked receipt_id={original_receipt.receipt_id} "
+        f"published outbox_receipt={result.receipt}")
 
 
 def test_cross_generation_finish_at_claim_preserves_old_ack_time():

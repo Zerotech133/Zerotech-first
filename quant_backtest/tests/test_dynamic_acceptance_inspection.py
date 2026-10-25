@@ -180,7 +180,14 @@ def test_each_inspection_samples_once_and_old_adapter_does_not_refresh() -> None
 @pytest.mark.parametrize("generation", ["same", "cross"])
 def test_inspector_denies_verified_outbox_after_ack_callback_inbox_revoke(
         generation: str) -> None:
-    """Diagnose the existing cross-ledger gap without rewriting either ledger."""
+    """R1 closes the gap: the revoked ACK settles UNKNOWN, inspector denies.
+
+    Historically this test diagnosed the cross-ledger gap where the outbox
+    published a verified receipt while the inbox receipt was already revoked
+    inside the active_ack callback. Since the R1 fix (D2 ruling 2026-10-23)
+    the outbox re-checks inbox liveness before publishing, so it now settles
+    UNKNOWN; the inspector denial below is kept as an independent guard.
+    """
     expected_receipt_id: list[str] = []
     revoked_receipt_ids: list[str] = []
     callback_epochs: list[tuple[int, int]] = []
@@ -236,8 +243,11 @@ def test_inspector_denies_verified_outbox_after_ack_callback_inbox_revoke(
     assert not inbox.is_active(receipt.receipt_id)
     assert inbox.receipt_for_report(report.report_id) is receipt
     assert settled == outbox._attempts[attempt_id]
-    assert settled.outcome == ACCEPTED_VERIFIED
-    assert settled.receipt is not None
+    # R1 (D2 ruling 2026-10-23): the revocation landing inside the active_ack
+    # callback is caught before the receipt is published, so the outbox itself
+    # no longer settles a revoked ACK as verified.
+    assert settled.outcome == UNKNOWN
+    assert settled.receipt is None
     if generation == "cross":
         assert outbox._attempts[first_attempt_id] is first_attempt
         assert first_attempt.outcome == UNKNOWN and first_attempt.receipt is None
