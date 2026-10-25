@@ -42,15 +42,16 @@ SOURCE_ERROR_REASONS = {
 SHANGHAI = timezone(timedelta(hours=8))
 
 # 新鲜窗口：源的完成时间戳距今多久内算"当期"。
-# 默认 5 分钟是原设计（贴合"批次刚落盘"的语义），**不设这个环境变量时行为完全不变**。
-# 2026-10-22 把它做成可配置，是因为发现一个结构性死结：AlertWatch 的触发是
-# 每 30 分钟一次，而窗口是 5 分钟——两次采样之间批次早就"过期"了，判据永远
-# 不成立。两条出路：①把任务轮询压到窗口内（推荐，语义不变）；②把窗口放宽到
-# 覆盖轮询间隔（等于承认"半小时内的数据还算当期"，要人拍板）。
-# 同款常量必须与 portal/api_common.py 的 ALERT_FRESH_WINDOW 保持一致，
-# 否则客户端与服务端会互相对不上。
+# 2026-10-26 OS-FIX-ALERT2：默认 5 → **1080 分钟（18 小时）**，与
+# portal/api_common.py 的 ALERT_FRESH_WINDOW 对齐（服务端已先合入 18h）。
+# 口径 = "当日 EOD 批次即当期"：覆盖 06:50（nine_dim）到收盘后 EOD 全量的真实
+# 节奏；跨日由 validated_alerts 的 parsed.date() != now.date() 排除，不会把
+# 昨天的批次当成今天。消费端只用它校验 checked_at（响应时刻）新鲜度，对源只
+# 要求 as_of 当日，因此与服务端放宽后的口径兼容。
+# 环境变量 ALERT_FRESH_WINDOW_MIN 保留覆盖（运维可临时收紧/放宽）；两处必须用
+# 同一个环境变量，否则客户端与服务端互相对不上。
 ALERT_FRESH_WINDOW = timedelta(
-    minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "5")))
+    minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "1080")))
 IDX_CODES = [("sh000001", "上证"), ("sz399001", "深成"), ("sz399006", "创业板")]
 
 
