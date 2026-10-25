@@ -160,6 +160,50 @@ def load_token(env_path: str | None = None) -> str:
     return token
 
 
+def _merge_cached_browser_cookies(sess: "requests.Session") -> bool:
+    """把 xq_browser 匿名预热缓存 cookie 注入 session（WAF 伴生 cookie）。
+
+    2026-10-26 EXEC-R29 实证：社区 API 只带 xq_a_token 会 302 到 www 的
+    interfaceacting.js WAF 挑战页；补上缓存里的 acw_tc/ssxmod_itna 等伴生
+    cookie + Referer 后，`/v4/statuses/public_timeline_by_category.json`
+    直连 200 JSON（9 items）。此前 token 分支提前 return 漏了伴生 cookie。
+    缓存 TTL 过期也读原始 cache 兜底（伴生 cookie 实测跨 5 天仍可用），
+    全部失败静默 False，不阻塞采集。返回是否至少注入一条。
+    """
+    cookies: list = []
+    try:
+        from xq_browser import _load_cache
+        cookies = _load_cache() or []
+    except Exception:
+        cookies = []
+    if not cookies:
+        try:
+            import json as _json
+            from xq_browser import CACHE_PATH as _CACHE
+            with open(_CACHE, encoding="utf-8-sig") as _f:
+                _data = _json.load(_f)
+            cookies = [c for c in _data.get("cookies", []) if isinstance(c, dict)]
+            if cookies:
+                print("[xq_common] 预热缓存已过期，仍合并伴生 cookie（%d 条）"
+                      % len(cookies))
+        except Exception:
+            cookies = []
+    merged = 0
+    for c in cookies:
+        name, value = c.get("name"), c.get("value")
+        if not name or value is None:
+            continue
+        try:
+            sess.cookies.set(str(name), str(value),
+                             domain=c.get("domain") or ".xueqiu.com")
+            merged += 1
+        except Exception:
+            continue
+    if merged:
+        print("[xq_common] WAF 伴生 cookie 已合并：%d 条" % merged)
+    return merged > 0
+
+
 def ensure_session_cookies(sess: "requests.Session", token: str = "") -> str:
     """把四级链 cookie 注入直爬 Session（L3 专用），返回生效 token。
 
@@ -177,7 +221,15 @@ def ensure_session_cookies(sess: "requests.Session", token: str = "") -> str:
     tok = token or ""
     if tok:
         sess.cookies.set("xq_a_token", tok, domain=".xueqiu.com")
+        # EXEC-R29：token 存在也必须合并 WAF 伴生 cookie，否则社区 API 302。
+        _merge_cached_browser_cookies(sess)
         return tok
+    # EXEC-R29：无 token 也先试预热缓存（匿名 xq_a_token + 伴生 cookie）
+    if _merge_cached_browser_cookies(sess):
+        tok = sess.cookies.get("xq_a_token", "")
+        if tok:
+            os.environ["XUEQIUTOKEN"] = tok
+            return tok
     # 第 2 级：浏览器全量 cookie
     try:
         import rookiepy

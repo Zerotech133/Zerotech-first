@@ -75,6 +75,24 @@ class XqCrawler:
             pass
         self.sess.headers.update({"User-Agent": self._ua})
         self.token = self._warm()
+        # EXEC-R29：代理出口若被 WAF 302，自动切直连（缓存伴生 cookie+token 直连
+        # 已实证 public_timeline_by_category 200 JSON；避免"代理可用但出口被拦"假失败）
+        if self.sess.proxies:
+            try:
+                _probe = self.sess.get(
+                    X.SOCIAL + "/v4/statuses/public_timeline_by_category.json",
+                    params={"category": 102, "count": 5, "page": 1},
+                    timeout=12, headers={"Accept": "application/json, */*"})
+                _ct = str(_probe.headers.get("Content-Type") or "")
+                if _probe.status_code != 200 or "json" not in _ct:
+                    self.sess.proxies.clear()
+                    print("[XqCrawler] 代理出口被 WAF 拒(%d) → 本会话切直连"
+                          % _probe.status_code)
+                else:
+                    print("[XqCrawler] 出口连通验证 OK(%d)" % _probe.status_code)
+            except Exception as _exc:  # noqa: BLE001
+                self.sess.proxies.clear()
+                print("[XqCrawler] 出口验证异常 → 切直连：%s" % str(_exc)[:60])
 
     def _warm(self) -> str:
         """三级链取 cookie（Agent-Reach 判例）：env → 浏览器登录态 → 首页。
@@ -208,19 +226,34 @@ class XqCrawler:
         return rows
 
     def fetch_hot(self, count: int = 30) -> list[dict] | None:
-        """v4/statuses/hot/listV2.json → 热帖（含 hot_rank）；请求失败 → None。"""
+        """v4/statuses/hot/listV2.json → 热帖（含 hot_rank）；失败回退 timeline。
+
+        2026-10-26 EXEC-R29：`v4/statuses/hot/listV2.json` 实测返回 404
+        （服务端路由已变），旧 `/statuses/hot/listV2.json` 被 WAF 302。
+        故 hot 端点不可用时**诚实回退** public_timeline_by_category 首页帖：
+        按原顺序标 hot_rank 并加 `hot_fallback=True`，调用方可明确区分
+        真热榜/回退榜；仅当 timeline 也失败时返回 None（错误信号）。
+        """
         url = SOCIAL + "/v4/statuses/hot/listV2.json"
         data = X.xq_get(self.sess, url, params={
             "count": count, "page": 1, "source": "user"})
-        if data is None:
-            return None          # 请求失败信号（区别于真空空页，P1 修复）
         items = (data or {}).get("items") or []
         rows = []
         for rank, it in enumerate(items[:count], 1):
             row = self._row(it, 0, extra={"hot_rank": rank})
             if row["status_id"]:
                 rows.append(row)
-        return rows
+        if rows:
+            return rows
+        print("[fetch_hot] v4 hot 端点不可用（%s）→ 回退 timeline 热榜"
+              % ("请求失败" if data is None else "无 items"))
+        fallback = self.fetch_timeline(category=102, count=count, max_pages=1)
+        if fallback is None:
+            return None
+        for rank, row in enumerate(fallback[:count], 1):
+            row["hot_rank"] = rank
+            row["hot_fallback"] = True
+        return fallback[:count]
 
     def fetch_comments(self, symbol: str, max_pages: int = 3) -> list[dict] | None:
         """v4/statuses/search.json?symbol=&source=user → 个股讨论帖。
