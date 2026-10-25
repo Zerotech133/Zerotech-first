@@ -65,9 +65,15 @@ UPSTREAM_UNTRUSTED_EXIT = 3
 #   3221225786 = 0xC000013A 任务被取消/强杀
 LAUNCHER_REFUSED_EXIT = 2147946720
 CANCELLED_EXIT = 3221225786
+# 2026-10-25 K-ORG-20261025-TASKMETA：两类"非失败"返回码此前被误计入 failures
+# 0x41001 = 267009：上一轮实例仍在运行（IgnoreNew 并发保护），是正常态
+RUNNING_EXIT = 267009
+# 0x41306 = 267014：任务被强制终止（超时/手动结束/关机打断），不计服务失败
+TERMINATED_EXIT = 267014
 # 窗口对比（window_diff）里也按同一口径排除：非失败码不参与"新增/持续失败"差集。
 NON_FAILURE_RC = frozenset({0, 267011, UPSTREAM_UNTRUSTED_EXIT,
-                            LAUNCHER_REFUSED_EXIT, CANCELLED_EXIT})
+                            LAUNCHER_REFUSED_EXIT, CANCELLED_EXIT,
+                             RUNNING_EXIT, TERMINATED_EXIT})
 
 KNOWN_SCHED_FAMILIES = ("Legion", "Agent", "Quant", "Alert", "Xueqiu", "Hermes",
                         "KgChain", "Space", "KG-", "Ollama", "CnOpenData", "Daily",
@@ -159,6 +165,8 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
     upstream_hold: list[dict[str, Any]] = []
     launcher_refused: list[dict[str, Any]] = []
     cancelled: list[dict[str, Any]] = []
+    running: list[dict[str, Any]] = []
+    terminated: list[dict[str, Any]] = []
     ok_count = 0
     disabled_count = 0
     never_run = 0
@@ -191,6 +199,10 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             launcher_refused.append(rec)
         elif code == CANCELLED_EXIT:  # 0xC000013A 任务被取消/强杀
             cancelled.append(rec)
+        elif code == RUNNING_EXIT:  # 0x41001 上一轮仍在跑（并发保护）：不是失败
+            running.append(rec)
+        elif code == TERMINATED_EXIT:  # 0x41306 被强制终止：单列，不计失败
+            terminated.append(rec)
         else:
             failures.append(rec)
 
@@ -203,6 +215,8 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
         "upstream_hold": len(upstream_hold),
         "launcher_refused": len(launcher_refused),
         "cancelled": len(cancelled),
+        "running": len(running),
+        "terminated": len(terminated),
         "disabled": disabled_count,
         "never_run": never_run,
         "failures": [
@@ -226,12 +240,25 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
              "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
             for f in cancelled
         ],
+        "running_tasks": [
+            {"name": f["name"], "last_result": f["last_result"],
+             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            for f in running
+        ],
+        "terminated_tasks": [
+            {"name": f["name"], "last_result": f["last_result"],
+             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            for f in terminated
+        ],
         "note": "LastTaskResult=0 只证明正常退出不证明有产出；产出核对仍需人工或产物探针。"
                 "Disabled 任务未计失败（它没失败，只是没开）。"
                 "exit 3 = 脚本主动拒跑（上游证据不足），不计失败、单列 upstream；"
                 "它的处置方向在数据管线，不在脚本本身。"
                 "0x800710E0 = 启动器已在运行/启动请求被拒（IgnoreNew），单列 launcher_refused；"
                 "0xC000013A = 任务被取消/强杀，单列 cancelled——两者均非服务失败、不计 failed。"
+                "0x41001 = 上一轮实例仍在运行（IgnoreNew 并发保护），单列 running；"
+                "0x41306 = 任务被强制终止（超时/手动结束/关机打断），单列 terminated——"
+                "两者同样不计 failed（2026-10-25 实测：8 个 failed 里有 3 个属于这两类误计）。"
                 "账本 append-only 可回放。",
         "ledger": os.path.relpath(ledger_path, os.path.join(DATA_DIR, "..", "..", "..")),
     }
@@ -355,13 +382,18 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
                   f"上游拒跑 {result.get('upstream_hold', 0)} / 启动器已在跑 {result.get('launcher_refused', 0)} / "
-                  f"被取消 {result.get('cancelled', 0)} / 禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）")
+                  f"被取消 {result.get('cancelled', 0)} / 跑批中 {result.get('running', 0)} / 被终止 {result.get('terminated', 0)} / "
+                  f"禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）")
             for f in result["failures"]:
                 print(f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
             for f in result.get("launcher_refused_tasks", []):
                 print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
             for f in result.get("cancelled_tasks", []):
                 print(f"  [CANCELLED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+            for f in result.get("running_tasks", []):
+                print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+            for f in result.get("terminated_tasks", []):
+                print(f"  [TERMINATED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
     return 0
 
 
