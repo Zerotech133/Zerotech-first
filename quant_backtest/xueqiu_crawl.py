@@ -23,7 +23,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 
@@ -202,7 +202,10 @@ class XqCrawler:
                 # 400016 token 失效），不可与真空空页混同——首步失败返回
                 # None 信号，调用方记 manifest failed（fail 而非伪成功）
                 if step == 1:
-                    return None
+                    # 2026-10-26 EXEC-R31：旧分类帖流端点已不可用（浏览器实测
+                    # 返回空），回退到真实可用的基金公开帖流；两者都失败才 None。
+                    return self._fetch_fund_timeline(
+                        category=category, count=count, max_pages=max_pages)
                 break                   # 后续步失败：保留已采行（部分成功）
             items = (data or {}).get("list") or \
                 (data or {}).get("items") or []
@@ -217,6 +220,18 @@ class XqCrawler:
                         row["status_id"] not in seen:
                     seen.add(row["status_id"])
                     rows.append(row)
+            if step == 1:
+                # 2026-10-26 EXEC-R31：旧分类帖流端点对匿名返回历史帖
+                # （created_at 缺失/陈旧）。首屏若拿不到近 3 天内容，改用
+                # 真实可用且新鲜的 fund_public 帖流（浏览器抓包实测）。
+                cutoff = (datetime.now() - timedelta(days=3)).strftime(
+                    "%Y-%m-%d %H:%M:%S")
+                if not any((r.get("created_at") or "") >= cutoff
+                           for r in rows):
+                    fb = self._fetch_fund_timeline(
+                        category=category, count=count, max_pages=max_pages)
+                    if fb:
+                        return fb
             if step < min(max_pages, X.MAX_PAGES):
                 nxt = (data or {}).get("next_max_id")
                 if not nxt or nxt == cursor:
@@ -226,26 +241,38 @@ class XqCrawler:
         return rows
 
     def fetch_hot(self, count: int = 30) -> list[dict] | None:
-        """v4/statuses/hot/listV2.json → 热帖（含 hot_rank）；失败回退 timeline。
+        """热帖榜（2026-10-26 EXEC-R31 端点实测更新）。
 
-        2026-10-26 EXEC-R29：`v4/statuses/hot/listV2.json` 实测返回 404
-        （服务端路由已变），旧 `/statuses/hot/listV2.json` 被 WAF 302。
-        故 hot 端点不可用时**诚实回退** public_timeline_by_category 首页帖：
-        按原顺序标 hot_rank 并加 `hot_fallback=True`，调用方可明确区分
-        真热榜/回退榜；仅当 timeline 也失败时返回 None（错误信号）。
+        `stock.xueqiu.com/v4/statuses/hot/listV2.json` 已 404、旧
+        `xueqiu.com/v4/...` 被 WAF 302；当前真实可用端点（浏览器抓包）：
+        `www.xueqiu.com/statuses/hot/listV2.json?since_id=-1&max_id=-1&count=N`
+        → items[].original_status 为真实帖（含 created_at 毫秒）。
+        xq_get 在 requests 302 时自动走浏览器回退。仍不可用时诚实回退
+        timeline 并标 hot_fallback=True。
         """
-        url = SOCIAL + "/v4/statuses/hot/listV2.json"
+        url = "https://www.xueqiu.com/statuses/hot/listV2.json"
         data = X.xq_get(self.sess, url, params={
-            "count": count, "page": 1, "source": "user"})
+            "since_id": -1, "max_id": -1, "count": count})
         items = (data or {}).get("items") or []
         rows = []
         for rank, it in enumerate(items[:count], 1):
-            row = self._row(it, 0, extra={"hot_rank": rank})
+            if not isinstance(it, dict):
+                continue
+            st = it.get("original_status") or it.get("data") or it
+            if isinstance(st, str):
+                try:
+                    st = json.loads(st)
+                except Exception:  # noqa: BLE001
+                    st = it
+            if not isinstance(st, dict):
+                continue
+            row = self._row(st, 0, extra={"hot_rank": rank})
+            row["hot_fallback"] = 0
             if row["status_id"]:
                 rows.append(row)
         if rows:
             return rows
-        print("[fetch_hot] v4 hot 端点不可用（%s）→ 回退 timeline 热榜"
+        print("[fetch_hot] hot/listV2 端点不可用（%s）→ 回退 timeline 热榜"
               % ("请求失败" if data is None else "无 items"))
         fallback = self.fetch_timeline(category=102, count=count, max_pages=1)
         if fallback is None:
@@ -254,6 +281,45 @@ class XqCrawler:
             row["hot_rank"] = rank
             row["hot_fallback"] = True
         return fallback[:count]
+
+    def _fetch_fund_timeline(self, category: int = 102, count: int = 20,
+                             max_pages: int = 1) -> list[dict] | None:
+        """基金公开帖流（真实可用端点，浏览器抓包实测）作 timeline 回退。
+
+        `www.xueqiu.com/statuses/fundx/public/list.json?source=fund_public`：
+        扁平 status 结构（id/created_at/title/description），created_at 为
+        毫秒时间戳；page/last_id 游标翻页。返回 None=首步失败（错误信号）。
+        """
+        rows: list[dict] = []
+        seen: set = set()
+        last_id = ""
+        url = "https://www.xueqiu.com/statuses/fundx/public/list.json"
+        for step in range(1, min(max_pages, X.MAX_PAGES) + 1):
+            data = X.xq_get(self.sess, url, params={
+                "source": "fund_public", "page": step, "last_id": last_id})
+            if data is None:
+                if step == 1:
+                    return None
+                break
+            items = (data or {}).get("list") or []
+            if not items:
+                break
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                row = self._row(it, category)
+                if row and row["status_id"] and row["status_id"] not in seen:
+                    seen.add(row["status_id"])
+                    rows.append(row)
+            nxt = (data or {}).get("last_id")
+            if not nxt:
+                last_item = items[-1] if items else {}
+                nxt = last_item.get("id") if isinstance(last_item, dict) else None
+            if not nxt or not (data or {}).get("has_next_page"):
+                break
+            last_id = str(nxt)
+            X.jitter_sleep()
+        return rows or None
 
     def fetch_comments(self, symbol: str, max_pages: int = 3) -> list[dict] | None:
         """v4/statuses/search.json?symbol=&source=user → 个股讨论帖。
