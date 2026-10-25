@@ -48,6 +48,11 @@ DEFAULT_LOG = r"C:\Temp\jev_night.log"
 DEFAULT_STOP = r"C:\Temp\jev_night.stop"
 PY = sys.executable
 
+# 2026-10-26 OS-FIX-JEVALERT：夜间批处理不再把 --alert-threshold 固定为 0。
+# 旧值 0 会关闭 jev_backfill 的"积压超过阈值"飞书告警（JEV 审计 §四-⑤：夜间唯一告警被关掉）。
+# 默认 100 与 jev_backfill 自身默认一致；JEV_ALERT_THRESHOLD 可覆盖（0 仍表示关闭，显式才生效）。
+ALERT_THRESHOLD = os.environ.get("JEV_ALERT_THRESHOLD", "100")
+
 # ---------------------------------------------------------------------------
 # 单实例锁（2026-10-26 EXEC-R30；复用 tools/night_batch.py 的锁语义/命名风格）
 # ---------------------------------------------------------------------------
@@ -325,7 +330,7 @@ def run_jev(batch: int, deadline: int, log: Logger) -> tuple[int, str]:
     try:
         proc = subprocess.run(
             [PY, "-X", "utf8", "-B", str(JEV), "--batch", str(batch),
-             "--deadline", str(deadline), "--alert-threshold", "0"],
+             "--deadline", str(deadline), "--alert-threshold", ALERT_THRESHOLD],
             cwd=str(ROOT / "news_collector"), capture_output=True,
             timeout=deadline + 300)
     except subprocess.TimeoutExpired:

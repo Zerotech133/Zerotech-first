@@ -68,6 +68,9 @@ PY = sys.executable
 NEWS_DB = ROOT / "news_collector" / "news.db"
 XQ_DB = ROOT / "quant_backtest" / "data" / "xueqiu" / "xueqiu_info.db"
 JEV = ROOT / "news_collector" / "jev_backfill.py"
+# 2026-10-26 OS-FIX-JEVALERT：旧值 0 关闭 jev_backfill 的积压飞书告警（JEV 审计 §四-⑤）。
+# 默认 100 与 jev_backfill 默认一致；JEV_ALERT_THRESHOLD 可覆盖（0 需显式设置才关闭）。
+ALERT_THRESHOLD = os.environ.get("JEV_ALERT_THRESHOLD", "100")
 XQ = ROOT / "quant_backtest" / "xq_classify.py"
 DEFAULT_LOG = r"C:\Temp\night_batch.log"
 DEFAULT_STOP = r"C:\Temp\night_batch.stop"
@@ -574,7 +577,7 @@ def main(argv=None) -> int:
                 rc, tail = _run([PY, "-X", "utf8", "-B", str(JEV),
                                  "--batch", str(args.batch_jev),
                                  "--deadline", str(args.deadline),
-                                 "--alert-threshold", "0"],
+                                 "--alert-threshold", ALERT_THRESHOLD],
                                 ROOT / "news_collector", hard_s)
                 elapsed = time.time() - t0
                 jev_elapsed = elapsed
