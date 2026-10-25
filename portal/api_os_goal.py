@@ -151,6 +151,9 @@ def handle_get(store: S.OsGoalStore, path: str,
             return 200, {"ok": True, **store.get_goal(m.group(1))}
         except KeyError as exc:
             return _err(404, "not_found", str(exc))
+    if path == "/api/os/asr/selfcheck":
+        import os_asr
+        return 200, {"ok": True, **os_asr.selfcheck()}
     if path == "/api/os/asr/status":
         import os_asr
         try:

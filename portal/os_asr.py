@@ -19,6 +19,7 @@ import re
 import struct
 import tempfile
 import threading
+import time
 import wave
 from typing import Any, Dict, Optional
 
@@ -101,6 +102,7 @@ def ensure_preload() -> None:
             with _GEN_LOCK:
                 if _CACHE.get("sv") is None:
                     _CACHE["sv"] = _load_model()
+            threading.Thread(target=_startup_selfcheck, name="os-asr-selfcheck", daemon=True).start()
         except Exception as exc:  # pragma: no cover
             _STATE["error"] = str(exc)
             _STATE["broken"] = True
@@ -169,6 +171,47 @@ def _load_wav_array(src: str):
         idx = np.linspace(0, a.size - 1, new_len)
         a = np.interp(idx, np.arange(a.size), a).astype(np.float32)
     return a[:16000 * 30]
+
+
+def selfcheck() -> Dict[str, Any]:
+    """合成 1 秒音频跑一次真实推理，判断“加载了”是否等于“可用”。
+    用于服务重启后检测 Errno22 一类进程级推理异常（加载成功但推理失败）。
+    """
+    import numpy as np
+    if _STATE.get("broken"):
+        return {"ok": False, "engine": "sensevoice_local", "reason": "broken",
+                "error": _STATE.get("error")}
+    if _CACHE.get("sv") is None:
+        ensure_preload()
+        if not _wait_ready(60.0):
+            return {"ok": False, "engine": "sensevoice_local", "reason": "not_loaded",
+                    "error": _STATE.get("error")}
+    try:
+        arr = (np.sin(2 * np.pi * 440 * np.arange(16000) / 16000) * 0.1).astype("float32")
+        out = _infer(arr, "zh")
+        return {"ok": True, "engine": "sensevoice_local", "text": str(out)[:60]}
+    except Exception as exc:  # noqa: BLE001
+        try:
+            with open(r"C:\Temp\os_asr_selfcheck.log", "a", encoding="utf-8") as fh:
+                fh.write("=== %s selfcheck FAIL: %r broken=%s\n"
+                         % (time.strftime("%F %T"), exc, _STATE.get("broken")))
+        except Exception:
+            pass
+        return {"ok": False, "engine": "sensevoice_local", "error": repr(exc),
+                "broken": bool(_STATE.get("broken"))}
+
+
+def _startup_selfcheck() -> None:
+    """加载完成后自检一次；失败则自动 recover 一次（不阻塞服务）。"""
+    try:
+        res = selfcheck()
+        with open(r"C:\Temp\os_asr_selfcheck.log", "a", encoding="utf-8") as fh:
+            fh.write("=== %s startup selfcheck ok=%s %r\n"
+                     % (time.strftime("%F %T"), res.get("ok"), res))
+        if not res.get("ok"):
+            recover()
+    except Exception:
+        pass
 
 
 def transcribe_wav(path: str, lang: str = "zh") -> str:
