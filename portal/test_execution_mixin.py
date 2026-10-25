@@ -110,6 +110,24 @@ class TestClassify:
         e = api_execution.classify(_cfg(), _row(last_result=4294967295), NOW)
         assert e["status"] == "fail"
 
+    def test_upstream_untrusted_rc3_not_fail(self):
+        """rc=3（上游不可信→主动拒跑）→ upstream_untrusted；不染红但确实没执行。"""
+        e = api_execution.classify(_cfg(), _row(last_result=3), NOW)
+        assert e["status"] == "upstream_untrusted"
+        assert e["result_ok"] is False
+
+    def test_cancelled_0xc000013a_not_fail(self):
+        """0xC000013A（被取消/强杀）→ cancelled，不进 fail。"""
+        e = api_execution.classify(_cfg(), _row(last_result=3221225786), NOW)
+        assert e["status"] == "cancelled"
+        assert e["result_ok"] is False
+
+    def test_launcher_refused_0x800710e0_not_fail(self):
+        """0x800710E0（启动器已在运行/请求被拒）→ launcher_refused，不进 fail。"""
+        e = api_execution.classify(_cfg(), _row(last_result=2147946720), NOW)
+        assert e["status"] == "launcher_refused"
+        assert e["result_ok"] is False
+
     def test_never_on_267011_sentinel(self):
         """267011 + 1999 哨兵 → never（从未运行，灰色不是 fail）。"""
         e = api_execution.classify(
@@ -312,6 +330,25 @@ class TestBuildHealth:
             _cfg(name="B"), _cfg(name="C")]}), encoding="utf-8")
         d = api_execution.build_execution_health(force=True)
         assert d["summary"]["worst"] == "stale"
+
+    def test_summary_non_failure_codes_not_worst(self, tmp_manifest, monkeypatch):
+        """非失败单列码（rc=3 / 0xC000013A / 0x800710E0）计数但不进 worst。"""
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg(name="Up"), _cfg(name="Cancel"), _cfg(name="Launcher")]}),
+            encoding="utf-8")
+
+        def _fake(names, force=False):
+            rows = {"Up": _row(last_result=3),
+                    "Cancel": _row(last_result=3221225786),
+                    "Launcher": _row(last_result=2147946720)}
+            return {n: rows[n] for n in names}, True, None, 7
+
+        monkeypatch.setattr(api_execution, "poll_tasks", _fake)
+        s = api_execution.build_execution_health(force=True)["summary"]
+        assert (s["upstream_untrusted"], s["cancelled"],
+                s["launcher_refused"]) == (1, 1, 1)
+        assert s["fail"] == 0
+        assert s["worst"] is None
 
     def test_cache_hit_within_ttl(self, tmp_manifest, monkeypatch):
         """缓存 30s 生效：两次调用 ps 只跑一次。"""
@@ -522,6 +559,10 @@ class TestHandlerMixin:
         h._execution_health("")
         assert h.status == 200
         assert h.payload["manifest_ok"] is False
+        # 兜底 summary 必须与新口径同 key（非失败单列码同样有计数位）
+        assert h.payload["summary"]["upstream_untrusted"] == 0
+        assert h.payload["summary"]["cancelled"] == 0
+        assert h.payload["summary"]["launcher_refused"] == 0
 
 
 # ----------------------------------------------------------------------

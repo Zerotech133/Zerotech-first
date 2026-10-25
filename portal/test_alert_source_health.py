@@ -181,20 +181,29 @@ class AlertSourceHealthTests(unittest.TestCase):
     def test_expired_same_day_and_weekend_prior_batch_fail_closed(self):
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         path = os.path.join(self.data, "nine_dim_scores.json")
-        for label, day, generated in (
-            ("same_day_old", now.date(), now - datetime.timedelta(hours=2)),
-            ("previous_day", (now - datetime.timedelta(days=1)).date(),
-             now - datetime.timedelta(days=1)),
-            ("weekend_previous_friday", datetime.date(2026, 10, 16),
-             datetime.datetime(2026, 10, 16, 17, 0, tzinfo=now.tzinfo)),
-        ):
-            with self.subTest(label=label):
-                self.write_json(path, {"trade_date": day.isoformat(),
-                                       "generated_at": generated.isoformat(),
-                                       "n_alert": 0})
-                health = api.build_alerts()["source_health"]["sources"]["nine_dim"]
-                self.assertNotIn(health["status"], ("ok", "empty"))
-                self.assertEqual(health["reason"], "stale_anchor")
+        # 2026-10-26 统一测量：服务端新鲜窗默认 5→1080 分钟（18h，"当日 EOD 批次
+        # 即当期"），"同日的旧批次"在新口径下按设计就是当期。本用例保留"宽窗口
+        # 下无法证明当期就必须拒收"的意图：先把窗口收紧回 5 分钟再断言，
+        # 否则结果依赖运行时刻（02:00 前后跨日与否不同）。
+        with mock.patch.object(api, "ALERT_FRESH_WINDOW",
+                               datetime.timedelta(minutes=5)):
+            for label, day, generated, expected in (
+                ("same_day_old", now.date(), now - datetime.timedelta(hours=2),
+                 # 02:00 前运行 now-2h 跨到前一天 → invalid_anchor；否则 stale_anchor。
+                 ("stale_anchor", "invalid_anchor")),
+                ("previous_day", (now - datetime.timedelta(days=1)).date(),
+                 now - datetime.timedelta(days=1), ("stale_anchor",)),
+                ("weekend_previous_friday", datetime.date(2026, 10, 16),
+                 datetime.datetime(2026, 10, 16, 17, 0, tzinfo=now.tzinfo),
+                 ("stale_anchor",)),
+            ):
+                with self.subTest(label=label):
+                    self.write_json(path, {"trade_date": day.isoformat(),
+                                           "generated_at": generated.isoformat(),
+                                           "n_alert": 0})
+                    health = api.build_alerts()["source_health"]["sources"]["nine_dim"]
+                    self.assertNotIn(health["status"], ("ok", "empty"))
+                    self.assertIn(health["reason"], expected)
 
     def test_malformed_json_cannot_become_empty(self):
         for path in (os.path.join(self.reports, "premarket_latest.json"),

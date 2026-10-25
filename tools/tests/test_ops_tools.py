@@ -611,6 +611,85 @@ def test_health_card_out_not_directory_exit2(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# 2a) gen_health_card.py · 判级函数（2026-10-26 统一测量）
+# ---------------------------------------------------------------------------
+# 判级是纯函数，但被测脚本按判例「一律 subprocess 调用」——这里仍然起子进程，
+# 只是在子进程里用 importlib 加载模块（不污染 pytest 进程的模块态）。
+_LEVEL_PROBE = r"""
+import datetime as dt
+import importlib.util
+import json
+import sys
+
+spec = importlib.util.spec_from_file_location("gen_health_card", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+rc3 = {"age_hours": 55.1, "last_write": "2026-10-23T17:00:00+08:00",
+       "state_date": "2026-10-23", "state_routes": 5,
+       "heartbeat": {"available": True, "age_min": 3.0, "rc": 3,
+                     "upstream_ok": False}}
+healthy = {"age_hours": 0.5, "state_date": "2026-10-26", "state_routes": 5,
+           "heartbeat": {"available": True, "age_min": 2.0, "rc": 0,
+                         "upstream_ok": True}}
+monday = dt.datetime(2026, 10, 26, 0, 20)
+saturday = dt.datetime(2026, 10, 24, 12, 0)
+print(json.dumps({
+    "alert_rc3": list(mod._alert_watch_level(rc3, now=monday)),
+    "alert_rc3_weekend": list(mod._alert_watch_level(rc3, now=saturday)),
+    "alert_ok": list(mod._alert_watch_level(healthy, now=monday)),
+    "launch_missing": list(mod._task_launch_level({})),
+    "launch_na": list(mod._task_launch_level(
+        {"available": False, "reason": "schtasks 调用失败"})),
+    "launch_fail": list(mod._task_launch_level(
+        {"available": True, "events_scanned": 9,
+         "launch_failures": [{"task": "Q", "code": -196608,
+                              "status": "Ready"}],
+         "unknown_codes": [], "other_nonzero": []})),
+}, ensure_ascii=False))
+"""
+
+
+def _health_level_probe() -> dict:
+    """子进程里加载 gen_health_card，返回判级函数的结果（不 import 进 pytest）。"""
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    proc = subprocess.run(
+        [PYTHON, "-B", "-c", _LEVEL_PROBE, str(HEALTH)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=60, cwd=str(REPO), env=env, check=False,
+    )
+    assert proc.returncode == 0, "判级探针失败: %r" % (proc.stderr or "")
+    return _json_stdout(proc, "health_card/levels")
+
+
+def test_health_card_task_launch_unavailable_is_yellow_na() -> None:
+    """N/A 口径：schtasks 不可采集 → 黄 N/A 不判红；ops 块缺失/真启动失败才红。"""
+    levels = _health_level_probe()
+    level, detail = levels["launch_na"]
+    assert level == "yellow", detail
+    assert detail.startswith("N/A（不可采集：schtasks 不可用"), detail
+    assert "不计红" in detail and "需管理员会话复核" in detail
+    assert levels["launch_missing"][0] == "red"
+    assert levels["launch_fail"][0] == "red"
+
+
+def test_health_card_alert_watch_rc3_is_yellow_not_green() -> None:
+    """心跳新鲜 + rc=3（上游不可信按设计拒跑）→ 黄；rc=0 且 upstream_ok=True 才绿。"""
+    levels = _health_level_probe()
+    level, detail = levels["alert_rc3"]
+    assert level == "yellow", detail
+    for needle in ("按设计", "上游不可信", "告警内容不可用"):
+        assert needle in detail, (needle, detail)
+    # 周末/非交易日追加"可能属预期"，但不得因此改判绿
+    weekend_level, weekend_detail = levels["alert_rc3_weekend"]
+    assert weekend_level == "yellow"
+    assert "非交易日" in weekend_detail, weekend_detail
+    assert levels["alert_ok"][0] == "green"
+
+
+# ---------------------------------------------------------------------------
 # 2b) gen_health_card.py · data.root_drift（两期 data_manifest.json 对比）
 # ---------------------------------------------------------------------------
 DATA_ROOT = r"C:\fixture\data"

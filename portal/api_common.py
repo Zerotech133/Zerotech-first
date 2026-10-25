@@ -1145,13 +1145,20 @@ def _alert_business_day(value):
 
 
 # 警报源新鲜窗口：源的完成时间戳距今多久内算"当期"。
-# 默认 5 分钟（原设计；不设环境变量时行为完全不变）。
-# 2026-10-22 做成可配置：AlertWatch 每 30 分钟才采一次，而窗口只有 5 分钟，
-# 两次采样之间批次必然"过期"，判据永远不成立（实测停摆 4 天）。
-# 必须与 news_collector/alert_push.py 的 ALERT_FRESH_WINDOW 用同一个环境变量，
-# 否则客户端与服务端口径不一致，会互相判对方的结论无效。
+# 2026-10-26 OS-FIX-MEASURE 统一测量：默认 5 → **1080 分钟（18 小时）**。
+#   原 5 分钟与"每日一次 EOD 源"存在结构性冲突：AlertWatch 每 5 分钟跑一次，
+#   而 premarket/chanlun/nine_dim 等源每天只产出一批，批次落盘 5 分钟后就"过期"，
+#   判据永远不成立 → 按设计长期 rc=3 拒跑（实测上游不可信 55.1 小时、6 源全 stale）。
+#   18h 的口径是"当日 EOD 批次即当期"：覆盖最早 06:50（nine_dim）到收盘后 EOD
+#   全量的真实节奏；跨日仍由下面的 day/anchor.date() != today 判 stale，
+#   不会把昨天的批次当成今天，也不会把"非交易日旧批次"冒充当期。
+# 环境变量 ALERT_FRESH_WINDOW_MIN 保留覆盖（运维可临时收紧/放宽）。
+# 必须与 news_collector/alert_push.py 的 ALERT_FRESH_WINDOW 用同一个环境变量：
+# 该文件本轮有并行 WIP 未同步默认值——消费端对 checked_at 只要求新鲜（响应时刻）、
+# 对源只要求 as_of 当日，因此服务端放宽到 18h 与消费端口径兼容（服务端已先按
+# 跨日剔除，放行到消费端的 as_of 必然落在当日）。
 ALERT_FRESH_WINDOW = datetime.timedelta(
-    minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "5")))
+    minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "1080")))
 
 
 def _alert_source_health():
@@ -1203,8 +1210,10 @@ def _alert_source_health():
             mark(name, "error", "future_anchor")
         elif (day != today or anchor.astimezone(now.tzinfo).date() != today or
               now - anchor > ALERT_FRESH_WINDOW):
-            # Without a per-source schedule/completion proof, a same-calendar-
-            # day but older batch is not necessarily the due/current batch.
+            # 2026-10-26 统一测量：窗口默认 18h =「当日 EOD 批次即当期」，覆盖
+            # 每日一次 EOD 源的真实节奏（原 5 分钟与生产节奏结构性冲突，导致
+            # AlertWatch 按设计长期 rc=3 拒跑）。跨日一律 stale（day/anchor 日期
+            # 不等于 today），不会把昨天/非交易日的批次冒充当期。
             mark(name, "stale", "stale_anchor", anchor)
         else:
             mark(name, "empty" if empty else "ok", None, anchor)

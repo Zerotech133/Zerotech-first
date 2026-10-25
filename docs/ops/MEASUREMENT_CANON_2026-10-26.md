@@ -1,0 +1,84 @@
+# 统一测量口径（MEASUREMENT CANON）· 2026-10-26
+
+> 工单 `OS-FIX-MEASURE-20261026`。本页回答"哪个数字说了算"。出现冲突时以本页为准；
+> 任何状态数字都必须能被三元组（as-of / tool / scope）复核，否则视为未核验。
+
+## 1. 权威源表（失败数只有一个权威）
+
+| 指标 | 权威产物 | 读法 | 性质 |
+|---|---|---|---|
+| 计划任务失败数 | `portal/data/task_exit_audit/task_exit_summary.json` + `task_exit_ledger.jsonl`（`agent_platform/tools/task_exit_audit.py` 产出） | 只有 `failures[]` / `failed` 才是失败权威 | **唯一失败权威** |
+| 执行面健康 | `/api/execution/health`（`portal/api_execution.py` + `portal/execution_manifest.json` 白名单） | `summary` 计数 + `worst`（红= fail > 黄= stale > 灰= never） | manifest 视图，**不是第二本账** |
+| 合规健康卡 | `tools/gen_health_card.py` → `health_card.json` 的 `checks[]` | 每项绿/黄/红；N/A 必须写清"不可采集" | 聚合视图 |
+| 警报上游 | `/api/alerts` 的 `source_health`（6 源 status / as_of） | as_of 是生产者完成时间，不是文件 mtime | 采集侧证据 |
+
+### 1.1 退出码语义（execution_health 必须与账本 `EXIT_SEMANTICS` 同口径）
+
+| 退出码 | 含义 | execution_health status | 进 failed / worst？ |
+|---|---|---|---|
+| 0 / 267009 / 267011 / 267014 | 成功 / 运行中 / 尚未跑 / 被终止 | ok / never / stale 等原判级 | 否 |
+| 3 | 上游证据不可信 → 脚本主动拒跑 | `upstream_untrusted` | **否** |
+| 0xC000013A（3221225786） | 被取消 / 强杀（关机、注销、时限） | `cancelled` | **否** |
+| 0x800710E0（2147946720） | 启动器已在运行 / 启动请求被拒（IgnoreNew） | `launcher_refused` | **否** |
+| 其它非零 | 真失败 | `fail` | 是 |
+| manifest `enabled:false` | 已停用的旧条目 | `disabled` | 否（不入红绿） |
+
+- `result_ok` 语义 = "是否成功执行"：`upstream_untrusted` / `cancelled` / `launcher_refused`
+  三者仍为 `False`（确实没成功执行），但 **status 不染红、不进 worst**；
+  R3 watchdog 只对 `fail`/`stale` 响，天然不误报。
+- manifest 2026-10-26 变更：`AgentWatchdog2`、`HermesWebUI-Guard` 置 `enabled:false`
+  （已由 AgentWatchdog / HermesWebUI-Guard2·Next-Guard 覆盖，避免 stale 假红）。
+- **写盘 ≠ 生效**：`api_execution.py` 由 8091 进程启动时 import（manifest 每次热读、代码不热更）。
+  本次只本地提交，**未重启、未合并**；生效需 L2 重启审批。改前读数见 §3。
+
+### 1.2 健康卡判级口径
+
+| 检查 | 口径 |
+|---|---|
+| `ops.task_launch_failures` | 不可采集（沙箱/权限会话里 `schtasks` 报错 → `available=false`）= **N/A，判黄不判红**，detail 写明"需管理员会话复核"；只有 ops 块缺失（采集器未运行）或 `available=true` 且真拿到 `launch_failures` 才红。采不到 ≠ 任务故障 |
+| `ops.alert_watch_liveness` | 心跳新鲜（≤15min）且 rc=3 / `upstream_ok=false` = **黄（不是绿）**：本体在跑、脚本按设计拒跑不是停摆，但上游 6 源 stale → 告警内容不可用；周末/非交易日 detail 追加"可能属预期，交易日需补源时间戳"。rc=0 且 `upstream_ok=true` 才绿；rc 非 0/3 黄；心跳缺失/过期回退状态文件旧口径（>26h 红） |
+| `task_audit.failures` | 沿用账本：无失败=绿（不是"没数据"）；未知退出码单列，不静默吞 |
+
+## 2. 数字书写规则（强制）
+
+1. 任何状态数字必须带三元组：`（as-of YYYY-MM-DD HH:MM，tool=…，scope=…）`。
+2. **禁止跨工具混用**：健康卡数字 ≠ 账本数字 ≠ `/api/execution/health` 数字；引用前先问三件事。
+3. `STATUS.md` 只写核验过的数字，且每个数字带三元组；未核验写"待核验"，不写估计值。
+4. 采集失败写 N/A（并注明原因），不写 0、不判绿。
+5. 口径变更必须同步测试：本单落了 `portal/test_execution_mixin.py`、`portal/test_alert_source_health.py`、
+   `tools/tests/test_ops_tools.py`。
+
+## 3. 当前权威读数（示例，全部带三元组）
+
+- 任务失败 **0**（as-of 2026-10-26 00:08，tool=`agent_platform/tools/task_exit_audit.py --scan`，scope=军团系计划任务 46 项）：
+  `failed=0 / upstream=1（AlertWatch rc=3）/ cancelled=1（AgentMondayCheckpoint 0xC000013A）/ terminated=1（NoticeBackfill）/ disabled=3 / never_run=2`。
+- 执行面（as-of 2026-10-25 23:49，tool=`GET /api/execution/health`，scope=`portal/execution_manifest.json` 22 项）：
+  `ok=18 / fail=2 / stale=2`。本单改后**重启前**不变；重启后预期 `fail 2→0`（AlertWatch→upstream_untrusted、
+  AgentMondayCheckpoint→cancelled）、`stale 2→0`（两条 disabled），以 `?force=1` 实测为准。
+- 健康卡（as-of 2026-10-25 23:49，tool=`tools/gen_health_card.py`，scope=治理检查全量）：
+  `17 绿 / 4 红 / 6 黄`；其中沙箱 `ops.task_launch_failures` 属"不可采集假红"、AlertWatch 上游不可信按旧口径不在正确颜色上，
+  本单分别改为 N/A 黄 / 上游不可信黄。
+
+## 4. 已知留口（本单未修，下一单）
+
+1. **AlertWatch 周末/非交易日跳过**：`news_collector/alert_watch.py` 与 `alert_push.py` 在主仓工作树有其它会话
+   未提交改动，本单**禁止改**（避免撞车）；周末 as_of 跨日仍会 rc=3（提示性拒跑）。下一单在 alert_watch 侧加交易日历跳过。
+2. **交易日节假日日历未接**：健康卡 `_is_non_trading_day()` 只判周末（`weekday>=5`），节假日只能靠人。
+   未接日历前，节假日上游 stale 只按"黄 + 可能属预期"呈现，不判绿也不强行判红。
+3. **weak / cross / council 3 源无生产者时间戳**：`source_health` 中这 3 源无 producer 完成时间证据（as_of=null），
+   `stale` 属预期，**不进 CORE_SOURCES**；不得为了变绿放宽时间戳校验，处置在数据生产侧（补 completed_at / 生成时间）。
+4. **AlertWatch 18h 窗口只改了服务端**：`portal/api_common.py` 的 `ALERT_FRESH_WINDOW` 默认 5→**1080 分钟（18h）**，
+   口径="当日 EOD 批次即当期"，跨日仍 stale；`alert_push.py` 消费端默认值仍为 5（并行 WIP 未同步）。
+   临时用同一环境变量 `ALERT_FRESH_WINDOW_MIN` 两端对齐，长期随下一单一起改。
+5. `267014 / 267009` 在部分工具仍按旧口径计失败（账本已单列 terminated / running），以 §1.1 为准逐步收口。
+
+## 5. 验收命令
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'; $env:PYTHONIOENCODING='utf-8'
+& 'C:\Program Files\Python311\python.exe' -m pytest portal/test_execution_mixin.py portal/test_alert_source_health.py -q -p no:cacheprovider
+& 'C:\Program Files\Python311\python.exe' -c "import json;json.load(open('portal/execution_manifest.json',encoding='utf-8'));print('manifest OK')"
+```
+
+> `news_collector/test_alert_delivery_p0.py` 的 12 个失败是 master 既有问题（测试 mock 的 `strftime` 缺
+> `%Y-%m-%d %H:%M:%S` 键，`alert_watch._write_heartbeat` 用到），与本次改动无关，属并行 WIP 区，本单未改。

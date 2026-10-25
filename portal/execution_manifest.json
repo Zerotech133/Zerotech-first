@@ -66,15 +66,15 @@
       "name": "AgentWatchdog2",
       "cadence_minutes": 5,
       "grace_minutes": 5,
-      "enabled": true,
-      "note": "每 5 分钟（rep=PT5M 实测，双守护冗余）"
+      "enabled": false,
+      "note": "每 5 分钟（rep=PT5M 实测，双守护冗余）；2026-10-26 统一测量：已由 AgentWatchdog 覆盖，禁用旧条目避免 stale 假红"
     },
     {
       "name": "HermesWebUI-Guard",
       "cadence_minutes": 30,
       "grace_minutes": 30,
-      "enabled": true,
-      "note": "每 30 分钟（rep=PT30M 实测）"
+      "enabled": false,
+      "note": "每 30 分钟（rep=PT30M 实测）；2026-10-26 统一测量：已由 HermesWebUI-Guard2·Next-Guard 覆盖，禁用旧条目避免 stale 假红"
     },
     {
       "name": "HermesWebUI-Guard2",
