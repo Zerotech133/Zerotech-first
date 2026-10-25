@@ -365,14 +365,27 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
         gate("C0-AUTH", "BLOCKED", "缺少真实签准")
     else:
         p = grant["payload"]
-        revoked = any(e.get("type") == "grant.revoked"
-                      and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")
-                      for e in evs)
-        ok = (p.get("env") == "controlled" and _valid_grant(p) and not revoked
-              and (p.get("signer") or {}).get("kind") == "user")
+        revokes = [e for e in evs
+                   if e.get("type") == "grant.revoked"
+                   and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")]
+        signer_ok = (p.get("signer") or {}).get("kind") == "user"
+        if art is not None:
+            # 历史链：按产物产生时刻判定授权（之后的撤销/过期不追溯翻案）
+            produced = _parse(art.get("ts")) or datetime.now(BEIJING)
+            until = _parse(p.get("valid_until"))
+            revoke_before_art = any(
+                art.get("seq") is not None and e.get("seq") is not None
+                and e["seq"] < art["seq"] for e in revokes)
+            ok = (p.get("env") == "controlled" and signer_ok
+                  and bool(until and produced < until) and not revoke_before_art)
+            note = "历史产物按产生时刻判定" + ("；撤销发生在产物之后" if revokes and not revoke_before_art else "")
+        else:
+            revoked = bool(revokes)
+            ok = (p.get("env") == "controlled" and signer_ok
+                  and _valid_grant(p) and not revoked)
+            note = "（已撤销）" if revoked else ""
         gate("C0-AUTH", "PASS" if ok else "FAIL",
-             "真实签准 env=%s 有效期至 %s%s" %
-             (p.get("env"), p.get("valid_until"), "（已撤销）" if revoked else ""))
+             "真实签准 env=%s 有效期至 %s%s" % (p.get("env"), p.get("valid_until"), note))
     if wo is None:
         gate("C0-WO", "BLOCKED", "缺少正式工单")
     else:
@@ -382,13 +395,20 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
         gate("C0-CLAIM", "BLOCKED", "尚未真实认领")
     else:
         claim_p = claim["payload"].get("claim") or {}
-        consumer = _consumer(store, claim_p.get("consumer_id"))
-        active = bool(consumer and consumer.get("status") == "active")
-        lease = _parse(claim_p.get("lease_until"))
-        ok = (claim_p.get("method") == "real" and active
-              and bool(lease and datetime.now(BEIJING) < lease))
+        cid = claim_p.get("consumer_id")
+        consumer = _consumer(store, cid)
+        claim_seq = claim.get("seq")
+        deact_seqs = [e.get("seq") for e in evs
+                      if e.get("type") == "consumer.registered"
+                      and (e.get("payload") or {}).get("consumer_id") == cid
+                      and (e.get("payload") or {}).get("status") == "inactive"
+                      and e.get("seq") is not None]
+        deact_before_claim = any(claim_seq is not None and s2 < claim_seq for s2 in deact_seqs)
+        ok = (claim_p.get("method") == "real" and consumer is not None
+              and not deact_before_claim)
+        note = "；停用发生在认领之后（历史有效）" if deact_seqs and not deact_before_claim else ""
         gate("C0-CLAIM", "PASS" if ok else "FAIL",
-             "consumer=%s method=%s" % (claim_p.get("consumer_id"), claim_p.get("method")))
+             "consumer=%s method=%s%s" % (cid, claim_p.get("method"), note))
     if risk is None:
         gate("C0-RISK", "BLOCKED", "缺少风控裁决")
     else:
@@ -583,9 +603,18 @@ def chain_report_c1(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
     gate("C1-REQ", "PASS" if req else "BLOCKED",
          "审批单 %s action=%s" % ((req or {}).get("payload", {}).get("approval_id"),
                                   (req or {}).get("payload", {}).get("action")))
-    state = _approval_state(store, item_id, (req or {}).get("payload", {}).get("approval_id", "")) if req else {"status": "missing"}
-    gate("C1-DECISION", "PASS" if state.get("status") == "approved" else "BLOCKED",
-         "本人审批：%s（%s）" % (state.get("status"), (req or {}).get("payload", {}).get("approval_id", "-")))
+    decision = (dec or {}).get("payload", {}).get("decision")
+    rid = (req or {}).get("payload", {}).get("approval_id", "-")
+    if dec is None:
+        gate("C1-DECISION", "BLOCKED", "本人审批：未决（%s）" % rid)
+    elif decision != "approved":
+        gate("C1-DECISION", "BLOCKED", "本人审批：%s（%s）" % (decision, rid))
+    else:
+        exp = _parse((req or {}).get("payload", {}).get("expires_at"))
+        ok = bool(outbox) or bool(exp and datetime.now(BEIJING) < exp)
+        note = "；outbox 已记录（历史有效）" if outbox else ""
+        gate("C1-DECISION", "PASS" if ok else "BLOCKED",
+             "本人审批：approved（%s）%s" % (rid, note))
     gate("C1-RISK", "PASS" if risk and (risk.get("payload") or {}).get("decision") == "allow"
          else "BLOCKED", "风控：%s" % ((risk or {}).get("payload", {}).get("decision") or "未裁决"))
     gate("C1-OUTBOX", "PASS" if outbox and (outbox.get("payload") or {}).get("external_sent") is False

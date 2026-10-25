@@ -65,15 +65,23 @@ def test_revoke_after_claim_blocks_artifact(store):
         X.produce_controlled_artifact(store, iid, "CONS-AUD", "a.md", "内容")
 
 
-def test_chain_auth_fail_after_revoke(store):
+def test_chain_auth_pass_after_revoke_when_artifact_precedes(store):
     iid, g = setup(store)
     X.risk_verdict(store, iid, "artifact.generate", consumer_id="CONS-AUD")
     X.real_claim(store, iid, "CONS-AUD")
     X.produce_controlled_artifact(store, iid, "CONS-AUD", "a.md", "内容")
     X.revoke_grant(store, iid, g["grant_id"])
     rep = X.chain_report_controlled(store, iid)
+    assert rep["gates"]["C0-AUTH"]["status"] == "PASS", rep["gates"]["C0-AUTH"]
+    assert rep["verdict"] == "CONTROLLED_ONLY"
+
+
+def test_chain_auth_fail_when_revoked_before_artifact(store):
+    iid, g = setup(store)
+    X.revoke_grant(store, iid, g["grant_id"])
+    rep = X.chain_report_controlled(store, iid)
     assert rep["gates"]["C0-AUTH"]["status"] == "FAIL"
-    assert rep["verdict"] == "FAIL"
+    assert rep["verdict"] != "CONTROLLED_ONLY"
 
 
 def test_consumer_capability_mismatch_blocks_claim(store):
@@ -172,3 +180,53 @@ def test_bad_ttl_returns_422_not_500(store):
                           {"action": "publish", "consumer_id": "CONS-AUD",
                            "ttl_minutes": "xx"})
     assert st == 422 and d.get("error") == "bad_value", (st, d)
+
+
+def _happy_produce(store):
+    iid, g = setup(store)
+    X.risk_verdict(store, iid, "artifact.generate", consumer_id="CONS-AUD")
+    X.real_claim(store, iid, "CONS-AUD")
+    X.produce_controlled_artifact(store, iid, "CONS-AUD", "a.md", "内容")
+    return iid, g
+
+
+def test_c0_chain_history_stable_after_revoke(store):
+    iid, g = _happy_produce(store)
+    X.revoke_grant(store, iid, g["grant_id"])
+    rep = X.chain_report_controlled(store, iid)
+    assert rep["gates"]["C0-AUTH"]["status"] == "PASS", rep["gates"]["C0-AUTH"]
+    assert rep["verdict"] == "CONTROLLED_ONLY", rep
+
+
+def test_c0_chain_history_stable_after_deactivate(store):
+    iid, _ = _happy_produce(store)
+    X.deactivate_consumer(store, "CONS-AUD")
+    rep = X.chain_report_controlled(store, iid)
+    assert rep["gates"]["C0-CLAIM"]["status"] == "PASS", rep["gates"]["C0-CLAIM"]
+    assert rep["verdict"] == "CONTROLLED_ONLY", rep
+
+
+def test_c1_chain_history_stable_after_expiry(store):
+    iid, _ = setup(store)
+    aid = "APR-HIST-001"
+    past = (datetime.now(BJT) - timedelta(minutes=10)).isoformat(timespec="seconds")
+    store.append_event("approval.requested", {"item_id": iid},
+                       {"approval_id": aid, "action": "publish", "consumer_id": "CONS-AUD",
+                        "summary": "历史审批", "expires_at": past, "status": "pending"},
+                       actor={"kind": "consumer", "id": "CONS-AUD"})
+    store.append_event("approval.decided", {"item_id": iid},
+                       {"approval_id": aid, "decision": "approved", "action": "publish",
+                        "consumer_id": "CONS-AUD",
+                        "signer": {"kind": "user", "id": "laotian"}},
+                       actor={"kind": "user", "id": "laotian"})
+    store.append_event("risk.verdict", {"item_id": iid},
+                       {"action": "publish", "decision": "allow", "approval_id": aid,
+                        "consumer_id": "CONS-AUD", "reasons": ["历史"], "risk_level": "L2"},
+                       actor={"kind": "system", "id": "os_controlled"})
+    store.append_event("l2.outbox.recorded", {"item_id": iid},
+                       {"outbox_id": "OUT-HIST-001", "approval_id": aid, "action": "publish",
+                        "consumer_id": "CONS-AUD", "external_sent": False, "env": "controlled"},
+                       actor={"kind": "consumer", "id": "CONS-AUD"})
+    rep = X.chain_report_c1(store, iid)
+    assert rep["gates"]["C1-DECISION"]["status"] == "PASS", rep["gates"]["C1-DECISION"]
+    assert rep["verdict"] == "CONTROLLED_L2_APPROVED", rep
