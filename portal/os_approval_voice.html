@@ -105,7 +105,7 @@ async function api(path, body, method){
   if(!r.ok || d.ok===false) throw new Error((d.error||('HTTP '+r.status))+': '+(d.message||''));
   return d;
 }
-function norm(t){ return String(t||'').replace(/[，。！？、；：,.!?;:\s]/g,'').replace(/要得|要的|要得嘛/g,'好').replace(/巴适/g,'满意').replace(/晓得了|晓得/g,'知道').replace(/莫得/g,'没有').replace(/啷个/g,'怎么'); }
+function norm(t){ return String(t||'').replace(/out\s*box/gi,'outbox').replace(/[，。！？、；：,.!?;:\s]/g,'').replace(/看练|看连/g,'看链').replace(/进录/g,'记录').replace(/要得|要的|要得嘛/g,'好').replace(/巴适/g,'满意').replace(/晓得了|晓得/g,'知道').replace(/莫得/g,'没有').replace(/啷个/g,'怎么'); }
 function isEcho(t){ return ECHO_RE.test(String(t||'')); }
 
 async function ensureAsr(){
