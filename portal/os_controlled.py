@@ -63,6 +63,21 @@ def _valid_grant(payload: Dict[str, Any]) -> bool:
     return bool(until and datetime.now(BEIJING) < until)
 
 
+def _usable_grant(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
+    """取最新真实签准并校验：controlled 环境、未过期、未被撤销。"""
+    evs = _evs(store, item_id)
+    g = _find(evs, "grant.signed")
+    _require(g is not None, "缺少真实签准：请先 sign_real_grant")
+    p = g["payload"]
+    _require(p.get("env") == "controlled", "真实签准环境必须是 controlled")
+    _require(_valid_grant(p), "签准已过期，请重新签准")
+    revoked = any(e.get("type") == "grant.revoked"
+                  and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")
+                  for e in evs)
+    _require(not revoked, "签准已撤销：%s" % p.get("grant_id"))
+    return p
+
+
 def _require(cond: bool, msg: str) -> None:
     if not cond:
         raise C.ContractError(msg)
@@ -82,11 +97,13 @@ def _all_events(store: S.OsGoalStore) -> List[Dict[str, Any]]:
 
 
 def _consumer(store: S.OsGoalStore, consumer_id: str) -> Optional[Dict[str, Any]]:
+    """返回该消费者的最新注册/状态事件（后写覆盖先写，确保 deactivate 生效）。"""
+    found = None
     for e in _all_events(store):
         p = e.get("payload") or {}
         if e.get("type") == "consumer.registered" and p.get("consumer_id") == consumer_id:
-            return p
-    return None
+            found = p
+    return found
 
 
 def _active_consumer(store: S.OsGoalStore, consumer_id: str) -> Dict[str, Any]:
@@ -133,14 +150,13 @@ def register_consumer(store: S.OsGoalStore, consumer_id: str, kind: str = "agent
 
 
 def list_consumers(store: S.OsGoalStore) -> List[Dict[str, Any]]:
-    out, seen = [], set()
+    latest = {}
     for e in _all_events(store):
         if e.get("type") == "consumer.registered":
             p = e.get("payload") or {}
-            if p.get("consumer_id") not in seen:
-                seen.add(p.get("consumer_id"))
-                out.append(p)
-    return out
+            if p.get("consumer_id"):
+                latest[p["consumer_id"]] = p
+    return list(latest.values())
 
 
 def deactivate_consumer(store: S.OsGoalStore, consumer_id: str, reason: str = "manual",
@@ -180,6 +196,9 @@ def sign_real_grant(store: S.OsGoalStore, item_id: str, actions: List[str],
 def revoke_grant(store: S.OsGoalStore, item_id: str, grant_id: str,
                  idem: Optional[str] = None) -> Dict[str, Any]:
     _item(store, item_id)
+    g = _find(_evs(store, item_id), "grant.signed")
+    _require(g is not None and g["payload"].get("grant_id") == grant_id,
+             "撤销失败：签准不存在或不是最新签准：%s" % grant_id)
     ev = store.append_event(
         "grant.revoked", {"item_id": item_id},
         {"grant_id": grant_id, "revoked_at": _now()},
@@ -192,19 +211,16 @@ def create_formal_workorder(store: S.OsGoalStore, item_id: str,
                             idem: Optional[str] = None) -> Dict[str, Any]:
     _item(store, item_id)
     evs = _evs(store, item_id)
-    grant = _find(evs, "grant.signed")
-    _require(grant is not None, "先真实签准，再建正式工单")
-    _require(grant["payload"].get("env") == "controlled", "正式工单必须绑定 controlled 环境的真实签准")
-    _require(_valid_grant(grant["payload"]), "签准已过期，请重新签准")
+    grant = _usable_grant(store, item_id)
     _require(bool(str(acceptance or "").strip()), "正式工单必须写验收口径")
     caps = [str(c) for c in (required_capabilities or ["artifact.generate"])]
-    _require(all(c in grant["payload"].get("actions", []) for c in caps),
+    _require(all(c in grant.get("actions", []) for c in caps),
              "工单要求超出签准动作范围")
     ev = store.append_event(
         "workorder.formal", {"item_id": item_id},
         {"workorder_id": "WO-%s-%03d" % (time.strftime("%Y%m%d"), len(evs) + 1),
          "acceptance": acceptance, "required_capabilities": caps,
-         "grant_id": grant["payload"].get("grant_id"), "env": "controlled",
+         "grant_id": grant.get("grant_id"), "env": "controlled",
          "created_by": "laotian", "created_at": _now()},
         actor=SYSTEM_ACTOR, idem=idem)
     return ev["payload"]
@@ -246,24 +262,22 @@ def risk_verdict(store: S.OsGoalStore, item_id: str, action: str,
 # ---------------- 真实认领 / 受控产物 ----------------
 def real_claim(store: S.OsGoalStore, item_id: str, consumer_id: str,
                idem: Optional[str] = None) -> Dict[str, Any]:
-    _active_consumer(store, consumer_id)
+    consumer = _active_consumer(store, consumer_id)
     evs = _evs(store, item_id)
     wo = _find(evs, "workorder.formal")
     _require(wo is not None, "先建正式工单，再真实认领")
-    grant = _find(evs, "grant.signed")
-    _require(grant is not None and grant["payload"].get("env") == "controlled",
-             "真实认领必须有 controlled 真实签准")
-    _require(_valid_grant(grant["payload"]), "签准已过期，请重新签准")
-    caps = (wo["payload"].get("required_capabilities") or [])
-    _require(all(c in grant["payload"].get("actions", []) for c in caps),
-             "签准未覆盖工单要求动作")
+    grant = _usable_grant(store, item_id)
+    caps = set(wo["payload"].get("required_capabilities") or [])
+    _require(caps <= set(grant.get("actions", [])), "签准未覆盖工单要求动作")
+    ccaps = set(consumer.get("capabilities") or [])
+    _require(caps <= ccaps, "消费者能力不足：缺 %s" % sorted(caps - ccaps))
     lease = (datetime.now(BEIJING) + timedelta(minutes=LEASE_MINUTES)).isoformat(timespec="seconds")
     ev = store.append_event(
         "workorder.claimed", {"item_id": item_id},
         {"workorder_id": wo["payload"].get("workorder_id"),
          "claim": {"consumer_id": consumer_id, "method": "real",
                    "claimed_at": _now(), "lease_until": lease,
-                   "authority_ref": grant["payload"].get("grant_id")}},
+                   "authority_ref": grant.get("grant_id")}},
         actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id},
         idem=idem)
     return ev["payload"]
@@ -287,12 +301,10 @@ def produce_controlled_artifact(store: S.OsGoalStore, item_id: str, consumer_id:
     evs = _evs(store, item_id)
     claim = _find(evs, "workorder.claimed")
     _require(_claim_active(claim, consumer_id), "没有有效的真实认领（或租约过期）")
-    grant = _find(evs, "grant.signed")
+    grant = _usable_grant(store, item_id)
     wo = _find(evs, "workorder.formal")
-    _require(grant is not None and wo is not None, "缺少签准或正式工单")
-    _require(grant["payload"].get("env") == "controlled", "签准环境不是 controlled")
-    _require(_valid_grant(grant["payload"]), "签准已过期")
-    _require("artifact.generate" in (grant["payload"].get("actions") or []),
+    _require(wo is not None, "缺少正式工单")
+    _require("artifact.generate" in (grant.get("actions") or []),
              "签准未包含 artifact.generate")
     safe = os.path.realpath(os.path.join(_workspace(store, item_id), filename))
     base = os.path.realpath(store.base_dir)
@@ -352,10 +364,14 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
         gate("C0-AUTH", "BLOCKED", "缺少真实签准")
     else:
         p = grant["payload"]
-        ok = (p.get("env") == "controlled" and _valid_grant(p)
+        revoked = any(e.get("type") == "grant.revoked"
+                      and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")
+                      for e in evs)
+        ok = (p.get("env") == "controlled" and _valid_grant(p) and not revoked
               and (p.get("signer") or {}).get("kind") == "user")
         gate("C0-AUTH", "PASS" if ok else "FAIL",
-             "真实签准 env=%s 有效期至 %s" % (p.get("env"), p.get("valid_until")))
+             "真实签准 env=%s 有效期至 %s%s" %
+             (p.get("env"), p.get("valid_until"), "（已撤销）" if revoked else ""))
     if wo is None:
         gate("C0-WO", "BLOCKED", "缺少正式工单")
     else:
@@ -436,7 +452,10 @@ def decide_l2_approval(store: S.OsGoalStore, item_id: str, approval_id: str,
             req = e["payload"]
             break
     _require(req is not None, "审批单不存在：%s" % approval_id)
-    _require(req.get("status") == "pending" or True, "审批单状态异常")
+    already = any(e.get("type") == "approval.decided"
+                  and (e.get("payload") or {}).get("approval_id") == approval_id
+                  for e in evs)
+    _require(not already, "审批单已有结论，不能重复裁决：%s" % approval_id)
     exp = _parse(req.get("expires_at"))
     _require(bool(exp and datetime.now(BEIJING) < exp), "审批单已过期，请重新申请")
     _require(decision in ("approved", "denied"), "审批结论必须是 approved / denied")
@@ -464,10 +483,11 @@ def _approval_state(store: S.OsGoalStore, item_id: str, approval_id: str) -> Dic
             dec = p
     if req is None:
         return {"status": "missing"}
+    exp = _parse(req.get("expires_at"))
+    if exp and datetime.now(BEIJING) >= exp:
+        return {"status": "expired", "request": req, "decision": dec}
     if dec is None:
-        exp = _parse(req.get("expires_at"))
-        status = "expired" if (exp and datetime.now(BEIJING) >= exp) else "pending"
-        return {"status": status, "request": req}
+        return {"status": "pending", "request": req}
     return {"status": dec.get("decision") or "unknown", "request": req, "decision": dec}
 
 
@@ -562,9 +582,9 @@ def chain_report_c1(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
     gate("C1-REQ", "PASS" if req else "BLOCKED",
          "审批单 %s action=%s" % ((req or {}).get("payload", {}).get("approval_id"),
                                   (req or {}).get("payload", {}).get("action")))
-    gate("C1-DECISION", "PASS" if dec and (dec.get("payload") or {}).get("decision") == "approved"
-         else ("BLOCKED" if req else "BLOCKED"),
-         "本人审批：%s" % ((dec or {}).get("payload", {}).get("decision") or "未决"))
+    state = _approval_state(store, item_id, (req or {}).get("payload", {}).get("approval_id", "")) if req else {"status": "missing"}
+    gate("C1-DECISION", "PASS" if state.get("status") == "approved" else "BLOCKED",
+         "本人审批：%s（%s）" % (state.get("status"), (req or {}).get("payload", {}).get("approval_id", "-")))
     gate("C1-RISK", "PASS" if risk and (risk.get("payload") or {}).get("decision") == "allow"
          else "BLOCKED", "风控：%s" % ((risk or {}).get("payload", {}).get("decision") or "未裁决"))
     gate("C1-OUTBOX", "PASS" if outbox and (outbox.get("payload") or {}).get("external_sent") is False
