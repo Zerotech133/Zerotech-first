@@ -17,6 +17,15 @@ import socket
 import subprocess
 import sys
 
+# 2026-10-25 B5/P1-07（审计 RC-04）：Windows 下 stdout 被管道重定向时默认按 GBK
+# 编码，本文件输出的 ✓/✗ 会 UnicodeEncodeError 崩溃（check_ports.py:224）→
+# 评审门在干净 shell 假红。强制 UTF-8；--json 模式不受影响（纯 ASCII 转义）。
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, OSError):  # 非常规 stdout（如被替换的流）不致命
+    pass
+
 REGISTRY = {
     8091: "零界门户API(portal_api.py)",
     8080: "nginx ai-portal(Docker)",

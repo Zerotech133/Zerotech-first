@@ -31,6 +31,12 @@ LOG_PATH = os.path.join(HERE, "logs", "ai.log")
 CST = timezone(timedelta(hours=8))
 
 OLLAMA = "http://127.0.0.1:11434/api/chat"
+# 2026-10-25 EXEC-R5/EXEC-R6：NUM_PARALLEL=1 时 M3 批处理占满唯一 slot，
+# 20s 内后端排不到 → 客户端主动 abort，Ollama 侧记 `POST /api/chat` 500
+# （tuned.log: "aborting completion request due to client closing the connection"）。
+# 本地 LLM 短请求统一用 45s：把「批处理排队」与「服务端真错误」区分开，
+# 不再让排队超时伪装成服务端 500（健康卡 ai.error_rate 由此长期误红）。
+LLM_TIMEOUT_S = 45
 JEV_BASE = "https://api.typesafe.ai/v1"
 JEV_ENV_PS1 = os.path.abspath(os.path.join(
     HERE, "..", "jev-eval", "jev-gate.env.ps1"))
@@ -401,8 +407,12 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
         return None
 
 
-def jev_reason(title, bias_cn, scope_cn, timeout=20):
-    """本地 Ollama 生成一句话判断依据（30 字内）。失败返回 ""（不阻塞）。"""
+def jev_reason(title, bias_cn, scope_cn, timeout=LLM_TIMEOUT_S):
+    """本地 Ollama 生成一句话判断依据（30 字内）。失败返回 ""（不阻塞）。
+
+    timeout 默认 45s（LLM_TIMEOUT_S）：旧值 20s 在 M3 批处理排队时必被客户端
+    主动 abort，Ollama 会记 500 并污染 ai.error_rate（2026-10-25 EXEC-R6）。
+    """
     model = ""
     try:
         with open(os.path.join(HERE, "news_config.json"),

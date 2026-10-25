@@ -187,6 +187,12 @@ def _secret_scan_gate(branch, worktree=""):
     return False, (summary + "\n" + reports).strip()
 
 
+# 2026-10-25 B5/P1-07（审计 RC-04）：守卫子进程强制 UTF-8 环境。Windows 下
+# 子进程 stdout 被管道重定向时按 locale(GBK) 编码，守卫里的 ❌/✓ 会
+# UnicodeEncodeError 崩溃 → 评审门在干净 shell 假红。守卫脚本自身另有
+# sys.stdout.reconfigure(utf-8) 兜底，两处都加 = 双保险。
+GUARD_ENV = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+
 GATES = [("Mixin方法集", [sys.executable,
                           os.path.join(REPO, "tools", "_mixin_integrity.py"),
                           "--check"]),
@@ -662,7 +668,8 @@ def cmd_merge(tid, *flags):
             ok, out = cmd(t["branch"], t.get("worktree"))
         else:
             r = subprocess.run(cmd, capture_output=True, text=True,
-                               encoding="utf-8", errors="replace")
+                               encoding="utf-8", errors="replace",
+                               env=GUARD_ENV)
             ok = r.returncode == 0
             out = (r.stdout or r.stderr).strip()
         if ok:

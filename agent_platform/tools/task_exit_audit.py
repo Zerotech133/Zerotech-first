@@ -48,11 +48,26 @@ EXIT_SEMANTICS: dict[int, str] = {
     # 路径 C:\aios\... 下）。它与 rc=1（脚本跑了但失败）性质完全不同，
     # 必须能分开看，否则会被误当成"业务逻辑报错"。
     2147942403: "进程未能启动(0x80070003 路径不存在)",
-    3221225786: "Ctrl-C 类强杀(0xC000013A)",
+    # 2026-10-25 EXEC-R7（B3 口径修正）：它不是"业务失败"，单列不按 failure 计。
+    # 0x800710E0 = HRESULT_FROM_WIN32(4320)=ERROR_REQUEST_REFUSED「启动请求被拒」：
+    # 任务 MultipleInstances=IgnoreNew 时实例已在跑，再次 Start 即被拒——设计语义
+    # ="启动器已在运行/已存在"，不代表服务死亡（N1 曾据它误判 instance hung）。
+    2147946720: "启动器已在运行/请求被拒(0x800710E0，非失败)",
+    # 0xC000013A = STATUS_CONTROL_C_EXIT：任务被 Cancel/强杀（含关机/注销打断、
+    # ExecutionTimeLimit 强杀），属"被取消"而非服务失败。
+    3221225786: "任务被取消/强杀(0xC000013A，非服务失败)",
 }
 
 # exit 3 的语义：拒跑不是故障。单列出来，既不进 failures，也不假装成功。
 UPSTREAM_UNTRUSTED_EXIT = 3
+# 2026-10-25 EXEC-R7：新增两类"非失败"退出码（只记账、单列，不进 failures）。
+#   2147946720 = 0x800710E0 启动器已在运行/启动请求被拒
+#   3221225786 = 0xC000013A 任务被取消/强杀
+LAUNCHER_REFUSED_EXIT = 2147946720
+CANCELLED_EXIT = 3221225786
+# 窗口对比（window_diff）里也按同一口径排除：非失败码不参与"新增/持续失败"差集。
+NON_FAILURE_RC = frozenset({0, 267011, UPSTREAM_UNTRUSTED_EXIT,
+                            LAUNCHER_REFUSED_EXIT, CANCELLED_EXIT})
 
 KNOWN_SCHED_FAMILIES = ("Legion", "Agent", "Quant", "Alert", "Xueqiu", "Hermes",
                         "KgChain", "Space", "KG-", "Ollama", "CnOpenData", "Daily",
@@ -142,6 +157,8 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
 
     failures: list[dict[str, Any]] = []
     upstream_hold: list[dict[str, Any]] = []
+    launcher_refused: list[dict[str, Any]] = []
+    cancelled: list[dict[str, Any]] = []
     ok_count = 0
     disabled_count = 0
     never_run = 0
@@ -170,6 +187,10 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             never_run += 1
         elif code == UPSTREAM_UNTRUSTED_EXIT:  # 主动拒跑：不是失败，单独记账
             upstream_hold.append(rec)
+        elif code == LAUNCHER_REFUSED_EXIT:  # 0x800710E0 启动器已在运行/被拒
+            launcher_refused.append(rec)
+        elif code == CANCELLED_EXIT:  # 0xC000013A 任务被取消/强杀
+            cancelled.append(rec)
         else:
             failures.append(rec)
 
@@ -180,6 +201,8 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
         "ok": ok_count,
         "failed": len(failures),
         "upstream_hold": len(upstream_hold),
+        "launcher_refused": len(launcher_refused),
+        "cancelled": len(cancelled),
         "disabled": disabled_count,
         "never_run": never_run,
         "failures": [
@@ -193,10 +216,23 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
              "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
             for f in upstream_hold
         ],
+        "launcher_refused_tasks": [
+            {"name": f["name"], "last_result": f["last_result"],
+             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            for f in launcher_refused
+        ],
+        "cancelled_tasks": [
+            {"name": f["name"], "last_result": f["last_result"],
+             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            for f in cancelled
+        ],
         "note": "LastTaskResult=0 只证明正常退出不证明有产出；产出核对仍需人工或产物探针。"
                 "Disabled 任务未计失败（它没失败，只是没开）。"
                 "exit 3 = 脚本主动拒跑（上游证据不足），不计失败、单列 upstream；"
-                "它的处置方向在数据管线，不在脚本本身。账本 append-only 可回放。",
+                "它的处置方向在数据管线，不在脚本本身。"
+                "0x800710E0 = 启动器已在运行/启动请求被拒（IgnoreNew），单列 launcher_refused；"
+                "0xC000013A = 任务被取消/强杀，单列 cancelled——两者均非服务失败、不计 failed。"
+                "账本 append-only 可回放。",
         "ledger": os.path.relpath(ledger_path, os.path.join(DATA_DIR, "..", "..", "..")),
     }
     _atomic_write_json(summary_path, summary)
@@ -255,7 +291,7 @@ def window_diff(hours: float = 24.0) -> dict[str, Any]:
             state[name] = str(rec.get("state", ""))
         return {n for n, code in last.items()
                 if state.get(n, "").lower() != "disabled"
-                and code != 0 and code != 267011}
+                and code not in NON_FAILURE_RC}
 
     now = dt.datetime.now().astimezone()
     in_window = [(ts, r) for ts, r in scans if ts > cutoff]
@@ -318,9 +354,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  窗口内修复 {len(result['fixed_in_window'])}：{'、'.join(result['fixed_in_window']) or '无'}")
         else:
             print(f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
-                  f"禁用 {result['disabled']} / 未跑 {result['never_run']}")
+                  f"上游拒跑 {result.get('upstream_hold', 0)} / 启动器已在跑 {result.get('launcher_refused', 0)} / "
+                  f"被取消 {result.get('cancelled', 0)} / 禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）")
             for f in result["failures"]:
                 print(f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+            for f in result.get("launcher_refused_tasks", []):
+                print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+            for f in result.get("cancelled_tasks", []):
+                print(f"  [CANCELLED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
     return 0
 
 

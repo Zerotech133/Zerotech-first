@@ -48,6 +48,12 @@ tools/out/
 # K-STOCK-396：lark-cli 解耦固定副本（49MB 第三方 exe 不入库；来源=Trae
 # Lark 插件 bin，缺失时晨检 [4.6] 报警，从插件目录拷贝恢复）
 bin/lark-cli.exe
+# 2026-10-25 B8/P1-10（审计 RC-02）：未跟踪大二进制补洞 —— models/ 486MB
+# 语音模型缓存（faster-whisper-small，voice_ingest 同批 WIP）+ bin/*.exe
+# 第三方 exe（cloudflared 52.8MB）此前未被忽略，一次 git add -A 即入仓、
+# 仓库不可逆膨胀。磁盘保留、不入库；回归：git check-ignore --no-index。
+models/
+bin/*.exe
 
 # ===== 密钥与环境（绝不入库）=====
 .env

@@ -84,8 +84,13 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
 11. 推理错误率（ai.error_rate）：读 Ollama 自己写的 GIN 访问日志（尾部 8 MB），
     统计最近 60 分钟 2xx/3xx、4xx、5xx 的分布。建项起因：2026-10-24 日志里出现
     每分钟 25–30 次 `POST /api/chat` 404，而业务侧被「降级三态/规则兜底」吞掉，
-    健康卡上完全看不见——失败在，信号没了。判级：有 5xx → 红；失败率 >20% 红、
-    >5% 黄；样本 <20 不判绿（读不到就是没看见）；窗口内 0 请求 → 绿并写明 0。
+    健康卡上完全看不见——失败在，信号没了。判级：有真 server 5xx → 红；失败率
+    >20% 红、>5% 黄；样本 <20 不判绿（读不到就是没看见）；窗口内 0 请求 → 绿并写明 0。
+    2026-10-25 EXEC-R6 口径拆分：GIN 里「客户端主动断开」的 500（前邻
+    `aborting completion request due to client closing the connection`，或耗时≈20s——
+    旧 news_ai.jev_reason 的 20s 超时/M3 批处理排队所致）单列 `client_aborts`，
+    **不计入 server_errors**、不计失败率；无真 5xx 但存在 client_aborts 时判黄提示核对
+    调用方超时，避免「客户端自己走了」被当成「服务端坏了」长期误红。
 
 12. 智能体点名册（agent.census）：复用 `tools/agent_census.py --json`（单一真相源，
     本卡不重复实现口径），把四本账（编制/事件/产出/工单）的结论收成一行：
@@ -2260,8 +2265,58 @@ def _docs_diff_text(diffs: dict[str, int]) -> str:
 # 所以脚本拒绝基于不可信数据报警。问题不在脚本，在于**没人看得见它停了**。
 # 这一项只做一件事：把「最后一次成功写入状态」的时刻量出来，停摆多久一眼可见。
 ALERT_STATE_REL = "news_collector/outbox/alert_watch_state.json"
-ALERT_RED_HOURS = 26.0     # 每 30 分钟一轮，>26h 说明整天都没成功过
-ALERT_YELLOW_HOURS = 2.0   # >2h 说明已经连续 4 轮没写状态
+ALERT_RED_HOURS = 26.0     # 状态文件 >26h 没成功写 → 红（旧口径，心跳缺失/过期时回退）
+ALERT_YELLOW_HOURS = 2.0   # >2h 说明已经连续几轮没写状态
+
+# 执行心跳（2026-10-25 EXEC-R8）：alert_watch 每 5 分钟写一次（含 rc=3 正确拒跑）。
+# 状态文件衡量"最后一次成功"，心跳衡量"本体是否还在跑"——优先用心跳判活：
+#   <15 分钟 → 绿（detail 说明本体在跑/上游不可信）；缺失或过期 → 回退状态文件旧口径。
+ALERT_HEARTBEAT_PATH = os.environ.get(
+    "ALERT_WATCH_HEARTBEAT",
+    os.path.join(r"C:\Temp", "alert_watch_heartbeat.json"))
+ALERT_HEARTBEAT_FRESH_MIN = 15.0
+
+
+def _empty_alert_heartbeat() -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "path": ALERT_HEARTBEAT_PATH,
+        "age_min": None,
+        "ts": None,
+        "rc": None,
+        "upstream_ok": None,
+        "routes_count": None,
+        "note": None,
+        "fresh_min": ALERT_HEARTBEAT_FRESH_MIN,
+    }
+
+
+def collect_alert_heartbeat() -> dict[str, Any]:
+    """读 alert_watch 执行心跳（只读文件，不发请求）。"""
+    result = _empty_alert_heartbeat()
+    path = Path(ALERT_HEARTBEAT_PATH)
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        result["reason"] = f"心跳文件不存在: {path}"
+        return result
+    except OSError as exc:
+        result["reason"] = f"读不到心跳文件: {_short_exc(exc)}"
+        return result
+    result["available"] = True
+    result["age_min"] = round((time.time() - stat.st_mtime) / 60.0, 1)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        data = None
+    if isinstance(data, dict):
+        result["ts"] = data.get("ts")
+        result["rc"] = data.get("rc")
+        result["upstream_ok"] = data.get("upstream_ok")
+        result["routes_count"] = data.get("routes_count")
+        result["note"] = data.get("note")
+    return result
 
 
 def _empty_alert_watch(repo_root: Path) -> dict[str, Any]:
@@ -2278,7 +2333,7 @@ def _empty_alert_watch(repo_root: Path) -> dict[str, Any]:
     }
 
 
-def collect_alert_watch(repo_root: Path) -> dict[str, Any]:
+def _collect_alert_state(repo_root: Path) -> dict[str, Any]:
     """量「警报监控最后一次成功写状态」距今多久（只读文件，不发请求）。"""
     result = _empty_alert_watch(repo_root)
     path = Path(result["path"])
@@ -2310,18 +2365,31 @@ def collect_alert_watch(repo_root: Path) -> dict[str, Any]:
     return result
 
 
-def _alert_watch_detail(watch: dict[str, Any]) -> str:
+def collect_alert_watch(repo_root: Path) -> dict[str, Any]:
+    """状态文件读数 + 执行心跳（2026-10-25 EXEC-R8）。"""
+    result = _collect_alert_state(repo_root)
+    result["heartbeat"] = collect_alert_heartbeat()
+    return result
+
+
+def _alert_watch_state_brief(watch: dict[str, Any]) -> str:
+    """状态文件一行简报（不含"停摆"判词，供心跳新鲜时说明"最后成功"用）。"""
     age = watch.get("age_hours")
     last = watch.get("last_write") or "?"
     date = watch.get("state_date") or "?"
     routes = watch.get("state_routes")
-    bits = [f"最后一次成功写状态 {last}（状态内日期 {date}"]
+    text = f"最后成功写状态 {last}（状态内日期 {date}"
     if routes is not None:
-        bits[0] += f"，{routes} 条路由"
-    bits[0] += "）"
-    text = "".join(bits)
+        text += f"，{routes} 条路由"
+    text += "）"
     if age is not None:
         text += f"，距今 {age:.1f} 小时"
+    return text
+
+
+def _alert_watch_detail(watch: dict[str, Any]) -> str:
+    text = _alert_watch_state_brief(watch)
+    age = watch.get("age_hours")
     if age is not None and age > ALERT_RED_HOURS:
         text += (
             "；警报监控已停摆，期间任何真警报都不会被推送。"
@@ -2329,6 +2397,61 @@ def _alert_watch_detail(watch: dict[str, Any]) -> str:
             "不是脚本崩溃——处置方向是补齐生产者时间戳或调整轮询与新鲜窗口"
         )
     return text
+
+
+def _alert_watch_level(watch: dict[str, Any]) -> tuple[str, str]:
+    """ops.alert_watch_liveness 判级（2026-10-25 EXEC-R8 新口径）。
+
+    优先级：
+      1) 执行心跳新鲜（<15min）→ green「本体在跑」；rc=3/upstream_ok=False 时
+         detail 注明「上游不可信已 X」，不误报停摆；心跳新鲜但 rc∉{0,3} →
+         yellow（本体在跑但本轮脚本自身失败）。
+      2) 心跳缺失/过期 → 回退旧状态文件口径（>26h red / >2h yellow / else green），
+         detail 标注心跳过期/缺失——过期样本仍会红（反例保留）。
+    """
+    hb = watch.get("heartbeat") or {}
+    hb_age = hb.get("age_min")
+    hb_fresh = (hb.get("available") and hb_age is not None
+                and hb_age <= ALERT_HEARTBEAT_FRESH_MIN)
+    if hb_fresh:
+        rc = hb.get("rc")
+        if rc == 3:
+            state_age = watch.get("age_hours")
+            waited = f"{state_age:.1f} 小时" if state_age is not None else "未知时长"
+            return (
+                "green",
+                f"本体在跑（心跳 {hb_age:.1f} 分钟前，rc=3）；"
+                f"上游不可信已 {waited}（{_alert_watch_state_brief(watch)}），"
+                "脚本按设计正确拒跑、不推即时预警——这不是停摆，处置在数据上游",
+            )
+        if rc in (0, None):
+            return (
+                "green",
+                f"本体在跑（心跳 {hb_age:.1f} 分钟前，rc={rc}，上游校验通过）；"
+                + _alert_watch_state_brief(watch),
+            )
+        # 心跳新鲜但 rc 非 0/3（1=脚本失败、2=错误…）→ 本体在跑但本轮自身异常，黄。
+        return (
+            "yellow",
+            f"本体在跑但本轮退出码异常（rc={rc}，心跳 {hb_age:.1f} 分钟前）——"
+            + str(hb.get("note") or "") + "；" + _alert_watch_state_brief(watch),
+        )
+    hb_note = (
+        f"执行心跳过期（{hb_age:.1f} 分钟前 > {ALERT_HEARTBEAT_FRESH_MIN:.0f} 分钟）"
+        if (hb.get("available") and hb_age is not None)
+        else "执行心跳缺失（" + str(hb.get("reason") or "未采集") + "）"
+    )
+    detail = _alert_watch_detail(watch)
+    if not watch.get("available"):
+        return "red", f"警报监控状态不可判定：{watch.get('reason') or '未知'}；{hb_note}"
+    age = watch.get("age_hours")
+    if age is None:
+        return "red", f"警报监控状态时间不可读：{detail}；{hb_note}"
+    if age > ALERT_RED_HOURS:
+        return "red", f"{detail}；{hb_note}"
+    if age > ALERT_YELLOW_HOURS:
+        return "yellow", f"{detail}；{hb_note}"
+    return "green", f"{detail}；{hb_note}"
 
 
 # --- 任务"动作起不来"统计（ops.task_launch_failures）-------------------------
@@ -3742,6 +3865,33 @@ AI_ERROR_MIN_SAMPLES = 20
 _GIN_RE = re.compile(
     r"\[GIN\]\s+(\d{4})/(\d{2})/(\d{2})\s+-\s+(\d{2}):(\d{2}):(\d{2})\s*\|\s*(\d{3})\s*\|"
 )
+# 2026-10-25 EXEC-R6：GIN 行尾补充「耗时 | 客户端 | 方法 "路径"」，用于把
+# 「客户端主动断开」的 500 从 server_errors 里摘出来（旧 news_ai 20s 超时特征）。
+_GIN_TAIL_RE = re.compile(
+    r"\|\s*([0-9]+(?:\.[0-9]+)?)\s*(ms|µs|μs|us|s)\s*\|[^|]*\|\s*(\w+)\s+\"([^\"]*)\""
+)
+# tuned.log 在 500 行前一两行会写这句：客户端 20s 超时主动断连的铁证。
+_CLIENT_ABORT_MARKER = "client closing the connection"
+# 兜底判据：耗时 ≈ 旧 jev_reason 的 20s 超时（±1.5s 容差，只对 5xx 生效）。
+_CLIENT_ABORT_DURATION_S = 20.0
+_CLIENT_ABORT_DURATION_TOL_S = 1.5
+
+
+def _parse_gin_duration_s(line: str) -> float | None:
+    """把 GIN 行里的耗时（1.2ms / 507.3µs / 20.0029794s）折算成秒。"""
+    match = _GIN_TAIL_RE.search(line)
+    if not match:
+        return None
+    try:
+        value = float(match.group(1))
+    except (TypeError, ValueError):
+        return None
+    unit = match.group(2)
+    if unit == "s":
+        return value
+    if unit == "ms":
+        return value / 1000.0
+    return value / 1_000_000.0  # µs/μs/us
 
 
 def _empty_ai_error_rate() -> dict[str, Any]:
@@ -3754,12 +3904,18 @@ def _empty_ai_error_rate() -> dict[str, Any]:
         "ok": None,
         "client_errors": None,
         "server_errors": None,
+        "client_aborts": None,
         "ratio": None,
     }
 
 
 def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> dict[str, Any]:
-    """统计最近一小时 Ollama 访问日志里的 HTTP 状态分布（只读，最多读尾部 4 万行）。"""
+    """统计最近一小时 Ollama 访问日志里的 HTTP 状态分布（只读，最多读尾部 8 MB）。
+
+    2026-10-25 EXEC-R6：客户端主动断开的 500（server 端日志出现
+    "client closing the connection"，或耗时≈20s 的 /api/chat 500）单列
+    client_aborts，不计 server_errors、不计失败率（ratio 只算真错误）。
+    """
     result = _empty_ai_error_rate()
     now = now or dt.datetime.now()
     candidates = [
@@ -3767,7 +3923,7 @@ def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> di
         Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "tuned.log",
     ]
     cutoff = now - dt.timedelta(minutes=AI_ERROR_WINDOW_MINUTES)
-    total = ok = client_err = server_err = 0
+    total = ok = client_err = server_err = client_abort = 0
     used = None
     for path in candidates:
         try:
@@ -3781,15 +3937,25 @@ def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> di
         except OSError:
             continue
         hits = 0
-        for match in _GIN_RE.finditer(tail):
+        # 逐行扫：500 前一两行若出现客户端断连标记，则该 500 归 client_abort。
+        pending_abort_marker = False
+        for line in tail.splitlines():
+            if _CLIENT_ABORT_MARKER in line:
+                pending_abort_marker = True
+                continue
+            match = _GIN_RE.search(line)
+            if not match:
+                continue
             try:
                 when = dt.datetime(
                     int(match.group(1)), int(match.group(2)), int(match.group(3)),
                     int(match.group(4)), int(match.group(5)), int(match.group(6)),
                 )
             except ValueError:
+                pending_abort_marker = False
                 continue
             if when < cutoff:
+                pending_abort_marker = False
                 continue
             status = int(match.group(7))
             hits += 1
@@ -3799,17 +3965,30 @@ def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> di
             elif 400 <= status < 500:
                 client_err += 1
             elif status >= 500:
-                server_err += 1
+                duration_s = _parse_gin_duration_s(line)
+                looks_like_timeout = (
+                    duration_s is not None
+                    and abs(duration_s - _CLIENT_ABORT_DURATION_S)
+                    <= _CLIENT_ABORT_DURATION_TOL_S
+                )
+                if pending_abort_marker or looks_like_timeout:
+                    client_abort += 1
+                else:
+                    server_err += 1
+            pending_abort_marker = False
         if hits and used is None:
             used = path.name
     if total == 0:
         result.update(available=True, source=used, total=0, ok=0,
-                      client_errors=0, server_errors=0, ratio=0.0)
+                      client_errors=0, server_errors=0, client_aborts=0,
+                      ratio=0.0)
         return result
+    # 失败率只算「客户端错误 + 真服务端错误」；client_aborts 是调用方自己超时走了。
     bad = client_err + server_err
     result.update(
         available=True, source=used, total=total, ok=ok,
         client_errors=client_err, server_errors=server_err,
+        client_aborts=client_abort,
         ratio=round(bad / total, 4),
     )
     return result
@@ -3824,6 +4003,9 @@ def _ai_error_detail(err: dict[str, Any]) -> str:
         % (AI_ERROR_WINDOW_MINUTES, total, err.get("ok") or 0,
            err.get("client_errors") or 0, err.get("server_errors") or 0),
     ]
+    client_aborts = err.get("client_aborts") or 0
+    if client_aborts:
+        bits.append("客户端主动断连 %d（不计失败率，原 500 口径）" % client_aborts)
     ratio = err.get("ratio") or 0.0
     if ratio > 0:
         bits.append("失败率 %.1f%%" % (ratio * 100))
@@ -4253,20 +4435,11 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
     watch = (card.get("ops") or {}).get("alert_watch") or {}
     if not watch:
         add("ops.alert_watch_liveness", "red", "警报监控存活检查未运行（ops 块缺失）")
-    elif not watch.get("available"):
-        add("ops.alert_watch_liveness", "red",
-            "警报监控状态不可判定：" + str(watch.get("reason") or "未知"))
     else:
-        age = watch.get("age_hours")
-        detail = _alert_watch_detail(watch)
-        if age is None:
-            add("ops.alert_watch_liveness", "red", "警报监控状态时间不可读：" + detail)
-        elif age > ALERT_RED_HOURS:
-            add("ops.alert_watch_liveness", "red", detail)
-        elif age > ALERT_YELLOW_HOURS:
-            add("ops.alert_watch_liveness", "yellow", detail)
-        else:
-            add("ops.alert_watch_liveness", "green", detail)
+        # 2026-10-25 EXEC-R8：优先看执行心跳（本体是否在跑）；心跳缺失/过期回退旧
+        # 状态文件口径（>26h 红）。判级逻辑集中在 _alert_watch_level，便于反例测试。
+        level, detail = _alert_watch_level(watch)
+        add("ops.alert_watch_liveness", level, detail)
 
     launch = (card.get("ops") or {}).get("task_launch_failures") or {}
     if not launch:
@@ -4354,10 +4527,14 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         add("ai.error_rate", "red",
             "推理错误率不可用：" + str(err.get("reason") or "未知原因"))
     else:
-        # 5xx 一票红；4xx 看占比。样本不足不判绿（读不到就是没看见）。
+        # 2026-10-25 EXEC-R6 口径拆分：真 server_errors>0 仍「一票红」（保留严格）；
+        # client_aborts（客户端主动断连：旧 20s 超时 / M3 批处理排队）不计失败率，
+        # 只进 detail；无真错误但仍有 client_aborts 时判黄，提示核对调用方超时，
+        # 不静默判绿（残留断连说明修复未覆盖全部调用方）。
         detail = _ai_error_detail(err)
         ratio = err.get("ratio") or 0.0
         total = err.get("total") or 0
+        client_aborts = err.get("client_aborts") or 0
         if (err.get("server_errors") or 0) > 0:
             add("ai.error_rate", "red", detail)
         elif total < AI_ERROR_MIN_SAMPLES:
@@ -4367,6 +4544,9 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             add("ai.error_rate", "red", detail)
         elif ratio > AI_ERROR_YELLOW_RATIO:
             add("ai.error_rate", "yellow", detail)
+        elif client_aborts > 0:
+            add("ai.error_rate", "yellow",
+                detail + "（仅客户端主动断连，不计失败率；建议核对调用方超时设置）")
         else:
             add("ai.error_rate", "green", detail)
 

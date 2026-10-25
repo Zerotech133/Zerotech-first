@@ -17,7 +17,15 @@
 # git is the audit record. To change this script: edit disk -> push
 # registry -> commit git. All three, every time - pushing registry
 # without committing git caused the git drift found on 2026-10-08.
-# VERSION: v11 2026-10-16
+# VERSION: v12 2026-10-25
+# v12 (2026-10-25 P1-01, EXEC-R1): quant_data archive-count gate now uses the
+# same +/-8 live-tree drift tolerance as quant_code (exact equality produced 5
+# false BACKUP_FAILED alerts in the 7 days 10-19..10-25: "files=224 expect=225");
+# a local failure no longer skips the offsite upload - a backup_diff_<stamp>.txt
+# manifest travels with the set naming what to distrust; the BACKUP_FAILED flag
+# now lists the failed items as failed_item= lines (existing consumers ignore
+# unknown keys). On THIS machine the on-disk file is the source of truth (see
+# DEVIATION NOTE below), so editing disk is the whole deploy step.
 # v11 (machine swap): new machine has a single C: drive (no D:/E:), user is
 # "t" (old: Administrator on E:). Changes:
 #   - base dir auto-locate: C:\aios junction (new) instead of E:\ scan
@@ -59,6 +67,9 @@ $stamp   = Get-Date -Format "yyyy-MM-dd_HHmm"
 $DayDir  = Join-Path $BackupRoot $stamp
 $LogFile = Join-Path $DayDir "backup.log"
 $script:Failed = 0
+# P1-01: keep the human-readable failure list, not just the count - the alert
+# and the offsite diff manifest must be able to say WHICH item failed.
+$script:Failures = New-Object System.Collections.ArrayList
 
 function Log([string]$msg) {
     $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $msg
@@ -67,7 +78,45 @@ function Log([string]$msg) {
     Add-Content -Path $LogFile -Value $line -Encoding UTF8
 }
 function LogOk([string]$what)   { Log ("OK   " + $what) }
-function LogFail([string]$what) { $script:Failed++; Log ("FAIL " + $what) }
+function LogFail([string]$what) { $script:Failed++; [void]$script:Failures.Add($what); Log ("FAIL " + $what) }
+
+# ---------------- archive-count judgement (2026-10-25 P1-01) ----------------
+# The workspace is a LIVE tree: sessions keep writing files while tar walks it,
+# so the archived entry count can legitimately differ from the filesystem count
+# taken moments earlier. A small delta is live-tree drift, not data loss; the
+# thing this gate must catch is bsdtar silently skipping whole ACL-denied
+# directories (dozens to thousands of files at once).
+# quant_data and quant_code MUST use the same tolerance - for 7 days the
+# inconsistent pair (data exact / code +/-8) raised 5 false alerts and each one
+# also suppressed the offsite upload of an otherwise complete backup set.
+$LiveTreeDrift = 8
+
+function Test-ArchiveCount([string]$label, [int]$got, [int]$expect, [int]$drift) {
+    $delta = $got - $expect
+    if (($got -gt 0) -and ([math]::Abs($delta) -le $drift)) {
+        $note = if ($delta -eq 0) { "" } else { " (live-tree drift " + $delta + ")" }
+        LogOk ($label + " files=" + $got + $note)
+        return $true
+    }
+    LogFail ($label + " files=" + $got + " expect=" + $expect + " delta=" + $delta)
+    return $false
+}
+
+# P1-01: local failures must not cancel the offsite upload of the archives that
+# ARE complete. Write the failure list next to the set so it travels with the
+# copy and a reviewer knows exactly what to distrust (and can restore the rest).
+function Write-OffsiteDiffManifest([string]$dir, [string]$stamp) {
+    $diffFile = Join-Path $dir ("backup_diff_" + $stamp + ".txt")
+    $lines = @(
+        "type=ai_workstation_backup_diff",
+        ("stamp=" + $stamp),
+        ("local_failed=" + $script:Failed),
+        ("generated_at=" + (Get-Date -Format "yyyy-MM-dd HH:mm:ss"))
+    )
+    foreach ($f in $script:Failures) { $lines += ("failed_item=" + $f) }
+    Set-Content -LiteralPath $diffFile -Value $lines -Encoding UTF8
+    return $diffFile
+}
 
 New-Item -ItemType Directory -Path $DayDir -Force | Out-Null
 Log ("Backup dir: " + $DayDir)
@@ -255,8 +304,12 @@ $qdata = Join-Path $DayDir 'quant_data.tar.gz'
 Push-Location $QDataDir; & tar.exe czf $qdata @QNames; Pop-Location
 $QGot = 0
 & tar.exe tzf $qdata | ForEach-Object { if (-not $_.EndsWith('/')) { $QGot++ } }
-if (($QGot -eq $QExpect) -and ($QGot -gt 0)) { LogOk ("quant_data.tar.gz files=" + $QGot) }
-else { LogFail ("quant_data.tar.gz files=" + $QGot + " expect=" + $QExpect) }
+# 2026-10-25 P1-01: quant_data is a live tree too (sqlite db + wal are written
+# during the tar), so exact equality is the wrong gate - it produced
+# "files=224 expect=225" FAILs on 5 of 7 days and each FAIL also suppressed the
+# offsite upload. Use the same live-tree drift rule as quant_code; got=0 or a
+# large delta still fails.
+Test-ArchiveCount "quant_data.tar.gz" $QGot $QExpect $LiveTreeDrift | Out-Null
 
 # ---------------- 1c. neo4j graph volume (OPS-0930d) ----------------
 # volume neo4j-kg-data (~3.1G). exec tar while running = file-level snapshot
@@ -300,14 +353,10 @@ $CGot = 0
 # 判据改为：允许 $CCodeDrift 以内的漂移（活树正常抖动），
 # 但丢失超过该值仍判 FAIL —— bsdtar 因 ACL 静默跳过文件时会一下子少很多，
 # 那才是这个检查真正要抓的东西。
-$CCodeDrift = 8
-$CDelta = $CGot - $CExpect
-if ($CGot -gt 0 -and [math]::Abs($CDelta) -le $CCodeDrift) {
-    $note = if ($CDelta -eq 0) { "" } else { " (live-tree drift " + $CDelta + ")" }
-    LogOk ("quant_code.tar.gz files=" + $CGot + $note)
-} else {
-    LogFail ("quant_code.tar.gz files=" + $CGot + " expect=" + $CExpect + " delta=" + $CDelta)
-}
+# 2026-10-25 P1-01: judgement extracted to Test-ArchiveCount so quant_data and
+# quant_code provably share one rule ($LiveTreeDrift, defined at the top).
+$CCodeDrift = $LiveTreeDrift
+Test-ArchiveCount "quant_code.tar.gz" $CGot $CExpect $CCodeDrift | Out-Null
 
 # ---------------- 2. gzip integrity check on all archives ----------------
 foreach ($f in @(Get-ChildItem $DayDir -Filter "*.gz")) {
@@ -373,12 +422,15 @@ if ($script:Failed -gt 0) {
         $alertDir = Join-Path $BaseDir "jev-eval\alerts"
         if (-not (Test-Path $alertDir)) { New-Item -ItemType Directory -Path $alertDir -Force | Out-Null }
         $flag = Join-Path $alertDir ("BACKUP_FAILED_" + $stamp + ".flag")
-        @(
+        $flagLines = @(
             "type=ai_workstation_backup_failed",
             ("stamp=" + $stamp),
-            ("failed_count=" + $script:Failed),
-            ("backup_log=" + $LogFile)
-        ) | Set-Content -LiteralPath $flag -Encoding UTF8
+            ("failed_count=" + $script:Failed)
+        )
+        # P1-01: name the failed items (backup_alert.py ignores unknown keys).
+        foreach ($f in $script:Failures) { $flagLines += ("failed_item=" + $f) }
+        $flagLines += ("backup_log=" + $LogFile)
+        $flagLines | Set-Content -LiteralPath $flag -Encoding UTF8
         Log ("ALERT flag written " + $flag)
     } catch { Log ("ALERT flag error: " + $_.Exception.Message) }
 }
@@ -389,41 +441,52 @@ if ($script:Failed -gt 0) {
 # is a byte-identical copy on the SAME disk (sha256-verified) - a false comfort.
 #
 # Design notes:
-#   * A LOCAL backup failure aborts here: never ship a known-bad set offsite.
+#   * A LOCAL backup failure no longer aborts the offsite step (2026-10-25
+#     P1-01): the typical failure is ONE archive's count/enc, while the other
+#     five are complete - refusing the upload threw away six good copies for
+#     seven days straight. Instead we upload and write backup_diff_<stamp>.txt
+#     next to the set, so the offsite copy itself names what to distrust.
 #   * A NETWORK failure must not be reported as "the backup failed" - it gets its
 #     own OFFSITE_FAILED flag so the alert text names the real culprit.
 #   * The push verifies sha256 on BOTH sides; size equality is not evidence here.
 $OffsiteRc = -1
 if ($script:Failed -gt 0) {
-    Log "OFFSITE skipped (local backup had failures)"
+    try {
+        $diffFile = Write-OffsiteDiffManifest $DayDir $stamp
+        Log ("OFFSITE proceeding despite local failures; diff list: " + $diffFile)
+        $mirrorSet = Join-Path $MirrorRoot $stamp
+        if (Test-Path -LiteralPath $mirrorSet) {
+            Copy-Item -LiteralPath $diffFile -Destination $mirrorSet -Force
+            Log ("OFFSITE diff list mirrored to " + $mirrorSet)
+        }
+    } catch { Log ("OFFSITE diff list error: " + $_.Exception.Message) }
+}
+$pushScript = Join-Path $BaseDir "tools\offsite_push_remote.ps1"
+if (-not (Test-Path -LiteralPath $pushScript)) {
+    Log ("OFFSITE skipped (missing " + $pushScript + ")")
 } else {
-    $pushScript = Join-Path $BaseDir "tools\offsite_push_remote.ps1"
-    if (-not (Test-Path -LiteralPath $pushScript)) {
-        Log ("OFFSITE skipped (missing " + $pushScript + ")")
-    } else {
+    try {
+        $pushOut = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $pushScript 2>&1
+        $OffsiteRc = $LASTEXITCODE
+        $tail = @($pushOut | Select-Object -Last 2) -join ' | '
+        Log ("OFFSITE rc=" + $OffsiteRc + " " + $tail)
+    } catch {
+        $OffsiteRc = 99
+        Log ("OFFSITE error: " + $_.Exception.Message)
+    }
+    if ($OffsiteRc -ne 0) {
         try {
-            $pushOut = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $pushScript 2>&1
-            $OffsiteRc = $LASTEXITCODE
-            $tail = @($pushOut | Select-Object -Last 2) -join ' | '
-            Log ("OFFSITE rc=" + $OffsiteRc + " " + $tail)
-        } catch {
-            $OffsiteRc = 99
-            Log ("OFFSITE error: " + $_.Exception.Message)
-        }
-        if ($OffsiteRc -ne 0) {
-            try {
-                $alertDir = Join-Path $BaseDir "jev-eval\alerts"
-                if (-not (Test-Path $alertDir)) { New-Item -ItemType Directory -Path $alertDir -Force | Out-Null }
-                $flag = Join-Path $alertDir ("OFFSITE_FAILED_" + $stamp + ".flag")
-                @(
-                    "type=ai_workstation_offsite_failed",
-                    ("stamp=" + $stamp),
-                    ("rc=" + $OffsiteRc),
-                    ("backup_log=" + $LogFile)
-                ) | Set-Content -LiteralPath $flag -Encoding UTF8
-                Log ("OFFSITE alert flag written " + $flag)
-            } catch { Log ("OFFSITE alert flag error: " + $_.Exception.Message) }
-        }
+            $alertDir = Join-Path $BaseDir "jev-eval\alerts"
+            if (-not (Test-Path $alertDir)) { New-Item -ItemType Directory -Path $alertDir -Force | Out-Null }
+            $flag = Join-Path $alertDir ("OFFSITE_FAILED_" + $stamp + ".flag")
+            @(
+                "type=ai_workstation_offsite_failed",
+                ("stamp=" + $stamp),
+                ("rc=" + $OffsiteRc),
+                ("backup_log=" + $LogFile)
+            ) | Set-Content -LiteralPath $flag -Encoding UTF8
+            Log ("OFFSITE alert flag written " + $flag)
+        } catch { Log ("OFFSITE alert flag error: " + $_.Exception.Message) }
     }
 }
 

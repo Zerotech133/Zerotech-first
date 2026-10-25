@@ -141,10 +141,10 @@
     },
     {
       "name": "AlertWatch",
-      "cadence_minutes": 30,
+      "cadence_minutes": 5,
       "grace_minutes": 60,
       "enabled": true,
-      "note": "每 30 分钟（rep=PT30M 实测）"
+      "note": "每 5 分钟（PT5M；2026-10-25 EXEC-R7 实测 last_run 14:45→14:50→14:55 连续前进，10-22 由 PT30M 修正为 PT5M 后生效。grace 保留 60 分钟=连续 12 轮未跑才判 stale，避免跨休眠/断电误红）"
     },
     {
       "name": "AlertPush",

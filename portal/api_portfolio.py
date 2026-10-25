@@ -12,6 +12,16 @@ _PAPER_DIR_ROOT = str(_REPO_ROOT / "k_stock" / "paper")
 _PAPER_DATA_DIR_ROOT = str(_REPO_ROOT / "k_stock" / "data")
 _PAPER_DB_ROOT = os.path.join(_PAPER_DATA_DIR_ROOT, "paper.db")
 _PAPER_QD_LOCK_FILE = os.path.join(_PAPER_DATA_DIR_ROOT, ".double_knife.lock")
+# 2026-10-25（EXEC-R6/P1-04）：portal_api.py 有 7 处按模块级属性访问
+# api_portfolio._PAPER_DIR / _PAPER_DATA_DIR / _PAPER_DB（L3431/3541/3551/
+# 3599/3619/3657/3692）。这三个名字此前只定义在类 _PortfolioAPI 内
+# （本文件 L1627-1629），模块级不存在 → /api/portfolio_status、/api/plan_review、
+# /api/review_minutes、/api/trader_roster 四个端点恒定 500 AttributeError
+# （12:25:57 同秒 7 条 500 即此 fan-out；HEAD 基线即含缺陷，非今日 WIP）。
+# 在模块级补同名别名，与类属性同源、零行为变化；改 7 处调用点也可以但触碰面更大。
+_PAPER_DIR = _PAPER_DIR_ROOT
+_PAPER_DATA_DIR = _PAPER_DATA_DIR_ROOT
+_PAPER_DB = _PAPER_DB_ROOT
 
 
 def _acquire_paper_qd_lock():

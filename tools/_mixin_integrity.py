@@ -14,10 +14,31 @@ import json
 import os
 import sys
 
+# 2026-10-25 B5/P1-07（审计 RC-04）：Windows 下 stdout 被管道重定向时默认按 GBK
+# 编码，本文件输出的 ❌/⚠️/✅ 会 UnicodeEncodeError 崩溃 → 评审门在干净 shell
+# 假红（rc=1 与真实违规不可区分）。强制 UTF-8，不可编码字符替换而非崩溃。
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, OSError):  # 非常规 stdout（如被替换的流）不致命
+    pass
+
 PORTAL = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "portal")
 MAIN = os.path.join(PORTAL, "portal_api.py")
 BASELINE = os.path.join(PORTAL, "mixin_baseline.json")
+
+# 2026-10-25 B6/P1-08（审计 RC-06）：「只改不扩」拒收闸。此前 --check 只拦
+# 「丢失」不拦「新增」→ 基线停在 10-12 的 121/98 而代码已 185/381 仍 rc=0。
+# 基线已于 2026-10-25 刷新到现状（185 methods / 381 funcs），此后新增 Handler
+# 方法预算为 0：要扩基座必须在同一提交显式重跑 --baseline（评审 diff 可见），
+# 不允许静默增长。新 handler 应落新的 portal/api_*.py 文件（基线含并集，新增
+# 同样计数），本门只保证「新增必须被看见」，不区分新增落在哪个文件。
+MAX_ADDED_HANDLERS = 0
+# portal_api.py 行数预算（同一 P1-08）：2026-10-25 现状 5,068 行（非空 4,618），
+# P4 完工口径 3,370（docs/plans/2026-10-12_P4完工总结.md:4,34），12 天回涨 +37%。
+# 阈值取 5,200（留 132 行余量）——超过即 FAIL，禁止巨石继续膨胀。
+PORTAL_API_MAX_LINES = 5200
 
 
 def _extract(path):
@@ -63,12 +84,29 @@ def main():
         print("❌ 丢失 Handler 方法 %d:" % len(lost), sorted(lost)[:10])
         ok = False
     if added:
-        print("⚠️ 新增 Handler 方法 %d:" % len(added), sorted(added)[:10])
+        if len(added) > MAX_ADDED_HANDLERS:
+            print("❌ 新增 Handler 方法 %d > 预算 %d（只改不扩：确需扩基座，"
+                  "须在同一提交显式重跑 --baseline）:"
+                  % (len(added), MAX_ADDED_HANDLERS), sorted(added)[:10])
+            ok = False
+        else:
+            print("ℹ️ 新增 Handler 方法 %d（预算 %d 内）:"
+                  % (len(added), MAX_ADDED_HANDLERS), sorted(added)[:10])
     if lostf:
         print("❌ 丢失模块级函数 %d:" % len(lostf), sorted(lostf)[:10])
         ok = False
     if addedf:
         print("ℹ️ 新增模块级函数 %d:" % len(addedf), sorted(addedf)[:10])
+    # portal_api.py 行数预算门（B6/P1-08）：独立于方法集，直接卡「只改不扩」红线。
+    with open(MAIN, encoding="utf-8") as f:
+        main_lines = len(f.read().splitlines())
+    if main_lines > PORTAL_API_MAX_LINES:
+        print("❌ portal_api.py 行数 %d > 预算 %d（只改不扩红线，见 "
+              "PORTAL_API_MAX_LINES 注释）" % (main_lines, PORTAL_API_MAX_LINES))
+        ok = False
+    else:
+        print("ℹ️ portal_api.py 行数 %d / 预算 %d"
+              % (main_lines, PORTAL_API_MAX_LINES))
     if ok:
         print("✅ INTEGRITY OK: %d methods / %d funcs 与基线零 diff"
               % (len(hs), len(fs)))

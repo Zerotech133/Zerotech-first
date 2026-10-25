@@ -34,6 +34,15 @@ DAILY_CAP = 3
 # EXIT_SEMANTICS[3] 保持一致。
 EXIT_UPSTREAM_UNTRUSTED = 3
 
+# 执行心跳（2026-10-25 EXEC-R8）：每次运行结束都写，含 rc=3 拒跑路径。
+# 状态文件 alert_watch_state.json 只在"上游校验通过"时写，所以它衡量的是
+# "最后一次成功"，无法证明"进程还在跑"；心跳文件专门证明后者，健康卡的
+# ops.alert_watch_liveness 用它区分「本体在跑但上游不可信」与「真的停了」。
+# 固定 C:\Temp（跨会话可读）；环境变量覆盖仅供测试，不影响生产默认路径。
+HEARTBEAT_PATH = os.environ.get(
+    "ALERT_WATCH_HEARTBEAT",
+    os.path.join(r"C:\Temp", "alert_watch_heartbeat.json"))
+
 RULES = {
     "盘前倾向": {"kind": "flip"},
     "缠论信号": {"kind": "num", "diff": 5, "abs": 40},
@@ -58,6 +67,33 @@ def _save_state(st):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(st, f, ensure_ascii=False, indent=1)
     os.replace(tmp, STATE_PATH)
+
+
+def _write_heartbeat(rc, upstream_ok, routes_count, note):
+    """原子写执行心跳（tmp + os.replace）。与状态文件语义完全独立。
+
+    心跳写失败只告警、不抛出——看门狗不能因为写自己的心跳而弄死主流程。
+    字段：ts/epoch/rc/upstream_ok/routes_count/note（供健康卡判「本体是否在跑」）。
+    """
+    payload = {
+        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "epoch": int(time.time()),
+        "rc": int(rc),
+        "upstream_ok": bool(upstream_ok),
+        "routes_count": int(routes_count),
+        "note": str(note)[:200],
+    }
+    try:
+        d = os.path.dirname(HEARTBEAT_PATH)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        tmp = HEARTBEAT_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+        os.replace(tmp, HEARTBEAT_PATH)
+    except Exception as exc:  # noqa: BLE001  心跳写失败不得影响主流程
+        print("ALERT_WATCH_WARN heartbeat write %s" % str(exc)[:100])
+    return payload
 
 
 def _parse_num(name, value):
@@ -105,10 +141,15 @@ def main():
         # 用 1 会让它在账本里和"脚本崩溃"长得一模一样——2026-10-22 实测它
         # 因此静默了 4 天（10-18 18:15 之后状态文件再没更新，而卡上只显示
         # "9 个任务非零退出"）。约定见 task_exit_audit.EXIT_SEMANTICS。
+        # 2026-10-25 EXEC-R8：拒跑也要写执行心跳（状态文件语义不变）。
+        _write_heartbeat(EXIT_UPSTREAM_UNTRUSTED, False, 0,
+                         "invalid source_health: 6 源完成时间证据不足，正确拒跑")
         return EXIT_UPSTREAM_UNTRUSTED
     res, bad = validated
     if bad and not res["alerts"]:
         print("ALERT_WATCH_SOURCE_UNAVAILABLE partial coverage without alerts")
+        _write_heartbeat(EXIT_UPSTREAM_UNTRUSTED, False, 0,
+                         "partial coverage without alerts: 上游不可信，正确拒跑")
         return EXIT_UPSTREAM_UNTRUSTED
 
     st = _load_state()
@@ -179,12 +220,23 @@ def main():
         print("ALERT_WATCH_FIRED %d routes ok=%s status=%s %s" % (
             len(hits), ok, "sent" if ok else "failed",
             json.dumps(tres, ensure_ascii=False)))
+        _write_heartbeat(0 if ok else 1, True, len(hits),
+                         "fired routes=%d pushes_ok=%s" % (len(hits), ok))
         return 0 if ok else 1
 
     _save_state(st)
     print("ALERT_WATCH_QUIET%s" % (" (baseline init)" if first_run else ""))
+    _write_heartbeat(0, True, 0,
+                     "quiet" + (" (baseline init)" if first_run else ""))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        _rc = main()
+    except SystemExit:
+        raise
+    except Exception as _exc:  # noqa: BLE001  崩溃也要留下"本体在跑"的证据
+        _write_heartbeat(1, False, 0, "exception: %s" % str(_exc)[:120])
+        raise
+    sys.exit(_rc)

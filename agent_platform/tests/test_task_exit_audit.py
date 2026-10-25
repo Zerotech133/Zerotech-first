@@ -43,12 +43,14 @@ def test_scan_classifies_and_writes(isolated_data_dir, monkeypatch):
 
     assert s["total_scanned"] == 5
     assert s["ok"] == 1
-    assert s["failed"] == 3  # exit 2 / 1 / 0xC000013A
+    assert s["failed"] == 2  # exit 2 / 1（0xC000013A 已按 EXEC-R7 单列 cancelled）
+    assert s["cancelled"] == 1  # 0xC000013A 被取消/强杀：不计 failed
+    assert s["launcher_refused"] == 0
     assert s["disabled"] == 1  # Disabled 不计失败
     assert s["never_run"] == 0  # Disabled 的 267011 走 disabled 分支
 
     names = {f["name"] for f in s["failures"]}
-    assert names == {"QuantWatchdog", "AlertWatch", "AgentMondayCheckpoint"}
+    assert names == {"QuantWatchdog", "AlertWatch"}
 
     # 账本与摘要都落盘
     ledger = os.path.join(isolated_data_dir, ta.LEDGER_NAME)
@@ -56,9 +58,9 @@ def test_scan_classifies_and_writes(isolated_data_dir, monkeypatch):
     assert os.path.isfile(ledger) and os.path.isfile(summary)
     lines = [json.loads(x) for x in open(ledger, encoding="utf-8") if x.strip()]
     assert len(lines) == 5  # append-only，含全部扫描记录
-    # 0xC000013A 语义可读
-    cp = [f for f in s["failures"] if f["name"] == "AgentMondayCheckpoint"][0]
-    assert "强杀" in cp["exit_semantics"]
+    # 0xC000013A 语义可读，且单列在 cancelled_tasks（不计 failed）
+    cp = [f for f in s["cancelled_tasks"] if f["name"] == "AgentMondayCheckpoint"][0]
+    assert "取消" in cp["exit_semantics"] and "0xC000013A" in cp["exit_semantics"]
 
 
 def test_scan_empty_is_honest(isolated_data_dir, monkeypatch):
@@ -84,6 +86,18 @@ def test_never_run_not_failure(isolated_data_dir, monkeypatch):
          "last_run": "", "next_run": "2026-10-23 00:00:00"}])
     s = ta.scan(audit_family_only=False)
     assert s["failed"] == 0 and s["never_run"] == 1
+
+
+def test_launcher_refused_not_failure(isolated_data_dir, monkeypatch):
+    """EXEC-R7：0x800710E0（启动器已在运行/启动请求被拒）不计失败，单列 launcher_refused。"""
+    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: [
+        {"name": "AI工作站调优回测批次", "state": "Ready", "last_result": 2147946720,
+         "last_run": "2026-10-24 20:23:40", "next_run": ""}])
+    s = ta.scan(audit_family_only=False)
+    assert s["failed"] == 0
+    assert s["launcher_refused"] == 1
+    assert [f["name"] for f in s["launcher_refused_tasks"]] == ["AI工作站调优回测批次"]
+    assert "0x800710E0" in s["launcher_refused_tasks"][0]["exit_semantics"]
 
 
 def test_summary_only_missing(isolated_data_dir, capsys):
@@ -150,3 +164,16 @@ def test_window_diff_disabled_not_failure(isolated_data_dir):
     # state 字段在 _seed_ledger 固定为 Ready，这里直接验证 267011 排除逻辑
     r = ta.window_diff(hours=1.5)
     assert "KG-QuantRetune" not in r.get("persisting_failures", [])
+
+
+def test_window_diff_excludes_non_failure_rc(isolated_data_dir):
+    """EXEC-R7：被取消(0xC000013A)/启动器已在跑(0x800710E0)/上游拒跑(3) 不进失败差集。"""
+    _seed_ledger(isolated_data_dir, [
+        {"CancelledTask": 3221225786, "LauncherTask": 2147946720,
+         "UpstreamTask": 3, "RealFail": 1},
+        {"CancelledTask": 3221225786, "LauncherTask": 2147946720,
+         "UpstreamTask": 3, "RealFail": 1},
+    ])
+    r = ta.window_diff(hours=1.5)
+    assert "error" not in r
+    assert r["persisting_failures"] == ["RealFail"]
