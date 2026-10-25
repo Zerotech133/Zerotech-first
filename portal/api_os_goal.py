@@ -188,7 +188,7 @@ def handle_get(store: S.OsGoalStore, path: str,
 
 
 CTRL_ITEM_RE = re.compile(
-    r"^/api/os/item/([A-Za-z0-9-]+)/(grant/real|workorder/formal|claim/real|risk/verdict|controlled/artifact)$")
+    r"^/api/os/item/([A-Za-z0-9-]+)/(grant/real|grant/revoke|workorder/formal|claim/real|risk/verdict|controlled/artifact)$")
 CTRL_CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain/controlled$")
 
 
@@ -199,6 +199,10 @@ CTRL_C1_CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain/c1$")
 
 def _handle_controlled_post(store, path, body):
     import os_controlled as X
+    if path == "/api/os/consumer/deactivate":
+        c = X.deactivate_consumer(store, str(body.get("consumer_id") or ""),
+                                  reason=str(body.get("reason") or "manual"))
+        return 201, {"ok": True, "consumer": c}
     if path == "/api/os/consumer/register":
         c = X.register_consumer(store, str(body.get("consumer_id") or ""),
                                 kind=str(body.get("kind") or "agent"),
@@ -216,6 +220,9 @@ def _handle_controlled_post(store, path, body):
                               signer_method=str(body.get("signer_method") or "session_nonce"),
                               valid_hours=int(body.get("valid_hours") or 2))
         return 201, {"ok": True, "grant": g}
+    if action == "grant/revoke":
+        g = X.revoke_grant(store, iid, str(body.get("grant_id") or ""))
+        return 201, {"ok": True, "revoked": g}
     if action == "workorder/formal":
         w = X.create_formal_workorder(store, iid, str(body.get("acceptance") or ""),
                                       required_capabilities=body.get("required_capabilities") or None)
