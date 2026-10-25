@@ -354,6 +354,8 @@ def handle_post(store: S.OsGoalStore, path: str,
         return _err(409, "duplicate_idempotency_key", str(exc))
     except C.ContractError as exc:
         return _err(422, "contract_violation", str(exc))
+    except ValueError as exc:
+        return _err(422, "bad_value", "字段类型/数值非法：%s" % exc)
     except S.LedgerError as exc:
         return _err(500, "ledger_error", str(exc))
 

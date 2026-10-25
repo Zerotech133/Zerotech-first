@@ -144,3 +144,31 @@ def test_api_consumer_deactivate_route(store):
     assert st == 201 and d["ok"] is True
     with __import__("pytest").raises(C.ContractError):
         X.real_claim(store, iid, "CONS-AUD")
+
+
+def test_consumer_reactivation_works(store):
+    iid, _ = setup(store)
+    X.deactivate_consumer(store, "CONS-AUD")
+    c = X.register_consumer(store, "CONS-AUD", kind="agent",
+                            capabilities=["artifact.generate", "test.run"])
+    assert c["status"] == "active" and c.get("reactivated") is True
+    X.risk_verdict(store, iid, "artifact.generate", consumer_id="CONS-AUD")
+    X.real_claim(store, iid, "CONS-AUD")
+
+
+def test_bad_numeric_field_returns_422_not_500(store):
+    import api_os_goal as A
+    iid, _ = setup(store)
+    st, d = A.handle_post(store, "/api/os/item/%s/grant/real" % iid,
+                          {"actions": ["artifact.generate"], "nonce": "nonce-audit-123",
+                           "valid_hours": "abc"})
+    assert st == 422 and d.get("error") == "bad_value", (st, d)
+
+
+def test_bad_ttl_returns_422_not_500(store):
+    import api_os_goal as A
+    iid, _ = setup(store)
+    st, d = A.handle_post(store, "/api/os/item/%s/approval/request" % iid,
+                          {"action": "publish", "consumer_id": "CONS-AUD",
+                           "ttl_minutes": "xx"})
+    assert st == 422 and d.get("error") == "bad_value", (st, d)
