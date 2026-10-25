@@ -38,6 +38,17 @@
     python -B tools/night_batch.py --until 06:30
     python -B tools/night_batch.py --dry-run          # 只看队列与计划，不执行
     python -B tools/night_batch.py --batch-xq 300 --xq-budget 1500
+
+白天调度参数（2026-10-26 EXEC-R27 · 计划 B；默认全关，显式传参才生效）
+--------------------------------------------------------------------
+  --xq-window HH:MM-HH:MM   只在该时段内跑 XQ 轮（支持跨午夜 22:00-06:00）；
+                            不传 = 不限窗口（旧行为）
+  --xq-min-jev N            JEV 待判积压 ≥N 时跳过 XQ 轮（计划 B 推荐 3000）；
+                            不传 = 不按积压跳过（旧行为）
+  --jev-only                完全跳过 XQ，只跑 JEV
+  计划 B 接线：白天主进程用 `--xq-window 08:00-10:00 --xq-min-jev 3000`（XQ 只在
+  早窗口且 JEV 清到 <3000 时才跑）；要彻底 JEV 优先则用 `--jev-only`。被跳过的
+  轮次逐轮打印 `XQ-SKIP <原因>`，START/END 打印生效策略与跳过轮次数，便于次日核验。
 """
 from __future__ import annotations
 
@@ -79,6 +90,15 @@ XQ_MIN_LIMIT = 30              # 自适应条数下限（宁可小步，不再�
 XQ_HARD_TIMEOUT_S = 1800.0     # 软收口失效时的最终保险
 BATCH_TIMEOUT_ALERT_STREAK = 2 # 连续 rc=124 达到该值写 ALERT 旗
 ALERT_DIR = ROOT / "jev-eval" / "alerts"
+
+# --- 2026-10-26 EXEC-R27（计划 B 白天调度；默认全关，显式传参才生效）--------
+# 背景（_audit_20261025\exec\E6-throughput-assessment.md §4/§5）：白天槽被 XQ
+# 分走约一半（JEV 日增仅 ~940 条），B 方案 = 白天优先 JEV、XQ 只在 08:00-10:00
+# 独立窗口跑，或 JEV 积压 <N（推荐 3000）才跑。
+# 注意：--xq-min-jev 的 argparse 默认值是 None 而不是 3000——当前 JEV 积压约
+# 1.8 万条，若默认生效会把 XQ 静默全停（等于改变旧行为，违背「缺省不加参数时
+# 与改造前一致」）。3000 作为计划 B 接线的**推荐值**，由启动命令显式传入。
+XQ_MIN_JEV_RECOMMENDED = 3000
 
 
 def stall_decision(stall_count: int, retries: int, backoff_s: float) -> tuple[bool, float]:
@@ -134,6 +154,76 @@ def log_looks_live(text: str) -> bool:
         elif "] END " in line:
             last_end = i
     return last_start >= 0 and last_start > last_end
+
+
+# --- 2026-10-26 EXEC-R27：白天调度纯函数（便于单测；不碰 IO）---------------
+def parse_xq_window(text: str) -> tuple[int, int]:
+    """解析 "HH:MM-HH:MM" → (起, 止) 的分钟数；支持跨午夜（22:00-06:00）。
+
+    非法格式抛 ValueError（main 转 argparse error rc=2，不进入批处理循环）。
+    起 == 止 视为全天窗口（24h）。
+    """
+    raw = (text or "").strip()
+    if "-" not in raw:
+        raise ValueError("缺少 '-'（应形如 08:00-10:00）：%r" % text)
+    left, _, right = raw.partition("-")
+
+    def _minutes(part: str) -> int:
+        part = part.strip()
+        hh, sep, mm = part.partition(":")
+        if not sep or not hh.isdigit() or not mm.isdigit():
+            raise ValueError("时刻应为 HH:MM：%r" % part)
+        h, m = int(hh), int(mm)
+        if not (0 <= h <= 23 and 0 <= m <= 59):
+            raise ValueError("时刻越界：%r" % part)
+        return h * 60 + m
+
+    return _minutes(left), _minutes(right)
+
+
+def in_xq_window(now: datetime, start_min: int, end_min: int) -> bool:
+    """当前时刻是否在 XQ 窗口内（起含、止不含；跨午夜按环绕处理）。"""
+    cur = now.hour * 60 + now.minute
+    start_min, end_min = int(start_min) % 1440, int(end_min) % 1440
+    if start_min == end_min:
+        return True
+    if start_min < end_min:
+        return start_min <= cur < end_min
+    return cur >= start_min or cur < end_min
+
+
+def xq_skip_reason(jev_only: bool, xq_window: tuple[int, int] | None,
+                   min_jev: int | None, now: datetime,
+                   jev_backlog: int) -> str | None:
+    """本轮是否跳过 XQ：返回人话原因（None = 允许跑）。纯函数，优先级：
+
+    ① `--jev-only` 全跳；② 不在 `--xq-window` 内；③ JEV 积压 ≥ `--xq-min-jev`。
+    积压读不到（-1）时不按阈值跳（宁跑勿误停，避免 DB 抖动把 XQ 永久停掉）。
+    """
+    if jev_only:
+        return "jev-only"
+    if xq_window is not None and not in_xq_window(now, xq_window[0], xq_window[1]):
+        return "outside-window(%02d:%02d-%02d:%02d)" % (
+            xq_window[0] // 60, xq_window[0] % 60,
+            xq_window[1] // 60, xq_window[1] % 60)
+    if (min_jev is not None and min_jev >= 0 and jev_backlog >= 0
+            and jev_backlog >= min_jev):
+        return "jev-backlog %d >= xq-min-jev %d" % (jev_backlog, min_jev)
+    return None
+
+
+def xq_policy_text(jev_only: bool, xq_window: tuple[int, int] | None,
+                   min_jev: int | None) -> str:
+    """START 日志用：把生效的 XQ 策略压成一行（默认参数时显示旧行为）。"""
+    parts = ["jev_only=%s" % ("on" if jev_only else "off")]
+    if xq_window is None:
+        parts.append("window=any")
+    else:
+        parts.append("window=%02d:%02d-%02d:%02d" % (
+            xq_window[0] // 60, xq_window[0] % 60,
+            xq_window[1] // 60, xq_window[1] % 60))
+    parts.append("min_jev=%s" % ("off" if min_jev is None else str(min_jev)))
+    return " ".join(parts)
 
 
 # --- 单实例锁实现（pid/host/start + 心跳；异常退出可回收）-------------------
@@ -365,7 +455,8 @@ def _stop_requested(stop: Path, cutoff: datetime) -> bool:
     return stop.exists() or datetime.now() >= cutoff
 
 
-def main(argv=None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """CLI 定义（2026-10-26 EXEC-R27 抽成函数，便于单测解析/默认值）。"""
     ap = argparse.ArgumentParser(description="夜间长跑：JEV 回填 + 雪球分类 串行轮转")
     ap.add_argument("--until", default="07:00", help="收工时刻 HH:MM（默认 07:00）")
     ap.add_argument("--batch-jev", type=int, default=600)
@@ -384,18 +475,50 @@ def main(argv=None) -> int:
     ap.add_argument("--stall-backoff", type=float, default=STALL_BACKOFF_DEFAULT,
                     help="退避基数秒数，按次数线性递增（默认 300）")
     ap.add_argument("--dry-run", action="store_true")
+    # ---- 2026-10-26 EXEC-R27（计划 B 白天调度；默认全关，不加参数=旧行为）----
+    ap.add_argument("--xq-window", default="", metavar="HH:MM-HH:MM",
+                    help="仅在此时段内跑 XQ 轮（如 08:00-10:00；支持跨午夜 "
+                         "22:00-06:00）；不传=不限窗口（旧行为）")
+    ap.add_argument("--xq-min-jev", type=int, default=None, metavar="N",
+                    help="JEV 待判积压 ≥N 时跳过 XQ 轮（计划 B 推荐 %d）；"
+                         "不传=不按积压跳过（旧行为）" % XQ_MIN_JEV_RECOMMENDED)
+    ap.add_argument("--jev-only", action="store_true",
+                    help="完全跳过 XQ，只跑 JEV（JEV 优先窗口/应急用）")
+    return ap
+
+
+def main(argv=None) -> int:
+    ap = build_parser()
     args = ap.parse_args(argv)
+    # EXEC-R27：新参数先校验，非法值 rc=2、不进循环/不读库/不写日志文件。
+    xq_win = None
+    if args.xq_window:
+        try:
+            xq_win = parse_xq_window(args.xq_window)
+        except ValueError as exc:
+            ap.error("--xq-window 非法（应形如 HH:MM-HH:MM，如 08:00-10:00）：%s" % exc)
+    if args.xq_min_jev is not None and args.xq_min_jev < 0:
+        ap.error("--xq-min-jev 必须 >=0（0=JEV>=0 时总跳过 XQ；不传=不按积压跳）")
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
 
+    xq_policy = xq_policy_text(args.jev_only, xq_win, args.xq_min_jev)
     log = Logger(args.log)
     cutoff = _cutoff(args.until)
     jev0, xq0 = backlog()
     if args.dry_run:
-        log("START 收工时间=%s | 起始积压 JEV=%s 雪球=%s | 批=%d/%d"
-            % (cutoff.strftime("%m-%d %H:%M"), jev0, xq0, args.batch_jev, args.batch_xq))
+        log("START 收工时间=%s | 起始积压 JEV=%s 雪球=%s | 批=%d/%d | XQ 策略: %s"
+            % (cutoff.strftime("%m-%d %H:%M"), jev0, xq0, args.batch_jev,
+               args.batch_xq, xq_policy))
+        if xq0 <= 0:
+            xq_now = "XQ 积压=0（无轮可跑）"
+        else:
+            _reason = xq_skip_reason(args.jev_only, xq_win, args.xq_min_jev,
+                                     datetime.now(), jev0)
+            xq_now = ("跳过（%s）" % _reason) if _reason else "允许跑"
         log("DRY-RUN 不执行；预计 JEV %.1f 小时、雪球 %.1f 小时（按 2s/1s 估）"
-            % (max(jev0, 0) * 2 / 3600.0, max(xq0, 0) * 1 / 3600.0))
+            " | XQ 当前判定: %s"
+            % (max(jev0, 0) * 2 / 3600.0, max(xq0, 0) * 1 / 3600.0, xq_now))
         return 0
 
     # 过渡期兜底（2026-10-25 EXEC-R13）：旧版实例没有锁，靠日志近动 + 未收工 START 判断。
@@ -418,13 +541,15 @@ def main(argv=None) -> int:
 
     try:
         log("START 收工时间=%s | 起始积压 JEV=%s 雪球=%s | 批=%d/%d | lock pid=%s"
+            " | XQ 策略: %s"
             % (cutoff.strftime("%m-%d %H:%M"), jev0, xq0, args.batch_jev,
-               args.batch_xq, os.getpid()))
+               args.batch_xq, os.getpid(), xq_policy))
         stop = Path(args.stop_file)
         rounds = 0
         stall = 0
         timeout_streak = 0
         timeout_alerted = False
+        xq_skipped = 0
         xq_limit = max(XQ_MIN_LIMIT, min(int(args.batch_xq), 600))
         last_jev, last_xq = jev0, xq0
         while datetime.now() < cutoff and rounds < args.max_rounds:
@@ -465,7 +590,16 @@ def main(argv=None) -> int:
                 break
 
             # ---- XQ：单轮条数预算 + 软预算到点主动收口 ----
-            if xq and xq > 0:
+            # EXEC-R27（计划 B）：--jev-only / --xq-window / --xq-min-jev 任一命中
+            # 则本轮跳过 XQ（JEV 已先行跑完），逐轮打印原因便于次日核验。
+            xq_skip = (xq_skip_reason(args.jev_only, xq_win, args.xq_min_jev,
+                                      datetime.now(), jev)
+                       if (xq and xq > 0) else None)
+            if xq and xq > 0 and xq_skip:
+                xq_skipped += 1
+                log("  XQ-SKIP %s | 剩余 JEV=%s 雪球=%s（按策略延后 XQ）"
+                    % (xq_skip, jev, xq))
+            elif xq and xq > 0:
                 t0 = time.time()
                 rc, tail, elapsed, stop_kind = _run_soft(
                     [PY, "-X", "utf8", "-B", str(XQ),
@@ -536,9 +670,11 @@ def main(argv=None) -> int:
 
         jev1, xq1 = backlog()
         log("END 轮数=%d | 剩余 JEV=%s 雪球=%s | 本轮完成 JEV=%s 雪球=%s"
+            " | XQ 跳过=%d 轮（策略: %s）"
             % (rounds, jev1, xq1,
                (jev0 - jev1) if (jev0 >= 0 and jev1 >= 0) else "?",
-               (xq0 - xq1) if (xq0 >= 0 and xq1 >= 0) else "?"))
+               (xq0 - xq1) if (xq0 >= 0 and xq1 >= 0) else "?",
+               xq_skipped, xq_policy))
         return 0
     finally:
         release_lock()

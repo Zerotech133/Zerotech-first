@@ -2,7 +2,8 @@
 """JEV 积压批量补判（历史新闻逐条过本地模型，每轮限量防过载）。
 
 news.jev 为空的条目按时间倒序取一批（--batch，默认 100），
-按 jev_judge_batch 内部上限 8 条/组分批调用（组间自动 0.8s 防限流），
+按 news_ai.jev_judge_batch 的 8 条/组上限分批调用（条间 sleep 由
+JEV_ITEM_SLEEP_S 控制；2026-10-26 EXEC-R28 起默认 0.2s，设 0.8 可回退），
 判完落库并打印剩余积压。单轮 100 条约 2-3 分钟，剩余积压
 靠计划任务多次运行逐步消化（或手动重复执行）。
 
@@ -11,6 +12,14 @@ news.jev 为空的条目按时间倒序取一批（--batch，默认 100），
 背景：08:57 实例 batch 500 × 15s timeout × 重试悬挂 2h+，PowerShell 宿主被
 任务 ExecutionTimeLimit 杀掉后 python 成孤儿继续跑，IgnoreNew 策略拒绝后续
 全部小时轮（0x800710E0 连锁）。deadline 保证 python 自身限时退出。
+
+吞吐开关（2026-10-26 EXEC-R28，均可 env 一键回退）：
+  · JEV_ITEM_SLEEP_S=0.2：每条之间的 sleep（原 news_ai 内硬编码 0.8s，
+    是云侧防限流遗留；本地 Ollama 无限流需求。设 0.8 即完全回退）。
+  · M3 暂停旗（C:\\Temp\\k266_m3.pause）存在时跳过 ollama_lock 租约让位：
+    夜间 jev_night 独占、没有 M3 要让，20s/300s 让位纯浪费；锁仍持有并续心跳。
+    设 JEV_LOCK_YIELD_PAUSED=0 恢复原让位逻辑（排障/回滚）。
+  · 不改变判定逻辑：reason/重采样/提示词/模型参数原样。
 
 告警（K-NEWS-001，A3）：
 结束后 left > --alert-threshold（默认 100）时经飞书推送告警；
@@ -24,6 +33,7 @@ import os
 import sqlite3
 import sys
 import time
+from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -31,6 +41,79 @@ import news_ai          # noqa: E402
 
 ALERT_STATE = os.path.join(HERE, "logs", "alert_state.json")
 ALERT_COOLDOWN_S = 6 * 3600   # 同类告警 6 小时内不重发
+
+# ---- 2026-10-26 EXEC-R28：吞吐计划 A 的两项零质量风险开关 -------------------
+# ① 条间 sleep：原由 news_ai.jev_judge_batch() 硬编码 0.8s（云侧防限流遗留），
+#    现由本文件的本地等价循环读取 JEV_ITEM_SLEEP_S（默认 0.2，设 0.8 回退）。
+#    不改 news_ai：jev_judge_batch 还被 jev_feed/news_collector/stock_analyze 调用，
+#    那些交互链保持原 0.8s 不变，本开关只作用于积压回填。
+# ② 租约让位：M3 暂停旗存在（夜间 jev_night 独占）时跳过 ollama_lock.tick()
+#    的 20s/300s 让位——没有 M3 要让，纯浪费；锁仍持有并续心跳。
+#    JEV_LOCK_YIELD_PAUSED=0 可恢复原让位逻辑（排障/回滚用）。
+JEV_ITEM_SLEEP_DEFAULT_S = 0.2
+JEV_ITEM_SLEEP_MAX_S = 5.0
+M3_PAUSE_FLAG = Path(os.environ.get("JEV_M3_PAUSE_FLAG", r"C:\Temp\k266_m3.pause"))
+LOCK_YIELD_PAUSED_ENV = "JEV_LOCK_YIELD_PAUSED"
+_JEV_BATCH_MAX = 8
+
+
+def _item_sleep_seconds() -> float:
+    """条间 sleep 秒数：JEV_ITEM_SLEEP_S（默认 0.2；非法值回落默认；夹在 [0,5]）。"""
+    raw = os.environ.get("JEV_ITEM_SLEEP_S")
+    if raw is None or not str(raw).strip():
+        return JEV_ITEM_SLEEP_DEFAULT_S
+    try:
+        value = float(str(raw).strip())
+    except (TypeError, ValueError):
+        return JEV_ITEM_SLEEP_DEFAULT_S
+    if value != value:          # NaN
+        return JEV_ITEM_SLEEP_DEFAULT_S
+    return max(0.0, min(JEV_ITEM_SLEEP_MAX_S, value))
+
+
+def m3_paused(flag_path: Path = M3_PAUSE_FLAG) -> bool:
+    """M3 暂停旗是否存在（k266_services 见旗不拉起 M3；jev_night 用旗独占夜间）。"""
+    try:
+        return flag_path.exists()
+    except OSError:
+        return False
+
+
+def _lease_yield_disabled() -> bool:
+    """JEV_LOCK_YIELD_PAUSED=0/false/no/off → 恢复原租约让位逻辑。"""
+    return str(os.environ.get(LOCK_YIELD_PAUSED_ENV, "1")).strip().lower() in (
+        "0", "false", "no", "off")
+
+
+def _should_skip_lease_yield(paused: bool, disabled: bool) -> bool:
+    """仅当 M3 暂停且未显式禁用时才跳过让位（两条分支可单测）。"""
+    return bool(paused) and not bool(disabled)
+
+
+def _judge_batch_sleep(items, sleep_s: float) -> dict:
+    """news_ai.jev_judge_batch() 的等价循环，仅把 0.8s 换成可配置 sleep_s。
+
+    与 news_ai 版逐行对齐：8 条上限、条间 sleep、失败重试一次、成功才收录。
+    EXEC-R28 的 writeScope 只允许改本文件，故就地实现；news_ai 其他调用方不变。
+    """
+    out = {}
+    for i, it in enumerate(items[:_JEV_BATCH_MAX]):
+        if i and sleep_s > 0:
+            time.sleep(sleep_s)
+        j = news_ai.jev_judge_one(it.get("title") or "", it.get("stocks") or [])
+        if j is None:
+            j = news_ai.jev_judge_one(it.get("title") or "", it.get("stocks") or [])
+        if j:
+            out[it["id"]] = j
+    return out
+
+
+def _locked_tick(lock_mod, purpose: str, paused: bool, disabled: bool) -> bool:
+    """持锁续期：M3 暂停时只 heartbeat 不让位；否则走 lock_mod.tick() 原逻辑。"""
+    if _should_skip_lease_yield(paused, disabled):
+        lock_mod.heartbeat()
+        return True
+    return lock_mod.tick(purpose)
 
 
 def _alert_ok(throttle):
@@ -81,6 +164,13 @@ def main():
     ap.add_argument("--alert-threshold", type=int, default=100,
                     help="剩余积压告警阈值（0=不告警）")
     args = ap.parse_args()
+    item_sleep = _item_sleep_seconds()
+    m3_is_paused = m3_paused()
+    yield_disabled = _lease_yield_disabled()
+    skip_yield = _should_skip_lease_yield(m3_is_paused, yield_disabled)
+    # 生效配置显式落日志，便于次日核对 EXEC-R28 是否真的生效（不写额外文件）。
+    print("BACKFILL cfg item_sleep=%.3fs m3_paused=%s lease_yield=%s"
+          % (item_sleep, m3_is_paused, "skip" if skip_yield else "normal"), flush=True)
     # 2026-10-16 审计：timeout=30 防与速报链写库竞争立刻抛 locked
     #（默认 5s 偏短；配合下方组级回滚兜底）
     db = sqlite3.connect(os.path.join(HERE, "news.db"), timeout=30)
@@ -113,12 +203,13 @@ def main():
     judged = 0
     deadline_hit = 0
     cloud_fail = 0      # K-STOCK-072：连续空判短路（2026-10-10）
+    _yield_skip_logged = False   # EXEC-R28：免让位只在首轮打印一次，防日志刷屏
     empty_streak = 0
     for i in range(0, len(items), 8):        # jev_judge_batch 单次上限 8
         if args.deadline and (time.time() - t0) >= args.deadline:
             deadline_hit = 1
             break
-        judges = news_ai.jev_judge_batch(items[i:i + 8])
+        judges = _judge_batch_sleep(items[i:i + 8], item_sleep)
         try:
             for nid, j in judges.items():
                 db.execute("UPDATE news SET jev=? WHERE id=?",
@@ -143,9 +234,15 @@ def main():
                 break
         else:
             empty_streak = 0
-        ollama_lock.heartbeat()
-        # 租约制（K-ORG-20261025-LOCK）：也让一手，M3 才不会被长期挤占
-        if not ollama_lock.tick("jev_backfill"):
+        if skip_yield:
+            # EXEC-R28：M3 暂停旗存在时不让位（无 M3 竞争，让位纯浪费）；锁仍持有。
+            ollama_lock.heartbeat()
+            if not _yield_skip_logged:
+                print("BACKFILL lock lease-yield skipped：M3 暂停旗存在（EXEC-R28）",
+                      flush=True)
+                _yield_skip_logged = True
+        elif not _locked_tick(ollama_lock, "jev_backfill", m3_is_paused, yield_disabled):
+            # 租约制（K-ORG-20261025-LOCK）：也让一手，M3 才不会被长期挤占
             print("BACKFILL lock lost: tick 重试 6 次未抢回，本轮收工", flush=True)
             break
     left = db.execute(
@@ -155,9 +252,9 @@ def main():
             and _alert_ok(throttle=True):
         alerted = 1 if alert_backlog(left, judged, deadline_hit) else 0
     print("BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d "
-          "cloud_fail=%d" % (
+          "cloud_fail=%d item_sleep=%.2f lease_yield=%s" % (
         judged, len(items), left, time.time() - t0, deadline_hit, alerted,
-        cloud_fail))
+        cloud_fail, item_sleep, "skip" if skip_yield else "normal"))
 
 
 if __name__ == "__main__":
