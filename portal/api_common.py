@@ -1144,6 +1144,35 @@ def _alert_business_day(value):
     return day
 
 
+def _alert_prev_weekday(day):
+    """日历不可用时的 fail-open 兜底：退到最近的周一至周五。"""
+    probe = day
+    while probe.weekday() >= 5:
+        probe -= datetime.timedelta(days=1)
+    return probe
+
+
+def _alert_acceptable_days(today):
+    """当期可接受业务日期集合 = {今天, 上一交易日}（2026-10-26 EXEC-R36）。
+
+    与 news_collector/alert_push.py 的 _acceptable_source_days 同一口径：
+    周末/节后开盘前 EOD 源天然只有上一交易日批次，不能按"business_date 必须
+    等于今天"误杀。trading_cal 只读 portal/data/trade_cal_open_days.json（进程内
+    缓存）；缺失/损坏 → fail-open 退回 weekday 口径，绝不因日历依赖弄死告警链。
+    """
+    days = {today}
+    prev = today - datetime.timedelta(days=1)
+    try:
+        news_dir = os.path.join(STATION, "news_collector")
+        if news_dir not in sys.path:
+            sys.path.insert(0, news_dir)
+        import trading_cal  # noqa: PLC0415  消费端同款只读交易日历
+        days.add(trading_cal.last_trading_day(prev))
+    except Exception:  # noqa: BLE001  日历不可用不能让告警链崩
+        days.add(_alert_prev_weekday(prev))
+    return days
+
+
 # 警报源新鲜窗口：源的完成时间戳距今多久内算"当期"。
 # 2026-10-26 OS-FIX-MEASURE 统一测量：默认 5 → **1080 分钟（18 小时）**。
 #   原 5 分钟与"每日一次 EOD 源"存在结构性冲突：AlertWatch 每 5 分钟跑一次，
@@ -1157,6 +1186,9 @@ def _alert_business_day(value):
 # 该文件本轮有并行 WIP 未同步默认值——消费端对 checked_at 只要求新鲜（响应时刻）、
 # 对源只要求 as_of 当日，因此服务端放宽到 18h 与消费端口径兼容（服务端已先按
 # 跨日剔除，放行到消费端的 as_of 必然落在当日）。
+# 2026-10-26 EXEC-R36：本窗口现在只用于「同日批次新鲜度 + as_of 超前容差」；
+# 跨日批次是否当期改由 business_date ∈ {今天, 上一交易日}（交易日历口径）判定，
+# 与 news_collector/alert_push.py 对齐，避免两端漂移。
 ALERT_FRESH_WINDOW = datetime.timedelta(
     minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "1080")))
 
@@ -1194,6 +1226,7 @@ def _alert_source_health():
     """
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
     today = now.date()
+    acceptable_days = _alert_acceptable_days(today)
     sources = {name: {"status": "error", "as_of": None, "business_date": None,
                       "reason": "missing"} for name in
                ("premarket", "chanlun", "nine_dim", "weak", "cross",
@@ -1223,22 +1256,25 @@ def _alert_source_health():
         day = _alert_business_day(raw_day)
         anchor = producer_time(raw_time)
         biz = day.isoformat() if day is not None else None
+        anchor_day = (anchor.astimezone(now.tzinfo).date()
+                      if anchor is not None else None)
         if day is None:
             mark(name, "error", "invalid_schema")
         elif day > today:
             mark(name, "error", "future_anchor", business_date=biz)
         elif anchor is None:
             mark(name, "stale", "unproven_completion", business_date=biz)
-        elif anchor.astimezone(now.tzinfo).date() < day:
+        elif anchor_day < day:
             mark(name, "error", "invalid_anchor", business_date=biz)
-        elif anchor > now + ALERT_FRESH_WINDOW:
+        elif anchor_day > today or anchor > now + ALERT_FRESH_WINDOW:
             mark(name, "error", "future_anchor", business_date=biz)
-        elif (day != today or anchor.astimezone(now.tzinfo).date() != today or
-              now - anchor > ALERT_FRESH_WINDOW):
-            # 2026-10-26 统一测量：窗口默认 18h =「当日 EOD 批次即当期」，覆盖
-            # 每日一次 EOD 源的真实节奏（原 5 分钟与生产节奏结构性冲突，导致
-            # AlertWatch 按设计长期 rc=3 拒跑）。跨日一律 stale（day/anchor 日期
-            # 不等于 today），不会把昨天/非交易日的批次冒充当期。
+        elif day not in acceptable_days:
+            # 2026-10-26 EXEC-R36：business_date 只允许「今天 ∪ 上一交易日」；
+            # 更早 = 真断更仍拒收（周末/节后开盘前的上一交易日 EOD 批次属正常）。
+            mark(name, "stale", "stale_anchor", anchor, business_date=biz)
+        elif day == today and now - anchor > ALERT_FRESH_WINDOW:
+            # 同日批次仍守 18h 新鲜窗（"当日旧批次不当期"）；跨日批次由
+            # business_date 在当期集合内放行，不再按 age 误杀上一交易日 EOD。
             mark(name, "stale", "stale_anchor", anchor, business_date=biz)
         else:
             mark(name, "empty" if empty else "ok", None, anchor,
@@ -1309,32 +1345,36 @@ def _alert_source_health():
             dated("nine_dim", nine["trade_date"], generated,
                   empty=n_alert == 0)
 
-    weak_paths = [path for path in glob.glob(os.path.join(
-        STATION, "reports", "weak_track_*.jsonl"))
-                  if ".closed_" not in os.path.basename(path)]
-    if not weak_paths:
-        mark("weak", "stale", "unproven_completion")
+    # 2026-10-26 EXEC-R36：修正顺序 bug——**先读新 marker**（weak_scan.py 成功
+    # 出口原子写的整轮完成证据），再回退旧 jsonl 流。原实现先 glob
+    # weak_track_*.jsonl，为空直接 stale 并 return，永远走不到 marker 读取；
+    # 即使周一 15:35 WeakScan 写了新 marker 也仍判 unproven。
+    marker = _read_weak_scan_marker()
+    print("[alert_health] weak source: marker=%s"
+          % ("hit" if marker else "miss"))
+    if marker and marker.get("trade_date") and marker.get("completed_at"):
+        dated("weak", marker.get("trade_date"), marker.get("completed_at"),
+              empty=marker.get("case_count") == 0)
     else:
-        try:
-            for path in weak_paths:
-                with open(path, encoding="utf-8") as handle:
-                    rows = [json.loads(line) for line in handle if line.strip()]
-                if not rows or not all(isinstance(row, dict) and row.get("ts")
-                                       for row in rows):
-                    raise TypeError("invalid weak status stream")
-            # 2026-10-26 OS-FIX-MEASURE2：单条案例 ts 只能证明"该案写过"，
-            # 不能证明"整轮扫描跑完"（零命中扫描连案例都没有）。只认
-            # weak_scan.py 成功出口原子写的 weak_scan_last.json；且要求
-            # weak_track_*.jsonl 仍在案（标记不能凭空复活已删案例流）。
-            marker = _read_weak_scan_marker()
-            if marker and marker.get("trade_date") and marker.get("completed_at"):
-                dated("weak", marker.get("trade_date"),
-                      marker.get("completed_at"),
-                      empty=marker.get("case_count") == 0)
-            else:
+        weak_paths = [path for path in glob.glob(os.path.join(
+            STATION, "reports", "weak_track_*.jsonl"))
+                      if ".closed_" not in os.path.basename(path)]
+        if not weak_paths:
+            mark("weak", "stale", "unproven_completion")
+        else:
+            try:
+                for path in weak_paths:
+                    with open(path, encoding="utf-8") as handle:
+                        rows = [json.loads(line) for line in handle
+                                if line.strip()]
+                    if not rows or not all(isinstance(row, dict) and row.get("ts")
+                                           for row in rows):
+                        raise TypeError("invalid weak status stream")
+                # 旧案例流只能证明"案例写过"，不能证明"整轮扫描完成"（零命中
+                # 扫描无案例）；无 marker 时维持 unproven，等 weak_scan 写 marker。
                 mark("weak", "stale", "unproven_completion")
-        except (OSError, UnicodeError, ValueError, TypeError):
-            mark("weak", "error", "invalid_json")
+            except (OSError, UnicodeError, ValueError, TypeError):
+                mark("weak", "error", "invalid_json")
 
     try:
         if QBT_DIR not in sys.path:
