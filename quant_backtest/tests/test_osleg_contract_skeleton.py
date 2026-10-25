@@ -98,5 +98,5 @@ def test_contract_doc_exists():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
-    doc = root / "outputs" / "2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md"
+    doc = root / "docs" / "plans" / "2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md"
     assert doc.is_file(), "契约草案缺失：%s" % doc
