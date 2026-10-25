@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>零界 · 语音审批台</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  .wrap{max-width:860px;margin:0 auto;padding:18px 20px 90px}
+  .big{background:#fff;border:1px solid #dbe5ee;border-radius:16px;padding:18px 20px;margin:12px 0;box-shadow:0 2px 10px rgba(20,50,80,.05)}
+  .say{font-size:19px;line-height:1.65;color:#153c55;min-height:64px}
+  .sub{color:#5a6f83;font-size:13px;line-height:1.6}
+  .banner{border-left:4px solid #936224;background:#faf3e6;padding:10px 14px;border-radius:8px;margin:10px 0;font-size:13px;color:#6a4a1f}
+  .mic{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  button{cursor:pointer;background:#0e7490;color:#fff;border:0;border-radius:12px;padding:14px 22px;font:700 16px inherit}
+  button.ghost{background:#fff;color:#0e7490;border:1px solid #bcd8e2;padding:10px 16px;font-size:14px}
+  button.warn{background:#b3402e}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  #mic{background:#b3402e;min-width:180px}
+  #mic.listening{background:#227a4b;animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 8px rgba(34,122,75,.18)}}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  input{font:inherit;padding:11px 12px;border:1px solid #bfd6e2;border-radius:10px;min-width:220px;flex:1}
+  .steps{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+  .step{font-size:12px;padding:4px 10px;border-radius:20px;background:#eef2f5;color:#54677a;border:1px solid #dbe5ee}
+  .step.on{background:#0e7490;color:#fff;border-color:#0e7490}
+  .step.done{background:#e9f5ee;color:#227a4b;border-color:#bcdcc9}
+  .log{max-height:190px;overflow:auto;font-size:13px;color:#44586b;background:#f7fafc;border:1px solid #e3ecf2;border-radius:10px;padding:10px 12px}
+  .log div{padding:2px 0}
+  .v{font-weight:800}
+  .v.PASS,.v.ISOLATED_ONLY,.v.CONTROLLED_L2_APPROVED{color:#227a4b}
+  .v.BLOCKED,.v.FAIL{color:#b3402e}
+  #err{color:#b3402e;font-size:13px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>语音审批台 · 说着走完全流程</h1>
+  <p class="sub">点一下「🎤 说话」说一句，我识别意图→回读确认→执行→报告结果。不需要看懂表单。支持方言口语（要得/巴适/要不得/晓得了）。</p>
+  <div class="banner">边界：这是 C1 审批通道，<b>只记录受控 outbox，不实际外发/发布</b>。真实外发属 C2，另需授权。</div>
+
+  <section class="big">
+    <div class="steps" id="steps">
+      <span class="step" data-s="1">① 载入事项</span><span class="step" data-s="2">② 注册消费者</span>
+      <span class="step" data-s="3">③ 申请审批</span><span class="step" data-s="4">④ 本人批准</span>
+      <span class="step" data-s="5">⑤ 记录 outbox</span><span class="step" data-s="6">⑥ 看审计链</span>
+    </div>
+    <div class="say" id="say">说一句话开始：例如「载入事项 202610250003」，或直接打开带 ?item= 的链接。</div>
+    <div class="mic">
+      <button id="mic">🎤 说话</button>
+      <button id="stop" class="ghost" hidden>⏹ 停止</button>
+      <button id="replay" class="ghost">🔊 重听提示</button>
+      <span class="sub" id="asr">识别方式检测中…</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <input id="txt" placeholder="也可以打字：注册消费者，叫小灵 / 申请发布审批 / 批准 / 确认执行 / 记录 outbox / 看链">
+      <button id="send" class="ghost">发送</button>
+    </div>
+    <div id="err"></div>
+  </section>
+
+  <section class="big">
+    <h2 style="margin:0 0 6px;font-size:16px">结果</h2>
+    <div class="sub" id="item">事项：（未载入）</div>
+    <div class="sub" id="consumer">消费者：（未注册）</div>
+    <div class="sub" id="approval">审批单：（无）</div>
+    <div class="sub" id="outbox">outbox：（无）</div>
+    <div class="v" id="verdict" style="margin-top:8px">审计链：—</div>
+    <div class="log" id="log"></div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const H={'Content-Type':'application/json','X-OS-Page':'approval'};
+let ITEM=new URLSearchParams(location.search).get('item')||'';
+let CONSUMER='', APPROVALS=[], CHAIN=null, OUTBOX=null;
+let PENDING_CONFIRM=null, BUSY=false, RECORDING=false, RECORD_STOP=null;
+let ASR_MODE='local', SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const ACTIONS={'发布':'publish','外发':'external.send','发送':'external.send','生产':'production.deploy','部署':'production.deploy','交易':'trade.execute'};
+const ECHO_RE=/我理解|审批台|请说|说一句|边界|受控|outbox/;
+
+function logline(s){ const d=document.createElement('div'); d.textContent=s; $('log').appendChild(d); $('log').scrollTop=$('log').scrollHeight; }
+function say(text, noSpeak){ $('say').textContent=text; logline('🤖 '+text); if(!noSpeak) speak(text); }
+function speak(text){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.05; speechSynthesis.speak(u); }catch(e){} }
+function err(m){ $('err').textContent=String(m||''); logline('⚠️ '+m); }
+function clearErr(){ $('err').textContent=''; }
+async function api(path, body, method){
+  const opt={method:method||'GET',headers:H};
+  if(method==='POST'){ opt.body=JSON.stringify(body||{}); }
+  const r=await fetch(path,opt);
+  const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));
+  if(!r.ok || d.ok===false) throw new Error((d.error||('HTTP '+r.status))+': '+(d.message||''));
+  return d;
+}
+function norm(t){ return String(t||'').replace(/[，。！？、；：,.!?;:\s]/g,'').replace(/要得|要的|要得嘛/g,'好').replace(/巴适/g,'满意').replace(/晓得了|晓得/g,'知道').replace(/莫得/g,'没有').replace(/啷个/g,'怎么'); }
+function isEcho(t){ return ECHO_RE.test(String(t||'')); }
+
+async function ensureAsr(){
+  try{
+    const d=await (await fetch('/api/os/asr/status')).json();
+    if(d&&d.engine==='sensevoice_local'){
+      ASR_MODE='local';
+      $('asr').textContent=d.loaded?'本地高精度 · SenseVoice（离线）':'本地模型加载中…';
+      if(!d.loaded){ for(let i=0;i<30;i++){ await new Promise(r=>setTimeout(r,1000)); const st=await (await fetch('/api/os/asr/status')).json(); if(st.loaded){ $('asr').textContent='本地高精度 · SenseVoice（离线）'; break; } } }
+      return;
+    }
+  }catch(e){}
+  $('asr').textContent='浏览器识别（回退）'; ASR_MODE='browser';
+}
+/* ---- 音频：16k WAV → /api/os/asr ---- */
+function resampleTo16k(buf, rate){
+  if(Math.abs(rate-16000)<1) return buf;
+  const ratio=rate/16000, len=Math.floor(buf.length/ratio), out=new Float32Array(len);
+  for(let i=0;i<len;i++){ const x=i*ratio, i0=Math.floor(x), i1=Math.min(buf.length-1,i0+1), f=x-i0; out[i]=buf[i0]*(1-f)+buf[i1]*f; }
+  return out;
+}
+function encodeWav16k(samples){
+  const len=samples.length, ab=new ArrayBuffer(44+len*2), dv=new DataView(ab);
+  const w=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,'RIFF'); dv.setUint32(4,36+len*2,true); w(8,'WAVE'); w(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,16000,true); dv.setUint32(28,32000,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  w(36,'data'); dv.setUint32(40,len*2,true);
+  for(let i=0;i<len;i++){ let v=Math.max(-1,Math.min(1,samples[i])); dv.setInt16(44+i*2, v<0?v*0x8000:v*0x7FFF, true); }
+  return ab;
+}
+function abToB64(ab){ const b=new Uint8Array(ab); let bin=''; for(let i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(bin); }
+async function postAsr(b64){ const r=await fetch('/api/os/asr',{method:'POST',headers:H,body:JSON.stringify({audio_b64:b64,lang:'zh'})}); const d=await r.json().catch(()=>({})); if(!r.ok||d.ok===false) throw new Error(d.error||('ASR HTTP '+r.status)); return String(d.text||'').trim(); }
+async function recordTurn(){
+  if(!navigator.mediaDevices||!window.AudioContext) return browserListen();
+  let stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ err('麦克风打不开：'+(e.name||e.message)); say('麦克风没打开，请点地址栏允许麦克风后刷新；也可以打字。'); return null; }
+  $('mic').classList.add('listening'); $('mic').textContent='🎤 我在听…'; $('stop').hidden=false; say('我在听，直接说，说完自动停。', true);
+  return new Promise(resolve=>{
+    const ctx=new AudioContext(); if(ctx.state==='suspended') ctx.resume();
+    const rate=ctx.sampleRate, src=ctx.createMediaStreamSource(stream), proc=ctx.createScriptProcessor(4096,1,1);
+    const chunks=[]; let lastLoud=0, loudSeen=false, stopped=false; const t0=performance.now();
+    const cleanup=()=>{ RECORDING=false; RECORD_STOP=null; $('mic').classList.remove('listening'); $('mic').textContent='🎤 说话'; $('stop').hidden=true; try{proc.disconnect();src.disconnect();ctx.close();}catch(e){} try{stream.getTracks().forEach(t=>t.stop());}catch(e){} };
+    RECORDING=true; RECORD_STOP=()=>{ if(!stopped){stopped=true;resolve(null);cleanup();} };
+    const finish=async()=>{ if(stopped) return; stopped=true; cleanup();
+      try{
+        const all=new Float32Array(chunks.reduce((a,c)=>a+c.length,0)); let off=0; chunks.forEach(c=>{all.set(c,off); off+=c.length;});
+        if(!loudSeen || all.length<rate*0.2){ say('没听到声音，请再说一次。'); resolve(null); return; }
+        const wav=encodeWav16k(resampleTo16k(all,rate));
+        $('asr').textContent='识别中…';
+        let text=null;
+        try{ text=await postAsr(abToB64(wav)); }catch(e){ ASR_MODE='browser'; $('asr').textContent='本地识别失败，转浏览器'; resolve(await browserListen()); return; }
+        $('asr').textContent='本地高精度 · SenseVoice（离线）';
+        if(!text){ say('没听清，请再说一次。'); resolve(null); return; }
+        resolve(text);
+      }catch(e){ say('识别失败：'+e.message); resolve(null); }
+    };
+    proc.onaudioprocess=e=>{ const d=new Float32Array(e.inputBuffer.getChannelData(0)); chunks.push(d);
+      let sum=0; for(let i=0;i<d.length;i++) sum+=d[i]*d[i]; const rms=Math.sqrt(sum/d.length), now=performance.now();
+      if(rms>0.004){ loudSeen=true; lastLoud=now; } };
+    src.connect(proc); proc.connect(ctx.destination);
+    const watch=setInterval(()=>{ const now=performance.now();
+      if(loudSeen && now-lastLoud>1100) finish();
+      else if(now-t0>15000 || (!loudSeen && now-t0>8000)) finish();
+    },120);
+    RECORD_STOP=()=>{ if(!stopped){ stopped=true; clearInterval(watch); resolve(null); cleanup(); } };
+  });
+}
+function browserListen(){
+  return new Promise(resolve=>{
+    if(!SR){ say('此浏览器不支持语音识别，请用 Edge/Chrome，或打字。'); resolve(null); return; }
+    const r=new SR(); r.lang='zh-CN'; r.interimResults=false; r.maxAlternatives=5; let got=false;
+    r.onresult=e=>{ got=true; resolve((e.results[0][0]||{}).transcript||''); };
+    r.onerror=e=>{ err('语音识别错误：'+e.error); if(!got) resolve(null); };
+    r.onend=()=>{ if(!got) resolve(null); };
+    try{ r.start(); }catch(e){ err('浏览器识别启动失败'); resolve(null); }
+  });
+}
+async function listen(){ if(BUSY) return; BUSY=true; clearErr();
+  try{ const t=ASR_MODE==='browser'?await browserListen():await recordTurn(); if(t&&!isEcho(t)) await handleCommand(t); else if(t) say('（听到的是我自己的话，略过）', true); }
+  finally{ BUSY=false; }
+}
+
+/* ---- 意图 → 动作 ---- */
+function stepUI(state){
+  const map={1:'load',2:'consumer',3:'request',4:'decide',5:'outbox',6:'chain'};
+  const order=['load','consumer','request','decide','outbox','chain'];
+  const reached=state? order.indexOf(state):0;
+  document.querySelectorAll('#steps .step').forEach(el=>{ const idx=order.indexOf(map[el.dataset.s]); el.className='step'+(idx<reached?' done':(idx===reached?' on':'')); });
+}
+function consumerState(){ return CONSUMER? 'ready':'none'; }
+function pendingApproval(){ return APPROVALS.find(a=>a.status==='pending') || null; }
+function approvedApproval(){ return APPROVALS.filter(a=>a.status==='approved').slice(-1)[0] || null; }
+function guide(){
+  if(!ITEM){ stepUI('load'); say('请先载入事项：说「载入事项 202610250003」，或打开带 ?item= 的链接。'); return; }
+  if(!CONSUMER){ stepUI('consumer'); say('事项已载入。请说「注册消费者，叫小灵」。'); return; }
+  if(!pendingApproval()){ stepUI('request'); say('消费者已就绪。请说「申请发布审批」。'); return; }
+  stepUI('decide'); say('有审批单 ' + pendingApproval().approval_id + ' 待您裁决。请说「批准」，我会再确认一次。');
+}
+async function loadItem(speakResult){
+  if(!ITEM) return;
+  try{
+    const [ch, al]=await Promise.all([api('/api/os/item/'+encodeURIComponent(ITEM)+'/chain/c1'), api('/api/os/item/'+encodeURIComponent(ITEM)+'/approvals')]);
+    CHAIN=ch; APPROVALS=al.approvals||[];
+    $('item').textContent='事项：'+ITEM;
+    const latest=APPROVALS.slice(-1)[0];
+    $('approval').textContent='审批单：'+(latest?latest.approval_id+' · '+latest.action+' · '+latest.status:'（无）');
+    $('verdict').textContent='审计链：'+(ch.verdict||'—');
+    $('verdict').className='v '+(ch.verdict||'');
+    if(pendingApproval()) stepUI('decide');
+    else if(approvedApproval()) stepUI('outbox');
+    else stepUI('request');
+    if(speakResult){ say('已载入 '+ITEM+'。审计链：'+(ch.verdict||'—')+'。'); }
+  }catch(e){ err(e.message); }
+}
+async function registerConsumer(name){
+  const id='CONS-VOICE-'+String(Date.now()).slice(-4);
+  const d=await api('/api/os/consumer/register',{consumer_id:id,kind:'agent',display_name:name||'语音小灵',capabilities:['artifact.generate']},'POST');
+  CONSUMER=d.consumer.consumer_id; $('consumer').textContent='消费者：'+CONSUMER+'（'+(name||'语音小灵')+'）';
+  say('消费者注册好了：'+CONSUMER+'。下一步说「申请发布审批」。');
+}
+async function requestApproval(actionWord, summary){
+  const action=ACTIONS[actionWord]||'publish';
+  if(!CONSUMER){ say('先注册消费者：说「注册消费者，叫小灵」。'); return; }
+  const d=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/approval/request',{action,consumer_id:CONSUMER,summary:summary||('语音发起：'+action),ttl_minutes:30},'POST');
+  const aid=d.approval.approval_id;
+  say('审批申请已提交：'+aid+'。请说「批准」，我会再向您确认一次。');
+  await loadItem(false);
+}
+function confirmApprove(decision){
+  const apr=pendingApproval(); if(!apr){ say('现在没有待批的审批单，请说「申请发布审批」。'); return; }
+  PENDING_CONFIRM={type:'decide',aid:apr.approval_id,decision};
+  say('确认'+(decision==='approved'?'批准':'拒绝')+' '+apr.approval_id+'（'+apr.action+'，'+(apr.summary||'')+'）吗？说「确认执行」或「取消」。');
+}
+async function doDecide(){
+  if(!PENDING_CONFIRM) return;
+  const {aid,decision}=PENDING_CONFIRM; PENDING_CONFIRM=null;
+  const nonce='voice-'+Date.now()+'-'+Math.floor(Math.random()*1e6);
+  const d=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/approval/decide',{approval_id:aid,decision,nonce,note:'语音确认（本机语音审批台）'},'POST');
+  say((decision==='approved'?'已批准：':'已拒绝：')+aid+'。'+(decision==='approved'?'下一步说「记录 outbox」。':''));
+  await loadItem(false);
+}
+async function doOutbox(){
+  const apr=approvedApproval(); if(!apr){ say('还没有已批准的审批单，请先说「批准」。'); return; }
+  const d=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/l2/outbox',{consumer_id:apr.consumer_id||CONSUMER,approval_id:apr.approval_id,action:apr.action,summary:apr.summary||'语音审批 outbox',payload_text:'语音确认的受控 outbox；本页不实际外发'},'POST');
+  OUTBOX=d.outbox; $('outbox').textContent='outbox：'+OUTBOX.sha256.slice(0,24)+'…（external_sent=false）';
+  say('outbox 已记录，没有外发。最后说「看链」。');
+  await loadItem(false);
+}
+async function showChain(){
+  await loadItem(false);
+  const v=CHAIN?CHAIN.verdict:'—';
+  say('审计链结果是 '+v+'。'+(v==='CONTROLLED_L2_APPROVED'?'全流程完成：注册、申请、批准、outbox、审计链都对上了。':'还差步骤，请按提示继续。'));
+  $('verdict').textContent='审计链：'+v;
+}
+
+async function handleCommand(raw){
+  const t=String(raw||''), s=norm(t);
+  logline('🗣️ '+t);
+  if(/取消|算了|不做了/.test(s)){ PENDING_CONFIRM=null; say('好，取消。'); return; }
+  if(/确认|确定|执行/.test(s) && PENDING_CONFIRM){ await doDecide(); return; }
+  if(/看链|查看链|结果|刷新|审计/.test(s)){ await showChain(); return; }
+  if(/记录|存档|留痕|outbox/i.test(s)){ await doOutbox(); return; }
+  if(/批准|同意|通过/.test(s)){ confirmApprove('approved'); return; }
+  if(/拒绝|驳回|不批|不同意/.test(s)){ confirmApprove('denied'); return; }
+  const req=/申请|发起/.exec(s) || /发布|外发|生产|交易/.test(s)? (s.match(/申请|发起/)||[null])[0]:null;
+  if(/申请|发起/.test(s)){ const m=s.match(/(发布|外发|发送|生产|部署|交易)/); const sum=(t.split(/摘要|内容|标题|说明/)[1]||'').trim(); await requestApproval(m?m[1]:'发布', sum); return; }
+  if(/注册|创建/.test(s) && /消费者|助手|机器人|小灵/.test(s)){ const m=t.match(/(?:叫|名为|名字是|名称是)\s*([^\s，。,.!?]{1,20})/); await registerConsumer(m?m[1]:'语音小灵'); return; }
+  if(/载入|打开|切换/.test(s) && /事项|item/i.test(s)){
+    const m=s.match(/(\d{4})[年\-]?(\d{2})[月\-]?(\d{2})[日\-]?(\d{1,4})/);
+    if(m){ ITEM='ITM-'+m[1]+m[2]+m[3]+'-'+String(m[4]).padStart(4,'0'); $('item').textContent='事项：'+ITEM; await loadItem(true); return; }
+    say('请说事项编号，例如：载入事项 202610250003。'); return;
+  }
+  if(!ITEM){ say('请先载入事项。点页面上的提示，或说「载入事项 202610250003」。'); return; }
+  say('我没听懂这句。可以说：注册消费者 / 申请发布审批 / 批准 / 确认执行 / 记录 outbox / 看链。');
+}
+
+$('mic').onclick=()=>{ if(RECORDING){ RECORD_STOP&&RECORD_STOP(); return; } listen(); };
+$('stop').onclick=()=>{ RECORD_STOP&&RECORD_STOP(); if(PENDING_CONFIRM) PENDING_CONFIRM=null; };
+$('replay').onclick=()=>speak($('say').textContent.replace(/^🤖\s*/,''));
+$('send').onclick=()=>{ const v=$('txt').value.trim(); if(!v) return; $('txt').value=''; handleCommand(v).catch(e=>err(e.message)); };
+$('txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('send').click(); } });
+(async()=>{ await ensureAsr();
+  $('item').textContent='事项：'+(ITEM||'（未载入）');
+  if(ITEM){ await loadItem(true); guide(); }
+  else say('语音审批台就绪。请说「载入事项 202610250003」，或打开带 ?item= 的链接。');
+})();
+</script>
+</body>
+</html>
