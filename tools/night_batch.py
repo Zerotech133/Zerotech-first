@@ -20,7 +20,7 @@
 --------
   · 只调这两个既有脚本，不直接写库
   · 到点（默认 07:00，赶在晨报前）自动收工；也可放停止旗文件提前收
-  · 连续两轮两条队列都没推进 → 判定卡死并退出，不做无效空转
+  · 连续无推进 → 线性退避重试（默认 3 次、基数 300s），用尽仍无进展才退出
   · 每轮落一行日志（含两条队列剩余量），收工写汇总
 
 用法：
@@ -47,6 +47,21 @@ JEV = ROOT / "news_collector" / "jev_backfill.py"
 XQ = ROOT / "quant_backtest" / "xq_classify.py"
 DEFAULT_LOG = r"C:\Temp\night_batch.log"
 DEFAULT_STOP = r"C:\Temp\night_batch.stop"
+STALL_RETRIES_DEFAULT = 3      # 连续无推进的重试次数（超过才退出）
+STALL_BACKOFF_DEFAULT = 300.0  # 退避基数秒数（按次数线性递增）
+STALL_SLEEP_CHUNK = 30.0       # 退避分片，便于响应停止旗与收工时间
+
+
+def stall_decision(stall_count: int, retries: int, backoff_s: float) -> tuple[bool, float]:
+    """连续无推进时的处置：返回 (是否继续重试, 本次退避秒数)。
+
+    2026-10-25（K-ORG-20261025-NIGHTBATCH）：原逻辑"连续 2 轮无推进即退出"，
+    一次瞬时故障（云侧空返 + 与 M3 抢 ollama 锁）就让 2 万条积压停摆 1 小时。
+    改为线性退避重试：第 n 次无推进等 n×base 秒再试，用尽上限才退出。
+    """
+    if stall_count < max(1, int(retries)):
+        return True, max(0.0, float(backoff_s) * max(1, stall_count))
+    return False, 0.0
 
 
 def _count(db: Path, sql: str) -> int:
@@ -118,6 +133,10 @@ def main(argv=None) -> int:
     ap.add_argument("--log", default=DEFAULT_LOG)
     ap.add_argument("--stop-file", default=DEFAULT_STOP)
     ap.add_argument("--max-rounds", type=int, default=200)
+    ap.add_argument("--stall-retries", type=int, default=STALL_RETRIES_DEFAULT,
+                    help="连续无推进的重试次数（默认 3，用尽才退出）")
+    ap.add_argument("--stall-backoff", type=float, default=STALL_BACKOFF_DEFAULT,
+                    help="退避基数秒数，按次数线性递增（默认 300）")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -174,9 +193,20 @@ def main(argv=None) -> int:
                 ((last_xq - xq2) if (last_xq >= 0 and xq2 >= 0) else 0)
         if moved <= 0:
             stall += 1
-            if stall >= 2:
-                log("STALL 连续 %d 轮无推进（JEV=%s 雪球=%s），退出避免空转"
+            retry, wait_s = stall_decision(stall, args.stall_retries, args.stall_backoff)
+            if not retry:
+                log("STALL 连续 %d 轮无推进（JEV=%s 雪球=%s），退避重试用尽，退出"
                     % (stall, jev2, xq2))
+                break
+            log("STALL 第 %d 轮无推进（JEV=%s 雪球=%s），退避 %.0fs 后重试（上限 %d 次）"
+                % (stall, jev2, xq2, wait_s, args.stall_retries))
+            end = time.time() + wait_s
+            while time.time() < end:
+                if stop.exists() or datetime.now() >= cutoff:
+                    break
+                time.sleep(min(STALL_SLEEP_CHUNK, max(0.1, end - time.time())))
+            if stop.exists() or datetime.now() >= cutoff:
+                log("STOP 退避期间收到停止旗或到达收工时间，退出")
                 break
         else:
             stall = 0
