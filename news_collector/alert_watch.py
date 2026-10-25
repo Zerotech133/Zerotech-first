@@ -14,13 +14,18 @@
 
 状态: outbox/alert_watch_state.json（跨日自动重置熔断计数；值不变零写盘）。
 调度: 计划任务每 30 分钟（数据源为盘前/盘后落盘快照，非交易时段静默比对）。
+非交易日（2026-10-26 起）: 按 trading_cal 整轮跳过——不 fetch / 不推送 / 不写
+    状态文件，只写 rc=0 + upstream_ok=None 心跳，与交易日上游故障明确区分。
 """
+import datetime
 import json
 import os
 import re
 import sys
 import time
 import urllib.request
+
+import trading_cal  # 同目录模块：脚本运行时脚本目录在 sys.path；测试亦插入 HERE
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -74,12 +79,15 @@ def _write_heartbeat(rc, upstream_ok, routes_count, note):
 
     心跳写失败只告警、不抛出——看门狗不能因为写自己的心跳而弄死主流程。
     字段：ts/epoch/rc/upstream_ok/routes_count/note（供健康卡判「本体是否在跑」）。
+    upstream_ok 取 None = 非交易日不适用（trade_cal 跳过路径，EOD 源本就不出数），
+    与 False（有交易日义务但上游不可信/拒跑）严格区分：健康卡据此把「按设计静默」
+    与「真故障」分开，避免周末被记成连续故障。
     """
     payload = {
         "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
         "epoch": int(time.time()),
         "rc": int(rc),
-        "upstream_ok": bool(upstream_ok),
+        "upstream_ok": None if upstream_ok is None else bool(upstream_ok),
         "routes_count": int(routes_count),
         "note": str(note)[:200],
     }
@@ -94,6 +102,32 @@ def _write_heartbeat(rc, upstream_ok, routes_count, note):
     except Exception as exc:  # noqa: BLE001  心跳写失败不得影响主流程
         print("ALERT_WATCH_WARN heartbeat write %s" % str(exc)[:100])
     return payload
+
+
+def _skip_reason(now=None):
+    """非交易日返回跳过原因，交易日返回 None。
+
+    now 缺省取本机当天（date.today()），便于测试注入任意日期。
+    周末/节假日不比对、不推送、不写状态文件：EOD 源按设计不在非交易日产出，
+    静默是预期行为而非上游故障；心跳另写 upstream_ok=None 让健康卡区分二者。
+    """
+    if now is None:
+        day = datetime.date.today()
+    elif isinstance(now, datetime.datetime):
+        day = now.date()
+    elif isinstance(now, datetime.date):
+        day = now
+    elif isinstance(now, str):
+        try:
+            day = datetime.date.fromisoformat(now)
+        except ValueError:
+            return None  # 无法判定日期 → fail-open 不跳过，按原路径跑
+    else:
+        return None
+    if trading_cal.is_trading_day(day):
+        return None
+    return ("non_trading_day: %s 非交易日（trade_cal/周末），"
+            "无 EOD 源预期，按设计静默" % day.isoformat())
 
 
 def _parse_num(name, value):
@@ -121,6 +155,14 @@ def _check(rule, prev, cur, prev_raw, cur_raw):
 
 def main():
     import alert_push
+    reason = _skip_reason()
+    if reason:
+        # 周末/节假日：EOD 源按设计不出数，不是上游故障。不写状态文件
+        # （保住最后一次交易日的熔断/基线），不推送；心跳 rc=0 + upstream_ok=None
+        # 让健康卡把「按设计静默」与「交易日上游不可信(rc=3, upstream_ok=False)」分开。
+        print("ALERT_WATCH_SKIP " + reason)
+        _write_heartbeat(0, None, 0, reason)
+        return 0
     today = time.strftime("%Y-%m-%d")
     try:
         with urllib.request.urlopen(ALERTS_URL, timeout=90) as r:
