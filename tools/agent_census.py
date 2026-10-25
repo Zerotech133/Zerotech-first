@@ -404,12 +404,202 @@ def render(card: dict, top: int) -> None:
         print("… 其余 %d 席（--top 调大或 --json 看全量）" % (len(card["rows"]) - shown))
 
 
+# ── 系统态势四卡（2026-10-26 K-ORG-20261026-BOARD2）──────────────────
+# 看板原先只答"人"（谁在干活），不答"系统"（任务/备份/夜间/健康）。
+# 这四块今天都出过事（任务审计误计、备份落后、夜间进程被杀、看板探活误判），
+# 所以收进首页顶部，随 30 分钟刷新自动更新。全部只读；任一数据源缺失 → 该卡降级"不可用"。
+
+import os  # 系统态势四卡需要读 TEMP
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_VAULT_DIR = _REPO_ROOT.parent / "_vault"
+# 运行日志统一落 C:\Temp（运维约定）；TEMP 指向用户临时目录，不能替代。
+_TMP_DIR = Path(r"C:\Temp") if Path(r"C:\Temp").is_dir() else Path(os.environ.get("TEMP") or r"C:\Temp")
+
+
+def _parse_night_log(text: str) -> dict:
+    """从 jev_night.log 文本提取：最近轮次、剩余积压、最近 judged、是否收尾。"""
+    import re as _re
+    out = {"round": None, "left": None, "judged": None, "batch": None, "ended": False}
+    for line in text.splitlines():
+        m = _re.search(r"ROUND (\d+) \| 剩余 JEV=(\d+)", line)
+        if m:
+            out["round"], out["left"] = int(m.group(1)), int(m.group(2))
+        m = _re.search(r"judged=(\d+)/(\d+)", line)
+        if m:
+            out["judged"], out["batch"] = int(m.group(1)), int(m.group(2))
+        if "窗口结束" in line or "收工" in line:
+            out["ended"] = True
+    return out
+
+
+def _parse_manifest_entries(text: str) -> int:
+    """MANIFEST.txt 的有效条目数（跳过注释/空行）。"""
+    return sum(1 for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#"))
+
+
+def _status_task() -> dict:
+    p = _REPO_ROOT / "portal" / "data" / "task_exit_audit" / "task_exit_summary.json"
+    try:
+        import json as _json
+        j = _json.loads(p.read_text(encoding="utf-8"))
+        fails = j.get("failures") or []
+        return {"ok": True, "failed": int(j.get("failed") or 0),
+                "names": [f.get("name") for f in fails[:3]],
+                "age_h": _age_hours_from_iso(j.get("generated_at"))}
+    except Exception as exc:  # noqa: BLE001  fail-open：卡片降级
+        return {"ok": False, "err": type(exc).__name__}
+
+
+def _status_backup() -> dict:
+    try:
+        dirs = [d for d in _VAULT_DIR.iterdir()
+                if d.is_dir() and len(d.name) == 10 and d.name[4] == "-" and d.name[7] == "-"]
+        if not dirs:
+            return {"ok": False, "err": "无日期快照"}
+        latest = sorted(dirs, key=lambda d: d.name)[-1]
+        man = latest / "MANIFEST.txt"
+        entries = _parse_manifest_entries(man.read_text(encoding="utf-8")) if man.is_file() else 0
+        age_h = (time.time() - man.stat().st_mtime) / 3600.0 if man.is_file() else None
+        offsite = _REPO_ROOT.parent / "_offsite"
+        has_offsite = bool(list(offsite.glob("*-offsite.txt"))) if offsite.is_dir() else False
+        return {"ok": True, "date": latest.name, "entries": entries,
+                "age_h": age_h, "offsite": has_offsite}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "err": type(exc).__name__}
+
+
+def _status_night() -> dict:
+    log = _TMP_DIR / "jev_night.log"
+    pause = _TMP_DIR / "k266_m3.pause"
+    try:
+        text = log.read_text(encoding="utf-8", errors="replace") if log.is_file() else ""
+        info = _parse_night_log(text)
+        info["ok"] = bool(text)
+        info["pause"] = pause.is_file()
+        info["age_min"] = ((time.time() - log.stat().st_mtime) / 60.0) if log.is_file() else None
+        return info
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "err": type(exc).__name__}
+
+
+def _status_health() -> dict:
+    """健康卡：优先读 30 分钟内的缓存，否则跑一次生成器（只读）。"""
+    import json as _json
+    import subprocess
+    cache = _TMP_DIR / "health_card_cache.json"
+    try:
+        if cache.is_file():
+            age = time.time() - cache.stat().st_mtime
+            if age < 1800:
+                j = _json.loads(cache.read_text(encoding="utf-8"))
+            else:
+                j = None
+        else:
+            j = None
+        if j is None:
+            gen = _REPO_ROOT / "tools" / "gen_health_card.py"
+            r = subprocess.run([sys.executable, "-B", str(gen)], capture_output=True,
+                               timeout=90, cwd=str(_REPO_ROOT))
+            j = _json.loads(r.stdout.decode("utf-8", "replace"))
+            cache.write_text(_json.dumps(j, ensure_ascii=False), encoding="utf-8")
+        checks = j.get("checks") or []
+        reds = [c.get("id") for c in checks if c.get("level") == "red"]
+        yellows = [c for c in checks if c.get("level") == "yellow"]
+        return {"ok": True, "status": j.get("status"), "red": len(reds),
+                "yellow": len(yellows), "reds": reds[:3]}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "err": type(exc).__name__}
+
+
+def _age_hours_from_iso(value) -> float | None:
+    if not value:
+        return None
+    try:
+        from datetime import datetime
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return round((datetime.now(dt.tzinfo) - dt).total_seconds() / 3600.0, 1)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def collect_system_status() -> dict:
+    return {
+        "task": _status_task(),
+        "backup": _status_backup(),
+        "night": _status_night(),
+        "health": _status_health(),
+    }
+
+
+def _sys_card(title: str, tone: str, big: str, lines: list) -> str:
+    import html as _html
+    li = "".join("<div class=\"sysline\">%s</div>" % _html.escape(x) for x in lines if x)
+    return ('<div class="syscard %s"><div class="systitle">%s</div>'
+            '<div class="sysbig">%s</div>%s</div>' % (tone, _html.escape(title), _html.escape(big), li))
+
+
+def render_system_status(st: dict) -> str:
+    """四卡 HTML。tone: ok/warn/bad/mute。"""
+    cards = []
+    t = st.get("task") or {}
+    if t.get("ok"):
+        cards.append(_sys_card("任务失败", "ok" if not t.get("failed") else "bad",
+                               str(t.get("failed")), [", ".join(t.get("names") or []) or "无",
+                                                      "审计 %s 小时前" % t.get("age_h")]))
+    else:
+        cards.append(_sys_card("任务失败", "mute", "?", ["数据不可用"]))
+    b = st.get("backup") or {}
+    if b.get("ok"):
+        age = b.get("age_h")
+        tone = "ok" if (age is not None and age < 36) else ("warn" if (age is None or age < 72) else "bad")
+        cards.append(_sys_card("备份", tone, "%s" % (("%.0fh" % age) if age is not None else "-"),
+                               ["最新 %s · %d 件" % (b.get("date"), b.get("entries")),
+                                "异地清单 %s" % ("已生成" if b.get("offsite") else "缺")]))
+    else:
+        cards.append(_sys_card("备份", "mute", "?", ["数据不可用"]))
+    n = st.get("night") or {}
+    if n.get("ok"):
+        if n.get("pause"):
+            tone, big = "warn", "独占中"
+        elif n.get("ended"):
+            tone, big = "ok", "已收工"
+        else:
+            tone, big = "mute", "未启动"
+        lines = []
+        if n.get("round") is not None:
+            lines.append("第 %d 轮 · 剩 %s 条" % (n["round"], n.get("left")))
+        if n.get("judged") is not None:
+            lines.append("上轮 judged %d/%d" % (n["judged"], n.get("batch") or 0))
+        if n.get("age_min") is not None:
+            lines.append("日志 %.0f 分钟前" % n["age_min"])
+        cards.append(_sys_card("夜间独占", tone, big, lines))
+    else:
+        cards.append(_sys_card("夜间独占", "mute", "?", ["日志不可用"]))
+    h = st.get("health") or {}
+    if h.get("ok"):
+        cards.append(_sys_card("系统健康", "ok" if not h.get("red") else "bad",
+                               "红 %d / 黄 %d" % (h.get("red", 0), h.get("yellow", 0)),
+                               [", ".join(h.get("reds") or []) or "无红灯"]))
+    else:
+        cards.append(_sys_card("系统健康", "mute", "?", ["健康卡不可用"]))
+    return ('<section class="sysgrid"><h2>系统态势（%s）</h2><div class="sysrow">%s</div></section>'
+            % (time.strftime("%H:%M"), "".join(cards)))
+
+
 _LEVEL_CLASS = {"干活中": "work", "有单未动": "debt", "在岗待命": "idle", "静默": "silent"}
 
 
 def write_html(card: dict, path: Path) -> None:
-    """生成自包含看板：一部门一卡，一席一点。无外部依赖，双击即开。"""
+    """生成自包含看板：一部门一卡，一席一点 + 顶部系统态势四卡。无外部依赖，双击即开。"""
     import html as _html
+
+    try:
+        _sys_html = render_system_status(collect_system_status())
+    except Exception as _exc:  # noqa: BLE001  系统卡渲染失败不能拖垮看板
+        _sys_html = '<section class="sysgrid"><h2>系统态势</h2><div class="sysrow">' \
+                    '<div class="syscard mute"><div class="systitle">采集失败</div>' \
+                    '<div class="sysbig">?</div></div></div></section>'
+        print("系统态势采集失败（看板继续）：%r" % (_exc,), file=sys.stderr)
 
     s = card["summary"]
     meta = card.get("dept_meta") or {}
@@ -562,11 +752,12 @@ border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:8px}
 .badge.gray{background:#f0f2f5;color:var(--sub)}
 .dstat{margin:0 0 8px;font-size:12px}
 .dstat.red{color:var(--debt)}.dstat.green{color:var(--work)}.dstat.gray{color:var(--sub)}
-.legend{margin-top:16px;font-size:12px;color:var(--sub)}
+.sysgrid{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:16px}.sysgrid h2{font-size:14px;margin:0 0 10px}.sysrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}.syscard{border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:#fafbfc}.systitle{font-size:12px;color:var(--sub)}.sysbig{font-size:20px;font-weight:700;line-height:1.3;margin:2px 0 4px}.sysline{font-size:11px;color:#8a94a2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.syscard.ok .sysbig{color:var(--work)}.syscard.warn .sysbig{color:var(--idle)}.syscard.bad .sysbig{color:var(--debt)}.syscard.mute .sysbig{color:var(--silent)}.legend{margin-top:16px;font-size:12px;color:var(--sub)}
 </style><script src="/static/nav.js" defer></script></head><body>
 <h1>零界 · 智能体点名册</h1>
 <div class="sub">生成于 %s ｜ 判定窗口 %g 分钟 ｜ 数据源：HR 档案 · org.json · 审计账本 · traces · 工单账本</div>
 <div class="chips">%s<span class="chip">在册 <b>%s</b></span><span class="chip">在手工单 <b>%s</b></span></div>
+%s
 %s
 <div class="grid">%s%s</div>
 <div class="legend">色条：<b style="color:#12805c">绿=干活中</b> ·
@@ -574,7 +765,7 @@ border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:8px}
 <b style="color:#9aa4b1">灰=静默</b>。人名取自 HR 逐席档案 cn_name，括注为席码。</div>
 </body></html>""" % (card["generated_at"], card["work_window_min"], chips,
                      _fmt_num(s.get("在册")), _fmt_num(s.get("在手工单")),
-                     deliver_html, "".join(cards), extra_html)
+                     _sys_html, deliver_html, "".join(cards), extra_html)
     path.write_text(doc, encoding="utf-8")
 
 
