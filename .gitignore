@@ -59,3 +59,6 @@ database/*.dump
 .venv_new/
 code/agent_platform_reports/
 code/logs/
+
+# 2026-10-25 EXEC: 运行时学习卡不入库（S-01，2928 个 JSON）
+**/learning/cards_outbox/

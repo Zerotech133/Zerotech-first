@@ -34,7 +34,9 @@ _V1_DB_PASSWORD = os.getenv("V1_DB_PASSWORD", "")
 _V2_DB_HOST = os.getenv("V2_DB_HOST", "localhost")
 _V2_DB_NAME = os.getenv("V2_DB_NAME", "zhice_os_v2")
 _V2_DB_USER = os.getenv("V2_DB_USER", "zhice")
-_V2_DB_PASSWORD = os.getenv("V2_DB_PASSWORD", "zhice_pass")
+_V2_DB_PASSWORD = os.getenv("V2_DB_PASSWORD", "")
+# 不留弱口令兜底（与 V1 侧 L33 口径对齐）：未配置时为空，让连接以明确错误失败，
+# 而不是静默退化为默认弱口令。轮换流程见《凭据轮换单_2026-10-22》批次 1。
 
 logger = logging.getLogger(__name__)
 

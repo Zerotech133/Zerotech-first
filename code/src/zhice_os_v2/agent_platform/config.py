@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -28,18 +29,21 @@ def _default_report_dir() -> str:
 def _default_db_url() -> str:
     """复用 zhice settings 的 db_main_url（只读 import，不复制凭据）。
 
-    settings 不可用时回退环境变量，再回退 zhice-db 容器默认 DSN。
+    独立部署（settings 包不可用）时必须显式提供 ZHICE_DB_URL；不再回退
+    含弱口令的容器默认 DSN，缺失时在构造配置阶段直接报错。
     """
     try:
         from zhice_os_v2.config.settings import get_settings
 
         return get_settings().db_main_url
-    except Exception:  # pragma: no cover - 独立部署兜底
-        import os
-
-        return os.environ.get(
-            "ZHICE_DB_URL", "postgresql://zhice:zhice_pass@localhost:5446/zhice_os_v2"
-        )
+    except ImportError:
+        db_url = os.environ.get("ZHICE_DB_URL", "").strip()
+        if not db_url:
+            raise RuntimeError(
+                "AgentPlatformConfig 无法导入 zhice settings，且未设置 "
+                "ZHICE_DB_URL；请显式提供 PostgreSQL 连接串"
+            ) from None
+        return db_url
 
 
 class LlmArbiterConfig(BaseModel):
