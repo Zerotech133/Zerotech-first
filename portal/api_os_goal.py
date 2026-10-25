@@ -138,6 +138,9 @@ def read_workspace_file(store, item_id, filename):
 
 def handle_get(store: S.OsGoalStore, path: str,
                qs: str = "") -> Tuple[int, Dict[str, Any]]:
+    ctrl = _handle_controlled_get(store, path)
+    if ctrl is not None:
+        return ctrl
     if path == "/api/os/health":
         return 200, {"ok": True, **store.health()}
     if path == "/api/os/goals":
@@ -184,11 +187,66 @@ def handle_get(store: S.OsGoalStore, path: str,
     return _err(404, "not_found", "no such route: %s" % path)
 
 
+CTRL_ITEM_RE = re.compile(
+    r"^/api/os/item/([A-Za-z0-9-]+)/(grant/real|workorder/formal|claim/real|risk/verdict|controlled/artifact)$")
+CTRL_CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain/controlled$")
+
+
+def _handle_controlled_post(store, path, body):
+    import os_controlled as X
+    if path == "/api/os/consumer/register":
+        c = X.register_consumer(store, str(body.get("consumer_id") or ""),
+                                kind=str(body.get("kind") or "agent"),
+                                display_name=str(body.get("display_name") or ""),
+                                capabilities=body.get("capabilities") or None,
+                                owner_id=str(body.get("owner_id") or "laotian"))
+        return 201, {"ok": True, "consumer": c}
+    m = CTRL_ITEM_RE.match(path)
+    if not m:
+        return None
+    iid, action = m.group(1), m.group(2)
+    if action == "grant/real":
+        g = X.sign_real_grant(store, iid, body.get("actions") or [],
+                              str(body.get("nonce") or ""),
+                              signer_method=str(body.get("signer_method") or "session_nonce"),
+                              valid_hours=int(body.get("valid_hours") or 2))
+        return 201, {"ok": True, "grant": g}
+    if action == "workorder/formal":
+        w = X.create_formal_workorder(store, iid, str(body.get("acceptance") or ""),
+                                      required_capabilities=body.get("required_capabilities") or None)
+        return 201, {"ok": True, "workorder": w}
+    if action == "claim/real":
+        c = X.real_claim(store, iid, str(body.get("consumer_id") or ""))
+        return 201, {"ok": True, "claim": c}
+    if action == "risk/verdict":
+        r = X.risk_verdict(store, iid, str(body.get("action") or ""),
+                           consumer_id=body.get("consumer_id"),
+                           context=body.get("context") or None)
+        return 201, {"ok": True, "risk": r}
+    if action == "controlled/artifact":
+        a = X.produce_controlled_artifact(store, iid, str(body.get("consumer_id") or ""),
+                                          str(body.get("filename") or "artifact.md"),
+                                          str(body.get("content") or ""))
+        return 201, {"ok": True, **a}
+    return None
+
+
+def _handle_controlled_get(store, path):
+    import os_controlled as X
+    m = CTRL_CHAIN_RE.match(path)
+    if not m:
+        return None
+    return 200, {"ok": True, **X.chain_report_controlled(store, m.group(1))}
+
+
 def handle_post(store: S.OsGoalStore, path: str,
                 body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
     if not isinstance(body, dict):
         return _err(400, "bad_body", "body 必须是 JSON 对象")
     try:
+        ctrl = _handle_controlled_post(store, path, body)
+        if ctrl is not None:
+            return ctrl
         quick = _handle_quick(store, path, body)
         if quick is not None:
             return quick
