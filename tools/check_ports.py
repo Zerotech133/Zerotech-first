@@ -20,6 +20,7 @@ import sys
 REGISTRY = {
     8091: "零界门户API(portal_api.py)",
     8080: "nginx ai-portal(Docker)",
+    8081: "移动端公网受限门(m_public_gate.py,2026-10-25)",
     8734: "零界首页(portproxy→8080,K-STOCK-107收编)",
     3000: "Open WebUI(Docker)",
     3001: "图谱studio(学习仓)",
@@ -170,7 +171,10 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              # 非平台栈）监听 9230/18080。同 trae / codex 先例入豁免——
              # 它是工具不是我们的服务，登记进 REGISTRY 反而是错误事实。
              # 触发背景：OPS1 每日事项「端口注册表零漂移」判红，查明是这两口。
-             "deepseek")
+             "deepseek",
+             # 2026-10-25 K-ORG-20261025-CFWHITELIST：cloudflared.exe 隧道工具
+             # 监听 20241/20242（快速隧道管理口），非我方服务；同 trae/codex 先例入豁免。
+             "cloudflared")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免
