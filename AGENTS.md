@@ -11,12 +11,12 @@
 
 ## 1. 端口铁律（不许互抢）
 
-- **唯一权威注册表**：`tools/check_ports.py` 的 `REGISTRY` dict（24 口在册，K-STOCK-115 收编后）。
+- **唯一权威注册表**：`tools/check_ports.py` 的 `REGISTRY` dict（**50 口在册**，以 REGISTRY 为准；K-STOCK-115 收编后，2026-10-26 实测 `python tools/check_ports.py` 汇总=注册 50 个）。
 - 起新服务前：① 先查 REGISTRY——被占用即换；② 用 `python tools/devtask.py port <服务名>` 申请分配；③ 分配到后**必须**把端口+服务名写回 check_ports.py REGISTRY（同一提交内）。
 - 一律绑 `127.0.0.1`，对外暴露走 nginx 反代（052 收敛既定）。
 - 违规自查：`python tools/check_ports.py`（--strict 供 CI）。
 - **入口唯一（K-STOCK-113 立宪，杜绝双口混乱）**：人类入口**只有一个 = 8734**（portproxy→nginx 同源合一）；8080 仅为容器/局域网反代链路，**文档、话术、页脚一律只写 8734，禁止再出现「8080/8734 同步生效」这类双口表述**。页内相对路径一律不带端口（走同源反代）。
-- **开发侧全量回流（同上立宪）**：一切 IDE Agent 的开发动作必须自动进平台事件层 `portal/data/dev_events.jsonl`（tools/events.py 四事件：task_start/commit/blocked/merge_done）；post-commit 钩子已自动上报 commit——**禁止任何 Agent 关闭/绕过该钩子**；工单页 `http://127.0.0.1:8734/devops`。
+- **开发侧全量回流（同上立宪）**：一切 IDE Agent 的开发动作必须自动进平台事件层 `portal/data/dev_events.jsonl`（tools/events.py 核心五类事件：task_start/commit/blocked/merge_done/guard_fail；另有派单/审批/编码线等扩展类，KINDS 共 15 类）；post-commit 钩子已自动上报 commit——**禁止任何 Agent 关闭/绕过该钩子**；工单页 `http://127.0.0.1:8734/devops`。
 - **开发身份三环境变量（领单必设）**：干活前导出 `DEVTOOL_AGENT`（谁，如 CodeBuddy·A）、`DEVTOOL_IDE`（什么工具，如 CodeBuddy/Claude Code）、`DEVTOOL_MODEL`（什么模型，如 qwen3.5:9b/claude-4.5-sonnet）——事件层与指挥台「IDE/模型」列靠它归因，不设=详情页看不到你在用什么开发。
 
 ## 2. 前端准入三件套（新页面缺一不收）
@@ -31,7 +31,7 @@
 
 - **一单一事、单据先行**：无任务单不写码。
 - 每个 Agent 在**独立 git worktree** 干活：`python tools/devtask.py new <TID> <一句话>`——自动建 `.worktrees/<TID>/` + 分支 `task/<TID>`。禁止在 master 直接开发。
-- 完工合并必须过评审门：`python tools/devtask.py merge <TID>`（内置三守卫，门不过不合并）。
+- 完工合并必须过评审门：`python tools/devtask.py merge <TID>`（内置评审门四道：Mixin 方法集/导航统一/端口注册/明文凭据，门不过不合并）。
 - **共享数据根互斥（2026-10-17 立章）**：对数据根（`quant_backtest/data` 等 KG_DATA_ROOT 指向目录）做结构性操作（还原/迁移/清理/换根/重建 catalog）前，**必须先读 `C:\Temp\kg_sync_task.log` 尾部**确认无其他会话的进行中操作；操作完成后**必须补记该日志**。违反=评审门拒绝合并。（教训：2026-10-17 KGDataRoot 17.7GB 因两会话同时「清理 vs 还原」反复拉锯一上午）
 
 ## 4. 任务单纪律
@@ -47,6 +47,7 @@
 | Mixin 方法集 | `python tools/_mixin_integrity.py --check` | portal_api 拆分丢方法 |
 | 导航统一 | `python tools/unify_nav.py --check` | 手写导航/数据漂移 |
 | 端口注册 | `python tools/check_ports.py --strict` | 抢端口/私起服务 |
+| 明文凭据 | `devtask.py merge` 内置 `_secret_scan_gate`（`tools/scan_secrets.py`） | 未豁免明文凭据入库 |
 
 ## 6. 受训与记忆（怎么让 Agent 越用越准）
 
@@ -60,7 +61,7 @@
 
 - Windows 删除一律进回收站（Python SHFileOperationW），禁 rm/del；
 - 长跑命令输出必须落文件；
-- portal_api.py 是 23k 行巨石——**只改不扩**，新 handler 一律新文件（P4 批 0 后启用拒收闸）；
+- portal_api.py 约 5k 行（2026-10-26 实测 5,052 行；行数预算 5,200——超预算即评审门 FAIL）——**只改不扩**，新 handler 一律新文件（P4 批 0 后启用拒收闸）；
 - 替换补丁前断言锚点 count==1，替换后断言新串存在；
 - 杀进程前先辨认是不是线上服务（按启动时间+端口归属）；
 - **修复写盘 ≠ 生效（2026-10-16 P0 实锤）**：改常驻服务代码后必须杀旧进程换血——「缺则拉」型守护器（start_jev_stack.ps1 类）不认 mtime，旧进程会带旧码跑到天荒地老；验证=新进程出生时间 > 文件 mtime + 日志出现新分支特征行；
