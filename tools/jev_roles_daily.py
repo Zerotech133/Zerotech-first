@@ -33,13 +33,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve()
-ROOT = HERE.parent.parent
+# 数据根默认=脚本所在仓库；工作树里 jev-eval/logs 与 news.db 被 gitignore，
+# 验证时可用 JEV_ROLES_ROOT 指向 master（生产运行不需要设置）。
+ROOT = Path(os.environ.get("JEV_ROLES_ROOT") or HERE.parent.parent)
 JEV_EVAL = ROOT / "jev-eval"
 NEWS_DB = ROOT / "news_collector" / "news.db"
 DATA_DIR = ROOT / "agent_platform" / "data" / "jev_roles"
@@ -106,14 +109,15 @@ def classify_gate_msg(msg: str) -> str:
     m = msg or ""
     if "无新告警" in m:
         return "no_alert"
-    if "推送" in m or "PUSH" in m.upper() or "推送到" in m:
-        return "push"
-    if "降噪" in m or "降级" in m:
-        return "suppress"
+    # 顺序敏感：「推送失败」必须归 fail 而不是 push
     if "失败" in m or "FAIL" in m.upper():
         return "fail"
     if "重试" in m:
         return "retry"
+    if "推送" in m or "PUSH" in m.upper() or "推送到" in m:
+        return "push"
+    if "降噪" in m or "降级" in m:
+        return "suppress"
     return "other"
 
 
@@ -313,7 +317,14 @@ def write_outputs(data: dict, out_dir: Path | None = None) -> tuple[Path, Path]:
     jdir = out_dir or DATA_DIR
     jdir.mkdir(parents=True, exist_ok=True)
     jpath = jdir / ("%s.json" % day)
-    jpath.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    jpath.write_text(payload, encoding="utf-8")
+    # 稳定路径：agent_daily 的 file 证据只看「最新一次生成」，不关心日期命名
+    (jdir / "latest.json").write_text(payload, encoding="utf-8")
+    # 三席各自一份（agent_daily 逐席判据，避免三席共用一个文件导致「一荣俱荣」）
+    for key in ("gate", "review", "qd"):
+        (jdir / ("%s.json" % key)).write_text(
+            json.dumps(data.get(key) or {}, ensure_ascii=False, indent=2), encoding="utf-8")
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
     mpath = OUTPUTS_DIR / ("jev_daily_%s.md" % day)
     mpath.write_text(render_md(data), encoding="utf-8")

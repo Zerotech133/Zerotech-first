@@ -23,6 +23,16 @@ try {
     $code = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
     W ('P1 exit=' + $code + ' out=' + ($out -join ' | '))
+
+    # 2026-10-26 K-ORG-20261026-JEVROLE: 夜间独占收工后，顺带生成 JEV 三席日报。
+    # 刻意不阻塞、不改本任务退出码：日报生成失败只留痕（P3 行），不污染漂移监控结果。
+    $rolesPy = Join-Path (Split-Path $PSScriptRoot -Parent) 'tools\jev_roles_daily.py'
+    if (Test-Path -LiteralPath $rolesPy) {
+        $rolesOut = & $py -X utf8 $rolesPy 2>&1
+        W ('P3 jev_roles exit=' + $LASTEXITCODE + ' out=' + ($rolesOut -join ' | '))
+    } else {
+        W ('P3 jev_roles SKIP: not found ' + $rolesPy)
+    }
     # log cap ~400KB: keep tail
     if ((Get-Item -LiteralPath $log).Length -gt 400KB) {
         $tail = Get-Content -LiteralPath $log -Tail 200 -Encoding UTF8
