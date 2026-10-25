@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>零界 · C1 审批台</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  .wrap{max-width:1120px;margin:0 auto;padding:16px 20px 70px}
+  .banner{border-left:4px solid #936224;background:#faf3e6;padding:10px 14px;border-radius:6px;margin:10px 0 16px;font-size:13px}
+  .muted{color:#5a6f83;font-size:13px}
+  .card{background:#fff;border:1px solid #dbe5ee;border-radius:12px;padding:14px 16px;margin:10px 0}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:6px 0}
+  label{display:grid;gap:4px;font-size:12px;color:#5a6f83}
+  input,select,textarea{font:inherit;padding:8px 10px;border:1px solid #bfd6e2;border-radius:8px;min-width:170px}
+  textarea{min-width:320px;min-height:50px}
+  button{cursor:pointer;background:#0e7490;color:#fff;border:0;border-radius:8px;padding:8px 13px;font:600 13px inherit}
+  button.ghost{background:#fff;color:#0e7490;border:1px solid #bcd8e2}
+  button.warn{background:#b3402e}
+  button.ok{background:#227a4b}
+  .g{padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;background:#eef2f5;color:#54677a;border:1px solid #dbe5ee}
+  .g.PASS{background:#e9f5ee;color:#227a4b;border-color:#bcdcc9}
+  .g.BLOCKED,.g.FAIL{background:#fdeeea;color:#b3402e;border-color:#eec5bd}
+  .g.CONTROLLED_L2_APPROVED{background:#faf3e6;color:#936224;border-color:#e6d5b0}
+  .gates{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .item{border-bottom:1px dashed #e3ecf2;padding:8px 0;font-size:13px}
+  .item:last-child{border-bottom:0}
+  .err{color:#b3402e;white-space:pre-wrap;font-size:13px}
+  pre{background:#f7fafc;border:1px solid #e3ecf2;border-radius:8px;padding:10px;overflow:auto;font-size:12px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>C1 审批台 · 真实受控的 L2 外部动作</h1>
+  <p class="muted">发布/外发/生产/交易等 L2 动作必须：消费者注册 → 申请审批 → <b>本人逐次批准</b>（nonce）→ 风控放行 → 受控 outbox 留痕 → 审计链 CONTROLLED_L2_APPROVED。本页只记录，<b>不实际外发</b>。</p>
+  <div class="banner">边界：outbox 的 <code>external_sent=false</code>；本页不调用任何外部发送/发布通道。真实外发属 C2，需另行授权。</div>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px;font-size:16px">① 真实消费者</h2>
+    <div class="row">
+      <label>consumer_id<input id="cid" placeholder="CONS-DEMO-01"></label>
+      <label>类型<select id="ckind"><option value="agent">agent</option><option value="service">service</option><option value="human">human</option></select></label>
+      <label>能力<input id="ccaps" value="artifact.generate,test.run"></label>
+      <button id="b-reg">注册消费者</button>
+      <button id="b-refresh-c" class="ghost">刷新列表</button>
+    </div>
+    <div id="consumers" class="muted">（未加载）</div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px;font-size:16px">② 事项与审批</h2>
+    <div class="row">
+      <label>事项 ID<input id="iid" placeholder="ITM-20261025-0002"></label>
+      <button id="b-load">载入事项</button>
+      <span class="g" id="verdict">—</span>
+    </div>
+    <div class="gates" id="gates"></div>
+    <div id="approvals" class="muted">（未加载）</div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px;font-size:16px">③ 申请 L2 审批</h2>
+    <div class="row">
+      <label>动作<select id="raction"><option value="publish">publish（发布）</option><option value="external.send">external.send（外发）</option><option value="production.deploy">production.deploy（生产）</option><option value="trade.execute">trade.execute（交易）</option></select></label>
+      <label>consumer_id<input id="rconsumer" placeholder="CONS-DEMO-01"></label>
+      <label>摘要<input id="rsummary" placeholder="发布内容草稿 01（本页不外发，仅留痕）"></label>
+      <label>有效期(分钟)<input id="rttl" type="number" value="30" min="1" max="240"></label>
+      <button id="b-request">提交审批申请</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px;font-size:16px">④ 本人裁决（批准 / 拒绝）</h2>
+    <div class="row">
+      <label>approval_id<input id="daid" placeholder="APR-20261025-003"></label>
+      <label>结论<select id="ddecision"><option value="approved">approved（批准）</option><option value="denied">denied（拒绝）</option></select></label>
+      <label>nonce<input id="dnonce" placeholder="至少 8 位，仅本机"></label>
+      <label>备注<input id="dnote" placeholder="例如：仅批准受控 outbox，不外发"></label>
+      <button id="b-decide" class="ok">提交裁决</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px;font-size:16px">⑤ 受控 outbox（不外发）</h2>
+    <div class="row">
+      <label>approval_id<input id="oaid" placeholder="APR-20261025-003"></label>
+      <label>动作<select id="oaction"><option value="publish">publish</option><option value="external.send">external.send</option><option value="production.deploy">production.deploy</option><option value="trade.execute">trade.execute</option></select></label>
+      <label>consumer_id<input id="oconsumer" placeholder="CONS-DEMO-01"></label>
+      <label>摘要<input id="osummary" placeholder="发布内容草稿 01"></label>
+      <label>内容摘要<input id="opayload" placeholder="正文摘要（不实际发送）"></label>
+      <button id="b-outbox">记录受控 outbox</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px;font-size:16px">⑥ 审计链 chain/c1</h2>
+    <pre id="chain">（未加载）</pre>
+    <div class="err" id="err"></div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const H={'Content-Type':'application/json','X-OS-Page':'approval'};
+let ITEM='';
+function showErr(m){ $('err').textContent=String(m||''); }
+function clearErr(){ $('err').textContent=''; }
+async function api(path, body, method){
+  const opt={method:method||'GET',headers:H};
+  if(body!==undefined){ opt.method='POST'; opt.body=JSON.stringify(body); }
+  const r=await fetch(path,opt);
+  const d=await r.json().catch(()=>({ok:false,error:'bad_json'}));
+  if(!r.ok || d.ok===false) throw new Error((d.error||('HTTP '+r.status))+': '+(d.message||''));
+  return d;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function renderConsumers(list){
+  if(!list.length){ $('consumers').textContent='（暂无消费者）'; return; }
+  $('consumers').innerHTML=list.map(c=>'<div class="item"><b>'+esc(c.consumer_id)+'</b> · '+esc(c.kind)+' · 能力：'+esc((c.capabilities||[]).join(','))+' · 状态：'+esc(c.status)+'</div>').join('');
+}
+function renderApprovals(list){
+  if(!list.length){ $('approvals').textContent='（该事项暂无审批单）'; return; }
+  $('approvals').innerHTML=list.map(a=>'<div class="item"><b>'+esc(a.approval_id)+'</b> · '+esc(a.action)+' · '+esc(a.consumer_id)+' · 状态：<b>'+esc(a.status)+'</b> · 到期：'+esc(a.expires_at||'—')+(a.decided_note?(' · 备注：'+esc(a.decided_note)):'')+'</div>').join('');
+}
+async function loadConsumers(){ try{ const d=await api('/api/os/consumer/list'); renderConsumers(d.consumers||[]); }catch(e){ showErr(e.message); } }
+async function loadItem(){
+  if(!ITEM) return;
+  clearErr();
+  try{
+    const [ch, ap]=await Promise.all([api('/api/os/item/'+encodeURIComponent(ITEM)+'/chain/c1'), api('/api/os/item/'+encodeURIComponent(ITEM)+'/approvals')]);
+    $('verdict').textContent=ch.verdict||'—'; $('verdict').className='g '+(ch.verdict||'');
+    $('gates').innerHTML=Object.values(ch.gates||{}).map(g=>'<span class="g '+esc(g.status)+'">'+esc(g.gate)+' '+esc(g.status)+'</span>').join('');
+    renderApprovals(ap.approvals||[]);
+    $('chain').textContent=JSON.stringify({verdict:ch.verdict,exit_code:ch.exit_code,gates:ch.gates,honesty:ch.honesty},null,1);
+  }catch(e){ showErr(e.message); }
+}
+$('b-reg').onclick=async()=>{ clearErr(); try{
+  const caps=$('ccaps').value.split(',').map(s=>s.trim()).filter(Boolean);
+  await api('/api/os/consumer/register',{consumer_id:$('cid').value.trim(),kind:$('ckind').value,capabilities:caps});
+  await loadConsumers(); }catch(e){ showErr(e.message); } };
+$('b-refresh-c').onclick=loadConsumers;
+$('b-load').onclick=()=>{ ITEM=$('iid').value.trim(); if(!ITEM) return showErr('请填事项 ID'); loadItem(); };
+$('b-request').onclick=async()=>{ clearErr(); try{
+  const d=await api('/api/os/item/'+encodeURIComponent(ITEM)+'/approval/request',
+    {action:$('raction').value,consumer_id:$('rconsumer').value.trim(),summary:$('rsummary').value.trim(),ttl_minutes:Number($('rttl').value)||30});
+  const aid=d.approval.approval_id; $('daid').value=aid; $('oaid').value=aid;
+  await loadItem(); }catch(e){ showErr(e.message); } };
+$('b-decide').onclick=async()=>{ clearErr(); try{
+  await api('/api/os/item/'+encodeURIComponent(ITEM)+'/approval/decide',
+    {approval_id:$('daid').value.trim(),decision:$('ddecision').value,nonce:$('dnonce').value,note:$('dnote').value.trim()});
+  await loadItem(); }catch(e){ showErr(e.message); } };
+$('b-outbox').onclick=async()=>{ clearErr(); try{
+  await api('/api/os/item/'+encodeURIComponent(ITEM)+'/l2/outbox',
+    {approval_id:$('oaid').value.trim(),action:$('oaction').value,consumer_id:$('oconsumer').value.trim(),
+     summary:$('osummary').value.trim(),payload_text:$('opayload').value.trim()});
+  await loadItem(); }catch(e){ showErr(e.message); } };
+const q=new URLSearchParams(location.search);
+if(q.get('item')){ $('iid').value=q.get('item'); ITEM=$('iid').value.trim(); loadItem(); }
+loadConsumers();
+</script>
+</body>
+</html>

@@ -265,8 +265,16 @@ def _handle_c1_post(store, path, body):
     return None
 
 
+CTRL_APPROVAL_LIST_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/approvals$")
+
+
 def _handle_controlled_get(store, path):
     import os_controlled as X
+    if path == "/api/os/consumer/list":
+        return 200, {"ok": True, "consumers": X.list_consumers(store)}
+    m0 = CTRL_APPROVAL_LIST_RE.match(path)
+    if m0:
+        return 200, {"ok": True, "approvals": X.list_approvals(store, m0.group(1))}
     m = CTRL_CHAIN_RE.match(path)
     if m:
         return 200, {"ok": True, **X.chain_report_controlled(store, m.group(1))}
