@@ -32,7 +32,13 @@ Log "ingest --once rc=$rc $($out -join ' | ')"
 
 # --- 3) M3 结构化（幂等：只判新增 doc；Ollama qwen3.5:9b → tags 入 structure_shadow） ---
 # 仅当本扫有新增（输出含 "OK d"）才跑，空转不占 Ollama；单实例守卫防并发重判
-if ("$out" -match 'OK d') {
+# 2026-10-25 K-ORG-20261025-JEVNIGHT：夜间 JEV 独占期暂停 M3。
+# 旗文件 C:\Temp\k266_m3.pause 由 tools\jev_night.py 写入/删除；
+# 删旗后下一 tick 自动恢复（"OK d" 判定不变，只多一道暂停闸）。
+$m3Pause = 'C:\Temp\k266_m3.pause'
+if (Test-Path $m3Pause) {
+    Log "m3: 暂停旗存在（夜间 JEV 独占），本轮不拉起"
+} elseif ("$out" -match 'OK d') {
     $m3run = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
         Where-Object { $_.CommandLine -match 'k266_m3_structure' }
     if ($m3run) {
