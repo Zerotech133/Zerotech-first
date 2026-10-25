@@ -187,6 +187,29 @@ JEV_NEWS_QUESTIONS = {
 _BIAS_CN = {"bull": "利多", "bear": "利空", "neutral": "中性"}
 _SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
              "crypto": "加密", "fx": "外汇", "macro": "宏观"}
+# 2026-10-26 OS-FIX-JEVSCOPE（JEV 审计 §四-①）：本地判读 prompt 原先没有 scope，
+# 新判行 scope 恒空，而老云端行用 cn/hk/us/commodity/crypto/fx/macro 七值。
+# 这里按既有 _SCOPE_CN 枚举做别名归一；未知值降级为空串（不猜、不伪造）。
+_SCOPE_ALIASES = {
+    "cn": "cn", "a股": "cn", "a-share": "cn", "ashare": "cn", "china": "cn",
+    "中国": "cn", "国内": "cn",
+    "hk": "hk", "港股": "hk", "hongkong": "hk", "hong kong": "hk",
+    "us": "us", "美股": "us", "usa": "us", "美国": "us", "us-stock": "us",
+    "commodity": "commodity", "commodities": "commodity", "商品": "commodity",
+    "大宗商品": "commodity", "期货": "commodity",
+    "crypto": "crypto", "加密货币": "crypto", "加密": "crypto",
+    "fx": "fx", "外汇": "fx", "汇率": "fx", "forex": "fx",
+    "macro": "macro", "宏观": "macro",
+}
+
+
+def _normalize_scope(value):
+    """把本地模型返回的 scope 归一到既有七值枚举；未知/空 → ''（不伪造）。"""
+    raw = str(value or "").strip().lower()
+    if not raw:
+        return ""
+    return _SCOPE_ALIASES.get(raw, "")
+
 # K-ORG-191：fx（外汇）为郭嘉预判对账司扩容的新市场枚举——自扩容日起
 # 积累信号（历史无 fx 数据，不回溯），对账基准 fx_susdcnh（美元/离岸人民币）。
 # K-ORG-157：低置信阈值与时效衰减（实证支撑 K-ORG-156——0.5-0.7 段
@@ -458,8 +481,11 @@ def jev_judge_one_local(title, stocks, timeout=60):
     base = (
         "财经快讯：%s%s\n判断该快讯对相关市场【资产价格】的短期影响方向，只输出 JSON："
         '{"bias":"bull|bear|neutral","conf":0.0到1.0,'
+        '"scope":"cn|hk|us|commodity|crypto|fx|macro",'
         '"event_type":"<事件类别枚举>","impact":"low|medium|high",'
         '"companies":["相关A股代码"]}，不要输出其他内容。'
+        "scope 枚举（资产/市场范围）：cn A股、hk 港股、us 美股、commodity 商品、"
+        "crypto 加密、fx 外汇、macro 宏观（无法确定时填空字符串，不要猜）。"
         "event_type 枚举：earnings业绩/policy政策/rate利率/trade贸易/supply供给/"
         "demand需求/price价格/ma并购/equity股权/credit债务/risk风险/tech技术/"
         "macro宏观/geo地缘/other其他。impact：low低/medium中/high高。"
@@ -494,7 +520,7 @@ def jev_judge_one_local(title, stocks, timeout=60):
         return None
     try:
         j["bias"] = (j.get("bias") or "").strip().lower()
-        j["scope"] = (j.get("scope") or "").strip().lower()
+        j["scope"] = _normalize_scope(j.get("scope"))
         j = _validate_jev(j)
     except ValueError as e:
         log("jev_judge_local schema FAIL %s" % str(e)[:100])
