@@ -1,7 +1,7 @@
 {
   "_note": "每日工作项目录（单一真相源）。一个席位每天干什么，写在这里，不写在文档里。每条都必须带可检查的证据，否则不收录。改动与代码同批提交。",
   "version": 1,
-  "updated": "2026-10-24",
+  "updated": "2026-10-26",
   "schema_doc": {
     "id": "事项编号，全局唯一",
     "agent": "负责人席位（对应 org.json 的 agent_id）",
@@ -244,7 +244,14 @@
       "title": "代码准入：portal 方法集零漂移",
       "why": "portal_api 拆分后靠 Mixin 继承，方法集丢了就是线上 500（三守卫之一）",
       "freq": "daily@09:00",
-      "evidence": { "type": "command", "cmd": ["tools/_mixin_integrity.py", "--check"], "expect_rc": 0 },
+      "evidence": {
+        "type": "command",
+        "cmd": [
+          "tools/_mixin_integrity.py",
+          "--check"
+        ],
+        "expect_rc": 0
+      },
       "on_miss": "A0 催办 DEV1：跑 tools/_mixin_integrity.py --check 并修方法集"
     },
     {
@@ -254,7 +261,10 @@
       "title": "模型版本登记（按需，无固定日产）",
       "why": "新版本不登记 domain/model_registry，回滚时找不到基线",
       "freq": "daily@09:00",
-      "evidence": { "type": "manual", "note": "模型训练按需触发，无每日产物；登记入口 domain/model_registry 待接自动判据" },
+      "evidence": {
+        "type": "manual",
+        "note": "模型训练按需触发，无每日产物；登记入口 domain/model_registry 待接自动判据"
+      },
       "on_miss": "待接线后再定"
     },
     {
@@ -264,7 +274,11 @@
       "title": "名下策略工单有推进",
       "why": "策略是插件式新增，没单就等于没产出",
       "freq": "every_min 1440",
-      "evidence": { "type": "order", "agent": "DEV3", "max_age_h": 48 },
+      "evidence": {
+        "type": "order",
+        "agent": "DEV3",
+        "max_age_h": 48
+      },
       "on_miss": "A0 催办 DEV3；若长期无单，转派工缺口上报"
     },
     {
@@ -274,7 +288,11 @@
       "title": "名下回测工单有推进",
       "why": "回测判据复核是 Go/No-Go 的唯一关口",
       "freq": "every_min 1440",
-      "evidence": { "type": "order", "agent": "DEV4", "max_age_h": 48 },
+      "evidence": {
+        "type": "order",
+        "agent": "DEV4",
+        "max_age_h": 48
+      },
       "on_miss": "A0 催办 DEV4；若长期无单，转派工缺口上报"
     },
     {
@@ -284,7 +302,14 @@
       "title": "前端准入：导航统一过关",
       "why": "手写导航会漂移，nav.js 注入是唯一入口（三件套之一）",
       "freq": "daily@09:30",
-      "evidence": { "type": "command", "cmd": ["tools/unify_nav.py", "--check"], "expect_rc": 0 },
+      "evidence": {
+        "type": "command",
+        "cmd": [
+          "tools/unify_nav.py",
+          "--check"
+        ],
+        "expect_rc": 0
+      },
       "on_miss": "A0 催办 DEV5：跑 python tools/unify_nav.py --check"
     },
     {
@@ -294,7 +319,11 @@
       "title": "名下后端工单有推进",
       "why": "E2 档负责常规功能独立交付，没单就没产出",
       "freq": "every_min 1440",
-      "evidence": { "type": "order", "agent": "DEV6", "max_age_h": 48 },
+      "evidence": {
+        "type": "order",
+        "agent": "DEV6",
+        "max_age_h": 48
+      },
       "on_miss": "A0 催办 DEV6；若长期无单，转派工缺口上报"
     },
     {
@@ -304,7 +333,11 @@
       "title": "名下执行类工单有推进",
       "why": "E1 档承接标准执行/批量修改，产出须交 E2 复核",
       "freq": "every_min 1440",
-      "evidence": { "type": "order", "agent": "DEV7", "max_age_h": 48 },
+      "evidence": {
+        "type": "order",
+        "agent": "DEV7",
+        "max_age_h": 48
+      },
       "on_miss": "A0 催办 DEV7；若长期无单，转派工缺口上报"
     },
     {
@@ -314,7 +347,11 @@
       "title": "名下前端工单有推进",
       "why": "E2 档前端交付，tokens 纪律与 DEV5 同标准",
       "freq": "every_min 1440",
-      "evidence": { "type": "order", "agent": "DEV8", "max_age_h": 48 },
+      "evidence": {
+        "type": "order",
+        "agent": "DEV8",
+        "max_age_h": 48
+      },
       "on_miss": "A0 催办 DEV8；若长期无单，转派工缺口上报"
     },
     {
@@ -324,7 +361,10 @@
       "title": "架构决策登记（按需）",
       "why": "ADR 不落 docs/adr/，下次踩同一个坑没人知道为什么这么定",
       "freq": "daily@09:00",
-      "evidence": { "type": "manual", "note": "ADR 按决策触发，无每日产物；入口 tools/adr.py（new/list/show），待接自动判据" },
+      "evidence": {
+        "type": "manual",
+        "note": "ADR 按决策触发，无每日产物；入口 tools/adr.py（new/list/show），待接自动判据"
+      },
       "on_miss": "待接线后再定"
     },
     {
@@ -334,7 +374,13 @@
       "title": "端口注册表零漂移（无未登记私起服务）",
       "why": "未登记端口=私起服务，是抢端口事故的起点。注意：只判「有没有未登记」，不判「在册服务是否在线」——开发机上 Docker/手动型服务本来就常关，混在一起会天天误报",
       "freq": "daily@09:00",
-      "evidence": { "type": "command_out", "cmd": ["tools/check_ports.py"], "forbid": "⚠" },
+      "evidence": {
+        "type": "command_out",
+        "cmd": [
+          "tools/check_ports.py"
+        ],
+        "forbid": "⚠"
+      },
       "on_miss": "A0 催办 OPS1：把未登记端口收编进 REGISTRY / 豁免名单，或停掉私起服务"
     },
     {
@@ -344,8 +390,57 @@
       "title": "文档索引与扫描一致",
       "why": "索引落后=新人按索引找不到文档，等于没有索引",
       "freq": "daily@09:00",
-      "evidence": { "type": "command", "cmd": ["tools/gen_docs_index.py", "--check"], "expect_rc": 0 },
+      "evidence": {
+        "type": "command",
+        "cmd": [
+          "tools/gen_docs_index.py",
+          "--check"
+        ],
+        "expect_rc": 0
+      },
       "on_miss": "A0 催办 DOC1：跑 python -B tools/gen_docs_index.py 重建索引"
+    },
+    {
+      "id": "JEV_GATE-01",
+      "agent": "JEV_GATE",
+      "dept": "ops_runtime",
+      "title": "JEV 告警门日报（拦截/推送/降噪率）",
+      "why": "告警门不产日报就无法判断降噪是否有效，KPI 82% 无从核验",
+      "freq": "daily@07:15",
+      "evidence": {
+        "type": "file",
+        "path": "agent_platform/data/jev_roles/gate.json",
+        "max_age_h": 30
+      },
+      "on_miss": "A0 催办 JEV_GATE，并查 \\JevDriftDaily（07:10 生成）与 tools/jev_roles_daily.py"
+    },
+    {
+      "id": "JEV_REVIEW-01",
+      "agent": "JEV_REVIEW",
+      "dept": "ops_runtime",
+      "title": "JEV 复核日报（轮询轮数/信号条数/抽检清单）",
+      "why": "复核席没有抽检清单=没有在复核；信号断流也无法察觉",
+      "freq": "daily@07:15",
+      "evidence": {
+        "type": "file",
+        "path": "agent_platform/data/jev_roles/review.json",
+        "max_age_h": 30
+      },
+      "on_miss": "A0 催办 JEV_REVIEW，并查 \\JevDriftDaily 是否成功"
+    },
+    {
+      "id": "JEV_QD-01",
+      "agent": "JEV_QD",
+      "dept": "ops_runtime",
+      "title": "JEV 桥接日报（推送成功率/失败清单）",
+      "why": "桥接失败=信号到不了下游，必须每天可核",
+      "freq": "daily@07:15",
+      "evidence": {
+        "type": "file",
+        "path": "agent_platform/data/jev_roles/qd.json",
+        "max_age_h": 30
+      },
+      "on_miss": "A0 催办 JEV_QD，附 qd_failed.json 内容"
     }
   ]
 }
