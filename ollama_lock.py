@@ -26,6 +26,12 @@ wait_s 内轮询，超时本轮让位，靠各自调度周期自愈追平。
   处理完一条/一组后调用 tick()——release → 冷却 YIELD_S（20s）→ 重新抢锁。
   背景：M3 长跑连续独占数小时且全程 heartbeat，STALE_S 永远不触发，JEV 回填
   2026-10-25 00:34–06:00 连续 9 轮让位、零推进。租约制让两个批处理轮流持有。
+- **等待上限（2026-10-26 OS-FIX-JEVLOCK，JEV 审计 §四-③）**：tick() 重新抢锁原实现
+  最坏 6×(TICK_WAIT_S 900 + 5)+20 ≈ 5450s，远超子任务 hard timeout（JEV 夜间 deadline
+  1500 / 小时轮 1800，外层 +300/+600）→ 被硬杀即丢组+留锁。现 tick() 支持
+  `deadline_ts`（子任务自报截止时刻，单次等待/冷却都不得越过它），未传时用总预算
+  TICK_TOTAL_BUDGET_S 兜底；超时打印 `OLLAMA_LOCK tick timeout ...` 字段日志后返回
+  False（调用方按既有"本轮收工"分支处理），锁可用时行为与吞吐不变。
 - 仅供长跑批处理使用；交互式/单次调用（门户问答等）不加锁，排队几秒可容忍
 """
 import contextlib
@@ -41,6 +47,11 @@ LEASE_S = 300             # 单次持锁租约：握满即让位一次（防长�
 YIELD_S = 20              # 让位冷却：交出后空出这么久给对方抢
 TICK_WAIT_S = 900         # 让位后重新抢锁的单次等待上限
 _POLL_S = 5
+# 2026-10-26 OS-FIX-JEVLOCK：tick 总等待上限（未传 deadline_ts 时的兜底）。
+# 旧最坏 = max_tries 6 × (900+5) + 20 ≈ 5450s；任何子任务 hard timeout 都 < 2400s。
+# 1200s 既保留"让位后仍可抢回"的正常语义，又保证在 1500/1800 的硬超时前必然返回。
+TICK_TOTAL_BUDGET_S = 1200
+TICK_DEADLINE_MARGIN_S = _POLL_S   # 提前一个轮询周期返回，防 acquire 内最后一次 sleep 越界
 
 
 def _alive(pid):
@@ -156,22 +167,71 @@ def should_yield(lease_s=None):
     return held_seconds() >= (LEASE_S if lease_s is None else lease_s)
 
 
-def tick(purpose, lease_s=None, yield_s=None, wait_s=None, max_tries=6):
+def tick(purpose, lease_s=None, yield_s=None, wait_s=None, max_tries=6,
+         deadline_ts=None):
     """租约检查：握满就交还一手，冷却后抢回来。返回 True 表示仍持锁。
 
     抢锁失败会重试 max_tries 次（每次 wait_s，默认 900s）；仍失败返回 False，
     由调用方决定告警策略——绝不能"以为还持锁"地继续跑。
+
+    2026-10-26 OS-FIX-JEVLOCK（JEV 审计 §四-③）：整次 tick 的等待/冷却受
+    `deadline_ts` 约束（epoch 秒）——单次 acquire 等待与 YIELD_S 冷却都不得超过
+    截止时刻（再提前 TICK_DEADLINE_MARGIN_S 返回）；未传 deadline_ts 时用
+    TICK_TOTAL_BUDGET_S 兜底。超时打印 `OLLAMA_LOCK tick timeout purpose=..
+    waited=..s tries=..s deadline_left=..s` 后返回 False。锁空闲时（should_yield
+    为假或首抢即中）路径与旧实现完全一致，不影响正常吞吐。
     """
+    started = time.time()
     if not should_yield(lease_s):
         return True
     release()
-    time.sleep(YIELD_S if yield_s is None else yield_s)
-    wait = TICK_WAIT_S if wait_s is None else wait_s
+    budget = _tick_budget_s(deadline_ts, started)
+    if budget <= 0:
+        _log_tick_timeout(purpose, time.time() - started, 0, deadline_ts)
+        return False
+    time.sleep(min(YIELD_S if yield_s is None else max(0.0, yield_s), budget))
+    wait = TICK_WAIT_S if wait_s is None else max(0.0, wait_s)
+    tries = 0
     for _ in range(max(1, max_tries)):
-        if acquire(purpose, wait_s=wait):
+        budget = _tick_budget_s(deadline_ts, started)
+        if budget <= 0:
+            break
+        tries += 1
+        if acquire(purpose, wait_s=min(wait, budget)):
             return True
-        time.sleep(_POLL_S)
+        budget = _tick_budget_s(deadline_ts, started)
+        if budget <= 0:
+            break
+        time.sleep(min(_POLL_S, budget))
+    _log_tick_timeout(purpose, time.time() - started, tries, deadline_ts)
     return False
+
+
+def _tick_budget_s(deadline_ts, started, now=None):
+    """本次 tick 剩余可等待秒数：优先 deadline_ts，缺省用 TICK_TOTAL_BUDGET_S。"""
+    now = time.time() if now is None else now
+    if deadline_ts is not None:
+        try:
+            return max(0.0, float(deadline_ts) - now - TICK_DEADLINE_MARGIN_S)
+        except (TypeError, ValueError):
+            pass                     # 非法 deadline 回落总预算（不因坏参数阻塞）
+    return max(0.0, TICK_TOTAL_BUDGET_S - (now - started))
+
+
+def _log_tick_timeout(purpose, waited_s, tries, deadline_ts):
+    """超时日志（字段化，便于夜批日志/审计对账）；不抛异常、不影响返回值。"""
+    left = "?"
+    if deadline_ts is not None:
+        try:
+            left = "%.1f" % max(0.0, float(deadline_ts) - time.time())
+        except (TypeError, ValueError):
+            left = "?"
+    print("OLLAMA_LOCK tick timeout purpose=%s waited=%.1fs tries=%d "
+          "deadline_left=%ss budget=%s" % (
+              purpose, waited_s, tries, left,
+              "deadline" if deadline_ts is not None
+              else "%ss" % TICK_TOTAL_BUDGET_S),
+          flush=True)
 
 
 @contextlib.contextmanager

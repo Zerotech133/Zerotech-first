@@ -342,10 +342,18 @@ def validated_alerts(res, morning=False, include_baseline=False):
         parsed = _parse_source_time(source_time) if source_time is not None else None
         if source_time is not None and parsed is None:
             return None
+        biz = _parse_day(item.get("business_date"))
         if status in ("ok", "empty") and (
-                parsed is None or parsed.date() not in acceptable_days
+                parsed is None
+                or (biz is not None and (
+                    biz not in acceptable_days or parsed.date() < biz))
+                or (biz is None and parsed.date() not in acceptable_days)
                 or parsed > checked + ALERT_FRESH_WINDOW):
             # checked_at is observation time, never a substitute for as_of.
+            # 2026-10-26 EXEC-R36：与 portal/api_common.dated() 统一口径——
+            # business_date ∈ {今天, 上一交易日} 且 as_of 不早于该业务日、不超前
+            # 即当期；不再要求 as_of 自身日期也落在当期集合（否则周末/跨夜完成的
+            # EOD 批次会被下游二次判 outdated，把服务端已判 ok 的核心源丢掉）。
             outdated.add(source)
             continue
         # EXEC-R35：服务端口径"business_date 必须=今天"，周末/节后开盘前会把
@@ -353,7 +361,6 @@ def validated_alerts(res, morning=False, include_baseline=False):
         # {今天, 上一交易日} 且 as_of 不早于该业务日、不超前 → 视为当期。
         # business_date 更早（真断更）不在此列，仍由 bad 路径拒跑。
         if status == "stale" and reason in ("stale_anchor", "unproven_completion"):
-            biz = _parse_day(item.get("business_date"))
             if (biz is not None and biz in acceptable_days and parsed is not None
                     and parsed.date() >= biz
                     and parsed <= now + ALERT_FRESH_WINDOW):
