@@ -117,6 +117,21 @@ TASK_SPECS = (
 
 # 日志目录（相对 agent_platform 根；shadow_automation.ps1:24/42 重定向目标）
 SHADOW_LOG_DIR_REL = ("data", "shadow")
+# 2026-10-26 K-ORG-20261026-CHAINPATH：真仓脚本/数据都在 agent_platform/ 下
+# （任务动作 = C:\aios\agent_platform\monday_checkpoint.py，run_shadow 数据根
+# = <agent_platform>/data，见 run_shadow.py:64）；检查器此前按「仓库根」找，
+# 导致 2026-10-25 16:40 误报「脚本缺失」。改为优先 agent_platform/，回退仓库根
+# （保留单测夹具的旧布局兼容）。
+_AP_DIR = "agent_platform"
+
+
+def _first_existing(root: Path, *rels):
+    """按 (agent_platform/..., ...) 顺序找第一个存在的路径；都不存在返回 None。"""
+    for rel in rels:
+        cand = Path(root).joinpath(*rel)
+        if cand.exists():
+            return cand
+    return None
 
 # daemon：本链硬依赖 = Ollama LLM 服务（run_shadow.py:341；门3检查项 7）
 OLLAMA_HOST = "127.0.0.1"
@@ -486,7 +501,9 @@ _LOG_JUDGES = {
 
 
 def check_b_last_runs(repo_root: Path) -> Tuple[str, str]:
-    log_dir = Path(repo_root).joinpath(*SHADOW_LOG_DIR_REL)
+    log_dir = _first_existing(repo_root,
+                              (_AP_DIR,) + SHADOW_LOG_DIR_REL,
+                              SHADOW_LOG_DIR_REL) or Path(repo_root).joinpath(*SHADOW_LOG_DIR_REL)
     results = []
     for spec in TASK_SPECS:
         log_name = spec["log"]
@@ -577,7 +594,8 @@ def check_c_daemon(connect_fn=None, process_probe=None,
 # ---------------------------------------------------------------------------
 
 def check_d_data_root(repo_root: Path) -> Tuple[str, str]:
-    data = Path(repo_root) / "data"
+    data = _first_existing(Path(repo_root), (_AP_DIR, "data"), ("data",)) \
+        or (Path(repo_root) / "data")
     if not data.exists():
         return FAIL, "真仓数据根不存在：%s（17:10 run 无处落账，run_shadow.py:64）" % data
     try:
@@ -629,10 +647,10 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
     parts = []
     fails = []
 
-    # 1) 语法编译（三件）
+    # 1) 语法编译（三件）：优先 agent_platform/，回退仓库根
     for name in (CODE_IMPORT_PROBE[0],) + CODE_COMPILE_ONLY:
-        src = root / name
-        if not src.is_file():
+        src = _first_existing(root, (_AP_DIR, name), (name,))
+        if src is None or not src.is_file():
             fails.append("%s 缺失（首跑必挂）" % name)
             continue
         proc = subprocess.run(
@@ -648,9 +666,11 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
     name, stmt = CODE_IMPORT_PROBE
     if not fails:
         try:
+            _probe = _first_existing(root, (_AP_DIR, name), (name,))
+            _cwd = str(_probe.parent) if _probe is not None else str(root)
             proc = subprocess.run(
                 [py, "-X", "utf8", "-c", stmt],
-                capture_output=True, timeout=CODE_IMPORT_TIMEOUT_S, cwd=str(root))
+                capture_output=True, timeout=CODE_IMPORT_TIMEOUT_S, cwd=_cwd)
             if proc.returncode != 0:
                 fails.append("%s 顶层导入失败（17:10 首跑直接 ImportError）：%s" % (
                     name,
