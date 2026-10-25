@@ -1161,6 +1161,24 @@ ALERT_FRESH_WINDOW = datetime.timedelta(
     minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "1080")))
 
 
+def _read_weak_scan_marker():
+    """weak_scan 整轮完成标记（reports/weak_scan_last.json）→ dict|None。
+
+    2026-10-26 OS-FIX-MEASURE2：weak 源原先没有"整轮扫描完成"证据——CSV/
+    jsonl 的 mtime 只能证明"有东西写过"，零命中扫描更是一点痕迹都没有，
+    于是 dated() 永远 unproven。weak_scan.py 在成功出口（含零命中）原子写
+    completed_at/trade_date/source/case_count；本函数只读该 marker。
+    缺失/坏/非 dict → None（不判错，由调用方维持 unproven）。
+    """
+    path = os.path.join(STATION, "reports", "weak_scan_last.json")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, UnicodeError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def _alert_source_health():
     """Report independently verified source evidence, not display-card counts.
 
@@ -1296,9 +1314,17 @@ def _alert_source_health():
                 if not rows or not all(isinstance(row, dict) and row.get("ts")
                                        for row in rows):
                     raise TypeError("invalid weak status stream")
-            # A case's ts proves only that case was written, not that a full
-            # current-period scan completed (including a zero-case scan).
-            mark("weak", "stale", "unproven_completion")
+            # 2026-10-26 OS-FIX-MEASURE2：单条案例 ts 只能证明"该案写过"，
+            # 不能证明"整轮扫描跑完"（零命中扫描连案例都没有）。只认
+            # weak_scan.py 成功出口原子写的 weak_scan_last.json；且要求
+            # weak_track_*.jsonl 仍在案（标记不能凭空复活已删案例流）。
+            marker = _read_weak_scan_marker()
+            if marker and marker.get("trade_date") and marker.get("completed_at"):
+                dated("weak", marker.get("trade_date"),
+                      marker.get("completed_at"),
+                      empty=marker.get("case_count") == 0)
+            else:
+                mark("weak", "stale", "unproven_completion")
         except (OSError, UnicodeError, ValueError, TypeError):
             mark("weak", "error", "invalid_json")
 
@@ -1317,8 +1343,15 @@ def _alert_source_health():
                   for state in (cross.get("src_state") or {}).values())):
             mark("cross", "error", "upstream_degraded")
         else:
-            # generated_at is the aggregator's wall clock, not a trade date.
-            mark("cross", "stale", "unproven_completion")
+            # 2026-10-26 OS-FIX-MEASURE2：cross 生产者时间戳 = 聚合完成时间
+            # completed_at（+08:00 ISO）+ trade_date（各源 anchor 最大日）。
+            # 两者齐备才能证明"当期跑完"；缺一维持 unproven（不拿 generated_at
+            # 这个聚合器墙钟冒充交易日）。
+            if cross.get("trade_date") and cross.get("completed_at"):
+                dated("cross", cross.get("trade_date"),
+                      cross.get("completed_at"))
+            else:
+                mark("cross", "stale", "unproven_completion")
     except Exception:
         mark("cross", "error", "source_error")
 
@@ -1491,6 +1524,36 @@ def _alerts_last_jsonl(fp):
         return None
 
 
+def _council_ts_iso(rows, last_day):
+    """投委会最新业务日行的 ts → +08:00 ISO；naive 按北京时间理解；坏值/缺失 ''。
+
+    2026-10-26 OS-FIX-MEASURE2：原 `_council_stats()["ts"]` 取
+    council_shadow_stats.json 的 `updated`（与 `d` 不同日，dated() 恒
+    invalid_anchor/unproven）。生产者完成时间应来自留痕行自身的 ts：
+    取 d == last_day 的行里最大的 ts。任一字段不可信 → ""（调用方维持 unproven）。
+    """
+    best = None
+    for row in rows:
+        if not isinstance(row, dict) or row.get("d") != last_day:
+            continue
+        raw = str(row.get("ts") or "").strip()
+        if not raw:
+            continue
+        try:
+            moment = datetime.datetime.fromisoformat(raw)
+        except ValueError:
+            continue
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=datetime.timezone(
+                datetime.timedelta(hours=8)))
+        if best is None or moment > best:
+            best = moment
+    if best is None:
+        return ""
+    return best.astimezone(datetime.timezone(
+        datetime.timedelta(hours=8))).isoformat(timespec="seconds")
+
+
 def _council_stats():
     """K61 投委会大屏锚：最近跑批夜三会计数 + 影子转正进度。
     全部读 jsonl/json 落盘锚（60s TTL，大屏轮询零重量级）；
@@ -1520,6 +1583,9 @@ def _council_stats():
     revs = _rows(os.path.join(rd, "council_reviews.jsonl"))
     ds = [r.get("d") for r in props + watch + revs if r.get("d")]
     last = max(ds) if ds else ""
+    # 生产者完成时间戳（2026-10-26 OS-FIX-MEASURE2）：最新业务日行的 ts，
+    # 归一为 +08:00 ISO；取代旧的 shadow stats.updated（非生产者完成时间）。
+    latest_ts = _council_ts_iso(props + watch + revs, last)
     # K62：当期 (sid,code) 最新指令（预警类计数）+ 风格分桶分布
     latest = {}
     for r in props:
@@ -1546,7 +1612,7 @@ def _council_stats():
            "n_pend": len(_council_pending()),     # K64d 待人工确认队列
            "shadow_n": gate.get("n", 0), "shadow_need": gate.get("need", 30),
            "gate": gate.get("status", ""),
-           "ts": (st or {}).get("updated", "")}
+           "ts": latest_ts}
     _council_cache.update(t=now, d=res)
     return res
 

@@ -215,5 +215,47 @@ class AlertSourceHealthTests(unittest.TestCase):
         self.assertEqual(sources["nine_dim"]["reason"], "invalid_json")
 
 
+    def test_producer_timestamps_cross_council_weak_are_trusted(self):
+        """cross/council/weak 有生产者完成时间 + 当期交易日 → ok（不再 unproven）。"""
+        now = datetime.datetime.now(datetime.timezone(
+            datetime.timedelta(hours=8)))
+        day = now.date().isoformat()
+        stamp = now.isoformat(timespec="seconds")
+        self.cross.build_cross = lambda: {
+            "stocks": [], "degraded": False,
+            "src_state": {sid: {"status": "ok"} for sid in
+                          ("qpzm", "sig4", "chanlun", "9dim")},
+            "k_gate": {"mode": "normal"},
+            "completed_at": stamp, "trade_date": day}
+        with open(os.path.join(self.weak, "weak_track_600001.jsonl"), "w",
+                  encoding="utf-8") as handle:
+            handle.write(json.dumps({"ts": stamp, "code": "600001.SH"},
+                                    ensure_ascii=False) + "\n")
+        self.write_json(os.path.join(self.weak, "weak_scan_last.json"),
+                        {"schema": "weak_scan_last/v1",
+                         "completed_at": stamp, "trade_date": day,
+                         "source": "test", "case_count": 1})
+        with mock.patch.object(api, "_council_stats",
+                               return_value={"d": day, "ts": stamp}):
+            sources = api.build_alerts()["source_health"]["sources"]
+        for name in ("cross", "council", "weak"):
+            with self.subTest(name=name):
+                self.assertEqual(sources[name]["status"], "ok", sources[name])
+                self.assertEqual(sources[name]["as_of"], stamp, sources[name])
+
+    def test_cross_council_without_producer_timestamps_stay_unproven(self):
+        """缺 completed_at/trade_date 或行级 ts → 维持 stale/unproven，不猜 mtime。"""
+        now = datetime.datetime.now(datetime.timezone(
+            datetime.timedelta(hours=8)))
+        day = now.date().isoformat()
+        with mock.patch.object(api, "_council_stats",
+                               return_value={"d": day, "ts": ""}):
+            sources = api.build_alerts()["source_health"]["sources"]
+        self.assertEqual(sources["cross"]["status"], "stale")
+        self.assertEqual(sources["cross"]["reason"], "unproven_completion")
+        self.assertEqual(sources["council"]["status"], "stale")
+        self.assertEqual(sources["council"]["reason"], "unproven_completion")
+
+
 if __name__ == "__main__":
     unittest.main()
