@@ -137,14 +137,15 @@ def register_consumer(store: S.OsGoalStore, consumer_id: str, kind: str = "agent
     caps = [str(c) for c in (capabilities or ["artifact.generate"])]
     _require(all(c in L1_ACTIONS for c in caps), "能力必须属于受控 L1 动作")
     existing = _consumer(store, consumer_id)
-    if existing:
+    if existing and existing.get("status") == "active":
         return existing
     ev = store.append_event(
         "consumer.registered", {},
         {"consumer_id": consumer_id, "kind": kind,
          "display_name": display_name or consumer_id,
          "capabilities": caps, "owner_id": owner_id,
-         "status": "active", "registered_at": _now()},
+         "status": "active", "registered_at": _now(),
+         "reactivated": bool(existing)},
         actor=USER_ACTOR, idem=idem)
     return ev["payload"]
 
