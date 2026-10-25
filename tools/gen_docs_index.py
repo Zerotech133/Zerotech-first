@@ -51,7 +51,7 @@ PROJECT_DIRNAME = "老田的AI助手"
 OUTPUT_FILENAME = "DOCS_INDEX.md"
 TITLE_LIMIT = 100
 TIME_PREFIX = "- 生成时间："
-NOTE_TEMPLATE_DELIVERABLES = "> 与 `老田的AI助手/deliverables` 有 **{dup} 篇同名**；当前位置待裁决。"
+NOTE_TEMPLATE_DELIVERABLES = "> 与 `老田的AI助手/deliverables` 有 **{dup} 篇同名**；**已裁决（2026-10-25）**：A=根 deliverables 为唯一索引根（主文档位），B=仓 deliverables 为 git 归档副本（依据 `双写文档裁决建议_2026-10-22.md` §〇）。"
 
 SECTIONS = (
     {

@@ -13,6 +13,10 @@
                                     --l2-ack=人工确认豁免 L2 命中（K-STOCK-416，须带 --l2-reason）
   board [out.html]         生成看板 HTML（默认 docs/dev/devboard.html）
   drop <TID>               放弃任务（留原因，清 worktree）
+  prune [--dry-run|--apply] [--all|--merged|--worktrees] [--repo <path>]
+                           仓治理（EXEC-R11）：删已合并 task/* 分支 + 回收 done/aborted
+                           且干净的 worktree。默认 dry-run 只打印；--apply 才执行；
+                           --repo 仅供单测/演练指向临时仓（不碰真仓）。
 
 依赖：git（Windows 原生，无 tmux）；评审门工具在 tools/ 下。
 """
@@ -788,6 +792,269 @@ def cmd_board(out=None):
     return 0
 
 
+# ── prune（EXEC-R11，2026-10-25）────────────────────────────────────────────
+# 仓治理：① 删已合并进 master 的本地 task/* 分支（git branch -d，绝不用 -D）；
+# ② 回收 .worktrees/<TID>（分支已合并 + tasks.json 状态 done/aborted + 工作树干净）。
+# 默认 dry-run 只打印计划，不发任何删除命令；--apply 才执行。执行权留给人：
+# 并行会话仍在写 worktree，误删不可逆（AGENTS §7「删前确认」判例）。
+PRUNE_PROTECTED = ("master", "main")
+_PRUNE_FLAGS = ("--apply", "--dry-run", "--merged", "--worktrees", "--all")
+
+
+def _prune_git(repo, *args, check=False):
+    """prune 专用 git 调用（独立于 _git：需支持 --repo 指向临时演练仓）。"""
+    r = subprocess.run(["git"] + list(args), cwd=repo, capture_output=True,
+                       text=True, encoding="utf-8", errors="replace",
+                       env=GUARD_ENV)
+    if check and r.returncode != 0:
+        raise SystemExit("git %s 失败: %s"
+                         % (" ".join(args), (r.stderr or r.stdout).strip()))
+    return r
+
+
+def _prune_load_tasks(tasks_path):
+    """读目标仓 .worktrees/tasks.json（沿用尾逗号自愈）。"""
+    if not os.path.exists(tasks_path):
+        return {}
+    with open(tasks_path, encoding="utf-8") as f:
+        raw = f.read()
+    try:
+        return json.loads(raw)
+    except ValueError:
+        healed = _heal_trailing_commas(raw)
+        if healed == raw:
+            raise
+        return json.loads(healed)
+
+
+def _prune_same_path(a, b):
+    return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
+
+
+def _prune_worktrees(repo):
+    """git worktree list --porcelain → [{path, branch, detached, bare, exists}]。"""
+    out = _prune_git(repo, "worktree", "list", "--porcelain", check=True).stdout
+    items = []
+    for line in out.splitlines():
+        line = line.rstrip()
+        if line.startswith("worktree "):
+            items.append({"path": line[len("worktree "):].strip(), "branch": None,
+                          "detached": False, "bare": False})
+        elif items and line.startswith("branch refs/heads/"):
+            items[-1]["branch"] = line[len("branch refs/heads/"):].strip()
+        elif items and line == "detached":
+            items[-1]["detached"] = True
+        elif items and line == "bare":
+            items[-1]["bare"] = True
+    for it in items:
+        it["exists"] = os.path.isdir(it["path"])
+    return items
+
+
+def _prune_find_task(tasks, tid, branch, wt_path):
+    """按 TID / branch / worktree 绝对路径三路匹配工单（aborted 会改名留存）。"""
+    if tid in tasks:
+        return tid, tasks[tid]
+    for key, val in tasks.items():
+        if branch and val.get("branch") == branch:
+            return key, val
+        if wt_path and val.get("worktree") and _prune_same_path(val["worktree"], wt_path):
+            return key, val
+    return None, None
+
+
+def _prune_plan(repo, do_branches=True, do_worktrees=True):
+    """只读计算 prune 计划；任何分支下都不发删除命令。"""
+    wt_dir = os.path.join(repo, ".worktrees")
+    tasks = _prune_load_tasks(os.path.join(wt_dir, "tasks.json"))
+    cur = _prune_git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    merged = set()
+    m_out = _prune_git(repo, "branch", "--merged", "master",
+                       "--format=%(refname:short)").stdout
+    for name in m_out.splitlines():
+        name = name.strip().lstrip("* ").strip()
+        if name:
+            merged.add(name)
+    wts = _prune_worktrees(repo)
+    checked_out = {}
+    for w in wts:
+        if w["branch"] and not w["bare"] and not _prune_same_path(w["path"], repo):
+            checked_out[w["branch"]] = w["path"]
+    plan = {"repo": repo, "current": cur, "worktrees": [], "branches": [],
+            "stale": []}
+    # ① worktree：只认 .worktrees/ 下且在 git worktree list 在册的目录
+    if do_worktrees and os.path.isdir(wt_dir):
+        listed = {os.path.normcase(os.path.abspath(w["path"])): w for w in wts}
+        for entry in sorted(os.listdir(wt_dir)):
+            path = os.path.join(wt_dir, entry)
+            if not os.path.isdir(path):
+                continue
+            w = listed.get(os.path.normcase(os.path.abspath(path)))
+            tid, branch, tv = entry, None, None
+            reasons = []
+            if w is None:
+                reasons.append("不在 git worktree list（残留目录，需人工核实）")
+            elif w["bare"]:
+                reasons.append("bare worktree")
+            elif w["detached"]:
+                reasons.append("detached HEAD（非任务分支检出）")
+            elif not w["branch"]:
+                reasons.append("分支未知")
+            else:
+                branch = w["branch"]
+            if branch:
+                if branch not in merged:
+                    reasons.append("分支未合并 master（%s）" % branch)
+                if branch == cur:
+                    reasons.append("分支是当前检出分支")
+                tk, tv = _prune_find_task(tasks, tid, branch, path)
+                if tv is None:
+                    reasons.append("tasks.json 无对应工单（状态未知）")
+                elif tv.get("status", "?") not in ("done", "aborted"):
+                    reasons.append("任务状态=%s（非 done/aborted）"
+                                   % tv.get("status", "?"))
+            if w is not None and w["exists"]:
+                st = _prune_git(path, "status", "--porcelain")
+                if st.returncode != 0:
+                    reasons.append("git status 失败（%s）"
+                                   % (st.stderr or "").strip()[:60])
+                elif st.stdout.strip():
+                    reasons.append("工作树脏（%d 个未提交项）"
+                                   % len(st.stdout.strip().splitlines()))
+            elif w is not None:
+                reasons.append("目录不存在（陈旧登记）")
+            plan["worktrees"].append({
+                "tid": tid, "path": path, "branch": branch,
+                "status": (tv or {}).get("status"), "action": "worktree-remove",
+                "skip": bool(reasons),
+                "reason": "；".join(reasons) if reasons
+                else "分支已合并 + 任务 %s + 工作树干净"
+                     % (tv or {}).get("status", "?")})
+    # ② 分支：本地 task/* 且已合并 master（当前分支/他人检出排除）
+    if do_branches:
+        wt_by_branch = {it["branch"]: it for it in plan["worktrees"] if it["branch"]}
+        for name in sorted(merged):
+            if not name.startswith("task/"):
+                continue
+            if name in PRUNE_PROTECTED or name == cur:
+                continue
+            holder = wt_by_branch.get(name)
+            if name in checked_out and holder is None:
+                plan["branches"].append({
+                    "branch": name, "action": "delete-branch", "skip": True,
+                    "reason": "分支被 worktree 占用：%s（--worktrees 未选中）"
+                              % checked_out[name]})
+            elif holder is not None and holder["skip"]:
+                plan["branches"].append({
+                    "branch": name, "action": "delete-branch", "skip": True,
+                    "reason": "分支被 worktree 占用且该 worktree 拒绝回收：%s"
+                              % holder["path"]})
+            elif holder is not None:
+                plan["branches"].append({
+                    "branch": name, "action": "delete-branch", "skip": False,
+                    "reason": "已合并 master（随 worktree 回收后删除）"})
+            else:
+                plan["branches"].append({
+                    "branch": name, "action": "delete-branch", "skip": False,
+                    "reason": "已合并 master"})
+    # ③ 陈旧登记：worktree list 中路径已不存在
+    for w in wts:
+        if not _prune_same_path(w["path"], repo) and not os.path.isdir(w["path"]):
+            plan["stale"].append(w["path"])
+    return plan
+
+
+def _prune_apply(repo, plan):
+    """执行计划：先回收 worktree（git worktree remove，无 --force），再删分支。"""
+    rc = 0
+    for it in plan["worktrees"]:
+        if it["skip"]:
+            continue
+        r = _prune_git(repo, "worktree", "remove", it["path"])
+        if r.returncode == 0:
+            print("  [DONE] git worktree remove \"%s\"" % it["path"])
+        else:
+            rc = 1
+            print("  [FAIL] git worktree remove \"%s\" → %s"
+                  % (it["path"], (r.stderr or r.stdout).strip()[:160]))
+    for it in plan["branches"]:
+        if it["skip"]:
+            continue
+        r = _prune_git(repo, "branch", "-d", it["branch"])
+        if r.returncode == 0:
+            print("  [DONE] git branch -d %s" % it["branch"])
+        else:
+            rc = 1
+            print("  [FAIL] git branch -d %s → %s"
+                  % (it["branch"], (r.stderr or r.stdout).strip()[:160]))
+    if plan["stale"]:
+        r = _prune_git(repo, "worktree", "prune")
+        if r.returncode == 0:
+            print("  [DONE] git worktree prune（清理 %d 条陈旧登记）"
+                  % len(plan["stale"]))
+    return rc
+
+
+def cmd_prune(*args):
+    """prune：仓治理（默认 dry-run，--apply 才执行）。"""
+    flags = [a for a in args if a.startswith("--")]
+    unknown = [f for f in flags if f not in _PRUNE_FLAGS and f != "--repo"]
+    if unknown:
+        raise SystemExit("prune 未知参数：%s（支持 --dry-run/--apply/--merged/"
+                         "--worktrees/--all/--repo <path>）" % " ".join(unknown))
+    repo = REPO
+    if "--repo" in args:
+        i = list(args).index("--repo")
+        if i + 1 >= len(args):
+            raise SystemExit("--repo 需要跟仓库路径（仅演练/单测用）")
+        repo = os.path.abspath(args[i + 1])
+    _prune_git(repo, "rev-parse", "--git-dir", check=True)
+    only_merged, only_wts = "--merged" in args, "--worktrees" in args
+    if "--all" in args or not (only_merged or only_wts):
+        do_branches = do_worktrees = True
+    else:
+        do_branches, do_worktrees = only_merged, only_wts
+    apply_ = "--apply" in args
+    plan = _prune_plan(repo, do_branches=do_branches, do_worktrees=do_worktrees)
+    print("== devtask prune（%s）==" % ("APPLY" if apply_ else "dry-run"))
+    print("仓库：%s（当前分支 %s）" % (repo, plan["current"]))
+    wts_do = [x for x in plan["worktrees"] if not x["skip"]]
+    wts_skip = [x for x in plan["worktrees"] if x["skip"]]
+    brs_do = [x for x in plan["branches"] if not x["skip"]]
+    brs_skip = [x for x in plan["branches"] if x["skip"]]
+    if do_worktrees:
+        print("-- worktree 回收：候选 %d / 拒绝 %d --"
+              % (len(wts_do), len(wts_skip)))
+        for it in wts_do:
+            print("  [%s] git worktree remove \"%s\"  # %s"
+                  % ("APPLY" if apply_ else "DRY", it["path"], it["reason"]))
+        for it in wts_skip:
+            print("  [SKIP] %s  # %s" % (it["path"], it["reason"]))
+    if do_branches:
+        print("-- 分支删除：候选 %d / 拒绝 %d --"
+              % (len(brs_do), len(brs_skip)))
+        for it in brs_do:
+            print("  [%s] git branch -d %s  # %s"
+                  % ("APPLY" if apply_ else "DRY", it["branch"], it["reason"]))
+        for it in brs_skip:
+            print("  [SKIP] git branch -d %s  # %s"
+                  % (it["branch"], it["reason"]))
+    if plan["stale"]:
+        print("-- 陈旧 worktree 登记 %d 条（--apply 时 git worktree prune）--"
+              % len(plan["stale"]))
+        for p in plan["stale"]:
+            print("  [STALE] %s" % p)
+    print("汇总：worktree 候选 %d / 分支候选 %d；拒绝 worktree %d / 分支 %d"
+          % (len(wts_do), len(brs_do), len(wts_skip), len(brs_skip)))
+    if not apply_:
+        print("→ dry-run：未执行任何删除。确认后在有权限会话跑 "
+              "`python tools/devtask.py prune --apply`")
+        return 0
+    rc = _prune_apply(repo, plan)
+    print("→ apply 完成（rc=%d）；建议重跑 --dry-run 复核剩余项" % rc)
+    return rc
+
+
 def main():
     a = sys.argv[1:]
     if not a:
@@ -799,6 +1066,7 @@ def main():
             "port": lambda: cmd_port(*rest),
             "merge": lambda: cmd_merge(*rest),
             "drop": lambda: cmd_drop(*rest),
+            "prune": lambda: cmd_prune(*rest),
             "board": cmd_board}[c]()
 
 
