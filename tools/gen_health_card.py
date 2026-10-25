@@ -43,10 +43,12 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
    是 tools/refresh_curated.py 从 data/tushare/ 派生的整理层（51 张表 + 3 侧车），
    纯派生，自己不会跟着原始层变新。取整理层最旧 parquet 的 mtime 与原始层递归
    最新 parquet 的 mtime 比落后天数，另按 51 个数据集逐个比（报落后的数据集数量），
-   判定取两者更差者。只看 mtime（scandir 目录项缓存，不打开文件、不读 footer，
-   5s 预算）。落后 <=2 天绿 / >2 天黄 / >14 天红；整理层不存在或为空 →
-   available=false 黄（不判绿）；原始层不存在/无 parquet/遍历超预算 →
-   available=false 红。
+   判定取两者更差者。只看 mtime（scandir 目录项缓存，不打开文件、不读 footer）。
+   预算默认 20s（ZB_HC_CURATED_BUDGET_S 可调）；成功结果缓存 2h
+   （ZB_HC_CURATED_CACHE / ZB_HC_CURATED_CACHE_TTL_S），ZB_HC_CURATED_FORCE=1 强制重扫。
+   落后 <=2 天绿 / >2 天黄 / >14 天红；整理层不存在或为空 → available=false 黄（不判绿）；
+   原始层不存在/无 parquet → available=false 红；**遍历超预算 → 黄（不判绿、也不判红：
+   超预算只说明扫描慢，不说明数据过期）；有缓存则用缓存兜底并在 detail 明确标注。**
 
 9. 本地推理能力（ai.inference）：这张卡原来 21 项全在管任务/备份/数据/仓库，
    产品本体（AI 推理）零监控，而推理故障全是静默的——上下文截断不报错、思考
@@ -317,9 +319,19 @@ RAW_REL = Path("quant_backtest") / "data" / "tushare"
 CURATED_YELLOW_LAG_DAYS = 2.0
 CURATED_RED_LAG_DAYS = 14.0
 # 实测：228,930 个文件名的 scandir 遍历 0.6–0.9s（只吃目录项缓存里的 mtime，
-# 从不打开 parquet、不读 footer）。5s 上限是给冷缓存/杀软抖动的余量，
-# 超了按不可判定处理，绝不拖死健康卡。
-CURATED_SCAN_BUDGET_SECONDS = 5.0
+# 从不打开 parquet、不读 footer）。但 2026-10-25 睡眠恢复后实测 >5s（冷缓存 +
+# 杀软抖动），旧逻辑因此误判红。现改为：
+#   * 预算默认 20s（ZB_HC_CURATED_BUDGET_S 可调），超预算只判黄，绝不判红；
+#   * 成功扫描结果缓存 2h（ZB_HC_CURATED_CACHE / ZB_HC_CURATED_CACHE_TTL_S），
+#     新鲜度是「天」尺度，2h 的缓存不会改变判级结论；
+#   * ZB_HC_CURATED_FORCE=1 可强制忽略缓存重扫（排障/验证用）。
+CURATED_SCAN_BUDGET_SECONDS = float(os.environ.get("ZB_HC_CURATED_BUDGET_S", "20.0"))
+CURATED_CACHE_PATH = Path(os.environ.get(
+    "ZB_HC_CURATED_CACHE",
+    str(Path(tempfile.gettempdir()) / "health_card_curated_raw_cache.json")))
+CURATED_CACHE_TTL_SECONDS = float(
+    os.environ.get("ZB_HC_CURATED_CACHE_TTL_S", "7200"))
+CURATED_FORCE_SCAN = os.environ.get("ZB_HC_CURATED_FORCE", "") == "1"
 CURATED_SCAN_DEADLINE_CHECK_EVERY = 4096
 CURATED_DETAIL_DATASET_LIMIT = 5
 
@@ -1569,6 +1581,8 @@ def _empty_curated_freshness(curated_root: Path, raw_root: Path) -> dict[str, An
         "stale_dataset_names": [],
         "scan_seconds": None,
         "timed_out": False,
+        "cache_used": False,
+        "cache_age_seconds": None,
         "thresholds": {
             "yellow_lag_days": CURATED_YELLOW_LAG_DAYS,
             "red_lag_days": CURATED_RED_LAG_DAYS,
@@ -1585,6 +1599,58 @@ def _mtime_iso(timestamp: float | None) -> str | None:
     if timestamp is None:
         return None
     return _iso(dt.datetime.fromtimestamp(timestamp).astimezone())
+
+
+def _curated_cache_load(any_age: bool = False) -> dict[str, Any] | None:
+    """读原始层扫描缓存；any_age=False 时只认 TTL 内的新鲜缓存。"""
+    try:
+        payload = json.loads(CURATED_CACHE_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    try:
+        ts = float(payload.get("ts"))
+        raw_files = int(payload.get("raw_files") or 0)
+        raw_newest_raw = payload.get("raw_newest")
+        raw_newest = float(raw_newest_raw) if raw_newest_raw is not None else None
+        per_dataset = {
+            str(key): float(value)
+            for key, value in dict(payload.get("per_dataset") or {}).items()
+        }
+    except (TypeError, ValueError):
+        return None
+    if raw_newest is None or not per_dataset:
+        return None
+    age = max(0.0, time.time() - ts)
+    if not any_age and age > CURATED_CACHE_TTL_SECONDS:
+        return None
+    return {
+        "per_dataset": per_dataset,
+        "raw_newest": raw_newest,
+        "raw_files": raw_files,
+        "age_seconds": round(age, 1),
+    }
+
+
+def _curated_cache_save(
+    per_dataset: dict[str, float], raw_newest: float | None, raw_files: int
+) -> None:
+    """扫描成功即写缓存；写失败不影响判级（缓存是加速器，不是事实源）。"""
+    try:
+        payload = {
+            "ts": time.time(),
+            "raw_newest": raw_newest,
+            "raw_files": int(raw_files),
+            "per_dataset": {key: value for key, value in per_dataset.items()},
+            "source": "gen_health_card.collect_curated_freshness",
+        }
+        CURATED_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = CURATED_CACHE_PATH.with_name(CURATED_CACHE_PATH.name + ".tmp")
+        tmp_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp_path, CURATED_CACHE_PATH)
+    except OSError:
+        pass
 
 
 def _scan_raw_parquet_mtimes(
@@ -1661,8 +1727,8 @@ def collect_curated_freshness(curated_root: Path, raw_root: Path) -> dict[str, A
     * 逐数据集：51 个数据集各自「本数据集整理产物 mtime vs 原始层同名目录最新」，
       报落后的数据集数量（能指出是哪几张表旧了）。
     判定：落后 ≤2 天绿；>2 天黄（该重建）；>14 天红（结论不可信）。
-    整理层不存在 → available=false + 黄（不判绿）；原始层不存在/扫不出 parquet
-    或遍历超预算 → available=false + 红。
+    整理层不存在 → available=false + 黄（不判绿）；原始层不存在/扫不出 parquet → 红；
+    遍历超预算 → 黄（不判绿、不判红：超预算只说明扫描慢；有缓存则用缓存兜底并标注）。
     """
     result = _empty_curated_freshness(curated_root, raw_root)
     started = time.monotonic()
@@ -1711,18 +1777,53 @@ def collect_curated_freshness(curated_root: Path, raw_root: Path) -> dict[str, A
         result["level"] = "yellow"
         return result
 
-    per_dataset, raw_newest, raw_files, timed_out = _scan_raw_parquet_mtimes(
-        raw_root, deadline
-    )
-    result["scan_seconds"] = round(time.monotonic() - started, 3)
-    if timed_out:
-        result["timed_out"] = True
-        result["reason"] = (
-            f"遍历原始层超过 {CURATED_SCAN_BUDGET_SECONDS:g}s 预算，结果不采信"
+    per_dataset: dict[str, float] = {}
+    raw_newest: float | None = None
+    raw_files = 0
+    timed_out = False
+    cache_used = False
+    cache_age_s: float | None = None
+
+    cached = None if CURATED_FORCE_SCAN else _curated_cache_load()
+    if cached:
+        per_dataset = cached["per_dataset"]
+        raw_newest = cached["raw_newest"]
+        raw_files = cached["raw_files"]
+        cache_age_s = cached["age_seconds"]
+        cache_used = True
+    else:
+        per_dataset, raw_newest, raw_files, timed_out = _scan_raw_parquet_mtimes(
+            raw_root, deadline
         )
-        result["status"] = "timeout"
-        result["level"] = "red"
-        return result
+        if timed_out:
+            # 超预算只说明扫描慢，不说明数据过期：旧逻辑判红会制造假红
+            # （2026-10-25 睡眠恢复后实测）。有缓存（哪怕过期）就用缓存兜底，
+            # 但明确标注 timed_out 且不判绿；没缓存则判黄，绝不判红。
+            stale_cached = _curated_cache_load(any_age=True)
+            if stale_cached:
+                per_dataset = stale_cached["per_dataset"]
+                raw_newest = stale_cached["raw_newest"]
+                raw_files = stale_cached["raw_files"]
+                cache_age_s = stale_cached["age_seconds"]
+                cache_used = True
+            else:
+                result["scan_seconds"] = round(time.monotonic() - started, 3)
+                result["timed_out"] = True
+                result["reason"] = (
+                    f"遍历原始层超过 {CURATED_SCAN_BUDGET_SECONDS:g}s 预算：本次结果"
+                    "不采信，但**不判红**（超预算只说明扫描慢，不说明数据过期）；"
+                    "可稍后复跑，或设 ZB_HC_CURATED_FORCE=1 强制重扫"
+                )
+                result["status"] = "timeout"
+                result["level"] = "yellow"
+                return result
+        else:
+            _curated_cache_save(per_dataset, raw_newest, raw_files)
+
+    result["scan_seconds"] = round(time.monotonic() - started, 3)
+    result["timed_out"] = timed_out or (cache_used and timed_out)
+    result["cache_used"] = cache_used
+    result["cache_age_seconds"] = cache_age_s
     if raw_newest is None or not raw_files:
         result["raw_files"] = raw_files
         result["reason"] = f"原始层没有任何 parquet，无从比对（{raw_root}）"
@@ -1796,6 +1897,11 @@ def collect_curated_freshness(curated_root: Path, raw_root: Path) -> dict[str, A
     else:
         result["status"] = "fresh"
         result["level"] = "green"
+    if cache_used and timed_out and result["level"] == "green":
+        # 缓存兜底可以给结论，但扫描已超预算时不判绿：避免用"看起来绿"掩盖
+        # 冷缓存/杀软导致的性能退化（2026-10-25 假红改假绿同样不可取）。
+        result["status"] = "fresh_cached_slow"
+        result["level"] = "yellow"
     return result
 
 
@@ -1846,6 +1952,13 @@ def _curated_freshness_detail(block: dict[str, Any]) -> str:
         bits.append(dataset_text)
     if block.get("datasets_without_raw"):
         bits.append("原始层缺对应目录 %s 个" % _fmt_num(block.get("datasets_without_raw")))
+    if block.get("cache_used"):
+        bits.append(
+            "原始层扫描结果来自缓存（%.0f 分钟前），本次未重扫"
+            % ((block.get("cache_age_seconds") or 0) / 60.0)
+        )
+    if block.get("timed_out"):
+        bits.append("原始层遍历超预算：用缓存兜底且不判绿（超预算≠数据过期，也不判红）")
 
     status = block.get("status")
     if status == "expired":
