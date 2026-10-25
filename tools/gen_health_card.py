@@ -4652,6 +4652,95 @@ def _batch_backlog_detail(bl: dict[str, Any]) -> str:
     return "；".join(bits)
 
 
+# ── Hermes 推送健康（hermes.push，2026-10-26 K-ORG-20261026-HERMESFIX）──────
+# 背景：push_log 连续 18 次 ok=false 却没有任何健康项报警；人工查会话发现 agent
+# 其实已回复，是读流/预算设计缺陷（SSE 吃光预算、state 兜底没机会跑）。此处把
+# 「最近成功时间 + 7 天成功率 + DLQ 积压」做成可判定指标，防止再次静默失败。
+HERMES_PUSH_LOG = os.environ.get("HERMES_PUSH_LOG") or (
+    r"C:\aios\zerobound-kg\deliverables\daily_brief\push_log.jsonl")
+HERMES_PUSH_DLQ = os.environ.get("HERMES_PUSH_DLQ") or (
+    r"C:\aios\zerobound-kg\deliverables\daily_brief\push_dlq.jsonl")
+
+
+def _read_jsonl_tail(path: str, max_lines: int = 500) -> list:
+    if not os.path.isfile(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.readlines()[-max_lines:]
+    except OSError:
+        return []
+    out = []
+    for ln in lines:
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            out.append(json.loads(ln))
+        except ValueError:
+            continue
+    return out
+
+
+def _parse_ts_local(value):
+    if not value:
+        return None
+    try:
+        return dt.datetime.fromisoformat(str(value).replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _collect_hermes_push() -> dict:
+    recs = _read_jsonl_tail(HERMES_PUSH_LOG)
+    dlq = _read_jsonl_tail(HERMES_PUSH_DLQ)
+    now = dt.datetime.now()
+    last_ok = None
+    for r in recs:
+        ts = _parse_ts_local(r.get("ts"))
+        if r.get("ok") is True and ts is not None and (last_ok is None or ts > last_ok):
+            last_ok = ts
+    win = []
+    for r in recs:
+        ts = _parse_ts_local(r.get("ts"))
+        if ts is not None and (now - ts).total_seconds() <= 7 * 86400:
+            win.append(r)
+    ok7 = sum(1 for r in win if r.get("ok") is True)
+    return {
+        "available": bool(recs),
+        "last_ok": last_ok.isoformat(timespec="seconds") if last_ok else None,
+        "last_ok_age_h": round((now - last_ok).total_seconds() / 3600.0, 1) if last_ok else None,
+        "win7_total": len(win),
+        "win7_ok": ok7,
+        "win7_rate": round(ok7 / len(win), 3) if win else None,
+        "last": (recs[-1] if recs else {}),
+        "dlq_count": len(dlq),
+        "log_path": HERMES_PUSH_LOG,
+    }
+
+
+def _hermes_push_level(rec: dict) -> tuple[str, str]:
+    if not rec.get("available"):
+        return "red", "Hermes 推送日志不存在/为空：%s" % rec.get("log_path")
+    age = rec.get("last_ok_age_h")
+    rate = rec.get("win7_rate")
+    total = rec.get("win7_total") or 0
+    dlq = rec.get("dlq_count") or 0
+    parts = ["最近成功 %s" % ("从未成功" if age is None else "%.1fh 前" % age)]
+    if total:
+        parts.append("7d 成功率 %.0f%% (%d/%d)" % ((rate or 0) * 100, rec.get("win7_ok", 0), total))
+    last = rec.get("last") or {}
+    if last:
+        parts.append("最近一次 ok=%s elapsed=%ss" % (last.get("ok"), last.get("elapsed_s")))
+    parts.append("DLQ %d 条" % dlq)
+    detail = " | ".join(parts)
+    if age is None or age > 48:
+        return "red", detail
+    if age > 36 or (total >= 3 and (rate or 0) < 0.7) or dlq >= 3:
+        return "yellow", detail
+    return "green", detail
+
+
 def _batch_backlog_level(bl: dict[str, Any]) -> tuple[str, str]:
     """ops.batch_backlog 判级（2026-10-25 EXEC-R13，R23/R32 修 ETA 口径）。
 
@@ -5440,6 +5529,17 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         # 便于反例测试；读不到/无 ROUND 一律红（不判绿）。
         level, detail = _batch_backlog_level(batch)
         add("ops.batch_backlog", level, detail)
+
+    # ---------------------------------------------------------------------------
+    # 6) Hermes 推送健康（hermes.push，2026-10-26 K-ORG-20261026-HERMESFIX）
+    #    JEV→Hermes 一切集成的必经通道：agent 回执失败必须可判定，不能只看 task rc=0。
+    # ---------------------------------------------------------------------------
+    try:
+        _hp = _collect_hermes_push()
+        _hp_level, _hp_detail = _hermes_push_level(_hp)
+        add("hermes.push", _hp_level, _hp_detail)
+    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+        add("hermes.push", "yellow", "Hermes 推送健康检查异常：%r" % (_exc,))
 
     keys = (card.get("security") or {}).get("plaintext_keys") or {}
     if not keys:
