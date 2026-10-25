@@ -17,7 +17,14 @@
 # git is the audit record. To change this script: edit disk -> push
 # registry -> commit git. All three, every time - pushing registry
 # without committing git caused the git drift found on 2026-10-08.
-# VERSION: v12 2026-10-25
+# VERSION: v13 2026-10-25
+# v13 (2026-10-25 EXEC-R18, user-approved): appended section 6 "_vault automation" -
+# tools\backup_bundles.ps1 -> tools\prepare_offsite.ps1 -> [switch, DEFAULT OFF]
+# tools\offsite_push_vault.ps1. The upload switch stays OFF for unattended runs;
+# failures are recorded as their own VAULT_FAILED_<stamp>.flag / OFFSITE_VAULT_FAILED
+# flags and never change the tar/mirror/offsite exit codes above (existing flow
+# untouched). Switches: -VaultUpload / -VaultDryRun / -SkipVaultAuto, or env
+# BACKUP_VAULT_UPLOAD=1 / BACKUP_VAULT_DRYRUN=1.
 # v12 (2026-10-25 P1-01, EXEC-R1): quant_data archive-count gate now uses the
 # same +/-8 live-tree drift tolerance as quant_code (exact equality produced 5
 # false BACKUP_FAILED alerts in the 7 days 10-19..10-25: "files=224 expect=225");
@@ -48,6 +55,17 @@
 # (~20-byte gzip of empty stream) from a legit shell-schema dump; dump size
 # now logged in the OK line for eyeball audit.
 # =====================================================================
+
+# 2026-10-25 EXEC-R18: _vault automation switches (see section 6 at the end).
+# Upload defaults to OFF: an unattended 03:00 run must never push to the
+# production offsite host unless a human explicitly turned it on.
+[CmdletBinding()]
+param(
+    [switch]$VaultUpload,
+    [switch]$VaultDryRun,
+    [switch]$SkipVaultAuto
+)
+
 $ErrorActionPreference = "Continue"
 
 # base dir: parent of script folder, or auto-located when run in-memory
@@ -116,6 +134,120 @@ function Write-OffsiteDiffManifest([string]$dir, [string]$stamp) {
     foreach ($f in $script:Failures) { $lines += ("failed_item=" + $f) }
     Set-Content -LiteralPath $diffFile -Value $lines -Encoding UTF8
     return $diffFile
+}
+
+# ---------------- _vault bundle automation (2026-10-25 EXEC-R18) ----------------
+# User-approved: hook the orphaned _vault pipeline into the existing BackupDaily
+# task (no new task, no task change - editing this on-disk script is the deploy).
+# Order: backup_bundles.ps1 -> <workspace>\_vault\<yyyy-MM-dd>\
+#        prepare_offsite.ps1 -> <workspace>\_offsite\<date>-offsite.txt etc.
+#        [explicit switch, DEFAULT OFF] offsite_push_vault.ps1 -> 10.205.0.118
+# Failure semantics: this section only writes its own VAULT_FAILED /
+# OFFSITE_VAULT_FAILED flags; it never changes $script:Failed, BACKUP_FAILED or
+# the tar/mirror/offsite exit codes computed above.
+$script:VaultLastRc = -1
+$script:VaultAutoFailed = 0
+$script:VaultAutoStages = @()
+
+function Invoke-VaultStep([string]$Label, [string]$ScriptPath, [string[]]$ExtraArgs = @()) {
+    if (-not (Test-Path -LiteralPath $ScriptPath)) {
+        Log ("VAULT FAIL " + $Label + " missing script: " + $ScriptPath)
+        $script:VaultLastRc = 127
+        return
+    }
+    $argList = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ScriptPath) + $ExtraArgs
+    Log ("VAULT start " + $Label + " " + $ScriptPath + " " + ($ExtraArgs -join " "))
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        $out = & powershell.exe @argList 2>&1
+        $rc = [int]$LASTEXITCODE
+    } catch {
+        $rc = 99
+        $out = @("VAULT exception: " + $_.Exception.Message)
+    }
+    $sw.Stop()
+    foreach ($line in @($out | Select-Object -Last 6)) {
+        Log ("VAULT " + $Label + " | " + ([string]$line).Trim())
+    }
+    Log ("VAULT end " + $Label + " rc=" + $rc + " elapsed=" + [math]::Round($sw.Elapsed.TotalSeconds, 1) + "s")
+    $script:VaultLastRc = $rc
+}
+
+function Invoke-VaultAuto([string]$RepoPhysical, [string]$AlertDir, [string]$Stamp, [bool]$Upload, [bool]$DryRun) {
+    $script:VaultAutoFailed = 0
+    $script:VaultAutoStages = @()
+    $workspace  = Split-Path -Parent $RepoPhysical
+    $vaultRoot  = Join-Path $workspace "_vault"
+    $offsiteDir = Join-Path $workspace "_offsite"
+    $vaultDate  = Get-Date -Format "yyyy-MM-dd"
+    $vaultDay   = Join-Path $vaultRoot $vaultDate
+    $toolsDir   = Join-Path $RepoPhysical "tools"
+    $bundleScript = Join-Path $toolsDir "backup_bundles.ps1"
+    $prepScript   = Join-Path $toolsDir "prepare_offsite.ps1"
+    $pushScript   = Join-Path $toolsDir "offsite_push_vault.ps1"
+
+    Log ("VAULT auto: workspace=" + $workspace + " date=" + $vaultDate + " upload=" + $Upload + " dryrun=" + $DryRun)
+    if ($DryRun) {
+        Log ("VAULT DRYRUN would run: powershell -NoProfile -ExecutionPolicy Bypass -File " + $bundleScript)
+        Log ("VAULT DRYRUN would run: powershell -NoProfile -ExecutionPolicy Bypass -File " + $prepScript + " -Date " + $vaultDate)
+        if ($Upload) {
+            Log ("VAULT DRYRUN would run: powershell -NoProfile -ExecutionPolicy Bypass -File " + $pushScript + " -Date " + $vaultDate)
+        } else {
+            Log "VAULT DRYRUN upload switch is OFF (default): nothing would be pushed to 10.205.0.118"
+        }
+        Log ("VAULT DRYRUN expected day dir: " + $vaultDay + " (exists=" + (Test-Path -LiteralPath $vaultDay) + ")")
+        Log ("VAULT DRYRUN expected controls: " + $offsiteDir + "\" + $vaultDate + "-offsite.txt")
+        return
+    }
+
+    # 1) bundle set (real production step)
+    Invoke-VaultStep "bundles" $bundleScript
+    if ($script:VaultLastRc -ne 0) {
+        $script:VaultAutoFailed++
+        $script:VaultAutoStages += ("bundles(rc=" + $script:VaultLastRc + ")")
+        Log "VAULT bundles failed; skipping prepare_offsite + upload (fail-closed; tar/offsite results above are untouched)"
+    } else {
+        # 2) offsite control files. No -Copy on purpose: upload directly from the
+        # vault set and avoid duplicating ~690 MiB under _offsite every night.
+        Invoke-VaultStep "prepare_offsite" $prepScript @("-Date", $vaultDate)
+        if ($script:VaultLastRc -ne 0) {
+            $script:VaultAutoFailed++
+            $script:VaultAutoStages += ("prepare_offsite(rc=" + $script:VaultLastRc + ")")
+        }
+        # 3) optional upload - explicit switch or env, DEFAULT OFF
+        if ($Upload) {
+            Invoke-VaultStep "push_vault" $pushScript @("-Date", $vaultDate)
+            if ($script:VaultLastRc -ne 0) {
+                $script:VaultAutoFailed++
+                $script:VaultAutoStages += ("push_vault(rc=" + $script:VaultLastRc + ")")
+            }
+        } else {
+            Log "VAULT upload skipped (switch OFF; use -VaultUpload or BACKUP_VAULT_UPLOAD=1 to enable)"
+        }
+    }
+
+    if ($script:VaultAutoFailed -gt 0) {
+        $stageText = ($script:VaultAutoStages -join ",")
+        $isPush = $stageText -match "push_vault"
+        try {
+            if (-not (Test-Path -LiteralPath $AlertDir)) { New-Item -ItemType Directory -Path $AlertDir -Force | Out-Null }
+            $flagName = $(if ($isPush) { "OFFSITE_VAULT_FAILED_" } else { "VAULT_FAILED_" }) + $Stamp + ".flag"
+            $flag = Join-Path $AlertDir $flagName
+            $flagType = $(if ($isPush) { "ai_workstation_offsite_vault_failed" } else { "ai_workstation_vault_failed" })
+            @(
+                ("type=" + $flagType),
+                ("stamp=" + $Stamp),
+                ("stages=" + $stageText),
+                ("vault_day=" + $vaultDay),
+                ("backup_log=" + $LogFile)
+            ) | Set-Content -LiteralPath $flag -Encoding UTF8
+            Log ("VAULT alert flag written " + $flag)
+        } catch { Log ("VAULT alert flag error: " + $_.Exception.Message) }
+    } else {
+        $upNote = " (upload off)"
+        if ($Upload) { $upNote = " (upload on, rc=0)" }
+        Log ("VAULT summary: OK bundles+prepare_offsite" + $upNote)
+    }
 }
 
 New-Item -ItemType Directory -Path $DayDir -Force | Out-Null
@@ -488,6 +620,37 @@ if (-not (Test-Path -LiteralPath $pushScript)) {
             Log ("OFFSITE alert flag written " + $flag)
         } catch { Log ("OFFSITE alert flag error: " + $_.Exception.Message) }
     }
+}
+
+# ------------------------------------------------------------------ 6. _vault automation
+# 2026-10-25 EXEC-R18（用户已批准 _vault 自动化）：不新增/不改计划任务，挂进本脚本末尾。
+# 产物：<workspace>\_vault\<yyyy-MM-dd>（bundle+docs+data_manifest+MANIFEST）；
+#       <workspace>\_offsite\<date>-offsite.txt 等控制文件（故意不带 -Copy：上传直接从
+#       _vault 读，避免每晚在 _offsite 再复制 ~690 MiB）。
+# 开关默认关：无人值守不推生产服务器；打开方式 -VaultUpload 或 BACKUP_VAULT_UPLOAD=1。
+# 本段失败只写 VAULT_FAILED_*/OFFSITE_VAULT_FAILED_* flag，不改变上面已有流程的退出码。
+$VaultUploadOn = $VaultUpload -or ($env:BACKUP_VAULT_UPLOAD -eq "1")
+$VaultDryRunOn = $VaultDryRun -or ($env:BACKUP_VAULT_DRYRUN -eq "1")
+if ($SkipVaultAuto) {
+    Log "VAULT skipped (-SkipVaultAuto)"
+} else {
+    # 计划任务经 C:\aios junction 启动（$BaseDir=C:\aios）。backup_bundles.ps1 /
+    # prepare_offsite.ps1 各自按 $PSScriptRoot 推导 workspace，必须传物理路径，
+    # 否则 workspace 会算成 C:\、_vault 落到 C:\_vault（错）。
+    $RepoPhysical = $BaseDir
+    try {
+        $bdItem = Get-Item -LiteralPath $BaseDir -Force
+        if ($bdItem.LinkType -eq "Junction" -and $bdItem.Target) {
+            $RepoPhysical = [string](@($bdItem.Target)[0])
+        }
+    } catch { }
+    if (-not (Test-Path -LiteralPath (Join-Path $RepoPhysical "tools\backup_bundles.ps1"))) {
+        Log ("VAULT WARN physical repo resolve failed (" + $RepoPhysical + "); falling back to BaseDir")
+        $RepoPhysical = $BaseDir
+    }
+    Invoke-VaultAuto -RepoPhysical $RepoPhysical `
+        -AlertDir (Join-Path $BaseDir "jev-eval\alerts") `
+        -Stamp $stamp -Upload ([bool]$VaultUploadOn) -DryRun ([bool]$VaultDryRunOn)
 }
 
 if ($script:Failed -gt 0) { exit 1 } else { if ($OffsiteRc -eq 0 -or $OffsiteRc -eq -1) { exit 0 } else { exit 1 } }

@@ -17,6 +17,11 @@ history_backfill / full_refresh / tail_fill）每天按日/按票切片落盘，
     python tools/refresh_curated.py --dry-run        # 只出计划（会扫 footer，约 2 分钟）
     python tools/refresh_curated.py                  # 重建到 <out>.tmp 并校验，不替换
     python tools/refresh_curated.py --replace        # 校验通过后替换正式目录（**永久删除旧层**）
+    python tools/refresh_curated.py --replace --keep-prev
+                                                     # 替换但把旧层改名为 <out>.prev 保留一代（可回滚）
+    python tools/refresh_curated.py --replace --keep-prev --from-tmp
+                                                     # 不再合并：直接切换已校验的 <out>.tmp
+                                                     # （weekly runner 在 STAGE 校验全 OK 后使用）
 
 安全设计
 --------
@@ -36,6 +41,17 @@ history_backfill / full_refresh / tail_fill）每天按日/按票切片落盘，
 6. `--replace` 会**永久删除**旧整理层（本机回收站不可用：进程是 Low IL，
    SHFileOperationW 会静默退化为硬删）。所以它要求显式开关，且先打印将删什么。
 7. 按 AGENTS.md §3，真跑前后在 C:\\Temp\\kg_sync_task.log 补记（`--no-log` 可关）。
+8. `--keep-prev`（EXEC-R17，2026-10-25 用户批准）：切换成功后旧层**不再永久删除**，
+   改名为 `<out>.prev` 保留一代（同卷 rename 瞬时；若已有 `.prev` 先清掉上一代，
+   磁盘只保留 1 代）；回滚 = 停写后把 `.prev` 改回 `<out>`。不带 `--keep-prev` 时
+   行为与旧版完全一致（永久删除，向后兼容）。Windows 上回收站不可用（Low IL），
+   所以旧层的「可回滚性」只能靠这一代的 rename。
+9. `--from-tmp`（EXEC-R17）：只用于「已有一份通过 STAGE 校验的 `<out>.tmp`」时做切换，
+   **不再重新合并**（否则 weekly runner 会把 22~52 分钟的合并跑两遍）。切换前仍复查
+   产物 footer（表数/可读性）+ 缩水护栏（新层表数/行数不得少于旧层）；不读原始层、
+   不写 `<out>.tmp`，因此**跳过 kg_sync 活跃守卫**（STAGE 收尾会写一条 kg_sync 日志，
+   套守卫会把 runner 的下一步误挡）。必须与 `--replace` 同用，且与 `--dirs` /
+   `--dry-run` 互斥。
 """
 from __future__ import annotations
 
@@ -61,6 +77,11 @@ KG_LOG = Path(r"C:\Temp\kg_sync_task.log")
 # 不排除的话：全量 refresh → dirs_skipped=1 → exit 1 → 无法 --replace，
 # 每周 routine 永远是"能暂存、不能切换"的半截状态（2026-10-22 实测）。
 DEFAULT_EXCLUDES = ("stk_pledge",)
+
+# EXEC-R17（2026-10-25 用户批准）：--keep-prev 保留的上一代目录名后缀。
+# 旧 live 层 `<out>` 切换成功后 rename 为 `<out>.prev`，保留一代供回滚；
+# 与 `<out>.old`（两阶段切换的中间态/失败残骸）语义不同，勿混用。
+PREV_SUFFIX = ".prev"
 
 
 def _say(msg: str = "") -> None:
@@ -206,12 +227,77 @@ def containment_error(label: str, path: Path, src: Path) -> str | None:
     return None
 
 
-def swap_out(out: Path, tmp: Path) -> int:
-    """两阶段切换整理层：out → out.old，tmp → out，成功后删 out.old。
+def check_shrink(out: Path, new_rows: int, new_tables: int) -> list[str]:
+    """护栏（EXEC-R17，2026-10-25 用户批准）：新层表数/行数不得少于旧 live 层。
+
+    只在 --replace（含 --from-tmp）时调用；out 不存在 = 首次替换，直接通过。
+    旧层若有读不出 footer 的文件，行数基准不完整 → 只比表数并 WARN。
+    返回失败原因列表（空列表 = 通过）。
+    """
+    if not out.is_dir():
+        return []
+    old_rows, old_tables, old_failed = count_product_rows(out)
+    _say(f"  旧层：{old_tables} 张表 / {old_rows:,} 行")
+    problems = []
+    if old_failed:
+        _say(f"  [WARN] 旧层 {len(old_failed)} 个文件 footer 读不出"
+             f"（{', '.join(old_failed[:5])}"
+             f"{' …' if len(old_failed) > 5 else ''}）——行数基准不完整，只比表数")
+    if new_tables < old_tables:
+        problems.append(f"表数 {new_tables} < 旧层 {old_tables}")
+    if not old_failed and new_rows < old_rows:
+        problems.append(f"行数 {new_rows:,} < 旧层 {old_rows:,}"
+                        f"（差 {old_rows - new_rows:,}）")
+    if not problems:
+        _say(f"  [OK] 护栏：新层 {new_tables} 表 / {new_rows:,} 行 ≥ 旧层 "
+             f"{old_tables} 表 / {old_rows:,} 行")
+    return problems
+
+
+def _retire_old(out: Path, old: Path, keep_prev: bool) -> None:
+    """切换成功后处置旧层（两阶段中间态 `<out>.old`）。
+
+    --keep-prev（EXEC-R17）：旧层不删，rename 为 `<out>.prev` 保留一代（回滚把手）；
+    已有 `.prev` 时先清掉上一代（磁盘只保留 1 代）。清理/改名失败只 WARN——
+    新层已生效，旧层仍以 `.old` 名义留在盘上，人工可改名，不假装成功。
+    默认行为（向后兼容）：永久删除旧层，与 2026-10-22 版一致。
+    """
+    if not keep_prev:
+        try:
+            shutil.rmtree(old)
+            _say(f"[REPLACE] 已删除旧层 {old}")
+        except OSError as exc:
+            _say(f"  [WARN] 旧层已切走但删除失败（{type(exc).__name__}: {exc}）：{old}"
+                 f"（不影响新层使用，但下次替换前需人工清掉它）")
+        return
+    prev = out.with_name(out.name + PREV_SUFFIX)
+    if prev.exists():
+        try:
+            prev_size = sum(f.stat().st_size for f in prev.glob("*") if f.is_file())
+            shutil.rmtree(prev)
+            _say(f"[REPLACE] --keep-prev：已清理上一代旧层 {prev.name}"
+                 f"（{prev_size / 1024**3:.2f} GiB，只保留一代，更早的不可回滚）")
+        except OSError as exc:
+            _say(f"  [WARN] 上一代 {prev} 清理失败（{type(exc).__name__}: {exc}）；"
+                 f"本次旧层保留为 {old.name}（新层已生效，可人工改名）")
+            return
+    try:
+        old.rename(prev)
+        _say(f"[REPLACE] --keep-prev：旧层已保留为 {prev}")
+        _say(f"          回滚：停写后把 {prev.name} 改回 {out.name}"
+             f"（`Move-Item`/`ren` 均可）")
+    except OSError as exc:
+        _say(f"  [WARN] 旧层改名 {prev.name} 失败（{type(exc).__name__}: {exc}）；"
+             f"旧层仍在 {old}（新层已生效，可人工改名）")
+
+
+def swap_out(out: Path, tmp: Path, keep_prev: bool = False) -> int:
+    """两阶段切换整理层：out → out.old，tmp → out；成功后删 out.old 或保留为 out.prev。
 
     返回 0 成功 / 1 失败（失败时保证 out 仍是替换前的旧层，除非回滚本身也失败）。
     Windows 上目录 rename 会因「目录内有文件被占用」抛 PermissionError，所以
     「rmtree 旧层 + rename 新层」的老写法一旦失手就是旧层已毁、新层未就位（审查 F3）。
+    keep_prev=True（EXEC-R17）时旧层 rename 为 `<out>.prev` 保留一代，供回滚。
     """
     old = out.with_name(out.name + ".old")
     if not tmp.is_dir():
@@ -247,13 +333,73 @@ def swap_out(out: Path, tmp: Path) -> int:
         return 1
 
     if moved_old:
-        try:
-            shutil.rmtree(old)
-            _say(f"[REPLACE] 已删除旧层 {old}")
-        except OSError as exc:
-            _say(f"  [WARN] 旧层已切走但删除失败（{type(exc).__name__}: {exc}）：{old}"
-                 f"（不影响新层使用，但下次替换前需人工清掉它）")
+        _retire_old(out, old, keep_prev)
     return 0
+
+
+def do_replace(out: Path, tmp: Path, keep_prev: bool, started: float,
+               new_tables: int, new_rows: int, log_on: bool) -> int:
+    """打印替换信息 + 两阶段切换 + 落日志（普通 --replace 与 --from-tmp 共用）。"""
+    _say()
+    _say(f"[REPLACE] 两阶段切换整理层：{out}")
+    if out.exists():
+        old_files = sum(1 for _ in out.glob("*"))
+        old_size = sum(f.stat().st_size for f in out.glob("*") if f.is_file())
+        disposition = (f"切换成功后旧层改名为 {out.name}{PREV_SUFFIX} 保留一代"
+                       f"（--keep-prev）" if keep_prev
+                       else "切换成功后**永久删除**")
+        _say(f"          现有 {old_files} 个条目 / {old_size / 1024**3:.2f} GiB"
+             f"（{disposition}）")
+    _say(f"          新层 {new_tables} 张表：{tmp}")
+    rc = swap_out(out, tmp, keep_prev=keep_prev)
+    if rc != 0:
+        _say("  [FAIL] 替换未完成，旧整理层保持不变")
+        _log(f"refresh_curated REPLACE failed {time.strftime('%Y-%m-%dT%H:%M:%S')} "
+             f"(exit={rc})", log_on)
+        return 1
+    _say(f"[REPLACE] 完成：{out}")
+    _say(f"耗时 {time.time() - started:.1f}s")
+    _log(f"refresh_curated REPLACE ok {time.strftime('%Y-%m-%dT%H:%M:%S')} "
+         f"({new_rows} rows{', keep_prev' if keep_prev else ''})", log_on)
+    return 0
+
+
+def _replace_from_tmp(args, out: Path, tmp: Path, log_on: bool) -> int:
+    """`--from-tmp`：不重新合并，直接切换已通过 STAGE 校验的 `<out>.tmp`。
+
+    weekly runner 先跑 STAGE（含源侧 footer 校验），确认 校验1/2 + 2/2 全 OK
+    后再调本路径；若走普通 `--replace`，脚本会重新合并一遍（22~52 分钟）。
+    这里仍做三件事：产物 footer 复查（可读性/表数>0）→ 缩水护栏 → 两阶段切换。
+    """
+    _say("=== 切换整理层（--from-tmp：复用已校验的临时层，不重新合并）===")
+    _say(f"目标（整理层）: {out}")
+    _say(f"临时目录     : {tmp}")
+    _say(f"模式         : REPLACE{'+KEEP-PREV' if args.keep_prev else ''}（FROM-TMP）")
+    _say("说明：from-tmp 不读原始层、不写 tmp，故跳过 kg_sync 活跃守卫"
+         "（STAGE 收尾会写 kg_sync 日志，套守卫会误挡自己的下一步）")
+    _say()
+    if not tmp.is_dir():
+        _say(f"错误：临时目录不存在（先跑一次 STAGE）：{tmp}")
+        return 2
+    started = time.time()
+    new_rows, new_tables, new_failed = count_product_rows(tmp)
+    _say(f"临时层：{new_tables} 张表 / {new_rows:,} 行")
+    if new_failed:
+        _say(f"  [FAIL] 临时层有 {len(new_failed)} 个文件 footer 读不出"
+             f"（{', '.join(new_failed[:5])}）——拒绝切换")
+        return 1
+    if new_tables <= 0:
+        _say("  [FAIL] 临时层没有 parquet 表——拒绝切换")
+        return 1
+    problems = check_shrink(out, new_rows, new_tables)
+    if problems:
+        _say("  [FAIL] 护栏：新层相对旧层缩水 —— " + "；".join(problems))
+        _say(f"         不替换，临时目录保留：{tmp}")
+        _log("refresh_curated REPLACE blocked from-tmp (shrink guard) "
+             + time.strftime("%Y-%m-%dT%H:%M:%S"), log_on)
+        return 1
+    return do_replace(out, tmp, args.keep_prev, started, new_tables,
+                      new_rows, log_on)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -263,7 +409,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dirs", nargs="+", default=None, help="只重建这些子目录")
     parser.add_argument("--dry-run", action="store_true", help="只出计划，不写盘")
     parser.add_argument("--replace", action="store_true",
-                        help="校验通过后替换正式目录（会永久删除旧整理层）")
+                        help="校验通过后替换正式目录（默认切换成功后永久删除旧整理层；"
+                             "加 --keep-prev 则保留一代）")
+    parser.add_argument("--keep-prev", action="store_true",
+                        help="与 --replace 同用：旧 live 层改名为 <out>.prev 保留一代"
+                             "（回滚把手；磁盘需多留一代空间）；不带时行为与旧版一致"
+                             "（永久删除）")
+    parser.add_argument("--from-tmp", action="store_true",
+                        help="不重新合并：直接切换已存在的 <out>.tmp（供 weekly runner "
+                             "在 STAGE 校验全 OK 后调用；必须与 --replace 同用，"
+                             "与 --dirs/--dry-run 互斥）")
     parser.add_argument("--no-log", action="store_true", help="不写 kg_sync_task.log")
     parser.add_argument("--skip-verify", action="store_true",
                         help="跳过逐文件 footer 复核（不推荐）")
@@ -273,9 +428,21 @@ def main(argv: list[str] | None = None) -> int:
                         help="无视 kg_sync 活跃守卫（--guard-minutes 0 的显式替代）")
     args = parser.parse_args(argv)
 
+    # ---- EXEC-R17（2026-10-25 用户批准）组合约束：在运行期拒绝歧义组合。
+    if args.keep_prev and not args.replace:
+        parser.error("--keep-prev 只能与 --replace 同用（它决定替换后旧层怎么处置）")
+    if args.from_tmp and not args.replace:
+        parser.error("--from-tmp 只能与 --replace 同用（它只负责切换，不负责生成）")
+    if args.from_tmp and args.dirs:
+        parser.error("--from-tmp 与 --dirs 互斥：子集产物不能做整层切换")
+    if args.from_tmp and args.dry_run:
+        parser.error("--from-tmp 与 --dry-run 互斥：切换动作没有预览模式"
+                     "（要预览 STAGE 请用普通 --dry-run）")
+
     src = Path(args.src)
     out = Path(args.out)
     tmp = out.with_name(out.name + ".tmp")
+    prev = out.with_name(out.name + PREV_SUFFIX)
     log_on = not args.no_log
 
     # ---- 硬约束 1（审查 F2）：--dirs 是「子集重建」，--replace 是「整层替换」。
@@ -294,7 +461,11 @@ def main(argv: list[str] | None = None) -> int:
     # ---- 开工守卫（每周 routine 的关键闸门）：kg_sync 正在写原始层时重建，
     # 会读到写了一半的数据集（写一半的 parquet 读不出 footer → F5 会拦，但那时
     # 已经浪费 52 分钟）。所以用「kg_sync 日志最近有写入」作为活跃信号。
-    if args.guard_minutes > 0 and not args.force and KG_LOG.is_file():
+    # EXEC-R17：--from-tmp 只切换已存在的 <out>.tmp（不读原始层、不写 tmp），
+    # 且 STAGE 收尾自己会写一条 "STAGE ok" 到 kg_sync 日志——若对 from-tmp 也套
+    # 这个 60 分钟守卫，weekly runner 在 STAGE 后立刻 replace 必被自己误挡，故豁免。
+    if (args.guard_minutes > 0 and not args.force and not args.from_tmp
+            and KG_LOG.is_file()):
         try:
             idle = (time.time() - KG_LOG.stat().st_mtime) / 60.0
         except OSError:
@@ -308,7 +479,11 @@ def main(argv: list[str] | None = None) -> int:
     # ---- 硬约束 2（审查 F4）：out / tmp 与 src 的三种重叠关系逐一显式拒绝。
     # 没这条时 `--out ...\quant_backtest\data` 能通过全部校验，替换时 rmtree 会把
     # 整个数据根（raw / staging / catalog）连根删掉。
-    for _label, _path in ((f"--out {out}", out), (f"临时目录 {tmp}", tmp)):
+    _paths = [(f"--out {out}", out), (f"临时目录 {tmp}", tmp)]
+    if args.keep_prev:
+        # EXEC-R17：保留位与 out 同目录，同样做 containment 校验（防御性，正常必然通过）
+        _paths.append((f"--keep-prev 保留位 {prev}", prev))
+    for _label, _path in _paths:
         _err = containment_error(_label, _path, src)
         if _err:
             _say(f"错误：{_err}")
@@ -319,11 +494,19 @@ def main(argv: list[str] | None = None) -> int:
         _say(f"错误：找不到合并工具 {MERGE_TOOL}")
         return 2
 
+    # ---- EXEC-R17（2026-10-25 用户批准）：STAGE 已校验通过后的「只切换」路径。
+    # 不重新合并、不读原始层；切换前仍做产物 footer 复查 + 缩水护栏。
+    if args.from_tmp:
+        return _replace_from_tmp(args, out, tmp, log_on)
+
     _say("=== 重建整理层 tushare_curated ===")
     _say(f"源（原始层）: {src}")
     _say(f"目标（整理层）: {out}")
     _say(f"临时目录     : {tmp}")
-    _say(f"模式         : {'DRY-RUN' if args.dry_run else ('REPLACE' if args.replace else 'STAGE-ONLY')}")
+    _mode = ("DRY-RUN" if args.dry_run else
+             ("REPLACE+KEEP-PREV" if args.replace and args.keep_prev else
+              ("REPLACE" if args.replace else "STAGE-ONLY")))
+    _say(f"模式         : {_mode}")
     _say()
 
     started = time.time()
@@ -358,7 +541,7 @@ def main(argv: list[str] | None = None) -> int:
 
     target_dirs = args.dirs or [d["dir"] for d in planned_dirs]
     merge_files_failed = int(totals.get("files_failed") or 0)
-    prod_tables = None
+    prod_rows, prod_tables = None, None
     _say()
     _say("校验 1/2：产物行数 vs 源 footer 累加（逐文件，跳过 0 行）")
     if args.skip_verify:
@@ -397,6 +580,21 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         _say(f"  [OK] {tables} 张表齐全")
 
+    # ---- 护栏（EXEC-R17，2026-10-25 用户批准）：新层相对旧 live 层不得缩水。
+    # 独立于 --skip-verify：用两侧 footer 直算，避免「重建出更少的层」顶替 live。
+    if args.replace:
+        if prod_tables is None:  # --skip-verify：产物计数按护栏需要补算
+            prod_rows, prod_tables, _guard_failed = count_product_rows(tmp)
+            if _guard_failed:
+                _say(f"  [FAIL] 产物侧 {len(_guard_failed)} 个文件 footer 读不出"
+                     f"（{', '.join(_guard_failed[:5])}）——不替换")
+                return 1
+        problems = check_shrink(out, prod_rows, prod_tables)
+        if problems:
+            _say("  [FAIL] 护栏：新层相对旧层缩水 —— " + "；".join(problems))
+            _say(f"         不替换，临时目录保留：{tmp}")
+            return 1
+
     if not args.replace:
         _say()
         _say(f"已写入 {tmp}（未替换正式目录）。加 --replace 才会切换。")
@@ -404,26 +602,8 @@ def main(argv: list[str] | None = None) -> int:
              f"({totals.get('rows_out', 0)} rows)", log_on)
         return 0
 
-    _say()
-    _say(f"[REPLACE] 两阶段切换整理层：{out}")
-    if out.exists():
-        old_files = sum(1 for _ in out.glob("*"))
-        old_size = sum(f.stat().st_size for f in out.glob("*") if f.is_file())
-        _say(f"          现有 {old_files} 个条目 / {old_size / 1024**3:.2f} GiB"
-             f"（切换成功后**永久删除**）")
-    if tmp.is_dir():
-        _say(f"          新层 {sum(1 for _ in tmp.glob('*.parquet'))} 张表：{tmp}")
-    rc = swap_out(out, tmp)
-    if rc != 0:
-        _say("  [FAIL] 替换未完成，旧整理层保持不变")
-        _log(f"refresh_curated REPLACE failed {time.strftime('%Y-%m-%dT%H:%M:%S')} "
-             f"(exit={rc})", log_on)
-        return 1
-    _say(f"[REPLACE] 完成：{out}")
-    _say(f"耗时 {time.time() - started:.1f}s")
-    _log(f"refresh_curated REPLACE ok {time.strftime('%Y-%m-%dT%H:%M:%S')} "
-         f"({totals.get('rows_out', 0)} rows)", log_on)
-    return 0
+    return do_replace(out, tmp, args.keep_prev, started, prod_tables, prod_rows,
+                      log_on)
 
 
 if __name__ == "__main__":
