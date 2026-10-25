@@ -466,11 +466,9 @@ def _doc_sync(md):
     if not exe:
         print("DOC_SYNC SKIP no lark-cli")
         return None
-    cfgp = os.path.join(pm.HERE, "config.json")
-    try:
-        cfg = json.load(open(cfgp, encoding="utf-8"))
-    except Exception:
-        cfg = {}
+    # 2026-10-25 SEC 收口（EXEC-R16）：doc URL 读 env/本地私有覆盖，见 config_local.py
+    from config_local import load_config, save_report_url
+    cfg = load_config()
     doc = (cfg.get("report") or {}).get("afterhours_doc_url", "")
     tmp = os.path.join(pm.HERE, "_aft_doc.md")
     try:
@@ -502,11 +500,8 @@ def _doc_sync(md):
         except Exception:
             url = ""
         if url:
-            cfg.setdefault("report", {})["afterhours_doc_url"] = url
-            tmp_cfg = cfgp + ".tmp"
-            with open(tmp_cfg, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, ensure_ascii=False, indent=1)
-            os.replace(tmp_cfg, cfgp)
+            # 2026-10-25 SEC 收口（EXEC-R16）：写私有覆盖，不回写 tracked config.json
+            save_report_url("afterhours_doc_url", url)
             print("DOC_SYNC CREATE OK", url[:60])
             return url
         print("DOC_SYNC FAIL", out[:200])

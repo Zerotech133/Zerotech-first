@@ -28,7 +28,10 @@ import strategies as strat
 from data_loader import load_bars
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CFG = json.load(open(os.path.join(HERE, "config.json"), encoding="utf-8"))
+# 2026-10-25 SEC 收口（EXEC-R16）：config.json 的 report 文档 URL 走环境变量/本地私有覆盖，
+# 见 config_local.py；禁止把真值写回 tracked config。
+from config_local import load_config as _load_quant_config  # noqa: E402
+CFG = _load_quant_config()
 RESULTS_JSONL = os.path.join(HERE, "backtest_results.jsonl")
 LAST_JSON = os.path.join(HERE, "last_backtest.json")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))

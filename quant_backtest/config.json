@@ -59,9 +59,10 @@
   "portal_url": "http://192.168.0.3:8080/",
   "pos_alert_pct": 0.03,
   "pos_alert_cooldown_min": 30,
-  "doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/QIcedHBRLozCWYxSa9ocBYgfnTf",
-  "premarket_doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/RxITdNTYvopjIZxEI93caaTZnYg",
-  "afterhours_doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/SRSldhZjooLl6uxIukBcAkoPnBe"
+  "doc_url": "",
+  "premarket_doc_url": "",
+  "afterhours_doc_url": "",
+  "_secrets_note": "2026-10-25 SEC 收口（EXEC-R16）：report.doc_url/premarket_doc_url/afterhours_doc_url 真值已移出 tracked config；优先环境变量 QUANT_DOC_URL/QUANT_PREMARKET_DOC_URL/QUANT_AFTERHOURS_DOC_URL 或本地私有文件 C:\\项目\\_vault\\secrets\\quant_config_private.json（见 config_local.py）；pos_card.buttons 中「详情文档」按钮 url 为派生占位，由 load_config() 用 report.doc_url 回填。report.portal_url 为内网拓扑、非凭据，2026-10-25 已裁决保留。禁止把真值写回本文件。"
  },
  "opt_grids": {
   "trend_follow": {
@@ -165,7 +166,7 @@
   "buttons": [
    {
     "label": "📄 详情文档",
-    "url": "https://fcnfiqjbtb8d.feishu.cn/docx/QIcedHBRLozCWYxSa9ocBYgfnTf",
+    "url": "",
     "type": "primary_filled"
    },
    {

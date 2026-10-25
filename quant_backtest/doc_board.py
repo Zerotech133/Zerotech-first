@@ -3,7 +3,8 @@
 
   手机飞书内原生打开，不依赖家里网络/Tailscale —— 解决移动端
   「按钮点不开、看不到详情」。每次异动提醒与 16:00 收盘记账后
-  整体 overwrite 刷新；文档 URL 存 config.json report.doc_url。
+  整体 overwrite 刷新；文档 URL 走 config_local（env/私有覆盖），
+  真值不存 tracked config（2026-10-25 SEC 收口 / EXEC-R16）。
 """
 import os
 import subprocess
