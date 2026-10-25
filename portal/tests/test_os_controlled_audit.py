@@ -126,3 +126,21 @@ def test_chain_c1_blocked_when_approval_expired(store):
     rep = X.chain_report_c1(store, iid)
     assert rep["gates"]["C1-DECISION"]["status"] == "BLOCKED"
     assert rep["verdict"] != "CONTROLLED_L2_APPROVED"
+
+
+def test_api_grant_revoke_route(store):
+    iid, g = setup(store)
+    st, d = __import__("api_os_goal").handle_post(
+        store, "/api/os/item/%s/grant/revoke" % iid, {"grant_id": g["grant_id"]})
+    assert st == 201 and d["ok"] is True
+    with __import__("pytest").raises(C.ContractError):
+        X.create_formal_workorder(store, iid, "撤销后工单")
+
+
+def test_api_consumer_deactivate_route(store):
+    iid, _ = setup(store)
+    st, d = __import__("api_os_goal").handle_post(
+        store, "/api/os/consumer/deactivate", {"consumer_id": "CONS-AUD", "reason": "t"})
+    assert st == 201 and d["ok"] is True
+    with __import__("pytest").raises(C.ContractError):
+        X.real_claim(store, iid, "CONS-AUD")
