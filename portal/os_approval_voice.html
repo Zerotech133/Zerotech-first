@@ -27,6 +27,11 @@
   .step{font-size:12px;padding:4px 10px;border-radius:20px;background:#eef2f5;color:#54677a;border:1px solid #dbe5ee}
   .step.on{background:#0e7490;color:#fff;border-color:#0e7490}
   .step.done{background:#e9f5ee;color:#227a4b;border-color:#bcdcc9}
+  .heard{font-size:20px;line-height:1.5;background:#f0f9ff;border:1px solid #cfe8f5;border-radius:10px;padding:10px 12px;margin:6px 0;color:#0b3b52}
+  .heard b{color:#0e7490}
+  .cheat{margin-top:10px;font-size:13px;color:#44586b}
+  .cheat summary{cursor:pointer;color:#0e7490;font-weight:700}
+  .cheat div{padding:8px 0}
   .log{max-height:190px;overflow:auto;font-size:13px;color:#44586b;background:#f7fafc;border:1px solid #e3ecf2;border-radius:10px;padding:10px 12px}
   .log div{padding:2px 0}
   .v{font-weight:800}
@@ -63,12 +68,17 @@
 
   <section class="big">
     <h2 style="margin:0 0 6px;font-size:16px">结果</h2>
+    <div class="heard">识别原文：<b id="heard">—</b> <button id="copyh" class="ghost" style="padding:4px 10px;font-size:12px">复制</button></div>
     <div class="sub" id="item">事项：（未载入）</div>
     <div class="sub" id="consumer">消费者：（未注册）</div>
     <div class="sub" id="approval">审批单：（无）</div>
     <div class="sub" id="outbox">outbox：（无）</div>
     <div class="v" id="verdict" style="margin-top:8px">审计链：—</div>
     <div class="log" id="log"></div>
+    <details class="cheat">
+      <summary>指令速查（说不清时可打开照着念）</summary>
+      <div>① 载入事项 202610250004<br>② 注册消费者，叫小灵<br>③ 申请发布审批<br>④ 批准 → 确认执行<br>⑤ 记录 outbox<br>⑥ 看链<br>其他：取消 / 拒绝 → 确认执行 / 刷新</div>
+    </details>
   </section>
 </main>
 <script>
@@ -253,7 +263,7 @@ async function showChain(){
 
 async function handleCommand(raw){
   const t=String(raw||''), s=norm(t);
-  logline('🗣️ '+t);
+  $('heard').textContent=t; logline('🗣️ '+t);
   if(/取消|算了|不做了/.test(s)){ PENDING_CONFIRM=null; say('好，取消。'); return; }
   if(/确认|确定|执行/.test(s) && PENDING_CONFIRM){ await doDecide(); return; }
   if(/看链|查看链|结果|刷新|审计/.test(s)){ await showChain(); return; }
@@ -272,6 +282,7 @@ async function handleCommand(raw){
   say('我没听懂这句。可以说：注册消费者 / 申请发布审批 / 批准 / 确认执行 / 记录 outbox / 看链。');
 }
 
+$('copyh').onclick=async()=>{ try{ await navigator.clipboard.writeText($('heard').textContent||''); say('识别原文已复制。', true); }catch(e){ err('复制失败，请手动选中复制'); } };
 $('mic').onclick=()=>{ if(RECORDING){ RECORD_STOP&&RECORD_STOP(); return; } listen(); };
 $('stop').onclick=()=>{ RECORD_STOP&&RECORD_STOP(); if(PENDING_CONFIRM) PENDING_CONFIRM=null; };
 $('replay').onclick=()=>speak($('say').textContent.replace(/^🤖\s*/,''));
