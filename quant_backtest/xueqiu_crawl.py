@@ -80,7 +80,7 @@ class XqCrawler:
         if self.sess.proxies:
             try:
                 _probe = self.sess.get(
-                    X.SOCIAL + "/v4/statuses/public_timeline_by_category.json",
+                    SOCIAL + "/v4/statuses/public_timeline_by_category.json",
                     params={"category": 102, "count": 5, "page": 1},
                     timeout=12, headers={"Accept": "application/json, */*"})
                 _ct = str(_probe.headers.get("Content-Type") or "")

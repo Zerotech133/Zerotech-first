@@ -19,6 +19,7 @@ pysnowball 0.1.8 实测口径（本机已装，utls.py 源码核验）：
 
 被 xueqiu_sync.py（L1/L2）与 xueqiu_crawl.py（L3）复用。
 """
+import atexit
 import json
 import os
 import random
@@ -80,7 +81,8 @@ SQLITE_TABLES = {
                 "desc TEXT, user_id TEXT, target TEXT, view_count INTEGER, "
                 "comment_count INTEGER, retweet_count INTEGER, "
                 "like_count INTEGER, reward_count INTEGER, source TEXT, "
-                "category INTEGER, hot_rank INTEGER, fetched_at TEXT)"),
+                "category INTEGER, hot_rank INTEGER, hot_fallback INTEGER, "
+                "fetched_at TEXT)"),
         "idx": [("idx_xq_hot_post_rank", "CREATE INDEX IF NOT EXISTS "
                  "idx_xq_hot_post_rank ON xq_hot_post(hot_rank, created_at)")],
     },
@@ -402,6 +404,84 @@ def backoff_sleep(attempt: int, cap: int = BACKOFF_CAP) -> None:
     time.sleep(delay + random.random() * 2)
 
 
+# ── 浏览器回退（2026-10-26 EXEC-R31）──────────────────────────────────────
+# WAF 302 挑战页落在 requests 上：实测同一 cookie 集，requests 302 / 浏览器
+# context.request 200（TLS/HTTP2/JS 指纹差异）。xq_get 在 3xx/非 JSON 时
+# 懒启动一次 Playwright(msedge→chromium) 并预热首页，用 context.request
+# 重取同一 URL；失败静默返回 None（不阻断调用方，不影响原降级链）。
+_BROWSER_STATE: dict = {"pw": None, "browser": None, "ctx": None, "failed": False}
+
+
+def _close_browser() -> None:
+    st = _BROWSER_STATE
+    for key in ("browser", "pw"):
+        obj = st.get(key)
+        try:
+            if obj is not None:
+                if key == "browser":
+                    obj.close()
+                else:
+                    obj.stop()
+        except Exception:  # noqa: BLE001 关闭失败不影响主流程
+            pass
+        st[key] = None
+    st["ctx"] = None
+
+
+def _browser_context():
+    """懒启动浏览器并预热 xueqiu.com；失败标记 failed，后续直接跳过。"""
+    st = _BROWSER_STATE
+    if st["ctx"] is not None:
+        return st["ctx"]
+    if st["failed"]:
+        return None
+    try:
+        from playwright.sync_api import sync_playwright
+
+        pw = sync_playwright().start()
+        try:
+            browser = pw.chromium.launch(channel="msedge", headless=True)
+        except Exception:  # noqa: BLE001 系统 Edge 不可用时退回内置 chromium
+            browser = pw.chromium.launch(headless=True)
+        ctx = browser.new_context(user_agent=UA)
+        page = ctx.new_page()
+        page.goto("https://xueqiu.com/", timeout=45000,
+                  wait_until="domcontentloaded")
+        st.update({"pw": pw, "browser": browser, "ctx": ctx})
+        atexit.register(_close_browser)
+        return ctx
+    except Exception:  # noqa: BLE001 playwright 未装/浏览器起不来 → 静默
+        st["failed"] = True
+        return None
+
+
+def browser_get_json(url: str, params: dict | None = None,
+                     timeout: float = 30.0) -> dict | None:
+    """用浏览器上下文 GET 同一 URL 并解析 JSON（WAF 回退）。"""
+    ctx = _browser_context()
+    if ctx is None:
+        return None
+    try:
+        resp = ctx.request.get(
+            url, params=params, timeout=int(timeout * 1000),
+            headers={"Referer": REFERER,
+                     "Accept": "application/json, text/plain, */*"})
+    except Exception:  # noqa: BLE001
+        return None
+    if getattr(resp, "status", None) != 200:
+        return None
+    try:
+        payload = resp.json()
+    except Exception:  # noqa: BLE001
+        return None
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("error_code") not in (None, 0):
+        return None
+    data = payload.get("data")
+    return data if isinstance(data, dict) else payload
+
+
 # ── 直爬 HTTP ────────────────────────────────────────────────
 def xq_get(sess: requests.Session, url: str, params: dict | None = None,
            max_retry: int = MAX_RETRY, timeout: float = 15.0) -> dict | None:
@@ -432,12 +512,15 @@ def xq_get(sess: requests.Session, url: str, params: dict | None = None,
         if resp.status_code >= 500:
             backoff_sleep(attempt)
             continue
+        if resp.status_code in (301, 302, 303, 307, 308):
+            # WAF/路由跳转挑战页：同一 URL 用浏览器上下文重取一次。
+            return browser_get_json(url, params, timeout)
         if resp.status_code != 200:
             return None                     # 4xx 非 429：不重试（cookie 缺失等）
         try:
             j = resp.json()
         except Exception:
-            return None                     # 非 JSON（WAF 页等）：不重试
+            return browser_get_json(url, params, timeout)  # WAF 挑战页回退
         if not isinstance(j, dict):
             return None
         if j.get("error_code") not in (None, 0):
@@ -663,6 +746,22 @@ def upsert_sqlite(db_path: str, table: str, rows: list[dict],
     try:
         if spec:
             conn.execute(spec["ddl"])
+            # 轻量列迁移（2026-10-26 EXEC-R31）：代码先行加列（如
+            # hot_fallback）而老库没有时，按首行键集合幂等 ALTER 补列；
+            # 不加索引、不动已有数据，失败忽略（后续 INSERT 会明确报错）。
+            existing = {row[1] for row in
+                        conn.execute('PRAGMA table_info("%s")' % table)}
+            for c in cols:
+                if c in existing:
+                    continue
+                col_type = "INTEGER" if c in (
+                    "hot_rank", "hot_fallback", "view_count", "comment_count",
+                    "retweet_count", "like_count", "reward_count") else "TEXT"
+                try:
+                    conn.execute('ALTER TABLE "%s" ADD COLUMN "%s" %s'
+                                 % (table, c, col_type))
+                except sqlite3.OperationalError:
+                    pass
             for _name, idx_sql in spec.get("idx", []):
                 conn.execute(idx_sql)
         else:
