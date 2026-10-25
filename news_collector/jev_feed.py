@@ -11,6 +11,12 @@ xd_notice，stocks=[ts_code]），逐条过 JEV 本地模型判定写回 jev 列
 重叠拉取 + INSERT OR IGNORE 去重（与 tushare_sync 增量同口径）。
 单轮截断（拉满 cap）时水位不动，下轮重叠窗口重拉。
 
+失败可见（2026-10-26 JEV 审计 §四-⑤ 修复：此前 runs.ok 恒 1、失败计成功）：
+源失败（dm.read 抛异常/返回 None）或判定阶段整批失败 → runs.ok=0、
+detail.errors 带 {source, stage, error} 明细、打印 FEED FAILED、进程 rc=1；
+失败源水位不推进（下次从上次成功水位重拉，防丢数被"成功"掩盖）。
+真实空数据（空 DataFrame）仍记成功（重拉同窗口幂等，不算失败）。
+
 用法：cd news_collector && python jev_feed.py [--days 2] [--cap 500]
       [--dryrun]
 """
@@ -77,7 +83,14 @@ def _pick(row, *names):
 
 
 def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
-    """拉一个别名 → 映射插入 news.db → 返回 (插入数, 拉取数, max_date)。"""
+    """拉一个别名 → 映射插入 news.db → 返回 (插入数, 拉取数, max_date, error)。
+
+    「真实空数据」与「源失败」严格区分（2026-10-26 JEV 审计 §四-⑤：
+    runs.ok 恒 1、失败被计成功）：
+    - `datamart.read` 返回空 DataFrame = 真实无新数据 → error=None（成功）；
+    - 抛异常 / 返回 None = 源不可用/未就绪 → error=明细（fail-visible，
+      调用方据此把 runs.ok 记 0、水位不推进，避免丢数被"成功"掩盖）。
+    """
     if wm_date:
         start = (datetime.strptime(wm_date, "%Y%m%d")
                  - timedelta(days=1)).strftime("%Y%m%d")
@@ -85,10 +98,15 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
         start = (datetime.now() - timedelta(days=days)).strftime("%Y%m%d")
     if dryrun:
         print("  DRY %s <- %s start=%s cap=%d" % (kind, alias, start, cap))
-        return 0, 0, None
-    df = dm.read(alias, start=start, limit=cap)
-    if df is None or df.empty:
-        return 0, 0, None
+        return 0, 0, None, None
+    try:
+        df = dm.read(alias, start=start, limit=cap)
+    except Exception as e:  # noqa: BLE001 - 任何源读取异常都是"源失败"，不静默吞
+        return 0, 0, None, "dm.read(%r) 异常: %s" % (alias, str(e)[:200])
+    if df is None:
+        return 0, 0, None, "dm.read(%r) 返回 None（源不可用/未就绪）" % alias
+    if df.empty:
+        return 0, 0, None, None
     if len(df) >= cap:
         print("  WARN %s 拉满 cap=%d（截断；水位推进策略见主循环 ADV 行）"
               % (kind, cap))
@@ -128,23 +146,30 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
         db.commit()
     finally:
         db.close()
-    return n_ins, len(df), max_date
+    return n_ins, len(df), max_date, None
 
 
 def judge_pending(kind, cap, dryrun=False):
-    """对本轮 xd_ 来源未判行过 JEV 模型（每批 8 条，内部 0.8s 防限流）。"""
+    """对本轮 xd_ 来源未判行过 JEV 模型（每批 8 条，内部 0.8s 防限流）。
+
+    返回 {"judged": 实际判成条数, "missing": 判定失败条数, "error": 阶段错误或 None}。
+    jev_judge_batch 失败条不返回（其内部单条失败返回 None 被跳过），旧代码
+    `judged += len(items)` 会把失败计成功（2026-10-26 JEV 审计 §四-⑤）——这里
+    只计实际 UPDATE 的条数；整批 0 条判成（模型整夜挂等）记阶段错误，
+    整轮 runs.ok=0，不再静默。
+    """
     db = sqlite3.connect(DB)
     try:
         rows = db.execute(
             "SELECT id, title, stocks FROM news "
             "WHERE source=? AND (jev IS NULL OR jev='') "
             "ORDER BY ts DESC LIMIT ?", ("xd_%s" % kind, cap)).fetchall()
+        res = {"judged": 0, "missing": 0, "error": None}
         if not rows:
-            return 0
+            return res
         if dryrun:
             print("  DRY judge %s: %d pending" % (kind, len(rows)))
-            return 0
-        judged = 0
+            return res
         for i in range(0, len(rows), 8):
             items = []
             for nid, title, stocks in rows[i:i + 8]:
@@ -153,44 +178,67 @@ def judge_pending(kind, cap, dryrun=False):
                 except Exception:
                     st = []
                 items.append({"id": nid, "title": title, "stocks": st})
-            for nid, j in news_ai.jev_judge_batch(items).items():
+            try:
+                got = news_ai.jev_judge_batch(items) or {}
+            except Exception as e:  # noqa: BLE001 - 判定阶段异常必须可见
+                res["missing"] += len(items)
+                res["error"] = res["error"] or (
+                    "jev_judge_batch(%s) 异常: %s" % (kind, str(e)[:200]))
+                continue
+            for nid, j in got.items():
                 db.execute("UPDATE news SET jev=? WHERE id=?",
                            (json.dumps(j, ensure_ascii=False), nid))
             db.commit()
-            judged += len(items)
+            res["judged"] += len(got)
+            res["missing"] += len(items) - len(got)
+            if items and not got and res["error"] is None:
+                res["error"] = ("jev_judge_batch(%s) 全部失败（0/%d 条判成）"
+                                % (kind, len(items)))
             time.sleep(0.5)
-        return judged
+        return res
     finally:
         db.close()
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=2,
                     help="无水位（首跑）回看天数")
     ap.add_argument("--cap", type=int, default=500,
                     help="每源单轮拉取/判定上限")
     ap.add_argument("--dryrun", action="store_true")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     wm = load_watermark()
     print("=== jev_feed 水位=%s days=%d cap=%d dryrun=%s ==="
           % (wm or "无(首跑)", args.days, args.cap, args.dryrun))
-    summary = {"wm": {}, "src": {}}
+    summary = {"wm": {}, "src": {}, "errors": []}
+    errors = summary["errors"]
     t0 = time.time()
     total_ins = 0
+
+    def _fail(kind, stage, msg):
+        """阶段失败留痕：detail.errors + stdout/stderr 双写（err log 供告警）。"""
+        errors.append({"source": kind, "stage": stage, "error": msg})
+        line = "FEED FAILED %s stage=%s: %s" % (kind, stage, msg)
+        print(line)
+        print(line, file=sys.stderr)
+
     for alias, kind in [("news", "news"), ("notice", "notice")]:
-        n_ins, n_fetched, max_date = feed_source(
+        n_ins, n_fetched, max_date, err = feed_source(
             alias, kind, wm.get(kind), args.days, args.cap,
             dryrun=args.dryrun)
-        # 水位推进策略（2026-10-16 活锁修复）：
+        # 水位推进策略（2026-10-16 活锁修复 + 2026-10-26 源失败不推进）：
+        #   源失败 → 不写 wm（下次从上次成功水位重拉，避免丢数被"成功"掩盖）；
         #   未截断 → 推进到本轮 max_date（原行为）；
         #   截断且有新插入 → 推进（存量积压排水：INSERT OR IGNORE +
         #     1 天重叠兜底回看）；
         #   截断且零插入 → 也推进（活锁破除：整窗全为重复/坏日期行，
         #     不推进则永远卡死，实证 21:24/23:55 两轮 fetched=500
         #     inserted=0 无限重拉）。
-        if not args.dryrun and max_date:
+        if err:
+            _fail(kind, "feed", err)
+        elif not args.dryrun and max_date:
             if n_fetched >= args.cap:
                 print("  ADV %s 截断轮推进水位→%s（插入=%d，%s）"
                       % (kind, max_date, n_ins,
@@ -200,26 +248,40 @@ def main():
         total_ins += n_ins
         print("  %s <- %s: inserted=%d fetched=%d max=%s"
               % (kind, alias, n_ins, n_fetched, max_date or "-"))
-        j = judge_pending(kind, args.cap, dryrun=args.dryrun)
-        if j:
-            summary["src"][kind]["judged"] = j
-            print("  %s judged=%d" % (kind, j))
+        jr = judge_pending(kind, args.cap, dryrun=args.dryrun)
+        if jr["judged"]:
+            summary["src"][kind]["judged"] = jr["judged"]
+            print("  %s judged=%d" % (kind, jr["judged"]))
+        if jr["missing"]:
+            # 单条判定失败不硬失败（避免个别坏条让整轮红），但留明细可追
+            summary["src"][kind]["judge_missing"] = jr["missing"]
+            print("  WARN %s judge_missing=%d（下轮仍会被重判）"
+                  % (kind, jr["missing"]))
+        if jr["error"]:
+            _fail(kind, "judge", jr["error"])
     if args.dryrun:
         print("DRYRUN 结束，未写库。")
-        return
+        return 0
+    ok = not errors
     db = sqlite3.connect(DB)
     try:
         db.execute(
             "INSERT INTO runs(kind, ts, ok, new_count, push_count, detail) "
             "VALUES (?,?,?,?,0,?)",
-            (FEED_KIND, datetime.now().strftime("%Y-%m-%d %H:%M"), 1,
-             total_ins, json.dumps(summary, ensure_ascii=False)))
+            (FEED_KIND, datetime.now().strftime("%Y-%m-%d %H:%M"),
+             1 if ok else 0, total_ins,
+             json.dumps(summary, ensure_ascii=False)))
         db.commit()
     finally:
         db.close()
-    print("FEED done inserted=%d wm=%s %.1fs"
-          % (total_ins, summary.get("wm", {}), time.time() - t0))
+    if ok:
+        print("FEED done inserted=%d wm=%s %.1fs"
+              % (total_ins, summary.get("wm", {}), time.time() - t0))
+        return 0
+    print("FEED FAILED runs.ok=0 errors=%d inserted=%d wm=%s %.1fs"
+          % (len(errors), total_ins, summary.get("wm", {}), time.time() - t0))
+    return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
