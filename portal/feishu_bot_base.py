@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """零界机器人公共壳 v1（邓芝台 W1，2026-10-24）。
 
 目标：新机器人 = 本壳 + 角色 handler（≤200 行），通道能力不重复实现。
@@ -34,7 +34,7 @@ from feishu_registry import load_registry, RegistryError  # noqa: E402
 SECRET_DIR = os.path.join(HERE, "work", "feishu_secrets")
 LOG_DIR = os.path.join(HERE, "logs")
 AT_PLACEHOLDER = "@_user_"
-HEARTBEAT_SEC = 300
+HB_INTERVAL_S = 300
 WS_CHECK_SEC = 120
 WS_MAX_MISS = 5
 
@@ -139,13 +139,13 @@ class Shell:
     """一个机器人进程的公共外壳。handler 在独立线程执行，不阻塞 WS 心跳。"""
 
     def __init__(self, role, on_text=None, on_audio=None, on_card=None,
-                 heartbeat_sec=HEARTBEAT_SEC, secret_dir=None, log_dir=None,
+                 HB_INTERVAL_S=HB_INTERVAL_S, secret_dir=None, log_dir=None,
                  registry=None):
         self.role = role
         self.on_text = on_text
         self.on_audio = on_audio
         self.on_card = on_card
-        self.heartbeat_sec = heartbeat_sec
+        self.HB_INTERVAL_S = HB_INTERVAL_S
         self.secret_dir = secret_dir or SECRET_DIR
         self.log_dir = log_dir or LOG_DIR
         self.registry = registry or _load_registry_safe()
@@ -255,7 +255,7 @@ class Shell:
     # 心跳/自检线程
     def _heartbeat_loop(self):
         while True:
-            time.sleep(self.heartbeat_sec)
+            time.sleep(self.HB_INTERVAL_S)
             self.heartbeat("patrol")
 
     def _ws_guard(self):
@@ -408,3 +408,4 @@ def _load_registry_safe():
 
 if __name__ == "__main__":
     print("feishu_bot_base：公共壳，不直接运行；用法见模块 docstring")
+
