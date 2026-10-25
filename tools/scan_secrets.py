@@ -351,6 +351,31 @@ def collect_targets(repo: str, mode_all: bool, extra_paths):
     return []
 
 
+def load_baseline(path):
+    """读取基线豁免 TSV（EXEC-R22）。
+
+    格式：每行 `path:line:rule<TAB>category<TAB>note`；# 开头与空行跳过。
+    只取第一列精确 key；`./` 前缀归一化，便于 `--all`（./x）与显式路径（x）两种模式共用。
+    文件不可读时打印 stderr 告警并按空基线处理（fail-open，不隐藏真实命中）。
+    """
+    keys = set()
+    try:
+        with open(path, encoding="utf-8") as f:
+            for ln in f:
+                k = ln.split("\t")[0].strip()
+                if k and not k.startswith("#"):
+                    keys.add(k[2:] if k.startswith("./") else k)
+    except OSError as e:
+        print(f"[scan_secrets] baseline 读取失败（按空基线继续）：{e}", file=sys.stderr)
+    return keys
+
+
+def _baseline_key(path, lineno, rule):
+    """命中 → 与 allowlist 对齐的 key（去掉 ./ 前缀）。"""
+    p = path[2:] if path.startswith("./") else path
+    return "%s:%s:%s" % (p, lineno, rule)
+
+
 def main():
     ap = argparse.ArgumentParser(description="防泄漏只读扫描器（输出全部脱敏）")
     ap.add_argument("paths", nargs="*", help="显式指定的文件/目录（优先于 git 模式）")
@@ -358,6 +383,9 @@ def main():
     ap.add_argument("--repo", default=".", help="git 仓库根目录")
     ap.add_argument("--include-vendor", action="store_true",
                     help="包含第三方/依赖文件（默认跳过：pylibs、vendor、dist-info、min.js 等）")
+    ap.add_argument("--baseline", default=None,
+                    help="基线豁免清单 TSV（path:line:rule）：表内命中只备案、不计入未豁免，"
+                         "退出码仅看新增命中（EXEC-R22）")
     args = ap.parse_args()
 
     targets = collect_targets(args.repo, args.all, args.paths)
@@ -384,12 +412,25 @@ def main():
     # 输出
     real_hits = [h for h in all_hits if not h[4]]
     exempt_hits = [h for h in all_hits if h[4]]
+    # 基线豁免（EXEC-R22）：allowlist 内的 path:line:rule 只备案，不算未豁免
+    baseline_hits = []
+    if args.baseline:
+        _base_keys = load_baseline(args.baseline)
+        kept = []
+        for h in real_hits:
+            if _baseline_key(h[0], h[1], h[2]) in _base_keys:
+                baseline_hits.append(h)
+            else:
+                kept.append(h)
+        real_hits = kept
+    baseline_keys = {_baseline_key(h[0], h[1], h[2]) for h in baseline_hits}
 
     print("=" * 72)
     vendor_n = sum(1 for _, why in skipped if why == "vendor")
     print(f"[scan_secrets] 扫描文件数={files_scanned}  跳过={len(skipped)}"
           f"(其中第三方/依赖={vendor_n})  路径豁免文件={len(exempt_files)}  "
-          f"命中行: 未豁免={len(real_hits)}  豁免(假密钥/测试桩)={len(exempt_hits)}")
+          f"命中行: 未豁免={len(real_hits)}  基线豁免={len(baseline_hits)}"
+          f"  豁免(假密钥/测试桩)={len(exempt_hits)}")
     print("=" * 72)
 
     if exempt_files:
@@ -402,6 +443,11 @@ def main():
         for path, lineno, rule, preview, _ in exempt_hits:
             print(f"  EXEMPT-TEST {path}:{lineno}:{rule}: {preview}")
 
+    if baseline_hits:
+        print(f"\n-- 基线豁免命中（allowlist 备案 {len(baseline_hits)} 条，不计入未豁免）--")
+        print("  清单：tools/scan_secrets_allowlist.tsv"
+              "（或用 --baseline <path> 指定）；复核方法见 _audit_20261025/exec/E3b 报告")
+
     if real_hits:
         print("\n-- 未豁免命中（预览已脱敏）--")
         for path, lineno, rule, preview, _ in real_hits:
@@ -409,8 +455,13 @@ def main():
 
     # 统计
     stats = {}
-    for _, _, rule, _, exempt in all_hits:
-        key = rule + ("(豁免)" if exempt else "")
+    for path, lineno, rule, preview, exempt in all_hits:
+        if exempt:
+            key = rule + "(豁免)"
+        elif _baseline_key(path, lineno, rule) in baseline_keys:
+            key = rule + "(基线)"
+        else:
+            key = rule
         stats[key] = stats.get(key, 0) + 1
     if stats:
         print("\n-- 按规则统计 --")

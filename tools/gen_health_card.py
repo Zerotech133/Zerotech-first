@@ -243,6 +243,13 @@ DATA_DRIFT_DIR_LIMIT = 6
 DATA_DRIFT_DIR_CHANGED_LIMIT = 3
 # dates 里最多回显几个发现的日期目录。
 DATA_DRIFT_DATE_LIMIT = 5
+# 2026-10-25 EXEC-R23：数据根里的瞬态/备份代目录不进漂移判断。
+# 背景：整理层重建 17:14–17:59 产生 tushare_curated.tmp（+481 MiB，随后消失），
+# 结束时旧层留成 tushare_curated.prev（7.18 GiB 回滚代，长期保留）；旧口径把
+# 「重建过程中的临时目录」当成「数据根新增目录」→ 假红（触发 dir_count 一票红）。
+DATA_DRIFT_EXCLUDE_DIR_NAMES = ("__pycache__", ".pytest_cache")
+DATA_DRIFT_EXCLUDE_SUFFIXES = (".tmp", ".prev", ".old")
+DATA_DRIFT_ROLLBACK_SUFFIXES = (".prev", ".old")
 
 # --- 明文私钥扫描（security.plaintext_keys）---------------------------------
 # 只扫限定范围，不做全盘扫：<repo>/outputs、<repo>/tools、<repo>/portal 递归，
@@ -1026,6 +1033,62 @@ def _discover_data_manifests(
     return found, len(date_dirs), None
 
 
+def _is_transient_data_dir(name: str) -> bool:
+    """漂移判断要排除的目录：重建/轮转瞬态与备份代（不按数据资产对待，EXEC-R23）。"""
+    lowered = name.strip().lower()
+    if lowered in DATA_DRIFT_EXCLUDE_DIR_NAMES:
+        return True
+    return lowered.endswith(DATA_DRIFT_EXCLUDE_SUFFIXES)
+
+
+def _split_drift_dirs(
+    manifest: dict[str, Any],
+) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """把清单 dirs 拆成（参与漂移的目录, 被排除的目录）并标注排除原因。
+
+    排除 *.tmp/*.prev/*.old/__pycache__/.pytest_cache：重建瞬态或回滚代不是数据
+    资产（2026-10-25 EXEC-R23 假红修复）。返回的 excluded 按名字排序，kind ∈
+    {transient(tmp/old), rollback(prev/old), cache}。
+    """
+    kept: dict[str, dict[str, Any]] = {}
+    excluded: list[dict[str, Any]] = []
+    for name in sorted(manifest.get("dirs") or {}):
+        info = manifest["dirs"][name]
+        if not _is_transient_data_dir(name):
+            kept[name] = info
+            continue
+        lowered = name.strip().lower()
+        if lowered in DATA_DRIFT_EXCLUDE_DIR_NAMES:
+            kind = "cache"
+        elif lowered.endswith(DATA_DRIFT_ROLLBACK_SUFFIXES):
+            kind = "rollback"
+        else:
+            kind = "transient"
+        excluded.append({"name": name, "kind": kind,
+                         "files": info.get("files"),
+                         "bytes": info.get("bytes")})
+    return kept, excluded
+
+
+def _adjusted_drift_totals(
+    manifest: dict[str, Any], excluded: list[dict[str, Any]],
+) -> dict[str, int | None]:
+    """manifest 总量扣掉被排除目录的 files/bytes（扣不动就返回 None，不硬算）。"""
+    files = manifest.get("total_files")
+    total_bytes = manifest.get("total_bytes")
+    ex_files = sum(item["files"] for item in excluded
+                   if isinstance(item.get("files"), int))
+    ex_bytes = sum(item["bytes"] for item in excluded
+                   if isinstance(item.get("bytes"), int))
+    adj_files = files - ex_files if isinstance(files, int) else None
+    adj_bytes = total_bytes - ex_bytes if isinstance(total_bytes, int) else None
+    if adj_files is not None and adj_files < 0:
+        adj_files = None          # 总量字段与 dirs 不自洽：宁可判不可比
+    if adj_bytes is not None and adj_bytes < 0:
+        adj_bytes = None
+    return {"files": adj_files, "bytes": adj_bytes}
+
+
 def _empty_data_root_drift(vault_root: Path) -> dict[str, Any]:
     return {
         "available": False,
@@ -1059,6 +1122,16 @@ def _empty_data_root_drift(vault_root: Path) -> dict[str, Any]:
         "level": None,
         "status": None,
         "thresholds": {"file_red_ratio": DATA_DRIFT_FILE_RED_RATIO},
+        "counts_raw": None,
+        "excluded": {
+            "latest": [],
+            "previous": [],
+            "bytes_latest": None,
+            "bytes_previous": None,
+            "rollback_bytes_latest": None,
+            "policy": "排除 *.tmp/*.prev/*.old/__pycache__/.pytest_cache："
+                      "重建瞬态与回滚代不进漂移判断，回滚代体积单列",
+        },
     }
 
 
@@ -1166,8 +1239,24 @@ def collect_data_root_drift(vault_root: Path) -> dict[str, Any]:
         )
         return result
 
-    latest_dirs: dict[str, dict[str, Any]] = latest["dirs"]
-    previous_dirs: dict[str, dict[str, Any]] = previous["dirs"]
+    # 2026-10-25 EXEC-R23：先剔除瞬态/回滚代目录再比对，避免重建 .tmp/.prev 假红。
+    latest_dirs, latest_excluded = _split_drift_dirs(latest)
+    previous_dirs, previous_excluded = _split_drift_dirs(previous)
+    latest_adj = _adjusted_drift_totals(latest, latest_excluded)
+    previous_adj = _adjusted_drift_totals(previous, previous_excluded)
+    rollback_items = [item for item in latest_excluded if item["kind"] == "rollback"]
+    result["excluded"] = {
+        "latest": latest_excluded,
+        "previous": previous_excluded,
+        "bytes_latest": sum(item["bytes"] for item in latest_excluded
+                            if isinstance(item.get("bytes"), int)),
+        "bytes_previous": sum(item["bytes"] for item in previous_excluded
+                              if isinstance(item.get("bytes"), int)),
+        "rollback_bytes_latest": sum(item["bytes"] for item in rollback_items
+                                     if isinstance(item.get("bytes"), int)),
+        "policy": "排除 *.tmp/*.prev/*.old/__pycache__/.pytest_cache："
+                  "重建瞬态与回滚代不进漂移判断，回滚代体积单列",
+    }
     added = sorted(set(latest_dirs) - set(previous_dirs))
     removed = sorted(set(previous_dirs) - set(latest_dirs))
 
@@ -1194,9 +1283,18 @@ def collect_data_root_drift(vault_root: Path) -> dict[str, Any]:
 
     changed_dirs.sort(key=_magnitude, reverse=True)
 
-    latest_files, latest_bytes = latest["total_files"], latest["total_bytes"]
-    previous_files, previous_bytes = previous["total_files"], previous["total_bytes"]
-    latest_dir_count, previous_dir_count = latest["dir_count"], previous["dir_count"]
+    # 总量同样用「扣除排除目录」后的口径；扣不动就判不可比（不把不自洽当一致）。
+    latest_files, latest_bytes = latest_adj["files"], latest_adj["bytes"]
+    previous_files, previous_bytes = previous_adj["files"], previous_adj["bytes"]
+    latest_dir_count = len(latest_dirs) if latest_dirs else None
+    previous_dir_count = len(previous_dirs) if previous_dirs else None
+    if (not isinstance(latest_files, int) or not isinstance(previous_files, int)
+            or not isinstance(latest_bytes, int) or not isinstance(previous_bytes, int)):
+        result["status"] = "unreadable"
+        result["level"] = "red"
+        result["reason"] = ("排除瞬态/回滚代目录后的总量不可计算"
+                            "（manifest 总量与 dirs 不自洽），不判绿")
+        return result
 
     result["counts"] = {
         "latest": {"files": latest_files, "bytes": latest_bytes, "dirs": latest_dir_count},
@@ -1210,6 +1308,12 @@ def collect_data_root_drift(vault_root: Path) -> dict[str, Any]:
             "bytes": _delta_or_none(latest_bytes, previous_bytes),
             "dirs": _delta_or_none(latest_dir_count, previous_dir_count),
         },
+    }
+    result["counts_raw"] = {
+        "latest": {"files": latest["total_files"], "bytes": latest["total_bytes"],
+                   "dirs": latest["dir_count"]},
+        "previous": {"files": previous["total_files"], "bytes": previous["total_bytes"],
+                     "dirs": previous["dir_count"]},
     }
     result["dirs_added"] = added
     result["dirs_removed"] = removed
@@ -1301,6 +1405,27 @@ def _catalog_drift_text(catalog: dict[str, Any]) -> str:
     return "catalog.json 指纹无法判定（清单缺 sha256）"
 
 
+def _data_root_drift_excluded_note(drift: dict[str, Any]) -> str:
+    """漂移 detail 的排除说明：瞬态/回滚代不进判断，回滚代体积单列（EXEC-R23）。"""
+    excluded = drift.get("excluded") or {}
+    items = excluded.get("latest") or []
+    if not items:
+        return ""
+    shown = []
+    for item in items[:DATA_DRIFT_DIR_LIMIT]:
+        size = item.get("bytes")
+        shown.append("%s(%s, %s)" % (
+            item.get("name"), item.get("kind"),
+            _human_bytes(size) if isinstance(size, int) else "—"))
+    text = "已排除瞬态/备份代目录 %d 个：%s" % (len(items), "、".join(shown))
+    if len(items) > DATA_DRIFT_DIR_LIMIT:
+        text += " 等"
+    rollback_bytes = excluded.get("rollback_bytes_latest")
+    if isinstance(rollback_bytes, int) and rollback_bytes > 0:
+        text += "；回滚代(.prev/.old) %s 单列，不计入漂移" % _human_bytes(rollback_bytes)
+    return text
+
+
 def _data_root_drift_detail(drift: dict[str, Any]) -> str:
     status = drift.get("status")
     if not drift.get("available"):
@@ -1322,7 +1447,8 @@ def _data_root_drift_detail(drift: dict[str, Any]) -> str:
         root_text = "数据根路径未记录"
 
     if status == "consistent":
-        return "数据根无漂移：%s 文件 %s、%s、目录 %s 一致；%s；%s" % (
+        excluded_note = _data_root_drift_excluded_note(drift)
+        text = "数据根无漂移：%s 文件 %s、%s、目录 %s 一致；%s；%s" % (
             span,
             _fmt_num(latest.get("files")),
             _human_bytes(latest.get("bytes")),
@@ -1330,6 +1456,7 @@ def _data_root_drift_detail(drift: dict[str, Any]) -> str:
             catalog_text,
             root_text,
         )
+        return text + ("；" + excluded_note if excluded_note else "")
 
     pct = _pct_text(delta.get("files"), previous.get("files"))
     if delta.get("files") == 0:
@@ -1389,6 +1516,7 @@ def _data_root_drift_detail(drift: dict[str, Any]) -> str:
         bits.append("文件数变化最大的目录 " + "、".join(shown))
     bits.extend([catalog_text, root_text])
 
+    excluded_note = _data_root_drift_excluded_note(drift)
     if status == "major_drift":
         triggers = []
         if "file_ratio" in (drift.get("triggers") or []):
@@ -1401,16 +1529,19 @@ def _data_root_drift_detail(drift: dict[str, Any]) -> str:
                 "顶层目录数 %s → %s"
                 % (_fmt_num(previous.get("dirs")), _fmt_num(latest.get("dirs")))
             )
-        return "数据根剧烈漂移（判红）：" + "；".join(bits) + "；触发：" + "、".join(triggers)
+        text = "数据根剧烈漂移（判红）：" + "；".join(bits) + "；触发：" + "、".join(triggers)
+        return text + ("；" + excluded_note if excluded_note else "")
     if status == "catalog_unknown":
-        return "数据根总量一致（%s 文件 %s、%s、目录 %s），但 %s；不判绿" % (
+        text = "数据根总量一致（%s 文件 %s、%s、目录 %s），但 %s；不判绿" % (
             span,
             _fmt_num(latest.get("files")),
             _human_bytes(latest.get("bytes")),
             _fmt_num(latest.get("dirs")),
             catalog_text,
         )
-    return "数据根漂移（判黄）：" + "；".join(bits)
+        return text + ("；" + excluded_note if excluded_note else "")
+    text = "数据根漂移（判黄）：" + "；".join(bits)
+    return text + ("；" + excluded_note if excluded_note else "")
 
 
 # ---------------------------------------------------------------------------
@@ -3752,17 +3883,19 @@ BATCH_STALE_YELLOW_MIN = 180.0
 _BATCH_ROUND_RE = re.compile(
     r"\]\s+ROUND\s+(\d+)\s*\|\s*剩余\s*JEV=(-?\d+)\s*雪球=(-?\d+)")
 _BATCH_RC_RE = re.compile(r"\]\s+(JEV|XQ)\s+rc=(-?\d+)\s+([\d.]+)s")
+_BATCH_START_RE = re.compile(r"\]\s+START\b")
 
 
 def _empty_batch_backlog() -> dict[str, Any]:
     return {
         "available": False, "reason": None, "path": BATCH_LOG_PATH,
-        "log_age_min": None, "rounds_seen": None,
+        "log_age_min": None, "rounds_seen": None, "session_rounds": None,
         "jev_backlog": None, "xq_backlog": None,
         "recent_rc": [], "timeout_streak": None,
         "jev_delta": None, "xq_delta": None,   # 正=下降(有进展)，负=上升(恶化)
         "round_hours": None, "eta_jev_hours": None, "eta_xq_hours": None,
-        "eta_hours": None, "last_round_at": None,
+        "eta_hours": None, "eta_serial_hours": None, "eta_basis": None,
+        "throughput": None, "last_round_at": None,
         "unfinished_last_round": None,
     }
 
@@ -3798,7 +3931,11 @@ def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
         return result
 
     rounds: list[dict[str, Any]] = []
+    session = 0
     for line in text.splitlines():
+        if _BATCH_START_RE.search(line):
+            session += 1
+            continue
         m = _BATCH_ROUND_RE.search(line)
         if m:
             at = None
@@ -3812,12 +3949,18 @@ def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
                 "jev": int(m.group(2)),
                 "xq": int(m.group(3)),
                 "at": at,
+                "session": session if session else 1,
                 "rc": {},
+                "sec": {},
             })
             continue
         mr = _BATCH_RC_RE.search(line)
         if mr and rounds:
             rounds[-1]["rc"][mr.group(1)] = int(mr.group(2))
+            try:
+                rounds[-1]["sec"][mr.group(1)] = float(mr.group(3))
+            except (TypeError, ValueError):
+                pass
     result["rounds_seen"] = len(rounds)
     if not rounds:
         result["available"] = False
@@ -3828,14 +3971,18 @@ def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
     result["jev_backlog"] = last["jev"]
     result["xq_backlog"] = last["xq"]
     result["last_round_at"] = last["at"].strftime("%Y-%m-%d %H:%M:%S") if last["at"] else None
+    # 只用最近一次 START 之后的轮次：ROUND 编号每次 START 从 1 重来，
+    # 跨会话相减会把「停机间隔+另一队列占用的时间」摊进轮时长（旧口径 428.5h 病根）。
+    sess = [r for r in rounds if r["session"] == last["session"]]
+    result["session_rounds"] = len(sess)
     result["recent_rc"] = [
         {"round": r["round"], "jev_rc": r["rc"].get("JEV"),
          "xq_rc": r["rc"].get("XQ")}
-        for r in rounds[-BATCH_RECENT_ROUNDS:]
+        for r in sess[-BATCH_RECENT_ROUNDS:]
     ]
     # 连续超时轮数：从尾部往前数；末轮可能"已 ROUND 但子任务还没收口"，跳过它再数。
     streak = 0
-    for r in reversed(rounds):
+    for r in reversed(sess):
         rcs = list(r["rc"].values())
         if not rcs:
             continue
@@ -3845,27 +3992,71 @@ def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
             break
     result["timeout_streak"] = streak
     result["unfinished_last_round"] = not last["rc"]
-    if len(rounds) >= 2:
-        prev = rounds[-2]
+    if len(sess) >= 2:
+        prev = sess[-2]
         result["jev_delta"] = prev["jev"] - last["jev"]
         result["xq_delta"] = prev["xq"] - last["xq"]
-    # 吞吐/ETA：取最近 ≤4 个带时间戳与 rc 的轮次，按平均每轮墙钟与净下降折算。
-    window = [r for r in rounds if r["at"] and r["rc"]][-4:]
-    if len(window) >= 2:
-        hours = (window[-1]["at"] - window[0]["at"]).total_seconds() / 3600.0
-        rounds_span = max(1, window[-1]["round"] - window[0]["round"])
-        if hours > 0:
-            round_hours = hours / rounds_span
-            jev_drop = (window[0]["jev"] - window[-1]["jev"]) / rounds_span
-            xq_drop = (window[0]["xq"] - window[-1]["xq"]) / rounds_span
-            result["round_hours"] = round(round_hours, 2)
-            if jev_drop > 0 and last["jev"] > 0:
-                result["eta_jev_hours"] = round(last["jev"] / jev_drop * round_hours, 1)
-            if xq_drop > 0 and last["xq"] > 0:
-                result["eta_xq_hours"] = round(last["xq"] / xq_drop * round_hours, 1)
-            etas = [e for e in (result["eta_jev_hours"], result["eta_xq_hours"])
-                    if e is not None]
-            result["eta_hours"] = max(etas) if etas else None
+
+    # ---- ETA（2026-10-25 EXEC-R23 口径修正）--------------------------------
+    # 旧口径 = 积压 /（每轮净下降）× 平均轮墙钟，且窗口跨会话 → 把停机间隔与
+    # 「另一队列占用的时间」都摊进分母，JEV ETA 被放大 4 倍（428.5h vs ~100h）。
+    # 新口径：各队列只用**自己的运行时长**（该队列 rc 行里的秒数）算吞吐：
+    #   吞吐(条/分) = 该队列每轮净下降 / 该队列运行分钟
+    #   ETA = 该队列积压 / 吞吐(条/小时)
+    # 会话内取最近 ≤4 对「相邻已收口轮次」；无配对时用末个已收口轮与当前积压做 1 对。
+    done = [r for r in sess if r["rc"]]
+    pairs = list(zip(done, done[1:]))[-4:]
+    if not pairs and done and done[-1] is not last:
+        pairs = [(done[-1], last)]
+
+    def _queue_eta(queue: str, key: str) -> tuple[float | None, float | None, float | None]:
+        drops: list[float] = []
+        secs: list[float] = []
+        for first, second in pairs:
+            if queue not in first["rc"]:
+                continue
+            runtime = first["sec"].get(queue)
+            drop = first[key] - second[key]
+            if not isinstance(runtime, (int, float)) or runtime <= 0:
+                continue
+            drops.append(drop)
+            secs.append(float(runtime))
+        if not drops or sum(secs) <= 0:
+            return None, None, None
+        drop_per_round = sum(drops) / len(drops)
+        per_min = drop_per_round / (sum(secs) / len(secs)) * 60.0
+        eta = None
+        if drop_per_round > 0 and last[key] > 0:
+            rate_per_h = per_min * 60.0
+            if rate_per_h > 0:
+                eta = round(last[key] / rate_per_h, 1)
+        return drop_per_round, per_min, eta
+
+    jev_drop_avg, jev_per_min, eta_jev = _queue_eta("JEV", "jev")
+    xq_drop_avg, xq_per_min, eta_xq = _queue_eta("XQ", "xq")
+    round_hours_list = [
+        (second["at"] - first["at"]).total_seconds() / 3600.0
+        for first, second in pairs if first["at"] and second["at"]
+    ]
+    result["round_hours"] = (round(sum(round_hours_list) / len(round_hours_list), 2)
+                             if round_hours_list else None)
+    result["throughput"] = {
+        "basis": "各队列自身运行时长（JEV/XQ rc 秒数；不含轮间隔/等待/停机）",
+        "jev_per_round": round(jev_drop_avg, 1) if jev_drop_avg is not None else None,
+        "jev_per_min": round(jev_per_min, 2) if jev_per_min is not None else None,
+        "xq_per_round": round(xq_drop_avg, 1) if xq_drop_avg is not None else None,
+        "xq_per_min": round(xq_per_min, 2) if xq_per_min is not None else None,
+        "samples": len(pairs),
+    }
+    result["eta_jev_hours"] = eta_jev
+    result["eta_xq_hours"] = eta_xq
+    etas = [value for value in (eta_jev, eta_xq) if value is not None]
+    result["eta_hours"] = max(etas) if etas else None
+    result["eta_serial_hours"] = (round(eta_jev + eta_xq, 1)
+                                  if (eta_jev is not None and eta_xq is not None)
+                                  else None)
+    result["eta_basis"] = ("按各队列自身运行时长计吞吐（已剔除轮间隔/另一队列等待/停机）；"
+                           "eta_hours=max(两队列)，eta_serial_hours=两队列串行合计")
     return result
 
 
@@ -3888,24 +4079,41 @@ def _batch_backlog_detail(bl: dict[str, Any]) -> str:
     if jd is not None or xd is not None:
         bits.append("较上轮变化 JEV=%s 雪球=%s（正=下降）"
                     % ("—" if jd is None else jd, "—" if xd is None else xd))
+    tp = bl.get("throughput") or {}
+    if tp.get("samples"):
+        parts = []
+        if tp.get("jev_per_round") is not None:
+            parts.append("JEV +%s/轮（%s 条/分）"
+                         % (tp["jev_per_round"], tp.get("jev_per_min")))
+        if tp.get("xq_per_round") is not None:
+            parts.append("XQ +%s/轮（%s 条/分）"
+                         % (tp["xq_per_round"], tp.get("xq_per_min")))
+        if parts:
+            bits.append("每轮吞吐 " + "、".join(parts)
+                        + "（%s 对样本）" % tp.get("samples"))
     if bl.get("eta_hours") is not None:
-        bits.append("按当前吞吐预计 %.1f 小时清完（JEV %s / 雪球 %s）"
-                    % (bl["eta_hours"], bl.get("eta_jev_hours"),
-                       bl.get("eta_xq_hours")))
+        eta_text = "ETA 口径：%s；JEV %s h / 雪球 %s h" % (
+            bl.get("eta_basis") or "按各队列自身运行时长",
+            bl.get("eta_jev_hours"), bl.get("eta_xq_hours"))
+        if bl.get("eta_serial_hours") is not None:
+            eta_text += "；串行合计 %s h" % bl["eta_serial_hours"]
+        bits.append(eta_text + "（瓶颈取 max = %s h）" % bl["eta_hours"])
     else:
-        bits.append("预计清完小时：不可计算（无净下降）")
+        bits.append("预计清完小时：不可计算（无净下降/无配对轮次）")
     if bl.get("log_age_min") is not None:
         bits.append("日志 %.0f 分钟前更新" % bl["log_age_min"])
     return "；".join(bits)
 
 
 def _batch_backlog_level(bl: dict[str, Any]) -> tuple[str, str]:
-    """ops.batch_backlog 判级（2026-10-25 EXEC-R13）。
+    """ops.batch_backlog 判级（2026-10-25 EXEC-R13，R23 修 ETA 口径）。
 
-    red    ：积压较上一轮上升（任一队列 delta<0），或连续 rc=124 ≥2 轮。
+    red    ：积压较上一轮上升（任一队列 delta<0），或连续 rc=124 ≥2 轮；
+             或 ETA >96h（ETA 已改为各队列自身运行时长口径，不存在轮间隔摊薄）。
     yellow ：仅最近 1 轮 rc=124；ETA >48h；日志 >3h 无新 ROUND（可能已收工/失联）。
     green  ：无超时、积压只降不升、ETA ≤48h。
-    读不到 / 无 ROUND → red（不判绿）。
+    读不到 / 无 ROUND → red（不判绿）。detail 里给出每轮吞吐与 ETA 口径及
+    JEV/雪球分队列 ETA、串行合计。
     """
     detail = _batch_backlog_detail(bl)
     if not bl.get("available"):
@@ -4398,6 +4606,14 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             new_n = len(audit.get("new_failures") or [])
             fix_n = len(audit.get("fixed_in_window") or [])
             keep_n = len(audit.get("persisting_failures") or [])
+            # 2026-10-25 EXEC-R23：把失败任务名+退出码直接写进 detail（旧版只有计数，
+            # 还得自己翻 summary 才知道是哪 3 个）。上限 6 条，避免 detail 过长。
+            fail_bits = [
+                "%s=%s" % (item.get("name"), item.get("last_result"))
+                for item in (audit.get("failures") or [])[:6]
+                if item.get("name")
+            ]
+            names_note = ("；明细：" + "、".join(fail_bits)) if fail_bits else ""
             if audit.get("window_baseline_at"):
                 window_note = (
                     f"；{audit.get('window_hours', 24):g}h 窗口内："
@@ -4412,7 +4628,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
                 "task_audit.failures",
                 "red",
                 f"{audit['failed']} 个任务真失败（口径同 task_exit_audit；跑批中/被终止/取消/上游拒跑已单列不计）"
-                + age_note + window_note,
+                + names_note + age_note + window_note,
             )
         else:
             add("task_audit.failures", "green", "无失败任务")
