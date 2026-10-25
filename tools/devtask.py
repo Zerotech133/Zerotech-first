@@ -37,6 +37,9 @@ ORG_JSON = os.path.join(REPO, "agent_platform", "registry", "org.json")
 OWNER_DOMAIN = os.path.join(REPO, "agent_platform", "registry",
                             "owner_domain.json")
 SCAN_SECRETS = os.path.join(REPO, "tools", "scan_secrets.py")
+# 2026-10-26 EXEC-R33：凭据扫描基线豁免表。存在才传给扫描器；缺失则回退旧行为
+# （不带 --baseline，全部未豁免命中照旧拒绝合并 = fail-closed）。
+SECRETS_BASELINE = os.path.join(REPO, "tools", "scan_secrets_allowlist.tsv")
 SECRET_SCAN_BATCH = 50
 
 
@@ -138,6 +141,12 @@ def _secret_scan_gate(branch, worktree=""):
     扫描器缺失 → 跳过并告警（fail-open，不阻断合并）；任一未豁免命中 →
     返回失败，由 merge 走既有 guard_fail 通道阻断。输出只透传扫描器已脱敏
     报告，绝不回显凭据明文。
+
+    2026-10-26 EXEC-R33：若 tools/scan_secrets_allowlist.tsv 存在，分批调用会追加
+    ``--baseline <allowlist>`` —— 已归因基线只备案、不误拒（避免「分支只是改到
+    历史基线行」被第五道门挡）；真正**新增**的未豁免命中仍 rc≠0 → fail-closed
+    拒绝合并。豁免表缺失时自动回退旧行为（不带 baseline）。豁免条数随结果返回，
+    便于 merge 输出审计。
     """
     if not os.path.isfile(SCAN_SECRETS):
         print("  [WARN] 明文凭据：扫描器不存在，跳过（fail-open，不阻断合并）：%s"
@@ -162,12 +171,28 @@ def _secret_scan_gate(branch, worktree=""):
         scan_cwd = _materialize_branch_files(branch, files)
         cleanup = scan_cwd
     failures = []
+    # 2026-10-26 EXEC-R33：基线豁免表存在才启用；统计条数供审计输出。
+    baseline = SECRETS_BASELINE if os.path.isfile(SECRETS_BASELINE) else ""
+    baseline_n = 0
+    if baseline:
+        try:
+            with open(baseline, encoding="utf-8") as bf:
+                baseline_n = sum(1 for ln in bf
+                                 if ln.strip()
+                                 and not ln.lstrip().startswith("#")
+                                 and ln.split("\t")[0].strip() != "key")
+        except OSError:
+            baseline, baseline_n = "", 0
     try:
         for start in range(0, len(files), SECRET_SCAN_BATCH):
             batch = files[start:start + SECRET_SCAN_BATCH]
             try:
+                cmd = [sys.executable, SCAN_SECRETS]
+                if baseline:
+                    cmd += ["--baseline", baseline]
+                cmd += ["--"] + batch
                 r = subprocess.run(
-                    [sys.executable, SCAN_SECRETS, "--"] + batch,
+                    cmd,
                     cwd=scan_cwd, capture_output=True, text=True,
                     encoding="utf-8", errors="replace")
             except OSError as e:
@@ -180,9 +205,14 @@ def _secret_scan_gate(branch, worktree=""):
         if cleanup:
             shutil.rmtree(cleanup, ignore_errors=True)
     if not failures:
+        if baseline:
+            return True, ("%d 个改动文件，无新增未豁免命中"
+                          "（基线豁免 %d 条已应用）" % (len(files), baseline_n))
         return True, "%d 个改动文件，无未豁免命中" % len(files)
     total = (len(files) + SECRET_SCAN_BATCH - 1) // SECRET_SCAN_BATCH
     summary = "未豁免命中（%d/%d 批退出码非 0）" % (len(failures), total)
+    if baseline:
+        summary += " [基线豁免 %d 条已应用]" % baseline_n
     reports = "\n".join(o for _, _, o in failures if o)
     hits = [ln.strip() for ln in reports.splitlines()
             if ln.strip().startswith("HIT ")]

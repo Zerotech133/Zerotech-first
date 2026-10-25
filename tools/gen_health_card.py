@@ -77,11 +77,11 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
        「睡了多少」的直接读数；
     ② Kernel-Power 42：进入睡眠次数；
     ③ Kernel-Power 41 / EventLog 6008：意外关机（无 BugCheck 的掉电/硬复位）。
-    判级：有意外关机 → 红；今日累计挂起 >60 分钟 → 红；>10 分钟 → 黄；
-    读不到/查询失败 → 红（不判绿）；无事件也是 0 次（可判绿，但要写明「今日无挂起」）。
-    本项纯只读，不启停服务、不改电源设置。
+    判级：有意外关机 / 今日累计挂起 >60 分钟 → 红；>10 分钟 → 黄；
+    **查询失败/权限不足/超时 → 黄（不可判定，非故障；detail 写明原因与重试方式）**；
+    无事件也是 0 次（可判绿，但要写明「今日无挂起」）。本项纯只读，不启停服务、不改电源设置。
     （2026-10-24 21:30 修订：本机是开发笔记本，睡眠/断电属使用方式，**改为一律只报黄**；
-    生产环境不适用此现象。只有"读不到"仍判红。）
+    2026-10-26 EXEC-R32：与整理层同哲学——查询失败只说明不可判定，不是故障，降黄不判红。）
 
 11. 推理错误率（ai.error_rate）：读 Ollama 自己写的 GIN 访问日志（尾部 8 MB），
     统计最近 60 分钟 2xx/3xx、4xx、5xx 的分布。建项起因：2026-10-24 日志里出现
@@ -106,13 +106,14 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
     判级：有未交付 → 红；只有待接线 → 黄；全部交付或今日无到期 → 绿。
     没有可检查证据的事**不收录**（type=manual 的标"待接线"，既不算过也不算欠）。
 
-14. 夜间批处理积压（ops.batch_backlog）：只读 `C:/Temp/night_batch.log` 尾部，
-    解析 START/ROUND/`JEV rc=`/`XQ rc=` 行，输出两条队列积压、最近两轮 rc、
-    每轮墙钟/吞吐、按当前吞吐预计清完小时。积压较上一轮上升 → 红；连续 rc=124
-    ≥2 轮 → 红；仅 1 轮 rc=124、ETA >48h 或日志 >3h 无新轮次 → 黄；ETA >96h →
-    红；读不到日志/无 ROUND → 红（不判绿）。建项起因：2026-10-25 白天 6 轮
-    JEV rc=124 1620s + XQ rc=124 1800s，每轮仍有 ~100 条推进——"有进展但清不动"
-    在卡上完全看不见。
+14. 夜间批处理积压（ops.batch_backlog）：读两份日志——白天 `C:/Temp/night_batch.log`
+    （START/ROUND/`JEV rc=`/`XQ rc=`）与夜间 `C:/Temp/jev_night.log`（JEV 独占跑批
+    START/ROUND/`JEV rc=`），输出两条队列积压、最近 rc、白天/夜间 JEV 吞吐与合并
+    日容量、按日容量折算的墙钟 ETA。JEV 容量=白天会话容量+夜间窗口容量；XQ 只在白天。
+    积压较上一轮上升 → 红；连续 rc=124 ≥2 轮 → 红；仅 1 轮 rc=124、ETA >48h 或两份
+    日志合计 >3h 无新轮次 → 黄；ETA >96h → 红；两日志都读不到/无 ROUND → 红（不判绿）。
+    建项起因：2026-10-25 白天 6 轮 JEV rc=124、每轮仍推进 ~100 条；2026-10-26
+    EXEC-R32 起纳入夜班 jev_night（此前夜间吞吐不计入，ETA 偏高/误判无新轮次）。
 
 用法：
     python -B tools/gen_health_card.py
@@ -131,8 +132,9 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
 本地推理：Ollama 不可达红、9b 未安装红、读不到 /api/ps 黄、未驻留黄（不判绿）、
 content 为空红、答案不含「好」黄、驻留 ctx≠16384 黄、吞吐 <20 tok/s 黄、
 请求 20s 未返回黄；读不到的指标一律写进 detail，绝不静默当 0 也不判绿。
-夜间批处理积压（ops.batch_backlog）：积压较上一轮上升红；连续 rc=124 ≥2 轮红；
-仅 1 轮 rc=124 黄；ETA >48h 黄 / >96h 红；日志 >3h 无新轮次黄；读不到红。
+夜间批处理积压（ops.batch_backlog）：白天 night_batch + 夜间 jev_night 合并口径，
+积压较上一轮上升红；连续 rc=124 ≥2 轮红；仅 1 轮 rc=124 黄；ETA >48h 黄 / >96h 红；
+两份日志合计 >3h 无新轮次黄；两日志都读不到红。
 交易日历（2026-10-26 OS-FIX-MEASURE2）：`_is_non_trading_day` 读
 `portal/data/trade_cal_open_days.json`（schema=trade_cal_open_days/v1，
 open_days=SSE is_open=1 的 YYYY-MM-DD 列表；`ZB_TRADE_CAL` 可覆盖路径；缺失/坏
@@ -4105,6 +4107,7 @@ def _ai_inference_verdict(ai: dict[str, Any]) -> tuple[str, str]:
 # 判级：积压比上一轮上升 → 红（只降不升是目标）；连续 rc=124 ≥2 轮 → 红；
 #      仅 1 轮 rc=124 或 ETA >48h → 黄；ETA >96h / 日志 >3h 无新轮 → 红/黄。
 BATCH_LOG_PATH = os.environ.get("NIGHT_BATCH_LOG", r"C:\Temp\night_batch.log")
+JEV_NIGHT_LOG_PATH = os.environ.get("JEV_NIGHT_LOG", r"C:\Temp\jev_night.log")
 BATCH_LOG_TAIL_BYTES = 256 * 1024
 BATCH_RECENT_ROUNDS = 2
 BATCH_TIMEOUT_STREAK_RED = 2
@@ -4115,11 +4118,24 @@ _BATCH_ROUND_RE = re.compile(
     r"\]\s+ROUND\s+(\d+)\s*\|\s*剩余\s*JEV=(-?\d+)\s*雪球=(-?\d+)")
 _BATCH_RC_RE = re.compile(r"\]\s+(JEV|XQ)\s+rc=(-?\d+)\s+([\d.]+)s")
 _BATCH_START_RE = re.compile(r"\]\s+START\b")
+# 夜班 jev_night.log（2026-10-26 EXEC-R32 纳入 ETA）：
+#   START 行：`START 计划窗口 10-25 23:59 → 10-26 07:00 | 待判 JEV=17659 | 批=600 截止=1500s`
+#   ROUND 行：`ROUND 3 | 剩余 JEV=17091`
+#   rc 行：`JEV rc=0 1516s BACKFILL judged=143/600 left=17091 1515.5s deadline_hit=1 …`
+_NIGHT_START_RE = re.compile(
+    r"\]\s+START\s+计划窗口\s+(\d{2})-(\d{2})\s+(\d{2}:\d{2})"
+    r"\s*→\s*(\d{2})-(\d{2})\s+(\d{2}:\d{2})")
+_NIGHT_ROUND_RE = re.compile(r"\]\s+ROUND\s+(\d+)\s*\|\s*剩余\s+JEV=(-?\d+)")
+_NIGHT_RC_RE = re.compile(
+    r"\]\s+JEV\s+rc=(-?\d+)\s+([\d.]+)s\s+BACKFILL\s+judged=(\d+)/"
+    r"(\d+)\s+left=(-?\d+)\s+([\d.]+)s")
+NIGHT_DEFAULT_WINDOW_HOURS = 9.0   # jev_night 缺省计划窗口（22:00→07:00）
 
 
 def _empty_batch_backlog() -> dict[str, Any]:
     return {
         "available": False, "reason": None, "path": BATCH_LOG_PATH,
+        "sources": None, "day": None, "night": None, "active_source": None,
         "log_age_min": None, "rounds_seen": None, "session_rounds": None,
         "jev_backlog": None, "xq_backlog": None,
         "recent_rc": [], "timeout_streak": None,
@@ -4128,6 +4144,10 @@ def _empty_batch_backlog() -> dict[str, Any]:
         "eta_hours": None, "eta_serial_hours": None, "eta_basis": None,
         "throughput": None, "last_round_at": None,
         "unfinished_last_round": None,
+        # 2026-10-26 EXEC-R32：白天+夜班合并容量（XQ 只在白天）
+        "daily_jev_capacity": None, "day_jev_capacity": None,
+        "night_capacity_per_night": None, "night_window_hours": None,
+        "night_jev_per_min": None, "day_session_hours": None,
     }
 
 
@@ -4142,8 +4162,8 @@ def _read_batch_log_tail(path: Path, max_bytes: int = BATCH_LOG_TAIL_BYTES) -> s
         return ""
 
 
-def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
-    """读 night_batch 日志尾部，量两条队列积压 / 最近两轮 rc / 预计清完小时。"""
+def _collect_day_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
+    """读白天 night_batch 日志尾部，量两条队列积压 / 最近两轮 rc / 吞吐（内部用）。"""
     path = Path(log_path or BATCH_LOG_PATH)
     result = _empty_batch_backlog()
     result["path"] = str(path)
@@ -4271,6 +4291,10 @@ def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
     ]
     result["round_hours"] = (round(sum(round_hours_list) / len(round_hours_list), 2)
                              if round_hours_list else None)
+    # 白天会话有效时长（估算）：平均每轮墙钟 × 本轮次轮数（供日容量折算）
+    result["day_session_hours"] = (
+        round(result["round_hours"] * len(sess), 2)
+        if (result["round_hours"] and sess) else None)
     result["throughput"] = {
         "basis": "各队列自身运行时长（JEV/XQ rc 秒数；不含轮间隔/等待/停机）",
         "jev_per_round": round(jev_drop_avg, 1) if jev_drop_avg is not None else None,
@@ -4289,6 +4313,283 @@ def collect_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
     result["eta_basis"] = ("按各队列自身运行时长计吞吐（已剔除轮间隔/另一队列等待/停机）；"
                            "eta_hours=max(两队列)，eta_serial_hours=两队列串行合计")
     return result
+
+
+def _empty_jev_night() -> dict[str, Any]:
+    return {
+        "available": False, "reason": None, "path": JEV_NIGHT_LOG_PATH,
+        "log_age_min": None, "window_hours": None, "rounds_seen": None,
+        "session_rounds": None, "completed": 0, "judged_total": 0,
+        "wall_total_s": 0.0, "jev_per_min": None, "capacity_per_night": None,
+        "last_round_at": None, "jev_backlog_last": None, "jev_delta": None,
+        "timeout_streak": None, "recent_rc": [], "last_open": None,
+    }
+
+
+def _parse_jev_night_log(log_path: str | None = None) -> dict[str, Any]:
+    """读夜班 jev_night.log：JEV 独占吞吐/窗口/最近 rc（2026-10-26 EXEC-R32）。
+
+    2026-10-24 起夜间由 jev_night 独跑（M3 暂停、窗口 22:00→07:00）；此前健康卡
+    只读白天 night_batch.log，夜班吞吐不计入 → ETA 偏高、夜跑时误判"无新轮次"。
+    本函数只读日志尾部（START 计划窗口 / ROUND / `JEV rc=… judged=… left=…`），
+    取最近一次会话最近 ≤4 个已收口轮次算吞吐（合计 judged/合计墙钟，保守），
+    容量 = 条/分 × 60 × 计划窗口小时（AST/部署窗口变化时随日志自动跟随）。
+    """
+    path = Path(log_path or JEV_NIGHT_LOG_PATH)
+    result = _empty_jev_night()
+    result["path"] = str(path)
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        result["reason"] = f"夜班日志不存在: {path}"
+        return result
+    except OSError as exc:
+        result["reason"] = f"读不到夜班日志: {_short_exc(exc)}"
+        return result
+    result["log_age_min"] = round((time.time() - stat.st_mtime) / 60.0, 1)
+    text = _read_batch_log_tail(path)
+    if not text:
+        result["reason"] = f"夜班日志为空/读不到: {path}"
+        return result
+
+    rounds: list[dict[str, Any]] = []
+    session = 0
+    window_hours = None
+    for line in text.splitlines():
+        if _BATCH_START_RE.search(line):
+            session += 1
+            m = _NIGHT_START_RE.search(line)
+            if m:
+                year = dt.date.today().year
+                if line.startswith("[") and len(line) > 5:
+                    try:
+                        year = int(line[1:5])
+                    except ValueError:
+                        pass
+                try:
+                    start = dt.datetime(year, int(m.group(1)), int(m.group(2)),
+                                        *[int(x) for x in m.group(3).split(":")])
+                    end = dt.datetime(year, int(m.group(4)), int(m.group(5)),
+                                      *[int(x) for x in m.group(6).split(":")])
+                    if end <= start:
+                        end += dt.timedelta(days=1)
+                    window_hours = round(
+                        (end - start).total_seconds() / 3600.0, 2)
+                except (TypeError, ValueError):
+                    pass
+            continue
+        m = _NIGHT_ROUND_RE.search(line)
+        if m:
+            at = None
+            if line.startswith("[") and len(line) > 21:
+                try:
+                    at = dt.datetime.strptime(line[1:20], "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    at = None
+            rounds.append({"round": int(m.group(1)), "left": int(m.group(2)),
+                           "at": at, "session": session if session else 1,
+                           "rc": None, "judged": None, "wall_s": None,
+                           "left_after": None})
+            continue
+        m = _NIGHT_RC_RE.search(line)
+        if m and rounds:
+            rounds[-1]["rc"] = int(m.group(1))
+            try:
+                rounds[-1]["wall_s"] = float(m.group(6))
+            except (TypeError, ValueError):
+                rounds[-1]["wall_s"] = float(m.group(2))
+            rounds[-1]["judged"] = int(m.group(3))
+            rounds[-1]["left_after"] = int(m.group(5))
+
+    result["rounds_seen"] = len(rounds)
+    if not rounds:
+        result["reason"] = "夜班日志里没有 ROUND 行（可能尚未开跑）"
+        return result
+    last = rounds[-1]
+    result["available"] = True
+    result["window_hours"] = window_hours or NIGHT_DEFAULT_WINDOW_HOURS
+    result["jev_backlog_last"] = last["left"]
+    result["last_open"] = last["rc"] is None
+    result["last_round_at"] = (last["at"].strftime("%Y-%m-%d %H:%M:%S")
+                               if last["at"] else None)
+    sess = [r for r in rounds if r["session"] == last["session"]]
+    result["session_rounds"] = len(sess)
+    recent = [r for r in sess if r["rc"] is not None][-4:]
+    result["completed"] = len(recent)
+    result["recent_rc"] = [{"round": r["round"], "jev_rc": r["rc"],
+                            "judged": r["judged"]} for r in recent]
+    judged_total = sum(r["judged"] for r in recent if r["judged"])
+    wall_total = sum(r["wall_s"] for r in recent if r["wall_s"])
+    result["judged_total"] = judged_total
+    result["wall_total_s"] = round(wall_total, 1)
+    if wall_total > 0 and judged_total > 0:
+        per_min = judged_total / wall_total * 60.0
+        result["jev_per_min"] = round(per_min, 2)
+        result["capacity_per_night"] = round(
+            per_min * 60.0 * result["window_hours"], 1)
+    deltas = [
+        a["left_after"] - b["left_after"]
+        for a, b in zip(sess, sess[1:])
+        if a.get("left_after") is not None and b.get("left_after") is not None
+    ]
+    result["jev_delta"] = (round(sum(deltas) / len(deltas), 1)
+                           if deltas else None)
+    streak = 0
+    for r in reversed(sess):
+        if r["rc"] is None:
+            continue
+        if r["rc"] == 124:
+            streak += 1
+        else:
+            break
+    result["timeout_streak"] = streak
+    return result
+
+
+def collect_batch_backlog(log_path: str | None = None,
+                          night_log_path: str | None = None) -> dict[str, Any]:
+    """白天 night_batch + 夜班 jev_night 合并：积压/最近 rc/日容量/ETA。
+
+    2026-10-26 EXEC-R32：此前只读 night_batch.log，夜间 jev_night 吞吐不计入 →
+    ETA 偏高（实测 73.6h）且夜跑时卡片误判"日志 3h 无新轮次"。现在两份日志都读：
+      · JEV 日容量 = 白天会话容量（条/分×白天会话时长）+ 夜班窗口容量（条/分×窗口）;
+      · XQ 只在白天跑，容量只算白天;
+      · 积压/最近 rc 取更新鲜的一份（夜班更鲜则用夜班 left/rc，XQ 仍取白天）;
+      · 判级阈值不变（48h/96h），两日志都不可用才 available=false。
+    """
+    day = _collect_day_batch_backlog(log_path)
+    night = _parse_jev_night_log(night_log_path)
+    day_ok = bool(day.get("available"))
+    night_ok = bool(night.get("available"))
+
+    if not day_ok and not night_ok:
+        result = _empty_batch_backlog()
+        result["day"] = {"available": False,
+                         "reason": day.get("reason"),
+                         "path": day.get("path")}
+        result["night"] = night
+        result["reason"] = ("白天/夜班两份日志都不可用：%s；%s"
+                            % (day.get("reason") or "未知",
+                               night.get("reason") or "未知"))
+        return result
+
+    result = day if day_ok else _empty_batch_backlog()
+    if not day_ok:
+        result["available"] = True
+        result["path"] = night.get("path")
+        result["jev_backlog"] = night.get("jev_backlog_last")
+        result["xq_backlog"] = None
+        result["recent_rc"] = night.get("recent_rc") or []
+        result["timeout_streak"] = night.get("timeout_streak")
+        result["last_round_at"] = night.get("last_round_at")
+        result["log_age_min"] = night.get("log_age_min")
+        result["active_source"] = "night"
+        result["unfinished_last_round"] = night.get("last_open")
+    else:
+        result["active_source"] = "day"
+        day_age = day.get("log_age_min")
+        night_age = night.get("log_age_min")
+        if night_ok:
+            result["log_age_min"] = min(
+                a for a in (day_age, night_age) if a is not None)
+            if night_age is not None and (day_age is None or night_age < day_age):
+                # 夜班更新鲜：JEV 积压/近况取夜班（XQ 只有白天有数据）
+                result["jev_backlog"] = night.get("jev_backlog_last")
+                result["recent_rc"] = (night.get("recent_rc")
+                                       or result.get("recent_rc"))
+                result["timeout_streak"] = night.get("timeout_streak")
+                result["last_round_at"] = night.get("last_round_at")
+                result["active_source"] = "night"
+                result["unfinished_last_round"] = night.get("last_open")
+                if night.get("jev_delta") is not None:
+                    result["jev_delta"] = night.get("jev_delta")
+
+    # 容量折算（XQ 只在白天）
+    day_hours = day.get("day_session_hours") if day_ok else None
+    tp = (day.get("throughput") or {}) if day_ok else {}
+    day_jev_cap = None
+    day_xq_cap = None
+    if day_hours and day_hours > 0:
+        if tp.get("jev_per_min") is not None:
+            day_jev_cap = round(tp["jev_per_min"] * 60.0 * day_hours, 1)
+        if tp.get("xq_per_min") is not None:
+            day_xq_cap = round(tp["xq_per_min"] * 60.0 * day_hours, 1)
+    night_cap = night.get("capacity_per_night") if night_ok else None
+    daily_jev = (day_jev_cap or 0) + (night_cap or 0)
+    result["day_jev_capacity"] = day_jev_cap
+    result["night_capacity_per_night"] = night_cap
+    result["daily_jev_capacity"] = round(daily_jev, 1) if daily_jev > 0 else None
+    result["day_session_hours"] = day_hours
+    result["night_window_hours"] = (night.get("window_hours")
+                                    if night_ok else None)
+    result["night_jev_per_min"] = (night.get("jev_per_min")
+                                   if night_ok else None)
+    result["throughput"] = tp
+
+    jev_backlog = result.get("jev_backlog")
+    xq_backlog = result.get("xq_backlog")
+    eta_jev = None
+    if isinstance(jev_backlog, int) and jev_backlog > 0 and daily_jev > 0:
+        eta_jev = round(jev_backlog / (daily_jev / 24.0), 1)
+    eta_xq = None
+    if (isinstance(xq_backlog, int) and xq_backlog > 0
+            and isinstance(day_xq_cap, (int, float)) and day_xq_cap > 0):
+        eta_xq = round(xq_backlog / (day_xq_cap / 24.0), 1)
+    result["eta_jev_hours"] = eta_jev
+    result["eta_xq_hours"] = eta_xq
+    etas = [value for value in (eta_jev, eta_xq) if value is not None]
+    result["eta_hours"] = max(etas) if etas else None
+    result["eta_serial_hours"] = (round(eta_jev + eta_xq, 1)
+                                  if (eta_jev is not None
+                                      and eta_xq is not None) else None)
+    result["eta_basis"] = (
+        "日容量=白天会话 JEV %s 条/天（%s 条/分×%sh）+ 夜班窗口 JEV %s 条/夜"
+        "（%s 条/分×%sh）；ETA=积压÷(日容量/24) 墙钟小时；"
+        "XQ 仅白天容量 %s 条/天"
+        % (day_jev_cap, tp.get("jev_per_min"), day_hours,
+           night_cap, night.get("jev_per_min") if night_ok else None,
+           result["night_window_hours"], day_xq_cap))
+    result["sources"] = {
+        "day": {"available": day_ok,
+                "reason": None if day_ok else day.get("reason"),
+                "path": day.get("path"),
+                "log_age_min": day.get("log_age_min"),
+                "jev_capacity": day_jev_cap,
+                "xq_capacity": day_xq_cap},
+        "night": {"available": night_ok,
+                  "reason": None if night_ok else night.get("reason"),
+                  "path": night.get("path"),
+                  "log_age_min": night.get("log_age_min"),
+                  "window_hours": (night.get("window_hours")
+                                   if night_ok else None),
+                  "jev_per_min": (night.get("jev_per_min")
+                                  if night_ok else None),
+                  "capacity_per_night": night_cap},
+    }
+    result["available"] = True
+    return result
+
+
+def _machine_suspend_level(sus: dict[str, Any]) -> tuple[str, str]:
+    """ops.machine_suspend 判级（2026-10-26 EXEC-R32）。
+
+    采集器未运行（ops 块缺失）= 卡自己没看，不判绿 → 红（与其它块一致）；
+    查询失败/权限不足/超时 = **不可判定≠故障** → 黄（detail 写明原因与重试方式）；
+    真读到数据时沿用 2026-10-24 开发机定调：有挂起/意外关机 → 黄，否则绿
+    （生产机要恢复红级时再改这里，阈值常量保留）。
+    """
+    if not sus:
+        return "red", "机器挂起检查未运行（ops 块缺失，采集器未跑；不判绿）"
+    if not sus.get("available"):
+        return ("yellow",
+                "机器挂起统计不可判定（查询失败/权限不足/超时，非故障）：%s；"
+                "重试：在有系统事件日志读权限的会话重跑 "
+                "python -B tools/gen_health_card.py"
+                % str(sus.get("reason") or "未知原因"))
+    detail = _machine_suspend_detail(sus) + "（开发机特性，不计入产品判据）"
+    if (sus.get("suspend_seconds") or 0) > 0 or sus.get("unexpected_shutdowns"):
+        return "yellow", detail
+    return "green", _machine_suspend_detail(sus)
 
 
 def _batch_backlog_detail(bl: dict[str, Any]) -> str:
@@ -4322,6 +4623,21 @@ def _batch_backlog_detail(bl: dict[str, Any]) -> str:
         if parts:
             bits.append("每轮吞吐 " + "、".join(parts)
                         + "（%s 对样本）" % tp.get("samples"))
+    sources = bl.get("sources") or {}
+    if sources:
+        def _src_text(source: dict[str, Any]) -> str:
+            return ("OK" if source.get("available")
+                    else "缺(%s)" % str(source.get("reason") or "?")[:36])
+        bits.append("数据来源：白天 %s、夜班 %s%s"
+                    % (_src_text(sources.get("day") or {}),
+                       _src_text(sources.get("night") or {}),
+                       "；当前以夜班为准" if bl.get("active_source") == "night"
+                       else ""))
+    if bl.get("daily_jev_capacity") is not None:
+        bits.append("合并日容量 JEV≈%s 条/天（白天 %s / 夜班 %s 条/夜）"
+                    % (bl.get("daily_jev_capacity"),
+                       bl.get("day_jev_capacity"),
+                       bl.get("night_capacity_per_night")))
     if bl.get("eta_hours") is not None:
         eta_text = "ETA 口径：%s；JEV %s h / 雪球 %s h" % (
             bl.get("eta_basis") or "按各队列自身运行时长",
@@ -4337,13 +4653,14 @@ def _batch_backlog_detail(bl: dict[str, Any]) -> str:
 
 
 def _batch_backlog_level(bl: dict[str, Any]) -> tuple[str, str]:
-    """ops.batch_backlog 判级（2026-10-25 EXEC-R13，R23 修 ETA 口径）。
+    """ops.batch_backlog 判级（2026-10-25 EXEC-R13，R23/R32 修 ETA 口径）。
 
     red    ：积压较上一轮上升（任一队列 delta<0），或连续 rc=124 ≥2 轮；
-             或 ETA >96h（ETA 已改为各队列自身运行时长口径，不存在轮间隔摊薄）。
-    yellow ：仅最近 1 轮 rc=124；ETA >48h；日志 >3h 无新 ROUND（可能已收工/失联）。
+             或 ETA >96h（2026-10-26 EXEC-R32：ETA=积压÷(白天+夜班合并日容量/24)，
+             已纳入夜班 jev_night 吞吐，不再按白天单口径虚高）。
+    yellow ：仅最近 1 轮 rc=124；ETA >48h；两份日志合计 >3h 无新 ROUND（可能收工/失联）。
     green  ：无超时、积压只降不升、ETA ≤48h。
-    读不到 / 无 ROUND → red（不判绿）。detail 里给出每轮吞吐与 ETA 口径及
+    两日志都读不到 / 无 ROUND → red（不判绿）。detail 给出数据来源、合并日容量与
     JEV/雪球分队列 ETA、串行合计。
     """
     detail = _batch_backlog_detail(bl)
@@ -5246,24 +5563,11 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             add("agent.daily", "green", detail)
 
     sus = (card.get("ops") or {}).get("machine_suspend") or {}
-    if not sus:
-        add("ops.machine_suspend", "red", "机器挂起检查未运行（ops 块缺失）")
-    elif not sus.get("available"):
-        add("ops.machine_suspend", "red",
-            "机器挂起统计不可用：" + str(sus.get("reason") or "未知原因"))
-    else:
-        # 判据优先级：意外关机 / 累计挂起时长。两者语义不同——
-        # 挂起是"机器慢了"，意外关机是"机器没了"，不能合并成一个数。
-        #
-        # 2026-10-24 21:30 老田定调：这**是开发笔记本**，合盖/拔电/睡眠是使用方式，
-        # 不是产品缺陷；生产环境不会复现。故挂起与断电一律**只报黄**（说明性），
-        # 保留数字与明细供观察，不作为阻断项。只有"读不到"才判红（下面分支）。
-        # 若将来跑在生产机上真复现，再按需恢复红级——别让开发机每天训练出"忽略红灯"。
-        detail = _machine_suspend_detail(sus) + "（开发机特性，不计入产品判据）"
-        if (sus.get("suspend_seconds") or 0) > 0 or sus.get("unexpected_shutdowns"):
-            add("ops.machine_suspend", "yellow", detail)
-        else:
-            add("ops.machine_suspend", "green", _machine_suspend_detail(sus))
+    # 2026-10-26 EXEC-R32：判级集中到 _machine_suspend_level——查询失败/权限不足/
+    # 超时=不可判定≠故障 → 黄（detail 写明原因与重试方式）；只有真读到挂起/意外关机
+    # 数据才按 10-24 开发机定调报黄，否则绿。绝不因查询失败染红整张卡。
+    sus_level, sus_detail = _machine_suspend_level(sus)
+    add("ops.machine_suspend", sus_level, sus_detail)
 
     rank = {"green": 0, "yellow": 1, "red": 2}
     status = max((check["level"] for check in checks), key=lambda level: rank[level])
@@ -5374,14 +5678,17 @@ def build_card(
             "读不到的指标写进 detail，不静默当 0、不判绿。",
             "机器挂起（ops.machine_suspend）：读系统事件日志的 Kernel-General 1"
             "（时间被硬件钟纠正的毫秒数=挂起时长，>60s 才计）、Kernel-Power 42（睡眠次数）、"
-            "41/6008（意外关机）。有意外关机 → 红；今日累计挂起 >60 分钟红 / >10 分钟黄；"
-            "查询失败红（不判绿）。这是全卡唯一能把「机器没开」与「任务失败」分开的读数——"
-            "2026-10-24 六条日志同时断档，应用侧只能看到少了几行，给不出时长。",
-            "夜间批处理积压（ops.batch_backlog）：只读 C:\\Temp\\night_batch.log 尾部，"
-            "解析 ROUND/rc 行取两条队列积压、最近两轮 rc、墙钟/吞吐与预计清完小时；"
-            "积压较上一轮上升或连续 rc=124 ≥2 轮 → 红；仅 1 轮 rc=124 / ETA >48h / "
-            "日志 >3h 无新轮 → 黄；ETA >96h 或读不到 → 红（不判绿）。"
-            "对应修复单 2026-10-25 EXEC-R13（单实例锁 + 每轮软预算收口 + 告警旗）。",
+            "41/6008（意外关机）。有意外关机 / 累计挂起 >60 分钟红、>10 分钟黄"
+            "（2026-10-24 定调开发机一律只报黄）；**查询失败/权限不足/超时 → 黄"
+            "（不可判定，非故障；detail 写明原因与重试方式）**。这是全卡唯一能把"
+            "「机器没开」与「任务失败」分开的读数——2026-10-24 六条日志同时断档，"
+            "应用侧只能看到少了几行，给不出时长。",
+            "夜间批处理积压（ops.batch_backlog）：读白天 C:\\Temp\\night_batch.log + "
+            "夜间 C:\\Temp\\jev_night.log 两份尾部，解析 ROUND/rc 行；JEV 日容量="
+            "白天会话容量+夜间窗口容量（XQ 只在白天）；积压较上一轮上升或连续 rc=124 "
+            "≥2 轮 → 红；仅 1 轮 rc=124 / ETA >48h / 两日志合计 >3h 无新轮 → 黄；"
+            "ETA >96h 或两日志都读不到 → 红（不判绿）。"
+            "对应修复单 EXEC-R13（单实例锁+软预算收口）、EXEC-R32（纳入夜班吞吐）。",
             "任务启动失败统计（ops.task_launch_failures）N/A 口径（2026-10-26 统一测量）："
             "schtasks 不可用（沙箱/权限会话）→ 采集不到 ≠ 任务故障，判黄 N/A、不计红，"
             "detail 写明「需管理员会话复核」；只有 ops 块缺失（采集器未运行）或真正采到 "
