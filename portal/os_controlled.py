@@ -583,3 +583,40 @@ def chain_report_c1(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
             "gates": gates, "counts": {"events": len(evs)},
             "honesty": {"approval": "per_action_user", "external_sent": False,
                         "limit": "仅审批+outbox 记录；未调用任何外部发送通道"}}
+
+
+def list_approvals(store: S.OsGoalStore, item_id: str) -> List[Dict[str, Any]]:
+    """列出某事项的 L2 审批单（含状态：pending/approved/denied/expired）。"""
+    evs = _evs(store, item_id)
+    reqs: Dict[str, Dict[str, Any]] = {}
+    order: List[str] = []
+    decs: Dict[str, Dict[str, Any]] = {}
+    for e in evs:
+        p = e.get("payload") or {}
+        t = e.get("type")
+        if t == "approval.requested" and p.get("approval_id"):
+            aid = p["approval_id"]
+            if aid not in reqs:
+                order.append(aid)
+            reqs[aid] = p
+        elif t == "approval.decided" and p.get("approval_id"):
+            decs[p["approval_id"]] = p
+    out = []
+    for aid in order:
+        req = reqs[aid]
+        dec = decs.get(aid)
+        status = "pending"
+        if dec:
+            status = dec.get("decision") or "unknown"
+        else:
+            exp = _parse(req.get("expires_at"))
+            if exp and datetime.now(BEIJING) >= exp:
+                status = "expired"
+        out.append({"approval_id": aid, "action": req.get("action"),
+                    "consumer_id": req.get("consumer_id"),
+                    "summary": req.get("summary"), "status": status,
+                    "expires_at": req.get("expires_at"),
+                    "requested_at": req.get("requested_at"),
+                    "decided_at": (dec or {}).get("decided_at"),
+                    "decided_note": (dec or {}).get("note")})
+    return out
