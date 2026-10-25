@@ -43,7 +43,7 @@
 <body>
 <main class="wrap">
   <h1>语音审批台 · 说着走完全流程</h1>
-  <p class="sub">点一下「🎤 说话」说一句，我识别意图→回读确认→执行→报告结果。不需要看懂表单。支持方言口语（要得/巴适/要不得/晓得了）。</p>
+  <p class="sub">点一下「🎤 说话」说一句，我识别意图→回读确认→执行→报告结果。不需要看懂表单。支持方言口语（要得/巴适/要不得/晓得了）；空格键=说话，可开「连续对话」。</p>
   <div class="banner">边界：这是 C1 审批通道，<b>只记录受控 outbox，不实际外发/发布</b>。真实外发属 C2，另需授权。</div>
 
   <section class="big">
@@ -57,6 +57,7 @@
       <button id="mic">🎤 说话</button>
       <button id="stop" class="ghost" hidden>⏹ 停止</button>
       <button id="replay" class="ghost">🔊 重听提示</button>
+      <button id="auto" class="ghost">🔁 连续对话：关</button>
       <span class="sub" id="asr">识别方式检测中…</span>
       <button id="asr-retry" class="ghost" style="padding:6px 10px;font-size:12px" hidden>重试本地 ASR</button>
     </div>
@@ -86,6 +87,7 @@
 const $=id=>document.getElementById(id);
 const H={'Content-Type':'application/json','X-OS-Page':'approval'};
 let ITEM=new URLSearchParams(location.search).get('item')||'';
+let AUTO=false, LAST_SPOKEN='', USER_STARTED=false;
 let CONSUMER='', APPROVALS=[], CHAIN=null, OUTBOX=null;
 let PENDING_CONFIRM=null, BUSY=false, RECORDING=false, RECORD_STOP=null;
 let ASR_MODE='local', SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -94,7 +96,7 @@ const ECHO_RE=/我理解|审批台|请说|说一句|边界|受控|outbox/;
 
 function logline(s){ const d=document.createElement('div'); d.textContent=s; $('log').appendChild(d); $('log').scrollTop=$('log').scrollHeight; }
 function say(text, noSpeak){ $('say').textContent=text; logline('🤖 '+text); if(!noSpeak) speak(text); }
-function speak(text){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.05; speechSynthesis.speak(u); }catch(e){} }
+function speak(text){ try{ LAST_SPOKEN=String(text||''); speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=1.05; u.onend=()=>{ if(AUTO && USER_STARTED && !BUSY && !RECORDING){ setTimeout(()=>{ if(AUTO && !BUSY && !RECORDING) listen(); }, 650); } }; speechSynthesis.speak(u); }catch(e){} }
 function err(m){ $('err').textContent=String(m||''); logline('⚠️ '+m); }
 function clearErr(){ $('err').textContent=''; }
 async function api(path, body, method){
@@ -266,6 +268,8 @@ async function showChain(){
 async function handleCommand(raw){
   const t=String(raw||''), s=norm(t);
   $('heard').textContent=t; logline('🗣️ '+t);
+  const ls=norm(LAST_SPOKEN);
+  if(ls && (s===ls || (s.length>=4 && ls.includes(s)))){ logline('（听到的是我自己的回读，略过）'); return; }
   if(/取消|算了|不做了/.test(s)){ PENDING_CONFIRM=null; say('好，取消。'); return; }
   if(/确认|确定|执行/.test(s) && PENDING_CONFIRM){ await doDecide(); return; }
   if(/看链|查看链|结果|刷新|审计/.test(s)){ await showChain(); return; }
@@ -285,8 +289,10 @@ async function handleCommand(raw){
 }
 
 $('asr-retry').onclick=async()=>{ try{ $('asr').textContent='正在尝试恢复本地 ASR…'; say('正在恢复本地 ASR，请稍等。', true); await fetch('/api/os/asr/recover',{method:'POST',headers:H,body:'{}'}); for(let i=0;i<40;i++){ await new Promise(r=>setTimeout(r,1500)); const d=await (await fetch('/api/os/asr/status')).json(); if(d.loaded && !d.broken){ ASR_MODE='local'; $('asr').textContent='本地高精度 · SenseVoice（离线）'; $('asr-retry').hidden=true; say('本地 ASR 恢复成功，可以说话了。'); return; } if(d.broken) break; } ASR_MODE='browser'; $('asr').textContent='本地 ASR 仍异常 → 浏览器识别'; say('本地 ASR 还没恢复，先用浏览器识别；或让老田重启 8091。'); }catch(e){ err('恢复失败：'+e.message); } };
+$('auto').onclick=()=>{ AUTO=!AUTO; USER_STARTED=true; $('auto').textContent=(AUTO?'🔁 连续对话：开':'🔁 连续对话：关'); if(AUTO){ say('连续对话已开：说完我会自动再听。', true); setTimeout(()=>{ if(!BUSY) listen(); }, 300); } else { say('连续对话已关。', true); } };
+window.addEventListener('keydown',e=>{ if(e.code==='Space' && !/INPUT|TEXTAREA|SELECT/.test((e.target||{}).tagName||'')){ e.preventDefault(); USER_STARTED=true; if(!BUSY) listen(); } else if(e.code==='Escape'){ PENDING_CONFIRM=null; say('已取消当前确认。', true); } });
 $('copyh').onclick=async()=>{ try{ await navigator.clipboard.writeText($('heard').textContent||''); say('识别原文已复制。', true); }catch(e){ err('复制失败，请手动选中复制'); } };
-$('mic').onclick=()=>{ if(RECORDING){ RECORD_STOP&&RECORD_STOP(); return; } listen(); };
+$('mic').onclick=()=>{ USER_STARTED=true; if(RECORDING){ RECORD_STOP&&RECORD_STOP(); return; } listen(); };
 $('stop').onclick=()=>{ RECORD_STOP&&RECORD_STOP(); if(PENDING_CONFIRM) PENDING_CONFIRM=null; };
 $('replay').onclick=()=>speak($('say').textContent.replace(/^🤖\s*/,''));
 $('send').onclick=()=>{ const v=$('txt').value.trim(); if(!v) return; $('txt').value=''; handleCommand(v).catch(e=>err(e.message)); };
