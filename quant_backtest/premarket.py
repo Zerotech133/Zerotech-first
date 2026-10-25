@@ -1833,6 +1833,29 @@ def build_doc_md(d):
     return "\n".join(L)
 
 
+def _cli_error_brief(out):
+    """把 lark-cli 的 JSON 错误压成一行可读摘要（鉴权/权限/参数）。
+
+    历史教训（2026-10-25 K-ORG-20261025-DOCSYNC）：原来只打印 out[:120]
+    原文，token_missing 与 app_scope_not_applied 都被截成看似同类的
+    validation 报错，排查时白走一大圈。摘要只取 type/subtype/code/message，
+    既短又保留病因。
+    """
+    text = (out or "").strip()
+    try:
+        payload = json.loads(text)
+        err = payload.get("error") or {}
+        kind = err.get("type") or "?"
+        subtype = err.get("subtype") or "?"
+        code = err.get("code")
+        head = "%s/%s" % (kind, subtype)
+        if code:
+            head += "(%s)" % code
+        return "%s %s" % (head, str(err.get("message") or "")[:160])
+    except Exception:
+        return text.replace("\n", " ")[:200]
+
+
 def _doc_sync(md):
     """镜像报告到飞书文档：无则创建，有则整体覆盖；失败不影响推卡。"""
     exe = _lark_exe()
@@ -1861,7 +1884,7 @@ def _doc_sync(md):
                 return doc
             # 兜底：更新瞬时失败（超时/抖动）时仍返回已知 URL——
             # 文档在、内容或旧一版，好过卡片丢掉唯一可达链接（10/39 实况）
-            print("DOC_SYNC UPDATE FAIL, keep stored url:", out[:120])
+            print("DOC_SYNC UPDATE FAIL, keep stored url:", _cli_error_brief(out))
             return doc
         r = subprocess.run(
             [exe, "docs", "+create", "--as", "user", "--title",
@@ -1884,7 +1907,7 @@ def _doc_sync(md):
             os.replace(tmp_cfg, cfgp)
             print("DOC_SYNC CREATE OK", url[:60])
             return url
-        print("DOC_SYNC FAIL", out[:200])
+        print("DOC_SYNC FAIL", _cli_error_brief(out))
         return None
     except Exception as e:
         print("DOC_SYNC ERR", str(e)[:120])
