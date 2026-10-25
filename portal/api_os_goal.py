@@ -192,6 +192,11 @@ CTRL_ITEM_RE = re.compile(
 CTRL_CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain/controlled$")
 
 
+CTRL_C1_RE = re.compile(
+    r"^/api/os/item/([A-Za-z0-9-]+)/(approval/request|approval/decide|l2/outbox)$")
+CTRL_C1_CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain/c1$")
+
+
 def _handle_controlled_post(store, path, body):
     import os_controlled as X
     if path == "/api/os/consumer/register":
@@ -231,12 +236,44 @@ def _handle_controlled_post(store, path, body):
     return None
 
 
+def _handle_c1_post(store, path, body):
+    import os_controlled as X
+    m = CTRL_C1_RE.match(path)
+    if not m:
+        return None
+    iid, action = m.group(1), m.group(2)
+    if action == "approval/request":
+        a = X.request_l2_approval(store, iid, str(body.get("action") or ""),
+                                  str(body.get("consumer_id") or ""),
+                                  summary=str(body.get("summary") or ""),
+                                  ttl_minutes=int(body.get("ttl_minutes") or 30))
+        return 201, {"ok": True, "approval": a}
+    if action == "approval/decide":
+        d = X.decide_l2_approval(store, iid, str(body.get("approval_id") or ""),
+                                 str(body.get("decision") or ""),
+                                 str(body.get("nonce") or ""),
+                                 note=str(body.get("note") or ""),
+                                 signer_method=str(body.get("signer_method") or "session_nonce"))
+        return 201, {"ok": True, "decision": d}
+    if action == "l2/outbox":
+        o = X.record_l2_outbox(store, iid, str(body.get("consumer_id") or ""),
+                               str(body.get("approval_id") or ""),
+                               str(body.get("action") or ""),
+                               summary=str(body.get("summary") or ""),
+                               payload_text=str(body.get("payload_text") or ""))
+        return 201, {"ok": True, "outbox": o}
+    return None
+
+
 def _handle_controlled_get(store, path):
     import os_controlled as X
     m = CTRL_CHAIN_RE.match(path)
-    if not m:
-        return None
-    return 200, {"ok": True, **X.chain_report_controlled(store, m.group(1))}
+    if m:
+        return 200, {"ok": True, **X.chain_report_controlled(store, m.group(1))}
+    m2 = CTRL_C1_CHAIN_RE.match(path)
+    if m2:
+        return 200, {"ok": True, **X.chain_report_c1(store, m2.group(1))}
+    return None
 
 
 def handle_post(store: S.OsGoalStore, path: str,
@@ -247,6 +284,9 @@ def handle_post(store: S.OsGoalStore, path: str,
         ctrl = _handle_controlled_post(store, path, body)
         if ctrl is not None:
             return ctrl
+        c1 = _handle_c1_post(store, path, body)
+        if c1 is not None:
+            return c1
         quick = _handle_quick(store, path, body)
         if quick is not None:
             return quick
