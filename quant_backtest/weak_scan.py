@@ -26,7 +26,7 @@ import glob
 import json
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -37,6 +37,40 @@ import linkage  # noqa: E402
 # 输出在项目根 reports（⚠️ 与 strong 的 quant_backtest/reports 不同根）——
 # 下游 portal/build_todays_picks 按此路径消费 weak_scan_*.csv，勿改。
 REP = os.path.abspath(os.path.join(HERE, "..", "reports"))
+
+# 生产者完成标记（2026-10-26 OS-FIX-MEASURE2）：api_common 的 weak 源只认
+# "整轮扫描跑完"的证据；CSV/案例 jsonl 的 mtime 只能证明局部写入，零命中扫描
+# 更是毫无痕迹。扫描成功出口（含零命中）原子写本文件，供 _alert_source_health
+# 的 dated() 判当期。格式 schema=weak_scan_last/v1。
+LAST_MARKER = os.path.join(REP, "weak_scan_last.json")
+CST = timezone(timedelta(hours=8))
+
+
+def write_scan_marker(last_day, case_count, source="quant_backtest/weak_scan.py"):
+    """写整轮扫描完成标记（原子写）→ payload。
+
+    · completed_at：本轮扫描完成时刻（北京时间 ISO8601 +08:00）；
+    · trade_date：本轮扫描覆盖的行情日（YYYY-MM-DD）；
+    · case_count：命中案例数（0 = 合法零命中，仍证明"跑完了"）。
+    写失败不致命：扫描结果照常返回，由调用方决定是否告警（本函数只做 IO）。
+    """
+    day = str(last_day or "").strip()
+    if len(day) == 8 and day.isdigit():
+        day = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
+    payload = {
+        "schema": "weak_scan_last/v1",
+        "completed_at": datetime.now(CST).isoformat(timespec="seconds"),
+        "trade_date": day[:10],
+        "source": source,
+        "case_count": int(case_count),
+    }
+    os.makedirs(REP, exist_ok=True)
+    tmp_path = LAST_MARKER + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False)
+        handle.write("\n")
+    os.replace(tmp_path, LAST_MARKER)
+    return payload
 
 # 行情日期护栏（K-QUANT-20261019-WEAKGUARD）日历基准：本地 TuShare
 # trade_cal 只读快照（判例 build_history_backfill_plan.py 同源目录）。
@@ -288,6 +322,14 @@ def main():
         h["focus"] = focus_tag(h, strong, a.deep, a.pct)
     foc = [h for h in hits if h["focus"]]
     foc.sort(key=focus_rank)
+
+    # 生产者完成标记（2026-10-26 OS-FIX-MEASURE2）：扫描已成功走到这里（含
+    # 零命中）就落盘——这是 weak 源"整轮完成"的唯一证据；写失败不影响扫描。
+    try:
+        write_scan_marker(last_day, len(hits))
+    except OSError as e:
+        sys.stderr.write(" ! weak_scan_last.json 写入失败（不影响扫描结果）: %s\n"
+                         % e)
 
     if not hits:
         print("无命中候选。")

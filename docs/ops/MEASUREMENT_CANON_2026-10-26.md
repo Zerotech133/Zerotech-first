@@ -82,3 +82,57 @@ $env:PYTHONDONTWRITEBYTECODE='1'; $env:PYTHONIOENCODING='utf-8'
 
 > `news_collector/test_alert_delivery_p0.py` 的 12 个失败是 master 既有问题（测试 mock 的 `strftime` 缺
 > `%Y-%m-%d %H:%M:%S` 键，`alert_watch._write_heartbeat` 用到），与本次改动无关，属并行 WIP 区，本单未改。
+
+## 6. 2026-10-26 追加：交易日历 / 生产者时间戳（OS-FIX-MEASURE2-20261026）
+
+> 本单只本地提交，**未合并、未重启**；`portal/api_common.py` 由 8091 进程启动时 import，
+> 生效需 L2 重启审批（重启前线上仍走旧口径）。
+
+### 6.1 交易日历 artifact（健康卡休市语义的唯一来源）
+
+| 项 | 值 |
+|---|---|
+| 路径 | `portal/data/trade_cal_open_days.json`（gitignored 运行时数据，不随 git 分发） |
+| schema | `trade_cal_open_days/v1`：`{"schema","exchange":"SSE","range":["2020-01-02","2027-12-31"],"count":1941,"open_days":["YYYY-MM-DD",…]}` |
+| 语义 | `open_days` = SSE `is_open=1` 的交易日列表；**不在列表内 = 休市**（覆盖周末 + 法定节假日 + 调休，不再用 weekday 猜） |
+| 生成方式 | 由 lead 从本地 TuShare `trade_cal`（exchange=SSE、is_open=1）导出为上述 schema；年报/交易日历更新后重新生成覆盖即可 |
+| 读取方 | `tools/gen_health_card.py` 的 `_is_non_trading_day()`；默认路径 `Path(__file__).parents[1]/portal/data/trade_cal_open_days.json`，`ZB_TRADE_CAL` 可覆盖 |
+| 降级纪律 | 文件缺失/坏 JSON/空 `open_days` → 回退 `weekday>=5`（旧口径），**绝不抛异常**；测试覆盖坏 JSON 与缺失两种回退 |
+
+### 6.2 健康卡休市语义
+
+- `_is_non_trading_day()` 只用于给 `ops.alert_watch_liveness` 黄项 detail 追加
+  「当前为周末/非交易日：可能属预期，交易日需补源时间戳」——**不参与判绿/判红**：
+  非交易日不能成为故障的免罪符。
+- 新增分支（与 OS-FIX-ALERT2 联动）：心跳新鲜 + `rc=0` 且 `upstream_ok is None` →
+  **绿**，detail =「非交易日静默（预期）：无 EOD 源预期，按设计跳过；交易日恢复校验」。
+  语义依据：该组合是 alert_watch 非交易日跳过路径
+  `_write_heartbeat(0, None, 0, "non_trading_day…")` 的生产者契约，不是"未记录校验结果"的未知态。
+- 其余 alert_watch 口径不变：rc=3 / `upstream_ok=false` → 黄；rc 非 0/3 → 黄；心跳
+  缺失/过期回退旧状态文件口径（>26h 红）。
+
+### 6.3 生产者时间戳边界（cross / council / weak）
+
+| 源 | 生产者证据 | 判定边界 |
+|---|---|---|
+| cross | `build_cross()` 产物 `completed_at`（北京时间 ISO+08:00）+ `trade_date`（各源信号日 dt 最大值，取不到 `None`）；`src_state[sid].anchor` 为新增字段（向后兼容） | 两者齐备才进 `dated()`；缺一 → `stale/unproven_completion`。`trade_date` = 信号覆盖到哪一天，**不是聚合器运行日**；`generated_at` 墙钟永远不能当完成证据 |
+| council | `_council_stats()` 的 `ts` = 最新业务日（`d == max(d)`）留痕行自身 `ts` 归一为 +08:00 ISO（原取 shadow stats.updated，与 d 不同日 → 恒 unproven） | `d` 与 `ts` 日期一致、为当日且在 18h 窗口内才 ok；缺 ts → unproven |
+| weak | `reports/weak_scan_last.json`（schema `weak_scan_last/v1`：`completed_at`/`trade_date`/`source`/`case_count`），由 `quant_backtest/weak_scan.py` 在**成功出口原子写**（含零命中：`case_count=0` 也写） | api_common 仅在 marker 有效**且** `weak_track_*.jsonl` 在案时用 `dated()`；marker 缺失 → unproven（不拿 CSV/mtime 顶替）。**marker 只在真实跑过一轮 weak_scan 后才出现**——未跑仍是 unproven，这是诚实状态不是缺陷 |
+
+### 6.4 周末/非交易日规则（统一）
+
+1. 交易日 = `open_days` 命中；周末/法定节假日/调休休市日一律非交易日。
+2. `api_common.dated()` 的"当期"判据仍是 `trade_date == today 且 anchor 日期 == today`
+   且 ≤18h 窗口——**非交易日没有当期生产者证据，因此信源 stale 属预期**（不得为绿放宽）。
+3. 健康卡休市文案只影响 detail；日报/STATUS 引用源健康必须带三元组（as-of/tool/scope），
+   并把"非交易日"写进说明。
+4. alert_watch 非交易日跳过属 OS-FIX-ALERT2 范围；本单只消费其心跳契约。
+
+### 6.5 本单对 §4 留口的处置
+
+- §4.2「交易日节假日日历未接」→ **已接**（§6.1/6.2），留口关闭。
+- §4.3「weak/cross/council 无生产者时间戳」→ **已接线**：cross/council 生产端补字段，
+  weak 补成功出口 marker + api_common 只认 marker；marker 首现要等下一轮真实
+  `start_weak_scan.ps1` 运行，之前维持 unproven。
+- §4.4（AlertWatch 18h 只改服务端）/§4.5（267014/267009 旧口径）本单未动。
+

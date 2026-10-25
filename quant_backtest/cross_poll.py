@@ -42,11 +42,14 @@ W5 净向分排序（20261014 cross-netdev，v1.1 计划滚动项）：
 import json
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 REPORTS = os.path.join(HERE, "reports")
+
+# 北京时间（生产者完成时间戳统一 +08:00，2026-10-26 OS-FIX-MEASURE2）
+CST = timezone(timedelta(hours=8))
 
 CHANLUN_LOOKBACK_DAYS = 90      # 缠论信号有效窗口（检出日起）
 NINE_DIM_LONG = 80              # 九维展示阈值（观察工具口径，非买入建议）
@@ -118,6 +121,39 @@ def _load_jsonl(path):
     return out
 
 
+# ── 生产者时间戳（2026-10-26 OS-FIX-MEASURE2）──────────────────────────────
+# 背景：api_common 的源健康只认"生产者完成时间"；此前 cross 聚合器只有
+# generated_at（聚合器墙钟），无法证明"当期跑完"→ 永远 unproven。本版给
+# build_cross 产物补两个字段：
+#   completed_at = 本次聚合完成时刻（北京时间 ISO8601 +08:00）
+#   trade_date   = 各源数据锚（信号日 dt）的最大值，取不到 None
+# 口径边界：trade_date 是"信号覆盖到哪一天"，**不是**聚合器运行日；拿不到
+# 任何源锚就不猜（None），由消费方维持 unproven。排序/过滤/门槛逻辑零改动。
+def _now_cst_iso():
+    """北京时间 ISO8601（+08:00）——生产者完成时间戳的唯一格式。"""
+    return datetime.now(CST).isoformat(timespec="seconds")
+
+
+def _signal_day(value):
+    """信号日期归一 → YYYY-MM-DD；8 位数字/带时间/坏值 → ''（不猜）。"""
+    text = str(value or "").strip()
+    if len(text) == 8 and text.isdigit():
+        text = "%s-%s-%s" % (text[:4], text[4:6], text[6:])
+    day = text[:10]
+    try:
+        datetime.strptime(day, "%Y-%m-%d")
+    except ValueError:
+        return ""
+    return day
+
+
+def _source_anchor(hits):
+    """单源数据锚 = 该源全部命中信号日 dt 的最大值（YYYY-MM-DD）；无则 ''。"""
+    days = [d for d in (_signal_day(h.get("dt")) for h in (hits or {}).values())
+            if d]
+    return max(days) if days else ""
+
+
 # ── 策略取数器：各自返回 {code: hit}，hit={dir,label,extra} ──
 def _src_qpzm():
     snap = _load_json(os.path.join(REPORTS, "rps_latest.json"))
@@ -131,7 +167,9 @@ def _src_qpzm():
             "dir": d,
             "label": "共振%d·%s" % (r.get("score") or 0, base),
             "name": r.get("name") or "",
-            "market": r.get("market") or ""}
+            "market": r.get("market") or "",
+            # 数据锚：rps 快照 ts（日批），供 build_cross 汇总 trade_date
+            "dt": str(snap.get("ts") or "")}
     return out
 
 
@@ -162,7 +200,9 @@ def _src_sig4():
             "dir": "long" if n >= SIG4_LONG else "neutral",
             "label": "4策略%d/4" % n,
             "name": r.get("name") or "",
-            "market": r.get("market") or ""}
+            "market": r.get("market") or "",
+            # 数据锚：同 rps 快照 ts
+            "dt": str(snap.get("ts") or "")}
     return out
 
 
@@ -229,7 +269,9 @@ def _src_9dim():
             "dir": "long",
             "label": "九维%.0f" % sc,
             "name": r.get("name") or "",
-            "market": "CN"}
+            "market": "CN",
+            # 数据锚：nine_dim_scores.json trade_date（周频锚），供 trade_date 汇总
+            "dt": str(snap.get("trade_date") or snap.get("generated_at") or "")}
     return out
 
 
@@ -301,6 +343,11 @@ def build_cross(force=False):
     · topn:       n_hit≥k 的票按排序键（cross.sort_key，缺省 net 净向分）
       降序取前 TOPN_DEFAULT（blocked 时 []）；net 模式下每票带 net_score
       字段（[-1,1] 归一化净向分），输出带 sort_key 口径标注供下游识别。
+    · 生产者时间戳（2026-10-26 OS-FIX-MEASURE2，供 api_common 源健康判"当期
+      跑完"）：completed_at = 本轮聚合完成时刻（北京时间 ISO8601 +08:00）；
+      trade_date = 各源数据锚的最大日（src_state[sid].anchor，取不到 None）；
+      src_state = {sid: {status, n, detail, anchor}}（anchor 为新增字段，向后兼容）。
+      排序/过滤/k 门槛逻辑零改动。
     """
     if not force and _CACHE["d"] and time.time() - _CACHE["t"] < CACHE_TTL:
         return _CACHE["d"]
@@ -319,11 +366,12 @@ def build_cross(force=False):
                 st = "ok"
             else:
                 st = "missing"
-            src_state[sid] = {"status": st, "n": len(per[sid]), "detail": ""}
+            src_state[sid] = {"status": st, "n": len(per[sid]), "detail": "",
+                              "anchor": _source_anchor(per[sid])}
         except Exception as ex:
             per[sid] = {}
             src_state[sid] = {"status": "error", "n": 0,
-                              "detail": str(ex)[:120]}
+                              "detail": str(ex)[:120], "anchor": ""}
     stocks = {}
     for s in STRATEGIES:
         sid = s["id"]
@@ -374,7 +422,15 @@ def build_cross(force=False):
     srt = _sort_stocks(list(stocks.values()), sort_key)
     # k 门槛过滤（判例式：排序键只改序，不放水——blocked/degraded 同此口径）
     topn = [st for st in srt if st["n_hit"] >= K_RES]
+    # 生产者时间戳（2026-10-26 OS-FIX-MEASURE2）：各源数据锚取最大值 →
+    # trade_date（信号覆盖到哪一天，不是聚合器运行日）；取不到任何锚 → None。
+    # completed_at = 本轮聚合完成时刻（北京时间 +08:00），供 api_common 源健康
+    # 的 dated() 判"当期是否跑完"——此前只有 generated_at 被拒收为 unproven。
+    anchors = [v.get("anchor") for v in src_state.values() if v.get("anchor")]
+    trade_date = max(anchors) if anchors else None
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+           "completed_at": _now_cst_iso(),
+           "trade_date": trade_date,
            "strategies": [{k: v for k, v in s.items() if k != "loader"}
                           for s in STRATEGIES],
            "n_per": {sid: len(v) for sid, v in per.items()},

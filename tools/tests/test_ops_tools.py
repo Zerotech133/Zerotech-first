@@ -632,12 +632,18 @@ rc3 = {"age_hours": 55.1, "last_write": "2026-10-23T17:00:00+08:00",
 healthy = {"age_hours": 0.5, "state_date": "2026-10-26", "state_routes": 5,
            "heartbeat": {"available": True, "age_min": 2.0, "rc": 0,
                          "upstream_ok": True}}
+nontrading_skip = {"age_hours": 0.5, "state_date": "2026-10-25",
+                   "state_routes": 5,
+                   "heartbeat": {"available": True, "age_min": 2.0, "rc": 0,
+                                 "upstream_ok": None,
+                                 "note": "non_trading_day 按设计跳过"}}
 monday = dt.datetime(2026, 10, 26, 0, 20)
 saturday = dt.datetime(2026, 10, 24, 12, 0)
 print(json.dumps({
     "alert_rc3": list(mod._alert_watch_level(rc3, now=monday)),
     "alert_rc3_weekend": list(mod._alert_watch_level(rc3, now=saturday)),
     "alert_ok": list(mod._alert_watch_level(healthy, now=monday)),
+    "alert_skip": list(mod._alert_watch_level(nontrading_skip, now=saturday)),
     "launch_missing": list(mod._task_launch_level({})),
     "launch_na": list(mod._task_launch_level(
         {"available": False, "reason": "schtasks 调用失败"})),
@@ -687,6 +693,91 @@ def test_health_card_alert_watch_rc3_is_yellow_not_green() -> None:
     assert weekend_level == "yellow"
     assert "非交易日" in weekend_detail, weekend_detail
     assert levels["alert_ok"][0] == "green"
+
+
+def test_health_card_alert_watch_non_trading_skip_is_green() -> None:
+    """心跳新鲜 + rc=0 + upstream_ok=None（非交易日按设计跳过）→ 绿 + 明确文案。
+
+    2026-10-26 OS-FIX-MEASURE2：它与 alert_watch 非交易日跳过路径写出的
+    _write_heartbeat(0, None, 0, "non_trading_day…") 联动；不得再显示
+    "未记录上游校验结果"的泛化文案，也不得因 upstream_ok 为 None 误判黄/红。
+    """
+    levels = _health_level_probe()
+    level, detail = levels["alert_skip"]
+    assert level == "green", detail
+    for needle in ("非交易日", "静默", "按设计跳过", "交易日恢复校验"):
+        assert needle in detail, (needle, detail)
+
+
+# ---------------------------------------------------------------------------
+# 2a-2) gen_health_card.py · 交易日历（2026-10-26 OS-FIX-MEASURE2）
+# ---------------------------------------------------------------------------
+_TRADE_CAL_PROBE = r"""
+import datetime as dt
+import importlib.util
+import json
+import sys
+
+spec = importlib.util.spec_from_file_location("gen_health_card", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+nows = {
+    "2026-10-23": dt.datetime(2026, 10, 23, 15, 0),   # 周五开市
+    "2026-10-24": dt.datetime(2026, 10, 24, 12, 0),   # 周六休市
+    "2026-10-25": dt.datetime(2026, 10, 25, 12, 0),   # 周日休市
+    "2026-10-26": dt.datetime(2026, 10, 26, 9, 0),    # 周一开市
+    "2026-10-01": dt.datetime(2026, 10, 1, 9, 0),     # 国庆休市（工作日）
+}
+print(json.dumps({day: mod._is_non_trading_day(now)
+                  for day, now in nows.items()}, ensure_ascii=False))
+"""
+
+
+def _run_trade_cal_probe(cal_path: Path) -> dict:
+    """子进程加载 gen_health_card，用 ZB_TRADE_CAL 指向合成日历后判非交易日。"""
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["ZB_TRADE_CAL"] = str(cal_path)
+    proc = subprocess.run(
+        [PYTHON, "-B", "-c", _TRADE_CAL_PROBE, str(HEALTH)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=60, cwd=str(REPO), env=env, check=False,
+    )
+    assert proc.returncode == 0, "交易日历探针失败: %r" % (proc.stderr or "")
+    return _json_stdout(proc, "health_card/trade_cal")
+
+
+def test_health_card_trade_cal_covers_weekend_and_holiday(tmp_path: Path) -> None:
+    """读日历：周末/国庆休市、10-26 开市——节假日不能只靠 weekday 猜。"""
+    cal = tmp_path / "trade_cal_open_days.json"
+    cal.write_text(json.dumps({
+        "schema": "trade_cal_open_days/v1",
+        "exchange": "SSE",
+        "range": ["2020-01-02", "2027-12-31"],
+        "count": 2,
+        "open_days": ["2026-10-23", "2026-10-26"],
+    }, ensure_ascii=False), encoding="utf-8")
+    result = _run_trade_cal_probe(cal)
+    assert result["2026-10-23"] is False, result
+    assert result["2026-10-26"] is False, result
+    assert result["2026-10-24"] is True, result
+    assert result["2026-10-25"] is True, result
+    assert result["2026-10-01"] is True, result  # 工作日节假日：只有日历能判
+
+
+def test_health_card_trade_cal_bad_json_falls_back_to_weekend(
+        tmp_path: Path) -> None:
+    """日历坏 JSON / 文件缺失 → 回退 weekday>=5（周一=开市、周六=休市），不抛异常。"""
+    bad = tmp_path / "broken.json"
+    bad.write_text("{not-json", encoding="utf-8")
+    result = _run_trade_cal_probe(bad)
+    assert result["2026-10-26"] is False, result   # 周一 → weekday 口径=开市
+    assert result["2026-10-24"] is True, result    # 周六 → 休市
+    missing = _run_trade_cal_probe(tmp_path / "nope.json")  # 缺失文件同样回退
+    assert missing["2026-10-26"] is False, missing
+    assert missing["2026-10-24"] is True, missing
 
 
 # ---------------------------------------------------------------------------

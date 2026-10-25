@@ -133,6 +133,11 @@ content 为空红、答案不含「好」黄、驻留 ctx≠16384 黄、吞吐 <
 请求 20s 未返回黄；读不到的指标一律写进 detail，绝不静默当 0 也不判绿。
 夜间批处理积压（ops.batch_backlog）：积压较上一轮上升红；连续 rc=124 ≥2 轮红；
 仅 1 轮 rc=124 黄；ETA >48h 黄 / >96h 红；日志 >3h 无新轮次黄；读不到红。
+交易日历（2026-10-26 OS-FIX-MEASURE2）：`_is_non_trading_day` 读
+`portal/data/trade_cal_open_days.json`（schema=trade_cal_open_days/v1，
+open_days=SSE is_open=1 的 YYYY-MM-DD 列表；`ZB_TRADE_CAL` 可覆盖路径；缺失/坏
+回退 `weekday>=5`，绝不抛异常）。它只影响 alert_watch 黄项的"可能属预期"文案，
+**不参与判绿/判红**——无法证明的日子不拿来给故障开脱。
 """
 from __future__ import annotations
 
@@ -2665,15 +2670,59 @@ def _alert_watch_detail(watch: dict[str, Any]) -> str:
     return text
 
 
-def _is_non_trading_day(now: dt.datetime) -> bool:
-    """周末/非交易日判定（2026-10-26 统一测量口径）。
+# --- 交易日历（2026-10-26 OS-FIX-MEASURE2）----------------------------------
+# 判"周末/非交易日"不能只靠 weekday>=5：A 股法定节假日（春节/国庆/元旦等）在
+# 工作日也休市，调休日又可能周末开市。日历产物 =
+#   portal/data/trade_cal_open_days.json
+#   schema=trade_cal_open_days/v1 · open_days=SSE is_open=1 的 YYYY-MM-DD 列表
+#   （由 TuShare trade_cal 生成；gitignored 运行时数据，默认随仓库路径分发）
+# 纪律：只读；缺失/坏/空 → 回退 weekday>=5（旧口径），绝不抛异常——健康卡不能
+# 因为日历文件坏了就整卡崩。测试用 ZB_TRADE_CAL 覆盖路径（见 tools/tests）。
+TRADE_CAL_ENV = "ZB_TRADE_CAL"
+TRADE_CAL_SCHEMA = "trade_cal_open_days/v1"
+TRADE_CAL_DEFAULT_PATH = (Path(__file__).resolve().parents[1]
+                          / "portal" / "data" / "trade_cal_open_days.json")
 
-    当前只判周末（weekday>=5）；A 股节假日日历尚未接入
-    （留口见 docs/ops/MEASUREMENT_CANON_2026-10-26.md）。因此这里只用来给
-    "上游不可信"的 detail 追加"可能属预期"，**不用于判绿/判红**——
-    无法证明的日子不能拿来给故障开脱。
+
+def _trade_cal_path() -> Path:
+    """日历路径：ZB_TRADE_CAL 覆盖 > 仓库默认 portal/data/trade_cal_open_days.json。"""
+    override = os.environ.get(TRADE_CAL_ENV, "").strip()
+    return Path(override) if override else TRADE_CAL_DEFAULT_PATH
+
+
+def _load_trade_cal_open_days() -> set[str] | None:
+    """读交易日历 → {YYYY-MM-DD}；不可用/坏/空返回 None（调用方回退周末口径）。"""
+    try:
+        data = json.loads(_trade_cal_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    days = data.get("open_days")
+    if not isinstance(days, list) or not days:
+        return None
+    normalized = set()
+    for item in days:
+        text = str(item or "").strip()
+        if len(text) == 10 and text[4] == "-" and text[7] == "-":
+            normalized.add(text)
+    return normalized or None
+
+
+def _is_non_trading_day(now: dt.datetime,
+                        open_days: set[str] | None = None) -> bool:
+    """周末/非交易日判定（2026-10-26 OS-FIX-MEASURE2：接入 A 股交易日历）。
+
+    优先读 `portal/data/trade_cal_open_days.json`（`ZB_TRADE_CAL` 可覆盖）：
+    当日不在 open_days → 非交易日（覆盖周末 + 法定节假日/调休）。
+    日历缺失/坏/空 → 回退 weekday>=5（旧口径），绝不抛异常（日历坏不能拖垮整卡）。
+    本函数只用来给"上游不可信"的 detail 追加"可能属预期"，**不用于判绿/判红**
+    ——无法证明的日子不能拿来给故障开脱。
     """
-    return now.weekday() >= 5
+    days = _load_trade_cal_open_days() if open_days is None else open_days
+    if not days:
+        return now.weekday() >= 5
+    return now.strftime("%Y-%m-%d") not in days
 
 
 def _alert_watch_level(watch: dict[str, Any],
@@ -2714,6 +2763,17 @@ def _alert_watch_level(watch: dict[str, Any],
             if _is_non_trading_day(now):
                 detail += "。当前为周末/非交易日：可能属预期，交易日需补源时间戳"
             return "yellow", detail
+        if rc == 0 and upstream_ok is None:
+            # 2026-10-26 OS-FIX-MEASURE2 / OS-FIX-ALERT2 联动：alert_watch 在
+            # 非交易日按设计跳过上游校验时写 _write_heartbeat(0, None, 0,
+            # "non_trading_day…")。该组合本身即"非交易日静默"的生产者契约，
+            # 不是"未记录校验结果"的未知态 → 绿（预期内）；detail 写明交易日恢复。
+            note = str(hb.get("note") or "").strip()
+            detail = ("非交易日静默（预期）：无 EOD 源预期，按设计跳过；"
+                      "交易日恢复校验")
+            if note:
+                detail += "（心跳备注：%s）" % note
+            return "green", detail + "；" + _alert_watch_state_brief(watch)
         if rc in (0, None):
             verified = "上游校验通过" if upstream_ok is True else "未记录上游校验结果"
             return (
@@ -5329,8 +5389,13 @@ def build_card(
             "警报监控存活（ops.alert_watch_liveness）：心跳新鲜（<=15 分钟）且 rc=3 / "
             "upstream_ok=false → 判黄（不是绿）：本体在跑、脚本按设计拒跑不是停摆，"
             "但上游 6 源 stale → 告警内容不可用，处置在数据上游；周末/非交易日追加"
-            "「可能属预期，交易日需补源时间戳」。rc=0 且 upstream_ok=true 才绿；"
-            "rc 非 0/3 黄；心跳缺失/过期回退状态文件旧口径（>26h 红）。",
+            "「可能属预期，交易日需补源时间戳」。心跳新鲜 + rc=0 且 upstream_ok=None "
+            "→ 判绿：alert_watch 非交易日按设计静默跳过（无 EOD 源预期），"
+            "detail 写明「非交易日静默（预期）…交易日恢复校验」。rc=0 且 "
+            "upstream_ok=true 才按上游校验通过判绿；rc 非 0/3 黄；心跳缺失/过期回退"
+            "状态文件旧口径（>26h 红）。非交易日判定读 "
+            "portal/data/trade_cal_open_days.json 的 SSE open_days（ZB_TRADE_CAL 可覆盖；"
+            "日历缺失/坏回退 weekday>=5）。",
         ],
     }
     checks, status, reasons = _evaluate(card)
