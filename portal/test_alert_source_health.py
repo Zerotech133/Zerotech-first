@@ -61,6 +61,8 @@ class AlertSourceHealthTests(unittest.TestCase):
         for name in ("premarket", "chanlun", "nine_dim", "weak", "cross"):
             self.assertNotIn(health["sources"][name]["status"], ("ok", "empty"))
             self.assertIsNone(health["sources"][name]["as_of"])
+            self.assertIsNone(health["sources"][name]["business_date"])
+        self.assertIsNone(health["sources"]["council"]["business_date"])
 
     def test_nine_dim_proven_empty_and_old_projection(self):
         today = datetime.datetime.now(datetime.timezone(
@@ -86,6 +88,7 @@ class AlertSourceHealthTests(unittest.TestCase):
         sources = result["source_health"]["sources"]
         self.assertEqual(sources["nine_dim"], {"status": "empty",
                                                  "as_of": generated,
+                                                 "business_date": today,
                                                  "reason": None})
         self.assertEqual(sources["chanlun"]["status"], "stale")
         self.assertEqual(sources["premarket"]["status"], "stale")
@@ -125,6 +128,7 @@ class AlertSourceHealthTests(unittest.TestCase):
                 source = api.build_alerts()["source_health"]["sources"]["nine_dim"]
                 self.assertEqual(source["status"], expected)
                 self.assertEqual(source["as_of"], today.isoformat() if offset < 0 else None)
+                self.assertEqual(source["business_date"], business_day)
 
     def test_naive_timestamps_and_date_only_signals_fail_closed(self):
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
@@ -140,11 +144,13 @@ class AlertSourceHealthTests(unittest.TestCase):
                 source = api.build_alerts()["source_health"]["sources"]["nine_dim"]
                 self.assertEqual(source["status"], "stale")
                 self.assertIsNone(source["as_of"])
+                self.assertEqual(source["business_date"], day)
         self.write_json(pre_path, {"verdict": "偏多", "trade_date": day,
                                    "ts": now.strftime("%Y-%m-%d %H:%M")})
         source = api.build_alerts()["source_health"]["sources"]["premarket"]
         self.assertEqual(source["status"], "stale")
         self.assertIsNone(source["as_of"])
+        self.assertEqual(source["business_date"], day)
         for name in ("nine_dim", "premarket"):
             source = api.build_alerts()["source_health"]["sources"][name]
             self.assertNotIn(source["status"], ("ok", "empty"))
@@ -159,6 +165,7 @@ class AlertSourceHealthTests(unittest.TestCase):
         source = api.build_alerts()["source_health"]["sources"]["chanlun"]
         self.assertEqual(source["status"], "ok")
         self.assertEqual(source["as_of"], now.isoformat())
+        self.assertEqual(source["business_date"], now.date().isoformat())
 
     def test_explicit_producer_timestamps_normalize_to_shanghai(self):
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
@@ -177,6 +184,7 @@ class AlertSourceHealthTests(unittest.TestCase):
                 self.assertEqual(datetime.datetime.fromisoformat(
                     source["as_of"]).utcoffset(), datetime.timedelta(hours=8))
                 self.assertEqual(source["as_of"][:10], day)
+                self.assertEqual(source["business_date"], day)
 
     def test_expired_same_day_and_weekend_prior_batch_fail_closed(self):
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
@@ -204,6 +212,7 @@ class AlertSourceHealthTests(unittest.TestCase):
                     health = api.build_alerts()["source_health"]["sources"]["nine_dim"]
                     self.assertNotIn(health["status"], ("ok", "empty"))
                     self.assertIn(health["reason"], expected)
+                    self.assertEqual(health["business_date"], day.isoformat())
 
     def test_malformed_json_cannot_become_empty(self):
         for path in (os.path.join(self.reports, "premarket_latest.json"),
@@ -242,6 +251,7 @@ class AlertSourceHealthTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(sources[name]["status"], "ok", sources[name])
                 self.assertEqual(sources[name]["as_of"], stamp, sources[name])
+                self.assertEqual(sources[name]["business_date"], day, sources[name])
 
     def test_cross_council_without_producer_timestamps_stay_unproven(self):
         """缺 completed_at/trade_date 或行级 ts → 维持 stale/unproven，不猜 mtime。"""
@@ -255,6 +265,24 @@ class AlertSourceHealthTests(unittest.TestCase):
         self.assertEqual(sources["cross"]["reason"], "unproven_completion")
         self.assertEqual(sources["council"]["status"], "stale")
         self.assertEqual(sources["council"]["reason"], "unproven_completion")
+
+    def test_stale_anchor_keeps_old_business_date_with_completion_time(self):
+        """stale_anchor：business_date=旧业务日，as_of 仍是生产者完成时间。
+
+        解决 cross/council 一类源"as_of 展示的是 completed_at、而业务日仍是
+        旧日"的读感：两个字段分开给出，前端可同时显示业务日与完成时间。
+        """
+        now = datetime.datetime.now(datetime.timezone(
+            datetime.timedelta(hours=8)))
+        old_day = (now - datetime.timedelta(days=1)).date().isoformat()
+        self.write_json(os.path.join(self.data, "nine_dim_scores.json"),
+                        {"trade_date": old_day, "generated_at": now.isoformat(),
+                         "n_alert": 0})
+        source = api.build_alerts()["source_health"]["sources"]["nine_dim"]
+        self.assertEqual(source["status"], "stale", source)
+        self.assertEqual(source["reason"], "stale_anchor", source)
+        self.assertEqual(source["business_date"], old_day, source)
+        self.assertEqual(source["as_of"], now.isoformat(), source)
 
 
 if __name__ == "__main__":

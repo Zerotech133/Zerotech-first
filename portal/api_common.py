@@ -1186,18 +1186,24 @@ def _alert_source_health():
     Only a producer-provided, timezone-aware completion timestamp corroborated
     by the business date can be trusted. Filesystem mtime and aggregator clocks
     are never substitutes for producer evidence.
+
+    business_date carries the source's real business day (YYYY-MM-DD, or None
+    when unproven); as_of stays the producer completion time. They are shown
+    separately so a fresh completion timestamp cannot disguise an old business
+    day in cross/council style sources.
     """
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
     today = now.date()
-    sources = {name: {"status": "error", "as_of": None,
+    sources = {name: {"status": "error", "as_of": None, "business_date": None,
                       "reason": "missing"} for name in
                ("premarket", "chanlun", "nine_dim", "weak", "cross",
                 "council")}
 
-    def mark(name, status, reason, anchor=None):
+    def mark(name, status, reason, anchor=None, business_date=None):
         sources[name] = {"status": status,
                          "as_of": anchor.astimezone(now.tzinfo).isoformat()
                          if anchor is not None else None,
+                         "business_date": business_date,
                          "reason": reason}
 
     def producer_time(value):
@@ -1216,25 +1222,27 @@ def _alert_source_health():
     def dated(name, raw_day, raw_time=None, empty=False):
         day = _alert_business_day(raw_day)
         anchor = producer_time(raw_time)
+        biz = day.isoformat() if day is not None else None
         if day is None:
             mark(name, "error", "invalid_schema")
         elif day > today:
-            mark(name, "error", "future_anchor")
+            mark(name, "error", "future_anchor", business_date=biz)
         elif anchor is None:
-            mark(name, "stale", "unproven_completion")
+            mark(name, "stale", "unproven_completion", business_date=biz)
         elif anchor.astimezone(now.tzinfo).date() < day:
-            mark(name, "error", "invalid_anchor")
+            mark(name, "error", "invalid_anchor", business_date=biz)
         elif anchor > now + ALERT_FRESH_WINDOW:
-            mark(name, "error", "future_anchor")
+            mark(name, "error", "future_anchor", business_date=biz)
         elif (day != today or anchor.astimezone(now.tzinfo).date() != today or
               now - anchor > ALERT_FRESH_WINDOW):
             # 2026-10-26 统一测量：窗口默认 18h =「当日 EOD 批次即当期」，覆盖
             # 每日一次 EOD 源的真实节奏（原 5 分钟与生产节奏结构性冲突，导致
             # AlertWatch 按设计长期 rc=3 拒跑）。跨日一律 stale（day/anchor 日期
             # 不等于 today），不会把昨天/非交易日的批次冒充当期。
-            mark(name, "stale", "stale_anchor", anchor)
+            mark(name, "stale", "stale_anchor", anchor, business_date=biz)
         else:
-            mark(name, "empty" if empty else "ok", None, anchor)
+            mark(name, "empty" if empty else "ok", None, anchor,
+                 business_date=biz)
 
     def read(name, path):
         try:

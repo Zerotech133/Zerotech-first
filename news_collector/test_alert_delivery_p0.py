@@ -46,9 +46,12 @@ class WatchDeliveryTest(unittest.TestCase):
         self.url.read.return_value = json.dumps(healthy_payload([
             {"name": "九维警报池", "value": "2 只"}])).encode("utf-8")
         self.patches = [
+            # 心跳/状态文案会调用多种 strftime 格式；未映射的格式必须安全回退
+            # 为格式串本身，避免新增格式（如 EXEC-R8 心跳的秒级 ts）直接 KeyError。
             mock.patch.object(alert_watch.time, "strftime", side_effect=lambda fmt: {
                 "%Y-%m-%d": "2026-10-17", "%Y-%m-%d %H:%M": "2026-10-17 12:00",
-                "%m-%d %H:%M": "10-17 12:00"}[fmt]),
+                "%Y-%m-%d %H:%M:%S": "2026-10-17 12:00:00",
+                "%m-%d %H:%M": "10-17 12:00"}.get(fmt, fmt)),
             mock.patch.object(alert_watch.urllib.request, "urlopen", return_value=self.url),
             mock.patch.object(alert_watch, "_load_state", side_effect=lambda: json.loads(json.dumps(self.state))),
             mock.patch.object(alert_watch, "_save_state", self.save),
@@ -108,7 +111,8 @@ class WatchDeliveryTest(unittest.TestCase):
         with mock.patch.object(alert_push, "push_card_multi") as card, \
              mock.patch.object(alert_watch, "_load_state") as load, \
              contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(alert_watch.main(), 1)
+            # WO-DEV-20261022-AA：上游不可信=主动拒跑 exit 3（原 1 与崩溃混淆）
+            self.assertEqual(alert_watch.main(), alert_watch.EXIT_UPSTREAM_UNTRUSTED)
         card.assert_not_called()
         load.assert_not_called()
         self.save.assert_not_called()
@@ -117,7 +121,7 @@ class WatchDeliveryTest(unittest.TestCase):
         self.url.read.return_value = b'{"alerts":[]}'
         with mock.patch.object(alert_watch, "_load_state") as load, \
              contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(alert_watch.main(), 1)
+            self.assertEqual(alert_watch.main(), alert_watch.EXIT_UPSTREAM_UNTRUSTED)
         load.assert_not_called()
         self.save.assert_not_called()
 
@@ -126,7 +130,7 @@ class WatchDeliveryTest(unittest.TestCase):
             statuses={source: "error" for source in alert_push.EOD_SOURCES})).encode()
         with mock.patch.object(alert_watch, "_load_state") as load, \
              contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(alert_watch.main(), 1)
+            self.assertEqual(alert_watch.main(), alert_watch.EXIT_UPSTREAM_UNTRUSTED)
         load.assert_not_called()
         self.save.assert_not_called()
 
@@ -145,7 +149,7 @@ class WatchDeliveryTest(unittest.TestCase):
         with mock.patch.object(alert_push, "_fallback_alerts", return_value={"alerts": []}) as fallback, \
              mock.patch.object(alert_watch, "_load_state") as load, \
              contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(alert_watch.main(), 1)
+            self.assertEqual(alert_watch.main(), alert_watch.EXIT_UPSTREAM_UNTRUSTED)
         fallback.assert_called_once()
         load.assert_not_called()
         self.save.assert_not_called()
@@ -159,7 +163,7 @@ class WatchDeliveryTest(unittest.TestCase):
                 {"chanlun": "empty"})) as fallback, \
              mock.patch.object(alert_watch, "_load_state") as load, \
              contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(alert_watch.main(), 1)
+            self.assertEqual(alert_watch.main(), alert_watch.EXIT_UPSTREAM_UNTRUSTED)
         fallback.assert_called_once()
         load.assert_not_called()
         self.save.assert_not_called()

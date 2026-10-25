@@ -123,7 +123,9 @@
             else freshness = 'unknown';
           }
           var level = status === 'limited-ok' ? (freshness === 'ok' ? 'limited-ok' : 'stale') : status;
-          result.focus.push(item('alert:source:' + name, '信号源 ' + name + (freshness !== 'ok' ? ' · 数据新鲜度 ' + (freshness === 'stale' ? '偏旧(>48h)' : '未知/过期') : ''), '六源范围内的健康信号', level, '/api/alerts.source_health', asOf, obj(row) ? text(row.reason, '仅为信号源状态') : '未取得该源状态', null, level === 'limited-ok' ? 3 : 2));
+          result.focus.push(item('alert:source:' + name, '信号源 ' + name
+            + (freshness !== 'ok' ? ' · 数据新鲜度 ' + (freshness === 'stale' ? '偏旧(>48h)' : '未知/过期') : '')
+            + (obj(row) && day(row.business_date) ? ' · 业务日 ' + row.business_date : ''), '六源范围内的健康信号', level, '/api/alerts.source_health', asOf, obj(row) ? text(row.reason, '仅为信号源状态') : '未取得该源状态', null, level === 'limited-ok' ? 3 : 2));
         });
       }
     }
