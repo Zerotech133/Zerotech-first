@@ -7,6 +7,14 @@ JEV_ITEM_SLEEP_S 控制；2026-10-26 EXEC-R28 起默认 0.2s，设 0.8 可回退
 判完落库并打印剩余积压。单轮 100 条约 2-3 分钟，剩余积压
 靠计划任务多次运行逐步消化（或手动重复执行）。
 
+并发/锁序（2026-10-26 OS-FIX-JEVLOCK，JEV 审计 §四-②）：
+原实现先 SELECT 待判批、再抢 ollama_lock（等锁最长 900s）——等锁期间批已过期，
+双实例会各自缓存同一批，后抢到锁的实例重复判读并覆盖已判值。现改为
+「先抢锁 → 再 SELECT → 落库」：占锁失败直接退出（不连库、不拿陈旧批）；
+落库 UPDATE 增加 `jev IS NULL OR jev=''` 守卫（事务内二次校验，不新增 DB 列），
+若该行已被外部先写（锁被陈旧回收/另一实例先落库）则跳过，并计入日志 dup_skip=N。
+断点续跑语义不变：未判行仍在下一轮 SELECT 中。
+
 护栏（2026-10-08 K-NEWS-001，A1）：
 --deadline 秒数（默认 1800）。每组 8 条处理前检查已耗时，超限即收工。
 背景：08:57 实例 batch 500 × 15s timeout × 重试悬挂 2h+，PowerShell 宿主被
@@ -108,12 +116,19 @@ def _judge_batch_sleep(items, sleep_s: float) -> dict:
     return out
 
 
-def _locked_tick(lock_mod, purpose: str, paused: bool, disabled: bool) -> bool:
-    """持锁续期：M3 暂停时只 heartbeat 不让位；否则走 lock_mod.tick() 原逻辑。"""
+def _locked_tick(lock_mod, purpose: str, paused: bool, disabled: bool,
+                 deadline_ts=None) -> bool:
+    """持锁续期：M3 暂停时只 heartbeat 不让位；否则走 lock_mod.tick() 原逻辑。
+
+    deadline_ts（OS-FIX-JEVLOCK）：本轮自报截止时刻（t0+--deadline），传给 tick()
+    让其单次等待/冷却不越过 deadline —— 否则 tick 最坏阻塞可击穿外层 hard timeout。
+    """
     if _should_skip_lease_yield(paused, disabled):
         lock_mod.heartbeat()
         return True
-    return lock_mod.tick(purpose)
+    if deadline_ts is None:
+        return lock_mod.tick(purpose)
+    return lock_mod.tick(purpose, deadline_ts=deadline_ts)
 
 
 def _alert_ok(throttle):
@@ -171,6 +186,20 @@ def main():
     # 生效配置显式落日志，便于次日核对 EXEC-R28 是否真的生效（不写额外文件）。
     print("BACKFILL cfg item_sleep=%.3fs m3_paused=%s lease_yield=%s"
           % (item_sleep, m3_is_paused, "skip" if skip_yield else "normal"), flush=True)
+    # Ollama 错峰锁：与 M3 结构化批处理互斥（wait_s≈M3 单条看门狗上限+余量；
+    # 正常退出/异常走 atexit 释放，强杀靠锁模块 20 分钟陈旧回收）
+    # 2026-10-26 OS-FIX-JEVLOCK（JEV 审计 §四-②）：**先抢锁、再取批**。旧顺序
+    # （SELECT → acquire 900s）会让双实例各自缓存同一批：等锁期间批已过期，后抢到
+    # 锁者重复判读并覆盖已判值。占锁失败直接退出 —— 不连库、不 SELECT、不拿陈旧批。
+    _root = os.path.dirname(HERE)
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
+    import atexit
+    import ollama_lock
+    atexit.register(ollama_lock.release)
+    if not ollama_lock.acquire("jev_backfill", wait_s=900):   # K-ORG-20261025-LOCK 覆盖 M3 一个租约周期
+        print("BACKFILL skip: ollama 锁被 M3 持有超 900s，本轮让位（小时轮自愈）")
+        return
     # 2026-10-16 审计：timeout=30 防与速报链写库竞争立刻抛 locked
     #（默认 5s 偏短；配合下方组级回滚兜底）
     db = sqlite3.connect(os.path.join(HERE, "news.db"), timeout=30)
@@ -181,17 +210,6 @@ def main():
     if not rows:
         print("BACKFILL done: no pending")
         return
-    # Ollama 错峰锁：与 M3 结构化批处理互斥（wait_s≈M3 单条看门狗上限+余量；
-    # 正常退出/异常走 atexit 释放，强杀靠锁模块 20 分钟陈旧回收）
-    _root = os.path.dirname(HERE)
-    if _root not in sys.path:
-        sys.path.insert(0, _root)
-    import atexit
-    import ollama_lock
-    atexit.register(ollama_lock.release)
-    if not ollama_lock.acquire("jev_backfill", wait_s=900):   # K-ORG-20261025-LOCK 覆盖 M3 一个租约周期
-        print("BACKFILL skip: ollama 锁被 M3 持有超 660s，本轮让位（小时轮自愈）")
-        return
     items = []
     for nid, title, stocks in rows:
         try:
@@ -201,19 +219,26 @@ def main():
         items.append({"id": nid, "title": title, "stocks": st})
     t0 = time.time()
     judged = 0
+    dup_skip = 0        # OS-FIX-JEVLOCK：落库前二次校验发现已被外部先写的行数
     deadline_hit = 0
     cloud_fail = 0      # K-STOCK-072：连续空判短路（2026-10-10）
     _yield_skip_logged = False   # EXEC-R28：免让位只在首轮打印一次，防日志刷屏
     empty_streak = 0
+    deadline_ts = (t0 + args.deadline) if args.deadline else None
     for i in range(0, len(items), 8):        # jev_judge_batch 单次上限 8
         if args.deadline and (time.time() - t0) >= args.deadline:
             deadline_hit = 1
             break
         judges = _judge_batch_sleep(items[i:i + 8], item_sleep)
+        written = 0
         try:
             for nid, j in judges.items():
-                db.execute("UPDATE news SET jev=? WHERE id=?",
-                           (json.dumps(j, ensure_ascii=False), nid))
+                # OS-FIX-JEVLOCK：事务内二次校验——只写仍是"待判"的行，绝不覆盖
+                # 已被另一实例/外部写入的 jev（锁被陈旧回收时的最后一道防重复写）。
+                cur = db.execute(
+                    "UPDATE news SET jev=? WHERE id=? AND (jev IS NULL OR jev='')",
+                    (json.dumps(j, ensure_ascii=False), nid))
+                written += int(cur.rowcount or 0)
             db.commit()
         except sqlite3.OperationalError as e:
             # 2026-10-16 审计：写库瞬态失败（locked/busy）原炸整个轮次，
@@ -222,7 +247,8 @@ def main():
             print("BACKFILL group commit FAIL %r（跳过本组，下轮重判）" % e,
                   file=sys.stderr)
             continue
-        judged += len(judges)
+        judged += written
+        dup_skip += len(judges) - written
         # 云侧故障短路：连续 3 组（24 条）全军覆没即收工。背景：typesafe
         # systemone 451 自 10-09 09:18 起持续，旧逻辑每轮空转 25-30 分钟
         # （451 立即返回+0.8s 间隔+二次重试）还占 ollama 锁。空判恢复即
@@ -241,9 +267,12 @@ def main():
                 print("BACKFILL lock lease-yield skipped：M3 暂停旗存在（EXEC-R28）",
                       flush=True)
                 _yield_skip_logged = True
-        elif not _locked_tick(ollama_lock, "jev_backfill", m3_is_paused, yield_disabled):
-            # 租约制（K-ORG-20261025-LOCK）：也让一手，M3 才不会被长期挤占
-            print("BACKFILL lock lost: tick 重试 6 次未抢回，本轮收工", flush=True)
+        elif not _locked_tick(ollama_lock, "jev_backfill", m3_is_paused, yield_disabled,
+                              deadline_ts=deadline_ts):
+            # 租约制（K-ORG-20261025-LOCK）：也让一手，M3 才不会被长期挤占。
+            # OS-FIX-JEVLOCK：tick 已受 deadline_ts 约束，超时会打 OLLAMA_LOCK tick timeout。
+            print("BACKFILL lock lost: tick 未抢回（见 OLLAMA_LOCK tick timeout 日志），本轮收工",
+                  flush=True)
             break
     left = db.execute(
         "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''").fetchone()[0]
@@ -252,9 +281,9 @@ def main():
             and _alert_ok(throttle=True):
         alerted = 1 if alert_backlog(left, judged, deadline_hit) else 0
     print("BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d "
-          "cloud_fail=%d item_sleep=%.2f lease_yield=%s" % (
+          "cloud_fail=%d item_sleep=%.2f lease_yield=%s dup_skip=%d" % (
         judged, len(items), left, time.time() - t0, deadline_hit, alerted,
-        cloud_fail, item_sleep, "skip" if skip_yield else "normal"))
+        cloud_fail, item_sleep, "skip" if skip_yield else "normal", dup_skip))
 
 
 if __name__ == "__main__":
