@@ -87,6 +87,15 @@ def m3_paused(flag_path: Path = M3_PAUSE_FLAG) -> bool:
         return False
 
 
+PREFILTER_ENV = "JEV_PREFILTER"
+
+
+def prefilter_enabled() -> bool:
+    """两段式推理灰度开关（K-ORG-20261026-JEV2STAGE）。默认 0=关，行为与现状完全一致。"""
+    return str(os.environ.get(PREFILTER_ENV, "0")).strip().lower() in (
+        "1", "true", "yes", "on")
+
+
 def _lease_yield_disabled() -> bool:
     """JEV_LOCK_YIELD_PAUSED=0/false/no/off → 恢复原租约让位逻辑。"""
     return str(os.environ.get(LOCK_YIELD_PAUSED_ENV, "1")).strip().lower() in (
@@ -204,19 +213,54 @@ def main():
     #（默认 5s 偏短；配合下方组级回滚兜底）
     db = sqlite3.connect(os.path.join(HERE, "news.db"), timeout=30)
     rows = db.execute(
-        "SELECT id, title, stocks FROM news "
+        "SELECT id, title, stocks, source FROM news "
         "WHERE (jev IS NULL OR jev='') ORDER BY ts DESC LIMIT ?",
         (args.batch,)).fetchall()
     if not rows:
         print("BACKFILL done: no pending")
         return
     items = []
-    for nid, title, stocks in rows:
+    for nid, title, stocks, source in rows:
         try:
             st = json.loads(stocks) if stocks else []
         except Exception:
             st = []
-        items.append({"id": nid, "title": title, "stocks": st})
+        items.append({"id": nid, "title": title, "stocks": st,
+                      "source": str(source or "")})
+    # ── 第一段：规则粗筛（灰度，默认关，K-ORG-20261026-JEV2STAGE）────────
+    pref_skipped = 0
+    if prefilter_enabled():
+        try:
+            import jev_prefilter
+            kept = []
+            skipped_jsons = []
+            for it in items:
+                j = jev_prefilter.prefilter_jev(it.get("title") or "", it.get("source") or "")
+                if j is None:
+                    kept.append(it)
+                else:
+                    skipped_jsons.append((it["id"], j))
+            if skipped_jsons:
+                try:
+                    for nid, j in skipped_jsons:
+                        cur = db.execute(
+                            "UPDATE news SET jev=? WHERE id=? AND (jev IS NULL OR jev='')",
+                            (json.dumps(j, ensure_ascii=False), nid))
+                        pref_skipped += int(cur.rowcount or 0)
+                    db.commit()
+                except sqlite3.OperationalError as e:
+                    db.rollback()
+                    print("BACKFILL prefilter commit FAIL %r（改为全部走 9B）" % e,
+                          file=sys.stderr)
+                    kept = items
+                    pref_skipped = 0
+            items = kept
+            print("BACKFILL prefilter ON: skip=%d keep=%d（skip 直接写 neutral，带 pref 证据可回退）"
+                  % (pref_skipped, len(items)), flush=True)
+        except Exception as exc:  # noqa: BLE001  粗筛异常 → 全量走 9B（fail-open）
+            print("BACKFILL prefilter DISABLED by error: %r" % (exc,), file=sys.stderr)
+            pref_skipped = 0
+
     t0 = time.time()
     judged = 0
     dup_skip = 0        # OS-FIX-JEVLOCK：落库前二次校验发现已被外部先写的行数
@@ -281,9 +325,10 @@ def main():
             and _alert_ok(throttle=True):
         alerted = 1 if alert_backlog(left, judged, deadline_hit) else 0
     print("BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d "
-          "cloud_fail=%d item_sleep=%.2f lease_yield=%s dup_skip=%d" % (
+          "cloud_fail=%d item_sleep=%.2f lease_yield=%s dup_skip=%d pref_skip=%d pref_keep=%d" % (
         judged, len(items), left, time.time() - t0, deadline_hit, alerted,
-        cloud_fail, item_sleep, "skip" if skip_yield else "normal", dup_skip))
+        cloud_fail, item_sleep, "skip" if skip_yield else "normal", dup_skip,
+        pref_skipped, len(items)))
 
 
 if __name__ == "__main__":
