@@ -142,6 +142,65 @@ def build_verdict(snap, feat, events):
         signals.append("盘后事件：" + (pending[0].get("title") or "")[:34])
         risks.append("停牌/控制权变更/重组事项存在不确定性（事件驱动）")
 
+    # ---- 扩展数据（sync 缓存）：一致预期/业绩预告/龙虎榜/股东行为 ----
+    ex = (feat.get("extras") or {})
+    cons = ex.get("consensus")
+    if cons:
+        signals.append("一致预期：近180天 %d 篇研报，最新评级 %s" % (cons.get("reports_180d", 0), cons.get("latest_rating") or "—"))
+        if cons.get("eps_last") is not None:
+            signals.append("最新预测 EPS %s" % round(float(cons["eps_last"]), 2))
+        if cons.get("buy_ratio") is not None and cons["buy_ratio"] < 0.5:
+            risks.append("卖方近半年买入/增持比例偏低（%.0f%%）" % (cons["buy_ratio"] * 100))
+    fc = ex.get("forecast")
+    if fc:
+        t = fc.get("type") or ""
+        if any(k in t for k in ("预增", "扭亏", "略增")):
+            signals.append("业绩预告：%s（%s）" % (t, fc.get("summary", "")))
+            score += 0.3
+        elif any(k in t for k in ("续亏", "预亏", "首亏", "略减")):
+            risks.append("业绩预告：%s（%s）" % (t, fc.get("summary", "")))
+    lhb = ex.get("lhb")
+    if lhb:
+        signals.append("龙虎榜：近90天 %d 次" % lhb.get("count_90d", 0))
+        if lhb.get("seat_net_wan") is not None:
+            if lhb["seat_net_wan"] > 0:
+                signals.append("席位净买入 %.0f 万" % lhb["seat_net_wan"])
+            else:
+                risks.append("席位净卖出 %.0f 万" % abs(lhb["seat_net_wan"]))
+    ha = ex.get("holder_actions") or {}
+    sell_ratio = sum(abs(x.get("ratio") or 0) for x in (ha.get("holdertrade") or []) if x.get("in_de") == "DE")
+    if sell_ratio > 1:
+        risks.append("近一年重要股东减持合计 %.1f%%" % sell_ratio)
+    if (ha.get("pledge_ratio") or 0) > 30:
+        risks.append("质押比例 %.1f%%，需关注平仓风险" % ha["pledge_ratio"])
+    if ha.get("float_next_180d"):
+        mx = max([x.get("ratio") or 0 for x in ha["float_next_180d"]] or [0])
+        if mx >= 5:
+            risks.append("未来180天解禁比例最高 %.1f%%" % mx)
+    if ha.get("repurchase"):
+        signals.append("回购：%s" % (ha["repurchase"].get("proc") or ""))
+
+    # 财报日历门禁：临近披露不确定性上升
+    try:
+        from datetime import date, datetime
+        today = date.today()
+        days = None
+        for c in (snap.get("calendar") or []):
+            p = str(c.get("pre_date") or "")
+            if len(p) == 8:
+                d = datetime.strptime(p, "%Y%m%d").date()
+                dd = (d - today).days
+                if 0 <= dd <= 30:
+                    days = dd if days is None else min(days, dd)
+        if days is not None and days <= 7:
+            risks.append("财报披露临近（%d 天），业绩不确定性上升" % days)
+            if rating == "买入":
+                rating = "观察偏多"
+            elif rating == "观察偏多" and days <= 2:
+                rating = "观察"
+    except Exception:
+        pass
+
     # 关键位
     levels = list(tech.get("levels") or [])
     pivots = []

@@ -139,6 +139,12 @@ def build_features(snap):
                     peers.append({"code": r["ts_code"], "ps_ttm": _f(r["ps_ttm"]),
                                   "pb": _f(r.get("pb")), "market_cap_yi": _f(r["mv"])})
             peers.sort(key=lambda x: (x["ps_ttm"] is None, x["ps_ttm"]))
+            # 可比性过滤：市值在自身 0.2x~5x 区间内（至少保留 3 家）
+            own_mv = val.get("market_cap_yi")
+            if own_mv:
+                filt = [p for p in peers if p.get("market_cap_yi") and 0.2 * own_mv <= p["market_cap_yi"] <= 5 * own_mv]
+                if len(filt) >= 3:
+                    peers = filt
             out["peers"] = peers[:10]
             if peers and val.get("ps_ttm"):
                 ps_list = [p["ps_ttm"] for p in peers if p.get("ps_ttm")]

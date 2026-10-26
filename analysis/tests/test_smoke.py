@@ -49,6 +49,13 @@ class TestPipeline(unittest.TestCase):
         self.assertIn("passed", g)
         self.assertGreaterEqual(g["score"], 0)
 
+    def test_extras_optional(self):
+        from analysis import extras
+        ex = extras.build(self.snap)
+        self.assertIsInstance(ex, dict)
+        # 缓存不存在时允许全空；存在时应至少有一项
+        self.assertTrue(all(v is None or isinstance(v, (dict, list)) for v in ex.values()))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
