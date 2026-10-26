@@ -362,6 +362,12 @@ CURATED_DETAIL_DATASET_LIMIT = 5
 SHIBOR_LPR_REL = CURATED_REL / "shibor_lpr.parquet"
 SHIBOR_LPR_YELLOW_DAYS = 14.0      # 落后 >14 天黄（该查上游源）
 SHIBOR_LPR_RED_DAYS = 60.0         # 落后 >60 天红（两个月断供，结论不可信）
+# 2026-10-26 K-DATA-20261026-SHIBOR：上游 shibor_lpr(LPR) 停更于 2026-08-20，
+# 改用日频 shibor（银行间拆借）做主新鲜源；优先整理层 shibor.parquet，
+# 未重建时回退原始层 data/tushare/shibor/part_*.parquet，最后才回退 LPR。
+SHIBOR_DAILY_REL = CURATED_REL / "shibor.parquet"
+SHIBOR_DAILY_YELLOW_DAYS = 4.0     # 日频：>4 天黄（含周末/小长假）
+SHIBOR_DAILY_RED_DAYS = 8.0        # 日频：>8 天红（连续一周以上断供）
 TDX_REL = Path("quant_backtest") / "data" / "tdx"
 TDX_UNMANAGED_MIN_BYTES = 1024 ** 3  # >1 GiB 且未纳管才判黄（小目录=不适用）
 TDX_WALK_BUDGET_SECONDS = 10.0     # 目录统计预算（实测 1,814 文件 0.13s）
@@ -2070,6 +2076,8 @@ def _empty_shibor_lpr_freshness(path: Path) -> dict[str, Any]:
         "status": None,
         "level": None,
         "path": str(path),
+        "source": None,
+        "sources_tried": [],
         "column": None,
         "rows": None,
         "max_date": None,
@@ -2082,45 +2090,84 @@ def _empty_shibor_lpr_freshness(path: Path) -> dict[str, Any]:
     }
 
 
+def _read_parquet_max_day(path: Path):
+    """读单文件日期列 → (max_day, rows, error)。"""
+    values, error = _read_parquet_column(path, ("cal_date", "date"))
+    if error:
+        return None, 0, error
+    values = values or []
+    days = [day for day in (_normalize_day(value) for value in values) if day]
+    if not days:
+        return None, len(values), "无有效日期值（列存在但全为空/不可解析）"
+    return max(days), len(values), ""
+
+
+def _rate_level(lag_days: int, source: str) -> tuple[str, str]:
+    """利率新鲜度判级（纯函数，便于反例测试）。
+
+    shibor 日频：>4 天黄 / >8 天红；lpr 历史（上游停更）：>14 黄 / >60 红。
+    """
+    if str(source).startswith("shibor"):
+        yellow, red = SHIBOR_DAILY_YELLOW_DAYS, SHIBOR_DAILY_RED_DAYS
+    else:
+        yellow, red = SHIBOR_LPR_YELLOW_DAYS, SHIBOR_LPR_RED_DAYS
+    if lag_days > red:
+        return "red", "stale"
+    if lag_days > yellow:
+        return "yellow", "stale"
+    return "green", "fresh"
+
+
+def _shibor_daily_raw_dir(curated_root: Path) -> Path:
+    """整理层目录 → 原始层 shibor 目录（<data>/tushare/shibor）。"""
+    return Path(curated_root).parent / "tushare" / "shibor"
+
+
 def collect_shibor_lpr_freshness(
     curated_root: Path, now: dt.datetime
 ) -> dict[str, Any]:
-    """Shibor/LPR 数据新鲜度：max(日期) 距今天数 >14 天黄 / >60 天红。
+    """利率数据新鲜度（2026-10-26 K-DATA-20261026-SHIBOR 改造）。
 
-    2026-10-26 OS-FIX-DATAHEALTH：断供近两个月但采集任务还在写——文件 mtime
-    是新的、内容是旧的，既有 curated_freshness 只看 mtime 完全看不见。
-    只读整理层单文件单列；文件缺失 / 读失败 / 无有效日期 → 黄（不判绿）。
+    优先级：整理层 shibor.parquet → 原始层 shibor/part_*.parquet（取 mtime 最新）
+    → shibor_lpr.parquet（历史 LPR，仅存证）。
+    只读单文件单列；全缺失 / 读失败 / 无有效日期 → 黄（不判绿）。
     """
-    path = curated_root / Path(SHIBOR_LPR_REL).name
-    block = _empty_shibor_lpr_freshness(path)
+    block = _empty_shibor_lpr_freshness(SHIBOR_DAILY_REL)
     started = time.monotonic()
     try:
-        if not path.is_file():
-            block.update(reason="文件缺失：%s" % path,
-                         status="missing", level="yellow")
+        candidates: list[tuple[str, Path | None]] = [
+            ("shibor-curated", curated_root / SHIBOR_DAILY_REL.name),
+            ("shibor-raw", None),
+            ("lpr", curated_root / SHIBOR_LPR_REL.name),
+        ]
+        for source, path in candidates:
+            block["sources_tried"].append(source)
+            if source == "shibor-raw":
+                raw_dir = _shibor_daily_raw_dir(curated_root)
+                if not raw_dir.is_dir():
+                    continue
+                parts = sorted(raw_dir.glob("part_*.parquet"),
+                               key=lambda item: item.stat().st_mtime)
+                if not parts:
+                    continue
+                path = parts[-1]
+            elif path is None or not path.is_file():
+                continue
+            max_day, rows, error = _read_parquet_max_day(path)
+            if error or not max_day:
+                block.update(path=str(path), source=source, rows=rows,
+                             reason=error or "无有效日期",
+                             status="unreadable", level="yellow")
+                return block
+            lag_days = (now.date() - dt.date.fromisoformat(max_day)).days
+            level, status = _rate_level(lag_days, source)
+            block.update(available=True, source=source, path=str(path),
+                         column="cal_date/date", rows=rows, max_date=max_day,
+                         lag_days=lag_days, level=level, status=status,
+                         scan_seconds=round(time.monotonic() - started, 3))
             return block
-        values, error = _read_parquet_column(path, ("cal_date", "date"))
-        block["scan_seconds"] = round(time.monotonic() - started, 3)
-        if error:
-            block.update(reason=error, status="unreadable", level="yellow")
-            return block
-        values = values or []
-        days = [day for day in (_normalize_day(value) for value in values) if day]
-        block["rows"] = len(values)
-        if not days:
-            block.update(reason="无有效日期值（列存在但全为空/不可解析）",
-                         status="invalid", level="yellow")
-            return block
-        max_day = max(days)
-        lag_days = (now.date() - dt.date.fromisoformat(max_day)).days
-        block.update(available=True, column="cal_date/date", max_date=max_day,
-                     lag_days=lag_days)
-        if lag_days > SHIBOR_LPR_RED_DAYS:
-            block.update(status="stale", level="red")
-        elif lag_days > SHIBOR_LPR_YELLOW_DAYS:
-            block.update(status="stale", level="yellow")
-        else:
-            block.update(status="fresh", level="green")
+        block.update(reason="shibor.parquet / 原始层 shibor / shibor_lpr 均缺失",
+                     status="missing", level="yellow")
         return block
     except Exception as exc:  # noqa: BLE001 - fail-visible：不拖垮整卡
         block.update(reason="检查异常：%s" % _short_exc(exc),
@@ -2130,23 +2177,32 @@ def collect_shibor_lpr_freshness(
 
 def _shibor_lpr_detail(block: dict[str, Any]) -> str:
     if not block:
-        return "Shibor/LPR 新鲜度检查未运行（data 块缺失）"
+        return "Shibor 新鲜度检查未运行（data 块缺失）"
     if not block.get("available"):
-        return "Shibor/LPR 数据源不可判定：%s；判黄（不判绿，不静默当没事）" % (
+        return "Shibor/利率数据源不可判定：%s；判黄（不判绿，不静默当没事）" % (
             block.get("reason") or "未知原因")
+    source = block.get("source") or "?"
+    label = {"shibor-curated": "shibor 日频(整理层)",
+             "shibor-raw": "shibor 日频(原始层)",
+             "lpr": "LPR(历史，上游停更)"}.get(source, source)
+    if source.startswith("shibor"):
+        yellow, red = SHIBOR_DAILY_YELLOW_DAYS, SHIBOR_DAILY_RED_DAYS
+    else:
+        yellow, red = SHIBOR_LPR_YELLOW_DAYS, SHIBOR_LPR_RED_DAYS
     bits = [
-        "shibor_lpr.parquet 最新日期 %s（%s 行）"
-        % (block.get("max_date"), _fmt_num(block.get("rows"))),
+        "%s 最新日期 %s（%s 行）" % (label, block.get("max_date"),
+                                 _fmt_num(block.get("rows"))),
         "距今 %s 天" % _fmt_num(block.get("lag_days")),
-        "阈值 >%g 天黄 / >%g 天红" % (SHIBOR_LPR_YELLOW_DAYS, SHIBOR_LPR_RED_DAYS),
+        "阈值 >%g 天黄 / >%g 天红" % (yellow, red),
     ]
     level = block.get("level")
     if level == "red":
-        return ("Shibor/LPR 已断供（判红，拿该源得出的结论已不可信）："
-                + "；".join(bits) + "；处置：查 tushare_sync/整理层重建是否漏了 shibor_lpr")
+        return ("利率源已断供（判红，拿该源得出的结论已不可信）：" + "；".join(bits)
+                + "；处置：查 tushare_sync --only shibor / 整理层重建是否漏了 shibor")
     if level == "yellow":
-        return "Shibor/LPR 落后（判黄，该查上游源了）：" + "；".join(bits)
-    return "Shibor/LPR 新鲜：" + "；".join(bits)
+        return "利率源落后（判黄，该查上游源了）：" + "；".join(bits)
+    suffix = "；LPR 上游停更于 2026-08-20（仅存证，不再作新鲜源）" if source.startswith("shibor") else ""
+    return "利率源新鲜：" + "；".join(bits) + suffix
 
 
 def _walk_tree_stats(root: Path) -> tuple[int, int, bool, str]:
