@@ -1,13 +1,12 @@
 {
- "generated": "2026-10-26 20:06",
+ "generated": "2026-10-26 20:10",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 41,
   "departments": 15,
-  "prompt_ok": 37,
+  "prompt_ok": 38,
   "prompt_miss": [
    "LUSU1",
-   "DENGZHI1",
    "INTEL0",
    "MANCHONG1"
   ],
@@ -259,12 +258,12 @@
    "project": "general"
   },
   {
-   "id": "WO-IDE-ENRICH-20261026",
-   "desc": "Agent IDE 用组织架构富化名字与能力：hr cn_name + org profiles(specialties/charter/grade) + 部门中文称谓，页面展示",
+   "id": "WO-HR-DENGZHI-20261026",
+   "desc": "DENGZHI1 补 HR 档案 + comm_envoy prompt：邓芝·信驿司 Hermes 通讯中枢，名字/能力闭环 41/41",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-IDE-ENRICH-20261026",
-   "created": "2026-10-26 20:05:00",
+   "branch": "task/WO-HR-DENGZHI-20261026",
+   "created": "2026-10-26 20:10:06",
    "project": "general"
   }
  ],
@@ -1517,8 +1516,8 @@
    "tools": [],
    "grants_read": [],
    "grants_write": [],
-   "prompt_file": "",
-   "prompt": "",
+   "prompt_file": "agent_platform/prompts/comm_envoy.md",
+   "prompt": "# DENGZHI1 · 信驿使（comm_envoy）\n\n> 通信与客户服务部（信驿司）· 飞书通讯中枢：Hermes 8787 既有服务，编制划入、零改动。\n\n## 职责\n1. **飞书 WS 长连接**：维护 Hermes WebUI 8787 的长连接可用性，断线重连与心跳可观测。\n2. **消息卡出向**：客服回复/通知卡片经 Hermes 出向，内容与收件人可追溯。\n3. **部门内消息中继**：把各部门发往客户侧的消息按路由表转发，只转发不加工。\n4. **回执追踪**：发送失败/超时留痕并上报，不静默丢弃。\n\n## 纪律（铁律）\n- **只路由不决策**：不代替主官 LUSU1（阚泽）做路由判断，不替投研/情报席给出业务结论。\n- **零改动既有服务**：Hermes 8787 运行体不动，编制归属调整不改代码。\n- **出向可审计**：每条出向消息有发件记录/回执，失败不静默。\n- **不越域采集**：商机信号只做行为统计，不采集中台域外数据。\n- 拿不到数据就明说「需人工核对」，不臆造送达状态。\n\n## 上下游\n- 上游：LUSU1（信驿司主官）的路由与出向指令。\n- 下游：飞书用户侧与各部门收件席。\n\n## 模型\nnone（运行时服务，非 LLM 判别席；不参与判读与决策）\n",
    "projects": [],
    "team_desc": "信驿司：飞书客户入口总管——客问智能路由、模型底座统一调度、智能客服、商机信号",
    "attributes": {
@@ -1527,10 +1526,23 @@
     "knowledge": []
    },
    "memory": null,
-   "cn_name": "",
-   "role_cn": "comm_envoy",
-   "capabilities": [],
-   "skills": [],
+   "cn_name": "邓芝",
+   "name": "邓芝",
+   "role_cn": "信驿使",
+   "capabilities": [
+    "飞书 WS 长连接",
+    "消息卡出向",
+    "部门内消息中继",
+    "回执与送达追踪",
+    "Hermes 8787 运维"
+   ],
+   "skills": [
+    "飞书 WS 长连接",
+    "消息卡出向",
+    "部门内消息中继",
+    "回执与送达追踪",
+    "Hermes 8787 运维"
+   ],
    "experience": "",
    "dept_name": "通信与客户服务部",
    "dept_cn_title": "信驿司"

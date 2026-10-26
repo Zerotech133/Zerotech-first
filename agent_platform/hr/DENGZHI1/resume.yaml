@@ -1,0 +1,18 @@
+agent_id: DENGZHI1
+name: 邓芝
+kind: runtime
+identity:
+  origin: Hermes 8787 通讯中枢运行体（既有服务，2026-10-21 编制划入通信与客户服务部，零改动）
+  model: none（运行时服务，非 LLM 判别席）
+  born: 2026-10-21
+education:
+  - {program: 飞书开放平台长连接与消息卡协议, source: Hermes WebUI 8787 既有实现, graduated: 2026-10}
+experience:
+  - {org: 信驿司, role: 通讯中枢·使节岗（飞书 WS 长连接/消息卡出向/部门内消息中继）, span: 2026.10~, kpi: 补办初始档，按消息送达率与中继时延观察}
+skills: ['飞书 WS 长连接', '消息卡出向', '部门内消息中继', '回执与送达追踪', 'Hermes 8787 运维']
+self_statement: 只做消息通路：长连接、出向卡片、部门中继——不替主官做路由决策，不替业务席下结论；消息出向可追溯、失败不静默。
+role_profile: comm_envoy
+charter_detail: Hermes 8787 通讯中枢（既有服务，编制划入零改动）：飞书 WS 长连接、消息卡出向、部门内消息中继
+grade: E2
+cn_name: 邓芝
+cn_origin: 信驿使=蜀汉外交家邓芝（字伯苗），出使东吴修好联盟，以「通使不辱命」著称

@@ -44,7 +44,7 @@ def test_bundle_names_and_capabilities_contract():
     agents = bundle["agents"]
     assert len(agents) == 41
     named = [c for c in agents.values() if c.get("cn_name")]
-    assert len(named) >= 40, "中文名覆盖应 >= 40/41"
+    assert len(named) == 41, "中文名覆盖应 41/41（DENGZHI1 已补档）"
     assert all(c.get("role_cn") for c in agents.values()), "每席应有中文岗位名"
     with_caps = [c for c in agents.values() if c.get("capabilities")]
     assert len(with_caps) >= 39, "专长覆盖应 >= 39/41"
@@ -52,6 +52,9 @@ def test_bundle_names_and_capabilities_contract():
     assert agents["ARCH1"]["role_cn"] == "架构师"
     assert agents["ST1"]["dept_cn_title"] == "谋略府"
     assert agents["A0"]["cn_name"] == "田丰"
+    assert agents["DENGZHI1"]["cn_name"] == "邓芝"
+    assert agents["DENGZHI1"]["role_cn"] == "信驿使"
+    assert agents["DENGZHI1"]["prompt_file"].endswith("comm_envoy.md")
     depts = {d["id"]: d for d in bundle["departments"]}
     assert depts["dev"]["cn_title"] == "将作监"
     assert depts["dev"]["lead_name"] == "曹操"
