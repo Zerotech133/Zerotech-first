@@ -89,3 +89,16 @@ def test_apply_atomic_write(tmp_path, monkeypatch):
         assert not os.path.exists(str(p) + ".tmp")  # 原子写无残留
     card = json.loads((homes["tianfeng"] / "SEAT_CARD.json").read_text(encoding="utf-8"))
     assert card["cn_name"] == "田丰"
+
+
+def test_seat_base_labels_not_stale():
+    """角色能力诚实性：base 标签必须反映真实主脑/载体，不得留旧口径。"""
+    tf = sms.SEATS["tianfeng"]["base"]
+    assert "9b" in tf.lower() and "glm" in tf.lower(), tf
+    assert "Hermes（GLM）" not in tf
+    zh = sms.SEATS["zhuge"]["base"]
+    assert "deepseek" in zh.lower(), zh
+    assert "GPT-6.0" not in zh and "key 未注入" not in zh
+    zy = sms.SEATS["zhaoyun"]["base"]
+    assert "key 未到位" not in zy, zy
+
