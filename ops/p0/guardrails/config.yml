@@ -1,0 +1,13 @@
+# NeMo Guardrails 最小配置（P0-5 shadow 阶段；只定义，不启用拦截）
+# 说明：当前 shadow 检测由 tools/p0_shadow_guard.py 的确定性规则执行（不依赖 LLM 调用）；
+# 本配置供 NeMo 加载校验/后续接入 LLM rails。接入 8795 兼容层前不用于生产拦截。
+models: []
+
+rails:
+  input:
+    flows:
+      - detect prompt injection
+      - detect overreach
+  output:
+    flows:
+      - detect sensitive output
