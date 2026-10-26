@@ -20,3 +20,8 @@ Markdown 无序列表，每条以粗体关键词开头；**链路/脚本缺陷�
 - **[链路]** 任务单读取失败（severity 字段缺失）[P1]。
 - **[风险]** 全篮子 HOLD 使 J2 主判据失效，影子后需校准 D1 保守度。
 - **明日关注**：Day1 五票真推理是否再现 T1 倒戈。
+
+## 回滚 / 停用
+- 双锚任务卸载：`Unregister-ScheduledTask -TaskName TianfengBrief-0845/TianfengBrief-1745 -Confirm:$false`（需管理员）；
+- 取数门面只写 `work/seat_brief/` 证据包，回滚=停止任务+删除本目录即可（事件层 append-only 不可删）；
+- 本席无危险动作权限（danger=deny），不涉及业务/消息回滚。

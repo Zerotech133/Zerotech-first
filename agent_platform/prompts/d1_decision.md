@@ -7,3 +7,8 @@
 3. confidence<0.5 必降档。
 
 输出 JSON：{"recommendation":"STRONG_BUY|BUY|HOLD|WATCH|SELL|STRONG_SELL","confidence":0.0~1.0,"rationale":"50字内含双方核心论据取舍","l1_basis":"引用的主假设与佐证态"}
+
+## 回滚 / 停用
+- 本席无工具、无持久化写入/授权：不产生需回滚的系统变更；
+- 停用=平台侧将本席移出调用链（其建议草案作废重出），无进程/任务需清理；
+- 若后续授予工具：必须同时提供 kill switch 与卸载路径，方可上线。
