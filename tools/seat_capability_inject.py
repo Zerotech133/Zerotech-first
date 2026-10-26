@@ -1,4 +1,4 @@
-"""seat_capability_inject.py — 三席位能力底座注入器（2026-10-23 00:20）。
+"""seat_capability_inject.py — 三席位能力底座注入器（2026-10-23 00:20；2026-10-26 TFSEAT：田丰补全 15 能力 + 15 技能卡）。
 
 把「AI 该有的记忆」按三层打进各席位底层：
   ① 技能表 skills/CAPABILITIES.json —— 本席位全部能力清单（能干什么/怎么调/边界）
@@ -7,7 +7,7 @@
 
 设计纪律：
   - 诸葛亮(OpenClaw workspace) 已有 3 技能卡：只补缺不重写；
-  - 田丰/赵云(Hermes profiles) skills 全空：全量注入；
+  - 田丰/赵云(Hermes profiles) 按职责面注入完整能力卡（2026-10-26 田丰 15 项）；
   - 能力清单对齐 SEAT_CARD 职责面 + 全仓既有工具真源（每项能力都指向真实工具/命令，不虚编）；
   - 幂等：CAPABILITIES.json 可重生成；SKILL.md 存在即跳过。
 
@@ -46,6 +46,10 @@ CAPABILITIES = {
         {"name": "council-hall", "what": "议会厅发言与议题推进", "how": "落盘 deliverables 文书 + tools/gen_council_data.py 刷新", "boundary": "发言=文书，页面只投影", "status": "ready"},
         {"name": "docs-index", "what": "文档现行性索引维护", "how": "python -B tools/gen_docs_index.py", "boundary": "索引同提交（S3）", "status": "ready"},
         {"name": "llm-glm", "what": "GLM 云端推理（归口复核智能层）", "how": "agent_platform/gateway llm_gateway（glm-5.3）", "boundary": "glm/nova 不传 model 用实例绑定", "status": "ready"},
+        {"name": "mutual-review", "what": "互审单复核：评审对家席位产出（MUTUAL-REVIEW 工单）", "how": "读 deliverables 互审文书/worktree diff，工具 tools/mutual_review_advice.py 可辅助", "boundary": "执行者不结案；分歧上议会厅；复核不改写原始记录", "status": "ready"},
+        {"name": "case-sign-chain", "what": "判例签字链核对：draft→待签 payload→本人签→公钥验签→入 Z4（只核对/验签）", "how": "python tools/gov_ai_case_bridge.py --emit / --apply（私钥老田持有，田丰只验签不签）", "boundary": "未签/篡改/未配公钥一律拒；田丰不代签", "status": "ready"},
+        {"name": "governance-ai", "what": "治理 AI draft 复核：异常归纳/优先级建议/判例草稿", "how": "python agent_platform/tools/gov_ai.py --action all --json（只读 draft）", "boundary": "只读 draft，不写卡/经验库/工单", "status": "ready"},
+        {"name": "worktree-hygiene", "what": "工单收口检查：worktree TTL/分支合并核对（S1）", "how": "git worktree list + git merge-base --is-ancestor + devtask 收口提示", "boundary": "只读检查；删除类进回收站或交赵云", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -103,6 +107,164 @@ description: 复核赵云写入的 Z4 supervision 经验条目（四字段）；
 3. 去重：同 cue 已有条目 → 合并引用，不重复登记。
 4. 升级建议：confidence≥0.8 且跨席位适用 → 建议进 SEAT_CARD 硬规则（报老田签）。
 5. 采纳状态以老田 approval_gate 签字为准；未签字一律「未生效」。
+""",
+        "devtask": """---
+name: devtask
+description: 工单全生命周期：建单/列单/合并/收口；归口席的派单唯一入口。
+---
+
+# 工单（devtask）
+
+1. 建单：`python tools/devtask.py new <TID> "<目标/验收>" --project quant`；一单一事。
+2. 列单/查单：`python tools/devtask.py list`；doing 单每日收口检查（S1）。
+3. 合并只走 `devtask.py merge <TID>`：五守卫全开、pathspec 精确提交；禁直推 master。
+4. 收口：merge 后回收 worktree、记回执；未合并/aborted 单写清原因。
+5. 建单前先查重（同目标已有单 → 引用不重开）；五要素类变更先等老田批准。
+""",
+        "council-route": """---
+name: council-route
+description: 分发路由建议：按议题标签产出派工组合建议（只建议不建单）。
+---
+
+# 分发路由建议
+
+1. `python tools/council_route.py --tags ...` 产建议（归属/依赖/顺序）。
+2. 只产建议不直接建单；定稿后由田丰用 devtask new 派工。
+3. 建议注明依据（org.json 编制/现有负载/依赖链）。
+4. 与议会厅议题灯保持一致；分歧升老田。
+""",
+        "health-card": """---
+name: health-card
+description: 治理健康卡生成与红黄绿解读；红项先归因再派单。
+---
+
+# 健康卡
+
+1. `python tools/gen_health_card.py` 生成/读取最新卡。
+2. 红/黄项先归因（证据+时间戳），禁止凭记忆报数；读不到=红不是绿。
+3. 检查器先自证（判例）：数字存疑先用已知样本验证工具。
+4. 红项按归口拆单（devtask）或升级老田；健康卡不代替真修复。
+""",
+        "task-exit-audit": """---
+name: task-exit-audit
+description: 计划任务退出码账本扫描+窗口三分类；只读，不改任务定义。
+---
+
+# 退出码审计
+
+1. `python agent_platform/tools/task_exit_audit.py --scan` 落账本。
+2. `--window 24` 出 new/persisting/fixed；fixed≠验收（rc=0 不证明有产出）。
+3. 语义：0 正常 / 2 degraded / 267014 强杀 / 267011 未跑不计败。
+4. 只读；异常产文书交议会厅/工单，不改任务定义（五要素）。
+""",
+        "z-series": """---
+name: z-series
+description: Z1-Z5 进化引擎链：profile/实验卡/匿名横评/经验库/防穿越。
+---
+
+# Z 系列引擎
+
+1. Z2 实验卡：无签字不结案（agent_platform/engine/experiment_card.py）。
+2. Z3 匿名横评：匿名化后横评，防名气偏差。
+3. Z4 经验库：四字段 cue/lesson/evidence/confidence；田丰为复核侧（只读+去重建议）。
+4. Z5 防穿越：lookahead_guard 规则精确优先+pass-through 反证。
+5. 引擎产物是草稿/证据，采纳以老田签字为准。
+""",
+        "memory-card": """---
+name: memory-card
+description: 席位三层记忆（L1 运行时 / L2 席位卡 / L3 组织引用）的读取与重生成。
+---
+
+# 三层记忆
+
+1. L1 会话级：任务单/会话记录/临时笔记（随会话生死，各底座自管）。
+2. L2 席位：SEAT_CARD.json（`python tools/seat_memory_sync.py --apply` 生成）。
+3. L3 组织：只引用不复制（org.json/工单账本/健康卡/经验库等单源）。
+4. 改单源即全员生效；不在席位内复制 L3 内容。
+""",
+        "council-hall": """---
+name: council-hall
+description: 议会厅发言与议题推进：发言=文书，页面只投影。
+---
+
+# 议会厅
+
+1. 发言落盘 deliverables 文书（文件名含议题/日期），`tools/gen_council_data.py` 刷新投影。
+2. 只产建议与证据，不做裁决；裁决权在老田。
+3. 分歧挂待裁区，不静默；未闭环滚动升级。
+4. 不在页面里造第二本账。
+""",
+        "docs-index": """---
+name: docs-index
+description: 文档现行性索引维护（S3：索引同提交）。
+---
+
+# 文档索引
+
+1. `python -B tools/gen_docs_index.py` 生成/刷新索引。
+2. 文档新增/迁移/废弃时索引同提交（S3）。
+3. 根目录散落 md >24h 应归档（docs/audit 或 _archive）。
+4. 索引只反映现行性，不代替正文。
+""",
+        "llm-glm": """---
+name: llm-glm
+description: GLM 云端推理（归口复核智能层）：glm-5.3，经统一 LLM 门面。
+---
+
+# GLM 推理
+
+1. 走 `agent_platform/gateway/llm_gateway.py`，binding `glm/glm-5.3`；不直连、不建第二调用层。
+2. glm/nova 不传 model（实例绑定模型）；异常归一为 ok=False 信封，不抛穿。
+3. 云端不可用 → 标注 degraded，判读交人工；本地 9B 只做检索/草稿。
+4. 含客户隐私/密钥/交易细节的内容不得直接送云端（脱敏规则先定）。
+""",
+        "mutual-review": """---
+name: mutual-review
+description: 互审单复核：独立重验对家产出，产评审批文书；执行者不结案。
+---
+
+# 互审复核（MUTUAL-REVIEW）
+
+1. 读对家交付（deliverables/worktree diff/账本），证据独立重验，不信自述。
+2. 评审结构：事实核对（属实/不实带证据）→ 前提证伪 → 未覆盖风险 → 表述修正建议。
+3. 自己错当场认；计数类结论存疑降级为「未知」。
+4. 复核通过≠验收通过；分歧上议会厅待老田裁决。
+""",
+        "case-sign-chain": """---
+name: case-sign-chain
+description: 判例签字链核对：draft→待签 payload→本人签→公钥验签→入 Z4；田丰只验签不签。
+---
+
+# 判例签字链
+
+1. `python tools/gov_ai_case_bridge.py --emit` 产待签 payload；本人（老田）持私钥签。
+2. `--apply` 走公钥验签；未签/篡改/未配公钥一律拒；strict 模式 verified=True 才入库。
+3. 田丰核对签字链完整性（签名/公钥/证据版本），不代签、不伪造。
+4. 验收结论落文书；入库以 Z4 引擎记录为准。
+""",
+        "governance-ai": """---
+name: governance-ai
+description: 治理 AI draft 复核：异常归纳/优先级建议/判例草稿；只读 draft。
+---
+
+# 治理 AI 复核
+
+1. `python agent_platform/tools/gov_ai.py --action all --json` 产出 draft（落 data/governance_ai）。
+2. 只读 draft：核对证据、去重、优先级合理性；不写卡/经验库/工单。
+3. 失败黄不阻塞治理链；草稿采纳走签字链。
+4. 判读结论仍以 a0_agent/GLM-5.3 产线为准。
+""",
+        "worktree-hygiene": """---
+name: worktree-hygiene
+description: 工单收口检查：worktree TTL/分支合并状态/回收（S1）；只读检查。
+---
+
+# 工作树收口检查
+
+1. `git worktree list` 查各单 worktree；merge 后应回收。
+2. 分支合并核对：`git merge-base --is-ancestor task/<TID> master`（True 才可回收）。
+3. TTL 超期/未合并 worktree 列清单，归因后交责任线；删除类进回收站。
+4. 只读检查；不擅自删改他人工作树。
 """,
     },
     "zhaoyun": {
