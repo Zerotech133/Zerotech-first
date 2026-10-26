@@ -53,13 +53,20 @@ def _load_persona() -> str:
 
 
 def build_prompt(packet: dict, max_chars: int = 12000) -> str:
-    tk = packet.get("tickets") or {}
-    exp = packet.get("experience") or {}
+    # 第二轮审计：畸形上游（字段类型错）不得让判读 prompt 直接崩。
+    tk = packet.get("tickets")
+    tk = tk if isinstance(tk, dict) else {}
+    exp = packet.get("experience")
+    exp = exp if isinstance(exp, dict) else {}
+    sources = packet.get("sources")
+    sources = sources if isinstance(sources, list) else []
+    health = packet.get("health")
+    health = health if isinstance(health, dict) else {}
     lines = [
         "【证据包】schema=%s generated_at=%s" % (packet.get("schema"), packet.get("generated_at")),
         "【来源】" + "; ".join(
             "%s(sha256=%s,exists=%s)" % (s.get("path"), (s.get("sha256") or "")[:12], s.get("exists"))
-            for s in (packet.get("sources") or [])),
+            for s in sources if isinstance(s, dict)),
         "【工单】总数=%s 状态=%s" % (tk.get("total"), json.dumps(tk.get("counts") or {}, ensure_ascii=False)),
     ]
     for r in (tk.get("doing_review") or [])[:10]:
@@ -70,7 +77,7 @@ def build_prompt(packet: dict, max_chars: int = 12000) -> str:
         lines.append("- %s confidence=%s cue=%s evidence=%s" % (
             e.get("id"), e.get("confidence"), (e.get("cue") or "")[:100],
             (e.get("evidence") or "")[:100]))
-    tail = (packet.get("health") or {}).get("tail") or []
+    tail = health.get("tail") or []
     if tail:
         lines += ["【健康卡原文尾段】"] + [str(x) for x in tail[-30:]]
     text = "\n".join(lines)
