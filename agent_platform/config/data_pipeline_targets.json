@@ -1,0 +1,13 @@
+{
+  "schema": "data_pipeline_targets/v1",
+  "_note": "B2-b 情报/采集 7 席数据管道自检目标（只读；本机路径；阈值按数据日更/周更节奏设定）。",
+  "targets": [
+    {"seat": "XQ1", "kind": "file_freshness", "path": "quant_backtest/data/guba", "max_age_hours": 24, "label": "股吧/雪球社媒采集落库"},
+    {"seat": "TDX1", "kind": "file_freshness", "path": "quant_backtest/data/tdx/ts_news", "max_age_hours": 72, "label": "新闻面三表增量（周末容忍 72h）"},
+    {"seat": "WORDC1", "kind": "file_freshness", "path": "quant_backtest/data/guba", "max_age_hours": 24, "label": "多源文本词云语料"},
+    {"seat": "MANCHONG1", "kind": "latest_json", "path": "quant_backtest/data", "label": "数据目录 catalog 可解析（串联/治理）"},
+    {"seat": "INTEL0", "kind": "file_freshness", "path": "agent_platform/data/evidence", "max_age_hours": 168, "label": "情报上行证据层"},
+    {"seat": "KGMAP1", "kind": "tcp", "host": "127.0.0.1", "port": 17687, "label": "Neo4j Bolt（知识图谱服务）"},
+    {"seat": "LINEAGE1", "kind": "file_freshness", "path": "quant_backtest/data/catalog_changelog.jsonl", "max_age_hours": 168, "label": "数据血缘/目录变更日志"}
+  ]
+}

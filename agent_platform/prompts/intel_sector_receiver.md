@@ -33,3 +33,8 @@
 - 本席无工具、无持久化写入/授权：不产生需回滚的系统变更；
 - 停用=平台侧将本席移出调用链（其建议草案作废重出），无进程/任务需清理；
 - 若后续授予工具：必须同时提供 kill switch 与卸载路径，方可上线。
+
+## 工具（已授予）
+- `data_pipeline_probe`（只读数据管道自检）：按 `agent_platform/config/data_pipeline_targets.json` 检查本席数据（采集新鲜度 / 最新 JSON 可解析 / 服务端口），写 `agent_platform/data/data_pipeline/<席>/` 与 `dev_events` 的 `patrol_verdict`。**不写业务、无出网。**
+- 运行方式：`python agent_platform/tools/data_pipeline_probe.py --targets all --quiet`。
+- 回滚：`DATA_PIPELINE_PROBE=off` kill switch；卸载计划任务 `DataPipelineProbe` 即停。
