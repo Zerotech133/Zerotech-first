@@ -68,8 +68,9 @@ def run_checks(py: str = sys.executable) -> dict:
     checks = {
         "compileall": _run([py, "-m", "compileall", "-q", "agent_platform", "tools"]),
         "ports": _run([py, "tools/check_ports.py"]),
-        "secrets": _run([py, "agent_platform/tools/scan_secrets.py", "--git-status"],
-                        env=_env_with_git()),
+        # 不依赖 git（S4U 任务上下文取不到 git 清单）：显式扫描受控目录
+        "secrets": _run([py, "agent_platform/tools/scan_secrets.py",
+                         "--paths", "agent_platform", "tools", "ops", "docs"]),
     }
     return {"schema": "quality_gate/v1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
