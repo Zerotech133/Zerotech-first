@@ -21,7 +21,7 @@ SCHEMA_VERSION = "1.2"   # S34: agents 增 has_profile/lead_profiled/seats_*
 # 在途工单归属规则（版本化）：tasks.json 的 owner 多为 unknown-agent，
 # 按 key 前缀 / 描述关键词把任务归到部门与席位，让沙盘能显示"谁在干什么"。
 # 只做标签映射，不改 tasks.json 任何字段。
-ACTIVITY_RULES_VERSION = "1.0"
+ACTIVITY_RULES_VERSION = "1.1"
 ACTIVITY_RULES = (
     # (匹配函数名, 部门 id, 席位 id 或 "")
     ("desc", "盘前", "invest", "D1"),
@@ -41,6 +41,11 @@ ACTIVITY_RULES = (
     # CM- = 交办给参谋长线席位的会议/交办单（现存 key 均指向 INTEL0 / 田丰），
     # 无更细席位证据时不硬派到人，只归部门，避免造出"某人负责"的假归属。
     ("key_prefix", "CM-", "chief_line", ""),
+    # 2026-10-26 老田裁定：OS-* 属平台运行体自运维/修复线（OS-CLOSE/OS-FIX/OS-...）→ 运行体部；
+    # WO-LEGION-* 属军团研发线 → 研发部。此前两类在途单一律 unmapped，沙盘"有人干活
+    # 不知道是谁的活"，治理绊线 test_activity_mapping_* 长期红（2026-10-26 批次核验实录）。
+    ("key_prefix", "OS-", "ops_runtime", ""),
+    ("key_prefix", "WO-LEGION", "dev", ""),
     ("key_contains", "hermes", "ops", ""),
     ("key_contains", "Hermes", "ops", ""),
 )

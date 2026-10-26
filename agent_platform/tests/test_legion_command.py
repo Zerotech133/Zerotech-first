@@ -281,7 +281,7 @@ def test_activity_mapping_covers_real_tasks():
     """真实 tasks.json 的 doing 应全部可归属到部门（0 unmapped）。"""
     data = build_snapshot()
     act = data["activity"]
-    assert act["rules_version"] == "1.0"
+    assert act["rules_version"] == "1.1"  # 2026-10-26 增 OS-*/WO-LEGION-* 前缀规则
     if act["doing"]:
         assert act["unmapped"] == [], "存在未归属在途单：%s" % act["unmapped"]
         assert sum(len(v) for v in act["by_dept"].values()) == len(act["doing"])
