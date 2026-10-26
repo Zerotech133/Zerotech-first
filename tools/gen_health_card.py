@@ -5432,20 +5432,28 @@ _CLIENT_ABORT_DURATION_TOL_S = 1.5
 
 
 def _parse_gin_duration_s(line: str) -> float | None:
-    """把 GIN 行里的耗时（1.2ms / 507.3µs / 20.0029794s）折算成秒。"""
-    match = _GIN_TAIL_RE.search(line)
-    if not match:
+    """从 GIN 行取耗时秒数；兼容 Go 复合时长（1m0s / 1h2m3.5s）。
+
+    2026-10-26 AIERR2：Ollama 对 >=60s 的请求写 `1m0s` 这类 Go 复合格式，
+    旧正则只认 ms/µs/s，导致 60s 的客户端超时被误判 server_error（一票红）。
+    """
+    if not line:
         return None
-    try:
-        value = float(match.group(1))
-    except (TypeError, ValueError):
+    m = re.search(
+        r"\|\s*((?:[0-9]+(?:\.[0-9]+)?)(?:h|ms|µs|μs|us|m|s)"
+        r"(?:[0-9]+(?:\.[0-9]+)?(?:h|ms|µs|μs|us|m|s))*)\s*\|",
+        line,
+    )
+    if not m:
         return None
-    unit = match.group(2)
-    if unit == "s":
-        return value
-    if unit == "ms":
-        return value / 1000.0
-    return value / 1_000_000.0  # µs/μs/us
+    units = {"h": 3600.0, "m": 60.0, "s": 1.0, "ms": 0.001,
+             "µs": 0.000001, "μs": 0.000001, "us": 0.000001}
+    total = 0.0
+    found = False
+    for num, unit in re.findall(r"([0-9]+(?:\.[0-9]+)?)(h|ms|µs|μs|us|m|s)", m.group(1)):
+        found = True
+        total += float(num) * units[unit]
+    return total if found else None
 
 
 def _empty_ai_error_rate() -> dict[str, Any]:
