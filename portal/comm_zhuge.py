@@ -38,10 +38,12 @@ from pathlib import Path
 
 DEFAULT_TIMEOUT = 30
 DEFAULT_MAX_CHARS = 600
-OPENCLAW_TIMEOUT = int(os.environ.get("COMM_ZHUGE_OPENCLAW_TIMEOUT", "45"))
+OPENCLAW_TIMEOUT = int(os.environ.get("COMM_ZHUGE_OPENCLAW_TIMEOUT", "90"))
 OPENCLAW_AGENT = os.environ.get("COMM_ZHUGE_OPENCLAW_AGENT", "zhuge")
-OPENCLAW_MODEL = os.environ.get("COMM_ZHUGE_OPENCLAW_MODEL",
-                                "itokengate/gpt-6-sol")
+# 模型覆盖：留空 = 用 OpenClaw agent 配置里的 model.primary（推荐，便于换载体）
+OPENCLAW_MODEL = os.environ.get("COMM_ZHUGE_OPENCLAW_MODEL", "").strip()
+# 载体诚实标签（仅展示用；默认从模型字符串推断，空则 agent-config）
+OPENCLAW_CARRIER = os.environ.get("COMM_ZHUGE_CARRIER", "").strip()
 
 # 诸葛亮 SOUL（精简自 deliverables/s20-zhuge-workspace-20261021/SOUL.md）
 ZHUGE_SOUL = (
@@ -153,8 +155,10 @@ def _run_openclaw(question, timeout=OPENCLAW_TIMEOUT):
     if not exe:
         return None, "bin_missing"
     args = [exe, "infer", "model", "run", "--local",
-            "--agent", OPENCLAW_AGENT, "--model", OPENCLAW_MODEL,
-            "--prompt", _openclaw_prompt(question), "--json"]
+            "--agent", OPENCLAW_AGENT]
+    if OPENCLAW_MODEL:
+        args += ["--model", OPENCLAW_MODEL]
+    args += ["--prompt", _openclaw_prompt(question), "--json"]
     try:
         cp = subprocess.run(args, capture_output=True, text=True,
                             encoding="utf-8", errors="replace",
@@ -210,7 +214,11 @@ def consult(question, open_id="", llm=None, timeout=DEFAULT_TIMEOUT,
     if ready:
         raw, oc_err = _run_openclaw(q, timeout=min(timeout, OPENCLAW_TIMEOUT))
         if raw:
-            return {"text": _trim(raw, max_chars), "mode": "openclaw_gpt",
+            # 诚实标签：gpt-6-sol 真身 vs 其他载体（如 deepseek 替代）
+            model_used = OPENCLAW_MODEL or "agent-config"
+            carrier = OPENCLAW_CARRIER or ("gpt-6-sol" if "gpt" in model_used.lower() else model_used)
+            mode = "openclaw_gpt" if "gpt-6" in model_used.lower() else "openclaw_cloud"
+            return {"text": _trim(raw, max_chars), "mode": mode, "carrier": carrier,
                     "llm_ok": True, "error": None,
                     "elapsed_ms": int((time.time() - t0) * 1000)}
         # 真通道失败 → 继续降级（错误进 error 字段，不吞）
