@@ -12,11 +12,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 import urllib.request
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _repo_paths import repo_root  # noqa: E402
+
+REPO = repo_root(Path(__file__))
 DEFAULT_URL = "http://127.0.0.1:8091/api/zhuge/brief"
 DEFAULT_OUT = REPO / "work" / "seat_brief_zhuge"
 
@@ -42,6 +46,7 @@ def build(fetched: dict, url: str) -> dict:
         "http": fetched.get("http"),
         "error": fetched.get("error"),
         "business_day": payload.get("business_day"),
+        "upstream_generated_at": payload.get("generated_at"),
         "engine": payload.get("engine"),
         "model_invoked": payload.get("model_invoked"),
         "dispatched": payload.get("dispatched"),
@@ -90,7 +95,7 @@ def main(argv=None) -> int:
         print(json.dumps({"ok": snap["ok"], "json": str(jp), "md": str(mp),
                           "suggestions": len(snap["suggestions"])},
                          ensure_ascii=False))
-    return 0
+    return 0 if snap["ok"] else 1
 
 
 if __name__ == "__main__":

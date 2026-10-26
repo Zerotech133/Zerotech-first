@@ -25,8 +25,11 @@ import sys
 import time
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
-DEFAULT_STATUS = Path(r"C:\项目\STATUS.md")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _repo_paths import repo_root  # noqa: E402
+
+REPO = repo_root(Path(__file__))
+DEFAULT_STATUS = REPO.parent / "STATUS.md"
 DEFAULT_TASKS = REPO / ".worktrees" / "tasks.json"
 DEFAULT_EXPERIENCE = (Path.home() / ".hermes" / "profiles" / "zhaoyun"
                       / "experience" / "supervision" / "EXPERIENCE.md")
@@ -89,6 +92,8 @@ def _parse_experience(p: Path) -> dict:
         text = p.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return {"exists": True, "entries": []}
+    # 审计 A-M1：HTML 注释里的「条目模板」不是真实经验，先剔除再解析。
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
     entries = []
     blocks = re.split(r"(?=^## )", text, flags=re.M)
     for block in blocks:

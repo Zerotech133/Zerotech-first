@@ -20,9 +20,13 @@ import argparse
 import datetime as dt
 import json
 import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.normpath(os.path.join(HERE, ".."))
+sys.path.insert(0, HERE)
+from _repo_paths import repo_root  # noqa: E402
+
+REPO = str(repo_root(HERE))
 ORG = os.path.join(REPO, "agent_platform", "registry", "org.json")
 
 # 席位 × 底座 × 工作根（全部现存目录）

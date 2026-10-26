@@ -24,9 +24,12 @@ import time
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
-REPO = BASE.parent
+sys.path.insert(0, str(BASE.parent / "tools"))
+from _repo_paths import repo_root  # noqa: E402
+
+REPO = repo_root(BASE)
 DEFAULT_PACKETS = REPO / "work" / "seat_brief"
-DEFAULT_OUT = BASE / "data" / "shadow"
+DEFAULT_OUT = REPO / "agent_platform" / "data" / "shadow"
 PERSONA = BASE / "prompts" / "a0_chief.md"
 DEFAULT_MODEL = "glm/glm-5.3"
 
@@ -77,6 +80,9 @@ def build_prompt(packet: dict, max_chars: int = 12000) -> str:
 def judge(packet: dict, model: str = DEFAULT_MODEL, live: bool = False,
           out_dir: Path | None = None, llm=None, max_chars: int = 12000) -> dict:
     """dry-run 或真调模型；返回结果 dict（ok/model/elapsed/prompt_len/text/out）。"""
+    if not isinstance(packet, dict):
+        return {"schema": "a0_evidence_judgment/v1", "ok": False,
+                "error": "packet_not_dict", "text": "", "prompt_len": 0}
     prompt = build_prompt(packet, max_chars=max_chars)
     res = {"schema": "a0_evidence_judgment/v1",
            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -95,7 +101,10 @@ def judge(packet: dict, model: str = DEFAULT_MODEL, live: bool = False,
             from llm import make_llm  # noqa: E402
             llm = make_llm(model)
         text, status = llm.chat(_load_persona(), prompt)
-        res.update({"ok": True, "text": str(text or ""), "status": status,
+        degraded = (status == "degraded")
+        res.update({"ok": not degraded, "degraded": degraded,
+                    "text": str(text or ""), "status": status,
+                    "error": "llm_degraded" if degraded else None,
                     "elapsed_s": round(time.time() - t0, 1)})
     except Exception as exc:  # noqa: BLE001
         res.update({"ok": False, "error": "%s: %s" % (type(exc).__name__, exc),
@@ -129,14 +138,23 @@ def main(argv=None) -> int:
     if not pkt_path or not pkt_path.is_file():
         print(json.dumps({"ok": False, "error": "evidence_packet_not_found"}, ensure_ascii=False))
         return 2
-    packet = json.loads(pkt_path.read_text(encoding="utf-8"))
+    try:
+        packet = json.loads(pkt_path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        print(json.dumps({"ok": False, "error": "packet_invalid_json: %s" % exc},
+                         ensure_ascii=True))
+        return 2
+    if not isinstance(packet, dict):
+        print(json.dumps({"ok": False, "error": "packet_not_dict"}, ensure_ascii=True))
+        return 2
     res = judge(packet, model=args.model, live=args.live,
                 out_dir=Path(args.out_dir), max_chars=args.max_chars)
     res["packet"] = str(pkt_path)
     print(json.dumps({k: res.get(k) for k in
                       ("ok", "dry_run", "model", "packet", "prompt_len",
-                       "elapsed_s", "error", "text", "prompt_head", "out_json", "out_md")},
-                     ensure_ascii=False, indent=1)[:4000])
+                       "elapsed_s", "error", "degraded", "text", "prompt_head",
+                       "out_json", "out_md")},
+                     ensure_ascii=True, indent=1))
     return 0 if res.get("ok") else 1
 
 
