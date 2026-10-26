@@ -45,8 +45,10 @@ def test_bundle_names_and_capabilities_contract():
     assert len(agents) == 61, "60 在编 + 1 治理席虚拟卡"
     assert bundle["stats"]["agents"] == 60
     assert bundle["stats"]["governance_seats"] == 1
+    assert bundle["stats"]["prompt_ok"] == 60
+    assert bundle["stats"]["prompt_miss"] == []
     named = [c for c in agents.values() if c.get("cn_name")]
-    assert len(named) >= 60, "中文名覆盖应 >= 60/61（COWBRIDGE 无 HR 档）"
+    assert len(named) == 61, "中文名覆盖应 61/61（COWBRIDGE 桥玄已补档）"
     assert all(c.get("role_cn") for c in agents.values()), "每席应有中文岗位名"
     with_caps = [c for c in agents.values() if c.get("capabilities")]
     assert len(with_caps) >= 39, "专长覆盖应 >= 39/61"
@@ -57,6 +59,11 @@ def test_bundle_names_and_capabilities_contract():
     assert agents["DENGZHI1"]["cn_name"] == "邓芝"
     assert agents["DENGZHI1"]["role_cn"] == "信驿使"
     assert agents["DENGZHI1"]["prompt_file"].endswith("comm_envoy.md")
+    assert agents["COWBRIDGE"]["cn_name"] == "桥玄"
+    assert agents["COWBRIDGE"]["prompt_file"].endswith("cowbridge_memory_bridge.md")
+    assert agents["R2"]["role_cn"] == "保守风控师·右侧立场官"
+    assert agents["LUSU1"]["prompt_file"].endswith("comm_lead.md")
+    assert agents["INTEL0"]["prompt_file"].endswith("intel_sector_receiver.md")
 
     # P1：三个缺失部门补入（risk/ops_runtime/chief_line），R2=赵云·保守风控哨
     depts = {d["id"]: d for d in bundle["departments"]}
