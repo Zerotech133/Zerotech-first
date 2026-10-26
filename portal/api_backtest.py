@@ -5152,7 +5152,6 @@ var P=%s;
 if(P){setTimeout(function(){go(P)},400)}
 </script></body></html>""" % (pill_nav("sa"), qe, hist_rows, json.dumps(q))
         self._html(body)
-        self.wfile.write(body)
 
 
 
