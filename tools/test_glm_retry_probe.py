@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """glm_retry_probe 两阶段单测（K-QUANT-20261026-GLMPROBE2）。
 
 验证：默认只发中性 ping（不发送证据）；ping 失败 rc=3 且无证据外发；
@@ -111,3 +111,21 @@ def test_agent_platform_on_sys_path_for_gateway_import():
     assert str(M.REPO / "agent_platform") in sys.path
     assert importlib.util.find_spec("gateway") is not None
 
+def test_approved_marker_enables_auto_evidence(tmp_path):
+    """外发追认后：EVIDENCE_APPROVED.txt 存在时，默认（无 --with-evidence）也会发一次证据判读。"""
+    M = _load()
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "EVIDENCE_APPROVED.txt").write_text("approved by 老田 2026-10-26", encoding="utf-8")
+    calls = []
+
+    def fake(user):
+        calls.append(user)
+        if "只回复 OK" in user:
+            return {"ok": True, "data": {"text": "OK"}}
+        return {"ok": True, "data": {"text": "判读草稿"}}
+
+    rc = M.probe(out_dir=out, packets_dir=_packets(tmp_path), chat_fn=fake)
+    assert rc == 0
+    assert (out / "JUDGMENT_READY.txt").is_file()
+    assert len(calls) == 2 and "内部数据示例" in calls[1]
