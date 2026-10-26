@@ -63,3 +63,29 @@ def test_run_timeout(monkeypatch):
     monkeypatch.setattr(QG.subprocess, "run", boom)
     out = QG._run(["x"])
     assert out["ok"] is False and out["error"] == "timeout"
+
+
+def test_env_with_git_adds_git_path():
+    import os
+    env = QG._env_with_git()
+    git_dirs = [d for d in (r"C:\Program Files\Git\cmd", r"C:\Program Files\Git\bin",
+                            r"C:\Program Files (x86)\Git\cmd") if os.path.isdir(d)]
+    if not git_dirs:
+        import pytest
+        pytest.skip("本机无 Git 安装目录")
+    assert any(d in env["PATH"] for d in git_dirs)
+
+
+def test_run_checks_passes_env_to_secrets(monkeypatch):
+    seen = []
+
+    def fake(argv, timeout=QG.TIMEOUT, env=None):
+        seen.append((argv, env))
+        return {"ok": True, "rc": 0}
+
+    monkeypatch.setattr(QG, "_run", fake)
+    res = QG.run_checks()
+    assert res["ok"] is True
+    secrets = [env for argv, env in seen
+               if any("scan_secrets" in str(x) for x in argv)]
+    assert secrets and secrets[0] and "Git" in secrets[0].get("PATH", "")

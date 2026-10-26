@@ -36,11 +36,24 @@ def kill_switch_on(env=None) -> bool:
     return str(env.get(KILL_ENV) or "").strip().lower() in KILL_VALUES
 
 
-def _run(argv: list, timeout: int = TIMEOUT) -> dict:
+def _env_with_git(env=None) -> dict:
+    """S4U/服务上下文 PATH 可能不含 Git → 为子进程补 Git 目录（scan_secrets 要 git status）。"""
+    out = dict(os.environ if env is None else env)
+    path = out.get("PATH", "")
+    for cand in (r"C:\Program Files\Git\cmd", r"C:\Program Files\Git\bin",
+                 r"C:\Program Files (x86)\Git\cmd"):
+        if os.path.isdir(cand) and cand not in path:
+            path = cand + os.pathsep + path
+    out["PATH"] = path
+    return out
+
+
+def _run(argv: list, timeout: int = TIMEOUT, env=None) -> dict:
     t0 = time.time()
     try:
         proc = subprocess.run(argv, cwd=str(REPO), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=timeout)
+                              encoding="utf-8", errors="replace", timeout=timeout,
+                              env=env)
         tail = ((proc.stdout or "") + (proc.stderr or "")).strip()[-500:]
         return {"ok": proc.returncode == 0, "rc": proc.returncode,
                 "elapsed_ms": int((time.time() - t0) * 1000), "tail": tail}
@@ -55,7 +68,8 @@ def run_checks(py: str = sys.executable) -> dict:
     checks = {
         "compileall": _run([py, "-m", "compileall", "-q", "agent_platform", "tools"]),
         "ports": _run([py, "tools/check_ports.py"]),
-        "secrets": _run([py, "agent_platform/tools/scan_secrets.py", "--git-status"]),
+        "secrets": _run([py, "agent_platform/tools/scan_secrets.py", "--git-status"],
+                        env=_env_with_git()),
     }
     return {"schema": "quality_gate/v1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
