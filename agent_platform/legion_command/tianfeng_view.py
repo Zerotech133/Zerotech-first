@@ -234,6 +234,11 @@ def build_view(platform: Path) -> dict:
                 break
     except OSError:
         pass
+    guard = _load(repo / "agent_platform" / "registry" / "tianfeng_guard.json", {})
+    guard_desc = "allow_repo=%d / deny_repo=%d / exec_confirm=%d（检测层，非强制）" % (
+        len(guard.get("allow_repo_prefixes") or []),
+        len(guard.get("deny_repo_prefixes") or []),
+        len(guard.get("exec_confirm_patterns") or []))
     return {
         "ok": True,
         "schema": "tianfeng_view/v1",
@@ -262,6 +267,7 @@ def build_view(platform: Path) -> dict:
             {"k": "SOUL", "v": "v3 · 产品经理+研发（全在性）"},
             {"k": "能力清单", "v": "%d 项 / %d ready" % (len(caps), ready)},
             {"k": "工具集", "v": ", ".join(_toolsets()) or "—"},
+            {"k": "L2 写守卫", "v": guard_desc},
             {"k": "席位卡", "v": "base=%s" % card.get("base")},
             {"k": "审计", "v": "pass %d / warn %d / fail %d（%s）"
              % (audit["pass"], audit["warn"], max(audit["fail"], 0), audit["verdict"])},
