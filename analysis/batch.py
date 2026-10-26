@@ -85,10 +85,18 @@ def main():
     os.makedirs(outdir, exist_ok=True)
     results = []
 
+    def _pending(code):
+        try:
+            from . import review
+            return len(review.pending(code=code, limit=500))
+        except Exception:
+            return None
+
     if a.queue:
         job = queue.claim()
         if job:
             res = run_one(job["code"], llm=job.get("llm", False), push=job.get("push", False), as_of=None)
+            res["pending_review"] = _pending(job["code"])
             queue.finish(job, res)
             results.append({"job": job, "result": res})
             print(json.dumps({"ok": res.get("ok"), "job": job["job_id"], "result": res}, ensure_ascii=False))
@@ -98,26 +106,31 @@ def main():
 
     for code in codes:
         res = run_one(code, llm=a.llm, push=a.push, as_of=a.as_of)
+        res["pending_review"] = _pending(code)
         results.append({"code": code, "result": res})
-        print("[batch] %s ok=%s rating=%s %.1fs" % (code, res.get("ok"), res.get("rating"), res.get("elapsed_s", 0)))
+        print("[batch] %s ok=%s rating=%s pending_review=%s %.1fs" % (
+            code, res.get("ok"), res.get("rating"), res.get("pending_review"), res.get("elapsed_s", 0)))
 
+    pending_total = sum((r["result"].get("pending_review") or 0) for r in results)
     receipt = {"date": day, "started": time.strftime("%F %T"), "llm": a.llm, "push": a.push,
-               "codes": codes, "results": results,
+               "codes": codes, "results": results, "pending_review_total": pending_total,
                "ok_count": sum(1 for r in results if r["result"].get("ok")),
                "fail_count": sum(1 for r in results if not r["result"].get("ok"))}
     rp = os.path.join(outdir, "receipt.json")
     json.dump(receipt, open(rp, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
     md = ["# 盘后批量分析回执 · %s" % day, "",
           "- 标的：%d 只；成功 %d；失败 %d" % (len(codes), receipt["ok_count"], receipt["fail_count"]),
-          "- 模式：LLM=%s 推送=%s" % (a.llm, a.push), "",
-          "| 代码 | 状态 | 评级 | 用时(s) | 归档 |", "|---|---|---|---|---|"]
+          "- 模式：LLM=%s 推送=%s ｜ 待复核事件合计：%d 条" % (a.llm, a.push, pending_total), "",
+          "| 代码 | 状态 | 评级 | 待复核 | 用时(s) | 归档 |", "|---|---|---|---|---|---|"]
     for r in results:
         x = r["result"]
-        md.append("| %s | %s | %s | %s | %s |" % (r["code"], "OK" if x.get("ok") else "FAIL", x.get("rating", "—"),
-                                                   x.get("elapsed_s", "—"), (x.get("outdir") or "")[-40:]))
+        md.append("| %s | %s | %s | %s | %s | %s |" % (r["code"], "OK" if x.get("ok") else "FAIL", x.get("rating", "—"),
+                                                       x.get("pending_review", "—"), x.get("elapsed_s", "—"),
+                                                       (x.get("outdir") or "")[-40:]))
     open(os.path.join(outdir, "receipt.md"), "w", encoding="utf-8").write("\n".join(md) + "\n")
     print(json.dumps({"ok": receipt["fail_count"] == 0, "receipt": rp, "ok_count": receipt["ok_count"],
-                      "fail_count": receipt["fail_count"]}, ensure_ascii=False))
+                      "fail_count": receipt["fail_count"], "pending_review_total": pending_total},
+                     ensure_ascii=False))
     return 0 if receipt["fail_count"] == 0 else 2
 
 
