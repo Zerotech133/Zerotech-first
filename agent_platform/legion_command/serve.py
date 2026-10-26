@@ -218,6 +218,37 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "zhaoyun_view_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path.startswith("/api/zhaoyun/"):
+            # WO-ZHAOYUN-DRILL：治理席"下钻"数据（能力详证/任务偏差/记忆/模型/请求）
+            try:
+                from legion_command import zhaoyun_drill as zd
+                sub = path[len("/api/zhaoyun/"):]
+                if sub == "tasks":
+                    self._send_json(zd.tasks_view(_PLATFORM))
+                elif sub == "memory":
+                    self._send_json(zd.memory_view(_PLATFORM))
+                elif sub == "model":
+                    self._send_json(zd.model_view(_PLATFORM))
+                elif sub == "requests":
+                    self._send_json(zd.requests_view(_PLATFORM))
+                elif sub == "capabilities":
+                    self._send_json(zd.capabilities_detail(_PLATFORM))
+                elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
+                    cap = sub.split("/", 1)[1]
+                    rep = zd.capabilities_detail(_PLATFORM)
+                    row = next((x for x in (rep.get("items") or [])
+                                if x.get("name") == cap), None)
+                    if row is None:
+                        self._send_json({"ok": False, "error": "cap_not_found",
+                                         "cap": cap}, 404)
+                    else:
+                        self._send_json({"ok": True, "capability": row})
+                else:
+                    self._send_json({"ok": False, "error": "not_found: %s" % path}, 404)
+            except Exception as e:                       # noqa: BLE001
+                self._send_json({"ok": False, "error": "zhaoyun_drill_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/tianfeng":
             # 田丰 · 产品/研发席只读视图（角色/授权/能力/运行态/链接）
             try:
@@ -323,6 +354,29 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         import json
         path = urlparse(self.path).path
+        if path == "/api/zhaoyun/request":
+            # WO-ZHAOYUN-DRILL：调整类动作只登记请求（pending_human），不自动改真源
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request",
+                                     "reason": "content_length_out_of_range"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                from legion_command import zhaoyun_drill as zd
+                res = zd.write_request(_PLATFORM, str(req.get("kind") or ""),
+                                       req.get("payload") or {},
+                                       str(req.get("reason") or ""),
+                                       requested_by="老田（页面提交）")
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "request_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
         if path == "/api/chat":
             try:
                 length = int(self.headers.get("Content-Length") or 0)

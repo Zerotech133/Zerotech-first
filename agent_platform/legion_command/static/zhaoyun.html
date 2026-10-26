@@ -59,6 +59,10 @@
   footer { margin-top: auto; padding: 10px 22px 16px; border-top: 0.5px solid #1E3A5F; color: #5A7190; font-size: 11px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   button.refresh { border: 0.5px solid #1E3A5F; background: none; color: #8FA8C0; font-size: 12px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; }
   button.refresh:hover { color: #E8F0F8; }
+  .clickable { cursor: pointer; }
+  .clickable:hover td { background: #0F2440; }
+  input, select, button { background: #081321; color: #CFE3FF; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 3px 6px; font-family: inherit; font-size: 12px; }
+  button { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -105,6 +109,11 @@
     </table>
   </section>
 
+  <section id="drill-sec" style="display:none">
+    <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
+    <div id="drill-body"></div>
+  </section>
+
   <div class="grid">
     <section>
       <h2>判例库（Z4 · supervision） <span id="exp-sub">—</span></h2>
@@ -121,8 +130,29 @@
     </section>
   </div>
 </main>
+<div class="grid">
+  <section>
+    <h2>任务偏差 <span id="task-sub">—</span> <span>只读标注；调整须走工单/审批</span></h2>
+    <div id="tasks"></div>
+  </section>
+  <section>
+    <h2>调整申请 <span>只登记 → 待老田审批（不自动生效）</span></h2>
+    <div id="req-form"></div>
+    <div id="req-list" class="muted" style="margin-top:8px"></div>
+  </section>
+</div>
+<div class="grid">
+  <section>
+    <h2>记忆审计（Z4 经验库） <span id="mem-sub">—</span></h2>
+    <div id="mem"></div>
+  </section>
+  <section>
+    <h2>模型信息 <span>只读；切换走申请</span></h2>
+    <div id="model"></div>
+  </section>
+</div>
 <footer>
-  <span id="foot-src">数据源：/api/zhaoyun（只读聚合）· 建议 draft、经验须签字 · 待签只读扫描 _vault/sign_requests</span>
+  <span id="foot-src">数据源：/api/zhaoyun + /api/zhaoyun/*（只读聚合 + 下钻）· 调整类动作只登记请求，待老田审批 · 建议 draft、经验须签字</span>
   <span id="foot-time">—</span>
 </footer>
 <script>
@@ -231,7 +261,10 @@ function render(v) {
   const capsBody = $('caps'); capsBody.replaceChildren();
   (caps.items || []).forEach((cap) => {
     const tr = el('tr');
-    tr.appendChild(el('td', '', cap.name));
+    tr.className = 'clickable';
+    tr.title = '点击下钻：' + cap.name;
+    tr.onclick = () => openDrill(cap.name);
+    tr.appendChild(el('td', '', cap.name + ' ↗'));
     tr.appendChild(el('td', '', cap.what));
     tr.appendChild(el('td', 'muted', cap.boundary));
     const td = el('td');
@@ -295,8 +328,134 @@ function load() {
     .then((v) => {
       if (!v.ok) { showBanner('视图不可用：' + (v.error || 'unknown') + ' ' + (v.detail || '')); return; }
       render(v);
+      loadDrill();
     })
     .catch((e) => showBanner('端点不可达：' + e));
+}
+function jget(url) { return fetch(url).then((r) => r.json()); }
+function kv(box, k, v) {
+  const row = el('div', 'row');
+  row.appendChild(el('span', 'k', k));
+  row.appendChild(el('span', 'v', (v == null || v === '') ? '—' : String(v)));
+  box.appendChild(row);
+}
+function openDrill(name) {
+  const sec = $('drill-sec'); sec.style.display = '';
+  $('drill-title').textContent = name;
+  const box = $('drill-body'); box.replaceChildren(el('div', 'muted', '加载中…'));
+  jget('/api/zhaoyun/cap/' + encodeURIComponent(name)).then((v) => {
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    box.replaceChildren();
+    if (!v.ok) { box.appendChild(el('div', 'muted', '下钻不可用：' + (v.error || ''))); return; }
+    const c = v.capability || {};
+    kv(box, '能力', c.name); kv(box, '说明', c.what); kv(box, '怎么跑', c.how);
+    kv(box, '边界', c.boundary); kv(box, '状态', c.status);
+    kv(box, '脚本引用', (c.how_ref || '—') + ' | 存在=' + String(c.how_ref_exists) +
+      ' | mtime=' + (c.how_ref_mtime || '—'));
+    if ((c.recent_events || []).length) {
+      box.appendChild(el('div', 'muted', '最近治理事件：'));
+      (c.recent_events || []).forEach((e) => box.appendChild(el('div', 'muted',
+        '• ' + (e.ts || '') + ' [' + (e.kind || '') + '] ' + (e.task || '') + ' ' + (e.detail || ''))));
+    }
+    box.appendChild(el('div', 'muted',
+      '调整入口：模型/记忆/学习/任务偏差在下方对应区块提交申请（审批前不会生效）。'));
+  }).catch((e) => { box.replaceChildren(el('div', 'muted', '下钻失败：' + e)); });
+}
+function loadDrill() {
+  Promise.all([
+    jget('/api/zhaoyun/tasks').catch(() => ({ ok: false })),
+    jget('/api/zhaoyun/memory').catch(() => ({ ok: false })),
+    jget('/api/zhaoyun/model').catch(() => ({ ok: false })),
+    jget('/api/zhaoyun/requests').catch(() => ({ ok: false })),
+  ]).then(([tasks, mem, mdl, reqs]) => {
+    const tb = $('tasks'); tb.replaceChildren();
+    if (!tasks.ok) tb.appendChild(el('div', 'muted', '任务账本不可用'));
+    else {
+      $('task-sub').textContent = 'doing ' + tasks.counts.doing + ' · review ' +
+        tasks.counts.review + ' · 偏差 ' + tasks.counts.deviations;
+      (tasks.deviations || []).slice(0, 10).forEach((d) => tb.appendChild(el('div', 'muted',
+        '⚠ ' + d.kind + ' · ' + d.tid + ' — ' + d.detail)));
+      [...(tasks.doing || []).slice(0, 8), ...(tasks.review || []).slice(0, 5)].forEach((r) => {
+        tb.appendChild(el('div', 'muted', '• [' + r.status + '] ' + r.tid + ' · ' +
+          (r.owner || '—') + ' · ' + r.age_hours + 'h' +
+          (r.unowned ? ' · 无主' : '') + (r.worktree_missing ? ' · worktree缺失' : '') +
+          ' — ' + r.desc));
+      });
+    }
+    const mb = $('mem'); mb.replaceChildren();
+    if (!mem.ok) mb.appendChild(el('div', 'muted', '记忆库不可用'));
+    else {
+      $('mem-sub').textContent = '共 ' + mem.entries_total + ' 条 · 隔离区 ' + mem.quarantined_total;
+      (mem.items || []).slice(-30).reverse().forEach((e) => {
+        const row = el('div', 'muted');
+        const cb = el('input'); cb.type = 'checkbox'; cb.value = e.entry_id; cb.className = 'memcb';
+        row.appendChild(cb);
+        row.appendChild(document.createTextNode(' ' + e.entry_id + ' · ' + (e.cue || '') +
+          ' · conf ' + (e.confidence == null ? '—' : e.confidence) + ' · ' + (e.written_at || '')));
+        mb.appendChild(row);
+      });
+      const bar = el('div', 'row'); bar.style.marginTop = '6px';
+      const reason = el('input'); reason.id = 'mem-reason';
+      reason.placeholder = '隔离原因（必填）'; reason.style.flex = '1';
+      const btn = el('button', '', '提交隔离申请');
+      btn.onclick = () => {
+        const ids = [...document.querySelectorAll('.memcb:checked')].map((x) => x.value);
+        if (!ids.length) { alert('先勾选条目'); return; }
+        submitRequest('memory_quarantine', { entry_ids: ids }, $('mem-reason').value,
+                      '记忆隔离 ' + ids.length + ' 条');
+      };
+      bar.appendChild(reason); bar.appendChild(btn); mb.appendChild(bar);
+    }
+    const mb2 = $('model'); mb2.replaceChildren();
+    if (!mdl.ok) mb2.appendChild(el('div', 'muted', '模型信息不可用'));
+    else {
+      (mdl.seats || []).forEach((s) => kv(mb2, s.seat + '（' + (s.cn_name || '') + '）',
+        (s.llm || '—') + (s.in_headcount ? ' · 编制' : ' · 不占编')));
+      kv(mb2, '候选模型', (mdl.candidate_models || []).join(' / '));
+      const bar = el('div', 'row'); bar.style.marginTop = '6px';
+      const selSeat = el('select'); selSeat.id = 'mdl-seat';
+      (mdl.seats || []).forEach((s) => { const o = el('option', '', s.seat); o.value = s.seat; selSeat.appendChild(o); });
+      const sel = el('select'); sel.id = 'mdl-model';
+      (mdl.candidate_models || []).forEach((m) => { const o = el('option', '', m); o.value = m; sel.appendChild(o); });
+      const reason = el('input'); reason.id = 'mdl-reason';
+      reason.placeholder = '变更原因'; reason.style.flex = '1';
+      const btn = el('button', '', '提交模型变更申请');
+      btn.onclick = () => submitRequest('model_change',
+        { seat: $('mdl-seat').value, candidate: $('mdl-model').value }, $('mdl-reason').value,
+        '模型变更 ' + $('mdl-seat').value + ' -> ' + $('mdl-model').value);
+      bar.appendChild(selSeat); bar.appendChild(sel); bar.appendChild(reason); bar.appendChild(btn);
+      mb2.appendChild(bar);
+    }
+    const f = $('req-form'); f.replaceChildren();
+    const mk = (id, ph) => { const i = el('input'); i.id = id; i.placeholder = ph; i.style.width = '100%'; i.style.margin = '2px 0'; return i; };
+    f.appendChild(mk('learn-name', '新能力名称（如 model-routing）'));
+    f.appendChild(mk('learn-what', '是什么 / 解决什么'));
+    f.appendChild(mk('learn-how', '怎么跑（命令/路径）'));
+    f.appendChild(mk('learn-boundary', '边界（只读/需审批…）'));
+    f.appendChild(mk('learn-reason', '提案理由 / 期望收益'));
+    const lb = el('button', '', '提交学习提案（待审批）');
+    lb.onclick = () => {
+      const p = { name: $('learn-name').value.trim(), what: $('learn-what').value.trim(),
+                  how: $('learn-how').value.trim(), boundary: $('learn-boundary').value.trim() };
+      if (!p.name || !p.what) { alert('名称与说明必填'); return; }
+      submitRequest('capability_learn', p, $('learn-reason').value, '学习提案 ' + p.name);
+    };
+    f.appendChild(lb);
+    const rl = $('req-list'); rl.replaceChildren();
+    rl.appendChild(el('div', 'muted', '待批请求：' + ((reqs && reqs.pending) || 0) +
+      ' 条（只登记，不自动生效）'));
+    ((reqs && reqs.items) || []).slice(0, 8).forEach((r) => rl.appendChild(el('div', 'muted',
+      '• ' + (r.id || '') + ' · ' + (r.kind || '') + ' · ' + (r.status || '') + ' · ' + (r.reason || ''))));
+  });
+}
+function submitRequest(kind, payload, reason, label) {
+  fetch('/api/zhaoyun/request', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind: kind, payload: payload, reason: reason })
+  }).then((r) => r.json()).then((j) => {
+    if (j.ok) { alert('已登记请求 ' + j.request.id + '（待老田审批，不会自动生效）'); loadDrill(); }
+    else alert('提交失败：' + (j.error || '') + (j.allowed ? (' 允许：' + j.allowed.join(',')) : ''));
+  }).catch((e) => alert('提交失败：' + e));
 }
 $('refresh').onclick = load;
 load();
