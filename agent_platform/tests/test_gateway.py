@@ -126,10 +126,12 @@ def test_llm_chat_default_binding_used(monkeypatch):
 
 
 def test_llm_chat_glm_does_not_repass_prefixed_model(monkeypatch):
-    """glm/nova 的模型已在 make_llm 构造时绑定，chat 不得再传整串 binding。
+    """glm/nova/openai 的模型已在 make_llm 构造时绑定，chat 不得再传整串 binding。
 
     2026-10-21 真实缺陷：`glm/glm-5.3` 整串被当模型名发往智谱 → HTTP 400，
     进而把 S38「glm-5.3-flash 模型名不存在」误判成模型能力问题。
+    2026-10-27 B05：openai/（OpenClaw 载体）与 openai-direct/（旧直连）同样
+    在构造时吃下模型，不得把整串 binding 当 model 传下去。
     """
     seen = {}
     class Spy:
@@ -139,10 +141,39 @@ def test_llm_chat_glm_does_not_repass_prefixed_model(monkeypatch):
             seen[self.binding] = model
             return "t", "normal"
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy(binding))
-    for b in ("glm/glm-5.3", "glm/glm-5.3-flash", "nova/8080"):
+    for b in ("glm/glm-5.3", "glm/glm-5.3-flash", "nova/8080",
+              "openai/gpt-6.0", "openai-direct/gpt-6.0"):
         env = llm_gateway.chat(binding=b, system="", user="u")
         assert env["ok"] is True
         assert seen[b] is None, "%s 不应把整串 binding 当 model 传入（实测会 400）" % b
+
+
+def test_gateway_prefix_owns_model_includes_openai_family():
+    """B05：openai/（OpenClaw 载体）与 openai-direct/（旧直连）都在前缀清单内"""
+    assert {"openai", "openai-direct"} <= set(llm_gateway._PREFIX_OWNS_MODEL)
+
+
+def test_llm_chat_openai_delegates_openclaw(monkeypatch):
+    """B05 集成：门面 openai/ → engine OpenClawLLM → OpenClaw 载体 run（同一轨道）"""
+    from engine import openclaw_cli as oc_mod
+    monkeypatch.setattr(oc_mod, "run",
+                        lambda agent, prompt, model=None, timeout=None: ("好", None))
+    monkeypatch.setattr(oc_mod, "agent_primary_model",
+                        lambda agent=None: "deepseek/deepseek-chat")
+    env = llm_gateway.chat(binding="openai/gpt-6.0", system="你是军师", user="给个结论")
+    validate_envelope(env)
+    assert env["ok"] is True
+    assert env["data"]["text"] == "好" and env["data"]["status"] == "normal"
+
+
+def test_llm_chat_openai_direct_key_missing_is_envelope_error(monkeypatch):
+    """B05：openai-direct/ 旧直连 key 缺失 → 快速信封错误，不降档、不抛穿"""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_GPT6_KEY", raising=False)
+    env = llm_gateway.chat(binding="openai-direct/gpt-6.0", system="", user="u")
+    validate_envelope(env)
+    assert env["ok"] is False and env["error"]["code"] == "llm_error"
+    assert "key" in env["error"]["message"]
 
 
 def test_llm_chat_unknown_prefix_passes_verbatim(monkeypatch):

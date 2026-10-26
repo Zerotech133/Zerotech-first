@@ -101,7 +101,10 @@ def test_provider_packing():
     assert router_mod._pack("glm/glm-5.3", ["x"])["provider"] == "cloud-zhipu"
     assert router_mod._pack("nova/1234", ["x"])["provider"] == "special-novamax"
     assert router_mod._pack("ollama/qwen3.5:9b", ["x"])["provider"] == "local-ollama"
-    assert router_mod._pack("openai/gpt-6.0", ["x"])["provider"] == "cloud-openai"
+    # 2026-10-27 B05：openai/ 已是 OpenClaw agent-config 载体（与 L5/8796 同源），
+    # /api/route 预览不得再显示直连 cloud-openai；直连旧通道只在 engine 层保留。
+    assert router_mod._pack("openai/gpt-6.0", ["x"])["provider"] == "openclaw"
+    assert router_mod._pack("openai-direct/gpt-6.0", ["x"])["provider"] == "cloud-openai-direct"
 
 
 # ---------------------------------------------------------------- 异族绑定（B 案）
@@ -110,11 +113,13 @@ def test_route_exotic_ai1_openai():
     """AI1=诸葛亮：10-21 异族编制裁决优先于关键词/等级/旧 glm 注册绑定"""
     r = router_mod.route("方法论研究与评测", agent_id="AI1", respect_binding="auto")
     assert r["binding"] == "openai/gpt-6.0"
+    assert r["provider"] == "openclaw"      # B05：载体口径，非直连 cloud-openai
     assert "异族编制裁决" in r["reason"]
     # 即使显式传了 10-18 的 glm 旧档，也以异族裁决为准
     r2 = router_mod.route("随便什么任务", agent_id="AI1",
                           respect_binding="glm/glm-5.3")
     assert r2["binding"] == "openai/gpt-6.0"
+    assert r2["provider"] == "openclaw"
 
 
 def test_auto_assign_ai1_openai():

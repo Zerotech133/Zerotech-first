@@ -8,13 +8,16 @@ engine 语义，本层只做信封化与异常归一：
   LLMError（重试耗尽）→ ok=False 信封（code="llm_error"），不抛穿；
   status=="degraded"  → degraded=True 透传（云端故障自动落本地 9b 判例）。
 
-binding 词表（10-18 分工定案 + S20 异族裁决）：
+binding 词表（10-18 分工定案 + S20 异族裁决 + 2026-10-27 B05 单轨化）：
   "ollama/qwen3.5:9b"（默认主力）/ "ollama/qwen3.6:35b-a3b"（判读重档）
   / "ollama/bge-m3"（嵌入）/ "glm/glm-5.3"（田丰参谋长云端）
-  / "openai/gpt-6.0"（诸葛亮异族）：本门面的 openai 前缀仍走 engine 的直连
-  OpenAILLM（须 env OPENAI_API_KEY，缺=快速 LLMError）；**运行时 L5/8796 的
-  AI1 已改走 OpenClaw agent-config 载体（DeepSeek 中转，见 engine/openclaw_cli.py），
-  二者口径不同，勿混用**（2026-10-26 A2-B05 记录）。
+  / "openai/gpt-6.0"（诸葛亮异族）：2026-10-27 B05 起 engine 的 openai 前缀
+  **委托 OpenClaw agent-config 载体**（OpenClawLLM → engine/openclaw_cli.run），
+  与 L5/8796 同源；实际模型由 ~/.openclaw agent 配置决定，不再直连
+  api.openai.com、无需 OPENAI_API_KEY——**OpenClaw agent-config 才是运行时真源**。
+  / "openai-direct/<模型>"（旧直连保留）：engine.OpenAILLM，须 env
+  OPENAI_API_KEY / OPENAI_GPT6_KEY，缺=快速 LLMError；仅供迁移/对照，
+  生产路由禁止使用。
 """
 
 from __future__ import annotations
@@ -35,11 +38,13 @@ KIND = "llm_chat"
 DEFAULT_BINDING = "ollama/qwen3.5:9b"
 
 # 这些 provider 在 make_llm 构造时**已经**吃下了自己的模型/端口：
-#   "glm/<模型>" → GLMCloudLLM(model="<模型>")
-#   "nova/<端口>" → NovaMaxLLM(port=..., model=PORTS[端口])
-#   "openai/<模型>" → OpenAILLM(model="<模型>")（2026-10-26 B 案）
+#   "glm/<模型>"           → GLMCloudLLM(model="<模型>")
+#   "nova/<端口>"          → NovaMaxLLM(port=..., model=PORTS[端口])
+#   "openai/<模型>"        → OpenClawLLM(model="<模型>"，实际模型由 agent-config 决定；
+#                            2026-10-27 B05 单轨化：与 L5/8796 同源，不直连、不需 env key)
+#   "openai-direct/<模型>" → OpenAILLM(model="<模型>")（旧直连保留，须 env key）
 # 因此 chat 时不能再把整串 binding 当 model 传回去。
-_PREFIX_OWNS_MODEL = frozenset({"glm", "nova", "openai"})
+_PREFIX_OWNS_MODEL = frozenset({"glm", "nova", "openai", "openai-direct"})
 
 
 @timed

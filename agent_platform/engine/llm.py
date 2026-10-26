@@ -15,10 +15,17 @@ qwen2.5:7b / qwen3:8b 已于 10-24 清理（config/ollama_model_route.json delet
 
 降级三态（对齐菜鸟 degraded）：normal / degraded / failed——LLM 不可用时解释器走规则兜底，不中断全链路。
 
-异族通道（2026-10-21 老田异族编制裁决；2026-10-26 B 案落码）：
-    "openai/<模型>" → OpenAILLM（诸葛亮 AI1 / GPT-6.0，OpenClaw 载体）。
-    key 从环境变量 OPENAI_API_KEY / OPENAI_GPT6_KEY 读取（零落盘）；缺失或断链
-    一律抛 LLMError，**不静默降档本地 9b**（与 GLMCloudLLM 同纪律）。
+异族通道（2026-10-21 老田异族编制裁决；2026-10-26 B 案落码；2026-10-27 B05 单轨化）：
+    "openai/<模型>"        → OpenClawLLM —— **委托 OpenClaw agent-config 载体**，
+                             与 L5/8796 同源（engine/openclaw_cli.run）；实际模型由
+                             ~/.openclaw agents.entries[<agent>].model.primary 决定，
+                             绑定串里的模型名只作请求口径记录；不直连 api.openai.com、
+                             不需要 OPENAI_API_KEY（密钥由 OpenClaw secret store 承载）。
+                             **OpenClaw agent-config 才是运行时真源**（A2-B05 口径）。
+    "openai-direct/<模型>" → OpenAILLM —— 旧直连保留通道（https://api.openai.com/v1，
+                             key 从 OPENAI_API_KEY / OPENAI_GPT6_KEY 读取，零落盘），
+                             仅供迁移/对照；生产绑定禁止直接使用。
+    以上两通道失败/空回一律抛 LLMError，**不静默降档本地 9b**（与 GLMCloudLLM 同纪律）。
 """
 import json
 import os
@@ -112,8 +119,10 @@ class OllamaLLM:
         10-18 自动路由：options 按 MODEL_PROFILES[model] 自动生成，
         每次调用的超时也随 profile 分级（35b 600s / 9b 300s）。
         10-18 全前缀分发（本类现为全 binding 兼容门面）：
-        "glm/…" 委托云端 GLMCloudLLM、"nova/…" 委托 NovaMaxLLM、
-        "ollama/…" 剥前缀——其余（含 huihui_ai/… 这类真名带斜杠的）原样走本地。
+        "glm/…" 委托云端 GLMCloudLLM、"nova/…" 委托 NovaMaxLLM；
+        "openai/…" 委托 OpenClaw 载体 OpenClawLLM（2026-10-27 B05，与 L5/8796 同源）；
+        "openai-direct/…" 委托旧直连 OpenAILLM、"ollama/…" 剥前缀——
+        其余（含 huihui_ai/… 这类真名带斜杠的）原样走本地。
         """
         if model and "/" in model:
             prefix, rest = model.split("/", 1)
@@ -132,9 +141,12 @@ class OllamaLLM:
                 except LLMError:
                     text, st = OllamaLLM().chat(system, user, model="qwen3.5:9b")
                     return text, ("degraded" if st == "normal" else st)
-            if prefix == "openai":
-                # 异族席位（AI1=诸葛亮）：key 缺失/断链必须抛错，不降档本地（同 glm 纪律）
+            if prefix == "openai-direct":
+                # 旧直连保留通道（2026-10-27 B05）：须 env key，缺失/断链抛错、不降档
                 return OpenAILLM(model=rest).chat(system, user)
+            if prefix == "openai":
+                # 异族席位（AI1=诸葛亮）：委托 OpenClaw agent-config 载体（运行时真源）
+                return OpenClawLLM(model=rest).chat(system, user)
             if prefix == "ollama":
                 model = rest
         model = MODEL_ALIASES.get(model or "", model)
@@ -269,21 +281,29 @@ class NovaMaxLLM:
 
 
 def make_llm(binding):
-    """按 binding 前缀路由到 provider（10-18 自动路由入口；10-26 B 案补 openai）
+    """按 binding 前缀路由到 provider（10-18 自动路由入口；10-27 B05 双轨拆分）
 
-    "ollama/<模型>" → OllamaLLM；"nova/<端口>" → NovaMaxLLM；
-    "glm/<模型>" → GLMCloudLLM（参谋长层云端判读，10-18 分工定案）；
-    "openai/<模型>" → OpenAILLM（诸葛亮异族席，2026-10-21 裁决）；
+    前缀语义（完整口径见文件头；**OpenClaw agent-config 才是运行时真源**）：
+    "ollama/<模型>"        → OllamaLLM（本地降级三态）
+    "nova/<端口>"          → NovaMaxLLM（特种视觉/结构化）
+    "glm/<模型>"           → GLMCloudLLM（参谋长层云端判读）
+    "openai/<模型>"        → OpenClawLLM（诸葛亮异族席，2026-10-21 裁决；
+                             委托 OpenClaw agent-config 载体，实际模型由 agent 配置决定，
+                             不直连、不需要 env key）
+    "openai-direct/<模型>" → OpenAILLM（旧直连保留：api.openai.com + env key，仅供
+                             迁移/对照；2026-10-27 B05 起不再被 AI1 绑定使用）
     其余 → OllamaLLM 兜底（会走降级三态，行为与旧版一致）。
     """
-    prefix, _, _rest = (binding or "").partition("/")
+    prefix, _, rest = (binding or "").partition("/")
     if prefix == "nova":
-        port = _rest.split("/", 1)[0] if "/" in _rest else _rest
+        port = rest.split("/", 1)[0] if "/" in rest else rest
         return NovaMaxLLM(port=port)
     if prefix == "glm":
-        return GLMCloudLLM(model=binding.split("/", 1)[1])
+        return GLMCloudLLM(model=rest)
+    if prefix == "openai-direct":
+        return OpenAILLM(model=rest or "gpt-6.0")
     if prefix == "openai":
-        return OpenAILLM(model=binding.split("/", 1)[1])
+        return OpenClawLLM(model=rest)
     return OllamaLLM()
 
 
@@ -363,8 +383,88 @@ class GLMCloudLLM:
         raise LLMError("glm 通道调用失败 after retry: %s" % last)
 
 
+def _openclaw_module():
+    """延迟导入 engine/openclaw_cli。
+
+    兼容两种导入上下文：包上下文（engine.llm）与扁平上下文（engine/ 直接进 sys.path，
+    如 python engine/xxx.py 或部分测试）。延迟导入同时保证测试可 monkeypatch
+    `engine.openclaw_cli.run`（取到的是同一个模块实例）。
+    """
+    try:
+        from engine import openclaw_cli as mod
+    except ImportError:  # engine/ 目录直接位于 sys.path
+        import openclaw_cli as mod
+    return mod
+
+
+class OpenClawLLM:
+    """OpenClaw agent-config 载体（诸葛亮 AI1 异族席的**运行时真源**；2026-10-27 B05）
+
+    背景（A2-B05 双轨）：同一绑定串 `openai/gpt-6.0` 曾在不同层含义不同——L5/8796
+    走 OpenClaw CLI（GPT6 跨境不可达期间由 deepseek 中转），engine 侧却直连
+    api.openai.com。现 engine 的 `openai/` 前缀与会议厅同源、**单轨化**：一律委托
+    `engine/openclaw_cli.run(agent, prompt)`，实际模型由 OpenClaw agent-config
+    （`~/.openclaw/openclaw.json` 的 agents.entries[agent].model.primary）决定；
+    绑定串里的模型名只作请求口径记录，不再直连、不需要 OPENAI_API_KEY。
+    旧直连保留为 `openai-direct/<模型>`（OpenAILLM），仅供迁移/对照。
+
+    纪律（与 GLMCloudLLM / 旧 OpenAILLM 一致）：
+    - 失败 / 超时 / 空回 → 抛 LLMError，**不静默降档本地 9b**（异族席位不冒充成功）；
+    - 成功返回 (text, "normal")；last_meta 记录 mode/agent/carrier/relay
+      （carrier=agent-config 实际模型，relay=是否非 GPT6 中转），供排障与诚实标签；
+    - 零密钥落盘：本层不读任何 key env，密钥由 OpenClaw secret store 承载。
+    """
+
+    AGENT = "zhuge"          # 诸葛亮在 OpenClaw agent-config 中的 agent 名
+    PROMPT_LIMIT = 16000     # 与 8796 /api/chat、portal 口径一致：单行提示上限
+
+    def __init__(self, agent=None, model=None, timeout=None):
+        self.agent = agent or self.AGENT
+        self.model = model or ""   # 仅请求口径记录；实际模型由 agent-config 决定
+        self.timeout = timeout     # None → openclaw_cli.DEFAULT_TIMEOUT（env 可覆盖）
+        self.last_meta = None
+
+    @classmethod
+    def compose_prompt(cls, system, user):
+        """system + user 拼单行后截 PROMPT_LIMIT（与 openclaw_cli.run 的空白归一幂等）"""
+        one_line = " ".join(("%s %s" % (system or "", user or "")).split())
+        return one_line[:cls.PROMPT_LIMIT]
+
+    def chat(self, system, user, model=None):
+        prompt = self.compose_prompt(system, user)
+        try:
+            oc = _openclaw_module()
+        except Exception as exc:  # noqa: BLE001 —— 载体桥缺失也必须抛 LLMError
+            raise LLMError("openclaw_cli 不可用：%s——异族席位不静默降档" % exc)
+        carrier = oc.agent_primary_model(self.agent)
+        self.last_meta = {"mode": "openclaw", "agent": self.agent,
+                          "carrier": carrier, "relay": oc.is_relay(carrier),
+                          "requested_model": model or self.model or "",
+                          "prompt_chars": len(prompt)}
+        if not prompt:
+            self.last_meta["error"] = "empty_prompt"
+            raise LLMError("openclaw 载体提示为空（agent=%s）——异族席位不静默降档"
+                           % self.agent)
+        # 不传 model：实际模型由 agent-config 决定（--model 仅调试覆盖用，运行时不用）
+        if self.timeout is None:
+            text, err = oc.run(self.agent, prompt)
+        else:
+            text, err = oc.run(self.agent, prompt, timeout=self.timeout)
+        if err or not text:
+            self.last_meta["error"] = err or "empty_output"
+            raise LLMError("openclaw 载体不可用（agent=%s, carrier=%s）：%s"
+                           "——异族席位不静默降档"
+                           % (self.agent, carrier or "unknown",
+                              err or "empty_output"))
+        return text, "normal"
+
+
 class OpenAILLM:
-    """OpenAI 兼容通道（异族席：诸葛亮 AI1 / GPT-6.0，2026-10-21 异族编制裁决）
+    """OpenAI 直连通道（**旧直连保留**：2026-10-27 B05 起仅经 `openai-direct/` 触达）
+
+    异族席：诸葛亮 AI1 / GPT-6.0，2026-10-21 异族编制裁决。运行时 AI1 绑定
+    `openai/gpt-6.0` 已改走 OpenClaw agent-config 载体（见 OpenClawLLM）——本类
+    不再承接该绑定，只作迁移/对照通道；**OpenClaw agent-config 才是运行时真源**。
 
     纪律（2026-10-26 B 案，与 GLMCloudLLM 同款）：
     - key 只从环境变量读：OPENAI_API_KEY 优先，回退 OPENAI_GPT6_KEY；零落盘。
