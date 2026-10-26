@@ -1,0 +1,67 @@
+# JEV 只读查询接口 + Hermes MCP 工具（2026-10-26）
+
+> 工单：K-ORG-20261026-JEVAPI / JEVAPI2 / JEVDOC
+> 目的：让 Hermes（及任何 MCP 客户端）按需读取 JEV 判定，回答「今天 JEV 抓到哪些利空/利多、哪些有后验命中、判断准不准」。
+
+## 一、HTTP 只读接口（8091）
+
+```
+GET /api/jev/query
+  hours=24              # 时间窗（1-720 小时，按「采集时间 created_at」计）
+  bias=bull,bear        # 可选：bull/bear/neutral
+  code=600519           # 可选：6 位 A 股代码（匹配 stocks/companies）
+  event_type=policy     # 可选：policy/earnings/price/equity/supply/tech/risk/other
+  with_posterior=1      # 可选：联查 T+1 后验（ret/bench/excess/hit）
+  limit=50              # 可选：1-200
+```
+
+返回：`ok / window_hours / filters / summary_window{total,bull,bear,neutral} / total / returned / posterior_band_pct / items[]`
+- `items[]`：`id, ts(发布), collected_at(采集), source, title, bias, conf, event_type, impact, companies, codes, reason, posterior{...}`
+- 只读铁律：`news.db` / `jev_audit.db` 均 `mode=ro`；`summary_window` 是全窗口统计（不随 limit 截断）。
+- 参数错误 400、news.db 缺失 503、内部错误 500（均 JSON）。
+
+示例：
+```bash
+curl "http://127.0.0.1:8091/api/jev/query?hours=24&bias=bear&limit=5"
+curl "http://127.0.0.1:8091/api/jev/query?hours=168&code=600519&with_posterior=1"
+```
+
+## 二、Hermes MCP 工具（jev-news server）
+
+配置文件 `~/.hermes/config.yaml` 的 `mcp_servers` 已注册：
+```yaml
+  jev-news:
+    command: "C:\\Program Files\\Python311\\python.exe"
+    args:
+      - "C:\\aios\\tools\\jev_mcp.py"
+```
+工具：
+| 工具 | 说明 |
+|---|---|
+| `jev_query` | 查询判定（hours/bias/code/event_type/with_posterior/limit），返回中文摘要+条目 |
+| `jev_calibration` | 校准状态（方向准确率 vs 全判 bull 基线、neutral 带宽、bear/conf 可用性） |
+
+**Hermes 小模型的调用方式（重要）**：Hermes 把 MCP 工具全部归入 *deferred*（设计如此），
+不能直接 `tool_call`；正确两步：
+1. `tool_search`（参数 `queries=["jev"]`）→ 拿到 `jev_calibration` / `jev_query` 的 schema；
+2. `tool_call`（name=`jev_calibration` 或 `jev_query`，arguments=…）→ 拿到结果。
+（9B 实测：tool_search + tool_describe 可用；直接 tool_call 会报
+`is not a known tool name. Deferred tools must be invoked through tool_call ...`）
+
+## 三、验证证据（2026-10-26 21:09-21:25）
+
+- 8091 接口：24h 窗口 1,900+ 条（多/空/中性齐全），`collected_at` 字段正常，参数矩阵/400 均验证。
+- Hermes：`mcp-stderr.log` 出现 `===== starting MCP server 'jev-news' =====` + `[jev-mcp] start ...`；
+  真实会话日志出现 `tool tool_search completed` / `tool_describe completed`（jev_calibration）。
+- 工具数据面直测（stdio 协议）：
+  - `jev_calibration` → 「方向类 n=1997，准确率 55.9%，基线 55.7%，增量 0.2pp；neutral 带宽 2.5% 命中 70%；bull/bear 均不可用」
+  - `jev_query` → 24h 1,921 条（多 704/空 290/中性 927），返回利空条目含 conf/事件类型
+
+## 四、运维坑（本次踩过，勿重犯）
+
+1. **8091 旧进程可能属于其他会话/S4U**，普通 `taskkill` 报 Access denied；需提权 kill 后由官方 launcher 冷启动。
+2. **不要杀提权 job 的父进程链**：`job_kill` 会连累 elevated launcher 的子进程（8091 曾被连带杀掉）；提权脚本用 `Start-Process -Verb RunAs` 后**不 -Wait**，改轮询端口。
+3. **`PORTAL_API_RESTART.flag` 会被 5 分钟守护 launcher 抢先消费**，手工重启时勿设 flag（直接 kill→launcher）；flag 只留给守护脚本。
+4. 8091 冷启动自带 import 冒烟预检（K-ORG-155），断链会拒绝拉起——这是保护，不要绕过。
+5. 查询窗口用 **created_at（采集时间）**：news.ts 常是发布日（如次日 00:00 公告），按 ts 会漏/混入。
+6. Hermes 重启：`Hermes/restart_hermes_8787.ps1` 需管理员（8787 属 SYSTEM 会话）；重启后 MCP 在**新 agent 会话**启动。
