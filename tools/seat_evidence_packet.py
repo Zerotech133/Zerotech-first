@@ -147,6 +147,20 @@ def render_md(packet: dict) -> str:
     return "\n".join(lines)
 
 
+def _emit_audit(json_path: Path, packet: dict) -> dict:
+    """取数门面运行审计：落 dev_events（patrol_verdict，task/agent=A0）；失败静默。"""
+    try:
+        import events  # tools/events.py（同目录，脚本运行/测试均可导入）
+        return events.emit(
+            kind="patrol_verdict", task="A0", agent="A0",
+            detail="evidence_packet %s tickets=%s experience=%s" % (
+                Path(json_path).name,
+                (packet.get("tickets") or {}).get("total", "?"),
+                (packet.get("experience") or {}).get("total", 0)))
+    except Exception:  # noqa: BLE001 —— 事件层不得挡住取数
+        return {"ok": False}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="田丰取数门面：确定性证据包")
     ap.add_argument("--status", default=str(DEFAULT_STATUS))
@@ -163,11 +177,12 @@ def main(argv=None) -> int:
     mp = out / ("evidence_packet_%s.md" % ts)
     jp.write_text(json.dumps(packet, ensure_ascii=False, indent=1), encoding="utf-8")
     mp.write_text(render_md(packet), encoding="utf-8")
+    audit = _emit_audit(jp, packet)
     if not args.quiet:
         print(json.dumps({"ok": True, "json": str(jp), "md": str(mp),
                           "tickets_doing_review": len(packet["tickets"].get("doing_review") or []),
-                          "experience_entries": packet["experience"].get("total", 0)},
-                         ensure_ascii=False))
+                          "experience_entries": packet["experience"].get("total", 0),
+                          "audit": audit}, ensure_ascii=False))
     return 0
 
 

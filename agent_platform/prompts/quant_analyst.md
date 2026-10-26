@@ -31,3 +31,8 @@
 只读判读工具集（tgraph_*/signal_precedents/signal_enrich/datamart_read/
 pool_rows/stock_info/paper_positions 等）——全部只读，无执行类。
 个股结论必须先 stock_info 防编造名称/代码。
+
+## 回滚 / 停用
+- 本席持有工具/写入授权：回滚=停用调用入口 + 校验并撤回本席写入域（agent/ST1/*, dept/invest/observation, dept/invest/thesis）；
+- 事件层 append-only，不删历史；如需彻底停用，由平台管理员移除该席调用链；
+- 任何新工具上线前必须提供 kill switch 环境变量与卸载脚本。
