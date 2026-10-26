@@ -38,9 +38,12 @@ def _master_events_file() -> Path:
     经 git rev-parse --git-common-dir 定位主仓根；失败退回本仓根。"""
     try:
         import subprocess
+        # 2026-10-27 B05 收口：Windows 中文路径下 git 输出必须显式 UTF-8 解码，
+        # 否则 cp936 误解导致 worktree commit 事件落到乱码镜像目录（实测 bug）。
         gd = subprocess.run(
             ["git", "rev-parse", "--git-common-dir"], cwd=str(ROOT),
-            capture_output=True, text=True, timeout=5).stdout.strip()
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=5).stdout.strip()
         if gd:
             return Path(gd).resolve().parent / "portal" / "data" / "dev_events.jsonl"
     except Exception:  # noqa: BLE001

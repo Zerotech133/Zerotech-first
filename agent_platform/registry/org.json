@@ -8,7 +8,7 @@
   "agent_id": "A0",
   "role_profile": "product_rd_chief",
   "llm_binding": "glm/glm-5.3",
-  "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层，通道待 OPENAI_API_KEY。】",
+  "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层；通道已由 OpenClaw agent-config 载体提供（2026-10-26 实测：DeepSeek 中转·非GPT6，env key 非前置；GPT6 真身待跨境网络）。】",
   "status": "active",
   "status_note": "K-ORG-015 起转 active：a0_agent.py 9b 判读 live 验证通过 + 日报 automation 17:35（K-ORG-004）实跑中 + A0 点评产线连续出稿（影子日报 10-08~10-12）",
   "name": "田丰",
@@ -2584,7 +2584,7 @@
      "analysis_type": "",
      "charter_detail": "产品经理+研发（全在性）：需求定义→架构/接口契约/代码参考→拆解派发→AI 自动执行→验收；无人能定案时做最优决策并指挥 AI 执行；L0/L1 自主、L2 报老田；保留归口复核纪律",
      "llm_binding": "glm/glm-5.3",
-     "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层，通道待 OPENAI_API_KEY。】",
+     "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层；通道已由 OpenClaw agent-config 载体提供（2026-10-26 实测：DeepSeek 中转·非GPT6，env key 非前置；GPT6 真身待跨境网络）。】",
      "tools": [
       "events",
       "devtask",
