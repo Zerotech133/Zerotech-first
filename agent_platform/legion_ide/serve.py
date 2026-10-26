@@ -2,18 +2,19 @@
 """军团 Agent IDE · 独立形态服务（legion_ide）。
 
 定位：把原本寄生在 8734 门户里的 Agent IDE（`portal/ide.html` + 预烘
-`portal/agent_ide_bundle.json`）独立成**自己的进程/端口/启动器/App 窗口**，
-不依赖 portal 页面路由与 nginx；数据仍用同一份预烘 bundle（单一真源不动）。
+bundle）独立成**自己的进程/端口/启动器/App 窗口**，不依赖 portal 页面路由
+与 nginx；数据默认用仓内预烘 bundle，也支持 `--bundle` 指向部署副本
+（post-merge 自动重烘到 `<_vault>/legion_ide/agent_ide_bundle.json`，不弄脏主仓）。
 
 接口：
   GET  /                       → portal/ide.html（只读施工台）
-  GET  /agent_ide_bundle.json  → 预烘 bundle（no-store）
+  GET  /agent_ide_bundle.json  → bundle（仓内或 --bundle 指定；no-store）
   GET  /api/health             → 服务/资源/门户代理可达性
   POST /ollama/api/chat        → 转发门户代理（不可达时 503 JSON，页面可降级）
 
 纪律：
   · 只绑 127.0.0.1；路径白名单，无目录穿越；POST 体上限 1MB；
-  · 不写任何真源、不落凭据；日志只打一行启动横幅（-v 才逐请求）；
+  · 不写任何真源、不落凭据；日志只打一行启动横幅；
   · 端口 8103 已入册 `tools/check_ports.py` REGISTRY（同一工单提交）。
 """
 from __future__ import annotations
@@ -29,10 +30,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-VERSION = "1.0"
+VERSION = "1.1"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8103
 DEFAULT_PORTAL = "http://127.0.0.1:8091"
+DEFAULT_BUNDLE = Path(r"C:\项目\_vault\legion_ide\agent_ide_bundle.json")
 REPO = Path(__file__).resolve().parents[2]
 MAX_BODY = 1024 * 1024
 
@@ -49,10 +51,20 @@ def _resource(path: Path) -> dict:
             "mtime": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(st.st_mtime))}
 
 
-def build_health(repo: Path, portal_url: str, port: int) -> dict:
+def resolve_bundle(repo: Path, bundle: str | None = None) -> Path:
+    """bundle 解析顺序：显式 --bundle > 部署副本（存在时）> 仓内预烘文件。"""
+    if bundle:
+        return Path(bundle)
+    if DEFAULT_BUNDLE.is_file():
+        return DEFAULT_BUNDLE
+    return Path(repo) / "portal" / "agent_ide_bundle.json"
+
+
+def build_health(repo: Path, portal_url: str, port: int,
+                 bundle_path: Path | None = None) -> dict:
     repo = Path(repo)
     ide = repo / "portal" / "ide.html"
-    bundle = repo / "portal" / "agent_ide_bundle.json"
+    bundle = Path(bundle_path) if bundle_path else (repo / "portal" / "agent_ide_bundle.json")
     return {
         "ok": True,
         "service": "legion-ide",
@@ -61,8 +73,9 @@ def build_health(repo: Path, portal_url: str, port: int) -> dict:
         "bind": "%s:%s" % (DEFAULT_HOST, port),
         "ide_html": _resource(ide),
         "bundle": _resource(bundle),
+        "bundle_source": str(bundle),
         "portal_proxy": {"url": portal_url, "reachable": _portal_alive(portal_url)},
-        "note": "只读施工台；数据=预烘 bundle；聊天走门户代理（可降级）",
+        "note": "只读施工台；数据=bundle（部署副本优先）；聊天走门户代理（可降级）",
     }
 
 
@@ -80,14 +93,14 @@ def _portal_alive(url: str, timeout: float = 0.6) -> bool:
     return False
 
 
-def make_handler(repo: Path, portal_url: str):
-    """构造 handler 类（repo/portal 注入，便于测试用 tmp 仓）。"""
+def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
+    """构造 handler 类（repo/portal/bundle 注入，便于测试用 tmp 仓）。"""
     repo = Path(repo)
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "LegionIDE/" + VERSION
 
-        def log_message(self, fmt, *args):  # 静默；-v 才在 serve 层打
+        def log_message(self, fmt, *args):  # 静默；serve 层打启动横幅
             pass
 
         def _send(self, status: int, body: bytes, ctype: str) -> None:
@@ -112,13 +125,15 @@ def make_handler(repo: Path, portal_url: str):
                                             "path": str(ide)})
                 return self._send(200, ide.read_bytes(), _HTML_CT)
             if path == "/agent_ide_bundle.json":
-                bundle = repo / "portal" / "agent_ide_bundle.json"
+                bundle = Path(bundle_path) if bundle_path else (repo / "portal" / "agent_ide_bundle.json")
                 if not bundle.is_file():
                     return self._json(503, {"ok": False, "error": "bundle_missing",
                                             "path": str(bundle)})
                 return self._send(200, bundle.read_bytes(), _JSON_CT)
             if path == "/api/health":
-                return self._json(200, build_health(repo, portal_url, self.server.server_port))
+                resolved = Path(bundle_path) if bundle_path else None
+                return self._json(200, build_health(repo, portal_url,
+                                                    self.server.server_port, resolved))
             if path == "/favicon.ico":
                 return self._send(204, b"", "image/x-icon")
             return self._json(404, {"ok": False, "error": "not_found", "path": path})
@@ -157,8 +172,9 @@ def make_handler(repo: Path, portal_url: str):
 
 def create_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
                   repo: Path | None = None,
-                  portal_url: str = DEFAULT_PORTAL) -> ThreadingHTTPServer:
-    handler = make_handler(Path(repo) if repo else REPO, portal_url)
+                  portal_url: str = DEFAULT_PORTAL,
+                  bundle_path: Path | None = None) -> ThreadingHTTPServer:
+    handler = make_handler(Path(repo) if repo else REPO, portal_url, bundle_path)
     httpd = ThreadingHTTPServer((host, int(port)), handler)
     return httpd
 
@@ -169,20 +185,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     ap.add_argument("--repo", default=str(REPO))
     ap.add_argument("--portal", default=DEFAULT_PORTAL, help="聊天代理目标（portal_api）")
+    ap.add_argument("--bundle", default="",
+                    help="bundle 路径（缺省：部署副本优先，退回仓内 portal/agent_ide_bundle.json）")
     ap.add_argument("--health", action="store_true", help="只打印健康 JSON 后退出")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
+    repo = Path(args.repo)
+    bundle = resolve_bundle(repo, args.bundle or None)
 
     if args.health:
-        print(json.dumps(build_health(Path(args.repo), args.portal, args.port),
+        print(json.dumps(build_health(repo, args.portal, args.port, bundle),
                          ensure_ascii=False))
         return 0
 
-    httpd = create_server(args.host, args.port, repo=Path(args.repo),
-                          portal_url=args.portal)
+    httpd = create_server(args.host, args.port, repo=repo,
+                          portal_url=args.portal, bundle_path=bundle)
     url = "http://%s:%s/" % (args.host, httpd.server_port)
-    print("[legion-ide] listening %s  repo=%s  portal=%s"
-          % (url, args.repo, args.portal), flush=True)
+    print("[legion-ide] listening %s  repo=%s  bundle=%s  portal=%s"
+          % (url, args.repo, bundle, args.portal), flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

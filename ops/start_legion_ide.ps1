@@ -9,10 +9,10 @@
   - stop  : 按端口找 pid 终止；
   - status: 端口/健康 JSON；
   - app   : 确保服务在跑，并用 Edge App 模式打开独立窗口（桌面应用观感）。
-  日志：C:\Temp\legion_ide_launcher.log（只增）。
+  bundle：优先部署副本 C:\项目\_vault\legion_ide\agent_ide_bundle.json
+  （post-merge 自动重烘，避免仓内旧数据），不存在则服务侧退回仓内预烘文件。
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File ops\start_legion_ide.ps1 -Action start
   powershell -ExecutionPolicy Bypass -File ops\start_legion_ide.ps1 -Action app
 #>
 [CmdletBinding()]
@@ -22,7 +22,8 @@ param(
     [int]$Port = 8103,
     [string]$Repo = "C:\项目\老田的AI助手",
     [string]$Python = "C:\项目\py312\python.exe",
-    [string]$LogFile = "C:\Temp\legion_ide_launcher.log"
+    [string]$LogFile = "C:\Temp\legion_ide_launcher.log",
+    [string]$Bundle = ""
 )
 
 function Write-LaunchLog([string]$Message) {
@@ -37,6 +38,13 @@ function Get-IdePid {
     $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($conn) { return [int]$conn.OwningProcess }
     return $null
+}
+
+function Resolve-BundlePath {
+    if ($Bundle) { return $Bundle }
+    $deploy = "C:\项目\_vault\legion_ide\agent_ide_bundle.json"
+    if (Test-Path -LiteralPath $deploy) { return $deploy }
+    return ""
 }
 
 $serve = Join-Path $Repo "agent_platform\legion_ide\serve.py"
@@ -63,13 +71,15 @@ switch ($Action) {
     "start" {
         $p = Get-IdePid
         if ($p) { Write-LaunchLog "legion-ide already running pid=$p"; exit 0 }
+        $bundlePath = Resolve-BundlePath
         $cmd = '"' + $Python + '" "' + $serve + '" --port ' + $Port
+        if ($bundlePath) { $cmd += ' --bundle "' + $bundlePath + '"' }
         try {
             $r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
                 CommandLine = $cmd; CurrentDirectory = $Repo
             }
             if ($r.ReturnValue -eq 0) {
-                Write-LaunchLog "STARTED legion-ide pid=$($r.ProcessId) port=$Port"
+                Write-LaunchLog "STARTED legion-ide pid=$($r.ProcessId) port=$Port bundle=$bundlePath"
                 Start-Sleep -Seconds 2
                 if (Get-IdePid) { exit 0 }
                 Write-LaunchLog "WARN started but port not listening yet"
@@ -79,14 +89,16 @@ switch ($Action) {
         } catch {
             Write-LaunchLog "WARN WMI error: $($_.Exception.Message); fallback"
         }
-        Start-Process -FilePath $Python -ArgumentList @("`"$serve`"", "--port", "$Port") `
+        $argsList = @("`"$serve`"", "--port", "$Port")
+        if ($bundlePath) { $argsList += @("--bundle", "`"$bundlePath`"") }
+        Start-Process -FilePath $Python -ArgumentList $argsList `
             -WorkingDirectory $Repo -WindowStyle Hidden
-        Write-LaunchLog "STARTED legion-ide (Start-Process fallback) port=$Port"
+        Write-LaunchLog "STARTED legion-ide (Start-Process fallback) port=$Port bundle=$bundlePath"
         Start-Sleep -Seconds 2
         exit 0
     }
     "app" {
-        & $PSCommandPath -Action start -Port $Port -Repo $Repo -Python $Python | Out-Host
+        & $PSCommandPath -Action start -Port $Port -Repo $Repo -Python $Python -Bundle $Bundle | Out-Host
         $url = "http://127.0.0.1:$Port/"
         $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
         if (Test-Path -LiteralPath $edge) {
