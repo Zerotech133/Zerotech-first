@@ -32,17 +32,17 @@ ORG = os.path.join(REPO, "agent_platform", "registry", "org.json")
 # 席位 × 底座 × 工作根（全部现存目录）
 SEATS = {
     "tianfeng": {
-        "cn": "田丰", "base": "Hermes（GLM）",
+        "cn": "田丰", "base": "Hermes（本地 qwen3.5:9b 主脑；判读 GLM-5.3）",
         "home": os.path.expanduser("~/.hermes/profiles/tianfeng"),
         "duty": "归口面：工单验收、经验复核、去重、差距呈报；复核不改写原始记录。",
     },
     "zhaoyun": {
-        "cn": "赵云", "base": "DeepSeek Harness（key 未到位，会话承担执行）",
+        "cn": "赵云", "base": "DeepSeek Harness（会话承担执行）",
         "home": os.path.expanduser("~/.hermes/profiles/zhaoyun"),
         "duty": "治理面：扫描、收口、健康卡、归档、判例沉淀；只产建议与证据，不派研发不裁决（V3.1）。",
     },
     "zhuge": {
-        "cn": "诸葛亮", "base": "OpenClaw（GPT-6.0，key 未注入）",
+        "cn": "诸葛亮", "base": "OpenClaw 载体（实际 deepseek/deepseek-chat，中转替代）",
         "home": os.path.join(REPO, "legion_agents", "zhuge", "workspace"),
         "duty": "建议面：今日优先级、下钻引导、跨板块提醒；只读归集不造第二账。",
     },
