@@ -29,6 +29,24 @@ KILL_VALUES = ("off", "0", "false", "no")
 MAX_AGE_HOURS = 48
 
 
+def _registry_result():
+    """优先用 Agent Skills 注册表做真实 verify；不可用时返回 None（回退旧逻辑）。"""
+    try:
+        sys.path.insert(0, str(PLATFORM / "tools"))
+        from skill_registry import list_skills, verify_all  # noqa: WPS433
+        rep = verify_all()
+        drift = [{"kind": "verify_failed", "capability": r["name"],
+                  "detail": str(r.get("detail") or "")[:160]}
+                 for r in rep.get("results") or [] if not r.get("ok")]
+        warnings = [{"kind": "manual", "capability": s.get("name"),
+                     "detail": "需人工核验（无自动 verify）"}
+                    for s in list_skills().get("skills") or [] if s.get("manual")]
+        return {"drift": drift, "warnings": warnings,
+                "total": rep.get("total", 0), "failed": rep.get("failed") or []}
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def kill_switch_on(env=None) -> bool:
     env = os.environ if env is None else env
     return str(env.get(KILL_ENV) or "").strip().lower() in KILL_VALUES
@@ -44,8 +62,14 @@ def _parse_age_hours(ts: str) -> float:
     return (dt.datetime.now().astimezone() - t).total_seconds() / 3600.0
 
 
-def check(profile: Path | None = None, max_age_hours: float = MAX_AGE_HOURS) -> dict:
+def check(profile: Path | None = None, max_age_hours: float = MAX_AGE_HOURS,
+          use_registry: bool | None = None) -> dict:
     prof = Path(profile) if profile else PROFILE
+    if use_registry is None:
+        try:
+            use_registry = prof.resolve() == PROFILE.resolve()
+        except OSError:
+            use_registry = False
     path = prof / "skills" / "CAPABILITIES.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -53,6 +77,23 @@ def check(profile: Path | None = None, max_age_hours: float = MAX_AGE_HOURS) -> 
         return {"ok": False, "error": "capabilities_unreadable",
                 "detail": type(exc).__name__, "drift": []}
     caps = [c for c in (data.get("capabilities") or []) if isinstance(c, dict)]
+    age = _parse_age_hours(data.get("generated_at") or "")
+    stale = age < 0 or age > max_age_hours
+    reg = _registry_result() if use_registry else None
+    if reg is not None:
+        drift = list(reg["drift"])
+        warnings = list(reg["warnings"])
+        if stale:
+            drift.append({"kind": "stale", "generated_at": data.get("generated_at"),
+                          "age_hours": round(age, 1) if age >= 0 else None,
+                          "max_age_hours": max_age_hours,
+                          "detail": "能力卡生成时间过旧或缺失"})
+        return {"ok": not drift, "generated_at": data.get("generated_at") or "",
+                "total": int(data.get("total") or len(caps)),
+                "ready": int(data.get("ready") or 0),
+                "stale": stale, "max_age_hours": max_age_hours,
+                "drift": drift, "warnings": warnings, "source": "skills_registry",
+                "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
     drift = []
     warnings = []
     for c in caps:

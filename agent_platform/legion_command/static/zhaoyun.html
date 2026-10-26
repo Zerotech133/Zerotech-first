@@ -109,6 +109,11 @@
     </table>
   </section>
 
+  <section>
+    <h2>技能注册表 <span id="skills-sub">—</span> <span>Agent Skills · verify 只读</span></h2>
+    <div id="skills"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -375,6 +380,15 @@ function openDrill(name) {
       ' | mtime=' + (c.how_ref_mtime || '—'));
     const u = (v.usage && v.usage.last) || null;
     kv(box, '最近真实使用', u ? ((u.ts || '') + ' · source=' + (u.source || '')) : '暂无留证');
+    if (c.skill) {
+      kv(box, '技能', c.skill.name + ' v' + (c.skill.version || '') +
+        ' · risk=' + (c.skill.risk || '') + ' · owner=' + (c.skill.owner || ''));
+      kv(box, 'verify 命令', c.skill.verify_cmd || '—');
+    }
+    if (v.last_verified) {
+      kv(box, '最近 verify', (v.last_verified.ok ? '通过' : '失败') + ' · ' +
+        (v.last_verified.verified_at || '') + ' · ' + (v.last_verified.detail || ''));
+    }
     if ((c.recent_events || []).length) {
       box.appendChild(el('div', 'muted', '最近治理事件：'));
       (c.recent_events || []).forEach((e) => box.appendChild(el('div', 'muted',
@@ -487,7 +501,8 @@ function loadCap2() {
     jget('/api/zhaoyun/routing').catch(() => null),
     jget('/api/zhaoyun/interventions').catch(() => null),
     jget('/api/zhaoyun/memory/curation').catch(() => null),
-  ]).then(([audit, routing, iv, cur]) => {
+    jget('/api/zhaoyun/skills').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -537,6 +552,19 @@ function loadCap2() {
         row.appendChild(b); cb.appendChild(row);
       });
     } else cb.appendChild(el('div', 'muted', '策展建议不可用'));
+    const sb = $('skills'); sb.replaceChildren();
+    if (sk && sk.ok) {
+      const verified = (sk.skills || []).filter((x) => x.last_verified && x.last_verified.ok).length;
+      $('skills-sub').textContent = 'total ' + (sk.total || 0) + ' · 已验证 ' + verified +
+        ' · manual ' + (sk.manual_count || 0);
+      (sk.skills || []).forEach((s) => {
+        const lv = s.last_verified
+          ? (s.last_verified.ok ? '✓ ' + (s.last_verified.verified_at || '') : '✗ verify 失败')
+          : '未验证';
+        sb.appendChild(el('div', 'muted', '• ' + s.name + ' · risk=' + (s.risk || '') +
+          ' · ' + lv + (s.manual ? ' · 人工核验' : '') + ' · ' + (s.verify_cmd || '')));
+      });
+    } else sb.appendChild(el('div', 'muted', '技能注册表不可用'));
   });
 }
 function approveRequest(id, decision, signer) {

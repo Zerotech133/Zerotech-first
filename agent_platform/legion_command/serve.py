@@ -253,6 +253,10 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json(zd.requests_view(_PLATFORM))
                 elif sub == "capabilities":
                     self._send_json(zd.capabilities_detail(_PLATFORM))
+                elif sub == "skills":
+                    sys.path.insert(0, str(_PLATFORM / "tools"))
+                    from skill_registry import list_skills
+                    self._send_json(list_skills())
                 elif sub == "selfaudit":
                     from legion_command import zhaoyun_cap2 as c2
                     self._send_json(c2.selfaudit(_PLATFORM))
