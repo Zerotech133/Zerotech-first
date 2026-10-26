@@ -39,6 +39,15 @@ try {
         Set-Content -LiteralPath $log -Value $tail -Encoding UTF8
         W 'P2 log rotated'
     }
+    # P4 (2026-10-26 K-DATA-20261026-JEVAUDIT): JEV audit ledger + T+1 posterior + calibration
+    # (read-only news.db; writes only agent_platform/data/jev_audit)
+    $auditPy = Join-Path (Split-Path $PSScriptRoot -Parent) 'tools\jev_audit.py'
+    if (Test-Path -LiteralPath $auditPy) {
+        $auditOut = & $py -X utf8 -B $auditPy --days 45 2>&1
+        W ('P4 jev_audit exit=' + $LASTEXITCODE + ' out=' + (($auditOut | Select-Object -Last 3) -join ' | '))
+    } else {
+        W ('P4 jev_audit SKIP: not found ' + $auditPy)
+    }
     exit $code
 } catch {
     try { W ('ERR ' + $_.Exception.Message) } catch {}
