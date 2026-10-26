@@ -11,6 +11,10 @@
   var FROM = qs.get('from') || 'browser';
   var ST = qs.get('st') || '';   // 分享归因 token（旧 picks ?st= 同口径）
   var PAGE = document.body.getAttribute('data-page') || '';
+  var PATH_ID = (function () {
+    var m = location.pathname.match(/^\/m\/(strategy|feed)\/([^\/]+)\/?$/);
+    return m ? decodeURIComponent(m[2]) : '';
+  })();
   var app = document.getElementById('app');
   var T0 = Date.now();
 
@@ -52,7 +56,9 @@
   function load() {
     if (!TOKEN) { fail('缺少页面令牌（t）', '请从飞书卡片按钮进入，或重新获取链接。'); return; }
     app.innerHTML = '<div class="m-skel">加载中…</div>';
-    fetch('/api/m/data?t=' + encodeURIComponent(TOKEN), {cache: 'no-store'})
+    var _u = '/api/m/data?t=' + encodeURIComponent(TOKEN) +
+             (PATH_ID ? '&id=' + encodeURIComponent(PATH_ID) : '');
+    fetch(_u, {cache: 'no-store'})
       .then(function (r) { return r.json().then(function (j) { return {status: r.status, body: j}; }); })
       .then(function (res) {
         if (res.status !== 200 || !res.body || res.body.ok === false) {
@@ -908,6 +914,7 @@ function renderStrategy(d) {
     '<button class="m-btn primary" style="flex:0 0 130px" onclick="stSubmit()">提交并回测</button></div>' +
     '<div id="st_msg" class="m-an-note" style="margin-top:8px"></div></div>';
   var blocks = (d.blocks || []).map(stBlockHtml).join('');
+  if (d.detail) form = '';
   app.innerHTML =
     '<div class="m-header"><button class="m-icon" onclick="history.back()">←</button>' +
     '<h1>' + stEsc(d.title || '策略工单') + '</h1><span style="width:44px"></span></div>' +

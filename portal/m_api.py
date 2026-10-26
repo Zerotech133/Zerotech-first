@@ -74,12 +74,16 @@ def page_url(scene, code="", id="", ttl=None, extra=None, base=None):
     params = ["t=" + tok]
     if code:
         params.append("code=" + str(code))
-    if id:
+    if id and scene not in ("strategy", "feed"):
         params.append("id=" + str(id))
     if extra and extra.get("tab"):
         params.append("tab=" + str(extra["tab"]))
     prefix = (base or base_url()).rstrip("/")
-    return prefix + route["path"] + "?" + "&".join(params), payload
+    path = route["path"]
+    if id and scene in ("strategy", "feed"):
+        from urllib.parse import quote
+        path = path + "/" + quote(str(id), safe="")
+    return prefix + path + "?" + "&".join(params), payload
 
 
 # ── 数据源 helper ───────────────────────────────────────────
@@ -908,10 +912,10 @@ def build(scene, code="", id="", open_id=""):
         return m_push.push_payload()
     if scene == "feed":
         import m_feed
-        return m_feed.feed_payload()
+        return m_feed.feed_payload(ticket=id)
     if scene == "strategy":
         import m_strategy
-        return m_strategy.strategy_payload()
+        return m_strategy.strategy_payload(order_id=id)
     raise ApiError("未知 scene：%s" % scene, 404)
 
 
@@ -1201,6 +1205,14 @@ def handle_get(handler, path, qs):
             import m_summary
             handler._json(m_summary.customer_summary())
             return
+        if path == "/api/m/score/core":
+            try:
+                import m_score
+                handler._json(m_score.core_snapshot())
+            except Exception as e:  # noqa: BLE001
+                handler._json({"ok": False, "error": str(e)[:200]})
+            return
+
         if path == "/api/m/data":
             tok = q.get("t") or ""
             payload = m_tokens.verify(tok, scope="page")

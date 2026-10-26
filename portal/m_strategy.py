@@ -74,7 +74,85 @@ def _shadow_map():
     return m
 
 
-def strategy_payload():
+def _find_order(order_id):
+    """按完整/前缀匹配最近一条工单。"""
+    order_id = str(order_id or "")
+    rows = _rows(ORDERS)
+    hits = [r for r in rows
+            if str(r.get("id") or "").startswith(order_id)]
+    return hits[-1] if hits else None
+
+
+def _detail(order_id):
+    row = _find_order(order_id)
+    if not row:
+        return {"ok": False, "scene": "strategy", "detail": True,
+                "error": "工单不存在：%s" % order_id}
+    oid = str(row.get("id") or order_id)
+    bt = row.get("backtest") or {}
+    sm = (bt.get("result") or {}).get("summary") or {}
+    sh = _shadow_map().get(oid) or {}
+    rows = _rows(ORDERS)
+    trows = []
+    for r in rows:
+        if str(r.get("id") or "").startswith(oid):
+            trows.append([str(r.get("ts") or "")[5:19],
+                          STATE_CN.get(str(r.get("status")), str(r.get("status") or "")),
+                          (r.get("reason") or "")[:40]])
+    blocks = [
+        {"type": "stats", "title": "工单概览", "items": [
+            {"label": "状态", "value": STATE_CN.get(str(row.get("status")),
+                                                   str(row.get("status") or "—")),
+             "sub": oid[:16],
+             "level": "warn" if row.get("status") == "shadowing" else "info"},
+            {"label": "回测收益", "value": ("%+.2f%%" % sm["total_return_pct"])
+             if sm.get("total_return_pct") is not None else "—",
+             "sub": "真实引擎", "level": "ok" if (sm.get("total_return_pct") or 0) > 0 else "bad"},
+            {"label": "交易笔数", "value": str(sm.get("n_trades", "—")),
+             "sub": "回测窗口内", "level": "info"},
+            {"label": "影子", "value": ("至 " + str(sh.get("end") or ""))
+             if sh.get("end") else "未入影子", "sub": "30 天期", "level": "warn" if sh else "info"},
+        ]},
+        {"type": "md", "title": "方法与结论",
+         "content": ("**方法**\n" + str(row.get("method") or "—")[:600]
+                     + "\n\n**结论/原因**\n"
+                     + str(row.get("reason") or bt.get("why") or "—")[:600])},
+        {"type": "table", "title": "状态时间线",
+         "headers": ["时间", "状态", "说明"],
+         "rows": trows or [["—", "—", "暂无流水"]]},
+        {"type": "note", "content":
+         "闸门：回测失败/负收益不进影子；影子 30 天 + 人工拍板才转正。"
+         "本页只读，提交/回测在 /m/strategy。"},
+    ]
+    return {"ok": True, "scene": "strategy", "detail": True,
+            "title": "策略工单 · %s" % oid[:12],
+            "subtitle": "工单详情（只读）", "crumbs": "情报 / 策略工单 / 详情",
+            "generated_at": time.strftime("%Y-%m-%d %H:%M"),
+            "blocks": blocks, "order_id": oid}
+
+
+def _links_block():
+    """最近工单详情链接（/m/strategy/<id>）。"""
+    lines = []
+    try:
+        import m_links
+        for o in _latest_orders(6):
+            oid = str(o.get("id") or "")
+            u = m_links.url_for("strategy", id=oid)
+            if u:
+                lines.append("- [%s](%s) · %s" % (oid[:16], u,
+                                                  STATE_CN.get(str(o.get("status")),
+                                                               str(o.get("status") or ""))))
+    except Exception:
+        pass
+    if not lines:
+        return {"type": "md", "title": "详情入口",
+                "content": "（/m 链接未启用或暂无工单）"}
+    return {"type": "md", "title": "工单详情（点击进入）",
+            "content": "\n".join(lines)}
+
+
+def strategy_payload(order_id=""):
     orders = _latest_orders(20)
     sh = _shadow_map()
     n_done = sum(1 for o in orders if (o.get("backtest") or {}).get("status") == "done")
@@ -111,6 +189,7 @@ def strategy_payload():
                     "· 三买（buy_filter=3）：各窗口均为负（合计 -37.52%）→ 弃用；\n"
                     "· 提交方法后由后台 worker 解析→回测→前视检测→按闸门决定影子/拒绝。",
          "note": "依据：2026-10-26_W43_二买walkforward分段验证_v1.md"},
+        _links_block(),
         {"type": "table", "title": "工单列表",
          "headers": ["工单", "时间", "方法", "状态", "回测收益", "笔数", "说明"],
          "rows": rows or [["—", "—", "—", "—", "—", "—", "暂无工单"]],
@@ -119,6 +198,8 @@ def strategy_payload():
          "只读看板 + 提交入口；回测在独立 worker 进程跑（不占 API 内存），"
          "结果先过「负收益/回测失败不得进影子」闸门。"},
     ]
+    if order_id:
+        return _detail(order_id)
     return {"ok": True, "scene": "strategy", "title": "策略工单",
             "subtitle": "提交选股方法 · 回测 · 观察名单",
             "crumbs": "情报 / 策略工单",

@@ -130,6 +130,8 @@ def test_approve_row_checks_and_reApproval_writes(iso):
 # ---------- 红线：审批后 execute 仍受开关门控，开关开则发并落 mid ----------
 
 def test_execute_switch_not_loosened_by_approval(iso, monkeypatch):
+    # 离线 fixture 无授权主表：operator 配对单独测试；此处只验 execute 开关门控
+    monkeypatch.setattr(nd, "owner_paired", lambda *a, **k: (True, "ok"))
     req = _record(_announcement())
     assert nd.approve_from_card({"id": req["id"]}, LAOTIAN)["ok"]
     sent = []
@@ -220,8 +222,12 @@ def test_build_review_card_buttons_and_truncation(iso):
     btns = _buttons(card)
     assert len(btns) == 2
     values = [b["behaviors"][0]["value"] for b in btns]
-    assert {"action_id": "decision_approve", "req_id": "dec-1"} in values
-    assert {"action_id": "decision_reject", "req_id": "dec-1"} in values
+    # 2026-10-26 B5：按钮值带 _sig/_ts/rid（CARD_SIGN_ENFORCE=1 需签名）
+    def _has(action):
+        return any(v.get("action_id") == action and v.get("req_id") == "dec-1"
+                   and v.get("_sig") for v in values)
+    assert _has("decision_approve")
+    assert _has("decision_reject")
     texts = [b["text"]["content"] for b in btns]
     assert any(t == "确认（审批留痕）" for t in texts)
     assert any(t == "驳回" for t in texts)
