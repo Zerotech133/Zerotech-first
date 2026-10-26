@@ -27,3 +27,9 @@ def test_run_pass_and_fail(tmp_path):
 
 def test_default_has_ten_tasks():
     assert len(E.load_tasks()) == 10
+
+
+def test_quality_score_parse():
+    assert E._parse_score('{"score": 4, "reason": "ok"}') == 4
+    assert E._parse_score("score: 5") == 5
+    assert E._parse_score("no score") is None

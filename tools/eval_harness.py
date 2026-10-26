@@ -27,11 +27,74 @@ def load_tasks(path: Path | None = None) -> list:
     return d.get("tasks") or []
 
 
+
+
+GATEWAY = "http://127.0.0.1:8796/v1/chat/completions"
+
+
+def _post(url: str, body: dict, timeout: int = 120) -> dict:
+    import urllib.request
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                 method="POST", headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+
+def _reply(data: dict) -> str:
+    return (((data.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
+
+
+def _parse_score(text: str):
+    import re
+    m = re.search(r'\{[^{}]*"score"\s*:\s*([0-9.]+)[^{}]*\}', text)
+    if not m:
+        m = re.search(r"score\s*[:：]\s*([0-9.]+)", text, re.I)
+    if not m:
+        return None
+    try:
+        return float(m.group(1))
+    except ValueError:
+        return None
+
+
+def run_quality(t: dict) -> dict:
+    """先让被测通道回答，再让同一网关当裁判打分（0–5）。"""
+    import re
+    t0 = time.time()
+    try:
+        cand = _reply(_post(GATEWAY, {"model": t.get("model", "auto"),
+                                      "messages": t.get("input") or [],
+                                      "stream": False}))
+        rubric = t.get("rubric") or "回答是否正确、完整、可执行"
+        judge_prompt = (
+            "你是严格的质量评审。请按评分标准给候选回答打 0-5 分。\n"
+            "评分标准：%s\n\n候选回答：\n%s\n\n"
+            "只输出一行 JSON：{\"score\": <0-5>, \"reason\": \"一句话\"}" % (rubric, cand))
+        judge = _reply(_post(GATEWAY, {"model": t.get("judge_model", "auto"),
+                                       "messages": [{"role": "user", "content": judge_prompt}],
+                                       "stream": False}))
+        score = _parse_score(judge)
+        min_score = float(t.get("min_score", 3))
+        ok = score is not None and score >= min_score
+        return {"id": t.get("id"), "desc": t.get("desc"), "type": "quality",
+                "rc": 0 if ok else 1, "ok": ok, "secs": round(time.time() - t0, 2),
+                "score": score, "min_score": min_score,
+                "candidate_tail": cand[-800:], "judge_tail": judge[-500:],
+                "stdout_tail": "score=%s reason=%s" % (score, judge[-200:]),
+                "stderr_tail": ""}
+    except Exception as e:  # noqa: BLE001
+        return {"id": t.get("id"), "desc": t.get("desc"), "type": "quality",
+                "rc": -1, "ok": False, "secs": round(time.time() - t0, 2),
+                "score": None, "stdout_tail": "", "stderr_tail": str(e)[:300]}
+
+
 def _subst(cmd: list) -> list:
     return [str(x).replace("{python}", sys.executable).replace("{repo}", str(REPO)) for x in cmd]
 
 
 def run_task(t: dict, cwd: Path | None = None, timeout: int = 0) -> dict:
+    if t.get("type") == "quality":
+        return run_quality(t)
     cmd = _subst(t.get("cmd") or [])
     t0 = time.time()
     try:
@@ -73,13 +136,14 @@ def main(argv=None) -> int:
     r.add_argument("--id", default="")
     r.add_argument("--json", action="store_true")
     r.add_argument("--out", default="")
+    r.add_argument("--file", default="", help="指定任务文件（如 eval/quality_tasks.json）")
     args = ap.parse_args(argv)
     if args.cmd == "list":
         tasks = load_tasks()
         print(json.dumps(tasks, ensure_ascii=False, indent=1) if args.json else
               "\n".join("%-22s %s" % (t.get("id"), t.get("desc")) for t in tasks))
         return 0
-    res = run_all(only=args.id)
+    res = run_all(tasks_path=Path(args.file) if args.file else None, only=args.id)
     if args.out:
         Path(args.out).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     if args.json:

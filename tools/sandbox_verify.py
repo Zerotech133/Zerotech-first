@@ -34,8 +34,17 @@ def _run(cmd, cwd, timeout):
     return rc, out, err, round(time.time() - t0, 2)
 
 
+def _find_requirements(worktree: Path) -> str:
+    for name in ("requirements.txt", "requirements-dev.txt"):
+        f = worktree / name
+        if f.exists():
+            return name
+    return ""
+
+
 def run(tests: list, repo: Path | None = None, venv: bool = False,
-        keep: bool = False, timeout: int = 600) -> dict:
+        keep: bool = False, timeout: int = 600, install: bool | None = None,
+        requirements: str = "") -> dict:
     repo = Path(repo) if repo else REPO
     tests = [str(t) for t in tests]
     if not tests:
@@ -67,6 +76,22 @@ def run(tests: list, repo: Path | None = None, venv: bool = False,
                                       "stderr": err.strip()[:400]})
             if rc == 0:
                 python = str(vdir / ("Scripts/python.exe" if os.name == "nt" else "bin/python"))
+                req = requirements or _find_requirements(worktree)
+                if install is not False and req:
+                    rc2, out2, err2, secs2 = _run(
+                        [python, "-m", "pip", "install", "--disable-pip-version-check",
+                         "-r", req], worktree, 900)
+                    evidence["steps"].append({"step": "pip_install", "requirements": req,
+                                              "rc": rc2, "secs": secs2,
+                                              "stdout_tail": out2[-1000:],
+                                              "stderr_tail": err2[-1000:]})
+                    if rc2 != 0:
+                        evidence["ok"] = False
+                        evidence["error"] = "pip install failed rc=%s" % rc2
+                        return evidence
+                elif req:
+                    evidence["steps"].append({"step": "pip_install", "skipped": True,
+                                              "requirements": req})
         rc, out, err, secs = _run([python, "-m", "pytest", "-q"] + tests, worktree, timeout)
         evidence["pytest"] = {"rc": rc, "secs": secs,
                               "stdout_tail": out[-4000:], "stderr_tail": err[-2000:]}
@@ -99,14 +124,18 @@ def main(argv=None) -> int:
     r.add_argument("--venv", action="store_true")
     r.add_argument("--keep", action="store_true")
     r.add_argument("--timeout", type=int, default=600)
+    r.add_argument("--install", action="store_true", help="venv 中安装 requirements")
+    r.add_argument("--no-install", action="store_true", help="venv 不自动安装")
+    r.add_argument("--requirements", default="", help="依赖文件（默认 requirements.txt）")
     r.add_argument("--json", action="store_true")
     e = sub.add_parser("evidence")
     e.add_argument("--last", action="store_true")
     e.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     if args.cmd == "run":
+        install = True if args.install else (False if args.no_install else None)
         ev = run(args.tests, Path(args.repo) if args.repo else None,
-                 args.venv, args.keep, args.timeout)
+                 args.venv, args.keep, args.timeout, install, args.requirements)
         if args.json:
             print(json.dumps(ev, ensure_ascii=False, indent=1))
         else:
