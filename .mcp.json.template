@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tushareMcp": {
+      "url": "https://api.tushare.pro/mcp/?token=${TUSHARE_MCP_TOKEN}",
+      "type": "streamable-http"
+    }
+  }
+}
