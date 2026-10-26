@@ -57,6 +57,11 @@ CAPABILITIES = {
         {"name": "case-sign-chain", "what": "判例签字链核对：draft→待签 payload→本人签→公钥验签→入 Z4（只核对/验签）", "how": "python tools/gov_ai_case_bridge.py --emit / --apply（私钥老田持有，田丰只验签不签）", "boundary": "未签/篡改/未配公钥一律拒；田丰不代签", "status": "ready"},
         {"name": "governance-ai", "what": "治理 AI draft 复核：异常归纳/优先级建议/判例草稿", "how": "python agent_platform/tools/gov_ai.py --action all --json（只读 draft）", "boundary": "只读 draft，不写卡/经验库/工单", "status": "ready"},
         {"name": "worktree-hygiene", "what": "工单收口检查：worktree TTL/分支合并核对（S1）", "how": "git worktree list + git merge-base --is-ancestor + devtask 收口提示", "boundary": "只读检查；删除类进回收站或交赵云", "status": "ready"},
+        {"name": "product-spec", "what": "产品定义：需求/场景/验收标准/优先级（产品经理面）", "how": "读健康卡/账本/反馈/会议 → 出 PRD+验收单到 deliverables；对标 docs/plans 判例", "boundary": "不直接改生产；验收标准必须可测、可回滚", "status": "ready"},
+        {"name": "architecture-design", "what": "研发设计：架构/接口契约/数据流/技术选型建议", "how": "出架构方案+接口契约+迁移/回滚路径到 deliverables；对齐 docs/plans 判例", "boundary": "不直接上线；执行者按契约实现，田丰 review", "status": "ready"},
+        {"name": "code-reference", "what": "代码参考：伪代码/参考实现/补丁思路（代码是思路载体，不亲自交付）", "how": "参考实现写 deliverables 或 work/refs，由执行 AI 落地；田丰只 review 与验收", "boundary": "不直接提交生产代码；执行者署名与测试证据必须齐", "status": "ready"},
+        {"name": "task-orchestration", "what": "任务编排：拆单→派给部门/AI worker→自动执行→收口验收", "how": "devtask 拆单/合并 + delegation 派工 + events 跟踪 + 验收清单", "boundary": "L2 动作仍报老田；每单必须有 owner/验收/回滚", "status": "ready"},
+        {"name": "decision-arbitration", "what": "决策仲裁：无人能定案时做最优决策，写依据/假设/选项/回滚", "how": "证据包+经验库+健康卡 → 决策记录 chief/decision；L0/L1 自主执行，L2 升级老田", "boundary": "不编造数据；L2 不越权；决策必须留痕", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -273,6 +278,67 @@ description: 工单收口检查：worktree TTL/分支合并状态/回收（S1）
 2. 分支合并核对：`git merge-base --is-ancestor task/<TID> master`（True 才可回收）。
 3. TTL 超期/未合并 worktree 列清单，归因后交责任线；删除类进回收站。
 4. 只读检查；不擅自删改他人工作树。
+""",
+        "product-spec": """---
+name: product-spec
+description: 产品经理面：需求/场景/验收标准/优先级；出 PRD 与验收单（不直接改生产）。
+---
+
+# 产品定义
+
+1. 来源：健康卡红项/工单账本/用户反馈/会议纪要，逐条带证据与时间戳。
+2. 产出：PRD（目标/非目标/场景/约束/验收标准/优先级/里程碑）落 deliverables。
+3. 验收标准必须可测（命令/断言/证据路径），并写回滚条件。
+4. 不直接改生产；执行派单走 task-orchestration。
+""",
+        "architecture-design": """---
+name: architecture-design
+description: 研发设计：架构/接口契约/数据流/技术选型；出方案供执行 AI 落地。
+---
+
+# 架构设计
+
+1. 先查判例（docs/plans、docs/audit）与既有接口，禁止另起第二套口径。
+2. 产出：目标架构、模块边界、接口契约（入参/出参/错误码/幂等）、数据流、迁移与回滚。
+3. 关键取舍列出备选方案与理由；不可逆点单列。
+4. 执行者按契约实现，田丰只 review 与验收。
+""",
+        "code-reference": """---
+name: code-reference
+description: 代码参考：伪代码/参考实现/补丁思路——代码是思路载体，不亲自交付。
+---
+
+# 代码参考
+
+1. 输出最小参考实现或伪代码，标明边界/异常/幂等/回滚点。
+2. 不直接提交生产代码；由执行 AI 落地并补测试，田丰 review 逻辑与证据。
+3. 参考代码落 deliverables 或 work/refs，不混入他人工作树。
+4. 验收标准：执行者提交测试证据 + 差异说明，田丰签字才收口。
+""",
+        "task-orchestration": """---
+name: task-orchestration
+description: 任务编排：拆单→派给部门/AI worker→自动执行→收口验收（L0/L1 自主，L2 报老田）。
+---
+
+# 任务编排
+
+1. 拆单：devtask 建单（owner/验收标准/回滚/时限），禁止无单开工。
+2. 派工：按部门能力并发派发（delegation/events），回执登记台账。
+3. 执行：L0/L1 自主推进；L2（生产/客户消息/资金/宿主机/不可逆）先报老田。
+4. 收口：证据核验→验收→合并/归档；未闭环项升级。
+""",
+        "decision-arbitration": """---
+name: decision-arbitration
+description: 决策仲裁：无人能定案时做最优决策，留依据/假设/选项/回滚；L2 升级老田。
+---
+
+# 决策仲裁
+
+1. 输入：证据包（来源+时间戳）、经验库、健康卡、约束与时限。
+2. 决策记录：目标/选项/最优选择/依据/关键假设/风险/回滚/负责人，落 chief/decision 或 deliverables。
+3. 授权：L0（常规研发/文档/取数/测试）自主；L1（跨部门派单/非生产配置）执行后即时报；
+   L2（生产/客户消息/资金/审批/宿主机/不可逆）必须先取得老田批准。
+4. 不编造数据；信息不足时写明"假设+验证方式"，不得沉默拖延。
 """,
     },
     "zhaoyun": {
