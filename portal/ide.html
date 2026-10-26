@@ -281,7 +281,7 @@
 
 <div class="pal-mask" id="palmask" onclick="if(event.target===this)palClose()">
   <div class="pal">
-    <input id="palq" placeholder="搜索 Agent / 代码 / 工单…（↑↓ 选择 · Enter 打开 · Esc 关闭）" oninput="palPaint()">
+    <input id="palq" placeholder="搜索 Agent（中文名/能力专长，如 前端/安全/缠论）/ 代码 / 工单…（↑↓ 选择 · Enter 打开 · Esc 关闭）" oninput="palPaint()">
     <div class="plist" id="pallist"></div>
   </div>
 </div>
@@ -954,7 +954,12 @@ function atCheck(){
   const kw = m[1].toLowerCase();  // 345 审计：原名 q 遮蔽全局 q() helper（属性安全 JSON），改名防未来误用
   atItems = [];
   for(const id in B.agents){
-    if(id.toLowerCase().startsWith(kw)) atItems.push({token:id, kind:"agent", rr:B.agents[id].role_profile});
+    const a = B.agents[id];
+    // 能力搜索（WO-IDE-CAPSEARCH）：@ 里输能力词（如 前端/安全/缠论）可直接点名
+    const cap = [a.cn_name, a.role_cn, (a.capabilities||[]).join(" ")].join(" ").toLowerCase();
+    if(id.toLowerCase().startsWith(kw) || cap.includes(kw))
+      atItems.push({token:id, kind:"agent",
+                    rr:(a.cn_name? a.cn_name+" · ":"")+(a.role_cn||a.role_profile||"")});
   }
   (B.code_files||[]).forEach(f=>{
     const fn = f.path.split("/").pop();
@@ -1145,7 +1150,12 @@ function palBuild(){
   for(const id in B.agents){
     if(wsA && !wsA.has(id)) continue;   // 面板随工作区过滤（346）
     const a = B.agents[id];
-    if(hit(id) || hit(a.role_profile)) PALI.push({kind:"agent", key:id, rr:a.role_profile||""});
+    // 能力搜索（WO-IDE-CAPSEARCH）：中文名/中文岗位/专长/技能 均参与匹配
+    const cap = [a.cn_name, a.role_cn, (a.capabilities||[]).join(" "), (a.skills||[]).join(" ")].join(" ");
+    if(hit(id) || hit(a.role_profile) || hit(cap)){
+      PALI.push({kind:"agent", key:id,
+                 rr:(a.cn_name? a.cn_name+" · ":"")+(a.role_cn||a.role_profile||"")});
+    }
   }
   (B.code_files||[]).forEach(f=>{ if(hit(f.path)) PALI.push({kind:"code", key:f.path, rr:f.lines+" 行"}); });
   (B.workorders||[]).forEach(w=>{
@@ -1164,7 +1174,7 @@ function palPaint(){
     return '<div class="pi'+(i===PALS?' sel':'')+'" onmousemove="palSel('+i+')" onclick="palGo('+i+')">'
       + '<span>'+ico+'</span><span>'+esc(main)+'</span>'
       + '<span class="k">'+kn+'</span><span class="rr">'+esc(it.rr)+'</span></div>';
-  }).join("") : '<div class="pempty">无匹配（支持 Agent ID / 角色 / 代码路径 / 工单 ID·描述 模糊搜索 · 随当前工作区过滤）</div>';
+  }).join("") : '<div class="pempty">无匹配（支持 Agent 中文名 / 能力专长 / 角色 / 代码路径 / 工单 ID·描述 模糊搜索 · 随当前工作区过滤）</div>';
 }
 function palSel(i){
   PALS = i;

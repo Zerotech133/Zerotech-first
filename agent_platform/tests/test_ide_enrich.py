@@ -64,3 +64,13 @@ def test_ide_html_renders_identity_block():
     html = (Path(_ROOT) / "portal" / "ide.html").read_text(encoding="utf-8")
     for marker in ("身份 · 组织架构", "专长能力", "capabilities", "cn_name", "role_cn"):
         assert marker in html, marker
+
+
+def test_ide_capability_search_contract():
+    """能力搜索（WO-IDE-CAPSEARCH）：Ctrl+P 与 @ 菜单都匹配 cn_name/role_cn/capabilities。"""
+    html = (Path(_ROOT) / "portal" / "ide.html").read_text(encoding="utf-8")
+    assert "a.capabilities" in html
+    assert "(a.capabilities||[]).join" in html
+    assert "能力专长" in html
+    assert "a.cn_name" in html
+
