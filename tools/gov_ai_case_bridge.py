@@ -241,9 +241,16 @@ def apply(signature_dir: Path, *, experience_root: Optional[Path] = None,
     for payload_path in payload_files:
         payload = _read_json(payload_path)
         item_id = payload.get("item_id") or payload_path.name.split(".")[0]
-        sig_path = sig_dir / (item_id + ".signature.json")
-        if not sig_path.is_file():
-            raise BridgeError("缺少签名：%s（期望 %s）" % (item_id, sig_path.name))
+        # 兼容两种签名命名：<item>.signature.json（本模块约定）与
+        # <item>.payload.json.signature.json（sign_approval.py 默认输出，
+        # 即 "<payload 文件>.signature.json"）——GOVAI3FIX2 实证踩到。
+        sig_candidates = [sig_dir / (item_id + ".signature.json"),
+                          sig_dir / (item_id + ".payload.json.signature.json")]
+        sig_path = next((c for c in sig_candidates if c.is_file()), None)
+        if sig_path is None:
+            raise BridgeError("缺少签名：%s（期望 %s 或 %s）"
+                              % (item_id, sig_candidates[0].name,
+                                 sig_candidates[1].name))
         signature = _read_json(sig_path)
         entry = S.write_entry(
             domain=payload["domain"], cue=payload["cue"], lesson=payload["lesson"],
