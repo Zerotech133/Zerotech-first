@@ -59,7 +59,37 @@ python -m analysis.sync --daily-only --days 30
 `_meta.json` 记录最后同步时间与行数。分析流水线自动读取：一致预期 → 估值段/信号；龙虎榜 → 资金段；
 增减持/质押/解禁/回购 → 风险段；主营构成 → 公司画像；互动易/调研 → 事件段。
 
-## 五、三股回放（2026-10-23 口径，P0B 复跑）
+## 五、门户入口 + 盘后批（P0C 新增）
+
+### 门户 API（`portal/api_analysis.py`，独立文件；`portal_api.py` 仅加早分派 3 段）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/analysis/health` | 流水线健康（db/runs/queue/最近一次运行） |
+| GET | `/api/analysis/list?code=&limit=` | 运行台账（SQLite `analysis.db`） |
+| GET | `/api/analysis/latest?code=600337.SH` | 最近一次运行 + analysis.json 摘要 |
+| GET | `/api/analysis/report?run_id=` | 返回 report.md 文本 |
+| GET | `/api/analysis/queue` | 队列计数/最近文件 |
+| POST | `/api/analysis/submit` | 入队 `{code, llm, push}`（已加入 `_MUTATION_POSTS`，需 X-Portal-Token） |
+
+### 盘后批（`analysis/batch.py`）
+
+```bash
+python -m analysis.batch                       # 读 watchlist.txt（默认不跑 LLM）
+python -m analysis.batch --codes 600337.SH --llm --push
+python -m analysis.batch --queue               # 消费一次门户队列
+```
+
+回执落盘：`C:\项目\work\analysis\batch\<date>\receipt.json` + `receipt.md`。
+每只股票独立子进程（异常隔离），默认 `--no-llm` 避免与生产 Ollama 抢卡。
+
+### 部署（L2，需人工批准后执行）
+
+1. 重启 8091（`portal/start_portal_api.ps1`，内置 import 冒烟预检）；
+2. 注册计划任务（每周一至周五 15:40）：`python -m analysis.batch --queue` 或 `--max 5`；
+3. 验证：`curl http://127.0.0.1:8091/api/analysis/health` 返回 `ok:true`；任务日志落 `work/analysis/batch/`。
+
+## 六、三股回放（2026-10-23 口径，P0B 复跑）
 
 | 标的 | 覆盖率 | 评级（流水线） | 人工版对照 | 用时 |
 |---|---|---|---|---|

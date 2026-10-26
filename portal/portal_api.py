@@ -207,6 +207,7 @@ _load_cainiao_env()
 # 变更类 POST 端点（逐一对照 do_POST 路由表；/feishu/event 为飞书回调，
 # 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
 _MUTATION_POSTS = frozenset((
+    "/api/analysis/submit",  # K-STOCK-ANALYSIS-P0C 个股分析入队（写队列文件）
     "/api/data/update-plan",
     "/api/data/update",
     "/api/portfolio_subscribe",
@@ -2597,6 +2598,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path.startswith('/api/os/'):
             self._os_goal_post(path)
             return
+        if path.startswith('/api/analysis/'):
+            # K-STOCK-ANALYSIS-P0C 个股分析入队（独立文件 api_analysis.py）
+            import api_analysis
+            api_analysis.handle_post(self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
+            return
         if path == '/api/zhuge/brief':
             # WO-OS-09 只读出口：非 GET 显式 405（不落 404 兜底，契约清晰）
             self._zhuge_brief_method_not_allowed()
@@ -3094,6 +3100,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         qs = raw.split("?", 1)[1] if "?" in raw else ""
         if path.startswith('/api/os/'):
             self._os_goal_get(path, qs)
+            return
+        if path.startswith('/api/analysis/'):
+            # K-STOCK-ANALYSIS-P0C 个股分析只读入口（独立文件 api_analysis.py）
+            import api_analysis
+            api_analysis.handle_get(self, path, qs)
             return
         if path == '/api/intel/evidence-targets':
             self._intel_evidence_targets(qs)
