@@ -134,11 +134,13 @@ def test_09_output_trimmed(monkeypatch):
 # ── openclaw 真通道路径（子进程桩，不真调 CLI）────────
 def test_10_openclaw_path_used_when_available(monkeypatch):
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
+    monkeypatch.setattr(cz, "OPENCLAW_MODEL", "itokengate/gpt-6-sol")
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
     monkeypatch.setattr(cz, "_run_openclaw",
                         lambda q, timeout: ("军师回答：先看流动性。", None))
     r = cz.consult("为什么跌", "ou_h")
     assert r["mode"] == "openclaw_gpt"
+    assert r["relay"] is False
     assert "流动性" in r["text"]
     assert r["llm_ok"] is True
 
@@ -173,6 +175,7 @@ def test_13_ready_without_env_key_when_configured(monkeypatch):
 
 def test_14_run_uses_infer_local_and_parses_json(monkeypatch):
     monkeypatch.setattr(cz, "_openclaw_bin", lambda: "/fake/openclaw")
+    monkeypatch.setattr(cz, "OPENCLAW_MODEL", "itokengate/gpt-6-sol")
     captured = {}
 
     class _R:
@@ -242,8 +245,74 @@ def test_19_status_reports_agent_model(monkeypatch):
     monkeypatch.setattr(cz, "_openclaw_bin", lambda: "/fake/openclaw")
     monkeypatch.setattr(cz, "_openclaw_config_path",
                         lambda: cz.Path("/fake/.openclaw/openclaw.json"))
+    monkeypatch.setattr(cz, "_openclaw_agent_model",
+                        lambda agent=None: "deepseek/deepseek-chat")
     st = cz.channel_status()
     assert st["openclaw_ready"] is True
     assert st["agent"] == cz.OPENCLAW_AGENT
     assert st["model"] == cz.OPENCLAW_MODEL
+    assert st["agent_model"] == "deepseek/deepseek-chat"
+    assert "deepseek" in st["carrier"]
     assert st["config_path"].endswith("openclaw.json")
+
+
+# ── 诚实标签（2026-10-26 L5LABEL）────────────────────────
+def test_20_relay_label_honest(monkeypatch):
+    """agent-config 载体非 GPT6 → openclaw_cloud + carrier 实名 + relay=True。"""
+    monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
+    monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
+    monkeypatch.setattr(cz, "_run_openclaw",
+                        lambda q, timeout: ("中转回答：先走审批。", None))
+    monkeypatch.setattr(cz, "OPENCLAW_MODEL", "")
+    monkeypatch.setattr(cz, "OPENCLAW_CARRIER", "")
+    monkeypatch.setattr(cz, "_openclaw_agent_model",
+                        lambda agent=None: "deepseek/deepseek-chat")
+    r = cz.consult("问", "ou_k")
+    assert r["mode"] == "openclaw_cloud"
+    assert r["relay"] is True
+    assert r["carrier"] == "deepseek/deepseek-chat"
+    assert "中转回答" in r["text"]
+
+
+def test_21_agent_model_parsed(monkeypatch, tmp_path):
+    import json
+    oc = tmp_path / ".openclaw"
+    oc.mkdir()
+    (oc / "openclaw.json").write_text(json.dumps({
+        "agents": {"entries": {"zhuge": {"model": {
+            "primary": "deepseek/deepseek-chat"}}}}},
+        ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    assert cz._openclaw_agent_model("zhuge") == "deepseek/deepseek-chat"
+    assert cz._openclaw_agent_model("nobody") == ""
+
+
+def test_22_run_omits_model_override_when_empty(monkeypatch):
+    monkeypatch.setattr(cz, "_openclaw_bin", lambda: "/fake/openclaw")
+    monkeypatch.setattr(cz, "OPENCLAW_MODEL", "")
+    captured = {}
+
+    class _R:
+        returncode = 0
+        stdout = '{"ok": true, "outputs": [{"text": "好"}]}'
+        stderr = ""
+
+    def _fake_run(args, **kw):
+        captured["args"] = args
+        return _R()
+
+    monkeypatch.setattr(cz.subprocess, "run", _fake_run)
+    text, err = cz._run_openclaw("问")
+    assert text == "好" and err is None
+    assert "--model" not in captured["args"]
+
+
+def test_23_zhuge_tag_honest():
+    gpt = {"mode": "openclaw_gpt", "carrier": "itokengate/gpt-6-sol"}
+    cloud = {"mode": "openclaw_cloud", "carrier": "deepseek/deepseek-chat"}
+    local = {"mode": "local_soul"}
+    assert "GPT6.0" in cz.zhuge_tag(gpt)
+    assert "中转替代" in cz.zhuge_tag(cloud)
+    assert "deepseek/deepseek-chat" in cz.zhuge_tag(cloud)
+    assert "非GPT6" in cz.zhuge_tag(cloud)
+    assert "本地军师代理" in cz.zhuge_tag(local)

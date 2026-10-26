@@ -763,8 +763,12 @@ def _zhuge_async_sink(open_id, question, zr, trace):
     """
     try:
         if zr.get("text"):
-            tag = "诸葛亮（GPT6.0）" if zr.get("mode") == "openclaw_gpt" \
-                else "诸葛亮（本地军师代理）"
+            # 2026-10-26 诚实标签：GPT6 真身 / 云端中转替代（非GPT6）/ 本地代理
+            try:
+                from comm_zhuge import zhuge_tag
+                tag = zhuge_tag(zr)
+            except Exception:  # noqa: BLE001 —— 标签失败不阻断补发
+                tag = "诸葛亮（本地军师代理）"
             md = ("**军师研判 · %s**\n\n%s" % (tag, zr["text"]))
         else:
             md = ("军师暂时给不出可靠答案（%s）。您可以直接追问细节，"
