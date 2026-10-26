@@ -292,9 +292,11 @@ class TestDomainDynamic:
         assert members is not None, "真实 org.json 必须可判定（不得返回 None）"
         expect = _expect_domain_size(str(ROOT / "agent_platform" / "registry" / "org.json"))
         assert len(members) == expect
+        # D5-C：合法域规模 = org 成员数 + profile 席位（治理席不占编但占合法域）
+        profile = devtask._profile_seat_members()
         owner_ok, _domain, size = devtask._owner_check("DEV1")
         assert owner_ok is True
-        assert size == expect
+        assert size == expect + len(profile)
 
 
 # ----------------------------------------------------------------------
@@ -512,3 +514,62 @@ class TestDomainUnavailable:
         task, _ = _new(agent_name, ledger, events,
                        "K-KEEP", "保留owner单", "TraeCode")
         assert task["owner"] == "TraeCode"
+
+
+# ----------------------------------------------------------------------
+# D5-C：profile 席位（治理席不占 org.json 编制，但必须是合法 owner）
+# ----------------------------------------------------------------------
+class TestProfileSeats:
+    """``owner_domain.json.profile_seats`` 的合法性与边界。
+
+    背景（2026-10-26 老田拍板 D5-C）：治理席以 profile 角色存在、不占 org.json
+    编制；若不走 profile_seats，治理席每张工单都会被判非法并打 ``[UNOWNED]``。
+    """
+
+    def _domain(self, tmp_root, monkeypatch, seats):
+        fx = tmp_root / "owner_domain_profile.json"
+        fx.write_text(json.dumps({
+            "version": 1,
+            "note": "D5-C 测试夹具",
+            "external_tools": {"status": "pending_ruling", "observed": []},
+            "profile_seats": {"seats": seats},
+            "unowned_tag": "[UNOWNED]",
+        }, ensure_ascii=False), encoding="utf-8")
+        monkeypatch.setattr(devtask, "OWNER_DOMAIN", str(fx))
+        return fx
+
+    def test_profile席位合法且不影响org口径(self, org_fixture, tmp_root, monkeypatch):
+        self._domain(tmp_root, monkeypatch, ["ZHAOYUN"])
+        assert devtask._owner_check("ZHAOYUN")[0] is True
+        assert devtask._owner_check("R2")[0] is True      # org 风控席仍合法
+        assert devtask._owner_check("NOT_A_SEAT")[0] is False
+        # 纯 org 成员池口径不被污染（仍是 org 派生结果）
+        assert "ZHAOYUN" not in (devtask._owner_domain_members() or set())
+
+    def test_profile席位未登记时判非法(self, org_fixture, tmp_root, monkeypatch):
+        self._domain(tmp_root, monkeypatch, [])
+        assert devtask._owner_check("ZHAOYUN")[0] is False
+
+    def test_profile席位大小写与空白归一(self, org_fixture, tmp_root, monkeypatch):
+        self._domain(tmp_root, monkeypatch, [" zhaoyun "])
+        assert devtask._owner_check("ZHAOYUN")[0] is True
+        assert devtask._owner_check("zhaoyun")[0] is True
+
+    def test_org不可判定时profile席位仍可判定合法(self, tmp_root, monkeypatch):
+        """org 读不到（不可判定）时，本地 profile 席位登记仍是权威：命中即合法。"""
+        monkeypatch.setattr(devtask, "ORG_JSON", str(tmp_root / "nope.json"))
+        self._domain(tmp_root, monkeypatch, ["ZHAOYUN"])
+        owner_ok, _domain, size = devtask._owner_check("ZHAOYUN")
+        assert owner_ok is True
+        assert size == 1
+        # 非 profile 席位仍保持"不可判定"三态（不误判非法）
+        assert devtask._owner_check("DEV1")[0] is None
+
+    def test_真实登记表治理席已合法(self):
+        """回归护栏：真实 owner_domain.json 已登记 ZHAOYUN 且判定合法（只读）。"""
+        real_domain = json.loads(
+            (ROOT / "agent_platform" / "registry" / "owner_domain.json")
+            .read_text(encoding="utf-8"))
+        seats = (real_domain.get("profile_seats") or {}).get("seats") or []
+        assert "ZHAOYUN" in [str(s).strip().upper() for s in seats]
+        assert devtask._owner_check("ZHAOYUN")[0] is True

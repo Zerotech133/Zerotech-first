@@ -1,7 +1,11 @@
 {
  "version": 1,
- "note": "合法 owner 取值域。members 由 org.json 动态派生，不在此硬编码。external_tools.status 仅 `legal` 生效（大小写/空白不敏感）；`pending_ruling` = 未裁定，observed 代号一律不视为合法；其它写法静默失效（等同 pending_ruling，不报错不告警）。",
+ "note": "合法 owner 取值域。members 由 org.json 动态派生，不在此硬编码；profile_seats 为「不占 org.json 编制的席位代号」（D5-C，2026-10-26 老田拍板：治理席以 profile 角色存在，不占编）。external_tools.status 仅 `legal` 生效（大小写/空白不敏感）；`pending_ruling` = 未裁定，observed 代号一律不视为合法；其它写法静默失效（等同 pending_ruling，不报错不告警）。",
  "members_source": "agent_platform/registry/org.json",
  "external_tools": {"status": "pending_ruling", "observed": ["unknown-agent", "Codex", "Trae"]},
+ "profile_seats": {
+  "note": "profile 席位（不占编）：代号进合法 owner 域，与 org.json 编制成员同等可落账；统计口径按 id 区分，不得与 R2 风控席 KPI 混算。",
+  "seats": ["ZHAOYUN"]
+ },
  "unowned_tag": "[UNOWNED]"
 }
