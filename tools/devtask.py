@@ -241,7 +241,10 @@ GATES = [("Mixin方法集", [sys.executable,
                        os.path.join(REPO, "tools", "unify_nav.py"),
                        "--check"]),
          ("端口注册", [sys.executable,
-                       os.path.join(REPO, "tools", "check_ports.py")]),
+                       os.path.join(REPO, "tools", "check_ports.py"),
+                       "--strict"]),  # 2026-10-26 WO-UPGRADE-20261026：合并门
+         # 必须走 strict，否则非 strict 恒 rc=0 = 假门（审计 B-02）。strict 语义
+         # 已拆：只拦「未登记监听/端口冲突」，在册服务离线不判负（check_ports.py）。
          ("明文凭据", _secret_scan_gate)]
 
 

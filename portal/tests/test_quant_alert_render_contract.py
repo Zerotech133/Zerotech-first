@@ -27,7 +27,21 @@ const sharedHelper = page.slice(helperStart, page.indexOf('  const ST_CN', helpe
 const strategiesSource = page.slice(strategyStart, strategyEnd);
 const loaderSource = page.slice(page.lastIndexOf('  let latestAlertRequest', start), end);
 assert(loaderSource.startsWith('  let latestAlertRequest = 0;'), 'generation fence must exist');
-const script = new vm.Script(sharedHelper + loaderSource + '\nloadAlerts');
+// 2026-10-26 WO-UPGRADE-20261026：loadAlerts 现引用页面级常量 LV_CN（第 595 行，
+// 位于 sharedHelper 截取区间之后）。此前 harness 未注入 → VM 内 ReferenceError 被
+// loadAlerts 自己的 catch 吞成「预警数据不可用」，测试恒红。这里从真实页面按源码
+// 抽取 LV_CN 字面量注入，不硬编码、不改被测业务逻辑。
+const lvCnStart = page.indexOf('  const LV_CN = ');
+assert(lvCnStart >= 0, 'LV_CN must exist in the real page');
+const lvCnSource = page.slice(lvCnStart, page.indexOf('\n', lvCnStart));
+// 固定时钟：fixture 快照日期是合成的，注入固定 Date 使用例不随真实时间漂移
+// （页面将来若加客户端新鲜度判断，也仍落在窗口内），保证确定性。
+const FIXED_NOW = new Date('2026-10-19T11:30:00+08:00');
+class FixedDate extends Date {
+  constructor(...args) { super(...(args.length ? args : [FIXED_NOW.getTime()])); }
+  static now() { return FIXED_NOW.getTime(); }
+}
+const script = new vm.Script(lvCnSource + sharedHelper + loaderSource + '\nloadAlerts');
 
 async function render(events) {
   const elements = Object.fromEntries(['al-ts', 'k-alerts', 'al-list'].map(id => [
@@ -43,6 +57,7 @@ async function render(events) {
   const context = {
     AbortController,
     URL,
+    Date: FixedDate,
     location: { origin: 'https://portal.example.test' },
     setTimeout: () => 0,
     fetch,
@@ -67,6 +82,7 @@ async function renderStrategies(items) {
   const context = {
     AbortController,
     URL,
+    Date: FixedDate,
     location: { origin: 'https://portal.example.test' },
     setTimeout: () => 0,
     fetch: async url => {
@@ -94,6 +110,7 @@ async function renderOutOfOrder(firstFails) {
   const context = {
     AbortController,
     URL,
+    Date: FixedDate,
     location: { origin: 'https://portal.example.test' },
     setTimeout: () => 0,
     fetch: async () => {
@@ -112,7 +129,7 @@ async function renderOutOfOrder(firstFails) {
     })[ch]),
   };
   vm.createContext(context);
-  const loader = new vm.Script(sharedHelper + loaderSource + '\nloadAlerts');
+  const loader = new vm.Script(lvCnSource + sharedHelper + loaderSource + '\nloadAlerts');
   const loadAlerts = loader.runInContext(context);
   const older = loadAlerts();
   const newer = loadAlerts();
@@ -138,9 +155,12 @@ async function renderOutOfOrder(firstFails) {
 
 (async () => {
   const row = { name: '真实预警', value: '3', sub: '来源', href: '/watch' };
-  const success = { ts: '2026-10-19 10:00', alerts: [row] };
+  // 固定 fixture 快照（合成日期，不读真实数据盘/不随真实时钟变化）
+  const FIXTURE_TS = '2026-10-19 10:00';
+  const success = { ts: FIXTURE_TS, alerts: [row] };
   const normal = await render([{ data: success }]);
-  assert.match(normal['al-ts'].textContent, /快照 2026-10-19 10:00 · 共 1 条/);
+  assert.match(normal['al-ts'].textContent,
+               new RegExp('快照 ' + FIXTURE_TS + ' · 共 1 条'));
   assert.equal(normal['k-alerts'].textContent, '1 条');
   assert.match(normal['al-list'].innerHTML, /真实预警/);
   assert.match(normal['al-list'].innerHTML, /href="\/watch"/);
