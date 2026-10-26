@@ -140,6 +140,15 @@ def _cn_index(root: Path, org: dict) -> dict:
     return idx
 
 
+def _matrix_ids(org: dict, dept: str) -> set:
+    """P2：项目部门的矩阵席位（档案在主档 matrix_assignments，不在部门表）。"""
+    try:
+        from engine.org_profiles import matrix_assignments
+    except ImportError:
+        from org_profiles import matrix_assignments
+    return set(matrix_assignments(org).get(dept, {}).keys())
+
+
 def _agent_id_index(org: dict, root: Path) -> dict:
     """agent_id → 占用位置（部门 or hr 档案目录）。"""
     idx: dict[str, str] = {}
@@ -150,6 +159,13 @@ def _agent_id_index(org: dict, root: Path) -> dict:
                 idx[aid] = "org:%s" % d.get("dept")
         for aid in d.get("agents") or []:
             idx.setdefault(str(aid), "org.agents:%s" % d.get("dept"))
+    try:
+        from engine.org_profiles import matrix_assignments
+    except ImportError:
+        from org_profiles import matrix_assignments
+    for _dep, _items in matrix_assignments(org).items():
+        for _aid in _items:
+            idx.setdefault(str(_aid), "org.matrix:%s" % _dep)
     hr = _hr_dir(root)
     if hr.exists():
         for d in hr.iterdir():
@@ -257,6 +273,7 @@ def build_backfill_plan(root: Path, *, dept: str, agent_id: str, role_profile: s
     aid = (agent_id or "").strip()
     listed = [str(x) for x in (target.get("agents") or [])]
     prof_ids = [str(p.get("agent_id")) for p in (target.get("agent_profiles") or [])]
+    prof_ids += sorted(_matrix_ids(org, dept))
     if aid not in listed:
         raise EnrollError(
             "补档要求 %s 已在 %s 的 agents 名单中（当前名单：%s）。"

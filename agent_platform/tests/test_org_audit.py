@@ -25,10 +25,24 @@ def _raw_org():
     return json.loads((_PLATFORM / "registry" / "org.json").read_text(encoding="utf-8"))
 
 
+def _matrix_ids_by_dept():
+    """P2 独立口径：项目部门档案在主档 matrix_assignments（不在部门表）。"""
+    out = {}
+    for d in _raw_org()["departments"]:
+        for p in (d.get("agent_profiles") or []):
+            for m in p.get("matrix_assignments") or []:
+                dep = m.get("dept")
+                if dep and p.get("agent_id"):
+                    out.setdefault(dep, set()).add(str(p["agent_id"]))
+    return out
+
+
 def _expect_depts_without_profile():
-    """独立口径：自己从 org.json 数「名单有人但零档案」的部门，不借用审计代码。"""
+    """独立口径：自己从 org.json 数「名单有人但零档案（含矩阵档）」的部门。"""
+    mx = _matrix_ids_by_dept()
     return {d["dept"] for d in _raw_org()["departments"]
-            if d.get("agents") and not d.get("agent_profiles")}
+            if d.get("agents") and not d.get("agent_profiles")
+            and not mx.get(d["dept"])}
 
 
 def _known_profile_ids():
@@ -40,6 +54,8 @@ def _known_profile_ids():
     org = _raw_org()
     ids = {str(p.get("agent_id")) for d in org["departments"]
            for p in (d.get("agent_profiles") or [])}
+    for _dep, _mx in _matrix_ids_by_dept().items():
+        ids.update(_mx)
     chief = org.get("chief") or {}
     if chief.get("agent_id"):
         ids.add(str(chief["agent_id"]))
@@ -110,6 +126,7 @@ def test_audit_real_summary():
     # 三态必须自平：名单 = 部门档案表 + 档案在别处 + 真无档。
     # 旧断言写的是二态（名单 = 有档 + 无档），档案在 team 文件里的席会被算成无档（S42 修）。
     assert s["seats_listed"] == (s["seats_profiled"]
+                                 + s.get("seats_matrix", 0)
                                  + s.get("seats_profiled_elsewhere", 0)
                                  + s["seats_ghost"])
     assert 0 <= s["ghost_ratio"] <= 1

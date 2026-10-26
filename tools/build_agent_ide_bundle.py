@@ -344,6 +344,7 @@ def main():
     for aid, card in agents.items():
         hr = hr_meta.get(aid) or {}
         prof = profiles.get(aid) or {}
+        card["matrix_assignments"] = list(prof.get("matrix_assignments") or [])
         p_attrs = prof.get("attributes") if isinstance(prof.get("attributes"), dict) else {}
         t_attrs = card.get("attributes") if isinstance(card.get("attributes"), dict) else {}
         caps = (p_attrs.get("specialties") or t_attrs.get("specialties")

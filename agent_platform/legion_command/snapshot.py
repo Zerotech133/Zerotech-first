@@ -121,8 +121,9 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
     # 统一取档口径（S42）：档案可能在部门表 / 顶层 chief / team_*.json。
     # 指挥台若只认部门表，邓芝（DENGZHI1，档案在 team_comm.json）会被画成"无档"虚线——
     # 展示层显示的和真源里的事实相反，比不显示更糟。
-    from engine.org_profiles import profile_index
+    from engine.org_profiles import matrix_assignments, profile_index
     all_prof = profile_index(root)
+    matrix_by_dept = matrix_assignments(org)
     departments = []
     for d in org.get("departments", []):
         did = d.get("dept") or d.get("dept_id") or ""
@@ -138,6 +139,12 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
             aid = str(p.get("agent_id") or "")
             if aid:
                 prof_by_id[aid] = p
+        for _aid, _m in (matrix_by_dept.get(did, {}) or {}).items():
+            if _aid not in prof_by_id:
+                prof_by_id[_aid] = {"agent_id": _aid,
+                                    "role_profile": _m.get("role_profile", ""),
+                                    "llm_binding": _m.get("llm_binding", ""),
+                                    "_matrix": True}
         listed = [str(x) for x in (d.get("agents") or [])]
         ordered = listed + [a for a in prof_by_id if a not in listed]
         agents = []
@@ -155,7 +162,9 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
                 "role": (p.get("role_profile") or "") if p else "",
                 "has_profile": (p is not None) or bool(ext),
                 # 档案不在部门表时如实标出来源，前端可据此提示「档案登记在别处」
-                "profile_source": "dept" if p is not None else (ext.get("source_detail") or ""),
+                "profile_source": ("matrix" if (p is not None and p.get("_matrix"))
+                                   else "dept" if p is not None
+                                   else (ext.get("source_detail") or "")),
             })
         departments.append({
             "id": did,
