@@ -1,0 +1,9 @@
+{
+ "schema": "codebase_intel_config/v1",
+ "scope": ["agent_platform", "tools", "portal"],
+ "exclude_dirs": [".git", ".worktrees", "node_modules", "__pycache__", ".venv", "venv",
+                  ".trae", ".pytest_cache", "dist", "build", "work", "quant_backtest",
+                  "legion_agents", "data_sources", "db_migration"],
+ "max_bytes": 400000,
+ "note": "repo map 白名单/排除配置；缓存仍按文件 mtime+size 自动失效"
+}
