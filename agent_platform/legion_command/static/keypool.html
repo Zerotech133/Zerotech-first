@@ -72,8 +72,14 @@ async function load(){
       const inp=el('input');inp.type='password';inp.placeholder='粘贴 Key（仅本机加密存储）';
       const lab=el('input');lab.placeholder='标签（如 主Key/备1）';
       const pri=el('input');pri.type='number';pri.placeholder='优先级 1-5';pri.value=keys.length+1;
+      let burl=null,bmodel=null;
+      if(sid==='relay'){
+        burl=el('input');burl.placeholder='中转站 URL（如 https://tokenegate.com/v1/chat/completions）';burl.value='https://tokenegate.com/v1/chat/completions';
+        bmodel=el('input');bmodel.placeholder='模型（如 gpt-6-sol）';bmodel.value='gpt-6-sol';
+        add.append(burl,bmodel);
+      }
       const b=el('button','','添加 Key');
-      b.onclick=async()=>{if(!inp.value.trim()){alert('请粘贴 Key');return}await act({action:'add',seat:sid,secret:inp.value.trim(),label:lab.value.trim(),priority:Number(pri.value)||keys.length+1})};
+      b.onclick=async()=>{if(!inp.value.trim()){alert('请粘贴 Key');return}const body={action:'add',seat:sid,secret:inp.value.trim(),label:lab.value.trim(),priority:Number(pri.value)||keys.length+1};if(sid==='relay'){body.base_url=(burl.value||'').trim();body.model=(bmodel.value||'').trim()}await act(body)};
       add.append(inp,lab,pri,b);c.appendChild(add);
       const auto=el('button',s.auto_switch?'warn':'','自动切换: '+(s.auto_switch?'ON':'OFF'));
       auto.onclick=()=>act({action:'autoswitch_toggle',seat:sid,enabled:!s.auto_switch});c.appendChild(auto);

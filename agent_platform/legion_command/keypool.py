@@ -30,6 +30,7 @@ SEATS = {
     "tianfeng": {"cn": "田丰", "provider": "zhipu", "binding": "glm/glm-5.3"},
     "zhaoyun": {"cn": "赵云", "provider": "deepseek", "binding": "deepseek/deepseek-chat"},
     "zhuge": {"cn": "诸葛亮", "provider": "deepseek", "binding": "openclaw/deepseek-chat"},
+    "relay": {"cn": "中转站", "provider": "custom", "binding": "openai-compatible"},
 }
 PROVIDER_URL = {
     "zhipu": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
@@ -125,11 +126,12 @@ def _key(d: dict, key_id: str):
     return None
 
 
-def _provider_test(provider: str, secret: str, timeout: int = 15) -> dict:
-    url = PROVIDER_URL.get(provider)
+def _provider_test(provider: str, secret: str, timeout: int = 15,
+                   base_url: str = "", model: str = "") -> dict:
+    url = base_url or PROVIDER_URL.get(provider)
     if not url:
         return {"status": "unknown", "detail": "provider_not_supported"}
-    body = json.dumps({"model": PROVIDER_MODEL.get(provider, ""),
+    body = json.dumps({"model": model or PROVIDER_MODEL.get(provider, ""),
                        "messages": [{"role": "user", "content": "ping"}],
                        "max_tokens": 1, "stream": False}).encode()
     req = urllib.request.Request(url, data=body, method="POST",
@@ -191,6 +193,7 @@ def state() -> dict:
             keys.append({"id": k.get("id"), "label": k.get("label"),
                          "masked": k.get("mask") or "***",
                          "priority": k.get("priority"), "status": k.get("status", "pending"),
+                         "base_url": k.get("base_url") or "", "model": k.get("model") or "",
                          "enabled": k.get("enabled", True),
                          "last_checked": k.get("last_checked"),
                          "last_error": k.get("last_error")})
@@ -227,6 +230,8 @@ def action(req: dict) -> dict:
                           "secret_enc": _encrypt(raw),
                           "mask": _mask(raw),
                           "priority": int(req.get("priority") or (len([x for x in d["keys"] if x.get("seat") == seat]) + 1)),
+                          "base_url": str(req.get("base_url") or "")[:300],
+                          "model": str(req.get("model") or "")[:80],
                           "status": "pending", "enabled": True,
                           "last_checked": None, "last_error": None})
         if not s.get("active_key_id"):
@@ -277,7 +282,8 @@ def action(req: dict) -> dict:
             secret = _decrypt(k.get("secret_enc") or "")
         except Exception as e:  # noqa: BLE001
             return {"ok": False, "error": "decrypt_failed", "detail": str(e)[:120]}
-        r = _provider_test(SEATS[seat]["provider"], secret)
+        r = _provider_test(SEATS[seat]["provider"], secret,
+                           base_url=str(k.get("base_url") or ""), model=str(k.get("model") or ""))
         k["status"] = r["status"]
         k["last_checked"] = _now()
         k["last_error"] = r.get("detail") if r["status"] != "healthy" else None
@@ -320,11 +326,12 @@ def _active_secret(d: dict, seat: str):
         return k, None
 
 
-def _provider_chat(provider: str, secret: str, messages: list, timeout: int = 45) -> dict:
-    url = PROVIDER_URL.get(provider)
+def _provider_chat(provider: str, secret: str, messages: list, timeout: int = 45,
+                   base_url: str = "", model: str = "") -> dict:
+    url = base_url or PROVIDER_URL.get(provider)
     if not url:
         return {"ok": False, "error": "provider_not_supported"}
-    body = json.dumps({"model": PROVIDER_MODEL.get(provider, ""), "messages": messages,
+    body = json.dumps({"model": model or PROVIDER_MODEL.get(provider, ""), "messages": messages,
                        "max_tokens": 800, "stream": False}).encode()
     req = urllib.request.Request(url, data=body, method="POST",
                                  headers={"Content-Type": "application/json",
@@ -367,7 +374,7 @@ def auto_chat(messages: list) -> dict:
     messages = messages[-20:]
     d = _load()
     attempts = []
-    for seat in ("tianfeng", "zhaoyun", "zhuge"):
+    for seat in ("relay", "tianfeng", "zhaoyun", "zhuge"):
         k, secret = _active_secret(d, seat)
         if not k:
             attempts.append({"seat": seat, "channel": SEATS[seat]["provider"], "result": "no_active_key"})
@@ -375,19 +382,22 @@ def auto_chat(messages: list) -> dict:
         if secret is None:
             attempts.append({"seat": seat, "channel": SEATS[seat]["provider"], "result": "decrypt_failed"})
             continue
-        r = _provider_chat(SEATS[seat]["provider"], secret, messages)
+        r = _provider_chat(SEATS[seat]["provider"], secret, messages,
+                           base_url=str(k.get("base_url") or ""), model=str(k.get("model") or ""))
         if r.get("ok"):
             _log(d, seat, k.get("id"), k.get("id"), "auto_chat", "used")
             _save(d)
             return {"ok": True, "reply": r.get("reply", ""),
-                    "channel": SEATS[seat]["provider"], "seat": seat,
+                    "channel": ("relay/custom" if SEATS[seat]["provider"] == "custom" else SEATS[seat]["provider"]),
+                    "seat": seat,
                     "attempts": attempts + [{"seat": seat, "channel": SEATS[seat]["provider"], "result": "ok"}]}
         code = str(r.get("code") or "")
         k["status"] = "quota" if code in ("429", "402") else ("invalid" if code in ("401", "403") else "degraded")
         k["last_error"] = r.get("error")
         k["last_checked"] = _now()
         sw = auto_switch(d, seat, "auto_chat_" + code)
-        attempts.append({"seat": seat, "channel": SEATS[seat]["provider"],
+        attempts.append({"seat": seat,
+                         "channel": ("relay/custom" if SEATS[seat]["provider"] == "custom" else SEATS[seat]["provider"]),
                          "result": "fail:" + code, "switched": sw.get("ok", False)})
         _save(d)
     lr = _local_chat(messages)
