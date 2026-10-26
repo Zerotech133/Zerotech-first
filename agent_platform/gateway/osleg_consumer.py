@@ -88,6 +88,7 @@ __all__ = [
     "ELIGIBLE_KINDS",
     "ELIGIBLE_SOURCES",
     "PROTECTED_MSG_IDS",
+    "P2B_APPROVED_MSG_IDS",
     "REAL_STORE",
     "ConsumerRefused",
     "main",
@@ -106,6 +107,9 @@ ELIGIBLE_SOURCES = frozenset({"e2e", "synthetic", "probe"})
 # 历史真单白名单：2026-10-21 真实个股咨询工单，永不自动消费/迁移/补答。
 # 判定优先于 source 白名单——即使有人把它伪造成 synthetic 也不得消费。
 PROTECTED_MSG_IDS = frozenset({"lg-5917d4c4357b"})
+
+# P2b 批准（老田 2026-10-26 22:4x）：真实 bridge_inbox 上仅允许消费这一张自测票。
+P2B_APPROVED_MSG_IDS = frozenset({"lg-060c67fbf89a"})
 
 # 归口执行身份仍按 Wo-FS-157/契约口径写 A0；本骨架不接真实归口席位。
 ANSWERED_BY = "A0"
@@ -167,12 +171,19 @@ def _require_store_root(store_root) -> Path:
     return root.resolve()
 
 
-def _assert_isolated(root: Path) -> None:
-    """写入硬闸：拒绝真实 bridge_inbox 及其祖先/子目录。"""
+def _assert_isolated(root: Path, allow_real_store: bool = False,
+                     only_msg_ids=None) -> None:
+    """写入硬闸：拒绝真实 bridge_inbox；P2b 批准窗口仅放行指定自测票。"""
     real = REAL_STORE.resolve()
     if _is_within(root, real) or _is_within(real, root):
-        raise ConsumerRefused(
-            "隔离红线：拒绝在真实 bridge_inbox 上执行 --run（%s）" % root)
+        if not allow_real_store:
+            raise ConsumerRefused(
+                "隔离红线：拒绝在真实 bridge_inbox 上执行 --run（%s）" % root)
+        ids = set(only_msg_ids or ())
+        if not ids or not ids <= P2B_APPROVED_MSG_IDS:
+            raise ConsumerRefused(
+                "P2b 真实 bridge_inbox 仅允许 --only-msg 指定批准自测票 %s（收到 %r）"
+                % (sorted(P2B_APPROVED_MSG_IDS), sorted(ids)))
 
 
 def _bind_store(root: Path) -> None:
@@ -290,12 +301,14 @@ def _classify_file(path: Path):
     }
 
 
-def scan(store_root) -> dict:
+def scan(store_root, only_msg_ids=None) -> dict:
     """只读扫描：分类 + 幂等台账视图（已 done 的单标 already_done）。
 
     dry-run 语义：不建目录、不写台账、不动 gateway 状态；台账损坏时失败关闭
     （不能证明幂等就不出执行计划）。
+    only_msg_ids：P2b 窗口只把指定自测票列为 eligible，其余 eligible 转 protected 展示。
     """
+    only = set(only_msg_ids or ())
     root = _require_store_root(store_root)
     plan = {
         "schema": PLAN_SCHEMA,
@@ -316,6 +329,9 @@ def scan(store_root) -> dict:
         entries = ledger["entries"]
         for path in sorted(inbox.glob("*.json"), key=lambda p: p.name):
             category, item = _classify_file(path)
+            if category == "eligible" and only and item.get("msg_id") not in only:
+                category = "protected"
+                item["reason"] = "not_in_p2b_allowlist"
             if category == "eligible":
                 recorded = entries.get(item["msg_id"])
                 item["already_done"] = bool(
@@ -556,18 +572,24 @@ def _consume_one(root: Path, item: dict, ledger: dict) -> dict:
     }
 
 
-def run_once(store_root, limit=None) -> dict:
+def run_once(store_root, limit=None, allow_real_store=False,
+             only_msg_ids=None) -> dict:
     """执行一轮消费（claim → consume → answer 摘要 → deliver）。可重复调用。
 
     limit：本轮最多尝试新消费 N 条；已 done 的单不计数，也不重复消费。
+    allow_real_store/only_msg_ids：仅 P2b 批准窗口使用（真实 bridge_inbox 指定自测票）。
     """
     root = _require_store_root(store_root)
-    _assert_isolated(root)  # 写入前硬闸：真实 bridge_inbox 一律拒绝
+    ids = tuple(only_msg_ids or ())
+    if ids and not set(ids) <= P2B_APPROVED_MSG_IDS:
+        raise ConsumerRefused(
+            "only_msg_ids 含非批准自测票：%r" % sorted(set(ids) - P2B_APPROVED_MSG_IDS))
+    _assert_isolated(root, allow_real_store=allow_real_store, only_msg_ids=ids)
     if limit is not None:
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 0:
             raise ConsumerRefused("limit 必须是非负整数：%r" % (limit,))
 
-    plan = scan(root)
+    plan = scan(root, only_msg_ids=ids)
     ledger = _load_ledger(root)
     result = {
         "schema": RUN_SCHEMA,
@@ -582,6 +604,9 @@ def run_once(store_root, limit=None) -> dict:
         "protected": plan["protected"],
         "malformed": plan["malformed"],
     }
+    if allow_real_store:
+        result["mode"] = "run_p2b"
+        result["only_msg_ids"] = list(ids)
     attempted = 0
     for item in plan["eligible"]:
         if limit is not None and attempted >= limit:
@@ -631,10 +656,16 @@ def main(argv=None) -> int:
                         help="执行消费（默认只出计划；拒绝真实 bridge_inbox）")
     parser.add_argument("--limit", type=int, default=None,
                         help="本轮最多尝试新消费 N 条（已 done 不计数）")
+    parser.add_argument("--allow-real-store", action="store_true",
+                        help="P2b 批准窗口：允许真实 bridge_inbox（必须配 --only-msg 批准自测票）")
+    parser.add_argument("--only-msg", action="append", default=None,
+                        help="P2b 仅消费指定自测票（可重复；必须 ⊆ 批准清单）")
     args = parser.parse_args(argv)
     try:
         if args.run:
-            out = run_once(args.store_root, limit=args.limit)
+            out = run_once(args.store_root, limit=args.limit,
+                           allow_real_store=args.allow_real_store,
+                           only_msg_ids=args.only_msg)
         else:
             out = scan(args.store_root)
     except ConsumerRefused as exc:
@@ -643,6 +674,8 @@ def main(argv=None) -> int:
                "store_root": str(args.store_root),
                "error": str(exc)}
     print(json.dumps(out, ensure_ascii=False, indent=1))
+    if args.allow_real_store and not args.run:
+        return 1
     return 0 if out.get("ok") else 1
 
 
