@@ -3,6 +3,7 @@
 # plus card-handler websocket self-heal (age > 6h or ws-down > 90s).
 # Scheduled task: \JevStack (every 10 min, S4U). Log: logs\jev-stack.log
 # Status snapshot: logs\jev-stack-status.json
+# Exit: 0 = all up OR only externally-blocked components; 1 = internal start failure.
 param(
     [switch]$Status,
     [switch]$Force
@@ -163,25 +164,59 @@ foreach ($c in $Components) {
 if ($started.Count -gt 0) { Write-Log ('pulled up: ' + ($started -join ',')) }
 foreach ($f in $failed) { Write-Log ('start FAIL ' + $f) }
 
-# 5) Verify.
-Start-Sleep -Seconds 3
+# 5) Verify (wait up to 10s for freshly started components to bind their port).
+$deadline = (Get-Date).AddSeconds(10)
+while ((Get-Date) -lt $deadline) {
+    $pending = @()
+    foreach ($name in $started) {
+        $port = ($Components | Where-Object { $_.Name -eq $name }).Port
+        if (-not (Test-Port $port)) { $pending += $name }
+    }
+    if ($pending.Count -eq 0) { break }
+    Start-Sleep -Seconds 1
+}
 $down = @()
 foreach ($c in $Components) {
     if (-not (Test-Port $c.Port)) { $down += $c.Name }
+}
+# External blockers: the launcher cannot fix these (e.g. Feishu platform still
+# holds a stale event bus for the app: online_instance_cnt=1). They are
+# reported but do NOT fail the task (avoids 288 noisy rc=1 per day).
+$external = @()
+$internal = @()
+foreach ($name in $down) {
+    $outFile = $ProcOut + '.' + $name + '.out'
+    $isExternal = $false
+    if (Test-Path $outFile) {
+        $tail = Get-Content $outFile -Tail 30 -ErrorAction SilentlyContinue
+        foreach ($ln in $tail) {
+            if ($ln -match 'another event bus is already connected' -or $ln -match 'online_instance_cnt') {
+                $isExternal = $true
+                break
+            }
+        }
+    }
+    if ($isExternal) { $external += $name } else { $internal += $name }
 }
 $snap = [ordered]@{
     ts = (Get-Date -Format 's')
     started = @($started)
     down = @($down)
+    external = @($external)
+    internal = @($internal)
     ports = [ordered]@{}
 }
 foreach ($c in $Components) {
     $snap.ports[$c.Name] = (Test-Port $c.Port)
 }
 $snap | ConvertTo-Json -Depth 4 -Compress | Set-Content -Path $StatusFile -Encoding UTF8
-if ($down.Count -gt 0) {
-    Write-Log ('FINAL down: ' + ($down -join ','))
+if ($down.Count -eq 0) {
+    Write-Log 'stack ok (4/4 listening)'
+    exit 0
+}
+if ($internal.Count -gt 0) {
+    Write-Log ('FINAL down: ' + ($internal -join ',') + ' (internal failure)')
     exit 1
 }
-Write-Log 'stack ok (4/4 listening)'
+Write-Log ('FINAL down: ' + ($external -join ',') + ' (external: platform event bus busy, will retry next run)')
 exit 0
