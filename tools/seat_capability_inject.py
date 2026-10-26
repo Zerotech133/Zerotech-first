@@ -58,7 +58,7 @@ CAPABILITIES = {
         {"name": "mutual-review", "what": "互审单：评审对家产出（MUTUAL-REVIEW 工单）", "how": "读对家 deliverables/worktree diff → 评审批文书", "boundary": "执行者不结案；分歧上议会厅", "status": "ready"},
         {"name": "lookahead-guard", "what": "Z5 防穿越断言（数据时点校验）", "how": "python agent_platform/engine/lookahead_guard.py --selftest", "boundary": "规则精确优先+pass-through 反证", "status": "ready"},
         {"name": "council-hall", "what": "议会厅治理面发言", "how": "落盘评审/回执文书", "boundary": "只产建议与证据（V3.1）", "status": "ready"},
-        {"name": "harness-runner", "what": "DeepSeek Harness 执行框架（cron/重试/隔离）", "how": "本体当前不在位（C:/lab 与仓内均无）；执行载体 DSH/ Harness² 待另单定性", "boundary": "执行体=会话/DSH 承担", "status": "pending_key"},
+        {"name": "harness-runner", "what": "DeepSeek Harness 执行框架（cron/重试/隔离）", "how": "执行体=DSH 会话（DeepSeek Harness 桌面版）；定时/重试由 governance_clock 承担；Harness² 本体不在位，按需再立项", "boundary": "执行体=DSH 会话；不依赖 Harness² 本体", "status": "ready"},
         {"name": "llm-deepseek", "what": "DeepSeek 真模型推理（异常归纳/建议生成/判例抽取）", "how": "python agent_platform/engine/deepseek.py --selftest（默认 deepseek-flash；key 读 _vault/secrets/deepseek_api_key.txt 或 DEEPSEEK_API_KEY）", "boundary": "key 私有区不落仓；异族互镜的一极", "status": "ready"},
         {"name": "governance-ai", "what": "治理 AI：异常归纳/优先级建议/判例草稿（DeepSeek flash）", "how": "python agent_platform/tools/gov_ai.py --action all --json（draft 落 data/governance_ai；健康卡 governance.ai_advice 判活）", "boundary": "只产 draft，不写卡/经验库/工单；失败黄不阻塞治理链", "status": "ready"},
         {"name": "case-sign-chain", "what": "判例草稿签字链：AI draft→待签 payload→本人签→公钥验签→入 Z4", "how": "python tools/gov_ai_case_bridge.py --emit / --apply（私钥由老田持有，Agent 只验签）", "boundary": "未签/篡改/未配公钥一律拒；strict 模式 verified=True 才入库", "status": "ready"},
