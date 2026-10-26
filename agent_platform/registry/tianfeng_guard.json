@@ -1,0 +1,46 @@
+{
+ "schema": "tianfeng_write_guard/v1",
+ "note": "田丰 v3 写路径白名单/执行确认规则（检测层；不替代 Hermes 沙箱）",
+ "allow_repo_prefixes": [
+  "deliverables/",
+  "work/",
+  "docs/",
+  "agent_platform/registry/",
+  "agent_platform/prompts/",
+  "legion_agents/zhuge/workspace/SEAT_CARD.json"
+ ],
+ "allow_home_prefixes": [
+  "memories/",
+  "guard/"
+ ],
+ "allow_exceptions": [
+  "portal/data/task_exit_audit/"
+ ],
+ "deny_repo_prefixes": [
+  "quant_backtest/data/",
+  "agent_platform/bridge_inbox/",
+  "portal/data/",
+  "portal/work/"
+ ],
+ "deny_substrings": [
+  ".env",
+  "secret",
+  "key",
+  "credential",
+  "token"
+ ],
+ "exec_confirm_patterns": [
+  "shutdown",
+  "restart-computer",
+  "logoff",
+  "schtasks /delete",
+  "schtasks /create",
+  "taskkill",
+  "reg add",
+  "net stop",
+  "net start",
+  "format ",
+  "rmdir",
+  "remove-item"
+ ]
+}
