@@ -23,10 +23,28 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 DEFAULT_SCOPE = ("agent_platform", "tools", "portal")
 CACHE = REPO / "work" / "codebase_intel" / "cache.json"
+CONFIG = REPO / "config" / "codebase_intel.json"
 EXCLUDE_DIRS = {".git", ".worktrees", "node_modules", "__pycache__", ".venv", "venv",
                 ".trae", ".pytest_cache", "dist", "build", "work", "quant_backtest",
                 "legion_agents", "data_sources", "db_migration"}
 MAX_BYTES = 400_000
+
+
+def _load_config() -> dict:
+    try:
+        return json.loads(CONFIG.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _apply_config() -> dict:
+    global EXCLUDE_DIRS, MAX_BYTES
+    cfg = _load_config()
+    if cfg.get("exclude_dirs"):
+        EXCLUDE_DIRS = set(cfg["exclude_dirs"])
+    if cfg.get("max_bytes"):
+        MAX_BYTES = int(cfg["max_bytes"])
+    return cfg
 
 
 def _iter_py(root: Path, scope=None):
@@ -100,7 +118,8 @@ def _save_cache(files: dict) -> None:
 
 def build_map(root: Path | None = None, scope=None, use_cache: bool = True) -> dict:
     root = Path(root) if root else REPO
-    scope = list(scope) if scope is not None else list(DEFAULT_SCOPE)
+    cfg = _apply_config()
+    scope = list(scope) if scope is not None else list(cfg.get("scope") or DEFAULT_SCOPE)
     t0 = time.time()
     old = _load_cache() if (use_cache and root == REPO) else {}
     files, modules, symbols = {}, [], []
@@ -146,6 +165,7 @@ def search(query: str, root: Path | None = None, limit: int = 50, scope=None) ->
 
 
 def refs(symbol: str, root: Path | None = None, scope=None) -> list:
+    _apply_config()
     sym = str(symbol or "").strip()
     if not sym:
         return []
@@ -163,6 +183,7 @@ def refs(symbol: str, root: Path | None = None, scope=None) -> list:
 
 
 def impact(path: str, root: Path | None = None, scope=None) -> dict:
+    _apply_config()
     root = Path(root) if root else REPO
     target = Path(path)
     stem = target.stem
