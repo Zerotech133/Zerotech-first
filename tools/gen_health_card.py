@@ -5229,7 +5229,30 @@ def _hermes_push_level(rec: dict) -> tuple[str, str]:
     return "green", detail
 
 
-def _batch_backlog_level(bl: dict[str, Any]) -> tuple[str, str]:
+# 2026-10-26 BACKLOGDUTY：白天让位期豁免。
+# 设计背景：07:00-21:50 是 M3 独占窗口，JEV 小时轮按设计「拿不到锁就让位」，
+# 期间新闻照常流入 → 积压自然上涨，这是工作模式不是故障。夜间 21:50-07:00 仍严格判红。
+BACKLOG_DAYTIME_EXEMPT_ENV = "ZB_HC_BACKLOG_DAYTIME_EXEMPT"
+NIGHT_WINDOW_START = dt.time(21, 50)
+NIGHT_WINDOW_END = dt.time(7, 0)
+
+
+def _in_night_window(now: dt.datetime | None = None) -> bool:
+    """21:50-07:00 为 JEV 夜间独占窗口（跨零点）。"""
+    n = now or dt.datetime.now()
+    t = n.time()
+    return t >= NIGHT_WINDOW_START or t < NIGHT_WINDOW_END
+
+
+def _backlog_daytime_exempt(now: dt.datetime | None = None) -> bool:
+    """白天让位期是否豁免（env=0 可关闭豁免）。"""
+    if os.environ.get(BACKLOG_DAYTIME_EXEMPT_ENV) == "0":
+        return False
+    return not _in_night_window(now)
+
+
+def _batch_backlog_level(bl: dict[str, Any],
+                         now: dt.datetime | None = None) -> tuple[str, str]:
     """ops.batch_backlog 判级（2026-10-25 EXEC-R13，R23/R32 修 ETA 口径）。
 
     red    ：积压较上一轮上升（任一队列 delta<0），或连续 rc=124 ≥2 轮；
@@ -5245,6 +5268,10 @@ def _batch_backlog_level(bl: dict[str, Any]) -> tuple[str, str]:
         return "red", detail
     jd, xd = bl.get("jev_delta"), bl.get("xq_delta")
     if (jd is not None and jd < 0) or (xd is not None and xd < 0):
+        if _backlog_daytime_exempt(now):
+            return ("yellow",
+                    "白天让位期积压上涨（M3 独占、JEV 按设计让位；21:50 夜跑清账，非故障）；"
+                    + detail)
         return "red", "积压较上一轮上升；" + detail
     streak = int(bl.get("timeout_streak") or 0)
     if streak >= BATCH_TIMEOUT_STREAK_RED:
