@@ -1,0 +1,346 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zerojie.local/schema/stock_analysis.schema.json",
+  "title": "个股全维分析产物 analysis.json",
+  "description": "个股全维分析平台（S1-S6）的统一产物。所有数字/事件须在 sources 中可溯源；缺失数据必须在 snapshot.coverage 中显式标注原因。",
+  "type": "object",
+  "required": ["meta", "snapshot", "features", "verdict", "sources", "checks"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["code", "name", "as_of", "run_id", "schema_version", "generated_at"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {"type": "string", "pattern": "^[0-9]{6}\\.(SH|SZ|BJ)$"},
+        "name": {"type": "string"},
+        "market": {"type": "string", "enum": ["CN", "HK", "US", "OTHER"]},
+        "board": {"type": "string", "description": "主板/创业板/科创板/北交所"},
+        "as_of": {"type": "string", "description": "数据统一时点 YYYY-MM-DD（收盘口径）"},
+        "intraday_as_of": {"type": "string", "description": "盘中快照时间，可选"},
+        "run_id": {"type": "string"},
+        "schema_version": {"type": "string", "const": "1.0"},
+        "generated_at": {"type": "string"},
+        "trigger": {"type": "string", "enum": ["user", "pool", "event", "schedule", "backfill"]},
+        "versions": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "数据/prompt/模型/规则版本号"
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "description": "12 个数据域的时点与覆盖率；缺项必须写原因",
+      "required": ["domains"],
+      "additionalProperties": false,
+      "properties": {
+        "domains": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["as_of", "status"],
+            "additionalProperties": false,
+            "properties": {
+              "as_of": {"type": "string"},
+              "rows": {"type": "integer", "minimum": 0},
+              "status": {"type": "string", "enum": ["ok", "partial", "missing", "stale"]},
+              "missing_reason": {"type": "string"},
+              "source": {"type": "string"}
+            }
+          }
+        },
+        "coverage_pct": {"type": "number", "minimum": 0, "maximum": 100},
+        "required_domains": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["quote", "valuation", "financial", "moneyflow", "chips", "margin", "announcement", "news", "research", "holders", "industry", "calendar"]
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "description": "结构化事件（公告/新闻/研报/监管/市场）",
+      "items": {
+        "type": "object",
+        "required": ["event_id", "date", "category", "title", "source_id"],
+        "additionalProperties": false,
+        "properties": {
+          "event_id": {"type": "string"},
+          "date": {"type": "string"},
+          "category": {
+            "type": "string",
+            "enum": ["业绩", "重组并购", "重整", "退市/ST", "减持/增持", "回购", "质押", "解禁", "分红", "诉讼", "问询/监管", "股权激励", "高管变动", "经营/订单", "行业政策", "市场异动", "其他"]
+          },
+          "title": {"type": "string"},
+          "summary": {"type": "string"},
+          "key_facts": {"type": "array", "items": {"type": "object"}},
+          "pdf_path": {"type": "string"},
+          "url": {"type": "string"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "reviewed": {"type": "boolean", "default": false},
+          "source_id": {"type": "string"}
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "required": ["technical", "valuation", "fundamental"],
+      "additionalProperties": false,
+      "properties": {
+        "technical": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "price": {"type": "number"},
+            "pct_1d": {"type": "number"},
+            "ret_20d": {"type": "number"},
+            "ret_60d": {"type": "number"},
+            "ret_250d": {"type": "number"},
+            "pct_rank_250d": {"type": "number", "minimum": 0, "maximum": 100},
+            "rps50": {"type": "number"},
+            "chanlun": {"type": "object", "description": "中枢/bis/买卖点（结构定义见 /api/chanlun/structure）"},
+            "linkage": {"type": "object", "description": "三线联动信号"},
+            "levels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["type", "price"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": {"type": "string", "enum": ["pressure", "support", "pivot"]},
+                  "price": {"type": "number"},
+                  "label": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "valuation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "market_cap_yi": {"type": "number"},
+            "pe_ttm": {"type": ["number", "null"]},
+            "pb": {"type": ["number", "null"]},
+            "ps_ttm": {"type": ["number", "null"]},
+            "ev_s": {"type": ["number", "null"]},
+            "peers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["code", "name", "ps_ttm"],
+                "additionalProperties": true,
+                "properties": {
+                  "code": {"type": "string"},
+                  "name": {"type": "string"},
+                  "ps_ttm": {"type": "number"},
+                  "pb": {"type": ["number", "null"]},
+                  "market_cap_yi": {"type": "number"}
+                }
+              }
+            },
+            "peer_percentile": {"type": "number", "description": "PS 同业分位（0-100）"}
+          }
+        },
+        "fundamental": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "revenue_ttm_yi": {"type": "number"},
+            "net_profit_ttm_yi": {"type": ["number", "null"]},
+            "revenue_yoy": {"type": ["number", "null"]},
+            "net_profit_yoy": {"type": ["number", "null"]},
+            "gross_margin": {"type": ["number", "null"]},
+            "debt_ratio": {"type": ["number", "null"]},
+            "ocf_ttm_yi": {"type": ["number", "null"]},
+            "contract_liab_yoy": {"type": ["number", "null"]},
+            "goodwill_yi": {"type": ["number", "null"]},
+            "net_assets_yi": {"type": ["number", "null"]},
+            "special_status": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "ST/*ST/停牌/重整/退市风险等状态标签"
+            }
+          }
+        },
+        "moneyflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "main_net_5d_wan": {"type": "number"},
+            "main_net_20d_wan": {"type": "number"},
+            "margin_balance_yi": {"type": "number"}
+          }
+        },
+        "chips": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "winner_rate": {"type": "number"},
+            "avg_cost": {"type": "number"},
+            "concentration": {"type": "object"}
+          }
+        },
+        "sentiment": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "score": {"type": "number", "minimum": -100, "maximum": 100},
+            "bull_bear_ratio": {"type": "number"},
+            "hotness": {"type": "number"},
+            "sources": {"type": "array", "items": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "views": {
+      "type": "object",
+      "description": "AI 研判；模型生成内容必须标注，且不得直接作为事实",
+      "additionalProperties": false,
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["channel", "model", "output", "is_model_generated"],
+            "additionalProperties": false,
+            "properties": {
+              "channel": {"type": "string", "enum": ["stock_analyze", "research", "legion", "council", "custom"]},
+              "model": {"type": "string"},
+              "prompt_version": {"type": "string"},
+              "output": {"type": "string"},
+              "bias": {"type": "string", "enum": ["看多", "中性", "看空", "无法判断"]},
+              "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+              "is_model_generated": {"type": "boolean", "const": true},
+              "fact_check": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "passed": {"type": "boolean"},
+                  "issues": {"type": "array", "items": {"type": "string"}}
+                }
+              }
+            }
+          }
+        },
+        "consensus": {"type": "string"},
+        "dissent": {"type": "string", "description": "分歧点/反方观点"}
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["rating", "confidence", "horizon", "thesis", "triggers", "invalidations", "disclaimer"],
+      "additionalProperties": false,
+      "properties": {
+        "rating": {"type": "string", "enum": ["买入", "观察偏多", "观察", "事件观察", "回避"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "horizon": {"type": "string", "enum": ["1周", "1月", "1季", "6月", "1年", "事件驱动"]},
+        "thesis": {"type": "string"},
+        "key_signals": {"type": "array", "items": {"type": "string"}},
+        "triggers": {"type": "array", "items": {"type": "string"}, "description": "触发条件（价格/事件/数据）"},
+        "invalidations": {"type": "array", "items": {"type": "string"}, "description": "失效条件"},
+        "position_note": {"type": "string", "description": "研究口径说明，不构成交易指令"},
+        "disclaimer": {"type": "string", "const": "研究分析，不构成投资建议"}
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "probability"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "probability": {"type": "number", "minimum": 0, "maximum": 1},
+          "trigger": {"type": "string"},
+          "meaning": {"type": "string"},
+          "watch": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "levels": {"type": "object", "description": "关键位汇总（压力/支撑/中枢），用于报告与 H5"},
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "title": {"type": "string"},
+          "detail": {"type": "string"},
+          "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+          "source_id": {"type": "string"}
+        }
+      }
+    },
+    "watch": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "item"],
+        "additionalProperties": false,
+        "properties": {
+          "date": {"type": "string"},
+          "item": {"type": "string"},
+          "type": {"type": "string", "enum": ["财报", "事件", "数据", "价格", "政策"]}
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "description": "所有数字/事件引用的来源；报告中的每个数字必须能在 sources 找到",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "type", "title"],
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {"type": "string"},
+          "type": {"type": "string", "enum": ["tushare", "announcement", "news", "research", "api", "kg", "manual"]},
+          "title": {"type": "string"},
+          "url": {"type": "string"},
+          "as_of": {"type": "string"},
+          "quote": {"type": "string", "description": "原文摘录（用于核对）"}
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "required": ["data", "facts", "consistency", "delivery"],
+      "additionalProperties": false,
+      "properties": {
+        "data": {"$ref": "#/definitions/gate"},
+        "facts": {"$ref": "#/definitions/gate"},
+        "consistency": {"$ref": "#/definitions/gate"},
+        "delivery": {"$ref": "#/definitions/gate"}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "report_md": {"type": "string"},
+        "report_html": {"type": "string"},
+        "h5_html": {"type": "string"},
+        "charts": {"type": "array", "items": {"type": "string"}},
+        "feishu_message_id": {"type": "string"},
+        "docx_url": {"type": "string"},
+        "archive_dir": {"type": "string"}
+      }
+    }
+  },
+  "definitions": {
+    "gate": {
+      "type": "object",
+      "required": ["passed"],
+      "additionalProperties": false,
+      "properties": {
+        "passed": {"type": "boolean"},
+        "score": {"type": "number", "minimum": 0, "maximum": 100},
+        "issues": {"type": "array", "items": {"type": "string"}},
+        "checked_at": {"type": "string"}
+      }
+    }
+  }
+}
