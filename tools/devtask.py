@@ -248,6 +248,45 @@ GATES = [("Mixin方法集", [sys.executable,
          ("明文凭据", _secret_scan_gate)]
 
 
+def _security_warn_gate(branch, worktree=""):
+    """安全扫描（告警模式）：只扫分支变更文件，high 只提示不阻断。"""
+    try:
+        r = subprocess.run(["git", "-C", REPO, "diff", "--name-only",
+                            "master...%s" % branch], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        rels = [x.strip() for x in r.stdout.splitlines() if x.strip()]
+        base = Path(worktree) if worktree else Path(REPO)
+        paths = []
+        for rel in rels:
+            f = base / rel
+            if f.exists() and f.suffix.lower() in (".py", ".js", ".ts", ".json", ".yaml",
+                                                   ".yml", ".env", ".ps1", ".bat"):
+                paths.append(str(f))
+        if not paths:
+            print("  %-8s - 无文本变更可扫" % "安全扫描")
+            return
+        r = subprocess.run([sys.executable, os.path.join(REPO, "tools", "security_gate.py"),
+                            "scan", "--path"] + paths + ["--json"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", env=GUARD_ENV)
+        data = {}
+        for ln in (r.stdout or "").splitlines():
+            if ln.strip().startswith("{"):
+                data = json.loads(r.stdout)
+                break
+        high = int(data.get("high") or 0)
+        total = int(data.get("total") or 0)
+        mark = "⚠" if high else "✓"
+        print("  %-8s %s high=%d total=%d（告警模式，不阻断）"
+              % ("安全扫描", mark, high, total))
+        if high:
+            for f in (data.get("findings") or [])[:10]:
+                if f.get("severity") == "high":
+                    print("    [high] %s:%s %s" % (f.get("file"), f.get("line"), f.get("rule")))
+    except Exception as e:  # noqa: BLE001
+        print("  %-8s ? 扫描失败（忽略，不阻断）：%s" % ("安全扫描", str(e)[:120]))
+
+
 def _git(*args, cwd=REPO):
     r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True,
                        text=True, encoding="utf-8", errors="replace")
@@ -768,6 +807,7 @@ def cmd_merge(tid, *flags):
         _save(tasks, changed=(tid,))
         _emit("guard_fail", tid, "门 %s 未过：%s" % (name, out[:120]))
         return 1
+    _security_warn_gate(t["branch"], t.get("worktree"))
     # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
     r = subprocess.run([sys.executable,
                         os.path.join(REPO, "tools", "_l2_guard.py"),
