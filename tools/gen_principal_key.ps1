@@ -99,10 +99,16 @@ with open(os.environ["DSH_KEY_OUT_PUB"], "w", encoding="ascii") as f:
     f.write(pub.hex() + "\n")
 print("fingerprint_sha256=" + hashlib.sha256(pub).hexdigest())
 '@
+# 落临时 .py 文件再执行：Windows PowerShell 5.1 把字符串作为原生参数传给
+# python -c 时会吞掉内部双引号（实测 f.write(pub.hex() + "\n") 被改成 + \n，
+# 触发 Python SyntaxError）。落文件可完全绕开原生参数转义问题。
+$pyPath = Join-Path $env:TEMP ("principal_keygen_{0}.py" -f ([guid]::NewGuid().ToString("N")))
 try {
-    & $python -c $code
+    Set-Content -LiteralPath $pyPath -Value $code -Encoding UTF8
+    & $python $pyPath
     if ($LASTEXITCODE -ne 0) { throw "key generation failed (exit=$LASTEXITCODE)" }
 } finally {
+    Remove-Item -LiteralPath $pyPath -Force -ErrorAction SilentlyContinue
     Remove-Item Env:DSH_KEY_PASSPHRASE -ErrorAction SilentlyContinue
     Remove-Item Env:DSH_KEY_OUT_PRIV -ErrorAction SilentlyContinue
     Remove-Item Env:DSH_KEY_OUT_PUB -ErrorAction SilentlyContinue
