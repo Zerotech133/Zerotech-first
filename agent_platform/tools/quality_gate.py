@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """质量门自检工具（B2-d 研发/质量席）。
 
-只读/可回滚：依次执行三项平台确定性检查（全部现有工具，不新增逻辑）：
+只读/可回滚：依次执行四项平台确定性检查（全部现有工具，不新增逻辑）：
   1. `python -m compileall -q agent_platform tools`（语法/字节码编译）
   2. `python tools/check_ports.py`（端口注册自检，非 strict）
-  3. `python agent_platform/tools/scan_secrets.py --git-status`（默认明文凭据扫描口径）
+  3. `python agent_platform/tools/scan_secrets.py --paths ...`（明文凭据扫描，不依赖 git）
+  4. `python tools/check_name_uniqueness.py --json`（P3：编制一名一席 / 治理席带限定）
 每次执行：结果写 `agent_platform/data/quality_gate/status.json` + history.jsonl，
 并给每席写 `agent_platform/data/quality_gate/<席>/status.json` + `dev_events`（patrol_verdict）。
 
@@ -71,6 +72,8 @@ def run_checks(py: str = sys.executable) -> dict:
         # 不依赖 git（S4U 任务上下文取不到 git 清单）：显式扫描受控目录
         "secrets": _run([py, "agent_platform/tools/scan_secrets.py",
                          "--paths", "agent_platform", "tools", "ops", "docs"]),
+        # P3 名称唯一性 CI：编制内一名一席；治理/虚拟席必须带席位限定
+        "names": _run([py, "tools/check_name_uniqueness.py", "--json"]),
     }
     return {"schema": "quality_gate/v1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),

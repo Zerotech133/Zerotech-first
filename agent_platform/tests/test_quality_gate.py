@@ -24,7 +24,8 @@ def test_run_checks_all_ok(monkeypatch):
     monkeypatch.setattr(QG, "_run",
                         lambda argv, timeout=QG.TIMEOUT, env=None: {"ok": True, "rc": 0})
     res = QG.run_checks()
-    assert res["ok"] is True and set(res["checks"]) == {"compileall", "ports", "secrets"}
+    assert res["ok"] is True and set(res["checks"]) == {
+        "compileall", "ports", "secrets", "names"}
 
 
 def test_run_checks_one_fail(monkeypatch):
