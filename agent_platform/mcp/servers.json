@@ -1,0 +1,28 @@
+{
+  "schema": "zhaoyun_mcp_servers/v1",
+  "generated_at": "2026-10-27T07:00:00+08:00",
+  "note": "赵云可直接调用的 MCP 只读 server 白名单；新 server 需人工评审后加入（risk 必须 read-only）",
+  "servers": {
+    "filesystem": {
+      "script": "tools/mcp_ro_filesystem.py",
+      "args": ["--root", ".", "--root", "C:/项目/deliverables"],
+      "risk": "read-only",
+      "allow_tools": ["list_dir", "read_file", "stat"],
+      "timeout": 20
+    },
+    "git": {
+      "script": "tools/mcp_ro_git.py",
+      "args": ["--repo", "."],
+      "risk": "read-only",
+      "allow_tools": ["git_status", "git_log", "git_diff"],
+      "timeout": 20
+    },
+    "zhaoyun-read": {
+      "script": "tools/mcp_ro_zhaoyun.py",
+      "args": [],
+      "risk": "read-only",
+      "allow_tools": ["tasks_read", "org_read", "docs_search", "health_read"],
+      "timeout": 25
+    }
+  }
+}

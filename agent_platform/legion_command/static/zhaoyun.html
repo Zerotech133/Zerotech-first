@@ -125,6 +125,11 @@
     <div id="evals"></div>
   </section>
 
+  <section>
+    <h2>MCP 工具 <span id="mcp-sub">—</span> <span>只读 server 白名单 · 探测/调用受控</span></h2>
+    <div id="mcp"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -515,7 +520,8 @@ function loadCap2() {
     jget('/api/zhaoyun/skills').catch(() => null),
     jget('/api/zhaoyun/traces').catch(() => null),
     jget('/api/zhaoyun/evals').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk, trc, ev]) => {
+    jget('/api/zhaoyun/mcp').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -606,7 +612,31 @@ function loadCap2() {
     const runb = el('button', '', '运行评估（smoke）');
     runb.onclick = runEvals;
     evb.appendChild(runb);
+    const mb = $('mcp'); mb.replaceChildren();
+    if (mcp && mcp.ok) {
+      $('mcp-sub').textContent = (mcp.count || 0) + ' servers · ' +
+        (mcp.cached ? '缓存' : '实时');
+      (mcp.servers || []).forEach((s) => mb.appendChild(el('div', 'muted',
+        '• ' + s.name + ' · risk=' + (s.risk || '') + ' · ' +
+        ((s.tools || []).length) + ' tools · ' +
+        (s.ok ? '✓ ' + (s.elapsed_ms || 0) + 'ms' : '✗ ' + (s.error || '')) +
+        ' · ' + (s.tools || []).join(', '))));
+    } else mb.appendChild(el('div', 'muted', 'MCP 不可用'));
+    const pb = el('button', '', '探测 MCP（3 servers）');
+    pb.onclick = probeMcp;
+    mb.appendChild(pb);
   });
+}
+function probeMcp() {
+  fetch('/api/zhaoyun/mcp/probe', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) {
+        const names = (j.servers || []).map((s) => s.name + ':' + (s.tools || []).length);
+        alert('MCP 探测完成：' + names.join(' / '));
+        loadCap2();
+      } else alert('MCP 探测失败：' + (j.error || ''));
+    }).catch((e) => alert('MCP 探测失败：' + e));
 }
 function runEvals() {
   const box = $('evals');
