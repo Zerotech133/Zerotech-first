@@ -31,6 +31,29 @@ def load_tasks(path: Path | None = None) -> list:
 
 GATEWAY = "http://127.0.0.1:8796/v1/chat/completions"
 
+def _local_native(messages: list, timeout: int = 180) -> str:
+    """本地 Ollama 原生 /api/chat + think=false：思考型模型也能拿到最终 content。"""
+    import urllib.request
+    body = json.dumps({"model": "qwen3.5:9b", "messages": messages,
+                       "stream": False, "think": False}, ensure_ascii=False).encode()
+    req = urllib.request.Request("http://127.0.0.1:11434/api/chat", data=body,
+                                 method="POST", headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return ((json.loads(r.read().decode("utf-8", "replace")).get("message")) or {}).get("content") or ""
+
+
+def _ask(messages: list) -> str:
+    try:
+        text = _local_native(messages)
+        if text.strip():
+            return text
+    except Exception:
+        pass
+    return _reply(_post(GATEWAY, {"model": "auto", "messages": messages, "stream": False}))
+
+
+
+
 
 def _post(url: str, body: dict, timeout: int = 120) -> dict:
     import urllib.request
@@ -62,17 +85,13 @@ def run_quality(t: dict) -> dict:
     import re
     t0 = time.time()
     try:
-        cand = _reply(_post(GATEWAY, {"model": t.get("model", "auto"),
-                                      "messages": t.get("input") or [],
-                                      "stream": False}))
+        cand = _ask(t.get("input") or [])
         rubric = t.get("rubric") or "回答是否正确、完整、可执行"
         judge_prompt = (
             "你是严格的质量评审。请按评分标准给候选回答打 0-5 分。\n"
             "评分标准：%s\n\n候选回答：\n%s\n\n"
             "只输出一行 JSON：{\"score\": <0-5>, \"reason\": \"一句话\"}" % (rubric, cand))
-        judge = _reply(_post(GATEWAY, {"model": t.get("judge_model", "auto"),
-                                       "messages": [{"role": "user", "content": judge_prompt}],
-                                       "stream": False}))
+        judge = _ask([{"role": "user", "content": judge_prompt}])
         score = _parse_score(judge)
         min_score = float(t.get("min_score", 3))
         ok = score is not None and score >= min_score
