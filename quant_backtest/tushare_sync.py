@@ -282,6 +282,9 @@ def batch_shallow(m):
     # monetary_policy 被 tushare 调整权限（2026-09-28 实测无权限，宏观组
     # cn_gdp/cn_cpi/cn_m 均正常，系单接口收紧）；改用 shibor_lpr（LPR 利率）
     run("shibor_lpr", "shibor_lpr", {}, 2000)
+    # 2026-10-26 K-DATA-20261026-SHIBOR：上游 shibor_lpr(LPR) 停更于 2026-08-20，
+    # 补 shibor 日频（银行间拆借 on/1w/.../1y，实测最新到 2026-10-23）作为利率新鲜源。
+    run("shibor", "shibor", {}, 5000)
     # 社融月度（当月增量/累计/存量）；tushare 无 cn_sf 接口名，实为 sf_month
     run("sf_month", "sf_month", {}, 2000)
     # 滚动信息流（历史深度有限，先收口近期）
@@ -1012,11 +1015,19 @@ def main():
     ap.add_argument("--dryrun", action="store_true",
                     help="增量空跑：打印计划不写盘不调 API（trade_cal/mins 元数据除外）")
     ap.add_argument("--status", action="store_true")
+    ap.add_argument("--only", choices=["shibor"],
+                    help="只同步单表（运维修补用；2026-10-26 SHIBOR 单新增）")
     a = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     m = load_manifest()
-    if a.status or (not a.batch and not a.incremental):
+    if a.status or (not a.batch and not a.incremental and not a.only):
         status()
+        return
+    if a.only:
+        # 单表运维修补：不触碰其他表、不跑批；写入原始层后由整理层下次重建派生。
+        ONLY = {"shibor": ("shibor", "shibor", {}, 5000)}
+        tbl, api, params, cap = ONLY[a.only]
+        run(tbl, api, params, cap)
         return
     if a.incremental:
         incremental(m, market=a.market, dryrun=a.dryrun)

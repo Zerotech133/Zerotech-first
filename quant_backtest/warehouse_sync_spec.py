@@ -15,6 +15,7 @@ SHALLOW_COMMON = (
     ('stock_company', 'stock_company', {}, 10000),
     ('cb_basic', 'cb_basic', {}, 2000), ('hk_basic', 'hk_basic', {}, 3000),
     ('npr', 'npr', {}, 500), ('shibor_lpr', 'shibor_lpr', {}, 2000),
+                       ('shibor', 'shibor', {}, 5000),  # 2026-10-26 SHIBOR：日频拆借利率（LPR 上游停更后接棒）
     ('sf_month', 'sf_month', {}, 2000))
 SHALLOW_US = ('us_basic', 'us_basic', {}, 6000)
 SHALLOW_CLASSIFY = ('sw_classify_l1', 'index_classify', {'src': 'SW2021', 'lv': 'L1'}, 5000)
