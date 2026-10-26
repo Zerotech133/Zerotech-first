@@ -142,6 +142,20 @@ def _missing_fields(topic: dict) -> list[str]:
     return out
 
 
+# 数据冻结四字段（DATA1 登记 → BACK1 开跑前置；空/待* = 未冻结）
+FREEZE_FIELDS = ("data_version", "sample_in", "sample_out", "cost_model")
+
+
+def _freeze_missing(bt: dict) -> list[str]:
+    """返回未冻结字段名：空值或 '待*' 均视为未冻结（失败即显形，不默认已冻结）。"""
+    miss = []
+    for key in FREEZE_FIELDS:
+        val = str(bt.get(key) or "").strip()
+        if not val or val.startswith("待"):
+            miss.append(key)
+    return miss
+
+
 def _fmt_ts() -> str:
     return dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
 
@@ -198,15 +212,29 @@ def build_review(root: Path) -> tuple[str, dict]:
                   "- 八字段缺项：%s" % ("、".join(miss) if miss else "无"),
                   "- 结论：%s ｜ 决策：%s（待评审记录）"
                   % (t.get("conclusion") or "待验证", t.get("decision") or "待签")]
-    lines += ["", "## 二、回测登记"]
+    lines += ["", "## 二、数据冻结跟踪（DATA1 登记 → BACK1 方可开跑）"]
     bts = _backtests(root)
     if not bts:
-        lines.append("- （空）")
-    for b in bts:
-        lines.append("- %s ｜ strategy=%s ｜ symbol=%s ｜ status=%s ｜ go_no_go=%s"
-                     % (b.get("topic_id", "?"), b.get("strategy", "?"),
-                        b.get("symbol", "?"), b.get("status", "?"),
-                        b.get("go_no_go", "?")))
+        lines.append("- （空——暂无回测登记，无需冻结项）")
+    else:
+        lines += ["| 课题 | 策略/标的 | 状态 | data_version | sample_in | sample_out | cost_model | go_no_go |",
+                  "|---|---|---|---|---|---|---|---|"]
+        for b in bts:
+            miss = _freeze_missing(b)
+            lines.append("| %s | %s/%s | %s | %s | %s | %s | %s | %s |"
+                         % (b.get("topic_id", "?"), b.get("strategy", "?"),
+                            b.get("symbol", "?"), b.get("status", "?"),
+                            b.get("data_version") or "（空）",
+                            b.get("sample_in") or "（空）",
+                            b.get("sample_out") or "（空）",
+                            b.get("cost_model") or "（空）",
+                            b.get("go_no_go", "?")))
+        frozen = [b for b in bts if not _freeze_missing(b)]
+        lines.append("")
+        lines.append("- 冻结进度：**%d/%d 已冻结**；命中 `待*`/空值即未冻结（当前未冻结清单见上表）。"
+                     % (len(frozen), len(bts)))
+        lines.append("- 关闭判据：`data_version`/`sample_in`/`sample_out`/`cost_model` 四字段全部登记且可追溯，"
+                     "DATA1 出冻结回执后，BACK1 才能执行回测并登记 `status`/`go_no_go`。")
     lines += ["", "## 三、评审检查表（逐项必须给证据）",
               "- [ ] 数据冻结：data_version / sample_in / sample_out 已登记且可追溯；",
               "- [ ] 可复现：同一输入重跑结果一致（附命令/产物）；",
@@ -216,7 +244,10 @@ def build_review(root: Path) -> tuple[str, dict]:
               "- [ ] 行动建议：补证/No-Go/入库/试点/产品化/终止，禁止悬空。"]
     summary = {"action": "review", "date": _today(), "topics": len(topics),
                "counts": counts, "pending": [t.get("topic_id") for t in pending],
-               "backtests": len(bts)}
+               "backtests": len(bts),
+               "freeze": {"total": len(bts),
+                          "frozen": len([b for b in bts if not _freeze_missing(b)]),
+                          "unfrozen": [b.get("topic_id") for b in bts if _freeze_missing(b)]}}
     return "\n".join(lines) + "\n", summary
 
 
@@ -256,6 +287,9 @@ def build_weekly(root: Path) -> tuple[str, dict]:
              "- 阶段分布：" + " ｜ ".join("%s=%d" % (s, counts[s]) for s in STAGES if counts.get(s)),
              "- 回测登记：%d（queued=%d）"
              % (len(bts), len([b for b in bts if str(b.get("status")) == "queued"])),
+             "- 数据冻结：**%d/%d 已冻结**（未冻结=%s）"
+             % (len([b for b in bts if not _freeze_missing(b)]), len(bts),
+                "、".join(b.get("topic_id", "?") for b in bts if _freeze_missing(b)) or "无"),
              "- 研究事件（本周）：%s ｜ ACAD1 事件：%d"
              % (json.dumps(stats["by_kind"], ensure_ascii=False) if stats["by_kind"] else "无",
                 stats["acad1_events"]),

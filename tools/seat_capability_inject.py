@@ -1,4 +1,4 @@
-"""seat_capability_inject.py — 三席位能力底座注入器（2026-10-23 00:20；2026-10-26 TFSEAT：田丰补全 15 能力 + 15 技能卡）。
+"""seat_capability_inject.py — 席位能力底座注入器（2026-10-23 00:20；2026-10-26 TFSEAT：田丰补全 15 能力 + 15 技能卡；2026-10-27 ACAD1 P0/P1：+acad1/strat1/back1）。
 
 把「AI 该有的记忆」按三层打进各席位底层：
   ① 技能表 skills/CAPABILITIES.json —— 本席位全部能力清单（能干什么/怎么调/边界）
@@ -1067,6 +1067,93 @@ WORKING_MEMORY["acad1"] = """# 工作记忆索引 — ACAD1 司马徽（研究�
 - 能力卡 status 要如实：pending_wiring 不冒充 ready，装任务后由注入器动态翻绿。
 """
 
+# ── STRAT1 / BACK1 能力底座（2026-10-27 WO-LEGION-ACAD1-P1）──────────────────
+# 只读工具授权见组织档（events + datamart_*/market_snapshot/data_health/stock_info/
+# recent_events/signal_precedents/pool_rows）；能力项全部映射仓内真实脚本/命令。
+HOMES["strat1"] = os.path.join(REPO, "legion_agents", "STRAT1", "workspace")
+HOMES["back1"] = os.path.join(REPO, "legion_agents", "BACK1", "workspace")
+
+CAPABILITIES["strat1"] = [
+    {"name": "strategy-hypothesis", "what": "策略假设卡：把投研市场问题转成可证伪假设（问题/对象/假设/证据口径/验证方法/结论等级/行动/风险）",
+     "how": "python -X utf8 agent_platform/domains/academy_wiring.py list|move（研究台账真源；阶段 ±1）；模板字段见 agent_platform/data/academy/research_topics.json",
+     "boundary": "只产假设与建议，不执行交易；阶段推进不得跳级", "status": "ready",
+     "verified_scope": "static_cli", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "lcs1-graph", "what": "LCS-1 图形推演：缠论三类买卖点/分型笔段/结构指纹的图形先验假设",
+     "how": "quant_backtest/chanlun_signal.py（三类买卖点）+ quant_backtest/chanlun_scan.py（全市场扫描池，只读产物 data/chanlun_pool*.jsonl）",
+     "boundary": "图形假设须交数据/回测验证；不得以图形替代证据", "status": "ready",
+     "verified_scope": "static_tool", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "factor-hypothesis", "what": "因子假设：RPS 共振/九维多因子/波动率目标等可证伪因子研究",
+     "how": "quant_backtest/rps_resonance.py（RPS 共振）+ quant_backtest/nine_dim.py（九维评分）+ quant_backtest/backtest.py（经典因子回测）",
+     "boundary": "因子结论须标注样本/窗口/成本口径；不得过拟合表述", "status": "ready",
+     "verified_scope": "static_tool", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "strategy-registry", "what": "策略研究台账：课题登记、阶段追踪、策略归属与版本记录",
+     "how": "python -X utf8 agent_platform/domains/academy_wiring.py list|report（真源 agent_platform/data/academy/research_topics.json；阶段唯一写路径）",
+     "boundary": "只维护研究台账，不改策略代码/权重", "status": "ready",
+     "verified_scope": "static_cli", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "research-report", "what": "研究报告：按评审口径出署名研究结论（数据口径/证据/Go-NoGo 建议）",
+     "how": "python -X utf8 agent_platform/tools/academy_ops.py review（评审清单口径）/ weekly（周报口径）；报告落 deliverables 并由 ACAD1 评审",
+     "boundary": "研究报告≠裁决；无数据冻结与回测证据不得出 Go", "status": "ready",
+     "verified_scope": "static_cli", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "evidence-readonly", "what": "证据采集：数据中台读层/市场快照/事件/信号先例只读核验",
+     "how": "quant_backtest/agent_tools.py（datamart_read/latest/ready、market_snapshot、data_health、stock_info、recent_events、signal_precedents、pool_rows；org 已授权）",
+     "boundary": "只读幂等；取不到=未取得，不编造", "status": "ready",
+     "verified_scope": "tool_grant", "verified_at": "2026-10-27T08:00+08:00"},
+]
+
+CAPABILITIES["back1"] = [
+    {"name": "backtest-engine", "what": "回测执行：BacktestEngine 按冻结口径跑策略/组合，输出可追溯成绩",
+     "how": "quant_backtest/backtest_engine_v2.py（引擎）+ quant_backtest/backtest.py（经典策略回测）",
+     "boundary": "不改策略本体；参数与数据版本必须登记", "status": "ready",
+     "verified_scope": "static_tool", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "oos-validation", "what": "样本外验证：滚动/走查/PIT 选样，防过拟合",
+     "how": "quant_backtest/walk_forward.py（滚动样本外）+ quant_backtest/chanlun_pit_select.py（PIT 选样）",
+     "boundary": "样本外窗口不得与调参窗口重叠；n<30 不出结论", "status": "ready",
+     "verified_scope": "static_tool", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "cost-slippage", "what": "成本与滑点：费用/冲击/成交模型，输出成本压力测试",
+     "how": "quant_backtest/fee_schedule.py（费用表）+ quant_backtest/fill_model.py（成交/滑点模型）",
+     "boundary": "成本口径须与冻结登记一致；缺成本证据不得出 Go", "status": "ready",
+     "verified_scope": "static_tool", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "result-registry", "what": "回测登记：结果登记到 backtests.jsonl（status/go_no_go/数据版本）",
+     "how": "python -X utf8 agent_platform/tools/academy_ops.py review（冻结跟踪表/登记展示）+ agent_platform/data/academy/backtests.jsonl（登记真源）",
+     "boundary": "登记可选；无证据不填 go_no_go=go", "status": "ready",
+     "verified_scope": "static_cli", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "reconcile-evidence", "what": "对账与证据：回放对账（S3 一致率）+ 策略账本三方对账",
+     "how": "quant_backtest/strategy_layer/onboarding/replay_reconcile.py（回放对账）+ tools/verify_strategy_ledger.py（账本三方对账）",
+     "boundary": "对账不一致即 fail-visible，不得静默通过", "status": "ready",
+     "verified_scope": "static_tool", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "data-freeze-check", "what": "数据冻结前置核验：data_version/sample_in/sample_out/cost_model 四字段未冻结即拒跑",
+     "how": "python -X utf8 agent_platform/tools/academy_ops.py review（数据冻结跟踪表，命中待*/空值=未冻结）+ quant_backtest/agent_tools.py（datamart_ready/latest 只读核验）",
+     "boundary": "未冻结拒跑回测并回报 DATA1，不自行改口径", "status": "ready",
+     "verified_scope": "static_cli+tool_grant", "verified_at": "2026-10-27T08:00+08:00"},
+]
+
+WORKING_MEMORY["strat1"] = """# 工作记忆索引 — STRAT1 徐庶（策略研究员 / 研究院）
+
+## 常读真源
+- 研究登记簿：agent_platform/data/academy/research_topics.json（阶段唯一真源）
+- 阶段机：agent_platform/domains/academy_wiring.py（±1 步；→decision/closed 需老田签）
+- 战术工具：quant_backtest/chanlun_signal.py、chanlun_scan.py、rps_resonance.py、nine_dim.py
+- 数据证据（只读）：quant_backtest/agent_tools.py 的 datamart_*/market_snapshot/recent_events/signal_precedents/pool_rows
+- 评审与周报口径：agent_platform/tools/academy_ops.py intake|review|weekly
+
+## 纪律
+- 只产假设与研究建议，不执行交易、不写策略权重；无数据冻结与回测证据不出 Go；
+- 结论必须区分事实/佐证/证伪/存疑/未知；假设必须可证伪、可复现。
+"""
+
+WORKING_MEMORY["back1"] = """# 工作记忆索引 — BACK1 陆逊（量化回测研究员 / 研究院）
+
+## 常读真源
+- 回测登记：agent_platform/data/academy/backtests.jsonl（status/go_no_go/data_version/sample_in/sample_out/cost_model）
+- 冻结跟踪：python -X utf8 agent_platform/tools/academy_ops.py review（数据冻结跟踪表）
+- 引擎与模型：quant_backtest/backtest_engine_v2.py、backtest.py、walk_forward.py、fee_schedule.py、fill_model.py
+- 对账：quant_backtest/strategy_layer/onboarding/replay_reconcile.py、tools/verify_strategy_ledger.py
+
+## 纪律
+- 数据未冻结（四字段空/待*）拒跑并回报 DATA1；样本外窗口不得与调参重叠；n<30 不出结论；
+- 对账不一致 fail-visible；回测结论只交 ACAD1/联评，不自判 Go。
+"""
+
 
 def inject(dry_run: bool, seats=None) -> int:
     wrote, skipped = 0, 0
@@ -1145,7 +1232,7 @@ def inject(dry_run: bool, seats=None) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="席位能力底座注入器（tianfeng/zhaoyun/zhuge/data1）")
+    ap = argparse.ArgumentParser(description="席位能力底座注入器（tianfeng/zhaoyun/zhuge/data1/acad1/strat1/back1）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--seat", default=None,

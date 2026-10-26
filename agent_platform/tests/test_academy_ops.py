@@ -51,6 +51,8 @@ def _mkroot(tmp_path: Path) -> Path:
     (academy / "backtests.jsonl").write_text(
         json.dumps({"topic_id": "AC-TEST-1", "status": "queued",
                     "strategy": "LCS-1", "symbol": "600337",
+                    "data_version": "待DATA1冻结", "sample_in": "待登记",
+                    "sample_out": "待登记", "cost_model": "待登记",
                     "go_no_go": "pending"}, ensure_ascii=False) + "\n",
         encoding="utf-8")
     return tmp_path
@@ -103,6 +105,22 @@ def test_review_lists_pending(tmp_path):
     text = files[0].read_text(encoding="utf-8")
     assert "AC-TEST-2" in text
     assert "评审检查表" in text
+    # 数据冻结跟踪（P1）：四字段未冻结须显形，不得默认已冻结
+    assert "数据冻结跟踪" in text
+    assert "待DATA1冻结" in text
+    assert "0/1 已冻结" in text
+    assert "data_version" in text and "cost_model" in text
+
+
+def test_weekly_contains_freeze_progress(tmp_path):
+    root = _mkroot(tmp_path)
+    proc = _run(root, "weekly")
+    assert proc.returncode == 0, proc.stderr
+    files = list((root / "agent_platform" / "data" / "academy" / "reports").glob("*_weekly.md"))
+    assert len(files) == 1
+    text = files[0].read_text(encoding="utf-8")
+    assert "数据冻结" in text
+    assert "0/1 已冻结" in text
 
 
 def test_weekly_contains_kpi(tmp_path):
