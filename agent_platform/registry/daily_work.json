@@ -267,8 +267,8 @@
       "why": "新版本不登记 domain/model_registry，回滚时找不到基线",
       "freq": "daily@09:00",
       "evidence": {
-        "type": "manual",
-        "note": "模型训练按需触发，无每日产物；登记入口 domain/model_registry 待接自动判据"
+        "type": "on_demand",
+        "note": "模型训练按需触发，无每日产物；登记入口 domain/model_registry（触发时应登记）"
       },
       "on_miss": "待接线后再定"
     },
@@ -367,8 +367,8 @@
       "why": "ADR 不落 docs/adr/，下次踩同一个坑没人知道为什么这么定",
       "freq": "daily@09:00",
       "evidence": {
-        "type": "manual",
-        "note": "ADR 按决策触发，无每日产物；入口 tools/adr.py（new/list/show），待接自动判据"
+        "type": "on_demand",
+        "note": "ADR 按决策触发，无每日产物；入口 tools/adr.py（new/list/show）"
       },
       "on_miss": "待接线后再定"
     },

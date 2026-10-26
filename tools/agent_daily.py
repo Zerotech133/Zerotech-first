@@ -336,6 +336,9 @@ def evaluate_item(item: dict, now_dt: datetime) -> dict:
         status, evidence = MANUAL, str(ev.get("note") or "无自动判据")
     elif kind == "port":
         status, evidence = check_port(ev)
+    elif kind == "on_demand":
+        # 按决策/需求触发、无每日产物的事项：显式标不适用，而不是永久"待接线"。
+        status, evidence = NA, str(ev.get("note") or "按需触发，无固定日产")
     elif kind == "file":
         status, evidence = check_file(ev, now)
     elif kind == "log_regex":
