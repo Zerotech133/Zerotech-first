@@ -222,6 +222,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "zhaoyun_view_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/v1/models":
+            self._send_json({"object": "list", "data": [
+                {"id": "gpt-6-sol", "object": "model", "owned_by": "relay"},
+                {"id": "glm-5.3", "object": "model", "owned_by": "zhipu"},
+                {"id": "deepseek-chat", "object": "model", "owned_by": "deepseek"},
+                {"id": "qwen3.5:9b", "object": "model", "owned_by": "local"},
+            ]})
+            return
         if path == "/api/keys/state":
             try:
                 from legion_command import keypool
@@ -389,6 +397,52 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         import json
         path = urlparse(self.path).path
+        if path == "/v1/chat/completions":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 1024 * 1024:
+                    self._send_json({"error": {"message": "bad_request",
+                                               "type": "invalid_request_error"}}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"error": {"message": "bad_json",
+                                           "type": "invalid_request_error"}}, 400)
+                return
+            if not isinstance(req, dict):
+                self._send_json({"error": {"message": "bad_body",
+                                           "type": "invalid_request_error"}}, 400)
+                return
+            if req.get("stream"):
+                self._send_json({"error": {"message": "stream_not_supported",
+                                           "type": "invalid_request_error"}}, 400)
+                return
+            messages = req.get("messages") or []
+            try:
+                from legion_command import keypool
+                res = keypool.auto_chat(messages)
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "gateway_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            if not res.get("ok"):
+                self._send_json({"error": {"message": res.get("detail") or res.get("error"),
+                                           "type": "upstream_error"},
+                                 "x_attempts": res.get("attempts", [])}, 502)
+                return
+            channel = res.get("channel", "")
+            self._send_json({
+                "id": "chatcmpl-dsh-%s" % int(time.time() * 1000),
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": str(req.get("model") or "auto"),
+                "choices": [{"index": 0, "message": {"role": "assistant",
+                                                     "content": res.get("reply", "")},
+                             "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                "x_channel": channel,
+                "x_attempts": res.get("attempts", []),
+            })
+            return
         if path == "/api/keys/auto_chat":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
