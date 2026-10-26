@@ -672,6 +672,8 @@ function rAgent(c, id, noDbg){
     + '<div class="k">姓名 / 席位</div><div class="v"><b>'+esc(nm||'—')+'</b> <code>'+esc(CUR.id)+'</code></div>'
     + '<div class="k">岗位</div><div class="v">'+esc(roleCn||CUR.role_profile)+' <code>'+esc(CUR.role_profile)+'</code></div>'
     + '<div class="k">部门</div><div class="v">'+esc(CUR.dept_name||CUR.dept||'')+(CUR.dept_cn_title?' · '+esc(CUR.dept_cn_title):'')+'</div>'
+    + (CUR.seat_note ? '<div class="k">身份说明</div><div class="v">'+esc(CUR.seat_note)+'</div>' : '')
+    + (CUR.home_page ? '<div class="k">治理页</div><div class="v"><code>'+esc(CUR.home_page)+'</code></div>' : '')
     + (caps.length ? '<div class="k">专长能力</div><div class="v">'+capsHtml+'</div>' : '')
     + ((CUR.skills||[]).length ? '<div class="k">技能</div><div class="v">'+(CUR.skills||[]).map(s=>'<code>'+esc(s)+'</code>').join(' ')+'</div>' : '')
     + (CUR.experience ? '<div class="k">履历</div><div class="v">'+esc(CUR.experience).slice(0,400)+'</div>' : '')

@@ -42,12 +42,14 @@ def test_role_cn_from_prompt_forms():
 def test_bundle_names_and_capabilities_contract():
     bundle = json.load(open(Path(B.OUT), encoding="utf-8"))
     agents = bundle["agents"]
-    assert len(agents) == 41
+    assert len(agents) == 61, "60 在编 + 1 治理席虚拟卡"
+    assert bundle["stats"]["agents"] == 60
+    assert bundle["stats"]["governance_seats"] == 1
     named = [c for c in agents.values() if c.get("cn_name")]
-    assert len(named) == 41, "中文名覆盖应 41/41（DENGZHI1 已补档）"
+    assert len(named) >= 60, "中文名覆盖应 >= 60/61（COWBRIDGE 无 HR 档）"
     assert all(c.get("role_cn") for c in agents.values()), "每席应有中文岗位名"
     with_caps = [c for c in agents.values() if c.get("capabilities")]
-    assert len(with_caps) >= 39, "专长覆盖应 >= 39/41"
+    assert len(with_caps) >= 39, "专长覆盖应 >= 39/61"
     assert agents["DEV1"]["cn_name"] == "马钧"
     assert agents["ARCH1"]["role_cn"] == "架构师"
     assert agents["ST1"]["dept_cn_title"] == "谋略府"
@@ -55,6 +57,30 @@ def test_bundle_names_and_capabilities_contract():
     assert agents["DENGZHI1"]["cn_name"] == "邓芝"
     assert agents["DENGZHI1"]["role_cn"] == "信驿使"
     assert agents["DENGZHI1"]["prompt_file"].endswith("comm_envoy.md")
+
+    # P1：三个缺失部门补入（risk/ops_runtime/chief_line），R2=赵云·保守风控哨
+    depts = {d["id"]: d for d in bundle["departments"]}
+    assert {"risk", "ops_runtime", "chief_line"} <= set(depts)
+    assert depts["risk"]["cn_title"] == "大都督府"
+    assert set(depts["risk"]["agents"]) == {"R1", "R2", "R3"}
+    assert agents["R2"]["cn_name"] == "赵云"
+    assert agents["R2"]["role_profile"] == "risk_conservative_sentinel"
+    assert agents["R2"]["entry_source"] == "org_profiles"
+
+    # P2：治理席虚拟卡（不占编，与 R2 不同 id）
+    zy = agents["ZHAOYUN"]
+    assert zy["cn_name"] == "赵云"
+    assert "不占编" in zy["seat_note"]
+    assert "R2" in zy["seat_note"]
+    assert len(zy["capabilities"]) >= 5
+    assert "8796/zhaoyun" in zy["home_page"]
+    assert depts["governance"]["agents"] == ["ZHAOYUN"]
+
+    # P3：R2 编制口径对齐（会议厅人格=保守风控哨）
+    meeting = (Path(_ROOT) / "agent_platform" / "legion_command" / "static"
+               / "meeting.html").read_text(encoding="utf-8")
+    assert "保守风控哨" in meeting and "进化官" not in meeting
+
     depts = {d["id"]: d for d in bundle["departments"]}
     assert depts["dev"]["cn_title"] == "将作监"
     assert depts["dev"]["lead_name"] == "曹操"
