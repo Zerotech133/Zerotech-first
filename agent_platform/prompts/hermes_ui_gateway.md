@@ -26,3 +26,12 @@
 
 ## 模型
 none（运行时规则执行体，非 LLM 判别席；不参与判读与决策）
+
+## 工具（已授予）
+- `hermes_ui_probe`（本席唯一工具）：对 Hermes WebUI 8787 做一次**只读探活**（GET /health、GET /），
+  结果写 `agent_platform/data/hermes_ui/status.json` + `history.jsonl`，并写 `dev_events` 的
+  `patrol_verdict` 事件（task=HERMES_UI）。**不写业务、不发消息、不重启服务。**
+- 运行方式：`python agent_platform/tools/hermes_ui_probe.py --quiet`（计划任务）；人工可加 `--json`。
+- 退出码：0=成功；1=探活失败；2=自身错误。
+- 回滚：设置环境变量 `HERMES_UI_PROBE=off` 立即跳过；删除计划任务/本工具即完全回滚。
+

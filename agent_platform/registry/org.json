@@ -1906,9 +1906,9 @@
      "charter_detail": "Hermes WebUI 门面：对外页面与接口门面、静态资源与路由；纯工程门面组件，无 LLM 依赖",
      "llm_binding": "none",
      "binding_note": "由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）",
-     "tools": [],
+     "tools": ["hermes_ui_probe"],
      "tools_note": "补档初始为空，按工单另行授予",
-     "memory_grants": [],
+     "memory_grants": {"read": ["domain/*", "dept/ops_runtime/*", "agent/HERMES_UI/*"], "write": ["agent/HERMES_UI/*"]},
      "grade": "E2",
      "grade_note": "补档初始档，待 KPI 观察后调整",
      "attributes": {}
