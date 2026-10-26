@@ -2142,6 +2142,7 @@
     "COMM1",
     "INTEL1",
     "AI1",
+    "GUANYU",
     "PROD1"
    ],
    "teams": [
@@ -2271,6 +2272,62 @@
      "grade": "E3",
      "grade_note": "补档初始档，待 KPI 观察后调整",
      "attributes": {}
+    },
+    {
+     "agent_id": "GUANYU",
+     "cn_name": "关羽",
+     "cn_name_note": "名号权威同 hr/GUANYU/resume.yaml（cn_origin=云长·武圣）；2026-10-27 老田令入编（工单 WO-GUANYU-SEAT-20261027）——研究院新增 E3 管理席，与 AI1 诸葛亮平级",
+     "role_profile": "guanyu_code_audit_governance",
+     "analysis_type": "",
+     "charter_detail": "代码审计与系统整治席（E3 管理席，与 AI1 诸葛亮平级，汇报线 ACAD1→A0）：①代码审计（漏洞/规范/技术债，P0/P1/P2 定级）②测试大修复（失败基线/时间炸弹/flaky/隔离）③编码规范制定与门禁落地 ④无用代码清理与重复功能合并建议（L2 需 A0 批，删除走回收站）⑤只出报告与工单，不自行合并；开发权=独立 worktree 提交+跑测试，合并/上线须 L2 人签；danger=deny，不碰凭据/生产数据/运行中服务",
+     "llm_binding": "deepseek/deepseek-flash",
+     "binding_note": "2026-10-27 入编：DSH（DeepSeek Harness）会话载体，模型实名同 engine/deepseek.py DEFAULT_MODEL=deepseek-flash，org 绑定按 provider/model 写法用 deepseek/ 前缀；本席未接入 llm_gateway/_PREFIX_OWNS_MODEL（若后续接入 8796/会议厅须先补 deepseek 前缀路由，否则整串 binding 会被当 model 传入）",
+     "tools": [
+      "quality_gate",
+      "devtask",
+      "events"
+     ],
+     "tools_note": "均取 org 既有合法工具名（org 内无 code_audit/test_repair 独立工具，故用等价既有工具并如实标注）：quality_gate=只读质量门（compileall/端口注册/明文凭据扫描）；devtask=工单/worktree/评审门；events=事件层留痕。tools 校验：quality_gate 有 agent_platform/tools 实现，devtask/events 属平台内置工具；无危险工具，danger=deny",
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/*",
+       "agent/GUANYU/*"
+      ],
+      "write": [
+       "agent/GUANYU/*"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档·管理席：代码审计与系统整治席，与 AI1 诸葛亮平级（ACAD1→A0）；只出报告与工单，L2 人签",
+     "attributes": {
+      "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
+      "specialties": [
+       "代码审计（漏洞/规范/技术债）",
+       "测试大修复（失败基线/时间炸弹/flaky/隔离）",
+       "编码规范与门禁（pre-commit/AST/CI）",
+       "无用代码清理与重复功能合并建议",
+       "审计报告与工单闭环"
+      ],
+      "knowledge": [
+       "AI工程实践知识库.md",
+       "测试规范知识库.md"
+      ],
+      "tools_allowed": {
+       "read": [
+        "*"
+       ],
+       "write": [
+        "agent/GUANYU/**"
+       ],
+       "execute": [
+        "devtask",
+        "python",
+        "pytest"
+       ],
+       "danger": "deny"
+      }
+     }
     },
     {
      "agent_id": "PROD1",
