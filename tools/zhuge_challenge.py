@@ -868,6 +868,34 @@ def cmd_emit(args) -> int:
         raise InputError("--severity 非法：%r（可选 %s）" % (args.severity, ",".join(SEVERITIES)))
     max_q = args.max_questions
     questions = build_questions(snap["items"], max_questions=max_q)
+    # P2 试点（默认 off）：real3 = 前 3 问用 OpenClaw 载体生成；失败降级规则模板并 warning。
+    model_info = {"mode": "off"}
+    model_warnings: list[str] = []
+    if getattr(args, "model_mode", "off") == "real3":
+        try:
+            from zhuge_challenge_model import generate_questions as _gen_model
+            model_qs, info = _gen_model(
+                snap["items"], max_questions=min(3, len(snap["items"])))
+        except Exception as exc:  # noqa: BLE001 —— 模型失败不反噬主链
+            model_qs, info = None, {"mode": "real3",
+                                    "error": "%s: %s" % (type(exc).__name__, str(exc)[:120])}
+        if model_qs:
+            top_ids = [it.get("task_id") for it in snap["items"][:len(model_qs)]]
+            mq = [{"q_id": "Q%d" % (i + 1), "question": q,
+                   "dimension": "model",
+                   "target_task": top_ids[i] if i < len(top_ids) else ""}
+                  for i, q in enumerate(model_qs)]
+            rest = [q for q in questions if q.get("target_task") not in top_ids]
+            questions = (mq + rest)[:max_q]
+            for i, q in enumerate(questions):
+                q["q_id"] = "Q%d" % (i + 1)
+            info["used"] = True
+            info["replaced_tasks"] = top_ids
+        else:
+            info["used"] = False
+            model_warnings.append(
+                "model real3 失败（%s）→ 已降级规则模板" % info.get("error"))
+        model_info = info
     if not questions:
         raise EmptySnapshotError("未能生成任何质询问题（快照条目缺标题/ID？）")
     date_str = args.date or today_str()
@@ -913,6 +941,7 @@ def cmd_emit(args) -> int:
             "inside_sandbox_prefix": meta["inside_sandbox_prefix"],
         },
         "idem_key": idem_key,
+        "model": model_info,
         "created_at": now_iso(),
         "created_by": "zhuge-offline-mvp",
         "whitelist": {
@@ -921,7 +950,7 @@ def cmd_emit(args) -> int:
             "sandbox_repo_prefix": report["sandbox_repo_prefix"],
             "ops_allowed": report["ops_allowed"],
         },
-        "warnings": list(meta["warnings"]),
+        "warnings": list(meta["warnings"]) + model_warnings,
     }
     if args.dry_run:
         payload = {"ok": True, "command": "emit", "dry_run": True, "written": False,
@@ -1135,6 +1164,8 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--max-questions", type=int, default=DEFAULT_MAX_QUESTIONS)
     e.add_argument("--strict-sandbox", action="store_true",
                    help="快照源必须在沙盘仓前缀内（生产硬化；MVP 离线默认允许 dev 源）")
+    e.add_argument("--model-mode", choices=("off", "real3"), default="off",
+                   help="质询生成模式：off=规则模板（默认，离线）；real3=前 3 问用 OpenClaw 载体生成（P2 试点，失败降级规则）")
     e.add_argument("--dry-run", action="store_true", help="只算不写")
     e.set_defaults(func=cmd_emit)
 
