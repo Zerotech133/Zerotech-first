@@ -150,6 +150,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/" or path == "/index.html":
             self._send_file(_STATIC / "index.html", "text/html; charset=utf-8")
             return
+        if path in ("/zhaoyun", "/zhaoyun.html"):
+            # 干净直达路由（顶栏 iframe 走 /static/zhaoyun.html，二者同一文件）
+            self._send_file(_STATIC / "zhaoyun.html", "text/html; charset=utf-8")
+            return
         m = re.match(r"^/static/([a-z_]+\.html)$", path)
         if m and re.fullmatch(r"[a-z_]+", m.group(1).rsplit(".", 1)[0]):
             self._send_file(_STATIC / m.group(1), "text/html; charset=utf-8")

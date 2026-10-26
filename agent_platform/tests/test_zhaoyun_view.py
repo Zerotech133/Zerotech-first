@@ -123,3 +123,27 @@ def test_index_has_zhaoyun_tab():
            "index.html").read_text(encoding="utf-8")
     assert 'data-v="zhaoyun"' in idx
     assert "/static/zhaoyun.html" in idx
+
+
+def test_pid_alive_own_process_and_absent_pid():
+    import os
+    assert V._pid_alive(os.getpid()) is True
+    assert V._pid_alive(99999999) is False
+    assert V._pid_alive("not-a-pid") is False
+    assert V._pid_alive(-1) is False
+
+
+def test_no_os_kill_probe_in_view():
+    """回归锚点：不得再用 os.kill 探活（Windows 语义会 TerminateProcess）。"""
+    src = (Path(__file__).resolve().parents[1] / "legion_command" /
+           "zhaoyun_view.py").read_text(encoding="utf-8")
+    assert "os.kill(pid, 0)" in src          # 仅 POSIX 分支允许出现
+    assert "OpenProcess" in src              # Windows 分支必须用 OpenProcess
+    # 出现位置必须在 POSIX 分支：Windows 分支（os.name == "nt"）早于最后的 os.kill
+    assert src.index('os.name == "nt"') < src.rindex("os.kill(pid, 0)")
+
+
+def test_serve_has_clean_zhaoyun_route():
+    src = (Path(__file__).resolve().parents[1] / "legion_command" /
+           "serve.py").read_text(encoding="utf-8")
+    assert '"/zhaoyun"' in src and '"zhaoyun.html"' in src

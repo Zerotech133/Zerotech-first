@@ -95,17 +95,48 @@ def _latest_advice(platform: Path, now: float) -> dict:
     return out
 
 
+def _pid_alive(pid) -> bool:
+    """进程存活探测（只读）。
+
+    严禁 `os.kill(pid, 0)` 探活：Windows 上 os.kill 对非 Ctrl-C 信号的语义是
+    **TerminateProcess**，探活可能误杀进程（本页 hotfix 教训）。Windows 用
+    OpenProcess + GetExitCodeProcess(STILL_ACTIVE)；POSIX 才用 kill(pid, 0)。
+    """
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            STILL_ACTIVE = 259
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+            if not handle:
+                return False
+            try:
+                code = ctypes.c_ulong(0)
+                ok = kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+                return bool(ok) and code.value == STILL_ACTIVE
+            finally:
+                kernel32.CloseHandle(handle)
+        except Exception:  # noqa: BLE001 —— 探活失败按"未知/不在"处理，不阻塞视图
+            return False
+    try:
+        os.kill(pid, 0)          # POSIX：0 = 仅检查存在，不投递信号
+        return True
+    except OSError:
+        return False
+
+
 def _clock(platform: Path) -> dict:
     lock = _read_json(platform / "data" / "governance_clock.lock")
     state = _read_json(platform / "data" / "governance_clock_state.json") or {}
     pid = lock.get("pid") if isinstance(lock, dict) else None
-    alive = False
-    if pid:
-        try:
-            os.kill(int(pid), 0)          # 只探测存在，不发信号（Windows 上 os.kill(pid,0) 亦可用）
-            alive = True
-        except (OSError, ValueError):
-            alive = False
+    alive = _pid_alive(pid) if pid else False
     anchors = None
     try:
         import sys
