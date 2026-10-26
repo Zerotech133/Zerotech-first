@@ -30,6 +30,12 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div><button onclick="load()">刷新</button></div></header>
 <div class="banner" id="banner"></div>
 <main id="main"></main>
+<section class="log" style="margin:0 22px 20px"><h2>AI 对话框（自动适配中转站）</h2>
+<div id="chatlog" style="max-height:220px;overflow:auto;margin-bottom:8px"></div>
+<div style="display:flex;gap:8px"><textarea id="chatinput" rows="2" placeholder="说点什么…（自动选可用通道：GLM→DeepSeek→本地9B）" style="flex:1;background:#081321;border:.5px solid #1E3A5F;border-radius:8px;color:#E8F0F8;padding:8px;font-family:inherit"></textarea>
+<button id="chatsend">发送</button></div>
+<div id="chatmeta" class="muted" style="margin-top:6px"></div>
+</section>
 <section class="log" style="margin:0 22px 20px"><h2>切换日志</h2><div id="log"></div></section>
 <script>
 const $=id=>document.getElementById(id);
@@ -78,5 +84,23 @@ async function load(){
   }catch(e){const b=$('banner');b.textContent='Key 池不可达：'+e.message;b.style.display='block'}
 }
 async function act(body){const r=await api(body);if(!r.ok)alert('失败：'+(r.error||'unknown'));load()}
+
+let chatHistory=[];
+async function sendChat(){
+  const inp=document.getElementById('chatinput');const text=(inp.value||'').trim();if(!text)return;
+  inp.value='';chatHistory.push({role:'user',content:text});
+  const log=document.getElementById('chatlog');log.innerHTML+='<div class="logitem"><b>我：</b>'+text.replace(/</g,'&lt;')+'</div>';
+  document.getElementById('chatmeta').textContent='自动选择通道中…';
+  try{
+    const r=await fetch('/api/keys/auto_chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory})});
+    const v=await r.json();
+    if(v.ok){chatHistory.push({role:'assistant',content:v.reply||''});log.innerHTML+='<div class="logitem"><b>AI（'+v.channel+'）：</b>'+(v.reply||'').replace(/</g,'&lt;')+'</div>';document.getElementById('chatmeta').textContent='通道：'+v.channel+' ｜ 尝试：'+JSON.stringify(v.attempts||[])}
+    else{document.getElementById('chatmeta').textContent='失败：'+(v.detail||v.error)}
+    log.scrollTop=log.scrollHeight;
+  }catch(e){document.getElementById('chatmeta').textContent='请求失败：'+e.message}
+}
+document.getElementById('chatsend').onclick=sendChat;
+document.getElementById('chatinput').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))sendChat()});
+
 load();setInterval(load,30000);
 </script></body></html>

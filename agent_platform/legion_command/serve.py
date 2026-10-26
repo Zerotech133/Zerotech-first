@@ -389,6 +389,25 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         import json
         path = urlparse(self.path).path
+        if path == "/api/keys/auto_chat":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 128 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request",
+                                     "reason": "content_length_out_of_range"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                from legion_command import keypool
+                res = keypool.auto_chat((req or {}).get("messages") or [])
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "auto_chat_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
         if path == "/api/keys/action":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
