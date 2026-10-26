@@ -81,7 +81,7 @@ def _http_request(method: str, url: str, headers: dict, data: Optional[bytes],
 class DeepSeekClient:
     """最小可用 DeepSeek 客户端（OpenAI 兼容）；transport 可注入做离线测试。"""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = DEFAULT_MODEL,
+    def __init__(self, api_key=None, model: str = DEFAULT_MODEL,
                  base_url: str = DEFAULT_BASE_URL, timeout: float = 60.0,
                  retries: int = 2,
                  transport: Optional[Callable[..., tuple[int, str]]] = None,
