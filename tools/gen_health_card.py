@@ -5644,7 +5644,9 @@ def _agent_census_detail(cen: dict[str, Any]) -> str:
 # "谁在干活"（agent.census）之外还要回答"该干的干了没有"——没有事的组织只会
 # 巡检和催办（当天实测：351 条催办 vs 1 单派工）。本项复用 tools/agent_daily.py
 # --json，不重复实现判定口径。
-AGENT_DAILY_TIMEOUT_SECONDS = 30.0
+# 2026-10-26 HCTIMEOUT: 476 张工单后 agent_daily 实测 32.4s（order 证据逐分支 git log），
+# 30s 超时会让 agent.daily 常态红；放宽到 120s，仍远小于整卡执行预算。
+AGENT_DAILY_TIMEOUT_SECONDS = 120.0
 
 
 def _empty_agent_daily() -> dict[str, Any]:
