@@ -16,10 +16,10 @@ def g1_data(snap):
     cov = snap.get("coverage", 0)
     if cov < 80:
         issues.append("覆盖率 %.1f%% < 80%%" % cov)
-    # 时效
+    # 时效：仅对状态 ok 的域检查（missing 已显式标 N/A，不误报滞后）
     for dom in ("chips", "margin"):
         d = snap["domains"].get(dom) or {}
-        if d.get("rows") and d.get("as_of") and snap.get("last_trade_date"):
+        if d.get("rows") and d.get("status") == "ok" and d.get("as_of") and snap.get("last_trade_date"):
             try:
                 from datetime import date
                 a = date.fromisoformat(d["as_of"].replace("/", "-"))

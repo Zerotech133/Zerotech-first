@@ -209,6 +209,24 @@ def load_snapshot(code, as_of):
     snap["required_missing"] = [k for k in req if snap["domains"].get(k, {}).get("status") == "missing"]
     snap["name"] = name
     snap["last_trade_date"] = _latest_date(daily)
+
+    # 数据域时效修正：老数据（如非两融标的的 margin）标为 missing/N/A，而不是"滞后"误报
+    def _age_days(d8):
+        try:
+            from datetime import date
+            a = date.fromisoformat(str(d8).replace("/", "-")[:10])
+            b = date.fromisoformat(str(snap["last_trade_date"]).replace("/", "-"))
+            return (b - a).days
+        except Exception:
+            return None
+
+    for dom, max_age in (("margin", 30), ("chips", 15)):
+        d = snap["domains"].get(dom) or {}
+        if d.get("rows") and d.get("as_of"):
+            age = _age_days(d["as_of"])
+            if age is not None and age > max_age:
+                d["status"] = "missing"
+                d["missing_reason"] = "非两融标的或长期未更新（最后 %s，%d 天前）" % (d["as_of"], age)
     return snap
 
 
