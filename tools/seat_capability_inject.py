@@ -65,6 +65,9 @@ CAPABILITIES = {
         {"name": "rd-planning", "what": "研发计划：目标/里程碑/范围/资源/KPI/风险登记与月度复盘", "how": "读 ROADMAP/tasks/健康卡 → 出季度计划+里程碑+风险台账到 deliverables；月度复盘", "boundary": "不虚报进度；基线变更留痕；计划可回滚", "status": "ready"},
         {"name": "workflow-dynamics", "what": "动态工作流观测：WIP/超期/阻塞/责任/下一步，卡点自动呈现", "how": "tianfeng_view 工作流区块（/api/tianfeng）+ 任务板账本 + 计划任务状态；卡点升级", "boundary": "只读观测；不改任务状态；卡点必须带责任与下一步", "status": "ready"},
         {"name": "dispatch-live", "what": "真实派工：把拆好的任务派给部门/AI worker 并跟踪回执", "how": "devtask 建单 + delegation/events + 回执台账；卡点升级", "boundary": "L2 动作报老田；每单 owner/验收/回滚齐全", "status": "ready"},
+        {"name": "implementation-supervision", "what": "研发执行监督：跟踪执行 AI 落地（进度/卡点/返工/验收前置）", "how": "devtask 台账 + delegation 回执（work/tianfeng_dispatch.jsonl）+ 测试证据；按里程碑核对", "boundary": "不亲自提交生产代码；执行者署名；卡点必须升级", "status": "ready"},
+        {"name": "qa-acceptance", "what": "验收：按验收标准核证据/测试/回滚点，出通过或驳回", "how": "验收单+证据包+测试命令；一次通过/驳回列缺陷；签字前复验", "boundary": "不通过不签；不改写原始记录", "status": "ready"},
+        {"name": "release-rollback", "what": "发布/回滚：上线清单、灰度、回滚预案、观察与复盘", "how": "发布单+五要素；L2 上线报老田；回滚脚本/证据落盘", "boundary": "L2 必报老田；不可逆点单列", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -379,6 +382,42 @@ description: 真实派工：拆单→派给部门/AI worker→跟踪回执→卡
 2. 派工：delegation/events/部门 AI 并发；回执登记台账。
 3. 跟踪：超时/无回执/失败 → 卡点升级（L1 即时报，L2 报老田）。
 4. 验收：证据+测试+回滚点齐全才收口；执行者署名。
+""",
+        "implementation-supervision": """---
+name: implementation-supervision
+description: 研发执行监督：跟踪执行 AI 落地、卡点、返工与验收前置；不亲自交付代码。
+---
+
+# 研发执行监督
+
+1. 按里程碑核对执行方进度：devtask 台账 + delegation 回执（work/tianfeng_dispatch.jsonl）。
+2. 卡点：超时/无回执/失败/返工 → 记原因、责任、下一步；L1 即时报，L2 报老田。
+3. 验收前置：测试证据、差异说明、回滚点齐全才进入 qa-acceptance。
+4. 不亲自提交生产代码；执行者署名，田丰只 review/验收。
+""",
+        "qa-acceptance": """---
+name: qa-acceptance
+description: 验收：按验收标准核证据/测试/回滚点，出通过或驳回；不通过不签。
+---
+
+# 验收
+
+1. 对照验收单逐条核：命令/断言/证据路径/回滚点。
+2. 复验关键主张（独立重跑测试或抽查证据），防"自证清白"。
+3. 结论三态：通过 / 驳回（列缺陷+复验条件）/ 升级老田（列裁决点）。
+4. 签字前不改写原始记录；不通过不签。
+""",
+        "release-rollback": """---
+name: release-rollback
+description: 发布/回滚：上线清单、灰度、回滚预案、观察与复盘；L2 报老田。
+---
+
+# 发布与回滚
+
+1. 发布单：变更范围、影响面、不可逆点、灰度策略、观察指标、回滚步骤。
+2. L2（上线/生产/客户可见）必须先取得老田批准；五要素齐全。
+3. 回滚脚本与证据提前备好；发布后观察窗口内保留回滚能力。
+4. 发布完成写复盘：实际 vs 计划、异常、后续动作。
 """,
     },
     "zhaoyun": {
