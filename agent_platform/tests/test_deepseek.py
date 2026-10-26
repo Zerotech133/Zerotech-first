@@ -124,3 +124,18 @@ def test_ping_combines_models_and_chat(tmp_path):
     out = _client(cap).ping()
     assert out["ok"] is True and out["models"] == ["deepseek-flash"]
     assert out["reply"] == "OK"
+
+
+def test_ping_empty_content_is_not_ok(tmp_path):
+    """假成功判例：HTTP 200 但正文为空（推理 token 占满预算）→ ok=False。"""
+    cap = _Capture([
+        (200, json.dumps({"data": [{"id": "deepseek-flash"}]})),
+        (200, json.dumps({"choices": [{"message": {"content": "",
+                                                    "reasoning_content": "思考中"}}]})),
+    ])
+    out = _client(cap).ping()
+    assert out["ok"] is False
+    assert out["reason"]
+    # 预算下限 64：防再次被推理 token 吃空
+    payload = json.loads(cap.calls[1]["data"].decode("utf-8"))
+    assert payload["max_tokens"] >= 64

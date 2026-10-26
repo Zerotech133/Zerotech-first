@@ -128,6 +128,13 @@ class DeepSeekClient:
     def chat(self, messages: list[dict], model: Optional[str] = None,
              temperature: float = 0.2, max_tokens: int = 800,
              response_format: Optional[dict] = None) -> str:
+        """发一轮对话，返回 assistant 正文。
+
+        注意（LLMDEEPSEEKFIX2 实证）：deepseek 系列为**推理模型**，响应含
+        ``reasoning_content``，其 token 与正文共用 ``max_tokens`` 预算；短回复场景
+        （如自检）预算过小会被推理吃光而正文为空。调用方应按任务给足预算
+        （一句话级 ≥64，结构化抽取 ≥512）。
+        """
         payload: dict = {"model": model or self.model, "messages": list(messages),
                          "temperature": float(temperature),
                          "max_tokens": int(max_tokens), "stream": False}
@@ -144,13 +151,20 @@ class DeepSeekClient:
         rows = data.get("data") if isinstance(data, dict) else None
         return [str(r.get("id")) for r in (rows or []) if isinstance(r, dict) and r.get("id")]
 
-    def ping(self) -> dict:
-        """最小连通性自检：/models + 一次极短 chat（成本可忽略）。"""
+    def ping(self, max_tokens: int = 64) -> dict:
+        """最小连通性自检：/models + 一次短 chat（成本可忽略）。
+
+        判例（假成功）：HTTP 200 但正文为空 ≠ 可用——推理模型预算不足时正文会空。
+        故默认 64 token，且空正文判 ``ok=False``（fail-visible，不冒充可用）。
+        """
         ids = self.models()
         reply = self.chat([{"role": "user", "content": "只回复 OK 两个字母"}],
-                          max_tokens=8, temperature=0.0)
-        return {"ok": True, "models": ids, "model": self.model,
-                "reply": reply.strip()[:20]}
+                          max_tokens=max(64, int(max_tokens)), temperature=0.0)
+        text = reply.strip()
+        return {"ok": bool(text), "models": ids, "model": self.model,
+                "reply": text[:20],
+                "reason": "" if text else
+                "empty_content（推理 token 可能占满预算；可调大 max_tokens）"}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -164,10 +178,13 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         client = DeepSeekClient(model=args.model)
+        rc = 0
         if args.models:
             out: Any = {"ok": True, "models": client.models()}
         elif args.selftest:
             out = client.ping()
+            if not out.get("ok"):          # 空正文 = 不可用（假成功判例）
+                rc = 1
         elif args.chat:
             out = {"ok": True, "reply": client.chat([{"role": "user", "content": args.chat}])}
         else:
@@ -178,7 +195,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(json.dumps(out, ensure_ascii=False, indent=2) if args.json
           else json.dumps(out, ensure_ascii=False))
-    return 0
+    return rc
 
 
 if __name__ == "__main__":
