@@ -620,7 +620,7 @@ def _jev_stats(db, hours=24):
                 age_h = 0.0
                 try:
                     age_h = max(0.0, (now - datetime.strptime(
-                        str(created_at or "")[:16],
+                        str(d.get("created_at") or "")[:16],
                         "%Y-%m-%d %H:%M")).total_seconds() / 3600.0)
                 except Exception:
                     pass  # 豁免（C2批2）：时间坏值按 0h（权重 1）计

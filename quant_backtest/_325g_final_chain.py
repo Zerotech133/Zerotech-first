@@ -34,7 +34,7 @@ STAMP = time.strftime("%Y-%m-%d %H:%M:%S")
 PY311 = r"C:\Program Files\Python311\python.exe"
 PY = PY311 if os.path.exists(PY311) else sys.executable
 if not os.path.exists(PY311) and sys.executable != PY311:
-    log("WARN: 系统 3.11 不在位，子进程回退 sys.executable=%s" % sys.executable)
+    print("WARN: 系统 3.11 不在位，子进程回退 sys.executable=%s" % sys.executable)
 
 
 def log(msg):

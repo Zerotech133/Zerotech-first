@@ -17,6 +17,7 @@
   python kg_features.py            # 全量计算并落盘
   python kg_features.py --top 10   # 打印各特征 Top N
 """
+import datamart as dm
 import argparse
 import os
 import sys

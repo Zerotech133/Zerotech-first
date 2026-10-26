@@ -46,11 +46,7 @@ def read_log_lines() -> list[str]:
             return r.stdout.decode("utf-8", errors="replace").splitlines()
     except (OSError, subprocess.TimeoutExpired):
         pass
-    # 兜底：宿主 LogPath（Linux 路径在 Windows 不可用，保留探测逻辑以防环境变化）
-    log = find_access_log()
-    if log:
-        with open(log, encoding="utf-8", errors="replace") as f:
-            return f.read().splitlines()
+    # 兜底：宿主 LogPath 在 Windows 不可用（原 Linux 探测函数已移除）
     return []
 
 

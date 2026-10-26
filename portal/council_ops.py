@@ -142,8 +142,7 @@ def parse_natural(text: str) -> dict:
         return m.group(0)
 
     # 日期
-    if _eat(_re.compile(r"(\d{4})[年./-](\d{1,2})[月./-](\d{1,2})[号日]?")):
-        g = _.groups() if False else None
+    _eat(_re.compile(r"(\d{4})[年./-](\d{1,2})[月./-](\d{1,2})[号日]?"))
     m = _re.search(r"(\d{4})[年./-](\d{1,2})[月./-](\d{1,2})", text)
     if m:
         at = dt.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
