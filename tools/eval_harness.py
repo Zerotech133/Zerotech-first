@@ -91,6 +91,8 @@ def _parse_score(text: str):
     if not m:
         m = re.search(r"score\s*[:：]\s*([0-9.]+)", text, re.I)
     if not m:
+        m = re.search(r"\b([0-5])\b", text)
+    if not m:
         return None
     try:
         return float(m.group(1))
@@ -108,7 +110,7 @@ def run_quality(t: dict) -> dict:
         judge_prompt = (
             "你是严格的质量评审。请按评分标准给候选回答打 0-5 分。\n"
             "评分标准：%s\n\n候选回答：\n%s\n\n"
-            "只输出一行 JSON：{\"score\": <0-5>, \"reason\": \"一句话\"}" % (rubric, cand))
+            "只输出一个 0-5 的数字，不要 JSON、不要解释。" % (rubric, cand))
         judge, judge_ch = _ask([{"role": "user", "content": judge_prompt}])
         score = _parse_score(judge)
         min_score = float(t.get("min_score", 3))
