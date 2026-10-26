@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""OSLINK-W4 契约骨架测试（草案期：全部 skip，实施期逐条转实跑）。
+"""OSLINK-W4 契约骨架测试（v1.0 已签认；当前占位 skip，实施期逐条落实现后转实跑）。
 
 对应契约：outputs/2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md
 归属单：K-QUANT-20261025-OSLEG-DRAFT（归口单 K-QUANT-20261023-OSLINK 的 W4）
@@ -18,7 +18,7 @@ from __future__ import annotations
 import pytest
 
 # 契约 v0.1 尚未签认前，全部用例 skip；A0 签认后逐条移除 skip。
-DRAFT = pytest.mark.skip(reason="契约 v0.1 待 A0 归口签认（K-QUANT-20261025-OSLEG-DRAFT）")
+DRAFT = pytest.mark.skip(reason="契约 v1.0 已签认（2026-10-26 老田代 A0，见契约 §十）；实施期落实现后逐条去 skip，未接 8795/真实消费者")
 
 
 @DRAFT
