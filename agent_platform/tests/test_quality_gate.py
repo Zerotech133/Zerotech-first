@@ -21,7 +21,8 @@ class _P:
 
 
 def test_run_checks_all_ok(monkeypatch):
-    monkeypatch.setattr(QG, "_run", lambda argv, timeout=QG.TIMEOUT: {"ok": True, "rc": 0})
+    monkeypatch.setattr(QG, "_run",
+                        lambda argv, timeout=QG.TIMEOUT, env=None: {"ok": True, "rc": 0})
     res = QG.run_checks()
     assert res["ok"] is True and set(res["checks"]) == {"compileall", "ports", "secrets"}
 
@@ -29,7 +30,7 @@ def test_run_checks_all_ok(monkeypatch):
 def test_run_checks_one_fail(monkeypatch):
     calls = {"n": 0}
 
-    def fake(argv, timeout=QG.TIMEOUT):
+    def fake(argv, timeout=QG.TIMEOUT, env=None):
         calls["n"] += 1
         return {"ok": calls["n"] != 2, "rc": 0 if calls["n"] != 2 else 1}
 
@@ -76,16 +77,17 @@ def test_env_with_git_adds_git_path():
     assert any(d in env["PATH"] for d in git_dirs)
 
 
-def test_run_checks_passes_env_to_secrets(monkeypatch):
+def test_secrets_uses_explicit_paths(monkeypatch):
+    """S4U 任务下 git 可能不可用 → secrets 检查必须显式扫目录（不依赖 git）。"""
     seen = []
 
     def fake(argv, timeout=QG.TIMEOUT, env=None):
-        seen.append((argv, env))
+        seen.append(argv)
         return {"ok": True, "rc": 0}
 
     monkeypatch.setattr(QG, "_run", fake)
     res = QG.run_checks()
     assert res["ok"] is True
-    secrets = [env for argv, env in seen
-               if any("scan_secrets" in str(x) for x in argv)]
-    assert secrets and secrets[0] and "Git" in secrets[0].get("PATH", "")
+    secrets = [a for a in seen if any("scan_secrets" in str(x) for x in a)]
+    assert secrets and "--paths" in secrets[0]
+    assert "agent_platform" in secrets[0] and "docs" in secrets[0]
