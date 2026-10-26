@@ -286,6 +286,10 @@ class Handler(BaseHTTPRequestHandler):
                         self._send_json(json.loads(latest.read_text(encoding="utf-8")))
                     except (OSError, ValueError):
                         self._send_json({"ok": False, "error": "no_report"})
+                elif sub == "mcp":
+                    sys.path.insert(0, str(_PLATFORM))
+                    from mcp import registry as mreg
+                    self._send_json(mreg.summary())
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -576,6 +580,37 @@ class Handler(BaseHTTPRequestHandler):
                 res = {"ok": False, "error": "evals_run_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
             self._send_json(res, 200 if res.get("ok") else 500)
+            return
+        if path == "/api/zhaoyun/mcp/probe":
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from mcp import registry as mreg  # noqa: WPS433
+                res = mreg.summary(force=True)
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "mcp_probe_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 500)
+            return
+        if path == "/api/zhaoyun/mcp/call":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from mcp import registry as mreg  # noqa: WPS433
+                res = mreg.call(str(req.get("server") or ""),
+                                str(req.get("tool") or ""),
+                                req.get("args") or {})
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "mcp_call_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/request":
             # WO-ZHAOYUN-DRILL：调整类动作只登记请求（pending_human），不自动改真源
