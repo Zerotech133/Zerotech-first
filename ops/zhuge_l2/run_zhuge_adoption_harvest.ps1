@@ -4,5 +4,9 @@
 $py = 'C:\Program Files\Python311\python.exe'
 $script = 'C:\aios\portal\harvest_adoption.py'
 $log = 'C:\Temp\zhuge_adoption_harvest.log'
-& $py -X utf8 $script *>> $log
-exit $LASTEXITCODE
+$env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
+$out = & $py -X utf8 $script 2>&1
+$rc = $LASTEXITCODE
+$out | Out-File -FilePath $log -Append -Encoding utf8
+exit $rc
