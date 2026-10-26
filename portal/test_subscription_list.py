@@ -12,7 +12,6 @@ sub_admin.html 引用端点且全 fetch 显式 GET、无 POST。
 """
 
 import re
-import sqlite3
 import sys
 from pathlib import Path
 

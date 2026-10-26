@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import html
 import ipaddress
-import json
 import re
 import socket
 import urllib.parse

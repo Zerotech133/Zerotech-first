@@ -4,6 +4,7 @@
 覆盖 timezone / paths / fail_visible / schema / contract 全部公共 API 与边界。
 运行：``python -m pytest common/genkit/tests/test_genkit.py -q``（仓库根目录）。
 """
+
 from __future__ import annotations
 
 import json
@@ -13,19 +14,37 @@ from pathlib import Path
 import pytest
 
 from common.genkit import (
-    CST, UTC, now_cst, utcnow, to_cst, to_utc, format_cst, cst_date_str, cst_month_str,  # noqa: F401
+    CST,
+    UTC,
+    now_cst,
+    utcnow,
+    to_cst,
+    to_utc,
+    format_cst,
+    cst_date_str,
+    cst_month_str,  # noqa: F401
 )
 from common.genkit import (
-    resolve_repo_root, resolve_path, resolve_project_root,
+    resolve_repo_root,
+    resolve_path,
+    resolve_project_root,
 )
 from common.genkit import (
-    read_json_visible, safe_json_loads, truncation_note, list_or_empty,
+    read_json_visible,
+    safe_json_loads,
+    truncation_note,
+    list_or_empty,
 )
 from common.genkit import (
-    SchemaViolation, field_state, validate_required, check_version,
+    SchemaViolation,
+    field_state,
+    validate_required,
+    check_version,
 )
 from common.genkit import (
-    assert_json_contract, assert_nonempty_generated, load_generated_json,
+    assert_json_contract,
+    assert_nonempty_generated,
+    load_generated_json,
 )
 
 

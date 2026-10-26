@@ -1,7 +1,6 @@
 # WO-OS-04 契约测试：诸葛亮建议引擎（规则版，纯函数离线）
 # 先红后绿：本文件先于 api_zhuge_brief.py 落地时必须红。
 # 运行：python -m pytest test_api_zhuge_brief.py -q
-import sys
 import importlib.util
 from datetime import datetime, timezone, timedelta
 from pathlib import Path

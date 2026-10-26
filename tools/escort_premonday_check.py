@@ -21,7 +21,7 @@ import json
 import sqlite3
 import subprocess
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]

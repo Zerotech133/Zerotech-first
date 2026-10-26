@@ -17,7 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 SCHEMA_VERSION = "os-item/1.1"
 GOAL_ID_RE = re.compile(r"^GOL-\d{8}-\d{4}$")

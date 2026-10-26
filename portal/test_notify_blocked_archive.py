@@ -113,7 +113,6 @@ def test_gate_deny_rows_idle_and_not_clustered(root):
 
 def test_archive_rule_visible_and_readonly(root):
     """归档语义透出给消费方；投影全程零写路径。"""
-    import os
     make_flow(root, [fail_row(TODAY, "daily:report", "ou_a")])
     p = payload(root)
     ba = p["meta"]["blocked_archive"]

@@ -23,7 +23,6 @@
   · 产物目录 mtime 扫描（分析/归档）· schtasks State=Running（进行中，stats 内）
 """
 import os
-import re
 import json
 import time
 import sqlite3

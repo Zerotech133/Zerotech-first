@@ -86,7 +86,6 @@ def _collect_geo_rss(max_items: int) -> list[dict]:
 def collect(max_items: int = 20) -> list[dict]:
     """走页面同源 JSON（TONGYONGGAILAN.json，TITLE/URL/DOCRELPUBTIME 全量 6k+ 条）。
     首页 HTML 是 AJAX 空 ul，正则抓不到——2026-10-23 实测判例。失败抛异常如实处理。"""
-    import urllib.error
     try:
         data = json.loads(_fetch(SRC_JSON, timeout=30))
     except json.JSONDecodeError as e:

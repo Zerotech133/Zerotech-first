@@ -8,7 +8,6 @@
 """
 from __future__ import annotations
 
-import sys
 
 try:
     import feishu_push as fp

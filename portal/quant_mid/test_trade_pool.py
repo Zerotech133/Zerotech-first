@@ -5,7 +5,10 @@
 真 DB 集成验证已在 smoke_trade_pool.py 完成, 此文件只 mock.
 """
 from __future__ import annotations
-import json, os, sys, tempfile
+import json
+import os
+import sys
+import tempfile
 from unittest.mock import patch, MagicMock
 import pytest
 

@@ -418,7 +418,8 @@ class Handler(BaseHTTPRequestHandler):
         # K-QUANT-002: quant_mid 子路由分发 (8097 升级为量化交易中台)
         if p.startswith("/api/quant/"):
             try:
-                import sys as _sys, os as _os
+                import sys as _sys
+                import os as _os
                 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
                 from quant_mid import api_routes as _qr
                 code, body = _qr.handle("GET", p, dict(self.headers))
@@ -500,7 +501,6 @@ class Handler(BaseHTTPRequestHandler):
                 flow = {"by_day": [], "today_by_kind": {}}
             try:  # K-PUSH-002：调优闭环 + 分享令牌概览（读侧降级为空）
                 import tune_gate
-                import share_tokens
                 import sys as _sys
                 _sys.path.insert(0, STATION)
                 import feedback_flow
@@ -601,7 +601,8 @@ class Handler(BaseHTTPRequestHandler):
         # K-QUANT-002: quant_mid 子路由分发 (8097 升级为量化交易中台)
         if p.startswith("/api/quant/"):
             try:
-                import sys as _sys, os as _os
+                import sys as _sys
+                import os as _os
                 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
                 from quant_mid import api_routes as _qr
                 _n = int(self.headers.get("Content-Length") or 0)

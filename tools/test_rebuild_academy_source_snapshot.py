@@ -2,7 +2,6 @@ import hashlib
 import json
 from pathlib import Path
 
-import pytest
 
 from rebuild_academy_source_snapshot import build_snapshot, source_id_for
 

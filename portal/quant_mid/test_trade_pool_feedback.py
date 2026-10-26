@@ -14,7 +14,10 @@
   以 CURRENT_TIMESTAMP 等价替换执行。真 PG 上的最终验证须老田批准后执行。
 """
 from __future__ import annotations
-import os, re, sqlite3, sys
+import os
+import re
+import sqlite3
+import sys
 from unittest.mock import patch, MagicMock
 import pytest
 

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-087 冒烟：/algo 页渲染 + 卡密激活闭环 + 主页统计口径。"""
-import io, json, os, sys, types
+import json
+import os
+import sys
 
 sys.path.insert(0, r"C:/项目/老田的AI助手/portal")
 os.chdir(r"C:/项目/老田的AI助手/portal")

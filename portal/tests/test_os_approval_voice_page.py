@@ -2,7 +2,6 @@
 """语音审批台页面结构测试（纯静态页，不改服务）。"""
 import os
 import re
-import sys
 
 PORTAL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = os.path.join(PORTAL, "os_approval_voice.html")

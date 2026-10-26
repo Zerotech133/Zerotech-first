@@ -93,7 +93,8 @@ def primary_hypothesis(ops: dict) -> dict:
 
 
 if __name__ == '__main__':
-    import sys, json
+    import sys
+    import json
     code = sys.argv[1] if len(sys.argv) > 1 else '600337'
     df = load_kline(code)
     ops = operators(df)

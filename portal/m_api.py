@@ -21,7 +21,7 @@ import os
 import socket
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)

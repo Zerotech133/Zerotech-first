@@ -1450,7 +1450,6 @@ class Handler(BaseHTTPRequestHandler):
 def _daily_collector_loop():
     """每日 07:35 采集：政策域(gov.cn)+天气(本地账本)。桥常驻自带调度，零系统任务。
     失败只打日志不影响服务；次日重试。"""
-    import logging
     while True:
         try:
             now = dt.datetime.now()

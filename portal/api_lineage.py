@@ -21,7 +21,6 @@ psycopg2 沿产线既有依赖（Python311 解释器已装 2.9.13），不引新
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 import urllib.parse as _urlparse

@@ -2,7 +2,14 @@
 """P4 批7-PF：持仓/投委会域 Mixin（debate/council 页族 + portfolio 函数族）。
 Handler 壳经基座多继承并入（禁 import *）。
 """
-import glob, json, os, re, subprocess, sys, threading, time
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
 
 from pathlib import Path
 
@@ -75,15 +82,9 @@ def _release_paper_qd_lock(lock):
         lock.close()
 from api_common import (
     _read_json,
-    log_exc,
-    STATION,
     REPORTS_DIR,
     QBT_DIR,
-    _env_market_key,
     pill_nav,
-    ROOT,
-    _pool_bear_news,
-    _council_stats,
     _council_pending,
     _PILL, NO_WINDOW, _screen_cache)
 

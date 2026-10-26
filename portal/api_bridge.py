@@ -2,21 +2,17 @@
 """P4 批 2：桥接域 Mixin（bridge 决策/预览/动作族）。
 消费方显式 import（禁 import *）。
 """
-import json, os, subprocess, sys, time
+import json
+import os
+import subprocess
+import time
 from api_common import (
     log_exc,
     QBT_DIR,
     STATION,
-    ROOT,
     DATA_SYNC_CMDS,
-    DATA_SYNC_JOBS,
-    _DATA_LOCK,
-    _FRESH_BG_LOCK,
-    _FRESH_BG_ERROR,
     data_freshness_bg,
     data_sync_start,
-    _read_json,
-    _env_market_key,
     pill_nav,
     _TP_JS,
     _TP_MKT,

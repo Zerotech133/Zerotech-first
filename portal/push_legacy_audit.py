@@ -15,7 +15,6 @@ import argparse
 import json
 import os
 import sys
-from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)

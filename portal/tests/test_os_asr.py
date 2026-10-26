@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """VOICE3：本地 SenseVoice ASR 端点与页面接线测试。"""
-import base64
 import os
 import sys
 

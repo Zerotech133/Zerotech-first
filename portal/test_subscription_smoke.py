@@ -28,7 +28,6 @@ for _p in (HERE, TOOLS):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import pytest  # noqa: E402
 
 SMOKE_SCRIPT = os.path.join(TOOLS, "subscription_smoke.py")
 

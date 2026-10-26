@@ -1,11 +1,9 @@
 """test_harvest_adoption.py — 采纳率归集器测试（C1 · 服务器侧方案）。"""
 from __future__ import annotations
 
-import json
 import os
 import sys
 
-import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

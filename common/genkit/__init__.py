@@ -11,20 +11,54 @@
 
 本包只新增，不修改任何现有生成器；Phase 2 起各生成器按需 import 本包替换缺陷写法。
 """
+
 from .timezone import (
-    CST, UTC, now_cst, utcnow, to_cst, to_utc, format_cst, cst_date_str, cst_month_str,
+    CST,
+    UTC,
+    now_cst,
+    utcnow,
+    to_cst,
+    to_utc,
+    format_cst,
+    cst_date_str,
+    cst_month_str,
 )
 from .paths import resolve_repo_root, resolve_path, resolve_project_root
 from .fail_visible import (
-    read_json_visible, safe_json_loads, truncation_note, list_or_empty,
+    read_json_visible,
+    safe_json_loads,
+    truncation_note,
+    list_or_empty,
 )
 from .schema import SchemaViolation, field_state, validate_required, check_version
-from .contract import assert_json_contract, assert_nonempty_generated, load_generated_json
+from .contract import (
+    assert_json_contract,
+    assert_nonempty_generated,
+    load_generated_json,
+)
 
 __all__ = [
-    "CST", "UTC", "now_cst", "utcnow", "to_cst", "to_utc", "format_cst", "cst_date_str", "cst_month_str",
-    "resolve_repo_root", "resolve_path", "resolve_project_root",
-    "read_json_visible", "safe_json_loads", "truncation_note", "list_or_empty",
-    "SchemaViolation", "field_state", "validate_required", "check_version",
-    "assert_json_contract", "assert_nonempty_generated", "load_generated_json",
+    "CST",
+    "UTC",
+    "now_cst",
+    "utcnow",
+    "to_cst",
+    "to_utc",
+    "format_cst",
+    "cst_date_str",
+    "cst_month_str",
+    "resolve_repo_root",
+    "resolve_path",
+    "resolve_project_root",
+    "read_json_visible",
+    "safe_json_loads",
+    "truncation_note",
+    "list_or_empty",
+    "SchemaViolation",
+    "field_state",
+    "validate_required",
+    "check_version",
+    "assert_json_contract",
+    "assert_nonempty_generated",
+    "load_generated_json",
 ]

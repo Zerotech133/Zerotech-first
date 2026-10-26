@@ -8,6 +8,7 @@ G7 = 低频淹没 / 截断未声明 / 阈值未量化。
 设计原则（沿 portal fail-visible 判例）：缺源返回 ``exists=false`` 合法观测态，
 **绝不**在 import 期抛 ``FileNotFoundError``，**绝不**编造；所有截断必须显式声明。
 """
+
 from __future__ import annotations
 
 import json

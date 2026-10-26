@@ -11,6 +11,7 @@ G8 = 「读多源 → 落盘 JSON/HTML」生成器普遍无 pytest 回归，修�
     assert_json_contract(payload, required=["meta", "summary", "generated"])
     assert_nonempty_generated(payload, "generated")   # 回归 G1：必须带时区
 """
+
 from __future__ import annotations
 
 import json

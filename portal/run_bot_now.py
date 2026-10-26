@@ -1,4 +1,5 @@
-import sys, os, threading, time
+import sys
+import os
 
 os.chdir(r'C:\aios\portal')
 sys.path.insert(0, r'C:\aios\portal')

@@ -15,7 +15,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-import card_templates  # noqa: E402
 from card_templates import KIND_CARD_TEMPLATES, apply_card_template  # noqa: E402
 
 

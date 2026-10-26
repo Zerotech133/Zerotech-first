@@ -344,7 +344,6 @@ def _services_def():
 
 def _ps_query(patterns):
     """一次 PowerShell 调用查多组命令行正则 → {pattern: [pid,...]}（正则需已转义）"""
-    import re as _re
     if not patterns:
         return {}
     arr = ", ".join("'" + p.replace("'", "''") + "'" for p in patterns)

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import importlib.util
 import io
-import os
 import shutil
 import sys
 import tempfile

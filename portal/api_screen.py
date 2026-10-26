@@ -2,7 +2,12 @@
 """P4 批7-SCR：数据/筛选域 Mixin（screen 页族 + build_screen/kline/chips 函数族）。
 Handler 壳经基座多继承并入（禁 import *）。pandas 均为函数内局部导入。
 """
-import json, os, re, subprocess, sys, threading, time
+import json
+import os
+import re
+import sys
+import threading
+import time
 from api_backtest import _bt_resolve, _bt_jev_news, build_daily_pulse, _pulse_ago
 from api_portfolio import _pf_reason_cat, _council_holdings
 from api_common import (
@@ -11,14 +16,8 @@ from api_common import (
     STATION,
     REPORTS_DIR,
     QBT_DIR,
-    _env_market_key,
     pill_nav,
-    ROOT,
-    _env_market_key,
-    _stock_sector_rows,
-    _stock_chip_summary,
     _screen_cache,
-    CANDLE_CN,
     _fmt_pct, _TP_JS, build_alerts, _council_stats, _pool_bear_news,
     data_freshness_bg)
 

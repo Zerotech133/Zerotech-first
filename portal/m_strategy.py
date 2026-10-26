@@ -15,7 +15,6 @@ import os
 import subprocess
 import sys
 import time
-import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")

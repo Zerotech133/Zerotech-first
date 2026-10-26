@@ -8,8 +8,10 @@
 不扩巨石: 业务逻辑在 portal/quant_mid/trade_pool.py, 本文件只做 HTTP 分发.
 """
 from __future__ import annotations
-import json, os, sys
-from typing import Any, Optional, Tuple
+import json
+import os
+import sys
+from typing import Optional, Tuple
 
 # 让 trade_pool 能被 import
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -34,7 +36,8 @@ def _auth_ok(headers: dict) -> bool:
             return True
         # push_secrets.json 兜底
         try:
-            import json as _json, os as _os
+            import json as _json
+            import os as _os
             sp = _os.environ.get("PUSH_SECRETS_PATH",
                                  _os.path.join(_os.path.dirname(__file__),
                                               "..", "work", "push_secrets.json"))

@@ -27,7 +27,6 @@ import ctypes
 import json
 import os
 import sys
-import time
 from ctypes import wintypes
 
 FO_DELETE = 3

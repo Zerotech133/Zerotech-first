@@ -17,7 +17,6 @@ import sys
 import types
 from pathlib import Path
 
-import pytest
 
 PORTAL = Path(__file__).resolve().parent
 REPO = PORTAL.parent
