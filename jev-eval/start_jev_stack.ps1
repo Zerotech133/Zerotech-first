@@ -143,11 +143,43 @@ if (Test-Port 9104) {
     }
 }
 
-# 4) Pull up missing components.
+# 4) External-block backoff (2026-10-26 JEVSTACK3, ASCII only).
+# If a component stays down for >=6 consecutive runs (about 1 hour) AND the last run
+# classified it as "external" (platform-side blocker), retry only once per hour instead
+# of every 10 minutes. Internal failures and healthy components keep the normal cadence.
+$prevStreaks = @{}
+$prevAttempt = @{}
+try {
+    if (Test-Path $StatusFile) {
+        $prev = Get-Content $StatusFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($prev.streaks) { foreach ($k in $prev.streaks.PSObject.Properties.Name) { $prevStreaks[$k] = [int]$prev.streaks.$k } }
+        if ($prev.last_attempt) { foreach ($k in $prev.last_attempt.PSObject.Properties.Name) { $prevAttempt[$k] = [double]$prev.last_attempt.$k } }
+    }
+} catch { Write-Log ("WARN read prev status failed: " + $_.Exception.Message) }
+$nowTs = [double][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$backoffSkip = @{}
+foreach ($c in $Components) {
+    if (Test-Port $c.Port) { continue }
+    $prevStreak = if ($prevStreaks.ContainsKey($c.Name)) { [int]$prevStreaks[$c.Name] } else { 0 }
+    if ($prevStreak -ge 6) {
+        $lastTry = if ($prevAttempt.ContainsKey($c.Name)) { [double]$prevAttempt[$c.Name] } else { 0.0 }
+        if (($nowTs - $lastTry) -lt 3600) {
+            $backoffSkip[$c.Name] = $true
+        } else {
+            $prevAttempt[$c.Name] = $nowTs
+        }
+    }
+}
+
+# 5) Pull up missing components.
 $started = @()
 $failed = @()
 foreach ($c in $Components) {
     if (Test-Port $c.Port) { continue }
+    if ($backoffSkip.ContainsKey($c.Name)) {
+        Write-Log ("backoff skip: " + $c.Name + " (external streak=" + $prevStreaks[$c.Name] + ", retry hourly)")
+        continue
+    }
     $out = $ProcOut + '.' + $c.Name + '.out'
     $err = $ProcOut + '.' + $c.Name + '.err'
     $scriptPath = Join-Path $Root $c.Script
@@ -198,12 +230,32 @@ foreach ($name in $down) {
     }
     if ($isExternal) { $external += $name } else { $internal += $name }
 }
+# streak: up -> 0; internal failure -> 0 (keep 10-min retry); external -> prev + 1
+$streaks = [ordered]@{}
+foreach ($c in $Components) {
+    $prevStreak = if ($prevStreaks.ContainsKey($c.Name)) { [int]$prevStreaks[$c.Name] } else { 0 }
+    if (-not (Test-Port $c.Port)) {
+        if ($external -contains $c.Name) {
+            $cur = $prevStreak + 1
+            if ($cur -eq 6) {
+                Write-Log ("EXTERNAL ALERT: " + $c.Name + " blocked by external dependency for 6 consecutive runs -> hourly retry")
+            }
+        } else {
+            $cur = 0
+        }
+    } else {
+        $cur = 0
+    }
+    $streaks[$c.Name] = $cur
+}
 $snap = [ordered]@{
     ts = (Get-Date -Format 's')
     started = @($started)
     down = @($down)
     external = @($external)
     internal = @($internal)
+    streaks = $streaks
+    last_attempt = $prevAttempt
     ports = [ordered]@{}
 }
 foreach ($c in $Components) {
