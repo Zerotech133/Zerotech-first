@@ -26,7 +26,8 @@ import uuid
 from pathlib import Path
 
 PROFILE = Path(os.path.expanduser("~")) / ".hermes" / "profiles" / "zhaoyun"
-REQUESTS_KIND = ("memory_quarantine", "capability_learn", "model_change")
+REQUESTS_KIND = ("memory_quarantine", "capability_learn", "model_change",
+                 "task_intervention")
 GAPS = [
     {"name": "model-control", "what": "查看/切换席位模型（申请制）",
      "why": "此前只有 DSH 会话载体，无切换入口"},

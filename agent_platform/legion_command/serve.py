@@ -245,6 +245,21 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json(zd.requests_view(_PLATFORM))
                 elif sub == "capabilities":
                     self._send_json(zd.capabilities_detail(_PLATFORM))
+                elif sub == "selfaudit":
+                    from legion_command import zhaoyun_cap2 as c2
+                    self._send_json(c2.selfaudit(_PLATFORM))
+                elif sub == "routing":
+                    from legion_command import zhaoyun_cap2 as c2
+                    self._send_json(c2.routing(_PLATFORM))
+                elif sub == "interventions":
+                    from legion_command import zhaoyun_cap2 as c2
+                    self._send_json(c2.interventions(_PLATFORM))
+                elif sub == "memory/curation":
+                    from legion_command import zhaoyun_cap2 as c2
+                    self._send_json(c2.memory_curation())
+                elif sub == "overrides":
+                    from legion_command import zhaoyun_cap2 as c2
+                    self._send_json(c2.overrides(_PLATFORM))
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -254,7 +269,15 @@ class Handler(BaseHTTPRequestHandler):
                         self._send_json({"ok": False, "error": "cap_not_found",
                                          "cap": cap}, 404)
                     else:
-                        self._send_json({"ok": True, "capability": row})
+                        # drill-evidence：记录一次真实"下钻使用"+最近使用
+                        try:
+                            from legion_command import zhaoyun_cap2 as c2
+                            usage = c2.last_used(_PLATFORM, cap)
+                            c2.log_usage(_PLATFORM, cap, "page")
+                        except Exception:            # noqa: BLE001
+                            usage = {"ok": False}
+                        self._send_json({"ok": True, "capability": row,
+                                         "usage": usage})
                 else:
                     self._send_json({"ok": False, "error": "not_found: %s" % path}, 404)
             except Exception as e:                       # noqa: BLE001
@@ -382,6 +405,29 @@ class Handler(BaseHTTPRequestHandler):
                 res = keypool.action(req if isinstance(req, dict) else {})
             except Exception as e:                       # noqa: BLE001
                 res = {"ok": False, "error": "keypool_action_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/approve":
+            # 审批闭环：approve/reject → 执行器落可逆文件（不自动改 org/bundle/CAPABILITIES）
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request",
+                                     "reason": "content_length_out_of_range"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                from legion_command import zhaoyun_cap2 as c2
+                res = c2.approve(_PLATFORM, str(req.get("id") or ""),
+                                 str(req.get("decision") or ""),
+                                 str(req.get("signer") or ""),
+                                 str(req.get("note") or ""))
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "approve_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
             self._send_json(res, 200 if res.get("ok") else 400)
             return

@@ -151,6 +151,26 @@
     <div id="model"></div>
   </section>
 </div>
+<div class="grid">
+  <section>
+    <h2>能力自检 <span id="audit-sub">—</span> <span>漂移/新鲜度（每日+手动）</span></h2>
+    <div id="selfaudit"></div>
+  </section>
+  <section>
+    <h2>模型路由 <span>429 自动降级；只读计划</span></h2>
+    <div id="routing"></div>
+  </section>
+</div>
+<div class="grid">
+  <section>
+    <h2>任务干预建议 <span id="iv-sub">—</span> <span>只登记申请</span></h2>
+    <div id="interventions"></div>
+  </section>
+  <section>
+    <h2>记忆策展建议 <span id="cur-sub">—</span> <span>去重/降权候选</span></h2>
+    <div id="curation"></div>
+  </section>
+</div>
 <footer>
   <span id="foot-src">数据源：/api/zhaoyun + /api/zhaoyun/*（只读聚合 + 下钻）· 调整类动作只登记请求，待老田审批 · 建议 draft、经验须签字</span>
   <span id="foot-time">—</span>
@@ -329,6 +349,7 @@ function load() {
       if (!v.ok) { showBanner('视图不可用：' + (v.error || 'unknown') + ' ' + (v.detail || '')); return; }
       render(v);
       loadDrill();
+      loadCap2();
     })
     .catch((e) => showBanner('端点不可达：' + e));
 }
@@ -352,6 +373,8 @@ function openDrill(name) {
     kv(box, '边界', c.boundary); kv(box, '状态', c.status);
     kv(box, '脚本引用', (c.how_ref || '—') + ' | 存在=' + String(c.how_ref_exists) +
       ' | mtime=' + (c.how_ref_mtime || '—'));
+    const u = (v.usage && v.usage.last) || null;
+    kv(box, '最近真实使用', u ? ((u.ts || '') + ' · source=' + (u.source || '')) : '暂无留证');
     if ((c.recent_events || []).length) {
       box.appendChild(el('div', 'muted', '最近治理事件：'));
       (c.recent_events || []).forEach((e) => box.appendChild(el('div', 'muted',
@@ -443,10 +466,92 @@ function loadDrill() {
     f.appendChild(lb);
     const rl = $('req-list'); rl.replaceChildren();
     rl.appendChild(el('div', 'muted', '待批请求：' + ((reqs && reqs.pending) || 0) +
-      ' 条（只登记，不自动生效）'));
-    ((reqs && reqs.items) || []).slice(0, 8).forEach((r) => rl.appendChild(el('div', 'muted',
-      '• ' + (r.id || '') + ' · ' + (r.kind || '') + ' · ' + (r.status || '') + ' · ' + (r.reason || ''))));
+      ' 条（批准=落可逆文件；不自动改 org/bundle/CAPABILITIES）'));
+    ((reqs && reqs.items) || []).filter((r) => r.status === 'pending_human').slice(0, 10).forEach((r) => {
+      const row = el('div', 'row');
+      row.appendChild(el('div', 'muted', '• ' + (r.id || '') + ' · ' + (r.kind || '') + ' · ' + (r.reason || '')));
+      const signer = el('input'); signer.id = 'ap-signer-' + r.id;
+      signer.placeholder = '审批人（老田）'; signer.style.width = '110px';
+      const ok = el('button', '', '批准');
+      ok.onclick = () => approveRequest(r.id, 'approve', $('ap-signer-' + r.id).value);
+      const no = el('button', '', '拒绝');
+      no.onclick = () => approveRequest(r.id, 'reject', $('ap-signer-' + r.id).value);
+      row.appendChild(signer); row.appendChild(ok); row.appendChild(no);
+      rl.appendChild(row);
+    });
   });
+}
+function loadCap2() {
+  Promise.all([
+    jget('/api/zhaoyun/selfaudit').catch(() => null),
+    jget('/api/zhaoyun/routing').catch(() => null),
+    jget('/api/zhaoyun/interventions').catch(() => null),
+    jget('/api/zhaoyun/memory/curation').catch(() => null),
+  ]).then(([audit, routing, iv, cur]) => {
+    const ab = $('selfaudit'); ab.replaceChildren();
+    if (!audit || audit.error) {
+      $('audit-sub').textContent = '不可用';
+      ab.appendChild(el('div', 'muted', '自检不可用：' + ((audit && audit.error) || '')));
+    } else {
+      $('audit-sub').textContent = 'total ' + (audit.total || 0) + ' · drift ' +
+        ((audit.drift || []).length) + ' · stale ' + audit.stale;
+      if (!(audit.drift || []).length) ab.appendChild(el('div', 'muted', '✓ 能力卡与真实工具一致，新鲜度正常'));
+      (audit.drift || []).slice(0, 10).forEach((d) => ab.appendChild(el('div', 'muted',
+        '⚠ ' + d.kind + ' · ' + (d.capability || '') + ' — ' + (d.detail || ''))));
+      (audit.warnings || []).slice(0, 10).forEach((w) => ab.appendChild(el('div', 'muted',
+        '· ' + w.kind + ' · ' + (w.capability || '') + ' — ' + (w.detail || ''))));
+      if ((audit.warnings || []).length) ab.appendChild(el('div', 'muted',
+        '提示 ' + audit.warnings.length + ' 条（无脚本核验，不阻断；建议补 how）'));
+    }
+    const rb = $('routing'); rb.replaceChildren();
+    if (routing && routing.ok) {
+      Object.keys(routing.plans || {}).forEach((p) => {
+        const chain = (routing.plans[p] || []).map((x) =>
+          x.model + (x.risk ? '(' + x.risk + ')' : '')).join(' → ');
+        rb.appendChild(el('div', 'muted', p + ' : ' + chain));
+      });
+      rb.appendChild(el('div', 'muted', '最近调用留证：' + ((routing.usage && routing.usage.count) || 0) + ' 条'));
+    } else rb.appendChild(el('div', 'muted', '路由不可用'));
+    const ib = $('interventions'); ib.replaceChildren();
+    if (iv && iv.ok) {
+      $('iv-sub').textContent = '建议 ' + (iv.count || 0) + ' 条';
+      (iv.items || []).slice(0, 10).forEach((it) => {
+        const row = el('div', 'row');
+        row.appendChild(el('div', 'muted', '• ' + (it.tid || '') + ' [' + (it.kind || '') + '] ' + (it.suggest || '')));
+        const b = el('button', '', '提交干预申请');
+        b.onclick = () => submitRequest('task_intervention',
+          { tid: it.tid, kind: it.kind, suggest: it.suggest }, it.suggest || '', '任务干预 ' + it.tid);
+        row.appendChild(b); ib.appendChild(row);
+      });
+    } else ib.appendChild(el('div', 'muted', '干预建议不可用'));
+    const cb = $('curation'); cb.replaceChildren();
+    if (cur && cur.ok) {
+      $('cur-sub').textContent = '建议 ' + (cur.count || 0) + ' 条';
+      (cur.suggestions || []).slice(0, 10).forEach((s) => {
+        const row = el('div', 'row');
+        row.appendChild(el('div', 'muted', '• ' + (s.kind || '') + ' · ' +
+          ((s.entry_ids || []).join(',')) + ' — ' + (s.detail || '')));
+        const b = el('button', '', '提交隔离申请');
+        b.onclick = () => submitRequest('memory_quarantine',
+          { entry_ids: s.entry_ids || [] }, s.detail || '策展建议', '策展隔离');
+        row.appendChild(b); cb.appendChild(row);
+      });
+    } else cb.appendChild(el('div', 'muted', '策展建议不可用'));
+  });
+}
+function approveRequest(id, decision, signer) {
+  if (!signer) { alert('请填写审批人'); return; }
+  const word = decision === 'approve' ? '批准' : '拒绝';
+  if (!confirm('确认' + word + '请求 ' + id + '？')) return;
+  fetch('/api/zhaoyun/approve', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id, decision: decision, signer: signer })
+  }).then((r) => r.json()).then((j) => {
+    if (j.ok) {
+      alert('已' + word + '：' + id + ((j.request && j.request.applied) ? '（已落盘执行）' : ''));
+      loadDrill(); loadCap2();
+    } else alert('失败：' + (j.error || ''));
+  }).catch((e) => alert('失败：' + e));
 }
 function submitRequest(kind, payload, reason, label) {
   fetch('/api/zhaoyun/request', {
