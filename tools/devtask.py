@@ -421,7 +421,29 @@ def _load_owner_domain():
         d["external_tools"] = {}
     if not isinstance(d.get("unowned_tag"), str) or not d["unowned_tag"]:
         d["unowned_tag"] = "[UNOWNED]"
+    # D5-C：profile 席位（不占 org.json 编制的合法 owner 代号）
+    if not isinstance(d.get("profile_seats"), dict):
+        d["profile_seats"] = {"seats": []}
+    if not isinstance(d["profile_seats"].get("seats"), list):
+        d["profile_seats"]["seats"] = []
     return d
+
+
+def _profile_seat_members(domain=None):
+    """D5-C：合法 owner 的 profile 席位代号（不占 org.json 编制）。
+
+    治理席以 profile 角色存在（如 ZHAOYUN），不进 org.json 编制表，但仍需能作为
+    工单 owner 落账、被统计识别——否则每单都被判非法打 ``[UNOWNED]``。本函数只读
+    ``owner_domain.json`` 的 ``profile_seats.seats``（大小写/空白归一），不改
+    org.json 派生口径（``_owner_domain_members`` 仍为纯 org 成员池）。
+    """
+    domain = domain if isinstance(domain, dict) else _load_owner_domain()
+    seats = ((domain.get("profile_seats") or {}).get("seats") or [])
+    out = set()
+    for s in seats:
+        if isinstance(s, str) and s.strip():
+            out.add(s.strip().upper())
+    return out
 
 
 def _owner_domain_members():
@@ -469,7 +491,8 @@ def _owner_domain_members():
 def _owner_check(owner):
     """owner 落账取值域校验（WO-TF-03：老田裁定「先立取值域，再校验」）。
 
-    合法域＝org.json 动态成员池 ∪ 已裁定合法的外部工具代号——``external_tools.status``
+    合法域＝org.json 动态成员池 ∪ 已裁定合法的外部工具代号 ∪ **profile 席位代号**
+    （D5-C：治理席不占编，见 ``_profile_seat_members``）——``external_tools.status``
     为 ``legal`` 时其 ``observed`` 才计入；只接受 ``legal``（工单用词），当前是
     ``pending_ruling``，一律不算合法（外部代号是否合法属后续裁定，本单不预断）。
 
@@ -478,17 +501,24 @@ def _owner_check(owner):
       * ``False`` —— 取值域可判定且owner ∉ 域（含 owner 为空）：非法，调用方降级打标签；
       * ``None``  —— **取值域不可判定**（org.json 缺失/坏 JSON/无 departments/空池）：
         无法判定 ≠ 非法，调用方**不判非法、不打标签**，仅留痕 ``owner_domain_unavailable=1``。
+        例外：owner 命中本地 ``profile_seats`` 时代码已知其合法（部分可用），放行并计入规模。
     """
     domain = _load_owner_domain()
+    profile = _profile_seat_members(domain)
+    who = (owner or "").strip().upper()
     members = _owner_domain_members()
     if members is None:
+        # org 不可判定：不下"非法"结论；但本地 profile 席位登记表仍是权威，
+        # 命中即可判定为合法（否则治理席在 org 读不到时会被误标 [UNOWNED]）。
+        if who and who in profile:
+            return True, domain, len(profile)
         return None, domain, 0            # 不可判定：不下非法结论
+    members |= profile
     ext = domain.get("external_tools") or {}
     if str(ext.get("status", "")).strip().lower() == "legal":
         for c in ext.get("observed") or []:
             if isinstance(c, str) and c.strip():
                 members.add(c.strip().upper())
-    who = (owner or "").strip().upper()
     return bool(who) and who in members, domain, len(members)
 
 
