@@ -306,6 +306,42 @@ def _z5_ok(obj: dict) -> tuple[bool, list[str]]:
     return True, []
 
 
+def assert_payload(action: str, payload: dict) -> None:
+    """输入契约（P3）：调模型前断言输入真实、非空、结构符合预期。
+
+    判例（GOVAI-1 首跑）：健康卡误读 items→checks 导致空输入，模型在空白上
+    编出看似合理的建议；校验器事后拦住，但已浪费一轮调用与信任。此处置于
+    **调用前**，失败即 GovAiError（不落 draft、不产生费用）。
+    """
+    if action == "anomaly_digest":
+        counts = payload.get("counts") or {}
+        try:
+            total = int(counts.get("total_scanned") or 0)
+        except (TypeError, ValueError):
+            total = 0
+        if total <= 0:
+            raise GovAiError("账本输入为空（total_scanned=0）：拒绝在空输入上调用模型")
+        if not payload.get("known_tasks"):
+            raise GovAiError("账本输入没有 known_tasks：拒绝调用模型（结构不符）")
+        window = payload.get("window") or {}
+        if not window:
+            raise GovAiError("账本输入缺少 window 三分类：拒绝调用模型")
+    elif action == "priority_advice":
+        items = payload.get("items") or []
+        if len(items) < 20:
+            raise GovAiError("健康卡输入项过少（%d < 20）：疑似误读结构，拒绝调用模型"
+                             % len(items))
+        if not payload.get("known_items"):
+            raise GovAiError("健康卡输入没有 known_items：拒绝调用模型")
+    elif action == "case_draft":
+        if not payload.get("timeline"):
+            raise GovAiError("证据包 timeline 为空：拒绝调用模型")
+        if not payload.get("known_bundle_ids"):
+            raise GovAiError("证据包没有可引用条目 id：拒绝调用模型")
+    else:
+        raise GovAiError("未知 action：%s" % action)
+
+
 def validate_items(action: str, items: Any, payload: dict) -> dict:
     """返回 {ok, schema_ok, grounding_ok, z5_ok, notes, items}；items 已补 id/裁字段。"""
     notes: list[str] = []
@@ -470,6 +506,9 @@ def run(action: str, *, hours: float = 24.0, bundle: Optional[str] = None,
         payload = build_case_input(bundle)
     else:
         raise GovAiError("未知 action：%s（可选 %s）" % (action, ",".join(ACTIONS)))
+
+    # P3 输入契约：空输入/结构不符在调用模型前就拒绝（不落 draft、不计费）
+    assert_payload(action, payload)
 
     digest = input_digest(payload)
     root = Path(output_root) if output_root else OUTPUT_ROOT

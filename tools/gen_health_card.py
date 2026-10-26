@@ -6069,6 +6069,35 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
     except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
         add("governance.ai_advice", "yellow", "治理 AI 健康检查未运行：%r" % (_exc,))
 
+    # ---------------------------------------------------------------------------
+    # 6.2) 经验库消费健康（governance.experience_library，2026-10-26 P1）
+    #      判级：有签字且全部 verified=绿；有条目但存在未验签=黄；空库=红。
+    # ---------------------------------------------------------------------------
+    try:
+        import os as _os2
+        _repo2 = _os2.path.dirname(_os2.path.dirname(_os2.path.abspath(__file__)))
+        _ap2 = _os2.path.join(_repo2, "agent_platform")
+        if _ap2 not in sys.path:
+            sys.path.insert(0, _ap2)
+        from engine import experience_store as _exp
+        _es = _exp.public_summary()
+        _total = int(_es.get("entries_total") or 0)
+        _verified = int(_es.get("verified_total") or 0)
+        if _total == 0:
+            _el, _ed = "red", "经验库为空：签字链尚未入库任何判例"
+        elif _verified == _total:
+            _el = "green"
+            _ed = ("经验库 %d 条全部 verified；最近签字 %s；supervision=%d"
+                   % (_total, _es.get("latest_signed_at") or "?", 
+                      int((_es.get("domains") or {}).get("supervision", {}).get("entries", 0))))
+        else:
+            _el = "yellow"
+            _ed = "经验库 %d 条中 verified %d（存在未验签）" % (_total, _verified)
+        add("governance.experience_library", _el, _ed[:300])
+    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+        add("governance.experience_library", "yellow",
+            "经验库消费检查未运行：%r" % (_exc,))
+
     keys = (card.get("security") or {}).get("plaintext_keys") or {}
     if not keys:
         add("security.plaintext_keys", "red", "明文私钥扫描未运行（security 块缺失）")
