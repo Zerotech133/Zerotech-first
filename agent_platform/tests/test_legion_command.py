@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import sys
 import threading
 import time
@@ -348,9 +350,41 @@ def test_minutes_saved_with_source_tags(meeting_server):
     assert doc["schema_version"] == "1.0"
     assert doc["participants"] == ["A0", "D1", "R3"]
     assert doc["model_stats"] == {"ok": 2, "fail": 1}
-    # 来源标记必须原样保留——纪要的价值就在能分辨真模型/降级/台词
+    # 保留兼容字段，但任何客户端来源声明都不得被认证为真实模型回执
     assert [m["src"] for m in doc["minutes"]] == ["host", "live", "script"]
+    assert doc["source_verification"] == "unverified"
+    assert all(m["source_verification"] == "unverified" for m in doc["minutes"])
+    assert "服务端真实模型回执" in doc["note"]
     assert doc["minutes"][1]["text"].startswith("选股面")
+
+
+def test_minutes_forged_live_stays_unverified(meeting_server):
+    base, mdir = meeting_server
+    env = _post(base, "/api/meeting/minutes", {
+        "minutes": [{"id": "A0", "text": "客户端自行声称是真模型", "src": "live",
+                     "source_verification": "verified"}],
+        "model_stats": {"ok": 999, "verified": True}})
+    assert env["ok"] is True
+    doc = json.loads(next(mdir.glob("warroom-*.json")).read_text(encoding="utf-8"))
+    assert doc["model_stats"] == {"ok": 999, "verified": True}  # 旧字段原样兼容
+    assert doc["minutes"][0]["src"] == "live"
+    assert doc["minutes"][0]["source_verification"] == "unverified"
+    assert doc["source_verification"] == "unverified"
+    listing = json.loads(_get(base, "/api/meeting/list")[1])["meetings"][0]
+    assert listing["src_stats"]["live"] == 1
+    assert listing["source_verification"] == "unverified"
+
+
+def test_minutes_save_failure_reports_error(meeting_server, monkeypatch):
+    from legion_command import serve as srv_mod
+    base, mdir = meeting_server
+    blocked = mdir.parent / "blocked"
+    blocked.write_text("not a directory", encoding="utf-8")
+    monkeypatch.setattr(srv_mod, "MEETINGS_DIR", blocked)
+    status, env = _post_err(base, "/api/meeting/minutes",
+                            {"minutes": [{"id": "HOST", "src": "host", "text": "test"}]})
+    assert status == 500 and env == {"ok": False, "error": "minutes_save_failed"}
+    assert blocked.read_text(encoding="utf-8") == "not a directory"
 
 
 def test_minutes_empty_rejected_no_file(meeting_server):
@@ -403,6 +437,80 @@ def test_minutes_bad_length_rejected(meeting_server):
     assert not list(mdir.glob("*.json")) if mdir.exists() else True
 
 
+def test_meeting_browser_flow_isolated():
+    """Node 虚拟 DOM 与假 fetch：验证 HOST XSS、会终成功/失败都不误派单。"""
+    html = (_PLATFORM / "legion_command" / "static" / "meeting.html").read_text(encoding="utf-8")
+    js = "\n".join(re.findall(r"<script>(.*?)</script>", html, re.S))
+    harness = r'''
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+let html = '', pending = [], posts = [], response, mutation = [];
+function node() {
+  const n = { className: '', textContent: '', value: '', disabled: false, children: [],
+    appendChild(c) { this.children.push(c); },
+    querySelector(s) { return s === '.content' ? this.content : null; },
+    get innerHTML() { return this._html || ''; },
+    set innerHTML(v) { this._html = v; mutation.push(v); this.content = { textContent: '' }; },
+    classList: { toggle() {}, remove() {}, add() {} } };
+  return n;
+}
+const els = {};
+for (const id of ['chat', 'table', 'say', 'pickCount', 'pick-zhong', 'pick-quant',
+  'pick-risk', 'pick-acad', 'pick-intel', 'pick-ops', 'pick-dev']) els[id] = node();
+els.chat.querySelector = s => null;
+const cards = ['WO-EVO-102', 'SIM-301'].map(title => ({
+  querySelector(s) { return { textContent: s === '.tn' ? title : '待派工' }; }
+}));
+const states = cards.map(() => ({ className: 'st st-wait', textContent: '待派工' }));
+const button = node();
+const ctx = vm.createContext({
+  document: {
+    createElement: node, getElementById: id => els[id],
+    querySelector: s => s === 'button[onclick="endMeeting()"]' ? button : null,
+    querySelectorAll: s => s === '#orderList .ocard' ? cards :
+      s === '#orderList .st' ? states : []
+  },
+  setTimeout: fn => pending.push(fn), alert: () => { throw Error('unexpected alert'); },
+  fetch: (path, opts) => { posts.push({ path, body: JSON.parse(opts.body) }); return response(); },
+  console
+});
+vm.runInContext(process.env.MEETING_JS, ctx);
+vm.runInContext("picked.push('A0')", ctx);
+vm.runInContext("add('HOST', '<img src=x onerror=alert(1)>')", ctx);
+assert.equal(els.chat.children.at(-1).content.textContent, '<img src=x onerror=alert(1)>');
+assert.equal(mutation.some(v => v.includes('<img src=x onerror=alert(1)>')), false);
+assert.equal(JSON.stringify(vm.runInContext('MINUTES.at(-1)', ctx)),
+  JSON.stringify({ id: 'HOST', text: '<img src=x onerror=alert(1)>', src: 'host' }));
+response = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, saved: 'archive.json', count: 2 }) });
+(async () => {
+  await vm.runInContext('endMeeting()', ctx);
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].path, '/api/meeting/minutes');
+  assert.equal(JSON.stringify(posts[0].body.orders.map(o => o.state)), JSON.stringify(['待派工', '待派工']));
+  assert.equal(states.every(s => s.textContent === '待派工'), true);
+  assert.match(els.chat.children.at(-1).content.textContent, /纪要已存档/);
+  assert.equal(els.chat.children.at(-1).content.textContent.includes('指令已下发'), false);
+  response = () => Promise.resolve({ ok: false, json: () => Promise.resolve({ ok: false, error: '<img src=x onerror=alert(1)>' }) });
+  await vm.runInContext('endMeeting()', ctx);
+  assert.equal(posts.length, 2);
+  assert.match(els.chat.children.at(-1).content.textContent, /纪要存档失败/);
+  assert.equal(els.chat.children.at(-1).content.textContent.includes('纪要已存档'), false);
+  assert.equal(states.every(s => s.textContent === '待派工'), true);
+  assert.equal(mutation.some(v => v.includes('<img src=x onerror=alert(1)>')), false);
+  response = () => Promise.reject(new TypeError('network'));
+  await vm.runInContext('endMeeting()', ctx);
+  assert.match(els.chat.children.at(-1).content.textContent, /端点不可达/);
+  assert.equal(button.disabled, false);
+  assert.equal(posts.every(p => p.path === '/api/meeting/minutes'), true);
+})().catch(e => { console.error(e); process.exitCode = 1; });
+'''
+    import os
+    env = dict(os.environ, MEETING_JS=js)
+    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True,
+                            env=env, timeout=10)
+    assert result.returncode == 0, result.stderr
+
+
 # ------------------------------------------------- 会议纪要回看（S32）
 
 def _seed_meeting(base, participants, texts):
@@ -431,7 +539,8 @@ def test_meeting_list_after_save(meeting_server):
     assert m["id"].startswith("warroom-") and m["broken"] is False
     assert m["count"] == 2
     assert m["participants"] == ["A0", "D1"]
-    # 来源分账必须精确：这是"别把台词当模型结论"的唯一依据
+    assert m["source_verification"] == "unverified"
+    # 兼容原统计字段，但这里仅是客户端声明计数
     assert m["src_stats"] == {"live": 1, "degraded": 0, "script": 0, "host": 1}
 
 
@@ -466,6 +575,7 @@ def test_meeting_get_roundtrip(meeting_server):
     doc = env["meeting"]
     assert doc["minutes"][1]["text"] == "缺乏回撤数据，无法判断"
     assert [m["src"] for m in doc["minutes"]] == ["host", "live"]
+    assert doc["source_verification"] == "unverified"
 
 
 def test_meeting_get_unknown_is_404(meeting_server):

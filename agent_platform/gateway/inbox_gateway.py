@@ -31,13 +31,21 @@ kind 词表 v1（供飞书板块选用）：
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
 import re
+import threading
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 from gateway.envelope import make_envelope, timed  # noqa: E402
 
@@ -67,6 +75,8 @@ class _Store:
 
 
 _DEFAULT_STORE = None
+_THREAD_LOCKS = {}
+_THREAD_LOCKS_GUARD = threading.Lock()
 
 
 def _store() -> _Store:
@@ -88,18 +98,55 @@ def _digest_key(payload: dict, source: str, kind: str) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:32]
 
 
-def _find_by_idem(idem: str):
-    for d in (_store().inbox, _store().processed):
-        if not d.exists():
-            continue
-        for f in d.glob("*.json"):
+@contextmanager
+def _store_lock(store: _Store):
+    """线程与跨进程互斥；进程退出时 OS 自动释放，锁文件不删除。"""
+    path = store.inbox.parent / ".inbox_gateway.lock"
+    with _THREAD_LOCKS_GUARD:
+        thread_lock = _THREAD_LOCKS.setdefault(path, threading.Lock())
+    with thread_lock:
+        with path.open("a+b") as lock:
+            if os.name == "nt":
+                lock.seek(0)
+                while True:
+                    try:
+                        msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+                        break
+                    except OSError as exc:
+                        if exc.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                            raise
+                        time.sleep(0.01)
+            else:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             try:
-                rec = json.loads(f.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                continue
-            if rec.get("idempotency_key") == idem:
+                yield
+            finally:
+                if os.name == "nt":
+                    lock.seek(0)
+                    msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def _find_by_idem(store: _Store, idem: str):
+    # processed 优先：consume 写入 processed 后、删除 inbox 前可能留下双份。
+    for d in (store.processed, store.inbox):
+        for f in d.glob("*.json"):
+            rec = _read_record(f)
+            if rec is not None and rec.get("idempotency_key") == idem:
                 return f, rec
     return None, None
+
+
+def _has_answer(rec: dict) -> bool:
+    return all(isinstance(rec.get(k), str) and rec[k].strip()
+               for k in ("answered_at", "answered_by", "answer_ref"))
+
+
+def _has_delivery(rec: dict) -> bool:
+    return _has_answer(rec) and all(
+        isinstance(rec.get(k), str) and rec[k].strip()
+        for k in ("delivered_at", "channel", "delivered_ref"))
 
 
 # ---------------------------------------------------------------- 生命周期
@@ -151,26 +198,31 @@ def submit(kind: str, payload: dict, source: str = "external",
         return make_envelope(kind=KIND_SUBMIT, ok=False,
                              error={"code": "bad_idempotency_key",
                                     "message": "idempotency_key must match ^[A-Za-z0-9_-]{1,64}$"})
-    hit_file, hit_rec = _find_by_idem(idem)
-    if hit_rec is not None:
-        state = "processed" if hit_file.parent == _store().processed else "inbox"
+    store = _store()
+    with _store_lock(store):
+        hit_file, hit_rec = _find_by_idem(store, idem)
+        if hit_rec is not None:
+            if (hit_rec.get("kind"), hit_rec.get("source"), hit_rec.get("payload")) != (kind, source, payload):
+                return make_envelope(
+                    kind=KIND_SUBMIT, ok=False,
+                    error={"code": "idempotency_conflict",
+                           "message": "idempotency_key already used for different content"})
+            state = "processed" if hit_file.parent == store.processed else "inbox"
+            return make_envelope(kind=KIND_SUBMIT, ok=True,
+                                 data={"id": hit_rec["id"], "replayed": True, "state": state})
+        msg_id = "lg-%s" % uuid.uuid4().hex[:12]
+        record = {
+            "id": msg_id,
+            "idempotency_key": idem,
+            "kind": kind,
+            "source": source,
+            "payload": payload,
+            "submitted_at": _now_iso(),
+            "state": "inbox",
+        }
+        _atomic_write(store.inbox / ("%s.json" % msg_id), record)
         return make_envelope(kind=KIND_SUBMIT, ok=True,
-                             data={"id": hit_rec["id"], "replayed": True, "state": state})
-    msg_id = "lg-%s" % uuid.uuid4().hex[:12]
-    record = {
-        "id": msg_id,
-        "idempotency_key": idem,
-        "kind": kind,
-        "source": source,
-        "payload": payload,
-        "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "state": "inbox",
-    }
-    path = _store().inbox / ("%s.json" % msg_id)
-    path.write_text(json.dumps(record, ensure_ascii=False, indent=1),
-                    encoding="utf-8")
-    return make_envelope(kind=KIND_SUBMIT, ok=True,
-                         data={"id": msg_id, "replayed": False, "state": "inbox"})
+                             data={"id": msg_id, "replayed": False, "state": "inbox"})
 
 
 @timed
@@ -187,46 +239,45 @@ def consume(msg_id: str, answered_by: str | None = None,
                              error={"code": "bad_id",
                                     "message": "msg_id must match ^[A-Za-z0-9_-]{1,64}$"})
     store = _store()
-    inbox_file = store.inbox / ("%s.json" % msg_id)
-    processed_file = store.processed / ("%s.json" % msg_id)
-
-    existing = _read_record(processed_file)
-    if existing is not None:
-        if existing.get("answered_at"):
-            if inbox_file.exists():  # 双份残留自愈（保守：先落 processed 后删 inbox）
+    with _store_lock(store):
+        inbox_file = store.inbox / ("%s.json" % msg_id)
+        processed_file = store.processed / ("%s.json" % msg_id)
+        rec = _read_record(processed_file)
+        if rec is not None and _has_answer(rec):
+            if inbox_file.exists():  # 先落 processed 后删 inbox 的崩溃残留
                 try:
                     inbox_file.unlink()
                 except OSError:
                     pass
             return make_envelope(kind=KIND_CONSUME, ok=True,
                                  data={"id": msg_id, "replayed": True,
-                                       "state": "processed", "record": existing})
-        existing["state"] = "processed"
-        existing["answered_at"] = _now_iso()
-        existing["answered_by"] = answered_by
-        existing["answer_ref"] = answer_ref
-        _atomic_write(processed_file, existing)
+                                       "state": "processed", "record": rec})
+        if not isinstance(answered_by, str) or not answered_by.strip() or not isinstance(answer_ref, str) or not answer_ref.strip():
+            return make_envelope(kind=KIND_CONSUME, ok=False,
+                                 error={"code": "bad_answer_evidence",
+                                        "message": "answered_by and answer_ref required"})
+        if rec is None:
+            rec = _read_record(inbox_file)
+        if rec is None:
+            return make_envelope(kind=KIND_CONSUME, ok=True,
+                                 data={"id": msg_id, "state": "not_found",
+                                       "record": {}})
+        if not _has_answer(rec):
+            for key in ("delivered_at", "channel", "delivered_ref"):
+                rec.pop(key, None)
+        rec["state"] = "processed"
+        rec["answered_at"] = _now_iso()
+        rec["answered_by"] = answered_by
+        rec["answer_ref"] = answer_ref
+        _atomic_write(processed_file, rec)
+        if inbox_file.exists():
+            try:
+                inbox_file.unlink()
+            except OSError:
+                pass
         return make_envelope(kind=KIND_CONSUME, ok=True,
                              data={"id": msg_id, "replayed": False,
-                                   "state": "processed", "record": existing})
-
-    rec = _read_record(inbox_file)
-    if rec is None:
-        return make_envelope(kind=KIND_CONSUME, ok=True,
-                             data={"id": msg_id, "state": "not_found",
-                                   "record": {}})
-    rec["state"] = "processed"
-    rec["answered_at"] = _now_iso()
-    rec["answered_by"] = answered_by
-    rec["answer_ref"] = answer_ref
-    _atomic_write(processed_file, rec)
-    try:
-        inbox_file.unlink()
-    except OSError:
-        pass
-    return make_envelope(kind=KIND_CONSUME, ok=True,
-                         data={"id": msg_id, "replayed": False,
-                               "state": "processed", "record": rec})
+                                   "state": "processed", "record": rec})
 
 
 @timed
@@ -238,33 +289,38 @@ def deliver(msg_id: str, channel: str | None = None,
                              error={"code": "bad_id",
                                     "message": "msg_id must match ^[A-Za-z0-9_-]{1,64}$"})
     store = _store()
-    processed_file = store.processed / ("%s.json" % msg_id)
-    rec = _read_record(processed_file)
-    if rec is None:
-        if (store.inbox / ("%s.json" % msg_id)).exists():
+    with _store_lock(store):
+        processed_file = store.processed / ("%s.json" % msg_id)
+        rec = _read_record(processed_file)
+        if rec is None:
+            if (store.inbox / ("%s.json" % msg_id)).exists():
+                return make_envelope(
+                    kind=KIND_DELIVER, ok=False,
+                    error={"code": "not_answered",
+                           "message": "消息尚未答复（answered），不得回传"})
+            return make_envelope(kind=KIND_DELIVER, ok=True,
+                                 data={"id": msg_id, "state": "not_found",
+                                       "record": {}})
+        if not _has_answer(rec):
             return make_envelope(
                 kind=KIND_DELIVER, ok=False,
                 error={"code": "not_answered",
-                       "message": "消息尚未答复（answered），不得回传"})
+                       "message": "记录无完整 answered 证据，不得回传"})
+        if _has_delivery(rec):
+            return make_envelope(kind=KIND_DELIVER, ok=True,
+                                 data={"id": msg_id, "replayed": True,
+                                       "state": "processed", "record": rec})
+        if not isinstance(channel, str) or not channel.strip() or not isinstance(delivered_ref, str) or not delivered_ref.strip():
+            return make_envelope(kind=KIND_DELIVER, ok=False,
+                                 error={"code": "bad_delivery_evidence",
+                                        "message": "channel and delivered_ref required"})
+        rec["delivered_at"] = _now_iso()
+        rec["channel"] = channel
+        rec["delivered_ref"] = delivered_ref
+        _atomic_write(processed_file, rec)
         return make_envelope(kind=KIND_DELIVER, ok=True,
-                             data={"id": msg_id, "state": "not_found",
-                                   "record": {}})
-    if not rec.get("answered_at"):
-        return make_envelope(
-            kind=KIND_DELIVER, ok=False,
-            error={"code": "not_answered",
-                   "message": "记录无 answered 戳记（未答复或老式消费），不得回传"})
-    if rec.get("delivered_at"):
-        return make_envelope(kind=KIND_DELIVER, ok=True,
-                             data={"id": msg_id, "replayed": True,
+                             data={"id": msg_id, "replayed": False,
                                    "state": "processed", "record": rec})
-    rec["delivered_at"] = _now_iso()
-    rec["channel"] = channel
-    rec["delivered_ref"] = delivered_ref
-    _atomic_write(processed_file, rec)
-    return make_envelope(kind=KIND_DELIVER, ok=True,
-                         data={"id": msg_id, "replayed": False,
-                               "state": "processed", "record": rec})
 
 
 @timed
@@ -274,12 +330,13 @@ def receipt(msg_id: str):
     if not msg_id:
         return make_envelope(kind=KIND_RECEIPT, ok=False,
                              error={"code": "bad_id", "message": "msg_id required"})
-    for d, state in ((_store().inbox, "inbox"), (_store().processed, "processed")):
-        f = d / ("%s.json" % msg_id)
-        if f.exists():
-            rec = json.loads(f.read_text(encoding="utf-8"))
-            answered = isinstance(rec, dict) and bool(rec.get("answered_at"))
-            delivered = isinstance(rec, dict) and bool(rec.get("delivered_at"))
+    store = _store()
+    # 优先选择 processed：写 processed 成功但尚未删除 inbox 时不回退旧状态。
+    for d, state in ((store.processed, "processed"), (store.inbox, "inbox")):
+        rec = _read_record(d / ("%s.json" % msg_id))
+        if rec is not None:
+            answered = state == "processed" and _has_answer(rec)
+            delivered = state == "processed" and _has_delivery(rec)
             return make_envelope(kind=KIND_RECEIPT, ok=True,
                                  data={"id": msg_id, "state": state,
                                        "record": rec, "answered": answered,

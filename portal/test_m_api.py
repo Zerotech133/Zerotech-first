@@ -204,6 +204,28 @@ def test_handle_post_link_requires_auth():
     assert h2.sent[0] == 200 and "/m/picks?t=" in h2.sent[1]["url"]
 
 
+def test_ticket_page_token_cannot_reply(monkeypatch):
+    """查看工单的页面令牌不得冒充处理人答复，且绝不调用发送链。"""
+    import ticket_loop
+
+    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    token, _ = mt.make_page_token("ticket", id="lg-test")
+    h = _H(body={"t": token, "text": "伪答复"})
+    ma.handle_post(h, "/api/m/ticket/reply")
+    assert h.sent[0] == 403
+    assert "答复权限未接通" in h.sent[1]["error"]
+
+
+def test_ticket_reply_rejects_wrong_scene(monkeypatch):
+    import ticket_loop
+
+    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    token, _ = mt.make_page_token("picks", id="lg-test")
+    h = _H(body={"t": token, "text": "伪答复"})
+    ma.handle_post(h, "/api/m/ticket/reply")
+    assert h.sent[0] == 400
+
+
 def test_handle_post_beacon(monkeypatch, ws_tmp):
     monkeypatch.setattr(ma, "EVENTS", os.path.join(ws_tmp, "events.jsonl"))
     h = _H(body={"events": [{"event": "m_page_view", "scene": "picks"}]})

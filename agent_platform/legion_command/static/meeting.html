@@ -143,15 +143,15 @@
   </div>
 
   <div class="panelbox orders">
-    <h3>会终指令 · 待下发</h3>
+    <h3>会终订单 · 待派工</h3>
     <div class="otype" id="otype">
       <div class="ot on" data-t="work">研发工单</div>
       <div class="ot" data-t="trade">模拟交易单</div>
       <div class="ot" data-t="study">研究单</div>
     </div>
     <div id="orderList">
-      <div class="ocard" id="o1"><div class="dt"><span class="tn">WO-EVO-102 Z5 对照实验</span><span class="st st-wait">待下发</span></div><div class="to">类型：<b>研发工单</b> · 主办按参会者分配</div></div>
-      <div class="ocard" id="o2"><div class="dt"><span class="tn">SIM-301 模拟调仓观察单</span><span class="st st-wait">待下发</span></div><div class="to">类型：<b>模拟交易单</b> · 只进影子盘，真实资金需 approval_gate</div></div>
+      <div class="ocard" id="o1"><div class="dt"><span class="tn">WO-EVO-102 Z5 对照实验</span><span class="st st-wait">待派工</span></div><div class="to">类型：<b>研发工单</b> · 主办按参会者分配</div></div>
+      <div class="ocard" id="o2"><div class="dt"><span class="tn">SIM-301 模拟调仓观察单</span><span class="st st-wait">待派工</span></div><div class="to">类型：<b>模拟交易单</b> · 只进影子盘，真实资金需 approval_gate</div></div>
     </div>
     <div class="simstat" style="margin-top:8px">
       沙盒状态<br>
@@ -159,8 +159,8 @@
       风控闸门：<b>RiskGuard 前置</b>（误杀治本 Z5 在途）<br>
       真实交易：<b style="color:#EF9F27">生产门未放行</b>（五要素签准）
     </div>
-    <div class="dfoot" style="margin-top:8px">会终下发 → 田丰登记去重 → 席位执行 → StatusPoint 回传沙盘。交易类指令永远先过 RiskGuard + 模拟盘验证。</div>
-    <button class="btn amber" style="width:100%;margin-top:10px" onclick="endMeeting()">会终 · 分发指令</button>
+    <div class="dfoot" style="margin-top:8px">会终仅保存纪要，不触发派工；订单保持待派工。交易类指令永远先过 RiskGuard + 模拟盘验证。</div>
+    <button class="btn amber" style="width:100%;margin-top:10px" onclick="endMeeting()">会终 · 保存纪要</button>
   </div>
 </div>
 
@@ -281,7 +281,7 @@ function renderTable() {
 const chat = document.getElementById('chat');
 function ensureChat() { const e = chat.querySelector('.empty'); if (e) e.remove(); }
 const SRC_CHIP = {
-  live:    '<span class="src s-live">真模型</span>',
+  live:    '<span class="src s-live">客户端标记实时应答</span>',
   degraded:'<span class="src s-deg">降级通道</span>',
   script:  '<span class="src s-script">演示台词</span>'
 };
@@ -292,9 +292,12 @@ function add(id, text, src) {
   const d = document.createElement('div');
   d.className = 'msg' + (isHost ? ' host' : '');
   const chip = isHost ? '' : (SRC_CHIP[src || 'script'] || '');
-  d.innerHTML = isHost
-    ? '<div class="av2 c-h">田</div><div class="body"><div class="who">老田 · 董事长</div>' + text + '</div>'
-    : '<div class="av2 ' + a.c + '">' + a.av + '</div><div class="body"><div class="who">' + a.nm + ' · ' + a.md + chip + '</div>' + text + '</div>';
+  if (isHost) {
+    d.innerHTML = '<div class="av2 c-h">田</div><div class="body"><div class="who">老田 · 董事长</div><div class="content"></div></div>';
+    d.querySelector('.content').textContent = text;
+  } else {
+    d.innerHTML = '<div class="av2 ' + a.c + '">' + a.av + '</div><div class="body"><div class="who">' + a.nm + ' · ' + a.md + chip + '</div>' + text + '</div>';
+  }
   chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
   MINUTES.push({ id: id, text: text, src: src || (isHost ? 'host' : 'script') });
 }
@@ -306,7 +309,7 @@ function ask(i) {
   picked.forEach((id, k) => setTimeout(() => {
     chatLive(id, QT[i], () => add(id, AGENTS[id].line, 'script'));
   }, 400 + k * 260));
-  setTimeout(() => add('A0', '<b>汇总：</b>各方意见已齐。风险点交诸葛复核，实验归赵云，执行单我立。要下发点右侧「会终」。'), 500 + picked.length * 900 + 1500);
+  setTimeout(() => add('A0', '<b>汇总（演示模板）：</b>发言是否收齐及归口责任均待核；会终仅存档纪要，订单仍待派工。', 'script'), 500 + picked.length * 900 + 1500);
 }
 function send() {
   const v = document.getElementById('say').value.trim(); if (!v) return;
@@ -323,29 +326,32 @@ document.querySelectorAll('.ot').forEach(el => el.onclick = () => {
 });
 function saveMinutes() {
   const orders = [];
-  document.querySelectorAll('#orderList .oi').forEach(el => {
-    orders.push({ title: (el.querySelector('.ot2') || el).textContent.trim().slice(0, 80),
-                  state: (el.querySelector('.st') || {}).textContent || '' });
+  document.querySelectorAll('#orderList .ocard').forEach(el => {
+    orders.push({ title: el.querySelector('.tn').textContent.trim().slice(0, 80),
+                  state: el.querySelector('.st').textContent });
   });
-  fetch('/api/meeting/minutes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  return fetch('/api/meeting/minutes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ participants: picked.slice(), orders: orders,
-      model_stats: MODEL_LIVE, minutes: MINUTES }) })
-  .then(r => r.json())
-  .then(env => {
-    if (env.ok) add('HOST', '<span style="color:#4FD1A5;font-size:11px">纪要已存档：' +
-      esc(env.saved) + '（' + env.count + ' 条 · 真模型 ' + MODEL_LIVE.ok + ' 次）</span>');
-    else add('HOST', '<span style="color:#EF9F27;font-size:11px">纪要存档失败：' +
-      esc(env.error || '?') + '（对话仍在页面内，可截图留证）</span>');
-  })
-  .catch(() => add('HOST', '<span style="color:#EF9F27;font-size:11px">纪要存档失败：端点不可达</span>'));
+      model_stats: MODEL_LIVE, minutes: MINUTES.slice() }) })
+  .then(async r => {
+    const env = await r.json();
+    if (!r.ok || !env.ok) throw new Error(env.error || '保存失败');
+    add('HOST', '纪要已存档：' + env.saved + '（' + env.count + ' 条；来源为客户端标记，未经服务端验证）。订单仍待派工，未下发指令。');
+    return env;
+  });
 }
-function endMeeting() {
+async function endMeeting() {
   if (!picked.length) { alert('先选参会 Agent'); return; }
-  saveMinutes();
-  add('HOST', '【会终】指令下发。');
-  const tn = { work:'WO-', trade:'SIM-', study:'RS-' }[otype];
-  setTimeout(() => add('A0', picked.includes('A0') ? '指令已入 .worktrees（' + tn + '系列），登记去重完成，各席执行，StatusPoint 回传。' : '田丰代收：指令已入 .worktrees（' + tn + '系列），登记去重，各席执行，StatusPoint 回传沙盘。'), 400);
-  document.querySelectorAll('#orderList .st').forEach(s => { s.className = 'st st-sent'; s.textContent = '已下发'; });
+  const button = document.querySelector('button[onclick="endMeeting()"]');
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    await saveMinutes();
+  } catch (e) {
+    add('HOST', '纪要存档失败：' + (e.name === 'TypeError' ? '端点不可达' : e.message) + '。对话仍在页面内，订单仍待派工，未下发指令。');
+  } finally {
+    button.disabled = false;
+  }
 }
 renderTable();
 setTimeout(() => { add('HOST', '点左侧名册选人上桌，或直接点快捷议题开会。'); }, 300);

@@ -33,6 +33,7 @@ BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
 from llm import LLMError, NovaMaxLLM, OllamaLLM  # noqa: E402
+from org_profiles import profile_index  # noqa: E402
 
 PERSONA = BASE / "prompts" / "a0_chief.md"
 COMPARE_PERSONA = BASE / "prompts" / "a0_compare.md"  # K-ORG-120 成对判读人设
@@ -101,26 +102,28 @@ def glm_chat(persona, user, model="glm/glm-5.3", timeout=240):
     return out, "ok"
 
 
-def route_chat(persona, user, model):
-    """模型路由（K-ORG-130 → 10-18 分工定案）：binding 全前缀路由。
-
-    glm/*  → 智谱包年云端（参谋长层判读：田丰/诸葛亮席位）
-    nova/* → NovaMax 特种（视觉/结构化）
-    ollama/* 或裸模型名 → 本地 Ollama（数据治理/蒸馏/嵌入岗）"""
+def route_chat(persona, user, model, metadata=None):
+    """按完整 binding 路由；可选 metadata 记录实际模型，不改变 (text, status) 接口。"""
+    if metadata is not None:
+        metadata["actual"] = model
     if model.startswith("glm/"):
         try:
             return glm_chat(persona, user, model=model)
         except LLMError:
-            # 云端额度/网络不可用 → 自动降级本地 9b（10-18：包年 key 周限至 10-20 18:57）
+            # 云端不可用时显式记录兜底，不能把本地结果冒充云端裁决。
             text, st = OllamaLLM().chat(persona, user, model="qwen3.5:9b")
-            return text, ("degraded" if st == "normal" else st)
+            if metadata is not None:
+                metadata["actual"] = "ollama/qwen3.5:9b"
+            return text, ("degraded" if st in ("normal", "ok") else st)
     if model.startswith("nova/"):
         try:
             port = model.split("/")[1]
             return NovaMaxLLM(port=port).chat(system=persona, user=user)
         except LLMError:
             text, st = OllamaLLM().chat(persona, user, model="qwen3.5:9b")
-            return text, ("degraded" if st == "normal" else st)
+            if metadata is not None:
+                metadata["actual"] = "ollama/qwen3.5:9b"
+            return text, ("degraded" if st in ("normal", "ok") else st)
     if model.startswith("ollama/"):
         model = model.split("/", 1)[1]
     return OllamaLLM().chat(persona, user, model=model)
@@ -147,17 +150,14 @@ MOCK_COMPARE = {
 
 
 def chief_model():
-    """从 org.json 读 chief 的 llm_binding——**返回完整 binding 含前缀**。
-
-    10-18 修：旧实现 split("/")[-1] 会把 glm/glm-5.3 砍成 "glm-5.3"，
-    route_chat 认不出 glm/ 前缀就误落本地 Ollama（404 降级）——云端席位静默变残废。
-    现返回完整 binding，前缀路由交 route_chat。兜底 ollama/qwen3.5:9b（已验证可用档，
-    K-STOCK-021b）。"""
+    """按部门档案 > 顶层 chief > 团队档案取 A0 完整 binding；缺档兜底 9b。"""
     try:
-        org = json.loads(ORG.read_text(encoding="utf-8"))
-        return org.get("chief", {}).get("llm_binding", "ollama/qwen3.5:9b")
-    except Exception:  # noqa: BLE001
-        return "ollama/qwen3.5:9b"
+        binding = profile_index(BASE).get("A0", {}).get("llm_binding")
+        if isinstance(binding, str) and binding.strip():
+            return binding.strip()
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return "ollama/qwen3.5:9b"
 
 
 # K-STOCK-120：点评质量四判据自检——黑名单操作建议词（含变体，如"建议买入"）
@@ -237,9 +237,13 @@ def parse_json_block(text):
 
     返回 (obj, err)：成功 err 为 None；失败 obj 为 None、err 为一句原因。"""
     import re as _re
+    try:
+        return json.loads(text.strip()), None
+    except json.JSONDecodeError:
+        pass
     m = _re.search(r"\{.*\}", text, _re.S)
     if not m:
-        return None, "输出中找不到 JSON 对象（无 {...} 块）"
+        return None, "输出中找不到合法 JSON（无 {...} 块）"
     try:
         return json.loads(m.group(0)), None
     except json.JSONDecodeError as e:
@@ -257,6 +261,8 @@ def compare_quality_check(verdict, cand_text, champ_text, ev_text=""):
     """
     import re as _re
     reasons = []
+    if not isinstance(verdict, dict):
+        return False, ["裁决须为 JSON 对象"]
     if verdict.get("winner") not in ("candidate", "champion", "tie"):
         reasons.append("winner 非法:%r" % verdict.get("winner"))
     if verdict.get("confidence") not in ("high", "medium", "low"):
@@ -267,22 +273,31 @@ def compare_quality_check(verdict, cand_text, champ_text, ev_text=""):
     else:
         src_nums = set(_re.findall(r"\d+(?:\.\d+)?", cand_text + champ_text + ev_text))
         for i, r in enumerate(rs):
+            if not isinstance(r, dict):
+                reasons.append("理由%d 须为对象" % (i + 1))
+                continue
             if r.get("side") not in ("candidate", "champion", "both"):
                 reasons.append("理由%d side 非法:%r" % (i + 1, r.get("side")))
-            if not (r.get("point") or "").strip() or not (r.get("evidence") or "").strip():
-                reasons.append("理由%d point/evidence 为空" % (i + 1))
+            point, evidence = r.get("point"), r.get("evidence")
+            if not isinstance(point, str) or not point.strip() or not isinstance(evidence, str) or not evidence.strip():
+                reasons.append("理由%d point/evidence 为空或非文本" % (i + 1))
             # ③ 数字可追溯（evidence 无数字则视为文字引用，放行）
-            for n in set(_re.findall(r"\d+(?:\.\d+)?", r.get("evidence", "") + r.get("point", ""))):
+            for n in set(_re.findall(r"\d+(?:\.\d+)?", (evidence if isinstance(evidence, str) else "") + (point if isinstance(point, str) else ""))):
                 if n not in src_nums:
                     reasons.append("理由%d 引用数字%s在两份产出中不存在" % (i + 1, n))
     # ② 黑名单（判读理由层同样不许出现操作建议）
     for r in rs if isinstance(rs, list) else []:
-        blob = (r.get("point", "") or "") + (r.get("evidence", "") or "")
+        if not isinstance(r, dict):
+            continue
+        blob = "".join(v for v in (r.get("point"), r.get("evidence")) if isinstance(v, str))
         for w in BLACKLIST_WORDS:
             if w in blob:
                 reasons.append("理由含黑名单词:%s" % w)
     # ④ tie 配套
-    missing = (verdict.get("missing") or "").strip()
+    missing_value = verdict.get("missing")
+    missing = missing_value.strip() if isinstance(missing_value, str) else ""
+    if missing_value is not None and not isinstance(missing_value, str):
+        reasons.append("missing 须为文本")
     if verdict.get("winner") == "tie" and not missing:
         reasons.append("winner=tie 但 missing 为空（须说明缺什么证据）")
     if verdict.get("winner") != "tie" and missing:
@@ -383,14 +398,12 @@ def run_compare(args):
         user += "\n\n【执行反馈补证档（事后补齐的事实证据）】\n" + ev_text
 
     if args.live:
-        # K-ORG-137：评估者席位缺省强模型 glm-5.3——此前缺省回退 chief_model()
-        # （org.json 仍绑 9b），round2 9b 两处归因错误（K-ORG-130 实录）在例行
-        # 判读会复发；点评主链（main）仍走 chief binding，9b 出稿冠军不动
-        model = args.model or "glm/glm-5.3"
+        model = args.model or chief_model()
+        route_meta = {}
         verdict, err, raw = None, None, ""
         for attempt in range(1, 4):  # K-ORG-127：小模型严格JSON不稳，解析失败重发至多3次（不放松契约）
             try:
-                raw, status = route_chat(persona, user, model=model)  # K-ORG-130：glm/* 走智谱通道
+                raw, status = route_chat(persona, user, model=model, metadata=route_meta)
             except LLMError as e:
                 print("[A0·判读] LLM 失败：%s（可用 --model qwen3.5:9b 降档重试）" % e)
                 sys.exit(2)
@@ -404,11 +417,14 @@ def run_compare(args):
             print("[A0·判读] 3 次仍未得合法 JSON；末次原文前200字：%s" % raw[:200])
             sys.exit(3)
     else:
-        verdict, model = dict(MOCK_COMPARE), "mock"
+        verdict, model, status, route_meta = dict(MOCK_COMPARE), "mock", "mock", {"actual": "mock"}
         print("[A0·判读] mock 模式（结构验证）")
 
+    actual = route_meta.get("actual", model)
+    degraded = actual != model or status == "degraded"
     elapsed = time.time() - t0
     ok, reasons = compare_quality_check(verdict, cand, champ, ev_text)
+    accepted = ok and not degraded and status in ("normal", "ok")
     print("[A0·判读] 推理耗时 %.1fs · 质量自检：%s" % (elapsed, "PASS" if ok else "FAIL（%s）" % ";".join(reasons)))
 
     out = BASE / "data" / "shadow" / ("a0_compare_%s_%s.json" % (args.date, args.target))
@@ -419,6 +435,11 @@ def run_compare(args):
                 "date": args.date,
                 "target": args.target,
                 "model": model,
+                "requested": model,
+                "actual": actual,
+                "degraded": degraded,
+                "status": status,
+                "accepted": accepted,
                 "candidate_file": str(cand_p),
                 "champion_file": str(champ_p),
                 "elapsed_s": round(elapsed, 1),
@@ -432,7 +453,10 @@ def run_compare(args):
         encoding="utf-8",
     )
     print("[A0·判读] 判读已生成：%s" % out)
-    print("winner=%s confidence=%s" % (verdict.get("winner"), verdict.get("confidence")))
+    print("winner=%s confidence=%s accepted=%s" % (
+        verdict.get("winner") if isinstance(verdict, dict) else None,
+        verdict.get("confidence") if isinstance(verdict, dict) else None,
+        accepted))
 
 
 if __name__ == "__main__":

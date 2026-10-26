@@ -1272,7 +1272,9 @@ def handle_post(handler, path):
             if path.endswith("nudge"):
                 r = ticket_loop.nudge(tid, by="customer")
             else:
-                r = ticket_loop.reply(tid, body.get("text") or "")
+                # 页面令牌只能查看/催办；不能证明持有人是该单处理人。
+                # 在服务端接入可核验的 actor+工单+动作授权前失败关闭。
+                raise ApiError("答复权限未接通：须核验处理人、工单与 reply 动作", 403)
             handler._json(r)
             return
         if path == "/api/m/strategy/submit":
