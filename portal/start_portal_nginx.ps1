@@ -7,7 +7,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) { $PSNativeCommandUseErrorActionPrefe
 $Name   = "ai-portal"
 $Portal = "C:\项目\老田的AI助手\portal"   # 挂载源唯一事实源（换机恢复：E: -> C:\项目）
 $Image  = "nginx:alpine"
-$Port   = "8080:80"
+$Port   = "127.0.0.1:8080:80"   # 2026-10-26 收口：仅本机（手机走 cloudflared→127.0.0.1:8734，不依赖 LAN 8080）
 
 Write-Host "[1/4] 等待 Docker 引擎就绪…" -ForegroundColor Cyan
 for ($i = 1; $i -le 90; $i++) {
