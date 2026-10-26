@@ -159,6 +159,10 @@ class Handler(BaseHTTPRequestHandler):
             # 田丰属性页（产品/研发席）直达路由
             self._send_file(_STATIC / "tianfeng.html", "text/html; charset=utf-8")
             return
+        if path in ("/keys", "/keys.html"):
+            # 三席多 Key 池页面
+            self._send_file(_STATIC / "keypool.html", "text/html; charset=utf-8")
+            return
         m = re.match(r"^/static/([a-z_]+\.html)$", path)
         if m and re.fullmatch(r"[a-z_]+", m.group(1).rsplit(".", 1)[0]):
             self._send_file(_STATIC / m.group(1), "text/html; charset=utf-8")
@@ -216,6 +220,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(build_view(_PLATFORM))
             except Exception as e:                       # noqa: BLE001
                 self._send_json({"ok": False, "error": "zhaoyun_view_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/keys/state":
+            try:
+                from legion_command import keypool
+                self._send_json(keypool.state())
+            except Exception as e:                       # noqa: BLE001
+                self._send_json({"ok": False, "error": "keypool_state_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path.startswith("/api/zhaoyun/"):
@@ -354,6 +366,25 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         import json
         path = urlparse(self.path).path
+        if path == "/api/keys/action":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request",
+                                     "reason": "content_length_out_of_range"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                from legion_command import keypool
+                res = keypool.action(req if isinstance(req, dict) else {})
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "keypool_action_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
         if path == "/api/zhaoyun/request":
             # WO-ZHAOYUN-DRILL：调整类动作只登记请求（pending_human），不自动改真源
             try:
