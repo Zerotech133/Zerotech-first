@@ -1,102 +1,301 @@
 # -*- coding: utf-8 -*-
-"""OSLINK-W4 契约骨架测试（v1.0 已签认；当前占位 skip，实施期逐条落实现后转实跑）。
+"""OSLINK-W4 归口契约实现测试（隔离树 / 合成数据；v1.0 已签认，实施期实跑）。
 
-对应契约：outputs/2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md
-归属单：K-QUANT-20261025-OSLEG-DRAFT（归口单 K-QUANT-20261023-OSLINK 的 W4）
+对应契约：`docs/plans/2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md` v1.0
+（2026-10-26 12:20 老田代 A0 签认）；归属单 `K-QUANT-20261026-OSLEG-IMPL`。
 
-为什么先写骨架而不是先写实现
---------------------------
-W1/W2/W3/W5 四单已合并，W4 是"归口段"——消息从司马懿(QS1)进、田丰(A0)受理答复。
-契约里最贵的不是 happy path，是六条负例（缺消费/重复/拒接/缺report_id/缺trace_id/通道混用）。
-先把负例写成可执行的用例名（skip 状态），实施时"填一个删一个 skip"，
-避免最后靠人脑回忆契约要求。
-
+覆盖契约 §四状态机全状态 + §五关联规则 + §六 N1-N6 负例 + §七无副作用。
 运行：python -X utf8 -B -m pytest quant_backtest/tests/test_osleg_contract_skeleton.py -q
 """
 from __future__ import annotations
 
+import inspect
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
-# 契约 v0.1 尚未签认前，全部用例 skip；A0 签认后逐条移除 skip。
-DRAFT = pytest.mark.skip(reason="契约 v1.0 已签认（2026-10-26 老田代 A0，见契约 §十）；实施期落实现后逐条去 skip，未接 8795/真实消费者")
+from quant_backtest.agent_bridge import osleg_contract as oc
+from quant_backtest.agent_bridge.osleg_contract import (
+    T_EXPIRE_SEC,
+    OslegInbox,
+)
+from quant_backtest.watch_dispatch.route_outbox import RouteOutbox
+
+T0 = datetime(2026, 10, 26, 4, 0, tzinfo=timezone.utc)
+REPORT = "QR-20261026-001"
+TRACE = "tr-20261026-001"
 
 
-@DRAFT
+class FakeClock:
+    """冻结时钟：expire 边界靠它做确定性验证。"""
+
+    def __init__(self, start: datetime) -> None:
+        self.t = start
+
+    def __call__(self) -> datetime:
+        return self.t
+
+    def advance(self, sec: float) -> None:
+        self.t = self.t + timedelta(seconds=sec)
+
+
+def _inbox(tmp_path, clock=None) -> OslegInbox:
+    return OslegInbox(tmp_path / "osleg", clock=clock)
+
+
+def _submit(inbox: OslegInbox, **over) -> dict:
+    kw = {
+        "kind": "stock_consult_result",
+        "payload": {"code": "605100", "signal": "3buy"},
+        "source": "qs1",
+        "report_id": REPORT,
+        "trace_id": TRACE,
+        "channel": oc.CHANNEL_INBOX,
+    }
+    kw.update(over)
+    return inbox.submit(**kw)
+
+
+def _to_consumed(inbox: OslegInbox) -> dict:
+    env = _submit(inbox)
+    assert env["ok"] is True
+    mid = env["msg_id"]
+    assert inbox.accept(mid, "A0", TRACE)["ok"] is True
+    assert inbox.consume(mid, "A0", TRACE)["ok"] is True
+    return {"msg_id": mid, "report_id": REPORT, "trace_id": TRACE}
+
+
+@pytest.fixture()
+def clock() -> FakeClock:
+    return FakeClock(T0)
+
+
+# ---------------------------------------------------------------- 正例 C1-C5
 def test_c1_submit_returns_msg_id(tmp_path):
-    """§三/§四：submit 必须落账并返回 msg_id；accepted_by 初始为空。"""
-    raise NotImplementedError
+    """§三/§四：submit 落账并返回 msg_id；accepted_by 初始为空、状态 submitted。"""
+    inbox = _inbox(tmp_path)
+    env = _submit(inbox)
+    assert env["ok"] is True and env["state"] == "submitted"
+    assert env["replayed"] is False and env["duplicate"] is False
+    assert str(env["msg_id"]).startswith("w4-")
+    rec = inbox.receipt(msg_id=env["msg_id"])
+    assert rec["ok"] is True and rec["status"] == "submitted"
+    assert rec["alive"] is True and rec["accepted_by"] == ""
+    assert rec["report_id"] == REPORT and rec["trace_id"] == TRACE
+    # 落盘在隔离树内（root 之外不写）
+    assert len(list((tmp_path / "osleg").glob("*.json"))) == 1
 
 
-@DRAFT
-def test_c2_lifecycle_all_states_reachable(tmp_path):
-    """§四：submitted→accepted→consumed→answered→delivered 全状态可达。"""
-    raise NotImplementedError
+def test_c2_lifecycle_all_states_reachable(tmp_path, clock):
+    """§四：submitted→accepted→consumed→answered→delivered 全链 + rejected/expired 可达。"""
+    inbox = _inbox(tmp_path, clock)
+    env = _submit(inbox)
+    mid = env["msg_id"]
+    seen = ["submitted"]
+    r = inbox.accept(mid, "A0", TRACE)
+    assert r["ok"] and r["state"] == "accepted"
+    seen.append(r["state"])
+    r = inbox.consume(mid, "A0", TRACE)
+    assert r["ok"] and r["state"] == "consumed"
+    seen.append(r["state"])
+    r = inbox.answer(mid, "A0", "3买成立，观察 2 日", REPORT, TRACE)
+    assert r["ok"] and r["state"] == "answered" and r["linked"] is True
+    seen.append(r["state"])
+    r = inbox.deliver(mid, "synthetic", "ref:1", TRACE)
+    assert r["ok"] and r["state"] == "delivered"
+    seen.append(r["state"])
+    assert inbox.receipt(msg_id=mid)["status"] == "delivered"
+
+    rej = _submit(inbox, report_id="QR-REJ", trace_id="tr-rej")
+    r = inbox.reject(rej["msg_id"], "不在归口范围", "A0")
+    assert r["ok"] and r["state"] == "rejected"
+    seen.append(r["state"])
+
+    exp = _submit(inbox, report_id="QR-EXP", trace_id="tr-exp")
+    clock.advance(T_EXPIRE_SEC)
+    r = inbox.expire()
+    assert exp["msg_id"] in r["expired"]
+    seen.append("expired")
+
+    assert set(seen) == set(oc.STATES)
 
 
-@DRAFT
 def test_c3_answer_must_link_report_id(tmp_path):
-    """§五-1：答复的 report_id 必须等于原提交；否则 receipt().linked=false。"""
-    raise NotImplementedError
+    """§五-1：答复 report_id 必须等于原提交；不一致拒收，不写 answered。"""
+    inbox = _inbox(tmp_path)
+    ctx = _to_consumed(inbox)
+    bad = inbox.answer(ctx["msg_id"], "A0", "答复", "QR-OTHER", TRACE)
+    assert bad["ok"] is False and bad["linked"] is False
+    assert bad["error"] == "report_id_mismatch"
+    assert inbox.receipt(msg_id=ctx["msg_id"])["status"] == "consumed"
+    good = inbox.answer(ctx["msg_id"], "A0", "答复", REPORT, TRACE)
+    assert good["ok"] is True and good["linked"] is True
+    assert inbox.receipt(msg_id=ctx["msg_id"])["linked"] is True
 
 
-@DRAFT
 def test_c4_trace_id_consistent_across_stages(tmp_path):
-    """§五-2：提交/消费/答复/投递四步 trace_id 一致，缺失则为 unknown。"""
-    raise NotImplementedError
+    """§五-2：trace_id 贯穿；缺失/不一致 → 该环 status=unknown，不得默认回填。"""
+    inbox = _inbox(tmp_path)
+    mid = _submit(inbox)["msg_id"]
+    assert inbox.accept(mid, "A0", "")["status"] == "unknown"
+    assert inbox.accept(mid, "A0", "tr-other")["error"] == "trace_mismatch"
+    assert inbox.accept(mid, "A0", TRACE)["ok"] is True
+    assert inbox.consume(mid, "A0", "tr-other")["status"] == "unknown"
+    assert inbox.consume(mid, "A0", TRACE)["ok"] is True
+    assert inbox.answer(mid, "A0", "答复", REPORT, "tr-other")["status"] == "unknown"
+    assert inbox.answer(mid, "A0", "答复", REPORT, TRACE)["ok"] is True
+    assert inbox.deliver(mid, "synthetic", "r", "")["status"] == "unknown"
+    assert inbox.deliver(mid, "synthetic", "r", TRACE)["ok"] is True
+    rec = inbox.receipt(msg_id=mid)
+    assert rec["trace_id"] == TRACE and rec["linked"] is True
 
 
-@DRAFT
 def test_c5_receipt_aggregates_both_channels(tmp_path):
-    """§五-3：按 report_id 聚合时，同进程 inbox 与 HTTP 8795 两条记录都要出现。"""
-    raise NotImplementedError
+    """§五-3：按 report_id 聚合时同进程 inbox 与 HTTP 两条记录都出现。"""
+    inbox = _inbox(tmp_path)
+    a = _submit(inbox, channel=oc.CHANNEL_INBOX)
+    b = _submit(inbox, channel=oc.CHANNEL_HTTP)
+    assert a["msg_id"] != b["msg_id"]
+    receipt = inbox.receipt(report_id=REPORT)
+    assert receipt["ok"] is True
+    assert receipt["total"] == 2
+    assert set(receipt["channels"]) == {oc.CHANNEL_INBOX, oc.CHANNEL_HTTP}
+    assert {a["msg_id"], b["msg_id"]} <= set(receipt["msg_ids"])
+    assert receipt["trace_consistent"] is True
+    assert receipt["trace_ids"] == [TRACE]
+    assert receipt["linked"] is False  # 尚未答复
+    # 一条通道答复后：linked 成立，另一通道记录仍在聚合里
+    inbox.accept(a["msg_id"], "A0", TRACE)
+    inbox.consume(a["msg_id"], "A0", TRACE)
+    inbox.answer(a["msg_id"], "A0", "答复", REPORT, TRACE)
+    receipt2 = inbox.receipt(report_id=REPORT)
+    assert receipt2["total"] == 2 and receipt2["linked"] is True
 
 
-@DRAFT
-def test_n1_expire_without_consumer(tmp_path):
-    """§六 N1：无消费者超过 T_expire → expired，receipt.alive=false。"""
-    raise NotImplementedError
+# ---------------------------------------------------------------- 负例 N1-N6
+def test_n1_expire_without_consumer(tmp_path, clock):
+    """§六 N1 + §十：T_expire=30min，≥ 阈值即 expired；已受理不误过期。"""
+    assert T_EXPIRE_SEC == 30 * 60
+    inbox = _inbox(tmp_path, clock)
+    pending = _submit(inbox, report_id="QR-P", trace_id="tr-p")
+    accepted = _submit(inbox, report_id="QR-A", trace_id="tr-a")
+    assert inbox.accept(accepted["msg_id"], "A0", "tr-a")["ok"] is True
+
+    clock.advance(T_EXPIRE_SEC - 1)
+    assert inbox.expire()["expired"] == []
+    assert inbox.receipt(msg_id=pending["msg_id"])["alive"] is True
+
+    clock.advance(1)  # 恰好等于阈值 → expired（签认边界：≥ 即过期）
+    expired = inbox.expire()["expired"]
+    assert pending["msg_id"] in expired
+    assert inbox.receipt(msg_id=pending["msg_id"])["status"] == "expired"
+    assert inbox.receipt(msg_id=pending["msg_id"])["alive"] is False
+    assert inbox.receipt(msg_id=accepted["msg_id"])["status"] == "accepted"
+
+    clock.advance(T_EXPIRE_SEC * 2)
+    inbox.expire()
+    assert inbox.receipt(msg_id=accepted["msg_id"])["status"] == "accepted"
 
 
-@DRAFT
 def test_n2_duplicate_submit_is_idempotent(tmp_path):
-    """§六 N2：同 payload 重复提交 → 原 msg_id，duplicate=true，不新增记录。"""
-    raise NotImplementedError
+    """§六 N2：同通道同体重复提交 → 原 msg_id、duplicate=true、不产生第二条记录。"""
+    inbox = _inbox(tmp_path)
+    first = _submit(inbox)
+    second = _submit(inbox)
+    assert second["ok"] is True and second["replayed"] is True
+    assert second["duplicate"] is True
+    assert second["msg_id"] == first["msg_id"]
+    rec = inbox.receipt(msg_id=first["msg_id"])
+    assert rec["duplicate"] is True
+    assert len(list((tmp_path / "osleg").glob("*.json"))) == 1
 
 
-@DRAFT
-def test_n3_rejection_requires_reason(tmp_path):
-    """§六 N3：拒接 must 带 reason；重复拒接幂等。"""
-    raise NotImplementedError
+def test_n3_rejection_requires_reason_and_resubmit_new_msg(tmp_path):
+    """§六 N3 + §十：拒接 reason 必填；重复拒接幂等；重投必须新 msg_id 且不复活旧单。"""
+    inbox = _inbox(tmp_path)
+    mid = _submit(inbox)["msg_id"]
+    assert inbox.reject(mid, "", "A0")["error"] == "reject_reason_required"
+    first = inbox.reject(mid, "归口外事项", "A0")
+    assert first["ok"] is True and first["state"] == "rejected"
+    again = inbox.reject(mid, "另一个原因", "A0")
+    assert again["ok"] is True and again["replayed"] is True
+    old = inbox.receipt(msg_id=mid)
+    assert old["status"] == "rejected"
+    assert old["retry_of"] == ""
+    # 重投：同 payload/report/trace → 新 msg_id，带 retry_of，旧单不复活
+    retry = _submit(inbox)
+    assert retry["ok"] is True
+    assert retry["msg_id"] != mid
+    assert retry["retry_of"] == mid
+    assert retry["state"] == "submitted"
+    assert inbox.receipt(msg_id=mid)["status"] == "rejected"
+    assert inbox.receipt(msg_id=retry["msg_id"])["state"] == "submitted"
+    assert len(list((tmp_path / "osleg").glob("*.json"))) == 2
 
 
-@DRAFT
 def test_n4_answer_without_report_id_rejected(tmp_path):
     """§六 N4：答复缺 report_id → 拒收，linked=false，不写 answered。"""
-    raise NotImplementedError
+    inbox = _inbox(tmp_path)
+    ctx = _to_consumed(inbox)
+    env = inbox.answer(ctx["msg_id"], "A0", "答复", "", TRACE)
+    assert env["ok"] is False and env["linked"] is False
+    assert env["error"] == "report_id_missing"
+    rec = inbox.receipt(msg_id=ctx["msg_id"])
+    assert rec["status"] == "consumed" and rec["linked"] is False
+    assert rec["answer_text"] == ""
 
 
-@DRAFT
 def test_n5_missing_trace_id_is_contract_violation(tmp_path):
-    """§六 N5：缺 trace_id → status=unknown，禁止回填默认值冒充。"""
-    raise NotImplementedError
+    """§六 N5：缺 trace_id → status=unknown，禁止回填默认值、不落账。"""
+    inbox = _inbox(tmp_path)
+    env = _submit(inbox, trace_id="")
+    assert env["ok"] is False and env["status"] == "unknown"
+    assert env["error"] == "trace_id_missing"
+    assert list((tmp_path / "osleg").glob("*.json")) == []
 
 
-@DRAFT
 def test_n6_channel_mix_distinct_msg_id_same_report_id(tmp_path):
-    """§六 N6：同 payload 双通道 → 两个 msg_id、同一 report_id。"""
-    raise NotImplementedError
+    """§六 N6：同 payload 双通道 → 两个 msg_id、同一 report_id/trace_id。"""
+    inbox = _inbox(tmp_path)
+    a = _submit(inbox, channel=oc.CHANNEL_INBOX)
+    b = _submit(inbox, channel=oc.CHANNEL_HTTP)
+    assert a["msg_id"] != b["msg_id"]
+    ra = inbox.receipt(msg_id=a["msg_id"])
+    rb = inbox.receipt(msg_id=b["msg_id"])
+    assert ra["report_id"] == rb["report_id"] == REPORT
+    assert ra["trace_id"] == rb["trace_id"] == TRACE
+    assert {ra["channel"], rb["channel"]} == {oc.CHANNEL_INBOX, oc.CHANNEL_HTTP}
+    assert len(list((tmp_path / "osleg").glob("*.json"))) == 2
 
 
-@DRAFT
+# ---------------------------------------------------------------- §七 无副作用
 def test_c7_no_side_effects(tmp_path):
-    """§七：隔离树内 RouteOutbox.trading_permitted() 必须 False；不得触真投递/8795。"""
-    raise NotImplementedError
+    """§七：不触网/不真投递/无审批交易副作用，全部落盘只在隔离树。"""
+    assert RouteOutbox().trading_permitted is False
+    src = inspect.getsource(oc)
+    for forbidden in ("import socket", "import urllib", "import requests",
+                      "http.client", "urlopen"):
+        assert forbidden not in src, "W4 契约层不得含网络 IO：%s" % forbidden
+
+    inbox = _inbox(tmp_path)
+    mid = _submit(inbox)["msg_id"]
+    inbox.accept(mid, "A0", TRACE)
+    inbox.consume(mid, "A0", TRACE)
+    inbox.answer(mid, "A0", "答复", REPORT, TRACE)
+    env = inbox.deliver(mid, "synthetic", "ref:synthetic-1", TRACE)
+    assert env["ok"] is True and env["delivered_channel"] == "synthetic"
+    # 隔离树之外零写入：tmp_path 下只允许出现 osleg 工作目录
+    assert {p.name for p in tmp_path.iterdir()} == {"osleg"}
+    assert all(p.is_file() for p in (tmp_path / "osleg").glob("*.json"))
 
 
+# ---------------------------------------------------------------- 契约文档
 def test_contract_doc_exists():
-    """契约正文必须与骨架同批入库（防止只写测试不落契约）。"""
+    """契约正文必须与实现同仓（防止只写实现不落契约）。"""
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
     doc = root / "docs" / "plans" / "2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md"
     assert doc.is_file(), "契约草案缺失：%s" % doc
+    text = doc.read_text(encoding="utf-8")
+    assert "v1.0" in text and "签认" in text
