@@ -76,6 +76,7 @@ def test_dup_hr_and_missing_name(tmp_path):
 def test_cli_exit_codes(tmp_path, capsys):
     good = _root(tmp_path / "good")
     assert CN.main(["--root", str(good), "--json"]) == 0
+    capsys.readouterr()  # 清掉 good 的输出，避免两段 JSON 拼接
     bad = _root(tmp_path / "bad", cards={"B1": {"cn_name": "甲", "name": "甲",
                                                 "entry_source": "org_profiles"}})
     assert CN.main(["--root", str(bad), "--json"]) == 1
