@@ -28,7 +28,7 @@ PORTS = {role: 9400 + 10 * i for i, role in enumerate(KNOWN_ROLES)}
 REPORT_TO = {
     "zhuge_liang": "principal",
     "tian_feng": "principal",
-    "zhao_yun": "principal",
+    "zhao_yun": "tian_feng",   # P0-4：问题单归口田丰（principal 非注册席，旧值会挂起）
     "platform_agent": "command",
     "risk_guard": "command",
     "approval_gate": "principal",
@@ -196,6 +196,26 @@ def _resolve_bind_host(auth_enabled: bool) -> str:
     return BIND_HOST_AUTH if auth_enabled else BIND_HOST_NO_AUTH
 
 
+# ---------------- P0-4 席位注册表与赵云状态路径 ----------------
+# 角色 -> 总线注册层级。总线只认**进程内注册**（route() 要求
+# source in bus._seats，未注册即判"伪署名"进死信），且公开 HTTP 端点只有
+# /route /status /board /health——没有 /register。因此必须由总线进程在启动时
+# 按本表登记已知席位，席位进程才可能上报成功。message_bus 自身不注册。
+SEAT_LEVELS = {
+    "zhuge_liang": "command",
+    "tian_feng": "command",
+    "zhao_yun": "command",
+    "platform_agent": "platform",
+    "risk_guard": "command",
+    "approval_gate": "command",
+    "os_commander": "command",
+}
+
+# 赵云督办轮次状态落盘路径（可选）：显式注入才启用持久化，
+# 缺省 None 保持既有纯内存行为（零副作用）。
+ZHAO_YUN_STATE_ENV = "LEGION_ZHAOYUN_STATE"
+
+
 def _run_message_bus(serve: bool, port: int) -> int:
     """构造 MessageBus（含席位凭证注入）；serve=True 时以 uvicorn 启动。
 
@@ -216,6 +236,10 @@ def _run_message_bus(serve: bool, port: int) -> int:
     pending_path = _load_pending_path(os.environ.get(PENDING_PATH_ENV))
     bus = MessageBus(seat_credentials=credentials, pending_path=pending_path)
 
+    # P0-4：总线进程启动即登记已知席位。否则席位上报会被 route() 判"伪署名"
+    # 进死信（message_bus.py 的 source in self._seats 校验），整条上报链全断。
+    registered = _register_known_seats(bus)
+
     # 自检打印如实反映鉴权与持久化状态（运维靠这几行确认配置真的进了总线）；
     # 只报开关与席位数，不报任何 token 内容。
     if bus.auth_enabled:
@@ -226,6 +250,7 @@ def _run_message_bus(serve: bool, port: int) -> int:
         pending_desc = f"pending=snapshot path={pending_path}"
     else:
         pending_desc = "pending=memory"
+    seats_desc = f"registered={len(registered)} ({','.join(registered)})"
 
     if serve:
         import uvicorn  # noqa: PLC0415
@@ -234,12 +259,21 @@ def _run_message_bus(serve: bool, port: int) -> int:
         # bind 与鉴权联动：未配凭证只监听本机，避免「0.0.0.0 + 无鉴权」的裸奔态。
         bind_host = _resolve_bind_host(bus.auth_enabled)
         print(f"[skeleton] message_bus 启动服务 bind={bind_host}:{port} "
-              f"{auth_desc} {pending_desc} —— 业务逻辑待实现")
+              f"{auth_desc} {pending_desc} {seats_desc} —— 业务逻辑待实现")
         uvicorn.run(app, host=bind_host, port=port)
     else:
         print(f"[skeleton] message_bus 实例化成功：{type(bus).__name__} "
-              f"{auth_desc} {pending_desc} —— 业务逻辑待实现")
+              f"{auth_desc} {pending_desc} {seats_desc} —— 业务逻辑待实现")
     return 0
+
+
+def _register_known_seats(bus) -> list[str]:
+    """按 SEAT_LEVELS 在总线进程内登记已知席位；返回成功登记的席位名。"""
+    registered: list[str] = []
+    for name, level in SEAT_LEVELS.items():
+        bus.register(name, level)
+        registered.append(name)
+    return registered
 
 
 def _run_seat(role: str, platform: str | None, serve: bool,
@@ -258,6 +292,11 @@ def _run_seat(role: str, platform: str | None, serve: bool,
     }
     if role == "platform_agent":
         kwargs["platform"] = platform
+    if role == "zhao_yun":
+        # P0-4：督办轮次状态持久化走显式 env 注入；未设置保持纯内存（零副作用）。
+        state_path = (os.environ.get(ZHAO_YUN_STATE_ENV) or "").strip()
+        if state_path:
+            kwargs["state_path"] = state_path
     seat = seat_cls(**kwargs)
 
     if serve:
