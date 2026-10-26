@@ -39,6 +39,11 @@ def test_http_probe_ok_and_fail():
     res2 = SP.probe_target({"kind": "http", "url": "http://127.0.0.1:59999/x"},
                            timeout=0.8)
     assert res2["ok"] is False
+    # OPTIONAL_OFFLINE 目标（LARK_CARDS 9104 拍板口径）：离线不判 degraded
+    opt = SP.probe_target({"kind": "http", "url": "http://127.0.0.1:59999/x",
+                           "expected_offline": True}, timeout=0.8)
+    assert opt["ok"] is True and opt["expected_offline"] is True
+    assert opt["was_online"] is False
 
 
 def test_file_freshness_fresh_stale_missing(tmp_path):
@@ -67,6 +72,8 @@ def test_targets_config_has_8_seats():
     seats = {str(t["seat"]) for t in targets}
     assert seats == {"LUSU1", "DENGZHI1", "JEV_GATE", "JEV_REVIEW", "JEV_QD",
                      "LARK_CARDS", "WATCH_TOWER", "COWBRIDGE"}
+    lark = [t for t in targets if t["seat"] == "LARK_CARDS"][0]
+    assert lark.get("expected_offline") is True, "9104 拍板 OPTIONAL_OFFLINE 须标定期离线"
 
 
 def test_main_emits_per_seat_events(tmp_path, monkeypatch):

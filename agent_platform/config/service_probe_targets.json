@@ -7,7 +7,7 @@
     {"seat": "JEV_GATE", "kind": "http", "url": "http://127.0.0.1:9101/health", "label": "Jev 告警降噪网关"},
     {"seat": "JEV_REVIEW", "kind": "http", "url": "http://127.0.0.1:9102/health", "label": "Jev 信号复核门"},
     {"seat": "JEV_QD", "kind": "http", "url": "http://127.0.0.1:9103/health", "label": "Jev⇄QuantDinger 桥"},
-    {"seat": "LARK_CARDS", "kind": "http", "url": "http://127.0.0.1:9104/health", "label": "飞书卡片回调（当前离线应显 degraded）"},
+    {"seat": "LARK_CARDS", "kind": "http", "url": "http://127.0.0.1:9104/health", "label": "飞书卡片回调（OPTIONAL_OFFLINE：2026-10-12 拍板无启动链，离线属正常）", "expected_offline": true},
     {"seat": "WATCH_TOWER", "kind": "file_freshness", "path": "agent_platform/data/shadow", "max_age_hours": 24, "label": "盯盘中台 shadow 产物新鲜度"},
     {"seat": "COWBRIDGE", "kind": "file_freshness", "path": "agent_platform/data/memory", "max_age_hours": 24, "label": "跨层记忆写入新鲜度"}
   ]

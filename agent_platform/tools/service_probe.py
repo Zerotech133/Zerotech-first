@@ -96,6 +96,13 @@ def probe_target(t: dict, timeout: float = 5.0) -> dict:
         res = {"ok": False, "error": "unsupported_kind", "kind": kind}
     res.update({"kind": kind, "label": str(t.get("label") or ""),
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z")})
+    # 拍板为 OPTIONAL_OFFLINE 的服务（如 9104 飞书卡片回调）：离线属设计内，不判 degraded
+    if t.get("expected_offline"):
+        res["expected_offline"] = True
+        res["was_online"] = bool(res.get("ok"))
+        if not res.get("ok"):
+            res["note"] = "expected_offline：按拍板 OPTIONAL_OFFLINE，离线属正常"
+            res["ok"] = True
     return res
 
 
