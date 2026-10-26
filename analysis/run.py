@@ -11,7 +11,7 @@ import os
 import sys
 import time
 
-from . import __version__, config, db, events as events_mod, features as feat_mod
+from . import __version__, config, db, events as events_mod, extras as extras_mod, features as feat_mod
 from . import gates, publish, render, snapshot, verdict as verdict_mod, views as views_mod
 
 
@@ -81,8 +81,15 @@ def run(code, as_of=None, no_llm=False, with_legion=False, skip_events=False, ma
 
     _log("S3 特征 ...", logf)
     feat = feat_mod.build_features(snap)
-    _log("S3 done price=%s ps=%s peers=%d" % (feat["technical"].get("price"), feat["valuation"].get("ps_ttm"),
-                                              len(feat.get("peers") or [])), logf)
+    try:
+        feat["extras"] = extras_mod.build(snap)
+    except Exception as e:
+        feat["extras"] = {}
+        _log("S3 extras 失败（不阻断）：" + str(e)[:120], logf)
+    _log("S3 done price=%s ps=%s peers=%d extras=%d" % (feat["technical"].get("price"),
+                                                        feat["valuation"].get("ps_ttm"),
+                                                        len(feat.get("peers") or []),
+                                                        sum(1 for v in (feat.get("extras") or {}).values() if v)), logf)
 
     views = None
     if not no_llm:

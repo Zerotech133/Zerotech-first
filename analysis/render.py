@@ -175,6 +175,11 @@ def build_report(ctx):
     A("- 行业（申万一级）：%s ｜ 特殊状态：%s" % (val.get("industry") or "—", "、".join(fnd.get("special_status") or []) or "无"))
     A("- 市值：%s 亿元 ｜ 数据覆盖：%.1f%%（%s）" % (_fmt(val.get("market_cap_yi")), snap.get("coverage", 0),
                                             "缺 " + "、".join(snap.get("required_missing")) if snap.get("required_missing") else "必需域齐全"))
+    ex = feat.get("extras") or {}
+    if ex.get("mainbz"):
+        mb = ex["mainbz"]
+        A("- 主营构成（%s）：%s" % (mb.get("end_date"), "；".join(
+            "%s %.1f%%" % (it["item"], it["share"]) for it in mb.get("items", [])[:4])))
     A("")
     A("## 三、财务")
     A("")
@@ -193,6 +198,14 @@ def build_report(ctx):
     A("| 合同负债 | %s 亿元 |" % _fmt(fnd.get("contract_liab_yi")))
     A("| 商誉 | %s 亿元 |" % _fmt(fnd.get("goodwill_yi")))
     A("")
+    if ex.get("forecast"):
+        fc = ex["forecast"]
+        A("- **业绩预告**（%s）：%s，净利润 %s ~ %s 亿元" % (fc.get("ann_date"), fc.get("type"),
+                                                        _fmt(fc.get("net_min_yi")), _fmt(fc.get("net_max_yi"))))
+    if ex.get("express"):
+        ep = ex["express"]
+        A("- **业绩快报**（%s）：营收 %s 亿元，净利 %s 亿元" % (ep.get("ann_date"), _fmt(ep.get("revenue_yi")), _fmt(ep.get("n_income_yi"))))
+    A("")
     A("## 四、估值（含同业）")
     A("")
     A("| 指标 | 值 |")
@@ -209,6 +222,12 @@ def build_report(ctx):
         for p in feat["peers"][:8]:
             A("| %s | %s | %s |" % (p["code"], _fmt(p.get("ps_ttm")), _fmt(p.get("market_cap_yi"))))
         A("")
+    if ex.get("consensus"):
+        c = ex["consensus"]
+        A("**一致预期**：近 180 天 %d 篇研报；最新（%s，%s）评级 %s；最近预测 EPS %s、净利 %s 亿元。" % (
+            c.get("reports_180d", 0), c.get("latest_date"), c.get("latest_org"), c.get("latest_rating") or "—",
+            _fmt(c.get("eps_last")), _fmt(c.get("np_last_yi"))))
+        A("")
     A("## 五、交易面与资金筹码")
     A("")
     A("| 指标 | 值 |")
@@ -223,6 +242,25 @@ def build_report(ctx):
     A("| 获利盘 / 平均成本 | %s%% / %s |" % (_fmt(chips.get("winner_rate")), _fmt(chips.get("avg_cost"))))
     A("")
     A("关键位：" + "；".join("%s %s（%s）" % (x["type"], x["price"], x.get("label", "")) for x in vd["levels"][:8]))
+    A("")
+    ha = ex.get("holder_actions") or {}
+    if ex.get("lhb"):
+        A("- **龙虎榜**：近 90 天 %d 次%s" % (ex["lhb"].get("count_90d", 0),
+                                          ("；席位净额 %s 万元" % _fmt(ex["lhb"].get("seat_net_wan"))) if ex["lhb"].get("seat_net_wan") is not None else ""))
+    if ha.get("holdertrade"):
+        A("- **重要股东增减持**（近一年）：" + "；".join("%s %s %s%%" % (x["ann_date"], x["holder"][:12],
+                                                                ("+" if x.get("in_de") == "IN" else "-") + str(x.get("ratio") or 0))
+                                                for x in ha["holdertrade"][:4]))
+    if ha.get("repurchase"):
+        A("- **回购**：%s（%s）" % (ha["repurchase"].get("proc"), ha["repurchase"].get("ann_date")))
+    if ha.get("pledge_ratio") is not None:
+        A("- **质押比例**：%s%%" % ha["pledge_ratio"])
+    if ha.get("float_next_180d"):
+        A("- **未来 180 天解禁**：" + "；".join("%s %.1f%%" % (x["date"], x.get("ratio") or 0) for x in ha["float_next_180d"]))
+    if ex.get("surveys"):
+        A("- **机构调研**：近一年 %d 次，最近 %s" % (ex["surveys"].get("count_365d", 0), ex["surveys"].get("last_date")))
+    if ex.get("interaction"):
+        A("- **互动问答**：累计 %d 条（近 180 天 %d 条）" % (ex["interaction"].get("total", 0), ex["interaction"].get("recent_180d", 0)))
     A("")
     A("## 六、事件（近两年关键公告）")
     A("")
@@ -374,7 +412,36 @@ def build_h5(ctx, outdir):
          "read": "事件为公告标题规则分类，未经人工复核仅作线索。", "chart": None, "cap": None},
     ]
 
-    # 情景/风险/关键位/观察
+    # 扩展数据（sync 缓存）
+    ex = feat.get("extras") or {}
+    if ex.get("consensus"):
+        c = ex["consensus"]
+        tabs[1]["rows"] += kv([("一致预期(180d)", "%d 篇" % c.get("reports_180d", 0)),
+                               ("最新评级", c.get("latest_rating") or "—"),
+                               ("预测 EPS", _fmt(c.get("eps_last")))])
+    ex_rows = []
+    if ex.get("lhb"):
+        ex_rows.append(("龙虎榜(90d)", "%d 次" % ex["lhb"].get("count_90d", 0)))
+    ha = ex.get("holder_actions") or {}
+    if ha.get("holdertrade"):
+        ex_rows.append(("股东增减持", "；".join("%s %s%%" % (x["ann_date"][:10], x.get("ratio") or 0) for x in ha["holdertrade"][:3])))
+    if ha.get("pledge_ratio") is not None:
+        ex_rows.append(("质押比例", "%s%%" % ha["pledge_ratio"]))
+    if ha.get("float_next_180d"):
+        ex_rows.append(("未来解禁", "；".join("%s %.1f%%" % (x["date"], x.get("ratio") or 0) for x in ha["float_next_180d"])))
+    if ha.get("repurchase"):
+        ex_rows.append(("回购", ha["repurchase"].get("proc") or ""))
+    if ex.get("surveys"):
+        ex_rows.append(("机构调研", "近一年 %d 次" % ex["surveys"].get("count_365d", 0)))
+    if ex.get("interaction"):
+        ex_rows.append(("互动问答", "累计 %d 条" % ex["interaction"].get("total", 0)))
+    if ex.get("mainbz"):
+        ex_rows.append(("主营构成", "；".join("%s %.0f%%" % (i["item"], i["share"]) for i in ex["mainbz"].get("items", [])[:3])))
+    if ex.get("forecast"):
+        ex_rows.append(("业绩预告", ex["forecast"].get("type") or ""))
+    if ex_rows:
+        tabs.append({"id": "ext", "name": "扩展", "rows": kv(ex_rows),
+                     "read": "来自 sync 数据层（一致预期/龙虎榜/股东行为/调研/主营/预告）。", "chart": None, "cap": None})
     scen = [{"id": s["id"], "letter": s["id"].replace("s", ""), "title": s["name"],
              "sub": "概率 %.0f%% ｜ %s" % (s["probability"] * 100, s["trigger"]),
              "tone": {"sA": "green", "sB": "blue", "sC": "red", "sD": "amber"}.get(s["id"], "blue")} for s in vd["scenarios"]]
