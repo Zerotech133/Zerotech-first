@@ -115,6 +115,18 @@ HTML（--out DIR）。除第 9 条的一次短生成探测外，本脚本只读�
     建项起因：2026-10-25 白天 6 轮 JEV rc=124、每轮仍推进 ~100 条；2026-10-26
     EXEC-R32 起纳入夜班 jev_night（此前夜间吞吐不计入，ETA 偏高/误判无新轮次）。
 
+15. 数据底座健康（2026-10-26 OS-FIX-DATAHEALTH）：三项"静默缺口"巡查——
+    · data.shibor_lpr_freshness：整理层 `shibor_lpr.parquet` 日期列
+      （cal_date/date）max 距今天数，>14 天黄 / >60 天红；文件缺失/读失败/列名
+      不匹配 → 黄（不判绿）。起因：文件 mtime 新、内容两个月前，mtime 口径看不见。
+    · data.tdx_manifest：`quant_backtest/data/tdx` 用 os.walk 统计体积/文件数
+      （10s / 5 万文件预算，超限报未完成不判绿）；>1 GiB 且不在最新
+      `<vault>/<date>/data_manifest.json` 的 dirs[].name/dirs[].path/tables/paths
+      中 → 黄「未纳管」；<阈值或目录不存在 → 绿/不适用；manifest 不可读 → 黄。
+    · data.trade_cal_dedup：整理层 `trade_cal.parquet` 的 cal_date 单列，
+      rows/distinct >1.01 → 黄（detail 写 rows/distinct/倍数）；读失败 → 黄。
+    三项读 parquet 时惰性 import pyarrow（不可用判黄、不判绿）；其余检查仍零依赖。
+
 用法：
     python -B tools/gen_health_card.py
     python -B tools/gen_health_card.py --vault-root C:/项目/_vault
@@ -341,6 +353,22 @@ CURATED_CACHE_TTL_SECONDS = float(
 CURATED_FORCE_SCAN = os.environ.get("ZB_HC_CURATED_FORCE", "") == "1"
 CURATED_SCAN_DEADLINE_CHECK_EVERY = 4096
 CURATED_DETAIL_DATASET_LIMIT = 5
+
+# --- 数据底座健康（data.shibor_lpr_freshness / data.tdx_manifest /
+#     data.trade_cal_dedup）——2026-10-26 OS-FIX-DATAHEALTH ----------------------
+# 三个"静默缺口"巡查：数据源断供（文件 mtime 新、内容是旧的）、vendor 大目录
+# 未纳管（盘上有、备份/manifest 没有）、交易日历重复（同一日期多行，下游按日期
+# 聚合时静默乘倍数）。纪律：只读、轻量；读不到 = 黄（不判绿），绝不静默当没事。
+SHIBOR_LPR_REL = CURATED_REL / "shibor_lpr.parquet"
+SHIBOR_LPR_YELLOW_DAYS = 14.0      # 落后 >14 天黄（该查上游源）
+SHIBOR_LPR_RED_DAYS = 60.0         # 落后 >60 天红（两个月断供，结论不可信）
+TDX_REL = Path("quant_backtest") / "data" / "tdx"
+TDX_UNMANAGED_MIN_BYTES = 1024 ** 3  # >1 GiB 且未纳管才判黄（小目录=不适用）
+TDX_WALK_BUDGET_SECONDS = 10.0     # 目录统计预算（实测 1,814 文件 0.13s）
+TDX_WALK_MAX_FILES = 50000         # 文件数上限：防病态目录把健康卡拖死
+TRADE_CAL_REL = CURATED_REL / "trade_cal.parquet"
+TRADE_CAL_DUP_YELLOW_RATIO = 1.01  # 行数/去重日期数 >1.01（>1% 重复）判黄
+DATA_MANIFEST_FILE = "data_manifest.json"
 
 # --- 本地推理能力（ai.inference）---------------------------------------------
 # 2026-10-24 建：本卡原来 21 项全在管任务/备份/数据/仓库，**产品本体（AI 推理）
@@ -1979,6 +2007,410 @@ def _curated_freshness_detail(block: dict[str, Any]) -> str:
         # 绿也给一条节奏建议：本项一旦转黄就是"该重建了"，提前把命令写在这里。
         tail = "；建议保持每周一次重建（先 python -B tools/refresh_curated.py --dry-run；见 SOP §1.5）"
     return head + "；".join(bits) + tail
+
+
+# ---------------------------------------------------------------------------
+# 2e) 数据底座健康（2026-10-26 OS-FIX-DATAHEALTH）
+#     ① shibor_lpr 断供 ② tdx vendor 未纳管 ③ trade_cal 重复
+# ---------------------------------------------------------------------------
+def _normalize_day(value: Any) -> str | None:
+    """日期值归一 → YYYY-MM-DD；支持 int 20260820 / str 20260820 / ISO / date。"""
+    if value is None:
+        return None
+    if isinstance(value, dt.datetime):
+        return value.date().isoformat()
+    if isinstance(value, dt.date):
+        return value.isoformat()
+    text = str(value).strip()
+    if len(text) == 8 and text.isdigit():
+        return "%s-%s-%s" % (text[:4], text[4:6], text[6:])
+    if len(text) >= 10 and text[4] == "-" and text[7] == "-":
+        day = text[:10]
+        try:
+            dt.date.fromisoformat(day)
+        except ValueError:
+            return None
+        return day
+    return None
+
+
+def _read_parquet_column(
+    path: Path, columns: tuple[str, ...]
+) -> tuple[list[Any] | None, str]:
+    """惰性 import pyarrow，只读一列 → (values, "")；失败 → (None, 原因)。
+
+    健康卡主流程仍是零第三方依赖；只有本组数据底座检查需要 parquet 元数据。
+    pyarrow 不可用 / schema 读失败 / 列名不匹配都返回原因（调用方判黄、不判绿）
+    ——绝不静默跳过，也不读全表（只看单列，正常 <1s）。
+    """
+    try:
+        import pyarrow.parquet as parquet  # 惰性：仅本组检查需要
+    except Exception as exc:  # noqa: BLE001 - 失败原因要原样进 detail
+        return None, "pyarrow 不可用（%s），无法读 parquet 单列" % _short_exc(exc)
+    try:
+        schema = parquet.read_schema(str(path))
+    except Exception as exc:  # noqa: BLE001
+        return None, "读 parquet schema 失败：%s" % _short_exc(exc)
+    for column in columns:
+        if column not in schema.names:
+            continue
+        try:
+            table = parquet.read_table(str(path), columns=[column])
+        except Exception as exc:  # noqa: BLE001
+            return None, "读 parquet 列 %s 失败：%s" % (column, _short_exc(exc))
+        return table.column(column).to_pylist(), ""
+    return None, "列名不匹配（期望 %s；实际 %s）" % (
+        "/".join(columns), ",".join(schema.names[:8]) or "空")
+
+
+def _empty_shibor_lpr_freshness(path: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "status": None,
+        "level": None,
+        "path": str(path),
+        "column": None,
+        "rows": None,
+        "max_date": None,
+        "lag_days": None,
+        "scan_seconds": None,
+        "thresholds": {
+            "yellow_days": SHIBOR_LPR_YELLOW_DAYS,
+            "red_days": SHIBOR_LPR_RED_DAYS,
+        },
+    }
+
+
+def collect_shibor_lpr_freshness(
+    curated_root: Path, now: dt.datetime
+) -> dict[str, Any]:
+    """Shibor/LPR 数据新鲜度：max(日期) 距今天数 >14 天黄 / >60 天红。
+
+    2026-10-26 OS-FIX-DATAHEALTH：断供近两个月但采集任务还在写——文件 mtime
+    是新的、内容是旧的，既有 curated_freshness 只看 mtime 完全看不见。
+    只读整理层单文件单列；文件缺失 / 读失败 / 无有效日期 → 黄（不判绿）。
+    """
+    path = curated_root / Path(SHIBOR_LPR_REL).name
+    block = _empty_shibor_lpr_freshness(path)
+    started = time.monotonic()
+    try:
+        if not path.is_file():
+            block.update(reason="文件缺失：%s" % path,
+                         status="missing", level="yellow")
+            return block
+        values, error = _read_parquet_column(path, ("cal_date", "date"))
+        block["scan_seconds"] = round(time.monotonic() - started, 3)
+        if error:
+            block.update(reason=error, status="unreadable", level="yellow")
+            return block
+        values = values or []
+        days = [day for day in (_normalize_day(value) for value in values) if day]
+        block["rows"] = len(values)
+        if not days:
+            block.update(reason="无有效日期值（列存在但全为空/不可解析）",
+                         status="invalid", level="yellow")
+            return block
+        max_day = max(days)
+        lag_days = (now.date() - dt.date.fromisoformat(max_day)).days
+        block.update(available=True, column="cal_date/date", max_date=max_day,
+                     lag_days=lag_days)
+        if lag_days > SHIBOR_LPR_RED_DAYS:
+            block.update(status="stale", level="red")
+        elif lag_days > SHIBOR_LPR_YELLOW_DAYS:
+            block.update(status="stale", level="yellow")
+        else:
+            block.update(status="fresh", level="green")
+        return block
+    except Exception as exc:  # noqa: BLE001 - fail-visible：不拖垮整卡
+        block.update(reason="检查异常：%s" % _short_exc(exc),
+                     status="error", level="yellow")
+        return block
+
+
+def _shibor_lpr_detail(block: dict[str, Any]) -> str:
+    if not block:
+        return "Shibor/LPR 新鲜度检查未运行（data 块缺失）"
+    if not block.get("available"):
+        return "Shibor/LPR 数据源不可判定：%s；判黄（不判绿，不静默当没事）" % (
+            block.get("reason") or "未知原因")
+    bits = [
+        "shibor_lpr.parquet 最新日期 %s（%s 行）"
+        % (block.get("max_date"), _fmt_num(block.get("rows"))),
+        "距今 %s 天" % _fmt_num(block.get("lag_days")),
+        "阈值 >%g 天黄 / >%g 天红" % (SHIBOR_LPR_YELLOW_DAYS, SHIBOR_LPR_RED_DAYS),
+    ]
+    level = block.get("level")
+    if level == "red":
+        return ("Shibor/LPR 已断供（判红，拿该源得出的结论已不可信）："
+                + "；".join(bits) + "；处置：查 tushare_sync/整理层重建是否漏了 shibor_lpr")
+    if level == "yellow":
+        return "Shibor/LPR 落后（判黄，该查上游源了）：" + "；".join(bits)
+    return "Shibor/LPR 新鲜：" + "；".join(bits)
+
+
+def _walk_tree_stats(root: Path) -> tuple[int, int, bool, str]:
+    """os.walk 统计目录 → (文件数, 字节数, 是否完整遍历, 未完成原因)。"""
+    files = 0
+    total = 0
+    deadline = time.monotonic() + TDX_WALK_BUDGET_SECONDS
+    try:
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames.sort()
+            for name in filenames:
+                files += 1
+                try:
+                    total += os.path.getsize(os.path.join(dirpath, name))
+                except OSError:
+                    pass
+                if files >= TDX_WALK_MAX_FILES:
+                    return (files, total, False,
+                            "达到 %d 文件上限，计数为下限" % TDX_WALK_MAX_FILES)
+            if time.monotonic() > deadline:
+                return (files, total, False,
+                        "遍历超过 %gs 预算，计数为下限" % TDX_WALK_BUDGET_SECONDS)
+    except OSError as exc:
+        return files, total, False, "遍历中断：%s" % _short_exc(exc)
+    return files, total, True, ""
+
+
+def _latest_data_manifest(
+    vault_root: Path,
+) -> tuple[Path | None, dict[str, Any] | None, str]:
+    """取 <vault>/<YYYY-MM-DD>/data_manifest.json 里最新一份可读的。"""
+    try:
+        date_dirs = sorted(
+            (entry for entry in vault_root.iterdir()
+             if entry.is_dir()
+             and re.fullmatch(r"\d{4}-\d{2}-\d{2}", entry.name)),
+            key=lambda entry: entry.name,
+            reverse=True,
+        )
+    except OSError as exc:
+        return None, None, "_vault 不可读：%s" % _short_exc(exc)
+    errors: list[str] = []
+    for date_dir in date_dirs:
+        candidate = date_dir / DATA_MANIFEST_FILE
+        if not candidate.is_file():
+            continue
+        try:
+            payload = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            errors.append("%s 读取失败：%s" % (candidate, _short_exc(exc)))
+            continue
+        if isinstance(payload, dict):
+            return candidate, payload, ""
+        errors.append("%s 顶层不是对象" % candidate)
+    reason = "未找到可读的 data_manifest.json"
+    if errors:
+        reason += "（最近错误：%s）" % "；".join(errors[-2:])
+    return None, None, reason
+
+
+def _manifest_managed_field(
+    manifest: dict[str, Any], name: str
+) -> tuple[str | None, dict[str, Any] | None]:
+    """data_manifest 是否已纳管某顶层目录 → (命中的字段, 对应条目 dict|None)。"""
+    entries = manifest.get("dirs")
+    if isinstance(entries, list):
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            if str(entry.get("name") or "") == name:
+                return "dirs[].name", entry
+            path = str(entry.get("path") or "").replace("\\", "/").rstrip("/")
+            if path.split("/")[-1] == name:
+                return "dirs[].path", entry
+    for key in ("tables", "paths"):
+        value = manifest.get(key)
+        if isinstance(value, dict):
+            for key_name in value:
+                if name in str(key_name).replace("\\", "/").split("/"):
+                    return key, None
+        elif isinstance(value, list):
+            for item in value:
+                if name in str(item).replace("\\", "/").strip("/").split("/"):
+                    return key, None
+    return None, None
+
+
+def _empty_tdx_manifest(tdx_root: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "status": None,
+        "level": None,
+        "tdx_root": str(tdx_root),
+        "files": None,
+        "bytes": None,
+        "walk_note": "",
+        "truncated": False,
+        "manifest_path": None,
+        "managed_by": None,
+        "manifest_files": None,
+        "manifest_bytes": None,
+        "min_bytes": TDX_UNMANAGED_MIN_BYTES,
+    }
+
+
+def collect_tdx_manifest(repo_root: Path, vault_root: Path) -> dict[str, Any]:
+    """TDX vendor 目录纳管巡查：>1 GiB 且不在 data_manifest → 黄「未纳管」。
+
+    2026-10-26 OS-FIX-DATAHEALTH：tdx 约 21 GiB 的 vendor 原始目录，
+    backup_daily 按设计把它排除出每日 tar 集（可重建），但既有健康卡既不看
+    目录体积、也不看它是否在 data_manifest 里——"盘上有、备份无"完全不可见。
+    判定：目录不存在或 <1 GiB → 绿/不适用；>1 GiB 且未纳管 → 黄；
+    manifest 不可读 / 遍历未完成 → 黄（不判绿）。
+    """
+    tdx_root = repo_root / TDX_REL
+    block = _empty_tdx_manifest(tdx_root)
+    try:
+        if not tdx_root.is_dir():
+            block.update(available=True, status="missing", level="green",
+                         reason="目录不存在（不适用）")
+            return block
+        files, total, complete, walk_note = _walk_tree_stats(tdx_root)
+        block.update(available=True, files=files, bytes=total,
+                     truncated=not complete, walk_note=walk_note)
+        if not complete:
+            block.update(status="unknown", level="yellow",
+                         reason="目录遍历未完成（%s），计数 %s / %s 为下限"
+                         % (walk_note, _fmt_num(files), _human_bytes(total)))
+            return block
+        if total <= TDX_UNMANAGED_MIN_BYTES:
+            block.update(status="not_applicable", level="green",
+                         reason="小于 %s 阈值，不适用"
+                         % _human_bytes(TDX_UNMANAGED_MIN_BYTES))
+            return block
+        manifest_path, manifest, manifest_error = _latest_data_manifest(vault_root)
+        block["manifest_path"] = str(manifest_path) if manifest_path else None
+        if manifest is None:
+            block.update(status="unknown", level="yellow",
+                         reason="无法判定纳管：%s（不判绿）"
+                         % (manifest_error or "data_manifest 不可读"))
+            return block
+        field, entry = _manifest_managed_field(manifest, "tdx")
+        if field:
+            block.update(status="managed", level="green", managed_by=field)
+            if isinstance(entry, dict):
+                block["manifest_files"] = _as_int(entry.get("files"))
+                block["manifest_bytes"] = _as_int(entry.get("bytes"))
+        else:
+            block.update(status="unmanaged", level="yellow",
+                         reason=">%s 且不在最新 data_manifest 的 dirs/tables/paths"
+                         % _human_bytes(TDX_UNMANAGED_MIN_BYTES))
+        return block
+    except Exception as exc:  # noqa: BLE001
+        block.update(reason="检查异常：%s" % _short_exc(exc),
+                     status="error", level="yellow")
+        return block
+
+
+def _tdx_manifest_detail(block: dict[str, Any]) -> str:
+    if not block:
+        return "TDX vendor 纳管检查未运行（data 块缺失）"
+    status = block.get("status")
+    if status == "missing":
+        return "TDX vendor 目录不存在（不适用）"
+    if block.get("bytes") is None:
+        return "TDX vendor 不可判定：%s；判黄（不判绿）" % (
+            block.get("reason") or "未知原因")
+    size_text = "%s 文件 / %s" % (_fmt_num(block.get("files")),
+                                 _human_bytes(block.get("bytes")))
+    head = "TDX vendor（%s）" % size_text
+    if status == "unknown":
+        return head + "；无法判定纳管：%s；判黄（不判绿）" % (
+            block.get("reason") or "未知原因")
+    if status == "not_applicable":
+        return head + "；< %s，不适用（小目录不判未纳管）" % (
+            _human_bytes(TDX_UNMANAGED_MIN_BYTES))
+    if status == "managed":
+        text = head + "；已纳管（data_manifest %s" % (block.get("managed_by") or "")
+        if block.get("manifest_files") is not None:
+            text += "：%s 文件 / %s" % (_fmt_num(block.get("manifest_files")),
+                                       _human_bytes(block.get("manifest_bytes")))
+        text += "）"
+        return text + "；注意 backup_daily 仍按 vendor 排除出 tar 集（可重建）"
+    if status == "unmanaged":
+        return (head + "；未纳管（>%s 且不在最新 data_manifest）："
+                "盘上有、备份/清单没有 → 判黄，需裁决纳入清单或明确接受可重建"
+                % _human_bytes(TDX_UNMANAGED_MIN_BYTES))
+    return head + "；" + str(block.get("reason") or "")
+
+
+def _empty_trade_cal_dedup(path: Path) -> dict[str, Any]:
+    return {
+        "available": False,
+        "reason": None,
+        "status": None,
+        "level": None,
+        "path": str(path),
+        "column": None,
+        "rows": None,
+        "distinct": None,
+        "ratio": None,
+        "scan_seconds": None,
+        "thresholds": {"dup_yellow_ratio": TRADE_CAL_DUP_YELLOW_RATIO},
+    }
+
+
+def collect_trade_cal_dedup(curated_root: Path) -> dict[str, Any]:
+    """交易日历去重巡查：rows/distinct > 1.01 → 黄（detail 写 rows/distinct/倍数）。
+
+    2026-10-26 OS-FIX-DATAHEALTH：整理层 trade_cal.parquet 40,542 行只有
+    13,514 个 distinct cal_date（×3 重复，多交易所/重复 merge 常见）。下游若按
+    日期聚合会静默乘倍数，而既有健康卡完全看不见。只读 cal_date 单列；
+    读失败/无有效日期 → 黄（不判绿）。
+    """
+    path = curated_root / Path(TRADE_CAL_REL).name
+    block = _empty_trade_cal_dedup(path)
+    started = time.monotonic()
+    try:
+        if not path.is_file():
+            block.update(reason="文件缺失：%s" % path,
+                         status="missing", level="yellow")
+            return block
+        values, error = _read_parquet_column(path, ("cal_date", "date"))
+        block["scan_seconds"] = round(time.monotonic() - started, 3)
+        if error:
+            block.update(reason=error, status="unreadable", level="yellow")
+            return block
+        values = values or []
+        days = [day for day in (_normalize_day(value) for value in values) if day]
+        block.update(rows=len(values), distinct=len(set(days)))
+        if not values or not days:
+            block.update(reason="无有效 cal_date 值", status="invalid", level="yellow")
+            return block
+        ratio = len(values) / float(len(set(days)))
+        block.update(available=True, column="cal_date/date", ratio=round(ratio, 4))
+        if ratio > TRADE_CAL_DUP_YELLOW_RATIO:
+            block.update(status="duplicated", level="yellow")
+        else:
+            block.update(status="ok", level="green")
+        return block
+    except Exception as exc:  # noqa: BLE001
+        block.update(reason="检查异常：%s" % _short_exc(exc),
+                     status="error", level="yellow")
+        return block
+
+
+def _trade_cal_dedup_detail(block: dict[str, Any]) -> str:
+    if not block:
+        return "交易日历去重检查未运行（data 块缺失）"
+    if not block.get("available"):
+        return "交易日历去重不可判定：%s；判黄（不判绿）" % (
+            block.get("reason") or "未知原因")
+    bits = [
+        "trade_cal.parquet %s 行 / %s 个去重日期（×%s）"
+        % (_fmt_num(block.get("rows")), _fmt_num(block.get("distinct")),
+           _fmt_num(block.get("ratio"))),
+        "阈值 >%g 判黄（>%g%% 重复）"
+        % (TRADE_CAL_DUP_YELLOW_RATIO, (TRADE_CAL_DUP_YELLOW_RATIO - 1) * 100),
+    ]
+    if block.get("level") == "yellow":
+        return ("交易日历重复（判黄，按日期聚合会静默乘倍数）：" + "；".join(bits)
+                + "；重复通常来自多 exchange 行或重复 merge，处置在整理层生成侧")
+    return "交易日历无重复：" + "；".join(bits)
 
 
 # ---------------------------------------------------------------------------
@@ -5430,6 +5862,24 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             _curated_freshness_detail(curated),
         )
 
+    # 数据底座健康三项（2026-10-26 OS-FIX-DATAHEALTH）：与 curated_freshness 并列，
+    # 等级同样由采集侧给全；缺失/无等级一律红兜底（绝不静默当绿）。
+    for check_id, block_key, detail_fn in (
+        ("data.shibor_lpr_freshness", "shibor_lpr_freshness", _shibor_lpr_detail),
+        ("data.tdx_manifest", "tdx_manifest", _tdx_manifest_detail),
+        ("data.trade_cal_dedup", "trade_cal_dedup", _trade_cal_dedup_detail),
+    ):
+        block = (card.get("data") or {}).get(block_key) or {}
+        if not block:
+            add(check_id, "red", "数据底座健康检查未运行（data 块缺失）：" + block_key)
+            continue
+        block_level = block.get("level")
+        add(
+            check_id,
+            block_level if block_level in ("green", "yellow", "red") else "red",
+            detail_fn(block),
+        )
+
     repo = card["repo"]
     if not repo["available"]:
         add("repo.readable", "red", "仓库卫生不可用：" + (repo["reason"] or "未知原因"))
@@ -5706,6 +6156,10 @@ def build_card(
         "data": {
             "root_drift": collect_data_root_drift(vault_root),
             "curated_freshness": collect_curated_freshness(curated_path, raw_path),
+            # 数据底座健康（2026-10-26 OS-FIX-DATAHEALTH）：断供 / 未纳管 / 重复
+            "shibor_lpr_freshness": collect_shibor_lpr_freshness(curated_path, now),
+            "tdx_manifest": collect_tdx_manifest(repo_root, vault_root),
+            "trade_cal_dedup": collect_trade_cal_dedup(curated_path),
         },
         "repo": repo_block,
         "docs": {"index_freshness": collect_docs_index(repo_root)},
@@ -5765,6 +6219,26 @@ def build_card(
             "原始层不存在、原始层没有 parquet、或遍历超 "
             f"{CURATED_SCAN_BUDGET_SECONDS:g}s 预算 → available=false + 红。"
             "重建命令见 tools/refresh_curated.py（--replace 会永久删除旧整理层，须先校验通过）。",
+            "数据源断供（data.shibor_lpr_freshness，2026-10-26 数据底座巡查）：只读整理层"
+            "shibor_lpr.parquet 的日期列（cal_date/date），取 max 日期距今天数；"
+            f">{SHIBOR_LPR_YELLOW_DAYS:g} 天黄 / >{SHIBOR_LPR_RED_DAYS:g} 天红；"
+            "文件缺失/读失败/列名不匹配/无有效日期 → 黄（不判绿）。建项起因："
+            "文件 mtime 新、内容是两个月前的，mtime 口径的 curated_freshness 看不见断供。",
+            "TDX vendor 纳管（data.tdx_manifest，2026-10-26 数据底座巡查）：用 os.walk 统计"
+            "quant_backtest/data/tdx 的文件数/字节数（预算 "
+            f"{TDX_WALK_BUDGET_SECONDS:g}s / {TDX_WALK_MAX_FILES} 文件，超限报未完成不判绿）；"
+            f"> {_human_bytes(TDX_UNMANAGED_MIN_BYTES)} 且不在最新 <vault>/<date>/data_manifest.json"
+            " 的 dirs[].name / dirs[].path / tables / paths 中 → 黄「未纳管」；"
+            "< 阈值或目录不存在 → 绿/不适用；manifest 不可读 → 黄（不判绿）。"
+            "注意 backup_daily 仍按 vendor 把该目录排除出 tar 集（可重建）——"
+            "本项只看 manifest 纳管，不代表已进备份。",
+            "交易日历去重（data.trade_cal_dedup，2026-10-26 数据底座巡查）：只读整理层"
+            "trade_cal.parquet 的 cal_date 单列，ratio=行数/去重日期数；"
+            f"> {TRADE_CAL_DUP_YELLOW_RATIO:g} 判黄（>{(TRADE_CAL_DUP_YELLOW_RATIO - 1) * 100:g}% 重复），"
+            "detail 写 rows/distinct/倍数；读失败/无有效日期 → 黄。重复通常来自多 exchange"
+            "行或重复 merge，按日期聚合会静默乘倍数。",
+            "数据底座三项（shibor_lpr/tdx/trade_cal）读 parquet 时惰性 import pyarrow；"
+            "pyarrow 不可用 → 判黄（不可采集，不判绿），其余检查仍零第三方依赖。",
             "本地推理（ai.inference）：只测 qwen3.5:9b，不跑三模型全量探针。"
             f"/api/tags {AI_TAGS_TIMEOUT_SECONDS:g}s 判可达、/api/ps "
             f"{AI_PS_TIMEOUT_SECONDS:g}s 判驻留（未驻留判黄且不发请求，绝不为测而冷加载）；"
