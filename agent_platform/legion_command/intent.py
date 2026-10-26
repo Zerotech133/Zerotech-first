@@ -179,6 +179,14 @@ def build_cards(platform_dir: pathlib.Path | None = None,
             home.setdefault(aid, dep_id)
             depts_of.setdefault(aid, set()).add(dep_id)
 
+    try:
+        from engine.org_profiles import matrix_assignments
+    except ImportError:
+        from org_profiles import matrix_assignments
+    for _dep, _items in matrix_assignments(org).items():
+        for _aid in _items:
+            depts_of.setdefault(_aid, set()).add(_dep)
+
     # ---- 任务：按口径分桶（doing 不含 review）----
     by_seat_doing, unclaimed = {}, {}
     doing_list, review_list, unmapped = [], [], []

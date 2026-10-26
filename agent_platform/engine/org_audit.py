@@ -22,9 +22,9 @@ import sys
 from pathlib import Path
 
 try:                                     # 包内导入（serve/测试经 engine.* 进来）
-    from engine.org_profiles import SRC_DEPT, profile_index
+    from engine.org_profiles import SRC_DEPT, matrix_assignments, profile_index
 except ImportError:                      # 直接 `python engine/org_audit.py` 运行
-    from org_profiles import SRC_DEPT, profile_index
+    from org_profiles import SRC_DEPT, matrix_assignments, profile_index
 
 SCHEMA_VERSION = "1.0"
 RULES_VERSION = "1.2"
@@ -95,8 +95,10 @@ def audit(root: Path) -> dict:
     findings: list[dict] = []
     rows: list[dict] = []
     listed_total = profiled_total = ghost_total = elsewhere_total = 0
+    matrix_total = 0
     in_org: set[str] = set()
     all_idx = profile_index(root)                  # 三处档案全量（dept / chief / team_*）
+    matrix_by_dept = matrix_assignments(org)       # P2：项目行营角色（主档 matrix_assignments）
     extra_prof = {aid: v for aid, v in all_idx.items()
                   if v.get("source") != SRC_DEPT}  # 部门表之外的
     leads_elsewhere: set[str] = set()
@@ -109,23 +111,27 @@ def audit(root: Path) -> dict:
         lead = d.get("lead")
         ids = [str(x) for x in (d.get("agents") or [])]
         profs = [str(p.get("agent_id")) for p in (d.get("agent_profiles") or [])]
+        matrix_ids = set(matrix_by_dept.get(dept, {}).keys())
         # 「有名无档」必须是**三处都查不到**才成立。DENGZHI1（邓芝）的档案在
         # registry/team_comm.json（Hermes 8787 通讯中枢），只扫部门表就把它报成幽灵席位，
         # 与 A0A 是同一个根因（S41 只修了主官判定，漏了席位统计——S42 补齐）。
-        ghosts = [i for i in ids if i not in profs and i not in extra_prof]
-        elsewhere_seats = [i for i in ids if i not in profs and i in extra_prof]
+        ghosts = [i for i in ids if i not in profs and i not in matrix_ids
+                  and i not in extra_prof]
+        elsewhere_seats = [i for i in ids if i not in profs and i not in matrix_ids
+                          and i in extra_prof]
         extra = [i for i in profs if i not in ids]          # 有档案但名单里没有
 
         listed_total += len(ids)
         profiled_total += len(profs)
         ghost_total += len(ghosts)
         elsewhere_total += len(elsewhere_seats)
+        matrix_total += len(matrix_ids)
         in_org.update(ids)
         in_org.update(profs)
         for i in ids:
             seat_depts.setdefault(i, []).append(dept)
 
-        if not profs:
+        if not profs and not matrix_ids:
             findings.append({"code": "DEPT_NO_PROFILE", "severity": SEV_P1, "dept": dept,
                              "detail": "整部门零档案：%d 个席位只有名字，无法回答职责/模型/档级"
                                        % len(ids), "agents": ids})
@@ -211,6 +217,7 @@ def audit(root: Path) -> dict:
         rows.append({"dept": dept, "name": d.get("name"), "lead": lead,
                      "listed": len(ids), "profiled": len(profs),
                      "ghost": len(ghosts), "ghost_list": ghosts,
+                     "matrix": len(matrix_ids),
                      "profiled_elsewhere": elsewhere_seats,
                      # 档案可能在本部门表、其他部门表、chief 或 team 文件——
                      # 只要组织里任何一处有，就算「档案齐备」（位置问题由
@@ -274,6 +281,7 @@ def audit(root: Path) -> dict:
             "seats_unique": len(seat_depts),
             "seats_multi_dept": sum(1 for v in seat_depts.values() if len(v) > 1),
             "seats_profiled": profiled_total,
+            "seats_matrix": matrix_total,
             "seats_ghost": ghost_total,
             "seats_profiled_elsewhere": elsewhere_total,
             "ghost_ratio": round(ghost_total / listed_total, 3) if listed_total else 0.0,
@@ -305,6 +313,8 @@ def _print_human(rep: dict) -> None:
     print("            = 部门档案表 %d + 档案在别处 %d + 真无档 %d（%.0f%%）"
           % (s["seats_profiled"], s.get("seats_profiled_elsewhere", 0),
              s["seats_ghost"], s["ghost_ratio"] * 100))
+    print("            + 项目行营矩阵档案 %d（已在主档 matrix_assignments，不重复计席位）"
+          % s.get("seats_matrix", 0))
     print("主官 %d 个 · 档案齐备 %d · 异常 %d" % (s["leads_total"], s["leads_ok"], s["leads_not_ok"]))
     print("重名 %d 对 · 编外 %d 员 · 主官未登记 %d · 缺口 P1=%d P2=%d P3=%d"
           % (s["duplicate_names"], s["orphan_staff"], s["leads_unregistered"],

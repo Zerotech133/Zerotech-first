@@ -77,6 +77,42 @@ def profile_index(root: Path) -> dict:
     return out
 
 
+def _is_project_dept(d: dict) -> bool:
+    return bool(d.get("type") == "project" or str(d.get("dept") or "").startswith("proj_"))
+
+
+def matrix_assignments(org: dict) -> dict:
+    """P2：{项目部门: {agent_id: matrix_assignment}}（项目角色已并入职能部主档）。"""
+    out: dict[str, dict] = {}
+    for d in org.get("departments") or []:
+        if _is_project_dept(d):
+            continue
+        profs = d.get("agent_profiles") or {}
+        items = profs.values() if isinstance(profs, dict) else profs
+        for p in items or []:
+            aid = str(p.get("agent_id") or "")
+            if not aid:
+                continue
+            for m in p.get("matrix_assignments") or []:
+                dep = str(m.get("dept") or "")
+                if dep:
+                    out.setdefault(dep, {})[aid] = m
+    return out
+
+
+def dept_profile_ids(org: dict, dept: str) -> set:
+    """某部门"可视为有档案"的席位：本部门档案表 ∪ 主档 matrix_assignments。"""
+    ids: set[str] = set()
+    for d in org.get("departments") or []:
+        if str(d.get("dept")) != dept:
+            continue
+        profs = d.get("agent_profiles") or {}
+        items = profs.values() if isinstance(profs, dict) else profs
+        ids.update(str(p.get("agent_id")) for p in items or [] if p.get("agent_id"))
+    ids.update(matrix_assignments(org).get(dept, {}).keys())
+    return ids
+
+
 def source_paths(root: Path) -> list:
     """参与索引的文件清单（供缓存失效判断：任何一个变了都要重算）。"""
     reg = root / "registry"

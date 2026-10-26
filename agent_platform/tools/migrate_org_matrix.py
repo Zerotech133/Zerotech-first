@@ -86,10 +86,12 @@ def plan(org: dict) -> dict:
 
 
 def _old_view(org: dict) -> dict:
+    """迁移前视图：所有部门档案表条目（已迁移数据的 matrix 字段也剔除，保证幂等校验可比）。"""
     out = {}
     for d in org.get("departments") or []:
         for p in _profiles(d):
-            out[(str(d.get("dept")), str(p.get("agent_id")))] = p
+            out[(str(d.get("dept")), str(p.get("agent_id")))] = {
+                k: v for k, v in p.items() if k != "matrix_assignments"}
     return out
 
 
