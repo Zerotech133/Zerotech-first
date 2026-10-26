@@ -41,3 +41,13 @@ def test_is_annotated_requires_exact_triplet(tmp_path):
     assert fc._is_annotated({**row, "kind": "auto:news_collector"}, anns) is False
     assert fc._is_annotated({**row, "target": "ou_2"}, anns) is False
     assert fc._is_annotated(row, []) is False
+
+
+def test_is_self_test_target():
+    """W41 死信自测的一次性假收件人：只按显式前缀识别，不误伤真实收件人。"""
+    assert fc._is_self_test_target(
+        {"target": "ou_deadpayload_selftest_001"}) is True
+    assert fc._is_self_test_target({"target": "ou_825c6146a104d7c4"}) is False
+    assert fc._is_self_test_target({"target": "oc_6b97bee8b5"}) is False
+    assert fc._is_self_test_target({"target": ""}) is False
+    assert fc._is_self_test_target({}) is False

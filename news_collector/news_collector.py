@@ -32,6 +32,18 @@ LOG_PATH = os.path.join(HERE, "logs", "collect.log")
 CST = timezone(timedelta(hours=8))  # 财经语境统一用北京时间
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
+
+def _h5_entry():
+    """统一 H5 入口链接（未启用/失败返回 ''，卡片不出死链）。"""
+    try:
+        _portal = os.path.join(os.path.dirname(HERE), "portal")
+        if _portal not in sys.path:
+            sys.path.insert(0, _portal)
+        from feishu_card_v2 import m_url
+        return m_url("entry")
+    except Exception:  # noqa: BLE001
+        return ""
+
 # 短别名的区分性后缀：别名后紧跟这些词时通常指其他主体
 # （平安→平安银行/平安证券；茅台→茅台镇；宁德→宁德市 等）
 DISAMBIG_SUFFIX = ("银行", "证券", "基金", "人寿", "产险", "信托", "租赁",
@@ -654,7 +666,42 @@ def main():
                 "orange", [md],
                 footer="关键词/自选股命中 · AI 判断本地生成 · 信息采集域",
                 use_schema2=True)
-            sent = push_card(card)
+            # 2026-10-25 P2：统一分装（默认发新版；PUSH_UNIFIED=0 或
+            # push_unified.json shadow=true 时保持旧卡并只记双跑）
+            card_to_send = card
+            try:
+                import os as _os
+                _portal = _os.path.join(_os.path.dirname(_os.path.dirname(
+                    _os.path.abspath(__file__))), "portal")
+                import sys as _sys
+                if _portal not in _sys.path:
+                    _sys.path.insert(0, _portal)
+                import feishu_push as _fp
+                _send_new, _shadow = _fp.should_unify("news")
+                if _send_new or _shadow:
+                    _uni = _fp.from_sections(
+                        "news", "news", "金融新闻速报",
+                        card_lines + [l for l in lines[1:-1]
+                                      if not l.startswith("· ")
+                                      and not l.startswith("…")],
+                        ts=now_cst().strftime("%Y-%m-%d %H:%M"),
+                        source="信息采集域",
+                        footer="关键词/自选股命中 · AI 判断本地生成",
+                        links=[x for x in [
+                            ("📄 详情文档", doc) if doc else None,
+                            ("⚖️ JEV 判断", cfg.get("jev_doc_url")
+                             or "") if cfg.get("jev_doc_url") else None,
+                        ] if x],
+                        buttons=[("📱 移动端总览（H5）", _h5_entry(),
+                                  "primary")] if _h5_entry() else None,
+                        level="news")
+                    if _shadow:
+                        _fp.shadow_log("news", card, _uni)
+                    elif _send_new:
+                        card_to_send = _uni
+            except Exception as _ue:  # noqa: BLE001
+                log("unified card FAIL -> legacy: %s" % str(_ue)[:100])
+            sent = push_card(card_to_send)
             if not sent:
                 log("card FAIL -> text fallback")
         except Exception as e:
