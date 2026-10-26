@@ -14,16 +14,22 @@
   python agent_platform/gateway/serve.py            # 前台 8795
   python agent_platform/gateway/serve.py --port 8796 --check
 挂载为常驻服务须走五要素授权（本单只交付代码与用法）。
+
+OSLINK-W4 通道②（K-QUANT-20261026-OSLEG-8795API，默认关闭）：
+  仅当 env OSLEG_HTTP_API=1 时启用 POST /osleg/v1/{submit,consume,answer,deliver}
+  与 GET /osleg/v1/receipt（端点层见 gateway/osleg_http_api.py；token/store 均需
+  显式注入，未配置即 503 失败关闭）。未开启时这些路径行为与既有版本完全一致。
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
@@ -31,6 +37,31 @@ if str(_PLATFORM) not in sys.path:
 
 from gateway import inbox_gateway, llm_gateway  # noqa: E402
 from gateway.envelope import make_envelope  # noqa: E402
+
+# OSLINK-W4 通道② 开关（K-QUANT-20261026-OSLEG-8795API）：
+# 仅当 env OSLEG_HTTP_API 显式开启时把 /osleg/v1/* 路由到 osleg_http_api；
+# 默认关闭 = 现役行为一字不变（未开启时这些路径仍走原 404）。
+_OSLEG_TRUTHY = ("1", "true", "yes", "on")
+_OSLEG_PREFIX = "/osleg/v1"
+
+
+def _osleg_enabled():
+    return os.environ.get("OSLEG_HTTP_API", "").strip().lower() in _OSLEG_TRUTHY
+
+
+def _osleg_dispatch(method, path, query, body, headers):
+    """懒加载通道②端点层（默认关闭时不 import、不改任何既有行为）。"""
+    from gateway import osleg_http_api
+    return osleg_http_api.handle(method=method, path=path, headers=headers,
+                                 body=body, query=query)
+
+
+def _osleg_query(raw_query):
+    query = {}
+    for key, values in parse_qs(raw_query or "").items():
+        if values:
+            query[key] = values[-1]
+    return query
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -62,6 +93,12 @@ class Handler(BaseHTTPRequestHandler):
             msg_id = path[len("/inbox/receipt/"):].strip("/")
             self._send(inbox_gateway.receipt(msg_id))
             return
+        if _osleg_enabled() and path.startswith(_OSLEG_PREFIX + "/"):
+            status, payload = _osleg_dispatch(
+                "GET", path, _osleg_query(urlparse(self.path).query), None,
+                {key: value for key, value in self.headers.items()})
+            self._send(payload, status)
+            return
         self._send(make_envelope(kind="http", ok=False,
                                  error={"code": "not_found", "message": path}), 404)
 
@@ -73,6 +110,12 @@ class Handler(BaseHTTPRequestHandler):
             req = json.loads(raw.decode("utf-8"))
         except (ValueError, UnicodeDecodeError):
             self._bad_request("body must be UTF-8 JSON")
+            return
+        if _osleg_enabled() and path.startswith(_OSLEG_PREFIX + "/"):
+            status, payload = _osleg_dispatch(
+                "POST", path, {}, req,
+                {key: value for key, value in self.headers.items()})
+            self._send(payload, status)
             return
         if path == "/llm/chat":
             if not isinstance(req, dict) or not isinstance(req.get("user", ""), str):
