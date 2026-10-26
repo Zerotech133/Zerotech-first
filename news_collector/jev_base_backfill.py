@@ -23,7 +23,25 @@ if HERE not in sys.path:
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "portal"))
 
 EXE = os.path.join(os.path.dirname(HERE), "bin", "lark-cli.exe")
-TOK = "MQdLb1eNJadskWs9w8OcHQCYnze"
+
+
+def _load_base_token() -> str:
+    """2026-10-26 SEC：Base token 禁止硬编码——env / 私有文件（config_local 链路）。"""
+    try:
+        from config_local import load_news_config  # 同目录；敏感字段已从 tracked 迁出
+        tok = (load_news_config().get("jev_base_token") or "").strip()
+    except Exception:
+        tok = ""
+    if not tok:
+        tok = os.environ.get("JEV_BASE_TOKEN", "").strip()
+    if not tok:
+        raise SystemExit(
+            "JEV_BASE_TOKEN 未配置（设 env 或 _vault/secrets/news_config_private.json）"
+        )
+    return tok
+
+
+TOK = _load_base_token()
 TABLE = "tbl3mCOORkb98xES"  # 判断记录
 BATCH_FILE = os.path.join(HERE, "_jev_bf_batch.json")
 BATCH = 40  # inline --json 受 Windows argv 长度限制
