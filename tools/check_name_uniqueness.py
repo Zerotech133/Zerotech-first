@@ -114,7 +114,7 @@ def check(root: Path = DEFAULT_ROOT) -> dict:
         elif not any(q in cn for q in QUALIFIERS):
             violations.append({"code": "VIRTUAL_UNQUALIFIED", "seat": aid, "name": cn,
                                "detail": "治理/虚拟席名「%s」缺席位限定（须含 · / （ ）" % cn})
-        elif cn in by_name:
+        if cn in by_name:
             violations.append({"code": "VIRTUAL_SHADOWS_HEADCOUNT", "seat": aid, "name": cn,
                                "detail": "治理/虚拟席名与编制内席完全相同：%s" % by_name[cn]})
 
