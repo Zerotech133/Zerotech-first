@@ -36,3 +36,7 @@ pool_rows/stock_info/paper_positions 等）——全部只读，无执行类。
 - 本席持有工具/写入授权：回滚=停用调用入口 + 校验并撤回本席写入域（agent/ST1/*, dept/invest/observation, dept/invest/thesis）；
 - 事件层 append-only，不删历史；如需彻底停用，由平台管理员移除该席调用链；
 - 任何新工具上线前必须提供 kill switch 环境变量与卸载脚本。
+
+## 工具改绑说明（B2-d）
+- 原 `tgraph_*` / `datamart_*` 等工具在仓库内无实现（占位），已改绑为 engine 真实只读工具：`kline_daily`（日K）、`quote_snapshot`（实时快照）、`make_context`（投研上下文）、`events`（事件层）。
+- 回滚：git revert 对应提交即可恢复原占位清单；本席无持久化写入。

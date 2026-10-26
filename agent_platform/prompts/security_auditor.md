@@ -19,3 +19,8 @@
 
 ## 模型
 ollama/qwen3.5:9b
+
+## 工具（已授予）
+- `quality_gate`（只读质量门）：跑 compileall / 端口注册自检 / 明文凭据扫描三项平台现有检查，结果写 `agent_platform/data/quality_gate/` 与 `dev_events` patrol_verdict（task=agent=席码）。
+- 不修改代码、不自动修复；只报事实。
+- 回滚：`QUALITY_GATE=off` kill switch；卸载计划任务 `QualityGate` 即停。
