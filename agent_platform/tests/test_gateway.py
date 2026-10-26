@@ -92,6 +92,37 @@ def test_llm_chat_degraded_passthrough(monkeypatch):
     assert env["data"]["status"] == "degraded"
 
 
+def test_llm_chat_openclaw_metadata_passthrough(monkeypatch):
+    """OpenClaw 载体元信息（carrier/relay/mode/agent）随信封透传，供 /llm/chat 核验。"""
+    class OpenClawStub:
+        last_meta = {"mode": "openclaw", "agent": "zhuge",
+                     "carrier": "deepseek/deepseek-chat", "relay": True,
+                     "requested_model": "gpt-6.0"}
+
+        def chat(self, system, user, model=None):
+            return "真身/中转答案", "normal"
+
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: OpenClawStub())
+    env = llm_gateway.chat(binding="openai/gpt-6.0", system="", user="u")
+    validate_envelope(env)
+    assert env["ok"] is True
+    assert env["data"]["carrier"] == "deepseek/deepseek-chat"
+    assert env["data"]["relay"] is True
+    assert env["data"]["mode"] == "openclaw"
+    assert env["data"]["agent"] == "zhuge"
+
+
+def test_llm_chat_no_meta_keeps_legacy_data(monkeypatch):
+    class PlainStub:
+        def chat(self, system, user, model=None):
+            return "ok", "normal"
+
+    monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: PlainStub())
+    env = llm_gateway.chat(binding="ollama/qwen3.5:9b", system="", user="u")
+    validate_envelope(env)
+    assert "carrier" not in env["data"] and "relay" not in env["data"]
+
+
 def test_llm_chat_error_no_throw(monkeypatch):
     from engine.llm import LLMError
     def boom(binding):

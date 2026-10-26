@@ -79,6 +79,13 @@ def chat(binding=None, system="", user=""):
     except LLMError as exc:
         return make_envelope(kind=KIND, ok=False,
                              error={"code": "llm_error", "message": str(exc)})
+    data = {"binding_resolved": binding, "text": text, "status": status}
+    # 2026-10-27 /llm/chat 接诸葛亮验证：OpenClawLLM 暴露 last_meta（载体/中转信息），
+    # 透传给本地网关调用方，便于核验「中转替代（relay=true）/ 真身」而不必猜配置。
+    meta = getattr(llm, "last_meta", None)
+    if isinstance(meta, dict) and meta:
+        for key in ("mode", "agent", "carrier", "relay", "requested_model"):
+            if key in meta:
+                data[key] = meta[key]
     return make_envelope(kind=KIND, ok=True, degraded=(status == "degraded"),
-                         data={"binding_resolved": binding,
-                               "text": text, "status": status})
+                         data=data)
