@@ -14,8 +14,12 @@ def g1_data(snap):
     if snap.get("required_missing"):
         issues.append("必需域缺失：" + "、".join(snap["required_missing"]))
     cov = snap.get("coverage", 0)
-    if cov < 80:
-        issues.append("覆盖率 %.1f%% < 80%%" % cov)
+    cov_ok = cov >= config.COVERAGE_MIN
+    if not cov_ok:
+        issues.append("覆盖率 %.1f%% < 硬门槛 %d%%" % (cov, config.COVERAGE_MIN))
+    elif cov < config.COVERAGE_TARGET:
+        # 诸葛亮裁示（2026-10-26）：目标 90%，80-90 区间标黄告警、不直接否决
+        issues.append("覆盖率 %.1f%% < 目标 %d%%（告警，不否决）" % (cov, config.COVERAGE_TARGET))
     # 时效：仅对状态 ok 的域检查（missing 已显式标 N/A，不误报滞后）
     for dom in ("chips", "margin"):
         d = snap["domains"].get(dom) or {}
@@ -28,7 +32,7 @@ def g1_data(snap):
                     issues.append("%s 数据滞后 %d 天" % (dom, (b - a).days))
             except Exception:
                 pass
-    passed = not [i for i in issues if "缺失" in i or "覆盖" in i]
+    passed = bool(cov_ok and not snap.get("required_missing"))
     return _g(issues, passed, cov)
 
 
