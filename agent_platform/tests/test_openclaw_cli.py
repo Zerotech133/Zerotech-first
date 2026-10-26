@@ -42,7 +42,9 @@ def test_agent_primary_model_reads_config(monkeypatch, tmp_path):
     (oc_dir / "openclaw.json").write_text(json.dumps({
         "agents": {"entries": {"zhuge": {"model": {"primary": "deepseek/deepseek-chat"}}}}},
         ensure_ascii=False), encoding="utf-8")
+    # Windows 下 Path.home() 读 USERPROFILE，Linux 下读 HOME（server verify 以 root 跑）——两边都钉到 tmp。
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    monkeypatch.setenv("HOME", str(tmp_path))
     assert oc.agent_primary_model("zhuge") == "deepseek/deepseek-chat"
     assert oc.agent_primary_model("nobody") == ""
 

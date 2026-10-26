@@ -101,6 +101,9 @@ def test_history_trim(tmp_path):
 
 def test_emit_audit_fail_soft(monkeypatch, tmp_path):
     monkeypatch.setattr(P, "REPO", tmp_path / "__no_such_repo__")
+    # 全量套件下 tools/events 可能已被其它用例导入（sys.modules 缓存），仅把 REPO 指到不存在
+    # 路径不保证 import 失败；用 None 占位强制 ImportError，验证「事件层不可用→静默降级」与顺序无关。
+    monkeypatch.setitem(sys.modules, "events", None)
     out = P.emit_audit({"checks": {"health": {"status": 200, "elapsed_ms": 1},
                                    "root": {"status": 200, "elapsed_ms": 1}}})
     assert out.get("ok") is False
