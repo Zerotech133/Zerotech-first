@@ -5,7 +5,14 @@
   · 身份/定位：本模块常量（与 docs/legion 身份对照表一致）
   · 能力卡：<profile>/skills/CAPABILITIES.json
   · 判例库：engine.experience_store.public_summary（默认 Z4 私有库；可传 root 供测试）
+    —— 只暴露身份/统计/短 cue 摘要，**不返回 lesson 正文**：
+       `recent` 保留最近 5 条（兼容旧口径），`all` 为全量条目（页面判例库展示全部）
   · 治理 AI 建议：<platform>/data/governance_ai/advice/<date>/{anomaly_digest,priority_advice,case_draft}.json
+  · 治理健康（governance_health）：
+      - ai_advice：tools/gov_ai.health_status()（健康卡 `governance.ai_advice` 单一真源）
+      - experience_library：经验库统计判级（与健康卡 `governance.experience_library` 同口径）
+  · 待签 payload：C:\\项目\\_vault\\sign_requests 下 **\\EXP-*.payload.json 只读扫描
+    （只看文件是否存在签名，不读 payload 正文、不碰任何私钥）
   · 时钟：<platform>/data/governance_clock_state.json + governance_clock.lock
   · 保活：C:\\Temp\\governance_keepalive.log 最后一行（读不到则留空）
 
@@ -28,6 +35,17 @@ IDENTITY = {
     "boundary": "只产建议与证据；不裁决、不自动执行、不持私钥",
     "r2_note": "R2（风控席）是 org 编制成员，与 ZHAOYUN 是两个 id，报表按 id 区分",
 }
+
+# 判例库：recent 保留条数（旧口径兼容）与 all 全量上限（防御性上限，12 条现状远未触顶）
+_RECENT_KEEP = 5
+_ALL_ENTRIES_LIMIT = 2000
+
+# 本模块所在平台的 tools 目录（gov_ai 的导入位置；与 platform 参数解耦，测试可注入数据根）
+_TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
+
+# 待签 payload 默认扫描根（只读；测试通过 build_view(sign_requests_root=...) 注入 tmp 目录）
+DEFAULT_SIGN_REQUESTS_ROOT = Path(r"C:\项目\_vault\sign_requests")
+_PAYLOAD_SUFFIX = ".payload.json"
 
 
 def _read_json(path: Path) -> Optional[dict]:
@@ -60,13 +78,146 @@ def _capabilities(profile: Path) -> dict:
 
 
 def _experience(experience_root: Optional[Path]) -> dict:
+    """经验库摘要 + 全量条目（只读、不含 lesson 正文）。"""
     try:
         from engine import experience_store as S
-        summary = S.public_summary(root=experience_root)
+        summary = S.public_summary(root=experience_root, recent=_ALL_ENTRIES_LIMIT)
     except Exception as exc:  # noqa: BLE001 —— 只读视图 fail-soft
         return {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
-                "entries_total": 0, "verified_total": 0, "recent": []}
-    return {"ok": True, **summary}
+                "entries_total": 0, "verified_total": 0, "recent": [], "all": []}
+    rows = list(summary.get("recent") or [])
+    return {
+        "ok": True,
+        **summary,
+        "recent": rows[:_RECENT_KEEP],   # 兼容字段：最近 5 条
+        "all": rows,                     # 全量条目（摘要字段，无 lesson 正文）
+    }
+
+
+def _load_gov_ai():
+    """惰性导入 tools/gov_ai.py（tools 目录先入 sys.path）。
+
+    单独成函数便于测试注入 import 失败：健康不可用时页面必须 fail-soft，不得 500。
+    """
+    import sys
+    tools = str(_TOOLS_DIR)
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    import gov_ai  # noqa: WPS433 —— 惰性导入，避免拖慢/拖死 serve 启动
+    return gov_ai
+
+
+def _gov_ai_health(platform: Path, now: float) -> dict:
+    """治理 AI 健康（真源 gov_ai.health_status；import/调用失败一律 fail-soft 黄）。"""
+    try:
+        G = _load_gov_ai()
+        status = G.health_status(
+            root=Path(platform) / "data" / "governance_ai", now=now)
+        level = str(status.get("level") or "yellow")
+        if level not in ("green", "yellow", "red"):
+            level = "yellow"
+        return {"level": level,
+                "detail": str(status.get("detail") or "")[:300],
+                "last_success": status.get("last_success"),
+                "age_hours": status.get("age_hours"),
+                "consecutive_failures": status.get("consecutive_failures", 0)}
+    except Exception as exc:  # noqa: BLE001 —— 健康数据源坏掉不得拖垮整页
+        return {"level": "yellow",
+                "detail": "不可用: %s: %s" % (type(exc).__name__, str(exc)[:160])}
+
+
+def _experience_health(exp: dict) -> dict:
+    """经验库健康判级（口径与健康卡 `governance.experience_library` 完全一致）。
+
+    空库=red；全部 verified=green；有条目但存在未验签=yellow。
+    """
+    if not exp.get("ok"):
+        return {"level": "yellow",
+                "detail": "经验库不可用: %s" % str(exp.get("error") or "")[:200]}
+    total = int(exp.get("entries_total") or 0)
+    verified = int(exp.get("verified_total") or 0)
+    supervision = int(
+        ((exp.get("domains") or {}).get("supervision") or {}).get("entries") or 0)
+    if total == 0:
+        return {"level": "red", "detail": "经验库为空：签字链尚未入库任何判例"}
+    if verified >= total:
+        return {"level": "green",
+                "detail": "经验库 %d 条全部 verified；最近签字 %s；supervision=%d"
+                          % (total, exp.get("latest_signed_at") or "?", supervision)}
+    return {"level": "yellow",
+            "detail": "经验库 %d 条中 verified %d（存在未验签）" % (total, verified)}
+
+
+def _governance_health(platform: Path, exp: dict, now: float) -> dict:
+    """治理健康摘要：AI 建议（gov_ai 真源）+ 经验库（健康卡同口径）。"""
+    return {"ai_advice": _gov_ai_health(platform, now),
+            "experience_library": _experience_health(exp)}
+
+
+def _archived_path(path: Path, base: Path) -> bool:
+    """`_` 前缀目录视为归档（`_superseded`/`_expired` 约定）：归档 payload 不催签。"""
+    try:
+        rel = path.relative_to(base)
+    except ValueError:
+        return False
+    return any(part.startswith("_") for part in rel.parts[:-1])
+
+
+def _has_signature(payload: Path) -> bool:
+    """签名文件与 payload 同目录，兼容两种命名：
+
+      <item_id>.signature.json
+      <item_id>.payload.json.signature.json
+
+    item_id 取自 payload 文件名去掉 `.payload.json` 后缀。
+    """
+    item_id = payload.name[:-len(_PAYLOAD_SUFFIX)]
+    for cand in (payload.parent / (item_id + ".signature.json"),
+                 payload.parent / (payload.name + ".signature.json")):
+        try:
+            if cand.is_file():
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def _pending_signatures(root: Optional[Path]) -> dict:
+    """扫描待签 payload（只读）：没有对应签名的 EXP-*.payload.json 计入 pending。
+
+    注入点：root 默认真实 `C:\\项目\\_vault\\sign_requests`，测试传 tmp 目录。
+    归档目录（任一上级目录名以 `_` 开头）不催签，只记 `archived_pending` 供审计。
+    """
+    base = Path(root) if root is not None else DEFAULT_SIGN_REQUESTS_ROOT
+    out = {"ok": True, "root": str(base), "count": 0, "items": [],
+           "scanned": 0, "signed": 0, "archived_pending": 0}
+    try:
+        if not base.is_dir():
+            out.update(ok=False, note="签名请求目录不存在: %s" % base)
+            return out
+        payloads = sorted(base.rglob("*" + _PAYLOAD_SUFFIX))
+    except OSError as exc:
+        out.update(ok=False,
+                   note="扫描失败: %s: %s" % (type(exc).__name__, str(exc)[:120]))
+        return out
+    for payload in payloads:
+        if not payload.name.startswith("EXP-"):
+            continue
+        signed = _has_signature(payload)
+        if _archived_path(payload, base):
+            if not signed:
+                out["archived_pending"] += 1
+            continue
+        out["scanned"] += 1
+        if signed:
+            out["signed"] += 1
+            continue
+        out["items"].append({
+            "item_id": payload.name[:-len(_PAYLOAD_SUFFIX)],
+            "payload_path": str(payload),
+        })
+    out["count"] = len(out["items"])
+    return out
 
 
 def _latest_advice(platform: Path, now: float) -> dict:
@@ -166,8 +317,13 @@ def _keepalive() -> dict:
 
 def build_view(platform: Path, profile: Optional[Path] = None,
                experience_root: Optional[Path] = None,
-               now: Optional[float] = None) -> dict:
-    """构建赵云页只读视图（可测试：platform/profile/experience_root 均可注入）。"""
+               now: Optional[float] = None,
+               sign_requests_root: Optional[Path] = None) -> dict:
+    """构建赵云页只读视图。
+
+    可测试注入：platform / profile / experience_root / sign_requests_root
+    （默认仍是真实路径）；now 用于确定性判级（测试传固定时刻）。
+    """
     platform = Path(platform)
     profile = Path(profile) if profile else Path.home() / ".hermes" / "profiles" / "zhaoyun"
     now_ts = float(now if now is not None else time.time())
@@ -176,6 +332,8 @@ def build_view(platform: Path, profile: Optional[Path] = None,
     advice = _latest_advice(platform, now_ts)
     clock = _clock(platform)
     keepalive = _keepalive()
+    health = _governance_health(platform, exp, now_ts)
+    pending = _pending_signatures(sign_requests_root)
     return {
         "ok": True,
         "generated_at": dt.datetime.fromtimestamp(now_ts).astimezone()
@@ -186,6 +344,8 @@ def build_view(platform: Path, profile: Optional[Path] = None,
         "advice": advice,
         "clock": clock,
         "keepalive": keepalive,
+        "governance_health": health,
+        "pending_signatures": pending,
         "sign_chain": {
             "desc": "AI draft → 待签 payload → 本人签（Ed25519）→ 公钥验签 → Z4 supervision",
             "private_key_holder": "老田（Agent 不持私钥、不代签）",
