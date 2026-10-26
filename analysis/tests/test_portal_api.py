@@ -1,0 +1,63 @@
+# -*- coding: utf-8 -*-
+"""门户入口 api_analysis 冒烟测试（不启服务，stub handler）。"""
+import io
+import json
+import os
+import sys
+import unittest
+
+ROOT = r"C:\项目\老田的AI助手"
+WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(WT, "portal"))
+
+import api_analysis  # noqa: E402
+
+
+class Stub:
+    def __init__(self, path="", body=None):
+        self.path = path
+        self.body = body or b""
+        self.status = None
+        self.obj = None
+        self.headers = {"Content-Length": str(len(self.body))}
+        self.rfile = io.BytesIO(self.body)
+        self.wfile = io.BytesIO()
+
+    def _json(self, obj, status=200):
+        self.obj = obj
+        self.status = status
+
+
+class TestAnalysisApi(unittest.TestCase):
+    def test_health(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/health", "")
+        self.assertEqual(h.status, 200)
+        self.assertTrue(h.obj.get("ok"))
+        self.assertIn("queue", h.obj)
+
+    def test_list(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/list", "limit=5")
+        self.assertEqual(h.status, 200)
+        self.assertIn("runs", h.obj)
+
+    def test_latest_bad_code(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/latest", "code=abc")
+        self.assertEqual(h.status, 400)
+
+    def test_submit_bad_code(self):
+        h = Stub(body=json.dumps({"code": "abc"}).encode())
+        api_analysis.handle_post(h, "/api/analysis/submit", "")
+        self.assertEqual(h.status, 400)
+
+    def test_unknown(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/nope", "")
+        self.assertEqual(h.status, 404)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
