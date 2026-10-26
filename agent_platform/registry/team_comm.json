@@ -1,5 +1,5 @@
 {
-  "_note": "WO-FS-148-1：通信与客户服务部（阌泽=都督 LUSU1）+ 邓芝（DENGZHI1，Hermes 8787 通讯中枢，编制划入服务不动）。注册只给身份与路由元数据，不实现硬校验适配器；AIR 意图路由与 cost_aware_route 调度由 WA-B/148-2~5 工单施工。SOUL 落位 ~/.hermes/profiles/kanze/（老田 2026-10-21 12:14 批 Hermes 对接创建）。",
+  "_note": "WO-FS-148-1：通信与客户服务部（阚泽=都督 LUSU1，agent_id 为历史 ID 保留不改）+ 邓芝（DENGZHI1，Hermes 8787 通讯中枢，编制划入服务不动）。注册只给身份与路由元数据，不实现硬校验适配器；AIR 意图路由与 cost_aware_route 调度由 WA-B/148-2~5 工单施工。SOUL 落位 ~/.hermes/profiles/kanze/（老田 2026-10-21 12:14 批 Hermes 对接创建）。定名：鲁肃=D1 量化交易部最终决策官，非本部门；判例 docs/audit/2026-10-27_鲁肃与阚泽定名判例.md。",
   "team": "comm",
   "dept": "comm",
   "description": "信驿司：飞书客户入口总管——客问智能路由、模型底座统一调度、智能客服、商机信号",

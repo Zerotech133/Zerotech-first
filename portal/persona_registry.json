@@ -1,7 +1,7 @@
 {
   "_meta": {
     "schema": "persona_registry.v1",
-    "updated": "2026-10-19",
+    "updated": "2026-10-27",
     "source": "deliverables/2026-10-19_量化板块三国命名体系_虚拟金融组织架构.md v1.2",
     "note": "纯人格化层登记簿：全量字段照体系文档 v1.2 抄录，零业务语义变更（不动判定矩阵/权重/考核/路由）。hao 字段取自体系文档「字/号」列原文（含字与号，不区分）。属性卡数值为角色扮演设定，不构成策略评价。"
   },
@@ -61,8 +61,8 @@
       "reason": "榻上策=全局研判；稳健联判、善聚众议——组织多种分析师会审正合其长",
       "duties": "（WO-091 起）人格化登记保留；量化聚合席已去人格化，改由无名确定性聚合引擎执行",
       "naming_revision": "WO-QT-20261021-091",
-      "naming_note": "老田 2026-10-21 12:56 裁决：鲁肃在通信与客户服务部（客服，见 WO-FS-148《鲁肃通信部》），不参与量化策略面。invest_committee.py 聚合席已改为 anonymous_engine（聚合本为加权纯函数，非人格）。本条目仅保留人格册登记，不再代表任何量化策略职能。",
-      "service_line": "communication_customer_service"
+      "naming_note": "2026-10-21 12:56 裁决保留：鲁肃不挂量化聚合席（聚合本为加权纯函数，改 anonymous_engine，非人格）。同日 13:01 复核名册实锤 D1(resume cn_name)=鲁肃 已被投研最终决策官占用，通信与客户服务部主官换名阚泽（agent_id LUSU1 保留）。现行口径：鲁肃=D1 量化交易部（投研部）最终决策官；通信部主官=阚泽。依据 docs/audit/2026-10-27_鲁肃与阚泽定名判例.md。",
+      "service_line": "invest_decision"
     },
     {
       "id": "watch_camp",
