@@ -26,6 +26,10 @@ sys.path.insert(0, str(HERE))
 from _repo_paths import repo_root  # noqa: E402
 
 REPO = repo_root(HERE)
+AGENT_PLATFORM = REPO / "agent_platform"
+if str(AGENT_PLATFORM) not in sys.path:
+    # S4U/计划任务环境下没有该路径（cwd=system32）；GLM 网关在 agent_platform/gateway。
+    sys.path.insert(0, str(AGENT_PLATFORM))
 DEFAULT_PACKETS = REPO / "work" / "seat_brief"
 DEFAULT_OUT = REPO / "work" / "glm_probe"
 MODEL = "glm/glm-5.3"

@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """glm_retry_probe 两阶段单测（K-QUANT-20261026-GLMPROBE2）。
 
 验证：默认只发中性 ping（不发送证据）；ping 失败 rc=3 且无证据外发；
@@ -101,4 +101,13 @@ def test_ready_skips(tmp_path):
     rc = M.probe(out_dir=out, packets_dir=_packets(tmp_path),
                  chat_fn=lambda u: called.append(u) or {"ok": True})
     assert rc == 0 and called == []
+
+
+def test_agent_platform_on_sys_path_for_gateway_import():
+    """计划任务/S4U 下 cwd 不是仓库；模块导入时应已把 agent_platform 加进 sys.path。"""
+    import importlib.util
+    M = _load()
+    assert (M.REPO / "agent_platform" / "gateway").is_dir()
+    assert str(M.REPO / "agent_platform") in sys.path
+    assert importlib.util.find_spec("gateway") is not None
 
