@@ -11,8 +11,11 @@
   - 负载与故障感知：本地 /api/ps 查在跑模型；云端通道带失败熔断计数
   - 席位等级（grade）是强信号：E3 判读/研究岗 → 云端重档；E1 调度岗 → flash/本地
 
-异族席位（2026-10-21 老田异族编制裁决；2026-10-26 B 案落码）：
-  AI1=诸葛亮 = openai/gpt-6.0（OpenClaw 载体），与 glm 家族隔离；
+异族席位（2026-10-21 老田异族编制裁决；2026-10-26 B 案落码；2026-10-27 B05 单轨化）：
+  AI1=诸葛亮 = openai/gpt-6.0（binding 串不变）。engine 侧 `openai/` 前缀已委托
+  OpenClaw agent-config 载体（OpenClawLLM，与 L5/8796 同源；实际模型由
+  ~/.openclaw 配置决定），旧直连降为 `openai-direct/` 前缀——故本处 provider
+  标签为 openclaw，不再显示直连云端 OpenAI。与 glm 家族隔离；
   本表 EXOTIC_ASSIGNMENTS 优先于注册绑定/关键词/等级/上云白名单。
 """
 import json
@@ -39,7 +42,9 @@ LOCAL_ROLES = {
 }
 
 # 异族固定绑定（2026-10-21 老田异族编制裁决）：AI1=诸葛亮 → openai/gpt-6.0。
-# 优先于一切自动策略；glm 旧档（10-18 分工定案）不得覆盖本表。
+# 2026-10-27 B05：binding 串不变，engine 侧 `openai/` 统一委托 OpenClaw agent-config
+# 载体（与 L5/8796 同源；实际模型由 ~/.openclaw 配置决定），旧直连仅在 engine 保留
+# `openai-direct/` 前缀。优先于一切自动策略；glm 旧档（10-18 分工定案）不得覆盖本表。
 EXOTIC_ASSIGNMENTS = {
     "AI1": "openai/gpt-6.0",
 }
@@ -134,7 +139,8 @@ def route(task, agent_id=None, grade=None, task_type=None, respect_binding=None)
     """
     signals = []
     # 0) 异族固定绑定（优先于注册绑定/关键词/等级）：AI1=诸葛亮=openai/gpt-6.0
-    #    依据 2026-10-21 10:51 老田异族编制裁决；2026-10-26 B 案落码。
+    #    依据 2026-10-21 10:51 老田异族编制裁决；2026-10-26 B 案落码；
+    #    2026-10-27 B05：该 binding 在 engine 侧委托 OpenClaw agent-config 载体（单轨）。
     if agent_id in EXOTIC_ASSIGNMENTS:
         signals.append("异族编制裁决[%s→%s]（2026-10-21）"
                        % (agent_id, EXOTIC_ASSIGNMENTS[agent_id]))
@@ -171,9 +177,13 @@ def route(task, agent_id=None, grade=None, task_type=None, respect_binding=None)
 
 def _pack(binding, signals):
     prefix = binding.split("/", 1)[0]
+    # 2026-10-27 B05：`openai/` 已是 OpenClaw agent-config 载体（非直连），provider 标
+    # openclaw；直连旧通道只在 engine 层保留 `openai-direct/` 前缀（router 不产出该绑定，
+    # 此处映射仅兜底展示，避免再把中转载体标成 cloud-openai）。
     provider = {"glm": "cloud-zhipu", "nova": "special-novamax",
                 "ollama": "local-ollama",
-                "openai": "cloud-openai"}.get(prefix, prefix)
+                "openai": "openclaw",
+                "openai-direct": "cloud-openai-direct"}.get(prefix, prefix)
     return {"binding": binding, "provider": provider,
             "reason": "；".join(signals), "signals": signals}
 
@@ -202,8 +212,9 @@ def auto_assign(roster, apply=False, write_fn=None):
     """按分工策略生成全军团建议绑定（默认只预览）。
 
     roster：[{agent_id, role_profile, grade, dept, binding}]（由服务层聚合）
-    策略（10-18 分工定案直译；2026-10-26 B 案补异族优先）：
-      AI1（诸葛亮，2026-10-21 异族编制裁决）→ openai/gpt-6.0（优先于一切）
+    策略（10-18 分工定案直译；2026-10-26 B 案补异族优先；2026-10-27 B05 单轨化）：
+      AI1（诸葛亮，2026-10-21 异族编制裁决）→ openai/gpt-6.0（优先于一切；
+          engine 侧已委托 OpenClaw agent-config 载体，旧直连仅 openai-direct/ 前缀）
       vision/视觉 role              → nova/1234；json 质检 role → nova/1238
       上云白名单 role（判读/研究）  → glm/glm-5.3
       E1 参谋线调度岗(dept=chief)   → glm/glm-5.3-flash
