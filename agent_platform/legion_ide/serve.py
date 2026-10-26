@@ -321,8 +321,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--portal", default=DEFAULT_PORTAL)
     ap.add_argument("--bundle", default="")
     ap.add_argument("--health", action="store_true")
+    ap.add_argument("--rw", action="store_true",
+                    help="开启受控写/执行（等价 IDE_RW=on；默认只读）")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
+    if args.rw:
+        # WMI 拉起不继承调用方 env（实测教训）：显式参数比环境变量可靠
+        os.environ[G.RW_ENV] = "on"
     repo = Path(args.repo)
     bundle = resolve_bundle(repo, args.bundle or None)
     if args.health:
