@@ -4,6 +4,7 @@ kind: staff
 identity:
   origin: 研究院AI方法论组（K-ORG-125）
   model: ollama/qwen3.5:9b
+  model_note: "2026-10-21 10:51 异族编制裁决后现状：openai/gpt-6.0（OpenClaw 载体），通道待 OPENAI_API_KEY；本字段为 10-17 建档案记录，运行时以 org.json 为准"
   born: 2026-10-17
 experience:
   - org: 数字军团研究院

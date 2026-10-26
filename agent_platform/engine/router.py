@@ -10,6 +10,10 @@
   - 规则打分优先：毫秒级、零 token、可解释；LLM 只做可选的兜底分类，不是必须
   - 负载与故障感知：本地 /api/ps 查在跑模型；云端通道带失败熔断计数
   - 席位等级（grade）是强信号：E3 判读/研究岗 → 云端重档；E1 调度岗 → flash/本地
+
+异族席位（2026-10-21 老田异族编制裁决；2026-10-26 B 案落码）：
+  AI1=诸葛亮 = openai/gpt-6.0（OpenClaw 载体），与 glm 家族隔离；
+  本表 EXOTIC_ASSIGNMENTS 优先于注册绑定/关键词/等级/上云白名单。
 """
 import json
 import time
@@ -20,6 +24,7 @@ import urllib.request
 CLOUD_MODELS = {
     "glm-5.3": {"tier": "heavy", "note": "思考型重档：判读/裁决/研究/走形检查"},
     "glm-5.3-flash": {"tier": "light", "note": "轻量快档：调度/分发/归集初筛"},
+    "gpt-6.0": {"tier": "exotic", "note": "异族旗舰：诸葛亮反向质询（OpenClaw 载体，10-21 裁决）"},
 }
 
 SPECIAL_ROUTES = {
@@ -31,6 +36,12 @@ LOCAL_ROLES = {
     "embed": "bge-m3",
     "distill_teacher": "qwen3.6:35b-a3b",
     "workhorse": "qwen3.5:9b",
+}
+
+# 异族固定绑定（2026-10-21 老田异族编制裁决）：AI1=诸葛亮 → openai/gpt-6.0。
+# 优先于一切自动策略；glm 旧档（10-18 分工定案）不得覆盖本表。
+EXOTIC_ASSIGNMENTS = {
+    "AI1": "openai/gpt-6.0",
 }
 
 # 任务类型关键词 → (binding, 权重)。顺序即优先级，命中即停。
@@ -122,6 +133,12 @@ def route(task, agent_id=None, grade=None, task_type=None, respect_binding=None)
     task_type 显式指定时跳过关键词匹配（调用方已知任务类型）。
     """
     signals = []
+    # 0) 异族固定绑定（优先于注册绑定/关键词/等级）：AI1=诸葛亮=openai/gpt-6.0
+    #    依据 2026-10-21 10:51 老田异族编制裁决；2026-10-26 B 案落码。
+    if agent_id in EXOTIC_ASSIGNMENTS:
+        signals.append("异族编制裁决[%s→%s]（2026-10-21）"
+                       % (agent_id, EXOTIC_ASSIGNMENTS[agent_id]))
+        return _pack(EXOTIC_ASSIGNMENTS[agent_id], signals)
     if respect_binding and respect_binding not in ("auto", ""):
         signals.append("尊重注册绑定(%s)" % respect_binding)
         return _pack(respect_binding, signals)
@@ -155,7 +172,8 @@ def route(task, agent_id=None, grade=None, task_type=None, respect_binding=None)
 def _pack(binding, signals):
     prefix = binding.split("/", 1)[0]
     provider = {"glm": "cloud-zhipu", "nova": "special-novamax",
-                "ollama": "local-ollama"}.get(prefix, prefix)
+                "ollama": "local-ollama",
+                "openai": "cloud-openai"}.get(prefix, prefix)
     return {"binding": binding, "provider": provider,
             "reason": "；".join(signals), "signals": signals}
 
@@ -184,7 +202,8 @@ def auto_assign(roster, apply=False, write_fn=None):
     """按分工策略生成全军团建议绑定（默认只预览）。
 
     roster：[{agent_id, role_profile, grade, dept, binding}]（由服务层聚合）
-    策略（10-18 分工定案直译）：
+    策略（10-18 分工定案直译；2026-10-26 B 案补异族优先）：
+      AI1（诸葛亮，2026-10-21 异族编制裁决）→ openai/gpt-6.0（优先于一切）
       vision/视觉 role              → nova/1234；json 质检 role → nova/1238
       上云白名单 role（判读/研究）  → glm/glm-5.3
       E1 参谋线调度岗(dept=chief)   → glm/glm-5.3-flash
@@ -199,7 +218,10 @@ def auto_assign(roster, apply=False, write_fn=None):
         old = a.get("binding") or ""
         role = (a.get("role_profile") or "").lower()
         dept = a.get("dept") or ""
-        if "vision" in role or "视觉" in role:
+        if a.get("agent_id") in EXOTIC_ASSIGNMENTS:
+            # 异族编制裁决优先：即使 role 命中上云白名单，也不得回落 glm
+            new = EXOTIC_ASSIGNMENTS[a["agent_id"]]
+        elif "vision" in role or "视觉" in role:
             new = "nova/1234"
         elif "json" in role and ("qa" in role or "质检" in role):
             new = "nova/1238"

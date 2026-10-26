@@ -14,8 +14,14 @@ qwen2.5:7b / qwen3:8b 已于 10-24 清理（config/ollama_model_route.json delet
     新模型上岗只需在本表加一行 profile，org.json 与业务代码零改动。
 
 降级三态（对齐菜鸟 degraded）：normal / degraded / failed——LLM 不可用时解释器走规则兜底，不中断全链路。
+
+异族通道（2026-10-21 老田异族编制裁决；2026-10-26 B 案落码）：
+    "openai/<模型>" → OpenAILLM（诸葛亮 AI1 / GPT-6.0，OpenClaw 载体）。
+    key 从环境变量 OPENAI_API_KEY / OPENAI_GPT6_KEY 读取（零落盘）；缺失或断链
+    一律抛 LLMError，**不静默降档本地 9b**（与 GLMCloudLLM 同纪律）。
 """
 import json
+import os
 import time
 import urllib.request
 
@@ -125,6 +131,9 @@ class OllamaLLM:
                 except LLMError:
                     text, st = OllamaLLM().chat(system, user, model="qwen3.5:9b")
                     return text, ("degraded" if st == "normal" else st)
+            if prefix == "openai":
+                # 异族席位（AI1=诸葛亮）：key 缺失/断链必须抛错，不降档本地（同 glm 纪律）
+                return OpenAILLM(model=rest).chat(system, user)
             if prefix == "ollama":
                 model = rest
         model = MODEL_ALIASES.get(model or "", model)
@@ -256,10 +265,11 @@ class NovaMaxLLM:
 
 
 def make_llm(binding):
-    """按 binding 前缀路由到 provider（10-18 自动路由入口）
+    """按 binding 前缀路由到 provider（10-18 自动路由入口；10-26 B 案补 openai）
 
     "ollama/<模型>" → OllamaLLM；"nova/<端口>" → NovaMaxLLM；
     "glm/<模型>" → GLMCloudLLM（参谋长层云端判读，10-18 分工定案）；
+    "openai/<模型>" → OpenAILLM（诸葛亮异族席，2026-10-21 裁决）；
     其余 → OllamaLLM 兜底（会走降级三态，行为与旧版一致）。
     """
     prefix, _, _rest = (binding or "").partition("/")
@@ -268,6 +278,8 @@ def make_llm(binding):
         return NovaMaxLLM(port=port)
     if prefix == "glm":
         return GLMCloudLLM(model=binding.split("/", 1)[1])
+    if prefix == "openai":
+        return OpenAILLM(model=binding.split("/", 1)[1])
     return OllamaLLM()
 
 
@@ -345,3 +357,78 @@ class GLMCloudLLM:
                 last = e
                 time.sleep(1.5)
         raise LLMError("glm 通道调用失败 after retry: %s" % last)
+
+
+class OpenAILLM:
+    """OpenAI 兼容通道（异族席：诸葛亮 AI1 / GPT-6.0，2026-10-21 异族编制裁决）
+
+    纪律（2026-10-26 B 案，与 GLMCloudLLM 同款）：
+    - key 只从环境变量读：OPENAI_API_KEY 优先，回退 OPENAI_GPT6_KEY；零落盘。
+    - base_url：OPENAI_BASE_URL 可覆盖（默认 https://api.openai.com/v1）。
+    - key 缺失 / 空回 / 重试耗尽 → 抛 LLMError，**不静默降档本地 9b**：
+      异族通道是否可用是席位有效性的一部分，调用方（会议厅/门面）自行决定
+      是否显式降级并标注 degraded，不得让本类冒充成功。
+    """
+
+    DEFAULT_BASE = "https://api.openai.com/v1"
+    KEY_ENVS = ("OPENAI_API_KEY", "OPENAI_GPT6_KEY")
+
+    def __init__(self, model="gpt-6.0", timeout=240, retries=1,
+                 base_url=None, api_key=None):
+        self.model = model or "gpt-6.0"
+        self.timeout = timeout
+        self.retries = retries
+        self.base_url = (base_url or os.environ.get("OPENAI_BASE_URL")
+                         or self.DEFAULT_BASE).rstrip("/")
+        self.api_key = api_key or ""
+        self.last_meta = None
+
+    @classmethod
+    def _key(cls):
+        for name in cls.KEY_ENVS:
+            v = os.environ.get(name, "")
+            if v:
+                return v
+        return ""
+
+    def chat(self, system, user, model=None):
+        key = self.api_key or self._key()
+        if not key:
+            raise LLMError("openai key 未配置（%s 均空）——异族席位不静默降档"
+                           % " / ".join(self.KEY_ENVS))
+        body = {
+            "model": model or self.model,
+            "max_tokens": 4000,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "stream": False,
+        }
+        last = None
+        for _ in range(self.retries + 1):
+            try:
+                op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                req = urllib.request.Request(
+                    self.base_url + "/chat/completions",
+                    data=json.dumps(body).encode("utf-8"),
+                    headers={"Content-Type": "application/json",
+                             "Authorization": "Bearer " + key},
+                )
+                with op.open(req, timeout=self.timeout) as r:
+                    d = json.load(r)
+                choice = (d.get("choices") or [{}])[0]
+                msg = choice.get("message") or {}
+                out = (msg.get("content") or "").strip()
+                finish = choice.get("finish_reason")
+                self.last_meta = {"finish_reason": finish,
+                                  "usage": d.get("usage")}
+                if not out:
+                    raise LLMError("openai 空回（finish=%s）" % finish)
+                return out, ("degraded" if finish == "length" else "normal")
+            except LLMError:
+                raise
+            except Exception as e:  # noqa: BLE001
+                last = e
+                time.sleep(1.5)
+        raise LLMError("openai 通道调用失败 after retry: %s" % last)

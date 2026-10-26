@@ -188,8 +188,8 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "glm/glm-5.3",
-   "binding_note": "10-18 老田拍板：诸葛亮（AI1）上云端——E3 方法论研究岗要强模型（Agent 能力评测/知识反哺），glm-5.3 coding 端点 K-ORG-136 实测全通；旧绑 9b 判死",
+   "llm_binding": "openai/gpt-6.0",
+   "binding_note": "【2026-10-26 B 案对齐】AI1=诸葛亮按 2026-10-21 10:51 老田异族编制裁决绑定 openai/gpt-6.0（OpenClaw 载体）；engine/router.py 已加异族固定路由/auto_assign 特例、engine/llm.py 已加 OpenAILLM（key 缺失抛错不降档）、legion_command/serve.py 已放行 openai 前缀；通道待 OPENAI_API_KEY。10-18 glm-5.3 为历史档（旧绑 9b 判死）。",
    "tools": [
     "events"
    ],

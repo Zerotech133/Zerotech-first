@@ -31,11 +31,12 @@ KIND = "llm_chat"
 
 DEFAULT_BINDING = "ollama/qwen3.5:9b"
 
-# 这两类 provider 在 make_llm 构造时**已经**吃下了自己的模型/端口：
+# 这些 provider 在 make_llm 构造时**已经**吃下了自己的模型/端口：
 #   "glm/<模型>" → GLMCloudLLM(model="<模型>")
 #   "nova/<端口>" → NovaMaxLLM(port=..., model=PORTS[端口])
+#   "openai/<模型>" → OpenAILLM(model="<模型>")（2026-10-26 B 案）
 # 因此 chat 时不能再把整串 binding 当 model 传回去。
-_PREFIX_OWNS_MODEL = frozenset({"glm", "nova"})
+_PREFIX_OWNS_MODEL = frozenset({"glm", "nova", "openai"})
 
 
 @timed
