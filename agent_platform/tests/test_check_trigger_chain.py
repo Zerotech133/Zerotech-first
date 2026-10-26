@@ -381,6 +381,8 @@ class TestCli(TriggerChainBase):
         self.assertIn("chief_last_run.log", out)
         self.assertIn("11434", out)
 
+    @unittest.skipUnless(sys.platform.startswith("win"),
+                         "断言依赖 Windows 计划任务/日志真实路径；Linux 服务器 verify 环境不适用")
     def test_main_report_and_exit_code(self):
         import io
         from contextlib import redirect_stdout

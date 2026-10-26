@@ -440,7 +440,8 @@ def test_minutes_filename_is_server_generated(meeting_server):
         "filename": "../../evil.json", "path": "C:/Windows/evil.json",
         "minutes": [{"id": "A0", "text": "ok", "src": "live"}]})
     assert env["ok"] is True
-    assert env["saved"].split("\\")[-1].startswith("warroom-")
+    # 跨平台取文件名（Linux 服务器上路径分隔符是 "/"，不能 split("\\")）
+    assert Path(env["saved"]).name.startswith("warroom-")
     assert not (mdir.parent / "evil.json").exists()
     assert len(list(mdir.glob("warroom-*.json"))) == 1
 
