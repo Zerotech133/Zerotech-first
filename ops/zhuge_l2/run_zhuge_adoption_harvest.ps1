@@ -6,6 +6,9 @@ $script = 'C:\aios\portal\harvest_adoption.py'
 $log = 'C:\Temp\zhuge_adoption_harvest.log'
 $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUTF8 = '1'
+# 显式 UTF-8 解码子进程输出（否则 Windows PowerShell 按本地码 cp936 解码 → 中文日志乱码）
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 $out = & $py -X utf8 $script 2>&1
 $rc = $LASTEXITCODE
 $out | Out-File -FilePath $log -Append -Encoding utf8
