@@ -126,7 +126,9 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
     since = (now - dt.timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
     code6 = _norm_code(code) if code else ""
 
-    where = ["jev IS NOT NULL", "jev<>''", "ts>=?"]
+    # 2026-10-26 JEVAPI2：窗口/排序用「采集时间 created_at」——新闻 ts 常是
+    # 发布日（如次日 00:00 的公告），按 ts 会漏掉今天抓到的条目或混入未来项。
+    where = ["jev IS NOT NULL", "jev<>''", "created_at IS NOT NULL", "created_at>=?"]
     params: list = [since]
     if code6:
         where.append("(stocks LIKE ? OR jev LIKE ?)")
@@ -135,15 +137,15 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
     db = _ro_connect(NEWS_DB)
     try:
         rows = db.execute(
-            "SELECT id, ts, source, title, stocks, jev FROM news"
-            " WHERE " + " AND ".join(where) + " ORDER BY ts DESC LIMIT 20000",
+            "SELECT id, ts, created_at, source, title, stocks, jev FROM news"
+            " WHERE " + " AND ".join(where) + " ORDER BY created_at DESC LIMIT 20000",
             params).fetchall()
     finally:
         db.close()
 
     window_counts = {"total": 0, "bull": 0, "bear": 0, "neutral": 0}
     matched: list[dict] = []
-    for nid, ts, source, title, stocks, jev in rows:
+    for nid, ts, created_at, source, title, stocks, jev in rows:
         try:
             j = json.loads(jev or "{}")
         except ValueError:
@@ -176,8 +178,11 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
         stock_codes = sorted(set(stock_codes))
         if code6 and code6 not in stock_codes:
             continue
+        if len(matched) >= limit:
+            continue  # 窗口统计继续累计，只是不再收集
         matched.append({
-            "id": str(nid), "ts": str(ts), "source": str(source or ""),
+            "id": str(nid), "ts": str(ts), "collected_at": str(created_at or ""),
+            "source": str(source or ""),
             "title": _clean_title(title),
             "bias": b, "bias_cn": j.get("bias_cn") or b,
             "conf": j.get("conf"),
@@ -187,9 +192,6 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
             "companies": companies, "codes": stock_codes,
             "reason": (j.get("reason") or "")[:200],
         })
-        if len(matched) >= limit:
-            break
-
     if with_posterior:
         post = _load_posterior([m["id"] for m in matched], band)
         for m in matched:
