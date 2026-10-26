@@ -140,6 +140,11 @@
     <div id="sandbox"></div>
   </section>
 
+  <section>
+    <h2>通知 / 审批卡片 <span id="outbox-sub">—</span> <span>outbox 留痕 · 无 webhook 只排队不假发</span></h2>
+    <div id="outbox"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -533,7 +538,8 @@ function loadCap2() {
     jget('/api/zhaoyun/mcp').catch(() => null),
     jget('/api/zhaoyun/memory/v2').catch(() => null),
     jget('/api/zhaoyun/sandbox').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx]) => {
+    jget('/api/zhaoyun/outbox').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx, ob]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -670,7 +676,38 @@ function loadCap2() {
         '• ' + r.skill + ' · ' + (r.ok ? '✓' : '✗') + ' · ' + (r.duration_ms || 0) + 'ms' +
         (r.error ? ' · ' + r.error : ''))));
     } else sbox.appendChild(el('div', 'muted', '沙箱不可用'));
+    const obx = $('outbox'); obx.replaceChildren();
+    if (ob && ob.ok) {
+      $('outbox-sub').textContent = (ob.count || 0) + ' 条 · webhook ' +
+        (ob.webhook_configured ? '已配置' : '未配置（只排队）');
+      const row = el('div', 'row');
+      const nb = el('button', '', '测试通知'); nb.onclick = notifyTest;
+      const cb2 = el('button', '', '生成审批卡片'); cb2.onclick = cardGen;
+      row.appendChild(nb); row.appendChild(cb2); obx.appendChild(row);
+      (ob.items || []).slice(0, 8).forEach((r) => obx.appendChild(el('div', 'muted',
+        '• ' + r.id + ' · ' + r.kind + ' · ' + r.title + ' · ' + r.status)));
+    } else obx.appendChild(el('div', 'muted', 'outbox 不可用'));
   });
+}
+function notifyTest() {
+  fetch('/api/zhaoyun/outbox', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: '赵云测试通知', body: 'outbox 冒烟（不会真发，除非配置 webhook）' }) })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) { alert('已入 outbox：' + j.message.id + (j.webhook_configured ? '（将发送）' : '（未配置 webhook，只排队）')); loadCap2(); }
+      else alert('入队失败：' + (j.error || ''));
+    }).catch((e) => alert('入队失败：' + e));
+}
+function cardGen() {
+  const rid = prompt('输入审批请求 ID（ZYREQ-...）');
+  if (!rid) return;
+  fetch('/api/zhaoyun/approval-card', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ request_id: rid }) })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) { alert('审批卡片已生成并入 outbox：' + j.message.id); loadCap2(); }
+      else alert('生成失败：' + (j.error || ''));
+    }).catch((e) => alert('生成失败：' + e));
 }
 function sandboxVerify() {
   const skill = ($('sbx-skill') || {}).value || '';

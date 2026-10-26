@@ -298,6 +298,10 @@ class Handler(BaseHTTPRequestHandler):
                     sys.path.insert(0, str(_PLATFORM))
                     from sandbox import runner as sbr
                     self._send_json(sbr.recent())
+                elif sub == "outbox":
+                    sys.path.insert(0, str(_PLATFORM))
+                    from notify import outbox as ob
+                    self._send_json(ob.recent())
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -679,6 +683,64 @@ class Handler(BaseHTTPRequestHandler):
                                        timeout=int(req.get("timeout") or 120))
             except Exception as e:                       # noqa: BLE001
                 res = {"ok": False, "error": "sandbox_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/outbox":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from notify import outbox as ob  # noqa: WPS433
+                res = ob.enqueue(str(req.get("title") or "赵云通知"),
+                                 str(req.get("body") or ""),
+                                 kind=str(req.get("kind") or "notify"))
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "outbox_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/outbox/send":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from notify import outbox as ob  # noqa: WPS433
+                res = ob.send(str(req.get("id") or ""))
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "outbox_send_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200)
+            return
+        if path == "/api/zhaoyun/approval-card":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                rid = str(req.get("request_id") or "").strip()
+                p = _PLATFORM / "data" / "zhaoyun_requests" / (rid + ".json")
+                request = json.loads(p.read_text(encoding="utf-8-sig"))
+                sys.path.insert(0, str(_PLATFORM))
+                from notify import outbox as ob  # noqa: WPS433
+                res = ob.enqueue_approval_card(request)
+            except (OSError, ValueError):
+                res = {"ok": False, "error": "request_not_found", "id": rid if "rid" in dir() else ""}
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "approval_card_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
             self._send_json(res, 200 if res.get("ok") else 400)
             return
