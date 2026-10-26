@@ -8,6 +8,14 @@ Git hook 只调用本文件，任务号解析和提交信息读取全部由 Pyth
 
 from __future__ import annotations
 
+import sys
+
+try:  # 2026-10-26 K-ORG-20261026-ENCPROT: non-UTF8 console printing CJK/checkmark
+    # raises UnicodeEncodeError and can crash merge/hook paths; degrade to UTF-8 output.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:  # noqa: BLE001 - non-TTY/old interpreter: ignore
+    pass
 import os
 import re
 import subprocess

@@ -26,6 +26,13 @@ import re
 import shutil
 import subprocess
 import sys
+
+try:  # 2026-10-26 K-ORG-20261026-ENCPROT: non-UTF8 console printing CJK/checkmark
+    # raises UnicodeEncodeError and can crash merge/hook paths; degrade to UTF-8 output.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:  # noqa: BLE001 - non-TTY/old interpreter: ignore
+    pass
 import tempfile
 import time
 
