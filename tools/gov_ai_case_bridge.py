@@ -126,14 +126,19 @@ def _next_entry_index(experience_root: Optional[Path], domain: str) -> int:
 def emit(draft_path: Path, out_dir: Path, *, ts: Optional[float] = None,
          nonce_prefix: str = "govai-case",
          experience_root: Optional[Path] = None,
-         domain: str = DEFAULT_DOMAIN) -> list[dict]:
-    """把 draft items 转成待签 payload（不签名）。"""
+         domain: str = DEFAULT_DOMAIN,
+         offset: int = 0) -> list[dict]:
+    """把 draft items 转成待签 payload（不签名）。
+
+    offset：预留给"尚未入库但已预分配 id"的批次（如 7 张判例卡占用
+    001..007 时，case 批次用 --offset 7 从 008 起），避免 item_id 撞车。
+    """
     draft = load_draft(Path(draft_path))
     if domain not in S.WRITABLE_DOMAINS:
         raise BridgeError("域 %s 不可写（只读或未知；可写=%s）"
                           % (domain, ",".join(S.WRITABLE_DOMAINS)))
     out_dir = Path(out_dir)
-    base = _next_entry_index(experience_root, domain)
+    base = _next_entry_index(experience_root, domain) + max(0, int(offset))
     ts_f = float(time.time() if ts is None else ts)
     payloads: list[dict] = []
     for i, item in enumerate(draft["items"], 1):
@@ -264,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--signature-dir", default="", help="签名目录（--apply 输入）")
     ap.add_argument("--experience-root", default="", help="Z4 根（默认私有区）")
     ap.add_argument("--domain", default=DEFAULT_DOMAIN)
+    ap.add_argument("--offset", type=int, default=0,
+                    help="预分配 id 偏移（如 7 卡占 001-007 时传 7，case 批次从 008 起）")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
@@ -276,7 +283,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.emit and args.apply:
             ap.error("--emit 与 --apply 不能同时使用")
         if args.emit:
-            payloads = emit(draft, out_dir, experience_root=root, domain=args.domain)
+            payloads = emit(draft, out_dir, experience_root=root, domain=args.domain,
+                            offset=args.offset)
             out: dict = {"ok": True, "emit": len(payloads), "out": str(out_dir),
                          "items": [{"item_id": p["item_id"], "cue": p["cue"]} for p in payloads]}
             rc = 0
