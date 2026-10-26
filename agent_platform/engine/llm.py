@@ -4,8 +4,9 @@
 模型分层（2026-10-18 自动路由改造，K-ORG-002 修正后重校）：
     A0 总管 = qwen3.6:35b-a3b（灰度上岗）/ 部门成员 = qwen3.5:9b /
     特种(视觉/结构化) = NovaMax 1234/1238 / 嵌入 = bge-m3(1024维)
-本地库现状（10-18）：qwen3.6:35b-a3b / qwen3.5:9b / qwen3:8b / qwen2.5:7b / bge-m3 /
-huihui(27.3B 无审查)。qwen3.5:4b 【未下载】——绑定引用前一律先打 /api/tags 核实。
+本地库在役（2026-10-26 /api/tags 实测）：qwen3.6:35b-a3b / qwen3.5:9b / qwen3.5:4b / bge-m3。
+qwen2.5:7b / qwen3:8b 已于 10-24 清理（config/ollama_model_route.json deleted_2026-10-17）；
+旧绑定引用经 MODEL_ALIASES 兜底映射到 qwen3.5:9b，禁止再新增旧模型名引用。
 
 自动路由设计（老田拍板：分工前期配好，运行时不需手动调）：
     binding 字符串 "ollama/<模型名>" 前缀由 interpreter 拆出模型名传入 chat()，
@@ -43,10 +44,16 @@ MODEL_PROFILES = {
     "qwen3.5:9b": {"num_predict": 400, "timeout": 300, "temperature": 0.4,
                    "num_ctx": 16384},
     "qwen3.5:4b": {"num_predict": 400, "timeout": 240, "temperature": 0.4},  # T2 轻量层(10-18 补下载落位)
-    "qwen3:8b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
-    "qwen2.5:7b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
 }
 DEFAULT_PROFILE = {"num_predict": 400, "timeout": 300, "temperature": 0.4}
+# 2026-10-24 模型清理已删 qwen2.5:7b / qwen3:8b（见 config/ollama_model_route.json
+# deleted_2026-10-17）；10-26 ai.error_rate 红=残留绑定仍发旧模型名 → /api/chat 404
+# （实测 404 {"error":"model 'qwen2.5:7b' not found"}，耗时 ~3ms）。统一在此映射到
+# 在役 9b，避免席位/HR 旧绑定静默 404 空转。
+MODEL_ALIASES = {
+    "qwen2.5:7b": "qwen3.5:9b",
+    "qwen3:8b": "qwen3.5:9b",
+}
 
 
 def resolve_profile(model):
@@ -120,6 +127,7 @@ class OllamaLLM:
                     return text, ("degraded" if st == "normal" else st)
             if prefix == "ollama":
                 model = rest
+        model = MODEL_ALIASES.get(model or "", model)
         prof = resolve_profile(model)
         options = {
             "temperature": prof["temperature"],

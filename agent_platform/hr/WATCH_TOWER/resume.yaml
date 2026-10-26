@@ -3,7 +3,7 @@ name: 盯盘中台值守 Agent
 kind: runtime
 identity:
   origin: zhice-os-v2 agent_platform（架构稿 2026-10-16 v1 落地，117 测试护栏）
-  model: ollama qwen2.5:7b 仲裁兜底（iGPU Vulkan 0.12-0.27s/条）/ 方法插件纯 CPU
+  model: ollama qwen3.5:9b 仲裁兜底（iGPU Vulkan 0.12-0.27s/条）/ 方法插件纯 CPU
   born: 2026-10-16
 education:
   - {program: 30 天全池回测种子训练, source: 106,430 决策 × 三方法投票留痕（aw_decision）, graduated: 2026-10-17}

@@ -5,7 +5,7 @@
 1. 全员点名：谁 48h 无心跳（该干活没干活的直接亮牌）
 2. 工单体检：doing >72h 催办、review 滞留、孤儿单
 3. 影子纪律：shadow 成员若有产码动作=违规
-4. 产出判读：调 qwen2.5:7b 给一段一句话简报（可选 --llm）
+4. 产出判读：调 qwen3.5:9b 给一段一句话简报（可选 --llm；qwen2.5:7b 已于 10-24 清理）
 
 用法：
   python tools/a0_patrol.py            # 纯规则巡察
@@ -108,7 +108,7 @@ def llm_brief(report: dict) -> str:
         p = f"""你是田丰（参谋长），对军团巡察报告做一句话判读（风险优先，30字内）：
 在册{report['n_members']}人/48h活跃{report['n_active_48h']}/无心跳{report['n_idle']}人/超期工单{len(report['overdue_doing'])}张。
 判读："""
-        body = json.dumps({"model": "qwen2.5:7b", "prompt": p, "stream": False,
+        body = json.dumps({"model": "qwen3.5:9b", "prompt": p, "stream": False,
                            "options": {"num_predict": 60}}).encode()
         req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=body,
                                      headers={"Content-Type": "application/json"})

@@ -3,7 +3,7 @@ name: Jev 告警降噪网关
 kind: runtime
 identity:
   origin: buberlo/jev-trader 设计哲学本土化（Jev 只拥有判断，不拥有系统）
-  model: typesafe.ai 主轨 / ollama qwen2.5:7b 回退轨
+  model: typesafe.ai 主轨 / ollama qwen3.5:9b 回退轨
   born: 2026-10-08
 education:
   - {program: Jev 判读范式影子训练, source: jev-eval 影子池（noul 二分阈值 0.8）, graduated: 2026-10}

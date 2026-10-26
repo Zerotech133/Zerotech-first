@@ -139,7 +139,7 @@ _JEV_OLLAMA_SYS = (
 
 def _jev_ask_ollama(state: str, questions: dict) -> dict:
     """本地 Ollama 后端：逐题判定，答案归一化到 systemone answers 协议。"""
-    o_model = os.environ.get("JEV_OLLAMA_MODEL", "qwen2.5:7b").strip() or "qwen2.5:7b"
+    o_model = os.environ.get("JEV_OLLAMA_MODEL", "qwen3.5:9b").strip() or "qwen3.5:9b"
     o_url = os.environ.get("JEV_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
     log(f"ollama 后端调用 model={o_model} url={o_url}")
     lines = [f"待判定内容：\n{state}", "题目："]

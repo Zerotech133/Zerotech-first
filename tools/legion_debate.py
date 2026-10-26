@@ -6,7 +6,7 @@
         → R1⇄R2 风控辩论 → R3 仲裁 → TR1 执行单 → LCS-1 标准报告
 
 工程判例内置：
-  - 模型降级链 qwen2.5:7b（主力，9b 损坏判例 2026-10-16）
+  - 模型降级链 qwen3.5:9b（qwen2.5:7b 已于 10-24 清理，旧名会 404；900s 超时/JSON 抖动判例见 K-STOCK-428）
   - 断点续跑（ckpt，Ollama 断连不废整场）
   - 4 次重试 × 指数退避
   - 五虎 LCS-1 新人设（T1/T2 假设攻防制 / D1 存疑禁 BUY/SELL 铁律）
@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from xsec_profile import profile as xsec_profile  # noqa: E402
 
-MODEL_CHAIN = ["qwen2.5:7b"]          # 降级链：9b 损坏待重拉，暂单模型
+MODEL_CHAIN = ["qwen3.5:9b"]          # 10-26：qwen2.5:7b 已清理（404），改在役 9b
 PROMPTS_DIR = ROOT / "agent_platform" / "prompts"
 OUT_DIR = ROOT / "reports" / "legion"
 CKPT_DIR = Path(r"C:/Temp/legion_ckpt")
