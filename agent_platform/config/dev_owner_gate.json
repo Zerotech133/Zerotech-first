@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "dept": "dev",
+  "phase": "warn",
+  "acceptance_required": true,
+  "note": "研发部试点：phase=warn 只告警不拒收；改 block 后 dev 单缺 owner/验收命令即拒收。2026-10-27 老田批。"
+}

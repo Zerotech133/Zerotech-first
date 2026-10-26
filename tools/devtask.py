@@ -4,7 +4,11 @@
 一单一线程：每个任务单 = 独立 git worktree + 独立分支，worker 互不踩脚。
 
 命令：
-  new <TID> <一句话描述>   建任务单+worktree+分支 task/<TID>
+  new <TID> <一句话描述> [--project <pid>] [--dept <部门>] [--acceptance "<命令串>"]
+                           建任务单+worktree+分支 task/<TID>；--dept 声明部门单，
+                           命中研发试点门（agent_platform/config/dev_owner_gate.json）
+                           时按 phase=warn 只告警 / phase=block 拒收，且拒收发生在
+                           建 worktree 之前（不落空 worktree）（WO-LEGION-DEVEXEC-20261027）
   list                     任务单总览（谁在干什么/分支/进度）
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
   merge <TID> [--l2-ack --l2-reason "五要素"]
@@ -44,6 +48,10 @@ PROJECTS = os.path.join(REPO, "agent_platform", "registry", "projects.json")
 ORG_JSON = os.path.join(REPO, "agent_platform", "registry", "org.json")
 OWNER_DOMAIN = os.path.join(REPO, "agent_platform", "registry",
                             "owner_domain.json")
+# 2026-10-27 WO-LEGION-DEVEXEC-20261027：研发试点门配置。phase=warn 只告警不拒收；
+# 改 phase=block 后，显式声明 --dept dev 且缺合法 owner/--acceptance 的单在建
+# worktree 之前拒收（不留空 worktree）。配置文件缺失/损坏一律降级 warn（fail-safe）。
+DEV_GATE = os.path.join(REPO, "agent_platform", "config", "dev_owner_gate.json")
 SCAN_SECRETS = os.path.join(REPO, "tools", "scan_secrets.py")
 # 2026-10-26 EXEC-R33：凭据扫描基线豁免表。存在才传给扫描器；缺失则回退旧行为
 # （不带 --baseline，全部未豁免命中照旧拒绝合并 = fail-closed）。
@@ -584,6 +592,60 @@ def _owner_check(owner):
     return bool(who) and who in members, domain, len(members)
 
 
+def _load_dev_gate():
+    """读研发试点门配置（agent_platform/config/dev_owner_gate.json）。
+
+    缺文件/坏 JSON/结构非法一律降级为默认 ``{"phase": "warn", "dept": "dev"}``
+    —— 门配置损坏只能退回「只告警」，绝不能因此把研发单全量拒收（fail-safe）。
+    ``phase`` 仅认 ``warn`` / ``block``（大小写与空白归一），其它字面量按 warn，
+    避免 ``"BLOCK "``/笔误字面量被静默当成拒收（假红）或被静默忽略（假绿）。
+    """
+    try:
+        gate = json.load(open(DEV_GATE, encoding="utf-8"))
+    except Exception:  # noqa: BLE001  缺文件/坏 JSON/编码异常都降级默认
+        gate = {}
+    if not isinstance(gate, dict):
+        gate = {}
+    if not isinstance(gate.get("dept"), str) or not gate["dept"].strip():
+        gate["dept"] = "dev"
+    phase = str(gate.get("phase") or "").strip().lower()
+    gate["phase"] = phase if phase in ("warn", "block") else "warn"
+    return gate
+
+
+def _dev_gate_check(dept, owner_ok, acceptance, gate=None):
+    """研发试点门判定（纯函数：无 IO、无副作用，``gate=None`` 时才读配置）。
+
+    ``dept``：开单时显式声明的部门代号（``None`` = 旧式未声明单，不进门）；
+    ``owner_ok``：``_owner_check`` 三态（True 合法 / False 非法 / None 不可判定）；
+    ``acceptance``：``--acceptance`` 验收命令串（None/空白 = 未提供）；
+    ``gate``：门配置，缺省读 ``_load_dev_gate()``。
+
+    返回 ``(warnings, blocked)``：
+      * 仅当 ``dept`` 命中 ``gate["dept"]``（默认 ``dev``，大小写/空白归一）时生效，
+        其它部门一律 ``([], False)`` —— 非研发单不受试点门影响；
+      * ``owner_ok is False`` → 告警「owner 不在合法域」（``None`` = 取值域不可判定，
+        不是非法，与 WO-TF-03 三态裁定一致，不告警不拒收）；
+      * 无验收命令 → 告警「缺验收命令」；
+      * ``phase == "block"`` 且（owner 非法 或 缺验收命令）→ ``blocked=True``，
+        调用方必须在建 worktree **之前**拒收（避免留空 worktree）。
+    """
+    gate = gate if isinstance(gate, dict) else _load_dev_gate()
+    target = str(gate.get("dept") or "dev").strip().lower()
+    if (dept or "").strip().lower() != target:
+        return [], False
+    has_acceptance = bool((acceptance or "").strip())
+    warnings = []
+    if owner_ok is False:
+        warnings.append("owner 不在合法域")
+    if not has_acceptance:
+        warnings.append("缺验收命令")
+    phase = str(gate.get("phase") or "warn").strip().lower()
+    blocked = (phase == "block"
+               and (owner_ok is False or not has_acceptance))
+    return warnings, blocked
+
+
 def cmd_new(tid, *desc):
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
     # 保兼容；判据3的「拒收」落在「声明了但不存在的线」上）
@@ -599,6 +661,23 @@ def cmd_new(tid, *desc):
     elif desc:
         print("[warn] 未声明 --project，归入 general 线（建议显式带线："
               "new %s --project <pid> ...）" % tid)
+    # 2026-10-27 WO-LEGION-DEVEXEC-20261027：--dept / --acceptance 可选，与 --project
+    # 同风格从 desc 弹出；缺省 dept=None 时**完全不进研发试点门**（旧调用行为不变）。
+    dept = None
+    if "--dept" in desc:
+        i = desc.index("--dept")
+        if i + 1 >= len(desc):
+            raise SystemExit("--dept 需要跟部门代号（如 --dept dev）")
+        dept = desc.pop(i + 1)
+        desc.pop(i)
+    acceptance = None
+    if "--acceptance" in desc:
+        i = desc.index("--acceptance")
+        if i + 1 >= len(desc):
+            raise SystemExit("--acceptance 需要跟验收命令串"
+                             "（如 --acceptance \"python -m pytest -q\"）")
+        acceptance = desc.pop(i + 1)
+        desc.pop(i)
     desc = " ".join(desc) or "(无描述)"
     tasks = _tasks()
     if tid in tasks:
@@ -609,14 +688,15 @@ def cmd_new(tid, *desc):
     # K-ORG-080/N5：EARS 判据 lint（只 WARN 不拦单，fail-open）
     for w in _ears_lint(desc):
         print("[warn] EARS lint: %s" % w)
-    branch = "task/" + tid
-    wt = os.path.join(WT_DIR, tid)
-    _git("worktree", "add", wt, "-b", branch)
     # WO-TF-03：owner 取值域校验。老田裁定①「非法 owner 降级不拒写」——非法时给
     # desc 追加 [UNOWNED] 标签（已有则不重复追加）并经既有 task_start 事件留痕；
     # 合法 owner 行为与现状完全一致（不加标签、不留痕、字段不变）。
     # 取值域不可判定（owner_ok 为 None，org.json 缺失/坏/无 departments）时**不判非法、
     # 不打标签**——读不到权威域不等于域内无人，误标会批量污染新建单，仅留痕计数。
+    #
+    # 2026-10-27 WO-LEGION-DEVEXEC-20261027：owner 预判与研发试点门**前置到
+    # `git worktree add` 之前** —— block 模式拒收时不落空 worktree（旧顺序为建完
+    # worktree 才发现 owner 非法，拒收会留一个空 worktree 需人工清）。
     owner = os.environ.get("AGENT_NAME", "unknown-agent")
     owner_ok, domain, domain_size = _owner_check(owner)
     if owner_ok is False:
@@ -630,10 +710,38 @@ def cmd_new(tid, *desc):
         print("[warn] 取值域不可判定（org.json 缺失/坏 JSON/无 departments）——"
               "不判非法、不打标签，仅留痕；owner=%s 原样落账" % owner,
               file=sys.stderr)
-    tasks[tid] = {"desc": desc, "branch": branch, "worktree": wt,
-                  "status": "doing", "created": time.strftime("%F %T"),
-                  "project": project,
-                  "owner": owner}
+    # 研发试点门：只在显式声明 --dept 时启用（旧调用不进门 = 行为不变）。
+    # warn 模式把告警打 stderr 后照常建单；block 模式缺合法 owner/验收命令**前置**
+    # 拒收（SystemExit，此时尚未 worktree add，故不会留空 worktree）。
+    gate_warnings = []
+    gate_applies = False
+    if dept is not None:
+        gate = _load_dev_gate()
+        gate_applies = (dept or "").strip().lower() == str(
+            gate.get("dept") or "dev").strip().lower()
+        gate_warnings, gate_blocked = _dev_gate_check(
+            dept, owner_ok, acceptance, gate=gate)
+        if gate_blocked:
+            raise SystemExit(
+                "研发试点门（phase=block）拒收 dept=%s：%s——未创建 worktree；"
+                "补合法 owner / --acceptance 验收命令后重试"
+                % (dept, "；".join(gate_warnings) or "gate 未过"))
+        for w in gate_warnings:
+            print("[warn] dev-gate: %s（phase=%s，只告警不拒收）"
+                  % (w, gate.get("phase", "warn")), file=sys.stderr)
+    branch = "task/" + tid
+    wt = os.path.join(WT_DIR, tid)
+    _git("worktree", "add", wt, "-b", branch)
+    rec = {"desc": desc, "branch": branch, "worktree": wt,
+           "status": "doing", "created": time.strftime("%F %T"),
+           "project": project,
+           "owner": owner}
+    # 显式声明 --dept 的单才落 dept/acceptance_cmd 新字段（旧调用字段集不变——
+    # WO-TF-03「合法路径字段与现状一致」回归用例锁定；acceptance 缺省落 null）。
+    if dept is not None:
+        rec["dept"] = dept
+        rec["acceptance_cmd"] = acceptance
+    tasks[tid] = rec
     _save(tasks, changed=(tid,))
     _ckpt(tid, "kai", tasks[tid]["owner"],
           {"desc": desc, "branch": branch, "worktree": wt,
@@ -648,9 +756,17 @@ def cmd_new(tid, *desc):
     else:
         detail = ("owner_degraded=1 owner=%s domain_size=%d · %s（owner=%s·project=%s）"
                   % (owner, domain_size, desc, owner, project))
+    if gate_applies:
+        # 研发试点单：detail 前缀标 [dev-gate]（截断后仍可检出）；warn 告警摘要前置，
+        # 保证大 desc 截断也不会把试点门告警吃掉。
+        gate_note = "[dev-gate]"
+        if gate_warnings:
+            gate_note += " " + "；".join(gate_warnings)
+        detail = gate_note + " · " + detail
     _emit("task_start", tid, detail)
-    print("工单 %s 已开：%s（分支 %s）owner=%s project=%s"
-          % (tid, desc, branch, tasks[tid]["owner"], project))
+    print("工单 %s 已开：%s（分支 %s）owner=%s project=%s%s"
+          % (tid, desc, branch, tasks[tid]["owner"], project,
+             " dept=%s" % dept if dept is not None else ""))
     print("→ Agent 请 cd %s 内干活，完工跑 devtask.py merge %s" % (wt, tid))
     return 0
 

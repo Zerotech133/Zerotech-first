@@ -1,7 +1,7 @@
 {
   "agent_id": "ARCH1",
   "dept": "dev",
-  "title": "工程研发中心·工程师",
+  "title": "工程研发中心·主官（架构终审）",
   "rank": "E3",
   "tools_allowed": {
     "read": [],

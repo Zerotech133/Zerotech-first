@@ -6,6 +6,10 @@
   · deep-reasoning / 复杂判读：deepseek-v4-pro → deepseek-flash → ollama/35b（若已起）
   · local-only / 离线/降级：ollama/qwen3.5:9b
   · glm 通道：glm/glm-5.3-flash（**配额风险**；429 自动降级，不丢任务）
+  · dev-lead / dev-exec（研发部新链）：dev-lead=E3 组长/主官链（glm/glm-5.3 优先，
+    429/不可用时自动降级到 deepseek-flash → 本地 9b）；dev-exec=E2/E1 执行席快档链
+    （glm/glm-5.3-flash 优先，同链降级）。
+  · glm 无 adapter 时会抛 unsupported_model：invoke 已按路由链 fail 到下一档（不丢任务）。
 
 本模块只做"选路 + 调用 + 留证"：不写 org/bundle 真源、不自动切全局默认。
 调用记录落 `agent_platform/data/zhaoyun_capability_usage.jsonl`（drill-evidence）。
@@ -30,6 +34,12 @@ ROUTES = {
     "local-only": ["ollama/qwen3.5:9b"],
     "glm-quota": ["deepseek/deepseek-flash", "glm/glm-5.3-flash",
                   "ollama/qwen3.5:9b"],
+    # 研发部指挥链（C4）：E3 组长/主官 glm 强档优先，429/不可用逐档降级
+    "dev-lead": ["glm/glm-5.3", "deepseek/deepseek-flash",
+                 "ollama/qwen3.5:9b"],
+    # 研发部执行链（C4）：E2/E1 执行席 glm 快档优先，同链降级
+    "dev-exec": ["glm/glm-5.3-flash", "deepseek/deepseek-flash",
+                 "ollama/qwen3.5:9b"],
 }
 
 
