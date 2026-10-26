@@ -351,19 +351,46 @@ def _provider_chat(provider: str, secret: str, messages: list, timeout: int = 45
         return {"ok": False, "code": "error", "error": "%s: %s" % (type(e).__name__, str(e)[:160])}
 
 
-def _local_chat(messages: list, timeout: int = 60) -> dict:
+def _local_openai_chat(messages: list, timeout: int = 60) -> str:
     body = json.dumps({"model": "qwen3.5:9b", "messages": messages,
                        "max_tokens": 800, "stream": False}).encode()
     req = urllib.request.Request("http://127.0.0.1:11434/v1/chat/completions",
                                  data=body, method="POST",
                                  headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        data = json.loads(r.read().decode("utf-8", "replace"))
+        return ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+
+
+def _local_native_chat(messages: list, timeout: int = 90) -> str:
+    # 思考型模型（qwen3.5:9b）会在 reasoning 里吃满 token 导致 content 为空；
+    # 原生 /api/chat + think=false 可关闭思考，直接拿最终回答。
+    body = json.dumps({"model": "qwen3.5:9b", "messages": messages,
+                       "stream": False, "think": False}, ensure_ascii=False).encode()
+    req = urllib.request.Request("http://127.0.0.1:11434/api/chat",
+                                 data=body, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        data = json.loads(r.read().decode("utf-8", "replace"))
+        return (data.get("message") or {}).get("content") or ""
+
+
+def _local_chat(messages: list, timeout: int = 60) -> dict:
+    err = ""
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8", "replace"))
-            reply = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
-            return {"ok": True, "reply": reply}
+        text = _local_openai_chat(messages, timeout)
+        if text.strip():
+            return {"ok": True, "reply": text}
+        err = "empty_content"
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:160])}
+        err = "%s: %s" % (type(e).__name__, str(e)[:160])
+    try:
+        text = _local_native_chat(messages, max(timeout, 90))
+        if text.strip():
+            return {"ok": True, "reply": text}
+        return {"ok": False, "error": "local_empty_content"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": "%s; fallback=%s" % (err, str(e)[:160])}
 
 
 def auto_chat(messages: list) -> dict:
