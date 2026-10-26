@@ -75,6 +75,7 @@ CAPABILITIES = {
         {"name": "spec-driven-delivery", "what": "规范驱动交付：constitution→spec→plan→tasks→converge 产物链与收敛检查", "how": "python -X utf8 tools/spec_flow.py init/check/list；产物落 deliverables/specs", "boundary": "阶段未收敛不得进实现；证据缺失不得签收敛", "status": "ready"},
         {"name": "security-gate", "what": "安全质量门：密钥/危险调用/危险参数扫描，high 阻断合并", "how": "python -X utf8 tools/security_gate.py scan --changed|--path|--all；证据落 work/security", "boundary": "只读；不自动修；high 必须人工裁决", "status": "ready"},
         {"name": "approval-inbox", "what": "L2 审批队列：请求→待批→批准/驳回，决策留痕", "how": "python -X utf8 tools/approval_inbox.py request/list/approve/reject", "boundary": "只有 pending 可决策；L2 不得自动批准", "status": "ready"},
+        {"name": "browser-verification", "what": "真浏览器验收：goto/click/fill/断言/截图，证据落盘", "how": "python -X utf8 tools/browser_verify.py run --url ... --steps ...", "boundary": "只读页面操作；不改生产数据；失败即失败", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -510,6 +511,19 @@ description: L2 审批队列：请求→待批→批准/驳回，决策留痕；
 2. 查看：`... list --status pending`。
 3. 决策：`... approve <id> --by 老田` / `reject <id> --by 老田 --note ...`。
 4. 只有 pending 可决策；L2 动作不得自动批准。
+""",
+        "browser-verification": """---
+name: browser-verification
+description: 真浏览器验收：Playwright 打开页面、点击/填表、断言文本/元素、截图存证。
+---
+
+# 浏览器验收
+
+1. 探活：`python -X utf8 tools/browser_verify.py probe`。
+2. 运行：`python -X utf8 tools/browser_verify.py run --url URL --steps steps.json`。
+3. 步骤：goto/click/fill/press/expect_text/expect_selector/screenshot；失败即失败。
+4. 证据：`work/browser/browser-*.json` + 截图；控制台错误一并记录。
+5. 只读页面；不改生产数据。
 """,
     },
     "zhaoyun": {
