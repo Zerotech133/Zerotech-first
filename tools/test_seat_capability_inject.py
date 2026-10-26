@@ -30,6 +30,8 @@ TIANFENG_EXPECTED = {
     "experience-review", "z-series", "memory-card", "council-hall", "docs-index",
     "llm-glm", "mutual-review", "case-sign-chain", "governance-ai",
     "worktree-hygiene",
+    "product-spec", "architecture-design", "code-reference",
+    "task-orchestration", "decision-arbitration",
 }
 
 ZHAOYUN_EXPECTED = {
@@ -63,14 +65,14 @@ def _card_names(seat):
     return names
 
 
-# ---------------- 田丰（原有断言，保留 15 能力 / 15 卡） ----------------
+# ---------------- 田丰（ROLEV3：15 能力 + 5 全在性能力 = 20 能力 / 20 卡） ----------------
 
 def test_tianfeng_capability_set_complete():
     caps = M.CAPABILITIES["tianfeng"]
     names = [c["name"] for c in caps]
     assert len(names) == len(set(names)), "能力名重复"
     assert set(names) == TIANFENG_EXPECTED
-    assert len(caps) == 15
+    assert len(caps) == 20
 
 
 def test_tianfeng_capability_fields_valid():

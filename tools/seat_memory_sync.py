@@ -34,7 +34,7 @@ SEATS = {
     "tianfeng": {
         "cn": "田丰", "base": "Hermes（本地 qwen3.5:9b 主脑；判读 GLM-5.3）",
         "home": os.path.expanduser("~/.hermes/profiles/tianfeng"),
-        "duty": "归口面：工单验收、经验复核、去重、差距呈报；复核不改写原始记录。",
+        "duty": "产品/研发全在性：需求定义→架构/代码参考→拆解派发→AI 自动执行→验收；L0/L1 自主决策、L2 报老田；复核不改写原始记录。",
     },
     "zhaoyun": {
         "cn": "赵云", "base": "DeepSeek Harness（会话承担执行）",

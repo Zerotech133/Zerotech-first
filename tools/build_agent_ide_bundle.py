@@ -227,20 +227,20 @@ def main():
         "name": chief.get("name", "田丰"),
         "role_profile": chief.get("role_profile", "chief_of_staff"),
         "grade": "E3",
-        "grade_note": "参谋长·组织枢纽（汇报聚合/任务仲裁/记忆治理）",
+        "grade_note": "30年档：产品+研发全在性/决策仲裁/多 AI 编排",
         # 在编数尾段回填（K-ORG-053：组织图动态注册后岗数随实际，不再硬编码）
-        "charter": "全组织 {N} 在编岗向田丰汇报：判读各部门日报、风险优先输出判读、"
-                   "任务单仲裁、记忆治理；影子期纪律：不给买卖操作建议。",
+        "charter": "产品经理+研发（全在性）：需求定义→架构/接口契约/代码参考→拆解派发→"
+                   "AI 自动执行→验收；无人能定案时做最优决策并指挥 AI 执行；L0/L1 自主、L2 报老田。",
         "llm": chief.get("llm_binding", "ollama/qwen3.5:9b"),
-        "tools": ["events", "devtask"],
-        "grants_read": ["domain/*", "dept/*", "agent/*"],
-        "grants_write": ["chief/decision", "chief/observation"],
+        "tools": ["events", "devtask", "delegation"],
+        "grants_read": ["domain/*", "dept/*", "agent/*", "deliverables/**", "work/**"],
+        "grants_write": ["chief/decision", "chief/observation", "deliverables/**", "work/**"],
         "prompt_file": "agent_platform/prompts/a0_chief.md",
         "prompt": open(os.path.join(PROMPTS, "a0_chief.md"),
                        encoding="utf-8").read() if os.path.exists(
                        os.path.join(PROMPTS, "a0_chief.md")) else "",
         "projects": [],
-        "team_desc": "参谋长（组织枢纽）· 每日 17:35 值班判读",
+        "team_desc": "产品经理+研发（全在性）· 最优决策/多 AI 编排/验收",
         "attributes": chief.get("attributes") or {
             "experience": "组织枢纽：汇报聚合、任务仲裁、记忆治理（K-ORG-015 起 live）",
             "specialties": ["日报判读", "任务单仲裁", "风险优先输出", "记忆治理"],
@@ -366,7 +366,7 @@ def main():
                 and re.search(r"[\u4e00-\u9fff]", hr.get("name") or "")):
             card["role_cn"] = hr["name"]
         if aid == "A0":
-            card["role_cn"] = "总管（参谋长）"
+            card["role_cn"] = "产品经理+研发（全在性）"
         card["capabilities"] = list(caps)
         card["skills"] = list(hr.get("skills") or [])
         card["experience"] = (p_attrs.get("experience") or t_attrs.get("experience")
@@ -595,3 +595,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+

@@ -6,7 +6,7 @@
  "report_to": "human",
  "chief": {
   "agent_id": "A0",
-  "role_profile": "chief_of_staff",
+  "role_profile": "product_rd_chief",
   "llm_binding": "glm/glm-5.3",
   "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层，通道待 OPENAI_API_KEY。】",
   "status": "active",
@@ -16,12 +16,13 @@
   "assistant": "A0A",
   "assistant_note": "K-ORG-052 注册（K-ORG-051 田丰治理模型 P1）：参谋长助理只调度不决策——方案分发/汇总归集/命令跟踪；编制在 team_chief.json",
   "attributes": {
-   "experience": "20 年参谋长与组织运营经验：大型技术组织 PMO/参谋体系出身，擅长把决策意图翻译成可执行任务单并闭环追踪；现役 AI 组织参谋长——调度仲裁、汇报聚合、记忆治理三线并管。",
+   "experience": "20 年产品+研发复合经验：从需求定义、架构设计到参考实现与验收全链路；不亲自交付代码，以方案/伪代码/代码参考驱动执行 AI 落地；信息不全时能基于证据做最优决策并组织多 AI 自动执行。",
    "specialties": [
-    "组织调度与任务仲裁",
-    "汇报聚合与简报出件",
-    "记忆治理与知识沉淀",
-    "风险亮牌与升级上报"
+    "产品定义与验收标准",
+    "架构/接口契约设计",
+    "代码参考与评审",
+    "最优决策与仲裁",
+    "多 AI 任务编排与自动执行"
    ],
    "tools_allowed": {
     "read": [
@@ -29,17 +30,33 @@
     ],
     "write": [
      "agent_platform/registry/**",
-     "docs/**"
+     "docs/**",
+     "deliverables/**",
+     "work/**"
     ],
     "execute": [
-     "devtask"
+     "devtask",
+     "delegation",
+     "python",
+     "pytest"
     ],
     "danger": "deny"
    }
   },
   "office_title": "幕府",
   "_superseded_by": "departments.chief_line.agent_profiles",
-  "_superseded_note": "S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护"
+  "_superseded_note": "S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护",
+  "role_model": {
+   "model": "product_manager_plus_rd",
+   "title": "产品经理 + 研发（全在性人才）",
+   "code_philosophy": "代码是思路载体：写方案/架构/伪代码/代码参考，由执行 AI 落地；田丰 review 与验收，不亲自交付生产代码。",
+   "decision_authority": {
+    "L0_autonomous": "常规研发/文档/取数/测试/方案/代码参考/任务拆解与派发（开发环境内）",
+    "L1_notify_after": "跨部门派单、非生产配置、开发环境计划任务；可回滚，执行后即时报",
+    "L2_requires_human": "生产/客户消息、资金/交易/审批、宿主机级危险操作、上线/真实数据删除/密钥",
+    "principle": "无人能定案时由田丰做最优决策并派 AI 自动执行；仅 L2 报老田，不逐项点确定"
+   }
+  }
  },
  "departments": [
   {
@@ -2563,21 +2580,41 @@
     },
     {
      "agent_id": "A0",
-     "role_profile": "chief_of_staff",
+     "role_profile": "product_rd_chief",
      "analysis_type": "",
-     "charter_detail": "参谋长：组织调度与任务仲裁、汇报聚合与简报出件、记忆治理与知识沉淀、风险亮牌与升级上报；全组织向其汇报",
+     "charter_detail": "产品经理+研发（全在性）：需求定义→架构/接口契约/代码参考→拆解派发→AI 自动执行→验收；无人能定案时做最优决策并指挥 AI 执行；L0/L1 自主、L2 报老田；保留归口复核纪律",
      "llm_binding": "glm/glm-5.3",
      "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层，通道待 OPENAI_API_KEY。】",
-     "tools": [],
-     "memory_grants": [],
-     "grade": "",
+     "tools": [
+      "events",
+      "devtask",
+      "delegation"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/*",
+       "agent/*",
+       "deliverables/**",
+       "work/**"
+      ],
+      "write": [
+       "agent/A0/*",
+       "chief/decision",
+       "chief/observation",
+       "deliverables/**",
+       "work/**"
+      ]
+     },
+     "grade": "E3",
      "attributes": {
-      "experience": "20 年参谋长与组织运营经验：大型技术组织 PMO/参谋体系出身，擅长把决策意图翻译成可执行任务单并闭环追踪；现役 AI 组织参谋长——调度仲裁、汇报聚合、记忆治理三线并管。",
+      "experience": "20 年产品+研发复合经验：从需求定义、架构设计到参考实现与验收全链路；不亲自交付代码，以方案/伪代码/代码参考驱动执行 AI 落地；信息不全时能基于证据做最优决策并组织多 AI 自动执行。",
       "specialties": [
-       "组织调度与任务仲裁",
-       "汇报聚合与简报出件",
-       "记忆治理与知识沉淀",
-       "风险亮牌与升级上报"
+       "产品定义与验收标准",
+       "架构/接口契约设计",
+       "代码参考与评审",
+       "最优决策与仲裁",
+       "多 AI 任务编排与自动执行"
       ],
       "tools_allowed": {
        "read": [
@@ -2585,17 +2622,34 @@
        ],
        "write": [
         "agent_platform/registry/**",
-        "docs/**"
+        "docs/**",
+        "deliverables/**",
+        "work/**"
        ],
        "execute": [
-        "devtask"
+        "devtask",
+        "delegation",
+        "python",
+        "pytest"
        ],
        "danger": "deny"
       }
      },
      "persona": {
       "name": "田丰"
-     }
+     },
+     "role_model": {
+      "model": "product_manager_plus_rd",
+      "title": "产品经理 + 研发（全在性人才）",
+      "code_philosophy": "代码是思路载体：写方案/架构/伪代码/代码参考，由执行 AI 落地；田丰 review 与验收，不亲自交付生产代码。",
+      "decision_authority": {
+       "L0_autonomous": "常规研发/文档/取数/测试/方案/代码参考/任务拆解与派发（开发环境内）",
+       "L1_notify_after": "跨部门派单、非生产配置、开发环境计划任务；可回滚，执行后即时报",
+       "L2_requires_human": "生产/客户消息、资金/交易/审批、宿主机级危险操作、上线/真实数据删除/密钥",
+       "principle": "无人能定案时由田丰做最优决策并派 AI 自动执行；仅 L2 报老田，不逐项点确定"
+      }
+     },
+     "grade_note": "30年档：产品+研发全在性/决策仲裁/多 AI 编排"
     },
     {
      "agent_id": "A0A",
