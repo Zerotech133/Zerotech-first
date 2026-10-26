@@ -1,0 +1,23 @@
+{
+ "schema": "zhaoyun_incident_draft/v1",
+ "id": "INC-20261024161819",
+ "status": "needs_review",
+ "source_event": {
+  "ts": "2026-10-24 16:18:19",
+  "kind": "guard_fail",
+  "task": "OS-CLOSE-VOICE1",
+  "agent": "devtask",
+  "detail": "分支无提交（master..task/OS-CLOSE-VOICE1=0），防呆拒绝合并，worktree 保留"
+ },
+ "proposed_behavior": {
+  "id": "inc.20261024161819",
+  "desc": "回归：guard_fail — 分支无提交（master..task/OS-CLOSE-VOICE1=0），防呆拒绝合并，worktree 保留",
+  "smoke": false,
+  "severity": "medium",
+  "check": {
+   "kind": "manual",
+   "note": "待人工定义断言后移入 behaviors.json"
+  }
+ },
+ "generated_at": "2026-10-27T06:45:51+0800"
+}

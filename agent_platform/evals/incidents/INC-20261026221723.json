@@ -1,0 +1,23 @@
+{
+ "schema": "zhaoyun_incident_draft/v1",
+ "id": "INC-20261026221723",
+ "status": "needs_review",
+ "source_event": {
+  "ts": "2026-10-26 22:17:23",
+  "kind": "guard_fail",
+  "task": "WO-HERMES-UI-REAL-20261026",
+  "agent": "ZHAOYUN",
+  "detail": "L2 门未过（K-STOCK-416）：L2 门 ✗：task/WO-HERMES-UI-REAL-20261026 命中 1 处宿主机级危险操作（K-STOCK-416）\n  ops/install_hermes_ui_probe.ps1:55  [创建计划任务（持久化面）]"
+ },
+ "proposed_behavior": {
+  "id": "inc.20261026221723",
+  "desc": "回归：guard_fail — L2 门未过（K-STOCK-416）：L2 门 ✗：task/WO-HERMES-UI-REAL-20261026 命中 1 处宿主机级危险操作（K-STOCK-416）\n  ops/install_hermes_ui_probe.ps1",
+  "smoke": false,
+  "severity": "medium",
+  "check": {
+   "kind": "manual",
+   "note": "待人工定义断言后移入 behaviors.json"
+  }
+ },
+ "generated_at": "2026-10-27T06:45:51+0800"
+}

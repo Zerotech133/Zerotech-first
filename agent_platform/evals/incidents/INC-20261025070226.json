@@ -1,0 +1,23 @@
+{
+ "schema": "zhaoyun_incident_draft/v1",
+ "id": "INC-20261025070226",
+ "status": "needs_review",
+ "source_event": {
+  "ts": "2026-10-25 07:02:26",
+  "kind": "guard_fail",
+  "task": "K-ORG-20261025-BATCH",
+  "agent": "DSH-Lead",
+  "detail": "门 明文凭据 未过：未豁免命中（1/1 批退出码非 0）；HIT ops/start_power_watch.ps1:15:HIGH_ENTROPY: #      Win3****em under both pwsh 7 and PS 5.1 in this"
+ },
+ "proposed_behavior": {
+  "id": "inc.20261025070226",
+  "desc": "回归：guard_fail — 门 明文凭据 未过：未豁免命中（1/1 批退出码非 0）；HIT ops/start_power_watch.ps1:15:HIGH_ENTROPY: #      Win3****em under both pwsh 7 and PS 5",
+  "smoke": false,
+  "severity": "medium",
+  "check": {
+   "kind": "manual",
+   "note": "待人工定义断言后移入 behaviors.json"
+  }
+ },
+ "generated_at": "2026-10-27T06:45:51+0800"
+}

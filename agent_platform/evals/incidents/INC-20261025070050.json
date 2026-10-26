@@ -1,0 +1,23 @@
+{
+ "schema": "zhaoyun_incident_draft/v1",
+ "id": "INC-20261025070050",
+ "status": "needs_review",
+ "source_event": {
+  "ts": "2026-10-25 07:00:50",
+  "kind": "guard_fail",
+  "task": "K-ORG-20261025-BATCH",
+  "agent": "DSH-Lead",
+  "detail": "门 Mixin方法集 未过：Traceback (most recent call last):\n  File \"C:\\��Ŀ\\�����AI����\\tools\\_mixin_integrity.py\", line 79, in <module>\n    sys.e"
+ },
+ "proposed_behavior": {
+  "id": "inc.20261025070050",
+  "desc": "回归：guard_fail — 门 Mixin方法集 未过：Traceback (most recent call last):\n  File \"C:\\��Ŀ\\�����AI����\\tools\\_mixin_integrity.py\", line 79, in <mod",
+  "smoke": false,
+  "severity": "medium",
+  "check": {
+   "kind": "manual",
+   "note": "待人工定义断言后移入 behaviors.json"
+  }
+ },
+ "generated_at": "2026-10-27T06:45:51+0800"
+}

@@ -280,6 +280,12 @@ class Handler(BaseHTTPRequestHandler):
                     sys.path.insert(0, str(_PLATFORM))
                     from observability import trace as tr
                     self._send_json(tr.get_trace(sub.split("/", 1)[1]))
+                elif sub == "evals":
+                    latest = _PLATFORM / "evals" / "reports" / "latest.json"
+                    try:
+                        self._send_json(json.loads(latest.read_text(encoding="utf-8")))
+                    except (OSError, ValueError):
+                        self._send_json({"ok": False, "error": "no_report"})
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -559,6 +565,21 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:                            # noqa: BLE001
                 pass
             self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/evals/run":
+            # 评估飞轮：跑 smoke 子集并返回报告（只读检查，不改变业务状态）
+            try:
+                import subprocess as _sp
+                r = _sp.run([sys.executable,
+                             str(_PLATFORM / "evals" / "run_evals.py"),
+                             "--smoke", "--json"], capture_output=True, text=True,
+                            encoding="utf-8", timeout=180)
+                res = (json.loads(r.stdout) if r.stdout.strip()
+                       else {"ok": False, "error": "no_output"})
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "evals_run_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 500)
             return
         if path == "/api/zhaoyun/request":
             # WO-ZHAOYUN-DRILL：调整类动作只登记请求（pending_human），不自动改真源
