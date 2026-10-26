@@ -93,6 +93,12 @@ VERDICTS = ("respond", "fix")
 DEFAULT_WHITELIST = r"C:\项目\digital-legion-sandbox\openclaw_readonly_whitelist.yaml"
 SANDBOX_PREFIX_FALLBACK = "C:/项目/digital-legion-sandbox"
 
+# W5 沙盘快照消费（2026-10-27 P1）：默认扫描 <sandbox>/plans/ 下最新可用快照；
+# 无可用快照时回落 tasks 账本（显式 warning，不静默）。文件由田丰侧按契约推送。
+SANDBOX_PLANS_DIRNAME = "plans"
+SANDBOX_SNAPSHOT_GLOBS = ("*_plan.json", "plan_*.json", "latest.json")
+AUTO_SNAPSHOT_MAX_CANDIDATES = 20
+
 # 本工具所需的工具面（与白名单 allow 名对齐）
 REQUIRED_ALLOW = ("file_read", "kanban_read", "kanban_card_write")
 REQUIRED_DENY = ("shell_exec", "file_write", "paperclip_api_write", "hermes_control", "network_egress")
@@ -535,13 +541,83 @@ def snapshot_from_tasks_ledger(path, filter_status: str | None = "doing") -> dic
     }
 
 
-def load_snapshot(args, root: Path) -> tuple[dict, dict]:
-    """按 --snapshot / --tasks / 默认 .worktrees/tasks.json 装载快照。
+def auto_snapshot_dir(args) -> Path:
+    """auto-snapshot 扫描目录：env > --snapshot-dir > <sandbox_prefix>/plans。"""
+    env_dir = os.environ.get("ZHUGE_SANDBOX_PLANS_DIR", "").strip()
+    if env_dir:
+        return Path(env_dir)
+    given = getattr(args, "snapshot_dir", None)
+    if given:
+        return Path(given)
+    prefix = getattr(args, "_sandbox_prefix", None) or SANDBOX_PREFIX_FALLBACK
+    return Path(prefix) / SANDBOX_PLANS_DIRNAME
 
-    → (snapshot, meta)；meta 含 source_kind / inside_sandbox_prefix / warnings。
+
+def scan_auto_snapshots(args):
+    """扫描沙盘 plans/，按 mtime 新→旧取最新可用快照。
+
+    → (snapshot|None, info)。info 记录 dir/candidates/chosen/fallback/warnings；
+    单个坏文件/空快照跳过并留因；无可用快照返回 None（由调用方回落 tasks）。
+    """
+    d = auto_snapshot_dir(args)
+    info = {"dir": str(d), "candidates": [], "chosen": None,
+            "fallback": False, "warnings": []}
+    if not d.is_dir():
+        info["warnings"].append("auto-snapshot: 目录不存在 %s → 回落 tasks" % d)
+        info["fallback"] = True
+        return None, info
+    files = []
+    for pat in SANDBOX_SNAPSHOT_GLOBS:
+        files.extend(d.glob(pat))
+    uniq = sorted({p.resolve() for p in files if p.is_file()},
+                  key=lambda p: p.stat().st_mtime, reverse=True)
+    uniq = uniq[:AUTO_SNAPSHOT_MAX_CANDIDATES]
+    info["candidates"] = [str(p) for p in uniq]
+    for p in uniq:
+        try:
+            snap = snapshot_from_file(p, filter_status=args.filter_status or None)
+        except (SnapshotError, WhitelistError) as exc:
+            info["warnings"].append("auto-snapshot: 跳过 %s（%s）"
+                                    % (p.name, getattr(exc, "code", "bad_snapshot")))
+            continue
+        if not snap.get("items"):
+            info["warnings"].append("auto-snapshot: 跳过空快照 %s" % p.name)
+            continue
+        info["chosen"] = str(p)
+        return snap, info
+    info["warnings"].append("auto-snapshot: %s 无可用快照 → 回落 tasks" % d)
+    info["fallback"] = True
+    return None, info
+
+
+def _load_tasks_snapshot(args, root: Path, warnings: list, strict: bool) -> dict:
+    tasks_path = Path(args.tasks) if args.tasks else resolve_tasks_ledger(root)
+    if tasks_path is None or not Path(tasks_path).is_file():
+        raise SnapshotError(
+            "未找到 .worktrees/tasks.json（可用 --snapshot 或 --tasks 显式指定）",
+            code="tasks_ledger_missing")
+    snap = snapshot_from_tasks_ledger(tasks_path, filter_status=args.filter_status or "doing")
+    snap["inside_sandbox_prefix"] = path_inside(tasks_path, args._sandbox_prefix)
+    if not snap["inside_sandbox_prefix"]:
+        warnings.append(
+            "快照来自 devtask 账本而非沙盘仓（MVP dev 适配）：生产接线后应改用 "
+            "digital-legion-sandbox/plans/ 快照")
+        if strict:
+            raise WhitelistError(
+                "strict-sandbox：默认 tasks 账本快照不在沙盘仓前缀内，拒绝；"
+                "请用 --snapshot 指向沙盘仓快照", code="snapshot_outside_sandbox")
+    return snap
+
+
+def load_snapshot(args, root: Path) -> tuple[dict, dict]:
+    """按 --snapshot / --auto-snapshot / --tasks / 默认 .worktrees/tasks.json 装载快照。
+
+    → (snapshot, meta)；meta 含 source_kind / inside_sandbox_prefix / warnings；
+    自动模式额外含 auto_snapshot{dir,candidates,chosen,fallback,warnings}。
     """
     warnings: list[str] = []
     strict = bool(getattr(args, "strict_sandbox", False))
+    auto_info = None
     if args.snapshot:
         snap = snapshot_from_file(args.snapshot, filter_status=args.filter_status or None)
         src = Path(args.snapshot)
@@ -555,22 +631,29 @@ def load_snapshot(args, root: Path) -> tuple[dict, dict]:
                 raise WhitelistError(
                     "strict-sandbox：快照源 %s 不在沙盘仓前缀 %s 内，拒绝读取"
                     % (src, args._sandbox_prefix), code="snapshot_outside_sandbox")
-    else:
-        tasks_path = Path(args.tasks) if args.tasks else resolve_tasks_ledger(root)
-        if tasks_path is None or not Path(tasks_path).is_file():
-            raise SnapshotError(
-                "未找到 .worktrees/tasks.json（可用 --snapshot 或 --tasks 显式指定）",
-                code="tasks_ledger_missing")
-        snap = snapshot_from_tasks_ledger(tasks_path, filter_status=args.filter_status or "doing")
-        snap["inside_sandbox_prefix"] = path_inside(tasks_path, args._sandbox_prefix)
-        if not snap["inside_sandbox_prefix"]:
-            warnings.append(
-                "快照来自 devtask 账本而非沙盘仓（MVP dev 适配）：生产接线后应改用 "
-                "digital-legion-sandbox/plans/ 快照")
+    elif bool(getattr(args, "auto_snapshot", False)):
+        snap, auto_info = scan_auto_snapshots(args)
+        warnings.extend(auto_info["warnings"])
+        if snap is None:
             if strict:
                 raise WhitelistError(
-                    "strict-sandbox：默认 tasks 账本快照不在沙盘仓前缀内，拒绝；"
-                    "请用 --snapshot 指向沙盘仓快照", code="snapshot_outside_sandbox")
+                    "strict-sandbox：无可用沙盘快照，拒绝回落 tasks 账本",
+                    code="snapshot_outside_sandbox")
+            snap = _load_tasks_snapshot(args, root, warnings, strict)
+        else:
+            inside = path_inside(Path(snap["path"]), args._sandbox_prefix)
+            snap["inside_sandbox_prefix"] = inside
+            if not inside:
+                warnings.append(
+                    "auto-snapshot 命中 %s 但不在沙盘仓前缀 %s 内（检查 plans 落点）"
+                    % (snap["path"], args._sandbox_prefix or "未配置"))
+                if strict:
+                    raise WhitelistError(
+                        "strict-sandbox：自动快照 %s 不在沙盘仓前缀 %s 内，拒绝"
+                        % (snap["path"], args._sandbox_prefix),
+                        code="snapshot_outside_sandbox")
+    else:
+        snap = _load_tasks_snapshot(args, root, warnings, strict)
     meta = {
         "source_kind": snap["source_kind"],
         "path": snap["path"],
@@ -581,6 +664,8 @@ def load_snapshot(args, root: Path) -> tuple[dict, dict]:
         "inside_sandbox_prefix": snap["inside_sandbox_prefix"],
         "warnings": warnings,
     }
+    if auto_info is not None:
+        meta["auto_snapshot"] = auto_info
     return snap, meta
 
 
@@ -1025,6 +1110,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("snapshot", help="生成/查看计划快照（不联网）"); _add_json_flag(s)
     s.add_argument("--snapshot", default=None, help="快照 JSON 文件路径")
+    s.add_argument("--auto-snapshot", action="store_true",
+                   help="自动扫描沙盘仓 plans/ 最新可用快照（W5；无可用回落 tasks）")
+    s.add_argument("--snapshot-dir", default=None,
+                   help="auto-snapshot 扫描目录（默认 <sandbox>/plans；env ZHUGE_SANDBOX_PLANS_DIR 优先）")
     s.add_argument("--tasks", default=None, help="devtask 账本路径（覆盖 .worktrees/tasks.json）")
     s.add_argument("--filter-status", default=None,
                    help="状态过滤：snapshot 源默认不过滤；tasks 源默认 doing")
@@ -1033,6 +1122,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     e = sub.add_parser("emit", help="生成质询卡（open）"); _add_json_flag(e)
     e.add_argument("--snapshot", default=None, help="快照 JSON 文件路径")
+    e.add_argument("--auto-snapshot", action="store_true",
+                   help="自动扫描沙盘仓 plans/ 最新可用快照（W5；无可用回落 tasks）")
+    e.add_argument("--snapshot-dir", default=None,
+                   help="auto-snapshot 扫描目录（默认 <sandbox>/plans；env ZHUGE_SANDBOX_PLANS_DIR 优先）")
     e.add_argument("--tasks", default=None, help="devtask 账本路径（覆盖 .worktrees/tasks.json）")
     e.add_argument("--filter-status", default=None,
                    help="状态过滤：snapshot 源默认全部；tasks 源默认 doing")
