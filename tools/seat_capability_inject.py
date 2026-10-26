@@ -21,9 +21,13 @@ import argparse
 import datetime as dt
 import json
 import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.normpath(os.path.join(HERE, ".."))
+sys.path.insert(0, HERE)
+from _repo_paths import repo_root  # noqa: E402
+
+REPO = str(repo_root(HERE))
 
 HOMES = {
     "tianfeng": os.path.expanduser("~/.hermes/profiles/tianfeng"),
@@ -560,7 +564,8 @@ def inject(dry_run: bool) -> int:
     wrote, skipped = 0, 0
     for seat, home in HOMES.items():
         skills_dir = os.path.join(home, "skills")
-        os.makedirs(skills_dir, exist_ok=True)
+        if not dry_run:
+            os.makedirs(skills_dir, exist_ok=True)
         # ① 能力清单
         cap_path = os.path.join(skills_dir, "CAPABILITIES.json")
         payload = {
@@ -599,7 +604,8 @@ def inject(dry_run: bool) -> int:
                 wrote += 1
         # ③ 工作记忆骨架
         mem_dir = os.path.join(home, "memories")
-        os.makedirs(mem_dir, exist_ok=True)
+        if not dry_run:
+            os.makedirs(mem_dir, exist_ok=True)
         wm = os.path.join(mem_dir, "WORKING_MEMORY.md")
         if os.path.isfile(wm):
             skipped += 1
