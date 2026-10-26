@@ -75,17 +75,29 @@ def sha256_file(path) -> str | None:
     return h.hexdigest()
 
 
+def _safe_print(text: str) -> None:
+    """非 UTF-8 控制台（GBK/CP936）也要能输出：优先原样，失败则按 UTF-8 字节兜底。"""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        try:
+            sys.stdout.buffer.write((text + "\n").encode("utf-8", "replace"))
+            sys.stdout.flush()
+        except Exception:  # noqa: BLE001
+            print(text.encode("ascii", "replace").decode("ascii"))
+
+
 def emit(payload: dict, as_json: bool = False, title: str = "") -> int:
     if as_json:
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        _safe_print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         if title:
-            print("== %s ==" % title)
+            _safe_print("== %s ==" % title)
         for k, v in payload.items():
             if isinstance(v, (dict, list)):
-                print("%s: %s" % (k, json.dumps(v, ensure_ascii=False)[:600]))
+                _safe_print("%s: %s" % (k, json.dumps(v, ensure_ascii=False)[:600]))
             else:
-                print("%s: %s" % (k, v))
+                _safe_print("%s: %s" % (k, v))
     code = payload.get("code", EXIT_OK)
     return int(code)
 
