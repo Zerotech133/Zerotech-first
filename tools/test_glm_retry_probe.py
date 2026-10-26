@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """glm_retry_probe 两阶段单测（K-QUANT-20261026-GLMPROBE2）。
 
 验证：默认只发中性 ping（不发送证据）；ping 失败 rc=3 且无证据外发；
@@ -81,7 +81,8 @@ def test_with_evidence_writes_judgment(tmp_path):
     assert len(calls) == 2 and "内部数据示例" in calls[1]
 
 
-def test_with_evidence_no_packet_rc2(tmp_path):
+def test_with_evidence_no_packet_available_rc0(tmp_path):
+    """第二轮修复：GLM 可用但无证据包 = 可判读无输入（rc=0，写 GLM_AVAILABLE）。"""
     M = _load()
     empty = tmp_path / "empty"
     empty.mkdir()
@@ -89,7 +90,8 @@ def test_with_evidence_no_packet_rc2(tmp_path):
     rc = M.probe(out_dir=out, packets_dir=empty,
                  chat_fn=lambda u: {"ok": True, "data": {"text": "OK"}},
                  with_evidence=True)
-    assert rc == 2
+    assert rc == 0
+    assert (out / "GLM_AVAILABLE.txt").is_file()
 
 
 def test_ready_skips(tmp_path):
@@ -129,3 +131,4 @@ def test_approved_marker_enables_auto_evidence(tmp_path):
     assert rc == 0
     assert (out / "JUDGMENT_READY.txt").is_file()
     assert len(calls) == 2 and "内部数据示例" in calls[1]
+

@@ -36,15 +36,20 @@ def fetch(url: str, timeout: int = 30) -> dict:
 
 
 def build(fetched: dict, url: str) -> dict:
-    payload = fetched.get("payload") or {}
+    raw_payload = fetched.get("payload")
+    payload = raw_payload if isinstance(raw_payload, dict) else {}
+    ok = bool(fetched.get("ok")) and isinstance(raw_payload, dict)
+    error = fetched.get("error")
+    if fetched.get("ok") and not isinstance(raw_payload, dict):
+        error = "upstream_payload_not_dict"
     return {
         "schema": "zhuge_brief_snapshot/v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "seat": "zhuge",
         "source": url,
-        "ok": bool(fetched.get("ok")),
+        "ok": ok,
         "http": fetched.get("http"),
-        "error": fetched.get("error"),
+        "error": error,
         "business_day": payload.get("business_day"),
         "upstream_generated_at": payload.get("generated_at"),
         "engine": payload.get("engine"),

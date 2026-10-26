@@ -74,8 +74,10 @@ def probe(out_dir: Path | None = None, packets_dir: Path | None = None,
     except Exception as exc:  # noqa: BLE001
         ping = {"ok": False, "error": {"message": "%s: %s" % (type(exc).__name__, exc)}}
     dt = round(time.time() - t0, 1)
-    ping_ok = bool((ping or {}).get("ok"))
-    err = ((ping or {}).get("error") or {}).get("message") or None
+    if not isinstance(ping, dict):
+        ping = {"ok": False, "error": {"message": "non_dict_ping_result"}}
+    ping_ok = bool(ping.get("ok"))
+    err = ((ping.get("error") or {}) if isinstance(ping.get("error"), dict) else {}).get("message") or None
     if not ping_ok:
         _log(out, {"at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "mode": "ping",
                    "ok": False, "elapsed_s": dt, "error": err})
@@ -95,9 +97,12 @@ def probe(out_dir: Path | None = None, packets_dir: Path | None = None,
 
     packet = latest_packet(Path(packets_dir) if packets_dir else None)
     if not packet:
-        print(json.dumps({"ok": False, "mode": "evidence", "error": "no_evidence_packet"},
+        # GLM 已恢复但没有证据包：这是“可判读但无输入”，不是探测失败（rc=0）。
+        print(json.dumps({"ok": True, "mode": "ping", "available": True,
+                          "note": "available_no_evidence_packet",
+                          "detail": "GLM 可用但 work/seat_brief 无证据包，待下轮取数后再判读"},
                          ensure_ascii=False))
-        return 2
+        return 0
     user = packet.read_text(encoding="utf-8", errors="replace")[:12000]
     t1 = time.time()
     try:
@@ -105,9 +110,12 @@ def probe(out_dir: Path | None = None, packets_dir: Path | None = None,
     except Exception as exc:  # noqa: BLE001
         env = {"ok": False, "error": {"message": "%s: %s" % (type(exc).__name__, exc)}}
     dt1 = round(time.time() - t1, 1)
-    ok = bool((env or {}).get("ok"))
-    text = str(((env or {}).get("data") or {}).get("text") or "")
-    err1 = ((env or {}).get("error") or {}).get("message") or None
+    if not isinstance(env, dict):
+        env = {"ok": False, "error": {"message": "non_dict_llm_result"}}
+    ok = bool(env.get("ok"))
+    data = env.get("data") if isinstance(env.get("data"), dict) else {}
+    text = str(data.get("text") or "")
+    err1 = ((env.get("error") or {}) if isinstance(env.get("error"), dict) else {}).get("message") or None
     if not ok:
         _log(out, {"at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "mode": "evidence",
                    "ok": False, "elapsed_s": dt1, "error": err1,

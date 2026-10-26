@@ -67,6 +67,9 @@ def _load_tasks(p: Path) -> dict:
         data = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {"exists": True, "error": "invalid_json", "counts": {}, "doing_review": []}
+    if not isinstance(data, dict):
+        return {"exists": True, "error": "tasks_not_dict", "counts": {},
+                "doing_review": [], "total": 0}
     counts = {s: 0 for s in STATUSES}
     rows = []
     for tid, meta in data.items():
