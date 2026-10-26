@@ -21,11 +21,12 @@ from _repo_paths import repo_root  # noqa: E402
 
 REPO = repo_root(HERE)
 HOME = Path.home() / ".hermes" / "profiles" / "tianfeng"
-# 允许 worktree 开发时输出到本 worktree（合并后默认仍写主仓 static/）
+# 注意：线上页面已改为动态 API（/api/tianfeng）。本脚本只生成静态参考快照，
+# 默认写 work/，不要覆盖 static/tianfeng.html（除非显式 TIANFENG_ATTR_OUT 指定）。
 import os  # noqa: E402
 
 OUT = Path(os.environ.get("TIANFENG_ATTR_OUT",
-                          str(REPO / "agent_platform" / "legion_command" / "static" / "tianfeng.html")))
+                          str(REPO / "work" / "tianfeng_attr_static.html")))
 
 
 def esc(x) -> str:

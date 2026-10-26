@@ -155,6 +155,10 @@ class Handler(BaseHTTPRequestHandler):
             # 干净直达路由（顶栏 iframe 走 /static/zhaoyun.html，二者同一文件）
             self._send_file(_STATIC / "zhaoyun.html", "text/html; charset=utf-8")
             return
+        if path in ("/tianfeng", "/tianfeng.html"):
+            # 田丰属性页（产品/研发席）直达路由
+            self._send_file(_STATIC / "tianfeng.html", "text/html; charset=utf-8")
+            return
         m = re.match(r"^/static/([a-z_]+\.html)$", path)
         if m and re.fullmatch(r"[a-z_]+", m.group(1).rsplit(".", 1)[0]):
             self._send_file(_STATIC / m.group(1), "text/html; charset=utf-8")
@@ -212,6 +216,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(build_view(_PLATFORM))
             except Exception as e:                       # noqa: BLE001
                 self._send_json({"ok": False, "error": "zhaoyun_view_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/tianfeng":
+            # 田丰 · 产品/研发席只读视图（角色/授权/能力/运行态/链接）
+            try:
+                from legion_command.tianfeng_view import build_view
+                self._send_json(build_view(_PLATFORM))
+            except Exception as e:                       # noqa: BLE001
+                self._send_json({"ok": False, "error": "tianfeng_view_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path == "/api/health":
