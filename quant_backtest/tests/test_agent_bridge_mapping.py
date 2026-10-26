@@ -14,7 +14,12 @@ from quant_backtest.agent_bridge import (
 from quant_backtest.quant_sector.upstream_inbox import UpstreamInbox, UpstreamInboxError
 from quant_backtest.watch_dispatch import freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity, AgentReport
-from quant_backtest.watch_dispatch.route_outbox import ACCEPTED_VERIFIED, RouteOutbox
+from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
+from quant_backtest.watch_dispatch.route_outbox import (
+    ACCEPTED_VERIFIED,
+    ReportFingerprint,
+    RouteOutbox,
+)
 from quant_backtest.watch_dispatch.signal_pool import (
     AcceptanceReceipt,
     SignalPool,
@@ -64,17 +69,31 @@ def settled_chain():
     inbox = UpstreamInbox()
     upstream_receipt = inbox.accept(mapped, now=T + timedelta(seconds=1))
     ack = to_agent_ack(upstream_receipt.ack)
-    outbox = RouteOutbox()
+    # P1 安全口径（848c95b0 / 955b4955）：active ACK 必须由构造注入的
+    # UpstreamAckAuthority 对"原报告指纹 + inbox 当前活跃回执"做真实校验；
+    # 裸 RouteOutbox 不再允许直接 settle 为 ACCEPTED_VERIFIED。
+    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(inbox))
+    fingerprint = ReportFingerprint(
+        report_id=report.report_id,
+        report_kind=report.report_kind,
+        event_id=report.event_id,
+        evidence_version=report.evidence_version,
+        envelope_hash=report.envelope_hash,
+        sender_agent_id=report.sender.agent_id,
+        receiver_agent_id=report.receiver.agent_id,
+        created_at=report.created_at,
+    )
     outbox.plan(env, route=ROUTE, target_type="AGENT", target_id=report.receiver.agent_id,
                 policy_version="agent-report-v1", control_epoch=0,
-                intent_id="report-report1", created_at=T, valid_until=END)
+                intent_id="report-report1", created_at=T, valid_until=END,
+                report_fingerprint=fingerprint)
     attempt = outbox.claim(env, route=ROUTE, target_type="AGENT",
                            target_id=report.receiver.agent_id, claim_token="token",
                            claim_at=T + timedelta(seconds=2), lease_until=END)
     settled = outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
                             external_message_id=ack.ack_id,
                             verification_source=ack.verification_source,
-                            observed_at=T + timedelta(seconds=3),
+                            observed_at=ack.acked_at,
                             now=T + timedelta(seconds=4))
     assert settled.receipt is not None
     store = EvidenceStore()
