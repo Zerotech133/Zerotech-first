@@ -1,3 +1,4 @@
 {
-  "anomaly.input.json": ["AlertWatch", "3221225786", "267014"]
+  "anomaly.input.json": ["AlertWatch", "3221225786", "267014"],
+  "upstream.input.json": ["AlertWatch"]
 }
