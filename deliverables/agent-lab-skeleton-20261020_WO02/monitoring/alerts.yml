@@ -1,0 +1,47 @@
+# 个人 OS 数字军团 · 告警规则骨架
+# ★ 所有阈值均为占位默认值，不是按业务基线标定的；
+#   投产使用前须由责任人按真实历史数据重新标定（责任人见注释）。
+groups:
+  - name: os-legion-core
+    rules:
+      - alert: TaskBacklogHigh
+        expr: task_backlog_total > 50 for 10m
+        labels: { severity: warning }
+        annotations:
+          summary: 中台待办任务积压
+          owner: zhuge_liang        # 责任人：中台统筹席
+
+      - alert: ReportDeliveryLag
+        expr: report_delivery_lag_hours > 24
+        labels: { severity: warning }
+        annotations:
+          summary: 平台日报/全局简报迟交
+          owner: tian_feng          # 责任人：中台文枢席
+
+      - alert: ApprovalPendingAging
+        expr: approval_pending_age_hours > 48
+        labels: { severity: critical }
+        annotations:
+          summary: 待签事项超 48 小时未闭环（仅提醒本人，不自动放行）
+          owner: principal_laotian  # 责任人：老田本人
+
+      - alert: RiskAlertRateHigh
+        expr: rate(risk_alert_total[1h]) > 5
+        labels: { severity: critical }
+        annotations:
+          summary: 风控预警频次异常（观察席只预警，处置须人工）
+          owner: risk_guard         # 责任人：风控观察席（阈值标定人为老田）
+
+      - alert: AgentHeartbeatMissing
+        expr: time() - agent_heartbeat_unixtime > 300
+        labels: { severity: warning }
+        annotations:
+          summary: 席位心跳缺失超 5 分钟
+          owner: zhao_yun           # 责任人：中台执行席（督办恢复）
+
+      - alert: BusDeadLetterPending
+        expr: bus_message_dlq_total > 0 for 15m
+        labels: { severity: warning }
+        annotations:
+          summary: 汇报总线死信积压（越级/署名校验失败的消息在此）
+          owner: zhao_yun           # 责任人：中台执行席

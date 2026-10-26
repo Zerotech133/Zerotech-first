@@ -1,0 +1,357 @@
+# 个人 OS 数字军团 · K8s 部署清单骨架（可选，默认部署目标为 docker-compose）
+# 占位说明：namespace、镜像、副本数与资源限额须按实际集群调整；
+# 密钥经 Secret 引用（占位名），禁止明文。
+# 端口约定（部署侧口径，与 deploy/docker-compose.yaml、monitoring/prometheus.yml 一致）：
+#   通用席位 9400+10×角色序号（message_bus=9400 … os_commander=9470）；
+#   平台席六实例：quant=9440（基准），其余五平台自 9480 起步长 10
+#   （stock=9480 rd=9490 ppt=9500 biz=9510 review=9520）。
+# 骨架状态披露（工位U 扩编后）：本清单已覆盖全部 8 席位（platform_agent
+# 按 6 平台实例展开，共 13 Deployment，与 compose 服务一一对齐）；
+# 镜像均为占位（os-legion/*:PLACEHOLDER_TAG），须替换后才能部署（骨架状态，不承诺部署）。
+# 平台实例化说明：platform_agent 经 entrypoint 既有 --platform 参数区分平台，
+# 入口已原生支持，未改动 entrypoint。
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-bus
+  namespace: os-legion
+  labels: { app: os-legion, component: message-bus }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: message-bus }
+  template:
+    metadata:
+      labels: { app: os-legion, component: message-bus }
+    spec:
+      containers:
+        - name: message-bus
+          image: os-legion/bus:PLACEHOLDER_TAG
+          ports: [{ containerPort: 9400 }]
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          livenessProbe:
+            httpGet: { path: /health, port: 9400 }
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          env:
+            - name: BUS_PORT
+              value: "9400"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-zhuge-liang
+  namespace: os-legion
+  labels: { app: os-legion, component: zhuge-liang }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: zhuge-liang }
+  template:
+    metadata:
+      labels: { app: os-legion, component: zhuge-liang }
+    spec:
+      containers:
+        - name: zhuge-liang
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "zhuge_liang", "--serve", "--port", "9410"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-tian-feng
+  namespace: os-legion
+  labels: { app: os-legion, component: tian-feng }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: tian-feng }
+  template:
+    metadata:
+      labels: { app: os-legion, component: tian-feng }
+    spec:
+      containers:
+        - name: tian-feng
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "tian_feng", "--serve", "--port", "9420"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-zhao-yun
+  namespace: os-legion
+  labels: { app: os-legion, component: zhao-yun }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: zhao-yun }
+  template:
+    metadata:
+      labels: { app: os-legion, component: zhao-yun }
+    spec:
+      containers:
+        - name: zhao-yun
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "zhao_yun", "--serve", "--port", "9430"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-platform-quant
+  namespace: os-legion
+  labels: { app: os-legion, component: platform-quant }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: platform-quant }
+  template:
+    metadata:
+      labels: { app: os-legion, component: platform-quant }
+    spec:
+      containers:
+        - name: platform-quant
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "quant_trading", "--serve", "--port", "9440"]
+          resources:
+            requests: { cpu: 250m, memory: 256Mi }
+            limits: { cpu: "1", memory: 1Gi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-platform-stock
+  namespace: os-legion
+  labels: { app: os-legion, component: platform-stock }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: platform-stock }
+  template:
+    metadata:
+      labels: { app: os-legion, component: platform-stock }
+    spec:
+      containers:
+        - name: platform-stock
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "stock_picking", "--serve", "--port", "9480"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-platform-rd
+  namespace: os-legion
+  labels: { app: os-legion, component: platform-rd }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: platform-rd }
+  template:
+    metadata:
+      labels: { app: os-legion, component: platform-rd }
+    spec:
+      containers:
+        - name: platform-rd
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "r_and_d", "--serve", "--port", "9490"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-platform-ppt
+  namespace: os-legion
+  labels: { app: os-legion, component: platform-ppt }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: platform-ppt }
+  template:
+    metadata:
+      labels: { app: os-legion, component: platform-ppt }
+    spec:
+      containers:
+        - name: platform-ppt
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "ppt_studio", "--serve", "--port", "9500"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-platform-biz
+  namespace: os-legion
+  labels: { app: os-legion, component: platform-biz }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: platform-biz }
+  template:
+    metadata:
+      labels: { app: os-legion, component: platform-biz }
+    spec:
+      containers:
+        - name: platform-biz
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "biz_negotiation", "--serve", "--port", "9510"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-platform-review
+  namespace: os-legion
+  labels: { app: os-legion, component: platform-review }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: platform-review }
+  template:
+    metadata:
+      labels: { app: os-legion, component: platform-review }
+    spec:
+      containers:
+        - name: platform-review
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "review_audit", "--serve", "--port", "9520"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-risk-guard
+  namespace: os-legion
+  labels: { app: os-legion, component: risk-guard }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: risk-guard }
+  template:
+    metadata:
+      labels: { app: os-legion, component: risk-guard }
+    spec:
+      containers:
+        - name: risk-guard
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "risk_guard", "--serve", "--port", "9450"]
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 128Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-approval-gate
+  namespace: os-legion
+  labels: { app: os-legion, component: approval-gate }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: approval-gate }
+  template:
+    metadata:
+      labels: { app: os-legion, component: approval-gate }
+    spec:
+      containers:
+        - name: approval-gate
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "approval_gate", "--serve", "--port", "9460"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+            - name: PRINCIPAL_PROOF_KEY
+              valueFrom:
+                secretKeyRef: { name: os-legion-approval, key: proof-key }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-legion-os-commander
+  namespace: os-legion
+  labels: { app: os-legion, component: os-commander }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: os-legion, component: os-commander }
+  template:
+    metadata:
+      labels: { app: os-legion, component: os-commander }
+    spec:
+      containers:
+        - name: os-commander
+          image: os-legion/seat:PLACEHOLDER_TAG
+          args: ["python", "entrypoint.py", "--role", "os_commander", "--serve", "--port", "9470"]
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          env:
+            - name: BUS_URL
+              value: http://os-legion-bus:9400
+---
+# 必要 Service：总线为全席位上行汇聚点，集群内经此访问（其余席位
+# 仅被 prometheus 抓取/内部上报，暂不单列 Service，须要时按同模式追加）。
+apiVersion: v1
+kind: Service
+metadata:
+  name: os-legion-bus
+  namespace: os-legion
+spec:
+  selector: { app: os-legion, component: message-bus }
+  ports:
+    - port: 9400
+      targetPort: 9400
