@@ -18,7 +18,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -62,6 +64,13 @@ class ExperimentCard:
     status: str = "draft"
     verdict: dict = field(default_factory=dict)
     experience_candidate: dict = field(default_factory=dict)
+    # WO-LEGION-CLOCK-20261026：卡片元数据（进化视图按 created_at 排序用）。
+    # kind 区分 "experiment"（对照实验）与 "observation"（日终观察卡）；
+    # decision_required=True 表示"待签字"，须上屏而不是只留在 stdout。
+    created_at: str = ""
+    kind: str = "experiment"
+    decision_required: bool = False
+    window_summary: dict = field(default_factory=dict)
 
 
 def _check_diff_safe(diff: dict, label: str) -> None:
@@ -81,7 +90,9 @@ def create_card(hypothesis: str,
                 adversary_diff: dict | None = None,
                 verifier: list | None = None,
                 budget: int = 1,
-                card_id: str | None = None) -> ExperimentCard:
+                card_id: str | None = None,
+                kind: str = "experiment",
+                created_at: str | None = None) -> ExperimentCard:
     if not (hypothesis or "").strip():
         raise CardError("hypothesis required")
     if candidate_diff is None:
@@ -106,6 +117,8 @@ def create_card(hypothesis: str,
         arms=arms,
         verifier=list(verifier),
         budget=budget,
+        kind=kind,
+        created_at=created_at or time.strftime("%Y-%m-%dT%H:%M:%S%z"),
     )
 
 
@@ -218,7 +231,15 @@ def save(card: ExperimentCard, root: Path | None = None) -> Path:
     d = Path(root) if root else (_PLATFORM / "data" / "experiments")
     d.mkdir(parents=True, exist_ok=True)
     p = d / ("%s.json" % card.card_id)
-    p.write_text(json.dumps(asdict(card), ensure_ascii=False, indent=1), encoding="utf-8")
+    # WO-LEGION-CLOCK-20261026：原子写 + fsync（旧实现 write_text 半写会留坏卡，
+    # 且 _evolution 遇坏 JSON 静默 continue → 卡"消失"不报警）。
+    data = json.dumps(asdict(card), ensure_ascii=False, indent=1)
+    tmp = p.with_name(p.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(data)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, p)
     return p
 
 
