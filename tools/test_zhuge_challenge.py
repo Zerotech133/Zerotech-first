@@ -503,3 +503,47 @@ def test_auto_snapshot_cli_smoke(capsys, env):
     assert data["ok"] is True
     assert data["meta"]["auto_snapshot"]["chosen"].endswith("2026-10-27_plan.json")
     assert data["snapshot"]["source_kind"] == "snapshot_file"
+
+
+# ---------------------------------------------------------------------------
+# 9. P2 真模型质询（--model-mode real3；默认 off；测试用桩，不联网）
+# ---------------------------------------------------------------------------
+def test_emit_model_mode_off_default(capsys, env):
+    rc, data = run(capsys, base_args(env, "emit", "--snapshot", str(env.snapshot),
+                                     "--date", "2026-10-27", "--dry-run"))
+    assert rc == 0
+    assert data["card"]["model"] == {"mode": "off"}
+
+
+def test_emit_model_mode_real3_uses_model(capsys, env, monkeypatch):
+    import zhuge_challenge_model as zcm
+
+    def fake_gen(items, max_questions=3, **kw):
+        return (["模型问一：完成判据？", "模型问二：失败信号？"],
+                {"mode": "real3", "used": True, "requested": 2, "returned": 2})
+
+    monkeypatch.setattr(zcm, "generate_questions", fake_gen)
+    rc, data = run(capsys, base_args(env, "emit", "--snapshot", str(env.snapshot),
+                                     "--model-mode", "real3",
+                                     "--date", "2026-10-27", "--dry-run"))
+    assert rc == 0
+    card = data["card"]
+    assert card["model"]["used"] is True
+    dims = [q["dimension"] for q in card["ref_questions"]]
+    assert dims.count("model") == 2
+    assert card["ref_questions"][0]["question"] == "模型问一：完成判据？"
+
+
+def test_emit_model_mode_real3_failure_falls_back_rules(capsys, env, monkeypatch):
+    import zhuge_challenge_model as zcm
+    monkeypatch.setattr(zcm, "generate_questions",
+                        lambda items, max_questions=3, **kw: (None, {"mode": "real3",
+                                                                   "error": "timeout"}))
+    rc, data = run(capsys, base_args(env, "emit", "--snapshot", str(env.snapshot),
+                                     "--model-mode", "real3",
+                                     "--date", "2026-10-27", "--dry-run"))
+    assert rc == 0
+    card = data["card"]
+    assert card["model"]["used"] is False
+    assert any("降级规则模板" in w for w in card["warnings"])
+    assert not any(q["dimension"] == "model" for q in card["ref_questions"])
