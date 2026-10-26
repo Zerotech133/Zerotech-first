@@ -567,15 +567,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/evals/run":
-            # 评估飞轮：跑 smoke 子集并返回报告（只读检查，不改变业务状态）
+            # 评估飞轮：进程内跑 smoke 子集（避免 venv/子进程 stdio 环境差异）
             try:
-                import subprocess as _sp
-                r = _sp.run([sys.executable,
-                             str(_PLATFORM / "evals" / "run_evals.py"),
-                             "--smoke", "--json"], capture_output=True, text=True,
-                            encoding="utf-8", timeout=180)
-                res = (json.loads(r.stdout) if r.stdout.strip()
-                       else {"ok": False, "error": "no_output"})
+                sys.path.insert(0, str(_PLATFORM))
+                from evals import run_evals as ev  # noqa: WPS433
+                res = ev.build_report(smoke=True)
             except Exception as e:                       # noqa: BLE001
                 res = {"ok": False, "error": "evals_run_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}

@@ -101,15 +101,10 @@ def run(check_name: str, item: dict) -> dict:
             "elapsed_ms": int((time.time() - t0) * 1000)}
 
 
-def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="赵云评估飞轮")
-    ap.add_argument("--smoke", action="store_true")
-    ap.add_argument("--json", action="store_true")
-    ap.add_argument("--quiet", action="store_true")
-    args = ap.parse_args(argv)
+def build_report(smoke: bool = False) -> dict:
     data = _load()
     items = [b for b in data.get("behaviors") or [] if isinstance(b, dict)]
-    if args.smoke:
+    if smoke:
         items = [b for b in items if b.get("smoke")]
     results = [run(b["id"], b) for b in items]
     passed = sum(1 for r in results if r["ok"])
@@ -120,7 +115,7 @@ def main(argv=None) -> int:
     rep = {
         "schema": "zhaoyun_evals_report/v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "smoke": bool(args.smoke),
+        "smoke": bool(smoke),
         "session": {"passed": passed, "total": total,
                     "rate": round(passed / total, 3) if total else 0.0},
         "trace": {"behaviors_with_assertions": total,
@@ -141,14 +136,26 @@ def main(argv=None) -> int:
     (REPORTS / "latest.json").write_text(
         json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     day = time.strftime("%Y%m%d")
-    (REPORTS / ("%s_%s.json" % (day, "smoke" if args.smoke else "full"))).write_text(
+    (REPORTS / ("%s_%s.json" % (day, "smoke" if smoke else "full"))).write_text(
         json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+    return rep
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description="赵云评估飞轮")
+    ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--quiet", action="store_true")
+    args = ap.parse_args(argv)
+    rep = build_report(args.smoke)
+    passed = rep["session"]["passed"]
+    total = rep["session"]["total"]
     if args.json:
         print(json.dumps(rep, ensure_ascii=False))
     elif not args.quiet:
         print("评估 | passed %d/%d (%.1f%%) | high_failed=%s | 最慢 %dms"
               % (passed, total, (passed / total * 100) if total else 0,
-                 high_failed, rep["span"]["slowest_ms"]))
+                 rep["high_failed"], rep["span"]["slowest_ms"]))
         for r in rep["failures"]:
             print(" [FAIL]", r["id"], r["detail"])
     return 0 if rep["ok"] else 1
