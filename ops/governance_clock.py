@@ -7,8 +7,9 @@
 15s tick + `day|HH:MM` fired 去重 + `last_tick` 心跳，**独立 daemon 进程**运行，
 不寄生 8796 控制台；保活走 PowerWatch 式 5 分钟幂等拉起（另由启动脚本负责）。
 
-锚点（默认，可配）：08:46 扫描（task_exit_audit --scan --window 24）；18:05 收口
-（closeout_round --if-changed）。17:55 被 `LegionW42MorningBrief` 占用，故错峰 18:05。
+锚点（默认，可配）：08:46 扫描（task_exit_audit --scan --window 24）；**17:50 预扫描**
+（收口前刷新摘要，避免 18:05 拿 >6h 旧摘要触发 as-of 告警）；18:05 收口
+（closeout_round --if-changed）。17:55 被 `LegionW42MorningBrief` 占用，故收口错峰 18:05。
 
 纪律：
   · 单实例锁（O_EXCL + 陈旧锁回收），并发启动第二个立即退出（rc=3）；
@@ -32,7 +33,7 @@ _REPO = Path(__file__).resolve().parents[1]
 _PLATFORM = _REPO / "agent_platform"
 _TOOLS = _PLATFORM / "tools"
 
-DEFAULT_ANCHORS = "08:46:scan,18:05:closeout"
+DEFAULT_ANCHORS = "08:46:scan,17:50:scan,18:05:closeout"
 DEFAULT_TICK_S = 15.0
 DEFAULT_MAX_DELAY_MIN = 120.0
 LOCK_STALE_S = 6 * 3600.0
