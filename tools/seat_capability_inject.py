@@ -78,6 +78,7 @@ CAPABILITIES = {
         {"name": "browser-verification", "what": "真浏览器验收：goto/click/fill/断言/截图，证据落盘", "how": "python -X utf8 tools/browser_verify.py run --url ... --steps ...", "boundary": "只读页面操作；不改生产数据；失败即失败", "status": "ready"},
         {"name": "memory-rag", "what": "本地记忆检索：文档/判例/席位简报的 hash-vector 召回（无外部 Key）", "how": "python -X utf8 tools/memory_rag.py index/search/stats；索引 work/memory_rag", "boundary": "本地索引；不把敏感原文外发；检索结果需核对", "status": "ready"},
         {"name": "durable-workflow", "what": "持久工作流：步骤状态机/超时/重试/断点续跑，长任务不丢", "how": "python -X utf8 tools/durable_workflow.py start/run/status/list；状态 work/workflows", "boundary": "不绕过 L2；失败/超时如实记录", "status": "ready"},
+        {"name": "model-routing", "what": "模型路由：Key 池→LiteLLM Router（多 Key/多 provider/fallback/成本）", "how": "python -X utf8 tools/litellm_route.py list/route/costs；成本 work/litellm/cost.jsonl", "boundary": "Key 只在内存/请求用；不落明文；不自动充值", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -551,6 +552,19 @@ description: 持久步骤状态机：start/run/status，超时/重试/断点续�
 3. 执行/续跑：`... run <id>`；已 done 的步骤跳过，failed 按 retries 重试。
 4. 查看：`status <id>` / `list`；状态落 `work/workflows/<id>.json`。
 5. 进程中断后重跑 run 即续跑；不绕过 L2。
+""",
+        "model-routing": """---
+name: model-routing
+description: LiteLLM 路由：Key 池生成多部署 Router，多 Key/多 provider/fallback/成本统计。
+---
+
+# 模型路由
+
+1. 查看部署：`python -X utf8 tools/litellm_route.py list`（Key 只显示掩码）。
+2. 路由：`... route "问题"`；失败自动 fallback 本地 9B。
+3. 成本：`... costs`；明细 `work/litellm/cost.jsonl`。
+4. Key 只在内存/请求用，不落明文；不自动充值。
+5. 需 `LITELLM_LOCAL_MODEL_COST_MAP=True` 避免联网拉价目表。
 """,
     },
     "zhaoyun": {

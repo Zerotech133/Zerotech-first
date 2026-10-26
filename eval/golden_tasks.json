@@ -212,6 +212,19 @@
    ],
    "expect_rc": 0,
    "timeout": 120
+  },
+  {
+   "id": "pytest-litellm",
+   "desc": "LiteLLM 路由单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_litellm_route.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 180
   }
  ]
 }
