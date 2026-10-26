@@ -306,14 +306,24 @@ def _port_open(port: int, host: str = "127.0.0.1", timeout: float = 2.0) -> bool
         return False
 
 
+def _port_open_retry(port: int, attempts: int = 3, gap: float = 0.4) -> bool:
+    """端口探活抗瞬时抖动（2026-10-26 PORTRETRY）：服务重启/排队时单次 2s 连接会假阴性。"""
+    for i in range(max(1, attempts)):
+        if _port_open(port):
+            return True
+        if i + 1 < attempts:
+            time.sleep(gap)
+    return False
+
+
 def check_port(ev: dict) -> tuple[str, str]:
     """port 证据：声明的端口全部监听才算交付（2026-10-26 AGENTHEALTH 接线）。"""
     ports = [int(p) for p in (ev.get("ports") or []) if str(p).strip()]
     if not ports:
         return MISSED, "evidence.ports 为空"
-    closed = [p for p in ports if not _port_open(p)]
+    closed = [p for p in ports if not _port_open_retry(p)]
     if closed:
-        return MISSED, "端口未监听：%s" % ", ".join(str(p) for p in closed)
+        return MISSED, "端口未监听（已重试 3 次）：%s" % ", ".join(str(p) for p in closed)
     return DONE, "端口均监听：%s" % ", ".join(str(p) for p in ports)
 
 
