@@ -63,7 +63,9 @@ def _emit_and_sign(tmp_path: Path, *, sign=True, pub_hex=None, items=None,
                    monkeypatch=None, experience_root=None):
     draft = _draft(tmp_path, items=items)
     out = tmp_path / "req"
-    payloads = B.emit(draft, out, experience_root=experience_root)
+    # 夹具必须隔离：不传 root 时用 tmp 空根，绝不可落到真实 Z4（001 起 id 会漂移）
+    emit_root = experience_root if experience_root is not None else tmp_path / "emit_base"
+    payloads = B.emit(draft, out, experience_root=emit_root)
     priv, pub = _keypair()
     if monkeypatch is not None:
         monkeypatch.setenv(SG.ENV_PUBKEY_HEX, pub_hex or pub)
@@ -81,7 +83,7 @@ def _emit_and_sign(tmp_path: Path, *, sign=True, pub_hex=None, items=None,
 def test_emit_builds_payloads_with_canonical(tmp_path):
     draft = _draft(tmp_path)
     out = tmp_path / "req"
-    payloads = B.emit(draft, out)
+    payloads = B.emit(draft, out, experience_root=tmp_path / "emit_base")
     assert [p["item_id"] for p in payloads] == ["EXP-SUPERVISION-001",
                                                 "EXP-SUPERVISION-002"]
     p0 = payloads[0]
@@ -176,7 +178,7 @@ def test_apply_unknown_domain_rejected(tmp_path, monkeypatch):
     items = [dict(_DRAFT_ITEMS[0])]
     draft = _draft(tmp_path, items=items)
     out = tmp_path / "req"
-    payloads = B.emit(draft, out)
+    payloads = B.emit(draft, out, experience_root=tmp_path / "emit_base")
     priv, pub = _keypair()
     monkeypatch.setenv(SG.ENV_PUBKEY_HEX, pub)
     monkeypatch.setenv(SG.ENV_STRICT, "1")
@@ -197,7 +199,7 @@ def test_emit_offset_reserves_ids_for_presigned_cards(tmp_path):
     """7 卡预分配 001-007 时，case 批次 offset=7 应从 008 起（防 id 撞车）。"""
     draft = _draft(tmp_path)
     out = tmp_path / "req"
-    payloads = B.emit(draft, out, offset=7)
+    payloads = B.emit(draft, out, offset=7, experience_root=tmp_path / "emit_base")
     assert [p["item_id"] for p in payloads] == ["EXP-SUPERVISION-008",
                                                 "EXP-SUPERVISION-009"]
     # offset 不影响内容指纹，仅影响 item_id/canonical
@@ -236,7 +238,7 @@ def test_apply_sign_approval_default_filename(tmp_path, monkeypatch):
     """sign_approval 默认输出 <payload>.signature.json，bridge apply 必须兼容。"""
     draft = _draft(tmp_path)
     out = tmp_path / "req"
-    payloads = B.emit(draft, out)
+    payloads = B.emit(draft, out, experience_root=tmp_path / "emit_base")
     priv, pub = _keypair()
     monkeypatch.setenv(SG.ENV_PUBKEY_HEX, pub)
     monkeypatch.setenv(SG.ENV_STRICT, "1")
