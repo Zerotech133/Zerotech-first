@@ -132,3 +132,30 @@ def test_loaded_state_roundtrip(tmp_path):
     # 坏 JSON 不抛，按空态处理
     p.write_text("{broken", encoding="utf-8")
     assert GC.load_state(p) == {}
+
+
+# ---------------- WO-LEGION-CLOCKANCHOR-20261026：17:50 预扫描 ----------------
+
+def test_default_anchors_include_prescan():
+    """默认锚点：08:46 扫描、17:50 预扫描、18:05 收口（收口前摘要 ≤15min）。"""
+    anchors = GC.parse_anchors(GC.DEFAULT_ANCHORS)
+    assert anchors == [("08:46", "scan"), ("17:50", "scan"),
+                       ("18:05", "closeout")]
+    assert [a for a, act in anchors if act == "scan"] == ["08:46", "17:50"]
+
+
+def test_prescan_fires_before_closeout(tmp_path):
+    """17:50 预扫描先触发；18:06 收口再触发（各自只一次）。"""
+    runner = _Runner()
+    state = {}
+    anchors = GC.parse_anchors(GC.DEFAULT_ANCHORS)
+    GC.run_tick(state, now_fn=lambda: _ts_at(17, 51), runner=runner,
+                anchors=anchors, state_path=tmp_path / "s.json",
+                log_path=tmp_path / "c.log")
+    assert [c[-2] for c in runner.calls][-1:] == ["--window"]  # 最后一次是 scan
+    fired2 = GC.run_tick(state, now_fn=lambda: _ts_at(18, 6), runner=runner,
+                         anchors=anchors, state_path=tmp_path / "s.json",
+                         log_path=tmp_path / "c.log")
+    actions = [r["action"] for r in fired2]
+    assert actions == ["closeout"]
+    assert len(runner.calls) == 2
