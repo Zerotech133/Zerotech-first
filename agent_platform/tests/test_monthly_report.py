@@ -106,8 +106,9 @@ def _make_git_repo(root: Path) -> None:
     (root / "docs" / "legion" / "判例件.md").write_text("判例正文", encoding="utf-8")
 
     def g(*args):
-        subprocess.run(["git", "-C", str(root), *args], check=True,
-                       capture_output=True,
+        # 不用 `git -C`（CentOS7 git 1.8.3.1 不支持），用 cwd= 保持跨平台/跨 git 版本可跑。
+        subprocess.run(["git", *args], check=True,
+                       capture_output=True, cwd=str(root),
                        env={"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
                             "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t",
                             "GIT_AUTHOR_DATE": "2026-10-10T12:00:00 +0800",

@@ -97,9 +97,10 @@ def iter_files_under(root: str):
 
 def git_repo_root(cwd: str):
     try:
+        # 不用 `git -C`：CentOS7 自带 git 1.8.3.1 不支持该选项（服务器 verify/运行时踩过）。
         proc = subprocess.run(
-            ["git", "-C", cwd, "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True,
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, cwd=cwd,
         )
     except OSError:
         return None
@@ -116,10 +117,11 @@ def git_status_files(repo_root: str):
     走退出码 2——不放宽为「空清单」静默通过。
     """
     try:
+        # 同上：cwd= 替代 `git -C`，兼容 CentOS7 git 1.8.3.1。
         proc = subprocess.run(
-            ["git", "-C", repo_root, "status", "--porcelain", "-z",
+            ["git", "status", "--porcelain", "-z",
              "--untracked-files=all"],
-            capture_output=True, timeout=GIT_STATUS_TIMEOUT_S,
+            capture_output=True, timeout=GIT_STATUS_TIMEOUT_S, cwd=repo_root,
         )
     except subprocess.TimeoutExpired:
         # git 挂起（锁文件/网络盘）时不再无限等：与 returncode!=0 同路径失败
