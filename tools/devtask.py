@@ -25,6 +25,7 @@ import os
 import re
 import shutil
 import subprocess
+from pathlib import Path
 import sys
 
 try:  # 2026-10-26 K-ORG-20261026-ENCPROT: non-UTF8 console printing CJK/checkmark
