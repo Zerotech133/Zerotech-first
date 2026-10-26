@@ -265,10 +265,17 @@ def build_report(ctx):
     A("## 六、事件（近两年关键公告）")
     A("")
     if ctx["events"]:
-        A("| 日期 | 类别 | 标题 |")
-        A("|---|---|---|")
+        A("| 日期 | 类别 | 标题 | 复核 |")
+        A("|---|---|---|---|")
         for e in ctx["events"][:15]:
-            A("| %s | %s | %s |" % (e["date"], e["category"], e["title"][:72]))
+            flag = {1: "✓通过", -1: "✗驳回"}.get(e.get("reviewed"), "待复核")
+            cat = e.get("category_final") or e["category"]
+            A("| %s | %s | %s | %s |" % (e["date"], cat, e["title"][:72], flag))
+        rev = [e for e in ctx["events"] if e.get("reviewed") in (1, -1)]
+        A("")
+        A("复核状态：已复核 %d / %d 条（通过 %d，驳回 %d）；未复核事件仅作线索。" % (
+            len(rev), len(ctx["events"]),
+            sum(1 for e in rev if e.get("reviewed") == 1), sum(1 for e in rev if e.get("reviewed") == -1)))
     else:
         A("（事件库为空：公告未抓取或未命中关键类别）")
     A("")
@@ -315,7 +322,7 @@ def build_report(ctx):
         A("- **%s**：%s（score=%s）%s" % (g, "通过" if gate.get("passed") else "不通过",
                                         gate.get("score"), "；" + "；".join(gate.get("issues", [])) if gate.get("issues") else ""))
     A("")
-    A("> 口径提醒：财务数据以最新报告期为准；估值/行情为 as-of 日收盘；事件为公告标题规则分类，未经人工复核的仅作线索。")
+    A("> 口径提醒：财务数据以最新报告期为准；估值/行情为 as-of 日收盘；事件为公告规则分类，✓/✗ 为人工复核结果，未复核仅作线索。")
     return "\n".join(L)
 
 
@@ -382,7 +389,11 @@ def build_h5(ctx, outdir):
         price_hot.append({"id": h["id"], "x": h["x"], "y": h["y"], "label": h.get("label", "")})
 
     # 时间线
-    timeline = [{"d": e["date"], "t": e["title"][:40], "tag": e["category"], "body": e["title"]}
+    def _tag(e):
+        flag = {1: "✓", -1: "✗"}.get(e.get("reviewed"), "")
+        return (e.get("category_final") or e["category"]) + flag
+
+    timeline = [{"d": e["date"], "t": e["title"][:40], "tag": _tag(e), "body": e["title"]}
                 for e in ctx["events"][:14]]
 
     # tabs
@@ -408,8 +419,9 @@ def build_h5(ctx, outdir):
             ("主力 20 日", "%s 万" % _fmt(feat.get("moneyflow", {}).get("main_net_20d_wan"))),
             ("获利盘", "%s%%" % _fmt(feat.get("chips", {}).get("winner_rate")))]),
          "read": "资金/筹码为 as-of 日口径。", "chart": None, "cap": None},
-        {"id": "event", "name": "事件", "rows": kv([(e["date"], "%s｜%s" % (e["category"], e["title"][:30])) for e in ctx["events"][:8]] or [("—", "事件库为空")]),
-         "read": "事件为公告标题规则分类，未经人工复核仅作线索。", "chart": None, "cap": None},
+        {"id": "event", "name": "事件", "rows": kv([(e["date"], "%s%s｜%s" % ("%s " % {1: "✓", -1: "✗"}.get(e.get("reviewed"), "") if e.get("reviewed") in (1, -1) else "",
+                                                     e.get("category_final") or e["category"], e["title"][:30])) for e in ctx["events"][:8]] or [("—", "事件库为空")]),
+         "read": "事件为公告规则分类；✓/✗ 为人工复核结果，未复核仅作线索。", "chart": None, "cap": None},
     ]
 
     # 扩展数据（sync 缓存）

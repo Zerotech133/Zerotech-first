@@ -89,7 +89,23 @@ python -m analysis.batch --queue               # 消费一次门户队列
 2. 注册计划任务（每周一至周五 15:40）：`python -m analysis.batch --queue` 或 `--max 5`；
 3. 验证：`curl http://127.0.0.1:8091/api/analysis/health` 返回 `ok:true`；任务日志落 `work/analysis/batch/`。
 
-## 六、三股回放（2026-10-23 口径，P0B 复跑）
+## 六、事件人工复核队列（P0E 新增）
+
+公告事件由规则自动分类（`reviewed=0`），用 CLI 逐条人工复核：
+
+```bash
+python -m analysis.review --code 600337.SH --list --limit 20      # 查看（✓通过/✗驳回/·待复核）
+python -m analysis.review --code 600337.SH --interactive           # 逐条：y通过 / n驳回 / c改类别 / s跳过 / q退出
+python -m analysis.review --approve <event_id> --category 重整 --note "确认"
+python -m analysis.review --reject  <event_id> --note "误分类"
+python -m analysis.review --stats --code 600337.SH
+```
+
+- 状态：`reviewed=1` 通过 / `-1` 驳回 / `0` 待复核；`category_final` 为人工修正类别；
+- 复核状态持久化在 `analysis.db.events`，**重复跑分析不会覆盖**（upsert 保留复核字段）；
+- 报告 §六 增加「复核」列与复核统计；H5 时间线类别带 ✓/✗；批回执含每只标的待复核数（`pending_review`）。
+
+## 七、三股回放（2026-10-23 口径，P0B 复跑）
 
 | 标的 | 覆盖率 | 评级（流水线） | 人工版对照 | 用时 |
 |---|---|---|---|---|

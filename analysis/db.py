@@ -45,19 +45,25 @@ def finish_run(run_id, status="ok", rating=None, coverage=None, artifacts_dir=No
 
 
 def upsert_events(events):
+    """幂等写入；保留人工复核状态（reviewed/category_final/reviewed_at/review_note）。"""
     with conn() as c:
         for e in events:
-            c.execute("""INSERT OR REPLACE INTO events(event_id,code,date,category,title,url,pdf,text_len,confidence,reviewed,facts)
-                         VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+            c.execute("""INSERT INTO events(event_id,code,date,category,title,url,pdf,text_len,confidence,reviewed,facts)
+                         VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                         ON CONFLICT(event_id) DO UPDATE SET
+                           code=excluded.code, date=excluded.date, category=excluded.category,
+                           title=excluded.title, url=excluded.url, pdf=excluded.pdf,
+                           text_len=excluded.text_len, confidence=excluded.confidence, facts=excluded.facts""",
                       (e["event_id"], e["code"], e["date"], e["category"], e["title"], e.get("url", ""),
                        e.get("pdf", ""), e.get("text_len", 0), e.get("confidence", 0.0),
-                       1 if e.get("reviewed") else 0, json.dumps(e.get("facts", {}), ensure_ascii=False)))
+                       0, json.dumps(e.get("facts", {}), ensure_ascii=False)))
 
 
 def load_events(code, limit=80):
     with conn() as c:
-        rows = c.execute("SELECT * FROM events WHERE code=? ORDER BY date DESC LIMIT ?", (code, limit)).fetchall()
-    cols = ["event_id", "code", "date", "category", "title", "url", "pdf", "text_len", "confidence", "reviewed", "facts"]
+        cur = c.execute("SELECT * FROM events WHERE code=? ORDER BY date DESC LIMIT ?", (code, limit))
+        cols = [d[0] for d in cur.description]
+        rows = cur.fetchall()
     out = []
     for r in rows:
         d = dict(zip(cols, r))

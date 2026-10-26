@@ -76,6 +76,8 @@ def run(code, as_of=None, no_llm=False, with_legion=False, skip_events=False, ma
         ev_note = "skipped, 读库 %d 条" % len(ev)
     else:
         ev, ev_note = events_mod.build_events(code, as_of, name=name, max_pdf=max_pdf)
+        # 重新读库：带出人工复核状态（reviewed/category_final），供报告与 H5 标注
+        ev = events_mod.load(code, 200) or ev
     snap["events"] = ev
     _log("S2 done " + ev_note, logf)
 
