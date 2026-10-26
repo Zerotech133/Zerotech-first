@@ -761,9 +761,132 @@ WORKING_MEMORY = {
 }
 
 
-def inject(dry_run: bool) -> int:
+
+# ---------------- DATA1（张松）· 数据仓主管能力底座（2026-10-27 K-DATA-20261027-DWAGT 方案 A） ----------------
+# 只读日检七工具 + 能力卡；写操作走 devtask（L1 评审门）/ 计划任务与系统变更（L2 人工批）。
+HOMES["data1"] = os.path.join(REPO, "legion_agents", "DATA1", "workspace")
+
+CAPABILITIES["data1"] = [
+    {"name": "catalog_snapshot", "what": "catalog v11 与 registry 一致性（sha256）+ 物理漂移抽样",
+     "how": "python tools/datawarehouse/catalog_snapshot.py --json", "boundary": "只读；抽样 25 表", "status": "ready"},
+    {"name": "schema_diff", "what": "登记 files 与实际 parquet 文件数漂移识别",
+     "how": "python tools/datawarehouse/catalog_snapshot.py --json --limit 50", "boundary": "只读；不读表内容", "status": "ready"},
+    {"name": "freshness_report", "what": "六表 prod_max（footer）+ 4 库停摆（quant/ann/warehouse_runs/jev_audit）",
+     "how": "python tools/datawarehouse/freshness_report.py --json", "boundary": "sqlite 只读；pyarrow 缺失降级标 degraded", "status": "ready"},
+    {"name": "manifest_check", "what": "4 个 _manifest.json 键 ∩ catalog 表名（覆盖基线 tdx166/tushare30/xueqiu7/cnopendata6）",
+     "how": "python tools/datawarehouse/manifest_check.py --json", "boundary": "只读", "status": "ready"},
+    {"name": "quality_test", "what": "空分片/分区重复/行数为零等确定性检查",
+     "how": "python tools/datawarehouse/quality_test.py --json [--table daily]", "boundary": "只读；不做业务口径判断", "status": "ready"},
+    {"name": "lineage_impact", "what": "改表前影响清单（catalog→store→alias→消费方静态检索）",
+     "how": "python tools/datawarehouse/lineage_impact.py --table <name> --json", "boundary": "静态文本检索，非运行时血缘；精确血缘待 OpenLineage（二期）", "status": "degraded_rule"},
+    {"name": "backup_receipt_check", "what": "最新备份代/产物齐全/异地 receipt/断档小时",
+     "how": "python tools/datawarehouse/backup_receipt_check.py --json", "boundary": "只读；不触发备份", "status": "ready"},
+    {"name": "db_instance_probe", "what": "15 个数据/服务端口只读探活（不连库、不用凭据）",
+     "how": "python tools/datawarehouse/db_instance_probe.py --json", "boundary": "仅 TCP 探活", "status": "ready"},
+    {"name": "daily_run_all", "what": "日检总入口（weekly/monthly 子集；--emit-memory 写 dept/data/observation）",
+     "how": "python tools/datawarehouse/run_all.py --json --emit-memory", "boundary": "默认 dry-run 不落盘；写记忆走 MemoryStore RBAC", "status": "ready"},
+    {"name": "contract_lint", "what": "ODCS 数据契约 lint/test（20 张核心表）",
+     "how": "python -m datacontract test contracts/*.odcs.yaml", "boundary": "datacontract-cli 未安装；安装属 L2 工具引入", "status": "pending_wiring"},
+    {"name": "capacity_report", "what": "容量与可回收账（数据根分层/镜像/卷/僵尸实例）",
+     "how": "python tools/datawarehouse/run_all.py --monthly --json（容量段二期补）", "boundary": "只读统计；清理属 L2", "status": "pending_wiring"},
+    {"name": "escalation_routing", "what": "超出 9b 判读能力的问题升级云端裁决并留痕",
+     "how": "经 a0_agent.route_chat 云端通道；结论回写 dept/data/observation", "boundary": "只给证据与建议，不裁决业务口径", "status": "degraded_rule"},
+]
+
+SKILL_CARDS["data1"] = {
+    "catalog-snapshot": """---
+name: catalog-snapshot
+description: DATA1 数据仓登记一致性检查：catalog sha256 vs registry、抽样物理漂移、manifest 覆盖、新鲜度与备份回执。
+---
+
+# 数据仓日检（只读）
+
+## 命令
+```
+python tools/datawarehouse/run_all.py --json            # 日检汇总（dry-run）
+python tools/datawarehouse/run_all.py --json --emit-memory  # 写 dept/data/observation
+python tools/datawarehouse/catalog_snapshot.py --json   # 单独看登记一致性
+```
+
+## 判据
+- registry.catalog_sha256 与当前 catalog 一致；
+- 六表 prod_max 滞后 ≤2 天；4 库停摆不超阈值；
+- 备份代 ≤26h 且产物齐全、receipt 在；
+- 端口探活 down 列表为空。
+
+## 边界
+只读；不修登记、不触发采集/发布；需变更时开 devtask 工单（L1），计划任务/系统变更走 L2 人工批。
+""",
+    "freshness-check": """---
+name: freshness-check
+description: 六表 prod_max（parquet footer）与 4 库停摆检查，识别静默停摆。
+---
+
+# 新鲜度检查
+
+```
+python tools/datawarehouse/freshness_report.py --json
+```
+
+- 六表：daily / adj_factor / daily_basic / index_daily / moneyflow / margin_detail
+- 4 库：quant.db(chanlun_pool) / ann_history.db(ann) / warehouse_runs.sqlite3(runs) / jev_audit.db(dec_audit)
+- 不凭 mtime 推业务日；pyarrow 缺失时退化文件名并标 `filename_degraded`。
+""",
+    "backup-receipt": """---
+name: backup-receipt
+description: 备份链回执核对：最新备份代、6 产物齐全、异地 receipt、断档小时数。
+---
+
+# 备份回执核对
+
+```
+python tools/datawarehouse/backup_receipt_check.py --json
+```
+
+- 判据：最新代 ≤26h、产物含 jev_eval/neo4j_kg/quant_code/quant_data/zhice_db/receipt；
+- 断档即报 A0/DATA1；修复动作属 L2（备份链改造）。
+""",
+    "lineage-impact": """---
+name: lineage-impact
+description: 改表/改口径前的影响清单（静态检索消费方）。
+---
+
+# 影响分析（静态）
+
+```
+python tools/datawarehouse/lineage_impact.py --table daily --json
+```
+
+输出 catalog store / alias / manifest / 仓内消费方文件清单。精确运行时血缘待 OpenLineage（二期，L2）。
+""",
+}
+
+WORKING_MEMORY["data1"] = """# 工作记忆索引 — DATA1 张松（数据仓主管 / 数据治理部主官）
+
+## 常读真源
+- 数据册：agent_platform/catalogs/data_catalog.yaml（10 条，登记纪律=黑户）
+- 表登记：quant_backtest/data/catalog.json（v11/244 表）+ warehouse_registry.json（83/92）
+- 发布：data/*/_manifest.json 4 个 + .warehouse-publication.lock（pending 应为 0）
+- 新鲜度：tools/datawarehouse/freshness_report.py；备份：backup_receipt_check.py
+- 工单：tools/devtask.py（L1 变更必须挂单）；计划任务/系统变更=L2 需老田五要素批准
+
+## 日检节奏（方案 A；任务注册属 L2-A 待批）
+- 06:30 日检：run_all.py --json --emit-memory → 有告警才升级 A0
+- 周日 10:00 周检：--weekly（含质量检查）
+- 每月 1 日 10:00 月检：--monthly（容量/备份/回收清单）
+
+## 口径纪律（沉淀中）
+- 只治理不裁决业务口径；业务口径争议交投研席裁决；
+- 「rc=0 ≠ 有产出」：任何"已更新"结论必须带 prod_max/产物证据；
+- 不凭 mtime 推业务日期（判例：curated 假红、Tushare 静默断更 7 交易日）。
+"""
+
+
+def inject(dry_run: bool, seats=None) -> int:
     wrote, skipped = 0, 0
-    for seat, home in HOMES.items():
+    targets = [s for s in (seats or list(HOMES)) if s in HOMES]
+    for seat in targets:
+        home = HOMES[seat]
         skills_dir = os.path.join(home, "skills")
         if not dry_run:
             os.makedirs(skills_dir, exist_ok=True)
@@ -834,14 +957,17 @@ def inject(dry_run: bool) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="三席位能力底座注入器")
+    ap = argparse.ArgumentParser(description="席位能力底座注入器（tianfeng/zhaoyun/zhuge/data1）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--seat", default=None,
+                    help="只注入指定席位（逗号分隔，如 data1）；缺省=全部（兼容旧行为）")
     args = ap.parse_args(argv)
     if not args.dry_run and not args.apply:
         ap.print_help()
         return 2
-    return inject(args.dry_run)
+    seats = [s.strip() for s in str(args.seat).split(",")] if args.seat else None
+    return inject(args.dry_run, seats)
 
 
 if __name__ == "__main__":
