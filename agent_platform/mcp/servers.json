@@ -1,7 +1,7 @@
 {
   "schema": "zhaoyun_mcp_servers/v1",
-  "generated_at": "2026-10-27T07:00:00+08:00",
-  "note": "赵云可直接调用的 MCP 只读 server 白名单；新 server 需人工评审后加入（risk 必须 read-only）",
+  "generated_at": "2026-10-27T07:45:00+08:00",
+  "note": "赵云可直接调用的 MCP server 白名单；risk 必须 read-only；http 需 token_env 且默认 disabled",
   "servers": {
     "filesystem": {
       "script": "tools/mcp_ro_filesystem.py",
@@ -23,6 +23,16 @@
       "risk": "read-only",
       "allow_tools": ["tasks_read", "org_read", "docs_search", "health_read"],
       "timeout": 25
+    },
+    "tushare-http": {
+      "transport": "http",
+      "url": "https://api.tushare.pro/mcp/",
+      "token_env": "TUSHARE_MCP_TOKEN",
+      "enabled": false,
+      "risk": "read-only",
+      "allow_tools": "*",
+      "timeout": 15,
+      "note": "外部 HTTP MCP 示例；需配置 TUSHARE_MCP_TOKEN 后把 enabled 改 true（token 不落仓）"
     }
   }
 }

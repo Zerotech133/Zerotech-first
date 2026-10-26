@@ -38,8 +38,20 @@ def _paragraph(text: str, style: str = "") -> str:
             % (ppr, _esc(text)))
 
 
-def write_docx(path, title: str, paragraphs: list, headings: list | None = None) -> dict:
-    """headings: [{"level":1,"text":...}]；paragraphs: [str]。"""
+def _table(rows: list) -> str:
+    cells = []
+    for row in rows or []:
+        tcs = "".join(
+            "<w:tc><w:p><w:r><w:t xml:space=\"preserve\">%s</w:t></w:r></w:p></w:tc>"
+            % _esc(c) for c in row)
+        cells.append("<w:tr>%s</w:tr>" % tcs)
+    return ("<w:tbl><w:tblPr><w:tblStyle w:val=\"TableGrid\"/></w:tblPr>"
+            "<w:tblGrid/>%s</w:tbl>" % "".join(cells))
+
+
+def write_docx(path, title: str, paragraphs: list, headings: list | None = None,
+               tables: list | None = None) -> dict:
+    """headings: [{"level":1,"text":...}]；paragraphs: [str]；tables: [[[cell,...],...]]。"""
     body = []
     if title:
         body.append(_paragraph(title, "Title"))
@@ -47,6 +59,8 @@ def write_docx(path, title: str, paragraphs: list, headings: list | None = None)
         body.append(_paragraph(h.get("text", ""), "Heading%d" % int(h.get("level", 1))))
     for p in paragraphs or []:
         body.append(_paragraph(p))
+    for rows in tables or []:
+        body.append(_table(rows))
     document = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
                 '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
                 "<w:body>%s<w:sectPr/></w:body></w:document>" % "".join(body))
@@ -57,7 +71,9 @@ def write_docx(path, title: str, paragraphs: list, headings: list | None = None)
         z.writestr("_rels/.rels", RELS)
         z.writestr("word/document.xml", document)
     return {"ok": True, "path": str(p), "bytes": p.stat().st_size,
-            "paragraphs": len(paragraphs or []) + len(headings or []) + (1 if title else 0)}
+            "paragraphs": len(paragraphs or []) + len(headings or []) + (1 if title else 0),
+            "tables": len(tables or []),
+            "table_rows": sum(len(r) for r in tables or [])}
 
 
 def read_docx(path, max_paragraphs: int = 1000) -> dict:
@@ -79,7 +95,20 @@ def read_docx(path, max_paragraphs: int = 1000) -> dict:
             paras.append(txt)
         if len(paras) >= max_paragraphs:
             break
-    return {"ok": True, "path": str(p), "paragraphs": len(paras), "text": paras}
+    tables = []
+    for tbl in root.iter(W + "tbl"):
+        rows = []
+        for tr in tbl.iter(W + "tr"):
+            cells = []
+            for tc in tr.iter(W + "tc"):
+                cell_text = "".join(t.text or "" for t in tc.iter(W + "t")).strip()
+                cells.append(cell_text)
+            if cells:
+                rows.append(cells)
+        tables.append(rows)
+    return {"ok": True, "path": str(p), "paragraphs": len(paras), "text": paras,
+            "tables": len(tables), "table_rows": [len(r) for r in tables],
+            "table_data": tables}
 
 
 def md_to_docx(md_path, out_path) -> dict:
