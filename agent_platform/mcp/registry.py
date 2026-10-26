@@ -68,6 +68,9 @@ def probe(name: str | None = None, timeout: float | None = None) -> dict:
             out.append(item)
             continue
         if cfg.get("enabled") is False:
+            # 显式禁用 = 正常配置（跳过），不算失败；调用仍会被拒
+            item["ok"] = True
+            item["skipped"] = True
             item["error"] = "transport_disabled" + (
                 "（" + str(cfg.get("note")) + "）" if cfg.get("note") else "")
             item["elapsed_ms"] = int((time.time() - t0) * 1000)
