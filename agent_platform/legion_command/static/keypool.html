@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三席多 Key 池 · 零界</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060F1D;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;color:#E8F0F8;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:.5px solid #1E3A5F;flex-wrap:wrap;gap:8px}
+h1{font-size:17px;font-weight:500}.sub{color:#8FA8C0;font-size:11.5px}
+button{border:.5px solid #1E3A5F;background:#0F2440;color:#4FD1A5;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
+button:hover{filter:brightness(1.15)}button.warn{color:#EF9F27}button.bad{color:#E24B4A}
+main{padding:18px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:1100px){main{grid-template-columns:1fr}}
+.card{background:#0A1626;border:.5px solid #1E3A5F;border-radius:12px;padding:14px}
+.card h2{font-size:14px;font-weight:500;margin-bottom:4px}
+.meta{color:#8FA8C0;font-size:11.5px;margin-bottom:8px}
+.pill{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:999px;border:.5px solid #1E3A5F}
+.ok{color:#4FD1A5;border-color:#1D9E75;background:#0F2440}.warn{color:#EF9F27;border-color:#7A5A1E}
+.bad{color:#E24B4A;border-color:#7A2A2E}.muted{color:#5A7190}
+table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px}
+th{text-align:left;color:#5A7190;font-weight:400;padding:5px 4px;border-bottom:.5px solid #1E3A5F}
+td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
+.add{display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px;padding-top:8px;border-top:.5px dashed #16304F}
+.add input,.add select{background:#081321;border:.5px solid #1E3A5F;border-radius:8px;color:#E8F0F8;padding:6px 8px;font-family:inherit;font-size:12px}
+.log{grid-column:1/-1;background:#0A1626;border:.5px solid #1E3A5F;border-radius:12px;padding:14px}
+.log h2{font-size:13px;margin-bottom:8px}.logitem{font-size:11.5px;color:#8FA8C0;padding:4px 0;border-bottom:.5px dashed #16304F}
+.banner{display:none;margin:0 22px 12px;padding:10px 14px;border-radius:10px;background:#2A1214;border:.5px solid #7A2A2E;color:#F3B5B4;font-size:12px}
+</style></head><body>
+<header><div><h1>三席多 Key 池</h1><div class="sub">田丰 · 赵云 · 诸葛亮｜手动录 Key（4–5）｜额度耗尽自动切换｜仅页面/日志告警</div></div>
+<div><button onclick="load()">刷新</button></div></header>
+<div class="banner" id="banner"></div>
+<main id="main"></main>
+<section class="log" style="margin:0 22px 20px"><h2>切换日志</h2><div id="log"></div></section>
+<script>
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n};
+function pill(s){const m={healthy:'ok',quota:'bad',invalid:'bad',degraded:'warn',pending:'muted',cooling:'warn'};return '<span class="pill '+(m[s]||'muted')+'">'+s+'</span>'}
+async function api(body){const r=await fetch('/api/keys/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json()}
+async function load(){
+  try{
+    const r=await fetch('/api/keys/state',{cache:'no-store'});const v=await r.json();
+    if(!v.ok)throw new Error(v.error||'state');
+    $('banner').style.display='none';
+    const main=$('main');main.replaceChildren();
+    for(const [sid,s] of Object.entries(v.seats)){
+      const c=el('div','card');
+      c.appendChild(el('h2','',s.cn+' · '+s.provider));
+      c.appendChild(el('div','meta','绑定 '+s.binding+' ｜ active '+((s.active_key_id)||'—')+' ｜ '+(s.degraded?'<span class="bad">全部不可用</span>':'自动切换 '+(s.auto_switch?'ON':'OFF'))));
+      const tb=document.createElement('table');
+      tb.innerHTML='<thead><tr><th>#</th><th>标签</th><th>Key</th><th>状态</th><th>操作</th></tr></thead><tbody></tbody>';
+      const tbody=tb.querySelector('tbody');
+      const keys=s.keys||[];
+      if(!keys.length){const tr=el('tr');const td=el('td','muted','未添加 Key');td.colSpan=5;tr.appendChild(td);tbody.appendChild(tr);}
+      keys.forEach(k=>{
+        const tr=el('tr');
+        tr.appendChild(el('td','',k.priority));tr.appendChild(el('td','',k.label));tr.appendChild(el('td','',k.masked));
+        const st=el('td');st.innerHTML=pill(k.status);tr.appendChild(st);
+        const op=el('td');
+        const bTest=el('button','','测试');bTest.onclick=()=>act({action:'test',seat:sid,key_id:k.id});op.appendChild(bTest);
+        const bSw=el('button','','切换');bSw.onclick=()=>act({action:'switch',seat:sid,key_id:k.id});op.appendChild(bSw);
+        const bDel=el('button','bad','删');bDel.onclick=()=>{if(confirm('删除该 Key？'))act({action:'delete',seat:sid,key_id:k.id})};op.appendChild(bDel);
+        tr.appendChild(op);tbody.appendChild(tr);
+      });
+      c.appendChild(tb);
+      const add=el('div','add');
+      const inp=el('input');inp.type='password';inp.placeholder='粘贴 Key（仅本机加密存储）';
+      const lab=el('input');lab.placeholder='标签（如 主Key/备1）';
+      const pri=el('input');pri.type='number';pri.placeholder='优先级 1-5';pri.value=keys.length+1;
+      const b=el('button','','添加 Key');
+      b.onclick=async()=>{if(!inp.value.trim()){alert('请粘贴 Key');return}await act({action:'add',seat:sid,secret:inp.value.trim(),label:lab.value.trim(),priority:Number(pri.value)||keys.length+1})};
+      add.append(inp,lab,pri,b);c.appendChild(add);
+      const auto=el('button',s.auto_switch?'warn':'','自动切换: '+(s.auto_switch?'ON':'OFF'));
+      auto.onclick=()=>act({action:'autoswitch_toggle',seat:sid,enabled:!s.auto_switch});c.appendChild(auto);
+      main.appendChild(c);
+    }
+    const lg=$('log');lg.replaceChildren();
+    (v.log||[]).forEach(l=>lg.appendChild(el('div','logitem',l.at+' | '+l.seat+' | '+(l.from||'-')+'→'+(l.to||'-')+' | '+l.reason+' | '+l.result)));
+  }catch(e){const b=$('banner');b.textContent='Key 池不可达：'+e.message;b.style.display='block'}
+}
+async function act(body){const r=await api(body);if(!r.ok)alert('失败：'+(r.error||'unknown'));load()}
+load();setInterval(load,30000);
+</script></body></html>
