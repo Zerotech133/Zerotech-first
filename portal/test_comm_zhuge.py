@@ -164,6 +164,27 @@ def test_12_openclaw_timeout_respected(monkeypatch):
     assert r["text"] == "答"
 
 
+def test_12b_consult_defaults_to_openclaw_timeout(monkeypatch):
+    """真通道默认用 OPENCLAW_TIMEOUT（deepseek 中转 28~50s，旧的 30s 会假 timeout）。"""
+    monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
+    monkeypatch.setattr(cz, "OPENCLAW_MODEL", "deepseek/deepseek-chat")
+    monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
+    seen = {}
+
+    def _fake(q, timeout=0):
+        seen["timeout"] = timeout
+        return "好", None
+
+    monkeypatch.setattr(cz, "_run_openclaw", _fake)
+    r = cz.consult("问", "ou_j2")
+    assert r["text"] == "好"
+    assert seen["timeout"] == cz.OPENCLAW_TIMEOUT
+    assert cz.OPENCLAW_TIMEOUT >= 90
+    # 显式 timeout 收窄，但不超过 OPENCLAW_TIMEOUT
+    cz.consult("问", "ou_j3", timeout=5)
+    assert seen["timeout"] == 5
+
+
 # ── OpenClaw 真通道 2026-10-26 修复（L5FIX）────────────
 def test_13_ready_without_env_key_when_configured(monkeypatch):
     """密钥在 OpenClaw secret store（write-only）→ 不再强制 env OPENAI_API_KEY。"""

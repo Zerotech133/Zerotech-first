@@ -39,7 +39,7 @@ from pathlib import Path
 
 DEFAULT_TIMEOUT = 30
 DEFAULT_MAX_CHARS = 600
-OPENCLAW_TIMEOUT = int(os.environ.get("COMM_ZHUGE_OPENCLAW_TIMEOUT", "90"))
+OPENCLAW_TIMEOUT = int(os.environ.get("COMM_ZHUGE_OPENCLAW_TIMEOUT", "120"))
 OPENCLAW_AGENT = os.environ.get("COMM_ZHUGE_OPENCLAW_AGENT", "zhuge")
 # 模型覆盖：留空 = 用 OpenClaw agent 配置里的 model.primary（推荐，便于换载体）
 OPENCLAW_MODEL = os.environ.get("COMM_ZHUGE_OPENCLAW_MODEL", "").strip()
@@ -272,9 +272,15 @@ def _trim(text, max_chars):
     return cut
 
 
-def consult(question, open_id="", llm=None, timeout=DEFAULT_TIMEOUT,
+def consult(question, open_id="", llm=None, timeout=None,
             max_chars=DEFAULT_MAX_CHARS):
-    """→ {text, mode, llm_ok, error}。text=None 表示两条通道都不可用。"""
+    """→ {text, mode, carrier, relay, llm_ok, error}。
+
+    timeout=None：真通道用 OPENCLAW_TIMEOUT（默认 120s；DeepSeek 中转实测
+    28~50s，旧的 30s 上限会把成功调用误判 timeout 后降级本地）；
+    显式传入时按 min(timeout, OPENCLAW_TIMEOUT) 收窄。
+    L5 走后台线程（comm_intake._bg_consult），长超时不阻塞消息主链。
+    """
     if not enabled():
         return {"text": None, "mode": None, "llm_ok": False,
                 "error": "disabled"}
@@ -288,7 +294,9 @@ def consult(question, open_id="", llm=None, timeout=DEFAULT_TIMEOUT,
     ready, why = _openclaw_available()
     oc_err = None
     if ready:
-        raw, oc_err = _run_openclaw(q, timeout=min(timeout, OPENCLAW_TIMEOUT))
+        oc_timeout = OPENCLAW_TIMEOUT if timeout is None \
+            else min(int(timeout), OPENCLAW_TIMEOUT)
+        raw, oc_err = _run_openclaw(q, timeout=oc_timeout)
         if raw:
             # 诚实标签：gpt-6-sol 真身 vs 其他载体（如 deepseek 中转替代）
             model_used = OPENCLAW_MODEL or _openclaw_agent_model() or "agent-config"
