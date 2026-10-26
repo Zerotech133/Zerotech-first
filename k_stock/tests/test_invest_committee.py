@@ -5,7 +5,7 @@
 覆盖验收口径：
   1. 三席各出意见：同一股票池 v1 输入，三分析师席（技术/价值/风控）
      各自产出评级意见（persona 各异只影响权重/风格参数）；
-  2. 聚合结论可复算：鲁肃加权聚合为确定性纯函数——同输入两次运行
+  2. 聚合结论可复算：加权聚合为确定性纯函数——同输入两次运行
      JSON 全等，且聚合分可由三席分按 seat_weights 手工复算；
   3. 股票池 v2 账本 append-only：两次会审追加，首行字节不变，
      不 update 不 delete；
@@ -101,7 +101,7 @@ def test_aggregate_recomputable_deterministic():
     for rev in s1["reviews"]:
         manual = round(sum(o["score"] * w[o["seat_id"]] for o in rev["opinions"]), 4)
         assert rev["aggregate"]["score"] == manual
-        # 精选判定 = 聚合分过线 且 风控席非 AVOID（鲁肃稳健联判）
+        # 精选判定 = 聚合分过线 且 风控席非 AVOID（聚合稳健联判；原 persona 已去人格化）
         risk = [o for o in rev["opinions"]
                 if o["seat_id"] == ic.RISK_SEAT_ID][0]
         expect_sel = (rev["aggregate"]["score"] >= s1["v2_floor"]
@@ -119,7 +119,7 @@ def test_aggregate_recomputable_deterministic():
 
 # ---------- 验收②补强（主会话验收补）：高分但风控 AVOID 必被一票否决 ----------
 # 样票与 000001 同证据强度（聚合分过线）但 q_toxic → 风控席 AVOID；
-# 鲁肃稳健联判下 selected 必为 False。该用例使"一票否决"逻辑可被
+# 聚合稳健联判下 selected 必为 False。该用例使"一票否决"逻辑可被
 # 变异区分（拆 risk_ok 否决 → 本用例红），防否决条款沦为冗余保险。
 
 def test_high_score_but_risk_avoid_vetoed():
@@ -283,9 +283,10 @@ def test_shadow_period_no_execution_chain_import():
 
 
 # ==========================================================================
-# WO-QT-20261021-091：聚合席去人格化（鲁肃归客服，聚合改无名确定性引擎）
+# WO-QT-20261021-091：聚合席去人格化（聚合改无名确定性引擎；鲁肃归属经
+# 2026-10-27 判例更正=D1 量化交易部最终决策官，不在通信部）
 # 验收口径：①组织者无任何人格字段 ②场次/纪要全文无人名残留
-#          ③聚合数值口径零变化（逻辑未动）④persona_registry 标注裁决
+#          ③聚合数值口径零变化（逻辑未动）④persona_registry 判例口径
 # ==========================================================================
 
 NAMING_WO = "WO-QT-20261021-091"
@@ -343,12 +344,15 @@ def test_wo091_aggregate_numeric_unchanged():
 
 
 def test_wo091_persona_registry_annotated():
-    """人格册鲁肃条目带 091 标注与客服线归属；量化职能已剥离。"""
+    """人格册鲁肃条目带 091 标注 + 2026-10-27 判例口径；量化职能已剥离、通信部归属不成立。"""
     reg = json.loads((HERE.parent / "portal" / "persona_registry.json")
                      .read_text(encoding="utf-8"))
     dep = [x for x in reg["departments"] if x.get("name") == "鲁肃"][0]
     assert dep["naming_revision"] == NAMING_WO
-    assert dep.get("service_line") == "communication_customer_service"
+    assert dep.get("service_line") == "invest_decision"
+    assert "阚泽" in dep["naming_note"], "命名注须说明通信部主官=阚泽"
+    assert "鲁肃在通信" not in dep["naming_note"], "旧「鲁肃在通信部」口径须已清除"
+    assert "2026-10-27_鲁肃与阚泽定名判例" in dep["naming_note"]
     assert "去人格化" in dep["duties"] or "无名" in dep["duties"]
     assert "二次筛选" not in dep["duties"], "量化聚合职能须已从该条目剥离"
 
