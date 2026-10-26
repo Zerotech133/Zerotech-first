@@ -263,7 +263,8 @@ foreach ($c in $Components) {
 }
 $snap | ConvertTo-Json -Depth 4 -Compress | Set-Content -Path $StatusFile -Encoding UTF8
 if ($down.Count -eq 0) {
-    Write-Log 'stack ok (4/4 listening)'
+    $upCount = @($Components | Where-Object { Test-Port $_.Port }).Count
+    Write-Log ('stack ok (' + $upCount + '/' + $Components.Count + ' listening)')
     exit 0
 }
 if ($internal.Count -gt 0) {

@@ -46,6 +46,8 @@
   --xq-min-jev N            JEV 待判积压 ≥N 时跳过 XQ 轮（计划 B 推荐 3000）；
                             不传 = 不按积压跳过（旧行为）
   --jev-only                完全跳过 XQ，只跑 JEV
+  --pause-m3                运行期暂停 M3（写 C:\Temp\k266_m3.pause + 停 M3 进程），
+                            收工/异常退出时恢复；用于"白天 JEV 独占窗口"（默认关）
   计划 B 接线：白天主进程用 `--xq-window 08:00-10:00 --xq-min-jev 3000`（XQ 只在
   早窗口且 JEV 清到 <3000 时才跑）；要彻底 JEV 优先则用 `--jev-only`。被跳过的
   轮次逐轮打印 `XQ-SKIP <原因>`，START/END 打印生效策略与跳过轮次数，便于次日核验。
@@ -487,6 +489,9 @@ def build_parser() -> argparse.ArgumentParser:
                          "不传=不按积压跳过（旧行为）" % XQ_MIN_JEV_RECOMMENDED)
     ap.add_argument("--jev-only", action="store_true",
                     help="完全跳过 XQ，只跑 JEV（JEV 优先窗口/应急用）")
+    ap.add_argument("--pause-m3", action="store_true",
+                    help="运行期暂停 M3（写 k266_m3.pause+停 M3 进程），收工恢复；"
+                         "用于白天 JEV 独占窗口，默认关")
     return ap
 
 
@@ -542,7 +547,19 @@ def main(argv=None) -> int:
             % (meta.get("pid"), meta.get("host"), meta.get("start"), LOCK_PATH))
         return 0
 
+    m3_paused = False
     try:
+        if args.pause_m3:
+            # 2026-10-26 OS-FIX-DAYBATCH：白天独占窗口——写暂停旗并停 M3 进程，
+            # 让 JEV 拿到 ollama 锁；finally 恢复（异常/被杀留下旗由 k266 自愈）。
+            try:
+                import jev_night as _jn
+                _jn.pause_m3(log)
+                m3_paused = True
+                log("M3 PAUSED（--pause-m3）收工自动恢复")
+            except Exception as exc:  # noqa: BLE001
+                log("ALERT M3 暂停失败（继续跑，可能仍被抢锁）：%s"
+                    % str(exc)[:160])
         log("START 收工时间=%s | 起始积压 JEV=%s 雪球=%s | 批=%d/%d | lock pid=%s"
             " | XQ 策略: %s"
             % (cutoff.strftime("%m-%d %H:%M"), jev0, xq0, args.batch_jev,
@@ -680,6 +697,14 @@ def main(argv=None) -> int:
                xq_skipped, xq_policy))
         return 0
     finally:
+        if m3_paused:
+            try:
+                import jev_night as _jn
+                _jn.resume_m3(log)
+                log("M3 RESUMED（--pause-m3 收工恢复）")
+            except Exception as exc:  # noqa: BLE001
+                log("ALERT M3 恢复失败（下轮 k266 tick 自愈）：%s"
+                    % str(exc)[:160])
         release_lock()
 
 
