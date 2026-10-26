@@ -306,8 +306,218 @@ description: 异族互审：评审对家席位的方案/代码/账本产出，�
 4. 执行者不结案：评审通过≠验收通过；分歧上议会厅待老田裁决。
 5. 文书落 deliverables 或项目根（文件名含互审/回执/评审），议会厅自动投影。
 """,
+        "health-card": """---
+name: health-card
+description: 健康卡运行与红黄绿解读：跑 tools/gen_health_card.py 取最新卡；红项先归因，检查器先自证（判例）。
+---
+
+# 健康卡（治理面）
+
+1. 运行/读取：`python tools/gen_health_card.py` 出最新健康卡；先核对卡的时间戳与覆盖范围，过期卡不采信。
+2. 红黄绿解读：逐项给读数、证据与时间，红项先归因再交办；不凭记忆报数。
+3. 检查器先自证（判例）：数字存疑时用已知样本复验检查器，确认可信后再采信其结论。
+4. 无法复核/读不到的项目标注「未知」，不判绿；判读结论落文书。
+5. 健康卡只反映状态，红项按归口拆单或升级老田，健康卡不代替真修复。
+""",
+        "backup-bundles": """---
+name: backup-bundles
+description: 备份链 bundle+manifest+校验+轮转：tools/backup_bundles.ps1 先 -DryRun 再执行；sha256 回执核对。
+---
+
+# 备份链（bundle/manifest/校验/轮转）
+
+1. 先演练：`powershell tools/backup_bundles.ps1 -DryRun`，看本次将产出的 bundle/manifest 清单与轮转动作。
+2. 再执行：去掉 -DryRun 真跑；长跑输出落文件，不靠终端滚动。
+3. 校验：按 manifest 逐项核 sha256；异地已落地以 2026-10-26 回执为准（7/7 sha256 通过）。
+4. 轮转：按保留策略轮转/归档旧 bundle；删除类进回收站或先归档，不直删。
+5. 任一项 sha256 不符 → 判备份链失败并升级，不写「已备份」。
+""",
+        "worktree-hygiene": """---
+name: worktree-hygiene
+description: 工作树 TTL/回收/收口（S1）：git worktree list 盘点 + devtask 收口提示；删除类进回收站/先归档。
+---
+
+# 工作树收口（S1）
+
+1. `git worktree list` 盘点各单 worktree 与分支，标出 TTL 超期、已合并未回收、游离未登记三类。
+2. 收口前核对分支是否已进 master、devtask 单状态与未提交改动，再决定回收。
+3. 回收动作先确认目标绝对路径；删除类一律进回收站（SHFileOperationW）或先归档，禁 rm/del 直删。
+4. 收口结果记回执（单号/路径/处置）；异常项交田丰或升级老田。
+5. 只读盘点可随时跑；不擅自处置他人工作树。
+""",
+        "docs-archive": """---
+name: docs-archive
+description: 一话题一归档（S4）：根目录散落 md 超 24h 迁移 docs/audit/ 或 _archive/；回收站纪律。
+---
+
+# 文档归档（S4）
+
+1. 扫根目录散落 .md，按 mtime 找出超 24h 未归档项，先按话题归类。
+2. 迁移目标：审计/过程类 → `docs/audit/`；过期/历史类 → `_archive/`；不留在根目录。
+3. 一话题一归档：同话题只留一份现行档，迁移时同步更新引用，避免断链。
+4. 删除类走回收站纪律（SHFileOperationW），禁 rm/del 直删。
+5. 归档可追溯：文件名含日期/话题，迁移动机记一句回执。
+""",
+        "experience-write": """---
+name: experience-write
+description: Z4 supervision 域经验写入（赵云写田丰读）：四字段 cue/lesson/evidence/confidence；采纳需老田签。
+---
+
+# 经验写入（Z4 · supervision 域）
+
+1. 目标路径：`~/.hermes/profiles/zhaoyun/experience/supervision/`，只写本域，不越域。
+2. 每条四字段齐全：cue（触发情境）/ lesson（教训）/ evidence（可回溯证据）/ confidence（0-1）。
+3. evidence 必须能回溯（commit/文书/账本行号）；无证据不写高 confidence。
+4. 登记即去重键：同 cue 先查已有条目，合并引用而不是重复登记。
+5. 采纳状态以老田签字为准；未签字一律标「未生效」，不虚报已采纳。
+""",
+        "lookahead-guard": """---
+name: lookahead-guard
+description: Z5 防穿越断言（数据时点校验）：lookahead_guard.py --selftest；规则精确优先 + pass-through 反证。
+---
+
+# 防穿越断言（Z5）
+
+1. 先自检：`python agent_platform/engine/lookahead_guard.py --selftest`，确认守卫自身可信。
+2. 校验口径：回测/统计输入的数据时点必须 ≤ 决策时点，越界即判穿越。
+3. 规则精确优先：能用精确规则判定的场景，不用宽松阈值兜底。
+4. pass-through 反证：对「看起来能放行」的样本构造反证，确认放行不是漏检。
+5. 判 fail 保留最小复现（输入时点/规则名）随结论落文书，交田丰或升级老田。
+""",
+        "council-hall": """---
+name: council-hall
+description: 议会厅治理面发言：评审/回执文书落盘即发言；只产建议与证据（V3.1），裁决权在老田。
+---
+
+# 议会厅（治理面发言）
+
+1. 发言=文书：评审/回执/质询按文件名含议题与日期落 deliverables，页面只是投影。
+2. 只产建议与证据（V3.1 边界）：列事实、读数、风险与建议，不宣布通过、不代裁决。
+3. 分歧挂待裁区，写明裁决所需材料；不静默、不私下收敛。
+4. 引用数据必须给来源路径/时间；不复制共享账本到席位记忆。
+5. 裁决落定后按归口执行或派单，发言本身不构成授权。
+""",
+        "harness-runner": """---
+name: harness-runner
+description: DeepSeek Harness 执行框架：执行体=DSH 会话（桌面版），定时/重试由 governance_clock 承担；Harness² 本体不在位。
+---
+
+# Harness 执行框架
+
+1. 执行体 = DSH 会话（DeepSeek Harness 桌面版）；不假设 Harness² 本体存在。
+2. 定时/重试交给 governance_clock 承担，不在会话内自建第二套调度。
+3. 隔离：每单独立 worktree/分支，长跑输出落文件，会话中断按回执续跑。
+4. 需要 Harness² 本体的能力按需再立项，不把「不在位」当已具备。
+5. 执行框架只负责跑与重试；通过/验收仍走评审门与收口流程。
+""",
+        "llm-deepseek": """---
+name: llm-deepseek
+description: DeepSeek 真模型推理（异常归纳/建议生成/判例抽取）：deepseek.py --selftest，默认 deepseek-flash；key 私有区不落仓。
+---
+
+# DeepSeek 推理
+
+1. 先自检：`python agent_platform/engine/deepseek.py --selftest` 确认链路可用再上业务调用。
+2. 默认模型 deepseek-flash；模型选择在调用处显式声明，不隐式依赖实例默认。
+3. key 读取：`_vault/secrets/deepseek_api_key.txt` 或环境变量 `DEEPSEEK_API_KEY`；key 私有区不落仓、不进日志、不贴文书。
+4. 用途边界：异常归纳/建议生成/判例抽取产草稿；结论仍要证据核对与签字，模型输出不直接当验收依据。
+5. 异族互镜的一极：和其他族模型互镜对照，不单独作为唯一判据。
+""",
+        "governance-ai": """---
+name: governance-ai
+description: 治理 AI（DeepSeek flash）：异常归纳/优先级建议/判例草稿；draft 落 data/governance_ai，只产 draft 不写卡。
+---
+
+# 治理 AI
+
+1. 调用：`python agent_platform/tools/gov_ai.py --action all --json`；draft 产物落 `data/governance_ai`。
+2. 只读 draft：核对证据、去重、优先级合理性；不写卡/经验库/工单。
+3. 判活看健康卡 `governance.ai_advice` 项；失败判黄，不阻塞治理链。
+4. 草稿采纳走签字链（本人签 + 公钥验签）后才入 Z4。
+5. 模型输出仅作候选；结论以证据核对为准，不虚报已采纳。
+""",
+        "case-sign-chain": """---
+name: case-sign-chain
+description: 判例草稿签字链：gov_ai_case_bridge --emit/--apply，私钥老田持有；未签/篡改/未配公钥一律拒，Agent 只验签。
+---
+
+# 判例签字链（治理面）
+
+1. `python tools/gov_ai_case_bridge.py --emit` 产出待签 payload（判例草稿 + 证据版本）。
+2. 本人（老田）持私钥签名；Agent 不代签、不接触私钥，只做验签与链路核对。
+3. `--apply` 走公钥验签：未签 / 被篡改 / 未配公钥一律拒收，不降级放行。
+4. strict 模式 verified=True 才入库（Z4）；非 strict 结果不得当已入库。
+5. 验签失败保留原始 payload 与公钥信息供复盘，交田丰或升级老田。
+""",
     },
-    "zhuge": {},  # 已有 3 卡，不重复注入
+    # 诸葛亮 OpenClaw workspace 已有 3 卡（adversarial-review/evidence-audit/pre-mortem），此处只补缺 5 张，不重写已有卡
+    "zhuge": {
+        "zhuge-brief": """---
+name: zhuge-brief
+description: 诸葛亮建议引擎（规则版，七源归集）：portal/api_zhuge_brief.py 出 /api/zhuge/brief（8091 已生效）；页面标注「规则归集非模型推理」。
+---
+
+# 建议引擎（规则版）
+
+1. 建议数据来自 `portal/api_zhuge_brief.py` 的七源归集，出口 `/api/zhuge/brief`（8091 已生效，只读消费）。
+2. 输出必须标注「规则归集非模型推理」：不把规则归集包装成模型结论或预测。
+3. 七源归集逐源可追溯：每条建议给出来源/时间/证据，不造第二本账。
+4. 只产建议不派单、不裁决；采纳与否由老田/归口决定。
+5. 建议与实际采纳的偏差留痕，供 brief-trend 复盘。
+""",
+        "os-suggest": """---
+name: os-suggest
+description: OS 首页建议呈现（四视图）：portal/os_entry_v9_prod.html 消费建议引擎输出；只读归集不造第二账。
+---
+
+# OS 首页建议呈现（四视图）
+
+1. 呈现入口：`portal/os_entry_v9_prod.html` 消费建议引擎归集结果，四视图只做投影。
+2. 只读归集：页面不写业务账、不新增后端字段，数据单源在建议引擎与共享账本。
+3. 四视图口径固定：同一份建议在不同视图里口径一致，不各算一套。
+4. 页面标注「规则归集非模型推理」；不把呈现样式当成模型能力。
+5. 呈现异常（缺数/错位）先核对数据源，再报归口；不改源数据硬凑页面。
+""",
+        "council-advise": """---
+name: council-advise
+description: 议会厅建议面表态：该不该做/优先级，落盘看法文书至 deliverables；不派单不裁决。
+---
+
+# 议会厅建议面表态
+
+1. 表态范围：该不该做（做/不做/先补证据）与优先级（P0/P1/P2），仅限建议面。
+2. 产出=看法文书，落 deliverables（文件名含议题/日期）；页面只投影。
+3. 每项表态给依据（证据/来源/时间）与不确定性；无依据的直觉标「待验证」。
+4. 不派单、不裁决：派单归田丰，裁决权在老田；分歧挂待裁区。
+5. 表态与最终裁决的差异留痕，供趋势复盘。
+""",
+        "brief-trend": """---
+name: brief-trend
+description: 建议趋势与采纳率跟踪（status：pending_wiring，未接线）：数据源=OS 建议消费日志（待接线），采纳率进健康卡 R3。
+---
+
+# 建议趋势与采纳率（pending_wiring）
+
+1. 当前状态：**pending_wiring** —— OS 建议消费日志尚未接线，本能力只有口径、无可用数据源。
+2. 目标数据源：OS 建议消费日志（接线后只读归集）；接线前不得凭印象报采纳率。
+3. 指标口径：建议数 / 被采纳数 / 采纳率 / 分类分布与趋势，分母与时间窗写清楚。
+4. 采纳率出口：进健康卡 R3（接线后）；未接线时标注「未接线」，不虚报 ready。
+5. 复盘结论只产建议；接线方案与优先级由老田拍板。
+""",
+        "llm-gpt6": """---
+name: llm-gpt6
+description: GPT-6.0 真模型推理（建议升级，status：pending_key）：OpenClaw zhuge agent 绑定 openai/gpt-6.0，OPENAI_API_KEY 未注入。
+---
+
+# GPT-6.0 推理（pending_key）
+
+1. 当前状态：**pending_key** —— 模型已绑 `openai/gpt-6.0`（OpenClaw zhuge agent），但 `OPENAI_API_KEY` 未注入，真调用不可用。
+2. 注入 key 前只做 Demo 对照与方案评估，不把「已绑模型」当「已可用」。
+3. 升级路径：Demo 先行 → 老田拍板 → 替换现行建议引擎；未拍板不替换。
+4. key 由私有区注入，不落仓、不进日志、不贴文书。
+5. 真模型对照以同题同证据跑 A/B，结论入复盘；pending 期间建议口径仍用规则版。
+""",
+    },
 }
 
 WORKING_MEMORY = {
