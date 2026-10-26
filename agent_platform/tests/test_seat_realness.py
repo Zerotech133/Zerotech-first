@@ -102,3 +102,19 @@ def test_main_exit_codes(monkeypatch, tmp_path, capsys):
     assert out["score"] == 5
     rc2 = SR.main(["--root", str(root), "--seat", "T1", "--json"])  # 无任务 → 4/5
     assert rc2 == 1
+
+
+def test_engine_tool_recognized(monkeypatch, tmp_path):
+    """engine/tools.py 内的 def <name>( 视为真实工具实现（B2-c 投研数据工具）。"""
+    root = make_root(tmp_path, tool_file=False)
+    (root / "agent_platform/engine").mkdir(parents=True, exist_ok=True)
+    (root / "agent_platform/engine/tools.py").write_text(
+        "def demo_engine_tool(code):\n    return code\n", encoding="utf-8")
+    org_path = root / "agent_platform/registry/org.json"
+    data = json.loads(org_path.read_text(encoding="utf-8"))
+    data["departments"][0]["agent_profiles"]["T1"]["tools"] = ["demo_engine_tool"]
+    org_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(SR, "task_exists", lambda t: True)
+    rep = SR.audit(root, "T1", task="Demo-Task")
+    assert rep["rows"]["tools"]["ok"] is True
+    assert "engine/tools.py" in rep["rows"]["tools"]["evidence"]
