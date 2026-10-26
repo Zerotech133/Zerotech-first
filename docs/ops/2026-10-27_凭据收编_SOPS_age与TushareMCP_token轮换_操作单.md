@@ -244,3 +244,50 @@ $V  = C:\项目\老田的AI助手\tools\secrets\vault.py   # 合并后路径
 & $py $V exec-env ROTATION_FILLBACK.env.age -- python your_task.py
 & $py C:\项目\老田的AI助手\tools\secrets\render_mcp.py --check
 ```
+
+---
+
+## 0. 2026-10-27 07:20 补充：轮换与 MCP 重启的「一键收口」
+
+> 本补充解决三件事：① 旧 token 需你在 Tushare 控制台轮换（外部账号，Agent 不能代做）；② 轮换后如何写回保险库并让 MCP 生效；③ 重启 MCP 客户端前的强制预检。
+
+### 0.1 轮换顺序（一次做完）
+
+```powershell
+# 第 0 步：控制台轮换（人工）
+#   打开 https://tushare.pro/user/token → 点『重新生成』→ 复制新 token
+#   （旧 token 立即失效；所有消费方必须同批更新）
+
+# 第 1 步：jev-gate 侧（既有脚本：校验 + 原子更新 + 重启 signal_review_gate）
+powershell -File C:\aios\jev-eval\rotate_tushare_token.ps1
+#   说明：交互粘贴新 token；脚本会调 trade_cal 校验并重启 9102 进程。
+
+# 第 2 步：MCP 侧（本保险库）——安全输入、不回显、不落 shell 历史
+python C:\aios\tools\secrets\rotate_token.py
+#   做四件事：形状校验 →（默认）调 trade_cal 在线校验 → age 加密入库并回读比对 → 渲染 .mcp.local.json；
+#   暂存明文立即覆写删除；审计落 _vault/secrets/mcp/rotation_audit.jsonl（只记 sha256 前缀，不记 token）。
+
+# 第 3 步：MCP 客户端重启前，把占位符配置切成真实配置
+python C:\aios\tools\secrets\mcp_preflight.py --check    # 1=需 apply，0=已就绪
+python C:\aios\tools\secrets\mcp_preflight.py --apply     # 渲染→备份旧配置→写两处 .mcp.json
+#   回滚：python C:\aios\tools\secrets\mcp_preflight.py --revert
+
+# 第 4 步：验证
+python C:\aios\tools\secrets\vault.py verify --json       # ok=true
+python C:\aios\tools\secrets\render_mcp.py --check       # ok=true, token 明文命中=0
+```
+
+### 0.2 关键约束
+
+- **不要在聊天/工单里粘贴 token**：`rotate_token.py` 用 `getpass` 读取，无命令行参数入口。
+- **`.mcp.json` 平时保持占位符**：MCP 客户端每次重启前先 `mcp_preflight.py --apply`；这是有意的「安全默认」，不是故障。
+- **age 私钥离线托管**：`C:\项目\_vault\keys\escrow\age-<日期>\`（含 `age.key.b64` 可打印副本、`SHA256SUMS.txt`、恢复步骤）；另有一份在 `%USERPROFILE%\OneDrive\AIOS-escrow-<日期>\`（云盘，防单盘）。恢复演练已执行：用 escrow 副本解密 `mcp/tushare_mcp_token`，明文 sha256 与 MANIFEST 记录一致。
+- **旧明文备份**：原 `.mcp.json.bak-20261027` 已归档到 `C:\项目\_vault\secrets_archive\mcp_bak_20261027\`（ACL 收紧）；轮换完成后即为失效值，可连目录一并删除。
+
+### 0.3 验收判据
+
+1. `rotate_token.py` 结束打印 `OK: 在线校验通过` 与 `OK: 已加密入库`；
+2. `vault.py verify --json` → `ok=true` 且该条目 sha256 已变化；
+3. `mcp_preflight.py --apply` 后两处 `.mcp.json` 状态均为 `resolved`，且 `.mcp.local.json` 与之一致；
+4. MCP 客户端重启后，`tushareMcp` 工具可列出且调用成功（如 `stock_basic` 低耗查询）；
+5. jev-gate（9102）日志出现新 token 生效记录，无 401/权限错误。
