@@ -1,17 +1,27 @@
 # -*- coding: utf-8 -*-
 """端口注册表守卫（K-STOCK-103）：治抢端口/私起服务。
 
-做三件事：
-1. 注册端口逐个 TCP 探测 → 在线/离线状态；
+做四件事：
+1. 注册端口逐个 TCP 探测 → 在线/离线状态；**离线仅提示，不判失败**
+   （手动/按需型服务、容器未启属正常态）；
 2. netstat 实测全机 LISTENING 端口 → 不在注册表的报「未登记」；
-3. --strict 时未登记>0 返回 rc=1（可挂晨检/CI）。
+3. 静态端口冲突检测：
+   a) REGISTRY 字面量里同一端口重复登记（Python dict 静默覆盖 = 归属不定）；
+   b) tools/ports_allocated.json 里同一端口分配给多个服务名；
+4. --strict 时「未登记监听 > 0」或「端口冲突 > 0」返回 rc=1（合并门/CI 用）。
+   在册服务离线**永不**导致 strict 失败。
 
 用法：python tools/check_ports.py [--strict] [--json]
 
---json：输出机器可读结果（registered/unknown/summary），供晨检与
-自动化消费（K-STOCK-114b）；与 --strict 可同用，rc 语义不变。
+--json：输出机器可读结果（registered/unknown/conflicts/offline/summary），
+供晨检与自动化消费（K-STOCK-114b）；与 --strict 可同用，rc 语义不变。
+
+2026-10-26 WO-UPGRADE-20261026 语义拆分（审计 B-02 修复）：此前 strict 把
+「在册但离线」也算失败（20 个按需口离线 → 恒红），而 devtask 合并门又调非
+strict（恒 0）→ 既假红又假绿。现在 strict 只拦「未登记监听 + 端口冲突」。
 """
 import json
+import os
 import re
 import socket
 import subprocess
@@ -55,7 +65,7 @@ REGISTRY = {
     8096: "军团作战大屏API(api_legion_ops.py/v2)",  # 2026-10-22 TF-AUDIT 归因纠正：K-STOCK-394 原登记 km_feishu_hub 已迁 8099，现持有者=军团大屏（/api/legion/ops 实测返回 roster），legion_scheduler/academy_worker_plan 均调用此口
     8095: "picks定时发布调度(publish_schedule_server.py)",
     8097: "推送中台总览(push_admin_server.py)",
-    8100: "datamart-api(数仓读层HTTP门面,K-STOCK-415)",
+    8100: "datamart-api 数仓读层HTTP门面(zerobound-kg 数据市集API/datamart_api.py,K-STOCK-415)",  # 2026-10-26 去重：原 10-17 与本行两次登记，Python dict 静默覆盖
     8123: "claudemind server(桌面第三方,非平台栈)",
     # 2026-10-16 数据仓止血入册：PG/Neo4j 容器口此前仅靠 dockerd 豁免（治理盲区）。
     # 2026-10-16 审计修正：5432 实为 RAGFlow infinity；zhice-db 真实映射 5446。
@@ -71,7 +81,8 @@ REGISTRY = {
     17687: "zerobound Neo4j Bolt(Docker,独立图谱)",
     # 2026-10-17 K-STOCK-211 任务4集成门禁：全量 netstat 归因后入册
     # （此前仅靠进程未撞豁免名单而未报，属注册表治理盲区收编）。
-    8100: "zerobound-kg 数据市集API(datamart_api.py)",
+    # 2026-10-26 WO-UPGRADE-20261026：原 8100 在此重复登记一次（与上方
+    # K-STOCK-415 条目同口不同名，dict 静默覆盖），已归并到上方条目，勿再加。
     8788: "Hermes WebUI v2(hermes-webui-next)",
     # 2026-10-22 老田裁端口处置（K-INTEL 情报线守卫收口）：
     # 8099=KM知识库飞书联动(portal/km_feishu_hub.py)，推送中台8097 iframe引用、
@@ -134,6 +145,59 @@ def listening_ports():
 
 
 _PROC_CACHE = {}
+
+
+def registry_duplicate_ports(path=None):
+    """静态扫描本文件 REGISTRY 字面量，返回重复登记的端口列表。
+
+    Python dict 字面量重复键会静默覆盖（后者生效），端口归属因此不定；
+    只在源码层面可查，故用行首 ``<port>: "<name>"`` 形态匹配（REGISTRY 是
+    本文件唯一的该形态字面量；集合字面量 ``{8100, ...}`` 不匹配）。
+    2026-10-26 实测命中 8100 重复登记（10-17 与 K-STOCK-415 两次入册），
+    去重后注册总数 51 = AGENTS.md §1 口径。
+    """
+    src = path or os.path.abspath(__file__)
+    try:
+        with open(src, encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+    except OSError:
+        return []
+    seen, dup = set(), set()
+    for match in re.finditer(r"^\s*(\d{2,5}):\s*['\"]", text, re.M):
+        port = int(match.group(1))
+        if port in seen:
+            dup.add(port)
+        seen.add(port)
+    return sorted(dup)
+
+
+def allocation_conflicts(path=None):
+    """tools/ports_allocated.json 中同一端口分配给多个服务名 → 冲突列表。"""
+    alloc = path or os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 "ports_allocated.json")
+    try:
+        with open(alloc, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return []
+    by_port = {}
+    for name, port in (data or {}).items():
+        by_port.setdefault(port, []).append(str(name))
+    return [{"port": p, "names": sorted(names)}
+            for p, names in sorted(by_port.items()) if len(names) > 1]
+
+
+def port_conflicts():
+    """端口冲突清单：注册表重复登记 + 端口分配表重复分配。"""
+    out = []
+    for port in registry_duplicate_ports():
+        out.append({"kind": "registry_duplicate", "port": port,
+                    "detail": "REGISTRY 中同一端口登记多次（dict 静默覆盖）"})
+    for item in allocation_conflicts():
+        out.append({"kind": "allocation_duplicate", "port": item["port"],
+                    "detail": "ports_allocated.json 中同端口分配给 %s"
+                              % "/".join(item["names"])})
+    return out
 
 
 def _powershell_proc_name(pid):
@@ -263,37 +327,52 @@ def main():
             continue
         unknown.append((p, name))
     if unknown:
-        rc = 1
         for p, name in unknown:
             say("  ⚠ %d 由 %s 监听——我方服务未上注册表！"
                   % (p, name))
         if not strict:
-            rc = 0  # 非 strict：警示不挡道（瞬时 dev server 常态存在）
             say("  （非 strict 模式：仅警示；--strict 才 rc=1）")
     else:
         say("  无 ✓（注册表外仅系统/第三方豁免进程）")
-    say("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d =="
+    say("== 端口冲突（注册表重复登记 / 分配表重复分配）==")
+    conflicts = port_conflicts()
+    if conflicts:
+        for c in conflicts:
+            say("  ⚠ %d %s（%s）" % (c["port"], c["kind"], c["detail"]))
+    else:
+        say("  无 ✓")
+    say("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d，冲突 %d =="
           % (len(REGISTRY), len(down),
-             ",".join(map(str, down)) or "无", len(unknown)))
+             ",".join(map(str, down)) or "无", len(unknown),
+             len(conflicts)))
     hard_down = [p for p in down if p not in OPTIONAL_OFFLINE]
-    strict_fail = bool(strict and (unknown or hard_down))
+    if hard_down:
+        say("  （在册服务离线 %d 个，仅提示不判负——strict 只拦未登记/冲突：%s）"
+            % (len(hard_down), ",".join(map(str, hard_down))))
+    # 2026-10-26 WO-UPGRADE-20261026：strict 只对「未登记监听/端口冲突」失败；
+    # 在册但离线永不判负（否则合并门被 20 个按需口天天误红 → 假门）。
+    strict_fail = bool(strict and (unknown or conflicts))
     if as_json:
         print(json.dumps({
             "strict": strict,
             "registered": registered,
             "offline": down,
+            "hard_offline": hard_down,
             "unknown": [{"port": p, "pid_name": name}
                         for p, name in unknown],
+            "conflicts": conflicts,
             "summary": {"registered_total": len(REGISTRY),
                         "offline": len(down),
-                        "unregistered": len(unknown)},
+                        "unregistered": len(unknown),
+                        "conflicts": len(conflicts)},
             "strict_fail": strict_fail,
-            "rc": 1 if strict_fail else rc,
+            "rc": 1 if strict_fail else 0,
         }, ensure_ascii=False, indent=2))
     if strict_fail:
-        say("STRICT FAIL")
+        say("STRICT FAIL（未登记 %d，端口冲突 %d）"
+            % (len(unknown), len(conflicts)))
         return 1
-    return rc
+    return 0
 
 
 if __name__ == "__main__":
