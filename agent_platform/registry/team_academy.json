@@ -15,7 +15,17 @@
    "wait_all_complete": false,
    "llm_binding": "glm/glm-5.3",
    "tools": [
-    "events"
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "recent_events",
+    "signal_precedents",
+    "pool_rows",
+    "paper_positions"
    ],
    "memory_grants": {
     "read": [
@@ -25,7 +35,9 @@
     ],
     "write": [
      "agent/ACAD1/*",
-     "agent_platform/data/academy/**"
+     "agent_platform/data/academy/**",
+     "knowledge_docs/**",
+     "docs/**"
     ]
    },
    "grade": "E3",
@@ -35,6 +47,56 @@
    "skills": [
     {
      "id": "events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_read",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_latest",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_ready",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "market_snapshot",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "data_health",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "stock_info",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "recent_events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "signal_precedents",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "pool_rows",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "paper_positions",
      "kind": "tool",
      "enabled": true
     }
@@ -51,7 +113,16 @@
    "wait_all_complete": false,
    "llm_binding": "ollama/qwen3.5:9b",
    "tools": [
-    "events"
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "recent_events",
+    "signal_precedents",
+    "pool_rows"
    ],
    "memory_grants": {
     "read": [
@@ -72,6 +143,51 @@
      "id": "events",
      "kind": "tool",
      "enabled": true
+    },
+    {
+     "id": "datamart_read",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_latest",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_ready",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "market_snapshot",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "data_health",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "stock_info",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "recent_events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "signal_precedents",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "pool_rows",
+     "kind": "tool",
+     "enabled": true
     }
    ]
   },
@@ -86,7 +202,14 @@
    "wait_all_complete": false,
    "llm_binding": "ollama/qwen3.5:9b",
    "tools": [
-    "events"
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "data_health",
+    "market_snapshot",
+    "stock_info",
+    "pool_rows"
    ],
    "memory_grants": {
     "read": [
@@ -105,6 +228,41 @@
    "skills": [
     {
      "id": "events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_read",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_latest",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_ready",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "data_health",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "market_snapshot",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "stock_info",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "pool_rows",
      "kind": "tool",
      "enabled": true
     }

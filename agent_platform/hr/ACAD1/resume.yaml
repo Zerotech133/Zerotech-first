@@ -3,7 +3,8 @@ name: 研究院院长
 kind: staff
 identity:
   origin: 数字军团研究院首批编制（K-ORG-125）
-  model: ollama/qwen3.5:9b
+  model: glm/glm-5.3
+  model_note: "2026-10-27 ACAD1 P0 口径归一：以 org.json/team_academy 为准（云端重载白名单 academy_director）；ollama/qwen3.5:9b 为历史档"
   born: 2026-10-17
 experience:
   - org: 数字军团研究院
@@ -19,6 +20,7 @@ charter_detail: 研究院总负责人：审题、立项、组织评审、协调�
 grade: E3
 tools_allowed:
   read: ['*']
-  write: ['agent_platform/data/academy/**', 'knowledge_docs/**', 'docs/**']
+  write: ['agent/ACAD1/*', 'agent_platform/data/academy/**', 'knowledge_docs/**', 'docs/**']
   execute: ['python', 'pytest']
   danger: deny
+tools_granted: [events, datamart_read, datamart_latest, datamart_ready, market_snapshot, data_health, stock_info, recent_events, signal_precedents, pool_rows, paper_positions]

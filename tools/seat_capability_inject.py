@@ -935,6 +935,97 @@ WORKING_MEMORY["data1"] = """# 工作记忆索引 — DATA1 张松（数据仓�
 - 不凭 mtime 推业务日期（判例：curated 假红、Tushare 静默断更 7 交易日）。
 """
 
+# ── ACAD1（研究院院长·司马徽）能力底座（2026-10-27 WO-LEGION-ACAD1-P0）─────────
+# 全仓真实工具：academy_ops（本项目新增，立项/评审/周报三件套）、academy_wiring
+# （8 段阶段机唯一写路径）、只读数据工具（quant_backtest/agent_tools.py，org 已授权）、
+# events/devtask（平台内置）、capability_self_audit（能力卡自检）、install_academy_ops.ps1。
+# 注：trigger-ops 的 status 由 inject() 动态判定（三计划任务是否已注册），静态卡不虚报 ready。
+HOMES["acad1"] = os.path.join(REPO, "legion_agents", "ACAD1", "workspace")
+
+CAPABILITIES["acad1"] = [
+    {"name": "research-intake", "what": "研究课题立项：读登记簿→立项简报（候选/缺项/建议动作）→research_intake 事件",
+     "how": "python -X utf8 agent_platform/tools/academy_ops.py intake（简报落 agent_platform/data/academy/briefs/）；阶段推进走 agent_platform/domains/academy_wiring.py list|move",
+     "boundary": "只读登记簿；立项不等于批准，阶段推进 ±1 步且不得跳级", "status": "ready",
+     "verified_scope": "cli_smoke+pytest", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "research-review", "what": "方法论评审：读待评审课题→评审清单（八字段缺项+回测登记+检查表）→research_review 事件",
+     "how": "python -X utf8 agent_platform/tools/academy_ops.py review（清单落 data/academy/reviews/）；结题裁决走 agent_platform/domains/academy_wiring.py approve decision|closed（需人签凭据）",
+     "boundary": "评审≠裁决；→decision/→closed 必须持 Approval 凭据，AI 不代签", "status": "ready",
+     "verified_scope": "cli_smoke+pytest", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "research-weekly", "what": "研究院周报：课题/评审/回测/事件统计+KPI 对照+下周动作，报 A0 田丰",
+     "how": "python -X utf8 agent_platform/tools/academy_ops.py weekly（周报落 data/academy/reports/）→research_report 事件",
+     "boundary": "只读登记统计，不替代评审记录与 Go/No-Go 结论", "status": "ready",
+     "verified_scope": "cli_smoke+pytest", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "evidence-readonly", "what": "证据采集与口径核验：数据中台读层/新鲜度/市场快照/个股身份/事件/信号先例（只读）",
+     "how": "org tools 已授：datamart_read/datamart_latest/datamart_ready、market_snapshot、data_health、stock_info、recent_events、signal_precedents、pool_rows、paper_positions；实现 quant_backtest/agent_tools.py（冒烟：python -X utf8 -c \"import sys;sys.path.insert(0,'quant_backtest');import agent_tools;print(agent_tools.call('datamart_latest',table='ts_daily'))\"）",
+     "boundary": "只读、幂等；不写数据根；取不到=未取得，不编造", "status": "ready",
+     "verified_scope": "tool_grant+cli_smoke", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "cross-dept-coordination", "what": "跨部门协同：立项/评审/联评留痕与派单（投研/数据/研发/产品/市场/法务）",
+     "how": "python tools/events.py emit --kind research_review --task ACAD1 --agent ACAD1 --detail ...；派单走 python tools/devtask.py new",
+     "boundary": "只留痕与建议，不代替 A0/老田拍板；L2 动作照旧报批", "status": "ready",
+     "verified_scope": "cli_smoke", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "outcome-adjudication", "what": "成果裁决：组织评审→Go/No-Go 建议→结题/关闭审批凭据登记",
+     "how": "python -X utf8 agent_platform/domains/academy_wiring.py approve <topic_id> decision|closed --by laotian --reason ...（需先推进至 joint_review；approvals 账本留凭据）",
+     "boundary": "AI 只组织与出建议，签字权归老田；无数据冻结/验收证据不得输出 Go", "status": "ready",
+     "verified_scope": "cli_smoke+domain_tests", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "capability-self-audit", "what": "能力自检：能力卡 vs 真实工具/新鲜度，drift 即报警（本卡验收工具）",
+     "how": "python -X utf8 agent_platform/tools/capability_self_audit.py --profile legion_agents/ACAD1/workspace --json",
+     "boundary": "只读；纸面能力（引用脚本缺失/卡过期）必须报 drift", "status": "ready",
+     "verified_scope": "cli_smoke", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "trigger-ops", "what": "研究运营触发：立项简报（周一 09:30）/评审清单（周三 15:00）/周报（周五 16:00）三计划任务",
+     "how": "tools/install_academy_ops.ps1（Windows 计划任务注册，L2 五要素人工批准后安装；-Uninstall 回滚；-DryRun 预演）；任务体=agent_platform/tools/academy_ops.py",
+     "boundary": "计划任务增删=L2 宿主级动作，未获批不装；装了才有 trigger 维审计", "status": "pending_wiring",
+     "tasks": ["AcademyIntakeBrief", "AcademyReview", "AcademyWeeklyReport"], "installed": False,
+     "verified_scope": "installer_dry_run", "verified_at": "2026-10-27T08:00+08:00"},
+]
+
+
+def _acad1_task_exists(name: str) -> bool:
+    """只查（不建）计划任务是否存在；失败按不存在处理。"""
+    try:
+        import subprocess
+        return subprocess.run(["schtasks", "/Query", "/TN", name],
+                              capture_output=True, timeout=10).returncode == 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _acad1_with_trigger_status(items):
+    """trigger-ops 状态按运行态动态判定：三任务全在=ready，否则 pending_wiring。"""
+    targets = ("AcademyIntakeBrief", "AcademyReview", "AcademyWeeklyReport")
+    installed = all(_acad1_task_exists(t) for t in targets)
+    out = []
+    for c in items:
+        c = dict(c)
+        if c.get("name") == "trigger-ops":
+            c["installed"] = installed
+            c["status"] = "ready" if installed else "pending_wiring"
+            if installed:
+                c["verified_scope"] = "scheduled_tasks"
+                c["verified_at"] = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+        out.append(c)
+    return out
+
+
+WORKING_MEMORY["acad1"] = """# 工作记忆索引 — ACAD1 司马徽（研究院院长 / 太学）
+
+## 常读真源
+- 研究登记簿：agent_platform/data/academy/research_topics.json（阶段唯一真源）
+- 回测登记：agent_platform/data/academy/backtests.jsonl
+- 阶段机唯一写路径：agent_platform/domains/academy_wiring.py（8 段 ±1；→decision/closed 需审批凭据）
+- 触发三件套：agent_platform/tools/academy_ops.py intake|review|weekly（简报/清单/周报落 data/academy/）
+- 能力卡：legion_agents/ACAD1/workspace/skills/CAPABILITIES.json（本注入器生成）
+- 舆情/情报：INTEL1；数据口径：DATA1；实现：DEV3/DEV4；执行：TR1；裁决：D1→A0→老田
+
+## 日/周节奏（计划任务装后自动）
+- 周一 09:30 立项简报（intake）｜周三 15:00 评审清单（review）｜周五 16:00 周报（weekly，报 A0）
+- 未装任务前：手动 python -X utf8 agent_platform/tools/academy_ops.py <action>
+
+## 口径纪律（沉淀中）
+- 研究必须可复现/可证伪/可转化；没有数据冻结与验收证据不得输出 Go 或产品化结论；
+- 阶段只能逐级推进，不得跳级；AI 不代签，裁决权归老田；
+- 能力卡 status 要如实：pending_wiring 不冒充 ready，装任务后由注入器动态翻绿。
+"""
+
 
 def inject(dry_run: bool, seats=None) -> int:
     wrote, skipped = 0, 0
@@ -947,6 +1038,8 @@ def inject(dry_run: bool, seats=None) -> int:
         # ① 能力清单
         cap_path = os.path.join(skills_dir, "CAPABILITIES.json")
         items = CAPABILITIES[seat]
+        if seat == "acad1":
+            items = _acad1_with_trigger_status(items)
 
         def _count(status):
             return sum(1 for c in items if c.get("status") == status)

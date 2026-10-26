@@ -2194,12 +2194,51 @@
      "charter_detail": "研究院总负责人：审题、立项、组织评审、协调投研/数据/研发/产品/市场/法务，向田丰提交研究院日报与周报",
      "llm_binding": "glm/glm-5.3",
      "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
-     "tools": [],
-     "tools_note": "补档初始为空，按工单另行授予",
-     "memory_grants": [],
+     "tools": [
+      "events",
+      "datamart_read",
+      "datamart_latest",
+      "datamart_ready",
+      "market_snapshot",
+      "data_health",
+      "stock_info",
+      "recent_events",
+      "signal_precedents",
+      "pool_rows",
+      "paper_positions"
+     ],
+     "tools_note": "2026-10-27 ACAD1 P0 口径归一：events + 只读研究工具（datamart_*/market_snapshot/data_health/stock_info/recent_events/signal_precedents/pool_rows/paper_positions）；实现见 quant_backtest/agent_tools.py；写盘仅 academy/knowledge_docs/docs",
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/*",
+       "agent/ACAD1/*"
+      ],
+      "write": [
+       "agent/ACAD1/*",
+       "agent_platform/data/academy/**",
+       "knowledge_docs/**",
+       "docs/**"
+      ]
+     },
      "grade": "E3",
      "grade_note": "补档初始档，待 KPI 观察后调整",
-     "attributes": {}
+     "attributes": {
+      "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
+      "specialties": [
+       "研究课题立项",
+       "方法论评审",
+       "策略与商业化统筹",
+       "跨部门协调",
+       "成果裁决"
+      ],
+      "knowledge": [
+       "knowledge_docs/AI工程实践知识库.md",
+       "knowledge_docs/金融专业知识库.md",
+       "knowledge_docs/缠论技术分析知识库.md",
+       "knowledge_docs/资本运作知识库.md"
+      ]
+     }
     },
     {
      "agent_id": "STRAT1",
@@ -2208,8 +2247,19 @@
      "charter_detail": "把投研部的市场问题转成可验证策略假设，维护策略研究台账，交由 BACK1 做回测",
      "llm_binding": "ollama/qwen3.5:9b",
      "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
-     "tools": [],
-     "tools_note": "补档初始为空，按工单另行授予",
+     "tools": [
+      "events",
+      "datamart_read",
+      "datamart_latest",
+      "datamart_ready",
+      "market_snapshot",
+      "data_health",
+      "stock_info",
+      "recent_events",
+      "signal_precedents",
+      "pool_rows"
+     ],
+     "tools_note": "2026-10-27 ACAD1 P0 同口径授权：只读研究工具（见 quant_backtest/agent_tools.py）",
      "memory_grants": [],
      "grade": "E2",
      "grade_note": "补档初始档，待 KPI 观察后调整",
@@ -2222,8 +2272,17 @@
      "charter_detail": "接收策略假设，按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据",
      "llm_binding": "ollama/qwen3.5:9b",
      "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
-     "tools": [],
-     "tools_note": "补档初始为空，按工单另行授予",
+     "tools": [
+      "events",
+      "datamart_read",
+      "datamart_latest",
+      "datamart_ready",
+      "data_health",
+      "market_snapshot",
+      "stock_info",
+      "pool_rows"
+     ],
+     "tools_note": "2026-10-27 ACAD1 P0 同口径授权：只读研究工具（见 quant_backtest/agent_tools.py）",
      "memory_grants": [],
      "grade": "E2",
      "grade_note": "补档初始档，待 KPI 观察后调整",
