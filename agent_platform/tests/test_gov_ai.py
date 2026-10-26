@@ -163,9 +163,11 @@ def test_build_ledger_input_error_raises(monkeypatch):
         G.build_ledger_input()
 
 
-def test_build_health_input_parses_stdout(monkeypatch):
-    card = {"items": [{"id": "backup.catchup", "state": "red", "detail": "30.4h"},
-                      {"id": "ops.alert_watch_liveness", "state": "green", "detail": ""}]}
+def test_build_health_input_parses_checks_structure(monkeypatch):
+    """健康卡真实结构是 checks[{id,level,detail}]（GOVAI-1 首跑曾误读 items 导致空输入）。"""
+    card = {"generated_at": "2026-10-26T11:00:00+08:00", "status": "red", "exit_code": 1,
+            "checks": [{"id": "backup.catchup", "level": "red", "detail": "30.4h"},
+                       {"id": "ops.alert_watch_liveness", "level": "green", "detail": ""}]}
     class FakeProc:
         returncode = 1
         stdout = json.dumps(card, ensure_ascii=False)
@@ -173,7 +175,37 @@ def test_build_health_input_parses_stdout(monkeypatch):
     monkeypatch.setattr(G.subprocess, "run", lambda *a, **kw: FakeProc())
     payload = G.build_health_input()
     assert payload["counts"]["red"] == 1 and payload["counts"]["green"] == 1
+    assert payload["status"] == "red" and payload["exit_code"] == 1
     assert "backup.catchup" in payload["known_items"]
+
+
+def test_build_health_input_items_fallback(monkeypatch):
+    card = {"items": [{"id": "x", "state": "yellow", "detail": ""}]}
+    class FakeProc:
+        returncode = 0
+        stdout = json.dumps(card)
+        stderr = ""
+    monkeypatch.setattr(G.subprocess, "run", lambda *a, **kw: FakeProc())
+    payload = G.build_health_input()
+    assert payload["counts"]["yellow"] == 1 and payload["known_items"] == ["x"]
+
+
+def test_priority_requires_evidence():
+    payload = {"items": [{"id": "health.a", "state": "red"}], "known_items": ["health.a"],
+               "counts": {"red": 1}}
+    item = {"title": "x", "why": "health.a 为红", "suggested_action": "查",
+            "confidence": 0.6}
+    r = G.validate_items("priority_advice", [item], payload)
+    assert r["schema_ok"] is False
+
+
+def test_priority_accepts_health_evidence():
+    payload = {"items": [{"id": "health.a", "state": "red"}], "known_items": ["health.a"],
+               "counts": {"red": 1}}
+    item = {"title": "x", "why": "health.a 为红", "suggested_action": "查",
+            "evidence": ["health:health.a"], "confidence": 0.6}
+    r = G.validate_items("priority_advice", [item], payload)
+    assert r["ok"] is True and r["items"][0]["evidence"] == ["health:health.a"]
 
 
 def test_build_case_input_requires_schema(tmp_path):
