@@ -414,3 +414,92 @@ def test_offline_default_ledger_path_is_checkout_local():
     root = zc.checkout_root(TOOLS_DIR / "zhuge_challenge.py")
     assert (root / "tools" / "zhuge_challenge.py").is_file()
     assert root == TOOLS_DIR.parent
+
+
+# ---------------------------------------------------------------------------
+# 8. W5 沙盘快照消费（--auto-snapshot，2026-10-27 P1）
+# ---------------------------------------------------------------------------
+def auto_args(tmp_path, snapshot_dir, strict=False):
+    return SimpleNamespace(
+        snapshot=None, tasks=None, filter_status=None, auto_snapshot=True,
+        snapshot_dir=str(snapshot_dir), strict_sandbox=strict,
+        _sandbox_prefix=str(tmp_path))
+
+
+def make_repo_with_tasks(root: Path, rows=None):
+    d = root / ".worktrees"
+    d.mkdir(parents=True, exist_ok=True)
+    write_json(d / "tasks.json", rows or {
+        "T-A": {"desc": "做 A", "status": "doing"},
+        "T-B": {"desc": "做 B", "status": "done"},
+    })
+    return root
+
+
+def test_auto_snapshot_picks_newest_valid(tmp_path):
+    plans = tmp_path / "plans"
+    plans.mkdir()
+    old = write_json(plans / "old_plan.json", SNAPSHOT_ROWS)
+    bad = plans / "new_plan.json"
+    bad.write_text("{bad-json", encoding="utf-8")
+    latest = write_json(plans / "latest.json", [
+        {"task_id": "T-Z", "title": "最新快照任务", "status": "doing"}])
+    import os
+    os.utime(old, (100, 100))
+    os.utime(bad, (400, 400))  # 坏文件最新 → 先被扫描并跳过，再命中 latest 有效
+    os.utime(latest, (300, 300))
+    root = make_repo_with_tasks(tmp_path / "repo")
+    snap, meta = zc.load_snapshot(auto_args(tmp_path, plans), root)
+    assert snap["source_kind"] == "snapshot_file"
+    assert snap["path"].endswith("latest.json")
+    assert [it["task_id"] for it in snap["items"]] == ["T-Z"]
+    assert meta["auto_snapshot"]["chosen"].endswith("latest.json")
+    assert any("跳过" in w for w in meta["auto_snapshot"]["warnings"])
+
+
+def test_auto_snapshot_missing_dir_falls_back_tasks(tmp_path):
+    root = make_repo_with_tasks(tmp_path / "repo")
+    snap, meta = zc.load_snapshot(
+        auto_args(tmp_path, tmp_path / "no-such-plans"), root)
+    assert snap["source_kind"] == "tasks_ledger"
+    assert meta["auto_snapshot"]["fallback"] is True
+    assert any("目录不存在" in w or "回落 tasks" in w
+               for w in meta["auto_snapshot"]["warnings"])
+
+
+def test_auto_snapshot_empty_skipped_then_falls_back(tmp_path):
+    plans = tmp_path / "plans"
+    plans.mkdir()
+    write_json(plans / "empty_plan.json", [])
+    root = make_repo_with_tasks(tmp_path / "repo")
+    snap, meta = zc.load_snapshot(auto_args(tmp_path, plans), root)
+    assert snap["source_kind"] == "tasks_ledger"
+    assert meta["auto_snapshot"]["fallback"] is True
+
+
+def test_auto_snapshot_strict_without_snapshot_rejects(tmp_path):
+    root = make_repo_with_tasks(tmp_path / "repo")
+    with pytest.raises(zc.WhitelistError):
+        zc.load_snapshot(auto_args(tmp_path, tmp_path / "plans", strict=True), root)
+
+
+def test_auto_snapshot_inside_prefix_strict_ok(tmp_path):
+    plans = tmp_path / "plans"
+    plans.mkdir()
+    write_json(plans / "2026-10-27_plan.json", SNAPSHOT_ROWS)
+    root = make_repo_with_tasks(tmp_path / "repo")
+    snap, meta = zc.load_snapshot(auto_args(tmp_path, plans, strict=True), root)
+    assert snap["source_kind"] == "snapshot_file"
+    assert snap["inside_sandbox_prefix"] is True
+
+
+def test_auto_snapshot_cli_smoke(capsys, env):
+    plans = env.tmp / "plans"
+    plans.mkdir()
+    write_json(plans / "2026-10-27_plan.json", SNAPSHOT_ROWS)
+    rc, data = run(capsys, base_args(
+        env, "snapshot", "--auto-snapshot", "--snapshot-dir", str(plans)))
+    assert rc == 0
+    assert data["ok"] is True
+    assert data["meta"]["auto_snapshot"]["chosen"].endswith("2026-10-27_plan.json")
+    assert data["snapshot"]["source_kind"] == "snapshot_file"
