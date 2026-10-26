@@ -54,3 +54,25 @@ def test_rate_and_wilson():
     assert 0.0 <= lo <= 0.75 <= hi <= 1.0
     empty = ja.rate(0, 0)
     assert empty["rate"] is None and empty["wilson95"] == [0.0, 0.0]
+
+def test_default_band_is_2_5():
+    assert ja.DEFAULT_BAND == 2.5
+
+
+def test_assess_report_flags():
+    report = {
+        "directional": {"n": 2000, "rate": 0.60,
+                        "baseline_all_bull": {"n": 2000, "rate": 0.55}},
+        "by_bias": {
+            "bull": {"n": 1200, "accuracy": 0.62},
+            "bear": {"n": 400, "accuracy": 0.50},
+        },
+        "neutral": {"n": 800, "band_hit_rate": 0.70, "highvol_share": 0.30},
+        "scope": {"band_pct": 2.5},
+    }
+    a = ja.assess_report(report)
+    assert a["bull"]["usable"] is True      # n>=1000 且 > 基线+2pp
+    assert a["bear"]["usable"] is False     # 样本不足 1000
+    assert a["neutral"]["usable_as_direction"] is False
+    assert a["confidence"]["decision_weight"] is False
+    assert a["directional"]["edge_vs_baseline"] == 0.05

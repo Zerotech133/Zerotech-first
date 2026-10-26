@@ -116,3 +116,18 @@ yz-substrate `refill(posterior_map={"jev.bias": fn})` 直接读取，**双方不
 - P1：`jev_audit` 表 + `--only` 式回填 + 每日 17:30 生成 `posterior_<date>.jsonl` + 健康卡 `jev.calibration`
 - P1：JEV wire 适配器 `POST /v1/systemone`（A 型出口）
 - P2：V14 门控结果反哺 `JEV_GATE` 阈值（0.8 改为 min_edge 驱动，经变更单）
+
+## 八、标定决策（2026-10-26，数据版）
+
+依据 P1 账本首份校准（`agent_platform/data/jev_audit/latest.json`，方向类 n=1997）与
+`docs/ops/2026-10-26_JEV判读标定三项决策_数据版.md`，已决定（解释层，判读提示词不变）：
+
+1. **neutral 带宽 1% → 2.5%**：1% 下命中仅 32.8%（67% 中性新闻仍动 >1%），2.5% 命中 69.6%；
+   超出带宽的 neutral 标记 `highvol`（30.4%），只作波动事件提示，不作方向信号。
+2. **bear 降为风险标签**：n=428 方向准确率 50.5%、平均超额 +0.131%，无方向 edge；
+   不入交易信号，待 n≥1000 且准确率≥53% 复核。
+3. **conf 退出决策权重**：corr(conf,hit)≈0、分桶非单调；保留入账字段供未来标定，
+   不参与门控；如需救活走 isotonic calibration。
+4. 附加观察：`price` 类事件方向准确率 46.5%（n=213）低于抛硬币，后续考虑降级/过滤。
+
+字段层影响：`dec_audit.hit` 对 neutral 按 2.5% 带宽计算；`assessment` 段随报告输出。

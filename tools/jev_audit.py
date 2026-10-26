@@ -47,7 +47,7 @@ AUDIT_DIR = ROOT / "agent_platform" / "data" / "jev_audit"
 AUDIT_DB = AUDIT_DIR / "jev_audit.db"
 BENCH_CODE = "000300.SH"
 DEFAULT_DAYS = 45
-DEFAULT_BAND = 1.0
+DEFAULT_BAND = 2.5  # 2026-10-26 JEVCAL2：neutral |excess| P70≈2.55%，1% 带宽过窄（命中仅 32.8%）
 CALIB_MIN_N = 20
 CONF_BUCKETS = [(0.0, 0.55), (0.55, 0.65), (0.65, 0.75), (0.75, 0.85), (0.85, 1.01)]
 
@@ -251,6 +251,11 @@ def fill_posterior(conn: sqlite3.Connection, band: float) -> int:
             " WHERE seq=?", (round(ret, 3), round(bench[trade_day], 3),
                              round(excess, 3), hit_of(bias, excess, band), now, seq))
         n += 1
+    # 带宽变化时重算 neutral 命中（bull/bear 与带宽无关，不动）
+    conn.execute(
+        "UPDATE dec_audit SET hit=CASE WHEN abs(excess)<=? THEN 1 ELSE 0 END"
+        " WHERE posterior_at IS NOT NULL AND bias='neutral' AND excess IS NOT NULL",
+        (band,))
     conn.commit()
     return n
 
@@ -302,7 +307,8 @@ def build_report(conn: sqlite3.Connection, band: float) -> dict:
             events[ev] = acc(sub)
     all_bull = rate(sum(1 for r in directional if r[3] > 0), len(directional))
     all_bear = rate(sum(1 for r in directional if r[3] < 0), len(directional))
-    return {
+    neutral_hit = acc(neutral)["rate"]
+    report = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "scope": {"band_pct": band, "bench": BENCH_CODE,
                   "return_def": "T+1 close pct_chg mean; excess vs bench"},
@@ -313,6 +319,61 @@ def build_report(conn: sqlite3.Connection, band: float) -> dict:
         "by_bias": by_bias,
         "calibration_directional": calib,
         "by_event_type": events,
+    }
+    report["neutral"]["highvol_share"] = (
+        round(1.0 - neutral_hit, 3) if neutral_hit is not None else None)
+    report["assessment"] = assess_report(report)
+    return report
+
+
+# 标定阈值（2026-10-26 JEVCAL2 数据版决策；样本门槛先保守取 1000）
+ASSESS_MIN_N = 1000
+ASSESS_BEAR_MAX_ACC = 0.53
+ASSESS_EDGE_PP = 0.02
+
+
+def assess_report(report: dict) -> dict:
+    """把「能不能当信号用」从数据里判出来，供报告/健康卡消费（不改判读提示词）。"""
+    d = report.get("directional") or {}
+    base = d.get("baseline_all_bull") or {}
+    n = int(d.get("n") or 0)
+    rate = d.get("rate")
+    base_rate = base.get("rate")
+    by_bias = report.get("by_bias") or {}
+    bull = by_bias.get("bull") or {}
+    bear = by_bias.get("bear") or {}
+    neutral = report.get("neutral") or {}
+    band = (report.get("scope") or {}).get("band_pct")
+
+    def _usable(sub, min_n, threshold):
+        if not sub or (sub.get("n") or 0) < min_n or sub.get("accuracy") is None:
+            return False, "样本不足(需≥%d)" % min_n
+        if sub["accuracy"] < threshold:
+            return False, "准确率 %.1f%% < %.1f%%" % (sub["accuracy"] * 100, threshold * 100)
+        return True, "达标"
+
+    bull_ok, bull_why = _usable(bull, ASSESS_MIN_N,
+                                (base_rate or 0.5) + ASSESS_EDGE_PP)
+    bear_ok, bear_why = _usable(bear, ASSESS_MIN_N, ASSESS_BEAR_MAX_ACC)
+    return {
+        "min_n": ASSESS_MIN_N,
+        "edge_pp": ASSESS_EDGE_PP,
+        "directional": {
+            "n": n, "accuracy": rate, "baseline_all_bull": base_rate,
+            "edge_vs_baseline": (round(rate - base_rate, 3)
+                                 if rate is not None and base_rate is not None else None),
+        },
+        "bull": {"n": bull.get("n"), "accuracy": bull.get("accuracy"),
+                 "usable": bull_ok, "reason": bull_why},
+        "bear": {"n": bear.get("n"), "accuracy": bear.get("accuracy"),
+                 "usable": bear_ok, "reason": bear_why},
+        "neutral": {"band_pct": band,
+                    "band_hit_rate": neutral.get("band_hit_rate"),
+                    "highvol_share": neutral.get("highvol_share"),
+                    "usable_as_direction": False,
+                    "note": "neutral 仅作无方向判定；超出带宽者标记为高波动事件，不构成方向信号"},
+        "confidence": {"decision_weight": False,
+                       "note": "conf 分桶准确率非单调、corr(conf,hit)≈0：保留入账但退出决策权重"},
     }
 
 
