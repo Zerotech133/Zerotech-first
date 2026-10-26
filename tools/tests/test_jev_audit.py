@@ -37,7 +37,9 @@ def test_hit_of():
     assert ja.hit_of("bear", 0.8) == 0
     assert ja.hit_of("neutral", 0.5) == 1
     assert ja.hit_of("neutral", -0.9) == 1
-    assert ja.hit_of("neutral", 1.5) == 0
+    assert ja.hit_of("neutral", 1.5) == 1      # 默认带宽 2.5%：1.5% 算中性
+    assert ja.hit_of("neutral", 1.5, band=1.0) == 0  # 显式窄带宽下超出
+    assert ja.hit_of("neutral", 2.6) == 0
 
 
 def test_bucket_of():
