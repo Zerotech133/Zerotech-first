@@ -114,6 +114,12 @@
     <div id="skills"></div>
   </section>
 
+  <section>
+    <h2>运行轨迹 <span id="trace-sub">—</span> <span>只读 · trace/span · 成本估算</span></h2>
+    <div id="traces"></div>
+    <div id="trace-detail" class="muted" style="margin-top:6px"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -502,7 +508,8 @@ function loadCap2() {
     jget('/api/zhaoyun/interventions').catch(() => null),
     jget('/api/zhaoyun/memory/curation').catch(() => null),
     jget('/api/zhaoyun/skills').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk]) => {
+    jget('/api/zhaoyun/traces').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -565,6 +572,31 @@ function loadCap2() {
           ' · ' + lv + (s.manual ? ' · 人工核验' : '') + ' · ' + (s.verify_cmd || '')));
       });
     } else sb.appendChild(el('div', 'muted', '技能注册表不可用'));
+    const tb = $('traces'); tb.replaceChildren();
+    if (trc && trc.ok) {
+      $('trace-sub').textContent = '最近 ' + (trc.count || 0) + ' 条';
+      (trc.items || []).slice(0, 10).forEach((t) => {
+        const row = el('div', 'row');
+        const b = el('button', '', (t.spans || 0) + ' spans · ' + (t.errors ? '⚠' : '✓'));
+        b.onclick = () => showTrace(t.trace_id);
+        row.appendChild(el('div', 'muted', '• ' + (t.start || '') + ' → ' + (t.end || '') +
+          ' · ' + t.trace_id));
+        row.appendChild(b); tb.appendChild(row);
+      });
+      if (!(trc.items || []).length) tb.appendChild(el('div', 'muted',
+        '暂无轨迹（触发一次下钻/审批/模型调用后出现）'));
+    } else tb.appendChild(el('div', 'muted', '轨迹不可用'));
+  });
+}
+function showTrace(id) {
+  jget('/api/zhaoyun/trace/' + encodeURIComponent(id)).then((v) => {
+    const box = $('trace-detail'); box.replaceChildren();
+    if (!v.ok) { box.appendChild(el('div', 'muted', '轨迹不可用：' + (v.error || ''))); return; }
+    box.appendChild(el('div', 'muted', 'trace ' + id + ' · spans ' + (v.count || 0) +
+      ' · 成本估算 ' + (v.cost || 0)));
+    (v.spans || []).forEach((s) => box.appendChild(el('div', 'muted',
+      '• [' + (s.kind || '') + '] ' + (s.name || '') + ' · ' + (s.status || '') + ' · ' +
+      (s.start || '') + ' → ' + (s.end || '') + (s.cost ? ' · ¥' + s.cost : ''))));
   });
 }
 function approveRequest(id, decision, signer) {
