@@ -136,12 +136,31 @@ def test_loaded_state_roundtrip(tmp_path):
 
 # ---------------- WO-LEGION-CLOCKANCHOR-20261026：17:50 预扫描 ----------------
 
-def test_default_anchors_include_prescan():
-    """默认锚点：08:46 扫描、17:50 预扫描、18:05 收口（收口前摘要 ≤15min）。"""
+def test_default_anchors_include_prescan_and_ai():
+    """默认锚点：08:46 扫描、17:50 预扫描、18:05 收口、18:10 AI 建议（GOVAI-2）。"""
     anchors = GC.parse_anchors(GC.DEFAULT_ANCHORS)
     assert anchors == [("08:46", "scan"), ("17:50", "scan"),
-                       ("18:05", "closeout")]
+                       ("18:05", "closeout"), ("18:10", "ai_advice")]
     assert [a for a, act in anchors if act == "scan"] == ["08:46", "17:50"]
+
+
+def test_ai_advice_action_maps_to_gov_ai():
+    cmd = " ".join(GC.ACTIONS["ai_advice"])
+    assert "gov_ai.py" in cmd and "--action" in cmd and "all" in cmd
+
+
+def test_ai_advice_fires_after_closeout(tmp_path):
+    """18:11：17:50 预扫（21min 内仍补跑）、18:05 收口、18:10 AI 建议各触发一次。"""
+    runner = _Runner()
+    state = {}
+    fired = GC.run_tick(state, now_fn=lambda: _ts_at(18, 11), runner=runner,
+                        anchors=GC.parse_anchors(GC.DEFAULT_ANCHORS),
+                        state_path=tmp_path / "s.json",
+                        log_path=tmp_path / "c.log")
+    actions = [r["action"] for r in fired if not r.get("skipped_missed")]
+    assert actions == ["scan", "closeout", "ai_advice"]
+    assert "gov_ai.py" in " ".join(runner.calls[-1])
+    assert len(runner.calls) == 3
 
 
 def test_prescan_fires_before_closeout(tmp_path):

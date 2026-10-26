@@ -33,7 +33,7 @@ _REPO = Path(__file__).resolve().parents[1]
 _PLATFORM = _REPO / "agent_platform"
 _TOOLS = _PLATFORM / "tools"
 
-DEFAULT_ANCHORS = "08:46:scan,17:50:scan,18:05:closeout"
+DEFAULT_ANCHORS = "08:46:scan,17:50:scan,18:05:closeout,18:10:ai_advice"
 DEFAULT_TICK_S = 15.0
 DEFAULT_MAX_DELAY_MIN = 120.0
 LOCK_STALE_S = 6 * 3600.0
@@ -43,6 +43,9 @@ ACTIONS: dict[str, list[str]] = {
              "--scan", "--window", "24"],
     "closeout": [sys.executable, str(_TOOLS / "closeout_round.py"),
                  "--json", "--if-changed"],
+    # GOVAI-2：18:10 在收口之后跑 AI 归纳+建议（只产 draft；失败不阻塞治理链）
+    "ai_advice": [sys.executable, str(_TOOLS / "gov_ai.py"),
+                  "--action", "all", "--json"],
 }
 
 

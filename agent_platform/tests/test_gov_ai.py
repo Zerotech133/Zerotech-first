@@ -324,11 +324,95 @@ def test_case_draft_unknown_bundle_ref_fails(tmp_path):
 
 def test_replay_golden_fixture():
     fixture = Path(__file__).resolve().parent / "fixtures" / "govai_golden"
-    item = {"title": "AlertWatch 上游拒跑", "hypothesis": "3221225786 与 267014 是非失败码",
-            "evidence": ["task:AlertWatch", "exit:3221225786"],
-            "confidence": 0.8}
+    # 同一 item 需在两个 fixture 上都接地：只引用两边都存在的任务，且不含数字
+    item = {"title": "AlertWatch 上游拒跑",
+            "hypothesis": "上游不可信主动拒跑，不属于失败（待验证）",
+            "evidence": ["task:AlertWatch"], "confidence": 0.6}
     result = G.replay(fixture, client=FakeClient(items=[item]))
-    assert result["cases"] >= 1
+    assert result["cases"] >= 2
     assert result["schema_ok"] == result["cases"]
     assert result["grounding_ok"] == result["cases"]
     assert (result["recall"] or 0) > 0
+
+
+# ---------------- GOVAI-2：健康判级 / 保留策略 / 批量动作 ----------------
+
+def _write_advice(root, day: str, action: str, status: str,
+                  generated_at: str, items: int = 1):
+    d = root / "advice" / day
+    d.mkdir(parents=True, exist_ok=True)
+    p = d / ("%s.json" % action)
+    p.write_text(json.dumps({"status": status, "generated_at": generated_at,
+                             "items": [{"id": "x"}] * items}, ensure_ascii=False),
+                 encoding="utf-8")
+    return p
+
+
+def test_health_status_no_files_is_yellow_not_red(tmp_path):
+    r = G.health_status(tmp_path)
+    assert r["level"] == "yellow" and "尚未运行" in r["detail"]
+
+
+def test_health_status_fresh_success_is_green(tmp_path):
+    import time
+    now = time.time()
+    _write_advice(tmp_path, G.dt.datetime.fromtimestamp(now).strftime("%Y-%m-%d"),
+                  "anomaly_digest", "draft", G._iso(now - 3600), items=2)
+    r = G.health_status(tmp_path, now=now)
+    assert r["level"] == "green" and r["age_hours"] is not None and r["age_hours"] <= 26
+
+
+def test_health_status_stale_success_is_yellow(tmp_path):
+    import time
+    now = time.time()
+    _write_advice(tmp_path, "2026-10-25", "anomaly_digest", "draft",
+                  G._iso(now - 30 * 3600))
+    assert G.health_status(tmp_path, now=now)["level"] == "yellow"
+
+
+def test_health_status_very_stale_success_is_red(tmp_path):
+    import time
+    now = time.time()
+    _write_advice(tmp_path, "2026-10-23", "anomaly_digest", "draft",
+                  G._iso(now - 60 * 3600))
+    assert G.health_status(tmp_path, now=now)["level"] == "red"
+
+
+def test_health_status_consecutive_failures_is_red(tmp_path):
+    import time
+    now = time.time()
+    _write_advice(tmp_path, "2026-10-26", "anomaly_digest", "failed", G._iso(now - 3600))
+    _write_advice(tmp_path, "2026-10-26", "priority_advice", "failed", G._iso(now - 3500))
+    r = G.health_status(tmp_path, now=now)
+    assert r["level"] == "red" and r["consecutive_failures"] >= 2
+
+
+def test_prune_advice_moves_old_days(tmp_path):
+    import time
+    now = time.time()
+    old_day = (G.dt.datetime.fromtimestamp(now) - G.dt.timedelta(days=120)).strftime("%Y-%m-%d")
+    new_day = G.dt.datetime.fromtimestamp(now).strftime("%Y-%m-%d")
+    _write_advice(tmp_path, old_day, "anomaly_digest", "draft", G._iso(now - 120 * 86400))
+    _write_advice(tmp_path, new_day, "anomaly_digest", "draft", G._iso(now - 3600))
+    moved = G.prune_advice(tmp_path, keep_days=90, now=now)
+    assert moved == 1
+    assert (tmp_path / "_expired" / old_day).is_dir()
+    assert (tmp_path / "advice" / new_day).is_dir()
+    assert not (tmp_path / "advice" / old_day).exists()
+
+
+def test_run_all_aggregates_actions(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_run(action, **kw):
+        calls.append(action)
+        return {"ok": True, "status": "draft", "items": [{"id": "x"}],
+                "usage": {"total_tokens": 1}, "path": "p",
+                "validator": {"schema_ok": True, "grounding_ok": True}}
+
+    monkeypatch.setattr(G, "run", fake_run)
+    out = G.run_all(output_root=tmp_path)
+    assert out["ok"] is True
+    assert calls == ["anomaly_digest", "priority_advice"]
+    assert [a["action"] for a in out["actions"]] == calls
+    assert out["health"]["level"] in ("yellow", "green")

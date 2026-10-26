@@ -6047,6 +6047,28 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
     except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
         add("hermes.push", "yellow", "Hermes 推送健康检查异常：%r" % (_exc,))
 
+    # ---------------------------------------------------------------------------
+    # 6.1) 治理 AI 建议健康（governance.ai_advice，2026-10-26 GOVAI-2）
+    #      judge 逻辑在 gov_ai.health_status（单一真源）；此处以子进程只读调用，
+    #      任何异常一律黄（不红、不阻塞整张卡）。
+    # ---------------------------------------------------------------------------
+    try:
+        import subprocess as _sp
+        import os as _os
+        _gov_py = _os.path.join(_os.path.dirname(_os.path.dirname(
+            _os.path.abspath(__file__))), "agent_platform", "tools", "gov_ai.py")
+        _gp = _sp.run([sys.executable, _gov_py, "--health-status", "--json"],
+                      capture_output=True, text=True, encoding="utf-8",
+                      errors="replace", timeout=90,
+                      env=dict(_os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8"))
+        _gobj = json.loads(_gp.stdout.strip()) if (_gp.stdout or "").strip() else {}
+        _gl = str(_gobj.get("level") or "yellow")
+        _gd = str(_gobj.get("detail") or "治理 AI 健康检查无输出")
+        add("governance.ai_advice", _gl if _gl in ("green", "yellow", "red") else "yellow",
+            _gd[:300])
+    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+        add("governance.ai_advice", "yellow", "治理 AI 健康检查未运行：%r" % (_exc,))
+
     keys = (card.get("security") or {}).get("plaintext_keys") or {}
     if not keys:
         add("security.plaintext_keys", "red", "明文私钥扫描未运行（security 块缺失）")
