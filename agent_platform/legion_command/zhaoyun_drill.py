@@ -163,7 +163,7 @@ def tasks_view(platform: Path) -> dict:
         if st == "review" and row["age_hours"] > 48:
             deviations.append({"kind": "review_stalled", "tid": tid,
                                "detail": "review 已 %.1fh（>48h）待验收" % row["age_hours"]})
-        if row["worktree_missing"]:
+        if row["worktree_missing"] and st in ("doing", "review"):
             deviations.append({"kind": "worktree_missing", "tid": tid,
                                "detail": "worktree 路径不存在（可能已被回收）"})
     return {"ok": True, "generated_at": _now(),

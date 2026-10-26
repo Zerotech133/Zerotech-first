@@ -47,6 +47,9 @@ def _fixture(tmp_path):
                         "created": "2026-10-27 05:00:00", "worktree": ""},
         "unowned-review": {"status": "review", "owner": "unknown-agent",
                            "desc": "无主 [UNOWNED]", "created": "2026-10-27 04:00:00"},
+        "done-old": {"status": "done", "owner": "X", "desc": "历史单",
+                     "created": "2026-10-24 00:00:00",
+                     "worktree": str(tmp_path / "gone-done")},
     }, ensure_ascii=False), encoding="utf-8")
     return platform, prof
 
@@ -66,6 +69,8 @@ def test_tasks_view_deviations(tmp_path):
     assert rep["ok"] and rep["counts"]["doing"] == 2 and rep["counts"]["review"] == 1
     kinds = {d["kind"] for d in rep["deviations"]}
     assert "doing_stalled" in kinds and "unowned" in kinds and "worktree_missing" in kinds
+    # 历史 done 单的 worktree 缺失不算偏差（只对 doing/review 生效）
+    assert all(d["tid"] != "done-old" for d in rep["deviations"])
 
 
 def test_memory_and_model_view(tmp_path):
