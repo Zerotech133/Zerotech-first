@@ -1,0 +1,179 @@
+# 个人 OS 数字军团 · 单机编排骨架（默认部署目标）
+# 占位说明：镜像名、端口、资源限额均须按实际环境替换；
+# 所有 os-legion/*:PLACEHOLDER_TAG 均为占位镜像，须替换后才能构建/部署（骨架状态，不承诺部署）。
+# 席位端口约定（部署侧口径：9400 + 10×序号，与 prometheus.yml 采集目标逐一对齐）：
+#   通用席位：9400 + 10×角色在 entrypoint.KNOWN_ROLES 中的序号
+#   （message_bus=9400 … os_commander=9470）。
+#   平台席六实例（角色均为 platform_agent，经 entrypoint 既有 --platform 参数
+#   区分平台，入口已原生支持，无需环境变量占位）：quant=9440（platform_agent
+#   基准端口），其余五平台按 PLATFORM_REGISTRY 注册顺序自 9480 起步长 10
+#   连续排布：stock=9480 rd=9490 ppt=9500 biz=9510 review=9520；
+#   9450–9470 段已被 risk_guard/approval_gate/os_commander 占用故跳过，
+#   9480–9520 为连续不冲突专用段。
+# 密钥一律走 *_FILE 环境变量或外部 Secret，禁止明文写入本文件。
+version: "3.9"
+
+services:
+  message-bus:
+    image: os-legion/bus:PLACEHOLDER_TAG
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    command: ["python", "entrypoint.py", "--role", "message_bus", "--serve", "--port", "9400"]
+    ports: ["127.0.0.1:9400:9400"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:9400/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  zhuge-liang:
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "zhuge_liang", "--serve", "--port", "9410"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  tian-feng:
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "tian_feng", "--serve", "--port", "9420"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  zhao-yun:
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "zhao_yun", "--serve", "--port", "9430"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  platform-quant:            # 平台席实例1（量化）：platform_agent 基准端口 9440
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "quant_trading", "--serve", "--port", "9440"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 1G }
+
+  # ---- 平台席实例 2-6（工位U 扩编）：角色均为 platform_agent，
+  # --platform 取 roles/platform_agent.py PLATFORM_REGISTRY 内平台标识；
+  # 端口按 9480-9520 专用段续排（规则见文件头注释）。
+
+  platform-stock:            # 平台席实例2（选股）
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "stock_picking", "--serve", "--port", "9480"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  platform-rd:               # 平台席实例3（研发）
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "r_and_d", "--serve", "--port", "9490"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  platform-ppt:              # 平台席实例4（PPT工坊）
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "ppt_studio", "--serve", "--port", "9500"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  platform-biz:              # 平台席实例5（商务谈判）
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "biz_negotiation", "--serve", "--port", "9510"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  platform-review:           # 平台席实例6（审查稽核）
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "platform_agent", "--platform", "review_audit", "--serve", "--port", "9520"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  risk-guard:                # 观察席：只读事件流，无写权限
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "risk_guard", "--serve", "--port", "9450"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  approval-gate:             # 签准网关：仅本人可闭环
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "approval_gate", "--serve", "--port", "9460"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+      # - PRINCIPAL_PROOF_KEY_FILE=/run/secrets/proof_key  # 占位：认证方式待裁定
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  os-commander:              # OS 归集席：只读汇聚投影（界面另立，不在本入口实现）
+    image: os-legion/seat:PLACEHOLDER_TAG
+    command: ["python", "entrypoint.py", "--role", "os_commander", "--serve", "--port", "9470"]
+    environment:
+      - BUS_URL=http://message-bus:9400
+    depends_on:
+      message-bus: { condition: service_healthy }
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }

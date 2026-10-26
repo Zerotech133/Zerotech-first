@@ -1,0 +1,30 @@
+# 个人 OS 数字军团 · 监控采集骨架
+# 占位说明：采集目标为占位地址，须替换为实际席位暴露端口；
+# 阈值统一维护在 alerts.yml，须人工按真实基线标定。
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: os-legion-seats
+    static_configs:
+      - targets:
+          - "message-bus:9400"        # 汇报总线
+          - "zhuge-liang:9410"        # 中台统筹席
+          - "tian-feng:9420"          # 中台文枢席
+          - "zhao-yun:9430"           # 中台执行席
+          - "platform-quant:9440"     # 平台席实例1（量化，platform_agent 基准端口）
+          - "risk-guard:9450"         # 风控观察席
+          - "approval-gate:9460"      # 签准网关
+          - "os-commander:9470"       # OS 归集席（只读汇聚投影）
+          # ---- 平台席实例 2-6（工位U 扩编，端口段规则见
+          # deploy/docker-compose.yaml 头注释：9480 起步长 10）----
+          - "platform-stock:9480"     # 平台席实例2（选股）
+          - "platform-rd:9490"        # 平台席实例3（研发）
+          - "platform-ppt:9500"       # 平台席实例4（PPT工坊）
+          - "platform-biz:9510"       # 平台席实例5（商务谈判）
+          - "platform-review:9520"    # 平台席实例6（审查稽核）
+    # 注意：以上为扩编后清单形态，实例上线前 targets 与实际部署须再核对。
+
+rule_files:
+  - alerts.yml
