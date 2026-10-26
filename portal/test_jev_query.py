@@ -48,8 +48,11 @@ def _make_dbs(tmp_path: Path) -> tuple[Path, Path]:
          {"bias": "bull", "conf": 0.70, "event_type": "other", "companies": []}),
     ]
     for nid, src, ts, title, stocks, jev in rows:
-        c.execute("INSERT INTO news(id,source,ts,title,stocks,jev) VALUES(?,?,?,?,?,?)",
-                  (nid, src, ts, title, stocks, json.dumps(jev, ensure_ascii=False)))
+        # created_at 与 ts 同值：窗口/排序按采集时间
+        c.execute("INSERT INTO news(id,source,ts,title,stocks,jev,created_at)"
+                  " VALUES(?,?,?,?,?,?,?)",
+                  (nid, src, ts, title, stocks,
+                   json.dumps(jev, ensure_ascii=False), ts))
     c.commit()
     c.close()
 
@@ -102,6 +105,9 @@ def test_limit_clamped(dbs):
     assert r["returned"] <= api_jev.MAX_LIMIT
     r1 = api_jev.query(hours=24, limit=1, now=NOW)
     assert r1["returned"] == 1
+    # summary 是窗口全量统计，不随 limit 截断
+    assert r1["summary_window"]["total"] == 3
+    assert r1["items"][0]["collected_at"]
 
 
 def test_posterior_join(dbs):
