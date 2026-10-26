@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>个股分析 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  :root{
+    --bg: var(--gray-0, #0d1117); --panel: var(--gray-1, #0f141c); --card: var(--gray-2, #161b22);
+    --line: var(--gray-4, #30363d); --dim: var(--gray-5, #8b949e); --text: var(--gray-7, #e6edf3);
+    --blue: var(--blu-500, #58a6ff); --green: var(--grn-500, #3fb950); --red: var(--red-500, #f85149); --amber: var(--ylw-500, #d29922);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif}
+  main{max-width:1080px;margin:0 auto;padding:18px 18px 70px}
+  .crumbs{font-size:12px;color:var(--dim);margin:6px 0 10px}
+  .crumbs a{color:var(--blue);text-decoration:none}
+  h1{font-size:21px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:12.5px;margin:0 0 14px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .bar input{flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text);font-size:15px;outline:none}
+  .bar input:focus{border-color:var(--blue)}
+  .btn{cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:9px;padding:10px 16px;font-size:13.5px}
+  .btn:hover{border-color:var(--blue);color:var(--blue)}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#04121f;font-weight:700}
+  .btn.danger{border-color:var(--red);color:var(--red)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+  .kpi .k{font-size:11.5px;color:var(--dim)}
+  .kpi .v{font-size:20px;font-weight:800;margin-top:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:12px}
+  .card h2{font-size:14px;margin:0 0 8px;color:var(--blue);display:flex;justify-content:space-between;align-items:center}
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--dim);margin-right:6px}
+  .tag.ok{color:var(--green);border-color:var(--green)}
+  .tag.bad{color:var(--red);border-color:var(--red)}
+  .tag.event{color:var(--amber);border-color:var(--amber)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:11.5px}
+  td .muted{color:var(--dim)}
+  .empty{color:var(--dim);font-size:12.5px;padding:6px 0}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#12303f;color:#fff;border-radius:9px;padding:8px 16px;font-size:13px;display:none;z-index:99}
+  @media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="/">零界</a> / <a href="/quant">量化</a> / 个股分析</div>
+  <h1>个股分析</h1>
+  <p class="sub">一键流水线：数据快照 → 事件库 → 量化特征 → AI 研判 → 报告/H5 → 质量门；事件支持人工复核。研究分析，不构成投资建议。</p>
+
+  <div class="bar">
+    <input id="code" placeholder="输入代码，如 600337.SH / 688023.SH" autocomplete="off">
+    <button class="btn primary" id="btnQuery">查询</button>
+    <button class="btn" id="btnRun">提交分析（后台队列）</button>
+    <button class="btn" id="btnReview">刷新复核队列</button>
+  </div>
+
+  <div class="grid">
+    <div class="kpi"><div class="k">最近运行</div><div class="v" id="k-run">—</div></div>
+    <div class="kpi"><div class="k">研究评级</div><div class="v" id="k-rating">—</div></div>
+    <div class="kpi"><div class="k">数据覆盖</div><div class="v" id="k-cov">—</div></div>
+    <div class="kpi"><div class="k">待复核事件</div><div class="v" id="k-pending">—</div></div>
+  </div>
+
+  <div class="card" id="latestCard">
+    <h2><span>最新分析</span><span class="muted" id="latest-run" style="font-weight:400;font-size:11.5px"></span></h2>
+    <div id="latestBody" class="empty">输入代码后查询</div>
+  </div>
+
+  <div class="card">
+    <h2><span>事件复核队列</span><span class="muted" id="reviewStat" style="font-weight:400;font-size:11.5px"></span></h2>
+    <div class="row" style="margin-bottom:8px">
+      <span class="tag" id="filterTag">待复核</span>
+      <button class="btn" id="btnFilter" style="padding:5px 12px;font-size:12px">切换：待复核 / 全部</button>
+    </div>
+    <div id="reviewBody" class="empty">点击「刷新复核队列」加载</div>
+  </div>
+
+  <div class="card">
+    <h2>最近运行</h2>
+    <div id="listBody" class="empty">—</div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var state = { code: '', showAll: false };
+  function toast(msg){ var t=$('toast'); t.textContent=msg; t.style.display='block'; setTimeout(function(){t.style.display='none';}, 2200); }
+  function api(path, opts){
+    opts = opts || {};
+    return fetch(path, opts).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, body:j }; }); });
+  }
+  function num(v, d){ return (v===null||v===undefined||v==='')?'—':(typeof v==='number'? v.toFixed(d===undefined?2:d): v); }
+  function esc(s){ return String(s===null||s===undefined?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function flag(r){ return r===1 ? '<span class="tag ok">✓通过</span>' : (r===-1 ? '<span class="tag bad">✗驳回</span>' : '<span class="tag event">待复核</span>'); }
+
+  function renderLatest(j){
+    var run = j.run || {}, sm = j.summary || {};
+    $('latest-run').textContent = run.run_id ? (run.run_id + ' · ' + (run.as_of||'')) : '';
+    if(!run.run_id){ $('latestBody').innerHTML = '<div class="empty">该代码还没有分析记录，点「提交分析」入队。</div>'; return; }
+    var v = sm.rating || run.rating || '—';
+    $('k-run').textContent = (run.finished||'').slice(5,16) || '—';
+    $('k-rating').textContent = v;
+    $('k-cov').textContent = (sm.coverage!==undefined? sm.coverage : run.coverage) + '%';
+    var lv = (sm.levels||[]).map(function(x){ return esc(x.type)+' '+x.price; }).join(' / ');
+    var scen = (sm.scenarios||[]).map(function(s){ return esc(s.name)+' '+(Math.round((s.probability||0)*100))+'%'; }).join('；');
+    var checks = sm.checks || {};
+    var gates = Object.keys(checks).map(function(k){ return '<span class="tag '+(checks[k].passed?'ok':'bad')+'">'+k+' '+(checks[k].passed?'✓':'✗')+'</span>'; }).join('');
+    $('latestBody').innerHTML =
+      '<div class="row" style="margin-bottom:6px"><span class="tag event">评级 '+esc(v)+'</span>'
+      + '<span class="tag">覆盖 '+esc(sm.coverage)+'%</span>'
+      + '<span class="tag">事件 '+(sm.events||0)+' 条</span>'+gates+'</div>'
+      + '<div style="font-size:13.5px">'+esc(sm.thesis||'（无摘要）')+'</div>'
+      + (lv? '<div class="muted" style="margin-top:6px;font-size:12px">关键位：'+lv+'</div>' : '')
+      + (scen? '<div class="muted" style="margin-top:4px;font-size:12px">情景：'+scen+'</div>' : '')
+      + '<div class="row" style="margin-top:10px">'
+      + '<a class="btn" target="_blank" href="/api/analysis/h5?run_id='+encodeURIComponent(run.run_id)+'">打开 H5 全景</a>'
+      + '<a class="btn" target="_blank" href="/api/analysis/report?run_id='+encodeURIComponent(run.run_id)+'">报告 JSON</a>'
+      + '</div>';
+  }
+
+  function query(){
+    var code = ($('code').value||'').trim().toUpperCase();
+    if(!/^[0-9]{6}\.(SH|SZ|BJ)$/.test(code)){ toast('代码格式应为 600337.SH'); return; }
+    state.code = code; $('k-run').textContent='…';
+    Promise.all([api('/api/analysis/latest?code='+encodeURIComponent(code)),
+                 api('/api/analysis/list?code='+encodeURIComponent(code)+'&limit=10')]).then(function(rs){
+      renderLatest(rs[0].body || {});
+      var runs = (rs[1].body||{}).runs || [];
+      if(!runs.length){ $('listBody').innerHTML='<div class="empty">无记录</div>'; }
+      else {
+        var h = '<table><tr><th>run_id</th><th>时间</th><th>状态</th><th>评级</th><th>覆盖</th></tr>';
+        runs.forEach(function(r){ h += '<tr><td>'+esc(r.run_id)+'</td><td class="muted">'+esc((r.started||'').slice(5))+'</td><td>'+esc(r.status)+'</td><td>'+esc(r.rating)+'</td><td>'+esc(r.coverage)+'%</td></tr>'; });
+        $('listBody').innerHTML = h+'</table>';
+      }
+      loadReview();
+    }).catch(function(e){ toast('查询失败：'+e); });
+  }
+
+  function loadReview(){
+    var q = '/api/analysis/events?limit=30';
+    if(state.code) q += '&code=' + encodeURIComponent(state.code);
+    if(!state.showAll) q += '&status=pending';
+    api(q).then(function(r){
+      var b = r.body||{}, items = b.events||[];
+      $('filterTag').textContent = state.showAll? '全部' : '待复核';
+      $('k-pending').textContent = b.pending_total!==undefined? b.pending_total : items.filter(function(x){return x.reviewed===0;}).length;
+      $('reviewStat').textContent = '共 '+(b.total||items.length)+' 条，待复核 '+(b.pending_total||0)+' 条';
+      if(!items.length){ $('reviewBody').innerHTML='<div class="empty">无事件（或已全部复核）</div>'; return; }
+      var h = '<table><tr><th>日期</th><th>类别</th><th>标题</th><th>复核</th><th>操作</th></tr>';
+      items.forEach(function(e){
+        var cat = esc(e.category_final || e.category);
+        h += '<tr><td class="muted">'+esc(e.date)+'</td><td><span class="tag">'+cat+'</span></td>'
+           + '<td>'+ (e.url? '<a href="'+esc(e.url)+'" target="_blank" style="color:var(--blue);text-decoration:none">'+esc((e.title||'').slice(0,52))+'</a>' : esc((e.title||'').slice(0,52)))
+           + '</td><td>'+flag(e.reviewed)+'</td>'
+           + '<td>'+(e.reviewed===0? '<button class="btn" style="padding:3px 10px;font-size:12px" data-act="approve" data-id="'+esc(e.event_id)+'">通过</button> '
+                                     + '<button class="btn danger" style="padding:3px 10px;font-size:12px" data-act="reject" data-id="'+esc(e.event_id)+'">驳回</button>' : '—')+'</td></tr>';
+      });
+      $('reviewBody').innerHTML = h+'</table>';
+      Array.prototype.forEach.call($('reviewBody').querySelectorAll('button[data-act]'), function(btn){
+        btn.onclick = function(){ review(btn.getAttribute('data-id'), btn.getAttribute('data-act')); };
+      });
+    }).catch(function(e){ $('reviewBody').innerHTML='<div class="empty">加载失败：'+esc(e)+'</div>'; });
+  }
+
+  function review(eventId, action){
+    api('/api/analysis/review', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({event_id:eventId, action:action}) }).then(function(r){
+      if(!(r.body||{}).ok){ toast('复核失败：'+((r.body||{}).error||r.status)); return; }
+      toast(action==='approve'?'已通过':'已驳回'); loadReview();
+    }).catch(function(e){ toast('复核失败：'+e); });
+  }
+
+  function submitRun(){
+    var code = ($('code').value||'').trim().toUpperCase();
+    if(!/^[0-9]{6}\.(SH|SZ|BJ)$/.test(code)){ toast('代码格式应为 600337.SH'); return; }
+    api('/api/analysis/submit', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({code:code, llm:false, push:false}) }).then(function(r){
+      if((r.body||{}).ok){ toast('已入队：'+(r.body.job_id||'')); }
+      else { toast('提交失败：'+((r.body||{}).error||r.status)); }
+    }).catch(function(e){ toast('提交失败：'+e); });
+  }
+
+  $('btnQuery').onclick = query;
+  $('btnRun').onclick = submitRun;
+  $('btnReview').onclick = loadReview;
+  $('btnFilter').onclick = function(){ state.showAll = !state.showAll; loadReview(); };
+  $('code').addEventListener('keydown', function(e){ if(e.key==='Enter') query(); });
+  document.addEventListener('DOMContentLoaded', function(){
+    var p = new URLSearchParams(location.search);
+    if(p.get('code')){ $('code').value = p.get('code'); query(); }
+    else { loadReview(); }
+  });
+})();
+</script>
+</body>
+</html>

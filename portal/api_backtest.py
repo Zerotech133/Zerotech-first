@@ -5034,6 +5034,14 @@ class Handler:  # Mixin 壳：经基座多继承并入
             + tourney_html)
         self._html(body)
     def _sa_page(self, q=""):
+        # K-STOCK-ANALYSIS-P0F：/sa 升级为「个股全维分析」页（静态文件 + /api/analysis/* 流水线）
+        import os as _os
+        _p = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "stock_analysis.html")
+        if _os.path.exists(_p):
+            try:
+                return self._html(open(_p, encoding="utf-8").read())
+            except Exception:
+                pass
         import html as _h
         qe = _h.escape(q or "")
         hist = _sa_hist_read()
