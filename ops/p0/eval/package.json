@@ -1,0 +1,12 @@
+{
+  "name": "zhuge-p0-eval",
+  "private": true,
+  "description": "诸葛亮能力底座 P0-4 promptfoo 评估（固定版本）",
+  "devDependencies": {
+    "promptfoo": "0.125.1"
+  },
+  "scripts": {
+    "eval": "promptfoo eval -c promptfooconfig.yaml --no-progress-bar",
+    "eval:view": "promptfoo view"
+  }
+}

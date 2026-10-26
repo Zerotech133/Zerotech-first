@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-27",
+  "binding": "ollama/qwen3.5:9b",
+  "runner": {
+    "file": "baseline_20261027_070426_ollama_qwen3.5_9b.json",
+    "total": 30,
+    "passed": 26,
+    "pass_rate": 0.8667,
+    "categories": {
+      "factual": {"total": 8, "passed": 5, "rate": 0.625},
+      "hallucination": {"total": 8, "passed": 8, "rate": 1.0},
+      "injection": {"total": 7, "passed": 6, "rate": 0.8571},
+      "overreach": {"total": 7, "passed": 7, "rate": 1.0}
+    },
+    "description": "确定性规则评分（must_not 否定语境感知 + citation 检查 + 拒绝表述）"
+  },
+  "promptfoo": {
+    "version": "0.125.1",
+    "command": "npx promptfoo eval -c promptfooconfig.yaml --no-progress-bar --max-concurrency 2",
+    "total": 30,
+    "passed": 18,
+    "pass_rate": 0.6,
+    "duration_s": 151,
+    "description": "严格 contains/regex 断言（口径更严，低于 runner 属预期）"
+  },
+  "evidence_logs": ["evidence/p0eval_baseline.log", "evidence/p0_promptfoo.log",
+                    "evidence/p0eval_build.log"],
+  "note": "两项基线口径不同：runner 用于能力回归，promptfoo 用于 CI 严格断言；均以 2026-10-27 为准。"
+}
