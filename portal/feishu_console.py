@@ -102,6 +102,17 @@ def _is_annotated(row, anns):
     return False
 
 
+# 2026-10-26 OS-FIX-W4CLOSE2：W41 死信自测使用一次性假收件人（ou_deadpayload_*），
+# 这类发送不可能是生产投递，不能计入 W4「24h 消息丢失」。用显式前缀白名单
+# 而不是按 kind 猜，避免把真实收件人失败也放过；计数单独显示「自测目标 N」。
+TEST_TARGET_PREFIXES = ("ou_deadpayload",)
+
+
+def _is_self_test_target(row):
+    t = str(row.get("target") or "")
+    return any(t.startswith(p) for p in TEST_TARGET_PREFIXES)
+
+
 def collect():
     roles_index, warnings = fr.load_registry()
     routes = fr.load_routes(roles_index=roles_index)
@@ -189,6 +200,10 @@ def collect():
     # 2026-10-26 OS-FIX-W4CLOSE：测试归因清单——只剔除清单里精确登记的
     # (ts, kind, target) 行（不删流水、不改 ok 字段）；单独计数并在检查项
     # 文本里显示「已归因测试 N」，W4 报告可见可追溯。
+    # OS-FIX-W4CLOSE2：W41 死信自测的一次性假收件人同样不是生产投递，单列
+    # 「自测目标 M」，不计入真实丢失（仍可见、可追溯）。
+    lost_test_target = [r for r in lost24 if _is_self_test_target(r)]
+    lost24 = [r for r in lost24 if not _is_self_test_target(r)]
     anns = _load_annotations()
     lost_annotated = [r for r in lost24 if _is_annotated(r, anns)]
     lost_unannotated = [r for r in lost24 if not _is_annotated(r, anns)]
@@ -252,10 +267,12 @@ def collect():
     else:
         warnings.append("未配置 canonical app（portal/work/feishu_secrets/"
                         "canonical.json），无法校验收件人域一致性")
-    checks.append(("24h 消息丢失 = 0（当前 %d%s）"
+    checks.append(("24h 消息丢失 = 0（当前 %d%s%s）"
                    % (len(lost_unannotated),
                       "；已归因测试 %d" % len(lost_annotated)
-                      if lost_annotated else ""),
+                      if lost_annotated else "",
+                      "；自测目标 %d" % len(lost_test_target)
+                      if lost_test_target else ""),
                    len(lost_unannotated) == 0))
     checks.append(("静默窗口策略生效（拦截 %d 次属正常）" % len(denied24), True))
 
@@ -278,6 +295,7 @@ def collect():
             "larkcli_fail_recovered_24h": len(larkcli_fail_recovered),
             "lost_24h": len(lost_unannotated),
             "lost_annotated_24h": len(lost_annotated),
+            "lost_test_target_24h": len(lost_test_target),
             "dead_letters_24h": len(dead24),
             "inbound_tickets": len(inbound),
             "decisions": decisions,
