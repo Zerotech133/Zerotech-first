@@ -73,27 +73,7 @@
      "charter_detail": "缠论分析师·策略部首席：四阶段学习环（L1观察→L2验证对账→L3结构归因→L4灰度修正+理论输出），缠论买卖点先例战绩判读、署名理论笔记（周记《缠论结构观察》入 dept/invest/thesis 与 docs/）；影子铁律——只读判读不执行，权重草案 draft≠adopt（影子对照≥20交易日后人工凭据）",
      "llm_binding": "glm/glm-5.3",
      "binding_note": "K-ORG-189 注册：判读/理论输出走云端智谱 glm-5.3（K-ORG-136 coding 端点先例，强模型判读同 A0）；本地 qwen3.5:9b 为降级档",
-     "tools": [
-      "tgraph_slots",
-      "tgraph_eval",
-      "tgraph_left_tail",
-      "tgraph_fps",
-      "signal_precedents",
-      "signal_enrich",
-      "events_for_stock",
-      "related_events",
-      "event_summary",
-      "recent_events",
-      "datamart_read",
-      "datamart_latest",
-      "datamart_ready",
-      "market_snapshot",
-      "data_health",
-      "pool_rows",
-      "stock_info",
-      "paper_positions",
-      "events"
-     ],
+     "tools": ["kline_daily", "quote_snapshot", "make_context", "events"],
      "tools_note": "全为只读判读工具（agent_tools 白名单），无任何下单/执行类——影子铁律",
      "memory_grants": {
       "read": [
@@ -1251,10 +1231,7 @@
      "role_profile": "qa_engineer",
      "charter_detail": "质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌",
      "llm_binding": "ollama/qwen3.5:9b",
-     "tools": [
-      "devtask",
-      "events"
-     ],
+     "tools": ["quality_gate"],
      "memory_grants": {
       "read": [
        "domain/*",
@@ -1299,10 +1276,7 @@
      "role_profile": "security_auditor",
      "charter_detail": "安全审计师：凭据红线监护（X1 OAuth/QMT 凭据不入库）·注册表 grants 越权审计·危险命令面盘点（rm/checkout--/杀进程验身份判例执法）·skill/脚本引入安全审查",
      "llm_binding": "ollama/qwen3.5:9b",
-     "tools": [
-      "devtask",
-      "events"
-     ],
+     "tools": ["quality_gate"],
      "memory_grants": {
       "read": [
        "domain/*",
@@ -1351,10 +1325,7 @@
      "grade": "E1",
      "grade_note": "10年档：用例执行位",
      "llm_binding": "ollama/qwen3.5:9b",
-     "tools": [
-      "devtask",
-      "events"
-     ],
+     "tools": ["quality_gate"],
      "memory_grants": {
       "read": [
        "domain/*",
@@ -1396,10 +1367,7 @@
      "grade_note": "30年档：方案级走形裁定·渗透/反渗透·压测与瓶颈定位（研发质量对抗线）",
      "llm_binding": "glm/glm-5.3",
      "binding_note": "10-18 升档：旧 glm-4.6 依赖 anthropic 端点对包年 key 报 429/404（K-ORG-136），统一 coding 端点 glm-5.3 全通；key 纪律不变——zhipu_key(6546) 包年优先，GLM_API_KEY(379b) 已 429 勿用。调用方统一 zhipu_key 优先（a0_agent.py / engine.llm.GLMCloudLLM 已同口径）",
-     "tools": [
-      "devtask",
-      "events"
-     ],
+     "tools": ["quality_gate"],
      "memory_grants": {
       "read": [
        "domain/*",
@@ -1503,7 +1471,7 @@
      "charter_detail": "回测质量门：QA-RUN 执行、回归用例维护、fail-closed 只读纪律；不合格不签字",
      "llm_binding": "ollama/qwen3.5:9b",
      "binding_note": "由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）",
-     "tools": [],
+     "tools": ["quality_gate"],
      "tools_note": "补档初始为空，按工单另行授予",
      "memory_grants": [],
      "grade": "E2",

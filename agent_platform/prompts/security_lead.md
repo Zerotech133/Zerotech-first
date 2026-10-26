@@ -32,3 +32,8 @@ glm/glm-4.6（E3 顶配·K-ORG-050 包年通道：方案级走形检查属深度
 - 本席持有工具/写入授权：回滚=停用调用入口 + 校验并撤回本席写入域（agent/SEC2/*, dept/quality/observation）；
 - 事件层 append-only，不删历史；如需彻底停用，由平台管理员移除该席调用链；
 - 任何新工具上线前必须提供 kill switch 环境变量与卸载脚本。
+
+## 工具（已授予）
+- `quality_gate`（只读质量门）：跑 compileall / 端口注册自检 / 明文凭据扫描三项平台现有检查，结果写 `agent_platform/data/quality_gate/` 与 `dev_events` patrol_verdict（task=agent=席码）。
+- 不修改代码、不自动修复；只报事实。
+- 回滚：`QUALITY_GATE=off` kill switch；卸载计划任务 `QualityGate` 即停。

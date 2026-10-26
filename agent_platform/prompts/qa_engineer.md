@@ -25,3 +25,8 @@ ollama/qwen3.5:9b
 - 本席无工具、无持久化写入/授权：不产生需回滚的系统变更；
 - 停用=平台侧将本席移出调用链（其建议草案作废重出），无进程/任务需清理；
 - 若后续授予工具：必须同时提供 kill switch 与卸载路径，方可上线。
+
+## 工具（已授予）
+- `quality_gate`（只读质量门）：跑 compileall / 端口注册自检 / 明文凭据扫描三项平台现有检查，结果写 `agent_platform/data/quality_gate/` 与 `dev_events` patrol_verdict（task=agent=席码）。
+- 不修改代码、不自动修复；只报事实。
+- 回滚：`QUALITY_GATE=off` kill switch；卸载计划任务 `QualityGate` 即停。
