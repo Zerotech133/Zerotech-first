@@ -42,6 +42,8 @@ try {
     $env:VOICE_AUTO_EXECUTE   = "1"
     $env:VOICE_ASR_TIMEOUT    = "90"
     $env:HF_ENDPOINT          = "https://hf-mirror.com"
+    # 2026-10-26 B5：卡片回调强制验签（观察期；旧卡无签名将被拒）
+    $env:CARD_SIGN_ENFORCE    = "1"
     Write-Log "starting bot ..."
     $proc = Start-Process -FilePath $py_src `
         -ArgumentList @("-u", "-X", "utf8", $bot) `

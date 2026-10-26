@@ -20,6 +20,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
 
+def _signed_value(val):
+    """按钮回调值签名（W40/B5）：CARD_SIGN_ENFORCE=1 时未签名回调会被拒。"""
+    try:
+        import card_sign
+        return card_sign.sign(val)
+    except Exception:  # noqa: BLE001
+        return val
+
+
 def build_review_card(decision):
     """decision dict → v3 审批卡（schema 2.0）。公告内容截断 200 字防超长；
     按钮须已在 card_actions.DEFAULT_ACTIONS 注册（decision_approve/reject）。"""
@@ -56,13 +65,15 @@ def build_review_card(decision):
          "text": {"tag": "plain_text",
                   "content": "确认（审批留痕）"},
          "behaviors": [{"type": "callback",
-                        "value": {"action_id": "decision_approve",
-                                  "req_id": did}}]},
+                        "value": _signed_value(
+                            {"action_id": "decision_approve",
+                             "req_id": did})}]},
         {"tag": "button", "type": "danger",
          "text": {"tag": "plain_text", "content": "驳回"},
          "behaviors": [{"type": "callback",
-                        "value": {"action_id": "decision_reject",
-                                  "req_id": did}}]},
+                        "value": _signed_value(
+                            {"action_id": "decision_reject",
+                             "req_id": did})}]},
     ]
     return {"schema": "2.0", "config": {"update_multi": True},
             "header": {"title": {"tag": "plain_text",

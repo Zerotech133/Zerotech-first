@@ -197,6 +197,23 @@ def _sec_fresh():
     return "\n".join(lines)
 
 
+def _score_line():
+    """B1-2：5 核心评分口径行（注册表注解，禁止自算）。"""
+    try:
+        sys.path.insert(0, os.path.join(HERE, "..", "portal"))
+        import m_score
+        import score_guard
+        snap = m_score.snapshot()
+        parts = [score_guard.render_line(a["metric_id"], a["value"],
+                                         a["as_of"])
+                 for a in (snap.get("items") or [])]
+        if not parts:
+            return ""
+        return "**评分口径**（注册表 5 核心）：" + "；".join(parts)
+    except Exception:
+        return ""
+
+
 def build_sections():
     """五节内容（每节独立 try，失败降级占位）→ 列表。"""
     secs = []
@@ -205,6 +222,12 @@ def build_sections():
             secs.append(fn())
         except Exception as e:
             secs.append("%s 失败: %s" % (fn.__name__, str(e)[:80]))
+    try:
+        _sl = _score_line()
+        if _sl:
+            secs.append(_sl)
+    except Exception:
+        pass
     return secs
 
 
