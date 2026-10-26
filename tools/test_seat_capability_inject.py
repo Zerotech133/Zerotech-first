@@ -35,6 +35,7 @@ TIANFENG_EXPECTED = {
     "rd-planning", "workflow-dynamics", "dispatch-live",
     "implementation-supervision", "qa-acceptance", "release-rollback",
     "codebase-intelligence", "sandbox-verification", "eval-harness", "observability-trace",
+    "spec-driven-delivery",
 }
 
 ZHAOYUN_EXPECTED = {
@@ -75,7 +76,7 @@ def test_tianfeng_capability_set_complete():
     names = [c["name"] for c in caps]
     assert len(names) == len(set(names)), "能力名重复"
     assert set(names) == TIANFENG_EXPECTED
-    assert len(caps) == 30
+    assert len(caps) == 31
 
 
 def test_tianfeng_capability_fields_valid():
