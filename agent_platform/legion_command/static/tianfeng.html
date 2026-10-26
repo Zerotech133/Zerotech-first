@@ -31,6 +31,10 @@ tr:last-child td{border-bottom:0}
 .links a{color:#4FD1A5;text-decoration:none;font-size:12px;border:.5px solid #1E3A5F;border-radius:8px;padding:6px 10px}
 footer{padding:10px 22px 16px;border-top:.5px solid #1E3A5F;color:#5A7190;font-size:11px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 button.refresh{border:.5px solid #1E3A5F;background:none;color:#8FA8C0;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
+.wfmetrics{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.wfitem{font-size:12px;padding:7px 0;border-bottom:.5px dashed #16304F}
+.wfitem:last-child{border-bottom:0}
+.wfitem .t{color:#E8F0F8}.wfitem .m{color:#5A7190;font-size:11px;margin-top:3px}
 .banner{display:none;margin:0 22px;padding:10px 14px;border-radius:10px;background:#2A1214;border:.5px solid #7A2A2E;color:#F3B5B4;font-size:12px}
 </style></head><body>
 <header>
@@ -50,6 +54,11 @@ button.refresh{border:.5px solid #1E3A5F;background:none;color:#8FA8C0;font-size
 </section>
 <section><h2>运行状态 <span>Hermes / 能力 / 审计 / 双锚</span></h2><div id="status"></div></section>
 </div>
+<section><h2>工作流与卡点 <span id="wf-sub">—</span></h2>
+<div class="wfmetrics" id="wf-metrics"></div>
+<div id="wf-blockers"></div>
+<table style="margin-top:6px"><thead><tr><th style="width:180px">超期单</th><th style="width:60px">状态</th><th style="width:72px">owner</th><th style="width:60px">小时</th><th>摘要</th></tr></thead><tbody id="wf-stale"></tbody></table>
+<div id="wf-next" style="margin-top:8px"></div></section>
 <section><h2>决策授权 <span>L0/L1 自主 · L2 报老田（不逐项点确定）</span></h2>
 <table><thead><tr><th style="width:140px">级别</th><th>范围</th><th>动作</th><th style="width:50px">找老田</th></tr></thead><tbody id="authority"></tbody></table></section>
 <section><h2>能力卡 <span id="cap-sub">—</span></h2>
@@ -75,6 +84,16 @@ function render(v){
   row(ib,'定位',idn.role); row(ib,'编制',idn.compilation); row(ib,'纪律',idn.boundary); row(ib,'区分',idn.distinction);
   const sb=$('status'); sb.replaceChildren();
   (v.status||[]).forEach(s=>row(sb,s.k,s.v));
+  const wf=v.workflow||{}; const wip=wf.wip||{};
+  const wm=$('wf-metrics'); wm.replaceChildren();
+  [['在途 doing',wip.doing||0],['评审 review',wip.review||0],['超 24h',(wf.stale||[]).length],['卡点',(wf.blockers||[]).length]].forEach(([k,val])=>{const c=el('span','chip'); c.appendChild(document.createTextNode(k+' ')); c.appendChild(el('b','',val)); wm.appendChild(c);});
+  const wb=$('wf-blockers'); wb.replaceChildren();
+  (wf.blockers||[]).forEach(b=>{const d=el('div','wfitem'); d.appendChild(el('div','t','['+(b.severity||'info')+'] '+b.name)); d.appendChild(el('div','m',b.detail+' → '+(b.next||''))); wb.appendChild(d);});
+  const ws=$('wf-stale'); ws.replaceChildren();
+  (wf.stale||[]).forEach(r=>{const tr=el('tr'); [r.tid,r.status,r.owner,r.age_h,r.desc].forEach((x,i)=>tr.appendChild(el('td',i===4?'muted':'',x))); ws.appendChild(tr);});
+  $('wf-sub').textContent='WIP '+((wip.doing||0)+(wip.review||0))+' · 平均 '+(wip.avg_age_h||0)+'h · 最长 '+(wip.max_age_h||0)+'h';
+  const wn=$('wf-next'); wn.replaceChildren();
+  (wf.next_actions||[]).forEach(a=>wn.appendChild(el('div','muted','→ '+a)));
   const ab=$('authority'); ab.replaceChildren();
   (v.decision_authority||[]).forEach(a=>{ const tr=el('tr'); tr.appendChild(el('td','',a.level)); tr.appendChild(el('td','',a.scope)); tr.appendChild(el('td','',a.action)); tr.appendChild(el('td','',a.human)); ab.appendChild(tr); });
   const cb=$('caps'); cb.replaceChildren();
