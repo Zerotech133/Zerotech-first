@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 HOME = Path.home() / ".hermes" / "profiles" / "tianfeng"
@@ -122,6 +123,64 @@ def build_view(platform: Path) -> dict:
                 glm = {}
     glm_ready = (repo / "work" / "glm_probe" / "JUDGMENT_READY.txt").exists()
     glm_state = "可用" if glm_ready else ("429 降级" if "429" in str(glm.get("error")) else "未知")
+
+    # ── 动态工作流 / 卡点 ──────────────────────────────────────────────
+    now = time.time()
+    wf_rows = []
+    for tid, m in tasks.items() if isinstance(tasks, dict) else []:
+        if not isinstance(m, dict) or m.get("status") not in ("doing", "review"):
+            continue
+        created = str(m.get("created") or "")
+        try:
+            age_h = round((now - datetime.strptime(created, "%Y-%m-%d %H:%M:%S").timestamp()) / 3600, 1)
+        except Exception:
+            age_h = -1
+        wf_rows.append({"tid": tid, "status": m.get("status"), "owner": m.get("owner") or "?",
+                        "age_h": age_h, "desc": str(m.get("desc") or "")[:80]})
+    doing_rows = [r for r in wf_rows if r["status"] == "doing"]
+    review_rows = [r for r in wf_rows if r["status"] == "review"]
+    stale = sorted([r for r in wf_rows if r["age_h"] > 24], key=lambda r: -r["age_h"])
+    owners = {}
+    for r in wf_rows:
+        owners[r["owner"]] = owners.get(r["owner"], 0) + 1
+    blockers = []
+    if "429" in glm_state:
+        blockers.append({"type": "外部依赖", "name": "GLM-5.3 判读不可用", "severity": "high",
+                         "detail": "429 持续；决策/判读降级为只出选项与风险",
+                         "next": "等额度恢复/换 key/备用模型（老田拍板）"})
+    if not glm_ready:
+        blockers.append({"type": "判读链", "name": "A0 真样例未出", "severity": "medium",
+                         "detail": "JUDGMENT_READY 不存在，A0 18:10 常驻未挂",
+                         "next": "GLM 恢复后生成样例，老田确认质量后再挂"})
+    if stale:
+        blockers.append({"type": "任务板", "name": "%d 单超 24h 未收口" % len(stale),
+                         "severity": "high" if len(stale) >= 3 else "medium",
+                         "detail": "；".join("%s(%sh,%s)" % (r["tid"], r["age_h"], r["owner"]) for r in stale[:4]),
+                         "next": "逐单收口/认领/abort，明确 owner 与验收"})
+    try:
+        e2e = json.loads((repo / "work" / "_dsh_mobile_e2e" / "mobile-e2e-auto.json").read_text(encoding="utf-8"))
+        auth = (e2e.get("auth") or {})
+        if "20029" in json.dumps(auth, ensure_ascii=False) or (auth.get("markers") or {}).get("redirect_invalid"):
+            blockers.append({"type": "外部依赖", "name": "飞书回调白名单未生效", "severity": "high",
+                             "detail": "授权页 20029 redirect_uri 不合法",
+                             "next": "老田后台加白名单或开通 application:application:patch 后自动加"})
+    except Exception:
+        pass
+    blockers.append({"type": "治理", "name": "P2c 全量暂缓", "severity": "info",
+                     "detail": "老田 22:5x 决策：P2c 暂缓（仅 P2a/P2b 已跑）",
+                     "next": "手机 E2E + GLM 样例 + P2b 观察后再议"})
+    blockers.append({"type": "节奏", "name": "下午锚未首跑", "severity": "info",
+                     "detail": "田丰/诸葛/赵云 17:4x 锚点等待首个工作日",
+                     "next": "下一工作日 17:4x 后核对 rc 与产物"})
+    workflow = {
+        "wip": {"doing": len(doing_rows), "review": len(review_rows),
+                "by_owner": owners,
+                "avg_age_h": round(sum(r["age_h"] for r in wf_rows if r["age_h"] >= 0) / max(1, len(wf_rows)), 1),
+                "max_age_h": max([r["age_h"] for r in wf_rows] or [0])},
+        "stale": stale[:10],
+        "blockers": blockers,
+        "next_actions": [b["next"] for b in blockers if b["severity"] in ("high", "medium")][:5],
+    }
     ready = sum(1 for c in caps if c.get("status") == "ready")
     soul_title = "田丰 · 产品经理+研发（全在性）"
     try:
@@ -180,6 +239,7 @@ def build_view(platform: Path) -> dict:
             {"level": "L2 必须先批", "scope": auth.get("L2_requires_human", "生产/客户消息、资金/交易/审批、宿主机危险操作、上线/真实数据删除/密钥"),
              "action": "五要素 + 老田明确批准；沉默≠同意", "human": "是"},
         ],
+        "workflow": workflow,
         "links": {
             "hermes": "http://127.0.0.1:8787/?profile=tianfeng",
             "ide": "http://127.0.0.1:8734/ide",

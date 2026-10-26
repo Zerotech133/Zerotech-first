@@ -62,6 +62,9 @@ CAPABILITIES = {
         {"name": "code-reference", "what": "代码参考：伪代码/参考实现/补丁思路（代码是思路载体，不亲自交付）", "how": "参考实现写 deliverables 或 work/refs，由执行 AI 落地；田丰只 review 与验收", "boundary": "不直接提交生产代码；执行者署名与测试证据必须齐", "status": "ready"},
         {"name": "task-orchestration", "what": "任务编排：拆单→派给部门/AI worker→自动执行→收口验收", "how": "devtask 拆单/合并 + delegation 派工 + events 跟踪 + 验收清单", "boundary": "L2 动作仍报老田；每单必须有 owner/验收/回滚", "status": "ready"},
         {"name": "decision-arbitration", "what": "决策仲裁：无人能定案时做最优决策，写依据/假设/选项/回滚", "how": "证据包+经验库+健康卡 → 决策记录 chief/decision；L0/L1 自主执行，L2 升级老田", "boundary": "不编造数据；L2 不越权；决策必须留痕", "status": "ready"},
+        {"name": "rd-planning", "what": "研发计划：目标/里程碑/范围/资源/KPI/风险登记与月度复盘", "how": "读 ROADMAP/tasks/健康卡 → 出季度计划+里程碑+风险台账到 deliverables；月度复盘", "boundary": "不虚报进度；基线变更留痕；计划可回滚", "status": "ready"},
+        {"name": "workflow-dynamics", "what": "动态工作流观测：WIP/超期/阻塞/责任/下一步，卡点自动呈现", "how": "tianfeng_view 工作流区块（/api/tianfeng）+ 任务板账本 + 计划任务状态；卡点升级", "boundary": "只读观测；不改任务状态；卡点必须带责任与下一步", "status": "ready"},
+        {"name": "dispatch-live", "what": "真实派工：把拆好的任务派给部门/AI worker 并跟踪回执", "how": "devtask 建单 + delegation/events + 回执台账；卡点升级", "boundary": "L2 动作报老田；每单 owner/验收/回滚齐全", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -340,6 +343,42 @@ description: 决策仲裁：无人能定案时做最优决策，留依据/假设
 3. 授权：L0（常规研发/文档/取数/测试）自主；L1（跨部门派单/非生产配置）执行后即时报；
    L2（生产/客户消息/资金/审批/宿主机/不可逆）必须先取得老田批准。
 4. 不编造数据；信息不足时写明"假设+验证方式"，不得沉默拖延。
+""",
+        "rd-planning": """---
+name: rd-planning
+description: 研发计划：目标/里程碑/范围/资源/KPI/风险登记与月度复盘；计划可回滚。
+---
+
+# 研发计划
+
+1. 输入：平台 ROADMAP、任务板账本、健康卡、老田优先级；先对齐单源。
+2. 产出：季度/月度计划（目标、范围、里程碑、负责人、验收、依赖、风险登记）落 deliverables。
+3. KPI：WIP、卡点时长、按期率、决策时延、返工率；每月复盘一次并写偏差。
+4. 基线变更留痕；计划不虚报进度，不可行立即上调。
+""",
+        "workflow-dynamics": """---
+name: workflow-dynamics
+description: 动态工作流观测：WIP/超期/阻塞/责任/下一步；卡点自动呈现，只读不改状态。
+---
+
+# 动态工作流
+
+1. 数据：任务板（doing/review/aborted）、计划任务状态、GLM/外部依赖、审批项。
+2. 指标：WIP、超期单（>24h）、按 owner 分布、卡点数量与时长。
+3. 输出：`/api/tianfeng` 的 workflow 区块 + 属性页"工作流与卡点"；每卡点带责任/下一步/升级条件。
+4. 只读观测；改变状态必须走 devtask/受权动作。
+""",
+        "dispatch-live": """---
+name: dispatch-live
+description: 真实派工：拆单→派给部门/AI worker→跟踪回执→卡点升级。
+---
+
+# 真实派工
+
+1. 拆单：devtask 建单，写 owner/验收/回滚/时限；无单不派。
+2. 派工：delegation/events/部门 AI 并发；回执登记台账。
+3. 跟踪：超时/无回执/失败 → 卡点升级（L1 即时报，L2 报老田）。
+4. 验收：证据+测试+回滚点齐全才收口；执行者署名。
 """,
     },
     "zhaoyun": {

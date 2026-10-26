@@ -32,6 +32,7 @@ TIANFENG_EXPECTED = {
     "worktree-hygiene",
     "product-spec", "architecture-design", "code-reference",
     "task-orchestration", "decision-arbitration",
+    "rd-planning", "workflow-dynamics", "dispatch-live",
 }
 
 ZHAOYUN_EXPECTED = {
@@ -72,7 +73,7 @@ def test_tianfeng_capability_set_complete():
     names = [c["name"] for c in caps]
     assert len(names) == len(set(names)), "能力名重复"
     assert set(names) == TIANFENG_EXPECTED
-    assert len(caps) == 20
+    assert len(caps) == 23
 
 
 def test_tianfeng_capability_fields_valid():
