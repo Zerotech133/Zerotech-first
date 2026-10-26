@@ -341,7 +341,11 @@
      "agent_id": "DEV1",
      "role_profile": "code_engineer",
      "charter_detail": "拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）",
-     "llm_binding": "ollama/qwen3.5:9b",
+     "llm_binding": "glm/glm-5.3",
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ],
      "tools": [
       "devtask",
       "events"
@@ -360,6 +364,11 @@
      },
      "grade": "E3",
      "grade_note": "30年档：后端主力，devtask 工具链作者位",
+     "acting_role": "tech_deputy",
+     "lead_scope": [
+      "dev"
+     ],
+     "team_lead_of": "G1",
      "attributes": {
       "experience": "30 年后端与研发效能经验：主导过金融交易系统与高并发平台建设，近十年专注研发工具链——任务单驱动的 worktree 并行工作流、自动化质检门与工单生命周期治理（本组织 devtask 工具链作者位）。",
       "specialties": [
@@ -730,7 +739,11 @@
      "agent_id": "DEV5",
      "role_profile": "frontend_engineer",
      "charter_detail": "门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页",
-     "llm_binding": "ollama/qwen3.5:9b",
+     "llm_binding": "glm/glm-5.3",
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ],
      "tools": [
       "devtask",
       "events"
@@ -748,6 +761,7 @@
      },
      "grade": "E3",
      "grade_note": "30年档：tokens 设计语言作者位",
+     "team_lead_of": "G2",
      "attributes": {
       "experience": "30 年前端与设计系统工程经验：大型门户/大屏架构，tokens.css 设计单源纪律与版面架构宪法作者；坚持 Demo 先行、改动必过 node --check + 死引用检查 + 线上实测三关。",
       "specialties": [
@@ -834,6 +848,10 @@
      "role_profile": "solution_architect",
      "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录用 tools/adr.py 登记，落 docs/adr/（版本化入 git，K-ORG-041 固化）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）",
      "llm_binding": "glm/glm-5.3",
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ],
      "tools": [
       "devtask",
       "events"
@@ -854,6 +872,17 @@
      },
      "grade": "E3",
      "grade_note": "30年档：架构定夺/疑难攻关/方案终审",
+     "command_authority": {
+      "dispatch": true,
+      "accept": true,
+      "escalate": true,
+      "reassign": true
+     },
+     "time_budget": {
+      "architecture": ">=60%",
+      "delivery": "<=30%",
+      "intel": "<=10%"
+     },
      "attributes": {
       "experience": "30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。",
       "specialties": [
@@ -891,7 +920,7 @@
        "basis": "老田 2026-10-22 会话裁定「曹操正式统筹整个情报板块」；分线计划 D1 节记载",
        "ticket": "K-INTEL-20261022-TF-AUDIT",
        "signed_by": "老田",
-       "scope_note": "跨部门统筹角色，不替代 intel.lead=INTEL0 受理职责，不自动取得源权利、飞书发送、生产或交易权限；dev.lead 不变；取消统筹仅删本字段"
+       "scope_note": "跨部门统筹角色，不替代 intel.lead=INTEL0 受理职责，不自动取得源权利、飞书发送、生产或交易权限；dev.lead 不变；取消统筹仅删本字段；时间预算：<=10% 工时；研发部指挥为第一职责。"
       }
      ],
      "matrix_assignments": [
@@ -917,7 +946,11 @@
      "agent_id": "OPS1",
      "role_profile": "devops_engineer",
      "charter_detail": "DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手",
-     "llm_binding": "ollama/qwen3.5:9b",
+     "llm_binding": "glm/glm-5.3",
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ],
      "tools": [
       "devtask",
       "events"
@@ -1014,7 +1047,40 @@
     }
    ],
    "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）",
-   "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）",
+   "lead_duty": "部门指挥：目标拆解/派工/验收/升级/组内调配；每日汇总报 A0（自动化）；超期 24h 催办（K-ORG-122）；每周部门周报（触发/吞吐/归属/review/返工/审计六指标）",
+   "deputy": "DEV1",
+   "delivery_coordinator": "A0A",
+   "groups": [
+    {
+     "id": "G1",
+     "name": "后端/平台组",
+     "lead": "DEV1",
+     "members": [
+      "DEV6",
+      "DEV7",
+      "DEV2",
+      "OPS1"
+     ]
+    },
+    {
+     "id": "G2",
+     "name": "前端/业务组",
+     "lead": "DEV5",
+     "members": [
+      "DEV8",
+      "DEV3",
+      "DEV4",
+      "DOC1"
+     ]
+    }
+   ],
+   "command_chain": {
+    "ARCH1": [
+     "DEV1",
+     "DEV5"
+    ],
+    "delivery_coordinator": "A0A"
+   },
    "cn_title": "将作监",
    "lead_appointed": {
     "at": "2026-10-24T03:39:00+08:00",

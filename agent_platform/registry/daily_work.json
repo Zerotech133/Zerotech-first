@@ -1,7 +1,7 @@
 {
   "_note": "每日工作项目录（单一真相源）。一个席位每天干什么，写在这里，不写在文档里。每条都必须带可检查的证据，否则不收录。改动与代码同批提交。",
   "version": 1,
-  "updated": "2026-10-26",
+  "updated": "2026-10-27",
   "schema_doc": {
     "id": "事项编号，全局唯一",
     "agent": "负责人席位（对应 org.json 的 agent_id）",
@@ -446,6 +446,65 @@
         "max_age_h": 30
       },
       "on_miss": "A0 催办 JEV_QD，附 qd_failed.json 内容"
+    },
+    {
+      "id": "ARCH1-02",
+      "agent": "ARCH1",
+      "dept": "dev",
+      "title": "部门周报（触发·吞吐·归属·review·返工·审计六指标）",
+      "why": "部门周报断供，六指标无人复盘，部门治理只能退化成事后救火",
+      "freq": "weekly@1 17:40",
+      "evidence": {
+        "type": "file",
+        "path": "agent_platform/data/dev/weekly_report.md",
+        "max_age_h": 200
+      },
+      "on_miss": "归档治理席催 ARCH1 出周报"
+    },
+    {
+      "id": "DEV1-02",
+      "agent": "DEV1",
+      "dept": "dev",
+      "title": "技术副手值班日志（评审初筛/后端协调）",
+      "why": "副手不落值班轨迹，评审初筛与后端协调是否发生无从追溯",
+      "freq": "daily@09:30",
+      "evidence": {
+        "type": "file",
+        "path": "agent_platform/data/dev/deputy_log.md",
+        "max_age_h": 36
+      },
+      "on_miss": "A0 催办 DEV1：补值班日志并说明断档原因"
+    },
+    {
+      "id": "OPS1-02",
+      "agent": "OPS1",
+      "dept": "dev",
+      "title": "研发合并队列与工作树回收巡检",
+      "why": "合并队列与工作树无人巡检，积压与僵尸 worktree 会拖垮并行开发",
+      "freq": "daily@18:00",
+      "evidence": {
+        "type": "file",
+        "path": "agent_platform/data/dev/merge_queue.md",
+        "max_age_h": 36
+      },
+      "on_miss": "A0 催办 OPS1：回收僵尸工作树并报合并队列积压"
+    },
+    {
+      "id": "DOC1-02",
+      "agent": "DOC1",
+      "dept": "dev",
+      "title": "研发部产物与索引刷新",
+      "why": "产物与索引不同步，研发交付物按索引找不到，等于没有交付物",
+      "freq": "daily@09:40",
+      "evidence": {
+        "type": "command",
+        "cmd": [
+          "tools/gen_docs_index.py",
+          "--check"
+        ],
+        "expect_rc": 0
+      },
+      "on_miss": "A0 催办 DOC1：跑 python -B tools/gen_docs_index.py 重建索引"
     }
   ]
 }

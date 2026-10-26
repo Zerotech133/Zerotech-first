@@ -4,8 +4,8 @@
  "members_source": "agent_platform/registry/org.json",
  "external_tools": {"status": "pending_ruling", "observed": ["unknown-agent", "Codex", "Trae"]},
  "profile_seats": {
-  "note": "profile 席位（不占编）：代号进合法 owner 域，与 org.json 编制成员同等可落账；统计口径按 id 区分，不得与 R2 风控席 KPI 混算。",
-  "seats": ["ZHAOYUN"]
+  "note": "profile 席位（不占编）：代号进合法 owner 域，与 org.json 编制成员同等可落账；统计口径按 id 区分，不得与 R2 风控席 KPI 混算。DSH-Lead=DSH 主控代理位（2026-10-27 老田批）；VERIFY1=研发独立验证虚拟席（先由 QA1 兼，不占编）。",
+  "seats": ["ZHAOYUN", "DSH-Lead", "VERIFY1"]
  },
  "unowned_tag": "[UNOWNED]"
 }

@@ -90,6 +90,8 @@ def test_kill_switch(tmp_path, monkeypatch):
 def test_default_config_seats():
     cfg = SH.load_config(_WT / "agent_platform" / "config" / "seat_heartbeat_seats.json")
     # 2026-10-27 扩 GUANYU（关羽·代码审计与系统整治席，E3）入心跳名单（WO-GUANYU-SEAT-20261027）
-    assert set(cfg["seats"]) == {"ST1", "T1", "T2", "N1", "F1", "D1", "WA1", "GUANYU"}
+    # 2026-10-27 扩研发 E3 四席（ARCH1/DEV1/DEV5/OPS1，WO-LEGION-DEVEXEC-20261027 C3 触发接线）
+    assert set(cfg["seats"]) == {"ST1", "T1", "T2", "N1", "F1", "D1", "WA1", "GUANYU",
+                                 "ARCH1", "DEV1", "DEV5", "OPS1"}
     assert "QS1" in cfg.get("_runtime_note", "")
     assert cfg["model"] == "deepseek-flash"

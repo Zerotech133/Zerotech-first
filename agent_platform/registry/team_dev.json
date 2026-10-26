@@ -13,7 +13,7 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
+   "llm_binding": "glm/glm-5.3",
    "tools": [
     "devtask",
     "events"
@@ -304,7 +304,7 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
+   "llm_binding": "glm/glm-5.3",
    "tools": [
     "devtask",
     "events"
@@ -446,7 +446,7 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
+   "llm_binding": "glm/glm-5.3",
    "tools": [
     "devtask",
     "events"
