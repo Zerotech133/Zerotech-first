@@ -5,5 +5,9 @@ $py = 'C:\Program Files\Python311\python.exe'
 $script = 'C:\aios\tools\zhuge_challenge.py'
 $tasks = 'C:\aios\.worktrees\tasks.json'
 $log = 'C:\Temp\zhuge_challenge_daily.log'
-& $py -X utf8 $script emit --tasks $tasks --max-questions 12 --json *>> $log
-exit $LASTEXITCODE
+$env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
+$out = & $py -X utf8 $script emit --tasks $tasks --max-questions 12 --json 2>&1
+$rc = $LASTEXITCODE
+$out | Out-File -FilePath $log -Append -Encoding utf8
+exit $rc
