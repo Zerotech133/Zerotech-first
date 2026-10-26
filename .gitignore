@@ -279,3 +279,7 @@ agent_platform/bridge_inbox/osleg_consumer/
 agent_platform/bridge_inbox/processed/lg-*.json
 quant_backtest/data/xueqiu/_manifest.json
 *.db-shm
+
+# ===== 自动生成物（2026-10-27 WO-HYGIENE3：由 AgentBoardRefresh / devtask board 生成，勿入库）=====
+portal/agent_board.html
+docs/dev/devboard.html
