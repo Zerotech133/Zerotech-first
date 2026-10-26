@@ -84,9 +84,12 @@ def probe(out_dir: Path | None = None, packets_dir: Path | None = None,
         return 3
     (out / "GLM_AVAILABLE.txt").write_text(
         time.strftime("%Y-%m-%dT%H:%M:%S%z"), encoding="utf-8")
-    if not with_evidence:
+    # 外发追认（老田 2026-10-26 22:4x，追踪单 §5）后允许：批准标记存在时，
+    # 计划任务默认动作在 ping 成功后自动发一次证据判读；无标记仍只 ping。
+    approved = with_evidence or (out / "EVIDENCE_APPROVED.txt").exists()
+    if not approved:
         print(json.dumps({"ok": True, "mode": "ping", "available": True,
-                          "note": "仅探测，未发送证据；发判读需 --with-evidence（外发追认后）"},
+                          "note": "仅探测，未发送证据；发判读需 --with-evidence 或 EVIDENCE_APPROVED.txt"},
                          ensure_ascii=False))
         return 0
 
