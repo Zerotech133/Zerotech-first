@@ -2587,8 +2587,7 @@
      "binding_note": "10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层；通道已由 OpenClaw agent-config 载体提供（2026-10-26 实测：DeepSeek 中转·非GPT6，env key 非前置；GPT6 真身待跨境网络）。】",
      "tools": [
       "events",
-      "devtask",
-      "delegation"
+      "devtask"
      ],
      "memory_grants": {
       "read": [
