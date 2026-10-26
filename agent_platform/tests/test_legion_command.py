@@ -190,8 +190,8 @@ def test_http_chat_degraded_and_failure_passthrough(server, monkeypatch):
                                          error={"code": "llm_error", "message": "key missing"})
 
     monkeypatch.setattr(llm_gateway, "chat", dead)
-    env2 = _post(server, "/api/chat", {"agent": "AI1", "system": "s", "user": "u"})
-    assert env2["ok"] is False and env2["binding"] == "openai/gpt-6.0"
+    env2 = _post(server, "/api/chat", {"agent": "R2", "system": "s", "user": "u"})
+    assert env2["ok"] is False and env2["error"]["code"] == "llm_error"
 
 
 def test_http_chat_bad_agent(server):
@@ -258,21 +258,40 @@ def test_http_chat_local_failure_no_fallback(server, monkeypatch):
     assert env["error"]["code"] == "llm_error"
 
 
-def test_http_chat_openai_channel_not_ready(server, monkeypatch):
-    """openai 绑定未接 → 明确 channel_not_ready，不打 Ollama 兜底（避免误导 404）。"""
-    from gateway import llm_gateway
+def test_http_chat_openai_via_openclaw_relay(server, monkeypatch):
+    """AI1 → OpenClaw agent-config 载体（GPT6 网络不可达时 deepseek 中转），
+    诚实返回 carrier/relay/mode，且不走 llm_gateway（避免误报未接）。"""
+    import legion_command.serve as srv_mod
     calls = []
 
-    def fake(binding=None, system="", user=""):
+    def fake_chat(binding=None, system="", user=""):
         calls.append(binding)
-        return llm_gateway.make_envelope(kind="llm_chat", ok=True, data={"text": "x"})
+        raise AssertionError("AI1 不应再走 llm_gateway")
 
-    monkeypatch.setattr(llm_gateway, "chat", fake)
+    monkeypatch.setattr(srv_mod.llm_gateway, "chat", fake_chat)
+    monkeypatch.setattr(srv_mod, "oc_run",
+                        lambda agent, prompt: ("军师答：先修心跳。", None))
+    monkeypatch.setattr(srv_mod, "agent_primary_model",
+                        lambda agent=None: "deepseek/deepseek-chat")
+    monkeypatch.setattr(srv_mod, "is_relay", lambda m: True)
+    env = _post(server, "/api/chat", {"agent": "AI1", "system": "s", "user": "u"})
+    assert env["ok"] is True
+    assert env["binding"] == "openclaw/agent-config"
+    assert env["data"]["carrier"] == "deepseek/deepseek-chat"
+    assert env["data"]["relay"] is True
+    assert env["data"]["mode"] == "openclaw_cloud"
+    assert "先修心跳" in env["data"]["text"]
+    assert calls == []
+
+
+def test_http_chat_openai_openclaw_unavailable(server, monkeypatch):
+    """OpenClaw 载体失败 → 明确 channel_not_ready（含原因），不静默兜底。"""
+    import legion_command.serve as srv_mod
+    monkeypatch.setattr(srv_mod, "oc_run", lambda agent, prompt: (None, "timeout"))
     env = _post(server, "/api/chat", {"agent": "AI1", "system": "s", "user": "u"})
     assert env["ok"] is False
     assert env["error"]["code"] == "channel_not_ready"
-    assert "Q12" in env["error"]["message"]
-    assert calls == []
+    assert "OpenClaw" in env["error"]["message"]
 
 
 # ---------------------------------------------------------------- 在途归属映射（S29）

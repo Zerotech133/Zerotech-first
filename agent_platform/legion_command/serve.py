@@ -29,6 +29,7 @@ if str(_PLATFORM) not in sys.path:
 
 from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
 from engine.org_profiles import profile_index, stamp  # noqa: E402  S41 统一取档口径
+from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402  OpenClaw 载体桥
 from legion_command.snapshot import build_snapshot  # noqa: E402
 
 _STATIC = Path(__file__).resolve().parent / "static"
@@ -333,23 +334,47 @@ class Handler(BaseHTTPRequestHandler):
                                  "agent": agent, "binding": binding})
                 return
             if binding.startswith("openai/"):
-                # 2026-10-26 B 案：engine 已接 OpenAILLM；仅 key 缺失时显式报通道未就绪，
-                # 不静默降档本地（异族席位语义在 engine 层不变）。
-                try:
-                    from engine.llm import OpenAILLM
-                    key_ready = bool(OpenAILLM._key())
-                except Exception:  # noqa: BLE001 - 导入失败按未就绪处理，fail-visible
-                    key_ready = False
-                if not key_ready:
+                # 2026-10-26 WG-8796OC：会议厅 AI1 的「真通道」改走 OpenClaw
+                # agent-config 载体（与 L5 同一载体）：GPT6 跨境不可达期间由
+                # deepseek 中转，网络恢复后自动回 GPT6，无需改码。诚实标注
+                # carrier/relay/mode，不再一律 channel_not_ready（那会连中转也拒掉）。
+                t0 = time.time()
+                if agent != "AI1":
                     self._send_json({"schema_version": "1.0", "ok": False,
                                      "kind": "llm_chat", "data": {},
                                      "error": {"code": "channel_not_ready",
-                                               "message": "openai 通道待 OPENAI_API_KEY 注入"
-                                                          "（B 案 provider 已接，key 缺失）"},
+                                               "message": "%s 的 openai 绑定暂无 OpenClaw 载体映射" % agent},
                                      "degraded": False, "latency_ms": 0,
                                      "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                                      "agent": agent, "binding": binding})
                     return
+                prompt = " ".join((str(req.get("system", "")) + " "
+                                   + str(req.get("user", ""))).split())
+                text, oc_err = oc_run("zhuge", prompt)
+                carrier = agent_primary_model("zhuge") or "agent-config"
+                relay = is_relay(carrier)
+                if text:
+                    self._send_json({"schema_version": "1.0", "ok": True,
+                                     "kind": "llm_chat",
+                                     "data": {"binding_resolved": "openclaw/agent-config",
+                                              "carrier": carrier,
+                                              "relay": relay,
+                                              "mode": "openclaw_cloud" if relay else "openclaw_gpt",
+                                              "text": text, "status": "normal"},
+                                     "degraded": False,
+                                     "latency_ms": int((time.time() - t0) * 1000),
+                                     "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                     "agent": agent, "binding": "openclaw/agent-config"})
+                else:
+                    self._send_json({"schema_version": "1.0", "ok": False,
+                                     "kind": "llm_chat", "data": {},
+                                     "error": {"code": "channel_not_ready",
+                                               "message": "OpenClaw 载体不可用：%s" % (oc_err or "unknown")},
+                                     "degraded": False,
+                                     "latency_ms": int((time.time() - t0) * 1000),
+                                     "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                     "agent": agent, "binding": binding})
+                return
             env = llm_gateway.chat(
                 binding=binding,
                 system=str(req.get("system", ""))[:4000],
