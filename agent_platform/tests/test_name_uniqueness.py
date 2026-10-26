@@ -79,5 +79,5 @@ def test_cli_exit_codes(tmp_path, capsys):
     bad = _root(tmp_path / "bad", cards={"B1": {"cn_name": "甲", "name": "甲",
                                                 "entry_source": "org_profiles"}})
     assert CN.main(["--root", str(bad), "--json"]) == 1
-    out = json.loads(capsys.readouterr().out.splitlines()[-1])
+    out = json.loads(capsys.readouterr().out)
     assert out["ok"] is False
