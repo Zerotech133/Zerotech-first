@@ -88,6 +88,13 @@ class TestBackup(unittest.TestCase):
         now = 1_700_000_000.0
         self.assertAlmostEqual(backup_receipt_check.age_hours(now - 3600, now=now), 1.0, places=2)
 
+    def test_clean_receipt_bom_and_non_ascii(self):
+        raw = "\ufefffiles=6 ok=6 mismatch=0\r\n中文".encode("utf-8")
+        out = backup_receipt_check.clean_receipt(raw)
+        self.assertFalse(out.startswith("\ufeff"))
+        self.assertIn("files=6 ok=6 mismatch=0", out)
+        self.assertTrue(all(ord(ch) < 127 for ch in out))
+
     def test_latest_generation(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

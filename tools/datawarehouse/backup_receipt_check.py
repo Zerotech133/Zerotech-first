@@ -21,6 +21,17 @@ EXPECTED_PRODUCTS = ["jev_eval", "neo4j_kg", "quant_code", "quant_data", "zhice_
 MAX_AGE_HOURS = 26.0
 
 
+def clean_receipt(raw: bytes, limit: int = 400) -> str:
+    """回执文本清洗：去 BOM/控制字符，非 ASCII 转义，防止 GBK 控制台崩溃。"""
+    text = raw.decode("utf-8-sig", "replace")
+    out = []
+    for ch in text[:limit]:
+        if ch in "\r\n\t" or 32 <= ord(ch) < 127:
+            out.append(ch)
+        elif ord(ch) > 127:
+            out.append("?")
+    return "".join(out)[:limit]
+
 def latest_generation(root: Path) -> Path | None:
     if not root.is_dir():
         return None
@@ -49,7 +60,7 @@ def collect() -> dict:
     receipt_text = ""
     if receipt.is_file():
         try:
-            receipt_text = receipt.read_text(encoding="utf-8", errors="ignore")[:400]
+            receipt_text = clean_receipt(receipt.read_bytes())
         except Exception:  # noqa: BLE001
             receipt_text = "<unreadable>"
     offsite_files = len(list(OFFSITE_DIR.glob("*"))) if OFFSITE_DIR.is_dir() else -1
