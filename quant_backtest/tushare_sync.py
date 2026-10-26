@@ -1025,10 +1025,22 @@ def main():
         return
     if a.only:
         # 单表运维修补：不触碰其他表、不跑批；写入原始层后由整理层下次重建派生。
+        # 注意：run() 是 batch_shallow 的内嵌函数，main 里不可见——这里直接用
+        # 模块级 pull_paged/save_full/save_manifest 复刻同样的落盘语义。
         ONLY = {"shibor": ("shibor", "shibor", {}, 5000)}
         tbl, api, params, cap = ONLY[a.only]
-        run(tbl, api, params, cap)
-        return
+        try:
+            df = pull_paged(api, params, cap)
+            save_full(tbl, df, m, "only")
+            m[tbl] = {"done": True, "rows": int(len(df)), "source": "only"}
+            save_manifest(m)
+            print("%-20s rows=%d only-sync ok" % (tbl, len(df)))
+        except Exception as e:
+            print("%-20s FAIL %s" % (tbl, str(e)[:70]))
+            m[tbl] = {"done": False, "error": str(e)[:120]}
+            save_manifest(m)
+            return 1
+        return 0
     if a.incremental:
         incremental(m, market=a.market, dryrun=a.dryrun)
         return
