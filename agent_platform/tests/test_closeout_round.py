@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import sys
@@ -33,9 +34,16 @@ WINDOW = {
 }
 
 
+def _fresh_summary(hours_old: float = 1.0) -> dict:
+    ts = dt.datetime.now().astimezone() - dt.timedelta(hours=hours_old)
+    s = dict(SUMMARY)
+    s["generated_at"] = ts.isoformat(timespec="seconds")
+    return s
+
+
 @pytest.fixture()
 def stub_ledger(monkeypatch):
-    monkeypatch.setattr(CR.ta, "summary_only", lambda: dict(SUMMARY))
+    monkeypatch.setattr(CR.ta, "summary_only", lambda: _fresh_summary())
     monkeypatch.setattr(CR.ta, "window_diff", lambda hours=24.0: dict(WINDOW))
 
 
@@ -103,3 +111,60 @@ def test_cli_json(tmp_path, stub_ledger, capsys):
     out = json.loads(capsys.readouterr().out)
     assert rc == 0
     assert out["ok"] is True and out["card_id"].startswith("EX-")
+
+
+# ---------------- WO-LEGION-CLOCK-20261026：as-of / 去重 / 保留 / 元数据 ----------------
+
+def test_card_metadata_fields(tmp_path, stub_ledger):
+    r = CR.run(experiments_root=tmp_path / "experiments")
+    card = json.loads((tmp_path / "experiments" / (r["card_id"] + ".json"))
+                      .read_text(encoding="utf-8"))
+    assert card["kind"] == "observation"
+    assert card["decision_required"] is True
+    assert card["created_at"]
+    ws = card["window_summary"]
+    assert ws["fixed_in_window"] == 2 and ws["failed_snapshot"] == 0
+    assert r["summary_age_hours"] is not None
+
+
+def test_stale_summary_refuses_card(tmp_path, monkeypatch):
+    """摘要龄 >12h：拒出卡（不拿旧账本当 24h 窗口）。"""
+    monkeypatch.setattr(CR.ta, "summary_only", lambda: _fresh_summary(13.0))
+    monkeypatch.setattr(CR.ta, "window_diff", lambda hours=24.0: dict(WINDOW))
+    root = tmp_path / "experiments"
+    r = CR.run(experiments_root=root, max_age_hours=12.0)
+    assert r["ok"] is False and r["stage"] == "stale"
+    assert not root.exists()
+
+
+def test_aged_summary_warns_but_writes(tmp_path, monkeypatch):
+    """6-12h：告警但允许出卡（黄，不判红）。"""
+    monkeypatch.setattr(CR.ta, "summary_only", lambda: _fresh_summary(8.0))
+    monkeypatch.setattr(CR.ta, "window_diff", lambda hours=24.0: dict(WINDOW))
+    r = CR.run(experiments_root=tmp_path / "experiments",
+               warn_age_hours=6.0, max_age_hours=12.0)
+    assert r["ok"] is True and r["stale_warning"]
+    assert r["summary_age_hours"] >= 7.5
+
+
+def test_if_changed_skips_duplicate(tmp_path, stub_ledger):
+    root = tmp_path / "experiments"
+    r1 = CR.run(experiments_root=root, if_changed=True)
+    r2 = CR.run(experiments_root=root, if_changed=True)
+    assert r1["ok"] is True and not r1["skipped"]
+    assert r2["ok"] is True and r2["skipped"] is True
+    assert len(list(root.glob("EX-*.json"))) == 1
+
+
+def test_retention_moves_old_cards(tmp_path, monkeypatch):
+    root = tmp_path / "experiments"
+    for i in range(3):
+        win = dict(WINDOW)
+        win["fixed_in_window"] = ["C", "D"][: (i % 2) + 1]
+        win["new_failures"] = ["A"] * (i + 1)
+        monkeypatch.setattr(CR.ta, "summary_only", lambda: _fresh_summary())
+        monkeypatch.setattr(CR.ta, "window_diff", lambda hours=24.0, w=win: dict(w))
+        CR.run(experiments_root=root, keep=2, if_changed=False)
+    assert len(list(root.glob("EX-*.json"))) == 2
+    expired = list((root / "_expired").glob("EX-*.json"))
+    assert len(expired) == 1

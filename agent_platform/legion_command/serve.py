@@ -220,15 +220,36 @@ class Handler(BaseHTTPRequestHandler):
         """进化层只读视图：实验卡清单 + 经验库五域统计（不读不写经验正文）。"""
         import json as _json
         exp_dir = _PLATFORM / "data" / "experiments"
-        cards = []
+        loaded = []
         if exp_dir.exists():
-            for p in sorted(exp_dir.glob("*.json"))[-20:]:
+            # WO-LEGION-CLOCK-20261026：按 created_at（回退 mtime）排序取末 20。
+            # 旧实现 sorted(glob)[-20:] 按随机 uuid 文件名排序——超过 20 张后
+            # 新卡可能永远不显示。
+            for p in exp_dir.glob("*.json"):
                 try:
                     d = _json.loads(p.read_text(encoding="utf-8"))
+                    if not isinstance(d, dict):
+                        continue
+                    loaded.append((str(d.get("created_at") or ""),
+                                   p.stat().st_mtime, d))
                 except (ValueError, OSError):
                     continue
-                cards.append({"card_id": d.get("card_id"), "hypothesis": str(d.get("hypothesis", ""))[:60],
-                              "status": d.get("status"), "arms": list((d.get("arms") or {}).keys())})
+        loaded.sort(key=lambda it: (it[0], it[1]))
+        cards = []
+        for created_at, _mtime, d in loaded[-20:]:
+            verdict = d.get("verdict") if isinstance(d.get("verdict"), dict) else {}
+            sig = verdict.get("signature") if isinstance(verdict.get("signature"), dict) else {}
+            cards.append({
+                "card_id": d.get("card_id"),
+                "hypothesis": str(d.get("hypothesis", ""))[:60],
+                "status": d.get("status"),
+                "arms": list((d.get("arms") or {}).keys()),
+                "created_at": d.get("created_at") or created_at,
+                "kind": d.get("kind") or "experiment",
+                "decision_required": bool(d.get("decision_required", False)),
+                "window_summary": d.get("window_summary") or {},
+                "signature_verified": sig.get("verified"),
+            })
         lib = Path.home() / ".hermes" / "profiles" / "zhaoyun" / "experience"
         domains = {}
         index_rows = []
