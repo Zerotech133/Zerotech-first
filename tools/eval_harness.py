@@ -18,6 +18,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 GOLDEN = REPO / "eval" / "golden_tasks.json"
+QUALITY = REPO / "eval" / "quality_tasks.json"
 OUTDIR = REPO / "work" / "eval"
 
 
@@ -131,8 +132,11 @@ def run_task(t: dict, cwd: Path | None = None, timeout: int = 0) -> dict:
             "stdout_tail": out[-1200:], "stderr_tail": err[-800:]}
 
 
-def run_all(tasks_path: Path | None = None, only: str = "") -> dict:
+def run_all(tasks_path: Path | None = None, only: str = "",
+            include_quality: bool = True) -> dict:
     tasks = load_tasks(tasks_path)
+    if tasks_path is None and include_quality and QUALITY.exists():
+        tasks += load_tasks(QUALITY)
     results = [run_task(t) for t in tasks if not only or t.get("id") == only]
     passed = sum(1 for r in results if r["ok"])
     out = {"schema": "eval_result/v1", "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -156,13 +160,15 @@ def main(argv=None) -> int:
     r.add_argument("--json", action="store_true")
     r.add_argument("--out", default="")
     r.add_argument("--file", default="", help="指定任务文件（如 eval/quality_tasks.json）")
+    r.add_argument("--no-quality", action="store_true", help="跳过 LLM 质量任务")
     args = ap.parse_args(argv)
     if args.cmd == "list":
         tasks = load_tasks()
         print(json.dumps(tasks, ensure_ascii=False, indent=1) if args.json else
               "\n".join("%-22s %s" % (t.get("id"), t.get("desc")) for t in tasks))
         return 0
-    res = run_all(tasks_path=Path(args.file) if args.file else None, only=args.id)
+    res = run_all(tasks_path=Path(args.file) if args.file else None, only=args.id,
+                  include_quality=not args.no_quality)
     if args.out:
         Path(args.out).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     if args.json:
