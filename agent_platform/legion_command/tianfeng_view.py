@@ -176,6 +176,14 @@ def build_view(platform: Path) -> dict:
         blockers.append({"type": "外部依赖", "name": "手机 E2E 待验证", "severity": "medium",
                          "detail": "未找到 mobile-e2e-auto.json；OAuth 白名单/真机验证未完成",
                          "next": "跑 work/_dsh_mobile_e2e/run_auto_e2e.py 并补白名单"})
+    e2e_pass = any(p.exists() for p in (
+        repo / "work" / "_dsh_mobile_e2e" / "E2E_PASS.txt",
+        repo.parent / "work" / "_dsh_mobile_e2e" / "E2E_PASS.txt",
+    ))
+    if not e2e_pass and not any(b["name"] in ("飞书回调白名单未生效", "手机 E2E 待验证") for b in blockers):
+        blockers.append({"type": "外部依赖", "name": "手机 E2E / 飞书白名单 待完成", "severity": "medium",
+                         "detail": "OAuth 白名单未确认或未真机验证（无 E2E_PASS 标记）",
+                         "next": "老田后台加白名单/开 scope；真机验证后写 E2E_PASS.txt"})
     blockers.append({"type": "治理", "name": "P2c 全量暂缓", "severity": "info",
                      "detail": "老田 22:5x 决策：P2c 暂缓（仅 P2a/P2b 已跑）",
                      "next": "手机 E2E + GLM 样例 + P2b 观察后再议"})
