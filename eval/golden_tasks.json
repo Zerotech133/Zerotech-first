@@ -1,0 +1,15 @@
+{
+ "schema": "eval_harness/golden_tasks/v1",
+ "tasks": [
+  {"id": "audit-tianfeng", "desc": "田丰席位审计 strict 通过", "cmd": ["{python}", "-X", "utf8", "tools/seat_system_audit.py", "--seat", "tianfeng", "--strict"], "expect_rc": 0, "timeout": 60},
+  {"id": "pytest-dispatch", "desc": "派工回执台账单测", "cmd": ["{python}", "-m", "pytest", "tools/test_tianfeng_dispatch.py", "-q"], "expect_rc": 0, "timeout": 120},
+  {"id": "pytest-guard", "desc": "L2 写守卫单测", "cmd": ["{python}", "-m", "pytest", "tools/test_seat_write_guard.py", "-q"], "expect_rc": 0, "timeout": 120},
+  {"id": "pytest-codebase", "desc": "codebase-intelligence 单测", "cmd": ["{python}", "-m", "pytest", "tools/test_codebase_intel.py", "-q"], "expect_rc": 0, "timeout": 120},
+  {"id": "pytest-eval", "desc": "eval-harness 单测", "cmd": ["{python}", "-m", "pytest", "tools/test_eval_harness.py", "-q"], "expect_rc": 0, "timeout": 120},
+  {"id": "pytest-trace", "desc": "observability trace 单测", "cmd": ["{python}", "-m", "pytest", "tools/test_trace_log.py", "-q"], "expect_rc": 0, "timeout": 120},
+  {"id": "repo-map", "desc": "本仓库 repo map 可生成", "cmd": ["{python}", "-X", "utf8", "tools/codebase_intel.py", "map", "--json"], "expect_rc": 0, "expect_contains": "file_count", "timeout": 120},
+  {"id": "caps-count", "desc": "田丰能力 >= 26", "cmd": ["{python}", "-X", "utf8", "-c", "import json,pathlib,sys; d=json.loads((pathlib.Path.home()/'.hermes/profiles/tianfeng/skills/CAPABILITIES.json').read_text(encoding='utf-8')); print(d['total']); sys.exit(0 if d['total']>=26 else 1)"], "expect_rc": 0, "timeout": 30},
+  {"id": "gateway-models", "desc": "本地网关 /v1/models 可达", "cmd": ["{python}", "-X", "utf8", "-c", "import json,urllib.request; d=json.loads(urllib.request.urlopen('http://127.0.0.1:8796/v1/models',timeout=10).read()); print(len(d.get('data') or []))"], "expect_rc": 0, "timeout": 30},
+  {"id": "deliverable-plan", "desc": "研发计划/能力报告存在", "cmd": ["{python}", "-X", "utf8", "-c", "import pathlib,sys; p=pathlib.Path(r'C:\\项目\\deliverables\\2026-10-27_田丰研发计划与能力配比研究_v1.md'); print(p.exists()); sys.exit(0 if p.exists() else 1)"], "expect_rc": 0, "timeout": 30}
+ ]
+}

@@ -68,6 +68,10 @@ CAPABILITIES = {
         {"name": "implementation-supervision", "what": "研发执行监督：跟踪执行 AI 落地（进度/卡点/返工/验收前置）", "how": "devtask 台账 + delegation 回执（work/tianfeng_dispatch.jsonl）+ 测试证据；按里程碑核对", "boundary": "不亲自提交生产代码；执行者署名；卡点必须升级", "status": "ready"},
         {"name": "qa-acceptance", "what": "验收：按验收标准核证据/测试/回滚点，出通过或驳回", "how": "验收单+证据包+测试命令；一次通过/驳回列缺陷；签字前复验", "boundary": "不通过不签；不改写原始记录", "status": "ready"},
         {"name": "release-rollback", "what": "发布/回滚：上线清单、灰度、回滚预案、观察与复盘", "how": "发布单+五要素；L2 上线报老田；回滚脚本/证据落盘", "boundary": "L2 必报老田；不可逆点单列", "status": "ready"},
+        {"name": "codebase-intelligence", "what": "代码库智能：repo map/符号检索/引用与影响面（先定位再改）", "how": "python -X utf8 tools/codebase_intel.py map|search|refs|impact", "boundary": "只读；不替代测试证据", "status": "ready"},
+        {"name": "sandbox-verification", "what": "隔离验证：临时 worktree + pytest 证据包（复现/验收）", "how": "python -X utf8 tools/sandbox_verify.py run --tests <paths> [--venv]", "boundary": "不碰生产数据；证据落 work/sandbox", "status": "ready"},
+        {"name": "eval-harness", "what": "质量评测：10 条金标任务 + 断言评分 + 回归报告", "how": "python -X utf8 tools/eval_harness.py run", "boundary": "金标更新留痕；失败不得当通过", "status": "ready"},
+        {"name": "observability-trace", "what": "调用观测：工具链/时延/成本/状态写本地 JSONL trace", "how": "python -X utf8 tools/trace_log.py --summary / --cmd ...", "boundary": "不记密钥/敏感正文", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -418,6 +422,54 @@ description: 发布/回滚：上线清单、灰度、回滚预案、观察与复
 2. L2（上线/生产/客户可见）必须先取得老田批准；五要素齐全。
 3. 回滚脚本与证据提前备好；发布后观察窗口内保留回滚能力。
 4. 发布完成写复盘：实际 vs 计划、异常、后续动作。
+""",
+        "codebase-intelligence": """---
+name: codebase-intelligence
+description: 代码库智能：repo map/符号检索/引用与影响面；先定位再改。
+---
+
+# 代码库智能
+
+1. 生成 repo map：`python -X utf8 tools/codebase_intel.py map --json`。
+2. 符号检索：`search <query>`；引用：`refs <symbol>`；影响面：`impact <path>`。
+3. 改前先出"涉及文件/调用方/影响面"清单，再进方案/拆单。
+4. 只读；结论必须能落到文件:行。
+""",
+        "sandbox-verification": """---
+name: sandbox-verification
+description: 隔离验证：临时 worktree + 可选 venv + pytest，产出证据包。
+---
+
+# 隔离验证
+
+1. 运行：`python -X utf8 tools/sandbox_verify.py run --tests <测试路径> [--venv]`。
+2. 证据：`work/sandbox/evidence-*.json`（git sha、命令、rc、输出尾、耗时）。
+3. 失败即失败，不以"本地能跑"替代；worktree 默认清理。
+4. 不碰生产数据；大测试给超时。
+""",
+        "eval-harness": """---
+name: eval-harness
+description: 质量评测：10 条金标任务 + 断言评分 + 回归结果落盘。
+---
+
+# 质量评测
+
+1. 列表：`python -X utf8 tools/eval_harness.py list`。
+2. 运行：`python -X utf8 tools/eval_harness.py run`；结果 `work/eval/result-*.json`。
+3. 金标任务必须可重复、有 expect_rc / expect_contains；失败不得当通过。
+4. 变更能力/工具后跑一遍，防回归。
+""",
+        "observability-trace": """---
+name: observability-trace
+description: 调用观测：工具链/时延/成本/状态写本地 JSONL；先本地后 Langfuse。
+---
+
+# 调用观测
+
+1. 记录：`record(kind,name,status,duration_ms,meta)` 或 `span(...)`。
+2. 查看：`python -X utf8 tools/trace_log.py --summary` / `--tail N`。
+3. 跑命令带 trace：`--cmd <命令>`；结果落 `work/traces/agent_trace.jsonl`。
+4. 不记密钥/敏感正文；后续可接 Langfuse/OTel。
 """,
     },
     "zhaoyun": {
