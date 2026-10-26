@@ -200,6 +200,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "audit_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/zhaoyun":
+            # 赵云 · 治理席只读视图（身份/能力卡/判例库/AI建议/时钟/保活/签字链）
+            try:
+                from legion_command.zhaoyun_view import build_view
+                self._send_json(build_view(_PLATFORM))
+            except Exception as e:                       # noqa: BLE001
+                self._send_json({"ok": False, "error": "zhaoyun_view_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/health":
             self._send_json({"ok": True, "service": "legion-command", "version": "1.0"})
             return
