@@ -266,11 +266,23 @@ assert e1["count"] == len([r for r in _tickets()
                            if r["ticket"].startswith("INB-")])
 print("OK（MD+JSON 幂等 / 外发零参数）")
 
-# ── T15 embedding L3 诚实降级 ─────────────────────────────────
-_section("T15 embedding 预留")
+# ── T15 embedding L3：启用则可用 / 无模型诚实降级 ────────────
+_section("T15 embedding L3")
 sig = gw.embedding_sig("任意文本")
-assert sig["available"] is False and sig["why"], sig
-print("OK（L3 无模型诚实标注不假绿）")
+assert isinstance(sig, dict) and "available" in sig, sig
+if sig["available"]:
+    assert sig.get("vec") and sig.get("model"), sig
+    _saved = gw._detect_embed_model
+    gw._detect_embed_model = lambda: ""
+    try:
+        sig2 = gw.embedding_sig("任意文本")
+        assert sig2["available"] is False and sig2["why"], sig2
+    finally:
+        gw._detect_embed_model = _saved
+    print("OK（L3 bge-m3 可用；无模型时诚实降级）")
+else:
+    assert sig["why"], sig
+    print("OK（L3 无模型诚实标注不假绿）")
 
 # ── 收尾 ─────────────────────────────────────────────────────
 gw._send_card, gw._ingest_links = _ORIG_SEND, _ORIG_INGEST

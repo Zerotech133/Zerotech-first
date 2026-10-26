@@ -85,16 +85,20 @@ def nudge(dispatch_id, by="customer", note="", notify_owner=True,
     if note:
         lines.append("说明：%s" % str(note)[:120])
     sent = {}
+    owner_ok = False
     if notify_owner:
         ok, why = _send(owner, _card(
             "⏰ 工单催办提醒", "red" if r.get("escalate") else "orange",
             lines), kind="comm_ticket")
+        owner_ok = bool(ok)
         sent["owner"] = {"ok": ok, "why": why}
     if notify_requester and req and req != owner:
-        ok, why = _send(req, _card(
-            "⏰ 已为您催办", "blue",
-            ["工单 %s 已催办第 %d 次，处理人已收到提醒。" %
-             (dispatch_id, r["n"])]), kind="comm_patrol")
+        msg = ("工单 %s 已催办第 %d 次，处理人提醒已由发送接口接受。" %
+               (dispatch_id, r["n"])) if owner_ok else (
+               "工单 %s 已登记第 %d 次催办，处理人提醒未确认送出，请稍后查看进度。" %
+               (dispatch_id, r["n"]))
+        ok, why = _send(req, _card("⏰ 催办进度", "blue", [msg]),
+                        kind="comm_patrol")
         sent["requester"] = {"ok": ok, "why": why}
     r["sent"] = sent
     return r
@@ -154,40 +158,65 @@ def auto_nudge(dispatch_id, stage=1):
     req = (rec.get("payload") or {}).get("open_id") or ""
     same = (not req) or (req == owner)
 
-    # 历史工单收口：只发一次，之后不再打扰
-    if wait >= 1440 and done < 9:
-        comm_dispatch.set_patrol_stage(dispatch_id, 9)
+    # 历史工单仅在发送接口确认接受后封口；失败保留原阶段供后续重试。
+    if wait >= 1440:
+        if done >= 9:
+            return {"ok": True, "skipped": True, "stage": done}
         txt = ("⏱ **历史工单收口**\n工单 %s 已等待 %.0f 小时（%s 提交），"
                "建议关闭或重新发起。" % (dispatch_id, wait / 60.0,
                                        (rec.get("submitted_at") or "")[:10]))
-        _send(req or owner, _card("⏱ 历史工单提醒", "grey", txt.split("\n")),
-              kind="comm_patrol")
-        return {"ok": True, "final": True, "waited_min": round(wait, 1)}
+        ok, why = _send(req or owner, _card(
+            "⏱ 历史工单提醒", "grey", txt.split("\n")), kind="comm_patrol")
+        if not ok:
+            return {"ok": False, "error": "reminder_not_accepted", "why": why,
+                    "stage": done}
+        comm_dispatch.set_patrol_stage(dispatch_id, 9)
+        return {"ok": True, "final": True, "stage": 9,
+                "waited_min": round(wait, 1)}
 
-    if int(stage) <= done:
-        return {"ok": True, "skipped": True, "stage": done}
-    comm_dispatch.set_patrol_stage(dispatch_id, stage)
     stage = int(stage)
+    if stage <= done:
+        return {"ok": True, "skipped": True, "stage": done}
     if same:
-        # 只发一张，不再叠加「进度提醒 + 催办提醒」
-        lines = ["**工单 %s** 已等待 %.1f 分钟。" % (dispatch_id, wait)]
-        if stage == 1:
-            lines.append("还在处理中，已为您加急，稍后回复。")
-        else:
-            lines.append("已升级督办，稍后给您明确答复。")
-        _send(req or owner, _card(
+        # 合并卡只表述待处理状态，不把接口接受说成处理人签收或答复。
+        lines = ["**工单 %s** 已等待 %.1f 分钟，仍待处理。" % (dispatch_id, wait)]
+        if stage >= 2:
+            lines.append("已达提醒阈值，请核查责任人与处理进度。")
+        ok, why = _send(req or owner, _card(
             "⏱ 处理进度提醒", "orange" if stage == 1 else "red", lines),
             kind="comm_patrol")
+        if not ok:
+            return {"ok": False, "error": "reminder_not_accepted", "why": why,
+                    "stage": done}
+        comm_dispatch.set_patrol_stage(dispatch_id, stage)
         return {"ok": True, "merged": True, "stage": stage,
                 "waited_min": round(wait, 1)}
 
-    lines = ["**工单 %s** 已等待 %.1f 分钟，请尽快处理。" %
+    lines = ["**工单 %s** 已等待 %.1f 分钟，请核查处理进度。" %
              (dispatch_id, wait)]
     if stage >= 2:
-        lines.append("⚠️ 已达升级阈值，建议督办。")
-    _send(owner, _card("⏰ 工单催办提醒", "orange" if stage == 1 else "red",
-                       lines), kind="comm_ticket")
-    _send(req, _card("⏱ 处理进度提醒", "orange" if stage == 1 else "red",
-                     ["工单 %s 还在处理中，已为您加急。" % dispatch_id]),
-          kind="comm_patrol")
+        lines.append("已达提醒阈值，建议核查责任人并督办。")
+    owner_ok, owner_why = _send(owner, _card(
+        "⏰ 工单催办提醒", "orange" if stage == 1 else "red", lines),
+        kind="comm_ticket")
+    req_line = ("工单 %s 仍待处理，提醒已由发送接口接受；请关注后续答复。" %
+                dispatch_id) if owner_ok else (
+                "工单 %s 仍待处理，处理人提醒未确认送出；请稍后查看进度。" %
+                dispatch_id)
+    req_ok, req_why = _send(req, _card(
+        "⏱ 处理进度提醒", "orange" if stage == 1 else "red", [req_line]),
+        kind="comm_patrol")
+    if owner_ok != req_ok:
+        # 一方已被接口接受时禁止自动重试两端，避免向已接受的一方重复发卡。
+        # 阶段表示本轮不再自动发，不代表两端均收到了；交人工查发送台账。
+        comm_dispatch.set_patrol_stage(dispatch_id, stage)
+        return {"ok": False, "error": "partial_delivery_needs_review",
+                "stage": stage,
+                "sent": {"owner": {"ok": bool(owner_ok), "why": owner_why},
+                         "requester": {"ok": bool(req_ok), "why": req_why}}}
+    if not owner_ok:
+        return {"ok": False, "error": "reminder_not_accepted", "stage": done,
+                "sent": {"owner": {"ok": False, "why": owner_why},
+                         "requester": {"ok": False, "why": req_why}}}
+    comm_dispatch.set_patrol_stage(dispatch_id, stage)
     return {"ok": True, "stage": stage, "waited_min": round(wait, 1)}

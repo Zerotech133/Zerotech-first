@@ -70,9 +70,28 @@ def _clip(s, n):
     return s if len(s) <= n else s[:n - 1] + "…"
 
 
+def _clip_text(text, n):
+    """段落级截断：优先在换行处切，其次在中文句末标点切，避免半句。"""
+    t = str(text or "").strip()
+    if len(t) <= n:
+        return t
+    head = t[:n]
+    cut = head.rfind("\n")
+    if cut < n * 0.5:
+        import re as _re
+        m = None
+        for m in _re.finditer(r"[。！？；\n]", head):
+            pass
+        if m and m.end() > n * 0.5:
+            cut = m.end()
+    if cut <= 0:
+        cut = n
+    return t[:cut].rstrip() + "\n\n…（内容较长，完整版见交易台账/选股看板）"
+
+
 def build(scene, title, summary="", kpis=None, ts="", source="",
           stale=False, level="info", buttons=None, note="", tags="",
-          audit="", link_kw=None, items=None, links=None):
+          audit="", link_kw=None, items=None, links=None, detail_md=""):
     """统一推送卡片（schema 2.0）。返回 dict；按钮链接失败则省略按钮。"""
     meta = SCENES.get(scene) or {"name": title, "emoji": "📌", "color": "grey"}
     color = LEVEL_COLORS.get(level) or meta.get("color") or "grey"
@@ -84,6 +103,11 @@ def build(scene, title, summary="", kpis=None, ts="", source="",
                     "content": "**%s**" % _clip(summary, MAX_SUMMARY)})
     items = items or []
     links = links or []
+    if detail_md:
+        if els:
+            els.append({"tag": "hr"})
+        els.append({"tag": "markdown",
+                    "content": _clip_text(detail_md, 3600)})
     kpis = kpis or []
     if items:
         if els:
@@ -202,7 +226,8 @@ def shadow_log(name, old_card, new_card):
 
 
 def from_sections(name, scene, title, sections, ts="", source="",
-                  footer="", buttons=None, links=None, level="info"):
+                  footer="", buttons=None, links=None, level="info",
+                  full=False):
     """旧「分节文本」→ 统一分装：首节首句当结论，其余作要点列表。
 
     sections: [markdown 文本块]；buttons: [(label, url, style)] 旧格式。
@@ -213,17 +238,28 @@ def from_sections(name, scene, title, sections, ts="", source="",
         first = sections[0].replace("**", "").strip().split("\n")[0]
         summary = _clip(first, MAX_SUMMARY)
     items = []
-    for sec in sections[1:] if summary else sections:
-        line = sec.replace("**", "").strip().split("\n")[0]
-        if line and line not in items:
-            items.append(_clip(line, 170))
+    detail_md = ""
+    if full:
+        # 全文块：保留每节全部行（去 ** 标记），段落级截断，避免只给首行
+        parts = []
+        for sec in sections:
+            clean = sec.replace("**", "").strip()
+            if clean:
+                parts.append(clean)
+        detail_md = "\n\n".join(parts)
+    else:
+        for sec in sections[1:] if summary else sections:
+            line = sec.replace("**", "").strip().split("\n")[0]
+            if line and line not in items:
+                items.append(_clip(line, 170))
     btns = None
     if buttons:
         btns = [{"type": "url", "text": lab, "url": url,
                  "style": (st or "default")} for lab, url, st in buttons]
     return build(scene, title, summary=summary, ts=ts, source=source,
                  level=level, buttons=btns, tags="#unified #%s" % name,
-                 items=items, links=links, note=footer or "")
+                 items=items, links=links, note=footer or "",
+                 detail_md=detail_md)
 
 
 # ── 常用分装器（生产者直接调用）────────────────────────────

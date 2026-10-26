@@ -1006,7 +1006,9 @@ def run_job(params: dict, job_id: str, progress=None):
             if universe == "market":
                 _hst = p.get("hist_st")
                 _hist_st = _hst is True or (isinstance(_hst, str) and _hst.strip().lower() in ("true", "1", "yes"))
-                sig_buy, sig_sell, pool_info, err = calc_chanlun_signals_market(d0, d1, progress, buy_filter, hist_st=_hist_st)
+                sig_buy, sig_sell, pool_info, err = calc_chanlun_signals_market(
+            d0, d1, progress, buy_filter, hist_st=_hist_st,
+            pit_st=bool(p.get("pit_st", False)))
                 if err:
                     return None, err
                 src = pool_info["signal_source"]

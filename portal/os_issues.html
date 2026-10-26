@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · 问题驾驶舱</title><style>
 :root{color-scheme:light;--bg:#f4f7fa;--paper:#fff;--ink:#1e3348;--muted:#5a6f83;--line:#dbe5ee;--blue:#0e7490;--bluebg:#e8f4f7;--amber:#936224;--red:#b3402e;--green:#227a4b;--violet:#5b3a9e}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.65 "Microsoft YaHei",system-ui,sans-serif}
-.top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:12px;height:54px;padding:0 22px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:17px;font-weight:800;color:var(--blue)}.top a{margin-left:auto;color:var(--muted);font-size:12.5px;text-decoration:none}
+.top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:12px;height:54px;padding:0 22px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:17px;font-weight:800;color:var(--blue)}.top .links{margin-left:auto;display:flex;gap:14px;flex-wrap:wrap}.top a{color:var(--muted);font-size:12.5px;text-decoration:none}
 main{max-width:1180px;margin:auto;padding:20px 22px 80px}
 .head h1{font-size:21px;margin:0 0 3px}.head p{margin:0 0 14px;color:var(--muted);font-size:13px}
 .kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}.kpi .c{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 13px}.kpi .n{font-size:22px;font-weight:800}.kpi .t{font-size:11.5px;color:var(--muted)}
@@ -18,7 +18,7 @@ main{max-width:1180px;margin:auto;padding:20px 22px 80px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#12303f;color:#fff;border-radius:10px;padding:9px 18px;font-size:13px;display:none;z-index:9}
 .foot{margin-top:18px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:10px}
 @media(max-width:960px){.cols,.kpi{grid-template-columns:1fr}}
-</style><script src="/static/nav.js" defer></script></head><body><header class="top"><div class="brand">零界 · 问题驾驶舱</div><a href="/os_map.html">← 全板块作战图</a><a href="/zero_proto.html">← AI 驾驶舱</a></header><main>
+</style></head><body><header class="top"><div class="brand">零界 · 问题驾驶舱</div><div class="links"><a id="issues-back" href="/zero_proto.html#system">← 返回系统</a><a href="/zero_proto.html#system">回驾驶舱·系统</a></div></header><main>
 <div class="head"><h1>问题生命周期 · 标准化管理</h1><p>发现 → 认领 → 解决 → 清除归档（archived=账本保留可溯，永不物理删）· 每条带证据路径 · 席位可领单 · 未来智能体自运作的任务基座</p></div>
 <div class="kpi">
 <div class="c"><div class="n" style="color:var(--red)" id="k-p1">—</div><div class="t">P1 待决</div></div>
@@ -42,6 +42,7 @@ main{max-width:1180px;margin:auto;padding:20px 22px 80px}
 </main><div class="toast" id="toast"></div>
 <script>
 const OPS=(location.protocol.startsWith('http')&&location.hostname)?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';
+try{const ref=new URL(document.referrer);if(ref.origin===location.origin&&ref.pathname==='/os_map.html'){const back=document.getElementById('issues-back');back.href='/os_map.html'+(ref.hash||'');back.textContent='← 返回作战图'}}catch(e){}
 const $=s=>document.querySelector(s);
 function toast(t){const n=$('#toast');n.textContent=t;n.style.display='block';setTimeout(()=>n.style.display='none',2400)}
 async function api(path,body){const r=await fetch(OPS+path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||r.status);return d}

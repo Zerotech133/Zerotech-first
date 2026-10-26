@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """WO-FS-141 · P3.11-lite：card_actions.dispatch 买点订阅/退订迁移单测。
 
 纪律（全桩化，零副作用）：
@@ -155,9 +155,10 @@ def test_buypoint_actions_not_hitting_legacy_branch(isolated, fake_sa):
 
 
 # 10. 未迁移老链动作不再返回 True 伪装成功（fail-open 缺陷已治）
+#     jev_ack 已于 W3 迁入统一分发（2026-10-24），改用仍未迁移的 er:list 验证口径。
 
 def test_unmigrated_legacy_no_fail_open(isolated):
-    ok, msg = card_actions.dispatch("jev_ack", {}, "")
+    ok, msg = card_actions.dispatch("er:list", {}, "")
     assert ok is False
     assert "老链动作未迁移" in msg and "8091" in msg
 
@@ -183,8 +184,24 @@ def test_actions_keys_unchanged():
         "ctl:sub_toggle", "ctl:param", "ctl:alert_ack", "ctl:alert_ignore",
         "ctl:alert_ack_all", "ctl:tasks", "ctl:board",
         "jev_ack", "jev_ignore",
-        "subscribe_buypoint", "unsubscribe_buypoint",
+        "subscribe_buypoint", "unsubscribe_buypoint", "dispatch_nudge",
         "subscribe_add", "picks_share", "beacon_view",
         "cmd:tune", "cmd:approve", "cmd:chanlun", "cmd:control",
         "cmd:stock", "cmd:detail", "cmd:tpsl", "cmd:help",
     }
+
+
+def test_dispatch_nudge_registered_and_calls_ticket_loop(monkeypatch, isolated):
+    info = card_actions.lookup("dispatch_nudge")
+    assert info and info["enabled"] and info["kind"] == "card"
+    import types
+    calls = []
+    fake = types.ModuleType("ticket_loop")
+    fake.nudge = lambda did, by="customer": (
+        calls.append((did, by)) or
+        {"ok": True, "n": 2, "dispatch_id": did, "escalate": False})
+    monkeypatch.setitem(__import__("sys").modules, "ticket_loop", fake)
+    ok, msg = card_actions.dispatch("dispatch_nudge",
+                                    {"dispatch_id": "lg-abc123456"}, "ou_u")
+    assert ok is True and "第 2 次" in msg
+    assert calls and calls[0][0] == "lg-abc123456"

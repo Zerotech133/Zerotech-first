@@ -983,9 +983,34 @@ def api_send(req):
         content, msg_type = apply_card_template(kind, content, msg_type)
     except Exception:
         pass  # 模板层异常不拦发送（fail-safe）
-    ok, why, mid = send_msg_tracked(content, msg_type, rid, rtype, kind=kind,
-                                    via_hub=False, flow_record=False,
-                                    route_targets=route_targets, domain=domain)
+    # W3（2026-10-24）sender 统一：调用方传 sender_role 时按角色选发送 app；
+    # 缺省 None = 走 canonical（存量调用零变化）。凭据缺失 closed on failure，
+    # 绝不静默换别的 app 发（防跨应用域 230001 / 身份漂移）。
+    sender_role = (req.get("sender_role") or "").strip() or None
+    _sender_app = {"app_id": None, "app_secret": None}
+    if sender_role:
+        try:
+            if HERE not in sys.path:
+                sys.path.insert(0, HERE)
+            import feishu_app_pool
+            aid, sec = feishu_app_pool.app_for_role(sender_role)
+            _sender_app = {"app_id": aid, "app_secret": sec}
+        except Exception as e:  # noqa: BLE001
+            why4 = ("sender_role %s 凭据不可用：%s"
+                    % (sender_role, str(e)[:120]))
+            try:
+                sys.path.insert(0, STATION)
+                import push_flow
+                push_flow.record(kind or "hub", "openapi", rid, 1, False,
+                                 evidence="dead_letter")
+            except Exception:
+                pass
+            return {"ok": False, "why": why4, "error": why4, "via": "hub"}
+    ok, why, mid = send_msg_tracked(
+        content, msg_type, rid, rtype, kind=kind,
+        via_hub=False, flow_record=False,
+        route_targets=route_targets, domain=domain,
+        app_id=_sender_app.get("app_id"), app_secret=_sender_app.get("app_secret"))
     # W38 送达证据分级：api_accepted ≠ receiver_verified ≠ dead_letter
     if ok and mid:
         try:
@@ -1002,12 +1027,16 @@ def api_send(req):
                          evidence=evidence)
     except Exception:
         pass
-    if not ok:
+    if not ok and not str(kind or "").startswith("dead_letter_redelivery"):
         # 直发失败 → 死信登记（闸门拒绝不算死信，走 _flow_gate_deny）
+        # 2026-10-26：补达失败不再回填死信（否则巡线补达→失败→新死信→再补达 风暴）
         try:
             sys.path.insert(0, HERE)
             import dead_letter
-            dead_letter.register(kind or "hub", "openapi", rid, why)
+            dead_letter.register(kind or "hub", "openapi", rid, why,
+                                 payload=(content if isinstance(content, str)
+                                          else json.dumps(content,
+                                                          ensure_ascii=False)))
         except Exception:
             pass
     # B1（2026-10-19）：返回键统一 why 主键；error 同值镜像一版过渡

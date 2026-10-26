@@ -9,7 +9,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from feishu_card_v2 import send_card, PORTAL_BASE, PORTAL_KEY  # noqa: E402
+from feishu_card_v2 import send_card, PORTAL_BASE, PORTAL_KEY, m_url  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
 import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
 
@@ -69,6 +69,12 @@ def build_card():
              "text": {"tag": "plain_text", "content": "带访问码直达"},
              "behaviors": [{"type": "open_url",
                             "default_url": "%s/?key=%s" % (BASE, KEY)}]},
+            # 2026-10-25：移动端 H5 新版入口（自动签发；未启用则不出）
+            *( [{"tag": "button", "type": "default", "size": "medium",
+                 "text": {"tag": "plain_text", "content": "移动端新版"},
+                 "behaviors": [{"type": "open_url",
+                                "default_url": m_url("picks")}]}]
+               if m_url("picks") else [] ),
             {"tag": "markdown", "content":
              "<font color='grey'>老田的AI工作站 · 今日选股看板（公网鉴权版 v1.1）</font>"},
         ]},

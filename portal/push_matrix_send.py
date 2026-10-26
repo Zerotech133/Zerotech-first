@@ -33,13 +33,36 @@ from __future__ import annotations
 
 import argparse
 import json
-import msvcrt
 import os
 import sys
 import time
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+
+# 跨平台文件锁（2026-10-26 服务器发布阻塞修复）：Windows msvcrt / POSIX fcntl.flock
+try:
+    import msvcrt as _msvcrt
+except ImportError:  # POSIX
+    _msvcrt = None
+    import fcntl as _fcntl
+
+
+def _os_lock(fd, nonblock=False):
+    if _msvcrt is not None:
+        _msvcrt.locking(fd, _msvcrt.LK_NBLCK if nonblock else _msvcrt.LK_LOCK, 1)
+    else:
+        _fcntl.flock(fd, _fcntl.LOCK_EX | (_fcntl.LOCK_NB if nonblock else 0))
+
+
+def _os_unlock(fd):
+    if _msvcrt is not None:
+        try:
+            _msvcrt.locking(fd, _msvcrt.LK_UNLCK, 1)
+        except OSError:
+            pass
+    else:
+        _fcntl.flock(fd, _fcntl.LOCK_UN)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import push_matrix  # noqa: E402  轨道A 解析器（REPO/load_matrix/is_quiet/resolve_windows）
@@ -244,13 +267,13 @@ def _append_log(entry):
     with f:
         f.seek(0, 2)
         pos = f.tell()
-        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+        _os_lock(f.fileno())
         try:
             f.write(data)
         finally:
             # 解锁必须与加锁同区域：写后 EOF 已变，须回到锁定时刻的 pos
             f.seek(pos)
-            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+            _os_unlock(f.fileno())
 
 
 # ---------- 发送通道 ----------

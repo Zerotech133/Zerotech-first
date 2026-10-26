@@ -95,6 +95,60 @@ def test_auto_nudge_different_owner_two_cards(monkeypatch):
     assert {s[0] for s in sent} == {"ou_owner", "ou_customer"}
 
 
+def test_auto_nudge_failed_send_keeps_stage_for_retry(monkeypatch):
+    cd, sent = _setup(monkeypatch)
+    cd.records["lg-fail"] = _rec("ou_owner")
+    cd.waits["lg-fail"] = 8.0
+    monkeypatch.setattr(tl, "_send", lambda oid, card, kind="comm_ticket":
+                        (False, "hub unavailable"))
+    r = tl.auto_nudge("lg-fail", 1)
+    assert r["ok"] is False and cd.patrol_stage("lg-fail") == 0
+    monkeypatch.setattr(tl, "_send", lambda oid, card, kind="comm_ticket":
+                        (sent.append((oid, card)) or (True, "accepted")))
+    r = tl.auto_nudge("lg-fail", 1)
+    assert r["ok"] is True and len(sent) == 1
+    assert cd.patrol_stage("lg-fail") == 1
+
+
+def test_auto_nudge_history_failed_send_not_final(monkeypatch):
+    cd, sent = _setup(monkeypatch)
+    cd.records["lg-old-fail"] = _rec("ou_owner")
+    cd.waits["lg-old-fail"] = 1500.0
+    monkeypatch.setattr(tl, "_send", lambda oid, card, kind="comm_patrol":
+                        (False, "denied"))
+    r = tl.auto_nudge("lg-old-fail", 2)
+    assert r["ok"] is False and cd.patrol_stage("lg-old-fail") == 0
+    monkeypatch.setattr(tl, "_send", lambda oid, card, kind="comm_patrol":
+                        (sent.append((oid, card)) or (True, "accepted")))
+    r = tl.auto_nudge("lg-old-fail", 2)
+    assert r["ok"] is True and r["final"] is True
+    assert cd.patrol_stage("lg-old-fail") == 9 and len(sent) == 1
+
+
+def test_auto_nudge_partial_send_requires_review_no_duplicate(monkeypatch):
+    cd, sent = _setup(monkeypatch)
+    cd.records["lg-part"] = _rec("ou_customer")
+    cd.waits["lg-part"] = 20.0
+    monkeypatch.setattr(tl, "_send", lambda oid, card, kind="comm_ticket":
+                        (sent.append((oid, card)) or (oid == "ou_owner", "accepted" if oid == "ou_owner" else "denied")))
+    r = tl.auto_nudge("lg-part", 2)
+    assert r["ok"] is False and r["error"] == "partial_delivery_needs_review"
+    assert cd.patrol_stage("lg-part") == 2
+    assert tl.auto_nudge("lg-part", 2)["skipped"] is True and len(sent) == 2
+    assert "处理人已收到" not in str(sent[-1][1])
+
+
+def test_nudge_requester_card_does_not_claim_owner_notified(monkeypatch):
+    cd, sent = _setup(monkeypatch)
+    cd.nudge = lambda did, by, note: {"ok": True, "n": 1, "open_id": "ou_customer",
+                                          "waited_min": 3.0, "state": "inbox"}
+    monkeypatch.setattr(tl, "_send", lambda oid, card, kind="comm_ticket":
+                        (sent.append((oid, card)) or (False, "denied")))
+    result = tl.nudge("lg-f", notify_owner=True, notify_requester=True)
+    assert not result["sent"]["owner"]["ok"]
+    assert "已收到提醒" not in str(sent[-1][1])
+
+
 def test_auto_nudge_done_skips(monkeypatch):
     cd, sent = _setup(monkeypatch)
     cd.records["lg-d"] = _rec("ou_owner")

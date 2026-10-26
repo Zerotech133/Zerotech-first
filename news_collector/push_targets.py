@@ -56,6 +56,28 @@ def target_id(name: str) -> str | None:
     return None
 
 
+def target_entry(name: str) -> dict | None:
+    """按名取整条收件人记录（含 type/app）；查无返回 None（不告警）。"""
+    for t in targets():
+        if t.get("name") == name:
+            return t
+    return None
+
+
+def app_ref(name: str) -> str | None:
+    """收件人所属 app_id（W3 域登记，2026-10-24）。
+
+    open_id / chat_id 是 **app 维度**的：本字段记录该 id 是在哪个应用下
+    取得/可见的；发送方必须用同一 app 的凭证，否则飞书返回
+    400（230001 invalid receive_id）。旧条目无此字段时返回 None（向后兼容）。
+    """
+    t = target_entry(name)
+    if not t:
+        return None
+    v = str(t.get("app") or "").strip()
+    return v or None
+
+
 def reload() -> None:
     """清缓存（测试用；生产 news_config 非热更配）。"""
     global _TARGETS

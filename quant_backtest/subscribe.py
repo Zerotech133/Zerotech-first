@@ -208,17 +208,20 @@ def _strip_md_card(card):
 
 
 def _portal_link(kind="subscribe_push"):
-    """K-PUSH-002 A2：卡片深链 = 公网看板 + 访问码 + 分享溯源 token。
-    token 每次推送现签（jti 唯一）→ 哪张卡带来的流量可追溯；签发失败
-    降级为不带 st 的带码直达（fail-safe，不挡推送）。"""
+    """K-PUSH-002 A2：卡片深链 = 选股页 + 分享溯源 token。
+
+    2026-10-25：优先 /m H5 选股页（st 归因由页面埋点回落 share_tokens.visit），
+    未启用 H5 时回退旧公网 picks.html?key= 链；token 每次现签（jti 唯一）。"""
     try:
         sys.path.insert(0, os.path.join(STATION, "portal"))
         import share_tokens
-        from feishu_card_v2 import PORTAL_BASE, _load_portal_key
-        url = "%s/picks.html?key=%s" % (PORTAL_BASE, _load_portal_key())
+        from feishu_card_v2 import PORTAL_BASE, _load_portal_key, m_url
         tok = share_tokens.gen(kind=kind, ttl_hours=72)
-        if tok:
-            url += "&st=" + tok
+        url = m_url("picks", st=tok)
+        if not url:
+            url = "%s/picks.html?key=%s" % (PORTAL_BASE, _load_portal_key())
+            if tok:
+                url += "&st=" + tok
         return url
     except Exception:
         return ""
@@ -243,6 +246,17 @@ def _build_card(title, sub, blocks, template="blue", footer=None,
             "tag": "button", "type": "primary", "size": "medium",
             "text": {"tag": "plain_text", "content": label},
             "behaviors": [{"type": "open_url", "default_url": url}]})
+    # 2026-10-25 P2：统一分装（失败回落旧卡）
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(HERE), "portal"))
+        from push_unified_adapter import adapt as _adapt
+        card = _adapt(
+            "subscribe", card, "subscription", title, blocks,
+            ts="", source="量化订阅引擎",
+            footer=footer or "AI工作站 · 订阅推送 · 不构成投资建议",
+            buttons=[url_button] if url_button else None, level="info")
+    except Exception:
+        pass
     return card
 
 

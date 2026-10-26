@@ -152,3 +152,20 @@ def test_shadow_log_writes(monkeypatch, ws_tmp):
                   {"header": {"title": {"content": "new"}}})
     line = open(path, encoding="utf-8").read().strip()
     assert "news" in line and "old" in line and "new" in line
+
+
+def test_from_sections_full_keeps_all_lines(monkeypatch):
+    secs = [
+        "① 大盘研判：升势·回踩确认期",
+        "② 入池 23 个\n  300715.SZ 凯伦股份 1卖\n  600110.SH 诺德股份 1卖",
+        "③ npv分层：≤2枢 n=18 win72.2%",
+        "④ 近24h强事件 8 条：\n  2026-10-25 15:48 [jev] 某事件",
+        "⑤ 数据新鲜度：核心表全部就绪 ✓",
+    ]
+    card = fp.from_sections("morning", "brief", "盘前晨报", secs,
+                            ts="2026-10-26 07:03", source="量化引擎",
+                            footer="个人研究晨报", full=True)
+    text = "\n".join(e.get("content") or "" for e in card["body"]["elements"])
+    for kw in ("300715.SZ", "600110.SH", "数据新鲜度", "核心表全部就绪"):
+        assert kw in text, kw
+    assert "…" not in text or "完整版见" in text

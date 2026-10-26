@@ -30,6 +30,18 @@ from send_feishu import _load_app_creds, USER_ID  # noqa: E402
 # 无发布记录无法下线，已决策弃用；老域名勿再写入任何卡片/链接）。
 PORTAL_BASE = "https://quant-picks-board-74446.app.workbuddy.host"  # 公网鉴权站（访问码门禁）
 
+# 2026-10-25 移动端 /m：链接自动签发（开关见 portal/work/m_link.json；默认关，
+# 关闭时卡片保持旧链接零变化；开启后按钮指向 /m 页面）。
+try:
+    import m_links  # 同目录
+except Exception:  # noqa: BLE001
+    m_links = None
+
+
+def m_url(scene, **kwargs):
+    """卡片按钮用的 /m 链接（未启用/失败返回 ""，调用方自行回退旧链接）。"""
+    return m_links.url_for(scene, **kwargs) if m_links else ""
+
 
 def _load_portal_key():
     """K-STOCK-408：访问码（发码侧）唯一事实源 = portal/work/portal_key.json
@@ -80,6 +92,14 @@ def _verdict_line(facts):
     return "**系统判定：%s**" % v
 
 
+def _legacy_note(tag):
+    try:
+        import legacy_telemetry
+        legacy_telemetry.hit(tag)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def build_drill_card(code, facts, sections, title_extra="",
                      trade_basis="2026-09-30 收盘（国庆休市）"):
     """sections: [(layer_title, md_content), ...] → 卡片 2.0 JSON dict。"""
@@ -103,13 +123,21 @@ def build_drill_card(code, facts, sections, title_extra="",
             "padding": "8px 12px",
             "elements": [{"tag": "markdown", "content": md}]})
     elements.append({"tag": "hr"})
-    # schema V2 不支持 action 容器 → button 直接放 elements，URL 走 behaviors
-    elements.append({
-        "tag": "button", "type": "primary", "size": "medium",
-        "text": {"tag": "plain_text", "content": "门户详情页"},
-        "behaviors": [{"type": "open_url",
-                       "default_url": "%s/picks.html?key=%s" % (
-                           PORTAL_BASE, _load_portal_key())}]})  # K-STOCK-414 现读
+    # 2026-10-25 老田拍板「用H5」：下钻按钮统一指向 H5 /m/chan；
+    # H5 未启用才回退旧门户按钮（绝不发死链）。
+    _m_url = m_links.url_for("chan", code=code) if m_links else ""
+    if _m_url:
+        elements.append({
+            "tag": "button", "type": "primary", "size": "medium",
+            "text": {"tag": "plain_text", "content": "📱 移动端详情（H5）"},
+            "behaviors": [{"type": "open_url", "default_url": _m_url}]})
+    else:
+        elements.append({
+            "tag": "button", "type": "primary", "size": "medium",
+            "text": {"tag": "plain_text", "content": "门户详情页"},
+            "behaviors": [{"type": "open_url",
+                           "default_url": "%s/picks.html?key=%s" % (
+                               PORTAL_BASE, _load_portal_key())}]})
     elements.append({
         "tag": "markdown", "content":
             "<font color='grey'>老田的AI工作站 · 缠论引擎K78+K246 · "
@@ -132,6 +160,12 @@ def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
     if receive_id is None:
         receive_id = USER_ID
     from feishu_client import send_msg  # NEWS 已挂 path（K-STOCK-228 出口收敛）
+    # P3 观察：发送旧模板卡时记一笔（统一卡 #unified 不计）
+    try:
+        if "#unified" not in json.dumps(card, ensure_ascii=False):
+            _legacy_note("send_card")
+    except Exception:  # noqa: BLE001
+        pass
     return send_msg(json.dumps(card, ensure_ascii=False), "interactive",
                     receive_id, receive_id_type, kind=kind)
 
@@ -205,6 +239,11 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
                     raise ValueError("按钮动作已禁用：%s" % aid)
                 val = {"action_id": aid}
                 val.update(payload or {})
+                try:  # W40：签名 + rid（防伪造/重放）
+                    import card_sign
+                    val = card_sign.sign(val)
+                except Exception:
+                    pass
                 els.append({"tag": "button", "type": style or "primary",
                             "text": {"tag": "plain_text", "content": label},
                             "behaviors": [{"type": "callback", "value": val}]})
@@ -213,6 +252,17 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
                             "text": {"tag": "plain_text", "content": label},
                             "behaviors": [{"type": "open_url",
                                            "default_url": spec[1]}]})
+            elif spec[0] == "m":
+                # ("m", scene, {"code": ..., "id": ..., "tab": ...})
+                # 自动签发 /m 链接；未启用/签发失败 → 不渲染（绝不发死链）
+                _murl = (m_links.url_for(spec[1], **(spec[2] or {}))
+                         if m_links and len(spec) >= 2 else "")
+                if _murl:
+                    els.append({"tag": "button", "type": style or "default",
+                                "text": {"tag": "plain_text",
+                                         "content": label},
+                                "behaviors": [{"type": "open_url",
+                                               "default_url": _murl}]})
             else:
                 raise ValueError("未知按钮 spec：%r" % (spec[0],))
 

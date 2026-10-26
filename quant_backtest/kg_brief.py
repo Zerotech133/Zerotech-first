@@ -373,12 +373,13 @@ def _build_card_payload(secs):
     try:
         sys.path.insert(0, os.path.abspath(
             os.path.join(HERE, "..", "portal")))
-        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
+        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY, m_url
+        # 2026-10-25：优先 /m H5 链接（账本/选股），未启用回退旧公网链
+        _ledger = m_url("ledger") or "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
+        _picks = m_url("picks") or "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
         buttons = [
-            ("💼 交易台账",
-             "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "primary"),
-            ("📈 选股看板",
-             "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "default"),
+            ("💼 交易台账", _ledger, "primary"),
+            ("📈 选股看板", _picks, "default"),
         ]
     except Exception:
         pass  # 按钮可选组件：域名模块不可用→纯分区卡照发

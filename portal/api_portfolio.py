@@ -5,7 +5,34 @@ Handler 壳经基座多继承并入（禁 import *）。
 import glob, json, os, re, subprocess, sys, threading, time
 
 from pathlib import Path
-import msvcrt
+
+# 跨平台文件锁（2026-10-26 服务器发布阻塞修复）：
+# Windows 用 msvcrt.locking；POSIX（Linux 部署机）用 fcntl.flock，语义等价：
+# 非阻塞拿锁失败抛 OSError（与 msvcrt.LK_NBLCK 一致），阻塞拿锁排队等待。
+# 原实现模块级 import msvcrt 会让 portal_api 在 Linux 上冷启动即 ImportError。
+try:
+    import msvcrt as _msvcrt
+except ImportError:  # POSIX
+    _msvcrt = None
+    import fcntl as _fcntl
+
+
+def _os_lock(fd, nonblock=False):
+    if _msvcrt is not None:
+        _msvcrt.locking(fd, _msvcrt.LK_NBLCK if nonblock else _msvcrt.LK_LOCK, 1)
+    else:
+        _fcntl.flock(fd, _fcntl.LOCK_EX | (_fcntl.LOCK_NB if nonblock else 0))
+
+
+def _os_unlock(fd):
+    if _msvcrt is not None:
+        try:
+            _msvcrt.locking(fd, _msvcrt.LK_UNLCK, 1)
+        except OSError:
+            pass
+    else:
+        _fcntl.flock(fd, _fcntl.LOCK_UN)
+
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _PAPER_DIR_ROOT = str(_REPO_ROOT / "k_stock" / "paper")
@@ -33,7 +60,7 @@ def _acquire_paper_qd_lock():
             lock.write(b"0")
             lock.flush()
         lock.seek(0)
-        msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+        _os_lock(lock.fileno(), nonblock=True)
     except OSError:
         lock.close()
         return None
@@ -43,7 +70,7 @@ def _acquire_paper_qd_lock():
 def _release_paper_qd_lock(lock):
     try:
         lock.seek(0)
-        msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+        _os_unlock(lock.fileno())
     finally:
         lock.close()
 from api_common import (
@@ -190,11 +217,10 @@ def _debate_say(rec):
     # （锁文件独立于数据文件：写回用 os.replace，数据文件本体不能持锁）
     new_human = {"text": txt, "ts": _t.strftime("%Y-%m-%d %H:%M:%S"),
                  "replies": reps, "final2": fin2}
-    import msvcrt
     lk = open(simj + ".lock", "a+b")
     try:
         lk.seek(0)
-        msvcrt.locking(lk.fileno(), msvcrt.LK_LOCK, 1)
+        _os_lock(lk.fileno())
         try:
             with open(simj, encoding="utf-8") as f:
                 fresh = [json.loads(x) for x in f if x.strip()]
@@ -216,7 +242,7 @@ def _debate_say(rec):
             os.replace(tmp, simj)
         finally:
             lk.seek(0)
-            msvcrt.locking(lk.fileno(), msvcrt.LK_UNLCK, 1)
+            _os_unlock(lk.fileno())
     finally:
         lk.close()
     return {"ok": True, "replies": reps}

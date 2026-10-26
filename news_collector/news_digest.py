@@ -69,11 +69,14 @@ def record_flow(ok, kind="daily:news_digest"):
 
 
 def _picks_url():
-    """公网看板按钮 URL——单点收敛在 portal/feishu_card_v2（K-STOCK-305 判例）。"""
+    """公网看板按钮 URL——单点收敛在 portal/feishu_card_v2（K-STOCK-305 判例）。
+
+    2026-10-25：优先返回 /m H5 选股页（自动签发）；未启用回退旧公网链。
+    """
     try:
         sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "portal")))
-        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
-        return "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
+        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY, m_url
+        return m_url("picks") or "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
     except Exception:
         return None
 
@@ -230,6 +233,16 @@ def push_card_flow(db, since, day, n_total, sec_blocks, hit_rows, dry):
         "近 24 小时 · %d 条 · 信息采集域" % n_total, blocks,
         footer="AI 工作站 · 信息采集域 · 每日 08:30 · 发送失败自动降级文本",
         buttons=buttons)
+    # 2026-10-25 P2/P3：统一分装（失败回落旧卡）
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(HERE), "portal"))
+        from push_unified_adapter import adapt as _adapt
+        card = _adapt("newsdigest", card, "daily", "金融新闻日报", blocks,
+                      ts=day, source="信息采集域",
+                      footer="AI 工作站 · 信息采集域 · 每日 08:30",
+                      buttons=buttons, level="info")
+    except Exception:
+        pass
     if dry:
         print(json.dumps(card, ensure_ascii=False, indent=1)[:4000])
         return True

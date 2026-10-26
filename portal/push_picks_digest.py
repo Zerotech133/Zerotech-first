@@ -112,7 +112,30 @@ def main():
              "手机速览版（门户完整版待 Tailscale 入网）</font>"}
         ])},
     }
-    ok, msg = send_card(body)
+    card = body
+    # 2026-10-25 P2：统一分装（失败回落旧卡）
+    try:
+        from push_unified_adapter import adapt as _adapt
+        from feishu_card_v2 import m_url as _m_url
+        _u = _m_url("picks")
+        _btn = [("📈 打开移动端选股", _u, "primary")] if _u else None
+        _head = ("全池 %d 只 ｜ T1 共振 %d ｜ T2 高价值 %d ｜ 拥挤警报 %d ｜ T3 %d"
+                 % (c.get("total") or len(stocks),
+                    c.get("T1_resonance") or len(t1),
+                    c.get("T2_high_value") or len(t2),
+                    c.get("crowd_alert") or 0,
+                    c.get("T3_single") or 0))
+        card = _adapt(
+            "picks", body, "picks", "今日选股速览", sections,
+            ts=str(d.get("scan_run_date") or ""), source="选股引擎",
+            footer="老田的AI工作站 · 六策略强制扫描 · 手机速览版",
+            buttons=_btn, level="info",
+            summary=_head,
+            kpis=[("T1 共振", str(len(t1))), ("T2 高价值", str(len(t2))),
+                  ("拥挤警报", str(len(crowd)))])
+    except Exception as _ue:  # noqa: BLE001
+        print("unified picks FAIL -> legacy:", str(_ue)[:100])
+    ok, msg = send_card(card)
     print("send:", ok, "|", msg)
     return 0 if ok else 1
 

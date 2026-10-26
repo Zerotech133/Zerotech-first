@@ -29,6 +29,17 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "quant_backtest"))
 
+# 语音输入兜底默认（2026-10-24）：不依赖看护脚本是否成功注入 env；
+# 显式设 0/false 可关闭。模型为本地 faster-whisper（ModelScope 下载）。
+if not (os.environ.get("VOICE_INGEST_ENABLED") or "").strip():
+    os.environ["VOICE_INGEST_ENABLED"] = "1"
+if not (os.environ.get("VOICE_ASR_PROVIDER") or "").strip():
+    os.environ["VOICE_ASR_PROVIDER"] = "local"
+if not (os.environ.get("VOICE_ASR_MODEL") or "").strip():
+    os.environ["VOICE_ASR_MODEL"] = r"C:\aios\models\faster-whisper-small"
+if not (os.environ.get("VOICE_AUTO_EXECUTE") or "").strip():
+    os.environ["VOICE_AUTO_EXECUTE"] = "1"
+
 LOG = os.path.join(HERE, "logs", "feishu_bot.log")
 PICKS = os.path.join(HERE, "data", "todays_picks.json")
 DDIR = os.path.join(HERE, "data", "pick_details")
@@ -51,6 +62,41 @@ def log(msg):
         except OSError:
             pass
     print(line, flush=True)
+
+
+# ── 看护加固（2026-10-24）：心跳 + WS 连接自检 ─────────────────
+HEARTBEAT = os.path.join(HERE, "logs", "feishu_bot_heartbeat.txt")
+_WS_CLIENT = {"cli": None}
+_WS_MISS = {"n": 0}
+
+
+def _heartbeat(tag=""):
+    """写心跳文件；看护 loop 用它识别"进程活着但假在线/假死"。"""
+    try:
+        os.makedirs(os.path.dirname(HEARTBEAT), exist_ok=True)
+        with open(HEARTBEAT, "w", encoding="utf-8") as f:
+            f.write("%s %s\n" % (datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), tag))
+    except OSError:
+        pass
+
+
+def _ws_guard():
+    """每 120s 查 lark WS 连接；连续 5 次无连接（~10min）主动退出，看护重拉。"""
+    while True:
+        time.sleep(120)
+        try:
+            cli = _WS_CLIENT.get("cli")
+            conn = getattr(cli, "_conn", None) if cli is not None else None
+            if cli is not None and conn is None:
+                _WS_MISS["n"] += 1
+                log("ws guard: no connection (%d/5)" % _WS_MISS["n"])
+                if _WS_MISS["n"] >= 5:
+                    log("ws guard: ws dead >10min, exit(3) for watchdog restart")
+                    os._exit(3)
+            else:
+                _WS_MISS["n"] = 0
+        except Exception:  # noqa: BLE001
+            pass
 
 
 # ── L2 引擎接合 ─────────────────────────────────────────────
@@ -307,6 +353,7 @@ HELP_MD = """**指令表**
 · `止盈单` — 当前全部持仓线位快照
 · `撤线 605100 tp` — 撤止盈（sl=撤止损）
 · `控制` — 控制中枢卡：推送开关/参数档位/告警处置/工单看板
+· `机器` / `新对话` / `问：<问题>` — **已迁移**：请私聊「零界·执行」（连续对话/远程入口）
 · `调优 <想法>` — 模型调优反馈（K-PUSH-002 闭环入口，语音输入亦可）
 · `审批 <req_id> 通过|驳回 [原因]` — 调优请求审批（仅管理员）
 管理员指令（仅管理员）：
@@ -518,6 +565,107 @@ def send_text(text, message_id=None):
     return cli.im.v1.message.reply(req).success()
 
 
+def _machine_entry_text():
+    """远程入口链接：读 dsh web 表层的带 token URL（每次重启 token 会变）。
+    供「机器」指令使用——手机飞书里拿到链接后在浏览器打开即可操作本机。
+    容错：入口日志可能被 web 进程独占/BOM/UTF-16，读不到就退回 current_url.txt。"""
+    candidates = [
+        os.environ.get("DSH_REMOTE_URL_FILE") or "",
+        r"C:\项目\work\_dsh_remote\current_url.txt",
+        os.environ.get("DSH_REMOTE_LOG") or "",
+        r"C:\项目\work\_dsh_remote\dsh_web.log",
+    ]
+    for path in candidates:
+        if not path or not os.path.exists(path):
+            continue
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+        except OSError:
+            continue
+        lines = []
+        for enc in ("utf-8-sig", "utf-16", "gbk"):
+            try:
+                lines = data.decode(enc).splitlines()
+                break
+            except Exception:  # noqa: BLE001
+                continue
+        for line in reversed(lines):
+            line = line.strip().lstrip("\ufeff").strip()
+            if line.startswith("dsh web: "):
+                url = line[len("dsh web: "):].strip()
+                return ("🖥 远程入口（手机浏览器打开）：\n" + url +
+                        "\n\n· 链接含访问令牌，请勿转发/截图外发。\n"
+                        "· 入口进程重启后 token 会变，重新发「机器」取最新。")
+            if line.startswith("https://") and "token=" in line:
+                return ("🖥 远程入口（手机浏览器打开）：\n" + line +
+                        "\n\n· 链接含访问令牌，请勿转发/截图外发。")
+    return "机器入口未就绪：本机 dsh web 表层未运行（找 Lead 拉起）。"
+
+
+def _handle_audio(msg, data):
+    """P0：飞书语音消息 → 文本（默认关闭）。
+
+    为什么这样写：
+      · **默认零行为变化**：VOICE_INGEST_ENABLED 不为 1 时直接返回，机器人仍走
+        原来的 skip non-text 分支，开关一关即回滚到旧行为。
+      · **重活放线程**：on_msg 跑在 SDK 的 asyncio 单循环里，同步下载 + 识别
+        会卡住 WS 心跳（判例：辅助线程不得反噬主链）。
+      · **群聊不接管**：语音指令只在 p2p 生效，避免群里一条语音触发全局动作。
+      · **语音只转文字**：默认不执行任何指令，见 voice_ingest 的 VOICE_AUTO_EXECUTE。
+    """
+    try:
+        import voice_ingest as vi
+    except Exception as e:  # noqa: BLE001
+        log("voice ingest import failed: %s" % (str(e)[:120],))
+        return
+    if not vi.enabled():
+        log("skip audio (VOICE_INGEST_ENABLED=0)")
+        return
+    mid = getattr(msg, "message_id", "") or ""
+    chat_type = getattr(msg, "chat_type", "") or ""
+    if chat_type != "p2p":
+        log("skip audio in %s chat: %s" % (chat_type, mid[-8:]))
+        return
+    sender_id = ""
+    try:
+        sender_id = (data.event.sender.sender_id.open_id or "")
+    except Exception:  # noqa: BLE001
+        pass
+
+    def _run():
+        try:
+            def _download(meta):
+                from lark_oapi.api.im.v1 import GetMessageResourceRequest
+                req = (GetMessageResourceRequest.builder()
+                       .message_id(mid).file_key(meta["file_key"])
+                       .type("audio").build())
+                resp = _lark_client().im.v1.message_resource.get(req)
+                if not getattr(resp, "success", lambda: False)():
+                    raise vi.VoiceError("DOWNLOAD_FAILED",
+                                        "取回语音失败（飞书接口返回失败）")
+                fh = getattr(resp, "file", None)
+                payload = fh.read() if hasattr(fh, "read") else b""
+                return payload, (lambda: None)
+
+            transcriber, provider, why = vi.build_transcriber()
+            rec = vi.ingest_audio(
+                message_id=mid, content=msg.content, sender_id=sender_id,
+                chat_type=chat_type, download=_download, transcriber=transcriber,
+                notify=lambda t: send_text(t, mid),
+                dispatch=lambda t: handle_cmd(t, mid, sender_id, chat_type),
+                log=log, auto_execute=vi.auto_execute(),
+                transcriber_reason=why)
+            log("voice %s: status=%s provider=%s dur=%sms bytes=%s chars=%s sha=%s"
+                % (mid[-8:], rec.get("status"), provider, rec.get("duration_ms"),
+                   rec.get("bytes"), rec.get("text_chars"),
+                   (rec.get("audio_sha256") or "")[:12]))
+        except Exception:  # noqa: BLE001
+            log("voice err " + traceback.format_exc()[-240:])
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
 # ── 指令解析 ────────────────────────────────────────────────
 def _norm_code(tok):
     from quote_snapshot import normalize_code
@@ -549,6 +697,20 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
     text = (text or "").strip()
     low = text.lower()
     try:
+        # 2026-10-25 W2/W3 分域（旧 bot 回归纯指令）：
+        # DSH 问答/连续对话/远程入口/新对话 已迁移到「零界·执行」(zb.owner.exec)，
+        # 旧 bot 只保留量化指令与 W43 投喂，不再承载执行能力。
+        if low.rstrip("。！!?？. ") in ("新对话", "重置对话", "重置",
+                                        "清空对话", "忘记上下文"):
+            send_text("该能力已迁移：请私聊「零界·执行」发「新对话」。",
+                      message_id)
+            return
+        for _p in ("机器问：", "机器问:", "问：", "问:", "AI：", "AI:",
+                   "ai：", "ai:"):
+            if text.startswith(_p):
+                send_text("该能力已迁移：DSH 问答请私聊「零界·执行」。",
+                          message_id)
+                return
         # M7 止盈止损：先于其余指令做白名单闸门
         if (low.startswith(("止盈", "止损", "止盈单", "撤线"))
                 and not _er_allowed(open_id)):
@@ -799,10 +961,15 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                       message_id)
             f, cached = get_facts(code)
             reply_card(card_main(code, f, cached), message_id)
+        elif low.rstrip("。！!?？. ") in ("机器", "打开机器", "机器入口",
+                                          "入口", "dsh", "远程"):
+            # 2026-10-25 分域：远程入口能力已迁移到零界·执行
+            send_text("该能力已迁移：请私聊「零界·执行」发「机器」取入口链接。",
+                      message_id)
         else:
-            # W43 入向受理器：P2P 兜底文本先过投喂环（身份闸/类型路由/
-            # 双回执走 8097 闸门）；不消费或受理器异常再走旧兜底文案，
-            # 存量指令（缠论/详情/调优/审批…）在上方分支不受影响。
+            # 2026-10-25 分域：私聊短文本不再交给 DSH（已迁移零界·执行）。
+            # 仍保留 W43 投喂环：P2P 兜底文本先过投喂环（身份闸/类型路由/
+            # 双回执走 8097 闸门）；不消费再走兜底指路文案。
             consumed = False
             try:
                 import inbound_gateway
@@ -812,10 +979,9 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
             except Exception:  # noqa: BLE001
                 log("inbound err " + traceback.format_exc()[-300:])
             if not consumed:
-                # K-STOCK-300：兜底文案指路——本 bot 只做指令下钻，自由问答
-                # 去找问答机器人（用户此前被「没听懂」误导以为联动坏了）。
-                send_text("未识别指令。我是下钻指令机器人，发「帮助」看指令表；"
-                          "自由问答请艾特或私聊「量化问答机器人」。", message_id)
+                send_text("未识别指令。我是零界·指令，发「帮助」看指令表；"
+                          "自由问答请发「零界·问答」，"
+                          "执行/远程/语音请私聊「零界·执行」。", message_id)
     except Exception as e:  # noqa: BLE001
         log("cmd err: %s" % traceback.format_exc()[-300:])
         try:
@@ -841,6 +1007,26 @@ def _handle_card(val, sender):
         aid = val.get("action_id") if isinstance(val, dict) else None
         if aid:
             import card_actions
+            # W40：HMAC 验签 + request_id 幂等（旧卡无签名→兼容告警；
+            # CARD_SIGN_ENFORCE=1 时强制拒绝未签名旧卡）
+            try:
+                import card_sign as _cs
+                _vok, _vwhy = _cs.verify(val)
+                if not _vok:
+                    if str(os.environ.get("CARD_SIGN_ENFORCE", "0")) == "1":
+                        send_text("❌ 卡片校验失败：%s" % _vwhy)
+                        log("card v3:%s verify_fail=%s (sender=%s)"
+                            % (aid, _vwhy, sender))
+                        return
+                    log("card v3:%s unsigned(%s) 兼容放行" % (aid, _vwhy))
+                else:
+                    _gok, _gwhy = _cs.guard(val)
+                    if not _gok:
+                        send_text("✅ 重复操作已忽略（request_id 幂等）")
+                        log("card v3:%s duplicate rid ignored" % aid)
+                        return
+            except Exception as _se:  # noqa: BLE001
+                log("card sign guard error: %s" % str(_se)[:120])
             ok, msg = card_actions.dispatch(str(aid), val, sender)
             send_text(("✅ " if ok else "❌ ") + str(msg)[:150])
             log("card v3:%s ok=%s (sender=%s)" % (aid, ok, sender))
@@ -1013,7 +1199,13 @@ def main():
                 % (msg.message_type, msg.chat_type,
                    (getattr(data.event.sender.sender_id, "open_id", "")
                     or "-")[:12]))
+            _heartbeat("msg")
             if msg.message_type != "text":
+                # P0 语音入口：仅当 VOICE_INGEST_ENABLED=1 时才接管 audio，
+                # 否则行为与改动前完全一致（继续 skip non-text）。
+                if msg.message_type == "audio":
+                    _handle_audio(msg, data)
+                    return
                 log("skip non-text: %s" % msg.message_type)
                 return
             mid = msg.message_id
@@ -1081,6 +1273,8 @@ def main():
                .register_p2_card_action_trigger(on_card).build())
     cli = Client(app_id, app_secret, event_handler=handler,
                  log_level=lark.LogLevel.INFO)
+    _WS_CLIENT["cli"] = cli
+    threading.Thread(target=_ws_guard, daemon=True).start()
     # K-PUSH-005：CARD 帧路由。P2.7 侦察结论：该 patch 是对 SDK 类
     # （lark_oapi.ws.client.Client）的一次性属性赋值（不读旧值、不叠加
     # 包装），重复调用幂等，且类级 patch 对环内重建的新 Client 实例
@@ -1127,28 +1321,52 @@ def main():
         import comm_dispatch as _cd
         import time as _t
         _seen = {}          # dispatch_id -> 已提示阶段（1=稍等, 2=升级）
+        _seen_approvals = set()  # W40：已升级过的待确认公告 decision_id
         while True:
             try:
                 _t.sleep(300)
+                _heartbeat("patrol")
                 if not _cd.enabled():
                     continue
                 for it in _cd.sweep_overdue():
                     stage = 2 if it.get("escalate") else 1
-                    if _seen.get(it["dispatch_id"], 0) >= stage:
+                    # 2026-10-25：统一走 ticket_loop.auto_nudge —— 同阶段只发一次
+                    # （stage 持久化，重启不重发）；owner==发起人时只发一张合并卡；
+                    # 超 24h 历史工单只提醒一次「建议关闭/重开」
+                    try:
+                        import ticket_loop as _tl
+                        r = _tl.auto_nudge(it["dispatch_id"], stage)
+                    except Exception as _ne:  # noqa: BLE001
+                        log("自动催办异常 %s: %s" % (
+                            it["dispatch_id"], str(_ne)[:120]))
                         continue
-                    _seen[it["dispatch_id"]] = stage
-                    oid = (it.get("payload") or {}).get("open_id") or ""
-                    if not oid:
-                        continue
-                    if stage == 1:
-                        txt = ("您的问题（工单 %s）还在处理中，预计稍后回复——"
-                               "已为您加急。" % it["dispatch_id"])
-                    else:
-                        txt = ("工单 %s 已超过 15 分钟未处理，已升级至田丰归口督办，"
-                               "稍后给您明确答复。" % it["dispatch_id"])
-                    _patrol_send(oid, txt, it["dispatch_id"], stage)
-                    log("派单巡视 %s stage=%d waited=%.1fmin"
-                        % (it["dispatch_id"], stage, it.get("waited_min", 0)))
+                    log("派单巡视 %s stage=%d waited=%.1fmin skip=%s"
+                        % (it["dispatch_id"], stage, it.get("waited_min", 0),
+                           (r or {}).get("skipped")))
+                # W40：待确认公告超时升级（>30min 未审批 → owner 提醒，每决策一次）
+                try:
+                    import notification_decision as _ndp
+                    for _ap in _ndp.stale_approvals(30):
+                        _aid = str(_ap.get("id") or "")
+                        if not _aid or _aid in _seen_approvals:
+                            continue
+                        _seen_approvals.add(_aid)
+                        send_text("⏰ 待确认公告超时未审批：%s → %s（登记 %s）。"
+                                  "请到 8097 通知决策处理。"
+                                  % (_aid[:8], _ap.get("target_name") or "-",
+                                     str(_ap.get("created_at") or "")[:16]))
+                        log("approval escalation %s" % _aid[:8])
+                except Exception:  # noqa: BLE001
+                    log("approval escalation error "
+                        + traceback.format_exc()[-160:])
+                # W41：死信自动补达（退避+封顶+独立流水；旧死信无 payload 跳过）
+                try:
+                    import redeliver as _rd
+                    _rr = _rd.run_once(_rd.default_sender)
+                    if _rr.get("tried"):
+                        log("redeliver patrol %s" % _rr)
+                except Exception:  # noqa: BLE001
+                    log("redeliver error " + traceback.format_exc()[-160:])
             except Exception:  # noqa: BLE001 —— 巡视异常不得打死线程
                 log("派单巡视异常 " + traceback.format_exc()[-200:])
 
@@ -1157,6 +1375,13 @@ def main():
         threading.Thread(target=_dispatch_patrol, daemon=True).start()
         log("dispatch patrol thread started (interval=300s)")
     log("bot ws starting (app=%s)" % app_id)
+    try:
+        import voice_ingest as _vi
+        log("voice: enabled=%s provider=%s model=%s" % (
+            _vi.enabled(), os.environ.get("VOICE_ASR_PROVIDER") or "none",
+            os.environ.get("VOICE_ASR_MODEL") or ""))
+    except Exception:  # noqa: BLE001
+        pass
     # P2.7 内部重连环：原 cli.start() 为单次阻塞调用，WS 断线=进程退出，
     # 只能靠 watchdog 每 5min 整机拉起兜底（恢复延迟最长 5min）。本环把
     # 恢复延迟降到秒级（指数退避：初始 1s 倍增上限 60s；存活≥60s 后异常
@@ -1182,6 +1407,7 @@ def main():
             # Client 重建在环内（app_id/app_secret/handler 复用环外对象）
             cli = Client(app_id, app_secret, event_handler=handler,
                          log_level=lark.LogLevel.INFO)
+            _WS_CLIENT["cli"] = cli
 
 
 if __name__ == "__main__":

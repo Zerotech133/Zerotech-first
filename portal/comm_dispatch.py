@@ -170,3 +170,134 @@ def sweep_overdue(now=None):
             "payload": rec.get("payload") or {},
         })
     return out
+
+
+# ── 催办/回复闭环存储（2026-10-25，老田反馈"派单后没有催促"）────
+DATA_DIR = ROOT / "portal" / "data" / "comm"
+NUDGE_PATH = DATA_DIR / "dispatch_nudges.json"
+REPLY_PATH = DATA_DIR / "dispatch_replies.jsonl"
+
+
+def _ensure_dir():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _load_nudges():
+    try:
+        return __import__("json").loads(
+            NUDGE_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_nudges(d):
+    _ensure_dir()
+    tmp = NUDGE_PATH.with_suffix(".json.tmp")
+    tmp.write_text(__import__("json").dumps(d, ensure_ascii=False, indent=1),
+                   encoding="utf-8")
+    __import__("os").replace(tmp, NUDGE_PATH)
+
+
+def record_of(dispatch_id):
+    """→ inbox 记录 dict（不存在返回 {}）。"""
+    st = check_receipt(dispatch_id)
+    return (st.get("record") or {}) if st.get("ok") else {}
+
+
+def requester_open_id(dispatch_id):
+    return str((record_of(dispatch_id).get("payload") or {}).get("open_id") or "")
+
+
+def waited_min(dispatch_id):
+    rec = record_of(dispatch_id)
+    ts = _parse_ts(rec.get("submitted_at"))
+    if ts is None:
+        return 0.0
+    return (time.time() - ts.timestamp()) / 60.0
+
+
+def nudge(dispatch_id, by="customer", note=""):
+    """记录一次催办 → {ok,n,escalate,waited_min,state,open_id}。不发送。"""
+    dispatch_id = str(dispatch_id or "").strip()
+    if not dispatch_id:
+        return {"ok": False, "error": "缺少工单号"}
+    st = check_receipt(dispatch_id)
+    rec = (st.get("record") or {}) if st.get("ok") else {}
+    if not rec:
+        return {"ok": False, "error": "工单不存在或已归档"}
+    state = str(st.get("state") or "unknown")
+    if state != "inbox":
+        return {"ok": False, "error": "工单已处理（%s），无需催办" % state}
+    d = _load_nudges()
+    item = d.get(dispatch_id) or {"n": 0}
+    n = int(item.get("n") or 0) + 1
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    item.update({"n": n, "last": now, "by": str(by or ""),
+                 "note": str(note or "")[:200]})
+    if n == 1:
+        item["first"] = now
+    wait = waited_min(dispatch_id)
+    escal = bool(n >= 2 or wait >= ESCALATE_AFTER_MIN)
+    item["escalate"] = escal
+    d[dispatch_id] = item
+    _save_nudges(d)
+    return {"ok": True, "dispatch_id": dispatch_id, "n": n,
+            "escalate": escal, "waited_min": round(wait, 1),
+            "state": state,
+            "open_id": (rec.get("payload") or {}).get("open_id") or "",
+            "kind": rec.get("kind") or "", "at": now}
+
+
+def nudge_info(dispatch_id):
+    item = _load_nudges().get(str(dispatch_id or "").strip()) or {}
+    return {"n": int(item.get("n") or 0),
+            "last": item.get("last") or "",
+            "first": item.get("first") or "",
+            "escalate": bool(item.get("escalate"))}
+
+
+def patrol_stage(dispatch_id):
+    """已通知过的巡视阶段（持久化在 nudges 文件，防 bot 重启重复发）。"""
+    item = _load_nudges().get(str(dispatch_id or "").strip()) or {}
+    return int(item.get("stage") or 0)
+
+
+def set_patrol_stage(dispatch_id, stage):
+    d = _load_nudges()
+    item = d.get(str(dispatch_id or "").strip()) or {"n": 0}
+    item["stage"] = int(stage)
+    item["stage_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    d[str(dispatch_id or "").strip()] = item
+    _save_nudges(d)
+    return {"ok": True, "stage": int(stage)}
+
+
+def record_reply(dispatch_id, text, by=""):
+    _ensure_dir()
+    row = {"ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+           "dispatch_id": str(dispatch_id or ""), "by": str(by or ""),
+           "text": str(text or "")[:1000]}
+    with open(REPLY_PATH, "a", encoding="utf-8") as f:
+        f.write(__import__("json").dumps(row, ensure_ascii=False) + "\n")
+    return {"ok": True, "at": row["ts"]}
+
+
+def replies(dispatch_id, limit=10):
+    did = str(dispatch_id or "").strip()
+    out = []
+    try:
+        with open(REPLY_PATH, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = __import__("json").loads(line)
+                except ValueError:
+                    continue
+                if str(row.get("dispatch_id")) == did:
+                    out.append(row)
+    except OSError:
+        return []
+    return out[-limit:]
+

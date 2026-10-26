@@ -33,17 +33,38 @@ if ($existing) {
     exit 0
 }
 
-# ③ 拉起 Bot
-Write-Log "STARTING..."
+# ③ 拉起 Bot（2026-10-25：全局互斥 + 二次判活，防与 loop 版双实例）
+$mutex = $null
+$got = $false
 try {
-    $proc = Start-Process -FilePath $py `
-        -ArgumentList @("-u", "-X", "utf8", $bot) `
-        -WorkingDirectory "C:\aios\portal" `
-        -WindowStyle Hidden `
-        -PassThru
-    if ($proc) { Write-Log "STARTED pid=$($proc.Id)" }
-} catch {
-    Write-Log "FAIL: $($_.Exception.Message)"
+    $mutex = New-Object System.Threading.Mutex($false, 'Global\FeishuBotStart')
+    $got = $mutex.WaitOne(0)
+} catch { $got = $false }
+if (-not $got) {
+    Write-Log "start mutex busy — skip"
+    exit 0
+}
+try {
+    $existing2 = Get-CimInstance Win32_Process -Filter "name = 'python.exe'" |
+        Where-Object { $_.CommandLine -like '*feishu_bot_ws.py*' }
+    if ($existing2) {
+        Write-Log "peer already started — skip"
+    } else {
+        Write-Log "STARTING..."
+        try {
+            $proc = Start-Process -FilePath $py `
+                -ArgumentList @("-u", "-X", "utf8", $bot) `
+                -WorkingDirectory "C:\aios\portal" `
+                -WindowStyle Hidden `
+                -PassThru
+            if ($proc) { Write-Log "STARTED pid=$($proc.Id)" }
+        } catch {
+            Write-Log "FAIL: $($_.Exception.Message)"
+        }
+    }
+} finally {
+    try { $mutex.ReleaseMutex() } catch { }
+    try { $mutex.Dispose() } catch { }
 }
 Write-Log "=== wrapper exit ==="
 exit 0

@@ -140,3 +140,53 @@ def test_12_bad_intent_still_question(inbox):
     files = list((inbox / "inbox").glob("*.json"))
     rec = json.loads(files[0].read_text(encoding="utf-8"))
     assert rec["kind"] == "question"
+
+
+# ── 催办/回复闭环（2026-10-25）─────────────────────────────
+def _make_dispatch(inbox):
+    r = cd.dispatch(_res(), "ou_cust", msg_id="M-NUDGE")
+    assert r["ok"] and r["dispatch_id"]
+    return r["dispatch_id"]
+
+
+def test_nudge_and_escalate(inbox, tmp_path, monkeypatch):
+    monkeypatch.setattr(cd, "DATA_DIR", tmp_path / "commdata")
+    monkeypatch.setattr(cd, "NUDGE_PATH", tmp_path / "commdata/nudges.json")
+    monkeypatch.setattr(cd, "REPLY_PATH", tmp_path / "commdata/replies.jsonl")
+    did = _make_dispatch(inbox)
+    assert cd.nudge(did)["n"] == 1
+    r2 = cd.nudge(did, by="patrol")
+    assert r2["n"] == 2 and r2["escalate"] is True
+    assert r2["open_id"] == "ou_cust"
+    assert cd.check_receipt(did)["state"] == "inbox"
+    info = cd.nudge_info(did)
+    assert info["n"] == 2 and info["escalate"] is True
+
+
+def test_nudge_rejects_done_or_unknown(inbox, tmp_path, monkeypatch):
+    monkeypatch.setattr(cd, "DATA_DIR", tmp_path / "c2")
+    monkeypatch.setattr(cd, "NUDGE_PATH", tmp_path / "c2/n.json")
+    monkeypatch.setattr(cd, "REPLY_PATH", tmp_path / "c2/r.jsonl")
+    r = cd.nudge("lg-doesnotexist")
+    assert r["ok"] is False and "不存在" in r["error"]
+    did = _make_dispatch(inbox)
+    # 模拟已处理：把文件挪到 processed
+    import shutil
+    f = list((inbox / "inbox").glob("*.json"))[0]
+    (inbox / "processed").mkdir(exist_ok=True)
+    shutil.move(str(f), str(inbox / "processed" / f.name))
+    r2 = cd.nudge(did)
+    assert r2["ok"] is False and "已处理" in r2["error"]
+
+
+def test_reply_store(inbox, tmp_path, monkeypatch):
+    monkeypatch.setattr(cd, "DATA_DIR", tmp_path / "c3")
+    monkeypatch.setattr(cd, "NUDGE_PATH", tmp_path / "c3/n.json")
+    monkeypatch.setattr(cd, "REPLY_PATH", tmp_path / "c3/r.jsonl")
+    did = _make_dispatch(inbox)
+    cd.record_reply(did, "已处理，答案如下")
+    cd.record_reply(did, "补充一句", by="seat")
+    rows = cd.replies(did)
+    assert len(rows) == 2 and rows[-1]["by"] == "seat"
+    assert cd.requester_open_id(did) == "ou_cust"
+    assert cd.waited_min(did) >= 0

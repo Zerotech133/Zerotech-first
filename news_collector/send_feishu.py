@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import urllib.request
 
 # K-STOCK-414：旧机用户 Administrator 硬编码换机断链 → expanduser 动态推导
@@ -90,14 +91,92 @@ def _send_openapi(content, msg_type, receive_id=None, receive_id_type="open_id",
     return send_msg(content, msg_type, receive_id, receive_id_type, kind=kind)
 
 
+def _run_lark_cli(args, timeout=30, attempts=2):
+    """lark-cli 子进程执行：网络类失败自动重试一次（2026-10-25 收口）。
+
+    背景：夜间网络抖动时 lark-cli 兜底报 network/transport 错误，单次失败
+    即丢消息（10-25 04:07/05:06/07:10 三批晨间推送实锤）。重试一次显著
+    降低瞬时丢送；成功路径语义不变。
+    """
+    last = None
+    for i in range(attempts):
+        try:
+            r = subprocess.run(args, capture_output=True, text=True,
+                               encoding="utf-8", timeout=timeout)
+            blob = ((r.stdout or "") + (r.stderr or "")).lower()
+            transient = any(k in blob for k in (
+                "network", "transport", "timeout", "timed out",
+                "connection", "econnreset"))
+            if transient and i + 1 < attempts:
+                time.sleep(2)
+                last = r
+                continue
+            return r
+        except Exception as e:  # noqa: BLE001
+            last = e
+            if i + 1 < attempts:
+                time.sleep(2)
+                continue
+            raise
+    return last
+
+
+def _lark_cli_send_chat(content, msg_type, chat_id):
+    """W3 清债：群目标兜底——lark-cli 以 bot 身份向 chat_id 发送。
+
+    背景（2026-10-24）：OpenAPI 直发群目标失败时原来**没有任何兜底**，
+    群副本直接丢失（FutQuantNotify 24h 丢 6 条）。lark-cli 已实测可用
+    （`--as bot --chat-id oc_... ` 返回 ok=true）。→ (ok, detail)。
+    """
+    exe = find_lark_cli()
+    if not exe:
+        return False, "no lark-cli"
+    try:
+        r = _run_lark_cli(
+            [exe, "im", "+messages-send", "--as", "bot",
+             "--chat-id", chat_id, "--msg-type", msg_type,
+             "--content", content], timeout=40)
+    except Exception as e:  # noqa: BLE001
+        return False, str(e)[:200]
+    out = (r.stdout or "").strip()
+    lines = out.splitlines()
+    for i in range(len(lines) - 1, -1, -1):
+        seg = "\n".join(lines[i:]).strip()
+        if not seg.startswith("{"):
+            continue
+        try:
+            d = json.loads(seg)
+        except ValueError:
+            continue
+        return d.get("ok") is True, str(d.get("message_id") or "")[:80]
+    return False, (out or r.stderr or "")[:160]
+
+
 def send_content_to(receive_id, receive_id_type, content, msg_type, kind=None):
-    """多目标发送（群 chat_id 等）：仅 OpenAPI 直连，不走 lark-cli 回退
-    （回退通道身份域混乱，群发场景明确要求 app 机器人在群内）。
-    kind 透传 _send_openapi → feishu_client.send_msg（账目语义）。"""
+    """多目标发送（群 chat_id 等）：OpenAPI 直连失败时**群兜底** lark-cli bot 身份。
+
+    W3 清债（2026-10-24）：原实现"仅 OpenAPI、不走回退"——群副本在 400 时
+    静默丢失。现改为：仅对 chat_id 目标、失败后尝试一次 lark-cli 群发
+    （身份域仍为 bot app），失败如实 SEND_FAIL 留证。
+    """
     ok, why = _send_openapi(content, msg_type, receive_id, receive_id_type,
                             kind=kind)
-    print("SEND_OK" if ok else "SEND_FAIL " + why)
-    return ok
+    if ok:
+        print("SEND_OK")
+        return True
+    if (receive_id_type or "") == "chat_id" and receive_id:
+        fok, detail = _lark_cli_send_chat(content, msg_type, receive_id)
+        if fok:
+            _flow_record(True, receive_id)
+            print("SEND_OK (lark-cli chat fallback)")
+            return True
+        _flow_record(False, receive_id)
+        print("SEND_FAIL openapi:%s lark-cli:%s"
+              % (str(why)[:120], str(detail)[:120]))
+        return False
+    print("SEND_FAIL " + str(why))
+    _flow_record(False, receive_id)
+    return False
 
 
 def _flow_record(ok, target):
@@ -140,11 +219,10 @@ def send_content(content, msg_type, kind=None):
     last = why
     for ident, uid in ((["--as", "bot"], USER_ID), ([], USER_ID_LARK)):
         try:
-            r = subprocess.run(
+            r = _run_lark_cli(
                 [exe, "im", "+messages-send"] + ident +
                 ["--user-id", uid, "--msg-type", msg_type,
-                 "--content", content],
-                capture_output=True, text=True, encoding="utf-8", timeout=30)
+                 "--content", content], timeout=30)
             try:
                 # K-STOCK-400：末尾 JSON 优先——lark-cli stdout 若混入告警/
                 # 版本提示/BOM，整体解析必败 → 误判失败 → 换 user 域重发

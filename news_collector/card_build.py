@@ -28,7 +28,23 @@ def _url_buttons(buttons):
                 for label, url, btype in buttons]}
 
 
+def _legacy_note(tag):
+    """P3 观察：旧模板调用打点（失败静默）。"""
+    try:
+        import sys as _s
+        import os as _o
+        _p = _o.path.join(_o.path.dirname(HERE), "portal")
+        if _p not in _s.path:
+            _s.path.insert(0, _p)
+        import legacy_telemetry
+        legacy_telemetry.hit(tag)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def build_card(title, subtitle, template, md_blocks, footer=None,
+               # P3（2026-10-25）：旧模板，禁止新增调用；新推送一律
+               # 走 portal/feishu_push.py（统一分装）。保留仅为历史卡回放。
                buttons=None, use_schema2=False):
     """use_schema2=True 返回真 Card 2.0（schema 键 + body.elements 包装）。
 
@@ -76,6 +92,7 @@ def build_card(title, subtitle, template, md_blocks, footer=None,
 # 按钮 (label, url, type) → build_v3 url 型（behaviors open_url，
 # 2.0 原生可点——顺带修 v1 按钮手机端兼容坑，K-STOCK-354 判例翻新）。
 def build_card3(domain, title, subtitle, md_blocks, footer=None, buttons=None):
+    """P3（2026-10-25）：旧 v3 模板，禁止新增调用；新推送走 feishu_push。"""
     """v3 统一卡 → card dict（发卡仍走 push_card，链路不变）。
 
     footer 原文案并入 source 位（v3 footer 格式 #tags · source · 时间 · act）。
@@ -109,6 +126,12 @@ def _qr_key(portal_url):
 
 
 def push_card(card, qr_portal=None, kind=None):
+    # P3 观察：仅当实际发送旧模板卡时记录（统一卡带 #unified 标记）
+    try:
+        if "#unified" not in __import__("json").dumps(card, ensure_ascii=False):
+            _legacy_note("push_card")
+    except Exception:  # noqa: BLE001
+        pass
     """写 outbox/pending_card.json → send_feishu.py interactive 模式。
     qr_portal 有值时自动附门户二维码（上传失败自动省略）。
     P3.6-lite K-A：kind 非 None 时给 send_feishu CLI 追加 --kind=X

@@ -11,7 +11,7 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -371,9 +371,95 @@ def recent():
             "execution_enabled": os.environ.get("PUSH_DECISION_EXECUTE") == "1"}
 
 
-def execute(decision_id, sender):
+def owner_paired(operator, operator_open_id=None):
+    """操作人配对：审批 operator 必须是授权主表 owner；open_id 提供时须属该人。"""
+    try:
+        import authorization as _az
+        p = _az.person(str(operator or ""))
+        if not p:
+            return False, "操作人不在授权主表"
+        if "owner" not in (p.get("roles") or []):
+            return False, "操作人无 owner 角色"
+        if operator_open_id and not _az.is_allowed_open_id(operator_open_id):
+            return False, "操作人 open_id 未配对本主表"
+        return True, "ok"
+    except Exception as e:  # noqa: BLE001
+        return False, "授权主表不可用：%s" % str(e)[:80]
+
+
+def stale_approvals(minutes=30):
+    """待确认公告超时（登记 > minutes 且仍无有效人工审批）→ 列表。"""
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    out = []
+    with _lock, _db() as db:
+        rows = db.execute("""SELECT * FROM decisions WHERE category='announcement'
+            AND status='recorded' ORDER BY created_at ASC LIMIT 50""").fetchall()
+        for row in rows:
+            try:
+                ts = datetime.fromisoformat(str(row["created_at"]))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+            except (TypeError, ValueError):
+                continue
+            if ts >= cutoff:
+                continue
+            ap = db.execute("""SELECT * FROM announcement_approvals
+                WHERE decision_id=? ORDER BY id DESC LIMIT 1""", (row["id"],)).fetchone()
+            if _approval_valid(row, ap):
+                continue
+            out.append(_public(row))
+    return out
+
+
+def precheck_execute(decision_id, operator_open_id=None):
+    """execute 双确认前置检查（不改状态）：开关/状态/时间/目标/公告审批/操作人配对/群实核。"""
+    checks = {"switch": os.environ.get("PUSH_DECISION_EXECUTE") == "1",
+              "status": False, "send_time": False, "target": False,
+              "approval": False, "operator_paired": False,
+              "group_verified": False}
+    with _lock, _db() as db:
+        row = db.execute("SELECT * FROM decisions WHERE id=?",
+                         (decision_id,)).fetchone()
+        if row is None:
+            return {"ok": False, "error": "决策不存在", "checks": checks}
+        checks["status"] = row["status"] == "recorded"
+        try:
+            when = datetime.fromisoformat(str(row["send_at"]))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            checks["send_time"] = datetime.now(timezone.utc) >= when
+        except (TypeError, ValueError):
+            checks["send_time"] = False
+        target = _target(row["target_name"])
+        checks["target"] = bool(target and target["id"] == row["target_id"])
+        ap = db.execute("""SELECT * FROM announcement_approvals
+            WHERE decision_id=? ORDER BY id DESC LIMIT 1""", (row["id"],)).fetchone()
+        if row["category"] == "announcement":
+            checks["approval"] = _approval_valid(row, ap)
+            checks["operator_paired"] = bool(ap) and owner_paired(
+                ap["operator"] if ap else "", operator_open_id)[0]
+        else:
+            checks["approval"] = True
+            checks["operator_paired"] = True
+    try:
+        groups = group_info().get("groups") or []
+        checks["group_verified"] = any(
+            g.get("target_name") == row["target_name"] and g.get("verified")
+            for g in groups)
+    except Exception:  # noqa: BLE001
+        checks["group_verified"] = False
+    bad = [k for k, v in checks.items() if not v]
+    return {"ok": not bad, "error": ("未通过：" + ",".join(bad)) if bad else "",
+            "checks": checks, "decision_id": decision_id}
+
+
+def execute(decision_id, sender, operator_open_id=None):
     if os.environ.get("PUSH_DECISION_EXECUTE") != "1":
         return {"ok": False, "error": "执行未启用（PUSH_DECISION_EXECUTE）"}
+    _pre = precheck_execute(decision_id, operator_open_id)
+    if not _pre["ok"]:
+        return {"ok": False, "error": _pre["error"],
+                "checks": _pre["checks"]}
     with _lock, _db() as db:
         db.execute("BEGIN IMMEDIATE")
         row = db.execute("SELECT * FROM decisions WHERE id=?", (decision_id,)).fetchone()

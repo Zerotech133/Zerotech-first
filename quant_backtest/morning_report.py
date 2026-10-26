@@ -229,22 +229,43 @@ def build_card_payload(secs):
     try:
         sys.path.insert(0, os.path.abspath(
             os.path.join(HERE, "..", "portal")))
-        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
+        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY, m_url
+        # 2026-10-25：优先生成 /m H5 链接（账本/选股），未启用回退旧公网链
+        _ledger = m_url("ledger") or "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
+        _picks = m_url("picks") or "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
         buttons = [
-            ("💼 交易台账",
-             "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "primary"),
-            ("📈 选股看板",
-             "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "default"),
+            ("💼 交易台账", _ledger, "primary"),
+            ("📈 选股看板", _picks, "default"),
         ]
     except Exception:
         pass  # 按钮可选组件：域名模块不可用→纯分区卡照发
     sys.path.insert(0, NEWS_DIR)
     from card_build import build_card
-    return build_card(
+    _legacy = build_card(
         "📊 盘前晨报", "%s · 缠论研判 × 入池 × 事件" % datetime.now(
             timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M"),
         "blue", blocks,
         footer="%s · 纯引擎结构化读数" % DISCLAIMER, buttons=buttons)
+    # 2026-10-25 P2：统一分装（失败自动回落旧卡）
+    try:
+        sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "portal")))
+        import feishu_push as _fp
+        _send_new, _shadow = _fp.should_unify("morning")
+        if _send_new or _shadow:
+            _uni = _fp.from_sections(
+                "morning", "brief", "盘前晨报", secs,
+                ts=datetime.now(timezone.utc).astimezone().strftime(
+                    "%Y-%m-%d %H:%M"),
+                source="量化引擎",
+                footer="%s · 纯引擎结构化读数" % DISCLAIMER,
+                buttons=buttons, full=True)
+            if _shadow:
+                _fp.shadow_log("morning", _legacy, _uni)
+            elif _send_new:
+                return _uni
+    except Exception:
+        pass
+    return _legacy
 
 
 def _send_card(card):

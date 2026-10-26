@@ -3,12 +3,12 @@
 .top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:14px;height:56px;padding:0 24px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:18px;font-weight:800;color:var(--blue)}.seg{display:flex;gap:4px;margin-left:auto}.seg button{cursor:pointer;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:6px 14px;font-size:13.5px;font-weight:600}.seg button.on{color:var(--blue);background:var(--bluebg);border-color:#bcd8e2}
 main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 .sec{display:none;animation:in .25s}.sec.on{display:block}@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
-.head{margin:2px 0 16px}.head h1{font-size:22px;margin:0 0 4px}.head p{margin:0;color:var(--muted);font-size:13px}
+.head{margin:2px 0 16px}.head h1{font-size:22px;margin:0 0 4px}.head p{margin:0;color:var(--muted);font-size:13px}.back-row{display:none;margin:0 0 12px}.back-row.show{display:block}.back-row button{cursor:pointer;border:1px solid #c6dbe5;background:#fff;color:var(--blue);border-radius:8px;padding:6px 12px;font-size:13px}
 .aihero{background:linear-gradient(140deg,#ffffff,#eef6f9);border:1px solid #c6dbe5;border-radius:16px;padding:20px 22px;margin:0 0 16px}
 .airow{display:flex;gap:10px;align-items:center}.airow .ava{flex:none;width:40px;height:40px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
 .airow input{flex:1;font-size:15px;padding:12px 14px;border:1.5px solid #bfd6e2;border-radius:12px;background:#fff;color:var(--ink)}.airow input:focus{outline:none;border-color:var(--blue)}
 .airow button{flex:none;cursor:pointer;background:var(--blue);color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:14.5px;font-weight:700}.airow button:hover{background:#0a5f77}
-.ai-echo{margin:10px 0 0;padding:9px 13px;border-radius:10px;background:var(--bluebg);border:1px dashed #9fc5d3;font-size:13.5px;color:#134e5e;display:none}
+.airow .voice-button{padding:12px 14px;background:#fff;color:var(--blue);border:1.5px solid #bfd6e2}.airow .voice-button:hover{background:var(--bluebg)}.airow .voice-button[aria-pressed="true"]{background:#fdeeea;color:var(--red);border-color:#eec5bd}.airow button:disabled{opacity:.6;cursor:not-allowed}.ai-echo{margin:10px 0 0;padding:9px 13px;border-radius:10px;background:var(--bluebg);border:1px dashed #9fc5d3;font-size:13.5px;color:#134e5e;display:none;white-space:pre-wrap}.voice-note{margin:9px 0 0;color:var(--muted);font-size:12px}
 .ai-tips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.tip{cursor:pointer;font-size:12px;color:var(--blue);background:#fff;border:1px solid #c6dbe5;border-radius:16px;padding:4px 12px}.tip:hover{background:var(--bluebg)}
 .grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px}.card h2{font-size:15px;margin:0 0 8px;color:var(--blue)}
@@ -17,32 +17,33 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 .krow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #eaf0f5;font-size:13.5px}.krow:last-child{border-bottom:none}.krow b{font-weight:600}.krow small{color:var(--muted);font-size:12px;display:block}
 .pill{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:700;white-space:nowrap}.pill.hot{background:#fdeeea;color:var(--red);border:1px solid #eec5bd}.pill.now{background:var(--bluebg);color:var(--blue);border:1px solid #bcd8e2}.pill.ok{background:#e9f5ee;color:var(--green);border:1px solid #bcdcc9}.pill.wait{background:#faf3e6;color:var(--amber);border:1px solid #e6d5b0}
 .tile{display:block;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px}.tile:hover{border-color:var(--blue)}.tile h3{margin:0 0 4px;font-size:15px}.tile small{color:var(--muted);font-size:12px}.tile .pill{margin-top:8px;display:inline-block}
-.layer{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #eaf0f5;align-items:flex-start}.layer:last-child{border-bottom:none}.layer .no{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:var(--bluebg);color:var(--blue)}.layer.ok .no{background:#e9f5ee;color:var(--green)}.layer b{font-size:13.5px}.layer small{display:block;color:var(--muted);font-size:12px}
+.layer{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #eaf0f5;align-items:flex-start}.layer:last-child{border-bottom:none}.layer .no{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:var(--bluebg);color:var(--blue)}.layer.ok .no{background:#e9f5ee;color:var(--green)}.layer b{font-size:13.5px}.layer small{display:block;color:var(--muted);font-size:12px}.layer.drill{cursor:pointer;border-radius:9px;padding:11px 9px}.layer.drill:hover,.layer.drill:focus-visible{background:var(--bluebg);outline:2px solid transparent}.layer.drill:after{content:'查看 →';margin-left:auto;color:var(--blue);font-size:12px;white-space:nowrap}.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.flow .card{background:#fbfdff}.flow .card b{color:var(--blue)}.flow .card p{font-size:13px;color:var(--muted);margin:5px 0 0}.detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.detail-actions a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid #bcd8e2;color:var(--blue);background:#fff;text-decoration:none;font-size:13px}.detail-actions a:first-child{background:var(--blue);color:#fff}.detail-note{font-size:13px;color:var(--muted);line-height:1.8}.preflight{grid-column:1/-1}.brief-chat{max-height:280px;overflow:auto;display:grid;gap:8px;background:#f7fafc;border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0}.brief-turn{max-width:90%;padding:8px 12px;border-radius:10px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;font-size:13px}.brief-turn.mine{justify-self:end;background:var(--bluebg);border-color:#bcd8e2}.brief-compose{display:flex;gap:8px}.brief-compose input,.brief-config input,.brief-config select,.brief-config textarea{min-width:0;padding:9px 11px;border:1px solid #bfd6e2;border-radius:9px;background:#fff;color:var(--ink);font:inherit}.brief-compose input{flex:1}.brief-compose button,.brief-actions button{padding:9px 16px;border:1px solid #bcd8e2;border-radius:9px;background:#fff;color:var(--blue);cursor:pointer;font:600 13px 'Microsoft YaHei',sans-serif}.brief-actions button.primary,.brief-compose button{background:var(--blue);color:#fff}.brief-actions button:disabled{opacity:.5;cursor:not-allowed}.brief-config{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;display:grid;grid-template-columns:1fr 1fr;gap:10px}.brief-config label{display:grid;gap:4px;font-size:12px;color:var(--muted)}.brief-config input,.brief-config select,.brief-config textarea{width:100%;font-size:13px}.brief-config .wide{grid-column:1/-1}.brief-choices{display:flex;gap:8px;flex-wrap:wrap}.brief-choices label{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:white;padding:5px 9px;border-radius:8px;color:var(--ink);font-size:12px}.brief-choices input{width:auto}.brief-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}.brief-status{font-size:12px;color:var(--muted)}@media(max-width:600px){.brief-compose{flex-wrap:wrap}.brief-compose input{width:100%}.brief-config{grid-template-columns:1fr}.brief-config .wide{grid-column:auto}}
 .more-grid{grid-template-columns:repeat(3,1fr);gap:12px}.stack .krow{display:grid;grid-template-columns:1fr auto;gap:1px 8px;align-items:center}.stack .krow b{grid-area:1/1;min-width:0}.stack .krow small{grid-area:2/1/3/3}.stack .krow .pill{grid-area:1/2;justify-self:end}.summary-grid{grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:13px}.ability-grid{grid-template-columns:repeat(2,1fr);gap:8px}.ability-grid .krow{display:block;padding:10px 12px;border:1px solid #eaf0f5;border-radius:10px;background:#fbfdff}.ability-grid .krow b{display:block;font-size:13.5px}.ability-grid .krow small{display:block;margin-top:2px}.ability-grid .krow .pill{display:inline-block;margin-top:6px}.intel-grid{grid-template-columns:repeat(3,1fr);gap:14px}.detail-grid{grid-template-columns:repeat(3,1fr);gap:10px}.subnav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}.subnav button{cursor:pointer;border:1px solid #c6dbe5;background:#fff;color:var(--blue);border-radius:9px;padding:8px 13px;font:600 13px "Microsoft YaHei",system-ui,sans-serif}.subnav button.on{background:var(--bluebg);border-color:#9fc5d3}.subnav button:hover{border-color:var(--blue)}
 .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:14px}.foot a{color:var(--muted)}
-@media(max-width:900px){.g2,.g4,.caps,.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
-@media(max-width:600px){.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid{grid-template-columns:1fr}.top{padding:0 12px;gap:6px}.brand{font-size:16px}.seg{gap:0}.seg button{padding:6px 8px;font-size:12px;white-space:nowrap}main{padding:16px 14px 60px}.g2,.g4,.caps{grid-template-columns:1fr}.airow{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center}.airow .ava{grid-area:1/1}.airow input{grid-area:1/2;font-size:14px}.airow button{grid-area:2/1/3/3;padding:12px}.aihero{padding:16px}.krow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}.krow b{grid-area:1/1;min-width:0}.krow small{grid-area:2/1/3/3}.krow .pill{grid-area:1/2;justify-self:end}.foot{flex-wrap:wrap}}
+@media(max-width:900px){.g2,.g4,.caps,.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid,.flow{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
+@media(max-width:600px){.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid,.flow{grid-template-columns:1fr}.top{padding:0 12px;gap:6px}.brand{font-size:16px}.seg{gap:0}.seg button{padding:6px 8px;font-size:12px;white-space:nowrap}main{padding:16px 14px 60px}.g2,.g4,.caps{grid-template-columns:1fr}.airow{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center}.airow .ava{grid-area:1/1}.airow input{grid-area:1/2;font-size:14px}.airow .voice-button{grid-area:2/1/3/2;padding:12px}.airow #ai-go{grid-area:2/2/3/3;padding:12px}.aihero{padding:16px}.krow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}.krow b{grid-area:1/1;min-width:0}.krow small{grid-area:2/1/3/3}.krow .pill{grid-area:1/2;justify-self:end}.foot{flex-wrap:wrap}}
 </style></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
 <button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报</button><button data-s="system">系统</button>
 </nav></header><main>
-
+<div class="back-row" id="back-row"><button id="back-screen" type="button">← 返回上一页</button></div>
 <section class="sec on" id="s-home">
 <div class="aihero">
 <div class="airow"><div class="ava">亮</div>
-<input id="ai-say" placeholder="对零界说一句话——我来指挥整个系统（开会/预约/想法/查询/定稿都行）">
-<button id="ai-go">说 → 执行</button></div>
-<div class="ai-echo" id="ai-echo"></div>
+<input id="ai-say" aria-label="告诉零界你想做什么" placeholder="说说你想做什么，例如：帮我查记录、讨论一个想法">
+<button id="ai-voice" class="voice-button" type="button" aria-label="语音输入" aria-pressed="false">🎙 说话</button><button id="ai-go" type="button">发送</button></div>
+<p class="voice-note">说话会先转成文字供你核对；不会自动发送或授权执行。语音识别是否可用取决于浏览器及其服务。</p>
+<div class="ai-echo" id="ai-echo" role="status" aria-live="polite"></div>
 <div class="ai-tips">
 <span class="tip" data-q="现在开会讨论本周量化复盘">开会</span>
-<span class="tip" data-q="预约明天9点半田丰赵云谈警报治理">预约</span>
+<span class="tip" data-q="预约明天9点半田丰赵云谈警报治理">预约（暂不可提交）</span>
 <span class="tip" data-q="我有个想法：盯盘预警加情绪因子">抛想法</span>
 <span class="tip" data-q="查一下0x80070003">查记录</span>
 <span class="tip" data-q="帮我规划下周的工作">规划下周</span>
 <span class="tip" data-q="打开能力总库">找能力</span>
 </div></div>
 <div class="grid g2" style="margin-bottom:16px">
-<div class="card" style="border-color:#bcd8e2;background:linear-gradient(140deg,#fff,#eef6f9)"><h2>🌐 今日情报 · 快速决策</h2><div id="intel-box"><div class="krow"><b>读取中…</b><small>盘面 × 情报线</small></div></div></div>
-<div class="card"><h2>✍️ 内容生产 · 今日自媒体 <span class="pill" id="cp-week">—</span></h2><div id="cp-box"><div class="krow"><b>读取中…</b></div></div>
+<div class="card" style="border-color:#bcd8e2;background:linear-gradient(140deg,#fff,#eef6f9)"><h2>🌐 最新情报 · 快速决策</h2><div id="intel-box"><div class="krow"><b>读取中…</b><small>盘面 × 情报线</small></div></div></div>
+<div class="card"><h2>✍️ 内容生产 · 最近进展 <span class="pill" id="cp-week">—</span></h2><div id="cp-box"><div class="krow"><b>读取中…</b></div></div>
 <div class="krow" style="cursor:pointer" data-ai="现在开会定明天公众号选题,对标今日热点"><b>▸ 定选题 · 对标热点</b><small>点这里 AI 开选题会</small></div></div>
 </div>
 <div class="caps">
@@ -52,34 +53,43 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="cap" data-jump="more"><div class="ic">🧩</div><h3>更多能力</h3><small>能力总库 · 业务模块 · 产品建设</small></div>
 </div>
 <div class="grid g2">
-<div class="card"><h2>待老田决定（真数据）</h2><div id="t-decide"><div class="krow"><b>读取中…</b></div></div></div>
+<div class="card"><h2>议会厅议题 <span class="pill now" id="council-at">待连接</span></h2><div id="t-decide"><div class="krow"><b>读取中…</b></div></div></div>
 <div class="card"><h2>告警 / 观察</h2>
-<div class="krow"><b>推送链修复首验</b><small>KgChainWatchdog 今晚 19:40</small><span class="pill now">观察</span></div>
-<div class="krow"><b>premarket 已恢复</b><small>16:43 产报 · 隔夜警报 2 条</small><span class="pill ok">已修</span></div>
-<div class="krow"><b>飞书外网控制</b><small>方案定，待拍板</small><span class="pill hot">待决</span></div></div>
-<div class="card"><h2>进行中任务（真数据）</h2><div id="t-tasks"><div class="krow"><b>读取中…</b></div></div></div>
-<div class="card"><h2>今日结果</h2>
-<div class="krow"><b>会议→指挥→执行全链通</b><small>议会厅 v11 + 工单直通 + 飞书闭环</small><span class="pill ok">达成</span></div>
-<div class="krow"><b>R1/R2 健康红项修复</b><small>警报停摆 + 推送预算</small><span class="pill ok">达成</span></div>
-<div class="krow"><b>零界统一原型</b><small>本页 · 待验收</small><span class="pill now">评审中</span></div></div>
+<div class="krow"><b>推送链</b><small>历史首验记录不代表当前健康；到系统页查看待核状态</small><span class="pill wait">待核</span></div>
+<div class="krow"><b>盘前与隔夜警报</b><small>以左上角情报数据的时间和来源为准</small><span class="pill wait">看时点</span></div>
+<div class="krow"><b>飞书异网访问</b><small>方案暂放，尚未完成跨网接入与可靠语音</small><span class="pill wait">未闭环</span></div></div>
+<div class="card"><h2>议会厅待办</h2><div id="t-tasks"><div class="krow"><b>读取中…</b></div></div></div>
+<div class="card"><h2>当前进展与边界</h2>
+<div class="krow"><b>会议→任务→归档</b><small>内部链路已接；不等于客户版或跨网可用</small><span class="pill now">内部验证</span></div>
+<div class="krow"><b>日报采集</b><small>07:35 已接代码，自然日可靠性待验收</small><span class="pill wait">待验收</span></div>
+<div class="krow"><b>零界定型原型</b><small>导航与能力层已更新，等待使用反馈</small><span class="pill now">评审中</span></div></div>
 </div></section>
 
 <section class="sec" id="s-council"><div class="head"><h1>会议指挥</h1><p>AI 全程引导：发起 → 复辩收敛 → 定稿 → 行动</p></div>
 <div class="grid g2">
-<div class="card"><h2>进入议会厅</h2><p style="color:var(--muted);font-size:13px">一条对话框五路路由；想法池承载不执行；轮值主席辩论收敛；定稿自动建工单并飞书通知。</p><a class="tile" style="display:block;text-align:center;margin-top:6px" href="/os_council.html">打开议会厅 →</a></div>
-<div class="card"><h2>机制</h2>
-<div class="layer ok"><div class="no">✓</div><div><b>日常/专项自动归类</b><small>☕ 轻流程 · 🎯 六阶段</small></div></div>
-<div class="layer ok"><div class="no">✓</div><div><b>智能召唤列席</b><small>议题涉什么领域召什么专家</small></div></div>
-<div class="layer"><div class="no">⚖</div><div><b>轮值主席 + 投票</b><small>3~5 轮收敛防走偏</small></div></div>
-<div class="layer"><div class="no">📦</div><div><b>定稿即行动</b><small>归档+工单+飞书</small></div></div></div>
+<div class="card"><h2>进入议会厅</h2><p style="color:var(--muted);font-size:13px">先用自然语言明确议题与参会范围，再确认配置单进入会场；不需要开会时也可以直接查看已有议题。</p><a class="tile" style="display:block;text-align:center;margin-top:6px" href="/os_council.html">查看已有议题 →</a></div>
+<div class="card"><h2>机制 · 点击查看详情</h2>
+<div class="layer ok drill" data-jump="council-classify" role="link" tabindex="0" aria-label="查看日常专项自动归类详情"><div class="no">✓</div><div><b>日常/专项自动归类</b><small>☕ 默认轻流程 · 🎯 专项六阶段</small></div></div>
+<div class="layer ok drill" data-jump="council-experts" role="link" tabindex="0" aria-label="查看智能召唤列席详情"><div class="no">✓</div><div><b>智能召唤列席</b><small>按议题关键词匹配领域；实际入场需核对</small></div></div>
+<div class="layer drill" data-jump="council-debate" role="link" tabindex="0" aria-label="查看轮值主席与投票详情"><div class="no">⚖</div><div><b>轮值主席 + 投票</b><small>两轮发言 + 主席总结 + 表态；3~5 轮待闭环</small></div></div>
+<div class="layer drill" data-jump="council-action" role="link" tabindex="0" aria-label="查看定稿行动详情"><div class="no">📦</div><div><b>定稿即行动</b><small>建档、工单与通知分开核验</small></div></div></div>
+<div class="card preflight" id="meeting-preflight"><h2>会前问答 · 确认后入场</h2><p class="detail-note">像对话一样说清这次要讨论什么。系统先给出可核对的组织席位候选；问答与改配置均不会创建会议，只有最后点击确认才提交。预约意图可澄清但暂不可提交，不会误建立刻开会的议题。</p><div class="brief-chat" id="brief-chat" aria-live="polite"></div><div class="brief-compose"><input id="brief-input" aria-label="描述会议内容或补充要求" placeholder="例如：开一个现场评审会，讨论情报板块规划，重点是人员分工和实施路径"><button id="brief-send" type="button">发送补充</button></div><div class="brief-config" id="brief-config" hidden><label>会议议题<input id="brief-title" maxlength="80" placeholder="请确认具体议题"></label><label>会议方式<select id="brief-mode"><option value="待定">待确认</option><option value="现场">现场</option><option value="线上">线上</option></select></label><label>讨论范围<input id="brief-scope" placeholder="例如：情报板块规划"></label><label>预期产出<input id="brief-goal" placeholder="例如：确认分工和下一步计划"></label><div class="wide"><span class="detail-note">组织候选（只读，不代表在线、获授权或已通知）</span><div id="brief-org" class="detail-note">待核对数据源</div></div><div class="wide"><span class="detail-note">建议 AI 列席（可选择；仅写入会议配置记录，不自动召唤或通知）</span><div id="brief-choices" class="brief-choices"></div></div><label class="wide">需要的人类参与者（本人确认）<input id="brief-humans" placeholder="例如：老田、板块负责人；不填则待确认"></label><div class="wide brief-actions"><button class="primary" id="brief-confirm" type="button">确认配置并进入会场</button><button id="brief-reset" type="button">清空草稿</button><span class="brief-status" id="brief-status">尚未提交</span></div></div></div>
 </div></section>
 
-<section class="sec" id="s-intelall"><div class="head"><h1>情报全谱</h1><p>经营者要看的一切 · 原型推演版（现役真数据 / 规划给样例样式并标「原型」——不装真）</p></div>
+<section class="sec" id="s-council-classify"><div class="head"><h1>日常／专项自动归类</h1><p>会议指挥 · 机制详情 01 / 04</p></div><div class="card"><h2>一句话进入合适的会议路径</h2><div class="flow"><div class="card"><b>01 · 说出议题</b><p>在议会厅输入开会事项；不要求先填会议类型或复杂表单。</p></div><div class="card"><b>02 · 自动归类</b><p>命中开发、评审、修复等专项词优先归专项；否则默认日常轻流程。</p></div><div class="card"><b>03 · 留痕与推进</b><p>议题进入对话流。专项显示六阶段；日常可先聊天记录，后续由本人决定是否升级。</p></div></div><p class="detail-note">现状：词表分类已接入内部会议桥，不是通用语义模型；误分类应在议会厅人工核对。预约登记不等于到点自动开会。</p><div class="detail-actions"><a href="/os_council.html">进入议会厅 →</a><a href="/zero_proto.html#council">返回会议指挥</a></div></div></section>
+
+<section class="sec" id="s-council-experts"><div class="head"><h1>智能召唤列席</h1><p>会议指挥 · 机制详情 02 / 04</p></div><div class="card"><h2>按领域找到该列席的角色</h2><div class="flow"><div class="card"><b>01 · 识别议题</b><p>以议题中的技术、情报、安全等关键词匹配当前领域规则或主题配置。</p></div><div class="card"><b>02 · 写入召唤记录</b><p>匹配到的领域与列席角色记录在议会厅消息流，可作为讨论邀请线索。</p></div><div class="card"><b>03 · 查看真实回应</b><p>在议会厅核对列席是否实际入场、发言及形成可追溯意见。</p></div></div><p class="detail-note">现状：内部规则匹配与提示已接；“被召唤”不等于专家在线、已收到通知或已经完成研判。</p><div class="detail-actions"><a href="/os_council.html">进入议会厅 →</a><a href="/zero_proto.html#council">返回会议指挥</a></div></div></section>
+
+<section class="sec" id="s-council-debate"><div class="head"><h1>轮值主席与投票</h1><p>会议指挥 · 机制详情 03 / 04</p></div><div class="card"><h2>先呈现分歧，再交由本人决定</h2><div class="flow"><div class="card"><b>01 · 两轮发言</b><p>赵云与田丰按风险治理、落地拆解等视角形成两轮意见。</p></div><div class="card"><b>02 · 主席总结</b><p>轮值主席按日期选取；诸葛亮席不可用时由建议面代行并应明确标注。</p></div><div class="card"><b>03 · 表态与定夺</b><p>两席对总结投票并写理由；模型意见和投票均不代替老田签准。</p></div></div><p class="detail-note">现状：内部桥包含两轮发言、主席总结与两席投票；原卡片所称“3~5 轮辩论”尚不是已验收实现。缺席、空答或模型失败不能伪作有效共识。</p><div class="detail-actions"><a href="/os_council.html">进入议会厅 →</a><a href="/zero_proto.html#council">返回会议指挥</a></div></div></section>
+
+<section class="sec" id="s-council-action"><div class="head"><h1>定稿与行动</h1><p>会议指挥 · 机制详情 04 / 04</p></div><div class="card"><h2>定稿不是所有动作都成功</h2><div class="flow"><div class="card"><b>01 · 本人确认</b><p>预览决议与任务拆解，人工确认后才生成会议档案。</p></div><div class="card"><b>02 · 建档留痕</b><p>会议纪要、决议和任务写入各自记录；可在议会厅成果区查询。</p></div><div class="card"><b>03 · 逐项回执</b><p>通知、工单派发与任务完成分属不同状态，应逐项核对失败和待处理项。</p></div></div><p class="detail-note">现状：内部建档与通知／工单联动已接；联动异常可能不阻断建档，故“归档成功”不等于通知送达或派单全部成功。跨网飞书与客户级授权仍未闭环。</p><div class="detail-actions"><a href="/os_council.html">进入议会厅 →</a><a href="/zero_proto.html#council">返回会议指挥</a></div></div></section>
+
+<section class="sec" id="s-intelall"><div class="head"><h1>情报全谱</h1><p>多域内部视图：接入不等于当日新鲜；逐条核对来源、时点和空态，规划项不冒充现役</p></div>
 
 <div class="grid intel-grid">
-<div class="card"><h2>📈 盘面与交易 <span class="pill ok">现役</span></h2>
+<div class="card"><h2>📈 盘面与交易 <span class="pill now">按时点</span></h2>
 <div id="pp-market"><div class="krow"><b>读取中…</b></div></div>
-<div class="krow" style="cursor:pointer" data-ai="查一下恒生指数隔夜"><b>雪球舆情 14212 帖</b><small>问AI：查一下恒生指数隔夜</small></div>
+<div class="krow" style="cursor:pointer" data-ai="查一下恒生指数隔夜"><b>雪球舆情</b><small>数量未接实时接口 · 问AI查隔夜动态</small><span class="pill wait">待接数</span></div>
 <div class="krow"><b>龙虎榜 / 前100股东 / 席位共现</b><small>总谱 C2/C4/C5 · 待归集</small><span class="pill wait">规划</span></div></div>
 
 <div class="card"><h2>🏛️ 政策与地缘 <span class="pill ok">真数据</span></h2><div id="policy-box"><div class="krow"><b>读取中…</b></div></div>
@@ -97,7 +107,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 </div>
 <div class="krow" style="cursor:pointer" data-ai="现在开会讨论商业关系跟进"><b>▸ 开个会推进任何一条</b><small>点这里 → AI 直接立会</small></div></div>
 
-<div class="card"><h2>🗓️ 环境与日程 <span class="pill ok">真数据</span></h2><div id="env-box"><div class="krow"><b>读取中…</b></div></div>
+<div class="card"><h2>🗓️ 环境与日程 <span class="pill now">按时点</span></h2><div id="env-box"><div class="krow"><b>读取中…</b></div></div>
 <div class="krow" style="cursor:pointer" data-ai="帮我规划下周的工作"><b>▸ 让 AI 规划我的下周</b><small>点这里直接说</small></div></div>
 </div>
 
@@ -132,7 +142,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="krow"><b>问题生命周期</b><small>登记→处理→归档，保留账本</small><span class="pill ok">内部可用</span></div>
 <div class="krow"><b>记录检索</b><small>留言、纪要与已接入标题</small><span class="pill ok">内部可用</span></div>
 <div class="krow"><b>主题配置</b><small>三国 / 商务 / 科技界面配置</small><span class="pill ok">内部可用</span></div>
-<div class="krow"><b>飞书跨网触达</b><small>内网卡片已实测；异网与可靠语音未解决</small><span class="pill wait">待闭环</span></div>
+<div class="krow"><b>飞书跨网触达</b><small>内网卡片已实测；异网与可靠语音未解决，方案暂放</small><span class="pill wait">待闭环</span></div>
 <div class="krow"><b>每日自动采集</b><small>07:35 代码已接；自然日可靠性待验收</small><span class="pill wait">待验收</span></div>
 <div class="krow"><b>智能体自运作领单</b><small>席位按 owner 自主领任务</small><span class="pill wait">构想</span></div>
 <div class="krow"><b>个人日历视图</b><small>预约、日程与提醒合并</small><span class="pill wait">构想</span></div>
@@ -148,14 +158,14 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="grid g4 stack">
 <div class="card"><h2>🏛️ 情报模块</h2>
 <div class="krow" style="cursor:pointer" onclick="location='/intel'"><b>情报研究台</b><small>信源与判断</small><span class="pill ok">现役</span></div>
-<div class="krow" style="cursor:pointer" onclick="location='/zero_proto.html'"><b>情报全谱</b><small>六域真数据</small><span class="pill ok">现役</span></div>
+<div class="krow" data-jump="intelall" style="cursor:pointer"><b>情报全谱</b><small>部分域已接入；按来源及时点核对</small><span class="pill now">内部视图</span></div>
 <div class="krow"><b>证据流工作台</b><small>E2E 在途</small><span class="pill wait">半成</span></div></div>
 <div class="card"><h2>📈 量化交易模块</h2>
 <div class="krow" style="cursor:pointer" onclick="location='/quant-drill'"><b>量化投研</b><small>选股/复盘</small><span class="pill ok">现役</span></div>
 <div class="krow" style="cursor:pointer" onclick="location='/paper'"><b>模拟盘</b><small>paper trading</small><span class="pill ok">现役</span></div>
-<div class="krow" style="cursor:pointer" onclick="location='/radar'"><b>盯盘雷达</b><small>watch</small><span class="pill ok">现役</span></div></div>
+<div class="krow"><b>量化盯盘入口</b><small>原「盯盘雷达」错连学习雷达；正确入口待核，不跳转</small><span class="pill wait">待核</span></div></div>
 <div class="card"><h2>🤖 数字军团模块</h2>
-<div class="krow" style="cursor:pointer" onclick="location='/legion'"><b>军团编制</b><small>68席组织状态</small><span class="pill ok">现役</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/legion'"><b>军团编制</b><small>组织状态以编制页实时数据为准</small><span class="pill now">查看</span></div>
 <div class="krow" style="cursor:pointer" onclick="location='/os_council.html'"><b>议会厅</b><small>会议指挥</small><span class="pill ok">现役</span></div>
 <div class="krow" style="cursor:pointer" onclick="location='/notify-command'"><b>通知指挥</b><small>队列/审批</small><span class="pill ok">现役</span></div></div>
 <div class="card"><h2>🛠️ 研发模块</h2>
@@ -184,7 +194,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="layer"><div class="no">A</div><div><b>产品确权</b><small>首包+访谈+事项字段 → 样本×2</small></div></div>
 <div class="layer"><div class="no">B</div><div><b>内核合同</b><small>契约+租户隔离+服务端身份</small></div></div>
 <div class="layer"><div class="no">C</div><div><b>试点交付</b><small>受控灰度+成本记录</small></div></div>
-<div class="layer ok"><div class="no">✓</div><div><b>首场景内部验证</b><small>会议→任务→回执 · 今日全链真机</small></div></div>
+<div class="layer ok"><div class="no">✓</div><div><b>首场景内部验证</b><small>会议→任务→回执 · 曾完成内部真机验证</small></div></div>
 <a class="tile" style="display:block;text-align:center" href="/zero_home.html">完整产品工作台 →</a></div>
 <div class="card"><h2>硬边界（如实）</h2>
 <div class="krow"><b>本地桥未鉴权</b><small>不可对客户开放→阶段B</small><span class="pill hot">红线</span></div>
@@ -195,44 +205,107 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <section class="sec" id="s-system"><div class="head"><h1>系统</h1><p>少而准</p></div>
 <div class="grid g4 stack">
 <div class="card"><h2>服务</h2>
-<div class="krow"><b>驾驶舱 8080</b><span class="pill ok">运行</span></div>
+<div class="krow"><b>本页</b><span class="pill ok">已加载</span></div>
 <div class="krow"><b>议会厅桥 8798</b><span class="pill" id="sys-bridge">探测</span></div>
-<div class="krow"><b>Hermes 8787</b><span class="pill now">真席位</span></div></div>
+<div class="krow"><b>Hermes 8787</b><span class="pill wait">未探测</span></div></div>
 <div class="card"><h2>任务健康</h2>
-<div class="krow"><b>失败 9 → 观察</b><span class="pill now">19:40 首验</span></div>
-<div class="krow"><b>警报源</b><span class="pill ok">已恢复</span></div></div>
+<div class="krow"><b>计划任务全量状态</b><span class="pill wait">未接监测</span></div>
+<div class="krow"><b>警报源当前状态</b><span class="pill wait">待取证</span></div></div>
 <div class="card"><h2>治理工具</h2>
-<div class="krow" style="cursor:pointer" onclick="location='/os_map.html'"><b>🗺️ 全板块作战图</b><small>58页盘点·完成度·颗粒度</small><span class="pill now">子工具</span></div>
+<div class="krow" style="cursor:pointer" onclick="location='/os_map.html'"><b>🗺️ 全板块作战图</b><small>2026-10-23 历史盘点·非当前健康</small><span class="pill now">子工具</span></div>
 <div class="krow" style="cursor:pointer" onclick="location='/os_issues.html'"><b>📋 问题驾驶舱</b><small>问题生命周期·优先级·派单</small><span class="pill now">子工具</span></div></div>
 <div class="card"><h2>深屏工作台</h2><p style="color:var(--muted);font-size:13px">v9 生产页（四视图+大屏）保留。</p><a class="tile" style="display:block;text-align:center" href="/os-entry">打开 v9 →</a></div>
 </div></section>
 
-<div class="foot"><span>零界 AI 驾驶舱 v0.2 · 浅色</span><a href="/os-entry">v9</a><a href="/os_council.html">议会厅</a><a href="/zero_home.html">产品台</a></div>
+<div class="foot"><span>零界 AI 驾驶舱 · 定型主版</span><span>专业深屏从所属板块进入；旧工作台不作为首页</span></div>
 </main>
 <script>
 const OPS=(location.protocol.startsWith('http')&&location.hostname)?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';
-function jump(s){const section=document.getElementById('s-'+s);if(!section)return;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.s===s));document.querySelectorAll('.sec').forEach(x=>x.classList.toggle('on',x===section));if(history.replaceState)history.replaceState(null,'','#'+s);window.scrollTo(0,0)}
-const H0=location.hash.slice(1);if(H0&&document.getElementById('s-'+H0))jump(H0);
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h&&document.getElementById('s-'+h))jump(h)});
+let loginPromise=null,loginVersion=0,loginCancelled=false;
+function opsLogin(){if(loginCancelled)throw Error('未授权：已取消登录，刷新页面后可重新输入口令');if(!loginPromise){loginPromise=(async()=>{const password=window.prompt('议会厅需要登录。请输入本机服务口令（只用于本次登录，不会保存在页面中）：');if(password===null){loginCancelled=true;throw Error('未授权：已取消登录，刷新页面后可重新输入口令')}if(!password)throw Error('未授权：未输入口令，请重新操作');const r=await fetch(OPS+'/api/council/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password}),credentials:'include'});if(!r.ok)throw Error('未授权：登录失败（HTTP '+r.status+'），请核对口令和页面来源');const d=await r.json();if(!d.ok)throw Error('未授权：登录未成功，请重新操作');loginVersion++})().finally(()=>{loginPromise=null})}return loginPromise}
+async function opsFetch(p,options={}){const version=loginVersion;let r=await fetch(OPS+p,{...options,credentials:'include'});if(r.status===401){if(version===loginVersion)await opsLogin();r=await fetch(OPS+p,{...options,credentials:'include'});if(r.status===401)throw Error('未授权：登录后仍无权限，请核对服务和页面来源')}if(!r.ok){const d=await r.json().catch(()=>({}));throw Error('请求失败（HTTP '+r.status+'）：'+(d.error||'请稍后重试'))}return r}
+async function opsGet(p){return (await opsFetch(p,{cache:'no-store'})).json()}
+async function opsPost(p,body){return (await opsFetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json()}
+function opsError(e){return e.message.startsWith('未授权：')?e.message:'连接或读取失败：'+e.message}
+const SCREEN_PARENT={council:'home','council-classify':'council','council-experts':'council','council-debate':'council','council-action':'council',intelall:'home',system:'home',more:'home',cap:'more',domains:'more',product:'more'};
+function showScreen(s){const section=document.getElementById('s-'+s);if(!section)return;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.s===s));document.querySelectorAll('.sec').forEach(x=>x.classList.toggle('on',x===section));const back=document.getElementById('back-row');back.classList.toggle('show',s!=='home');const parent=(history.state&&history.state.screen===s&&history.state.parent)||SCREEN_PARENT[s]||'home';document.getElementById('back-screen').textContent='← 返回'+({'home':'首页','more':'更多能力','domains':'业务模块','system':'系统','intelall':'情报','council':'会议指挥','product':'产品建设','cap':'能力总库'}[parent]||'上一页');window.scrollTo(0,0)}
+function jump(s){if(!document.getElementById('s-'+s))return;const current=document.querySelector('.sec.on').id.slice(2);if(current!==s)history.pushState({screen:s,parent:current,internal:true},'','#'+s);showScreen(s)}
+const H0=location.hash.slice(1);const initial=document.getElementById('s-'+H0)?H0:'home';history.replaceState({screen:initial,parent:SCREEN_PARENT[initial]||'home',internal:false},'','#'+initial);showScreen(initial);
+window.addEventListener('popstate',()=>{const h=location.hash.slice(1);showScreen(document.getElementById('s-'+h)?h:'home')});
+document.getElementById('back-screen').addEventListener('click',()=>{const st=history.state||{};if(st.internal){history.back();return}const parent=st.parent||SCREEN_PARENT[st.screen]||'home';if(parent===st.screen)return;history.replaceState({screen:parent,parent:SCREEN_PARENT[parent]||'home',internal:false},'','#'+parent);showScreen(parent)});
 document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>jump(b.dataset.s)));
-document.querySelectorAll('[data-jump]').forEach(c=>c.addEventListener('click',()=>jump(c.dataset.jump)));
-async function aiSay(){const q=document.getElementById('ai-say').value.trim();if(!q)return;
-const echo=document.getElementById('ai-echo');echo.style.display='block';echo.textContent='⏳ '+q+' — 零界正在处理…';
-if(/^(打开|进入|去|看看|找)/.test(q)){const m={'能力':'cap','模块':'domains','业务域':'domains','产品':'product','系统':'system','情报':'intelall','会议':'council','更多':'more'};for(const k in m)if(q.includes(k)){jump(m[k]);echo.textContent='✅ 已为你打开「'+k+'」页面';document.getElementById('ai-say').value='';return}}
-try{const r=await fetch(OPS+'/api/council/natural',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q,current_topic:'',seat:'laotian'})});
-const d=await r.json();echo.textContent='✅ '+(d.routed||'完成');load();}catch(e){echo.textContent='⚠️ 指挥桥未连（议会厅 8798）——导航可用，直连功能受限'}
-document.getElementById('ai-say').value=''}
-document.getElementById('ai-go').addEventListener('click',aiSay);
-document.getElementById('ai-say').addEventListener('keydown',e=>{if(e.key==='Enter')aiSay()});
+document.querySelectorAll('[data-jump]').forEach(c=>{c.addEventListener('click',()=>jump(c.dataset.jump));if(c.getAttribute('role')==='link')c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();jump(c.dataset.jump)}})});
+// 会前澄清只在本机页面内形成草稿。组织数据只读；唯一写入点为明确确认后的建会/配置记录。
+const meetingDraft={turns:[],org:null,selected:[],submitting:false,createdTopic:'',requestId:'',confirmedPayload:null,isSchedule:false};
+function briefTurn(who,text){meetingDraft.turns.push({who,text});const box=document.getElementById('brief-chat');const div=document.createElement('div');div.className='brief-turn'+(who==='我'?' mine':'');div.textContent=(who==='我'?'我：':'零界：')+text;box.append(div);box.scrollTop=box.scrollHeight}
+function briefStatus(text){document.getElementById('brief-status').textContent=text}
+function briefOrgHint(){const org=meetingDraft.org;const line=document.getElementById('brief-org');if(!org){line.textContent='组织接口未提供可核对的部门清单；席位数量与在线人数未知，请在会前人工确认。';return}line.textContent=org.name+'：组织档案列 '+org.ids.length+' 个席位，其中 '+org.bound+' 个记录了模型绑定（不等于在线 AI 或实际到场）。源：/api/org；建议参会人数待你选择。'}
+async function briefLoadOrg(){try{const r=await fetch('/api/org',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();if(!d.ok||!d.bundle||!Array.isArray(d.bundle.departments)||!d.bundle.agents)throw Error('字段不可用');const dept=d.bundle.departments.find(x=>x.id==='intel');if(!dept)throw Error('情报部未登记');const ids=(dept.agents||[]).filter(id=>d.bundle.agents[id]);meetingDraft.org={name:dept.name,ids,bound:ids.filter(id=>{const v=d.bundle.agents[id].llm;return Boolean(v&&v!=='none')}).length,agents:ids.map(id=>({id,name:d.bundle.agents[id].name||id,hasModel:Boolean(d.bundle.agents[id].llm&&d.bundle.agents[id].llm!=='none')}))};briefOrgHint();briefRenderChoices()}catch(e){meetingDraft.org=null;briefOrgHint();document.getElementById('brief-choices').textContent='组织数据不可核对；请在议会厅人工确认列席。'}}
+function briefRenderChoices(){const box=document.getElementById('brief-choices');box.replaceChildren();if(!meetingDraft.org)return;meetingDraft.org.agents.forEach(a=>{const label=document.createElement('label'),cb=document.createElement('input');cb.type='checkbox';cb.value=a.id;cb.checked=meetingDraft.selected.includes(a.id);cb.addEventListener('change',()=>{meetingDraft.selected=[...box.querySelectorAll('input:checked')].map(x=>x.value)});label.append(cb,document.createTextNode(a.id+' · '+a.name+(a.hasModel?' · 有模型绑定':' · 未绑定模型')));box.append(label)})}
+function briefAnalyze(text){const t=text.trim();if(!t)return;if(meetingDraft.requestId){briefStatus('已确认的配置不可改动；请用原配置重试或查看议题。');return}if(/预约|明天|后天|下周|下个月|周[一二三四五六日天]/.test(t))meetingDraft.isSchedule=true;briefTurn('我',t);if(/^(?:改成|改为|换成|将会议改成|会议方式改成)/.test(t)){if(/线上|远程|视频/.test(t))document.getElementById('brief-mode').value='线上';else if(/现场|线下/.test(t))document.getElementById('brief-mode').value='现场'}const range=t.match(/(?:范围|主题|议题)(?:改为|改成|是|：|:)([^，。；;]{2,80})/);if(range)document.getElementById('brief-scope').value=range[1].trim();const outcome=t.match(/(?:预期产出|希望形成|结果)(?:是|为|：|:)([^，。；;]{2,80})/);if(outcome)document.getElementById('brief-goal').value=outcome[1].trim();const people=t.match(/(?:人类参与者|真人参会|参加的人)(?:是|有|为|：|:)([^，。；;]{2,80})/);if(people)document.getElementById('brief-humans').value=people[1].trim();const config=document.getElementById('brief-config');config.hidden=false;const title=document.getElementById('brief-title'),scope=document.getElementById('brief-scope'),goal=document.getElementById('brief-goal'),mode=document.getElementById('brief-mode');if(/线上|远程|视频/.test(t))mode.value='线上';else if(/现场|线下/.test(t))mode.value='现场';if(/情报/.test(t)){if(!scope.value)scope.value='情报板块规划';if(!title.value)title.value='情报板块规划评审';if(!goal.value)goal.value='确认规划范围、席位分工与下一步验收';if(!meetingDraft.org)briefLoadOrg()}else{const match=t.match(/(?:讨论|评审|关于|主要内容是)([^，。；;]{2,48})/);if(match){if(!scope.value)scope.value=match[1].trim();if(!title.value)title.value=scope.value+(t.includes('评审')?'评审':'讨论')}else if(!title.value){title.value=t.replace(/^(我想|我们|请|现在|要)?(?:开|召开|组织)(?:一个|一场|次)?(?:现场|线上|专项|日常)?(?:的)?(?:评审会|会议|会)/,'').trim().slice(0,60)||''}}if(!goal.value&&/评审/.test(t))goal.value='形成评审意见与后续行动';briefTurn('零界',!scope.value?'这次会议主要讨论什么？请再说一句主题或范围。':mode.value==='待定'?'我理解主要讨论「'+scope.value+'」。这是现场还是线上会议？不确定也可在配置单中保留待确认。':!goal.value?'已记下「'+scope.value+'」和会议方式；希望本次形成什么结果？不确定可保留待确认。':'我理解主要讨论「'+scope.value+'」。我已整理成下方配置单，你可以继续补充或修改；人类与 AI 参与者未选时会保留待确认。');if(/情报/.test(t))briefTurn('零界','我会从组织档案只读查情报部席位与模型绑定情况，并展示可选列席；这些数不是在线人数，也不等于自动通知。');briefStatus(meetingDraft.isSchedule?'预约意图已识别：目前仅可登记即时会议，预约不可提交，请等待预约确认链路':'草稿中 · 尚未创建会议')}
+function briefClear(){if(meetingDraft.requestId){briefStatus('已有确认编号，可能已经创建议题；请先用原配置重试核对，不能清空重建。');return}meetingDraft.turns=[];meetingDraft.selected=[];meetingDraft.org=null;meetingDraft.createdTopic='';meetingDraft.requestId='';meetingDraft.confirmedPayload=null;meetingDraft.isSchedule=false;document.getElementById('brief-chat').replaceChildren();document.getElementById('brief-input').value='';document.querySelectorAll('#brief-config input:not([type=checkbox])').forEach(x=>x.value='');document.getElementById('brief-mode').value='待定';document.getElementById('brief-config').hidden=true;briefStatus('尚未提交');briefTurn('零界','先告诉我开哪类会、主要讨论什么。例如“开一个现场评审会，讨论情报板块规划”。我会追问缺项、汇总配置，等你确认才创建会议。')}
+document.getElementById('brief-reset').addEventListener('click',briefClear);document.getElementById('brief-send').addEventListener('click',()=>{const input=document.getElementById('brief-input');briefAnalyze(input.value);input.value='';input.focus()});document.getElementById('brief-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('brief-send').click()}});briefClear();try{const saved=JSON.parse(sessionStorage.getItem('councilPendingConfirmation')||'null');if(saved&&saved.requestId&&saved.payload){meetingDraft.requestId=saved.requestId;meetingDraft.confirmedPayload=saved.payload;document.getElementById('brief-config').hidden=false;for(const [id,value] of Object.entries({'brief-title':saved.payload.title,'brief-scope':saved.payload.scope,'brief-goal':saved.payload.goal,'brief-mode':saved.payload.mode==='待确认'?'待定':saved.payload.mode,'brief-humans':saved.payload.humans}))document.getElementById(id).value=value;briefStatus('检测到提交状态未确认；请保持原配置并点击确认重试，服务端按编号去重。')}}catch(_){}const meetingPrefill=new URLSearchParams(location.search).get('meeting');if(meetingPrefill&&!meetingDraft.requestId)briefAnalyze(meetingPrefill.slice(0,500));
+async function briefConfirm(){if(meetingDraft.submitting)return;if(meetingDraft.isSchedule){briefStatus('这是预约意图：预约配置与时间核验尚未接入，不能误建为即时会议。');return}const title=document.getElementById('brief-title').value.trim(),scope=document.getElementById('brief-scope').value.trim(),goal=document.getElementById('brief-goal').value.trim(),humans=document.getElementById('brief-humans').value.trim(),mode=document.getElementById('brief-mode').value;if(!title||!scope){briefStatus('请先明确会议议题和讨论范围');return}const picks=[...document.querySelectorAll('#brief-choices input:checked')].map(x=>x.value);if(meetingDraft.requestId){const p=meetingDraft.confirmedPayload;if(!p||p.title!==title||p.scope!==scope||p.mode!==(mode==='待定'?'待确认':mode)||p.goal!==(goal||'待确认')||p.humans!==(humans||'待确认')){briefStatus('已提交过该配置；请恢复原内容后重试，不能以同一确认编号改配置。');return}}const summary='会议方式：'+(mode==='待定'?'待确认':mode)+'；讨论范围：'+scope+'；预期产出：'+(goal||'待确认')+'；人类参与者（拟）：'+(humans||'待确认')+'；AI候选（拟，未通知）：'+(picks.join('、')||'待确认')+'。';if(!meetingDraft.requestId&&!window.confirm('确认创建会议并进入会场？\n议题：'+title+'\n'+summary+'\n“待确认”项不会被视为已核实或已通知。提交后会写入会议议题与配置记录。'))return;meetingDraft.submitting=true;document.getElementById('brief-confirm').disabled=true;briefStatus('正在提交本人确认配置…');if(!meetingDraft.requestId){meetingDraft.requestId=crypto.randomUUID();meetingDraft.confirmedPayload={title,scope,mode:mode==='待定'?'待确认':mode,goal:goal||'待确认',humans:humans||'待确认',candidates:picks};try{sessionStorage.setItem('councilPendingConfirmation',JSON.stringify({requestId:meetingDraft.requestId,payload:meetingDraft.confirmedPayload}))}catch(_){}}try{const d=await opsPost('/api/council/preflight/confirm',{request_id:meetingDraft.requestId,confirmed:true,...meetingDraft.confirmedPayload});if(d.topic&&d.topic.topic)meetingDraft.createdTopic=d.topic.topic;if(!d.ok||!d.config_recorded)throw Error(d.error||'确认配置未全部写入，请用原确认编号重试');briefStatus('议题与配置已保存，正在进入会场');try{sessionStorage.removeItem('councilPendingConfirmation')}catch(_){}location.assign('/os_council.html?topic='+encodeURIComponent(meetingDraft.createdTopic))}catch(e){briefStatus((meetingDraft.createdTopic?'已关联议题 '+meetingDraft.createdTopic+'；请勿清空草稿，使用原确认编号重试。':'提交未确认成功，请保留草稿并重试，系统按确认编号去重。')+'错误：'+e.message)}finally{meetingDraft.submitting=false;document.getElementById('brief-confirm').disabled=false}}
+document.getElementById('brief-confirm').addEventListener('click',briefConfirm);
+// 首页仅自动选择只读查询或草稿澄清路径；绝不将未识别请求交给可写的 natural 接口。
+const aiInput=document.getElementById('ai-say'),aiGo=document.getElementById('ai-go'),aiVoice=document.getElementById('ai-voice');
+const aiEcho=document.getElementById('ai-echo');let aiBusy=false,aiListening=false,aiRecognizer=null;
+function aiStatus(text){aiEcho.style.display='block';aiEcho.textContent=text}
+function aiRoute(q){
+  if(/交易|下单|买入|卖出|支付|付款|转账|删除|清空|上线|部署|发布|写入|入库|重启|停机|发给|群发/.test(q))return {kind:'gated'};
+  const nav=q.match(/^(?:打开|进入|去|看看)\s*(?:一下)?\s*(?:我的)?\s*(更多能力|能力总库|业务模块|产品建设|会议指挥|议会厅|情报|系统)(?:页面)?[。！!\s]*$/);
+  if(nav){const pages={'更多能力':'more','能力总库':'cap','业务模块':'domains','产品建设':'product','会议指挥':'council','议会厅':'council','情报':'intelall','系统':'system'};return {kind:'page',screen:pages[nav[1]],name:nav[1]}}
+  if(/预约|明天|后天|下周/.test(q)&&/会议|开会|讨论|评审/.test(q))return {kind:'meeting'};
+  if(/(?:开会|开个会|开一场会|召开会议|会议讨论|组织会议|开评审会)/.test(q))return {kind:'meeting'};
+  if(/^(?:查一下|查查|搜索|搜一下|找回|检索|谁说过|查记录)/.test(q))return {kind:'search'};
+  return {kind:'clarify'};
+}
+async function aiSay(){const q=aiInput.value.trim();if(!q||aiBusy||aiListening)return;const route=aiRoute(q);aiBusy=true;aiGo.disabled=true;
+try{
+  if(route.kind==='gated'){aiStatus('我理解你可能想进行会改变数据、对外发送或涉及资金／服务的操作。\n这里不会直接执行。请补充对象和范围，我会先说明路径、风险与需要的授权。');return}
+  if(route.kind==='page'){jump(route.screen);aiStatus('已打开「'+route.name+'」。这只是页面导航，没有执行其他操作。');aiInput.value='';return}
+  if(route.kind==='meeting'){jump('council');briefAnalyze(q);aiStatus(meetingDraft.isSchedule?'已转入会前澄清：预约暂不可提交，不会建立即时会议。':'已转入会前问答：核对议题后由你确认，当前尚未创建会议。');aiInput.value='';return}
+  if(route.kind==='search'){
+    const term=q.replace(/^(?:查一下|查查|搜索|搜一下|找回|检索|谁说过|查记录)/,'').trim();
+    if(!term){aiStatus('想查什么？请再说出一个关键词。');return}
+    aiStatus('正在查询已接入的留言与会议记录…');
+    const d=await opsGet('/api/council/search?q='+encodeURIComponent(term));const hits=Array.isArray(d.hits)?d.hits:[];
+    aiStatus('在已接入的留言与会议记录中找到 '+hits.length+' 条'+(hits.length?'\n'+hits.slice(0,3).map(h=>'· '+String(h.ctx||'').slice(0,100)).join('\n'):'；不代表其他数据源也没有记录。'));
+    aiInput.value='';return;
+  }
+  aiStatus('我先记下你的目标：「'+q+'」。\n目前不能可靠判断该走哪条执行链；请补一句希望得到什么结果（例如“只查资料”或“开会讨论”）。尚未创建任务或执行操作。');
+}catch(e){aiStatus('暂时没办成：'+opsError(e)+'。你的输入还在，可以修改后重试。')}
+finally{aiBusy=false;aiGo.disabled=false}}
+aiGo.addEventListener('click',aiSay);
+aiInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();aiSay()}});
+const AiSR=window.SpeechRecognition||window.webkitSpeechRecognition;
+aiVoice.addEventListener('click',()=>{
+  if(!AiSR){aiStatus('当前浏览器没有可用的语音转文字能力。请用 Edge 或 Chrome 打开本页，允许麦克风权限；仍不可用时请直接打字。');return}
+  if(aiListening){if(aiRecognizer)aiRecognizer.stop();aiStatus('已停止收音。若识别到文字，请核对后再发送。');return}
+  if(aiBusy){aiStatus('正在处理上一条输入，请稍后再说。');return}
+  if(!window.isSecureContext){aiStatus('当前页面不是安全来源，浏览器可能禁止麦克风。请使用 localhost 或 HTTPS 地址打开，再允许麦克风权限。');return}
+  aiStatus('正在请求麦克风权限与语音识别，请留意浏览器地址栏提示…');
+  let recognition;
+  try{recognition=new AiSR()}catch(e){aiStatus('无法初始化语音识别，请尝试 Edge / Chrome 或使用文字输入。');return}
+  aiRecognizer=recognition;recognition.lang='zh-CN';recognition.interimResults=false;recognition.maxAlternatives=1;
+  let heard=false,failed=false,started=false;
+  const watchdog=setTimeout(()=>{if(!started&&!failed){failed=true;aiStatus('语音服务暂未响应。请检查麦克风权限、网络和浏览器语音服务；也可以直接打字。');try{recognition.abort()}catch(e){/* 部分浏览器不支持取消，状态已提示 */}}},8000);
+  recognition.onstart=()=>{started=true;clearTimeout(watchdog);aiListening=true;aiVoice.setAttribute('aria-pressed','true');aiVoice.textContent='停止';aiStatus('正在听。识别后会填入输入框，请核对文字再点发送。')};
+  recognition.onresult=e=>{heard=true;const transcript=String(e.results[0][0].transcript||'').trim();if(transcript){aiInput.value=transcript;aiStatus('已转成文字，请核对后点击“发送”。没有自动提交或执行。');aiInput.focus()}else aiStatus('没有听到内容，请重试或直接打字。')};
+  recognition.onerror=e=>{failed=true;clearTimeout(watchdog);const reason=String(e.error||'未知原因');const tips={'not-allowed':'麦克风权限被拒绝，请在地址栏允许麦克风后重试。','audio-capture':'未找到可用麦克风，请检查设备连接。','network':'浏览器语音服务连接失败，请检查网络或改用文字输入。','no-speech':'没有听到清晰语音，请靠近麦克风重试。','service-not-allowed':'当前浏览器禁用了语音服务，请改用文字输入。'};aiStatus(tips[reason]||'语音识别未成功（'+reason+'），请改用文字输入。')};
+  recognition.onend=()=>{clearTimeout(watchdog);aiListening=false;aiRecognizer=null;aiVoice.setAttribute('aria-pressed','false');aiVoice.textContent='🎙 说话';if(!heard&&!failed)aiStatus('收音已结束，没有识别到文字。请重试或直接打字。')};
+  try{recognition.start()}catch(e){clearTimeout(watchdog);failed=true;recognition.onend();aiStatus('无法启动语音识别，请检查浏览器和麦克风权限，或改用文字输入。')}
+});
 document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',()=>{document.getElementById('ai-say').value=t.dataset.q;aiSay()}));
-async function load(){let st=null;try{st=await(await fetch(OPS+'/api/council/state',{cache:'no-store'})).json();const b=document.getElementById('sys-bridge');b.className='pill ok';b.textContent='在线'}catch(e){const b=document.getElementById('sys-bridge');b.className='pill hot';b.textContent='离线';return}
+async function load(){let st=null;try{st=await opsGet('/api/council/state');const b=document.getElementById('sys-bridge');b.className='pill ok';b.textContent='在线'}catch(e){const b=document.getElementById('sys-bridge');b.className='pill hot';b.textContent=e.message.startsWith('未授权：')?'未授权':'读取失败';document.getElementById('council-at').textContent=b.textContent;document.getElementById('t-decide').textContent=opsError(e);document.getElementById('t-tasks').textContent=opsError(e);return}
+const at=document.getElementById('council-at');at.textContent=st.generated_at?'更新 '+String(st.generated_at).slice(5,16).replace('T',' '):'时点未提供';
 const dec=document.getElementById('t-decide');dec.innerHTML='';
-(st.extra_topics||[]).slice(-2).reverse().forEach(t=>dec.insertAdjacentHTML('beforeend','<div class="krow"><b>'+t.topic.slice(0,22)+'</b><small>'+(t.summary||'')+'</small><span class="pill now">'+t.stage+'</span></div>'));
+(st.extra_topics||[]).filter(t=>!['archived','done','closed'].includes(String(t.stage||'').toLowerCase())).slice(-2).reverse().forEach(t=>dec.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(t.topic||'未命名议题').slice(0,22)+'</b><small>'+(t.summary||'')+'</small><span class="pill now">'+(t.stage||'待核')+'</span></div>'));
 const tk=document.getElementById('t-tasks');tk.innerHTML='';
-(st.tasks||[]).slice(-3).reverse().forEach(t=>tk.insertAdjacentHTML('beforeend','<div class="krow"><b>['+t.owner+'] '+String(t.text).slice(0,18)+'</b><small>期限 '+(t.due||'无')+'</small><span class="pill '+(t.status==='done'?'ok':'now')+'">'+t.status+'</span></div>'));
-if(!dec.children.length)dec.innerHTML='<div class="krow"><b>无待决议题</b><small>上方对零界说一句即开</small></div>';
-if(!tk.children.length)tk.innerHTML='<div class="krow"><b>无进行中任务</b><small>定稿归档时自动分解</small></div>'}
-async function loadIntel(){let d=null;try{d=await(await fetch(OPS+'/api/intel/brief',{cache:'no-store'})).json()}catch(e){document.getElementById('intel-box').innerHTML='<div class="krow"><b>情报桥未连</b><small>8798</small></div>';return}
+(st.tasks||[]).filter(t=>!['done','closed','archived','cancelled'].includes(String(t.status||'').toLowerCase())).slice(-3).reverse().forEach(t=>tk.insertAdjacentHTML('beforeend','<div class="krow"><b>['+(t.owner||'未分配')+'] '+String(t.text||'').slice(0,18)+'</b><small>期限 '+(t.due||'无')+'</small><span class="pill now">'+(t.status||'待核')+'</span></div>'));
+if(!dec.children.length)dec.innerHTML='<div class="krow"><b>当前无未归档议题</b><small>仅表示议会厅返回的议题池为空</small></div>';
+if(!tk.children.length)tk.innerHTML='<div class="krow"><b>当前无未结待办</b><small>仅表示议会厅返回的任务池为空</small></div>'}
+async function loadIntel(){let d=null;try{d=await opsGet('/api/intel/brief')}catch(e){document.getElementById('intel-box').textContent=opsError(e);return}
 const box=document.getElementById('intel-box');box.innerHTML='';
 const m=d.market;const i=d.intel;
 if(m){const tone=(m.overall||0)<=-10?'hot':((m.overall||0)>=10?'ok':'now');
@@ -246,12 +319,12 @@ box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+(v.scope=='us'?'美�
 if(!box.children.length)box.innerHTML='<div class="krow"><b>情报线暂无当日数据</b><small>源未更新（如实）</small></div>'}
 function bindAI(){document.querySelectorAll('[data-ai]').forEach(n=>n.addEventListener('click',()=>{document.getElementById('ai-say').value=n.dataset.ai;jump('home');document.getElementById('ai-say').focus()}))}
 bindAI();
-async function loadPP(){let d=null;try{d=await(await fetch(OPS+'/api/intel/brief',{cache:'no-store'})).json()}catch(e){return}
+async function loadPP(){let d=null;try{d=await opsGet('/api/intel/brief')}catch(e){document.getElementById('pp-market').textContent=opsError(e);return}
 const box=document.getElementById('pp-market');if(!box)return;box.innerHTML='';
 const m=d.market;if(m){box.insertAdjacentHTML('beforeend','<div class="krow"><b>盘面 overall '+(m.overall??'—')+'</b><small>'+String(m.ts||'').slice(5,16).replace('T',' ')+'</small><span class="pill '+((m.overall||0)<=-10?'hot':(m.overall||0)>=10?'ok':'now')+'">'+((m.overall||0)<=-10?'偏空':(m.overall||0)>=10?'偏多':'中性')+'</span></div>');
 (m.alerts||[]).forEach(a=>box.insertAdjacentHTML('beforeend','<div class="krow"><b style="color:var(--red)">⚠ '+a+'</b><small>隔夜警报</small></div>'))}}
 loadPP();setInterval(loadPP,60000);
-async function loadCP(){let d=null;try{d=await(await fetch(OPS+'/api/content/brief',{cache:'no-store'})).json()}catch(e){return}
+async function loadCP(){let d=null;try{d=await opsGet('/api/content/brief')}catch(e){document.getElementById('cp-box').textContent=opsError(e);return}
 const box=document.getElementById('cp-box');if(!box)return;box.innerHTML='';
 document.getElementById('cp-week').textContent='近7天 '+(d.week_n||0)+' 篇';
 document.getElementById('cp-week').className='pill '+(d.week_n>=5?'ok':'wait');
@@ -259,7 +332,7 @@ document.getElementById('cp-week').className='pill '+(d.week_n>=5?'ok':'wait');
 box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(x.title).slice(0,20)+'</b><small>'+x.date+' · '+x.col+'</small><span class="pill '+st+'">'+(x.status==='reviewed'?'已审':'草稿')+'</span></div>')});
 if(!box.children.length)box.innerHTML='<div class="krow"><b>近 7 天无产出</b><small>该写了</small></div>'}
 loadCP();setInterval(loadCP,60000);
-async function loadPolicy(){let d=null;try{d=await(await fetch(OPS+'/api/intel/policy',{cache:'no-store'})).json()}catch(e){return}
+async function loadPolicy(){let d=null;try{d=await opsGet('/api/intel/policy')}catch(e){document.getElementById('policy-box').textContent=opsError(e);return}
 const box=document.getElementById('policy-box');if(!box)return;box.innerHTML='';
 const rows=d.recent||[];
 if(!rows.length){box.innerHTML='<div class="krow"><b>政策线暂无数据</b><small>源未采集（如实）</small></div>';return}
@@ -268,20 +341,20 @@ rows.slice(0,4).forEach(r=>{const hit=kw.find(k=>(r.title||'').includes(k));
 box.insertAdjacentHTML('beforeend','<div class="krow" style="cursor:pointer" data-ai=\'查一下政策 ">'+(hit?'<span class="pill now">关联</span> ':'')+'<span style="flex:1"><b>'+String(r.title).slice(0,26)+'</b><small>'+r.date+' · gov.cn · 点击开会研判</small></span></div>')});
 box.querySelectorAll('[data-ai]').forEach((n,i)=>{n.dataset.ai='现在开会研判政策影响：'+(rows[i]||{}).title;n.addEventListener('click',()=>{document.getElementById('ai-say').value=n.dataset.ai;jump('home');document.getElementById('ai-say').focus()})})}
 loadPolicy();setInterval(loadPolicy,300000);
-async function loadEnv(){let d=null;try{d=await(await fetch(OPS+'/api/env/brief',{cache:'no-store'})).json()}catch(e){return}
+async function loadEnv(){let d=null;try{d=await opsGet('/api/env/brief')}catch(e){document.getElementById('env-box').textContent=opsError(e);return}
 const box=document.getElementById('env-box');if(!box)return;box.innerHTML='';
 const w=d.weather;if(w&&w.cities){Object.entries(w.cities).forEach(([c,v])=>{
 if(v.err){box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c+' 天气获取失败</b><small>保留上次</small></div>');return}
 box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c+' '+(v.temp_c||'?')+'°C '+(v.desc||'')+'</b><small>体感'+(v.feels||'?')+'° · '+(v.max_min||'')+'° · '+(w.stale?'旧数据':'当前')+'</small><span class="pill now">天气</span></div>')})}
 (d.sched||[]).forEach(r=>{if(r&&r.for)box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(r.title||'会议').slice(0,20)+'</b><small>'+r.for+' · 议会厅预约</small><span class="pill ok">已约</span></div>')});
-if(!box.children.length)box.innerHTML='<div class="krow"><b>暂无天气/日程</b><small>07:35 每日自动刷新</small></div>'}
-async function loadTech(){let d=null;try{d=await(await fetch(OPS+'/api/tech/brief',{cache:'no-store'})).json()}catch(e){return}
+if(!box.children.length)box.innerHTML='<div class="krow"><b>暂无天气/日程</b><small>07:35 调度代码已接，可靠性待自然日验收</small></div>'}
+async function loadTech(){let d=null;try{d=await opsGet('/api/tech/brief')}catch(e){document.getElementById('tech-box').textContent=opsError(e);return}
 const box=document.getElementById('tech-box');if(!box)return;box.innerHTML='';
 const rows=d.recent||[];
-if(!rows.length){box.innerHTML='<div class="krow"><b>科技线暂无数据</b><small>07:35 每日采集</small></div>';return}
+if(!rows.length){box.innerHTML='<div class="krow"><b>科技线暂无数据</b><small>调度可靠性待自然日验收</small></div>';return}
 rows.slice(0,4).forEach(r=>{const isGh=r.src.includes('github');
 box.insertAdjacentHTML('beforeend','<div class="krow"><b>'+String(r.title).slice(0,30)+'</b><small>'+(isGh?'GitHub Trending':'arXiv cs.AI')+' · '+r.date+'</small><span class="pill '+(isGh?'now':'wait')+'">'+(isGh?'开源':'论文')+'</span></div>')})}
-async function loadCt(){let d=null;try{d=await(await fetch(OPS+'/api/contacts/brief',{cache:'no-store'})).json()}catch(e){return}
+async function loadCt(){let d=null;try{d=await opsGet('/api/contacts/brief')}catch(e){document.getElementById('ct-box').textContent=opsError(e);document.getElementById('ct-docs').textContent=opsError(e);return}
 const b=document.getElementById('ct-box'),db=document.getElementById('ct-docs');if(!b)return;b.innerHTML='';db.innerHTML='';
 (d.contacts||[]).slice(0,4).forEach(c=>{b.insertAdjacentHTML('beforeend','<div class="krow"><b>'+c.name.slice(0,16)+'</b><small>'+String(c.note||'').slice(0,22)+'</small><span class="pill '+(c.role==='客户'?'hot':'now')+'">'+c.role+'</span></div>')});
 if(!(d.contacts||[]).length)b.innerHTML='<div class="krow"><b>暂无联系人</b><small>对AI说或--add登记</small></div>';

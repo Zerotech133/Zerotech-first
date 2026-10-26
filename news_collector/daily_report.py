@@ -15,9 +15,11 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 
-import card_build
-
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+
+import card_build  # noqa: E402
 STATION = os.path.dirname(HERE)
 CST = timezone(timedelta(hours=8))
 
@@ -234,6 +236,22 @@ def main():
     card = card_build.build_card3(  # K-PUSH-008：v3 绿域例行
         "daily", "🌙 AI 工作站统一日报", now + " · 五域一天全览",
         blocks, footer=footer, buttons=buttons)
+    # 2026-10-25 P2：统一分装（失败回落旧卡）
+    try:
+        sys.path.insert(0, os.path.join(STATION, "portal"))
+        import feishu_push as _fp
+        _send_new, _shadow = _fp.should_unify("daily")
+        if _send_new or _shadow:
+            _uni = _fp.from_sections(
+                "daily", "daily", "统一日报", blocks, ts=now,
+                source="五域任务汇总", footer=footer, buttons=buttons,
+                level="info")
+            if _shadow:
+                _fp.shadow_log("daily", card, _uni)
+            elif _send_new:
+                card = _uni
+    except Exception as _ue:  # noqa: BLE001
+        print("unified daily card FAIL -> legacy: %s" % str(_ue)[:100])
     if not push:
         for b in blocks:
             print(b, "\n" + "─" * 40)

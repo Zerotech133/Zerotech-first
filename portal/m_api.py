@@ -1189,6 +1189,18 @@ def handle_get(handler, path, qs):
         if path == "/api/m/auth/check":
             auth_check(handler)
             return
+        if path == "/api/m/strategy/summary":
+            import m_summary
+            handler._json(m_summary.strategy_summary())
+            return
+        if path == "/api/m/feed/summary":
+            import m_summary
+            handler._json(m_summary.feed_summary())
+            return
+        if path == "/api/m/customer/summary":
+            import m_summary
+            handler._json(m_summary.customer_summary())
+            return
         if path == "/api/m/data":
             tok = q.get("t") or ""
             payload = m_tokens.verify(tok, scope="page")

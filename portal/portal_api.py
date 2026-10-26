@@ -2595,6 +2595,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        # P1 移动端 /m 家族（2026-10-25）：POST 早分支（m_api.py 独立文件）。
+        if path.startswith('/api/m/'):
+            import m_api
+            m_api.handle_post(self, path)
+            return
         if path.startswith('/api/os/'):
             self._os_goal_post(path)
             return
@@ -3098,6 +3103,17 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        # P1 移动端 /m 家族（2026-10-25）：新 handler 独立文件 m_api.py，
+        # 本处仅做早分支路由（portal_api 只改不扩）。
+        if path.startswith('/api/m/'):
+            import m_api
+            m_api.handle_get(self, path, qs)
+            return
+        # P2 外部分享短链 /s/<share_token>（2026-10-25）：校验后 302 到 /m 页面。
+        if path.startswith('/s/'):
+            import m_api
+            m_api.handle_share(self, path)
+            return
         if path.startswith('/api/os/'):
             self._os_goal_get(path, qs)
             return

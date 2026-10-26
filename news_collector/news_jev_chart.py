@@ -211,7 +211,7 @@ def upload_key():
     if not exe:
         return None
     try:
-        for who in ("user", "bot"):  # strict-mode=user 时 bot 被拒，双保险
+        for who in ("bot", "user"):  # 2026-10-26：bot 优先（user 缺 send_as_user，且图 key 需同身份发送）
             r = subprocess.run(
                 [exe, "im", "images", "create", "--as", who,
                  "--data", json.dumps({"image_type": "message"}),
@@ -252,9 +252,9 @@ def sync_base(items):
         print("JEV_CHART base SKIP: JEV_BASE_TOKEN 未配置"
               "（env 或 _vault/secrets/news_config_private.json）")
         return 0
-    tbl = "判断记录"
+    tbl = "tbl3mCOORkb98xES"  # 判断记录（名称→ID：batch/list 均需真实 ID）
     r = _lark(["base", "+record-list", "--as", "user", "--base-token", base,
-               "--table-id", tbl, "--page-size", "20",
+               "--table-id", tbl, "--limit", "20",
                "--sort-json", '[{"field":"判断时间","desc":true}]',
                "--format", "json"])
     dd = r.get("data") or {}
@@ -277,13 +277,14 @@ def sync_base(items):
         rows.append({"标题": x["title"][:200],
                      "方向": [BJ.get(x["bias"], "中性")],
                      "置信度": round(x["conf"] * 100),
-                     "市场": [SC.get(x["scope"], x["scope"])],
+                     "市场": [SC.get(x["scope"]) or "其他"],
                      "判断时间": ts,
                      "依据": x["reason"],
                      "来源": x["source"][:30]})
+    rows = rows[:500]  # 单次增量上限 500（历史回填另跑，避免命令行/接口超限）
     n = 0
-    for i in range(0, len(rows), 200):  # 单批上限 200
-        batch = rows[i:i + 200][::-1]  # 旧→新写入
+    for i in range(0, len(rows), 20):  # 单批 20：Windows 命令行长度/接口上限保护
+        batch = rows[i:i + 20][::-1]  # 旧→新写入
         r = _lark(["base", "+record-batch-create", "--as", "user",
                    "--base-token", base, "--table-id", tbl,
                    "--json", json.dumps({"create_records": batch},
@@ -317,7 +318,7 @@ def _md_h5(now, items):
           "| 利多 | 利空 | 中性 | 合计 |", "|---|---|---|---|",
          "| %d | %d | %d | %d |" % (
              cnt["bull"], cnt["bear"], cnt["neutral"], len(day)),
-         "*低置信（<70%）%d 条不参与净倾向 · 净倾向按 6h 半衰期时衰加权*"
+         "*低置信（<70%%）%d 条不参与净倾向 · 净倾向按 6h 半衰期时衰加权*"
          % sum(1 for x in day if x["conf"] < LOW_CONF),
          "", "## 按市场（近 7 天）", "",
          "| 市场 | 利多 | 利空 | 中性 | 合计 |", "|---|---|---|---|---|"]
@@ -454,6 +455,31 @@ def push(key, n_total, n_day, now, doc_url=None, base_url=None):
                         "不构成投资建议</font>"},
         ],
     }
+    # 2026-10-26 修复：lark-cli user 身份缺 im:message.send_as_user，卡片发送失败；
+    # 改为经统一 bot 通道（feishu_client/hub）发 union_id，失败再回落旧 user 通道。
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.dirname(HERE))
+        _sys.path.insert(0, HERE)
+        from feishu_client import send_msg
+        union = "on_73852db6352a7f834ba0802060ae5aee"
+        try:
+            import json as _json
+            _own = _json.load(open(os.path.join(
+                os.path.dirname(HERE), "portal", "work", "feishu_secrets",
+                "owners.json"), encoding="utf-8"))
+            union = _own.get("union_id") or union
+        except Exception:
+            pass
+        ok, why = send_msg(json.dumps(card, ensure_ascii=False),
+                           "interactive", union,
+                           receive_id_type="union_id",
+                           kind="auto:jev_chart")
+        if ok:
+            return True
+        print("JEV_CHART bot push fail: %s" % str(why)[:120])
+    except Exception as e:  # noqa: BLE001
+        print("JEV_CHART bot push ERR %s" % str(e)[:120])
     from card_build import push_card
     return push_card(card)
 
@@ -468,22 +494,28 @@ def main():
     if dry:
         print("JEV_CHART dry ok %d items -> %s" % (len(items), PNG))
         return
-    key = upload_key()
-    if not key:
-        print("JEV_CHART UPLOAD_FAIL")
-        return
     day_n = sum(1 for x in items if now - x["t"] <= timedelta(hours=24))
+    # 先用正文刷新文档：图片上传/卡片推送失败不得阻断文档更新（2026-10-26 事故判例）
+    try:
+        base_url = load_news_config().get("jev_base_url")
+    except Exception:
+        base_url = ""
+    try:
+        doc_url = refresh_doc(now, items)
+        print("JEV_CHART doc ok")
+    except Exception as e:
+        doc_url = ""
+        print("JEV_CHART doc ERR %s" % str(e)[:160])
     try:
         n_new = sync_base(items)
         if n_new:
             print("JEV_CHART base +%d" % n_new)
     except Exception as e:
         print("JEV_CHART base sync ERR %s" % str(e)[:100])
-    try:
-        base_url = load_news_config().get("jev_base_url")
-    except Exception:
-        base_url = ""
-    doc_url = refresh_doc(now, items)  # 先刷文档，卡片按钮才能带上链接
+    key = upload_key()
+    if not key:
+        print("JEV_CHART UPLOAD_FAIL")
+        return
     ok = push(key, len(items), day_n, now, doc_url, base_url)
     try:  # 微信渠道（企微机器人，未配置自动跳过）
         import send_wecom

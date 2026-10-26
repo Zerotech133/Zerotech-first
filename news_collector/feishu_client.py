@@ -25,6 +25,24 @@ import urllib.error
 
 OPEN = "https://open.feishu.cn/open-apis"
 
+# W3 清债（2026-10-24）：OpenAPI 直发可重试错误集合与可注入的 HTTP 打开器（单测用）
+_HTTP_OPEN = urllib.request.urlopen
+_RETRY_HTTP_STATUS = {429, 500, 502, 503, 504}
+# 频控(99991400) 与 token 失效类(9999166x)：退避重试；token 类先强制刷新
+_RETRY_BIZ_CODES = {99991400, 99991661, 99991663, 99991664, 99991668}
+_TOKEN_BIZ_CODES = {99991661, 99991663, 99991664, 99991668}
+
+
+def _biz_code_from_body(raw):
+    try:
+        return int(json.loads(raw).get("code"))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def _brief(raw, n=200):
+    return str(raw or "").replace("\n", " ")[:n]
+
 _TAT_CACHE = {}                # (app_id, app_secret) -> (expire_ts, tat)
 _TAT_LOCK = threading.Lock()
 _TAT_TTL = 7200 - 600          # 提前 600s 过期
@@ -32,23 +50,71 @@ _TAT_TTL = 7200 - 600          # 提前 600s 过期
 _TAT_INVALID_CODES = {99991661, 99991663, 99991664, 99991668}
 
 
-def load_app_creds():
-    """读 ~/.lark-cli/config.json 静态凭证（apps[0]）。
+def _canonical_app_id():
+    """期望使用的 app_id：env FEISHU_APP_ID 优先，其次 work/feishu_secrets/canonical.json。
 
-    20261016换机：lark-cli 1.0.5+ 明文 secret 外置（config.json 里
-    appSecret 为 {"source","id"} 引用 dict）——非 str 即静态凭证不可用，
-    返回 (None, None) 让调用方走 lark-cli 回退；防止 dict 进 get_tat
-    缓存键导致 unhashable type: 'dict'。"""
+    2026-10-24 W3 根因：~/.lark-cli/config.json 里可能注册多个 app（实测两个），
+    apps[0] 顺序漂移会让 token 应用域与 push_targets 的 open_id/chat_id 域错配
+    → 间歇 HTTP 400（code=230001 invalid receive_id / 99992356 invalid open_chat_id）。
+    """
+    v = (os.environ.get("FEISHU_APP_ID") or "").strip()
+    if v:
+        return v
+    kf = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      "portal", "work", "feishu_secrets", "canonical.json")
+    try:
+        with open(kf, encoding="utf-8") as f:
+            return str(json.load(f).get("app_id") or "").strip()
+    except (OSError, ValueError):
+        return ""
+
+
+_WARNED_APPS = set()
+
+
+def load_app_creds():
+    """读飞书应用静态凭证（**确定化选择**，不再盲取 apps[0]）。
+
+    优先级：① env FEISHU_APP_ID/FEISHU_APP_SECRET 直供；
+            ② env FEISHU_APP_ID 或 canonical.json 指定 app_id → 在 config 中精确匹配；
+            ③ 都没有 → 退回 apps[0]，但打一次响亮告警（可观测，不静默）。
+    20261016换机：lark-cli 1.0.5+ 明文 secret 可能外置（appSecret 为 dict 引用）
+    ——非 str 即静态凭证不可用，返回 (None, None) 让调用方走 lark-cli 回退。
+    """
+    env_id = (os.environ.get("FEISHU_APP_ID") or "").strip()
+    env_sec = (os.environ.get("FEISHU_APP_SECRET") or "").strip()
+    if env_id and env_sec:
+        return env_id, env_sec
     cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
     try:
         with open(cfg, encoding="utf-8") as f:
             apps = json.load(f).get("apps") or []
-        if apps:
-            aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
-            if aid and isinstance(sec, str):
-                return aid, sec
-    except Exception:
-        pass  # 豁免（C2批2）：凭证缺失→(None,None)，调用方以 no app creds 呈现
+    except Exception:  # noqa: BLE001
+        return None, None
+    if not apps:
+        return None, None
+    want = env_id or _canonical_app_id()
+    if want:
+        for app in apps:
+            if app.get("appId") == want:
+                sec = app.get("appSecret")
+                if isinstance(sec, str) and sec:
+                    return want, sec
+                print("[feishu_client] app %s secret 非明文（外置引用），"
+                      "静态凭证不可用" % want, file=sys.stderr)
+                return None, None
+        print("[feishu_client] 指定 app_id %s 不在 ~/.lark-cli/config.json"
+              "（现有: %s）" % (want, ",".join(str(a.get("appId")) for a in apps)),
+              file=sys.stderr)
+        return None, None
+    aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
+    if aid and aid not in _WARNED_APPS:
+        _WARNED_APPS.add(aid)
+        print("[feishu_client] WARN 未配置 FEISHU_APP_ID/canonical.json，"
+              "退回 apps[0]=%s（config 共 %d 个 app，顺序漂移会导致 400）"
+              % (aid, len(apps)), file=sys.stderr)
+    if aid and isinstance(sec, str):
+        return aid, sec
     return None, None
 
 
@@ -193,12 +259,14 @@ def _hub_key():
 
 def _hub_send(content, msg_type, receive_id, receive_id_type,
               kind=None, critical=False, timeout=8, route_targets=None,
-              domain=None):
+              domain=None, sender_role=None):
     """→ (ok, why, message_id) 闸门结果；hub 不可达也返回失败，不直发。
     K-ORG-201 W38：hub 响应含 message_id（闸内直发回执）时透出，缺则 None。
     K-ORG-204：route_targets 透传给 hub gate，hub 侧转发 Agent webhook。
     FC-A（2026-10-20）：domain（owner/ops/customer）一级路由字段透传给 hub，
-    缺省 None 不发字段，存量调用零变化。"""
+    缺省 None 不发字段，存量调用零变化。
+    W3（2026-10-24）：sender_role 透传给 hub，由 8097 按角色选发送 app
+    （sender 统一：通知/指令/执行/问答各用自己的 app）。缺省不发送该字段。"""
     try:
         body_obj = {"content": content, "msg_type": msg_type,
                     "receive_id": receive_id,
@@ -208,6 +276,8 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
             body_obj["route_targets"] = route_targets
         if domain:
             body_obj["domain"] = domain
+        if sender_role:
+            body_obj["sender_role"] = sender_role
         body = json.dumps(body_obj).encode("utf-8")
         key = _hub_key()
         if not key:
@@ -235,7 +305,7 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
 
 def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
              app_id=None, app_secret=None, kind=None, critical=False,
-             via_hub=True):
+             via_hub=True, sender_role=None):
     """发消息/卡片 → (ok, why)。why 文本兼容 send_feishu 判例
     （no app creds / openapi code=N / openapi err ...）。
 
@@ -244,17 +314,20 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
     K-PUSH-012：hub 不可达/拒绝时 fail-closed 不回落直发（闸门唯一通路）。
     critical=True 为预警类（豁免静默，风险提示不可吞）。
     K-ORG-201 W38：内部委托 send_msg_tracked 丢掉第三元 message_id，
-    在役调用方签名与返回完全零感知。"""
+    在役调用方签名与返回完全零感知。
+    W3：sender_role 交给 8097 按角色选发送 app（不填=闸门默认 canonical）。"""
     ok, why, _mid = send_msg_tracked(content, msg_type, receive_id,
                                      receive_id_type, app_id, app_secret,
-                                     kind, critical, via_hub)
+                                     kind, critical, via_hub, False, None,
+                                     None, sender_role)
     return ok, why
 
 
 def send_msg_tracked(content, msg_type, receive_id=None,
                      receive_id_type="open_id", app_id=None, app_secret=None,
                      kind=None, critical=False, via_hub=True,
-                     flow_record=True, route_targets=None, domain=None):
+                     flow_record=True, route_targets=None, domain=None,
+                     sender_role=None):
     """W38 送达证据版发消息 → (ok, why, message_id or None)。参数同 send_msg。
 
     message_id 口径：经 hub=hub /api/send 响应顶层 message_id；
@@ -268,15 +341,17 @@ def send_msg_tracked(content, msg_type, receive_id=None,
     if via_hub:
         return _hub_send(content, msg_type, receive_id, receive_id_type,
                          kind, critical, route_targets=route_targets,
-                         domain=domain)
-    # K-ORG-204：via_hub=False 改为 Agent webhook
+                         domain=domain, sender_role=sender_role)
+    # K-ORG-204：via_hub=False 改为 Agent webhook（闸内直发时由 8097 指定 app）
     return _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
                                kind, critical, route_targets=route_targets,
-                               flow_record=flow_record)
+                               flow_record=flow_record, app_id=app_id,
+                               app_secret=app_secret)
 
 
 def _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
-                        kind, critical, route_targets, flow_record):
+                        kind, critical, route_targets, flow_record,
+                        app_id=None, app_secret=None):
     """K-ORG-204：推飞书 Agent webhook（App Webhook / 事件订阅）。
     hub 闸内直发路径改道至此——不再直调 OpenAPI /im/v1/messages chat_id。
     route_targets=push_targets 群列表透传给 Agent 侧路由参考。
@@ -290,7 +365,8 @@ def _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
     if not webhook:
         if agent_webhook_fallback_enabled():
             return _openapi_direct_send(content, msg_type, receive_id,
-                                        receive_id_type, kind, flow_record)
+                                        receive_id_type, kind, flow_record,
+                                        app_id=app_id, app_secret=app_secret)
         return False, ("no endpoint configured: agent webhook unset (env "
                        "PUSH_AGENT_WEBHOOK / push_secrets.json %s) and "
                        "openapi fallback disabled"
@@ -354,8 +430,35 @@ def _openapi_content(content, msg_type):
     return content
 
 
+def _target_app_guard(receive_id, receive_id_type="", targets=None):
+    """收件人域登记校验（W3-D）：receive_id 在 push_targets 里登记了 app 时返回该 app_id。
+
+    背景：**open_id 是 app 维度**的；用 A app 的 token 发 B app 域 open_id
+    会得到 HTTP 400（230001 invalid receive_id）。登记表有 app 字段时提前拦截，
+    把"神秘 400"变成可读的 mismatch 证据。
+
+    2026-10-25 W3 窗口修正：**chat_id 为租户级共享**（实测两个不同 app 看到
+    同一 oc_ 值且都能发送成功）→ 仅对 open_id 目标做严格域校验；chat_id
+    目标放行（其登记 app 仅作备注）。旧条目无 app 字段 → None（不拦）。
+    """
+    if str(receive_id or "").startswith("oc_") or \
+            (receive_id_type or "").lower() == "chat_id":
+        return None
+    try:
+        if targets is None:
+            import push_targets
+            targets = push_targets.targets()
+    except Exception:  # noqa: BLE001
+        return None
+    for t in targets or []:
+        if str(t.get("id")) == str(receive_id):
+            v = str(t.get("app") or "").strip()
+            return v or None
+    return None
+
+
 def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
-                         kind, flow_record):
+                         kind, flow_record, app_id=None, app_secret=None):
     """DD-1 方案 B 降级路径：Agent webhook 不可用 → OpenAPI 直发
     （K-ORG-204 前的旧出口 POST /im/v1/messages，chat_id/open_id 直发）。
     why 统一带 openapi_fallback: 前缀（证据链可 grep）；message_id 取
@@ -366,28 +469,78 @@ def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
         if flow_record:
             _flow_record(False, "", kind=kind, channel="openapi-fallback")
         return False, "openapi_fallback: missing receive_id", None
-    tok = get_tat()
+    tok = get_tat(app_id, app_secret) if app_id else get_tat()
     if not tok:
         if flow_record:
             _flow_record(False, receive_id, kind=kind,
                          channel="openapi-fallback")
         return False, "openapi_fallback: no tenant token", None
+    want_app = _target_app_guard(receive_id, receive_id_type)
+    if want_app:
+        used_app = app_id or load_app_creds()[0]
+        if used_app and used_app != want_app:
+            if flow_record:
+                _flow_record(False, receive_id, kind=kind,
+                             channel="openapi-fallback")
+            return False, ("openapi_fallback: target app mismatch "
+                           "(target needs %s, token app %s)"
+                           % (want_app, used_app))[:300], None
     body = json.dumps({
         "receive_id": receive_id, "msg_type": msg_type,
         "content": _openapi_content(content, msg_type)}).encode("utf-8")
-    rq = urllib.request.Request(
-        OPEN + "/im/v1/messages?receive_id_type=" +
-        urllib.parse.quote(receive_id_type or "open_id", safe=""),
-        data=body, headers={"Content-Type": "application/json",
-                            "Authorization": "Bearer " + tok})
-    try:
-        with urllib.request.urlopen(rq, timeout=15) as r:
-            resp = json.loads(r.read().decode("utf-8"))
-    except Exception as e:
-        if flow_record:
-            _flow_record(False, receive_id, kind=kind,
-                         channel="openapi-fallback")
-        return False, ("openapi_fallback: err " + str(e))[:200], None
+    url = (OPEN + "/im/v1/messages?receive_id_type=" +
+           urllib.parse.quote(receive_id_type or "open_id", safe=""))
+    attempts = 3
+    resp = None
+    last_why = ""
+    for attempt in range(1, attempts + 1):
+        rq = urllib.request.Request(
+            url, data=body, headers={"Content-Type": "application/json",
+                                     "Authorization": "Bearer " + tok})
+        try:
+            with _HTTP_OPEN(rq, timeout=15) as r:
+                resp = json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            # W3 清债（2026-10-24）：原来只留 "HTTP Error 400" 丢弃响应体，
+            # 无法区分频控/参数/鉴权错误——补读 body；可重试错误退避重试。
+            raw = ""
+            try:
+                raw = e.read().decode("utf-8", "replace")
+            except Exception:  # noqa: BLE001
+                pass
+            code = _biz_code_from_body(raw)
+            retryable = (e.code in _RETRY_HTTP_STATUS
+                         or code in _RETRY_BIZ_CODES)
+            last_why = ("openapi_fallback: err HTTP %d %s"
+                        % (e.code, _brief(raw, 300)))[:400]
+            if retryable and attempt < attempts:
+                if code in _TOKEN_BIZ_CODES:
+                    tok = get_tat(use_cache=False) or tok
+                time.sleep(0.5 * attempt)
+                continue
+            if flow_record:
+                _flow_record(False, receive_id, kind=kind,
+                             channel="openapi-fallback")
+            return False, last_why, None
+        except Exception as e:  # noqa: BLE001
+            last_why = ("openapi_fallback: err " + str(e))[:200]
+            if attempt < attempts:
+                time.sleep(0.5 * attempt)
+                continue
+            if flow_record:
+                _flow_record(False, receive_id, kind=kind,
+                             channel="openapi-fallback")
+            return False, last_why, None
+        biz = resp.get("code")
+        if biz != 0 and biz in _RETRY_BIZ_CODES and attempt < attempts:
+            if biz in _TOKEN_BIZ_CODES:
+                tok = get_tat(use_cache=False) or tok
+            last_why = "openapi_fallback: " + str(resp.get("msg"))[:120]
+            time.sleep(0.5 * attempt)
+            continue
+        break
+    if resp is None:
+        return False, (last_why or "openapi_fallback: no response")[:400], None
     ok = resp.get("code") == 0
     mid = (resp.get("data") or {}).get("message_id") if ok else None
     if flow_record:

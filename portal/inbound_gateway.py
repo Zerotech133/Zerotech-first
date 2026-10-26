@@ -301,10 +301,86 @@ def _bands(sig):
     return {tuple(sig[i * 8:i * 8 + 8]) for i in range(_BANDS)}
 
 
+_EMBED_CACHE = {"model": "", "ts": 0.0}
+
+
+def _detect_embed_model():
+    """Ollama 中找 embedding 模型（bge/m3/embed 关键字）；没有返回空串。"""
+    model = os.environ.get("FEED_EMBED_MODEL") or ""
+    if model:
+        return model
+    now = _now_ts() if "_now_ts" in globals() else 0.0
+    if _EMBED_CACHE["model"] and now - _EMBED_CACHE["ts"] < 300:
+        return _EMBED_CACHE["model"]
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:11434/api/tags",
+                                    timeout=3) as r:
+            models = json.loads(r.read().decode()).get("models") or []
+        for m in models:
+            name = str(m.get("name") or "")
+            if any(k in name.lower() for k in ("bge", "m3", "embed")):
+                _EMBED_CACHE.update({"model": name, "ts": _now_ts()})
+                return name
+    except Exception:  # noqa: BLE001
+        pass
+    return ""
+
+
+def _now_ts():
+    import time as _t
+    return _t.time()
+
+
+def _cos(a, b):
+    try:
+        n = min(len(a), len(b))
+        if n <= 0:
+            return 0.0
+        dot = sum(float(a[i]) * float(b[i]) for i in range(n))
+        na = sum(float(x) * float(x) for x in a[:n]) ** 0.5
+        nb = sum(float(x) * float(x) for x in b[:n]) ** 0.5
+        return dot / (na * nb) if na and nb else 0.0
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
 def embedding_sig(text):
-    """L3 embedding 去重：当前无向量模型，诚实返回不可用（不假绿）。"""
+    """L3 语义去重：有 embedding 模型则取向量；不可用诚实标注（不假绿）。"""
+    t = str(text or "").strip()
+    if not t:
+        return {"available": False, "why": "空文本"}
+    model = _detect_embed_model()
+    if model:
+        try:
+            req = urllib.request.Request(
+                "http://127.0.0.1:11434/api/embeddings",
+                data=json.dumps({"model": model,
+                                 "prompt": t[:6000]}).encode("utf-8"),
+                headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                vec = json.loads(r.read().decode()).get("embedding") or []
+            if vec:
+                return {"available": True, "model": model,
+                        "vec": [round(float(x), 5) for x in vec[:2048]],
+                        "why": ""}
+        except Exception as e:  # noqa: BLE001
+            return {"available": False,
+                    "why": "embedding 调用失败：%s" % str(e)[:80]}
     return {"available": False,
-            "why": "embedding 模型未接入（W43 首包预留位，语义级去重暂缺）"}
+            "why": "无 embedding 模型（FEED_EMBED_MODEL 未设且 Ollama 无 embed 模型）",
+            "fallback": "minhash"}
+
+
+def _embedding_lookup(emb, rows, threshold=0.93):
+    """→ 命中的 duplicate ticket（语义近似），未命中 ""。"""
+    if not emb.get("available"):
+        return ""
+    for r in reversed((rows or [])[-_DEDUP_SCAN:]):
+        if r.get("kind") != "text" or not r.get("emb"):
+            continue
+        if _cos(emb["vec"], r["emb"]) >= threshold:
+            return str(r.get("ticket") or "")
+    return ""
 
 
 def _dedup_lookup(kind, key, sig=None):
@@ -322,10 +398,12 @@ def _dedup_lookup(kind, key, sig=None):
     return "", ""
 
 
-def _dedup_append(kind, key, sig, ticket, ref=""):
-    _append_ledger(_dedup_path(), {"kind": kind, "key": key, "sig": sig,
-                                   "ticket": ticket, "ref": ref,
-                                   "ts": _now_iso()})
+def _dedup_append(kind, key, sig, ticket, ref="", emb=None):
+    row = {"kind": kind, "key": key, "sig": sig, "ticket": ticket,
+           "ref": ref, "ts": _now_iso()}
+    if emb:
+        row["emb"] = emb
+    _append_ledger(_dedup_path(), row)
 
 
 # ── URL 路由：采集 API + 快照归档（Jina 兜底） ────────────────
@@ -363,7 +441,8 @@ def _snapshot_url(ticket, url, idx):
     os.makedirs(_snap_dir(), exist_ok=True)
     meta = {"url": url, "display_url": display_url(url), "ts": _now_iso(),
             "fetcher": "", "ok": False, "error": "", "title": "",
-            "bytes": 0, "sha256": ""}
+            "bytes": 0, "sha256": "", "extractor": "", "text_chars": 0,
+            "text_path": ""}
     raw = b""
     try:
         raw = _http_get(url, timeout=15)
@@ -396,6 +475,24 @@ def _snapshot_url(ticket, url, idx):
                     meta["title"] = m.group(1).strip()[:120]
             elif head:
                 meta["title"] = head.strip().splitlines()[0][:120]
+            # P2 投喂补强：正文抽取（trafilatura 可选 → lxml 启发式 → 纯文本）
+            try:
+                import feed_extract as _fx
+                _ex = _fx.extract_main(raw, url)
+                _text = str(_ex.get("text") or "")
+                if _text:
+                    _tpath = os.path.join(_snap_dir(), "%s_%d.md"
+                                          % (ticket, idx))
+                    with open(_tpath, "w", encoding="utf-8") as _tf:
+                        _tf.write(_text)
+                    meta["text_path"] = os.path.basename(_tpath)
+                    meta["text_chars"] = len(_text)
+                    if not meta["title"]:
+                        meta["title"] = str(_ex.get("title") or "")[:120]
+                    meta["extractor"] = str(_ex.get("extractor") or "")
+            except Exception as _ee:  # noqa: BLE001
+                meta["error"] = (meta["error"] + " | extract: %s"
+                                 % str(_ee)[:80]).strip(" |")
         except OSError as e:
             meta["error"] = "write: %s" % str(e)[:100]
             meta["fetcher"] = ""
@@ -499,18 +596,27 @@ def _route_text(ticket, payload, open_id):
         return {"status": "duplicate", "evidence": "duplicate_suppressed",
                 "duplicate_of": dup_ticket, "dedup_level": level,
                 "preview": sanitize_outbound_text(content[:80])}
+    # L3 语义去重（模型可用时）：向量近似命中 → duplicate_suppressed
+    _emb = embedding_sig(content)
+    if _emb.get("available"):
+        _l3 = _embedding_lookup(_emb, _load_jsonl(_dedup_path()))
+        if _l3:
+            return {"status": "duplicate", "evidence": "duplicate_suppressed",
+                    "duplicate_of": _l3, "dedup_level": "semantic",
+                    "preview": sanitize_outbound_text(content[:80])}
     try:
         path = _km_inbox_write(ticket, content, open_id)
     except OSError as e:
         return {"status": "failed", "evidence": "failed",
                 "why": "收件箱写入失败：%s" % str(e)[:100]}
     _ensure_km_library()
-    _dedup_append("text", _text_key(content), sig, ticket, "")
+    _dedup_append("text", _text_key(content), sig, ticket, "",
+                  emb=(_emb.get("vec") if _emb.get("available") else None))
     return {"status": "routed", "evidence": "km_inbox_written",
             "path": os.path.relpath(path, ROOT),
             "dedup_level": "md5", "preview": sanitize_outbound_text(
                 content[:80]),
-            "embedding": embedding_sig(content)}
+            "embedding": _emb}
 
 
 # ── 确认路由：决策账（W40 配对复用，能力收窄唯一通道） ──────────
@@ -702,19 +808,41 @@ def _smart_card(ticket, smart):
         md += "\n> 模型通道降级中，本条按规则处理；准确率以人工复核为准。"
 
     # 下钻：派单类给工单详情页（URL 按钮，点击在飞书内置浏览器打开）
+    # 2026-10-25：优先 /m H5（ticket/subscription 自动签发），未启用回退旧公网链。
+    def _m_url(scene, **kw):
+        try:
+            from feishu_card_v2 import m_url as _mu
+            return _mu(scene, **kw) or ""
+        except Exception:  # noqa: BLE001
+            return ""
     buttons = None
     disp = smart.get("dispatch") or {}
     did = disp.get("dispatch_id")
     if did:
+        _ticket_url = _m_url("ticket", id=did) or \
+            "%s/comm/ticket?id=%s" % (_public_base(), did)
+        _nudge_url = _ticket_url + ("&nudge=1" if "?" in _ticket_url
+                                    else "?nudge=1")
         buttons = [
-            ("查看处理详情", ("url", "%s/comm/ticket?id=%s" % (_public_base(), did)),
-             "primary"),
-            ("查看我的订阅", ("url", "%s/my-subscription" % _public_base()), "default"),
+            ("查看处理详情", ("url", _ticket_url), "primary"),
+            ("催一下", ("url", _nudge_url), "default"),
         ]
     card, _ = build_v3("interact", "阚泽部 · 受理 %s" % ticket,
                        "通信与客户服务部",
                        md=md, tags="#comm #intake #%s" % (intent,),
                        buttons=buttons)
+    # 2026-10-25 P2：派单受理卡统一分装（失败回落旧卡）
+    try:
+        from push_unified_adapter import adapt as _adapt
+        card = _adapt(
+            "dispatch", card, "ticket", "派单受理",
+            [md], ts=smart.get("ts") or "", source="通信与客户服务部",
+            footer="零界 · 通信与客户服务部",
+            buttons=[("查看处理详情", _ticket_url, "primary"),
+                     ("催一下", _nudge_url, "default")],
+            level="warn")
+    except Exception:
+        pass
     return card
 
 

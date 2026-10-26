@@ -33,7 +33,7 @@ def _append(row):
 
 
 def register(kind, channel, target, why, decision_id=None,
-             evidence="dead_letter"):
+             evidence="dead_letter", payload=None):
     """登记一条死信 → dead_id（失败 None，不抛）。evidence 缺省
     dead_letter；传入非法级别也醒目归 dead_letter（死信行不冒充其他证据）。"""
     try:
@@ -48,7 +48,8 @@ def register(kind, channel, target, why, decision_id=None,
                            ("api_accepted", "receiver_verified", "dead_letter")
                            else "dead_letter",
                "redelivered_at": None,
-               "redelivery_message_id": None}
+               "redelivery_message_id": None,
+               "payload": (str(payload)[:2000] if payload else None)}
         _append(row)
         return row["dead_id"]
     except Exception:
@@ -126,8 +127,13 @@ def count_since(hours=24):
                     if not line:
                         continue
                     try:
+                        row = json.loads(line)
+                        # 只计原始死信：补达行（action=redelivery / 无 dead_id）不是死信
+                        if str(row.get("action") or "") == "redelivery" or \
+                                not row.get("dead_id"):
+                            continue
                         ts = datetime.fromisoformat(
-                            str(json.loads(line).get("ts") or "")[:19])
+                            str(row.get("ts") or "")[:19])
                         if ts >= cutoff:
                             cnt += 1
                     except (ValueError, TypeError):

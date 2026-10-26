@@ -1198,6 +1198,22 @@ def run(mode, dry):
                 footer="本地 %s 客观归纳 · 仅信息参考，不构成投资建议 · 信息采集域"
                        % model,
                 buttons=btns or None)
+            # 2026-10-25 P2/P3：统一分装 + H5 按钮（失败回落旧卡）
+            try:
+                sys.path.insert(0, os.path.join(os.path.dirname(
+                    os.path.dirname(os.path.abspath(__file__))), "portal"))
+                from push_unified_adapter import adapt as _adapt
+                from feishu_card_v2 import m_url as _m
+                _h5 = _m("entry")
+                _btns = [("📱 移动端总览（H5）", _h5, "primary")] if _h5 else None
+                card = _adapt("ai", card, "brief", m["title"], md_blocks,
+                              ts=now_cst().strftime("%Y-%m-%d %H:%M"),
+                              source="AI 晨报",
+                              footer="本地 %s 客观归纳 · 仅信息参考，不构成投资建议"
+                                     % model,
+                              buttons=_btns, level="info")
+            except Exception:
+                pass
             sent = push_card(card, qr_portal=portal or None)
             if not sent:
                 log("card FAIL -> text fallback")
@@ -1288,6 +1304,28 @@ def run(mode, dry):
 def main():
     mode = "review" if "review" in sys.argv else "brief"
     run(mode, "--dry" in sys.argv)
+    # W40：AI 晨报（08:00 既有任务）成功后追加「推送日报」（每日一次，不新建任务）
+    if mode == "brief" and "--dry" not in sys.argv \
+            and str(os.environ.get("PUSH_DIGEST_ENABLED", "1")) != "0":
+        try:
+            import sys as _sys, os as _os
+            _portal = _os.path.join(_os.path.dirname(_os.path.dirname(
+                _os.path.abspath(__file__))), "portal")
+            if _portal not in _sys.path:
+                _sys.path.insert(0, _portal)
+            import push_daily_digest as _pd
+            _ok, _why = _pd.send_once()
+            print("PUSH_DIGEST", _ok, _why)
+            # H3：军机驿日报（Hermes 只读草稿；定时归平台，Hermes 不当定时器）
+            if str(os.environ.get("HERMES_REPORT_ENABLED", "1")) != "0":
+                try:
+                    import hermes_report_job as _hr
+                    _hok, _hwhy = _hr.run_once("day")
+                    print("HERMES_REPORT", _hok, _hwhy)
+                except Exception as _he:  # noqa: BLE001
+                    print("HERMES_REPORT_SKIP", str(_he)[:120])
+        except Exception as _e:  # noqa: BLE001
+            print("PUSH_DIGEST_SKIP", str(_e)[:120])
 
 
 if __name__ == "__main__":

@@ -59,10 +59,12 @@ DEFAULT_ACTIONS = {
     "ctl:alert_ack_all":  ("预警全部确认", "控制面板", "card", "bot ws 老链"),
     "ctl:tasks":          ("任务面板", "控制面板", "card", "bot ws 老链"),
     "ctl:board":          ("看板打开", "控制面板", "card", "bot ws 老链"),
-    # 盯盘预警 jev（老链：lark-cli lark_card_handler 独立进程消费，
-    # value {"action":"ack|ignore"} 无 action_id 不会触达 dispatch）
-    "jev_ack":    ("预警 · 已处理", "盯盘预警", "card", "lark-cli 老链"),
-    "jev_ignore": ("预警 · 忽略", "盯盘预警", "card", "lark-cli 老链"),
+    # 盯盘预警 jev（W3 清债 2026-10-24：已从 lark-cli 老链迁入统一分发；
+    # value 兼容 {"action_id":"jev_ack"} 与老卡 {"action":"ack"} 经 bot 归一）
+    "jev_ack":    ("预警 · 已处理", "盯盘预警", "card",
+                   "bot ws → dispatch → jev_card_action.handle_action"),
+    "jev_ignore": ("预警 · 忽略", "盯盘预警", "card",
+                   "bot ws → dispatch → jev_card_action.handle_action"),
     # 订阅买点（P3.11-lite 已迁移：bot ws → dispatch → 真 handler；
     # 8091 api_misc HTTP 链并行在役，两链同源 subscribe_from_card）
     "subscribe_buypoint":   ("订阅买点", "量化订阅", "card",
@@ -71,6 +73,9 @@ DEFAULT_ACTIONS = {
     "unsubscribe_buypoint": ("退订买点", "量化订阅", "card",
                              "bot ws → dispatch → subscribe_action.subscribe_from_card"
                              "（8091 HTTP 链并行在役）"),
+    # 工单催办（2026-10-25：派单卡「催一下」→ 计数 + 提醒处理人）
+    "dispatch_nudge": ("工单 · 催一下", "通信/工单", "card",
+                       "bot ws → dispatch → ticket_loop.nudge"),
     # H5 动作（share/H5 页面）
     "subscribe_add": ("H5 · 订阅", "H5 精选页", "h5", "share 链路"),
     "picks_share":   ("H5 · 分享", "精选推送", "h5", "share_tokens"),
@@ -324,6 +329,26 @@ def dispatch(action_id, payload=None, who=""):
                 action_id, payload.get("req_id") or "", who)
             log_event(action_id, who=who,
                       card=str(payload.get("req_id") or "")[:60],
+                      result=("ok" if ok2 else str(msg2))[:80])
+            return bool(ok2), msg2
+        if action_id == "dispatch_nudge":
+            import ticket_loop
+            did = str((payload or {}).get("dispatch_id") or "")
+            r = ticket_loop.nudge(did, by=who or "card")
+            log_event(action_id, who=who, card=did,
+                      result="ok" if r.get("ok") else str(r.get("error"))[:80])
+            if not r.get("ok"):
+                return False, r.get("error") or "催办失败"
+            return True, "已催办第 %d 次（工单 %s，已提醒处理人）" % (
+                r["n"], did)
+        if action_id in ("jev_ack", "jev_ignore"):
+            # W3 清债：9104 lark-cli 老链迁入统一分发（数据状态 + 审计；
+            # 卡片视觉更新由 WS 回执承担）。老卡 value {"action":"ack"}
+            # 由 bot 侧归一为 jev_ack/jev_ignore 后进入本分支。
+            import jev_card_action
+            ok2, msg2 = jev_card_action.handle_action(action_id, payload, who)
+            log_event(action_id, who=who,
+                      card=str(payload.get("alert_id") or "")[:60],
                       result=("ok" if ok2 else str(msg2))[:80])
             return bool(ok2), msg2
         if action_id in ("subscribe_buypoint", "unsubscribe_buypoint"):

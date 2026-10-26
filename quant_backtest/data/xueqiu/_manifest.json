@@ -2,8 +2,8 @@
  "health": {
   "quotec_probe": {
    "ok": false,
-   "latency_ms": 18081,
-   "ts": "2026-10-22T17:40:08",
+   "latency_ms": 13153,
+   "ts": "2026-10-25T17:40:07",
    "err": "b'403 Forbidden. Seek IP Blacklisted.'"
   },
   "token_present": true,
@@ -11,25 +11,25 @@
   "token_pool": "3 entries"
  },
  "xq_status": {
-  "done": false,
-  "rows": 0,
-  "status": "failed",
-  "note": "timeline 请求失败（重试到顶/风控/400016 token 失效）",
-  "last_run": "2026-10-22T18:02:48"
+  "done": true,
+  "rows": 30,
+  "status": "ok",
+  "note": "",
+  "last_run": "2026-10-26T02:12:55"
  },
  "xq_hot_post": {
-  "done": false,
-  "rows": 0,
-  "status": "failed",
-  "note": "hot 请求失败（重试到顶/风控/400016 token 失效）",
-  "last_run": "2026-10-22T18:05:24"
+  "done": true,
+  "rows": 9,
+  "status": "ok",
+  "note": "",
+  "last_run": "2026-10-26T02:12:58"
  },
  "xq_quote_snap": {
   "done": false,
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-22T17:40:26",
+  "last_run": "2026-10-25T17:40:20",
   "file": "d_20261019.parquet"
  },
  "xq_kline_d": {
@@ -37,21 +37,21 @@
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-22T17:40:26"
+  "last_run": "2026-10-25T17:40:20"
  },
  "xq_capital_flow": {
   "done": false,
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-22T17:40:26"
+  "last_run": "2026-10-25T17:40:20"
  },
  "xq_northbound": {
   "done": false,
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-22T17:40:26"
+  "last_run": "2026-10-25T17:40:20"
  },
  "xq_comment": {
   "done": false,

@@ -239,6 +239,20 @@ def main():
             time.strftime("%Y-%m-%d %H:%M") + " · 关键变化触发",
             ["\n".join(lines)],
             footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议")
+        # 2026-10-25 P2/P3：统一分装（失败回落旧卡）
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))), "portal"))
+            from push_unified_adapter import adapt as _adapt
+            from feishu_card_v2 import m_url as _m
+            _u = _m("entry")
+            _btn = [("📱 移动端总览（H5）", _u, "primary")] if _u else None
+            card = _adapt("alertwatch", card, "alert", "即时预警",
+                          ["\n".join(lines)], ts=time.strftime("%Y-%m-%d %H:%M"),
+                          source="阈值监听", buttons=_btn, level="bad",
+                          footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议")
+        except Exception:
+            pass
         try:
             tres = alert_push.push_card_multi(card, targets=targets)
         except Exception as exc:

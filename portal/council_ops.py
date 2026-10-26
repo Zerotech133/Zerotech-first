@@ -6,22 +6,30 @@
 
 端点：
   GET  /healthz                     存活
+  POST /api/council/auth/login      口令登录（须白名单 Origin）
   GET  /api/council/state           议题+留言快照（复用 gen_council_data 逻辑 + messages）
-  POST /api/council/new             {title,tags,originator}→新议题（写 registry 片段+留言）
+  POST /api/council/preflight/confirm  会前确认配置→新议题与配置记录（幂等编号）
   POST /api/council/message         {topic,seat,text}→发言留言（落 council_messages.jsonl）
-  POST /api/council/schedule        {title,tags,at,note}→预约会议（落 scheduled.jsonl）
+  /new、/schedule、/idea_promote 与自然语言直建会已拦截；预约确认尚未接入
   POST /api/council/upload          multipart 文件→uploads/（限 10MB，白名单后缀）
-纪律：仅 127.0.0.1；不鉴权（本机单用户）；原子写；上传不执行只存证。
+纪律：仅 loopback；口令会话鉴权与 Origin 门禁；原子写；上传不执行只存证。
 """
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
+import hmac
+import ipaddress
 import json
 import os
 import re
+import secrets
 import tempfile
 import time
+import threading
+import uuid
 import urllib.parse
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -31,11 +39,43 @@ UPLOAD_DIR = os.path.join(DATA_DIR, "council_uploads")
 MESSAGES = os.path.join(DATA_DIR, "council_messages.jsonl")
 SCHEDULED = os.path.join(DATA_DIR, "council_scheduled.jsonl")
 REGISTRY_SNIPPET = os.path.join(DATA_DIR, "council_new_topics.json")
+PREFLIGHT = os.path.join(DATA_DIR, "council_preflight.json")
+MEETING_WRITE_LOCK = threading.RLock()
 ARCHIVE_ROOT = os.path.join(DATA_DIR, "council_meetings")  # 建档：月/会议号/五件套
 
 ALLOWED_EXT = {".md", ".txt", ".pdf", ".png", ".jpg", ".jpeg", ".json", ".csv", ".docx", ".xlsx", ".log", ".py", ".js", ".html"}
 MAX_UPLOAD = 10 * 1024 * 1024
 SAN = re.compile(r"[^\w\u4e00-\u9fff.-]+")
+SESSION_TTL = 30 * 60
+SESSION_COOKIE = "council_ops_session"
+DEFAULT_ORIGINS = ("http://127.0.0.1:8080", "http://localhost:8080")
+
+
+def _loopback(address: str) -> bool:
+    try:
+        return ipaddress.ip_address(address).is_loopback
+    except ValueError:
+        return False
+
+
+def _allowed_origins() -> frozenset[str]:
+    configured = os.environ.get("COUNCIL_OPS_ORIGINS")
+    origins = DEFAULT_ORIGINS if configured is None else tuple(configured.split(","))
+    if not origins:
+        raise ValueError("COUNCIL_OPS_ORIGINS 必须包含本机页面源")
+    for origin in origins:
+        parsed = urllib.parse.urlsplit(origin)
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise ValueError("COUNCIL_OPS_ORIGINS 包含无效端口") from exc
+        if (not origin or parsed.scheme != "http" or not parsed.hostname or port is None
+                or not 1 <= port <= 65535 or parsed.username is not None
+                or parsed.password is not None or parsed.path or parsed.query or parsed.fragment
+                or origin != f"http://{parsed.netloc}"
+                or not (parsed.hostname == "localhost" or _loopback(parsed.hostname))):
+            raise ValueError("COUNCIL_OPS_ORIGINS 只允许带端口的本机 http 页面源")
+    return frozenset(origins)
 
 
 def _now() -> str:
@@ -636,30 +676,88 @@ def dispatch_to_devtask(tasks: list[dict], meeting_id: str) -> list[dict]:
     return results
 
 
+class CouncilServer(ThreadingHTTPServer):
+    def __init__(self, address, password: str, allowed_origins: frozenset[str]):
+        if len(password) < 16:
+            raise ValueError("COUNCIL_OPS_PASSWORD 至少需要 16 个字符")
+        if not _loopback(address[0]):
+            raise ValueError("COUNCIL_OPS_BIND 必须是 loopback IP")
+        self.allowed_origins = allowed_origins
+        self.password_salt = secrets.token_bytes(16)
+        self.password_digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), self.password_salt, 200_000)
+        self.sessions: dict[str, float] = {}
+        self.session_lock = threading.Lock()
+        super().__init__(address, Handler)
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 静默
         pass
 
-    def _json(self, obj, status: int = 200):
+    def _cors(self):
+        origin = self.headers.get("Origin")
+        if origin in self.server.allowed_origins:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Vary", "Origin")
+
+    def _json(self, obj, status: int = 200, cookie: str | None = None):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "no-store")
+        if cookie is not None:
+            self.send_header("Set-Cookie", cookie)
+        self._cors()
         self.end_headers()
         self.wfile.write(body)
 
+    def _local_peer(self) -> bool:
+        if _loopback(self.client_address[0]):
+            return True
+        self._json({"error": "forbidden"}, 403)
+        return False
+
+    def _authenticated(self) -> bool:
+        try:
+            cookies = SimpleCookie()
+            cookies.load(self.headers.get("Cookie", ""))
+            token = cookies[SESSION_COOKIE].value if SESSION_COOKIE in cookies else ""
+        except (CookieError, ValueError):
+            token = ""
+        if token:
+            digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+            with self.server.session_lock:
+                expiry = self.server.sessions.get(digest, 0)
+                if expiry > time.monotonic():
+                    return True
+                self.server.sessions.pop(digest, None)
+        self._json({"error": "unauthorized"}, 401)
+        return False
+
     def do_OPTIONS(self):
+        if not self._local_peer():
+            return
+        origin = self.headers.get("Origin")
+        if origin not in self.server.allowed_origins:
+            return self._json({"error": "forbidden origin"}, 403)
+        # CORS 预检不携带 Cookie；仅返回许可元数据，不执行受保护路由。
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        self._cors()
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Content-Length", "0")
         self.end_headers()
 
     def do_GET(self):
+        if not self._local_peer():
+            return
         u = urllib.parse.urlparse(self.path)
         if u.path == "/healthz":
             return self._json({"ok": True, "at": _now()})
+        if not self._authenticated():
+            return
         if u.path == "/api/council/state":
             st = load_state()
             st["archives"] = load_archives()
@@ -795,8 +893,19 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"error": "not found"}, 404)
 
     def do_POST(self):
+        if not self._local_peer():
+            return
+        if self.headers.get("Origin") not in self.server.allowed_origins:
+            return self._json({"error": "forbidden origin"}, 403)
         u = urllib.parse.urlparse(self.path)
-        n = int(self.headers.get("Content-Length") or 0)
+        if u.path != "/api/council/auth/login" and not self._authenticated():
+            return
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            return self._json({"error": "bad length"}, 400)
+        if n < 0 or (u.path == "/api/council/auth/login" and n > 4096):
+            return self._json({"error": "bad length"}, 400)
         if u.path == "/api/council/upload":
             return self._upload(n)
         body = self.rfile.read(n) if n else b"{}"
@@ -804,6 +913,20 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             return self._json({"error": "bad json"}, 400)
+        if u.path == "/api/council/auth/login":
+            if not isinstance(data, dict) or not isinstance(data.get("password"), str):
+                return self._json({"error": "invalid credentials"}, 401)
+            digest = hashlib.pbkdf2_hmac("sha256", data["password"].encode("utf-8"),
+                                        self.server.password_salt, 200_000)
+            if not hmac.compare_digest(digest, self.server.password_digest):
+                return self._json({"error": "invalid credentials"}, 401)
+            token = secrets.token_urlsafe(32)
+            with self.server.session_lock:
+                now = time.monotonic()
+                self.server.sessions = {k: v for k, v in self.server.sessions.items() if v > now}
+                self.server.sessions[hashlib.sha256(token.encode("utf-8")).hexdigest()] = now + SESSION_TTL
+            cookie = f"{SESSION_COOKIE}={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={SESSION_TTL}"
+            return self._json({"ok": True}, cookie=cookie)
         if u.path == "/api/council/debate":
             topic = str(data.get("topic") or "").strip()[:120]
             if not topic:
@@ -857,6 +980,8 @@ class Handler(BaseHTTPRequestHandler):
                                "kind": "sys", "text": "🤖 归档确认：这个想法已存「💡想法池」。要不要挂到某个专项？直接说「把它转成专项会议」或就留在池里——留池即默认，无需操作。"})
             return self._json({"ok": True, "views": views})
         if u.path == "/api/council/idea_promote":
+            return self._json({"error": "先到会前问答确认配置，再提交建会"}, 409)
+        if False:  # 旧想法直升会议实现保留作迁移参考，不作为可达写入入口
             # 池中想法 → 专项会议（后面想执行时）
             idea = str(data.get("idea") or "").strip()[:500]
             if not idea:
@@ -950,7 +1075,7 @@ class Handler(BaseHTTPRequestHandler):
             current_topic = str(data.get("current_topic") or "").strip()[:120]
             if not text:
                 return self._json({"error": "text required"}, 400)
-            # ── 统一意图路由：定稿归档 > 查询 > 预约 > 想法(对答) > 发言 > 开新会议 ──
+            # ── 意图路由；新会/预约/想法升级意图只拒绝，不在自然接口写议题 ──
             intent = None
             if any(k in text for k in _ACTION_ARCHIVE):
                 intent = "archive"
@@ -989,6 +1114,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": True, "intent": "debate", "chair": ch,
                                    "conclusion": result["conclusion"], "votes": result["votes"],
                                    "routed": "⚖️ 辩论收敛完成——轮值主席 " + ch["cn"] + " 已总结，投票已入流"})
+            if intent in ("new", "schedule", "promote"):
+                return self._json({"error": "请先完成会前问答并确认配置，再创建或预约会议", "intent": "preflight_required"}, 409)
             if intent == "promote":
                 idea = _re.sub(r"^(把想法池里的?|把这个想法|把|想法池里的)", "", text)
                 idea = _re.sub(r"(转成专项会议|转成专项|转专项|立项|开始执行|想法)", "", idea).strip("：: 「」 ")[:200]
@@ -1119,7 +1246,120 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "act?"}, 400)
             except Exception as e:
                 return self._json({"error": str(e)[:120]}, 400)
+        if u.path == "/api/council/preflight/confirm":
+            key = str(data.get("request_id") or "").strip()
+            title = str(data.get("title") or "").strip()[:80]
+            scope = str(data.get("scope") or "").strip()[:160]
+            if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", key) or not title or not scope or data.get("confirmed") is not True:
+                return self._json({"error": "request_id、议题、范围与本人确认均必需"}, 400)
+            if data.get("meeting_kind") == "schedule" or data.get("scheduled_for"):
+                return self._json({"error": "预约确认与时间核验尚未接入，不得创建即时会议"}, 409)
+            mode = str(data.get("mode") or "待确认")[:20]
+            goal = str(data.get("goal") or "待确认")[:160]
+            humans = str(data.get("humans") or "待确认")[:160]
+            candidates = [str(s)[:30] for s in data.get("candidates", []) if isinstance(s, str)][:60] if isinstance(data.get("candidates", []), list) else []
+            payload = {"title": title, "scope": scope, "mode": mode, "goal": goal,
+                       "humans": humans, "candidates": candidates}
+            with MEETING_WRITE_LOCK:
+                ledger = {}
+                if os.path.isfile(PREFLIGHT):
+                    try:
+                        with open(PREFLIGHT, encoding="utf-8") as f:
+                            ledger = json.load(f)
+                    except (OSError, json.JSONDecodeError):
+                        return self._json({"error": "会前确认账本无法读取，已停止写入"}, 503)
+                existing = ledger.get(key)
+                if existing:
+                    if existing.get("payload") != payload:
+                        return self._json({"error": "同一确认编号的配置已变更，请核对原记录"}, 409)
+                    if not existing.get("config_recorded"):
+                        recorded = False
+                        if os.path.isfile(MESSAGES):
+                            with open(MESSAGES, encoding="utf-8") as f:
+                                for line in f:
+                                    try:
+                                        msg = json.loads(line)
+                                    except json.JSONDecodeError:
+                                        continue
+                                    if msg.get("request_id") == key and msg.get("kind") == "config":
+                                        recorded = True
+                                        break
+                        if not recorded:
+                            _append(MESSAGES, {"at": _now(), "topic": existing["topic"]["topic"],
+                                               "seat": "laotian", "kind": "config", "request_id": key,
+                                               "text": f"会前确认配置：会议方式：{mode}；讨论范围：{scope}；预期产出：{goal}；"
+                                                       f"人类参与者（拟）：{humans}；AI候选（拟，未通知）：{'、'.join(candidates) or '待确认'}。"})
+                        existing["config_recorded"] = True
+                        fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+                        try:
+                            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                                json.dump(ledger, f, ensure_ascii=False, indent=1)
+                            os.replace(tmp, PREFLIGHT)
+                        finally:
+                            if os.path.exists(tmp):
+                                os.unlink(tmp)
+                    return self._json({"ok": True, "topic": existing["topic"], "duplicate": True,
+                                       "config_recorded": existing["config_recorded"]})
+                cur = []
+                if os.path.isfile(REGISTRY_SNIPPET):
+                    try:
+                        with open(REGISTRY_SNIPPET, encoding="utf-8") as f:
+                            cur = json.load(f)
+                    except (OSError, json.JSONDecodeError):
+                        return self._json({"error": "议题账本无法读取，已停止写入"}, 503)
+                recovered = next((t for t in cur if t.get("request_id") == key), None)
+                if recovered:
+                    if recovered.get("preflight_payload") != payload:
+                        return self._json({"error": "原确认配置不可核对，已停止恢复，请人工复核议题"}, 409)
+                    ledger[key] = {"payload": payload, "topic": recovered, "config_recorded": False}
+                    fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+                    try:
+                        with os.fdopen(fd, "w", encoding="utf-8") as f:
+                            json.dump(ledger, f, ensure_ascii=False, indent=1)
+                        os.replace(tmp, PREFLIGHT)
+                    finally:
+                        if os.path.exists(tmp):
+                            os.unlink(tmp)
+                    return self._json({"error": "已恢复既有议题关联，请用原确认编号重试写入配置", "topic": recovered}, 503)
+                topic = {"topic": f"{title}（#{dt.datetime.now().strftime('%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}）",
+                         "tags": ["govern"], "stage": "立题", "originator": "laotian",
+                         "summary": "会前配置已确认；候选未通知", "created_at": _now(), "request_id": key,
+                         "preflight_payload": payload}
+                cur.append(topic)
+                os.makedirs(DATA_DIR, exist_ok=True)
+                fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as f:
+                        json.dump(cur, f, ensure_ascii=False, indent=1)
+                    os.replace(tmp, REGISTRY_SNIPPET)
+                finally:
+                    if os.path.exists(tmp):
+                        os.unlink(tmp)
+                ledger[key] = {"payload": payload, "topic": topic, "config_recorded": False}
+                fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as f:
+                        json.dump(ledger, f, ensure_ascii=False, indent=1)
+                    os.replace(tmp, PREFLIGHT)
+                finally:
+                    if os.path.exists(tmp):
+                        os.unlink(tmp)
+                summary = (f"会前确认配置：会议方式：{mode}；讨论范围：{scope}；预期产出：{goal}；"
+                           f"人类参与者（拟）：{humans}；AI候选（拟，未通知）：{'、'.join(candidates) or '待确认'}。")
+                _append(MESSAGES, {"at": _now(), "topic": topic["topic"], "seat": "laotian",
+                                   "kind": "config", "text": summary, "request_id": key})
+                ledger[key]["config_recorded"] = True
+                fd, tmp = tempfile.mkstemp(dir=DATA_DIR, suffix=".tmp")
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as f:
+                        json.dump(ledger, f, ensure_ascii=False, indent=1)
+                    os.replace(tmp, PREFLIGHT)
+                finally:
+                    if os.path.exists(tmp):
+                        os.unlink(tmp)
+                return self._json({"ok": True, "topic": topic, "config_recorded": True})
         if u.path == "/api/council/new":
+            return self._json({"error": "旧建会入口已关闭；请使用会前确认提交"}, 409)
             title = str(data.get("title") or "").strip()[:80]
             tags = [str(t)[:20] for t in (data.get("tags") or []) if str(t).strip()][:5]
             originator = str(data.get("originator") or "laotian")[:20]
@@ -1145,6 +1385,8 @@ class Handler(BaseHTTPRequestHandler):
             os.replace(tmp, REGISTRY_SNIPPET)
             return self._json({"ok": True, "topic": topic})
         if u.path == "/api/council/message":
+            if str(data.get("kind") or "") == "config":
+                return self._json({"error": "配置记录只可由会前确认接口写入"}, 409)
             topic = str(data.get("topic") or "")[:120]
             seat = str(data.get("seat") or "laotian")[:20]
             text = str(data.get("text") or "").strip()[:4000]
@@ -1155,6 +1397,7 @@ class Handler(BaseHTTPRequestHandler):
             _append(MESSAGES, rec)
             return self._json({"ok": True, "message": rec})
         if u.path == "/api/council/schedule":
+            return self._json({"error": "旧预约入口已关闭；请使用会前确认提交"}, 409)
             title = str(data.get("title") or "").strip()[:80]
             at = str(data.get("at") or "").strip()[:30]
             if not title or not at:
@@ -1239,11 +1482,14 @@ def _daily_collector_loop():
 
 
 def main() -> int:
-    bind = os.environ.get("COUNCIL_OPS_BIND", "0.0.0.0")  # 手机同网访问；仅本机用时设 127.0.0.1
-    import threading as _th2
-    _th2.Thread(target=_daily_collector_loop, daemon=True).start()
-    srv = ThreadingHTTPServer((bind, 8798), Handler)
-    print("council_ops listening http://127.0.0.1:8798 (会话级进程，Ctrl+C 退出)", flush=True)
+    bind = os.environ.get("COUNCIL_OPS_BIND", "127.0.0.1")
+    password = os.environ.get("COUNCIL_OPS_PASSWORD", "")
+    if len(password) < 16:
+        raise ValueError("启动需要 COUNCIL_OPS_PASSWORD，且至少 16 个字符")
+    origins = _allowed_origins()
+    srv = CouncilServer((bind, 8798), password, origins)
+    threading.Thread(target=_daily_collector_loop, daemon=True).start()
+    print(f"council_ops listening http://{bind}:8798 (会话级进程，Ctrl+C 退出)", flush=True)
     srv.serve_forever()
     return 0
 
