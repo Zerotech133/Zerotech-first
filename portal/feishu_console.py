@@ -27,6 +27,9 @@ if HERE not in sys.path:
 ROOT = os.path.dirname(HERE)
 WORK = os.path.join(HERE, "work")
 LOGS = os.path.join(HERE, "logs")
+# 2026-10-26 OS-FIX-W4CLOSE：测试归因清单（JSONL）。只登记明确为"测试/未挂调度"
+# 的发送（精确 ts+kind+target），从 lost24 剔除但单独显示；不删流水、不改 ok。
+ANNOTATIONS = os.path.join(WORK, "push_flow_annotations.jsonl")
 SECRETS = os.path.join(WORK, "feishu_secrets")
 DATA = os.path.join(HERE, "data", "feishu")
 NEWS_CONFIG = os.path.join(ROOT, "news_collector", "news_config.json")
@@ -67,6 +70,36 @@ def _age_sec(path):
         return max(0, int(time.time() - os.path.getmtime(path)))
     except OSError:
         return None
+
+
+def _load_annotations(path=None):
+    """读取测试归因清单 JSONL → list[dict]；坏行/缺失静默跳过（fail-safe）。"""
+    rows = []
+    try:
+        with open(path or ANNOTATIONS, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(d, dict):
+                    rows.append(d)
+    except OSError:
+        pass
+    return rows
+
+
+def _is_annotated(row, anns):
+    """只有 ts+kind+target 三者精确匹配才算已归因（防宽泛豁免）。"""
+    for a in anns:
+        if (a.get("ts") == row.get("ts")
+                and a.get("kind") == row.get("kind")
+                and a.get("target") == row.get("target")):
+            return True
+    return False
 
 
 def collect():
@@ -153,6 +186,12 @@ def collect():
     larkcli_fail_recovered = [r for r in larkcli_fail if _recovered(r)]
     lost24 = ([r for r in hub_fail if not _recovered(r)]
               + [r for r in larkcli_fail if not _recovered(r)])
+    # 2026-10-26 OS-FIX-W4CLOSE：测试归因清单——只剔除清单里精确登记的
+    # (ts, kind, target) 行（不删流水、不改 ok 字段）；单独计数并在检查项
+    # 文本里显示「已归因测试 N」，W4 报告可见可追溯。
+    anns = _load_annotations()
+    lost_annotated = [r for r in lost24 if _is_annotated(r, anns)]
+    lost_unannotated = [r for r in lost24 if not _is_annotated(r, anns)]
 
     decisions = {"total": None, "pending": None, "error": ""}
     db = os.path.join(WORK, "notification_decisions.sqlite3")
@@ -213,7 +252,11 @@ def collect():
     else:
         warnings.append("未配置 canonical app（portal/work/feishu_secrets/"
                         "canonical.json），无法校验收件人域一致性")
-    checks.append(("24h 消息丢失 = 0（当前 %d）" % len(lost24), len(lost24) == 0))
+    checks.append(("24h 消息丢失 = 0（当前 %d%s）"
+                   % (len(lost_unannotated),
+                      "；已归因测试 %d" % len(lost_annotated)
+                      if lost_annotated else ""),
+                   len(lost_unannotated) == 0))
     checks.append(("静默窗口策略生效（拦截 %d 次属正常）" % len(denied24), True))
 
     return {
@@ -233,7 +276,8 @@ def collect():
             "hub_fail_recovered_24h": len(hub_fail_recovered),
             "larkcli_fail_24h": len(larkcli_fail),
             "larkcli_fail_recovered_24h": len(larkcli_fail_recovered),
-            "lost_24h": len(lost24),
+            "lost_24h": len(lost_unannotated),
+            "lost_annotated_24h": len(lost_annotated),
             "dead_letters_24h": len(dead24),
             "inbound_tickets": len(inbound),
             "decisions": decisions,
