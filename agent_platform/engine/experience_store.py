@@ -32,6 +32,7 @@ if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
 from engine import lookahead_guard  # noqa: E402
+from engine import signature_guard  # noqa: E402
 
 DOMAINS = ("stock_screen", "execution", "tooling", "riskguard", "supervision")
 WRITABLE_DOMAINS = tuple(d for d in DOMAINS if d != "riskguard")
@@ -44,8 +45,10 @@ class StoreError(ValueError):
     """入库不合规（域/字段/重复）。"""
 
 
-class SignatureRequired(RuntimeError):
-    """无签字不得入库。"""
+# P0-3：签字门升级为“可验证签名”（渐进式），异常类统一由 signature_guard 提供，
+# 保留本模块旧名字导出，既有调用方/测试 `S.SignatureRequired` 不受影响。
+SignatureRequired = signature_guard.SignatureRequired
+SignatureError = signature_guard.SignatureError
 
 
 @dataclass
@@ -58,6 +61,9 @@ class Entry:
     confidence: float
     signed_by: str
     written_at: str
+    # P0-3 渐进签名：未配公钥/未传签名时 verified=False，如实记录不冒充已验签
+    verified: bool = False
+    signature_reason: str = ""
 
     def as_dict(self) -> dict:
         return {
@@ -65,6 +71,7 @@ class Entry:
             "lesson": self.lesson, "evidence": self.evidence,
             "confidence": self.confidence, "signed_by": self.signed_by,
             "written_at": self.written_at,
+            "verified": self.verified, "signature_reason": self.signature_reason,
         }
 
 
@@ -113,8 +120,15 @@ def _check_evidence_paths(evidence: str) -> None:
 
 def write_entry(domain: str, cue: str, lesson: str, evidence: str,
                 confidence: float, signed_by: str,
-                root: Path | None = None) -> Entry:
-    """写入一条四字段经验。返回 Entry；不合规抛 StoreError/SignatureRequired。"""
+                root: Path | None = None, signature: dict | None = None,
+                now: float | None = None) -> Entry:
+    """写入一条四字段经验。返回 Entry；不合规抛 StoreError/SignatureRequired。
+
+    P0-3（渐进签名）：`signature` 为可选 Ed25519 签名对象（payload 口径见
+    signature_guard，item_id=entry_id、action="write"、fingerprint=内容指纹）。
+    未提供时保留旧行为，但 Entry/索引里如实记录 `verified=False`；配公钥后自动
+    验签，`EVOLVE_SIGNATURE_STRICT=1` 时无签名/无公钥直接拒绝。
+    """
     if domain not in DOMAINS:
         raise StoreError("unknown domain: %s" % domain)
     if domain in READONLY_DOMAINS:
@@ -139,8 +153,17 @@ def write_entry(domain: str, cue: str, lesson: str, evidence: str,
         if row.get("domain") == domain and _norm(row.get("cue", "")) == key:
             raise StoreError("duplicate cue in domain %s (去重键命中): %s" % (domain, row.get("entry_id")))
 
+    entry_id = _next_id(base, domain)
+    auth = signature_guard.check(
+        kind="experience_entry", item_id=entry_id,
+        fingerprint=signature_guard.fingerprint_of({
+            "domain": domain, "cue": str(cue).strip(),
+            "lesson": str(lesson).strip(), "evidence": str(evidence).strip(),
+            "confidence": conf}),
+        action="write", signed_by=signed_by, signature=signature, now=now)
+
     entry = Entry(
-        entry_id=_next_id(base, domain),
+        entry_id=entry_id,
         domain=domain,
         cue=str(cue).strip(),
         lesson=str(lesson).strip(),
@@ -148,6 +171,8 @@ def write_entry(domain: str, cue: str, lesson: str, evidence: str,
         confidence=conf,
         signed_by=signed_by.strip(),
         written_at=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        verified=bool(auth.get("verified")),
+        signature_reason=str(auth.get("reason", "")),
     )
 
     d = base / domain
@@ -162,9 +187,12 @@ def write_entry(domain: str, cue: str, lesson: str, evidence: str,
 
     with exp.open("a", encoding="utf-8") as f:
         f.write("\n## %s\n- **cue**: %s\n- **lesson**: %s\n- **evidence**: %s\n"
-                "- **confidence**: %s\n- **采纳**: %s 签字于 %s\n" % (
+                "- **confidence**: %s\n- **采纳**: %s 签字于 %s\n"
+                "- **验签**: %s（%s）\n" % (
                     entry.entry_id, entry.cue, entry.lesson, entry.evidence,
-                    entry.confidence, entry.signed_by, entry.written_at))
+                    entry.confidence, entry.signed_by, entry.written_at,
+                    "verified" if entry.verified else "unverified",
+                    entry.signature_reason))
     with idx.open("a", encoding="utf-8") as f:
         f.write("| %s | %s | %s | %s |\n" % (
             entry.entry_id, entry.cue[:40], entry.confidence,

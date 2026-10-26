@@ -12,6 +12,24 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import seat_memory_sync as sms
 
 
+def _isolate_all_seats(tmp_path, monkeypatch):
+    """P0-5：把**三个席位**的 home 全部指到 tmp。
+
+    旧测试只 monkeypatch 田丰一个席位，却调用 `sms.main(["--apply"])`——
+    该命令会遍历全部 SEATS，于是会**真实覆盖**
+    `~/.hermes/profiles/zhaoyun/SEAT_CARD.json` 与
+    `legion_agents/zhuge/workspace/SEAT_CARD.json`（测试污染生产文件）。
+    """
+    homes = {}
+    for seat in ("tianfeng", "zhaoyun", "zhuge"):
+        home = tmp_path / seat
+        home.mkdir()
+        monkeypatch.setitem(sms.SEATS, seat,
+                            dict(sms.SEATS[seat], home=str(home)))
+        homes[seat] = home
+    return homes
+
+
 def test_plan_covers_three_seats():
     plan = sms.plan()
     seats = {card["seat"] for _, card in plan}
@@ -53,18 +71,21 @@ def test_capability_summary_linkage(tmp_path, monkeypatch):
 
 
 def test_dry_run_no_write(tmp_path, monkeypatch, capsys):
-    monkeypatch.setitem(sms.SEATS, "tianfeng", dict(sms.SEATS["tianfeng"], home=str(tmp_path)))
+    homes = _isolate_all_seats(tmp_path, monkeypatch)
     rc = sms.main(["--dry-run"])
     assert rc == 0
-    assert not os.path.exists(tmp_path / "SEAT_CARD.json")  # dry-run 零写入
+    for home in homes.values():
+        assert not os.path.exists(home / "SEAT_CARD.json")  # dry-run 零写入
     assert "dry-run" in capsys.readouterr().out
 
 
 def test_apply_atomic_write(tmp_path, monkeypatch):
-    monkeypatch.setitem(sms.SEATS, "tianfeng", dict(sms.SEATS["tianfeng"], home=str(tmp_path)))
+    homes = _isolate_all_seats(tmp_path, monkeypatch)
     rc = sms.main(["--apply"])
     assert rc == 0
-    p = tmp_path / "SEAT_CARD.json"
-    card = json.loads(p.read_text(encoding="utf-8"))
+    for seat, home in homes.items():
+        p = home / "SEAT_CARD.json"
+        assert p.is_file(), "席位 %s 的卡未落在隔离目录" % seat
+        assert not os.path.exists(str(p) + ".tmp")  # 原子写无残留
+    card = json.loads((homes["tianfeng"] / "SEAT_CARD.json").read_text(encoding="utf-8"))
     assert card["cn_name"] == "田丰"
-    assert not os.path.exists(str(p) + ".tmp")  # 原子写无残留

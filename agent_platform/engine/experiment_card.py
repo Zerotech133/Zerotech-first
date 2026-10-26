@@ -28,6 +28,7 @@ if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
 from engine import lookahead_guard  # noqa: E402
+from engine import signature_guard  # noqa: E402
 
 ARMS = ("baseline", "candidate", "adversary")
 STATUSES = ("draft", "probing", "judged", "adopted", "rejected")
@@ -37,8 +38,10 @@ class CardError(ValueError):
     """实验卡不合规（结构/顺序/证据缺失）。"""
 
 
-class SignatureRequired(RuntimeError):
-    """无签字不得结案（Paperclip=老田 approval_gate）。"""
+# P0-3：签字门升级为“可验证签名”（渐进式）。异常类统一由 signature_guard 提供，
+# 保留本模块旧名字导出，既有调用方/测试 `E.SignatureRequired` 不受影响。
+SignatureRequired = signature_guard.SignatureRequired
+SignatureError = signature_guard.SignatureError
 
 
 @dataclass
@@ -145,16 +148,40 @@ def compare(card: ExperimentCard) -> dict:
     return table
 
 
-def decide(card: ExperimentCard, adopt: bool, signed_by: str, reason: str = "") -> dict:
-    """结案：必须签字；采纳必须有对比证据支撑。"""
+def card_fingerprint(card: ExperimentCard) -> str:
+    """卡片内容指纹：把签名绑定到"这张卡的具体内容"，防签名被挪用到别的卡。"""
+    return signature_guard.fingerprint_of({
+        "card_id": card.card_id,
+        "hypothesis": card.hypothesis,
+        "arms": {name: dict(arm.diff) for name, arm in card.arms.items()},
+        "verifier": list(card.verifier),
+        "budget": card.budget,
+    })
+
+
+def decide(card: ExperimentCard, adopt: bool, signed_by: str, reason: str = "",
+           signature: dict | None = None, now: float | None = None) -> dict:
+    """结案：必须签字；采纳必须有对比证据支撑。
+
+    P0-3（渐进签名）：`signature` 为可选的 Ed25519 签名对象
+    （scheme/sig/ts/nonce，payload 口径见 signature_guard）。未提供时保留旧行为，
+    但 verdict 里如实记录 `signature_verified=False`；配公钥后自动验签，
+    `EVOLVE_SIGNATURE_STRICT=1` 时无签名/无公钥直接拒绝。
+    """
     if not (signed_by or "").strip():
         raise SignatureRequired("无签字不得结案（Paperclip = 老田 approval_gate）")
     table = compare(card)
     if adopt and not table.get("candidate_better"):
         raise CardError("无对比证据支撑采纳（无证据 = kept_base）")
+    auth = signature_guard.check(
+        kind="experiment_card", item_id=card.card_id,
+        fingerprint=card_fingerprint(card),
+        action="adopt" if adopt else "reject",
+        signed_by=signed_by, signature=signature, now=now)
     card.status = "adopted" if adopt else "rejected"
     card.verdict = {"adopt": bool(adopt), "signed_by": signed_by.strip(),
-                    "reason": reason, "table": table}
+                    "reason": reason, "table": table,
+                    "signature": auth}
     card.experience_candidate = {
         "cue": card.hypothesis,
         "lesson": ("采纳：" if adopt else "否决：") + (reason or "（未写理由）"),

@@ -200,3 +200,73 @@ def test_running_and_terminated_not_failure(isolated_data_dir, monkeypatch):
     assert [f["name"] for f in s["terminated_tasks"]] == ["NoticeBackfill"]
     assert "0x41001" in s["running_tasks"][0]["exit_semantics"]
     assert "0x41306" in s["terminated_tasks"][0]["exit_semantics"]
+
+
+# ---------------- P0-1 回归（WO-LEGION-P0FIX-20261026）----------------
+# 旧实现 `if --scan / elif --window`：两参数同给时 --window 被**静默丢弃**，
+# 用组合命令做收口却只落快照——正是“快照假绿”判例要防的假绿。
+
+def _fake_scan(audit_family_only=True):
+    return {"total_scanned": 1, "ok": 1, "failed": 0, "upstream_hold": 0,
+            "launcher_refused": 0, "cancelled": 0, "running": 0,
+            "terminated": 0, "disabled": 0, "never_run": 0, "failures": []}
+
+
+def _fake_window(hours=24.0):
+    return {"window_hours": hours,
+            "compared": {"prior_scan_at": "2026-10-25T00:00:00+08:00",
+                         "latest_scan_at": "2026-10-26T00:00:00+08:00"},
+            "new_failures": ["A"], "persisting_failures": [], "fixed_in_window": []}
+
+
+def test_scan_and_window_combined_not_dropped(monkeypatch, capsys):
+    calls = {}
+
+    def fake_scan(audit_family_only=True):
+        calls["scan"] = audit_family_only
+        return _fake_scan()
+
+    def fake_window(hours=24.0):
+        calls["window"] = hours
+        return _fake_window(hours)
+
+    monkeypatch.setattr(ta, "scan", fake_scan)
+    monkeypatch.setattr(ta, "window_diff", fake_window)
+    rc = ta.main(["--scan", "--window", "6", "--json"])
+    data = json.loads(capsys.readouterr().out)
+
+    assert calls == {"scan": True, "window": 6.0}, "--window 被静默丢弃（P0-1 回归）"
+    assert rc == 0
+    assert data["scan"]["total_scanned"] == 1
+    assert data["window"]["window_hours"] == 6.0
+
+
+def test_scan_and_window_text_prints_both(monkeypatch, capsys):
+    monkeypatch.setattr(ta, "scan", lambda audit_family_only=True: _fake_scan())
+    monkeypatch.setattr(ta, "window_diff", lambda hours=24.0: _fake_window(hours))
+    rc = ta.main(["--scan", "--window"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "扫描 1 任务" in out
+    assert "窗口 24.0h 对比" in out
+
+
+def test_scan_only_keeps_flat_output(monkeypatch, capsys):
+    """单参数行为向后兼容：仍输出扁平扫描 JSON（不套 scan 键）。"""
+    monkeypatch.setattr(ta, "scan", lambda audit_family_only=True: _fake_scan())
+    rc = ta.main(["--scan", "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert "scan" not in data and data["total_scanned"] == 1
+
+
+def test_combined_window_error_returns_nonzero(monkeypatch, capsys):
+    """组合模式下窗口不可用：如实报错（非零退出），但扫描结果照常输出。"""
+    monkeypatch.setattr(ta, "scan", lambda audit_family_only=True: _fake_scan())
+    monkeypatch.setattr(ta, "window_diff",
+                        lambda hours=24.0: {"error": "账本仅 1 条，不足两次扫描"})
+    rc = ta.main(["--scan", "--window", "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert data["scan"]["total_scanned"] == 1
+    assert "不足两次扫描" in data["window"]["error"]

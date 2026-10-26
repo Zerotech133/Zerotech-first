@@ -343,7 +343,41 @@ def window_diff(hours: float = 24.0) -> dict[str, Any]:
     }
 
 
+def _print_scan_result(result: dict) -> None:
+    """打印一次扫描摘要（扁平结构）。"""
+    print(f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
+          f"上游拒跑 {result.get('upstream_hold', 0)} / 启动器已在跑 {result.get('launcher_refused', 0)} / "
+          f"被取消 {result.get('cancelled', 0)} / 跑批中 {result.get('running', 0)} / 被终止 {result.get('terminated', 0)} / "
+          f"禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）")
+    for f in result["failures"]:
+        print(f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+    for f in result.get("launcher_refused_tasks", []):
+        print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+    for f in result.get("cancelled_tasks", []):
+        print(f"  [CANCELLED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+    for f in result.get("running_tasks", []):
+        print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+    for f in result.get("terminated_tasks", []):
+        print(f"  [TERMINATED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+
+
+def _print_window_result(result: dict) -> None:
+    """打印一次窗口对比（扁平结构）。"""
+    print(f"窗口 {result['window_hours']}h 对比（{result['compared']['prior_scan_at']} → {result['compared']['latest_scan_at']}）")
+    print(f"  新增失败 {len(result['new_failures'])}：{'、'.join(result['new_failures']) or '无'}")
+    print(f"  持续失败 {len(result['persisting_failures'])}：{'、'.join(result['persisting_failures']) or '无'}")
+    print(f"  窗口内修复 {len(result['fixed_in_window'])}：{'、'.join(result['fixed_in_window']) or '无'}")
+
+
 def main(argv: list[str] | None = None) -> int:
+    """CLI 入口。
+
+    P0-1 修复（WO-LEGION-P0FIX-20261026）：旧实现 `if --scan / elif --window`
+    在两者同给时**静默丢弃 --window**——用组合命令做收口却只落快照，正是
+    "快照假绿"判例要防的假绿。现改为：--scan 先扫；若同时给 --window，
+    再跑窗口对比并以 `{"scan": …, "window": …}` 输出（--json 同构）。
+    单参数行为与旧版逐字节一致（扁平输出，不破坏既有消费者）。
+    """
     ap = argparse.ArgumentParser(description="计划任务退出码告警闭环（只读扫描+账本+摘要）")
     ap.add_argument("--scan", action="store_true", help="执行扫描并落账本与摘要")
     ap.add_argument("--summary-only", action="store_true", help="只读已有摘要")
@@ -359,7 +393,12 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.scan:
-            result = scan(audit_family_only=not args.all_families)
+            scan_result = scan(audit_family_only=not args.all_families)
+            if args.window is not None:
+                result: dict = {"scan": scan_result,
+                                "window": window_diff(hours=args.window)}
+            else:
+                result = scan_result
         elif args.window is not None:
             result = window_diff(hours=args.window)
         else:
@@ -368,32 +407,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[FAIL] {e}", file=sys.stderr)
         return 1
 
+    combined = "scan" in result and "window" in result
+
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
-    else:
-        if "error" in result:
-            print(result["error"])
-            return 1
-        if "window_hours" in result:
-            print(f"窗口 {result['window_hours']}h 对比（{result['compared']['prior_scan_at']} → {result['compared']['latest_scan_at']}）")
-            print(f"  新增失败 {len(result['new_failures'])}：{'、'.join(result['new_failures']) or '无'}")
-            print(f"  持续失败 {len(result['persisting_failures'])}：{'、'.join(result['persisting_failures']) or '无'}")
-            print(f"  窗口内修复 {len(result['fixed_in_window'])}：{'、'.join(result['fixed_in_window']) or '无'}")
+    elif combined:
+        _print_scan_result(result["scan"])
+        print()
+        if "error" in result["window"]:
+            print(result["window"]["error"])
         else:
-            print(f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
-                  f"上游拒跑 {result.get('upstream_hold', 0)} / 启动器已在跑 {result.get('launcher_refused', 0)} / "
-                  f"被取消 {result.get('cancelled', 0)} / 跑批中 {result.get('running', 0)} / 被终止 {result.get('terminated', 0)} / "
-                  f"禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）")
-            for f in result["failures"]:
-                print(f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
-            for f in result.get("launcher_refused_tasks", []):
-                print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
-            for f in result.get("cancelled_tasks", []):
-                print(f"  [CANCELLED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
-            for f in result.get("running_tasks", []):
-                print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
-            for f in result.get("terminated_tasks", []):
-                print(f"  [TERMINATED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+            _print_window_result(result["window"])
+    elif "error" in result:
+        print(result["error"])
+    elif "window_hours" in result:
+        _print_window_result(result)
+    else:
+        _print_scan_result(result)
+
+    # 错误口径：组合模式任一子结果报错即非零（--json 同样适用）
+    if combined:
+        return 1 if ("error" in result["window"] or "error" in result["scan"]) else 0
+    if isinstance(result, dict) and "error" in result:
+        return 1
     return 0
 
 

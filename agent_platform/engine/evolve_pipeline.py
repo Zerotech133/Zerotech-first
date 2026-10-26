@@ -57,8 +57,14 @@ def run(hypothesis: str,
         domain: str = "stock_screen",
         signed_by: str = "",
         reason: str = "",
-        experience_root: Path | None = None) -> PipelineResult:
-    """跑完整链路。signed_by 为空 → 停在签字门，不入库。"""
+        experience_root: Path | None = None,
+        signature: dict | None = None,
+        now: float | None = None) -> PipelineResult:
+    """跑完整链路。signed_by 为空 → 停在签字门，不入库。
+
+    P0-3：`signature` 透传给 Z2 decide 与 Z4 write_entry（同一签名对象，
+    两次分别按各自 kind/item_id 验签）；未提供时按渐进模式记录 verified=False。
+    """
     card = E.create_card(hypothesis=hypothesis,
                          candidate_diff=candidate_diff,
                          adversary_diff=adversary_diff,
@@ -79,7 +85,8 @@ def run(hypothesis: str,
         return result
 
     adopt = bool(table.get("candidate_better"))
-    E.decide(card, adopt=adopt, signed_by=signed_by, reason=reason)
+    E.decide(card, adopt=adopt, signed_by=signed_by, reason=reason,
+             signature=signature, now=now)
     R.reveal(review)                 # 决定后解盲
     R.apply_to_card(card, review)    # 解盲后回写（覆盖匿名期建议，带 reveal_map）
     cand = card.experience_candidate
@@ -91,6 +98,8 @@ def run(hypothesis: str,
         confidence=cand["confidence"],
         signed_by=signed_by,
         root=experience_root,
+        signature=signature,
+        now=now,
     )
     result.decision_required = False
     result.note = "已签字 → 经验入库 %s" % result.entry.entry_id

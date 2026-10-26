@@ -54,3 +54,70 @@ def test_invalid_role_rejected(capsys):
     with pytest.raises(SystemExit) as excinfo:
         main(["--role", "not_a_role"])
     assert excinfo.value.code != 0
+
+
+# ---------------- P0-4 回归（WO-LEGION-P0FIX-20261026）----------------
+# 三个真实断点：①总线进程不 register → 上报必判“伪署名”进死信；
+# ②赵云 report_to=principal（非注册席）→ 只落 delivered=false 并挂起；
+# ③entrypoint 从不注入 state_path → 生产启动即无持久化。
+
+def test_zhao_yun_reports_to_tian_feng():
+    """赵云问题单归口田丰，且目标必须是已知席位（不是 principal 伪目标）。"""
+    assert entrypoint.REPORT_TO["zhao_yun"] == "tian_feng"
+    assert entrypoint.REPORT_TO["zhao_yun"] in entrypoint.KNOWN_ROLES
+
+
+def test_message_bus_registers_known_seats(monkeypatch, capsys):
+    import roles.message_bus as mb
+
+    seen = {}
+    real_init = mb.MessageBus.__init__
+
+    def spy_init(self, *a, **kw):
+        real_init(self, *a, **kw)
+        real_register = self.register
+
+        def record(name, level):
+            seen[name] = level
+            return real_register(name, level)
+
+        self.register = record
+
+    monkeypatch.setattr(mb.MessageBus, "__init__", spy_init)
+    rc = entrypoint.main(["--role", "message_bus"])
+    assert rc == 0
+    assert seen == entrypoint.SEAT_LEVELS, "总线未按 SEAT_LEVELS 注册席位"
+
+
+def _spy_seat_module(monkeypatch, captured):
+    import sys
+    import types
+
+    class SpySeat:
+        def __init__(self, **kw):
+            captured.update(kw)
+
+    fake = types.ModuleType("roles.zhao_yun_spy")
+    fake.ZhaoYun = SpySeat
+    monkeypatch.setitem(sys.modules, "roles.zhao_yun_spy", fake)
+    monkeypatch.setitem(entrypoint.SEAT_CLASSES, "zhao_yun",
+                        ("roles.zhao_yun_spy", "ZhaoYun"))
+
+
+def test_zhao_yun_state_path_env_injected(monkeypatch, capsys):
+    captured = {}
+    _spy_seat_module(monkeypatch, captured)
+    monkeypatch.setenv(entrypoint.ZHAO_YUN_STATE_ENV, r"C:\tmp\zhao_state.json")
+    rc = entrypoint.main(["--role", "zhao_yun"])
+    assert rc == 0
+    assert captured.get("state_path") == r"C:\tmp\zhao_state.json"
+    assert captured.get("report_to") == "tian_feng"
+
+
+def test_zhao_yun_state_path_absent_keeps_memory_mode(monkeypatch, capsys):
+    captured = {}
+    _spy_seat_module(monkeypatch, captured)
+    monkeypatch.delenv(entrypoint.ZHAO_YUN_STATE_ENV, raising=False)
+    rc = entrypoint.main(["--role", "zhao_yun"])
+    assert rc == 0
+    assert "state_path" not in captured  # 缺省零副作用：纯内存
