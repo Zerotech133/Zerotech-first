@@ -44,3 +44,18 @@
 - 仅影响 sync `/api/chat`（前端不使用）；UI/默认满宠不变；
 - 依赖 `hermes_constants.set_hermes_home_override` 上下文 API，异常路径已 try/except 收敛；
 - 后续 Hermes 升级若替换 `routes.py`，需重新评估/重放本补丁（本文件为锚点）。
+
+## 7. 审计 B 收口补充（2026-10-26 22:1x）
+
+- **S-02 边界（已知、低风险）**：本补丁只给 sync 线程装 `hermes_constants` 的 contextvar override，
+  **未像流式路径那样镜像 `HERMES_HOME`/profile `.env` 到环境变量**；因此 sync 轮内由 terminal 工具
+  拉起的子进程（hermes CLI/命令）仍可能读 default profile。当前 tianfeng/zhaoyun/zhuge 均无
+  `.env` 凭据，影响低；后续若 profile 加凭据或 sync 需要 spawn 子进程，应参照 streaming 的
+  `_build_agent_thread_env` 对齐。
+- **S-06 回滚注意**：回滚资产 `Hermes/hermes-webui` 未含本补丁；`HermesWebUI-Guard` 的触发器已过期
+  不再轮值（实际守护=Guard2/Guard30）；7 个计划任务的注册命令目前只存在于
+  `work/_dsh_p25_20261026/ACTIVATE.md` 与 `C:\Temp\*.ps1`，未版本化；建议后续把任务注册脚本
+  收进仓库 `tools/`（ASCII 参数路径 + UAC 说明）。
+- **实际进程记录**：20:15 UAC 换血后 PID=47992；21:08:05 因 `.hermes/config.yaml` 修改后
+  手工启动 Guard 再换血为 **PID=57208（session 0）**，routes.py mtime 20:12:34 < 21:08:05，
+  补丁仍在（22:16 复验 sync：tianfeng→田丰、default→满宠，ok=true）。
