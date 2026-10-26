@@ -3123,6 +3123,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_analysis
             api_analysis.handle_get(self, path, qs)
             return
+        if path.startswith('/api/jev/'):
+            # 2026-10-26 JEVAPI：JEV 判定只读查询（独立文件 api_jev.py；Hermes MCP 消费）
+            import api_jev
+            api_jev.handle_get(self, path, qs)
+            return
         if path == '/api/intel/evidence-targets':
             self._intel_evidence_targets(qs)
             return
