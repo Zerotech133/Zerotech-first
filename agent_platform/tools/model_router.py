@@ -91,13 +91,31 @@ def invoke(messages: list, purpose: str = "governance", prefer: list | None = No
                    "elapsed_ms": int((time.time() - t0) * 1000),
                    "attempts": attempts, "text": text}
             _log_usage("model-routing", purpose, model, True)
+            _record_llm(model, purpose, True, t0)
             return rec
         except Exception as e:  # noqa: BLE001
             attempts.append({"model": model, "error": "%s: %s"
                              % (type(e).__name__, str(e)[:120]),
                              "elapsed_ms": int((time.time() - t0) * 1000)})
             _log_usage("model-routing", purpose, model, False)
+            _record_llm(model, purpose, False, t0, str(e))
     return {"ok": False, "model": None, "used": False, "attempts": attempts}
+
+
+def _record_llm(model: str, purpose: str, ok: bool, t0: float,
+                err: str = "") -> None:
+    """LLM 调用留证（trace span，字段按 OTel GenAI 命名；无 token 统计时成本=0）。"""
+    try:
+        sys.path.insert(0, str(PLATFORM))
+        from observability import trace as tr  # noqa: WPS433
+        tr.record(tr.trace_id(), "llm.call", "llm", start=t0, end=time.time(),
+                  status="ok" if ok else "error",
+                  attrs={"gen_ai.operation.name": "chat",
+                         "gen_ai.request.model": model,
+                         "zhaoyun.purpose": purpose,
+                         "error": str(err or "")[:120]})
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _log_usage(capability: str, purpose: str, model: str, ok: bool) -> None:

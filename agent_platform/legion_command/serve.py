@@ -272,6 +272,14 @@ class Handler(BaseHTTPRequestHandler):
                 elif sub == "overrides":
                     from legion_command import zhaoyun_cap2 as c2
                     self._send_json(c2.overrides(_PLATFORM))
+                elif sub == "traces":
+                    sys.path.insert(0, str(_PLATFORM))
+                    from observability import trace as tr
+                    self._send_json(tr.list_traces(50))
+                elif re.fullmatch(r"trace/[0-9a-f]{8,64}", sub):
+                    sys.path.insert(0, str(_PLATFORM))
+                    from observability import trace as tr
+                    self._send_json(tr.get_trace(sub.split("/", 1)[1]))
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -288,6 +296,13 @@ class Handler(BaseHTTPRequestHandler):
                             c2.log_usage(_PLATFORM, cap, "page")
                         except Exception:            # noqa: BLE001
                             usage = {"ok": False}
+                        try:
+                            from observability import trace as tr
+                            tr.record(tr.trace_id(), "cap.drill", "tool",
+                                      attrs={"zhaoyun.capability": cap,
+                                             "zhaoyun.source": "page"})
+                        except Exception:            # noqa: BLE001
+                            pass
                         self._send_json({"ok": True, "capability": row,
                                          "usage": usage})
                 else:
@@ -534,6 +549,15 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:                       # noqa: BLE001
                 res = {"ok": False, "error": "approve_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            try:
+                from observability import trace as tr
+                tr.record(tr.trace_id(), "approval", "approval", attrs={
+                    "zhaoyun.approval_id": str(req.get("id") or ""),
+                    "zhaoyun.decision": str(req.get("decision") or ""),
+                    "zhaoyun.result": "ok" if res.get("ok") else "error",
+                    "zhaoyun.applied": bool((res.get("request") or {}).get("applied"))})
+            except Exception:                            # noqa: BLE001
+                pass
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/request":
