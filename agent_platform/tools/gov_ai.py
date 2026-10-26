@@ -110,7 +110,7 @@ SYSTEM_PROMPTS = {
         "你是治理席的判例起草助手。只输入一个人工整理的真实事件证据包（JSON）。\n"
         "任务：起草 Z4 四字段经验（cue/lesson/evidence/confidence）。\n"
         "硬规则：\n"
-        "1) 只输出 {\"items\": [...]}；每项字段：cue, lesson, evidence, confidence, "
+        "1) 只输出 {\"items\": [...]}；每项字段：cue, lesson, evidence(必须是数组，元素形如 bundle:<条目id>), confidence, "
         "可选 solidify_point, category；\n"
         "2) evidence 必须引用证据包条目，形如 bundle:<条目id>；禁止引用包外内容；\n"
         "3) 不得编造事件、数字、提交号；证据不足 confidence ≤0.4；\n"
@@ -275,7 +275,8 @@ def build_health_input(now: Optional[float] = None) -> dict:
 def build_case_input(bundle_path: str) -> dict:
     """人工证据包（真实事件），schema 见设计文档 §4.3。"""
     try:
-        raw = json.loads(Path(bundle_path).read_text(encoding="utf-8"))
+        # utf-8-sig：容忍 Windows 编辑器/Set-Content 写的 BOM（GOVAI2FIX 实证）
+        raw = json.loads(Path(bundle_path).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
         raise GovAiError("证据包不可读：%s" % _sanitize(exc)) from None
     if not isinstance(raw, dict) or raw.get("schema") != "governance_case_bundle/v1":
@@ -353,8 +354,13 @@ def validate_items(action: str, items: Any, payload: dict) -> dict:
             notes.append("%s confidence 越界" % tag)
             continue
         kept["confidence"] = round(conf, 3)
-        # evidence 结构
-        evidence = kept.get("evidence") or []
+        # evidence 结构（GOVAI2FIX：模型偶尔返回字符串，归一为单元素数组，
+        # 接地规则不放宽——字符串同样要过前缀/引用校验）
+        evidence = kept.get("evidence")
+        if isinstance(evidence, str):
+            evidence = [evidence]
+            notes.append("%s evidence 为字符串，已归一为数组" % tag)
+        evidence = evidence or []
         if not isinstance(evidence, list):
             schema_ok = False
             notes.append("%s evidence 不是数组" % tag)

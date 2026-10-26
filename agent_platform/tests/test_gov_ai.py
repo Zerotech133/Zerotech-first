@@ -416,3 +416,31 @@ def test_run_all_aggregates_actions(monkeypatch, tmp_path):
     assert calls == ["anomaly_digest", "priority_advice"]
     assert [a["action"] for a in out["actions"]] == calls
     assert out["health"]["level"] in ("yellow", "green")
+
+
+# ---------------- GOVAI2FIX：BOM 容忍 / evidence 字符串归一 ----------------
+
+def test_build_case_input_tolerates_bom(tmp_path):
+    bundle = tmp_path / "b.json"
+    data = {"schema": "governance_case_bundle/v1", "timeline": [{"id": "E1"}]}
+    bundle.write_text("\ufeff" + json.dumps(data), encoding="utf-8")
+    payload = G.build_case_input(str(bundle))
+    assert payload["known_bundle_ids"] == ["E1"]
+
+
+def test_validate_normalizes_string_evidence():
+    payload = {"known_tasks": ["AlertWatch"]}
+    item = {"title": "x", "hypothesis": "y", "evidence": "task:AlertWatch",
+            "confidence": 0.6}
+    r = G.validate_items("anomaly_digest", [item], payload)
+    assert r["ok"] is True
+    assert r["items"][0]["evidence"] == ["task:AlertWatch"]
+    assert any("归一为数组" in n for n in r["notes"])
+
+
+def test_validate_string_evidence_still_grounded():
+    payload = {"known_tasks": ["AlertWatch"]}
+    item = {"title": "x", "hypothesis": "y", "evidence": "task:NotARealTask",
+            "confidence": 0.6}
+    r = G.validate_items("anomaly_digest", [item], payload)
+    assert r["ok"] is False and r["grounding_ok"] is False
