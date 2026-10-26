@@ -157,15 +157,25 @@ def build_view(platform: Path) -> dict:
                          "severity": "high" if len(stale) >= 3 else "medium",
                          "detail": "；".join("%s(%sh,%s)" % (r["tid"], r["age_h"], r["owner"]) for r in stale[:4]),
                          "next": "逐单收口/认领/abort，明确 owner 与验收"})
-    try:
-        e2e = json.loads((repo / "work" / "_dsh_mobile_e2e" / "mobile-e2e-auto.json").read_text(encoding="utf-8"))
-        auth = (e2e.get("auth") or {})
-        if "20029" in json.dumps(auth, ensure_ascii=False) or (auth.get("markers") or {}).get("redirect_invalid"):
-            blockers.append({"type": "外部依赖", "name": "飞书回调白名单未生效", "severity": "high",
-                             "detail": "授权页 20029 redirect_uri 不合法",
-                             "next": "老田后台加白名单或开通 application:application:patch 后自动加"})
-    except Exception:
-        pass
+    e2e_candidates = [
+        repo / "work" / "_dsh_mobile_e2e" / "mobile-e2e-auto.json",
+        repo.parent / "work" / "_dsh_mobile_e2e" / "mobile-e2e-auto.json",
+    ]
+    e2e_path = next((p for p in e2e_candidates if p.exists()), None)
+    if e2e_path:
+        try:
+            e2e = json.loads(e2e_path.read_text(encoding="utf-8"))
+            auth = (e2e.get("auth") or {})
+            if "20029" in json.dumps(auth, ensure_ascii=False) or (auth.get("markers") or {}).get("redirect_invalid"):
+                blockers.append({"type": "外部依赖", "name": "飞书回调白名单未生效", "severity": "high",
+                                 "detail": "授权页 20029 redirect_uri 不合法（自动检测 %s）" % e2e_path.name,
+                                 "next": "老田后台加白名单或开通 application:application:patch 后自动加"})
+        except Exception:
+            pass
+    else:
+        blockers.append({"type": "外部依赖", "name": "手机 E2E 待验证", "severity": "medium",
+                         "detail": "未找到 mobile-e2e-auto.json；OAuth 白名单/真机验证未完成",
+                         "next": "跑 work/_dsh_mobile_e2e/run_auto_e2e.py 并补白名单"})
     blockers.append({"type": "治理", "name": "P2c 全量暂缓", "severity": "info",
                      "detail": "老田 22:5x 决策：P2c 暂缓（仅 P2a/P2b 已跑）",
                      "next": "手机 E2E + GLM 样例 + P2b 观察后再议"})
