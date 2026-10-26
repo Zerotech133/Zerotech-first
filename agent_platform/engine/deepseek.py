@@ -34,7 +34,23 @@ KEY_ENV = "DEEPSEEK_API_KEY"
 KEY_FILE_ENV = "DEEPSEEK_API_KEY_FILE"
 
 _REPO = Path(__file__).resolve().parents[2]          # <repo>/agent_platform/engine -> <repo>
-DEFAULT_KEY_FILE = _REPO.parent / "_vault" / "secrets" / "deepseek_api_key.txt"
+
+
+def _find_default_key_file() -> Path:
+    """向上搜索 `<workspace>/_vault/secrets/deepseek_api_key.txt`。
+
+    生产布局：repo=<workspace>/老田的AI助手，workspace 即 repo 的父目录；
+    worktree 布局：repo=<main repo>/.worktrees/<TID>，工作区根在更上层。
+    二者统一按"最近的含 _vault 的祖先"解析，找不到退回 repo 父目录约定路径。
+    """
+    for base in (_REPO, *_REPO.parents):
+        cand = base / "_vault" / "secrets" / "deepseek_api_key.txt"
+        if cand.is_file():
+            return cand
+    return _REPO.parent / "_vault" / "secrets" / "deepseek_api_key.txt"
+
+
+DEFAULT_KEY_FILE = _find_default_key_file()
 
 _SK_RE = re.compile(r"sk-[A-Za-z0-9_\-]{6,}")
 
@@ -125,15 +141,14 @@ class DeepSeekClient:
 
     # ---------------- 公共 API ----------------
 
-    def chat(self, messages: list[dict], model: Optional[str] = None,
-             temperature: float = 0.2, max_tokens: int = 800,
-             response_format: Optional[dict] = None) -> str:
-        """发一轮对话，返回 assistant 正文。
+    def chat_full(self, messages: list[dict], model: Optional[str] = None,
+                  temperature: float = 0.2, max_tokens: int = 800,
+                  response_format: Optional[dict] = None) -> dict:
+        """发一轮对话，返回 ``{content, usage, model, finish_reason}``。
 
         注意（LLMDEEPSEEKFIX2 实证）：deepseek 系列为**推理模型**，响应含
         ``reasoning_content``，其 token 与正文共用 ``max_tokens`` 预算；短回复场景
-        （如自检）预算过小会被推理吃光而正文为空。调用方应按任务给足预算
-        （一句话级 ≥64，结构化抽取 ≥512）。
+        预算过小会被推理吃光而正文为空。一句话级 ≥64，结构化抽取 ≥512。
         """
         payload: dict = {"model": model or self.model, "messages": list(messages),
                          "temperature": float(temperature),
@@ -142,9 +157,22 @@ class DeepSeekClient:
             payload["response_format"] = response_format
         data = self._request("POST", "/chat/completions", payload)
         try:
-            return str(data["choices"][0]["message"]["content"])
+            choice = data["choices"][0]
+            content = choice["message"]["content"]
         except (KeyError, IndexError, TypeError):
             raise DeepSeekError("DeepSeek 响应结构异常（缺 choices[0].message.content）") from None
+        return {"content": str(content),
+                "usage": data.get("usage") or {},
+                "model": data.get("model") or (model or self.model),
+                "finish_reason": choice.get("finish_reason")}
+
+    def chat(self, messages: list[dict], model: Optional[str] = None,
+             temperature: float = 0.2, max_tokens: int = 800,
+             response_format: Optional[dict] = None) -> str:
+        """发一轮对话，返回 assistant 正文（需要 usage 用 chat_full）。"""
+        return self.chat_full(messages, model=model, temperature=temperature,
+                              max_tokens=max_tokens,
+                              response_format=response_format)["content"]
 
     def models(self) -> list[str]:
         data = self._request("GET", "/models")

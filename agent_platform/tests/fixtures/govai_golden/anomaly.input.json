@@ -1,0 +1,14 @@
+{
+  "action": "anomaly_digest",
+  "payload": {
+    "as_of": "2026-10-26T09:56:00+08:00",
+    "hours": 24.0,
+    "counts": {"total_scanned": 46, "ok": 38, "failed": 0, "upstream_hold": 1, "disabled": 3, "never_run": 2},
+    "failures": [],
+    "upstream": [{"name": "AlertWatch", "last_result": 3, "exit_semantics": "上游不可信", "last_run": "2026-10-26 09:45:00"}],
+    "cancelled_tasks": [{"name": "AgentMondayCheckpoint", "last_result": 3221225786, "exit_semantics": "被取消", "last_run": "2026-10-19 17:25:00"}],
+    "terminated_tasks": [{"name": "NoticeBackfill", "last_result": 267014, "exit_semantics": "被终止", "last_run": "2026-10-25 06:45:01"}],
+    "window": {"window_hours": 24.0, "new_failures": [], "persisting_failures": [], "fixed_in_window": ["HermesBriefPush"]},
+    "known_tasks": ["AlertWatch", "AgentMondayCheckpoint", "NoticeBackfill", "HermesBriefPush"]
+  }
+}
