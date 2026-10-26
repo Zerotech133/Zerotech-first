@@ -80,6 +80,10 @@ REGISTRY = {
     8099: "KM知识库飞书联动(portal/km_feishu_hub.py)",
     # 8796=军团指挥台(agent_platform/legion_command/serve.py)，HKCU Run 用户级自启。
     8796: "军团指挥台(legion_command/serve.py)",  # 按需自启（HKCU Run），同 8030 手动语义：strict 只防抢占，不因未运行判负
+    # 8795=军团网关 HTTP 通道（OSLINK-W4 §二 契约端口，gateway/serve.py）。默认不启动；
+    # 2026-10-26 老田批准 Scope A 隔离验收后入册（K-QUANT-20261026-OSLEG-8795PREP），
+    # 按需语义同 8796：strict 只防抢占、不因闲置判负。
+    8795: "军团网关(gateway/serve.py)",
     8791: "图谱数据看板(kg_data_dashboard.py)",
     8898: "res-downloader 自用工具(uvicorn)",
     18899: "res-downloader 自用工具(uvicorn)",
@@ -219,6 +223,9 @@ OPTIONAL_OFFLINE |= {3000, 8095, 8123, 8734, 8888, 9899, 15000, 15432, 16379}
 # 这些都是「按需启停」语义，strict 只该防抢占，不该因闲置判负。
 # 教训：把「未登记」与「在册服务离线」混在一个返回码里，会让合并门天天误报。
 OPTIONAL_OFFLINE |= {1234, 1238, 8898, 18899}
+# 2026-10-26 K-QUANT-20261026-OSLEG-8795PREP：8795=W4 军团网关（默认不启，
+# 隔离验收/按需语义同 8796；strict 语义=防抢占、不因闲置判负）。
+OPTIONAL_OFFLINE |= {8795}
 
 
 def main():

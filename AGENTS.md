@@ -11,7 +11,7 @@
 
 ## 1. 端口铁律（不许互抢）
 
-- **唯一权威注册表**：`tools/check_ports.py` 的 `REGISTRY` dict（**50 口在册**，以 REGISTRY 为准；K-STOCK-115 收编后，2026-10-26 实测 `python tools/check_ports.py` 汇总=注册 50 个）。
+- **唯一权威注册表**：`tools/check_ports.py` 的 `REGISTRY` dict（**51 口在册**，以 REGISTRY 为准；K-STOCK-115 收编后，2026-10-26 实测 `python tools/check_ports.py` 汇总=注册 51 个）。
 - 起新服务前：① 先查 REGISTRY——被占用即换；② 用 `python tools/devtask.py port <服务名>` 申请分配；③ 分配到后**必须**把端口+服务名写回 check_ports.py REGISTRY（同一提交内）。
 - 一律绑 `127.0.0.1`，对外暴露走 nginx 反代（052 收敛既定）。
 - 违规自查：`python tools/check_ports.py`（--strict 供 CI）。
