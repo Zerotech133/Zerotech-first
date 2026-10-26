@@ -1,0 +1,33 @@
+{
+ "schema": "eval_harness/quality_tasks/v1",
+ "tasks": [
+  {
+   "id": "quality-math",
+   "desc": "LLM 质量：1+1=2 解释",
+   "type": "quality",
+   "input": [
+    {
+     "role": "user",
+     "content": "请用一句话解释 1+1=2。"
+    }
+   ],
+   "rubric": "结论正确、解释简洁、无事实错误",
+   "min_score": 3,
+   "timeout": 120
+  },
+  {
+   "id": "quality-steps",
+   "desc": "LLM 质量：三步放冰箱",
+   "type": "quality",
+   "input": [
+    {
+     "role": "user",
+     "content": "如何把大象放进冰箱？请给三个步骤。"
+    }
+   ],
+   "rubric": "步骤清晰、可执行、符合常识",
+   "min_score": 3,
+   "timeout": 120
+  }
+ ]
+}

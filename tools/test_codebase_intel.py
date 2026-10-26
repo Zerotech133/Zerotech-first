@@ -15,13 +15,13 @@ def test_map_search_impact(tmp_path):
         "def helper():\n    '''工具函数'''\n    return 1\n", encoding="utf-8")
     (tmp_path / "app.py").write_text("from pkg.core import Engine\n\nEngine().run()\n",
                                       encoding="utf-8")
-    data = C.build_map(tmp_path)
+    data = C.build_map(tmp_path, scope=[], use_cache=False)
     assert data["file_count"] >= 3
     names = {s["name"] for s in data["symbols"]}
     assert {"Engine", "run", "helper"} <= names
-    hits = C.search("helper", tmp_path)
+    hits = C.search("helper", tmp_path, scope=[])
     assert hits and hits[0]["name"] == "helper"
-    ref = C.refs("Engine", tmp_path)
+    ref = C.refs("Engine", tmp_path, scope=[])
     assert any(x["path"] == "app.py" for x in ref)
-    imp = C.impact("pkg/core.py", tmp_path)
+    imp = C.impact("pkg/core.py", tmp_path, scope=[])
     assert any(x["path"] == "app.py" for x in imp["importers"])
