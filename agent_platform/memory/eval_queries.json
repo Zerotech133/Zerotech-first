@@ -1,0 +1,16 @@
+{
+  "schema": "zhaoyun_memory_eval/v1",
+  "note": "检索评测 golden 集：query → 命中任一 expected_any 即算中；只看 top3",
+  "queries": [
+    {"query": "假成功 脚本报成功 目标未修改", "expected_any": ["假成功", "目标对象未被修改"]},
+    {"query": "快照假绿 LastTaskResult 失败拍成正常", "expected_any": ["快照假绿", "LastTaskResult"]},
+    {"query": "无对照 失败组比例归因", "expected_any": ["无对照", "对照组"]},
+    {"query": "检测器 自证 已知为真样本", "expected_any": ["检测器自证", "检测器"]},
+    {"query": "修复两个入口只改一个 修A漏B", "expected_any": ["修A漏B", "两个入口"]},
+    {"query": "窗口对比测试种子 now 相对偏移", "expected_any": ["种子", "窗口对比"]},
+    {"query": "零引用当删除依据 搜索静默失效", "expected_any": ["零引用", "删除依据"]},
+    {"query": "健康卡字段 schema 不一致", "expected_any": ["schema", "健康卡"]},
+    {"query": "只跑单测 认为问题已解决", "expected_any": ["单测", "问题已解决"]},
+    {"query": "模型空白输入 泛化建议", "expected_any": ["空白", "泛化建议"]}
+  ]
+}

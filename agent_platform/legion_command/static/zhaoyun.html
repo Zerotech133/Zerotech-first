@@ -130,6 +130,11 @@
     <div id="mcp"></div>
   </section>
 
+  <section>
+    <h2>记忆 v2（四层） <span id="memv2-sub">—</span> <span>working/episodic/semantic/procedural · 检索评测</span></h2>
+    <div id="memv2"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -521,7 +526,8 @@ function loadCap2() {
     jget('/api/zhaoyun/traces').catch(() => null),
     jget('/api/zhaoyun/evals').catch(() => null),
     jget('/api/zhaoyun/mcp').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp]) => {
+    jget('/api/zhaoyun/memory/v2').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -625,7 +631,51 @@ function loadCap2() {
     const pb = el('button', '', '探测 MCP（3 servers）');
     pb.onclick = probeMcp;
     mb.appendChild(pb);
+    const m2 = $('memv2'); m2.replaceChildren();
+    if (mem2 && mem2.ok) {
+      const L = mem2.layers || {};
+      $('memv2-sub').textContent = '共 ' + (mem2.total || 0) + ' 条 · semantic ' +
+        (L.semantic || 0) + ' · procedural ' + (L.procedural || 0) +
+        ' · episodic ' + (L.episodic || 0);
+      const ev = mem2.eval;
+      if (ev && ev.ok) {
+        m2.appendChild(el('div', 'muted', '检索评测：hit@1 ' + ev['hit@1'] + '/' + ev.total +
+          ' · hit@3 ' + ev['hit@3'] + '/' + ev.total + ' · MRR ' + ev.mrr));
+      } else m2.appendChild(el('div', 'muted', '检索评测：未运行'));
+      const row = el('div', 'row');
+      const inp = el('input'); inp.id = 'mem-q'; inp.placeholder = '检索记忆（中文/关键词）';
+      const sb = el('button', '', '检索'); sb.onclick = memSearch;
+      const ib = el('button', '', '摄取+评测'); ib.onclick = memIngest;
+      row.appendChild(inp); row.appendChild(sb); row.appendChild(ib);
+      m2.appendChild(row);
+    } else m2.appendChild(el('div', 'muted', '记忆 v2 不可用'));
   });
+}
+function memSearch() {
+  const q = ($('mem-q') || {}).value ? $('mem-q').value.trim() : '';
+  if (!q) { alert('请输入检索词'); return; }
+  fetch('/api/zhaoyun/memory/search', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: q, limit: 5 }) })
+    .then((r) => r.json()).then((j) => {
+      const box = $('memv2'); box.replaceChildren();
+      if (!j.ok) { box.appendChild(el('div', 'muted', '检索失败：' + (j.error || ''))); return; }
+      box.appendChild(el('div', 'muted', '检索「' + q + '」：' + j.count + ' 条（fts=' + j.used_fts + '）'));
+      (j.items || []).forEach((it) => box.appendChild(el('div', 'muted',
+        '• [' + it.layer + '] ' + it.cue + ' · score ' + it.score + (it.fts_hit ? ' · fts' : ''))));
+    }).catch((e) => alert('检索失败：' + e));
+}
+function memIngest() {
+  fetch('/api/zhaoyun/memory/ingest', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) {
+        alert('摄取完成：semantic+' + ((j.experience || {}).added || 0) +
+          ' procedural+' + ((j.skills || {}).added || 0) +
+          ((j.eval && j.eval.ok) ? (' · hit@3 ' + j.eval['hit@3'] + '/' + j.eval.total) : ''));
+        loadCap2();
+      } else alert('摄取失败：' + (j.error || ''));
+    }).catch((e) => alert('摄取失败：' + e));
 }
 function probeMcp() {
   fetch('/api/zhaoyun/mcp/probe', { method: 'POST',

@@ -290,6 +290,10 @@ class Handler(BaseHTTPRequestHandler):
                     sys.path.insert(0, str(_PLATFORM))
                     from mcp import registry as mreg
                     self._send_json(mreg.summary())
+                elif sub == "memory/v2":
+                    sys.path.insert(0, str(_PLATFORM))
+                    from memory import store as ms
+                    self._send_json(ms.stats())
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -611,6 +615,48 @@ class Handler(BaseHTTPRequestHandler):
                 res = {"ok": False, "error": "mcp_call_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
             self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/memory/search":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from memory import store as ms  # noqa: WPS433
+                res = ms.search(str(req.get("q") or ""),
+                                layer=str(req.get("layer") or "") or None,
+                                limit=int(req.get("limit") or 5))
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "memory_search_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/memory/ingest":
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from memory import store as ms  # noqa: WPS433
+                res = ms.ingest_all()
+                res["eval"] = ms.run_eval()
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "memory_ingest_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 500)
+            return
+        if path == "/api/zhaoyun/memory/eval":
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from memory import store as ms  # noqa: WPS433
+                res = ms.run_eval()
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "memory_eval_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 500)
             return
         if path == "/api/zhaoyun/request":
             # WO-ZHAOYUN-DRILL：调整类动作只登记请求（pending_human），不自动改真源
