@@ -232,6 +232,35 @@ def search(query: str, domain: str | None = None, root: Path | None = None,
     return hits[:limit]
 
 
+def public_summary(root: Path | None = None, recent: int = 5) -> dict:
+    """只读消费入口（P1 接线）：经验库统计 + 最近条目摘要。
+
+    只暴露身份/统计/短 cue，**不返回 lesson 正文**；风控域（riskguard）可读、
+    不可写（写入口在 write_entry 已硬拒），本函数不区分调用方、不写盘。
+    """
+    base = _root(root)
+    rows = _load_index(base)
+    domains = {d: {"entries": 0, "verified": 0, "readonly": d in READONLY_DOMAINS}
+               for d in DOMAINS}
+    for row in rows:
+        d = str(row.get("domain") or "")
+        if d in domains:
+            domains[d]["entries"] += 1
+            if row.get("verified"):
+                domains[d]["verified"] += 1
+    ordered = sorted(rows, key=lambda r: str(r.get("written_at") or ""), reverse=True)
+    latest = [{
+        "entry_id": r.get("entry_id"), "domain": r.get("domain"),
+        "cue": str(r.get("cue") or "")[:80], "confidence": r.get("confidence"),
+        "signed_by": r.get("signed_by"), "written_at": r.get("written_at"),
+        "verified": bool(r.get("verified")),
+    } for r in ordered[:max(0, int(recent))]]
+    verified_total = sum(1 for r in rows if r.get("verified"))
+    return {"entries_total": len(rows), "verified_total": verified_total,
+            "domains": domains, "recent": latest,
+            "latest_signed_at": latest[0]["written_at"] if latest else None}
+
+
 def _demo(tmp: Path) -> int:
     """Z4 验收演示：写一条真实验→检索命中→打印落盘片段（临时根，不污染真库）。"""
     e = write_entry(
