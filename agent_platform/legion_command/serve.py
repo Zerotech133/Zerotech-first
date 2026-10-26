@@ -302,6 +302,10 @@ class Handler(BaseHTTPRequestHandler):
                     sys.path.insert(0, str(_PLATFORM))
                     from notify import outbox as ob
                     self._send_json(ob.recent())
+                elif sub == "research":
+                    sys.path.insert(0, str(_PLATFORM))
+                    from research import web as rw
+                    self._send_json(rw.recent_citations())
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -741,6 +745,26 @@ class Handler(BaseHTTPRequestHandler):
                 res = {"ok": False, "error": "request_not_found", "id": rid if "rid" in dir() else ""}
             except Exception as e:                       # noqa: BLE001
                 res = {"ok": False, "error": "approval_card_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/research/fetch":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from research import web as rw  # noqa: WPS433
+                res = rw.fetch(str(req.get("url") or ""),
+                               force=bool(req.get("force")))
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "research_fetch_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
             self._send_json(res, 200 if res.get("ok") else 400)
             return
