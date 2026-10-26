@@ -34,3 +34,8 @@ none（运行时规则执行体，非 LLM 判别席；不参与判读与决策�
 - 本席无工具、无持久化写入/授权：不产生需回滚的系统变更；
 - 停用=平台侧将本席移出调用链（其建议草案作废重出），无进程/任务需清理；
 - 若后续授予工具：必须同时提供 kill switch 与卸载路径，方可上线。
+
+## 工具（已授予）
+- `service_probe`（只读多目标探活）：按 `agent_platform/config/service_probe_targets.json` 中本席目标探测（HTTP /health 或数据目录新鲜度），写 `agent_platform/data/service_probe/<席>/` 与 `dev_events` 的 `patrol_verdict`（task=agent=席码）。**不写业务、不发消息、不重启服务。**
+- 运行方式：`python agent_platform/tools/service_probe.py --targets all --quiet`（计划任务）。
+- 回滚：`SERVICE_PROBE=off` kill switch；卸载计划任务 `SeatServiceProbe` 即停。
