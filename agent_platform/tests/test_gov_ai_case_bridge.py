@@ -191,3 +191,42 @@ def test_apply_unknown_domain_rejected(tmp_path, monkeypatch):
     with pytest.raises((S.StoreError, SG.SignatureError, B.BridgeError)):
         B.apply(out, experience_root=tmp_path / "lib")
     assert not (tmp_path / "lib").exists()
+
+
+def test_emit_offset_reserves_ids_for_presigned_cards(tmp_path):
+    """7 卡预分配 001-007 时，case 批次 offset=7 应从 008 起（防 id 撞车）。"""
+    draft = _draft(tmp_path)
+    out = tmp_path / "req"
+    payloads = B.emit(draft, out, offset=7)
+    assert [p["item_id"] for p in payloads] == ["EXP-SUPERVISION-008",
+                                                "EXP-SUPERVISION-009"]
+    # offset 不影响内容指纹，仅影响 item_id/canonical
+    assert payloads[0]["fingerprint"] == SG.fingerprint_of({
+        "domain": "supervision", "cue": _DRAFT_ITEMS[0]["cue"],
+        "lesson": _DRAFT_ITEMS[0]["lesson"],
+        "evidence": "; ".join(_DRAFT_ITEMS[0]["evidence"]),
+        "confidence": 0.7})
+
+
+def test_offset_apply_matches_after_cards_applied(tmp_path, monkeypatch):
+    """先入库 7 条（模拟 7 卡），再 offset=7 的 case payload 应能顺利 apply。"""
+    lib = tmp_path / "library"
+    for i in range(7):
+        S.write_entry(domain="supervision", cue="预置判例 %d" % i, lesson="l",
+                      evidence="e", confidence=0.5, signed_by="老田", root=lib)
+    draft = _draft(tmp_path)
+    out = tmp_path / "req"
+    # 7 条已入库后 base=7；无需再传 offset（offset 只用于"尚未入库的预分配"）
+    payloads = B.emit(draft, out, experience_root=lib)
+    assert [p["item_id"] for p in payloads] == ["EXP-SUPERVISION-008",
+                                                "EXP-SUPERVISION-009"]
+    priv, pub = _keypair()
+    monkeypatch.setenv(SG.ENV_PUBKEY_HEX, pub)
+    monkeypatch.setenv(SG.ENV_STRICT, "1")
+    for p in payloads:
+        out.joinpath(p["item_id"] + ".signature.json").write_text(
+            json.dumps(_sign_payload(p, priv)), encoding="utf-8")
+    entries = B.apply(out, experience_root=lib)
+    assert [e["entry_id"] for e in entries] == ["EXP-SUPERVISION-008",
+                                                "EXP-SUPERVISION-009"]
+    assert all(e["verified"] is True for e in entries)
