@@ -101,3 +101,31 @@ def test_provider_packing():
     assert router_mod._pack("glm/glm-5.3", ["x"])["provider"] == "cloud-zhipu"
     assert router_mod._pack("nova/1234", ["x"])["provider"] == "special-novamax"
     assert router_mod._pack("ollama/qwen3.5:9b", ["x"])["provider"] == "local-ollama"
+    assert router_mod._pack("openai/gpt-6.0", ["x"])["provider"] == "cloud-openai"
+
+
+# ---------------------------------------------------------------- 异族绑定（B 案）
+
+def test_route_exotic_ai1_openai():
+    """AI1=诸葛亮：10-21 异族编制裁决优先于关键词/等级/旧 glm 注册绑定"""
+    r = router_mod.route("方法论研究与评测", agent_id="AI1", respect_binding="auto")
+    assert r["binding"] == "openai/gpt-6.0"
+    assert "异族编制裁决" in r["reason"]
+    # 即使显式传了 10-18 的 glm 旧档，也以异族裁决为准
+    r2 = router_mod.route("随便什么任务", agent_id="AI1",
+                          respect_binding="glm/glm-5.3")
+    assert r2["binding"] == "openai/gpt-6.0"
+
+
+def test_auto_assign_ai1_openai():
+    """auto_assign 不得把 AI1 从 openai 改回 glm（10-26 B 案回归）"""
+    roster = [
+        {"agent_id": "AI1", "role_profile": "ai_methodology_researcher",
+         "grade": "E3", "dept": "academy", "binding": "glm/glm-5.3"},
+        {"agent_id": "A0", "role_profile": "chief_of_staff", "grade": "E3",
+         "dept": "chief", "binding": "glm/glm-5.3"},
+    ]
+    out = router_mod.auto_assign(roster, apply=False)
+    m = {o["agent_id"]: o for o in out}
+    assert m["AI1"]["new"] == "openai/gpt-6.0" and m["AI1"]["changed"]
+    assert m["A0"]["new"] == "glm/glm-5.3" and not m["A0"]["changed"]

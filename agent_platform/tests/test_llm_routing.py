@@ -70,6 +70,75 @@ def test_make_llm_routes_glm_cloud():
     assert l.ENDPOINT.startswith("https://open.bigmodel.cn")
 
 
+def test_make_llm_routes_openai():
+    """2026-10-21 异族编制裁决：openai/ → OpenAILLM（B 案 10-26）"""
+    l = llm_mod.make_llm("openai/gpt-6.0")
+    assert isinstance(l, llm_mod.OpenAILLM)
+    assert l.model == "gpt-6.0"
+
+
+def test_openai_no_key_raises(monkeypatch):
+    """key 缺失必须抛 LLMError，不静默降档本地（异族席位纪律）"""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_GPT6_KEY", raising=False)
+    try:
+        llm_mod.OpenAILLM().chat("s", "u")
+        raised = False
+    except llm_mod.LLMError:
+        raised = True
+    assert raised, "openai key 缺失应抛 LLMError"
+
+
+def test_openai_chat_parses_response(monkeypatch):
+    """离线校验 OpenAI 兼容请求体/鉴权头/响应解析（零网络）"""
+    captured = {}
+
+    class FakeResp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return json.dumps({
+                "choices": [{"message": {"content": "ok"},
+                             "finish_reason": "stop"}],
+                "usage": {"total_tokens": 3},
+            }).encode("utf-8")
+
+    class FakeOpener:
+        def open(self, req, timeout=None):
+            captured["body"] = json.loads(req.data.decode("utf-8"))
+            captured["auth"] = req.headers.get("Authorization")
+            captured["timeout"] = timeout
+            return FakeResp()
+
+    monkeypatch.setattr(llm_mod.urllib.request, "build_opener",
+                        lambda handler=None: FakeOpener())
+    text, status = llm_mod.OpenAILLM(api_key="test-key").chat("s", "u")
+    assert text == "ok" and status == "normal"
+    assert captured["body"]["model"] == "gpt-6.0"
+    assert captured["body"]["messages"][0]["role"] == "system"
+    assert captured["auth"] == "Bearer test-key"
+
+
+def test_ollamallm_delegates_openai_prefix(monkeypatch):
+    """OllamaLLM 兼容门面：openai/ 前缀应委托 OpenAILLM（不误走本地）"""
+    called = {}
+
+    class FakeOpenAI:
+        def __init__(self, model=None):
+            called["model"] = model
+
+        def chat(self, system, user, model=None):
+            return "ok", "normal"
+
+    monkeypatch.setattr(llm_mod, "OpenAILLM", FakeOpenAI)
+    out, st = llm_mod.OllamaLLM().chat("s", "u", model="openai/gpt-6.0")
+    assert called["model"] == "gpt-6.0" and out == "ok" and st == "normal"
+
+
 def test_glm_cloud_no_key_raises(monkeypatch):
     """key 缺失必须抛 LLMError，不静默降档（K-ORG-136 纪律）"""
     monkeypatch.delenv("GLM_API_KEY", raising=False)

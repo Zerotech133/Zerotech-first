@@ -87,6 +87,7 @@
   "prompt": "\n\n## 从业画像\n- 从业经验：30 年从业经验（AI 方法论：Agent 能力、评测与知识反哺）\n\n## 工作边界（K-ORG-035 F6 纪律段）\n- 允许读取域：domain/*, dept/*, agent/AI1/*\n- 允许写入域：agent/AI1/*, agent_platform/data/academy/**\n- 禁改：org_baseline.json、哨文件、A0 日报链、tasks.json 登记区\n- 越界产出无效；QA1 复核以本边界为判据之一。",
   "tools": "Read,Grep,Glob",
   "model": "glm-4.5-flash",
+  "model_note": "2026-10-26 注：旧岗卡档位，运行时以 org.json/team_academy 为准；诸葛亮（AI1）现绑 openai/gpt-6.0（通道待 OPENAI_API_KEY）",
   "attributes": {
    "experience": "30 年从业经验（AI 方法论：Agent 能力、评测与知识反哺）",
    "specialties": [],

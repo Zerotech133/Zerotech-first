@@ -333,15 +333,23 @@ class Handler(BaseHTTPRequestHandler):
                                  "agent": agent, "binding": binding})
                 return
             if binding.startswith("openai/"):
-                # openai 通道未接（engine 无该 provider，勿让 Ollama 兜底报 404 误导）
-                self._send_json({"schema_version": "1.0", "ok": False,
-                                 "kind": "llm_chat", "data": {},
-                                 "error": {"code": "channel_not_ready",
-                                           "message": "openai 通道待 Q12 OPENAI_API_KEY 注入"},
-                                 "degraded": False, "latency_ms": 0,
-                                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                                 "agent": agent, "binding": binding})
-                return
+                # 2026-10-26 B 案：engine 已接 OpenAILLM；仅 key 缺失时显式报通道未就绪，
+                # 不静默降档本地（异族席位语义在 engine 层不变）。
+                try:
+                    from engine.llm import OpenAILLM
+                    key_ready = bool(OpenAILLM._key())
+                except Exception:  # noqa: BLE001 - 导入失败按未就绪处理，fail-visible
+                    key_ready = False
+                if not key_ready:
+                    self._send_json({"schema_version": "1.0", "ok": False,
+                                     "kind": "llm_chat", "data": {},
+                                     "error": {"code": "channel_not_ready",
+                                               "message": "openai 通道待 OPENAI_API_KEY 注入"
+                                                          "（B 案 provider 已接，key 缺失）"},
+                                     "degraded": False, "latency_ms": 0,
+                                     "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                     "agent": agent, "binding": binding})
+                    return
             env = llm_gateway.chat(
                 binding=binding,
                 system=str(req.get("system", ""))[:4000],
