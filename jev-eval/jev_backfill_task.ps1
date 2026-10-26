@@ -14,6 +14,13 @@ function W([string]$m) {
 try {
     try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
     W 'P0 start'
+    # 2026-10-27 JEVHOURLY: night-window guard. During 21:50-07:00 the night run owns
+    # the shared ollama_batch lock; the :00 hourly run was contending and cost night
+    # round R16 a skipped round (2026-10-27 04:07-04:22). Pause flag == night window.
+    if (Test-Path 'C:\Temp\k266_m3.pause') {
+        W 'P0 night window: skip hourly (night owns ollama_batch lock)'
+        exit 0
+    }
     # locate Chinese-path news_collector via marker file (ASCII cmdline rule)
     $dir = $null
     foreach ($drv in @('C:\', 'E:\', 'D:\')) {  # 2026-10-16 换机：C 盘优先
