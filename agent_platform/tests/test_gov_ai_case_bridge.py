@@ -230,3 +230,21 @@ def test_offset_apply_matches_after_cards_applied(tmp_path, monkeypatch):
     assert [e["entry_id"] for e in entries] == ["EXP-SUPERVISION-008",
                                                 "EXP-SUPERVISION-009"]
     assert all(e["verified"] is True for e in entries)
+
+
+def test_apply_sign_approval_default_filename(tmp_path, monkeypatch):
+    """sign_approval 默认输出 <payload>.signature.json，bridge apply 必须兼容。"""
+    draft = _draft(tmp_path)
+    out = tmp_path / "req"
+    payloads = B.emit(draft, out)
+    priv, pub = _keypair()
+    monkeypatch.setenv(SG.ENV_PUBKEY_HEX, pub)
+    monkeypatch.setenv(SG.ENV_STRICT, "1")
+    for p in payloads:
+        filename = p["item_id"] + ".payload.json.signature.json"  # sign_approval 默认
+        out.joinpath(filename).write_text(
+            json.dumps(_sign_payload(p, priv)), encoding="utf-8")
+    entries = B.apply(out, experience_root=tmp_path / "lib")
+    assert [e["entry_id"] for e in entries] == ["EXP-SUPERVISION-001",
+                                                "EXP-SUPERVISION-002"]
+    assert all(e["verified"] is True for e in entries)
