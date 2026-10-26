@@ -36,6 +36,47 @@ _STATIC = Path(__file__).resolve().parent / "static"
 MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "warroom"
 _KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 
+
+def load_experiment_cards(exp_dir: Path, limit: int = 20) -> list[dict]:
+    """读取实验卡：忽略点状态文件、按 created_at（回退 mtime）取末 limit 张。
+
+    WO-LEGION-CLOCKFIX-20261026：`agent_platform/data/experiments/` 里同时存在
+    `.closeout_state.json`（去重状态）与 `EX-*.json`（卡）；旧实现 glob("*.json")
+    会把状态文件当卡片（渲染出 card_id=null 的空卡）。点文件一律跳过；
+    `card_id` 缺失的坏文件也跳过（fail-visible：不渲染假卡）。
+    """
+    exp_dir = Path(exp_dir)
+    if not exp_dir.exists():
+        return []
+    loaded = []
+    for p in exp_dir.glob("*.json"):
+        if p.name.startswith("."):
+            continue
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+            if not isinstance(d, dict) or not d.get("card_id"):
+                continue
+            loaded.append((str(d.get("created_at") or ""), p.stat().st_mtime, d))
+        except (ValueError, OSError):
+            continue
+    loaded.sort(key=lambda it: (it[0], it[1]))
+    cards = []
+    for created_at, _mtime, d in loaded[-limit:]:
+        verdict = d.get("verdict") if isinstance(d.get("verdict"), dict) else {}
+        sig = verdict.get("signature") if isinstance(verdict.get("signature"), dict) else {}
+        cards.append({
+            "card_id": d.get("card_id"),
+            "hypothesis": str(d.get("hypothesis", ""))[:60],
+            "status": d.get("status"),
+            "arms": list((d.get("arms") or {}).keys()),
+            "created_at": d.get("created_at") or created_at,
+            "kind": d.get("kind") or "experiment",
+            "decision_required": bool(d.get("decision_required", False)),
+            "window_summary": d.get("window_summary") or {},
+            "signature_verified": sig.get("verified"),
+        })
+    return cards
+
 # 参会席位 → 模型绑定（10-51 异族裁决 + org.json 主事实源；未列出席位默认本地 9b）
 AGENT_BINDING = {
     "A0": "glm/glm-5.3",
@@ -220,36 +261,7 @@ class Handler(BaseHTTPRequestHandler):
         """进化层只读视图：实验卡清单 + 经验库五域统计（不读不写经验正文）。"""
         import json as _json
         exp_dir = _PLATFORM / "data" / "experiments"
-        loaded = []
-        if exp_dir.exists():
-            # WO-LEGION-CLOCK-20261026：按 created_at（回退 mtime）排序取末 20。
-            # 旧实现 sorted(glob)[-20:] 按随机 uuid 文件名排序——超过 20 张后
-            # 新卡可能永远不显示。
-            for p in exp_dir.glob("*.json"):
-                try:
-                    d = _json.loads(p.read_text(encoding="utf-8"))
-                    if not isinstance(d, dict):
-                        continue
-                    loaded.append((str(d.get("created_at") or ""),
-                                   p.stat().st_mtime, d))
-                except (ValueError, OSError):
-                    continue
-        loaded.sort(key=lambda it: (it[0], it[1]))
-        cards = []
-        for created_at, _mtime, d in loaded[-20:]:
-            verdict = d.get("verdict") if isinstance(d.get("verdict"), dict) else {}
-            sig = verdict.get("signature") if isinstance(verdict.get("signature"), dict) else {}
-            cards.append({
-                "card_id": d.get("card_id"),
-                "hypothesis": str(d.get("hypothesis", ""))[:60],
-                "status": d.get("status"),
-                "arms": list((d.get("arms") or {}).keys()),
-                "created_at": d.get("created_at") or created_at,
-                "kind": d.get("kind") or "experiment",
-                "decision_required": bool(d.get("decision_required", False)),
-                "window_summary": d.get("window_summary") or {},
-                "signature_verified": sig.get("verified"),
-            })
+        cards = load_experiment_cards(exp_dir)
         lib = Path.home() / ".hermes" / "profiles" / "zhaoyun" / "experience"
         domains = {}
         index_rows = []
