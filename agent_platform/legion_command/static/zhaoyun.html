@@ -145,6 +145,11 @@
     <div id="outbox"></div>
   </section>
 
+  <section>
+    <h2>外部取证 <span id="research-sub">—</span> <span>只读 web · 域名白名单 · 缓存 · 每日预算 · 来源引用</span></h2>
+    <div id="research"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -539,7 +544,8 @@ function loadCap2() {
     jget('/api/zhaoyun/memory/v2').catch(() => null),
     jget('/api/zhaoyun/sandbox').catch(() => null),
     jget('/api/zhaoyun/outbox').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx, ob]) => {
+    jget('/api/zhaoyun/research').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx, ob, rs]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -687,7 +693,43 @@ function loadCap2() {
       (ob.items || []).slice(0, 8).forEach((r) => obx.appendChild(el('div', 'muted',
         '• ' + r.id + ' · ' + r.kind + ' · ' + r.title + ' · ' + r.status)));
     } else obx.appendChild(el('div', 'muted', 'outbox 不可用'));
+    const rbx = $('research'); rbx.replaceChildren();
+    if (rs && rs.ok) {
+      const b = rs.budget || {};
+      $('research-sub').textContent = '预算 ' + (b.remaining || 0) + '/' + (b.limit || 0) +
+        ' · citations ' + (rs.count || 0) + ' · 白名单 ' + ((rs.allowlist || []).length) + ' 域名';
+      const row = el('div', 'row');
+      const u = el('input'); u.id = 'rs-url';
+      u.placeholder = 'https://docs.python.org/3/';
+      u.style.flex = '1';
+      const fb = el('button', '', '取证');
+      fb.onclick = researchFetch;
+      row.appendChild(u); row.appendChild(fb); rbx.appendChild(row);
+      (rs.items || []).slice(-5).reverse().forEach((c) => rbx.appendChild(el('div', 'muted',
+        '• ' + (c.title || c.url) + ' · ' + c.url + ' · sha ' + String(c.sha256 || '').slice(0, 10))));
+    } else rbx.appendChild(el('div', 'muted', '取证不可用'));
   });
+}
+function researchFetch() {
+  const url = (($('rs-url') || {}).value || '').trim();
+  if (!url) { alert('请输入 URL'); return; }
+  fetch('/api/zhaoyun/research/fetch', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: url }) })
+    .then((r) => r.json()).then((j) => {
+      const box = $('research'); box.replaceChildren();
+      if (!j.ok) {
+        box.appendChild(el('div', 'muted', '取证失败：' + (j.error || '') +
+          (j.detail ? ' · ' + j.detail : '')));
+        return;
+      }
+      box.appendChild(el('div', 'muted', '已取证：' + (j.title || j.url) +
+        (j.cached ? '（缓存）' : '') + ' · ' + (j.bytes || 0) + ' bytes'));
+      box.appendChild(el('div', 'muted', '引用：' + j.url + ' · sha256 ' + j.sha256 +
+        ' · ' + j.fetched_at));
+      box.appendChild(el('div', 'muted', (j.excerpt || '').slice(0, 400)));
+      loadCap2();
+    }).catch((e) => alert('取证失败：' + e));
 }
 function notifyTest() {
   fetch('/api/zhaoyun/outbox', { method: 'POST',

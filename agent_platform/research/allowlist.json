@@ -1,0 +1,25 @@
+{
+  "schema": "zhaoyun_research_allowlist/v1",
+  "note": "只读取证域名白名单；新增域名需人工评审（防 SSRF/数据外带）",
+  "domains": [
+    "docs.python.org",
+    "www.python.org",
+    "arxiv.org",
+    "export.arxiv.org",
+    "github.com",
+    "raw.githubusercontent.com",
+    "www.anthropic.com",
+    "platform.claude.com",
+    "openai.com",
+    "developers.openai.com",
+    "learn.microsoft.com",
+    "modelcontextprotocol.io",
+    "agentskills.io",
+    "langfuse.com",
+    "temporal.io",
+    "e2b.dev",
+    "opentelemetry.io",
+    "docs.letta.com",
+    "www.splunk.com"
+  ]
+}
