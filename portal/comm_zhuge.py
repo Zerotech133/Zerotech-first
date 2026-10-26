@@ -5,9 +5,12 @@
 
 通道三级（priority 从高到低）
 ---------------------------
-1. **openclaw_gpt**：OpenClaw CLI + GPT6.0（老田 10-21 10:51 裁决的异族编制）。
-   前置：OPENAI_API_KEY 已注入 + openclaw 已配置（`~/.openclaw/config.json`）。
-   调用方式：子进程 `openclaw --print "<prompt>"`，超时上限 DEFAULT_TIMEOUT。
+1. **openclaw_gpt**：OpenClaw 配置的异族模型（itokengate/gpt-6-sol，老田 10-21 10:51 裁决）。
+   前置：openclaw bin + `~/.openclaw/openclaw.json`（旧名 config.json 兼容）。
+   密钥由 OpenClaw secret store 承载（`ITOKENGATE_ZHUGE_API_KEY`，write-only），
+   不再强制要求 env OPENAI_API_KEY。调用方式：子进程
+   `openclaw infer model run --local --agent zhuge --model itokengate/gpt-6-sol`。
+   超时上限 OPENCLAW_TIMEOUT（env `COMM_ZHUGE_OPENCLAW_TIMEOUT` 可覆盖）。
 2. **local_soul**：本地 qwen3.5:9b + 诸葛亮 SOUL prompt（军师人格，非真 GPT6.0）。
    **诚实标注**：返回 mode=local_soul 且 reply meta 会标「本地军师代理」，
    不冒充 OpenAI 通道。
@@ -20,11 +23,12 @@
 不做
 ----
 - 不把客户原文写盘（本模块不落任何文件；留痕仅在上层 route_log 存指纹）。
-- 不在 key 缺失时尝试真通道（省掉一次必败的子进程与可能的错误计费）。
+- 真通道失败即降级本地并保留错误原因（不吞错、不硬编答案、不冒充真模型）。
 - 不让咨询位处理投诉/涉资金问题（那是田丰归口与人工兜底的事）。
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -34,7 +38,10 @@ from pathlib import Path
 
 DEFAULT_TIMEOUT = 30
 DEFAULT_MAX_CHARS = 600
-OPENCLAW_TIMEOUT = 45
+OPENCLAW_TIMEOUT = int(os.environ.get("COMM_ZHUGE_OPENCLAW_TIMEOUT", "45"))
+OPENCLAW_AGENT = os.environ.get("COMM_ZHUGE_OPENCLAW_AGENT", "zhuge")
+OPENCLAW_MODEL = os.environ.get("COMM_ZHUGE_OPENCLAW_MODEL",
+                                "itokengate/gpt-6-sol")
 
 # 诸葛亮 SOUL（精简自 deliverables/s20-zhuge-workspace-20261021/SOUL.md）
 ZHUGE_SOUL = (
@@ -66,16 +73,24 @@ def _openclaw_bin():
     return None
 
 
+def _openclaw_config_path():
+    """→ 现存 OpenClaw 配置文件 Path 或 None（新名 openclaw.json，旧名 config.json 兼容）。"""
+    root = Path.home() / ".openclaw"
+    for name in ("openclaw.json", "config.json"):
+        p = root / name
+        if p.exists():
+            return p
+    return None
+
+
 def _openclaw_configured():
-    return (Path.home() / ".openclaw" / "config.json").exists()
+    return _openclaw_config_path() is not None
 
 
 def _openclaw_available():
-    """→ (ready, reason)。三条件全满足才走真通道。"""
+    """→ (ready, reason)。真通道只用 OpenClaw 自身配置/密钥；env key 不再硬门禁。"""
     if not _openclaw_bin():
         return False, "openclaw_bin_missing"
-    if not os.environ.get("OPENAI_API_KEY"):
-        return False, "openai_key_missing"
     if not _openclaw_configured():
         return False, "openclaw_config_missing"
     return True, None
@@ -84,31 +99,71 @@ def _openclaw_available():
 def channel_status():
     b = _openclaw_bin()
     ready, reason = _openclaw_available()
+    cfg = _openclaw_config_path()
     return {"openclaw_bin": b, "openclaw_ready": ready,
             "reason": reason,
-            "key_set": bool(os.environ.get("OPENAI_API_KEY")),
-            "configured": _openclaw_configured()}
+            "key_set": bool(os.environ.get("OPENAI_API_KEY")
+                            or os.environ.get("OPENAI_GPT6_KEY")),
+            "configured": cfg is not None,
+            "config_path": str(cfg) if cfg else None,
+            "agent": OPENCLAW_AGENT, "model": OPENCLAW_MODEL,
+            "transport": "openclaw_provider"}
+
+
+def _openclaw_prompt(question):
+    """把 SOUL 与用户问题合成纯模型 prompt（infer model run 无 system 参数）。"""
+    return ZHUGE_SOUL + "\n\n用户咨询：\n" + (question or "").strip()
+
+
+def _parse_openclaw_stdout(stdout, stderr="", returncode=0):
+    """解析 `--json` 输出 → (text, error)；兼容非 JSON 纯文本与日志行。"""
+    txt = (stdout or "").strip()
+    if txt:
+        try:
+            d = json.loads(txt)
+        except ValueError:
+            d = None
+        if isinstance(d, dict):
+            if d.get("ok"):
+                out = d.get("text") or d.get("output") or d.get("content")
+                if not out:
+                    res = d.get("result")
+                    if isinstance(res, dict):
+                        out = res.get("text") or res.get("content")
+                out = str(out or "").strip()
+                return (out, None) if out else (None, "empty_output")
+            err = d.get("error")
+            if isinstance(err, dict):
+                msg = err.get("message") or err.get("type") or "unknown"
+            else:
+                msg = str(err or "unknown")
+            return None, "cli_error: %s" % str(msg)[-160:]
+    if returncode != 0:
+        return None, "exit=%d: %s" % (returncode, (stderr or txt or "")[-160:])
+    lines = [ln for ln in txt.splitlines()
+             if ln.strip() and not ln.startswith("[openclaw]")
+             and not ln.startswith("[provider-")]
+    out = "\n".join(lines).strip()
+    return (out, None) if out else (None, "empty_output")
 
 
 def _run_openclaw(question, timeout=OPENCLAW_TIMEOUT):
-    """子进程调 CLI。→ (text, error)。绝不抛（调用方靠 error 判降级）。"""
+    """子进程跑 OpenClaw 纯模型推理（--local，不依赖 Gateway）。→ (text, error)。"""
     exe = _openclaw_bin()
     if not exe:
         return None, "bin_missing"
+    args = [exe, "infer", "model", "run", "--local",
+            "--agent", OPENCLAW_AGENT, "--model", OPENCLAW_MODEL,
+            "--prompt", _openclaw_prompt(question), "--json"]
     try:
-        cp = subprocess.run(
-            [exe, "--print", question],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", timeout=timeout,
-            env={**os.environ})
+        cp = subprocess.run(args, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace",
+                            timeout=timeout, env={**os.environ})
     except subprocess.TimeoutExpired:
         return None, "timeout"
     except OSError as ex:
         return None, "%s: %s" % (type(ex).__name__, ex)
-    if cp.returncode != 0:
-        return None, "exit=%d: %s" % (cp.returncode,
-                                      (cp.stderr or "")[-160:])
-    return (cp.stdout or "").strip(), None
+    return _parse_openclaw_stdout(cp.stdout, cp.stderr, cp.returncode)
 
 
 def _default_llm():
