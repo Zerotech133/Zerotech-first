@@ -160,6 +160,7 @@ class _H:
     def __init__(self, body=None, token_ok=True, headers=None, payload=None):
         self._body = json.dumps(body or {}).encode("utf-8")
         self.headers = {"Content-Length": str(len(self._body))}
+        self.headers.update(headers or {})
         self._token_ok = token_ok
         self.payload = payload
         self.sent = None
@@ -204,16 +205,98 @@ def test_handle_post_link_requires_auth():
     assert h2.sent[0] == 200 and "/m/picks?t=" in h2.sent[1]["url"]
 
 
+def _session_cookie(open_id):
+    import time as _t
+
+    now = int(_t.time())
+    tok = mt.sign({"scope": "session", "open_id": open_id,
+                   "nbf": now, "exp": now + 3600})
+    return "m_sess=" + tok
+
+
 def test_ticket_page_token_cannot_reply(monkeypatch):
-    """查看工单的页面令牌不得冒充处理人答复，且绝不调用发送链。"""
+    """查看工单的页面令牌 + 无飞书会话：失败关闭，且绝不进入发送链。"""
     import ticket_loop
 
     monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
     token, _ = mt.make_page_token("ticket", id="lg-test")
     h = _H(body={"t": token, "text": "伪答复"})
     ma.handle_post(h, "/api/m/ticket/reply")
+    assert h.sent[0] == 401
+    assert "登录" in h.sent[1]["error"]
+
+
+def test_ticket_reply_wrong_identity_403(monkeypatch):
+    """有飞书会话但不是处理人名单成员：403，且不进发送链。"""
+    import ticket_loop
+
+    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    monkeypatch.setattr(ma, "_handler_open_ids", lambda: ["ou_owner"])
+    token, _ = mt.make_page_token("ticket", id="lg-test")
+    h = _H(body={"t": token, "text": "伪答复"},
+           headers={"Cookie": _session_cookie("ou_other")})
+    ma.handle_post(h, "/api/m/ticket/reply")
     assert h.sent[0] == 403
-    assert "答复权限未接通" in h.sent[1]["error"]
+    assert "无权" in h.sent[1]["error"]
+
+
+def test_ticket_reply_no_handler_roster_fails_closed(monkeypatch):
+    """处理人名单不可读/为空：失败关闭（403），不静默放行。"""
+    import ticket_loop
+
+    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    monkeypatch.setattr(ma, "_handler_open_ids", lambda: [])
+    token, _ = mt.make_page_token("ticket", id="lg-test")
+    h = _H(body={"t": token, "text": "伪答复"},
+           headers={"Cookie": _session_cookie("ou_owner")})
+    ma.handle_post(h, "/api/m/ticket/reply")
+    assert h.sent[0] == 403
+
+
+def test_ticket_reply_handler_identity_passes(monkeypatch):
+    """处理人（飞书会话 open_id ∈ 名单）+ 工单页面令牌 → 才允许答复并留身份痕迹。"""
+    import ticket_loop
+
+    seen = {}
+
+    def fake_reply(tid, text, by="handler"):
+        seen.update({"tid": tid, "text": text, "by": by})
+        return {"ok": True, "sent": True, "why": ""}
+
+    monkeypatch.setattr(ticket_loop, "reply", fake_reply)
+    monkeypatch.setattr(ma, "_handler_open_ids", lambda: ["ou_owner"])
+    token, _ = mt.make_page_token("ticket", id="lg-test")
+    h = _H(body={"t": token, "text": "已处理"},
+           headers={"Cookie": _session_cookie("ou_owner")})
+    ma.handle_post(h, "/api/m/ticket/reply")
+    assert h.sent[0] == 200 and h.sent[1]["ok"] is True
+    assert seen["tid"] == "lg-test" and seen["text"] == "已处理"
+    assert seen["by"].startswith("处理人·ou_ow")
+
+
+def test_handler_open_ids_env_union(monkeypatch):
+    monkeypatch.setenv("COMM_OWNER_OPEN_ID", "ou_a, ou_b")
+    ids = ma._handler_open_ids()
+    assert "ou_a" in ids and "ou_b" in ids
+
+
+def test_ticket_payload_can_reply_flag(monkeypatch):
+    fake = {"ticket": {"dispatch_id": "lg-5917d4c4357b", "state": "inbox"},
+            "timeline": []}
+    monkeypatch.setattr(ma, "_local_get", lambda p, timeout=15: (200, fake))
+    import types
+    mod = types.ModuleType("ticket_loop")
+    mod.summary = lambda tid: {"ok": True, "replies": [], "can_nudge": True}
+    monkeypatch.setitem(__import__("sys").modules, "ticket_loop", mod)
+    monkeypatch.setattr(ma, "_handler_open_ids", lambda: ["ou_owner"])
+    owner = ma.ticket_payload("lg-5917d4c4357b", open_id="ou_owner")
+    assert owner["can_reply"] is True and owner["authed"] is True
+    cust = ma.ticket_payload("lg-5917d4c4357b", open_id="ou_customer")
+    assert cust["can_reply"] is False and cust["reply_hint"]
+    anon = ma.ticket_payload("lg-5917d4c4357b")
+    assert anon["can_reply"] is False
+    via_build = ma.build("ticket", id="lg-5917d4c4357b", open_id="ou_owner")
+    assert via_build["can_reply"] is True
 
 
 def test_ticket_reply_rejects_wrong_scene(monkeypatch):

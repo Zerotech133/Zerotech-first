@@ -638,9 +638,13 @@
       '<div class="body"><ol class="m-steps">' + (steps || '<li class="dim">—</li>') + '</ol></div></div>' +
       '<div class="m-crumbs">处理人回复（' + esc((d.replies || []).length) + '）</div>' +
       (replies || '<div class="m-empty">还没有回复</div>') +
-      '<div class="m-card"><label class="dim">回复这条工单（处理人）</label>' +
-      '<textarea id="m-ticket-reply" rows="3" style="width:100%;margin:8px 0;background:var(--bg-2);color:var(--fg-1);border:1px solid var(--line);border-radius:8px;padding:8px" placeholder="输入回复内容…"></textarea>' +
-      '<button class="m-btn primary" onclick="window.mTicketReply()">发送回复</button></div>' +
+      (d.can_reply
+        ? '<div class="m-card"><label class="dim">回复这条工单（处理人）</label>' +
+          '<textarea id="m-ticket-reply" rows="3" style="width:100%;margin:8px 0;background:var(--bg-2);color:var(--fg-1);border:1px solid var(--line);border-radius:8px;padding:8px" placeholder="输入回复内容…"></textarea>' +
+          '<button class="m-btn primary" onclick="window.mTicketReply()">发送回复</button></div>'
+        : '<div class="m-card"><label class="dim">处理人回复</label>' +
+          '<p class="dim" style="margin:6px 0">' + esc(d.reply_hint || '处理人回复需先用飞书身份登录') + '</p>' +
+          '<button class="m-btn" style="width:100%" onclick="window.mTicketLogin()">飞书授权 · 处理人身份</button></div>') +
       (d.next_hint ? '<div class="m-note">' + esc(d.next_hint) + '</div>' : '') +
       '<div class="m-actionbar"><button class="m-btn" onclick="history.back()">返回</button>' +
       '<button class="m-btn primary" onclick="location.reload()">刷新</button></div>';
@@ -814,6 +818,11 @@
       } else { alert((j && j.error) || '催办失败'); }
     }).catch(function (e) { alert('网络异常：' + e.message); });
   };
+  window.mTicketLogin = function () {
+    var t = encodeURIComponent(window.M_TOKEN || '');
+    var ret = encodeURIComponent(location.pathname);
+    location.href = '/api/m/auth/start?t=' + t + '&return=' + ret;
+  };
   window.mTicketReply = function () {
     var ta = document.getElementById('m-ticket-reply');
     var v = ta ? ta.value.trim() : '';
@@ -822,6 +831,8 @@
       if (j && j.ok) {
         alert(j.sent ? '回复已推送给发起人' : '回复已记录（推送失败：' + (j.why || '') + '）');
         location.reload();
+      } else if (j && /登录|授权/.test(j.error || '')) {
+        window.mTicketLogin();
       } else { alert((j && j.error) || '回复失败'); }
     }).catch(function (e) { alert('网络异常：' + e.message); });
   };

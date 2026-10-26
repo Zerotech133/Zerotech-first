@@ -727,7 +727,7 @@ def lineage_payload():
                     "watch=偏旧、断链=最近运行失败。历史失败运行数仅作累计参考。"}
 
 
-def ticket_payload(tid):
+def ticket_payload(tid, open_id=""):
     import re as _re
     import urllib.parse as _up
     tid = str(tid or "").strip()
@@ -755,6 +755,10 @@ def ticket_payload(tid):
         _loop = ticket_loop.summary(tid)
     except Exception:  # noqa: BLE001 —— 闭环不可用不反噬详情页
         _loop = {}
+    try:
+        can_reply = bool(open_id) and open_id in _handler_open_ids()
+    except Exception:  # noqa: BLE001 —— 处理人名单不可判定时失败关闭
+        can_reply = False
     return {"ok": True, "scene": "ticket", "id": tid,
             "status_label": status_label,
             "headline": headline,
@@ -767,7 +771,11 @@ def ticket_payload(tid):
             "last_nudge": _loop.get("last_nudge") or "",
             "escalate": bool(_loop.get("escalate")),
             "replies": _loop.get("replies") or [],
-            "can_nudge": bool(_loop.get("can_nudge"))}
+            "can_nudge": bool(_loop.get("can_nudge")),
+            "authed": bool(open_id),
+            "can_reply": can_reply,
+            "reply_hint": ("" if can_reply else
+                           "处理人回复需先用飞书身份登录；仅处理人账号可答复")}
 
 
 def entry_payload():
@@ -886,7 +894,7 @@ def build(scene, code="", id="", open_id=""):
     if scene == "lineage":
         return lineage_payload()
     if scene == "ticket":
-        return ticket_payload(id or code)
+        return ticket_payload(id or code, open_id=open_id)
     if scene == "entry":
         return entry_payload()
     if scene == "analysis":
@@ -1141,6 +1149,32 @@ def auth_check(handler):
                    "open_id_masked": (oid[:6] + "**") if oid else ""})
 
 
+def _handler_open_ids():
+    """可核验的工单处理人身份白名单（飞书 open_id）。
+
+    来源：env COMM_OWNER_OPEN_ID（逗号/分号分隔）∪ owners.json（open_ids/owners，
+    与催办提醒的 owner 同一口径）。名单不可读/为空 → 返回空列表，答复侧失败关闭。
+    """
+    out = []
+    ov = os.environ.get("COMM_OWNER_OPEN_ID") or ""
+    for part in ov.replace(";", ",").split(","):
+        part = part.strip()
+        if part and part not in out:
+            out.append(part)
+    try:
+        import ticket_loop
+        with open(ticket_loop.OWNER_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+        ids = d if isinstance(d, list) else (d.get("open_ids") or d.get("owners") or [])
+        for x in ids:
+            s_ = str(x or "").strip()
+            if s_ and s_ not in out:
+                out.append(s_)
+    except Exception:  # noqa: BLE001 —— 名单不可读=空名单=失败关闭
+        pass
+    return out
+
+
 def handle_get(handler, path, qs):
     try:
         q = _qs(qs)
@@ -1262,20 +1296,38 @@ def handle_post(handler, path):
             body = _body(handler)
             auth_exchange(handler, body)
             return
-        if path in ("/api/m/ticket/nudge", "/api/m/ticket/reply"):
+        if path == "/api/m/ticket/nudge":
             body = _body(handler)
             payload = m_tokens.verify(str(body.get("t") or ""), scope="page")
             if payload.get("scene") != "ticket":
                 raise ApiError("令牌场景不符", 400)
             tid = str(payload.get("id") or "")
             import ticket_loop
-            if path.endswith("nudge"):
-                r = ticket_loop.nudge(tid, by="customer")
-            else:
-                # 页面令牌只能查看/催办；不能证明持有人是该单处理人。
-                # 在服务端接入可核验的 actor+工单+动作授权前失败关闭。
-                raise ApiError("答复权限未接通：须核验处理人、工单与 reply 动作", 403)
-            handler._json(r)
+            handler._json(ticket_loop.nudge(tid, by="customer"))
+            return
+        if path == "/api/m/ticket/reply":
+            # 三重授权：①工单（页面令牌 scene/id）②处理人（飞书 OAuth 会话 open_id
+            # ∈ owners.json 处理人名单）③动作（reply）。缺任一环失败关闭，绝不进发送链。
+            body = _body(handler)
+            payload = m_tokens.verify(str(body.get("t") or ""), scope="page")
+            if payload.get("scene") != "ticket":
+                raise ApiError("令牌场景不符", 400)
+            tid = str(payload.get("id") or "")
+            oid = _session_open_id(handler)
+            if not oid:
+                raise ApiError("答复须先以处理人飞书身份登录（/api/m/auth/start）", 401)
+            try:
+                allowed = oid in _handler_open_ids()
+            except Exception:  # noqa: BLE001
+                allowed = False
+            if not allowed:
+                raise ApiError("当前登录身份不是该工单处理人，无权答复", 403)
+            text = str(body.get("text") or "").strip()
+            if not text:
+                raise ApiError("回复内容为空", 400)
+            import ticket_loop
+            handler._json(ticket_loop.reply(
+                tid, text, by="处理人·" + oid[:6] + "**"))
             return
         if path == "/api/m/strategy/submit":
             body = _body(handler)
