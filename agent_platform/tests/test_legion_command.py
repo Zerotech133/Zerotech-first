@@ -281,7 +281,7 @@ def test_activity_mapping_covers_real_tasks():
     """真实 tasks.json 的 doing 应全部可归属到部门（0 unmapped）。"""
     data = build_snapshot()
     act = data["activity"]
-    assert act["rules_version"] == "1.1"  # 2026-10-26 增 OS-*/WO-LEGION-* 前缀规则
+    assert act["rules_version"] == "1.2"  # 1.1 前缀规则；1.2 项目注册表兜底
     if act["doing"]:
         assert act["unmapped"] == [], "存在未归属在途单：%s" % act["unmapped"]
         assert sum(len(v) for v in act["by_dept"].values()) == len(act["doing"])
@@ -314,6 +314,9 @@ def test_map_task_rules():
     assert _map_task("K-INTEL-20261018-RO", "") == ("intel", "")
     assert _map_task("K-ORG-180", "") == ("ops", "")
     assert _map_task("random-task", "无关键词") == ("", "")
+    # 1.2：登记了 project 的任务，按项目注册表 dept 兜底（不猜前缀）
+    assert _map_task("未知前缀-X", "", "quant", {"quant": "dev"}) == ("dev", "")
+    assert _map_task("未知前缀-X", "", "general", {"quant": "dev"}) == ("", "")
 
 
 # ------------------------------------------------- 会终纪要落盘（S31）

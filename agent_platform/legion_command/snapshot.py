@@ -21,7 +21,7 @@ SCHEMA_VERSION = "1.2"   # S34: agents 增 has_profile/lead_profiled/seats_*
 # 在途工单归属规则（版本化）：tasks.json 的 owner 多为 unknown-agent，
 # 按 key 前缀 / 描述关键词把任务归到部门与席位，让沙盘能显示"谁在干什么"。
 # 只做标签映射，不改 tasks.json 任何字段。
-ACTIVITY_RULES_VERSION = "1.1"
+ACTIVITY_RULES_VERSION = "1.2"
 ACTIVITY_RULES = (
     # (匹配函数名, 部门 id, 席位 id 或 "")
     ("desc", "盘前", "invest", "D1"),
@@ -51,8 +51,30 @@ ACTIVITY_RULES = (
 )
 
 
-def _map_task(key: str, desc: str) -> tuple:
-    """返回 (dept_id, agent_id) 或 ("", "")。命中即停（顺序即优先级）。"""
+# 项目线→部门兜底（K-ORG-057 项目注册表 registry/projects.json 为准）：
+# 前缀/关键词规则未命中时，若任务显式登记了 project，则用该线登记的 dept 归部门，
+# 避免"每来一个新前缀就让治理绊线变红"的打地鼠。未登记 project（缺省 general）
+# 仍返回 unmapped——绊线语义保留：没分线的活就是需要人管。
+def _project_dept_map(root: Path) -> dict:
+    proj = _load_json(root / "registry" / "projects.json")
+    out = {}
+    if isinstance(proj, dict):
+        for pr in proj.get("projects") or []:
+            if not isinstance(pr, dict):
+                continue
+            pid = str(pr.get("project_id") or "")
+            dep = str(pr.get("dept") or "")
+            if pid and dep:
+                out[pid] = dep
+    return out
+
+
+def _map_task(key: str, desc: str, project: str = "",
+              project_dept: dict | None = None) -> tuple:
+    """返回 (dept_id, agent_id) 或 ("", "")。命中即停（顺序即优先级）。
+
+    规则未命中时按任务登记的 project 查项目注册表 dept（有据可依，不猜前缀）。
+    """
     k = str(key)
     d = str(desc)
     for mode, pat, dept, agent in ACTIVITY_RULES:
@@ -62,6 +84,10 @@ def _map_task(key: str, desc: str) -> tuple:
             return dept, agent
         if mode == "key_contains" and pat in k:
             return dept, agent
+    if project and isinstance(project_dept, dict):
+        dep = project_dept.get(str(project))
+        if dep:
+            return dep, ""
     return "", ""
 
 
@@ -145,11 +171,13 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
         })
 
     tasks = _load_json(root.parent / ".worktrees" / "tasks.json")
+    project_dept = _project_dept_map(root)
     doing = []
     if isinstance(tasks, dict):
         for k, v in tasks.items():
             if isinstance(v, dict) and v.get("status") == "doing":
-                dept, agent = _map_task(k, v.get("desc", ""))
+                dept, agent = _map_task(k, v.get("desc", ""),
+                                        v.get("project") or "", project_dept)
                 doing.append({"key": k,
                               "desc": str(v.get("desc", ""))[:80],
                               "owner": v.get("owner", ""),
