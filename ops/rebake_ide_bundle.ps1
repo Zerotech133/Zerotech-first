@@ -40,7 +40,7 @@ try {
 } finally {
     Pop-Location
 }
-if ($rc -ne 0) { Write-RebakeLog "ERROR rebake failed rc=$rc: $($out | Select-Object -Last 3)"; exit 1 }
+if ($rc -ne 0) { Write-RebakeLog "ERROR rebake failed rc=${rc}: $($out | Select-Object -Last 3)"; exit 1 }
 if (-not (Test-Path -LiteralPath $srcBundle)) { Write-RebakeLog "ERROR bundle not produced: $srcBundle"; exit 1 }
 
 New-Item -ItemType Directory -Force -Path $DeployDir | Out-Null
