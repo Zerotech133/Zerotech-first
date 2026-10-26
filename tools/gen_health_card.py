@@ -5691,6 +5691,88 @@ def _empty_agent_daily() -> dict[str, Any]:
             "summary": None, "missed": []}
 
 
+# 2026-10-26 JEVCALHC：JEV 判读质量（账本由 JevDriftDaily 07:10 P4 生成）
+JEV_CALIB_MIN_SAMPLES = 200
+JEV_CALIB_EDGE_PP = 0.02
+JEV_CALIB_RED_RATE = 0.48
+
+
+def collect_jev_calibration(repo_root: Path | None = None) -> dict[str, Any]:
+    """读 agent_platform/data/jev_audit/latest.json（只读派生账本报告）。"""
+    repo_root = repo_root or Path(__file__).resolve().parents[1]
+    path = repo_root / "agent_platform" / "data" / "jev_audit" / "latest.json"
+    out: dict[str, Any] = {"available": False, "path": str(path), "reason": None,
+                           "generated_at": None, "directional": None,
+                           "baseline_bull": None, "edge_vs_baseline": None,
+                           "band_pct": None, "neutral_hit": None,
+                           "neutral_highvol": None, "bear_usable": None,
+                           "bull_usable": None, "conf_decision_weight": None}
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        out["reason"] = "读不到 %s: %s" % (path.name, _short_exc(exc))
+        return out
+    try:
+        data = json.loads(raw)
+    except ValueError as exc:
+        out["reason"] = "JSON 解析失败: %s" % _short_exc(exc)
+        return out
+    if not isinstance(data, dict):
+        out["reason"] = "报告结构异常"
+        return out
+    d = data.get("directional") or {}
+    a = data.get("assessment") or {}
+    out.update(
+        available=True,
+        generated_at=data.get("generated_at"),
+        directional={"n": d.get("n"), "rate": d.get("rate")},
+        baseline_bull=((d.get("baseline_all_bull") or {}).get("rate")),
+        edge_vs_baseline=(a.get("directional") or {}).get("edge_vs_baseline"),
+        band_pct=(a.get("neutral") or {}).get("band_pct"),
+        neutral_hit=(a.get("neutral") or {}).get("band_hit_rate"),
+        neutral_highvol=(a.get("neutral") or {}).get("highvol_share"),
+        bear_usable=(a.get("bear") or {}).get("usable"),
+        bull_usable=(a.get("bull") or {}).get("usable"),
+        conf_decision_weight=(a.get("confidence") or {}).get("decision_weight"),
+    )
+    return out
+
+
+def _jev_calibration_level(cal: dict[str, Any]) -> tuple[str, str]:
+    """判级：账本缺失/样本不足黄；方向准确率崩塌红；有 edge 绿；无增量黄。"""
+    if not cal.get("available"):
+        return "yellow", "判读账本暂不可用（JevDriftDaily 07:10 P4 生成）：" + str(cal.get("reason") or "")
+    d = cal.get("directional") or {}
+    n = int(d.get("n") or 0)
+    rate = d.get("rate")
+    base = cal.get("baseline_bull")
+    band = cal.get("band_pct")
+    bits = ["账本方向类 n=%d" % n]
+    if rate is not None:
+        bits.append("方向准确率 %.1f%%" % (rate * 100))
+    if base is not None:
+        bits.append("全判 bull 基线 %.1f%%" % (base * 100))
+    if band is not None:
+        bits.append("neutral 带宽 %.1f%%（命中 %.0f%%，高波动 %.0f%%）" % (
+            band, (cal.get("neutral_hit") or 0) * 100, (cal.get("neutral_highvol") or 0) * 100))
+    if cal.get("bear_usable") is False:
+        bits.append("bear 仅风险标签")
+    if cal.get("conf_decision_weight") is False:
+        bits.append("conf 不入决策")
+    detail = "；".join(bits)
+    if n == 0:
+        return "yellow", "账本尚无后验样本（T+1 数据未回填）；" + detail
+    if n < JEV_CALIB_MIN_SAMPLES:
+        return "yellow", "样本不足（%d < %d 条）；" % (n, JEV_CALIB_MIN_SAMPLES) + detail
+    if rate is not None and rate < JEV_CALIB_RED_RATE:
+        return "red", "方向准确率低于 %.0f%%（模型退化）；" % (JEV_CALIB_RED_RATE * 100) + detail
+    edge = cal.get("edge_vs_baseline")
+    if edge is not None and edge >= JEV_CALIB_EDGE_PP:
+        return "green", "相对基线有增量（+%.1fpp）；" % (edge * 100) + detail
+    return "yellow", "无显著增量 edge（+%.1fpp < %.0fpp 门槛）；" % (
+        (edge or 0) * 100, JEV_CALIB_EDGE_PP * 100) + detail
+
+
 def collect_agent_daily(repo_root: Path) -> dict[str, Any]:
     result = _empty_agent_daily()
     script = repo_root / "tools" / "agent_daily.py"
@@ -6257,6 +6339,10 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             add("agent.daily", "yellow", detail)
         else:
             add("agent.daily", "green", detail)
+
+    calib = collect_jev_calibration()
+    cal_level, cal_detail = _jev_calibration_level(calib)
+    add("jev.calibration", cal_level, cal_detail)
 
     sus = (card.get("ops") or {}).get("machine_suspend") or {}
     # 2026-10-26 EXEC-R32：判级集中到 _machine_suspend_level——查询失败/权限不足/
