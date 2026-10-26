@@ -147,6 +147,32 @@
    ],
    "expect_rc": 0,
    "timeout": 120
+  },
+  {
+   "id": "pytest-security",
+   "desc": "security-gate 单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_security_gate.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
+  },
+  {
+   "id": "pytest-approval",
+   "desc": "approval-inbox 单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_approval_inbox.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
   }
  ]
 }
