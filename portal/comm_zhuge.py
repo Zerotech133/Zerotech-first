@@ -113,8 +113,17 @@ def channel_status():
 
 
 def _openclaw_prompt(question):
-    """把 SOUL 与用户问题合成纯模型 prompt（infer model run 无 system 参数）。"""
-    return ZHUGE_SOUL + "\n\n用户咨询：\n" + (question or "").strip()
+    """把 SOUL 与用户问题合成纯模型 prompt（infer model run 无 system 参数）。
+
+    P0H 修复：persona 放在最前会让模型只回"寒暄"、忽略咨询内容；
+    末尾必须追加强指令「直接回答、不要打招呼、不要复述」。
+    """
+    return (
+        ZHUGE_SOUL
+        + "\n\n【用户咨询】\n" + (question or "").strip()
+        + "\n\n【要求】直接回答上面的咨询：结论先行、条理清晰、3-6 句内说清；"
+          "不要打招呼、不要自我介绍、不要复述材料；如为多问，用 1/2/3 编号逐条回答。"
+    )
 
 
 def _parse_openclaw_stdout(stdout, stderr="", returncode=0):
