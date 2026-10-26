@@ -102,7 +102,8 @@ def test_registry_disabled_http(tmp_path, monkeypatch):
     p.write_text(json.dumps(cfg), encoding="utf-8")
     monkeypatch.setattr(REG, "CONFIG", p)
     rep = REG.probe("disabled")
-    assert rep["ok"] is False
+    assert rep["ok"] is True
+    assert rep["servers"][0]["skipped"] is True
     assert "transport_disabled" in rep["servers"][0]["error"]
     call = REG.call("disabled", "x", {})
     assert call["error"] in ("transport_disabled", "tool_not_allowed")
