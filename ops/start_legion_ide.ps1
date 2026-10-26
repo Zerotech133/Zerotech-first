@@ -79,6 +79,7 @@ switch ($Action) {
         $bundlePath = Resolve-BundlePath
         $cmd = '"' + $Python + '" "' + $serve + '" --port ' + $Port
         if ($bundlePath) { $cmd += ' --bundle "' + $bundlePath + '"' }
+        if ($EnableWrite) { $cmd += ' --rw' }   # WMI 不继承 env：显式传参
         try {
             $r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
                 CommandLine = $cmd; CurrentDirectory = $Repo
@@ -96,6 +97,7 @@ switch ($Action) {
         }
         $argsList = @("`"$serve`"", "--port", "$Port")
         if ($bundlePath) { $argsList += @("--bundle", "`"$bundlePath`"") }
+        if ($EnableWrite) { $argsList += @("--rw") }   # WMI 不继承 env：显式传参
         Start-Process -FilePath $Python -ArgumentList $argsList `
             -WorkingDirectory $Repo -WindowStyle Hidden
         Write-LaunchLog "STARTED legion-ide (Start-Process fallback) port=$Port bundle=$bundlePath IDE_RW=$($env:IDE_RW)"
