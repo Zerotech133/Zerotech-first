@@ -69,6 +69,10 @@ def test_unsigned_only_saves_card(tmp_path, stub_ledger):
 
 def test_window_unavailable_no_card(tmp_path, monkeypatch):
     monkeypatch.setattr(CR.ta, "summary_only", lambda: dict(SUMMARY))
+    # c8f59ceb（WO-LEGION-CLOCK Step2）起 run() 在窗口检查前新增 as-of/stale 守卫：
+    # 摘要龄 > max_age_hours 时先返回 stage=stale（拒绝拿旧账本当窗口）。
+    # 本用例只测「窗口不可用」路径，把摘要龄钉成新鲜以免先命中 stale 分支（K-ORG-20261027-CLOSEOUT）。
+    monkeypatch.setattr(CR, "summary_age_hours", lambda summary, now: 0.0)
     monkeypatch.setattr(CR.ta, "window_diff",
                         lambda hours=24.0: {"error": "账本仅 1 条，不足两次扫描"})
     exp_root = tmp_path / "experiments"
