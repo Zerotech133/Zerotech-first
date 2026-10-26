@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>田丰 · 产品/研发席</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060F1D;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;color:#E8F0F8;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 22px;border-bottom:.5px solid #1E3A5F;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.avatar{width:34px;height:34px;border-radius:10px;background:#0F2440;border:1px solid #1D9E75;display:flex;align-items:center;justify-content:center;font-size:16px}
+h1{font-size:17px;font-weight:500}.sub{font-size:11.5px;color:#8FA8C0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:11.5px;padding:6px 10px;border-radius:999px;border:.5px solid #1E3A5F;color:#8FA8C0}
+.chip b{color:#4FD1A5;font-weight:500}.chip.warn b{color:#EF9F27}.chip.bad b{color:#E24B4A}
+main{padding:18px 22px 26px;display:flex;flex-direction:column;gap:14px}
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:14px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+section{background:#0A1626;border:.5px solid #1E3A5F;border-radius:12px;padding:14px 16px}
+section h2{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;gap:8px;align-items:center}
+section h2 span{color:#5A7190;font-size:11px;font-weight:400}
+.row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:.5px dashed #16304F;font-size:12.5px}
+.row:last-child{border-bottom:0}.row .k{color:#8FA8C0;flex:0 0 auto}.row .v{text-align:right;word-break:break-all}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:#5A7190;font-weight:400;padding:6px;border-bottom:.5px solid #1E3A5F}
+td{padding:6px;border-bottom:.5px dashed #16304F;vertical-align:top}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:999px;border:.5px solid #1E3A5F;color:#8FA8C0}
+.pill.ok{color:#4FD1A5;border-color:#1D9E75;background:#0F2440}.pill.pend{color:#EF9F27;border-color:#7A5A1E}
+.muted{color:#5A7190;font-size:11px}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.links a{color:#4FD1A5;text-decoration:none;font-size:12px;border:.5px solid #1E3A5F;border-radius:8px;padding:6px 10px}
+footer{padding:10px 22px 16px;border-top:.5px solid #1E3A5F;color:#5A7190;font-size:11px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+button.refresh{border:.5px solid #1E3A5F;background:none;color:#8FA8C0;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
+</style></head><body>
+<header>
+<div class="brand"><div class="avatar">田</div><div><h1>田丰 · 产品经理+研发（全在性）</h1>
+<div class="sub">A0 · 参谋长 / 产品/研发席 · 不亲自交付代码 · 指挥 AI 自动执行</div></div></div>
+<div class="chips"><span class='chip good'>SOUL <b>v3 · 产品/研发</b></span><span class='chip good'>能力 <b>20/20</b></span><span class='chip good'>审计 <b>9 通过 / 0 失败</b></span><span class='chip '>决策 <b>L0/L1 自主 · L2 报批</b></span><span class='chip warn'>判读 <b>429 降级</b></span><span class='chip good'>Hermes <b>8787 PID 57208</b></span></div>
+<button class="refresh" onclick="location.reload()">刷新</button>
+</header>
+<main>
+<div class="grid">
+<section><h2>角色与边界 <span>2026-10-27 v3 定调</span></h2><div class='row'><span class='k'>定位</span><span class='v'>产品经理 + 研发（全在性人才）：取数→方案/架构/代码参考→拆单派发→AI 自动执行→验收；无人能定案时做最优决策并指挥其他 AI 执行</span></div><div class='row'><span class='k'>编制</span><span class='v'>org.json A0（参谋长）+ Hermes profile tianfeng（席位门面）；不占部门编制，全组织向其汇报</span></div><div class='row'><span class='k'>纪律</span><span class='v'>L0/L1 自主决策执行；仅 L2（生产/客户消息/资金/审批/宿主机危险操作/上线/真实数据删除/密钥）报老田；不亲自交付生产代码</span></div><div class='row'><span class='k'>区分</span><span class='v'>A0=田丰本席；A0A=参谋长助理（只调度不决策）；ZHAOYUN=治理席（不占编）</span></div><div style="margin-top:8px">
+<table>
+<thead><tr><th>对象</th><th>载体</th><th>编制/身份</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>A0</td><td>org.json chief_line + Hermes profile</td><td>org 参谋长 + profile 角色</td><td>产品/研发/决策/编排（本页）</td></tr>
+<tr><td>A0A</td><td>agent_platform team_chief</td><td>org 编制成员</td><td>参谋长助理：只调度不决策</td></tr>
+<tr><td>DSH</td><td>DeepSeek Harness 桌面版</td><td>执行载体</td><td>会话/子代理执行</td></tr>
+</tbody></table>
+</div></section>
+<section><h2>运行状态 <span>Hermes / 能力 / 审计 / 双锚</span></h2><div class='row'><span class='k'>Hermes profile</span><span class='v'>tianfeng（localhost:8787，PID 57208，health 200）</span></div><div class='row'><span class='k'>SOUL</span><span class='v'>SOUL — 田丰（产品经理 + 研发 · 全在性人才 · Hermes 门面版）</span></div><div class='row'><span class='k'>能力清单</span><span class='v'>20 项 / 20 ready · 技能卡 20 张</span></div><div class='row'><span class='k'>工具集</span><span class='v'>—</span></div><div class='row'><span class='k'>席位卡</span><span class='v'>base=Hermes（本地 qwen3.5:9b 主脑；判读 GLM-5.3）</span></div><div class='row'><span class='k'>审计</span><span class='v'>pass 9 / warn 0 / fail 0（）</span></div><div class='row'><span class='k'>任务板</span><span class='v'>doing 8 单（全平台账本）</span></div><div class='row'><span class='k'>最新证据包</span><span class='v'>evidence_packet_20261026-223949.json</span></div><div class='row'><span class='k'>GLM 判读</span><span class='v'>429 降级（最近 2026-10-27T04:46:41+0800）</span></div><div class='row'><span class='k'>双锚</span><span class='v'>田丰 08:45 / 17:45（S4U，battery-off）</span></div></section>
+</div>
+<section><h2>决策授权 <span>L0/L1 自主 · L2 报老田（不逐项点确定）</span></h2>
+<table><thead><tr><th style="width:140px">级别</th><th>范围</th><th>动作</th><th style="width:50px">找老田</th></tr></thead><tbody><tr><td><b>L0 自主</b></td><td>常规研发/文档/取数/测试/方案/代码参考/任务拆解与派发（开发环境）</td><td>直接执行 · 事件+chief/decision 留痕</td><td>否</td></tr><tr><td><b>L1 执行后通报</b></td><td>跨部门派单/非生产配置/开发环境计划任务</td><td>可回滚即执行 · 执行后即时报</td><td>否</td></tr><tr><td><b>L2 必须先批</b></td><td>生产/客户消息、资金/交易/审批、宿主机危险操作、上线/真实数据删除/密钥</td><td>五要素 + 老田明确批准；沉默≠同意</td><td>是</td></tr></tbody></table></section>
+<section><h2>能力卡 <span>20 项 / CAPABILITIES.json</span></h2>
+<table><thead><tr><th style="width:160px">能力</th><th>说明</th><th>边界</th><th style="width:80px">状态</th></tr></thead><tbody><tr><td><b>devtask</b></td><td>工单全生命周期：建单/列表/合并/收口</td><td class='muted'>五守卫全开；pathspec 精确提交</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>ticket-gate</b></td><td>归口验收：复核互审单、经验卡签字链核对</td><td class='muted'>复核不改写原始记录</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>council-route</b></td><td>分发路由建议（定稿后派工组合）</td><td class='muted'>只产建议不直接建单</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>health-card</b></td><td>治理健康卡 21 项生成与解读</td><td class='muted'>读不到=红不是绿</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>task-exit-audit</b></td><td>计划任务退出码账本+窗口对比</td><td class='muted'>只读扫描不改任务定义</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>experience-review</b></td><td>Z4 经验复核（赵云写田丰读）</td><td class='muted'>无签字不结案（Z2）</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>z-series</b></td><td>Z1-Z5 进化引擎链（profile/实验卡/匿名横评/经验库/防穿越）</td><td class='muted'>真实经验库 0 条待签</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>memory-card</b></td><td>席位三层记忆（L1/L2/L3）</td><td class='muted'>L3 只引用不复制</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>council-hall</b></td><td>议会厅发言与议题推进</td><td class='muted'>发言=文书，页面只投影</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>docs-index</b></td><td>文档现行性索引维护</td><td class='muted'>索引同提交（S3）</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>llm-glm</b></td><td>GLM 云端推理（归口复核智能层）</td><td class='muted'>glm/nova 不传 model 用实例绑定</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>mutual-review</b></td><td>互审单复核：评审对家席位产出（MUTUAL-REVIEW 工单）</td><td class='muted'>执行者不结案；分歧上议会厅；复核不改写原始记录</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>case-sign-chain</b></td><td>判例签字链核对：draft→待签 payload→本人签→公钥验签→入 Z4（只核对/验签）</td><td class='muted'>未签/篡改/未配公钥一律拒；田丰不代签</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>governance-ai</b></td><td>治理 AI draft 复核：异常归纳/优先级建议/判例草稿</td><td class='muted'>只读 draft，不写卡/经验库/工单</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>worktree-hygiene</b></td><td>工单收口检查：worktree TTL/分支合并核对（S1）</td><td class='muted'>只读检查；删除类进回收站或交赵云</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>product-spec</b></td><td>产品定义：需求/场景/验收标准/优先级（产品经理面）</td><td class='muted'>不直接改生产；验收标准必须可测、可回滚</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>architecture-design</b></td><td>研发设计：架构/接口契约/数据流/技术选型建议</td><td class='muted'>不直接上线；执行者按契约实现，田丰 review</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>code-reference</b></td><td>代码参考：伪代码/参考实现/补丁思路（代码是思路载体，不亲自交付）</td><td class='muted'>不直接提交生产代码；执行者署名与测试证据必须齐</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>task-orchestration</b></td><td>任务编排：拆单→派给部门/AI worker→自动执行→收口验收</td><td class='muted'>L2 动作仍报老田；每单必须有 owner/验收/回滚</td><td><span class='pill ok'>ready</span></td></tr>
+<tr><td><b>decision-arbitration</b></td><td>决策仲裁：无人能定案时做最优决策，写依据/假设/选项/回滚</td><td class='muted'>不编造数据；L2 不越权；决策必须留痕</td><td><span class='pill ok'>ready</span></td></tr>
+</tbody></table></section>
+<section><h2>执行闭环 <span>取数→方案/架构/代码参考→拆单→派 AI→验收</span></h2>
+<div class="row"><span class="k">代码哲学</span><span class="v">代码是思路载体：写参考实现/伪代码/契约，执行 AI 落地，田丰 review 与验收</span></div>
+<div class="row"><span class="k">编排工具</span><span class="v">devtask 拆单 · delegation 派工 · events 留痕 · chief/decision 记决策</span></div>
+<div class="row"><span class="k">能力入口</span><span class="v">python -X utf8 tools/seat_evidence_packet.py（证据包）</span></div>
+<div class="links">
+<a href="http://127.0.0.1:8787/?profile=tianfeng" target="_blank">Hermes 田丰</a>
+<a href="http://127.0.0.1:8734/ide" target="_blank">IDE 角色卡</a>
+<a href="http://127.0.0.1:8734/legion" target="_blank">军团作战大屏</a>
+</div></section>
+</main>
+<footer><span>数据源：SOUL.md / SEAT_CARD / CAPABILITIES / org.json / 审计 / tasks / 证据包 · 静态快照，重跑 gen_tianfeng_attr.py 刷新</span><span>生成 2026-10-27T04:55:24+0800</span></footer>
+</body></html>
