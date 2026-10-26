@@ -52,6 +52,9 @@ def _load_hr_meta(root):
                 m = re.search(r'cn_name"?\s*:\s*"?([^\s",]+)', text)
                 if m and not meta.get("cn_name"):
                     meta["cn_name"] = m.group(1)
+                mn = re.search(r"^name:\s*(.+)$", text, re.M)
+                if mn and not meta.get("name"):
+                    meta["name"] = mn.group(1).strip().strip("'\"")
                 m2 = re.search(r"^skills\s*:\s*\[(.*?)\]\s*$", text, re.M | re.S)
                 if m2 and not meta.get("skills"):
                     meta["skills"] = [s.strip().strip("'\"")
@@ -110,6 +113,10 @@ DEPT_META = {  # 部门显示名（org.json name 键值在此冗余固化，避�
     "proj_backtest": ("🅰 回测开发部", "project"),
     "proj_data": ("🅱 数据治理部", "project"),
     "proj_next": ("🅲 下版本设计推理部", "project"),
+    # WO-IDE-ZHAOYUN：org 有 profiles 但原先无 team 文件的部门（现在走兜底入编）
+    "ops_runtime": ("📡 运行体部 · 驿传署", "func"),
+    "chief_line": ("🧠 直属参谋长线 · 参军署", "func"),
+    "risk": ("🛡 风控部 · 大都督府", "func"),
 }
 
 # devtask 工单库（K-ORG-024 批C先行：研发工单真实投影进 IDE）
@@ -275,6 +282,44 @@ def main():
             for aid in ids:
                 projects_of.setdefault(aid, []).append(dept)
 
+    # ── P1 兜底（WO-IDE-ZHAOYUN）：org.json 有 agent_profiles 但未落卡的席位
+    # 自动入编（无 team 文件的整部门 + 已有部门里漏掉的 profile 席）；
+    # 已有席位不重复、不覆盖。
+    for d in org.get("departments") or []:
+        dep = d.get("dept")
+        ap = d.get("agent_profiles") or {}
+        items = ap.values() if isinstance(ap, dict) else ap
+        new_ids = []
+        for prof in items or []:
+            if not isinstance(prof, dict):
+                continue
+            aid = prof.get("agent_id")
+            if not aid or aid in agents:
+                continue
+            grants = prof.get("memory_grants") or {}
+            agents[aid] = {
+                "id": aid,
+                "dept": dep,
+                "role_profile": prof.get("role_profile", ""),
+                "grade": prof.get("grade", ""),
+                "grade_note": prof.get("grade_note", ""),
+                "charter": prof.get("charter_detail", ""),
+                "llm": prof.get("llm_binding", ""),
+                "tools": prof.get("tools", []),
+                "grants_read": grants.get("read", []),
+                "grants_write": grants.get("write", []),
+                "prompt_file": "",
+                "prompt": "",
+                "projects": [],
+                "team_desc": d.get("description") or d.get("charter", ""),
+                "attributes": prof.get("attributes") or {},
+                "entry_source": "org_profiles",  # 与 team 文件落卡区分（排查用）
+            }
+            new_ids.append(aid)
+        if new_ids:
+            dept_agents[dep] = list(dict.fromkeys(
+                dept_agents.get(dep, []) + new_ids))
+
     # 项目标签回填 + prompt 全文（chief 田丰已在入编时装好 a0_chief.md）
     miss_prompt = []
     for aid, card in agents.items():
@@ -302,12 +347,23 @@ def main():
         p_attrs = prof.get("attributes") if isinstance(prof.get("attributes"), dict) else {}
         t_attrs = card.get("attributes") if isinstance(card.get("attributes"), dict) else {}
         caps = (p_attrs.get("specialties") or t_attrs.get("specialties")
-                or hr.get("skills") or [])
-        card["cn_name"] = hr.get("cn_name") or prof.get("cn_name") or ""
+                or card.get("capabilities") or hr.get("skills") or [])
+        # org 补档席的 specialties 可能只是 role slug（如 risk_conservative_sentinel）：
+        # 视为占位，优先用 HR 技能
+        if (len(caps) == 1 and caps[0] == card.get("role_profile")
+                and hr.get("skills")):
+            caps = hr["skills"]
+        card["cn_name"] = (hr.get("cn_name") or prof.get("cn_name")
+                           or card.get("cn_name") or "")
         if card["cn_name"]:
             card["name"] = card["cn_name"]
-        card["role_cn"] = _role_cn_from_prompt(card.get("prompt", ""),
-                                               card.get("role_profile", ""))
+        card["role_cn"] = (_role_cn_from_prompt(card.get("prompt", ""),
+                                                card.get("role_profile", ""))
+                           or card.get("role_cn", ""))
+        # 无 prompt 且 role_cn 还是英文 slug 时，回退 HR 档案里的中文岗位名
+        if (not re.search(r"[\u4e00-\u9fff]", card["role_cn"] or "")
+                and re.search(r"[\u4e00-\u9fff]", hr.get("name") or "")):
+            card["role_cn"] = hr["name"]
         if aid == "A0":
             card["role_cn"] = "总管（参谋长）"
         card["capabilities"] = list(caps)
@@ -320,8 +376,9 @@ def main():
             card["grade"] = prof["grade"]
         if prof.get("grade_note"):
             card["grade_note"] = prof["grade_note"]
-        card["dept_name"] = dept_name_map.get(card.get("dept"), "")
-        card["dept_cn_title"] = dept_title_map.get(card.get("dept"), "")
+        card["dept_name"] = card.get("dept_name") or dept_name_map.get(card.get("dept"), "")
+        card["dept_cn_title"] = (card.get("dept_cn_title")
+                                 or dept_title_map.get(card.get("dept"), ""))
 
     # 部门视图（IDE 左树顺序：参谋长在顶，职能部居中，项目部在后）
     # K-ORG-053：组织图动态注册的新部门免改码——org.json departments 取显示名/type，
@@ -355,10 +412,66 @@ def main():
             "all_ids": dept_agents[dep],  # 项目部可能引用未在职能表落卡者（现状无）
         })
 
-    # 参谋长 charter 回填实际在编数（K-ORG-053）
+    # ── P2（WO-IDE-ZHAOYUN）：治理席虚拟卡（profile 角色，不占编）────────────
+    # 与 R2（org 编制·保守风控哨）是两个 id：页面/报表按 id 区分，勿按名字聚合。
+    zy_caps = []
+    try:
+        cap_file = os.path.join(os.path.expanduser("~"), ".hermes", "profiles",
+                                "zhaoyun", "skills", "CAPABILITIES.json")
+        cap_data = json.load(open(cap_file, encoding="utf-8-sig"))
+        zy_caps = [str(c.get("name")) for c in (cap_data.get("capabilities") or [])
+                   if isinstance(c, dict) and c.get("name")]
+    except (OSError, ValueError):
+        zy_caps = []
+    if not zy_caps:
+        zy_caps = ["扫描与收口", "健康卡判读", "AI 归纳建议", "判例沉淀", "经验库维护"]
+    agents["ZHAOYUN"] = {
+        "id": "ZHAOYUN",
+        "dept": "governance",
+        "cn_name": "赵云",
+        "name": "赵云",
+        "role_cn": "治理席（进化官）",
+        "role_profile": "governance_seat",
+        "grade": "",
+        "grade_note": "profile 角色，不占 org.json 编制（D5-C）",
+        "charter": "治理面：扫描/收口/健康卡/AI 归纳建议/判例沉淀；只产建议与证据，"
+                   "不裁决、不自动执行、不持私钥。",
+        "llm": "deepseek/deepseek-flash（DSH 会话载体）",
+        "tools": [],
+        "grants_read": [],
+        "grants_write": [],
+        "prompt_file": "",
+        "prompt": "",
+        "projects": [],
+        "team_desc": "治理席（不占编）· 只产建议与证据",
+        "attributes": {"specialties": zy_caps},
+        "capabilities": zy_caps,
+        "entry_source": "virtual_governance",
+        "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）"
+                     "是不同 id，报表按 id 区分。",
+        "home_page": "http://127.0.0.1:8796/zhaoyun",
+    }
+    governance_dept = {
+        "id": "governance",
+        "name": "🧭 治理席（不占编）",
+        "type": "func",
+        "charter": "赵云治理席（ZHAOYUN）：扫描/收口/健康卡/AI 归纳建议/判例沉淀；"
+                   "只产建议与证据，不占编、不裁决、不自动执行。",
+        "cn_title": "治理台",
+        "lead_id": "ZHAOYUN",
+        "lead_name": "赵云",
+        "agents": ["ZHAOYUN"],
+        "all_ids": ["ZHAOYUN"],
+    }
+    chief_idx = next((i for i, d in enumerate(departments) if d["id"] == "chief"), 0)
+    departments.insert(chief_idx + 1, governance_dept)  # 左树顶部可见，且与编制区分
+
+    # 参谋长 charter 回填实际**在编**数（排除不占编的治理席虚拟卡）
+    org_agent_count = sum(1 for c in agents.values()
+                          if c.get("entry_source") != "virtual_governance")
     if "{N}" in agents["A0"]["charter"]:
         agents["A0"]["charter"] = agents["A0"]["charter"].replace(
-            "{N}", str(len(agents)))
+            "{N}", str(org_agent_count))
 
     # 工单投影（K-ORG-024 批C先行）：devtask tasks.json 活跃单挂到岗卡
     # owner 精确匹配 agent_id（如 DEV1/PM1）；Codex 系自由身 worker 归全局池
@@ -440,9 +553,11 @@ def main():
         "generated": time.strftime("%Y-%m-%d %H:%M"),
         "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
         "stats": {
-            "agents": len(agents),
+            "agents": org_agent_count,
             "departments": len(departments),
-            "prompt_ok": len(agents) - len(miss_prompt),
+            "governance_seats": 1,
+            "total_cards": len(agents),
+            "prompt_ok": org_agent_count - len(miss_prompt),
             "prompt_miss": miss_prompt,
             "workorders_doing": wo_stats["doing"],
             "workorders_review": wo_stats["review"],
