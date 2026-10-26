@@ -42,6 +42,9 @@ EXEMPT_PATH_PATTERNS = [
     r"(^|/)\.envrc$",
     r"(^|/)secrets?(/|$)",          # secrets/ 目录
     r"\.env\.example$",             # 示例 env（配合占位符过滤）
+    # 2026-10-26 EXEC-R39：基线豁免清单本身含大量 path:rule 形态的 key 文本，
+    # 扫描它会自指命中（如长文档名触发 HIGH_ENTROPY）；它不是凭据载体，按路径豁免。
+    r"(^|/)scan_secrets_allowlist\.tsv$",
 ]
 
 # 测试桩目录/文件标记（按路径豁免）

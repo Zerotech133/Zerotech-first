@@ -32,7 +32,15 @@ HR = ROOT / "agent_platform" / "hr"
 WORKTREES = ROOT / ".worktrees"
 
 DEPT_NAME = {}
-TOKEN_FILE = Path(os.environ.get("LEGION_TOKEN_FILE", r"C:\\Temp\\portal_api_token"))
+# 2026-10-26 R39：token 优先读本机私有区 _vault\secrets（从 C:\Temp 迁移），
+# 旧 C:\Temp 路径仅兼容回退；LEGION_TOKEN_FILE 环境变量仍最高优先。
+_R39_SECRETS_DIR = r"C:\项目\_vault\secrets"
+TOKEN_FILE = Path(os.environ.get("LEGION_TOKEN_FILE")
+                  or next((p for p in (
+                      os.path.join(_R39_SECRETS_DIR, "portal_api_token"),
+                      r"C:\\Temp\\portal_api_token",
+                  ) if os.path.isfile(p)),
+                      os.path.join(_R39_SECRETS_DIR, "portal_api_token")))
 
 def _load_token():
     try:

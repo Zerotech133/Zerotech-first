@@ -211,10 +211,19 @@ _ERROR_LOG_MAX = 50 * 1024 * 1024   # 50MB
 #   - 本机直连 8091（无标记）→ 本机可信域，放行（本机等价于能读 token 文件）
 #   - 经反代且 X-Real-IP=127.0.0.1 → 本机浏览器，放行且页面注入 token
 #   - 经反代且 X-Real-IP=局域网 → 变更类 POST 必须带匹配的 X-Portal-Token
-# token 来源：环境变量 PORTAL_API_TOKEN 优先；否则 C:\Temp\portal_api_token
+# token 来源：环境变量 PORTAL_API_TOKEN 优先；其次 PORTAL_API_TOKEN_FILE 指定路径；
+# 再优先本机私有区 `_vault\secrets\portal_api_token`（2026-10-26 R39 从 C:\Temp
+# 迁移，见 _audit_20261025/exec/A3-execution-20261026.md），旧 C:\Temp 路径仅兼容
+# 回退；两者皆无则首次自动生成 64 位 hex 落盘。
 # （不落 portal/ 下——该目录整挂为 nginx web root，落盘即等于局域网可直接
-# GET 下载，鉴权形同虚设）；两者皆无则首次自动生成 64 位 hex 落盘。
-_PORTAL_TOKEN_FILE = r"C:\Temp\portal_api_token"
+# GET 下载，鉴权形同虚设）
+_VAULT_SECRETS = r"C:\项目\_vault\secrets"
+_PORTAL_TOKEN_FILE = (os.environ.get("PORTAL_API_TOKEN_FILE")
+                      or next((p for p in (
+                          os.path.join(_VAULT_SECRETS, "portal_api_token"),
+                          r"C:\Temp\portal_api_token",
+                      ) if os.path.isfile(p)),
+                          os.path.join(_VAULT_SECRETS, "portal_api_token")))
 
 
 ROOT = os.path.dirname(os.path.abspath(__file__))      # ...\portal
@@ -652,11 +661,13 @@ def _portal_token():
     return tok
 
 
-def _load_cainiao_env(path=r"C:\Temp\cainiao_oauth2.env"):
+def _load_cainiao_env(path=None):
     """X1（2026-10-09）：加载菜鸟 OAuth2 本地凭据文件（KEY=VALUE 行）注入
-    os.environ.setdefault——已有环境变量优先，文件不覆盖。文件放
-    C:\\Temp（与 _PORTAL_TOKEN_FILE 同一安全口径：portal/ 目录整挂
-    nginx web root，落盘即等于局域网可直接 GET 下载，凭据绝不能放这里）。
+    os.environ.setdefault——已有环境变量优先，文件不覆盖。默认路径（2026-10-26
+    R39 迁移后）：`_vault\\secrets\\cainiao_oauth2.env` → 旧
+    `C:\\Temp\\cainiao_oauth2.env` 兼容回退
+    （与 _PORTAL_TOKEN_FILE 同一安全口径：portal/ 目录整挂 nginx web root，
+    落盘即等于局域网可直接 GET 下载，凭据绝不能放这里）。
 
     B5 白名单化（2026-10-21）：仅键名 strip 后以 "CAINIAO_" 前缀开头的
     行允许 setdefault；其余键（如 PORTAL_SUB_ADMIN_KEY 等任意键）跳过
@@ -669,6 +680,12 @@ def _load_cainiao_env(path=r"C:\Temp\cainiao_oauth2.env"):
      "missing": 文件是否缺失 bool}
     文件缺失（OSError）时静默 no-op（closed on failure，与既有口径一致），
     返回 missing=True。"""
+    if path is None:
+        # 2026-10-26 R39：优先本机私有区（从 C:\Temp 迁移），旧路径兼容回退。
+        path = next((p for p in (
+            os.path.join(_VAULT_SECRETS, "cainiao_oauth2.env"),
+            r"C:\Temp\cainiao_oauth2.env",
+        ) if os.path.isfile(p)), r"C:\Temp\cainiao_oauth2.env")
     loaded = []
     skipped = []
     missing = False
