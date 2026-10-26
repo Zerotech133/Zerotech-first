@@ -44,6 +44,10 @@ FILE_WHITELIST = {
     "devtask.py", "publish_watchdog.py", "a0_patrol.py",
     "execution_watchdog.py", "alert_forward.py", "refresh_agent_board.py",
     "health_check.py", "feishu_rollback_drill.py", "feishu_sop_runner.py",
+    # 2026-10-26 OS-FIX-W4FINAL（老田批准执行）：JEV 图表卡含飞书 img_key
+    # （图表快照），统一分装 feishu_push 不支持图片；按"非迁移场景"白名单，
+    # 非通用推送生产者（随晨报/复盘附带的图表附件）。
+    "news_jev_chart.py",
 }
 
 
