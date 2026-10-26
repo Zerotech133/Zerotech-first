@@ -321,12 +321,17 @@ def _tasks():
     return {}
 
 
-def _save(tasks, *, drop_keys=()):
+def _save(tasks, *, drop_keys=(), changed=None):
     """原子保存并保留并发进程已登记的工单。
 
     ``new``/``review``/``merge`` 都是「读→改→写」短命 CLI；若另一进程
     在本进程读完后先写入新工单，直接覆盖会丢单。保存时把磁盘上较新的
     键合并回来，显式 drop_keys 才允许删除（原子替换防半文件）。
+
+    ``changed``：本进程实际改动的键集合。只把这些键从 ``tasks`` 写入磁盘，
+    避免整包覆盖把并发进程刚更新的其它工单状态回滚（2026-10-26 并发漂移
+    修复：实证 TFSEAT/OSLEG-CH2/CHDOC 已 merge 但状态被并发写回 doing）。
+    ``changed=None`` 保留旧的整包覆盖语义（兼容内部调用）。
     """
     os.makedirs(WT_DIR, exist_ok=True)
     current = {}
@@ -336,7 +341,14 @@ def _save(tasks, *, drop_keys=()):
         except (OSError, ValueError):
             current = {}
     merged = dict(current)
-    merged.update(tasks)
+    if changed is None:
+        merged.update(tasks)
+    else:
+        for key in changed:
+            if key in tasks:
+                merged[key] = tasks[key]
+            else:
+                merged.pop(key, None)
     for key in drop_keys:
         merged.pop(key, None)
     fd, tmp = tempfile.mkstemp(prefix="tasks.", suffix=".tmp", dir=WT_DIR)
@@ -579,7 +591,7 @@ def cmd_new(tid, *desc):
                   "status": "doing", "created": time.strftime("%F %T"),
                   "project": project,
                   "owner": owner}
-    _save(tasks)
+    _save(tasks, changed=(tid,))
     _ckpt(tid, "kai", tasks[tid]["owner"],
           {"desc": desc, "branch": branch, "worktree": wt,
            "project": project})
@@ -729,7 +741,7 @@ def cmd_merge(tid, *flags):
               "会空转（无实际合并内容）" % (t["branch"], t["branch"]))
         print("  已拒绝合并，worktree 保留。请在 worktree 内先 commit，再重跑 merge。")
         t["status"] = "review"
-        _save(tasks)
+        _save(tasks, changed=(tid,))
         _emit("guard_fail", tid, "分支无提交（master..%s=0），防呆拒绝合并，worktree 保留"
               % t["branch"])
         return 1
@@ -750,7 +762,7 @@ def cmd_merge(tid, *flags):
         print("  %-8s ✗ %s" % (name, out[:160]))
         print("门未过，拒绝合并。修完重跑。")
         t["status"] = "review"
-        _save(tasks)
+        _save(tasks, changed=(tid,))
         _emit("guard_fail", tid, "门 %s 未过：%s" % (name, out[:120]))
         return 1
     # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
@@ -780,7 +792,7 @@ def cmd_merge(tid, *flags):
                       "不静默放行；修完重跑）")
             print("门未过，拒绝合并。")
             t["status"] = "review"
-            _save(tasks)
+            _save(tasks, changed=(tid,))
             _emit("guard_fail", tid, "L2 门未过（K-STOCK-416）：%s" % detail[:120])
             return 1
     _git("merge", "--no-ff", t["branch"], "-m",
@@ -788,7 +800,7 @@ def cmd_merge(tid, *flags):
     # 合并后不自动删除 worktree/分支：删除不可逆，只提示、留给人确认执行。
     t["status"] = "done"
     t["merged"] = time.strftime("%F %T")
-    _save(tasks)
+    _save(tasks, changed=(tid,))
     _ckpt(tid, "merge", t.get("owner", "devtask"), {"status": "done"})
     _emit("merge_done", tid,
           "守卫全绿（含明文凭据扫描），已合并 master；worktree 保留待人工回收")
@@ -815,8 +827,9 @@ def cmd_drop(tid, *reason):
         pass
     t["status"] = "aborted"
     t["abort_reason"] = " ".join(reason) or "(未填)"
-    tasks[tid + "-aborted-" + time.strftime("%H%M%S")] = t
-    _save(tasks, drop_keys=(tid,))
+    _abort_key = tid + "-aborted-" + time.strftime("%H%M%S")
+    tasks[_abort_key] = t
+    _save(tasks, changed=(_abort_key,), drop_keys=(tid,))
     print("工单 %s 已放弃：%s" % (tid, t["abort_reason"]))
     return 0
 
