@@ -278,3 +278,4 @@ agent_platform/bridge_inbox/osleg_http/
 agent_platform/bridge_inbox/osleg_consumer/
 agent_platform/bridge_inbox/processed/lg-*.json
 quant_backtest/data/xueqiu/_manifest.json
+*.db-shm
