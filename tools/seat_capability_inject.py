@@ -77,6 +77,7 @@ CAPABILITIES = {
         {"name": "approval-inbox", "what": "L2 审批队列：请求→待批→批准/驳回，决策留痕", "how": "python -X utf8 tools/approval_inbox.py request/list/approve/reject", "boundary": "只有 pending 可决策；L2 不得自动批准", "status": "ready"},
         {"name": "browser-verification", "what": "真浏览器验收：goto/click/fill/断言/截图，证据落盘", "how": "python -X utf8 tools/browser_verify.py run --url ... --steps ...", "boundary": "只读页面操作；不改生产数据；失败即失败", "status": "ready"},
         {"name": "memory-rag", "what": "本地记忆检索：文档/判例/席位简报的 hash-vector 召回（无外部 Key）", "how": "python -X utf8 tools/memory_rag.py index/search/stats；索引 work/memory_rag", "boundary": "本地索引；不把敏感原文外发；检索结果需核对", "status": "ready"},
+        {"name": "durable-workflow", "what": "持久工作流：步骤状态机/超时/重试/断点续跑，长任务不丢", "how": "python -X utf8 tools/durable_workflow.py start/run/status/list；状态 work/workflows", "boundary": "不绕过 L2；失败/超时如实记录", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -537,6 +538,19 @@ description: 本地记忆检索：文档/判例/席位简报的 hash-vector 召�
 2. 检索：`python -X utf8 tools/memory_rag.py search "关键词" --top 5`。
 3. 增量：按文件 mtime+size 缓存，只重建变更文件；索引落 `work/memory_rag/index.json`。
 4. 检索结果须核对原文；不把敏感原文外发。
+""",
+        "durable-workflow": """---
+name: durable-workflow
+description: 持久步骤状态机：start/run/status，超时/重试/断点续跑；长任务状态落盘。
+---
+
+# 持久工作流
+
+1. 定义 steps.json：每步 id/cmd/timeout/retries。
+2. 启动：`python -X utf8 tools/durable_workflow.py start <id> --steps steps.json`。
+3. 执行/续跑：`... run <id>`；已 done 的步骤跳过，failed 按 retries 重试。
+4. 查看：`status <id>` / `list`；状态落 `work/workflows/<id>.json`。
+5. 进程中断后重跑 run 即续跑；不绕过 L2。
 """,
     },
     "zhaoyun": {
