@@ -1,4 +1,5 @@
-"""api_zhuge_adoption.py — 诸葛亮建议采纳率只追加路由（WO-OS-32 / C1，2026-10-23）。
+"""api_zhuge_adoption.py — 诸葛亮建议采纳率只追加路由（WO-OS-32 / C1，2026-10-23；
+C3 接线 2026-10-27，工单 WO-LEGION-ZHUGE-ADOPTROUTE-20261027）。
 
 POST /api/zhuge/adoption：接收页面 sendBeacon 的 {items:[{at,domain}]}，
 追加到 portal/data/zhuge_adoption.jsonl（append-only）。
@@ -8,10 +9,16 @@ POST /api/zhuge/adoption：接收页面 sendBeacon 的 {items:[{at,domain}]}，
 - 单条上限 200 items / 单 item 字段白名单，脏数据整批拒 400；
 - 无鉴权（内网 beacon；sendBeacon 不能带自定义头）——与 /feishu/event 同级
   「匿名但只写专用账本」面，写面窄化到本文件，风险可控；
-- 现状（2026-10-26 A2/C2 实测）：**未注册于 portal_api**（grep 无引用），
-  `/api/zhuge/adoption` = 404、账本 0B；v2 sendBeacon 方案已被 v3 服务器侧
-  归集（`harvest_adoption.py`，access log）取代。本文件保留仅作历史实现，
-  若要恢复采纳率能力，接线判据=路由 200 + 账本非空 + 归集器在计划任务中。
+- 路由接线（C3）：portal_api.do_POST 早分支分发到 handle_post(body)，
+  回包 {"ok": status==200, "message": msg}；正文长度上限对齐既有写端点
+  （负数 400 / 超 64KiB 413），落盘异常显式 500；GET 无读语义，走 404 兜底；
+- 现状（2026-10-27 C3 接线）：**源码已注册于 portal_api**（import + do_POST
+  分发行，契约测试 15 passed 走 handler stub）；**运行中的 8091 仍跑旧码，
+  需重启换血后才在线上生效（本单不重启，按纪律）**；GET /api/zhuge/adoption
+  = 404（测试锁定）；data/zhuge_adoption.jsonl 仍为空（测试一律 tmp 账本
+  隔离）。剩余：归集器 `harvest_adoption.py`（v3 access-log 方案）排程属 L2
+  未批；能力卡 `brief-trend` 保持 pending_wiring（三判据：路由 200 = 源码已接、
+  运行态待换血 / 账本非空 ❌ / 归集器在计划任务中 ❌）。
 """
 from __future__ import annotations
 
