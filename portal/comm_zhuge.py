@@ -5,11 +5,12 @@
 
 通道三级（priority 从高到低）
 ---------------------------
-1. **openclaw_gpt**：OpenClaw 配置的异族模型（itokengate/gpt-6-sol，老田 10-21 10:51 裁决）。
-   前置：openclaw bin + `~/.openclaw/openclaw.json`（旧名 config.json 兼容）。
-   密钥由 OpenClaw secret store 承载（`ITOKENGATE_ZHUGE_API_KEY`，write-only），
-   不再强制要求 env OPENAI_API_KEY。调用方式：子进程
-   `openclaw infer model run --local --agent zhuge --model itokengate/gpt-6-sol`。
+1. **openclaw_gpt / openclaw_cloud**：OpenClaw agent-config 决定的载体。
+   2026-10-21 裁决真身 = `itokengate/gpt-6-sol`（跨境网络待恢复）；当前可用
+   载体 = `deepseek/deepseek-chat`（**中转替代·非 GPT6**，诚实标 `mode=openclaw_cloud`
+   + `carrier`）。前置：openclaw bin + `~/.openclaw/openclaw.json`（旧名 config.json 兼容）。
+   密钥由 OpenClaw secret store 承载，不再强制要求 env OPENAI_API_KEY。调用方式：
+   `openclaw infer model run --local --agent zhuge [--model <override>]`。
    超时上限 OPENCLAW_TIMEOUT（env `COMM_ZHUGE_OPENCLAW_TIMEOUT` 可覆盖）。
 2. **local_soul**：本地 qwen3.5:9b + 诸葛亮 SOUL prompt（军师人格，非真 GPT6.0）。
    **诚实标注**：返回 mode=local_soul 且 reply meta 会标「本地军师代理」，
@@ -42,7 +43,7 @@ OPENCLAW_TIMEOUT = int(os.environ.get("COMM_ZHUGE_OPENCLAW_TIMEOUT", "90"))
 OPENCLAW_AGENT = os.environ.get("COMM_ZHUGE_OPENCLAW_AGENT", "zhuge")
 # 模型覆盖：留空 = 用 OpenClaw agent 配置里的 model.primary（推荐，便于换载体）
 OPENCLAW_MODEL = os.environ.get("COMM_ZHUGE_OPENCLAW_MODEL", "").strip()
-# 载体诚实标签（仅展示用；默认从模型字符串推断，空则 agent-config）
+# 载体诚实标签（仅展示用；空则解析 agent-config 的 model.primary，再退回 "agent-config"）
 OPENCLAW_CARRIER = os.environ.get("COMM_ZHUGE_CARRIER", "").strip()
 
 # 诸葛亮 SOUL（精简自 deliverables/s20-zhuge-workspace-20261021/SOUL.md）
@@ -85,6 +86,42 @@ def _openclaw_config_path():
     return None
 
 
+def _openclaw_agent_model(agent=None):
+    """→ OpenClaw agent 配置里的 model.primary（如 deepseek/deepseek-chat）。
+
+    只用于**诚实标签**（carrier/mode），不参与调用——调用时由 OpenClaw 按
+    agent-config 自行解析载体。读不到/坏 JSON 一律返回 ""（fail-open 不抛）。
+    """
+    cfg = _openclaw_config_path()
+    if not cfg:
+        return ""
+    try:
+        d = json.loads(cfg.read_text(encoding="utf-8"))
+        entries = (d.get("agents") or {}).get("entries") or {}
+        ent = entries.get(agent or OPENCLAW_AGENT) or {}
+        model = ent.get("model") or {}
+        return str(model.get("primary") or "").strip()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def zhuge_tag(zr):
+    """军师回复的卡面诚实标签（供 inbound_gateway 等展示层复用）。
+
+    - openclaw_gpt   → GPT-6.0 真身
+    - openclaw_cloud → 云端中转替代（carrier，如 deepseek/deepseek-chat），非 GPT6
+    - 其它           → 本地军师代理（qwen3.5:9b）
+    """
+    zr = zr or {}
+    mode = zr.get("mode")
+    if mode == "openclaw_gpt":
+        return "诸葛亮（GPT6.0）"
+    if mode == "openclaw_cloud":
+        carrier = str(zr.get("carrier") or "cloud")
+        return "诸葛亮（中转替代·%s·非GPT6）" % carrier
+    return "诸葛亮（本地军师代理）"
+
+
 def _openclaw_configured():
     return _openclaw_config_path() is not None
 
@@ -109,6 +146,8 @@ def channel_status():
             "configured": cfg is not None,
             "config_path": str(cfg) if cfg else None,
             "agent": OPENCLAW_AGENT, "model": OPENCLAW_MODEL,
+            "agent_model": _openclaw_agent_model(),
+            "carrier": OPENCLAW_CARRIER or _openclaw_agent_model() or "agent-config",
             "transport": "openclaw_provider"}
 
 
@@ -251,11 +290,13 @@ def consult(question, open_id="", llm=None, timeout=DEFAULT_TIMEOUT,
     if ready:
         raw, oc_err = _run_openclaw(q, timeout=min(timeout, OPENCLAW_TIMEOUT))
         if raw:
-            # 诚实标签：gpt-6-sol 真身 vs 其他载体（如 deepseek 替代）
-            model_used = OPENCLAW_MODEL or "agent-config"
-            carrier = OPENCLAW_CARRIER or ("gpt-6-sol" if "gpt" in model_used.lower() else model_used)
-            mode = "openclaw_gpt" if "gpt-6" in model_used.lower() else "openclaw_cloud"
-            return {"text": _trim(raw, max_chars), "mode": mode, "carrier": carrier,
+            # 诚实标签：gpt-6-sol 真身 vs 其他载体（如 deepseek 中转替代）
+            model_used = OPENCLAW_MODEL or _openclaw_agent_model() or "agent-config"
+            carrier = OPENCLAW_CARRIER or model_used
+            is_gpt6 = "gpt-6" in model_used.lower()
+            mode = "openclaw_gpt" if is_gpt6 else "openclaw_cloud"
+            return {"text": _trim(raw, max_chars), "mode": mode,
+                    "carrier": carrier, "relay": (not is_gpt6),
                     "llm_ok": True, "error": None,
                     "elapsed_ms": int((time.time() - t0) * 1000)}
         # 真通道失败 → 继续降级（错误进 error 字段，不吞）
