@@ -105,6 +105,22 @@ python -m analysis.review --stats --code 600337.SH
 - 复核状态持久化在 `analysis.db.events`，**重复跑分析不会覆盖**（upsert 保留复核字段）；
 - 报告 §六 增加「复核」列与复核统计；H5 时间线类别带 ✓/✗；批回执含每只标的待复核数（`pending_review`）。
 
+### 事件 AI 预审清单（P0J 新增，只出建议、不代替人审）
+
+```bash
+python -m analysis.prereview --all                     # 三只 watchlist，输出 CSV+MD 到 deliverables
+python -m analysis.prereview --code 600337.SH --out C:\项目\deliverables\2026-10-26_事件AI预审清单
+```
+
+- 每条 pending 事件给出：`approve`（类别一致）/ `reclassify`（建议改类别）/ `reject`（程序性文件，如实施细则/审计委员会/章程/股东大会通知）；
+- **不写复核状态**；人工确认后按 CSV 里的 `event_id` 用 `review --approve/--reject` 或门户 `/sa` 页点选入库；
+- 规则补全（同一提交）：`MATERIAL` 去掉 `审计`（避免审计委员会类程序文件混入）；`EVENT_RULES` 增加「治理/程序」类别；重整优先于退市/ST。
+
+### G1 覆盖率目标（P0J，诸葛亮裁示）
+
+- `config.COVERAGE_MIN=80`（硬门槛，低于即不通过）、`config.COVERAGE_TARGET=90`（目标，80-90 区间标黄告警但不否决）；
+- 报告/analysis.json 的 `checks.G1.issues` 会写明"覆盖率 x% < 目标 90%（告警，不否决）"。
+
 ## 七、三股回放（2026-10-23 口径，P0B 复跑）
 
 | 标的 | 覆盖率 | 评级（流水线） | 人工版对照 | 用时 |
