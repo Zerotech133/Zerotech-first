@@ -348,7 +348,7 @@ def test_audit_binding_missing_matches_independent_count():
 
 # ------------------------------------------- 绑定声明（rules 1.2 / S43）
 
-def test_audit_detects_binding_missing(tmp_path):
+def test_audit_detects_binding_missing__dup2(tmp_path):
     """有档案但没写 llm_binding 必须报出来：取档方会回落默认档。
 
     为什么算缺口而不是"默认就行"：规则执行体（桥接/回调/门面）本该 none，
@@ -371,7 +371,7 @@ def test_audit_detects_binding_missing(tmp_path):
     assert got == {"Q1"}, "未声明绑定的席位必须被检出（实际 %r）" % got
 
 
-def test_audit_binding_missing_matches_independent_count():
+def test_audit_binding_missing_matches_independent_count__dup2():
     """真实盘面：检出的未声明绑定席位须与独立口径一致（不写死人名）。"""
     from engine.org_profiles import profile_index
     rep = A.audit(_PLATFORM)
@@ -400,7 +400,7 @@ def test_audit_other_dept_profile_downgraded_to_p3():
     assert checked > 0, "样本为空：没有「主官档案在别的部门表」的情形，用例失去承重"
 
 
-def test_audit_other_dept_profile_downgraded_to_p3():
+def test_audit_other_dept_profile_downgraded_to_p3__dup2():
     """档案在**别的部门表**（跨部门兼任的常态）应是 P3，不能当成取档故障报 P2。
 
     统一取档口径能查到这类档案，不存在"静默回落默认档"；把它算 P2 会让真实的
