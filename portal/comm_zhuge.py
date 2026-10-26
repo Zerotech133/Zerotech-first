@@ -115,15 +115,13 @@ def channel_status():
 def _openclaw_prompt(question):
     """把 SOUL 与用户问题合成纯模型 prompt（infer model run 无 system 参数）。
 
-    P0H 修复：persona 放在最前会让模型只回"寒暄"、忽略咨询内容；
-    末尾必须追加强指令「直接回答、不要打招呼、不要复述」。
+    P0I：压成单行。多行/超长 prompt 会让 CLI 走人类可读输出甚至截断，
+    导致只回寒暄；单行短 prompt 实测正常调用模型并回答内容。
     """
-    return (
-        ZHUGE_SOUL
-        + "\n\n【用户咨询】\n" + (question or "").strip()
-        + "\n\n【要求】直接回答上面的咨询：结论先行、条理清晰、3-6 句内说清；"
-          "不要打招呼、不要自我介绍、不要复述材料；如为多问，用 1/2/3 编号逐条回答。"
-    )
+    soul = " ".join((ZHUGE_SOUL or "").split())
+    q = " ".join((question or "").split())
+    return (soul + " 用户咨询：" + q
+            + " 要求：直接回答，结论先行，3-6句内说清，不寒暄、不复述材料；多问用 1/2/3 编号。")
 
 
 def _parse_openclaw_stdout(stdout, stderr="", returncode=0):
@@ -138,9 +136,24 @@ def _parse_openclaw_stdout(stdout, stderr="", returncode=0):
             if d.get("ok"):
                 out = d.get("text") or d.get("output") or d.get("content")
                 if not out:
+                    # P0I：OpenClaw --json 真实结构为 outputs:[{text,...}]（此前漏提取→误判空回复→降级本地）
+                    outs = d.get("outputs")
+                    if isinstance(outs, list) and outs:
+                        parts = []
+                        for it in outs:
+                            if isinstance(it, dict):
+                                t = it.get("text") or it.get("content")
+                                if t:
+                                    parts.append(str(t))
+                        out = "\n".join(parts) if parts else None
+                if not out:
                     res = d.get("result")
                     if isinstance(res, dict):
                         out = res.get("text") or res.get("content")
+                        if not out and isinstance(res.get("outputs"), list) and res["outputs"]:
+                            rs = [x.get("text") for x in res["outputs"]
+                                  if isinstance(x, dict) and x.get("text")]
+                            out = "\n".join(rs) if rs else None
                 out = str(out or "").strip()
                 return (out, None) if out else (None, "empty_output")
             err = d.get("error")
@@ -151,9 +164,24 @@ def _parse_openclaw_stdout(stdout, stderr="", returncode=0):
             return None, "cli_error: %s" % str(msg)[-160:]
     if returncode != 0:
         return None, "exit=%d: %s" % (returncode, (stderr or txt or "")[-160:])
-    lines = [ln for ln in txt.splitlines()
-             if ln.strip() and not ln.startswith("[openclaw]")
-             and not ln.startswith("[provider-")]
+    # P0I：兼容 CLI 人类可读输出（长 prompt 时出现）：
+    #   model.run via local / provider: x / model: y / outputs: 1
+    #   <正文>
+    import re as _re
+    m = _re.search(r"outputs:\s*\d+\s*\n(.+)$", txt, _re.S)
+    if m:
+        out = m.group(1).strip()
+        return (out, None) if out else (None, "empty_output")
+    lines = []
+    for ln in txt.splitlines():
+        s = ln.strip()
+        if not s:
+            continue
+        if s.startswith("[openclaw]") or s.startswith("[provider-"):
+            continue
+        if s.startswith("model.run via") or s.startswith("provider:") or s.startswith("model:"):
+            continue
+        lines.append(ln)
     out = "\n".join(lines).strip()
     return (out, None) if out else (None, "empty_output")
 
