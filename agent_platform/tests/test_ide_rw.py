@@ -232,8 +232,11 @@ def test_exec_timeout(monkeypatch, tmp_path):
 
 # ---------------------------------------------------------------- 审计
 
-def test_audit_fallback_writes_jsonl(tmp_path):
+def test_audit_fallback_writes_jsonl(tmp_path, monkeypatch):
     repo, _wt = make_repo(tmp_path)
+    # 全量套件下 tools/events 可能已被其它用例导入（sys.modules 缓存），emit 会「成功」而
+    # 走不到 fallback；用 None 占位强制 ImportError，确保本用例只测本地 jsonl 降级分支。
+    monkeypatch.setitem(sys.modules, "events", None)
     res = G.audit(repo, "code_action", "T-BOOT", "IDE", "write x")
     assert res["ok"] is True
     fb = repo / "agent_platform" / "data" / "legion_ide_audit.jsonl"

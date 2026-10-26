@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -459,6 +460,8 @@ def test_minutes_bad_length_rejected(meeting_server):
     assert not list(mdir.glob("*.json")) if mdir.exists() else True
 
 
+@pytest.mark.skipif(shutil.which("node") is None,
+                    reason="用例以 Node 虚拟 DOM 跑前端脚本；服务器 verify 环境无 node，跳过")
 def test_meeting_browser_flow_isolated():
     """Node 虚拟 DOM 与假 fetch：验证 HOST XSS、会终成功/失败都不误派单。"""
     html = (_PLATFORM / "legion_command" / "static" / "meeting.html").read_text(encoding="utf-8")
