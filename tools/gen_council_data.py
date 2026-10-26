@@ -146,11 +146,16 @@ def probe_seats() -> list[dict]:
     probe_port("田丰 · Hermes", "tianfeng", 8787, "Hermes WebUI")
     # 军团指挥台 8796（军团总线现役，非某单席位，列出供参考）
     probe_port("军团指挥台", "legion", 8796, "legion_command")
-    # 诸葛亮：OpenClaw 网关（local 模式无常驻端口，配置已核 key 未注入）
+    # 诸葛亮：OpenClaw agent-config 载体（无固定端口；L5/8796 走 CLI）
+    # 2026-10-26 A2/C2：旧文案「key 未注入——骨架就绪未上模」已被实测推翻
+    # （密钥在 OpenClaw secret store，env 非前置；L5/8796 经 deepseek 中转真实作答）。
     seats.append({"seat": "zhuge", "name": "诸葛亮 · OpenClaw",
-                  "method": "OpenClaw 网关无固定端口（local 模式）",
+                  "method": "OpenClaw agent-config 载体（无固定端口；L5/8796 走 CLI）",
                   "online": False, "verifiable": False,
-                  "note": "agent 已建、模型 openai/gpt-6.0 已配、OPENAI_API_KEY 未注入——骨架就绪未上模"})
+                  "note": "无端口可探故 online=false（≠通道不可用）。2026-10-26 实测："
+                          "L5 consult 与 8796 AI1 均经 DeepSeek 中转真实作答"
+                          "（openclaw_cloud/carrier=deepseek/deepseek-chat/relay=true，非 GPT6）；"
+                          "GPT6 真身待跨境网络；密钥在 OpenClaw secret store，非 env"})
     # 赵云：DeepSeek Harness（本体已迁 C:/lab，key 未到位，无常驻服务）
     seats.append({"seat": "zhaoyun", "name": "赵云 · DeepSeek Harness",
                   "method": "Harness 无常驻服务（任务框架，按需起）",

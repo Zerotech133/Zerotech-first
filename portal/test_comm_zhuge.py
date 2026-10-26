@@ -275,6 +275,10 @@ def test_19_status_reports_agent_model(monkeypatch):
     assert st["agent_model"] == "deepseek/deepseek-chat"
     assert "deepseek" in st["carrier"]
     assert st["config_path"].endswith("openclaw.json")
+    # A2：凭据来源诚实标注（旧 key_set 只看 env，会误导排障）
+    assert st["key_source"] == "openclaw_secret_store"
+    assert st["key_set"] is True
+    assert st["env_key_set"] in (False, True)
 
 
 # ── 诚实标签（2026-10-26 L5LABEL）────────────────────────

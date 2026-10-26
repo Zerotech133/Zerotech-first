@@ -97,9 +97,10 @@ def similarity(a, b):
 
 
 class OllamaLLM:
-    def __init__(self, host="http://127.0.0.1:11434", timeout=300, retries=1):
-        # timeout=300：解释器层内并行多路请求会在 Ollama 排队（实测 9b 冷加载 34s，
-        # 3 路并行排队最坏 3×生成时长），90s 级超时会全军覆没（2026-10-08 live 首跑教训）
+    def __init__(self, host="http://127.0.0.1:11434", timeout=None, retries=1):
+        # timeout=None：不设调用方预算，按 MODEL_PROFILES 的模型档超时（35b 900s / 9b 300s）。
+        # timeout=<秒>：调用方预算 = 硬上限（2026-10-26 A2-B01：旧实现 profile 会覆盖
+        # 调用方显式传入的 12s/25s，L5 本地降级与意图分类最坏挂 ~601s）。
         self.host = host.rstrip("/")
         self.timeout = timeout
         self.retries = retries
@@ -156,7 +157,10 @@ class OllamaLLM:
             "think": False,  # qwen3.5 思考模型：必须关思考（实测 400 token 全被 thinking 吃掉，content 为空）
             "options": options,
         }
-        per_call_timeout = prof["timeout"] or self.timeout
+        per_call_timeout = prof["timeout"] or 300
+        if self.timeout:
+            # 调用方显式预算优先（取更小者）：profile 只是模型档默认，不是硬覆盖。
+            per_call_timeout = min(per_call_timeout, self.timeout)
         last = None
         for _ in range(self.retries + 1):
             try:

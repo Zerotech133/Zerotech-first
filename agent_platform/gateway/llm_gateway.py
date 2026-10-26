@@ -11,7 +11,10 @@ engine 语义，本层只做信封化与异常归一：
 binding 词表（10-18 分工定案 + S20 异族裁决）：
   "ollama/qwen3.5:9b"（默认主力）/ "ollama/qwen3.6:35b-a3b"（判读重档）
   / "ollama/bge-m3"（嵌入）/ "glm/glm-5.3"（田丰参谋长云端）
-  / "openai/gpt-6.0"（诸葛亮异族，须 OPENAI_API_KEY）
+  / "openai/gpt-6.0"（诸葛亮异族）：本门面的 openai 前缀仍走 engine 的直连
+  OpenAILLM（须 env OPENAI_API_KEY，缺=快速 LLMError）；**运行时 L5/8796 的
+  AI1 已改走 OpenClaw agent-config 载体（DeepSeek 中转，见 engine/openclaw_cli.py），
+  二者口径不同，勿混用**（2026-10-26 A2-B05 记录）。
 """
 
 from __future__ import annotations

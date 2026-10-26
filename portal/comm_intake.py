@@ -94,19 +94,43 @@ def build_reply(intent_result, open_id="", dispatch_result=None):
                 "meta": ["查账本直答", "零Agent", "trace:" + trace]}
 
     if intent == "billing":
-        return {"text": ("您的账单/发票/退款类问题涉及资金口径，我已登记并转人工"
-                         "专员跟进（工单 %s），一个工作日内回复。为避免口径出错，"
-                         "此类问题我不自动答复金额与退款结论。"
-                         % ("BI-" + trace[:6].upper())),
+        # 2026-10-26 A2-B02：不再编 BI-xxxx 假工单号。只认真实派单结果；
+        # 派单未启用/失败时如实说明，不假装已转人工（"不假装已执行"红线）。
+        dr = dispatch_result or {}
+        real_id = dr.get("dispatch_id") if dr.get("ok") else None
+        if real_id:
+            return {"text": ("您的账单/发票/退款类问题涉及资金口径，已转人工专员跟进"
+                             "（工单 %s），一个工作日内回复。为避免口径出错，"
+                             "此类问题我不自动答复金额与退款结论。" % real_id),
+                    "action": ACTION_REPLY, "llm_ok": False,
+                    "meta": ["涉资金·模板+真实派单", "不自动答金额",
+                             "trace:" + trace]}
+        reason = dr.get("reason")
+        tail = "转人工通道未启用，请回复「人工」转专员。" if reason == "disabled" \
+            else "转人工暂时不可用，请回复「人工」转专员。"
+        return {"text": ("您的账单/发票/退款类问题涉及资金口径，已留痕（未派单）。"
+                         + tail + "此类问题我不自动答复金额与退款结论。"),
                 "action": ACTION_REPLY, "llm_ok": False,
-                "meta": ["涉资金·模板+人工", "不自动答金额", "trace:" + trace]}
+                "meta": ["涉资金·模板+人工未接通(如实)", "不自动答金额",
+                         "trace:" + trace]}
 
     if intent == "complaint":
-        return {"text": ("非常抱歉给您带来不好的体验。您的反馈已升级为最高优先级"
-                         "工单 %s，田丰大人亲自督办，30 分钟内必有答复。"
-                         % ("TS-" + trace[:6].upper())),
+        # 2026-10-26 A2：投诉同样只认真实派单号，不再拼 TS- 假号。
+        dr = dispatch_result or {}
+        real_id = dr.get("dispatch_id") if dr.get("ok") else None
+        if real_id:
+            return {"text": ("非常抱歉给您带来不好的体验。您的反馈已升级为最高优先级"
+                             "工单 %s，田丰大人亲自督办，30 分钟内必有答复。" % real_id),
+                    "action": ACTION_REPLY, "llm_ok": False,
+                    "meta": ["田丰归口", "最高优先级", "真实派单",
+                             "trace:" + trace]}
+        reason = dr.get("reason")
+        tail = "投诉通道未启用，请回复「人工」转专员。" if reason == "disabled" \
+            else "投诉转接暂时不可用，请回复「人工」转专员。"
+        return {"text": ("非常抱歉给您带来不好的体验。已记录您的反馈（未派单）。"
+                         + tail),
                 "action": ACTION_REPLY, "llm_ok": False,
-                "meta": ["田丰归口", "最高优先级", "永不受闸限", "trace:" + trace]}
+                "meta": ["田丰归口", "通道未接通(如实)", "trace:" + trace]}
 
     if intent in ("stock_consult", "watch_setup"):
         # K5.1：真投递成功用真实工单号（lg-xxx）；投递未启用/失败如实说明，
@@ -187,12 +211,11 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
         res["entities"]["code"] = ref["injected_code"]
         res["resolved_from_memory"] = True
 
-    # K5.1：派单类意图先真投递（开关内置于 comm_dispatch），回执单号进文案
+    # K5.1 派单：2026-10-26 A2-B03 修复——先做军师裁决，仅非军师链路才真投递，
+    # 避免 stock_consult 无标的被军师接管后仍先落一张孤儿 task_request。
     dr = None
-    if res["intent"] in ("stock_consult", "watch_setup", "complaint"):
-        dr = dispatch.dispatch(res, open_id, msg_id=msg_id)
     # K6：小聊里夹着真问题（为什么/怎么办）→ 交诸葛亮咨询位；
-    # 咨询位给不出答案（key 缺失且本地不可用）则回落澄清卡，不硬编。
+    # 咨询位给不出答案（真通道+本地都不可用）则回落澄清卡，不硬编。
     # 触发条件（细化）：smalltalk+疑问 → 军师；stock_consult 但**无具体标的**
     # （大盘/趋势类判断）→ 也交军师；有标的的个股咨询仍走司马懿席（不抢单）。
     _no_code = not (res.get("entities") or {}).get("code")
@@ -207,7 +230,7 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
         # ③线程异常只降级为补发失败提示，不反噬消息主链。
         trace = res["trace_id"]
         rp = {"text": ("已收到您的问题，军师正在研判（通常 10~20 秒），"
-                       "答案稍后单独送达。工单 %s。"
+                       "答案稍后单独送达。回执 %s。"
                        % ("ZG-" + trace[:6].upper())),
               "action": ACTION_REPLY, "llm_ok": False,
               "meta": ["咨询位·异步", "trace:" + trace]}
@@ -223,8 +246,10 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
                     pass
 
         threading.Thread(target=_bg_consult, daemon=True).start()
-        dr = None
     else:
+        if res["intent"] in ("stock_consult", "watch_setup", "complaint",
+                             "billing"):
+            dr = dispatch.dispatch(res, open_id, msg_id=msg_id)
         rp = build_reply(res, open_id=open_id, dispatch_result=dr)
     if rp["action"] is ACTION_FALLBACK:
         # 仍判不出：记忆也记一笔（供后续代词消解），然后交回原链路

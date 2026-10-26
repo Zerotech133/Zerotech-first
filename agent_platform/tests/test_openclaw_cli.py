@@ -28,6 +28,14 @@ def test_parse_non_json_human_output():
     assert text == "先修心跳。" and err is None
 
 
+def test_parse_result_outputs_nested():
+    """A2-B09：与 portal/comm_zhuge 对齐，兼容 outputs 嵌在 result 下。"""
+    raw = json.dumps({"ok": True, "result": {
+        "outputs": [{"text": "嵌套答案"}]}})
+    text, err = oc.parse_stdout(raw, "", 0)
+    assert text == "嵌套答案" and err is None
+
+
 def test_agent_primary_model_reads_config(monkeypatch, tmp_path):
     oc_dir = tmp_path / ".openclaw"
     oc_dir.mkdir()

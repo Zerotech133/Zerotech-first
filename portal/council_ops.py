@@ -547,8 +547,9 @@ def run_debate(idea: str, rounds: int = 2) -> dict:
                            f"请做最终总结（党组值班总结）：3 句内给出统一结论——做/不做/怎么做+关键前提；如仍有分歧给出总裁决建议交老田。") \
         if chair_id != "zhuge" else ""
     if chair_id == "zhuge":
-        # 诸葛亮 key 未注入：建议面由规则总结并如实标注
-        conclusion = f"（诸葛亮·建议面代行·轮值主席）综合两轮：分歧焦点已明确，建议按'条件推进'收口——采纳田丰的落地三问作为前置条件，采纳赵云的隐私红线作为硬约束；执行方案由老田拍板。"
+        # 2026-10-26 A2/C2：载体已可用（OpenClaw+DeepSeek 中转，非GPT6），
+        # 但议会厅按既定策略仍规则代行（非模型表态），故如实标注"规则代行"。
+        conclusion = f"（诸葛亮·建议面代行·轮值主席·规则代行非模型）综合两轮：分歧焦点已明确，建议按'条件推进'收口——采纳田丰的落地三问作为前置条件，采纳赵云的隐私红线作为硬约束；执行方案由老田拍板。"
     # 投票（两席位对结论表态）
     votes = _ask_seats_parallel({
         sid: f"轮值主席结论：「{conclusion[:300]}」。你是{cn}，对这份总结投一票：赞成/反对（一词）+一句理由。"
@@ -973,9 +974,9 @@ class Handler(BaseHTTPRequestHandler):
                 if v["view"]:
                     _append(MESSAGES, {"at": _now(), "topic": "💡 想法池", "seat": v["seat"],
                                        "kind": "say", "text": v["view"]})
-            # 诸葛亮建议面由规则兜底（key 未注入，如实标注）
+            # 诸葛亮建议面由规则代行（载体可用但不走模型，如实标注）
             _append(MESSAGES, {"at": _now(), "topic": "💡 想法池", "seat": "zhuge",
-                               "kind": "say", "text": "（诸葛亮·建议面代行）想法价值在于先承载：入池后不定进度，与现有工作不抢资源；若后续要执行，从池中一键转专项会议即可。"})
+                               "kind": "say", "text": "（诸葛亮·建议面代行·规则代行非模型）想法价值在于先承载：入池后不定进度，与现有工作不抢资源；若后续要执行，从池中一键转专项会议即可。"})
             _append(MESSAGES, {"at": _now(), "topic": "💡 想法池", "seat": "laotian",
                                "kind": "sys", "text": "🤖 归档确认：这个想法已存「💡想法池」。要不要挂到某个专项？直接说「把它转成专项会议」或就留在池里——留池即默认，无需操作。"})
             return self._json({"ok": True, "views": views})

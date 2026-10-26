@@ -101,6 +101,14 @@ def test_good_clock_param_accepted():
     assert seen["obj"]["business_day"] == "2026-10-21"
 
 
+def test_good_clock_param_urlencoded_accepted():
+    """A2-B07：标准客户端把 + 编成 %2B、冒号编成 %3A，必须仍 200。"""
+    h, seen, _ = _make_handler()
+    _h_get(h, qs="clock=2026-10-21T09%3A00%3A00%2B08%3A00")
+    assert seen.get("code") == 200
+    assert seen["obj"]["business_day"] == "2026-10-21"
+
+
 # ── ⑥ 非 GET 方法不被允许（POST/OPTIONS/PUT/DELETE → 405）───────────
 def test_post_method_not_allowed_405():
     portal_api = _load_module("portal_api")

@@ -157,10 +157,17 @@ def test_13_billing_is_human_fallback_no_amount(env):
 
 
 def test_14_complaint_has_ticket_and_priority(env):
-    r = ci.build_reply(_res("complaint"), "ou_l")
+    # A2：投诉只认真实派单号；未派单时不得拼 TS- 假号（但仍保留最高优先级语义）。
+    r = ci.build_reply(_res("complaint"), "ou_l",
+                       dispatch_result={"ok": True,
+                                        "dispatch_id": "lg-complaint-1"})
     assert r["action"] == ci.ACTION_REPLY
-    assert "TS-" in r["text"]
+    assert "lg-complaint-1" in r["text"]
     assert "最高优先级" in r["text"]
+    r2 = ci.build_reply(_res("complaint"), "ou_l",
+                        dispatch_result={"ok": False, "reason": "disabled"})
+    assert "TS-" not in r2["text"], "不得编造 TS- 假工单号"
+    assert "未派单" in r2["text"]
 
 
 def test_15_stock_dispatch_honest_when_channel_off(env):
@@ -373,3 +380,49 @@ def test_27_consult_channel_down_sink_says_honest(env, monkeypatch):
     assert r is not None, "异步模式先回执，不再回落澄清卡"
     assert ready.wait(timeout=5)
     assert got["zr"]["text"] is None, "sink 收到 None 才能发诚实失败卡"
+
+
+# ── 2026-10-26 A2-B02/B03：不假装已执行 / 不产生孤儿派单 ───────────
+def test_28_billing_no_fake_ticket_when_dispatch_disabled():
+    r = ci.build_reply({"intent": "billing", "trace_id": "abcdef",
+                        "entities": {}},
+                       dispatch_result={"ok": False, "reason": "disabled",
+                                        "dispatch_id": None})
+    assert "BI-" not in r["text"], "不得编造 BI- 假工单号"
+    assert "已转人工" not in r["text"], "未派单不得说已转"
+    assert "人工" in r["text"] and "未派单" in r["text"]
+
+
+def test_29_billing_uses_real_dispatch_id():
+    r = ci.build_reply({"intent": "billing", "trace_id": "abcdef",
+                        "entities": {}},
+                       dispatch_result={"ok": True, "dispatch_id": "lg-abc123"})
+    assert "lg-abc123" in r["text"] and "已转人工" in r["text"]
+    assert "BI-" not in r["text"]
+
+
+def test_30_zhuge_takes_stock_consult_without_orphan_dispatch(env, monkeypatch):
+    """stock_consult 无标的被军师接管时，不得先真派单再丢弃（A2-B03）。"""
+    import threading as _th
+    monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
+    monkeypatch.setattr(ci, "_is_consult", lambda t: True)
+    monkeypatch.setattr(ci.zhuge, "enabled", lambda: True)
+    monkeypatch.setattr(ci.zhuge, "consult",
+                        lambda q, open_id="", **k: {"text": "军师答",
+                                                    "mode": "openclaw_cloud",
+                                                    "llm_ok": True, "error": None})
+    calls = []
+    monkeypatch.setattr(ci.dispatch, "dispatch",
+                        lambda *a, **k: calls.append(a) or {"ok": True,
+                                                            "dispatch_id": "x"})
+    monkeypatch.setattr(ci.cr, "route_message",
+                        lambda text, **kw: {"intent": "stock_consult",
+                                            "entities": {}, "trace_id": "TR1",
+                                            "confidence": 0.9, "route": "dispatch",
+                                            "model": "local", "channel": "text"})
+    done = _th.Event()
+    r = ci.smart_intake("分析一下大盘", "ou_orphan", msg_id="M1",
+                        async_sink=lambda *a: done.set())
+    assert r is not None and r["intent"] == "consult"
+    assert calls == [], "军师接管后不得再派单（孤儿工单）"
+    assert done.wait(timeout=5)
