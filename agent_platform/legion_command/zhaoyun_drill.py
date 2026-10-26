@@ -26,6 +26,18 @@ import uuid
 from pathlib import Path
 
 PROFILE = Path(os.path.expanduser("~")) / ".hermes" / "profiles" / "zhaoyun"
+PLATFORM = Path(__file__).resolve().parents[1]
+
+
+def _skill_info(name: str) -> dict:
+    """技能注册表元信息 + 最近 verify（注册表缺失时返回空）。"""
+    try:
+        sys.path.insert(0, str(PLATFORM / "tools"))
+        from skill_registry import get_skill, state  # noqa: WPS433
+        return {"skill": get_skill(name),
+                "last_verified": (state().get("items") or {}).get(name)}
+    except Exception:  # noqa: BLE001
+        return {}
 REQUESTS_KIND = ("memory_quarantine", "capability_learn", "model_change",
                  "task_intervention")
 GAPS = [
@@ -105,11 +117,13 @@ def capabilities_detail(platform: Path, profile: Path | None = None) -> dict:
                 ref_mtime = _iso(cand.stat().st_mtime)
             else:
                 ref_ok = False
+        info = _skill_info(str(c.get("name")))
         items.append({
             "name": str(c.get("name")), "what": str(c.get("what") or ""),
             "how": how, "boundary": str(c.get("boundary") or ""),
             "status": str(c.get("status") or "unknown"),
             "how_ref": ref, "how_ref_exists": ref_ok, "how_ref_mtime": ref_mtime,
+            "skill": info.get("skill"), "last_verified": info.get("last_verified"),
             "recent_events": [{"ts": e.get("ts"), "kind": e.get("kind"),
                                "task": e.get("task"), "detail": str(e.get("detail") or "")[:80]}
                               for e in recent[-3:]],

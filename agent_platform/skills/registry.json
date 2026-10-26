@@ -1,0 +1,219 @@
+{
+ "schema": "zhaoyun_skills/v1",
+ "generated_at": "2026-10-27T06:37:48+0800",
+ "source": "C:\\Users\\t\\.hermes\\profiles\\zhaoyun\\skills\\CAPABILITIES.json",
+ "total": 14,
+ "skills": [
+  {
+   "name": "task-exit-audit",
+   "path": "agent_platform/skills/task-exit-audit/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/task-exit-audit/scripts/verify.py",
+   "legacy_capability": "task-exit-audit",
+   "manual": false
+  },
+  {
+   "name": "health-card",
+   "path": "agent_platform/skills/health-card/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/health-card/scripts/verify.py",
+   "legacy_capability": "health-card",
+   "manual": false
+  },
+  {
+   "name": "task-launch-probe",
+   "path": "agent_platform/skills/task-launch-probe/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/task-launch-probe/scripts/verify.py",
+   "legacy_capability": "task-launch-probe",
+   "manual": false
+  },
+  {
+   "name": "backup-bundles",
+   "path": "agent_platform/skills/backup-bundles/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/backup-bundles/scripts/verify.py",
+   "legacy_capability": "backup-bundles",
+   "manual": false
+  },
+  {
+   "name": "worktree-hygiene",
+   "path": "agent_platform/skills/worktree-hygiene/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/worktree-hygiene/scripts/verify.py",
+   "legacy_capability": "worktree-hygiene",
+   "manual": false
+  },
+  {
+   "name": "docs-archive",
+   "path": "agent_platform/skills/docs-archive/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/docs-archive/scripts/verify.py",
+   "legacy_capability": "docs-archive",
+   "manual": false
+  },
+  {
+   "name": "experience-write",
+   "path": "agent_platform/skills/experience-write/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/experience-write/scripts/verify.py",
+   "legacy_capability": "experience-write",
+   "manual": false
+  },
+  {
+   "name": "mutual-review",
+   "path": "agent_platform/skills/mutual-review/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/mutual-review/scripts/verify.py",
+   "legacy_capability": "mutual-review",
+   "manual": false
+  },
+  {
+   "name": "lookahead-guard",
+   "path": "agent_platform/skills/lookahead-guard/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/lookahead-guard/scripts/verify.py",
+   "legacy_capability": "lookahead-guard",
+   "manual": false
+  },
+  {
+   "name": "council-hall",
+   "path": "agent_platform/skills/council-hall/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/council-hall/scripts/verify.py",
+   "legacy_capability": "council-hall",
+   "manual": false
+  },
+  {
+   "name": "harness-runner",
+   "path": "agent_platform/skills/harness-runner/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/harness-runner/scripts/verify.py",
+   "legacy_capability": "harness-runner",
+   "manual": false
+  },
+  {
+   "name": "llm-deepseek",
+   "path": "agent_platform/skills/llm-deepseek/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/llm-deepseek/scripts/verify.py",
+   "legacy_capability": "llm-deepseek",
+   "manual": false
+  },
+  {
+   "name": "governance-ai",
+   "path": "agent_platform/skills/governance-ai/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/governance-ai/scripts/verify.py",
+   "legacy_capability": "governance-ai",
+   "manual": false
+  },
+  {
+   "name": "case-sign-chain",
+   "path": "agent_platform/skills/case-sign-chain/SKILL.md",
+   "version": "1.0.0",
+   "status": "ready",
+   "risk": "read-only",
+   "owner": "ZHAOYUN",
+   "allowed_tools": [
+    "read-file",
+    "run-python"
+   ],
+   "verify_cmd": "python agent_platform/skills/case-sign-chain/scripts/verify.py",
+   "legacy_capability": "case-sign-chain",
+   "manual": false
+  }
+ ],
+ "note": "Agent Skills 规范：name/description/allowed-tools/scripts；verify 只读"
+}
