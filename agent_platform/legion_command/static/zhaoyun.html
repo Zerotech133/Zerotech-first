@@ -17,6 +17,7 @@
   .chip b { color: #4FD1A5; font-weight: 500; }
   .chip.warn b { color: #EF9F27; }
   .chip.bad b { color: #E24B4A; }
+  .chip.good b { color: #4FD1A5; }
   main { padding: 18px 22px 26px; display: flex; flex-direction: column; gap: 14px; }
   .grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; }
   @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
@@ -47,6 +48,14 @@
   .anchor { display: flex; flex-wrap: wrap; gap: 8px; }
   .anchor span { font-size: 11.5px; padding: 5px 9px; border: 0.5px solid #1E3A5F; border-radius: 8px; color: #8FA8C0; }
   .banner { display: none; margin: 0 22px; padding: 10px 14px; border-radius: 10px; background: #2A1214; border: 0.5px solid #7A2A2E; color: #F3B5B4; font-size: 12px; }
+  .pending { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #0A1626; border: 0.5px solid #1E3A5F; color: #8FA8C0; font-size: 12.5px; }
+  .pending b { font-weight: 500; }
+  .pending.ok { color: #4FD1A5; border-color: #1D9E75; background: #0F2440; }
+  .pending.warn { color: #F5D08A; border-color: #7A5A1E; background: #2A1F0C; }
+  .pending.bad { color: #F3B5B4; border-color: #7A2A2E; background: #2A1214; }
+  .exp-scroll { max-height: 360px; overflow-y: auto; }
+  .exp-scroll thead th { position: sticky; top: 0; background: #0A1626; }
+  .exp-scroll td.id { color: #8FA8C0; white-space: nowrap; }
   footer { margin-top: auto; padding: 10px 22px 16px; border-top: 0.5px solid #1E3A5F; color: #5A7190; font-size: 11px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   button.refresh { border: 0.5px solid #1E3A5F; background: none; color: #8FA8C0; font-size: 12px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; }
   button.refresh:hover { color: #E8F0F8; }
@@ -66,6 +75,8 @@
 </header>
 <div class="banner" id="banner"></div>
 <main>
+  <div class="pending" id="pending"></div>
+
   <div class="grid">
     <section>
       <h2>角色与边界 <span>身份对照（详见 docs/legion 身份对照表）</span></h2>
@@ -80,7 +91,7 @@
       </table>
     </section>
     <section>
-      <h2>运行状态 <span>时钟 / 保活 / 签字链</span></h2>
+      <h2>运行状态 <span>时钟 / 保活 / 签字链 / 健康</span></h2>
       <div id="status"></div>
       <div class="anchor" id="anchors" style="margin-top:10px"></div>
     </section>
@@ -97,7 +108,12 @@
   <div class="grid">
     <section>
       <h2>判例库（Z4 · supervision） <span id="exp-sub">—</span></h2>
-      <div id="exp"></div>
+      <div class="exp-scroll">
+        <table>
+          <thead><tr><th style="width:150px">编号</th><th>cue</th><th style="width:52px">conf</th><th style="width:70px">签字</th><th style="width:150px">时间</th><th style="width:72px">验签</th></tr></thead>
+          <tbody id="exp"></tbody>
+        </table>
+      </div>
     </section>
     <section>
       <h2>治理 AI 最新产物 <span>全部 draft；需人评审/人签</span></h2>
@@ -106,7 +122,7 @@
   </div>
 </main>
 <footer>
-  <span id="foot-src">数据源：/api/zhaoyun（只读聚合）· 建议 draft、经验须签字</span>
+  <span id="foot-src">数据源：/api/zhaoyun（只读聚合）· 建议 draft、经验须签字 · 待签只读扫描 _vault/sign_requests</span>
   <span id="foot-time">—</span>
 </footer>
 <script>
@@ -123,8 +139,23 @@ function chip(label, value, state) {
   c.appendChild(el('b', '', value));
   return c;
 }
+function levelState(level) {
+  return level === 'green' ? 'good' : (level === 'red' ? 'bad' : 'warn');
+}
+function levelWord(level) {
+  return level === 'green' ? '绿' : (level === 'red' ? '红' : '黄');
+}
+function levelLine(level, detail) {
+  return levelWord(level) + (detail ? ' · ' + detail : '');
+}
 function showBanner(msg) {
   const b = $('banner'); b.textContent = msg; b.style.display = 'block';
+}
+function statusRow(box, k, v) {
+  const row = el('div', 'row');
+  row.appendChild(el('span', 'k', k));
+  row.appendChild(el('span', 'v', v || '—'));
+  box.appendChild(row);
 }
 function render(v) {
   $('banner').style.display = 'none';
@@ -141,26 +172,54 @@ function render(v) {
   const clock = v.clock || {}, ka = v.keepalive || {};
   const caps = v.capabilities || {}, exp = v.experience || {}, sc = v.sign_chain || {};
   const advice = v.advice || {};
+  const gh = v.governance_health || {};
+  const aih = gh.ai_advice || {}, elh = gh.experience_library || {};
+  const ps = v.pending_signatures || {};
+
+  // 顶部健康 chip：治理 AI + 经验库（绿 / 黄 / 红）
   const c = $('chips'); c.replaceChildren();
   c.appendChild(chip('时钟', clock.alive ? ('在线 ' + clock.pid) : '离线', clock.alive ? '' : 'bad'));
   c.appendChild(chip('心跳', clock.last_tick || '—'));
   c.appendChild(chip('能力', (caps.ready || 0) + '/' + (caps.total || 0),
                      caps.pending_key ? 'warn' : ''));
-  c.appendChild(chip('判例', (exp.verified_total || 0) + '/' + (exp.entries_total || 0) + ' verified'));
+  c.appendChild(chip('判例', (exp.verified_total || 0) + '/' + (exp.entries_total || 0) + ' verified',
+                     (exp.entries_total || 0) > 0 && exp.verified_total === exp.entries_total ? '' : 'warn'));
+  const aiChip = chip('治理AI', levelWord(aih.level), levelState(aih.level));
+  aiChip.title = aih.detail || '';
+  c.appendChild(aiChip);
+  const elChip = chip('经验库', levelWord(elh.level), levelState(elh.level));
+  elChip.title = elh.detail || '';
+  c.appendChild(elChip);
 
+  // 待签 payload 提醒条：>0 橙色醒目；=0 显示「无待签」
+  const pend = $('pending'); pend.replaceChildren();
+  if ((ps.count || 0) > 0) {
+    pend.className = 'pending warn';
+    pend.appendChild(el('b', '', '待签提醒'));
+    pend.appendChild(el('span', '', '有 ' + ps.count + ' 个 EXP payload 尚未签名（需本人签，Agent 不代签）：'));
+    const ids = (ps.items || []).slice(0, 8).map((it) => it.item_id);
+    pend.appendChild(el('span', '', ids.join('、') +
+      ((ps.items || []).length > ids.length ? ' 等' : '')));
+  } else {
+    pend.className = 'pending ok';
+    pend.appendChild(el('b', '', '无待签'));
+    pend.appendChild(el('span', '',
+      ps.ok === false ? ('（' + (ps.note || '签名请求目录不可用') + '）')
+                      : '（EXP-*.payload.json 均有对应签名）'));
+  }
+
+  // 运行状态（含健康两行 + 待签计数）
   const st = $('status'); st.replaceChildren();
-  [['时钟 pid', clock.pid || '—'],
-   ['最近心跳', clock.last_tick || '—'],
-   ['保活最近', ka.available ? ka.last : '无日志'],
-   ['判例库', (exp.entries_total || 0) + ' 条（verified ' + (exp.verified_total || 0) + '）'],
-   ['最近签字', exp.latest_signed_at || '—'],
-   ['签字链', sc.entries_total ? ((sc.verified_total || 0) + '/' + sc.entries_total + ' verified') : '—']]
-    .forEach(([k, val]) => {
-      const row = el('div', 'row');
-      row.appendChild(el('span', 'k', k));
-      row.appendChild(el('span', 'v', val));
-      st.appendChild(row);
-    });
+  statusRow(st, '时钟 pid', clock.pid || '—');
+  statusRow(st, '最近心跳', clock.last_tick || '—');
+  statusRow(st, '保活最近', ka.available ? ka.last : '无日志');
+  statusRow(st, '判例库', (exp.entries_total || 0) + ' 条（verified ' + (exp.verified_total || 0) + '）');
+  statusRow(st, '最近签字', exp.latest_signed_at || '—');
+  statusRow(st, '签字链', sc.entries_total ? ((sc.verified_total || 0) + '/' + sc.entries_total + ' verified') : '—');
+  statusRow(st, '治理 AI 健康', levelLine(aih.level, aih.detail));
+  statusRow(st, '经验库健康', levelLine(elh.level, elh.detail));
+  statusRow(st, '待签 payload', (ps.count || 0) + ' 条' +
+    ((ps.archived_pending || 0) ? ('（另有 ' + ps.archived_pending + ' 条归档未签，不计）') : ''));
 
   const anc = $('anchors'); anc.replaceChildren();
   (clock.anchors || []).forEach(([time, action]) => {
@@ -182,18 +241,31 @@ function render(v) {
     capsBody.appendChild(tr);
   });
 
-  $('exp-sub').textContent = '共 ' + (exp.entries_total || 0) + ' 条 · 全部签字后 verified';
-  const expBox = $('exp'); expBox.replaceChildren();
-  (exp.recent || []).forEach((e) => {
-    const it = el('div', 'item');
-    it.appendChild(el('div', 't', (e.entry_id || '') + '　' + (e.cue || '')));
-    it.appendChild(el('div', 'm',
-      'conf ' + (e.confidence != null ? e.confidence : '—') +
-      ' · 签字 ' + (e.signed_by || '—') + ' ' + (e.written_at || '') +
-      ' · ' + (e.verified ? 'verified' : '未验签')));
-    expBox.appendChild(it);
+  // 判例库：展示全部条目（可滚动），只读摘要不含 lesson 正文
+  const allEntries = exp.all || exp.recent || [];
+  $('exp-sub').textContent = '共 ' + (exp.entries_total || 0) + ' 条 · verified ' +
+    (exp.verified_total || 0) + ' · 全量展示';
+  const expBody = $('exp'); expBody.replaceChildren();
+  allEntries.forEach((e) => {
+    const tr = el('tr');
+    tr.appendChild(el('td', 'id', e.entry_id || '—'));
+    tr.appendChild(el('td', '', e.cue || ''));
+    tr.appendChild(el('td', '', e.confidence != null ? e.confidence : '—'));
+    tr.appendChild(el('td', '', e.signed_by || '—'));
+    tr.appendChild(el('td', '', e.written_at || '—'));
+    const td = el('td');
+    td.appendChild(el('span', 'pill ' + (e.verified ? 'ok' : 'pend'),
+                      e.verified ? 'verified' : '未验签'));
+    tr.appendChild(td);
+    expBody.appendChild(tr);
   });
-  if (!(exp.recent || []).length) expBox.appendChild(el('div', 'muted', '暂无判例'));
+  if (!allEntries.length) {
+    const tr = el('tr');
+    const td = el('td', 'muted', '暂无判例');
+    td.colSpan = 6;
+    tr.appendChild(td);
+    expBody.appendChild(tr);
+  }
 
   const adv = $('advice'); adv.replaceChildren();
   const names = { anomaly_digest: '异常归纳', priority_advice: '治理建议', case_draft: '判例草稿' };
