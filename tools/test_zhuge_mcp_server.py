@@ -153,4 +153,5 @@ def test_mcp_sdk_available():
     assert m.mcp is not None, "mcp SDK 未安装"
     tool_names = {t.name for t in m.mcp._tool_manager.list_tools()}
     assert {"tasks_read_tool", "org_read_tool", "docs_search_tool",
-            "health_read_tool", "brief_read_tool"} <= tool_names
+            "health_read_tool", "brief_read_tool",
+            "web_fetch_tool", "evidence_check_tool"} <= tool_names

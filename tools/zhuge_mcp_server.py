@@ -2,8 +2,10 @@
 """zhuge_mcp_server.py — 诸葛亮能力底座 P0-1：MCP 只读工具 server（stdio）。
 
 设计纪律（P0 批准包：纯代码+本地依赖、零执行权）：
-- 五个工具**全部只读**：tasks_read / org_read / health_read / brief_read / docs_search；
-- 无写文件、无 subprocess、无派单/改任务；HTTP 仅允许 127.0.0.1/localhost；
+- 七个只读工具：tasks_read / org_read / health_read / brief_read / docs_search /
+  web_fetch（P0-2 联网取证）/ evidence_check（P0-3 证据 schema 校验）；
+- 无写文件、无 subprocess、无派单/改任务；平台 HTTP 仅允许 127.0.0.1/localhost；
+  web_fetch 走 zhuge_evidence 的 SSRF 防护（禁回环/私网/非 http(s)）；
 - 平台数据源：`.worktrees/tasks.json`、`agent_platform/registry/org.json`、
   8091 `/health`、8091 `/api/zhuge/brief`、`docs/`（只读检索）；
 - 供 OpenClaw agent / L5 / 8796 以 MCP 调用；不内置执行权限。
@@ -24,6 +26,12 @@ import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+
+try:
+    from zhuge_evidence import fetch_url, validate_claims
+except Exception:  # noqa: BLE001 —— 证据模块缺失时工具显式不可用，不反噬 server
+    fetch_url = None
+    validate_claims = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
@@ -288,6 +296,30 @@ if FastMCP is not None:
     def brief_read_tool(clock: str = "") -> str:
         """只读读取诸葛亮规则建议面（可传 clock 覆盖时钟）。"""
         return _json(brief_read(clock=clock))
+
+    @mcp.tool()
+    def web_fetch_tool(url: str, max_chars: int = 4000) -> str:
+        """联网只读取证：返回 title/text/抓取时间/来源等级；SSRF 防护；失败显式 ok=false。"""
+        if fetch_url is None:
+            return _json({"ok": False, "read_only": True,
+                          "error": {"code": "evidence_module_missing",
+                                    "message": "zhuge_evidence.py 未部署"}})
+        return _json(fetch_url(url, max_chars=max_chars))
+
+    @mcp.tool()
+    def evidence_check_tool(claims_json: str = "[]", sources_json: str = "[]") -> str:
+        """证据 schema 校验：有事实主张必须有 source_ids（无来源不编）。"""
+        if validate_claims is None:
+            return _json({"ok": False, "read_only": True,
+                          "error": {"code": "evidence_module_missing",
+                                    "message": "zhuge_evidence.py 未部署"}})
+        try:
+            claims = json.loads(claims_json or "[]")
+            sources = json.loads(sources_json or "[]")
+        except json.JSONDecodeError as exc:
+            return _json({"ok": False, "read_only": True,
+                          "error": {"code": "bad_json", "message": str(exc)}})
+        return _json(validate_claims(claims, sources))
 else:  # pragma: no cover
     mcp = None
 
@@ -299,6 +331,8 @@ def _selftest() -> int:
         ("docs_search", lambda: docs_search("诸葛亮", limit=2)),
         ("health_read", lambda: health_read(timeout=2)),
         ("brief_read", lambda: brief_read()),
+        ("evidence_check", lambda: validate_claims(
+            [{"text": "x", "source_ids": ["S1"], "confidence": "high"}], [{"id": "S1"}])),
     ]
     failed = 0
     for name, fn in checks:
