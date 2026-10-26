@@ -1,6 +1,7 @@
 # JEV service stack watchdog (restored 2026-10-26, K-ORG-20261026-JEVSTACK)
-# ASCII only. Pull-up-if-missing for the Jev quad, port-based liveness,
-# plus card-handler websocket self-heal (age > 6h or ws-down > 90s).
+# ASCII only. Pull-up-if-missing for the Jev triplet, port-based liveness.
+# 2026-10-26 OS-FIX-W4FINAL：card-handler(9104) 已随 W3 统一分发退役，JevStack
+# 不再拉起它；若外部仍有残留监听则尽力停掉（W4 验收要求 9104=down）。
 # Scheduled task: \JevStack (every 10 min, S4U). Log: logs\jev-stack.log
 # Status snapshot: logs\jev-stack-status.json
 # Exit: 0 = all up OR only externally-blocked components; 1 = internal start failure.
@@ -94,8 +95,10 @@ function Get-CardRestartReason {
 $Components = @(
     @{ Name = 'jev-gate'; Port = 9101; Script = 'jev_gate.py'; Args = @() },
     @{ Name = 'review-gate'; Port = 9102; Script = 'signal_review_gate.py'; Args = @('--loop') },
-    @{ Name = 'qd-bridge'; Port = 9103; Script = 'jev_qd_bridge.py'; Args = @('--loop') },
-    @{ Name = 'card-handler'; Port = 9104; Script = 'lark_card_handler.py'; Args = @() }
+    @{ Name = 'qd-bridge'; Port = 9103; Script = 'jev_qd_bridge.py'; Args = @('--loop') }
+    # W3 退役（2026-10-26 OS-FIX-W4FINAL）：card-handler(9104) 由统一分发替代，
+    # 不再随 JevStack 拉起；保留注释便于回滚。
+    # @{ Name = 'card-handler'; Port = 9104; Script = 'lark_card_handler.py'; Args = @() }
 )
 
 if ($Status) {
@@ -134,13 +137,10 @@ if ($Force) {
     }
 }
 
-# 3) Card-handler self-heal (only when it is up but unhealthy).
+# 3) 9104 card-handler 已退役（W3/OS-FIX-W4FINAL）：不拉起；残留监听尽力停掉。
 if (Test-Port 9104) {
-    $reason = Get-CardRestartReason
-    if ($reason) {
-        $oldPid = Stop-TreeByPort 9104
-        Write-Log ('restart: card-handler reason=' + $reason + ' killed=' + $oldPid)
-    }
+    $oldPid = Stop-TreeByPort 9104
+    Write-Log ('retired card-handler(9104) stopped pid=' + $oldPid)
 }
 
 # 4) Pull up missing components.
