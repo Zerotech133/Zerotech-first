@@ -286,3 +286,14 @@ docs/dev/devboard.html
 
 # evals runtime reports (regenerable)
 agent_platform/evals/reports/
+
+# ===== K-DATA-20261027-SECVAULT：L1 凭据保险库（tools/secrets，绝不入库）=====
+# 密钥/明文/密文副本都在 repo 外的 C:\项目\_vault；此处只做「防误提交」保险垫。
+# age 身份、明文 secrets、密文副本、本地渲染配置、备份文件一律不进 git。
+_vault/keys/
+_vault/secrets/
+_vault/secrets.enc/
+.mcp.local.json
+*.bak-20261027
+# 本保险库的密文扩展名（repo 内只允许出现模板/代码/文档）
+*.age
