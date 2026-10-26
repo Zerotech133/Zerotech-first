@@ -5520,10 +5520,12 @@ def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> di
                 client_err += 1
             elif status >= 500:
                 duration_s = _parse_gin_duration_s(line)
+                # 2026-10-26 AIERR：500 且耗时 >= 客户端超时线(20s) 一律归 client_abort。
+                # 原 |duration-20|<=1.5 只认"恰好 20s"，45s 的客户端放弃会被误判 server_error
+                # 一票红（实测 13:51 M3 满载时 health probe 超时即此类）。
                 looks_like_timeout = (
                     duration_s is not None
-                    and abs(duration_s - _CLIENT_ABORT_DURATION_S)
-                    <= _CLIENT_ABORT_DURATION_TOL_S
+                    and duration_s >= _CLIENT_ABORT_DURATION_S
                 )
                 if pending_abort_marker or looks_like_timeout:
                     client_abort += 1
