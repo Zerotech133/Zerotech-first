@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>军团 IDE · 施工台（受控写/执行）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #060F1D; color: #E8F0F8; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 0.5px solid #1E3A5F; flex-wrap: wrap; }
+  h1 { font-size: 15px; font-weight: 500; }
+  .sub { color: #8FA8C0; font-size: 11.5px; }
+  .chip { font-size: 11.5px; padding: 5px 10px; border-radius: 999px; border: 0.5px solid #1E3A5F; color: #8FA8C0; }
+  .chip b { color: #4FD1A5; }
+  .chip.warn b { color: #EF9F27; }
+  main { padding: 14px 20px 24px; display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
+  @media (max-width: 1050px) { main { grid-template-columns: 1fr; } }
+  section { background: #0A1626; border: 0.5px solid #1E3A5F; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  h2 { font-size: 12.5px; font-weight: 500; color: #8FA8C0; }
+  label { font-size: 11.5px; color: #5A7190; display: block; margin-top: 4px; }
+  input, select, textarea { width: 100%; background: #081321; border: 0.5px solid #1E3A5F; color: #E8F0F8; border-radius: 8px; padding: 7px 9px; font-family: inherit; font-size: 12px; }
+  textarea { font-family: Consolas, 'Courier New', monospace; min-height: 300px; resize: vertical; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button { border: 0.5px solid #1E3A5F; background: #0F2440; color: #E8F0F8; font-size: 12px; padding: 7px 14px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+  button:hover { border-color: #1D9E75; }
+  button.primary { background: #0F2440; border-color: #1D9E75; color: #4FD1A5; }
+  button.danger { border-color: #7A2A2E; color: #F3B5B4; }
+  pre { background: #081321; border: 0.5px solid #1E3A5F; border-radius: 8px; padding: 9px; font-size: 11.5px; overflow: auto; max-height: 240px; white-space: pre-wrap; word-break: break-all; color: #B9C9DA; }
+  .status { font-size: 11.5px; color: #8FA8C0; min-height: 16px; }
+  .ok { color: #4FD1A5; } .bad { color: #E24B4A; } .warn { color: #EF9F27; }
+  footer { margin-top: auto; padding: 9px 20px 14px; border-top: 0.5px solid #1E3A5F; color: #5A7190; font-size: 11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>军团 IDE · 施工台</h1>
+  <span class="sub">受控写 / 白名单执行 · 默认关闭（IDE_RW=off）</span>
+  <span class="chip" id="rwchip">开关 <b>…</b></span>
+  <span class="chip" id="lockchip">锁 <b>—</b></span>
+</header>
+<main>
+  <section>
+    <h2>① 作用域与文件（仅 doing/review worktree 的受控目录）</h2>
+    <label>工单</label>
+    <select id="task"><option value="">（先刷新范围）</option></select>
+    <label>文件相对路径（agent_platform/ ops/ docs/ tools/ portal/ 内）</label>
+    <input id="path" placeholder="agent_platform/legion_ide/serve.py">
+    <div class="row">
+      <button id="btnScope">刷新范围</button>
+      <button id="btnRead">读取</button>
+      <button class="primary" id="btnWrite">保存（需锁）</button>
+      <button id="btnLock">获取锁</button>
+      <button class="danger" id="btnUnlock">释放锁</button>
+    </div>
+    <div class="status" id="writeStatus"></div>
+    <textarea id="content" placeholder="文件内容（UTF-8，≤1MB）"></textarea>
+    <label>diff（保存后显示）</label>
+    <pre id="diff">—</pre>
+  </section>
+  <section>
+    <h2>② 白名单执行（超时 120s / 输出 256KB）</h2>
+    <label>命令（示例：git status -s / git diff --stat / python -m pytest agent_platform/tests/test_legion_ide.py -q）</label>
+    <input id="cmd" placeholder="git status -s">
+    <div class="row">
+      <button class="primary" id="btnExec">执行（需锁）</button>
+      <button id="btnAudit">本单审计</button>
+    </div>
+    <div class="status" id="execStatus"></div>
+    <pre id="output">—</pre>
+    <h2 style="margin-top:8px">③ 审计（code_action / code_observation）</h2>
+    <pre id="audit">—</pre>
+  </section>
+</main>
+<footer>只读服务 + 受控写/执行；写/执行必须同源 + 会话 cookie + 工单锁；日志：C:\Temp\legion_ide_launcher.log</footer>
+<script>
+const $ = (id) => document.getElementById(id);
+const OWNER = (sessionStorage.getItem('ide_owner') || ('ide-' + Math.random().toString(36).slice(2, 10)));
+sessionStorage.setItem('ide_owner', OWNER);
+let locked = false;
+
+function status(el, text, cls) { el.className = 'status ' + (cls || ''); el.textContent = text; }
+async function api(method, path, body) {
+  const opt = { method, credentials: 'same-origin', headers: {} };
+  if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  const r = await fetch(path, opt);
+  let data;
+  try { data = await r.json(); } catch (e) { data = { ok: false, error: 'bad_response' }; }
+  if (!r.ok && data && !data.error) data.error = 'http_' + r.status;
+  return data;
+}
+function taskId() { return $('task').value; }
+function body(extra) { return Object.assign({ task: taskId(), owner: OWNER }, extra || {}); }
+
+async function refreshScope() {
+  const d = await api('GET', '/api/ide/scope');
+  if (!d.ok) { status($('writeStatus'), '范围不可用：' + (d.message || d.error), 'bad'); return; }
+  const sel = $('task'); sel.replaceChildren();
+  d.items.forEach(it => {
+    const o = document.createElement('option');
+    o.value = it.task; o.textContent = it.task + ' · ' + it.status;
+    sel.appendChild(o);
+  });
+  if (!d.items.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '（无可写 worktree）'; sel.appendChild(o); }
+  status($('writeStatus'), '可写工单：' + d.items.length, 'ok');
+}
+async function readFile() {
+  const d = await api('POST', '/api/ide/read', body({ path: $('path').value.trim() }));
+  if (!d.ok) { status($('writeStatus'), '读取失败：' + (d.message || d.error), 'bad'); return; }
+  $('content').value = d.content;
+  status($('writeStatus'), '已读取 ' + d.path + '（' + d.bytes + 'B）', 'ok');
+}
+async function writeFile() {
+  const d = await api('POST', '/api/ide/write', body({ path: $('path').value.trim(), content: $('content').value }));
+  if (!d.ok) { status($('writeStatus'), '保存失败：' + (d.message || d.error), 'bad'); return; }
+  status($('writeStatus'), '已保存 ' + d.path + '（' + d.bytes + 'B' + (d.created ? '，新建' : '') + '）', 'ok');
+  $('diff').textContent = (d.diff && d.diff.stat) ? d.diff.stat : '（无 diff；未跟踪文件用 git status 看）';
+}
+async function lock() {
+  const d = await api('POST', '/api/ide/lock', body());
+  if (!d.ok) { status($('writeStatus'), '取锁失败：' + (d.message || d.error), 'warn'); return; }
+  locked = true; $('lockchip').innerHTML = '锁 <b>已持有</b>';
+  status($('writeStatus'), '已获取工单锁（15min TTL，owner=' + OWNER + '）', 'ok');
+}
+async function unlock() {
+  const q = new URLSearchParams({ task: taskId(), owner: OWNER });
+  const d = await api('DELETE', '/api/ide/lock?' + q.toString());
+  locked = false; $('lockchip').innerHTML = '锁 <b>—</b>';
+  status($('writeStatus'), d.ok ? '已释放锁' : '释放失败：' + (d.message || d.error), d.ok ? 'ok' : 'bad');
+}
+async function runCmd() {
+  const d = await api('POST', '/api/ide/exec', body({ command: $('cmd').value.trim() }));
+  if (!d.ok) { status($('execStatus'), '执行被拒：' + (d.message || d.error), 'bad'); $('output').textContent = d.detail ? JSON.stringify(d.detail, null, 1) : '—'; return; }
+  status($('execStatus'), 'exit=' + d.exit_code + ' · ' + d.duration_ms + 'ms · run=' + d.run_id, d.exit_code === 0 ? 'ok' : 'warn');
+  $('output').textContent = (d.output || '（无输出）') + (d.truncated ? '\n[输出已截断]' : '');
+}
+async function showAudit() {
+  const d = await api('GET', '/api/ide/audit?task=' + encodeURIComponent(taskId()));
+  if (!d.ok) { status($('execStatus'), '审计不可用：' + (d.message || d.error), 'bad'); return; }
+  $('audit').textContent = d.events.length
+    ? d.events.map(e => e.ts + '  ' + e.kind + '  ' + e.detail).join('\n')
+    : '（本单暂无 code_action / code_observation）';
+}
+$('btnScope').onclick = refreshScope;
+$('btnRead').onclick = readFile;
+$('btnWrite').onclick = writeFile;
+$('btnLock').onclick = lock;
+$('btnUnlock').onclick = unlock;
+$('btnExec').onclick = runCmd;
+$('btnAudit').onclick = showAudit;
+$('task').onchange = () => { $('lockchip').innerHTML = '锁 <b>—</b>'; };
+(async () => {
+  const h = await api('GET', '/api/health');
+  $('rwchip').innerHTML = '开关 <b class="' + (h.rw_enabled ? '' : 'warn') + '">' + (h.rw_enabled ? 'ON（可写）' : 'OFF（只读）') + '</b>';
+  if (!h.rw_enabled) status($('writeStatus'), 'IDE_RW=off：写/执行接口返回 403；请重启服务时设 IDE_RW=on（launcher -EnableWrite）', 'warn');
+  await refreshScope();
+})();
+</script>
+</body>
+</html>
