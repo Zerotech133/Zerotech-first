@@ -834,8 +834,8 @@ def cmd_board(out=None):
                  "</span> %s</td><td>%s</td><td>%s</td><td>+%d/-%d</td>"
                  "<td>%s</td></tr>"
                  % (tid, lamp.get(t["status"], "#888"), t["status"],
-                    t["owner"], t["desc"], ahead, behind,
-                    t.get("merged", t["created"])))
+                    t.get("owner", "?"), t.get("desc", ""), ahead, behind,
+                    t.get("merged", t.get("created", ""))))
     html = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<title>研发部看板</title>"
             "<script src='/static/nav.js' defer></script>"
