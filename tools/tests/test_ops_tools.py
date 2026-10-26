@@ -781,6 +781,251 @@ def test_health_card_trade_cal_bad_json_falls_back_to_weekend(
 
 
 # ---------------------------------------------------------------------------
+# 2a-3) gen_health_card.py · 数据底座健康（2026-10-26 OS-FIX-DATAHEALTH）
+# ---------------------------------------------------------------------------
+# 三个静默缺口：shibor_lpr 断供 / tdx vendor 未纳管 / trade_cal 重复。
+# 探针在子进程里加载 gen_health_card，用临时小 parquet 与临时目录跑采集/判级，
+# 不碰真实数据根（真实读数见报告）。
+_DATA_HEALTH_PROBE = r"""
+import datetime as dt
+import importlib.util
+import json
+import sys
+import tempfile
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("gen_health_card", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+tmp = Path(tempfile.mkdtemp(prefix="dh_"))
+now = dt.datetime(2026, 10, 26, 7, 0)
+out = {}
+
+
+def folder(name):
+    path = tmp / name
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def write_table(path, data):
+    pq.write_table(pa.table(data), str(path))
+
+
+# ---- shibor_lpr：绿/黄/红边界 + cal_date 变体 + 缺失/坏文件 ----
+def shibor_case(name, dates, column="date"):
+    cur = folder("shibor_" + name)
+    write_table(cur / "shibor_lpr.parquet", {column: dates, "1y": [2.0] * len(dates)})
+    block = mod.collect_shibor_lpr_freshness(cur, now)
+    return {"level": block["level"], "status": block["status"],
+            "max_date": block["max_date"], "lag": block["lag_days"],
+            "available": block["available"], "reason": block["reason"],
+            "detail": mod._shibor_lpr_detail(block)}
+
+
+out["shibor_green"] = shibor_case("green", [20261020, 20261021, 20261022])
+out["shibor_yellow"] = shibor_case("yellow", [20261001, 20261002])
+out["shibor_red"] = shibor_case("red", [20260819, 20260820])
+out["shibor_caldate"] = shibor_case("caldate", ["2026-10-24"], column="cal_date")
+missing = folder("shibor_missing")
+block = mod.collect_shibor_lpr_freshness(missing, now)
+out["shibor_missing"] = {"level": block["level"], "reason": block["reason"]}
+bad = folder("shibor_bad")
+(bad / "shibor_lpr.parquet").write_text("not a parquet", encoding="utf-8")
+block = mod.collect_shibor_lpr_freshness(bad, now)
+out["shibor_bad"] = {"level": block["level"], "reason": block["reason"]}
+
+# ---- trade_cal：绿/黄/缺失/坏 ----
+def tcal_case(name, dates):
+    cur = folder("tcal_" + name)
+    write_table(cur / "trade_cal.parquet",
+                {"exchange": ["SSE"] * len(dates), "cal_date": dates})
+    block = mod.collect_trade_cal_dedup(cur)
+    return {"level": block["level"], "status": block["status"],
+            "rows": block["rows"], "distinct": block["distinct"],
+            "ratio": block["ratio"], "detail": mod._trade_cal_dedup_detail(block)}
+
+
+out["tcal_green"] = tcal_case("green", [20261020, 20261021, 20261022])
+out["tcal_yellow"] = tcal_case("yellow", [20261023] * 3 + [20261022] * 3)
+missing = folder("tcal_missing")
+out["tcal_missing"] = {"level": mod.collect_trade_cal_dedup(missing)["level"]}
+bad = folder("tcal_bad")
+(bad / "trade_cal.parquet").write_bytes(b"broken")
+out["tcal_bad"] = {"level": mod.collect_trade_cal_dedup(bad)["level"]}
+
+# ---- tdx：未纳管黄 / 已纳管绿（dirs 与 tables 两形态）/ manifest 不可读黄 /
+#      小目录绿 / 目录缺失绿 / 遍历超限黄 ----
+mod.TDX_UNMANAGED_MIN_BYTES = 10
+mod.TDX_WALK_MAX_FILES = 50000
+
+
+def tdx_repo(name, nfiles=4):
+    repo = tmp / ("repo_" + name)
+    tdx = repo / "quant_backtest" / "data" / "tdx"
+    tdx.mkdir(parents=True)
+    for index in range(nfiles):
+        (tdx / ("f%d.parquet" % index)).write_bytes(b"x" * 5)
+    return repo
+
+
+def vault_with_manifest(name, manifest):
+    vault = tmp / ("vault_" + name)
+    day = vault / "2026-10-25"
+    day.mkdir(parents=True)
+    (day / "data_manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
+    return vault
+
+
+repo = tdx_repo("unmanaged")
+vault = vault_with_manifest("unmanaged", {"dirs": [{"name": "tushare", "files": 1, "bytes": 1}]})
+block = mod.collect_tdx_manifest(repo, vault)
+out["tdx_unmanaged"] = {"level": block["level"], "status": block["status"],
+                        "files": block["files"], "bytes": block["bytes"],
+                        "detail": mod._tdx_manifest_detail(block)}
+
+repo = tdx_repo("managed")
+vault = vault_with_manifest("managed", {"dirs": [
+    {"name": "tushare", "files": 1, "bytes": 1},
+    {"name": "tdx", "files": 4, "bytes": 20}]})
+block = mod.collect_tdx_manifest(repo, vault)
+out["tdx_managed"] = {"level": block["level"], "status": block["status"],
+                      "managed_by": block["managed_by"]}
+
+repo = tdx_repo("tables")
+vault = vault_with_manifest("tables", {"tables": {"tdx": {"n": 4}}})
+out["tdx_tables"] = {"level": mod.collect_tdx_manifest(repo, vault)["level"]}
+
+repo = tdx_repo("nomanifest")
+empty_vault = tmp / "vault_empty"
+empty_vault.mkdir()
+block = mod.collect_tdx_manifest(repo, empty_vault)
+out["tdx_no_manifest"] = {"level": block["level"], "status": block["status"]}
+
+repo = tdx_repo("small")
+mod.TDX_UNMANAGED_MIN_BYTES = 10 ** 9
+block = mod.collect_tdx_manifest(repo, vault)
+out["tdx_small"] = {"level": block["level"], "status": block["status"]}
+mod.TDX_UNMANAGED_MIN_BYTES = 10
+
+repo = tmp / "repo_missing_tdx"
+repo.mkdir()
+out["tdx_missing_dir"] = {"level": mod.collect_tdx_manifest(repo, empty_vault)["level"]}
+
+repo = tdx_repo("truncated", nfiles=6)
+mod.TDX_WALK_MAX_FILES = 2
+block = mod.collect_tdx_manifest(repo, vault)
+out["tdx_truncated"] = {"level": block["level"], "status": block["status"],
+                        "truncated": block["truncated"]}
+
+print(json.dumps(out, ensure_ascii=False, default=str))
+"""
+
+
+def _data_health_probe() -> dict:
+    """子进程加载 gen_health_card，用临时小 parquet/目录跑三项数据底座检查。"""
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    proc = subprocess.run(
+        [PYTHON, "-B", "-c", _DATA_HEALTH_PROBE, str(HEALTH)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=180, cwd=str(REPO), env=env, check=False,
+    )
+    assert proc.returncode == 0, "数据底座探针失败:\n%s\n%s" % (
+        proc.stdout, proc.stderr)
+    return _json_stdout(proc, "health_card/data_health")
+
+
+def test_data_health_shibor_lpr_freshness_levels() -> None:
+    """shibor_lpr：≤14 天绿、>14 黄、>60 红；缺失/坏文件黄；兼容 cal_date 列名。"""
+    pytest.importorskip("pyarrow")
+    result = _data_health_probe()
+    assert result["shibor_green"]["level"] == "green", result["shibor_green"]
+    assert result["shibor_green"]["max_date"] == "2026-10-22"
+    assert result["shibor_yellow"]["level"] == "yellow"
+    assert result["shibor_yellow"]["lag"] == 24
+    assert result["shibor_red"]["level"] == "red"
+    assert result["shibor_red"]["max_date"] == "2026-08-20"
+    assert "断供" in result["shibor_red"]["detail"]
+    assert result["shibor_caldate"]["level"] == "green"
+    assert result["shibor_missing"]["level"] == "yellow"
+    assert result["shibor_bad"]["level"] == "yellow"
+    assert result["shibor_bad"]["reason"]
+
+
+def test_data_health_tdx_manifest_levels() -> None:
+    """tdx：>1GiB 未纳管黄；dirs/tables 命中纳管绿；manifest 不可读/遍历超限黄；小/缺失绿。"""
+    pytest.importorskip("pyarrow")
+    result = _data_health_probe()
+    assert result["tdx_unmanaged"]["level"] == "yellow"
+    assert result["tdx_unmanaged"]["status"] == "unmanaged"
+    assert "未纳管" in result["tdx_unmanaged"]["detail"]
+    assert result["tdx_managed"]["level"] == "green"
+    assert result["tdx_managed"]["status"] == "managed"
+    assert result["tdx_managed"]["managed_by"] == "dirs[].name"
+    assert result["tdx_tables"]["level"] == "green"
+    assert result["tdx_no_manifest"]["level"] == "yellow"
+    assert result["tdx_small"]["level"] == "green"
+    assert result["tdx_small"]["status"] == "not_applicable"
+    assert result["tdx_missing_dir"]["level"] == "green"
+    assert result["tdx_truncated"]["level"] == "yellow"
+    assert result["tdx_truncated"]["truncated"] is True
+
+
+def test_data_health_trade_cal_dedup_levels() -> None:
+    """trade_cal：无重复绿；rows/distinct>1.01 黄（detail 写 rows/distinct/倍数）；坏/缺黄。"""
+    pytest.importorskip("pyarrow")
+    result = _data_health_probe()
+    assert result["tcal_green"]["level"] == "green"
+    assert result["tcal_green"]["rows"] == 3
+    assert result["tcal_green"]["distinct"] == 3
+    assert result["tcal_yellow"]["level"] == "yellow"
+    assert result["tcal_yellow"]["rows"] == 6
+    assert result["tcal_yellow"]["distinct"] == 2
+    assert result["tcal_yellow"]["ratio"] == 3.0
+    assert "去重日期" in result["tcal_yellow"]["detail"]
+    assert "6 行 / 2" in result["tcal_yellow"]["detail"]
+    assert result["tcal_missing"]["level"] == "yellow"
+    assert result["tcal_bad"]["level"] == "yellow"
+
+
+def test_data_health_checks_wired_into_card(tmp_path: Path) -> None:
+    """端到端：data 块出三项、checks 出三条；小夹具 → 绿/不适用。"""
+    pa = pytest.importorskip("pyarrow")
+    pq = pytest.importorskip("pyarrow.parquet")
+    repo, vault = _make_health_repo(tmp_path, "hc_datahealth")
+    _make_vault(vault, {"a.bundle": b"A" * 8})
+    curated = repo / "quant_backtest" / "data" / "tushare_curated"
+    curated.mkdir(parents=True)
+    today = dt.datetime.now()
+    ymd = int(today.strftime("%Y%m%d"))
+    pq.write_table(pa.table({"date": [ymd]}), str(curated / "shibor_lpr.parquet"))
+    pq.write_table(pa.table({"cal_date": [ymd]}),
+                   str(curated / "trade_cal.parquet"))
+
+    proc = _run_health(repo, vault)
+    assert proc.returncode in (0, 1), proc.stderr
+    card = _json_stdout(proc, "health_card/data_health")
+    data = card["data"]
+    for key in ("shibor_lpr_freshness", "tdx_manifest", "trade_cal_dedup"):
+        assert key in data, data.keys()
+    checks = _checks_by_id(card)
+    for check_id in ("data.shibor_lpr_freshness", "data.tdx_manifest",
+                     "data.trade_cal_dedup"):
+        assert check_id in checks, sorted(checks)
+        assert checks[check_id]["detail"]
+    assert checks["data.shibor_lpr_freshness"]["level"] == "green"
+    assert checks["data.tdx_manifest"]["level"] == "green"  # 目录不存在 → 不适用
+    assert checks["data.trade_cal_dedup"]["level"] == "green"
+
+
+# ---------------------------------------------------------------------------
 # 2b) gen_health_card.py · data.root_drift（两期 data_manifest.json 对比）
 # ---------------------------------------------------------------------------
 DATA_ROOT = r"C:\fixture\data"
