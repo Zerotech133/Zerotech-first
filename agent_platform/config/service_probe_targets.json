@@ -1,0 +1,14 @@
+{
+  "schema": "service_probe_targets/v1",
+  "_note": "B2-a 通信/运行体 8 席探活目标（只读；仅 127.0.0.1；更新后随 task 立即生效）。file_freshness 用于无 HTTP 端点的运行体：目录最新文件 mtime 不超过阈值即 ok。",
+  "targets": [
+    {"seat": "LUSU1", "kind": "http", "url": "http://127.0.0.1:8787/health", "label": "通信入口 Hermes WebUI"},
+    {"seat": "DENGZHI1", "kind": "http", "url": "http://127.0.0.1:8787/health", "label": "Hermes 通讯中枢"},
+    {"seat": "JEV_GATE", "kind": "http", "url": "http://127.0.0.1:9101/health", "label": "Jev 告警降噪网关"},
+    {"seat": "JEV_REVIEW", "kind": "http", "url": "http://127.0.0.1:9102/health", "label": "Jev 信号复核门"},
+    {"seat": "JEV_QD", "kind": "http", "url": "http://127.0.0.1:9103/health", "label": "Jev⇄QuantDinger 桥"},
+    {"seat": "LARK_CARDS", "kind": "http", "url": "http://127.0.0.1:9104/health", "label": "飞书卡片回调（当前离线应显 degraded）"},
+    {"seat": "WATCH_TOWER", "kind": "file_freshness", "path": "agent_platform/data/shadow", "max_age_hours": 24, "label": "盯盘中台 shadow 产物新鲜度"},
+    {"seat": "COWBRIDGE", "kind": "file_freshness", "path": "agent_platform/data/memory", "max_age_hours": 24, "label": "跨层记忆写入新鲜度"}
+  ]
+}
