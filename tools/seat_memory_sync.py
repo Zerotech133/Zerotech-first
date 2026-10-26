@@ -78,15 +78,21 @@ def _capability_summary(home: str) -> dict:
         return None
     try:
         cap = json.load(open(p, encoding="utf-8"))
+        caps = cap.get("capabilities", [])
         return {
             "total": cap.get("total"),
             "ready": cap.get("ready"),
+            # 2026-10-26 A2/C2：新增降级/纸面状态计数（旧卡只有 ready/pending_*）
+            "degraded_relay": cap.get("degraded_relay", 0),
+            "degraded_rule": cap.get("degraded_rule", 0),
             "pending_key": cap.get("pending_key"),
             "pending_wiring": cap.get("pending_wiring"),
-            "ready_names": [c["name"] for c in cap.get("capabilities", [])
+            "paper": cap.get("paper", 0),
+            "ready_names": [c["name"] for c in caps
                             if c.get("status") == "ready"],
-            "pending_names": [c["name"] for c in cap.get("capabilities", [])
+            "pending_names": [c["name"] for c in caps
                               if c.get("status") != "ready"],
+            "statuses": {c["name"]: c.get("status") for c in caps},
             "source_generated_at": cap.get("generated_at"),
         }
     except (OSError, json.JSONDecodeError):

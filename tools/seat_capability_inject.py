@@ -36,7 +36,10 @@ HOMES = {
 }
 
 # ---------------- 能力全集（按席位职责面 × 全仓真实工具） ----------------
-# 每项：name / what（能干什么）/ how（真实调用）/ boundary（边界）/ status（ready|pending_key|pending_wiring）
+# 每项：name / what（能干什么）/ how（真实调用）/ boundary（边界）/ status
+# status 枚举（2026-10-26 A2/C2 扩展）：ready | degraded_relay | degraded_rule |
+# pending_wiring | paper；verified_at/verified_scope = 运行态证据时点与范围
+# （静态卡 ≠ 运行态可用；审计通过 ≠ 能力可用）。
 CAPABILITIES = {
     "tianfeng": [
         {"name": "devtask", "what": "工单全生命周期：建单/列表/合并/收口", "how": "python tools/devtask.py new|list|merge", "boundary": "五守卫全开；pathspec 精确提交", "status": "ready"},
@@ -72,14 +75,15 @@ CAPABILITIES = {
         {"name": "case-sign-chain", "what": "判例草稿签字链：AI draft→待签 payload→本人签→公钥验签→入 Z4", "how": "python tools/gov_ai_case_bridge.py --emit / --apply（私钥由老田持有，Agent 只验签）", "boundary": "未签/篡改/未配公钥一律拒；strict 模式 verified=True 才入库", "status": "ready"},
     ],
     "zhuge": [
-        {"name": "adversarial-review", "what": "反向质询（已有技能卡）", "how": "skills/adversarial-review", "boundary": "只给建议与质询卡，不代签", "status": "ready"},
-        {"name": "evidence-audit", "what": "证据审计（已有技能卡）", "how": "skills/evidence-audit", "boundary": "已核实/推断/待验证三分", "status": "ready"},
-        {"name": "pre-mortem", "what": "事前验尸（已有技能卡）", "how": "skills/pre-mortem", "boundary": "失败路径枚举", "status": "ready"},
-        {"name": "zhuge-brief", "what": "诸葛亮建议引擎（规则版，七源归集）", "how": "portal/api_zhuge_brief.py + /api/zhuge/brief（8091 已生效）", "boundary": "页面标注'规则归集非模型推理'", "status": "ready"},
-        {"name": "os-suggest", "what": "OS 首页建议呈现（四视图）", "how": "portal/os_entry_v9_prod.html 消费", "boundary": "只读归集不造第二账", "status": "ready"},
-        {"name": "council-advise", "what": "议会厅建议面表态（该不该做/优先级）", "how": "落盘看法文书至 deliverables", "boundary": "不派单不裁决", "status": "ready"},
-        {"name": "brief-trend", "what": "建议趋势与采纳率跟踪", "how": "OS 建议消费日志（待接线）", "boundary": "采纳率进健康卡（R3）", "status": "pending_wiring"},
-        {"name": "llm-gpt6", "what": "GPT-6.0 真模型推理（建议升级）", "how": "OpenClaw zhuge agent（模型已绑 openai/gpt-6.0）", "boundary": "OPENAI_API_KEY 未注入——注入后真模型对照（Demo先行→拍板→替换）", "status": "pending_key"},
+        {"name": "adversarial-review", "what": "反向质询（已有技能卡）", "how": "skills/adversarial-review/SKILL.md；OpenClaw agent zhuge skills 已登记；一次性 infer 是否加载技能卡 ⏳未验证", "boundary": "只给建议与质询卡，不代签；通道级可用", "status": "ready", "verified_scope": "skill_card_and_agent_binding", "verified_at": "2026-10-26T23:33+08:00"},
+        {"name": "evidence-audit", "what": "证据审计（已有技能卡）", "how": "skills/evidence-audit/SKILL.md；通道级可用，技能注入未验证", "boundary": "已核实/推断/待验证三分", "status": "ready", "verified_scope": "skill_card_and_agent_binding", "verified_at": "2026-10-26T23:33+08:00"},
+        {"name": "pre-mortem", "what": "事前验尸（已有技能卡）", "how": "skills/pre-mortem/SKILL.md；L5 实测答复形态符合 pre-mortem（3 条失败风险）", "boundary": "失败路径枚举；通道级可用，技能注入未验证", "status": "ready", "verified_scope": "skill_card_and_agent_binding", "verified_at": "2026-10-26T23:33+08:00"},
+        {"name": "zhuge-brief", "what": "诸葛亮建议引擎（规则版，七源归集）", "how": "portal/api_zhuge_brief.py + /api/zhuge/brief（8091/8734 实测 200，suggestions≈30/gaps=0）", "boundary": "页面标注'规则归集非模型推理'；不派单不审批", "status": "ready", "verified_scope": "runtime_http", "verified_at": "2026-10-26T23:32+08:00"},
+        {"name": "os-suggest", "what": "OS 首页建议呈现（四视图，消费 /api/zhuge/brief）", "how": "portal/os_entry_v9_prod.html 消费；实测 8734 页面 200 且前端同语义适配", "boundary": "只读归集不造第二账；页面自述未挂定时推送", "status": "ready", "verified_scope": "runtime_page", "verified_at": "2026-10-26T23:39+08:00"},
+        {"name": "council-advise", "what": "议会厅建议面表态（该不该做/优先级）", "how": "portal/council_ops.py 规则代行（CHAIR_POOL/建议面代行语句）→ tools/gen_council_data.py 刷新 portal/data/council.json；'看法文书落 deliverables' 无代码路径（人工/文档动作）", "boundary": "不派单不裁决；当前为规则代行（非模型表态）；council.json 的 zhuge online/verifiable 非通道判活", "status": "degraded_rule", "verified_scope": "runtime_rule", "verified_at": "2026-10-26T23:35+08:00"},
+        {"name": "brief-trend", "what": "建议趋势与采纳率跟踪", "how": "设计：portal/harvest_adoption.py（access log）→ portal/data/zhuge_adoption.jsonl + portal/api_zhuge_adoption.py；实测 2026-10-26 23:4x：/api/zhuge/adoption=404（未注册）、账本 0B、无排程", "boundary": "接线判据=路由 200 + 账本非空 + 归集器在计划任务中（三者同时满足）；未接线不虚报 ready", "status": "pending_wiring", "verified_scope": "runtime_absent", "verified_at": "2026-10-26T23:40+08:00"},
+        {"name": "llm-carrier", "what": "真模型推理通道（目标 GPT-6.0；当前经 OpenClaw agent-config 载体以 deepseek/deepseek-chat 中转真实作答）", "how": "OpenClaw agent zhuge（agents.entries.zhuge.model.primary，现 deepseek/deepseek-chat）→ L5 portal/comm_zhuge.py、8796 engine/openclaw_cli.py+legion_command/serve.py；切换 ops/zhuge_carrier_switch.ps1", "boundary": "GPT6 真身 itokengate/gpt-6-sol 待跨境网络；env key 非前置（密钥在 OpenClaw secret store）；中转必须标 openclaw_cloud+carrier+relay=true，不冒充 GPT6；真身恢复后按 agent-config 自动回 openclaw_gpt", "status": "degraded_relay", "mode": "openclaw_cloud", "carrier": "deepseek/deepseek-chat", "relay": True, "gpt6_ready": False, "verified_scope": "runtime_l5_and_8796", "verified_at": "2026-10-26T23:33+08:00", "evidence": "work/zhuge-role-audit-20261026/phase2/_probe_consult.py"},
+        {"name": "carrier-switch", "what": "载体三级自动切换（gpt6→ms1max35→ms1max177→deepseek，取当前可达最高档）", "how": "ops/zhuge_carrier_switch.ps1 -DryRun|-Apply；Windows 计划任务「AI工作站诸葛载体自动切换」每 10 分钟 -Apply -Json；日志 C:\\Temp\\zhuge_carrier_switch.log", "boundary": "探测 2s TCP；Apply=备份+openclaw config patch+validate+真实推理自检，失败自动回滚；切换后标签按 agent-config 实读自动变、无需重启；计划任务增删属 L2；自 22:42 注册以来始终 no-change（真实切换路径未触发）", "status": "ready", "apply_path_verified": False, "verified_scope": "runtime_probe_and_task", "verified_at": "2026-10-26T23:12+08:00"},
     ],
 }
 
@@ -568,19 +572,31 @@ def inject(dry_run: bool) -> int:
             os.makedirs(skills_dir, exist_ok=True)
         # ① 能力清单
         cap_path = os.path.join(skills_dir, "CAPABILITIES.json")
+        items = CAPABILITIES[seat]
+
+        def _count(status):
+            return sum(1 for c in items if c.get("status") == status)
+
         payload = {
             "schema": "seat_capabilities/v1",
             "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "seat": seat,
-            "total": len(CAPABILITIES[seat]),
-            "ready": sum(1 for c in CAPABILITIES[seat] if c["status"] == "ready"),
-            "pending_key": sum(1 for c in CAPABILITIES[seat] if c["status"] == "pending_key"),
-            "pending_wiring": sum(1 for c in CAPABILITIES[seat] if c["status"] == "pending_wiring"),
-            "capabilities": CAPABILITIES[seat],
-            "note": "能力全部指向真实工具/命令；pending_key=等模型凭据；pending_wiring=等数据接线。",
+            "total": len(items),
+            "ready": _count("ready"),
+            "degraded_relay": _count("degraded_relay"),
+            "degraded_rule": _count("degraded_rule"),
+            "pending_wiring": _count("pending_wiring"),
+            "pending_key": _count("pending_key"),
+            "paper": _count("paper"),
+            "capabilities": items,
+            "note": "能力全部指向真实工具/命令；status=ready|degraded_relay|degraded_rule|"
+                    "pending_wiring|paper；verified_at/verified_scope=运行态证据时点与范围"
+                    "（静态卡≠运行态可用；审计通过≠能力可用）。",
         }
         if dry_run:
-            print(f"[dry] {cap_path}（{payload['total']} 项：ready {payload['ready']} / key {payload['pending_key']} / wiring {payload['pending_wiring']}）")
+            print(f"[dry] {cap_path}（{payload['total']} 项：ready {payload['ready']} / "
+                  f"relay {payload['degraded_relay']} / rule {payload['degraded_rule']} / "
+                  f"wiring {payload['pending_wiring']}）")
         else:
             tmp = cap_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:

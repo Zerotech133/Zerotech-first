@@ -91,7 +91,7 @@ d.append(el('small','标签 '+((t.tags)||[]).join('、')+' · '+String(t.summary
 d.addEventListener('click',()=>{curTopic=t.topic;loadAll()});topicsBox.append(d)});
 if(!extra.length&&!reg.length)topicsBox.append(el('div','empty','暂无议题——左上「立即发起」开一个'));
 const seats=$('#seats');seats.replaceChildren();
-[['田丰 · Hermes','g','8787 真席位'],['赵云 · 真席位','g','8787 真席位'],['诸葛亮 · 建议面','q','key 未注入·代行'],['军团指挥台','g','8796'],['WorkBuddy 工位','g','会话级']].forEach(([n,c,note])=>{const card=el('div','seatcard');const r1=el('div','r1');r1.append(el('b',null,n),el('span','dot '+c));card.append(r1,el('small',note));seats.append(card)});
+[['田丰 · Hermes','g','8787 真席位'],['赵云 · 真席位','g','8787 真席位'],['诸葛亮 · 建议面','q','OpenClaw 载体·中转（非GPT6）'],['军团指挥台','g','8796'],['WorkBuddy 工位','g','会话级']].forEach(([n,c,note])=>{const card=el('div','seatcard');const r1=el('div','r1');r1.append(el('b',null,n),el('span','dot '+c));card.append(r1,el('small',note));seats.append(card)});
 window._state=st;windowMsgs=st.messages||[];renderMsgs();
 const ex=(st.experts||[]);
 ex.forEach(e=>{const card=el('div','seatcard');card.style.borderColor='#8a6a3a';const r1=el('div','r1');r1.append(el('b',null,'🔔 '+e.who),el('span','dot y'));card.append(r1,el('small','智能召唤 · '+e.domain+' · 议题相关列席'));seats.append(card)});

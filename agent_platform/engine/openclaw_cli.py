@@ -80,6 +80,11 @@ def parse_stdout(stdout, stderr="", returncode=0):
                     res = d.get("result")
                     if isinstance(res, dict):
                         out = res.get("text") or res.get("content")
+                        # A2-B09：与 portal/comm_zhuge 对齐，兼容 result.outputs[*].text 嵌套
+                        if not out and isinstance(res.get("outputs"), list):
+                            parts = [str(it.get("text") or it.get("content") or "")
+                                     for it in res["outputs"] if isinstance(it, dict)]
+                            out = "\n".join(p for p in parts if p)
                 out = str(out or "").strip()
                 return (out, None) if out else (None, "empty_output")
             err = d.get("error")

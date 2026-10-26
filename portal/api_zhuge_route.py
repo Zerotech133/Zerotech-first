@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """WO-OS-09 诸葛亮建议引擎只读路由（GET /api/zhuge/brief，2026-10-21）。
 WO-OS-20 扩第七源 pushflow：当日通知投递成败（读 portal/work/push_flow.jsonl）。
+2026-10-26 A2-B07：clock 参数先 URL 解码再解析（标准 %2B/encodeURIComponent 可用）。
 
 把 WO-OS-04 规则版引擎（api_zhuge_brief.build_brief）挂上 8091 门户 API：
 七源只读聚合 → build_brief → JSON。路由层零写操作（不 open 写、不 sqlite
@@ -228,11 +229,14 @@ class Handler:
     """
 
     def _zhuge_brief(self, qs):
+        from urllib.parse import unquote
         qs = qs or ""
         clock = None
         for part in qs.split("&"):
             if part.startswith("clock="):
-                clock = _parse_clock(part[6:])
+                # A2-B07：标准客户端会把 + 编成 %2B（encodeURIComponent），
+                # 必须先 unquote 再 fromisoformat，否则合法 ISO8601 被 400。
+                clock = _parse_clock(unquote(part[6:]))
                 if clock is None:
                     self._json({"ok": False,
                                 "error": "clock 参数必须是带时区的 ISO8601 "

@@ -53,6 +53,8 @@ _KIND_MAP = {
     "stock_consult": "task_request",
     "watch_setup": "task_request",
     "complaint": "feedback",
+    # 2026-10-26 A2-B02：涉资金诉求必须真投递人工归口，不能只靠模板说「已转」。
+    "billing": "feedback",
 }
 
 

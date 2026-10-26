@@ -8,7 +8,10 @@ POST /api/zhuge/adoption：接收页面 sendBeacon 的 {items:[{at,domain}]}，
 - 单条上限 200 items / 单 item 字段白名单，脏数据整批拒 400；
 - 无鉴权（内网 beacon；sendBeacon 不能带自定义头）——与 /feishu/event 同级
   「匿名但只写专用账本」面，写面窄化到本文件，风险可控；
-- 注册于 portal_api（代码级就绪；8091 SYSTEM 进程重启后生效——WO-OS-09 同款判例）。
+- 现状（2026-10-26 A2/C2 实测）：**未注册于 portal_api**（grep 无引用），
+  `/api/zhuge/adoption` = 404、账本 0B；v2 sendBeacon 方案已被 v3 服务器侧
+  归集（`harvest_adoption.py`，access log）取代。本文件保留仅作历史实现，
+  若要恢复采纳率能力，接线判据=路由 200 + 账本非空 + 归集器在计划任务中。
 """
 from __future__ import annotations
 

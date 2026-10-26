@@ -139,10 +139,16 @@ def channel_status():
     b = _openclaw_bin()
     ready, reason = _openclaw_available()
     cfg = _openclaw_config_path()
+    # 2026-10-26 A2：key_set 旧字段只反映 env（现网走 OpenClaw secret store，
+    # 恒为 False 会误导排障）。拆成 env_key_set 并显式标注凭据来源；
+    # key_set 保留为「调用面可用」的兼容别名。
+    env_key_set = bool(os.environ.get("OPENAI_API_KEY")
+                       or os.environ.get("OPENAI_GPT6_KEY"))
     return {"openclaw_bin": b, "openclaw_ready": ready,
             "reason": reason,
-            "key_set": bool(os.environ.get("OPENAI_API_KEY")
-                            or os.environ.get("OPENAI_GPT6_KEY")),
+            "env_key_set": env_key_set,
+            "key_set": ((b is not None) and (cfg is not None)),
+            "key_source": "openclaw_secret_store",
             "configured": cfg is not None,
             "config_path": str(cfg) if cfg else None,
             "agent": OPENCLAW_AGENT, "model": OPENCLAW_MODEL,

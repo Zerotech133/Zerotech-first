@@ -313,6 +313,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/chat":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
+                # 2026-10-26 A2-B04：兄弟端点都有上限，本端点此前缺失。
+                # 负值/超 64KB 一律 400（防 read(-1) 悬挂与无界内存/参数超长）。
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request",
+                                     "reason": "content_length_out_of_range"}, 400)
+                    return
                 req = json.loads(self.rfile.read(length).decode("utf-8"))
             except (ValueError, UnicodeDecodeError):
                 self._send_json({"ok": False, "error": "bad_request"}, 400)
@@ -349,7 +355,7 @@ class Handler(BaseHTTPRequestHandler):
                                      "agent": agent, "binding": binding})
                     return
                 prompt = " ".join((str(req.get("system", "")) + " "
-                                   + str(req.get("user", ""))).split())
+                                   + str(req.get("user", ""))).split())[:16000]
                 text, oc_err = oc_run("zhuge", prompt)
                 carrier = agent_primary_model("zhuge") or "agent-config"
                 relay = is_relay(carrier)

@@ -787,3 +787,16 @@ def test_binding_cache_refreshes_on_org_change(tmp_path):
     st = p.stat()
     os.utime(p, (st.st_atime, st.st_mtime + 10))
     assert srv_mod.resolve_binding("Z1", platform_dir=r) == "none", "org 改动后缓存未失效"
+
+
+# ---------------------------------------------------------------- A2-B04 入参上限
+
+def test_http_chat_rejects_oversized_body(server):
+    """/api/chat 请求体 >64KB 必须 400，不得原样塞进子进程参数。"""
+    big = {"agent": "AI1", "system": "s", "user": "x" * 70000}
+    try:
+        _post(server, "/api/chat", big)
+        raised = False
+    except urllib.error.HTTPError as e:
+        raised = e.code == 400
+    assert raised, "超大 body 应 400"

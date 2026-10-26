@@ -37,6 +37,29 @@ function Log([string]$msg) {
     } catch { }
 }
 
+function Fail([string]$msg) {
+    # A2-B11：错误路径也遵守 -Json 契约（计划任务以 -Json 调用，下游按 JSON 解析）
+    Log ('ERROR ' + $msg)
+    if ($Json) {
+        @{ ok = $false; error = $msg; action = 'error'; log = $logFile } |
+            ConvertTo-Json -Depth 4
+    } else {
+        Write-Output ('ERROR: ' + $msg)
+    }
+    exit 1
+}
+
+function Resolve-ConfigPath {
+    if ($env:OPENCLAW_CONFIG -and (Test-Path $env:OPENCLAW_CONFIG)) {
+        return $env:OPENCLAW_CONFIG
+    }
+    foreach ($n in @('openclaw.json', 'config.json')) {
+        $p = Join-Path $env:USERPROFILE ('.openclaw\' + $n)
+        if (Test-Path $p) { return $p }
+    }
+    return $null
+}
+
 function Probe-Tcp([string]$hostName, [int]$port, [int]$timeoutMs) {
     try {
         $client = New-Object System.Net.Sockets.TcpClient
@@ -81,17 +104,9 @@ $tiers = [ordered]@{
 }
 
 $oc = Find-OpenClaw
-if (-not $oc) {
-    Write-Output 'ERROR: openclaw not found on PATH'
-    Log 'ERROR openclaw not found on PATH'
-    exit 1
-}
-$cfgPath = Join-Path $env:USERPROFILE '.openclaw\openclaw.json'
-if (-not (Test-Path $cfgPath)) {
-    Write-Output ('ERROR: config not found: ' + $cfgPath)
-    Log ('ERROR config missing ' + $cfgPath)
-    exit 1
-}
+if (-not $oc) { Fail 'openclaw not found on PATH' }
+$cfgPath = Resolve-ConfigPath
+if (-not $cfgPath) { Fail 'openclaw config not found (~/.openclaw/openclaw.json or config.json)' }
 $current = Get-CurrentModel -cfgPath $cfgPath
 
 # ---- pick target tier ----
@@ -164,18 +179,43 @@ try {
     if ($LASTEXITCODE -ne 0) { throw ('config validate failed exit=' + $LASTEXITCODE) }
 
     # real inference self-check (uses OpenClaw secret store; no key on disk)
-    $inferOut = & $oc infer model run --local --agent zhuge --prompt 'reply only: OK' --json 2>&1
-    $inferText = ($inferOut | Out-String)
+    # A2-B06：必须有超时（InferTimeoutSec 旧版声明未用，OpenClaw 挂起会无限阻塞）
+    # 且必须判「非空正文」——{"ok":true,"outputs":[]} 不能算健康（L5 会判 empty_output）。
+    $job = Start-Job -ScriptBlock {
+        param($exe)
+        & $exe infer model run --local --agent zhuge --prompt 'reply only: OK' --json
+    } -ArgumentList $oc
+    if (-not (Wait-Job $job -Timeout $InferTimeoutSec)) {
+        Stop-Job $job -ErrorAction SilentlyContinue
+        Remove-Job $job -Force -ErrorAction SilentlyContinue
+        throw ('self-check timeout ' + $InferTimeoutSec + 's')
+    }
+    $inferText = (Receive-Job $job | Out-String)
+    Remove-Job $job -Force -ErrorAction SilentlyContinue
     Log ('selfcheck raw len=' + $inferText.Length)
     $ok = $false
     try {
         $start = $inferText.IndexOf('{')
         if ($start -ge 0) {
             $d = $inferText.Substring($start) | ConvertFrom-Json
-            $ok = [bool]$d.ok
+            $outText = ''
+            if ($d.ok) {
+                $outText = [string]$d.text
+                if (-not $outText -and $d.outputs) {
+                    $outText = (($d.outputs | ForEach-Object { [string]$_.text }) -join "`n")
+                }
+                if (-not $outText -and $d.result) {
+                    $outText = [string]$d.result.text
+                    if (-not $outText -and $d.result.outputs) {
+                        $outText = (($d.result.outputs | ForEach-Object { [string]$_.text }) -join "`n")
+                    }
+                }
+            }
+            $ok = -not [string]::IsNullOrWhiteSpace($outText)
+            Log ('selfcheck ok=' + $ok + ' text_len=' + ($outText.Length))
         }
     } catch { $ok = $false }
-    if (-not $ok) { throw 'self-check inference failed' }
+    if (-not $ok) { throw 'self-check inference empty/failed' }
 
     $result.ok = $true
     $result.action = 'applied'

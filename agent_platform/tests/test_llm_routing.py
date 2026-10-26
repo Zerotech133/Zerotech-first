@@ -250,6 +250,42 @@ def test_chat_body_uses_profile(monkeypatch):
     monkeypatch.setattr(urllib.request, "build_opener", orig)
 
 
+def test_chat_respects_caller_timeout_cap(monkeypatch):
+    """A2-B01：调用方显式 timeout 是硬上限，不得被 profile(300s) 覆盖。
+
+    L5 本地军师(25s)/意图分类(12s) 曾因此最坏挂 ~601s。
+    """
+    captured = {}
+
+    class FakeResp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return json.dumps({"message": {"content": "ok"},
+                               "done_reason": "stop"}).encode("utf-8")
+
+    class FakeOpener:
+        def open(self, req, timeout=None):
+            captured["timeout"] = timeout
+            return FakeResp()
+
+    import urllib.request
+    monkeypatch.setattr(urllib.request, "build_opener",
+                        lambda handler=None: FakeOpener())
+
+    llm_mod.OllamaLLM(timeout=12).chat("s", "u", model="qwen3.5:9b")
+    assert captured["timeout"] == 12, "12s 预算必须被尊重"
+    llm_mod.OllamaLLM(timeout=25).chat("s", "u", model="qwen3.5:9b")
+    assert captured["timeout"] == 25
+    # 未显式给 timeout 时仍按模型档（9b=300s），保持原行为
+    llm_mod.OllamaLLM().chat("s", "u", model="qwen3.5:9b")
+    assert captured["timeout"] == 300
+
+
 # ---------------------------------------------------------------- live 层
 
 def _live():
