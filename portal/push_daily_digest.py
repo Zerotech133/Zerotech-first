@@ -58,44 +58,42 @@ def build_card():
         buttons=buttons, tags="#pj #push_digest")
 
 
-def send(card):
-    """经「零界·通知」app 发 union_id（open_id 是 app 维度，跨 app 会 400）。
+def _in_silent_window(now=None):
+    """22:00–07:00 静默窗（非 critical 不发）。→ (是否静默, 原因)。"""
+    import datetime as _dt
+    now = now or _dt.datetime.now()
+    if now.hour >= 22 or now.hour < 7:
+        return True, "silent_window(%02d:%02d)" % (now.hour, now.minute)
+    return False, ""
 
-    说明：这是运维摘要卡，走通知 app 直发；生产推送链仍以 8097 闸门为准
-    （P0-1 审计已记录本旁路，待 hub 支持 app 选择后收敛）。
+
+def send(card, critical=False):
+    """经 8097 统一闸门发送（kind=auto:push_digest · sender_role=zb.ops.notify）。
+
+    2026-10-26 OS-FIX-W4CLOSE：旧实现绕过 8097 直发 OpenAPI——失败会进
+    push_flow 但成功不记账（W4 24h 丢失误判的直接来源）。现所有尝试/成功
+    都过统一发送通道：
+      · 静默窗（22:00–07:00）非 critical 直接返回不发（不产生死信）；
+      · hub 不可达/拒绝 → fail-closed，不回落直发；
+      · 成功/失败由 push_flow 记账，W4 可追溯。
     """
-    import json as _j
-    import urllib.request as _u
-    sec_path = os.path.join(HERE, "work", "feishu_secrets", "zb.ops.notify.json")
+    silent, why = _in_silent_window()
+    if silent and not critical:
+        return False, why
+    union = (authorization.person("田峰") or {}).get("union_id") or ""
+    if not union:
+        return False, "缺 union_id"
     try:
-        sec = _j.load(open(sec_path, encoding="utf-8"))
-    except (OSError, ValueError):
-        return False, "缺通知 app 凭据"
-    try:
-        req = _u.Request(
-            "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
-            data=_j.dumps({"app_id": sec["app_id"],
-                           "app_secret": sec["app_secret"]}).encode(),
-            headers={"Content-Type": "application/json"})
-        with _u.urlopen(req, timeout=15) as r:
-            tok = _j.loads(r.read().decode()).get("tenant_access_token")
-        union = (authorization.person("田峰") or {}).get("union_id") or ""
-        if not tok or not union:
-            return False, "缺 token/union_id"
-        req = _u.Request(
-            "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=union_id",
-            data=_j.dumps({"receive_id": union, "msg_type": "interactive",
-                           "content": _j.dumps(card, ensure_ascii=False)},
-                          ensure_ascii=False).encode(),
-            headers={"Authorization": "Bearer " + tok,
-                     "Content-Type": "application/json"})
-        with _u.urlopen(req, timeout=20) as r:
-            res = _j.loads(r.read().decode())
-        ok = res.get("code") == 0
-        return ok, ("message_id=" + str((res.get("data") or {}).get("message_id"))
-                    if ok else str(res.get("msg") or res.get("code")))
+        import feishu_client as _fc
     except Exception as e:  # noqa: BLE001
-        return False, "%s: %s" % (type(e).__name__, str(e)[:120])
+        return False, "feishu_client 不可用: %s" % str(e)[:80]
+    ok, why, mid = _fc.send_msg_tracked(
+        card, "interactive", receive_id=union, receive_id_type="union_id",
+        kind="auto:push_digest", critical=critical, via_hub=True,
+        sender_role="zb.ops.notify")
+    if ok:
+        return True, "message_id=" + str(mid or "")
+    return False, str(why or "")
 
 
 STATE = os.path.join(HERE, "work", "push_digest_state.json")
