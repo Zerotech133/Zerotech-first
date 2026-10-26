@@ -73,6 +73,8 @@ CAPABILITIES = {
         {"name": "eval-harness", "what": "质量评测：10 条金标任务 + 断言评分 + 回归报告", "how": "python -X utf8 tools/eval_harness.py run", "boundary": "金标更新留痕；失败不得当通过", "status": "ready"},
         {"name": "observability-trace", "what": "调用观测：工具链/时延/成本/状态写本地 JSONL trace", "how": "python -X utf8 tools/trace_log.py --summary / --cmd ...", "boundary": "不记密钥/敏感正文", "status": "ready"},
         {"name": "spec-driven-delivery", "what": "规范驱动交付：constitution→spec→plan→tasks→converge 产物链与收敛检查", "how": "python -X utf8 tools/spec_flow.py init/check/list；产物落 deliverables/specs", "boundary": "阶段未收敛不得进实现；证据缺失不得签收敛", "status": "ready"},
+        {"name": "security-gate", "what": "安全质量门：密钥/危险调用/危险参数扫描，high 阻断合并", "how": "python -X utf8 tools/security_gate.py scan --changed|--path|--all；证据落 work/security", "boundary": "只读；不自动修；high 必须人工裁决", "status": "ready"},
+        {"name": "approval-inbox", "what": "L2 审批队列：请求→待批→批准/驳回，决策留痕", "how": "python -X utf8 tools/approval_inbox.py request/list/approve/reject", "boundary": "只有 pending 可决策；L2 不得自动批准", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -484,6 +486,30 @@ description: 规范驱动交付：宪法→规格→计划→任务→收敛，�
 3. 检查：`python -X utf8 tools/spec_flow.py check <id>`；未通过不得进实现。
 4. 收敛结论只允许 converged / partial / failed；证据缺失不得签 converged。
 5. 产物落 `deliverables/specs/<id>/`，与工单/验收单互相引用。
+""",
+        "security-gate": """---
+name: security-gate
+description: 安全质量门：密钥/危险调用/危险参数扫描；high 阻断，证据落盘。
+---
+
+# 安全质量门
+
+1. 扫描：`python -X utf8 tools/security_gate.py scan --changed`（或 --path/--all）。
+2. 规则：硬编码密钥、eval/exec/os.system、shell=True、pickle.loads 等。
+3. high>0 阻断合并；不得自动修复，须人工裁决。
+4. 证据落 `work/security/security-*.json`；只读。
+""",
+        "approval-inbox": """---
+name: approval-inbox
+description: L2 审批队列：请求→待批→批准/驳回，决策留痕；L2 不自动批。
+---
+
+# L2 审批队列
+
+1. 请求：`python -X utf8 tools/approval_inbox.py request --kind ... --reason ...`。
+2. 查看：`... list --status pending`。
+3. 决策：`... approve <id> --by 老田` / `reject <id> --by 老田 --note ...`。
+4. 只有 pending 可决策；L2 动作不得自动批准。
 """,
     },
     "zhaoyun": {
