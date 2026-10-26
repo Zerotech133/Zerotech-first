@@ -76,12 +76,15 @@ def test_bundle_names_and_capabilities_contract():
 
     # P2：治理席虚拟卡（不占编，与 R2 不同 id）
     zy = agents["ZHAOYUN"]
-    assert zy["cn_name"] == "赵云"
+    assert zy["cn_name"] == "赵云·治理席（不占编）"
     assert "不占编" in zy["seat_note"]
     assert "R2" in zy["seat_note"]
     assert len(zy["capabilities"]) >= 5
     assert "8796/zhaoyun" in zy["home_page"]
     assert depts["governance"]["agents"] == ["ZHAOYUN"]
+    # 名称去重（WO-SEAT-DEDUP）：编制内 R2 仍叫赵云，治理席显示名已消歧；全卡无同名冲突
+    assert agents["R2"]["cn_name"] == "赵云"
+    assert bundle["stats"]["name_collisions"] == {}
 
     # P3：R2 编制口径对齐（会议厅人格=保守风控哨）
     meeting = (Path(_ROOT) / "agent_platform" / "legion_command" / "static"

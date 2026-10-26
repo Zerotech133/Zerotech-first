@@ -428,8 +428,8 @@ def main():
     agents["ZHAOYUN"] = {
         "id": "ZHAOYUN",
         "dept": "governance",
-        "cn_name": "赵云",
-        "name": "赵云",
+        "cn_name": "赵云·治理席（不占编）",
+        "name": "赵云·治理席（不占编）",
         "role_cn": "治理席（进化官）",
         "role_profile": "governance_seat",
         "grade": "",
@@ -549,6 +549,14 @@ def main():
                 "status": pr.get("status", "active"),
             })
 
+    # 名称唯一性守卫（WO-SEAT-DEDUP）：同名不同 id 必须显式消歧，避免按名字误聚合
+    _by_name = {}
+    for _aid, _card in agents.items():
+        _nm = (_card or {}).get("cn_name") or ""
+        if _nm:
+            _by_name.setdefault(_nm, []).append(_aid)
+    name_collisions = {nm: ids for nm, ids in _by_name.items() if len(ids) > 1}
+
     bundle = {
         "generated": time.strftime("%Y-%m-%d %H:%M"),
         "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
@@ -559,6 +567,7 @@ def main():
             "total_cards": len(agents),
             "prompt_ok": org_agent_count - len(miss_prompt),
             "prompt_miss": miss_prompt,
+            "name_collisions": name_collisions,
             "workorders_doing": wo_stats["doing"],
             "workorders_review": wo_stats["review"],
         },
@@ -577,6 +586,8 @@ def main():
     print("agents:", len(agents), "| prompt_ok:", bundle["stats"]["prompt_ok"],
           "| miss:", miss_prompt or "none")
     print("workorders: doing=%d review=%d" % (wo_stats["doing"], wo_stats["review"]))
+    if name_collisions:
+        print("WARN 同名冲突:", json.dumps(name_collisions, ensure_ascii=False))
     print("code_files: %d 个 · 合计 %.1f KB" % (
         len(code_files), sum(f["size"] for f in code_files) / 1024))
 
