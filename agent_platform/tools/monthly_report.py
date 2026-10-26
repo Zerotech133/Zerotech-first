@@ -274,10 +274,10 @@ def build_inventory_section(root: Path, month: str) -> tuple[str, str]:
     nxt = date(y + (m == 12), (m % 12) + 1, 1).isoformat()
     try:
         p = subprocess.run(
-            ["git", "-C", str(root), "log", f"--since={since}",
+            ["git", "log", f"--since={since}",
              f"--until={nxt}", "--oneline", "--", "docs/legion/"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=60)
+            timeout=60, cwd=str(root))
         lines = [ln for ln in p.stdout.splitlines() if ln.strip()]
     except (OSError, subprocess.TimeoutExpired) as e:
         return (f"## ③当月施工盘点\n> 锚: docs/legion/ | 态: INCONCLUSIVE"
@@ -404,10 +404,10 @@ def recheck(text: str, base: Path) -> dict:
     nxt = date(y + (mo == 12), (mo % 12) + 1, 1).isoformat()
     try:
         p = subprocess.run(
-            ["git", "-C", str(base), "log", f"--since={since}", f"--until={nxt}",
+            ["git", "log", f"--since={since}", f"--until={nxt}",
              "--oneline", "--", "docs/legion/"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=60)
+            timeout=60, cwd=str(base))
         glines = [ln for ln in p.stdout.splitlines() if ln.strip()]
     except (OSError, subprocess.TimeoutExpired):
         glines = None
