@@ -39,6 +39,17 @@ def _timeout(cfg: dict, default: float = 20.0) -> float:
         return default
 
 
+def _is_http(cfg: dict) -> bool:
+    return str(cfg.get("transport") or "stdio").lower() == "http"
+
+
+def _http_client(cfg: dict, timeout: float | None = None):
+    from mcp.http_client import MCPHttpClient, token_from_env  # noqa: WPS433
+    return MCPHttpClient(str(cfg.get("url") or ""),
+                         token=token_from_env(cfg),
+                         timeout=timeout or _timeout(cfg, 15.0))
+
+
 def probe(name: str | None = None, timeout: float | None = None) -> dict:
     """启动 server → initialize → tools/list → 关闭；返回健康与工具清单。"""
     sys.path.insert(0, str(PLATFORM))
@@ -50,19 +61,30 @@ def probe(name: str | None = None, timeout: float | None = None) -> dict:
         cfg = servers.get(n) or {}
         t0 = time.time()
         item = {"name": n, "risk": cfg.get("risk", "unknown"),
+                "transport": "http" if _is_http(cfg) else "stdio",
                 "ok": False, "tools": [], "error": ""}
         if not cfg:
             item["error"] = "server_not_configured"
             out.append(item)
             continue
+        if cfg.get("enabled") is False:
+            item["error"] = "transport_disabled" + (
+                "（" + str(cfg.get("note")) + "）" if cfg.get("note") else "")
+            item["elapsed_ms"] = int((time.time() - t0) * 1000)
+            out.append(item)
+            continue
         client = None
         try:
-            client = MCPClient(_argv(cfg), cwd=str(REPO),
-                               timeout=timeout or _timeout(cfg)).start()
+            if _is_http(cfg):
+                client = _http_client(cfg, timeout)
+                client.initialize()
+            else:
+                client = MCPClient(_argv(cfg), cwd=str(REPO),
+                                   timeout=timeout or _timeout(cfg)).start()
             tools = client.list_tools()
             item["ok"] = True
             item["tools"] = [t.get("name") for t in tools if isinstance(t, dict)]
-        except (MCPError, OSError, ValueError) as e:
+        except (MCPError, OSError, ValueError, RuntimeError) as e:
             item["error"] = "%s: %s" % (type(e).__name__, str(e)[:160])
         finally:
             if client is not None:
@@ -97,6 +119,24 @@ def call(server: str, tool: str, arguments: dict | None = None,
     if cfg.get("risk") != "read-only":
         return {"ok": False, "error": "server_not_read_only", "server": server}
     sys.path.insert(0, str(PLATFORM))
+    if _is_http(cfg):
+        if cfg.get("enabled") is False:
+            return {"ok": False, "error": "transport_disabled", "server": server,
+                    "note": cfg.get("note") or ""}
+        from mcp.http_client import MCPHttpError  # noqa: WPS433
+        client = None
+        try:
+            client = _http_client(cfg, timeout)
+            client.initialize()
+            rep = client.call_tool(tool, arguments or {})
+            return {"ok": bool(rep.get("ok")), "server": server, "tool": tool,
+                    "payload": rep.get("payload"), "isError": rep.get("isError")}
+        except (MCPHttpError, ValueError) as e:
+            return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                    "server": server, "tool": tool}
+        finally:
+            if client is not None:
+                client.close()
     from mcp.client import MCPClient, MCPError  # noqa: WPS433
     client = None
     try:
