@@ -168,3 +168,19 @@ def test_retention_moves_old_cards(tmp_path, monkeypatch):
     assert len(list(root.glob("EX-*.json"))) == 2
     expired = list((root / "_expired").glob("EX-*.json"))
     assert len(expired) == 1
+
+
+def test_prune_ignores_dot_state_file(tmp_path):
+    """CLOCKFIX：.closeout_state.json 不是卡片，轮转不得把它移走。"""
+    root = tmp_path / "experiments"
+    root.mkdir()
+    for i in range(3):
+        (root / ("EX-%d.json" % i)).write_text(json.dumps({
+            "card_id": "EX-%d" % i,
+            "created_at": "2026-10-26T09:0%d:00+0800" % i,
+        }), encoding="utf-8")
+    (root / ".closeout_state.json").write_text('{"last_digest": "x"}', encoding="utf-8")
+    moved = CR.prune_cards(root, keep=2)
+    assert moved == 1
+    assert (root / ".closeout_state.json").is_file()
+    assert len(list(root.glob("EX-*.json"))) == 2

@@ -21,7 +21,7 @@ sys.path.insert(0, str(_PLATFORM / "engine"))
 
 from engine import experience_store as S  # noqa: E402
 from engine import evolve_pipeline as P  # noqa: E402
-from legion_command.serve import build_server  # noqa: E402
+from legion_command.serve import build_server, load_experiment_cards  # noqa: E402
 
 
 def _run(tmp, signed="", **kw):
@@ -124,3 +124,24 @@ def test_api_evolution_readonly_no_body_leak(server):
     data = json.loads(raw)
     assert "lesson" not in json.dumps(data)   # 不暴露经验正文
     assert "cue" not in json.dumps(data)
+
+
+def test_load_cards_ignores_dot_state_file(tmp_path):
+    """CLOCKFIX：data/experiments 下的 .closeout_state.json 不得渲染成空卡。"""
+    (tmp_path / ".closeout_state.json").write_text(
+        json.dumps({"last_digest": "x"}), encoding="utf-8")
+    (tmp_path / "EX-1.json").write_text(json.dumps({
+        "card_id": "EX-1",
+        "created_at": "2026-10-26T09:00:00+0800",
+        "kind": "observation",
+        "decision_required": True,
+        "window_summary": {"new_failures": 0},
+        "hypothesis": "h", "status": "probing",
+        "arms": {"baseline": {}, "candidate": {}},
+    }), encoding="utf-8")
+    (tmp_path / "broken.json").write_text("{bad", encoding="utf-8")
+    cards = load_experiment_cards(tmp_path)
+    assert len(cards) == 1
+    assert cards[0]["card_id"] == "EX-1"
+    assert cards[0]["kind"] == "observation"
+    assert cards[0]["decision_required"] is True

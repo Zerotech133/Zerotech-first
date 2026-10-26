@@ -120,7 +120,9 @@ def prune_cards(experiments_root: Path, keep: int = DEFAULT_KEEP) -> int:
     root = Path(experiments_root)
     if not root.exists():
         return 0
-    cards = [p for p in root.glob("*.json") if p.is_file()]
+    # CLOCKFIX：.closeout_state.json 等点文件不是卡片，绝不参与轮转
+    cards = [p for p in root.glob("*.json")
+             if p.is_file() and not p.name.startswith(".")]
     cards.sort(key=lambda p: (_card_created_at(p), p.stat().st_mtime))
     overflow = cards[:-keep] if len(cards) > keep else []
     if not overflow:
