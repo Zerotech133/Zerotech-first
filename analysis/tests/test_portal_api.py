@@ -58,6 +58,33 @@ class TestAnalysisApi(unittest.TestCase):
         api_analysis.handle_get(h, "/api/analysis/nope", "")
         self.assertEqual(h.status, 404)
 
+    def test_events_list(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/events", "limit=5&status=pending")
+        self.assertEqual(h.status, 200)
+        self.assertIn("events", h.obj)
+        self.assertIn("pending_total", h.obj)
+
+    def test_events_bad_code(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/events", "code=abc")
+        self.assertEqual(h.status, 400)
+
+    def test_review_bad_input(self):
+        h = Stub(body=json.dumps({"event_id": "", "action": "approve"}).encode())
+        api_analysis.handle_post(h, "/api/analysis/review", "")
+        self.assertEqual(h.status, 400)
+
+    def test_review_missing_event(self):
+        h = Stub(body=json.dumps({"event_id": "__nope__", "action": "approve"}).encode())
+        api_analysis.handle_post(h, "/api/analysis/review", "")
+        self.assertEqual(h.status, 404)
+
+    def test_h5_bad_run(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/h5", "run_id=../../etc")
+        self.assertEqual(h.status, 404)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

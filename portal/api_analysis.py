@@ -129,26 +129,81 @@ def handle_get(handler, path, qs):
             d = os.path.join(QUEUE, k)
             stats[k] = sorted([f for f in os.listdir(d) if f.endswith(".json")])[-5:] if os.path.isdir(d) else []
         return _json(handler, {"ok": True, "queue": stats})
+    if path == "/api/analysis/events":
+        limit = max(1, min(int(q.get("limit", 30) or 30), 200))
+        code = q.get("code", "")
+        status = q.get("status", "pending")
+        if code and not CODE_RE.match(code):
+            return _json(handler, {"ok": False, "error": "非法代码"}, 400)
+        try:
+            import sys
+            if ROOT not in sys.path:
+                sys.path.insert(0, ROOT)
+            from analysis import review
+            items = review.list_events(code or None, limit, status if status in ("all", "pending", "approved", "rejected") else "all", path=DB)
+            st = review.stats(code or None, path=DB)
+        except Exception as e:
+            return _json(handler, {"ok": False, "error": "事件库读取失败: " + str(e)[:120]}, 500)
+        out = [{"event_id": e.get("event_id"), "date": e.get("date"), "category": e.get("category"),
+                "category_final": e.get("category_final"), "title": e.get("title"), "url": e.get("url"),
+                "reviewed": e.get("reviewed"), "reviewed_at": e.get("reviewed_at"),
+                "review_note": e.get("review_note"), "confidence": e.get("confidence")} for e in items]
+        return _json(handler, {"ok": True, "events": out, "total": st.get("total"), "pending_total": st.get("pending"),
+                               "approved": st.get("approved"), "rejected": st.get("rejected")})
+    if path == "/api/analysis/h5":
+        d = _run_dir(q.get("run_id", ""))
+        if not d:
+            return _json(handler, {"ok": False, "error": "run 不存在"}, 404)
+        p = os.path.join(d, "h5.html")
+        if not os.path.exists(p):
+            return _json(handler, {"ok": False, "error": "H5 不存在"}, 404)
+        body = open(p, encoding="utf-8").read()
+        try:
+            handler._html(body)
+        except Exception:
+            data = body.encode("utf-8")
+            handler.send_response(200)
+            handler.send_header("Content-Type", "text/html; charset=utf-8")
+            handler.send_header("Content-Length", str(len(data)))
+            handler.end_headers()
+            handler.wfile.write(data)
+        return
     return _json(handler, {"ok": False, "error": "unknown analysis api: " + path}, 404)
 
 
+def _read_body(handler):
+    ln = int(handler.headers.get("Content-Length") or 0)
+    return json.loads(handler.rfile.read(ln).decode("utf-8") or "{}") if ln else {}
+
+
 def handle_post(handler, path, qs):
-    if path != "/api/analysis/submit":
+    if path not in ("/api/analysis/submit", "/api/analysis/review"):
         return _json(handler, {"ok": False, "error": "unknown analysis post"}, 404)
     try:
-        ln = int(handler.headers.get("Content-Length") or 0)
-        body = json.loads(handler.rfile.read(ln).decode("utf-8") or "{}") if ln else {}
+        body = _read_body(handler)
     except Exception:
         return _json(handler, {"ok": False, "error": "bad json"}, 400)
+    import sys
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+
+    if path == "/api/analysis/review":
+        event_id = str(body.get("event_id") or "").strip()
+        action = str(body.get("action") or "").strip().lower()
+        if not event_id or action not in ("approve", "reject"):
+            return _json(handler, {"ok": False, "error": "需要 event_id 与 action(approve/reject)"}, 400)
+        try:
+            from analysis import review
+            r = review.apply(event_id, action, category=body.get("category"), note=body.get("note"), path=DB)
+        except Exception as e:
+            return _json(handler, {"ok": False, "error": "复核失败: " + str(e)[:120]}, 500)
+        return _json(handler, r, 200 if r.get("ok") else 404)
+
     code = str(body.get("code") or "").strip().upper()
     if not CODE_RE.match(code):
         return _json(handler, {"ok": False, "error": "非法代码（示例 600337.SH）"}, 400)
     llm = bool(body.get("llm", False))
     push = bool(body.get("push", False))
-    # 延迟 import，避免 portal 冷启动依赖 analysis 包
-    import sys
-    if ROOT not in sys.path:
-        sys.path.insert(0, ROOT)
     try:
         from analysis import queue as aq
         r = aq.submit(code, llm=llm, push=push)

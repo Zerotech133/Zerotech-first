@@ -208,6 +208,7 @@ _load_cainiao_env()
 # 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
 _MUTATION_POSTS = frozenset((
     "/api/analysis/submit",  # K-STOCK-ANALYSIS-P0C2 个股分析入队（写队列文件）
+    "/api/analysis/review",  # K-STOCK-ANALYSIS-P0F 事件人工复核（写复核状态）
     "/api/data/update-plan",
     "/api/data/update",
     "/api/portfolio_subscribe",
