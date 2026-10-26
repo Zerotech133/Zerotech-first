@@ -764,7 +764,7 @@ def test_exec_run_stale_guard_and_allow_stale_bypass(tmp_path):
 
 
 # ---------- v0.5 allow_stale 补跑旁路（2026-10-20 判例）----------
-def test_exec_run_stale_guard_and_allow_stale_bypass(tmp_path):
+def test_exec_run_stale_guard_and_allow_stale_bypass__dup2(tmp_path):
     """守卫2：asof 日早于湖最新交易日 → 拒单（陈旧产物）；allow_stale=True
     （显式补跑授权，老田拍板通道）旁路落单且 reason 带 [stale-replay] 标注；
     plan_date 按防偷价语义派生；settle 仍按 first_bar_on_or_after(plan_date)

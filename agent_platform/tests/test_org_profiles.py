@@ -117,7 +117,7 @@ def test_audit_ghost_requires_all_three_sources_missing():
             aid, (idx.get(aid) or {}).get("source_detail"))
 
 
-def test_audit_ghost_requires_all_three_sources_missing():
+def test_audit_ghost_requires_all_three_sources_missing__dup2():
     """幽灵席位 = 三处都查不到；档案在 team 文件里不算幽灵。"""
     from engine import org_audit as A
     rep = A.audit(_PLATFORM)

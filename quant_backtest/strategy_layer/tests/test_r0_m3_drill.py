@@ -270,7 +270,7 @@ def test_unexpected_exception_keeps_gate_verdicts_blocked(monkeypatch, tmp_path)
 
 # ---- WO-QT-20261020-054：046 评审 P2 防御性加固的反例 ----
 
-def test_final_guard_failure_resets_gate_verdicts_to_literals(monkeypatch, tmp_path):
+def test_final_guard_failure_resets_gate_verdicts_to_literals__dup2(monkeypatch, tmp_path):
     """FINAL_GUARD_FAILED 路径：失败报告门位必须是字面量 BLOCKED，不得残留对账中间值。"""
     from strategy_layer import r0_m3_drill as drill_mod
     expected_stages = ("CALLER_ATTESTATION_CLAIM", "IN_MEMORY_ONLY",
@@ -295,7 +295,7 @@ def test_final_guard_failure_resets_gate_verdicts_to_literals(monkeypatch, tmp_p
     assert report["final"]["cutover_verdict"] == "BLOCK_CUTOVER"
 
 
-def test_unexpected_exception_keeps_gate_verdicts_blocked(monkeypatch, tmp_path):
+def test_unexpected_exception_keeps_gate_verdicts_blocked__dup2(monkeypatch, tmp_path):
     """异常路径：结构化失败报告的双门位恒为字面量 BLOCKED（含 _blank_report 默认）。"""
     from strategy_layer import r0_m3_drill as drill_mod
 
