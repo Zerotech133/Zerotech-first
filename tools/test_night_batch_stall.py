@@ -126,3 +126,10 @@ def test_batch_backlog_parser_streak_and_unfinished_round(tmp_path):
     level, detail = health_card._batch_backlog_level(bl)
     assert level in ("red", "yellow")
     assert "未收口" in detail
+
+
+def test_pause_m3_flag_parsed_default_off():
+    """2026-10-26 OS-FIX-DAYBATCH：--pause-m3 默认关，显式传参才生效。"""
+    ap = night_batch.build_parser()
+    assert ap.parse_args([]).pause_m3 is False
+    assert ap.parse_args(["--pause-m3"]).pause_m3 is True
