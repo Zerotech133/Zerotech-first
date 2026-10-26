@@ -269,3 +269,5 @@ quant_backtest/experiments/
 quant_backtest/portal/
 agent_platform/backup_20261018_team_quality.json
 agent_platform/intel_inbox/intel_inbox_ledger.jsonl
+# OSLINK-W4 8795 HTTP 鉴权 token（K-QUANT-20261026-OSLEG-8795API）：运行时注入，禁入库
+agent_platform/gateway/.osleg_http_token
