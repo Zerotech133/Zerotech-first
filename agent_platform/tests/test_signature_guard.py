@@ -130,7 +130,7 @@ def test_z4_write_entry_records_verified(tmp_path, monkeypatch):
     entry_id = "EXP-SUPERVISION-001"
     content = {"domain": "supervision", "cue": "c", "lesson": "l",
                "evidence": "e", "confidence": 0.6}
-    sig = _sign(priv, kind="experience_entry", item_id=entry_id,
+    sig = _sign(priv, kind="experience_write", item_id=entry_id,
                 fingerprint=G.fingerprint_of(content), action="write")
     entry = S.write_entry(**content, signed_by="老田", root=root, signature=sig)
     assert entry.verified is True

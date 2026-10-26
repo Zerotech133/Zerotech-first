@@ -154,8 +154,11 @@ def write_entry(domain: str, cue: str, lesson: str, evidence: str,
             raise StoreError("duplicate cue in domain %s (去重键命中): %s" % (domain, row.get("entry_id")))
 
     entry_id = _next_id(base, domain)
+    # GOVAI-3 修复：签字口径必须与 sign_approval.py KINDS / evolve_sign_payloads.py
+    # 的 KIND 一致（均为 experience_write）。此前误用 experience_entry，导致
+    # 真实签字（experience_write）在入库验签时 kind 不匹配 → SignatureError。
     auth = signature_guard.check(
-        kind="experience_entry", item_id=entry_id,
+        kind="experience_write", item_id=entry_id,
         fingerprint=signature_guard.fingerprint_of({
             "domain": domain, "cue": str(cue).strip(),
             "lesson": str(lesson).strip(), "evidence": str(evidence).strip(),
