@@ -150,6 +150,11 @@
     <div id="research"></div>
   </section>
 
+  <section>
+    <h2>修复车道（关羽） <span id="repair-sub">—</span> <span>事故 triage · 批次 · pytest 验证 · 只发现不改码</span></h2>
+    <div id="repair"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -545,7 +550,8 @@ function loadCap2() {
     jget('/api/zhaoyun/sandbox').catch(() => null),
     jget('/api/zhaoyun/outbox').catch(() => null),
     jget('/api/zhaoyun/research').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx, ob, rs]) => {
+    jget('/api/zhaoyun/repair').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx, ob, rs, rp]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -708,7 +714,46 @@ function loadCap2() {
       (rs.items || []).slice(-5).reverse().forEach((c) => rbx.appendChild(el('div', 'muted',
         '• ' + (c.title || c.url) + ' · ' + c.url + ' · sha ' + String(c.sha256 || '').slice(0, 10))));
     } else rbx.appendChild(el('div', 'muted', '取证不可用'));
+    const rpBox = $('repair'); rpBox.replaceChildren();
+    if (rp && rp.ok) {
+      const sc = rp.status_counts || {};
+      $('repair-sub').textContent = '批次 ' + (rp.count || 0) + ' · ' +
+        Object.keys(sc).map((k) => k + ':' + sc[k]).join(' ');
+      const tb2 = el('button', '', 'Triage 事故/失败');
+      tb2.onclick = repairTriage;
+      rpBox.appendChild(tb2);
+      (rp.batches || []).slice(-8).reverse().forEach((b) => {
+        const row = el('div', 'row');
+        row.appendChild(el('div', 'muted', '• ' + b.id + ' · ' + b.module +
+          ' · ' + b.status + ' · target=' + (b.target || '—')));
+        if (b.target) {
+          const rb = el('button', '', '跑验证');
+          rb.onclick = () => repairRun(b.id);
+          row.appendChild(rb);
+        }
+        rpBox.appendChild(row);
+      });
+    } else rpBox.appendChild(el('div', 'muted', '修复车道不可用'));
   });
+}
+function repairTriage() {
+  fetch('/api/zhaoyun/repair/triage', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) { alert('Triage 完成：found=' + j.found + ' new=' + j.new_batches +
+        ' pending=' + j.pending); loadCap2(); }
+      else alert('Triage 失败：' + (j.error || ''));
+    }).catch((e) => alert('Triage 失败：' + e));
+}
+function repairRun(id) {
+  fetch('/api/zhaoyun/repair/run', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ batch_id: id }) })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) alert('批次验证通过：' + id);
+      else alert('批次验证失败：' + id + ' · ' + (j.error || ''));
+      loadCap2();
+    }).catch((e) => alert('批次运行失败：' + e));
 }
 function researchFetch() {
   const url = (($('rs-url') || {}).value || '').trim();

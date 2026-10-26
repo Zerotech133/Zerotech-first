@@ -101,7 +101,7 @@ def run(check_name: str, item: dict) -> dict:
             "elapsed_ms": int((time.time() - t0) * 1000)}
 
 
-def build_report(smoke: bool = False) -> dict:
+def build_report(smoke: bool = False, judge: bool = False) -> dict:
     data = _load()
     items = [b for b in data.get("behaviors") or [] if isinstance(b, dict)]
     if smoke:
@@ -132,6 +132,16 @@ def build_report(smoke: bool = False) -> dict:
         "failures": [r for r in results if not r["ok"]],
         "results": results,
     }
+    if judge and not smoke:
+        try:
+            sys.path.insert(0, str(EVALS))
+            from judge import judge_text  # noqa: WPS433
+            summary = "评估报告：session %d/%d，失败 %s" % (
+                passed, total, [r["id"] for r in rep["failures"][:5]])
+            rep["judge"] = judge_text(summary)
+        except Exception as e:  # noqa: BLE001
+            rep["judge"] = {"ok": False, "error": "judge_failed",
+                            "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
     REPORTS.mkdir(parents=True, exist_ok=True)
     (REPORTS / "latest.json").write_text(
         json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -144,10 +154,12 @@ def build_report(smoke: bool = False) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="赵云评估飞轮")
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--judge", action="store_true",
+                    help="全量评估后追加 LLM-as-judge（预算内）")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
-    rep = build_report(args.smoke)
+    rep = build_report(args.smoke, judge=args.judge)
     passed = rep["session"]["passed"]
     total = rep["session"]["total"]
     if args.json:

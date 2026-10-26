@@ -306,6 +306,14 @@ class Handler(BaseHTTPRequestHandler):
                     sys.path.insert(0, str(_PLATFORM))
                     from research import web as rw
                     self._send_json(rw.recent_citations())
+                elif sub == "repair":
+                    sys.path.insert(0, str(_PLATFORM))
+                    from repair import lane as rl
+                    self._send_json(rl.recent())
+                elif sub == "evals/judge":
+                    sys.path.insert(0, str(_PLATFORM / "evals"))
+                    from judge import latest  # noqa: WPS433
+                    self._send_json(latest())
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
@@ -765,6 +773,32 @@ class Handler(BaseHTTPRequestHandler):
                                force=bool(req.get("force")))
             except Exception as e:                       # noqa: BLE001
                 res = {"ok": False, "error": "research_fetch_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 400)
+            return
+        if path == "/api/zhaoyun/repair/triage":
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from repair import lane as rl  # noqa: WPS433
+                res = rl.triage()
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "repair_triage_failed",
+                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            self._send_json(res, 200 if res.get("ok") else 500)
+            return
+        if path == "/api/zhaoyun/repair/run":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                sys.path.insert(0, str(_PLATFORM))
+                from repair import lane as rl  # noqa: WPS433
+                res = rl.run_batch(str(req.get("batch_id") or ""))
+            except Exception as e:                       # noqa: BLE001
+                res = {"ok": False, "error": "repair_run_failed",
                        "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
             self._send_json(res, 200 if res.get("ok") else 400)
             return
