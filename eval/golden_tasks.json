@@ -173,6 +173,19 @@
    ],
    "expect_rc": 0,
    "timeout": 120
+  },
+  {
+   "id": "pytest-browser",
+   "desc": "browser-verification 单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_browser_verify.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 180
   }
  ]
 }
