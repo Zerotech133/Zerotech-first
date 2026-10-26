@@ -101,6 +101,16 @@ def _tool_impl(root: Path, name: str) -> str:
             return "agent_platform/engine/tools.py:%s" % name
     except OSError:
         pass
+    # 投研/研究只读工具层（2026-10-27 ACAD1 P0）：quant_backtest/agent_tools.py
+    # 内以 def <name>( 实现（datamart_read/market_snapshot/signal_precedents…）。
+    quant_tools = root / "quant_backtest" / "agent_tools.py"
+    try:
+        if quant_tools.is_file() and re.search(
+                r"^def %s\(" % re.escape(name),
+                quant_tools.read_text(encoding="utf-8", errors="replace"), re.M):
+            return "quant_backtest/agent_tools.py:%s" % name
+    except OSError:
+        pass
     return ""
 
 

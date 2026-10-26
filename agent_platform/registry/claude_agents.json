@@ -31,7 +31,7 @@
   "description": "ACAD1·E3·研究院：策略、数据智能、情报、商业化与组织方法论研究",
   "prompt": "\n\n## 从业画像\n- 从业经验：30 年从业经验（研究院院长：审题立项与评审统筹）\n\n## 工作边界（K-ORG-035 F6 纪律段）\n- 允许读取域：domain/*, dept/*, agent/ACAD1/*\n- 允许写入域：agent/ACAD1/*, agent_platform/data/academy/**\n- 禁改：org_baseline.json、哨文件、A0 日报链、tasks.json 登记区\n- 越界产出无效；QA1 复核以本边界为判据之一。",
   "tools": "Read,Grep,Glob",
-  "model": "glm-4.5-flash",
+  "model": "glm/glm-5.3",
   "attributes": {
    "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
    "specialties": [],
@@ -42,7 +42,7 @@
   "description": "STRAT1·E2·研究院：策略、数据智能、情报、商业化与组织方法论研究",
   "prompt": "\n\n## 从业画像\n- 从业经验：20 年从业经验（策略研究：可证伪假设与 LCS-1 图形推演）\n\n## 工作边界（K-ORG-035 F6 纪律段）\n- 允许读取域：domain/*, dept/invest/*, agent/STRAT1/*\n- 允许写入域：agent/STRAT1/*, agent_platform/data/academy/**\n- 禁改：org_baseline.json、哨文件、A0 日报链、tasks.json 登记区\n- 越界产出无效；QA1 复核以本边界为判据之一。",
   "tools": "Read,Grep,Glob",
-  "model": "glm-4.5-flash",
+  "model": "ollama/qwen3.5:9b",
   "attributes": {
    "experience": "20 年从业经验（策略研究：可证伪假设与 LCS-1 图形推演）",
    "specialties": [],
@@ -53,7 +53,7 @@
   "description": "BACK1·E2·研究院：策略、数据智能、情报、商业化与组织方法论研究",
   "prompt": "\n\n## 从业画像\n- 从业经验：20 年从业经验（回测研究：复现、样本外与成本压力测试）\n\n## 工作边界（K-ORG-035 F6 纪律段）\n- 允许读取域：domain/*, agent/BACK1/*, agent_platform/data/academy/**\n- 允许写入域：agent/BACK1/*, agent_platform/data/academy/**\n- 禁改：org_baseline.json、哨文件、A0 日报链、tasks.json 登记区\n- 越界产出无效；QA1 复核以本边界为判据之一。",
   "tools": "Read,Grep,Glob",
-  "model": "glm-4.5-flash",
+  "model": "ollama/qwen3.5:9b",
   "attributes": {
    "experience": "20 年从业经验（回测研究：复现、样本外与成本压力测试）",
    "specialties": [],

@@ -4,6 +4,7 @@
   事件文件 : portal/data/dev_events.jsonl（每行一事件，append-only）
   事件类型 : task_start / commit / blocked / merge_done / guard_fail
              + dispatch / accept / review_verdict / patrol_verdict（K-ORG-027b 派单域）
+             + research_intake / research_review / research_report（WO-LEGION-ACAD1-P0 研究院三件套）
   CLI 用法 :
     python tools/events.py emit --kind commit --task K-STOCK-113 --agent CodeBuddy --detail "xxx 完成"
     python tools/events.py today          # 今日汇总（JSON）
@@ -55,7 +56,8 @@ KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail",
         "code_action", "code_observation",  # K-ORG-036e(F5)：+编码生产线动作/观察对（OpenHands 事件流范式）
         "approval_request", "approval_verdict",  # K-ORG-054(G4)：确定因素直批通道——Agent 请批/田丰判读（灰度期全部抄送老田）
         "confirmation_verdict",  # 2026-10-19 议事厅判例：用户对会议材料的确认/退回——不是田丰直批，不得混入 approval_verdict 灰度统计
-        "deviation_report")  # K-ORG-054(G3)：SEC2 方案级走形检查报告（对照方案条目→证据→判定→建议命令）
+        "deviation_report",  # K-ORG-054(G3)：SEC2 方案级走形检查报告（对照方案条目→证据→判定→建议命令）
+        "research_intake", "research_review", "research_report")  # WO-LEGION-ACAD1-P0：研究院立项/评审/周报三件套（ACAD1 触发+审计取证）
 
 
 def emit(kind: str, task: str = "", agent: str = "", detail: str = "",
