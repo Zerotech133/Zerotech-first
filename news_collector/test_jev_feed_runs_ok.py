@@ -70,6 +70,11 @@ class JevFeedRunsOkTest(unittest.TestCase):
         self._saved_db = J.DB
         J.DB = self.dbpath
         self.addCleanup(lambda: setattr(J, "DB", self._saved_db))
+        # 夜间守卫隔离：真实夜批文件/时间窗不应影响既有用例（默认判读路径）
+        self._real_in_night_window = J._in_night_window
+        _night = mock.patch.object(J, "_in_night_window", lambda: False)
+        _night.start()
+        self.addCleanup(_night.stop)
         for patcher in (
             mock.patch.object(J.time, "sleep", lambda _s: None),
             mock.patch.object(J.news_ai, "log", lambda _msg: None),
@@ -217,6 +222,43 @@ class JevFeedRunsOkTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(self._count("SELECT COUNT(*) FROM runs"), 0)
         self.assertIn("DRYRUN", out)
+
+    # ------------------------------------- OS-FIX-JEVFEEDNIGHT 夜间守卫
+    def test_in_night_window_boundaries(self):
+        from datetime import datetime
+        check = self._real_in_night_window
+        # 隔离本机真实 pause/lock（夜批正在跑时文件存在，不应影响纯时间窗断言）
+        with (mock.patch.object(J, "NIGHT_PAUSE_FLAG", "Z:/nonexistent-pause"),
+              mock.patch.object(J, "NIGHT_LOCK", "Z:/nonexistent-lock")):
+            self.assertTrue(check(datetime(2026, 10, 27, 21, 45)))
+            self.assertTrue(check(datetime(2026, 10, 27, 23, 0)))
+            self.assertTrue(check(datetime(2026, 10, 27, 3, 0)))
+            self.assertFalse(check(datetime(2026, 10, 27, 7, 5)))
+            self.assertFalse(check(datetime(2026, 10, 27, 12, 0)))
+            with mock.patch.dict(os.environ, {"JEV_FEED_FORCE_JUDGE": "1"}):
+                self.assertFalse(check(datetime(2026, 10, 27, 23, 0)))
+
+    def test_judge_pending_skips_in_night_window(self):
+        """夜间窗口内 judge_pending 不判读（数据保留 jev IS NULL 给夜批）。"""
+        con = sqlite3.connect(self.dbpath)
+        try:
+            con.execute(
+                "INSERT INTO news(id, source, ts, title, stocks, jev) "
+                "VALUES (?,?,?,?,?,NULL)",
+                ("xd:news:night1", "xd_news", "2026-10-26 22:00",
+                 "夜间待判新闻", "[]"))
+            con.commit()
+        finally:
+            con.close()
+        self._patch_judge(lambda items: {"不该被调用": {"bias": "bull"}})
+        with mock.patch.object(J, "_in_night_window", lambda: True):
+            res = J.judge_pending("news", 10)
+        self.assertEqual(res["judged"], 0)
+        self.assertTrue(res.get("skipped_night"))
+        self.assertEqual(
+            self._count("SELECT COUNT(*) FROM news WHERE jev IS NULL"), 1,
+            "跳读不应改库，夜批仍能按 jev IS NULL 取到")
+
 
 
 if __name__ == "__main__":
