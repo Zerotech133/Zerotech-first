@@ -31,8 +31,10 @@ def _fixture(tmp_path: Path) -> Path:
     return repo
 
 
-def _serve(repo: Path, portal_url: str = "http://127.0.0.1:59999"):
-    httpd = L.create_server("127.0.0.1", 0, repo=repo, portal_url=portal_url)
+def _serve(repo: Path, portal_url: str = "http://127.0.0.1:59999",
+           bundle_path: Path | None = None):
+    httpd = L.create_server("127.0.0.1", 0, repo=repo, portal_url=portal_url,
+                            bundle_path=bundle_path)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     return httpd, t
@@ -133,3 +135,35 @@ def test_port_registered_and_launcher_present():
     ps1 = _PLATFORM.parent / "ops" / "start_legion_ide.ps1"
     text = ps1.read_text(encoding="utf-8-sig")
     assert "8103" in text and "legion_ide" in text and "-Action" in text
+
+
+def test_bundle_override_served(tmp_path):
+    """--bundle 部署副本优先：服务应从显式 bundle 读取，health 标注来源。"""
+    repo = _fixture(tmp_path)
+    custom = tmp_path / "deploy" / "agent_ide_bundle.json"
+    custom.parent.mkdir(parents=True, exist_ok=True)
+    custom.write_text(json.dumps({"generated": "DEPLOY-2026-10-26", "agents": []}),
+                      encoding="utf-8")
+    httpd, _t = _serve(repo, bundle_path=custom)
+    try:
+        base = "http://127.0.0.1:%d" % httpd.server_port
+        status, _c, body = _get(base + "/agent_ide_bundle.json")
+        assert status == 200
+        assert json.loads(body)["generated"] == "DEPLOY-2026-10-26"
+        status, _c, body = _get(base + "/api/health")
+        assert json.loads(body)["bundle_source"] == str(custom)
+    finally:
+        httpd.shutdown(); httpd.server_close()
+
+
+def test_ops_scripts_present():
+    ops = _PLATFORM.parent / "ops"
+    for name, tokens in (
+        ("keepalive_legion_ide.ps1", ("8103", "start_legion_ide", "OK legion-ide")),
+        ("rebake_ide_bundle.ps1", ("build_agent_ide_bundle", "agent_ide_bundle.json", "checkout")),
+        ("install_git_hooks.ps1", ("post-merge", "rebake_ide_bundle")),
+        ("create_legion_ide_shortcut.ps1", ("WScript.Shell", "-Action app", "8103")),
+    ):
+        text = (ops / name).read_text(encoding="utf-8-sig")
+        for tok in tokens:
+            assert tok in text, (name, tok)
