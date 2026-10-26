@@ -220,7 +220,8 @@ class Handler(BaseHTTPRequestHandler):
                     d = json.loads(p.read_text(encoding="utf-8"))
                 except (ValueError, OSError):
                     rows.append({"id": p.stem, "ts": "", "broken": True,
-                                 "count": 0, "participants": [], "src_stats": {}})
+                                 "count": 0, "participants": [], "src_stats": {},
+                                 "source_verification": "unverified"})
                     continue
                 ms = d.get("minutes") or []
                 stats = {"live": 0, "degraded": 0, "script": 0, "host": 0}
@@ -232,10 +233,11 @@ class Handler(BaseHTTPRequestHandler):
                              "count": len(ms),
                              "participants": d.get("participants") or [],
                              "src_stats": stats,
+                             "source_verification": "unverified",
                              "broken": False})
         return {"ok": True, "schema_version": "1.0", "meetings": rows,
                 "total": len(rows),
-                "note": "只读清单；src_stats 区分真模型/降级/台词，避免把演示台词当模型结论"}
+                "note": "只读清单；src_stats 统计客户端来源声明（含旧纪要），不是经服务端验证的真模型次数"}
 
     @staticmethod
     def _meeting_get(mid: str):
@@ -253,8 +255,9 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, OSError) as e:
             return {"ok": False, "error": "meeting_unreadable: %s" % type(e).__name__,
                     "id": mid}
+        doc["source_verification"] = "unverified"
         return {"ok": True, "schema_version": "1.0", "id": mid, "meeting": doc,
-                "note": "只读回看；线程内模型发言原文，不重新生成、不二次润色"}
+                "note": "只读回看；src 为客户端声明，未凭服务端真实模型回执验证（含历史纪要）"}
 
     @staticmethod
     def _evolution():
@@ -340,7 +343,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(env)
             return
         if path == "/api/meeting/minutes":
-            # 会终纪要落盘：真模型发言是真实资产，停在前端内存里就丢了。
+            # 会终纪要落盘：来源是客户端声明，不能据此认定为真模型回执。
             # 只接受对话内容与参会名单，文件名一律服务端生成（不收用户路径）。
             try:
                 length = int(self.headers.get("Content-Length") or 0)
@@ -360,20 +363,26 @@ class Handler(BaseHTTPRequestHandler):
                     continue
                 rows.append({"by": str(m.get("id", ""))[:24],
                              "src": str(m.get("src", ""))[:12],
+                             "source_verification": "unverified",
                              "text": str(m.get("text", ""))[:2000]})
             stamp = time.strftime("%Y%m%d-%H%M%S")
             out_dir = MEETINGS_DIR
-            out_dir.mkdir(parents=True, exist_ok=True)
             doc = {"schema_version": "1.0", "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
                    "participants": [str(p)[:24] for p in (req.get("participants") or [])][:30],
                    "orders": req.get("orders") if isinstance(req.get("orders"), list) else [],
                    "model_stats": req.get("model_stats") if isinstance(req.get("model_stats"), dict) else {},
                    "minutes": rows,
-                   "note": "指挥台作战会议室会终纪要；src=live 为真模型应答 / degraded 降级通道 / script 演示台词"}
+                   "source_verification": "unverified",
+                   "note": "指挥台作战会议室会终纪要；src=live/degraded/script 仅为客户端来源声明；须有服务端真实模型回执才能验证，当前均未验证"}
             target = out_dir / ("warroom-%s.json" % stamp)
             tmp = target.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
-            tmp.replace(target)
+            try:
+                out_dir.mkdir(parents=True, exist_ok=True)
+                tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+                tmp.replace(target)
+            except OSError:
+                self._send_json({"ok": False, "error": "minutes_save_failed"}, 500)
+                return
             try:
                 rel = str(target.relative_to(_PLATFORM))
             except ValueError:

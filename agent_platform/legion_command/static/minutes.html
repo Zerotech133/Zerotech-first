@@ -67,7 +67,7 @@
 <main>
   <div id="list"><div class="empty">读取纪要清单…</div></div>
   <div id="pane"><div class="empty">从左侧选一场会议。<br><br>
-    纪要来源标记含义：<b style="color:#4FD1A5">真模型</b> = 模型实时应答；
+    纪要来源为客户端标记，未经服务端核验：<b style="color:#4FD1A5">客户端标记实时应答</b>；
     <b style="color:#EF9F27">降级通道</b> = 云端限额/故障后回落本地；
     <b style="color:#7C93AD">演示台词</b> = 未获应答时的兜底文案（不是模型结论）。</div></div>
 </main>
@@ -96,7 +96,7 @@ function renderList() {
     const seg = k => ((s[k] || 0) / tot * 100).toFixed(1) + '%';
     return '<div class="mi' + (CUR === m.id ? ' on' : '') + '" onclick="open1(\'' + esc(m.id) + '\')">' +
       '<div class="ts">' + esc(fmtTs(m.ts)) + (m.broken ? ' <span class="warn">（文件损坏）</span>' : '') + '</div>' +
-      '<div class="sub">' + m.count + ' 条 · 参会 ' + (m.participants || []).length + ' 席 · 真模型 ' + (s.live || 0) + '</div>' +
+      '<div class="sub">' + m.count + ' 条 · 参会 ' + (m.participants || []).length + ' 席 · 标记实时应答 ' + (s.live || 0) + '</div>' +
       '<div class="bar"><i class="b-live" style="width:' + seg('live') + '"></i>' +
       '<i class="b-deg" style="width:' + seg('degraded') + '"></i>' +
       '<i class="b-scr" style="width:' + seg('script') + '"></i>' +
@@ -104,7 +104,7 @@ function renderList() {
   }).join('');
 }
 
-const SRC_LABEL = { live:'真模型', degraded:'降级通道', script:'演示台词', host:'' };
+const SRC_LABEL = { live:'客户端标记实时应答·未核验', degraded:'客户端标记降级·未核验', script:'演示台词', host:'' };
 
 function renderMeeting(env) {
   const pane = document.getElementById('pane');
@@ -119,7 +119,7 @@ function renderMeeting(env) {
   let html = '<div class="mtitle">' + esc(fmtTs(d.ts)) + ' 作战会议室</div>' +
     '<div class="mmeta">参会：' + esc((d.participants || []).join(' / ') || '未记录') +
     '　·　共 ' + ms.length + ' 条' +
-    '　·　真模型 ' + (s.live || 0) + ' / 降级 ' + (s.degraded || 0) + ' / 台词 ' + (s.script || 0) +
+    '　·　标记实时应答 ' + (s.live || 0) + ' / 降级 ' + (s.degraded || 0) + ' / 台词 ' + (s.script || 0) +
     (d.model_stats ? '<br>当时调用统计：' + esc(JSON.stringify(d.model_stats)) : '') +
     (d.note ? '<br>' + esc(d.note) : '') + '</div>';
   ms.forEach(m => {
@@ -156,7 +156,7 @@ fetch('/api/meeting/list').then(r => r.json()).then(env => {
   const tot = LIST.reduce((a, m) => a + m.count, 0);
   const live = LIST.reduce((a, m) => a + ((m.src_stats || {}).live || 0), 0);
   document.getElementById('topstat').innerHTML =
-    '共 <b>' + env.total + '</b> 场 · <b>' + tot + '</b> 条发言 · 真模型 <b>' + live + '</b> 条' +
+    '共 <b>' + env.total + '</b> 场 · <b>' + tot + '</b> 条发言 · 标记实时应答 <b>' + live + '</b> 条' +
     '<span style="margin-left:8px;color:#5A7190">（只读回看，不重新生成）</span>';
   renderList();
   if (LIST.length) open1(LIST[0].id);
