@@ -92,6 +92,15 @@ def _tool_impl(root: Path, name: str) -> str:
                  root / "agent_platform" / "tools" / (name + ".ps1")):
         if cand.is_file():
             return str(cand.relative_to(root)).replace("\\", "/")
+    # 平台数据工具层：agent_platform/engine/tools.py 内以 def <name>( 实现（如 kline_daily）
+    engine = root / "agent_platform" / "engine" / "tools.py"
+    try:
+        if engine.is_file() and re.search(
+                r"^def %s\(" % re.escape(name),
+                engine.read_text(encoding="utf-8"), re.M):
+            return "agent_platform/engine/tools.py:%s" % name
+    except OSError:
+        pass
     return ""
 
 
