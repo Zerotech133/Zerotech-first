@@ -67,6 +67,13 @@ def _toolsets() -> list:
         text = (HOME / "config.yaml").read_text(encoding="utf-8", errors="replace")
     except OSError:
         return []
+    try:
+        import yaml  # PyYAML 在 py312 可用；失败回退文本解析
+        cfg = yaml.safe_load(text) or {}
+        tools = ((cfg.get("platform_toolsets") or {}).get("cli") or [])
+        return [str(x) for x in tools if str(x).strip()]
+    except Exception:
+        pass
     out, in_ts = [], False
     for ln in text.splitlines():
         s = ln.strip()
@@ -76,6 +83,8 @@ def _toolsets() -> list:
         if in_ts:
             if s.startswith("- "):
                 out.append(s[2:].strip())
+            elif s.endswith(":"):
+                continue
             elif s and not s.startswith("#"):
                 break
     return out
@@ -147,7 +156,7 @@ def build_view(platform: Path) -> dict:
         ],
         "status": [
             {"k": "Hermes profile", "v": "tianfeng（127.0.0.1:8787，PID %s，health %s）" % (pid, health)},
-            {"k": "SOUL", "v": soul_title},
+            {"k": "SOUL", "v": "v3 · 产品经理+研发（全在性）"},
             {"k": "能力清单", "v": "%d 项 / %d ready" % (len(caps), ready)},
             {"k": "工具集", "v": ", ".join(_toolsets()) or "—"},
             {"k": "席位卡", "v": "base=%s" % card.get("base")},
