@@ -136,7 +136,7 @@
     <div id="tasks"></div>
   </section>
   <section>
-    <h2>调整申请 <span>只登记 → 待老田审批（不自动生效）</span></h2>
+    <h2>调整申请 <span>只登记 → 老田人工审批（控制权；Agent 不得代批）</span></h2>
     <div id="req-form"></div>
     <div id="req-list" class="muted" style="margin-top:8px"></div>
   </section>
@@ -466,7 +466,7 @@ function loadDrill() {
     f.appendChild(lb);
     const rl = $('req-list'); rl.replaceChildren();
     rl.appendChild(el('div', 'muted', '待批请求：' + ((reqs && reqs.pending) || 0) +
-      ' 条（批准=落可逆文件；不自动改 org/bundle/CAPABILITIES）'));
+      ' 条（人工审批=控制权，Agent 不得代批；批准后落可逆文件，不自动改 org/bundle/CAPABILITIES）'));
     ((reqs && reqs.items) || []).filter((r) => r.status === 'pending_human').slice(0, 10).forEach((r) => {
       const row = el('div', 'row');
       row.appendChild(el('div', 'muted', '• ' + (r.id || '') + ' · ' + (r.kind || '') + ' · ' + (r.reason || '')));
