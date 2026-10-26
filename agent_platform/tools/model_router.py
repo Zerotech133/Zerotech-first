@@ -58,20 +58,42 @@ def _default_adapters() -> dict:
     return {"call": _call_model}
 
 
-def _call_model(model: str, messages: list, max_tokens: int = 256) -> str:
-    """真实调用一个模型；异常抛出由 invoke 捕获后降级。"""
+def _call_model(model: str, messages: list, max_tokens: int = 256):
+    """真实调用一个模型；返回 str（无 usage）或 {"text","usage"}。"""
     if model.startswith("deepseek/"):
         sys.path.insert(0, str(PLATFORM))
         from engine import deepseek  # noqa: WPS433
         m = model.split("/", 1)[1]
-        return str(deepseek.DeepSeekClient().chat(messages, model=m,
-                                                  max_tokens=max_tokens) or "")
+        full = deepseek.DeepSeekClient().chat_full(messages, model=m,
+                                                  max_tokens=max_tokens)
+        return {"text": str(full.get("content") or ""),
+                "usage": full.get("usage") or {}}
     if model.startswith("ollama/"):
         sys.path.insert(0, str(PLATFORM))
         from engine.llm import make_llm  # noqa: WPS433
         llm = make_llm(model)
         return str(llm.chat(messages) or "")
     raise RuntimeError("unsupported_model:%s" % model)
+
+
+def _usage_tokens(usage: dict | None, messages: list, text: str) -> dict:
+    """优先用 provider usage；缺失时按字符数/4 估算并标注来源。"""
+    u = usage or {}
+    pin = u.get("prompt_tokens") or u.get("input_tokens") or 0
+    pout = u.get("completion_tokens") or u.get("output_tokens") or 0
+    source = "provider"
+    try:
+        pin, pout = int(pin), int(pout)
+    except (TypeError, ValueError):
+        pin, pout = 0, 0
+    if pin <= 0:
+        pin = max(1, sum(len(str(m.get("content") or "")) for m in messages) // 4)
+        source = "estimated"
+    if pout <= 0:
+        pout = max(1, len(str(text or "")) // 4)
+        source = "estimated"
+    return {"input": pin, "output": pout, "source": source,
+            "total": pin + pout}
 
 
 def invoke(messages: list, purpose: str = "governance", prefer: list | None = None,
@@ -84,36 +106,51 @@ def invoke(messages: list, purpose: str = "governance", prefer: list | None = No
         model = item["model"]
         t0 = time.time()
         try:
-            text = adapters["call"](model, messages, max_tokens)
+            raw = adapters["call"](model, messages, max_tokens)
+            if isinstance(raw, dict):
+                text = str(raw.get("text") or "")
+                usage = raw.get("usage") or {}
+            else:
+                text = str(raw or "")
+                usage = {}
             if not text:
                 raise RuntimeError("empty_reply")
+            tokens = _usage_tokens(usage, messages, text)
             rec = {"ok": True, "model": model, "used": True,
                    "elapsed_ms": int((time.time() - t0) * 1000),
-                   "attempts": attempts, "text": text}
+                   "attempts": attempts, "text": text, "usage": tokens}
             _log_usage("model-routing", purpose, model, True)
-            _record_llm(model, purpose, True, t0)
+            _record_llm(model, purpose, True, t0, tokens=tokens, text=text)
             return rec
         except Exception as e:  # noqa: BLE001
             attempts.append({"model": model, "error": "%s: %s"
                              % (type(e).__name__, str(e)[:120]),
                              "elapsed_ms": int((time.time() - t0) * 1000)})
             _log_usage("model-routing", purpose, model, False)
-            _record_llm(model, purpose, False, t0, str(e))
+            _record_llm(model, purpose, False, t0, err=str(e))
     return {"ok": False, "model": None, "used": False, "attempts": attempts}
 
 
 def _record_llm(model: str, purpose: str, ok: bool, t0: float,
-                err: str = "") -> None:
-    """LLM 调用留证（trace span，字段按 OTel GenAI 命名；无 token 统计时成本=0）。"""
+                err: str = "", tokens: dict | None = None,
+                text: str = "") -> None:
+    """LLM 调用留证（trace span，OTel GenAI 字段；成本由 usage 估算）。"""
     try:
         sys.path.insert(0, str(PLATFORM))
         from observability import trace as tr  # noqa: WPS433
+        attrs = {"gen_ai.operation.name": "chat",
+                 "gen_ai.request.model": model,
+                 "zhaoyun.purpose": purpose,
+                 "error": str(err or "")[:120]}
+        if tokens:
+            attrs.update({
+                "gen_ai.usage.input_tokens": int(tokens.get("input") or 0),
+                "gen_ai.usage.output_tokens": int(tokens.get("output") or 0),
+                "zhaoyun.usage_source": str(tokens.get("source") or "estimated"),
+                "zhaoyun.response_chars": len(str(text or "")),
+            })
         tr.record(tr.trace_id(), "llm.call", "llm", start=t0, end=time.time(),
-                  status="ok" if ok else "error",
-                  attrs={"gen_ai.operation.name": "chat",
-                         "gen_ai.request.model": model,
-                         "zhaoyun.purpose": purpose,
-                         "error": str(err or "")[:120]})
+                  status="ok" if ok else "error", attrs=attrs)
     except Exception:  # noqa: BLE001
         pass
 
