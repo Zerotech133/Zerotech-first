@@ -413,10 +413,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": {"message": "bad_body",
                                            "type": "invalid_request_error"}}, 400)
                 return
-            if req.get("stream"):
-                self._send_json({"error": {"message": "stream_not_supported",
-                                           "type": "invalid_request_error"}}, 400)
-                return
+            stream = bool(req.get("stream"))
             messages = req.get("messages") or []
             try:
                 from legion_command import keypool
@@ -430,13 +427,44 @@ class Handler(BaseHTTPRequestHandler):
                                  "x_attempts": res.get("attempts", [])}, 502)
                 return
             channel = res.get("channel", "")
+            reply = str(res.get("reply", ""))
+            model = str(req.get("model") or "auto")
+            if stream:
+                # OpenAI SSE 兼容（OpenClaw 需要流式）；按完整回答切片回放
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                cid = "chatcmpl-dsh-%s" % int(time.time() * 1000)
+                created = int(time.time())
+
+                def _chunk(delta, finish=None):
+                    payload = {"id": cid, "object": "chat.completion.chunk",
+                               "created": created, "model": model,
+                               "x_channel": channel,
+                               "choices": [{"index": 0, "delta": delta,
+                                            "finish_reason": finish}]}
+                    self.wfile.write(("data: " + json.dumps(payload, ensure_ascii=False) + "\n\n").encode("utf-8"))
+                    self.wfile.flush()
+
+                try:
+                    _chunk({"role": "assistant", "content": ""})
+                    for i in range(0, len(reply), 32):
+                        _chunk({"content": reply[i:i + 32]})
+                    _chunk({}, "stop")
+                    self.wfile.write(b"data: [DONE]\n\n")
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                return
             self._send_json({
                 "id": "chatcmpl-dsh-%s" % int(time.time() * 1000),
                 "object": "chat.completion",
                 "created": int(time.time()),
-                "model": str(req.get("model") or "auto"),
+                "model": model,
                 "choices": [{"index": 0, "message": {"role": "assistant",
-                                                     "content": res.get("reply", "")},
+                                                     "content": reply},
                              "finish_reason": "stop"}],
                 "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
                 "x_channel": channel,
