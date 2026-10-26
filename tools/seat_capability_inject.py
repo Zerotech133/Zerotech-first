@@ -76,6 +76,7 @@ CAPABILITIES = {
         {"name": "security-gate", "what": "安全质量门：密钥/危险调用/危险参数扫描，high 阻断合并", "how": "python -X utf8 tools/security_gate.py scan --changed|--path|--all；证据落 work/security", "boundary": "只读；不自动修；high 必须人工裁决", "status": "ready"},
         {"name": "approval-inbox", "what": "L2 审批队列：请求→待批→批准/驳回，决策留痕", "how": "python -X utf8 tools/approval_inbox.py request/list/approve/reject", "boundary": "只有 pending 可决策；L2 不得自动批准", "status": "ready"},
         {"name": "browser-verification", "what": "真浏览器验收：goto/click/fill/断言/截图，证据落盘", "how": "python -X utf8 tools/browser_verify.py run --url ... --steps ...", "boundary": "只读页面操作；不改生产数据；失败即失败", "status": "ready"},
+        {"name": "memory-rag", "what": "本地记忆检索：文档/判例/席位简报的 hash-vector 召回（无外部 Key）", "how": "python -X utf8 tools/memory_rag.py index/search/stats；索引 work/memory_rag", "boundary": "本地索引；不把敏感原文外发；检索结果需核对", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -524,6 +525,18 @@ description: 真浏览器验收：Playwright 打开页面、点击/填表、断�
 3. 步骤：goto/click/fill/press/expect_text/expect_selector/screenshot；失败即失败。
 4. 证据：`work/browser/browser-*.json` + 截图；控制台错误一并记录。
 5. 只读页面；不改生产数据。
+""",
+        "memory-rag": """---
+name: memory-rag
+description: 本地记忆检索：文档/判例/席位简报的 hash-vector 召回，无需外部 Key。
+---
+
+# 本地记忆检索
+
+1. 建索引：`python -X utf8 tools/memory_rag.py index`（默认 deliverables/docs/seat_brief）。
+2. 检索：`python -X utf8 tools/memory_rag.py search "关键词" --top 5`。
+3. 增量：按文件 mtime+size 缓存，只重建变更文件；索引落 `work/memory_rag/index.json`。
+4. 检索结果须核对原文；不把敏感原文外发。
 """,
     },
     "zhaoyun": {

@@ -186,6 +186,19 @@
    ],
    "expect_rc": 0,
    "timeout": 180
+  },
+  {
+   "id": "pytest-memory",
+   "desc": "memory-rag 单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_memory_rag.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
   }
  ]
 }
