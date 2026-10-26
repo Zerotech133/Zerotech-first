@@ -3,5 +3,6 @@
   "_note": "B2-e 席位心跳名单：每日一次 DeepSeek 最小真实调用（只发席位公开职责摘要，无密钥/业务数据）。扩席只改本文件，不新增计划任务/L2。",
   "model": "deepseek-flash",
   "max_tokens": 128,
-  "seats": ["ST1", "T1", "T2", "N1", "F1", "D1", "WA1", "QS1"]
+  "seats": ["ST1", "T1", "T2", "N1", "F1", "D1", "WA1"],
+  "_runtime_note": "QS1 为 runtime 席（llm=none），不走模型心跳；其触发/审计需专用运行体探针（B2-d 后续）"
 }
