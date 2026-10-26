@@ -25,8 +25,8 @@ def test_run_pass_and_fail(tmp_path):
     assert ids == {"ok": True, "bad": False}
 
 
-def test_default_has_ten_deterministic_tasks():
-    assert len(E.load_tasks()) == 10
+def test_default_has_eleven_deterministic_tasks():
+    assert len(E.load_tasks()) == 11
 
 
 def test_quality_score_parse():
@@ -38,4 +38,4 @@ def test_quality_score_parse():
 def test_default_gate_includes_quality():
     tasks = E.load_tasks()
     quality = E.load_tasks(E.QUALITY) if E.QUALITY.exists() else []
-    assert len(tasks) == 10 and isinstance(quality, list)
+    assert len(tasks) == 11 and isinstance(quality, list)

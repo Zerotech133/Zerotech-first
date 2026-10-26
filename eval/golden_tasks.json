@@ -134,6 +134,19 @@
    ],
    "expect_rc": 0,
    "timeout": 30
+  },
+  {
+   "id": "pytest-spec",
+   "desc": "spec-driven-delivery 单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_spec_flow.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
   }
  ]
 }

@@ -72,6 +72,7 @@ CAPABILITIES = {
         {"name": "sandbox-verification", "what": "隔离验证：临时 worktree + pytest 证据包（复现/验收）", "how": "python -X utf8 tools/sandbox_verify.py run --tests <paths> [--venv]", "boundary": "不碰生产数据；证据落 work/sandbox", "status": "ready"},
         {"name": "eval-harness", "what": "质量评测：10 条金标任务 + 断言评分 + 回归报告", "how": "python -X utf8 tools/eval_harness.py run", "boundary": "金标更新留痕；失败不得当通过", "status": "ready"},
         {"name": "observability-trace", "what": "调用观测：工具链/时延/成本/状态写本地 JSONL trace", "how": "python -X utf8 tools/trace_log.py --summary / --cmd ...", "boundary": "不记密钥/敏感正文", "status": "ready"},
+        {"name": "spec-driven-delivery", "what": "规范驱动交付：constitution→spec→plan→tasks→converge 产物链与收敛检查", "how": "python -X utf8 tools/spec_flow.py init/check/list；产物落 deliverables/specs", "boundary": "阶段未收敛不得进实现；证据缺失不得签收敛", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -470,6 +471,19 @@ description: 调用观测：工具链/时延/成本/状态写本地 JSONL；先�
 2. 查看：`python -X utf8 tools/trace_log.py --summary` / `--tail N`。
 3. 跑命令带 trace：`--cmd <命令>`；结果落 `work/traces/agent_trace.jsonl`。
 4. 不记密钥/敏感正文；后续可接 Langfuse/OTel。
+""",
+        "spec-driven-delivery": """---
+name: spec-driven-delivery
+description: 规范驱动交付：宪法→规格→计划→任务→收敛，产物驱动、逐阶段检查。
+---
+
+# 规范驱动交付
+
+1. 初始化：`python -X utf8 tools/spec_flow.py init <id> --title "..."`。
+2. 依次填 `constitution.md → spec.md → plan.md → tasks.md → converge.md`。
+3. 检查：`python -X utf8 tools/spec_flow.py check <id>`；未通过不得进实现。
+4. 收敛结论只允许 converged / partial / failed；证据缺失不得签 converged。
+5. 产物落 `deliverables/specs/<id>/`，与工单/验收单互相引用。
 """,
     },
     "zhaoyun": {
