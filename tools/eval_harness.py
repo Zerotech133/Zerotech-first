@@ -43,14 +43,31 @@ def _local_native(messages: list, timeout: int = 180) -> str:
         return ((json.loads(r.read().decode("utf-8", "replace")).get("message")) or {}).get("content") or ""
 
 
-def _ask(messages: list) -> str:
+def _keypool_ask(messages: list):
+    """优先走 Key 池（中转站→GLM→DeepSeek→本地）；返回 (text, channel)。"""
+    try:
+        sys.path.insert(0, str(REPO / "agent_platform"))
+        from legion_command import keypool
+        r = keypool.auto_chat(messages)
+        text = str((r or {}).get("reply") or "").strip()
+        if r.get("ok") and text:
+            return text, str(r.get("channel") or "keypool")
+    except Exception:
+        pass
+    return "", ""
+
+
+def _ask(messages: list):
+    text, ch = _keypool_ask(messages)
+    if text:
+        return text, ch
     try:
         text = _local_native(messages)
         if text.strip():
-            return text
+            return text, "local-native"
     except Exception:
         pass
-    return _reply(_post(GATEWAY, {"model": "auto", "messages": messages, "stream": False}))
+    return _reply(_post(GATEWAY, {"model": "auto", "messages": messages, "stream": False})), "gateway"
 
 
 
@@ -86,19 +103,20 @@ def run_quality(t: dict) -> dict:
     import re
     t0 = time.time()
     try:
-        cand = _ask(t.get("input") or [])
+        cand, cand_ch = _ask(t.get("input") or [])
         rubric = t.get("rubric") or "回答是否正确、完整、可执行"
         judge_prompt = (
             "你是严格的质量评审。请按评分标准给候选回答打 0-5 分。\n"
             "评分标准：%s\n\n候选回答：\n%s\n\n"
             "只输出一行 JSON：{\"score\": <0-5>, \"reason\": \"一句话\"}" % (rubric, cand))
-        judge = _ask([{"role": "user", "content": judge_prompt}])
+        judge, judge_ch = _ask([{"role": "user", "content": judge_prompt}])
         score = _parse_score(judge)
         min_score = float(t.get("min_score", 3))
         ok = score is not None and score >= min_score
         return {"id": t.get("id"), "desc": t.get("desc"), "type": "quality",
                 "rc": 0 if ok else 1, "ok": ok, "secs": round(time.time() - t0, 2),
                 "score": score, "min_score": min_score,
+                "candidate_channel": cand_ch, "judge_channel": judge_ch,
                 "candidate_tail": cand[-800:], "judge_tail": judge[-500:],
                 "stdout_tail": "score=%s reason=%s" % (score, judge[-200:]),
                 "stderr_tail": ""}
