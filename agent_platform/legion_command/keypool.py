@@ -306,3 +306,93 @@ def action(req: dict) -> dict:
 def mask_only_state() -> dict:
     """state() 已只返回掩码；保留别名供测试。"""
     return state()
+
+
+def _active_secret(d: dict, seat: str):
+    s = d.get("seats", {}).get(seat, {})
+    kid = s.get("active_key_id")
+    k = _key(d, kid) if kid else None
+    if not k or not k.get("enabled", True):
+        return None, None
+    try:
+        return k, _decrypt(k.get("secret_enc") or "")
+    except Exception:
+        return k, None
+
+
+def _provider_chat(provider: str, secret: str, messages: list, timeout: int = 45) -> dict:
+    url = PROVIDER_URL.get(provider)
+    if not url:
+        return {"ok": False, "error": "provider_not_supported"}
+    body = json.dumps({"model": PROVIDER_MODEL.get(provider, ""), "messages": messages,
+                       "max_tokens": 800, "stream": False}).encode()
+    req = urllib.request.Request(url, data=body, method="POST",
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": "Bearer " + secret})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8", "replace"))
+            reply = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            return {"ok": True, "reply": reply}
+    except urllib.error.HTTPError as e:
+        try:
+            msg = e.read(300).decode("utf-8", "replace")
+        except Exception:
+            msg = ""
+        return {"ok": False, "code": str(e.code), "error": msg[:200]}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "code": "error", "error": "%s: %s" % (type(e).__name__, str(e)[:160])}
+
+
+def _local_chat(messages: list, timeout: int = 60) -> dict:
+    body = json.dumps({"model": "qwen3.5:9b", "messages": messages,
+                       "max_tokens": 800, "stream": False}).encode()
+    req = urllib.request.Request("http://127.0.0.1:11434/v1/chat/completions",
+                                 data=body, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8", "replace"))
+            reply = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            return {"ok": True, "reply": reply}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:160])}
+
+
+def auto_chat(messages: list) -> dict:
+    """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
+    if not isinstance(messages, list) or not messages:
+        return {"ok": False, "error": "empty_messages"}
+    messages = [m for m in messages if isinstance(m, dict) and m.get("role") and m.get("content")]
+    messages = messages[-20:]
+    d = _load()
+    attempts = []
+    for seat in ("tianfeng", "zhaoyun", "zhuge"):
+        k, secret = _active_secret(d, seat)
+        if not k:
+            attempts.append({"seat": seat, "channel": SEATS[seat]["provider"], "result": "no_active_key"})
+            continue
+        if secret is None:
+            attempts.append({"seat": seat, "channel": SEATS[seat]["provider"], "result": "decrypt_failed"})
+            continue
+        r = _provider_chat(SEATS[seat]["provider"], secret, messages)
+        if r.get("ok"):
+            _log(d, seat, k.get("id"), k.get("id"), "auto_chat", "used")
+            _save(d)
+            return {"ok": True, "reply": r.get("reply", ""),
+                    "channel": SEATS[seat]["provider"], "seat": seat,
+                    "attempts": attempts + [{"seat": seat, "channel": SEATS[seat]["provider"], "result": "ok"}]}
+        code = str(r.get("code") or "")
+        k["status"] = "quota" if code in ("429", "402") else ("invalid" if code in ("401", "403") else "degraded")
+        k["last_error"] = r.get("error")
+        k["last_checked"] = _now()
+        sw = auto_switch(d, seat, "auto_chat_" + code)
+        attempts.append({"seat": seat, "channel": SEATS[seat]["provider"],
+                         "result": "fail:" + code, "switched": sw.get("ok", False)})
+        _save(d)
+    lr = _local_chat(messages)
+    if lr.get("ok"):
+        return {"ok": True, "reply": lr.get("reply", ""), "channel": "local-qwen3.5:9b",
+                "seat": "local", "attempts": attempts + [{"channel": "local-qwen3.5:9b", "result": "ok"}]}
+    return {"ok": False, "error": "all_channels_failed",
+            "detail": lr.get("error"), "attempts": attempts}
