@@ -86,7 +86,7 @@ function render(v){
   (v.status||[]).forEach(s=>row(sb,s.k,s.v));
   const wf=v.workflow||{}; const wip=wf.wip||{};
   const wm=$('wf-metrics'); wm.replaceChildren();
-  [['在途 doing',wip.doing||0],['评审 review',wip.review||0],['超 24h',(wf.stale||[]).length],['卡点',(wf.blockers||[]).length]].forEach(([k,val])=>{const c=el('span','chip'); c.appendChild(document.createTextNode(k+' ')); c.appendChild(el('b','',val)); wm.appendChild(c);});
+  [['在途 doing',wip.doing||0],['评审 review',wip.review||0],['超 24h',(wf.stale||[]).length],['派工 open',(wf.dispatch||{}).open||0],['派工 blocked',(wf.dispatch||{}).blocked||0],['卡点',(wf.blockers||[]).length]].forEach(([k,val])=>{const c=el('span','chip'); c.appendChild(document.createTextNode(k+' ')); c.appendChild(el('b','',val)); wm.appendChild(c);});
   const wb=$('wf-blockers'); wb.replaceChildren();
   (wf.blockers||[]).forEach(b=>{const d=el('div','wfitem'); d.appendChild(el('div','t','['+(b.severity||'info')+'] '+b.name)); d.appendChild(el('div','m',b.detail+' → '+(b.next||''))); wb.appendChild(d);});
   const ws=$('wf-stale'); ws.replaceChildren();

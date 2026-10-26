@@ -190,12 +190,38 @@ def build_view(platform: Path) -> dict:
     blockers.append({"type": "节奏", "name": "下午锚未首跑", "severity": "info",
                      "detail": "田丰/诸葛/赵云 17:4x 锚点等待首个工作日",
                      "next": "下一工作日 17:4x 后核对 rc 与产物"})
+    dispatch_path = repo / "work" / "tianfeng_dispatch.jsonl"
+    drows = []
+    if dispatch_path.exists():
+        for ln in dispatch_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            ln = ln.strip()
+            if ln:
+                try:
+                    d = json.loads(ln)
+                except ValueError:
+                    d = None
+                if isinstance(d, dict):
+                    drows.append(d)
+    d_open = [r for r in drows if r.get("status") in ("dispatched", "accepted")]
+    d_blocked = [r for r in drows if r.get("status") == "blocked"]
+    today = time.strftime("%Y-%m-%d")
+    d_overdue = [r for r in d_open if r.get("due") and str(r.get("due")) < today]
+    if d_overdue:
+        blockers.append({"type": "派工", "name": "%d 条派工超期" % len(d_overdue), "severity": "medium",
+                         "detail": "；".join("%s→%s" % (r.get("task"), r.get("to")) for r in d_overdue[:4]),
+                         "next": "催办/升级/重派；更新回执状态"})
+    if d_blocked:
+        blockers.append({"type": "派工", "name": "%d 条派工 blocked" % len(d_blocked), "severity": "high",
+                         "detail": "；".join("%s→%s" % (r.get("task"), r.get("to")) for r in d_blocked[:4]),
+                         "next": "解阻/换人/上报老田（L2）"})
     workflow = {
         "wip": {"doing": len(doing_rows), "review": len(review_rows),
                 "by_owner": owners,
                 "avg_age_h": round(sum(r["age_h"] for r in wf_rows if r["age_h"] >= 0) / max(1, len(wf_rows)), 1),
                 "max_age_h": max([r["age_h"] for r in wf_rows] or [0])},
         "stale": stale[:10],
+        "dispatch": {"total": len(drows), "open": len(d_open), "blocked": len(d_blocked),
+                     "overdue": d_overdue[-5:], "recent": drows[-5:]},
         "blockers": blockers,
         "next_actions": [b["next"] for b in blockers if b["severity"] in ("high", "medium")][:5],
     }
