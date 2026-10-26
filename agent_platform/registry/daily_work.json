@@ -22,8 +22,9 @@
       "freq": "trading_day@05:50",
       "evidence": {
         "type": "file",
-        "path": "quant_backtest/data/chanlun_pool.jsonl",
-        "max_age_h": 30
+        "path": "quant_backtest/data/chanlun_pool_eval_cache.json",
+        "max_age_h": 30,
+        "note": "2026-10-26 AGENTHEALTH：chanlun_pool.jsonl 仅在有新信号时追加（周末/无信号日 mtime 不动，实测 scan new=0 属正常），不能当新鲜度判据；改指每次扫描必写的评估缓存 chanlun_scan.py POOL_EVAL"
       },
       "on_miss": "A0 催办 D1，并附文件路径与最后更新时间"
     },
@@ -232,8 +233,12 @@
       "why": "门户打不开，前面所有产出都没人看得见",
       "freq": "every_min 10",
       "evidence": {
-        "type": "manual",
-        "note": "端口探活需网络调用，暂不入离线判据；由 AI工作站门户API 任务自身 5 分钟看门狗兜"
+        "type": "port",
+        "ports": [
+          8734,
+          8091
+        ],
+        "note": "2026-10-26 AGENTHEALTH 接线：本机 socket 连 127.0.0.1 探活，不依赖外部网络"
       },
       "on_miss": "由门户看门狗任务兜底"
     },

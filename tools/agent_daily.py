@@ -27,6 +27,7 @@ import glob as globmod
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -296,6 +297,26 @@ def check_order(ev: dict, now: float) -> tuple[str, str]:
     return MISSED, "%d 单在名下，但分支 %s 已 %.1f 小时无提交" % (len(mine), best, age / 3600)
 
 
+def _port_open(port: int, host: str = "127.0.0.1", timeout: float = 2.0) -> bool:
+    """TCP 连一下端口（本机探活，不依赖外部网络）。"""
+    try:
+        with socket.create_connection((host, int(port)), timeout=timeout):
+            return True
+    except (OSError, ValueError):
+        return False
+
+
+def check_port(ev: dict) -> tuple[str, str]:
+    """port 证据：声明的端口全部监听才算交付（2026-10-26 AGENTHEALTH 接线）。"""
+    ports = [int(p) for p in (ev.get("ports") or []) if str(p).strip()]
+    if not ports:
+        return MISSED, "evidence.ports 为空"
+    closed = [p for p in ports if not _port_open(p)]
+    if closed:
+        return MISSED, "端口未监听：%s" % ", ".join(str(p) for p in closed)
+    return DONE, "端口均监听：%s" % ", ".join(str(p) for p in ports)
+
+
 def exec_short(exc) -> str:
     return type(exc).__name__ + ": " + str(exc)[:80]
 
@@ -313,6 +334,8 @@ def evaluate_item(item: dict, now_dt: datetime) -> dict:
         status, evidence = NOT_YET, "今天 %s 才到期" % item.get("freq")
     elif kind == "manual":
         status, evidence = MANUAL, str(ev.get("note") or "无自动判据")
+    elif kind == "port":
+        status, evidence = check_port(ev)
     elif kind == "file":
         status, evidence = check_file(ev, now)
     elif kind == "log_regex":
