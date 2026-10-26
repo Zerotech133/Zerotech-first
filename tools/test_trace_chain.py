@@ -1,7 +1,6 @@
 """shadow -> paper pending/fill -> performance 的离线追踪链验证。"""
 import importlib.util
 import json
-import sqlite3
 import sys
 from pathlib import Path
 

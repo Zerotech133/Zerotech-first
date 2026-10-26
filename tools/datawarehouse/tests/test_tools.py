@@ -2,11 +2,9 @@
 """datawarehouse 工具层单测（纯本地，不依赖网络/真实数据仓/凭据）。"""
 from __future__ import annotations
 
-import json
 import sys
 import tempfile
 import unittest
-import time
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parents[1]

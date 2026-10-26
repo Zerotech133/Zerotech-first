@@ -16,7 +16,6 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 import card_audit  # noqa: E402
-import card_templates  # noqa: E402
 import test_card_templates  # noqa: E402  （FC-C 快照：ALL_KINDS/_COLORS/_TITLES）
 from card_templates import KIND_CARD_TEMPLATES, apply_card_template  # noqa: E402
 

@@ -24,7 +24,6 @@ GET /api/unified/usage?days=              → 统一使用账本报告
 
 from __future__ import annotations
 
-import json
 import time
 import urllib.parse as _urlparse
 from dataclasses import asdict

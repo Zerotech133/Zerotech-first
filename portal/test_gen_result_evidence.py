@@ -18,7 +18,6 @@ DAY = "2026-10-21"
 
 def _gm(day=DAY, n=2):
     """假 git 输出：n 条目标日提交 + 1 条前一日（应被过滤）。"""
-    import gen_result_evidence as g
     rows = []
     for i in range(n):
         ts = "%sT%02d:1%d:00+08:00" % (day, 9 + i, i)
@@ -157,7 +156,6 @@ def test_payload_interleaves_commits_and_docs(tmp_path):
 
 # ⑥ dry-run 不写盘；正常写入 today.json
 def test_dry_run_and_write(tmp_path):
-    import gen_result_evidence as g
     import gen_result_evidence
     rc = gen_result_evidence.main(["--dry-run", "--day", DAY, "--out-dir", str(tmp_path)])
     assert rc == 0

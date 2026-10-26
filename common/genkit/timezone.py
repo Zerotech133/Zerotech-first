@@ -7,6 +7,7 @@
 判例：``portal/api_daily_data.py:39`` 已先行落地 ``CST = timezone(timedelta(hours=8))``，
 本模块将其固化为可复用单例，并补齐 utc/cst 互转与格式化助手。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone

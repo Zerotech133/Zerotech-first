@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """移动端契约与令牌单测（P0）：四契约校验、签名/验签、过期/作用域。"""
-import json
 import os
 import shutil
 import sys

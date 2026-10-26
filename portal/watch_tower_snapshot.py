@@ -13,7 +13,7 @@ import time
 import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 

@@ -2,31 +2,23 @@
 """P4 批 1：数据域 Mixin（data_health/warehouse/sync 族 + Handler 方法壳）。
 消费方显式 import；Handler 壳经基座多继承并入（禁 import *）。
 """
-import json, os, subprocess, sys, threading, time
+import json
+import os
+import sys
+import threading
+import time
 from api_common import (
-    _read_json,
     log_exc,
     pill_nav,
-    ROOT,
     STATION,
     QBT_DIR,
-    REPORTS_DIR,
     DATA_SYNC_CMDS,
     DATA_SYNC_JOBS,
-    _DATA_LOCK,
     _FRESH_BG_LOCK,
     _FRESH_BG_ERROR,
     data_freshness_bg,
-    data_sync_start,
-    _env_market_key,
-    _tabs_html,
-    _back_link_html,
-    _portal_token,
     _TP_JS,
-    _TP_MKT,
-    _tp_row,
-    _sched_rc_html,
-    _SCHED_INFO_CODES)
+    _tp_row)
 
 
 _WAREHOUSE_SERVICES_LOCK = threading.Lock()

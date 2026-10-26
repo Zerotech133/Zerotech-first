@@ -9,7 +9,6 @@
 运行：python -m pytest portal/test_perf_mixin.py -q
 """
 
-import json
 import sys
 from pathlib import Path
 

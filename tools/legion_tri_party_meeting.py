@@ -21,7 +21,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT / "tools") not in sys.path:

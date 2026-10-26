@@ -3,7 +3,6 @@
 import os
 import sys
 
-import pytest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:

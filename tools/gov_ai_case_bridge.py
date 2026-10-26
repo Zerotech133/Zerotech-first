@@ -32,7 +32,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 _TOOLS = Path(__file__).resolve().parent
 _REPO = _TOOLS.parent

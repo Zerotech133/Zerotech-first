@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """feishu_registry 单测（W1 底座）：合法/非法注册表、路由匹配、白名单、通道铁律。"""
 import copy
-import json
 import os
 import sys
 

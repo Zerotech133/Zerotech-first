@@ -11,7 +11,6 @@
 运行:
   "C:/Program Files/Python311/python.exe" portal/test_qd_amount_fix.py
 """
-import os
 import sys
 import tempfile
 from datetime import date, timedelta

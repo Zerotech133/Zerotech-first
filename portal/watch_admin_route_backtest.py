@@ -22,7 +22,7 @@ import json
 import math
 import os
 import statistics
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # --------------------------------------------------------------------------- #
 # 路径解析（相对本模块文件位置，避免依赖 cwd；并保留绝对兜底路径）

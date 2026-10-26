@@ -1,7 +1,12 @@
 # K-STOCK-397 守卫测试：回调验签字节化等价性 + 未验签降级告警状态机。
 # 运行：python portal/test_feishu_event_guard.py（不真发飞书——send 被
 # monkeypatch；flag 走 FEISHU_EVENT_FLAG 注入的临时路径，不碰生产态）。
-import hashlib, json, os, sys, tempfile, types
+import hashlib
+import json
+import os
+import sys
+import tempfile
+import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

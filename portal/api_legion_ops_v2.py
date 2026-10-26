@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 import sys
 sys.path.insert(0, str(ROOT / "tools"))
 from legion_pulse import heartbeat, recent
-from academy_research import load_topics, create_topic, advance_topic, summary as academy_summary
+from academy_research import create_topic, advance_topic, summary as academy_summary
 from legion_tri_party_meeting import (MeetingError, create_meeting, list_meetings,
                                       load_meeting, update_confirmation)
 from legion_meeting_room import (RoomError, create_room, load_room, list_rooms,

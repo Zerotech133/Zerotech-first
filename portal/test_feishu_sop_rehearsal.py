@@ -8,7 +8,6 @@
   4) 机器人公共壳可构造、群策略生效
   5) 管理台数据模型能容纳新角色（registry 校验后即可见）
 """
-import copy
 import json
 import os
 import sys

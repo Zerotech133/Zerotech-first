@@ -28,7 +28,6 @@ def test_frontend_admission_and_five_views():
 def test_offline_boundary_has_no_network_or_claimed_facts():
     html = _page()
     # E2 后受控演进: 允许对同源只读端点 /api/intel-graph 的 fetch; 仍禁外网/写操作/存储
-    import json as _json
     for m in re.finditer(r"fetch\(([^)]*)\)", html):
         arg = m.group(1)
         assert "'/api/intel-graph/dossier?code='" in arg or "\"/api/intel-graph/dossier?code=\"" in arg, \

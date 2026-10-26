@@ -23,7 +23,6 @@ if str(_HERE) not in sys.path:
 
 
 def main() -> int:
-    import watch_admin_snapshot as m  # noqa: E402
     from watch_admin_snapshot import WatchAdminAggregator, SCHEMA  # noqa: E402
 
     snap = WatchAdminAggregator().build()

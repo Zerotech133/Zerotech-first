@@ -1183,7 +1183,6 @@ def main():
     import lark_oapi as lark
     from lark_oapi.api.im.v1 import P2ImMessageReceiveV1
     from lark_oapi.ws import Client
-    from feishu_card_v2 import send_card
 
     app_id, app_secret = _creds()
     if not app_id:

@@ -40,7 +40,6 @@ def main():
     from gateway import inbox_gateway as ig
     ig.set_store(Path(tmp) / "bridge_inbox")
 
-    import comm_dispatch as cd
     import comm_interest as ci
     import comm_intake as ck
     import comm_summarize as cs

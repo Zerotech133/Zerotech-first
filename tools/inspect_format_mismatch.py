@@ -5,7 +5,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check_format_args import check_file, scan, SKIP_DIRS  # noqa: E402
+from check_format_args import scan  # noqa: E402
 
 roots = sys.argv[1:] or ["quant_backtest", "portal", "news_collector",
                          "jev-eval", "agent_platform", "k_stock", "gzh",

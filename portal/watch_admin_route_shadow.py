@@ -159,9 +159,9 @@ def _load_ledger(path: Path) -> Tuple[List[Dict[str, Any]], Optional[str], int]:
                     skipped += 1
     except FileNotFoundError:
         return [], "missing", 0
-    except (IsADirectoryError, PermissionError) as exc:
+    except (IsADirectoryError, PermissionError):
         return [], "permission", 0
-    except OSError as exc:  # pragma: no cover - environment dependent
+    except OSError:  # pragma: no cover - environment dependent
         return [], "read_error", 0
     return rows, None, skipped
 

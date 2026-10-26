@@ -7,6 +7,7 @@
 判例：``portal/api_daily_data.py:33`` 用 ``REPO = Path(os.environ.get("AIOS_ROOT","C:/aios"))``，
 但 ``:37`` 又硬编码 ``XQ_LATEST = Path("C:/aios/...")`` 绕过了 REPO。本模块统一经 repo_root 解析。
 """
+
 from __future__ import annotations
 
 import os

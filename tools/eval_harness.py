@@ -102,7 +102,6 @@ def _parse_score(text: str):
 
 def run_quality(t: dict) -> dict:
     """先让被测通道回答，再让同一网关当裁判打分（0–5）。"""
-    import re
     t0 = time.time()
     try:
         cand, cand_ch = _ask(t.get("input") or [])

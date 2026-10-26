@@ -15,7 +15,6 @@ nginx 之外的关键契约，全部读文件断言、零网络、零服务启�
 """
 
 import re
-import sys
 from pathlib import Path
 
 PORTAL = Path(__file__).resolve().parent

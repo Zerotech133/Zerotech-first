@@ -3,7 +3,9 @@
 用法：python kg_stock_query.py 605100.SH [days]
 stdout = JSON，stdout/stderr 分离。
 """
-import sys, os, json
+import sys
+import os
+import json
 sys.path.insert(0, r'C:\aios\quant_backtest')
 os.environ.setdefault("KG_DSN", "bolt://127.0.0.1:7687")
 

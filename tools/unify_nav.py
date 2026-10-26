@@ -14,7 +14,6 @@ import glob
 import json
 import os
 import re
-import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

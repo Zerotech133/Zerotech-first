@@ -2,19 +2,14 @@
 """P4 批3：知识图谱域 Mixin（kg 页族 17 方法 + 卡片/标注 JS 与小函数）。
 Handler 壳经基座多继承并入（禁 import *）。拍板：D1(v1画布)/D2(net_html) 均留，纯搬运零删减。
 """
-import datetime, glob, html, json, os, re, subprocess, sys, time
+import json
+import os
+import sys
+import time
 import os as _os
 from api_common import (
-    _read_json,
-    log_exc,
-    STATION,
-    REPORTS_DIR,
-    _env_market_key,
     QBT_DIR,
     pill_nav,
-    ROOT,
-    _tabs_html,
-    _back_link_html,
     _BTSEL_TAG,
     _PILL, _PILL_ON,
     CANDLE_CN,

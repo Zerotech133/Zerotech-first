@@ -12,46 +12,19 @@
 from api_common import (
     ROOT,
     STATION,
-    _PORTAL_TOKEN_FILE,
     _portal_token,
     _load_cainiao_env,
-    _ERROR_LOG,
-    _ERROR_LOG_MAX,
     _log_rotate,
     log_exc,
-    SECTIONS,
-    DOMAIN_NAV_GROUPS,
-    SECTION_PAGES,
-    PAGE_SECTION,
-    _PILL,
-    _PILL_ON,
-    _TABBTN,
-    _TAB_JS,
     _back_link_html,
     _tabs_html,
     pill_nav,
     REPORTS_DIR,
     QBT_DIR,
-    _screen_cache,
-    DATA_SYNC_JOBS,
-    _DATA_LOCK,
-    DATA_SYNC_CMDS,
-    _FRESH_BG_LOCK,
-    _FRESH_BG_ERROR,
     data_freshness_bg,
-    _TP_JS,
-    _TP_MKT,
-    _tp_row,
     data_sync_start,
     _read_json,
-    _ENV_MKT,
-    _env_market_key,
-    _SCHED_INFO_CODES,
-    _sched_rc_html,
-    run, MKT_LABEL, _pool_bear_news, NO_WINDOW,
-    CANDLE_CN, _matrix_cards, _stock_chip_summary, _stock_sector_rows,
-    _SEC_CACHE, CACHE_TTL, build_alerts, _fmt_pct,
-    _alerts_last_jsonl, _council_stats, _council_pending, _council_cache, _BTSEL_TAG, _LABELS_FP)
+    CACHE_TTL, build_alerts, _BTSEL_TAG, _LABELS_FP)
 import api_kg
 from api_kg import _kg_card_fb_save, _kg_label_save
 from api_backtest import strategies_data
@@ -59,43 +32,27 @@ from api_backtest import strategies_data
 # ==== P4 批1：api_data 显式导入 ====
 import api_data  # 模块名绑定：Handler 多继承基类引用 api_data.Handler
 from api_data import (
-    _HEALTH_CACHE,
-    _HEALTH_LOCK,
-    _KG_HEALTH_CACHE,
-    _KG_HEALTH_LOCK,
-    data_health_bg,
-    data_health_kg_bg,
     data_freshness,
-    _WAREHOUSE_SERVICES,
-    _WAREHOUSE_SERVICES_LOCK,
-    warehouse_update_services,
-    warehouse_legacy_status,
-    data_sync_status,
-    _news_db)
+    data_sync_status)
 # ==== 批1 导入结束 ====
 # ==== P4 批2：api_bridge 显式导入 ====
 import api_bridge  # 模块名绑定（from-import 不绑模块名，批1教训）
 from api_bridge import (
     bridge_table_preview,
-    bridge_summary,
-    bridge_decisions,
-    BRIDGE_SCAN_TASKS,
-    bridge_actions_index,
-    bridge_act,
-    bridge_act_desc)
+    bridge_summary)
 # ==== 批2 导入结束 ====
 # ==== P4 批5：api_chanlun_pages 显式导入 ====
 import api_portfolio  # 模块名绑定（多继承基类引用）
 from api_portfolio import (
     _debate_say, _portfolio_set, _council_confirm, _portfolio_undo,
-    _debate_flow, _pf_csv, _portfolio_adjust, _portfolio_open,
-    _council_holdings, _council_simrun, _portfolio_close,
-    _portfolio_market, _pf_apply, _pf_reason_cat, _pf_summary)
-from api_screen import build_screen, _kline_data, _kline_qy, _chips_data, get_quotes
+    _pf_csv, _portfolio_adjust, _portfolio_open,
+    _council_simrun, _portfolio_close,
+    _portfolio_market)
+from api_screen import build_screen, _kline_data, _kline_qy, _chips_data
 import api_screen  # 模块名绑定（多继承基类引用）
 import api_misc  # 模块名绑定（多继承基类引用）
-from api_misc import (get_news, get_alerts, build_overview,
-    build_brief, get_backups, get_video, get_gzh, _SS_TAG,
+from api_misc import (build_overview,
+    build_brief, _SS_TAG,
     build_home_cockpit, build_os_cockpit)
 import api_chanlun_pages  # 模块名绑定（多继承基类引用）
 from api_chanlun_pages import (
@@ -104,15 +61,8 @@ from api_chanlun_pages import (
 # ==== P4 批6：api_backtest 显式导入 ====
 import api_backtest  # 模块名绑定（多继承基类引用）
 from api_backtest import (
-    get_backtest,
     fut_page_html,
     sellpoint_page_html,
-    _sa_hist_read,
-    _BT_CUSTOM_BATCHES,
-    _BT_CUSTOM_REPORT,
-    _BT_CUSTOM_STATE,
-    _BT_CUSTOM_LOG,
-    _bt_norm_code,
     _bt_custom_start,
     _bt_custom_status,
     _cbt_start,
@@ -121,13 +71,7 @@ from api_backtest import (
     _bt2_status,
     _api_my_strategies,
     _bt2_result,
-    _bt2_nl,
-    _pulse_exit_line,
-    _pulse_fresh,
-    _pulse_ago,
-    build_daily_pulse,
-    _bt_resolve,
-    _bt_jev_news)
+    _bt2_nl)
 # ==== 批6 导入结束 ====
 # ==== F1：api_flow 显式导入（动作流中心：统一事件流聚合/预览/重跑）====
 import api_flow  # 模块名绑定（多继承基类引用）
@@ -171,8 +115,6 @@ import json
 import getpass
 import os
 import re
-import shutil
-import socket
 import subprocess
 import sys
 import threading
@@ -3678,7 +3620,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
             from urllib.parse import parse_qs as _pqs4
             _tid = (_pqs4(qs).get("id") or [""])[0].strip()
             try:
-                import json as _j4
                 import sqlite3 as _sq3
                 r = self._paper_run_json(
                     [self._PAPER_PY,

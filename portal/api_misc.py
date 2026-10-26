@@ -3,7 +3,16 @@
 + news/alerts/overview/brief/backups/video/gzh 函数族 + 备份/镜像/hermes/短屏常量）。
 Handler 壳经基座多继承并入（禁 import *）。
 """
-import glob, hashlib, hmac, html, json, os, re, shutil, socket, subprocess, sys, threading, time
+import glob
+import hmac
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import time
 from api_common import (
     _read_json,
     log_exc,
@@ -13,17 +22,11 @@ from api_common import (
     _env_market_key,
     pill_nav,
     ROOT,
-    _TP_JS,
-    _TP_MKT,
-    _tp_row,
     _tabs_html,
     _back_link_html,
     run,
     MKT_LABEL,
-    NO_WINDOW,
-    CANDLE_CN,
     build_alerts,
-    _fmt_pct,
     _PILL, _PILL_ON)
 TASKS = ["AI工作站每日备份", "AI工作站告警转发", "JevFOCUS首期报告",
          "ZhiceWatchdog", "金融新闻采集", "金融新闻日报", "金融新闻AI晨报",

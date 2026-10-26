@@ -16,8 +16,6 @@ from __future__ import annotations
 import concurrent.futures
 import os
 import re
-import struct
-import tempfile
 import threading
 import time
 import wave

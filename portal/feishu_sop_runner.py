@@ -74,7 +74,6 @@ def dry_run(role=DEFAULT_ROLE, display=DEFAULT_DISPLAY):
     """临时副本上走完 7 步 → 步骤结果列表。"""
     import feishu_registry as fr
     import feishu_bot_base as base
-    import feishu_console as console
 
     os.makedirs(WORK_TMP, exist_ok=True)
     # 注意：不要用 tempfile.mkdtemp —— Windows 沙箱下 mkdtemp 生成的目录

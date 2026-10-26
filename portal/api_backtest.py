@@ -2,7 +2,16 @@
 """P4 批 6：回测域 Mixin（backtest 页族/pulse/custom 批族）。
 Handler 壳经基座多继承并入（禁 import *）。
 """
-import datetime, glob, hashlib, html, json, math, os, re, subprocess, sys, tempfile, time
+import datetime
+import hashlib
+import json
+import math
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
 from api_common import (
     _read_json,
     log_exc,
@@ -12,12 +21,7 @@ from api_common import (
     QBT_DIR,
     pill_nav,
     ROOT,
-    _tabs_html,
-    _back_link_html,
-    run,
-    NO_WINDOW,
     MKT_LABEL,
-    _sched_rc_html,
     CANDLE_CN, _matrix_cards, _stock_chip_summary, _stock_sector_rows,
     _HERMES_FAB_HTML)
 

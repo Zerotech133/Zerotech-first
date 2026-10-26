@@ -12,12 +12,11 @@ schema V2 不支持 note 组件（灰字用 markdown font 标签）。
 import json
 import os
 import sys
-import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NEWS = os.path.join(os.path.dirname(HERE), "news_collector")
 sys.path.insert(0, NEWS)
-from send_feishu import _load_app_creds, USER_ID  # noqa: E402
+from send_feishu import USER_ID  # noqa: E402
 
 # 卡片按钮的 URL 在飞书客户端（手机/外部设备）打开 → 必须用跨设备可达地址。
 # K-STOCK-140 判例：100.110.192.72:8080 随 052 收敛失效（nginx 仅绑回环）。

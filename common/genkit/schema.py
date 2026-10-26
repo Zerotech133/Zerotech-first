@@ -7,6 +7,7 @@ G5 = JSON 契约漂移：null 与键缺失混淆；同 ``type`` 跨版本 schema
 修复方向：以显式 ``version`` 字段替代「按 ``len(levels)`` 分支」这类隐式契约
 （jev_oos_question_gen.py:305-322 判例）；消费端做 schema 校验；null 与缺失必须区分对待。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -55,5 +56,7 @@ def check_version(
     if st == "null":
         return SchemaViolation("null_value", field)
     if obj[field] != expected:
-        return SchemaViolation("version_mismatch", field, f"got={obj[field]} expect={expected}")
+        return SchemaViolation(
+            "version_mismatch", field, f"got={obj[field]} expect={expected}"
+        )
     return None

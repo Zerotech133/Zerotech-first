@@ -87,7 +87,10 @@ def export(dossier: dict, *, now: datetime, sender=None) -> ExportReceipt:
                 break
         else:
             raise ExportRejected("CHANNEL_MISSING: send_feishu.py not found")
-    import subprocess, sys, tempfile, os
+    import subprocess
+    import sys
+    import tempfile
+    import os
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
         f.write(text)
         tmp = f.name

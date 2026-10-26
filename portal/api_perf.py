@@ -119,7 +119,7 @@ def build_perf_replay(target: str, root: Path = None) -> dict:
         import sys
         sys.path.insert(0, str(_AGENT_PLATFORM))
         from adapters.trace_link import LinkStore
-        from engine.perf_ledger import perf_chain_view, ledger_path
+        from engine.perf_ledger import perf_chain_view
         links_path = (root or _REPO_ROOT) / "agent_platform" / "data" / \
             "trace" / "trace_links.jsonl"
         if not links_path.exists():

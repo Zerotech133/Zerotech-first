@@ -44,7 +44,6 @@ import types
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pytest
 
 PORTAL = Path(__file__).resolve().parent
 REPO = PORTAL.parent

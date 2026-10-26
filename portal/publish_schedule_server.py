@@ -34,7 +34,6 @@ import sys
 import tempfile
 import threading
 import time
-import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))

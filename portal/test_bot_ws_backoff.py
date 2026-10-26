@@ -91,7 +91,6 @@ def test_patch_ws_card_route_idempotent_and_card_routed():
     lark_oapi 仅在在役 bot venv 可用，缺失则跳过（静态侧已兜底）。"""
     pytest.importorskip("lark_oapi")
     from lark_oapi.ws import client as wsc
-    from lark_oapi.ws.enum import MessageType
 
     feishu_bot_ws._patch_ws_card_route()
     patched_once = wsc.Client._handle_data_frame

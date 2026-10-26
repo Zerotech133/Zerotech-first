@@ -3,7 +3,16 @@
 由批 0 施工脚本从 portal_api.py 结构边界剪切生成；唯一实例（锁/缓存单例）。
 消费方必须显式 import（import * 不导出下划线名）。
 """
-import datetime, glob, json, os, re, subprocess, sys, threading, threading as _th, time
+import datetime
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import threading
+import threading as _th
+import time
 
 # ── K255 全局勾选回测 JS（pill_nav 注入，48 页共用）──────
 _BTSEL_JS = '''
