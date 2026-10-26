@@ -39,6 +39,31 @@ import news_ai             # noqa: E402
 DB = os.path.join(HERE, "news.db")
 FEED_KIND = "jev_feed"
 
+# 2026-10-26 OS-FIX-JEVFEEDNIGHT：夜批独占窗口守卫。
+# 背景：21:00 JevFeed 与 21:50 JevNight 同时本地 judge，抢同一 Ollama
+# （NUM_PARALLEL=1）→ 夜批速率从 1,300/h 掉到 612/h（10-26 实锤）。
+# 规则：21:45–07:05 或 M3 暂停旗/夜锁存在时，jev_feed 只拉数不判读；
+# 待判行留给 JevNight（按 jev IS NULL 取全量）处理，不丢数据。
+# 应急开关：JEV_FEED_FORCE_JUDGE=1 强制判读。
+NIGHT_GUARD_START_MIN = 21 * 60 + 45     # 21:45
+NIGHT_GUARD_END_MIN = 7 * 60 + 5         # 07:05（不含）
+NIGHT_PAUSE_FLAG = r"C:\Temp\k266_m3.pause"
+NIGHT_LOCK = os.environ.get(
+    "JEV_NIGHT_LOCK_PATH",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                 "locks", "jev_night.lock"))
+
+
+def _in_night_window(now=None):
+    """是否处于 JevNight 独占窗口（时间窗 + pause/lock 强证据）。"""
+    if os.environ.get("JEV_FEED_FORCE_JUDGE") == "1":
+        return False
+    now = now or datetime.now()
+    minutes = now.hour * 60 + now.minute
+    if minutes >= NIGHT_GUARD_START_MIN or minutes < NIGHT_GUARD_END_MIN:
+        return True
+    return os.path.exists(NIGHT_PAUSE_FLAG) or os.path.exists(NIGHT_LOCK)
+
 
 def _xd_id(kind, url, title):
     """幂等主键：xd:<kind>:md5(url|title) 前 12 位（对齐 sina:5115033 风格）。"""
@@ -153,18 +178,21 @@ def judge_pending(kind, cap, dryrun=False):
     """对本轮 xd_ 来源未判行过 JEV 模型（每批 8 条，内部 0.8s 防限流）。
 
     返回 {"judged": 实际判成条数, "missing": 判定失败条数, "error": 阶段错误或 None}。
-    jev_judge_batch 失败条不返回（其内部单条失败返回 None 被跳过），旧代码
-    `judged += len(items)` 会把失败计成功（2026-10-26 JEV 审计 §四-⑤）——这里
-    只计实际 UPDATE 的条数；整批 0 条判成（模型整夜挂等）记阶段错误，
-    整轮 runs.ok=0，不再静默。
+    夜批独占窗口（21:45–07:05 / 暂停旗 / 夜锁）内跳过判读，返回
+    {"judged":0,...,"skipped_night":True}——数据留待 JevNight 判，不丢。
     """
+    res = {"judged": 0, "missing": 0, "error": None}
+    if not dryrun and _in_night_window():
+        res["skipped_night"] = True
+        print("  SKIP judge %s: JevNight 独占窗口（21:45–07:05 / 暂停旗）；"
+              "留待夜批判读" % kind)
+        return res
     db = sqlite3.connect(DB)
     try:
         rows = db.execute(
             "SELECT id, title, stocks FROM news "
             "WHERE source=? AND (jev IS NULL OR jev='') "
             "ORDER BY ts DESC LIMIT ?", ("xd_%s" % kind, cap)).fetchall()
-        res = {"judged": 0, "missing": 0, "error": None}
         if not rows:
             return res
         if dryrun:
@@ -249,6 +277,8 @@ def main(argv=None):
         print("  %s <- %s: inserted=%d fetched=%d max=%s"
               % (kind, alias, n_ins, n_fetched, max_date or "-"))
         jr = judge_pending(kind, args.cap, dryrun=args.dryrun)
+        if jr.get("skipped_night"):
+            summary["src"][kind]["judge_skipped_night"] = True
         if jr["judged"]:
             summary["src"][kind]["judged"] = jr["judged"]
             print("  %s judged=%d" % (kind, jr["judged"]))
