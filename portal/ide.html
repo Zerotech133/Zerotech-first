@@ -570,6 +570,18 @@ function renderSide(){
   document.getElementById("side").innerHTML = h;
 }
 function sideItem(kind, key, grade, rid, rr){
+  // 组织架构富化（WO-IDE-ENRICH）：agent 行优先显示中文名，副行显示中文岗位
+  if(kind==="agent" && B.agents && B.agents[key]){
+    const a = B.agents[key];
+    const nm = a.cn_name || a.name || "";
+    const roleCn = a.role_cn || a.role_profile || "";
+    if(nm){ rid = nm; rr = key + ' · ' + esc(roleCn); }
+    else if(roleCn){ rr = esc(roleCn); }
+    const cap = (a.capabilities||[]).slice(0,4).join(' / ');
+    return '<div class="it'+(tabOn(kind,key)?' on':'')+'" title="'+esc(cap)+'" onclick="openTab(\''+kind+'\','+q(key)+')">'
+      + '<span class="g g-'+grade+'">'+grade+'</span><span class="rid">'+esc(rid)+'</span>'
+      + '<span class="rr">'+rr+'</span></div>';
+  }
   return '<div class="it'+(tabOn(kind,key)?' on':'')+'" onclick="openTab(\''+kind+'\','+q(key)+')">'
     + '<span class="g g-'+grade+'">'+grade+'</span><span class="rid">'+esc(rid)+'</span>'
     + '<span class="rr">'+rr+'</span></div>';
@@ -647,10 +659,24 @@ function rAgent(c, id, noDbg){
   const CUR = B.agents[id];
   if(!CUR){ c.innerHTML = '<div class="dep">Agent 不存在（bundle 过期？重跑 bundle 脚本）</div>'; return; }
   const pj = (CUR.projects||[]).map(p=>'<span class="ptag">'+esc(p)+'</span>').join("");
+  const nm = CUR.cn_name || CUR.name || "";
+  const roleCn = CUR.role_cn || "";
+  const caps = (CUR.capabilities || []);
+  const capsHtml = caps.map(x=>'<span class="ptag">'+esc(x)+'</span>').join("");
   c.innerHTML =
-    '<div class="a-head"><h2>'+CUR.id+'</h2>'
+    '<div class="a-head"><h2>'+esc(nm || CUR.id)+'</h2>'
+    + (nm ? '<code style="font-size:12px;color:var(--dim)">'+esc(CUR.id)+'</code>' : '')
     + '<span class="g g-'+CUR.grade+'" style="width:24px;height:24px;line-height:24px;font-size:11px">'+CUR.grade+'</span>'
     + '<span style="font-size:12px;color:var(--dim)">'+(GRADE_CN[CUR.grade]||'')+'</span>'+pj+'</div>'
+    + '<div class="blk"><h3>身份 · 组织架构</h3><div class="kv">'
+    + '<div class="k">姓名 / 席位</div><div class="v"><b>'+esc(nm||'—')+'</b> <code>'+esc(CUR.id)+'</code></div>'
+    + '<div class="k">岗位</div><div class="v">'+esc(roleCn||CUR.role_profile)+' <code>'+esc(CUR.role_profile)+'</code></div>'
+    + '<div class="k">部门</div><div class="v">'+esc(CUR.dept_name||CUR.dept||'')+(CUR.dept_cn_title?' · '+esc(CUR.dept_cn_title):'')+'</div>'
+    + (caps.length ? '<div class="k">专长能力</div><div class="v">'+capsHtml+'</div>' : '')
+    + ((CUR.skills||[]).length ? '<div class="k">技能</div><div class="v">'+(CUR.skills||[]).map(s=>'<code>'+esc(s)+'</code>').join(' ')+'</div>' : '')
+    + (CUR.experience ? '<div class="k">履历</div><div class="v">'+esc(CUR.experience).slice(0,400)+'</div>' : '')
+    + '<div class="k">职级说明</div><div class="v">'+esc(CUR.grade_note||CUR.grade||'—')+'</div>'
+    + '</div></div>'
     + '<div class="tagline">'+esc(CUR.team_desc)+'</div>'
     + '<div class="blk"><h3>岗位职责 CHARTER</h3>'
     + (CUR.charter.length > 260

@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-26 16:23",
+ "generated": "2026-10-26 20:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 41,
@@ -11,7 +11,7 @@
    "INTEL0",
    "MANCHONG1"
   ],
-  "workorders_doing": 20,
+  "workorders_doing": 26,
   "workorders_review": 2
  },
  "workorders": [
@@ -205,12 +205,66 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-IDE-BUNDLE-20261026",
-   "desc": "独立IDE数据刷新：重烘 agent_ide_bundle（真实 org 41 席 + 真实工单 5 doing/6 review）",
+   "id": "K-QUANT-20261026-TFSEAT",
+   "desc": "田丰完整席位系统（对标赵云）：扩展 tools/seat_capability_inject.py 田丰能力 11→15（+mutual-review/case-sign-chain/governance-ai/worktree-hygiene）+ 15 张 SKILL.md 操作卡（devtask/council-route/health-card/task-exit-audit/z-series/memory-card/council-hall/docs-index/llm-glm/mutual-review/case-sign-chain/governance-ai/worktree-hygiene 等）+ 对应测试；--apply 幂等，不动 default/满宠，不启服务 [UNOWNED]",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261026-TFSEAT",
+   "created": "2026-10-26 16:44:59",
+   "project": "quant"
+  },
+  {
+   "id": "K-ORG-20261026-JEVCALHC",
+   "desc": "健康卡 jev.calibration：读账本 latest.json，按样本/方向edge/bear可用性判级 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/K-ORG-20261026-JEVCALHC",
+   "created": "2026-10-26 16:47:18",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-IDE-RWFIX-20261026",
+   "desc": "IDE-RWFIX：WMI 拉起不继承 env，改 --rw 显式参数（serve+launcher）",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-IDE-BUNDLE-20261026",
-   "created": "2026-10-26 16:23:42",
+   "branch": "task/WO-LEGION-IDE-RWFIX-20261026",
+   "created": "2026-10-26 17:46:27",
+   "project": "general"
+  },
+  {
+   "id": "legion-1026175009",
+   "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/legion-1026175009",
+   "created": "2026-10-26 17:50:15",
+   "project": "general"
+  },
+  {
+   "id": "WO-GOVAI-FIXTURE-20261026",
+   "desc": "GOVAI建议降噪：green/测试夹具项不得生成处置建议（本期明文私钥误报根因），补回归测试",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-GOVAI-FIXTURE-20261026",
+   "created": "2026-10-26 19:07:34",
+   "project": "general"
+  },
+  {
+   "id": "WO-MONDAY-REPLAY-20261026",
+   "desc": "AgentMondayCheckpoint 17:25 失败(EXIT=1)：replay_trace 锚点 e59397a787d8 回放 NOT_FOUND，查锚点过期/丢失并修复；顺带 tasks schema ERROR 3 条",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-MONDAY-REPLAY-20261026",
+   "created": "2026-10-26 19:07:39",
+   "project": "general"
+  },
+  {
+   "id": "WO-IDE-ENRICH-20261026",
+   "desc": "Agent IDE 用组织架构富化名字与能力：hr cn_name + org profiles(specialties/charter/grade) + 部门中文称谓，页面展示",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-IDE-ENRICH-20261026",
+   "created": "2026-10-26 20:05:00",
    "project": "general"
   }
  ],
@@ -576,10 +630,10 @@
   },
   {
    "path": "agent_platform/registry/org.json",
-   "size": 70248,
-   "lines": 2738,
+   "size": 70640,
+   "lines": 2740,
    "truncated": true,
-   "content": "{\n \"_note\": \"GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。 | K-ORG-024 27满编：marketing 激活(MKT1) + legal 新设(LEG1直属参谋长) | K-ORG-189 量化交易部扩编（老田 10-18 拍板，设计=docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md）：现投研部 name 归一「量化交易部」（dept=invest 不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter「策略部 ST1 预留」，glm-5.3 判读/理论输出，影子铁律只读）\",\n \"org\": \"laotian_ai\",\n \"host\": \"GenOS\",\n \"host_note\": \"K-ORG-019 老田拍板：GenOS=个人 OS 宿主（门户 8080/指挥大屏/组织架构页为其门面），代码开发部分全部收编于本 org——任何新开发需求=在本注册表加岗或加项目部门，不改平台。\",\n \"report_to\": \"human\",\n \"chief\": {\n  \"agent_id\": \"A0\",\n  \"role_profile\": \"chief_of_staff\",\n  \"llm_binding\": \"glm/glm-5.3\",\n  \"binding_note\": \"10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下\",\n  \"status\": \"active\",\n  \"status_note\": \"K-ORG-015 起转 active：a0_agent.py 9b 判读 live 验证通过 + 日报 automation 17:35（K-ORG-004）实跑中 + A0 点评产线连续出稿（影子日报 10-08~10-12）\",\n  \"name\": \"田丰\",\n  \"name_note\": \"老田 2026-10-13 08:28 命名：参谋长取名田丰，全组织向其汇报（agent_id 仍为 A0，牵动记忆 namespace 与日报链不动）\",\n  \"assistant\": \"A0A\",\n  \"assistant_note\": \"K-ORG-052 注册（K-ORG-051 田丰治理模型 P1）：参谋长助理只调度不决策——方案分发/汇总归集/命令跟踪；编制在 team_chief.json\",\n  \"attributes\": {\n   \"experience\": \"20 年参谋长与组织运营经验：大型技术组织 PMO/参谋体系出身，擅长把决策意图翻译成可执行任务单并闭环追踪；现役 AI 组织参谋长——调度仲裁、汇报聚合、记忆治理三线并管。\",\n   \"specialties\": [\n    \"组织调度与任务仲裁\",\n    \"汇报聚合与简报出件\",\n    \"记忆治理与知识沉淀\",\n    \"风险亮牌与升级上报\"\n   ],\n   \"tools_allowed\": {\n    \"read\": [\n     \"*\"\n    ],\n    \"write\": [\n     \"agent_platform/registry/**\",\n     \"docs/**\"\n    ],\n    \"execute\": [\n     \"devtask\"\n    ],\n    \"danger\": \"deny\"\n   }\n  },\n  \"office_title\": \"幕府\",\n  \"_superseded_by\": \"departments.chief_line.agent_profiles\",\n  \"_superseded_note\": \"S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护\"\n },\n \"departments\": [\n  {\n   \"dept\": \"invest\",\n   \"name\": \"量化交易部\",\n   \"lead\": \"D1\",\n   \"status\": \"active\",\n   \"charter\": \"选股研究·多空辩论·情绪与基本面分析·投资决策·策略复盘（缠论等结构化策略学习环）\",\n   \"agents\": [\n    \"T1\",\n    \"T2\",\n    \"N1\",\n    \"F1\",\n    \"D1\",\n    \"ST1\",\n    \"WA1\",\n    \"QS1\"\n   ],\n   \"teams\": [\n    \"alpha\",\n    \"strategy\"\n   ],\n   \"source\": \"菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板） | K-ORG-189 量化交易部扩编：产品规划v1已立「量化交易部（现投研部扩编）」判例，本部即其现役实体——name 归一「量化交易部」（dept=invest 键不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter 预留，影子铁律只读）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；QS1 负责签收 WA1 的 QUANT_UPSTREAM_REPORT 并出具 agent 级 ACK（K-ORG-191）\",\n   \"cn_title\": \"谋略府\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"ST1\",\n     \"role_profile\": \"quant_analyst\",\n     \"analysis_type\": \"chan_structure\",\n     \"charter_detail\": \"缠论分析师·策略部首席：四阶段学习环（L1观察→L2验证对账→L3结构归因→L4灰度修正+理论输出），缠论买卖点先例战绩判读、署名理论笔记（周记《缠论结构观察》入 dept/invest/thesis 与 docs/）；影子铁律——只读判读不执行，权重草案 draft≠adopt（影子对照≥20交易日后人工凭据）\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"K-ORG-189 注册：判读/理论输出走云端智谱 glm-5.3（K-ORG-136 coding 端点先例，强模型判读同 A0）；本地 qwen3.5:9b 为降级档\",\n     \"tools\": [\n      \"tgraph_slots\",\n      \"tgraph_eval\",\n      \"tgraph_left_tail\",\n      \"tgraph_fps\",\n      \"signal_precedents\",\n      \"signal_enrich\",\n      \"events_for_stock\",\n      \"related_events\",\n      \"event_summary\",\n      \"recent_events\",\n      \"datamart_read\",\n      \"datamart_latest\",\n      \"datamart_ready\",\n      \"market_snapshot\",\n      \"data_health\",\n      \"pool_rows\",\n      \"stock_info\",\n      \"paper_positions\",\n      \"events\"\n     ],\n     \"tools_note\": \"全为只读判读工具（agent_tools 白名单），无任何下单/执行类——影子铁律\",\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/invest/*\",\n       \"agent/ST1/*\"\n      ],\n      \"write\": [\n       \"agent/ST1/*\",\n       \"dept/invest/observation\",\n       \"dept/invest/thesis\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：量化交易部策略部首席（缠论分析师），学习环与理论输出双责\",\n     \"attributes\": {\n      \"experience\": \"20 年缠论结构化技术分析经验：分型/笔/中枢/三类买卖点的实战判读与复盘归因，擅长把逐日影子信号对账成「哪类信号在哪种市场状态下可信」的结构化结论，并输出可沉淀的理论笔记。\",\n      \"specialties\": [\n       \"缠论结构判读（买卖点×级别×regime×结构指纹）\",\n       \"信号后验对账与左尾风险识别\",\n       \"策略复盘归因与置信度校准建议\",\n       \"署名理论输出与知识沉淀\"\n      ],\n      \"knowledge\": [\n       \"缠论技术分析知识库.md\",\n       \"金融专业知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"reports/**\",\n        \"data/**\",\n        \"docs/**\",\n        \"quant_backtest/**\"\n       ],\n       \"write\": [\n        \"docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     },\n     \"cn_name\": \"程昱\"\n    },\n    {\n     \"agent_id\": \"WA1\",\n     \"role_profile\": \"watch_monitor\",\n     \"kind\": \"watch_upstream_reporter\",\n     \"persona\": {\n      \"name\": \"许褚\",\n      \"courtesy_name\": \"仲康\",\n      \"dept\": \"盯盘营\"\n     },\n     \"identity\": {\n      \"agent_role\": \"WATCH\",\n      \"registry_ref\": \"registry:org:invest:WA1\",\n      \"registered_at\": \"2026-10-19T10:13:12+00:00\",\n      \"valid_until\": \"2027-04-17T10:13:12+00:00\",\n      \"upstream_route\": \"QUANT_UPSTREAM_REPORT\",\n      \"report_kinds\": [\n       \"ANOMALY\",\n       \"HEALTH\"\n      ]\n     },\n     \"grade\": \"E1\",\n     \"skills\": [\n      {\n       \"id\": \"watch_upstream_report\",\n       \"kind\": \"tool\",\n       \"enabled\": true\n      }\n     ],\n     \"constraints\": {\n      \"execute\": [],\n      \"danger\": \"deny\",\n      \"note\": \"盯盘只观察/预警；所有上行仅走 QUANT_UPSTREAM_REPORT 单一上行路；不直连飞书/投研/交易所；三类动作权限恒 False\"\n     },\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更\"\n    },\n    {\n     \"agent_id\": \"QS1\",\n     \"role_profile\": \"quant_sector_receiver\",\n     \"kind\": \"quant_sector_upstream_receiver\",\n     \"persona\": {\n      \"name\": \"司马懿\",\n      \"courtesy_name\": \"仲达\",\n      \"dept\": \"量化板块总署\"\n     },\n     \"identity\": {\n      \"agent_role\": \"QUANT_SECTOR\",\n      \"registry_ref\": \"registry:org:invest:QS1\",\n      \"registered_at\": \"2026-10-19T10:13:12+00:00\",\n      \"valid_until\": \"2027-04-17T10:13:12+00:00\",\n      \"accepted_routes\": [\n       \"QUANT_UPSTREAM_REPORT\"\n      ],\n      \"ack_semantics\": \"受理回执=agent 级 ACK（AgentAck），受理不等于授权，不等于研判确认\"\n     },\n     \"grade\": \"E1\",\n     \"skills\": [\n      {\n       \"id\": \"upstream_inbox_ack\",\n       \"kind\": \"tool\",\n       \"enabled\": true\n      }\n     ],\n     \"constraints\": {\n      \"execute\": [],\n      \"danger\": \"deny\",\n      \"note\": \"受理后由量化交易层决定三路分发（飞书信息/投研研判/交易所观察）；W-Q1 建设中，本席位先挂名待模块落地\"\n     },\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更；改档 llm_binding→none（工单 WO-LEGION-S43 / 放行人 老田）：履历 identity.ack_semantics 明写「受理回执=ACK，受理不等于授权、不等于研判确认」，工具仅 upstream_inbox_ack；按规则执行体口径显式 none，不再回落 9b\"\n    },\n    {\n     \"agent_id\": \"T1\",\n     \"role_profile\": \"aggressive_technical_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"激进多头技术面分析：趋势分析（均线/通道）、动能判断（MACD/RSI）、量价配合、支撑阻力位、成长股挖掘、产能与订单拐点识别\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"T2\",\n     \"role_profile\": \"conservative_technical_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"保守空头技术面分析：上方压力识别（前高/套牢盘）、顶背离、量价背离、破位风险、流动性冲击情景推演\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"N1\",\n     \"role_profile\": \"sentiment_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"情绪面分析：公告与事件冲击判读、行业政策风向、市场情绪指数、资金偏好、舆情热度、传闻降权\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"F1\",\n     \"role_profile\": \"fundamental_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"基本面分析：营收与利润趋势、盈利质量（现金流/应收）、估值分位（PE/PB）、行业景气位判断\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"D1\",\n     \"role_profile\": \"decision_chief\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"最终决策官：多方权衡裁决、五档推荐输出、置信度校准、辩论质量评估；汇总 T1/T2/N1/F1 四线分析出最终结论，须署名与可追溯\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E3\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"D1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"dev\",\n   \"name\": \"研发部\",\n   \"lead\": \"ARCH1\",\n   \"status\": \"active\",\n   \"charter\": \"多梯队工程交付：后端(30/20/10年三档)·前端(30/20年)·量化(20年三岗)·架构/运维(30年)·文档(20年)\",\n   \"agents\": [\n    \"DEV1\",\n    \"DEV6\",\n    \"DEV7\",\n    \"DEV2\",\n    \"DEV3\",\n    \"DEV4\",\n    \"DEV5\",\n    \"DEV8\",\n    \"ARCH1\",\n    \"OPS1\",\n    \"DOC1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DEV1\",\n     \"role_profile\": \"code_engineer\",\n     \"charter_detail\": \"拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/invest/decision\",\n       \"agent/DEV1/*\"\n      ],\n      \"write\": [\n       \"agent/DEV1/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：后端主力，devtask 工具链作者位\",\n     \"attributes\": {\n      \"experience\": \"30 年后端与研发效能经验：主导过金融交易系统与高并发平台建设，近十年专注研发工具链——任务单驱动的 worktree 并行工作流、自动化质检门与工单生命周期治理（本组织 devtask 工具链作者位）。\",\n      \"specialties\": [\n       \"Python 后端工程化\",\n       \"研发工具链与工作流设计\",\n       \"code review 与疑难攻关\",\n       \"worktree 并行开发治理\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV6\",\n     \"role_profile\": \"code_engineer\",\n     \"charter_detail\": \"E2·20年档·后端：常规功能/接口/脚本独立交付；疑难上报 DEV1\",\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：后端独立交付主力\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV6/*\"\n      ],\n      \"write\": [\n       \"agent/DEV6/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"20 年后端独立交付经验：API 服务、数据接口与运维脚本全栈交付，习惯小步提交、灰度验证，疑难问题升级 DEV1 主线。\",\n      \"specialties\": [\n       \"REST API 与服务端功能交付\",\n       \"数据处理与运维脚本\",\n       \"接口联调与灰度验证\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV7\",\n     \"role_profile\": \"code_engineer\",\n     \"charter_detail\": \"E1·10年档·后端：标准执行/批量修改/格式化任务；产出交 E2+ 复核\",\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：标准执行位\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV7/*\"\n      ],\n      \"write\": [\n       \"agent/DEV7/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"10 年后端标准执行经验：批量修改、格式化重构、依赖升级等标准化工程任务，产出严格走 E2+ 复核闭环。\",\n      \"specialties\": [\n       \"批量代码修改与重构\",\n       \"代码格式化与静态检查修复\",\n       \"回归验证与证据采集\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV2\",\n     \"role_profile\": \"model_trainer\",\n     \"charter_detail\": \"模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）\",\n     \"llm_binding\": \"ollama/qwen3.6:35b-a3b\",\n     \"tools\": [\n      \"ollama\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV2/*\"\n      ],\n      \"write\": [\n       \"agent/DEV2/*\",\n       \"dept/dev/observation\",\n       \"domain/model_registry\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：训练/评估独立交付\",\n     \"attributes\": {\n      \"experience\": \"20 年机器学习工程经验：模型训练、评估与版本化登记全流程，熟悉特征工程与离线/在线评估一致性校验，坚持模型版本登记 domain/model_registry 的可追溯纪律。\",\n      \"specialties\": [\n       \"模型训练与调参\",\n       \"评估体系与基准管理\",\n       \"模型版本化登记\",\n       \"特征工程\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     },\n     \"binding_note\": \"auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）\"\n    },\n    {\n     \"agent_id\": \"DEV3\",\n     \"role_profile\": \"strategy_engineer\",\n     \"charter_detail\": \"写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/invest/decision\",\n       \"agent/DEV3/*\"\n      ],\n      \"write\": [\n       \"agent/DEV3/*\",\n       \"dept/dev/observation\",\n       \"domain/strategy_registry\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：策略研发独立交付\",\n     \"attributes\": {\n      \"experience\": \"20 年量化策略研发经验：策略从想法到上线的完整纪律链——注册制新增、回测判据前置自检、影子账挂载验证；深知跳过影子期直上模拟仓的代价（缠论联立/快枪手判例亲历者）。\",\n      \"specialties\": [\n       \"量化策略设计与实现\",\n       \"回测判据前置自检\",\n       \"影子账验证流程\",\n       \"策略注册制管理\"\n      ],\n      \"knowledge\": [\n       \"缠论技术分析知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV4\",\n     \"role_profile\": \"backtest_engineer\",\n     \"charter_detail\": \"回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/invest/decision\",\n       \"agent/DEV4/*\"\n      ],\n      \"write\": [\n       \"agent/DEV4/*\",\n       \"dept/dev/observation\",\n       \"domain/backtest_registry\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：回测复核独立表态\",\n     \"attributes\": {\n      \"experience\": \"20 年回测与风控复核经验：BacktestEngine 执行、冻结判据下的 Go/No-Go 独立表态、结果登记 domain/backtest_registry；判据冻结期内不改判据是职业底线。\",\n      \"specialties\": [\n       \"回测执行与结果分析\",\n       \"Go/No-Go 独立复核\",\n       \"回测登记与可追溯\",\n       \"判据冻结纪律执法\"\n      ],\n      \"knowledge\": [\n       \"金融专业知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV5\",\n     \"role_profile\": \"frontend_engineer\",\n     \"charter_detail\": \"门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV5/*\"\n      ],\n      \"write\": [\n       \"agent/DEV5/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：tokens 设计语言作者位\",\n     \"attributes\": {\n      \"experience\": \"30 年前端与设计系统工程经验：大型门户/大屏架构，tokens.css 设计单源纪律与版面架构宪法作者；坚持 Demo 先行、改动必过 node --check + 死引用检查 + 线上实测三关。\",\n      \"specialties\": [\n       \"设计系统与 tokens 治理\",\n       \"门户/大屏版面架构\",\n       \"前端质量三关（语法/死引用/实测）\",\n       \"Demo 先行流程\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV8\",\n     \"role_profile\": \"frontend_engineer\",\n     \"charter_detail\": \"E2·20年档·前端：常规页面/图表交付；tokens 纪律同 DEV5，疑难上报 DEV5\",\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：前端页面交付主力\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV8/*\"\n      ],\n      \"write\": [\n       \"agent/DEV8/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"20 年前端交付经验：常规页面与图表组件独立交付，严守 tokens 纪律与页面宽度规范，疑难上报 DEV5。\",\n      \"specialties\": [\n       \"页面与图表组件交付\",\n       \"tokens 纪律执行\",\n       \"暗色主题与响应式适配\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"ARCH1\",\n     \"role_profile\": \"solution_architect\",\n     \"charter_detail\": \"架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录用 tools/adr.py 登记，落 docs/adr/（版本化入 git，K-ORG-041 固化）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/data/*\",\n       \"dept/product/*\",\n       \"agent/ARCH1/*\"\n      ],\n      \"write\": [\n       \"agent/ARCH1/*\",\n       \"dept/dev/observation\",\n       \"docs/adr\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：架构定夺/疑难攻关/方案终审\",\n     \"attributes\": {\n      \"experience\": \"30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。\",\n      \"specialties\": [\n       \"架构评审与技术选型\",\n       \"跨部门方案终审\",\n       \"ADR 决策记录治理\",\n       \"疑难技术攻关\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \".worktrees/**\",\n        \"docs/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     },\n     \"binding_note\": \"auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）\",\n     \"cn_name\": \"曹操\",\n     \"coordination_roles\": [\n      {\n       \"role\": \"intel_board_lead\",\n       \"board\": \"intel\",\n       \"appointed_at\": \"2026-10-22T18:20:00+0800\",\n       \"basis\": \"老田 2026-10-22 会话裁定「曹操正式统筹整个情报板块」；分线计划 D1 节记载\",\n       \"ticket\": \"K-INTEL-20261022-TF-AUDIT\",\n       \"signed_by\": \"老田\",\n       \"scope_note\": \"跨部门统筹角色，不替代 intel.lead=INTEL0 受理职责，不自动取得源权利、飞书发送、生产或交易权限；dev.lead 不变；取消统筹仅删本字段\"\n      }\n     ]\n    },\n    {\n     \"agent_id\": \"OPS1\",\n     \"role_profile\": \"devops_engineer\",\n     \"charter_detail\": \"DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/OPS1/*\"\n      ],\n      \"write\": [\n       \"agent/OPS1/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：生产配方执法位\",\n     \"attributes\": {\n      \"experience\": \"30 年生产运维经验：容器集群、计划任务、端口监护、备份三件套与磁盘巡检的全套生产配方执法；铁律=生产操作先验明进程身份再动手（误杀线上服务判例亲历）。\",\n      \"specialties\": [\n       \"Docker 容器集群运维\",\n       \"计划任务与看门狗配置\",\n       \"备份恢复与灾备\",\n       \"生产进程身份辨认\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"config/**\",\n        \"ops/**\",\n        \"tools/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"python\",\n        \"pytest\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DOC1\",\n     \"role_profile\": \"tech_writer\",\n     \"charter_detail\": \"技术文档工程师：docs/plans 计划谱系维护·INDEX 索引总账·判例沉淀（撞号/行尾/回滚死引用等判例入册）·README 与宪法文档保鲜\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DOC1/*\"\n      ],\n      \"write\": [\n       \"agent/DOC1/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：判例沉淀/谱系维护\",\n     \"attributes\": {\n      \"experience\": \"20 年技术文档经验：docs/plans 计划谱系与 INDEX 索引总账维护、判例沉淀入册（撞号/行尾/回滚死引用等）、宪法文档保鲜；让组织每次踩坑都变成可检索资产。\",\n      \"specialties\": [\n       \"计划谱系与索引治理\",\n       \"判例沉淀与知识入册\",\n       \"宪法/README 文档保鲜\",\n       \"技术写作规范\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [\n        \"git\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"将作监\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"ARCH1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"trading\",\n   \"name\": \"交易部\",\n   \"lead\": \"TR1\",\n   \"status\": \"active\",\n   \"charter\": \"执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）\",\n   \"agents\": [\n    \"TR1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"TR1\",\n     \"role_profile\": \"trade_executor\",\n     \"charter_detail\": \"交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"10-18 修幽灵绑定：qwen3.5:4b 本地库未下载（10-08 起即 404 幽灵），执行员降级三态兜底掩盖了故障——改绑 9b（已验证可用），4b 落位下载后再评估回切\",\n     \"tools\": [\n      \"paper_bridge\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/trading/*\",\n       \"dept/invest/decision\",\n       \"agent/TR1/*\"\n      ],\n      \"write\": [\n       \"agent/TR1/*\",\n       \"dept/trading/feedback\"\n      ]\n     },\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：轻量执行位\",\n     \"attributes\": {\n      \"knowledge\": [\n       \"金融专业知识库.md\"\n      ],\n      \"experience\": \"10 年交易执行经验：策略信号到订单的执行链路、paper 链下单、成交与滑点数据回写复盘；轻量执行位，只做执行不做判断。\",\n      \"specialties\": [\n       \"订单执行与 paper 链下单\",\n       \"成交/滑点数据回写\",\n       \"执行复盘数据整理\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"reports/**\",\n        \"data/**\",\n        \"docs/**\"\n       ],\n       \"write\": [],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"先登营\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"TR1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"data\",\n   \"name\": \"数据智能部\",\n   \"lead\": \"DATA1\",\n   \"status\": \"active\",\n   \"charter\": \"数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）\",\n   \"agents\": [\n    \"DATA1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DATA1\",\n     \"role_profile\": \"data_engineer\",\n     \"charter_detail\": \"数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/data/*\",\n       \"dept/dev/*\",\n       \"agent/DATA1/*\"\n      ],\n      \"write\": [\n       \"agent/DATA1/*\",\n       \"dept/data/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：数据底座独立运维\",\n     \"attributes\": {\n      \"experience\": \"20 年数据工程经验：实体映射、血缘三表、增量同步监护与特征湖 parquet 口径守护；数据口径不一致是最大事故源，口径守护是第一职责。\",\n      \"specialties\": [\n       \"数据血缘与实体映射\",\n       \"增量同步与监护\",\n       \"特征湖 parquet 口径守护\",\n       \"数据接入接线\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"data/**\",\n        \"k_stock/**\",\n        \"reports/**\",\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"write\": [\n        \"knowledge_docs/**\",\n        \"docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"兰台\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"DATA1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"product\",\n   \"name\": \"产品管理部\",\n   \"lead\": \"PM1\",\n   \"status\": \"active\",\n   \"charter\": \"需求池·版本规划·验收口径·UI/UX 设计（30年主笔+10年执行双梯队）\",\n   \"agents\": [\n    \"PM1\",\n    \"DSGN1\",\n    \"DSGN2\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"PM1\",\n     \"role_profile\": \"product_manager\",\n     \"charter_detail\": \"产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/product/*\",\n       \"dept/invest/decision\",\n       \"dept/dev/observation\",\n       \"agent/PM1/*\"\n      ],\n      \"write\": [\n       \"agent/PM1/*\",\n       \"dept/product/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：交付定义/验收口径裁定\",\n     \"attributes\": {\n      \"experience\": \"30 年产品管理经验：需求池治理、版本规划与验收口径定义（acceptance_criteria）；项目交付定义人——验收口径模糊就是返工之源。\",\n      \"specialties\": [\n       \"需求池与版本规划\",\n       \"验收口径定义\",\n       \"交付定义与归建判据\",\n       \"跨部门需求协调\"\n      ],\n      \"knowledge\": [\n       \"企业分析与尽调知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"deliverables/**\"\n       ],\n       \"execute\": [\n        \"devtask\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DSGN1\",\n     \"role_profile\": \"ui_designer\",\n     \"charter_detail\": \"UI/UX 设计师：tokens.css 设计语言治理·Demo 先行流程（老田拍板后再怼生产）·风格一致化巡查（悬空 token 三分类判例执法）·驾驶舱暗色同构风守门\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/product/*\",\n       \"dept/dev/observation\",\n       \"agent/DSGN1/*\"\n      ],\n      \"write\": [\n       \"agent/DSGN1/*\",\n       \"dept/product/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：tokens 设计语言作者位\",\n     \"attributes\": {\n      \"experience\": \"30 年 UI/UX 与设计系统经验：tokens 设计语言治理、Demo 先行流程执法、风格一致化巡查（悬空 token 三分类判例执法者）；驾驶舱暗色同构风守门。\",\n      \"specialties\": [\n       \"设计语言与 tokens 治理\",\n       \"Demo 先行流程\",\n       \"风格一致化巡查\",\n       \"暗色同构设计守门\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"portal/**\",\n        \"docs/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DSGN2\",\n     \"role_profile\": \"ui_designer\",\n     \"charter_detail\": \"E1·10年档·UI：切图/图标/样式批量执行；产出交 DSGN1 审定\",\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：UI 批量执行位\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/product/*\",\n       \"agent/DSGN2/*\"\n      ],\n      \"write\": [\n       \"agent/DSGN2/*\",\n       \"dept/product/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"10 年 UI 执行经验：切图、图标、样式批量执行，产出交 DSGN1 审定后入库。\",\n      \"specialties\": [\n       \"切图与图标制作\",\n       \"样式批量执行\",\n       \"设计稿高保真还原\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"portal/**\",\n        \"docs/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-018 新设；K-ORG-019 +DSGN1；K-ORG-020 UI 双梯队\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"度支府\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"PM1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"quality\",\n   \"name\": \"质量工程部\",\n   \"lead\": \"QA1\",\n   \"status\": \"active\",\n   \"charter\": \"测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计（SEC1合规红线·SEC2研发质量对抗/走形检查）\",\n   \"agents\": [\n    \"QA1\",\n    \"QA2\",\n    \"SEC1\",\n    \"SEC2\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"QA1\",\n     \"role_profile\": \"qa_engineer\",\n     \"charter_detail\": \"质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/quality/*\",\n       \"dept/dev/*\",\n       \"dept/data/*\",\n       \"agent/QA1/*\"\n      ],\n      \"write\": [\n       \"agent/QA1/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：验收口径裁定/三守卫裁定\",\n     \"attributes\": {\n      \"experience\": \"30 年质量工程经验：验收测试执行、三守卫（AST gate/金样本/回测判据）人化复核、review 积压质检分派、质量红线亮牌；连续多轮抓出产码方增量违规，质量判断独立不受产码方影响。\",\n      \"specialties\": [\n       \"验收测试与证据链\",\n       \"三守卫人化复核\",\n       \"review 质检分派\",\n       \"质量红线亮牌\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\",\n       \"测试规范知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [],\n       \"execute\": [\n        \"qa_run\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"SEC1\",\n     \"role_profile\": \"security_auditor\",\n     \"charter_detail\": \"安全审计师：凭据红线监护（X1 OAuth/QMT 凭据不入库）·注册表 grants 越权审计·危险命令面盘点（rm/checkout--/杀进程验身份判例执法）·skill/脚本引入安全审查\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/quality/*\",\n       \"dept/dev/*\",\n       \"agent/SEC1/*\"\n      ],\n      \"write\": [\n       \"agent/SEC1/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：审计独立表态\",\n     \"attributes\": {\n      \"experience\": \"20 年安全审计经验：凭据红线监护（OAuth/QMT 凭据不入库）、注册表 grants 越权审计、危险命令面盘点（rm/checkout--/杀进程验身份判例执法）、skill 与脚本引入安全审查。\",\n      \"specialties\": [\n       \"凭据与密钥红线监护\",\n       \"权限越权审计\",\n       \"危险命令面盘点\",\n       \"引入件安全审查\"\n      ],\n      \"knowledge\": [\n       \"法律专业知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"QA2\",\n     \"role_profile\": \"qa_engineer\",\n     \"charter_detail\": \"E1·10年档·测试：用例执行/证据采集/回归跑批；结论交 QA1 裁定\",\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：用例执行位\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/quality/*\",\n       \"agent/QA2/*\"\n      ],\n      \"write\": [\n       \"agent/QA2/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"10 年测试执行经验：用例执行、证据采集、回归跑批；结论只交 QA1 裁定，不自行下验收结论。\",\n      \"specialties\": [\n       \"用例执行与证据采集\",\n       \"回归跑批\",\n       \"缺陷记录与复现\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [],\n       \"execute\": [\n        \"qa_run\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"SEC2\",\n     \"role_profile\": \"security_lead\",\n     \"charter_detail\": \"网络安全工程师(30年+全栈)：对照研发方案走形检查(条目→证据→判定→建议命令·走形开单@田丰直推·返工复查闭环)·渗透/反渗透·压力测试；与SEC1分工=SEC1合规红线执法·SEC2研发质量对抗\",\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：方案级走形裁定·渗透/反渗透·压测与瓶颈定位（研发质量对抗线）\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"10-18 升档：旧 glm-4.6 依赖 anthropic 端点对包年 key 报 429/404（K-ORG-136），统一 coding 端点 glm-5.3 全通；key 纪律不变——zhipu_key(6546) 包年优先，GLM_API_KEY(379b) 已 429 勿用。调用方统一 zhipu_key 优先（a0_agent.py / engine.llm.GLMCloudLLM 已同口径）\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/*\",\n       \"agent/SEC2/*\"\n      ],\n      \"write\": [\n       \"agent/SEC2/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"30 年网络安全与全栈经验：研发方案走形检查（条目→证据→判定→建议命令·走形开单@田丰直推）、渗透与反渗透、压测与瓶颈定位；与 SEC1 分工明确——SEC1 合规红线执法，SEC2 研发质量对抗。\",\n      \"specialties\": [\n       \"方案走形检查与返工闭环\",\n       \"渗透/反渗透\",\n       \"压力测试与瓶颈定位\",\n       \"全栈代码审计\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队；K-ORG-052 +SEC2（田丰治理模型·研发质量对抗线）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"监军府\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"QA1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"proj_backtest\",\n   \"name\": \"🅰 回测开发部\",\n   \"lead\": \"DEV3\",\n   \"type\": \"project\",\n   \"status\": \"active\",\n   \"charter\": \"【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建\",\n   \"agents\": [\n    \"DEV3\",\n    \"DEV4\",\n    \"QA1\"\n   ],\n   \"worktree_prefix\": \"proj_a_\",\n   \"source\": \"K-ORG-018 老田原话「部门 A 现目前在完成我们的回测的开发」\",\n   \"cn_title\": \"🅰 回测行营\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DEV3\",\n     \"role_profile\": \"backtest_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"DEV4\",\n     \"role_profile\": \"backtest_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"QA1\",\n     \"role_profile\": \"qa_runner\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"回测质量门：QA-RUN 执行、回归用例维护、fail-closed 只读纪律；不合格不签字\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_duty\": \"回测开发部主官：主持逐日账、组合制v6评审与影子验收交付，对回测产物可追溯性与验收签字负责\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-21T20:52:42+0800\",\n    \"from\": null,\n    \"to\": \"DEV3\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S43\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"proj_data\",\n   \"name\": \"🅱 数据治理部\",\n   \"lead\": \"DATA1\",\n   \"type\": \"project\",\n   \"status\": \"active\",\n   \"charter\": \"【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建\",\n   \"agents\": [\n    \"DATA1\",\n    \"DEV1\"\n   ],\n   \"worktree_prefix\": \"proj_b_\",\n   \"source\": \"K-ORG-018 老田原话「部门 B 在完成我们的数据底层的治理」\",\n   \"cn_title\": \"🅱 数据行营\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DATA1\",\n     \"role_profile\": \"data_governance\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理；只治理不裁决业务口径\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-223 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"DEV1\",\n     \"role_profile\": \"data_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"数据治理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付数据管道代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-223 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_duty\": \"数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理，只治理不造数\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-21T20:14:38+0800\",\n    \"from\": null,\n    \"to\": \"DATA1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S42\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"proj_next\",\n   \"name\": \"🅲 下版本设计推理部\",\n   \"lead\": \"PM1\",\n   \"type\": \"project\",\n   \"status\": \"active\",\n   \"charter\": \"【项目部门·现役】下一版本设计+推理：nl_query 图谱自然语言问答（v5 C 线启动·最小闭环先行）+ 下一版门户/大屏产品定义；PM1 出验收口径 → ARCH1 技术终审 → DEV2 推理侧\",\n   \"agents\": [\n    \"PM1\",\n    \"ARCH1\",\n    \"DEV2\"\n   ],\n   \"worktree_prefix\": \"proj_c_\",\n   \"source\": \"K-ORG-018 老田原话「部门 C 在完成我们下一个版本的设计。和推理」；v5 设想 C 线（图谱智能化）今日立项\",\n   \"cn_title\": \"🅲 设计行营\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"PM1\",\n     \"role_profile\": \"next_version_pm\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"下版本设计推理部主官：需求梳理、验收判据、路线图；把设计意图转成可验收条目\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"ARCH1\",\n     \"role_profile\": \"next_version_arch\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"下版本设计推理部架构席：Python 产码、代码评审、工单执行、AST 静态门；负责设计推理链的架构落地\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"DEV2\",\n     \"role_profile\": \"next_version_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"下版本设计推理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付下版本功能代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"PM1\",\n    \"cross_dept\": true,\n    \"cross_note\": \"本部门 lead 由 product 的 PM1 兼任（主属 product），指挥链由本部门 lead 显式指向\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"marketing\",\n   \"name\": \"市场部\",\n   \"status\": \"active\",\n   \"charter\": \"统一口号纪律·内容宣发(过LEG1审查后发布)·开源社区影响面·在研文稿协同\",\n   \"agents\": [\n    \"MKT1\"\n   ],\n   \"source\": \"K-ORG-001 §11 AIGC 松耦合扩展预留；K-ORG-024 激活+MKT1 入编\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"MKT1\",\n     \"role_profile\": \"mkt1_marketer\",\n     \"charter_detail\": \"E2·20年档·市场运营：统一口号纪律执法·宣发文案/视频脚本·开源社区高star项目对比报告·在研文稿协同；对外定位=能力平台，禁Tokens售卖标签\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/marketing/*\",\n       \"dept/legal/*\",\n       \"agent/MKT1/*\"\n      ],\n      \"write\": [\n       \"agent/MKT1/*\",\n       \"dept/marketing/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：内容与社区运营独立交付\",\n     \"attributes\": {\n      \"experience\": \"20 年市场运营经验：宣发文案与视频脚本、开源社区高 star 项目对比研究、统一口号纪律执法；对外定位=能力平台，禁用 Tokens 售卖标签。\",\n      \"specialties\": [\n       \"宣发文案与视频脚本\",\n       \"开源社区对比研究\",\n       \"统一口号纪律执法\",\n       \"在研文稿协同\"\n      ],\n      \"knowledge\": [\n       \"企业分析与尽调知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"gzh/**\",\n        \"reports/**\",\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"write\": [\n        \"gzh/**\",\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"lead\": \"MKT1\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"鸿胪署\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"MKT1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"legal\",\n   \"name\": \"合规法务部\",\n   \"lead\": \"LEG1\",\n   \"status\": \"active\",\n   \"charter\": \"对外材料合规审查·口径裁定(四原则)·数据与采集合规红线·公安协调支撑；直属参谋长田丰，独立表态\",\n   \"agents\": [\n    \"LEG1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"LEG1\",\n     \"role_profile\": \"leg1_legal\",\n     \"charter_detail\": \"E3·30年档·合规法务：政府材料/宣发文稿发布前审查(通过/修改后通过/驳回)·四条对外口径裁定权·爬虫采集合规红线·军方背景与涉政一票驳回\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"tools\": [\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/legal/*\",\n       \"dept/marketing/*\",\n       \"agent/LEG1/*\"\n      ],\n      \"write\": [\n       \"agent/LEG1/*\",\n       \"dept/legal/review\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：独立表态·一票否决权\",\n     \"attributes\": {\n      \"knowledge\": [\n       \"企业分析与尽调知识库.md\"\n      ],\n      \"experience\": \"30 年合规法务经验：政府材料与宣发文稿发布前审查（通过/修改后通过/驳回）、四条对外口径裁定权、爬虫采集合规红线、军方背景与涉政内容一票驳回。\",\n      \"specialties\": [\n       \"政府/宣发材料审查\",\n       \"对外口径裁定\",\n       \"采集合规红线\",\n       \"涉政涉军一票否决\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"docs/**\",\n        \"knowledge_docs/**\",\n        \"deliverables/**\",\n        \"data/**\"\n       ],\n       \"write\": [\n        \"knowledge_docs/**\",\n        \"docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     },\n     \"binding_note\": \"auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）\"\n    }\n   ],\n   \"teams\": [\n    \"team_legal\"\n   ],\n   \"source\": \"K-ORG-024 新设（27满编收官）：直属参谋长，E3 一票否决\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"廷尉府\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"LEG1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"ops_runtime\",\n   \"name\": \"运行体部\",\n   \"lead\": \"A0A\",\n   \"status\": \"active\",\n   \"charter\": \"常驻运行体的编制归属与守护归口：只调度不决策；endpoint 必填可探活；K-ORG-116/119 收编\",\n   \"agents\": [\n    \"JEV_GATE\",\n    \"JEV_REVIEW\",\n    \"JEV_QD\",\n    \"LARK_CARDS\",\n    \"COWBRIDGE\",\n    \"HERMES_UI\",\n    \"WATCH_TOWER\"\n   ],\n   \"teams\": [],\n   \"source\": \"K-ORG-116 一批收编（2026-10-16）：Jev四件套/cowbridge记忆桥/Hermes WebUI；kind=runtime，代码进程零改动\",\n   \"cn_title\": \"驿传署\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"JEV_GATE\",\n     \"role_profile\": \"jev_alert_gate\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Jev 告警降噪网关：紧急度判读、方向判定、告警降噪聚合、企业微信推送路由；只降噪不改变告警事实\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"JEV_REVIEW\",\n     \"role_profile\": \"jev_signal_reviewer\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Jev 信号复核门：对入站信号做二次复核与判据校验，复核不通过不进入下游；只复核不生成信号\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"WATCH_TOWER\",\n     \"role_profile\": \"watchtower_arbiter\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"盯盘中台值守：多方法仲裁、缠论/量能/RSI 方法插件治理、容量自检与分片、毕业权重闭环、T+5 前向归因\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"朱然\"\n    },\n    {\n     \"agent_id\": \"JEV_QD\",\n     \"role_profile\": \"jev_quantdinger_bridge\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Jev⇄QuantDinger 桥接组件：双向消息格式转换与投递，保证幂等与失败重试；纯工程桥接，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"LARK_CARDS\",\n     \"role_profile\": \"lark_card_listener\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"飞书卡片回调监听器：接收卡片交互回调、解析动作、回投处理结果；纯工程回调组件，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"COWBRIDGE\",\n     \"role_profile\": \"cowbridge_memory_bridge\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"cowbridge 记忆桥：跨层记忆读写与格式转换、幂等落库；纯工程桥接组件，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"HERMES_UI\",\n     \"role_profile\": \"hermes_ui_gateway\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Hermes WebUI 门面：对外页面与接口门面、静态资源与路由；纯工程门面组件，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-21T20:14:20+0800\",\n    \"from\": \"A0A\",\n    \"to\": \"A0A\",\n    \"cross_dept\": true,\n    \"cross_note\": \"参谋长助理 A0A 兼任运行体部主官，档案登记于 registry/team_chief.json，指挥链由本部门 lead 显式指向\",\n    \"ticket\": \"WO-LEGION-S42\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"academy\",\n   \"name\": \"研究院\",\n   \"lead\": \"ACAD1\",\n   \"status\": \"active\",\n   \"charter\": \"策略研究与商业化逻辑研究：交易策略研发与回测验证、AI能力方法论提炼、商业化路径探索（算法商品/策略市场/对外服务）、竞争情报对标——军团的知识发动机\",\n   \"research_language\": {\n    \"principle\": \"先定义问题，再定义证据；先形成假设，再设计验证；先判定能否复现，再讨论能否商业化。\",\n    \"mandatory_fields\": [\n     \"研究问题：要解释、预测或改进什么\",\n     \"研究对象：股票、策略、Agent能力、产品或外部市场\",\n     \"核心假设：可证伪、可度量、可复现\",\n     \"证据口径：数据来源、时间范围、样本、指标和版本\",\n     \"验证方法：回测、对照实验、访谈、竞品拆解或压力测试\",\n     \"结论等级：事实、推断、暂定结论、否定结论\",\n     \"行动建议：继续研究、进入试点、产品化、入库或终止\",\n     \"风险边界：数据风险、模型风险、合规风险、商业风险\"\n    ],\n    \"evidence_states\": [\n     \"事实\",\n     \"佐证\",\n     \"证伪\",\n     \"存疑\",\n     \"未知\"\n    ],\n    \"decision_words\": [\n     \"立项\",\n     \"补证\",\n     \"Go\",\n     \"No-Go\",\n     \"试点\",\n     \"产品化\",\n     \"入库\",\n     \"终止\"\n    ]\n   },\n   \"directions\": [\n    {\n     \"id\": \"strategy_lab\",\n     \"name\": \"策略与交易研究\",\n     \"owner\": \"STRAT1\",\n     \"support\": [\n      \"BACK1\",\n      \"T1\",\n      \"T2\",\n      \"R1\",\n      \"R2\",\n      \"R3\"\n     ],\n     \"scope\": \"图形推演、因子研究、交易策略、左侧/右侧、风控参数和实盘反馈\",\n     \"outputs\": [\n      \"策略假设卡\",\n      \"回测任务单\",\n      \"样本外报告\",\n      \"策略判例\",\n      \"Go/No-Go结论\"\n     ]\n    },\n    {\n     \"id\": \"data_ai_lab\",\n     \"name\": \"数据与智能研究\",\n     \"owner\": \"AI1\",\n     \"support\": [\n      \"DATA1\",\n      \"DEV1\",\n      \"DEV6\"\n     ],\n     \"scope\": \"数据血缘、特征工程、Agent能力、评测体系、路由和知识反哺\",\n     \"outputs\": [\n      \"数据口径卡\",\n      \"能力登记\",\n      \"评测集\",\n      \"Prompt变更提案\",\n      \"知识条目\"\n     ]\n    },\n    {\n     \"id\": \"market_intelligence_lab\",\n     \"name\": \"行业与竞争情报研究\",\n     \"owner\": \"INTEL1\",\n     \"support\": [\n      \"N1\",\n      \"F1\",\n      \"COMM1\",\n      \"MKT1\",\n      \"LEG1\"\n     ],\n     \"scope\": \"行业趋势、竞品、开源社区、政策环境、客户需求和商业模式\",\n     \"outputs\": [\n      \"情报简报\",\n      \"竞品矩阵\",\n      \"机会/威胁清单\",\n      \"事实与推断分层报告\"\n     ]\n    },\n    {\n     \"id\": \"commercialization_lab\",\n     \"name\": \"商业化与产品化研究\",\n     \"owner\": \"COMM1\",\n     \"support\": [\n      \"PROD1\",\n      \"PM1\",\n      \"MKT1\",\n      \"LEG1\"\n     ],\n     \"scope\": \"算法商品、策略市场、对外服务、客户场景、交付边界、定价与试点\",\n     \"outputs\": [\n      \"商业模式卡\",\n      \"客户画像\",\n      \"交付清单\",\n      \"试点方案\",\n      \"合规边界卡\"\n     ]\n    },\n    {\n     \"id\": \"methodology_lab\",\n     \"name\": \"方法论与组织学习研究\",\n     \"owner\": \"ACAD1\",\n     \"support\": [\n      \"AI1\",\n      \"D1\",\n      \"A0A\"\n     ],\n     \"scope\": \"研究规范、评审制度、复盘机制、知识工程和军团能力升级\",\n     \"outputs\": [\n      \"研究标准\",\n      \"评审意见\",\n      \"复盘判例\",\n      \"能力升级提案\",\n      \"周度研究院报告\"\n     ]\n    }\n   ],\n   \"agents\": [\n    \"ACAD1\",\n    \"STRAT1\",\n    \"BACK1\",\n    \"COMM1\",\n    \"INTEL1\",\n    \"AI1\",\n    \"PROD1\"\n   ],\n   \"teams\": [\n    \"academy_strategy\",\n    \"academy_commercial\",\n    \"academy_intelligence\",\n    \"academy_methodology\"\n   ],\n   \"operating_plan\": {\n    \"intake\": \"投研部、数据智能部、产品部或田丰提出研究课题\",\n    \"stages\": [\n     \"研究立项\",\n     \"数据与假设登记\",\n     \"回测或商业化论证\",\n     \"研究院评审\",\n     \"跨部门联评\",\n     \"田丰拍板\",\n     \"知识入库或产品化\"\n    ],\n    \"meetings\": [\n     \"周一 09:30 研究院立项会\",\n     \"周三 15:00 策略/商业化专题评审\",\n     \"周五 16:00 军团例会汇报\"\n    ],\n    \"handoffs\": {\n     \"invest\": \"提供策略需求、市场假设与实盘问题\",\n     \"data\": \"提供数据、血缘、特征与可复现口径\",\n     \"dev\": \"实现策略、回测工具与 AI 方法\",\n     \"product\": \"定义算法商品、策略市场和服务形态\",\n     \"marketing\": \"商业化包装与对外内容\",\n     \"legal\": \"外部发布、数据使用与合规审查\"\n    }\n   },\n   \"kpi\": [\n    \"每周完成不少于 1 个可复现研究课题\",\n    \"策略必须有数据口径、回测证据和 Go/No-Go 结论\",\n    \"每周沉淀不少于 2 条可复用方法论或判例\",\n    \"商业化课题必须形成目标客户、交付形态和合规边界\",\n    \"研究结论进入知识环后可被路由和复用\"\n   ],\n   \"source\": \"K-ORG-124/125 老田拍板设立并完成首批编制（2026-10-17）：研究策略 + 商业化逻辑\",\n   \"lead_duty\": \"院长监督四个研究组；每日汇总课题进度报 A0；周五提交研究院周报；研究结论未经评审不得进入产品化\",\n   \"cn_title\": \"太学\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"ACAD1\",\n     \"role_profile\": \"academy_director\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"研究院总负责人：审题、立项、组织评审、协调投研/数据/研发/产品/市场/法务，向田丰提交研究院日报与周报\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E3\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"STRAT1\",\n     \"role_profile\": \"strategy_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"把投研部的市场问题转成可验证策略假设，维护策略研究台账，交由 BACK1 做回测\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"BACK1\",\n     \"role_profile\": \"backtest_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"接收策略假设，按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"COMM1\",\n     \"role_profile\": \"commercialization_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"研究算法商品、策略市场、对外服务和平台能力变现路径，形成客户画像、交付边界与试点方案\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"INTEL1\",\n     \"role_profile\": \"competitive_intelligence_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"跟踪开源社区、同类产品、策略市场与行业变化，为策略和商业化立项提供外部证据\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"AI1\",\n     \"role_profile\": \"ai_methodology_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"把成功研究提炼为标准、能力、评测和知识条目，推动 router、Prompt 与判例库经评审后更新；模型按老田 10-21 异族裁决走 ChatGPT 6.0（OpenClaw 载体），通道待 OPENAI_API_KEY\",\n     \"llm_binding\": \"openai/gpt-6.0\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E3\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"PROD1\",\n     \"role_profile\": \"strategy_product_manager\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"将通过评审的策略或 AI 方法转成产品需求、交付形态、验收指标和试点计划，联接产品部与市场部\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"ACAD1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"intel\",\n   \"name\": \"情报部\",\n   \"lead\": \"INTEL0\",\n   \"status\": \"active\",\n   \"charter\": \"情报三线归口：舆情线（雪球社媒 14212 帖库）、通讯线（TDX 新闻/公告/研报三表 59 万行）、内务线（平台巡检告警四任务）；只采集只报实况不决策，情报裁决走 intel 域审批（Agent 建议权+人工裁决权）；K-ORG-165 收编 | 2026-10-23 曹操统筹首批下派（老田令）：舆情线=水镜XQ1/通讯线=韦昭TDX1/内务线=周泰BEACON1/受理=是仪INTEL0/治理+R03任峻位=满宠MANCHONG1/图谱=郑玄KGMAP1/词云=陈琳WORDC1/血缘=谯周LINEAGE1\",\n   \"agents\": [\n    \"XQ1\",\n    \"TDX1\",\n    \"BEACON1\",\n    \"INTEL0\",\n    \"MANCHONG1\",\n    \"KGMAP1\",\n    \"WORDC1\",\n    \"LINEAGE1\"\n   ],\n   \"teams\": [],\n   \"source\": \"K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口\",\n   \"cn_title\": \"军情司\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；INTEL0 负责签收满宠的 INTEL_UPSTREAM_REPORT 并出具受理回执——只受理不裁决\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"XQ1\",\n     \"role_profile\": \"雪球与股吧舆情采集哨\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责股吧与雪球社媒数据挖掘：游标深翻采集、完整cookie注入、动态代理轮换、幂等落库、停轮判据自治；只采集与报实况，不决策\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-211 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"水镜\"\n    },\n    {\n     \"agent_id\": \"TDX1\",\n     \"role_profile\": \"接口新闻面挖掘史官\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责接口新闻面数据挖掘：news/notice/report 三表增量同步与时序落库、影子库治理、多源资讯采集口径核对\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-212 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"韦昭\"\n    },\n    {\n     \"agent_id\": \"MANCHONG1\",\n     \"cn_name\": \"满宠\",\n     \"role_profile\": \"全量数据串联与治理席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责把各线数据串联成可用事实：连接数据、清洗数据、关联数据、治理赋能、每日情报汇报；串联结论只报实况不裁决。兼 MDC-R03 证据持久层存储责任席（任峻位，2026-10-23 老田裁定）：offered/accepted/persisted/visible 四态分账、幂等键与血缘完整性、崩溃回放一致、连续水位不提前；持久产出未经独立验收不得宣称已入库\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-213 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"KGMAP1\",\n     \"role_profile\": \"情报知识图谱构建席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责把分散情报要素连成可查询的关系图谱：实体识别、关系抽取、图谱构建与维护、按标的与主体双向检索；只呈现事实关联，不做因果推断\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 按工单 WO-ORG-214 入编（放行人：老田）\",\n     \"tools\": [],\n     \"tools_note\": \"入编初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"入编初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"郑玄\"\n    },\n    {\n     \"agent_id\": \"WORDC1\",\n     \"role_profile\": \"文本词云挖掘席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责多源文本挖掘与词云图生成：分词与词频统计、热度趋势、异动词捕捉、停用词与同义词表维护；只报词频事实与异动，不解释成因\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 按工单 WO-ORG-215 入编（放行人：老田）\",\n     \"tools\": [],\n     \"tools_note\": \"入编初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"入编初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"陈琳\"\n    },\n    {\n     \"agent_id\": \"LINEAGE1\",\n     \"role_profile\": \"数据血缘治理席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责数据血缘关系治理：字段级血缘溯源、上下游链路登记、口径变更影响面分析、血缘与实际产物对账；只登记与报差异，不裁决口径归属\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 按工单 WO-ORG-216 入编（放行人：老田）\",\n     \"tools\": [],\n     \"tools_note\": \"入编初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"入编初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"谯周\"\n    },\n    {\n     \"agent_id\": \"INTEL0\",\n     \"role_profile\": \"军情司上行受理席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"情报板块唯一上行受理口：专职签收上游情报报告（INTEL_UPSTREAM_REPORT）、哈希幂等核验、出具 ACK 受理回执、维护受理台账；只受理不裁决，受理后分发与研判归情报板块与参谋长线\",\n     \"llm_binding\": \"glm/glm-5.3-flash\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-217 / 放行人 老田）；改档 glm/glm-5.3-flash → ollama/qwen3.5:9b（工单 WO-ORG-219 / 放行人 老田）：glm-5.3-flash 实调 HTTP 400（模型名不存在）；E1 受理岗只做签收/回执，本地 9b 足够且不耗云端额度；改档 llm_binding→glm/glm-5.3-flash（工单 WO-LEGION-S43 / 放行人 老田）：S38判例作废：glm 400 真因是 gateway 把整串 binding 当 model 传参（S41 已修），flash 探针实测 ok(3943ms)，恢复 S37 原档\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E1\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"BEACON1\",\n     \"role_profile\": \"平台内务巡检哨\",\n     \"analysis_type\": \n… [已截断，完整内容看仓库文件]"
+   "content": "{\n \"_note\": \"GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。 | K-ORG-024 27满编：marketing 激活(MKT1) + legal 新设(LEG1直属参谋长) | K-ORG-189 量化交易部扩编（老田 10-18 拍板，设计=docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md）：现投研部 name 归一「量化交易部」（dept=invest 不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter「策略部 ST1 预留」，glm-5.3 判读/理论输出，影子铁律只读）\",\n \"org\": \"laotian_ai\",\n \"host\": \"GenOS\",\n \"host_note\": \"K-ORG-019 老田拍板：GenOS=个人 OS 宿主（门户 8080/指挥大屏/组织架构页为其门面），代码开发部分全部收编于本 org——任何新开发需求=在本注册表加岗或加项目部门，不改平台。\",\n \"report_to\": \"human\",\n \"chief\": {\n  \"agent_id\": \"A0\",\n  \"role_profile\": \"chief_of_staff\",\n  \"llm_binding\": \"glm/glm-5.3\",\n  \"binding_note\": \"10-18 老田拍板分工定案：参谋长层（田丰/诸葛亮）全部走云端智谱包年通道——判读/裁决/汇报聚合要强模型，K-ORG-136 实测 coding 端点 glm-5.3 全通（思考型，reasoning_content 不拼正文）。本地模型退居数据岗：治理/分配/流转/抓取/蒸馏/训练。通道由 a0_agent.route_chat 前缀路由；本地 9b 保留为云端不可用时的降级档（--model qwen3.5:9b）。旧灰度（35b 本地判读）当日撤下【2026-10-26 注：本句为 10-18 口径；2026-10-21 10:51 老田异族编制裁决后，诸葛亮（AI1，研究院）改走 openai/gpt-6.0（OpenClaw 载体），不再属参谋长层，通道待 OPENAI_API_KEY。】\",\n  \"status\": \"active\",\n  \"status_note\": \"K-ORG-015 起转 active：a0_agent.py 9b 判读 live 验证通过 + 日报 automation 17:35（K-ORG-004）实跑中 + A0 点评产线连续出稿（影子日报 10-08~10-12）\",\n  \"name\": \"田丰\",\n  \"name_note\": \"老田 2026-10-13 08:28 命名：参谋长取名田丰，全组织向其汇报（agent_id 仍为 A0，牵动记忆 namespace 与日报链不动）\",\n  \"assistant\": \"A0A\",\n  \"assistant_note\": \"K-ORG-052 注册（K-ORG-051 田丰治理模型 P1）：参谋长助理只调度不决策——方案分发/汇总归集/命令跟踪；编制在 team_chief.json\",\n  \"attributes\": {\n   \"experience\": \"20 年参谋长与组织运营经验：大型技术组织 PMO/参谋体系出身，擅长把决策意图翻译成可执行任务单并闭环追踪；现役 AI 组织参谋长——调度仲裁、汇报聚合、记忆治理三线并管。\",\n   \"specialties\": [\n    \"组织调度与任务仲裁\",\n    \"汇报聚合与简报出件\",\n    \"记忆治理与知识沉淀\",\n    \"风险亮牌与升级上报\"\n   ],\n   \"tools_allowed\": {\n    \"read\": [\n     \"*\"\n    ],\n    \"write\": [\n     \"agent_platform/registry/**\",\n     \"docs/**\"\n    ],\n    \"execute\": [\n     \"devtask\"\n    ],\n    \"danger\": \"deny\"\n   }\n  },\n  \"office_title\": \"幕府\",\n  \"_superseded_by\": \"departments.chief_line.agent_profiles\",\n  \"_superseded_note\": \"S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护\"\n },\n \"departments\": [\n  {\n   \"dept\": \"invest\",\n   \"name\": \"量化交易部\",\n   \"lead\": \"D1\",\n   \"status\": \"active\",\n   \"charter\": \"选股研究·多空辩论·情绪与基本面分析·投资决策·策略复盘（缠论等结构化策略学习环）\",\n   \"agents\": [\n    \"T1\",\n    \"T2\",\n    \"N1\",\n    \"F1\",\n    \"D1\",\n    \"ST1\",\n    \"WA1\",\n    \"QS1\"\n   ],\n   \"teams\": [\n    \"alpha\",\n    \"strategy\"\n   ],\n   \"source\": \"菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板） | K-ORG-189 量化交易部扩编：产品规划v1已立「量化交易部（现投研部扩编）」判例，本部即其现役实体——name 归一「量化交易部」（dept=invest 键不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter 预留，影子铁律只读）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；QS1 负责签收 WA1 的 QUANT_UPSTREAM_REPORT 并出具 agent 级 ACK（K-ORG-191）\",\n   \"cn_title\": \"谋略府\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"ST1\",\n     \"role_profile\": \"quant_analyst\",\n     \"analysis_type\": \"chan_structure\",\n     \"charter_detail\": \"缠论分析师·策略部首席：四阶段学习环（L1观察→L2验证对账→L3结构归因→L4灰度修正+理论输出），缠论买卖点先例战绩判读、署名理论笔记（周记《缠论结构观察》入 dept/invest/thesis 与 docs/）；影子铁律——只读判读不执行，权重草案 draft≠adopt（影子对照≥20交易日后人工凭据）\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"K-ORG-189 注册：判读/理论输出走云端智谱 glm-5.3（K-ORG-136 coding 端点先例，强模型判读同 A0）；本地 qwen3.5:9b 为降级档\",\n     \"tools\": [\n      \"tgraph_slots\",\n      \"tgraph_eval\",\n      \"tgraph_left_tail\",\n      \"tgraph_fps\",\n      \"signal_precedents\",\n      \"signal_enrich\",\n      \"events_for_stock\",\n      \"related_events\",\n      \"event_summary\",\n      \"recent_events\",\n      \"datamart_read\",\n      \"datamart_latest\",\n      \"datamart_ready\",\n      \"market_snapshot\",\n      \"data_health\",\n      \"pool_rows\",\n      \"stock_info\",\n      \"paper_positions\",\n      \"events\"\n     ],\n     \"tools_note\": \"全为只读判读工具（agent_tools 白名单），无任何下单/执行类——影子铁律\",\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/invest/*\",\n       \"agent/ST1/*\"\n      ],\n      \"write\": [\n       \"agent/ST1/*\",\n       \"dept/invest/observation\",\n       \"dept/invest/thesis\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：量化交易部策略部首席（缠论分析师），学习环与理论输出双责\",\n     \"attributes\": {\n      \"experience\": \"20 年缠论结构化技术分析经验：分型/笔/中枢/三类买卖点的实战判读与复盘归因，擅长把逐日影子信号对账成「哪类信号在哪种市场状态下可信」的结构化结论，并输出可沉淀的理论笔记。\",\n      \"specialties\": [\n       \"缠论结构判读（买卖点×级别×regime×结构指纹）\",\n       \"信号后验对账与左尾风险识别\",\n       \"策略复盘归因与置信度校准建议\",\n       \"署名理论输出与知识沉淀\"\n      ],\n      \"knowledge\": [\n       \"缠论技术分析知识库.md\",\n       \"金融专业知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"reports/**\",\n        \"data/**\",\n        \"docs/**\",\n        \"quant_backtest/**\"\n       ],\n       \"write\": [\n        \"docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     },\n     \"cn_name\": \"程昱\"\n    },\n    {\n     \"agent_id\": \"WA1\",\n     \"role_profile\": \"watch_monitor\",\n     \"kind\": \"watch_upstream_reporter\",\n     \"persona\": {\n      \"name\": \"许褚\",\n      \"courtesy_name\": \"仲康\",\n      \"dept\": \"盯盘营\"\n     },\n     \"identity\": {\n      \"agent_role\": \"WATCH\",\n      \"registry_ref\": \"registry:org:invest:WA1\",\n      \"registered_at\": \"2026-10-19T10:13:12+00:00\",\n      \"valid_until\": \"2027-04-17T10:13:12+00:00\",\n      \"upstream_route\": \"QUANT_UPSTREAM_REPORT\",\n      \"report_kinds\": [\n       \"ANOMALY\",\n       \"HEALTH\"\n      ]\n     },\n     \"grade\": \"E1\",\n     \"skills\": [\n      {\n       \"id\": \"watch_upstream_report\",\n       \"kind\": \"tool\",\n       \"enabled\": true\n      }\n     ],\n     \"constraints\": {\n      \"execute\": [],\n      \"danger\": \"deny\",\n      \"note\": \"盯盘只观察/预警；所有上行仅走 QUANT_UPSTREAM_REPORT 单一上行路；不直连飞书/投研/交易所；三类动作权限恒 False\"\n     },\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更\"\n    },\n    {\n     \"agent_id\": \"QS1\",\n     \"role_profile\": \"quant_sector_receiver\",\n     \"kind\": \"quant_sector_upstream_receiver\",\n     \"persona\": {\n      \"name\": \"司马懿\",\n      \"courtesy_name\": \"仲达\",\n      \"dept\": \"量化板块总署\"\n     },\n     \"identity\": {\n      \"agent_role\": \"QUANT_SECTOR\",\n      \"registry_ref\": \"registry:org:invest:QS1\",\n      \"registered_at\": \"2026-10-19T10:13:12+00:00\",\n      \"valid_until\": \"2027-04-17T10:13:12+00:00\",\n      \"accepted_routes\": [\n       \"QUANT_UPSTREAM_REPORT\"\n      ],\n      \"ack_semantics\": \"受理回执=agent 级 ACK（AgentAck），受理不等于授权，不等于研判确认\"\n     },\n     \"grade\": \"E1\",\n     \"skills\": [\n      {\n       \"id\": \"upstream_inbox_ack\",\n       \"kind\": \"tool\",\n       \"enabled\": true\n      }\n     ],\n     \"constraints\": {\n      \"execute\": [],\n      \"danger\": \"deny\",\n      \"note\": \"受理后由量化交易层决定三路分发（飞书信息/投研研判/交易所观察）；W-Q1 建设中，本席位先挂名待模块落地\"\n     },\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更；改档 llm_binding→none（工单 WO-LEGION-S43 / 放行人 老田）：履历 identity.ack_semantics 明写「受理回执=ACK，受理不等于授权、不等于研判确认」，工具仅 upstream_inbox_ack；按规则执行体口径显式 none，不再回落 9b\"\n    },\n    {\n     \"agent_id\": \"T1\",\n     \"role_profile\": \"aggressive_technical_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"激进多头技术面分析：趋势分析（均线/通道）、动能判断（MACD/RSI）、量价配合、支撑阻力位、成长股挖掘、产能与订单拐点识别\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"T2\",\n     \"role_profile\": \"conservative_technical_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"保守空头技术面分析：上方压力识别（前高/套牢盘）、顶背离、量价背离、破位风险、流动性冲击情景推演\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"N1\",\n     \"role_profile\": \"sentiment_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"情绪面分析：公告与事件冲击判读、行业政策风向、市场情绪指数、资金偏好、舆情热度、传闻降权\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"F1\",\n     \"role_profile\": \"fundamental_analyst\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"基本面分析：营收与利润趋势、盈利质量（现金流/应收）、估值分位（PE/PB）、行业景气位判断\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"D1\",\n     \"role_profile\": \"decision_chief\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"最终决策官：多方权衡裁决、五档推荐输出、置信度校准、辩论质量评估；汇总 T1/T2/N1/F1 四线分析出最终结论，须署名与可追溯\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E3\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"D1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"dev\",\n   \"name\": \"研发部\",\n   \"lead\": \"ARCH1\",\n   \"status\": \"active\",\n   \"charter\": \"多梯队工程交付：后端(30/20/10年三档)·前端(30/20年)·量化(20年三岗)·架构/运维(30年)·文档(20年)\",\n   \"agents\": [\n    \"DEV1\",\n    \"DEV6\",\n    \"DEV7\",\n    \"DEV2\",\n    \"DEV3\",\n    \"DEV4\",\n    \"DEV5\",\n    \"DEV8\",\n    \"ARCH1\",\n    \"OPS1\",\n    \"DOC1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DEV1\",\n     \"role_profile\": \"code_engineer\",\n     \"charter_detail\": \"拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/invest/decision\",\n       \"agent/DEV1/*\"\n      ],\n      \"write\": [\n       \"agent/DEV1/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：后端主力，devtask 工具链作者位\",\n     \"attributes\": {\n      \"experience\": \"30 年后端与研发效能经验：主导过金融交易系统与高并发平台建设，近十年专注研发工具链——任务单驱动的 worktree 并行工作流、自动化质检门与工单生命周期治理（本组织 devtask 工具链作者位）。\",\n      \"specialties\": [\n       \"Python 后端工程化\",\n       \"研发工具链与工作流设计\",\n       \"code review 与疑难攻关\",\n       \"worktree 并行开发治理\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV6\",\n     \"role_profile\": \"code_engineer\",\n     \"charter_detail\": \"E2·20年档·后端：常规功能/接口/脚本独立交付；疑难上报 DEV1\",\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：后端独立交付主力\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV6/*\"\n      ],\n      \"write\": [\n       \"agent/DEV6/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"20 年后端独立交付经验：API 服务、数据接口与运维脚本全栈交付，习惯小步提交、灰度验证，疑难问题升级 DEV1 主线。\",\n      \"specialties\": [\n       \"REST API 与服务端功能交付\",\n       \"数据处理与运维脚本\",\n       \"接口联调与灰度验证\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV7\",\n     \"role_profile\": \"code_engineer\",\n     \"charter_detail\": \"E1·10年档·后端：标准执行/批量修改/格式化任务；产出交 E2+ 复核\",\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：标准执行位\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV7/*\"\n      ],\n      \"write\": [\n       \"agent/DEV7/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"10 年后端标准执行经验：批量修改、格式化重构、依赖升级等标准化工程任务，产出严格走 E2+ 复核闭环。\",\n      \"specialties\": [\n       \"批量代码修改与重构\",\n       \"代码格式化与静态检查修复\",\n       \"回归验证与证据采集\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV2\",\n     \"role_profile\": \"model_trainer\",\n     \"charter_detail\": \"模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）\",\n     \"llm_binding\": \"ollama/qwen3.6:35b-a3b\",\n     \"tools\": [\n      \"ollama\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV2/*\"\n      ],\n      \"write\": [\n       \"agent/DEV2/*\",\n       \"dept/dev/observation\",\n       \"domain/model_registry\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：训练/评估独立交付\",\n     \"attributes\": {\n      \"experience\": \"20 年机器学习工程经验：模型训练、评估与版本化登记全流程，熟悉特征工程与离线/在线评估一致性校验，坚持模型版本登记 domain/model_registry 的可追溯纪律。\",\n      \"specialties\": [\n       \"模型训练与调参\",\n       \"评估体系与基准管理\",\n       \"模型版本化登记\",\n       \"特征工程\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     },\n     \"binding_note\": \"auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）\"\n    },\n    {\n     \"agent_id\": \"DEV3\",\n     \"role_profile\": \"strategy_engineer\",\n     \"charter_detail\": \"写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/invest/decision\",\n       \"agent/DEV3/*\"\n      ],\n      \"write\": [\n       \"agent/DEV3/*\",\n       \"dept/dev/observation\",\n       \"domain/strategy_registry\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：策略研发独立交付\",\n     \"attributes\": {\n      \"experience\": \"20 年量化策略研发经验：策略从想法到上线的完整纪律链——注册制新增、回测判据前置自检、影子账挂载验证；深知跳过影子期直上模拟仓的代价（缠论联立/快枪手判例亲历者）。\",\n      \"specialties\": [\n       \"量化策略设计与实现\",\n       \"回测判据前置自检\",\n       \"影子账验证流程\",\n       \"策略注册制管理\"\n      ],\n      \"knowledge\": [\n       \"缠论技术分析知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV4\",\n     \"role_profile\": \"backtest_engineer\",\n     \"charter_detail\": \"回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/invest/decision\",\n       \"agent/DEV4/*\"\n      ],\n      \"write\": [\n       \"agent/DEV4/*\",\n       \"dept/dev/observation\",\n       \"domain/backtest_registry\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：回测复核独立表态\",\n     \"attributes\": {\n      \"experience\": \"20 年回测与风控复核经验：BacktestEngine 执行、冻结判据下的 Go/No-Go 独立表态、结果登记 domain/backtest_registry；判据冻结期内不改判据是职业底线。\",\n      \"specialties\": [\n       \"回测执行与结果分析\",\n       \"Go/No-Go 独立复核\",\n       \"回测登记与可追溯\",\n       \"判据冻结纪律执法\"\n      ],\n      \"knowledge\": [\n       \"金融专业知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV5\",\n     \"role_profile\": \"frontend_engineer\",\n     \"charter_detail\": \"门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV5/*\"\n      ],\n      \"write\": [\n       \"agent/DEV5/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：tokens 设计语言作者位\",\n     \"attributes\": {\n      \"experience\": \"30 年前端与设计系统工程经验：大型门户/大屏架构，tokens.css 设计单源纪律与版面架构宪法作者；坚持 Demo 先行、改动必过 node --check + 死引用检查 + 线上实测三关。\",\n      \"specialties\": [\n       \"设计系统与 tokens 治理\",\n       \"门户/大屏版面架构\",\n       \"前端质量三关（语法/死引用/实测）\",\n       \"Demo 先行流程\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DEV8\",\n     \"role_profile\": \"frontend_engineer\",\n     \"charter_detail\": \"E2·20年档·前端：常规页面/图表交付；tokens 纪律同 DEV5，疑难上报 DEV5\",\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：前端页面交付主力\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DEV8/*\"\n      ],\n      \"write\": [\n       \"agent/DEV8/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"20 年前端交付经验：常规页面与图表组件独立交付，严守 tokens 纪律与页面宽度规范，疑难上报 DEV5。\",\n      \"specialties\": [\n       \"页面与图表组件交付\",\n       \"tokens 纪律执行\",\n       \"暗色主题与响应式适配\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"tools/**\",\n        \"portal/**\",\n        \"agent_platform/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"ARCH1\",\n     \"role_profile\": \"solution_architect\",\n     \"charter_detail\": \"架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录用 tools/adr.py 登记，落 docs/adr/（版本化入 git，K-ORG-041 固化）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"dept/data/*\",\n       \"dept/product/*\",\n       \"agent/ARCH1/*\"\n      ],\n      \"write\": [\n       \"agent/ARCH1/*\",\n       \"dept/dev/observation\",\n       \"docs/adr\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：架构定夺/疑难攻关/方案终审\",\n     \"attributes\": {\n      \"experience\": \"30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。\",\n      \"specialties\": [\n       \"架构评审与技术选型\",\n       \"跨部门方案终审\",\n       \"ADR 决策记录治理\",\n       \"疑难技术攻关\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \".worktrees/**\",\n        \"docs/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     },\n     \"binding_note\": \"auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）\",\n     \"cn_name\": \"曹操\",\n     \"coordination_roles\": [\n      {\n       \"role\": \"intel_board_lead\",\n       \"board\": \"intel\",\n       \"appointed_at\": \"2026-10-22T18:20:00+0800\",\n       \"basis\": \"老田 2026-10-22 会话裁定「曹操正式统筹整个情报板块」；分线计划 D1 节记载\",\n       \"ticket\": \"K-INTEL-20261022-TF-AUDIT\",\n       \"signed_by\": \"老田\",\n       \"scope_note\": \"跨部门统筹角色，不替代 intel.lead=INTEL0 受理职责，不自动取得源权利、飞书发送、生产或交易权限；dev.lead 不变；取消统筹仅删本字段\"\n      }\n     ]\n    },\n    {\n     \"agent_id\": \"OPS1\",\n     \"role_profile\": \"devops_engineer\",\n     \"charter_detail\": \"DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/OPS1/*\"\n      ],\n      \"write\": [\n       \"agent/OPS1/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：生产配方执法位\",\n     \"attributes\": {\n      \"experience\": \"30 年生产运维经验：容器集群、计划任务、端口监护、备份三件套与磁盘巡检的全套生产配方执法；铁律=生产操作先验明进程身份再动手（误杀线上服务判例亲历）。\",\n      \"specialties\": [\n       \"Docker 容器集群运维\",\n       \"计划任务与看门狗配置\",\n       \"备份恢复与灾备\",\n       \"生产进程身份辨认\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"config/**\",\n        \"ops/**\",\n        \"tools/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"python\",\n        \"pytest\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DOC1\",\n     \"role_profile\": \"tech_writer\",\n     \"charter_detail\": \"技术文档工程师：docs/plans 计划谱系维护·INDEX 索引总账·判例沉淀（撞号/行尾/回滚死引用等判例入册）·README 与宪法文档保鲜\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/dev/*\",\n       \"agent/DOC1/*\"\n      ],\n      \"write\": [\n       \"agent/DOC1/*\",\n       \"dept/dev/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：判例沉淀/谱系维护\",\n     \"attributes\": {\n      \"experience\": \"20 年技术文档经验：docs/plans 计划谱系与 INDEX 索引总账维护、判例沉淀入册（撞号/行尾/回滚死引用等）、宪法文档保鲜；让组织每次踩坑都变成可检索资产。\",\n      \"specialties\": [\n       \"计划谱系与索引治理\",\n       \"判例沉淀与知识入册\",\n       \"宪法/README 文档保鲜\",\n       \"技术写作规范\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [\n        \"git\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"将作监\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"ARCH1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"trading\",\n   \"name\": \"交易部\",\n   \"lead\": \"TR1\",\n   \"status\": \"active\",\n   \"charter\": \"执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）\",\n   \"agents\": [\n    \"TR1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"TR1\",\n     \"role_profile\": \"trade_executor\",\n     \"charter_detail\": \"交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"10-18 修幽灵绑定：qwen3.5:4b 本地库未下载（10-08 起即 404 幽灵），执行员降级三态兜底掩盖了故障——改绑 9b（已验证可用），4b 落位下载后再评估回切\",\n     \"tools\": [\n      \"paper_bridge\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/trading/*\",\n       \"dept/invest/decision\",\n       \"agent/TR1/*\"\n      ],\n      \"write\": [\n       \"agent/TR1/*\",\n       \"dept/trading/feedback\"\n      ]\n     },\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：轻量执行位\",\n     \"attributes\": {\n      \"knowledge\": [\n       \"金融专业知识库.md\"\n      ],\n      \"experience\": \"10 年交易执行经验：策略信号到订单的执行链路、paper 链下单、成交与滑点数据回写复盘；轻量执行位，只做执行不做判断。\",\n      \"specialties\": [\n       \"订单执行与 paper 链下单\",\n       \"成交/滑点数据回写\",\n       \"执行复盘数据整理\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"reports/**\",\n        \"data/**\",\n        \"docs/**\"\n       ],\n       \"write\": [],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"先登营\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"TR1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"data\",\n   \"name\": \"数据智能部\",\n   \"lead\": \"DATA1\",\n   \"status\": \"active\",\n   \"charter\": \"数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）\",\n   \"agents\": [\n    \"DATA1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DATA1\",\n     \"role_profile\": \"data_engineer\",\n     \"charter_detail\": \"数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/data/*\",\n       \"dept/dev/*\",\n       \"agent/DATA1/*\"\n      ],\n      \"write\": [\n       \"agent/DATA1/*\",\n       \"dept/data/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：数据底座独立运维\",\n     \"attributes\": {\n      \"experience\": \"20 年数据工程经验：实体映射、血缘三表、增量同步监护与特征湖 parquet 口径守护；数据口径不一致是最大事故源，口径守护是第一职责。\",\n      \"specialties\": [\n       \"数据血缘与实体映射\",\n       \"增量同步与监护\",\n       \"特征湖 parquet 口径守护\",\n       \"数据接入接线\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"data/**\",\n        \"k_stock/**\",\n        \"reports/**\",\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"write\": [\n        \"knowledge_docs/**\",\n        \"docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"兰台\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"DATA1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"product\",\n   \"name\": \"产品管理部\",\n   \"lead\": \"PM1\",\n   \"status\": \"active\",\n   \"charter\": \"需求池·版本规划·验收口径·UI/UX 设计（30年主笔+10年执行双梯队）\",\n   \"agents\": [\n    \"PM1\",\n    \"DSGN1\",\n    \"DSGN2\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"PM1\",\n     \"role_profile\": \"product_manager\",\n     \"charter_detail\": \"产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/product/*\",\n       \"dept/invest/decision\",\n       \"dept/dev/observation\",\n       \"agent/PM1/*\"\n      ],\n      \"write\": [\n       \"agent/PM1/*\",\n       \"dept/product/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：交付定义/验收口径裁定\",\n     \"attributes\": {\n      \"experience\": \"30 年产品管理经验：需求池治理、版本规划与验收口径定义（acceptance_criteria）；项目交付定义人——验收口径模糊就是返工之源。\",\n      \"specialties\": [\n       \"需求池与版本规划\",\n       \"验收口径定义\",\n       \"交付定义与归建判据\",\n       \"跨部门需求协调\"\n      ],\n      \"knowledge\": [\n       \"企业分析与尽调知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"deliverables/**\"\n       ],\n       \"execute\": [\n        \"devtask\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DSGN1\",\n     \"role_profile\": \"ui_designer\",\n     \"charter_detail\": \"UI/UX 设计师：tokens.css 设计语言治理·Demo 先行流程（老田拍板后再怼生产）·风格一致化巡查（悬空 token 三分类判例执法）·驾驶舱暗色同构风守门\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/product/*\",\n       \"dept/dev/observation\",\n       \"agent/DSGN1/*\"\n      ],\n      \"write\": [\n       \"agent/DSGN1/*\",\n       \"dept/product/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：tokens 设计语言作者位\",\n     \"attributes\": {\n      \"experience\": \"30 年 UI/UX 与设计系统经验：tokens 设计语言治理、Demo 先行流程执法、风格一致化巡查（悬空 token 三分类判例执法者）；驾驶舱暗色同构风守门。\",\n      \"specialties\": [\n       \"设计语言与 tokens 治理\",\n       \"Demo 先行流程\",\n       \"风格一致化巡查\",\n       \"暗色同构设计守门\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"portal/**\",\n        \"docs/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"DSGN2\",\n     \"role_profile\": \"ui_designer\",\n     \"charter_detail\": \"E1·10年档·UI：切图/图标/样式批量执行；产出交 DSGN1 审定\",\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：UI 批量执行位\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/product/*\",\n       \"agent/DSGN2/*\"\n      ],\n      \"write\": [\n       \"agent/DSGN2/*\",\n       \"dept/product/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"10 年 UI 执行经验：切图、图标、样式批量执行，产出交 DSGN1 审定后入库。\",\n      \"specialties\": [\n       \"切图与图标制作\",\n       \"样式批量执行\",\n       \"设计稿高保真还原\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"portal/**\",\n        \"docs/**\",\n        \".worktrees/**\"\n       ],\n       \"execute\": [\n        \"git\",\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-018 新设；K-ORG-019 +DSGN1；K-ORG-020 UI 双梯队\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"度支府\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"PM1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"quality\",\n   \"name\": \"质量工程部\",\n   \"lead\": \"QA1\",\n   \"status\": \"active\",\n   \"charter\": \"测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计（SEC1合规红线·SEC2研发质量对抗/走形检查）\",\n   \"agents\": [\n    \"QA1\",\n    \"QA2\",\n    \"SEC1\",\n    \"SEC2\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"QA1\",\n     \"role_profile\": \"qa_engineer\",\n     \"charter_detail\": \"质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/quality/*\",\n       \"dept/dev/*\",\n       \"dept/data/*\",\n       \"agent/QA1/*\"\n      ],\n      \"write\": [\n       \"agent/QA1/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：验收口径裁定/三守卫裁定\",\n     \"attributes\": {\n      \"experience\": \"30 年质量工程经验：验收测试执行、三守卫（AST gate/金样本/回测判据）人化复核、review 积压质检分派、质量红线亮牌；连续多轮抓出产码方增量违规，质量判断独立不受产码方影响。\",\n      \"specialties\": [\n       \"验收测试与证据链\",\n       \"三守卫人化复核\",\n       \"review 质检分派\",\n       \"质量红线亮牌\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\",\n       \"测试规范知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [],\n       \"execute\": [\n        \"qa_run\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"SEC1\",\n     \"role_profile\": \"security_auditor\",\n     \"charter_detail\": \"安全审计师：凭据红线监护（X1 OAuth/QMT 凭据不入库）·注册表 grants 越权审计·危险命令面盘点（rm/checkout--/杀进程验身份判例执法）·skill/脚本引入安全审查\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/quality/*\",\n       \"dept/dev/*\",\n       \"agent/SEC1/*\"\n      ],\n      \"write\": [\n       \"agent/SEC1/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：审计独立表态\",\n     \"attributes\": {\n      \"experience\": \"20 年安全审计经验：凭据红线监护（OAuth/QMT 凭据不入库）、注册表 grants 越权审计、危险命令面盘点（rm/checkout--/杀进程验身份判例执法）、skill 与脚本引入安全审查。\",\n      \"specialties\": [\n       \"凭据与密钥红线监护\",\n       \"权限越权审计\",\n       \"危险命令面盘点\",\n       \"引入件安全审查\"\n      ],\n      \"knowledge\": [\n       \"法律专业知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"QA2\",\n     \"role_profile\": \"qa_engineer\",\n     \"charter_detail\": \"E1·10年档·测试：用例执行/证据采集/回归跑批；结论交 QA1 裁定\",\n     \"grade\": \"E1\",\n     \"grade_note\": \"10年档：用例执行位\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/quality/*\",\n       \"agent/QA2/*\"\n      ],\n      \"write\": [\n       \"agent/QA2/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"10 年测试执行经验：用例执行、证据采集、回归跑批；结论只交 QA1 裁定，不自行下验收结论。\",\n      \"specialties\": [\n       \"用例执行与证据采集\",\n       \"回归跑批\",\n       \"缺陷记录与复现\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [],\n       \"execute\": [\n        \"qa_run\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    },\n    {\n     \"agent_id\": \"SEC2\",\n     \"role_profile\": \"security_lead\",\n     \"charter_detail\": \"网络安全工程师(30年+全栈)：对照研发方案走形检查(条目→证据→判定→建议命令·走形开单@田丰直推·返工复查闭环)·渗透/反渗透·压力测试；与SEC1分工=SEC1合规红线执法·SEC2研发质量对抗\",\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：方案级走形裁定·渗透/反渗透·压测与瓶颈定位（研发质量对抗线）\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"10-18 升档：旧 glm-4.6 依赖 anthropic 端点对包年 key 报 429/404（K-ORG-136），统一 coding 端点 glm-5.3 全通；key 纪律不变——zhipu_key(6546) 包年优先，GLM_API_KEY(379b) 已 429 勿用。调用方统一 zhipu_key 优先（a0_agent.py / engine.llm.GLMCloudLLM 已同口径）\",\n     \"tools\": [\n      \"devtask\",\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/*\",\n       \"agent/SEC2/*\"\n      ],\n      \"write\": [\n       \"agent/SEC2/*\",\n       \"dept/quality/observation\"\n      ]\n     },\n     \"attributes\": {\n      \"experience\": \"30 年网络安全与全栈经验：研发方案走形检查（条目→证据→判定→建议命令·走形开单@田丰直推）、渗透与反渗透、压测与瓶颈定位；与 SEC1 分工明确——SEC1 合规红线执法，SEC2 研发质量对抗。\",\n      \"specialties\": [\n       \"方案走形检查与返工闭环\",\n       \"渗透/反渗透\",\n       \"压力测试与瓶颈定位\",\n       \"全栈代码审计\"\n      ],\n      \"knowledge\": [\n       \"AI工程实践知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"*\"\n       ],\n       \"write\": [\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [\n        \"pytest\",\n        \"python\"\n       ],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"source\": \"K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队；K-ORG-052 +SEC2（田丰治理模型·研发质量对抗线）\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"监军府\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"QA1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"proj_backtest\",\n   \"name\": \"🅰 回测开发部\",\n   \"lead\": \"DEV3\",\n   \"type\": \"project\",\n   \"status\": \"active\",\n   \"charter\": \"【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建\",\n   \"agents\": [\n    \"DEV3\",\n    \"DEV4\",\n    \"QA1\"\n   ],\n   \"worktree_prefix\": \"proj_a_\",\n   \"source\": \"K-ORG-018 老田原话「部门 A 现目前在完成我们的回测的开发」\",\n   \"cn_title\": \"🅰 回测行营\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DEV3\",\n     \"role_profile\": \"backtest_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"DEV4\",\n     \"role_profile\": \"backtest_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"QA1\",\n     \"role_profile\": \"qa_runner\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"回测质量门：QA-RUN 执行、回归用例维护、fail-closed 只读纪律；不合格不签字\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_duty\": \"回测开发部主官：主持逐日账、组合制v6评审与影子验收交付，对回测产物可追溯性与验收签字负责\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-21T20:52:42+0800\",\n    \"from\": null,\n    \"to\": \"DEV3\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S43\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"proj_data\",\n   \"name\": \"🅱 数据治理部\",\n   \"lead\": \"DATA1\",\n   \"type\": \"project\",\n   \"status\": \"active\",\n   \"charter\": \"【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建\",\n   \"agents\": [\n    \"DATA1\",\n    \"DEV1\"\n   ],\n   \"worktree_prefix\": \"proj_b_\",\n   \"source\": \"K-ORG-018 老田原话「部门 B 在完成我们的数据底层的治理」\",\n   \"cn_title\": \"🅱 数据行营\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"DATA1\",\n     \"role_profile\": \"data_governance\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理；只治理不裁决业务口径\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-223 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"DEV1\",\n     \"role_profile\": \"data_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"数据治理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付数据管道代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-223 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_duty\": \"数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理，只治理不造数\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-21T20:14:38+0800\",\n    \"from\": null,\n    \"to\": \"DATA1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S42\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"proj_next\",\n   \"name\": \"🅲 下版本设计推理部\",\n   \"lead\": \"PM1\",\n   \"type\": \"project\",\n   \"status\": \"active\",\n   \"charter\": \"【项目部门·现役】下一版本设计+推理：nl_query 图谱自然语言问答（v5 C 线启动·最小闭环先行）+ 下一版门户/大屏产品定义；PM1 出验收口径 → ARCH1 技术终审 → DEV2 推理侧\",\n   \"agents\": [\n    \"PM1\",\n    \"ARCH1\",\n    \"DEV2\"\n   ],\n   \"worktree_prefix\": \"proj_c_\",\n   \"source\": \"K-ORG-018 老田原话「部门 C 在完成我们下一个版本的设计。和推理」；v5 设想 C 线（图谱智能化）今日立项\",\n   \"cn_title\": \"🅲 设计行营\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"PM1\",\n     \"role_profile\": \"next_version_pm\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"下版本设计推理部主官：需求梳理、验收判据、路线图；把设计意图转成可验收条目\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"ARCH1\",\n     \"role_profile\": \"next_version_arch\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"下版本设计推理部架构席：Python 产码、代码评审、工单执行、AST 静态门；负责设计推理链的架构落地\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"DEV2\",\n     \"role_profile\": \"next_version_dev\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"下版本设计推理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付下版本功能代码\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"PM1\",\n    \"cross_dept\": true,\n    \"cross_note\": \"本部门 lead 由 product 的 PM1 兼任（主属 product），指挥链由本部门 lead 显式指向\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"marketing\",\n   \"name\": \"市场部\",\n   \"status\": \"active\",\n   \"charter\": \"统一口号纪律·内容宣发(过LEG1审查后发布)·开源社区影响面·在研文稿协同\",\n   \"agents\": [\n    \"MKT1\"\n   ],\n   \"source\": \"K-ORG-001 §11 AIGC 松耦合扩展预留；K-ORG-024 激活+MKT1 入编\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"MKT1\",\n     \"role_profile\": \"mkt1_marketer\",\n     \"charter_detail\": \"E2·20年档·市场运营：统一口号纪律执法·宣发文案/视频脚本·开源社区高star项目对比报告·在研文稿协同；对外定位=能力平台，禁Tokens售卖标签\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"tools\": [\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/marketing/*\",\n       \"dept/legal/*\",\n       \"agent/MKT1/*\"\n      ],\n      \"write\": [\n       \"agent/MKT1/*\",\n       \"dept/marketing/observation\"\n      ]\n     },\n     \"grade\": \"E2\",\n     \"grade_note\": \"20年档：内容与社区运营独立交付\",\n     \"attributes\": {\n      \"experience\": \"20 年市场运营经验：宣发文案与视频脚本、开源社区高 star 项目对比研究、统一口号纪律执法；对外定位=能力平台，禁用 Tokens 售卖标签。\",\n      \"specialties\": [\n       \"宣发文案与视频脚本\",\n       \"开源社区对比研究\",\n       \"统一口号纪律执法\",\n       \"在研文稿协同\"\n      ],\n      \"knowledge\": [\n       \"企业分析与尽调知识库.md\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"gzh/**\",\n        \"reports/**\",\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"write\": [\n        \"gzh/**\",\n        \"docs/**\",\n        \"knowledge_docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     }\n    }\n   ],\n   \"lead\": \"MKT1\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"鸿胪署\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"MKT1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"legal\",\n   \"name\": \"合规法务部\",\n   \"lead\": \"LEG1\",\n   \"status\": \"active\",\n   \"charter\": \"对外材料合规审查·口径裁定(四原则)·数据与采集合规红线·公安协调支撑；直属参谋长田丰，独立表态\",\n   \"agents\": [\n    \"LEG1\"\n   ],\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"LEG1\",\n     \"role_profile\": \"leg1_legal\",\n     \"charter_detail\": \"E3·30年档·合规法务：政府材料/宣发文稿发布前审查(通过/修改后通过/驳回)·四条对外口径裁定权·爬虫采集合规红线·军方背景与涉政一票驳回\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"tools\": [\n      \"events\"\n     ],\n     \"memory_grants\": {\n      \"read\": [\n       \"domain/*\",\n       \"dept/legal/*\",\n       \"dept/marketing/*\",\n       \"agent/LEG1/*\"\n      ],\n      \"write\": [\n       \"agent/LEG1/*\",\n       \"dept/legal/review\"\n      ]\n     },\n     \"grade\": \"E3\",\n     \"grade_note\": \"30年档：独立表态·一票否决权\",\n     \"attributes\": {\n      \"knowledge\": [\n       \"企业分析与尽调知识库.md\"\n      ],\n      \"experience\": \"30 年合规法务经验：政府材料与宣发文稿发布前审查（通过/修改后通过/驳回）、四条对外口径裁定权、爬虫采集合规红线、军方背景与涉政内容一票驳回。\",\n      \"specialties\": [\n       \"政府/宣发材料审查\",\n       \"对外口径裁定\",\n       \"采集合规红线\",\n       \"涉政涉军一票否决\"\n      ],\n      \"tools_allowed\": {\n       \"read\": [\n        \"docs/**\",\n        \"knowledge_docs/**\",\n        \"deliverables/**\",\n        \"data/**\"\n       ],\n       \"write\": [\n        \"knowledge_docs/**\",\n        \"docs/**\"\n       ],\n       \"execute\": [],\n       \"danger\": \"deny\"\n      }\n     },\n     \"binding_note\": \"auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）\"\n    }\n   ],\n   \"teams\": [\n    \"team_legal\"\n   ],\n   \"source\": \"K-ORG-024 新设（27满编收官）：直属参谋长，E3 一票否决\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）\",\n   \"cn_title\": \"廷尉府\",\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"LEG1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"ops_runtime\",\n   \"name\": \"运行体部\",\n   \"lead\": \"A0A\",\n   \"status\": \"active\",\n   \"charter\": \"常驻运行体的编制归属与守护归口：只调度不决策；endpoint 必填可探活；K-ORG-116/119 收编\",\n   \"agents\": [\n    \"JEV_GATE\",\n    \"JEV_REVIEW\",\n    \"JEV_QD\",\n    \"LARK_CARDS\",\n    \"COWBRIDGE\",\n    \"HERMES_UI\",\n    \"WATCH_TOWER\"\n   ],\n   \"teams\": [],\n   \"source\": \"K-ORG-116 一批收编（2026-10-16）：Jev四件套/cowbridge记忆桥/Hermes WebUI；kind=runtime，代码进程零改动\",\n   \"cn_title\": \"驿传署\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"JEV_GATE\",\n     \"role_profile\": \"jev_alert_gate\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Jev 告警降噪网关：紧急度判读、方向判定、告警降噪聚合、企业微信推送路由；只降噪不改变告警事实\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"JEV_REVIEW\",\n     \"role_profile\": \"jev_signal_reviewer\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Jev 信号复核门：对入站信号做二次复核与判据校验，复核不通过不进入下游；只复核不生成信号\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"WATCH_TOWER\",\n     \"role_profile\": \"watchtower_arbiter\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"盯盘中台值守：多方法仲裁、缠论/量能/RSI 方法插件治理、容量自检与分片、毕业权重闭环、T+5 前向归因\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"朱然\"\n    },\n    {\n     \"agent_id\": \"JEV_QD\",\n     \"role_profile\": \"jev_quantdinger_bridge\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Jev⇄QuantDinger 桥接组件：双向消息格式转换与投递，保证幂等与失败重试；纯工程桥接，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"LARK_CARDS\",\n     \"role_profile\": \"lark_card_listener\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"飞书卡片回调监听器：接收卡片交互回调、解析动作、回投处理结果；纯工程回调组件，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"COWBRIDGE\",\n     \"role_profile\": \"cowbridge_memory_bridge\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"cowbridge 记忆桥：跨层记忆读写与格式转换、幂等落库；纯工程桥接组件，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"HERMES_UI\",\n     \"role_profile\": \"hermes_ui_gateway\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"Hermes WebUI 门面：对外页面与接口门面、静态资源与路由；纯工程门面组件，无 LLM 依赖\",\n     \"llm_binding\": \"none\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-225 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-21T20:14:20+0800\",\n    \"from\": \"A0A\",\n    \"to\": \"A0A\",\n    \"cross_dept\": true,\n    \"cross_note\": \"参谋长助理 A0A 兼任运行体部主官，档案登记于 registry/team_chief.json，指挥链由本部门 lead 显式指向\",\n    \"ticket\": \"WO-LEGION-S42\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"academy\",\n   \"name\": \"研究院\",\n   \"lead\": \"ACAD1\",\n   \"status\": \"active\",\n   \"charter\": \"策略研究与商业化逻辑研究：交易策略研发与回测验证、AI能力方法论提炼、商业化路径探索（算法商品/策略市场/对外服务）、竞争情报对标——军团的知识发动机\",\n   \"research_language\": {\n    \"principle\": \"先定义问题，再定义证据；先形成假设，再设计验证；先判定能否复现，再讨论能否商业化。\",\n    \"mandatory_fields\": [\n     \"研究问题：要解释、预测或改进什么\",\n     \"研究对象：股票、策略、Agent能力、产品或外部市场\",\n     \"核心假设：可证伪、可度量、可复现\",\n     \"证据口径：数据来源、时间范围、样本、指标和版本\",\n     \"验证方法：回测、对照实验、访谈、竞品拆解或压力测试\",\n     \"结论等级：事实、推断、暂定结论、否定结论\",\n     \"行动建议：继续研究、进入试点、产品化、入库或终止\",\n     \"风险边界：数据风险、模型风险、合规风险、商业风险\"\n    ],\n    \"evidence_states\": [\n     \"事实\",\n     \"佐证\",\n     \"证伪\",\n     \"存疑\",\n     \"未知\"\n    ],\n    \"decision_words\": [\n     \"立项\",\n     \"补证\",\n     \"Go\",\n     \"No-Go\",\n     \"试点\",\n     \"产品化\",\n     \"入库\",\n     \"终止\"\n    ]\n   },\n   \"directions\": [\n    {\n     \"id\": \"strategy_lab\",\n     \"name\": \"策略与交易研究\",\n     \"owner\": \"STRAT1\",\n     \"support\": [\n      \"BACK1\",\n      \"T1\",\n      \"T2\",\n      \"R1\",\n      \"R2\",\n      \"R3\"\n     ],\n     \"scope\": \"图形推演、因子研究、交易策略、左侧/右侧、风控参数和实盘反馈\",\n     \"outputs\": [\n      \"策略假设卡\",\n      \"回测任务单\",\n      \"样本外报告\",\n      \"策略判例\",\n      \"Go/No-Go结论\"\n     ]\n    },\n    {\n     \"id\": \"data_ai_lab\",\n     \"name\": \"数据与智能研究\",\n     \"owner\": \"AI1\",\n     \"support\": [\n      \"DATA1\",\n      \"DEV1\",\n      \"DEV6\"\n     ],\n     \"scope\": \"数据血缘、特征工程、Agent能力、评测体系、路由和知识反哺\",\n     \"outputs\": [\n      \"数据口径卡\",\n      \"能力登记\",\n      \"评测集\",\n      \"Prompt变更提案\",\n      \"知识条目\"\n     ]\n    },\n    {\n     \"id\": \"market_intelligence_lab\",\n     \"name\": \"行业与竞争情报研究\",\n     \"owner\": \"INTEL1\",\n     \"support\": [\n      \"N1\",\n      \"F1\",\n      \"COMM1\",\n      \"MKT1\",\n      \"LEG1\"\n     ],\n     \"scope\": \"行业趋势、竞品、开源社区、政策环境、客户需求和商业模式\",\n     \"outputs\": [\n      \"情报简报\",\n      \"竞品矩阵\",\n      \"机会/威胁清单\",\n      \"事实与推断分层报告\"\n     ]\n    },\n    {\n     \"id\": \"commercialization_lab\",\n     \"name\": \"商业化与产品化研究\",\n     \"owner\": \"COMM1\",\n     \"support\": [\n      \"PROD1\",\n      \"PM1\",\n      \"MKT1\",\n      \"LEG1\"\n     ],\n     \"scope\": \"算法商品、策略市场、对外服务、客户场景、交付边界、定价与试点\",\n     \"outputs\": [\n      \"商业模式卡\",\n      \"客户画像\",\n      \"交付清单\",\n      \"试点方案\",\n      \"合规边界卡\"\n     ]\n    },\n    {\n     \"id\": \"methodology_lab\",\n     \"name\": \"方法论与组织学习研究\",\n     \"owner\": \"ACAD1\",\n     \"support\": [\n      \"AI1\",\n      \"D1\",\n      \"A0A\"\n     ],\n     \"scope\": \"研究规范、评审制度、复盘机制、知识工程和军团能力升级\",\n     \"outputs\": [\n      \"研究标准\",\n      \"评审意见\",\n      \"复盘判例\",\n      \"能力升级提案\",\n      \"周度研究院报告\"\n     ]\n    }\n   ],\n   \"agents\": [\n    \"ACAD1\",\n    \"STRAT1\",\n    \"BACK1\",\n    \"COMM1\",\n    \"INTEL1\",\n    \"AI1\",\n    \"PROD1\"\n   ],\n   \"teams\": [\n    \"academy_strategy\",\n    \"academy_commercial\",\n    \"academy_intelligence\",\n    \"academy_methodology\"\n   ],\n   \"operating_plan\": {\n    \"intake\": \"投研部、数据智能部、产品部或田丰提出研究课题\",\n    \"stages\": [\n     \"研究立项\",\n     \"数据与假设登记\",\n     \"回测或商业化论证\",\n     \"研究院评审\",\n     \"跨部门联评\",\n     \"田丰拍板\",\n     \"知识入库或产品化\"\n    ],\n    \"meetings\": [\n     \"周一 09:30 研究院立项会\",\n     \"周三 15:00 策略/商业化专题评审\",\n     \"周五 16:00 军团例会汇报\"\n    ],\n    \"handoffs\": {\n     \"invest\": \"提供策略需求、市场假设与实盘问题\",\n     \"data\": \"提供数据、血缘、特征与可复现口径\",\n     \"dev\": \"实现策略、回测工具与 AI 方法\",\n     \"product\": \"定义算法商品、策略市场和服务形态\",\n     \"marketing\": \"商业化包装与对外内容\",\n     \"legal\": \"外部发布、数据使用与合规审查\"\n    }\n   },\n   \"kpi\": [\n    \"每周完成不少于 1 个可复现研究课题\",\n    \"策略必须有数据口径、回测证据和 Go/No-Go 结论\",\n    \"每周沉淀不少于 2 条可复用方法论或判例\",\n    \"商业化课题必须形成目标客户、交付形态和合规边界\",\n    \"研究结论进入知识环后可被路由和复用\"\n   ],\n   \"source\": \"K-ORG-124/125 老田拍板设立并完成首批编制（2026-10-17）：研究策略 + 商业化逻辑\",\n   \"lead_duty\": \"院长监督四个研究组；每日汇总课题进度报 A0；周五提交研究院周报；研究结论未经评审不得进入产品化\",\n   \"cn_title\": \"太学\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"ACAD1\",\n     \"role_profile\": \"academy_director\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"研究院总负责人：审题、立项、组织评审、协调投研/数据/研发/产品/市场/法务，向田丰提交研究院日报与周报\",\n     \"llm_binding\": \"glm/glm-5.3\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E3\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"STRAT1\",\n     \"role_profile\": \"strategy_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"把投研部的市场问题转成可验证策略假设，维护策略研究台账，交由 BACK1 做回测\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"BACK1\",\n     \"role_profile\": \"backtest_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"接收策略假设，按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"COMM1\",\n     \"role_profile\": \"commercialization_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"研究算法商品、策略市场、对外服务和平台能力变现路径，形成客户画像、交付边界与试点方案\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"INTEL1\",\n     \"role_profile\": \"competitive_intelligence_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"跟踪开源社区、同类产品、策略市场与行业变化，为策略和商业化立项提供外部证据\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"AI1\",\n     \"cn_name\": \"诸葛亮\",\n     \"cn_name_note\": \"名号权威同 hr/AI1/resume.yaml:15（cn_origin=孔明）；2026-10-26 补齐——此前块内无名号，导致 10-24 C1/C3 按中文名检索误判「无组织档」\",\n     \"role_profile\": \"ai_methodology_researcher\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"把成功研究提炼为标准、能力、评测和知识条目，推动 router、Prompt 与判例库经评审后更新；模型按老田 10-21 异族裁决走 ChatGPT 6.0（OpenClaw 载体），通道待 OPENAI_API_KEY\",\n     \"llm_binding\": \"openai/gpt-6.0\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E3\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"PROD1\",\n     \"role_profile\": \"strategy_product_manager\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"将通过评审的策略或 AI 方法转成产品需求、交付形态、验收指标和试点计划，联接产品部与市场部\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    }\n   ],\n   \"lead_appointed\": {\n    \"at\": \"2026-10-24T03:39:00+08:00\",\n    \"from\": null,\n    \"to\": \"ACAD1\",\n    \"cross_dept\": false,\n    \"cross_note\": \"\",\n    \"ticket\": \"WO-LEGION-S46\",\n    \"signed_by\": \"老田\"\n   }\n  },\n  {\n   \"dept\": \"intel\",\n   \"name\": \"情报部\",\n   \"lead\": \"INTEL0\",\n   \"status\": \"active\",\n   \"charter\": \"情报三线归口：舆情线（雪球社媒 14212 帖库）、通讯线（TDX 新闻/公告/研报三表 59 万行）、内务线（平台巡检告警四任务）；只采集只报实况不决策，情报裁决走 intel 域审批（Agent 建议权+人工裁决权）；K-ORG-165 收编 | 2026-10-23 曹操统筹首批下派（老田令）：舆情线=水镜XQ1/通讯线=韦昭TDX1/内务线=周泰BEACON1/受理=是仪INTEL0/治理+R03任峻位=满宠MANCHONG1/图谱=郑玄KGMAP1/词云=陈琳WORDC1/血缘=谯周LINEAGE1\",\n   \"agents\": [\n    \"XQ1\",\n    \"TDX1\",\n    \"BEACON1\",\n    \"INTEL0\",\n    \"MANCHONG1\",\n    \"KGMAP1\",\n    \"WORDC1\",\n    \"LINEAGE1\"\n   ],\n   \"teams\": [],\n   \"source\": \"K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口\",\n   \"cn_title\": \"军情司\",\n   \"lead_duty\": \"部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；INTEL0 负责签收满宠的 INTEL_UPSTREAM_REPORT 并出具受理回执——只受理不裁决\",\n   \"agent_profiles\": [\n    {\n     \"agent_id\": \"XQ1\",\n     \"role_profile\": \"雪球与股吧舆情采集哨\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责股吧与雪球社媒数据挖掘：游标深翻采集、完整cookie注入、动态代理轮换、幂等落库、停轮判据自治；只采集与报实况，不决策\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-211 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"水镜\"\n    },\n    {\n     \"agent_id\": \"TDX1\",\n     \"role_profile\": \"接口新闻面挖掘史官\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责接口新闻面数据挖掘：news/notice/report 三表增量同步与时序落库、影子库治理、多源资讯采集口径核对\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-212 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"韦昭\"\n    },\n    {\n     \"agent_id\": \"MANCHONG1\",\n     \"cn_name\": \"满宠\",\n     \"role_profile\": \"全量数据串联与治理席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责把各线数据串联成可用事实：连接数据、清洗数据、关联数据、治理赋能、每日情报汇报；串联结论只报实况不裁决。兼 MDC-R03 证据持久层存储责任席（任峻位，2026-10-23 老田裁定）：offered/accepted/persisted/visible 四态分账、幂等键与血缘完整性、崩溃回放一致、连续水位不提前；持久产出未经独立验收不得宣称已入库\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-213 / 放行人 老田）\",\n     \"tools\": [],\n     \"tools_note\": \"补档初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"补档初始档，待 KPI 观察后调整\",\n     \"attributes\": {}\n    },\n    {\n     \"agent_id\": \"KGMAP1\",\n     \"role_profile\": \"情报知识图谱构建席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责把分散情报要素连成可查询的关系图谱：实体识别、关系抽取、图谱构建与维护、按标的与主体双向检索；只呈现事实关联，不做因果推断\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 按工单 WO-ORG-214 入编（放行人：老田）\",\n     \"tools\": [],\n     \"tools_note\": \"入编初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"入编初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"郑玄\"\n    },\n    {\n     \"agent_id\": \"WORDC1\",\n     \"role_profile\": \"文本词云挖掘席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责多源文本挖掘与词云图生成：分词与词频统计、热度趋势、异动词捕捉、停用词与同义词表维护；只报词频事实与异动，不解释成因\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 按工单 WO-ORG-215 入编（放行人：老田）\",\n     \"tools\": [],\n     \"tools_note\": \"入编初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"入编初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"陈琳\"\n    },\n    {\n     \"agent_id\": \"LINEAGE1\",\n     \"role_profile\": \"数据血缘治理席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"负责数据血缘关系治理：字段级血缘溯源、上下游链路登记、口径变更影响面分析、血缘与实际产物对账；只登记与报差异，不裁决口径归属\",\n     \"llm_binding\": \"ollama/qwen3.5:9b\",\n     \"binding_note\": \"由 org_enroll 按工单 WO-ORG-216 入编（放行人：老田）\",\n     \"tools\": [],\n     \"tools_note\": \"入编初始为空，按工单另行授予\",\n     \"memory_grants\": [],\n     \"grade\": \"E2\",\n     \"grade_note\": \"入编初始档，待 KPI 观察后调整\",\n     \"attributes\": {},\n     \"cn_name\": \"谯周\"\n    },\n    {\n     \"agent_id\": \"INTEL0\",\n     \"role_profile\": \"军情司上行受理席\",\n     \"analysis_type\": \"\",\n     \"charter_detail\": \"情报板块唯一上行受理口：专职签收上游情报报告（INTEL_UPSTREAM_REPORT）、哈希幂等核验、出具 ACK 受理回执、维护受理台账；只受理不裁决，受理后分发与研判归情报板块与参谋长线\",\n     \"llm_binding\": \"glm/glm-5.3-flash\",\n     \"binding_note\": \"由 org_enroll 补档（工单 WO-ORG-217 / 放行人 老田）；改档 glm/glm-5.3-flash → ollama/qwen3.5:9b（工单 WO-ORG-219 / 放行人 老田）：glm-5.3-flash 实调 HTTP 400（模型名不存在）；E1 受理岗只做签收/回执，本地 9b 足够且不耗云端额度；改档 llm_binding→glm/glm-5.3-flash（工单 WO-LEGION-S43 / 放行人 老田）：S38判例作废：glm 400 真因是 gateway 把整串 binding 当 model 传参（S41 已修），flash 探针实测 ok(3943ms)，恢复 \n… [已截断，完整内容看仓库文件]"
   }
  ],
  "a0_daily": null,
@@ -590,6 +644,9 @@
    "name": "🧠 参谋长 · 田丰",
    "type": "chief",
    "charter": "",
+   "cn_title": "",
+   "lead_id": "",
+   "lead_name": "",
    "agents": [
     "A0",
     "A0A"
@@ -604,6 +661,9 @@
    "name": "📊 投研部",
    "type": "func",
    "charter": "选股研究·多空辩论·情绪与基本面分析·投资决策·策略复盘（缠论等结构化策略学习环）",
+   "cn_title": "谋略府",
+   "lead_id": "D1",
+   "lead_name": "鲁肃",
    "agents": [
     "D1",
     "F1",
@@ -626,6 +686,9 @@
    "name": "🏗 工程研发中心",
    "type": "func",
    "charter": "多梯队工程交付：后端(30/20/10年三档)·前端(30/20年)·量化(20年三岗)·架构/运维(30年)·文档(20年)",
+   "cn_title": "将作监",
+   "lead_id": "ARCH1",
+   "lead_name": "曹操",
    "agents": [
     "ARCH1",
     "DEV1",
@@ -658,6 +721,9 @@
    "name": "📈 交易部",
    "type": "func",
    "charter": "执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）",
+   "cn_title": "先登营",
+   "lead_id": "TR1",
+   "lead_name": "周瑜",
    "agents": [
     "TR1"
    ],
@@ -670,6 +736,9 @@
    "name": "🗄 数据智能部",
    "type": "func",
    "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）",
+   "cn_title": "兰台",
+   "lead_id": "DATA1",
+   "lead_name": "张松",
    "agents": [
     "DATA1"
    ],
@@ -682,6 +751,9 @@
    "name": "📋 产品管理部",
    "type": "func",
    "charter": "需求池·版本规划·验收口径·UI/UX 设计（30年主笔+10年执行双梯队）",
+   "cn_title": "度支府",
+   "lead_id": "PM1",
+   "lead_name": "吕蒙",
    "agents": [
     "DSGN1",
     "DSGN2",
@@ -698,6 +770,9 @@
    "name": "✅ 质量工程部",
    "type": "func",
    "charter": "测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计（SEC1合规红线·SEC2研发质量对抗/走形检查）",
+   "cn_title": "监军府",
+   "lead_id": "QA1",
+   "lead_name": "于禁",
    "agents": [
     "QA1",
     "QA2",
@@ -716,6 +791,9 @@
    "name": "📣 市场部",
    "type": "func",
    "charter": "统一口号纪律·内容宣发(过LEG1审查后发布)·开源社区影响面·在研文稿协同",
+   "cn_title": "鸿胪署",
+   "lead_id": "MKT1",
+   "lead_name": "简雍",
    "agents": [
     "MKT1"
    ],
@@ -728,6 +806,9 @@
    "name": "⚖️ 合规法务部",
    "type": "func",
    "charter": "对外材料合规审查·口径裁定(四原则)·数据与采集合规红线·公安协调支撑；直属参谋长田丰，独立表态",
+   "cn_title": "廷尉府",
+   "lead_id": "LEG1",
+   "lead_name": "诸葛瑾",
    "agents": [
     "LEG1"
    ],
@@ -740,6 +821,9 @@
    "name": "🅰 回测开发部",
    "type": "project",
    "charter": "【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建",
+   "cn_title": "🅰 回测行营",
+   "lead_id": "DEV3",
+   "lead_name": "蒋济",
    "agents": [
     "DEV3",
     "DEV4",
@@ -756,6 +840,9 @@
    "name": "🅱 数据治理部",
    "type": "project",
    "charter": "【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建",
+   "cn_title": "🅱 数据行营",
+   "lead_id": "DATA1",
+   "lead_name": "张松",
    "agents": [
     "DATA1",
     "DEV1"
@@ -770,6 +857,9 @@
    "name": "🅲 下版本设计推理部",
    "type": "project",
    "charter": "【项目部门·现役】下一版本设计+推理：nl_query 图谱自然语言问答（v5 C 线启动·最小闭环先行）+ 下一版门户/大屏产品定义；PM1 出验收口径 → ARCH1 技术终审 → DEV2 推理侧",
+   "cn_title": "🅲 设计行营",
+   "lead_id": "PM1",
+   "lead_name": "吕蒙",
    "agents": [
     "ARCH1",
     "DEV2",
@@ -786,6 +876,9 @@
    "name": "研究院",
    "type": "func",
    "charter": "策略研究与商业化逻辑研究：交易策略研发与回测验证、AI能力方法论提炼、商业化路径探索（算法商品/策略市场/对外服务）、竞争情报对标——军团的知识发动机",
+   "cn_title": "太学",
+   "lead_id": "ACAD1",
+   "lead_name": "司马徽",
    "agents": [
     "ACAD1",
     "AI1",
@@ -810,6 +903,9 @@
    "name": "情报部",
    "type": "func",
    "charter": "情报三线归口：舆情线（雪球社媒 14212 帖库）、通讯线（TDX 新闻/公告/研报三表 59 万行）、内务线（平台巡检告警四任务）；只采集只报实况不决策，情报裁决走 intel 域审批（Agent 建议权+人工裁决权）；K-ORG-165 收编 | 2026-10-23 曹操统筹首批下派（老田令）：舆情线=水镜XQ1/通讯线=韦昭TDX1/内务线=周泰BEACON1/受理=是仪INTEL0/治理+R03任峻位=满宠MANCHONG1/图谱=郑玄KGMAP1/词云=陈琳WORDC1/血缘=谯周LINEAGE1",
+   "cn_title": "军情司",
+   "lead_id": "INTEL0",
+   "lead_name": "是仪",
    "agents": [
     "INTEL0",
     "MANCHONG1"
@@ -824,6 +920,9 @@
    "name": "通信与客户服务部",
    "type": "func",
    "charter": "飞书客户入口总管（阌泽=都督）：客问智能路由（AIR 八意图→域路由表）、模型底座统一调度（本地 Ollama 9b/35b + 云端 GLM/GPT6.0/DeepSeek，cost_aware_route 三档+降级三态）、智能客服回复（llm_ok 标记+模板兜底）、研究推理转派（只路由不研究：个股→司马懿席/数据→情报部/投诉→田丰）、商机信号采集（customer_interest 行为统计不出中台域）；麾下邓芝（Hermes 8787 通讯中枢，编制划入服务不动）；编制依据 docs/plans/2026-10-21_阌泽通信与客户服务部_编制方案_v1.md（老田 2026-10-21 12:14 批 Hermes 对接创建阌泽）",
+   "cn_title": "信驿司",
+   "lead_id": "LUSU1",
+   "lead_name": "阚泽",
    "agents": [
     "DENGZHI1",
     "LUSU1"
@@ -880,7 +979,7 @@
    "role_profile": "chief_of_staff",
    "grade": "E3",
    "grade_note": "参谋长·组织枢纽（汇报聚合/任务仲裁/记忆治理）",
-   "charter": "全组织 41 在编岗向田丰汇报：判读各部门日报、风险优先输出判读、任务单仲裁、记忆治理；影子期纪律：不给买卖操作建议。",
+   "charter": "参谋长：组织调度与任务仲裁、汇报聚合与简报出件、记忆治理与知识沉淀、风险亮牌与升级上报；全组织向其汇报",
    "llm": "glm/glm-5.3",
    "tools": [
     "events",
@@ -922,6 +1021,24 @@
     }
    },
    "memory": null,
+   "cn_name": "田丰",
+   "role_cn": "总管（参谋长）",
+   "capabilities": [
+    "组织调度与任务仲裁",
+    "汇报聚合与简报出件",
+    "记忆治理与知识沉淀",
+    "风险亮牌与升级上报"
+   ],
+   "skills": [
+    "组织调度",
+    "任务仲裁",
+    "汇报聚合",
+    "记忆治理",
+    "风险亮牌"
+   ],
+   "experience": "20 年参谋长与组织运营经验：大型技术组织 PMO/参谋体系出身，擅长把决策意图翻译成可执行任务单并闭环追踪；现役 AI 组织参谋长——调度仲裁、汇报聚合、记忆治理三线并管。",
+   "dept_name": "",
+   "dept_cn_title": "",
    "tasks": [
     {
      "id": "K-QUANT-20261023-OSLINK",
@@ -940,8 +1057,8 @@
    "dept": "academy",
    "role_profile": "academy_director",
    "grade": "E3",
-   "grade_note": "研究院院长：审题立项与评审统筹",
-   "charter": "研究院总负责人：审题、立项、组织评审、协调跨部门研究并向田丰汇报。",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "研究院总负责人：审题、立项、组织评审、协调投研/数据/研发/产品/市场/法务，向田丰提交研究院日报与周报",
    "llm": "glm/glm-5.3",
    "tools": [
     "events"
@@ -964,15 +1081,35 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "司马徽",
+   "name": "司马徽",
+   "role_cn": "司马徽",
+   "capabilities": [
+    "研究课题立项",
+    "方法论评审",
+    "策略与商业化统筹",
+    "跨部门协调",
+    "成果裁决"
+   ],
+   "skills": [
+    "研究课题立项",
+    "方法论评审",
+    "策略与商业化统筹",
+    "跨部门协调",
+    "成果裁决"
+   ],
+   "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
+   "dept_name": "研究院",
+   "dept_cn_title": "太学"
   },
   "STRAT1": {
    "id": "STRAT1",
    "dept": "academy",
    "role_profile": "strategy_researcher",
    "grade": "E2",
-   "grade_note": "策略研究：可证伪假设与 LCS-1 图形推演",
-   "charter": "把市场问题转成可验证策略假设，维护策略研究台账并交由 BACK1 回测。",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "把投研部的市场问题转成可验证策略假设，维护策略研究台账，交由 BACK1 做回测",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "events"
@@ -995,15 +1132,35 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "徐庶",
+   "name": "徐庶",
+   "role_cn": "徐庶",
+   "capabilities": [
+    "交易策略设计",
+    "LCS-1图形推演",
+    "因子假设",
+    "策略登记",
+    "研究报告"
+   ],
+   "skills": [
+    "交易策略设计",
+    "LCS-1图形推演",
+    "因子假设",
+    "策略登记",
+    "研究报告"
+   ],
+   "experience": "20 年从业经验（策略研究：可证伪假设与 LCS-1 图形推演）",
+   "dept_name": "研究院",
+   "dept_cn_title": "太学"
   },
   "BACK1": {
    "id": "BACK1",
    "dept": "academy",
    "role_profile": "backtest_researcher",
    "grade": "E2",
-   "grade_note": "回测研究：复现、样本外与成本压力测试",
-   "charter": "按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据。",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "接收策略假设，按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "events"
@@ -1026,15 +1183,35 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "王粲",
+   "name": "王粲",
+   "role_cn": "陆逊",
+   "capabilities": [
+    "BacktestEngine",
+    "样本外验证",
+    "回测判据",
+    "滑点与成本",
+    "结果登记"
+   ],
+   "skills": [
+    "BacktestEngine",
+    "样本外验证",
+    "回测判据",
+    "滑点与成本",
+    "结果登记"
+   ],
+   "experience": "20 年从业经验（回测研究：复现、样本外与成本压力测试）",
+   "dept_name": "研究院",
+   "dept_cn_title": "太学"
   },
   "COMM1": {
    "id": "COMM1",
    "dept": "academy",
    "role_profile": "commercialization_researcher",
    "grade": "E2",
-   "grade_note": "商业化研究：客户、交付与策略市场",
-   "charter": "研究算法商品、策略市场和对外服务，形成客户画像、交付边界与试点方案。",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "研究算法商品、策略市场、对外服务和平台能力变现路径，形成客户画像、交付边界与试点方案",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "events"
@@ -1057,15 +1234,35 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "马良",
+   "name": "马良",
+   "role_cn": "马良",
+   "capabilities": [
+    "商业模式",
+    "客户场景",
+    "交付形态",
+    "成本收益",
+    "竞争格局"
+   ],
+   "skills": [
+    "商业模式",
+    "客户场景",
+    "交付形态",
+    "成本收益",
+    "竞争格局"
+   ],
+   "experience": "20 年从业经验（商业化研究：客户、交付与策略市场）",
+   "dept_name": "研究院",
+   "dept_cn_title": "太学"
   },
   "INTEL1": {
    "id": "INTEL1",
    "dept": "academy",
    "role_profile": "competitive_intelligence_researcher",
    "grade": "E2",
-   "grade_note": "竞争情报：行业、竞品与外部证据分级",
-   "charter": "跟踪开源社区、同类产品和行业变化，为策略和商业化立项提供外部证据。",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "跟踪开源社区、同类产品、策略市场与行业变化，为策略和商业化立项提供外部证据",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "events"
@@ -1087,16 +1284,36 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "郭嘉",
+   "name": "郭嘉",
+   "role_cn": "郭嘉",
+   "capabilities": [
+    "竞争情报",
+    "开源社区研究",
+    "行业对标",
+    "商业模式拆解",
+    "证据分级"
+   ],
+   "skills": [
+    "竞争情报",
+    "开源社区研究",
+    "行业对标",
+    "商业模式拆解",
+    "证据分级"
+   ],
+   "experience": "20 年从业经验（竞争情报：行业、竞品与外部证据分级）",
+   "dept_name": "研究院",
+   "dept_cn_title": "太学"
   },
   "AI1": {
    "id": "AI1",
    "dept": "academy",
    "role_profile": "ai_methodology_researcher",
    "grade": "E3",
-   "grade_note": "AI 方法论：Agent 能力、评测与知识反哺",
-   "charter": "把成功研究提炼为标准、能力、评测和知识条目，推动 Prompt 与路由升级。",
-   "llm": "glm/glm-5.3",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "把成功研究提炼为标准、能力、评测和知识条目，推动 router、Prompt 与判例库经评审后更新；模型按老田 10-21 异族裁决走 ChatGPT 6.0（OpenClaw 载体），通道待 OPENAI_API_KEY",
+   "llm": "openai/gpt-6.0",
    "tools": [
     "events"
    ],
@@ -1118,15 +1335,35 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "诸葛亮",
+   "name": "诸葛亮",
+   "role_cn": "诸葛亮",
+   "capabilities": [
+    "Agent方法论",
+    "能力册设计",
+    "评测体系",
+    "Prompt工程",
+    "知识反哺"
+   ],
+   "skills": [
+    "Agent方法论",
+    "能力册设计",
+    "评测体系",
+    "Prompt工程",
+    "知识反哺"
+   ],
+   "experience": "30 年从业经验（AI 方法论：Agent 能力、评测与知识反哺）",
+   "dept_name": "研究院",
+   "dept_cn_title": "太学"
   },
   "PROD1": {
    "id": "PROD1",
    "dept": "academy",
    "role_profile": "product_manager",
    "grade": "E2",
-   "grade_note": "策略产品化：验收、试点与交付",
-   "charter": "将通过评审的策略或 AI 方法转成产品需求、验收指标和试点计划。",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "将通过评审的策略或 AI 方法转成产品需求、交付形态、验收指标和试点计划，联接产品部与市场部",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "events"
@@ -1149,7 +1386,27 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "黄月英",
+   "name": "黄月英",
+   "role_cn": "产品经理",
+   "capabilities": [
+    "策略产品化",
+    "需求定义",
+    "验收标准",
+    "试点设计",
+    "跨部门交付"
+   ],
+   "skills": [
+    "策略产品化",
+    "需求定义",
+    "验收标准",
+    "试点设计",
+    "跨部门交付"
+   ],
+   "experience": "20 年从业经验（策略产品化：验收、试点与交付）",
+   "dept_name": "研究院",
+   "dept_cn_title": "太学"
   },
   "A0A": {
    "id": "A0A",
@@ -1199,15 +1456,33 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "董允",
+   "name": "董允",
+   "role_cn": "参谋长助理",
+   "capabilities": [
+    "方案并发分发与归集",
+    "产出初筛与异常标红",
+    "台账跟踪与晨会三件套预备"
+   ],
+   "skills": [
+    "组织调度",
+    "任务仲裁",
+    "汇报聚合",
+    "记忆治理",
+    "风险亮牌"
+   ],
+   "experience": "10 年调度执行经验：研发方案按部门并发分发、产出归集初筛（聚类/异常标红·宁松勿严）、修改命令下发台账跟踪；只调度不决策，判断类一律上浮田丰/SEC2。",
+   "dept_name": "",
+   "dept_cn_title": ""
   },
   "LUSU1": {
    "id": "LUSU1",
    "dept": "comm",
    "role_profile": "comm_lead",
-   "grade": "",
-   "grade_note": "",
-   "charter": "",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "通信与客户服务部主官：客户入口总管、模型底座统一调度（本地 Ollama + 云端 GLM/GPT6.0/DeepSeek）、商业化触点；路由决策须留痕",
    "llm": "",
    "tools": [],
    "grants_read": [],
@@ -1221,7 +1496,15 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "阚泽",
+   "name": "阚泽",
+   "role_cn": "comm_lead",
+   "capabilities": [],
+   "skills": [],
+   "experience": "",
+   "dept_name": "通信与客户服务部",
+   "dept_cn_title": "信驿司"
   },
   "DENGZHI1": {
    "id": "DENGZHI1",
@@ -1229,7 +1512,7 @@
    "role_profile": "comm_envoy",
    "grade": "",
    "grade_note": "",
-   "charter": "",
+   "charter": "Hermes 8787 通讯中枢（既有服务，编制划入零改动）：飞书 WS 长连接、消息卡出向、部门内消息中继",
    "llm": "",
    "tools": [],
    "grants_read": [],
@@ -1243,15 +1526,22 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "",
+   "role_cn": "comm_envoy",
+   "capabilities": [],
+   "skills": [],
+   "experience": "",
+   "dept_name": "通信与客户服务部",
+   "dept_cn_title": "信驿司"
   },
   "DATA1": {
    "id": "DATA1",
    "dept": "data",
    "role_profile": "data_engineer",
    "grade": "E2",
-   "grade_note": "20年档：数据底座独立运维",
-   "charter": "数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理；只治理不裁决业务口径",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "devtask",
@@ -1300,15 +1590,32 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "张松",
+   "name": "张松",
+   "role_cn": "数据工程师",
+   "capabilities": [
+    "数据血缘与实体映射",
+    "增量同步与监护",
+    "特征湖 parquet 口径守护",
+    "数据接入接线"
+   ],
+   "skills": [
+    "数据同步",
+    "目录登记",
+    "parquet/Neo4j/SQLite 治理"
+   ],
+   "experience": "20 年数据工程经验：实体映射、血缘三表、增量同步监护与特征湖 parquet 口径守护；数据口径不一致是最大事故源，口径守护是第一职责。",
+   "dept_name": "数据智能部",
+   "dept_cn_title": "兰台"
   },
   "DEV1": {
    "id": "DEV1",
    "dept": "dev",
    "role_profile": "code_engineer",
-   "grade": "E3",
-   "grade_note": "30年档：后端主力，devtask 工具链作者位",
-   "charter": "拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "数据治理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付数据管道代码",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "devtask",
@@ -1359,15 +1666,33 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "马钧",
+   "name": "马钧",
+   "role_cn": "代码工程师",
+   "capabilities": [
+    "Python 后端工程化",
+    "研发工具链与工作流设计",
+    "code review 与疑难攻关",
+    "worktree 并行开发治理"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "30 年后端与研发效能经验：主导过金融交易系统与高并发平台建设，近十年专注研发工具链——任务单驱动的 worktree 并行工作流、自动化质检门与工单生命周期治理（本组织 devtask 工具链作者位）。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DEV2": {
    "id": "DEV2",
    "dept": "dev",
    "role_profile": "model_trainer",
    "grade": "E2",
-   "grade_note": "20年档：训练/评估独立交付",
-   "charter": "模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "下版本设计推理部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付下版本功能代码",
    "llm": "ollama/qwen3.6:35b-a3b",
    "tools": [
     "ollama",
@@ -1418,15 +1743,33 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "刘晔",
+   "name": "刘晔",
+   "role_cn": "模型训练师",
+   "capabilities": [
+    "模型训练与调参",
+    "评估体系与基准管理",
+    "模型版本化登记",
+    "特征工程"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "20 年机器学习工程经验：模型训练、评估与版本化登记全流程，熟悉特征工程与离线/在线评估一致性校验，坚持模型版本登记 domain/model_registry 的可追溯纪律。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DEV3": {
    "id": "DEV3",
    "dept": "dev",
    "role_profile": "strategy_engineer",
    "grade": "E2",
-   "grade_note": "20年档：策略研发独立交付",
-   "charter": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "devtask",
@@ -1478,15 +1821,33 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "蒋济",
+   "name": "蒋济",
+   "role_cn": "策略工程师",
+   "capabilities": [
+    "量化策略设计与实现",
+    "回测判据前置自检",
+    "影子账验证流程",
+    "策略注册制管理"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "20 年量化策略研发经验：策略从想法到上线的完整纪律链——注册制新增、回测判据前置自检、影子账挂载验证；深知跳过影子期直上模拟仓的代价（缠论联立/快枪手判例亲历者）。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DEV4": {
    "id": "DEV4",
    "dept": "dev",
    "role_profile": "backtest_engineer",
    "grade": "E2",
-   "grade_note": "20年档：回测复核独立表态",
-   "charter": "回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "devtask",
@@ -1538,7 +1899,25 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "杜预",
+   "name": "杜预",
+   "role_cn": "回测工程师",
+   "capabilities": [
+    "回测执行与结果分析",
+    "Go/No-Go 独立复核",
+    "回测登记与可追溯",
+    "判据冻结纪律执法"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "20 年回测与风控复核经验：BacktestEngine 执行、冻结判据下的 Go/No-Go 独立表态、结果登记 domain/backtest_registry；判据冻结期内不改判据是职业底线。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DEV5": {
    "id": "DEV5",
@@ -1594,15 +1973,33 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "邓艾",
+   "name": "邓艾",
+   "role_cn": "前端工程师",
+   "capabilities": [
+    "设计系统与 tokens 治理",
+    "门户/大屏版面架构",
+    "前端质量三关（语法/死引用/实测）",
+    "Demo 先行流程"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "30 年前端与设计系统工程经验：大型门户/大屏架构，tokens.css 设计单源纪律与版面架构宪法作者；坚持 Demo 先行、改动必过 node --check + 死引用检查 + 线上实测三关。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "ARCH1": {
    "id": "ARCH1",
    "dept": "dev",
    "role_profile": "solution_architect",
-   "grade": "E3",
-   "grade_note": "30年档：架构定夺/疑难攻关/方案终审",
-   "charter": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录用 tools/adr.py 登记，落 docs/adr/（版本化入 git）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "下版本设计推理部架构席：Python 产码、代码评审、工单执行、AST 静态门；负责设计推理链的架构落地",
    "llm": "glm/glm-5.3",
    "tools": [
     "devtask",
@@ -1653,7 +2050,25 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "曹操",
+   "name": "曹操",
+   "role_cn": "架构师",
+   "capabilities": [
+    "架构评审与技术选型",
+    "跨部门方案终审",
+    "ADR 决策记录治理",
+    "疑难技术攻关"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "OPS1": {
    "id": "OPS1",
@@ -1708,7 +2123,25 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "王基",
+   "name": "王基",
+   "role_cn": "DevOps 运维工程师",
+   "capabilities": [
+    "Docker 容器集群运维",
+    "计划任务与看门狗配置",
+    "备份恢复与灾备",
+    "生产进程身份辨认"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "30 年生产运维经验：容器集群、计划任务、端口监护、备份三件套与磁盘巡检的全套生产配方执法；铁律=生产操作先验明进程身份再动手（误杀线上服务判例亲历）。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DOC1": {
    "id": "DOC1",
@@ -1760,7 +2193,25 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "陈寿",
+   "name": "陈寿",
+   "role_cn": "技术文档工程师",
+   "capabilities": [
+    "计划谱系与索引治理",
+    "判例沉淀与知识入册",
+    "宪法/README 文档保鲜",
+    "技术写作规范"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "20 年技术文档经验：docs/plans 计划谱系与 INDEX 索引总账维护、判例沉淀入册（撞号/行尾/回滚死引用等）、宪法文档保鲜；让组织每次踩坑都变成可检索资产。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DEV6": {
    "id": "DEV6",
@@ -1815,7 +2266,24 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "胡昭",
+   "name": "胡昭",
+   "role_cn": "代码工程师",
+   "capabilities": [
+    "REST API 与服务端功能交付",
+    "数据处理与运维脚本",
+    "接口联调与灰度验证"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "20 年后端独立交付经验：API 服务、数据接口与运维脚本全栈交付，习惯小步提交、灰度验证，疑难问题升级 DEV1 主线。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DEV7": {
    "id": "DEV7",
@@ -1870,7 +2338,24 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "姜维",
+   "name": "姜维",
+   "role_cn": "代码工程师",
+   "capabilities": [
+    "批量代码修改与重构",
+    "代码格式化与静态检查修复",
+    "回归验证与证据采集"
+   ],
+   "skills": [
+    "Python架构",
+    "高并发",
+    "量化系统",
+    "PostgreSQL"
+   ],
+   "experience": "10 年后端标准执行经验：批量修改、格式化重构、依赖升级等标准化工程任务，产出严格走 E2+ 复核闭环。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "DEV8": {
    "id": "DEV8",
@@ -1925,15 +2410,32 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "郝昭",
+   "name": "郝昭",
+   "role_cn": "前端工程师",
+   "capabilities": [
+    "页面与图表组件交付",
+    "tokens 纪律执行",
+    "暗色主题与响应式适配"
+   ],
+   "skills": [
+    "Python 产码",
+    "代码评审",
+    "工单执行",
+    "AST 静态门"
+   ],
+   "experience": "20 年前端交付经验：常规页面与图表组件独立交付，严守 tokens 纪律与页面宽度规范，疑难上报 DEV5。",
+   "dept_name": "研发部",
+   "dept_cn_title": "将作监"
   },
   "INTEL0": {
    "id": "INTEL0",
    "dept": "intel",
    "role_profile": "intel_sector_receiver",
    "grade": "E1",
-   "grade_note": "",
-   "charter": "",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "情报板块唯一上行受理口：专职签收上游情报报告（INTEL_UPSTREAM_REPORT）、哈希幂等核验、出具 ACK 受理回执、维护受理台账；只受理不裁决，受理后分发与研判归情报板块与参谋长线",
    "llm": "glm/glm-5.3-flash",
    "tools": [
     "intel_inbox_ack"
@@ -1953,15 +2455,33 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "是仪",
+   "name": "是仪",
+   "role_cn": "intel_sector_receiver",
+   "capabilities": [
+    "上行受理",
+    "哈希幂等核验",
+    "ACK回执出具",
+    "台账纪律"
+   ],
+   "skills": [
+    "上行受理",
+    "哈希幂等核验",
+    "ACK回执出具",
+    "台账纪律"
+   ],
+   "experience": "10 年从业经验（）",
+   "dept_name": "情报部",
+   "dept_cn_title": "军情司"
   },
   "MANCHONG1": {
    "id": "MANCHONG1",
    "dept": "intel",
    "role_profile": "intel_data_hub",
    "grade": "E2",
-   "grade_note": "",
-   "charter": "",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "负责把各线数据串联成可用事实：连接数据、清洗数据、关联数据、治理赋能、每日情报汇报；串联结论只报实况不裁决。兼 MDC-R03 证据持久层存储责任席（任峻位，2026-10-23 老田裁定）：offered/accepted/persisted/visible 四态分账、幂等键与血缘完整性、崩溃回放一致、连续水位不提前；持久产出未经独立验收不得宣称已入库",
    "llm": "runtime/hermes",
    "tools": [
     "manchong_daily_brief"
@@ -1981,15 +2501,35 @@
     "specialties": [],
     "knowledge": []
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "满宠",
+   "name": "满宠",
+   "role_cn": "intel_data_hub",
+   "capabilities": [
+    "连接数据",
+    "清洗数据",
+    "关联数据",
+    "治理赋能",
+    "每日情报汇报"
+   ],
+   "skills": [
+    "连接数据",
+    "清洗数据",
+    "关联数据",
+    "治理赋能",
+    "每日情报汇报"
+   ],
+   "experience": "20 年从业经验（）",
+   "dept_name": "情报部",
+   "dept_cn_title": "军情司"
   },
   "T1": {
    "id": "T1",
    "dept": "invest",
    "role_profile": "t1_bull",
-   "grade": "",
-   "grade_note": "",
-   "charter": "",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "激进多头技术面分析：趋势分析（均线/通道）、动能判断（MACD/RSI）、量价配合、支撑阻力位、成长股挖掘、产能与订单拐点识别",
    "llm": "ollama/qwen3.5:9b",
    "tools": [],
    "grants_read": [
@@ -2031,15 +2571,34 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "庞统",
+   "name": "庞统",
+   "role_cn": "激进多头技术面分析师",
+   "capabilities": [
+    "成长股与产业趋势研究",
+    "产能/订单拐点研判",
+    "多头论据构建"
+   ],
+   "skills": [
+    "趋势分析(均线/通道)",
+    "动能判断(MACD/RSI)",
+    "量价配合",
+    "支撑阻力位",
+    "成长股挖掘",
+    "产能/订单拐点"
+   ],
+   "experience": "15 年多头研究经验：成长股挖掘与产业趋势研判，擅长从产能周期与订单数据里找拐点；立场纪律=只为多头论点找最强证据。",
+   "dept_name": "量化交易部",
+   "dept_cn_title": "谋略府"
   },
   "T2": {
    "id": "T2",
    "dept": "invest",
    "role_profile": "t2_bear",
-   "grade": "",
-   "grade_note": "",
-   "charter": "",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "保守空头技术面分析：上方压力识别（前高/套牢盘）、顶背离、量价背离、破位风险、流动性冲击情景推演",
    "llm": "ollama/qwen3.5:9b",
    "tools": [],
    "grants_read": [
@@ -2081,15 +2640,33 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "贾诩",
+   "name": "贾诩",
+   "role_cn": "保守空头技术面分析师",
+   "capabilities": [
+    "财务质量与舞弊识别",
+    "估值泡沫度量",
+    "空头反证构建"
+   ],
+   "skills": [
+    "上方压力识别(前高/套牢盘)",
+    "顶背离",
+    "量价背离",
+    "破位风险",
+    "流动性冲击情景"
+   ],
+   "experience": "15 年空头研究经验：财务质量审查与估值泡沫识别，擅长从应收/存货/现金流背离里找风险；立场纪律=只为空头论点找最强反证。",
+   "dept_name": "量化交易部",
+   "dept_cn_title": "谋略府"
   },
   "N1": {
    "id": "N1",
    "dept": "invest",
    "role_profile": "n1_sentiment",
-   "grade": "",
-   "grade_note": "",
-   "charter": "",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "情绪面分析：公告与事件冲击判读、行业政策风向、市场情绪指数、资金偏好、舆情热度、传闻降权",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "events_for_stock"
@@ -2133,15 +2710,34 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "许劭",
+   "name": "许劭",
+   "role_cn": "情绪面分析师",
+   "capabilities": [
+    "新闻舆情监测与降噪",
+    "情绪周期计量",
+    "龙虎榜与资金流向解读"
+   ],
+   "skills": [
+    "公告/事件冲击判读",
+    "行业政策风向",
+    "市场情绪指数",
+    "资金偏好",
+    "舆情热度",
+    "传闻降权"
+   ],
+   "experience": "12 年市场情绪研究经验：新闻舆情、龙虎榜资金与市场情绪周期跟踪，把非结构化消息转成可计量的情绪因子。",
+   "dept_name": "量化交易部",
+   "dept_cn_title": "谋略府"
   },
   "F1": {
    "id": "F1",
    "dept": "invest",
    "role_profile": "f1_fundamental",
-   "grade": "",
-   "grade_note": "",
-   "charter": "",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "基本面分析：营收与利润趋势、盈利质量（现金流/应收）、估值分位（PE/PB）、行业景气位判断",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "datamart_read"
@@ -2184,15 +2780,32 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "荀彧",
+   "name": "荀彧",
+   "role_cn": "基本面分析师",
+   "capabilities": [
+    "财务三表拆解",
+    "盈利预测与估值建模",
+    "行业横向对比"
+   ],
+   "skills": [
+    "营收/利润趋势",
+    "盈利质量(现金流/应收)",
+    "估值分位(PE/PB)",
+    "行业景气位"
+   ],
+   "experience": "18 年基本面分析经验：三表拆解、行业横向对比与盈利预测建模，估值锚定 DCF 与可比公司双口径。",
+   "dept_name": "量化交易部",
+   "dept_cn_title": "谋略府"
   },
   "D1": {
    "id": "D1",
    "dept": "invest",
    "role_profile": "d1_decision",
-   "grade": "",
-   "grade_note": "",
-   "charter": "",
+   "grade": "E3",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "最终决策官：多方权衡裁决、五档推荐输出、置信度校准、辩论质量评估；汇总 T1/T2/N1/F1 四线分析出最终结论，须署名与可追溯",
    "llm": "ollama/qwen3.5:9b",
    "tools": [],
    "grants_read": [
@@ -2236,7 +2849,24 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "鲁肃",
+   "name": "鲁肃",
+   "role_cn": "最终决策官",
+   "capabilities": [
+    "多空证据加权裁决",
+    "仓位与风险预算",
+    "决策记录可追溯"
+   ],
+   "skills": [
+    "多方权衡裁决",
+    "五档推荐输出",
+    "置信度校准",
+    "辩论质量评估"
+   ],
+   "experience": "20 年投资决策经验：多空证据加权裁决、仓位建议与风险预算；决策只认证据清单不认立场音量。",
+   "dept_name": "量化交易部",
+   "dept_cn_title": "谋略府"
   },
   "LEG1": {
    "id": "LEG1",
@@ -2289,7 +2919,26 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "诸葛瑾",
+   "name": "诸葛瑾",
+   "role_cn": "合规法务",
+   "capabilities": [
+    "政府/宣发材料审查",
+    "对外口径裁定",
+    "采集合规红线",
+    "涉政涉军一票否决"
+   ],
+   "skills": [
+    "组织调度",
+    "任务仲裁",
+    "汇报聚合",
+    "记忆治理",
+    "风险亮牌"
+   ],
+   "experience": "30 年合规法务经验：政府材料与宣发文稿发布前审查（通过/修改后通过/驳回）、四条对外口径裁定权、爬虫采集合规红线、军方背景与涉政内容一票驳回。",
+   "dept_name": "合规法务部",
+   "dept_cn_title": "廷尉府"
   },
   "MKT1": {
    "id": "MKT1",
@@ -2343,15 +2992,31 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "简雍",
+   "name": "简雍",
+   "role_cn": "市场运营",
+   "capabilities": [
+    "宣发文案与视频脚本",
+    "开源社区对比研究",
+    "统一口号纪律执法",
+    "在研文稿协同"
+   ],
+   "skills": [
+    "统一口号纪律",
+    "内容宣发"
+   ],
+   "experience": "20 年市场运营经验：宣发文案与视频脚本、开源社区高 star 项目对比研究、统一口号纪律执法；对外定位=能力平台，禁用 Tokens 售卖标签。",
+   "dept_name": "市场部",
+   "dept_cn_title": "鸿胪署"
   },
   "PM1": {
    "id": "PM1",
    "dept": "product",
    "role_profile": "product_manager",
-   "grade": "E3",
-   "grade_note": "30年档：交付定义/验收口径裁定",
-   "charter": "产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "下版本设计推理部主官：需求梳理、验收判据、路线图；把设计意图转成可验收条目",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "devtask",
@@ -2399,7 +3064,24 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "吕蒙",
+   "name": "吕蒙",
+   "role_cn": "产品经理",
+   "capabilities": [
+    "需求池与版本规划",
+    "验收口径定义",
+    "交付定义与归建判据",
+    "跨部门需求协调"
+   ],
+   "skills": [
+    "需求梳理",
+    "验收判据",
+    "路线图"
+   ],
+   "experience": "30 年产品管理经验：需求池治理、版本规划与验收口径定义（acceptance_criteria）；项目交付定义人——验收口径模糊就是返工之源。",
+   "dept_name": "产品管理部",
+   "dept_cn_title": "度支府"
   },
   "DSGN1": {
    "id": "DSGN1",
@@ -2455,7 +3137,24 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "曹植",
+   "name": "曹植",
+   "role_cn": "UI/UX 设计师",
+   "capabilities": [
+    "设计语言与 tokens 治理",
+    "Demo 先行流程",
+    "风格一致化巡查",
+    "暗色同构设计守门"
+   ],
+   "skills": [
+    "需求梳理",
+    "验收判据",
+    "路线图"
+   ],
+   "experience": "30 年 UI/UX 与设计系统经验：tokens 设计语言治理、Demo 先行流程执法、风格一致化巡查（悬空 token 三分类判例执法者）；驾驶舱暗色同构风守门。",
+   "dept_name": "产品管理部",
+   "dept_cn_title": "度支府"
   },
   "DSGN2": {
    "id": "DSGN2",
@@ -2509,15 +3208,31 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "杨修",
+   "name": "杨修",
+   "role_cn": "UI/UX 设计师",
+   "capabilities": [
+    "切图与图标制作",
+    "样式批量执行",
+    "设计稿高保真还原"
+   ],
+   "skills": [
+    "需求梳理",
+    "验收判据",
+    "路线图"
+   ],
+   "experience": "10 年 UI 执行经验：切图、图标、样式批量执行，产出交 DSGN1 审定后入库。",
+   "dept_name": "产品管理部",
+   "dept_cn_title": "度支府"
   },
   "QA1": {
    "id": "QA1",
    "dept": "quality",
    "role_profile": "qa_engineer",
-   "grade": "E3",
-   "grade_note": "30年档：验收口径裁定/三守卫裁定",
-   "charter": "质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌",
+   "grade": "E2",
+   "grade_note": "补档初始档，待 KPI 观察后调整",
+   "charter": "回测质量门：QA-RUN 执行、回归用例维护、fail-closed 只读纪律；不合格不签字",
    "llm": "ollama/qwen3.5:9b",
    "tools": [
     "devtask",
@@ -2563,7 +3278,24 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "于禁",
+   "name": "于禁",
+   "role_cn": "质量工程师",
+   "capabilities": [
+    "验收测试与证据链",
+    "三守卫人化复核",
+    "review 质检分派",
+    "质量红线亮牌"
+   ],
+   "skills": [
+    "QA-RUN",
+    "回归用例",
+    "fail-closed 只读纪律"
+   ],
+   "experience": "30 年质量工程经验：验收测试执行、三守卫（AST gate/金样本/回测判据）人化复核、review 积压质检分派、质量红线亮牌；连续多轮抓出产码方增量违规，质量判断独立不受产码方影响。",
+   "dept_name": "质量工程部",
+   "dept_cn_title": "监军府"
   },
   "SEC1": {
    "id": "SEC1",
@@ -2617,7 +3349,24 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "李严",
+   "name": "李严",
+   "role_cn": "安全审计师",
+   "capabilities": [
+    "凭据与密钥红线监护",
+    "权限越权审计",
+    "危险命令面盘点",
+    "引入件安全审查"
+   ],
+   "skills": [
+    "QA-RUN",
+    "回归用例",
+    "fail-closed 只读纪律"
+   ],
+   "experience": "20 年安全审计经验：凭据红线监护（OAuth/QMT 凭据不入库）、注册表 grants 越权审计、危险命令面盘点（rm/checkout--/杀进程验身份判例执法）、skill 与脚本引入安全审查。",
+   "dept_name": "质量工程部",
+   "dept_cn_title": "监军府"
   },
   "QA2": {
    "id": "QA2",
@@ -2665,7 +3414,23 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "郭淮",
+   "name": "郭淮",
+   "role_cn": "质量工程师",
+   "capabilities": [
+    "用例执行与证据采集",
+    "回归跑批",
+    "缺陷记录与复现"
+   ],
+   "skills": [
+    "QA-RUN",
+    "回归用例",
+    "fail-closed 只读纪律"
+   ],
+   "experience": "10 年测试执行经验：用例执行、证据采集、回归跑批；结论只交 QA1 裁定，不自行下验收结论。",
+   "dept_name": "质量工程部",
+   "dept_cn_title": "监军府"
   },
   "SEC2": {
    "id": "SEC2",
@@ -2718,15 +3483,32 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "法正",
+   "name": "法正",
+   "role_cn": "网络安全工程师",
+   "capabilities": [
+    "方案走形检查与返工闭环",
+    "渗透/反渗透",
+    "压力测试与瓶颈定位",
+    "全栈代码审计"
+   ],
+   "skills": [
+    "QA-RUN",
+    "回归用例",
+    "fail-closed 只读纪律"
+   ],
+   "experience": "30 年网络安全与全栈经验：研发方案走形检查（条目→证据→判定→建议命令·走形开单@田丰直推）、渗透与反渗透、压测与瓶颈定位；与 SEC1 分工明确——SEC1 合规红线执法，SEC2 研发质量对抗。",
+   "dept_name": "质量工程部",
+   "dept_cn_title": "监军府"
   },
   "ST1": {
    "id": "ST1",
    "dept": "invest",
    "role_profile": "quant_analyst",
    "grade": "E2",
-   "grade_note": "20年档：策略部首席（缠论分析师），学习环与理论输出双责",
-   "charter": "缠论分析师·策略部首席：四阶段学习环（观察→验证对账→结构归因→灰度修正），缠论买卖点先例战绩判读、署名理论笔记；影子铁律只读不执行，draft≠adopt；消费 TR1 执行岗回写的成交/滑点复盘数据",
+   "grade_note": "20年档：量化交易部策略部首席（缠论分析师），学习环与理论输出双责",
+   "charter": "缠论分析师·策略部首席：四阶段学习环（L1观察→L2验证对账→L3结构归因→L4灰度修正+理论输出），缠论买卖点先例战绩判读、署名理论笔记（周记《缠论结构观察》入 dept/invest/thesis 与 docs/）；影子铁律——只读判读不执行，权重草案 draft≠adopt（影子对照≥20交易日后人工凭据）",
    "llm": "glm/glm-5.3",
    "tools": [
     "tgraph_slots",
@@ -2789,7 +3571,25 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "程昱",
+   "name": "程昱",
+   "role_cn": "缠论分析师",
+   "capabilities": [
+    "缠论结构判读（买卖点×级别×regime×结构指纹）",
+    "信号后验对账与左尾风险识别",
+    "策略复盘归因与置信度校准建议",
+    "署名理论输出与知识沉淀"
+   ],
+   "skills": [
+    "缠论结构判读（买卖点×级别×regime×结构指纹）",
+    "信号后验对账与左尾风险识别",
+    "策略复盘归因与置信度校准建议",
+    "署名理论输出与知识沉淀"
+   ],
+   "experience": "20 年缠论结构化技术分析经验：分型/笔/中枢/三类买卖点的实战判读与复盘归因，擅长把逐日影子信号对账成「哪类信号在哪种市场状态下可信」的结构化结论，并输出可沉淀的理论笔记。",
+   "dept_name": "量化交易部",
+   "dept_cn_title": "谋略府"
   },
   "TR1": {
    "id": "TR1",
@@ -2838,7 +3638,23 @@
      "danger": "deny"
     }
    },
-   "memory": null
+   "memory": null,
+   "cn_name": "周瑜",
+   "name": "周瑜",
+   "role_cn": "交易部执行岗",
+   "capabilities": [
+    "订单执行与 paper 链下单",
+    "成交/滑点数据回写",
+    "执行复盘数据整理"
+   ],
+   "skills": [
+    "订单执行",
+    "模拟仓验收",
+    "止损纪律"
+   ],
+   "experience": "10 年交易执行经验：策略信号到订单的执行链路、paper 链下单、成交与滑点数据回写复盘；轻量执行位，只做执行不做判断。",
+   "dept_name": "交易部",
+   "dept_cn_title": "先登营"
   }
  }
 }

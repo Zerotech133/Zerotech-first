@@ -14,6 +14,7 @@ portal/agent_ide_bundle.json（nginx 静态直出，ide.html 数据源）。
 import json
 import glob
 import os
+import re
 import sys
 import time
 
@@ -21,6 +22,77 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REG = os.path.join(ROOT, "agent_platform", "registry")
 PROMPTS = os.path.join(ROOT, "agent_platform", "prompts")
 OUT = os.path.join(ROOT, "portal", "agent_ide_bundle.json")
+
+
+# ── 组织架构富化（2026-10-26 WO-IDE-ENRICH）─────────────────────────────
+# 名字真源：agent_platform/hr/<席码>/resume.yaml 的 cn_name（三国人名，工具
+#   tools/agent_census.py 同源口径）；缺档时用 org.json agent_profiles.cn_name 补。
+# 能力真源：org.json departments[].agent_profiles 的 attributes.specialties /
+#   charter_detail / grade / grade_note；hr resume 的 skills 作为补充。
+def _load_hr_meta(root):
+    """{agent_id: {cn_name, skills, experience}}（只读，找不到就空）。"""
+    out = {}
+    hr_dir = os.path.join(root, "agent_platform", "hr")
+    if not os.path.isdir(hr_dir):
+        return out
+    for seat in os.listdir(hr_dir):
+        seat_dir = os.path.join(hr_dir, seat)
+        if not os.path.isdir(seat_dir):
+            continue
+        meta = {}
+        for dirpath, _dirs, files in os.walk(seat_dir):
+            for fn in files:
+                if not fn.endswith((".yaml", ".yml")):
+                    continue
+                try:
+                    text = open(os.path.join(dirpath, fn), encoding="utf-8",
+                                errors="replace").read()
+                except OSError:
+                    continue
+                m = re.search(r'cn_name"?\s*:\s*"?([^\s",]+)', text)
+                if m and not meta.get("cn_name"):
+                    meta["cn_name"] = m.group(1)
+                m2 = re.search(r"^skills\s*:\s*\[(.*?)\]\s*$", text, re.M | re.S)
+                if m2 and not meta.get("skills"):
+                    meta["skills"] = [s.strip().strip("'\"")
+                                      for s in m2.group(1).split(",") if s.strip()]
+                m3 = re.search(r"^\s*role:\s*(.+)$", text, re.M)
+                if m3 and not meta.get("experience"):
+                    meta["experience"] = m3.group(1).strip()
+            if meta.get("cn_name"):
+                break
+        if meta:
+            out[seat] = meta
+    return out
+
+
+def _load_org_profiles(org):
+    """{agent_id: profile}；兼容 dict/list 两种 agent_profiles 形态。"""
+    out = {}
+    for d in org.get("departments") or []:
+        ap = d.get("agent_profiles") or {}
+        items = ap.values() if isinstance(ap, dict) else ap
+        for prof in items or []:
+            if isinstance(prof, dict) and prof.get("agent_id"):
+                out[prof["agent_id"]] = prof
+    return out
+
+
+def _role_cn_from_prompt(prompt, fallback):
+    """从 prompt 首行/首句提取中文岗位名：# ARCH1 · 架构师（…）/ 你是 DEV1，…的代码工程师。"""
+    text = prompt or ""
+    m = re.search(r"^#\s*[^\s·]+\s*·\s*([^（(\n]+)", text, re.M)
+    if m:
+        return m.group(1).strip()
+    m2 = re.search(r"你是\s*\S+?，[^，\n]*的([^，。\n（(]+)", text)
+    if m2:
+        return m2.group(1).strip()
+    # "你是 TR1，交易部执行岗（v2 人设…）"——无「的」时取首个逗号后的岗位名
+    m3 = re.search(r"你是\s*\S+?，([^，。\n（(]+)", text)
+    if m3:
+        return m3.group(1).strip()
+    return fallback or ""
+
 
 # 职能部/项目部分类（K-ORG-053 起按文件名约定判定：team_proj_* = 项目部只打标，
 # 其余 team_*.json 一律职能部落卡——组织图新注册部门免改码自动入编）
@@ -217,6 +289,40 @@ def main():
         else:
             miss_prompt.append(aid)
 
+    # ── 组织架构富化（WO-IDE-ENRICH）：名字 + 能力 + 部门称谓 ──────────────
+    hr_meta = _load_hr_meta(ROOT)
+    profiles = _load_org_profiles(org)
+    dept_name_map = {d.get("dept"): d.get("name", "")
+                     for d in org.get("departments", [])}
+    dept_title_map = {d.get("dept"): d.get("cn_title", "")
+                      for d in org.get("departments", [])}
+    for aid, card in agents.items():
+        hr = hr_meta.get(aid) or {}
+        prof = profiles.get(aid) or {}
+        p_attrs = prof.get("attributes") if isinstance(prof.get("attributes"), dict) else {}
+        t_attrs = card.get("attributes") if isinstance(card.get("attributes"), dict) else {}
+        caps = (p_attrs.get("specialties") or t_attrs.get("specialties")
+                or hr.get("skills") or [])
+        card["cn_name"] = hr.get("cn_name") or prof.get("cn_name") or ""
+        if card["cn_name"]:
+            card["name"] = card["cn_name"]
+        card["role_cn"] = _role_cn_from_prompt(card.get("prompt", ""),
+                                               card.get("role_profile", ""))
+        if aid == "A0":
+            card["role_cn"] = "总管（参谋长）"
+        card["capabilities"] = list(caps)
+        card["skills"] = list(hr.get("skills") or [])
+        card["experience"] = (p_attrs.get("experience") or t_attrs.get("experience")
+                              or hr.get("experience") or "")
+        if prof.get("charter_detail"):
+            card["charter"] = prof["charter_detail"]
+        if prof.get("grade"):
+            card["grade"] = prof["grade"]
+        if prof.get("grade_note"):
+            card["grade_note"] = prof["grade_note"]
+        card["dept_name"] = dept_name_map.get(card.get("dept"), "")
+        card["dept_cn_title"] = dept_title_map.get(card.get("dept"), "")
+
     # 部门视图（IDE 左树顺序：参谋长在顶，职能部居中，项目部在后）
     # K-ORG-053：组织图动态注册的新部门免改码——org.json departments 取显示名/type，
     # order 之外的新部门按 org.json 顺序追加在尾部
@@ -237,9 +343,14 @@ def main():
             name, typ = DEPT_META[dep]
         else:  # 动态注册部门：显示名与类型全部取 org.json
             name, typ = od.get("name", dep), od.get("type", "func")
+        lead_id = od.get("lead") or ""
+        lead_name = (agents.get(lead_id) or {}).get("cn_name") or ""
         departments.append({
             "id": dep, "name": name, "type": typ,
             "charter": od.get("charter", ""),
+            "cn_title": od.get("cn_title", ""),  # 部门中文称谓（谋略府/将作监…）
+            "lead_id": lead_id,
+            "lead_name": lead_name,
             "agents": [a for a in dept_agents[dep] if a in agents],
             "all_ids": dept_agents[dep],  # 项目部可能引用未在职能表落卡者（现状无）
         })
