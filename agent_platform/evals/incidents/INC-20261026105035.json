@@ -1,0 +1,23 @@
+{
+ "schema": "zhaoyun_incident_draft/v1",
+ "id": "INC-20261026105035",
+ "status": "needs_review",
+ "source_event": {
+  "ts": "2026-10-26 10:50:35",
+  "kind": "guard_fail",
+  "task": "WO-LEGION-LLMDEEPSEEK-20261026",
+  "agent": "ZHAOYUN",
+  "detail": "门 明文凭据 未过：未豁免命中（1/1 批退出码非 0） [基线豁免 117 条已应用]；HIT agent_platform/engine/deepseek.py:84:TOKEN_ASSIGN:     def __init__(self, api_key"
+ },
+ "proposed_behavior": {
+  "id": "inc.20261026105035",
+  "desc": "回归：guard_fail — 门 明文凭据 未过：未豁免命中（1/1 批退出码非 0） [基线豁免 117 条已应用]；HIT agent_platform/engine/deepseek.py:84:TOKEN_ASSIGN:     def __init__(sel",
+  "smoke": false,
+  "severity": "medium",
+  "check": {
+   "kind": "manual",
+   "note": "待人工定义断言后移入 behaviors.json"
+  }
+ },
+ "generated_at": "2026-10-27T06:45:51+0800"
+}

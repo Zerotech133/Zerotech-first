@@ -1,0 +1,23 @@
+{
+ "schema": "zhaoyun_incident_draft/v1",
+ "id": "INC-20261026121023",
+ "status": "needs_review",
+ "source_event": {
+  "ts": "2026-10-26 12:10:23",
+  "kind": "guard_fail",
+  "task": "K-STOCK-ANALYSIS-P0-20261026",
+  "agent": "DSH-Lead",
+  "detail": "L2 门未过（K-STOCK-416）：Traceback (most recent call last):\n  File \"C:\\��Ŀ\\�����AI����\\tools\\_l2_guard.py\", line 138, in <module>\n    sys.exit(ma"
+ },
+ "proposed_behavior": {
+  "id": "inc.20261026121023",
+  "desc": "回归：guard_fail — L2 门未过（K-STOCK-416）：Traceback (most recent call last):\n  File \"C:\\��Ŀ\\�����AI����\\tools\\_l2_guard.py\", line 138, in <mod",
+  "smoke": false,
+  "severity": "medium",
+  "check": {
+   "kind": "manual",
+   "note": "待人工定义断言后移入 behaviors.json"
+  }
+ },
+ "generated_at": "2026-10-27T06:45:51+0800"
+}

@@ -120,6 +120,11 @@
     <div id="trace-detail" class="muted" style="margin-top:6px"></div>
   </section>
 
+  <section>
+    <h2>评估飞轮 <span id="eval-sub">—</span> <span>行为目录 · session/trace/span · 只读</span></h2>
+    <div id="evals"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -509,7 +514,8 @@ function loadCap2() {
     jget('/api/zhaoyun/memory/curation').catch(() => null),
     jget('/api/zhaoyun/skills').catch(() => null),
     jget('/api/zhaoyun/traces').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk, trc]) => {
+    jget('/api/zhaoyun/evals').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc, ev]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -586,7 +592,34 @@ function loadCap2() {
       if (!(trc.items || []).length) tb.appendChild(el('div', 'muted',
         '暂无轨迹（触发一次下钻/审批/模型调用后出现）'));
     } else tb.appendChild(el('div', 'muted', '轨迹不可用'));
+    const evb = $('evals'); evb.replaceChildren();
+    if (ev && ev.ok) {
+      const ss = ev.session || {};
+      $('eval-sub').textContent = '通过 ' + (ss.passed || 0) + '/' + (ss.total || 0) +
+        ' · ' + Math.round((ss.rate || 0) * 100) + '% · smoke=' + (ev.smoke ? '是' : '否');
+      evb.appendChild(el('div', 'muted', '覆盖 ' + ((ev.coverage || {}).behaviors || 0) +
+        ' 行为 · 最慢 ' + ((ev.span || {}).slowest_ms || 0) + 'ms · ' + (ev.generated_at || '')));
+      (ev.failures || []).slice(0, 10).forEach((f) => evb.appendChild(el('div', 'muted',
+        '⚠ ' + f.id + ' — ' + f.detail)));
+      if (!(ev.failures || []).length) evb.appendChild(el('div', 'muted', '✓ 全部通过'));
+    } else evb.appendChild(el('div', 'muted', '暂无评估报告（运行一次评估生成）'));
+    const runb = el('button', '', '运行评估（smoke）');
+    runb.onclick = runEvals;
+    evb.appendChild(runb);
   });
+}
+function runEvals() {
+  const box = $('evals');
+  const btn = box.querySelector('button');
+  if (btn) { btn.disabled = true; btn.textContent = '运行中…'; }
+  fetch('/api/zhaoyun/evals/run', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) {
+        alert('评估完成：' + ((j.session || {}).passed) + '/' + ((j.session || {}).total) + ' 通过');
+        loadCap2();
+      } else alert('评估失败：' + (j.error || ''));
+    }).catch((e) => alert('评估失败：' + e));
 }
 function showTrace(id) {
   jget('/api/zhaoyun/trace/' + encodeURIComponent(id)).then((v) => {
