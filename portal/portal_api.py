@@ -156,6 +156,7 @@ import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，20
 import api_news_intel   # K-ORG-207 新闻情报台三栏聚合出口（速报/政策/舆情，只读 2026-10-19）
 import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量化/飞书双路径 2026-10-19）
 import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/brief（2026-10-21）
+import api_zhuge_adoption  # WO-LEGION-ZHUGE-ADOPTROUTE C3 建议采纳率只追加 /api/zhuge/adoption（2026-10-27）
 import api_os_goal      # OS-CLOSE-G0 目标/事项/成果 G0 骨架（/api/os/*，2026-10-24）
 
 
@@ -2637,6 +2638,24 @@ color:#fff;font-size:13.5px;cursor:pointer}
                                    if "?" in self.path else "")
                 return
             ln = int(self.headers.get("Content-Length") or 0)
+            if path == "/api/zhuge/adoption":
+                # C3（2026-10-27）：采纳率只追加路由（独立文件 api_zhuge_adoption.py）。
+                # sendBeacon 不能带自定义头→沿用模块「匿名但只写专用账本」窄写设计；
+                # 正文长度/上限口径对齐既有写端点（负数 400、超 64KiB 413）。
+                if ln < 0:
+                    self._json({"error": "正文长度不合法"}, 400)
+                    return
+                if ln > 65536:
+                    self._json({"error": "请求正文超过64KiB"}, 413)
+                    return
+                try:
+                    _st, _msg = api_zhuge_adoption.handle_post(
+                        self.rfile.read(ln) if ln else b"")
+                except Exception:
+                    log_exc("zhuge-adoption")
+                    _st, _msg = 500, "internal: 采纳率账本写入失败"
+                self._json({"ok": _st == 200, "message": _msg}, _st)
+                return
             if path in {'/api/data/update-plan','/api/data/update'}:
                 if ln < 0:
                     self._json({'error':'正文长度不合法'},400)
