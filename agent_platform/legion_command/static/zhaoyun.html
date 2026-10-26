@@ -135,6 +135,11 @@
     <div id="memv2"></div>
   </section>
 
+  <section>
+    <h2>沙箱验证 <span id="sandbox-sub">—</span> <span>进程级隔离 · 净环境 · 超时 · 只跑技能 verify</span></h2>
+    <div id="sandbox"></div>
+  </section>
+
   <section id="drill-sec" style="display:none">
     <h2>下钻 · <span id="drill-title">—</span> <span>单能力详证（只读）</span></h2>
     <div id="drill-body"></div>
@@ -527,7 +532,8 @@ function loadCap2() {
     jget('/api/zhaoyun/evals').catch(() => null),
     jget('/api/zhaoyun/mcp').catch(() => null),
     jget('/api/zhaoyun/memory/v2').catch(() => null),
-  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2]) => {
+    jget('/api/zhaoyun/sandbox').catch(() => null),
+  ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
       $('audit-sub').textContent = '不可用';
@@ -649,7 +655,35 @@ function loadCap2() {
       row.appendChild(inp); row.appendChild(sb); row.appendChild(ib);
       m2.appendChild(row);
     } else m2.appendChild(el('div', 'muted', '记忆 v2 不可用'));
+    const sbox = $('sandbox'); sbox.replaceChildren();
+    if (sbx && sbx.ok) {
+      $('sandbox-sub').textContent = '最近 ' + (sbx.count || 0) + ' 次 · 模式 ' + (sbx.mode || '');
+      const row = el('div', 'row');
+      const sel = el('select'); sel.id = 'sbx-skill';
+      (sbx.skills || []).forEach((n) => { const o = el('option', '', n); o.value = n; sel.appendChild(o); });
+      const to = el('input'); to.id = 'sbx-timeout'; to.value = '120'; to.style.width = '64px';
+      const vb = el('button', '', '沙箱验证');
+      vb.onclick = sandboxVerify;
+      row.appendChild(sel); row.appendChild(to); row.appendChild(vb);
+      sbox.appendChild(row);
+      (sbx.recent || []).slice(-5).reverse().forEach((r) => sbox.appendChild(el('div', 'muted',
+        '• ' + r.skill + ' · ' + (r.ok ? '✓' : '✗') + ' · ' + (r.duration_ms || 0) + 'ms' +
+        (r.error ? ' · ' + r.error : ''))));
+    } else sbox.appendChild(el('div', 'muted', '沙箱不可用'));
   });
+}
+function sandboxVerify() {
+  const skill = ($('sbx-skill') || {}).value || '';
+  const timeout = parseInt(($('sbx-timeout') || {}).value || '120', 10);
+  if (!skill) { alert('无可用技能'); return; }
+  fetch('/api/zhaoyun/sandbox/verify', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skill: skill, timeout: timeout }) })
+    .then((r) => r.json()).then((j) => {
+      if (j.ok) alert('沙箱验证通过：' + skill + ' · ' + (j.duration_ms || 0) + 'ms');
+      else alert('沙箱验证失败：' + skill + ' · ' + (j.error || ('rc=' + j.rc)));
+      loadCap2();
+    }).catch((e) => alert('沙箱调用失败：' + e));
 }
 function memSearch() {
   const q = ($('mem-q') || {}).value ? $('mem-q').value.trim() : '';
