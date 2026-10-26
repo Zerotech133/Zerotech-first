@@ -271,3 +271,10 @@ agent_platform/backup_20261018_team_quality.json
 agent_platform/intel_inbox/intel_inbox_ledger.jsonl
 # OSLINK-W4 8795 HTTP 鉴权 token（K-QUANT-20261026-OSLEG-8795API）：运行时注入，禁入库
 agent_platform/gateway/.osleg_http_token
+
+# ===== 运行态/生成本地产物（2026-10-27 工作树收编 WO-HYGIENE-20261027）=====
+agent_platform/bridge_inbox/.inbox_gateway.lock
+agent_platform/bridge_inbox/osleg_http/
+agent_platform/bridge_inbox/osleg_consumer/
+agent_platform/bridge_inbox/processed/lg-*.json
+quant_backtest/data/xueqiu/_manifest.json
