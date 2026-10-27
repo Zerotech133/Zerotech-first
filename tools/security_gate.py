@@ -126,8 +126,7 @@ def scan(paths=None, changed=False, all_files=False) -> dict:
         except OSError:
             continue
         file_count += 1
-        before = len(findings)
-        findings.extend(_scan_secrets(text, rel))
+            findings.extend(_scan_secrets(text, rel))
         if p.suffix == ".py":
             findings.extend(_scan_ast(text, rel))
         # 行级忽略标记（测试夹具/经评审的例外）

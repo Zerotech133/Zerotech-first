@@ -5,8 +5,6 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-import pytest
-
 # 向量后端是可选依赖（fastembed/sqlite_vec）；服务器 verify 环境未装 → eval 用
 # monkeypatch 也绕不过模块级 availability 检查（返回 vector_unavailable）。环境缺依赖即 skip。
 _HAS_VECTOR_DEPS = any(
