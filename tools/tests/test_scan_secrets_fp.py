@@ -37,6 +37,7 @@ def _hits(tmp_path, content, fname="t.py"):
     ('boundary = "----QPZMabcdEFGH1234gW"\n', "t.py"),
     ('"sign_field_8": self._secret_fp,\n', "t.py"),
     ("def _load_neo4j_password() -> str:\n", "t.py"),
+    ("# 凭据：env → .env.local（见 _load_neo4j_password；不再有硬编码旧值兜底）\n", "t.py"),
 ])
 def test_false_positive_exempt(tmp_path, content, fname):
     assert _hits(tmp_path, content, fname) == []

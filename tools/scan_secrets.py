@@ -314,7 +314,9 @@ def scan_file(path: str, include_vendor: bool = False):
                     state.ip_lines.append((lineno, cand))
                     continue
                 if rule_name == "HIGH_ENTROPY":
-                    if line.lstrip().startswith(("def ", "async def ", "class ")):
+                    if line.lstrip().startswith(("def ", "async def ", "class ", "#", "//")):
+                        # 2026-10-27：函数/类名、纯注释行常含 token/password 等词，非密钥
+                        continue
                         continue  # 2026-10-27：函数/类名常含 token/password 等词，非密钥
                     if not is_high_entropy_candidate(cand, line):
                         continue
