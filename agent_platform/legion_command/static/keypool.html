@@ -29,6 +29,13 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <header><div><h1>三席多 Key 池</h1><div class="sub">田丰 · 赵云 · 诸葛亮｜手动录 Key（4–5）｜额度耗尽自动切换｜仅页面/日志告警</div></div>
 <div><button onclick="load()">刷新</button></div></header>
 <div class="banner" id="banner"></div>
+<section class="log" id="smart-card" style="margin:16px 22px 0">
+<h2>智能托管（默认 · 小白无需设置）</h2>
+<div id="smart-status" class="muted">读取中…</div>
+<div class="muted" style="margin-top:8px">你只需要用 AI，不需要给每个 AI 配 Key。平台会自动把请求分配给可用的中转站/强模型/本地模型；只有管理员或需要固定模型的人，才点开下面的「高级设置」手动调整。</div>
+</section>
+<details id="adv-config" style="margin:14px 22px 0">
+<summary style="cursor:pointer;color:#9fc3e8;font-size:13px;padding:8px 0">管理员 / 高级设置（可选）：平台中转站、模型通道、各 AI 手动 Key</summary>
 <section class="log" id="relay-hero" style="margin:16px 22px 0">
 <h2>平台中转站（主入口 · 所有 AI 共用）</h2>
 <div class="muted" style="margin-bottom:8px">先配平台中转站；下方席位卡只做路由适配。所有 AI 通过 8796 网关统一使用这里的 Key。</div>
@@ -52,6 +59,7 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div id="modelch" style="display:flex;gap:12px;flex-wrap:wrap"></div>
 </section>
 <main id="main"></main>
+</details>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
 <div id="cred-list"></div>
@@ -241,6 +249,21 @@ async function loadModelCh(){
   }catch(e){box.innerHTML='<div class="muted">模型通道读取失败：'+e.message+'</div>'}
 }
 loadModelCh(); setInterval(loadModelCh,30000);
+
+
+async function loadSmart(){
+  try{
+    const r=await fetch('/api/auto/status',{cache:'no-store'}); const v=await r.json();
+    const up=v.upstream||{}; const loc=v.local||{}; const n=(v.agents||{}).count||0;
+    const rel=(up.relay_keys||[]).map(k=>k.masked+'['+k.status+']').join(', ')||'未配置';
+    const mode=v.mode==='smart'?'✅ 智能分配已开启':'⚠️ 等待管理员配置平台中转站 Key';
+    document.getElementById('smart-status').innerHTML=
+      '<div><b>'+mode+'</b></div>'
+      +'<div>平台上游：'+rel+' ｜ 本地模型：'+(loc.online?'在线':'离线')+(loc.present?' · qwen3.5:9b':'')+' ｜ 已托管 AI：'+n+'</div>'
+      +'<div>分配策略：'+(v.routing||{}).auto+'</div>';
+  }catch(e){document.getElementById('smart-status').textContent='状态读取失败：'+e.message}
+}
+loadSmart(); setInterval(loadSmart,30000);
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);
