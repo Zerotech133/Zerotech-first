@@ -85,11 +85,33 @@ def _find_bin_age() -> Path | None:
     return None
 
 
-def dry_run(vault_dir: Path) -> int:
+def _token_from_file(path: str) -> str:
+    """从受限文件读取 token（不回显、不进 shell 历史）；只取第一个非空行。"""
+    p = Path(path)
+    if not p.is_file():
+        _fail("token 文件不存在: %s" % p)
+    try:
+        lines = [ln.strip() for ln in p.read_text(encoding="utf-8", errors="replace").splitlines()
+                 if ln.strip()]
+    except OSError as exc:
+        _fail("token 文件读取失败: %s" % exc)
+    if not lines:
+        _fail("token 文件为空: %s" % p)
+    return lines[0]
+
+
+def dry_run(vault_dir: Path, token_file: str = "") -> int:
     target = vault_dir / TARGET_REL
     print("[dry-run] repo       =", REPO)
     print("[dry-run] vault_dir  =", vault_dir, "(exists=%s)" % vault_dir.is_dir())
     print("[dry-run] target     =", target, "(exists=%s)" % target.is_file())
+    if token_file:
+        tf = Path(token_file)
+        print("[dry-run] token_file =", tf, "(exists=%s size=%s)"
+              % (tf.is_file(), tf.stat().st_size if tf.is_file() else "-"))
+        if not tf.is_file():
+            print("[dry-run] WARN: --token-file 指向的文件不存在")
+            return 1
     if target.is_file():
         raw = target.read_text(encoding="utf-8", errors="replace").strip()
         print("[dry-run] old token len=%d sha8=%s (masked)"
@@ -98,8 +120,9 @@ def dry_run(vault_dir: Path) -> int:
     print("[dry-run] render_mcp =", RENDER_PY, "(exists=%s)" % RENDER_PY.is_file())
     age = _find_bin_age()
     print("[dry-run] age binary =", age, "(exists=%s)" % (age is not None))
-    print("[dry-run] steps: getpass x2 -> write target -> vault encrypt --recursive "
-          "-> vault verify --json -> render_mcp -> render_mcp --check")
+    print("[dry-run] steps: %s -> write target -> vault encrypt --recursive "
+          "-> vault verify --json -> render_mcp -> render_mcp --check"
+          % ("token-file" if token_file else "getpass x2"))
     if not VAULT_PY.is_file() or not RENDER_PY.is_file():
         print("[dry-run] WARN: tools/secrets 不完整，实跑会失败")
         return 1
@@ -115,24 +138,33 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="只检查前置，不读取/写入 token")
     ap.add_argument("--secrets-dir", default=None, help="覆盖 _vault/secrets 路径")
     ap.add_argument("--skip-render", action="store_true", help="只加密+校验，不重渲染 MCP 配置")
+    ap.add_argument("--token-file", default="",
+                    help="从受限文件读取 token（不回显；与 getpass 二选一，文件不自动删除）")
     args = ap.parse_args(argv)
 
     vault_dir = _vault_dir(args.secrets_dir)
     if args.dry_run:
-        return dry_run(vault_dir)
+        return dry_run(vault_dir, args.token_file)
     if not vault_dir.is_dir():
         _fail("vault 目录不存在: %s" % vault_dir)
     if not VAULT_PY.is_file() or not RENDER_PY.is_file():
         _fail("tools/secrets 工具缺失")
 
-    token = getpass.getpass("new Tushare MCP token (不回显): ").strip()
+    if args.token_file:
+        token = _token_from_file(args.token_file)
+        print("[ok] 已从文件读取 token（不回显）: %s" % args.token_file)
+        confirm = token
+    else:
+        token = getpass.getpass("new Tushare MCP token (不回显): ").strip()
+        confirm = None
     if not token:
         _fail("空输入")
     if len(token) < 20:
         _fail("token 长度异常（%d < 20），像不完整输入" % len(token))
     if any(ch.isspace() for ch in token):
         _fail("token 含空白字符，请重新从控制台复制")
-    confirm = getpass.getpass("再次输入确认: ").strip()
+    if confirm is None:
+        confirm = getpass.getpass("再次输入确认: ").strip()
     if token != confirm:
         _fail("两次输入不一致，已中止（未写入）")
 
