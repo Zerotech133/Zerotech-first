@@ -47,3 +47,11 @@ def test_paper_a11y_contract():
     assert 'role="main"' in s
     assert 'aria-live="polite"' in s
     assert 'aria-current="page"' in s
+
+
+def test_js_inline_style_cleanup():
+    s = PAGE.read_text(encoding="utf-8")
+    assert 'id="pjs-utilities"' in s
+    assert "pjs-dim" in s
+    assert "pjs-11" in s
+    assert "pjs-pad48" in s
