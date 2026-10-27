@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 22,
+  "workorders_doing": 21,
   "workorders_review": 4
  },
  "workorders": [
@@ -227,15 +227,6 @@
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-B12-20261027",
    "created": "2026-10-27 23:16:34",
-   "project": "general"
-  },
-  {
-   "id": "WO-DEBATE-WIRE-20261027",
-   "desc": "辩论接L5/页面：COMM_ZHUGE_DEBATE + /api/zhaoyun/debate + 页面表单",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-DEBATE-WIRE-20261027",
-   "created": "2026-10-27 23:20:35",
    "project": "general"
   },
   {
@@ -6802,11 +6793,6 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
-    },
-    {
-     "id": "WO-DEBATE-WIRE-20261027",
-     "desc": "辩论接L5/页面：COMM_ZHUGE_DEBATE + /api/zhaoyun/debate + 页面表单",
-     "status": "doing"
     }
    ]
   }
