@@ -90,8 +90,9 @@ def _fold(events: list[dict]) -> dict:
                                      "decision_note": ev.get("note"),
                                      "decided_at": ev.get("at")})
             elif kind == "updated":
-                for key in ("outcome", "adoption_id", "adoption_domains", "review_at",
-                            "status", "implemented_at", "superseded_by", "confidence"):
+                for key in ("outcome", "adoption_id", "adoption_domains", "suggestion_ids",
+                            "review_at", "status", "implemented_at", "superseded_by",
+                            "confidence"):
                     if key in ev:
                         records[rid][key] = ev[key]
             elif kind == "rejected_event":
@@ -119,7 +120,7 @@ def _next_id(records: dict) -> str:
 def create(title: str, question: str, recommendation: str, alternatives=None,
            evidence=None, risks=None, confidence: str = "medium", tags=None,
            source_card: str = "", review_at: str = "",
-           adoption_domains=None) -> dict:
+           adoption_domains=None, suggestion_ids=None) -> dict:
     title, question, recommendation = [(x or "").strip() for x in
                                        (title, question, recommendation)]
     if not title or not question or not recommendation:
@@ -148,6 +149,8 @@ def create(title: str, question: str, recommendation: str, alternatives=None,
         "review_at": (review_at or "")[:10],
         "adoption_domains": [str(d).strip()[:80] for d in (adoption_domains or [])
                              if str(d).strip()][:20],
+        "suggestion_ids": [str(s).strip()[:80] for s in (suggestion_ids or [])
+                           if str(s).strip()][:50],
         "tags": [str(t).strip() for t in (tags or []) if str(t).strip()][:12],
         "idem_key": idem,
     }
@@ -174,7 +177,8 @@ def decide(rid: str, status: str, by: str = "", note: str = "") -> dict:
 
 
 def update(rid: str, outcome: str = "", adoption_id: str = "", review_at: str = "",
-           confidence: str = "", adoption_domains=None) -> dict:
+           confidence: str = "", adoption_domains=None,
+           suggestion_ids=None) -> dict:
     records = _fold(_load_events())
     rec = records.get(rid)
     if not rec:
@@ -191,6 +195,11 @@ def update(rid: str, outcome: str = "", adoption_id: str = "", review_at: str = 
         merged = list(dict.fromkeys(current + [str(d).strip()[:80]
                                               for d in adoption_domains if str(d).strip()]))
         ev["adoption_domains"] = merged[:20]
+    if suggestion_ids:
+        current = list(rec.get("suggestion_ids") or [])
+        merged = list(dict.fromkeys(current + [str(s).strip()[:80]
+                                              for s in suggestion_ids if str(s).strip()]))
+        ev["suggestion_ids"] = merged[:50]
     if review_at:
         ev["review_at"] = review_at[:10]
     if confidence:
@@ -259,6 +268,7 @@ def main(argv=None) -> int:
     c.add_argument("--source-card", default="")
     c.add_argument("--review-at", default="")
     c.add_argument("--adoption-domains", default="")
+    c.add_argument("--suggestion-ids", default="")
     d = sub.add_parser("decide")
     d.add_argument("id")
     d.add_argument("--status", required=True)
@@ -271,6 +281,7 @@ def main(argv=None) -> int:
     u.add_argument("--review-at", default="")
     u.add_argument("--confidence", default="")
     u.add_argument("--adoption-domains", default="")
+    u.add_argument("--suggestion-ids", default="")
     l = sub.add_parser("list")
     l.add_argument("--status", default="")
     l.add_argument("--limit", type=int, default=20)
@@ -288,13 +299,15 @@ def main(argv=None) -> int:
                      args.confidence,
                      args.tags.split(",") if args.tags else [],
                      args.source_card, args.review_at,
-                     args.adoption_domains.split(",") if args.adoption_domains else [])
+                     args.adoption_domains.split(",") if args.adoption_domains else [],
+                     args.suggestion_ids.split(",") if args.suggestion_ids else [])
     elif args.cmd == "decide":
         out = decide(args.id, args.status, args.by, args.note)
     elif args.cmd == "update":
         out = update(args.id, args.outcome, args.adoption_id, args.review_at,
                      args.confidence,
-                     args.adoption_domains.split(",") if args.adoption_domains else [])
+                     args.adoption_domains.split(",") if args.adoption_domains else [],
+                     args.suggestion_ids.split(",") if args.suggestion_ids else [])
     elif args.cmd == "list":
         out = list_records(args.status, args.limit)
     elif args.cmd == "show":
