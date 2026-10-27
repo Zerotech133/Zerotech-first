@@ -23,7 +23,6 @@
   python kg_build_p3.py --sample    # 抽检联动边（SPX/沪深300）
 """
 import argparse
-import glob
 import os
 import sys
 from datetime import datetime

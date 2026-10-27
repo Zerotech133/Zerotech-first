@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 import json
 
 import pytest
-from cryptography.hazmat.primitives import serialization
 
 from strategy_layer.r0_historical_pool_probe import inspect_historical_pool
 from strategy_layer.r0_m3_drill import (

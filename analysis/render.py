@@ -3,7 +3,6 @@
 import base64
 import json
 import os
-import shutil
 
 import matplotlib
 matplotlib.use("Agg")

@@ -11,7 +11,6 @@
 合规：只读 GET、页间 2s 抖动、不写库、不落盘除本报告 stdout。
 用法：python tools/xq_probe_entries.py
 """
-import json
 import sys
 import time
 from datetime import datetime
@@ -20,7 +19,6 @@ HERE = r"C:\项目\老田的AI助手\quant_backtest"
 sys.path.insert(0, HERE)
 
 from xueqiu_crawl import XqCrawler  # noqa: E402
-import xueqiu_common as X  # noqa: E402
 
 SOCIAL = "https://xueqiu.com"
 

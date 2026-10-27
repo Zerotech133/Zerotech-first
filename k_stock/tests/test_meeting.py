@@ -9,7 +9,6 @@ manager 账本注入同 test_manager.py（临时目录，真账本零触碰）�
 """
 import json
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest

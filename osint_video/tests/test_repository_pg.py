@@ -19,7 +19,6 @@ PG 不可达时整文件跳过（不失败）。
 
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 import uuid

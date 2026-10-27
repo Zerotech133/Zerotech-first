@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from datetime import date, timedelta
 
-import pytest
 import pandas as pd
 
 from full_refresh_plan import execute_recent_refresh

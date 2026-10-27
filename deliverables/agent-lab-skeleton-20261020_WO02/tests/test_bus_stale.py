@@ -14,10 +14,9 @@ import threading
 import time
 from pathlib import Path
 
-import pytest
 
 import roles.message_bus as message_bus
-from roles.base_agent import _HELD_LOCK_PATHS, file_lock
+from roles.base_agent import _HELD_LOCK_PATHS
 from roles.message_bus import MessageBus, STATUS_POINT_FIELDS
 
 

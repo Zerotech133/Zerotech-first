@@ -16,7 +16,6 @@
 真实 token 计量均属后续工单——本文件不为其留桩。
 """
 import json
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -32,7 +31,7 @@ import strategy_branch as sb                            # noqa: E402
 from market import FakeMarket                           # noqa: E402
 from engine import PaperEngine                          # noqa: E402
 
-from test_paper_engine import _bar, RUN_ASOF            # noqa: E402
+from test_paper_engine import _bar            # noqa: E402
 from test_strategy_branch import _signal               # noqa: E402
 
 STOCK = "000002.SZ"

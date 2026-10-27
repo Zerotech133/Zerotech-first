@@ -217,7 +217,6 @@ class TestIpBlocked(unittest.TestCase):
 
     def test_expired_self_heals(self):
         """冷却到期 → active 返回 ""（熔断自愈，不人工解锁）。"""
-        import tempfile
         from datetime import datetime, timedelta
         mf = self._tmp_mf()
         past = (datetime.now() - timedelta(minutes=1)

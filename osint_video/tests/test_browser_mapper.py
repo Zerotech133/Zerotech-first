@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from collectors.browser_mapper import BrowserCollectorMapper
-from collectors.ports import CollectionAccessError, MediaAvailability, SessionStatus
+from collectors.ports import CollectionAccessError, MediaAvailability
 from knowledge.browser_fetcher import BrowserFetchResult, BrowserSessionHealth, BrowserSessionStatus
 
 

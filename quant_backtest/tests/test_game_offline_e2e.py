@@ -56,9 +56,6 @@ from quant_backtest.quant_sector.research_plan_book import (
     ResearchSignal,
 )
 from quant_backtest.quant_sector.signal_ref_bridge import (
-    BUSINESS_SIGNAL_REQUIRED,
-    NOT_A_PERMISSION,
-    RECEIPT_NOT_ACTIVE,
     SignalRefBridgeError,
     build_acceptance_ref,
     build_signal_ref,

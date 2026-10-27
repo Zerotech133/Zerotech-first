@@ -14,7 +14,6 @@ from typing import Any
 from common import db
 from queue_link.models import (
     ALLOWED_TRANSITIONS,
-    DEFAULT_MAX_RETRY,
     RETRY_BACKOFF_SECONDS,
     ErrorCode,
     LinkStatus,

@@ -7,7 +7,6 @@ b. _core_lock_acquire 陈锁自愈（pid 存活佐证 + LOCK-CLEAR 留痕）
 mock 全部网络与锁路径，不触 C:\\Temp 真锁、不连 rookie 数据源。
 """
 import os
-import socket
 import sys
 import time
 import types

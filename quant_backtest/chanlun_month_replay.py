@@ -7,7 +7,10 @@
 - 复权：tdx ts_adj_factor 覆盖 20260901→20261009（尾部 ffill）；无因子标的引擎回测剔除并登记
 - 双口径：①引擎回测（复权 OHLC + 3+1bps 成本）②信号前瞻收益（pct_chg 官方复权日收益，+5/+10/+20 交易日）
 """
-import json, os, sys, glob
+import json
+import os
+import sys
+import glob
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

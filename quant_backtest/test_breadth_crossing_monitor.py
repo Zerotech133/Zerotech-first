@@ -7,7 +7,6 @@
 """
 import json
 import os
-import sys
 import tempfile
 
 import breadth_crossing_monitor as bcm

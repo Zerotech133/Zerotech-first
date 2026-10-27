@@ -11,7 +11,6 @@ G5 = JSON 契约漂移：null 与键缺失混淆；同 ``type`` 跨版本 schema
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass

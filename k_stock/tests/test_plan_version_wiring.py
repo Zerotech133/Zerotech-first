@@ -12,8 +12,6 @@
   4. 跟随分支端到端：信号→as_of_plan→落单→快照含 plan_version
      （禁回写防线在链路生效：会后生效版本被拒）。
 """
-import json
-import sqlite3
 import sys
 from pathlib import Path
 

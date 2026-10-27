@@ -8,12 +8,10 @@
   ④ 抽样与调用预算红线
 跑法：pytest quant_backtest/tests/test_llm_bench_conc.py -q
 """
-import json
 import sys
 import time
 from pathlib import Path
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))

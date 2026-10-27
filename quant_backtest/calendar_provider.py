@@ -7,7 +7,7 @@ verified identity before it can be used by a production execution path.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import re
 from types import MappingProxyType
 from typing import Iterable, Mapping, Optional, Protocol, Tuple

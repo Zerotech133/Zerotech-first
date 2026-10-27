@@ -22,7 +22,6 @@ sys.path.insert(0, str(HERE / "paper"))
 sys.path.insert(0, str(HERE / "tests"))
 
 from engine import PaperEngine, ENGINE_VERSION   # noqa: E402
-import combo_registry                            # noqa: E402
 import decision_snapshot                         # noqa: E402
 import signal_consumer                           # noqa: E402
 from signal_consumer import (SignalPointError, SignalRejected,   # noqa: E402

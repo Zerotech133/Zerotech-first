@@ -2,7 +2,6 @@
 """S3 量化特征：技术 / 估值（含同业）/ 财务 / 资金 / 筹码 / 结构。"""
 import json
 import os
-import re
 import urllib.request
 
 import pandas as pd

@@ -8,14 +8,13 @@ not persist, enqueue, download media, attach externally, or inspect credentials.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 import math
 from typing import Any, Callable, Mapping
 from urllib.parse import urlparse
 
 from collectors.ports import VideoMetadata
 from knowledge.authorized_browser import AuthorizedBrowserSession
-from knowledge.browser_fetcher import BrowserSessionAccessError, BrowserSessionStatus
+from knowledge.browser_fetcher import BrowserSessionStatus
 
 
 class VisiblePocError(RuntimeError):

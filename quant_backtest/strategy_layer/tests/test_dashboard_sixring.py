@@ -198,7 +198,6 @@ class TestSixringRingFuncs:
                         "rules": {"R1": {"block": 2}, "R2": {"block": 0},
                                   "R3": {"block": 1}, "R4": {"block": 0}},
                         "market_gate": {"action": "shadow_block"}}
-        import types
         monkeypatch.setitem(sys.modules, "strategy_layer.risk_bridge",
                             FakeBridge)
         ring = dashboard_api._sixring_risk()

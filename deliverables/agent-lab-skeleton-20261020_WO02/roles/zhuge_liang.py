@@ -20,8 +20,8 @@ from typing import Any, Dict, List, Optional
 
 from roles.base_agent import BaseAgent, Report, TaskState
 from roles.rectification_line import (PREFIX_ESCALATION_ROUTE,
-                                      SEVERITY_BLOCKING, SEVERITY_ESCALATION,
-                                      SEVERITY_NORMAL, normalize_severity)
+                                      SEVERITY_ESCALATION,
+                                      normalize_severity)
 
 # 合法七态迁移表：created→assigned→doing→review→done；任意→blocked/cancelled。
 # blocked 的解阻路径未定稿，暂仅允许 blocked→cancelled（待老田裁定）。

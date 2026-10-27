@@ -36,7 +36,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
-from jev_graduation_bydomain import load_all, domain_stats, mean  # noqa: E402
+from jev_graduation_bydomain import load_all, domain_stats  # noqa: E402
 
 OUT_JSON = HERE / "review_data" / "graduation_status_v2.json"
 

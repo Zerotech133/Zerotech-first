@@ -23,7 +23,6 @@ source 仅 n≥min_n_src 且衰减显著差异的来源下发（applied=True）�
 
 用法：python jev_decay.py
 """
-import json
 import math
 import os
 import sys

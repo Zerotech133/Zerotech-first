@@ -18,8 +18,13 @@
 历史: 2026-10-19 K-QUANT-003 初版, 方案 A (8097 升级) 配套
 """
 from __future__ import annotations
-import argparse, json, os, sys, time, logging
-from typing import Any, Optional
+import argparse
+import json
+import os
+import sys
+import time
+import logging
+from typing import Optional
 
 # ── 基础 ──────────────────────────────────────────────
 WATCHDOG_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,7 +60,8 @@ def _hub_key() -> str:
 def _hub_call(path: str, method: str = "GET",
               body: Optional[dict] = None) -> Optional[dict]:
     """调 8097 /api/quant/* 端点. 返回 response dict 或 None (异常)."""
-    import urllib.request, urllib.error
+    import urllib.request
+    import urllib.error
     url = f"{HUB_URL}{path}"
     headers = {"X-Push-Hub-Key": _hub_key(),
                "Content-Type": "application/json"}

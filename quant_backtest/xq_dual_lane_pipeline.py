@@ -32,7 +32,7 @@ from __future__ import annotations
 
 from collections import deque
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import threading
 from typing import Callable, Iterator, Mapping
 

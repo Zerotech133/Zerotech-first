@@ -7,7 +7,6 @@
   3. collector 仍收 ⑤（展示隐藏不影响留档）
   4. 开关缺省 = 旧行为（无配置文件 → 全开）
 """
-import json
 import os
 import sys
 

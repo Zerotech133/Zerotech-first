@@ -6,7 +6,9 @@
 差值 = 确认滞后的入场成本；hyp 自身为负 = 信号本身烂。
 另外对全部 fresh 买点（不限成交）算 sig_dt→+20日 前瞻收益，量信号本身含金量。
 """
-import sys, os, json
+import sys
+import os
+import json
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

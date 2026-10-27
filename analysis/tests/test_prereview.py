@@ -9,7 +9,7 @@ WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(WT))
 sys.path.insert(0, WT)
 
-from analysis import config, gates, prereview, review  # noqa: E402
+from analysis import gates, prereview, review  # noqa: E402
 
 
 class TestPrereview(unittest.TestCase):

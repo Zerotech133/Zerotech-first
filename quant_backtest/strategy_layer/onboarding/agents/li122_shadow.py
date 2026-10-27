@@ -90,7 +90,6 @@ def _chanlun_data():
 def _datamart():
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
-    import datamart
     return sys.modules["datamart"]
 
 
@@ -100,7 +99,6 @@ def _li122_agent():
         sys.path.insert(0, _AGENTS_DIR)
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
-    import li122_agent
     return sys.modules["li122_agent"]
 
 

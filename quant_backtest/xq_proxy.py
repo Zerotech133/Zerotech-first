@@ -17,7 +17,7 @@
 import json
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from urllib.parse import quote
 
 HERE = os.path.dirname(os.path.abspath(__file__))

@@ -5,7 +5,8 @@ K-STOCK-267 探针5：等权池 + 周期再平衡 × regime 调仓（含成本�
 口径：76 池等权；再平衡时权重拉回等权；换手按 15bp 单边计费；
 regime（池等权指数 MA20/60，D-1 判定）只在 80/50/30 间调部署率，永不禁开仓。
 """
-import sys, os, json
+import os
+import json
 import pandas as pd
 import numpy as np
 

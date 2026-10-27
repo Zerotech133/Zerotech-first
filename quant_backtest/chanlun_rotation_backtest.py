@@ -11,7 +11,10 @@ K-STOCK-257 · 交易视角轮动回测（换股机制）
   - 基线：同池同打分的「买入持有不动」组合——两者之差=换股机制的价值。
 执行约定（保守，避免同 bar 前视）：D 日收盘确认的信号 → D+1 日收盘成交（持仓当日仍承担 D+1 日收益，新仓从 D+2 起计收益）。
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

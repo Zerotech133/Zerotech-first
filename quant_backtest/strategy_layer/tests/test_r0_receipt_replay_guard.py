@@ -1,9 +1,7 @@
 """WO-QT-20261020-020 合成测试：只测本地文件与内存行为，无网络、无生产接线。"""
 import json
-import os
 from pathlib import Path
 
-import pytest
 
 from strategy_layer.r0_receipt_replay_guard import (
     ReplayLedger, inspect_ledger, repair_ledger,

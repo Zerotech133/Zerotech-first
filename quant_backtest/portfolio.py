@@ -1298,7 +1298,7 @@ if __name__ == "__main__":
         try:
             daily_run(notify=True)    # 计划任务入口：跑批+战报
             _spawn_council()          # K55-C1 影子投委会（detached，故障不影响跑批）
-        except Exception as e:        # K52-B 无人值守跑批失败 → 飞书告警
+        except Exception:        # K52-B 无人值守跑批失败 → 飞书告警
             import traceback
             tail = traceback.format_exc().strip().splitlines()[-1][:200]
             try:

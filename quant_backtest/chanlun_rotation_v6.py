@@ -21,7 +21,10 @@ K-STOCK-267b · v6b 学院方案对齐重构(部署修复)（量子双刀框架 
 数据口径：hfq(263a) + seen-ever(263b)；对照 v5-B5(-7.83%/-10.98%) 与买入持有。
 ⚠️ 如实声明：池为 2026-10-12 快照，2023-2024 段存在宇宙前视（待按日快照池重刷）。
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

@@ -3,7 +3,6 @@
 
 原则：评级只做研究口径；所有结论都要能在 features/events 中找到依据。
 """
-from . import config
 
 
 def _num(x):

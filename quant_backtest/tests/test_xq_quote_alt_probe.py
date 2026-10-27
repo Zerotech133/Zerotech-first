@@ -5,7 +5,6 @@
 akshare 缺库优雅 N/A、tushare token 缺失 N/A、verdict 优先级、报告落盘。
 """
 import json
-import struct
 import sys
 from pathlib import Path
 

@@ -20,7 +20,6 @@ from build_todays_picks import _backfill_quotes  # noqa: E402
 from build_todays_picks import gate_failed_sources, _push_source_alert  # noqa: E402
 import build_todays_picks as btp  # noqa: E402
 from build_pick_verdicts import pct_between  # noqa: E402
-import tdx_read  # noqa: E402
 
 
 def _e(name, *srcs):

@@ -7,7 +7,6 @@ import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "subscribe.py"

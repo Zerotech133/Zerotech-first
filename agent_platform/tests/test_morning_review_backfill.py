@@ -151,7 +151,8 @@ class TriStateTests(unittest.TestCase):
 
 class AnchorAndNoFabricationTests(unittest.TestCase):
     def setUp(self):
-        import tempfile, shutil
+        import tempfile
+        import shutil
         self.tmp = Path(tempfile.mkdtemp(prefix="w42_test_"))
         (self.tmp / "tools").mkdir()
         shutil.copy(REPO / "tools" / "validate_json.py",

@@ -5,7 +5,6 @@
 解析对照）、SR0 公式、逆正态精度、台账幂等/原子追加/坏行容忍、CLI record。
 运行：python -m pytest test_trial_ledger.py -q
 """
-import json
 import math
 import os
 import tempfile

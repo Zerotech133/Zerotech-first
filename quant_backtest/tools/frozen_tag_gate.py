@@ -35,7 +35,6 @@ import os
 import re
 import subprocess
 import sys
-from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 QB = os.path.dirname(HERE)                      # quant_backtest/

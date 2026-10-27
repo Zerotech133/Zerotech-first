@@ -13,7 +13,10 @@ K-STOCK-277 · 逐日回测账本生成器（回测中心数据管线）
   meta / summary KPI / equity_curve / days{day:{pnl_pct, n_pos, wins, losses, cap, actions[]}}
   holdings{day:[{stock,pnl_pct,wgt_pct}]} / trades / monthly
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

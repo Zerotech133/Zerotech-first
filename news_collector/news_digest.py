@@ -35,7 +35,7 @@ HI_CONF = 0.80
 SIGNAL_TOP = 4
 
 sys.path.insert(0, HERE)
-from card_build import build_card, build_card3, push_card  # noqa: E402
+from card_build import build_card3, push_card  # noqa: E402
 
 
 def log(msg):

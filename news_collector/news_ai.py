@@ -1308,7 +1308,8 @@ def main():
     if mode == "brief" and "--dry" not in sys.argv \
             and str(os.environ.get("PUSH_DIGEST_ENABLED", "1")) != "0":
         try:
-            import sys as _sys, os as _os
+            import sys as _sys
+            import os as _os
             _portal = _os.path.join(_os.path.dirname(_os.path.dirname(
                 _os.path.abspath(__file__))), "portal")
             if _portal not in _sys.path:

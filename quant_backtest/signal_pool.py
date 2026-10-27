@@ -28,7 +28,7 @@ signal_id 确定性生成（幂等防重）：{pool}.{code}.{方向}.{yyyymmdd}.
 import json
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)

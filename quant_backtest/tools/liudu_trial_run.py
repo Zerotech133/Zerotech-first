@@ -41,7 +41,6 @@ sys.path.insert(0, str(_REPO / "experiments"))
 from liudu_universe import SELECTED_UNIVERSE  # noqa: E402
 from reconcile_semantics import (  # noqa: E402
     SELECTED_RECONCILE_MODE,
-    MODE_B_R1_SINGLESOURCE,
     reconcile,
 )
 from signal_pool_writer import (  # noqa: E402
@@ -55,7 +54,7 @@ from signal_pool_writer import (  # noqa: E402
 from stop_loss_harness import simulate, default_params  # noqa: E402
 
 # 复用荀攸真实已拍板 T1/T2 分档选择逻辑（老田 2026-10-19 拍板口径）
-from strategy_layer.xunyou import build_pool, assign_tiers  # noqa: E402
+from strategy_layer.xunyou import build_pool  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

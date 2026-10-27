@@ -6,8 +6,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from quant_backtest.quant_sector import (
-    AuthorizationScope, HumanAuthorization, PermissionGate, ResearchReview,
-    RiskDecision,
+    PermissionGate,
 )
 from quant_backtest.watch_dispatch import (
     RouteOutbox, ShadowDecision, ShadowLedger, ShadowReview, freeze_offline,

@@ -38,7 +38,6 @@ HERE = Path(__file__).resolve().parent          # k_stock/paper
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-import combo_factory as cf                      # noqa: E402
 import combo_registry as creg                   # noqa: E402
 import strategy_branch as sb                    # noqa: E402
 

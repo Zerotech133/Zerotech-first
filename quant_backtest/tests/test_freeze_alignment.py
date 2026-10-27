@@ -6,7 +6,7 @@
 import json
 import sys
 import tempfile
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 

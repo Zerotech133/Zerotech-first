@@ -10,7 +10,6 @@ import socket
 import sys
 import os
 
-import pytest
 
 QUANT_BT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

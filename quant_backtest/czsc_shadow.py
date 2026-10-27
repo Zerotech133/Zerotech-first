@@ -14,7 +14,6 @@
 attribution）只读。
 """
 import argparse
-import hashlib
 import json
 import math
 import os

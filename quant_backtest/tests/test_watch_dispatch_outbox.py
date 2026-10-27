@@ -8,7 +8,7 @@ import pytest
 
 from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
 from quant_backtest.quant_sector.upstream_inbox import QuantUpstreamReport, UpstreamInbox
-from quant_backtest.watch_dispatch import EvidenceEnvelope, RouteIntent, freeze_offline
+from quant_backtest.watch_dispatch import freeze_offline
 from quant_backtest.watch_dispatch.evidence_store import EvidenceConflict, EvidenceStore
 from quant_backtest.watch_dispatch.route_outbox import (
     ACCEPTED_VERIFIED, CLAIMED, CANCELLED, DEFINITELY_REJECTED, OutboxError,

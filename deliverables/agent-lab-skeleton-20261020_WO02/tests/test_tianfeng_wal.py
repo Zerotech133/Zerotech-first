@@ -595,7 +595,6 @@ def test_reconcile_is_idempotent(tmp_path, monkeypatch):
 
 def test_wal_write_failure_degrades_but_still_delivers(tmp_path, monkeypatch):
     """WAL 落盘失败：降级为无日志送达 + data_gaps 留痕，不因日志故障漏报。"""
-    import roles.tian_feng as tian_feng_mod
 
     bus = make_bus(tmp_path)
     bus.register("tian_feng", "command")

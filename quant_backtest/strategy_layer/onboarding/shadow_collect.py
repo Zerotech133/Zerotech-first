@@ -33,7 +33,7 @@ import math
 import os
 import sys
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _QB_ROOT = os.path.dirname(os.path.dirname(_HERE))

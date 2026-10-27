@@ -9,9 +9,10 @@ K-STOCK-273 · 数据源全面体检（老田 10-13 06:46 指令「检查我们�
   S5 data/tushare/daily + index_daily 抽查对照
 输出：stdout 摘要 + data/integrity/audit_20261013.json
 """
-import os, json, glob
+import os
+import json
+import glob
 import pandas as pd
-import numpy as np
 
 BASE = r"C:/项目/老田的AI助手/quant_backtest/data"
 TODAY = "20261012"          # 数据应到的最后交易日（10-13 为周二盘前，数据只到 10-12）

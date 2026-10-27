@@ -15,14 +15,12 @@
 纪律：零 LLM 调用、零网络（前向收益全部 fwd_fn 注入）、零全局 patch
 （不碰 time.sleep）、测试时间动态生成、唯一写副作用限定 pytest tmp_path。
 """
-import json
 import math
 import os
 import time
 from datetime import date, timedelta
 
 import numpy as np
-import pytest
 
 from strategy_layer.onboarding import shadow_collect as sc
 from strategy_layer.signal import Signal

@@ -11,7 +11,10 @@ W3-4 · 缠论 v7 滚动池轮动回测（20261014）
 基建复用: chanlun_signal.analyze 为 import 复用；v6c 全顶层脚本无法安全 import（会重跑七臂
       并覆写留痕），故数据加载 15 行 kfac 逻辑以同口径函数内聚于本文件，用 B0 对数校验兜底。
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

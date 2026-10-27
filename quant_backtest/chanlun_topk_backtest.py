@@ -11,9 +11,12 @@
   python chanlun_topk_backtest.py --dates 20251201,20260105,... --sig 3买 --topk 10
   python chanlun_topk_backtest.py --start 20251201 --end 20260227 --step 10   # 等步长采样
 """
-import json, os, sys, glob, argparse, time
+import json
+import os
+import sys
+import argparse
+import time
 import pandas as pd
-from collections import Counter
 
 BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")

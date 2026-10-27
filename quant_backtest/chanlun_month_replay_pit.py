@@ -2,13 +2,15 @@
 """K-STOCK-241 缠论池月度信号账本·严格截断重做版（更正 239 前视账本）
 对窗口内每个交易日跑 pit_select（截断双pass），产出「当天收盘时真正可见的新确认信号」账本。
 """
-import json, os, sys
+import json
+import os
+import sys
 import pandas as pd
 from collections import Counter
 
 BASE = r"C:/项目/老田的AI助手"
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
-from chanlun_pit_select import pit_select, load_universe   # noqa: E402
+from chanlun_pit_select import pit_select   # noqa: E402
 
 W0, W1 = "20260912", "20261012"
 OUT = os.path.join(BASE, "quant_backtest", "chanlun_month_replay_pit_result.json")

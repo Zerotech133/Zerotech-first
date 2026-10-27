@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """事件复核队列测试（临时 SQLite，不碰生产库）。"""
 import os
-import sqlite3
 import sys
 import tempfile
 import unittest

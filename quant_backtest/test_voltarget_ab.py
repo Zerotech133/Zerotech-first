@@ -6,7 +6,6 @@ import os
 import sys
 import tempfile
 
-import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

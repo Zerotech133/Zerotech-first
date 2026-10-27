@@ -10,7 +10,10 @@ K-STOCK-263 · v4 = v3(hfq修正) + seen-ever 信号去重（窗口滑移伪信�
   o/h/l 按当日 close 比例缩放），喂 chanlun 引擎与 mom20 特征。hfq 只乘过去因子 = PIT 安全。
   其余逻辑与 v2（259）逐字节一致，差异全部归因 K 线修真。
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

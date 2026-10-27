@@ -4,7 +4,9 @@
 口径：全部 fresh 买点（seen-ever 去重后），入场=确认日次一交易日收盘(hfq)，
 前瞻 = 入场日→+20交易日 hfq 收益。
 """
-import sys, os, json
+import sys
+import os
+import json
 import pandas as pd
 import datetime as _d
 

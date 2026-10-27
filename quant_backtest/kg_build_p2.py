@@ -34,7 +34,6 @@
   python kg_build_p2.py --sample 688411.SH   # 抽检某标的的人物
 """
 import argparse
-import glob
 import os
 import sys
 from datetime import datetime

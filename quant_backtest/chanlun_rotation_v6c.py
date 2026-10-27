@@ -5,7 +5,10 @@ v1 缺陷：忘了初始建仓，全程空仓。v2 修正：
   D0 起对池内所有个股等权分批建仓（未上市/无数据者首个有数据交易日自动进场）；
   止损/卖点退出资金，在新买点出现或 regime 升档时自动回场；regime 减档等比例减仓。
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

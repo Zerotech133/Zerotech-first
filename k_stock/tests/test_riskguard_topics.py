@@ -17,7 +17,6 @@
 （跑完字节与 mtime 必须不变）。
 """
 import json
-import os
 import sys
 from pathlib import Path
 

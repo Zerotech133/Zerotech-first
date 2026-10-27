@@ -34,7 +34,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from quant_backtest.quant_sector.upstream_inbox import (
     UpstreamReceipt,
-    digest,
 )
 
 _LABEL = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")

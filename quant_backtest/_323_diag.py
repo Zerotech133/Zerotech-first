@@ -3,7 +3,6 @@
 import sys
 
 import pandas as pd
-import numpy as np
 
 sys.path.insert(0, r"C:\项目\老田的AI助手")
 from agent_platform.engine.quant_double_knife import quant_double_knife

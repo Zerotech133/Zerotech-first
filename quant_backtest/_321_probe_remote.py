@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """321 勘查：远端 ts_rt_min 最新日期与 14:45 快照可用性验证。"""
-import json
 import time
 
-import pandas as pd
 import requests
 
 BASE = "http://rookie.xtcloud-tech.com:48088"

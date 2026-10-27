@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple
 from bar_dto import Bar, BarQuery, ensure_utc
 from bar_store import BarStore
 from market_rules import MarketRuleProvider
-from fill_model import AllOrNoneFillModel, FillDecision, FillModel, VolumeParticipationFillModel
+from fill_model import FillDecision, FillModel, VolumeParticipationFillModel
 from fee_schedule import CostBreakdown, CostCalculator, OrderFeeAccumulator
 
 Provider = Callable[..., Any]
@@ -646,7 +646,7 @@ def _run_from_store_once(
     calendar_identity = None
     if policy.calendar_required:
         try:
-            from calendar_provider import require_production_provider, validate_identity
+            from calendar_provider import require_production_provider
             identity = require_production_provider(calendar_provider)
             if policy.calendar_ref is None or policy.calendar_version is None:
                 raise ValueError("CALENDAR_MISMATCH: calendar identity required")

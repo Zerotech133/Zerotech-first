@@ -2,7 +2,6 @@
 """JEV Base 补缺口（按 (判断时间,标题,来源) 精确去重；2026-10-26）。"""
 import json
 import sys
-import os
 import time
 
 HERE = r"C:\项目\老田的AI助手\news_collector"

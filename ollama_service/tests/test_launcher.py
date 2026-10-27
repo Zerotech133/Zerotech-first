@@ -1,7 +1,6 @@
 import io
 import unittest
 from contextlib import redirect_stdout
-from pathlib import Path
 from unittest.mock import Mock
 
 from ollama_service.health import HealthCheckResult, HealthReport

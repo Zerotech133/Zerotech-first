@@ -21,7 +21,6 @@ import os
 import subprocess
 import sys
 import time
-import urllib.request
 
 # K-STOCK-414：旧机用户 Administrator 硬编码换机断链 → expanduser 动态推导
 LARK_ROOT = os.path.join(
