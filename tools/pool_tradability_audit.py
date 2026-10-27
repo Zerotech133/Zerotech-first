@@ -17,6 +17,7 @@ from datetime import datetime
 
 sys.stdout.reconfigure(encoding='utf-8')
 import tushare as ts
+import logging
 
 pro = ts.pro_api()
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -32,8 +33,8 @@ def main():
             if line:
                 try:
                     rows.append(json.loads(line))
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/pool_tradability_audit.py", exc)
     # CN 市场才有涨跌停语义；按 detect_date 分组批量拉
     cn = [r for r in rows if r.get('market') == 'CN']
     by_date = defaultdict(list)

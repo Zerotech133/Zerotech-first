@@ -28,6 +28,7 @@ import threading
 import time
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -181,8 +182,8 @@ def main():
           % (args.host, args.port, SOURCE_URL), flush=True)
     try:
         srv.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    except KeyboardInterrupt as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/alerts_shadow.py", exc)
     finally:
         srv.server_close()
 

@@ -31,6 +31,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import xueqiu_common as X
+import logging
 
 BASE = "https://stock.xueqiu.com"
 SOCIAL = "https://xueqiu.com"                # 舆情接口在主站域
@@ -71,8 +72,8 @@ class XqCrawler:
             if pr:
                 print("[XqCrawler] UA 粘性: 出口专属（%s）"
                       % pool.current().name)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xueqiu_crawl.py", exc)
         self.sess.headers.update({"User-Agent": self._ua})
         self.token = self._warm()
         # EXEC-R29：代理出口若被 WAF 302，自动切直连（缓存伴生 cookie+token 直连

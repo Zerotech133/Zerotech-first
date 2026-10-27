@@ -39,6 +39,7 @@ import xueqiu_common as X
 from xueqiu_crawl import XqCrawler
 from xq_collect_1000 import URL_TIMELINE as TL_URL, CATS
 from xq_proxy import get_pool, ua_for, notify_blocked
+import logging
 
 INFO_DB = os.path.join(ROOT, "data", "xueqiu", "xueqiu_info.db")
 
@@ -121,8 +122,8 @@ def main() -> int:
                 print("  cat %d @ %-11s → 403，换出口重试一次" % (cat, probe))
                 try:
                     notify_blocked()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/research/xq_timeline_probe.py", exc)
                 sess.proxies.update(get_pool().proxies() or {})
                 time.sleep(8)
                 sid, ts = first_item(sess, cat, probe)

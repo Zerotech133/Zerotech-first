@@ -4,6 +4,7 @@
 import ctypes
 import ctypes.wintypes as wt
 import subprocess
+import logging
 
 # 拿 PID 列表（tasklist 输出 GBK）
 r = subprocess.run(["tasklist", "/FO", "CSV"], capture_output=True)
@@ -18,8 +19,8 @@ for line in r.stdout.decode("gbk", errors="replace").splitlines()[1:]:
     ):
         try:
             targets[int(parts[1])] = parts[0]
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/_331_proc_times.py", exc)
 
 k32 = ctypes.windll.kernel32
 TOKEN = 0x1FFF  # PROCESS_QUERY_LIMITED_INFORMATION 0x1000 | QUERY_INFORMATION 0x0400

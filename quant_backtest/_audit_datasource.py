@@ -14,6 +14,7 @@ import os
 import json
 import glob
 import pandas as pd
+import logging
 
 BASE = r"C:/项目/老田的AI助手/quant_backtest/data"
 TODAY = "20261012"  # 数据应到的最后交易日（10-13 为周二盘前，数据只到 10-12）
@@ -111,8 +112,8 @@ for tag, d in (
             dd = a[c[0]].astype(str)
             los.append(dd.min())
             his.append(dd.max())
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/_audit_datasource.py", exc)
     print(f"{tag}: 文件 {len(fs)} 个（抽样 {len(los)}）· 范围 {min(los)} → {max(his)}")
 
 # ---------- S4: 交易日历 ----------

@@ -40,6 +40,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import xueqiu_common as X
+import logging
 
 _PROXY_KEYS = (
     "HTTP_PROXY",
@@ -120,8 +121,8 @@ def load_ts_token(repo_root: str | None = None) -> str:
                     v = s.split("=", 1)[1].strip()
                     if v:
                         return v
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xq_quote_router.py", exc)
     return ""
 
 

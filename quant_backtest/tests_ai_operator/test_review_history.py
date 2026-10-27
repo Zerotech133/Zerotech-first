@@ -12,6 +12,7 @@ import uuid
 from ai_operator.contracts import EVENT_FIELDS, canonical_json, normalize_time
 from ai_operator.memory import open_store
 from tests_ai_operator import test_review_gate as gate_fixtures
+import logging
 
 
 class SignedFixtureVerifier:
@@ -55,8 +56,8 @@ class ReviewHistoryTests(unittest.TestCase):
         for module in ("human_review", "review_history"):
             try:
                 stack.enter_context(patch("ai_operator." + module + ".utc_now", return_value=value, create=True))
-            except ModuleNotFoundError:
-                pass
+            except ModuleNotFoundError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tests_ai_operator/test_review_history.py", exc)
         return stack
 
     def record(self, action, second, *, target=None, expires=100, pair=None):

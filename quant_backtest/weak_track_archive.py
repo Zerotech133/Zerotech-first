@@ -35,6 +35,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import weak_track_summary as wts  # noqa: E402  (parse_cases 唯一解析器)
 import weak_track_learn as wl  # noqa: E402  (learn_fields 统计复用)
+import logging
 
 CASES = os.path.join(os.path.dirname(HERE), "reports", "weak_cases")
 OPEN = "https://open.feishu.cn/open-apis"
@@ -275,8 +276,8 @@ def _ensure_folder(tok, root):
             ft = json.load(open(STATE, encoding="utf-8")).get("folder")
             if ft:
                 return ft
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_archive.py", exc)
     r = _api(
         tok,
         OPEN + "/drive/v1/files/create_folder",

@@ -27,6 +27,7 @@ import tempfile
 from typing import Dict, List, Optional, Protocol, runtime_checkable
 
 from .signal import Signal
+import logging
 
 # 开关持久化文件默认路径（与本文件同目录）
 DEFAULT_STORE_PATH = os.path.join(
@@ -247,8 +248,8 @@ class Registry:
                         merged_top_n.update(
                             {k: v for k, v in disk_top.items() if k not in merged_top_n}
                         )
-        except Exception:
-            pass  # 磁盘不可读则以内存状态为准
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/adapter.py", exc)
         payload = {
             "enabled": merged_enabled or self.enabled_ids(),
             "weights": merged_weights

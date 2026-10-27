@@ -45,6 +45,7 @@ from pathlib import Path
 
 from quant_backtest.agent_bridge import osleg_contract as oc
 from quant_backtest.agent_bridge.osleg_contract import OslegInbox
+import logging
 
 __all__ = [
     "CHANNEL",
@@ -197,8 +198,8 @@ class InboxChannelBridge:
         except BaseException:
             try:
                 tmp.unlink()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/agent_bridge/osleg_inbox_channel.py", exc)
             raise
 
     def _ledger(self, path: Path):

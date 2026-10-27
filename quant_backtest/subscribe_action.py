@@ -24,6 +24,7 @@
 
 import json
 import os
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SUB_PATH = os.path.join(HERE, "subscriptions.json")
@@ -170,8 +171,8 @@ def _params(code, px, kind, label):
     if px:
         try:
             p["trigger_px"] = round(float(px), 2)
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/subscribe_action.py", exc)
     p["trigger_kind"] = (
         "pullback_hold"
         if kind == "buy_point"

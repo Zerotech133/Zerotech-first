@@ -35,6 +35,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import weak_track_close as wc  # noqa: E402  (_load/_case_name)
+import logging
 
 REP = os.path.join(os.path.dirname(HERE), "reports")
 TPL = os.path.join(HERE, "weak_track_watch_tpl.txt")
@@ -160,8 +161,8 @@ def build_watch(f):
                 if not l.lstrip().startswith("#")
             )
             return text.format(**f).rstrip("\n")
-        except (KeyError, IndexError, ValueError):
-            pass
+        except (KeyError, IndexError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_watch.py", exc)
     return (
         "⏰ [WEAK WATCH] 超期未结案巡检（§12）\n"
         "在案 {n} 案｜异常 {n_bad} 案｜{ts}\n"

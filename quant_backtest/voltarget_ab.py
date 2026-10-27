@@ -18,6 +18,7 @@
 import hashlib
 import json
 import os
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERIES_FP = os.path.join(HERE, "reports", "qd_breadth_series.json")
@@ -85,8 +86,8 @@ def _cross_confirmed(events_fp=None):
             for line in f:
                 if '"CONFIRM_HOLD"' in line:
                     return True
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/voltarget_ab.py", exc)
     return False
 
 

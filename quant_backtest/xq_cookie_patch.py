@@ -17,6 +17,7 @@ xq_a_token（token 池换号时数据面 token 与 cookie 保持一致）。
 import json
 import os
 import time
+import logging
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _BROWSER_CACHE = os.path.join(_HERE, "config", "xq_browser_cookies.json")
@@ -88,8 +89,8 @@ def patch_pysnowball_cookies() -> bool:
                     if full:
                         headers["Cookie"] = full
                         kw["headers"] = headers
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xq_cookie_patch.py", exc)
             return _orig(url, *a, **kw)
 
         requests.get = _get

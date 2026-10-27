@@ -58,6 +58,7 @@ import json
 import os
 import sys
 import time
+import logging
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _QB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))  # quant_backtest/
@@ -431,8 +432,8 @@ def collect_li122_shadow(
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/onboarding/agents/li122_shadow.py", exc)
     import argparse
 
     ap = argparse.ArgumentParser(description="li122 每日影子采集（干跑/补采）")

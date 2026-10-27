@@ -28,6 +28,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 ASHARE_DIR = HERE / "data" / "ashare"
@@ -47,8 +48,8 @@ def _xmap_pg_password():
                 ln = ln.strip()
                 if ln.startswith("XMAP_PG_PASSWORD=") and not ln.startswith("#"):
                     return ln.split("=", 1)[1].strip()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/stock_basic_sync.py", exc)
     raise RuntimeError("XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
 
 

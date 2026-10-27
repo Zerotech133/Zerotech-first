@@ -40,6 +40,7 @@ import json
 import os
 import sys
 from datetime import datetime
+import logging
 
 TOOL = "check_deliverables_parity"
 DEFAULT_A = r"C:\项目\deliverables"
@@ -304,8 +305,8 @@ def main(argv=None):
         if hasattr(stream, "reconfigure"):
             try:
                 stream.reconfigure(encoding="utf-8")
-            except (OSError, ValueError):
-                pass
+            except (OSError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/check_deliverables_parity.py", exc)
     args = build_parser().parse_args(argv)
     try:
         a_root = resolve_root(args.a, "A")

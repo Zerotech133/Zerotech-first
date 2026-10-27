@@ -48,6 +48,7 @@ _REPO = Path(__file__).resolve().parent.parent
 # 门判解析复用（R1 判例：tools 侧经 portal sys.path 复用只读解析面）
 sys.path.insert(0, str(_REPO / "portal"))
 import api_gate  # noqa: E402
+import logging
 
 # TaskStore 开单底座（execution_watchdog / run_shadow 判例：
 # engine path 注入后 from tasks import TaskStore）
@@ -442,8 +443,8 @@ def main(argv=None):
                                  "reason": str(e), "brief_date": None,
                                  "ticket": None})
                 _append_run_log("%s ERROR %s" % (ran_at, e))
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/retro_brief.py", exc)
         return 1
 
 

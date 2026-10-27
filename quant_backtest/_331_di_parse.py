@@ -19,6 +19,7 @@ def ft_to_str(ft):
 
 # 滑窗解所有 8 字节对齐的 FILETIME，落在合理区间的都打印
 import struct
+import logging
 
 for off in range(0, len(di) - 8):
     (ft,) = struct.unpack_from("<Q", di, off)
@@ -27,5 +28,5 @@ for off in range(0, len(di) - 8):
             s = ft_to_str(ft)
             if "2026-10" in s or "2026-09" in s:
                 print("off=%d ft=%s -> %s" % (off, hex(ft), s))
-        except (OverflowError, OSError, ValueError):
-            pass
+        except (OverflowError, OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/_331_di_parse.py", exc)

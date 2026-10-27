@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import os
 from typing import Any, Optional
+import logging
 
 WARN_PREFIX = "[evidence-intake][WARN]"
 
@@ -184,6 +185,6 @@ def record_pool_intake(
             print("%s 入池单票失败（不阻断其余票）: %s" % (WARN_PREFIX, str(exc)[:120]))
     try:
         store.close()
-    except Exception:  # noqa: BLE001 — 收尾关闭失败无副作用
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/evidence_intake.py", exc)
     return summary

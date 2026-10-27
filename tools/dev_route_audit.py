@@ -37,6 +37,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+import logging
 
 SCHEMA = "dev_route_audit/v1"
 REASON_OWNER = "owner 不在 dev_seats"
@@ -59,8 +60,8 @@ def _main_root() -> Path:
                     gitdir = (root / gitdir).resolve()
                 # <主仓>/.git/worktrees/<name> → parents[2] 即 <主仓> 根
                 return gitdir.parents[2]
-    except (OSError, IndexError, ValueError):
-        pass
+    except (OSError, IndexError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/dev_route_audit.py", exc)
     return root
 
 

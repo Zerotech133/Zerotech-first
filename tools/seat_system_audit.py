@@ -46,6 +46,7 @@ import json
 import os
 import re
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -508,8 +509,8 @@ def format_human(reports: list, strict: bool = False) -> str:
 def _configure_stdout() -> None:
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except (AttributeError, OSError, ValueError):
-        pass
+    except (AttributeError, OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/seat_system_audit.py", exc)
 
 
 def build_parser() -> argparse.ArgumentParser:

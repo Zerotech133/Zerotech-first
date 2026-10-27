@@ -37,6 +37,7 @@ if _QUANT_BT not in sys.path:
     sys.path.insert(0, _QUANT_BT)
 
 from strategy_layer import Registry, bootstrap_default_adapters  # noqa: E402
+import logging
 
 # ── 常量（影子期参数，判据预注册防事后调参）────────────────────────────
 ALPHA = 0.3  # EWMA 新数据权重
@@ -208,8 +209,8 @@ def _load_env_local() -> None:
                     k = k.strip()
                     if k.startswith("XMAP_PG_"):
                         os.environ.setdefault(k, v.strip())
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/weight_updater.py", exc)
 
 
 def _pg_connect():

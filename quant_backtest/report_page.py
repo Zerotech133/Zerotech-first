@@ -9,6 +9,7 @@ import os
 from urllib.parse import quote
 
 import strategies as _strat
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORT = os.path.join(HERE, "reports", "report.html")
@@ -1020,8 +1021,8 @@ def write_snapshot(title, sections, tag=""):
         for old in snaps[:-SNAP_KEEP]:
             try:
                 os.remove(os.path.join(SNAP_DIR, old))
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/report_page.py", exc)
         return name
     except Exception:
         return None

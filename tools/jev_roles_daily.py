@@ -38,6 +38,7 @@ import sqlite3
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve()
 # 数据根默认=脚本所在仓库；工作树里 jev-eval/logs 与 news.db 被 gitignore，
@@ -157,8 +158,8 @@ def collect_review(day: str) -> dict:
                 head = msg.split("（")[0].replace("本轮", "").replace("条", "").strip()
                 try:
                     rec["items"] += int(head)
-                except ValueError:
-                    pass
+                except ValueError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_roles_daily.py", exc)
             if "regime=" in msg:
                 rec["regime"] = msg.split("regime=")[1].split()[0]
             if "公告源=" in msg:

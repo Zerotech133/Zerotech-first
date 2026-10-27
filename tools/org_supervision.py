@@ -12,6 +12,7 @@ import sys
 import urllib.request
 from collections import Counter
 from datetime import datetime
+import logging
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, "agent_platform", "data", "supervision")
@@ -351,8 +352,8 @@ def main(push=True):
         lines.append("- <font color='grey'>工单成本台账: %s</font>"
                      % cost_report.summary_line("近7天",
                                                 cost_report.usage_total(7)))
-    except ImportError:
-        pass  # cost_report 未部署环境降级（N7 fail-open）
+    except ImportError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/org_supervision.py", exc)
     lines.append("")
 
     # K-ORG-090/T4: 工具调用审计（observe 段）

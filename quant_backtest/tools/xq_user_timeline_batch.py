@@ -29,6 +29,7 @@ from playwright.sync_api import sync_playwright
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools"))
 from xq_user_timeline_probe import detect_slider, ms_to_iso  # noqa: E402
+import logging
 
 PROFILE_DIR = REPO / "data" / "xueqiu" / "_headed_profile"
 POOL_PATH = REPO / "data" / "xueqiu" / "user_pool_sample.json"
@@ -276,8 +277,8 @@ def main():
                             page.screenshot(
                                 path=str(BATCH_DIR / ("api_err_idx%d.png" % idx))
                             )
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_user_timeline_batch.py", exc)
                         reason2 = detect_slider(page)
                         if reason2:
                             page.screenshot(path=str(BATCH_DIR / "captcha.png"))

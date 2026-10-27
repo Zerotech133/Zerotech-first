@@ -16,6 +16,7 @@ probe valid=False 的丢弃不灌池）；绝不打印 token 明文。
 import argparse
 import os
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -42,8 +43,8 @@ def grab(browser: str) -> str:
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xq_grab_browser.py", exc)
     ap = argparse.ArgumentParser()
     ap.add_argument("--edge-name", default="")
     ap.add_argument("--chrome-name", default="")

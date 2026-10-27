@@ -55,6 +55,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import xq_ticker_normalize as xtn  # noqa: E402  (sys.path 先行)
+import logging
 
 # 实读自 build_catalog.py:43 XQ_INFO_DB（data/xueqiu/xueqiu_info.db）
 DEFAULT_DB = REPO_ROOT / "data" / "xueqiu" / "xueqiu_info.db"
@@ -249,8 +250,8 @@ def migrate(
         conn = _connect_rw(db_path)
         try:
             conn.execute("PRAGMA journal_mode=WAL")
-        except sqlite3.OperationalError:
-            pass  # 并发写占住/已是 WAL：不阻断
+        except sqlite3.OperationalError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_status_add_symbol.py", exc)
     else:
         conn = _connect_ro(db_path)
 

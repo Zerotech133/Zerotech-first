@@ -43,6 +43,7 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 import xq_daily_report as xqdr  # noqa: E402  （复用生产逻辑，见模块 docstring）
+import logging
 
 SEED_DAY = "2020-05-13"  # seed 播种验证日（2026-10-18 判例）
 SEED_WINDOW = 3  # 种子日 ±3 天
@@ -226,8 +227,8 @@ def main():
 
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/research/xq_anomaly_calibration.py", exc)
 
     print("=" * 72)
     print("雪球异动信号阈值敏感性复检（3×3 网格）· 只读 mode=ro")

@@ -46,6 +46,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # tools/gen_data_manifest.py -> repo root -> workspace root
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -348,6 +349,6 @@ if __name__ == "__main__":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+    except (AttributeError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/gen_data_manifest.py", exc)
     raise SystemExit(main())

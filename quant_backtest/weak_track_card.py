@@ -24,6 +24,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import weak_track_close as wc  # noqa: E402  (REP/_load/CTYPE/close_fields)
+import logging
 
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 HEADER_T = {"A": "green", "B": "orange", "C": "red"}
@@ -710,8 +711,8 @@ def _last_state(fp):
         for line in f:
             try:
                 row = json.loads(line.lstrip("\ufeff"))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_card.py", exc)
     return row
 
 

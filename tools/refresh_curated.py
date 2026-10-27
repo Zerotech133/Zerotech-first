@@ -63,6 +63,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import logging
 
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_SRC = REPO / "quant_backtest" / "data" / "tushare"
@@ -143,8 +144,8 @@ def run_merge(src: Path, out: Path, dirs: list[str] | None,
     payload = None
     try:
         payload = json.loads(proc.stdout)
-    except (json.JSONDecodeError, TypeError):
-        pass
+    except (json.JSONDecodeError, TypeError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/refresh_curated.py", exc)
     return proc.returncode, payload, proc.stderr or ""
 
 

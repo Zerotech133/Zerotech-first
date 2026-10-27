@@ -56,6 +56,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import weak_track_card as wtc  # noqa: E402  (to2/_md/_f2 卡片组件范式)
+import logging
 
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 REP = os.path.join(HERE, "reports")
@@ -148,8 +149,8 @@ def load_state():
             st = json.load(f)
         if st.get("date") == today:
             return st
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strong_card.py", exc)
     return {"date": today, "pushed": {}}
 
 

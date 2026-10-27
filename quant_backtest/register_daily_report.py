@@ -10,6 +10,7 @@ Register-ScheduledTask/schtasks 被安全策略拦 → pywin32 COM API（同等�
 """
 import sys
 import datetime
+import logging
 
 TASK_NAME = "XueqiuDailyReport"
 WRAPPER = r"C:\项目\老田的AI助手\quant_backtest\start_daily_report.ps1"
@@ -24,8 +25,8 @@ def register() -> int:
     try:
         folder.DeleteTask(TASK_NAME, 0)
         print("[reg] existing task removed")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/register_daily_report.py", exc)
     td = sched.NewTask(0)
     td.RegistrationInfo.Description = ("Xueqiu intel daily report 19:00 "
                                        "(Windows takeover of WorkBuddy automation 01f1a51c)")

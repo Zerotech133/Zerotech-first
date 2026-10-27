@@ -36,6 +36,7 @@ sys.path.insert(0, HERE)
 
 import db
 import nine_dim_backtest as ndb
+import logging
 
 BT_RC = ndb.BT_RC
 
@@ -126,8 +127,8 @@ def test_rc_at_consistency():
             for d in dates[:2]:  # 加几个窗口内锚点（+15 天，用日期算术）
                 try:
                     anchors.append(_plus_days(d, 15))
-                except ValueError:
-                    pass
+                except ValueError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/test_sqlite_migration_p2.py", exc)
             for ai in anchors:
                 if not ai:
                     continue
