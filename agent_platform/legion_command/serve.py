@@ -841,9 +841,20 @@ class Handler(BaseHTTPRequestHandler):
                 })
                 return
             try:
+                from legion_command import seat_router
+
+                _auth = str(self.headers.get("Authorization") or "").strip()
+                _token = _auth[7:].strip() if _auth.lower().startswith("bearer ") else _auth
+                route = seat_router.resolve(str(req.get("model") or ""), _token)
+                if not route.get("ok"):
+                    self._send_json({"error": {"message": route.get("error"),
+                                               "type": "auth_error"}},
+                                    int(route.get("code") or 401))
+                    return
                 from legion_command import keypool
 
-                res = keypool.auto_chat(messages)
+                res = keypool.auto_chat(messages, seats=route.get("seats") or [],
+                                        allow_local=bool(route.get("allow_local", True)))
             except Exception as e:  # noqa: BLE001
                 res = {
                     "ok": False,
@@ -922,6 +933,8 @@ class Handler(BaseHTTPRequestHandler):
                         "total_tokens": 0,
                     },
                     "x_channel": channel,
+                    "x_alias": route.get("alias"),
+                    "x_vk_owner": route.get("owner"),
                     "x_attempts": res.get("attempts", []),
                 }
             )
