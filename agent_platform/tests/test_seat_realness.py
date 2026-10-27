@@ -159,3 +159,22 @@ def test_engine_tool_recognized(monkeypatch, tmp_path):
     rep = SR.audit(root, "T1", task="Demo-Task")
     assert rep["rows"]["tools"]["ok"] is True
     assert "engine/tools.py" in rep["rows"]["tools"]["evidence"]
+
+
+def test_default_stays_five_dims(monkeypatch, tmp_path):
+    root = make_root(tmp_path)
+    monkeypatch.setattr(SR, "task_exists", lambda t: True)
+    rep = SR.audit(root, "T1", task="Demo-Task")
+    assert rep["total"] == 5
+    assert "eval" not in rep["rows"]
+
+
+def test_with_eval_adds_sixth_dim(monkeypatch, tmp_path):
+    root = make_root(tmp_path)
+    monkeypatch.setattr(SR, "task_exists", lambda t: True)
+    rep = SR.audit(root, "T1", task="Demo-Task", with_eval=True)
+    assert rep["total"] == 6
+    assert "eval" in rep["rows"]
+    # tmp 仓无 golden 命令环境：eval 行判缺口，但不影响其余五维统计口径
+    assert set(rep["rows"]) == {"authorization", "tools", "trigger", "audit", "rollback", "eval"}
+
