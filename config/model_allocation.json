@@ -35,7 +35,35 @@
   "default": "auto"
  },
  "heuristics": {
-  "strong_keywords": ["推理", "架构", "审计", "代码", "决策", "规划", "证明", "为什么", "设计"],
-  "local_keywords": ["翻译", "摘要", "格式化", "分类", "提取", "改写"]
- }
+  "strong_keywords": [
+   "推理",
+   "架构",
+   "审计",
+   "代码",
+   "决策",
+   "规划",
+   "证明",
+   "为什么",
+   "设计"
+  ],
+  "local_keywords": [
+   "翻译",
+   "摘要",
+   "格式化",
+   "分类",
+   "提取",
+   "改写"
+  ]
+ },
+ "local_models": {
+  "small": "qwen3.5:4b",
+  "default": "qwen3.5:9b",
+  "strong": "qwen3.6:35b-a3b"
+ },
+ "local_small_tasks": [
+  "simple",
+  "format",
+  "classify",
+  "translate"
+ ]
 }

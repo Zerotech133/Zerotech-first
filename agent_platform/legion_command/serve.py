@@ -474,6 +474,9 @@ class Handler(BaseHTTPRequestHandler):
                         {"id": "gpt-6-sol", "object": "model", "owned_by": "relay"},
                         {"id": "strong", "object": "model", "owned_by": "gateway"},
                         {"id": "local", "object": "model", "owned_by": "gateway"},
+                        {"id": "local4", "object": "model", "owned_by": "gateway"},
+                        {"id": "local9", "object": "model", "owned_by": "gateway"},
+                        {"id": "local35", "object": "model", "owned_by": "gateway"},
                     ],
                 }
             )
@@ -541,11 +544,15 @@ class Handler(BaseHTTPRequestHandler):
                 import urllib.request as _u
                 with _u.urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
                     tags = json.loads(r.read().decode("utf-8", "replace"))
-                names = [m.get("name", "") for m in (tags.get("models") or [])]
-                hit = next((n for n in names if n.startswith("qwen3.5:9b")), "")
+                ms = []
+                for m in (tags.get("models") or []):
+                    n = m.get("name", "")
+                    ms.append({"name": n,
+                               "size_gb": round(float(m.get("size") or 0) / (1024 ** 3), 2)})
+                hit = next((m for m in ms if m["name"].startswith("qwen3.5:9b")), None)
                 out["local"] = {"online": True, "model": "qwen3.5:9b",
                                 "endpoint": "http://127.0.0.1:11434",
-                                "present": bool(hit), "models": names[:10]}
+                                "present": bool(hit), "models": ms}
             except Exception as e:  # noqa: BLE001
                 out["local"] = {"online": False, "model": "qwen3.5:9b",
                                 "endpoint": "http://127.0.0.1:11434",
@@ -983,6 +990,7 @@ class Handler(BaseHTTPRequestHandler):
                     _alloc = model_allocator.allocate(_agent, _task, messages)
                     route["seats"] = list(_alloc.get("seats") or [])
                     route["allow_local"] = bool(_alloc.get("allow_local", True))
+                    route["local_model"] = _alloc.get("local_model")
                     route["alias"] = _alloc.get("tier")
                     owner = route.get("owner")
                     if owner and _alloc.get("tier") != "local" and owner not in route["seats"]:
@@ -990,7 +998,8 @@ class Handler(BaseHTTPRequestHandler):
                 from legion_command import keypool
 
                 res = keypool.auto_chat(messages, seats=route.get("seats") or [],
-                                        allow_local=bool(route.get("allow_local", True)))
+                                        allow_local=bool(route.get("allow_local", True)),
+                                        local_model=route.get("local_model") or None)
             except Exception as e:  # noqa: BLE001
                 res = {
                     "ok": False,

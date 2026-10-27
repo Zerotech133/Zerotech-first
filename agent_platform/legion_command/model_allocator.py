@@ -30,6 +30,9 @@ DEFAULT = {
         "strong_keywords": ["推理", "架构", "审计", "代码", "决策", "规划", "证明", "为什么", "设计"],
         "local_keywords": ["翻译", "摘要", "格式化", "分类", "提取", "改写"],
     },
+    "local_models": {"small": "qwen3.5:4b", "default": "qwen3.5:9b",
+                     "strong": "qwen3.6:35b-a3b"},
+    "local_small_tasks": ["simple", "format", "classify", "translate"],
 }
 
 
@@ -75,18 +78,26 @@ def classify(agent: str = "", task: str = "", messages=None) -> tuple:
     return str(cfg.get("default_tier") or "auto"), "default"
 
 
-def tier_route(tier: str) -> dict:
+def _default_local_model() -> str:
+    cfg = load_config()
+    return str((cfg.get("local_models") or {}).get("default") or "qwen3.5:9b")
+
+
+def tier_route(tier: str, local_model: str = "") -> dict:
     from legion_command import seat_router
     cfg = seat_router.load_config()
     aliases = cfg.get("aliases") or {}
     tier = str(tier or "auto")
     if tier == "local":
-        return {"tier": "local", "seats": [], "allow_local": True}
+        return {"tier": "local", "seats": [], "allow_local": True,
+                "local_model": local_model or _default_local_model()}
     if tier == "gpt6" or tier == "gpt-6-sol":
-        return {"tier": "gpt6", "seats": ["relay"], "allow_local": False}
+        return {"tier": "gpt6", "seats": ["relay"], "allow_local": False,
+                "local_model": _default_local_model()}
     spec = aliases.get(tier if tier in aliases else "auto") or {}
     return {"tier": tier, "seats": list(spec.get("seats") or []),
-            "allow_local": bool(spec.get("allow_local", True))}
+            "allow_local": bool(spec.get("allow_local", True)),
+            "local_model": local_model or _default_local_model()}
 
 
 def allocate(agent: str = "", task: str = "", messages=None,
@@ -98,7 +109,14 @@ def allocate(agent: str = "", task: str = "", messages=None,
             route.update({"agent": agent, "task": task, "reason": "requested:%s" % req})
             return route
     tier, reason = classify(agent, task, messages)
-    route = tier_route(tier)
+    cfg = load_config()
+    lm = cfg.get("local_models") or {}
+    local_model = str(lm.get("default") or "qwen3.5:9b")
+    if tier == "local":
+        small = str(lm.get("small") or "qwen3.5:4b")
+        t = str(task or "").strip().lower()
+        local_model = small if t in (cfg.get("local_small_tasks") or []) else local_model
+    route = tier_route(tier, local_model)
     route.update({"agent": agent, "task": task, "reason": reason})
     return route
 
