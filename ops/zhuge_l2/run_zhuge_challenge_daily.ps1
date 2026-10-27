@@ -13,6 +13,8 @@ $env:PYTHONUTF8 = '1'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 # C1↔P1-4：emit 成功后同步质询卡到决策记录（幂等；失败不影响卡生成）
 $env:ZHUGE_C1_DECISION_SYNC = '1'
+# C3↔P1-4：同一次同步里按 adoption_domains 回填采纳信号（只读 C3 账本）
+$env:ZHUGE_C3_DECISION_SYNC = '1'
 $out = & $py -X utf8 $script emit --auto-snapshot --model-mode real3 --max-questions 12 --json 2>&1
 $rc = $LASTEXITCODE
 $out | Out-File -FilePath $log -Append -Encoding utf8
