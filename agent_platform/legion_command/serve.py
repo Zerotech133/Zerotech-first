@@ -440,6 +440,20 @@ class Handler(BaseHTTPRequestHandler):
                     500,
                 )
             return
+        if path in ("/v1", "/v1/"):
+            self._send_json({"ok": True, "service": "dsh-llm-gateway",
+                             "endpoints": {
+                                 "chat": "POST /v1/chat/completions",
+                                 "models": "GET /v1/models",
+                                 "health": "GET /v1/health",
+                                 "aliases": {"auto": "强模型优先→本地兜底",
+                                             "strong": "仅云端，不降级本地",
+                                             "local": "仅本地 9B"}},
+                             "auth": "可选：Authorization: Bearer vk-..."})
+            return
+        if path == "/v1/health":
+            self._send_json({"ok": True, "service": "dsh-llm-gateway"})
+            return
         if path == "/v1/models":
             self._send_json(
                 {
