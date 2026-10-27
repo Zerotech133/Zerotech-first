@@ -12,6 +12,7 @@
 连接串：优先环境变量 LINEAGE_DSN；缺省 = docker exec 同款参数
 （quant_user@127.0.0.1:5442/quant_system，可再以 LINEAGE_PASSWORD 补密码）。
 """
+
 import hashlib
 import json
 import os
@@ -31,9 +32,15 @@ _DEFAULT_DSN = "host=127.0.0.1 port=5442 user=quant_user dbname=quant_system"
 def _log_err(where, exc):
     try:
         with open(ERR_LOG, "a", encoding="utf-8") as f:
-            f.write("[%s] %s: %r\n%s\n" % (
-                datetime.now(timezone.utc).isoformat(), where, exc,
-                traceback.format_exc()))
+            f.write(
+                "[%s] %s: %r\n%s\n"
+                % (
+                    datetime.now(timezone.utc).isoformat(),
+                    where,
+                    exc,
+                    traceback.format_exc(),
+                )
+            )
     except Exception:
         pass
 
@@ -58,6 +65,7 @@ def _lineage_password():
 
 def _get_conn():
     import psycopg2  # 沿产线既有依赖（psycopg2-binary），不引新包
+
     dsn = os.environ.get("LINEAGE_DSN")
     if not dsn:
         dsn = _DEFAULT_DSN + " password=" + _lineage_password()
@@ -67,9 +75,14 @@ def _get_conn():
 def _git_sha():
     try:
         import subprocess
+
         out = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], cwd=HERE,
-            capture_output=True, text=True, timeout=5)
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=HERE,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
         if out.returncode == 0:
             return out.stdout.strip() or None
     except Exception:
@@ -112,13 +125,22 @@ class JobRun:
     def __enter__(self):
         self._silent("connect", self._open)
         if self._conn:
-            row = self._silent("insert_job_run", self._q,
+            row = self._silent(
+                "insert_job_run",
+                self._q,
                 "INSERT INTO lineage.job_run "
                 "(job, step, started_at, status, git_sha, detail) "
                 "VALUES (%s, %s, now(), 'running', %s, %s) RETURNING id",
-                (self.job, self.step, _git_sha(),
-                 json.dumps(self.detail, ensure_ascii=False) if self.detail else None),
-                fetch=True)
+                (
+                    self.job,
+                    self.step,
+                    _git_sha(),
+                    json.dumps(self.detail, ensure_ascii=False)
+                    if self.detail
+                    else None,
+                ),
+                fetch=True,
+            )
             self.id = row[0] if row else None
         return self
 
@@ -138,12 +160,17 @@ class JobRun:
         """幂等收尾：update 状态 + 关连接（_conn 置 None 后重入直接返回）。"""
         if not self._conn:
             return None
-        self._silent("update_job_run", self._q,
+        self._silent(
+            "update_job_run",
+            self._q,
             "UPDATE lineage.job_run SET status=%s, ended_at=now(), "
             "rows_written=%s, detail=COALESCE(%s, detail) WHERE id=%s",
-            (status, self.rows_written,
-             json.dumps(self.detail, ensure_ascii=False) if self.detail else None,
-             self.id),
+            (
+                status,
+                self.rows_written,
+                json.dumps(self.detail, ensure_ascii=False) if self.detail else None,
+                self.id,
+            ),
         )
         self._silent("close", self._conn.close)
         self._conn = None
@@ -160,12 +187,15 @@ class JobRun:
         self._conn = _get_conn()
 
     # -- API ---------------------------------------------------------------
-    def edge(self, output_table, input_table, out_cols=None, in_cols=None,
-             transform=None):
+    def edge(
+        self, output_table, input_table, out_cols=None, in_cols=None, transform=None
+    ):
         """登记一条 输入→输出 血缘边（拿齐输入、写图前调用）。"""
         if not (self.id and self._conn):
             return None
-        return self._silent("insert_edge", self._q,
+        return self._silent(
+            "insert_edge",
+            self._q,
             "INSERT INTO lineage.lineage_edge "
             "(job_run_id, output_table, input_table, output_cols, input_cols, transform) "
             "VALUES (%s, %s, %s, %s, %s, %s)",
@@ -183,15 +213,19 @@ class JobRun:
             row = self._q(
                 "SELECT version, ddl_hash FROM lineage.schema_version "
                 "WHERE table_name=%s ORDER BY version DESC LIMIT 1",
-                (table_urn,), fetch=True)
+                (table_urn,),
+                fetch=True,
+            )
             if row and row[1] == h:
                 return row[0]
             ver = (row[0] + 1) if row else 1
             self._q(
                 "INSERT INTO lineage.schema_version "
                 "(table_name, version, ddl_hash, columns) VALUES (%s,%s,%s,%s)",
-                (table_urn, ver, h, payload))
+                (table_urn, ver, h, payload),
+            )
             return ver
+
         return self._silent("schema_version", _do)
 
 

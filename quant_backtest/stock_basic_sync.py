@@ -19,6 +19,7 @@
   python quant_backtest/stock_basic_sync.py            # 同步并输出统计
   python quant_backtest/stock_basic_sync.py --dry-run  # 只报差异不写库
 """
+
 from __future__ import annotations
 
 import glob
@@ -31,6 +32,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ASHARE_DIR = HERE / "data" / "ashare"
 SNAP_DIR = HERE.parent / "portal" / "qd_daily_data"
+
 
 def _xmap_pg_password():
     """XMAP_PG_PASSWORD 回落链：env → 同目录 .env.local（止血 2026-10-16：
@@ -50,18 +52,20 @@ def _xmap_pg_password():
     raise RuntimeError("XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
 
 
-PG = dict(host=os.environ.get("XMAP_PG_HOST", "127.0.0.1"),
-          port=int(os.environ.get("XMAP_PG_PORT", "5442")),
-          user=os.environ.get("XMAP_PG_USER", "quant_user"),
-          password=_xmap_pg_password(),
-          dbname=os.environ.get("XMAP_PG_DB", "quant_system"))
+PG = dict(
+    host=os.environ.get("XMAP_PG_HOST", "127.0.0.1"),
+    port=int(os.environ.get("XMAP_PG_PORT", "5442")),
+    user=os.environ.get("XMAP_PG_USER", "quant_user"),
+    password=_xmap_pg_password(),
+    dbname=os.environ.get("XMAP_PG_DB", "quant_system"),
+)
 
 
 def codes_from_lake() -> dict[str, dict]:
     """特征湖文件名 → {ts_code: {}}（湖即全集口径）。"""
     out = {}
     for f in glob.glob(str(ASHARE_DIR / "*.parquet")):
-        stem = Path(f).stem          # 000001_SZ
+        stem = Path(f).stem  # 000001_SZ
         if "_" not in stem or len(stem) < 6:
             continue
         code, mkt = stem.split("_", 1)
@@ -78,8 +82,11 @@ def names_from_snapshot() -> dict[str, str]:
     try:
         d = json.loads(snaps[-1].read_text(encoding="utf-8"))
         rows = d.get("rows") or {}
-        return {k.replace("_", "."): (v or {}).get("name", "")
-                for k, v in rows.items() if k.count("_") == 1}
+        return {
+            k.replace("_", "."): (v or {}).get("name", "")
+            for k, v in rows.items()
+            if k.count("_") == 1
+        }
     except Exception as e:  # noqa
         print(f"[warn] 快照解析失败（{snaps[-1].name}）：{e}", file=sys.stderr)
         return {}
@@ -94,13 +101,16 @@ def main(argv=None) -> int:
         return 1
     missing_name = [c for c in lake if c not in names]
     extra_name = [c for c in names if c not in lake]
-    print(f"特征湖全集 {len(lake)} | 快照覆盖 {len(names)}"
-          f" | 湖有快照无 {len(missing_name)} | 快照有湖无 {len(extra_name)}")
+    print(
+        f"特征湖全集 {len(lake)} | 快照覆盖 {len(names)}"
+        f" | 湖有快照无 {len(missing_name)} | 快照有湖无 {len(extra_name)}"
+    )
     if dry:
         print("[dry-run] 不写库。")
         return 0
 
     import psycopg2
+
     conn = psycopg2.connect(connect_timeout=5, **PG)
     try:
         with conn.cursor() as cur:
@@ -109,18 +119,22 @@ def main(argv=None) -> int:
             rows = []
             for c in sorted(lake):
                 nm = names.get(c, "")
-                rows.append((c, nm, c.split(".")[-1],
-                             ("ST" in nm.upper()), False, False, now))
+                rows.append(
+                    (c, nm, c.split(".")[-1], ("ST" in nm.upper()), False, False, now)
+                )
             cur.executemany(
                 "INSERT INTO public.stock_basic"
                 " (symbol, name, market, is_st, is_suspended, is_delisted,"
                 "  updated_at) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                rows)
+                rows,
+            )
             cur.execute("SELECT count(*) FROM public.stock_basic")
             n = cur.fetchone()[0]
         conn.commit()
-        print(f"[ok] public.stock_basic 已写入 {n} 行"
-              f"（名称缺失 {len(missing_name)} 行留空）")
+        print(
+            f"[ok] public.stock_basic 已写入 {n} 行"
+            f"（名称缺失 {len(missing_name)} 行留空）"
+        )
         return 0
     finally:
         conn.close()

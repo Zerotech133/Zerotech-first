@@ -5,6 +5,7 @@
 2026-10-16 审计修正），失败自动降级 docker exec zhice-db psql。
 返回 DataFrame（index=trade_date, columns=open/high/low/close/volume/turnover/pre_close）。
 """
+
 import json
 import os
 import subprocess
@@ -33,6 +34,7 @@ def _db_password():
             pass
     return DB_CFG.get("password") or ""
 
+
 # P1-1：模块级单连接被 ThreadingHTTPServer 多线程并发使用（非线程安全，
 # 会出现协议错乱/连接假死）。改为 threading.local() 每线程独立连接，
 # 范式对齐 chanlun_data.py（查询间连接隔离）。
@@ -41,14 +43,18 @@ _tls = threading.local()
 
 def _direct_conn():
     import psycopg2
+
     c = getattr(_tls, "conn", None)
     if c is not None and c.closed:
         c = None
     if c is None:
         c = psycopg2.connect(
-            host=DB_CFG["host"], port=DB_CFG["port"],
-            user=DB_CFG["user"], password=_db_password(),
-            dbname=DB_CFG["dbname"])
+            host=DB_CFG["host"],
+            port=DB_CFG["port"],
+            user=DB_CFG["user"],
+            password=_db_password(),
+            dbname=DB_CFG["dbname"],
+        )
         c.autocommit = True
         _tls.conn = c
     return c
@@ -64,21 +70,45 @@ def _query_direct(sql, params):
 
 
 def _query_docker(sql, params):
-    args = ["docker", "exec", "-i", DB_CFG["container"], "psql",
-            "-U", DB_CFG["user"], "-d", DB_CFG["dbname"],
-            "-A", "-t", "-F", "\x1f", "-v", "ON_ERROR_STOP=1"]
+    args = [
+        "docker",
+        "exec",
+        "-i",
+        DB_CFG["container"],
+        "psql",
+        "-U",
+        DB_CFG["user"],
+        "-d",
+        DB_CFG["dbname"],
+        "-A",
+        "-t",
+        "-F",
+        "\x1f",
+        "-v",
+        "ON_ERROR_STOP=1",
+    ]
     parts = sql.split("%s")
     sql2 = parts[0]
     for i, v in enumerate(params or []):
-        if isinstance(v, (list, tuple)):      # 数组参数：内联 ARRAY[...] 字面量
-            sql2 += ("ARRAY[" + ",".join(
-                "'%s'" % str(x).replace("'", "''") for x in v) + "]"
-                + parts[i + 1])
+        if isinstance(v, (list, tuple)):  # 数组参数：内联 ARRAY[...] 字面量
+            sql2 += (
+                "ARRAY["
+                + ",".join("'%s'" % str(x).replace("'", "''") for x in v)
+                + "]"
+                + parts[i + 1]
+            )
         else:
             sql2 += ":'p%d'" % i + parts[i + 1]
             args += ["-v", "p%d=%s" % (i, v)]
-    out = subprocess.run(args, input=sql2, capture_output=True, text=True,
-                         timeout=30, encoding="utf-8", errors="replace")
+    out = subprocess.run(
+        args,
+        input=sql2,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        encoding="utf-8",
+        errors="replace",
+    )
     if out.returncode != 0:
         raise RuntimeError("psql 失败: " + out.stderr.strip()[:200])
     return None, [tuple(l.split("\x1f")) for l in out.stdout.strip().splitlines() if l]
@@ -95,8 +125,10 @@ def load_bars(market, symbols, start=None, end=None):
     """加载单市场多只股票日线。返回 {symbol: DataFrame}。"""
     if isinstance(symbols, str):
         symbols = [symbols]
-    sql = ("SELECT symbol, trade_date, open, high, low, close, volume, turnover, pre_close "
-           "FROM v2_bar_daily WHERE market=%s AND symbol = ANY(%s)")
+    sql = (
+        "SELECT symbol, trade_date, open, high, low, close, volume, turnover, pre_close "
+        "FROM v2_bar_daily WHERE market=%s AND symbol = ANY(%s)"
+    )
     params = [market, list(symbols)]
     if start:
         sql += " AND trade_date >= %s"
@@ -107,13 +139,14 @@ def load_bars(market, symbols, start=None, end=None):
     sql += " ORDER BY symbol, trade_date"
     try:
         cols, rows = _query_direct(sql, params)
-    except Exception as _e:      # 诊断：直连失败原因落盘（SYSTEM 等上下文）
+    except Exception as _e:  # 诊断：直连失败原因落盘（SYSTEM 等上下文）
         try:
             import time as _t
-            with open(r"C:\Temp\db_direct_err.log", "a",
-                      encoding="utf-8") as f:
-                f.write("%s load_bars %s %r\n" % (
-                    _t.strftime("%m-%d %H:%M:%S"), market, _e))
+
+            with open(r"C:\Temp\db_direct_err.log", "a", encoding="utf-8") as f:
+                f.write(
+                    "%s load_bars %s %r\n" % (_t.strftime("%m-%d %H:%M:%S"), market, _e)
+                )
         except OSError:
             pass
         cols, rows = _query_docker(sql, params)
@@ -123,13 +156,18 @@ def load_bars(market, symbols, start=None, end=None):
         if len(row) < 9:
             continue
         sym, td = row[0], row[1]
-        frames.setdefault(sym, []).append({
-            "trade_date": str(td),
-            "open": _to_float(row[2]), "high": _to_float(row[3]),
-            "low": _to_float(row[4]), "close": _to_float(row[5]),
-            "volume": _to_float(row[6]), "turnover": _to_float(row[7]),
-            "pre_close": _to_float(row[8]),
-        })
+        frames.setdefault(sym, []).append(
+            {
+                "trade_date": str(td),
+                "open": _to_float(row[2]),
+                "high": _to_float(row[3]),
+                "low": _to_float(row[4]),
+                "close": _to_float(row[5]),
+                "volume": _to_float(row[6]),
+                "turnover": _to_float(row[7]),
+                "pre_close": _to_float(row[8]),
+            }
+        )
     out = {}
     for sym, recs in frames.items():
         df = pd.DataFrame(recs)
@@ -147,8 +185,10 @@ def load_table(start=None, end=None, symbols=None, limit=None):
     返回单一 DataFrame 供 datamart layout "pg" 路由消费；symbol 保持库内
     形态（datamart 只做列名归一，不转换代码形态）。直连失败走 docker 兜底。
     """
-    sql = ("SELECT symbol, market, trade_date, open, high, low, close, "
-           "volume, turnover, pre_close FROM v2_bar_daily")
+    sql = (
+        "SELECT symbol, market, trade_date, open, high, low, close, "
+        "volume, turnover, pre_close FROM v2_bar_daily"
+    )
     params, where = [], []
     if symbols:
         if isinstance(symbols, str):
@@ -177,14 +217,35 @@ def load_table(start=None, end=None, symbols=None, limit=None):
         if len(row) < 10:
             continue
         td = str(row[2]).replace("-", "")[:8]
-        recs.append({"symbol": row[0], "market": row[1], "trade_date": td,
-                     "open": _to_float(row[3]), "high": _to_float(row[4]),
-                     "low": _to_float(row[5]), "close": _to_float(row[6]),
-                     "volume": _to_float(row[7]), "turnover": _to_float(row[8]),
-                     "pre_close": _to_float(row[9])})
-    return pd.DataFrame(recs, columns=["symbol", "market", "trade_date",
-                                       "open", "high", "low", "close",
-                                       "volume", "turnover", "pre_close"])
+        recs.append(
+            {
+                "symbol": row[0],
+                "market": row[1],
+                "trade_date": td,
+                "open": _to_float(row[3]),
+                "high": _to_float(row[4]),
+                "low": _to_float(row[5]),
+                "close": _to_float(row[6]),
+                "volume": _to_float(row[7]),
+                "turnover": _to_float(row[8]),
+                "pre_close": _to_float(row[9]),
+            }
+        )
+    return pd.DataFrame(
+        recs,
+        columns=[
+            "symbol",
+            "market",
+            "trade_date",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "turnover",
+            "pre_close",
+        ],
+    )
 
 
 def available_symbols(market, limit=None):
@@ -205,8 +266,10 @@ def latest_dates(market, symbols):
         symbols = [symbols]
     if not symbols:
         return {}
-    sql = ("SELECT symbol, max(trade_date) FROM v2_bar_daily "
-           "WHERE market=%s AND symbol = ANY(%s) GROUP BY symbol")
+    sql = (
+        "SELECT symbol, max(trade_date) FROM v2_bar_daily "
+        "WHERE market=%s AND symbol = ANY(%s) GROUP BY symbol"
+    )
     params = [market, list(symbols)]
     try:
         _, rows = _query_direct(sql, params)
@@ -233,9 +296,11 @@ def symbol_ranges(market, symbols):
         symbols = [symbols]
     if not symbols:
         return {}
-    sql = ("SELECT symbol, min(trade_date) AS d0, max(trade_date) AS d1 "
-           "FROM v2_bar_daily WHERE market=%s AND symbol = ANY(%s) "
-           "GROUP BY symbol")
+    sql = (
+        "SELECT symbol, min(trade_date) AS d0, max(trade_date) AS d1 "
+        "FROM v2_bar_daily WHERE market=%s AND symbol = ANY(%s) "
+        "GROUP BY symbol"
+    )
     params = [market, list(symbols)]
     try:
         _, rows = _query_direct(sql, params)

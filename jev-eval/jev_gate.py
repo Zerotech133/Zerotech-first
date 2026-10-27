@@ -16,6 +16,7 @@
   ALERT_WEBHOOK_URL  企业微信群机器人 webhook（未配置则只打印不推送）
   JEV_BASE_URL       默认 https://api.typesafe.ai/v1
 """
+
 from __future__ import annotations
 
 import json
@@ -27,8 +28,17 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import jev_common as jc
-from jev_common import (C_JEV, db_execute, db_rows, db_run, install_stop, log,
-                        new_trace, set_module, with_retry)
+from jev_common import (
+    C_JEV,
+    db_execute,
+    db_rows,
+    db_run,
+    install_stop,
+    log,
+    new_trace,
+    set_module,
+    with_retry,
+)
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -37,13 +47,19 @@ HERE = Path(__file__).parent
 SEEN_FILE = HERE / "gate_seen.json"  # 旧版本地 seen，启动时一次性迁入 DB 后留档改名
 # P2-3 阈值可配置化：环境变量覆盖（jev-gate.env.ps1），默认值=评测校准值
 POLL_SEC = int(os.environ.get("GATE_POLL_SEC", "60"))
-MAX_ALERT_AGE_MIN = int(os.environ.get("GATE_MAX_ALERT_AGE_MIN", "120"))  # 只看 N 分钟内新告警
-URGENT_THRESHOLD = float(os.environ.get("GATE_URGENT_THRESHOLD", "0.8"))  # noul P ≥ 阈值才推
+MAX_ALERT_AGE_MIN = int(
+    os.environ.get("GATE_MAX_ALERT_AGE_MIN", "120")
+)  # 只看 N 分钟内新告警
+URGENT_THRESHOLD = float(
+    os.environ.get("GATE_URGENT_THRESHOLD", "0.8")
+)  # noul P ≥ 阈值才推
 
 API_KEY = os.environ.get("JEV_API_KEY", "")
 BASE_URL = os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
-log(f"启动环境: JEV_BACKEND={os.environ.get('JEV_BACKEND','')} "
-    f"proxies={urllib.request.getproxies()}")
+log(
+    f"启动环境: JEV_BACKEND={os.environ.get('JEV_BACKEND', '')} "
+    f"proxies={urllib.request.getproxies()}"
+)
 # 2026-10-16: Jev 后端分发已收敛到 jev_common.jev_ask_backend
 # （JEV_BACKEND=ollama 走本地 qwen2.5:7b；typesafe.ai 451 地区屏蔽）
 LARK_ALERT_OPEN_ID = os.environ.get("LARK_ALERT_OPEN_ID", "")
@@ -63,9 +79,11 @@ def fetch_open_alerts() -> list[dict]:
         "SELECT alert_id, level, title, coalesce(message,'') FROM v2_alert "
         "WHERE status='OPEN' AND created_at > now() - make_interval(mins => %s) "
         "ORDER BY id DESC LIMIT 50",
-        (MAX_ALERT_AGE_MIN,))
-    return [{"alert_id": r[0], "level": r[1], "title": r[2], "message": r[3]}
-            for r in rows]
+        (MAX_ALERT_AGE_MIN,),
+    )
+    return [
+        {"alert_id": r[0], "level": r[1], "title": r[2], "message": r[3]} for r in rows
+    ]
 
 
 # ── Jev 判定 ────────────────────────────────────────────────
@@ -75,8 +93,12 @@ def jev_ask(state: str, questions: dict) -> dict:
     2026-10-16: 后端分发收敛到 jev_common.jev_ask_backend
     （JEV_BACKEND=ollama 走本地模型，typesafe.ai 451 屏蔽）。"""
     try:
-        ans = with_retry(lambda: jc.jev_ask_backend(state, questions),
-                         retries=3, base_sec=2.0, label="jev ")
+        ans = with_retry(
+            lambda: jc.jev_ask_backend(state, questions),
+            retries=3,
+            base_sec=2.0,
+            label="jev ",
+        )
         C_JEV.labels("gate", "1").inc()
         return ans
     except Exception:
@@ -91,7 +113,7 @@ def judge(alert: dict) -> dict | None:
         "is_urgent": {
             "type": "noul",
             "instructions": "这条告警需要人工立即关注（数据缺失/执行失败/风控触发等），"
-                            "而非例行提示或可延后处理的信息。",
+            "而非例行提示或可延后处理的信息。",
         },
         "category": {
             "type": "choice",
@@ -112,7 +134,13 @@ def judge(alert: dict) -> dict | None:
 
 
 # ── 推送 ────────────────────────────────────────────────────
-_CAT_LABEL = {"risk": "交易风控", "data": "数据质量", "sys": "系统运行", "info": "例行", "unknown": "未分类"}
+_CAT_LABEL = {
+    "risk": "交易风控",
+    "data": "数据质量",
+    "sys": "系统运行",
+    "info": "例行",
+    "unknown": "未分类",
+}
 
 
 def _build_alert_card(alert: dict, verdict: dict) -> dict:
@@ -131,26 +159,33 @@ def _build_alert_card(alert: dict, verdict: dict) -> dict:
     title = alert.get("title", "")
     message = alert.get("message", "")[:300]
 
-    _portal = os.path.join(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))), "portal")
+    _portal = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "portal"
+    )
     if _portal not in sys.path:
         sys.path.insert(0, _portal)
     from feishu_card_v2 import build_v3
 
     card, _audit = build_v3(
-        "alert", "告警通知 · %s" % level,
+        "alert",
+        "告警通知 · %s" % level,
         source="jev-eval 盯盘预警",
-        rows=[("紧急度", "%.2f" % urgent_p),
-              ("类别", cat_label),
-              ("级别", level)],
+        rows=[("紧急度", "%.2f" % urgent_p), ("类别", cat_label), ("级别", level)],
         md="**%s**\n\n%s" % (title, message),
-        buttons=[("✓ 已处理", ("action", "jev_ack",
-                              {"alert_id": alert_id, "action": "ack"}),
-                  "primary"),
-                 ("忽略", ("action", "jev_ignore",
-                           {"alert_id": alert_id, "action": "ignore"}),
-                  "default")],
-        tags="#jev #alert")
+        buttons=[
+            (
+                "✓ 已处理",
+                ("action", "jev_ack", {"alert_id": alert_id, "action": "ack"}),
+                "primary",
+            ),
+            (
+                "忽略",
+                ("action", "jev_ignore", {"alert_id": alert_id, "action": "ignore"}),
+                "default",
+            ),
+        ],
+        tags="#jev #alert",
+    )
     return card
 
 
@@ -174,6 +209,7 @@ def push_feishu(alert: dict, verdict: dict) -> bool:
             sys.path.insert(0, os.path.join(os.path.dirname(_root), "news_collector"))
         import push_targets
         from feishu_client import send_msg
+
         _oid = push_targets.target_id("个人")
         if _oid:
             _ok, _why = send_msg(card_json, "interactive", receive_id=_oid)
@@ -193,10 +229,21 @@ def push_feishu(alert: dict, verdict: dict) -> bool:
 
     def _send() -> bool:
         jc.lark_cli_json(
-            ["im", "+messages-send", "--as", "bot",
-             "--user-id", LARK_ALERT_OPEN_ID,
-             "--msg-type", "interactive", "--content", card_json],
-            timeout=20, kind="push")
+            [
+                "im",
+                "+messages-send",
+                "--as",
+                "bot",
+                "--user-id",
+                LARK_ALERT_OPEN_ID,
+                "--msg-type",
+                "interactive",
+                "--content",
+                card_json,
+            ],
+            timeout=20,
+            kind="push",
+        )
         return True
 
     try:
@@ -229,11 +276,12 @@ def _escalate_dlq(alert: dict, reason: str) -> None:
          时的异 app 兜底（open_id 跨 app 不可用，须用各自签发的）。
     纯文本无按钮；两路全败仅日志（不递归、不反噬主链路）。
     """
-    txt = ("🚨 告警通道失守：jev 推送 %d 轮失败已入死信\n"
-           "%s | %s\n原因: %s" % (
-               MAX_PUSH_ATTEMPTS, alert.get("level", "?"),
-               (alert.get("title") or "")[:60],
-               (_LAST_PUSH_ERR or reason)[:160]))
+    txt = "🚨 告警通道失守：jev 推送 %d 轮失败已入死信\n%s | %s\n原因: %s" % (
+        MAX_PUSH_ATTEMPTS,
+        alert.get("level", "?"),
+        (alert.get("title") or "")[:60],
+        (_LAST_PUSH_ERR or reason)[:160],
+    )
     here = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
     try:
@@ -246,9 +294,13 @@ def _escalate_dlq(alert: dict, reason: str) -> None:
     app_secret = os.environ.get("JEV_CARD_APP_SECRET", "").strip()
     if app_id and app_secret and LARK_ALERT_OPEN_ID:
         try:
-            ok, why = send_msg(json.dumps({"text": txt}), "text",
-                               receive_id=LARK_ALERT_OPEN_ID,
-                               app_id=app_id, app_secret=app_secret)
+            ok, why = send_msg(
+                json.dumps({"text": txt}),
+                "text",
+                receive_id=LARK_ALERT_OPEN_ID,
+                app_id=app_id,
+                app_secret=app_secret,
+            )
             if ok:
                 log("死信升级告警(jev app 路径) 送达", alert_id=alert.get("alert_id"))
                 return
@@ -262,9 +314,11 @@ def _escalate_dlq(alert: dict, reason: str) -> None:
         oid2 = next((u.get("userOpenId") for u in users if u.get("userOpenId")), "")
         if oid2:
             ok, why = send_msg(json.dumps({"text": txt}), "text", receive_id=oid2)
-            log("死信升级告警(apps[0] 路径) " + ("送达" if ok else f"失败: {why[:80]}"),
+            log(
+                "死信升级告警(apps[0] 路径) " + ("送达" if ok else f"失败: {why[:80]}"),
                 alert_id=alert.get("alert_id"),
-                level="info" if ok else "warn")
+                level="info" if ok else "warn",
+            )
             return
     except Exception as e:  # noqa: BLE001
         log(f"apps[0] 路径异常: {str(e)[:80]}", level="warn")
@@ -272,11 +326,16 @@ def _escalate_dlq(alert: dict, reason: str) -> None:
 
 
 def _append_dead_letter(alert: dict, verdict: dict, reason: str, final: bool) -> None:
-    rec = {"ts": datetime.now().isoformat(timespec="seconds"),
-           "alert_id": alert["alert_id"], "level": alert["level"],
-           "title": alert["title"], "verdict": verdict,
-           "reason": reason, "final": final,
-           "err": _LAST_PUSH_ERR[:300]}  # K-STOCK-401：失败原因入死信（此前仅日志可查）
+    rec = {
+        "ts": datetime.now().isoformat(timespec="seconds"),
+        "alert_id": alert["alert_id"],
+        "level": alert["level"],
+        "title": alert["title"],
+        "verdict": verdict,
+        "reason": reason,
+        "final": final,
+        "err": _LAST_PUSH_ERR[:300],
+    }  # K-STOCK-401：失败原因入死信（此前仅日志可查）
     try:
         with DEAD_LETTER.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
@@ -287,7 +346,7 @@ def _append_dead_letter(alert: dict, verdict: dict, reason: str, final: bool) ->
 
 # ── 死信轮转（R12：仅追加的审计日志，无生产读方，TTL 清理）───
 DEAD_LETTER_TTL_DAYS = 30  # K-STOCK-401 事故复盘需 17 天跨度，30 天留足余量
-_last_trim = ""            # 最近一次清理日（按日节流，避免每次追加都全量重写）
+_last_trim = ""  # 最近一次清理日（按日节流，避免每次追加都全量重写）
 
 
 def _trim_dead_letter() -> None:
@@ -315,7 +374,9 @@ def _trim_dead_letter() -> None:
         keep.append(line)
     if drop:
         jc.atomic_write_text(DEAD_LETTER, "\n".join(keep) + "\n")
-        log(f"死信轮转清理 {drop} 条（保留 {len(keep)} 条，TTL {DEAD_LETTER_TTL_DAYS} 天）")
+        log(
+            f"死信轮转清理 {drop} 条（保留 {len(keep)} 条，TTL {DEAD_LETTER_TTL_DAYS} 天）"
+        )
 
 
 def _push_with_dlq(alert: dict, verdict: dict) -> bool:
@@ -353,9 +414,12 @@ def ensure_seen_table() -> bool:
         db_run(
             "CREATE TABLE IF NOT EXISTS jev_gate_seen ("
             "alert_id varchar(64) PRIMARY KEY, "
-            "seen_at timestamptz NOT NULL DEFAULT now())")
-        db_execute("DELETE FROM jev_gate_seen WHERE seen_at < now() - make_interval(days => %s)",
-                   (SEEN_RETENTION_DAYS,))
+            "seen_at timestamptz NOT NULL DEFAULT now())"
+        )
+        db_execute(
+            "DELETE FROM jev_gate_seen WHERE seen_at < now() - make_interval(days => %s)",
+            (SEEN_RETENTION_DAYS,),
+        )
         # 一次性迁移本地 JSON（老版本遗留），成功后改名留档
         if SEEN_FILE.exists():
             try:
@@ -363,11 +427,16 @@ def ensure_seen_table() -> bool:
                 migrated = 0
                 for aid in old if isinstance(old, list) else []:
                     if isinstance(aid, str) and 0 < len(aid) <= 64:
-                        db_execute("INSERT INTO jev_gate_seen(alert_id) VALUES (%s) "
-                                   "ON CONFLICT DO NOTHING", (aid,))
+                        db_execute(
+                            "INSERT INTO jev_gate_seen(alert_id) VALUES (%s) "
+                            "ON CONFLICT DO NOTHING",
+                            (aid,),
+                        )
                         migrated += 1
                 SEEN_FILE.rename(SEEN_FILE.with_suffix(".json.imported"))
-                log(f"seen 本地 JSON 迁移入库完成：{migrated} 条（留档 gate_seen.json.imported）")
+                log(
+                    f"seen 本地 JSON 迁移入库完成：{migrated} 条（留档 gate_seen.json.imported）"
+                )
             except Exception as e:  # noqa: BLE001
                 log("seen JSON 迁移失败（继续用 DB）", err=str(e)[:120], level="warn")
         _seen_ready = True
@@ -385,8 +454,10 @@ def load_seen() -> set:
 
 def mark_seen(alert_id: str) -> None:
     """单条即时持久化（幂等，主键冲突忽略）。失败抛异常 → 调用方不吞。"""
-    db_execute("INSERT INTO jev_gate_seen(alert_id) VALUES (%s) ON CONFLICT DO NOTHING",
-               (alert_id,))
+    db_execute(
+        "INSERT INTO jev_gate_seen(alert_id) VALUES (%s) ON CONFLICT DO NOTHING",
+        (alert_id,),
+    )
 
 
 # ── 用户忽略模式（K-STOCK-404 R3 闭环） ─────────────────────
@@ -409,8 +480,9 @@ def _ignored_titles() -> set:
     try:
         raw = json.loads(IGNORE_FILE.read_text(encoding="utf-8"))
     except Exception as e:  # noqa: BLE001
-        log(f"gate_ignored.json 读取失败（忽略集按空处理）: {str(e)[:80]}",
-            level="warn")
+        log(
+            f"gate_ignored.json 读取失败（忽略集按空处理）: {str(e)[:80]}", level="warn"
+        )
         return set()
     titles, cutoff = set(), datetime.now() - timedelta(days=IGNORE_TTL_DAYS)
     for it in raw if isinstance(raw, list) else []:
@@ -434,7 +506,9 @@ def _handle_alert(a: dict, dry: bool) -> None:
     # CRITICAL 直推不过 Jev（评测结论：兜底通道不能依赖外部模型）
     if a["level"] == "CRITICAL":
         log("CRITICAL 直推", alert_id=a["alert_id"], title=a["title"][:40])
-        if not dry and not _push_with_dlq(a, {"urgent_p": 1.0, "category": "sys", "category_p": 1.0}):
+        if not dry and not _push_with_dlq(
+            a, {"urgent_p": 1.0, "category": "sys", "category_p": 1.0}
+        ):
             return  # 推送失败：不标 seen，下轮重试（P1-4）
         if not dry:  # K-STOCK-401：dry 只演练不落状态，防真实告警被 seen 永久吞掉
             mark_seen(a["alert_id"])
@@ -443,8 +517,7 @@ def _handle_alert(a: dict, dry: bool) -> None:
     # K-STOCK-404：用户忽略的同类告警（title 匹配）不再推送/不再消耗 Jev
     # 额度。仅豁免 CRITICAL（上方已 return）——告警安全侧：宁可多推不漏推。
     if _IGN and a["title"] in _IGN:
-        log("用户已忽略该类告警，抑制", alert_id=a["alert_id"],
-            title=a["title"][:40])
+        log("用户已忽略该类告警，抑制", alert_id=a["alert_id"], title=a["title"][:40])
         if not dry:
             mark_seen(a["alert_id"])
         return
@@ -454,8 +527,12 @@ def _handle_alert(a: dict, dry: bool) -> None:
         try:
             verdict = judge(a)
         except Exception as e:  # noqa: BLE001
-            log("Jev 失败（跳过本轮）", alert_id=a["alert_id"], err=str(e)[:120],
-                level="warn")
+            log(
+                "Jev 失败（跳过本轮）",
+                alert_id=a["alert_id"],
+                err=str(e)[:120],
+                level="warn",
+            )
             return  # 不标 seen，下轮重试
     elif dry:
         verdict = {"urgent_p": -1, "category": "dry", "category_p": 0}
@@ -463,19 +540,31 @@ def _handle_alert(a: dict, dry: bool) -> None:
     if verdict is None:
         # 无 key：保守起见不推，等配置。2026-10-16 审计：原 mark_seen 会
         # 把告警永久吞掉（key 恢复后也不再重判）——不标 seen，留待重判。
-        log("无 Jev key，跳过（不标 seen，留待 key 就绪重判）",
-            alert_id=a["alert_id"], level=a["level"],
-            title=a["title"][:40])
+        log(
+            "无 Jev key，跳过（不标 seen，留待 key 就绪重判）",
+            alert_id=a["alert_id"],
+            level=a["level"],
+            title=a["title"][:40],
+        )
         return
 
     if verdict["urgent_p"] >= URGENT_THRESHOLD:
-        log("推送", alert_id=a["alert_id"], urgent_p=round(verdict["urgent_p"], 2),
-            category=verdict["category"], title=a["title"][:40])
+        log(
+            "推送",
+            alert_id=a["alert_id"],
+            urgent_p=round(verdict["urgent_p"], 2),
+            category=verdict["category"],
+            title=a["title"][:40],
+        )
         if not dry and not _push_with_dlq(a, verdict):
             return  # 推送失败：不标 seen，下轮重试（P1-4）
     else:
-        log("抑制", alert_id=a["alert_id"], urgent_p=round(verdict["urgent_p"], 2),
-            title=a["title"][:40])
+        log(
+            "抑制",
+            alert_id=a["alert_id"],
+            urgent_p=round(verdict["urgent_p"], 2),
+            title=a["title"][:40],
+        )
     if not dry:  # K-STOCK-401：dry 只演练不落状态（同上）
         mark_seen(a["alert_id"])
 
@@ -499,8 +588,12 @@ def run_once(dry: bool = False) -> None:
             try:
                 _handle_alert(a, dry)
             except Exception as e:  # noqa: BLE001
-                log("单告警处理异常（不标 seen，下轮重试）", alert_id=a["alert_id"],
-                    err=str(e)[:150], level="error")
+                log(
+                    "单告警处理异常（不标 seen，下轮重试）",
+                    alert_id=a["alert_id"],
+                    err=str(e)[:150],
+                    level="error",
+                )
 
 
 # ── P2-1 事件驱动：LISTEN/NOTIFY 秒级感知新告警，轮询兜底 ──
@@ -518,6 +611,7 @@ FOR EACH ROW EXECUTE FUNCTION jev_alert_notify();
 """
     try:
         import psycopg2
+
         c = psycopg2.connect(**jc.DB_DSN)
         c.autocommit = True
         with c.cursor() as cur:
@@ -532,6 +626,7 @@ FOR EACH ROW EXECUTE FUNCTION jev_alert_notify();
 def _listen_conn():
     """独立 LISTEN 连接（select 独占等待，不可与查询连接复用）。"""
     import psycopg2
+
     c = psycopg2.connect(**jc.DB_DSN)
     c.autocommit = True
     with c.cursor() as cur:
@@ -555,6 +650,7 @@ def poll_loop() -> None:
 def event_loop() -> None:
     """NOTIFY 驱动 + 周期兜底轮询；断连自动重建 LISTEN 连接。"""
     import select as _select
+
     while not _STOP["flag"]:
         try:
             c = _listen_conn()
@@ -594,9 +690,11 @@ def main() -> None:
         sys.exit("缺少 JEV_API_KEY（或用 --dry 先看链路）")
     jc.start_metrics(METRICS_PORT)
     mode = "事件驱动" if ensure_notify_trigger() else "纯轮询"
-    log(f"网关启动 模式={mode} 轮询={POLL_SEC}s 阈值={URGENT_THRESHOLD} "
+    log(
+        f"网关启动 模式={mode} 轮询={POLL_SEC}s 阈值={URGENT_THRESHOLD} "
         f"metrics=127.0.0.1:{METRICS_PORT} "
-        f"飞书推送={'已配置' if LARK_ALERT_OPEN_ID else '未配置(仅日志)'}")
+        f"飞书推送={'已配置' if LARK_ALERT_OPEN_ID else '未配置(仅日志)'}"
+    )
     _trim_dead_letter()  # R12：常驻启动时轮转一次（历史积压在此清理）
     if mode == "事件驱动":
         event_loop()

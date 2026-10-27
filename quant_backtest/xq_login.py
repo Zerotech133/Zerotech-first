@@ -23,6 +23,7 @@ cookie 出现登录态特征 → 导出 → token_probe 验活 → TokenPool.sav
 铁律：token/密码绝不完整打印（掩码）；密码仅经 CLI 传入不落盘；
 失败路径截图 C:/Temp/xq_login_fail_*.png 供排查。
 """
+
 import argparse
 import logging
 import asyncio
@@ -35,8 +36,10 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
 HOME_URL = "https://xueqiu.com/"
 CHALLENGE_WAIT_MS = 10_000
 LOGIN_FEATURE_COOKIES = {"xq_r_token", "xqat", "xq_id", "xq_or_token"}
@@ -60,20 +63,24 @@ def _looks_waf(text: str) -> bool:
 # ── 浏览器流程（async）──────────────────────────────────────
 async def _probe_async(headless: bool) -> None:
     from playwright.async_api import async_playwright
+
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            channel="msedge", headless=headless)
+        browser = await p.chromium.launch(channel="msedge", headless=headless)
         ctx = await browser.new_context(
-            user_agent=UA, locale="zh-CN",
-            viewport={"width": 1366, "height": 768})
+            user_agent=UA, locale="zh-CN", viewport={"width": 1366, "height": 768}
+        )
         page = await ctx.new_page()
         try:
             await page.goto(HOME_URL, wait_until="commit", timeout=30_000)
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "xq_login.py", exc
+            )
         await page.wait_for_timeout(CHALLENGE_WAIT_MS)
-        print("== WAF 判定：body 前 3KB %s"
-              % ("像挑战页" if _looks_waf(await page.content()) else "正常"))
+        print(
+            "== WAF 判定：body 前 3KB %s"
+            % ("像挑战页" if _looks_waf(await page.content()) else "正常")
+        )
         cands = await page.evaluate(
             """() => {
                 const out = [];
@@ -88,11 +95,14 @@ async def _probe_async(headless: bool) -> None:
                     .map(e => ({name: e.name, ph: e.placeholder,
                                 visible: !!(e.offsetWidth || e.offsetHeight)}));
                 return {cands: out.slice(0, 15), pws};
-            }""")
+            }"""
+        )
         print("== 登录入口候选（前 15）：")
         for c in cands["cands"]:
-            print("   <%s cls=%r text=%r href=%r>"
-                  % (c["tag"], str(c["cls"])[:60], c["text"], c["href"][:60]))
+            print(
+                "   <%s cls=%r text=%r href=%r>"
+                % (c["tag"], str(c["cls"])[:60], c["text"], c["href"][:60])
+            )
         print("== 页面内 password 输入框：%s" % (cands["pws"] or "无"))
         _shot = os.path.join(FAIL_SHOT_DIR, "xq_probe_home.png")
         await page.screenshot(path=_shot)
@@ -105,43 +115,54 @@ def _mask_cookies(cookies: list[dict]) -> list[str]:
     return names
 
 
-async def _login_async(user: str, password: str, headless: bool,
-                       wait_human: int, mode: str = "pwd") -> tuple[
-                           str, list[dict]]:
+async def _login_async(
+    user: str, password: str, headless: bool, wait_human: int, mode: str = "pwd"
+) -> tuple[str, list[dict]]:
     """登录并返回 (xq_a_token, cookies)。mode=pwd 账号密码+极验；
     mode=qr 二维码扫码（用户雪球 App 扫窗内码，免滑块免验证码）。"""
     from playwright.async_api import async_playwright
-    _safe_name = "u" + re.sub(r"\D", "", user)[-4:]   # 账号脱敏（后 4 位数字）
+
+    _safe_name = "u" + re.sub(r"\D", "", user)[-4:]  # 账号脱敏（后 4 位数字）
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            channel="msedge", headless=headless)
+        browser = await p.chromium.launch(channel="msedge", headless=headless)
         ctx = await browser.new_context(
-            user_agent=UA, locale="zh-CN",
-            viewport={"width": 1366, "height": 768})
+            user_agent=UA, locale="zh-CN", viewport={"width": 1366, "height": 768}
+        )
         page = await ctx.new_page()
         try:
             await page.goto(HOME_URL, wait_until="commit", timeout=30_000)
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "xq_login.py", exc
+            )
         await page.wait_for_timeout(CHALLENGE_WAIT_MS)
-        pre = {c["name"]: c.get("value", "")
-               for c in await ctx.cookies() if isinstance(c, dict)}
+        pre = {
+            c["name"]: c.get("value", "")
+            for c in await ctx.cookies()
+            if isinstance(c, dict)
+        }
 
         # 1) 登录面板可能已嵌在页面（落地页右侧：tab=账号密码登录），
         #    否则（普通首页形态）先点登录入口
         panel = False
         try:
             await page.get_by_text("账号密码登录", exact=False).first.wait_for(
-                state="visible", timeout=8000)
+                state="visible", timeout=8000
+            )
             panel = True
             print("[login] 落地页形态：登录面板已在页面")
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "xq_login.py", exc
+            )
         if not panel:
             opened = False
-            for sel in ("a[class*='btn--login']",
-                        "a:has-text('立即登录/注册')",
-                        "a:has-text('登录')", "button:has-text('登录')"):
+            for sel in (
+                "a[class*='btn--login']",
+                "a:has-text('立即登录/注册')",
+                "a:has-text('登录')",
+                "button:has-text('登录')",
+            ):
                 try:
                     loc = page.locator(sel).first
                     await loc.wait_for(state="visible", timeout=20_000)
@@ -155,12 +176,15 @@ async def _login_async(user: str, password: str, headless: bool,
                 try:
                     await page.screenshot(
                         path=os.path.join(
-                            FAIL_SHOT_DIR,
-                            "xq_login_noentry_%d.png" % int(time.time())))
+                            FAIL_SHOT_DIR, "xq_login_noentry_%d.png" % int(time.time())
+                        )
+                    )
                     waf = _looks_waf(await page.content())
                     print("[login] 入口未现（WAF 挑战页=%s），截图已存" % waf)
                 except Exception as exc:
-                    logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+                    logging.getLogger(__name__).warning(
+                        "silent-except %s: %s", "xq_login.py", exc
+                    )
                 raise RuntimeError("登录入口未找到（首页无「登录」可点）")
             await page.wait_for_timeout(2500)
 
@@ -177,19 +201,20 @@ async def _login_async(user: str, password: str, headless: bool,
             await page.wait_for_timeout(2500)
             await page.screenshot(
                 path=os.path.join(
-                    FAIL_SHOT_DIR, "xq_login_qr_%d.png" % int(time.time())))
+                    FAIL_SHOT_DIR, "xq_login_qr_%d.png" % int(time.time())
+                )
+            )
             print("[login]" + "!" * 60)
             print("[login] ⚠ 请用雪球 App 扫描屏幕上浏览器窗口中的二维码")
-            print("[login]   确认后脚本自动检测登录态并继续（窗口 %ds）"
-                  % wait_human)
+            print("[login]   确认后脚本自动检测登录态并继续（窗口 %ds）" % wait_human)
             print("[login]" + "!" * 60)
-            got = await _wait_login_feature(ctx, pre,
-                                            time.time() + wait_human)
+            got = await _wait_login_feature(ctx, pre, time.time() + wait_human)
             if not got:
                 await page.screenshot(
                     path=os.path.join(
-                        FAIL_SHOT_DIR,
-                        "xq_login_fail_%d.png" % int(time.time())))
+                        FAIL_SHOT_DIR, "xq_login_fail_%d.png" % int(time.time())
+                    )
+                )
                 raise RuntimeError("扫码登录未成功（窗口超时）")
             return await _export_login(ctx, pre, _safe_name, browser)
 
@@ -209,7 +234,8 @@ async def _login_async(user: str, password: str, headless: bool,
         phone = page.locator(
             "input[type=tel]:visible, input[placeholder*='手机']:visible, "
             "input[name*='phone']:visible, "
-            "input[name*='account']:visible").first
+            "input[name*='account']:visible"
+        ).first
         await phone.fill(user, timeout=8000)
         pwd = page.locator("input[type=password]:visible").first
         await pwd.fill(password, timeout=8000)
@@ -228,7 +254,8 @@ async def _login_async(user: str, password: str, headless: bool,
                     const r = circle.getBoundingClientRect();
                     return {x: r.x + r.width / 2, y: r.y + r.height / 2,
                             cls: String(circle.className || '').slice(0, 80)};
-                }""")
+                }"""
+            )
             if not info:
                 print("[login] 协议元素未找到")
             else:
@@ -242,17 +269,23 @@ async def _login_async(user: str, password: str, headless: bool,
                                   && (l.textContent || '').length < 40);
                         const c = lb && lb.querySelector('span,i,div,em,b');
                         return c ? String(c.className || '').slice(0, 80) : '?';
-                    }""")
-                print("[login] 协议圆圈 class 后：%s %s"
-                      % (cls2, "✓ 已勾选" if cls2 != info["cls"] else "⚠ 未变化"))
+                    }"""
+                )
+                print(
+                    "[login] 协议圆圈 class 后：%s %s"
+                    % (cls2, "✓ 已勾选" if cls2 != info["cls"] else "⚠ 未变化")
+                )
         except Exception as e:
             print("[login] 协议点击失败：%s" % str(e)[:60])
 
         # 5) 提交：大蓝按钮「登 录」（tab 是 a 元素不会误中）
         submitted = False
-        for sel in ("button:has-text('登')",
-                    "[class*='login'] button, [class*='Login'] button",
-                    "text=登 录", "[class*=submit]"):
+        for sel in (
+            "button:has-text('登')",
+            "[class*='login'] button, [class*='Login'] button",
+            "text=登 录",
+            "[class*=submit]",
+        ):
             try:
                 loc = page.locator(sel).last
                 await loc.click(timeout=4000)
@@ -275,77 +308,90 @@ async def _login_async(user: str, password: str, headless: bool,
                             '[class*=error],[class*=toast],[class*=tip],[class*=alert]')]
                         .filter(e => e.offsetWidth)
                         .map(e => (e.textContent || '').trim())
-                        .filter(t => t && t.length < 60)""")
+                        .filter(t => t && t.length < 60)"""
+                )
                 if tips:
                     print("[login] 页面提示：%s" % tips[:5])
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "xq_login.py", exc
+                )
         if not got and not headless:
             # 滑块自动拖（仅当页面确有滑块/验证元素——实测拦截多为
             # 「手机号码验证」短信弹窗，无滑块元素时跳过白等）
             has_slider = False
             try:
                 has_slider = await page.locator(
-                    "[class*=slider],[class*=aptcha],"
-                    "[class*=puzzle]").first.is_visible(timeout=1500)
+                    "[class*=slider],[class*=aptcha],[class*=puzzle]"
+                ).first.is_visible(timeout=1500)
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "xq_login.py", exc
+                )
             if has_slider:
                 for i in range(3):
                     print("[login] 极验自动尝试 %d/3" % (i + 1))
                     ok = await _try_slider(page)
-                    got = await _wait_login_feature(ctx, pre,
-                                                    time.time() + 6)
+                    got = await _wait_login_feature(ctx, pre, time.time() + 6)
                     if got:
                         break
-                    if ok and i < 2:            # 拖了但没过 → 刷新换图
+                    if ok and i < 2:  # 拖了但没过 → 刷新换图
                         try:
-                            await page.locator(
-                                "[class*=geetest_refresh]").first.click(
-                                timeout=2000)
+                            await page.locator("[class*=geetest_refresh]").first.click(
+                                timeout=2000
+                            )
                             await page.wait_for_timeout(1200)
                         except Exception as exc:
-                            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+                            logging.getLogger(__name__).warning(
+                                "silent-except %s: %s", "xq_login.py", exc
+                            )
             if not got:
                 print("[login]" + "!" * 60)
                 print("[login] ⚠ 请人工辅助（窗口 %ds）：" % wait_human)
-                print("[login]   若弹出「手机号码验证」→ 查收该账号手机"
-                      "的短信验证码，在浏览器窗口输入并提交；")
+                print(
+                    "[login]   若弹出「手机号码验证」→ 查收该账号手机"
+                    "的短信验证码，在浏览器窗口输入并提交；"
+                )
                 print("[login]   若是滑块 → 手动拖动。")
                 print("[login]   完成后脚本自动检测登录态并继续，无需其他操作。")
                 print("[login]" + "!" * 60)
-                got = await _wait_login_feature(ctx, pre,
-                                                time.time() + wait_human)
+                got = await _wait_login_feature(ctx, pre, time.time() + wait_human)
         if not got:
             await page.screenshot(
                 path=os.path.join(
-                    FAIL_SHOT_DIR,
-                    "xq_login_fail_%d.png" % int(time.time())))
+                    FAIL_SHOT_DIR, "xq_login_fail_%d.png" % int(time.time())
+                )
+            )
             raise RuntimeError("登录未成功（未见登录态 cookie）")
 
         return await _export_login(ctx, pre, _safe_name, browser)
 
 
-async def _export_login(ctx, pre: dict, _safe_name: str,
-                        browser) -> tuple[str, list[dict]]:
+async def _export_login(
+    ctx, pre: dict, _safe_name: str, browser
+) -> tuple[str, list[dict]]:
     """登录成功后共用导出：提取 xq_a_token + 全套 cookie 备份落盘。"""
     cookies = await ctx.cookies()
-    tok = next((c["value"] for c in cookies
-                if c["name"] == "xq_a_token" and c.get("value")), "")
+    tok = next(
+        (c["value"] for c in cookies if c["name"] == "xq_a_token" and c.get("value")),
+        "",
+    )
     if not tok:
         raise RuntimeError("登录态 cookie 存在但无 xq_a_token")
-    print("[login] 登录成功：cookie %d 项，xq_a_token=%s"
-          % (len(cookies), _mask(tok)))
+    print("[login] 登录成功：cookie %d 项，xq_a_token=%s" % (len(cookies), _mask(tok)))
     # 全套登录态 cookie 备份落盘（token 失效时可人工回灌，免重登）
     try:
-        bak = os.path.join(HERE, "config",
-                           "xq_login_cookies_%s.json" % _safe_name)
+        bak = os.path.join(HERE, "config", "xq_login_cookies_%s.json" % _safe_name)
         with open(bak + ".tmp", "w", encoding="utf-8") as f:
-            json.dump({"saved_at": time.time(), "user": _safe_name,
-                       "cookies": cookies}, f, ensure_ascii=False)
+            json.dump(
+                {"saved_at": time.time(), "user": _safe_name, "cookies": cookies},
+                f,
+                ensure_ascii=False,
+            )
         os.replace(bak + ".tmp", bak)
-        print("[login] 登录态 cookie 已备份 config/xq_login_cookies_%s.json"
-              % _safe_name)
+        print(
+            "[login] 登录态 cookie 已备份 config/xq_login_cookies_%s.json" % _safe_name
+        )
     except Exception as e:
         print("[login] cookie 备份失败（忽略）：%s" % str(e)[:60])
     await browser.close()
@@ -362,13 +408,15 @@ async def _wait_login_feature(ctx, pre_map: dict, deadline: float) -> bool:
     """
     while time.time() < deadline:
         try:
-            cur = {c["name"]: c.get("value", "")
-                   for c in await ctx.cookies() if isinstance(c, dict)}
+            cur = {
+                c["name"]: c.get("value", "")
+                for c in await ctx.cookies()
+                if isinstance(c, dict)
+            }
         except Exception:
             await asyncio.sleep(2)
             continue
-        if cur.get("xq_a_token") and cur.get("xq_a_token") != \
-                pre_map.get("xq_a_token"):
+        if cur.get("xq_a_token") and cur.get("xq_a_token") != pre_map.get("xq_a_token"):
             return True
         for k in LOGIN_FEATURE_COOKIES:
             if k in cur and cur[k] != pre_map.get(k):
@@ -407,20 +455,27 @@ async def _geetest_gap(page) -> dict:
                 if (d > bestDiff) { bestDiff = d; best = x; }
             }
             return {w: w, h: h, gapX: best, diff: bestDiff};
-        }""")
+        }"""
+    )
 
 
 def _human_track(dist: float) -> list[float]:
     """人类拖动轨迹（相对位移序列）：连续速度模型——分相速度平滑趋近
     （加速 25% → 巡航 → 末端爬行 1.6px/帧），噪声速度扰动，过冲回拉。"""
     import random
+
     over = dist + random.uniform(3, 6)
     pts: list[float] = []
     pos, v = 0.0, 0.0
     while pos < over and len(pts) < 220:
         phase = pos / over
-        vmax = (random.uniform(7, 10) if phase < 0.25
-                else random.uniform(5, 7) if phase < 0.75 else 1.6)
+        vmax = (
+            random.uniform(7, 10)
+            if phase < 0.25
+            else random.uniform(5, 7)
+            if phase < 0.75
+            else 1.6
+        )
         v += (vmax - v) * 0.3 + random.uniform(-0.4, 0.4)
         v = max(0.8, v)
         pos = min(over, pos + v)
@@ -446,28 +501,34 @@ async def _try_slider(page) -> bool:
                     print("[login] 错误面板已点重试，重开拼图")
                     await page.wait_for_timeout(1500)
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "xq_login.py", exc
+                )
         box = await btn.bounding_box(timeout=4000)
         if not box:
             print("[login] 无 geetest_slider_button")
             return False
         gap = await _geetest_gap(page)
         if not gap or gap.get("err") or gap.get("gapX", -1) < 0:
-            print("[login] 缺口检测失败：%s" % json.dumps(
-                gap, ensure_ascii=False)[:120])
+            print(
+                "[login] 缺口检测失败：%s" % json.dumps(gap, ensure_ascii=False)[:120]
+            )
             return False
         bg = page.locator(".geetest_canvas_bg").first
         bbox = await bg.bounding_box(timeout=3000)
         if not bbox:
             return False
-        scale = bbox["width"] / gap["w"]        # canvas 像素 → 显示 px
+        scale = bbox["width"] / gap["w"]  # canvas 像素 → 显示 px
         dist = gap["gapX"] * scale
-        print("[login] 缺口 x=%d/%dpx diff=%.1f 比例=%.2f → 拖距 %.0fpx"
-              % (gap["gapX"], gap["w"], gap["diff"], scale, dist))
+        print(
+            "[login] 缺口 x=%d/%dpx diff=%.1f 比例=%.2f → 拖距 %.0fpx"
+            % (gap["gapX"], gap["w"], gap["diff"], scale, dist)
+        )
         if gap["diff"] < 5:
             print("[login] 边缘差过弱（%.1f<5），疑似无缺口特征" % gap["diff"])
             return False
         import random
+
         sx = box["x"] + box["width"] / 2
         sy = box["y"] + box["height"] / 2
         await page.mouse.move(sx, sy)
@@ -491,6 +552,7 @@ def verify_token(tok: str) -> dict:
     """token_probe 验活（pysnowball 走 XUEQIUTOKEN 环境变量）。"""
     os.environ["XUEQIUTOKEN"] = tok
     from xueqiu_common import token_probe
+
     return token_probe("SH600519")
 
 
@@ -504,15 +566,18 @@ def _is_market_ip_blacklist_error(probe: dict) -> bool:
     domain = str(detail.get("domain") or detail.get("host") or "").lower()
     code = str(detail.get("code") or detail.get("error_code") or "").upper()
     reason = str(detail.get("reason") or detail.get("type") or "").upper()
-    return (domain in {"stock.xueqiu.com", "行情域"}
-            and code in {"403", "HTTP_403", "IP_BLACKLIST"}
-            and reason in {"IP_BLACKLIST", "IP_BLOCKED", "BLACKLIST"})
+    return (
+        domain in {"stock.xueqiu.com", "行情域"}
+        and code in {"403", "HTTP_403", "IP_BLACKLIST"}
+        and reason in {"IP_BLACKLIST", "IP_BLOCKED", "BLACKLIST"}
+    )
 
 
 def save_to_pool(name: str, tok: str) -> bool:
     """同名替换 / 追加 → 原子落盘。"""
     from xq_tokens import load_tokens
     from xq_tokens import TokenEntry
+
     pool = load_tokens()
     for e in pool.entries:
         if e.name == name:
@@ -524,8 +589,7 @@ def save_to_pool(name: str, tok: str) -> bool:
             return True
     pool.entries.append(TokenEntry(name=name, token=tok))
     pool.save()
-    print("[pool] 追加：%s → %s（池内 %d 条）"
-          % (name, _mask(tok), len(pool.entries)))
+    print("[pool] 追加：%s → %s（池内 %d 条）" % (name, _mask(tok), len(pool.entries)))
     return True
 
 
@@ -533,22 +597,20 @@ def main() -> int:
     # 输出实时化（管道/重定向全缓冲会让中断丢全部日志，判例 2026-10-17）；
     # 强制 utf-8（GBK console 遇特殊字符死进程判例）
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace",
-                                line_buffering=True)
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace",
-                                line_buffering=True)
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--user")
     ap.add_argument("--password")
-    ap.add_argument("--name", required=False,
-                    help="token 池条目名（如 tok-u-150）")
+    ap.add_argument("--name", required=False, help="token 池条目名（如 tok-u-150）")
     ap.add_argument("--headless", action="store_true")
     ap.add_argument("--no-pool", action="store_true")
-    ap.add_argument("--qr", action="store_true",
-                    help="扫码登录（雪球 App 扫窗内二维码，免滑块）")
+    ap.add_argument(
+        "--qr", action="store_true", help="扫码登录（雪球 App 扫窗内二维码，免滑块）"
+    )
     ap.add_argument("--wait-human", type=int, default=180)
     a = ap.parse_args()
 
@@ -560,9 +622,11 @@ def main() -> int:
             print("扫码模式需要 --name")
             return 1
         try:
-            tok, _cookies = asyncio.run(_login_async(
-                "", "", headless=a.headless, wait_human=a.wait_human,
-                mode="qr"))
+            tok, _cookies = asyncio.run(
+                _login_async(
+                    "", "", headless=a.headless, wait_human=a.wait_human, mode="qr"
+                )
+            )
         except Exception as e:
             print("[FATAL] 扫码登录失败：%s" % str(e)[:200])
             return 2
@@ -571,16 +635,24 @@ def main() -> int:
             print("需要 --user --password --name（或 --probe/--qr）")
             return 1
         try:
-            tok, _cookies = asyncio.run(_login_async(
-                a.user, a.password, headless=a.headless,
-                wait_human=a.wait_human, mode="pwd"))
+            tok, _cookies = asyncio.run(
+                _login_async(
+                    a.user,
+                    a.password,
+                    headless=a.headless,
+                    wait_human=a.wait_human,
+                    mode="pwd",
+                )
+            )
         except Exception as e:
             print("[FATAL] 登录失败：%s" % str(e)[:200])
             return 2
 
     tp = verify_token(tok)
-    print("[verify] token_probe ok=%s valid=%s latency=%dms err=%s"
-          % (tp["ok"], tp.get("valid"), tp["latency_ms"], tp["err"] or "-"))
+    print(
+        "[verify] token_probe ok=%s valid=%s latency=%dms err=%s"
+        % (tp["ok"], tp.get("valid"), tp["latency_ms"], tp["err"] or "-")
+    )
     if not (tp["ok"] and tp.get("valid")):
         if _is_market_ip_blacklist_error(tp):
             print("[verify] 行情域 IP 黑名单错误，继续入池")
