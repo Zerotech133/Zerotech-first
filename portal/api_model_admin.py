@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
 import router as router_mod  # noqa: E402  # SmartRouter 引擎
+import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 REG = ROOT / "agent_platform" / "registry"
@@ -71,8 +72,8 @@ def _cloud_status():
         if key_file.exists() and json.loads(
                 key_file.read_text(encoding="utf-8")).get("zhipu_key"):
             has_key, key_src = True, "audit_ai_config.json zhipu_key"
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_model_admin.py", exc)
     if not has_key:
         import os
         if os.environ.get("GLM_API_KEY"):
@@ -133,8 +134,8 @@ def _org_name_map():
             for ap in d.get("agent_profiles", []):
                 if ap.get("name"):
                     names[ap["agent_id"]] = ap["name"]
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_model_admin.py", exc)
     return names
 
 
@@ -166,8 +167,8 @@ def _dept_titles():
         for d in org.get("departments", []):
             if d.get("cn_title"):
                 titles[d.get("dept", "")] = d["cn_title"]
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_model_admin.py", exc)
     return titles
 
 
@@ -269,8 +270,8 @@ def _glm_key():
             zk = json.loads(kf.read_text(encoding="utf-8")).get("zhipu_key", "")
             if zk:
                 return zk
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_model_admin.py", exc)
     import os
     return os.environ.get("GLM_API_KEY", "")
 
@@ -315,8 +316,8 @@ def _logistics():
             rows = sum(1 for _ in f)
         sft = {"rows": rows, "mtime": time.strftime("%H:%M", time.localtime(st.st_mtime)),
                "fresh_min": round(age_min, 1)}
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_model_admin.py", exc)
     disk = shutil.disk_usage("C:\\")
     return {"sft": sft, "glm": _glm_probe(),
             "disk": {"free_gb": round(disk.free / 1e9), "pct": round(disk.used / disk.total * 100)},

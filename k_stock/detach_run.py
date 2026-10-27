@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 import time
+import logging
 
 REPO = os.path.dirname(os.path.abspath(__file__))  # .../k_stock
 RUN_CWD = os.path.dirname(REPO)  # 仓库根（-m k_stock 需要）
@@ -97,8 +98,8 @@ def pid_alive(pid: int) -> bool:
         if h:
             k32.CloseHandle(h)
             return True
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/detach_run.py", exc)
     return False
 
 
@@ -162,12 +163,12 @@ def acquire_lock() -> bool:
                 old = int(open(LOCK).read().strip() or "0")
                 if pid_alive(old):
                     return False  # 真实实例在跑，直接退出
-            except (ValueError, OSError):
-                pass
+            except (ValueError, OSError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/detach_run.py", exc)
             try:
                 os.remove(LOCK)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/detach_run.py", exc)
             time.sleep(1)
     return False
 
@@ -177,8 +178,8 @@ def dereg_bootstrap():
         subprocess.run(
             ["schtasks", "/Delete", "/TN", BOOTSTRAP_TASK, "/F"], capture_output=True
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/detach_run.py", exc)
 
 
 def main() -> int:
@@ -267,8 +268,8 @@ def main() -> int:
     finally:
         try:
             os.remove(LOCK)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/detach_run.py", exc)
     return 0
 
 

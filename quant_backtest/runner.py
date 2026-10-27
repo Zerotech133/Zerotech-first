@@ -32,6 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # 2026-10-25 SEC 收口（EXEC-R16）：config.json 的 report 文档 URL 走环境变量/本地私有覆盖，
 # 见 config_local.py；禁止把真值写回 tracked config。
 from config_local import load_config as _load_quant_config  # noqa: E402
+import logging
 
 CFG = _load_quant_config()
 RESULTS_JSONL = os.path.join(HERE, "backtest_results.jsonl")
@@ -660,8 +661,8 @@ def update_ledger(refresh_signals=True, ledger_path=None):
         import doc_board
 
         doc_board.refresh()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/runner.py", exc)
     if dup_skip:
         print("LEDGER dedup_skip=%d（同信号重复入账已跳过）" % dup_skip)
     if forced:
@@ -922,8 +923,8 @@ def _chart_png(tag, m, bh):
         for old in pngs[:-40]:  # 保留最近 40 张
             try:
                 os.remove(os.path.join(d, old))
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/runner.py", exc)
         return fn
     except Exception:
         return None
@@ -1086,8 +1087,8 @@ def run_single(strategy_name, symbol, market, start, end, push=False):
         )
         report_page.write_report_html(title, [sec])
         snap_file = report_page.write_snapshot(title, [sec], tag=symbol)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/runner.py", exc)
 
     report = fmt_report(
         symbol, strategy_name, params, m, bh, window, df=df, sig=sig, market=market
@@ -1102,8 +1103,8 @@ def run_single(strategy_name, symbol, market, start, end, push=False):
             if _s == symbol:
                 news_name = _n
                 break
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/runner.py", exc)
     if push and CFG["feishu"].get("push", True):
         sent = push_report_card(
             symbol,
@@ -1347,8 +1348,8 @@ def run_daily():
     out = run_scan(strategy_name, "ALL", start, None, push=bool(d.get("push", True)))
     try:
         update_ledger()  # 16:00 顺带：信号页刷新 + 纸面持仓账本更新
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/runner.py", exc)
     topn = int(d.get("top_reports", 0) or 0)
     if not topn or not out or not out.get("results"):
         return
@@ -1387,8 +1388,8 @@ def run_daily():
         title = "每日扫描 Top%d 回测报告" % n_ok
         report_page.write_report_html(title, page_secs)
         snap_file = report_page.write_snapshot(title, page_secs, tag="top")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/runner.py", exc)
     buttons, qr = _card_actions(snap_file)
     card = build_card(
         "📈 每日扫描 Top%d 单股回测详情" % n_ok,

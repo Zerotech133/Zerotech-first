@@ -27,8 +27,8 @@ MARKER = r"C:\Temp\push_admin_restart.marker"
 if os.path.exists(MARKER):
     try:
         os.remove(MARKER)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ops/launch_push_admin.py", exc)
     _ns = subprocess.run(["netstat", "-ano", "-p", "TCP"],
                          capture_output=True).stdout.decode("gbk", "replace")
     for _ln in _ns.splitlines():
@@ -58,6 +58,7 @@ if os.path.exists(MARKER):
 #   1) 单次 CIM 快查（timeout 25s）供 marker/dedup/ensure 共用
 #   2) 整段 try/except 兜底——bot 守护失败不阻断 8097 主职
 import re as _re
+import logging
 
 BOT_MARKER = r"C:\Temp\feishu_bot_restart.marker"
 DUMP_MARKER = r"C:\Temp\proc_dump.marker"
@@ -124,16 +125,16 @@ def _write_reset_ts(ts):
     try:
         with open(BOT_RESET_TS, "w", encoding="ascii") as f:
             f.write(repr(float(ts)))
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ops/launch_push_admin.py", exc)
 
 
 try:
     if os.path.exists(DUMP_MARKER):
         try:
             os.remove(DUMP_MARKER)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "ops/launch_push_admin.py", exc)
         try:
             r = subprocess.run(
                 ["powershell", "-NoProfile", "-Command",
@@ -155,8 +156,8 @@ try:
             _reset_ts = time.time()
         try:
             os.remove(BOT_MARKER)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "ops/launch_push_admin.py", exc)
         for _bp, _, _ in _procs:
             subprocess.run(["taskkill", "/F", "/T", "/PID", str(_bp)],
                            capture_output=True)
@@ -204,13 +205,13 @@ try:
     s.close()
     print("[skip] 8097 already listening")
     sys.exit(0)
-except OSError:
-    pass
+except OSError as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "ops/launch_push_admin.py", exc)
 finally:
     try:
         s.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ops/launch_push_admin.py", exc)
 
 _sysroot = os.environ.get("SystemRoot", r"C:\Windows")
 env = os.environ.copy()

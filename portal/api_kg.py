@@ -14,6 +14,7 @@ from api_common import (
     _PILL, _PILL_ON,
     CANDLE_CN,
     _LABELS_FP, _CARD_FB_FP)
+import logging
 
 
 
@@ -294,8 +295,8 @@ def _kg_label_save(rec):
                 if (r.get("code"), r.get("period"),
                         r.get("last_dt")) != key:
                     rows.append(r)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_kg.py", exc)
     diff = _kg_label_diff(algo, user)
     rows.append({"code": code, "period": period, "last_dt": last_dt,
                  "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -384,8 +385,8 @@ def _kg_card_fb_save(rec):
                 if (r.get("code"), r.get("period"),
                         r.get("last_dt")) != key:
                     rows.append(r)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_kg.py", exc)
     rows.append(row)
     tmp = _CARD_FB_FP + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -878,10 +879,10 @@ function save(){
                     try:
                         r = json.loads(line)
                         shadow[r.get("doc_id")] = r
-                    except Exception:
-                        pass
-        except OSError:
-            pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_kg.py", exc)
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_kg.py", exc)
         # 时间窗（K266-W5，?days=7/30）：只统计近 N 日影子行（ts=judge 时刻，
         # 新闻/文档当日采集当日判，近似入库时间成立）；默认全部。窗口同时作用于
         # 词云与文档列表，保持"点词过滤文档"两侧口径一致。ts 恒为
@@ -2780,8 +2781,8 @@ nodeClick=function(id){if(linkFrom){
                                    "sector_flow_latest.json"),
                       encoding="utf-8") as f:
                 doc = _jf.load(f)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_kg.py", exc)
         hist = []
         try:
             with open(os.path.join(QBT_DIR, "reports",
@@ -2792,8 +2793,8 @@ nodeClick=function(id){if(linkFrom){
                         hist.append(_jf.loads(line))
                     except Exception:
                         continue
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_kg.py", exc)
         hist = hist[-30:]                      # 近 30 条触发记录
 
         if not doc:
@@ -5513,8 +5514,8 @@ if(m0){var gid=decodeURIComponent(m0[1]);if(byG[gid])selGroup(gid,false);}
                         "断流 灰=无数据 黄=静态）· 数字=观测时点/滞后天 · "
                         "悬停看信源信任档。触发式扇区（龙虎榜/涨跌停类）"
                         "无数据≠断流。</div></div>" % chips)
-                except Exception:
-                    pass            # 体检条失败不拖垮主视图（旧版兼容）
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_kg.py", exc)
                 # ACH 三假设条
                 ach = tr.get("ach", {}) if tr.get("ok") else {}
                 bars = "".join(

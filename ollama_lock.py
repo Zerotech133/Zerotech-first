@@ -39,6 +39,7 @@ import ctypes
 import json
 import os
 import time
+import logging
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
 LOCK_PATH = os.path.join(_ROOT, "locks", "ollama_batch.lock")
@@ -110,8 +111,8 @@ def acquire(purpose, wait_s=0):
         if _stealable():
             try:
                 os.remove(LOCK_PATH)                   # 回收遗留锁后重试
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_lock.py", exc)
             if _try_create(purpose):
                 return True
         if time.time() >= deadline:
@@ -123,8 +124,8 @@ def heartbeat():
     """持锁方周期续命：仅 touch mtime（不动内容，避免撕裂读）。"""
     try:
         os.utime(LOCK_PATH, None)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_lock.py", exc)
 
 
 def release():
@@ -134,12 +135,12 @@ def release():
             pid = int((json.load(f) or {}).get("pid") or 0)
         if pid != os.getpid():
             return
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_lock.py", exc)
     try:
         os.remove(LOCK_PATH)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_lock.py", exc)
 
 
 def _read_lock():
@@ -213,8 +214,8 @@ def _tick_budget_s(deadline_ts, started, now=None):
     if deadline_ts is not None:
         try:
             return max(0.0, float(deadline_ts) - now - TICK_DEADLINE_MARGIN_S)
-        except (TypeError, ValueError):
-            pass                     # 非法 deadline 回落总预算（不因坏参数阻塞）
+        except (TypeError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_lock.py", exc)
     return max(0.0, TICK_TOTAL_BUDGET_S - (now - started))
 
 

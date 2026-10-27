@@ -18,6 +18,7 @@ import sys
 import time
 import uuid
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -123,8 +124,8 @@ def _record(result: dict) -> None:
         with open(RESULTS, "a", encoding="utf-8") as f:
             f.write(json.dumps(result, ensure_ascii=False) + "\n")
         _prune()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/sandbox/runner.py", exc)
 
 
 def _prune() -> None:
@@ -138,10 +139,10 @@ def _prune() -> None:
                 import shutil
 
                 shutil.rmtree(old, ignore_errors=True)
-            except OSError:
-                pass
-    except OSError:
-        pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/sandbox/runner.py", exc)
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/sandbox/runner.py", exc)
 
 
 def recent(limit: int = 20) -> dict:
@@ -167,14 +168,14 @@ def recent(limit: int = 20) -> dict:
                     )
                 }
             )
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/sandbox/runner.py", exc)
     skills = []
     try:
         reg = json.loads((SKILLS / "registry.json").read_text(encoding="utf-8"))
         skills = [s.get("name") for s in reg.get("skills") or []]
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/sandbox/runner.py", exc)
     return {
         "ok": True,
         "mode": "process-isolated-readonly-verify",

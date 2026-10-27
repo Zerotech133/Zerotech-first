@@ -15,6 +15,7 @@ sys.path.insert(0, str(HERE / ".." / "paper"))
 
 import trainee  # noqa: E402
 from trainee import Reject, fire, hire, hires_list, load_hires  # noqa: E402
+import logging
 
 
 @pytest.fixture(autouse=True)
@@ -53,13 +54,13 @@ def test_hire_rejects_non_live():
             try:
                 hire(tid, "qd")
                 raise AssertionError(f"{tid}({st}) 应被拒")
-            except Reject:
-                pass
+            except Reject as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_hires.py", exc)
         try:
             hire("hawk", "bogus_source")
             raise AssertionError("未知 source 应被拒")
-        except Reject:
-            pass
+        except Reject as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_hires.py", exc)
     print("PASS test_hire_rejects_non_live")
 
 
@@ -71,8 +72,8 @@ def test_hire_fire_cycle_and_duplicate():
         try:
             hire("hawk", "qd")
             raise AssertionError("重复雇佣应被拒")
-        except Reject:
-            pass
+        except Reject as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_hires.py", exc)
         hire("hawk", "qpzm")  # 同人可被多源雇
         rows = hires_list()
         assert len(rows) == 2
@@ -85,8 +86,8 @@ def test_hire_fire_cycle_and_duplicate():
         try:
             fire("hawk", "ai_team")  # 无 active 应拒
             raise AssertionError("fire 无 active 雇佣应拒")
-        except Reject:
-            pass
+        except Reject as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_hires.py", exc)
     print("PASS test_hire_fire_cycle_and_duplicate")
 
 
@@ -139,8 +140,8 @@ def test_newest_run_for_source_selection():
         try:
             trainee._newest_run_for("qpzm")  # 空源应 Reject
             raise AssertionError("空源应 Reject")
-        except Reject:
-            pass
+        except Reject as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_hires.py", exc)
     print("PASS test_newest_run_for_source_selection")
 
 

@@ -31,6 +31,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 from feishu_registry import load_registry, RegistryError  # noqa: E402
+import logging
 
 SECRET_DIR = os.path.join(HERE, "work", "feishu_secrets")
 LOG_DIR = os.path.join(HERE, "logs")
@@ -76,8 +77,8 @@ def write_heartbeat(role, tag="", base_dir=None):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             f.write("%s %s\n" % (datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), tag))
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_bot_base.py", exc)
     return path
 
 
@@ -199,8 +200,8 @@ class Shell:
                 encoding="utf-8",
             ) as f:
                 f.write(line + "\n")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_bot_base.py", exc)
 
     def heartbeat(self, tag=""):
         write_heartbeat(self.role, tag, self.log_dir)
@@ -315,8 +316,8 @@ class Shell:
                         os._exit(3)
                 else:
                     self._miss = 0
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_bot_base.py", exc)
 
     # 主循环
     def run(self):
@@ -337,8 +338,8 @@ class Shell:
                 sender = ""
                 try:
                     sender = data.event.sender.sender_id.open_id or ""
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_bot_base.py", exc)
                 chat_id = getattr(msg, "chat_id", "") or ""
                 self.log(
                     "msg frame: type=%s chat=%s sender=%s"
@@ -395,8 +396,8 @@ class Shell:
                 sender = ""
                 try:
                     sender = ev.operator.open_id or ""
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_bot_base.py", exc)
                 self.log(
                     "card cb: val=%r op=%s" % (str(val)[:80], mask_open_id(sender))
                 )
@@ -441,8 +442,8 @@ class Shell:
                 time.sleep(delay)
                 try:
                     self.client = build_client()
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_bot_base.py", exc)
 
 
 def _safe(fn, *args):
