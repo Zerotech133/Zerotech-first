@@ -668,8 +668,11 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
         try:
             _probe = _first_existing(root, (_AP_DIR, name), (name,))
             _cwd = str(_probe.parent) if _probe is not None else str(root)
+            # 宿主可能启用 PYTHONSAFEPATH=1（-c 不把 cwd 加入 sys.path），
+            # 因此显式注入探测目录，避免把环境策略误判成代码 ImportError。
+            probe_stmt = ("import sys; sys.path.insert(0, %r); " % _cwd) + stmt
             proc = subprocess.run(
-                [py, "-X", "utf8", "-c", stmt],
+                [py, "-X", "utf8", "-c", probe_stmt],
                 capture_output=True, timeout=CODE_IMPORT_TIMEOUT_S, cwd=_cwd)
             if proc.returncode != 0:
                 fails.append("%s 顶层导入失败（17:10 首跑直接 ImportError）：%s" % (
