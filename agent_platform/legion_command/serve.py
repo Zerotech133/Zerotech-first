@@ -547,6 +547,8 @@ class Handler(BaseHTTPRequestHandler):
                 ms = []
                 for m in (tags.get("models") or []):
                     n = m.get("name", "")
+                    if n.lower().startswith("bge"):
+                        continue
                     ms.append({"name": n,
                                "size_gb": round(float(m.get("size") or 0) / (1024 ** 3), 2)})
                 hit = next((m for m in ms if m["name"].startswith("qwen3.5:9b")), None)
