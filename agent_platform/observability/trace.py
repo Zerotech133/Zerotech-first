@@ -15,6 +15,7 @@ import json
 import os
 import sqlite3
 import time
+import urllib.request
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
@@ -30,6 +31,60 @@ DEFAULT_PRICES = {
 }
 KEEP_DAYS = 30
 KEEP_SPANS = 50000
+
+
+# ── OTel → Phoenix（OTLP/HTTP JSON，stdlib；默认关，fail-open）──────────────
+def otel_endpoint() -> str:
+    """ZHAOYUN_OTEL=1 且配置 endpoint 才导出；返回 '' 表示关闭。"""
+    if str(os.environ.get("ZHAOYUN_OTEL") or "").strip().lower() in (
+            "0", "off", "false", "no", ""):
+        return ""
+    ep = (os.environ.get("ZHAOYUN_OTEL_ENDPOINT")
+          or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+          or os.environ.get("PHOENIX_OTLP_ENDPOINT") or "").strip().rstrip("/")
+    return ep
+
+
+def _otel_span_payload(trace, sid, parent, name, kind, start, end, status, attrs) -> dict:
+    def _attr(k, v):
+        return {"key": str(k), "value": {"stringValue": str(v)[:1024]}}
+
+    return {"resourceSpans": [{
+        "resource": {"attributes": [_attr("service.name", "zhaoyun")]},
+        "scopeSpans": [{
+            "scope": {"name": "zhaoyun.trace"},
+            "spans": [{
+                "traceId": str(trace),
+                "spanId": str(sid),
+                "parentSpanId": str(parent or ""),
+                "name": str(name)[:200],
+                "kind": 1,
+                "startTimeUnixNano": str(int(float(start) * 1e9)),
+                "endTimeUnixNano": str(int(float(end) * 1e9)),
+                "status": {"code": 2 if status == "error" else 1},
+                "attributes": [_attr(k, v) for k, v in (attrs or {}).items()],
+            }],
+        }],
+    }]}
+
+
+def export_span(trace, sid, parent, name, kind, start, end, status, attrs) -> dict:
+    """幂等副作用仅网络；失败 fail-open 不抛。"""
+    ep = otel_endpoint()
+    if not ep:
+        return {"ok": False, "skipped": "otel_off"}
+    url = ep if ep.endswith("/v1/traces") else ep + "/v1/traces"
+    body = json.dumps(_otel_span_payload(trace, sid, parent, name, kind,
+                                         start, end, status, attrs),
+                      ensure_ascii=False).encode("utf-8")
+    try:
+        req = urllib.request.Request(
+            url, data=body, method="POST",
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=2) as resp:  # noqa: S310
+            return {"ok": 200 <= int(resp.status) < 300, "status": int(resp.status)}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
 
 
 def enabled() -> bool:
@@ -105,7 +160,11 @@ def record(
         )
         conn.commit()
         conn.close()
-        return {"ok": True, "span_id": sid}
+        export = export_span(trace, sid, parent, name, kind,
+                             start if start is not None else time.time(),
+                             end if end is not None else time.time(),
+                             status, attrs or {})
+        return {"ok": True, "span_id": sid, "otel": export}
     except sqlite3.Error as e:
         return {"ok": False, "error": "sqlite:%s" % str(e)[:120]}
 
@@ -165,6 +224,8 @@ def span(
                 conn.close()
             except sqlite3.Error:
                 pass
+            export_span(tid, sid, parent, name, kind, start, time.time(),
+                        "error" if err else "ok", data)
 
 
 def _prices() -> dict:
