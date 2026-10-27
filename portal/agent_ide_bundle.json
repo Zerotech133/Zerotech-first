@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 18,
+  "workorders_doing": 17,
   "workorders_review": 3
  },
  "workorders": [
@@ -173,15 +173,6 @@
    "owner": "ARCH1",
    "branch": "task/WO-TRACE-COST-20261027",
    "created": "2026-10-27 15:34:18",
-   "project": "quant"
-  },
-  {
-   "id": "WO-POLICY-CODE-20261027",
-   "desc": "P0③ 策略单源（ARCH1 owner）：agent_platform/rules/policy.json（工具 allow/deny + L0-L3 审批级别）+ tools/policy_check.py（决策/--check 与 tool_matrix 对齐）+ 策略单测；只读接入，不改 devtask 强制。验收：ARCH1 四工具 allowed、未登记 denied、审批级别映射正确；pytest 过。",
-   "status": "doing",
-   "owner": "ARCH1",
-   "branch": "task/WO-POLICY-CODE-20261027",
-   "created": "2026-10-27 15:34:23",
    "project": "quant"
   },
   {
@@ -2877,11 +2868,6 @@
     {
      "id": "WO-TRACE-COST-20261027",
      "desc": "P0② Agent trace+成本观测（ARCH1 owner）：trace 记录 schema + 写入/查询 CLI + 日汇总（JSONL，轻量不引依赖）；先接入 arch1_ops/research_seat_ops 两类值守任务；测试。验收：每次值守产出 trace_id/耗时/结果；report 出 P95/top 失败；pytest 过；无 L2。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-POLICY-CODE-20261027",
-     "desc": "P0③ 策略单源（ARCH1 owner）：agent_platform/rules/policy.json（工具 allow/deny + L0-L3 审批级别）+ tools/policy_check.py（决策/--check 与 tool_matrix 对齐）+ 策略单测；只读接入，不改 devtask 强制。验收：ARCH1 四工具 allowed、未登记 denied、审批级别映射正确；pytest 过。",
      "status": "doing"
     }
    ]
