@@ -8,6 +8,7 @@
   3. 辩论链：debate_partner_key 互指 + max_debate_rounds + 相似度>0.8 提前收敛
   4. 降级三态：节点 LLM 失败 → 重试(2) → 降级输出(标记 degraded) → 不阻塞全链
 """
+
 from __future__ import annotations
 
 import json
@@ -22,6 +23,7 @@ ChatFn = Callable[..., tuple[str, str]]  # LLMClient.chat 签名
 
 
 # ---------- DSL 加载 ----------
+
 
 def load_team(path: str | Path) -> list[dict[str, Any]]:
     """加载 team_poc.json（字段名对齐 ai_team_role DDL）。"""
@@ -58,6 +60,7 @@ def topo_waves(nodes: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
 
 # ---------- 相似度（辩论收敛判据，S1 用词面 Jaccard，S2 换向量） ----------
 
+
 def similarity(a: str, b: str) -> float:
     sa = set(re.findall(r"[\u4e00-\u9fff\w]+", a.lower()))
     sb = set(re.findall(r"[\u4e00-\u9fff\w]+", b.lower()))
@@ -68,9 +71,15 @@ def similarity(a: str, b: str) -> float:
 
 # ---------- 编排器 ----------
 
+
 class Orchestrator:
-    def __init__(self, nodes: list[dict[str, Any]], chat: ChatFn,
-                 max_workers: int = 3, converge_threshold: float = 0.8):
+    def __init__(
+        self,
+        nodes: list[dict[str, Any]],
+        chat: ChatFn,
+        max_workers: int = 3,
+        converge_threshold: float = 0.8,
+    ):
         self.nodes = {n["node_key"]: n for n in nodes}
         self.waves = topo_waves(nodes)
         self.chat = chat
@@ -88,21 +97,38 @@ class Orchestrator:
             done_keys: set[str] = set()
             debate_pairs = self._pair_debates(wave)
             for a_key, b_key in debate_pairs:
-                self._debate(a_key, b_key, stock, context, outputs, raw_outputs, degraded)
+                self._debate(
+                    a_key, b_key, stock, context, outputs, raw_outputs, degraded
+                )
                 done_keys.update({a_key, b_key})
             remain = [n for n in wave if n["node_key"] not in done_keys]
-            if len(remain) == 1 or (len(remain) > 1 and not remain[0].get("is_parallel")):
+            if len(remain) == 1 or (
+                len(remain) > 1 and not remain[0].get("is_parallel")
+            ):
                 for n in remain:
                     self._single(n, stock, context, outputs, raw_outputs, degraded)
             else:  # 并行屏障
                 with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
-                    futs = {ex.submit(self._single, n, stock, context, outputs,
-                                      raw_outputs, degraded): n["node_key"]
-                            for n in remain}
+                    futs = {
+                        ex.submit(
+                            self._single,
+                            n,
+                            stock,
+                            context,
+                            outputs,
+                            raw_outputs,
+                            degraded,
+                        ): n["node_key"]
+                        for n in remain
+                    }
                     for f in as_completed(futs):
                         f.result()
-        return {"outputs": outputs, "raw": raw_outputs,
-                "trace": self.trace, "degraded": degraded}
+        return {
+            "outputs": outputs,
+            "raw": raw_outputs,
+            "trace": self.trace,
+            "degraded": degraded,
+        }
 
     # ----- 辩论配对（debate_partner_key 互指） -----
     def _pair_debates(self, wave: list[dict[str, Any]]) -> list[tuple[str, str]]:
@@ -124,41 +150,98 @@ class Orchestrator:
         rounds = int(a.get("max_debate_rounds") or 2)
         rd = 0
         for rd in range(1, rounds + 1):
-            msg_a = self._call(a, stock, context, outputs, opponent_last=msg_b,
-                               round_no=rd, raw_out=raw_outputs, degraded=degraded)
+            msg_a = self._call(
+                a,
+                stock,
+                context,
+                outputs,
+                opponent_last=msg_b,
+                round_no=rd,
+                raw_out=raw_outputs,
+                degraded=degraded,
+            )
             # 对手已降级则不再向其追问（无意义辩论），提前收敛
             if '"degraded": true' in msg_b and rd > 1:
-                self.trace.append({"event": "debate_aborted", "round": rd,
-                                   "why": f"{b_key} degraded", "ts": datetime.now().isoformat(timespec="seconds")})
+                self.trace.append(
+                    {
+                        "event": "debate_aborted",
+                        "round": rd,
+                        "why": f"{b_key} degraded",
+                        "ts": datetime.now().isoformat(timespec="seconds"),
+                    }
+                )
                 break
-            msg_b = self._call(b, stock, context, outputs, opponent_last=msg_a,
-                               round_no=rd, raw_out=raw_outputs, degraded=degraded)
+            msg_b = self._call(
+                b,
+                stock,
+                context,
+                outputs,
+                opponent_last=msg_a,
+                round_no=rd,
+                raw_out=raw_outputs,
+                degraded=degraded,
+            )
             if '"degraded": true' in msg_a and rd > 1:
-                self.trace.append({"event": "debate_aborted", "round": rd,
-                                   "why": f"{a_key} degraded", "ts": datetime.now().isoformat(timespec="seconds")})
+                self.trace.append(
+                    {
+                        "event": "debate_aborted",
+                        "round": rd,
+                        "why": f"{a_key} degraded",
+                        "ts": datetime.now().isoformat(timespec="seconds"),
+                    }
+                )
                 break
             if similarity(msg_a, msg_b) >= self.converge_threshold:
-                self.trace.append({"event": "debate_converged", "round": rd,
-                                   "pair": [a_key, b_key], "sim": round(similarity(msg_a, msg_b), 3),
-                                   "ts": datetime.now().isoformat(timespec="seconds")})
+                self.trace.append(
+                    {
+                        "event": "debate_converged",
+                        "round": rd,
+                        "pair": [a_key, b_key],
+                        "sim": round(similarity(msg_a, msg_b), 3),
+                        "ts": datetime.now().isoformat(timespec="seconds"),
+                    }
+                )
                 break
         outputs[a_key] = self._parse(msg_a, degraded, a_key)
         outputs[b_key] = self._parse(msg_b, degraded, b_key)
-        self.trace.append({"event": "debate_done", "pair": [a_key, b_key],
-                           "rounds": max(rd, 1), "ts": datetime.now().isoformat(timespec="seconds")})
+        self.trace.append(
+            {
+                "event": "debate_done",
+                "pair": [a_key, b_key],
+                "rounds": max(rd, 1),
+                "ts": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
 
     # ----- 单节点执行：重试 2 次 → 降级 -----
     def _single(self, node, stock, context, outputs, raw_outputs, degraded):
-        msg = self._call(node, stock, context, outputs, raw_out=raw_outputs, degraded=degraded)
+        msg = self._call(
+            node, stock, context, outputs, raw_out=raw_outputs, degraded=degraded
+        )
         outputs[node["node_key"]] = self._parse(msg, degraded, node["node_key"])
-        self.trace.append({"event": "node_done", "node": node["node_key"],
-                           "analysis_type": node.get("analysis_type"),
-                           "ts": datetime.now().isoformat(timespec="seconds")})
+        self.trace.append(
+            {
+                "event": "node_done",
+                "node": node["node_key"],
+                "analysis_type": node.get("analysis_type"),
+                "ts": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
 
     # ----- 单次 LLM 调用（含降级三态的执行面） -----
-    def _call(self, node, stock, context, outputs, opponent_last="", round_no=1,
-              raw_out=None, degraded=None):
+    def _call(
+        self,
+        node,
+        stock,
+        context,
+        outputs,
+        opponent_last="",
+        round_no=1,
+        raw_out=None,
+        degraded=None,
+    ):
         from .nodes import build_messages
+
         msgs = build_messages(node, stock, context, outputs, opponent_last, round_no)
         attempts = int(node.get("retry") or 2)
         for i in range(attempts + 1):
@@ -170,9 +253,15 @@ class Orchestrator:
                     return text
                 raise ValueError("空输出")
             except Exception as e:
-                self.trace.append({"event": "node_retry", "node": node["node_key"],
-                                   "attempt": i + 1, "err": str(e)[:120],
-                                   "ts": datetime.now().isoformat(timespec="seconds")})
+                self.trace.append(
+                    {
+                        "event": "node_retry",
+                        "node": node["node_key"],
+                        "attempt": i + 1,
+                        "err": str(e)[:120],
+                        "ts": datetime.now().isoformat(timespec="seconds"),
+                    }
+                )
                 if i < attempts:
                     time.sleep(2 + 2 * i)  # 退避：负载高峰连发空输出时给 Ollama 喘息
         # 全败：降级输出（不阻塞全链）

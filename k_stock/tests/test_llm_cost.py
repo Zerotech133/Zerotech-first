@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-101 M2：llm_cost 模块测试（tmp 目录隔离，monkeypatch DATA_DIR）。"""
+
 from __future__ import annotations
 
 import json
@@ -38,12 +39,20 @@ def test_record_and_daily_accumulate(cost_env):
     assert len(files) == 1
     lines = [json.loads(x) for x in files[0].read_text(encoding="utf-8").splitlines()]
     assert len(lines) == 3
-    assert set(lines[0]) >= {"ts", "account", "binding", "prompt_tokens",
-                             "completion_tokens", "cost"}
+    assert set(lines[0]) >= {
+        "ts",
+        "account",
+        "binding",
+        "prompt_tokens",
+        "completion_tokens",
+        "cost",
+    }
 
 
 def test_cap_breach_and_degrade(cost_env, monkeypatch):
-    monkeypatch.setattr(llm_cost, "_tier_of", lambda a: {"tier": "T1", "daily_cost_cap": 5.0})
+    monkeypatch.setattr(
+        llm_cost, "_tier_of", lambda a: {"tier": "T1", "daily_cost_cap": 5.0}
+    )
     ts = time.time()
     # deepseek 2 元/百万：450 万 token = 9 元 > T1 cap 5
     llm_cost.record_cost("chaser", "deepseek/deepseek-chat", 4_000_000, 500_000, ts=ts)
@@ -54,7 +63,9 @@ def test_cap_breach_and_degrade(cost_env, monkeypatch):
     assert flag["breached"] is True
     assert flag["degrade_to"] == "ollama/qwen3.5:9b"
     # 未触线场景
-    monkeypatch.setattr(llm_cost, "_tier_of", lambda a: {"tier": "T3", "daily_cost_cap": 100.0})
+    monkeypatch.setattr(
+        llm_cost, "_tier_of", lambda a: {"tier": "T3", "daily_cost_cap": 100.0}
+    )
     assert llm_cost.check_and_flag("chaser") == {"breached": False}
 
 

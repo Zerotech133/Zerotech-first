@@ -7,7 +7,9 @@ from typing import Any, Mapping
 from urllib.parse import parse_qsl, urlsplit
 
 
-_ALLOWED_FIELDS = frozenset({"url", "title", "author", "media_id", "duration", "format"})
+_ALLOWED_FIELDS = frozenset(
+    {"url", "title", "author", "media_id", "duration", "format"}
+)
 _SENSITIVE_FIELDS = frozenset(
     {
         "key",
@@ -20,7 +22,16 @@ _SENSITIVE_FIELDS = frozenset(
         "password",
     }
 )
-_QUERY_CREDENTIAL_MARKERS = ("token", "key", "sig", "signature", "auth", "credential", "password", "secret")
+_QUERY_CREDENTIAL_MARKERS = (
+    "token",
+    "key",
+    "sig",
+    "signature",
+    "auth",
+    "credential",
+    "password",
+    "secret",
+)
 
 
 @dataclass(frozen=True)
@@ -43,13 +54,18 @@ class MediaInfo:
         parsed = urlsplit(self.url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError("url must be an absolute http(s) URL")
-        query_names = {name.lower() for name, _ in parse_qsl(parsed.query, keep_blank_values=True)}
+        query_names = {
+            name.lower() for name, _ in parse_qsl(parsed.query, keep_blank_values=True)
+        }
         credential_names = {
-            name for name in query_names
+            name
+            for name in query_names
             if any(marker in name for marker in _QUERY_CREDENTIAL_MARKERS)
         }
         if credential_names:
-            raise ValueError(f"credential-like URL query fields are not allowed: {sorted(credential_names)}")
+            raise ValueError(
+                f"credential-like URL query fields are not allowed: {sorted(credential_names)}"
+            )
         if parsed.fragment:
             raise ValueError("URL fragments are not allowed")
         if self.duration is not None and self.duration < 0:
@@ -83,7 +99,9 @@ class MediaInfo:
             raise ValueError("media fields must use canonical lowercase names")
         sensitive = original_keys & _SENSITIVE_FIELDS
         if sensitive:
-            raise ValueError(f"sensitive media fields are not allowed: {sorted(sensitive)}")
+            raise ValueError(
+                f"sensitive media fields are not allowed: {sorted(sensitive)}"
+            )
         unknown = original_keys - _ALLOWED_FIELDS
         if unknown:
             raise ValueError(f"unsupported media fields: {sorted(unknown)}")
@@ -92,6 +110,8 @@ class MediaInfo:
             title=str(value.get("title", "")),
             author=str(value.get("author", "")),
             media_id=str(value.get("media_id", "")),
-            duration=float(value["duration"]) if value.get("duration") is not None else None,
+            duration=float(value["duration"])
+            if value.get("duration") is not None
+            else None,
             format=str(value.get("format", "mp4")),
         )

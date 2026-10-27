@@ -3,6 +3,7 @@
 The script deliberately does not read cookies, storage state, headers, or tokens.
 Authentication status must be obtained separately from the safe browser adapter.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -15,7 +16,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROFILE = PROJECT_ROOT / "data" / "browser_profile"
 _ALLOWED_VIDEO_CHANNEL_HOSTS = frozenset({"channels.weixin.qq.com"})
 _ALLOWED_VIDEO_CHANNEL_PATH_PREFIXES = ("/", "/platform", "/channels", "/web")
-_ALLOWED_VIDEO_CHANNEL_TITLES = ("视频号", "微信视频号", "wechat channels", "video channels")
+_ALLOWED_VIDEO_CHANNEL_TITLES = (
+    "视频号",
+    "微信视频号",
+    "wechat channels",
+    "video channels",
+)
 
 
 def _is_allowed_video_channel_page(url: str, title: str) -> bool:
@@ -27,7 +33,10 @@ def _is_allowed_video_channel_page(url: str, title: str) -> bool:
     if parsed.scheme.lower() != "https" or host not in _ALLOWED_VIDEO_CHANNEL_HOSTS:
         return False
     path = parsed.path or "/"
-    path_match = any(path == prefix or path.startswith(prefix + "/") for prefix in _ALLOWED_VIDEO_CHANNEL_PATH_PREFIXES)
+    path_match = any(
+        path == prefix or path.startswith(prefix + "/")
+        for prefix in _ALLOWED_VIDEO_CHANNEL_PATH_PREFIXES
+    )
     title_match = any(marker in title for marker in _ALLOWED_VIDEO_CHANNEL_TITLES)
     return path_match and title_match
 
@@ -46,9 +55,14 @@ def visible_page_health(page: Any) -> BrowserSessionHealth:
         return BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
     if any(marker in url or marker in title for marker in ("login", "signin", "auth")):
         return BrowserSessionHealth(status=BrowserSessionStatus.LOGIN_REQUIRED)
-    if any(marker in url or marker in title for marker in ("captcha", "verify", "blocked", "forbidden")):
+    if any(
+        marker in url or marker in title
+        for marker in ("captcha", "verify", "blocked", "forbidden")
+    ):
         return BrowserSessionHealth(status=BrowserSessionStatus.BLOCKED)
-    if any(marker in url or marker in title for marker in ("expired", "session-expired")):
+    if any(
+        marker in url or marker in title for marker in ("expired", "session-expired")
+    ):
         return BrowserSessionHealth(status=BrowserSessionStatus.EXPIRED)
     if _is_allowed_video_channel_page(url, title):
         return BrowserSessionHealth(status=BrowserSessionStatus.AUTHENTICATED)
@@ -72,18 +86,26 @@ def visible_context_health(context: Any) -> BrowserSessionHealth:
         return BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
 
 
-def probe_live_context(context: Any, *, pages: Iterable[Any] | None = None) -> BrowserSessionHealth:
+def probe_live_context(
+    context: Any, *, pages: Iterable[Any] | None = None
+) -> BrowserSessionHealth:
     """Return coarse health for a controlled live context; never export state."""
     try:
         candidates = pages if pages is not None else getattr(context, "pages", ())
         page = next(iter(candidates), None)
-        return visible_page_health(page) if page is not None else BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
+        return (
+            visible_page_health(page)
+            if page is not None
+            else BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
+        )
     except Exception:
         return BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="启动隔离浏览器，供用户本人完成授权登录")
+    parser = argparse.ArgumentParser(
+        description="启动隔离浏览器，供用户本人完成授权登录"
+    )
     parser.add_argument("url", help="用户明确提供的目标平台登录地址")
     parser.add_argument(
         "--profile",
@@ -104,7 +126,9 @@ def main() -> int:
     profile = args.profile.resolve()
     profile.mkdir(parents=True, exist_ok=True)
     print("session_health=login_required（请用户本人在打开的浏览器中完成合法登录）")
-    print("安全边界：本入口不读取、不导出 Cookie/Token/Storage State；登录状态由安全适配器单独返回。")
+    print(
+        "安全边界：本入口不读取、不导出 Cookie/Token/Storage State；登录状态由安全适配器单独返回。"
+    )
 
     with sync_playwright() as playwright:
         context = playwright.chromium.launch_persistent_context(
@@ -115,9 +139,15 @@ def main() -> int:
         try:
             page = context.pages[0] if context.pages else context.new_page()
             page.goto(args.url, wait_until="domcontentloaded")
-            print("浏览器已启动。仅支持可见页面 coarse session_health 检查，不读取或导出凭证。")
+            print(
+                "浏览器已启动。仅支持可见页面 coarse session_health 检查，不读取或导出凭证。"
+            )
             while True:
-                command = input("输入 health 检查会话状态，输入 quit 关闭浏览器：").strip().lower()
+                command = (
+                    input("输入 health 检查会话状态，输入 quit 关闭浏览器：")
+                    .strip()
+                    .lower()
+                )
                 if command == "health":
                     health = visible_page_health(page)
                     print(f"session_health={health.status.value}")

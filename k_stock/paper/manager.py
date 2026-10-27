@@ -4,6 +4,7 @@
 复刻 trainee.py 的账本模式，独立账本 manager_hires.json（与操盘手 hires.json 互不干扰）。
 模型绑定硬约束：经理档案 model 字段必须在 gaorta 目录（models.json）内——fail-closed。
 """
+
 import json
 import os
 import re
@@ -54,7 +55,9 @@ def _hire_price(prof: dict) -> int:
     model = prof.get("model")
     for m in cat.get("models", []):
         if m["model"] == model:
-            return round(prof.get("hire_base_price_cny", 99) * m.get("coef_vs_glm52", 1.0))
+            return round(
+                prof.get("hire_base_price_cny", 99) * m.get("coef_vs_glm52", 1.0)
+            )
     raise Reject(f"模型 {model!r} 不在 gaorta 目录，计价失败")
 
 
@@ -80,6 +83,7 @@ def _load_hires() -> dict:
 
 def _save_hires(d: dict) -> None:
     import secrets
+
     tmp = HIRES_PATH.with_suffix(f".json.tmp.{os.getpid()}.{secrets.token_hex(2)}")
     tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(str(tmp), str(HIRES_PATH))
@@ -87,7 +91,9 @@ def _save_hires(d: dict) -> None:
 
 def _check_source(source: str) -> None:
     if not isinstance(source, str) or not _SOURCE_RE.match(source):
-        raise Reject(f"非法组合源: {source!r}（限 1-32 位字母/数字/下划线/中文/连字符）")
+        raise Reject(
+            f"非法组合源: {source!r}（限 1-32 位字母/数字/下划线/中文/连字符）"
+        )
 
 
 def _check_note(note: str) -> str:
@@ -102,6 +108,7 @@ def _check_note(note: str) -> str:
 def hire(mid: str, source: str, note: str = "") -> dict:
     """雇佣经理到某组合源。模型必须在 gaorta 目录内。"""
     from gaorta_client import allowed_models
+
     _check_mid(mid)
     _check_source(source)
     note = _check_note(note)
@@ -112,12 +119,22 @@ def hire(mid: str, source: str, note: str = "") -> dict:
         raise Reject(f"{mid} 绑定模型 {prof.get('model')!r} 不在 gaorta 目录，雇佣被拒")
     d = _load_hires()
     for h in d["hires"]:
-        if h.get("manager") == mid and h.get("source") == source and h.get("status") == "active":
+        if (
+            h.get("manager") == mid
+            and h.get("source") == source
+            and h.get("status") == "active"
+        ):
             raise Reject(f"{mid} 已被 {source} 雇佣（先 fire 再操作）")
-    rec = {"manager": mid, "manager_name": prof.get("name"), "model": prof.get("model"),
-           "source": source, "status": "active",
-           "hire_price_cny": prof["hire_price_cny"],
-           "hired_at": datetime.now().isoformat(timespec="seconds"), "note": note}
+    rec = {
+        "manager": mid,
+        "manager_name": prof.get("name"),
+        "model": prof.get("model"),
+        "source": source,
+        "status": "active",
+        "hire_price_cny": prof["hire_price_cny"],
+        "hired_at": datetime.now().isoformat(timespec="seconds"),
+        "note": note,
+    }
     d["hires"].append(rec)
     _save_hires(d)
     return rec
@@ -128,7 +145,11 @@ def fire(mid: str, source: str) -> dict:
     _check_source(source)
     d = _load_hires()
     for h in d["hires"]:
-        if h.get("manager") == mid and h.get("source") == source and h.get("status") == "active":
+        if (
+            h.get("manager") == mid
+            and h.get("source") == source
+            and h.get("status") == "active"
+        ):
             h["status"] = "ended"
             h["fired_at"] = datetime.now().isoformat(timespec="seconds")
             _save_hires(d)
@@ -155,20 +176,28 @@ def hires_list() -> list[dict]:
 
 def _main(argv=None):
     import argparse
+
     ap = argparse.ArgumentParser(prog="manager", description="投资部经理管线")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("list", help="经理名册")
-    p.add_argument("--json", action="store_true", help="单行 JSON 输出（portal 子进程用）")
+    p.add_argument(
+        "--json", action="store_true", help="单行 JSON 输出（portal 子进程用）"
+    )
     p.set_defaults(fn=lambda a: list_profiles(), json_key="profiles")
     p = sub.add_parser("hires", help="雇佣注册表")
-    p.add_argument("--json", action="store_true", help="单行 JSON 输出（portal 子进程用）")
+    p.add_argument(
+        "--json", action="store_true", help="单行 JSON 输出（portal 子进程用）"
+    )
     p.set_defaults(fn=lambda a: hires_list(), json_key="hires")
     p = sub.add_parser("hire")
-    p.add_argument("mid"); p.add_argument("source"); p.add_argument("--note", default="")
+    p.add_argument("mid")
+    p.add_argument("source")
+    p.add_argument("--note", default="")
     p.add_argument("--json", action="store_true")
     p.set_defaults(fn=lambda a: [hire(a.mid, a.source, a.note)], cmd_name="hire")
     p = sub.add_parser("fire")
-    p.add_argument("mid"); p.add_argument("source")
+    p.add_argument("mid")
+    p.add_argument("source")
     p.add_argument("--json", action="store_true")
     p.set_defaults(fn=lambda a: [fire(a.mid, a.source)], cmd_name="fire")
     args = ap.parse_args(argv)

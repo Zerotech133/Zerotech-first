@@ -16,7 +16,9 @@ from queue_link.api import RetryTaskRequest
 
 def _request(headers: dict[str, str] | None = None) -> Request:
     """Build a minimal Starlette request with the supplied headers."""
-    encoded = [(key.lower().encode(), value.encode()) for key, value in (headers or {}).items()]
+    encoded = [
+        (key.lower().encode(), value.encode()) for key, value in (headers or {}).items()
+    ]
     return Request({"type": "http", "method": "POST", "path": "/", "headers": encoded})
 
 
@@ -25,16 +27,23 @@ def _task(status: str = "failed") -> SimpleNamespace:
     return SimpleNamespace(status=status)
 
 
-def test_completed_record_replays_original_response(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_completed_record_replays_original_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A completed key returns its stored payload and status without re-running retry."""
     payload = {"code": 0, "data": {"task_id": "7"}, "message": "任务已重新入队"}
     monkeypatch.setattr(api.repo, "get_by_id", lambda _: _task("pending"))
     monkeypatch.setattr(
         api.repo,
         "reserve_retry_idempotency",
-        lambda *args: ({"status": "completed", "response": payload, "response_status": 200}, False),
+        lambda *args: (
+            {"status": "completed", "response": payload, "response_status": 200},
+            False,
+        ),
     )
-    monkeypatch.setattr(api.repo, "resume_task", lambda _: pytest.fail("must not retry twice"))
+    monkeypatch.setattr(
+        api.repo, "resume_task", lambda _: pytest.fail("must not retry twice")
+    )
 
     result = api.retry_link(
         7,
@@ -53,7 +62,10 @@ def test_active_processing_record_remains_409(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(
         api.repo,
         "reserve_retry_idempotency",
-        lambda *args: ({"status": "processing", "processing_at": "2099-01-01T00:00:00Z"}, False),
+        lambda *args: (
+            {"status": "processing", "processing_at": "2099-01-01T00:00:00Z"},
+            False,
+        ),
     )
 
     with pytest.raises(HTTPException) as caught:
@@ -68,7 +80,9 @@ def test_active_processing_record_remains_409(monkeypatch: pytest.MonkeyPatch) -
     assert "正在处理" in str(caught.value.detail)
 
 
-def test_stale_processing_record_is_reclaimed_with_cas(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_stale_processing_record_is_reclaimed_with_cas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A stale processing row is atomically reclaimed and returned as owned."""
     executed: list[str] = []
 

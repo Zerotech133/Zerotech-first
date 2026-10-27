@@ -31,7 +31,9 @@ class PathPolicy:
             except ValueError:
                 continue
             return candidate
-        raise PathPolicyError(f"path is outside configured download roots: {candidate.name}")
+        raise PathPolicyError(
+            f"path is outside configured download roots: {candidate.name}"
+        )
 
     def validate_directory(self, requested: str | Path) -> Path:
         """Validate a directory and create it only after containment succeeds."""

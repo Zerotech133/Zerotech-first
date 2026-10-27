@@ -14,6 +14,7 @@
   - 断线源超期 → 红；
   - 快照零落单且无灰态说明 → 红。
 """
+
 import json
 import os
 import sqlite3
@@ -42,6 +43,7 @@ class _Base(unittest.TestCase):
 
     def setUp(self):
         import tempfile
+
         self.tmp = Path(tempfile.mkdtemp(prefix="mhealth_"))
         self.repo = self.tmp / "repo"
         self.shadow = self.repo / "agent_platform" / "data" / "shadow"
@@ -50,14 +52,18 @@ class _Base(unittest.TestCase):
         for d in (self.shadow, self.data, self.reports):
             d.mkdir(parents=True, exist_ok=True)
         self.paths = MH.HealthPaths(
-            repo_root=self.repo, shadow_dir=self.shadow, kstock_data=self.data,
-            reports_dir=self.reports, automation_runs=self.repo / "automation_runs",
+            repo_root=self.repo,
+            shadow_dir=self.shadow,
+            kstock_data=self.data,
+            reports_dir=self.reports,
+            automation_runs=self.repo / "automation_runs",
             paper_db=self.data / "paper.db",
             automation_log=self.shadow / "automation.log",
         )
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     # ---- 脚手架 ----
@@ -67,7 +73,8 @@ class _Base(unittest.TestCase):
     def w_ledger(self, lines):
         (self.shadow / "shadow_ledger.jsonl").write_text(
             "\n".join(json.dumps(x, ensure_ascii=False) for x in lines) + "\n",
-            encoding="utf-8")
+            encoding="utf-8",
+        )
 
     def w_poc(self, prefix, date, extra=""):
         f = self.data / ("%s%s%s.json" % (prefix, date, extra))
@@ -89,8 +96,9 @@ class _Base(unittest.TestCase):
     def w_db(self, with_snapshot_table=True, rows=()):
         con = sqlite3.connect(str(self.data / "paper.db"))
         if with_snapshot_table:
-            con.execute("CREATE TABLE decision_snapshots"
-                        " (snapshot_id TEXT, captured_at TEXT)")
+            con.execute(
+                "CREATE TABLE decision_snapshots (snapshot_id TEXT, captured_at TEXT)"
+            )
             for r in rows:
                 con.execute("INSERT INTO decision_snapshots VALUES (?,?)", r)
         else:
@@ -100,14 +108,17 @@ class _Base(unittest.TestCase):
 
     def w_feed(self, name, date):
         (self.reports / ("%s.json" % name)).write_text(
-            json.dumps({"date": date}), encoding="utf-8")
+            json.dumps({"date": date}), encoding="utf-8"
+        )
 
     # feeds 的路径是相对 repo_root 的（与 DEFAULT_FEEDS 同口径）
     FEED_REL = "quant_backtest/reports/xq.json"
     FEED_GLOB_REL = "quant_backtest/reports/xq_*.json"
 
     def w_report(self, name, date_iso):
-        (self.shadow / ("%s_%s.md" % (name, date_iso))).write_text("x", encoding="utf-8")
+        (self.shadow / ("%s_%s.md" % (name, date_iso))).write_text(
+            "x", encoding="utf-8"
+        )
 
     def run_check(self, **kw):
         """跑自检。默认注入**空台账**——单测必须与真实 channel_frequency.json
@@ -135,18 +146,23 @@ class _Base(unittest.TestCase):
         self.w_report("daily_report", "2026-10-20")
 
     def run_green_cfg(self):
-        return {"feeds": {"雪球": (self.FEED_REL, 2)},
-                "artifacts": {"日报": "agent_platform/data/shadow/daily_report_*.md"}}
+        return {
+            "feeds": {"雪球": (self.FEED_REL, 2)},
+            "artifacts": {"日报": "agent_platform/data/shadow/daily_report_*.md"},
+        }
 
 
 # ---------------------------------------------------------------------------
 # H1 影子晨批心跳
 # ---------------------------------------------------------------------------
 
+
 class TestH1ShadowHeartbeat(_Base):
     def test_green_when_today_done(self):
-        self.w_shadow_log("===== shadow run start 2026-10-20 03:47:59 =====\n"
-                          "shadow day 2026-10-20 done: {'done': 5}\n")
+        self.w_shadow_log(
+            "===== shadow run start 2026-10-20 03:47:59 =====\n"
+            "shadow day 2026-10-20 done: {'done': 5}\n"
+        )
         self.assertEqual(_f(self.run_check(), "H1")["severity"], "green")
 
     def test_red_when_last_run_log_missing(self):
@@ -157,8 +173,10 @@ class TestH1ShadowHeartbeat(_Base):
 
     def test_red_when_no_done_line(self):
         """文件在但无 done 行 = 跑崩了，不是正常。"""
-        self.w_shadow_log("===== shadow run start 2026-10-20 03:47:59 =====\n"
-                          "[strategy] 600519 产出 4 条\n")
+        self.w_shadow_log(
+            "===== shadow run start 2026-10-20 03:47:59 =====\n"
+            "[strategy] 600519 产出 4 条\n"
+        )
         f = _f(self.run_check(), "H1")
         self.assertEqual(f["severity"], "red")
         self.assertIn("无任何", f["evidence"])
@@ -183,6 +201,7 @@ class TestH1ShadowHeartbeat(_Base):
 # ---------------------------------------------------------------------------
 # H2 各通道最新 run 时效
 # ---------------------------------------------------------------------------
+
 
 class TestH2ChannelFreshness(_Base):
     def test_all_green_when_every_channel_has_today(self):
@@ -210,8 +229,9 @@ class TestH2ChannelFreshness(_Base):
 
     def test_red_when_three_days_stale(self):
         for pfx in MH.CHANNEL_PREFIXES.values():
-            self._backdate(self.w_poc(pfx, "20261017", "_080000"),
-                           "2026-10-17 08:00:00")
+            self._backdate(
+                self.w_poc(pfx, "20261017", "_080000"), "2026-10-17 08:00:00"
+            )
         r = self.run_check()
         for ch in MH.CHANNELS:
             self.assertEqual(_f(r, "H2.%s" % ch)["severity"], "red", ch)
@@ -219,8 +239,9 @@ class TestH2ChannelFreshness(_Base):
     def test_two_days_stale_is_red_by_default_threshold(self):
         """默认阈值：>2*stale_days(1) = 3 天以上红；2 天档落红（>1 即黄，>2 红）。"""
         for pfx in MH.CHANNEL_PREFIXES.values():
-            self._backdate(self.w_poc(pfx, "20261018", "_080000"),
-                           "2026-10-18 08:00:00")
+            self._backdate(
+                self.w_poc(pfx, "20261018", "_080000"), "2026-10-18 08:00:00"
+            )
         r = self.run_check()
         self.assertEqual(_f(r, "H2.qd")["severity"], "red")
 
@@ -263,6 +284,7 @@ class TestH2ChannelFreshness(_Base):
 # H3 D-1 决策快照
 # ---------------------------------------------------------------------------
 
+
 class TestH3DecisionSnapshot(_Base):
     def test_green_when_snapshot_exists_today(self):
         self.w_db(rows=[("s1", "2026-10-20 07:10:00")])
@@ -279,8 +301,13 @@ class TestH3DecisionSnapshot(_Base):
     def test_yellow_when_gray_state_note_present(self):
         """灰态=黄且 evidence 必含「灰态无样本」，禁当绿。"""
         self.w_db(rows=[])
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             gray_notes={"snapshot": "1.3灰度未起算，无决策样本"})
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            gray_notes={"snapshot": "1.3灰度未起算，无决策样本"},
+        )
         f = _f(r, "H3")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("灰态无样本", f["evidence"])
@@ -308,6 +335,7 @@ class TestH3DecisionSnapshot(_Base):
 # H4 段完整性（含今晨实证：HK 段无文件但有 note →黄）
 # ---------------------------------------------------------------------------
 
+
 class TestH4SegmentIntegrity(_Base):
     def test_green_when_segment_product_today(self):
         for _, (_pfx, pat) in MH.SEGMENTS.items():
@@ -318,8 +346,13 @@ class TestH4SegmentIntegrity(_Base):
 
     def test_yellow_when_no_file_but_note_evidence(self):
         """今晨实证：HK 段灰态零落盘，只有 stdout note → 黄而非红。"""
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             gray_notes={"4e": "4e HK 段灰态：港股未开盘，无样本"})
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            gray_notes={"4e": "4e HK 段灰态：港股未开盘，无样本"},
+        )
         f = _f(r, "H4.4e")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("灰态零落盘", f["evidence"])
@@ -346,8 +379,16 @@ class TestH4SegmentIntegrity(_Base):
         子串匹配会把无关落单洗成「有note 证据」，让该判红的静默失败降级成黄——
         正是本判据要抓的东西，不能自己先漏。
         """
-        self.w_ledger([{"date": "2026-10-20", "run_id": "14dad5866f5a",
-                        "symbol": "600519", "status": "done"}])
+        self.w_ledger(
+            [
+                {
+                    "date": "2026-10-20",
+                    "run_id": "14dad5866f5a",
+                    "symbol": "600519",
+                    "status": "done",
+                }
+            ]
+        )
         r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={})
         self.assertEqual(_f(r, "H4.4d")["severity"], "red")
 
@@ -363,6 +404,7 @@ class TestH4SegmentIntegrity(_Base):
 # ---------------------------------------------------------------------------
 # H5 数据断线（fail-open 禁令核心）
 # ---------------------------------------------------------------------------
+
 
 class TestH5DataFeedDisconnect(_Base):
     def test_red_when_feed_missing_entirely(self):
@@ -408,7 +450,8 @@ class TestH5DataFeedDisconnect(_Base):
         """glob 形态按业务日期取最新（不是按落盘时间/字典序）。"""
         for d in ("20261010", DATE, "20261016"):
             (self.reports / ("xq_%s.json" % d)).write_text(
-                json.dumps({"date": d}), encoding="utf-8")
+                json.dumps({"date": d}), encoding="utf-8"
+            )
         r = self.run_check(feeds={"雪球": (self.FEED_GLOB_REL, 2)})
         self.assertEqual(_f(r, "H5.雪球")["severity"], "green")
 
@@ -417,15 +460,20 @@ class TestH5DataFeedDisconnect(_Base):
 # H6 产物新鲜度
 # ---------------------------------------------------------------------------
 
+
 class TestH6ArtifactFreshness(_Base):
     def test_green_when_artifact_today(self):
         self.w_report("daily_report", "2026-10-20")
-        r = self.run_check(artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"})
+        r = self.run_check(
+            artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"}
+        )
         self.assertEqual(_f(r, "H6.日报")["severity"], "green")
 
     def test_yellow_when_artifact_missing_today(self):
         self.w_report("daily_report", "2026-10-19")
-        r = self.run_check(artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"})
+        r = self.run_check(
+            artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"}
+        )
         self.assertEqual(_f(r, "H6.日报")["severity"], "yellow")
 
     def test_yellow_when_artifact_dir_missing(self):
@@ -436,7 +484,9 @@ class TestH6ArtifactFreshness(_Base):
         """回归：仓内daily_report 用横线日期戳，只认 YYYYMMDD 会把「有产物」
         误判成「无日期戳不可判定」，白挂一个黄。"""
         self.w_report("daily_report", "2026-10-20")
-        r = self.run_check(artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"})
+        r = self.run_check(
+            artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"}
+        )
         f = _f(r, "H6.日报")
         self.assertEqual(f["severity"], "green")
 
@@ -444,6 +494,7 @@ class TestH6ArtifactFreshness(_Base):
 # ---------------------------------------------------------------------------
 # 汇总 / 严重度 / 只读 / 坏输入
 # ---------------------------------------------------------------------------
+
 
 class TestAggregateAndSeverity(_Base):
     def test_status_takes_max_severity(self):
@@ -455,8 +506,11 @@ class TestAggregateAndSeverity(_Base):
     def test_status_green_when_all_checks_green(self):
         self.make_all_green()
         r = MH.check_morning(DATE, paths=self.paths, **self.run_green_cfg())
-        bad = [(f["check_id"], f["evidence"]) for f in r["findings"]
-               if f["severity"] != "green"]
+        bad = [
+            (f["check_id"], f["evidence"])
+            for f in r["findings"]
+            if f["severity"] != "green"
+        ]
         self.assertEqual(bad, [], "全绿场景存在非绿判据: %s" % bad)
         self.assertEqual(r["status"], "green")
 
@@ -464,7 +518,7 @@ class TestAggregateAndSeverity(_Base):
         """全绿基线 + H6 缺当日日报（黄）→整体黄（status 取最高，非「有黄就红」）。"""
         self.make_all_green()
         (self.shadow / "daily_report_2026-10-20.md").unlink()
-        self.w_report("daily_report", "2026-10-19")     # 只剩昨日那期
+        self.w_report("daily_report", "2026-10-19")  # 只剩昨日那期
         r = MH.check_morning(DATE, paths=self.paths, **self.run_green_cfg())
         self.assertEqual(_f(r, "H6.日报")["severity"], "yellow")
         self.assertEqual(r["status"], "yellow")
@@ -485,7 +539,9 @@ class TestAggregateAndSeverity(_Base):
         for f in r["findings"]:
             for k in ("check_id", "severity", "title", "evidence", "action"):
                 self.assertIn(k, f)
-                self.assertTrue(str(f[k]).strip(), "%s 字段 %s 为空" % (f["check_id"], k))
+                self.assertTrue(
+                    str(f[k]).strip(), "%s 字段 %s 为空" % (f["check_id"], k)
+                )
             self.assertIn(f["severity"], MH.SEVERITY_ORDER)
 
     def test_dryrun_mode_flag_present(self):
@@ -502,14 +558,21 @@ class TestReadOnlyGuarantee(_Base):
         self.w_db(rows=[("s1", "2026-10-20 07:00:00")])
         self.w_feed("xq", DATE)
         self.w_report("daily_report", "2026-10-20")
-        targets = [self.shadow / "last_run.log", self.shadow / "shadow_ledger.jsonl",
-                   self.data / ("poc_qd_%s_080000.json" % DATE),
-                   self.data / "paper.db", self.reports / "xq.json",
-                   self.shadow / "daily_report_2026-10-20.md"]
-        before = {p: (p.stat().st_mtime_ns, p.stat().st_size,
-                      p.read_bytes()) for p in targets}
-        self.run_check(feeds={"雪球": (self.FEED_REL, 2)},
-                       artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"})
+        targets = [
+            self.shadow / "last_run.log",
+            self.shadow / "shadow_ledger.jsonl",
+            self.data / ("poc_qd_%s_080000.json" % DATE),
+            self.data / "paper.db",
+            self.reports / "xq.json",
+            self.shadow / "daily_report_2026-10-20.md",
+        ]
+        before = {
+            p: (p.stat().st_mtime_ns, p.stat().st_size, p.read_bytes()) for p in targets
+        }
+        self.run_check(
+            feeds={"雪球": (self.FEED_REL, 2)},
+            artifacts={"日报": "agent_platform/data/shadow/daily_report_*.md"},
+        )
         for p in targets:
             after = (p.stat().st_mtime_ns, p.stat().st_size, p.read_bytes())
             self.assertEqual(before[p], after, "只读被破坏: %s" % p)
@@ -520,7 +583,11 @@ class TestReadOnlyGuarantee(_Base):
         self.assertFalse((self.data / "paper.db").exists())
 
     def test_query_only_guard_enabled(self):
-        con = MH._open_ro(self.data / "paper.db") if (self.data / "paper.db").exists() else None
+        con = (
+            MH._open_ro(self.data / "paper.db")
+            if (self.data / "paper.db").exists()
+            else None
+        )
         if con is None:
             self.w_db()
             con = MH._open_ro(self.data / "paper.db")
@@ -567,12 +634,24 @@ class TestRendering(_Base):
         """全绿场景 + 人工构造一条黄一条红，确认三色图标都渲染得出。"""
         self.make_all_green()
         r = MH.check_morning(DATE, paths=self.paths, **self.run_green_cfg())
-        r["findings"].append({
-            "check_id": "H9.demo", "severity": "yellow", "title": "演示黄",
-            "evidence": "e", "action": "a"})
-        r["findings"].append({
-            "check_id": "H8.demo", "severity": "red", "title": "演示红",
-            "evidence": "e", "action": "a"})
+        r["findings"].append(
+            {
+                "check_id": "H9.demo",
+                "severity": "yellow",
+                "title": "演示黄",
+                "evidence": "e",
+                "action": "a",
+            }
+        )
+        r["findings"].append(
+            {
+                "check_id": "H8.demo",
+                "severity": "red",
+                "title": "演示红",
+                "evidence": "e",
+                "action": "a",
+            }
+        )
         r["status"] = "red"
         md = MH.render_markdown(r)
         self.assertIn("晨批健康自检", md)
@@ -592,7 +671,7 @@ class TestRendering(_Base):
     def test_json_contract_shape(self):
         d = self.run_check()
         self.assertTrue({"date", "status", "findings", "summary", "mode"} <= set(d))
-        json.dumps(d, ensure_ascii=False)          # 必须可序列化
+        json.dumps(d, ensure_ascii=False)  # 必须可序列化
 
     def test_human_render_lists_only_non_green(self):
         """紧凑输出只列非绿项（H1 绿时不该出现）。"""
@@ -629,30 +708,41 @@ class TestChannelFrequencyLedger(_Base):
     def test_disabled_channel_shows_disabled_not_red(self):
         """台账 enabled=false → 「已停用（原因）」判黄，且不是红。"""
         for pfx in MH.CHANNEL_PREFIXES.values():
-            self.w_poc(pfx, DATE, "_080000")     # 产物其实在，但停用优先显示
-        led = self.w_ledger({"channels": {"qd": {
-            "frequency": "daily", "enabled": False,
-            "reason": "双刀线下线，2026-10-18 起并入 portal 手动面板",
-            "evidence": "portal/qd_scan_cache.json mtime 2026-10-14",
-            "approved_by": "老田 WO-QT-20261020-021"}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+            self.w_poc(pfx, DATE, "_080000")  # 产物其实在，但停用优先显示
+        led = self.w_ledger(
+            {
+                "channels": {
+                    "qd": {
+                        "frequency": "daily",
+                        "enabled": False,
+                        "reason": "双刀线下线，2026-10-18 起并入 portal 手动面板",
+                        "evidence": "portal/qd_scan_cache.json mtime 2026-10-14",
+                        "approved_by": "老田 WO-QT-20261020-021",
+                    }
+                }
+            }
+        )
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         f = _f(r, "H2.qd")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("已停用", f["evidence"])
         self.assertIn("双刀线下线", f["evidence"])
-        self.assertIn("老田", f["evidence"])          # 停用留痕：谁拍的
+        self.assertIn("老田", f["evidence"])  # 停用留痕：谁拍的
         # 未停用的通道不受影响
         self.assertEqual(_f(r, "H2.qpzm")["severity"], "green")
 
     def test_disabled_channel_with_no_artifact_still_yellow_not_red(self):
         """停用通道连产物都没有 → 仍是「已停用」黄，不是红（无产物是停用预期）。"""
-        led = self.w_ledger({"channels": {"hk": {
-            "enabled": False, "reason": "HK 通道暂缓"}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+        led = self.w_ledger(
+            {"channels": {"hk": {"enabled": False, "reason": "HK 通道暂缓"}}}
+        )
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         self.assertEqual(_f(r, "H2.hk")["severity"], "yellow")
-        self.assertEqual(_f(r, "H4.4e")["severity"], "yellow")   # 段随通道
+        self.assertEqual(_f(r, "H4.4e")["severity"], "yellow")  # 段随通道
         self.assertIn("已停用", _f(r, "H4.4e")["evidence"])
 
     def test_disabled_is_never_green(self):
@@ -660,8 +750,9 @@ class TestChannelFrequencyLedger(_Base):
         for pfx in MH.CHANNEL_PREFIXES.values():
             self.w_poc(pfx, DATE, "_080000")
         led = self.w_ledger({"channels": {"qd": {"enabled": False, "reason": "x"}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         self.assertNotEqual(_f(r, "H2.qd")["severity"], "green")
 
     # ---- ② 周频 ----
@@ -671,16 +762,19 @@ class TestChannelFrequencyLedger(_Base):
         注意分档语义：只有 age<=0（当日）才判绿，阈值内一律黄。故周频修正的
         可观测效果是 **红 → 黄**，不是红 → 绿——「在周频窗口内」不等于「今日新鲜」。
         """
-        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261014", "_080000")   # 距今 6 天
-        self._backdate(self.data / ("poc_qd_20261014_080000.json"),
-                       "2026-10-14 08:00:00")
-        base = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                                ledger={})
-        self.assertEqual(_f(base, "H2.qd")["severity"], "red")       # 无台账：日频→红
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261014", "_080000")  # 距今 6 天
+        self._backdate(
+            self.data / ("poc_qd_20261014_080000.json"), "2026-10-14 08:00:00"
+        )
+        base = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger={}
+        )
+        self.assertEqual(_f(base, "H2.qd")["severity"], "red")  # 无台账：日频→红
 
         led = self.w_ledger({"channels": {"qd": {"frequency": "weekly"}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         f = _f(r, "H2.qd")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("weekly", f["evidence"])
@@ -688,66 +782,85 @@ class TestChannelFrequencyLedger(_Base):
 
     def test_weekly_channel_still_red_when_overdue(self):
         """周频不是免死金牌：超一周（8 天）仍判红。"""
-        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261012", "_080000")   # 距今 8 天
-        self._backdate(self.data / ("poc_qd_20261012_080000.json"),
-                       "2026-10-12 08:00:00")
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261012", "_080000")  # 距今 8 天
+        self._backdate(
+            self.data / ("poc_qd_20261012_080000.json"), "2026-10-12 08:00:00"
+        )
         led = self.w_ledger({"channels": {"qd": {"frequency": "weekly"}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         self.assertEqual(_f(r, "H2.qd")["severity"], "red")
 
     def test_weekly_feed_uses_weekly_threshold(self):
         """H5 同理：周频数据源按周频阈值判，不被日频阈值误报红。"""
-        self.w_feed("xq", "20261014")               # 距今 6 天
-        feeds = {"周报": (self.FEED_REL, 1)}         # 代码默认给 1 天
-        base = MH.check_morning(DATE, paths=self.paths, feeds=feeds,
-                                artifacts={}, ledger={})
+        self.w_feed("xq", "20261014")  # 距今 6 天
+        feeds = {"周报": (self.FEED_REL, 1)}  # 代码默认给 1 天
+        base = MH.check_morning(
+            DATE, paths=self.paths, feeds=feeds, artifacts={}, ledger={}
+        )
         self.assertEqual(_f(base, "H5.周报")["severity"], "red")
 
         led = self.w_ledger({"feeds": {"周报": {"frequency": "weekly"}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds=feeds, artifacts={},
-                             ledger_path=led)
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds=feeds, artifacts={}, ledger_path=led
+        )
         self.assertEqual(_f(r, "H5.周报")["severity"], "green")
 
     # ---- ③ 台账缺失/坏 JSON → 沿用默认，不静默放宽 ----
     def test_missing_ledger_falls_back_to_default(self):
         """台账文件不存在 → 行为等同空台账（默认阈值），红不被吃掉。"""
-        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261011", "_080000")   # 距今 9 天
-        self._backdate(self.data / ("poc_qd_20261011_080000.json"),
-                       "2026-10-11 08:00:00")
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=self.tmp / "nope.json")
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261011", "_080000")  # 距今 9 天
+        self._backdate(
+            self.data / ("poc_qd_20261011_080000.json"), "2026-10-11 08:00:00"
+        )
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            ledger_path=self.tmp / "nope.json",
+        )
         self.assertEqual(_f(r, "H2.qd")["severity"], "red")
-        self.assertIsNotNone(r["ledger"]["error"])       # 台账故障必须被看见
+        self.assertIsNotNone(r["ledger"]["error"])  # 台账故障必须被看见
         h0 = _f(r, "H0")
         self.assertEqual(h0["severity"], "yellow")
-        self.assertIn("不", h0["evidence"])              # 明写「未放宽」
+        self.assertIn("不", h0["evidence"])  # 明写「未放宽」
 
     def test_broken_ledger_json_falls_back_and_flags(self):
         """坏 JSON → 回落默认 + H0 黄；不得抛异常、不得放宽。"""
         self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261011", "_080000")
-        self._backdate(self.data / ("poc_qd_20261011_080000.json"),
-                       "2026-10-11 08:00:00")
+        self._backdate(
+            self.data / ("poc_qd_20261011_080000.json"), "2026-10-11 08:00:00"
+        )
         led = self.w_raw_ledger("{ this is not json ")
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         self.assertEqual(_f(r, "H2.qd")["severity"], "red")
         self.assertIn("坏 JSON", _f(r, "H0")["evidence"])
 
     def test_ledger_non_dict_root_falls_back(self):
         """台账根节点非对象 → 回落默认（不抛、不放宽）。"""
         led = self.w_raw_ledger("[1,2,3]")
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         self.assertIn("非对象", _f(r, "H0")["evidence"])
 
     # ---- 防掩盖：pending_mount ≠ 停用 ----
     def test_pending_mount_stays_red(self):
         """pending_mount（已实现未挂载）→ 维持红，且证据点明是接线缺口。"""
-        led = self.w_ledger({"channels": {"hk": {
-            "frequency": "daily", "enabled": True, "pending_mount": True}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
+        led = self.w_ledger(
+            {
+                "channels": {
+                    "hk": {"frequency": "daily", "enabled": True, "pending_mount": True}
+                }
+            }
+        )
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
         f = _f(r, "H2.hk")
         self.assertEqual(f["severity"], "red")
         self.assertNotIn("已停用", f["evidence"])
@@ -760,37 +873,49 @@ class TestChannelFrequencyLedger(_Base):
 
         2 天前产物 + 默认阈值 1 天 → 落在 (1, 2] 区间 = 红，与无台账时同判。
         """
-        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261018", "_080000")   # 距今 2 天
-        self._backdate(self.data / ("poc_qd_20261018_080000.json"),
-                       "2026-10-18 08:00:00")
-        base = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                                ledger={})
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261018", "_080000")  # 距今 2 天
+        self._backdate(
+            self.data / ("poc_qd_20261018_080000.json"), "2026-10-18 08:00:00"
+        )
+        base = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger={}
+        )
         led = self.w_ledger({"channels": {"qd": {"enabled": True}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
-        self.assertEqual(_f(r, "H2.qd")["severity"],
-                         _f(base, "H2.qd")["severity"])
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
+        self.assertEqual(_f(r, "H2.qd")["severity"], _f(base, "H2.qd")["severity"])
         self.assertEqual(_f(r, "H2.qd")["severity"], "red")
 
     def test_explicit_stale_days_beats_frequency(self):
         """台账显式 stale_days 优先于 frequency 折算。"""
-        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261017", "_080000")   # 距今 3 天
-        self._backdate(self.data / ("poc_qd_20261017_080000.json"),
-                       "2026-10-17 08:00:00")
-        led = self.w_ledger({"channels": {"qd": {
-            "frequency": "weekly", "stale_days": 1}}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led)
-        self.assertEqual(_f(r, "H2.qd")["severity"], "red")          # 3>2*1
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261017", "_080000")  # 距今 3 天
+        self._backdate(
+            self.data / ("poc_qd_20261017_080000.json"), "2026-10-17 08:00:00"
+        )
+        led = self.w_ledger(
+            {"channels": {"qd": {"frequency": "weekly", "stale_days": 1}}}
+        )
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=led
+        )
+        self.assertEqual(_f(r, "H2.qd")["severity"], "red")  # 3>2*1
 
     def test_caller_explicit_stale_days_overrides_ledger_frequency(self):
         """调用方显式传 stale_days → 以调用方为准（台账不得静默压掉本次覆盖）。"""
         for pfx in MH.CHANNEL_PREFIXES.values():
-            self.w_poc(pfx, "20261018", "_080000")                     # 距今 2 天
-        led = self.w_ledger({"channels": {ch: {"frequency": "daily"}
-                                         for ch in MH.CHANNELS}})
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=led, stale_days=5)
+            self.w_poc(pfx, "20261018", "_080000")  # 距今 2 天
+        led = self.w_ledger(
+            {"channels": {ch: {"frequency": "daily"} for ch in MH.CHANNELS}}
+        )
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            ledger_path=led,
+            stale_days=5,
+        )
         for ch in MH.CHANNELS:
             self.assertEqual(_f(r, "H2.%s" % ch)["severity"], "yellow", ch)
 
@@ -803,8 +928,10 @@ class TestChannelFrequencyLedger(_Base):
             self.assertTrue(led[sec], "台账 %s 段为空" % sec)
         for name, e in led["channels"].items():
             if e.get("enabled") is False:
-                self.assertTrue(e.get("reason") or e.get("note"),
-                                "停用条目 %s 缺 reason/note（停用必须留痕）" % name)
+                self.assertTrue(
+                    e.get("reason") or e.get("note"),
+                    "停用条目 %s 缺 reason/note（停用必须留痕）" % name,
+                )
             self.assertTrue(e.get("frequency"), "通道 %s 未声明 frequency" % name)
 
     def test_shipped_ledger_does_not_disable_hk(self):
@@ -821,47 +948,64 @@ class TestChannelFrequencyLedger(_Base):
             zb = e.get("zero_buy")
             if isinstance(zb, dict) and zb.get("declared"):
                 for k in ("reason", "evidence", "approved_by"):
-                    self.assertTrue(str(zb.get(k) or "").strip(),
-                                    "zero_buy 声明 %s.%s 缺失（声明必须留痕）" % (name, k))
+                    self.assertTrue(
+                        str(zb.get(k) or "").strip(),
+                        "zero_buy 声明 %s.%s 缺失（声明必须留痕）" % (name, k),
+                    )
 
 
 # ---------------------------------------------------------------------------
 # G-01 零买入 vs 断供区分（WO-QT-20261020-030）
 # ---------------------------------------------------------------------------
 
+
 class TestG01ZeroBuyDeclaration(_Base):
     """台账 zero_buy 显式声明：闸门收紧零产出判黄「业务零产出（闸门收紧，非断线）」，
     不判红；未声明沿用现状判红，缺省不放宽。"""
 
-    ZB = {"declared": True,
-          "reason": "环境闸门 safe=false 全冷，0 买入行 → adapter 契约性 raise",
-          "evidence": "rps_latest.json res 38 行 action 全=回避",
-          "approved_by": "老田"}
+    ZB = {
+        "declared": True,
+        "reason": "环境闸门 safe=false 全冷，0 买入行 → adapter 契约性 raise",
+        "evidence": "rps_latest.json res 38 行 action 全=回避",
+        "approved_by": "老田",
+    }
 
     def _led(self, zb=None):
         p = self.tmp / "ledger.json"
         entry = {"frequency": "daily"}
         if zb is not None:
             entry["zero_buy"] = zb
-        p.write_text(json.dumps({"channels": {"qpzm": entry}}, ensure_ascii=False),
-                     encoding="utf-8")
+        p.write_text(
+            json.dumps({"channels": {"qpzm": entry}}, ensure_ascii=False),
+            encoding="utf-8",
+        )
         return p
 
     def test_zero_buy_declared_no_product_yellow_not_red(self):
         """闸门收紧构造用例：声明 zero_buy + 零产物 → 黄「业务零产出」，不得判红。"""
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=self._led(zb=self.ZB))
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            ledger_path=self._led(zb=self.ZB),
+        )
         f = _f(r, "H2.qpzm")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("业务零产出（闸门收紧，非断线）", f["evidence"])
-        self.assertIn("老田", f["evidence"])          # 声明留痕进证据
+        self.assertIn("老田", f["evidence"])  # 声明留痕进证据
 
     def test_zero_buy_declared_stale_product_yellow_not_red(self):
         """闸门收紧构造用例（有陈旧产物形态）：超期本应判红 → 声明后判黄。"""
         f = self.w_poc(MH.CHANNEL_PREFIXES["qpzm"], "20261009", "_163655")
-        self._backdate(f, "2026-10-09 16:36:55")   # 落盘也旧，排除 G-02 补跑件分支
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=self._led(zb=self.ZB))
+        self._backdate(f, "2026-10-09 16:36:55")  # 落盘也旧，排除 G-02 补跑件分支
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            ledger_path=self._led(zb=self.ZB),
+        )
         f = _f(r, "H2.qpzm")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("业务零产出（闸门收紧，非断线）", f["evidence"])
@@ -870,16 +1014,22 @@ class TestG01ZeroBuyDeclaration(_Base):
     def test_zero_buy_declared_but_fresh_product_still_green(self):
         """声明不洗绿：闸门放开当日有产出 → 仍绿（声明只挡红，不挡绿）。"""
         self.w_poc(MH.CHANNEL_PREFIXES["qpzm"], DATE, "_080000")
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=self._led(zb=self.ZB))
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            ledger_path=self._led(zb=self.ZB),
+        )
         self.assertEqual(_f(r, "H2.qpzm")["severity"], "green")
 
     def test_zero_buy_not_declared_stays_red(self):
         """缺省沿用现状：无 zero_buy 声明的通道超期照旧判红，不放宽。"""
         f = self.w_poc(MH.CHANNEL_PREFIXES["qpzm"], "20261009", "_163655")
         self._backdate(f, "2026-10-09 16:36:55")
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=self._led())
+        r = MH.check_morning(
+            DATE, paths=self.paths, feeds={}, artifacts={}, ledger_path=self._led()
+        )
         f = _f(r, "H2.qpzm")
         self.assertEqual(f["severity"], "red")
         self.assertNotIn("业务零产出", f["evidence"])
@@ -888,15 +1038,20 @@ class TestG01ZeroBuyDeclaration(_Base):
         """zero_buy 字段存在但 declared 非真 → 视同未声明，照旧判红。"""
         f = self.w_poc(MH.CHANNEL_PREFIXES["qpzm"], "20261009", "_163655")
         self._backdate(f, "2026-10-09 16:36:55")
-        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
-                             ledger_path=self._led(zb={"declared": False,
-                                                       "reason": "草稿，未拍板"}))
+        r = MH.check_morning(
+            DATE,
+            paths=self.paths,
+            feeds={},
+            artifacts={},
+            ledger_path=self._led(zb={"declared": False, "reason": "草稿，未拍板"}),
+        )
         self.assertEqual(_f(r, "H2.qpzm")["severity"], "red")
 
 
 # ---------------------------------------------------------------------------
 # G-02 补跑件口径（终裁 v20261021-user-approved，WO-QT-20261020-068）
 # ---------------------------------------------------------------------------
+
 
 class TestG02ReplayArtifact(_Base):
     """补跑件新鲜度判读基准 = **业务日期**（终裁：老田 2026-10-21 07:12 圈选⑧A）：
@@ -912,15 +1067,15 @@ class TestG02ReplayArtifact(_Base):
         for ch, pfx in MH.CHANNEL_PREFIXES.items():
             f = self.w_poc(pfx, "20261016", "_161000")
             if ch == "qpzm_us":
-                pass                                   # 只有它今天落盘（补跑件）
+                pass  # 只有它今天落盘（补跑件）
             else:
                 self._backdate(f, "2026-10-16 16:10:00")  # 其余=真断线，照旧红
         r = self.run_check()
         f = _f(r, "H2.qpzm_us")
         self.assertEqual(f["severity"], "red")
         self.assertIn("20261016", f["evidence"])
-        self.assertIn("mtime", f["evidence"])          # mtime 证据保留（留痕）
-        self.assertNotIn("待口径确认", f["evidence"])   # 豁免分支已随终裁移除
+        self.assertIn("mtime", f["evidence"])  # mtime 证据保留（留痕）
+        self.assertNotIn("待口径确认", f["evidence"])  # 豁免分支已随终裁移除
         # 其余通道业务落盘都旧 → 照旧红（对照，防判据泄漏）
         self.assertEqual(_f(r, "H2.qd")["severity"], "red")
 
@@ -951,7 +1106,7 @@ class TestG02ReplayArtifact(_Base):
         g = _f(r, "H2.qd")
         self.assertEqual(g["severity"], "yellow")
         self.assertNotIn("补跑件", g["evidence"])
-        self.assertIn("mtime", g["evidence"])          # evidence 仍增列 mtime
+        self.assertIn("mtime", g["evidence"])  # evidence 仍增列 mtime
 
     def test_stale_red_evidence_lists_mtime(self):
         """G-02 显示项：判红/判黄 evidence 增列产物 mtime，两个时间都可见。"""
@@ -964,19 +1119,26 @@ class TestG02ReplayArtifact(_Base):
 # CH-08 H5 内容级降级检测（假绿根治，WO-QT-20261020-030）
 # ---------------------------------------------------------------------------
 
+
 class TestH5ContentDegradation(_Base):
     """日期绿只证明「件在且新」，不证明「内容可用」：status=DEGRADED /
     cutover_verdict=BLOCK_* → 判黄「形式在、内容降级」并引用具体字段。"""
 
     def _w_xq(self, obj):
-        (self.reports / "xq.json").write_text(json.dumps(obj, ensure_ascii=False),
-                                              encoding="utf-8")
+        (self.reports / "xq.json").write_text(
+            json.dumps(obj, ensure_ascii=False), encoding="utf-8"
+        )
 
     def test_degraded_section_yellow_not_green(self):
         """DEGRADED 内容构造用例：日期当日但 section 降级 → 黄，证据引具体字段。"""
-        self._w_xq({"date": DATE,
-                    "sections": {"posterior": {
-                        "status": "DEGRADED", "reason": "后验档未产出"}}})
+        self._w_xq(
+            {
+                "date": DATE,
+                "sections": {
+                    "posterior": {"status": "DEGRADED", "reason": "后验档未产出"}
+                },
+            }
+        )
         f = _f(self.run_check(feeds={"雪球": (self.FEED_REL, 2)}), "H5.雪球")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("形式在、内容降级", f["evidence"])
@@ -985,18 +1147,35 @@ class TestH5ContentDegradation(_Base):
 
     def test_block_cutover_verdict_yellow(self):
         """cutover_verdict=BLOCK_* 同样判黄（BLOCK_CUTOVER 实测形态）。"""
-        self._w_xq({"date": DATE, "cutover_verdict": "BLOCK_CUTOVER",
-                    "sections": {"pool": {"status": "OK"}}})
+        self._w_xq(
+            {
+                "date": DATE,
+                "cutover_verdict": "BLOCK_CUTOVER",
+                "sections": {"pool": {"status": "OK"}},
+            }
+        )
         f = _f(self.run_check(feeds={"雪球": (self.FEED_REL, 2)}), "H5.雪球")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("cutover_verdict=BLOCK_CUTOVER", f["evidence"])
 
     def test_all_sections_degraded_still_yellow(self):
         """三段全废（CH-08 实测形态）也判黄：按工单口径黄态显性化，不放宽成绿。"""
-        self._w_xq({"date": DATE, "sections": {
-            "pool": {"status": "DEGRADED", "reason": "池档未产出"},
-            "evidence": {"status": "DEGRADED", "detail": "unable to open database file"},
-            "posterior": {"status": "DEGRADED", "reason": "combined_verdicts 不存在"}}})
+        self._w_xq(
+            {
+                "date": DATE,
+                "sections": {
+                    "pool": {"status": "DEGRADED", "reason": "池档未产出"},
+                    "evidence": {
+                        "status": "DEGRADED",
+                        "detail": "unable to open database file",
+                    },
+                    "posterior": {
+                        "status": "DEGRADED",
+                        "reason": "combined_verdicts 不存在",
+                    },
+                },
+            }
+        )
         f = _f(self.run_check(feeds={"雪球": (self.FEED_REL, 2)}), "H5.雪球")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("sections.pool.status", f["evidence"])
@@ -1005,9 +1184,16 @@ class TestH5ContentDegradation(_Base):
 
     def test_normal_content_still_green(self):
         """正常内容构造用例：无降级标记 → 仍绿（内容检测不放宽现状）。"""
-        self._w_xq({"date": DATE, "cutover_verdict": "OK",
-                    "sections": {"pool": {"status": "OK"},
-                                 "evidence": {"status": "OK", "count": 105}}})
+        self._w_xq(
+            {
+                "date": DATE,
+                "cutover_verdict": "OK",
+                "sections": {
+                    "pool": {"status": "OK"},
+                    "evidence": {"status": "OK", "count": 105},
+                },
+            }
+        )
         f = _f(self.run_check(feeds={"雪球": (self.FEED_REL, 2)}), "H5.雪球")
         self.assertEqual(f["severity"], "green")
         self.assertIn("内容无降级标记", f["evidence"])
@@ -1015,19 +1201,24 @@ class TestH5ContentDegradation(_Base):
     def test_content_check_covers_glob_latest_file(self):
         """glob 形态：内容检测作用于提供最新日期的那个具体文件。"""
         (self.reports / "xq_20261019.json").write_text(
-            json.dumps({"date": "20261019"}), encoding="utf-8")
+            json.dumps({"date": "20261019"}), encoding="utf-8"
+        )
         (self.reports / "xq_20261020.json").write_text(
-            json.dumps({"date": DATE,
-                        "sections": {"pool": {"status": "DEGRADED", "reason": "x"}}}),
-            encoding="utf-8")
+            json.dumps(
+                {
+                    "date": DATE,
+                    "sections": {"pool": {"status": "DEGRADED", "reason": "x"}},
+                }
+            ),
+            encoding="utf-8",
+        )
         f = _f(self.run_check(feeds={"雪球": (self.FEED_GLOB_REL, 2)}), "H5.雪球")
         self.assertEqual(f["severity"], "yellow")
         self.assertIn("sections.pool.status", f["evidence"])
 
     def test_stale_feed_red_unaffected_by_content_check(self):
         """日期超期已红的源不受内容检测影响（红不被内容检测改写）。"""
-        self._w_xq({"date": "20261016",
-                    "sections": {"pool": {"status": "DEGRADED"}}})
+        self._w_xq({"date": "20261016", "sections": {"pool": {"status": "DEGRADED"}}})
         f = _f(self.run_check(feeds={"雪球": (self.FEED_REL, 2)}), "H5.雪球")
         self.assertEqual(f["severity"], "red")
         self.assertIn("断线", f["evidence"])

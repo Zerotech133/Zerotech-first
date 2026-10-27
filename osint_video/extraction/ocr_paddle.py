@@ -63,9 +63,11 @@ def _create_engine():
     except ImportError as exc:
         raise OCREngineUnavailableError(PADDLE_INSTALL_HINT) from exc
     # 2.x 需要 show_log=False 关闭刷屏；3.x 移除该参数 → TypeError 降级重试
-    for kwargs in ({"use_angle_cls": True, "lang": "ch", "show_log": False},
-                   {"use_angle_cls": True, "lang": "ch"},
-                   {"lang": "ch"}):
+    for kwargs in (
+        {"use_angle_cls": True, "lang": "ch", "show_log": False},
+        {"use_angle_cls": True, "lang": "ch"},
+        {"lang": "ch"},
+    ):
         try:
             return PaddleOCR(**kwargs)
         except (TypeError, ValueError):
@@ -73,7 +75,9 @@ def _create_engine():
     try:
         return PaddleOCR()
     except Exception as exc:  # noqa: BLE001 —— 初始化失败原因多样，统一包装
-        raise OCREngineUnavailableError(f"PaddleOCR 引擎初始化失败：{exc}\n{PADDLE_INSTALL_HINT}") from exc
+        raise OCREngineUnavailableError(
+            f"PaddleOCR 引擎初始化失败：{exc}\n{PADDLE_INSTALL_HINT}"
+        ) from exc
 
 
 def _run_ocr(engine: Any, image_path: Path) -> Any:
@@ -120,7 +124,9 @@ def _parse_ocr_output(raw: Any) -> list[tuple[str, float]]:
 # ---------------------------------------------------------------------------
 # 时间轴相邻合并
 # ---------------------------------------------------------------------------
-def _merge_adjacent(raw_items: list[OCRItem], gap_sec: float = MERGE_GAP_SEC) -> list[OCRItem]:
+def _merge_adjacent(
+    raw_items: list[OCRItem], gap_sec: float = MERGE_GAP_SEC
+) -> list[OCRItem]:
     """同文本（规范化后）且时间相邻的条目合并为一条。
 
     - 时间窗：``start2 - end1 <= gap_sec`` 视为相邻（容忍帧去重造成的空洞）；
@@ -141,7 +147,14 @@ def _merge_adjacent(raw_items: list[OCRItem], gap_sec: float = MERGE_GAP_SEC) ->
                     (last["conf"] * w_last + item["conf"] * w_cur) / max(total_w, 1), 4
                 )
                 continue
-        merged.append(OCRItem(start=item["start"], end=item["end"], text=item["text"], conf=item["conf"]))
+        merged.append(
+            OCRItem(
+                start=item["start"],
+                end=item["end"],
+                text=item["text"],
+                conf=item["conf"],
+            )
+        )
     return merged
 
 
@@ -196,5 +209,10 @@ def recognize(
             )
 
     items = _merge_adjacent(raw_items)
-    logger.info("OCR 完成：%d 帧 → 原始 %d 条 → 合并后 %d 条", len(frames), len(raw_items), len(items))
+    logger.info(
+        "OCR 完成：%d 帧 → 原始 %d 条 → 合并后 %d 条",
+        len(frames),
+        len(raw_items),
+        len(items),
+    )
     return items

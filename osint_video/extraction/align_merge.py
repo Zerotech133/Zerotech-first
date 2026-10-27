@@ -37,10 +37,10 @@ class AlignedSegment(TypedDict):
     start: float
     end: float
     text: str
-    source: str            # "asr+ocr" / "asr" / "ocr"
+    source: str  # "asr+ocr" / "asr" / "ocr"
     confidence: float
     needs_review: bool
-    ocr_text: str | None   # 冲突双保留时的 OCR 原文；非冲突为 None
+    ocr_text: str | None  # 冲突双保留时的 OCR 原文；非冲突为 None
 
 
 def _levenshtein(a: str, b: str) -> int:
@@ -80,7 +80,9 @@ def _overlap_ratio(a_start: float, a_end: float, b_start: float, b_end: float) -
     return overlap / shorter
 
 
-def _weighted_conf(asr_conf: float, ocr_conf: float, asr_weight: float = ASR_WEIGHT) -> float:
+def _weighted_conf(
+    asr_conf: float, ocr_conf: float, asr_weight: float = ASR_WEIGHT
+) -> float:
     """置信度加权合成，四舍五入到 4 位。"""
     return round(asr_conf * asr_weight + ocr_conf * (1.0 - asr_weight), 4)
 
@@ -131,7 +133,9 @@ def merge_channels(
         for idx, item in enumerate(ocr):
             if idx in consumed:
                 continue
-            ratio = _overlap_ratio(a_start, a_end, float(item["start"]), float(item["end"]))
+            ratio = _overlap_ratio(
+                a_start, a_end, float(item["start"]), float(item["end"])
+            )
             if ratio >= min_overlap_ratio and ratio > best_ratio:
                 best_idx, best_ratio = idx, ratio
         if best_idx < 0:
@@ -149,20 +153,26 @@ def merge_channels(
             # 双通道一致：取 ASR 文本（标点更稳），置信度加权
             results.append(
                 AlignedSegment(
-                    start=round(o_start, 3), end=round(o_end, 3),
-                    text=str(seg["text"]), source="asr+ocr",
+                    start=round(o_start, 3),
+                    end=round(o_end, 3),
+                    text=str(seg["text"]),
+                    source="asr+ocr",
                     confidence=_weighted_conf(asr_conf, ocr_conf, asr_weight),
-                    needs_review=False, ocr_text=None,
+                    needs_review=False,
+                    ocr_text=None,
                 )
             )
         else:
             # 双通道冲突：双文本保留，待人工复核
             results.append(
                 AlignedSegment(
-                    start=round(o_start, 3), end=round(o_end, 3),
-                    text=str(seg["text"]), source="asr+ocr",
+                    start=round(o_start, 3),
+                    end=round(o_end, 3),
+                    text=str(seg["text"]),
+                    source="asr+ocr",
                     confidence=_weighted_conf(asr_conf, ocr_conf, asr_weight),
-                    needs_review=True, ocr_text=str(item["text"]),
+                    needs_review=True,
+                    ocr_text=str(item["text"]),
                 )
             )
 
@@ -174,7 +184,10 @@ def merge_channels(
     results.sort(key=lambda r: r["start"])
     logger.info(
         "对齐完成：ASR %d 段 + OCR %d 条 → %d 对齐段（冲突待复核 %d）",
-        len(asr), len(ocr), len(results), sum(1 for r in results if r["needs_review"]),
+        len(asr),
+        len(ocr),
+        len(results),
+        sum(1 for r in results if r["needs_review"]),
     )
     return results
 

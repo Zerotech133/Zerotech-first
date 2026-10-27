@@ -24,6 +24,7 @@ orders 即可配对后验结果 → 形成「上下文-决策-结果」训练样
 - 仅 orders 非空且非 dry_run 时产快照（灰态零决策无样本信息量，不产）；
 - 幂等：run_ref 唯一，同 run 重放（幂等跳过路径）不会产快照（orders 空）。
 """
+
 from __future__ import annotations
 
 import json
@@ -31,7 +32,9 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-SNAPSHOT_SCHEMA_VERSION = 3   # v2:+combo 印记（E-1）；v3:+pool 池快照印记（2.1a，加法演进）
+SNAPSHOT_SCHEMA_VERSION = (
+    3  # v2:+combo 印记（E-1）；v3:+pool 池快照印记（2.1a，加法演进）
+)
 
 # 池快照印记（WO-QT-20261020-004 §6）必填键：缺一即抛错（closed on failure）。
 # pool_version 约定：快照型池=int 版本号；文件型池（日期+generated_at 软版本）=0。
@@ -65,8 +68,11 @@ def normalize_pool_stamp(pool) -> dict:
             raise PoolStampError(f"pool_stamp 缺必填键 {k}（契约 §6）: {sorted(pool)}")
     v = pool["pool_version"]
     if not isinstance(v, int) or isinstance(v, bool) or v < 0:
-        raise PoolStampError(f"pool_stamp.pool_version 须为非负 int（软版本池=0）: {v!r}")
+        raise PoolStampError(
+            f"pool_stamp.pool_version 须为非负 int（软版本池=0）: {v!r}"
+        )
     return dict(pool)
+
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS decision_snapshots (
@@ -99,17 +105,28 @@ def ensure_table(con) -> None:
     """
     row = con.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-        ("decision_snapshots",)).fetchone()
+        ("decision_snapshots",),
+    ).fetchone()
     if row is not None:
         return
     con.execute(_DDL)
 
 
-def capture(con, *, run_path: Path | str, run_name: str, out: dict,
-            account_id: str, strategy: str, versions: dict | None = None,
-            context: dict | None = None, combo: dict | None = None,
-            pool: dict | None = None, signal: dict | None = None,
-            plan_version: dict | None = None) -> dict:
+def capture(
+    con,
+    *,
+    run_path: Path | str,
+    run_name: str,
+    out: dict,
+    account_id: str,
+    strategy: str,
+    versions: dict | None = None,
+    context: dict | None = None,
+    combo: dict | None = None,
+    pool: dict | None = None,
+    signal: dict | None = None,
+    plan_version: dict | None = None,
+) -> dict:
     """写入一份决策快照（调用方负责在其事务 commit 前调用）。返回快照行。
 
     combo：四元组印记（combo_registry.quad_stamp 产物，E-1）。给定时
@@ -144,12 +161,20 @@ def capture(con, *, run_path: Path | str, run_name: str, out: dict,
             raise PlanStampError(f"plan_stamp 须为 dict: {type(plan_version).__name__}")
         for k in PLAN_STAMP_REQUIRED:
             if k not in plan_version:
-                raise PlanStampError(f"plan_stamp 缺必填键 {k}（契约 WO-QT-20261020-006 §10）: {sorted(plan_version)}")
+                raise PlanStampError(
+                    f"plan_stamp 缺必填键 {k}（契约 WO-QT-20261020-006 §10）: {sorted(plan_version)}"
+                )
         # 禁回写时点强制：plan 生效时点必须 ≤ 快照时刻（信号触发时已知道）
         import plan_meeting_ledger
+
         plan_meeting_ledger.assert_plan_effective(
-            con, plan_version["combo_id"], plan_version["stock"],
-            plan_version["plan_version"], at_time=ts, stage="capture")
+            con,
+            plan_version["combo_id"],
+            plan_version["stock"],
+            plan_version["plan_version"],
+            at_time=ts,
+            stage="capture",
+        )
         ctx["plan_version"] = dict(plan_version)
     snap = {
         "snapshot_id": uuid.uuid4().hex,
@@ -172,7 +197,9 @@ def capture(con, *, run_path: Path | str, run_name: str, out: dict,
         "skipped_json,versions_json,context_json) "
         "VALUES(:snapshot_id,:ts,:schema_version,:combo_id,:account_id,"
         ":strategy,:run_ref,:run_path,:run_content,:orders_json,"
-        ":skipped_json,:versions_json,:context_json)", snap)
+        ":skipped_json,:versions_json,:context_json)",
+        snap,
+    )
     return snap
 
 
@@ -185,11 +212,12 @@ def by_ref(con, run_ref: str, account_id: str | None = None) -> dict | None:
     if account_id:
         row = con.execute(
             "SELECT * FROM decision_snapshots WHERE run_ref=? AND account_id=?",
-            (run_ref, account_id)).fetchone()
+            (run_ref, account_id),
+        ).fetchone()
     else:
         row = con.execute(
-            "SELECT * FROM decision_snapshots WHERE run_ref=? LIMIT 1",
-            (run_ref,)).fetchone()
+            "SELECT * FROM decision_snapshots WHERE run_ref=? LIMIT 1", (run_ref,)
+        ).fetchone()
     if row is None:
         return None
     d = dict(row)

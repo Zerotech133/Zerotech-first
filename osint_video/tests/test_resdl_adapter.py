@@ -32,7 +32,9 @@ def test_adapter_requires_boolean_acceptance_status(tmp_path: Path) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"message": "queued"})
 
-    adapter = ResDownloaderAdapter(client=_client(handler), path_policy=PathPolicy((tmp_path,)))
+    adapter = ResDownloaderAdapter(
+        client=_client(handler), path_policy=PathPolicy((tmp_path,))
+    )
     with pytest.raises(HttpRequestError, match="boolean acceptance"):
         adapter.download(MediaInfo("https://example.test/video"), tmp_path)
 
@@ -62,10 +64,14 @@ def test_media_info_preserves_ordinary_query_and_rejects_credentials() -> None:
     with pytest.raises(ValueError, match="fragment"):
         MediaInfo.from_mapping({"url": "https://example.test/v#fragment"})
     with pytest.raises(ValueError, match="sensitive"):
-        MediaInfo.from_mapping({"url": "https://example.test/v", "decode_key": "secret"})
+        MediaInfo.from_mapping(
+            {"url": "https://example.test/v", "decode_key": "secret"}
+        )
 
 
-def test_decode_does_not_log_sensitive_fields(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_decode_does_not_log_sensitive_fields(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
     root = tmp_path / "downloads"
 
     def handler(request: httpx.Request) -> httpx.Response:

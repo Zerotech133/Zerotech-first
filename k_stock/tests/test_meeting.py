@@ -7,6 +7,7 @@
 chat_for_hire 与 minutes.send 全部 monkeypatch，绝不真触网；
 manager 账本注入同 test_manager.py（临时目录，真账本零触碰）。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -35,15 +36,33 @@ class _Spies:
 
     def fake_chat(self, mid, source, messages, timeout=60):
         self.chat_calls.append({"mid": mid, "source": source, "messages": messages})
-        return {"content": "【纪要】今日策略要点……（测试正文）",
-                "model": "GLM-5.2", "usage": {"total_tokens": 42}}
+        return {
+            "content": "【纪要】今日策略要点……（测试正文）",
+            "model": "GLM-5.2",
+            "usage": {"total_tokens": 42},
+        }
 
     def fake_send(self, mid, kind, title, body="", channel="site", meta=None):
-        self.sent.append({"mid": mid, "kind": kind, "title": title,
-                          "body": body, "channel": channel, "meta": dict(meta or {})})
-        return {"id": "min_test_0", "mid": mid, "kind": kind, "title": title,
-                "body": body, "channel": channel, "status": "delivered",
-                "meta": dict(meta or {})}
+        self.sent.append(
+            {
+                "mid": mid,
+                "kind": kind,
+                "title": title,
+                "body": body,
+                "channel": channel,
+                "meta": dict(meta or {}),
+            }
+        )
+        return {
+            "id": "min_test_0",
+            "mid": mid,
+            "kind": kind,
+            "title": title,
+            "body": body,
+            "channel": channel,
+            "status": "delivered",
+            "meta": dict(meta or {}),
+        }
 
 
 @pytest.fixture()
@@ -54,13 +73,24 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(manager, "HIRES_PATH", tmp_path / "manager_hires.json")
     monkeypatch.setattr(manager, "MANAGERS_DIR", mdir)
     monkeypatch.setattr(manager, "HERE", tmp_path)  # _hire_price 读 HERE/"models.json"
-    (tmp_path / "models.json").write_text(json.dumps(
-        {"models": [{"model": "GLM-5.2", "coef_vs_glm52": 1.0}]}), encoding="utf-8")
-    (mdir / f"{MID}.json").write_text(json.dumps(
-        {"id": MID, "name": "牛市台", "status": "live", "model": "GLM-5.2",
-         "hire_base_price_cny": 99,
-         "role_prompt": "你是测试经理角色提示词RP-MARKER。",
-         "delivery_channels": ["site"]}), encoding="utf-8")
+    (tmp_path / "models.json").write_text(
+        json.dumps({"models": [{"model": "GLM-5.2", "coef_vs_glm52": 1.0}]}),
+        encoding="utf-8",
+    )
+    (mdir / f"{MID}.json").write_text(
+        json.dumps(
+            {
+                "id": MID,
+                "name": "牛市台",
+                "status": "live",
+                "model": "GLM-5.2",
+                "hire_base_price_cny": 99,
+                "role_prompt": "你是测试经理角色提示词RP-MARKER。",
+                "delivery_channels": ["site"],
+            }
+        ),
+        encoding="utf-8",
+    )
     manager.hire(MID, SOURCE)
     spies = _Spies()
     monkeypatch.setattr(gaorta_client, "chat_for_hire", spies.fake_chat)
@@ -123,9 +153,12 @@ def test_hold_meeting_rejects_unknown_mid(env):
 def test_hold_meeting_llm_failure_no_half_minutes(env, monkeypatch):
     # 门控隔离：无论真实 meeting_fallback.json 开关如何，本用例只验主链失败路径
     monkeypatch.setattr(meeting, "_zhipu_fallback_allowed", lambda fp=None: False)
+
     def boom(mid, source, messages, timeout=60):
         raise RuntimeError("未配置 GAORTA_API_KEY，无法调用 gaorta 通道")
+
     import gaorta_client as g
+
     orig = g.chat_for_hire
     g.chat_for_hire = boom
     try:
@@ -140,19 +173,25 @@ def test_hold_meeting_llm_failure_no_half_minutes(env, monkeypatch):
 def test_hold_meeting_gate_on_fallback_also_fails_no_half_minutes(env, monkeypatch):
     # 门开 + 兜底通道也失败 → 仍 MeetingError 且不落半截纪要
     monkeypatch.setattr(meeting, "_zhipu_fallback_allowed", lambda fp=None: True)
+
     def boom(mid, source, messages, timeout=60):
         raise RuntimeError("未配置 GAORTA_API_KEY，无法调用 gaorta 通道")
+
     import gaorta_client as g
+
     orig = g.chat_for_hire
     g.chat_for_hire = boom
 
     class FakeLLM:
         def __init__(self, *a, **k):
             pass
+
         def chat(self, messages, **k):
             raise RuntimeError("智谱兜底也不可达（模拟）")
 
-    monkeypatch.setattr(meeting, "_LLMClient", FakeLLM)  # meeting 顶部延迟导入的模块级引用
+    monkeypatch.setattr(
+        meeting, "_LLMClient", FakeLLM
+    )  # meeting 顶部延迟导入的模块级引用
     try:
         with pytest.raises(MeetingError):
             hold_meeting(MID, SOURCE, "pre_open", context="行情摘要")
@@ -164,6 +203,7 @@ def test_hold_meeting_gate_on_fallback_also_fails_no_half_minutes(env, monkeypat
 
 def test_hold_meeting_llm_empty_body_rejected(env):
     import gaorta_client as g
+
     orig = g.chat_for_hire
     g.chat_for_hire = lambda *a, **k: {"content": "   ", "model": "GLM-5.2"}
     try:
@@ -196,6 +236,7 @@ def test_cli_hold_rejected_exit_codes(env, capsys):
 
 # ── K-STOCK-153 · 智谱兜底通道（门控默认关；mock LLMClient 不触网） ──
 
+
 class _FakeLLMClient:
     """LLMClient 替身：记录实例化与 chat 调用，不触网。"""
 
@@ -207,8 +248,13 @@ class _FakeLLMClient:
         self.glm_model = glm_model
 
     def chat(self, messages, temperature=0.3, json_mode=True, max_tokens=2000):
-        _FakeLLMClient.calls.append({"glm_model": self.glm_model,
-                                     "messages": messages, "max_tokens": max_tokens})
+        _FakeLLMClient.calls.append(
+            {
+                "glm_model": self.glm_model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+            }
+        )
         if _FakeLLMClient.boom:
             raise RuntimeError("智谱兜底也不可达")
         return _FakeLLMClient.text, "glm"
@@ -231,6 +277,7 @@ def _boom_no_gaorta_key(mid, source, messages, timeout=60):
 def test_fallback_disabled_meeting_error_no_llmclient(fallback_env, env):
     """开关关（文件缺失=false）→ chat_for_hire 失败即 MeetingError，不兜底。"""
     import gaorta_client as g
+
     orig = g.chat_for_hire
     g.chat_for_hire = _boom_no_gaorta_key
     try:
@@ -245,8 +292,11 @@ def test_fallback_disabled_meeting_error_no_llmclient(fallback_env, env):
 
 def test_fallback_enabled_delivers_with_zhipu_provider(fallback_env, env):
     """开关开 → chat_for_hire 失败后 LLMClient 被调用，投递成功且 provider=zhipu-fallback。"""
-    fallback_env.write_text(json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8")
+    fallback_env.write_text(
+        json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8"
+    )
     import gaorta_client as g
+
     orig = g.chat_for_hire
     g.chat_for_hire = _boom_no_gaorta_key
     try:
@@ -254,7 +304,9 @@ def test_fallback_enabled_delivers_with_zhipu_provider(fallback_env, env):
     finally:
         g.chat_for_hire = orig
     assert len(_FakeLLMClient.calls) == 1
-    assert _FakeLLMClient.calls[0]["glm_model"] == "glm-5.2"  # 账本 GLM-5.2 → 智谱小写可用名
+    assert (
+        _FakeLLMClient.calls[0]["glm_model"] == "glm-5.2"
+    )  # 账本 GLM-5.2 → 智谱小写可用名
     assert len(env.sent) == 1
     assert env.sent[0]["body"] == "【纪要】兜底正文（智谱通道测试）"
     assert env.sent[0]["meta"]["provider"] == "zhipu-fallback"
@@ -265,9 +317,12 @@ def test_fallback_enabled_delivers_with_zhipu_provider(fallback_env, env):
 
 def test_fallback_also_fails_meeting_error(fallback_env, env):
     """开关开但兜底也失败 → 仍 MeetingError，send 不被调用（不落半截纪要）。"""
-    fallback_env.write_text(json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8")
+    fallback_env.write_text(
+        json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8"
+    )
     _FakeLLMClient.boom = True
     import gaorta_client as g
+
     orig = g.chat_for_hire
     g.chat_for_hire = _boom_no_gaorta_key
     try:
@@ -283,12 +338,16 @@ def test_fallback_also_fails_meeting_error(fallback_env, env):
 
 def test_fallback_only_for_missing_gaorta_key(fallback_env, env):
     """非 GAORTA_API_KEY 类失败（如 HTTP 5xx）不触发兜底，即使开关已开。"""
-    fallback_env.write_text(json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8")
+    fallback_env.write_text(
+        json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8"
+    )
     import gaorta_client as g
+
     orig = g.chat_for_hire
 
     def boom_http(mid, source, messages, timeout=60):
         raise RuntimeError("gaorta HTTP 500: internal error（模型 GLM-5.2）")
+
     g.chat_for_hire = boom_http
     try:
         with pytest.raises(MeetingError, match="HTTP 500"):

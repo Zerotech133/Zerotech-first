@@ -19,6 +19,7 @@ LLMClient（智谱官方 coding 端点，GLM_API_KEY）生成同款纪要，prov
 智谱官方，启用须老田批准。门控读 meeting_fallback.json 的
 {"allow_zhipu_fallback": true/false}，文件缺失一律视为 false（默认关）。
 """
+
 import argparse
 import json
 import sys
@@ -118,17 +119,23 @@ def _try_zhipu_fallback(messages, ledger_model, orig_err) -> str | None:
         text, _prov = client.chat(messages, json_mode=False, max_tokens=8000)
     except Exception as e:
         # 兜底失败必须显式留痕：静默 None 会让上层误报原始 gaorta 错误（排查血泪）
-        print(f"[zhipu-fallback] 兜底通道异常: {type(e).__name__}: {e}", file=sys.stderr)
+        print(
+            f"[zhipu-fallback] 兜底通道异常: {type(e).__name__}: {e}", file=sys.stderr
+        )
         return None
     if not (text or "").strip():
         # 空正文同样显式留痕：多为思考超预算，静默 None 会误传上游错误
-        print("[zhipu-fallback] 兜底返回空正文（疑似思考消耗超 max_tokens 预算）", file=sys.stderr)
+        print(
+            "[zhipu-fallback] 兜底返回空正文（疑似思考消耗超 max_tokens 预算）",
+            file=sys.stderr,
+        )
         return None
     return text
 
 
-def hold_meeting(mid: str, source: str, kind: str,
-                 context: str = "", channel: str | None = None) -> tuple[dict, str]:
+def hold_meeting(
+    mid: str, source: str, kind: str, context: str = "", channel: str | None = None
+) -> tuple[dict, str]:
     """召开会议并投递纪要。返回 (minutes 账本记录, 实际提供方模型名)。"""
     if kind not in KINDS:
         raise MeetingError(f"非法会议类型: {kind!r}（可选: {'/'.join(KINDS)}）")
@@ -142,22 +149,33 @@ def hold_meeting(mid: str, source: str, kind: str,
         raise MeetingError(f"会议 {kind} 无法召开: {e}") from e
 
     # ② active 雇佣校验（复用 manager 账本查询）
-    active = [h for h in manager.hires_list()
-              if h.get("manager") == mid and h.get("source") == source
-              and h.get("status") == "active"]
+    active = [
+        h
+        for h in manager.hires_list()
+        if h.get("manager") == mid
+        and h.get("source") == source
+        and h.get("status") == "active"
+    ]
     if not active:
         raise MeetingError(
             f"会议 {kind} 无法召开: 无 {mid}×{source} 的 active 雇佣"
-            f"（账本 {manager.HIRES_PATH}），须先由经理雇佣建立")
+            f"（账本 {manager.HIRES_PATH}），须先由经理雇佣建立"
+        )
 
     # ③ 组装 LLM 消息并生成纪要正文（LLM 失败 → MeetingError，send 绝不触达）
     role_prompt = profile.get("role_prompt") or (
-        f"你是 K-STOCK 模拟仓投资部经理 {profile.get('name', mid)}。")
+        f"你是 K-STOCK 模拟仓投资部经理 {profile.get('name', mid)}。"
+    )
     messages = [
-        {"role": "system",
-         "content": role_prompt + "\n\n【会议指令】\n" + _MEETING_INSTRUCTIONS[kind]},
-        {"role": "user",
-         "content": context.strip() or "（调用方未提供当日行情摘要，请按通用框架输出纪要）"},
+        {
+            "role": "system",
+            "content": role_prompt + "\n\n【会议指令】\n" + _MEETING_INSTRUCTIONS[kind],
+        },
+        {
+            "role": "user",
+            "content": context.strip()
+            or "（调用方未提供当日行情摘要，请按通用框架输出纪要）",
+        },
     ]
     try:
         out = gaorta_client.chat_for_hire(mid, source, messages)
@@ -165,45 +183,67 @@ def hold_meeting(mid: str, source: str, kind: str,
         body = _try_zhipu_fallback(messages, active[0].get("model"), e)
         if body is None:
             raise MeetingError(
-                f"会议 {mid}×{source} {kind}: LLM 生成纪要失败（不落半截纪要）→ {e}") from e
+                f"会议 {mid}×{source} {kind}: LLM 生成纪要失败（不落半截纪要）→ {e}"
+            ) from e
         provider_tag = "zhipu-fallback"
     else:
         body = (out or {}).get("content") or ""
         provider_tag = None
     if not body.strip():
-        raise MeetingError(f"会议 {mid}×{source} {kind}: LLM 返回空纪要（不落半截纪要）")
+        raise MeetingError(
+            f"会议 {mid}×{source} {kind}: LLM 返回空纪要（不落半截纪要）"
+        )
 
     # ④ 投递纪要
     title = f"{profile.get('name', mid)} {_KIND_LABELS[kind]} {datetime.now().strftime('%m-%d')}"
     ch = _resolve_channel(mid, profile, channel)
     try:
-        rec = minutes.send(mid, kind, title, body, channel=ch,
-                           meta={"source": source, "provider": provider_tag
-                                 or (out or {}).get("model")})
+        rec = minutes.send(
+            mid,
+            kind,
+            title,
+            body,
+            channel=ch,
+            meta={
+                "source": source,
+                "provider": provider_tag or (out or {}).get("model"),
+            },
+        )
     except minutes.Reject as e:
         raise MeetingError(f"会议 {mid}×{source} {kind}: 纪要投递被拒 → {e}") from e
     if rec.get("status") != "delivered":
         raise MeetingError(
             f"会议 {mid}×{source} {kind}: 纪要投递未成功"
-            f"（channel={ch}, status={rec.get('status')}, meta={rec.get('meta')}）")
-    return rec, provider_tag or (out or {}).get("model") or active[0].get("model") or "unknown"
+            f"（channel={ch}, status={rec.get('status')}, meta={rec.get('meta')}）"
+        )
+    return rec, provider_tag or (out or {}).get("model") or active[0].get(
+        "model"
+    ) or "unknown"
 
 
 # ── CLI ──────────────────────────────────────────────────────────
 def _main(argv=None):
-    ap = argparse.ArgumentParser(prog="meeting", description="经理会议线（纪要生成与投递）")
+    ap = argparse.ArgumentParser(
+        prog="meeting", description="经理会议线（纪要生成与投递）"
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("hold", help="召开会议并投递纪要")
     p.add_argument("mid")
     p.add_argument("source")
     p.add_argument("kind", choices=KINDS)
-    p.add_argument("--context-file", default=None, help="当日行情摘要文本文件（缺省为空）")
-    p.add_argument("--channel", default=None, help="投递通道（缺省按经理档案 delivery_channels）")
+    p.add_argument(
+        "--context-file", default=None, help="当日行情摘要文本文件（缺省为空）"
+    )
+    p.add_argument(
+        "--channel", default=None, help="投递通道（缺省按经理档案 delivery_channels）"
+    )
     p.add_argument("--json", action="store_true")
 
     def _hold(a):
         ctx = Path(a.context_file).read_text(encoding="utf-8") if a.context_file else ""
-        rec, provider = hold_meeting(a.mid, a.source, a.kind, context=ctx, channel=a.channel)
+        rec, provider = hold_meeting(
+            a.mid, a.source, a.kind, context=ctx, channel=a.channel
+        )
         return [{"record": rec, "provider": provider}]
 
     p.set_defaults(fn=_hold)

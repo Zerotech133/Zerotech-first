@@ -53,6 +53,7 @@ ack 带载荷/实质回执无载荷/账本被改写 → 显式抛 ReceiptError �
 何时调用 record_receipt 由后续工单接线（等 -006 合并后另开小单接
 006 会议账消费 research_conclusion 载荷）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -78,12 +79,22 @@ SUBSTANTIVE_KINDS = frozenset({RESEARCH_CONCLUSION, TRADER_ACTION})
 SIGNAL_ID_PATTERN = r"[A-Za-z0-9_.:-]+"
 
 # 默认回执账文件（append-only jsonl；测试注入临时路径）
-DEFAULT_RECEIPT_LOG = Path(__file__).resolve().parent.parent / "data" / "signal_receipts.jsonl"
+DEFAULT_RECEIPT_LOG = (
+    Path(__file__).resolve().parent.parent / "data" / "signal_receipts.jsonl"
+)
 
 # 回执条目固定字段（其余字段一律不收，防夹带）
-_ENTRY_FIELDS = ("ts", "signal_id", "receipt_kind", "actor", "payload",
-                 "plan_version", "combo_id", "entry_sha256",
-                 "receipt_schema_version")
+_ENTRY_FIELDS = (
+    "ts",
+    "signal_id",
+    "receipt_kind",
+    "actor",
+    "payload",
+    "plan_version",
+    "combo_id",
+    "entry_sha256",
+    "receipt_schema_version",
+)
 
 
 class ReceiptError(Exception):
@@ -110,43 +121,60 @@ _APPEND_LOCK = threading.Lock()
 def validate_signal_id(signal_id) -> str:
     """signal_id 契约校验（对齐 -005：非空 + 安全字符集）。closed on failure。"""
     if not isinstance(signal_id, str) or not signal_id.strip():
-        raise ReceiptError("signal_id_invalid", f"signal_id 须为非空字符串: {signal_id!r}")
+        raise ReceiptError(
+            "signal_id_invalid", f"signal_id 须为非空字符串: {signal_id!r}"
+        )
     if not re.fullmatch(SIGNAL_ID_PATTERN, signal_id):
-        raise ReceiptError("signal_id_invalid",
-                           f"signal_id 只许字母数字与 _.:- （对齐 -005 契约）: {signal_id!r}")
+        raise ReceiptError(
+            "signal_id_invalid",
+            f"signal_id 只许字母数字与 _.:- （对齐 -005 契约）: {signal_id!r}",
+        )
     return signal_id
 
 
 def _entry_digest(entry: dict) -> str:
     """条目自校验指纹（不含 entry_sha256 自身；改写检测的锚点）。"""
-    blob = json.dumps({k: v for k, v in entry.items() if k != "entry_sha256"},
-                      ensure_ascii=False, sort_keys=True)
+    blob = json.dumps(
+        {k: v for k, v in entry.items() if k != "entry_sha256"},
+        ensure_ascii=False,
+        sort_keys=True,
+    )
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
-def _check_receipt(signal_id, receipt_kind, actor, payload,
-                   plan_version, combo_id) -> dict:
+def _check_receipt(
+    signal_id, receipt_kind, actor, payload, plan_version, combo_id
+) -> dict:
     """入账前全量校验，返回规范化字段。任何不合法抛 ReceiptError。"""
     validate_signal_id(signal_id)
     if receipt_kind not in RECEIPT_KINDS:
-        raise ReceiptError("receipt_kind_invalid",
-                           f"回执类型只认四类 {list(RECEIPT_KINDS)}: {receipt_kind!r}")
+        raise ReceiptError(
+            "receipt_kind_invalid",
+            f"回执类型只认四类 {list(RECEIPT_KINDS)}: {receipt_kind!r}",
+        )
     if not isinstance(actor, str) or not actor.strip():
-        raise ReceiptError("actor_invalid", f"actor（角色 id）须为非空字符串: {actor!r}")
+        raise ReceiptError(
+            "actor_invalid", f"actor（角色 id）须为非空字符串: {actor!r}"
+        )
     # 投递≠内容：ack 只记收悉，禁止携带结论载荷（防「投递成功冒充开会」）
     if receipt_kind in ACK_KINDS:
         if payload:
             raise ReceiptError(
                 "ack_payload_forbidden",
-                f"ack 类回执（{receipt_kind}）只记收悉，禁止携带载荷（投递≠内容）: {payload!r}")
+                f"ack 类回执（{receipt_kind}）只记收悉，禁止携带载荷（投递≠内容）: {payload!r}",
+            )
     # 实质回执必须有内容：无载荷的结论/动作不收（防「空口办结」）
     else:
         if not isinstance(payload, dict) or not payload:
             raise ReceiptError(
                 "payload_required",
-                f"实质回执（{receipt_kind}）必须携带非空 dict 载荷（结论/动作详情）")
-    out = {"payload": dict(payload) if payload else None,
-           "plan_version": None, "combo_id": None}
+                f"实质回执（{receipt_kind}）必须携带非空 dict 载荷（结论/动作详情）",
+            )
+    out = {
+        "payload": dict(payload) if payload else None,
+        "plan_version": None,
+        "combo_id": None,
+    }
     for k, v in (("plan_version", plan_version), ("combo_id", combo_id)):
         if v is not None:
             if not isinstance(v, str) or not v.strip():
@@ -174,31 +202,43 @@ def _read_ledger(log_path: Path) -> list[dict]:
             try:
                 e = json.loads(line)
             except ValueError as err:
-                raise ReceiptError("ledger_corrupt",
-                                   f"回执账第 {lineno} 行不是合法 JSON（closed on failure）") from err
+                raise ReceiptError(
+                    "ledger_corrupt",
+                    f"回执账第 {lineno} 行不是合法 JSON（closed on failure）",
+                ) from err
             if not isinstance(e, dict) or "entry_sha256" not in e:
-                raise ReceiptError("ledger_corrupt",
-                                   f"回执账第 {lineno} 行缺 entry_sha256（closed on failure）")
+                raise ReceiptError(
+                    "ledger_corrupt",
+                    f"回执账第 {lineno} 行缺 entry_sha256（closed on failure）",
+                )
             if _entry_digest(e) != e["entry_sha256"]:
                 raise ReceiptLedgerTampered(
                     "ledger_tampered",
-                    f"回执账第 {lineno} 行内容与其自校验 sha256 不符——append-only 被改写（closed on failure）")
+                    f"回执账第 {lineno} 行内容与其自校验 sha256 不符——append-only 被改写（closed on failure）",
+                )
             entries.append(e)
     return entries
 
 
-def record_receipt(log_path: Path | str, signal_id: str, receipt_kind: str,
-                   actor: str, payload: dict | None = None,
-                   plan_version: str | None = None, combo_id: str | None = None,
-                   ts: str | None = None) -> dict:
+def record_receipt(
+    log_path: Path | str,
+    signal_id: str,
+    receipt_kind: str,
+    actor: str,
+    payload: dict | None = None,
+    plan_version: str | None = None,
+    combo_id: str | None = None,
+    ts: str | None = None,
+) -> dict:
     """入账一条回执（append-only，任意时序，无顺序依赖）。
 
     幂等：同 (signal_id, receipt_kind, actor) 重复入账 → DuplicateReceiptError
     （不写行、不改账）。校验失败不写任何行（closed on failure）。
     返回入账条目（含自校验 entry_sha256）。
     """
-    fields = _check_receipt(signal_id, receipt_kind, actor, payload,
-                            plan_version, combo_id)
+    fields = _check_receipt(
+        signal_id, receipt_kind, actor, payload, plan_version, combo_id
+    )
     if ts is None:
         ts = datetime.now().isoformat(timespec="seconds")
     else:
@@ -208,21 +248,30 @@ def record_receipt(log_path: Path | str, signal_id: str, receipt_kind: str,
             datetime.fromisoformat(ts)
         except ValueError as err:
             raise ReceiptError("ts_invalid", f"ts 不是可解析 ISO 时刻: {ts!r}") from err
-    entry = {"ts": ts, "signal_id": signal_id, "receipt_kind": receipt_kind,
-             "actor": actor, "payload": fields["payload"],
-             "plan_version": fields["plan_version"], "combo_id": fields["combo_id"],
-             "receipt_schema_version": RECEIPT_SCHEMA_VERSION}
+    entry = {
+        "ts": ts,
+        "signal_id": signal_id,
+        "receipt_kind": receipt_kind,
+        "actor": actor,
+        "payload": fields["payload"],
+        "plan_version": fields["plan_version"],
+        "combo_id": fields["combo_id"],
+        "receipt_schema_version": RECEIPT_SCHEMA_VERSION,
+    }
     entry["entry_sha256"] = _entry_digest(entry)
     p = Path(log_path)
     with _APPEND_LOCK:
         for e in _read_ledger(p):
-            if (e.get("signal_id") == signal_id
-                    and e.get("receipt_kind") == receipt_kind
-                    and e.get("actor") == actor):
+            if (
+                e.get("signal_id") == signal_id
+                and e.get("receipt_kind") == receipt_kind
+                and e.get("actor") == actor
+            ):
                 raise DuplicateReceiptError(
                     "duplicate_receipt",
                     f"回执已入账（幂等拒绝）: signal={signal_id} kind={receipt_kind} actor={actor} "
-                    f"原条目 ts={e.get('ts')}——重复入账疑似生产方 bug 或事件重放，不静默去重")
+                    f"原条目 ts={e.get('ts')}——重复入账疑似生产方 bug 或事件重放，不静默去重",
+                )
         _append_line(p, entry)
     return entry
 
@@ -230,7 +279,9 @@ def record_receipt(log_path: Path | str, signal_id: str, receipt_kind: str,
 def timeline(log_path: Path | str, signal_id: str) -> list[dict]:
     """某信号的四类回执时间线（按 ts 升序，审计用）。只读，不改账。"""
     validate_signal_id(signal_id)
-    entries = [e for e in _read_ledger(Path(log_path)) if e.get("signal_id") == signal_id]
+    entries = [
+        e for e in _read_ledger(Path(log_path)) if e.get("signal_id") == signal_id
+    ]
     entries.sort(key=lambda e: (datetime.fromisoformat(e["ts"]),))
     return entries
 
@@ -242,12 +293,20 @@ def completeness(log_path: Path | str, signal_id: str) -> dict:
     ack 出现≠实质回执出现（收悉≠办结，语义区分由四类分立保证）。
     """
     validate_signal_id(signal_id)
-    seen = {e["receipt_kind"] for e in _read_ledger(Path(log_path))
-            if e.get("signal_id") == signal_id}
+    seen = {
+        e["receipt_kind"]
+        for e in _read_ledger(Path(log_path))
+        if e.get("signal_id") == signal_id
+    }
     received = [k for k in RECEIPT_KINDS if k in seen]
     missing = [k for k in RECEIPT_KINDS if k not in seen]
-    return {"signal_id": signal_id, "received": received, "missing": missing,
-            "received_count": len(received), "total": len(RECEIPT_KINDS)}
+    return {
+        "signal_id": signal_id,
+        "received": received,
+        "missing": missing,
+        "received_count": len(received),
+        "total": len(RECEIPT_KINDS),
+    }
 
 
 def verify_integrity(log_path: Path | str) -> int:

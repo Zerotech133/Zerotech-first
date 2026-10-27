@@ -1,4 +1,5 @@
 """Pure unit tests for the dependency-injected Hermes adapter."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -109,8 +110,16 @@ def test_handle_link_creates_run_and_emits_structured_result() -> None:
         (lambda: HermesTask("", 1, "https://example.invalid"), "task_id"),
         (lambda: HermesTask("t", 0, "https://example.invalid"), "target_id"),
         (lambda: HermesTask("t", 1, "  "), "url"),
-        (lambda: HermesTask("t", 1, "https://example.invalid", run_type=" "), "run_type"),
-        (lambda: HermesTask("t", 1, "https://example.invalid", metadata={"token": "secret"}), "sensitive metadata"),
+        (
+            lambda: HermesTask("t", 1, "https://example.invalid", run_type=" "),
+            "run_type",
+        ),
+        (
+            lambda: HermesTask(
+                "t", 1, "https://example.invalid", metadata={"token": "secret"}
+            ),
+            "sensitive metadata",
+        ),
         (lambda: Evidence("", "source", "quote"), "evidence_id"),
         (lambda: Evidence("e", "", "quote"), "source_ref"),
         (lambda: Evidence("e", "source", " "), "evidence quote"),
@@ -131,7 +140,9 @@ def test_normalize_sequence_preserves_evidence() -> None:
         [evidence, {"evidence_id": "e2", "source_ref": "ref2", "quote": "q2"}]
     )
 
-    assert content == {"items": [evidence, {"evidence_id": "e2", "source_ref": "ref2", "quote": "q2"}]}
+    assert content == {
+        "items": [evidence, {"evidence_id": "e2", "source_ref": "ref2", "quote": "q2"}]
+    }
     assert normalized == (
         evidence,
         Evidence("e2", "ref2", "q2"),
@@ -146,7 +157,9 @@ def test_normalize_rejects_non_mapping_or_sequence(raw: Any) -> None:
 
 def test_invalid_run_id_fails_before_fetching() -> None:
     class InvalidStore(FakeStore):
-        def create_run(self, target_id: int, run_type: str, input_cursor: str | None = None) -> Mapping[str, Any]:
+        def create_run(
+            self, target_id: int, run_type: str, input_cursor: str | None = None
+        ) -> Mapping[str, Any]:
             return {"run_id": 0}
 
     class NeverFetcher:
@@ -154,7 +167,9 @@ def test_invalid_run_id_fails_before_fetching() -> None:
             raise AssertionError("fetcher must not be called")
 
     with pytest.raises(ValueError, match="invalid run id"):
-        HermesAdapter(NeverFetcher(), FakeProvider(), InvalidStore({})).handle_link(make_task())
+        HermesAdapter(NeverFetcher(), FakeProvider(), InvalidStore({})).handle_link(
+            make_task()
+        )
 
 
 def test_snapshot_hash_is_deterministic_and_changes_with_content() -> None:
@@ -177,12 +192,16 @@ def test_repeated_handle_link_should_not_duplicate_event_ids() -> None:
     adapter.handle_link(make_task())
 
     event_ids = [event.event_id for event in sink.events]
-    assert len(event_ids) == len(set(event_ids)), "duplicate task retries must be idempotent"
+    assert len(event_ids) == len(set(event_ids)), (
+        "duplicate task retries must be idempotent"
+    )
 
 
 def test_events_do_not_expose_sensitive_fields() -> None:
     sink = FakeSink()
-    result = HermesAdapter(FakeFetcher(), FakeProvider(), FakeStore({}), sink).handle_link(
+    result = HermesAdapter(
+        FakeFetcher(), FakeProvider(), FakeStore({}), sink
+    ).handle_link(
         HermesTask(
             "task-1",
             7,

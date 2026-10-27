@@ -75,7 +75,9 @@ def _load_model(model_dir: str | None = None):
             disable_update=True,
         )
     except Exception as exc:  # noqa: BLE001 —— 模型加载失败原因多样，统一包装
-        raise ASRModelUnavailableError(f"SenseVoice 模型加载失败：{exc}\n{FUNASR_INSTALL_HINT}") from exc
+        raise ASRModelUnavailableError(
+            f"SenseVoice 模型加载失败：{exc}\n{FUNASR_INSTALL_HINT}"
+        ) from exc
 
 
 def _ms_to_sec(value: Any) -> float:
@@ -100,12 +102,16 @@ def _parse_result(item: dict[str, Any], fallback_duration: float) -> list[ASRSeg
         end = _ms_to_sec(si.get("end"))
         if end <= start:  # 时间戳异常时退化为紧邻上一段
             start, end = 0.0, fallback_duration
-        segments.append(ASRSegment(start=start, end=end, text=text, conf=DEFAULT_ASR_CONF))
+        segments.append(
+            ASRSegment(start=start, end=end, text=text, conf=DEFAULT_ASR_CONF)
+        )
     if not segments:
         text = str(item.get("text", "")).strip()
         if text:
             segments.append(
-                ASRSegment(start=0.0, end=fallback_duration, text=text, conf=DEFAULT_ASR_CONF)
+                ASRSegment(
+                    start=0.0, end=fallback_duration, text=text, conf=DEFAULT_ASR_CONF
+                )
             )
     return segments
 
@@ -137,20 +143,24 @@ def transcribe(
         results = active_model.generate(
             input=str(path),
             cache={},
-            language="auto",       # 视频号内容中英混合常见
-            use_itn=True,          # 逆文本正则：数字/日期规范化
-            batch_size_s=60,       # VAD 分批：每批 60 秒音频
-            merge_vad=True,        # 合并相邻 VAD 段 → sentence_info 带时间戳
+            language="auto",  # 视频号内容中英混合常见
+            use_itn=True,  # 逆文本正则：数字/日期规范化
+            batch_size_s=60,  # VAD 分批：每批 60 秒音频
+            merge_vad=True,  # 合并相邻 VAD 段 → sentence_info 带时间戳
         )
     except ASRModelUnavailableError:
         raise
     except Exception as exc:  # noqa: BLE001 —— 推理失败统一包装为模型不可用
-        raise ASRModelUnavailableError(f"ASR 推理失败：{exc}\n{FUNASR_INSTALL_HINT}") from exc
+        raise ASRModelUnavailableError(
+            f"ASR 推理失败：{exc}\n{FUNASR_INSTALL_HINT}"
+        ) from exc
 
     duration = _wav_duration_sec(path)
     segments: list[ASRSegment] = []
     for item in results or []:
         segments.extend(_parse_result(item or {}, duration))
     segments.sort(key=lambda seg: seg["start"])
-    logger.info("ASR 完成：%s → %d 段（音频 %.1fs）", path.name, len(segments), duration)
+    logger.info(
+        "ASR 完成：%s → %d 段（音频 %.1fs）", path.name, len(segments), duration
+    )
     return segments

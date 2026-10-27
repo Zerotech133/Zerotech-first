@@ -50,16 +50,27 @@ class TestStateMachine:
     def test_nine_statuses_defined(self):
         """架构 §2.1 共 9 个状态。"""
         assert ALL_STATUSES == {
-            "pending", "parsed", "downloaded", "decrypted",
-            "extracted", "done", "failed", "dead", "waiting_cookie",
+            "pending",
+            "parsed",
+            "downloaded",
+            "decrypted",
+            "extracted",
+            "done",
+            "failed",
+            "dead",
+            "waiting_cookie",
         }
         assert len(ALL_STATUSES) == 9
 
     def test_main_happy_path_allowed(self):
         """主链路 pending→parsed→…→done 全部合法。"""
         chain = [
-            LinkStatus.PENDING, LinkStatus.PARSED, LinkStatus.DOWNLOADED,
-            LinkStatus.DECRYPTED, LinkStatus.EXTRACTED, LinkStatus.DONE,
+            LinkStatus.PENDING,
+            LinkStatus.PARSED,
+            LinkStatus.DOWNLOADED,
+            LinkStatus.DECRYPTED,
+            LinkStatus.EXTRACTED,
+            LinkStatus.DONE,
         ]
         for cur, nxt in zip(chain, chain[1:]):
             assert _task(cur).can_transition_to(nxt), f"{cur} → {nxt} 应合法"
@@ -67,8 +78,11 @@ class TestStateMachine:
     def test_any_processing_to_failed_allowed(self):
         """任意处理态 → failed 合法（可重试）。"""
         for status in (
-            LinkStatus.PENDING, LinkStatus.PARSED, LinkStatus.DOWNLOADED,
-            LinkStatus.DECRYPTED, LinkStatus.EXTRACTED,
+            LinkStatus.PENDING,
+            LinkStatus.PARSED,
+            LinkStatus.DOWNLOADED,
+            LinkStatus.DECRYPTED,
+            LinkStatus.EXTRACTED,
         ):
             assert _task(status).can_transition_to(LinkStatus.FAILED), status
 
@@ -90,12 +104,12 @@ class TestStateMachine:
     @pytest.mark.parametrize(
         "bad_transition",
         [
-            (LinkStatus.PENDING, LinkStatus.DONE),        # 跳过全流程
+            (LinkStatus.PENDING, LinkStatus.DONE),  # 跳过全流程
             (LinkStatus.PENDING, LinkStatus.DOWNLOADED),  # 跳过解析
-            (LinkStatus.PARSED, LinkStatus.EXTRACTED),    # 跳过下载/解密
-            (LinkStatus.DONE, LinkStatus.PENDING),        # 终态复活
-            (LinkStatus.DEAD, LinkStatus.PENDING),        # 死信复活
-            (LinkStatus.EXTRACTED, LinkStatus.PARSED),    # 回退
+            (LinkStatus.PARSED, LinkStatus.EXTRACTED),  # 跳过下载/解密
+            (LinkStatus.DONE, LinkStatus.PENDING),  # 终态复活
+            (LinkStatus.DEAD, LinkStatus.PENDING),  # 死信复活
+            (LinkStatus.EXTRACTED, LinkStatus.PARSED),  # 回退
         ],
     )
     def test_illegal_transitions_rejected(self, bad_transition):
@@ -135,11 +149,19 @@ class TestRetryBackoff:
         from queue_link.repository import _backoff_deadline
 
         before = datetime.now(timezone.utc)
-        for retry, expect_seconds in [(1, 300), (2, 1800), (3, 7200), (4, 7200), (99, 7200)]:
+        for retry, expect_seconds in [
+            (1, 300),
+            (2, 1800),
+            (3, 7200),
+            (4, 7200),
+            (99, 7200),
+        ]:
             deadline = _backoff_deadline(retry)
             delta: timedelta = deadline - before
-            assert timedelta(seconds=expect_seconds - 5) <= delta <= timedelta(
-                seconds=expect_seconds + 5
+            assert (
+                timedelta(seconds=expect_seconds - 5)
+                <= delta
+                <= timedelta(seconds=expect_seconds + 5)
             ), f"retry={retry} 期望约 {expect_seconds}s，实际 {delta}"
 
     def test_backoff_deadline_invalid_input(self):

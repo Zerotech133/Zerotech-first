@@ -4,6 +4,7 @@
 独立 jsonl 账本（data/llm_cost/YYYYMMDD.jsonl），不碰 portal.db。
 定价为锚点示意（人民币/百万 token）；超 daily_cost_cap 触发降级建议。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,7 +27,7 @@ MODEL_UNIT_PRICE: dict[str, float] = {
     "deepseek/deepseek-reasoner": 4.0,
     "qwen/qwen-max": 20.0,
     "qwen/qwen-plus": 8.0,
-    "zhipu/glm-4-flash": 1.0,   # 077w M2：kstock/llm.py primary 实际模型（低价锚点）
+    "zhipu/glm-4-flash": 1.0,  # 077w M2：kstock/llm.py primary 实际模型（低价锚点）
     "zhipu/glm-4-plus": 50.0,
     "anthropic/claude-sonnet-4": 60.0,
     "anthropic/claude-opus-4": 150.0,
@@ -36,7 +37,7 @@ MODEL_UNIT_PRICE: dict[str, float] = {
     "xai/grok-4": 100.0,
 }
 UNKNOWN_FALLBACK_PRICE = 50.0  # 未知模型保守价
-DEFAULT_TIER_CAP = 20.0        # 取不到 tier 档案时按 T2 上限
+DEFAULT_TIER_CAP = 20.0  # 取不到 tier 档案时按 T2 上限
 
 
 def _price(binding: str) -> tuple[float, bool]:
@@ -62,6 +63,7 @@ def _tier_of(account: str) -> dict | None:
     """从 trainee.load_profile(account) 取 tier 信息；失败返回 None。"""
     try:
         from k_stock.paper import trainee
+
         prof = trainee.load_profile(account)
     except Exception:
         return None
@@ -79,8 +81,13 @@ def _day_file(date: str | None = None) -> Path:
     return COST_DIR / f"{d}.jsonl"
 
 
-def record_cost(account: str, binding: str, prompt_tokens: int,
-                completion_tokens: int, ts: float | None = None) -> dict:
+def record_cost(
+    account: str,
+    binding: str,
+    prompt_tokens: int,
+    completion_tokens: int,
+    ts: float | None = None,
+) -> dict:
     """估算单次调用成本并追加写当日 jsonl。返回该行记录。"""
     ts = ts if ts is not None else time.time()
     unit, estimated = _price(binding)
@@ -171,12 +178,17 @@ def _cli() -> int:
             print(json.dumps(rec, ensure_ascii=False))
         else:
             est = " (estimated)" if rec.get("estimated") else ""
-            print(f"recorded: {rec['account']} {rec['binding']}{est} "
-                  f"cost={rec['cost']} 元")
+            print(
+                f"recorded: {rec['account']} {rec['binding']}{est} "
+                f"cost={rec['cost']} 元"
+            )
     elif a.cmd == "daily":
         d = daily_cost(a.account, a.date)
-        print(json.dumps(d, ensure_ascii=False, indent=2)
-              if a.json else json.dumps(d, ensure_ascii=False))
+        print(
+            json.dumps(d, ensure_ascii=False, indent=2)
+            if a.json
+            else json.dumps(d, ensure_ascii=False)
+        )
     elif a.cmd == "check":
         r = check_and_flag(a.account)
         print(json.dumps(r, ensure_ascii=False))

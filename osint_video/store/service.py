@@ -7,7 +7,9 @@ import math
 from store.models import KnowledgeResource, StrategyEvidence
 
 
-def validate_evidence_for_resource(evidence: StrategyEvidence, resource: KnowledgeResource) -> None:
+def validate_evidence_for_resource(
+    evidence: StrategyEvidence, resource: KnowledgeResource
+) -> None:
     """Validate finite, ordered quote bounds against a resource duration.
 
     This validation is repeated at the service boundary so callers cannot bypass
@@ -36,10 +38,14 @@ def validate_evidence_for_resource(evidence: StrategyEvidence, resource: Knowled
     if duration_value is not None:
         for name, value in (("quote_start_sec", start), ("quote_end_sec", end)):
             if value is not None and value > duration_value:
-                raise ValueError(f"{name} must not exceed resource duration ({duration_value})")
+                raise ValueError(
+                    f"{name} must not exceed resource duration ({duration_value})"
+                )
 
 
-def prepare_evidence(evidence: StrategyEvidence, resource: KnowledgeResource) -> StrategyEvidence:
+def prepare_evidence(
+    evidence: StrategyEvidence, resource: KnowledgeResource
+) -> StrategyEvidence:
     """Validate and return evidence before persistence."""
     validate_evidence_for_resource(evidence, resource)
     return evidence

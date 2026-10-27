@@ -5,6 +5,7 @@ supplies a fetcher and processor, while :mod:`knowledge.creator_ops` owns the
 PostgreSQL run state and waterlines.  A failed item stops only its run; the
 cursor remains at the last successful item so a later retry cannot skip it.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,14 +19,18 @@ from knowledge import creator_ops
 class PageFetcher(Protocol):
     """Fetch one page after ``cursor`` without performing persistence."""
 
-    def __call__(self, target: Mapping[str, Any], cursor: str | None, run: Mapping[str, Any]) -> Any:
+    def __call__(
+        self, target: Mapping[str, Any], cursor: str | None, run: Mapping[str, Any]
+    ) -> Any:
         """Return a page mapping or a sequence of items."""
 
 
 class ItemProcessor(Protocol):
     """Persist one item and return an optional item cursor."""
 
-    def __call__(self, item: Any, target: Mapping[str, Any], run: Mapping[str, Any]) -> Any:
+    def __call__(
+        self, item: Any, target: Mapping[str, Any], run: Mapping[str, Any]
+    ) -> Any:
         """Raise on failure; a returned cursor advances the waterline."""
 
 
@@ -51,7 +56,12 @@ def _page(value: Any) -> tuple[list[Any], str | None, bool]:
     """Normalize common fetcher return shapes to ``items,next_cursor,done``."""
     if isinstance(value, Mapping):
         raw_items = value.get("items", value.get("data", []))
-        items = list(raw_items) if isinstance(raw_items, Sequence) and not isinstance(raw_items, (str, bytes)) else []
+        items = (
+            list(raw_items)
+            if isinstance(raw_items, Sequence)
+            and not isinstance(raw_items, (str, bytes))
+            else []
+        )
         next_cursor = value.get("next_cursor", value.get("cursor"))
         if "done" in value:
             done = bool(value.get("done"))
@@ -70,7 +80,9 @@ def _item_cursor(result: Any, item: Any) -> str | None:
     """Extract a cursor returned by processor or embedded in an item."""
     for value in (result, item):
         if isinstance(value, Mapping):
-            cursor = value.get("cursor", value.get("output_cursor", value.get("next_cursor")))
+            cursor = value.get(
+                "cursor", value.get("output_cursor", value.get("next_cursor"))
+            )
             if cursor is not None:
                 return str(cursor)
     if isinstance(result, str):
@@ -79,16 +91,23 @@ def _item_cursor(result: Any, item: Any) -> str | None:
 
 
 def _run_row(run_id: int) -> Mapping[str, Any] | None:
-    rows = db.fetch_all("SELECT * FROM osint_creator_run WHERE run_id=:run_id", {"run_id": run_id})
+    rows = db.fetch_all(
+        "SELECT * FROM osint_creator_run WHERE run_id=:run_id", {"run_id": run_id}
+    )
     return rows[0] if rows else None
 
 
 def _target_row(target_id: int) -> Mapping[str, Any] | None:
-    rows = db.fetch_all("SELECT * FROM osint_target WHERE target_id=:target_id", {"target_id": target_id})
+    rows = db.fetch_all(
+        "SELECT * FROM osint_target WHERE target_id=:target_id",
+        {"target_id": target_id},
+    )
     return rows[0] if rows else None
 
 
-def _advance_state(target: Mapping[str, Any], cursor: str | None, run_type: str) -> None:
+def _advance_state(
+    target: Mapping[str, Any], cursor: str | None, run_type: str
+) -> None:
     """Advance only known successful states; leave manual states untouched."""
     current = str(target.get("operation_state") or "")
     next_state: str | None = None
@@ -116,11 +135,15 @@ def _execute_run(
     target_id = int(run["target_id"])
     started = creator_ops.start_run(run_id)
     if started is None:
-        return WorkerResult(run_id, target_id, "skipped", run.get("output_cursor"), 0, 0, 0)
+        return WorkerResult(
+            run_id, target_id, "skipped", run.get("output_cursor"), 0, 0, 0
+        )
     target = _target_row(target_id)
     if target is None:
         detail = "target not found"
-        creator_ops.finish_run(run_id, state="failed", error_code="TARGET_NOT_FOUND", error_detail=detail)
+        creator_ops.finish_run(
+            run_id, state="failed", error_code="TARGET_NOT_FOUND", error_detail=detail
+        )
         return WorkerResult(run_id, target_id, "failed", None, 0, 0, 0, detail)
 
     cursor = started.get("input_cursor")
@@ -145,43 +168,87 @@ def _execute_run(
                     failed += 1
                     detail = f"item {seen} failed: {exc}"
                     finished = creator_ops.finish_run(
-                        run_id, state="failed", output_cursor=cursor,
-                        items_seen=seen, items_succeeded=succeeded, items_failed=failed,
-                        error_code="ITEM_PROCESS_FAILED", error_detail=detail,
+                        run_id,
+                        state="failed",
+                        output_cursor=cursor,
+                        items_seen=seen,
+                        items_succeeded=succeeded,
+                        items_failed=failed,
+                        error_code="ITEM_PROCESS_FAILED",
+                        error_detail=detail,
                     )
-                    return WorkerResult(run_id, target_id, str((finished or {}).get("state", "failed")), cursor, seen, succeeded, failed, detail)
+                    return WorkerResult(
+                        run_id,
+                        target_id,
+                        str((finished or {}).get("state", "failed")),
+                        cursor,
+                        seen,
+                        succeeded,
+                        failed,
+                        detail,
+                    )
             if page_cursor is not None and succeeded > 0:
                 cursor = page_cursor
             if done or len(items) == 0:
                 break
         finished = creator_ops.finish_run(
-            run_id, state="succeeded", output_cursor=cursor,
-            items_seen=seen, items_succeeded=succeeded, items_failed=failed,
+            run_id,
+            state="succeeded",
+            output_cursor=cursor,
+            items_seen=seen,
+            items_succeeded=succeeded,
+            items_failed=failed,
         )
         if finalize_state:
             _advance_state(target, cursor, str(started.get("run_type")))
-        return WorkerResult(run_id, target_id, str((finished or {}).get("state", "succeeded")), cursor, seen, succeeded, failed)
+        return WorkerResult(
+            run_id,
+            target_id,
+            str((finished or {}).get("state", "succeeded")),
+            cursor,
+            seen,
+            succeeded,
+            failed,
+        )
     except CollectionAccessError as exc:
         detail = f"collector access denied: {exc.code}"
         creator_ops.finish_run(
-            run_id, state="failed", output_cursor=cursor,
-            items_seen=seen, items_succeeded=succeeded, items_failed=failed,
-            error_code=exc.code, error_detail=detail,
+            run_id,
+            state="failed",
+            output_cursor=cursor,
+            items_seen=seen,
+            items_succeeded=succeeded,
+            items_failed=failed,
+            error_code=exc.code,
+            error_detail=detail,
         )
-        return WorkerResult(run_id, target_id, "failed", cursor, seen, succeeded, failed, detail)
+        return WorkerResult(
+            run_id, target_id, "failed", cursor, seen, succeeded, failed, detail
+        )
     except Exception as exc:
         detail = str(exc)
         creator_ops.finish_run(
-            run_id, state="failed", output_cursor=cursor,
-            items_seen=seen, items_succeeded=succeeded, items_failed=failed,
-            error_code="FETCH_FAILED", error_detail=detail,
+            run_id,
+            state="failed",
+            output_cursor=cursor,
+            items_seen=seen,
+            items_succeeded=succeeded,
+            items_failed=failed,
+            error_code="FETCH_FAILED",
+            error_detail=detail,
         )
-        return WorkerResult(run_id, target_id, "failed", cursor, seen, succeeded, failed, detail)
+        return WorkerResult(
+            run_id, target_id, "failed", cursor, seen, succeeded, failed, detail
+        )
 
 
 def run_history_backfill(
-    run_id: int, fetcher: PageFetcher, processor: ItemProcessor,
-    *, max_items: int = 1000, finalize_state: bool = True,
+    run_id: int,
+    fetcher: PageFetcher,
+    processor: ItemProcessor,
+    *,
+    max_items: int = 1000,
+    finalize_state: bool = True,
 ) -> WorkerResult:
     """Claim and execute one ``history_backfill`` run."""
     if max_items < 1:
@@ -191,7 +258,9 @@ def run_history_backfill(
         return WorkerResult(run_id, 0, "missing", None, 0, 0, 0, "run not found")
     if str(run.get("run_type")) != "history_backfill":
         raise ValueError("run is not a history_backfill run")
-    return _execute_run(run, fetcher, processor, max_items=max_items, finalize_state=finalize_state)
+    return _execute_run(
+        run, fetcher, processor, max_items=max_items, finalize_state=finalize_state
+    )
 
 
 @dataclass
@@ -213,16 +282,36 @@ class DailyScanWorker:
             claim_token = target.get("claim_token")
             result: WorkerResult
             try:
-                run = creator_ops.create_run(target_id, "daily_scan", target.get("last_success_cursor"))
-                result = _execute_run(run, self.fetcher, self.processor, max_items=self.max_items, finalize_state=True)
+                run = creator_ops.create_run(
+                    target_id, "daily_scan", target.get("last_success_cursor")
+                )
+                result = _execute_run(
+                    run,
+                    self.fetcher,
+                    self.processor,
+                    max_items=self.max_items,
+                    finalize_state=True,
+                )
             except Exception as exc:  # isolate one target from the scheduler batch
-                result = WorkerResult(0, target_id, "failed", target.get("last_success_cursor"), 0, 0, 0, str(exc))
+                result = WorkerResult(
+                    0,
+                    target_id,
+                    "failed",
+                    target.get("last_success_cursor"),
+                    0,
+                    0,
+                    0,
+                    str(exc),
+                )
             finally:
                 if claim_token:
                     try:
                         creator_ops.release_target_claim(
-                            target_id, str(claim_token),
-                            success=result.state == "succeeded" if "result" in locals() else False,
+                            target_id,
+                            str(claim_token),
+                            success=result.state == "succeeded"
+                            if "result" in locals()
+                            else False,
                         )
                     except Exception:
                         pass
@@ -240,10 +329,16 @@ class HistoryBackfillWorker:
 
     def run(self, run_id: int) -> WorkerResult:
         """Execute a pre-created history run."""
-        return run_history_backfill(run_id, self.fetcher, self.processor, max_items=self.max_items)
+        return run_history_backfill(
+            run_id, self.fetcher, self.processor, max_items=self.max_items
+        )
 
 
 __all__ = [
-    "PageFetcher", "ItemProcessor", "WorkerResult", "HistoryBackfillWorker",
-    "DailyScanWorker", "run_history_backfill",
+    "PageFetcher",
+    "ItemProcessor",
+    "WorkerResult",
+    "HistoryBackfillWorker",
+    "DailyScanWorker",
+    "run_history_backfill",
 ]

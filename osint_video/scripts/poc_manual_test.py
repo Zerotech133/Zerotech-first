@@ -72,8 +72,11 @@ def process_directory(
         }
         try:
             doc = run(
-                video, video_id,
-                force=force, enable_asr=enable_asr, enable_ocr=enable_ocr,
+                video,
+                video_id,
+                force=force,
+                enable_asr=enable_asr,
+                enable_ocr=enable_ocr,
             )
             metrics: dict[str, Any] = doc.get("metrics", {})
             record.update(
@@ -120,7 +123,9 @@ def build_report(records: list[dict[str, Any]]) -> str:
     lines.append("# PoC 抽取质量报表（T03）")
     lines.append("")
     lines.append(f"- 生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    lines.append(f"- 样本总数：{len(records)}（成功 {len(ok_records)} / 失败 {len(fail_records)}）")
+    lines.append(
+        f"- 样本总数：{len(records)}（成功 {len(ok_records)} / 失败 {len(fail_records)}）"
+    )
     lines.append("")
     lines.append("## 汇总（成功样本均值）")
     lines.append("")
@@ -134,7 +139,9 @@ def build_report(records: list[dict[str, Any]]) -> str:
     lines.append(f"| OCR 平均置信度 | {_avg('ocr_avg_conf'):.3f} |")
     lines.append(f"| ASR 覆盖率 | {_fmt_pct(_avg('asr_coverage'))} |")
     lines.append(f"| OCR 覆盖率 | {_fmt_pct(_avg('ocr_coverage'))} |")
-    lines.append(f"| 冲突待复核段（累计） | {sum(r['needs_review'] for r in ok_records)} |")
+    lines.append(
+        f"| 冲突待复核段（累计） | {sum(r['needs_review'] for r in ok_records)} |"
+    )
     lines.append("")
     lines.append("## 逐视频明细")
     lines.append("")
@@ -154,7 +161,9 @@ def build_report(records: list[dict[str, Any]]) -> str:
                 f"| {r['needs_review']} | {degraded} |"
             )
         else:
-            lines.append(f"| {r['file']} | ✗ 失败 | - | - | - | - | - | - | - | - | - |")
+            lines.append(
+                f"| {r['file']} | ✗ 失败 | - | - | - | - | - | - | - | - | - |"
+            )
     lines.append("")
     if fail_records:
         lines.append("## 失败清单")
@@ -177,10 +186,18 @@ def main() -> int:
         description="PoC 手工验证：mp4 目录 → 抽取管线 → 质量报表 Markdown"
     )
     parser.add_argument("video_dir", help="mp4 样本目录（递归扫描 *.mp4）")
-    parser.add_argument("--out", default=None, help="报表输出路径（默认 data/work/poc_report_<时间戳>.md）")
+    parser.add_argument(
+        "--out",
+        default=None,
+        help="报表输出路径（默认 data/work/poc_report_<时间戳>.md）",
+    )
     parser.add_argument("--force", action="store_true", help="忽略检查点强制全量重跑")
-    parser.add_argument("--no-asr", action="store_true", help="禁用 ASR 通道（仅 OCR 验证）")
-    parser.add_argument("--no-ocr", action="store_true", help="禁用 OCR 通道（仅 ASR 验证）")
+    parser.add_argument(
+        "--no-asr", action="store_true", help="禁用 ASR 通道（仅 OCR 验证）"
+    )
+    parser.add_argument(
+        "--no-ocr", action="store_true", help="禁用 OCR 通道（仅 ASR 验证）"
+    )
     args = parser.parse_args()
 
     setup_logging()
@@ -196,8 +213,10 @@ def main() -> int:
     print(f"发现 {len(videos)} 个 mp4 样本，开始抽取…\n")
 
     records = process_directory(
-        video_dir, force=args.force,
-        enable_asr=not args.no_asr, enable_ocr=not args.no_ocr,
+        video_dir,
+        force=args.force,
+        enable_asr=not args.no_asr,
+        enable_ocr=not args.no_ocr,
     )
     report = build_report(records)
     out_path = (

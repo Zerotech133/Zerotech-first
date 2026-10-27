@@ -41,8 +41,12 @@ def test_unit_truth_and_extension_are_explicit() -> None:
 
 
 def test_evidence_supporting_and_contradicting_roles() -> None:
-    supporting = StrategyEvidence("strategy", "unit", "ev-support", evidence_role="supporting")
-    contradicting = StrategyEvidence("strategy", "unit", "ev-against", evidence_role="contradicting")
+    supporting = StrategyEvidence(
+        "strategy", "unit", "ev-support", evidence_role="supporting"
+    )
+    contradicting = StrategyEvidence(
+        "strategy", "unit", "ev-against", evidence_role="contradicting"
+    )
     assert supporting.evidence_role == "supporting"
     assert contradicting.evidence_role == "contradicting"
     with pytest.raises(ValueError):
@@ -53,7 +57,10 @@ def test_service_checks_duration_and_non_finite_values() -> None:
     resource = KnowledgeResource("resource-2", duration_sec=10)
     with pytest.raises(ValueError):
         validate_evidence_for_resource(
-            StrategyEvidence("s", "u", "ev-too-long", quote_start_sec=1, quote_end_sec=11), resource
+            StrategyEvidence(
+                "s", "u", "ev-too-long", quote_start_sec=1, quote_end_sec=11
+            ),
+            resource,
         )
     with pytest.raises(ValueError):
         KnowledgeResource("resource-nan", duration_sec=math.nan)

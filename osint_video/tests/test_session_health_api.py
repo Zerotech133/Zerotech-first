@@ -1,4 +1,5 @@
 """Tests for the coarse, credential-free browser session health endpoint."""
+
 from __future__ import annotations
 
 import sys
@@ -24,7 +25,9 @@ class _Fetcher:
         self.status = status
 
     def session_health(self) -> BrowserSessionHealth:
-        return BrowserSessionHealth(status=self.status, checked_at=datetime.now(timezone.utc))
+        return BrowserSessionHealth(
+            status=self.status, checked_at=datetime.now(timezone.utc)
+        )
 
 
 @pytest.fixture()

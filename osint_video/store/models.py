@@ -17,6 +17,7 @@ from typing import Any
 def _stable_json(value: Any) -> str:
     """Serialize nested attributes deterministically for observation identity."""
     import json
+
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
@@ -42,9 +43,15 @@ REVIEW_STATUSES: frozenset[str] = frozenset({"unreviewed", "reviewed", "rejected
 RESOURCE_STATUSES: frozenset[str] = frozenset(
     {"candidate", "reviewed", "published", "deprecated", "quarantined"}
 )
-EVIDENCE_STATUSES: frozenset[str] = frozenset({"draft", "valid", "rejected", "superseded"})
-INDEX_STATUSES: frozenset[str] = frozenset({"pending", "running", "succeeded", "failed"})
-TRUTH_STATUSES: frozenset[str] = frozenset({"unknown", "correct", "incorrect", "contested"})
+EVIDENCE_STATUSES: frozenset[str] = frozenset(
+    {"draft", "valid", "rejected", "superseded"}
+)
+INDEX_STATUSES: frozenset[str] = frozenset(
+    {"pending", "running", "succeeded", "failed"}
+)
+TRUTH_STATUSES: frozenset[str] = frozenset(
+    {"unknown", "correct", "incorrect", "contested"}
+)
 EVIDENCE_ROLES: frozenset[str] = frozenset({"supporting", "contradicting", "context"})
 
 
@@ -95,9 +102,15 @@ class KnowledgeUnit:
             raise ValueError(f"review_status must be one of {sorted(REVIEW_STATUSES)}")
         for name in ("start_sec", "end_sec"):
             value = getattr(self, name)
-            if value is not None and (not math.isfinite(float(value)) or float(value) < 0):
+            if value is not None and (
+                not math.isfinite(float(value)) or float(value) < 0
+            ):
                 raise ValueError(f"{name} must be finite and non-negative")
-        if self.start_sec is not None and self.end_sec is not None and float(self.end_sec) <= float(self.start_sec):
+        if (
+            self.start_sec is not None
+            and self.end_sec is not None
+            and float(self.end_sec) <= float(self.start_sec)
+        ):
             raise ValueError("end_sec must be strictly greater than start_sec")
         if self.content_hash is None:
             self.content_hash = hashlib.sha256(self.content.encode("utf-8")).hexdigest()
@@ -167,7 +180,9 @@ class StrategyEvidence:
     def __post_init__(self) -> None:
         """Validate keys and bounded confidence metrics."""
         self.strategy_key = _required(self.strategy_key, "strategy_key")
-        self.knowledge_unit_key = _required(self.knowledge_unit_key, "knowledge_unit_key")
+        self.knowledge_unit_key = _required(
+            self.knowledge_unit_key, "knowledge_unit_key"
+        )
         self.evidence_key = _required(self.evidence_key, "evidence_key")
         self.knowledge_unit_version = int(self.knowledge_unit_version)
         if self.knowledge_unit_version < 1:
@@ -175,15 +190,27 @@ class StrategyEvidence:
         self.evidence_role = _required(self.evidence_role, "evidence_role").lower()
         if self.evidence_role not in EVIDENCE_ROLES:
             raise ValueError(f"evidence_role must be one of {sorted(EVIDENCE_ROLES)}")
-        self.evidence_status = _required(self.evidence_status, "evidence_status").lower()
+        self.evidence_status = _required(
+            self.evidence_status, "evidence_status"
+        ).lower()
         if self.evidence_status not in EVIDENCE_STATUSES:
-            raise ValueError(f"evidence_status must be one of {sorted(EVIDENCE_STATUSES)}")
+            raise ValueError(
+                f"evidence_status must be one of {sorted(EVIDENCE_STATUSES)}"
+            )
         for name in ("quote_start_sec", "quote_end_sec"):
             value = getattr(self, name)
-            if value is not None and (not math.isfinite(float(value)) or float(value) < 0):
+            if value is not None and (
+                not math.isfinite(float(value)) or float(value) < 0
+            ):
                 raise ValueError(f"{name} must be a finite non-negative number")
-        if self.quote_start_sec is not None and self.quote_end_sec is not None and float(self.quote_end_sec) <= float(self.quote_start_sec):
-            raise ValueError("quote_end_sec must be strictly greater than quote_start_sec")
+        if (
+            self.quote_start_sec is not None
+            and self.quote_end_sec is not None
+            and float(self.quote_end_sec) <= float(self.quote_start_sec)
+        ):
+            raise ValueError(
+                "quote_end_sec must be strictly greater than quote_start_sec"
+            )
         if self.snapshot_hash is not None:
             self.snapshot_hash = _required(self.snapshot_hash, "snapshot_hash")
         if self.evidence_status == "valid" and not _required(self.quote or "", "quote"):
@@ -221,7 +248,9 @@ class KnowledgeResource:
         self.status = _required(self.status, "status").lower()
         if self.status not in RESOURCE_STATUSES:
             raise ValueError(f"status must be one of {sorted(RESOURCE_STATUSES)}")
-        if self.duration_sec is not None and (not math.isfinite(float(self.duration_sec)) or float(self.duration_sec) < 0):
+        if self.duration_sec is not None and (
+            not math.isfinite(float(self.duration_sec)) or float(self.duration_sec) < 0
+        ):
             raise ValueError("duration_sec must be a finite non-negative number")
         for name in ("asr_text", "ocr_text", "subtitle_text"):
             value = getattr(self, name)
@@ -262,22 +291,37 @@ class IndexTask:
 def row_to_knowledge_resource(row: dict[str, Any]) -> KnowledgeResource:
     """Convert a resource row mapping."""
     return KnowledgeResource(
-        resource_id=row.get("resource_id"), resource_key=row["resource_key"], blogger_key=row.get("blogger_key"),
-        source_url=row.get("source_url"), platform_content_id=row.get("platform_content_id"),
-        published_at=_row_time(row, "published_at"), duration_sec=row.get("duration_sec"), status=row.get("status", "candidate"),
-        temporary_media_path=row.get("temporary_media_path"), media_expires_at=_row_time(row, "media_expires_at"),
-        asr_text=row.get("asr_text"), ocr_text=row.get("ocr_text"), subtitle_text=row.get("subtitle_text"),
-        metadata=row.get("metadata") or {}, created_at=_row_time(row, "created_at"), updated_at=_row_time(row, "updated_at"),
+        resource_id=row.get("resource_id"),
+        resource_key=row["resource_key"],
+        blogger_key=row.get("blogger_key"),
+        source_url=row.get("source_url"),
+        platform_content_id=row.get("platform_content_id"),
+        published_at=_row_time(row, "published_at"),
+        duration_sec=row.get("duration_sec"),
+        status=row.get("status", "candidate"),
+        temporary_media_path=row.get("temporary_media_path"),
+        media_expires_at=_row_time(row, "media_expires_at"),
+        asr_text=row.get("asr_text"),
+        ocr_text=row.get("ocr_text"),
+        subtitle_text=row.get("subtitle_text"),
+        metadata=row.get("metadata") or {},
+        created_at=_row_time(row, "created_at"),
+        updated_at=_row_time(row, "updated_at"),
     )
 
 
 def row_to_index_task(row: dict[str, Any]) -> IndexTask:
     """Convert an index task row mapping."""
     return IndexTask(
-        task_id=row.get("task_id"), resource_key=row["resource_key"], target=row["target"],
-        status=row.get("status", "pending"), processing_run_key=row.get("processing_run_key"),
-        error_message=row.get("error_message"), attempt_count=int(row.get("attempt_count", 0) or 0),
-        created_at=_row_time(row, "created_at"), updated_at=_row_time(row, "updated_at"),
+        task_id=row.get("task_id"),
+        resource_key=row["resource_key"],
+        target=row["target"],
+        status=row.get("status", "pending"),
+        processing_run_key=row.get("processing_run_key"),
+        error_message=row.get("error_message"),
+        attempt_count=int(row.get("attempt_count", 0) or 0),
+        created_at=_row_time(row, "created_at"),
+        updated_at=_row_time(row, "updated_at"),
     )
 
 
@@ -289,14 +333,30 @@ def _row_time(row: dict[str, Any], key: str) -> datetime | None:
 def row_to_knowledge_unit(row: dict[str, Any]) -> KnowledgeUnit:
     """Convert a database row mapping to :class:`KnowledgeUnit`."""
     return KnowledgeUnit(
-        unit_id=row.get("unit_id"), unit_key=row["unit_key"], unit_version=int(row.get("unit_version", 1) or 1), unit_type=row.get("unit_type", "fact"),
-        title=row.get("title"), content=row.get("content", ""), source_channel=row.get("source_channel", "manual"),
-        source_video_id=row.get("source_video_id"),         source_url=row.get("source_url"), source_link=row.get("source_link"),
-        start_sec=row.get("start_sec"), end_sec=row.get("end_sec"), content_hash=row.get("content_hash"),
-        review_status=row.get("review_status", "unreviewed"), blogger_key=row.get("blogger_key"), resource_key=row.get("resource_key"), facts=row.get("facts") or {},
-        entities=row.get("entities") or [], topics=row.get("topics") or [],
-        evidence_refs=row.get("evidence_refs") or [], quality=row.get("quality") or {},
-        status=row.get("status", "active"), truth_status=row.get("truth_status", "unknown"), extension=row.get("extension") or {},
+        unit_id=row.get("unit_id"),
+        unit_key=row["unit_key"],
+        unit_version=int(row.get("unit_version", 1) or 1),
+        unit_type=row.get("unit_type", "fact"),
+        title=row.get("title"),
+        content=row.get("content", ""),
+        source_channel=row.get("source_channel", "manual"),
+        source_video_id=row.get("source_video_id"),
+        source_url=row.get("source_url"),
+        source_link=row.get("source_link"),
+        start_sec=row.get("start_sec"),
+        end_sec=row.get("end_sec"),
+        content_hash=row.get("content_hash"),
+        review_status=row.get("review_status", "unreviewed"),
+        blogger_key=row.get("blogger_key"),
+        resource_key=row.get("resource_key"),
+        facts=row.get("facts") or {},
+        entities=row.get("entities") or [],
+        topics=row.get("topics") or [],
+        evidence_refs=row.get("evidence_refs") or [],
+        quality=row.get("quality") or {},
+        status=row.get("status", "active"),
+        truth_status=row.get("truth_status", "unknown"),
+        extension=row.get("extension") or {},
         created_at=_row_time(row, "created_at"),
         updated_at=_row_time(row, "updated_at"),
     )
@@ -305,30 +365,57 @@ def row_to_knowledge_unit(row: dict[str, Any]) -> KnowledgeUnit:
 def row_to_blogger_history(row: dict[str, Any]) -> BloggerHistory:
     """Convert a database row mapping to :class:`BloggerHistory`."""
     return BloggerHistory(
-        history_id=row.get("history_id"), blogger_key=row["blogger_key"], history_key=row["history_key"],
-        observed_at=_utc(row["observed_at"]), event_type=row.get("event_type", "snapshot"),
-        summary=row.get("summary"), attributes=row.get("attributes") or {},
-        source_video_id=row.get("source_video_id"), source_unit_id=row.get("source_unit_id"),
-        observation_hash=row.get("observation_hash"), created_at=_row_time(row, "created_at"),
+        history_id=row.get("history_id"),
+        blogger_key=row["blogger_key"],
+        history_key=row["history_key"],
+        observed_at=_utc(row["observed_at"]),
+        event_type=row.get("event_type", "snapshot"),
+        summary=row.get("summary"),
+        attributes=row.get("attributes") or {},
+        source_video_id=row.get("source_video_id"),
+        source_unit_id=row.get("source_unit_id"),
+        observation_hash=row.get("observation_hash"),
+        created_at=_row_time(row, "created_at"),
     )
 
 
 def row_to_strategy_evidence(row: dict[str, Any]) -> StrategyEvidence:
     """Convert a database row mapping to :class:`StrategyEvidence`."""
     return StrategyEvidence(
-        evidence_id=row.get("evidence_id"), strategy_key=row["strategy_key"],
-        knowledge_unit_key=row["knowledge_unit_key"], evidence_key=row["evidence_key"],
+        evidence_id=row.get("evidence_id"),
+        strategy_key=row["strategy_key"],
+        knowledge_unit_key=row["knowledge_unit_key"],
+        evidence_key=row["evidence_key"],
         knowledge_unit_version=int(row.get("knowledge_unit_version", 1) or 1),
-        evidence_role=row.get("evidence_role", "supporting"), quote=row.get("quote"),
-        quote_start_sec=row.get("quote_start_sec"), quote_end_sec=row.get("quote_end_sec"),
-        evidence_status=row.get("evidence_status", "draft"), snapshot_hash=row.get("snapshot_hash"),
-        relevance=row.get("relevance"), confidence=row.get("confidence"), metadata=row.get("metadata") or {},
+        evidence_role=row.get("evidence_role", "supporting"),
+        quote=row.get("quote"),
+        quote_start_sec=row.get("quote_start_sec"),
+        quote_end_sec=row.get("quote_end_sec"),
+        evidence_status=row.get("evidence_status", "draft"),
+        snapshot_hash=row.get("snapshot_hash"),
+        relevance=row.get("relevance"),
+        confidence=row.get("confidence"),
+        metadata=row.get("metadata") or {},
         created_at=_row_time(row, "created_at"),
     )
 
 
 __all__ = [
-    "SOURCE_CHANNELS", "REVIEW_STATUSES", "RESOURCE_STATUSES", "EVIDENCE_STATUSES", "INDEX_STATUSES", "TRUTH_STATUSES", "EVIDENCE_ROLES",
-    "KnowledgeUnit", "KnowledgeResource", "IndexTask", "BloggerHistory", "StrategyEvidence",
-    "row_to_knowledge_unit", "row_to_knowledge_resource", "row_to_index_task", "row_to_blogger_history", "row_to_strategy_evidence",
+    "SOURCE_CHANNELS",
+    "REVIEW_STATUSES",
+    "RESOURCE_STATUSES",
+    "EVIDENCE_STATUSES",
+    "INDEX_STATUSES",
+    "TRUTH_STATUSES",
+    "EVIDENCE_ROLES",
+    "KnowledgeUnit",
+    "KnowledgeResource",
+    "IndexTask",
+    "BloggerHistory",
+    "StrategyEvidence",
+    "row_to_knowledge_unit",
+    "row_to_knowledge_resource",
+    "row_to_index_task",
+    "row_to_blogger_history",
+    "row_to_strategy_evidence",
 ]

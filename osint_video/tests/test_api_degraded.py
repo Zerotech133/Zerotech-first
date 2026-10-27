@@ -134,10 +134,10 @@ class TestRequestValidation:
     @pytest.mark.parametrize(
         "payload",
         [
-            {"urls": []},                                  # 空列表
-            {"urls": "not-a-list"},                        # 类型错误
-            {"urls": ["x"], "route": "X"},                 # 非法路由
-            {"urls": ["x"], "priority": 99},               # 优先级越界
+            {"urls": []},  # 空列表
+            {"urls": "not-a-list"},  # 类型错误
+            {"urls": ["x"], "route": "X"},  # 非法路由
+            {"urls": ["x"], "priority": 99},  # 优先级越界
         ],
     )
     def test_submit_payload_validation_422(self, client: TestClient, payload: dict):
@@ -166,8 +166,11 @@ class TestRealUvicorn:
             pytest.skip(f"端口 {port} 被占用")
         env = {
             **os.environ,
-            "PG_HOST": "127.0.0.1", "PG_PORT": "1",
-            "PG_USER": "qa", "PG_PASSWORD": "qa", "PG_DB": "qa_none",
+            "PG_HOST": "127.0.0.1",
+            "PG_PORT": "1",
+            "PG_USER": "qa",
+            "PG_PASSWORD": "qa",
+            "PG_DB": "qa_none",
             "PYTHONPATH": str(PROJECT_ROOT),
             "PYTHONDONTWRITEBYTECODE": "1",
             # 双保险：子进程内任何 HTTP 客户端也不走宿主代理
@@ -176,8 +179,16 @@ class TestRealUvicorn:
         }
         proc = subprocess.Popen(
             [
-                sys.executable, "-m", "uvicorn", "queue_link.api:app",
-                "--host", "127.0.0.1", "--port", str(port), "--log-level", "warning",
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "queue_link.api:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(port),
+                "--log-level",
+                "warning",
             ],
             cwd=str(PROJECT_ROOT),
             env=env,
@@ -207,7 +218,9 @@ class TestRealUvicorn:
             while time.time() < deadline:
                 if proc.poll() is not None:  # 进程早退：读 stderr 定位原因
                     err = (proc.stderr.read() or b"").decode("utf-8", "replace")
-                    pytest.fail(f"uvicorn 进程提前退出（exit={proc.returncode}）：{err[-1500:]}")
+                    pytest.fail(
+                        f"uvicorn 进程提前退出（exit={proc.returncode}）：{err[-1500:]}"
+                    )
                 try:
                     with socket.create_connection(("127.0.0.1", port), timeout=0.5):
                         tcp_ready = True
@@ -229,7 +242,9 @@ class TestRealUvicorn:
                 first = probe.get(f"{base}/healthz")
                 if first.status_code != 200:
                     err = (proc.stderr.read() or b"").decode("utf-8", "replace")
-                    pytest.fail(f"uvicorn 首次 healthz={first.status_code}：{err[-1000:]}")
+                    pytest.fail(
+                        f"uvicorn 首次 healthz={first.status_code}：{err[-1000:]}"
+                    )
             yield base
         finally:
             pass  # addfinalizer 负责清理

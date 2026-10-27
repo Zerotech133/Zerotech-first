@@ -99,8 +99,12 @@ class TestWeightedConf:
 class TestConsistentMerge:
     def test_consistent_pair_uses_asr_text_and_weighted_conf(self):
         """时间重叠 + 文本几乎一致 → asr+ocr 段，ASR 文本 + 加权置信度。"""
-        asr = [{"start": 0.0, "end": 3.0, "text": "今天我们聊一聊人工智能", "conf": 0.9}]
-        ocr = [{"start": 0.2, "end": 3.2, "text": "今天我们聊一聊人工智能!", "conf": 0.6}]
+        asr = [
+            {"start": 0.0, "end": 3.0, "text": "今天我们聊一聊人工智能", "conf": 0.9}
+        ]
+        ocr = [
+            {"start": 0.2, "end": 3.2, "text": "今天我们聊一聊人工智能!", "conf": 0.6}
+        ]
         result = merge_channels(asr, ocr)
         assert len(result) == 1
         seg = result[0]
@@ -126,20 +130,22 @@ class TestConflictMerge:
     def test_conflict_keeps_both_texts_and_flags_review(self):
         """重叠但文本差异大 → needs_review=true，ocr_text 双保留。"""
         asr = [{"start": 0.0, "end": 4.0, "text": "机器学习入门教程", "conf": 0.9}]
-        ocr = [{"start": 0.0, "end": 4.0, "text": "深度学习进阶指南第二版", "conf": 0.7}]
+        ocr = [
+            {"start": 0.0, "end": 4.0, "text": "深度学习进阶指南第二版", "conf": 0.7}
+        ]
         result = merge_channels(asr, ocr)
         assert len(result) == 1
         seg = result[0]
         assert seg["source"] == "asr+ocr"
         assert seg["needs_review"] is True
-        assert seg["text"] == "机器学习入门教程"       # ASR 为主
+        assert seg["text"] == "机器学习入门教程"  # ASR 为主
         assert seg["ocr_text"] == "深度学习进阶指南第二版"  # OCR 附注保留
 
     def test_conflict_boundary_exactly_threshold_is_consistent(self):
         """编辑距离恰好等于阈值 0.3 → 判一致（<= 闭区间）。"""
         # 构造：规范化后 A=10 字，B 与 A 差 3 字 → 3/10 = 0.3
-        text_a = "一二三四五六七八九十"          # 10 字
-        text_b = "一二三四五六七甲乙十"          # 换 2 字 → 距离 2/10=0.2
+        text_a = "一二三四五六七八九十"  # 10 字
+        text_b = "一二三四五六七甲乙十"  # 换 2 字 → 距离 2/10=0.2
         assert normalized_distance(text_a, text_b) == pytest.approx(0.2)
         # 距离恰 0.3 的对
         text_c = "一二三四五六七甲乙丙"
