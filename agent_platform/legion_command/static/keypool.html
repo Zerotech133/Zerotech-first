@@ -72,6 +72,7 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
   <button id="mission-real-btn" style="background:#2a1f3a;border:1px solid #7b4db3;border-radius:8px;color:#e5d4ff;padding:6px 10px;cursor:pointer">真实派工（建 worktree）</button>
   <button id="mission-advance-btn">推进（自动评审门）</button>
   <button id="mission-evolve-btn">采集结果 · 进化建议</button>
+  <button id="mission-worker-btn" style="background:#1f3326;border:1px solid #3f7f57;border-radius:8px;color:#d6f5e3;padding:6px 10px;cursor:pointer">Worker 自动接单（低风险）</button>
   <span id="mission-status" class="muted" style="align-self:center"></span>
 </div>
 <div id="mission-result" style="margin-top:10px"></div>
@@ -391,6 +392,19 @@ async function missionEvolve(){
   document.getElementById('mission-result').innerHTML=h+'</tbody></table><div class="muted" style="margin-top:6px">未签字不入经验库；签字走 CLI tools/mission_evolve.py promote --signed-by ...</div>';
 }
 document.getElementById('mission-evolve-btn').onclick=missionEvolve;
+
+
+async function missionWorker(){
+  const mid=(MISSION_PLAN&&MISSION_PLAN.mission_id)||'';
+  if(!mid){alert('先生成计划');return}
+  if(!confirm('Worker 将在当前 mission 的 worktree 里自动写文件并提交（仅页面/文档/静态低风险范围）。继续？'))return;
+  const st=document.getElementById('mission-status'); st.textContent='Worker 接单并写码中…';
+  const r=await fetch('/api/mission/worker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:mid,limit:1,dry_run:false})});
+  const j=await r.json(); st.textContent='';
+  document.getElementById('mission-result').innerHTML='<pre class="muted" style="white-space:pre-wrap">'+JSON.stringify(j,null,1)+'</pre>';
+  addLog('Mission Worker：'+(j.ok?'ok':'failed'), 'lg-b');
+}
+document.getElementById('mission-worker-btn').onclick=missionWorker;
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);

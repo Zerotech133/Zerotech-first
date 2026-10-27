@@ -1326,6 +1326,26 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "mission_dispatch_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/mission/worker":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_worker
+                mid = str(req.get("mission_id") or "")
+                tid = str(req.get("task_id") or "")
+                dry = bool(req.get("dry_run", False))
+                if tid:
+                    res = mission_worker.run_task(mid, tid, dry)
+                else:
+                    res = mission_worker.poll(mid, int(req.get("limit") or 1), dry)
+                self._send_json(res)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_worker_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/mission/advance":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
