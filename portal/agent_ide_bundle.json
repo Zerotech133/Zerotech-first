@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 14:56",
+ "generated": "2026-10-27 14:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,8 +9,8 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 13,
-  "workorders_review": 2
+  "workorders_doing": 14,
+  "workorders_review": 1
  },
  "workorders": [
   {
@@ -131,21 +131,21 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261027-ROUTER2",
-   "desc": "网关 /v1/models 补 auto/strong/local 别名（路由层已生效，模型列表缺失）",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-ROUTER2",
-   "created": "2026-10-27 14:55:25",
-   "project": "quant"
-  },
-  {
    "id": "WO-B06BYPREP-20261027",
    "desc": "B-06执行包+Bytebase上架准备(L1)：nginx.conf 运行时json 404收口(9个,零页面引用已核)+/static/^~豁免 + check_ports REGISTRY 登记8104 bytebase",
    "status": "doing",
    "owner": "DSH-Lead",
    "branch": "task/WO-B06BYPREP-20261027",
    "created": "2026-10-27 14:56:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-AUDIT7-MONDAY-20261027",
+   "desc": "代码审计第7批：test_monday_drill 只读性测试在全量套件期间被常驻服务写 governance_clock_state.json 假阳性。路由例外=跨部门治理。修：snapshot() 排除常驻服务易变文件（governance_clock_state.json 及 *.db/*.db-wal/*.db-shm），保留其余文件集+mtime/size 严格比对。验收：test_monday_drill 单跑绿；全量 master 复跑 0 红。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUDIT7-MONDAY-20261027",
+   "created": "2026-10-27 14:57:06",
    "project": "general"
   }
  ],
