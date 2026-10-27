@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:06",
+ "generated": "2026-10-28 07:07",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 34,
-  "workorders_review": 6
+  "workorders_review": 5
  },
  "workorders": [
   {
@@ -354,15 +354,6 @@
    "branch": "task/WO-HUANGZHONG-20261028",
    "created": "2026-10-28 07:01:26",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261028-KEYSV2ON",
-   "desc": "Phase A 收口：KEYS_V2 默认启用新页；旧页 ?v2=0/KEYS_V2=0 回滚；/mission 默认可用；全量验收",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-KEYSV2ON",
-   "created": "2026-10-28 07:01:37",
-   "project": "quant"
   },
   {
    "id": "WO-SYNTAX-GATE-20261028",
