@@ -48,7 +48,7 @@ def _is_http(cfg: dict) -> bool:
 
 
 def _http_client(cfg: dict, timeout: float | None = None):
-    from mcp.http_client import MCPHttpClient, token_from_env  # noqa: WPS433
+    from .http_client import MCPHttpClient, token_from_env  # noqa: WPS433
 
     return MCPHttpClient(
         str(cfg.get("url") or ""),
@@ -60,7 +60,7 @@ def _http_client(cfg: dict, timeout: float | None = None):
 def probe(name: str | None = None, timeout: float | None = None) -> dict:
     """启动 server → initialize → tools/list → 关闭；返回健康与工具清单。"""
     sys.path.insert(0, str(PLATFORM))
-    from mcp.client import MCPClient, MCPError  # noqa: WPS433
+    from .client import MCPClient, MCPError  # noqa: WPS433
 
     servers = load_servers().get("servers") or {}
     names = [name] if name else list(servers.keys())
@@ -151,7 +151,7 @@ def call(
                 "server": server,
                 "note": cfg.get("note") or "",
             }
-        from mcp.http_client import MCPHttpError  # noqa: WPS433
+        from .http_client import MCPHttpError  # noqa: WPS433
 
         client = None
         try:
@@ -175,7 +175,7 @@ def call(
         finally:
             if client is not None:
                 client.close()
-    from mcp.client import MCPClient, MCPError  # noqa: WPS433
+    from .client import MCPClient, MCPError  # noqa: WPS433
 
     client = None
     try:

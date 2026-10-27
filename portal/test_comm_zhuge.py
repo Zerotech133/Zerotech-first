@@ -37,6 +37,10 @@ class _Boom:
 def _env(monkeypatch):
     monkeypatch.delenv("COMM_ZHUGE_ENABLED", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    # 本套测试针对通道/降级语义；grounding 由 test_comm_zhuge_grounding 单独覆盖
+    monkeypatch.setenv("COMM_ZHUGE_GROUNDING", "0")
+    # 模块级开关在 import 时求值，测试内需同步关闭（否则文档检索会给回复追加引用）
+    monkeypatch.setattr(cz, "GROUNDING_ENABLED", False)
     import tempfile
     import os as _os
 
@@ -141,7 +145,7 @@ def test_10_openclaw_path_used_when_available(monkeypatch):
     monkeypatch.setattr(cz, "OPENCLAW_MODEL", "itokengate/gpt-6-sol")
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
     monkeypatch.setattr(
-        cz, "_run_openclaw", lambda q, timeout: ("军师回答：先看流动性。", None)
+        cz, "_run_openclaw", lambda q, timeout, grounding=None: ("军师回答：先看流动性。", None)
     )
     r = cz.consult("为什么跌", "ou_h")
     assert r["mode"] == "openclaw_gpt"
@@ -153,7 +157,8 @@ def test_10_openclaw_path_used_when_available(monkeypatch):
 def test_11_openclaw_failure_falls_back_local(monkeypatch):
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
-    monkeypatch.setattr(cz, "_run_openclaw", lambda q, timeout: (None, "timeout"))
+    monkeypatch.setattr(cz, "_run_openclaw",
+                        lambda q, timeout, grounding=None: (None, "timeout"))
     llm = _Stub("本地兜底回答。")
     r = cz.consult("为什么跌", "ou_i", llm=llm)
     assert r["mode"] == "local_soul"
@@ -175,7 +180,7 @@ def test_12b_consult_defaults_to_openclaw_timeout(monkeypatch):
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
     seen = {}
 
-    def _fake(q, timeout=0):
+    def _fake(q, timeout=0, grounding=None):
         seen["timeout"] = timeout
         return "好", None
 
@@ -295,7 +300,7 @@ def test_20_relay_label_honest(monkeypatch):
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
     monkeypatch.setattr(
-        cz, "_run_openclaw", lambda q, timeout: ("中转回答：先走审批。", None)
+        cz, "_run_openclaw", lambda q, timeout, grounding=None: ("中转回答：先走审批。", None)
     )
     monkeypatch.setattr(cz, "OPENCLAW_MODEL", "")
     monkeypatch.setattr(cz, "OPENCLAW_CARRIER", "")

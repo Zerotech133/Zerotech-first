@@ -247,8 +247,10 @@ def test_18_smart_intake_full_chain(env, monkeypatch):
 
 def test_19_smart_intake_pronoun_resolution_end_to_end(env, monkeypatch):
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
-    ci.smart_intake("帮我看看 605100 能进吗", "ou_q")  # 记住 code
-    r = ci.smart_intake("刚才那只票现在能进吗", "ou_q")  # 代词指代
+    # 代词句可能走 LLM 兜底；注入确定性 stub，避免本测试依赖本机 Ollama 冷启动/抖动
+    stub = _StubLLM('{"intent": "stock_consult", "confidence": 0.9}')
+    ci.smart_intake("帮我看看 605100 能进吗", "ou_q", llm=stub)  # 记住 code
+    r = ci.smart_intake("刚才那只票现在能进吗", "ou_q", llm=stub)  # 代词指代
     assert r is not None
     assert r["entities"].get("code") == "605100"
     assert r.get("resolved_from_memory") is True

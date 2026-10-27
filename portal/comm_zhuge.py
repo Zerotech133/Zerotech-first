@@ -100,6 +100,8 @@ def _build_grounding(question):
 
 def _apply_citations(text, grounding):
     mod = _grounding_module()
+    if not (text or "").strip():
+        return text  # 空回复/失败不得用引用兜底伪装成有答案
     if mod is None or not grounding or not grounding.get("sources"):
         return text
     try:

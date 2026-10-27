@@ -11,7 +11,7 @@ from pathlib import Path
 PLATFORM = Path(__file__).resolve().parents[2] / "agent_platform"
 sys.path.insert(0, str(PLATFORM))
 
-from mcp import registry  # noqa: E402
+from legion_mcp import registry  # noqa: E402
 
 
 def main(argv=None) -> int:

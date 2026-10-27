@@ -9,7 +9,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
-from agent_platform.mcp.server import serve_stdio  # noqa: E402
+from agent_platform.legion_mcp.server import serve_stdio  # noqa: E402
 
 GIT_REPO = REPO
 

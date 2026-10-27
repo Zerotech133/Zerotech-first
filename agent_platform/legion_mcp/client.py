@@ -167,7 +167,7 @@ def _env_with_pythonpath(extra_paths: list) -> dict:
 
 
 if __name__ == "__main__":
-    # 简单自测：python -m agent_platform.mcp.client
-    c = MCPClient([sys.executable, "-m", "agent_platform.mcp.server"], timeout=10)
+    # 简单自测：python -m agent_platform.legion_mcp.client
+    c = MCPClient([sys.executable, "-m", "agent_platform.legion_mcp.server"], timeout=10)
     print(c.start().list_tools())
     c.close()

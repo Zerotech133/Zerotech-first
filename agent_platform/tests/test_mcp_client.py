@@ -17,9 +17,9 @@ sys.path.insert(0, str(_PLAT))
 # Linux 上 "C:/Windows/win.ini" 会被当相对路径拼接到 root 内（10-27 服务器新门暴露）。
 _OUTSIDE_PATH = r"C:\Windows\win.ini" if os.name == "nt" else "/etc/passwd"
 
-from mcp import registry  # noqa: E402
-from mcp.client import MCPClient, MCPError  # noqa: E402
-from mcp.server import dispatch  # noqa: E402
+from legion_mcp import registry  # noqa: E402
+from legion_mcp.client import MCPClient, MCPError  # noqa: E402
+from legion_mcp.server import dispatch  # noqa: E402
 
 
 def _load(name, path):

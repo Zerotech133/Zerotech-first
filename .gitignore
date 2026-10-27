@@ -297,3 +297,6 @@ _vault/secrets.enc/
 *.bak-20261027
 # 本保险库的密文扩展名（repo 内只允许出现模板/代码/文档）
 *.age
+
+# 本地 Python venv（勿入库；2026-10-27 审计发现 .venvs 落在仓库内）
+.venvs/
