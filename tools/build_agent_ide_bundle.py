@@ -610,6 +610,7 @@ def main():
         "a0_daily": a0_daily,      # 最近一期 A0 日报（只读快照）
         "a0_review": a0_review,    # 最近一期 A0 点评（只读快照）
         "departments": departments,
+        "command_hq": org.get("command_hq") or {},
         "projects": projects,  # K-ORG-057 项目线（IDE 工作区内 chips）
         "agents": agents,
     }

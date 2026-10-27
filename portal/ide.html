@@ -437,6 +437,7 @@ function renderWs(){
   const el = document.getElementById("wsbar");
   const depts = (B && B.departments) || [];
   let h = '<span class="wsbtn'+(WS==="all"?' on':'')+'" onclick="setWs(\'all\')" title="聚合视图（全部部门）">🌐 全部部门</span>';
+  h += '<span class="wsbtn" onclick="showHQ()" title="指挥部：田丰 / 赵云 / 诸葛亮 / 关羽 / 黄忠">🎖 指挥部</span>';
   depts.forEach((d,i)=>{
     const icon = d.type==="project" ? (WS_ICONS[i]||"▫")
       : (d.type==="chief" ? "🧭" : (d.type==="func" ? "🏛" : "▫"));
@@ -445,6 +446,10 @@ function renderWs(){
       + ' title="'+esc(d.name)+' · '+esc(brief)+'">'+icon+' '+esc(d.name)+'</span>';
   });
   el.innerHTML = h;
+}
+function showHQ(){
+  setWs("all");
+  setTimeout(()=>{const el=document.getElementById("hq-section"); if(el) el.scrollIntoView({block:"start"});},300);
 }
 function setWs(name){
   if(name===WS || !B) return;
@@ -483,6 +488,11 @@ function renderSide(){
   const star = id => (ME===id ? ' <span style="color:var(--orange)">★我</span>' : '');  // 348 身份视角
   if(VIEW==="org"){
     if(WS==="all"){
+      if(B.command_hq && (B.command_hq.members||[]).length){
+        h += '<div class="s-t" id="hq-section">🎖 指挥部</div>';
+        for(const id of B.command_hq.members){ const a=B.agents[id]; if(!a) continue;
+          h += sideItem("agent", id, a.grade, id, esc(a.role_label||a.role_profile)+star(id)); }
+      }
       const chief = B.departments.filter(d=>d.type==="chief");
       const func = B.departments.filter(d=>d.type==="func"), proj = B.departments.filter(d=>d.type==="project");
       if(chief.length){
