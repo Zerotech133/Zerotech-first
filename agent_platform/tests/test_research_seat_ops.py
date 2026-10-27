@@ -103,6 +103,23 @@ def _write_receipt(root: Path) -> None:
     )
 
 
+def _add_dispatch(root: Path, suggested: str = "WO-LCS1-HARNESS-20261027") -> str:
+    d = root / "agent_platform" / "data" / "academy" / "dispatch_requests"
+    d.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "request_id": "WO-REQ-TEST",
+        "target": "ARCH1",
+        "suggested_ticket": suggested,
+        "requirement_doc": "deliverables/req.md",
+        "status": "pending_dispatch",
+        "created_at": "2026-10-27T11:00:00+08:00",
+    }
+    (d / "WO-REQ-TEST.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    return suggested
+
+
 def test_strat1_brief(tmp_path):
     root = _mkroot(tmp_path)
     proc = _run(root, "strat1")
@@ -180,6 +197,49 @@ def test_back1_ready_when_fields_and_receipt(tmp_path):
     )
     assert "READY" in text
     assert "可开跑" in text
+
+
+def test_back1_dispatch_pending(tmp_path):
+    root = _mkroot(tmp_path)
+    suggested = _add_dispatch(root)
+    proc = _run(root, "back1")
+    assert proc.returncode == 0, proc.stderr
+    text = _read(
+        list(
+            (root / "agent_platform" / "data" / "academy" / "ops" / "back1").glob(
+                "*_brief.md"
+            )
+        )[0]
+    )
+    assert "派单跟踪" in text
+    assert "pending_dispatch" in text
+    assert suggested in text
+    assert "pending=1 / dispatched=0" in text
+
+
+def test_back1_dispatch_detected(tmp_path):
+    root = _mkroot(tmp_path)
+    suggested = _add_dispatch(root)
+    wt = root / ".worktrees"
+    wt.mkdir(parents=True)
+    tasks = {suggested: {"desc": "LCS-1 harness 实施（需求 WO-REQ-TEST）",
+                          "owner": "BACK1", "status": "doing"}}
+    (wt / "tasks.json").write_text(
+        json.dumps(tasks, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    proc = _run(root, "back1")
+    assert proc.returncode == 0, proc.stderr
+    text = _read(
+        list(
+            (root / "agent_platform" / "data" / "academy" / "ops" / "back1").glob(
+                "*_brief.md"
+            )
+        )[0]
+    )
+    assert "dispatched" in text
+    assert suggested in text
+    assert "BACK1" in text
+    assert "pending=0 / dispatched=1" in text
 
 
 def test_weekly_both(tmp_path):
