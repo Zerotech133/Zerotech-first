@@ -194,13 +194,13 @@
    "project": "quant"
   },
   {
-   "id": "WO-LCS1-BASELINE-ACCEPT-20261027",
-   "desc": "P0⑤ 验收清单（BACK1 owner）：为 WO-LCS1-BASELINE 写可执行验收清单（Alpha158 子集/IC/RankIC/PIT/与 LCS-1 同窗口对比/输出格式/测试/依赖与边界）；不改回测实现。",
+   "id": "WO-AUTHORITY-B2-DEVTASK-20261027",
+   "desc": "ARCH1 研发域最高权限·第2单：devtask 增加 --approver 署名 + 合并审批校验（warn/block 可配，config/dev_authority_charter.json）；缺署名/非授权人/自审自批告警（block 时拒收）；合并成功发 review_verdict 事件；测试补齐。路由例外=跨部门治理。",
    "status": "doing",
-   "owner": "BACK1",
-   "branch": "task/WO-LCS1-BASELINE-ACCEPT-20261027",
-   "created": "2026-10-27 15:53:37",
-   "project": "quant"
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUTHORITY-B2-DEVTASK-20261027",
+   "created": "2026-10-27 15:54:40",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -1552,11 +1552,6 @@
     {
      "id": "WO-LCS1-BASELINE-20261027",
      "desc": "P0⑤ LCS-1 基线对照（BACK1 owner）：quant_backtest/baseline_factors.py——Alpha158 子集（或等价基础因子）+ IC/RankIC/分组收益 + point-in-time 口径；与 LCS-1 候选池同窗口对比；产出 baseline 报告并入 BACK1 回测清单；实现不依赖 DATA1 冻结，全量对比须 READY 后。验收：IC/RankIC 表；LCS-1 vs baseline 增量；pytest。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LCS1-BASELINE-ACCEPT-20261027",
-     "desc": "P0⑤ 验收清单（BACK1 owner）：为 WO-LCS1-BASELINE 写可执行验收清单（Alpha158 子集/IC/RankIC/PIT/与 LCS-1 同窗口对比/输出格式/测试/依赖与边界）；不改回测实现。",
      "status": "doing"
     }
    ]
