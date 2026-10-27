@@ -37,22 +37,20 @@ DANGER_KW = {"shell": "high", "verify": "medium"}
 
 def _iter(root: Path):
     for p in sorted(root.rglob("*")):
-        if not p.is_file() or p.name in SKIP_NAMES:
-            continue
         try:
+            if not p.is_file() or p.name in SKIP_NAMES:
+                continue
             rel = p.relative_to(root)
-        except ValueError:
-            continue
-        if any(x in EXCLUDE for x in rel.parts):
-            continue
-        if p.suffix.lower() not in (".py", ".js", ".ts", ".json", ".yaml", ".yml", ".env", ".ps1", ".bat"):
-            continue
-        try:
+            if any(x in EXCLUDE for x in rel.parts):
+                continue
+            if p.suffix.lower() not in (".py", ".js", ".ts", ".json", ".yaml", ".yml", ".env", ".ps1", ".bat"):
+                continue
             if p.stat().st_size > 400_000:
                 continue
-        except OSError:
+            yield p, rel.as_posix()
+        except (OSError, ValueError):
+            # Docker volume socket/权限受限文件等不可访问项：跳过，不中断全量扫描
             continue
-        yield p, rel.as_posix()
 
 
 def _scan_secrets(text: str, rel: str):
