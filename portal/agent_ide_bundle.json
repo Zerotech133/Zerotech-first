@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 16:51",
+ "generated": "2026-10-27 16:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -149,15 +149,6 @@
    "project": "general"
   },
   {
-   "id": "WO-RESEARCH-FSM-20261027",
-   "desc": "P0⑥ 研究流水线状态机（ACAD1 owner）：8 阶段→显式状态机（intake→hypothesis→evidence→validation→review→joint_review→decision→closed），每阶段 input/output JSON schema；checkpoint/resume（中断可恢复）；审批节点暂停/恢复；测试。验收：中断恢复演示 + schema 校验 100%。",
-   "status": "doing",
-   "owner": "ACAD1",
-   "branch": "task/WO-RESEARCH-FSM-20261027",
-   "created": "2026-10-27 15:53:20",
-   "project": "quant"
-  },
-  {
    "id": "WO-DATA-LINEAGE-20261027",
    "desc": "P0⑦ 数据血缘（DATA1 owner）：冻结回执加 lineage 段（输入表/输出表/版本/facets）；数据任务发 run/job/dataset 事件（OpenLineage 风格，本地 JSONL）；回执可由 lineage 复算 sha256；测试。验收：LCS-1 冻结回执带 lineage；schema 校验。",
    "status": "doing",
@@ -227,6 +218,15 @@
    "owner": "DEV8",
    "branch": "task/WO-P0-DEV8-METRICS-20261027",
    "created": "2026-10-27 16:51:18",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-UIPROTO-20261027",
+   "desc": "UI 原型 v1：今日工作台高保真原型（OS 定版暗色 + 1+5+3：今日建议/待决策/风险/证据链/5 域驾驶舱），生成截图供评审；不改生产页面/无 L2",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-UIPROTO-20261027",
+   "created": "2026-10-27 16:52:16",
    "project": "general"
   }
  ],
@@ -1405,14 +1405,7 @@
    ],
    "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-RESEARCH-FSM-20261027",
-     "desc": "P0⑥ 研究流水线状态机（ACAD1 owner）：8 阶段→显式状态机（intake→hypothesis→evidence→validation→review→joint_review→decision→closed），每阶段 input/output JSON schema；checkpoint/resume（中断可恢复）；审批节点暂停/恢复；测试。验收：中断恢复演示 + schema 校验 100%。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "STRAT1": {
    "id": "STRAT1",
@@ -6445,6 +6438,11 @@
     {
      "id": "WO-PHOENIX-ISOLATED-20261027",
      "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-UIPROTO-20261027",
+     "desc": "UI 原型 v1：今日工作台高保真原型（OS 定版暗色 + 1+5+3：今日建议/待决策/风险/证据链/5 域驾驶舱），生成截图供评审；不改生产页面/无 L2",
      "status": "doing"
     }
    ]
