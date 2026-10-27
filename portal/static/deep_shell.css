@@ -1,4 +1,4 @@
-/* deep_shell.css — 零界深屏骨架 v1（双版本·深色侧）
+﻿/* deep_shell.css — 零界深屏骨架 v1（双版本·深色侧）
    适用：/paper（参照）、/picks.html、/strategies 等专业工作台。
    原则：只提供 shell / 页面头 / 上下文条 / 页脚与通用主题变量；业务内容样式由各页保留。 */
 
@@ -154,3 +154,29 @@ body.strategies-page .dw-panel{background:rgba(15,28,46,.7);border:1px solid var
 @media (prefers-reduced-motion:reduce){
   body.dw-page *{animation:none!important;transition:none!important;}
 }
+
+/* ── /strategies P1：实盘默认展开，影子/支撑折叠，SOP 折叠 ── */
+.strategies-page .strat-group{margin:0 0 14px;}
+.strategies-page .strat-group-head{display:flex;align-items:baseline;gap:8px;margin:0 0 8px;}
+.strategies-page .strat-group-head h3{font-size:14px;margin:0;color:var(--dw-ink);}
+.strategies-page .strat-group-head span{font-size:11px;color:var(--dw-muted);}
+.strategies-page details.strat-group{
+  border:1px solid var(--dw-line);border-radius:12px;
+  background:rgba(15,28,46,.5);padding:10px 14px;margin-bottom:10px;
+}
+.strategies-page details.strat-group summary{
+  cursor:pointer;font-size:13px;font-weight:600;color:var(--dw-muted);
+  list-style:none;display:flex;align-items:center;gap:8px;
+}
+.strategies-page details.strat-group summary::-webkit-details-marker{display:none;}
+.strategies-page details.strat-group summary::before{content:"▸";color:var(--dw-cyan);}
+.strategies-page details.strat-group[open] summary::before{content:"▾";}
+.strategies-page details.strat-group summary .strat-open{margin-left:auto;font-size:10.5px;color:var(--dw-cyan);}
+.strategies-page details.strat-group[open] summary{margin-bottom:10px;color:var(--dw-ink);}
+.strategies-page .strat-sop{
+  border:1px solid var(--dw-line);border-radius:12px;
+  background:rgba(15,28,46,.5);padding:10px 14px;margin-top:16px;
+}
+.strategies-page .strat-sop summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--dw-muted);}
+.strategies-page .strat-sop summary:hover{color:var(--dw-cyan);}
+.strategies-page .strat-sop-body{padding-top:10px;}
