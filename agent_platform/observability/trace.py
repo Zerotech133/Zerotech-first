@@ -33,7 +33,7 @@ KEEP_DAYS = 30
 KEEP_SPANS = 50000
 
 
-# ── OTel → Phoenix（OTLP/HTTP JSON，stdlib；默认关，fail-open）──────────────
+# ── OTel → Phoenix（OTLP/HTTP protobuf，纯 stdlib 手写编码；默认关，fail-open）──
 def otel_endpoint() -> str:
     """ZHAOYUN_OTEL=1 且配置 endpoint 才导出；返回 '' 表示关闭。"""
     if str(os.environ.get("ZHAOYUN_OTEL") or "").strip().lower() in (
@@ -45,27 +45,58 @@ def otel_endpoint() -> str:
     return ep
 
 
-def _otel_span_payload(trace, sid, parent, name, kind, start, end, status, attrs) -> dict:
-    def _attr(k, v):
-        return {"key": str(k), "value": {"stringValue": str(v)[:1024]}}
+def _uvarint(n: int) -> bytes:
+    out = bytearray()
+    n = int(n)
+    while n > 0x7F:
+        out.append((n & 0x7F) | 0x80)
+        n >>= 7
+    out.append(n & 0x7F)
+    return bytes(out)
 
-    return {"resourceSpans": [{
-        "resource": {"attributes": [_attr("service.name", "zhaoyun")]},
-        "scopeSpans": [{
-            "scope": {"name": "zhaoyun.trace"},
-            "spans": [{
-                "traceId": str(trace),
-                "spanId": str(sid),
-                "parentSpanId": str(parent or ""),
-                "name": str(name)[:200],
-                "kind": 1,
-                "startTimeUnixNano": str(int(float(start) * 1e9)),
-                "endTimeUnixNano": str(int(float(end) * 1e9)),
-                "status": {"code": 2 if status == "error" else 1},
-                "attributes": [_attr(k, v) for k, v in (attrs or {}).items()],
-            }],
-        }],
-    }]}
+
+def _ld(field: int, data: bytes) -> bytes:
+    return _uvarint((field << 3) | 2) + _uvarint(len(data)) + data
+
+
+def _s(field: int, text) -> bytes:
+    return _ld(field, str(text).encode("utf-8"))
+
+
+def _fixed64(field: int, value: int) -> bytes:
+    import struct
+    return _uvarint((field << 3) | 1) + struct.pack("<Q", int(value))
+
+
+def _vi(field: int, value: int) -> bytes:
+    return _uvarint((field << 3) | 0) + _uvarint(int(value))
+
+
+def _kv(key: str, value: str) -> bytes:
+    anyv = _s(1, str(value)[:1024])          # AnyValue.string_value
+    return _s(1, key) + _ld(2, anyv)          # KeyValue{key, value}
+
+
+def otel_protobuf_payload(trace, sid, parent, name, kind, start, end,
+                          status, attrs) -> bytes:
+    """手写 OTLP ExportTraceServiceRequest（span kind=INTERNAL=1）。"""
+    status_pb = (_s(2, "error") if status == "error" else b"") + \
+        _vi(3, 2 if status == "error" else 1)
+    span = (
+        _ld(1, bytes.fromhex(str(trace))) +
+        _ld(2, bytes.fromhex(str(sid))) +
+        (_ld(4, bytes.fromhex(str(parent))) if parent else b"") +
+        _s(5, str(name)[:200]) +
+        _vi(6, 1) +
+        _fixed64(7, int(float(start) * 1e9)) +
+        _fixed64(8, int(float(end) * 1e9)) +
+        b"".join(_ld(9, _kv(k, v)) for k, v in (attrs or {}).items()) +
+        _ld(15, status_pb)
+    )
+    scope = _ld(1, _s(1, "zhaoyun.trace")) + _ld(2, span)
+    resource = _ld(1, _kv("service.name", "zhaoyun"))
+    resource_spans = _ld(1, resource) + _ld(2, scope)
+    return _ld(1, resource_spans)
 
 
 def export_span(trace, sid, parent, name, kind, start, end, status, attrs) -> dict:
@@ -74,13 +105,12 @@ def export_span(trace, sid, parent, name, kind, start, end, status, attrs) -> di
     if not ep:
         return {"ok": False, "skipped": "otel_off"}
     url = ep if ep.endswith("/v1/traces") else ep + "/v1/traces"
-    body = json.dumps(_otel_span_payload(trace, sid, parent, name, kind,
-                                         start, end, status, attrs),
-                      ensure_ascii=False).encode("utf-8")
+    body = otel_protobuf_payload(trace, sid, parent, name, kind,
+                                 start, end, status, attrs)
     try:
         req = urllib.request.Request(
             url, data=body, method="POST",
-            headers={"Content-Type": "application/json"})
+            headers={"Content-Type": "application/x-protobuf"})
         with urllib.request.urlopen(req, timeout=2) as resp:  # noqa: S310
             return {"ok": 200 <= int(resp.status) < 300, "status": int(resp.status)}
     except Exception as e:  # noqa: BLE001

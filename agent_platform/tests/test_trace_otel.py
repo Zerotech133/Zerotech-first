@@ -38,7 +38,7 @@ def test_otel_export_payload(monkeypatch, tmp_path):
 
     def fake_urlopen(req, timeout=0):
         captured["url"] = req.full_url
-        captured["body"] = json.loads(req.data.decode("utf-8"))
+        captured["body"] = req.data
         return _Resp()
 
     import urllib.request
@@ -48,10 +48,10 @@ def test_otel_export_payload(monkeypatch, tmp_path):
                    attrs={"capability": "selftest"}, db=tmp_path / "t.sqlite")
     assert rep["otel"]["ok"] is True
     assert captured["url"].endswith("/v1/traces")
-    spans = captured["body"]["resourceSpans"][0]["scopeSpans"][0]["spans"]
-    assert spans[0]["traceId"] == "b" * 32
-    assert spans[0]["name"] == "cap.test"
-    assert spans[0]["attributes"][0]["key"] == "capability"
+    body = captured["body"]
+    assert isinstance(body, (bytes, bytearray)) and body[:1] == b"\x0a"
+    assert b"cap.test" in body and b"capability" in body
+    assert bytes.fromhex("b" * 32) in body
 
 
 def test_otel_error_fail_open(monkeypatch, tmp_path):
