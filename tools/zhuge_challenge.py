@@ -1199,7 +1199,19 @@ def main(argv=None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        return int(args.func(args))
+        rc = int(args.func(args))
+        # C1 ↔ P1-4（可选，默认关）：命令成功后把质询卡同步到结构化决策账本
+        if rc == 0 and os.environ.get("ZHUGE_C1_DECISION_SYNC", "").strip().lower() \
+                in ("1", "true", "yes", "on"):
+            try:
+                tools_dir = str(Path(__file__).resolve().parent)
+                if tools_dir not in sys.path:
+                    sys.path.insert(0, tools_dir)
+                from zhuge_c1_decisions import sync_all
+                sync_all()
+            except Exception:  # noqa: BLE001 —— 同步失败不反噬 C1 主链
+                pass
+        return rc
     except ZhugeError as exc:
         payload = {"ok": False, "command": getattr(args, "command", None),
                    "error": {"code": exc.code, "detail": exc.detail}}
