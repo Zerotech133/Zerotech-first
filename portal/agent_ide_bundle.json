@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 16,
+  "workorders_doing": 15,
   "workorders_review": 2
  },
  "workorders": [
@@ -164,15 +164,6 @@
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-B4-20261027",
    "created": "2026-10-27 15:13:23",
-   "project": "general"
-  },
-  {
-   "id": "WO-P2-QUANT-RT-20261027",
-   "desc": "P2量化只读工具(tushare MCP复用)+红队每日抽样/周报",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-P2-QUANT-RT-20261027",
-   "created": "2026-10-27 15:14:38",
    "project": "general"
   }
  ],
@@ -6339,11 +6330,6 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
-    },
-    {
-     "id": "WO-P2-QUANT-RT-20261027",
-     "desc": "P2量化只读工具(tushare MCP复用)+红队每日抽样/周报",
-     "status": "doing"
     }
    ]
   }
