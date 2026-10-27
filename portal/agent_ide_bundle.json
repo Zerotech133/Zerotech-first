@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 23,
+  "workorders_doing": 22,
   "workorders_review": 2
  },
  "workorders": [
@@ -201,15 +201,6 @@
    "branch": "task/WO-P0-DEV5-EVALCASES-20261027",
    "created": "2026-10-27 16:50:56",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261027-SMART2",
-   "desc": "智能托管状态：只有存在 healthy 上游 Key 才算智能分配开启，否则提示管理员修复平台 Key",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-SMART2",
-   "created": "2026-10-27 16:50:57",
-   "project": "quant"
   },
   {
    "id": "WO-P0-DEV6-TRACE-20261027",
