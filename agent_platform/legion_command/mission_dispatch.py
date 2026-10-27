@@ -227,7 +227,7 @@ def advance(mission_id: str) -> dict:
     tasks = state.get("tasks") or {}
     merged, failed = [], []
     for tid, t in tasks.items():
-        if t.get("status") not in ("queued", "doing"):
+        if t.get("status") not in ("queued", "doing", "review"):
             continue
         ticket = t.get("ticket_id")
         if not ticket or not _has_commits(ticket):
