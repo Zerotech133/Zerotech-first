@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 13,
+  "workorders_doing": 12,
   "workorders_review": 2
  },
  "workorders": [
@@ -129,15 +129,6 @@
    "branch": "task/WO-DEV-B4-NIGHTBASE-20261027",
    "created": "2026-10-27 14:19:12",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261027-KEYPOOLUI",
-   "desc": "Key池页面修复：席位卡 meta 的 <span> 被当文本输出（显示原始HTML）；改为 DOM 追加 pill",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-KEYPOOLUI",
-   "created": "2026-10-27 15:02:26",
-   "project": "quant"
   },
   {
    "id": "WO-REDTEAM-JUDGE-20261027",
