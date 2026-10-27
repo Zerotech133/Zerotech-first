@@ -512,7 +512,7 @@ class Handler(BaseHTTPRequestHandler):
                 "entries_total": len(index_rows),
                 "experience_verified_total": sum(1 for r in index_rows if r.get("verified")),
                 "experience_recent": [{
-                    k: r.get(k) for k in ("entry_id", "domain", "cue", "confidence",
+                    k: r.get(k) for k in ("entry_id", "domain", "confidence",
                                           "signed_by", "written_at", "verified")}
                     for r in recent],
                 "note": "只读视图；经验入库须签字（Z4）；风控域只读"}

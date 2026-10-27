@@ -52,6 +52,8 @@ _TOOLS_DIR = Path(__file__).resolve().parent
 _AGENT_PLATFORM = _TOOLS_DIR.parent
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
+if str(_TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TOOLS_DIR))
 
 from verify_strategy_ledger import verify  # noqa: E402  同目录复用三方对账
 

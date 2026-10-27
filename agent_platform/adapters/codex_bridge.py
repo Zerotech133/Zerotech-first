@@ -351,12 +351,19 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
     payload = json.dumps({"source": source, "context": ctx},
                          ensure_ascii=False)
     engine_dir = str(Path(__file__).resolve().parent.parent / "engine")
+    platform_dir = str(Path(__file__).resolve().parent.parent)
+    repo_root = str(Path(__file__).resolve().parents[2])
     env = dict(os.environ)
-    env["PYTHONPATH"] = (engine_dir + os.pathsep + env.get("PYTHONPATH", "")
-                         ).rstrip(os.pathsep)
+    env["PYTHONPATH"] = os.pathsep.join(
+        [engine_dir, platform_dir, repo_root,
+         env.get("PYTHONPATH", "")]).rstrip(os.pathsep)
+    # 宿主环境可能启用 PYTHONSAFEPATH=1（PYTHONPATH 被忽略），
+    # 因此把导入路径直接注入子进程代码，双保险。
+    runner_code = ("import sys as _sys_boot; _sys_boot.path[:0] = %r\n"
+                   % ([engine_dir, platform_dir, repo_root],)) + _SANDBOX_RUNNER
     t0 = time.perf_counter()
     proc = subprocess.Popen(
-        [sys.executable, "-c", _SANDBOX_RUNNER],
+        [sys.executable, "-c", runner_code],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, env=env)
     try:
