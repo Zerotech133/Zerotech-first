@@ -1,0 +1,112 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.moneyflow
+name: moneyflow
+version: 1.0.0
+status: draft
+description:
+  purpose: 数据仓核心表 moneyflow（来源 tushare，频率 D）
+  limitations: catalog 基线 v12；schema 取自 store 抽样 parquet footer
+domain: quant
+dataProduct: zerobond-datawarehouse
+team:
+- username: data1@open-metadata.org
+  name: DATA1 张松
+  role: data steward
+servers:
+- server: local-datawarehouse
+  type: local
+  path: tushare/moneyflow
+  format: parquet
+schema:
+- name: moneyflow
+  physicalName: tushare/moneyflow
+  logicalType: object
+  properties:
+  - name: ts_code
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 标的代码列
+  - name: trade_date
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 业务日期列（event date）
+  - name: buy_sm_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: buy_sm_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_sm_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_sm_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: buy_md_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: buy_md_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_md_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_md_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: buy_lg_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: buy_lg_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_lg_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_lg_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: buy_elg_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: buy_elg_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_elg_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: sell_elg_amount
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: net_mf_vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: net_mf_amount
+    logicalType: number
+    physicalType: number
+    required: false
+slaProperties:
+- property: frequency
+  value: D

@@ -1,0 +1,104 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.daily_basic
+name: daily_basic
+version: 1.0.0
+status: draft
+description:
+  purpose: 数据仓核心表 daily_basic（来源 tushare，频率 D）
+  limitations: catalog 基线 v12；schema 取自 store 抽样 parquet footer
+domain: quant
+dataProduct: zerobond-datawarehouse
+team:
+- username: data1@open-metadata.org
+  name: DATA1 张松
+  role: data steward
+servers:
+- server: local-datawarehouse
+  type: local
+  path: tushare/daily_basic
+  format: parquet
+schema:
+- name: daily_basic
+  physicalName: tushare/daily_basic
+  logicalType: object
+  properties:
+  - name: ts_code
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 标的代码列
+  - name: trade_date
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 业务日期列（event date）
+  - name: close
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: turnover_rate
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: turnover_rate_f
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: volume_ratio
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: pe
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: pe_ttm
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: pb
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: ps
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: ps_ttm
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: dv_ratio
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: dv_ttm
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: total_share
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: float_share
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: free_share
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: total_mv
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: circ_mv
+    logicalType: number
+    physicalType: number
+    required: false
+slaProperties:
+- property: frequency
+  value: D
