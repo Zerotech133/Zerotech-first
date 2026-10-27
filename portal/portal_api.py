@@ -489,6 +489,7 @@ def _sub_status_key_ok(got_key):
 
 import os as _os
 import threading as _th
+import logging
 # PORTAL_NO_WARMUP=1：跳过启动预热（测试环境用——真实 datamart.read
 # 冷算 ~100s，会与测试的 sys.modules 补丁窗口产生线程竞态）。
 if _os.environ.get("PORTAL_NO_WARMUP") != "1":
@@ -605,8 +606,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                 f.write("%s %s %s\n" % (
                     time.strftime("%Y-%m-%d %H:%M:%S"),
                     self.client_address[0], fmt % args))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
     def _is_local_req(self):
         """P0-1b：请求是否来自本机可信域（判定规则见模块头注释）。"""
@@ -699,8 +700,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
         try:
             self.wfile.write(chunk.encode("utf-8"))
             self.wfile.flush()
-        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
-            pass
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
     def _html_file(self, path, nav_key=None):
         try:
@@ -724,8 +725,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                     t = (t[:i] + "<div style='padding:12px 14px 0'>"
                          + pill_nav(nav_key) + "</div>" + t[i:])
                     body = t.encode("utf-8")
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         # 058 全站统一：文件页同样幂等前置 tokens.css（:root 变量零副作用；
         # 生成器重写文件后注入依然生效——与 _html 出口同构）
         try:
@@ -736,8 +737,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                     '<link rel="stylesheet" href="/static/tokens.css"></head>',
                     1)
                 body = t.encode("utf-8")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         # K-STOCK-182 包2.3 窄屏表格横滚：<760px 宽表格块级+容器内横滚，
         # 页面级零溢出（宪法「移动端可看不溢出」判据；生成器重写后依然生效）
         try:
@@ -748,8 +749,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                     '<link rel="stylesheet" href="/static/mobile_table.css"></head>',
                     1)
                 body = t.encode("utf-8")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         # K-STOCK-164 全站短屏化：报告外壳统一注入 shortscreen.js
         # （锚点条+自动 details 折叠；<4 个标题的短页其内部自动跳过；
         #   生成器重写文件后注入依然生效——与上方 tokens.css 同构）
@@ -762,8 +763,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                     '<script src="/static/shortscreen.js" defer></script></head>',
                     1)
                 body = t.encode("utf-8")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         # K-STOCK-170 包2.1 首屏结论条：报告页 3 秒定则落地（宪法 6.2）
         # （.env/.kpi 结论候选克隆到顶部+买卖计数徽标；无候选短页自动跳过）
         try:
@@ -775,8 +776,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                     '<script src="/static/firstscreen.js" defer></script></head>',
                     1)
                 body = t.encode("utf-8")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         body += _BTSEL_TAG.encode("utf-8")   # K255 静态报告页同样注入
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -891,8 +892,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                         "last_run": pick("Last Run Time", "上次运行时间"),
                         "next_run": pick("Next Run Time", "下次运行时间"),
                     })
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
             return info
 
         with ThreadPoolExecutor(max_workers=5) as _ex:
@@ -970,8 +971,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                         alive = time.time() - float(m3.group(1))
                         if alive > 0:
                             met["alive_s"] = int(alive)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
             return out
 
         with ThreadPoolExecutor(max_workers=4) as _ex:
@@ -991,8 +992,8 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                     restarts.append({"ts": m4.group(1), "kind": kind,
                                      "detail": m4.group(2)})
             restarts.reverse()  # 最新在前
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
         # 死信队列：总数 + 最近 8 条（err 截断，防大 JSON）
         dlq = {"count": 0, "recent": []}
@@ -1012,11 +1013,11 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                         "reason": d.get("reason", ""),
                         "final": d.get("final", False),
                         "err": (d.get("err") or "")[:120]})
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
             dlq["recent"].reverse()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
         data = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "services": services, "restarts": restarts, "dlq": dlq}
@@ -1306,8 +1307,8 @@ gap:14px;align-items:start}}
                 _op = _u.build_opener(_u.ProxyHandler({}))
                 _op.open("http://127.0.0.1:8787/", timeout=1.5)
                 hermes_up = True
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
             _HERMES_UP_CACHE = (now, hermes_up)
         else:
             hermes_up = _HERMES_UP_CACHE[1]
@@ -1890,8 +1891,8 @@ function _nlForce(){_wait('强制重算中…（绕过缓存，约 10-30s）');
             with open(os.path.join(STATION, "ops", "health_latest.json"),
                       encoding="utf-8") as f:
                 snap = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         blocks = ["<h3 style='color:#8b949e;font-size:13px'>实时探活"
                   "（打开本页即测）</h3>" + rows]
         if snap.get("deprecated"):
@@ -2151,8 +2152,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     _t = str(_d.get("role_prompt") or "").strip()
                     if _t:  # 提炼：取首段，限 200 字
                         greeting = _t.splitlines()[0].strip()[:200]
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
             profiles = []
             for fn in sorted(glob.glob(os.path.join(base, "managers", "*.json"))):
                 try:
@@ -2338,8 +2339,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         for h in (json.load(f).get("hires") or []):
                             if h.get("status") == "active":
                                 occupied.add(h.get("trader"))
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
             for p in pfs:  # 订阅清单 trader 字段并计（防 hires 缺行重复指派）
                 if p.get("trader"):
                     occupied.add(p.get("trader"))
@@ -2505,8 +2506,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     "strategy_id": sid, "stock": stock, "qty": qty,
                     "ok": bool(r.get("ok")),
                 }, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         if r.get("ok"):
             r["source"] = "direct_lightweight"
             r["mode_note"] = "轻量模式：无经理无复盘，随时可在策略详情升级雇佣"
@@ -3058,8 +3059,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json(_bt_custom_start(rec))
             else:
                 self.send_error(404)
-        except (BrokenPipeError, ConnectionResetError):
-            pass
+        except (BrokenPipeError, ConnectionResetError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
     def do_GET(self):
         raw = self.path
@@ -3940,8 +3941,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                             continue
                         if r.get("code") == code and r.get("period") == period:
                             hit = r          # 取最后一条
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
             self._json(hit or {"none": True})
         elif path.startswith("/kg/stock/") and "format=json" not in qs:
             # K-STOCK-051 统一股票详情卡（046 §5.1 五区制，唯一样式）：
@@ -4805,8 +4806,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 log_exc("portal-page")
                 try:
                     self._json({"ok": False, "error": "portal internal (see err log)"}, 500)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         elif path == "/org":
             self._org_page()
         elif path == "/api/org":

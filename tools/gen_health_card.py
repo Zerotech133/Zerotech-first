@@ -154,6 +154,7 @@ open_days=SSE is_open=1 的 YYYY-MM-DD 列表；`ZB_TRADE_CAL` 可覆盖路径�
 **不参与判绿/判红**——无法证明的日子不拿来给故障开脱。
 """
 from __future__ import annotations
+import logging
 
 import argparse
 import datetime as dt
@@ -1690,8 +1691,8 @@ def _curated_cache_save(
         tmp_path = CURATED_CACHE_PATH.with_name(CURATED_CACHE_PATH.name + ".tmp")
         tmp_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
         os.replace(tmp_path, CURATED_CACHE_PATH)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
 
 
 def _scan_raw_parquet_mtimes(
@@ -2217,8 +2218,8 @@ def _walk_tree_stats(root: Path) -> tuple[int, int, bool, str]:
                 files += 1
                 try:
                     total += os.path.getsize(os.path.join(dirpath, name))
-                except OSError:
-                    pass
+                except OSError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
                 if files >= TDX_WALK_MAX_FILES:
                     return (files, total, False,
                             "达到 %d 文件上限，计数为下限" % TDX_WALK_MAX_FILES)
@@ -3407,8 +3408,8 @@ def collect_task_launch_failures() -> dict[str, Any]:
         try:
             last_run = dt.datetime.strptime(last_run_text, "%Y/%m/%d %H:%M:%S")
             minutes_ago = round((dt.datetime.now() - last_run).total_seconds() / 60.0, 1)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
         item = {"task": name, "code": code, "status": status,
                 "last_run": last_run_text, "minutes_ago": minutes_ago,
                 "count": 1, "recovered": False,
@@ -4698,8 +4699,8 @@ def _collect_day_batch_backlog(log_path: str | None = None) -> dict[str, Any]:
             rounds[-1]["rc"][mr.group(1)] = int(mr.group(2))
             try:
                 rounds[-1]["sec"][mr.group(1)] = float(mr.group(3))
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
     result["rounds_seen"] = len(rounds)
     if not rounds:
         result["available"] = False
@@ -4852,8 +4853,8 @@ def _parse_jev_night_log(log_path: str | None = None) -> dict[str, Any]:
                 if line.startswith("[") and len(line) > 5:
                     try:
                         year = int(line[1:5])
-                    except ValueError:
-                        pass
+                    except ValueError as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
                 try:
                     start = dt.datetime(year, int(m.group(1)), int(m.group(2)),
                                         *[int(x) for x in m.group(3).split(":")])
@@ -4863,8 +4864,8 @@ def _parse_jev_night_log(log_path: str | None = None) -> dict[str, Any]:
                         end += dt.timedelta(days=1)
                     window_hours = round(
                         (end - start).total_seconds() / 3600.0, 2)
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
             continue
         m = _NIGHT_ROUND_RE.search(line)
         if m:
@@ -7036,8 +7037,8 @@ def _atomic_write_text(path: Path, text: str) -> None:
         if os.path.exists(temp_path):
             try:
                 os.unlink(temp_path)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
 
 
 def _write_outputs(out_dir: Path, card: dict[str, Any]) -> str | None:
@@ -7070,8 +7071,8 @@ def _force_utf8_stdio() -> None:
             continue
         try:
             reconfigure(encoding="utf-8", errors="replace")
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "gen_health_card.py", exc)
 
 
 def main(argv: list[str] | None = None) -> int:

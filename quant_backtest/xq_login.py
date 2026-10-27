@@ -24,6 +24,7 @@ cookie 出现登录态特征 → 导出 → token_probe 验活 → TokenPool.sav
 失败路径截图 C:/Temp/xq_login_fail_*.png 供排查。
 """
 import argparse
+import logging
 import asyncio
 import json
 import os
@@ -68,8 +69,8 @@ async def _probe_async(headless: bool) -> None:
         page = await ctx.new_page()
         try:
             await page.goto(HOME_URL, wait_until="commit", timeout=30_000)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
         await page.wait_for_timeout(CHALLENGE_WAIT_MS)
         print("== WAF 判定：body 前 3KB %s"
               % ("像挑战页" if _looks_waf(await page.content()) else "正常"))
@@ -120,8 +121,8 @@ async def _login_async(user: str, password: str, headless: bool,
         page = await ctx.new_page()
         try:
             await page.goto(HOME_URL, wait_until="commit", timeout=30_000)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
         await page.wait_for_timeout(CHALLENGE_WAIT_MS)
         pre = {c["name"]: c.get("value", "")
                for c in await ctx.cookies() if isinstance(c, dict)}
@@ -134,8 +135,8 @@ async def _login_async(user: str, password: str, headless: bool,
                 state="visible", timeout=8000)
             panel = True
             print("[login] 落地页形态：登录面板已在页面")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
         if not panel:
             opened = False
             for sel in ("a[class*='btn--login']",
@@ -158,8 +159,8 @@ async def _login_async(user: str, password: str, headless: bool,
                             "xq_login_noentry_%d.png" % int(time.time())))
                     waf = _looks_waf(await page.content())
                     print("[login] 入口未现（WAF 挑战页=%s），截图已存" % waf)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
                 raise RuntimeError("登录入口未找到（首页无「登录」可点）")
             await page.wait_for_timeout(2500)
 
@@ -277,8 +278,8 @@ async def _login_async(user: str, password: str, headless: bool,
                         .filter(t => t && t.length < 60)""")
                 if tips:
                     print("[login] 页面提示：%s" % tips[:5])
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
         if not got and not headless:
             # 滑块自动拖（仅当页面确有滑块/验证元素——实测拦截多为
             # 「手机号码验证」短信弹窗，无滑块元素时跳过白等）
@@ -287,8 +288,8 @@ async def _login_async(user: str, password: str, headless: bool,
                 has_slider = await page.locator(
                     "[class*=slider],[class*=aptcha],"
                     "[class*=puzzle]").first.is_visible(timeout=1500)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
             if has_slider:
                 for i in range(3):
                     print("[login] 极验自动尝试 %d/3" % (i + 1))
@@ -303,8 +304,8 @@ async def _login_async(user: str, password: str, headless: bool,
                                 "[class*=geetest_refresh]").first.click(
                                 timeout=2000)
                             await page.wait_for_timeout(1200)
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
             if not got:
                 print("[login]" + "!" * 60)
                 print("[login] ⚠ 请人工辅助（窗口 %ds）：" % wait_human)
@@ -444,8 +445,8 @@ async def _try_slider(page) -> bool:
                     await rst.click(timeout=2000)
                     print("[login] 错误面板已点重试，重开拼图")
                     await page.wait_for_timeout(1500)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
         box = await btn.bounding_box(timeout=4000)
         if not box:
             print("[login] 无 geetest_slider_button")
@@ -536,8 +537,8 @@ def main() -> int:
                                 line_buffering=True)
         sys.stderr.reconfigure(encoding="utf-8", errors="replace",
                                 line_buffering=True)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "xq_login.py", exc)
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--user")

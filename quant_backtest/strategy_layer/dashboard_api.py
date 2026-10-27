@@ -52,6 +52,7 @@ docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一�
 期间零打扰，接入属后续单独变更。
 """
 from __future__ import annotations
+import logging
 
 import json
 import os
@@ -128,8 +129,8 @@ def _load_env_local() -> None:
                 key, _, val = line.partition("=")
                 if key.strip().startswith("XMAP_PG_"):
                     os.environ.setdefault(key.strip(), val.strip())
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
 
 
 def _pg_connect():
@@ -184,8 +185,8 @@ def _load_registry() -> Any:
                 try:
                     _tmp_reg = Registry()
                     bootstrap_default_adapters(_tmp_reg)
-                except Exception:  # noqa: BLE001 — 引导失败不影响面板
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
             _BOOTSTRAP_DONE["flag"] = True
 
         reg = Registry()
@@ -221,8 +222,8 @@ def _load_registry() -> Any:
             })
         if out:
             return out
-    except Exception:  # noqa: BLE001 — Registry 未落盘/失败走 JSON 兜底
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
 
     # 2) strategy_registry.json 直读兜底（支持两种形状：
     #    store 形 {"enabled": [ids], "weights": {id: w}}；
@@ -337,8 +338,8 @@ def _query_signals_db(trade_date: str) -> list:
         if conn is not None:
             try:
                 conn.close()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
             conn = None
         rows = _parse_psql_rows(_psql_exec(sql))
     else:
@@ -588,8 +589,8 @@ def _load_proposals() -> list:
             data = json.load(fh)
         if isinstance(data, dict) and isinstance(data.get("proposals"), list):
             return data["proposals"]
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
     return []
 
 
@@ -613,8 +614,8 @@ def _save_proposals(items: list) -> None:
     except Exception:
         try:
             os.unlink(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
         raise
 
 
@@ -774,8 +775,8 @@ def _load_health_env_local() -> None:
                 key, _, val = line.partition("=")
                 if key.strip().startswith("HEALTH_"):
                     os.environ.setdefault(key.strip(), val.strip())
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
 
 
 def _health_env_port(env_key: str, default: int) -> int:
@@ -793,8 +794,8 @@ def _probe_tcp(port: int, timeout: float) -> int:
     sock = socket.create_connection((HEALTH_HOST, port), timeout=timeout)
     try:
         sock.close()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
     return int((time.perf_counter() - t0) * 1000)
 
 

@@ -3,6 +3,7 @@
 Handler 壳经基座多继承并入（禁 import *）。
 """
 import json
+import logging
 import os
 import sys
 from api_common import (
@@ -1106,8 +1107,8 @@ function ckPush(i){
             if body.get("del") is not None:
                 try:
                     rows.pop(int(body["del"]))
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
             else:
                 try:
                     price = round(float(body.get("price")), 2)
@@ -1119,8 +1120,8 @@ function ckPush(i){
                     if price > 0 and label:
                         rows.append({"price": price, "label": label,
                                      "color": color})
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
             data[key] = rows
             os.makedirs(os.path.dirname(self._ANNO_PATH), exist_ok=True)
             with open(self._ANNO_PATH, "w", encoding="utf-8") as f:
@@ -1189,8 +1190,8 @@ function ckPush(i){
                                      overlays=ovs, chip=ch)
                 if np_ and os.path.exists(str(np_)):
                     png = np_
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
         if png and os.path.exists(str(png)):
             data = open(png, "rb").read()
             self.send_response(200)
@@ -1265,23 +1266,23 @@ function ckPush(i){
                         pool.append(_jp.loads(line))
                     except Exception:
                         continue
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
         paper, ev = {}, {}
         try:
             with open(os.path.join(QBT_DIR, "data",
                                    "chanlun_paper%s.json" % _sfx),
                       encoding="utf-8") as f:
                 paper = _jp.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
         try:
             with open(os.path.join(QBT_DIR, "data",
                                    "chanlun_pool_eval_cache%s.json" % _sfx),
                       encoding="utf-8") as f:
                 ev = _jp.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
         # 影子日志：1卖+tbe=True 专项追踪（chanlun_scan.refresh_shadow_1sell_tbe
         # 投影自 pool+paper，记录 type/dt/code/price/tbe/lag/exe20）
         shadow = []
@@ -1294,8 +1295,8 @@ function ckPush(i){
                         shadow.append(_jp.loads(line))
                     except Exception:
                         continue
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
 
         # 侧面标签（配色对齐缠论查看器图例；True 彩色 / False 灰✗）
         _S = [("M✓", "#bc8cff", "mbei"), ("✓", "#f85149", "bei"),
@@ -2275,8 +2276,8 @@ function ckPush(i){
                 b = _cp.chip_band(c, "1d")
                 if b:
                     chip = "%.2f – %.2f（峰 %.2f）" % b
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
             stp = self._chanlun_sl_tp(c)
             stp_html = ""
             if stp:
@@ -2388,8 +2389,8 @@ function ckPush(i){
                 ev = float(row.get("entry_px"))
                 if ev > 0:
                     ovs.append((ev, "入场", "#3fb950"))
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_chanlun_pages.py", exc)
             stp = self._chanlun_sl_tp(code)
             if stp:
                 ovs.append((stp["stop"], "止损", "#f85149"))

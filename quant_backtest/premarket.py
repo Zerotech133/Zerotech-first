@@ -6,6 +6,7 @@
 用法: python premarket.py [--push]
 """
 import argparse
+import logging
 import html
 import json
 import math
@@ -205,8 +206,8 @@ def layer2_policy():
                     out["macro"].append({"name": name,
                                          "val": items[0][idx],
                                          "month": m})
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     # 政策/央行/监管新闻 JEV（近3天）
     import sqlite3
     kw = ("政策", "央行", "监管", "利率", "关税", "MLF", "降准", "降息",
@@ -240,8 +241,8 @@ def layer2_policy():
                         "content": (c or "")[:280],
                         "stocks": _parse_stocks(s)}
                        for t, j, c, s in hits[:5]]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return out
 
 
@@ -265,8 +266,8 @@ def layer3_liquidity():
             out["margin_yoy"] = round(chg, 3)
             out["margin_yi"] = round(tot[ds[1]] / 1e8)
             out["margin_date"] = ds[1]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     # 北向（接口降序返回，取最新一行；north_money 万元口径 → 亿）
     try:
         items, fields = RR._ts("moneyflow_hsgt", start_date=st,
@@ -279,8 +280,8 @@ def layer3_liquidity():
             d, v = pts[0]
             out["north_yi"] = round(v / 10000)
             out["north_date"] = d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     # Shibor O/N（降序返回，取最新；14 日变化 = 最新 - 最旧）
     try:
         items, fields = RR._ts("shibor", start_date=st, end_date="20991231")
@@ -291,8 +292,8 @@ def layer3_liquidity():
         if pts:
             out["shibor_on"] = pts[0][1]
             out["shibor_chg"] = round(pts[0][1] - pts[-1][1], 3)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     s = 0
     if "margin_yoy" in out:
         s += _clip(out["margin_yoy"] * 800)      # 日环比 0.1% ≈ 80
@@ -368,8 +369,8 @@ def layer5_sentiment(snap):
         if n:
             out = {"n": n, "bull": bull, "bear": bear, "neu": neu,
                    "score": round(_clip((bull - bear) * 100 / n))}
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     env = None
     for e in snap.get("envs") or []:            # rps_latest.json envs 列表
         if "A股" in str(e.get("label", "")):
@@ -523,8 +524,8 @@ def money_effect():
                         "net_yi": round(float(v) / 1e8, 2)
                         if v is not None and v == v else None,
                         "reason": str(r.get("reason") or "")[:16]}
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
 
         def _dim(code, rs):
             """每票四维：ind 板块 / mv 总市值 / cmv 流通市值（亿）/
@@ -562,8 +563,8 @@ def money_effect():
             try:
                 a0, a5 = float(rs.loc[c, "amount"]), float(prev5[c])
                 vr = round(a0 / a5, 1) if a5 else None
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
             return {"turn": turn, "vr": vr}
 
         def _style(rs, c):
@@ -668,8 +669,8 @@ def money_effect():
                                    "回暖" if temp >= 25 else
                                    "冰点" if temp <= -60 else
                                    "转弱" if temp <= -25 else "常态")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return out
 
 
@@ -737,8 +738,8 @@ def volume_position():
                             % ("涨" if p5 > 0 else "跌",
                                "缩" if v5 < 0 else "放", p5 * 100,
                                v5 * 100))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return out
 
 
@@ -777,8 +778,8 @@ def industry_flow():
                      "n": int(r["n"])} for _, r in df.iterrows()]
         out["top"] = _rows(g.head(5))
         out["bottom"] = _rows(g.tail(5)[::-1])
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return out
 
 
@@ -819,8 +820,8 @@ def margin_sentiment():
         # 逐日融资净流入（近3日，判断加/减杠杆节奏）
         chg = g["rzye"].diff().dropna()
         out["chg_recent"] = [round(float(x)) for x in chg.tail(3)]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return out
 
 
@@ -854,8 +855,8 @@ def cb_sentiment():
             ma5 = float(amt.iloc[-5:].mean())
             out["amt_vs_ma5"] = round(
                 (float(amt.iloc[-1]) / ma5 - 1) * 100, 1) if ma5 else None
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return out
 
 
@@ -941,21 +942,21 @@ def layer6_notices():
         def _rpt_bg():
             try:
                 report_fetch.fetch_missing(rated[:12], max_fetch=8)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
             try:
                 report_fetch.backfill_post_perf()
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
             try:
                 import report_ai
                 report_ai.run_all()   # Ollama 语义抽取（不可用内部熔断）
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
         import threading as _th
         _th.Thread(target=_rpt_bg, daemon=True).start()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
 
     # ── 解禁提醒（近7天公告标题含"解禁"；同股去重，优先提示性公告；
     #    limit=10000 防 ORDER BY notice_date DESC 在节前公告井喷时截断较早日期） ──
@@ -980,8 +981,8 @@ def layer6_notices():
                 picked[code] = item
         out["unlock"] = sorted(picked.values(),
                                key=lambda x: x["date"], reverse=True)[:8]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return out
 
 
@@ -1013,8 +1014,8 @@ def run(push=False):
     if os.path.exists(SNAP):
         try:
             snap = json.load(open(SNAP, encoding="utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     l1 = layer1_global()
     l2 = layer2_policy()
     l3 = layer3_liquidity()
@@ -1623,8 +1624,8 @@ def _lark_exe():
             c = os.path.join(root, d, "bin", "lark-cli.exe")
             if os.path.exists(c):
                 return c
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
     return None
 
 
@@ -1910,8 +1911,8 @@ def _doc_sync(md):
     finally:
         try:
             os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
 
 
 def push_card(data, doc_url=None):
@@ -2032,8 +2033,8 @@ def main():
                 f.write("\n==== %s (push=%s) ====\n" % (
                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"), a.push))
                 traceback.print_exc(file=f)
-        except OSError:
-            pass  # 日志写失败不掩盖原始异常
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "premarket.py", exc)
         raise
 
 

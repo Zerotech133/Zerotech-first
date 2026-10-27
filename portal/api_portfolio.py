@@ -3,6 +3,7 @@
 Handler 壳经基座多继承并入（禁 import *）。
 """
 import glob
+import logging
 import json
 import os
 import re
@@ -35,8 +36,8 @@ def _os_unlock(fd):
     if _msvcrt is not None:
         try:
             _msvcrt.locking(fd, _msvcrt.LK_UNLCK, 1)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
     else:
         _fcntl.flock(fd, _fcntl.LOCK_UN)
 
@@ -315,8 +316,8 @@ def _council_simrun(rec):
                     sz = f.tell()
                     f.seek(max(0, sz - 3000))
                     tail = f.read().decode("utf-8", "replace").strip()[-800:]
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         return {"ok": True, "running": running, "tail": tail}
     if op != "start":
         return {"ok": False, "error": "op 需为 start/status"}
@@ -720,8 +721,8 @@ def _council_holdings(cs, opens):
                 k = (r.get("sid"), r.get("code"))
                 if k in opens:
                     hmap[k] = r          # 后读覆盖 = 最新一夜
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
     order = {"平仓预警": 0, "减仓预警": 1, "收紧盯盘": 2, "持有观察": 3}
     hold = [{"sid": k[0], "code": k[1], "name": r.get("name"),
              "verdict": (r.get("memo") or {}).get("verdict"),
@@ -759,8 +760,8 @@ class Handler:
         try:
             with open(SIMJ, encoding="utf-8") as f:
                 props = [json.loads(x) for x in f if x.strip()]
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         # K91 同日同标的去重：jsonl 是 append-only，同场重跑产生多行
         # ——旧行占据列表卡片并虚高「场数」（600663 一日 4 行 → 显示
         # 4 张卡，点旧卡看不到插话反馈）。按 (code,d) 取最新行用于
@@ -1361,8 +1362,8 @@ class Handler:
                             out.append(json.loads(line))
                         except Exception:
                             continue
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
             return out
 
         props = _jl("council_proposals.jsonl")
@@ -1374,8 +1375,8 @@ class Handler:
             with open(os.path.join(REPORTS_DIR, "council_shadow_stats.json"),
                       encoding="utf-8") as f:
                 stats = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
 
         def hit(r):
             return (not q) or q in str(r.get("code") or "").lower() \
@@ -1838,8 +1839,8 @@ class Handler:
         if out:
             try:
                 return json.loads(out.splitlines()[-1])
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         return {"ok": False,
                 "error": err.splitlines()[-1] if err else (out[-200:] or f"exit={p.returncode}")}
     def _sim_page(self, qs):
@@ -1859,14 +1860,14 @@ class Handler:
             with open(os.path.join(REPORTS_DIR, "trader_sim_eval.json"),
                       encoding="utf-8") as f:
                 ev = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         try:
             with open(os.path.join(REPORTS_DIR, "trader_sim.json"),
                       encoding="utf-8") as f:
                 sim = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         BOOKS = ["激进|积极", "激进|保守", "保守|积极",
                  "保守|保守", "中立|积极", "中立|保守"]
         # K70 策略来源标签（与 stock_council.SID_DESC 同步）
@@ -2039,8 +2040,8 @@ class Handler:
             with open(os.path.join(REPORTS_DIR, "council_sim_score.json"),
                       encoding="utf-8") as f:
                 score = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         sim_props = []
         try:
             with open(os.path.join(REPORTS_DIR,
@@ -2051,8 +2052,8 @@ class Handler:
                         sim_props.append(json.loads(line))
                     except Exception:
                         continue
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         cmp_ = {"%s|%s|%s" % (x.get("sid"), x.get("code"), x.get("d")): x
                 for x in (score.get("rows") or [])}
 
@@ -2325,8 +2326,8 @@ class Handler:
                                    "trader_sim_simbooks_eval.json"),
                       encoding="utf-8") as f:
                 evb = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_portfolio.py", exc)
         sec_preset = ""
         if evb:
             vs = evb.get("vs_real") or {}

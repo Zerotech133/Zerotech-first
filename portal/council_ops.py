@@ -15,6 +15,7 @@
 纪律：仅 loopback；口令会话鉴权与 Origin 门禁；原子写；上传不执行只存证。
 """
 from __future__ import annotations
+import logging
 
 import datetime as dt
 import hashlib
@@ -96,8 +97,8 @@ def load_state() -> dict:
     try:
         import gen_council_data as gcd
         topics = gcd.build_stage_view()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
     extra = []
     if os.path.isfile(REGISTRY_SNIPPET):
         try:
@@ -297,8 +298,8 @@ def archive_meeting(topic: str, decision: str = "", tasks: list | None = None) -
                        "path": folder})
     try:
         post_archive_hooks(topic, mid, decision, tasks or [])
-    except Exception:
-        pass  # 联动失败不阻塞建档（回执在对话流可见）
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
     return {"ok": True, "meeting_id": mid, "folder": folder, "meta": meta}
 
 
@@ -767,8 +768,8 @@ class Handler(BaseHTTPRequestHandler):
                     cur = json.load(open(REGISTRY_SNIPPET, encoding="utf-8"))
                     if cur:
                         st["experts"] = summon_experts(cur[-1].get("topic", "") + " " + cur[-1].get("summary", ""))
-                except (OSError, json.JSONDecodeError):
-                    pass
+                except (OSError, json.JSONDecodeError) as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             st["theme"] = load_theme()
             return self._json(st)
         q = urllib.parse.parse_qs(u.query).get("q", [""])[0]
@@ -784,8 +785,8 @@ class Handler(BaseHTTPRequestHandler):
                 out["total"] = len(idx)
                 out["recent"] = [{"date": x.get("date"), "title": str(x.get("title", ""))[:30],
                                   "col": x.get("col"), "status": x.get("status")} for x in idx[:6]]
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             return self._json(out)
         if u.path == "/api/issues":
             try:
@@ -802,8 +803,8 @@ class Handler(BaseHTTPRequestHandler):
                 import contacts_store as _cs
                 out["contacts"] = _cs.load(12)
                 out["docs"] = _cs.docs_inventory()[:6]
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             return self._json(out)
         if u.path == "/api/tech/brief":
             # 科技前沿：github trending + arXiv cs.AI
@@ -811,8 +812,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 import tech_feed as _tf
                 out["recent"] = _tf.load_recent(10)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             return self._json(out)
         if u.path == "/api/env/brief":
             # 环境日程域：天气(账本)+议会厅预约(未来日程)
@@ -820,8 +821,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 import weather_store as _ws
                 out["weather"] = _ws.load()
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             try:
                 rows = []
                 if os.path.isfile(SCHEDULED):
@@ -832,8 +833,8 @@ class Handler(BaseHTTPRequestHandler):
                             except json.JSONDecodeError:
                                 continue
                 out["sched"] = [{"title": r.get("title"), "for": r.get("for")} for r in rows[-5:]][::-1]
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             return self._json(out)
         if u.path == "/api/intel/policy":
             # 政策地缘域真数据（gov.cn 政策文件库采集账本）
@@ -841,8 +842,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 import policy_geo_collector as _pg
                 out["recent"] = _pg.load_recent(8)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             return self._json(out)
         if u.path == "/api/intel/brief":
             # 情报一屏：盘面(premarket) + 情报对账(guojia) + 最新裁定(verdicts) —— 情报视角驾驶舱
@@ -852,8 +853,8 @@ class Handler(BaseHTTPRequestHandler):
                 d = json.load(open(pm, encoding="utf-8"))
                 alerts = [str(x)[:70] for x in (d.get("alerts") or [])[:4]]
                 out["market"] = {"ts": d.get("ts"), "overall": d.get("overall"), "alerts": alerts}
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             try:
                 g = json.load(open(r"C://aios//news_collector//data//guojia//summary.json", encoding="utf-8"))
                 o = g.get("overall", {})
@@ -861,8 +862,8 @@ class Handler(BaseHTTPRequestHandler):
                 out["intel"] = {"generated_at": g.get("generated_at"),
                                 "hit_rate": o.get("hit_rate"), "n": o.get("n_reconciled"),
                                 "markets": {k: v.get("name", k) for k, v in mk.items() if isinstance(v, dict)}}
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             try:
                 vs = []
                 with open(r"C://aios//news_collector//data//guojia//verdicts.jsonl", encoding="utf-8") as f:
@@ -873,8 +874,8 @@ class Handler(BaseHTTPRequestHandler):
                             continue
                 out["verdicts"] = [{"day": v.get("day"), "scope": v.get("scope"),
                                     "bias": v.get("bias"), "conf": v.get("conf")} for v in vs[-6:]][::-1]
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "council_ops.py", exc)
             return self._json(out)
         mid = urllib.parse.parse_qs(u.query).get("mid", [""])[0]
         if u.path == "/api/council/minutes":

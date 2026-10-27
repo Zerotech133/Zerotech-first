@@ -16,6 +16,7 @@ dim:* 分支仅为旧 schema v1 卡兼容保留——schema 2.0 钻取卡无回�
   im.message.receive_v1 与 card.action.trigger 两个事件。
 """
 import json
+import logging
 import os
 import re
 import sys
@@ -59,8 +60,8 @@ def log(msg):
             os.makedirs(os.path.dirname(LOG), exist_ok=True)
             with open(LOG, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
     print(line, flush=True)
 
 
@@ -76,8 +77,8 @@ def _heartbeat(tag=""):
         os.makedirs(os.path.dirname(HEARTBEAT), exist_ok=True)
         with open(HEARTBEAT, "w", encoding="utf-8") as f:
             f.write("%s %s\n" % (datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), tag))
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
 
 
 def _ws_guard():
@@ -95,8 +96,8 @@ def _ws_guard():
                     os._exit(3)
             else:
                 _WS_MISS["n"] = 0
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
 
 
 # ── L2 引擎接合 ─────────────────────────────────────────────
@@ -121,8 +122,8 @@ def get_facts(code):
             if (old.get("ts") or "").startswith(
                     datetime.now().strftime("%Y-%m-%d")):
                 return old, True
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
     portal, pr = _portal_shim()
     return pr.collect_facts(portal, code), False
 
@@ -496,8 +497,8 @@ def _card_sender_id(ev):
         try:
             d = ctx if isinstance(ctx, dict) else json.loads(str(ctx))
             return d.get("open_operator_id") or ""
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
     return ""
 
 
@@ -630,8 +631,8 @@ def _handle_audio(msg, data):
     sender_id = ""
     try:
         sender_id = (data.event.sender.sender_id.open_id or "")
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
 
     def _run():
         try:
@@ -942,8 +943,8 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
             if len(parts) > 2:
                 try:
                     days = int(parts[2])
-                except ValueError:
-                    pass
+                except ValueError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
             send_text(f"🧬 {code} KG 血缘查询中（{days} 天窗口）…", message_id)
             data = _kg_stock(code, days=days)
             if not data.get("ok"):
@@ -986,8 +987,8 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
         log("cmd err: %s" % traceback.format_exc()[-300:])
         try:
             send_text("处理失败：%s" % str(e)[:100], message_id)
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
 
 
 # ── ws 主程序 ───────────────────────────────────────────────
@@ -1218,8 +1219,8 @@ def main():
                 # AttributeError 被 except 吞 → 恒空（recv 日志恒
                 # sender=- 的根因，白名单被迫降级空开放的根源）。
                 sender_id = (data.event.sender.sender_id.open_id or "")
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
             # K-STOCK-299：群消息只响应 @本bot 的（content 渲染为 @_user_N
             # 占位）。双 bot 并存期，@ 新 bot 的消息是 <at user_id=ou_...>
             # 原文——一律沉默，防抢答回「没听懂」污染对方会话。
@@ -1379,8 +1380,8 @@ def main():
         log("voice: enabled=%s provider=%s model=%s" % (
             _vi.enabled(), os.environ.get("VOICE_ASR_PROVIDER") or "none",
             os.environ.get("VOICE_ASR_MODEL") or ""))
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "feishu_bot_ws.py", exc)
     # P2.7 内部重连环：原 cli.start() 为单次阻塞调用，WS 断线=进程退出，
     # 只能靠 watchdog 每 5min 整机拉起兜底（恢复延迟最长 5min）。本环把
     # 恢复延迟降到秒级（指数退避：初始 1s 倍增上限 60s；存活≥60s 后异常
