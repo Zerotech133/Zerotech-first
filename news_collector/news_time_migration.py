@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """新闻旧时间迁移：prepare 只读，apply 备份后原子修改，rollback 逐行回退。"""
+
 import argparse
 import json
 import re
@@ -10,17 +11,31 @@ from news_time import parse_news_time
 
 
 def _readonly(path):
-    return sqlite3.connect(Path(path).resolve().as_uri() + "?mode=ro", uri=True, timeout=20)
+    return sqlite3.connect(
+        Path(path).resolve().as_uri() + "?mode=ro", uri=True, timeout=20
+    )
 
 
 def prepare(path):
-    plan = {"version": 1, "database": str(Path(path).resolve()), "changes": [], "unresolved": []}
+    plan = {
+        "version": 1,
+        "database": str(Path(path).resolve()),
+        "changes": [],
+        "unresolved": [],
+    }
     db = _readonly(path)
     try:
-        for ident, source, ts, created_at in db.execute("SELECT id,source,ts,created_at FROM news"):
+        for ident, source, ts, created_at in db.execute(
+            "SELECT id,source,ts,created_at FROM news"
+        ):
             if not re.fullmatch(r"\d{2}-\d{2} \d{2}:\d{2}", str(ts or "")):
                 continue
-            row = {"id": ident, "source": source, "old_ts": ts, "created_at": created_at}
+            row = {
+                "id": ident,
+                "source": source,
+                "old_ts": ts,
+                "created_at": created_at,
+            }
             event = parse_news_time(ts, reference=created_at, source=source)
             if event is None:
                 plan["unresolved"].append(row)
@@ -48,8 +63,14 @@ def _validate_plan(plan):
 def _pending(db, plan, reverse=False):
     pending = []
     for row in plan["changes"]:
-        current = db.execute("SELECT source,ts,created_at FROM news WHERE id=?", (row["id"],)).fetchone()
-        old, new = (row["new_ts"], row["old_ts"]) if reverse else (row["old_ts"], row["new_ts"])
+        current = db.execute(
+            "SELECT source,ts,created_at FROM news WHERE id=?", (row["id"],)
+        ).fetchone()
+        old, new = (
+            (row["new_ts"], row["old_ts"])
+            if reverse
+            else (row["old_ts"], row["new_ts"])
+        )
         if current == (row["source"], new, row["created_at"]):
             continue
         if current != (row["source"], old, row["created_at"]):
@@ -81,7 +102,10 @@ def apply(plan, backup_path):
         finally:
             source.close()
             saved.close()
-        db.executemany("UPDATE news SET ts=? WHERE id=? AND ts=? AND source IS ? AND created_at IS ?", pending)
+        db.executemany(
+            "UPDATE news SET ts=? WHERE id=? AND ts=? AND source IS ? AND created_at IS ?",
+            pending,
+        )
         db.commit()
         return len(pending)
     except Exception:
@@ -97,7 +121,10 @@ def rollback(plan):
     try:
         db.execute("BEGIN IMMEDIATE")
         pending = _pending(db, plan, reverse=True)
-        db.executemany("UPDATE news SET ts=? WHERE id=? AND ts=? AND source IS ? AND created_at IS ?", pending)
+        db.executemany(
+            "UPDATE news SET ts=? WHERE id=? AND ts=? AND source IS ? AND created_at IS ?",
+            pending,
+        )
         db.commit()
         return len(pending)
     except Exception:
@@ -123,7 +150,11 @@ def main():
         plan = prepare(args.database)
         with open(args.plan, "x", encoding="utf-8") as target:
             json.dump(plan, target, ensure_ascii=False, indent=2)
-        print(json.dumps({"changes": len(plan["changes"]), "unresolved": len(plan["unresolved"])}))
+        print(
+            json.dumps(
+                {"changes": len(plan["changes"]), "unresolved": len(plan["unresolved"])}
+            )
+        )
     else:
         with open(args.plan, encoding="utf-8") as source:
             plan = json.load(source)

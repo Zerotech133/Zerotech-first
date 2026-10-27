@@ -11,6 +11,7 @@
 存储: news.db 表 ai_briefs / ai_reviews + runs；ai_brief.json / ai_review.json 供门户。
 用法: python news_ai.py [review] [--dry]
 """
+
 import json
 import math
 import os
@@ -38,20 +39,33 @@ OLLAMA = "http://127.0.0.1:11434/api/chat"
 # 不再让排队超时伪装成服务端 500（健康卡 ai.error_rate 由此长期误红）。
 LLM_TIMEOUT_S = 45
 JEV_BASE = "https://api.typesafe.ai/v1"
-JEV_ENV_PS1 = os.path.abspath(os.path.join(
-    HERE, "..", "jev-eval", "jev-gate.env.ps1"))
+JEV_ENV_PS1 = os.path.abspath(os.path.join(HERE, "..", "jev-eval", "jev-gate.env.ps1"))
 SINA_HQ = "https://hq.sinajs.cn/list=%s"
 SINA_CODES = [
-    ("A股", "sh000001"), ("A股", "sz399001"), ("A股", "sz399006"), ("A股", "sh000300"),
+    ("A股", "sh000001"),
+    ("A股", "sz399001"),
+    ("A股", "sz399006"),
+    ("A股", "sh000300"),
     ("港股", "rt_hkHSI"),
-    ("美股", "gb_dji"), ("美股", "gb_ixic"), ("美股", "gb_inx"),
-    ("商品", "hf_CL"), ("商品", "hf_GC"),
+    ("美股", "gb_dji"),
+    ("美股", "gb_ixic"),
+    ("美股", "gb_inx"),
+    ("商品", "hf_CL"),
+    ("商品", "hf_GC"),
     ("汇率", "fx_susdcny"),
 ]
-GROUP_EMOJI = {"A股": "🇨🇳", "港股": "🇭🇰", "美股": "🇺🇸", "商品": "🛢",
-               "汇率": "💱", "自选": "⭐"}
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-           "Referer": "https://finance.sina.com.cn"}
+GROUP_EMOJI = {
+    "A股": "🇨🇳",
+    "港股": "🇭🇰",
+    "美股": "🇺🇸",
+    "商品": "🛢",
+    "汇率": "💱",
+    "自选": "⭐",
+}
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Referer": "https://finance.sina.com.cn",
+}
 
 SYS_PROMPT = (
     "你是一名严谨的中文金融市场分析师，为个人投资者整理市场报告。"
@@ -103,19 +117,32 @@ def quick_judge(model, items, timeout=90):
     """即时速报轻量市场判断：仅命中标题 → 60~120 字。失败返回 None（不影响推送）。"""
     if not items:
         return None
-    news = "\n".join("· %s%s" % (
-        ("【%s】" % "/".join(it["stocks"])) if it.get("stocks") else "",
-        (it["title"] or "")[:60]) for it in items[:8])
+    news = "\n".join(
+        "· %s%s"
+        % (
+            ("【%s】" % "/".join(it["stocks"])) if it.get("stocks") else "",
+            (it["title"] or "")[:60],
+        )
+        for it in items[:8]
+    )
     try:
-        r = requests.post(OLLAMA, json={
-            "model": model,
-            "messages": [
-                {"role": "system", "content": SYS_PROMPT},
-                {"role": "user", "content":
-                    "== 关注命中快讯 ==\n" + news + "\n\n" + QUICK_RULES}],
-            "stream": False, "think": False,
-            "options": {"temperature": 0.3, "num_predict": 300},
-        }, timeout=timeout)
+        r = requests.post(
+            OLLAMA,
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": SYS_PROMPT},
+                    {
+                        "role": "user",
+                        "content": "== 关注命中快讯 ==\n" + news + "\n\n" + QUICK_RULES,
+                    },
+                ],
+                "stream": False,
+                "think": False,
+                "options": {"temperature": 0.3, "num_predict": 300},
+            },
+            timeout=timeout,
+        )
         r.raise_for_status()
         text = r.json()["message"]["content"].strip()
         return text if 10 <= len(text) <= 400 else None
@@ -185,21 +212,49 @@ JEV_NEWS_QUESTIONS = {
     #     （已实测）。判断依据由 jev_reason() 用本地 Ollama 单独生成。
 }
 _BIAS_CN = {"bull": "利多", "bear": "利空", "neutral": "中性"}
-_SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
-             "crypto": "加密", "fx": "外汇", "macro": "宏观"}
+_SCOPE_CN = {
+    "cn": "A股",
+    "hk": "港股",
+    "us": "美股",
+    "commodity": "商品",
+    "crypto": "加密",
+    "fx": "外汇",
+    "macro": "宏观",
+}
 # 2026-10-26 OS-FIX-JEVSCOPE（JEV 审计 §四-①）：本地判读 prompt 原先没有 scope，
 # 新判行 scope 恒空，而老云端行用 cn/hk/us/commodity/crypto/fx/macro 七值。
 # 这里按既有 _SCOPE_CN 枚举做别名归一；未知值降级为空串（不猜、不伪造）。
 _SCOPE_ALIASES = {
-    "cn": "cn", "a股": "cn", "a-share": "cn", "ashare": "cn", "china": "cn",
-    "中国": "cn", "国内": "cn",
-    "hk": "hk", "港股": "hk", "hongkong": "hk", "hong kong": "hk",
-    "us": "us", "美股": "us", "usa": "us", "美国": "us", "us-stock": "us",
-    "commodity": "commodity", "commodities": "commodity", "商品": "commodity",
-    "大宗商品": "commodity", "期货": "commodity",
-    "crypto": "crypto", "加密货币": "crypto", "加密": "crypto",
-    "fx": "fx", "外汇": "fx", "汇率": "fx", "forex": "fx",
-    "macro": "macro", "宏观": "macro",
+    "cn": "cn",
+    "a股": "cn",
+    "a-share": "cn",
+    "ashare": "cn",
+    "china": "cn",
+    "中国": "cn",
+    "国内": "cn",
+    "hk": "hk",
+    "港股": "hk",
+    "hongkong": "hk",
+    "hong kong": "hk",
+    "us": "us",
+    "美股": "us",
+    "usa": "us",
+    "美国": "us",
+    "us-stock": "us",
+    "commodity": "commodity",
+    "commodities": "commodity",
+    "商品": "commodity",
+    "大宗商品": "commodity",
+    "期货": "commodity",
+    "crypto": "crypto",
+    "加密货币": "crypto",
+    "加密": "crypto",
+    "fx": "fx",
+    "外汇": "fx",
+    "汇率": "fx",
+    "forex": "fx",
+    "macro": "macro",
+    "宏观": "macro",
 }
 
 
@@ -209,6 +264,7 @@ def _normalize_scope(value):
     if not raw:
         return ""
     return _SCOPE_ALIASES.get(raw, "")
+
 
 # K-ORG-191：fx（外汇）为郭嘉预判对账司扩容的新市场枚举——自扩容日起
 # 积累信号（历史无 fx 数据，不回溯），对账基准 fx_susdcnh（美元/离岸人民币）。
@@ -223,20 +279,45 @@ def _normalize_scope(value):
 # 来源异质（E7）当前仅 announcement 达样本阈值且无超额边际，不下发
 # （来源级零变化，随积累复评；sbt._load_samples 已保留 source 捕获）。
 _JEV_LOW_CONF = 0.7
-_JEV_HL_H = {"bull": 12.0, "bear": 24.0}   # bias → 半衰期（小时），w=2^(-Δt/HL)
+_JEV_HL_H = {"bull": 12.0, "bear": 24.0}  # bias → 半衰期（小时），w=2^(-Δt/HL)
 
 # K-ORG-159（M1）：事件类型枚举 + 公司绑定（借鉴 FEED/DocFEE/FNSPID——
 # 金融事件抽取、(公司,事件) 是舆情分布监控的最强载体）。云/本地判定
 # 均输出 event_type（choice/枚举），本地回落另自报 companies（A股代码）。
 _EVENT_TYPES = (
-    "earnings", "policy", "rate", "trade", "supply", "demand", "price",
-    "ma", "equity", "credit", "risk", "tech", "macro", "geo", "other",
+    "earnings",
+    "policy",
+    "rate",
+    "trade",
+    "supply",
+    "demand",
+    "price",
+    "ma",
+    "equity",
+    "credit",
+    "risk",
+    "tech",
+    "macro",
+    "geo",
+    "other",
 )
-_EVENT_CN = {"earnings": "业绩", "policy": "政策", "rate": "利率",
-             "trade": "贸易", "supply": "供给", "demand": "需求",
-             "price": "价格", "ma": "并购", "equity": "股权",
-             "credit": "债务", "risk": "风险", "tech": "技术",
-             "macro": "宏观", "geo": "地缘", "other": "其他"}
+_EVENT_CN = {
+    "earnings": "业绩",
+    "policy": "政策",
+    "rate": "利率",
+    "trade": "贸易",
+    "supply": "供给",
+    "demand": "需求",
+    "price": "价格",
+    "ma": "并购",
+    "equity": "股权",
+    "credit": "债务",
+    "risk": "风险",
+    "tech": "技术",
+    "macro": "宏观",
+    "geo": "地缘",
+    "other": "其他",
+}
 _IMPACTS = ("low", "medium", "high")
 _IMPACT_CN = {"low": "低", "medium": "中", "high": "高"}
 
@@ -279,7 +360,7 @@ def _validate_jev(d):
 # 段命中率更不可信。对本地判定 conf<0.7 样本触发 K=3 重采样，以多数票一致率
 # 重算 conf：3/3 一致→0.8，2:1→0.6，全分散→中性/0.3（分歧降权，治右偏）。
 _JEV_RECALIB_CONF = 0.7
-_JEV_AGREE_CONF = {3: 0.8, 2: 0.6}   # 多数票数 → 校准后 conf
+_JEV_AGREE_CONF = {3: 0.8, 2: 0.6}  # 多数票数 → 校准后 conf
 
 
 def _resample_consistency(ask_fn, first_bias, k=3):
@@ -292,7 +373,7 @@ def _resample_consistency(ask_fn, first_bias, k=3):
     for _ in range(k - 1):
         try:
             j2 = ask_fn()
-        except Exception:   # noqa: BLE001  豁免（C2批2）：重采样失败不阻断
+        except Exception:  # noqa: BLE001  豁免（C2批2）：重采样失败不阻断
             continue
         if isinstance(j2, dict):
             b2 = (j2.get("bias") or "").strip().lower()
@@ -301,14 +382,14 @@ def _resample_consistency(ask_fn, first_bias, k=3):
     cnt = Counter(votes)
     maj, n = cnt.most_common(1)[0]
     if n == len(votes) and len(cnt) == 1:
-        return maj, _JEV_AGREE_CONF[3]     # 全一致 → 高可信
+        return maj, _JEV_AGREE_CONF[3]  # 全一致 → 高可信
     if n >= 2:
-        return maj, _JEV_AGREE_CONF[2]     # 2:1 多数 → 中可信
-    return "neutral", 0.3                   # 全分散 → 中性低置信
+        return maj, _JEV_AGREE_CONF[2]  # 2:1 多数 → 中可信
+    return "neutral", 0.3  # 全分散 → 中性低置信
 
 
-_JEV_KEY_MEMO = None   # 2026-10-16 审计：进程内 memo（backfill 每判一条
-                       # 调一次 _jev_key，原每次都 DPAPI 解密+正则读盘）
+_JEV_KEY_MEMO = None  # 2026-10-16 审计：进程内 memo（backfill 每判一条
+# 调一次 _jev_key，原每次都 DPAPI 解密+正则读盘）
 
 
 def _jev_key():
@@ -325,10 +406,9 @@ def _jev_key():
     # ""，自然落明文兜底——链路不断只退化，同 C2批2 豁免哲学）
     try:
         import importlib.util
-        _loader_fp = os.path.join(os.path.dirname(JEV_ENV_PS1),
-                                  "load_env_dpapi.py")
-        spec = importlib.util.spec_from_file_location("load_env_dpapi",
-                                                      _loader_fp)
+
+        _loader_fp = os.path.join(os.path.dirname(JEV_ENV_PS1), "load_env_dpapi.py")
+        spec = importlib.util.spec_from_file_location("load_env_dpapi", _loader_fp)
         _mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(_mod)
         key = _mod.get_secret("JEV_API_KEY")
@@ -338,11 +418,13 @@ def _jev_key():
     except Exception:
         pass
     import re
+
     try:
         with open(JEV_ENV_PS1, encoding="utf-8") as f:
             txt = f.read()
-        m = re.search(r'JEV_API_KEY"\s*=\s*"([^"]+)"', txt) \
-            or re.search(r'JEV_API_KEY\s*=\s*"([^"]+)"', txt)
+        m = re.search(r'JEV_API_KEY"\s*=\s*"([^"]+)"', txt) or re.search(
+            r'JEV_API_KEY\s*=\s*"([^"]+)"', txt
+        )
         if m:
             _JEV_KEY_MEMO = m.group(1)
             return m.group(1)
@@ -352,15 +434,19 @@ def _jev_key():
     # 勿静默——审计实证 stub 化后此出口零提示，jev 云判定静默降级
     # 无人知晓。stderr WARN + env_fallback.flag（同 load_env_dpapi
     # 判例），仍按"无 key"豁免退出（链路不断只退化，C2批2 哲学不变）。
-    print("[WARN] JEV_API_KEY unresolved: env/DPAPI(.enc)/stub 全落空，"
-          "jev 云判定将跳过（本地回落不受影响）", file=sys.stderr)
+    print(
+        "[WARN] JEV_API_KEY unresolved: env/DPAPI(.enc)/stub 全落空，"
+        "jev 云判定将跳过（本地回落不受影响）",
+        file=sys.stderr,
+    )
     try:
-        flag = os.path.join(os.path.dirname(JEV_ENV_PS1),
-                            "env_fallback.flag")
+        flag = os.path.join(os.path.dirname(JEV_ENV_PS1), "env_fallback.flag")
         if not os.path.exists(flag):
             with open(flag, "w", encoding="ascii") as f:
-                f.write("news_ai._jev_key unresolved %s\n"
-                        % time.strftime("%Y-%m-%d %H:%M:%S"))
+                f.write(
+                    "news_ai._jev_key unresolved %s\n"
+                    % time.strftime("%Y-%m-%d %H:%M:%S")
+                )
     except Exception:
         pass
     return ""  # 豁免（C2批2）：与"未配置 key"同一出口，jev_judge_one 侧按无 key 跳过
@@ -378,20 +464,21 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
     key = _jev_key()
     if not key or not title:
         return None
-    _t0 = time.time()   # K-ORG-176：meter 计量（借鉴 grok-jev-router 的 meter 字段）
+    _t0 = time.time()  # K-ORG-176：meter 计量（借鉴 grok-jev-router 的 meter 字段）
     ts_proxy = os.environ.get("TS_PROXY", "http://127.0.0.1:7890")
     ts_proxies = {"https": ts_proxy, "http": ts_proxy}
-    timeout = max(timeout, 25)   # 7890 首次建连偶发 >15s（K-STOCK-084 实测）
+    timeout = max(timeout, 25)  # 7890 首次建连偶发 >15s（K-STOCK-084 实测）
     tag = ("（关联标的：%s）" % "/".join(stocks)) if stocks else ""
-    state = "以下是一条刚采集的财经快讯，请判断其市场影响。\n· %s%s" % (
-        title[:80], tag)
-    body = {"model": "jev-latest", "state": state,
-            "questions": JEV_NEWS_QUESTIONS}
+    state = "以下是一条刚采集的财经快讯，请判断其市场影响。\n· %s%s" % (title[:80], tag)
+    body = {"model": "jev-latest", "state": state, "questions": JEV_NEWS_QUESTIONS}
     try:
         r = requests.post(
-            JEV_BASE + "/systemone", json=body, timeout=timeout,
+            JEV_BASE + "/systemone",
+            json=body,
+            timeout=timeout,
             headers={"Authorization": "Bearer %s" % key},
-            proxies=ts_proxies)
+            proxies=ts_proxies,
+        )
         r.raise_for_status()
         ans = (r.json() or {}).get("answers", {})
         bias = (ans.get("bias") or {}).get("choice", "")
@@ -402,28 +489,36 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
             conf = (ans.get("bias") or {}).get("confidence", 0.0)
         if bias not in _BIAS_CN:
             return None
-        d = {"bias": bias, "bias_cn": _BIAS_CN[bias],
-             "conf": round(float(conf or 0), 2),
-             "scope": scope, "scope_cn": _SCOPE_CN.get(scope, ""),
-             "companies": list(stocks or []),  # K-ORG-159：云侧公司绑定=输入标的
-             "src": "cloud"}
+        d = {
+            "bias": bias,
+            "bias_cn": _BIAS_CN[bias],
+            "conf": round(float(conf or 0), 2),
+            "scope": scope,
+            "scope_cn": _SCOPE_CN.get(scope, ""),
+            "companies": list(stocks or []),  # K-ORG-159：云侧公司绑定=输入标的
+            "src": "cloud",
+        }
         # K-ORG-176：bias 概率全量落盘（借鉴 grok-jev-router signals 全量保留；
         # 供 E4 分歧/拥挤度哨兵用分布熵 > 单一 conf）
-        d["bias_probs"] = {k: round(float(v), 3) for k, v in probs.items()
-                           if isinstance(v, (int, float))}
+        d["bias_probs"] = {
+            k: round(float(v), 3)
+            for k, v in probs.items()
+            if isinstance(v, (int, float))
+        }
         d["impact"] = (ans.get("impact") or {}).get("choice", "low")
         try:
-            d["event_type"] = (ans.get("event_type") or {}) \
-                .get("choice", "other")
+            d["event_type"] = (ans.get("event_type") or {}).get("choice", "other")
             d = _validate_jev(d)
         except ValueError as e:
             log("jev_judge cloud schema FAIL %s" % str(e)[:100])
             return None
         d["impact_cn"] = _IMPACT_CN[d["impact"]]
-        d["meter"] = {"ms": int((time.time() - _t0) * 1000),
-                      "model": "jev-latest", "src": "cloud"}
-        d["reason"] = jev_reason(title, _BIAS_CN[bias],
-                                 _SCOPE_CN.get(scope, scope))
+        d["meter"] = {
+            "ms": int((time.time() - _t0) * 1000),
+            "model": "jev-latest",
+            "src": "cloud",
+        }
+        d["reason"] = jev_reason(title, _BIAS_CN[bias], _SCOPE_CN.get(scope, scope))
         return d
     except Exception as e:
         log("jev_judge FAIL %s" % str(e)[:100])
@@ -438,22 +533,30 @@ def jev_reason(title, bias_cn, scope_cn, timeout=LLM_TIMEOUT_S):
     """
     model = ""
     try:
-        with open(os.path.join(HERE, "news_config.json"),
-                  encoding="utf-8") as f:
+        with open(os.path.join(HERE, "news_config.json"), encoding="utf-8") as f:
             model = (json.load(f) or {}).get("ai_model") or ""
     except Exception:
         pass  # 豁免（C2批2）：配置缺省→环境变量/默认模型兜底，常态容错
     if not model:
         model = os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
     try:
-        r = requests.post(OLLAMA, json={
-            "model": model,
-            "messages": [{"role": "user", "content":
-                "财经快讯：%s\n判断：%s·%s。请用一句话（30字内）写出判断依据，"
-                "只输出依据本身，不要解释。" % (title[:80], bias_cn, scope_cn)}],
-            "stream": False, "think": False,
-            "options": {"temperature": 0.2, "num_predict": 80},
-        }, timeout=timeout)
+        r = requests.post(
+            OLLAMA,
+            json={
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "财经快讯：%s\n判断：%s·%s。请用一句话（30字内）写出判断依据，"
+                        "只输出依据本身，不要解释。" % (title[:80], bias_cn, scope_cn),
+                    }
+                ],
+                "stream": False,
+                "think": False,
+                "options": {"temperature": 0.2, "num_predict": 80},
+            },
+            timeout=timeout,
+        )
         r.raise_for_status()
         return r.json()["message"]["content"].strip().replace("\n", " ")[:60]
     except Exception:
@@ -462,7 +565,7 @@ def jev_reason(title, bias_cn, scope_cn, timeout=LLM_TIMEOUT_S):
 
 # K-STOCK-083（2026-10-10）：本地回落接线。盲测门已过（86.7% ENABLE，
 # docs/plans/2026-10-10_A3_jev情绪源本地回落预研.md §三）。
-_CLOUD_FAIL_UNTIL = 0.0   # 云失败后此 epoch 前直接走本地，防 451 期每条空打探测
+_CLOUD_FAIL_UNTIL = 0.0  # 云失败后此 epoch 前直接走本地，防 451 期每条空打探测
 
 
 def jev_judge_one_local(title, stocks, timeout=60):
@@ -475,7 +578,7 @@ def jev_judge_one_local(title, stocks, timeout=60):
     """
     if not title:
         return None
-    _t0 = time.time()   # K-ORG-176：meter 计量（与云路径同契约）
+    _t0 = time.time()  # K-ORG-176：meter 计量（与云路径同契约）
     _model = os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
     tag = ("（关联标的：%s）" % "/".join(stocks)) if stocks else ""
     base = (
@@ -493,15 +596,22 @@ def jev_judge_one_local(title, stocks, timeout=60):
         "无则空数组。"
         "口径：只看对资产价格的直接影响——外交会晤、一般性产业与技术进展、常规信息披露、"
         "国债/政策性金融债发行供给等属 neutral；明确的需求扩张、超预期业绩、降息等利好才判 bull；"
-        "明确的供给冲击、业绩暴雷、加息、制裁等才判 bear。" % (title[:100], tag))
+        "明确的供给冲击、业绩暴雷、加息、制裁等才判 bear。" % (title[:100], tag)
+    )
 
     def _ask(prompt):
-        r = requests.post(OLLAMA, json={
-            "model": os.environ.get("OLLAMA_MODEL", "qwen3.5:9b"),
-            "messages": [{"role": "user", "content": prompt}],
-            "stream": False, "think": False, "format": "json",
-            "options": {"temperature": 0.1, "num_predict": 80},
-        }, timeout=timeout)
+        r = requests.post(
+            OLLAMA,
+            json={
+                "model": os.environ.get("OLLAMA_MODEL", "qwen3.5:9b"),
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+                "think": False,
+                "format": "json",
+                "options": {"temperature": 0.1, "num_predict": 80},
+            },
+            timeout=timeout,
+        )
         r.raise_for_status()
         return json.loads(r.json()["message"]["content"])
 
@@ -511,7 +621,9 @@ def jev_judge_one_local(title, stocks, timeout=60):
         log("jev_judge_local parse FAIL %s" % str(e)[:100])
         try:
             # M8：带错重发 1 次，仍败走降级链（C2批2）
-            j = _ask(base + "（注意：上次输出无法解析，请只输出合法 JSON，不要任何多余文字）")
+            j = _ask(
+                base + "（注意：上次输出无法解析，请只输出合法 JSON，不要任何多余文字）"
+            )
         except Exception as e2:
             log("jev_judge_local retry FAIL %s" % str(e2)[:100])
             return None
@@ -529,18 +641,30 @@ def jev_judge_one_local(title, stocks, timeout=60):
     if j["conf"] < _JEV_RECALIB_CONF:
         _bias2, _conf2 = _resample_consistency(lambda: _ask(base), j["bias"])
         if _bias2 != j["bias"] or _conf2 != j["conf"]:
-            log("jev_judge_local recalib %s conf %.2f->%.2f bias %s->%s"
-                % (title[:40], j["conf"], _conf2, j["bias"], _bias2))
+            log(
+                "jev_judge_local recalib %s conf %.2f->%.2f bias %s->%s"
+                % (title[:40], j["conf"], _conf2, j["bias"], _bias2)
+            )
         j["bias"], j["conf"] = _bias2, _conf2
     scope = j.get("scope", "")
-    d = {"bias": j["bias"], "bias_cn": _BIAS_CN[j["bias"]],
-         "conf": j["conf"], "scope": scope,
-         "scope_cn": _SCOPE_CN.get(scope, scope or ""),
-         "event_type": j["event_type"], "event_cn": _EVENT_CN[j["event_type"]],
-         "impact": j["impact"], "impact_cn": _IMPACT_CN[j["impact"]],
-         "companies": j["companies"], "src": "local"}
-    d["meter"] = {"ms": int((time.time() - _t0) * 1000),
-                  "model": _model, "src": "local"}
+    d = {
+        "bias": j["bias"],
+        "bias_cn": _BIAS_CN[j["bias"]],
+        "conf": j["conf"],
+        "scope": scope,
+        "scope_cn": _SCOPE_CN.get(scope, scope or ""),
+        "event_type": j["event_type"],
+        "event_cn": _EVENT_CN[j["event_type"]],
+        "impact": j["impact"],
+        "impact_cn": _IMPACT_CN[j["impact"]],
+        "companies": j["companies"],
+        "src": "local",
+    }
+    d["meter"] = {
+        "ms": int((time.time() - _t0) * 1000),
+        "model": _model,
+        "src": "local",
+    }
     d["reason"] = jev_reason(title, d["bias_cn"], d["scope_cn"])
     return d
 
@@ -592,7 +716,9 @@ def _jev_stats(db, hours=24):
     try:
         rows = db.execute(
             "SELECT jev, created_at FROM news WHERE jev IS NOT NULL "
-            "AND jev!='' AND created_at>=?", (since,)).fetchall()
+            "AND jev!='' AND created_at>=?",
+            (since,),
+        ).fetchall()
     except Exception as e:
         log("jev_summary 查询失败，JEV 分布降级为空: %s" % str(e)[:100])  # C2批2
         return ""
@@ -608,8 +734,8 @@ def _jev_stats(db, hours=24):
         sc = d.get("scope") or "?"
         scope_cnt[sc] = scope_cnt.get(sc, 0) + 1
         et = d.get("event_type")
-        if et:   # K-ORG-159：仅统计携带 event_type 的新判定，
-                 # 存量旧数据无此键不污染「其他」桶
+        if et:  # K-ORG-159：仅统计携带 event_type 的新判定，
+            # 存量旧数据无此键不污染「其他」桶
             event_cnt[et] = event_cnt.get(et, 0) + 1
         conf = d.get("conf")
         if isinstance(conf, (int, float)):
@@ -619,37 +745,62 @@ def _jev_stats(db, hours=24):
             if d.get("bias") in ("bull", "bear"):
                 age_h = 0.0
                 try:
-                    age_h = max(0.0, (now - datetime.strptime(
-                        str(d.get("created_at") or "")[:16],
-                        "%Y-%m-%d %H:%M")).total_seconds() / 3600.0)
+                    age_h = max(
+                        0.0,
+                        (
+                            now
+                            - datetime.strptime(
+                                str(d.get("created_at") or "")[:16], "%Y-%m-%d %H:%M"
+                            )
+                        ).total_seconds()
+                        / 3600.0,
+                    )
                 except Exception:
                     pass  # 豁免（C2批2）：时间坏值按 0h（权重 1）计
-                net += math.exp(-math.log(2) * age_h
-                                / _JEV_HL_H.get(d.get("bias"), 6.0)) \
-                    * (1.0 if d.get("bias") == "bull" else -1.0)
+                net += math.exp(
+                    -math.log(2) * age_h / _JEV_HL_H.get(d.get("bias"), 6.0)
+                ) * (1.0 if d.get("bias") == "bull" else -1.0)
                 hi_dir += 1
     if not bias_cnt:
         return "", 0.0, 0
     total = sum(bias_cnt.values())
-    parts = ["%d 条已判：利多 %d / 利空 %d / 中性 %d" % (
-        total, bias_cnt.get("bull", 0), bias_cnt.get("bear", 0),
-        bias_cnt.get("neutral", 0))]
+    parts = [
+        "%d 条已判：利多 %d / 利空 %d / 中性 %d"
+        % (
+            total,
+            bias_cnt.get("bull", 0),
+            bias_cnt.get("bear", 0),
+            bias_cnt.get("neutral", 0),
+        )
+    ]
     for sc in ("cn", "us", "hk", "commodity", "crypto", "macro"):
         if scope_cnt.get(sc):
-            parts.append("%s %d（多%d/空%d）" % (
-                _SCOPE_CN[sc], scope_cnt[sc],
-                sum(1 for (j, _ca) in rows if _bias_of(j) == "bull"
-                    and _scope_of(j) == sc),
-                sum(1 for (j, _ca) in rows if _bias_of(j) == "bear"
-                    and _scope_of(j) == sc)))
+            parts.append(
+                "%s %d（多%d/空%d）"
+                % (
+                    _SCOPE_CN[sc],
+                    scope_cnt[sc],
+                    sum(
+                        1
+                        for (j, _ca) in rows
+                        if _bias_of(j) == "bull" and _scope_of(j) == sc
+                    ),
+                    sum(
+                        1
+                        for (j, _ca) in rows
+                        if _bias_of(j) == "bear" and _scope_of(j) == sc
+                    ),
+                )
+            )
     if low_conf:
         parts.append("低置信%d条(<70%%)" % low_conf)
     if hi_dir:
         parts.append("净倾向(时衰×高置信)%+.1f" % net)
     if event_cnt:
         top = sorted(event_cnt.items(), key=lambda kv: -kv[1])[:3]
-        parts.append("事件:%s" % " ".join(
-            "%s%d" % (_EVENT_CN.get(k, k), v) for k, v in top))
+        parts.append(
+            "事件:%s" % " ".join("%s%d" % (_EVENT_CN.get(k, k), v) for k, v in top)
+        )
     return " · ".join(parts), net, hi_dir
 
 
@@ -668,10 +819,10 @@ def jev_summary(db, hours=24):
 # （-3.8pp 未达 5pp 阈值）；低开高走组 59.2%（+6.1pp 达阈值但样本小
 # n=71 且与预设假设逻辑相反，谨慎未下发）。三档均不启用，留待样本
 # 积累后重跑 jev_resonance.py 复评。
-_JEV_RESONANCE_ON = False   # 实证 applied 达标后置位（当前未达标）
-_RESO_RNG_PCT = 0.8        # 振幅%阈值（快照 high/low vs low）
-_RESO_SHADOW = 0.5         # 上影/下影占振幅阈值（冲高回落/低开高走）
-_RESO_MOVE = 0.4           # A股方向移动阈值%（涨跌幅绝对值）
+_JEV_RESONANCE_ON = False  # 实证 applied 达标后置位（当前未达标）
+_RESO_RNG_PCT = 0.8  # 振幅%阈值（快照 high/low vs low）
+_RESO_SHADOW = 0.5  # 上影/下影占振幅阈值（冲高回落/低开高走）
+_RESO_MOVE = 0.4  # A股方向移动阈值%（涨跌幅绝对值）
 
 
 def judge_resonance(net, hi_dir, markets):
@@ -683,8 +834,7 @@ def judge_resonance(net, hi_dir, markets):
     """
     if not hi_dir or net == 0.0:
         return ""
-    a = [m for m in markets
-         if m.get("grp") == "A股" and m.get("pct") is not None]
+    a = [m for m in markets if m.get("grp") == "A股" and m.get("pct") is not None]
     if not a:
         return ""
     avg = sum(m["pct"] for m in a) / len(a)
@@ -699,7 +849,8 @@ def judge_resonance(net, hi_dir, markets):
     if net > 0:
         if up_shadow is not None and up_shadow >= _RESO_SHADOW:
             return "分歧警示：JEV 利多主导 × A股冲高回落（上影%.0f%%）" % (
-                up_shadow * 100)
+                up_shadow * 100
+            )
         if avg >= _RESO_MOVE:
             return "共振确认：JEV 利多主导 × A股上行"
         if avg <= -_RESO_MOVE:
@@ -730,13 +881,23 @@ def _scope_of(j):
 
 MODES = {
     "brief": {
-        "title": "🤖 AI 金融晨报", "rules": BRIEF_RULES, "json": "ai_brief.json",
-        "table": "ai_briefs", "kind": "ai", "win_cfg": "ai_window_hours", "win_def": 14,
+        "title": "🤖 AI 金融晨报",
+        "rules": BRIEF_RULES,
+        "json": "ai_brief.json",
+        "table": "ai_briefs",
+        "kind": "ai",
+        "win_cfg": "ai_window_hours",
+        "win_def": 14,
         "span": "盘前",
     },
     "review": {
-        "title": "📊 AI 收盘复盘", "rules": REVIEW_RULES, "json": "ai_review.json",
-        "table": "ai_reviews", "kind": "review", "win_cfg": "review_window_hours", "win_def": 7,
+        "title": "📊 AI 收盘复盘",
+        "rules": REVIEW_RULES,
+        "json": "ai_review.json",
+        "table": "ai_reviews",
+        "kind": "review",
+        "win_cfg": "review_window_hours",
+        "win_def": 7,
         "span": "收盘",
     },
 }
@@ -772,8 +933,9 @@ def fetch_markets(extra_codes=()):
     """单次请求拉全部行情，按代码类型解析；单项失败不影响其他。
     extra_codes: 自选股代码（追加为「自选」分组）。"""
     code_list = list(SINA_CODES) + [("自选", c) for c in extra_codes]
-    r = requests.get(SINA_HQ % ",".join(c for _, c in code_list),
-                     headers=HEADERS, timeout=12)
+    r = requests.get(
+        SINA_HQ % ",".join(c for _, c in code_list), headers=HEADERS, timeout=12
+    )
     r.raise_for_status()
     r.encoding = "gbk"
     raw = {}
@@ -794,8 +956,13 @@ def fetch_markets(extra_codes=()):
             if code.startswith(("sh", "sz", "bj")):
                 # K-ORG-168（E2）：追加当日 high/low 快照（f[4]/f[5]），
                 # 供共振观察段做冲高回落/低开高走的日内行为判定。
-                rec.update(name=f[0], price=_f(f[3]), pct=_pct(_f(f[3]), _f(f[2])),
-                           high=_f(f[4]), low=_f(f[5]))
+                rec.update(
+                    name=f[0],
+                    price=_f(f[3]),
+                    pct=_pct(_f(f[3]), _f(f[2])),
+                    high=_f(f[4]),
+                    low=_f(f[5]),
+                )
             elif code.startswith("rt_hk"):
                 rec.update(name=f[1], price=_f(f[6]), pct=_f(f[8]), dec=3)
             elif code.startswith("gb_"):
@@ -820,14 +987,21 @@ def format_markets(markets):
             last_grp = m["grp"]
         arrow = ""
         if m["pct"] is not None:
-            arrow = " ▲%+.2f%%" % m["pct"] if m["pct"] > 0 else (
-                " ▼%.2f%%" % abs(m["pct"]) if m["pct"] < 0 else " 0.00%")
-        lines.append("  %s %s%s" % (m["name"], ("%." + str(m["dec"]) + "f") % m["price"], arrow))
+            arrow = (
+                " ▲%+.2f%%" % m["pct"]
+                if m["pct"] > 0
+                else (" ▼%.2f%%" % abs(m["pct"]) if m["pct"] < 0 else " 0.00%")
+            )
+        lines.append(
+            "  %s %s%s" % (m["name"], ("%." + str(m["dec"]) + "f") % m["price"], arrow)
+        )
     return "\n".join(lines)
 
 
-EM_SECTOR_URL = ("https://push2.eastmoney.com/api/qt/clist/get?pn=%d&pz=100&po=1"
-                 "&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:2&fields=f12,f14,f3,f104,f105")
+EM_SECTOR_URL = (
+    "https://push2.eastmoney.com/api/qt/clist/get?pn=%d&pz=100&po=1"
+    "&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:2&fields=f12,f14,f3,f104,f105"
+)
 SINA_HY_URL = "https://vip.stock.finance.sina.com.cn/q/view/newSinaHy.php"
 
 
@@ -861,14 +1035,21 @@ def _fetch_sectors_em():
         name, pct = s.get("f14"), _f(s.get("f3"))
         if not name or pct is None:
             continue
-        out.append({"name": name, "pct": pct,
-                    "up": int(s.get("f104") or 0), "down": int(s.get("f105") or 0)})
+        out.append(
+            {
+                "name": name,
+                "pct": pct,
+                "up": int(s.get("f104") or 0),
+                "down": int(s.get("f105") or 0),
+            }
+        )
     return out
 
 
 def _fetch_sectors_sina():
     """新浪行业板块（约60个一级行业，降级源）。失败抛异常。"""
     import re
+
     r = requests.get(SINA_HY_URL, headers=HEADERS, timeout=12)
     r.raise_for_status()
     r.encoding = "gbk"
@@ -913,14 +1094,23 @@ def format_sectors(sectors, top_n=6):
     up_cnt = sum(1 for s in sectors if s["pct"] > 0)
     dn_cnt = sum(1 for s in sectors if s["pct"] < 0)
     breadth = "上涨占比 %d%%" % round(up_cnt * 100 / len(sectors))
-    mood = "普涨" if up_cnt * 3 > len(sectors) * 2 else (
-        "普跌" if up_cnt * 3 < len(sectors) else "分化")
-    lines = ["全行业 %d 个：%d 涨 / %d 跌（%s，%s）" % (
-        len(sectors), up_cnt, dn_cnt, breadth, mood)]
-    for tag, grp in (("领涨", sectors[:top_n]),
-                     ("领跌", list(reversed(sectors))[:top_n])):
-        lines.append("%s：%s" % (tag, "，".join(
-            "%s %+.2f%%" % (s["name"], s["pct"]) for s in grp)))
+    mood = (
+        "普涨"
+        if up_cnt * 3 > len(sectors) * 2
+        else ("普跌" if up_cnt * 3 < len(sectors) else "分化")
+    )
+    lines = [
+        "全行业 %d 个：%d 涨 / %d 跌（%s，%s）"
+        % (len(sectors), up_cnt, dn_cnt, breadth, mood)
+    ]
+    for tag, grp in (
+        ("领涨", sectors[:top_n]),
+        ("领跌", list(reversed(sectors))[:top_n]),
+    ):
+        lines.append(
+            "%s：%s"
+            % (tag, "，".join("%s %+.2f%%" % (s["name"], s["pct"]) for s in grp))
+        )
     return "\n".join(lines)
 
 
@@ -930,15 +1120,19 @@ def fetch_news(db, window_hours, limit):
         # K-ORG-161（M4）：rowid 作 news_id 带出，供报告引用溯源映射
         "SELECT rowid, source, ts, title, hit, COALESCE(stocks,'') FROM news "
         "WHERE created_at>=? ORDER BY created_at DESC, ts DESC LIMIT ?",
-        (since, limit)).fetchall()
+        (since, limit),
+    ).fetchall()
     out = []
     for r in reversed(rows):
         try:
             stocks = json.loads(r[5]) if r[5] else []
         except Exception:
             stocks = []
-        out.append(dict(news_id=r[0], source=r[1], ts=r[2], title=r[3],
-                        hit=r[4], stocks=stocks))
+        out.append(
+            dict(
+                news_id=r[0], source=r[1], ts=r[2], title=r[3], hit=r[4], stocks=stocks
+            )
+        )
     return out
 
 
@@ -948,9 +1142,17 @@ def format_news(items):
     for i, it in enumerate(items, 1):
         star = "⭐" if it["hit"] else "  "
         tag = ("【%s】" % "/".join(it["stocks"])) if it.get("stocks") else ""
-        lines.append("%d. %s[%s %s]%s %s" % (
-            i, star, src_name.get(it["source"], it["source"]),
-            (it["ts"] or "")[-11:], tag, (it["title"] or "")[:70]))
+        lines.append(
+            "%d. %s[%s %s]%s %s"
+            % (
+                i,
+                star,
+                src_name.get(it["source"], it["source"]),
+                (it["ts"] or "")[-11:],
+                tag,
+                (it["title"] or "")[:70],
+            )
+        )
     return "\n".join(lines)
 
 
@@ -990,12 +1192,15 @@ def _audit_citations(text, news_count):
             out.append(ln)
             continue
         if s.startswith("【") and "】" in s:
-            sec = s[1:s.index("】")]  # 仅受审计区块进入 claim 校验
+            sec = s[1 : s.index("】")]  # 仅受审计区块进入 claim 校验
             out.append(ln)
             continue
-        if (sec in _AUDIT_SECS and not s.startswith("（")
-                and "来源 #" not in s
-                and "暂无明确信息来源" not in s):
+        if (
+            sec in _AUDIT_SECS
+            and not s.startswith("（")
+            and "来源 #" not in s
+            and "暂无明确信息来源" not in s
+        ):
             out.append(ln + "（暂无明确信息来源）")
             continue
         out.append(ln)
@@ -1003,21 +1208,29 @@ def _audit_citations(text, news_count):
 
 
 def call_llm(model, market_text, news_text, stock_text, rules, sector_text=""):
-    blocks = ["以下是市场行情快照与财经快讯，请生成报告。\n\n"
-              "== 行情快照 ==\n" + market_text]
+    blocks = [
+        "以下是市场行情快照与财经快讯，请生成报告。\n\n== 行情快照 ==\n" + market_text
+    ]
     if sector_text:
         blocks.append("== 行业板块热力（当日涨跌）==\n" + sector_text)
     blocks.append("== 财经快讯（⭐为关注命中）==\n" + news_text)
     if stock_text:
         blocks.append("== 自选股相关 ==\n" + stock_text)
     user = "\n\n".join(blocks) + "\n\n" + rules + (STOCK_RULE if stock_text else "")
-    r = requests.post(OLLAMA, json={
-        "model": model,
-        "messages": [{"role": "system", "content": SYS_PROMPT},
-                     {"role": "user", "content": user}],
-        "stream": False, "think": False,
-        "options": {"temperature": 0.3, "num_predict": 1100},
-    }, timeout=600)
+    r = requests.post(
+        OLLAMA,
+        json={
+            "model": model,
+            "messages": [
+                {"role": "system", "content": SYS_PROMPT},
+                {"role": "user", "content": user},
+            ],
+            "stream": False,
+            "think": False,
+            "options": {"temperature": 0.3, "num_predict": 1100},
+        },
+        timeout=600,
+    )
     r.raise_for_status()
     text = r.json()["message"]["content"].strip()
     if "【" not in text:
@@ -1026,10 +1239,14 @@ def call_llm(model, market_text, news_text, stock_text, rules, sector_text=""):
 
 
 def fallback_brief(news_items):
-    lines = ["【提示】", "（本地 AI 模型暂不可用，以下为关注命中原文）", "",
-             "【⭐ 关注命中】"]
+    lines = [
+        "【提示】",
+        "（本地 AI 模型暂不可用，以下为关注命中原文）",
+        "",
+        "【⭐ 关注命中】",
+    ]
     hits = [n for n in news_items if n["hit"]]
-    for n in (hits or news_items[-8:]):
+    for n in hits or news_items[-8:]:
         tag = ("【%s】" % "/".join(n["stocks"])) if n.get("stocks") else ""
         lines.append("· %s%s" % (tag, (n["title"] or "")[:70]))
     if not hits and not news_items:
@@ -1049,8 +1266,13 @@ def push_message(text):
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
-    r = subprocess.run([sys.executable, os.path.join(HERE, "send_feishu.py"), tmp],
-                       capture_output=True, text=True, encoding="utf-8", timeout=60)
+    r = subprocess.run(
+        [sys.executable, os.path.join(HERE, "send_feishu.py"), tmp],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+    )
     out = (r.stdout or "").strip()
     log("push -> " + out)
     return out.startswith("SEND_OK")
@@ -1060,6 +1282,7 @@ def run(mode, dry):
     m = MODES[mode]
     # 2026-10-25 SEC 收口（EXEC-R14）：敏感字段（portal/doc/jev_*）读 env/本地私有覆盖
     from config_local import load_news_config
+
     cfg = load_news_config()
     model = cfg.get("ai_model", "qwen3.5:9b")
     window = int(cfg.get(m["win_cfg"], m["win_def"]))
@@ -1070,11 +1293,14 @@ def run(mode, dry):
     db.execute(
         "CREATE TABLE IF NOT EXISTS ai_briefs ("
         "date TEXT PRIMARY KEY, ts TEXT, model TEXT, ok INTEGER, "
-        "markets TEXT, brief TEXT, pushed INTEGER DEFAULT 0)")
+        "markets TEXT, brief TEXT, pushed INTEGER DEFAULT 0)"
+    )
     db.execute(
         "CREATE TABLE IF NOT EXISTS ai_reviews ("
         "date TEXT PRIMARY KEY, ts TEXT, model TEXT, ok INTEGER, "
-        "markets TEXT, brief TEXT, pushed INTEGER DEFAULT 0)")
+        "markets TEXT, brief TEXT, pushed INTEGER DEFAULT 0)"
+    )
+
     def _add_col(col):
         # 2026-10-16 审计：原 except OperationalError: pass 连 "database
         # is locked" 等真故障一并吞掉（迁移静默假成功）；仅豁免
@@ -1084,14 +1310,17 @@ def run(mode, dry):
         except sqlite3.OperationalError as e:
             if "duplicate column" not in str(e).lower():
                 raise
+
     _add_col("stocks")
     _add_col("jev")
 
     try:
         from quote_snapshot import normalize_code
     except Exception:
+
         def normalize_code(c):
             return str(c).strip().lower()
+
     extra_codes = []
     for w in watchlist:
         c = normalize_code(w.get("code", ""))
@@ -1114,15 +1343,27 @@ def run(mode, dry):
     sector_text = format_sectors(sectors) if sectors else ""
     if sectors:  # 落盘供 /bt-sectors 独立页渲染
         try:
-            with open(os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    "sectors.json"), "w", encoding="utf-8") as f:
-                json.dump({"ts": now_cst().strftime("%Y-%m-%d %H:%M") + " 北京",
-                           "count": len(sectors),
-                           "up": sum(1 for s in sectors if s["pct"] > 0),
-                           "items": sectors}, f, ensure_ascii=False)
+            with open(
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "sectors.json"
+                ),
+                "w",
+                encoding="utf-8",
+            ) as f:
+                json.dump(
+                    {
+                        "ts": now_cst().strftime("%Y-%m-%d %H:%M") + " 北京",
+                        "count": len(sectors),
+                        "up": sum(1 for s in sectors if s["pct"] > 0),
+                        "items": sectors,
+                    },
+                    f,
+                    ensure_ascii=False,
+                )
         except Exception as e:
-            log("sectors.json 落盘失败（/bt-sectors 页将 stale）: %s" % str(e)[:100])  # C2批2
+            log(
+                "sectors.json 落盘失败（/bt-sectors 页将 stale）: %s" % str(e)[:100]
+            )  # C2批2
 
     news_items = fetch_news(db, window, limit)
     news_text = format_news(news_items) if news_items else "（时间窗内暂无新闻）"
@@ -1134,14 +1375,22 @@ def run(mode, dry):
             jev_reso = judge_resonance(_jev_net, _jev_hi, markets)
         except Exception as e:
             log("resonance FAIL %s" % str(e)[:80])  # C2批2：共振段失败不阻断
-    log("%s start markets=%d news=%d stocks_hits=%d model=%s" % (
-        mode, len(markets), len(news_items),
-        sum(1 for n in news_items if n.get("stocks")), model))
+    log(
+        "%s start markets=%d news=%d stocks_hits=%d model=%s"
+        % (
+            mode,
+            len(markets),
+            len(news_items),
+            sum(1 for n in news_items if n.get("stocks")),
+            model,
+        )
+    )
 
     ai_ok = 1
     try:
-        brief = call_llm(model, market_text, news_text, stock_text,
-                         m["rules"], sector_text)
+        brief = call_llm(
+            model, market_text, news_text, stock_text, m["rules"], sector_text
+        )
     except Exception as e:
         ai_ok = 0
         brief = fallback_brief(news_items)
@@ -1150,7 +1399,12 @@ def run(mode, dry):
 
     today = now_cst().strftime("%Y-%m-%d")
     header = "%s · %s（%s %d条快讯/%dh）" % (
-        m["title"], now_cst().strftime("%m-%d"), m["span"], len(news_items), window)
+        m["title"],
+        now_cst().strftime("%m-%d"),
+        m["span"],
+        len(news_items),
+        window,
+    )
     msg_parts = [header, "", "▍全球市场速览", market_text]
     if sector_text:
         msg_parts += ["", "▍行业板块热力", sector_text]
@@ -1158,14 +1412,19 @@ def run(mode, dry):
         msg_parts += ["", "▍JEV 新闻判断（近24h）", jev_text]
         if jev_reso:
             msg_parts += ["", "▍共振观察", jev_reso]
-    msg_parts += ["", brief, "",
-                  "—— 本地 %s 客观归纳 · 仅信息参考，不构成投资建议 · 信息采集域" % model]
+    msg_parts += [
+        "",
+        brief,
+        "",
+        "—— 本地 %s 客观归纳 · 仅信息参考，不构成投资建议 · 信息采集域" % model,
+    ]
     msg = "\n".join(msg_parts)
 
     sent = False
     if not dry:
         try:
             from card_build import build_card, push_card
+
             portal = cfg.get("portal_url", "")
             md_blocks = ["### ▍全球市场速览\n" + market_text]
             if sector_text:
@@ -1182,36 +1441,52 @@ def run(mode, dry):
             if portal:
                 btns.append(("🚦 明日信号·内网", portal + "bt-signals", "default"))
                 if jev_text:
-                    btns.append(("⚖️ JEV 判断",
-                                 cfg.get("jev_doc_url") or (portal + "bt-jev"),
-                                 "primary"))
+                    btns.append(
+                        (
+                            "⚖️ JEV 判断",
+                            cfg.get("jev_doc_url") or (portal + "bt-jev"),
+                            "primary",
+                        )
+                    )
                 if mode == "review" and sector_text:
                     btns.append(("🔥 板块热力·内网", portal + "bt-sectors", "default"))
                 btns.append(("🖥 门户控制台·内网", portal + "#console", "default"))
             card = build_card(
                 m["title"],
-                "%s（%s %d条快讯/%dh）" % (m["span"],
-                                           now_cst().strftime("%m-%d"),
-                                           len(news_items), window),
+                "%s（%s %d条快讯/%dh）"
+                % (m["span"], now_cst().strftime("%m-%d"), len(news_items), window),
                 "turquoise" if mode == "brief" else "carmine",
                 md_blocks,
                 footer="本地 %s 客观归纳 · 仅信息参考，不构成投资建议 · 信息采集域"
-                       % model,
-                buttons=btns or None)
+                % model,
+                buttons=btns or None,
+            )
             # 2026-10-25 P2/P3：统一分装 + H5 按钮（失败回落旧卡）
             try:
-                sys.path.insert(0, os.path.join(os.path.dirname(
-                    os.path.dirname(os.path.abspath(__file__))), "portal"))
+                sys.path.insert(
+                    0,
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "portal",
+                    ),
+                )
                 from push_unified_adapter import adapt as _adapt
                 from feishu_card_v2 import m_url as _m
+
                 _h5 = _m("entry")
                 _btns = [("📱 移动端总览（H5）", _h5, "primary")] if _h5 else None
-                card = _adapt("ai", card, "brief", m["title"], md_blocks,
-                              ts=now_cst().strftime("%Y-%m-%d %H:%M"),
-                              source="AI 晨报",
-                              footer="本地 %s 客观归纳 · 仅信息参考，不构成投资建议"
-                                     % model,
-                              buttons=_btns, level="info")
+                card = _adapt(
+                    "ai",
+                    card,
+                    "brief",
+                    m["title"],
+                    md_blocks,
+                    ts=now_cst().strftime("%Y-%m-%d %H:%M"),
+                    source="AI 晨报",
+                    footer="本地 %s 客观归纳 · 仅信息参考，不构成投资建议" % model,
+                    buttons=_btns,
+                    level="info",
+                )
             except Exception:
                 pass
             sent = push_card(card, qr_portal=portal or None)
@@ -1230,20 +1505,35 @@ def run(mode, dry):
     db.execute(
         "INSERT OR REPLACE INTO %s(date,ts,model,ok,markets,brief,pushed) "
         "VALUES(?,?,?,?,?,?,?)" % m["table"],
-        (today, now_cst().strftime("%Y-%m-%d %H:%M"), model, ai_ok,
-         json.dumps(markets, ensure_ascii=False), brief, int(bool(sent))))
-    db.execute("INSERT INTO runs(kind,ts,ok,new_count,push_count,detail) VALUES(?,?,?,?,?,?)",
-               (m["kind"], now_cst().strftime("%Y-%m-%d %H:%M"), ai_ok,
-                len(news_items), int(bool(sent)),
-                "markets=%d llm_ok=%d" % (len(markets), ai_ok)))
+        (
+            today,
+            now_cst().strftime("%Y-%m-%d %H:%M"),
+            model,
+            ai_ok,
+            json.dumps(markets, ensure_ascii=False),
+            brief,
+            int(bool(sent)),
+        ),
+    )
+    db.execute(
+        "INSERT INTO runs(kind,ts,ok,new_count,push_count,detail) VALUES(?,?,?,?,?,?)",
+        (
+            m["kind"],
+            now_cst().strftime("%Y-%m-%d %H:%M"),
+            ai_ok,
+            len(news_items),
+            int(bool(sent)),
+            "markets=%d llm_ok=%d" % (len(markets), ai_ok),
+        ),
+    )
     db.commit()
     db.close()
 
     if sent and not dry:  # 同步刷新飞书简报文档（失败静默，不影响推送）
         try:
             import news_doc_board
-            log("doc_board refresh %s"
-                % ("OK" if news_doc_board.refresh() else "FAIL"))
+
+            log("doc_board refresh %s" % ("OK" if news_doc_board.refresh() else "FAIL"))
         except Exception as e:
             log("doc_board refresh ERR %s" % str(e)[:100])
         try:  # 外网图表卡（后台跑，不阻塞晨报链路）
@@ -1251,25 +1541,34 @@ def run(mode, dry):
             # 统一重定向 C:\Temp\news_jev_chart_out.log（对齐 alert_push 等启动器惯例）
             _jc_log = open(r"C:\Temp\news_jev_chart_out.log", "ab")
             subprocess.Popen(
-                [sys.executable,
-                 os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "news_jev_chart.py")],
-                stdout=_jc_log, stderr=subprocess.STDOUT,
-                creationflags=0x08000000)  # CREATE_NO_WINDOW
+                [
+                    sys.executable,
+                    os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)), "news_jev_chart.py"
+                    ),
+                ],
+                stdout=_jc_log,
+                stderr=subprocess.STDOUT,
+                creationflags=0x08000000,
+            )  # CREATE_NO_WINDOW
         except Exception as e:
             log("news_jev_chart 启动失败，本期图表不更新: %s" % str(e)[:100])  # C2批2
         try:  # 微信渠道：晨报/复盘 markdown 摘要（未配置自动跳过）
             import send_wecom
+
             md = "**%s · %s**\n" % (
                 "🤖 AI 金融晨报" if mode == "brief" else "🤖 AI 收盘复盘",
-                now_cst().strftime("%m-%d %H:%M"))
+                now_cst().strftime("%m-%d %H:%M"),
+            )
             if jev_text:
                 md += "JEV 判断：%s\n" % jev_text
             md += "\n" + brief[:1500]
             send_wecom.send_markdown(md)
         except Exception as e:
-            log("wecom 摘要推送失败（未配置走 send_wecom 内部跳过，异常即真失败）: %s"
-                % str(e)[:100])  # C2批2
+            log(
+                "wecom 摘要推送失败（未配置走 send_wecom 内部跳过，异常即真失败）: %s"
+                % str(e)[:100]
+            )  # C2批2
 
     headline = ""
     for ln in brief.splitlines():
@@ -1277,25 +1576,41 @@ def run(mode, dry):
             headline = ln.strip()
             break
     payload = {
-        "kind": mode, "date": today, "ts": now_cst().strftime("%Y-%m-%d %H:%M"),
-        "model": model, "ok": bool(ai_ok), "pushed": bool(sent),
-        "news_count": len(news_items), "market_count": len(markets),
+        "kind": mode,
+        "date": today,
+        "ts": now_cst().strftime("%Y-%m-%d %H:%M"),
+        "model": model,
+        "ok": bool(ai_ok),
+        "pushed": bool(sent),
+        "news_count": len(news_items),
+        "market_count": len(markets),
         "headline": headline[:120],
     }
     # K-ORG-161（M4）：引用溯源映射——报告「来源 #序号」→ 快讯 news_id(rowid)
-    payload["news_refs"] = {str(i + 1): it["news_id"]
-                            for i, it in enumerate(news_items)}
+    payload["news_refs"] = {
+        str(i + 1): it["news_id"] for i, it in enumerate(news_items)
+    }
     if sectors:
         up_cnt = sum(1 for s in sectors if s["pct"] > 0)
         payload["sectors"] = {
-            "total": len(sectors), "up": up_cnt, "down": len(sectors) - up_cnt,
+            "total": len(sectors),
+            "up": up_cnt,
+            "down": len(sectors) - up_cnt,
             "top": sectors[:6],
             "bottom": list(reversed(sectors))[:6],
         }
     atomic_json(os.path.join(HERE, m["json"]), payload)
     log("%s done llm_ok=%d sent=%s" % (mode, ai_ok, sent))
-    print("AI_%s %s llm_ok=%d markets=%d news=%d" % (
-        mode.upper(), "SENT" if sent else "FAIL", ai_ok, len(markets), len(news_items)))
+    print(
+        "AI_%s %s llm_ok=%d markets=%d news=%d"
+        % (
+            mode.upper(),
+            "SENT" if sent else "FAIL",
+            ai_ok,
+            len(markets),
+            len(news_items),
+        )
+    )
     if dry:
         print("=" * 60)
         print(msg)
@@ -1305,22 +1620,29 @@ def main():
     mode = "review" if "review" in sys.argv else "brief"
     run(mode, "--dry" in sys.argv)
     # W40：AI 晨报（08:00 既有任务）成功后追加「推送日报」（每日一次，不新建任务）
-    if mode == "brief" and "--dry" not in sys.argv \
-            and str(os.environ.get("PUSH_DIGEST_ENABLED", "1")) != "0":
+    if (
+        mode == "brief"
+        and "--dry" not in sys.argv
+        and str(os.environ.get("PUSH_DIGEST_ENABLED", "1")) != "0"
+    ):
         try:
             import sys as _sys
             import os as _os
-            _portal = _os.path.join(_os.path.dirname(_os.path.dirname(
-                _os.path.abspath(__file__))), "portal")
+
+            _portal = _os.path.join(
+                _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "portal"
+            )
             if _portal not in _sys.path:
                 _sys.path.insert(0, _portal)
             import push_daily_digest as _pd
+
             _ok, _why = _pd.send_once()
             print("PUSH_DIGEST", _ok, _why)
             # H3：军机驿日报（Hermes 只读草稿；定时归平台，Hermes 不当定时器）
             if str(os.environ.get("HERMES_REPORT_ENABLED", "1")) != "0":
                 try:
                     import hermes_report_job as _hr
+
                     _hok, _hwhy = _hr.run_once("day")
                     print("HERMES_REPORT", _hok, _hwhy)
                 except Exception as _he:  # noqa: BLE001

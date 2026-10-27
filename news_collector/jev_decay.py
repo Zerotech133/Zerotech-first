@@ -23,6 +23,7 @@ source 仅 n≥min_n_src 且衰减显著差异的来源下发（applied=True）�
 
 用法：python jev_decay.py
 """
+
 import math
 import os
 import sys
@@ -33,10 +34,10 @@ import sentiment_backtest as sbt  # noqa: E402  (复用其 run/_write_json)
 
 RESULT = os.path.join(HERE, "data", "jev_decay.json")
 DIRS = {"bull": 1.0, "bear": -1.0}
-HI_CUT = 0.7          # 对齐 _JEV_LOW_CONF（低置信不参与净倾向）
-MIN_SRC_N = 30        # 来源级最小方向样本数
-HL_MIN, HL_MAX = 4.0, 24.0   # 半衰期钳制范围（小时）
-SYM_LAMBDA = 0.1155   # ln2/6（对称基准，K-ORG-157）
+HI_CUT = 0.7  # 对齐 _JEV_LOW_CONF（低置信不参与净倾向）
+MIN_SRC_N = 30  # 来源级最小方向样本数
+HL_MIN, HL_MAX = 4.0, 24.0  # 半衰期钳制范围（小时）
+SYM_LAMBDA = 0.1155  # ln2/6（对称基准，K-ORG-157）
 ASYM_PERSIST_GAP = 0.05  # 不对称采纳阈值：bear 的 hit3 保持率须高于 bull 该量
 
 
@@ -81,8 +82,7 @@ def main():
     if not res:
         print("DECAY no result (datamart/样本缺失)")
         return None
-    rows = [r for r in res.get("rows", []) if r["bias"] in DIRS
-            and r["conf"] >= HI_CUT]
+    rows = [r for r in res.get("rows", []) if r["bias"] in DIRS and r["conf"] >= HI_CUT]
     n_dir = len(rows)
 
     bias_decay = {}
@@ -101,8 +101,11 @@ def main():
     # 不对称采纳：bear 保持率(小样本带噪) > bull 保持率 + 间隙，且两档 h1 均有效
     r_bull = bl["h3"] / bl["h1"] if (bl.get("h1") and bl["h3"]) else None
     r_bear = bh["h3"] / bh["h1"] if (bh.get("h1") and bh["h3"]) else None
-    asym = (r_bear is not None and r_bull is not None
-            and r_bear - r_bull >= ASYM_PERSIST_GAP)
+    asym = (
+        r_bear is not None
+        and r_bull is not None
+        and r_bear - r_bull >= ASYM_PERSIST_GAP
+    )
 
     # 来源级：方向样本按 source 分组，仅统计 n≥MIN_SRC_N
     by_src = {}
@@ -116,8 +119,7 @@ def main():
         h1, n1 = _hit(sub, 1, None)  # 来源级不分方向：绝对命中（T+1 涨）
         h3, n3 = _hit(sub, 3, None)
         hl = _hl_from_ratio(h1, h3)
-        entry = {"source": s, "n": len(sub), "h1": h1, "h3": h3,
-                 "hl_h": hl}
+        entry = {"source": s, "n": len(sub), "h1": h1, "h3": h3, "hl_h": hl}
         # 显著差异：与对称基准半衰期(6h)差距 ≥ 2h 才下发（小样本不下发）
         entry["applied"] = bool(hl and abs(hl - 6.0) >= 2.0)
         src_rows.append(entry)
@@ -129,27 +131,48 @@ def main():
         "hi_cut": HI_CUT,
         "bias_decay": bias_decay,
         "asym_supported": asym,
-        "persist3": {"bull": round(r_bull, 3) if r_bull else None,
-                     "bear": round(r_bear, 3) if r_bear else None},
+        "persist3": {
+            "bull": round(r_bull, 3) if r_bull else None,
+            "bear": round(r_bear, 3) if r_bear else None,
+        },
         "source_decay": src_rows,
-        "hint": ("asym_supported=true 时 news_ai 净倾向按利空更慢/利多更快半衰期"
-                 "加权；来源级 applied=true 的来源按各自半衰期，未达样本阈值不"
-                 "下发（回落对称 6h）。样本不足档位一律不下发。"),
+        "hint": (
+            "asym_supported=true 时 news_ai 净倾向按利空更慢/利多更快半衰期"
+            "加权；来源级 applied=true 的来源按各自半衰期，未达样本阈值不"
+            "下发（回落对称 6h）。样本不足档位一律不下发。"
+        ),
     }
     sbt._write_json(RESULT, obj)
-    print("JEV 衰减校准表 %s  n_dir=%d 不对称=%s"
-          % (obj["generated_at"][:16], n_dir, asym and "是" or "否"))
+    print(
+        "JEV 衰减校准表 %s  n_dir=%d 不对称=%s"
+        % (obj["generated_at"][:16], n_dir, asym and "是" or "否")
+    )
     for b in ("bull", "bear"):
         d = bias_decay[b]
-        print("  %-5s n=%-4d h1=%-5s h3=%-5s h5=%-5s 半衰期=%sh λ=%.4f"
-              % (b, d["n"], d.get("h1"), d.get("h3"), d.get("h5"),
-                 d.get("hl_h") or "-",
-                 d.get("lambda") or 0.0))
+        print(
+            "  %-5s n=%-4d h1=%-5s h3=%-5s h5=%-5s 半衰期=%sh λ=%.4f"
+            % (
+                b,
+                d["n"],
+                d.get("h1"),
+                d.get("h3"),
+                d.get("h5"),
+                d.get("hl_h") or "-",
+                d.get("lambda") or 0.0,
+            )
+        )
     for e in src_rows:
-        print("  来源 %-14s n=%-4d h1=%-5s h3=%-5s 半衰期=%s%s"
-              % (e["source"], e["n"], e["h1"], e["h3"],
-                 e["hl_h"] if e["hl_h"] else "-",
-                 " applied" if e["applied"] else ""))
+        print(
+            "  来源 %-14s n=%-4d h1=%-5s h3=%-5s 半衰期=%s%s"
+            % (
+                e["source"],
+                e["n"],
+                e["h1"],
+                e["h3"],
+                e["hl_h"] if e["hl_h"] else "-",
+                " applied" if e["applied"] else "",
+            )
+        )
     print("saved -> %s" % RESULT)
     return 0  # rc=0 正常（sys.exit 吃返回值）
 

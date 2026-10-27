@@ -18,12 +18,12 @@ miss 策略：查无此名返回 None 并响亮告警（一次）——不做字
 （错误上下文的 id 静默发出 = 99992361 级事故重演，响亮失败可被
 push_liveness/晨检捕获）。
 """
+
 import json
 import os
 import sys
 
-_CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "news_config.json")
+_CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "news_config.json")
 _TARGETS = None
 _MISSED: set = set()
 
@@ -36,8 +36,7 @@ def targets() -> list:
             with open(_CONFIG, encoding="utf-8") as f:
                 _TARGETS = json.load(f).get("push_targets") or []
         except Exception as e:  # noqa: BLE001
-            print("[push_targets] news_config.json 读取失败: %r" % e,
-                  file=sys.stderr)
+            print("[push_targets] news_config.json 读取失败: %r" % e, file=sys.stderr)
             # 2026-10-16 审计：不缓存失败结果——原 _TARGETS=[] 落缓存后，
             # 长驻进程（gate/qd_bridge）瞬态读取失败变永久 miss。
             return []
@@ -51,8 +50,11 @@ def target_id(name: str) -> str | None:
             return t.get("id")
     if name not in _MISSED:
         _MISSED.add(name)
-        print("[push_targets] 收件人 %r 不在 push_targets（检查 "
-              "news_config.json）" % name, file=sys.stderr)
+        print(
+            "[push_targets] 收件人 %r 不在 push_targets（检查 "
+            "news_config.json）" % name,
+            file=sys.stderr,
+        )
     return None
 
 

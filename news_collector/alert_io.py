@@ -6,6 +6,7 @@ BOM 嗅探范式：读前 4 字节判定编码，杜绝 UTF-16 日志按 utf-8 �
 ASCII 状态日志范式：单行管道分隔、写前 ascii 消毒，对齐 K208/K220 惯例。
 原子写范式：tempfile 同目录落盘 + os.replace（alert_watch._save_state 判例）。
 """
+
 import json
 import os
 import tempfile
@@ -40,9 +41,9 @@ def append_ascii_log(path, line):
 def atomic_write_json(path, obj, indent=None):
     """JSON 原子写：同目录 tempfile + os.replace，杜绝半截 JSON。"""
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path),
-                               prefix=os.path.basename(path) + ".",
-                               suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(
+        dir=os.path.dirname(path), prefix=os.path.basename(path) + ".", suffix=".tmp"
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(obj, f, ensure_ascii=False, indent=indent)

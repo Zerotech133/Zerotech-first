@@ -7,6 +7,7 @@ JEV 审计 §四-①：本地判读 prompt 缺 scope → 新判行 scope 100% �
 2) 模型返回的中文/别名 scope 被归一到七值；
 3) 未知/缺失 scope 降级为空串（不猜、不伪造）。
 """
+
 import json
 import os
 import sys
@@ -44,8 +45,14 @@ def _judge_with(monkeypatch, ans):
 
 
 def test_prompt_contains_scope_enum(monkeypatch):
-    ans = {"bias": "bull", "conf": 0.9, "scope": "cn",
-           "event_type": "earnings", "impact": "high", "companies": []}
+    ans = {
+        "bias": "bull",
+        "conf": 0.9,
+        "scope": "cn",
+        "event_type": "earnings",
+        "impact": "high",
+        "companies": [],
+    }
     _, prompt = _judge_with(monkeypatch, ans)
     assert '"scope"' in prompt
     assert "cn|hk|us|commodity|crypto|fx|macro" in prompt
@@ -53,8 +60,14 @@ def test_prompt_contains_scope_enum(monkeypatch):
 
 
 def test_scope_alias_normalized(monkeypatch):
-    ans = {"bias": "bull", "conf": 0.9, "scope": "A股",
-           "event_type": "policy", "impact": "high", "companies": []}
+    ans = {
+        "bias": "bull",
+        "conf": 0.9,
+        "scope": "A股",
+        "event_type": "policy",
+        "impact": "high",
+        "companies": [],
+    }
     d, _ = _judge_with(monkeypatch, ans)
     assert d is not None
     assert d["scope"] == "cn"
@@ -62,23 +75,40 @@ def test_scope_alias_normalized(monkeypatch):
 
 
 def test_scope_english_enum_kept(monkeypatch):
-    ans = {"bias": "neutral", "conf": 0.8, "scope": "commodity",
-           "event_type": "price", "impact": "low", "companies": []}
+    ans = {
+        "bias": "neutral",
+        "conf": 0.8,
+        "scope": "commodity",
+        "event_type": "price",
+        "impact": "low",
+        "companies": [],
+    }
     d, _ = _judge_with(monkeypatch, ans)
     assert d["scope"] == "commodity" and d["scope_cn"] == "商品"
 
 
 def test_scope_unknown_degrades_empty(monkeypatch):
-    ans = {"bias": "neutral", "conf": 0.8, "scope": "foo-market",
-           "event_type": "other", "impact": "low", "companies": []}
+    ans = {
+        "bias": "neutral",
+        "conf": 0.8,
+        "scope": "foo-market",
+        "event_type": "other",
+        "impact": "low",
+        "companies": [],
+    }
     d, _ = _judge_with(monkeypatch, ans)
     assert d is not None
     assert d["scope"] == "" and d["scope_cn"] == ""
 
 
 def test_scope_missing_degrades_empty(monkeypatch):
-    ans = {"bias": "bear", "conf": 0.9,
-           "event_type": "risk", "impact": "medium", "companies": []}
+    ans = {
+        "bias": "bear",
+        "conf": 0.9,
+        "event_type": "risk",
+        "impact": "medium",
+        "companies": [],
+    }
     d, _ = _judge_with(monkeypatch, ans)
     assert d is not None
     assert d["scope"] == ""
@@ -86,7 +116,14 @@ def test_scope_missing_degrades_empty(monkeypatch):
 
 def test_scope_enum_has_seven_values():
     assert set(news_ai._SCOPE_CN) == {
-        "cn", "hk", "us", "commodity", "crypto", "fx", "macro"}
+        "cn",
+        "hk",
+        "us",
+        "commodity",
+        "crypto",
+        "fx",
+        "macro",
+    }
 
 
 def test_normalize_scope_unit():

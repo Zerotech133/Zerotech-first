@@ -16,6 +16,7 @@
 设计约束：**私有值绝不能被写回 tracked 的 news_config.json**。文档 URL 首次建成后
 由 save_jev_doc_url() 写私有文件；消费方一律用 load_news_config() 拿合并后的视图。
 """
+
 import json
 import os
 
@@ -33,8 +34,10 @@ _SENSITIVE = {
 
 def private_path():
     """本地私有覆盖文件路径（未跟踪；默认在 _vault/secrets，可用 env 覆盖）。"""
-    return os.environ.get(
-        "NEWS_CONFIG_PRIVATE") or r"C:\项目\_vault\secrets\news_config_private.json"
+    return (
+        os.environ.get("NEWS_CONFIG_PRIVATE")
+        or r"C:\项目\_vault\secrets\news_config_private.json"
+    )
 
 
 def _read_json(path):

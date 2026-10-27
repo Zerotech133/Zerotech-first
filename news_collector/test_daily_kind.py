@@ -4,6 +4,7 @@
 纯 mock 隔离：feishu_client.send_msg / subprocess.run / push_flow 全部
 打桩，绝不真发、不写流水账、不落真实 outbox。
 """
+
 import inspect
 import os
 import runpy
@@ -39,18 +40,17 @@ class SendOpenapiKind(unittest.TestCase):
 
     def test_kind_passthrough_as_kwarg(self):
         with patch("feishu_client.send_msg", return_value=(True, "")) as m:
-            ok, _ = send_feishu._send_openapi("{}", "interactive",
-                                              kind="daily:alert")
+            ok, _ = send_feishu._send_openapi("{}", "interactive", kind="daily:alert")
         self.assertTrue(ok)
         self.assertEqual(m.call_args.kwargs.get("kind"), "daily:alert")
 
     def test_send_content_to_kind_passthrough(self):
         with patch("feishu_client.send_msg", return_value=(True, "")) as m:
             ok = send_feishu.send_content_to(
-                "oc_grp", "chat_id", "{}", "interactive", kind="daily:report")
+                "oc_grp", "chat_id", "{}", "interactive", kind="daily:report"
+            )
         self.assertTrue(ok)
-        self.assertEqual(m.call_args.args,
-                         ("{}", "interactive", "oc_grp", "chat_id"))
+        self.assertEqual(m.call_args.args, ("{}", "interactive", "oc_grp", "chat_id"))
         self.assertEqual(m.call_args.kwargs.get("kind"), "daily:report")
 
 
@@ -65,17 +65,17 @@ class SendContentKind(unittest.TestCase):
 
     def test_send_content_kind_openapi_success(self):
         with patch("feishu_client.send_msg", return_value=(True, "")) as m:
-            ok = send_feishu.send_content("{}", "interactive",
-                                          kind="daily:report")
+            ok = send_feishu.send_content("{}", "interactive", kind="daily:report")
         self.assertTrue(ok)
         self.assertEqual(m.call_args.kwargs.get("kind"), "daily:report")
 
     def test_send_content_kind_falls_back_to_cli_without_error(self):
         # openapi 败 + 无 lark-cli 可执行 → SEND_FAIL，kind 不改变回退语义
-        with patch("feishu_client.send_msg", return_value=(False, "boom")), \
-             patch.object(send_feishu, "find_lark_cli", return_value=None):
-            ok = send_feishu.send_content("{}", "interactive",
-                                          kind="daily:alert")
+        with (
+            patch("feishu_client.send_msg", return_value=(False, "boom")),
+            patch.object(send_feishu, "find_lark_cli", return_value=None),
+        ):
+            ok = send_feishu.send_content("{}", "interactive", kind="daily:alert")
         self.assertFalse(ok)
 
 
@@ -87,13 +87,14 @@ class CliKindFlag(unittest.TestCase):
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write("{}")
-            with patch.object(sys, "argv",
-                              ["send_feishu.py", path] + argv), \
-                 patch("feishu_client.send_msg", return_value=(True, "")) as m:
+            with (
+                patch.object(sys, "argv", ["send_feishu.py", path] + argv),
+                patch("feishu_client.send_msg", return_value=(True, "")) as m,
+            ):
                 with self.assertRaises(SystemExit) as ctx:
                     runpy.run_path(
-                        os.path.join(HERE, "send_feishu.py"),
-                        run_name="__main__")
+                        os.path.join(HERE, "send_feishu.py"), run_name="__main__"
+                    )
             self.assertEqual(ctx.exception.code, 0)
             self.assertEqual(m.call_args.args[1], msg_type_expected)
             self.assertEqual(m.call_args.kwargs.get("kind"), kind_expected)
@@ -104,8 +105,9 @@ class CliKindFlag(unittest.TestCase):
         self._run_cli(["interactive"], None, "interactive")
 
     def test_cli_kind_flag_interactive(self):
-        self._run_cli(["interactive", "--kind=daily:report"],
-                      "daily:report", "interactive")
+        self._run_cli(
+            ["interactive", "--kind=daily:report"], "daily:report", "interactive"
+        )
 
     def test_cli_kind_flag_text(self):
         self._run_cli(["--kind=daily:alert"], "daily:alert", "text")
@@ -118,8 +120,10 @@ class CardBuildKind(unittest.TestCase):
 
     def _push(self, kind):
         tmp = tempfile.mkdtemp()
-        with patch.object(card_build, "HERE", tmp), \
-             patch.object(card_build.subprocess, "run", _ok_run()) as m:
+        with (
+            patch.object(card_build, "HERE", tmp),
+            patch.object(card_build.subprocess, "run", _ok_run()) as m,
+        ):
             ok = card_build.push_card(dict(self.CARD), kind=kind)
         self.assertTrue(ok)
         return m.call_args.args[0]
@@ -133,8 +137,8 @@ class CardBuildKind(unittest.TestCase):
     def test_push_card_kind_appended_once(self):
         argv = self._push("daily:report")
         self.assertEqual(
-            [a for a in argv if a.startswith("--kind=")],
-            ["--kind=daily:report"])
+            [a for a in argv if a.startswith("--kind=")], ["--kind=daily:report"]
+        )
         self.assertEqual(argv[-1], "--kind=daily:report")
         self.assertEqual(argv[-2], "interactive")
         self.assertEqual(len(argv), 5)  # 原 4 元素 + kind 追加 1
@@ -143,19 +147,23 @@ class CardBuildKind(unittest.TestCase):
 class PushCardMultiKind(unittest.TestCase):
     """alert_push.push_card_multi：首腿/次腿各透传 kind。"""
 
-    TARGETS = [{"name": "个人", "type": "open_id", "id": None},
-               {"name": "量化群", "type": "chat_id", "id": "oc_x"}]
+    TARGETS = [
+        {"name": "个人", "type": "open_id", "id": None},
+        {"name": "量化群", "type": "chat_id", "id": "oc_x"},
+    ]
 
     def test_both_legs_receive_kind(self):
         card = {"header": {}, "elements": []}
-        with patch.object(card_build, "push_card",
-                          return_value=True) as first, \
-             patch.object(send_feishu, "send_content_to",
-                          return_value=True) as second, \
-             patch.dict(sys.modules, {"push_flow": Mock()}):
+        with (
+            patch.object(card_build, "push_card", return_value=True) as first,
+            patch.object(send_feishu, "send_content_to", return_value=True) as second,
+            patch.dict(sys.modules, {"push_flow": Mock()}),
+        ):
             import alert_push
-            res = alert_push.push_card_multi(card, targets=self.TARGETS,
-                                             kind="daily:alert")
+
+            res = alert_push.push_card_multi(
+                card, targets=self.TARGETS, kind="daily:alert"
+            )
         self.assertEqual(res, {"个人": True, "量化群": True})
         self.assertEqual(first.call_args.kwargs.get("kind"), "daily:alert")
         self.assertEqual(second.call_args.kwargs.get("kind"), "daily:alert")
@@ -163,10 +171,13 @@ class PushCardMultiKind(unittest.TestCase):
 
     def test_default_kind_is_daily_alert(self):
         card = {"header": {}, "elements": []}
-        with patch.object(card_build, "push_card", return_value=True) as first, \
-             patch.object(send_feishu, "send_content_to", return_value=True), \
-             patch.dict(sys.modules, {"push_flow": Mock()}):
+        with (
+            patch.object(card_build, "push_card", return_value=True) as first,
+            patch.object(send_feishu, "send_content_to", return_value=True),
+            patch.dict(sys.modules, {"push_flow": Mock()}),
+        ):
             import alert_push
+
             alert_push.push_card_multi(card, targets=self.TARGETS)
         self.assertEqual(first.call_args.kwargs.get("kind"), "daily:alert")
 
@@ -175,17 +186,18 @@ class DailyReportContract(unittest.TestCase):
     """daily_report.py 零改动核对：:256 已传 kind，静态守护。"""
 
     def test_daily_report_passes_kind_report(self):
-        with open(os.path.join(HERE, "daily_report.py"),
-                  encoding="utf-8") as f:
+        with open(os.path.join(HERE, "daily_report.py"), encoding="utf-8") as f:
             src = f.read()
         self.assertRegex(
-            src, r"push_card_multi\(card, targets=_targets\(cfg\),"
-                 r" kind=\"daily:report\"\)")
+            src,
+            r"push_card_multi\(card, targets=_targets\(cfg\),"
+            r" kind=\"daily:report\"\)",
+        )
 
     def test_push_card_multi_signature_has_kind(self):
         import alert_push
-        self.assertIn("kind", inspect.signature(
-            alert_push.push_card_multi).parameters)
+
+        self.assertIn("kind", inspect.signature(alert_push.push_card_multi).parameters)
 
     def test_send_msg_wrapper_contract_documented(self):
         # feishu_client.py 零改动红线：本工位透传仅靠 kwargs 追加，

@@ -9,6 +9,7 @@
 
 用法: python quote_snapshot.py [--dry]   (--dry 入库但不发飞书)
 """
+
 import json
 import math
 import os
@@ -28,8 +29,10 @@ ALERT_STATE = os.path.join(HERE, "quote_alert_state.json")
 LOG_PATH = os.path.join(HERE, "logs", "quote.log")
 CST = timezone(timedelta(hours=8))
 URL = "https://hq.sinajs.cn/list=%s"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-           "Referer": "https://finance.sina.com.cn"}
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Referer": "https://finance.sina.com.cn",
+}
 
 
 def log(msg):
@@ -60,8 +63,9 @@ def normalize_code(code):
             return "bj" + c
         if c[:2] == "90":
             return "sh" + c
-        return {"6": "sh", "5": "sh", "0": "sz", "3": "sz",
-                "4": "bj", "8": "bj"}.get(c[0], "sz") + c
+        return {"6": "sh", "5": "sh", "0": "sz", "3": "sz", "4": "bj", "8": "bj"}.get(
+            c[0], "sz"
+        ) + c
     return c
 
 
@@ -89,8 +93,9 @@ def _source_time(date_field: str, time_field: str):
     if not re.fullmatch(r"\d{2}:\d{2}:\d{2}", time_field.strip()):
         return None
     try:
-        return datetime.strptime(date_field.strip() + " " + time_field.strip(),
-                                 "%Y-%m-%d %H:%M:%S").replace(tzinfo=CST)
+        return datetime.strptime(
+            date_field.strip() + " " + time_field.strip(), "%Y-%m-%d %H:%M:%S"
+        ).replace(tzinfo=CST)
     except ValueError:
         return None
 
@@ -128,14 +133,30 @@ def parse_one(code, f):
     """按代码前缀解析新浪行情，返回 dict 或 None。"""
     if len(f) < 9:
         return None
-    rec = {"code": code, "name": code, "ts": None, "price": None, "pct": None,
-           "open": None, "high": None, "low": None, "vol": None, "amount": None,
-           "dec": 2}
+    rec = {
+        "code": code,
+        "name": code,
+        "ts": None,
+        "price": None,
+        "pct": None,
+        "open": None,
+        "high": None,
+        "low": None,
+        "vol": None,
+        "amount": None,
+        "dec": 2,
+    }
     if code.startswith(("sh", "sz", "bj")):
         if not re.fullmatch(r"(?:sh|sz|bj)\d{6}", code) or len(f) < 10:
             return None
-        rec.update(name=f[0], open=_f(f[1]), high=_f(f[4]), low=_f(f[5]),
-                   vol=_f(f[8]), amount=_f(f[9]))
+        rec.update(
+            name=f[0],
+            open=_f(f[1]),
+            high=_f(f[4]),
+            low=_f(f[5]),
+            vol=_f(f[8]),
+            amount=_f(f[9]),
+        )
         prev, cur = _f(f[2]), _f(f[3])
         event = _source_time(f[30], f[31]) if len(f) > 31 else None
         rec["ts"] = event.strftime("%Y-%m-%d %H:%M:%S") if event else None
@@ -144,12 +165,17 @@ def parse_one(code, f):
         elif prev:  # 停牌：以昨收计价、无涨跌幅
             rec["price"], rec["pct"] = prev, None
     elif code.startswith("rt_hk"):
-        rec.update(name=f[1], price=_f(f[6]), pct=_f(f[8]), dec=3,
-                   high=_f(f[4]), low=_f(f[5]))
+        rec.update(
+            name=f[1], price=_f(f[6]), pct=_f(f[8]), dec=3, high=_f(f[4]), low=_f(f[5])
+        )
     elif code.startswith("gb_"):
-        rec.update(name=f[0], price=_f(f[1]), pct=_f(f[2]),
-                   high=_f(f[6]) if len(f) > 6 else None,
-                   low=_f(f[7]) if len(f) > 7 else None)
+        rec.update(
+            name=f[0],
+            price=_f(f[1]),
+            pct=_f(f[2]),
+            high=_f(f[6]) if len(f) > 6 else None,
+            low=_f(f[7]) if len(f) > 7 else None,
+        )
     else:
         return None
     return rec if rec["price"] is not None else None
@@ -193,8 +219,13 @@ def push_message(text):
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
-    r = subprocess.run([sys.executable, os.path.join(HERE, "send_feishu.py"), tmp],
-                       capture_output=True, text=True, encoding="utf-8", timeout=60)
+    r = subprocess.run(
+        [sys.executable, os.path.join(HERE, "send_feishu.py"), tmp],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+    )
     out = (r.stdout or "").strip()
     log("push -> " + out)
     return out.startswith("SEND_OK")
@@ -229,24 +260,45 @@ def main():
         "CREATE TABLE IF NOT EXISTS quotes ("
         "code TEXT, name TEXT, ts TEXT, price REAL, pct REAL, "
         "open REAL, high REAL, low REAL, vol REAL, amount REAL, created_at TEXT, "
-        "PRIMARY KEY(code, ts))")
+        "PRIMARY KEY(code, ts))"
+    )
     observed = now_cst()
     stamp = observed.strftime("%Y-%m-%d %H:%M:%S")
     for q in quotes:
         # 原生 ts 可供历史去重；没有原生 ts 不写 SQLite，避免每轮洗出伪事件。
         # 老版消费者只检查旧 ts/updated，故在 v2 消费升级前一律不发布旧 ts。
         native_ts = q.get("ts")
-        native_event = (_source_time(native_ts[:10], native_ts[11:])
-                        if isinstance(native_ts, str) else None)
-        q["market_as_of"] = native_event.isoformat(timespec="seconds") if native_event else None
+        native_event = (
+            _source_time(native_ts[:10], native_ts[11:])
+            if isinstance(native_ts, str)
+            else None
+        )
+        q["market_as_of"] = (
+            native_event.isoformat(timespec="seconds") if native_event else None
+        )
         q["eligibility"] = _eligibility(q, observed)
-        if (native_event and re.fullmatch(r"(?:sh|sz|bj)\d{6}", q["code"])
-                and timedelta(0) <= observed - native_event <= timedelta(minutes=15)):
+        if (
+            native_event
+            and re.fullmatch(r"(?:sh|sz|bj)\d{6}", q["code"])
+            and timedelta(0) <= observed - native_event <= timedelta(minutes=15)
+        ):
             db.execute(
                 "INSERT OR IGNORE INTO quotes(code,name,ts,price,pct,open,high,low,vol,amount,created_at) "
                 "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                (q["code"], q["name"], native_ts, q["price"], q["pct"],
-                 q["open"], q["high"], q["low"], q["vol"], q["amount"], stamp))
+                (
+                    q["code"],
+                    q["name"],
+                    native_ts,
+                    q["price"],
+                    q["pct"],
+                    q["open"],
+                    q["high"],
+                    q["low"],
+                    q["vol"],
+                    q["amount"],
+                    stamp,
+                ),
+            )
     cutoff = (observed - timedelta(days=keep_days)).strftime("%Y-%m-%d %H:%M:%S")
     db.execute("DELETE FROM quotes WHERE ts < ?", (cutoff,))
     db.commit()
@@ -269,7 +321,8 @@ def main():
             if last:
                 try:
                     if now_cst() - datetime.strptime(last, "%Y-%m-%d %H:%M:%S").replace(
-                            tzinfo=CST) < timedelta(minutes=cooldown_min):
+                        tzinfo=CST
+                    ) < timedelta(minutes=cooldown_min):
                         continue
                 except Exception:
                     pass  # 豁免（C2批2）：冷却时间戳坏值→去重失效可能重发一次，不漏告警
@@ -281,31 +334,64 @@ def main():
         lines = ["⚠️ 自选股异动（%d 只触发 ±%.1f%%）" % (len(alerts), threshold)]
         for q in alerts[:6]:
             arrow = "▲" if q["pct"] > 0 else "▼"
-            lines.append("【%s】%s %+.2f%% 现价 %s" % (
-                q["name"], arrow, q["pct"], ("%." + str(q["dec"]) + "f") % q["price"]))
+            lines.append(
+                "【%s】%s %+.2f%% 现价 %s"
+                % (
+                    q["name"],
+                    arrow,
+                    q["pct"],
+                    ("%." + str(q["dec"]) + "f") % q["price"],
+                )
+            )
         lines.append("🕐 %s · 信息采集域" % stamp[5:16])
         if push_message("\n".join(lines)):
             pushed = len(alerts)
             atomic_json(ALERT_STATE, state)
     db.close()
 
-    atomic_json(STATUS_PATH, {
-        "ok": ok, "updated": stamp[:16], "observed_at": observed.isoformat(timespec="seconds"),
-        "event_time_contract_version": 2, "alert_threshold": threshold,
-        "count": len(quotes), "alerts_last_run": pushed,
-        "items": [{"code": q["code"], "name": q["name"], "price": q["price"],
-                   "pct": q["pct"], "dec": q["dec"],
-                   "ts": None,  # v1 消费者仅凭旧 ts 就可投递，升级前不能暴露可用旧信号
-                   "market_as_of": q["market_as_of"],
-                   "observed_at": observed.isoformat(timespec="seconds"),
-                   "eligibility": q["eligibility"]}
-                  for q in quotes],
-    })
+    atomic_json(
+        STATUS_PATH,
+        {
+            "ok": ok,
+            "updated": stamp[:16],
+            "observed_at": observed.isoformat(timespec="seconds"),
+            "event_time_contract_version": 2,
+            "alert_threshold": threshold,
+            "count": len(quotes),
+            "alerts_last_run": pushed,
+            "items": [
+                {
+                    "code": q["code"],
+                    "name": q["name"],
+                    "price": q["price"],
+                    "pct": q["pct"],
+                    "dec": q["dec"],
+                    "ts": None,  # v1 消费者仅凭旧 ts 就可投递，升级前不能暴露可用旧信号
+                    "market_as_of": q["market_as_of"],
+                    "observed_at": observed.isoformat(timespec="seconds"),
+                    "eligibility": q["eligibility"],
+                }
+                for q in quotes
+            ],
+        },
+    )
     log("snapshot ok=%s n=%d alerts=%d" % (ok, len(quotes), len(alerts)))
-    print("QUOTE %s n=%d alerts=%d%s" % (
-        "OK" if ok else "FETCH_FAIL", len(quotes), len(alerts),
-        (" " + json.dumps([(q["name"], q["pct"]) for q in alerts], ensure_ascii=False))
-        if (alerts and dry) else ""))
+    print(
+        "QUOTE %s n=%d alerts=%d%s"
+        % (
+            "OK" if ok else "FETCH_FAIL",
+            len(quotes),
+            len(alerts),
+            (
+                " "
+                + json.dumps(
+                    [(q["name"], q["pct"]) for q in alerts], ensure_ascii=False
+                )
+            )
+            if (alerts and dry)
+            else "",
+        )
+    )
 
 
 if __name__ == "__main__":
