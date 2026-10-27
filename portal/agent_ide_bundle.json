@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:27",
+ "generated": "2026-10-27 23:28",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -230,15 +230,6 @@
    "project": "portal"
   },
   {
-   "id": "WO-O6P2-DESIGN-20261027",
-   "desc": "O6 P2 设计稿：run_id 生成/透传 + fallback 同 run 聚合 + tool span + trace schema 增量迁移；纯文档不写运行时代码",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O6P2-DESIGN-20261027",
-   "created": "2026-10-27 23:26:54",
-   "project": "portal"
-  },
-  {
    "id": "WO-O8P3-POLICY-20261027",
    "desc": "O8 P3 发布年龄策略草案：依赖升级 7 天 cooldown + 例外流程 + 渐进落地；纯文档",
    "status": "doing",
@@ -246,6 +237,15 @@
    "branch": "task/WO-O8P3-POLICY-20261027",
    "created": "2026-10-27 23:26:59",
    "project": "portal"
+  },
+  {
+   "id": "WO-LEGION-SIMPLE-P0-20261027",
+   "desc": "P0 /paper 首屏减法：4 KPI、去重页面快捷导航、折叠服务/进门路线/AI 值班、保留全部功能；无业务逻辑/无 L2",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-SIMPLE-P0-20261027",
+   "created": "2026-10-27 23:27:54",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6802,6 +6802,11 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-SIMPLE-P0-20261027",
+     "desc": "P0 /paper 首屏减法：4 KPI、去重页面快捷导航、折叠服务/进门路线/AI 值班、保留全部功能；无业务逻辑/无 L2",
+     "status": "doing"
     }
    ]
   }
