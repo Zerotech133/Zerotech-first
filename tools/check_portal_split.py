@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 """portal 大文件拆分守卫（2026-10-28，守则 v1）。
 
-规则：
-  1) portal/portal_api.py ≤ PORTAL_API_BUDGET（5,200 行）；
-  2) 非冻结的 portal/api_*.py ≤ NEW_FILE_LIMIT（1,200 行）；
-  3) 冻结名单（存量巨型文件）只允许"不增长"（相对基线）。
-退出码：0=PASS，1=违规。
-用法：python tools/check_portal_split.py [--quiet]
+分级规则：
+  硬规则（违规 exit 1）：
+    · portal/portal_api.py > PORTAL_API_BUDGET（5,200 行）
+    · portal/api_*.py 缺失/不可读
+  建议项（默认只告警、exit 0；加 --strict 时同样 exit 1）：
+    · 冻结名单（存量巨型文件）行数 > 基线（只减不增）
+    · 非冻结 api_*.py > NEW_FILE_LIMIT（1,200 行）
+用法：python tools/check_portal_split.py [--quiet] [--strict]
 """
 from __future__ import annotations
 
@@ -36,19 +38,25 @@ def count_lines(p: Path) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="portal 大文件拆分守卫")
+    ap = argparse.ArgumentParser(description="portal 大文件拆分守卫（分级）")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--strict", action="store_true", help="建议项也判失败（CI 用）")
     args = ap.parse_args(argv)
-    problems = []
+
+    problems = []  # 硬规则
+    warns = []     # 建议项
     notes = []
 
     pa = PORTAL / "portal_api.py"
-    if pa.is_file():
+    if not pa.is_file():
+        problems.append("缺 portal/portal_api.py")
+    else:
         n = count_lines(pa)
         if n > PORTAL_API_BUDGET:
             problems.append("portal_api.py %d > 预算 %d" % (n, PORTAL_API_BUDGET))
         elif not args.quiet:
-            notes.append("portal_api.py %d / %d（%.0f%%）" % (n, PORTAL_API_BUDGET, n * 100.0 / PORTAL_API_BUDGET))
+            notes.append("portal_api.py %d / %d（%.0f%%）"
+                         % (n, PORTAL_API_BUDGET, n * 100.0 / PORTAL_API_BUDGET))
 
     for p in sorted(PORTAL.glob("api_*.py")):
         n = count_lines(p)
@@ -56,12 +64,21 @@ def main(argv=None) -> int:
         if name in FROZEN:
             base = FROZEN[name]
             if n > base:
-                problems.append("%s 冻结文件增长：%d > 基线 %d（拆分守则：只减不增）" % (name, n, base))
+                warns.append("%s 冻结文件增长：%d > 基线 %d（守则：只减不增，需说明）"
+                             % (name, n, base))
         elif n > NEW_FILE_LIMIT:
-            problems.append("%s %d > 新文件上限 %d（拆分或说明入冻结名单）" % (name, n, NEW_FILE_LIMIT))
+            warns.append("%s %d > 新文件上限 %d（应拆分或登记冻结基线）"
+                         % (name, n, NEW_FILE_LIMIT))
+
+    for w in warns:
+        print("PORTAL-SPLIT WARN：%s" % w)
+    if warns and not args.strict:
+        print("…建议项不阻塞（--strict 可判失败）")
+    if args.strict:
+        problems.extend(warns)
 
     if problems:
-        print("PORTAL-SPLIT FAIL：%d 项违规" % len(problems))
+        print("PORTAL-SPLIT FAIL：%d 项硬违规" % len(problems))
         for x in problems:
             print("  -", x)
         return 1
