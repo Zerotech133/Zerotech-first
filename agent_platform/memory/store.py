@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -44,7 +45,31 @@ def connect(db: Path | None = None) -> sqlite3.Connection:
         cue TEXT NOT NULL, content TEXT NOT NULL, source TEXT DEFAULT '',
         confidence REAL DEFAULT 0.8, tags TEXT DEFAULT '', created_at TEXT NOT NULL,
         last_used_at TEXT, use_count INTEGER DEFAULT 0, ttl_days INTEGER DEFAULT 365)""")
+    # P0④ 补差：namespace 统一 / 有效期 / episode 溯源（迁移式加列，兼容旧库）
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(memories)")}
+    for name, ddl in (
+        ("namespace", "namespace TEXT DEFAULT ''"),
+        ("version", "version INTEGER DEFAULT 1"),
+        ("valid_from", "valid_from TEXT"),
+        ("valid_to", "valid_to TEXT"),
+        ("episode_id", "episode_id TEXT"),
+    ):
+        if name not in cols:
+            conn.execute("ALTER TABLE memories ADD COLUMN " + ddl)
+    conn.execute("""CREATE TABLE IF NOT EXISTS episodes(
+        id TEXT PRIMARY KEY, source TEXT DEFAULT '', sha256 TEXT NOT NULL,
+        content TEXT NOT NULL, meta TEXT DEFAULT '', created_at TEXT NOT NULL)""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS memory_history(
+        hist_id INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL,
+        layer TEXT, namespace TEXT, scope TEXT, cue TEXT, content TEXT,
+        source TEXT, confidence REAL, tags TEXT, created_at TEXT,
+        valid_from TEXT, valid_to TEXT, version INTEGER,
+        episode_id TEXT, archived_at TEXT, reason TEXT)""")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_layer ON memories(layer)")
+    # 旧库回填：namespace/valid_from（迁移无痛，幂等）
+    conn.execute("UPDATE memories SET namespace='agent/'||COALESCE(scope,'zhaoyun') "
+                 "WHERE namespace IS NULL OR namespace=''")
+    conn.execute("UPDATE memories SET valid_from=created_at WHERE valid_from IS NULL")
     try:
         conn.execute(
             "CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts "
@@ -54,6 +79,38 @@ def connect(db: Path | None = None) -> sqlite3.Connection:
         pass
     conn.commit()
     return conn
+
+
+def _ensure_episode(conn: sqlite3.Connection, source: str, content: str,
+                    meta: dict | None = None, episode_id: str | None = None) -> str:
+    """episode = 原始输入（来源/指纹/原文），供记忆事实溯源；同内容幂等。"""
+    sha = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    eid = episode_id or ("ep_%s" % sha[:16])
+    row = conn.execute("SELECT id FROM episodes WHERE id=?", (eid,)).fetchone()
+    if row is None:
+        conn.execute(
+            "INSERT INTO episodes(id,source,sha256,content,meta,created_at) VALUES(?,?,?,?,?,?)",
+            (eid, source or "", sha, content[:20000], json.dumps(meta or {}, ensure_ascii=False), _now()),
+        )
+    return eid
+
+
+def gns_to_namespace(gns: str) -> str:
+    """把 engine/memory 的 GNS 收敛为 store namespace（P0④ 缺口① 的桥）。
+
+    domain/* -> domain ｜ dept/{dept}/{type} -> dept/{dept}
+    ｜ agent/{id}/{type} -> agent/{id} ｜ share/* -> share
+    """
+    parts = [p for p in str(gns or "").strip("/").split("/") if p]
+    if not parts:
+        return "agent/zhaoyun"
+    if parts[0] in ("dept", "agent") and len(parts) >= 2:
+        return "/".join(parts[:2])
+    return parts[0]
+
+
+def namespace_for_agent(agent_id: str) -> str:
+    return "agent/%s" % (agent_id or "zhaoyun")
 
 
 def add(
@@ -66,29 +123,57 @@ def add(
     ttl_days: int = 365,
     mid: str | None = None,
     db: Path | None = None,
+    namespace: str | None = None,
+    scope: str = "zhaoyun",
+    episode_id: str | None = None,
+    episode_source: str = "",
+    episode_content: str = "",
+    episode_meta: dict | None = None,
 ) -> dict:
     if layer not in LAYERS:
         return {"ok": False, "error": "bad_layer", "allowed": list(LAYERS)}
     mid = str(mid or ("%s:%s" % (layer, abs(hash(cue + content)) % 10**10)))
+    ns = namespace or namespace_for_agent(scope)
     conn = connect(db)
     try:
-        conn.execute(
-            "INSERT INTO memories(id,layer,cue,content,source,confidence,tags,"
-            "created_at,ttl_days) VALUES(?,?,?,?,?,?,?,?,?) "
-            "ON CONFLICT(id) DO UPDATE SET cue=excluded.cue,content=excluded.content,"
-            "confidence=excluded.confidence,tags=excluded.tags",
-            (
-                mid,
-                layer,
-                cue,
-                content,
-                source,
-                float(confidence),
-                ",".join(tags or []),
-                _now(),
-                int(ttl_days),
-            ),
-        )
+        ep = None
+        if episode_content:
+            ep = _ensure_episode(conn, episode_source or source, episode_content, episode_meta, episode_id)
+        elif episode_id:
+            row = conn.execute("SELECT id FROM episodes WHERE id=?", (episode_id,)).fetchone()
+            ep = episode_id if row else None
+        now = _now()
+        row = conn.execute("SELECT * FROM memories WHERE id=?", (mid,)).fetchone()
+        if row is None:
+            conn.execute(
+                "INSERT INTO memories(id,layer,scope,namespace,cue,content,source,confidence,"
+                "tags,created_at,ttl_days,version,valid_from,valid_to,episode_id) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (mid, layer, scope, ns, cue, content, source, float(confidence),
+                 ",".join(tags or []), now, int(ttl_days), 1, now, None, ep),
+            )
+            version = 1
+        else:
+            # 旧版本进 history（append-only：原文保留，不覆盖；valid_to=now）
+            old = dict(row)
+            conn.execute(
+                "INSERT INTO memory_history(id,layer,namespace,scope,cue,content,source,"
+                "confidence,tags,created_at,valid_from,valid_to,version,episode_id,"
+                "archived_at,reason) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (old.get("id"), old.get("layer"), old.get("namespace") or namespace_for_agent(old.get("scope") or scope),
+                 old.get("scope"), old.get("cue"), old.get("content"), old.get("source"),
+                 old.get("confidence"), old.get("tags"), old.get("created_at"),
+                 old.get("valid_from") or old.get("created_at"), now,
+                 int(old.get("version") or 1), old.get("episode_id"), now, "superseded"),
+            )
+            version = int(old.get("version") or 1) + 1
+            conn.execute(
+                "UPDATE memories SET layer=?, scope=?, namespace=?, cue=?, content=?,"
+                "source=?, confidence=?, tags=?, created_at=?, ttl_days=?, version=?,"
+                "valid_from=?, valid_to=NULL, episode_id=? WHERE id=?",
+                (layer, scope, ns, cue, content, source, float(confidence),
+                 ",".join(tags or []), now, int(ttl_days), version, now, ep, mid),
+            )
         try:
             conn.execute("DELETE FROM memories_fts WHERE id=?", (mid,))
             conn.execute(
@@ -98,7 +183,8 @@ def add(
         except sqlite3.OperationalError:
             pass
         conn.commit()
-        return {"ok": True, "id": mid, "layer": layer}
+        return {"ok": True, "id": mid, "layer": layer, "version": version,
+                "namespace": ns, "episode_id": ep}
     finally:
         conn.close()
 
@@ -132,16 +218,20 @@ def _fts_ids(conn, query: str) -> set:
 
 
 def search(
-    query: str, layer: str | None = None, limit: int = 5, db: Path | None = None, use_vector: bool | None = None
+    query: str, layer: str | None = None, limit: int = 5, db: Path | None = None,
+    use_vector: bool | None = None, namespace: str | None = None,
 ) -> dict:
     limit = max(1, min(int(limit or 5), 20))
     conn = connect(db)
     try:
-        sql = "SELECT * FROM memories"
+        sql = "SELECT * FROM memories WHERE (valid_to IS NULL OR valid_to='')"
         args: list = []
         if layer:
-            sql += " WHERE layer=?"
+            sql += " AND layer=?"
             args.append(layer)
+        if namespace:
+            sql += " AND namespace=?"
+            args.append(namespace)
         rows = [dict(r) for r in conn.execute(sql, args).fetchall()]
         fts = _fts_ids(conn, query)
     finally:
@@ -174,6 +264,10 @@ def search(
                 "confidence": r["confidence"],
                 "score": round(score, 4),
                 "fts_hit": r["id"] in fts,
+                "namespace": r.get("namespace") or namespace_for_agent(r.get("scope")),
+                "version": r.get("version") or 1,
+                "valid_from": r.get("valid_from"),
+                "episode_id": r.get("episode_id"),
             }
         )
     scored.sort(key=lambda x: (-x["score"], x["id"]))
@@ -206,6 +300,47 @@ def search(
         "total_candidates": len(rows),
         "items": out,
     }
+
+
+def list_namespaces(db: Path | None = None) -> dict:
+    """当前有效记忆的 namespace 分布（seat/topic 统一视图）。"""
+    conn = connect(db)
+    try:
+        rows = conn.execute(
+            "SELECT namespace, COUNT(*) n FROM memories "
+            "WHERE (valid_to IS NULL OR valid_to='') GROUP BY namespace ORDER BY n DESC"
+        ).fetchall()
+    finally:
+        conn.close()
+    return {"ok": True, "namespaces": {r["namespace"]: int(r["n"]) for r in rows}}
+
+
+def history(mid: str, db: Path | None = None) -> dict:
+    """返回一条逻辑记忆的当前版本 + 历史版本（append-only 审计）。"""
+    conn = connect(db)
+    try:
+        cur = conn.execute("SELECT * FROM memories WHERE id=?", (mid,)).fetchone()
+        hist = [dict(r) for r in conn.execute(
+            "SELECT * FROM memory_history WHERE id=? ORDER BY hist_id", (mid,)
+        ).fetchall()]
+    finally:
+        conn.close()
+    return {"ok": True, "id": mid,
+            "current": dict(cur) if cur else None,
+            "history": hist}
+
+
+def get_episode(episode_id: str, db: Path | None = None) -> dict:
+    """原始输入（episode）→ 指纹/来源/时间；记忆事实可据此回溯。"""
+    conn = connect(db)
+    try:
+        row = conn.execute("SELECT * FROM episodes WHERE id=?", (episode_id,)).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return {"ok": False, "error": "episode_not_found", "id": episode_id}
+    out = dict(row)
+    return {"ok": True, "episode": out}
 
 
 def stats(db: Path | None = None) -> dict:
