@@ -155,6 +155,19 @@
   </section>
 
   <section>
+    <h2>兵棋推演 <span>三情景 · 敏感性 · 触发条件（只读，不执行）</span></h2>
+    <div class="row">
+      <input id="wg-question" placeholder="推演问题（如：加息周期下是否加仓成长股）" style="flex:2">
+      <input id="wg-code" placeholder="可选代码 000001.SZ" style="width:140px">
+      <button onclick="wargameRun()">推演</button>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <input id="wg-vars" placeholder='可选变量 JSON：{"利率":{"base":3,"down":2,"up":4,"weight":0.4}}' style="flex:1">
+    </div>
+    <div id="wg-out" class="muted">规则推演 v0：给情景与触发条件，不预测点位、不执行交易。</div>
+  </section>
+
+  <section>
     <h2>记忆 v2（四层） <span id="memv2-sub">—</span> <span>working/episodic/semantic/procedural · 检索评测</span></h2>
     <div id="memv2"></div>
   </section>
@@ -560,6 +573,36 @@ function loadDrill() {
     });
   });
 }
+async function wargameRun() {
+  var out = document.getElementById('wg-out');
+  out.textContent = '推演中…';
+  var q = document.getElementById('wg-question').value.trim();
+  if (!q) { out.textContent = '先填推演问题'; return; }
+  var p = new URLSearchParams({ question: q });
+  var code = document.getElementById('wg-code').value.trim();
+  var vars = document.getElementById('wg-vars').value.trim();
+  if (code) p.set('code', code);
+  if (vars) p.set('vars', vars);
+  try {
+    var r = await fetch('/api/zhaoyun/wargame?' + p.toString());
+    var d = await r.json();
+    if (!d.ok) { out.textContent = '推演失败：' + (d.error || 'unknown'); return; }
+    var html = '<table class="tbl"><tr><th>情景</th><th>影响分</th><th>判断</th></tr>';
+    (d.scenarios || []).forEach(function (s) {
+      html += '<tr><td>' + s.name + '</td><td>' + s.impact_score + '</td><td>' + s.impact + '</td></tr>';
+    });
+    html += '</table><div class="muted">敏感性（降序）：' +
+      (d.sensitivity || []).map(function (x) { return x.variable + '(' + x.contribution + ')'; }).join(' · ') + '</div>';
+    if ((d.triggers || []).length) {
+      html += '<div class="muted">触发条件：' + d.triggers.join('；') + '</div>';
+    }
+    if (d.evidence && d.evidence.ok) {
+      html += '<div class="muted">证据：' + d.evidence.code + ' 近 ' + (d.evidence.rows || []).length + ' 日线（只读，不参与打分）</div>';
+    }
+    out.innerHTML = html;
+  } catch (e) { out.textContent = '推演异常：' + e; }
+}
+
 async function quantQuery() {
   var out = document.getElementById('quant-out');
   out.textContent = '查询中…';

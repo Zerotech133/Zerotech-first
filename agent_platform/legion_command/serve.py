@@ -696,6 +696,16 @@ class Handler(BaseHTTPRequestHandler):
                         start=(qs.get("start") or [""])[0],
                         end=(qs.get("end") or [""])[0],
                         limit=(qs.get("limit") or ["20"])[0]))
+                elif sub == "wargame":
+                    from urllib.parse import parse_qs
+
+                    from legion_command import zhaoyun_wargame as zw
+
+                    qs = parse_qs(urlparse(self.path).query)
+                    self._send_json(zw.wargame_view(
+                        question=(qs.get("question") or [""])[0],
+                        code=(qs.get("code") or [""])[0],
+                        vars_json=(qs.get("vars") or [""])[0]))
                 elif sub == "memory/v2":
                     sys.path.insert(0, str(_PLATFORM))
                     from memory import store as ms
