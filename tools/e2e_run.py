@@ -33,8 +33,8 @@ SCENARIOS = [
     {"id": "E2E-05", "name": "质量分级 none=0", "status": "implemented", "path": "test_smoke_tools.py"},
     {"id": "E2E-06", "name": "扩展 lint/对账一致", "status": "implemented", "path": "test_smoke_tools.py"},
     {"id": "E2E-07", "name": "MCP 安全自查 0 error", "status": "implemented", "path": "test_smoke_tools.py"},
-    {"id": "E2E-08", "name": "飞书 bot 存活/心跳", "status": "planned", "path": ""},
-    {"id": "E2E-09", "name": "飞书私聊→命令→回执（mock）", "status": "planned", "path": ""},
+    {"id": "E2E-08", "name": "飞书 bot 存活/心跳", "status": "implemented", "path": "test_smoke_bot.py"},
+    {"id": "E2E-09", "name": "飞书私聊→命令→回执（mock）", "status": "implemented", "path": "test_smoke_bot.py"},
     {"id": "E2E-10", "name": "失败路径（8091 离线/8796 401）", "status": "planned", "path": ""},
     {"id": "E2E-11", "name": "L2 重启后健康", "status": "planned", "path": ""},
 ]
