@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:46",
+ "generated": "2026-10-28 07:49",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 34,
   "workorders_review": 4
  },
  "workorders": [
@@ -344,6 +344,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
+   "project": "general"
+  },
+  {
+   "id": "WO-RESEARCH-20261028",
+   "desc": "研究流水线 Step1-3(L1)：假设台账 hypotheses.db + 四关 README + 公告事件 CAR 工具(H1) + JEV 决策归因(H6) + 首版报告",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-RESEARCH-20261028",
+   "created": "2026-10-28 07:48:45",
    "project": "general"
   }
  ],
