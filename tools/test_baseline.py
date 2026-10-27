@@ -70,6 +70,9 @@ def run_baseline(py: str | None = None, suites: list[str] | None = None,
            "generated_at": started.isoformat(timespec="seconds"),
            "command": cmd, "returncode": getattr(r, "returncode", None),
            "summary": summary,
+           "stdout_tail": (getattr(r, "stdout", "") or "")[-3000:],
+           "failure_lines": [ln for ln in (getattr(r, "stdout", "") or "").splitlines()
+                              if ln.startswith(("FAILED", "ERROR"))][-20:],
            "stderr_tail": (getattr(r, "stderr", "") or "")[-600:],
            "deselected": list(DESELECT)}
     out = Path(out_dir) if out_dir else OUT
