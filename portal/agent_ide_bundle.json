@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 15:51",
+ "generated": "2026-10-27 15:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -158,15 +158,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-UIUX-W3-20261027",
-   "desc": "UI/UX Week3：命令面板原型(ui_palette.js/css, Ctrl+K 过滤/键控/无危险动作)；密度切换([data-wb-density] + 列表/表格模板)；键盘焦点顺序静态审计工具+测试；OS 页接入；不改业务逻辑/无 L2",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIUX-W3-20261027",
-   "created": "2026-10-27 15:50:15",
-   "project": "general"
-  },
-  {
    "id": "WO-O2B-TOOLDOCS-20261027",
    "desc": "O2 收尾：补工具层第二份文档（10 工具操作手册），把 quality_scale tool 对象 docs_depth 补齐升 Silver；不改运行代码",
    "status": "doing",
@@ -174,6 +165,15 @@
    "branch": "task/WO-O2B-TOOLDOCS-20261027",
    "created": "2026-10-27 15:51:43",
    "project": "portal"
+  },
+  {
+   "id": "WO-AUTHORITY-A1-ORG-20261027",
+   "desc": "ARCH1 研发域最高权限·第1单（老田 2026-10-27 批 charter，L1 组织授权）：org.json ARCH1 增 authority_scope（level=L1_dev_max，domains/excludes/delegation/dual_sign/evidence/revocation）；dev.lead_duty 首句改研发域最高技术决策人（L1_dev_max）；team_dev.json 投影同步；新增 config/dev_authority_charter.json（charter v1：审批模式 warn、red lines、阶段）；bundle 重烘。路由例外=跨部门治理。 --approver ARCH1",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUTHORITY-A1-ORG-20261027",
+   "created": "2026-10-27 15:52:23",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6344,11 +6344,6 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-UIUX-W3-20261027",
-     "desc": "UI/UX Week3：命令面板原型(ui_palette.js/css, Ctrl+K 过滤/键控/无危险动作)；密度切换([data-wb-density] + 列表/表格模板)；键盘焦点顺序静态审计工具+测试；OS 页接入；不改业务逻辑/无 L2",
-     "status": "doing"
     }
    ]
   }
