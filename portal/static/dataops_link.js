@@ -10,7 +10,7 @@
   var me = document.currentScript;
   var nid = me && me.getAttribute('data-entity');
   if (!nid) return;
-  var API = 'http://127.0.0.1:8091/api/dataops/entity?id=' + encodeURIComponent(nid);
+  var API = '/api/dataops/entity?id=' + encodeURIComponent(nid);
   var el = document.createElement('div');
   el.id = 'dops-link';
   el.title = '点击下钻：' + nid;
