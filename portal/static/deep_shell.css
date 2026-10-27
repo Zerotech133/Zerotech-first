@@ -180,3 +180,5 @@ body.strategies-page .dw-panel{background:rgba(15,28,46,.7);border:1px solid var
 .strategies-page .strat-sop summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--dw-muted);}
 .strategies-page .strat-sop summary:hover{color:var(--dw-cyan);}
 .strategies-page .strat-sop-body{padding-top:10px;}
+/* P3：/strategies 页面快捷条与全局导航重复，隐藏（面包屑/全局导航仍可达） */
+body.strategies-page > div[style*="justify-content:space-between"][style*="margin:0 0 18px"]{display:none!important;}

@@ -13,3 +13,14 @@
 }
 #p2-bar button:hover{border-color:rgba(107,215,229,.5);}
 #p2-bar .p2-note{color:var(--dw-muted,#8fa8c0);}
+
+/* P3：高级筛选抽屉（默认只留搜索） */
+#filters .p3-advanced{display:none!important;}
+#filters.p3-open .p3-advanced{display:inline-flex!important;}
+#filters.p3-open .fsep{display:inline-block!important;}
+.p3-filter-toggle{
+  border:1px solid var(--dw-line,#2c4058);background:rgba(15,28,46,.7);
+  color:var(--dw-cyan,#6bd7e5);border-radius:8px;padding:6px 12px;
+  font-size:11.5px;cursor:pointer;
+}
+.p3-filter-toggle:hover{border-color:rgba(107,215,229,.5);}
