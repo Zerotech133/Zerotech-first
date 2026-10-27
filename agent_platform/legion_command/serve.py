@@ -323,6 +323,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 
@@ -355,7 +356,7 @@ class Handler(BaseHTTPRequestHandler):
             # 田丰属性页（产品/研发席）直达路由
             self._send_file(_STATIC / "tianfeng.html", "text/html; charset=utf-8")
             return
-        if path in ("/keys", "/keys.html"):
+        if path in ("/keys", "/keys/", "/keys.html"):
             # 三席多 Key 池页面
             self._send_file(_STATIC / "keypool.html", "text/html; charset=utf-8")
             return
