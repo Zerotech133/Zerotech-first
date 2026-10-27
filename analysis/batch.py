@@ -8,7 +8,7 @@
     python -m analysis.batch --max 5 --push
 
 设计：作为计划任务入口（--no-llm 默认，避免与生产 Ollama 抢卡）；
-每只股票独立子进程（隔离异常），输出落盘到 work/analysis/batch/<date>/。
+每只股票独立子进程（隔离异常），输出落盘到 analysis_work/batch/<date>/。
 """
 import argparse
 import json

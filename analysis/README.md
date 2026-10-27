@@ -20,7 +20,7 @@ python -m analysis.run --code 600337.SH --push
 ```
 
 产物目录：
-- 运行目录：`C:\项目\work\analysis\runs\<run_id>\`（report.md / h5.html / charts / analysis.json / manifest.json）
+- 运行目录：`C:\项目\analysis_work\runs\<run_id>\`（report.md / h5.html / charts / analysis.json / manifest.json）
 - 归档目录：`C:\项目\deliverables\<as-of>_<code>_<name>\`
 - 索引：`C:\项目\deliverables\ANALYSIS_INDEX.md`
 
@@ -55,7 +55,7 @@ python -m analysis.sync --codes 600337.SH,688023.SH,605258.SH
 python -m analysis.sync --daily-only --days 30
 ```
 
-缓存：`C:\项目\work\analysis\cache\tables\`（`by_code/<table>/<code>.parquet` + `daily/<table>.parquet`），
+缓存：`C:\项目\analysis_work\cache\tables\`（`by_code/<table>/<code>.parquet` + `daily/<table>.parquet`），
 `_meta.json` 记录最后同步时间与行数。分析流水线自动读取：一致预期 → 估值段/信号；龙虎榜 → 资金段；
 增减持/质押/解禁/回购 → 风险段；主营构成 → 公司画像；互动易/调研 → 事件段。
 
@@ -80,14 +80,14 @@ python -m analysis.batch --codes 600337.SH --llm --push
 python -m analysis.batch --queue               # 消费一次门户队列
 ```
 
-回执落盘：`C:\项目\work\analysis\batch\<date>\receipt.json` + `receipt.md`。
+回执落盘：`C:\项目\analysis_work\batch\<date>\receipt.json` + `receipt.md`。
 每只股票独立子进程（异常隔离），默认 `--no-llm` 避免与生产 Ollama 抢卡。
 
 ### 部署（L2，需人工批准后执行）
 
 1. 重启 8091（`portal/start_portal_api.ps1`，内置 import 冒烟预检）；
 2. 注册计划任务（每周一至周五 15:40）：`python -m analysis.batch --queue` 或 `--max 5`；
-3. 验证：`curl http://127.0.0.1:8091/api/analysis/health` 返回 `ok:true`；任务日志落 `work/analysis/batch/`。
+3. 验证：`curl http://127.0.0.1:8091/api/analysis/health` 返回 `ok:true`；任务日志落 `analysis_work/batch/`。
 
 ## 六、事件人工复核队列（P0E 新增）
 
