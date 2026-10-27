@@ -80,9 +80,24 @@ button.small{padding:3px 8px;font-size:11px}
   </section>
 
   <section class="panel" id="tab-routing">
-    <h2>模型路由</h2>
-    <div class="muted">A-4 将把平台中转站与模型通道合并到此单一可编辑区块；当前跳到旧版配置。</div>
-    <p><a class="btn-link" href="/keys?tab=routing&legacy=1#relay-hero">打开旧版中转站配置</a></p>
+    <h2>模型路由（唯一可编辑入口）</h2>
+    <div class="muted" style="margin-bottom:8px">平台中转站与模型通道合并在此；其它位置只读引用。真 Key 不进前端。</div>
+    <div class="add" id="relay-presets" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn small" data-rp="dashscope-plus">百炼 · qwen-plus</button>
+      <button class="btn small" data-rp="dashscope-max">百炼 · qwen3-max</button>
+      <button class="btn small" data-rp="tokenegate">中转站 GPT-6</button>
+      <button class="btn small" data-rp="custom">自定义</button>
+    </div>
+    <div class="add" style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="relay-url" placeholder="中转站 URL" style="min-width:300px" value="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions">
+      <input id="relay-model" placeholder="模型" value="qwen-plus">
+      <input id="relay-key" type="password" placeholder="粘贴平台中转站 Key（加密存储，只回显掩码）">
+      <input id="relay-label" placeholder="标签（如 百炼主Key / 备1）" value="平台中转站主Key">
+      <button class="btn primary" id="relay-save">保存到平台中转站</button>
+    </div>
+    <div id="relay-status" class="muted" style="margin:10px 0">加载中…</div>
+    <h2 style="margin-top:16px">本地模型（只读）</h2>
+    <div id="local-models" class="muted">加载中…</div>
   </section>
 
   <section class="panel" id="tab-seats">
@@ -243,6 +258,46 @@ async function deleteKey(seat,id){
 }
 document.getElementById("drawer-save").onclick=saveDrawer;
 loadSeats(); setInterval(loadSeats,30000);
+const RELAY_PRESETS={
+  "dashscope-plus":{url:"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",model:"qwen-plus",label:"百炼主Key"},
+  "dashscope-max":{url:"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",model:"qwen3-max",label:"百炼 qwen3-max"},
+  "tokenegate":{url:"https://tokenegate.com/v1/chat/completions",model:"gpt-6-sol",label:"中转站 GPT-6"},
+  "custom":{url:"",model:"",label:"自定义"}
+};
+document.querySelectorAll("#relay-presets button").forEach(b=>b.onclick=()=>{
+  const p=RELAY_PRESETS[b.dataset.rp]||RELAY_PRESETS.custom;
+  document.getElementById("relay-url").value=p.url;
+  document.getElementById("relay-model").value=p.model;
+  document.getElementById("relay-label").value=p.label;
+});
+async function loadRouting(){
+  try{
+    const [ks,ms]=await Promise.all([
+      fetch("/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
+      fetch("/api/models/status",{cache:"no-store"}).then(r=>r.json())
+    ]);
+    const relay=(ks.seats||{}).relay||{}; const keys=relay.keys||[];
+    let h='<table><thead><tr><th>Key</th><th>模型</th><th>状态</th><th>优先级</th><th>操作</th></tr></thead><tbody>';
+    for(const k of keys) h+='<tr><td>'+esc(k.masked)+'</td><td>'+esc(k.model||"")+'</td><td><span class="pill '+seatStatus({keys:[k]}).cls+'">'+esc(k.status)+'</span></td><td>'+esc(k.priority||1)+'</td><td><button class="btn small" onclick="testRelayKey(\''+k.id+'\')">测试</button></td></tr>';
+    document.getElementById("relay-status").innerHTML='<div class="muted" style="margin-bottom:6px">当前平台中转站 · '+keys.length+' 条 Key</div>'+(keys.length?h+'</tbody></table>':'<div class="muted">暂未配置平台中转站 Key</div>');
+    const local=(ms.local&&ms.local.models)||[]; const on=ms.local&&ms.local.online;
+    document.getElementById("local-models").innerHTML=on?local.map(m=>'<span class="pill ok">'+esc(m.name)+'</span>').join(" "):'<span class="pill bad">Ollama 离线</span>';
+  }catch(e){document.getElementById("relay-status").innerHTML='<div class="muted">读取失败：'+e.message+'</div>';document.getElementById("local-models").textContent="读取失败"}
+}
+async function saveRelay(){
+  const secret=document.getElementById("relay-key").value.trim();
+  if(!secret){alert("请粘贴平台中转站 Key");return}
+  const body={action:"add",seat:"relay",secret,base_url:document.getElementById("relay-url").value.trim(),model:document.getElementById("relay-model").value.trim(),label:document.getElementById("relay-label").value.trim(),priority:1};
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json(); if(!j.ok){alert("保存失败："+(j.error||"unknown"));return}
+  document.getElementById("relay-key").value=""; await loadRouting(); alert("已保存到平台中转站（掩码只回显）");
+}
+async function testRelayKey(id){
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"test",seat:"relay",key_id:id})});
+  const j=await r.json(); alert(j.ok?"测试完成："+((j.test||{}).status||""):"测试失败："+(j.error||"")); await loadRouting();
+}
+document.getElementById("relay-save").onclick=saveRelay;
+loadRouting(); setInterval(loadRouting,30000);
 async function loadOverview(){
   try{
     const [ks,ms,vk] = await Promise.all([
