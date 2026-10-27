@@ -436,8 +436,9 @@ document.addEventListener('click',ev=>{
 });
 window.addEventListener('error',e=>showErr('页面脚本错误：'+(e.message||e.type)));
 window.addEventListener('unhandledrejection',e=>showErr('未处理错误：'+((e.reason&&e.reason.message)||e.reason)));
-try{ if(new URLSearchParams(location.search).get('text')==='1'){ TEXT_ONLY=true; } }catch(e){}
-if(TEXT_ONLY){ $('b-start').textContent='⌨️ 纯文字：在输入框写一句'; showTypePanel(); setStatus('纯文字验收模式：写一句→出卡→按这个办→接受/改'); }
+let PREFILL='';
+try{ const qs=new URLSearchParams(location.search); if(qs.get('text')==='1'){ TEXT_ONLY=true; } PREFILL=qs.get('prefill')||''; }catch(e){}
+if(TEXT_ONLY){ $('b-start').textContent='⌨️ 纯文字：在输入框写一句'; showTypePanel(); if(PREFILL && $('ask')){ $('ask').value=PREFILL; } setStatus(PREFILL?'已带入一句话，点“出卡”即可':'纯文字验收模式：写一句→出卡→按这个办→接受/改'); }
 checkAsr();
 </script>
 </body>
