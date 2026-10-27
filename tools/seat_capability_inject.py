@@ -80,6 +80,7 @@ CAPABILITIES = {
         {"name": "durable-workflow", "what": "持久工作流：步骤状态机/超时/重试/断点续跑，长任务不丢", "how": "python -X utf8 tools/durable_workflow.py start/run/status/list；状态 work/workflows", "boundary": "不绕过 L2；失败/超时如实记录", "status": "ready"},
         {"name": "model-routing", "what": "模型路由：Key 池→LiteLLM Router（多 Key/多 provider/fallback/成本）", "how": "python -X utf8 tools/litellm_route.py list/route/costs；成本 work/litellm/cost.jsonl", "boundary": "Key 只在内存/请求用；不落明文；不自动充值", "status": "ready"},
         {"name": "product-metrics", "what": "产品数据闭环：eval/trace/审批/工作流/浏览器/Key 池聚合 + 反馈", "how": "python -X utf8 tools/product_metrics.py report/feedback/list", "boundary": "本地聚合；不编造指标；反馈如实记录", "status": "ready"},
+        {"name": "agent-onboarding", "what": "新 AI 快速接入：虚拟Key+配置片段+注册表，一条命令接入统一网关", "how": "python -X utf8 tools/ai_onboard.py add/list/disable", "boundary": "真 Key 不下发；注册表不含明文 token", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -578,6 +579,19 @@ description: 产品数据闭环：eval/trace/审批/工作流/浏览器/Key 池�
 2. 反馈：`... feedback --score 1-5 --note "..." --source 老田`。
 3. 汇总：`... list`；报告落 `work/product/metrics.json`。
 4. 本地聚合，不编造指标；反馈如实记录。
+""",
+        "agent-onboarding": """---
+name: agent-onboarding
+description: 新 AI 快速接入：一条命令生成虚拟 Key、配置片段和注册表，统一走 8796 网关。
+---
+
+# 新 AI 接入
+
+1. 接入：`python -X utf8 tools/ai_onboard.py add <name> [--alias auto] [--allowed auto strong]`
+2. 会输出 base_url / vk token / model 配置片段（token 只显示一次）。
+3. 查看：`... list`；停用：`... disable <name>`。
+4. 所有 AI 只连 `http://127.0.0.1:8796/v1`；真 Key 只在 Key 池。
+5. 注册表：`config/ai_registry.json`（不含明文 token）。
 """,
     },
     "zhaoyun": {
