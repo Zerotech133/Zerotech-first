@@ -43,3 +43,17 @@ python tools/datawarehouse/backup_receipt_check.py
 ## 回滚 / 停用
 
 全部为独立脚本，删除目录即停用；`run_all.py` 默认 dry-run，不产生副作用；无守护进程、无端口占用。
+
+## OTLP 追踪（默认关，2026-10-27 起）
+
+关键链路已接 fail-open 追踪助手 `tools/otel_tracing.py`（Phoenix 可观测底座，UI http://127.0.0.1:6006）：
+
+```powershell
+$env:OTEL_ENABLED = "1"                                # 默认空=完全 no-op
+$env:OTEL_EXPORTER_OTLP_ENDPOINT = "http://127.0.0.1:6006/v1/traces"
+$env:OTEL_SERVICE_NAME = "zerobond-datawarehouse"
+python tools/datawarehouse/run_all.py --json --dry-run
+```
+
+- 未启用时零依赖、零行为变化；OTEL 包缺失/导出失败也静默降级（绝不阻断主流程）。
+- Phoenix OTLP HTTP 端点在 **6006/v1/traces**（4317=gRPC；4318 预留）。

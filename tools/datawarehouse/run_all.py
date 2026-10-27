@@ -16,7 +16,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))  # tools/ 根：otel_tracing
 import common  # noqa: E402  (同目录)
+
+try:  # OTEL 接线（默认关；缺失/失败一律降级，不影响主流程）
+    import otel_tracing  # noqa: E402
+except Exception:  # noqa: BLE001
+    otel_tracing = None
 import backup_receipt_check  # noqa: E402
 import catalog_snapshot  # noqa: E402
 import db_instance_probe  # noqa: E402
@@ -37,6 +43,14 @@ def _run(name: str, fn) -> dict:
 
 
 def collect(mode: str = "daily") -> dict:
+    """带 OTEL span 的 collect（未启用追踪时零开销直通）。"""
+    if otel_tracing is not None:
+        with otel_tracing.traced("datawarehouse.run_all.collect", mode=mode):
+            return _collect_impl(mode)
+    return _collect_impl(mode)
+
+
+def _collect_impl(mode: str = "daily") -> dict:
     sections = {}
     if mode in ("daily", "weekly", "monthly"):
         sections["catalog"] = _run("catalog_snapshot", catalog_snapshot.collect)
