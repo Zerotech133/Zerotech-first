@@ -12,10 +12,16 @@ from gatekeeper.ledger import Ledger
 
 def _dec(market, date, safe=True):
     return GateDecision(
-        market=market, date=date, safe=safe,
-        conditions={}, features={"breadth": 0.5},
-        policy_ver="v3_breadth40_med20", policy_sha="a" * 16,
-        feeder="qpzm_parquet", ts="2026-10-15T09:00:00")
+        market=market,
+        date=date,
+        safe=safe,
+        conditions={},
+        features={"breadth": 0.5},
+        policy_ver="v3_breadth40_med20",
+        policy_sha="a" * 16,
+        feeder="qpzm_parquet",
+        ts="2026-10-15T09:00:00",
+    )
 
 
 def test_atomic_append_lines(tmp_path):
@@ -27,7 +33,7 @@ def test_atomic_append_lines(tmp_path):
     with open(fp, encoding="utf-8") as f:
         lines = [ln for ln in f.read().splitlines() if ln.strip()]
     assert len(lines) == 5
-    for ln in lines:                      # 每行独立可解析 = 无半截写入
+    for ln in lines:  # 每行独立可解析 = 无半截写入
         assert json.loads(ln)["policy_ver"] == "v3_breadth40_med20"
     assert led.count() == 5
 

@@ -23,6 +23,7 @@
 运行（仓库根）：
     python tools/liudu_trial_run.py [trade_date]
 """
+
 from __future__ import annotations
 
 import json
@@ -63,12 +64,36 @@ from strategy_layer.xunyou import build_pool  # noqa: E402
 import random  # noqa: E402
 
 _SYNTH_SYMBOLS = [
-    "600519.SH", "000858.SZ", "601318.SH", "300750.SZ", "002594.SZ",
-    "600036.SH", "000333.SZ", "601012.SH", "600276.SH", "000651.SZ",
-    "603259.SH", "002415.SZ", "600900.SH", "601888.SH", "000001.SZ",
-    "688981.SH", "600030.SH", "002475.SZ", "601166.SH", "600585.SH",
-    "000725.SZ", "601398.SH", "600887.SH", "002714.SZ", "603288.SH",
-    "600309.SH", "000792.SZ", "601857.SH", "600048.SH", "002304.SZ",
+    "600519.SH",
+    "000858.SZ",
+    "601318.SH",
+    "300750.SZ",
+    "002594.SZ",
+    "600036.SH",
+    "000333.SZ",
+    "601012.SH",
+    "600276.SH",
+    "000651.SZ",
+    "603259.SH",
+    "002415.SZ",
+    "600900.SH",
+    "601888.SH",
+    "000001.SZ",
+    "688981.SH",
+    "600030.SH",
+    "002475.SZ",
+    "601166.SH",
+    "600585.SH",
+    "000725.SZ",
+    "601398.SH",
+    "600887.SH",
+    "002714.SZ",
+    "603288.SH",
+    "600309.SH",
+    "000792.SZ",
+    "601857.SH",
+    "600048.SH",
+    "002304.SZ",
 ]
 
 
@@ -90,7 +115,7 @@ def _synth_combined(trade_date: str, seed: int = 20261021) -> tuple:
             score = round(rng.uniform(95.0, 99.0), 2)
         else:
             score = round(rng.uniform(80.0, 94.9), 2)
-        divergent = (i % 11 == 0)  # 少量分歧票
+        divergent = i % 11 == 0  # 少量分歧票
         row = {
             "symbol": sym,
             "action": "buy",
@@ -115,30 +140,35 @@ def _synth_price_path(seed: int) -> list:
     price = 100.0
     path = [price]
     for _ in range(9):
-        price *= (1 + rng.uniform(-0.06, 0.06))
+        price *= 1 + rng.uniform(-0.06, 0.06)
         path.append(round(price, 2))
     return path
 
 
 def main(argv: list) -> int:
-    trade_date = (argv[1] if len(argv) > 1
-                  else datetime.now().strftime("%Y%m%d"))
+    trade_date = argv[1] if len(argv) > 1 else datetime.now().strftime("%Y%m%d")
     print("=== 六度选股 决定后配置 端到端 trial 试运行 ===")
-    print(f"[ctx] universe={SELECTED_UNIVERSE} reconcile_mode={SELECTED_RECONCILE_MODE}"
-          f" tiering={TIERING_PLAN}")
+    print(
+        f"[ctx] universe={SELECTED_UNIVERSE} reconcile_mode={SELECTED_RECONCILE_MODE}"
+        f" tiering={TIERING_PLAN}"
+    )
 
     # --- N1 + 真实选择逻辑：构造合成信号并跑荀攸已拍板 T1/T2 分档 ---
     combined, divergences = _synth_combined(trade_date)
     pool = build_pool(trade_date, combined, divergences)
-    print(f"[N1/N10] 荀攸真实分档逻辑跑通：buy={pool['stats']['buy_total']}"
-          f" T1={pool['stats']['tier1_total']} T2={pool['stats']['tier2_total']}"
-          f" 复核={pool['stats']['review_total']}")
+    print(
+        f"[N1/N10] 荀攸真实分档逻辑跑通：buy={pool['stats']['buy_total']}"
+        f" T1={pool['stats']['tier1_total']} T2={pool['stats']['tier2_total']}"
+        f" 复核={pool['stats']['review_total']}"
+    )
     assert pool["stats"]["tier1_total"] > 0, "T1 断层逻辑未触发（合成分布异常）"
 
     # --- N8 reconcile 模式 B：仍以 NOT_VERIFIED 护栏（不私自 READY）---
     rec = reconcile(trade_date=trade_date, mode=SELECTED_RECONCILE_MODE)
-    print(f"[N8] reconcile(mode={SELECTED_RECONCILE_MODE}) -> status={rec.get('status')}"
-          f" ready={rec.get('ready')}")
+    print(
+        f"[N8] reconcile(mode={SELECTED_RECONCILE_MODE}) -> status={rec.get('status')}"
+        f" ready={rec.get('ready')}"
+    )
     assert rec.get("status") in ("NOT_VERIFIED", "REJECTED")
     assert rec.get("ready") is False
 
@@ -147,19 +177,25 @@ def main(argv: list) -> int:
     sel = [r for r in pool["pool"] if r["tier"] in ("T1", "T2")]
     sl_rows = []
     for idx, r in enumerate(sel):
-        path = _synth_price_path(seed=hash(r["symbol"]) % (10 ** 8))
+        path = _synth_price_path(seed=hash(r["symbol"]) % (10**8))
         fixed = simulate(path, "fixed", params)
         trail = simulate(path, "trailing", params)
-        sl_rows.append({
-            "symbol": r["symbol"], "tier": r["tier"], "score": r["score"],
-            "stop_loss_fixed_pnl": round(fixed["final_pnl"], 4),
-            "stop_loss_trailing_pnl": round(trail["final_pnl"], 4),
-            "max_drawdown": round(fixed["max_drawdown"], 4),
-        })
+        sl_rows.append(
+            {
+                "symbol": r["symbol"],
+                "tier": r["tier"],
+                "score": r["score"],
+                "stop_loss_fixed_pnl": round(fixed["final_pnl"], 4),
+                "stop_loss_trailing_pnl": round(trail["final_pnl"], 4),
+                "max_drawdown": round(fixed["max_drawdown"], 4),
+            }
+        )
     avg_fixed = sum(x["stop_loss_fixed_pnl"] for x in sl_rows) / max(len(sl_rows), 1)
     avg_trail = sum(x["stop_loss_trailing_pnl"] for x in sl_rows) / max(len(sl_rows), 1)
-    print(f"[N4] 止损仿真覆盖 {len(sl_rows)} 只 | fixed均值PnL={avg_fixed:.4f}"
-          f" trailing均值PnL={avg_trail:.4f}")
+    print(
+        f"[N4] 止损仿真覆盖 {len(sl_rows)} 只 | fixed均值PnL={avg_fixed:.4f}"
+        f" trailing均值PnL={avg_trail:.4f}"
+    )
 
     # --- N11 tiering 方案 B：决定后配置激活 SIGNAL_POOL_AUTO_WRITE，显式落分层产物 ---
     signal_pool_path = default_output_path()
@@ -168,15 +204,23 @@ def main(argv: list) -> int:
         # 方案 B：xunyou_pool 作为上游之一，分层汇聚到统一消费入口 signal_pool.jsonl
         records = [
             build_record(
-                r["symbol"], r["score"], "xunyou_pool", trade_date,
-                meta={"tier": r["tier"], "action": r["action"],
-                      "tiering_plan": TIERING_PLAN,
-                      "tier_layer_order": list(TIER_LAYER_ORDER)},
+                r["symbol"],
+                r["score"],
+                "xunyou_pool",
+                trade_date,
+                meta={
+                    "tier": r["tier"],
+                    "action": r["action"],
+                    "tiering_plan": TIERING_PLAN,
+                    "tier_layer_order": list(TIER_LAYER_ORDER),
+                },
             )
             for r in pool["pool"]
         ]
         n_written = write_signals(records, signal_pool_path)
-        print(f"[N11] 方案B分层落账 → {signal_pool_path}（写入 {n_written} 条，幂等 upsert，重跑不累积）")
+        print(
+            f"[N11] 方案B分层落账 → {signal_pool_path}（写入 {n_written} 条，幂等 upsert，重跑不累积）"
+        )
     else:
         print("[N11] SIGNAL_POOL_AUTO_WRITE=False，未落账（保持休眠）")
 
@@ -218,8 +262,10 @@ def main(argv: list) -> int:
     os.replace(tmp, str(out_path))
 
     print(f"[out] trial 产物 → {out_path}")
-    print("[done] 决定后配置端到端试运行通过：真实分档逻辑跑通 + N4 仿真覆盖 + "
-          "N8 护栏生效。")
+    print(
+        "[done] 决定后配置端到端试运行通过：真实分档逻辑跑通 + N4 仿真覆盖 + "
+        "N8 护栏生效。"
+    )
     return 0
 
 

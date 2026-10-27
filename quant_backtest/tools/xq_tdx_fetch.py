@@ -21,6 +21,7 @@ vol 口径：pytdx get_security_bars 返回的 vol 单位为手，×100 换算�
 fail-visible：全部行情服务器连接失败 → stderr 明确报错 + 退出码 1，
 绝不静默产出空文件。代理变量在启动时清空（判例：代理造成假 403/假 502）。
 """
+
 import argparse
 import json
 import os
@@ -29,13 +30,13 @@ import sys
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent          # tools/
-REPO = HERE.parent                              # 仓库根
+HERE = Path(__file__).resolve().parent  # tools/
+REPO = HERE.parent  # 仓库根
 DEFAULT_OUT = REPO / "data" / "tdx"
 
 # 与 tools/xq_quote_alt_probe.py 的 _TDX_DAY 完全一致（32 字节小端）
 _TDX_DAY = struct.Struct("<IIIIIfII")
-DAY_SIZE = _TDX_DAY.size                        # 32
+DAY_SIZE = _TDX_DAY.size  # 32
 
 # pytdx 日K category：9 = 日线
 KLINE_DAY = 9
@@ -61,18 +62,20 @@ RUN_DIR = Path(r"C:/aios/automation_runs/xq_tdx")
 
 # ── 符号解析 ─────────────────────────────────────────────────
 
+
 def parse_symbol(sym):
     """'SH600519' → ('sh600519', market=1, '600519')；SZ → market=0。
 
     指数同理：'SH000001' → market=1 code='000001'（上证指数）。
     """
     s = sym.strip().lower()
-    if (len(s) != 8 or s[:2] not in ("sh", "sz") or not s[2:].isdigit()):
+    if len(s) != 8 or s[:2] not in ("sh", "sz") or not s[2:].isdigit():
         raise ValueError("非法符号 %r，应为 SH/SZ + 6 位数字（如 SH600519）" % sym)
     return s, (1 if s.startswith("sh") else 0), s[2:]
 
 
 # ── 32B 编码（与 parse_tdx_day 严格 roundtrip 兼容）──────────
+
 
 def encode_day(date_int, o, h, l, c, amount, vol):
     """一条 dict bar → 32B。date_int 为 YYYYMMDD；价格为元，×100 存分。"""
@@ -102,6 +105,7 @@ def write_day_file(path, recs):
 
 # ── 网络层（可注入 mock）─────────────────────────────────────
 
+
 def fetch_bars(api, market, code, days, page=100, category=KLINE_DAY):
     """分页拉日线，返回最近 days 根（date 升序、去重）。
 
@@ -117,10 +121,10 @@ def fetch_bars(api, market, code, days, page=100, category=KLINE_DAY):
         if not chunk:
             break
         raw.extend(chunk)
-        if len(chunk) < page:                   # 末页取尽
+        if len(chunk) < page:  # 末页取尽
             break
         start += page
-    return normalize_bars(raw)[-int(days):]
+    return normalize_bars(raw)[-int(days) :]
 
 
 def normalize_bars(raw):
@@ -132,7 +136,10 @@ def normalize_bars(raw):
             continue
         seen[di] = (
             di,
-            b["open"], b["high"], b["low"], b["close"],
+            b["open"],
+            b["high"],
+            b["low"],
+            b["close"],
             float(b.get("amount") or 0.0),
             b.get("vol") or 0,
         )
@@ -150,27 +157,30 @@ def _bar_date(b):
 def connect_any(api_cls, servers=None, timeout=5):
     """遍历服务器池，返回 (api, (ip, port))；全失败抛 ConnectionError。"""
     last = []
-    for ip, port in (servers or HQ_SERVERS):
+    for ip, port in servers or HQ_SERVERS:
         api = api_cls(heartbeat=False)
         try:
             try:
                 ok = api.connect(ip, port, time_out=timeout)
-            except TypeError:                   # 老版本签名无 time_out
+            except TypeError:  # 老版本签名无 time_out
                 ok = api.connect(ip, port)
             if ok:
                 return api, (ip, port)
             last.append("%s:%s 连接返回失败" % (ip, port))
-        except Exception as e:                  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             last.append("%s:%s %s" % (ip, port, str(e)[:80]))
         try:
             api.disconnect()
-        except Exception:                       # noqa: BLE001
+        except Exception:  # noqa: BLE001
             pass
-    raise ConnectionError("全部 %d 个行情服务器连接失败：%s"
-                          % (len(servers or HQ_SERVERS), "；".join(last)))
+    raise ConnectionError(
+        "全部 %d 个行情服务器连接失败：%s"
+        % (len(servers or HQ_SERVERS), "；".join(last))
+    )
 
 
 # ── 主流程 ───────────────────────────────────────────────────
+
 
 def run(symbols, days, out_root, page=100, timeout=5, verbose=True):
     """拉全部符号落盘。返回 (written, errors)；written 为空时调用方退出 1。"""
@@ -181,26 +191,33 @@ def run(symbols, days, out_root, page=100, timeout=5, verbose=True):
         try:
             name, market, code = parse_symbol(sym)
             if api is None:
-                from pytdx.hq import TdxHq_API          # noqa: 延迟导入
+                from pytdx.hq import TdxHq_API  # noqa: 延迟导入
+
                 api, peer = connect_any(TdxHq_API, timeout=timeout)
                 _log("已连接行情服务器 %s:%s" % peer, verbose)
             bars = fetch_bars(api, market, code, days, page=page)
             if not bars:
                 raise ValueError("日线拉取为空")
-            recs = [(d, o, h, l, c, amt, int(round(v * 100)))   # 手→股
-                    for (d, o, h, l, c, amt, v) in bars]
-            f = write_day_file(Path(out_root) / name[:2] / "lday"
-                               / (name + ".day"), recs)
+            recs = [
+                (d, o, h, l, c, amt, int(round(v * 100)))  # 手→股
+                for (d, o, h, l, c, amt, v) in bars
+            ]
+            f = write_day_file(
+                Path(out_root) / name[:2] / "lday" / (name + ".day"), recs
+            )
             written[name] = str(f)
-            _log("%s: %d 根 → %s（最新 %s）"
-                 % (name, len(recs), f, _fmt_date(recs[-1][0])), verbose)
-        except Exception as e:                  # noqa: BLE001
+            _log(
+                "%s: %d 根 → %s（最新 %s）"
+                % (name, len(recs), f, _fmt_date(recs[-1][0])),
+                verbose,
+            )
+        except Exception as e:  # noqa: BLE001
             errors.append("%s: %s" % (sym.strip().upper(), str(e)[:120]))
             _log("%s: 失败 %s" % (sym.strip().upper(), str(e)[:120]), verbose)
     if api is not None:
         try:
             api.disconnect()
-        except Exception:                       # noqa: BLE001
+        except Exception:  # noqa: BLE001
             pass
     return written, errors
 
@@ -216,8 +233,11 @@ def _log(msg, verbose=True):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="TDX 日线盘后下载（pytdx → data/tdx）")
-    ap.add_argument("--symbols", default=DEFAULT_SYMBOLS,
-                    help="逗号分隔，如 SH600519,SZ000001,SH000001")
+    ap.add_argument(
+        "--symbols",
+        default=DEFAULT_SYMBOLS,
+        help="逗号分隔，如 SH600519,SZ000001,SH000001",
+    )
     ap.add_argument("--days", type=int, default=250, help="每标的拉最近 N 根")
     ap.add_argument("--out", default=str(DEFAULT_OUT), help=".day 输出根目录")
     ap.add_argument("--page", type=int, default=100, help="单页 bar 数")
@@ -225,8 +245,14 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     # 判例：清代理变量（代理对部分源返假 403/假 502）
-    for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy",
-              "ALL_PROXY", "all_proxy"):
+    for k in (
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "ALL_PROXY",
+        "all_proxy",
+    ):
         os.environ.pop(k, None)
 
     symbols = [s for s in args.symbols.split(",") if s.strip()]
@@ -234,23 +260,26 @@ def main(argv=None):
         print("错误：--symbols 为空", file=sys.stderr)
         return 1
     t0 = time.time()
-    written, errors = run(symbols, args.days, args.out,
-                          page=args.page, timeout=args.timeout)
+    written, errors = run(
+        symbols, args.days, args.out, page=args.page, timeout=args.timeout
+    )
     summary = {
         "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
         "elapsed_s": round(time.time() - t0, 2),
         "written": written,
         "errors": errors,
     }
-    try:                                        # 长跑输出归档（尽力而为）
+    try:  # 长跑输出归档（尽力而为）
         RUN_DIR.mkdir(parents=True, exist_ok=True)
         (RUN_DIR / "fetch_last.json").write_text(
-            json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+            json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     except OSError:
         pass
     if not written:
-        print("错误：零符号落盘（fail-visible）→ %s" % "；".join(errors),
-              file=sys.stderr)
+        print(
+            "错误：零符号落盘（fail-visible）→ %s" % "；".join(errors), file=sys.stderr
+        )
         return 1
     if errors:
         print("警告：部分符号失败 → %s" % "；".join(errors), file=sys.stderr)

@@ -26,10 +26,11 @@ import os
 
 import pandas as pd
 
-MIN_BARS_ENV = 21       # 计闸门槛：锚日累计 bar 数下限（对齐 qpzm:68）
+MIN_BARS_ENV = 21  # 计闸门槛：锚日累计 bar 数下限（对齐 qpzm:68）
 
-PROJECT_ROOT = os.path.normpath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+PROJECT_ROOT = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
+)
 DEFAULT_DATA_DIR = os.path.join(PROJECT_ROOT, "data", "ashare")
 
 
@@ -45,7 +46,7 @@ class QpzmParquetFeeder:
 
     def __init__(self, data_dir=None):
         self.data_dir = data_dir or DEFAULT_DATA_DIR
-        self._cache = None      # (close_df, above_df, ret20_df)
+        self._cache = None  # (close_df, above_df, ret20_df)
 
     # ---- 装载与口径（对齐 qpzm load_wide） ------------------------------
 
@@ -68,12 +69,10 @@ class QpzmParquetFeeder:
         for fp in sorted(glob.glob(os.path.join(self.data_dir, "*.parquet"))):
             code = os.path.splitext(os.path.basename(fp))[0]
             try:
-                df = pd.read_parquet(
-                    fp, columns=["trade_date", "close", "pre_close"])
-            except Exception:                       # noqa: BLE001 缺列/损坏票跳过
+                df = pd.read_parquet(fp, columns=["trade_date", "close", "pre_close"])
+            except Exception:  # noqa: BLE001 缺列/损坏票跳过
                 continue
-            s = (df.drop_duplicates("trade_date")
-                   .set_index("trade_date").sort_index())
+            s = df.drop_duplicates("trade_date").set_index("trade_date").sort_index()
             if s.empty:
                 continue
             c = pd.to_numeric(s["close"], errors="coerce")
@@ -84,12 +83,11 @@ class QpzmParquetFeeder:
             c = c * ratio.cumprod()
             closes[code] = c
         if not closes:
-            self._cache = (pd.DataFrame(dtype=float),
-                           pd.DataFrame(dtype=float))
+            self._cache = (pd.DataFrame(dtype=float), pd.DataFrame(dtype=float))
             return self._cache
         close = pd.DataFrame(closes).sort_index()
         above_cols, ret_cols = {}, {}
-        for code, c in closes.items():              # own-bar 逐股算
+        for code, c in closes.items():  # own-bar 逐股算
             ma20 = c.rolling(20, min_periods=1).mean()
             nb = pd.Series(range(1, len(c) + 1), index=c.index, dtype=float)
             ab = (c > ma20).astype(float)
@@ -116,14 +114,18 @@ class QpzmParquetFeeder:
         else:
             anchor = _norm_date(date)
             if anchor not in above.index:
-                return anchor, {"breadth": None, "med20": None,
-                                "n_stocks": 0, "anchor_missing": True}
-        mask = above.loc[anchor].notna()            # n_bars>=MIN_BARS_ENV
+                return anchor, {
+                    "breadth": None,
+                    "med20": None,
+                    "n_stocks": 0,
+                    "anchor_missing": True,
+                }
+        mask = above.loc[anchor].notna()  # n_bars>=MIN_BARS_ENV
         n = int(mask.sum())
         if n == 0:
             return anchor, {"breadth": None, "med20": None, "n_stocks": 0}
         b_raw = above.loc[anchor][mask].mean()
-        m_raw = ret20.loc[anchor][mask].median()    # 中位跳 NaN（env_gate 同）
+        m_raw = ret20.loc[anchor][mask].median()  # 中位跳 NaN（env_gate 同）
         return anchor, {
             "breadth": None if pd.isna(b_raw) else float(b_raw),
             "med20": None if pd.isna(m_raw) else float(m_raw),

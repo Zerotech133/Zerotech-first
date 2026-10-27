@@ -23,6 +23,7 @@ docs/2026-10-18_行情替代源探针报告.md。
 铁律遵守：网络探测全部走 python（urllib/requests 内部封装），探针前清
 HTTP_PROXY/HTTPS_PROXY 等代理变量（代理对部分源返假 502 判例）。
 """
+
 import json
 import os
 import struct
@@ -31,31 +32,40 @@ import threading
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent          # tools/
-REPO = HERE.parent                              # 仓库根
+HERE = Path(__file__).resolve().parent  # tools/
+REPO = HERE.parent  # 仓库根
 REPORT_PATH = REPO / "docs" / "2026-10-18_行情替代源探针报告.md"
 
 # 样标的：(tdx 文件符号, 展示名)
-SAMPLES = [("sh600519", "SH600519 贵州茅台(千元级校验)"),
-           ("sz000001", "SZ000001 平安银行")]
+SAMPLES = [
+    ("sh600519", "SH600519 贵州茅台(千元级校验)"),
+    ("sz000001", "SZ000001 平安银行"),
+]
 
 # 本地通达信候选安装根（按序探测）
 # 2026-10-25 EXEC-R11（审计 P3-04）：实际安装根 = C:/项目/new_tdx64（AGENTS.md §8）；
 # 第 2/3 项为历史残留位，保留仅兼容旧机，不新增引用、不改探测顺序与逻辑。
 TDX_CANDIDATES = [
     r"C:/项目/new_tdx64",
-    r"C:/new_tdx64",   # 历史遗留：旧安装位（已废，仅兜底）
-    r"D:/new_tdx64",   # 死路径：D 盘安装已迁入 C:/项目/new_tdx64（EXEC-R11 核实）
+    r"C:/new_tdx64",  # 历史遗留：旧安装位（已废，仅兜底）
+    r"D:/new_tdx64",  # 死路径：D 盘安装已迁入 C:/项目/new_tdx64（EXEC-R11 核实）
 ]
 
 # TDX .day 单条记录布局（小端 32 字节）
 _TDX_DAY = struct.Struct("<IIIIIfII")
-_TDX_DAY_SIZE = _TDX_DAY.size                   # 32
-_PROXY_KEYS = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
-               "http_proxy", "https_proxy", "all_proxy")
+_TDX_DAY_SIZE = _TDX_DAY.size  # 32
+_PROXY_KEYS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+)
 
 
 # ── 公共 ─────────────────────────────────────────────────────
+
 
 def clear_proxy_env():
     """清代理变量（防假 502 判例）；返回被清除的键列表。"""
@@ -74,7 +84,7 @@ def _call_with_timeout(fn, seconds, *args, **kwargs):
     def _run():
         try:
             box["ok"], box["val"] = True, fn(*args, **kwargs)
-        except Exception as e:                  # noqa: BLE001 - 探针需吞一切异常
+        except Exception as e:  # noqa: BLE001 - 探针需吞一切异常
             box["ok"], box["val"] = False, e
 
     t = threading.Thread(target=_run, daemon=True)
@@ -89,19 +99,26 @@ def _call_with_timeout(fn, seconds, *args, **kwargs):
 
 def _last3_ohlc(rows):
     """取最近 3 根的精简 OHLC 样本（输出用，不含 amount/vol）。"""
-    return [{k: r[k] for k in ("date", "open", "high", "low", "close")}
-            for r in rows[-3:]]
+    return [
+        {k: r[k] for k in ("date", "open", "high", "low", "close")} for r in rows[-3:]
+    ]
 
 
 def _probe_result(source, ok, latency_ms, sample, err, **extra):
     """统一的三源输出结构 {source, ok, latency_ms, sample_ohlc_last3, err}。"""
-    d = {"source": source, "ok": bool(ok), "latency_ms": latency_ms,
-         "sample_ohlc_last3": sample or [], "err": err}
+    d = {
+        "source": source,
+        "ok": bool(ok),
+        "latency_ms": latency_ms,
+        "sample_ohlc_last3": sample or [],
+        "err": err,
+    }
     d.update(extra)
     return d
 
 
 # ── 源1：本地通达信 .day 解析（零网络） ──────────────────────
+
 
 def parse_tdx_day(path, limit=20):
     """解析通达信日线二进制，返回最近 limit 根（时间升序）。
@@ -125,19 +142,26 @@ def parse_tdx_day(path, limit=20):
     data = p.read_bytes()
     if not data:
         raise ValueError("empty file: %s" % p)
-    n = len(data) // _TDX_DAY_SIZE              # 尾部不足 32B 的残片忽略
+    n = len(data) // _TDX_DAY_SIZE  # 尾部不足 32B 的残片忽略
     start = 0 if limit is None else max(0, n - int(limit))
     out = []
     for i in range(start, n):
-        d, o, h, l, c, amt, vol, _res = _TDX_DAY.unpack_from(
-            data, i * _TDX_DAY_SIZE)
-        out.append({
-            "date": "%08d" % d,
-            "open": o / 100.0, "high": h / 100.0,
-            "low": l / 100.0, "close": c / 100.0,
-            "open_c": o, "high_c": h, "low_c": l, "close_c": c,
-            "amount": round(amt, 2), "vol": vol,
-        })
+        d, o, h, l, c, amt, vol, _res = _TDX_DAY.unpack_from(data, i * _TDX_DAY_SIZE)
+        out.append(
+            {
+                "date": "%08d" % d,
+                "open": o / 100.0,
+                "high": h / 100.0,
+                "low": l / 100.0,
+                "close": c / 100.0,
+                "open_c": o,
+                "high_c": h,
+                "low_c": l,
+                "close_c": c,
+                "amount": round(amt, 2),
+                "vol": vol,
+            }
+        )
     return out
 
 
@@ -167,9 +191,13 @@ def probe_tdx(base_dir=None, limit=20):
     cands = [base_dir] if base_dir else TDX_CANDIDATES
     base = next((c for c in cands if c and Path(c).is_dir()), None)
     if base is None:
-        return _probe_result("tdx_local", False, 0, [],
-                             "未找到通达信安装目录（候选：%s）"
-                             % ", ".join(map(str, cands)))
+        return _probe_result(
+            "tdx_local",
+            False,
+            0,
+            [],
+            "未找到通达信安装目录（候选：%s）" % ", ".join(map(str, cands)),
+        )
     samples, errs, warns = {}, [], []
     for sym, label in SAMPLES:
         f = _tdx_day_path(base, sym)
@@ -178,7 +206,7 @@ def probe_tdx(base_dir=None, limit=20):
         except FileNotFoundError:
             errs.append("%s: 文件缺失 %s" % (sym, f))
             continue
-        except Exception as e:                  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             errs.append("%s: 解析失败 %s" % (sym, str(e)[:60]))
             continue
         bad = _tdx_sanity(sym, rows)
@@ -187,23 +215,31 @@ def probe_tdx(base_dir=None, limit=20):
         samples[sym] = _last3_ohlc(rows)
     latency = int((time.time() - t0) * 1000)
     if errs and not samples:
-        return _probe_result("tdx_local", False, latency, [],
-                             "；".join(errs), install_dir=str(base))
+        return _probe_result(
+            "tdx_local", False, latency, [], "；".join(errs), install_dir=str(base)
+        )
     note = []
     if errs:
         note.append("部分缺失：" + "；".join(errs))
     if warns:
         note.append("常识校验告警：" + "；".join(warns))
-    return _probe_result("tdx_local", True, latency,
-                         samples.get("sh600519") or list(samples.values())[0],
-                         "；".join(note), install_dir=str(base),
-                         all_samples=samples)
+    return _probe_result(
+        "tdx_local",
+        True,
+        latency,
+        samples.get("sh600519") or list(samples.values())[0],
+        "；".join(note),
+        install_dir=str(base),
+        all_samples=samples,
+    )
 
 
 # ── 源2：akshare ─────────────────────────────────────────────
 
+
 def _import_akshare():
     import akshare
+
     return akshare
 
 
@@ -216,11 +252,15 @@ def _akshare_daily(ak, sym, limit):
     rows = []
     for _, r in df.iterrows():
         d = r.get("date")
-        rows.append({
-            "date": str(getattr(d, "date", lambda: d)())[:10].replace("-", ""),
-            "open": round(float(r["open"]), 2), "high": round(float(r["high"]), 2),
-            "low": round(float(r["low"]), 2), "close": round(float(r["close"]), 2),
-        })
+        rows.append(
+            {
+                "date": str(getattr(d, "date", lambda: d)())[:10].replace("-", ""),
+                "open": round(float(r["open"]), 2),
+                "high": round(float(r["high"]), 2),
+                "low": round(float(r["low"]), 2),
+                "close": round(float(r["close"]), 2),
+            }
+        )
     return rows
 
 
@@ -230,9 +270,11 @@ def _akshare_snapshot(ak, code):
         df = ak.stock_bid_ask_em(symbol=code)
         kv = dict(zip(df["item"], df["value"]))
         price = kv.get("最新") or kv.get("现价")
-        return (float(price) if price is not None else None,
-                "stock_bid_ask_em 最新=%s" % price)
-    except Exception as e:                      # noqa: BLE001
+        return (
+            float(price) if price is not None else None,
+            "stock_bid_ask_em 最新=%s" % price,
+        )
+    except Exception as e:  # noqa: BLE001
         return None, "snapshot 失败: %s" % str(e)[:60]
 
 
@@ -242,38 +284,58 @@ def probe_akshare(limit=20):
     t0 = time.time()
     try:
         ak = _import_akshare()
-    except Exception as e:                      # noqa: BLE001
-        return _probe_result("akshare", False, 0, [],
-                             "akshare 未安装（N/A）：%s" % str(e)[:60])
+    except Exception as e:  # noqa: BLE001
+        return _probe_result(
+            "akshare", False, 0, [], "akshare 未安装（N/A）：%s" % str(e)[:60]
+        )
     samples, notes, errs = {}, [], []
     for sym, label in SAMPLES:
-        code = sym[2:]                          # sh600519 → 600519
+        code = sym[2:]  # sh600519 → 600519
         try:
             rows = _call_with_timeout(_akshare_daily, 30, ak, sym, limit)
             samples[sym] = rows
-        except Exception as e:                  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             errs.append("%s daily: %s" % (sym, str(e)[:60]))
     for sym, label in SAMPLES:
         price, note = _akshare_snapshot(ak, sym[2:])
         notes.append("%s %s" % (sym, note))
         if price is not None:
             samples.setdefault(sym, []).append(
-                {"date": "SNAPSHOT", "open": None, "high": None,
-                 "low": None, "close": price})
+                {
+                    "date": "SNAPSHOT",
+                    "open": None,
+                    "high": None,
+                    "low": None,
+                    "close": price,
+                }
+            )
     latency = int((time.time() - t0) * 1000)
     if errs and not any(v for v in samples.values()):
-        return _probe_result("akshare", False, latency, [],
-                             "；".join(errs), snapshot_note="；".join(notes))
+        return _probe_result(
+            "akshare",
+            False,
+            latency,
+            [],
+            "；".join(errs),
+            snapshot_note="；".join(notes),
+        )
     return _probe_result(
-        "akshare", True, latency,
+        "akshare",
+        True,
+        latency,
         samples.get("sh600519") or next((v for v in samples.values() if v), []),
-        "；".join(errs), snapshot_note="；".join(notes), all_samples=samples)
+        "；".join(errs),
+        snapshot_note="；".join(notes),
+        all_samples=samples,
+    )
 
 
 # ── 源3：tushare ─────────────────────────────────────────────
 
+
 def _import_tushare():
     import tushare
+
     return tushare
 
 
@@ -295,16 +357,23 @@ def _find_ts_token(repo_root=None):
 def _tushare_daily(pro, ts_code, limit):
     """pro.daily 拉日K，返回最近 limit 根（升序）。"""
     import datetime as _dt
+
     end = _dt.date.today().strftime("%Y%m%d")
     start = (_dt.date.today() - _dt.timedelta(days=60)).strftime("%Y%m%d")
     df = pro.daily(ts_code=ts_code, start_date=start, end_date=end)
     if df is None or df.empty:
         raise ValueError("daily 返回空")
     df = df.sort_values("trade_date").tail(limit)
-    return [{"date": str(r["trade_date"]),
-             "open": round(float(r["open"]), 2), "high": round(float(r["high"]), 2),
-             "low": round(float(r["low"]), 2), "close": round(float(r["close"]), 2)}
-            for _, r in df.iterrows()]
+    return [
+        {
+            "date": str(r["trade_date"]),
+            "open": round(float(r["open"]), 2),
+            "high": round(float(r["high"]), 2),
+            "low": round(float(r["low"]), 2),
+            "close": round(float(r["close"]), 2),
+        }
+        for _, r in df.iterrows()
+    ]
 
 
 def _tushare_realtime(ts, ts_code):
@@ -314,8 +383,10 @@ def _tushare_realtime(ts, ts_code):
         if df is None or df.empty:
             return None, "realtime_quote 空"
         r = df.iloc[0]
-        return float(r.get("price") or 0) or None, "realtime_quote price=%s" % r.get("price")
-    except Exception as e:                      # noqa: BLE001
+        return float(r.get("price") or 0) or None, "realtime_quote price=%s" % r.get(
+            "price"
+        )
+    except Exception as e:  # noqa: BLE001
         return None, "realtime 失败: %s" % str(e)[:60]
 
 
@@ -325,15 +396,20 @@ def probe_tushare(limit=20, repo_root=None):
     t0 = time.time()
     try:
         ts = _import_tushare()
-    except Exception as e:                      # noqa: BLE001
-        return _probe_result("tushare", False, 0, [],
-                             "tushare 未安装（N/A）：%s" % str(e)[:60])
+    except Exception as e:  # noqa: BLE001
+        return _probe_result(
+            "tushare", False, 0, [], "tushare 未安装（N/A）：%s" % str(e)[:60]
+        )
     token, tok_src = _find_ts_token(repo_root)
     if not token:
-        return _probe_result("tushare", False, int((time.time() - t0) * 1000),
-                             [], "token 不可得（N/A）："
-                             "TUSHARE_TOKEN / .env.local XT_DATA_KEY 均未找到",
-                             token_found=False)
+        return _probe_result(
+            "tushare",
+            False,
+            int((time.time() - t0) * 1000),
+            [],
+            "token 不可得（N/A）：TUSHARE_TOKEN / .env.local XT_DATA_KEY 均未找到",
+            token_found=False,
+        )
     try:
         pro = ts.pro_api(token)
         samples = {}
@@ -342,23 +418,43 @@ def probe_tushare(limit=20, repo_root=None):
             ts_code = "%s.%s" % (sym[2:], sym[:2].upper())
             try:
                 samples[sym] = _call_with_timeout(
-                    _tushare_daily, 30, pro, ts_code, limit)
-            except Exception as e:              # noqa: BLE001
+                    _tushare_daily, 30, pro, ts_code, limit
+                )
+            except Exception as e:  # noqa: BLE001
                 errs.append("%s daily: %s" % (ts_code, str(e)[:60]))
         price, rt_note = _tushare_realtime(ts, "600519.SH")
         latency = int((time.time() - t0) * 1000)
         if errs and not any(samples.values()):
-            return _probe_result("tushare", False, latency, [],
-                                 "；".join(errs), token_found=True,
-                                 token_source=tok_src, snapshot_note=rt_note)
+            return _probe_result(
+                "tushare",
+                False,
+                latency,
+                [],
+                "；".join(errs),
+                token_found=True,
+                token_source=tok_src,
+                snapshot_note=rt_note,
+            )
         return _probe_result(
-            "tushare", True, latency,
+            "tushare",
+            True,
+            latency,
             samples.get("sh600519") or next((v for v in samples.values() if v), []),
-            "；".join(errs), token_found=True, token_source=tok_src,
-            snapshot_note=rt_note, all_samples=samples)
-    except Exception as e:                      # noqa: BLE001
-        return _probe_result("tushare", False, int((time.time() - t0) * 1000),
-                             [], "调用失败：%s" % str(e)[:80], token_found=True)
+            "；".join(errs),
+            token_found=True,
+            token_source=tok_src,
+            snapshot_note=rt_note,
+            all_samples=samples,
+        )
+    except Exception as e:  # noqa: BLE001
+        return _probe_result(
+            "tushare",
+            False,
+            int((time.time() - t0) * 1000),
+            [],
+            "调用失败：%s" % str(e)[:80],
+            token_found=True,
+        )
 
 
 # ── 汇总 verdict + 报告 ──────────────────────────────────────
@@ -377,8 +473,9 @@ def build_verdict(results):
             "akshare": "免 token、社区维护活跃；需网络且接口偶发变动",
             "tushare": "token 可得且接口稳定；受积分/频率限制，实时快照走新浪免费源",
         }.get(primary, "三源均不可用，需人工介入"),
-        "fallback": [s for s in _VERDICT_ORDER
-                     if s != primary and by.get(s, {}).get("ok")],
+        "fallback": [
+            s for s in _VERDICT_ORDER if s != primary and by.get(s, {}).get("ok")
+        ],
     }
 
 
@@ -386,8 +483,18 @@ _XQ_FIELD_MAP = [
     # (xq_quote_snap 字段, tdx_local 对应, akshare 对应, tushare 对应)
     ("symbol", "文件名 sh/sz+code", "symbol 列(sh600519)", "ts_code(600519.SH)"),
     ("ts_code", "由文件名推导", "norm_symbol 映射", "原生 ts_code"),
-    ("current", "close(日频，实时性受限)", "stock_bid_ask_em 最新", "realtime_quote price"),
-    ("percent/chg", "与前一 close 差分自算", "daily 涨跌幅自算 / spot pct", "daily pct_chg"),
+    (
+        "current",
+        "close(日频，实时性受限)",
+        "stock_bid_ask_em 最新",
+        "realtime_quote price",
+    ),
+    (
+        "percent/chg",
+        "与前一 close 差分自算",
+        "daily 涨跌幅自算 / spot pct",
+        "daily pct_chg",
+    ),
     ("volume", "vol(股)", "volume", "vol(手)"),
     ("amount", "amount(元)", "amount", "amount(千元)"),
     ("pe/pb", "无", "stock_zh_a_spot_em 有", "daily_basic(需积分)"),
@@ -403,47 +510,60 @@ def _conclusion_lines(results):
     lines = []
     tdx = by.get("tdx_local", {})
     if tdx.get("ok"):
-        lines.append("- **tdx_local 可用**：%s（解析器 `parse_tdx_day` "
-                     "已就绪，13 测试绿）。" % tdx.get("install_dir", ""))
+        lines.append(
+            "- **tdx_local 可用**：%s（解析器 `parse_tdx_day` "
+            "已就绪，13 测试绿）。" % tdx.get("install_dir", "")
+        )
     else:
         lines.append(
             "- **tdx_local 数据未就位（解析器已就绪）**：`parse_tdx_day` "
             "纯 stdlib 解析 + 13 测试绿；当前 %s 的 vipdoc/*/lday 无 .day "
             "文件（通达信客户端未执行盘后下载）。在客户端"
             "「系统→盘后数据下载」跑一次后重跑本探针，即按优先级自动转为主源。"
-            % tdx.get("install_dir", "本地通达信安装目录"))
+            % tdx.get("install_dir", "本地通达信安装目录")
+        )
         lines.append("  - 原因：%s" % (tdx.get("err") or "未知"))
     ak = by.get("akshare", {})
     lines.append(
         "- **akshare：%s**：日K `stock_zh_a_daily` 可用%s；实时快照 "
-        "`stock_bid_ask_em` %s。" % (
+        "`stock_bid_ask_em` %s。"
+        % (
             "可用" if ak.get("ok") else "不可用",
             "" if ak.get("ok") else "失败（%s）" % (ak.get("err") or "?"),
-            "正常" if "snapshot 失败" not in (ak.get("snapshot_note") or "")
+            "正常"
+            if "snapshot 失败" not in (ak.get("snapshot_note") or "")
             else "失败（RemoteDisconnected，东财单股盘口端点连不上；"
-                 "实时口径可改试 stock_zh_a_spot_em 全表）"))
+            "实时口径可改试 stock_zh_a_spot_em 全表）",
+        )
+    )
     ts = by.get("tushare", {})
     lines.append(
         "- **tushare：%s**：Pro daily 可用（token=%s），延迟 %sms；"
-        "实时快照 ts.realtime_quote %s。" % (
+        "实时快照 ts.realtime_quote %s。"
+        % (
             "可用" if ts.get("ok") else "不可用",
             ts.get("token_source", "未找到"),
             ts.get("latency_ms", "?"),
-            "正常" if "realtime 失败" not in (ts.get("snapshot_note") or "")
-            else "失败（需先 `tushare.set_token` 本地落凭证后再试）"))
+            "正常"
+            if "realtime 失败" not in (ts.get("snapshot_note") or "")
+            else "失败（需先 `tushare.set_token` 本地落凭证后再试）",
+        )
+    )
     return lines
 
 
 def _short_term_plan(results):
     """按实测延迟生成短期接入建议（tdx 未就位时的过渡方案）。"""
     by = {r["source"]: r for r in results}
-    ok_net = [r for s in ("akshare", "tushare")
-              if (r := by.get(s, {})).get("ok")]
+    ok_net = [r for s in ("akshare", "tushare") if (r := by.get(s, {})).get("ok")]
     if not ok_net:
         return ["- **短期建议**：三源均未实测可用，建议先修网络源再定接入。"]
     fastest = min(ok_net, key=lambda r: r["latency_ms"])
-    backup = (next(r["source"] for r in ok_net if r is not fastest)
-              if len(ok_net) > 1 else "无")
+    backup = (
+        next(r["source"] for r in ok_net if r is not fastest)
+        if len(ok_net) > 1
+        else "无"
+    )
     return [
         "- **短期建议**：tdx_local 数据未就位期间，日K 以 `%s` 为主"
         "（实测 %sms，本次最快）、`%s` 为备；实时快照两源端点本次均失败，"
@@ -466,7 +586,7 @@ def write_report(results, verdict, path=REPORT_PATH):
         "",
         "雪球行情域整域拉黑：`data/xueqiu/_manifest.json` 显示 "
         "xq_quote_snap / xq_kline_d / xq_capital_flow / xq_northbound 四源 "
-        "403 \"Seek IP Blacklisted\" degraded，xq_hot_post / xq_comment "
+        '403 "Seek IP Blacklisted" degraded，xq_hot_post / xq_comment '
         "failed。情绪×行情回测闭环右侧断供，需探明替代行情源。",
         "",
         "## 三源对比",
@@ -475,22 +595,35 @@ def write_report(results, verdict, path=REPORT_PATH):
         "|---|---|---|---|---|",
     ]
     for r in results:
-        sample = json.dumps(r["sample_ohlc_last3"][:1], ensure_ascii=False) \
-            if r["sample_ohlc_last3"] else "—"
+        sample = (
+            json.dumps(r["sample_ohlc_last3"][:1], ensure_ascii=False)
+            if r["sample_ohlc_last3"]
+            else "—"
+        )
         if r["sample_ohlc_last3"]:
             s3 = r["sample_ohlc_last3"][-1]
             sample = "%s O%s H%s L%s C%s" % (
-                s3.get("date"), s3.get("open"), s3.get("high"),
-                s3.get("low"), s3.get("close"))
-        lines.append("| %s | %s | %s | %s | %s |" % (
-            r["source"], "✅" if r["ok"] else "❌", r["latency_ms"],
-            sample, (r["err"] or "—")[:120].replace("|", "\\|")))
+                s3.get("date"),
+                s3.get("open"),
+                s3.get("high"),
+                s3.get("low"),
+                s3.get("close"),
+            )
+        lines.append(
+            "| %s | %s | %s | %s | %s |"
+            % (
+                r["source"],
+                "✅" if r["ok"] else "❌",
+                r["latency_ms"],
+                sample,
+                (r["err"] or "—")[:120].replace("|", "\\|"),
+            )
+        )
     lines += [
         "",
         "## verdict",
         "",
-        "- **推荐主源：`%s`** — %s" % (verdict["primary"] or "无",
-                                       verdict["reason"]),
+        "- **推荐主源：`%s`** — %s" % (verdict["primary"] or "无", verdict["reason"]),
         "- 备选链：%s" % (" → ".join(verdict["fallback"]) or "无"),
         "",
         "## 实测结论",
@@ -524,8 +657,9 @@ def write_report(results, verdict, path=REPORT_PATH):
         "## 附录：探针原始 JSON",
         "",
         "```json",
-        json.dumps({"results": results, "verdict": verdict},
-                   ensure_ascii=False, indent=1),
+        json.dumps(
+            {"results": results, "verdict": verdict}, ensure_ascii=False, indent=1
+        ),
         "```",
         "",
     ]
@@ -540,8 +674,11 @@ def main(argv=None):
     write_report_on = "--no-report" not in argv
     results = [probe_tdx(), probe_akshare(), probe_tushare()]
     verdict = build_verdict(results)
-    print(json.dumps({"results": results, "verdict": verdict},
-                     ensure_ascii=False, indent=1))
+    print(
+        json.dumps(
+            {"results": results, "verdict": verdict}, ensure_ascii=False, indent=1
+        )
+    )
     if write_report_on:
         p = write_report(results, verdict)
         print("[report] %s" % p)

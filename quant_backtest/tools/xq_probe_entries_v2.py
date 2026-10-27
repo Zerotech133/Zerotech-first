@@ -21,6 +21,7 @@
 JS 挑战特征）/ FAIL（403/404/超时/非预期内容）。结论行结构化输出到 stdout，
 绝不落库。
 """
+
 import argparse
 import json
 import os
@@ -34,11 +35,13 @@ except Exception:
     pass
 
 SOCIAL = "https://xueqiu.com"
-UA_FALLBACK = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-               "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36")
+UA_FALLBACK = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+)
 VIEWPORT = {"width": 1440, "height": 900}
-MAX_REQUESTS = 5          # 显式导航硬上限（挑战页 JS 自动续跳不计、但总量仍留裕度）
-GAP_SECONDS = 2.2         # 导航间隔下限
+MAX_REQUESTS = 5  # 显式导航硬上限（挑战页 JS 自动续跳不计、但总量仍留裕度）
+GAP_SECONDS = 2.2  # 导航间隔下限
 NAV_TIMEOUT_MS = 20000
 CHALLENGE_SETTLE_S = 3.5  # 挑战页 JS 自动重载的等待窗口
 
@@ -48,7 +51,7 @@ ENTRIES = {
         "url": SOCIAL + "/v4/statuses/user_timeline.json",
         "params": {"user_id": 9222060866, "count": 5, "page": 1},
         "kind": "json",
-        "warmup": True,      # 先访问首页过挑战拿内存 cookie，再打 API
+        "warmup": True,  # 先访问首页过挑战拿内存 cookie，再打 API
     },
     "hot": {
         "url": SOCIAL + "/v4/statuses/hot/listV2.json",
@@ -60,21 +63,35 @@ ENTRIES = {
         "url": SOCIAL + "/S/SH600519",
         "params": {},
         "kind": "html",
-        "warmup": False,     # 个股页本身就是完整 HTML 页面，直接导航
+        "warmup": False,  # 个股页本身就是完整 HTML 页面，直接导航
     },
 }
 
 # WAF/JS 挑战特征（一期判例：renderData textarea 形态；二期实测新增：访问验证页）
-WAF_MARKERS = ("renderData", "<textarea", "acw_sc__v2", "jsl_clearance",
-               "滑动验证", "请开启JavaScript", "Just a moment",
-               "访问验证", "为了更好的访问体验，请进行验证")
+WAF_MARKERS = (
+    "renderData",
+    "<textarea",
+    "acw_sc__v2",
+    "jsl_clearance",
+    "滑动验证",
+    "请开启JavaScript",
+    "Just a moment",
+    "访问验证",
+    "为了更好的访问体验，请进行验证",
+)
 
 
 def clear_proxy_env() -> list:
     """清空代理环境变量（返回被清除项，供报告）。"""
     removed = []
-    for k in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
-              "http_proxy", "https_proxy", "all_proxy"):
+    for k in (
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+    ):
         if k in os.environ:
             removed.append("%s=%s" % (k, os.environ[k]))
             os.environ.pop(k, None)
@@ -126,10 +143,15 @@ def classify(kind: str, status, body: str) -> tuple:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="雪球入口探针二期（Playwright 通道，只读）")
+    ap = argparse.ArgumentParser(
+        description="雪球入口探针二期（Playwright 通道，只读）"
+    )
     g = ap.add_mutually_exclusive_group(required=True)
-    g.add_argument("--dry", action="store_true",
-                   help="只启动浏览器+访问 about:blank，验证通道，零雪球访问")
+    g.add_argument(
+        "--dry",
+        action="store_true",
+        help="只启动浏览器+访问 about:blank，验证通道，零雪球访问",
+    )
     g.add_argument("--live", action="store_true", help="打真实入口")
     ap.add_argument("--entry", choices=sorted(ENTRIES), default="user_timeline")
     args = ap.parse_args()
@@ -142,7 +164,9 @@ def main() -> int:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
             headless=True,
-            args=["--no-proxy-server"],      # 判例：direct:// 挡不住 Windows 系统代理，须命令行级禁用
+            args=[
+                "--no-proxy-server"
+            ],  # 判例：direct:// 挡不住 Windows 系统代理，须命令行级禁用
         )
         try:
             # --- 探测浏览器自身 UA（零网络请求），HeadlessChrome 掩蔽为 Chrome ---
@@ -167,32 +191,42 @@ def main() -> int:
             if args.dry:
                 page.goto("about:blank")
                 ok = page.evaluate("() => document.title === ''")
-                print(json.dumps({
-                    "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "mode": "dry", "verdict": "PASS" if ok else "FAIL",
-                    "detail": "chromium headless + about:blank 通道可用",
-                    "requests": budget.n,
-                }, ensure_ascii=False))
+                print(
+                    json.dumps(
+                        {
+                            "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "mode": "dry",
+                            "verdict": "PASS" if ok else "FAIL",
+                            "detail": "chromium headless + about:blank 通道可用",
+                            "requests": budget.n,
+                        },
+                        ensure_ascii=False,
+                    )
+                )
                 return 0 if ok else 2
 
             # --- live ---
             ent = ENTRIES[args.entry]
             time.sleep(GAP_SECONDS)
             if ent["warmup"] and budget.n < MAX_REQUESTS:
-                resp = budget.goto(page, SOCIAL + "/")   # 请求 1：首页过挑战/拿内存 cookie
+                resp = budget.goto(
+                    page, SOCIAL + "/"
+                )  # 请求 1：首页过挑战/拿内存 cookie
                 time.sleep(CHALLENGE_SETTLE_S)
-                w1, d1 = classify("html", resp.status if resp else None, read_body(page))
+                w1, d1 = classify(
+                    "html", resp.status if resp else None, read_body(page)
+                )
                 print("[i] warmup %s %s" % (w1, d1))
                 time.sleep(GAP_SECONDS)
 
             url = ent["url"]
             if ent["params"]:
                 url += "?" + "&".join("%s=%s" % kv for kv in ent["params"].items())
-            resp = budget.goto(page, url)                # 请求 2：目标入口
+            resp = budget.goto(page, url)  # 请求 2：目标入口
             status = resp.status if resp else None
 
             verdict, detail = "FAIL", "no body"
-            for attempt in range(2):                     # 挑战页可能 JS 自动重载后复活
+            for attempt in range(2):  # 挑战页可能 JS 自动重载后复活
                 verdict, detail = classify(ent["kind"], status, read_body(page))
                 if verdict != "WAF_CHALLENGE" or attempt == 1:
                     break
@@ -200,14 +234,18 @@ def main() -> int:
 
             rec = {
                 "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "mode": "live", "entry": args.entry, "url": url,
-                "http": status, "verdict": verdict, "detail": detail,
+                "mode": "live",
+                "entry": args.entry,
+                "url": url,
+                "http": status,
+                "verdict": verdict,
+                "detail": detail,
                 "requests": budget.n,
             }
             print(json.dumps(rec, ensure_ascii=False))
             return 0 if verdict == "PASS" else 2
         finally:
-            browser.close()   # 内存态 cookie 随进程销毁，无落盘
+            browser.close()  # 内存态 cookie 随进程销毁，无落盘
 
 
 if __name__ == "__main__":

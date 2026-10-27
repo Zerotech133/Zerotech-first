@@ -3,6 +3,7 @@
 
 用临时沙盒目录（monkeypatch 模块常量），不触碰真实 strategies/。
 """
+
 import importlib.util
 import json
 import os
@@ -16,13 +17,16 @@ from unittest import mock
 _here = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location(
     "deploy_package_under_test",
-    os.path.join(os.path.dirname(_here), "deploy_package.py"))
+    os.path.join(os.path.dirname(_here), "deploy_package.py"),
+)
 DP = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(DP)
 
 FROZEN_SHA_BODY = {
-    "strategy": "t1", "version": "v2",
-    "signals": {"top_n": 5}, "thresholds": {"gate": 0.45},
+    "strategy": "t1",
+    "version": "v2",
+    "signals": {"top_n": 5},
+    "thresholds": {"gate": 0.45},
 }
 
 
@@ -36,14 +40,17 @@ def _make_policy(fp, sha):
 
 def _sha_of(cfg_wo_sha):
     import hashlib
-    body = json.dumps(cfg_wo_sha, sort_keys=True, ensure_ascii=False,
-                      separators=(",", ":"))
+
+    body = json.dumps(
+        cfg_wo_sha, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+    )
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
 class TestDeploy(unittest.TestCase):
     def setUp(self):
         import tempfile
+
         self.tmp = tempfile.mkdtemp(prefix="deploy_pkg_test_")
         self.addCleanup(_rmtree, self.tmp)
         self.strat = os.path.join(self.tmp, "strategies", "t1")
@@ -52,12 +59,13 @@ class TestDeploy(unittest.TestCase):
         for fn in DP.PKG_FILES:
             open(os.path.join(self.strat, fn), "w", encoding="utf-8").close()
         _make_policy(os.path.join(self.strat, "policy.json"), "X" * 64)
-        with open(os.path.join(self.strat, "MANIFEST.json"), "w",
-                  encoding="utf-8") as f:
+        with open(
+            os.path.join(self.strat, "MANIFEST.json"), "w", encoding="utf-8"
+        ) as f:
             json.dump({"name": "t1", "deploy": {"deployed": False}}, f)
         self.patcher = mock.patch.multiple(
-            DP, STRAT_DIR=os.path.join(self.tmp, "strategies"),
-            DEPLOY_DIR=self.dep)
+            DP, STRAT_DIR=os.path.join(self.tmp, "strategies"), DEPLOY_DIR=self.dep
+        )
         self.patcher.start()
         self.addCleanup(self.patcher.stop)
 
@@ -86,8 +94,7 @@ class TestDeploy(unittest.TestCase):
         with open(os.path.join(vdir, "PACKAGE.json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f)["policy_sha256"], sha)
         # MANIFEST.deploy 回写
-        with open(os.path.join(self.strat, "MANIFEST.json"),
-                  encoding="utf-8") as f:
+        with open(os.path.join(self.strat, "MANIFEST.json"), encoding="utf-8") as f:
             man = json.load(f)
         self.assertTrue(man["deploy"]["deployed"])
         self.assertEqual(man["deploy"]["sha"], sha)
@@ -97,6 +104,7 @@ class TestDeploy(unittest.TestCase):
 
 def _rmtree(p):
     import shutil
+
     shutil.rmtree(p, ignore_errors=True)
 
 

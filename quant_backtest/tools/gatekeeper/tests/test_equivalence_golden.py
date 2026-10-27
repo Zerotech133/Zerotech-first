@@ -12,6 +12,7 @@ v3 policy 判定）重算同窗逐日，对照 breadth/med20/safe 逐值 diff=0�
   "C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Scripts/python.exe" \
       -m pytest tools/gatekeeper/tests/test_equivalence_golden.py -v
 """
+
 import json
 import os
 import sys
@@ -25,8 +26,9 @@ for p in (GK_DIR, PROJECT_ROOT):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-BASELINE_PATH = os.path.join(PROJECT_ROOT, "reports",
-                             "_gatekeeper_golden_baseline.json")
+BASELINE_PATH = os.path.join(
+    PROJECT_ROOT, "reports", "_gatekeeper_golden_baseline.json"
+)
 TOL = 1e-9
 
 pytest.importorskip("pandas")
@@ -45,6 +47,7 @@ def gate():
     from feeders.qpzm_parquet import QpzmParquetFeeder
     from policies.v3_breadth40_med20 import V3Policy
     from api import EnvGate
+
     return EnvGate(V3Policy(), QpzmParquetFeeder())
 
 
@@ -83,6 +86,7 @@ def test_full_window_equivalence(gate, baseline):
 
 def test_policy_sha_frozen():
     from policies.v3_breadth40_med20 import V3Policy
+
     p = V3Policy()
     assert p.intact, "v3 policy.json sha 校验失败（被手工改参）"
     assert len(p.sha) == 16

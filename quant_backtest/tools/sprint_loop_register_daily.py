@@ -13,13 +13,14 @@ StartWhenAvailable=true 把「今天已错过的当日槽位」立即补跑。
 4h，旧值会在 17:30 整点硬杀仍在收尾分片的进程（留陈锁）；放宽 1h 让
 runner 自己的窗口检查（17:30 后不再开新片）优雅退出。
 """
+
 import sys
 
 import pythoncom
 import win32com.client
 
 TASK_NAME = "XueqiuBackfillSprint"
-START_BOUNDARY = "2026-10-19T13:30:00"          # 明日起每日 13:30（本地时间）
+START_BOUNDARY = "2026-10-19T13:30:00"  # 明日起每日 13:30（本地时间）
 TASK_CREATE_OR_UPDATE = 6
 TASK_LOGON_INTERACTIVE_TOKEN = 3
 TASK_TRIGGER_DAILY = 2
@@ -45,8 +46,7 @@ def main():
     w("before: triggers=%d" % defn.Triggers.Count)
     for i in range(1, defn.Triggers.Count + 1):
         tr = defn.Triggers.Item(i)
-        w("  old trigger[%d]: type=%d start=%s"
-          % (i, tr.Type, tr.StartBoundary))
+        w("  old trigger[%d]: type=%d start=%s" % (i, tr.Type, tr.StartBoundary))
     for i in range(defn.Triggers.Count, 0, -1):
         defn.Triggers.Remove(i)
 
@@ -60,11 +60,13 @@ def main():
     defn.RegistrationInfo.Description = (
         "Xueqiu classify backfill sprint, daily 13:30 (runner self-limits "
         "window 13:30-17:30, lock-protected, yields to automation; "
-        "re-registered 2026-10-18 from one-shot)")
+        "re-registered 2026-10-18 from one-shot)"
+    )
     defn.Settings.ExecutionTimeLimit = "PT5H"
 
-    root.RegisterTaskDefinition(TASK_NAME, defn, TASK_CREATE_OR_UPDATE,
-                                None, None, TASK_LOGON_INTERACTIVE_TOKEN)
+    root.RegisterTaskDefinition(
+        TASK_NAME, defn, TASK_CREATE_OR_UPDATE, None, None, TASK_LOGON_INTERACTIVE_TOKEN
+    )
     w("registered.")
 
     # ---- verify ----
@@ -72,39 +74,47 @@ def main():
     d2 = task2.Definition
     nrt = task2.NextRunTime
     w("NextRunTime: %r" % (nrt,))
-    ok_nrt = (nrt is not None and nrt.year == 2026 and nrt.month == 10
-              and nrt.day == 19 and nrt.hour == 13 and nrt.minute == 30)
+    ok_nrt = (
+        nrt is not None
+        and nrt.year == 2026
+        and nrt.month == 10
+        and nrt.day == 19
+        and nrt.hour == 13
+        and nrt.minute == 30
+    )
     w("NextRunTime==2026-10-19 13:30: %s" % ok_nrt)
 
     trs = d2.Triggers
-    w("triggers count=%d (anchor==1: %s)"
-      % (trs.Count, trs.Count == 1))
+    w("triggers count=%d (anchor==1: %s)" % (trs.Count, trs.Count == 1))
     for i in range(1, trs.Count + 1):
         tr = trs.Item(i)
-        w("  trigger[%d]: type=%d start=%s enabled=%s"
-          % (i, tr.Type, tr.StartBoundary, tr.Enabled))
+        w(
+            "  trigger[%d]: type=%d start=%s enabled=%s"
+            % (i, tr.Type, tr.StartBoundary, tr.Enabled)
+        )
         try:
             rep = tr.Repetition
-            w("  repetition: interval=%r duration=%r"
-              % (rep.Interval, rep.Duration))
+            w("  repetition: interval=%r duration=%r" % (rep.Interval, rep.Duration))
         except Exception as e:
             w("  repetition: n/a (%s)" % e)
-    ok_trig = (trs.Count == 1 and trs.Item(1).Type == TASK_TRIGGER_DAILY)
+    ok_trig = trs.Count == 1 and trs.Item(1).Type == TASK_TRIGGER_DAILY
 
     xml = d2.XmlText
     has_daily = "<ScheduleByDay>" in xml and "<DaysInterval>1</DaysInterval>" in xml
     has_boundary = "2026-10-19T13:30:00" in xml
     n_cal = xml.count("<CalendarTrigger")
     one_calendar = n_cal == 1
-    w("XML anchors: ScheduleByDay+DaysInterval1=%s boundary=%s "
-      "calendar_trigger_count=%d"
-      % (has_daily, has_boundary, n_cal))
-    w("ExecutionTimeLimit in XML: %s"
-      % ("PT5H" in xml))
+    w(
+        "XML anchors: ScheduleByDay+DaysInterval1=%s boundary=%s "
+        "calendar_trigger_count=%d" % (has_daily, has_boundary, n_cal)
+    )
+    w("ExecutionTimeLimit in XML: %s" % ("PT5H" in xml))
     ok_xml = has_daily and has_boundary and one_calendar
 
-    w("Principal: %s logon=%s runlevel=%s"
-      % (d2.Principal.UserId, d2.Principal.LogonType, d2.Principal.RunLevel))
+    w(
+        "Principal: %s logon=%s runlevel=%s"
+        % (d2.Principal.UserId, d2.Principal.LogonType, d2.Principal.RunLevel)
+    )
     w("Action: %s %s" % (d2.Actions.Item(1).Path, d2.Actions.Item(1).Arguments))
 
     all_ok = ok_nrt and ok_trig and ok_xml

@@ -42,8 +42,7 @@ def test_three_branches(tmp_path):
     assert safe is False and cond["med20_lt_-0.03"] is True
     # 放行：双条件都不触发
     safe, cond = pol.evaluate({"breadth": 0.50, "med20": 0.01})
-    assert safe is True and not cond["breadth_lt_0.4"] and \
-        not cond["med20_lt_-0.03"]
+    assert safe is True and not cond["breadth_lt_0.4"] and not cond["med20_lt_-0.03"]
 
 
 def test_boundary_equality_not_killed(tmp_path):
@@ -69,9 +68,11 @@ def test_first_freeze_and_sha(tmp_path):
     assert intact and len(sha) == 16
     # sha = 规范化体（剔除 sha 键）sort_keys+紧凑分隔+UTF-8 的 sha256 前 16
     body = {k: v for k, v in cfg.items() if k != v3.SHA_KEY}
-    calc = hashlib.sha256(json.dumps(
-        body, sort_keys=True, separators=(",", ":"),
-        ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+    calc = hashlib.sha256(
+        json.dumps(
+            body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+    ).hexdigest()[:16]
     assert sha == calc
     # 落盘文件回填了 sha，二次读取 intact
     with open(fp, encoding="utf-8") as f:
@@ -85,7 +86,7 @@ def test_tamper_detected(tmp_path):
     fp = str(tmp_path / "policy.json")
     cfg, _, sha = v3.ensure_policy(fp)
     tampered = dict(cfg)
-    tampered["breadth_lt"] = 0.45          # 改参
+    tampered["breadth_lt"] = 0.45  # 改参
     cfg2, intact2, sha2 = v3.ensure_policy(_write_cfg(tmp_path, tampered))
     assert intact2 is False
-    assert sha2 != sha                     # 重算 sha 随体变，与旧冻结不符
+    assert sha2 != sha  # 重算 sha 随体变，与旧冻结不符

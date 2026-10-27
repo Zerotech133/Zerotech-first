@@ -64,6 +64,7 @@ C:/Temp/nine_ind_pct.log。
 
 用法：C:/Program Files/Python311/python.exe nine_dim_industry_pct.py
 """
+
 import collections
 import glob
 import json
@@ -75,9 +76,9 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import nine_dim as nd                     # noqa: E402  规则点表单一来源（只读）
-import nine_dim_backtest as nb            # noqa: E402  复用 _fina_asof（只读）
-import db                                 # noqa: E402  fina SQLite 读层（只读）
+import nine_dim as nd  # noqa: E402  规则点表单一来源（只读）
+import nine_dim_backtest as nb  # noqa: E402  复用 _fina_asof（只读）
+import db  # noqa: E402  fina SQLite 读层（只读）
 
 REPLAY = os.path.join(HERE, "data", "nine_dim_replay.jsonl")
 STAGING = os.path.join(HERE, "data", "tushare_staging")
@@ -85,9 +86,9 @@ OUT_JSONL = os.path.join(HERE, "data", "nine_dim_ind_pct_replay.jsonl")
 OUT_MD = os.path.join(HERE, "reports", "nine_industry_pct_report.md")
 LOG = "C:/Temp/nine_ind_pct.log"
 
-WINDOW_END = "20260924"   # 对齐 5479 样本（k33_grid_report：51 锚点）
-IND_MIN = 10              # 行业成员数门（任务规格）
-V2_RANK_PCT = 0.80        # 补充口径：行业内 score 分位 ≥80%
+WINDOW_END = "20260924"  # 对齐 5479 样本（k33_grid_report：51 锚点）
+IND_MIN = 10  # 行业成员数门（任务规格）
+V2_RANK_PCT = 0.80  # 补充口径：行业内 score 分位 ≥80%
 
 
 class _Tee:
@@ -152,21 +153,31 @@ def thin(rows):
 
 def stats(rs):
     """thinned r20 统计：仅成熟+未除权；k33_grid_report.stats 同款。"""
-    vals = [r["r20"] for r in rs if r.get("r20") is not None
-            and r.get("mature20") and not r.get("adj")]
+    vals = [
+        r["r20"]
+        for r in rs
+        if r.get("r20") is not None and r.get("mature20") and not r.get("adj")
+    ]
     if not vals:
         return None
     sv = sorted(vals)
     n = len(sv)
-    exs = [r["r20"] - r["bench20"] for r in rs if r.get("r20") is not None
-           and r.get("mature20") and not r.get("adj")
-           and r.get("bench20") is not None]
-    return {"n": n,
-            "win": round(sum(1 for x in vals if x > 0) * 100.0 / n, 1),
-            "avg": round(sum(vals) / n, 2),
-            "exc": round(sum(exs) / len(exs), 2) if exs else None,
-            "p5": round(sv[max(0, int(n * 0.05) - 1)], 1),
-            "min": round(sv[0], 1)}
+    exs = [
+        r["r20"] - r["bench20"]
+        for r in rs
+        if r.get("r20") is not None
+        and r.get("mature20")
+        and not r.get("adj")
+        and r.get("bench20") is not None
+    ]
+    return {
+        "n": n,
+        "win": round(sum(1 for x in vals if x > 0) * 100.0 / n, 1),
+        "avg": round(sum(vals) / n, 2),
+        "exc": round(sum(exs) / len(exs), 2) if exs else None,
+        "p5": round(sv[max(0, int(n * 0.05) - 1)], 1),
+        "min": round(sv[0], 1),
+    }
 
 
 def fmt(st):
@@ -175,7 +186,14 @@ def fmt(st):
     grey = "（灰）" if st["n"] < 10 else ""
     exc = "—" if st["exc"] is None else "%+.1f" % st["exc"]
     return "%d%s / %.0f%% / %+.1f%% / %s / %.1f / %.1f" % (
-        st["n"], grey, st["win"], st["avg"], exc, st["p5"], st["min"])
+        st["n"],
+        grey,
+        st["win"],
+        st["avg"],
+        exc,
+        st["p5"],
+        st["min"],
+    )
 
 
 def _pct_of(arr_sorted, x):
@@ -191,15 +209,15 @@ def _pct_of(arr_sorted, x):
 def load_pe_maps(anchors):
     out = {}
     for a in anchors:
-        fs = glob.glob(os.path.join(STAGING, "*",
-                                    "ts_daily_basic_%s.parquet" % a))
+        fs = glob.glob(os.path.join(STAGING, "*", "ts_daily_basic_%s.parquet" % a))
         if not fs:
             log("  WARN: staging 缺 %s daily_basic" % a)
             out[a] = {}
             continue
         df = nb.pd.read_parquet(fs[0], columns=["ts_code", "pe_ttm"])
-        out[a] = dict(zip(df["ts_code"], nb.pd.to_numeric(
-            df["pe_ttm"], errors="coerce")))
+        out[a] = dict(
+            zip(df["ts_code"], nb.pd.to_numeric(df["pe_ttm"], errors="coerce"))
+        )
     return out
 
 
@@ -236,14 +254,20 @@ def build_raw(rows, anchors):
         xs[a] = {
             "q1": (float(np.mean(np.array(oys) < 25)) if oys else 0.0),
             "g1": (float(np.mean(np.array(pegs) <= 1.0)) if pegs else 0.0),
-            "gp": (float(np.mean(np.array(pegs) <= 1.5)) if pegs else 0.0)}
+            "gp": (float(np.mean(np.array(pegs) <= 1.5)) if pegs else 0.0),
+        }
     n_def = sum(1 for d in raw.values() if d["peg"] is not None)
-    log("原始值重构: or_yoy n=%d, PEG 可定义 n=%d（缺 %d）；逐锚点等价分位"
+    log(
+        "原始值重构: or_yoy n=%d, PEG 可定义 n=%d（缺 %d）；逐锚点等价分位"
         "阈值 X_q1 中位=%.3f X_g1 中位=%.3f"
-        % (sum(1 for d in raw.values() if d["or_yoy"] is not None),
-           n_def, len(raw) - n_def,
-           float(np.median([x["q1"] for x in xs.values()])),
-           float(np.median([x["g1"] for x in xs.values()]))))
+        % (
+            sum(1 for d in raw.values() if d["or_yoy"] is not None),
+            n_def,
+            len(raw) - n_def,
+            float(np.median([x["q1"] for x in xs.values()])),
+            float(np.median([x["g1"] for x in xs.values()])),
+        )
+    )
     return raw, xs
 
 
@@ -261,8 +285,7 @@ def rescore(rows, raw, xs):
         for r in rs:
             r["_n_ind"] = 0
         ind_cell = collections.Counter((r["industry"] or "") for r in rs)
-        oy_ind, peg_ind = collections.defaultdict(list), \
-            collections.defaultdict(list)
+        oy_ind, peg_ind = collections.defaultdict(list), collections.defaultdict(list)
         oy_all, peg_all = [], []
         for r in rs:
             d = raw.get((a, r["code"])) or {}
@@ -291,8 +314,11 @@ def rescore(rows, raw, xs):
                 pm = _pct_of(oy_all, oy)
                 q1_m = bool(pm >= xs[a]["q1"])
                 total["q1"] += 1
-                pi = (_pct_of(oy_ind_s[g], oy)
-                      if len(oy_ind_s.get(g, [])) >= IND_MIN else None)
+                pi = (
+                    _pct_of(oy_ind_s[g], oy)
+                    if len(oy_ind_s.get(g, [])) >= IND_MIN
+                    else None
+                )
                 if pi is not None:
                     q1_i = bool(pi >= xs[a]["q1"])
                 else:
@@ -305,8 +331,11 @@ def rescore(rows, raw, xs):
                 gp_m = bool(pm > xs[a]["gp"])
                 total["g1"] += 1
                 total["g_p"] += 1
-                pi = (_pct_of(peg_ind_s[g], peg)
-                      if len(peg_ind_s.get(g, [])) >= IND_MIN else None)
+                pi = (
+                    _pct_of(peg_ind_s[g], peg)
+                    if len(peg_ind_s.get(g, [])) >= IND_MIN
+                    else None
+                )
                 if pi is not None:
                     g1_i = bool(pi <= xs[a]["g1"])
                     gp_i = bool(pi > xs[a]["gp"])
@@ -316,29 +345,38 @@ def rescore(rows, raw, xs):
                 agree["g1"] += 1 if g1_m == v0["g1"] else 0
                 agree["g_p"] += 1 if gp_m == v0["g_p"] else 0
 
-            vm = dict(v0); vm["q1"], vm["g1"], vm["g_p"] = q1_m, g1_m, gp_m
-            vi = dict(v0); vi["q1"], vi["g1"], vi["g_p"] = q1_i, g1_i, gp_i
-            r["_v"] = {"abs": r["score"],
-                       "mkt": score_from_v(vm), "ind": score_from_v(vi)}
+            vm = dict(v0)
+            vm["q1"], vm["g1"], vm["g_p"] = q1_m, g1_m, gp_m
+            vi = dict(v0)
+            vi["q1"], vi["g1"], vi["g_p"] = q1_i, g1_i, gp_i
+            r["_v"] = {
+                "abs": r["score"],
+                "mkt": score_from_v(vm),
+                "ind": score_from_v(vi),
+            }
             r["_ind_fallback"] = fb
             r["_n_ind"] = ind_cell[g]
             r["_flip"] = any((q1_m != q1_i, g1_m != g1_i, gp_m != gp_i))
-    log("mkt vs abs 判定一致率（内部校验）: %s"
-        % {k: "%d/%d" % (agree[k], total[k]) for k in total})
+    log(
+        "mkt vs abs 判定一致率（内部校验）: %s"
+        % {k: "%d/%d" % (agree[k], total[k]) for k in total}
+    )
     n_flip = sum(1 for r in rows if r["_flip"])
     log("ind vs mkt 状态翻转样本: %d/%d" % (n_flip, len(rows)))
     return rows
 
 
 # ── ④ 分段对照 ────────────────────────────────────────────
-SEGMENTS = [("≤25", lambda s: s <= 25),
-            ("25-60", lambda s: 25 < s < 60),
-            ("<60 小计", lambda s: s < 60),
-            ("60-75", lambda s: 60 <= s < 75),
-            ("≥75 小计", lambda s: s >= 75),
-            ("75-85", lambda s: 75 <= s < 85),
-            ("≥80 小计", lambda s: s >= 80),
-            ("≥85", lambda s: s >= 85)]
+SEGMENTS = [
+    ("≤25", lambda s: s <= 25),
+    ("25-60", lambda s: 25 < s < 60),
+    ("<60 小计", lambda s: s < 60),
+    ("60-75", lambda s: 60 <= s < 75),
+    ("≥75 小计", lambda s: s >= 75),
+    ("75-85", lambda s: 75 <= s < 85),
+    ("≥80 小计", lambda s: s >= 80),
+    ("≥85", lambda s: s >= 85),
+]
 
 
 def seg_table(rows, key):
@@ -355,10 +393,12 @@ def top_sel(rows, key, n_sel):
 
 
 def jaccard(rows, key_a, key_b, th):
-    sa = {r["code"] + "@" + str(r["anchor"]) for r in rows
-          if (r["_v"][key_a] or 0) >= th}
-    sb = {r["code"] + "@" + str(r["anchor"]) for r in rows
-          if (r["_v"][key_b] or 0) >= th}
+    sa = {
+        r["code"] + "@" + str(r["anchor"]) for r in rows if (r["_v"][key_a] or 0) >= th
+    }
+    sb = {
+        r["code"] + "@" + str(r["anchor"]) for r in rows if (r["_v"][key_b] or 0) >= th
+    }
     if not sa and not sb:
         return "—"
     return "%.0f%%" % (100.0 * len(sa & sb) / len(sa | sb))
@@ -368,14 +408,15 @@ def two_halves(rows, key, th):
     anchors = sorted({str(r["anchor"]) for r in rows})
     mid = anchors[len(anchors) // 2]
     out, halves = {}, []
-    for lb, flt in (("前半(≤%s)" % mid, lambda r: str(r["anchor"]) <= mid),
-                    ("后半(>%s)" % mid, lambda r: str(r["anchor"]) > mid)):
+    for lb, flt in (
+        ("前半(≤%s)" % mid, lambda r: str(r["anchor"]) <= mid),
+        ("后半(>%s)" % mid, lambda r: str(r["anchor"]) > mid),
+    ):
         sel = [r for r in rows if flt(r) and (r["_v"][key] or 0) >= th]
         st = stats(sel)
         out[lb] = st
         halves.append(st["avg"] if st else None)
-    ok = None if any(h is None for h in halves) else \
-        (halves[0] < 0 and halves[1] < 0)
+    ok = None if any(h is None for h in halves) else (halves[0] < 0 and halves[1] < 0)
     return out, ok
 
 
@@ -386,21 +427,26 @@ def main():
 
     rows = load_rows()
     anchors = sorted({str(r["anchor"]) for r in rows})
-    log("样本 %d（%d 锚点 %s..%s，窗口对齐 5479 样本）"
-        % (len(rows), len(anchors), anchors[0], anchors[-1]))
+    log(
+        "样本 %d（%d 锚点 %s..%s，窗口对齐 5479 样本）"
+        % (len(rows), len(anchors), anchors[0], anchors[-1])
+    )
 
     # parity（披露用；abs 基线仍用存储分数=官方 k33 口径）
     def _sc_or_none(r):
         s = score_from_v(r["v"])
         return None if s is None else s
 
-    bad = [r for r in rows
-           if _sc_or_none(r) is None
-           or abs(_sc_or_none(r) - r["score"]) > 1e-9]
-    log("parity 对账: %d/%d 不一致（%.1f%% 一致）——mkt/ind 以 v 重算为底，"
-        "abs 用存储分数，2%% 微差已披露" % (len(bad), len(rows),
-                                          100.0 * (len(rows) - len(bad))
-                                          / len(rows)))
+    bad = [
+        r
+        for r in rows
+        if _sc_or_none(r) is None or abs(_sc_or_none(r) - r["score"]) > 1e-9
+    ]
+    log(
+        "parity 对账: %d/%d 不一致（%.1f%% 一致）——mkt/ind 以 v 重算为底，"
+        "abs 用存储分数，2%% 微差已披露"
+        % (len(bad), len(rows), 100.0 * (len(rows) - len(bad)) / len(rows))
+    )
 
     raw, xs = build_raw(rows, anchors)
     rows = rescore(rows, raw, xs)
@@ -410,15 +456,27 @@ def main():
     os.makedirs(os.path.dirname(OUT_JSONL), exist_ok=True)
     with open(OUT_JSONL, "w", encoding="utf-8") as f:
         for r in rows:
-            f.write(json.dumps({
-                "anchor": r["anchor"], "code": r["code"],
-                "industry": r["industry"], "n_ind": r["_n_ind"],
-                "score_abs": r["_v"]["abs"], "score_mkt": r["_v"]["mkt"],
-                "score_ind": r["_v"]["ind"],
-                "ind_fallback": r["_ind_fallback"], "flip": r["_flip"],
-                "r20": r["r20"], "mature20": r["mature20"],
-                "adj": r["adj"], "bench20": r["bench20"]},
-                ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "anchor": r["anchor"],
+                        "code": r["code"],
+                        "industry": r["industry"],
+                        "n_ind": r["_n_ind"],
+                        "score_abs": r["_v"]["abs"],
+                        "score_mkt": r["_v"]["mkt"],
+                        "score_ind": r["_v"]["ind"],
+                        "ind_fallback": r["_ind_fallback"],
+                        "flip": r["_flip"],
+                        "r20": r["r20"],
+                        "mature20": r["mature20"],
+                        "adj": r["adj"],
+                        "bench20": r["bench20"],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     log("逐样本三口径评分 → %s" % OUT_JSONL)
 
     # ── 报告 ──
@@ -427,56 +485,79 @@ def main():
     ap("# ninedim 行业分位全市场化改造验证报告（W5）")
     ap("")
     ap("- 生成：%s" % t0.strftime("%F %T"))
-    ap("- 数据：nine_dim_replay.jsonl 锚点≤%s（5345 样本 / 51 锚点，窗口"
+    ap(
+        "- 数据：nine_dim_replay.jsonl 锚点≤%s（5345 样本 / 51 锚点，窗口"
         "对齐 10-02 的 5479 样本快照），thinned 去重 %d；全程离线"
         "（fina SQLite + staging 逐日 daily_basic as-of parquet）"
-        % (WINDOW_END, len(thinned)))
+        % (WINDOW_END, len(thinned))
+    )
     ap("- 口径：仅成熟窗口、剔跨除权；r20 交易日窗口；n<10 灰显不构成结论")
-    ap("- parity：v 重算 vs 存储分数 %d/%d 一致（98.0%%）；不一致样本系"
+    ap(
+        "- parity：v 重算 vs 存储分数 %d/%d 一致（98.0%%）；不一致样本系"
         "历史部分重跑留下的 score/v 微差（±5/+4 分量级），mkt/ind 底座"
-        "以 v 重算为准，abs 用存储分数（官方 k33 口径）" %
-        (len(rows) - len(bad), len(rows)))
+        "以 v 重算为准，abs 用存储分数（官方 k33 口径）"
+        % (len(rows) - len(bad), len(rows))
+    )
     ap("")
-    ap("> **样本库漂移警示**：当前库与 10-02 k33 快照已不一致——存储口径"
+    ap(
+        "> **样本库漂移警示**：当前库与 10-02 k33 快照已不一致——存储口径"
         "≥75 段从 23/9%%/-27.9%% 漂至 %s，≥85 段从 4/-71.5%% 漂至 %s。"
         "本验证以当前库为准；如需延续 10-02 结论，须先冻结样本库快照。"
-        % (fmt(stats([r for r in thinned
-                      if (r["_v"]["abs"] or 0) >= 75])),
-           fmt(stats([r for r in thinned
-                      if (r["_v"]["abs"] or 0) >= 85]))))
+        % (
+            fmt(stats([r for r in thinned if (r["_v"]["abs"] or 0) >= 75])),
+            fmt(stats([r for r in thinned if (r["_v"]["abs"] or 0) >= 85])),
+        )
+    )
     ap("")
     ap("## ① 口径定义")
     ap("")
-    ap("- 产线评分无逐维全市场分位：全市场分位暴露只在粗筛门 RPS50>80"
+    ap(
+        "- 产线评分无逐维全市场分位：全市场分位暴露只在粗筛门 RPS50>80"
         "（动量门，决定候选池构成，不进评分公式）；q2/g2/s1/s_p 本已是"
         "行业相对项。可截面化项仅 3 个（15 分权重）：q1 营收增速≥25%、"
-        "g1 PEG≤1.0、g_p PEG>1.5 扣3。")
-    ap("- **阈值校准**（v2 修订）：naive 固定分位（p70/p30）与本 pooled"
+        "g1 PEG≤1.0、g_p PEG>1.5 扣3。"
+    )
+    ap(
+        "- **阈值校准**（v2 修订）：naive 固定分位（p70/p30）与本 pooled"
         " 阈值两种试法均会结构性压低强势锚点的高分段（v1 试跑实证废弃）。"
         "改用**逐锚点选择率等价分位** X_a：X_q1(a)=锚点内 P(or_yoy<25)、"
-        "X_g1(a)=P(peg≤1.0)、X_gp(a)=P(peg≤1.5)。")
-    ap("- **mkt 全市场分位版**：锚点内全市场分位与 X_a 比较——与绝对规则"
-        "锚点内数学等价（单调变换），作内部校验列（判定一致率见运行日志）。")
-    ap("- **ind 行业分位版**：同一组 X_a 改用锚点内行业内分位（同锚点同"
+        "X_g1(a)=P(peg≤1.0)、X_gp(a)=P(peg≤1.5)。"
+    )
+    ap(
+        "- **mkt 全市场分位版**：锚点内全市场分位与 X_a 比较——与绝对规则"
+        "锚点内数学等价（单调变换），作内部校验列（判定一致率见运行日志）。"
+    )
+    ap(
+        "- **ind 行业分位版**：同一组 X_a 改用锚点内行业内分位（同锚点同"
         "行业完整评分样本 ≥%d 只）；<%d 归全市场分位（防小行业噪声，任务"
         "规格，ind_fallback 标注）。mkt 与 ind 之差纯粹归因于行业内相对化。"
-        % (IND_MIN, IND_MIN))
-    ap("- 同伴集=同锚点候选池完整评分样本（cov≥0.75 子集），与产线 q2 的"
+        % (IND_MIN, IND_MIN)
+    )
+    ap(
+        "- 同伴集=同锚点候选池完整评分样本（cov≥0.75 子集），与产线 q2 的"
         "「候选池内近似」同款保守口径。原始值 as-of：fina ann_date≤锚点、"
         "pe_ttm 取 staging 当日 parquet；PEG 定义域 pe>0 且增速>0"
-        "（可定义 %d/%d）。" % (sum(1 for d in raw.values()
-                                     if d["peg"] is not None), len(raw)))
-    ap("- ≥%d 成员行业单元覆盖样本 %d/%d（%.1f%%）——触发面受限是本验证"
-        "天花板之一。" % (
-            IND_MIN, sum(1 for r in rows if r["_n_ind"] >= IND_MIN),
-            len(rows), 100.0 * sum(1 for r in rows
-                                   if r["_n_ind"] >= IND_MIN) / len(rows)))
+        "（可定义 %d/%d）。"
+        % (sum(1 for d in raw.values() if d["peg"] is not None), len(raw))
+    )
+    ap(
+        "- ≥%d 成员行业单元覆盖样本 %d/%d（%.1f%%）——触发面受限是本验证"
+        "天花板之一。"
+        % (
+            IND_MIN,
+            sum(1 for r in rows if r["_n_ind"] >= IND_MIN),
+            len(rows),
+            100.0 * sum(1 for r in rows if r["_n_ind"] >= IND_MIN) / len(rows),
+        )
+    )
     ap("")
     ap("## ② 反指分段对照（thinned r20：n/胜率/均值/超额/p5/最低）")
     ap("")
-    for key, lb in (("abs", "abs 产线基线（存储分数，官方口径）"),
-                    ("mkt", "mkt 全市场分位版（≈abs，校验列）"),
-                    ("ind", "ind 行业分位版")):
+    for key, lb in (
+        ("abs", "abs 产线基线（存储分数，官方口径）"),
+        ("mkt", "mkt 全市场分位版（≈abs，校验列）"),
+        ("ind", "ind 行业分位版"),
+    ):
         ap("### %s" % lb)
         ap("")
         ap(seg_table(thinned, key))
@@ -489,37 +570,44 @@ def main():
         cells = []
         for key in ("abs", "mkt", "ind"):
             st = stats([r for r in thinned if (r["_v"][key] or 0) >= th])
-            cells.append("%d / %.0f%% / %+.1f%%" %
-                         (st["n"], st["win"], st["avg"]) if st else "—")
+            cells.append(
+                "%d / %.0f%% / %+.1f%%" % (st["n"], st["win"], st["avg"]) if st else "—"
+            )
         ap("| ≥%d | %s | %s | %s |" % (th, cells[0], cells[1], cells[2]))
     ap("")
-    ap("≥75 集合重合（Jaccard）：abs∩mkt %s，mkt∩ind %s，abs∩ind %s"
-        % (jaccard(rows, "abs", "mkt", 75),
-           jaccard(rows, "mkt", "ind", 75),
-           jaccard(rows, "abs", "ind", 75)))
+    ap(
+        "≥75 集合重合（Jaccard）：abs∩mkt %s，mkt∩ind %s，abs∩ind %s"
+        % (
+            jaccard(rows, "abs", "mkt", 75),
+            jaccard(rows, "mkt", "ind", 75),
+            jaccard(rows, "abs", "ind", 75),
+        )
+    )
     ap("")
     ap("### 选择率匹配对照（top-k 等选择率，规避绝对阈值不可迁移）")
     ap("")
     n75 = sum(1 for r in rows if (r["_v"]["abs"] or 0) >= 75)
     n85 = sum(1 for r in rows if (r["_v"]["abs"] or 0) >= 85)
-    ap("| 口径 | top-%d（≈abs≥75 选择率） | top-%d（≈abs≥85） |"
-       % (n75, n85))
+    ap("| 口径 | top-%d（≈abs≥75 选择率） | top-%d（≈abs≥85） |" % (n75, n85))
     ap("|---|---|---|")
     for key in ("mkt", "ind"):
         s75 = fmt(stats(list(thin(top_sel(rows, key, n75)))))
         s85 = fmt(stats(list(thin(top_sel(rows, key, n85)))))
         ap("| %s | %s | %s |" % (key, s75, s85))
-    ap("| abs 参照 | %s | %s |" %
-       (fmt(stats([r for r in thinned if (r["_v"]["abs"] or 0) >= 75])),
-        fmt(stats([r for r in thinned if (r["_v"]["abs"] or 0) >= 85]))))
+    ap(
+        "| abs 参照 | %s | %s |"
+        % (
+            fmt(stats([r for r in thinned if (r["_v"]["abs"] or 0) >= 75])),
+            fmt(stats([r for r in thinned if (r["_v"]["abs"] or 0) >= 85])),
+        )
+    )
     ap("")
     ap("## ③ 正指侧（低分段是否同时改善，thinned r20）")
     ap("")
     for key, lb in (("abs", "abs"), ("mkt", "mkt"), ("ind", "ind")):
         sel = [r for r in thinned if (r["_v"][key] or 0) <= 25]
         ap("- %s ≤25 段：%s" % (lb, fmt(stats(sel))))
-    ap("- 结论：三版 ≤25 段均为负收益（无正指区分），行业分位化不同时"
-        "改善低分段。")
+    ap("- 结论：三版 ≤25 段均为负收益（无正指区分），行业分位化不同时改善低分段。")
     ap("")
     ap("## ④ 两半段同向性（thinned r20）")
     ap("")
@@ -529,32 +617,44 @@ def main():
         hh, ok = two_halves(rows, key, 75)
         for hlb, st in hh.items():
             ap("| %s | %s | %s |" % (key, hlb, fmt(st)))
-        ap("| %s | 同向判定（两半窗均值均负） | %s |" % (
-            key, {True: "✓ 同向", False: "✗ 不同向",
-                  None: "样本不足"}[ok]))
+        ap(
+            "| %s | 同向判定（两半窗均值均负） | %s |"
+            % (key, {True: "✓ 同向", False: "✗ 不同向", None: "样本不足"}[ok])
+        )
     ap("")
     ap("## ⑤ 行业拥挤视角（警报命中集中度，abs 口径）")
     ap("")
     for th in (75, 85):
         cnt = collections.Counter(
-            (r["industry"] or "缺失") for r in rows
-            if (r["_v"]["abs"] or 0) >= th)
+            (r["industry"] or "缺失") for r in rows if (r["_v"]["abs"] or 0) >= th
+        )
         tot = sum(cnt.values())
         tops = cnt.most_common(5)
         cum = sum(n for _i, n in tops[:3])
-        ap("- abs ≥%d 命中 %d 条：%s；TOP1（%s）占比 %.0f%%，TOP3 合计 "
-            "%.0f%%" % (th, tot,
-                        "、".join("%s(%d)" % (i, n) for i, n in tops[:3]),
-                        tops[0][0], 100.0 * tops[0][1] / max(tot, 1),
-                        100.0 * cum / max(tot, 1)))
+        ap(
+            "- abs ≥%d 命中 %d 条：%s；TOP1（%s）占比 %.0f%%，TOP3 合计 "
+            "%.0f%%"
+            % (
+                th,
+                tot,
+                "、".join("%s(%d)" % (i, n) for i, n in tops[:3]),
+                tops[0][0],
+                100.0 * tops[0][1] / max(tot, 1),
+                100.0 * cum / max(tot, 1),
+            )
+        )
     ap("")
-    ap("- live 警报池 data/nine_dim_history.jsonl 尚未落盘（W1-2 已接"
-        "盘前卡/持仓页，尚无实际命中），行业集中度以回放 ≥75 样本为代理。")
+    ap(
+        "- live 警报池 data/nine_dim_history.jsonl 尚未落盘（W1-2 已接"
+        "盘前卡/持仓页，尚无实际命中），行业集中度以回放 ≥75 样本为代理。"
+    )
     ap("")
     ap("## ⑥ 补充口径：行业相对警报（个股拥挤 vs 行业拥挤）")
     ap("")
-    ap("abs≥75 且同行业 abs 分位≥%d%%（同锚点同行业成员 ≥%d 才启用）。"
-       % (int(V2_RANK_PCT * 100), IND_MIN))
+    ap(
+        "abs≥75 且同行业 abs 分位≥%d%%（同锚点同行业成员 ≥%d 才启用）。"
+        % (int(V2_RANK_PCT * 100), IND_MIN)
+    )
     ap("")
     by_anchor = collections.defaultdict(list)
     for r in rows:
@@ -570,27 +670,35 @@ def main():
                 if len(vals) >= IND_MIN:
                     elig.append(r)
                     s = r["_v"]["abs"] or 0
-                    pct = (sum(1 for x in vals if x < s) +
-                           0.5 * sum(1 for x in vals if x == s)) / len(vals)
+                    pct = (
+                        sum(1 for x in vals if x < s)
+                        + 0.5 * sum(1 for x in vals if x == s)
+                    ) / len(vals)
                     if pct >= V2_RANK_PCT:
                         v2.append(r)
     ap("| 集合 | thinned r20 |")
     ap("|---|---|")
-    ap("| abs≥75 全体 | %s |" % fmt(stats(
-        [r for r in thinned if (r["_v"]["abs"] or 0) >= 75])))
+    ap(
+        "| abs≥75 全体 | %s |"
+        % fmt(stats([r for r in thinned if (r["_v"]["abs"] or 0) >= 75]))
+    )
     ap("| abs≥75 ∩ 可判集（行业≥10 成员） | %s |" % fmt(stats(list(thin(elig)))))
     ap("| 行业相对警报（V2） | %s |" % fmt(stats(list(thin(v2)))))
     ap("")
-    ap("**解读**：V2 与可判集完全重合（行业内分位过滤零增量）——大行业"
-       "单元内的 ≥75 命中本来就全部处于行业内前 20%分位。真正的信息是"
-       "「命中落在样本量大的行业单元」（即拥挤行业聚集处）时更危险："
-       "-20.3%/11% 胜率 vs 全体 -12.6%/27%，但这属于行业聚集度效应，"
-       "行业内相对排名本身没有额外纯化能力。")
+    ap(
+        "**解读**：V2 与可判集完全重合（行业内分位过滤零增量）——大行业"
+        "单元内的 ≥75 命中本来就全部处于行业内前 20%分位。真正的信息是"
+        "「命中落在样本量大的行业单元」（即拥挤行业聚集处）时更危险："
+        "-20.3%/11% 胜率 vs 全体 -12.6%/27%，但这属于行业聚集度效应，"
+        "行业内相对排名本身没有额外纯化能力。"
+    )
     ap("")
 
     # ⑦ 判定
-    ap("## ⑦ 判定（任务规则：ind ≥85 段负向幅度优于 mkt ≥20% 且两半段"
-       "同向 → 建议切换；否则维持）")
+    ap(
+        "## ⑦ 判定（任务规则：ind ≥85 段负向幅度优于 mkt ≥20% 且两半段"
+        "同向 → 建议切换；否则维持）"
+    )
     ap("")
     g85_m = stats([r for r in thinned if (r["_v"]["mkt"] or 0) >= 85])
     g85_i = stats([r for r in thinned if (r["_v"]["ind"] or 0) >= 85])
@@ -603,37 +711,53 @@ def main():
     switch = False
     if g85_m and g85_i and g85_m["n"] >= 10 and g85_m["avg"] < 0:
         gain = (abs(g85_i["avg"]) - abs(g85_m["avg"])) / abs(g85_m["avg"])
-        ap("- ≥85 段：mkt n=%d %+.1f%% vs ind n=%d %+.1f%%（负向幅度差 "
-           "%+.0f%%，阈值 +20%%）" % (g85_m["n"], g85_m["avg"],
-                                     g85_i["n"], g85_i["avg"], 100 * gain))
+        ap(
+            "- ≥85 段：mkt n=%d %+.1f%% vs ind n=%d %+.1f%%（负向幅度差 "
+            "%+.0f%%，阈值 +20%%）"
+            % (g85_m["n"], g85_m["avg"], g85_i["n"], g85_i["avg"], 100 * gain)
+        )
         switch = gain >= 0.20 and ok_m and ok_i
     else:
-        ap("- ≥85 段样本不足（mkt n=%s，ind n=%s，n<10 灰显），任务判定"
-           "前提不成立。" % (g85_m and g85_m["n"], g85_i and g85_i["n"]))
+        ap(
+            "- ≥85 段样本不足（mkt n=%s，ind n=%s，n<10 灰显），任务判定"
+            "前提不成立。" % (g85_m and g85_m["n"], g85_i and g85_i["n"])
+        )
     ap("- 两半段同向（≥75 均负）：mkt=%s，ind=%s" % (ok_m, ok_i))
     ap("")
     ap("**次级证据（≥85 段不可判时的主判据）**：")
     if g75_m and g75_i:
-        ap("- ≥75 段：mkt n=%d 胜率 %.0f%% %+.1f%% vs ind n=%d 胜率 "
-           "%.0f%% %+.1f%%——行业分位版反指强度%s（负向幅度%s %.0f%%）。"
-           % (g75_m["n"], g75_m["win"], g75_m["avg"],
-              g75_i["n"], g75_i["win"], g75_i["avg"],
-              "更弱" if abs(g75_i["avg"]) < abs(g75_m["avg"]) else "更强",
-              "弱" if abs(g75_i["avg"]) < abs(g75_m["avg"]) else "强",
-              100.0 * abs(abs(g75_i["avg"]) - abs(g75_m["avg"]))
-              / max(abs(g75_m["avg"]), 1e-9)))
+        ap(
+            "- ≥75 段：mkt n=%d 胜率 %.0f%% %+.1f%% vs ind n=%d 胜率 "
+            "%.0f%% %+.1f%%——行业分位版反指强度%s（负向幅度%s %.0f%%）。"
+            % (
+                g75_m["n"],
+                g75_m["win"],
+                g75_m["avg"],
+                g75_i["n"],
+                g75_i["win"],
+                g75_i["avg"],
+                "更弱" if abs(g75_i["avg"]) < abs(g75_m["avg"]) else "更强",
+                "弱" if abs(g75_i["avg"]) < abs(g75_m["avg"]) else "强",
+                100.0
+                * abs(abs(g75_i["avg"]) - abs(g75_m["avg"]))
+                / max(abs(g75_m["avg"]), 1e-9),
+            )
+        )
     if g80_m and g80_i:
-        ap("- ≥80 段：mkt %+.1f%% vs ind %+.1f%%。"
-           % (g80_m["avg"], g80_i["avg"]))
+        ap("- ≥80 段：mkt %+.1f%% vs ind %+.1f%%。" % (g80_m["avg"], g80_i["avg"]))
     tk_m = stats(list(thin(top_sel(rows, "mkt", n75))))
     tk_i = stats(list(thin(top_sel(rows, "ind", n75))))
     if tk_m and tk_i:
-        ap("- 等选择率 top-%d：mkt %+.1f%%（胜率 %.0f%%）vs ind %+.1f%%"
-           "（胜率 %.0f%%）。" % (n75, tk_m["avg"], tk_m["win"],
-                                 tk_i["avg"], tk_i["win"]))
+        ap(
+            "- 等选择率 top-%d：mkt %+.1f%%（胜率 %.0f%%）vs ind %+.1f%%"
+            "（胜率 %.0f%%）。"
+            % (n75, tk_m["avg"], tk_m["win"], tk_i["avg"], tk_i["win"])
+        )
     ap("")
-    ap("**判定：维持全市场分位口径（行业分位版未通过任务切换条件，且在"
-       "≥75/≥80/等选择率对照中反指强度一致地更弱、两半段不同向）。**")
+    ap(
+        "**判定：维持全市场分位口径（行业分位版未通过任务切换条件，且在"
+        "≥75/≥80/等选择率对照中反指强度一致地更弱、两半段不同向）。**"
+    )
     ap("")
 
     os.makedirs(os.path.dirname(OUT_MD), exist_ok=True)

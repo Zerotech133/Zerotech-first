@@ -40,6 +40,7 @@
   · 不对 created_at/labeled_at 做 CAST/strftime unixepoch（本项目判例，本脚本不做时间运算）
   · 报告只写 C:/aios/automation_runs/xq_data_review/（可用 --report 显式覆盖，测试用 tmp_path）
 """
+
 import argparse
 import itertools
 import json
@@ -54,14 +55,14 @@ DEFAULT_DB = HERE / "data" / "xueqiu" / "xueqiu_info.db"
 DEFAULT_REPORT_DIR = Path(r"C:/aios/automation_runs/xq_data_review")
 
 # 判定阈值（百分比/百分点、σ 倍数）
-ALERT_DIFF_PP = 5.0    # 占比差 > 5pp 触发 ALERT
-ALERT_SIGMA = 2.0      # 差异 > 2σ 触发 ALERT
-CRIT_DIFF_PP = 10.0    # 占比差 > 10pp 升级 CRITICAL
-CRIT_SIGMA = 3.0       # 差异 > 3σ 升级 CRITICAL
+ALERT_DIFF_PP = 5.0  # 占比差 > 5pp 触发 ALERT
+ALERT_SIGMA = 2.0  # 差异 > 2σ 触发 ALERT
+CRIT_DIFF_PP = 10.0  # 占比差 > 10pp 升级 CRITICAL
+CRIT_SIGMA = 3.0  # 差异 > 3σ 升级 CRITICAL
 
 RULE_SUFFIX = "-rule"  # 规则通道后缀，排除在 LLM 版本对拍之外
 
-MIN_SAMPLES = 30       # LLM 版本最小样本量门槛：n < 30 不参与版本对拍
+MIN_SAMPLES = 30  # LLM 版本最小样本量门槛：n < 30 不参与版本对拍
 
 
 def is_rule_version(prompt_version: str) -> bool:
@@ -88,7 +89,9 @@ def collect(cur: sqlite3.Cursor) -> dict:
     for pv, et, n in rows:
         pv_key = "unknown" if pv is None else str(pv)
         et_key = "unknown" if et is None else str(et)
-        dist.setdefault(pv_key, {})[et_key] = dist.setdefault(pv_key, {}).get(et_key, 0) + n
+        dist.setdefault(pv_key, {})[et_key] = (
+            dist.setdefault(pv_key, {}).get(et_key, 0) + n
+        )
     return dist
 
 
@@ -135,14 +138,16 @@ def drift_matrix(dist: dict) -> list:
 
             if diff_pp > ALERT_DIFF_PP or sigma_mult > ALERT_SIGMA:
                 critical = diff_pp > CRIT_DIFF_PP or sigma_mult > CRIT_SIGMA
-                alerts.append({
-                    "event_type": et,
-                    "pct_a": round(pct_a, 2),
-                    "pct_b": round(pct_b, 2),
-                    "diff_pp": round(diff_pp, 2),
-                    "sigma": round(sigma_mult, 2),
-                    "level": "CRITICAL" if critical else "WARN",
-                })
+                alerts.append(
+                    {
+                        "event_type": et,
+                        "pct_a": round(pct_a, 2),
+                        "pct_b": round(pct_b, 2),
+                        "diff_pp": round(diff_pp, 2),
+                        "sigma": round(sigma_mult, 2),
+                        "level": "CRITICAL" if critical else "WARN",
+                    }
+                )
         pairs.append({"a": a, "b": b, "alerts": alerts})
     return pairs
 
@@ -161,8 +166,11 @@ def run(cur: sqlite3.Cursor) -> dict:
     """算矩阵并产出 automation 消费的稳定 JSON 结构。"""
     dist = collect(cur)
     counts = _version_counts(dist)
-    llm_versions = [pv for pv in sorted(dist)
-                    if not is_rule_version(pv) and counts[pv] >= MIN_SAMPLES]
+    llm_versions = [
+        pv
+        for pv in sorted(dist)
+        if not is_rule_version(pv) and counts[pv] >= MIN_SAMPLES
+    ]
     rule_versions = sorted(pv for pv in dist if is_rule_version(pv))
     excluded_versions = {
         pv: {"n": counts[pv], "reason": "too_few_samples"}
@@ -190,7 +198,8 @@ def write_report(payload: dict, path: Path) -> Path:
         "",
         "- generated_at: %s" % payload["generated_at"],
         "- LLM 版本: %s" % (", ".join(payload["versions"]) or "(无)"),
-        "- 规则通道(不参与对拍): %s" % (", ".join(payload.get("rule_versions", [])) or "(无)"),
+        "- 规则通道(不参与对拍): %s"
+        % (", ".join(payload.get("rule_versions", [])) or "(无)"),
         "- verdict: **%s**" % payload["verdict"],
         "",
     ]
@@ -217,8 +226,14 @@ def write_report(payload: dict, path: Path) -> Path:
         for al in pair["alerts"]:
             lines.append(
                 "| %s | %s | %s | %s | %s | %s |"
-                % (al["event_type"], al["pct_a"], al["pct_b"],
-                   al["diff_pp"], al["sigma"], al["level"])
+                % (
+                    al["event_type"],
+                    al["pct_a"],
+                    al["pct_b"],
+                    al["diff_pp"],
+                    al["sigma"],
+                    al["level"],
+                )
             )
         lines.append("")
 
@@ -228,15 +243,30 @@ def write_report(payload: dict, path: Path) -> Path:
 
 def default_report_path() -> Path:
     """默认报告路径：label_drift_YYYY-MM-DD.md。"""
-    return DEFAULT_REPORT_DIR / ("label_drift_%s.md" % datetime.now().strftime("%Y-%m-%d"))
+    return DEFAULT_REPORT_DIR / (
+        "label_drift_%s.md" % datetime.now().strftime("%Y-%m-%d")
+    )
 
 
 def main(argv: list = None) -> int:
-    parser = argparse.ArgumentParser(description="xq_status_classified 标签口径漂移探针（只读）")
-    parser.add_argument("--db", default=str(DEFAULT_DB), help="SQLite 路径（默认 data/xueqiu/xueqiu_info.db）")
-    parser.add_argument("--json", action="store_true", help="stdout 输出 JSON（供 automation 消费）")
-    parser.add_argument("--report", nargs="?", const="", default=None,
-                        help="写 MD 报告（无参数值则用默认路径 label_drift_YYYY-MM-DD.md）")
+    parser = argparse.ArgumentParser(
+        description="xq_status_classified 标签口径漂移探针（只读）"
+    )
+    parser.add_argument(
+        "--db",
+        default=str(DEFAULT_DB),
+        help="SQLite 路径（默认 data/xueqiu/xueqiu_info.db）",
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="stdout 输出 JSON（供 automation 消费）"
+    )
+    parser.add_argument(
+        "--report",
+        nargs="?",
+        const="",
+        default=None,
+        help="写 MD 报告（无参数值则用默认路径 label_drift_YYYY-MM-DD.md）",
+    )
     args = parser.parse_args(argv)
 
     conn = connect_ro(args.db)

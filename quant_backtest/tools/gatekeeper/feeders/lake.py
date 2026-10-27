@@ -15,10 +15,10 @@
 import json
 import os
 
-PROJECT_ROOT = os.path.normpath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
-DEFAULT_SERIES_FP = os.path.join(PROJECT_ROOT, "reports",
-                                 "qd_breadth_series.json")
+PROJECT_ROOT = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
+)
+DEFAULT_SERIES_FP = os.path.join(PROJECT_ROOT, "reports", "qd_breadth_series.json")
 
 
 def _norm_date(d):
@@ -49,10 +49,12 @@ class LakeFeeder:
         s = self._load()
         dates = [str(d) for d in (s.get("dates") or [])]
         breadths = s.get("breadth") or []
-        pairs = [(d, b) for d, b in zip(dates, breadths)
-                 if isinstance(b, (int, float))]
-        feats = {"breadth": None, "med20": None,
-                 "anchor_semantics": self.anchor_semantics}
+        pairs = [(d, b) for d, b in zip(dates, breadths) if isinstance(b, (int, float))]
+        feats = {
+            "breadth": None,
+            "med20": None,
+            "anchor_semantics": self.anchor_semantics,
+        }
         if not pairs:
             return None, feats
         if date is None:

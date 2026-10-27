@@ -9,6 +9,7 @@
 用法：
   python tools/xq_user_timeline_probe.py [--uids uid1,uid2] [--insert]
 """
+
 import json
 import sqlite3
 import sys
@@ -70,7 +71,7 @@ def detect_slider(page):
         return "URL 跳转: " + page.url
     try:
         hits = page.locator(
-            '.gt_box, .geetest_box, .geetest_slider, .gt_slider, .captcha-container, '
+            ".gt_box, .geetest_box, .geetest_slider, .gt_slider, .captcha-container, "
             'iframe[src*="captcha"], iframe[src*="geetest"], #captcha'
         )
         if hits.count() > 0:
@@ -99,19 +100,25 @@ def fetch_api_timeline(page, uid):
     posts = []
     for s in data["statuses"]:
         created = s.get("created_at_ms")
-        iso = ms_to_iso(created) if isinstance(created, (int, float)) else str(created or "")
-        posts.append({
-            "status_id": s["status_id"],
-            "created_at": iso,
-            "title": s["title"],
-            "desc": s["desc"],
-            "text": s["text"],
-            "target": s["target"],
-            "view_count": s["view_count"],
-            "comment_count": s["comment_count"],
-            "like_count": s["like_count"],
-            "retweet_count": s["retweet_count"],
-        })
+        iso = (
+            ms_to_iso(created)
+            if isinstance(created, (int, float))
+            else str(created or "")
+        )
+        posts.append(
+            {
+                "status_id": s["status_id"],
+                "created_at": iso,
+                "title": s["title"],
+                "desc": s["desc"],
+                "text": s["text"],
+                "target": s["target"],
+                "view_count": s["view_count"],
+                "comment_count": s["comment_count"],
+                "like_count": s["like_count"],
+                "retweet_count": s["retweet_count"],
+            }
+        )
     return posts, None
 
 
@@ -124,7 +131,9 @@ def parse_dom_timeline(page):
         item = items.nth(i)
         try:
             date_el = item.locator(".timeline__item__info--date").first
-            date_txt = date_el.get_attribute("title") or date_el.inner_text(timeout=1500)
+            date_txt = date_el.get_attribute("title") or date_el.inner_text(
+                timeout=1500
+            )
         except Exception:
             date_txt = ""
         try:
@@ -143,19 +152,21 @@ def parse_dom_timeline(page):
                 sid = m[-1]
         except Exception:
             pass
-        posts.append({
-            "status_id": sid,
-            "created_at": date_txt.strip(),
-            "title": "",
-            "desc": "",
-            "text": body_txt,
-            "target": "",
-            "view_count": 0,
-            "comment_count": 0,
-            "like_count": 0,
-            "retweet_count": 0,
-            "source": "dom",
-        })
+        posts.append(
+            {
+                "status_id": sid,
+                "created_at": date_txt.strip(),
+                "title": "",
+                "desc": "",
+                "text": body_txt,
+                "target": "",
+                "view_count": 0,
+                "comment_count": 0,
+                "like_count": 0,
+                "retweet_count": 0,
+                "source": "dom",
+            }
+        )
     return posts
 
 
@@ -207,7 +218,9 @@ def probe_user(ctx, uid, out_dir):
 
         # 2. 用户页
         print("[%s] 进入用户页 %s" % (now_str(), uid))
-        page.goto(USER_URL.format(uid=uid), wait_until="domcontentloaded", timeout=45000)
+        page.goto(
+            USER_URL.format(uid=uid), wait_until="domcontentloaded", timeout=45000
+        )
         page.wait_for_timeout(5000)
         reason = detect_slider(page)
         if reason:
@@ -223,8 +236,12 @@ def probe_user(ctx, uid, out_dir):
         posts = parse_dom_timeline(page)
         if posts:
             return "a", posts, None
-        return "c", None, "无帖子且无滑块：API=%s；DOM timeline__item=0。页面 title=%s url=%s" % (
-            api_err, page.title(), page.url)
+        return (
+            "c",
+            None,
+            "无帖子且无滑块：API=%s；DOM timeline__item=0。页面 title=%s url=%s"
+            % (api_err, page.title(), page.url),
+        )
     finally:
         try:
             page.close()
@@ -244,10 +261,17 @@ def insert_db(posts, uid):
             " comment_count, retweet_count, like_count, fetched_at) "
             "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (
-                p.get("status_id"), p.get("created_at"), p.get("title") or "",
-                p.get("desc") or p.get("text") or "", str(uid), p.get("target") or "",
-                p.get("view_count") or 0, p.get("comment_count") or 0,
-                p.get("retweet_count") or 0, p.get("like_count") or 0, now_str(),
+                p.get("status_id"),
+                p.get("created_at"),
+                p.get("title") or "",
+                p.get("desc") or p.get("text") or "",
+                str(uid),
+                p.get("target") or "",
+                p.get("view_count") or 0,
+                p.get("comment_count") or 0,
+                p.get("retweet_count") or 0,
+                p.get("like_count") or 0,
+                now_str(),
             ),
         )
         inserted += cur.rowcount
@@ -300,7 +324,9 @@ def main():
                 if posts is not None:
                     entry["n_posts"] = len(posts)
                     entry["posts"] = posts
-                    posts_2024 = [x for x in posts if (x.get("created_at") or "") >= "2024-01-01"]
+                    posts_2024 = [
+                        x for x in posts if (x.get("created_at") or "") >= "2024-01-01"
+                    ]
                     entry["n_posts_2024"] = len(posts_2024)
                     report["posts_2024_all"].extend(posts_2024)
                     if do_insert and posts:
@@ -313,8 +339,16 @@ def main():
                 if err:
                     entry["error"] = err
                 report["results"][uid] = entry
-                print("[%s] uid=%s outcome=%s posts=%s err=%s" % (
-                    now_str(), uid, outcome, len(posts) if posts is not None else None, err))
+                print(
+                    "[%s] uid=%s outcome=%s posts=%s err=%s"
+                    % (
+                        now_str(),
+                        uid,
+                        outcome,
+                        len(posts) if posts is not None else None,
+                        err,
+                    )
+                )
                 if outcome == "b":
                     # 滑块：红线停批（等人工），批量回填保守语义保留
                     overall_outcome = outcome
@@ -333,7 +367,9 @@ def main():
             ctx.close()
 
     out_json = out_dir / "probe_result.json"
-    out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_json.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print("结果已写: %s" % out_json)
     print("OUTCOME=%s" % report["outcome"])
     return 0 if report["outcome"] == "a" else (2 if report["outcome"] == "b" else 3)

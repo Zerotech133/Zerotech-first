@@ -19,6 +19,7 @@
 
 红线：研究/自动化副本；不触生产、不造数、不覆盖既有产物目录（除非同 business_day 幂等刷新）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -46,8 +47,9 @@ def d_iso(value) -> str:
     return _coerce_date(value).isoformat()
 
 
-def business_day_consumption_timepoint(business_day, *, tz=DEFAULT_TZ,
-                                       close=A_SHARE_CLOSE, provider=None):
+def business_day_consumption_timepoint(
+    business_day, *, tz=DEFAULT_TZ, close=A_SHARE_CLOSE, provider=None
+):
     """被消费业务日的规范消费时点（**逻辑冻结时点**）。
 
     - 若传入 `provider`（实现 `calendar_provider.CalendarProvider` 的 `session_bounds`），
@@ -66,7 +68,9 @@ def business_day_consumption_timepoint(business_day, *, tz=DEFAULT_TZ,
     return datetime.combine(d, close, tzinfo=ZoneInfo(tz))
 
 
-def freeze_pool(pool_path, business_day, out_dir, *, provider=None, consumer="freeze_alignment"):
+def freeze_pool(
+    pool_path, business_day, out_dir, *, provider=None, consumer="freeze_alignment"
+):
     """确定性冻结：读 live pool 一次，按 business_day 锚定逻辑消费时点，写 frozen copy。
 
     返回冻结记录 dict：
@@ -98,17 +102,22 @@ def freeze_pool(pool_path, business_day, out_dir, *, provider=None, consumer="fr
         "consumer": consumer,
     }
     (out_dir / "freeze_record.json").write_text(
-        json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return rec
 
 
 def main(argv=None) -> int:
     import argparse
+
     ap = argparse.ArgumentParser(description="N7 冻结时点与业务日消费时点对齐")
     ap.add_argument("--pool", required=True, help="live pool 路径 (chanlun_pool.jsonl)")
     ap.add_argument("--day", required=True, help="业务日 YYYYMMDD 或 YYYY-MM-DD")
-    ap.add_argument("--out", default=None,
-                    help="冻结产物目录（默认 <pool_dir>/freeze_<day>）；同 business_day 幂等刷新")
+    ap.add_argument(
+        "--out",
+        default=None,
+        help="冻结产物目录（默认 <pool_dir>/freeze_<day>）；同 business_day 幂等刷新",
+    )
     ap.add_argument("--consumer", default="cli")
     a = ap.parse_args(argv)
     out = a.out or str(Path(a.pool).parent / f"freeze_{d_iso(a.day).replace('-', '')}")

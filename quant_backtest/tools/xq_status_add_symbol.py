@@ -38,6 +38,7 @@
   python tools/xq_status_add_symbol.py --db <path>        # 指定库
   python tools/xq_status_add_symbol.py --verify           # 只读验证分布
 """
+
 from __future__ import annotations
 
 import argparse
@@ -82,6 +83,7 @@ SYMBOL_DIST_SQL = (
 # ---------------------------------------------------------------------------
 # 确定性 symbol 推导（纯函数）
 # ---------------------------------------------------------------------------
+
 
 def _canonical_from_digits(digits: str):
     """无前缀数字码 → canonical；不可映射返回 None。
@@ -181,6 +183,7 @@ def derive_symbol(title, desc, classified_norm) -> str | None:
 # sqlite 基建（对齐 xq_ticker_normalize 生产纪律）
 # ---------------------------------------------------------------------------
 
+
 def _is_busy(exc: Exception) -> bool:
     msg = str(exc).lower()
     return "locked" in msg or "busy" in msg
@@ -193,7 +196,7 @@ def _with_retry(fn, retries: int = 3, base_delay: float = 0.5):
         except sqlite3.OperationalError as exc:
             if attempt >= retries or not _is_busy(exc):
                 raise
-            time.sleep(base_delay * (2 ** attempt))
+            time.sleep(base_delay * (2**attempt))
 
 
 def _connect_ro(db_path) -> sqlite3.Connection:
@@ -220,9 +223,9 @@ def ensure_symbol_column(conn: sqlite3.Connection, retries: int = 3) -> bool:
         print("already")
         return False
     _with_retry(
-        lambda: conn.execute(
-            "ALTER TABLE %s ADD COLUMN %s TEXT" % (TABLE, SYMBOL_COL)),
-        retries=retries)
+        lambda: conn.execute("ALTER TABLE %s ADD COLUMN %s TEXT" % (TABLE, SYMBOL_COL)),
+        retries=retries,
+    )
     conn.commit()
     return True
 
@@ -231,8 +234,10 @@ def ensure_symbol_column(conn: sqlite3.Connection, retries: int = 3) -> bool:
 # 迁移主体
 # ---------------------------------------------------------------------------
 
-def migrate(db_path, batch_size: int = BATCH_SIZE,
-            dry_run: bool = True, execute: bool = False) -> dict:
+
+def migrate(
+    db_path, batch_size: int = BATCH_SIZE, dry_run: bool = True, execute: bool = False
+) -> dict:
     """幂等迁移。dry-run 默认开（只读连接，只打印不写）；execute 才真跑。
 
     返回 report dict；dry_run=True 时 {"dry_run": True, "sql": [...],
@@ -254,27 +259,37 @@ def migrate(db_path, batch_size: int = BATCH_SIZE,
         col_exists = SYMBOL_COL in cols
 
         # 关联表兜底数据（norm_tickers 缺列时回退 tickers 原词形）
-        cl_cols = _columns(conn, CLASSIFIED_TABLE) \
-            if CLASSIFIED_TABLE in [r[0] for r in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'")] else []
+        cl_cols = (
+            _columns(conn, CLASSIFIED_TABLE)
+            if CLASSIFIED_TABLE
+            in [
+                r[0]
+                for r in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            ]
+            else []
+        )
         cl_source = None
         cl_rows = {}
         if cl_cols:
             if "norm_tickers" in cl_cols:
                 cl_source = "norm_tickers"
-                cl_rows = dict(conn.execute(
-                    "SELECT status_id, norm_tickers FROM %s"
-                    % CLASSIFIED_TABLE))
+                cl_rows = dict(
+                    conn.execute(
+                        "SELECT status_id, norm_tickers FROM %s" % CLASSIFIED_TABLE
+                    )
+                )
             elif "tickers" in cl_cols:
                 cl_source = "tickers"
-                cl_rows = dict(conn.execute(
-                    "SELECT status_id, tickers FROM %s" % CLASSIFIED_TABLE))
+                cl_rows = dict(
+                    conn.execute("SELECT status_id, tickers FROM %s" % CLASSIFIED_TABLE)
+                )
 
         sql_plan = ["ALTER TABLE %s ADD COLUMN %s TEXT" % (TABLE, SYMBOL_COL)]
         total = backfillable = ambiguous = null_left = 0
         from_marker = from_classified = 0
-        rows = conn.execute(
-            "SELECT status_id, title, desc FROM %s" % TABLE).fetchall()
+        rows = conn.execute("SELECT status_id, title, desc FROM %s" % TABLE).fetchall()
 
         updates = []
         for status_id, title, desc in rows:
@@ -291,8 +306,11 @@ def migrate(db_path, batch_size: int = BATCH_SIZE,
                 else:
                     from_classified += 1
                 updates.append((status_id, sym))
-            elif len(m_syms) > 1 or (not m_syms and cl_norm is not None
-                                     and len(symbol_from_classified(cl_norm)) > 1):
+            elif len(m_syms) > 1 or (
+                not m_syms
+                and cl_norm is not None
+                and len(symbol_from_classified(cl_norm)) > 1
+            ):
                 ambiguous += 1
             else:
                 null_left += 1
@@ -317,8 +335,13 @@ def migrate(db_path, batch_size: int = BATCH_SIZE,
         # --execute 路径
         added = ensure_symbol_column(conn)
         report["added_column"] = added
-        existing = dict() if added else dict(
-            conn.execute("SELECT status_id, %s FROM %s" % (SYMBOL_COL, TABLE)))
+        existing = (
+            dict()
+            if added
+            else dict(
+                conn.execute("SELECT status_id, %s FROM %s" % (SYMBOL_COL, TABLE))
+            )
+        )
         updated = skipped = 0
         pending = 0
         for status_id, sym in updates:
@@ -328,7 +351,9 @@ def migrate(db_path, batch_size: int = BATCH_SIZE,
             _with_retry(
                 lambda sid=status_id, s=sym: conn.execute(
                     "UPDATE %s SET %s=? WHERE status_id=?" % (TABLE, SYMBOL_COL),
-                    (s, sid)))
+                    (s, sid),
+                )
+            )
             updated += 1
             pending += 1
             if pending >= batch_size:
@@ -354,18 +379,25 @@ def verify(db_path) -> list:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(
-        description="xq_status 补 symbol 列幂等迁移（WO-XQ）")
+    ap = argparse.ArgumentParser(description="xq_status 补 symbol 列幂等迁移（WO-XQ）")
     ap.add_argument("--db", default=str(DEFAULT_DB), help="SQLite 库路径")
-    ap.add_argument("--batch-size", type=int, default=BATCH_SIZE,
-                    help="每批 commit 行数（默认 200）")
+    ap.add_argument(
+        "--batch-size",
+        type=int,
+        default=BATCH_SIZE,
+        help="每批 commit 行数（默认 200）",
+    )
     mode = ap.add_mutually_exclusive_group()
-    mode.add_argument("--dry-run", action="store_true", default=True,
-                      help="只打印 SQL 与预计回填数（默认）")
-    mode.add_argument("--execute", action="store_true",
-                      help="真跑迁移+回填（缺省不执行）")
-    ap.add_argument("--verify", action="store_true",
-                    help="只读验证 symbol 分布后退出")
+    mode.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=True,
+        help="只打印 SQL 与预计回填数（默认）",
+    )
+    mode.add_argument(
+        "--execute", action="store_true", help="真跑迁移+回填（缺省不执行）"
+    )
+    ap.add_argument("--verify", action="store_true", help="只读验证 symbol 分布后退出")
     return ap
 
 
@@ -375,8 +407,9 @@ def main() -> int:
         for bucket, n in verify(args.db):
             print("symbol_dist %s=%d" % (bucket, n))
         return 0
-    report = migrate(args.db, batch_size=args.batch_size,
-                     dry_run=args.dry_run, execute=args.execute)
+    report = migrate(
+        args.db, batch_size=args.batch_size, dry_run=args.dry_run, execute=args.execute
+    )
     print("migrate " + json.dumps(report, ensure_ascii=False, sort_keys=True))
     if report.get("dry_run"):
         print("DRY-RUN：以上为预计值，未写库。加 --execute 才真跑。")

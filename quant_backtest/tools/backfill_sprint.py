@@ -26,6 +26,7 @@
   python tools/backfill_sprint.py --window "20:00-23:00"
   python tools/backfill_sprint.py --limit 1 --force     # 小样验证（绕过窗口）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,8 +39,8 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent))          # 项目根，import xq_classify
-import xq_classify                            # noqa: E402
+sys.path.insert(0, str(HERE.parent))  # 项目根，import xq_classify
+import xq_classify  # noqa: E402
 
 # 本任务自有产物根（lock/sprint log），对齐 2026-10-18 拍板「定时任务产物
 # 统一落 <任务名> 目录」，与 wrapper 日志同处 automation_runs/XueqiuBackfillSprint。
@@ -49,21 +50,22 @@ import xq_classify                            # noqa: E402
 RUN_DIR = Path(r"C:\aios\automation_runs\XueqiuBackfillSprint")
 LOCK_PATH = RUN_DIR / "backfill_sprint.lock"
 SPRINT_LOG = RUN_DIR / "backfill_sprint.log"
-STATUS_LOG = xq_classify.STATUS_LOG           # 共享状态日志（让路探测对象，原地不动）
+STATUS_LOG = xq_classify.STATUS_LOG  # 共享状态日志（让路探测对象，原地不动）
 DB_PATH = xq_classify.DB_PATH
 
 DEFAULT_WINDOW = "13:30-17:30"
-SHARD_SIZE = 500            # 每片行数（对齐 xq_classify 每日轮判例）
-YIELD_SLEEP_SEC = 60        # 让路等待
-YIELD_MAX = 3               # 连续让路上限
-FRESH_WRITE_SEC = 60        # 启动时日志「新鲜写入」阈值
-OBSERVE_SEC = 5             # 片间隙观察窗：外部写者活跃探测（每日循环走查补丁）
+SHARD_SIZE = 500  # 每片行数（对齐 xq_classify 每日轮判例）
+YIELD_SLEEP_SEC = 60  # 让路等待
+YIELD_MAX = 3  # 连续让路上限
+FRESH_WRITE_SEC = 60  # 启动时日志「新鲜写入」阈值
+OBSERVE_SEC = 5  # 片间隙观察窗：外部写者活跃探测（每日循环走查补丁）
 BUSY_TIMEOUT = 30
 
 RC_OK, RC_ERROR, RC_OUT_OF_WINDOW, RC_LOCKED, RC_YIELDED_OUT = 0, 1, 2, 3, 4
 
 
 # ---------------------------------------------------------------- logging
+
 
 def slog(msg: str) -> None:
     """ASCII 安全进度日志（判例：计划任务产物落盘排障）。"""
@@ -79,6 +81,7 @@ def slog(msg: str) -> None:
 
 
 # ---------------------------------------------------------------- window
+
 
 def parse_window(spec: str) -> tuple:
     """'HH:MM-HH:MM' -> (start_min, end_min)。支持跨夜（start > end）。
@@ -105,10 +108,11 @@ def in_window(ts: float, win: tuple) -> bool:
     cur_min = cur.hour * 60 + cur.minute
     if start <= end:
         return start <= cur_min < end
-    return cur_min >= start or cur_min < end       # 跨夜：22:00-02:00
+    return cur_min >= start or cur_min < end  # 跨夜：22:00-02:00
 
 
 # ---------------------------------------------------------------- lock
+
 
 def is_pid_alive(pid: int) -> bool:
     """跨平台 pid 探活（Windows 用 OpenProcess，不能用 os.kill——
@@ -195,6 +199,7 @@ def release_lock(path: Path = LOCK_PATH) -> None:
 
 # ---------------------------------------------------------------- yield
 
+
 def status_log_mtime() -> float | None:
     try:
         return STATUS_LOG.stat().st_mtime
@@ -207,7 +212,7 @@ def should_yield(mtime: float | None, baseline: float | None, now: float) -> boo
     日志在 FRESH_WRITE_SEC 内有写入即视为外部写者活跃。
     之后：mtime != 基线 → 基线之后有新写入（外部写者）。"""
     if mtime is None:
-        return False                              # 无共享日志，无从探测
+        return False  # 无共享日志，无从探测
     if baseline is None:
         return (now - mtime) < FRESH_WRITE_SEC
     return mtime != baseline
@@ -215,19 +220,27 @@ def should_yield(mtime: float | None, baseline: float | None, now: float) -> boo
 
 # ---------------------------------------------------------------- db status
 
+
 def fetch_counts() -> dict:
     """--status 语义只读查数：source/classified/ok/degraded/pending。"""
-    con = sqlite3.connect("file:%s?mode=ro" % DB_PATH.as_posix(),
-                          uri=True, timeout=BUSY_TIMEOUT)
+    con = sqlite3.connect(
+        "file:%s?mode=ro" % DB_PATH.as_posix(), uri=True, timeout=BUSY_TIMEOUT
+    )
     try:
         src = con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
         row = con.execute(
             """SELECT COUNT(*),
                       COALESCE(SUM(CASE WHEN parse_ok=1 THEN 1 ELSE 0 END),0)
-               FROM xq_status_classified""").fetchone()
+               FROM xq_status_classified"""
+        ).fetchone()
         classified, ok = int(row[0]), int(row[1])
-        return {"source": src, "classified": classified, "ok": ok,
-                "degraded": classified - ok, "pending": src - classified}
+        return {
+            "source": src,
+            "classified": classified,
+            "ok": ok,
+            "degraded": classified - ok,
+            "pending": src - classified,
+        }
     finally:
         con.close()
 
@@ -238,13 +251,15 @@ def log_counts(tag: str) -> dict:
     except sqlite3.Error as e:
         slog("%s counts-unavailable: %s" % (tag, str(e)[:100]))
         return {}
-    slog("%s source=%d classified=%d ok=%d degraded=%d pending=%d"
-         % (tag, c["source"], c["classified"], c["ok"],
-            c["degraded"], c["pending"]))
+    slog(
+        "%s source=%d classified=%d ok=%d degraded=%d pending=%d"
+        % (tag, c["source"], c["classified"], c["ok"], c["degraded"], c["pending"])
+    )
     return c
 
 
 # ---------------------------------------------------------------- main loop
+
 
 def sprint(limit: int, win: tuple | None, force: bool) -> int:
     """批量主循环。win=None 表示 --force 绕过窗口（仅测试用）。"""
@@ -275,20 +290,22 @@ def sprint(limit: int, win: tuple | None, force: bool) -> int:
                 mtime = status_log_mtime()
             if should_yield(mtime, baseline, now):
                 yielded += 1
-                slog("yield %d/%d: external writer active on status log"
-                     % (yielded, YIELD_MAX))
+                slog(
+                    "yield %d/%d: external writer active on status log"
+                    % (yielded, YIELD_MAX)
+                )
                 if yielded >= YIELD_MAX:
                     slog("yielded out rc=4: writer persists, retry later")
                     return RC_YIELDED_OUT
                 time.sleep(YIELD_SLEEP_SEC)
-                baseline = status_log_mtime()     # 让路后对齐基线再观察
+                baseline = status_log_mtime()  # 让路后对齐基线再观察
                 continue
             yielded = 0
             shard = min(SHARD_SIZE, limit - done)
             slog("shard start done=%d shard=%d" % (done, shard))
             rc = xq_classify.run(shard)
             done += shard
-            baseline = status_log_mtime()         # 记录「自己写完」的基线
+            baseline = status_log_mtime()  # 记录「自己写完」的基线
             slog("shard end done=%d rc=%d" % (done, rc))
             if rc != 0:
                 slog("shard rc=%d (consecutive hard-fail), stop" % rc)
@@ -306,13 +323,18 @@ def sprint(limit: int, win: tuple | None, force: bool) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="雪球分类存量追平错峰批量 runner")
-    ap.add_argument("--limit", type=int, default=2000,
-                    help="单批总上限（分片 run(500) 循环），缺省 2000")
-    ap.add_argument("--window", default=DEFAULT_WINDOW,
-                    help="错峰窗口 HH:MM-HH:MM（支持跨夜），缺省 %s"
-                         % DEFAULT_WINDOW)
-    ap.add_argument("--force", action="store_true",
-                    help="绕过窗口检查（小样/测试用）")
+    ap.add_argument(
+        "--limit",
+        type=int,
+        default=2000,
+        help="单批总上限（分片 run(500) 循环），缺省 2000",
+    )
+    ap.add_argument(
+        "--window",
+        default=DEFAULT_WINDOW,
+        help="错峰窗口 HH:MM-HH:MM（支持跨夜），缺省 %s" % DEFAULT_WINDOW,
+    )
+    ap.add_argument("--force", action="store_true", help="绕过窗口检查（小样/测试用）")
     a = ap.parse_args()
     if a.limit <= 0:
         slog("bad --limit %d" % a.limit)

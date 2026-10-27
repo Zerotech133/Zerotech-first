@@ -22,6 +22,7 @@
       _meta.backfill: {start,end,source,fetched_rows,merged_rows,per_sym...}
     报告: CACHE_DIR/daily_backfill_report.json（对账明细）
 """
+
 import argparse
 import datetime as dt
 import json
@@ -51,26 +52,31 @@ def _df_to_rows(df):
     """
     rows = []
     for _, r in df.sort_values("trade_date").iterrows():
-        rows.append({
-            "trade_date": str(r["trade_date"]),
-            "open": float(r["open"]), "high": float(r["high"]),
-            "low": float(r["low"]), "close": float(r["close"]),
-            "vol": float(r["vol"]) * 100.0,            # 手 → 股
-            "amount": float(r["amount"]) * 1000.0,     # 千元 → 元
-            "adj": "qfq",
-        })
+        rows.append(
+            {
+                "trade_date": str(r["trade_date"]),
+                "open": float(r["open"]),
+                "high": float(r["high"]),
+                "low": float(r["low"]),
+                "close": float(r["close"]),
+                "vol": float(r["vol"]) * 100.0,  # 手 → 股
+                "amount": float(r["amount"]) * 1000.0,  # 千元 → 元
+                "adj": "qfq",
+            }
+        )
     return rows
 
 
-def backfill(start: str, end: str, sleep_s: float,
-             cache_path: str, out_path: str):
+def backfill(start: str, end: str, sleep_s: float, cache_path: str, out_path: str):
     cache = json.load(open(cache_path, encoding="utf-8"))
     daily = cache.get("daily", {})
     syms = sorted(daily.keys())
     print("[backfill] 现缓存 %d 只；目标窗口 %s~%s" % (len(syms), start, end))
     ts_mod, pro = setup_tushare()
     merged = {s: list(rows) for s, rows in daily.items()}
-    existing_dates = {s: {r.get("trade_date") for r in rows} for s, rows in daily.items()}
+    existing_dates = {
+        s: {r.get("trade_date") for r in rows} for s, rows in daily.items()
+    }
     per_sym, errs = {}, []
     fetched_total = 0
     for i, sym in enumerate(syms, 1):
@@ -82,14 +88,18 @@ def backfill(start: str, end: str, sleep_s: float,
             with no_proxy_env():
                 df = None
                 try:
-                    df = ts_mod.pro_bar(ts_code=ts_code, api=pro, adj="qfq",
-                                        start_date=start, end_date=end)
+                    df = ts_mod.pro_bar(
+                        ts_code=ts_code,
+                        api=pro,
+                        adj="qfq",
+                        start_date=start,
+                        end_date=end,
+                    )
                     info["adj"] = "qfq"
                 except Exception:
                     df = None
                 if df is None or df.empty:
-                    df = pro.daily(ts_code=ts_code, start_date=start,
-                                   end_date=end)
+                    df = pro.daily(ts_code=ts_code, start_date=start, end_date=end)
                     info["adj"] = "raw"
             if df is None or df.empty:
                 info["error"] = "空返回"
@@ -106,47 +116,70 @@ def backfill(start: str, end: str, sleep_s: float,
                 old_adj = {r.get("adj") for r in daily[sym] if r.get("adj")}
                 if fresh and old_adj and info["adj"] not in old_adj:
                     info["error"] = "复权口径冲突（现缓存 %s vs 回填 %s），拒并" % (
-                        ",".join(sorted(old_adj)), info["adj"])
+                        ",".join(sorted(old_adj)),
+                        info["adj"],
+                    )
                     fresh = []
-                merged[sym] = sorted(daily[sym] + fresh,
-                                     key=lambda r: r.get("trade_date") or "")
+                merged[sym] = sorted(
+                    daily[sym] + fresh, key=lambda r: r.get("trade_date") or ""
+                )
                 info["new_rows"] = len(fresh)
-        except Exception as e:                        # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             info["error"] = "%s: %s" % (type(e).__name__, str(e)[:100])
             errs.append("%s %s" % (sym, info["error"]))
         per_sym[sym] = info
         if i % 20 == 0 or i == len(syms):
-            print("[backfill] %d/%d fetched=%d new=%d errs=%d"
-                  % (i, len(syms), fetched_total,
-                     sum(v["new_rows"] for v in per_sym.values()), len(errs)),
-                  flush=True)
+            print(
+                "[backfill] %d/%d fetched=%d new=%d errs=%d"
+                % (
+                    i,
+                    len(syms),
+                    fetched_total,
+                    sum(v["new_rows"] for v in per_sym.values()),
+                    len(errs),
+                ),
+                flush=True,
+            )
         time.sleep(sleep_s)
 
-    out = {"daily": merged,
-           "_meta": {"days": None, "saved_at": dt.datetime.now().isoformat(),
-                     "kind": "backfill-merged",
-                     "backfill": {
-                         "window": "%s~%s" % (start, end),
-                         "source": "tushare pro_bar/pro.daily (qfq优先)",
-                         "base_cache": os.path.abspath(cache_path),
-                         "base_cache_saved_at": (cache.get("_meta") or {}).get("saved_at"),
-                         "fetched_rows": fetched_total,
-                         "new_rows": sum(v["new_rows"] for v in per_sym.values()),
-                         "symbols": len(syms),
-                         "errors": len(errs),
-                         "generated_at": dt.datetime.now().astimezone().isoformat(),
-                     }}}
+    out = {
+        "daily": merged,
+        "_meta": {
+            "days": None,
+            "saved_at": dt.datetime.now().isoformat(),
+            "kind": "backfill-merged",
+            "backfill": {
+                "window": "%s~%s" % (start, end),
+                "source": "tushare pro_bar/pro.daily (qfq优先)",
+                "base_cache": os.path.abspath(cache_path),
+                "base_cache_saved_at": (cache.get("_meta") or {}).get("saved_at"),
+                "fetched_rows": fetched_total,
+                "new_rows": sum(v["new_rows"] for v in per_sym.values()),
+                "symbols": len(syms),
+                "errors": len(errs),
+                "generated_at": dt.datetime.now().astimezone().isoformat(),
+            },
+        },
+    }
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     json.dump(out, open(out_path, "w", encoding="utf-8"), ensure_ascii=False)
-    json.dump({"per_sym": per_sym, "errors": errs},
-              open(REPORT_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    print("[backfill] written %s (new_rows=%d, errors=%d)"
-          % (out_path, out["_meta"]["backfill"]["new_rows"], len(errs)))
+    json.dump(
+        {"per_sym": per_sym, "errors": errs},
+        open(REPORT_PATH, "w", encoding="utf-8"),
+        ensure_ascii=False,
+        indent=1,
+    )
+    print(
+        "[backfill] written %s (new_rows=%d, errors=%d)"
+        % (out_path, out["_meta"]["backfill"]["new_rows"], len(errs))
+    )
     print("[backfill] report   %s" % REPORT_PATH)
 
 
 def main():
-    ap = argparse.ArgumentParser(description="候选股历史日线回填（合并式，不覆盖现缓存）")
+    ap = argparse.ArgumentParser(
+        description="候选股历史日线回填（合并式，不覆盖现缓存）"
+    )
     ap.add_argument("--start", default="20180101")
     ap.add_argument("--end", default="20191231")
     ap.add_argument("--sleep", type=float, default=0.35)

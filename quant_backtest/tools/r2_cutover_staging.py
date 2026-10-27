@@ -19,16 +19,16 @@ from __future__ import annotations
 # R2 前置验收检查项（每一项当前默认未满足）。字典便于扩展：键为检查项名，
 # 值为当前是否满足；True 表示已满足，False 表示未满足。
 DEFAULT_PRECONDITIONS = {
-    "R0_closed": False,                 # R0 已闭环
-    "R1_BLOCK_enforced": False,         # R1 恒 BLOCK_CUTOVER
-    "N3_adopted": False,                # N3 已采用
-    "N5_signed": False,                 # N5 真实通道回签
-    "N6_ceremony_done": False,          # N6 密钥 ceremony 完成
-    "N7_done": False,                   # N7 完成
-    "N8_semantics_decided": False,      # N8 语义已定
-    "N10_nav_mounted": False,           # N10 导航已挂载
-    "N11_pool_decided": False,          # N11 标的池已定
-    "N12_five_elements_approved": False,# N12 五要素已批准
+    "R0_closed": False,  # R0 已闭环
+    "R1_BLOCK_enforced": False,  # R1 恒 BLOCK_CUTOVER
+    "N3_adopted": False,  # N3 已采用
+    "N5_signed": False,  # N5 真实通道回签
+    "N6_ceremony_done": False,  # N6 密钥 ceremony 完成
+    "N7_done": False,  # N7 完成
+    "N8_semantics_decided": False,  # N8 语义已定
+    "N10_nav_mounted": False,  # N10 导航已挂载
+    "N11_pool_decided": False,  # N11 标的池已定
+    "N12_five_elements_approved": False,  # N12 五要素已批准
 }
 
 

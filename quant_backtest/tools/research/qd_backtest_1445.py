@@ -33,6 +33,7 @@ positions.json 与任何生产数据表；不推送、不注册计划任务。
     "C:/Program Files/Python311/python.exe" -u quant_backtest/qd_backtest_1445.py \
         [--limit N] [--start 20231001] [--signal-price raw|hfq]
 """
+
 import argparse
 import glob
 import json
@@ -61,16 +62,17 @@ def result_json_path(signal_price):
         return REPORTS / "qd_backtest_1445_result_hfq.json"
     return REPORTS / "qd_backtest_1445_result.json"
 
+
 # 指数文件剔除（湖内混入的指数 daily：000001.SH 上证、000688.SH 科创50、
 # 399001.SZ 深成指、399006.SZ 创业板指）——与产线 scan_one 不同：产线全池
 # 扫（指数也会被 6-200 价格带自然过滤大半），本回测显式剔除保证池纯净。
 INDEX_FILES = {"000001_SH", "000688_SH", "399001_SZ", "399006_SZ"}
 
 PROFILE = "strict"
-COST_ROUNDTRIP = 0.0030          # 15bps 买 + 15bps 卖
-HOLD_GRID = (5, 10, 20)          # 持有期网格（交易日）
-COOLDOWN = 5                     # 首信号对照的冷却期（交易日）
-DEFAULT_START = "20231001"       # 近 3 年信号窗口起点
+COST_ROUNDTRIP = 0.0030  # 15bps 买 + 15bps 卖
+HOLD_GRID = (5, 10, 20)  # 持有期网格（交易日）
+COOLDOWN = 5  # 首信号对照的冷却期（交易日）
+DEFAULT_START = "20231001"  # 近 3 年信号窗口起点
 
 REGIMES = ("trend_up", "rotation", "range", "trend_down")
 
@@ -88,12 +90,18 @@ def load_adj_factors():
     if _ADJ is not None:
         return _ADJ
     import tdx_read
+
     if not tdx_read.table_ready("ts_adj_factor"):
-        print("[warn] ts_adj_factor 表未就绪 → 收益退回不复权口径（结果不可信，仅冒烟用）")
+        print(
+            "[warn] ts_adj_factor 表未就绪 → 收益退回不复权口径（结果不可信，仅冒烟用）"
+        )
         _ADJ = {}
         return _ADJ
-    df = tdx_read.read_range("ts_adj_factor", start="20230101",
-                             columns=["ts_code", "trade_date", "adj_factor"])
+    df = tdx_read.read_range(
+        "ts_adj_factor",
+        start="20230101",
+        columns=["ts_code", "trade_date", "adj_factor"],
+    )
     m = {}
     if df is not None and not df.empty:
         g_all = df.assign(
@@ -116,6 +124,7 @@ def adj_series(code, dates):
     缺失日用邻近值续（ffill/bfill，湖与因子表同源同步，缺口极少）；
     整票无因子/末根因子非正 → None（该票收益降级剔除）。"""
     import numpy as np
+
     fmap = load_adj_factors().get(code)
     if not fmap:
         return None
@@ -161,8 +170,9 @@ def backtest_one(fp, start, signal_price, details=None):
     tail_gap = []
 
     try:
-        df = pd.read_parquet(fp, columns=["trade_date", "open", "high",
-                                          "low", "close", "amount"])
+        df = pd.read_parquet(
+            fp, columns=["trade_date", "open", "high", "low", "close", "amount"]
+        )
     except Exception as e:
         return code, out, out_regime, first_counts, "read:%s" % e, tail_gap
     if len(df) < 100:  # 照抄产线 scan_one：warmup 不足跳过
@@ -236,11 +246,18 @@ def backtest_one(fp, start, signal_price, details=None):
 # ── 汇总统计 ────────────────────────────────────────────────
 def stats(rets):
     import numpy as np
+
     a = np.asarray(rets, dtype=float)
     if len(a) == 0:
         return {"n": 0}
     gains, losses = a[a > 0], a[a < 0]
-    pf = float(gains.sum() / abs(losses.sum())) if losses.sum() != 0 else float("inf") if len(gains) else 0.0
+    pf = (
+        float(gains.sum() / abs(losses.sum()))
+        if losses.sum() != 0
+        else float("inf")
+        if len(gains)
+        else 0.0
+    )
     # 事件序列口径回撤（按信号发生顺序的等权净值，非日度组合曲线）
     eq = np.cumprod(1.0 + a)
     dd = float(1.0 - (eq / np.maximum.accumulate(eq)).min()) if len(a) else 0.0
@@ -272,20 +289,32 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0, help="只扫前 N 只（冒烟）")
     ap.add_argument("--start", default=DEFAULT_START, help="信号统计起点 YYYYMMDD")
-    ap.add_argument("--signal-price", choices=["raw", "hfq"], default="raw",
-                    help="信号价格口径：raw=不复权（产线 scan_one 现行为），hfq=后复权")
-    ap.add_argument("--details", default="",
-                    help="逐信号明细导出路径（JSON 数组：code/date/regime/r5/r10/r20）"
-                         "——W3-5 变体离线过滤重算用，不影响汇总结果")
+    ap.add_argument(
+        "--signal-price",
+        choices=["raw", "hfq"],
+        default="raw",
+        help="信号价格口径：raw=不复权（产线 scan_one 现行为），hfq=后复权",
+    )
+    ap.add_argument(
+        "--details",
+        default="",
+        help="逐信号明细导出路径（JSON 数组：code/date/regime/r5/r10/r20）"
+        "——W3-5 变体离线过滤重算用，不影响汇总结果",
+    )
     args = ap.parse_args()
 
     t0 = time.time()
-    files = [fp for fp in sorted(glob.glob(str(ASHARE / "*.parquet")))
-             if os.path.basename(fp)[:-8] not in INDEX_FILES]
+    files = [
+        fp
+        for fp in sorted(glob.glob(str(ASHARE / "*.parquet")))
+        if os.path.basename(fp)[:-8] not in INDEX_FILES
+    ]
     if args.limit:
-        files = files[:args.limit]
-    print("[run] 池 %d 只 | 窗口 %s~湖锚 | 信号口径 %s | 成本 %.0fbps RT"
-          % (len(files), args.start, args.signal_price, COST_ROUNDTRIP * 1e4))
+        files = files[: args.limit]
+    print(
+        "[run] 池 %d 只 | 窗口 %s~湖锚 | 信号口径 %s | 成本 %.0fbps RT"
+        % (len(files), args.start, args.signal_price, COST_ROUNDTRIP * 1e4)
+    )
 
     load_adj_factors()
 
@@ -297,7 +326,8 @@ def main():
     details = [] if args.details else None
     for k, fp in enumerate(files):
         code, out, out_regime, first_counts, fb, tail_gap = backtest_one(
-            fp, args.start, args.signal_price, details=details)
+            fp, args.start, args.signal_price, details=details
+        )
         if fb:
             fallback[fb] = fallback.get(fb, 0) + 1
         for h, rets in out.items():
@@ -309,61 +339,82 @@ def main():
             first_total[h] += c
         gaps.extend(tail_gap)
         if (k + 1) % 500 == 0:
-            print("[scan] %d/%d 已扫 %.0fs" % (k + 1, len(files), time.time() - t0), flush=True)
+            print(
+                "[scan] %d/%d 已扫 %.0fs" % (k + 1, len(files), time.time() - t0),
+                flush=True,
+            )
 
     results = {h: stats(v) for h, v in agg.items()}
     regime_detail = regime_breakdown(agg_regime)
 
     # 整体判据：PF≥1.1（用主口径 N=10 的 PF；三档全部列出）
     pf_main = results.get(10, {}).get("pf", 0.0)
-    verdict = ("PF>=1.1 达标：够格起 60 日影子"
-               if isinstance(pf_main, float) and pf_main >= 1.1
-               else "PF<1.1 未达标：需调参后再测（不建议直接起影子）")
+    verdict = (
+        "PF>=1.1 达标：够格起 60 日影子"
+        if isinstance(pf_main, float) and pf_main >= 1.1
+        else "PF<1.1 未达标：需调参后再测（不建议直接起影子）"
+    )
 
     import numpy as np
+
     gaps_a = np.asarray(gaps, dtype=float) if gaps else np.array([0.0])
     payload = {
         "task": "T-20261009-009 W3-4 量子双刀离线回测",
         "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "params": {
             "profile": PROFILE,
-            "eight_filters": ["cross_star_2d", "range_ok", "price_ok", "amount_ok",
-                              "ma_stack_ok", "ma_distance_ok", "macd_ok", "regime_ok"],
+            "eight_filters": [
+                "cross_star_2d",
+                "range_ok",
+                "price_ok",
+                "amount_ok",
+                "ma_stack_ok",
+                "ma_distance_ok",
+                "macd_ok",
+                "regime_ok",
+            ],
             "blocked_regimes": sorted(PROFILE_CONFIG[PROFILE]["blocked_regimes"]),
             "start": args.start,
             "anchor": "20261013",
             "universe": "湖内全部 CN 股（剔除 4 只指数文件；ST/停牌无显式剔除——"
-                        "照抄产线 scan_one 行为，仅 len>=100 warmup 过滤）",
+            "照抄产线 scan_one 行为，仅 len>=100 warmup 过滤）",
             "entry": "T 日收盘（近似 14:45 信号确认 + 14:55 执行）",
             "sell_grid": ["hold_5", "hold_10", "hold_20", "t1_open_sell"],
             "cost_bps_roundtrip": 30,
             "cost_note": "15bps 买入 + 15bps 卖出（backtest.py CN 保守口径判例）",
             "signal_price": args.signal_price,
             "return_price": "hfq（ts_adj_factor 累积因子，末根=1，chanlun W1-2 判例）",
-            "dedup": "事件研究：每信号一笔独立交易；另计 %d 交易日冷却首信号" % COOLDOWN,
+            "dedup": "事件研究：每信号一笔独立交易；另计 %d 交易日冷却首信号"
+            % COOLDOWN,
         },
         "caliber_notes": {
             "1445_approx": "14:45 信号≈T 日 close 成交。湖无分钟数据，偏差以"
-                           "「T 收盘 vs T+1 开盘」gap 分布侧面量化：均值 %.2f%%、"
-                           "中位 %.2f%%、P5 %.2f%%、P95 %.2f%%（正=次日开盘更贵，"
-                           "即错过尾盘窗口的滞后成本）。尾盘 15 分钟真实漂移未计，"
-                           "动量信号追价通常使实盘劣于回测 ~10-20bps/笔。"
-                           % (gaps_a.mean() * 100, float(np.median(gaps_a)) * 100,
-                              float(np.percentile(gaps_a, 5)) * 100,
-                              float(np.percentile(gaps_a, 95)) * 100),
+            "「T 收盘 vs T+1 开盘」gap 分布侧面量化：均值 %.2f%%、"
+            "中位 %.2f%%、P5 %.2f%%、P95 %.2f%%（正=次日开盘更贵，"
+            "即错过尾盘窗口的滞后成本）。尾盘 15 分钟真实漂移未计，"
+            "动量信号追价通常使实盘劣于回测 ~10-20bps/笔。"
+            % (
+                gaps_a.mean() * 100,
+                float(np.median(gaps_a)) * 100,
+                float(np.percentile(gaps_a, 5)) * 100,
+                float(np.percentile(gaps_a, 95)) * 100,
+            ),
             "sell_semantics": "产线未定义卖出语义（qd_scanner/qd_view 无 sell 分支）"
-                              "→ 本回测以持有网格 N=5/10/20 + T+1 开盘卖对照补账，"
-                              "卖出语义定义移交 W3-5 依本表决策。",
+            "→ 本回测以持有网格 N=5/10/20 + T+1 开盘卖对照补账，"
+            "卖出语义定义移交 W3-5 依本表决策。",
             "st_suspend": "ST 股（±5% 涨跌幅）未显式剔除，与产线一致；停牌日在湖中"
-                          "无 bar 自然不产生信号。",
+            "无 bar 自然不产生信号。",
         },
         "overall": results,
         "first_signal_only": {"cooldown_days": COOLDOWN, "counts": first_total},
         "by_regime": regime_detail,
-        "tail_gap": {"n": int(len(gaps)), "mean": round(float(gaps_a.mean()), 5),
-                     "median": round(float(np.median(gaps_a)), 5),
-                     "p5": round(float(np.percentile(gaps_a, 5)), 5),
-                     "p95": round(float(np.percentile(gaps_a, 95)), 5)},
+        "tail_gap": {
+            "n": int(len(gaps)),
+            "mean": round(float(gaps_a.mean()), 5),
+            "median": round(float(np.median(gaps_a)), 5),
+            "p5": round(float(np.percentile(gaps_a, 5)), 5),
+            "p95": round(float(np.percentile(gaps_a, 95)), 5),
+        },
         "fallback": fallback,
         "verdict": verdict,
         "verdict_rule": "整体 PF>=1.1（主口径 hold_10）→ 够格起 60 日影子；否则调参后再测",
@@ -373,20 +424,36 @@ def main():
 
     REPORTS.mkdir(exist_ok=True)
     result_json = result_json_path(args.signal_price)
-    result_json.write_text(json.dumps(payload, ensure_ascii=False, indent=1),
-                           encoding="utf-8")
+    result_json.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     if details is not None:
         Path(args.details).write_text(
-            json.dumps({"signal_price": args.signal_price, "start": args.start,
-                        "n": len(details), "records": details},
-                       ensure_ascii=False), encoding="utf-8")
+            json.dumps(
+                {
+                    "signal_price": args.signal_price,
+                    "start": args.start,
+                    "n": len(details),
+                    "records": details,
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
         print("[details] %d 条逐信号明细 → %s" % (len(details), args.details))
     print("[done] %.0fs → %s" % (time.time() - t0, result_json))
     for h in list(HOLD_GRID) + ["t1_open"]:
         s = results.get(h, {})
-        print("[res] %-8s n=%-6d win=%.2f%% PF=%.3f mean=%.3f%%"
-              % (h, s.get("n", 0), s.get("win_rate", 0) * 100,
-                 s.get("pf", 0), s.get("mean", 0) * 100))
+        print(
+            "[res] %-8s n=%-6d win=%.2f%% PF=%.3f mean=%.3f%%"
+            % (
+                h,
+                s.get("n", 0),
+                s.get("win_rate", 0) * 100,
+                s.get("pf", 0),
+                s.get("mean", 0) * 100,
+            )
+        )
     print("[verdict]", verdict)
 
 

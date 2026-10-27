@@ -85,7 +85,9 @@ def main() -> int:
         if src in DECOUPLED_SOURCES:
             actual = DECOUPLED_SOURCES[src]
             if store.is_configured(actual):
-                print(f"[脱钩] {src:<10} {key} ← {actual}（WO-085 归情报，量化不直接武装，须经情报供给层）")
+                print(
+                    f"[脱钩] {src:<10} {key} ← {actual}（WO-085 归情报，量化不直接武装，须经情报供给层）"
+                )
             else:
                 print(f"[缺 ] {src:<10} {key}")
                 missing.append(key)
@@ -100,7 +102,9 @@ def main() -> int:
 
     print("-" * 56)
     if not missing:
-        print(f"量化 N5 全部 {len(REQUIRED_KEYS)} 类密钥齐备 → 可进入 N5 real_auth 武装（仍须 N6 ceremony 批准）。")
+        print(
+            f"量化 N5 全部 {len(REQUIRED_KEYS)} 类密钥齐备 → 可进入 N5 real_auth 武装（仍须 N6 ceremony 批准）。"
+        )
         return 0
     print(f"量化 N5 仍缺 {len(missing)} 类：{', '.join(missing)}")
     print("（以上仅为键名，未打印任何真实值；[在-别名]/[脱钩] 不计入缺项但均尚未武装）")

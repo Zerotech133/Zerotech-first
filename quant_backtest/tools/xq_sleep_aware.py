@@ -19,6 +19,7 @@ Windows-only：事件日志查询仅在 Windows 上可用；非 Windows 平台
 sleep_windows() 返回空列表（不报错），effective_runtime 退化为墙钟时长，
 is_frozen_alive 退化为纯 mtime 新鲜度两态（ALIVE/DEAD，无 STALLED_SLEEP）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,8 +32,8 @@ from datetime import datetime, timedelta
 
 IS_WINDOWS = sys.platform == "win32"  # 模块级变量，便于测试在任意平台注入
 
-_SLEEP_ID = 42   # Microsoft-Windows-Kernel-Power：进入睡眠
-_WAKE_ID = 1     # Microsoft-Windows-Power-Troubleshooter：从低功耗状态恢复
+_SLEEP_ID = 42  # Microsoft-Windows-Kernel-Power：进入睡眠
+_WAKE_ID = 1  # Microsoft-Windows-Power-Troubleshooter：从低功耗状态恢复
 
 _EVENT_LINE_RE = re.compile(r"^(42|1)\|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$")
 
@@ -60,9 +61,19 @@ def fetch_power_events(hours: float) -> list:
     script = _PS_SCRIPT.format(minutes=max(1.0, float(hours) * 60.0))
     try:
         proc = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive",
-             "-ExecutionPolicy", "Bypass", "-Command", script],
-            capture_output=True, encoding="utf-8", errors="replace", timeout=90,
+            [
+                "powershell",
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                script,
+            ],
+            capture_output=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=90,
         )
     except (OSError, subprocess.TimeoutExpired):
         return []
@@ -70,7 +81,9 @@ def fetch_power_events(hours: float) -> list:
     for line in (proc.stdout or "").splitlines():
         m = _EVENT_LINE_RE.match(line.strip())
         if m:
-            events.append((int(m.group(1)), datetime.strptime(m.group(2), "%Y-%m-%d %H:%M:%S")))
+            events.append(
+                (int(m.group(1)), datetime.strptime(m.group(2), "%Y-%m-%d %H:%M:%S"))
+            )
     events.sort(key=lambda e: e[1])
     return events
 
@@ -165,9 +178,7 @@ def is_frozen_alive(mtime_path, max_idle_min=20, windows=None, now=None):
         return ALIVE
     if windows is None:
         windows = sleep_windows(hours=(idle.total_seconds() / 3600.0 + 1.0), now=now)
-    sleep_total = sum(
-        (_overlap(w[0], w[1], mtime, now) for w in windows), timedelta(0)
-    )
+    sleep_total = sum((_overlap(w[0], w[1], mtime, now) for w in windows), timedelta(0))
     effective_idle = idle - sleep_total
     if effective_idle <= timedelta(minutes=max_idle_min):
         return STALLED_SLEEP if sleep_total > timedelta(0) else ALIVE
@@ -200,10 +211,21 @@ def build_report(hours, windows, now):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="睡眠感知判活工具（判活/ETA 应剔除系统睡眠窗）")
-    ap.add_argument("--report", nargs="?", type=float, const=24.0, default=None, metavar="HOURS",
-                    help="打印最近 HOURS 小时的人类可读报告（默认 24）")
-    ap.add_argument("--json", action="store_true", help="输出机器可读 JSON（配合 --report 的时段）")
+    ap = argparse.ArgumentParser(
+        description="睡眠感知判活工具（判活/ETA 应剔除系统睡眠窗）"
+    )
+    ap.add_argument(
+        "--report",
+        nargs="?",
+        type=float,
+        const=24.0,
+        default=None,
+        metavar="HOURS",
+        help="打印最近 HOURS 小时的人类可读报告（默认 24）",
+    )
+    ap.add_argument(
+        "--json", action="store_true", help="输出机器可读 JSON（配合 --report 的时段）"
+    )
     args = ap.parse_args(argv)
     if args.report is None and not args.json:
         ap.print_help()
@@ -216,18 +238,33 @@ def main(argv=None):
         print(json.dumps(rep, ensure_ascii=False, indent=2))
         return 0
     print("睡眠感知判活报告（最近 {} 小时）".format(rep["hours"]))
-    print("平台: {} | 事件源: System 日志 (Kernel-Power Id=42 / Power-Troubleshooter Id=1)".format(rep["platform"]))
+    print(
+        "平台: {} | 事件源: System 日志 (Kernel-Power Id=42 / Power-Troubleshooter Id=1)".format(
+            rep["platform"]
+        )
+    )
     if not windows:
         print("睡眠窗: 无（系统事件日志未探到 Id=42 睡眠事件，或非 Windows 平台）")
     else:
-        print("睡眠窗 {} 个, 合计 {}:".format(len(windows), _fmt_td(timedelta(seconds=rep["total_sleep_s"]))))
+        print(
+            "睡眠窗 {} 个, 合计 {}:".format(
+                len(windows), _fmt_td(timedelta(seconds=rep["total_sleep_s"]))
+            )
+        )
         for i, w in enumerate(rep["sleep_windows"], 1):
-            print("  [{}] {} -> {}  ({})".format(
-                i, w["start"], w["end"], _fmt_td(timedelta(seconds=w["duration_s"]))))
-    print("净运行时长示例: 最近 {}h 墙钟 {}h，剔除睡眠后净 {}（{}）".format(
-        rep["hours"], _fmt_td(timedelta(hours=rep["hours"])),
-        _fmt_td(timedelta(seconds=rep["effective_runtime_s"])),
-        "睡眠感知" if windows else "无睡眠窗, 等于墙钟"))
+            print(
+                "  [{}] {} -> {}  ({})".format(
+                    i, w["start"], w["end"], _fmt_td(timedelta(seconds=w["duration_s"]))
+                )
+            )
+    print(
+        "净运行时长示例: 最近 {}h 墙钟 {}h，剔除睡眠后净 {}（{}）".format(
+            rep["hours"],
+            _fmt_td(timedelta(hours=rep["hours"])),
+            _fmt_td(timedelta(seconds=rep["effective_runtime_s"])),
+            "睡眠感知" if windows else "无睡眠窗, 等于墙钟",
+        )
+    )
     return 0
 
 

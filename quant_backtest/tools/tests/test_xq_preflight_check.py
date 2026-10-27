@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """preflight-dev 单测：xq_preflight_check 判定逻辑（注入假数据，不碰调度面）。"""
+
 import os
 import sys
 from datetime import datetime, timedelta
@@ -20,10 +21,14 @@ PY = "C:/Users/t/.workbuddy/binaries/python/envs/default/Scripts/python.exe"
 class TestParseSchedTime:
     def test_com_string_with_fake_utc_suffix(self):
         # COM 返回本地时间但带误导性 "+00:00" 尾巴，须取 naive 部分
-        assert parse_sched_time("2026-10-18 18:00:00+00:00") == datetime(2026, 10, 18, 18, 0, 0)
+        assert parse_sched_time("2026-10-18 18:00:00+00:00") == datetime(
+            2026, 10, 18, 18, 0, 0
+        )
 
     def test_iso_t_boundary(self):
-        assert parse_sched_time("2026-10-18T19:35:00") == datetime(2026, 10, 18, 19, 35, 0)
+        assert parse_sched_time("2026-10-18T19:35:00") == datetime(
+            2026, 10, 18, 19, 35, 0
+        )
 
     def test_garbage_returns_none(self):
         assert parse_sched_time("never") is None
@@ -37,11 +42,15 @@ class TestJudgeNextRun:
         assert r["status"] == "PASS"
 
     def test_within_tolerance_pass(self):
-        r = judge_next_run("2026-10-18 19:05:30", datetime(2026, 10, 18, 19, 5), tolerance_min=1)
+        r = judge_next_run(
+            "2026-10-18 19:05:30", datetime(2026, 10, 18, 19, 5), tolerance_min=1
+        )
         assert r["status"] == "PASS"
 
     def test_off_by_minutes_fail(self):
-        r = judge_next_run("2026-10-18 19:00:00", datetime(2026, 10, 18, 19, 5), tolerance_min=0)
+        r = judge_next_run(
+            "2026-10-18 19:00:00", datetime(2026, 10, 18, 19, 5), tolerance_min=0
+        )
         assert r["status"] == "FAIL"
 
     def test_wrong_day_fail(self):
@@ -123,12 +132,16 @@ class TestJudgeHeartbeat:
 
     def test_stale_silence_unknown(self):
         now = datetime(2026, 10, 18, 16, 10)
-        r = self._judge("2026-10-18 14:00:00 | OK id=1", now - timedelta(minutes=130), now)
+        r = self._judge(
+            "2026-10-18 14:00:00 | OK id=1", now - timedelta(minutes=130), now
+        )
         assert r["status"] == "UNKNOWN"
 
     def test_fresh_but_fail_marker(self):
         now = datetime(2026, 10, 18, 16, 10)
-        r = self._judge("2026-10-18 16:05:00 | hard_fail=3", now - timedelta(minutes=5), now)
+        r = self._judge(
+            "2026-10-18 16:05:00 | hard_fail=3", now - timedelta(minutes=5), now
+        )
         assert r["status"] == "FAIL"
 
     def test_no_mtime_unknown(self):

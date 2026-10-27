@@ -18,6 +18,7 @@
   python tools/xq_norm_migrate.py --db <path>     # 指定库（默认 data/xueqiu/xueqiu_info.db）
   python tools/xq_norm_migrate.py --verify        # 迁移后 kind 分布一行 SQL 验证
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,7 +41,9 @@ def _set_wal(conn: sqlite3.Connection) -> str:
     try:
         mode = xtn._with_retry(
             lambda: conn.execute("PRAGMA journal_mode=WAL").fetchone()[0],
-            retries=3, base_delay=0.5)
+            retries=3,
+            base_delay=0.5,
+        )
     except sqlite3.OperationalError:
         mode = "keep-current(failed)"
     return str(mode)
@@ -59,19 +62,32 @@ def migrate(db_path, batch_size: int = 200, dry_run: bool = False) -> dict:
         if dry_run:
             journal_mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
             rows = conn.execute(
-                "SELECT status_id, tickers FROM %s" % xtn._TABLE).fetchall()
+                "SELECT status_id, tickers FROM %s" % xtn._TABLE
+            ).fetchall()
             kinds = {}
             for _sid, tickers_raw in rows:
                 for it in xtn.normalize_tickers(tickers_raw):
                     kinds[it["kind"]] = kinds.get(it["kind"], 0) + 1
-            return {"db": str(db_path), "journal_mode": str(journal_mode),
-                    "dry_run": True, "total": len(rows), "updated": 0,
-                    "skipped": 0, "kinds": kinds}
+            return {
+                "db": str(db_path),
+                "journal_mode": str(journal_mode),
+                "dry_run": True,
+                "total": len(rows),
+                "updated": 0,
+                "skipped": 0,
+                "kinds": kinds,
+            }
         wal = _set_wal(conn)
         added = xtn.ensure_norm_column(conn)
         report = xtn.backfill(conn, batch_size=batch_size)
-        report.update({"db": str(db_path), "journal_mode": wal,
-                       "added_column": added, "dry_run": False})
+        report.update(
+            {
+                "db": str(db_path),
+                "journal_mode": wal,
+                "added_column": added,
+                "dry_run": False,
+            }
+        )
         return report
     finally:
         conn.close()
@@ -92,14 +108,16 @@ def verify(db_path) -> list:
 def build_arg_parser() -> argparse.ArgumentParser:
     """Argparse builder（对齐 xq_classify.build_arg_parser 可测性判例）。"""
     ap = argparse.ArgumentParser(
-        description="xq_status_classified norm_tickers 幂等迁移（P0-1）")
+        description="xq_status_classified norm_tickers 幂等迁移（P0-1）"
+    )
     ap.add_argument("--db", default=str(DEFAULT_DB), help="SQLite 库路径")
-    ap.add_argument("--batch-size", type=int, default=200,
-                    help="每批 commit 行数（默认 200）")
-    ap.add_argument("--dry-run", action="store_true",
-                    help="只算不写（零副作用预演）")
-    ap.add_argument("--verify", action="store_true",
-                    help="只跑 kind 分布验证 SQL 后退出")
+    ap.add_argument(
+        "--batch-size", type=int, default=200, help="每批 commit 行数（默认 200）"
+    )
+    ap.add_argument("--dry-run", action="store_true", help="只算不写（零副作用预演）")
+    ap.add_argument(
+        "--verify", action="store_true", help="只跑 kind 分布验证 SQL 后退出"
+    )
     return ap
 
 
@@ -109,8 +127,7 @@ def main() -> int:
         for kind, n in verify(args.db):
             print("kind_dist %s=%d" % (kind, n))
         return 0
-    report = migrate(args.db, batch_size=args.batch_size,
-                     dry_run=args.dry_run)
+    report = migrate(args.db, batch_size=args.batch_size, dry_run=args.dry_run)
     print("migrate done " + json.dumps(report, ensure_ascii=False, sort_keys=True))
     if not report.get("dry_run"):
         for kind, n in verify(args.db):

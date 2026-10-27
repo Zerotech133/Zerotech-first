@@ -11,6 +11,7 @@
 合规：只读 GET、页间 2s 抖动、不写库、不落盘除本报告 stdout。
 用法：python tools/xq_probe_entries.py
 """
+
 import sys
 import time
 from datetime import datetime
@@ -60,11 +61,15 @@ def main() -> int:
 
     # E5 user_timeline 匿名复测（v1 判 WAF 拦）：只发 1 发，40x 即定谳
     try:
-        r = cr.sess.get(SOCIAL + "/v4/statuses/user_timeline.json",
-                        params={"user_id": 9222060866, "count": 5, "page": 1},
-                        timeout=15)
+        r = cr.sess.get(
+            SOCIAL + "/v4/statuses/user_timeline.json",
+            params={"user_id": 9222060866, "count": 5, "page": 1},
+            timeout=15,
+        )
         body = r.text[:80].replace("\n", " ")
-        out.append(("E5 user_timeline 匿名", "HTTP %d %s" % (r.status_code, body), "-", "-", 0))
+        out.append(
+            ("E5 user_timeline 匿名", "HTTP %d %s" % (r.status_code, body), "-", "-", 0)
+        )
     except Exception as e:
         out.append(("E5 user_timeline 匿名", "EXC %r" % e, "-", "-", 0))
 
