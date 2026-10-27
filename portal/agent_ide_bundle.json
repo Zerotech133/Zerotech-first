@@ -140,15 +140,6 @@
    "project": "general"
   },
   {
-   "id": "WO-D3-OBS-20261027",
-   "desc": "D3 Agent 可观测：gen_ai.* 字段映射文档 + agent_platform/observability/genai.py（默认关 OTel span，DSH_OTEL_ENABLED=1 开启）+ make_llm 单点包装 + 单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-D3-OBS-20261027",
-   "created": "2026-10-27 15:10:22",
-   "project": "portal"
-  },
-  {
    "id": "WO-D4-MCPCHECK-20261027",
    "desc": "D4 MCP 安全自查：tools/mcp_security_check.py（token 仅 env/read-only/URL 无 token/scope 最小化）+ docs/specs 自查表",
    "status": "doing",
@@ -165,6 +156,15 @@
    "branch": "task/WO-D5D6-BUILD-20261027",
    "created": "2026-10-27 15:10:34",
    "project": "portal"
+  },
+  {
+   "id": "WO-GUANYU-B4-20261027",
+   "desc": "B4机械修 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-B4-20261027",
+   "created": "2026-10-27 15:13:23",
+   "project": "general"
   }
  ],
  "coder_traces": [
