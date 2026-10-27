@@ -46,6 +46,7 @@ sys.path.insert(0, HERE)
 
 from nl_query import _llm, _coerce, _schema, TOOL_MSG_MAX, MAX_ROUNDS
 from agent_tools import call as T
+import logging
 
 REPORTS = os.path.join(HERE, "reports")
 PROPOSALS = os.path.join(REPORTS, "council_proposals.jsonl")
@@ -538,8 +539,8 @@ def _done_today(day):
                     continue
                 if r.get("d") == day and r.get("code"):
                     done.add(r["code"])
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/stock_council.py", exc)
     return done
 
 
@@ -569,8 +570,8 @@ def _load_seen():
                     continue
                 k = "%s|%s" % (r.get("sid"), r.get("code"))
                 seen.setdefault(k, set()).update(r.get("fps") or [])
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/stock_council.py", exc)
     return seen
 
 
@@ -592,8 +593,8 @@ def _style_map():
                         "act": (r.get("directive") or {}).get("act") or "",
                         "params": r.get("params") or {},
                     }
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/stock_council.py", exc)
     return m
 
 
@@ -833,8 +834,8 @@ def _load_jsonl(fp):
                     out.append(json.loads(line))
                 except Exception:
                     continue
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/stock_council.py", exc)
     return out
 
 
@@ -1340,8 +1341,8 @@ def _push_day_card(recs, alerts, day, reviews=None):
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/stock_council.py", exc)
     ap = argparse.ArgumentParser(description="K55-C1 逐票投委会（影子）")
     ap.add_argument("--code", help="单票手动辩论（从账本 open 捞上下文）")
     ap.add_argument("--force", action="store_true", help="同日同票重辩")

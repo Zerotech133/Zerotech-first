@@ -31,6 +31,7 @@ import os
 import tempfile
 import urllib.request
 import uuid
+import logging
 
 # ── 限额（宁可早拒，不要让 2 分钟的音频卡住 WS 主链）──────────────
 MAX_DURATION_MS = 120_000
@@ -172,8 +173,8 @@ def _faster_whisper_transcribe(path: str, cfg: dict) -> str:
 
             _av.open = _open_compat
             _av._dsh_meta_patched = True
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/voice_ingest.py", exc)
     from faster_whisper import WhisperModel
 
     name = cfg.get("model") or os.environ.get("VOICE_ASR_MODEL") or "small"
@@ -291,13 +292,13 @@ def ingest_audio(
             finally:
                 try:
                     os.unlink(path)  # 转完即删，音频不落长期盘
-                except OSError:
-                    pass
+                except OSError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/voice_ingest.py", exc)
         finally:
             try:
                 cleanup()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/voice_ingest.py", exc)
 
         text = (text or "").strip()
         if not text:
@@ -334,8 +335,8 @@ def ingest_audio(
         log("voice ingest unexpected: %s" % (str(e)[:200],))
         try:
             notify("⚠️ 语音处理异常，已记录日志，请改用文字。")
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/voice_ingest.py", exc)
         return rec
 
 

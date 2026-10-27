@@ -16,6 +16,7 @@ REPO = HERE / ".." / ".."
 sys.path.insert(0, str(REPO / "tools"))
 
 import gaorta_models as gm  # noqa: E402
+import logging
 
 MODELS_FP = REPO / "k_stock" / "paper" / "models.json"
 
@@ -89,8 +90,8 @@ def test_usd_price_parse_failure():
                 }
             )
             raise AssertionError(f"expr={expr!r} 应 ValueError")
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_gaorta_models.py", exc)
     print("PASS test_usd_price_parse_failure")
 
 
@@ -104,8 +105,8 @@ def test_usd_price_peak_idle_order():
             }
         )
         raise AssertionError("idle≥peak 应 ValueError")
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_gaorta_models.py", exc)
     try:
         gm.usd_price(
             {
@@ -115,8 +116,8 @@ def test_usd_price_peak_idle_order():
             }
         )
         raise AssertionError("idle>peak 应 ValueError")
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_gaorta_models.py", exc)
     print("PASS test_usd_price_peak_idle_order")
 
 
@@ -131,8 +132,8 @@ def test_usd_price_zero_negative_nan():
                 }
             )
             raise AssertionError(f"ratio={ratio!r} 应 ValueError")
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_gaorta_models.py", exc)
     print("PASS test_usd_price_zero_negative_nan")
 
 

@@ -24,6 +24,7 @@ import sys
 import time
 from datetime import date, datetime
 from pathlib import Path
+import logging
 
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE))
@@ -153,16 +154,16 @@ class _Tee:
         for st in self._streams:
             try:
                 st.write(s)
-            except Exception:  # noqa: BLE001  日志不可写时保住控制台
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/monday_checkpoint.py", exc)
         return len(s)
 
     def flush(self):
         for st in self._streams:
             try:
                 st.flush()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/monday_checkpoint.py", exc)
 
     def isatty(self):
         return False
@@ -174,8 +175,8 @@ def _close_log():
         if _LOG_HANDLE is not None and not _LOG_HANDLE.closed:
             _LOG_HANDLE.flush()
             _LOG_HANDLE.close()
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/monday_checkpoint.py", exc)
 
 
 def _tee_log():
@@ -202,8 +203,8 @@ def _flush_log():
     if _LOG_HANDLE is not None and not _LOG_HANDLE.closed:
         try:
             _LOG_HANDLE.flush()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/monday_checkpoint.py", exc)
 
 
 def _tasks_schema_observe():

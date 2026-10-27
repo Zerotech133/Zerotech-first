@@ -26,6 +26,7 @@ import re
 import sqlite3
 import sys
 from datetime import datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -90,8 +91,8 @@ def _facts_quote(code, name):
                 "vr": _r(q.get("vol_ratio"), 2),
                 "ts": q.get("ts"),
             }
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/portal_report.py", exc)
     return None
 
 
@@ -140,8 +141,8 @@ def _facts_bars(code, days=150):
             df = _D.load_bars(mk, [sy], start, None).get(sy)
             if df is not None and len(df) > 20:
                 return df.tail(days)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/portal_report.py", exc)
     return None
 
 
@@ -695,8 +696,8 @@ def _resolve_name(code, name=None):
             e = stock_analyze.resolve_stock(code)
             if e and e.get("name"):
                 return e["name"]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/portal_report.py", exc)
     return code
 
 
@@ -850,8 +851,8 @@ def _narrative_hints(facts):
                         "（比买点晚 %d 天——即形态先出买点，"
                         "资金次日才上榜确认，属「买点先于资金」）" % -gap
                     )
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/portal_report.py", exc)
         tip += "。突破至今：%s 最高到 %s，现价 %s（较突破日 %s%%、较高点 %s%%）" % (
             es.get("peak_date"),
             es.get("peak_close"),

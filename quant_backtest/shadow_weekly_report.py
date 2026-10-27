@@ -43,6 +43,7 @@ import re
 import sys
 from collections import Counter
 from datetime import date, datetime, timedelta
+import logging
 
 BASE = r"C:/项目/老田的AI助手"
 QT = os.path.join(BASE, "quant_backtest")
@@ -145,10 +146,10 @@ def read_jsonl(path):
                     continue
                 try:
                     rows.append(json.loads(line))
-                except Exception:
-                    pass
-    except Exception:
-        pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/shadow_weekly_report.py", exc)
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/shadow_weekly_report.py", exc)
     return rows
 
 
@@ -313,8 +314,8 @@ def line_chanlun(monday, today):
     stale = True
     try:
         stale = datetime.strptime(str(meta.get("D_END")), "%Y%m%d").date() < monday
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/shadow_weekly_report.py", exc)
     r["data"]["grid_cache_stale_for_week"] = stale
     if stale:
         r["notes"].append(
@@ -433,8 +434,8 @@ def line_jev(monday, today):
                         "total": int(m.group(3)),
                         "pct": float(m.group(4)),
                     }
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/shadow_weekly_report.py", exc)
     r["data"]["coverage_latest"] = cov
     if cov is None:
         r["data"]["coverage_latest"] = "暂无数据"
@@ -466,8 +467,8 @@ def line_jev(monday, today):
                 rets.append(v)
                 if v > JEV_GRAD_MEAN:
                     n_gt1 += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/shadow_weekly_report.py", exc)
     mean_ret = sum(rets) / len(rets) if rets else None
     r["data"]["focus_total"] = n_focus
     r["data"]["focus_week"] = n_focus_wk

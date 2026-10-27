@@ -22,6 +22,7 @@ import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -173,8 +174,8 @@ def _extract(body: str) -> dict:
     p = _TextExtractor()
     try:
         p.feed(body)
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/research/web.py", exc)
     text = re.sub(r"\s+", " ", " ".join(p.parts)).strip()
     return {"title": p.title[:300], "text": text[:20000]}
 
@@ -212,8 +213,8 @@ def fetch(url: str, force: bool = False) -> dict:
             age_h = (time.time() - float(c.get("fetched_ts") or 0)) / 3600
             if age_h <= CACHE_TTL_HOURS:
                 return dict(c, cached=True, budget=budget())
-        except (OSError, ValueError, TypeError):
-            pass
+        except (OSError, ValueError, TypeError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/research/web.py", exc)
     if not _budget_consume():
         return {"ok": False, "error": "budget_exceeded", "budget": budget()}
     try:
@@ -257,8 +258,8 @@ def fetch(url: str, force: bool = False) -> dict:
         RESEARCH.mkdir(parents=True, exist_ok=True)
         with open(CITATIONS, "a", encoding="utf-8") as f:
             f.write(json.dumps(citation, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/research/web.py", exc)
     return rec
 
 
@@ -271,8 +272,8 @@ def recent_citations(limit: int = 20) -> dict:
                 rows.append(json.loads(ln))
             except ValueError:
                 continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/research/web.py", exc)
     return {
         "ok": True,
         "count": len(rows),

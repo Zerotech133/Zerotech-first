@@ -23,6 +23,7 @@ import time
 import urllib.parse
 import urllib.request
 import urllib.error
+import logging
 
 OPEN = "https://open.feishu.cn/open-apis"
 
@@ -181,8 +182,8 @@ def _flow_record(ok, target, channel="openapi", kind=None):
         import push_flow
 
         push_flow.record(kind or push_flow.infer_kind(), channel, target, 1, ok)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/feishu_client.py", exc)
 
 
 # ── K-PUSH-003 推送中台闸门（hub 统一入口客户端侧）─────────────────
@@ -530,8 +531,8 @@ def _agent_webhook_send(
         raw = ""
         try:
             raw = e.read().decode("utf-8", "replace")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/feishu_client.py", exc)
         if flow_record:
             _flow_record(False, webhook, kind=kind)
         return False, ("agent webhook HTTP %d %s" % (e.code, raw[:200]))[:300], None
@@ -549,8 +550,8 @@ def _openapi_content(content, msg_type):
             v = json.loads(content)
             if isinstance(v, dict) and "text" in v:
                 return content
-        except (ValueError, TypeError):
-            pass
+        except (ValueError, TypeError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/feishu_client.py", exc)
         return json.dumps({"text": str(content)}, ensure_ascii=False)
     return content
 
@@ -657,8 +658,8 @@ def _openapi_direct_send(
             raw = ""
             try:
                 raw = e.read().decode("utf-8", "replace")
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/feishu_client.py", exc)
             code = _biz_code_from_body(raw)
             retryable = e.code in _RETRY_HTTP_STATUS or code in _RETRY_BIZ_CODES
             last_why = (

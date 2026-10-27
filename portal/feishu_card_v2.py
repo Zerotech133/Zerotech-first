@@ -18,6 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 NEWS = os.path.join(os.path.dirname(HERE), "news_collector")
 sys.path.insert(0, NEWS)
 from send_feishu import USER_ID  # noqa: E402
+import logging
 
 # 卡片按钮的 URL 在飞书客户端（手机/外部设备）打开 → 必须用跨设备可达地址。
 # K-STOCK-140 判例：100.110.192.72:8080 随 052 收敛失效（nginx 仅绑回环）。
@@ -62,8 +63,8 @@ def _load_portal_key():
             k = (json.load(f).get("key") or "").strip()
             if k:
                 return k
-    except Exception:
-        pass  # 文件缺失/坏 JSON：空码 fail-safe（守卫测试有专项告警断言）
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_card_v2.py", exc)
     return ""
 
 
@@ -101,8 +102,8 @@ def _legacy_note(tag):
         import legacy_telemetry
 
         legacy_telemetry.hit(tag)
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_card_v2.py", exc)
 
 
 def build_drill_card(
@@ -199,8 +200,8 @@ def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
     try:
         if "#unified" not in json.dumps(card, ensure_ascii=False):
             _legacy_note("send_card")
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_card_v2.py", exc)
     return send_msg(
         json.dumps(card, ensure_ascii=False),
         "interactive",
@@ -296,8 +297,8 @@ def build_v3(
                     import card_sign
 
                     val = card_sign.sign(val)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_card_v2.py", exc)
                 els.append(
                     {
                         "tag": "button",
