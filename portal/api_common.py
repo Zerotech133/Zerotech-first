@@ -13,6 +13,7 @@ import sys
 import threading
 import threading as _th
 import time
+import logging
 
 # ── K255 全局勾选回测 JS（pill_nav 注入，48 页共用）──────
 _BTSEL_JS = '''
@@ -647,8 +648,8 @@ def log_exc(context):
             f.write("[%s] %s\n%s\n" % (
                 time.strftime("%Y-%m-%d %H:%M:%S"), context,
                 traceback.format_exc()))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_common.py", exc)
 
 
 def _portal_token():
@@ -665,8 +666,8 @@ def _portal_token():
         try:
             with open(_PORTAL_TOKEN_FILE, "w", encoding="utf-8") as f:
                 f.write(tok)
-        except OSError:
-            pass  # 落盘失败则仅本次进程内存可用，下次启动重新生成
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_common.py", exc)
     return tok
 
 
@@ -1494,8 +1495,8 @@ def build_alerts():
                     continue
                 try:
                     rows.append(json.loads(ln))
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_common.py", exc)
         days = sorted({r.get("detect_date", "") for r in rows
                        if isinstance(r, dict) and isinstance(r.get("detect_date"), str)
                        and r.get("detect_date")})
@@ -1660,8 +1661,8 @@ def _council_stats():
                     if ln:
                         try:
                             out.append(json.loads(ln))
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_common.py", exc)
             return out
         except OSError:
             return []

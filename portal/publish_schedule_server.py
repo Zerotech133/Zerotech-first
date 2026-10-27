@@ -35,6 +35,7 @@ import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -67,8 +68,8 @@ def load_config():
         if isinstance(d.get("times"), list):
             cfg["times"] = sorted({t for t in d["times"] if TIME_RE.match(str(t))})
         cfg["enabled"] = bool(d.get("enabled", True))
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/publish_schedule_server.py", exc)
     return cfg
 
 
@@ -104,8 +105,8 @@ def load_state():
             _state["fired"] = d["fired"]
         if d.get("last_run"):
             _state["last_run"] = d["last_run"]
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/publish_schedule_server.py", exc)
 
 
 # ---------- 巡检执行 ----------
@@ -165,8 +166,8 @@ def scheduler_loop():
                 import publish_watchdog
 
                 publish_watchdog.log("[scheduler] tick 异常: %r" % e)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/publish_schedule_server.py", exc)
         time.sleep(15)
 
 
@@ -203,8 +204,8 @@ def api_state():
     try:
         with open(os.path.join(WORK, "DEPLOY_PENDING.json"), encoding="utf-8") as f:
             flag = json.load(f)
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/publish_schedule_server.py", exc)
     return {
         "config": cfg,
         "next_fire": next_fire(cfg),

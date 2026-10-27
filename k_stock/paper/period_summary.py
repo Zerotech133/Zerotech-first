@@ -34,6 +34,7 @@ DATA = HERE.parent / "data"
 sys.path.insert(0, str(HERE))
 
 from judge import _connect, LLM_MODEL, OLLAMA  # noqa: E402
+import logging
 
 # 组合→trader 映射数据文件（portal/subscriptions.py 的存储层）。
 SUB_PATH = HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
@@ -166,8 +167,8 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
                                 "grade": d.get("grade"),
                             }
                         )
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/period_summary.py", exc)
         # 口径修正：纪律拦截同 account 过滤（原混入 USD 独立账本拒单）
         blocks = con.execute(
             "SELECT COUNT(*) FROM orders WHERE status='rejected' "
@@ -189,8 +190,8 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
                 if start <= (d.get("date") or "") <= end:
                     dis_total += len(d.get("disagreements") or [])
                     res_total += len(d.get("resolutions") or [])
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/period_summary.py", exc)
     out["problems"]["meeting_disagreements"] = dis_total
     out["problems"]["meeting_resolutions"] = res_total
     # ③ 下步方向 + ④ 待裁决
@@ -271,8 +272,8 @@ def _decisions(out: dict) -> list:
         for pf in _sub.portfolios().get("portfolios") or []:
             for sid in pf.get("_shadow") or []:
                 need.append("组合含 shadow 态策略 %s：是否继续保留订阅？" % sid)
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/period_summary.py", exc)
     eq = out["performance"]["equity"]
     if len(eq) >= 2 and eq[-1]["total"] < eq[0]["total"] * 0.95:
         need.append("周期回撤超 5%%：是否降低仓位上限或暂停新增订阅？")
@@ -396,8 +397,8 @@ def main(argv=None) -> int:
                 _Path(_fp).write_text(
                     json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8"
                 )
-        except Exception:
-            pass  # 落盘失败不掩盖 push 事实，rc 仍按 push 结果判
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/period_summary.py", exc)
     print(
         json.dumps(
             {k: v for k, v in out.items() if k != "performance" or True},

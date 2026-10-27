@@ -25,13 +25,14 @@ from pathlib import Path
 try:  # Windows 管道输出统一 UTF-8（子进程测试/工具捕获防 cp936 解码失败）
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/eval_shadow.py", exc)
 
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
 from tools import quote_snapshot, kline_daily  # noqa: E402
+import logging
 
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"
@@ -48,8 +49,8 @@ def load_ledger():
         for line in LEDGER.read_text(encoding="utf-8").splitlines():
             try:
                 rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/eval_shadow.py", exc)
     return rows
 
 
@@ -134,15 +135,15 @@ def stance_groups(per_symbol_latest: dict) -> dict:
 
             m = _re.search(r"看多|看空", head)
             groups[sym] = "倒戈" if (m and m.group(0) == "看空") else "坚守"
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/eval_shadow.py", exc)
     finally:
         # 异常路径也要还连接（查询中途炸时旧实现泄漏 sqlite 句柄）
         if conn is not None:
             try:
                 conn.close()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/eval_shadow.py", exc)
     return groups
 
 
