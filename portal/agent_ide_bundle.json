@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 16:55",
+ "generated": "2026-10-27 16:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 19,
+  "workorders_doing": 20,
   "workorders_review": 2
  },
  "workorders": [
@@ -201,6 +201,15 @@
    "branch": "task/WO-P0-DEV7-WIKI-20261027",
    "created": "2026-10-27 16:51:10",
    "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261027-AUTOADAPT",
+   "desc": "恢复全部人员卡（撤销折叠/智能托管遮罩）；新增任务感知模型分配 model_allocator：任务类型+角色→本地/云端/gpt6 自动路由，新老角色自动适配，网关支持 X-DSH-Task/Agent；/api/auto/explain",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261027-AUTOADAPT",
+   "created": "2026-10-27 16:56:09",
+   "project": "quant"
   }
  ],
  "coder_traces": [
