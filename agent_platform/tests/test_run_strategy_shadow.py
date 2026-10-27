@@ -67,6 +67,9 @@ def _run(tmp_path, *extra):
         capture_output=True,
         text=True,
         encoding="utf-8",
+        # 2026-10-27 WO-AUDIT4-FLAKY：Windows 中文 locale 下子进程可能输出 GBK，
+        # 用 replace 防止解码失败导致 stdout=None（根因见仓库根 conftest.py）。
+        errors="replace",
     )
 
 
@@ -98,6 +101,9 @@ def test_cli_missing_required_argument_fails_readably(tmp_path):
         capture_output=True,
         text=True,
         encoding="utf-8",
+        # 2026-10-27 WO-AUDIT4-FLAKY：Windows 中文 locale 下子进程可能输出 GBK，
+        # 用 replace 防止解码失败导致 stdout=None（根因见仓库根 conftest.py）。
+        errors="replace",
     )
 
     assert completed.returncode != 0
@@ -124,6 +130,9 @@ def test_cli_rejects_live_without_running_validation(tmp_path):
         capture_output=True,
         text=True,
         encoding="utf-8",
+        # 2026-10-27 WO-AUDIT4-FLAKY：Windows 中文 locale 下子进程可能输出 GBK，
+        # 用 replace 防止解码失败导致 stdout=None（根因见仓库根 conftest.py）。
+        errors="replace",
     )
 
     assert completed.returncode != 0
