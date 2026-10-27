@@ -6,7 +6,7 @@
  "subject": "ARCH1",
  "deputy": "DEV1",
  "approval": {
-  "mode": "warn",
+  "mode": "block",
   "approver": "ARCH1",
   "alternates": [
    "DEV1"
@@ -50,5 +50,5 @@
    "window": "2026-12-08+"
   }
  ],
- "note": "warn=合并缺署名仅告警；到期(2026-10-30 或 P1 启动)后可切 block（需老田批）。"
+ "note": "warn=合并缺署名仅告警；到期(2026-10-30 或 P1 启动)后可切 block（需老田批）。 2026-10-27 老田批准：warn→block 已生效（合并缺 ARCH1 署名拒收）。"
 }

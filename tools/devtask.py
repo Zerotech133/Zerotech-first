@@ -925,6 +925,13 @@ def cmd_new(tid, *desc):
             raise SystemExit("--approver 需要跟署名席位（如 --approver ARCH1）")
         approver = desc.pop(i + 1)
         desc.pop(i)
+    # 2026-10-27 WO-AUTHORITY-D2：charter approval.mode=block 后，dev 单若未显式
+    # 给 --approver，自动落 charter 默认署名（ARCH1），避免误建无署名单卡死在合并门。
+    if dept is not None and not approver:
+        _auth = _load_dev_authority()
+        approver = str((_auth.get("approval") or {}).get("approver") or "").strip() or None
+        if approver:
+            print("[info] dev 单未给 --approver，按 charter 自动落默认署名：%s" % approver)
     desc = " ".join(desc) or "(无描述)"
     tasks = _tasks()
     if tid in tasks:

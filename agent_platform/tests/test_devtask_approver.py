@@ -85,10 +85,10 @@ def test_cmd_new_stores_approver(sandbox):
     assert rec["approver"] == "ARCH1"
 
 
-def test_cmd_new_without_approver_keeps_old_shape(sandbox):
+def test_cmd_new_without_approver_auto_fills_charter_default(sandbox):
     rc = devtask.cmd_new("T-APPROVER-2", "无署名单", "--dept", "dev",
                          "--acceptance", "pytest -q")
     assert rc == 0
     rec = json.loads((sandbox["tmp"] / ".worktrees" / "tasks.json")
                      .read_text(encoding="utf-8"))["T-APPROVER-2"]
-    assert "approver" not in rec
+    assert rec["approver"] == "ARCH1"   # charter 默认署名（block 模式防空门）
