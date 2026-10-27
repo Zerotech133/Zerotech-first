@@ -2632,7 +2632,22 @@
      "memory_grants": [],
      "grade": "E3",
      "grade_note": "指挥部老将席",
-     "attributes": {}
+     "attributes": {
+      "skills": [
+       "acceptance_criteria_design",
+       "quality_gate",
+       "test_baseline",
+       "redteam_review",
+       "rollback_evidence",
+       "readonly_boundary",
+       "pytest_triage",
+       "trace_observability",
+       "diff_review",
+       "kpi_metrics"
+      ],
+      "learning_path": "docs/plans/2026-10-28_黄忠技能清单与共享资能_v1.md",
+      "skill_manifest": "agent_platform/skills/huangzhong/SKILL.md"
+     }
     }
    ],
    "lead_appointed": {
