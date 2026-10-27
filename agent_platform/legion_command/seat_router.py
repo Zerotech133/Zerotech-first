@@ -117,6 +117,14 @@ def _match_vk(token: str, path: Path | None = None):
     return None
 
 
+def _key_seat_ids() -> set:
+    try:
+        d = json.loads((REPO / "config" / "key_seats.json").read_text(encoding="utf-8"))
+        return set((d.get("seats") or {}).keys())
+    except Exception:
+        return set()
+
+
 def resolve(model: str = "", token: str = "", path: Path | None = None) -> dict:
     cfg = load_config()
     aliases = cfg.get("aliases") or {}
@@ -140,8 +148,12 @@ def resolve(model: str = "", token: str = "", path: Path | None = None) -> dict:
     if vk and alias not in (vk.get("allowed") or []):
         return {"ok": False, "error": "alias_not_allowed_for_vk: %s" % alias, "code": 403}
     spec = aliases.get(alias) or aliases.get("auto") or {}
+    seats = list(spec.get("seats") or [])
+    owner = (vk or {}).get("owner")
+    if owner and owner in _key_seat_ids() and owner not in seats:
+        seats = [owner] + seats
     return {"ok": True, "alias": alias,
-            "seats": list(spec.get("seats") or []),
+            "seats": seats,
             "allow_local": bool(spec.get("allow_local", True)),
             "owner": (vk or {}).get("owner"),
             "vk_id": (vk or {}).get("id")}

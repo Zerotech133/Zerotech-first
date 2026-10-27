@@ -48,6 +48,19 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div id="relay-status" class="muted" style="margin-top:8px">加载中…</div>
 </section>
 <main id="main"></main>
+<section class="log" id="extra-section" style="margin:0 22px 20px">
+<h2>其他 AI / 部门负责人 Key</h2>
+<div class="muted" style="margin-bottom:8px">主力席位之外的 AI（关羽/部门负责人等）在这里单独配 Key；不配则走平台中转站。</div>
+<div class="add">
+  <select id="extra-seat"></select>
+  <input id="extra-url" placeholder="URL（OpenAI 兼容）">
+  <input id="extra-model" placeholder="模型（如 qwen-plus / deepseek-chat）">
+  <input id="extra-key" type="password" placeholder="粘贴 Key（加密存储）">
+  <input id="extra-label" placeholder="标签（留空自动）">
+  <button id="extra-save">保存到该 AI</button>
+</div>
+<div id="extra-status" class="muted" style="margin-top:8px">加载中…</div>
+</section>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
 <div id="cred-list"></div>
@@ -76,7 +89,7 @@ async function load(){
     $('banner').style.display='none';
     const main=$('main');main.replaceChildren();
     for(const [sid,s] of Object.entries(v.seats)){
-      if(sid==='relay') continue;
+      if(sid==='relay'||s.extra) continue;
       const c=el('div','card');
       c.appendChild(el('h2','',s.cn+' · '+s.provider));
       const meta=el('div','meta','绑定 '+s.binding+' ｜ active '+((s.active_key_id)||'—')+' ｜ ');
@@ -213,6 +226,34 @@ async function saveRelay(){
 }
 document.getElementById('relay-save').onclick=saveRelay;
 loadRelay(); setInterval(loadRelay,30000);
+
+
+async function loadExtras(){
+  try{
+    const r=await fetch('/api/keys/state',{cache:'no-store'}); const v=await r.json();
+    const extras=Object.entries(v.seats||{}).filter(([sid,s])=>s.extra);
+    const sel=document.getElementById('extra-seat'); const cur=sel.value;
+    sel.innerHTML=extras.map(([sid,s])=>'<option value="'+sid+'">'+(s.cn||sid)+' · '+sid+'</option>').join('');
+    if(cur) sel.value=cur;
+    const box=document.getElementById('extra-status');
+    if(!extras.length){box.textContent='暂无扩展席位';return}
+    const rows=extras.filter(([sid,s])=>(s.keys||[]).length).map(([sid,s])=>(s.cn||sid)+'：'+s.keys.map(k=>k.masked+'['+k.status+']').join(','));
+    box.textContent=rows.length?('已配：'+rows.join(' ｜ ')):'扩展席位均未配 Key';
+  }catch(e){document.getElementById('extra-status').textContent='读取失败：'+e.message}
+}
+async function saveExtra(){
+  const seat=document.getElementById('extra-seat').value;
+  const url=document.getElementById('extra-url').value.trim();
+  const model=document.getElementById('extra-model').value.trim();
+  const key=document.getElementById('extra-key').value.trim();
+  const label=document.getElementById('extra-label').value.trim()||('seat/'+seat);
+  if(!seat||!url||!model||!key){alert('AI / URL / 模型 / Key 都要填');return}
+  const r=await fetch('/api/keys/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',seat,secret:key,label,base_url:url,model})});
+  const v=await r.json(); if(!v.ok){alert('保存失败：'+(v.error||'unknown'));return}
+  document.getElementById('extra-key').value=''; alert('已保存（只回显掩码）'); loadExtras(); load();
+}
+document.getElementById('extra-save').onclick=saveExtra;
+loadExtras(); setInterval(loadExtras,30000);
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);
