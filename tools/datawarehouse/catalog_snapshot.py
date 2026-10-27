@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
-"""目录快照：catalog v11 与来源资格 registry 一致性 + 物理漂移抽样（只读）。
+"""目录快照：catalog（当前 v12）与来源资格 registry 一致性 + 物理漂移抽样（只读）。
 
 用法：
     python tools/datawarehouse/catalog_snapshot.py --json
 退出码：0=一致 / 1=发现漂移或登记陈旧 / 2=登记文件缺失
+
+漂移口径（K-DATA-20261027-SMALL3）：
+- 文件数按 catalog `layout` 选扩展名：parquet/part/by_code/by_date/by_code_month/
+  by_period/single → `*.parquet`；jsonl → `*.jsonl`；sqlite/pg 等库型不做文件数比对（files_na）；
+- 差异分级：|diff|≤1 → drift_info（登记时点快照 vs 实时写，不计 issue）；
+  |diff|>1 → drift_warn（计 issue）；登记 files 为 null/0 而磁盘>0 → drift_info；
+- store 缺失始终报（missing_stores，计 issue）。
 """
 from __future__ import annotations
 
@@ -17,6 +24,18 @@ import common  # noqa: E402
 
 SAMPLE_TABLES = 25
 
+# layout → 物理文件扩展名；库型（sqlite/pg）与未知 layout 不做文件数比对
+LAYOUT_EXT = {
+    "parquet": ".parquet",
+    "part": ".parquet",
+    "by_code": ".parquet",
+    "by_date": ".parquet",
+    "by_code_month": ".parquet",
+    "by_period": ".parquet",
+    "single": ".parquet",
+    "jsonl": ".jsonl",
+}
+
 
 def compare_sha(catalog_sha: str | None, registry: dict) -> dict:
     want = (registry or {}).get("catalog_sha256")
@@ -24,26 +43,83 @@ def compare_sha(catalog_sha: str | None, registry: dict) -> dict:
             "match": bool(catalog_sha and want and catalog_sha == want)}
 
 
+def _count_files(store: Path, ext: str) -> int:
+    """只数文件不读内容；store 本身是文件（single 布局）按 1 个算。"""
+    if store.is_dir():
+        return len(list(store.glob("*" + ext)))
+    return 1
+
+
 def drift_sample(catalog: dict, limit: int = SAMPLE_TABLES) -> list:
-    """对 store 存在性与 parquet 文件数做抽样比对（不读内容）。"""
+    """按 catalog layout 抽样比对 store 存在性与物理文件数（只读、不读内容）。
+
+    每行 file_check 取值：ok / info（|diff|≤1 或登记值缺失）/ warn（|diff|>1）/
+    na（sqlite/pg 等库型跳过）/ store_missing（store 不存在，始终报）。
+    """
     rows = []
     tables = (catalog or {}).get("tables") or {}
     for name in sorted(tables)[:limit]:
-        e = tables[name]
-        store = Path(str(e.get("store") or ""))
-        item = {"table": name, "store_exists": store.exists() and bool(str(e.get("store")))}
-        if item["store_exists"]:
-            try:
-                files = len(list(store.glob("*.parquet"))) if store.is_dir() else 1
-            except Exception:  # noqa: BLE001
-                files = -1
-            reg = e.get("files")
-            item["files_on_disk"] = files
-            item["files_registered"] = reg
-            if isinstance(reg, int) and reg >= 0 and files >= 0:
-                item["mismatch"] = files != reg
+        e = tables[name] or {}
+        layout = str(e.get("layout") or "").strip().lower()
+        raw_store = str(e.get("store") or "")
+        store = Path(raw_store)
+        reg = e.get("files")
+        item = {"table": name, "layout": layout or None,
+                "store_exists": bool(raw_store) and store.exists(),
+                "files_registered": reg}
+        if not item["store_exists"]:
+            item["file_check"] = "store_missing"
+            rows.append(item)
+            continue
+        ext = LAYOUT_EXT.get(layout)
+        if ext is None:
+            # sqlite/pg（库内表，没有分片文件）或未知 layout：跳过文件数比对，不制造误报
+            item["files_na"] = True
+            item["file_check"] = "na"
+            item["na_reason"] = "layout=%s 不做文件数比对" % (layout or "?")
+            rows.append(item)
+            continue
+        try:
+            files = _count_files(store, ext)
+        except OSError:
+            files = -1
+        item["files_on_disk"] = files
+        item["pattern"] = "*" + ext
+        if files < 0:
+            item["files_na"] = True
+            item["file_check"] = "na"
+            item["na_reason"] = "文件盘点失败"
+            rows.append(item)
+            continue
+        if not isinstance(reg, int) or isinstance(reg, bool) or reg < 0:
+            # 登记值不可比：缺登记 ≠ 漂移，归 info 提示补登记
+            item["diff"] = None
+            item["file_check"] = "info"
+            item["info_reason"] = "登记 files 不可比（%r）" % (reg,)
+            rows.append(item)
+            continue
+        diff = files - reg
+        item["diff"] = diff
+        if reg == 0 and files > 0:
+            item["file_check"] = "info"
+            item["info_reason"] = "登记 files=0 而磁盘 %d 个，需补登记" % files
+        elif abs(diff) > 1:
+            item["file_check"] = "warn"
+        elif abs(diff) == 1:
+            item["file_check"] = "info"
+            item["info_reason"] = "登记时点快照 vs 实时写（diff=%+d）" % diff
+        else:
+            item["file_check"] = "ok"
         rows.append(item)
     return rows
+
+
+def _drift_brief(row: dict) -> dict:
+    """info/warn 明细的紧凑投影（输出不膨胀）。"""
+    return {"table": row.get("table"), "layout": row.get("layout"),
+            "files_registered": row.get("files_registered"),
+            "files_on_disk": row.get("files_on_disk"), "diff": row.get("diff"),
+            "reason": row.get("info_reason")}
 
 
 def collect(limit: int = SAMPLE_TABLES) -> dict:
@@ -65,7 +141,9 @@ def collect(limit: int = SAMPLE_TABLES) -> dict:
     mstatus = Counter(v.get("manifest_status") for v in tables.values())
     qstatus = Counter((r or {}).get("qualification_status") for r in registry.get("physical_tables") or [])
     sample = drift_sample(catalog, limit=limit)
-    mismatches = [s for s in sample if s.get("mismatch")]
+    warns = [s for s in sample if s.get("file_check") == "warn"]
+    infos = [s for s in sample if s.get("file_check") == "info"]
+    nas = [s for s in sample if s.get("file_check") == "na"]
     missing_stores = [s["table"] for s in sample if not s.get("store_exists")]
 
     issues = []
@@ -73,8 +151,8 @@ def collect(limit: int = SAMPLE_TABLES) -> dict:
         issues.append("registry.catalog_sha256 与当前 catalog 不一致（登记陈旧）")
     if missing_stores:
         issues.append("抽样中 %d 张表 store 不存在" % len(missing_stores))
-    if mismatches:
-        issues.append("抽样中 %d 张表 parquet 文件数与登记不符" % len(mismatches))
+    if warns:
+        issues.append("抽样中 %d 张表文件数与登记差异 >1（drift_warn）" % len(warns))
     if registry.get("generated_at", "") < "2026-10-20":
         issues.append("registry generated_at=%s（早于 10-20，需重生成）" % registry.get("generated_at"))
 
@@ -95,7 +173,10 @@ def collect(limit: int = SAMPLE_TABLES) -> dict:
             "qualification_status": dict(qstatus),
         },
         "drift_sample": {"tables": len(sample), "missing_stores": missing_stores,
-                         "file_count_mismatch": [m["table"] for m in mismatches]},
+                         "file_count_mismatch": [s["table"] for s in warns],
+                         "drift_warn": [_drift_brief(s) for s in warns],
+                         "drift_info": [_drift_brief(s) for s in infos],
+                         "files_na": [s["table"] for s in nas]},
         "issues": issues,
     }
 

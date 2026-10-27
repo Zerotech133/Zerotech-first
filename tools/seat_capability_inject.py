@@ -875,9 +875,9 @@ WORKING_MEMORY = {
 HOMES["data1"] = os.path.join(REPO, "legion_agents", "DATA1", "workspace")
 
 CAPABILITIES["data1"] = [
-    {"name": "catalog_snapshot", "what": "catalog v11 与 registry 一致性（sha256）+ 物理漂移抽样",
+    {"name": "catalog_snapshot", "what": "catalog v12 与 registry 一致性（sha256）+ 物理漂移抽样（按 layout 计数/分级）",
      "how": "python tools/datawarehouse/catalog_snapshot.py --json", "boundary": "只读；抽样 25 表", "status": "ready"},
-    {"name": "schema_diff", "what": "登记 files 与实际 parquet 文件数漂移识别",
+    {"name": "schema_diff", "what": "登记 files 与实际文件数漂移识别（按 layout 选扩展名，diff≤1 归 info）",
      "how": "python tools/datawarehouse/catalog_snapshot.py --json --limit 50", "boundary": "只读；不读表内容", "status": "ready"},
     {"name": "freshness_report", "what": "六表 prod_max（footer）+ 4 库停摆（quant/ann/warehouse_runs/jev_audit）",
      "how": "python tools/datawarehouse/freshness_report.py --json", "boundary": "sqlite 只读；pyarrow 缺失降级标 degraded", "status": "ready"},
@@ -972,8 +972,8 @@ python tools/datawarehouse/lineage_impact.py --table daily --json
 WORKING_MEMORY["data1"] = """# 工作记忆索引 — DATA1 张松（数据仓主管 / 数据治理部主官）
 
 ## 常读真源
-- 数据册：agent_platform/catalogs/data_catalog.yaml（10 条，登记纪律=黑户）
-- 表登记：quant_backtest/data/catalog.json（v11/244 表）+ warehouse_registry.json（83/92）
+- 数据册：agent_platform/catalogs/data_catalog.yaml（v2 22 条，2026-10-27 起；登记纪律=黑户）
+- 表登记：quant_backtest/data/catalog.json（v12/245 表）+ warehouse_registry.json（245/92）
 - 发布：data/*/_manifest.json 4 个 + .warehouse-publication.lock（pending 应为 0）
 - 新鲜度：tools/datawarehouse/freshness_report.py；备份：backup_receipt_check.py
 - 工单：tools/devtask.py（L1 变更必须挂单）；计划任务/系统变更=L2 需老田五要素批准

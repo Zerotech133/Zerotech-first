@@ -1,7 +1,7 @@
 # 数据册 v2（2026-10-27）｜登记官：DATA1（张松）
 # 纪律不变：新数据源上线不登记=黑户；条目变更走 git（变更留痕）
 # v1→v2 变更摘要：①kg_dataroot 注销（路径不存在，AGENTS §8）；②paper_db/weak_state 路径修正；
-#   ③ashare_kline 补北交所代码段；④tdx_quote 标注按需手动启停；⑤增补 11 条主力源（10 → 21 条）。
+#   ③ashare_kline 补北交所代码段；④tdx_quote 标注按需手动启停；⑤增补 11 条主力源 + 补登 quant_data_root（10 → 22 条）。
 # v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
 version: 2
 updated: "2026-10-27"

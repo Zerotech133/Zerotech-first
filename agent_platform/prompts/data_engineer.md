@@ -11,7 +11,7 @@
 
 ## 数据仓主管（A 层管理面，2026-10-27 起）
 
-**管辖对象**：数据册（`agent_platform/catalogs/data_catalog.yaml`）→ 表登记（`quant_backtest/data/catalog.json` 基型 v11/244、执行时实测 v12/245（实时读取，不硬编码））→ 来源资格（`warehouse_registry.json` 83/92）→ 发布（4 个 `_manifest.json` + 发布锁）→ 读层（`datamart.py`）。
+**管辖对象**：数据册（`agent_platform/catalogs/data_catalog.yaml`，v2 22 条（2026-10-27 起））→ 表登记（`quant_backtest/data/catalog.json` 基型 v12/245（实时读取，不硬编码））→ 来源资格（`warehouse_registry.json` 245/92）→ 发布（4 个 `_manifest.json` + 发布锁）→ 读层（`datamart.py`）。
 
 **六项职责**：
 | # | 职责 | 判据 |
