@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 15:41",
+ "generated": "2026-10-27 15:42",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 16,
+  "workorders_doing": 15,
   "workorders_review": 2
  },
  "workorders": [
@@ -149,15 +149,6 @@
    "project": "general"
   },
   {
-   "id": "WO-O2-QUALITY-20261027",
-   "desc": "O2 质量分级 v1：docs/standards 质量分级 + agent_platform/config/quality_scale.json + tools/quality_scale_check.py + 单测（三层 Bronze/Silver）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O2-QUALITY-20261027",
-   "created": "2026-10-27 15:38:03",
-   "project": "portal"
-  },
-  {
    "id": "WO-O4-ACCEPT-20261027",
    "desc": "O4 实现/验收分离：docs/standards 政策 + CONTRIBUTING 增补 + tools/dev_acceptance_audit.py（只读审计验收人与验收命令）",
    "status": "doing",
@@ -167,13 +158,13 @@
    "project": "portal"
   },
   {
-   "id": "WO-LEGION-UIUX-W2FIX-20261027",
-   "desc": "修复 nav.js 生成器少一个 + 导致顶栏 JS 语法错误（W2 回归）；重导 nav.js + Node 语法测试 + live 截图验证；不碰业务逻辑/无 L2",
+   "id": "WO-EVAL-REALNESS-20261027",
+   "desc": "P0①-2 seat_realness 接入评测第6维（ACAD1 owner）：新增 --with-eval；对有 golden 的 4 席追加 eval 行（seat_eval 通过率≥80% 判 ok），默认 5 维口径不变；测试。验收：4 席 --with-eval = 6/6；无 golden 席 --with-eval 仍 5/5；默认 5/5 不变；pytest 过。",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIUX-W2FIX-20261027",
-   "created": "2026-10-27 15:40:27",
-   "project": "general"
+   "owner": "ACAD1",
+   "branch": "task/WO-EVAL-REALNESS-20261027",
+   "created": "2026-10-27 15:41:43",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -1351,7 +1342,14 @@
    ],
    "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-EVAL-REALNESS-20261027",
+     "desc": "P0①-2 seat_realness 接入评测第6维（ACAD1 owner）：新增 --with-eval；对有 golden 的 4 席追加 eval 行（seat_eval 通过率≥80% 判 ok），默认 5 维口径不变；测试。验收：4 席 --with-eval = 6/6；无 golden 席 --with-eval 仍 5/5；默认 5/5 不变；pytest 过。",
+     "status": "doing"
+    }
+   ]
   },
   "STRAT1": {
    "id": "STRAT1",
@@ -6339,11 +6337,6 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-UIUX-W2FIX-20261027",
-     "desc": "修复 nav.js 生成器少一个 + 导致顶栏 JS 语法错误（W2 回归）；重导 nav.js + Node 语法测试 + live 截图验证；不碰业务逻辑/无 L2",
-     "status": "doing"
     }
    ]
   }
