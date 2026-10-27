@@ -63,6 +63,11 @@
   .clickable:hover td { background: #0F2440; }
   input, select, button { background: #081321; color: #CFE3FF; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 3px 6px; font-family: inherit; font-size: 12px; }
   button { cursor: pointer; }
+
+    section.collapsed > :not(h2) { display: none; }
+    h2 .sec-toggle { margin-left: 8px; font-size: 11px; padding: 1px 8px; }
+    h2 { cursor: pointer; }
+    #fold-bar { margin: 6px 0; }
 </style>
 </head>
 <body>
@@ -127,6 +132,10 @@
 
   <section>
     <h2>MCP 工具 <span id="mcp-sub">—</span> <span>只读 server 白名单 · 探测/调用受控</span></h2>
+    <div id="mcp"></div>
+  </section>
+
+  <section>
     <h2>量化只读 <span id="quant-sub">tushare MCP</span></h2>
     <div class="row">
       <select id="quant-tool">
@@ -142,7 +151,6 @@
       <button onclick="quantQuery()">查询（只读）</button>
     </div>
     <div id="quant-out" class="muted">只读查询：不写库、不落 token；数据源 tushare-http MCP。</div>
-    <div id="mcp"></div>
   </section>
 
   <section>
@@ -940,6 +948,48 @@ function submitRequest(kind, payload, reason, label) {
 $('refresh').onclick = load;
 load();
 setInterval(load, 60000);
+
+// 页面瘦身（2026-10-27）：每个 section 默认收起，点标题/按钮下钻展开。
+document.addEventListener('DOMContentLoaded', function () {
+  var main = document.querySelector('main');
+  if (!main) return;
+  var secs = Array.prototype.slice.call(main.querySelectorAll(':scope > section'));
+  var bar = document.createElement('div');
+  bar.id = 'fold-bar'; bar.className = 'row';
+  var allFold = document.createElement('button'); allFold.textContent = '全部收起';
+  var allOpen = document.createElement('button'); allOpen.textContent = '全部展开';
+  bar.appendChild(allFold); bar.appendChild(allOpen);
+  main.insertBefore(bar, main.firstChild);
+  secs.forEach(function (s, i) {
+    s.classList.add('collapsed');
+    s.id = s.id || ('sec-' + i);
+    var h = s.querySelector('h2');
+    if (!h) return;
+    var t = document.createElement('button');
+    t.className = 'sec-toggle'; t.textContent = '展开 ▾';
+    t.onclick = function (e) { e.stopPropagation(); toggle(); };
+    h.appendChild(t);
+    h.onclick = function () { toggle(); };
+    function toggle() {
+      s.classList.toggle('collapsed');
+      t.textContent = s.classList.contains('collapsed') ? '展开 ▾' : '收起 ▴';
+    }
+  });
+  allFold.onclick = function () { secs.forEach(function (s) {
+    s.classList.add('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '展开 ▾';
+  }); };
+  allOpen.onclick = function () { secs.forEach(function (s) {
+    s.classList.remove('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '收起 ▴';
+  }); };
+  var m = /^#sec-(\d+)$/.exec(location.hash);
+  if (m) { var s = secs[+m[1]]; if (s) {
+    s.classList.remove('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '收起 ▴';
+    s.scrollIntoView();
+  } }
+});
 </script>
 </body>
 </html>
