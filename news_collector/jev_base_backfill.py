@@ -108,7 +108,6 @@ def fetch_existing():
 def build_records():
     import news_jev_chart as C
     now, items = C.load()
-    from datetime import timedelta
     BJ = {"bull": "利多", "bear": "利空", "neutral": "中性"}
     SC = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
           "crypto": "加密", "macro": "宏观"}

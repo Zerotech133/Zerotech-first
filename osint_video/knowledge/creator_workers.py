@@ -8,7 +8,7 @@ cursor remains at the last successful item so a later retry cannot skip it.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Mapping, Protocol, Sequence
+from typing import Any, Mapping, Protocol, Sequence
 
 from common import db
 from collectors.ports import CollectionAccessError

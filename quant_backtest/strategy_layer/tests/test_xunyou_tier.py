@@ -12,7 +12,6 @@ from strategy_layer import xunyou
 from strategy_layer.xunyou import (
     T1_RANK_CAP,
     T1_SCORE_MIN,
-    T2_SCORE_MIN,
     assign_tiers,
     build_pool,
 )

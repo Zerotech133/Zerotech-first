@@ -30,7 +30,7 @@ from pathlib import Path
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
 
-from secret_store import load_dotenv_file, SecretStore, MissingSecretError  # noqa: E402
+from secret_store import load_dotenv_file, SecretStore  # noqa: E402
 
 # 8 类数据源 ↔ .env.example 规范键名（仅名字，无真实值）
 REQUIRED_KEYS = {

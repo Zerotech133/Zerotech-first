@@ -5,7 +5,6 @@ ts_namechange.parquet 依赖；真实数据加载已由 a3_st_pit_diff_probe.py 
 实证（见 reports/a3_st_pit_diff_report.json）。本文件固化「逐事件 PIT 不回写未来」
 的契约，供 BACK1/STRAT1 签字采纳后在引擎侧接入的回归护栏。
 """
-import os
 import sys
 from pathlib import Path
 

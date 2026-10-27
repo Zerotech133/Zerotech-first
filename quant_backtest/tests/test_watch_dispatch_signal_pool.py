@@ -17,7 +17,7 @@ from quant_backtest.watch_dispatch import EvidenceStore, freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity
 from quant_backtest.watch_dispatch.signal_pool import (
     ACCEPTED_VERIFIED_OUTCOME, AcceptanceReceipt, AttemptBinding, SignalPool, SignalPoolDraft,
-    SignalPoolEntry, SignalPoolError, STATUS_ACCEPTED, STATUS_CLAIMED,
+    SignalPoolError, STATUS_ACCEPTED, STATUS_CLAIMED,
     STATUS_OPEN, STATUS_REVOKED,
 )
 

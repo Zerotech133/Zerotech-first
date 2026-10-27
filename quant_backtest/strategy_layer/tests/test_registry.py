@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Registry 测试：注册 / 查询 / 开关 / 权重 / 坏 JSON 回退 / 写失败降级。"""
 import json
-import os
 
 import pytest
 

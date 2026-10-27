@@ -11,7 +11,7 @@ import argparse
 import json
 from typing import Any, Callable
 
-from knowledge.creator_workers import DailyScanWorker, HistoryBackfillWorker, WorkerResult
+from knowledge.creator_workers import DailyScanWorker, HistoryBackfillWorker
 from store import repository as store_repository
 from workers.composition import CompositionError, WorkerComposition, compose_worker_dependencies
 

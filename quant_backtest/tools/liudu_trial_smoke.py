@@ -23,7 +23,7 @@ for _d in ("strategy_layer", "tools", "experiments"):
     sys.path.insert(0, str(_REPO / _d))
 
 from liudu_universe import resolve_universe, SELECTED_UNIVERSE  # noqa: E402
-from reconcile_semantics import reconcile, SELECTED_RECONCILE_MODE, MODE_B_R1_SINGLESOURCE  # noqa: E402
+from reconcile_semantics import reconcile, SELECTED_RECONCILE_MODE  # noqa: E402
 from signal_pool_writer import build_record, write_signals  # noqa: E402
 from data_source_adapter import build_adapter, KNOWN_DATA_SOURCES  # noqa: E402
 from stop_loss_harness import simulate, default_params  # noqa: E402

@@ -1,10 +1,8 @@
 import json
 
-import pandas as pd
 import pytest
 
 from sector_gap_backfill import (
-    probe_sector_daily,
     reconcile_sector_definition,
     stage_sector_daily,
     stage_sector_daily_by_date,

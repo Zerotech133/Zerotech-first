@@ -12,7 +12,10 @@ K-STOCK-265 · v5 = v4(hfq + seen-ever) + 回撤引擎 + runup 入场帽
 【对照臂】A5=仅runup帽 / B5=runup帽+回撤引擎 / C5=仅回撤引擎；v4 基线 A=-31.50%/23.4%。
 其余口径与 v4 完全一致（hfq、seen-ever、80%帽、T+1、15bp）。
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

@@ -32,7 +32,6 @@ import json
 import os
 import re
 import shutil
-import sys
 from ctypes import wintypes
 
 HERE = os.path.dirname(os.path.abspath(__file__))

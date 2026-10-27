@@ -33,7 +33,7 @@ import argparse
 import json
 import os
 import sys
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _QB_ROOT = os.path.dirname(os.path.dirname(_HERE))

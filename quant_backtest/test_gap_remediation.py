@@ -1,6 +1,5 @@
 import json
 
-import pytest
 
 from gap_remediation import build_gap_snapshot, qualify_source, write_key_manifest
 

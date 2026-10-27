@@ -22,7 +22,7 @@ import sqlite3
 import sys
 import time
 from collections import Counter, defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 import jieba
 

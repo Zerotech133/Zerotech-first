@@ -14,7 +14,6 @@ def bar(hour, minute, close=1.0):
 
 
 def test_session_bucket_does_not_cross_lunch_and_zero_volume_is_real():
-    from datetime import timedelta
     bars = [bar(9, 30), bar(9, 31), bar(13, 0)]
     result = SessionAggregator("5m").aggregate(bars, datetime(2026, 10, 16, 5, 0, tzinfo=timezone.utc))
     assert len(result) == 2
@@ -24,7 +23,6 @@ def test_session_bucket_does_not_cross_lunch_and_zero_volume_is_real():
 
 
 def test_unfinished_bucket_is_open_and_weekend_outside_session_ignored():
-    from datetime import timedelta
     bars = [bar(9, 30), bar(9, 31)]
     result = SessionAggregator("5m").aggregate(bars, datetime(2026, 10, 16, 1, 32, tzinfo=timezone.utc))
     assert len(result) == 1

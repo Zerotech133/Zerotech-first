@@ -11,7 +11,6 @@ import json
 import os
 import sys
 
-import pytest
 
 _QB = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _QB not in sys.path:

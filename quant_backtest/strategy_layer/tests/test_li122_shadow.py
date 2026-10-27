@@ -84,7 +84,6 @@ from strategy_layer.signal import Signal                    # noqa: E402
 
 # chanlun 本体可用性闸门（test_li122_agent 同款模式）
 try:
-    from chanlun_li122 import RULESETS as _RULESETS
     _CHANLUN_ERR = None
 except Exception as _exc:  # pragma: no cover - 仅缺 config.json 环境触发
     _CHANLUN_ERR = _exc

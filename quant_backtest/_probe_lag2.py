@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """探针2：全信号流扫描，抓 lag>450 的不可能事件（解剖窗口滑移伪信号）"""
-import sys, os, json
+import sys
+import os
+import json
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"
@@ -48,7 +50,6 @@ for day in cal:
             weird.append((lag, day, s, key[1], dt, wstart, len(seg)))
     prev = cur
 all_lags.sort()
-import statistics
 print("全流 fresh 信号数:", len(all_lags))
 print("滞后 median:", all_lags[len(all_lags)//2], "p90:", all_lags[int(len(all_lags)*0.9)], "max:", all_lags[-1])
 print("lag>450 事件数:", len(weird))

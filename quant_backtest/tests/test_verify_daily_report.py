@@ -11,11 +11,9 @@
 import importlib.util
 import json
 import os
-import sys
 import datetime
 from pathlib import Path
 
-import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent

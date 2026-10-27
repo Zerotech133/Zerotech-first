@@ -7,7 +7,7 @@ This module is an audit harness — it grants nothing, fetches nothing.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 STATES = ("verified", "claimed", "unknown", "BLOCK")

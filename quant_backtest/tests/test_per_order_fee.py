@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests for immutable, auditable PER_ORDER fee aggregation."""
-from datetime import date
 from decimal import Decimal
 from pathlib import Path
 import sys

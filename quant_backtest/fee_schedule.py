@@ -7,12 +7,12 @@ existing ``fee_bps``/``fee_rate`` behaviour.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, ROUND_UP, ROUND_DOWN
+from decimal import Decimal, InvalidOperation
 import hashlib
 import json
-from typing import Any, Iterable, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Iterable, Mapping, Optional, Tuple, Union
 
 Number = Union[str, int, float, Decimal]
 DateLike = Union[date, datetime]

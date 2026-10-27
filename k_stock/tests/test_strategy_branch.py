@@ -22,13 +22,11 @@ sys.path.insert(0, str(HERE / "paper"))
 sys.path.insert(0, str(HERE / "tests"))
 
 from engine import PaperEngine                      # noqa: E402
-import combo_registry                               # noqa: E402
 import event_receipts as er                         # noqa: E402
 import plan_meeting_ledger as pml                   # noqa: E402
 import signal_consumer                              # noqa: E402
 import strategy_branch as sb                        # noqa: E402
-from strategy_branch import (AGGRESSIVE_DIRECT, AggressiveDirectBranch,  # noqa: E402
-                             BranchError, BranchPermissionError, BranchRunner,
+from strategy_branch import (AGGRESSIVE_DIRECT, BranchError, BranchPermissionError, BranchRunner,
                              FOLLOW_RESEARCH, FollowResearchBranch,
                              StrategyBranch, create_branch, make_decision,
                              registered_branch_ids, register_branch,

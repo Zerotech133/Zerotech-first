@@ -12,7 +12,6 @@
 import os
 import sys
 import time
-import json
 import threading
 
 _HERE = os.path.dirname(os.path.abspath(__file__))

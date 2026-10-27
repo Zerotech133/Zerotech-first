@@ -323,7 +323,7 @@ class PermissionGate:
         _utc(now, "CONSUME_NOW")
         try:
             envelope.validate(now=now)
-        except ValueError as exc:
+        except ValueError:
             return _blocked("EVIDENCE_NOT_CURRENT")
         identity = self._identity(envelope)
         if identity in self._blocked:

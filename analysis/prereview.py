@@ -18,7 +18,7 @@ import os
 import time
 from collections import Counter
 
-from . import config, events as events_mod, review
+from . import review
 
 # 程序性/治理类文件：不是投研事件，建议驳回
 NOISE = (

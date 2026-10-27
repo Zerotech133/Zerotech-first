@@ -8,18 +8,15 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 import pytest
 
 from common.genkit import (
-    CST,
     UTC,
     now_cst,
-    utcnow,
     to_cst,
-    to_utc,
     format_cst,
     cst_date_str,
     cst_month_str,  # noqa: F401

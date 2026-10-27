@@ -3,7 +3,6 @@
 
 fixture 零数据依赖（不读行情、不发推送），只验 scan_card/scan_text 两个纯函数。
 """
-import math
 import os
 import sys
 

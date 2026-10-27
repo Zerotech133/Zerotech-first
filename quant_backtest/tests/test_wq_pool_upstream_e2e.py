@@ -27,7 +27,7 @@ from quant_backtest.watch_dispatch.agent_reporting import (
     AgentAck, AgentIdentity, AgentReportingError, AgentUpstreamReporter,
 )
 from quant_backtest.watch_dispatch.route_outbox import (
-    ACCEPTED_VERIFIED, OutboxError, UNKNOWN,
+    ACCEPTED_VERIFIED, UNKNOWN,
 )
 from quant_backtest.watch_dispatch.signal_pool import (
     AcceptanceReceipt, SignalPool, SignalPoolDraft, SignalPoolError,

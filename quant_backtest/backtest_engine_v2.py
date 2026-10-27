@@ -14,9 +14,13 @@ K-STOCK-285b · 回测框架 v2 正式版（配置驱动 · 执行时间轴 · �
 口径铁律：缠论信号/结算=hfq（263）；双刀信号=原始价（6-200 元实务门槛，hfq 全灭
 实证 10-13）而结算=hfq。信号与结算分离，两口径各安其位。
 """
-import sys, os, json, time, argparse, tempfile
+import sys
+import os
+import json
+import time
+import argparse
+import tempfile
 from datetime import datetime, date, time as dt_time, timedelta, timezone
-from zoneinfo import ZoneInfo
 from market_policy import timezone_for
 import random as _random
 import pandas as pd
@@ -322,7 +326,6 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3", hist_st=F
     pool_daily = {}          # 每日入池统计：一二三买全部入池（老田口径），trade=仅 buy_filter
     for d in (x for x in cal_idx_all if d0 <= x <= d1):
         sig_buy[d], sig_sell[d], pool_daily[d] = set(), set(), {"pool": 0, "trade": 0}
-    from collections import Counter
     for ev in events:
         day = ev["day"]
         if day not in sig_buy:
@@ -857,7 +860,6 @@ def _minute_query_from_params(params, market="CN", timezone_name="Asia/Shanghai"
 def _run_minute_store_job(params: dict, job_id: str, progress=None):
     """Run the explicit BarStore execution mode without touching daily legacy state."""
     try:
-        from bar_dto import BarQuery
         from execution_engine import ExecutionConfig, OrderIntent, run_from_store
         store = params.get("bar_store")
         if store is None:

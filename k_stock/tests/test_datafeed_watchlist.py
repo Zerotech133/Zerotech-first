@@ -5,7 +5,6 @@
 点分下划线式（300750_SZ.parquet）。格式错位致 exists() 恒 False、
 watchlist 恒空、07:05 主 PoC 聚合连续空跑（10-12/13/15 三日实证）。
 """
-import os
 import sys
 import unittest
 from pathlib import Path

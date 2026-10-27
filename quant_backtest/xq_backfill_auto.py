@@ -14,10 +14,8 @@ rc：0=本轮正常结束（含 done 跳过）；1=异常（由计划任务告�
 """
 import json
 import os
-import re
 import subprocess
 import sys
-import time
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))

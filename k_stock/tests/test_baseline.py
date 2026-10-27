@@ -19,7 +19,6 @@
 回填后自动生效）；后验**自动**回填（快照 run_ref → 结算后验）属后续工单，本文件
 只用显式喂入/回填一条路径，不为自动回填留桩。
 """
-import json
 import sqlite3
 import sys
 from pathlib import Path

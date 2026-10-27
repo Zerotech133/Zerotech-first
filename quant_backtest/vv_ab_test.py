@@ -32,7 +32,7 @@ def load_pool():
             try:
                 d = json.loads(line)
                 key = (d["code"], d["type"], d["dt"])
-            except (json.JSONDecodeError, KeyError) as e:
+            except (json.JSONDecodeError, KeyError):
                 # 审查 P1-1（077l）：坏行/BOM 容错，计数留痕不中断
                 bad[0] += 1
                 continue

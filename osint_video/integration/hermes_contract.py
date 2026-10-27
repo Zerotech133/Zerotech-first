@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Literal, Mapping, Protocol, Sequence
+from typing import Any, Literal, Mapping, Protocol
 
 RunType = Literal["history_backfill", "daily_scan"]
 _ALLOWED_ROUTES = frozenset({"D", "B", "AUTO"})

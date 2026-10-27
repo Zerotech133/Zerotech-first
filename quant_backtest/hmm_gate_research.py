@@ -24,7 +24,6 @@ HMM 软闸门离线对照研究（研究线，不接产线、不改任何现有�
 import glob
 import json
 import os
-import sys
 
 import numpy as np
 import pandas as pd

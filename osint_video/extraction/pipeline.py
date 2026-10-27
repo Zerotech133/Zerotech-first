@@ -20,7 +20,6 @@ ocr_items.json / structured_doc.json），已存在且非 ``force`` 的检查点
 from __future__ import annotations
 
 import json
-import hashlib
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone

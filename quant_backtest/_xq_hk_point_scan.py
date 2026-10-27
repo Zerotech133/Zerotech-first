@@ -5,7 +5,6 @@
 用当前 RE_HK bare 通道同口径判定该 5 位是否会被收码，再查点位语境词。
 零 DB 写入（mode=ro）。
 """
-import json
 import re
 import sqlite3
 import sys

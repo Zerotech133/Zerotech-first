@@ -29,7 +29,6 @@ from extraction.align_merge import (  # noqa: E402
     merge_channels,
     normalized_distance,
 )
-from extraction.ocr_paddle import normalize_text  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

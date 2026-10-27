@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import hashlib
 from typing import Any, Protocol
 
-from collectors import CollectionFailureError, TextChannel, VideoPage
+from collectors import VideoPage
 from store.models import KnowledgeResource, KnowledgeUnit, StrategyEvidence
 from store.service import validate_evidence_for_resource
 

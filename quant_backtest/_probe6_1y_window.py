@@ -6,7 +6,8 @@ K-STOCK-271 探针6：老田指定窗口 2025-10-12 → 2026-10-12（整一年�
 regime=池等权指数 MA20/60（D-1 判定）调部署率 80/50/30，永不禁开仓。
 ⚠️ 如实声明：池是 2026-10-12 快照，窗口前段仍有宇宙前视，绝对数偏高。
 """
-import os, json
+import os
+import json
 import pandas as pd
 import numpy as np
 

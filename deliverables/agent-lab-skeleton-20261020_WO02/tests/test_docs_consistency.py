@@ -25,7 +25,6 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -11,7 +11,6 @@ import json
 import os
 import sys
 import tempfile
-import types
 
 # K-STOCK-406：路径锚相对测试文件定位（worktree 开发期/merge 后主仓均跑得动；
 # 原 .worktrees/K-STOCK-401 硬编码在 worktree 清场后失效）

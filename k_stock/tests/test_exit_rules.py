@@ -13,7 +13,6 @@ sys.path.insert(0, str(HERE.parent / "paper"))
 
 import exit_rules                      # noqa: E402
 from engine import PaperEngine         # noqa: E402
-from market import ParquetMarket       # noqa: E402
 
 ACCT = "t7x"
 

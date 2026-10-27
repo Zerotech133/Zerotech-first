@@ -4,7 +4,6 @@
 只读 tushare anns_d + 巨潮 PDF；不写 curated 仓库；缓存到 WORK/cache/pdf。
 """
 import hashlib
-import json
 import os
 import re
 import sys

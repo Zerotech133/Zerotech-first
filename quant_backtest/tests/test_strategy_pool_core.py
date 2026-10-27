@@ -8,7 +8,7 @@ import json
 import pytest
 
 from quant_backtest.strategy_pool import (
-    ArtifactSeal, BatchStatus, CoverageApproval, CoverageScope, DecisionKind, EventKind,
+    BatchStatus, CoverageApproval, CoverageScope, DecisionKind, EventKind,
     Evidence, Hit, PoolPolicy, PoolState, RunnerObservation, ScanBatch,
     SecurityId, StrategyId, measure_artifact, project_security, receipt_is_valid, reduce_batch,
     set_manual_hold, verify_runner_batch,

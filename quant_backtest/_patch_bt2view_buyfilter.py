@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-285c: bt2_view.html 加缠论买点等级下拉（仅二买+三买默认·10-13 拍板）"""
-import io
 
 p = r"C:/项目/老田的AI助手/portal/bt2_view.html"
 s = open(p, encoding="utf-8").read()

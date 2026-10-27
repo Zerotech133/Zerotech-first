@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from roles.base_agent import BaseAgent, Report, TaskState
+from roles.base_agent import BaseAgent, Report
 
 # ---- 督办节奏规则占位，真实基线后标定（工位W 表驱动常量） ----
 # SUPERVISION_WINDOW_S：督办窗口（秒）——任务自最近一次有效督办起超过

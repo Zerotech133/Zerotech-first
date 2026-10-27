@@ -254,7 +254,8 @@ class TestCli(InboxFixture):
 
     def test_exit_code_clean(self):
         self.deliver()
-        import io, contextlib
+        import io
+        import contextlib
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             rc = inbox_mod.main(["--inbox", self.inbox_dir,
@@ -265,7 +266,8 @@ class TestCli(InboxFixture):
 
     def test_exit_code_reject(self):
         self.deliver(with_json=False)
-        import io, contextlib
+        import io
+        import contextlib
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             rc = inbox_mod.main(["--inbox", self.inbox_dir,

@@ -43,7 +43,6 @@ from roles.rectification_line import (
     PREFIX_TRIAGE_NOTICE,
     SEVERITY_BLOCKING,
     SEVERITY_ESCALATION,
-    SEVERITY_NORMAL,
     normalize_severity,
 )
 from roles.zhuge_liang import LEGAL_TRANSITIONS  # 只读 import，不改其文件

@@ -9,7 +9,6 @@
 另覆盖持仓页 write_positions_html 的命中标记与 fail-open 渲染。
 """
 import json
-import os
 
 import report_page as rp
 

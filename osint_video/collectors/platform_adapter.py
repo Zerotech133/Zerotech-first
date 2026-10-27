@@ -7,7 +7,6 @@ Only allow-listed page fields are projected to :mod:`collectors.ports` DTOs.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 

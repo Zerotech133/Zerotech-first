@@ -208,7 +208,9 @@ def test_mark_selected_routes_markets_and_backs_up(tmp_path, monkeypatch):
             return {"verify_ok": True, "date": day, "total": 100.0,
                     "pos_pct": 0.0, "pending": 0}
 
-    import market, us_market, hk_market
+    import market
+    import us_market
+    import hk_market
     monkeypatch.setattr(market, "ParquetMarket", MarketA)
     monkeypatch.setattr(us_market, "UsMarket", MarketUS)
     monkeypatch.setattr(hk_market, "HkMarket", MarketHK)

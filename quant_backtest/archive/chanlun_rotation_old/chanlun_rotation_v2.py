@@ -11,7 +11,10 @@ v2 相对 257 的修正：
   3) 【审计内建】T+1 持有天数校验 / 仓位占用率分布 / 入场动量 vs 池中位（追高体检）/ 信号确认滞后分布。
 其余口径（严格截断双 pass、D 确认→D+1 收盘成交、pct_chg 复权、15bp 成本、止损 -10%）与 257 一致。
 """
-import sys, os, json, time
+import sys
+import os
+import json
+import time
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手"

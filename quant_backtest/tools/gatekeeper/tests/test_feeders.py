@@ -62,7 +62,6 @@ def test_exact_threshold_bars_counted(tmp_path):
     assert feats["breadth"] == 1.0 and 2.0 > ma
     assert feats["med20"] is not None                  # ret20 恰 21 根可算
     # 边界：恰 20 根（门槛外）→ n_stocks=0 缺维
-    import pandas as _pd
     d2 = tmp_path / "edge"
     d2.mkdir()
     _make_parquet(d2, "600001_SH", closes[:-1], d[:-1])

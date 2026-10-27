@@ -13,7 +13,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 import math
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Mapping, Protocol
 from urllib.parse import parse_qsl, urlparse
 import ipaddress
 

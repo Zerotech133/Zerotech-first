@@ -29,7 +29,7 @@ from tests.conftest import FFMPEG_BIN_DIR, PROJECT_ROOT
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from common.paths import DATA_WORK, work_dir_for  # noqa: E402
+from common.paths import DATA_WORK  # noqa: E402
 from extraction.asr_sensevoice import ASRModelUnavailableError, transcribe  # noqa: E402
 from extraction.audio_extract import extract_wav16k, probe_duration_sec  # noqa: E402
 from extraction.frame_extract import extract_frames  # noqa: E402

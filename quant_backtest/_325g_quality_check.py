@@ -8,7 +8,10 @@ K-STOCK-329 · 首窗 301 信号质量抽检（只读）
   D 名称/板块分布
 输出: quant_backtest/_325g_signals_full.json + _325g_quality_report.md
 """
-import os, sys, json, time
+import os
+import sys
+import json
+import time
 from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))

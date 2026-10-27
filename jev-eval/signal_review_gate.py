@@ -47,7 +47,7 @@ from pathlib import Path
 
 import jev_common as jc
 from jev_common import (C_JEV, atomic_write_text, db_rows, install_stop, log,
-                        set_module, with_retry)
+                        set_module)
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")

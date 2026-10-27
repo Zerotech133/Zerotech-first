@@ -25,7 +25,11 @@ W3-4 · 缠论影子背驰标注阈值网格扫描（20261014）——只读产�
 纪律: 不 import 改写任何产线状态; chanlun_signal / chanlun_macd 仅只读调用。
 解释器: C:/Program Files/Python311/python.exe；日志 /c/Temp/chanlun_beichi.log。
 """
-import sys, os, json, time, logging
+import sys
+import os
+import json
+import time
+import logging
 from collections import defaultdict
 
 import pandas as pd
@@ -48,7 +52,7 @@ GRID_P5 = [0.8, 0.9, 1.0]                                       # 力度比
 
 sys.path.insert(0, QT)
 from chanlun_signal import analyze as chan_analyze          # noqa: E402 只读
-from chanlun_macd import macd_series, divergence as _macd_div  # noqa: E402 只读
+from chanlun_macd import macd_series  # noqa: E402 只读
 
 # ---------- 日志（stdout + 文件双写） ----------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s",

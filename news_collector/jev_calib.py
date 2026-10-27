@@ -14,7 +14,6 @@ calib_conf = hit_pct1/100（实测命中率归一）——未来置信过滤/净
 
 用法：python jev_calib.py
 """
-import json
 import os
 import sys
 

@@ -3,7 +3,10 @@
 重拉 202610 月窗口 → 与现有含 202610 的 part 合并 → drop_duplicates 回写 →
 更新 manifest rows。之后跑 adj_factor_sync.py 补复权因子。
 """
-import json, os, sys, glob
+import json
+import os
+import sys
+import glob
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pandas as pd

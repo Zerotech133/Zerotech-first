@@ -21,7 +21,6 @@
 
 以下实现全部为占位，返回空结果——填实现后删除 NOT_IMPLEMENTED 标记。
 """
-import pandas as pd
 
 
 def load_features(feeder):

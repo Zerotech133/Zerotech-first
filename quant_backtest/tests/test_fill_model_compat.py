@@ -9,8 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 from bar_dto import Bar
-from execution_engine import (AllOrNoneFillModel, ExecutionConfig, Fill, FillDecision,
-                              FillModel, OrderAudit, OrderIntent,
+from execution_engine import (AllOrNoneFillModel, Fill, FillDecision,
+                              OrderAudit, OrderIntent,
                               VolumeParticipationFillModel)
 
 

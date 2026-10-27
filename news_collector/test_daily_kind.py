@@ -5,9 +5,7 @@
 打桩，绝不真发、不写流水账、不落真实 outbox。
 """
 import inspect
-import json
 import os
-import re
 import runpy
 import sys
 import tempfile

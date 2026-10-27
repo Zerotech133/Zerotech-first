@@ -26,7 +26,6 @@
 
 用法：python jev_resonance.py
 """
-import json
 import os
 import sys
 

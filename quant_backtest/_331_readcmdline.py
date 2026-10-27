@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """331：用 psutil 式只读方式取目标 PID 命令行（纯 ctypes NtQueryInformationProcess）。"""
 import ctypes
-from ctypes import wintypes
 
 ntdll = ctypes.WinDLL("ntdll")
 k32 = ctypes.windll.kernel32
