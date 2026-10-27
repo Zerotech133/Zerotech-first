@@ -5,12 +5,17 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
 _WT = Path(__file__).resolve().parents[2]
 _PLAT = _WT / "agent_platform"
 sys.path.insert(0, str(_PLAT))
+
+# 越界路径要按平台选：Windows 用 C:\Windows\win.ini 才是绝对路径；
+# Linux 上 "C:/Windows/win.ini" 会被当相对路径拼接到 root 内（10-27 服务器新门暴露）。
+_OUTSIDE_PATH = r"C:\Windows\win.ini" if os.name == "nt" else "/etc/passwd"
 
 from mcp import registry  # noqa: E402
 from mcp.client import MCPClient, MCPError  # noqa: E402
@@ -64,7 +69,7 @@ def test_filesystem_server_read_and_traversal(tmp_path):
         assert set(names) == {"list_dir", "read_file", "stat"}
         r = c.call_tool("read_file", {"path": "a.txt"})
         assert r["ok"] and r["payload"]["text"] == "hello"
-        bad = c.call_tool("read_file", {"path": "C:/Windows/win.ini"})
+        bad = c.call_tool("read_file", {"path": _OUTSIDE_PATH})
         assert bad["isError"]
         assert "outside allowed roots" in json.dumps(bad["payload"], ensure_ascii=False)
     finally:
