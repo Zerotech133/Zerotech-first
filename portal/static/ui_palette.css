@@ -1,0 +1,72 @@
+/* ui_palette.css — Week3 命令面板 + 密度切换（原型，tokens 驱动） */
+.wb-palette {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 12vh;
+  background: rgba(0, 0, 0, .55);
+}
+.wb-palette[hidden] { display: none; }
+.wb-palette-box {
+  width: min(620px, 92vw);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+.wb-palette-input {
+  width: 100%; box-sizing: border-box;
+  border: 0; border-bottom: 1px solid var(--border);
+  padding: var(--sp-4);
+  background: transparent; color: var(--text);
+  font: inherit; font-size: var(--fs-m);
+  outline: none;
+}
+.wb-palette-input::placeholder { color: var(--text-dim); }
+.wb-palette-list { max-height: 46vh; overflow: auto; padding: var(--sp-2); }
+.wb-palette-item {
+  width: 100%; text-align: left;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 0; border-radius: var(--r-s);
+  background: transparent; color: var(--text);
+  font: inherit; cursor: pointer;
+}
+.wb-palette-item:hover,
+.wb-palette-item[aria-selected="true"] {
+  background: var(--bg-surface);
+  color: var(--text);
+}
+.wb-palette-item mark { background: transparent; color: var(--color-focus); }
+.wb-palette-hint {
+  padding: var(--sp-2) var(--sp-3);
+  border-top: 1px solid var(--border);
+  color: var(--text-dim); font-size: var(--fs-xs);
+}
+.wb-palette-trigger {
+  position: fixed; right: 18px; bottom: 18px; z-index: 900;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-raised); color: var(--text-dim);
+  font: inherit; font-size: var(--fs-s); cursor: pointer;
+}
+.wb-palette-trigger:hover { color: var(--text); border-color: var(--color-focus); }
+
+/* 密度：舒适（默认）/紧凑；表格与列表共用 */
+[data-wb-density="compact"] table th,
+[data-wb-density="compact"] table td {
+  padding: 4px 8px !important;
+  font-size: var(--fs-s);
+  line-height: 1.35;
+}
+[data-wb-density="compact"] .source,
+[data-wb-density="compact"] .row {
+  padding-top: 6px; padding-bottom: 6px;
+}
+[data-wb-density="compact"] .card { padding: var(--sp-3); }
+[data-wb-density="compact"] .panel { padding: var(--sp-4); }
+@media (prefers-reduced-motion: reduce) {
+  .wb-palette { transition: none; }
+}
