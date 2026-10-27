@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 14:47",
+ "generated": "2026-10-27 14:48",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -140,21 +140,21 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-A3-A7-PREP-20261027",
-   "desc": "A3 R1 一键轮换助手 + R2/R4/R7 runbook + R5 窗口五要素 + A7 8080 依赖取证与 A2 五要素 + B 阶段结项回执待签（老田 14:37 指令）。只做 L1 准备：git 入库引导脚本/文档，不登录外部平台/不改防火墙/不重启/不代签。",
-   "status": "doing",
-   "owner": "A0",
-   "branch": "task/WO-LEGION-A3-A7-PREP-20261027",
-   "created": "2026-10-27 14:45:03",
-   "project": "quant"
-  },
-  {
    "id": "WO-AUDIT6-LANE-20261027",
    "desc": "代码审计第6批：repair_lane 子进程 pytest 在全量套件并发下偶发 collection FileNotFoundError（相邻进程 TEMP/缓存竞态）。路由例外=跨部门治理。修：lane.run_batch 子进程改为 hermetic——独立 --basetemp、TEMP/TMP 指向独立目录、清 PYTEST_CURRENT_TEST/PYTEST_ADDOPTS、保留 -p no:cacheprovider；若仍 rc!=0 且 tail 含 ERROR collecting 则换新 basetemp 重试一次（仅一次）。验收：test_repair_lane 单跑绿；全量 master 复跑 0 红。",
    "status": "doing",
    "owner": "DSH-Lead",
    "branch": "task/WO-AUDIT6-LANE-20261027",
    "created": "2026-10-27 14:46:56",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-OCRFIX-20261027",
+   "desc": "OCR审查发现修复 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-OCRFIX-20261027",
+   "created": "2026-10-27 14:48:12",
    "project": "general"
   }
  ],
@@ -1253,14 +1253,7 @@
    ],
    "experience": "20 年产品+研发复合经验：从需求定义、架构设计到参考实现与验收全链路；不亲自交付代码，以方案/伪代码/代码参考驱动执行 AI 落地；信息不全时能基于证据做最优决策并组织多 AI 自动执行。",
    "dept_name": "",
-   "dept_cn_title": "",
-   "tasks": [
-    {
-     "id": "WO-LEGION-A3-A7-PREP-20261027",
-     "desc": "A3 R1 一键轮换助手 + R2/R4/R7 runbook + R5 窗口五要素 + A7 8080 依赖取证与 A2 五要素 + B 阶段结项回执待签（老田 14:37 指令）。只做 L1 准备：git 入库引导脚本/文档，不登录外部平台/不改防火墙/不重启/不代签。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": ""
   },
   "ACAD1": {
    "id": "ACAD1",
