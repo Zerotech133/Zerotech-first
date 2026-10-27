@@ -300,6 +300,38 @@ def _security_warn_gate(branch, worktree=""):
         print("  %-8s ? 扫描失败（忽略，不阻断）：%s" % ("安全扫描", str(e)[:120]))
 
 
+def _gitleaks_warn_gate(branch, worktree=""):
+    """gitleaks 第二道凭据扫描（告警模式，2026-10-27 P0 质量门升级）。
+
+    与 _security_warn_gate 互补：自研扫描器管历史/批量口径，gitleaks 管真实凭据面；
+    只告警不阻断（先并行观察，稳定后再升级为阻断门）。gitleaks 未安装时静默跳过。
+    """
+    script = Path(REPO) / "tools" / "secret_scan_gitleaks.py"
+    if not script.exists():
+        return
+    base = Path(worktree) if worktree else Path(REPO)
+    try:
+        r = subprocess.run([sys.executable, str(script), "--path", str(base), "--json"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", env=GUARD_ENV, timeout=600)
+    except Exception as e:  # noqa: BLE001 - 告警门不得阻断合并
+        print("  %-8s ! gitleaks 执行异常：%s" % ("gitleaks", str(e)[:100]))
+        return
+    try:
+        data = json.loads(r.stdout or "{}")
+    except ValueError:
+        print("  %-8s ! gitleaks 输出不可解析（跳过）" % ("gitleaks",))
+        return
+    n = int(data.get("findings") or 0)
+    if r.returncode == 2:
+        print("  %-8s - 未安装/不可用（跳过，warn-only）" % ("gitleaks",))
+    elif n:
+        print("  %-8s ! 发现 %d 处疑似凭据（warn-only，不阻断）：%s"
+              % ("gitleaks", n, str(data.get("sample") or "")[:180]))
+    else:
+        print("  %-8s ✓ 0 泄露" % ("gitleaks",))
+
+
 def _ocr_warn_gate(branch, worktree=""):
     """OCR 语义审查（告警模式，第 5 道门；默认关，DEVTOOL_OCR_GATE=1 开启）。
 
@@ -1073,6 +1105,7 @@ def cmd_merge(tid, *flags):
         _emit("guard_fail", tid, "门 %s 未过：%s" % (name, out[:120]))
         return 1
     _security_warn_gate(t["branch"], t.get("worktree"))
+    _gitleaks_warn_gate(t["branch"], t.get("worktree"))
     _ocr_warn_gate(t["branch"], t.get("worktree"))
     # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
     r = subprocess.run([sys.executable,
