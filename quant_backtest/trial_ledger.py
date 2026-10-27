@@ -32,6 +32,7 @@ import math
 import os
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -161,8 +162,8 @@ def _log(msg):
     try:
         with open("C:/Temp/trial_ledger.log", "a", encoding="utf-8") as f:
             f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/trial_ledger.py", exc)
 
 
 def trial_id(strategy, config_fingerprint):
@@ -183,8 +184,8 @@ def _acquire_lock(timeout=30):
                 if time.time() - os.stat(LOCK).st_mtime > STALE_LOCK_SEC:
                     os.remove(LOCK)
                     continue
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/trial_ledger.py", exc)
             if time.time() >= deadline:
                 return False
             time.sleep(0.2)
@@ -193,8 +194,8 @@ def _acquire_lock(timeout=30):
 def _release_lock():
     try:
         os.remove(LOCK)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/trial_ledger.py", exc)
 
 
 def record_trial(entry, path=LEDGER):
@@ -261,8 +262,8 @@ def ledger_stats(path=LEDGER):
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/trial_ledger.py", exc)
     ap = argparse.ArgumentParser(description="试验台账 + DSR")
     sub = ap.add_subparsers(dest="cmd")
     p_rec = sub.add_parser("record")

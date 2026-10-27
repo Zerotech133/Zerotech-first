@@ -790,8 +790,8 @@ def _latest_one_uncached(t, e):
             return v
     except PublicationPending:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/datamart.py", exc)
     return e.get("freshness")
 
 
@@ -947,8 +947,8 @@ def table_preview(table, n=8):
         lat = latest(table)
     except PublicationPending:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/datamart.py", exc)
     df = pd.DataFrame()
 
     # by_code 快路径：read(start,end) 对 by_code 是全 glob+过滤（us_daily
@@ -1007,8 +1007,8 @@ def table_preview(table, n=8):
             df = df.sort_values(dcol, ascending=False)
         except PublicationPending:
             raise
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/datamart.py", exc)
     df = df.head(max(1, min(int(n), 20)))
     cols = [c for c in df.columns][:12]
 

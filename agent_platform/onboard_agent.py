@@ -18,6 +18,7 @@ import re
 import sys
 from datetime import date
 from pathlib import Path
+import logging
 
 ROOT = Path(__file__).resolve().parent  # agent_platform/
 HR_DIR = ROOT / "hr"
@@ -53,8 +54,8 @@ def parse_resume(path: Path) -> dict:
         import yaml
 
         return yaml.safe_load(path.read_text(encoding="utf-8"))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/onboard_agent.py", exc)
     # 无 yaml 库时降级解析（覆盖模板字段）
     out, section = {}, None
     for raw in path.read_text(encoding="utf-8").splitlines():
@@ -160,8 +161,8 @@ def onboard(resume_path: Path) -> None:
         from legion_pulse import heartbeat
 
         heartbeat("HR_ONBOARD", "draft", f"{aid} 入职草稿 rank={rank} dept={dept}")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/onboard_agent.py", exc)
 
 
 def _yaml_scalar(v) -> str:
@@ -360,8 +361,8 @@ def backfill(aid: str) -> None:
             "draft",
             f"{aid} 补档 draft rank={appt['rank']} dept={appt['dept']}",
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/onboard_agent.py", exc)
 
 
 def check() -> None:

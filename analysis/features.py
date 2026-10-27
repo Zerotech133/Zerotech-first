@@ -7,6 +7,7 @@ import urllib.request
 import pandas as pd
 
 from . import config
+import logging
 
 
 def _f(v, nd=2):
@@ -122,8 +123,8 @@ def build_features(snap):
                 mem = mem[mem["index_code"].isin(idx)]
                 mem = mem[mem.get("is_new", "Y") == "Y"] if "is_new" in mem.columns else mem
                 peer_codes = [c for c in mem["con_code"].tolist() if c != snap["code"]][:60]
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
     if peer_codes:
         try:
             dball = pd.read_parquet(os.path.join(config.CURATED, "daily_basic.parquet"),
@@ -149,8 +150,8 @@ def build_features(snap):
                 ps_list = [p["ps_ttm"] for p in peers if p.get("ps_ttm")]
                 val["peer_ps_median"] = round(float(pd.Series(ps_list).median()), 2)
                 val["peer_percentile"] = _pct_rank(ps_list + [val["ps_ttm"]], val["ps_ttm"])
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
 
     # ---- 财务 ----
     fnd = out["fundamental"]
@@ -173,8 +174,8 @@ def build_features(snap):
                     fnd["revenue_yoy"] = round((float(latest["revenue"]) / prev_rev - 1) * 100, 2)
                 if prev_np:
                     fnd["net_profit_yoy"] = round((float(latest.get("n_income_attr_p", 0)) - prev_np) / abs(prev_np) * 100, 2)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
         # TTM（最近年报 + 最新中报 - 上年中报）
         annual = inc[inc["end_date"].str.endswith("1231")]
         ttm = None

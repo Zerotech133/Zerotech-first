@@ -48,6 +48,7 @@ else:
     import fcntl
 
 from gateway.envelope import make_envelope, timed  # noqa: E402
+import logging
 
 _PLATFORM = Path(__file__).resolve().parents[1]
 
@@ -182,8 +183,8 @@ def _atomic_write(path: Path, record: dict) -> None:
     except BaseException:
         try:
             tmp.unlink()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/gateway/inbox_gateway.py", exc)
         raise
 
 
@@ -287,8 +288,8 @@ def consume(msg_id: str, answered_by: str | None = None, answer_ref: str | None 
             if inbox_file.exists():  # 先落 processed 后删 inbox 的崩溃残留
                 try:
                     inbox_file.unlink()
-                except OSError:
-                    pass
+                except OSError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/gateway/inbox_gateway.py", exc)
             return make_envelope(
                 kind=KIND_CONSUME,
                 ok=True,
@@ -332,8 +333,8 @@ def consume(msg_id: str, answered_by: str | None = None, answer_ref: str | None 
         if inbox_file.exists():
             try:
                 inbox_file.unlink()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/gateway/inbox_gateway.py", exc)
         return make_envelope(
             kind=KIND_CONSUME,
             ok=True,

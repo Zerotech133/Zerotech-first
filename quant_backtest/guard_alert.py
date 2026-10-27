@@ -29,6 +29,7 @@ import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -46,8 +47,8 @@ def log(msg):
         os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write("[%s] %s\n" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/guard_alert.py", exc)
 
 
 _last_fail_reason = ""  # 最近一次 _push 失败原因（SEND_FAIL 原因行/stderr
@@ -96,8 +97,8 @@ def _locked(path, timeout_s=_LOCK_TIMEOUT_S):
                 if time.time() - os.path.getmtime(lock_path) > _LOCK_STALE_S:
                     os.remove(lock_path)  # 陈旧锁强破
                     continue
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/guard_alert.py", exc)
             if time.time() - t0 > timeout_s:
                 log("state lock timeout (proceed unlocked) %s" % os.path.basename(path))
                 break
@@ -109,8 +110,8 @@ def _locked(path, timeout_s=_LOCK_TIMEOUT_S):
             try:
                 os.close(fd)
                 os.remove(lock_path)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/guard_alert.py", exc)
 
 
 def _fresh(ent, now, window_h):

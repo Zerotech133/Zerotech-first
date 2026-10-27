@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+import logging
 
 MAX_MINUTE_BARS = 240
 
@@ -20,8 +21,8 @@ def _text(value: Any) -> Optional[str]:
     try:
         if value != value:
             return None
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/watch_tower_linkage.py", exc)
     return str(value)
 
 
@@ -32,13 +33,13 @@ def _json_value(value: Any) -> Any:
     try:
         if value != value:
             return None
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/watch_tower_linkage.py", exc)
     if hasattr(value, "item"):
         try:
             return value.item()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/watch_tower_linkage.py", exc)
     return value
 
 

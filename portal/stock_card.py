@@ -21,6 +21,7 @@ import html
 import os
 import sqlite3
 from datetime import datetime
+import logging
 
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DB = os.path.join(STATION, "news_collector", "news.db")
@@ -154,8 +155,8 @@ def _sec_quote(ts_code):
                 )
             )
         con.close()
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/stock_card.py", exc)
     try:
         if QBT_DIR not in __import__("sys").path:
             __import__("sys").path.insert(0, QBT_DIR)
@@ -165,8 +166,8 @@ def _sec_quote(ts_code):
         if d.get("ok"):
             out["candles"] = (d.get("candles") or [])[:10]
             out["limits"] = (d.get("limits") or [])[:8]
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/stock_card.py", exc)
     return out
 
 
@@ -796,8 +797,8 @@ def render_card(ts_code, days=120):
             (f"%{_num6(ts_code)}%",),
         ).fetchall()
         con.close()
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/stock_card.py", exc)
 
     now = datetime.now().strftime("%F %T")
     tl = _timeline_data(ts_code, kg_data, paper_orders)

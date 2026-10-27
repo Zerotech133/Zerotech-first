@@ -34,6 +34,7 @@ import time
 from contextlib import redirect_stdout
 
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -48,8 +49,8 @@ def _log(msg):
     try:
         with open("C:/Temp/sentiment_collect.log", "a", encoding="utf-8") as f:
             f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sentiment_collect_daily.py", exc)
 
 
 def _no_proxy():
@@ -117,8 +118,8 @@ def _acquire_lock(timeout=30):
                 if time.time() - os.stat(LOCK).st_mtime > STALE_LOCK_SEC:
                     os.remove(LOCK)
                     continue
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sentiment_collect_daily.py", exc)
             if time.time() >= deadline:
                 return False
             time.sleep(0.2)
@@ -127,8 +128,8 @@ def _acquire_lock(timeout=30):
 def _release_lock():
     try:
         os.remove(LOCK)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sentiment_collect_daily.py", exc)
 
 
 def _load_dates(path=SHADOW):
@@ -266,8 +267,8 @@ def corr_with_breadth(path=SHADOW, series_fp=SERIES_FP, min_n=20):
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sentiment_collect_daily.py", exc)
     _no_proxy()
     ap = argparse.ArgumentParser(description="情绪影子日采（涨停/炸板/连板）")
     ap.add_argument(
