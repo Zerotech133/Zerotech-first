@@ -28,6 +28,7 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
+import logging
 
 try:  # ENCPROT 编码保护
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -38,7 +39,6 @@ except Exception as exc:
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
-import logging
 
 ROOT = Path(r"C:\项目\老田的AI助手")
 NEWS_DB = Path(r"C:\aios\news_collector\news.db")

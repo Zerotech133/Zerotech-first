@@ -9,6 +9,7 @@ Git hook 只调用本文件，任务号解析和提交信息读取全部由 Pyth
 from __future__ import annotations
 
 import sys
+import logging
 
 try:  # 2026-10-26 K-ORG-20261026-ENCPROT: non-UTF8 console printing CJK/checkmark
     # raises UnicodeEncodeError and can crash merge/hook paths; degrade to UTF-8 output.
@@ -22,7 +23,6 @@ import subprocess
 from pathlib import Path
 
 from events import emit
-import logging
 
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -26,6 +26,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
+import logging
 
 try:  # Windows 控制台 GBK 兜底
     sys.stdout.reconfigure(encoding="utf-8")
@@ -35,7 +36,6 @@ except Exception as exc:
 
 import psycopg2
 import psycopg2.extras
-import logging
 
 # ── 常量 ──────────────────────────────────────────────────────────────
 MAIN_SCHEMA = "xmap"
