@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 06:57",
+ "generated": "2026-10-28 06:58",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 35,
+  "workorders_doing": 34,
   "workorders_review": 4
  },
  "workorders": [
@@ -354,15 +354,6 @@
    "branch": "task/WO-CIGATES-20261028",
    "created": "2026-10-28 06:56:15",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261028-KEYSV2A4",
-   "desc": "Phase A-4 模型路由：平台中转站+模型通道合并为单一可编辑区块；GPT6改为预设；本地模型只读；其它位置只引用",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-KEYSV2A4",
-   "created": "2026-10-28 06:57:25",
-   "project": "quant"
   }
  ],
  "coder_traces": [
