@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 15,
+  "workorders_doing": 13,
   "workorders_review": 2
  },
  "workorders": [
@@ -146,24 +146,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-B06BYPREP-20261027",
    "created": "2026-10-27 14:56:07",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-A3-FILLBACK-20261027",
-   "desc": "A3 派单回填批量应用器（老田 14:47 指令续）：apply_rotation_fillback.py 读 ROTATION_FILLBACK.env 非空项写本地目标（env/json/text）、备份、vault encrypt+verify、MCP render；dry-run 全量；当前 fillback 敏感键为空（只证明待填，不伪造值）；命令卡补批量模式。",
-   "status": "doing",
-   "owner": "A0",
-   "branch": "task/WO-LEGION-A3-FILLBACK-20261027",
-   "created": "2026-10-27 14:56:08",
-   "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-EVALFIX-20261027",
-   "desc": "评测断言修正 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-EVALFIX-20261027",
-   "created": "2026-10-27 14:56:12",
    "project": "general"
   }
  ],
@@ -1262,14 +1244,7 @@
    ],
    "experience": "20 年产品+研发复合经验：从需求定义、架构设计到参考实现与验收全链路；不亲自交付代码，以方案/伪代码/代码参考驱动执行 AI 落地；信息不全时能基于证据做最优决策并组织多 AI 自动执行。",
    "dept_name": "",
-   "dept_cn_title": "",
-   "tasks": [
-    {
-     "id": "WO-LEGION-A3-FILLBACK-20261027",
-     "desc": "A3 派单回填批量应用器（老田 14:47 指令续）：apply_rotation_fillback.py 读 ROTATION_FILLBACK.env 非空项写本地目标（env/json/text）、备份、vault encrypt+verify、MCP render；dry-run 全量；当前 fillback 敏感键为空（只证明待填，不伪造值）；命令卡补批量模式。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": ""
   },
   "ACAD1": {
    "id": "ACAD1",
