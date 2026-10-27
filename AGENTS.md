@@ -39,6 +39,7 @@
 - 任务单登记在 `.worktrees/tasks.json`（devtask.py 维护）+ 重活同步 agent_platform tasks。
 - 状态机：doing → review → done（merge 时自动翻转）。中途放弃标 aborted 留原因。
 - 汇报：完工必须在提交信息带 `K-STOCK-xxx` 或工单号；A0 日报按此汇总。
+- **研发需求路由（2026-10-27 A0 批，L1）**：新研发需求优先派 ARCH1/组长（G1 DEV1 / G2 DEV5），不得直接落 DSH/治理席；例外=A0/老田显式指派、跨部门治理任务、研发部请求支援且 ARCH1 确认。细则见 `docs/plans/2026-10-27_研发单路由规则_ARCH1优先_v1.md`。
 
 ## 5. 评审门（merge 自动执行，全绿才放行）
 
