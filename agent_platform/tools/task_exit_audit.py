@@ -94,7 +94,11 @@ NON_FAILURE_RC = frozenset(
 # 其它任务同码仍按通用语义（rc=1=一般失败）处理，保持既有口径不变。
 TASK_RC_SEMANTICS: dict[tuple[str, int], tuple[str, str]] = {
     ("KgChainWatchdog", 1): ("alert_found", "发现坏链告警(by-design，非任务失败)"),
-    ("PytestWeekly", 1): ("known_baseline", "k_stock 2 个既存失败(已知基线，非任务失败)"),
+    ("PytestWeekly", 1): ("known_baseline", "已知基线：历史收集炸窗已修(61f51fe9)，待下轮复验；原 k_stock 归因错误"),
+    # 2026-10-27 OS-FIX-TASKREG：设计内非失败码，标注真实语义，避免被当脚本崩溃。
+    ("DeadlineWatch", 2): ("known_baseline", "设计内 pending(上游锚点未到，非脚本失败)"),
+    ("x5-picks-publish-check", 2): ("known_baseline", "设计内线上滞后告警(DEPLOY_PENDING，非崩溃)"),
+    ("ObservePointReviewOnce", 1): ("known_baseline", "一次性任务已过期(next_run 空，非当前失败)"),
 }
 
 
@@ -119,6 +123,14 @@ KNOWN_SCHED_FAMILIES = (
     # （Event ID 329 实证），却因前缀不在名单而从未入账。
     "AI工作站门户",
     "Notice",
+    # 2026-10-27 OS-FIX-TASKREG：11 个业务任务前缀未登记导致 canonical 审计漏报
+    # （Kg×6 + SeatHeartbeat + DeadlineWatch + x5-picks + PytestWeekly + ObservePointReviewOnce）。
+    "Kg",
+    "SeatHeartbeat",
+    "DeadlineWatch",
+    "x5-picks",
+    "PytestWeekly",
+    "ObservePointReviewOnce",
 )
 
 # 落盘到 portal/data（与 result_evidence 同域）：nginx 静态直服 /data/task_exit_audit/*，

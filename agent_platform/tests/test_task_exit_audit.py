@@ -428,8 +428,11 @@ def test_classify_task_by_design_mapping():
     )
     assert ta.classify_task_by_design("PytestWeekly", 1) == (
         "known_baseline",
-        "k_stock 2 个既存失败(已知基线，非任务失败)",
+        "已知基线：历史收集炸窗已修(61f51fe9)，待下轮复验；原 k_stock 归因错误",
     )
+    assert ta.classify_task_by_design("DeadlineWatch", 2)[0] == "known_baseline"
+    assert ta.classify_task_by_design("x5-picks-publish-check", 2)[0] == "known_baseline"
+    assert ta.classify_task_by_design("ObservePointReviewOnce", 1)[0] == "known_baseline"
     # 其它任务同码 / 同任务其它码 → 不映射（保持既有口径）
     assert ta.classify_task_by_design("SomeOtherTask", 1) is None
     assert ta.classify_task_by_design("KgChainWatchdog", 2) is None
