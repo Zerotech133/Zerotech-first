@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:19",
+ "generated": "2026-10-28 07:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 34,
   "workorders_review": 4
  },
  "workorders": [
@@ -344,6 +344,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-UIW4H-20261028",
+   "desc": "W4 第六批收编：os_quick/os_map/agent_board/approvals 接入 PageShell adopted；更新清单与测试",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-UIW4H-20261028",
+   "created": "2026-10-28 07:21:45",
    "project": "general"
   }
  ],
@@ -7026,6 +7035,11 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-UIW4H-20261028",
+     "desc": "W4 第六批收编：os_quick/os_map/agent_board/approvals 接入 PageShell adopted；更新清单与测试",
+     "status": "doing"
     }
    ]
   }
