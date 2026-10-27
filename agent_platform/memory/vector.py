@@ -77,6 +77,39 @@ def embed(texts: list[str]) -> list[list[float]]:
     return [list(map(float, v)) for v in _model().embed([str(t) for t in texts])]
 
 
+def hash_embed(texts: list[str], dim: int = 256) -> list[list[float]]:
+    """纯 Python 轻量向量：字符 1~3-gram 哈希到 dim 桶 + L2 归一（无依赖）。
+
+    语义能力弱于 fastembed，但零依赖、毫秒级；用于 8796(py3.13) 等装不上
+    fastembed 的环境做"轻量向量"兜底。
+    """
+    import math
+    import zlib
+    out = []
+    for text in texts:
+        s = str(text or "").lower()
+        vec = [0.0] * dim
+        n = len(s)
+        for i in range(n):
+            for k in (1, 2, 3):
+                if i + k <= n:
+                    gram = s[i:i + k]
+                    vec[zlib.crc32(gram.encode("utf-8")) % dim] += 1.0
+        norm = math.sqrt(sum(x * x for x in vec)) or 1.0
+        out.append([x / norm for x in vec])
+    return out
+
+
+def embed_any(texts: list[str]) -> tuple[list[list[float]], str]:
+    """优先 fastembed（若可用），否则纯 Python 哈希向量。"""
+    if available():
+        try:
+            return embed(texts), "fastembed:" + MODEL_NAME
+        except Exception:  # noqa: BLE001
+            pass
+    return hash_embed(texts), "hash-ngram-256"
+
+
 def cosine(a: list[float], b: list[float]) -> float:
     if not a or not b or len(a) != len(b):
         return 0.0
@@ -90,13 +123,15 @@ def rerank(query: str, items: list, limit: int | None = None) -> list:
     """对候选做语义重排；失败抛 VectorUnavailable（调用方降级）。"""
     if not items:
         return []
-    vecs = embed([query] + [str(it.get("cue", "")) + " " + str(it.get("content", ""))
-                            for it in items])
+    vecs, engine = embed_any(
+        [query] + [str(it.get("cue", "")) + " " + str(it.get("content", ""))
+                   for it in items])
     q, docs = vecs[0], vecs[1:]
     out = []
     for it, dv in zip(items, docs):
         row = dict(it)
         row["vector_score"] = round(cosine(q, dv), 4)
+        row["vector_engine"] = engine
         out.append(row)
     out.sort(key=lambda x: -x["vector_score"])
     return out[:limit] if limit else out
@@ -189,9 +224,10 @@ def eval_hits(db: Path | None = None, limit: int = 3) -> dict:
         conn.close()
     if not rows:
         return {"ok": True, "total": 0, "hit@1": 0, "hit@3": 0, "mrr": 0.0}
-    docs = embed([str(r["cue"]) + " " + str(r["content"]) for r in rows])
+    docs, engine = embed_any(
+        [str(r["cue"]) + " " + str(r["content"]) for r in rows])
     queries = [str(q.get("query") or "") for q in data.get("queries") or []]
-    qvecs = embed(queries)
+    qvecs, _ = embed_any(queries)
     hit1 = hit3 = 0
     rr = 0.0
     details = []
@@ -214,7 +250,7 @@ def eval_hits(db: Path | None = None, limit: int = 3) -> dict:
         details.append({"query": q, "rank": rank})
     total = len(queries)
     return {"ok": True, "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-            "model": MODEL_NAME, "total": total, "hit@1": hit1, "hit@3": hit3,
+            "model": engine, "total": total, "hit@1": hit1, "hit@3": hit3,
             "hit1_rate": round(hit1 / total, 3) if total else 0,
             "hit3_rate": round(hit3 / total, 3) if total else 0,
             "mrr": round(rr / total, 3) if total else 0, "details": details}

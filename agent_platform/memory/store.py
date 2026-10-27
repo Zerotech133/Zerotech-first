@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sqlite3
 import time
@@ -131,7 +132,7 @@ def _fts_ids(conn, query: str) -> set:
 
 
 def search(
-    query: str, layer: str | None = None, limit: int = 5, db: Path | None = None
+    query: str, layer: str | None = None, limit: int = 5, db: Path | None = None, use_vector: bool | None = None
 ) -> dict:
     limit = max(1, min(int(limit or 5), 20))
     conn = connect(db)
@@ -176,13 +177,26 @@ def search(
             }
         )
     scored.sort(key=lambda x: (-x["score"], x["id"]))
+    if use_vector is None:
+        use_vector = str(os.environ.get("ZHAOYUN_VECTOR", "")).lower() in (
+            "1", "on", "true", "yes")
+    vector_used = False
+    vector_engine = ""
+    if use_vector and scored:
+        try:
+            from memory.vector import rerank  # noqa: WPS433
+            scored = rerank(query, scored)
+            vector_used = True
+            vector_engine = scored[0].get("vector_engine", "") if scored else ""
+        except Exception:  # noqa: BLE001
+            vector_used = False
     out = scored[:limit]
     return {
         "ok": True,
         "query": query,
         "layer": layer,
         "count": len(out),
-        "used_fts": bool(fts),
+        "used_fts": bool(fts), "used_vector": vector_used, "vector_engine": vector_engine,
         "total_candidates": len(rows),
         "items": out,
     }
