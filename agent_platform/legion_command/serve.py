@@ -1253,6 +1253,40 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "mission_plan_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/mission/dispatch":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_dispatch, mission_planner
+                plan = req.get("plan")
+                if not plan and req.get("mission_id"):
+                    plan = mission_planner.load_plan(str(req["mission_id"]))
+                if not plan:
+                    self._send_json({"ok": False, "error": "plan_required"}, 400)
+                    return
+                res = mission_dispatch.dispatch(plan, int(req.get("parallel") or 3),
+                                                create=bool(req.get("create", True)))
+                self._send_json(res)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_dispatch_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/advance":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_dispatch
+                self._send_json(mission_dispatch.advance(str(req.get("mission_id") or "")))
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_advance_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/mission/dry-run":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
