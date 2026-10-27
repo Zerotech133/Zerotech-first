@@ -30,9 +30,18 @@ class TestDst:
 
 class TestResolve:
     def test_winter_shift_us(self):
-        cfg = {"dst": "us", "winter_shift_minutes": 60,
-               "windows": [{"name": "preopen", "start": "20:40",
-                            "end": "21:20", "deadline": "21:00"}]}
+        cfg = {
+            "dst": "us",
+            "winter_shift_minutes": 60,
+            "windows": [
+                {
+                    "name": "preopen",
+                    "start": "20:40",
+                    "end": "21:20",
+                    "deadline": "21:00",
+                }
+            ],
+        }
         summer = pm.resolve_windows(cfg, date(2026, 7, 15))[0]
         winter = pm.resolve_windows(cfg, date(2026, 1, 15))[0]
         assert (summer["start"], summer["deadline"]) == ("20:40", "21:00")
@@ -40,8 +49,16 @@ class TestResolve:
         assert winter["_shift_min"] == 60 and summer["_shift_min"] == 0
 
     def test_cn_no_shift(self):
-        cfg = {"windows": [{"name": "morning", "start": "07:40",
-                            "end": "09:15", "deadline": "08:00"}]}
+        cfg = {
+            "windows": [
+                {
+                    "name": "morning",
+                    "start": "07:40",
+                    "end": "09:15",
+                    "deadline": "08:00",
+                }
+            ]
+        }
         w = pm.resolve_windows(cfg, date(2026, 1, 15))[0]
         assert w["start"] == "07:40" and w["_shift_min"] == 0
 
@@ -76,8 +93,12 @@ class TestNextWindow:
 
     def test_cross_day(self):
         mkt, w, st = pm.next_window(datetime(2026, 10, 19, 21, 0), self.m)
-        assert mkt == "us" and st.date() == date(2026, 10, 20) \
-            and st.hour == 5 and st.minute == 40
+        assert (
+            mkt == "us"
+            and st.date() == date(2026, 10, 20)
+            and st.hour == 5
+            and st.minute == 40
+        )
 
 
 class TestQuiet:
@@ -93,52 +114,48 @@ class TestQuiet:
         assert not pm.is_quiet(datetime(2026, 10, 19, 21, 59), self.m, "daily")
 
     def test_critical_bypass(self):
-        assert not pm.is_quiet(datetime(2026, 10, 19, 23, 0), self.m,
-                               "critical")
+        assert not pm.is_quiet(datetime(2026, 10, 19, 23, 0), self.m, "critical")
 
 
 def _touch(p: Path, ts: datetime):
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text("x", encoding="utf-8")
     import os
+
     os.utime(p, (ts.timestamp(), ts.timestamp()))
 
 
 class TestAnchor:
     def setup_method(self):
         self.m = pm.load_matrix(HERE / "push_matrix.json")
-        self.m["anchors"]["t"] = {"path": "tmp_anchor/x.json",
-                                  "rule": "mtime_today",
-                                  "min_mtime": "07:25", "enabled": True}
+        self.m["anchors"]["t"] = {
+            "path": "tmp_anchor/x.json",
+            "rule": "mtime_today",
+            "min_mtime": "07:25",
+            "enabled": True,
+        }
 
     def _repo(self, tmp: Path) -> Path:
         return tmp
 
     def test_ok(self, tmp_path):
-        _touch(tmp_path / "tmp_anchor" / "x.json",
-               datetime(2026, 10, 19, 7, 30))
-        r = pm.anchor_status("t", self.m, datetime(2026, 10, 19, 8, 0),
-                             repo=tmp_path)
+        _touch(tmp_path / "tmp_anchor" / "x.json", datetime(2026, 10, 19, 7, 30))
+        r = pm.anchor_status("t", self.m, datetime(2026, 10, 19, 8, 0), repo=tmp_path)
         assert r["status"] == "ok"
 
     def test_missing_and_disabled_and_unknown(self, tmp_path):
         r = pm.anchor_status("t", self.m, repo=tmp_path)
         assert r["status"] == "missing"
         self.m["anchors"]["t"]["enabled"] = False
-        assert pm.anchor_status("t", self.m, repo=tmp_path)["status"] == \
-            "disabled"
+        assert pm.anchor_status("t", self.m, repo=tmp_path)["status"] == "disabled"
         assert pm.anchor_status("nope", self.m)["status"] == "unknown"
 
     def test_stale_yesterday_and_early(self, tmp_path):
-        _touch(tmp_path / "tmp_anchor" / "x.json",
-               datetime(2026, 10, 18, 9, 0))
-        r = pm.anchor_status("t", self.m, datetime(2026, 10, 19, 8, 0),
-                             repo=tmp_path)
+        _touch(tmp_path / "tmp_anchor" / "x.json", datetime(2026, 10, 18, 9, 0))
+        r = pm.anchor_status("t", self.m, datetime(2026, 10, 19, 8, 0), repo=tmp_path)
         assert r["status"] == "stale"
-        _touch(tmp_path / "tmp_anchor" / "x.json",
-               datetime(2026, 10, 19, 7, 0))
-        r = pm.anchor_status("t", self.m, datetime(2026, 10, 19, 8, 0),
-                             repo=tmp_path)
+        _touch(tmp_path / "tmp_anchor" / "x.json", datetime(2026, 10, 19, 7, 0))
+        r = pm.anchor_status("t", self.m, datetime(2026, 10, 19, 8, 0), repo=tmp_path)
         assert r["status"] == "stale" and "07:25" in r["detail"]
 
 
@@ -146,8 +163,7 @@ class TestLoad:
     def test_shipped_config_valid(self):
         m = pm.load_matrix(HERE / "push_matrix.json")
         # 六市场全覆盖，锚引用闭合（每个窗口的 anchor/templates 有注册）
-        assert set(m["markets"]) == {"cn", "hk", "us", "commodity", "crypto",
-                                     "fx"}
+        assert set(m["markets"]) == {"cn", "hk", "us", "commodity", "crypto", "fx"}
         for mkt, cfg in m["markets"].items():
             for w in cfg["windows"]:
                 assert w["anchor"] in m["anchors"], (mkt, w["name"])

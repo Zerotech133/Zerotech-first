@@ -9,6 +9,7 @@
 - 断言返回统计只含键名，任何 "secret" 类值字符串不得出现在返回
   dict 的任何 str 中。
 """
+
 import os
 import sys
 import tempfile
@@ -34,7 +35,8 @@ class _EnvGuardMixin(object):
     def setUp(self):
         super(_EnvGuardMixin, self).setUp()
         self._snapshot = {
-            k: v for k, v in os.environ.items()
+            k: v
+            for k, v in os.environ.items()
             if k.startswith("CAINIAO_") or k in _NON_PREFIX_KEYS
         }
         for k in self._snapshot:
@@ -50,7 +52,6 @@ class _EnvGuardMixin(object):
 
 
 class LoadCainiaoEnvAllowlistTest(_EnvGuardMixin, unittest.TestCase):
-
     def _write_env(self, content):
         fd, path = tempfile.mkstemp(suffix=".env")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -69,9 +70,7 @@ class LoadCainiaoEnvAllowlistTest(_EnvGuardMixin, unittest.TestCase):
     # --- 2. 非前缀键不入 environ 且进 skipped（只记键名） ---
     def test_non_prefixed_keys_skipped(self):
         path = self._write_env(
-            "PORTAL_SUB_ADMIN_KEY=should-not-leak\n"
-            "OTHER_X=1\n"
-            "CAINIAO_TENANT_ID=t1\n"
+            "PORTAL_SUB_ADMIN_KEY=should-not-leak\nOTHER_X=1\nCAINIAO_TENANT_ID=t1\n"
         )
         r = api_common._load_cainiao_env(path=path)
         self.assertEqual(r["loaded"], ["CAINIAO_TENANT_ID"])
@@ -95,7 +94,8 @@ class LoadCainiaoEnvAllowlistTest(_EnvGuardMixin, unittest.TestCase):
     def test_missing_file_noop(self):
         before = dict(os.environ)
         r = api_common._load_cainiao_env(
-            path=os.path.join(tempfile.gettempdir(), "no_such_env_zz9xkq.env"))
+            path=os.path.join(tempfile.gettempdir(), "no_such_env_zz9xkq.env")
+        )
         self.assertTrue(r["missing"])
         self.assertEqual(r["loaded"], [])
         self.assertEqual(r["skipped"], [])
@@ -104,10 +104,7 @@ class LoadCainiaoEnvAllowlistTest(_EnvGuardMixin, unittest.TestCase):
     # --- 5. 空行 / # 注释 / 无等号行跳过 ---
     def test_blank_comment_noeq_lines_skipped(self):
         path = self._write_env(
-            "\n"
-            "# CAINIAO_COMMENTED=nope\n"
-            "CAINIAO_OK=1\n"
-            "INVALID_LINE_NO_EQUALS\n"
+            "\n# CAINIAO_COMMENTED=nope\nCAINIAO_OK=1\nINVALID_LINE_NO_EQUALS\n"
         )
         r = api_common._load_cainiao_env(path=path)
         self.assertEqual(r["loaded"], ["CAINIAO_OK"])
@@ -137,8 +134,7 @@ class LoadCainiaoEnvAllowlistTest(_EnvGuardMixin, unittest.TestCase):
                     self.assertNotIn("supersecretvalue", item)
                     self.assertNotIn("adminsecretvalue", item)
         # 结构约束
-        self.assertEqual(
-            sorted(r.keys()), ["loaded", "missing", "skipped"])
+        self.assertEqual(sorted(r.keys()), ["loaded", "missing", "skipped"])
         self.assertIsInstance(r["missing"], bool)
         # skipped 只记键名
         self.assertEqual(r["skipped"], ["PORTAL_SUB_ADMIN_KEY"])

@@ -12,6 +12,7 @@ Checks required by the task:
   * every MISSING source is tagged SOURCE_UNVERIFIED (no silent fabrication)
   * a single missing source must NOT raise (fail-visible)
 """
+
 from __future__ import annotations
 
 import sys
@@ -28,7 +29,10 @@ def main() -> int:
     snap = WatchAdminAggregator().build()
     assert isinstance(snap, dict), "build() must return a dict"
 
-    assert snap.get("schema") == SCHEMA, "schema must be %r, got %r" % (SCHEMA, snap.get("schema"))
+    assert snap.get("schema") == SCHEMA, "schema must be %r, got %r" % (
+        SCHEMA,
+        snap.get("schema"),
+    )
 
     zones = snap.get("zones", {})
     required = ["zone1", "zone2", "zone3", "zone4", "zone5", "zone6", "zone7"]
@@ -41,8 +45,12 @@ def main() -> int:
         for s in z.get("sources", []):
             if not s.get("verified"):
                 assert s.get("source_quality") == "SOURCE_UNVERIFIED", (
-                    "missing source %s/%s is not flagged SOURCE_UNVERIFIED" % (zid, s.get("name")))
-                unverified.append("%s/%s:%s" % (zid, s.get("name"), s.get("error_code")))
+                    "missing source %s/%s is not flagged SOURCE_UNVERIFIED"
+                    % (zid, s.get("name"))
+                )
+                unverified.append(
+                    "%s/%s:%s" % (zid, s.get("name"), s.get("error_code"))
+                )
 
     print("OK  schema            :", snap["schema"])
     print("OK  zones present     :", sorted(zones.keys()))

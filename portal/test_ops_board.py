@@ -9,6 +9,7 @@
 5. 只读纪律：ops_board.html 无写操作（无 POST）
 6. 降级诚实：ops_board.html 含 degraded 降级区与只读声明文案
 """
+
 import os
 import re
 
@@ -31,7 +32,9 @@ def test_nginx_has_ops_board_location():
     # 静态页模式判例：try_files + no-cache
     assert re.search(
         r"location = /ops-board \{ try_files /static/ops_board\.html =404; "
-        r'add_header Cache-Control "no-cache"; \}', conf)
+        r'add_header Cache-Control "no-cache"; \}',
+        conf,
+    )
 
 
 def test_nginx_has_api_state_proxy():
@@ -39,8 +42,7 @@ def test_nginx_has_api_state_proxy():
     conf = _read(NGINX)
     assert conf.count("location = /api/state") == 1
     # 反代到 8097（带变量判例，同 /push 块）
-    m = re.search(r"location = /api/state \{.*?proxy_pass http://\$h:8097;",
-                  conf, re.S)
+    m = re.search(r"location = /api/state \{.*?proxy_pass http://\$h:8097;", conf, re.S)
     assert m, "缺 proxy_pass → 8097"
 
 
@@ -49,8 +51,7 @@ def test_portal_api_has_ops_board_branch():
     src = _read(API)
     assert 'path == "/ops-board"' in src
     # 路由指向新页面文件
-    assert re.search(
-        r'path == "/ops-board".*?ops_board\.html', src, re.S)
+    assert re.search(r'path == "/ops-board".*?ops_board\.html', src, re.S)
     # 判例锚点仍在（零破坏）
     assert 'path == "/notify-command"' in src
 

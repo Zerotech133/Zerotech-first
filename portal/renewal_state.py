@@ -93,6 +93,7 @@ _TZ_CACHE = {}
 # 时区口径
 # ---------------------------------------------------------------------------
 
+
 def _fmt_offset(td):
     total = int(td.total_seconds())
     sign = "+" if total >= 0 else "-"
@@ -115,7 +116,7 @@ def _fixed_offset(name):
     body = raw
     for prefix in ("UTC", "GMT"):
         if body.startswith(prefix):
-            body = body[len(prefix):]
+            body = body[len(prefix) :]
             break
     if not body or body[0] not in "+-":
         return None
@@ -224,6 +225,7 @@ def today_str(now=None, tz=None):
 # 已发去重状态（纯文件）
 # ---------------------------------------------------------------------------
 
+
 def state_path(path=None):
     """生效状态文件路径：入参 > env RENEWAL_STATE_PATH > portal/work/renewal_state.json。"""
     if path:
@@ -290,8 +292,15 @@ def load(path=None):
       调用方据此拒绝写（``mark_sent`` 已内置该拒绝）。
     """
     p = state_path(path)
-    result = {"ok": True, "error": None, "path": p, "corrupt": False,
-              "version": STATE_VERSION, "sent": {}, "problems": []}
+    result = {
+        "ok": True,
+        "error": None,
+        "path": p,
+        "corrupt": False,
+        "version": STATE_VERSION,
+        "sent": {},
+        "problems": [],
+    }
     try:
         with open(p, "r", encoding="utf-8") as fh:
             raw = fh.read()
@@ -300,8 +309,9 @@ def load(path=None):
     except OSError as exc:
         # closed on failure：读不了就不当空态，标记 corrupt 阻断后续覆盖写
         result.update(ok=False, error="state_unreadable", corrupt=True)
-        result["problems"].append({"reason": "state_unreadable", "path": p,
-                                   "detail": str(exc)[:200]})
+        result["problems"].append(
+            {"reason": "state_unreadable", "path": p, "detail": str(exc)[:200]}
+        )
         return result
 
     if not raw.strip():
@@ -312,14 +322,20 @@ def load(path=None):
         data = json.loads(raw)
     except ValueError as exc:
         result.update(ok=False, error="state_corrupt", corrupt=True)
-        result["problems"].append({"reason": "state_corrupt", "path": p,
-                                   "detail": str(exc)[:200]})
+        result["problems"].append(
+            {"reason": "state_corrupt", "path": p, "detail": str(exc)[:200]}
+        )
         return result
 
     if not isinstance(data, dict) or not isinstance(data.get("sent"), dict):
         result.update(ok=False, error="state_bad_shape", corrupt=True)
-        result["problems"].append({"reason": "state_bad_shape", "path": p,
-                                   "detail": "expect {'sent': {key: entry}}"})
+        result["problems"].append(
+            {
+                "reason": "state_bad_shape",
+                "path": p,
+                "detail": "expect {'sent': {key: entry}}",
+            }
+        )
         return result
 
     sent = {}
@@ -327,8 +343,9 @@ def load(path=None):
         if isinstance(key, str) and isinstance(entry, dict):
             sent[key] = entry
         else:
-            result["problems"].append({"reason": "state_bad_entry", "path": p,
-                                       "detail": str(key)[:80]})
+            result["problems"].append(
+                {"reason": "state_bad_entry", "path": p, "detail": str(key)[:80]}
+            )
     result["sent"] = sent
     try:
         result["version"] = int(data.get("version") or STATE_VERSION)
@@ -390,23 +407,43 @@ def mark_sent(state, item, day, path=None):
     plan_id = item.get("plan_id")
     stage = item.get("stage")
     if not open_id or not plan_id or not stage:
-        return {"ok": False, "error": "bad_item", "key": None, "path": p,
-                "written": False,
-                "problems": [{"reason": "bad_item", "path": p,
-                              "detail": "缺 open_id/plan_id/stage"}]}
+        return {
+            "ok": False,
+            "error": "bad_item",
+            "key": None,
+            "path": p,
+            "written": False,
+            "problems": [
+                {"reason": "bad_item", "path": p, "detail": "缺 open_id/plan_id/stage"}
+            ],
+        }
     day_str = _norm_day(day)
     if day_str is None:
-        return {"ok": False, "error": "bad_day", "key": None, "path": p,
-                "written": False,
-                "problems": [{"reason": "bad_day", "path": p,
-                              "detail": str(day)[:40]}]}
+        return {
+            "ok": False,
+            "error": "bad_day",
+            "key": None,
+            "path": p,
+            "written": False,
+            "problems": [{"reason": "bad_day", "path": p, "detail": str(day)[:40]}],
+        }
     key = sent_key(open_id, plan_id, stage, day_str)
     if state is None or state.get("corrupt"):
         # closed on failure：坏状态文件只能上报，不能以空态覆盖
-        return {"ok": False, "error": "state_corrupt", "key": key, "path": p,
-                "written": False,
-                "problems": [{"reason": "state_corrupt", "path": p,
-                              "detail": "state marked corrupt, refuse to write"}]}
+        return {
+            "ok": False,
+            "error": "state_corrupt",
+            "key": key,
+            "path": p,
+            "written": False,
+            "problems": [
+                {
+                    "reason": "state_corrupt",
+                    "path": p,
+                    "detail": "state marked corrupt, refuse to write",
+                }
+            ],
+        }
 
     sent = state.get("sent")
     if not isinstance(sent, dict):
@@ -422,16 +459,31 @@ def mark_sent(state, item, day, path=None):
     state["sent"] = sent
     state["version"] = STATE_VERSION
 
-    written, err = _atomic_write(p, {"version": STATE_VERSION,
-                                     "sent": sent,
-                                     "updated_at": local_now(None).strftime(_TS_FMT)})
+    written, err = _atomic_write(
+        p,
+        {
+            "version": STATE_VERSION,
+            "sent": sent,
+            "updated_at": local_now(None).strftime(_TS_FMT),
+        },
+    )
     if not written:
-        return {"ok": False, "error": "write_failed", "key": key, "path": p,
-                "written": False,
-                "problems": [{"reason": "write_failed", "path": p,
-                              "detail": err}]}
-    return {"ok": True, "error": None, "key": key, "path": p,
-            "written": True, "problems": []}
+        return {
+            "ok": False,
+            "error": "write_failed",
+            "key": key,
+            "path": p,
+            "written": False,
+            "problems": [{"reason": "write_failed", "path": p, "detail": err}],
+        }
+    return {
+        "ok": True,
+        "error": None,
+        "key": key,
+        "path": p,
+        "written": True,
+        "problems": [],
+    }
 
 
 def prune(state, keep_days=DEFAULT_KEEP_DAYS, today=None):

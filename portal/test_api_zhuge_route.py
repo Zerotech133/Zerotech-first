@@ -62,10 +62,10 @@ def test_get_returns_200_engine_contract():
 # ── ② 六源全缺（stub 注入）→ gaps 覆盖六源且 note 以「待核」开头 ──────
 def test_all_sources_missing_gaps_cover_six():
     import api_zhuge_route as zr
+
     out = zr.build_route_payload({k: (lambda: None) for k in zr.SOURCES})
     gaps = {g["source"] for g in out["gaps"]}
-    assert gaps == {"os", "home", "alerts", "notify", "tasks", "capability",
-                    "pushflow"}
+    assert gaps == {"os", "home", "alerts", "notify", "tasks", "capability", "pushflow"}
     for g in out["gaps"]:
         assert g["note"].startswith("待核")
 
@@ -77,10 +77,16 @@ def test_fetcher_exception_degrades_to_gap():
     def _boom():
         raise RuntimeError("boom")
 
-    out = zr.build_route_payload({
-        "os": _boom, "home": lambda: None, "alerts": lambda: None,
-        "notify": lambda: None, "tasks": lambda: None, "capability": lambda: None,
-    })
+    out = zr.build_route_payload(
+        {
+            "os": _boom,
+            "home": lambda: None,
+            "alerts": lambda: None,
+            "notify": lambda: None,
+            "tasks": lambda: None,
+            "capability": lambda: None,
+        }
+    )
     assert out["engine"] == "rule-based"  # 单源坏不拖垮整体
     assert any(g["source"] == "os" for g in out["gaps"])
 
@@ -123,30 +129,31 @@ def test_post_method_not_allowed_405():
             seen["code"] = code
 
     import io
+
     for verb in ("do_POST", "do_OPTIONS", "do_PUT", "do_DELETE"):
         h = object.__new__(_Stub)
         h.path = ROUTE_PATH
         h.headers = {}
         h.rfile = io.BytesIO(b"")
         getattr(h, verb)()
-        assert seen.get("code") == 405, f"{verb} /api/zhuge/brief 应 405，得 {seen.get('code')}"
+        assert seen.get("code") == 405, (
+            f"{verb} /api/zhuge/brief 应 405，得 {seen.get('code')}"
+        )
 
 
 # ── ⑦ 路由源码零写操作纪律 ────────────────────────────────────────────
 def test_route_source_has_no_write_ops():
     src = (HERE / "api_zhuge_route.py").read_text(encoding="utf-8")
-    for banned in ("requests.post", "urllib.request", "subprocess",
-                   "sqlite3.connect"):
+    for banned in ("requests.post", "urllib.request", "subprocess", "sqlite3.connect"):
         assert banned not in src, f"路由源码不得出现 {banned}"
     # open( 仅允许只读形态（路由层本应零文件 IO，六源函数各司其职）
-    assert 'open(' not in src.replace('mode=ro', '')
+    assert "open(" not in src.replace("mode=ro", "")
 
 
 # ── ⑧ 引擎 04 的 9 例不回退（引用守卫：模块同名加载）──────────────────
 def test_engine_module_still_importable_and_pure():
     m = _load_module("api_zhuge_brief")
-    out = m.build_brief({}, datetime(2026, 10, 21, 9, 0,
-                                     tzinfo=m.BEIJING))
+    out = m.build_brief({}, datetime(2026, 10, 21, 9, 0, tzinfo=m.BEIJING))
     assert out["engine"] == "rule-based" and out["suggestions"] == []
 
 
@@ -159,22 +166,33 @@ def _write_temp_ledger(rows, name=None):
     path = TMP_DIR / (name or "wo_os_20_push_flow_fixture.jsonl")
     path.write_text(
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
-        encoding="utf-8")
+        encoding="utf-8",
+    )
     return path
 
 
 def _row(day, ok, channel="openapi"):
-    return {"ts": day + "T10:00:00", "date": day, "kind": "hub",
-            "channel": channel, "target": "oc_test", "count": 1,
-            "ok": ok, "tenant": "default"}
+    return {
+        "ts": day + "T10:00:00",
+        "date": day,
+        "kind": "hub",
+        "channel": channel,
+        "target": "oc_test",
+        "count": 1,
+        "ok": ok,
+        "tenant": "default",
+    }
 
 
 def test_pushflow_stats_counts_today_by_channel():
     import api_zhuge_route as zr
-    rows = ([_row("2026-10-21", True) for _ in range(4)]
-            + [_row("2026-10-21", False) for _ in range(5)]
-            + [_row("2026-10-21", True, "lark-cli")]
-            + [_row("2026-10-20", False)])  # 非当日，必须忽略
+
+    rows = (
+        [_row("2026-10-21", True) for _ in range(4)]
+        + [_row("2026-10-21", False) for _ in range(5)]
+        + [_row("2026-10-21", True, "lark-cli")]
+        + [_row("2026-10-20", False)]
+    )  # 非当日，必须忽略
     path = _write_temp_ledger(rows)
     try:
         stats = zr._pushflow_stats(path=path, day="2026-10-21")
@@ -185,12 +203,15 @@ def test_pushflow_stats_counts_today_by_channel():
     assert stats["today"] == 10
     assert stats["ok_count"] == 5 and stats["fail_count"] == 5
     assert stats["fail_rate"] == 0.5
-    assert stats["channels"] == {"openapi": {"ok": 4, "fail": 5},
-                                 "lark-cli": {"ok": 1, "fail": 0}}
+    assert stats["channels"] == {
+        "openapi": {"ok": 4, "fail": 5},
+        "lark-cli": {"ok": 1, "fail": 0},
+    }
 
 
 def test_pushflow_stats_missing_file_returns_none():
     import api_zhuge_route as zr
+
     missing = TMP_DIR / "wo_os_20_not_exists.jsonl"
     if missing.exists():
         missing.unlink()
@@ -199,9 +220,16 @@ def test_pushflow_stats_missing_file_returns_none():
 
 # ── WO-OS-20-FIX 口径缺陷：免打扰窗口策略抑制不得算作投递失败 ──────
 def _gate_row(day, channel="hub-gate", kind="hub|deny:silent window"):
-    return {"ts": day + "T02:00:00", "date": day, "kind": kind,
-            "channel": channel, "target": "oc_test", "count": 1,
-            "ok": False, "tenant": "default"}
+    return {
+        "ts": day + "T02:00:00",
+        "date": day,
+        "kind": kind,
+        "channel": channel,
+        "target": "oc_test",
+        "count": 1,
+        "ok": False,
+        "tenant": "default",
+    }
 
 
 def test_pushflow_stats_excludes_policy_suppressed_from_fail_rate():
@@ -211,9 +239,12 @@ def test_pushflow_stats_excludes_policy_suppressed_from_fail_rate():
     若计入失败会虚报 53.9%，排除后真实失败率 27.4%。
     """
     import api_zhuge_route as zr
-    rows = ([_row("2026-10-21", True) for _ in range(7)]
-            + [_row("2026-10-21", False) for _ in range(3)]
-            + [_gate_row("2026-10-21") for _ in range(10)])
+
+    rows = (
+        [_row("2026-10-21", True) for _ in range(7)]
+        + [_row("2026-10-21", False) for _ in range(3)]
+        + [_gate_row("2026-10-21") for _ in range(10)]
+    )
     path = _write_temp_ledger(rows, "wo_os_20fix_gate.jsonl")
     try:
         stats = zr._pushflow_stats(path=path, day="2026-10-21")
@@ -231,6 +262,7 @@ def test_pushflow_stats_excludes_policy_suppressed_from_fail_rate():
 def test_pushflow_stats_all_suppressed_returns_none():
     """当日若全部是抑制行（无真实尝试），失败率无意义 → 返回 None 交引擎待核。"""
     import api_zhuge_route as zr
+
     rows = [_gate_row("2026-10-21") for _ in range(5)]
     path = _write_temp_ledger(rows, "wo_os_20fix_allgate.jsonl")
     try:
@@ -243,9 +275,10 @@ def test_pushflow_stats_all_suppressed_returns_none():
 def test_pushflow_stats_gate_by_kind_without_channel():
     """channel 非 hub-gate 但 kind 带 |deny: 也算抑制（matrix:us|deny:silent）。"""
     import api_zhuge_route as zr
-    rows = ([_row("2026-10-21", True) for _ in range(2)]
-            + [_gate_row("2026-10-21", channel="openapi",
-                         kind="matrix:us|deny:silent window")])
+
+    rows = [_row("2026-10-21", True) for _ in range(2)] + [
+        _gate_row("2026-10-21", channel="openapi", kind="matrix:us|deny:silent window")
+    ]
     path = _write_temp_ledger(rows, "wo_os_20fix_denykind.jsonl")
     try:
         stats = zr._pushflow_stats(path=path, day="2026-10-21")
@@ -264,11 +297,19 @@ def test_pushflow_quota_block_is_policy_not_failure():
     真实账本当前 0 条（未触发），一旦触发就会虚报，故按词表加固。
     """
     import api_zhuge_route as zr
-    rows = ([_row("2026-10-21", True) for _ in range(3)]
-            + [{"ts": "2026-10-21T11:00:00", "date": "2026-10-21",
-                "kind": "quota_block:km_card", "channel": "feishu",
-                "target": "oc_test", "count": 1, "ok": False,
-                "tenant": "default"}])
+
+    rows = [_row("2026-10-21", True) for _ in range(3)] + [
+        {
+            "ts": "2026-10-21T11:00:00",
+            "date": "2026-10-21",
+            "kind": "quota_block:km_card",
+            "channel": "feishu",
+            "target": "oc_test",
+            "count": 1,
+            "ok": False,
+            "tenant": "default",
+        }
+    ]
     path = _write_temp_ledger(rows, "wo_os_22_quota.jsonl")
     try:
         stats = zr._pushflow_stats(path=path, day="2026-10-21")
@@ -283,12 +324,27 @@ def test_pushflow_quota_block_is_policy_not_failure():
 def test_pushflow_policy_word_variants():
     """政策词表覆盖 deny/quota/policy/silent/hold 常见变体。"""
     import api_zhuge_route as zr
-    kinds = ["hub|deny:silent window", "quota_block:km_card",
-             "policy:deferred", "hold:rate_limit", "silent:night"]
-    rows = ([_row("2026-10-21", True)]
-            + [{"ts": "2026-10-21T12:00:00", "date": "2026-10-21",
-                "kind": k, "channel": "feishu", "target": "oc_t",
-                "count": 1, "ok": False, "tenant": "default"} for k in kinds])
+
+    kinds = [
+        "hub|deny:silent window",
+        "quota_block:km_card",
+        "policy:deferred",
+        "hold:rate_limit",
+        "silent:night",
+    ]
+    rows = [_row("2026-10-21", True)] + [
+        {
+            "ts": "2026-10-21T12:00:00",
+            "date": "2026-10-21",
+            "kind": k,
+            "channel": "feishu",
+            "target": "oc_t",
+            "count": 1,
+            "ok": False,
+            "tenant": "default",
+        }
+        for k in kinds
+    ]
     path = _write_temp_ledger(rows, "wo_os_22_kinds.jsonl")
     try:
         stats = zr._pushflow_stats(path=path, day="2026-10-21")
@@ -303,10 +359,14 @@ def test_pushflow_policy_word_variants():
 def test_pushflow_recent_trend_series():
     """recent 应按日期升序给近 4 天真实失败率（排除政策行、跳过空日）。"""
     import api_zhuge_route as zr
+
     rows = []
     # 10-18：2 成 1 败 → 33.3%
-    rows += [_row("2026-10-18", True), _row("2026-10-18", True),
-             _row("2026-10-18", False)]
+    rows += [
+        _row("2026-10-18", True),
+        _row("2026-10-18", True),
+        _row("2026-10-18", False),
+    ]
     # 10-19：全败 → 100%
     rows += [_row("2026-10-19", False), _row("2026-10-19", False)]
     # 10-20：全成 → 0%
@@ -320,8 +380,12 @@ def test_pushflow_recent_trend_series():
     finally:
         path.unlink()
     recent = stats["recent"]
-    assert [r["day"] for r in recent] == ["2026-10-18", "2026-10-19",
-                                         "2026-10-20", "2026-10-21"]
+    assert [r["day"] for r in recent] == [
+        "2026-10-18",
+        "2026-10-19",
+        "2026-10-20",
+        "2026-10-21",
+    ]
     assert [round(r["fail_rate"], 3) for r in recent] == [0.333, 1.0, 0.0, 0.5]
     assert [r["attempted"] for r in recent] == [3, 2, 2, 2]
     assert recent[-1]["fail_rate"] == stats["fail_rate"], "末日应与当日口径一致"
@@ -330,9 +394,17 @@ def test_pushflow_recent_trend_series():
 def test_pushflow_recent_capped_at_four_days():
     """超过 4 天时只取最近 4 天（按日期升序）。"""
     import api_zhuge_route as zr
+
     rows = []
-    for day in ("2026-10-15", "2026-10-16", "2026-10-17",
-                "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21"):
+    for day in (
+        "2026-10-15",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18",
+        "2026-10-19",
+        "2026-10-20",
+        "2026-10-21",
+    ):
         rows.append(_row(day, True))
     path = _write_temp_ledger(rows, "wo_os_25_cap.jsonl")
     try:
@@ -351,15 +423,40 @@ def test_pushflow_recent_rejects_missing_and_future_dates():
     趋势拿"None"日与今日比，且末日≠顶层口径。
     """
     import api_zhuge_route as zr
-    rows = [_row("2026-10-21", True), _row("2026-10-21", False),
-            {"ts": "2026-10-21T10:00:00", "kind": "hub", "channel": "openapi",
-             "target": "oc_t", "count": 1, "ok": False, "tenant": "default"},  # 无 date
-            {"ts": "2026-10-21T10:00:01", "date": "2026-10-21T10:00:01",
-             "kind": "hub", "channel": "openapi", "target": "oc_t",
-             "count": 1, "ok": False, "tenant": "default"},  # 非法 date 格式
-            {"ts": "2026-10-25T10:00:00", "date": "2026-10-25",
-             "kind": "hub", "channel": "openapi", "target": "oc_t",
-             "count": 1, "ok": True, "tenant": "default"}]  # 未来日期
+
+    rows = [
+        _row("2026-10-21", True),
+        _row("2026-10-21", False),
+        {
+            "ts": "2026-10-21T10:00:00",
+            "kind": "hub",
+            "channel": "openapi",
+            "target": "oc_t",
+            "count": 1,
+            "ok": False,
+            "tenant": "default",
+        },  # 无 date
+        {
+            "ts": "2026-10-21T10:00:01",
+            "date": "2026-10-21T10:00:01",
+            "kind": "hub",
+            "channel": "openapi",
+            "target": "oc_t",
+            "count": 1,
+            "ok": False,
+            "tenant": "default",
+        },  # 非法 date 格式
+        {
+            "ts": "2026-10-25T10:00:00",
+            "date": "2026-10-25",
+            "kind": "hub",
+            "channel": "openapi",
+            "target": "oc_t",
+            "count": 1,
+            "ok": True,
+            "tenant": "default",
+        },
+    ]  # 未来日期
     path = _write_temp_ledger(rows, "wo_os_25fix_dates.jsonl")
     try:
         stats = zr._pushflow_stats(path=path, day="2026-10-21")
@@ -371,4 +468,3 @@ def test_pushflow_recent_rejects_missing_and_future_dates():
     assert "2026-10-25" not in days, "未来日期不得进 recent"
     assert days[-1] == "2026-10-21", "末日必须是当日"
     assert stats["recent"][-1]["fail_rate"] == stats["fail_rate"]
-

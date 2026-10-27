@@ -9,6 +9,7 @@
   python push_legacy_audit.py --days 7
   python push_legacy_audit.py --days 1 --json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,22 +28,49 @@ WHITELIST = os.path.join(HERE, "work", "push_legacy_whitelist.json")
 # 判定：①按文件名在常见源码目录找到当前源文件；②源文件含统一分装标记；③该组
 # 全部记录时间早于源文件 mtime（即迁移前）→ 判"已迁移(历史)"，不列待迁移。
 # 迁移后若再出现旧调用（记录晚于 mtime）仍会照常标红，不会漏。
-MIGRATION_MARKERS = ("should_unify", "from_sections", "#unified",
-                     "push_unified_adapter", "feishu_push.")
-SOURCE_SUBDIRS = ("", "portal", "news_collector", "tools", "jev-eval",
-                  "quant_backtest", "ops")
+MIGRATION_MARKERS = (
+    "should_unify",
+    "from_sections",
+    "#unified",
+    "push_unified_adapter",
+    "feishu_push.",
+)
+SOURCE_SUBDIRS = (
+    "",
+    "portal",
+    "news_collector",
+    "tools",
+    "jev-eval",
+    "quant_backtest",
+    "ops",
+)
 
 # 非「对外推送」场景：审批/控制/台账/本地播报等，允许继续用旧模板
 DEFAULT_WHITELIST = [
-    "approval_card", "tune_gate", "km_feishu_hub", "jev_card_action",
-    "card_actions", "api_misc", "portal_api", "org_command_api",
-    "feishu_console", "feishu_sop_runner", "card_audit", "broadcast",
+    "approval_card",
+    "tune_gate",
+    "km_feishu_hub",
+    "jev_card_action",
+    "card_actions",
+    "api_misc",
+    "portal_api",
+    "org_command_api",
+    "feishu_console",
+    "feishu_sop_runner",
+    "card_audit",
+    "broadcast",
 ]
 # 内部工具/巡检脚本（非用户推送生产者；按脚本文件名豁免）
 FILE_WHITELIST = {
-    "devtask.py", "publish_watchdog.py", "a0_patrol.py",
-    "execution_watchdog.py", "alert_forward.py", "refresh_agent_board.py",
-    "health_check.py", "feishu_rollback_drill.py", "feishu_sop_runner.py",
+    "devtask.py",
+    "publish_watchdog.py",
+    "a0_patrol.py",
+    "execution_watchdog.py",
+    "alert_forward.py",
+    "refresh_agent_board.py",
+    "health_check.py",
+    "feishu_rollback_drill.py",
+    "feishu_sop_runner.py",
     # 2026-10-26 OS-FIX-W4FINAL（老田批准执行）：JEV 图表卡含飞书 img_key
     # （图表快照），统一分装 feishu_push 不支持图片；按"非迁移场景"白名单，
     # 非通用推送生产者（随晨报/复盘附带的图表附件）。
@@ -63,6 +91,7 @@ def load_whitelist():
 
 def _within(ts, days):
     import datetime as dt
+
     try:
         t = dt.datetime.fromisoformat(str(ts))
     except ValueError:
@@ -72,6 +101,7 @@ def _within(ts, days):
 
 def _epoch(ts):
     import datetime as dt
+
     try:
         return dt.datetime.fromisoformat(str(ts)).timestamp()
     except ValueError:
@@ -82,9 +112,10 @@ def _find_source(file_name, roots=None):
     """按文件名在常见源码目录找当前源文件；找不到返回 None（fail-open 不判迁移）。"""
     if not file_name or file_name == "?":
         return None
-    for base in (roots if roots is not None else SOURCE_SUBDIRS):
-        p = os.path.join(base if os.path.isabs(base) else os.path.join(ROOT, base),
-                         file_name)
+    for base in roots if roots is not None else SOURCE_SUBDIRS:
+        p = os.path.join(
+            base if os.path.isabs(base) else os.path.join(ROOT, base), file_name
+        )
         if os.path.isfile(p):
             return p
     return None
@@ -132,22 +163,32 @@ def audit(days=7, log_path=None, source_roots=None):
     wl = load_whitelist()
     grouped = {}
     for r in rows:
-        key = (r.get("template") or "?", r.get("caller") or "?",
-               r.get("file") or "?")
+        key = (r.get("template") or "?", r.get("caller") or "?", r.get("file") or "?")
         grouped.setdefault(key, []).append(r)
     groups = []
     for k, rs in grouped.items():
         latest = max(_epoch(x.get("ts")) for x in rs)
         whitelisted = (k[1] in wl) or (k[2] in FILE_WHITELIST)
         migrated = _is_migrated(k[2], latest, roots=source_roots)
-        groups.append({"template": k[0], "caller": k[1], "file": k[2],
-                       "count": len(rs), "whitelisted": whitelisted,
-                       "migrated": migrated})
+        groups.append(
+            {
+                "template": k[0],
+                "caller": k[1],
+                "file": k[2],
+                "count": len(rs),
+                "whitelisted": whitelisted,
+                "migrated": migrated,
+            }
+        )
     groups.sort(key=lambda g: g["count"], reverse=True)
-    unlisted = [g for g in groups
-                if not g["whitelisted"] and not g["migrated"]]
-    return {"days": days, "total": len(rows), "groups": groups,
-            "unlisted": unlisted, "whitelist_size": len(wl)}
+    unlisted = [g for g in groups if not g["whitelisted"] and not g["migrated"]]
+    return {
+        "days": days,
+        "total": len(rows),
+        "groups": groups,
+        "unlisted": unlisted,
+        "whitelist_size": len(wl),
+    }
 
 
 def render(res):
@@ -158,13 +199,21 @@ def render(res):
     lines.append("  模板                     调用方/脚本                 次数  白名单")
     for g in res["groups"]:
         who = g["caller"] if g["caller"] != "__main__" else g.get("file", "?")
-        lines.append("  %-24s %-24s %4d  %s" % (
-            g["template"][:24], who[:24], g["count"],
-            "✓" if g["whitelisted"]
-            else ("✓ 已迁移(历史)" if g.get("migrated") else "✗ 待迁移")))
+        lines.append(
+            "  %-24s %-24s %4d  %s"
+            % (
+                g["template"][:24],
+                who[:24],
+                g["count"],
+                "✓"
+                if g["whitelisted"]
+                else ("✓ 已迁移(历史)" if g.get("migrated") else "✗ 待迁移"),
+            )
+        )
     if res["unlisted"]:
-        lines.append("待迁移：%s" % "、".join(
-            sorted({g["caller"] for g in res["unlisted"]})))
+        lines.append(
+            "待迁移：%s" % "、".join(sorted({g["caller"] for g in res["unlisted"]}))
+        )
     else:
         lines.append("✓ 无待迁移调用（全部为白名单/非推送场景）")
     return "\n".join(lines)

@@ -3,13 +3,16 @@
 用法：python kg_stock_query.py 605100.SH [days]
 stdout = JSON，stdout/stderr 分离。
 """
+
 import sys
 import os
 import json
-sys.path.insert(0, r'C:\aios\quant_backtest')
+
+sys.path.insert(0, r"C:\aios\quant_backtest")
 os.environ.setdefault("KG_DSN", "bolt://127.0.0.1:7687")
 
 import kg_portal
+
 code = sys.argv[1] if len(sys.argv) > 1 else ""
 days = int(sys.argv[2]) if len(sys.argv) > 2 else 90
 
@@ -24,6 +27,7 @@ try:
     json.dump(r, sys.stdout, ensure_ascii=False, default=str)
 except Exception as e:
     import traceback
+
     json.dump({"ok": False, "error": str(e)}, sys.stdout, ensure_ascii=False)
     traceback.print_exc(file=sys.stderr)
     sys.exit(2)

@@ -11,6 +11,7 @@ notification_decision.approve_from_card（身份配对 + 行核对 + 留痕）�
 保持 recorded，真实执行仍由 8097 execute 端点受 PUSH_DECISION_EXECUTE
 门控——审批不绕开关。
 """
+
 import datetime
 import json
 import os
@@ -24,6 +25,7 @@ def _signed_value(val):
     """按钮回调值签名（W40/B5）：CARD_SIGN_ENFORCE=1 时未签名回调会被拒。"""
     try:
         import card_sign
+
         return card_sign.sign(val)
     except Exception:  # noqa: BLE001
         return val
@@ -42,44 +44,65 @@ def build_review_card(decision):
     # 不并入发送正文——文档引用不外发）
     lines = [
         "**公告内容**　%s" % (content or "（空）"),
-        "**目标**　%s%s" % (d.get("target_name") or "?",
-                            ("（%s）" % tid) if tid else ""),
+        "**目标**　%s%s"
+        % (d.get("target_name") or "?", ("（%s）" % tid) if tid else ""),
         "**拟发送时间**　%s" % (d.get("send_at") or "?"),
         "**理由**　%s" % (d.get("reason") or "未提供"),
         "**依据**　%s" % (d.get("basis") or "未提供"),
     ]
     if d.get("doc_url"):
         doc_title = str(d.get("doc_title") or "未命名文档")
-        lines.append("**参考文档（未核实）**　[%s](%s)" % (
-            doc_title.replace("[", "（").replace("]", "）"), d["doc_url"]))
+        lines.append(
+            "**参考文档（未核实）**　[%s](%s)"
+            % (doc_title.replace("[", "（").replace("]", "）"), d["doc_url"])
+        )
     md = "\n".join(lines)
     els = [
         {"tag": "markdown", "content": "**管理公告 · 待老田确认**"},
         {"tag": "hr"},
         {"tag": "markdown", "content": md},
-        {"tag": "markdown", "content":
-            "<font color='red'>「确认」仅完成审批留痕，真实执行仍受 "
-            "PUSH_DECISION_EXECUTE 开关门控</font>"},
+        {
+            "tag": "markdown",
+            "content": "<font color='red'>「确认」仅完成审批留痕，真实执行仍受 "
+            "PUSH_DECISION_EXECUTE 开关门控</font>",
+        },
         {"tag": "hr"},
-        {"tag": "button", "type": "primary",
-         "text": {"tag": "plain_text",
-                  "content": "确认（审批留痕）"},
-         "behaviors": [{"type": "callback",
-                        "value": _signed_value(
-                            {"action_id": "decision_approve",
-                             "req_id": did})}]},
-        {"tag": "button", "type": "danger",
-         "text": {"tag": "plain_text", "content": "驳回"},
-         "behaviors": [{"type": "callback",
-                        "value": _signed_value(
-                            {"action_id": "decision_reject",
-                             "req_id": did})}]},
+        {
+            "tag": "button",
+            "type": "primary",
+            "text": {"tag": "plain_text", "content": "确认（审批留痕）"},
+            "behaviors": [
+                {
+                    "type": "callback",
+                    "value": _signed_value(
+                        {"action_id": "decision_approve", "req_id": did}
+                    ),
+                }
+            ],
+        },
+        {
+            "tag": "button",
+            "type": "danger",
+            "text": {"tag": "plain_text", "content": "驳回"},
+            "behaviors": [
+                {
+                    "type": "callback",
+                    "value": _signed_value(
+                        {"action_id": "decision_reject", "req_id": did}
+                    ),
+                }
+            ],
+        },
     ]
-    return {"schema": "2.0", "config": {"update_multi": True},
-            "header": {"title": {"tag": "plain_text",
-                                 "content": "⚖ 交互 · 管理公告审批"},
-                       "template": "violet"},
-            "body": {"elements": els}}
+    return {
+        "schema": "2.0",
+        "config": {"update_multi": True},
+        "header": {
+            "title": {"tag": "plain_text", "content": "⚖ 交互 · 管理公告审批"},
+            "template": "violet",
+        },
+        "body": {"elements": els},
+    }
 
 
 def push_review_card(decision):
@@ -89,23 +112,28 @@ def push_review_card(decision):
     sys.path.insert(0, os.path.join(ROOT, "news_collector"))
     import feishu_client
     import notification_decision as nd
+
     receive_id = nd._laotian_open_id()
     if not receive_id:
         return False, "老田 open_id 未配置（LAOTIAN_OPEN_ID / push_subscribers）"
     card = build_review_card(decision)
     # critical=True：审批卡是发给老田本人的动作请求（非群广播），静默窗吞卡
     # 会让审批流 22:00-07:30 瘫痪；走闸门既有 critical 豁免（K-ORG-201 冒烟判例）。
-    return feishu_client.send_msg(json.dumps(card, ensure_ascii=False),
-                                  "interactive", receive_id,
-                                  receive_id_type="open_id",
-                                  kind="decision:announcement",
-                                  critical=True)
+    return feishu_client.send_msg(
+        json.dumps(card, ensure_ascii=False),
+        "interactive",
+        receive_id,
+        receive_id_type="open_id",
+        kind="decision:announcement",
+        critical=True,
+    )
 
 
 def handle_card_action(action_id, req_id, operator_open_id):
     """卡片按钮处理（card_actions.dispatch v3 分发表注册入口）→ (ok, msg)。
     其他 action_id 返回 not mine 交给老链。"""
     import notification_decision as nd
+
     if action_id == "decision_approve":
         r = nd.approve_from_card({"id": req_id}, operator_open_id)
         if r.get("ok"):
@@ -123,26 +151,31 @@ def _reject(req_id, operator_open_id):
     executed_at 字段存时间戳，outcome=rejected_by_laotian）+ 审计流水。
     被驳回决策不再可执行（execute 只认 recorded）。"""
     import notification_decision as nd
+
     expected = nd._laotian_open_id()
     got = str(operator_open_id or "").strip()
     if not expected or not got or got != expected:
         return False, "操作者身份与授权名单不匹配，阻断"
     with nd._lock, nd._db() as db:
-        row = db.execute("SELECT * FROM decisions WHERE id=?",
-                         (req_id,)).fetchone()
+        row = db.execute("SELECT * FROM decisions WHERE id=?", (req_id,)).fetchone()
         if row is None:
             return False, "决策不存在"
         if row["status"] != "recorded":
             return False, "决策已流转，不可驳回"
-        db.execute("UPDATE decisions SET status='rejected', executed_at=?, "
-                   "outcome='rejected_by_laotian' WHERE id=?",
-                   (datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                    req_id))
+        db.execute(
+            "UPDATE decisions SET status='rejected', executed_at=?, "
+            "outcome='rejected_by_laotian' WHERE id=?",
+            (datetime.datetime.now(datetime.timezone.utc).isoformat(), req_id),
+        )
     try:
         import card_actions
-        card_actions.log_event("decision_reject", who=got[:16],
-                               card=str(req_id)[:60],
-                               result="rejected_by_laotian")
+
+        card_actions.log_event(
+            "decision_reject",
+            who=got[:16],
+            card=str(req_id)[:60],
+            result="rejected_by_laotian",
+        )
     except Exception:
         pass  # 审计失败不拦驳回主链路
     return True, "已驳回（决策不再执行）"

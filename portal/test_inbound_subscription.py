@@ -16,6 +16,7 @@ import 失败/异常降级放行、subscription_guide 模板结构、kind 未注
 的场景。端到端用例以「首次调用放行（身份闸）/再次调用拒绝（闸内
 owner 豁免检查）」的桩模拟该形态，其余用例直接桩测 subscription_gate。
 """
+
 import json
 import os
 import sys
@@ -29,12 +30,12 @@ sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
 
 import inbound_gateway as gw  # noqa: E402
-import card_templates as ct   # noqa: E402
+import card_templates as ct  # noqa: E402
 
-ANON = "ou_anon_subtest_0001"   # 非 owner 白名单（闸内豁免检查为 False）
-LAO = "ou_lao_subtest_0002"     # owner 白名单（is_allowed=True）
+ANON = "ou_anon_subtest_0001"  # 非 owner 白名单（闸内豁免检查为 False）
+LAO = "ou_lao_subtest_0002"  # owner 白名单（is_allowed=True）
 
-STUB_CALLS = []   # 桩 is_entitled 收到的 (open_id, kind) 调用记录
+STUB_CALLS = []  # 桩 is_entitled 收到的 (open_id, kind) 调用记录
 
 
 def _make_stub(entitled=False, reason=None, raise_exc=None):
@@ -47,8 +48,7 @@ def _make_stub(entitled=False, reason=None, raise_exc=None):
             raise raise_exc
         if reason is not None:
             return (entitled, reason)
-        return (entitled,
-                "stub_entitled" if entitled else "stub_no_subscription")
+        return (entitled, "stub_entitled" if entitled else "stub_no_subscription")
 
     mod.is_entitled = is_entitled
     return mod
@@ -77,15 +77,16 @@ def gate_env(monkeypatch):
     STUB_CALLS.clear()
     monkeypatch.setattr(gw, "SUBSCRIPTION_GATE_MODE", "observe")
     monkeypatch.setattr(
-        gw, "_send_card",
-        lambda card, oid: (sent.append((card, oid))
-                           or (True, "stub_sent", "om_stub")))
-    monkeypatch.setattr(gw, "_append_ledger",
-                        lambda path, row: rows.append(row))
+        gw,
+        "_send_card",
+        lambda card, oid: sent.append((card, oid)) or (True, "stub_sent", "om_stub"),
+    )
+    monkeypatch.setattr(gw, "_append_ledger", lambda path, row: rows.append(row))
     yield {"sent": sent, "rows": rows}
 
 
 # ── 一、subscription_gate 决策函数 ────────────────────────────
+
 
 def test_owner_exempt_no_store_consult(gate_env, monkeypatch):
     """owner 白名单直接豁免：不咨询账本、不留闸记录。"""
@@ -107,8 +108,9 @@ def test_gate_result_shape(gate_env, monkeypatch):
 def test_observe_not_entitled_passes_with_record(gate_env, monkeypatch):
     """observe 模式未订阅：放行 + 一条 observe_pass 诚实留痕。"""
     monkeypatch.setattr(gw, "is_allowed", lambda oid: False)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(reason="no_active_subscription"))
+    monkeypatch.setitem(
+        sys.modules, "subscription_store", _make_stub(reason="no_active_subscription")
+    )
     allowed, reason = gw.subscription_gate(ANON, "ticker")
     assert allowed is True and reason == "observe:no_active_subscription"
     assert STUB_CALLS == [(ANON, "ticker")]
@@ -122,8 +124,11 @@ def test_observe_not_entitled_passes_with_record(gate_env, monkeypatch):
 def test_observe_entitled_allowed(gate_env, monkeypatch):
     """observe 模式已订阅：放行，留痕 allowed（带账本 reason）。"""
     monkeypatch.setattr(gw, "is_allowed", lambda oid: False)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(entitled=True, reason="sub_active"))
+    monkeypatch.setitem(
+        sys.modules,
+        "subscription_store",
+        _make_stub(entitled=True, reason="sub_active"),
+    )
     allowed, reason = gw.subscription_gate(ANON, "url")
     assert allowed is True and reason == "sub_active"
     grows = _gate_rows(gate_env["rows"])
@@ -135,8 +140,9 @@ def test_enforce_not_entitled_blocked(gate_env, monkeypatch):
     """enforce 模式未订阅：拦截（allowed=False），留痕 blocked。"""
     monkeypatch.setattr(gw, "SUBSCRIPTION_GATE_MODE", "enforce")
     monkeypatch.setattr(gw, "is_allowed", lambda oid: False)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(reason="no_active_subscription"))
+    monkeypatch.setitem(
+        sys.modules, "subscription_store", _make_stub(reason="no_active_subscription")
+    )
     allowed, reason = gw.subscription_gate(ANON, "ticker")
     assert allowed is False and reason == "no_active_subscription"
     grows = _gate_rows(gate_env["rows"])
@@ -148,8 +154,7 @@ def test_enforce_entitled_passes(gate_env, monkeypatch):
     """enforce 模式已订阅：照常放行。"""
     monkeypatch.setattr(gw, "SUBSCRIPTION_GATE_MODE", "enforce")
     monkeypatch.setattr(gw, "is_allowed", lambda oid: False)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(entitled=True))
+    monkeypatch.setitem(sys.modules, "subscription_store", _make_stub(entitled=True))
     allowed, reason = gw.subscription_gate(ANON, "text")
     assert allowed is True and reason == "stub_entitled"
 
@@ -172,26 +177,30 @@ def test_import_failure_fail_open_enforce(gate_env, monkeypatch):
     monkeypatch.setitem(sys.modules, "subscription_store", None)
     allowed, reason = gw.subscription_gate(ANON, "ticker")
     assert allowed is True and reason == "store_unavailable_fail_open"
-    assert not any(g["status"] == "blocked"
-                   for g in _gate_rows(gate_env["rows"]))
+    assert not any(g["status"] == "blocked" for g in _gate_rows(gate_env["rows"]))
 
 
 def test_is_entitled_raises_fail_open(gate_env, monkeypatch):
     """is_entitled 调用抛异常：降级放行，不向主流程抛错。"""
     monkeypatch.setattr(gw, "is_allowed", lambda oid: False)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(raise_exc=RuntimeError("db locked")))
+    monkeypatch.setitem(
+        sys.modules,
+        "subscription_store",
+        _make_stub(raise_exc=RuntimeError("db locked")),
+    )
     allowed, reason = gw.subscription_gate(ANON, "text")
     assert allowed is True and reason == "store_unavailable_fail_open"
 
 
 # ── 二、handle_inbound 端到端（桩测，零回归） ─────────────────
 
+
 def test_handle_inbound_observe_pass(gate_env, monkeypatch):
     """observe 端到端：不拦截（ticker 照常受理），闸留痕一条。"""
     _identity_then_gate_stub(monkeypatch)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(reason="no_active_subscription"))
+    monkeypatch.setitem(
+        sys.modules, "subscription_store", _make_stub(reason="no_active_subscription")
+    )
     r = gw.handle_inbound(ANON, "600519", "ob1")
     assert r["status"] == "routed" and r["detail"]["code"] == "600519"
     assert STUB_CALLS == [(ANON, "ticker")]
@@ -203,8 +212,9 @@ def test_handle_inbound_enforce_blocks_with_guide_card(gate_env, monkeypatch):
     """enforce 端到端：拦截、只回灰卡引导（业务受理卡未发）。"""
     monkeypatch.setattr(gw, "SUBSCRIPTION_GATE_MODE", "enforce")
     _identity_then_gate_stub(monkeypatch)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(reason="no_active_subscription"))
+    monkeypatch.setitem(
+        sys.modules, "subscription_store", _make_stub(reason="no_active_subscription")
+    )
     r = gw.handle_inbound(ANON, "600519", "en1")
     assert r["status"] == "blocked_subscription"
     assert r["gate"] == "no_active_subscription"
@@ -231,8 +241,7 @@ def test_handle_inbound_owner_zero_regression(gate_env, monkeypatch):
 def test_handle_inbound_unclear_skips_gate(gate_env, monkeypatch):
     """澄清路由不经闸：零账本咨询、零闸留痕。"""
     monkeypatch.setattr(gw, "is_allowed", lambda oid: oid == LAO)
-    monkeypatch.setitem(sys.modules, "subscription_store",
-                        _make_stub(reason="never"))
+    monkeypatch.setitem(sys.modules, "subscription_store", _make_stub(reason="never"))
     r = gw.handle_inbound(LAO, "在吗", "uc1")
     assert r["status"] == "clarified"
     assert STUB_CALLS == []
@@ -253,13 +262,15 @@ def test_handle_inbound_identity_reject_unchanged(gate_env, monkeypatch):
 
 # ── 三、card_templates · subscription_guide 注册 ─────────────
 
+
 def test_subscription_guide_registered():
     assert "subscription_guide" in ct.KIND_CARD_TEMPLATES
 
 
 def test_subscription_guide_structure():
     card, msg_type = ct.apply_card_template(
-        "subscription_guide", {"text": "x"}, "interactive")
+        "subscription_guide", {"text": "x"}, "interactive"
+    )
     assert msg_type == "interactive"
     assert isinstance(card, dict)
     assert card["header"]["template"] == "grey"
@@ -276,7 +287,9 @@ def test_subscription_guide_ignores_injected_content():
     """固定文案：调用方 content 不注入卡片（防塞购买链接）。"""
     card, _ = ct.apply_card_template(
         "subscription_guide",
-        {"text": "点此购买 https://pay.example.com/buy"}, "interactive")
+        {"text": "点此购买 https://pay.example.com/buy"},
+        "interactive",
+    )
     dumped = json.dumps(card, ensure_ascii=False)
     assert "pay.example.com" not in dumped
 

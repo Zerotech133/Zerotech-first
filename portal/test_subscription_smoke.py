@@ -21,8 +21,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-HERE = os.path.dirname(os.path.abspath(__file__))          # portal/
-ROOT = os.path.dirname(HERE)                               # 仓库根
+HERE = os.path.dirname(os.path.abspath(__file__))  # portal/
+ROOT = os.path.dirname(HERE)  # 仓库根
 TOOLS = os.path.join(ROOT, "tools")
 for _p in (HERE, TOOLS):
     if _p not in sys.path:
@@ -33,29 +33,43 @@ SMOKE_SCRIPT = os.path.join(TOOLS, "subscription_smoke.py")
 
 # 禁用调用字面量按分片拼装：本文件只做「断言演练脚本里不存在」，自身
 # 不应命中收编对演练脚本的 grep 校验口径
-_BAD_TOKENS = ("send" + "_msg", "send" + "_card", "feishu" + "_client",
-               "requests" + ".post", "web" + "hook")
-_NETWORK_IMPORTS = ("import requests", "import urllib", "http.client",
-                    "import socket")
+_BAD_TOKENS = (
+    "send" + "_msg",
+    "send" + "_card",
+    "feishu" + "_client",
+    "requests" + ".post",
+    "web" + "hook",
+)
+_NETWORK_IMPORTS = ("import requests", "import urllib", "http.client", "import socket")
 _MONEY_TOKENS = ("元", "¥", "￥", "价格", "金额", "收费", "费用")
 
 # 剥离宿主环境，保证隔离判定只看本测试显式给的沙盒路径
-_STRIP_ENV = ("SUBSCRIPTION_DB", "RENEWAL_STATE_PATH",
-              "SUBSCRIPTION_OWN_DOMAIN", "RENEWAL_TZ")
+_STRIP_ENV = (
+    "SUBSCRIPTION_DB",
+    "RENEWAL_STATE_PATH",
+    "SUBSCRIPTION_OWN_DOMAIN",
+    "RENEWAL_TZ",
+)
 
 
 def _run_smoke(args=None, env_over=None):
     env = {k: v for k, v in os.environ.items() if k not in _STRIP_ENV}
     if env_over:
         env.update(env_over)
-    return subprocess.run([sys.executable, SMOKE_SCRIPT] + (args or []),
-                          capture_output=True, text=True, env=env,
-                          cwd=ROOT, timeout=180)
+    return subprocess.run(
+        [sys.executable, SMOKE_SCRIPT] + (args or []),
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=ROOT,
+        timeout=180,
+    )
 
 
 # ---------------------------------------------------------------------------
 # 沙盒助手
 # ---------------------------------------------------------------------------
+
 
 def _make_sandbox(base: Path):
     d = base / "g3sandbox"
@@ -87,6 +101,7 @@ def _real_state_path():
 # 1. 缺省无 env：退出 2 且绝不创建真实库/状态文件
 # ---------------------------------------------------------------------------
 
+
 def test_missing_env_refuses_exit2_and_never_touches_real_paths():
     real_db, real_state = _real_db_path(), _real_state_path()
     db_before, state_before = real_db.exists(), real_state.exists()
@@ -103,6 +118,7 @@ def test_missing_env_refuses_exit2_and_never_touches_real_paths():
 # 2. 只缺 RENEWAL_STATE_PATH：同样拒绝
 # ---------------------------------------------------------------------------
 
+
 def test_missing_state_env_refuses_exit2(tmp_path):
     db, _ = _make_sandbox(tmp_path)
     env = {"SUBSCRIPTION_DB": str(db)}  # 只给库不给状态文件
@@ -113,6 +129,7 @@ def test_missing_state_env_refuses_exit2(tmp_path):
 # ---------------------------------------------------------------------------
 # 3. 显式指向真实默认路径 / portal/work 内路径：拒绝且不落盘
 # ---------------------------------------------------------------------------
+
 
 def test_explicit_real_default_db_path_rejected(tmp_path):
     _, state = _make_sandbox(tmp_path)
@@ -133,6 +150,7 @@ def test_path_inside_real_work_dir_rejected(tmp_path):
 # 4. 全流程演练 pass，退出 0，默认跑完即删沙盒
 # ---------------------------------------------------------------------------
 
+
 def test_full_run_exit_zero_and_cleans_up(tmp_path):
     proc, payload, db, state = _run_json(tmp_path)
     assert proc.returncode == 0, proc.stdout + proc.stderr
@@ -145,8 +163,10 @@ def test_full_run_exit_zero_and_cleans_up(tmp_path):
 # 5. steps 覆盖九步且无 fail
 # ---------------------------------------------------------------------------
 
+
 def test_steps_cover_nine_no_fail(tmp_path):
     import subscription_smoke
+
     _, payload, _, _ = _run_json(tmp_path)
     names = [s["name"] for s in payload["steps"]]
     assert len(names) == 9
@@ -157,6 +177,7 @@ def test_steps_cover_nine_no_fail(tmp_path):
 # ---------------------------------------------------------------------------
 # 6. 撤销步标注替身/SKIP 语义，不谎称已实现
 # ---------------------------------------------------------------------------
+
 
 def test_revoke_step_marked_surrogate(tmp_path):
     _, payload, _, _ = _run_json(tmp_path)
@@ -172,6 +193,7 @@ def test_revoke_step_marked_surrogate(tmp_path):
 # 7. --json 结构键齐备
 # ---------------------------------------------------------------------------
 
+
 def test_json_structure_keys_complete(tmp_path):
     _, payload, _, _ = _run_json(tmp_path)
     assert set(payload) >= {"ok", "steps", "summary"}
@@ -180,8 +202,17 @@ def test_json_structure_keys_complete(tmp_path):
         assert isinstance(s["elapsed_ms"], int) and s["elapsed_ms"] >= 0
         assert s["status"] in ("pass", "fail", "skip")
     summary = payload["summary"]
-    assert set(summary) >= {"total", "pass", "fail", "skip", "surrogate",
-                            "db", "state", "keep", "cleanup_errors"}
+    assert set(summary) >= {
+        "total",
+        "pass",
+        "fail",
+        "skip",
+        "surrogate",
+        "db",
+        "state",
+        "keep",
+        "cleanup_errors",
+    }
     assert summary["total"] == len(payload["steps"])
     assert summary["fail"] == 0 and summary["skip"] == 0
 
@@ -190,11 +221,13 @@ def test_json_structure_keys_complete(tmp_path):
 # 8. 开通后 is_entitled 判定与 summary 一致
 # ---------------------------------------------------------------------------
 
+
 def test_entitlement_consistent_with_summary(tmp_path, monkeypatch):
     db, state = _make_sandbox(tmp_path)
     monkeypatch.setenv("SUBSCRIPTION_DB", str(db))
     monkeypatch.setenv("RENEWAL_STATE_PATH", str(state))
     import subscription_store as store
+
     r = store.ensure_schema()
     assert r["ok"] is True
     store.upsert_subscriber("ou_case8_0001", "用例八")
@@ -213,12 +246,14 @@ def test_entitlement_consistent_with_summary(tmp_path, monkeypatch):
 # 9. T-3 提醒命中且正文合规（无金额、无明文 open_id）
 # ---------------------------------------------------------------------------
 
+
 def test_t3_reminder_hit_and_text_compliance(tmp_path, monkeypatch):
     db, state = _make_sandbox(tmp_path)
     monkeypatch.setenv("SUBSCRIPTION_DB", str(db))
     monkeypatch.setenv("RENEWAL_STATE_PATH", str(state))
     import renewal_reminder as rr
     import subscription_store as store
+
     store.ensure_schema()
     store.upsert_subscriber("ou_case9_0001", "用例九")
     g = store.grant_subscription("ou_case9_0001", "basic_monthly", 3)
@@ -239,12 +274,14 @@ def test_t3_reminder_hit_and_text_compliance(tmp_path, monkeypatch):
 # 10. 清扫后勾稽仍 ok
 # ---------------------------------------------------------------------------
 
+
 def test_sweep_then_reconcile_ok(tmp_path, monkeypatch):
     db, state = _make_sandbox(tmp_path)
     monkeypatch.setenv("SUBSCRIPTION_DB", str(db))
     monkeypatch.setenv("RENEWAL_STATE_PATH", str(state))
     import reconcile_subscription as rec
     import subscription_store as store
+
     assert store.ensure_schema()["ok"] is True
     store.upsert_subscriber("ou_case10_0001", "用例十")
     # 直插一条历史已过期行（end 固定在过去，任何时候跑都成立）
@@ -254,8 +291,14 @@ def test_sweep_then_reconcile_ok(tmp_path, monkeypatch):
         conn.execute(
             "INSERT INTO subscription(subscriber_open_id, plan_id, start,"
             " end, status) VALUES (?,?,?,?,?)",
-            ("ou_case10_0001", "basic_monthly",
-             "2026-09-01 00:00:00", "2026-10-01 00:00:00", "active"))
+            (
+                "ou_case10_0001",
+                "basic_monthly",
+                "2026-09-01 00:00:00",
+                "2026-10-01 00:00:00",
+                "active",
+            ),
+        )
         conn.commit()
     finally:
         conn.close()  # closed on failure：连接必须关
@@ -268,6 +311,7 @@ def test_sweep_then_reconcile_ok(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 # 11. 可重复跑：两次全新沙盒，结果一致
 # ---------------------------------------------------------------------------
+
 
 def test_rerun_fresh_sandbox_same_result(tmp_path):
     sigs = []
@@ -282,6 +326,7 @@ def test_rerun_fresh_sandbox_same_result(tmp_path):
 # ---------------------------------------------------------------------------
 # 12. 源码静态防线：无发送调用、无 ensure_schema 之外的建库路径
 # ---------------------------------------------------------------------------
+
 
 def test_source_static_guards():
     src = Path(SMOKE_SCRIPT).read_text(encoding="utf-8")

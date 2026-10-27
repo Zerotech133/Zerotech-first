@@ -11,6 +11,7 @@ pytest 收集会出问题：
 
 排除收集不影响直跑；回归门禁 = `python -m pytest portal quant_backtest -q`。
 """
+
 collect_ignore = [
     "test_feishu_event_guard.py",
     "test_portal_key_rotation.py",

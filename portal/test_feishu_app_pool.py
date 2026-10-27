@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """feishu_app_pool 单测（W2 前置）：角色凭据确定化、sender 选择、目标域校验、状态报告。"""
+
 import json
 import os
 import tempfile
@@ -16,7 +17,11 @@ import feishu_app_pool as pool  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -63,6 +68,7 @@ def test_app_for_role_caches_and_invalidates(ws_tmp):
     _put_secret(ws_tmp, "zb.owner.exec", "cli_v1")
     assert pool.app_for_role("zb.owner.exec", ws_tmp)[0] == "cli_v1"
     import time
+
     time.sleep(0.01)
     _put_secret(ws_tmp, "zb.owner.exec", "cli_v2")
     # mtime 变化 → 重新加载
@@ -111,9 +117,11 @@ def test_status_report_reads_real_registry(ws_tmp, monkeypatch):
 
 def test_cli_runs(monkeypatch):
     import subprocess
+
     py = sys.executable
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_app_pool.py")
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_app_pool.py"
+    )
     r = subprocess.run([py, script], capture_output=True)
     assert r.returncode == 0, r.stderr
     data = json.loads(r.stdout.decode("utf-8", "replace"))

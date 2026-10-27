@@ -21,6 +21,7 @@
 （Get/Set/Start-ScheduledTask，已实测 2026-10-14）；原子写；body 上限；RLock。
 保活：并入计划任务「AI工作站CowAgent看门狗」（ops/keepalive_9899.py）。
 """
+
 import argparse
 import logging
 import hmac
@@ -59,35 +60,104 @@ DEFAULT_SCHEDULE = {
     "silent_start": "22:00",
     "silent_end": "07:30",
     "note": "K-PUSH-007 调度全量：全局静默 + 源矩阵。闸门可执行=silent+exempt；"
-            "time/freq/window/excess 为描述性配置（面板展示，任务时间经 task 联动计划任务）。",
+    "time/freq/window/excess 为描述性配置（面板展示，任务时间经 task 联动计划任务）。",
     "sources": [
-        {"id": "daily_report", "name": "统一日报", "kind": "daily:report",
-         "task": "AI工作站统一日报", "time": "03:00", "freq": "daily",
-         "window": "", "exempt": False, "excess": "", "enabled": True},
-        {"id": "alert_morning", "name": "预警 · 晨", "kind": "daily:alert",
-         "task": "AI工作站预警推送晨", "time": "07:10", "freq": "daily",
-         "window": "盘前", "exempt": True, "excess": "", "enabled": True},
-        {"id": "news_digest", "name": "新闻日报", "kind": "daily:news_digest",
-         "task": "金融新闻日报", "time": "08:30", "freq": "daily",
-         "window": "开盘前", "exempt": False, "excess": "", "enabled": True},
-        {"id": "intraday", "name": "订阅 · 盘中", "kind": "subscribe:*",
-         "task": "", "time": "", "freq": "30min",
-         "window": "09:30-15:00", "exempt": True, "excess": "同标的 30min 去重",
-         "enabled": True},
-        {"id": "alert_evening", "name": "预警 · 晚", "kind": "daily:alert",
-         "task": "AI工作站预警推送", "time": "16:05", "freq": "daily",
-         "window": "收盘后", "exempt": True, "excess": "", "enabled": True},
-        {"id": "picks", "name": "精选发布", "kind": "",
-         "task": "", "time": "16:45", "freq": "daily",
-         "window": "", "exempt": False, "excess": "", "enabled": True},
-        {"id": "news_hit", "name": "新闻命中推送", "kind": "auto:news_collector",
-         "task": "", "time": "", "freq": "15min",
-         "window": "全天", "exempt": False, "excess": "同源 10min 去重",
-         "enabled": True},
-        {"id": "tune_bt", "name": "调优回测批次", "kind": "tune:*",
-         "task": "AI工作站调优回测批次", "time": "20:00", "freq": "daily",
-         "window": "盘后", "exempt": False, "excess": "",
-         "enabled": True},
+        {
+            "id": "daily_report",
+            "name": "统一日报",
+            "kind": "daily:report",
+            "task": "AI工作站统一日报",
+            "time": "03:00",
+            "freq": "daily",
+            "window": "",
+            "exempt": False,
+            "excess": "",
+            "enabled": True,
+        },
+        {
+            "id": "alert_morning",
+            "name": "预警 · 晨",
+            "kind": "daily:alert",
+            "task": "AI工作站预警推送晨",
+            "time": "07:10",
+            "freq": "daily",
+            "window": "盘前",
+            "exempt": True,
+            "excess": "",
+            "enabled": True,
+        },
+        {
+            "id": "news_digest",
+            "name": "新闻日报",
+            "kind": "daily:news_digest",
+            "task": "金融新闻日报",
+            "time": "08:30",
+            "freq": "daily",
+            "window": "开盘前",
+            "exempt": False,
+            "excess": "",
+            "enabled": True,
+        },
+        {
+            "id": "intraday",
+            "name": "订阅 · 盘中",
+            "kind": "subscribe:*",
+            "task": "",
+            "time": "",
+            "freq": "30min",
+            "window": "09:30-15:00",
+            "exempt": True,
+            "excess": "同标的 30min 去重",
+            "enabled": True,
+        },
+        {
+            "id": "alert_evening",
+            "name": "预警 · 晚",
+            "kind": "daily:alert",
+            "task": "AI工作站预警推送",
+            "time": "16:05",
+            "freq": "daily",
+            "window": "收盘后",
+            "exempt": True,
+            "excess": "",
+            "enabled": True,
+        },
+        {
+            "id": "picks",
+            "name": "精选发布",
+            "kind": "",
+            "task": "",
+            "time": "16:45",
+            "freq": "daily",
+            "window": "",
+            "exempt": False,
+            "excess": "",
+            "enabled": True,
+        },
+        {
+            "id": "news_hit",
+            "name": "新闻命中推送",
+            "kind": "auto:news_collector",
+            "task": "",
+            "time": "",
+            "freq": "15min",
+            "window": "全天",
+            "exempt": False,
+            "excess": "同源 10min 去重",
+            "enabled": True,
+        },
+        {
+            "id": "tune_bt",
+            "name": "调优回测批次",
+            "kind": "tune:*",
+            "task": "AI工作站调优回测批次",
+            "time": "20:00",
+            "freq": "daily",
+            "window": "盘后",
+            "exempt": False,
+            "excess": "",
+            "enabled": True,
+        },
     ],
 }
 
@@ -101,23 +171,37 @@ SID_RE = re.compile(r"^[A-Za-z0-9_]{1,60}$")
 BODY_CAP = 65536
 
 # 可管理时间点/立即执行的任务白名单（只动这几个既有任务，不建不删）
-TASK_MANAGEABLE = ["金融新闻日报", "AI工作站统一日报",
-                   "AI工作站预警推送晨", "AI工作站预警推送",
-                   "AI工作站调优回测批次"]
+TASK_MANAGEABLE = [
+    "金融新闻日报",
+    "AI工作站统一日报",
+    "AI工作站预警推送晨",
+    "AI工作站预警推送",
+    "AI工作站调优回测批次",
+]
 # 只读展示的生态任务
-TASK_READONLY = ["TodaysPicks", "自选股行情快照",
-                 "AI工作站预警监听", "AI工作站持仓异动监控"]
+TASK_READONLY = [
+    "TodaysPicks",
+    "自选股行情快照",
+    "AI工作站预警监听",
+    "AI工作站持仓异动监控",
+]
 
 _lock = threading.RLock()
 _run_lock = threading.Lock()
-_state = {"last_tick": 0.0, "running": False,
-          "last_test": None, "task_cache": (0.0, None)}
+_state = {
+    "last_tick": 0.0,
+    "running": False,
+    "last_test": None,
+    "task_cache": (0.0, None),
+}
 
 
 # ---------- 基础设施 ----------
 
+
 def atomic_write_json(path, obj):
     import tempfile
+
     d = os.path.dirname(path)
     os.makedirs(d, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=d, suffix=".tmp")
@@ -129,7 +213,9 @@ def atomic_write_json(path, obj):
         try:
             os.remove(tmp)
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
         raise
 
 
@@ -147,7 +233,9 @@ def log(msg):
         with open(os.path.join(WORK, "push_admin.out"), "a", encoding="utf-8") as f:
             f.write(line)
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
     print(line, end="", flush=True)
 
 
@@ -171,9 +259,16 @@ PS_QUERY = (
 
 
 def ps_run(cmd, timeout=60):
-    r = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
-                       capture_output=True, timeout=timeout)
-    return r.returncode, r.stdout.decode("utf-8", "replace"), r.stderr.decode("gbk", "replace")
+    r = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", cmd],
+        capture_output=True,
+        timeout=timeout,
+    )
+    return (
+        r.returncode,
+        r.stdout.decode("utf-8", "replace"),
+        r.stderr.decode("gbk", "replace"),
+    )
 
 
 def tasks_snapshot(force=False):
@@ -207,8 +302,10 @@ def ps_set_task_time(name, hhmm):
         return False, "任务不在白名单：%s" % name
     if not TIME_RE.match(hhmm):
         return False, "时间格式非法（HH:MM）"
-    cmd = ("$t = New-ScheduledTaskTrigger -Daily -At '%s'; "
-           "Set-ScheduledTask -TaskName '%s' -Trigger $t | Out-Null" % (hhmm, name))
+    cmd = (
+        "$t = New-ScheduledTaskTrigger -Daily -At '%s'; "
+        "Set-ScheduledTask -TaskName '%s' -Trigger $t | Out-Null" % (hhmm, name)
+    )
     rc, _, err = ps_run(cmd, timeout=90)
     with _lock:
         _state["task_cache"] = (0.0, None)
@@ -226,6 +323,7 @@ def ps_run_task(name):
 
 
 # ---------- 订阅 / 接收人 ----------
+
 
 def load_subs():
     return _read_json(SUB_PATH, {"subscriptions": []}).get("subscriptions", [])
@@ -257,8 +355,13 @@ def load_biz():
         with open(BIZ_PATH, encoding="utf-8") as f:
             return json.load(f)
     except (OSError, ValueError):
-        return {"tenant": "老田工作室", "plan": "internal",
-                "quota_daily": 0, "apikey": "", "note": ""}
+        return {
+            "tenant": "老田工作室",
+            "plan": "internal",
+            "quota_daily": 0,
+            "apikey": "",
+            "note": "",
+        }
 
 
 # K-PUSH-012 密钥供给：env 优先，portal/work/push_secrets.json 文件兜底
@@ -315,10 +418,13 @@ def source_health():
         ok = False
         try:
             with urllib.request.urlopen(
-                    "http://127.0.0.1:%d/health" % port, timeout=1.5) as r:
+                "http://127.0.0.1:%d/health" % port, timeout=1.5
+            ) as r:
                 ok = bool(json.loads(r.read().decode("utf-8")).get("ok"))
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
         out.append({"name": name, "port": port, "ok": ok})
     return out
 
@@ -339,7 +445,9 @@ def km_today_sent():
                 if r.get("date") == today_str():
                     n += r.get("sent_ok", 0)
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
     return n
 
 
@@ -355,14 +463,25 @@ def test_sub(sid):
         os.makedirs(WORK, exist_ok=True)
         try:
             with open(TEST_LOG, "ab") as out:
-                out.write(("\n=== test %s %s ===\n" % (sid, datetime.now().isoformat(timespec="seconds"))).encode())
+                out.write(
+                    (
+                        "\n=== test %s %s ===\n"
+                        % (sid, datetime.now().isoformat(timespec="seconds"))
+                    ).encode()
+                )
                 out.flush()
                 p = subprocess.Popen(
                     [sys.executable, "-X", "utf8", SUB_PY, "--test", sid],
                     cwd=os.path.dirname(SUB_PY),
-                    stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT)
-                _state["last_test"] = {"id": sid, "ts": datetime.now().isoformat(timespec="seconds"),
-                                       "status": "running"}
+                    stdin=subprocess.DEVNULL,
+                    stdout=out,
+                    stderr=subprocess.STDOUT,
+                )
+                _state["last_test"] = {
+                    "id": sid,
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                    "status": "running",
+                }
                 try:
                     rc = p.wait(timeout=180)
                 except subprocess.TimeoutExpired:
@@ -374,23 +493,37 @@ def test_sub(sid):
                 with open(TEST_LOG, encoding="utf-8", errors="replace") as f:
                     tail = f.read().splitlines()[-1]
             except OSError as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
-            _state["last_test"] = {"id": sid, "ts": datetime.now().isoformat(timespec="seconds"),
-                                   "status": "done", "rc": rc, "tail": tail}
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "push_admin_server.py", exc
+                )
+            _state["last_test"] = {
+                "id": sid,
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "status": "done",
+                "rc": rc,
+                "tail": tail,
+            }
             log("[test] %s rc=%d %s" % (sid, rc, tail))
         except Exception as e:  # noqa: BLE001
             _state["last_test"] = {"id": sid, "status": "error", "error": str(e)}
         finally:
             _state["running"] = False
+
     threading.Thread(target=worker, daemon=True).start()
     return {"ok": True}
 
 
 # ---------- HTTP ----------
 
+
 def esc(s):
-    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
+    return (
+        str(s)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -402,11 +535,15 @@ class Handler(BaseHTTPRequestHandler):
         def _default(x):
             import decimal as _d
             import datetime as _dt
+
             if isinstance(x, _d.Decimal):
                 return float(x) if x.is_finite() else str(x)
             if isinstance(x, (_dt.datetime, _dt.date)):
                 return x.isoformat()
-            raise TypeError(f"Object of type {type(x).__name__} is not JSON serializable")
+            raise TypeError(
+                f"Object of type {type(x).__name__} is not JSON serializable"
+            )
+
         body = json.dumps(obj, ensure_ascii=False, default=_default).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -421,16 +558,21 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 import sys as _sys
                 import os as _os
+
                 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
                 from quant_mid import api_routes as _qr
+
                 code, body = _qr.handle("GET", p, dict(self.headers))
                 return self._json(body, code)
             except Exception as _e:  # noqa: BLE001
                 return self._json({"ok": False, "error": str(_e)}, 500)
-        if p == "/api/state" and not admin_authorized(self.headers.get("X-Push-Admin-Key")):
+        if p == "/api/state" and not admin_authorized(
+            self.headers.get("X-Push-Admin-Key")
+        ):
             return self._json({"ok": False, "error": "未授权"}, 403)
         if p in ("/api/decisions", "/api/decision-groups"):
             import notification_decision as nd
+
             if not nd.authorized(self.headers.get("X-Decision-Key")):
                 return self._json({"ok": False, "error": "未授权"}, 403)
             return self._json(nd.recent() if p == "/api/decisions" else nd.group_info())
@@ -440,145 +582,212 @@ class Handler(BaseHTTPRequestHandler):
             # dead_letter.count_since（60s 缓存已有）；-1=读取异常，诚实
             # 上抛由页面降级，不猜数。
             import dead_letter
+
             n24 = dead_letter.count_since(24)
             # P2.6 FE-C N6 主动巡检：ops_board 60s 自动刷新即天然探针
             # （复用上方 count_since 同一次读取传入，不双读死信账；
             # 60s 缓存 + 6h 防抖 + daemon 非阻塞，判例同 api_send）
-            _dead_letter_alert_if_needed(stats={
-                "count_24h": n24, "threshold": DEAD_ALERT_THRESHOLD,
-                "degraded": None if n24 < 0
-                else n24 >= DEAD_ALERT_THRESHOLD})
-            return self._json({
-                "ok": True,
-                "generated_at": datetime.now().isoformat(timespec="seconds"),
-                "dead_letters_24h": n24,
-                # P2.6 FE-C：降级占比观测（只读计数段，零 open_id/target/kind 明文）
-                "fallback_24h": _fallback_stats_24h(),
-                "services": [
-                    {"port": 8097, "label": "推送闸门",
-                     "note": "静态在役标注，非实时探测"},
-                    {"port": 8091, "label": "中台 API",
-                     "note": "静态在役标注，非实时探测"},
-                    {"port": 8096, "label": "Legion",
-                     "note": "静态在役标注，非实时探测"},
-                    {"port": 8099, "label": "KM",
-                     "note": "静态在役标注，非实时探测"},
-                    {"port": 8787, "label": "邓芝驻地",
-                     "note": "静态在役标注，非实时探测"}],
-                "note": "本端点无鉴权，只暴露计数与静态标注，不暴露任何 "
-                        "open_id/target/kind 明文"})
+            _dead_letter_alert_if_needed(
+                stats={
+                    "count_24h": n24,
+                    "threshold": DEAD_ALERT_THRESHOLD,
+                    "degraded": None if n24 < 0 else n24 >= DEAD_ALERT_THRESHOLD,
+                }
+            )
+            return self._json(
+                {
+                    "ok": True,
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                    "dead_letters_24h": n24,
+                    # P2.6 FE-C：降级占比观测（只读计数段，零 open_id/target/kind 明文）
+                    "fallback_24h": _fallback_stats_24h(),
+                    "services": [
+                        {
+                            "port": 8097,
+                            "label": "推送闸门",
+                            "note": "静态在役标注，非实时探测",
+                        },
+                        {
+                            "port": 8091,
+                            "label": "中台 API",
+                            "note": "静态在役标注，非实时探测",
+                        },
+                        {
+                            "port": 8096,
+                            "label": "Legion",
+                            "note": "静态在役标注，非实时探测",
+                        },
+                        {
+                            "port": 8099,
+                            "label": "KM",
+                            "note": "静态在役标注，非实时探测",
+                        },
+                        {
+                            "port": 8787,
+                            "label": "邓芝驻地",
+                            "note": "静态在役标注，非实时探测",
+                        },
+                    ],
+                    "note": "本端点无鉴权，只暴露计数与静态标注，不暴露任何 "
+                    "open_id/target/kind 明文",
+                }
+            )
         if p == "/api/state":
             subs = load_subs()
             recvs = load_receivers()
             st = sub_state()
             today = today_str()
             tasks = tasks_snapshot()
-            manageable = [{"name": n, **tasks.get(n, {}), "manage": True}
-                          for n in TASK_MANAGEABLE]
-            readonly = [{"name": n, **tasks.get(n, {}), "manage": False}
-                        for n in TASK_READONLY if n in tasks]
+            manageable = [
+                {"name": n, **tasks.get(n, {}), "manage": True} for n in TASK_MANAGEABLE
+            ]
+            readonly = [
+                {"name": n, **tasks.get(n, {}), "manage": False}
+                for n in TASK_READONLY
+                if n in tasks
+            ]
             sub_rows = []
             sub_sent_today = 0
             for s in subs:
                 ss = st.get(s["id"], {})
                 cnt = ss.get("count", 0) if ss.get("day") == today else 0
                 sub_sent_today += cnt
-                sub_rows.append({"id": s["id"], "name": s.get("name"),
-                                 "kind": s.get("kind"), "when": s.get("when"),
-                                 "receivers": s.get("receivers") or [],
-                                 "note": s.get("note", ""),
-                                 "enabled": s.get("enabled", True),
-                                 "today_sent": cnt,
-                                 "last_ts": ss.get("last_ts", "")})
+                sub_rows.append(
+                    {
+                        "id": s["id"],
+                        "name": s.get("name"),
+                        "kind": s.get("kind"),
+                        "when": s.get("when"),
+                        "receivers": s.get("receivers") or [],
+                        "note": s.get("note", ""),
+                        "enabled": s.get("enabled", True),
+                        "today_sent": cnt,
+                        "last_ts": ss.get("last_ts", ""),
+                    }
+                )
             km_sent = km_today_sent()
             tasks_ran_today = sum(
-                1 for t in (manageable + readonly)
-                if (t.get("last") or "").startswith(today))
+                1
+                for t in (manageable + readonly)
+                if (t.get("last") or "").startswith(today)
+            )
             try:  # 统一发送流水（商业化计费依据）
                 sys.path.insert(0, STATION)
                 import push_flow
+
                 flow = push_flow.stats(7)
             except Exception:
                 flow = {"by_day": [], "today_by_kind": {}}
             try:  # K-PUSH-002：调优闭环 + 分享令牌概览（读侧降级为空）
                 import tune_gate
                 import sys as _sys
+
                 _sys.path.insert(0, STATION)
                 import feedback_flow
+
                 # K-PUSH-010：action_needed 聚合——待人工对比（私有）vs 挂账（共享）
                 _tune_rows = tune_gate.list_requests(limit=50)
-                tune = {"stats": feedback_flow.stats(7),
-                        "requests": _tune_rows,
-                        "vip": tune_gate.vip_overrides(),
-                        "action_needed": {
-                            "wait_compare": [r for r in _tune_rows
-                                             if r.get("stage") in ("verified", "pending_manual")
-                                             and r.get("scope") == "private"],
-                            "on_hold": [r for r in _tune_rows
-                                        if r.get("stage") == "pending_manual"
-                                        and r.get("scope") == "shared"]}}
+                tune = {
+                    "stats": feedback_flow.stats(7),
+                    "requests": _tune_rows,
+                    "vip": tune_gate.vip_overrides(),
+                    "action_needed": {
+                        "wait_compare": [
+                            r
+                            for r in _tune_rows
+                            if r.get("stage") in ("verified", "pending_manual")
+                            and r.get("scope") == "private"
+                        ],
+                        "on_hold": [
+                            r
+                            for r in _tune_rows
+                            if r.get("stage") == "pending_manual"
+                            and r.get("scope") == "shared"
+                        ],
+                    },
+                }
             except Exception:
-                tune = {"stats": {"by_day": [], "today_by_stage": {}},
-                        "requests": [], "vip": {},
-                        "action_needed": {"wait_compare": [], "on_hold": []}}
+                tune = {
+                    "stats": {"by_day": [], "today_by_stage": {}},
+                    "requests": [],
+                    "vip": {},
+                    "action_needed": {"wait_compare": [], "on_hold": []},
+                }
             try:
                 import share_tokens as _st
+
                 share = _st.stats(7)
             except Exception:
                 share = {"by_day": [], "today_visit_by_kind": {}}
-            self._json({
-                "heartbeat": heartbeat_ok(),
-                "tasks": manageable + readonly,
-                "subs": sub_rows,
-                "receivers": recvs,
-                "news_targets": news_targets(),
-                "today": {"sub_sent": sub_sent_today, "km_sent": km_sent,
-                          "tasks_ran": tasks_ran_today,
-                          "total": sub_sent_today + km_sent},
-                "last_test": _state.get("last_test"),
-                "running": _state["running"],
-                "sources": source_health(),
-                "biz": public_biz(load_biz()),
-                "flow": flow,
-                "flowmx": flow_matrix(),   # K-PUSH-003：今日动线矩阵（源/触点/闸门/拦截）
-                "actmx": _actions_stats(),   # K-PUSH-004：按钮归档注册表 + 审计
-                "tune": tune,   # K-PUSH-002：调优闭环概览
-                "share": share,   # K-PUSH-002：分享令牌概览
-                "sched": {   # K-PUSH-007：调度中心（矩阵+任务时间实况+当前静默态）
-                    "schedule": load_schedule(),
-                    "in_silent_now": _in_silent_window(),
-                    "tasks": tasks_snapshot()},
-                "shadow": _shadow_stats(),  # P3：FOCUS_CN 影子组毕业统计（300s 缓存）
-                "dead_letters": _dead_letter_stats()})  # N6：24h 死信计数+degraded
+            self._json(
+                {
+                    "heartbeat": heartbeat_ok(),
+                    "tasks": manageable + readonly,
+                    "subs": sub_rows,
+                    "receivers": recvs,
+                    "news_targets": news_targets(),
+                    "today": {
+                        "sub_sent": sub_sent_today,
+                        "km_sent": km_sent,
+                        "tasks_ran": tasks_ran_today,
+                        "total": sub_sent_today + km_sent,
+                    },
+                    "last_test": _state.get("last_test"),
+                    "running": _state["running"],
+                    "sources": source_health(),
+                    "biz": public_biz(load_biz()),
+                    "flow": flow,
+                    "flowmx": flow_matrix(),  # K-PUSH-003：今日动线矩阵（源/触点/闸门/拦截）
+                    "actmx": _actions_stats(),  # K-PUSH-004：按钮归档注册表 + 审计
+                    "tune": tune,  # K-PUSH-002：调优闭环概览
+                    "share": share,  # K-PUSH-002：分享令牌概览
+                    "sched": {  # K-PUSH-007：调度中心（矩阵+任务时间实况+当前静默态）
+                        "schedule": load_schedule(),
+                        "in_silent_now": _in_silent_window(),
+                        "tasks": tasks_snapshot(),
+                    },
+                    "shadow": _shadow_stats(),  # P3：FOCUS_CN 影子组毕业统计（300s 缓存）
+                    "dead_letters": _dead_letter_stats(),
+                }
+            )  # N6：24h 死信计数+degraded
         elif p == "/api/open/stats":
             # 开放 API（只读）——商业化接入点：X-API-Key 头或 ?key= 均可
             biz = load_biz()
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-            key = (self.headers.get("X-API-Key")
-                   or (q.get("key", [""])[0] or ""))
+            key = self.headers.get("X-API-Key") or (q.get("key", [""])[0] or "")
             if not biz.get("apikey") or not hmac.compare_digest(
-                    str(key), str(biz["apikey"])):
-                return self._json(
-                    {"ok": False, "error": "invalid api key"}, 403)
+                str(key), str(biz["apikey"])
+            ):
+                return self._json({"ok": False, "error": "invalid api key"}, 403)
             try:
                 sys.path.insert(0, STATION)
                 import push_flow
+
                 flow = push_flow.stats(7)
             except Exception:
                 flow = {"by_day": [], "today_by_kind": {}}
             subs = load_subs()
-            self._json({
-                "ok": True,
-                "tenant": biz.get("tenant", ""),
-                "plan": biz.get("plan", "internal"),
-                "quota_daily": biz.get("quota_daily", 0),
-                "sent_today": sum(flow.get("today_by_kind", {}).values()),
-                "flow": flow,
-                "subs": [{"id": s["id"], "name": s.get("name"),
-                          "kind": s.get("kind"),
-                          "enabled": s.get("enabled", True)} for s in subs],
-                "receivers": len(load_receivers()),
-                "generated_at": datetime.now().isoformat(timespec="seconds")})
+            self._json(
+                {
+                    "ok": True,
+                    "tenant": biz.get("tenant", ""),
+                    "plan": biz.get("plan", "internal"),
+                    "quota_daily": biz.get("quota_daily", 0),
+                    "sent_today": sum(flow.get("today_by_kind", {}).values()),
+                    "flow": flow,
+                    "subs": [
+                        {
+                            "id": s["id"],
+                            "name": s.get("name"),
+                            "kind": s.get("kind"),
+                            "enabled": s.get("enabled", True),
+                        }
+                        for s in subs
+                    ],
+                    "receivers": len(load_receivers()),
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                }
+            )
         elif p == "/api/targets":
             # W38：授权名单只读全量（人数字段诚实置 None，实核走
             # /api/decision-groups 群资料接口）
@@ -604,17 +813,24 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 import sys as _sys
                 import os as _os
+
                 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
                 from quant_mid import api_routes as _qr
+
                 _n = int(self.headers.get("Content-Length") or 0)
                 _body = self.rfile.read(_n) if 0 < _n <= (1 << 20) else b""
                 code, body = _qr.handle("POST", p, dict(self.headers), _body)
                 return self._json(body, code)
             except Exception as _e:  # noqa: BLE001
                 return self._json({"ok": False, "error": str(_e)}, 500)
-        if p in ("/api/decisions/preview", "/api/decisions/record",
-                 "/api/decisions/approve", "/api/decisions/execute"):
+        if p in (
+            "/api/decisions/preview",
+            "/api/decisions/record",
+            "/api/decisions/approve",
+            "/api/decisions/execute",
+        ):
             import notification_decision as nd
+
             caller = nd.caller_for_key(self.headers.get("X-Decision-Key"))
             if not caller:
                 return self._json({"ok": False, "error": "未授权"}, 403)
@@ -636,14 +852,19 @@ class Handler(BaseHTTPRequestHandler):
                     # （不阻断 record 主链路；卡片确认只留痕不执行）
                     try:
                         import approval_card
+
                         card_req = dict(req)
                         card_req.update(out.get("decision") or {})
                         approval_card.push_review_card(card_req)
                     except Exception as exc:
-                        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+                        logging.getLogger(__name__).warning(
+                            "silent-except %s: %s", "push_admin_server.py", exc
+                        )
                 return self._json(out)
             if caller != "admin_ui":
-                return self._json({"ok": False, "error": "审批或执行需人工管理凭证"}, 403)
+                return self._json(
+                    {"ok": False, "error": "审批或执行需人工管理凭证"}, 403
+                )
             if p == "/api/decisions/approve":
                 return self._json(nd.approve(req, caller=caller))
             return self._json(_execute_decision(req.get("id")))
@@ -659,8 +880,9 @@ class Handler(BaseHTTPRequestHandler):
             except (ValueError, OSError) as e:
                 return self._json({"ok": False, "error": "请求体解析失败: %s" % e}, 400)
             try:
-                payload, code = (targets_upsert(req) if p.endswith("upsert")
-                                 else targets_delete(req))
+                payload, code = (
+                    targets_upsert(req) if p.endswith("upsert") else targets_delete(req)
+                )
             except Exception as e:  # noqa: BLE001
                 payload, code = {"ok": False, "error": "%s" % e}, 500
             return self._json(payload, code)
@@ -699,6 +921,7 @@ class Handler(BaseHTTPRequestHandler):
 
 # ---------- K-PUSH-003 统一发送闸门 ----------
 
+
 def load_schedule():
     """K-PUSH-007 调度全量配置。缺文件/坏文件回落 DEFAULT_SCHEDULE 并写盘
     （首次自愈，schema 见常量注释）。load 每次即时读 = 天然热加载。"""
@@ -712,9 +935,13 @@ def load_schedule():
         s = json.loads(json.dumps(DEFAULT_SCHEDULE))  # 深拷贝防常量被污
         try:
             atomic_write_json(SCHEDULE_PATH, s)
-            log("[sched] schedule.json 缺失/损坏，已写缺省矩阵（静默 22:00-07:30，预警/盘中豁免）")
+            log(
+                "[sched] schedule.json 缺失/损坏，已写缺省矩阵（静默 22:00-07:30，预警/盘中豁免）"
+            )
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
     return s
 
 
@@ -744,9 +971,9 @@ def _in_silent_window(now=None, kind=""):
     if not a or not b:
         return False
     cur = (now or datetime.now()).strftime("%H:%M")
-    if a <= b:                      # 同日窗口，如 12:00-13:30
+    if a <= b:  # 同日窗口，如 12:00-13:30
         return a <= cur < b
-    return cur >= a or cur < b      # 跨午夜窗口，如 22:00-07:30
+    return cur >= a or cur < b  # 跨午夜窗口，如 22:00-07:30
 
 
 def _flow_gate_deny(kind, target, why):
@@ -754,14 +981,18 @@ def _flow_gate_deny(kind, target, why):
     try:
         sys.path.insert(0, STATION)
         import push_flow
-        push_flow.record("%s|deny:%s" % (kind or "hub", why)[:80],
-                         "hub-gate", target, 1, False)
+
+        push_flow.record(
+            "%s|deny:%s" % (kind or "hub", why)[:80], "hub-gate", target, 1, False
+        )
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
 
 
 # ── N6（派工单 2026-10-19 / P0-4）：死信计数观测 + 阈值告警 ─────────
-DEAD_ALERT_THRESHOLD = 20          # 近 24h 死信告警阈值（条）
+DEAD_ALERT_THRESHOLD = 20  # 近 24h 死信告警阈值（条）
 DEAD_ALERT_COOLDOWN_SEC = 6 * 3600  # 告警防抖窗口（防死信自递归）
 
 
@@ -771,14 +1002,17 @@ def _dead_letter_stats():
     try:
         sys.path.insert(0, HERE)
         import dead_letter
+
         n = dead_letter.count_since(24)
     except Exception:
         n = -1
     if n < 0:
-        return {"count_24h": None, "threshold": DEAD_ALERT_THRESHOLD,
-                "degraded": None}
-    return {"count_24h": n, "threshold": DEAD_ALERT_THRESHOLD,
-            "degraded": n >= DEAD_ALERT_THRESHOLD}
+        return {"count_24h": None, "threshold": DEAD_ALERT_THRESHOLD, "degraded": None}
+    return {
+        "count_24h": n,
+        "threshold": DEAD_ALERT_THRESHOLD,
+        "degraded": n >= DEAD_ALERT_THRESHOLD,
+    }
 
 
 def _fallback_stats_24h():
@@ -800,11 +1034,10 @@ def _fallback_stats_24h():
     try:
         sys.path.insert(0, STATION)
         import push_flow
-        cutoff = (datetime.now() - timedelta(hours=24)).isoformat(
-            timespec="seconds")
+
+        cutoff = (datetime.now() - timedelta(hours=24)).isoformat(timespec="seconds")
         cnt = tot = sent = 0
-        with open(push_flow.FLOW_PATH, encoding="utf-8",
-                  errors="replace") as f:
+        with open(push_flow.FLOW_PATH, encoding="utf-8", errors="replace") as f:
             for line in f:
                 try:
                     r = json.loads(line)
@@ -846,22 +1079,35 @@ def _dead_letter_alert_if_needed(stats=None):
             with open(sp, encoding="utf-8") as f:
                 last = float(json.load(f).get("last_alert_ts") or 0)
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
         import time as _t
+
         if _t.time() - last < DEAD_ALERT_COOLDOWN_SEC:
             return
-        rid = next((t.get("id") for t in news_targets()
-                    if t.get("name") == "个人" and t.get("id")), None)
+        rid = next(
+            (
+                t.get("id")
+                for t in news_targets()
+                if t.get("name") == "个人" and t.get("id")
+            ),
+            None,
+        )
         if not rid:
-            log("[dead-alert] degraded=%s but no receiver, state only"
-                % st["count_24h"])
+            log(
+                "[dead-alert] degraded=%s but no receiver, state only" % st["count_24h"]
+            )
             return
-        body = json.dumps({"text":
-                           "⚠️ 推送中台死信告警：近24h 死信 %d 条（阈值 %d）"
-                           "——受计量出口疑似不可达，请检查 8097 / agent "
-                           "webhook。详情 /api/state dead_letters 段。"
-                           % (st["count_24h"], DEAD_ALERT_THRESHOLD)},
-                          ensure_ascii=False)
+        body = json.dumps(
+            {
+                "text": "⚠️ 推送中台死信告警：近24h 死信 %d 条（阈值 %d）"
+                "——受计量出口疑似不可达，请检查 8097 / agent "
+                "webhook。详情 /api/state dead_letters 段。"
+                % (st["count_24h"], DEAD_ALERT_THRESHOLD)
+            },
+            ensure_ascii=False,
+        )
 
         def _send():
             try:
@@ -869,18 +1115,33 @@ def _dead_letter_alert_if_needed(stats=None):
                 if news_dir not in sys.path:
                     sys.path.insert(0, news_dir)
                 from feishu_client import send_msg_tracked
-                send_msg_tracked(body, "text", rid, "open_id",
-                                 kind="dead_letter_alert", critical=True,
-                                 via_hub=True, flow_record=True)
+
+                send_msg_tracked(
+                    body,
+                    "text",
+                    rid,
+                    "open_id",
+                    kind="dead_letter_alert",
+                    critical=True,
+                    via_hub=True,
+                    flow_record=True,
+                )
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "push_admin_server.py", exc
+                )
 
         threading.Thread(target=_send, daemon=True).start()
         with open(sp, "w", encoding="utf-8") as f:
-            json.dump({"last_alert_ts": _t.time(),
-                       "count_at_alert": st["count_24h"],
-                       "threshold": DEAD_ALERT_THRESHOLD}, f,
-                      ensure_ascii=False)
+            json.dump(
+                {
+                    "last_alert_ts": _t.time(),
+                    "count_at_alert": st["count_24h"],
+                    "threshold": DEAD_ALERT_THRESHOLD,
+                },
+                f,
+                ensure_ascii=False,
+            )
         log("[dead-alert] degraded fire: count_24h=%s" % st["count_24h"])
     except Exception as _e:
         log("[dead-alert] failed: %r" % _e)
@@ -908,10 +1169,13 @@ def api_send(req):
     domain = (req.get("domain") or "").strip() or None
     if domain:
         from notify_contracts import DOMAINS
+
         if domain not in DOMAINS:
-            return {"ok": False,
-                    "why": "invalid domain: %s" % domain[:20],
-                    "error": "invalid domain"}
+            return {
+                "ok": False,
+                "why": "invalid domain: %s" % domain[:20],
+                "error": "invalid domain",
+            }
         # FC-A：域路由表驱动（松耦合设计稿）；customer 域本期 observe 只留痕，
         # enforce M3 收银台后另批。P2.7 G-B 预埋口径注释：enforce 切换后
         # customer 域 critical 不豁免（老田建议口径，M3 另批确认）——届时
@@ -920,6 +1184,7 @@ def api_send(req):
         if domain_route.get(domain) == "observe":
             try:
                 import push_flow
+
                 # P2.7 G-B 静默窗预埋（零行为变更，纯留痕增强）：customer
                 # 域流入全局静默窗（读 load_schedule 同源 22:00-07:30）时
                 # observe 行 kind 加 "|silent-window" 后缀（_flow_gate_deny
@@ -931,46 +1196,57 @@ def api_send(req):
                 obs_kind = kind or "hub"
                 if _in_silent_window(kind=""):
                     obs_kind = "%s|silent-window" % obs_kind
-                push_flow.record(obs_kind, "domain-observe", rid, 1, True,
-                                 domain=domain)
+                push_flow.record(
+                    obs_kind, "domain-observe", rid, 1, True, domain=domain
+                )
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "push_admin_server.py", exc
+                )
     if not content or not rid:
-        return {"ok": False, "why": "missing content/receive_id",
-                "error": "missing content/receive_id"}
+        return {
+            "ok": False,
+            "why": "missing content/receive_id",
+            "error": "missing content/receive_id",
+        }
 
     # 闸 1：静默时段（K-PUSH-007：per-kind 豁免——预警/盘中类风险提示不可吞）
     if not critical and _in_silent_window(kind=kind):
         _flow_gate_deny(kind, rid, "silent window")
-        return {"ok": False, "why": "silent window",
-                "error": "silent window"}
+        return {"ok": False, "why": "silent window", "error": "silent window"}
 
     # 闸 2：套餐配额（internal 永不拦，承 push_flow.quota_check 判例）
     try:
         sys.path.insert(0, STATION)
         import push_flow
+
         plan, quota, sent, blocked = push_flow.quota_check()
         if blocked:
             _flow_gate_deny(kind, rid, "quota %d/%d" % (sent, quota))
-            return {"ok": False,
-                    "error": "quota block: plan=%s sent=%d quota=%d" % (
-                        plan, sent, quota)}
+            return {
+                "ok": False,
+                "error": "quota block: plan=%s sent=%d quota=%d" % (plan, sent, quota),
+            }
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
 
     # 闸 3（K-PUSH-004）：卡片按钮注册校验——未注册/禁用动作的按钮，
     # warn 模式仅记观察流水，enforce 模式拒发（按钮统一归档的强制入口）
     if msg_type == "interactive":
         try:
             import card_actions
+
             card = json.loads(content) if isinstance(content, str) else content
             ok3, why3, bad = card_actions.check_card(card)
             if not ok3:
                 _flow_gate_deny(kind, rid, "unregistered-btn %s" % ",".join(bad)[:40])
-                return {"ok": False, "why": why3, "error": why3,
-                        "via": "hub"}
+                return {"ok": False, "why": why3, "error": why3, "via": "hub"}
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
 
     # 直发（via_hub=False 防环；W38 起改走 tracked 版拿 message_id，
     # flow_record=False 由本函数统一落 evidence 证据账，防同一发送双行）
@@ -978,13 +1254,17 @@ def api_send(req):
     if news_dir not in sys.path:
         sys.path.insert(0, news_dir)
     from feishu_client import send_msg_tracked, verify_message
+
     # FB-L（2026-10-20）：卡片模板差异化（总纲 P1）——按 kind 包装卡片，
     # 未注册 kind / 任何异常一律原样透传（closed on failure，不阻断主发送）
     try:
         from card_templates import apply_card_template
+
         content, msg_type = apply_card_template(kind, content, msg_type)
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
     # W3（2026-10-24）sender 统一：调用方传 sender_role 时按角色选发送 app；
     # 缺省 None = 走 canonical（存量调用零变化）。凭据缺失 closed on failure，
     # 绝不静默换别的 app 发（防跨应用域 230001 / 身份漂移）。
@@ -995,29 +1275,40 @@ def api_send(req):
             if HERE not in sys.path:
                 sys.path.insert(0, HERE)
             import feishu_app_pool
+
             aid, sec = feishu_app_pool.app_for_role(sender_role)
             _sender_app = {"app_id": aid, "app_secret": sec}
         except Exception as e:  # noqa: BLE001
-            why4 = ("sender_role %s 凭据不可用：%s"
-                    % (sender_role, str(e)[:120]))
+            why4 = "sender_role %s 凭据不可用：%s" % (sender_role, str(e)[:120])
             try:
                 sys.path.insert(0, STATION)
                 import push_flow
-                push_flow.record(kind or "hub", "openapi", rid, 1, False,
-                                 evidence="dead_letter")
+
+                push_flow.record(
+                    kind or "hub", "openapi", rid, 1, False, evidence="dead_letter"
+                )
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "push_admin_server.py", exc
+                )
             return {"ok": False, "why": why4, "error": why4, "via": "hub"}
     ok, why, mid = send_msg_tracked(
-        content, msg_type, rid, rtype, kind=kind,
-        via_hub=False, flow_record=False,
-        route_targets=route_targets, domain=domain,
-        app_id=_sender_app.get("app_id"), app_secret=_sender_app.get("app_secret"))
+        content,
+        msg_type,
+        rid,
+        rtype,
+        kind=kind,
+        via_hub=False,
+        flow_record=False,
+        route_targets=route_targets,
+        domain=domain,
+        app_id=_sender_app.get("app_id"),
+        app_secret=_sender_app.get("app_secret"),
+    )
     # W38 送达证据分级：api_accepted ≠ receiver_verified ≠ dead_letter
     if ok and mid:
         try:
-            evidence = "receiver_verified" if verify_message(mid) \
-                else "api_accepted"
+            evidence = "receiver_verified" if verify_message(mid) else "api_accepted"
         except Exception:
             evidence = "api_accepted"
     else:
@@ -1025,26 +1316,43 @@ def api_send(req):
     try:
         sys.path.insert(0, STATION)
         import push_flow
-        push_flow.record(kind or "hub", "openapi", rid, 1, bool(ok),
-                         evidence=evidence)
+
+        push_flow.record(kind or "hub", "openapi", rid, 1, bool(ok), evidence=evidence)
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
     if not ok and not str(kind or "").startswith("dead_letter_redelivery"):
         # 直发失败 → 死信登记（闸门拒绝不算死信，走 _flow_gate_deny）
         # 2026-10-26：补达失败不再回填死信（否则巡线补达→失败→新死信→再补达 风暴）
         try:
             sys.path.insert(0, HERE)
             import dead_letter
-            dead_letter.register(kind or "hub", "openapi", rid, why,
-                                 payload=(content if isinstance(content, str)
-                                          else json.dumps(content,
-                                                          ensure_ascii=False)))
+
+            dead_letter.register(
+                kind or "hub",
+                "openapi",
+                rid,
+                why,
+                payload=(
+                    content
+                    if isinstance(content, str)
+                    else json.dumps(content, ensure_ascii=False)
+                ),
+            )
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
     # B1（2026-10-19）：返回键统一 why 主键；error 同值镜像一版过渡
     # （防外部老客户端仍读 error——_hub_send/inbound_gateway 已改读 why）。
-    resp = {"ok": bool(ok), "why": why, "error": why, "via": "hub",
-            "evidence": evidence}
+    resp = {
+        "ok": bool(ok),
+        "why": why,
+        "error": why,
+        "via": "hub",
+        "evidence": evidence,
+    }
     if mid:
         resp["message_id"] = mid
     return resp
@@ -1056,6 +1364,7 @@ def _execute_decision(decision_id):
     attempt 失败（gate_or_send_failed / unknown_after_attempt）→ 死信登记
     （未到时间/开关未开等闸级拒绝不是死信）。"""
     import notification_decision as nd
+
     captured = {}
 
     def sender(payload):
@@ -1069,23 +1378,33 @@ def _execute_decision(decision_id):
         r = captured.get("resp") or {}
         if r.get("message_id"):
             try:
-                nd.update_send_evidence(decision_id, r["message_id"],
-                                        r.get("evidence") or "api_accepted")
+                nd.update_send_evidence(
+                    decision_id, r["message_id"], r.get("evidence") or "api_accepted"
+                )
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "push_admin_server.py", exc
+                )
     elif dec.get("outcome") in ("gate_or_send_failed", "unknown_after_attempt"):
         try:
             import dead_letter
-            dead_letter.register("decision:%s" % (dec.get("category") or "?"),
-                                 "openapi", dec.get("target_id") or "",
-                                 str(dec.get("outcome")),
-                                 decision_id=decision_id)
+
+            dead_letter.register(
+                "decision:%s" % (dec.get("category") or "?"),
+                "openapi",
+                dec.get("target_id") or "",
+                str(dec.get("outcome")),
+                decision_id=decision_id,
+            )
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
     return out
 
 
 # ---------- W38 授权名单（targets）CRUD ----------
+
 
 def targets_view():
     """/api/targets：只读本地授权名单配置全量。人数字段诚实置 None
@@ -1098,12 +1417,20 @@ def targets_view():
         groups = {}
     rows = []
     for gid, entry in groups.items():
-        rows.append({"group_id": gid,
-                     **(entry if isinstance(entry, dict) else {}),
-                     "member_count": None,
-                     "member_count_note": "未知（读不到不猜，实核走 /api/decision-groups）"})
-    return {"ok": True, "version": data.get("version"),
-            "dryrun_default": data.get("dryrun_default"), "groups": rows}
+        rows.append(
+            {
+                "group_id": gid,
+                **(entry if isinstance(entry, dict) else {}),
+                "member_count": None,
+                "member_count_note": "未知（读不到不猜，实核走 /api/decision-groups）",
+            }
+        )
+    return {
+        "ok": True,
+        "version": data.get("version"),
+        "dryrun_default": data.get("dryrun_default"),
+        "groups": rows,
+    }
 
 
 def _save_subscribers_snapshot(data, operator, group_id, action, before, after):
@@ -1117,25 +1444,37 @@ def _save_subscribers_snapshot(data, operator, group_id, action, before, after):
             with open(SUBSCRIBERS_PATH + ".bak", "wb") as f:
                 f.write(raw)
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
     tmp = SUBSCRIBERS_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     os.replace(tmp, SUBSCRIBERS_PATH)
     try:
-        rec = {"ts": datetime.now().isoformat(timespec="seconds"),
-               "operator": str(operator)[:100], "group_id": str(group_id)[:60],
-               "action": action, "before": before, "after": after}
+        rec = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "operator": str(operator)[:100],
+            "group_id": str(group_id)[:60],
+            "action": action,
+            "before": before,
+            "after": after,
+        }
         with open(TARGET_AUDIT_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
 
 
 def _targets_operator(req):
     operator = req.get("operator")
-    if not isinstance(operator, str) or not operator.strip() \
-            or len(operator.strip()) > 100:
+    if (
+        not isinstance(operator, str)
+        or not operator.strip()
+        or len(operator.strip()) > 100
+    ):
         return None
     return operator.strip()
 
@@ -1147,25 +1486,25 @@ def targets_upsert(req):
     if not operator:
         return {"ok": False, "error": "operator 必填且不超过 100 字"}, 400
     import notify_contracts as nc
+
     group_id, entry = req.get("group_id"), req.get("entry")
     errors = nc.validate_subscriber_entry(group_id, entry)
     if errors:
-        return {"ok": False, "error": "授权名单条目校验未通过",
-                "errors": errors}, 400
+        return {"ok": False, "error": "授权名单条目校验未通过", "errors": errors}, 400
     data = _read_json(SUBSCRIBERS_PATH, None)
     if not isinstance(data, dict):
-        return {"ok": False,
-                "error": "push_subscribers.json 缺失或损坏，拒绝在线改（先人工修复）"}, 500
+        return {
+            "ok": False,
+            "error": "push_subscribers.json 缺失或损坏，拒绝在线改（先人工修复）",
+        }, 500
     groups = data.get("groups")
     if not isinstance(groups, dict):
         groups = {}
         data["groups"] = groups
     before = groups.get(group_id)
     groups[group_id] = entry
-    _save_subscribers_snapshot(data, operator, group_id, "upsert",
-                               before, entry)
-    return {"ok": True, "group_id": group_id, "before": before,
-            "after": entry}, 200
+    _save_subscribers_snapshot(data, operator, group_id, "upsert", before, entry)
+    return {"ok": True, "group_id": group_id, "before": before, "after": entry}, 200
 
 
 def targets_delete(req):
@@ -1180,22 +1519,25 @@ def targets_delete(req):
     data = _read_json(SUBSCRIBERS_PATH, None)
     groups = data.get("groups") if isinstance(data, dict) else None
     if not isinstance(groups, dict):
-        return {"ok": False,
-                "error": "push_subscribers.json 缺失或损坏，拒绝在线改（先人工修复）"}, 500
+        return {
+            "ok": False,
+            "error": "push_subscribers.json 缺失或损坏，拒绝在线改（先人工修复）",
+        }, 500
     if group_id not in groups:
         return {"ok": False, "error": "group_id 不存在：%s" % group_id}, 404
     before = groups.pop(group_id)
-    _save_subscribers_snapshot(data, operator, group_id, "delete",
-                               before, None)
+    _save_subscribers_snapshot(data, operator, group_id, "delete", before, None)
     return {"ok": True, "group_id": group_id, "before": before}, 200
 
 
 # ---------- K-PUSH-003 动线总览数据 ----------
 
+
 def _actions_stats():
     """K-PUSH-004：按钮归档数据（读侧降级为空，页面不崩）。"""
     try:
         import card_actions
+
         return card_actions.stats()
     except Exception:
         return {"actions": [], "total": 0, "enforce": False, "events": []}
@@ -1246,15 +1588,16 @@ def _shadow_stats():
     subprocess 判例：Popen+bytes+手动 decode；-X utf8 强制管道输出 utf-8
     （Windows 管道默认 GBK，ensure_ascii=False 的中文/数学负号会炸）。
     """
-    if (_shadow_cache["data"] is not None
-            and time.time() - _shadow_cache["t"] <= 300):
+    if _shadow_cache["data"] is not None and time.time() - _shadow_cache["t"] <= 300:
         return _shadow_cache["data"]
     jev_dir = os.path.join(STATION, "jev-eval")
     try:
         p = subprocess.Popen(
-            [sys.executable, "-X", "utf8", "jev_graduation_status.py",
-             "--json"],
-            cwd=jev_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            [sys.executable, "-X", "utf8", "jev_graduation_status.py", "--json"],
+            cwd=jev_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         so, _ = p.communicate(timeout=30)
         data = json.loads(so.decode("utf-8", "replace"))
         _shadow_cache["t"] = time.time()
@@ -1267,6 +1610,7 @@ def _shadow_stats():
 def flow_matrix():
     """今日动线矩阵：源归组计数 / 触点归组计数 / 拦截明细（真实流水聚合）。"""
     import datetime as dt
+
     today = dt.date.today().isoformat()
     flow_path = os.path.join(WORK, "push_flow.jsonl")
     src, dst, deny = {}, {}, []
@@ -1283,36 +1627,50 @@ def flow_matrix():
                 ok = bool(r.get("ok", True))
                 k = str(r.get("kind", ""))
                 src[_kind_group(k)] = src.get(_kind_group(k), 0) + c
-                dst[_target_group(r.get("target", ""))] = \
+                dst[_target_group(r.get("target", ""))] = (
                     dst.get(_target_group(r.get("target", "")), 0) + c
+                )
                 if not ok or "deny" in k:
-                    deny.append({"ts": r.get("ts", "")[-8:], "kind": k[:40],
-                                 "target": _target_group(r.get("target", "")),
-                                 "note": "拦截" if "deny" in k else "发送失败"})
+                    deny.append(
+                        {
+                            "ts": r.get("ts", "")[-8:],
+                            "kind": k[:40],
+                            "target": _target_group(r.get("target", "")),
+                            "note": "拦截" if "deny" in k else "发送失败",
+                        }
+                    )
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "push_admin_server.py", exc
+        )
     import push_flow
+
     try:
         plan, daily, sent, blocked = push_flow.quota_check()
         quota = {"plan": plan, "daily": daily, "sent": sent, "blocked": blocked}
     except Exception:
         quota = {}
-    return {"sources": src, "targets": dst, "deny": deny[-8:],
-            "gate": {"silent": load_schedule(), "hub": "on", "quota": quota}}
+    return {
+        "sources": src,
+        "targets": dst,
+        "deny": deny[-8:],
+        "gate": {"silent": load_schedule(), "hub": "on", "quota": quota},
+    }
 
 
 def dispatch(req):
     act = req.get("action")
 
-    if act == "toggle_action":   # K-PUSH-004：按钮归档启停
+    if act == "toggle_action":  # K-PUSH-004：按钮归档启停
         import card_actions
+
         on = card_actions.toggle(req.get("id"), bool(req.get("enabled")))
         return {"ok": True, "enabled": on}
 
-    if act == "set_action_enforce":   # K-PUSH-004：未注册按钮 warn/enforce
+    if act == "set_action_enforce":  # K-PUSH-004：未注册按钮 warn/enforce
         import card_actions
-        return {"ok": True, "enforce": card_actions.set_enforce(
-            bool(req.get("on")))}
+
+        return {"ok": True, "enforce": card_actions.set_enforce(bool(req.get("on")))}
 
     if act == "toggle_sub":
         subs = load_subs()
@@ -1330,8 +1688,11 @@ def dispatch(req):
         known = {r["name"] for r in load_receivers()}
         bad = [n for n in names if n not in known]
         if bad:
-            return {"ok": False, "error":
-                    "接收人不在 receivers.json（先在接收人表添加或点同步）：%s" % bad}
+            return {
+                "ok": False,
+                "error": "接收人不在 receivers.json（先在接收人表添加或点同步）：%s"
+                % bad,
+            }
         subs = load_subs()
         for s in subs:
             if s["id"] == sid:
@@ -1345,22 +1706,37 @@ def dispatch(req):
         added = []
         for t in news_targets():
             if t.get("name") and t["name"] not in names:
-                recvs.append({"name": t["name"], "type": t["type"],
-                              "id": t["id"], "note": "同步自 news push_targets"})
+                recvs.append(
+                    {
+                        "name": t["name"],
+                        "type": t["type"],
+                        "id": t["id"],
+                        "note": "同步自 news push_targets",
+                    }
+                )
                 added.append(t["name"])
         save_receivers(recvs)
         return {"ok": True, "added": added}
 
     if act == "add_receiver":
         r = req.get("receiver") or {}
-        if not r.get("name") or not r.get("id") or \
-                r.get("type") not in ("chat_id", "open_id"):
+        if (
+            not r.get("name")
+            or not r.get("id")
+            or r.get("type") not in ("chat_id", "open_id")
+        ):
             return {"ok": False, "error": "需含 name/id/type(chat_id|open_id)"}
         recvs = load_receivers()
         if any(x["name"] == r["name"] for x in recvs):
             return {"ok": False, "error": "接收人已存在：%s" % r["name"]}
-        recvs.append({"name": r["name"], "type": r["type"], "id": r["id"],
-                      "note": r.get("note", "")})
+        recvs.append(
+            {
+                "name": r["name"],
+                "type": r["type"],
+                "id": r["id"],
+                "note": r.get("note", ""),
+            }
+        )
         save_receivers(recvs)
         return {"ok": True}
 
@@ -1398,20 +1774,27 @@ def dispatch(req):
             t = (r.get("time") or base.get("time") or "").strip()
             if t and not TIME_RE.match(t):
                 return {"ok": False, "error": "%s 时间格式非法：%s" % (rid_, t)}
-            clean.append({
-                "id": rid_, "name": r.get("name", base.get("name", "")),
-                "kind": r.get("kind", base.get("kind", "")),
-                "task": r.get("task", base.get("task", "")),
-                "time": t, "freq": r.get("freq", base.get("freq", "")),
-                "window": r.get("window", base.get("window", "")),
-                "exempt": bool(r.get("exempt", base.get("exempt", False))),
-                "excess": r.get("excess", base.get("excess", "")),
-                "enabled": bool(r.get("enabled", base.get("enabled", True))),
-            })
-        out = {"silent_start": str(ns), "silent_end": str(ne),
-               "note": cur.get("note", ""),
-               "updated_at": datetime.now().isoformat(timespec="seconds"),
-               "sources": clean}
+            clean.append(
+                {
+                    "id": rid_,
+                    "name": r.get("name", base.get("name", "")),
+                    "kind": r.get("kind", base.get("kind", "")),
+                    "task": r.get("task", base.get("task", "")),
+                    "time": t,
+                    "freq": r.get("freq", base.get("freq", "")),
+                    "window": r.get("window", base.get("window", "")),
+                    "exempt": bool(r.get("exempt", base.get("exempt", False))),
+                    "excess": r.get("excess", base.get("excess", "")),
+                    "enabled": bool(r.get("enabled", base.get("enabled", True))),
+                }
+            )
+        out = {
+            "silent_start": str(ns),
+            "silent_end": str(ne),
+            "note": cur.get("note", ""),
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+            "sources": clean,
+        }
         atomic_write_json(SCHEDULE_PATH, out)
         applied, errs = [], []
         apply = bool(req.get("apply_tasks"))
@@ -1424,14 +1807,28 @@ def dispatch(req):
                 except (OSError, subprocess.TimeoutExpired) as e:
                     ok2, err2 = False, str(e)
                 (applied if ok2 else errs).append(
-                    "%s->%s" % (row["task"], row["time"]) if ok2
-                    else "%s: %s" % (row["task"], err2))
-        log("[sched] 保存调度矩阵（%d 源，联动成功 %d 项，失败 %d 项）" % (
-            len(clean), len(applied), len(errs)))
-        return {"ok": not errs, "saved": True, "applied": apply and not errs,
-                "partial_failure": bool(errs),
-                **({"error": "配置已保存，但 %d 项计划任务联动失败" % len(errs)} if errs else {}),
-                "applied_tasks": applied, "task_errors": errs, "schedule": out}
+                    "%s->%s" % (row["task"], row["time"])
+                    if ok2
+                    else "%s: %s" % (row["task"], err2)
+                )
+        log(
+            "[sched] 保存调度矩阵（%d 源，联动成功 %d 项，失败 %d 项）"
+            % (len(clean), len(applied), len(errs))
+        )
+        return {
+            "ok": not errs,
+            "saved": True,
+            "applied": apply and not errs,
+            "partial_failure": bool(errs),
+            **(
+                {"error": "配置已保存，但 %d 项计划任务联动失败" % len(errs)}
+                if errs
+                else {}
+            ),
+            "applied_tasks": applied,
+            "task_errors": errs,
+            "schedule": out,
+        }
 
     if act == "set_biz":
         biz = load_biz()
@@ -1450,12 +1847,14 @@ def dispatch(req):
         biz["note"] = (req.get("note") or biz.get("note") or "").strip()[:200]
         if not biz.get("apikey"):
             import secrets
+
             biz["apikey"] = "pk_" + secrets.token_hex(16)
         save_biz(biz)
         return {"ok": True, "biz": public_biz(biz)}
 
     if act == "regen_apikey":
         import secrets
+
         biz = load_biz()
         biz["apikey"] = "pk_" + secrets.token_hex(16)
         save_biz(biz)
@@ -1472,44 +1871,59 @@ def dispatch(req):
     if act == "tune_submit":
         # 受理一条调优请求（bot 指令之外的第二入口：API/管理台测试）
         import tune_gate
+
         if not (req.get("text") or "").strip():
             return {"ok": False, "error": "text 必填（客户反馈原文）"}
-        rid = tune_gate.submit(req["text"],
-                               customer=req.get("customer") or "API提交",
-                               plan=req.get("plan") or "internal",
-                               source=req.get("source") or "text")
+        rid = tune_gate.submit(
+            req["text"],
+            customer=req.get("customer") or "API提交",
+            plan=req.get("plan") or "internal",
+            source=req.get("source") or "text",
+        )
         return {"ok": True, "req_id": rid}
 
     if act == "tune_approve":
         import tune_gate
-        return tune_gate.approve(req.get("req_id") or "",
-                                 operator=req.get("operator") or "8097管理台",
-                                 note=req.get("note") or "")
+
+        return tune_gate.approve(
+            req.get("req_id") or "",
+            operator=req.get("operator") or "8097管理台",
+            note=req.get("note") or "",
+        )
 
     if act == "tune_reject":
         import tune_gate
-        r = tune_gate.reject(req.get("req_id") or "",
-                             operator=req.get("operator") or "8097管理台",
-                             reason=req.get("reason") or "")
+
+        r = tune_gate.reject(
+            req.get("req_id") or "",
+            operator=req.get("operator") or "8097管理台",
+            reason=req.get("reason") or "",
+        )
         return r
 
     if act == "tune_deploy":
         import tune_gate
-        return tune_gate.deploy(req.get("req_id") or "",
-                                operator=req.get("operator") or "8097管理台",
-                                params=req.get("params"))
+
+        return tune_gate.deploy(
+            req.get("req_id") or "",
+            operator=req.get("operator") or "8097管理台",
+            params=req.get("params"),
+        )
 
     if act == "tune_list":
         import tune_gate
-        return {"ok": True,
-                "requests": tune_gate.list_requests(req.get("status"))}
+
+        return {"ok": True, "requests": tune_gate.list_requests(req.get("status"))}
 
     if act == "share_gen":
         # 签发一枚分享 token（订阅卡片深链用；也可手动签发测试）
         import share_tokens
-        tok = share_tokens.gen(code=req.get("code") or "",
-                               kind=req.get("kind") or "manual",
-                               ttl_hours=int(req.get("ttl_hours") or 72))
+
+        tok = share_tokens.gen(
+            code=req.get("code") or "",
+            kind=req.get("kind") or "manual",
+            ttl_hours=int(req.get("ttl_hours") or 72),
+        )
         if not tok:
             return {"ok": False, "error": "share_secret 不可用（见 work/）"}
         return {"ok": True, "token": tok}
@@ -1935,9 +2349,15 @@ def main():
         # spawn 的僵尸循环即此）。勿改回文件重定向；观测走 /health +
         # watchdog_9899.log 的 spawn 记录。
         import subprocess as sp
-        sp.Popen([sys.executable, os.path.abspath(__file__), "--port", str(args.port)],
-                 cwd=HERE, stdin=sp.DEVNULL, stdout=sp.DEVNULL, stderr=sp.DEVNULL,
-                 creationflags=sp.DETACHED_PROCESS | sp.CREATE_NEW_PROCESS_GROUP)
+
+        sp.Popen(
+            [sys.executable, os.path.abspath(__file__), "--port", str(args.port)],
+            cwd=HERE,
+            stdin=sp.DEVNULL,
+            stdout=sp.DEVNULL,
+            stderr=sp.DEVNULL,
+            creationflags=sp.DETACHED_PROCESS | sp.CREATE_NEW_PROCESS_GROUP,
+        )
         print("[ok] 已后台驻留：http://127.0.0.1:%d/" % args.port)
         return 0
 
@@ -1961,7 +2381,9 @@ def scheduler_loop():
                 _state["last_tick"] = time.time()
             tasks_snapshot()
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "push_admin_server.py", exc
+            )
         time.sleep(15)
 
 

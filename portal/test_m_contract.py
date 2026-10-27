@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """移动端契约与令牌单测（P0）：四契约校验、签名/验签、过期/作用域。"""
+
 import os
 import tempfile
 import shutil
@@ -16,7 +17,11 @@ import m_tokens as mt  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -79,10 +84,16 @@ def test_contract_rejects_bad_beacon():
 
 def test_contract_check_cli():
     import subprocess
-    p = subprocess.run([sys.executable,
-                        os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "m_contract.py"), "--check"],
-                       capture_output=True, timeout=60)
+
+    p = subprocess.run(
+        [
+            sys.executable,
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "m_contract.py"),
+            "--check",
+        ],
+        capture_output=True,
+        timeout=60,
+    )
     assert p.returncode == 0
     assert "契约校验通过" in p.stdout.decode("utf-8", "replace")
 
@@ -90,8 +101,7 @@ def test_contract_check_cli():
 # ── 令牌 ───────────────────────────────────────────────────
 def test_token_roundtrip(ws_tmp):
     sec = mt.load_secret(os.path.join(ws_tmp, "secret.txt"))
-    tok, payload = mt.make_page_token("chan", id="605100", code="605100",
-                                      secret=sec)
+    tok, payload = mt.make_page_token("chan", id="605100", code="605100", secret=sec)
     got = mt.verify(tok, scope="page", secret=sec)
     assert got["scene"] == "chan" and got["id"] == "605100"
     assert payload["exp"] > payload["nbf"]

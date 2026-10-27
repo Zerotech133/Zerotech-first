@@ -9,6 +9,7 @@
   portal/work/authorization.json                schema zb.authorization.v1（主表）
 规则：主表是唯一可编辑事实源；owners/receivers/targets_by_app 保留只读兼容。
 """
+
 from __future__ import annotations
 
 import json
@@ -30,34 +31,48 @@ def _json(path, default):
 def build():
     owners = _json(os.path.join(HERE, "work", "feishu_secrets", "owners.json"), {})
     by_app = _json(os.path.join(HERE, "work", "feishu_targets_by_app.json"), {})
-    recv = _json(os.path.join(ROOT, "quant_backtest", "receivers.json"),
-                 {}).get("receivers", [])
+    recv = _json(os.path.join(ROOT, "quant_backtest", "receivers.json"), {}).get(
+        "receivers", []
+    )
 
     apps = by_app.get("apps") or {}
     people = {}
     groups = {}
 
     def person(name, **kw):
-        p = people.setdefault(name, {"name": name, "aliases": [],
-                                     "roles": [], "open_ids": {},
-                                     "union_id": "", "note": ""})
+        p = people.setdefault(
+            name,
+            {
+                "name": name,
+                "aliases": [],
+                "roles": [],
+                "open_ids": {},
+                "union_id": "",
+                "note": "",
+            },
+        )
         for k, v in kw.items():
             if k == "open_ids":
                 p["open_ids"].update(v)
             elif v:
                 p[k] = v
 
-    person("田峰", aliases=["老田", "田丰"], roles=["owner", "admin"],
-           union_id=owners.get("union_id", ""),
-           note="本人；owner/admin；allow_any_p2p=%s" % owners.get("allow_any_p2p"))
+    person(
+        "田峰",
+        aliases=["老田", "田丰"],
+        roles=["owner", "admin"],
+        union_id=owners.get("union_id", ""),
+        note="本人；owner/admin；allow_any_p2p=%s" % owners.get("allow_any_p2p"),
+    )
     for app_name, cfg in apps.items():
         oid = cfg.get("owner_open_id")
         if oid:
             people["田峰"]["open_ids"][app_name] = oid
         for gname, cid in (cfg.get("groups") or {}).items():
-            g = groups.setdefault(gname, {"name": gname, "aliases": [],
-                                          "chat_ids": {}, "roles": [],
-                                          "note": ""})
+            g = groups.setdefault(
+                gname,
+                {"name": gname, "aliases": [], "chat_ids": {}, "roles": [], "note": ""},
+            )
             g["chat_ids"][app_name] = cid
     for oid in owners.get("open_ids") or []:
         people["田峰"]["open_ids"].setdefault("legacy", oid)
@@ -67,15 +82,30 @@ def build():
         if not nm:
             continue
         if r.get("type") == "chat_id":
-            g = groups.setdefault(nm, {"name": nm, "aliases": [],
-                                       "chat_ids": {}, "roles": [],
-                                       "note": r.get("note") or ""})
+            g = groups.setdefault(
+                nm,
+                {
+                    "name": nm,
+                    "aliases": [],
+                    "chat_ids": {},
+                    "roles": [],
+                    "note": r.get("note") or "",
+                },
+            )
             g["chat_ids"].setdefault("receivers", r.get("id"))
         else:
             target = "田峰" if nm in ("个人", "本人", "老田", "田丰") else nm
-            p = people.setdefault(target, {"name": target, "aliases": [],
-                                           "roles": ["member"], "open_ids": {},
-                                           "union_id": "", "note": ""})
+            p = people.setdefault(
+                target,
+                {
+                    "name": target,
+                    "aliases": [],
+                    "roles": ["member"],
+                    "open_ids": {},
+                    "union_id": "",
+                    "note": "",
+                },
+            )
             p["open_ids"].setdefault("receivers", r.get("id"))
             if nm != target and nm not in p["aliases"]:
                 p["aliases"].append(nm)
@@ -95,10 +125,14 @@ def build():
         "people": sorted(people.values(), key=lambda x: x["name"]),
         "groups": sorted(groups.values(), key=lambda x: x["name"]),
         "roles": {
-            "owner": {"desc": "本人/决策审批", "permissions":
-                      ["decide", "execute", "push_critical", "admin"]},
-            "admin": {"desc": "管理面（8097 console）", "permissions":
-                      ["state_read", "send_test", "config_write"]},
+            "owner": {
+                "desc": "本人/决策审批",
+                "permissions": ["decide", "execute", "push_critical", "admin"],
+            },
+            "admin": {
+                "desc": "管理面（8097 console）",
+                "permissions": ["state_read", "send_test", "config_write"],
+            },
             "member": {"desc": "普通接收人", "permissions": ["receive"]},
         },
         "permissions_default": {"member": ["receive"]},
@@ -113,5 +147,7 @@ def build():
 
 if __name__ == "__main__":
     d = build()
-    print("authorization: people=%d groups=%d -> %s"
-          % (len(d["people"]), len(d["groups"]), OUT))
+    print(
+        "authorization: people=%d groups=%d -> %s"
+        % (len(d["people"]), len(d["groups"]), OUT)
+    )

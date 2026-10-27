@@ -9,6 +9,7 @@
   · 每次尝试写独立补达行（dead_letter.mark_redelivered），不冒充原发送成功；
   · 状态落 work/redeliver_state.json（attempts/last_ts）。
 """
+
 from __future__ import annotations
 
 import json
@@ -44,6 +45,7 @@ def _save_state(st):
 def _parse_ts(ts):
     try:
         from datetime import datetime
+
         return datetime.fromisoformat(str(ts)).timestamp()
     except (TypeError, ValueError):
         return 0.0
@@ -79,10 +81,15 @@ def pending(now=None):
             state_attempts = 0
         attempts = max(len(reds), state_attempts)
         payload = r.get("payload")
-        base = {"dead_id": dead_id, "kind": r.get("kind"),
-                "channel": r.get("channel"), "target": r.get("target"),
-                "why": r.get("why"), "attempts": attempts,
-                "payload": payload}
+        base = {
+            "dead_id": dead_id,
+            "kind": r.get("kind"),
+            "channel": r.get("channel"),
+            "target": r.get("target"),
+            "why": r.get("why"),
+            "attempts": attempts,
+            "payload": payload,
+        }
         if attempts >= CAP:
             out.append(dict(base, reason="exhausted"))
             continue
@@ -92,8 +99,7 @@ def pending(now=None):
         last = _parse_ts(reds[-1].get("ts")) if reds else _parse_ts(r.get("ts"))
         wait = BACKOFFS[min(attempts, len(BACKOFFS) - 1)]
         if now - last < wait:
-            out.append(dict(base, reason="backoff",
-                            next_in=int(wait - (now - last))))
+            out.append(dict(base, reason="backoff", next_in=int(wait - (now - last))))
             continue
         out.append(dict(base, reason="ready"))
     return out
@@ -116,31 +122,33 @@ def run_once(sender, now=None):
     if now_ts - win > 600:
         win, n = now_ts, 0
     if n >= 100:
-        return {"tried": 0, "ok": 0, "fail": 0,
-                "skipped": {"storm_breaker": 1},
-                "tripped": True, "window_n": n}
+        return {
+            "tried": 0,
+            "ok": 0,
+            "fail": 0,
+            "skipped": {"storm_breaker": 1},
+            "tripped": True,
+            "window_n": n,
+        }
     res = {"tried": 0, "ok": 0, "fail": 0, "skipped": {}}
     for item in pending(now):
         if item["reason"] != "ready":
-            res["skipped"][item["reason"]] = res["skipped"].get(
-                item["reason"], 0) + 1
+            res["skipped"][item["reason"]] = res["skipped"].get(item["reason"], 0) + 1
             continue
         res["tried"] += 1
         try:
             ok, mid, why = sender(item.get("payload"), item)
         except Exception as e:  # noqa: BLE001
-            ok, mid, why = False, None, "%s: %s" % (type(e).__name__,
-                                                    str(e)[:100])
+            ok, mid, why = False, None, "%s: %s" % (type(e).__name__, str(e)[:100])
         dead_letter.mark_redelivered(item["dead_id"], bool(ok), mid, why or "")
         st.setdefault(item["dead_id"], {}).update(
-            {"attempts": item["attempts"] + 1, "last_ts": time.time(),
-             "ok": bool(ok)})
+            {"attempts": item["attempts"] + 1, "last_ts": time.time(), "ok": bool(ok)}
+        )
         if ok:
             res["ok"] += 1
         else:
             res["fail"] += 1
-    st["_global"] = {"window_start": win, "n": n + res["tried"],
-                     "ts": time.time()}
+    st["_global"] = {"window_start": win, "n": n + res["tried"], "ts": time.time()}
     _save_state(st)
     return res
 
@@ -153,11 +161,13 @@ def default_sender(payload, item):
     """
     try:
         import sys as _sys
+
         root = os.path.dirname(HERE)
         nc = os.path.join(root, "news_collector")
         if nc not in _sys.path:
             _sys.path.insert(0, nc)
         from feishu_client import send_msg_tracked
+
         target = str(item.get("target") or "")
         if not target:
             return False, None, "无目标"
@@ -167,11 +177,19 @@ def default_sender(payload, item):
             rid = "union_id"
         else:
             rid = "open_id"
-        text = payload if isinstance(payload, str) else json.dumps(
-            payload, ensure_ascii=False)
+        text = (
+            payload
+            if isinstance(payload, str)
+            else json.dumps(payload, ensure_ascii=False)
+        )
         ok, why, mid = send_msg_tracked(
-            str(text)[:4000], "text", target, receive_id_type=rid,
-            kind="dead_letter_redelivery", critical=True)
+            str(text)[:4000],
+            "text",
+            target,
+            receive_id_type=rid,
+            kind="dead_letter_redelivery",
+            critical=True,
+        )
         return bool(ok), mid, str(why or "")
     except Exception as e:  # noqa: BLE001
         return False, None, "%s: %s" % (type(e).__name__, str(e)[:100])
@@ -182,5 +200,4 @@ def summary():
     by = {}
     for it in items:
         by[it["reason"]] = by.get(it["reason"], 0) + 1
-    return {"pending": len(items), "by_reason": by,
-            "cap": CAP, "backoffs": BACKOFFS}
+    return {"pending": len(items), "by_reason": by, "cap": CAP, "backoffs": BACKOFFS}

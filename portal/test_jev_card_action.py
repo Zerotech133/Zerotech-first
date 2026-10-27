@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """jev_card_action 单测（W3 清债：9104 老链迁移目标）+ dispatch 接线。"""
+
 import os
 import tempfile
 import shutil
@@ -17,7 +18,11 @@ import card_actions  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -37,8 +42,13 @@ def _ack_true(alert_id):
 
 
 def test_ack_success(owner):
-    ok, msg = jca.handle_action("jev_ack", {"alert_id": "a1"}, who=owner,
-                                ack_fn=_ack_true, title_fn=lambda a: "")
+    ok, msg = jca.handle_action(
+        "jev_ack",
+        {"alert_id": "a1"},
+        who=owner,
+        ack_fn=_ack_true,
+        title_fn=lambda a: "",
+    )
     assert ok is True and "ACKED" in msg
 
 
@@ -48,8 +58,9 @@ def test_missing_alert_id(owner):
 
 
 def test_operator_not_allowed(owner):
-    ok, msg = jca.handle_action("jev_ack", {"alert_id": "a1"}, who="ou_other",
-                                ack_fn=_ack_true)
+    ok, msg = jca.handle_action(
+        "jev_ack", {"alert_id": "a1"}, who="ou_other", ack_fn=_ack_true
+    )
     assert ok is False and "允许名单" in msg
 
 
@@ -57,8 +68,9 @@ def test_empty_allowlist_denies(monkeypatch):
     monkeypatch.delenv("LARK_ALERT_OPEN_ID", raising=False)
     monkeypatch.delenv("LARK_ALLOWED_OPERATORS", raising=False)
     monkeypatch.setattr(jca, "_push_owner_open_id", lambda: "")
-    ok, _ = jca.handle_action("jev_ack", {"alert_id": "a1"}, who="ou_x",
-                              ack_fn=_ack_true)
+    ok, _ = jca.handle_action(
+        "jev_ack", {"alert_id": "a1"}, who="ou_x", ack_fn=_ack_true
+    )
     assert ok is False
 
 
@@ -68,8 +80,9 @@ def test_allowlist_falls_back_to_push_owner(monkeypatch):
     monkeypatch.delenv("LARK_ALLOWED_OPERATORS", raising=False)
     monkeypatch.setattr(jca, "_push_owner_open_id", lambda: "ou_owner_from_table")
     assert jca.allowed_operators() == {"ou_owner_from_table"}
-    ok, msg = jca.handle_action("jev_ack", {"alert_id": "a1"},
-                                who="ou_owner_from_table", ack_fn=_ack_true)
+    ok, msg = jca.handle_action(
+        "jev_ack", {"alert_id": "a1"}, who="ou_owner_from_table", ack_fn=_ack_true
+    )
     assert ok is True
 
 
@@ -80,24 +93,35 @@ def test_push_owner_reads_real_config():
 
 
 def test_db_failure_not_faked(owner):
-    ok, msg = jca.handle_action("jev_ack", {"alert_id": "a1"}, who=owner,
-                                ack_fn=lambda a: False)
+    ok, msg = jca.handle_action(
+        "jev_ack", {"alert_id": "a1"}, who=owner, ack_fn=lambda a: False
+    )
     assert ok is False and "数据库" in msg
 
 
 def test_ignore_writes_and_dedupes(owner, ws_tmp):
     path = os.path.join(ws_tmp, "gate_ignored.json")
-    ok, msg = jca.handle_action("jev_ignore", {"alert_id": "a1"}, who=owner,
-                                ack_fn=_ack_true, title_fn=lambda a: "标题A",
-                                ignore_file=path)
+    ok, msg = jca.handle_action(
+        "jev_ignore",
+        {"alert_id": "a1"},
+        who=owner,
+        ack_fn=_ack_true,
+        title_fn=lambda a: "标题A",
+        ignore_file=path,
+    )
     assert ok is True and "已忽略" in msg
     items = jca.load_ignored(path)
     assert len(items) == 1 and items[0]["alert_id"] == "a1"
     assert items[0]["title"] == "标题A" and items[0]["ts"]
     # 重复忽略同一条 → 只有一条
-    jca.handle_action("jev_ignore", {"alert_id": "a1"}, who=owner,
-                      ack_fn=_ack_true, title_fn=lambda a: "标题A2",
-                      ignore_file=path)
+    jca.handle_action(
+        "jev_ignore",
+        {"alert_id": "a1"},
+        who=owner,
+        ack_fn=_ack_true,
+        title_fn=lambda a: "标题A2",
+        ignore_file=path,
+    )
     items = jca.load_ignored(path)
     assert len(items) == 1 and items[0]["title"] == "标题A2"
 
@@ -105,10 +129,16 @@ def test_ignore_writes_and_dedupes(owner, ws_tmp):
 def test_ignore_write_failure_reported(owner, ws_tmp, monkeypatch):
     def boom(items, path=None):
         raise OSError("disk full")
+
     monkeypatch.setattr(jca, "save_ignored", boom)
-    ok, msg = jca.handle_action("jev_ignore", {"alert_id": "a2"}, who=owner,
-                                ack_fn=_ack_true, title_fn=lambda a: "",
-                                ignore_file=os.path.join(ws_tmp, "x.json"))
+    ok, msg = jca.handle_action(
+        "jev_ignore",
+        {"alert_id": "a2"},
+        who=owner,
+        ack_fn=_ack_true,
+        title_fn=lambda a: "",
+        ignore_file=os.path.join(ws_tmp, "x.json"),
+    )
     assert ok is False and "忽略集写入失败" in msg
 
 
@@ -118,8 +148,9 @@ def test_unknown_action(owner):
 
 
 def test_dispatch_routes_jev_actions(monkeypatch, ws_tmp):
-    monkeypatch.setattr(card_actions, "LOG_PATH",
-                        os.path.join(ws_tmp, "action_log.jsonl"))
+    monkeypatch.setattr(
+        card_actions, "LOG_PATH", os.path.join(ws_tmp, "action_log.jsonl")
+    )
     calls = {}
 
     def fake_handle(action_id, payload, who=""):

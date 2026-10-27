@@ -6,7 +6,8 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location(
-    "api_zhuge_brief", Path(__file__).with_name("api_zhuge_brief.py"))
+    "api_zhuge_brief", Path(__file__).with_name("api_zhuge_brief.py")
+)
 mod = importlib.util.module_from_spec(spec)
 
 BEIJING = timezone(timedelta(hours=8))
@@ -15,22 +16,62 @@ CLOCK = datetime(2026, 10, 21, 9, 0, tzinfo=BEIJING)
 GOOD_SIX = {
     "os": {"ok": True, "biz": {"near": [], "notes": []}},
     "home": {"ok": True, "calendar": {"items": []}},
-    "alerts": {"ok": True, "source_health": {"sources": {
-        "premarket": {"status": "ok", "as_of": "2026-10-21T08:00:00+08:00"}}}},
-    "notify": {"ok": True, "errors": [], "items": [
-        {"id": "n1", "title": "阻断通知", "state": "blocked", "created_at": "2026-10-21T07:00:00+08:00", "reason": "通道异常"}]},
-    "tasks": {"ok": True, "tasks": [
-        {"task_id": "t1", "title": "今日到期工单", "status": "open", "due": "2026-10-21", "created_at": "2026-10-20T10:00:00+08:00"},
-        {"task_id": "t2", "title": "逾期工单", "status": "open", "due": "2026-10-19", "created_at": "2026-10-18T10:00:00+08:00"}]},
+    "alerts": {
+        "ok": True,
+        "source_health": {
+            "sources": {
+                "premarket": {"status": "ok", "as_of": "2026-10-21T08:00:00+08:00"}
+            }
+        },
+    },
+    "notify": {
+        "ok": True,
+        "errors": [],
+        "items": [
+            {
+                "id": "n1",
+                "title": "阻断通知",
+                "state": "blocked",
+                "created_at": "2026-10-21T07:00:00+08:00",
+                "reason": "通道异常",
+            }
+        ],
+    },
+    "tasks": {
+        "ok": True,
+        "tasks": [
+            {
+                "task_id": "t1",
+                "title": "今日到期工单",
+                "status": "open",
+                "due": "2026-10-21",
+                "created_at": "2026-10-20T10:00:00+08:00",
+            },
+            {
+                "task_id": "t2",
+                "title": "逾期工单",
+                "status": "open",
+                "due": "2026-10-19",
+                "created_at": "2026-10-18T10:00:00+08:00",
+            },
+        ],
+    },
     "capability": {"ok": True, "production_lines": []},
 }
 
 # WO-OS-20 第七源 pushflow：当日通知投递成败统计（真实账本口径）
 PUSHFLOW_HIGH = {
-    "ok": True, "today": 276, "attempted": 276, "ok_count": 124, "fail_count": 152,
-    "fail_rate": 0.55, "policy_suppressed": 0,
-    "channels": {"openapi": {"ok": 100, "fail": 150},
-                 "lark-cli": {"ok": 24, "fail": 2}},
+    "ok": True,
+    "today": 276,
+    "attempted": 276,
+    "ok_count": 124,
+    "fail_count": 152,
+    "fail_rate": 0.55,
+    "policy_suppressed": 0,
+    "channels": {
+        "openapi": {"ok": 100, "fail": 150},
+        "lark-cli": {"ok": 24, "fail": 2},
+    },
 }
 
 
@@ -44,6 +85,7 @@ def test_module_loadable_and_pure():
     out = m.build_brief(GOOD_SIX, CLOCK)
     # 纯函数：不修改输入
     import copy
+
     snapshot = copy.deepcopy(GOOD_SIX)
     m.build_brief(GOOD_SIX, CLOCK)
     assert GOOD_SIX == snapshot
@@ -56,10 +98,20 @@ def test_output_contract():
     assert out["model_invoked"] is False
     assert out["dispatched"] is False
     assert out["generated_at"] == CLOCK.isoformat()
-    assert isinstance(out["suggestions"], list) and out["suggestions"], "应至少有一条建议"
+    assert isinstance(out["suggestions"], list) and out["suggestions"], (
+        "应至少有一条建议"
+    )
     for s in out["suggestions"]:
         # 每条建议必须带来源与生产者时点（可为 None 但键必须在）
-        for key in ("id", "domain", "priority", "reason", "source", "as_of", "confidence"):
+        for key in (
+            "id",
+            "domain",
+            "priority",
+            "reason",
+            "source",
+            "as_of",
+            "confidence",
+        ):
             assert key in s, f"建议缺 {key}"
         assert s["confidence"] == "rule-based"
     ids = [s["id"] for s in out["suggestions"]]
@@ -87,18 +139,33 @@ def test_deadline_blocked_stays_p1():
     """deadline 类（到点未就绪）是真 P1，不参与历史簇聚合。"""
     m = _load()
     raw = dict(GOOD_SIX)
-    raw["notify"] = {"ok": True, "errors": [], "items": [
-        {"id": "d1", "title": "数据锚到点未就绪 · us / postclose",
-         "state": "blocked", "created_at": "2026-10-21T08:00:00+08:00",
-         "reason": "锚 guojia 状态 stale"},
-        {"id": "n1", "title": "hub 投递失败", "state": "blocked",
-         "created_at": "2026-10-21T07:00:00+08:00", "reason": "ok=0"}]}
+    raw["notify"] = {
+        "ok": True,
+        "errors": [],
+        "items": [
+            {
+                "id": "d1",
+                "title": "数据锚到点未就绪 · us / postclose",
+                "state": "blocked",
+                "created_at": "2026-10-21T08:00:00+08:00",
+                "reason": "锚 guojia 状态 stale",
+            },
+            {
+                "id": "n1",
+                "title": "hub 投递失败",
+                "state": "blocked",
+                "created_at": "2026-10-21T07:00:00+08:00",
+                "reason": "ok=0",
+            },
+        ],
+    }
     out = m.build_brief(raw, CLOCK)
     d = next((s for s in out["suggestions"] if s["id"] == "notify:d1"), None)
     assert d is not None and d["priority"] == 1, "deadline 必须单列 P1"
     assert "到点未就绪" in d["reason"]
-    cluster = next((s for s in out["suggestions"]
-                    if s["id"] == "notify:history_cluster"), None)
+    cluster = next(
+        (s for s in out["suggestions"] if s["id"] == "notify:history_cluster"), None
+    )
     assert cluster is not None and cluster["priority"] == 2
     assert "1 条" in cluster["reason"], "簇只含非 deadline 的 blocked"
 
@@ -115,8 +182,15 @@ def test_missing_sources_degrade_explicitly():
     out = m.build_brief({}, CLOCK)
     assert out["suggestions"] == []
     gaps = {g["source"] for g in out["gaps"]}
-    assert gaps == {"os", "home", "alerts", "notify", "tasks", "capability",
-                    "pushflow"}, "七源全缺应逐一点名（WO-OS-20 扩容）"
+    assert gaps == {
+        "os",
+        "home",
+        "alerts",
+        "notify",
+        "tasks",
+        "capability",
+        "pushflow",
+    }, "七源全缺应逐一点名（WO-OS-20 扩容）"
     for g in out["gaps"]:
         assert g["note"].startswith("待核"), "缺源说明必须以待核开头"
 
@@ -125,14 +199,25 @@ def test_ok_false_source_degrades():
     m = _load()
     raw = dict(GOOD_SIX, notify={"ok": False})
     out = m.build_brief(raw, CLOCK)
-    assert all(s["id"] != "notify:n1" for s in out["suggestions"]), "ok:false 不得产出建议"
+    assert all(s["id"] != "notify:n1" for s in out["suggestions"]), (
+        "ok:false 不得产出建议"
+    )
     assert any(g["source"] == "notify" for g in out["gaps"])
 
 
 def test_stale_as_of_flags_low_freshness():
     m = _load()
-    raw = dict(GOOD_SIX, alerts={"ok": True, "source_health": {"sources": {
-        "premarket": {"status": "ok", "as_of": "2026-10-01T08:00:00+08:00"}}}})
+    raw = dict(
+        GOOD_SIX,
+        alerts={
+            "ok": True,
+            "source_health": {
+                "sources": {
+                    "premarket": {"status": "ok", "as_of": "2026-10-01T08:00:00+08:00"}
+                }
+            },
+        },
+    )
     out = m.build_brief(raw, CLOCK)
     s = next(x for x in out["suggestions"] if x["id"] == "alert:premarket")
     assert s["as_of"] is not None
@@ -152,19 +237,32 @@ def test_no_write_side_effects_by_design():
     m = _load()
     # 模块级不得出现写库/HTTP派单调用痕迹
     src = Path(__file__).with_name("api_zhuge_brief.py").read_text(encoding="utf-8")
-    for banned in ("requests.post", "urllib.request", "subprocess", "sqlite3.connect", "open("):
+    for banned in (
+        "requests.post",
+        "urllib.request",
+        "subprocess",
+        "sqlite3.connect",
+        "open(",
+    ):
         assert banned not in src, f"建议引擎源码不得出现 {banned}"
 
 
 # ── WO-OS-20 第七源 pushflow：当日实际失败率（不是历史失败簇）──────────
 def _pushflow_case(rate, fail_count=11, today=20):
     """构造自洽的 pushflow 夹具（WO-OS-22 起必须带 attempted/policy_suppressed）。"""
-    return dict(GOOD_SIX, pushflow={
-        "ok": True, "today": today, "attempted": today,
-        "ok_count": today - fail_count,
-        "fail_count": fail_count, "fail_rate": rate, "policy_suppressed": 0,
-        "channels": {"openapi": {"ok": today - fail_count, "fail": fail_count}},
-    })
+    return dict(
+        GOOD_SIX,
+        pushflow={
+            "ok": True,
+            "today": today,
+            "attempted": today,
+            "ok_count": today - fail_count,
+            "fail_count": fail_count,
+            "fail_rate": rate,
+            "policy_suppressed": 0,
+            "channels": {"openapi": {"ok": today - fail_count, "fail": fail_count}},
+        },
+    )
 
 
 def _pick(out, sid="pushflow:daily_rate"):
@@ -193,10 +291,19 @@ def test_pushflow_policy_suppressed_excluded_and_noted():
     失败 49 → 真实失败率 27.4%（若把抑制算进去会虚报 53.9%）。
     """
     m = _load()
-    stats = {"ok": True, "today": 282, "attempted": 179, "ok_count": 130,
-             "fail_count": 49, "fail_rate": 0.274, "policy_suppressed": 103,
-             "channels": {"openapi": {"ok": 64, "fail": 46},
-                          "lark-cli": {"ok": 65, "fail": 3}}}
+    stats = {
+        "ok": True,
+        "today": 282,
+        "attempted": 179,
+        "ok_count": 130,
+        "fail_count": 49,
+        "fail_rate": 0.274,
+        "policy_suppressed": 103,
+        "channels": {
+            "openapi": {"ok": 64, "fail": 46},
+            "lark-cli": {"ok": 65, "fail": 3},
+        },
+    }
     out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
     s = _pick(out)
     assert s is not None and s["priority"] == 3, "27.4% 属 P3 区间"
@@ -234,9 +341,16 @@ def test_pushflow_inconsistent_counts_goes_to_gaps():
     账本行数与尝试数对不上 = 口径不可信 → 记待核，不产失败率建议。
     """
     m = _load()
-    stats = {"ok": True, "today": 282, "attempted": 179, "ok_count": 130,
-             "fail_count": 49, "fail_rate": 0.274, "policy_suppressed": 50,
-             "channels": {}}
+    stats = {
+        "ok": True,
+        "today": 282,
+        "attempted": 179,
+        "ok_count": 130,
+        "fail_count": 49,
+        "fail_rate": 0.274,
+        "policy_suppressed": 50,
+        "channels": {},
+    }
     out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
     gap = next((g for g in out["gaps"] if g["source"] == "pushflow"), None)
     assert gap is not None, "行数不自洽必须进 gaps"
@@ -247,9 +361,16 @@ def test_pushflow_inconsistent_counts_goes_to_gaps():
 def test_pushflow_consistent_counts_pass():
     """自洽时正常产建议（282=179+103）。"""
     m = _load()
-    stats = {"ok": True, "today": 282, "attempted": 179, "ok_count": 130,
-             "fail_count": 49, "fail_rate": 0.274, "policy_suppressed": 103,
-             "channels": {}}
+    stats = {
+        "ok": True,
+        "today": 282,
+        "attempted": 179,
+        "ok_count": 130,
+        "fail_count": 49,
+        "fail_rate": 0.274,
+        "policy_suppressed": 103,
+        "channels": {},
+    }
     out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
     s = _pick(out)
     assert s is not None and s["priority"] == 3
@@ -258,14 +379,33 @@ def test_pushflow_consistent_counts_pass():
 
 # ── WO-OS-25 趋势：让"25%"能读出方向（改善/恶化/持平）──────────────
 def _trend_case(today_rate, prev_rate):
-    return dict(GOOD_SIX, pushflow={
-        "ok": True, "today": 100, "attempted": 100, "ok_count": int(100 * (1 - today_rate)),
-        "fail_count": int(100 * today_rate), "fail_rate": today_rate,
-        "policy_suppressed": 0, "channels": {},
-        "recent": [{"day": "2026-10-20", "attempted": 100, "fail_count": int(100 * prev_rate),
-                    "fail_rate": prev_rate},
-                   {"day": "2026-10-21", "attempted": 100, "fail_count": int(100 * today_rate),
-                    "fail_rate": today_rate}]})
+    return dict(
+        GOOD_SIX,
+        pushflow={
+            "ok": True,
+            "today": 100,
+            "attempted": 100,
+            "ok_count": int(100 * (1 - today_rate)),
+            "fail_count": int(100 * today_rate),
+            "fail_rate": today_rate,
+            "policy_suppressed": 0,
+            "channels": {},
+            "recent": [
+                {
+                    "day": "2026-10-20",
+                    "attempted": 100,
+                    "fail_count": int(100 * prev_rate),
+                    "fail_rate": prev_rate,
+                },
+                {
+                    "day": "2026-10-21",
+                    "attempted": 100,
+                    "fail_count": int(100 * today_rate),
+                    "fail_rate": today_rate,
+                },
+            ],
+        },
+    )
 
 
 def test_pushflow_trend_improving():
@@ -315,8 +455,10 @@ def test_pushflow_trend_boundary_symmetric():
                 verdicts.append("恶化")
             else:
                 verdicts.append("改善")
-    assert len(set(verdicts)) == 1, (
-        "5pp 边界判定不一致，出现 %s 共 %d 组" % (sorted(set(verdicts)), len(verdicts)))
+    assert len(set(verdicts)) == 1, "5pp 边界判定不一致，出现 %s 共 %d 组" % (
+        sorted(set(verdicts)),
+        len(verdicts),
+    )
     assert verdicts[0] == "持平", "按注释 ±5pp 内含边界应判持平，实得 " + verdicts[0]
 
 
@@ -332,9 +474,16 @@ def test_pushflow_trend_beyond_boundary():
 def test_pushflow_trend_missing_recent_degrades_silently():
     """无 recent 字段（旧载荷）不影响主结论，只是不给趋势。"""
     m = _load()
-    stats = {"ok": True, "today": 100, "attempted": 100, "ok_count": 70,
-             "fail_count": 30, "fail_rate": 0.30, "policy_suppressed": 0,
-             "channels": {}}
+    stats = {
+        "ok": True,
+        "today": 100,
+        "attempted": 100,
+        "ok_count": 70,
+        "fail_count": 30,
+        "fail_rate": 0.30,
+        "policy_suppressed": 0,
+        "channels": {},
+    }
     out = m.build_brief(dict(GOOD_SIX, pushflow=stats), CLOCK)
     s = _pick(out)
     assert s is not None and s["priority"] == 2
@@ -347,11 +496,16 @@ def test_pushflow_legacy_payload_without_attempted_guarded():
     today=276 但无 attempted 字段 → 无法区分抑制与失败 → 待核，不虚报。
     """
     m = _load()
-    legacy = {"ok": True, "today": 276, "ok_count": 124, "fail_count": 152,
-              "fail_rate": 0.55, "channels": {}}
+    legacy = {
+        "ok": True,
+        "today": 276,
+        "ok_count": 124,
+        "fail_count": 152,
+        "fail_rate": 0.55,
+        "channels": {},
+    }
     out = m.build_brief(dict(GOOD_SIX, pushflow=legacy), CLOCK)
     gap = next((g for g in out["gaps"] if g["source"] == "pushflow"), None)
     assert gap is not None, "旧载荷缺 attempted 必须待核"
     assert not _pick(out), "旧载荷不得静默产出含抑制的假失败率"
     assert _pick(out) is None, "缺源不得产建议"
-

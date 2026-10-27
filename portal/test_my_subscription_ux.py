@@ -41,45 +41,64 @@ def page_src() -> str:
 # 1. 边界：剩余天数必须在前端自算，不依赖后端派生字段
 # ---------------------------------------------------------------------------
 
+
 def test_01_no_backend_derived_days_field():
     src = page_src()
-    for banned in ("days_left", "daysLeft", "remaining_days", "remainingDays",
-                   "expires_in", "expiresIn", "days_remaining"):
+    for banned in (
+        "days_left",
+        "daysLeft",
+        "remaining_days",
+        "remainingDays",
+        "expires_in",
+        "expiresIn",
+        "days_remaining",
+    ):
         assert banned not in src, (
             f"页面出现对后端派生字段 {banned} 的依赖——status 端点字段已最小化，"
-            "剩余天数只能由 start / end 在前端自算")
+            "剩余天数只能由 start / end 在前端自算"
+        )
     # 自算的入口必须在页面内，且读的是既有 end 字段
     assert "function calendarDay(" in src, "缺日历日归一函数"
     assert "function expiryState(" in src, "缺到期状态判定函数"
-    assert "expiryState(sum.status,sum.end)" in src, "到期判定应只吃 status / end 两个既有字段"
+    assert "expiryState(sum.status,sum.end)" in src, (
+        "到期判定应只吃 status / end 两个既有字段"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 2. 日历日归一：本地 0 点对齐 + 四舍五入整数日差，不是裸毫秒差截断
 # ---------------------------------------------------------------------------
 
+
 def test_02_calendar_day_normalization_not_ms_division():
     src = page_src()
     assert "const DAY_MS=86400000" in src, "缺一天毫秒常量（应集中定义，便于审计）"
     # 纯日期按当日结束计：与后端 renewal_reminder 的 23:59:59 口径一致
-    assert "23,59,59" in src, "缺「纯日期按当日结束」的归一（否则今天到期会被算成已过期）"
+    assert "23,59,59" in src, (
+        "缺「纯日期按当日结束」的归一（否则今天到期会被算成已过期）"
+    )
     assert "dateOnly" in src, "缺纯日期 / 带时刻的分支标记"
     # 用本地 0 点重建日期，避免 Date 对纯日期串按 UTC 解析导致东八区串日
-    assert "new Date(abs.getFullYear(),abs.getMonth(),abs.getDate())" in src, \
+    assert "new Date(abs.getFullYear(),abs.getMonth(),abs.getDate())" in src, (
         "带时刻的值未按本地年月日重建 0 点"
+    )
     assert "getFullYear()!==y" in src, "缺非法日期（如 2026-02-30）的进位拦截"
     # 整数日差必须是「0 点相减后四舍五入」，所有 /DAY_MS 都应包在 Math.round 里
-    assert re.search(r"Math\.round\(\(\w+\.getTime\(\)-\w+\.getTime\(\)\)/DAY_MS\)", src), \
-        "缺日历日整数差实现"
+    assert re.search(
+        r"Math\.round\(\(\w+\.getTime\(\)-\w+\.getTime\(\)\)/DAY_MS\)", src
+    ), "缺日历日整数差实现"
     for m in re.finditer(r"/\s*DAY_MS", src):
-        head = src[max(0, m.start() - 80):m.start()]
+        head = src[max(0, m.start() - 80) : m.start()]
         assert "Math.round" in head, f"发现未四舍五入的毫秒差除法：…{head[-80:]}"
-    assert "Math.floor" not in src, "不得用 floor 截断毫秒差（会把今天 23:00 算成 0 天）"
+    assert "Math.floor" not in src, (
+        "不得用 floor 截断毫秒差（会把今天 23:00 算成 0 天）"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 3. 三档阈值与文案
 # ---------------------------------------------------------------------------
+
 
 def test_03_three_tier_thresholds_and_copy():
     src = page_src()
@@ -87,20 +106,25 @@ def test_03_three_tier_thresholds_and_copy():
     assert "days<=3" in src, "缺 1~3 天档阈值"
     assert "days<=0" in src, "缺 0 天档阈值"
     assert "head:'剩余 '+days+' 天'" in src, "缺 >3 天的中性文案「剩余 N 天」"
-    assert "剩余 '+days+' 天 · 即将到期" in src, "缺 1~3 天的警示文案「剩余 N 天 · 即将到期」"
+    assert "剩余 '+days+' 天 · 即将到期" in src, (
+        "缺 1~3 天的警示文案「剩余 N 天 · 即将到期」"
+    )
     assert "head:'今天到期'" in src, "缺 0 天文案「今天到期」"
     assert "head:'已到期'" in src, "缺过期文案「已到期」"
     # 三档各带独立 tier 类，供色语义挂靠
-    assert "tier:'neutral'" in src and "tier:'warn'" in src and "tier:'severe'" in src, \
-        "三档应各带一个 tier 标记"
+    assert (
+        "tier:'neutral'" in src and "tier:'warn'" in src and "tier:'severe'" in src
+    ), "三档应各带一个 tier 标记"
     # >3 天必须真的走中性档：不能所有分支都落 warn
-    assert src.count("tier:'neutral'") == 1 and src.count("tier:'warn'") == 1, \
+    assert src.count("tier:'neutral'") == 1 and src.count("tier:'warn'") == 1, (
         "中性 / 警示档应各只有一个出口"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 4. 解析失败：显式报「无法解析到期日」，不蒙混成 0 天 / 负数
 # ---------------------------------------------------------------------------
+
 
 def test_04_unparseable_end_branch():
     src = page_src()
@@ -110,30 +134,33 @@ def test_04_unparseable_end_branch():
     m = re.search(r"function calendarDay\(raw\)\{(.*?)\n\}", src, re.S)
     assert m, "calendarDay 结构异常"
     body = m.group(1)
-    assert body.count("return null") >= 3, \
+    assert body.count("return null") >= 3, (
         "空值 / 非法日期 / 非日期串都应 return null（不得退化为 0）"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 5. 降级纪律：读不到 ≠ 没有订阅
 # ---------------------------------------------------------------------------
 
+
 def test_05_error_state_says_cannot_read_not_unsubscribed():
     src = page_src()
     assert "无法读取订阅状态" in src, "缺「无法读取订阅状态」错误态文案"
     assert "未订阅" not in src, "错误态不得出现「未订阅」（读不到不等于没有订阅）"
-    assert "订阅不存在" not in src and "无有效订阅" not in src, \
-        "错误态不得断言订阅有无"
+    assert "订阅不存在" not in src and "无有效订阅" not in src, "错误态不得断言订阅有无"
     assert "读不到不等于没有订阅" in src, "降级区应显式写清「读不到 ≠ 没有订阅」"
     # 错误路径必须把到期条一起收起，避免残留上一轮的「剩余 N 天」
-    assert src.count("$('expiry-bar').hidden=true") >= 2, \
+    assert src.count("$('expiry-bar').hidden=true") >= 2, (
         "无 open_id 与读取失败两条路径都应收起到期条"
+    )
     assert "error" in src and "d.error" in src, "error 响应应原样透出"
 
 
 # ---------------------------------------------------------------------------
 # 6. 无金额、无收银台按钮
 # ---------------------------------------------------------------------------
+
 
 def test_06_no_money_no_buy_button():
     src = page_src()
@@ -144,6 +171,7 @@ def test_06_no_money_no_buy_button():
 # ---------------------------------------------------------------------------
 # 7. 既有四字段渲染锚点不得丢失
 # ---------------------------------------------------------------------------
+
 
 def test_07_four_field_anchors_kept():
     src = page_src()
@@ -156,6 +184,7 @@ def test_07_four_field_anchors_kept():
 # 8. P3.7-lite L-A 的金额声明仍在
 # ---------------------------------------------------------------------------
 
+
 def test_08_p37_amount_disclaimer_kept():
     src = page_src()
     assert "本页不展示金额信息" in src, "P3.7-lite 的金额声明被删"
@@ -165,6 +194,7 @@ def test_08_p37_amount_disclaimer_kept():
 # ---------------------------------------------------------------------------
 # 9. 零写请求
 # ---------------------------------------------------------------------------
+
 
 def test_09_no_write_requests():
     src = page_src()
@@ -182,18 +212,22 @@ def test_09_no_write_requests():
 # 10. 续费引导：静态文案，无二维码 / 无外链 / 无按钮
 # ---------------------------------------------------------------------------
 
+
 def test_10_static_renew_guide_without_qr_or_link():
     src = page_src()
     assert "续费方式：通过飞书联系管理员" in src, "缺续费引导静态文案"
     assert "二维码" not in src, "续费引导不得含二维码"
     assert not re.search(r"<a\s[^>]*href=\"https?://", src, re.I), "不得引入外部链接"
     assert not re.search(r"<img\b", src, re.I), "不得贴图（含收款码）"
-    assert not re.search(r"<button[^>]*>[^<]*(购买|支付)", src), "不得出现收银台暗示按钮"
+    assert not re.search(r"<button[^>]*>[^<]*(购买|支付)", src), (
+        "不得出现收银台暗示按钮"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 11. 色语义复用既有 CSS 变量
 # ---------------------------------------------------------------------------
+
 
 def test_11_tier_colors_reuse_existing_css_vars():
     src = page_src()
@@ -210,6 +244,7 @@ def test_11_tier_colors_reuse_existing_css_vars():
 # 12. 到期后失去什么：写清三类推送，但不写额度数字
 # ---------------------------------------------------------------------------
 
+
 def test_12_expiry_copy_lists_stopped_capabilities():
     src = page_src()
     assert "到期后：盯盘推送、预警推送、新闻推送将停止" in src, "缺到期后果文案"
@@ -221,6 +256,7 @@ def test_12_expiry_copy_lists_stopped_capabilities():
 # 13. 「已到期」与「今天到期」必须分开
 # ---------------------------------------------------------------------------
 
+
 def test_13_expired_and_today_are_distinct():
     src = page_src()
     m = re.search(r"function expiryState\(.*?\n\}", src, re.S)
@@ -231,7 +267,9 @@ def test_13_expired_and_today_are_distinct():
     assert body.count("head:'今天到期'") == 1, "缺「今天到期」独立分支"
     expired_at = body.index("head:'已到期'")
     today_at = body.index("head:'今天到期'")
-    assert expired_at < today_at, "过期判定应早于 0 天判定（否则过期会被误显示成今天到期）"
+    assert expired_at < today_at, (
+        "过期判定应早于 0 天判定（否则过期会被误显示成今天到期）"
+    )
     # 已过期既可由 status 判定，也可由剩余天数 < 0 判定
     assert "st==='expired'||passed" in body, "已过期判定应同时覆盖 status 与到期时点"
 
@@ -240,11 +278,13 @@ def test_13_expired_and_today_are_distinct():
 # 14. 未知状态原样透出，不映射成正常
 # ---------------------------------------------------------------------------
 
+
 def test_14_unknown_status_not_mapped_to_normal():
     src = page_src()
     assert "未知状态" in src, "缺「未知状态」标注"
     assert "st!=='active'&&st!=='expired'" in src, "缺未知状态分支"
     assert "不在已知状态（active / expired）内" in src, "未知状态分支应写清已知状态取值"
     # 状态卡的 ok 档只能在 active 时命中
-    assert "const known=(st==='active'||st==='expired');" in src, \
+    assert "const known=(st==='active'||st==='expired');" in src, (
         "状态卡应先判已知状态再上色，未知值不得落 ok"
+    )

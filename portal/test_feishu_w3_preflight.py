@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """W3 前置检查单测：结论口径、凭据判定、渲染、CLI。"""
+
 import json
 import os
 import tempfile
@@ -17,7 +18,11 @@ import feishu_w3_preflight as pre  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -38,8 +43,15 @@ def test_secret_ready(ws_tmp, monkeypatch):
 
 def test_preflight_structure():
     rep = pre.preflight()
-    assert set(rep) >= {"ts", "verdict", "infra_go", "w2_go",
-                        "w2_missing_roles", "acceptance", "rollback"}
+    assert set(rep) >= {
+        "ts",
+        "verdict",
+        "infra_go",
+        "w2_go",
+        "w2_missing_roles",
+        "acceptance",
+        "rollback",
+    }
     assert rep["verdict"] in ("GO", "PARTIAL-GO", "NO-GO")
     assert isinstance(rep["w2_missing_roles"], list)
 
@@ -52,9 +64,11 @@ def test_render_contains_verdict():
 
 
 def test_cli_json():
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_w3_preflight.py")
-    r = subprocess.run([sys.executable, script, "--json"],
-                       capture_output=True, timeout=300)
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_w3_preflight.py"
+    )
+    r = subprocess.run(
+        [sys.executable, script, "--json"], capture_output=True, timeout=300
+    )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["verdict"] in ("GO", "PARTIAL-GO", "NO-GO")

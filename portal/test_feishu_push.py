@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """飞书推送统一封装单测（2026-10-25）。"""
+
 import os
 import tempfile
 import sys
@@ -16,12 +17,17 @@ import feishu_push as fp  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
     finally:
         import shutil
+
         shutil.rmtree(root, ignore_errors=True)
 
 
@@ -44,9 +50,14 @@ def _buttons(card):
 
 
 def test_build_basic_layout():
-    card = fp.build("daily", "统一日报", summary="今日情报 1055 条",
-                    kpis=[("偏多", "17.5%"), ("高置信", "63.8%")],
-                    ts="2026-10-25 16:00", source="推送中台")
+    card = fp.build(
+        "daily",
+        "统一日报",
+        summary="今日情报 1055 条",
+        kpis=[("偏多", "17.5%"), ("高置信", "63.8%")],
+        ts="2026-10-25 16:00",
+        source="推送中台",
+    )
     assert card["schema"] == "2.0"
     assert "📊" in card["header"]["title"]["content"]
     els = card["body"]["elements"]
@@ -59,26 +70,40 @@ def test_build_basic_layout():
 def test_build_without_links_when_disabled(monkeypatch):
     monkeypatch.setenv("M_LINK_ENABLE", "0")
     card = fp.build("picks", "选股摘要", summary="x")
-    assert _buttons(card) == []          # 绝不发死链
+    assert _buttons(card) == []  # 绝不发死链
 
 
 def test_build_stale_and_note():
-    card = fp.build("ledger", "账本", summary="x", ts="2026-10-14 16:00",
-                    source="账本快照", stale=True)
+    card = fp.build(
+        "ledger",
+        "账本",
+        summary="x",
+        ts="2026-10-14 16:00",
+        source="账本快照",
+        stale=True,
+    )
     text = "\n".join(e.get("content") or "" for e in card["body"]["elements"])
     assert "缓存数据" in text and "2026-10-14" in text
 
 
 def test_max_kpis_and_buttons():
-    card = fp.build("picks", "选股", summary="x",
-                    kpis=[("a", "1"), ("b", "2"), ("c", "3"), ("d", "4"),
-                          ("e", "5")],
-                    buttons=[{"type": "url", "text": "1", "url": "u1"},
-                             {"type": "url", "text": "2", "url": "u2"},
-                             {"type": "url", "text": "3", "url": "u3"}])
+    card = fp.build(
+        "picks",
+        "选股",
+        summary="x",
+        kpis=[("a", "1"), ("b", "2"), ("c", "3"), ("d", "4"), ("e", "5")],
+        buttons=[
+            {"type": "url", "text": "1", "url": "u1"},
+            {"type": "url", "text": "2", "url": "u2"},
+            {"type": "url", "text": "3", "url": "u3"},
+        ],
+    )
     assert len(_buttons(card)) == 2
-    kpi_lines = [e for e in card["body"]["elements"]
-                 if e.get("tag") == "markdown" and "　" in (e.get("content") or "")]
+    kpi_lines = [
+        e
+        for e in card["body"]["elements"]
+        if e.get("tag") == "markdown" and "　" in (e.get("content") or "")
+    ]
     assert len(kpi_lines) <= 4
 
 
@@ -110,28 +135,41 @@ def test_convenience_builders():
     assert "🚨" in fp.alert("预警", "x")["header"]["title"]["content"]
     assert "🎯" in fp.picks_digest("x")["header"]["title"]["content"]
 
+
 def test_from_sections_adapter(monkeypatch):
     from_sections = fp.from_sections
-    card = from_sections("news", "notify", "金融新闻速报",
-                         ["**⚡ 金融新闻速报（6 条命中）**",
-                          "**JEV 批次判定** 4 利多 / 1 利空 / 1 中性",
-                          "**AI 判断** 市场整体偏中性"],
-                         ts="2026-10-25 16:30", source="信息采集域",
-                         footer="关键词命中", links=[("📄 详情文档", "https://x")],
-                         level="news")
+    card = from_sections(
+        "news",
+        "notify",
+        "金融新闻速报",
+        [
+            "**⚡ 金融新闻速报（6 条命中）**",
+            "**JEV 批次判定** 4 利多 / 1 利空 / 1 中性",
+            "**AI 判断** 市场整体偏中性",
+        ],
+        ts="2026-10-25 16:30",
+        source="信息采集域",
+        footer="关键词命中",
+        links=[("📄 详情文档", "https://x")],
+        level="news",
+    )
     els = card["body"]["elements"]
     text = "\n".join(e.get("content") or "" for e in els)
     assert "金融新闻速报" in card["header"]["title"]["content"]
     assert "6 条命中" in text
     assert "JEV 批次判定" in text
     assert "https://x" in text
-    assert card["header"]["template"] == "blue"     # level=news
+    assert card["header"]["template"] == "blue"  # level=news
 
 
 def test_from_sections_buttons_legacy_format(monkeypatch):
-    card = fp.from_sections("morning", "brief", "盘前晨报",
-                            ["**总览** 三线共振", "**缠论** 60F 底分型"],
-                            buttons=[("💼 交易台账", "http://x/ledger", "primary")])
+    card = fp.from_sections(
+        "morning",
+        "brief",
+        "盘前晨报",
+        ["**总览** 三线共振", "**缠论** 60F 底分型"],
+        buttons=[("💼 交易台账", "http://x/ledger", "primary")],
+    )
     btns = _buttons(card)
     assert len(btns) == 1 and btns[0]["url"] == "http://x/ledger"
 
@@ -140,8 +178,10 @@ def test_should_unify_overrides(monkeypatch, ws_tmp):
     cfg = os.path.join(ws_tmp, "push_unified.json")
     monkeypatch.setattr(fp, "UNIFIED_CFG", cfg)
     with open(cfg, "w", encoding="utf-8") as f:
-        f.write('{"enabled": true, "shadow": false, "producers": {'
-                '"news": {"enabled": false, "shadow": true}}}')
+        f.write(
+            '{"enabled": true, "shadow": false, "producers": {'
+            '"news": {"enabled": false, "shadow": true}}}'
+        )
     assert fp.should_unify("news") == (False, True)
     assert fp.should_unify("daily") == (True, False)
 
@@ -149,8 +189,11 @@ def test_should_unify_overrides(monkeypatch, ws_tmp):
 def test_shadow_log_writes(monkeypatch, ws_tmp):
     path = os.path.join(ws_tmp, "data", "push_unified_shadow.jsonl")
     monkeypatch.setattr(fp, "HERE", ws_tmp)
-    fp.shadow_log("news", {"header": {"title": {"content": "old"}}},
-                  {"header": {"title": {"content": "new"}}})
+    fp.shadow_log(
+        "news",
+        {"header": {"title": {"content": "old"}}},
+        {"header": {"title": {"content": "new"}}},
+    )
     line = open(path, encoding="utf-8").read().strip()
     assert "news" in line and "old" in line and "new" in line
 
@@ -163,9 +206,16 @@ def test_from_sections_full_keeps_all_lines(monkeypatch):
         "④ 近24h强事件 8 条：\n  2026-10-25 15:48 [jev] 某事件",
         "⑤ 数据新鲜度：核心表全部就绪 ✓",
     ]
-    card = fp.from_sections("morning", "brief", "盘前晨报", secs,
-                            ts="2026-10-26 07:03", source="量化引擎",
-                            footer="个人研究晨报", full=True)
+    card = fp.from_sections(
+        "morning",
+        "brief",
+        "盘前晨报",
+        secs,
+        ts="2026-10-26 07:03",
+        source="量化引擎",
+        footer="个人研究晨报",
+        full=True,
+    )
     text = "\n".join(e.get("content") or "" for e in card["body"]["elements"])
     for kw in ("300715.SZ", "600110.SH", "数据新鲜度", "核心表全部就绪"):
         assert kw in text, kw

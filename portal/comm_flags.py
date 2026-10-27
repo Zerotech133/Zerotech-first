@@ -26,6 +26,7 @@
 - 打开还需重启对应服务才生效（进程内已缓存的不重读）：本模块只解决
   「新进程能否读到」，不解决「旧进程热切换」。
 """
+
 from __future__ import annotations
 
 import json
@@ -35,11 +36,11 @@ from pathlib import Path
 FLAGS_PATH = Path(__file__).resolve().parent / "work" / "comm_flags.json"
 
 DEFAULTS = {
-    "intent": False,     # COMM_INTENT_ENABLED
-    "dispatch": False,   # COMM_DISPATCH_ENABLED
-    "patrol": True,      # COMM_DISPATCH_PATROL
-    "zhuge": False,      # COMM_ZHUGE_ENABLED
-    "summary": True,     # COMM_SUMMARY_ENABLED
+    "intent": False,  # COMM_INTENT_ENABLED
+    "dispatch": False,  # COMM_DISPATCH_ENABLED
+    "patrol": True,  # COMM_DISPATCH_PATROL
+    "zhuge": False,  # COMM_ZHUGE_ENABLED
+    "summary": True,  # COMM_SUMMARY_ENABLED
 }
 
 ENV_MAP = {
@@ -99,11 +100,16 @@ def status():
         "file": data,
         "read_error": err,
         "effective": {k: get(k) for k in DEFAULTS},
-        "source": {k: ("env" if (ENV_MAP.get(k) and
-                                str(os.environ.get(ENV_MAP[k], "")).strip()
-                                != "") else
-                       ("file" if k in data else "default"))
-                   for k in DEFAULTS},
+        "source": {
+            k: (
+                "env"
+                if (
+                    ENV_MAP.get(k) and str(os.environ.get(ENV_MAP[k], "")).strip() != ""
+                )
+                else ("file" if k in data else "default")
+            )
+            for k in DEFAULTS
+        },
     }
 
 
@@ -114,6 +120,7 @@ def write_flags(updates, note=""):
         data = {}
     data.update({k: bool(v) for k, v in updates.items()})
     import time
+
     data["updated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     if note:
         data["note"] = note
@@ -121,9 +128,8 @@ def write_flags(updates, note=""):
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
         tmp = p.with_suffix(".tmp")
-        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1),
-                       encoding="utf-8")
-        tmp.replace(p)          # 原子替换，避免读到半截文件
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        tmp.replace(p)  # 原子替换，避免读到半截文件
         return True, None
     except OSError as ex:
         return False, "%s: %s" % (type(ex).__name__, ex)

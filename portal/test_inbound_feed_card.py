@@ -10,6 +10,7 @@
   - test_card_templates.py FC-C 快照同步；
   - 审计报告"处置落实"小节存在。
 """
+
 import copy
 import json
 import os
@@ -24,8 +25,9 @@ from card_templates import KIND_CARD_TEMPLATES, apply_card_template  # noqa: E40
 
 ROOT = os.path.dirname(HERE)
 GATEWAY_PATH = os.path.join(ROOT, "portal", "inbound_gateway.py")
-AUDIT_PATH = os.path.join(ROOT, "docs", "plans",
-                          "2026-10-20_卡片模板覆盖审计_2026-10-20.md")
+AUDIT_PATH = os.path.join(
+    ROOT, "docs", "plans", "2026-10-20_卡片模板覆盖审计_2026-10-20.md"
+)
 
 KIND = "inbound:feed"
 COLOR = "green"
@@ -33,6 +35,7 @@ TITLE = "📥 投喂回执"
 
 
 # 1. 注册存在与 header 齐全（绿「📥 投喂回执」）
+
 
 def test_registered_and_header_complete():
     assert KIND in KIND_CARD_TEMPLATES
@@ -46,6 +49,7 @@ def test_registered_and_header_complete():
 
 # 2. 纯文本 dict 经 apply_card_template 包整卡
 
+
 def test_plain_text_wrapped_full_card():
     out, mt = apply_card_template(KIND, {"text": "已受理"}, "interactive")
     assert mt == "interactive"
@@ -57,22 +61,29 @@ def test_plain_text_wrapped_full_card():
 
 # 3. 已是卡片且带 header：保留原 header（build_v3 回执卡判例）
 
+
 def test_existing_card_header_preserved():
-    card = {"header": {"template": "purple",
-                       "title": {"tag": "plain_text", "content": "入向受理"}},
-            "elements": [{"tag": "div", "text": {"content": "x"}}]}
+    card = {
+        "header": {
+            "template": "purple",
+            "title": {"tag": "plain_text", "content": "入向受理"},
+        },
+        "elements": [{"tag": "div", "text": {"content": "x"}}],
+    }
     snapshot = copy.deepcopy(card)
     out, _ = apply_card_template(KIND, card, "interactive")
-    assert out is not card            # 深拷贝，不改入参
-    assert card == snapshot           # 原对象零副作用
+    assert out is not card  # 深拷贝，不改入参
+    assert card == snapshot  # 原对象零副作用
     assert out["header"] == card["header"]  # 已有 header 不覆盖
 
 
 # 4. str JSON content 解析后包装，msg_type 原样透传
 
+
 def test_str_json_content_wrapped():
     out, mt = apply_card_template(
-        KIND, json.dumps({"text": "回执"}, ensure_ascii=False), "interactive")
+        KIND, json.dumps({"text": "回执"}, ensure_ascii=False), "interactive"
+    )
     assert mt == "interactive"
     assert isinstance(out, str)
     card = json.loads(out)
@@ -82,6 +93,7 @@ def test_str_json_content_wrapped():
 
 # 5. 未注册 kind 原样回归（closed on failure 语义不变）
 
+
 def test_unregistered_kind_passthrough():
     content = {"text": "plain"}
     out, mt = apply_card_template("unknown_kind", content, "interactive")
@@ -90,6 +102,7 @@ def test_unregistered_kind_passthrough():
 
 
 # 6. inbound_gateway.py:578 kind="inbound:feed" 静态断言（本轮零改动锚点）
+
 
 def test_gateway_send_msg_kind_literal():
     """静态锚点：kind 字面量与发送语义不得漂移。
@@ -111,8 +124,9 @@ def test_gateway_send_msg_kind_literal():
     end = src.index("\n\n\ndef ", start)
     body = src[start:end]
     assert "send_msg_tracked" in body, "主路径应为 tracked 版（需回 message_id）"
-    assert "feishu_client.send_msg" in body or "from feishu_client import send_msg" in body, \
-        "兜底路径缺失"
+    assert (
+        "feishu_client.send_msg" in body or "from feishu_client import send_msg" in body
+    ), "兜底路径缺失"
     assert '"interactive"' in body
     assert "critical=True" in body
     assert 'receive_id_type="open_id"' in body
@@ -121,6 +135,7 @@ def test_gateway_send_msg_kind_literal():
 
 
 # 7. test_card_templates.py FC-C 快照同步（三快照均含 inbound:feed）
+
 
 def test_snapshot_sync_in_test_card_templates():
     assert KIND in test_card_templates.ALL_KINDS
@@ -131,6 +146,7 @@ def test_snapshot_sync_in_test_card_templates():
 
 
 # 8. 审计报告"处置落实"小节存在且四项处置齐
+
 
 def test_audit_report_disposal_section():
     with open(AUDIT_PATH, "r", encoding="utf-8") as f:

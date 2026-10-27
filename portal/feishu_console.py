@@ -9,6 +9,7 @@
     python feishu_console.py --json          # 机器可读摘要（stdout）
     python feishu_console.py --out <path>
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,7 +35,8 @@ DATA = os.path.join(HERE, "data", "feishu")
 NEWS_CONFIG = os.path.join(ROOT, "news_collector", "news_config.json")
 CANONICAL = os.path.join(SECRETS, "canonical.json")
 OUT_DIR = os.environ.get("FEISHU_CONSOLE_OUT") or os.path.join(
-    os.path.dirname(ROOT), "work", "feishu_console")
+    os.path.dirname(ROOT), "work", "feishu_console"
+)
 
 import feishu_registry as fr  # noqa: E402
 
@@ -94,9 +96,11 @@ def _load_annotations(path=None):
 def _is_annotated(row, anns):
     """只有 ts+kind+target 三者精确匹配才算已归因（防宽泛豁免）。"""
     for a in anns:
-        if (a.get("ts") == row.get("ts")
-                and a.get("kind") == row.get("kind")
-                and a.get("target") == row.get("target")):
+        if (
+            a.get("ts") == row.get("ts")
+            and a.get("kind") == row.get("kind")
+            and a.get("target") == row.get("target")
+        ):
             return True
     return False
 
@@ -116,8 +120,11 @@ def collect():
     roles_index, warnings = fr.load_registry()
     routes = fr.load_routes(roles_index=roles_index)
     raw = _read_json(os.path.join(DATA, "registry.json"), {}) or {}
-    canonical_app = str((_read_json(CANONICAL, {}) or {}).get("app_id")
-                        or os.environ.get("FEISHU_APP_ID") or "")
+    canonical_app = str(
+        (_read_json(CANONICAL, {}) or {}).get("app_id")
+        or os.environ.get("FEISHU_APP_ID")
+        or ""
+    )
     legacy_hb = os.path.join(LOGS, "feishu_bot_heartbeat.txt")
 
     # 1) 机器人台账 + 健康（旧 bot 无角色心跳文件时回退 legacy 心跳）
@@ -133,26 +140,37 @@ def collect():
             legacy_age = _age_sec(legacy_hb)
             if legacy_age is not None:
                 hb_age, hb_source = legacy_age, "legacy"
-        bots.append({
-            "role": rid,
-            "display": meta["display"],
-            "domain": "/".join(meta["domain"]),
-            "status": meta["status"],
-            "app_ref": meta.get("app_ref"),
-            "app_id": (sec or {}).get("app_id") or meta.get("app_id_current") or "-",
-            "secret_ready": bool(sec and sec.get("app_id") and sec.get("app_secret")),
-            "events": meta.get("events") or [],
-            "group_mode": (meta.get("group_policy") or {}).get("mode"),
-            "heartbeat_age_sec": hb_age,
-            "heartbeat_ok": hb_age is not None and hb_age < 900,
-            "heartbeat_source": hb_source,
-        })
+        bots.append(
+            {
+                "role": rid,
+                "display": meta["display"],
+                "domain": "/".join(meta["domain"]),
+                "status": meta["status"],
+                "app_ref": meta.get("app_ref"),
+                "app_id": (sec or {}).get("app_id")
+                or meta.get("app_id_current")
+                or "-",
+                "secret_ready": bool(
+                    sec and sec.get("app_id") and sec.get("app_secret")
+                ),
+                "events": meta.get("events") or [],
+                "group_mode": (meta.get("group_policy") or {}).get("mode"),
+                "heartbeat_age_sec": hb_age,
+                "heartbeat_ok": hb_age is not None and hb_age < 900,
+                "heartbeat_source": hb_source,
+            }
+        )
 
     # 1b) 收件人域登记（W3-D）：每条 push_targets 应有 app 字段，且与当前 canonical app 一致
-    targets = [{"name": t.get("name"), "type": t.get("type"),
-                "id": t.get("id"), "app": str(t.get("app") or "")}
-               for t in ((_read_json(NEWS_CONFIG, {}) or {}).get("push_targets") or [])]
-
+    targets = [
+        {
+            "name": t.get("name"),
+            "type": t.get("type"),
+            "id": t.get("id"),
+            "app": str(t.get("app") or ""),
+        }
+        for t in ((_read_json(NEWS_CONFIG, {}) or {}).get("push_targets") or [])
+    ]
 
     # 2) 通道账本（区分：静默拦截 / hub 降级失败 / lark-cli 兜底 / 真实丢失）
     push = _tail_jsonl(os.path.join(WORK, "push_flow.jsonl"))
@@ -173,11 +191,14 @@ def collect():
         elif r.get("ok"):
             ok_count += 1
 
-    hub_fail = [r for r in push24
-                if not r.get("ok") and r not in denied24
-                and r.get("channel") == "openapi"]
-    larkcli_fail = [r for r in push24
-                    if not r.get("ok") and r.get("channel") == "lark-cli"]
+    hub_fail = [
+        r
+        for r in push24
+        if not r.get("ok") and r not in denied24 and r.get("channel") == "openapi"
+    ]
+    larkcli_fail = [
+        r for r in push24 if not r.get("ok") and r.get("channel") == "lark-cli"
+    ]
 
     def _recovered(row):
         # 同目标 15 分钟内出现任一成功发送行 → 视为已由兜底通道送达
@@ -194,8 +215,9 @@ def collect():
     # 再计丢失——旧实现把「失败后 38s 重试成功」也当真实丢失（W4 07:41 实例：
     # auto:news_collector 00:10:46 fail → 00:11:24 ok 仍被计入 lost=3）。
     larkcli_fail_recovered = [r for r in larkcli_fail if _recovered(r)]
-    lost24 = ([r for r in hub_fail if not _recovered(r)]
-              + [r for r in larkcli_fail if not _recovered(r)])
+    lost24 = [r for r in hub_fail if not _recovered(r)] + [
+        r for r in larkcli_fail if not _recovered(r)
+    ]
     # 2026-10-26 OS-FIX-W4CLOSE：测试归因清单——只剔除清单里精确登记的
     # (ts, kind, target) 行（不删流水、不改 ok 字段）；单独计数并在检查项
     # 文本里显示「已归因测试 N」，W4 报告可见可追溯。
@@ -213,7 +235,9 @@ def collect():
         try:
             con = sqlite3.connect("file:%s?mode=ro" % db.replace("\\", "/"), uri=True)
             cur = con.cursor()
-            decisions["total"] = cur.execute("select count(*) from decisions").fetchone()[0]
+            decisions["total"] = cur.execute(
+                "select count(*) from decisions"
+            ).fetchone()[0]
             try:
                 decisions["pending"] = cur.execute(
                     "select count(*) from decisions where status in ('pending','preview')"
@@ -245,34 +269,61 @@ def collect():
     # 3) 一致性检查
     checks = []
     policy = raw.get("channel_policy") or {}
-    checks.append(("通道铁律（入 W43 / 出 8097 / 禁直连）",
-                   policy.get("inbound") == "W43 only"
-                   and policy.get("outbound") == "8097 only"
-                   and policy.get("direct_openapi") == "forbidden"))
+    checks.append(
+        (
+            "通道铁律（入 W43 / 出 8097 / 禁直连）",
+            policy.get("inbound") == "W43 only"
+            and policy.get("outbound") == "8097 only"
+            and policy.get("direct_openapi") == "forbidden",
+        )
+    )
     groups = raw.get("group_whitelist") or []
-    checks.append(("群白名单 ≥2 且有 chat_id",
-                   len(groups) >= 2 and all(g.get("chat_id") for g in groups)))
+    checks.append(
+        (
+            "群白名单 ≥2 且有 chat_id",
+            len(groups) >= 2 and all(g.get("chat_id") for g in groups),
+        )
+    )
     active = [b for b in bots if b["status"] in ("active", "active_rename_pending")]
     # 在役机器人：新 bot 需 secrets 就绪；旧 bot 走既有凭据链（app_id_current 非空即视为在役）
-    checks.append(("在役机器人凭据就绪",
-                   all(b["secret_ready"] or b["app_id"] not in ("", "-")
-                       for b in active) if active else True))
+    checks.append(
+        (
+            "在役机器人凭据就绪",
+            all(b["secret_ready"] or b["app_id"] not in ("", "-") for b in active)
+            if active
+            else True,
+        )
+    )
     checks.append(("路由表覆盖注册角色", len(routes) >= len(roles_index)))
-    checks.append(("收件人域登记（app 字段齐全）",
-                   bool(targets) and all(t["app"] for t in targets)))
+    checks.append(
+        (
+            "收件人域登记（app 字段齐全）",
+            bool(targets) and all(t["app"] for t in targets),
+        )
+    )
     if canonical_app:
-        checks.append(("收件人 app 与当前凭据一致（%s）" % canonical_app[:12],
-                       all(t["app"] == canonical_app for t in targets if t["app"])))
+        checks.append(
+            (
+                "收件人 app 与当前凭据一致（%s）" % canonical_app[:12],
+                all(t["app"] == canonical_app for t in targets if t["app"]),
+            )
+        )
     else:
-        warnings.append("未配置 canonical app（portal/work/feishu_secrets/"
-                        "canonical.json），无法校验收件人域一致性")
-    checks.append(("24h 消息丢失 = 0（当前 %d%s%s）"
-                   % (len(lost_unannotated),
-                      "；已归因测试 %d" % len(lost_annotated)
-                      if lost_annotated else "",
-                      "；自测目标 %d" % len(lost_test_target)
-                      if lost_test_target else ""),
-                   len(lost_unannotated) == 0))
+        warnings.append(
+            "未配置 canonical app（portal/work/feishu_secrets/"
+            "canonical.json），无法校验收件人域一致性"
+        )
+    checks.append(
+        (
+            "24h 消息丢失 = 0（当前 %d%s%s）"
+            % (
+                len(lost_unannotated),
+                "；已归因测试 %d" % len(lost_annotated) if lost_annotated else "",
+                "；自测目标 %d" % len(lost_test_target) if lost_test_target else "",
+            ),
+            len(lost_unannotated) == 0,
+        )
+    )
     checks.append(("静默窗口策略生效（拦截 %d 次属正常）" % len(denied24), True))
 
     return {
@@ -317,23 +368,36 @@ def render_html(d):
     status_color = "#2f9e44" if not bad else "#e03131"
     rows = []
     for b in d["bots"]:
-        hb = ("%ds" % b["heartbeat_age_sec"]) if b["heartbeat_age_sec"] is not None else "无"
+        hb = (
+            ("%ds" % b["heartbeat_age_sec"])
+            if b["heartbeat_age_sec"] is not None
+            else "无"
+        )
         rows.append(
             "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
-            "<td>%s</td><td>%s</td><td>%s</td></tr>" % (
-                b["role"], b["display"], b["domain"], b["status"],
+            "<td>%s</td><td>%s</td><td>%s</td></tr>"
+            % (
+                b["role"],
+                b["display"],
+                b["domain"],
+                b["status"],
                 "✅" if b["secret_ready"] else "—",
-                b["group_mode"], ", ".join(b["events"]),
-                ("✅ " if b["heartbeat_ok"] else "⚠️ ") + hb))
+                b["group_mode"],
+                ", ".join(b["events"]),
+                ("✅ " if b["heartbeat_ok"] else "⚠️ ") + hb,
+            )
+        )
     check_rows = "".join(
-        "<tr><td>%s</td><td>%s</td></tr>"
-        % ("✅" if ok else "❌", name) for name, ok in d["checks"])
+        "<tr><td>%s</td><td>%s</td></tr>" % ("✅" if ok else "❌", name)
+        for name, ok in d["checks"]
+    )
     gw = d["gateway"]
     kinds = "<br>".join("%s: %d" % (k, v) for k, v in sorted(gw["push_kinds"].items()))
     target_rows = "".join(
-        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (
-            t.get("name"), t.get("type"), t.get("app") or "—",
-            str(t.get("id"))[:26]) for t in d.get("targets") or [])
+        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+        % (t.get("name"), t.get("type"), t.get("app") or "—", str(t.get("id"))[:26])
+        for t in d.get("targets") or []
+    )
     return """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>邓芝台 · 飞书中台管理台</title>
 <style>body{font-family:system-ui,"Microsoft YaHei",sans-serif;margin:24px;background:#f8f9fa;color:#212529}
@@ -358,17 +422,33 @@ pre{background:#fff;border:1px solid #dee2e6;padding:8px;font-size:12px;overflow
 <h2>看护日志尾部</h2><pre>%s</pre>
 <p style="color:#868e96;font-size:12px">W1 离线版：只读汇总本机文件/账本；W3 挂到 /feishu-console 后由 nginx 鉴权。</p>
 </body></html>""" % (
-        status_color, d["ts"], "全绿" if not bad else "有 %d 项不绿" % len(bad),
-        "".join(rows), target_rows, check_rows,
-        gw["push_24h"], gw["push_ok_24h"], gw["denied_24h"],
-        gw["hub_fail_24h"], gw["hub_fail_recovered_24h"], gw["lost_24h"],
-        gw["dead_letters_24h"], gw["inbound_tickets"],
-        ("total=%s pending=%s %s" % (gw["decisions"]["total"],
-                                     gw["decisions"]["pending"],
-                                     gw["decisions"]["error"])).strip(),
-        gw["loop_pid"] or "无", kinds or "—",
+        status_color,
+        d["ts"],
+        "全绿" if not bad else "有 %d 项不绿" % len(bad),
+        "".join(rows),
+        target_rows,
+        check_rows,
+        gw["push_24h"],
+        gw["push_ok_24h"],
+        gw["denied_24h"],
+        gw["hub_fail_24h"],
+        gw["hub_fail_recovered_24h"],
+        gw["lost_24h"],
+        gw["dead_letters_24h"],
+        gw["inbound_tickets"],
+        (
+            "total=%s pending=%s %s"
+            % (
+                gw["decisions"]["total"],
+                gw["decisions"]["pending"],
+                gw["decisions"]["error"],
+            )
+        ).strip(),
+        gw["loop_pid"] or "无",
+        kinds or "—",
         json.dumps(d["routes"], ensure_ascii=False, indent=1),
-        gw["task_log_tail"] or "—")
+        gw["task_log_tail"] or "—",
+    )
 
 
 def main(argv=None):
@@ -381,15 +461,21 @@ def main(argv=None):
         print(json.dumps(data, ensure_ascii=False, indent=1))
         return 0
     out = args.out or os.path.join(
-        OUT_DIR, "feishu_console_%s.html" % datetime.now().strftime("%Y%m%d_%H%M%S"))
+        OUT_DIR, "feishu_console_%s.html" % datetime.now().strftime("%Y%m%d_%H%M%S")
+    )
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
         f.write(render_html(data))
     bad = [c for c, ok in data["checks"] if not ok]
     print("WROTE %s" % out)
-    print("bots=%d routes=%d checks=%s" % (
-        len(data["bots"]), len(data["routes"]),
-        "ALL GREEN" if not bad else "NOT GREEN: " + "; ".join(bad)))
+    print(
+        "bots=%d routes=%d checks=%s"
+        % (
+            len(data["bots"]),
+            len(data["routes"]),
+            "ALL GREEN" if not bad else "NOT GREEN: " + "; ".join(bad),
+        )
+    )
     return 0
 
 

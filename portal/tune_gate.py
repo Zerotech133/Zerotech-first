@@ -17,6 +17,7 @@
 管理员：portal/work/tune_admins.json {"open_ids":[], "chat_id":""}
     —— open_ids 空 = 内测期任何人可批（上线收费前必须配置，见 AGENTS 红线）
 """
+
 import json
 import os
 import re
@@ -108,11 +109,13 @@ def _send_card(card, to_group=False):
     to_group=True：优先管理群（未配 chat_id 降级发个人——回执不能哑）。"""
     try:
         from feishu_card_v2 import send_card
+
         if to_group:
             chat = _admins().get("chat_id") or ""
             if chat:
-                ok = bool(send_card(card, receive_id=chat,
-                                    receive_id_type="chat_id")[0])
+                ok = bool(
+                    send_card(card, receive_id=chat, receive_id_type="chat_id")[0]
+                )
                 if ok:
                     return True
         return bool(send_card(card)[0])
@@ -127,31 +130,58 @@ def _approval_card(rid, doc, p):
     不经 8097），手机可点——破 K-STOCK-305「8097 绑 127.0.0.1 点不开」
     局限。文本指令保留为兜底通道（按钮链路故障时仍可审批）。"""
     from feishu_card_v2 import build_v3
-    rows = [("客户", "%s（%s / %s）" % (
-                doc["customer"], doc["plan"],
-                {"voice": "语音", "text": "文字"}.get(doc["source"], doc["source"]))),
-            ("意图", "%s ｜ 范围 %s%s" % (
-                p["intent"], p["scope"],
-                (" ｜ 标的 " + p["code"]) if p["code"] else "")),
-            ("原文", doc["text"][:160])]
-    howto = ("<font color='grey'>按钮不生效时兜底：回复 `审批 %s 通过` / "
-             "`审批 %s 驳回 原因`，或 8097 推送中台 API</font>" % (rid, rid))
+
+    rows = [
+        (
+            "客户",
+            "%s（%s / %s）"
+            % (
+                doc["customer"],
+                doc["plan"],
+                {"voice": "语音", "text": "文字"}.get(doc["source"], doc["source"]),
+            ),
+        ),
+        (
+            "意图",
+            "%s ｜ 范围 %s%s"
+            % (p["intent"], p["scope"], (" ｜ 标的 " + p["code"]) if p["code"] else ""),
+        ),
+        ("原文", doc["text"][:160]),
+    ]
+    howto = (
+        "<font color='grey'>按钮不生效时兜底：回复 `审批 %s 通过` / "
+        "`审批 %s 驳回 原因`，或 8097 推送中台 API</font>" % (rid, rid)
+    )
     card, _audit = build_v3(
-        "interact", rid, "tune_gate", rows=rows, md=howto,
-        buttons=[("✓ 通过", ("action", "tune_approve", {"req_id": rid}), "primary"),
-                 ("✗ 驳回", ("action", "tune_reject", {"req_id": rid}), "danger")],
-        tags="#tune #pending")
+        "interact",
+        rid,
+        "tune_gate",
+        rows=rows,
+        md=howto,
+        buttons=[
+            ("✓ 通过", ("action", "tune_approve", {"req_id": rid}), "primary"),
+            ("✗ 驳回", ("action", "tune_reject", {"req_id": rid}), "danger"),
+        ],
+        tags="#tune #pending",
+    )
     return card
 
 
 def _receipt_card(rid, ok, extra):
     """回执卡（回群，客户可见）v3 回执域（金）——驳回必须给原因，闭环可感知。"""
     from feishu_card_v2 import build_v3
+
     if ok:
-        body = "**已通过审核** ✅\n%s\n\n下一步：沙盒回测对比（新逻辑 vs 现行），验证达标后落地到您的专属参数空间。" % extra
+        body = (
+            "**已通过审核** ✅\n%s\n\n下一步：沙盒回测对比（新逻辑 vs 现行），验证达标后落地到您的专属参数空间。"
+            % extra
+        )
         tags = "#tune #approved"
     else:
-        body = "**未通过审核** ❌\n%s\n\n感谢反馈——您的观点已入档，将汇入后续模型迭代参考。" % extra
+        body = (
+            "**未通过审核** ❌\n%s\n\n感谢反馈——您的观点已入档，将汇入后续模型迭代参考。"
+            % extra
+        )
         tags = "#tune #rejected"
     card, _audit = build_v3("receipt", rid, "tune_gate", md=body, tags=tags)
     return card
@@ -167,9 +197,13 @@ def _sandbox_draft(doc, p):
     """审批通过 → 回测参数草案（结构供 bt2 预填/自动跑，人工点跑对比）。
     重计算复用现有回测台（backtest_engine_v2 可编程；K-PUSH-011 起
     chanlun/risk/param 意图自动跑对比，freq/opinion 仅人工）。"""
-    intent_cn = {"chanlun": "缠论中枢参数", "risk": "止损/仓位风控",
-                 "freq": "推送频率", "param": "策略阈值",
-                 "opinion": "观点校准"}[p["intent"]]
+    intent_cn = {
+        "chanlun": "缠论中枢参数",
+        "risk": "止损/仓位风控",
+        "freq": "推送频率",
+        "param": "策略阈值",
+        "opinion": "观点校准",
+    }[p["intent"]]
     draft = {
         "bt2_params_hint": {
             "symbols": [p["code"]] if p["code"] else [],
@@ -182,6 +216,7 @@ def _sandbox_draft(doc, p):
     # K-PUSH-011：规则模板 → 具体参数覆盖（deploy 落地取用；无模板意图不给）
     try:
         from quant_backtest import bt2_tune_compare as _btc
+
         _tpl = _btc.RULE_TEMPLATES.get(p["intent"]) or {}
         if _tpl:
             _ov = {}
@@ -207,9 +242,12 @@ def _vip_write(customer, params, req_id, operator):
                 data = json.load(f)
         except Exception:
             data = {}
-        data[customer] = {"params": params, "req_id": req_id,
-                          "operator": operator,
-                          "updated": datetime.now().isoformat(timespec="seconds")}
+        data[customer] = {
+            "params": params,
+            "req_id": req_id,
+            "operator": operator,
+            "updated": datetime.now().isoformat(timespec="seconds"),
+        }
         os.makedirs(os.path.dirname(VIP_PATH), exist_ok=True)
         tmp = VIP_PATH + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -231,23 +269,39 @@ def submit(text, customer="匿名客户", plan="internal", source="text"):
     """受理一条调优请求：解析 → 双落账（received+parsed）→ 详情落盘 →
     审批卡。返回 req_id（任何内部失败仍返回 req_id——账本 fail-safe）。"""
     import feedback_flow
+
     rid = "TUNE-%s-%s" % (datetime.now().strftime("%y%m%d"), secrets.token_hex(2))
     p = parse_intent(text)
-    doc = {"req_id": rid, "text": str(text or "")[:2000],
-           "customer": str(customer or "匿名客户")[:60],
-           "plan": str(plan or "internal")[:20],
-           "source": str(source or "text")[:20],
-           "intent": p["intent"], "scope": p["scope"], "code": p["code"],
-           "created": datetime.now().isoformat(timespec="seconds")}
-    feedback_flow.record(rid, "received", customer=doc["customer"],
-                         plan=doc["plan"], source=doc["source"],
-                         scope=p["scope"],
-                         note="语音受理（飞书客户端转文字）"
-                         if source == "voice" else "文字受理")
-    feedback_flow.record(rid, "parsed", customer=doc["customer"],
-                         plan=doc["plan"], source=doc["source"],
-                         intent=p["intent"], scope=p["scope"],
-                         note="标的 %s" % p["code"] if p["code"] else "无标的")
+    doc = {
+        "req_id": rid,
+        "text": str(text or "")[:2000],
+        "customer": str(customer or "匿名客户")[:60],
+        "plan": str(plan or "internal")[:20],
+        "source": str(source or "text")[:20],
+        "intent": p["intent"],
+        "scope": p["scope"],
+        "code": p["code"],
+        "created": datetime.now().isoformat(timespec="seconds"),
+    }
+    feedback_flow.record(
+        rid,
+        "received",
+        customer=doc["customer"],
+        plan=doc["plan"],
+        source=doc["source"],
+        scope=p["scope"],
+        note="语音受理（飞书客户端转文字）" if source == "voice" else "文字受理",
+    )
+    feedback_flow.record(
+        rid,
+        "parsed",
+        customer=doc["customer"],
+        plan=doc["plan"],
+        source=doc["source"],
+        intent=p["intent"],
+        scope=p["scope"],
+        note="标的 %s" % p["code"] if p["code"] else "无标的",
+    )
     try:
         _save_store(doc)
     except Exception:
@@ -259,14 +313,20 @@ def submit(text, customer="匿名客户", plan="internal", source="text"):
 def _pending_doc(rid):
     """待审状态校验：返回 (doc, err)。doc 从详情+账本视图合并重建。"""
     import feedback_flow
+
     view = feedback_flow.requests_view().get(rid)
     if not view:
         return None, "请求单不存在：%s" % rid
     if view["stage"] not in PENDING_STAGES:
         return None, "状态 %s 不可审批（仅待审单可操作）" % view["stage"]
     doc = _load_store(rid) or {}
-    doc.update({k: view[k] for k in ("customer", "plan", "source",
-                                     "intent", "scope") if view.get(k)})
+    doc.update(
+        {
+            k: view[k]
+            for k in ("customer", "plan", "source", "intent", "scope")
+            if view.get(k)
+        }
+    )
     doc.setdefault("req_id", rid)
     doc.setdefault("text", "")
     return doc, ""
@@ -275,22 +335,33 @@ def _pending_doc(rid):
 def approve(req_id, operator="", open_id="", note=""):
     """审核通过 → 沙盒草案 + 回执。共享范围仅挂账不实施（另行工单）。"""
     import feedback_flow
+
     if open_id and not is_admin(open_id):
         return {"ok": False, "error": "无审批权限（tune_admins.json 白名单）"}
     # K-PUSH-010 延续：approve 仅待审单（received/parsed）可走，
     # 防 PENDING_STAGES 放宽后已通过单重复审批
     view = feedback_flow.requests_view().get(req_id)
     if view and view["stage"] not in ("received", "parsed"):
-        return {"ok": False, "error":
-                "状态 %s 不可重复审批（仅待审单可操作）" % view["stage"]}
+        return {
+            "ok": False,
+            "error": "状态 %s 不可重复审批（仅待审单可操作）" % view["stage"],
+        }
     doc, err = _pending_doc(req_id)
     if err:
         return {"ok": False, "error": err}
-    p = {"intent": doc.get("intent", "opinion"),
-         "scope": doc.get("scope", "private"),
-         "code": doc.get("code", "")}
-    feedback_flow.record(req_id, "approved", operator=operator or open_id,
-                         intent=p["intent"], scope=p["scope"], note=note[:200])
+    p = {
+        "intent": doc.get("intent", "opinion"),
+        "scope": doc.get("scope", "private"),
+        "code": doc.get("code", ""),
+    }
+    feedback_flow.record(
+        req_id,
+        "approved",
+        operator=operator or open_id,
+        intent=p["intent"],
+        scope=p["scope"],
+        note=note[:200],
+    )
     draft = _sandbox_draft(doc, p)
     doc["draft"] = draft
     doc["approved_by"] = operator or open_id
@@ -299,31 +370,49 @@ def approve(req_id, operator="", open_id="", note=""):
         _save_store(doc)
     except Exception:
         pass
-    extra = ("沙盒草案已生成（%s 回测台人工跑对比）。\n操作人：%s"
-             % (draft["created"], operator or open_id or "管理台"))
-    feedback_flow.record(req_id, "verified", note="草案就绪·bt2人工跑",
-                         intent=p["intent"], scope=p["scope"])
+    extra = "沙盒草案已生成（%s 回测台人工跑对比）。\n操作人：%s" % (
+        draft["created"],
+        operator or open_id or "管理台",
+    )
+    feedback_flow.record(
+        req_id,
+        "verified",
+        note="草案就绪·bt2人工跑",
+        intent=p["intent"],
+        scope=p["scope"],
+    )
     # K-PUSH-010：人工对比阶段显形——沙盒草案就绪后落入 pending_manual，
     # 语义与 feedback_flow L20 注释一致（沙盒需人工跑，不 block 审批流）
-    feedback_flow.record(req_id, "pending_manual",
-                         note="草案就绪·人工跑bt2对比中",
-                         intent=p["intent"], scope=p["scope"])
+    feedback_flow.record(
+        req_id,
+        "pending_manual",
+        note="草案就绪·人工跑bt2对比中",
+        intent=p["intent"],
+        scope=p["scope"],
+    )
     _send_card(_receipt_card(req_id, True, extra), to_group=False)
-    feedback_flow.record(req_id, "receipt", note="通过回执已发",
-                         intent=p["intent"], scope=p["scope"])
+    feedback_flow.record(
+        req_id, "receipt", note="通过回执已发", intent=p["intent"], scope=p["scope"]
+    )
     # K-PUSH-011：有规则模板的意图 → 独立进程自动跑 bt2 对比（不阻塞审批流）
     if p["intent"] in ("chanlun", "risk", "param"):
         try:
-            draft["bt2_result"] = {"status": "running",
-                                   "started_at": datetime.now().isoformat(
-                                       timespec="seconds")}
+            draft["bt2_result"] = {
+                "status": "running",
+                "started_at": datetime.now().isoformat(timespec="seconds"),
+            }
             doc["draft"] = draft
             _save_store(doc)
             _spawn_auto_compare(req_id)
         except Exception:
             pass  # 自动跑批拉起失败不影响审批（降级纯人工，盘后批次兜底）
-    return {"ok": True, "req_id": req_id, "draft": draft,
-            "scope": p["scope"], "code": p["code"]}
+    return {
+        "ok": True,
+        "req_id": req_id,
+        "draft": draft,
+        "scope": p["scope"],
+        "code": p["code"],
+    }
 
 
 def _spawn_auto_compare(req_id):
@@ -333,11 +422,14 @@ def _spawn_auto_compare(req_id):
     服务器争 GIL/CPU。独立进程 + DETACHED_PROCESS，父进程退出不带走。"""
     try:
         import subprocess
+
         entry = os.path.join(STATION, "quant_backtest", "bt2_auto_compare.py")
-        subprocess.Popen([sys.executable, "-X", "utf8", entry, req_id],
-                         stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL,
-                         creationflags=0x00000008)  # DETACHED_PROCESS
+        subprocess.Popen(
+            [sys.executable, "-X", "utf8", entry, req_id],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=0x00000008,
+        )  # DETACHED_PROCESS
     except Exception:
         pass
 
@@ -348,8 +440,10 @@ def _auto_compare(req_id):
     引擎错误/样本不足→pending_manual（可重跑，防误杀）。"""
     import traceback
     import feedback_flow
+
     try:
         from quant_backtest import bt2_tune_compare as _btc
+
         doc = _load_store(req_id) or {}
         # 注意：不能内联 `((...).get("bt2_result") or {}.get("status") == "done")`——
         # == 优先级高于 or，会解析成 (bt2_result or (None == "done"))，bt2_result
@@ -364,32 +458,48 @@ def _auto_compare(req_id):
         r = _btc.run_compare(req_id, doc, vip)
         doc2 = _load_store(req_id) or {}
         draft = doc2.setdefault("draft", {})
-        draft["bt2_result"] = dict(r, status="done",
-                                   finished_at=datetime.now().isoformat(
-                                       timespec="seconds"))
+        draft["bt2_result"] = dict(
+            r, status="done", finished_at=datetime.now().isoformat(timespec="seconds")
+        )
         _save_store(doc2)
         intent = doc2.get("intent", "opinion")
         scope = doc2.get("scope", "private")
         note = "自动回测%s：%s（%ss）" % (
-            r.get("verdict", "?"), r.get("reason", ""), r.get("elapsed", "?"))
+            r.get("verdict", "?"),
+            r.get("reason", ""),
+            r.get("elapsed", "?"),
+        )
         if r.get("verdict") == "pass":
-            feedback_flow.record(req_id, "pending_manual",
-                                 note=note[:200], intent=intent, scope=scope)
+            feedback_flow.record(
+                req_id, "pending_manual", note=note[:200], intent=intent, scope=scope
+            )
         elif r.get("verdict") == "fail":
-            feedback_flow.record(req_id, "rejected", operator="auto-bt2",
-                                 note=note[:200], intent=intent, scope=scope)
+            feedback_flow.record(
+                req_id,
+                "rejected",
+                operator="auto-bt2",
+                note=note[:200],
+                intent=intent,
+                scope=scope,
+            )
         else:  # inconclusive：留待人工/批次重跑
-            feedback_flow.record(req_id, "pending_manual",
-                                 note=(note + "（可重跑）")[:200],
-                                 intent=intent, scope=scope)
+            feedback_flow.record(
+                req_id,
+                "pending_manual",
+                note=(note + "（可重跑）")[:200],
+                intent=intent,
+                scope=scope,
+            )
     except Exception:
         try:
             doc3 = _load_store(req_id) or {}
-            feedback_flow.record(req_id, "pending_manual",
-                                 note=("自动对比异常：" +
-                                       traceback.format_exc()[-90:])[:200],
-                                 intent=doc3.get("intent", "opinion"),
-                                 scope=doc3.get("scope", "private"))
+            feedback_flow.record(
+                req_id,
+                "pending_manual",
+                note=("自动对比异常：" + traceback.format_exc()[-90:])[:200],
+                intent=doc3.get("intent", "opinion"),
+                scope=doc3.get("scope", "private"),
+            )
         except Exception:
             pass
 
@@ -397,19 +507,28 @@ def _auto_compare(req_id):
 def reject(req_id, operator="", open_id="", reason=""):
     """驳回 → 账本 + 回执（原因必填——「驳回即回执」是闭环铁律）。"""
     import feedback_flow
+
     if open_id and not is_admin(open_id):
         return {"ok": False, "error": "无审批权限（tune_admins.json 白名单）"}
     doc, err = _pending_doc(req_id)
     if err:
         return {"ok": False, "error": err}
     reason = str(reason or "").strip() or "暂未说明（请补充）"
-    feedback_flow.record(req_id, "rejected", operator=operator or open_id,
-                         note=("驳回原因：" + reason)[:200])
-    _send_card(_receipt_card(
-        req_id, False, "原因：%s\n操作人：%s" % (reason, operator or "管理台")),
-        to_group=False)
-    feedback_flow.record(req_id, "receipt", note="驳回回执已发",
-                         scope=doc.get("scope", "private"))
+    feedback_flow.record(
+        req_id,
+        "rejected",
+        operator=operator or open_id,
+        note=("驳回原因：" + reason)[:200],
+    )
+    _send_card(
+        _receipt_card(
+            req_id, False, "原因：%s\n操作人：%s" % (reason, operator or "管理台")
+        ),
+        to_group=False,
+    )
+    feedback_flow.record(
+        req_id, "receipt", note="驳回回执已发", scope=doc.get("scope", "private")
+    )
     return {"ok": True, "req_id": req_id}
 
 
@@ -417,6 +536,7 @@ def deploy(req_id, operator="", open_id="", params=None):
     """落地（独立动作，看完回测结果再点）：私有→VIP 空间写入；
     共享→仅挂账（共享模型变更必须另行实施工单，闸门不越权）。"""
     import feedback_flow
+
     if open_id and not is_admin(open_id):
         return {"ok": False, "error": "无审批权限（tune_admins.json 白名单）"}
     view = feedback_flow.requests_view().get(req_id)
@@ -425,13 +545,18 @@ def deploy(req_id, operator="", open_id="", params=None):
     # K-PUSH-010：前置放宽——approve 后私有单落入 pending_manual（人工对比中），
     # 旧单（stage=verified）与新单均允许落地，零破坏
     if view["stage"] not in ("verified", "pending_manual"):
-        return {"ok": False, "error":
-                "状态 %s 不可落地（须先 approve 至 verified/pending_manual）"
-                % view["stage"]}
+        return {
+            "ok": False,
+            "error": "状态 %s 不可落地（须先 approve 至 verified/pending_manual）"
+            % view["stage"],
+        }
     doc = _load_store(req_id) or {}
     _bt2r = (doc.get("draft") or {}).get("bt2_result") or {}
     if view.get("scope", "private") == "private":
-        if not isinstance(_bt2r, dict) or str(_bt2r.get("status", "")).lower() == "running":
+        if (
+            not isinstance(_bt2r, dict)
+            or str(_bt2r.get("status", "")).lower() == "running"
+        ):
             return {"ok": False, "error": "回测结果缺失或仍在运行，不可落地"}
         verdict = str(_bt2r.get("verdict", "")).strip().lower()
         if not re.search(r"(?:^|[^a-z])pass(?:$|[^a-z])", verdict):
@@ -439,34 +564,54 @@ def deploy(req_id, operator="", open_id="", params=None):
     scope = view.get("scope", "private")
     if scope == "private":
         # K-PUSH-011：落地参数优先取规则模板 override（无则回退 hint）
-        pv = (params or (doc.get("draft") or {}).get("bt2_params_override")
-              or (doc.get("draft") or {}).get("bt2_params_hint") or {})
-        _vip_write(view.get("customer", "?"), pv, req_id,
-                   operator or open_id or "管理台")
-        feedback_flow.record(req_id, "deployed", operator=operator or open_id,
-                             note="VIP 私有参数空间已写入")
+        pv = (
+            params
+            or (doc.get("draft") or {}).get("bt2_params_override")
+            or (doc.get("draft") or {}).get("bt2_params_hint")
+            or {}
+        )
+        _vip_write(
+            view.get("customer", "?"), pv, req_id, operator or open_id or "管理台"
+        )
+        feedback_flow.record(
+            req_id,
+            "deployed",
+            operator=operator or open_id,
+            note="VIP 私有参数空间已写入",
+        )
         # K-PUSH-010：落地回执——私有单部署成功即发（fail-safe 吞错）
-        extra = ("参数空间已写入（VIP）。对比结论：%s"
-                 % (_bt2r.get("reason")
-                    or ((doc.get("draft") or {}).get("bt2_params_hint")
-                        or "见参数空间")))
+        extra = "参数空间已写入（VIP）。对比结论：%s" % (
+            _bt2r.get("reason")
+            or ((doc.get("draft") or {}).get("bt2_params_hint") or "见参数空间")
+        )
         _send_card(_receipt_card(req_id, True, extra), to_group=False)
-        feedback_flow.record(req_id, "receipt", note="落地回执已发",
-                             scope=scope)
-        return {"ok": True, "req_id": req_id, "scope": scope,
-                "customer": view.get("customer")}
-    feedback_flow.record(req_id, "pending_manual", operator=operator or open_id,
-                         note="共享模型变更挂账——另行实施工单（闸门不越权）")
-    return {"ok": True, "req_id": req_id, "scope": scope,
-            "note": "共享变更已挂账，待另行实施"}
+        feedback_flow.record(req_id, "receipt", note="落地回执已发", scope=scope)
+        return {
+            "ok": True,
+            "req_id": req_id,
+            "scope": scope,
+            "customer": view.get("customer"),
+        }
+    feedback_flow.record(
+        req_id,
+        "pending_manual",
+        operator=operator or open_id,
+        note="共享模型变更挂账——另行实施工单（闸门不越权）",
+    )
+    return {
+        "ok": True,
+        "req_id": req_id,
+        "scope": scope,
+        "note": "共享变更已挂账，待另行实施",
+    }
 
 
 def list_requests(status=None, limit=50):
     """请求单列表（最新在前；status 过滤最新状态）。"""
     import feedback_flow
+
     view = feedback_flow.requests_view()
-    rows = sorted(view.values(), key=lambda v: v.get("last_ts", ""),
-                  reverse=True)
+    rows = sorted(view.values(), key=lambda v: v.get("last_ts", ""), reverse=True)
     if status:
         rows = [r for r in rows if r["stage"] == status]
     return rows[:limit]

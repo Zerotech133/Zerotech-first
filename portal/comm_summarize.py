@@ -19,6 +19,7 @@
 - 不做「模型自己算」的事——摘要文本里的数字必须能在输入里找到，
   否则丢弃该句（防模型编造，见 _numbers_ok）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -31,7 +32,7 @@ PROMPT_VERSION = "v1"
 DEFAULT_MAX_CHARS = 220
 CACHE_TTL_SEC = 600
 
-_CACHE = {}      # {(body_md5, kind): (ts, result)}
+_CACHE = {}  # {(body_md5, kind): (ts, result)}
 
 _SYSTEM = (
     "你是飞书推送卡片的中文编辑。把结构化事实写成 1~3 句人话摘要，"
@@ -45,10 +46,15 @@ def enabled():
     """摘要开关：env 优先，comm_flags.json 兜底（WO-FS-152，默认开）。"""
     try:
         import comm_flags
+
         return comm_flags.get("summary")
     except Exception:  # noqa: BLE001
-        return str(os.environ.get("COMM_SUMMARY_ENABLED", "1")).strip().lower() \
-            in ("1", "true", "yes", "on")
+        return str(os.environ.get("COMM_SUMMARY_ENABLED", "1")).strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
 
 
 def _default_llm():
@@ -58,8 +64,10 @@ def _default_llm():
         if str(ap) not in os.sys.path:
             os.sys.path.insert(0, str(ap))
         from engine.llm import OllamaLLM  # noqa: E402
-        return OllamaLLM(timeout=float(os.environ.get(
-            "COMM_SUMMARY_TIMEOUT", "20"))), None
+
+        return OllamaLLM(
+            timeout=float(os.environ.get("COMM_SUMMARY_TIMEOUT", "20"))
+        ), None
     except Exception as ex:  # noqa: BLE001
         return None, "%s: %s" % (type(ex).__name__, ex)
 
@@ -86,7 +94,7 @@ def _trim(text, max_chars):
     for sep in ("。", "；", ".", "，", " "):
         i = cut.rfind(sep)
         if i >= max_chars * 0.6:
-            return cut[:i + (1 if sep in "。；." else 0)]
+            return cut[: i + (1 if sep in "。；." else 0)]
     return cut
 
 
@@ -97,21 +105,25 @@ def _build_user(title, items, kind):
     return "\n".join(lines)
 
 
-def humanize(title, items, kind="daily", llm=None, max_chars=None,
-             use_cache=True):
+def humanize(title, items, kind="daily", llm=None, max_chars=None, use_cache=True):
     """→ {text, llm_ok, tier, error, cached}
 
     llm_ok=False 时 text 为模板原文（调用方在卡片标注「模板」）。
     """
-    mc = int(max_chars or os.environ.get("COMM_SUMMARY_MAX_CHARS",
-                                         DEFAULT_MAX_CHARS))
+    mc = int(max_chars or os.environ.get("COMM_SUMMARY_MAX_CHARS", DEFAULT_MAX_CHARS))
     body = _build_user(title, items, kind)
-    fallback = _trim("%s：%s" % (title or kind,
-                                 "；".join(str(i) for i in (items or []))), mc)
+    fallback = _trim(
+        "%s：%s" % (title or kind, "；".join(str(i) for i in (items or []))), mc
+    )
 
     if not enabled():
-        return {"text": fallback, "llm_ok": False, "tier": "template",
-                "error": "disabled", "cached": False}
+        return {
+            "text": fallback,
+            "llm_ok": False,
+            "tier": "template",
+            "error": "disabled",
+            "cached": False,
+        }
 
     key = (_md5(body + PROMPT_VERSION), kind)
     if use_cache:
@@ -124,28 +136,50 @@ def humanize(title, items, kind="daily", llm=None, max_chars=None,
     if llm is None:
         llm, err = _default_llm()
         if llm is None:
-            return {"text": fallback, "llm_ok": False, "tier": "template",
-                    "error": "llm_unavailable: %s" % err, "cached": False}
+            return {
+                "text": fallback,
+                "llm_ok": False,
+                "tier": "template",
+                "error": "llm_unavailable: %s" % err,
+                "cached": False,
+            }
     try:
         raw, status = llm.chat(_SYSTEM, body, model="qwen3.5:9b")
     except Exception as ex:  # noqa: BLE001 —— 降级必须留因
-        return {"text": fallback, "llm_ok": False, "tier": "template",
-                "error": "%s: %s" % (type(ex).__name__, str(ex)[:100]),
-                "cached": False}
+        return {
+            "text": fallback,
+            "llm_ok": False,
+            "tier": "template",
+            "error": "%s: %s" % (type(ex).__name__, str(ex)[:100]),
+            "cached": False,
+        }
 
     out = _trim(raw, mc)
     if not out or len(out) < 8:
-        return {"text": fallback, "llm_ok": False, "tier": "template",
-                "error": "output_too_short", "cached": False}
+        return {
+            "text": fallback,
+            "llm_ok": False,
+            "tier": "template",
+            "error": "output_too_short",
+            "cached": False,
+        }
     if not _numbers_ok(out, body):
         # 出现输入里没有的数字 → 判定编造，回模板（不冒险展示）
-        return {"text": fallback, "llm_ok": False, "tier": "template",
-                "error": "number_fabrication_guard", "cached": False}
+        return {
+            "text": fallback,
+            "llm_ok": False,
+            "tier": "template",
+            "error": "number_fabrication_guard",
+            "cached": False,
+        }
 
-    res = {"text": out, "llm_ok": True,
-           "tier": "fast" if status == "normal" else "degraded",
-           "error": None if status == "normal" else "llm_status=%s" % status,
-           "cached": False}
+    res = {
+        "text": out,
+        "llm_ok": True,
+        "tier": "fast" if status == "normal" else "degraded",
+        "error": None if status == "normal" else "llm_status=%s" % status,
+        "cached": False,
+    }
     if use_cache:
         _CACHE[key] = (time.time(), dict(res))
     return res

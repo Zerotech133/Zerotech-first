@@ -13,6 +13,7 @@ Usage:
     python portal/quant_mid/guojia_adapter.py --once
     python portal/quant_mid/guojia_adapter.py --date 20261019 --dry-run
 """
+
 from __future__ import annotations
 import argparse
 import datetime as dt
@@ -35,6 +36,7 @@ from quant_backtest.strategy_layer.adapters.chan_monitor import (  # noqa: E402
 # 8097 地址 (env 优先)
 HUB_URL = os.environ.get("QUANT_HUB_URL", "http://127.0.0.1:8097")
 API_PUSH = f"{HUB_URL}/api/quant/push"
+
 
 # 鉴权 key (复用 push_secrets.json / env)
 def _hub_key() -> Optional[str]:
@@ -70,14 +72,16 @@ def load_chan_signals(trade_date: str) -> List[dict]:
         signal = _ACTION_MAP.get(s.action)
         if not signal:
             continue  # hold/watch 不进 trade_pool (缠论只产出 buy/sell)
-        out.append({
-            "stock_code": s.symbol,
-            "stock_name": "",  # chan_monitor 信号池未稳定提供 name, 投研可补
-            "signal": signal,
-            "confidence": s.confidence,
-            "source_agent": "guojia_chan_monitor",
-            "rationale": s.rationale,
-        })
+        out.append(
+            {
+                "stock_code": s.symbol,
+                "stock_name": "",  # chan_monitor 信号池未稳定提供 name, 投研可补
+                "signal": signal,
+                "confidence": s.confidence,
+                "source_agent": "guojia_chan_monitor",
+                "rationale": s.rationale,
+            }
+        )
     return out
 
 
@@ -100,15 +104,26 @@ def push_to_trade_pool(items: List[dict], *, dry_run: bool = False) -> dict:
         if key:
             headers["X-Push-Hub-Key"] = key
         r = requests.post(API_PUSH, json=payload, headers=headers, timeout=10)
-        body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+        body = (
+            r.json()
+            if r.headers.get("content-type", "").startswith("application/json")
+            else {}
+        )
         if r.ok and body.get("ok"):
-            return {"ok": True, "count": body.get("count", len(items)),
-                    "ids": body.get("ids", []), "error": ""}
-        return {"ok": False, "count": 0, "ids": [],
-                "error": f"HTTP {r.status_code}: {body.get('error', r.text[:200])}"}
+            return {
+                "ok": True,
+                "count": body.get("count", len(items)),
+                "ids": body.get("ids", []),
+                "error": "",
+            }
+        return {
+            "ok": False,
+            "count": 0,
+            "ids": [],
+            "error": f"HTTP {r.status_code}: {body.get('error', r.text[:200])}",
+        }
     except requests.ConnectionError as e:
-        return {"ok": False, "count": 0, "ids": [],
-                "error": f"8097 unreachable: {e}"}
+        return {"ok": False, "count": 0, "ids": [], "error": f"8097 unreachable: {e}"}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "count": 0, "ids": [], "error": str(e)}
 

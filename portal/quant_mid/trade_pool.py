@@ -5,6 +5,7 @@
 DB: quant-pg (port 5442) → quant_system.trade_pool
 密码走 env (QUANT_DB_*) 或 portal/work/push_secrets.json 兜底 (K-PUSH-012 供钥链判例)
 """
+
 from __future__ import annotations
 import os
 import json
@@ -23,7 +24,7 @@ except ImportError:  # pragma: no cover
 # ── DB 连接配置（K-PUSH-012 供钥链: env 优先 → push_secrets.json 兜底）────
 _SECRETS_CACHE: Dict[str, Any] = {}
 _SECRETS_CACHE_TS = 0
-_SECRETS_TTL = 60   # 60s 缓存
+_SECRETS_TTL = 60  # 60s 缓存
 
 _SECRETS_PATH = os.environ.get(
     "PUSH_SECRETS_PATH",
@@ -85,13 +86,22 @@ def _get_conn():
 
 
 # ── 状态机常量 ─────────────────────────────────────────────
-STATUS = frozenset({
-    'pending_research', 'researching', 'approved', 'rejected',
-    'building_position', 'active_watch', 'watch_alert',
-    'closed_profit', 'closed_loss', 'closed_other',
-})
-SIGNAL = frozenset({'BUY', 'SELL', 'HOLD', 'WATCH'})
-_TERMINAL = frozenset({'closed_profit', 'closed_loss', 'closed_other', 'rejected'})
+STATUS = frozenset(
+    {
+        "pending_research",
+        "researching",
+        "approved",
+        "rejected",
+        "building_position",
+        "active_watch",
+        "watch_alert",
+        "closed_profit",
+        "closed_loss",
+        "closed_other",
+    }
+)
+SIGNAL = frozenset({"BUY", "SELL", "HOLD", "WATCH"})
+_TERMINAL = frozenset({"closed_profit", "closed_loss", "closed_other", "rejected"})
 
 
 # ── 选股Agent 推池 ────────────────────────────────────────
@@ -125,8 +135,9 @@ def push_to_pool(
     """
     with _get_conn() as conn:
         cur = conn.cursor()
-        cur.execute(sql, (stock_code, stock_name, signal, confidence,
-                          source_agent, rationale))
+        cur.execute(
+            sql, (stock_code, stock_name, signal, confidence, source_agent, rationale)
+        )
         new_id = cur.fetchone()[0]
         conn.commit()
     return new_id
@@ -166,7 +177,7 @@ def get_pending_research(limit: int = 200) -> List[Dict[str, Any]]:
 
 def research_decide(row_id: int, approve: bool, comment: str = "") -> None:
     """投研决策: approve → approved, reject → rejected."""
-    status = 'approved' if approve else 'rejected'
+    status = "approved" if approve else "rejected"
     sql = "UPDATE trade_pool SET status = %s, rationale = %s WHERE id = %s"
     new_rationale = comment  # 简化: 直接覆盖 rationale 字段存决策备注
     with _get_conn() as conn:
@@ -200,8 +211,9 @@ def set_position(
     """
     with _get_conn() as conn:
         cur = conn.cursor()
-        cur.execute(sql, (entry_price, entry_date, stop_loss, take_profit,
-                          position_pct, row_id))
+        cur.execute(
+            sql, (entry_price, entry_date, stop_loss, take_profit, position_pct, row_id)
+        )
         if cur.rowcount == 0:
             conn.rollback()
             raise ValueError(f"row {row_id} not in approved/building_position state")
@@ -238,10 +250,11 @@ def mark_alert(row_id: int, detail: str) -> None:
         conn.commit()
 
 
-def close_position(row_id: int, close_price: float,
-                   final_status: str = 'closed_other') -> None:
+def close_position(
+    row_id: int, close_price: float, final_status: str = "closed_other"
+) -> None:
     """交易员处理完平仓 → 闭环追踪. final_status ∈ closed_*."""
-    if not final_status.startswith('closed_'):
+    if not final_status.startswith("closed_"):
         raise ValueError(f"final_status must be closed_*, got {final_status}")
     sql = """
         UPDATE trade_pool
@@ -258,8 +271,12 @@ def close_position(row_id: int, close_price: float,
 
 
 # ── 双向 Agent Webhook 反馈入口 (HERMES 回流郭嘉) ─────────
-def set_feedback(row_id: int, feedback_type: str = "",
-                 feedback_note: str = "", feedback_score: float = None) -> None:
+def set_feedback(
+    row_id: int,
+    feedback_type: str = "",
+    feedback_note: str = "",
+    feedback_score: float = None,
+) -> None:
     """HERMES 侧对 trade_pool 信号的复盘反馈 → 写回 DB 供郭嘉校准.
 
     feedback_type ∈ {approve, reject, calibrate, skip, other}
@@ -273,9 +290,15 @@ def set_feedback(row_id: int, feedback_type: str = "",
     """
     with _get_conn() as conn:
         cur = conn.cursor()
-        cur.execute(sql, (feedback_type or None, feedback_note or None,
-                          float(feedback_score) if feedback_score is not None else None,
-                          row_id))
+        cur.execute(
+            sql,
+            (
+                feedback_type or None,
+                feedback_note or None,
+                float(feedback_score) if feedback_score is not None else None,
+                row_id,
+            ),
+        )
         if cur.rowcount == 0:
             conn.rollback()
             raise ValueError(f"row {row_id} not found")

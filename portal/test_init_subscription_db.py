@@ -35,10 +35,13 @@ import init_subscription_db as mod  # noqa: E402
 TOOL = _ROOT / "tools" / "init_subscription_db.py"
 
 EXPECTED_TABLES = {
-    "subscriber", "plan", "subscription", "entitlement_log", "payment_order",
+    "subscriber",
+    "plan",
+    "subscription",
+    "entitlement_log",
+    "payment_order",
 }
-RESULT_KEYS = {"ok", "db_path", "mode", "created", "tables",
-               "seeded_plans", "problems"}
+RESULT_KEYS = {"ok", "db_path", "mode", "created", "tables", "seeded_plans", "problems"}
 
 
 @pytest.fixture(autouse=True)
@@ -64,11 +67,13 @@ def ledger(tmp_path, monkeypatch):
 # 辅助
 # ---------------------------------------------------------------------------
 
+
 def table_names(path):
     conn = sqlite3.connect(str(path))
     try:
         rows = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
     finally:
         conn.close()
     return {r[0] for r in rows}
@@ -99,6 +104,7 @@ def read_json(capsys):
 # ---------------------------------------------------------------------------
 # --check / --init 基本行为
 # ---------------------------------------------------------------------------
+
 
 def test_01_check_missing_reports_false_and_creates_nothing(ledger, capsys):
     """--check 在库不存在时 ok=false，且绝不创建文件（读路径不建库同判例）。"""
@@ -138,8 +144,11 @@ def test_03_init_twice_is_idempotent(ledger, capsys):
     """重复 --init：created=false，表与种子数量不变，已有业务数据不丢。"""
     assert mod.main(["--init", "--json"]) == 0
     read_json(capsys)
-    run_sql(ledger, "INSERT INTO subscriber(open_id, display_name, created_at)"
-                    " VALUES (?,?,?)", ("ou_keep", "留存用户", "2026-10-20 10:00:00"))
+    run_sql(
+        ledger,
+        "INSERT INTO subscriber(open_id, display_name, created_at) VALUES (?,?,?)",
+        ("ou_keep", "留存用户", "2026-10-20 10:00:00"),
+    )
 
     assert mod.main(["--init", "--json"]) == 0
     out = read_json(capsys)
@@ -179,8 +188,11 @@ def test_04_check_passes_after_init(ledger, capsys):
 def test_05_init_restores_dropped_table_without_rebuild(ledger, capsys):
     """库存在但缺一表：--init 只补该表，其他表与行数据原样保留。"""
     ss._connect(create=True).close()
-    run_sql(ledger, "INSERT INTO subscriber(open_id, display_name, created_at)"
-                    " VALUES (?,?,?)", ("ou_keep", "留存用户", "2026-10-20 10:00:00"))
+    run_sql(
+        ledger,
+        "INSERT INTO subscriber(open_id, display_name, created_at) VALUES (?,?,?)",
+        ("ou_keep", "留存用户", "2026-10-20 10:00:00"),
+    )
     run_sql(ledger, "DROP TABLE payment_order")
     assert "payment_order" not in table_names(ledger)
 
@@ -208,10 +220,10 @@ def test_05_init_restores_dropped_table_without_rebuild(ledger, capsys):
 # 损坏文件：拒绝自动修复
 # ---------------------------------------------------------------------------
 
+
 def test_06_init_refuses_corrupt_file(ledger, capsys):
     """损坏库：--init 回 db_corrupt、退出码 1，且一个字节都不改。"""
-    garbage = (b"not a sqlite database, deliberately corrupted\n"
-               b"0123456789abcdef" * 40)
+    garbage = b"not a sqlite database, deliberately corrupted\n0123456789abcdef" * 40
     ledger.write_bytes(garbage)
     before_hash = hashlib.sha256(ledger.read_bytes()).hexdigest()
     before_size = ledger.stat().st_size
@@ -239,18 +251,19 @@ def test_06_init_refuses_corrupt_file(ledger, capsys):
 # 退出码 / JSON 结构 / ensure_schema 契约
 # ---------------------------------------------------------------------------
 
+
 def test_07_exit_codes_0_1_2(ledger, capsys, monkeypatch):
     """退出码三态：ok → 0；结构缺失/损坏 → 1；工具自身失败 → 2。"""
-    assert mod.main(["--check"]) == 1          # 库不存在
+    assert mod.main(["--check"]) == 1  # 库不存在
     capsys.readouterr()
-    assert mod.main(["--init"]) == 0           # 初始化成功
+    assert mod.main(["--init"]) == 0  # 初始化成功
     capsys.readouterr()
 
     def boom(*_a, **_kw):
         raise RuntimeError("探测内部错误（注入）")
 
     monkeypatch.setattr(mod, "probe", boom)
-    assert mod.main(["--check"]) == 2          # 工具自身执行失败
+    assert mod.main(["--check"]) == 2  # 工具自身执行失败
     out = capsys.readouterr().out
     assert "RuntimeError" in out
 
@@ -314,6 +327,7 @@ def test_10_human_output_distinguishes_missing_vs_incomplete(ledger, capsys):
 # no-op 铁律（已齐备时一个字节都不动）
 # ---------------------------------------------------------------------------
 
+
 def test_11_init_on_ready_db_is_pure_noop(ledger, capsys):
     """库已齐备时 --init 是 no-op：文件字节与 mtime 均不变。"""
     assert mod.main(["--init"]) == 0
@@ -337,6 +351,7 @@ def test_11_init_on_ready_db_is_pure_noop(ledger, capsys):
 # 子进程真实退出码（证明 sys.exit(main()) 接线正确）
 # ---------------------------------------------------------------------------
 
+
 def test_12_subprocess_real_exit_codes(tmp_path):
     """子进程跑真实 CLI：库不存在 --check → 1；--init → 0；再 --check → 0。"""
     p = tmp_path / "subproc.sqlite3"
@@ -346,7 +361,10 @@ def test_12_subprocess_real_exit_codes(tmp_path):
     def run(*args):
         return subprocess.run(
             [sys.executable, str(TOOL), *args],
-            capture_output=True, text=True, env=full_env, timeout=120,
+            capture_output=True,
+            text=True,
+            env=full_env,
+            timeout=120,
         )
 
     r = run("--check", "--json")

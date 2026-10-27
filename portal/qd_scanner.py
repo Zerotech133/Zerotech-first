@@ -11,6 +11,7 @@
 性质：只读特征湖 + 只 import engine 信号模块；零影子链路触碰；纯研究预览，
       未回测验证（T-20261009-009 结论前不构成选股依据）。
 """
+
 import argparse
 import glob
 import json
@@ -41,6 +42,7 @@ def lake_amounts(code):
     坑: 湖是 tushare daily 不复权口径，但 amount 是实际成交额，与复权
     无关——可与腾讯 qfq 实时 bar 直接拼接。"""
     import pandas as pd  # noqa: F401  顶部不 import：让 --help 也不依赖 venv
+
     if code in _LAKE_AMOUNT:
         return _LAKE_AMOUNT[code]
     out = None
@@ -48,8 +50,11 @@ def lake_amounts(code):
     try:
         df = pd.read_parquet(fp, columns=["trade_date", "amount"])
         if len(df) and df["amount"].notna().any():
-            out = {str(t)[:8]: float(a) for t, a in
-                   zip(df["trade_date"], df["amount"]) if a == a}
+            out = {
+                str(t)[:8]: float(a)
+                for t, a in zip(df["trade_date"], df["amount"])
+                if a == a
+            }
     except Exception:
         out = None
     _LAKE_AMOUNT[code] = out
@@ -64,6 +69,7 @@ def merge_amount(d, lake):
     → 全序列退回近似（旧行为）。
     返回 (pd.Series, used_lake: bool)。"""
     import pandas as pd  # noqa: F401  顶部不 import：让 --help 也不依赖 venv
+
     approx = d["vol"] * d["close"] / 1000.0
     if not lake:
         return approx, False
@@ -80,6 +86,7 @@ def merge_amount(d, lake):
 
 
 # ---- W3-5b 任务B：市况宽度影子注记（只标注不拦截，不改信号/过滤/推送行为）----
+
 
 def _load_cfg():
     """qd_scanner 配置（最小机制）：portal/qd_scanner_config.json。
@@ -131,6 +138,7 @@ def lake_breadth(lake_dir=None):
     """
     import pandas as pd  # 顶部不 import：与全文件惯例一致
     from collections import Counter
+
     lake_dir = Path(lake_dir) if lake_dir else ASHARE
     rows = []
     for fp in sorted(glob.glob(str(lake_dir / "*.parquet"))):
@@ -153,9 +161,14 @@ def lake_breadth(lake_dir=None):
     n_above = sum(1 for a in valid if a)
     n_total = len(valid)
     pct = round(100.0 * n_above / n_total, 1) if n_total else None
-    return {"breadth": pct, "bucket": breadth_bucket(pct),
-            "breadth_ref": "T-1", "ref_date": anchor,
-            "n_above": n_above, "n_total": n_total}
+    return {
+        "breadth": pct,
+        "bucket": breadth_bucket(pct),
+        "breadth_ref": "T-1",
+        "ref_date": anchor,
+        "n_above": n_above,
+        "n_total": n_total,
+    }
 
 
 def annotate_breadth(signals, note):
@@ -179,11 +192,14 @@ def apply_breadth_note(sig_now, recent, tail_signals, regime_now, enabled):
     annotate_breadth(sig_now, note)
     annotate_breadth(recent, note)
     annotate_breadth(tail_signals, note)
-    summary = market_summary_line(note["breadth"], note["bucket"],
-                                  regime_majority(regime_now))
+    summary = market_summary_line(
+        note["breadth"], note["bucket"], regime_majority(regime_now)
+    )
     note["market_summary"] = summary
-    note["note"] = ("breadth_ref=T-1：14:40 时点当日湖未更新，用 T-1 锚宽度，"
-                    "与回测当日口径存在已知差异")
+    note["note"] = (
+        "breadth_ref=T-1：14:40 时点当日湖未更新，用 T-1 锚宽度，"
+        "与回测当日口径存在已知差异"
+    )
     return note, summary
 
 
@@ -191,6 +207,7 @@ def apply_breadth_note(sig_now, recent, tail_signals, regime_now, enabled):
 # 背景：实时行情原单依赖腾讯源，W3-4 曾因腾讯源末根错日整段不可信。
 # 原则：每源取回后先做末根时间戳校验，错日=该源失败（宁可降级不假绿）；
 #       全源失败必须显式返回，调用方跳过并留痕，绝不允许拿错日数据继续算。
+
 
 def _http_text(url, headers=None, timeout=10, encoding="utf-8"):
     req = urllib.request.Request(url, headers=headers or {})
@@ -210,26 +227,39 @@ def _secid(plain):
 def _kline_tencent(plain, n):
     """腾讯日K（前复权）：[[date, open, close, high, low, vol], ...]"""
     from tools import kline_daily
+
     return kline_daily(plain, n=n)
 
 
 def _kline_sina(plain, n):
     """新浪日K → 映射为腾讯行格式。坑: 新浪 volume 单位是股、腾讯是手
     → ÷100 对齐量纲（量比/均量类特征跨源才可比）。"""
-    u = ("https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService"
-         ".getKLineData?symbol=%s&scale=240&ma=no&datalen=%d"
-         % (norm_symbol(plain), n))
+    u = (
+        "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService"
+        ".getKLineData?symbol=%s&scale=240&ma=no&datalen=%d" % (norm_symbol(plain), n)
+    )
     rows = _http_json(u) or []
-    return [[d["day"], d["open"], d["close"], d["high"], d["low"],
-             float(d["volume"]) / 100.0] for d in rows]
+    return [
+        [
+            d["day"],
+            d["open"],
+            d["close"],
+            d["high"],
+            d["low"],
+            float(d["volume"]) / 100.0,
+        ]
+        for d in rows
+    ]
 
 
 def _kline_east(plain, n):
     """东财日K（fqt=1 前复权）→ 映射为腾讯行格式。
     fields2=f51..f56 依次 date,open,close,high,low,vol(手)。"""
-    u = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s"
-         "&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56"
-         "&klt=101&fqt=1&end=20500101&lmt=%d" % (_secid(plain), n))
+    u = (
+        "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s"
+        "&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56"
+        "&klt=101&fqt=1&end=20500101&lmt=%d" % (_secid(plain), n)
+    )
     kl = ((_http_json(u) or {}).get("data") or {}).get("klines") or []
     return [row.split(",")[:6] for row in kl]
 
@@ -269,8 +299,11 @@ def kline_multisource(plain, n=150, expect_day=None, enabled=None):
         if expect_day and _kline_last_day(rows) != expect_day:
             notes.append("%s:last=%s" % (name, _kline_last_day(rows)))
             continue
-        return rows, (name if name == "tencent" else name + "_fallback"), \
-            ";".join(notes)
+        return (
+            rows,
+            (name if name == "tencent" else name + "_fallback"),
+            ";".join(notes),
+        )
     return None, "all_failed", ";".join(notes) or "no_source"
 
 
@@ -282,32 +315,44 @@ def _quote_tencent(plain):
 def _quote_sina(plain):
     """新浪快照 → 统一字段映射：价格/涨跌幅/成交量/时间戳。
     坑: hq.sinajs.cn 要求 Referer，否则 407；volume 单位股→手。"""
-    txt = _http_text("https://hq.sinajs.cn/list=" + norm_symbol(plain),
-                     headers={"Referer": "https://finance.sina.com.cn"},
-                     encoding="gbk")
+    txt = _http_text(
+        "https://hq.sinajs.cn/list=" + norm_symbol(plain),
+        headers={"Referer": "https://finance.sina.com.cn"},
+        encoding="gbk",
+    )
     f = txt.split('"')[1].split(",")
     price, preclose = float(f[3]), float(f[2])
-    return {"name": f[0], "price": price,
-            "change_pct": round((price / preclose - 1) * 100, 2)
-            if preclose else None,
-            "volume": float(f[8]) / 100.0,
-            "ts": ("%s %s" % (f[30], f[31])).strip()}
+    return {
+        "name": f[0],
+        "price": price,
+        "change_pct": round((price / preclose - 1) * 100, 2) if preclose else None,
+        "volume": float(f[8]) / 100.0,
+        "ts": ("%s %s" % (f[30], f[31])).strip(),
+    }
 
 
 def _quote_east(plain):
     """东财快照 → 统一字段映射。fltt=2 返回已除算浮点，免手工缩放；
     f43=价格 f47=量(手) f60=昨收 f86=时间戳(秒) f170=涨跌幅。"""
-    d = ((_http_json(
-        "https://push2.eastmoney.com/api/qt/stock/get?secid=%s"
-        "&invt=2&fltt=2&fields=f43,f47,f57,f58,f60,f86,f170"
-        % _secid(plain)) or {}).get("data") or {})
+    d = (
+        _http_json(
+            "https://push2.eastmoney.com/api/qt/stock/get?secid=%s"
+            "&invt=2&fltt=2&fields=f43,f47,f57,f58,f60,f86,f170" % _secid(plain)
+        )
+        or {}
+    ).get("data") or {}
     ts = d.get("f86")
     try:
         ts_s = datetime.fromtimestamp(int(ts)).strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
         ts_s = ""
-    return {"name": d.get("f58") or plain, "price": d.get("f43"),
-            "change_pct": d.get("f170"), "volume": d.get("f47"), "ts": ts_s}
+    return {
+        "name": d.get("f58") or plain,
+        "price": d.get("f43"),
+        "change_pct": d.get("f170"),
+        "volume": d.get("f47"),
+        "ts": ts_s,
+    }
 
 
 def quote_multisource(plain, enabled=None):
@@ -329,15 +374,16 @@ def quote_multisource(plain, enabled=None):
         if not q or not q.get("price"):
             notes.append("%s:empty" % name)
             continue
-        return q, (name if name == "tencent" else name + "_fallback"), \
-            ";".join(notes)
+        return q, (name if name == "tencent" else name + "_fallback"), ";".join(notes)
     return None, "all_failed", ";".join(notes) or "no_source"
 
 
 def scan_one(fp):
     """单票扫描：返回 (code, dict) 或 None（缺列/数据不足/无信号时摘要返回）"""
     code = os.path.basename(fp).replace(".parquet", "").replace("_", ".")
-    df = pd.read_parquet(fp, columns=["trade_date", "open", "high", "low", "close", "amount"])
+    df = pd.read_parquet(
+        fp, columns=["trade_date", "open", "high", "low", "close", "amount"]
+    )
     if len(df) < 100:  # 次新股/数据不足：MA54+TSI60 warmup 不够
         return code, None
     df = df.rename(columns={"trade_date": "date"}).set_index("date")
@@ -368,14 +414,16 @@ def intraday_recheck(candidates):
     返回 (tail_signals, tail_checked, tail_note)
     """
     import pandas as pd  # noqa: F401  scan_one 依赖由调用方保证
+
     today = datetime.now().strftime("%Y%m%d")
     multi = bool(_load_cfg().get("qd_multi_source", True))
     tail_signals, checked = [], 0
     note = ""
     for code in candidates:
         plain = code.split(".")[0]
-        kl, src, src_note = kline_multisource(plain, n=150,
-                                              expect_day=today, enabled=multi)
+        kl, src, src_note = kline_multisource(
+            plain, n=150, expect_day=today, enabled=multi
+        )
         if kl is None:
             # 全源失败/错日：该候选显式跳过（checked 不计入，note 留痕）
             note = "全源失败/错日（%s），候选 %s 跳过（不假绿）" % (src_note, code)
@@ -403,22 +451,28 @@ def intraday_recheck(candidates):
             continue
         last = out.iloc[-1]
         if bool(last["double_knife_signal"]):
-            tail_signals.append({
-                "code": code,
-                "close": round(float(d["close"].iloc[-1]), 2),
-                "regime": str(last["regime_label"]),
-                "note": note,
-            })
+            tail_signals.append(
+                {
+                    "code": code,
+                    "close": round(float(d["close"].iloc[-1]), 2),
+                    "regime": str(last["regime_label"]),
+                    "note": note,
+                }
+            )
     return tail_signals, checked, note
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--recent-window", type=int, default=5,
-                    help="近 N 日信号窗口（默认 5）")
-    ap.add_argument("--intraday", action="store_true",
-                    help="尾盘模式（14:40）：候选池+当日实时 bar 复核，"
-                         "产出 14:55 执行窗口的尾盘买信号")
+    ap.add_argument(
+        "--recent-window", type=int, default=5, help="近 N 日信号窗口（默认 5）"
+    )
+    ap.add_argument(
+        "--intraday",
+        action="store_true",
+        help="尾盘模式（14:40）：候选池+当日实时 bar 复核，"
+        "产出 14:55 执行窗口的尾盘买信号",
+    )
     args = ap.parse_args()
     intraday = args.intraday
 
@@ -443,14 +497,18 @@ def main():
         elif info["n_recent"] > 0:
             recent.append(info)
         if (i + 1) % 1000 == 0:
-            print("[scan] %d/%d 已扫 %.0fs" % (i + 1, len(files), time.time() - t0), flush=True)
+            print(
+                "[scan] %d/%d 已扫 %.0fs" % (i + 1, len(files), time.time() - t0),
+                flush=True,
+            )
 
     # 尾盘两段式（K-STOCK-025）：14:40 盘中触发时，用「昨日单日十字星」
     # 候选池 + 当日实时 bar 复核，产出今日尾盘买信号（14:55 执行窗口）。
     # 非盘中（腾讯末根≠当日）自动退化为空并留 note，不误报。
     tail_signals, tail_checked, tail_note = [], 0, ""
-    star_candidates = [info["code"] for info in recent + sig_now
-                       if info.get("star_yesterday")]
+    star_candidates = [
+        info["code"] for info in recent + sig_now if info.get("star_yesterday")
+    ]
     # 候选池不足时补扫一遍湖里昨日单日十字星票（recent 仅含已触发票）
     if intraday and star_pool:
         star_candidates = sorted(set(star_candidates) | set(star_pool))
@@ -458,8 +516,12 @@ def main():
         tail_signals, tail_checked, tail_note = intraday_recheck(star_candidates)
     # W3-5b 任务B：市况宽度影子注记（qd_breadth_note 开关，关=零改动回退）
     breadth_note, market_summary = apply_breadth_note(
-        sig_now, recent, tail_signals, regime_now,
-        bool(_load_cfg().get("qd_breadth_note", False)))
+        sig_now,
+        recent,
+        tail_signals,
+        regime_now,
+        bool(_load_cfg().get("qd_breadth_note", False)),
+    )
     cache = {
         "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "elapsed_s": round(time.time() - t0, 1),
@@ -505,6 +567,7 @@ def main():
             ctx = make_context(info["code"].split(".")[0])
             mt = ctx.get("market_technical", "")
             import re as _re
+
             arr = _re.search(r"(多头排列|空头排列|纠缠)", mt)
             c5 = _re.search(r"近5日涨跌 ([+\-]?[\d.]+)%", mt)
             vr = _re.search(r"量比\(对5日均量\) ([\d.]+)", mt)
@@ -523,14 +586,27 @@ def main():
             info["tech"] = ""
 
     CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
-    print("[done] 扫描 %d 只（跳过 %d）：当日信号 %d，近 %d 日有信号 %d，"
-          "尾盘候选池 %d，尾盘复核 %d 只→信号 %d %s，耗时 %.0fs → %s%s"
-          % (cache["scanned"], skipped, len(sig_now), args.recent_window,
-             len(recent), len(star_pool), tail_checked, len(tail_signals),
-             ("(%s)" % tail_note) if tail_note else "", cache["elapsed_s"], CACHE,
-             (" · " + market_summary) if market_summary else ""))
+    print(
+        "[done] 扫描 %d 只（跳过 %d）：当日信号 %d，近 %d 日有信号 %d，"
+        "尾盘候选池 %d，尾盘复核 %d 只→信号 %d %s，耗时 %.0fs → %s%s"
+        % (
+            cache["scanned"],
+            skipped,
+            len(sig_now),
+            args.recent_window,
+            len(recent),
+            len(star_pool),
+            tail_checked,
+            len(tail_signals),
+            ("(%s)" % tail_note) if tail_note else "",
+            cache["elapsed_s"],
+            CACHE,
+            (" · " + market_summary) if market_summary else "",
+        )
+    )
 
 
 if __name__ == "__main__":
     import pandas as pd  # noqa: E402  顶部不 import：让 --help 也不依赖 venv
+
     main()

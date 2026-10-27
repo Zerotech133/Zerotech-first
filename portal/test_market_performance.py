@@ -1,4 +1,5 @@
 """/market 只读绩效账本的契约测试。"""
+
 from __future__ import annotations
 
 import importlib
@@ -25,14 +26,19 @@ class MarketPerformanceTests(unittest.TestCase):
             return
         with tempfile.TemporaryDirectory() as tmp:
             ledger = Path(tmp) / "ledger.json"
-            ledger.write_text(json.dumps({
-                "generated_at": "2026-10-11 00:51:07",
-                "asof": "20261009",
-                "caliber": {"id": "exec-d2-open-20261010"},
-                "totals": {"picks": 2, "1": {"n": 0, "hit": None, "avg": None}},
-                "per_tier": {"T1": {"n": 2}},
-                "per_strategy": {"chanlun": {"n": 2}},
-            }), encoding="utf-8")
+            ledger.write_text(
+                json.dumps(
+                    {
+                        "generated_at": "2026-10-11 00:51:07",
+                        "asof": "20261009",
+                        "caliber": {"id": "exec-d2-open-20261010"},
+                        "totals": {"picks": 2, "1": {"n": 0, "hit": None, "avg": None}},
+                        "per_tier": {"T1": {"n": 2}},
+                        "per_strategy": {"chanlun": {"n": 2}},
+                    }
+                ),
+                encoding="utf-8",
+            )
             result = market_performance.project(ledger)
         self.assertTrue(result["ok"])
         self.assertEqual(result["asof"], "20261009")
@@ -62,15 +68,15 @@ class MarketPerformanceTests(unittest.TestCase):
         if not page.is_file():
             return
         html = page.read_text(encoding="utf-8")
-        self.assertIn('/static/tokens.css', html)
-        self.assertIn('/static/nav.js', html)
-        self.assertIn('/static/shortscreen.js', html)
-        self.assertIn('/api/market_performance', html)
-        self.assertIn('location = /market', nginx)
+        self.assertIn("/static/tokens.css", html)
+        self.assertIn("/static/nav.js", html)
+        self.assertIn("/static/shortscreen.js", html)
+        self.assertIn("/api/market_performance", html)
+        self.assertIn("location = /market", nginx)
         self.assertIn('path == "/api/market_performance"', api)
         self.assertIn('"/market"', nav)
-        self.assertNotIn('/api/portfolio_subscribe', html)
-        self.assertNotIn('/api/paper_buy', html)
+        self.assertNotIn("/api/portfolio_subscribe", html)
+        self.assertNotIn("/api/paper_buy", html)
 
 
 if __name__ == "__main__":

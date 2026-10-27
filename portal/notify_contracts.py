@@ -14,6 +14,7 @@
 原则：本模块不发 HTTP、不落盘、不读 DB；登记表缺失/损坏 fail-visible
 返回 errors 非空，不抛异常（沿 api_daily_data 只读纪律）。
 """
+
 import json
 import os
 
@@ -30,8 +31,13 @@ QUEUE_STATE_LABELS = {
 }
 
 # ── 生命周期证据分级（设计≠代码验证≠演练≠真实发送≠自然定时首跑） ──
-EVIDENCE_LIFECYCLE = ("designed", "code_verified", "drilled",
-                      "live_sent", "scheduled_first_run")
+EVIDENCE_LIFECYCLE = (
+    "designed",
+    "code_verified",
+    "drilled",
+    "live_sent",
+    "scheduled_first_run",
+)
 EVIDENCE_LIFECYCLE_LABELS = {
     "designed": "设计（未落码）",
     "code_verified": "代码验证（单测通过，未真实发送）",
@@ -120,18 +126,23 @@ def validate_channels(data):
         if not isinstance(ch.get("name"), str) or not ch["name"].strip():
             _err(errors, where, "name 必须是非空字符串")
         kinds = ch.get("kinds")
-        if not isinstance(kinds, list) or not kinds or \
-                not all(isinstance(k, str) and k.strip() for k in kinds):
+        if (
+            not isinstance(kinds, list)
+            or not kinds
+            or not all(isinstance(k, str) and k.strip() for k in kinds)
+        ):
             _err(errors, where, "kinds 必须是非空字符串数组")
         if ch.get("autonomy") not in AUTONOMY_LEVELS:
             _err(errors, where, "autonomy 必须是 %s 之一" % (AUTONOMY_LEVELS,))
         red = ch.get("red_lines")
-        if not isinstance(red, list) or not red or \
-                not all(isinstance(r, str) and r.strip() for r in red):
+        if (
+            not isinstance(red, list)
+            or not red
+            or not all(isinstance(r, str) and r.strip() for r in red)
+        ):
             _err(errors, where, "red_lines 必须是非空字符串数组")
         if ch.get("evidence_level") not in EVIDENCE_LIFECYCLE:
-            _err(errors, where, "evidence_level 必须是 %s 之一"
-                 % (EVIDENCE_LIFECYCLE,))
+            _err(errors, where, "evidence_level 必须是 %s 之一" % (EVIDENCE_LIFECYCLE,))
     return errors
 
 
@@ -146,8 +157,7 @@ def load_channels(path=None):
     except ValueError as e:
         return {"ok": False, "channels": [], "errors": ["登记表 JSON 损坏：%s" % e]}
     errors = validate_channels(data)
-    return {"ok": not errors, "channels": data.get("channels", []),
-            "errors": errors}
+    return {"ok": not errors, "channels": data.get("channels", []), "errors": errors}
 
 
 def validate_subscriber_entry(group_id, entry):

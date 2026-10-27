@@ -10,14 +10,14 @@
 
 失败策略：任何异常返回 ""（绝不阻塞卡片发送）；需要强制签名时传 force=True。
 """
+
 from __future__ import annotations
 
 import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CONFIG = os.environ.get("M_LINK_CONFIG") or os.path.join(
-    HERE, "work", "m_link.json")
+CONFIG = os.environ.get("M_LINK_CONFIG") or os.path.join(HERE, "work", "m_link.json")
 
 
 def _load_config():
@@ -42,8 +42,9 @@ def enabled():
 
 
 def base():
-    return (os.environ.get("M_BASE_URL")
-            or str(_load_config().get("base") or "")).rstrip("/")
+    return (
+        os.environ.get("M_BASE_URL") or str(_load_config().get("base") or "")
+    ).rstrip("/")
 
 
 def url_for(scene, code="", id="", tab=None, ttl=None, force=False, st=None):
@@ -55,12 +56,19 @@ def url_for(scene, code="", id="", tab=None, ttl=None, force=False, st=None):
         return ""
     try:
         import m_api
+
         extra = {"tab": tab} if tab else None
-        url, _p = m_api.page_url(scene, code=str(code or ""),
-                                 id=str(id or ""), ttl=ttl, extra=extra,
-                                 base=base() or None)
+        url, _p = m_api.page_url(
+            scene,
+            code=str(code or ""),
+            id=str(id or ""),
+            ttl=ttl,
+            extra=extra,
+            base=base() or None,
+        )
         if st:
             from urllib.parse import quote
+
             url += ("&st=" if "?" in url else "?st=") + quote(str(st), safe="")
         return url
     except Exception:  # noqa: BLE001 —— 链接签发失败不得影响卡片主链路
@@ -73,5 +81,13 @@ def link_footer():
 
 
 if __name__ == "__main__":
-    print(json.dumps({"enabled": enabled(), "base": base(),
-                      "picks": url_for("picks", force=True)}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "enabled": enabled(),
+                "base": base(),
+                "picks": url_for("picks", force=True),
+            },
+            ensure_ascii=False,
+        )
+    )

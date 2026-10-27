@@ -18,6 +18,7 @@
     except Exception:
         pass  # 原样透传
 """
+
 import copy
 import functools
 import json
@@ -77,8 +78,7 @@ def _wrap_built_in(kind, content):
 # ── 注册表：kind → 包装函数（纯函数，无 IO） ─────────────────────
 
 KIND_CARD_TEMPLATES = {
-    kind: functools.partial(_wrap_built_in, kind)
-    for kind in _BUILTIN_TEMPLATES
+    kind: functools.partial(_wrap_built_in, kind) for kind in _BUILTIN_TEMPLATES
 }
 
 # ── FC-C 追加注册：订阅引导卡（灰卡，P2 波次 2026-10-20） ─────
@@ -86,7 +86,8 @@ KIND_CARD_TEMPLATES = {
 # 追加注册不改写 FB-L 既有语义：未注册 kind 原样返回的规则不变。
 _SUBSCRIPTION_GUIDE_MD = (
     "当前账号未开通订阅，**盯盘 / 预警**等订阅能力暂不可用。\n"
-    "如需使用，请**联系开通**（自助购买渠道 M3 上线前请找管理员办理）。")
+    "如需使用，请**联系开通**（自助购买渠道 M3 上线前请找管理员办理）。"
+)
 
 
 def _wrap_subscription_guide(kind, content):
@@ -94,19 +95,22 @@ def _wrap_subscription_guide(kind, content):
     del content
     return {
         "config": dict(_DEFAULT_CONFIG),
-        "header": {"template": "grey",
-                   "title": {"tag": "plain_text",
-                             "content": "🔒 订阅服务"}},
+        "header": {
+            "template": "grey",
+            "title": {"tag": "plain_text", "content": "🔒 订阅服务"},
+        },
         "elements": [
-            {"tag": "div",
-             "text": {"tag": "lark_md",
-                      "content": _SUBSCRIPTION_GUIDE_MD}},
+            {
+                "tag": "div",
+                "text": {"tag": "lark_md", "content": _SUBSCRIPTION_GUIDE_MD},
+            },
         ],
     }
 
 
 KIND_CARD_TEMPLATES["subscription_guide"] = functools.partial(
-    _wrap_subscription_guide, "subscription_guide")
+    _wrap_subscription_guide, "subscription_guide"
+)
 
 
 # ── H-B 追加注册：KM 知识卡（蓝卡，P3-lite 波次 2026-10-20） ─────
@@ -126,8 +130,7 @@ _BUILTIN_TEMPLATES["km_card"] = ("blue", "🗂 KM 知识卡")
 # 判例：已是卡片且有 header 保留原 header，无 header 按 kind 补，
 # 纯文本包整卡，elements 不注入任何链接文案。未注册/未透传 kind
 # 原样返回的既有语义不变（closed on failure 不破坏）。
-KIND_CARD_TEMPLATES["inbound:feed"] = functools.partial(
-    _wrap_built_in, "inbound:feed")
+KIND_CARD_TEMPLATES["inbound:feed"] = functools.partial(_wrap_built_in, "inbound:feed")
 _BUILTIN_TEMPLATES["inbound:feed"] = ("green", "📥 投喂回执")
 
 
@@ -141,7 +144,8 @@ _BUILTIN_TEMPLATES["inbound:feed"] = ("green", "📥 投喂回执")
 # 判例（0596b37e）把该 kind 并入主表，并同步扩充 ALL_KINDS/_COLORS/_TITLES
 # —— 属恒等搬迁 + 快照追加，不改写任何既有断言语义。
 KIND_CARD_TEMPLATES["subscription_expiring"] = functools.partial(
-    _wrap_built_in, "subscription_expiring")
+    _wrap_built_in, "subscription_expiring"
+)
 _BUILTIN_TEMPLATES["subscription_expiring"] = ("orange", "⏳ 订阅即将到期")
 
 

@@ -4,6 +4,7 @@
 覆盖：建表幂等、日聚合 upsert、频次累加、top_codes 合并、
 7 日滚动窗口、四档信号判定、空态不造数、隐私（不存原文）。
 """
+
 import os
 import sys
 
@@ -25,8 +26,7 @@ def db(tmp_path, monkeypatch):
 
 
 def _record(open_id, intent, code=None, blocked=False, day=None):
-    return ci.record(open_id, intent=intent, code=code, blocked=blocked,
-                     day=day)
+    return ci.record(open_id, intent=intent, code=code, blocked=blocked, day=day)
 
 
 # ── 建表与写入 ───────────────────────────────
@@ -74,9 +74,9 @@ def test_06_domain_buckets(db):
     _record("ou_e", "complaint")
     _record("ou_e", "feed")
     st = ci.stats_7d("ou_e")
-    assert st["domain_quant"] == 2          # stock + watch
-    assert st["domain_business"] >= 1       # subscription
-    assert st["domain_knowledge"] == 1      # feed
+    assert st["domain_quant"] == 2  # stock + watch
+    assert st["domain_business"] >= 1  # subscription
+    assert st["domain_knowledge"] == 1  # feed
 
 
 def test_07_feed_and_complaint_not_counted_as_consult(db):
@@ -90,6 +90,7 @@ def test_07_feed_and_complaint_not_counted_as_consult(db):
 def test_08_7day_window_excludes_old(db):
     # 今天 + 8 天前
     from datetime import date, timedelta
+
     old = (date.today() - timedelta(days=8)).isoformat()
     _record("ou_g", "stock_consult", code="605100", day=old)
     _record("ou_g", "stock_consult", code="300750")
@@ -124,6 +125,7 @@ def test_11_prospect(db):
 
 def test_12_churning_when_was_active(db):
     from datetime import date, timedelta
+
     # 上周活跃（6 天前 3 次），本周 0
     d = (date.today() - timedelta(days=6)).isoformat()
     for _ in range(3):
@@ -147,11 +149,11 @@ def test_13_subscribed_active_not_hot(db):
 def test_13b_expiring_subscribed_active(db):
     """已订阅 + 3 天后到期 + 本周咨询≥3 → expiring ★★（续费优先触达）。"""
     from datetime import date, timedelta
+
     end = (date.today() + timedelta(days=3)).isoformat()
     for _ in range(3):
         _record("ou_exp", "stock_consult", code="605100")
-    sigs = ci.signals(subscribed={
-        "ou_exp": {"subscribed": True, "end": end}})
+    sigs = ci.signals(subscribed={"ou_exp": {"subscribed": True, "end": end}})
     row = [s for s in sigs if s["open_id"] == "ou_exp"][0]
     assert row["level"] == "expiring"
     assert row["stars"] == 2
@@ -179,11 +181,13 @@ def test_15_signal_has_action_hint(db):
 # ── 隐私：不存原文 ────────────────────────────
 def test_16_no_raw_text_columns(db):
     import sqlite3
+
     conn = sqlite3.connect(str(db))
     cols = [r[1] for r in conn.execute("PRAGMA table_info(customer_interest)")]
     conn.close()
-    assert not any("text" == c or c.startswith("text_") for c in cols), \
+    assert not any("text" == c or c.startswith("text_") for c in cols), (
         "画像表不得有原文列：%s" % cols
+    )
     assert "top_codes" in cols and "top_topics" in cols
 
 
@@ -209,6 +213,7 @@ def test_19_guide_text_none_when_no_data(db):
 def test_20_guide_card_personalized(monkeypatch, db):
     """引导卡有统计→个性化文案；无统计→通用文案（不臆造）。"""
     import inbound_gateway as gw
+
     for _ in range(6):
         _record("ou_card", "stock_consult", code="605100")
     card = gw._subscription_guide_card("ou_card")

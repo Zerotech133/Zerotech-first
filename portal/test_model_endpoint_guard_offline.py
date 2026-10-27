@@ -27,26 +27,73 @@ MODEL_ROUTES = {
 # sits between the audit_chat and ai_duty dispatches inside the compiled
 # prefix. Its calls compile inert here (org_command_api/log_exc/out are not
 # injected into the probe namespace, so any stray execution raises NameError).
-_REVIEWED_POST_AST_SHA256 = "1b97f327fee4209b8239e7c09c488f638a6cf8257dc85783c3fe6ccb286e0b8f"
-_REVIEWED_NODE_TYPES = frozenset({
-    ast.Add, ast.And, ast.Assign, ast.Attribute, ast.BinOp, ast.BoolOp,
-    ast.Call, ast.Compare,
-    ast.Constant, ast.Dict, ast.Eq, ast.ExceptHandler, ast.Expr,
-    ast.FormattedValue, ast.Gt, ast.If, ast.IfExp, ast.In, ast.JoinedStr,
-    ast.Load, ast.Lt, ast.Name, ast.Not, ast.Or, ast.Return, ast.Set,
-    ast.Store, ast.Subscript, ast.Try, ast.Tuple, ast.UnaryOp, ast.keyword,
-})
-_REVIEWED_CALLS = frozenset({
-    "(self.headers.get('X-Real-IP') or '').strip", "_rate_hit", "getattr",
-    "int", "json.loads", "log_exc", "org_command_api.api_agent_learn",
-    "org_command_api.api_agent_update", "org_command_api.api_preview",
-    "org_command_api.api_project_preview",
-    "org_command_api.api_project_register", "org_command_api.api_register",
-    "out.get", "raw.decode", "self._api_ai_duty",
-    "self._api_audit_chat", "self._chanlun_anno", "self._check_portal_token",
-    "self._flow_rerun", "self._json", "self._warehouse_update_request",
-    "self.headers.get", "self.path.split", "self.rfile.read",
-})
+_REVIEWED_POST_AST_SHA256 = (
+    "1b97f327fee4209b8239e7c09c488f638a6cf8257dc85783c3fe6ccb286e0b8f"
+)
+_REVIEWED_NODE_TYPES = frozenset(
+    {
+        ast.Add,
+        ast.And,
+        ast.Assign,
+        ast.Attribute,
+        ast.BinOp,
+        ast.BoolOp,
+        ast.Call,
+        ast.Compare,
+        ast.Constant,
+        ast.Dict,
+        ast.Eq,
+        ast.ExceptHandler,
+        ast.Expr,
+        ast.FormattedValue,
+        ast.Gt,
+        ast.If,
+        ast.IfExp,
+        ast.In,
+        ast.JoinedStr,
+        ast.Load,
+        ast.Lt,
+        ast.Name,
+        ast.Not,
+        ast.Or,
+        ast.Return,
+        ast.Set,
+        ast.Store,
+        ast.Subscript,
+        ast.Try,
+        ast.Tuple,
+        ast.UnaryOp,
+        ast.keyword,
+    }
+)
+_REVIEWED_CALLS = frozenset(
+    {
+        "(self.headers.get('X-Real-IP') or '').strip",
+        "_rate_hit",
+        "getattr",
+        "int",
+        "json.loads",
+        "log_exc",
+        "org_command_api.api_agent_learn",
+        "org_command_api.api_agent_update",
+        "org_command_api.api_preview",
+        "org_command_api.api_project_preview",
+        "org_command_api.api_project_register",
+        "org_command_api.api_register",
+        "out.get",
+        "raw.decode",
+        "self._api_ai_duty",
+        "self._api_audit_chat",
+        "self._chanlun_anno",
+        "self._check_portal_token",
+        "self._flow_rerun",
+        "self._json",
+        "self._warehouse_update_request",
+        "self.headers.get",
+        "self.path.split",
+        "self.rfile.read",
+    }
+)
 
 
 class _MissingModelProtection(AssertionError):
@@ -87,12 +134,18 @@ def _validate_executable_ast(statements: list[ast.stmt]) -> None:
                 raise AssertionError(
                     f"unreviewed executable AST node: {type(node).__name__}"
                 )
-            if isinstance(node, ast.Call) and ast.unparse(node.func) not in _REVIEWED_CALLS:
-                raise AssertionError(f"unreviewed executable call: {ast.unparse(node.func)}")
+            if (
+                isinstance(node, ast.Call)
+                and ast.unparse(node.func) not in _REVIEWED_CALLS
+            ):
+                raise AssertionError(
+                    f"unreviewed executable call: {ast.unparse(node.func)}"
+                )
 
 
 def _isolated_dispatch(
-    *, rate_limited: bool = False,
+    *,
+    rate_limited: bool = False,
 ) -> tuple[Callable[..., Any], frozenset[str], list[tuple[tuple[str, str], int]]]:
     """Compile only original auth/rate/read/dispatch AST with inert globals.
 
@@ -102,74 +155,101 @@ def _isolated_dispatch(
     """
     tree = _portal_tree()
     mutation_assignments = [
-        node for node in ast.walk(tree)
+        node
+        for node in ast.walk(tree)
         if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign))
-        and any(isinstance(target, ast.Name) and target.id == "_MUTATION_POSTS"
-                for target in (node.targets if isinstance(node, ast.Assign)
-                               else [node.target]))
+        and any(
+            isinstance(target, ast.Name) and target.id == "_MUTATION_POSTS"
+            for target in (
+                node.targets if isinstance(node, ast.Assign) else [node.target]
+            )
+        )
     ]
     if len(mutation_assignments) != 1:
         raise AssertionError("_MUTATION_POSTS must have exactly one source assignment")
     mutation_assign = mutation_assignments[0]
     if not isinstance(mutation_assign, ast.Assign) or mutation_assign not in tree.body:
         raise AssertionError("_MUTATION_POSTS must be a top-level literal assignment")
-    if not (isinstance(mutation_assign.value, ast.Call)
-            and isinstance(mutation_assign.value.func, ast.Name)
-            and mutation_assign.value.func.id == "frozenset"
-            and len(mutation_assign.value.args) == 1
-            and not mutation_assign.value.keywords):
+    if not (
+        isinstance(mutation_assign.value, ast.Call)
+        and isinstance(mutation_assign.value.func, ast.Name)
+        and mutation_assign.value.func.id == "frozenset"
+        and len(mutation_assign.value.args) == 1
+        and not mutation_assign.value.keywords
+    ):
         raise AssertionError("_MUTATION_POSTS source expression changed shape")
     mutations = frozenset(ast.literal_eval(mutation_assign.value.args[0]))
     handler_class = next(
-        node for node in tree.body
+        node
+        for node in tree.body
         if isinstance(node, ast.ClassDef) and node.name == "Handler"
     )
     method = next(
-        node for node in handler_class.body
+        node
+        for node in handler_class.body
         if isinstance(node, ast.FunctionDef) and node.name == "do_POST"
     )
     signature = method.args
-    if (method.decorator_list or method.returns is not None
-            or getattr(method, "type_params", ()) or signature.posonlyargs
-            or len(signature.args) != 1 or signature.args[0].arg != "self"
-            or signature.args[0].annotation is not None or signature.vararg is not None
-            or signature.kwonlyargs or signature.kw_defaults or signature.kwarg is not None
-            or signature.defaults):
+    if (
+        method.decorator_list
+        or method.returns is not None
+        or getattr(method, "type_params", ())
+        or signature.posonlyargs
+        or len(signature.args) != 1
+        or signature.args[0].arg != "self"
+        or signature.args[0].annotation is not None
+        or signature.vararg is not None
+        or signature.kwonlyargs
+        or signature.kw_defaults
+        or signature.kwarg is not None
+        or signature.defaults
+    ):
         raise AssertionError("POST function signature changed; refuse executable AST")
     statements = method.body
     try_node = next(node for node in statements if isinstance(node, ast.Try))
-    pre_try = statements[:statements.index(try_node)]
+    pre_try = statements[: statements.index(try_node)]
     if not any(
         isinstance(node, ast.Assign)
-        and any(isinstance(target, ast.Name) and target.id == "path"
-                for target in node.targets)
+        and any(
+            isinstance(target, ast.Name) and target.id == "path"
+            for target in node.targets
+        )
         for node in pre_try
     ):
         raise AssertionError("POST path assignment absent")
     if len([node for node in statements if isinstance(node, ast.Try)]) != 1:
-        raise AssertionError("POST try topology changed; inspect the AST isolation boundary")
+        raise AssertionError(
+            "POST try topology changed; inspect the AST isolation boundary"
+        )
     dispatch_indices: list[int] = []
     for route, handler_name in MODEL_ROUTES.items():
-        matches = [node for node in ast.walk(method)
-                   if isinstance(node, ast.If) and _route_guard(node, route)]
+        matches = [
+            node
+            for node in ast.walk(method)
+            if isinstance(node, ast.If) and _route_guard(node, route)
+        ]
         if len(matches) != 1:
             raise AssertionError(f"{route} must have exactly one route guard")
         match = matches[0]
         if match not in try_node.body:
-            raise AssertionError(f"{route} guard moved outside the isolated top-level dispatch")
+            raise AssertionError(
+                f"{route} guard moved outside the isolated top-level dispatch"
+            )
         if match.orelse:
             raise AssertionError(f"{route} guard now has an unisolated else branch")
-        if not any(isinstance(node, ast.Call)
-                   and isinstance(node.func, ast.Attribute)
-                   and isinstance(node.func.value, ast.Name)
-                   and node.func.value.id == "self"
-                   and node.func.attr == handler_name
-                   for node in ast.walk(match)):
+        if not any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "self"
+            and node.func.attr == handler_name
+            for node in ast.walk(match)
+        ):
             raise AssertionError(f"{route} branch no longer invokes {handler_name}")
         dispatch_indices.append(try_node.body.index(match))
     # Include EVERY pre-try guard, plus every pre-dispatch branch (including
     # future body checks inside try), preserving their original control flow.
-    selected = [*pre_try, *try_node.body[:max(dispatch_indices) + 1]]
+    selected = [*pre_try, *try_node.body[: max(dispatch_indices) + 1]]
     _validate_executable_ast(selected)
     reviewed_ast = "\n".join(ast.unparse(statement) for statement in selected)
     if hashlib.sha256(reviewed_ast.encode("utf-8")).hexdigest() != (
@@ -178,12 +258,22 @@ def _isolated_dispatch(
         raise AssertionError(
             "POST executable AST changed; review before updating the isolation boundary"
         )
-    safe_args = ast.arguments(posonlyargs=[], args=[ast.arg(arg="self")],
-                              vararg=None, kwonlyargs=[], kw_defaults=[],
-                              kwarg=None, defaults=[])
+    safe_args = ast.arguments(
+        posonlyargs=[],
+        args=[ast.arg(arg="self")],
+        vararg=None,
+        kwonlyargs=[],
+        kw_defaults=[],
+        kwarg=None,
+        defaults=[],
+    )
     probe_method = ast.FunctionDef(
-        name="isolated_do_post", args=safe_args, body=selected,
-        decorator_list=[], returns=None, type_comment=None,
+        name="isolated_do_post",
+        args=safe_args,
+        body=selected,
+        decorator_list=[],
+        returns=None,
+        type_comment=None,
     )
     module = ast.fix_missing_locations(ast.Module(body=[probe_method], type_ignores=[]))
     rate_calls: list[tuple[tuple[str, str], int]] = []
@@ -202,23 +292,35 @@ def _isolated_dispatch(
     return namespace["isolated_do_post"], mutations, rate_calls
 
 
-def test_ast_isolation_rejects_elif_route_drift(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ast_isolation_rejects_elif_route_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """An elif dispatch cannot be silently dropped from the compiled prefix."""
     # _portal_tree() re-parses the source on every call, so the returned tree
     # is exclusively owned: mutate it in place (deepcopy of the full AST blows
     # Python 3.11's recursion limit and is unnecessary here).
     mutated_tree = _portal_tree()
-    handler = next(node for node in mutated_tree.body
-                   if isinstance(node, ast.ClassDef) and node.name == "Handler")
-    method = next(node for node in handler.body
-                  if isinstance(node, ast.FunctionDef) and node.name == "do_POST")
+    handler = next(
+        node
+        for node in mutated_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "Handler"
+    )
+    method = next(
+        node
+        for node in handler.body
+        if isinstance(node, ast.FunctionDef) and node.name == "do_POST"
+    )
     dispatch = next(node for node in method.body if isinstance(node, ast.Try))
-    audit_branch = next(node for node in dispatch.body
-                        if isinstance(node, ast.If)
-                        and _route_guard(node, "/api/audit_chat"))
-    duty_branch = next(node for node in dispatch.body
-                       if isinstance(node, ast.If)
-                       and _route_guard(node, "/api/ai_duty"))
+    audit_branch = next(
+        node
+        for node in dispatch.body
+        if isinstance(node, ast.If) and _route_guard(node, "/api/audit_chat")
+    )
+    duty_branch = next(
+        node
+        for node in dispatch.body
+        if isinstance(node, ast.If) and _route_guard(node, "/api/ai_duty")
+    )
     dispatch.body.remove(duty_branch)
     audit_branch.orelse = [duty_branch]
     monkeypatch.setitem(globals(), "_portal_tree", lambda: mutated_tree)
@@ -226,22 +328,33 @@ def test_ast_isolation_rejects_elif_route_drift(monkeypatch: pytest.MonkeyPatch)
         _isolated_dispatch()
 
 
-@pytest.mark.parametrize("injected, rejection", [
-    ("import os", "unreviewed executable AST node: Import"),
-    ("open('must-not-create', 'w')", "unreviewed executable call: open"),
-    ("__import__('socket')", "unreviewed executable call: __import__"),
-    ("self.rfile.read(1)", "POST executable AST changed"),
-    ("path = '/api/ai_duty'", "POST executable AST changed"),
-])
+@pytest.mark.parametrize(
+    "injected, rejection",
+    [
+        ("import os", "unreviewed executable AST node: Import"),
+        ("open('must-not-create', 'w')", "unreviewed executable call: open"),
+        ("__import__('socket')", "unreviewed executable call: __import__"),
+        ("self.rfile.read(1)", "POST executable AST changed"),
+        ("path = '/api/ai_duty'", "POST executable AST changed"),
+    ],
+)
 def test_ast_isolation_rejects_unreviewed_statement_before_execution(
-    monkeypatch: pytest.MonkeyPatch, injected: str, rejection: str,
+    monkeypatch: pytest.MonkeyPatch,
+    injected: str,
+    rejection: str,
 ) -> None:
     """Unknown source statements cannot run, even before the model dispatch."""
     mutated_tree = _portal_tree()
-    handler = next(node for node in mutated_tree.body
-                   if isinstance(node, ast.ClassDef) and node.name == "Handler")
-    method = next(node for node in handler.body
-                  if isinstance(node, ast.FunctionDef) and node.name == "do_POST")
+    handler = next(
+        node
+        for node in mutated_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "Handler"
+    )
+    method = next(
+        node
+        for node in handler.body
+        if isinstance(node, ast.FunctionDef) and node.name == "do_POST"
+    )
     dispatch = next(node for node in method.body if isinstance(node, ast.Try))
     dispatch.body.insert(0, ast.parse(injected).body[0])
     monkeypatch.setitem(globals(), "_portal_tree", lambda: mutated_tree)
@@ -254,10 +367,16 @@ def test_ast_isolation_never_executes_injected_dangerous_call(
 ) -> None:
     """A synthetic side-effect callable must never run from source drift."""
     mutated_tree = _portal_tree()
-    handler = next(node for node in mutated_tree.body
-                   if isinstance(node, ast.ClassDef) and node.name == "Handler")
-    method = next(node for node in handler.body
-                  if isinstance(node, ast.FunctionDef) and node.name == "do_POST")
+    handler = next(
+        node
+        for node in mutated_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "Handler"
+    )
+    method = next(
+        node
+        for node in handler.body
+        if isinstance(node, ast.FunctionDef) and node.name == "do_POST"
+    )
     dispatch = next(node for node in method.body if isinstance(node, ast.Try))
     dispatch.body.insert(0, ast.parse("dangerous_probe()").body[0])
     side_effects: list[str] = []
@@ -275,14 +394,21 @@ def test_ast_isolation_never_executes_injected_dangerous_call(
 
 @pytest.mark.parametrize("signature_drift", ["default", "annotation"])
 def test_ast_isolation_rejects_executable_signature_before_execution(
-    monkeypatch: pytest.MonkeyPatch, signature_drift: str,
+    monkeypatch: pytest.MonkeyPatch,
+    signature_drift: str,
 ) -> None:
     """Default values and annotations never execute when the source drifts."""
     mutated_tree = _portal_tree()
-    handler = next(node for node in mutated_tree.body
-                   if isinstance(node, ast.ClassDef) and node.name == "Handler")
-    method = next(node for node in handler.body
-                  if isinstance(node, ast.FunctionDef) and node.name == "do_POST")
+    handler = next(
+        node
+        for node in mutated_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "Handler"
+    )
+    method = next(
+        node
+        for node in handler.body
+        if isinstance(node, ast.FunctionDef) and node.name == "do_POST"
+    )
     side_effects: list[str] = []
 
     def dangerous_probe() -> None:
@@ -291,7 +417,9 @@ def test_ast_isolation_rejects_executable_signature_before_execution(
     if signature_drift == "default":
         method.args.defaults.append(ast.parse("dangerous_probe()", mode="eval").body)
     else:
-        method.args.args[0].annotation = ast.parse("dangerous_probe()", mode="eval").body
+        method.args.args[0].annotation = ast.parse(
+            "dangerous_probe()", mode="eval"
+        ).body
     monkeypatch.setitem(globals(), "_portal_tree", lambda: mutated_tree)
     monkeypatch.setitem(globals(), "dangerous_probe", dangerous_probe)
     with pytest.raises(AssertionError, match="POST function signature changed"):
@@ -305,11 +433,15 @@ def test_ast_isolation_rejects_duplicate_mutation_assignment(
 ) -> None:
     """A later mutation-set reassignment cannot hide a changed token gate."""
     mutated_tree = _portal_tree()
-    assignment = next(node for node in mutated_tree.body
-                      if isinstance(node, ast.Assign)
-                      and any(isinstance(target, ast.Name)
-                              and target.id == "_MUTATION_POSTS"
-                              for target in node.targets))
+    assignment = next(
+        node
+        for node in mutated_tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "_MUTATION_POSTS"
+            for target in node.targets
+        )
+    )
     duplicate = ast.parse(ast.unparse(assignment)).body[0]
     mutated_tree.body.insert(mutated_tree.body.index(assignment) + 1, duplicate)
     monkeypatch.setitem(globals(), "_portal_tree", lambda: mutated_tree)
@@ -332,11 +464,19 @@ class _ReadProbe(io.BytesIO):
 class _StubRequest:
     """An inert request exposing only the methods read by selected AST nodes."""
 
-    def __init__(self, route: str, body: bytes = b"{}", *, token_ok: bool = True,
-                 length: int | None = None) -> None:
+    def __init__(
+        self,
+        route: str,
+        body: bytes = b"{}",
+        *,
+        token_ok: bool = True,
+        length: int | None = None,
+    ) -> None:
         self.path = route + "?offline=1"
-        self.headers = {"Content-Length": str(len(body) if length is None else length),
-                        "X-Real-IP": "192.0.2.42"}
+        self.headers = {
+            "Content-Length": str(len(body) if length is None else length),
+            "X-Real-IP": "192.0.2.42",
+        }
         self.client_address = ("192.0.2.42", 0)
         self.rfile = _ReadProbe(body)
         self.token_ok = token_ok
@@ -360,7 +500,8 @@ class _StubRequest:
 
 @pytest.mark.parametrize("route,handler", MODEL_ROUTES.items())
 def test_model_post_reaches_real_dispatch_with_inert_handler(
-    route: str, handler: str,
+    route: str,
+    handler: str,
 ) -> None:
     """Both branches remain wired to their correct handlers and pass raw bytes."""
     dispatch, _, _ = _isolated_dispatch()
@@ -371,16 +512,21 @@ def test_model_post_reaches_real_dispatch_with_inert_handler(
 
 
 @pytest.mark.parametrize("route", MODEL_ROUTES)
-@pytest.mark.xfail(strict=True, raises=_MissingModelProtection,
-                   reason="model POST must require portal token for nonlocal client")
+@pytest.mark.xfail(
+    strict=True,
+    raises=_MissingModelProtection,
+    reason="model POST must require portal token for nonlocal client",
+)
 def test_model_post_rejects_unauthorized_request(route: str) -> None:
     """Future gate: a failed token check must prevent model dispatch."""
     dispatch, _, _ = _isolated_dispatch()
     request = _StubRequest(route, token_ok=False)
     dispatch(request)
     _require_protection(request.token_checks == 1, "token gate was not invoked")
-    _require_protection(bool(request.responses) and request.responses[0][0] == 403,
-                        "model POST did not return forbidden")
+    _require_protection(
+        bool(request.responses) and request.responses[0][0] == 403,
+        "model POST did not return forbidden",
+    )
     _require_protection(not request.dispatched, "unauthorized model request dispatched")
 
 
@@ -393,8 +539,11 @@ def test_model_route_stays_outside_shared_mutation_set(route: str) -> None:
 
 
 @pytest.mark.parametrize("route", MODEL_ROUTES)
-@pytest.mark.xfail(strict=True, raises=_MissingModelProtection,
-                   reason="model POST needs independent rate protection, not the shared write set")
+@pytest.mark.xfail(
+    strict=True,
+    raises=_MissingModelProtection,
+    reason="model POST needs independent rate protection, not the shared write set",
+)
 def test_model_post_has_independent_rate_guard(route: str) -> None:
     """Future gate: independent model bucket must reject excess before dispatch."""
     dispatch, mutation_routes, rate_calls = _isolated_dispatch(rate_limited=True)
@@ -411,50 +560,75 @@ def test_model_post_has_independent_rate_guard(route: str) -> None:
         all(route in key[0] or key[0] == "model" for key, _ in rate_calls),
         "model request has no model-specific rate bucket",
     )
-    _require_protection(bool(request.responses) and request.responses[0][0] == 429,
-                        "rate-limited model request did not return 429")
-    _require_protection(not request.dispatched,
-                        "rate-limited model request reached handler")
+    _require_protection(
+        bool(request.responses) and request.responses[0][0] == 429,
+        "rate-limited model request did not return 429",
+    )
+    _require_protection(
+        not request.dispatched, "rate-limited model request reached handler"
+    )
 
 
 @pytest.mark.parametrize("route", MODEL_ROUTES)
-@pytest.mark.xfail(strict=True, raises=_MissingModelProtection,
-                   reason="model POST must reject oversized body before read/dispatch")
+@pytest.mark.xfail(
+    strict=True,
+    raises=_MissingModelProtection,
+    reason="model POST must reject oversized body before read/dispatch",
+)
 def test_model_post_rejects_oversized_body(route: str) -> None:
     """Future gate: impose a body cap without invoking a model handler."""
     dispatch, _, _ = _isolated_dispatch()
     request = _StubRequest(route, b"x" * 65537)
     dispatch(request)
-    _require_protection(bool(request.responses) and request.responses[0][0] == 413,
-                        "oversized model request was not rejected")
-    _require_protection(request.rfile.read_calls == 0,
-                        "oversized model request was read before rejection")
+    _require_protection(
+        bool(request.responses) and request.responses[0][0] == 413,
+        "oversized model request was not rejected",
+    )
+    _require_protection(
+        request.rfile.read_calls == 0,
+        "oversized model request was read before rejection",
+    )
     _require_protection(not request.dispatched, "oversized model request dispatched")
 
 
 @pytest.mark.parametrize("route", MODEL_ROUTES)
-@pytest.mark.xfail(strict=True, raises=_MissingModelProtection,
-                   reason="model POST must reject negative Content-Length")
+@pytest.mark.xfail(
+    strict=True,
+    raises=_MissingModelProtection,
+    reason="model POST must reject negative Content-Length",
+)
 def test_model_post_rejects_negative_length(route: str) -> None:
     """Future gate: negative request lengths are invalid, not empty bodies."""
     dispatch, _, _ = _isolated_dispatch()
     request = _StubRequest(route, length=-1)
     dispatch(request)
-    _require_protection(bool(request.responses) and request.responses[0][0] == 400,
-                        "negative Content-Length was not rejected")
-    _require_protection(request.rfile.read_calls == 0,
-                        "negative-length model request was read before rejection")
-    _require_protection(not request.dispatched, "negative-length model request dispatched")
+    _require_protection(
+        bool(request.responses) and request.responses[0][0] == 400,
+        "negative Content-Length was not rejected",
+    )
+    _require_protection(
+        request.rfile.read_calls == 0,
+        "negative-length model request was read before rejection",
+    )
+    _require_protection(
+        not request.dispatched, "negative-length model request dispatched"
+    )
 
 
 def test_audit_page_explicit_request_contract_has_no_token() -> None:
     """Current embedded client only supplies JSON content type, not auth."""
     source = (PORTAL_DIR / "api_misc.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
-    handler = next(node for node in tree.body
-                   if isinstance(node, ast.ClassDef) and node.name == "Handler")
-    page = next(node for node in handler.body
-                if isinstance(node, ast.FunctionDef) and node.name == "_audit_ai_page")
+    handler = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "Handler"
+    )
+    page = next(
+        node
+        for node in handler.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_audit_ai_page"
+    )
     page_source = ast.get_source_segment(source, page) or ""
     if "fetch('/api/audit_chat',{method:'POST'," not in page_source:
         raise AssertionError("audit chat fetch call changed")
@@ -470,9 +644,13 @@ def test_paper_duty_explicit_request_contract_has_no_token() -> None:
     """Paper's duty call and API wrapper do not explicitly attach a token."""
     source = (PORTAL_DIR / "paper.html").read_text(encoding="utf-8")
     duty = source.split("async function askDuty(preset){", 1)[1].split(
-        "// ===== K-STOCK-352 ②", 1)[0]
+        "// ===== K-STOCK-352 ②", 1
+    )[0]
     wrapper = source.split("async function api(path,opt){", 1)[1].split("\n}", 1)[0]
-    if "api('/api/ai_duty',{method:'POST',headers:{'Content-Type':'application/json'}," not in duty:
+    if (
+        "api('/api/ai_duty',{method:'POST',headers:{'Content-Type':'application/json'},"
+        not in duty
+    ):
         raise AssertionError("duty POST request changed")
     if "body:JSON.stringify({question:q, ctx:'模拟仓平台 · 接待大厅'})" not in duty:
         raise AssertionError("duty request body changed")

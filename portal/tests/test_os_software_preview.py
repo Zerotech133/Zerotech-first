@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """G1b：只读预览路由（白名单 + 路径限定）与软件面工作台页面静态检查。"""
+
 import os
 import sys
 
@@ -13,8 +14,12 @@ import api_os_goal as A  # noqa: E402
 import os_goal_store as S  # noqa: E402
 import os_software_flow as F  # noqa: E402
 
-ACTIONS = ["prototype.generate", "prototype.preview",
-           "prototype.test", "workspace.cleanup"]
+ACTIONS = [
+    "prototype.generate",
+    "prototype.preview",
+    "prototype.test",
+    "workspace.cleanup",
+]
 
 
 @pytest.fixture()
@@ -24,16 +29,33 @@ def store(tmp_path):
 
 def build_item(store):
     goal = store.create_goal(
-        "把零界做成持续创业者的个人事业OS", "连续创业者",
+        "把零界做成持续创业者的个人事业OS",
+        "连续创业者",
         [{"id": "A1", "text": "用户愿付费", "status": "hypothesis"}],
-        ["四类成果各验收一次"])
-    iid = store.create_item(goal["payload"]["goal_id"], "做一页可试用原型",
-                            "老田今天要试用", "software")["payload"]["item_id"]
-    F.freeze_brief(store, iid, ["把一句需求做成可试用单页"],
-                   [{"id": "SC1", "statement": "页面可打开",
-                     "verify_method": "静态自检 data-artifact"}])
-    F.freeze_card(store, iid, {"option": "A｜隔离单页", "why": "可逆"},
-                  [{"option": "B｜改现网", "why": "不可逆"}], "本人试用并反馈")
+        ["四类成果各验收一次"],
+    )
+    iid = store.create_item(
+        goal["payload"]["goal_id"], "做一页可试用原型", "老田今天要试用", "software"
+    )["payload"]["item_id"]
+    F.freeze_brief(
+        store,
+        iid,
+        ["把一句需求做成可试用单页"],
+        [
+            {
+                "id": "SC1",
+                "statement": "页面可打开",
+                "verify_method": "静态自检 data-artifact",
+            }
+        ],
+    )
+    F.freeze_card(
+        store,
+        iid,
+        {"option": "A｜隔离单页", "why": "可逆"},
+        [{"option": "B｜改现网", "why": "不可逆"}],
+        "本人试用并反馈",
+    )
     F.select_card(store, iid, "c1")
     F.sign_grant(store, iid, "c1", ACTIONS)
     F.create_workorder(store, iid)

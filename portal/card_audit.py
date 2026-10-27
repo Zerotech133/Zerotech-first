@@ -16,6 +16,7 @@
     python portal/card_audit.py          # 打印人类可读报告
     python -c "import card_audit; r = card_audit.audit()"  # 取结构化结果
 """
+
 import os
 import re
 import sys
@@ -168,25 +169,26 @@ osint_video/common/paths.py
 # ── 发送函数 → msg_type 判定表（None = 从调用实参文本推断） ────────
 
 SEND_FUNCS = {
-    "send_msg_tracked": None,   # news_collector.feishu_client（实参第 2 位）
-    "send_msg": None,           # news_collector.feishu_client
-    "send_content_to": None,    # news_collector.send_feishu（OpenAPI 直连）
-    "_hub_send": None,          # osint_video FeishuNotifier 内核
-    "send_card": "interactive",   # feishu_card_v2 / FeishuNotifier（interactive 卡）
-    "send_text": "text",          # FeishuNotifier 文本
+    "send_msg_tracked": None,  # news_collector.feishu_client（实参第 2 位）
+    "send_msg": None,  # news_collector.feishu_client
+    "send_content_to": None,  # news_collector.send_feishu（OpenAPI 直连）
+    "_hub_send": None,  # osint_video FeishuNotifier 内核
+    "send_card": "interactive",  # feishu_card_v2 / FeishuNotifier（interactive 卡）
+    "send_text": "text",  # FeishuNotifier 文本
     "send_daily_report": "text",  # FeishuNotifier 日报
     "push_card_multi": "interactive",  # news_collector.alert_push 多目标卡
 }
 
 SEND_RE = re.compile(
-    r"\b(%s)\s*\(" % "|".join(sorted(SEND_FUNCS, key=len, reverse=True)))
+    r"\b(%s)\s*\(" % "|".join(sorted(SEND_FUNCS, key=len, reverse=True))
+)
 
 # kind= 字面量（kwarg / 赋值；lookbehind 排除 source_kind/obs_kind 等）
-KIND_RE = re.compile(
-    r"(?<![A-Za-z_])kind\s*=\s*[\"']([A-Za-z0-9_:|.%%\-]+)[\"']")
+KIND_RE = re.compile(r"(?<![A-Za-z_])kind\s*=\s*[\"']([A-Za-z0-9_:|.%%\-]+)[\"']")
 # kind=f"{self.kind_prefix}:xxx"（osint_video FeishuNotifier 动态前缀，默认 osint）
 KIND_F_PREFIX_RE = re.compile(
-    r"(?<![A-Za-z_])kind\s*=\s*f\"\{self\.kind_prefix\}:([A-Za-z0-9_]+)\"")
+    r"(?<![A-Za-z_])kind\s*=\s*f\"\{self\.kind_prefix\}:([A-Za-z0-9_]+)\""
+)
 
 # 就近配对窗距（行）：kind 赋值与其归属发送点的最大行距
 MAX_WINDOW = 80
@@ -197,52 +199,38 @@ FLOW_ONLY_PREFIXES = ("quota_block:",)
 # ── 人工核对注记（机械判定的修正与建议，派工单建议集逐条给口径） ────
 
 CURATED_NOTES = {
-    "dead_letter_alert":
-        "实测：push_admin_server.py:870-871 以 send_msg_tracked(body, \"text\", "
-        "…) 发送（N6 死信告警降级链）→ text 发送，注册模板无效果，不注册（派工单口径）。"
-        "如未来改发 interactive 卡可再按红色「💀 死信告警」注册。",
-    "deadline_watch":
-        "实测：api_notify.py:313 为四态队列条目 kind（HTTP payload / block_triage "
-        "分诊用），无 msg_type 发送语境 → 注册无生效点，不注册并挂账说明。",
-    "km_card":
-        "实测：km_feishu_hub.py:242-254 经 feishu_card_v2.send_card 发送 interactive "
-        "卡（语义明确：KM 知识卡）；kind 目前仅进 push_flow.record 流水（:264），"
-        "发送侧未透传 kind。按派工单建议集补注册（蓝「🗂 KM 知识卡」）；"
-        "发送侧透传 kind 后生效，挂账移交后续波次。",
-    "daily:alert":
-        "news_collector 预警卡（alert_push.push_card_multi）interactive 发送，"
-        "但 kind 仅进 push_flow.record（alert_push.py:176），发送侧未透传 → "
-        "注册无生效点；不在派工单建议集，观察不注册。",
-    "daily:report":
-        "news_collector 统一日报（daily_report.py:256），同 daily:alert 口径："
-        "interactive 发送但 kind 未随路透传，观察不注册。",
-    "daily:news_digest":
-        "流水账 kind（news_digest.record_flow），无直接 msg_type 发送语境，观察。",
-    "osint:cookie_expired":
-        "osint_video FeishuNotifier 经 8097 api/send（kind 随路）interactive 发送，"
-        "但卡片已自带 header（_simple_card）→ 注册仅保 header 无视觉增量；"
-        "且前缀动态（kind_prefix 可配），观察不注册。",
-    "osint:dead_letter":
-        "同 osint:cookie_expired：interactive 但卡片自带 header，注册无视觉增量，观察。",
-    "osint:cookie_updated":
-        "send_text 文本发送 → 注册无效果，不注册。",
-    "osint:daily_report":
-        "send_text 文本发送 → 注册无效果，不注册。",
-    "quant:watch_alert":
-        "quant_mid/api_routes.py:262-263 以 msg_type=text 发送 → 注册无效果，不注册。",
-    "inbound:feed":
-        "inbound_gateway.py:575 经 send_msg() interactive 发送且语义明确"
-        "（入站情报回流卡）→ 注册候选；不在派工单建议集，观察挂账留待下波次。",
-    "jev_feed":
-        "DB 行分类 kind（jev_feed_verify SQL），非发送 kind。",
+    "dead_letter_alert": '实测：push_admin_server.py:870-871 以 send_msg_tracked(body, "text", '
+    "…) 发送（N6 死信告警降级链）→ text 发送，注册模板无效果，不注册（派工单口径）。"
+    "如未来改发 interactive 卡可再按红色「💀 死信告警」注册。",
+    "deadline_watch": "实测：api_notify.py:313 为四态队列条目 kind（HTTP payload / block_triage "
+    "分诊用），无 msg_type 发送语境 → 注册无生效点，不注册并挂账说明。",
+    "km_card": "实测：km_feishu_hub.py:242-254 经 feishu_card_v2.send_card 发送 interactive "
+    "卡（语义明确：KM 知识卡）；kind 目前仅进 push_flow.record 流水（:264），"
+    "发送侧未透传 kind。按派工单建议集补注册（蓝「🗂 KM 知识卡」）；"
+    "发送侧透传 kind 后生效，挂账移交后续波次。",
+    "daily:alert": "news_collector 预警卡（alert_push.push_card_multi）interactive 发送，"
+    "但 kind 仅进 push_flow.record（alert_push.py:176），发送侧未透传 → "
+    "注册无生效点；不在派工单建议集，观察不注册。",
+    "daily:report": "news_collector 统一日报（daily_report.py:256），同 daily:alert 口径："
+    "interactive 发送但 kind 未随路透传，观察不注册。",
+    "daily:news_digest": "流水账 kind（news_digest.record_flow），无直接 msg_type 发送语境，观察。",
+    "osint:cookie_expired": "osint_video FeishuNotifier 经 8097 api/send（kind 随路）interactive 发送，"
+    "但卡片已自带 header（_simple_card）→ 注册仅保 header 无视觉增量；"
+    "且前缀动态（kind_prefix 可配），观察不注册。",
+    "osint:dead_letter": "同 osint:cookie_expired：interactive 但卡片自带 header，注册无视觉增量，观察。",
+    "osint:cookie_updated": "send_text 文本发送 → 注册无效果，不注册。",
+    "osint:daily_report": "send_text 文本发送 → 注册无效果，不注册。",
+    "quant:watch_alert": "quant_mid/api_routes.py:262-263 以 msg_type=text 发送 → 注册无效果，不注册。",
+    "inbound:feed": "inbound_gateway.py:575 经 send_msg() interactive 发送且语义明确"
+    "（入站情报回流卡）→ 注册候选；不在派工单建议集，观察挂账留待下波次。",
+    "jev_feed": "DB 行分类 kind（jev_feed_verify SQL），非发送 kind。",
 }
 # decision:* 前缀注记（CATEGORIES 动态拼接）
 CURATED_PREFIX_NOTES = {
-    "decision:":
-        "decision:* 语境混杂：approval_card.py:87 interactive 发送"
-        "（decision:announcement），notification_decision.execute 又以 "
-        "msg_type=text 发送（notification_decision.py:412-414）→ 注册只影响"
-        "前者的视觉且后者无效果；不在派工单建议集，观察挂账不注册。",
+    "decision:": "decision:* 语境混杂：approval_card.py:87 interactive 发送"
+    "（decision:announcement），notification_decision.execute 又以 "
+    "msg_type=text 发送（notification_decision.py:412-414）→ 注册只影响"
+    "前者的视觉且后者无效果；不在派工单建议集，观察挂账不注册。",
 }
 
 
@@ -290,13 +278,12 @@ def _scan_file(rel_path):
     except OSError as e:
         return [], [], "%s: 读取失败 %r" % (rel_path, e)
     lines = text.splitlines()
-    send_sites = []   # (line_no, func, msg_type)
+    send_sites = []  # (line_no, func, msg_type)
     for i, line in enumerate(lines):
         for m in SEND_RE.finditer(line):
             call = _capture_call(lines, i, m.end() - 1)
-            send_sites.append((i + 1, m.group(1),
-                               _resolve_msg_type(m.group(1), call)))
-    kind_occ = []     # (line_no, kind, raw)
+            send_sites.append((i + 1, m.group(1), _resolve_msg_type(m.group(1), call)))
+    kind_occ = []  # (line_no, kind, raw)
     for i, line in enumerate(lines):
         for m in KIND_F_PREFIX_RE.finditer(line):
             kind_occ.append((i + 1, "osint:%s" % m.group(1), m.group(0)))
@@ -308,6 +295,7 @@ def _scan_file(rel_path):
 def audit():
     """跑审计 → 结构化结果 dict（纯内存，零写盘）。"""
     import card_templates  # noqa: PLC0415 —— 注册表现状（纯函数模块，无 IO）
+
     registered = set(card_templates.KIND_CARD_TEMPLATES)
 
     kinds = {}
@@ -320,9 +308,14 @@ def audit():
             continue
         scanned.append(rel)
         for line_no, kind, raw in kind_occ:
-            entry = kinds.setdefault(kind, {
-                "occurrences": [], "msg_types": set(),
-                "registered": kind in registered})
+            entry = kinds.setdefault(
+                kind,
+                {
+                    "occurrences": [],
+                    "msg_types": set(),
+                    "registered": kind in registered,
+                },
+            )
             # 就近配对：窗距内最近的发送点
             best, best_d = None, MAX_WINDOW + 1
             for s_line, func, mt in send_sites:
@@ -339,8 +332,14 @@ def audit():
                 ctx += "（push_flow 流水 kind，非发送 kind）"
                 msg_type = "无发送语境"
             entry["occurrences"].append(
-                {"file": rel, "line": line_no, "raw": raw,
-                 "send_point": ctx, "msg_type": msg_type})
+                {
+                    "file": rel,
+                    "line": line_no,
+                    "raw": raw,
+                    "send_point": ctx,
+                    "msg_type": msg_type,
+                }
+            )
             if msg_type not in ("无发送语境", "未判明", "msg_type(变量)"):
                 entry["msg_types"].add(msg_type)
 
@@ -356,8 +355,10 @@ def audit():
             verdict, suggestion = "registered", "已注册模板；保持现状。"
         elif "interactive" in mts:
             verdict = "register_candidate"
-            suggestion = ("interactive 发送且语义明确 → 按派工单建议集裁决："
-                          "建议集内补注册，建议集外观察挂账。")
+            suggestion = (
+                "interactive 发送且语义明确 → 按派工单建议集裁决："
+                "建议集内补注册，建议集外观察挂账。"
+            )
         elif "text" in mts:
             verdict, suggestion = "skip_text_send", "text 发送，注册无效果，不注册。"
         elif mts:
@@ -373,8 +374,7 @@ def audit():
 
     verdict_counts = {}
     for entry in kinds.values():
-        verdict_counts[entry["verdict"]] = \
-            verdict_counts.get(entry["verdict"], 0) + 1
+        verdict_counts[entry["verdict"]] = verdict_counts.get(entry["verdict"], 0) + 1
     return {
         "scanned_files": scanned,
         "scan_errors": errors,
@@ -404,13 +404,16 @@ def render_report(result):
     out = []
     s = result["summary"]
     out.append("卡片模板覆盖审计对照表（H-B · P3-lite · 纯离线只读）")
-    out.append("扫描文件 %d 个（读取失败 %d），实测 kind %d 种，"
-               "已注册模板 %d 种" % (s["n_scanned"], s["n_scan_errors"],
-                                    s["n_kinds"], s["n_registered"]))
+    out.append(
+        "扫描文件 %d 个（读取失败 %d），实测 kind %d 种，"
+        "已注册模板 %d 种"
+        % (s["n_scanned"], s["n_scan_errors"], s["n_kinds"], s["n_registered"])
+    )
     out.append("")
     for verdict, label in _VERDICT_LABELS:
-        bucket = sorted(k for k, e in result["kinds"].items()
-                        if e["verdict"] == verdict)
+        bucket = sorted(
+            k for k, e in result["kinds"].items() if e["verdict"] == verdict
+        )
         if not bucket:
             continue
         out.append("── %s（%d 种）──" % (label, len(bucket)))
@@ -418,8 +421,7 @@ def render_report(result):
             e = result["kinds"][kind]
             reg = "已注册" if e["registered"] else "未注册"
             for occ in e["occurrences"]:
-                out.append("  %-24s | %-9s | %s" % (
-                    kind, reg, occ["send_point"]))
+                out.append("  %-24s | %-9s | %s" % (kind, reg, occ["send_point"]))
             out.append("    建议：%s" % e["suggestion"])
         out.append("")
     if result["scan_errors"]:

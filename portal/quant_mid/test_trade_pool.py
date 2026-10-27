@@ -4,6 +4,7 @@
 覆盖: 签名校验 / SQL 正确 / 状态机约束 / push_secrets.json 供钥链.
 真 DB 集成验证已在 smoke_trade_pool.py 完成, 此文件只 mock.
 """
+
 from __future__ import annotations
 import json
 import os
@@ -68,9 +69,7 @@ def test_push_to_pool_executes_insert(_mock_conn):
     fake_conn, fake_cur = _mock_conn
     fake_cur.fetchone.return_value = (42,)
 
-    rid = tp.push_to_pool(
-        "000001.SZ", "buy", 0.9, "quant_a4", "理由", "平安银行"
-    )
+    rid = tp.push_to_pool("000001.SZ", "buy", 0.9, "quant_a4", "理由", "平安银行")
     assert rid == 42
 
     fake_cur.execute.assert_called_once()
@@ -102,7 +101,7 @@ def test_research_decide_not_found_raises(_mock_conn):
 # ── set_position 状态约束 ──────────────────────────────────
 def test_set_position_invalid_state_raises(_mock_conn):
     fake_conn, fake_cur = _mock_conn
-    fake_cur.rowcount = 0   # row 在 pending_research (没先 approve)
+    fake_cur.rowcount = 0  # row 在 pending_research (没先 approve)
     with pytest.raises(ValueError, match="approved/building_position"):
         tp.set_position(1, 10.0, 9.0, 12.0, 5.0)
 
@@ -134,11 +133,14 @@ def test_db_config_falls_back_to_secrets_json(monkeypatch):
     with tempfile.TemporaryDirectory() as td:
         secrets_path = os.path.join(td, "push_secrets.json")
         with open(secrets_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "quant_db_host": "json-host.local",
-                "quant_db_port": 5499,
-                "quant_db_user": "json_user",
-            }, f)
+            json.dump(
+                {
+                    "quant_db_host": "json-host.local",
+                    "quant_db_port": 5499,
+                    "quant_db_user": "json_user",
+                },
+                f,
+            )
         monkeypatch.setattr(tp, "_SECRETS_PATH", secrets_path)
         tp._SECRETS_CACHE.clear()
         cfg = tp._db_config()

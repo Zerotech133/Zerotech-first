@@ -11,6 +11,7 @@
   · _patch_ws_card_route 幂等动态验证：重复调用后 CARD 帧路由
     （MessageType.CARD 同路派发）语义不破。
 """
+
 import inspect
 import os
 import sys
@@ -27,6 +28,7 @@ _SRC = inspect.getsource(feishu_bot_ws)
 
 
 # ── next_backoff 三态 ────────────────────────────────────────
+
 
 def test_backoff_initial_is_1s():
     """首次断连（delay=0）退避初始 1s。"""
@@ -61,6 +63,7 @@ def test_backoff_reset_boundary_exactly_60s():
 
 # ── 源码静态断言 ─────────────────────────────────────────────
 
+
 def test_src_reconnect_loop_exists():
     """main() 内部重连环存在：while True + reconnect 日志 + 退避接线。"""
     assert "while True" in _SRC
@@ -84,6 +87,7 @@ def test_src_client_rebuild_inside_loop():
 
 
 # ── _patch_ws_card_route 幂等（动态） ────────────────────────
+
 
 def test_patch_ws_card_route_idempotent_and_card_routed():
     """重复调用幂等：类级一次性赋值（不读旧值），二次调用后 CARD 帧

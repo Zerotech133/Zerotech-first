@@ -9,6 +9,7 @@ subscription_expiring 模板色彩与标题。
 P3.8-lite M-A 追加：RENEWAL_TZ 口径可切换（UTC vs Asia/Shanghai）、
 非法时区名可见退化、collect_subscribers 截断提示 / limit 钳制 / store 降级。
 """
+
 import copy
 import json
 import os
@@ -22,8 +23,12 @@ if HERE not in sys.path:
 import card_templates  # noqa: E402
 import renewal_reminder as rr  # noqa: E402
 from card_templates import apply_card_template  # noqa: E402
-from renewal_reminder import (build_reminder_text, due_for_reminder,  # noqa: E402
-                              mask_open_id, plan_reminders)
+from renewal_reminder import (
+    build_reminder_text,
+    due_for_reminder,  # noqa: E402
+    mask_open_id,
+    plan_reminders,
+)
 
 # 固定"现在"：2026-11-16 10:00:00（本地时区口径，避免测试随运行时刻漂移）
 NOW = "2026-11-16 10:00:00"
@@ -31,8 +36,13 @@ NOW = "2026-11-16 10:00:00"
 _MONEY_TOKENS = ("元", "¥", "￥", "价格", "金额", "收费", "费用")
 
 
-def _row(open_id="ou_alice001", plan_id="basic_monthly",
-         end="2026-11-19 10:00:00", status="active", name="Alice"):
+def _row(
+    open_id="ou_alice001",
+    plan_id="basic_monthly",
+    end="2026-11-19 10:00:00",
+    status="active",
+    name="Alice",
+):
     """构造 list_subscribers() 同构的一行。"""
     return {
         "open_id": open_id,
@@ -48,6 +58,7 @@ def _row(open_id="ou_alice001", plan_id="basic_monthly",
 
 # 1. T-3 命中
 
+
 def test_t3_hit():
     items = due_for_reminder([_row()], now=NOW)
     assert len(items) == 1
@@ -60,6 +71,7 @@ def test_t3_hit():
 
 # 2. T-1 命中
 
+
 def test_t1_hit():
     items = due_for_reminder([_row(end="2026-11-17 10:00:00")], now=NOW)
     assert len(items) == 1
@@ -68,6 +80,7 @@ def test_t1_hit():
 
 
 # 3. T-10 不命中（不在档位内，也不该被静默丢掉——计入 not_due）
+
 
 def test_t10_not_due():
     report = plan_reminders([_row(end="2026-11-26 10:00:00")], now=NOW)
@@ -80,6 +93,7 @@ def test_t10_not_due():
 
 # 4. 同日同 stage 去重（重复行只提醒一次）
 
+
 def test_same_day_same_stage_dedup():
     rows = [_row(), _row(), _row(name="Alice-dup")]
     report = plan_reminders(rows, now=NOW)
@@ -89,6 +103,7 @@ def test_same_day_same_stage_dedup():
 
 
 # 5. 已过期不提醒（status=expired 与 status=active 但 end 已过，都不提醒）
+
 
 def test_expired_never_remind():
     rows = [
@@ -103,6 +118,7 @@ def test_expired_never_remind():
 
 
 # 6. 不同 plan 互不干扰（同一 open_id 两条有效订阅各自成项）
+
 
 def test_different_plans_independent():
     rows = [
@@ -119,12 +135,13 @@ def test_different_plans_independent():
 
 # 7. 正文不含金额、不含明文 open_id
 
+
 def test_text_has_no_amount_and_no_plain_open_id():
     item = due_for_reminder([_row()], now=NOW)[0]
     text = build_reminder_text(item)
     for token in _MONEY_TOKENS:
         assert token not in text, "正文不得含金额口径: %s" % token
-    assert "ou_alice001" not in text          # 明文 open_id 不得出现
+    assert "ou_alice001" not in text  # 明文 open_id 不得出现
     assert mask_open_id("ou_alice001") in text  # 用掩码标识
     assert "3" in text and "2026-11-19" in text
     assert "续费" in text and "联系管理员开通" in text
@@ -138,35 +155,42 @@ def test_mask_open_id_shape():
 
 # 8. subscription_expiring 已注册且色彩与标题正确
 
+
 def test_subscription_expiring_registered():
     # 收编口（2026-10-20 13:48）：已按 FC-C 快照同步扩充判例并入主表，
     # 与其余全部 kind 同表存放，不再有独立追加表。
     assert "subscription_expiring" in card_templates.KIND_CARD_TEMPLATES
-    out, mt = apply_card_template("subscription_expiring",
-                                  {"text": "还剩 3 天"}, "interactive")
+    out, mt = apply_card_template(
+        "subscription_expiring", {"text": "还剩 3 天"}, "interactive"
+    )
     assert mt == "interactive"
     assert out["header"]["template"] == "orange"
     assert out["header"]["title"]["content"] == "⏳ 订阅即将到期"
     assert out["header"]["title"]["tag"] == "plain_text"
     assert out["elements"][0]["text"] == {"text": "还剩 3 天"}
     # 未被误伤：既有 kind 与未注册 kind 语义不变
-    assert apply_card_template("alert", {"text": "x"}, "interactive")[0][
-        "header"]["template"] == "red"
+    assert (
+        apply_card_template("alert", {"text": "x"}, "interactive")[0]["header"][
+            "template"
+        ]
+        == "red"
+    )
     plain = {"text": "x"}
     assert apply_card_template("no_such_kind", plain, "interactive")[0] is plain
 
 
 # 9. 解析失败显式跳过并计数（不静默把整批当空）
 
+
 def test_bad_end_counted_not_silently_empty():
     rows = [
-        _row(open_id="ou_good0001"),                    # 正常命中
+        _row(open_id="ou_good0001"),  # 正常命中
         _row(open_id="ou_bad00002", end="2026-13-45"),  # 脏日期
-        _row(open_id="ou_bad00003", end="下个月"),       # 非日期文本
-        _row(open_id="ou_none0004", end=None),          # 缺 end
+        _row(open_id="ou_bad00003", end="下个月"),  # 非日期文本
+        _row(open_id="ou_none0004", end=None),  # 缺 end
     ]
     report = plan_reminders(rows, now=NOW)
-    assert report["ok"] is True                     # 整批可用，但问题可见
+    assert report["ok"] is True  # 整批可用，但问题可见
     assert report["count"] == 1
     assert report["items"][0]["open_id"] == "ou_good0001"
     assert report["skipped"]["bad_end"] == 2
@@ -182,6 +206,7 @@ def test_bad_end_counted_not_silently_empty():
 
 # 10. store 不可用不装成"今天没人该提醒"
 
+
 def test_store_unavailable_not_faked_empty():
     report = plan_reminders({"ok": False, "error": "store_unavailable"}, now=NOW)
     assert report["ok"] is False
@@ -193,9 +218,9 @@ def test_store_unavailable_not_faked_empty():
 
 # 11. 入参形态：整包 dict（list_subscribers 同构）与纯日期 end
 
+
 def test_accepts_whole_list_subscribers_payload_and_date_only_end():
-    payload = {"ok": True, "count": 1,
-               "subscribers": [_row(end="2026-11-19")]}
+    payload = {"ok": True, "count": 1, "subscribers": [_row(end="2026-11-19")]}
     items = due_for_reminder(payload, now=NOW)
     assert len(items) == 1
     assert items[0]["days_left"] == 3
@@ -208,6 +233,7 @@ def test_accepts_whole_list_subscribers_payload_and_date_only_end():
 
 
 # 12. 时区串 / ISO T 串解析一致
+
 
 def test_iso_and_offset_end_parsed():
     rows = [
@@ -222,6 +248,7 @@ def test_iso_and_offset_end_parsed():
 
 # 13. 纯函数纪律：输入零副作用
 
+
 def test_input_not_mutated():
     rows = [_row(), _row(plan_id="pro_monthly")]
     snapshot = copy.deepcopy(rows)
@@ -231,9 +258,9 @@ def test_input_not_mutated():
     text = build_reminder_text(item)
     assert isinstance(text, str) and "⏳ 订阅即将到期" in text
     # 正文可直接作为 lark_md 内容包进 subscription_expiring 卡
-    out, _ = apply_card_template("subscription_expiring",
-                                 {"tag": "lark_md", "content": text},
-                                 "interactive")
+    out, _ = apply_card_template(
+        "subscription_expiring", {"tag": "lark_md", "content": text}, "interactive"
+    )
     assert json.dumps(out, ensure_ascii=False)  # 可 JSON 序列化
 
 
@@ -242,6 +269,7 @@ def test_input_not_mutated():
 # ---------------------------------------------------------------------------
 
 # 14. 时区口径可切换：同一条 end，RENEWAL_TZ 不同 → days_left 差一天
+
 
 def test_tz_switch_changes_days_left(monkeypatch):
     # now 用 aware UTC 固定，避免宿主机时区参与
@@ -266,6 +294,7 @@ def test_tz_switch_changes_days_left(monkeypatch):
 
 # 15. 缺省时区固定为 Asia/Shanghai（不再随宿主机漂）
 
+
 def test_default_tz_is_shanghai(monkeypatch):
     monkeypatch.delenv("RENEWAL_TZ", raising=False)
     report = plan_reminders([_row()], now=NOW)
@@ -273,8 +302,8 @@ def test_default_tz_is_shanghai(monkeypatch):
     assert tz["name"] == "Asia/Shanghai"
     assert tz["source"] == "default"
     assert tz["offset"] == "+08:00"
-    assert report["items"][0]["days_left"] == 3   # 与 L-B 在 +08 宿主机上的结果一致
-    if tz["degraded"]:                            # Windows 无 tzdata 时：退化必须可见
+    assert report["items"][0]["days_left"] == 3  # 与 L-B 在 +08 宿主机上的结果一致
+    if tz["degraded"]:  # Windows 无 tzdata 时：退化必须可见
         assert tz["reason"] == "zoneinfo_not_found"
         assert "tz_degraded:Asia/Shanghai" in report["warnings"]
     else:
@@ -282,6 +311,7 @@ def test_default_tz_is_shanghai(monkeypatch):
 
 
 # 16. 非法时区名：不抛、不静默退化为 +08
+
 
 def test_invalid_tz_name_degrades_visibly(monkeypatch):
     monkeypatch.setenv("RENEWAL_TZ", "Not/AZone")
@@ -294,7 +324,7 @@ def test_invalid_tz_name_degrades_visibly(monkeypatch):
     assert tz["offset"] == "+08:00"
     assert tz["note"] == "fallback_fixed_offset:+08:00"
     assert "tz_degraded:Not/AZone" in report["warnings"]
-    assert report["items"][0]["days_left"] == 3   # 退化后仍给出可用结果
+    assert report["items"][0]["days_left"] == 3  # 退化后仍给出可用结果
 
 
 class _FakeStore:
@@ -312,11 +342,15 @@ class _FakeStore:
             raise self.exc
         if self.payload is not None:
             return self.payload
-        return {"ok": True, "count": min(limit, len(self.rows)),
-                "subscribers": self.rows[:limit]}
+        return {
+            "ok": True,
+            "count": min(limit, len(self.rows)),
+            "subscribers": self.rows[:limit],
+        }
 
 
 # 17. limit 默认 200；行数达到上限即提示可能截断
+
 
 def test_collect_subscribers_flags_truncation():
     full = _FakeStore(total=200)
@@ -333,7 +367,7 @@ def test_collect_subscribers_flags_truncation():
     assert got2["count"] == 49
     assert got2["mode"] == "single_page"
     assert got2["warnings"] == ["offset_unsupported"]
-    assert got2["complete"] is True       # 未触顶 ⇒ 已到底
+    assert got2["complete"] is True  # 未触顶 ⇒ 已到底
 
     edge = _FakeStore(total=50)
     got3 = rr.collect_subscribers(store=edge, limit=50)
@@ -341,6 +375,7 @@ def test_collect_subscribers_flags_truncation():
 
 
 # 18. limit 钳制与非法 limit（store 自身只到 200，不许假装拿全）
+
 
 def test_collect_subscribers_limit_clamped_and_bad_limit():
     store = _FakeStore(total=3)
@@ -355,6 +390,7 @@ def test_collect_subscribers_limit_clamped_and_bad_limit():
 
 
 # 19. store 失败/异常/形态不可识别：带 problems 降级，绝不当空列表
+
 
 def test_collect_subscribers_store_failure_not_empty():
     degraded = _FakeStore(payload={"ok": False, "error": "store_unavailable"})
@@ -380,10 +416,10 @@ def test_collect_subscribers_store_failure_not_empty():
 
 # 20. collect → plan 端到端（拉取结构可直接喂判定层）
 
+
 def test_collect_then_plan_end_to_end():
     store = _FakeStore(total=0)
-    store.rows = [_row(),
-                  _row(open_id="ou_bob0002", end="2026-11-17 10:00:00")]
+    store.rows = [_row(), _row(open_id="ou_bob0002", end="2026-11-17 10:00:00")]
     fetched = rr.collect_subscribers(store=store)
     assert fetched["ok"] is True
     # 该假 store 只接受 limit ⇒ 单页路径 + 降级可见（P3.10-lite 契约演进）
@@ -393,7 +429,6 @@ def test_collect_then_plan_end_to_end():
     assert report["ok"] is True
     assert {it["stage"] for it in report["items"]} == {"t3", "t1"}
     assert report["count"] == 2
-
 
 
 # ── P3.10-lite O-B 追加：分页取数口径（第 201 人之后不再漏） ─────────────
@@ -413,9 +448,11 @@ class _OffsetStore:
         self.pages_called.append((limit, offset))
         if self.fail_from_page is not None and page >= self.fail_from_page:
             raise self.exc or RuntimeError("page boom")
-        return {"ok": True,
-                "count": min(limit, max(0, len(self.rows) - offset)),
-                "subscribers": self.rows[offset:offset + limit]}
+        return {
+            "ok": True,
+            "count": min(limit, max(0, len(self.rows) - offset)),
+            "subscribers": self.rows[offset : offset + limit],
+        }
 
 
 class _IterStore:
@@ -426,13 +463,21 @@ class _IterStore:
         self.truncated = truncated
 
     def iter_all_subscribers(self, page_size=200, now=None, max_pages=50):
-        got = self.rows[:page_size * max_pages]
+        got = self.rows[: page_size * max_pages]
         more = len(self.rows) > len(got)
         trunc = self.truncated or more
-        return {"ok": True, "error": None, "count": len(got),
-                "subscribers": got, "page_size": page_size, "pages": 1,
-                "max_pages": max_pages, "truncated": trunc,
-                "complete": not trunc, "problems": []}
+        return {
+            "ok": True,
+            "error": None,
+            "count": len(got),
+            "subscribers": got,
+            "page_size": page_size,
+            "pages": 1,
+            "max_pages": max_pages,
+            "truncated": trunc,
+            "complete": not trunc,
+            "problems": [],
+        }
 
 
 def test_ob_1_offset_store_pages_through_250():

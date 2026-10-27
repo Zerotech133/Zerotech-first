@@ -13,6 +13,7 @@
 9. 8097 其他端点锚点抽验（零破坏）；
 10. notify_command.html 页脚含死信计数源图例行。
 """
+
 import sys
 import types
 from pathlib import Path
@@ -27,9 +28,15 @@ import push_admin_server as admin  # noqa: E402
 ADMIN_SRC = (PORTAL / "push_admin_server.py").read_text(encoding="utf-8")
 OPS_BOARD = (PORTAL / "static" / "ops_board.html").read_text(encoding="utf-8")
 NOTIFY_HTML = (PORTAL / "static" / "notify_command.html").read_text(encoding="utf-8")
-CONSOLE_HTML = (REPO / "Hermes" / "hermes-webui-next" / "static" / "console.html").read_text(encoding="utf-8")
-INDEX_HTML = (REPO / "Hermes" / "hermes-webui-next" / "static" / "index.html").read_text(encoding="utf-8")
-MANIFEST = (REPO / "Hermes" / "hermes-webui-next" / "static" / "manifest.json").read_text(encoding="utf-8")
+CONSOLE_HTML = (
+    REPO / "Hermes" / "hermes-webui-next" / "static" / "console.html"
+).read_text(encoding="utf-8")
+INDEX_HTML = (
+    REPO / "Hermes" / "hermes-webui-next" / "static" / "index.html"
+).read_text(encoding="utf-8")
+MANIFEST = (
+    REPO / "Hermes" / "hermes-webui-next" / "static" / "manifest.json"
+).read_text(encoding="utf-8")
 START_PS1 = (REPO / "Hermes" / "start-hermes.ps1").read_text(encoding="utf-8")
 
 
@@ -64,17 +71,25 @@ def _call_public_ops(monkeypatch, count=3):
 
 # ── 1. 端点存在且无鉴权前置 ──
 
+
 def test_public_ops_endpoint_exists_before_state_branch():
     """/api/public/ops branch 存在，且位于 /api/state（需密钥）branch 之前。"""
     assert ADMIN_SRC.count('p == "/api/public/ops"') == 1
-    assert ADMIN_SRC.index('p == "/api/public/ops"') < ADMIN_SRC.index('if p == "/api/state":')
+    assert ADMIN_SRC.index('p == "/api/public/ops"') < ADMIN_SRC.index(
+        'if p == "/api/state":'
+    )
     # 该 branch 自身不引任何密钥判断（无 X-Push-Admin-Key / authorized 前置）
-    branch = ADMIN_SRC[ADMIN_SRC.index('p == "/api/public/ops"'):ADMIN_SRC.index('if p == "/api/state":')]
+    branch = ADMIN_SRC[
+        ADMIN_SRC.index('p == "/api/public/ops"') : ADMIN_SRC.index(
+            'if p == "/api/state":'
+        )
+    ]
     assert "X-Push-Admin-Key" not in branch
     assert "authorized" not in branch
 
 
 # ── 2/3/4. 响应结构与隐私边界 ──
+
 
 def test_public_ops_payload_shape(monkeypatch):
     handler, _ = _call_public_ops(monkeypatch, count=7)
@@ -113,6 +128,7 @@ def test_public_ops_count_minus_one_honest(monkeypatch):
 
 # ── 5/6. ops_board 页面契约 ──
 
+
 def test_ops_board_has_render_dead_letter_public_and_degraded_fallback():
     assert "function renderDeadLetterPublic" in OPS_BOARD
     assert "/push/api/public/ops" in OPS_BOARD
@@ -131,6 +147,7 @@ def test_ops_board_no_write_operations():
 
 # ── 7. 品牌收尾 ──
 
+
 def test_branding_dengzhi_in_entry_files():
     assert "邓芝 8787" in CONSOLE_HTML
     assert "由邓芝转调持有" in CONSOLE_HTML
@@ -148,6 +165,7 @@ def test_branding_identifiers_untouched():
 
 # ── 8. start-hermes.ps1 banner 与路径逻辑 ──
 
+
 def test_start_hermes_banner_changed_but_paths_intact():
     assert "邓芝 WebUI Launcher（生产基=hermes-webui-next）" in START_PS1
     assert "start_hermes_bg.py" in START_PS1  # 守护链注释行
@@ -158,6 +176,7 @@ def test_start_hermes_banner_changed_but_paths_intact():
 
 
 # ── 9. 8097 其他端点锚点抽验（零破坏） ──
+
 
 def test_8097_other_endpoints_unchanged():
     anchors = (
@@ -173,6 +192,7 @@ def test_8097_other_endpoints_unchanged():
 
 
 # ── 10. notify_command 图例 ──
+
 
 def test_notify_command_legend_mentions_public_ops():
     assert "死信计数源：/api/public/ops（无鉴权摘要" in NOTIFY_HTML

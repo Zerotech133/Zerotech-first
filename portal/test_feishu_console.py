@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """feishu_console（邓芝台 W1 离线版）单测：数据采集结构、检查项、HTML 渲染、JSON 输出。"""
+
 import json
 import os
 import tempfile
@@ -18,7 +19,11 @@ import uuid
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -34,8 +39,16 @@ def test_collect_structure():
     assert isinstance(d["routes"], list) and len(d["routes"]) >= 5
     assert "gateway" in d and "checks" in d
     for b in d["bots"]:
-        for key in ("role", "display", "domain", "status", "secret_ready",
-                    "group_mode", "events", "heartbeat_ok"):
+        for key in (
+            "role",
+            "display",
+            "domain",
+            "status",
+            "secret_ready",
+            "group_mode",
+            "events",
+            "heartbeat_ok",
+        ):
             assert key in b
     # W3-D：收件人域登记面板
     assert isinstance(d["targets"], list) and d["targets"]
@@ -63,8 +76,9 @@ def test_render_html_contains_sections():
 
 def test_json_cli():
     py = sys.executable
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_console.py")
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_console.py"
+    )
     r = subprocess.run([py, script, "--json"], capture_output=True)
     assert r.returncode == 0
     data = json.loads(r.stdout.decode("utf-8", "replace"))
@@ -73,8 +87,9 @@ def test_json_cli():
 
 def test_html_cli_writes_file(ws_tmp):
     py = sys.executable
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_console.py")
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_console.py"
+    )
     out = os.path.join(ws_tmp, "console.html")
     r = subprocess.run([py, script, "--out", out], capture_output=True)
     assert r.returncode == 0, r.stderr

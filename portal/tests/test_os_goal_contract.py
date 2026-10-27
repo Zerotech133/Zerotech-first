@@ -4,6 +4,7 @@
 运行（portal 目录下）：
   python -B -m pytest tests/test_os_goal_contract.py -q -p no:cacheprovider
 """
+
 import os
 import sys
 
@@ -34,38 +35,57 @@ def seal(evs):
 
 
 def goal_event(actor_kind="user", goal_id=GOAL_ID):
-    return {"type": "goal.created",
-            "actor": {"kind": actor_kind, "id": "laotian"},
-            "refs": {},
-            "payload": {"goal_id": goal_id,
-                        "statement": "把零界做成持续创业者的个人事业OS",
-                        "target_user": "连续创业者",
-                        "assumptions": [{"id": "A1", "text": "用户愿付费",
-                                         "status": "hypothesis"}],
-                        "success_signals": ["四类成果各验收一次"]}}
+    return {
+        "type": "goal.created",
+        "actor": {"kind": actor_kind, "id": "laotian"},
+        "refs": {},
+        "payload": {
+            "goal_id": goal_id,
+            "statement": "把零界做成持续创业者的个人事业OS",
+            "target_user": "连续创业者",
+            "assumptions": [{"id": "A1", "text": "用户愿付费", "status": "hypothesis"}],
+            "success_signals": ["四类成果各验收一次"],
+        },
+    }
 
 
 def item_event(kind="software", why_now="老田今天要试用"):
-    return {"type": "item.created",
-            "actor": {"kind": "user", "id": "laotian"},
-            "refs": {"goal_id": GOAL_ID},
-            "payload": {"item_id": ITEM_ID, "title": "做一页可试用原型",
-                        "why_now": why_now, "outcome_kind": kind,
-                        "attempt_no": 1}}
+    return {
+        "type": "item.created",
+        "actor": {"kind": "user", "id": "laotian"},
+        "refs": {"goal_id": GOAL_ID},
+        "payload": {
+            "item_id": ITEM_ID,
+            "title": "做一页可试用原型",
+            "why_now": why_now,
+            "outcome_kind": kind,
+            "attempt_no": 1,
+        },
+    }
 
 
 def outcome_event(kind="software", citations=None):
-    return {"type": "outcome.produced",
-            "actor": {"kind": "user", "id": "laotian"},
-            "refs": {"item_id": ITEM_ID},
-            "payload": {"outcome_kind": kind, "version": "v1",
-                        "content_ref": "portal/data/os_goals/x/a1.html",
-                        "sha256": SHA,
-                        "citations": [] if citations is None else citations}}
+    return {
+        "type": "outcome.produced",
+        "actor": {"kind": "user", "id": "laotian"},
+        "refs": {"item_id": ITEM_ID},
+        "payload": {
+            "outcome_kind": kind,
+            "version": "v1",
+            "content_ref": "portal/data/os_goals/x/a1.html",
+            "sha256": SHA,
+            "citations": [] if citations is None else citations,
+        },
+    }
 
 
-CITE = {"source_surface": "research", "source_ref": "RES-001",
-        "source_kind": "data", "claim": "样本内胜率 55%", "confidence": "fact"}
+CITE = {
+    "source_surface": "research",
+    "source_ref": "RES-001",
+    "source_kind": "data",
+    "claim": "样本内胜率 55%",
+    "confidence": "fact",
+}
 
 
 def codes(report):
@@ -108,47 +128,87 @@ def test_item_requires_existing_goal():
 
 
 def test_outcome_kind_must_match_item():
-    rep = C.evaluate(seal([goal_event(), item_event(),
-                           outcome_event("content", [CITE])]))
+    rep = C.evaluate(
+        seal([goal_event(), item_event(), outcome_event("content", [CITE])])
+    )
     assert rep["verdict"] == "FAIL"
 
 
 def test_business_plan_requires_citation():
-    rep = C.evaluate(seal([goal_event(), item_event("business_plan"),
-                           outcome_event("business_plan", [])]))
+    rep = C.evaluate(
+        seal(
+            [
+                goal_event(),
+                item_event("business_plan"),
+                outcome_event("business_plan", []),
+            ]
+        )
+    )
     assert rep["verdict"] == "FAIL"
 
 
 def test_inference_as_fact_rejected():
-    bad = {"source_surface": "content", "source_ref": "C1",
-           "source_kind": "inference", "claim": "用户会付费",
-           "confidence": "fact"}
-    rep = C.evaluate(seal([goal_event(), item_event("business_plan"),
-                           outcome_event("business_plan", [bad])]))
+    bad = {
+        "source_surface": "content",
+        "source_ref": "C1",
+        "source_kind": "inference",
+        "claim": "用户会付费",
+        "confidence": "fact",
+    }
+    rep = C.evaluate(
+        seal(
+            [
+                goal_event(),
+                item_event("business_plan"),
+                outcome_event("business_plan", [bad]),
+            ]
+        )
+    )
     assert rep["verdict"] == "FAIL"
 
 
 def test_citation_upgrade_rejected():
     cites = [
-        {"source_surface": "content", "source_ref": "C2",
-         "source_kind": "conversation", "claim": "用户提到成本",
-         "confidence": "hypothesis"},
-        {"source_surface": "business_plan", "source_ref": "C2",
-         "source_kind": "conversation", "claim": "用户确认付费",
-         "confidence": "fact"},
+        {
+            "source_surface": "content",
+            "source_ref": "C2",
+            "source_kind": "conversation",
+            "claim": "用户提到成本",
+            "confidence": "hypothesis",
+        },
+        {
+            "source_surface": "business_plan",
+            "source_ref": "C2",
+            "source_kind": "conversation",
+            "claim": "用户确认付费",
+            "confidence": "fact",
+        },
     ]
-    rep = C.evaluate(seal([goal_event(), item_event("business_plan"),
-                           outcome_event("business_plan", cites)]))
+    rep = C.evaluate(
+        seal(
+            [
+                goal_event(),
+                item_event("business_plan"),
+                outcome_event("business_plan", cites),
+            ]
+        )
+    )
     assert rep["verdict"] == "FAIL"
 
 
 def test_goal_update_records_assumption_status():
-    upd = {"type": "goal.updated",
-           "actor": {"kind": "user", "id": "laotian"},
-           "refs": {},
-           "payload": {"goal_id": GOAL_ID, "assumption_id": "A1",
-                       "status": "validated", "evidence_refs": ["EV-1"],
-                       "reason": "研究结论支持"}}
+    upd = {
+        "type": "goal.updated",
+        "actor": {"kind": "user", "id": "laotian"},
+        "refs": {},
+        "payload": {
+            "goal_id": GOAL_ID,
+            "assumption_id": "A1",
+            "status": "validated",
+            "evidence_refs": ["EV-1"],
+            "reason": "研究结论支持",
+        },
+    }
     rep = C.evaluate(seal([goal_event(), upd, item_event(), outcome_event()]))
     assert rep["verdict"] == "PASS", codes(rep)
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Quickstart 单测：一句话→一张卡→确认即执行（三句话交互）。"""
+
 import os
 import sys
 
@@ -29,7 +30,8 @@ def test_card_defaults(store):
     assert card["scope"]["reversible"] is True
     assert card["honesty"]["card_source"] == "rule_assisted"
     assert card["success_criteria"] and all(
-        sc.get("verify_method") for sc in card["success_criteria"])
+        sc.get("verify_method") for sc in card["success_criteria"]
+    )
     assert card["goals"][0].startswith("（原话）")
 
 
@@ -46,15 +48,18 @@ def test_confirm_executes_isolated_chain(store):
     assert os.path.isfile(out["artifact"]["path"])
     assert out["chain"]["gates"]["G6"] == "PASS"
     assert out["chain"]["verdict"] == "BLOCKED"  # 等待本人第 3 句验收
-    st, d = A.handle_post(store, "/api/os/item/%s/verdict" % out["item_id"],
-                          {"decision": "accepted", "feedback": "接受"})
+    st, d = A.handle_post(
+        store,
+        "/api/os/item/%s/verdict" % out["item_id"],
+        {"decision": "accepted", "feedback": "接受"},
+    )
     assert st == 201, d
     import os_software_flow as F
+
     rep = F.chain_report(store, out["item_id"])
     assert rep["verdict"] == "ISOLATED_ONLY", rep
     # trial 已记录（确认后自动打开），验收走既有端点
-    evs = [e for e in store.events_for(out["item_id"])
-           if e["type"] == "trial.opened"]
+    evs = [e for e in store.events_for(out["item_id"]) if e["type"] == "trial.opened"]
     assert evs and evs[-1]["actor"]["kind"] == "user"
     assert "自动打开试用" in evs[-1]["payload"]["note"]
 
@@ -70,14 +75,17 @@ def test_confirm_idempotent(store):
 
 def test_edit_changes_goals_and_acceptance(store):
     card = Q.create_draft("做个页面看简报")
-    out = Q.confirm(card["draft_id"], store,
-                    edits={"changes": "标题改成今日简报，只显示两条"})
-    brief = [e for e in store.events_for(out["item_id"])
-             if e["type"] == "brief.frozen"][-1]
+    out = Q.confirm(
+        card["draft_id"], store, edits={"changes": "标题改成今日简报，只显示两条"}
+    )
+    brief = [
+        e for e in store.events_for(out["item_id"]) if e["type"] == "brief.frozen"
+    ][-1]
     joined = " ".join(brief["payload"]["goals"])
     assert "只显示两条" in joined
-    grant = [e for e in store.events_for(out["item_id"])
-             if e["type"] == "grant.signed"][-1]
+    grant = [
+        e for e in store.events_for(out["item_id"]) if e["type"] == "grant.signed"
+    ][-1]
     assert set(grant["payload"]["actions"]) == set(Q.DEFAULT_ACTIONS)
     assert grant["payload"]["env"] == "isolated"
 
@@ -106,23 +114,32 @@ def test_quick_page_three_piece_and_turns():
     for kw in ("第 1 句", "第 2 句", "第 3 句", "按这个办", "这里改"):
         assert kw in text
 
+
 def test_draft_ids_unique_after_restart(store):
     a = Q.create_draft("第一件事")["draft_id"]
     old_tag = Q._PROC_TAG
     try:
-        Q._SEQ[0] = 0          # 模拟重启后序号归零
+        Q._SEQ[0] = 0  # 模拟重启后序号归零
         Q._PROC_TAG = "99999"  # 模拟新进程 PID 不同
         b = Q.create_draft("第二件事")["draft_id"]
     finally:
         Q._PROC_TAG = old_tag
     assert a != b
 
+
 def test_quick_page_voice_guided():
     page = os.path.join(PORTAL, "os_quick.html")
     text = open(page, encoding="utf-8").read()
-    for kw in ("SpeechRecognition", "speechSynthesis", "🎤", "说“行”", "点一下，说想法"):
+    for kw in (
+        "SpeechRecognition",
+        "speechSynthesis",
+        "🎤",
+        "说“行”",
+        "点一下，说想法",
+    ):
         assert kw in text, kw
     assert "X-OS-Page" in text
+
 
 def test_voice_eval_page_ten_items_and_gate():
     page = os.path.join(PORTAL, "os_voice_eval.html")

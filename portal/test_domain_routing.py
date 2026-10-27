@@ -17,6 +17,7 @@
 读取被平台审批拦截以 skip 占位；主会话提供锚点原文后改动落地，本文件
 取消 skip 补全实现断言。
 """
+
 import io
 import json
 import sys
@@ -43,6 +44,7 @@ NOW_ISO = datetime.now().isoformat(timespec="seconds")
 
 # ---------- 工具 ----------
 
+
 @pytest.fixture
 def flow_path(tmp_path, monkeypatch):
     """FLOW_PATH 锚到 tmp，绝不污染真实流水账 portal/work/push_flow.jsonl。"""
@@ -52,11 +54,15 @@ def flow_path(tmp_path, monkeypatch):
 
 
 def read_rows(p):
-    return [json.loads(line) for line in
-            p.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line)
+        for line in p.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
 
 
 # ---------- 1. push_flow.record jsonl 行格式 ----------
+
 
 def test_record_with_domain_writes_key(flow_path):
     """domain 非 None → 行内写 domain 键（分域一级字段落账）。"""
@@ -85,8 +91,7 @@ def test_record_domain_none_no_key(flow_path):
 
 def test_record_domain_with_evidence_coexist(flow_path):
     """evidence 与 domain 两个可选键互不影响、可同时落行。"""
-    push_flow.record("k", "feishu", "t", evidence="api_accepted",
-                     domain="customer")
+    push_flow.record("k", "feishu", "t", evidence="api_accepted", domain="customer")
     (row,) = read_rows(flow_path)
     assert row["evidence"] == "api_accepted"
     assert row["domain"] == "customer"
@@ -94,13 +99,13 @@ def test_record_domain_with_evidence_coexist(flow_path):
 
 # ---------- 2. notify_contracts 分域常量 ----------
 
+
 def test_domains_tuple():
     assert nc.DOMAINS == ("owner", "ops", "customer")
 
 
 def test_domain_labels():
-    assert nc.DOMAIN_LABELS == {"owner": "本人", "ops": "运维",
-                                "customer": "客户"}
+    assert nc.DOMAIN_LABELS == {"owner": "本人", "ops": "运维", "customer": "客户"}
 
 
 def test_blocked_kind_subscription_required():
@@ -108,6 +113,7 @@ def test_blocked_kind_subscription_required():
 
 
 # ---------- 3. api_notify item domain 徽章 ----------
+
 
 def test_item_default_no_domain_key():
     """_item 缺省：payload 键集合不含 domain（旧结构零变化）。"""
@@ -130,17 +136,31 @@ def _flow_root(tmp_path, monkeypatch, rows):
     monkeypatch.setenv("AIOS_ROOT", str(tmp_path))
     (tmp_path / "portal" / "work").mkdir(parents=True)
     p = tmp_path / "portal" / "work" / "push_flow.jsonl"
-    p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n"
-                         for r in rows), encoding="utf-8")
+    p.write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
+        encoding="utf-8",
+    )
 
 
 def test_flow_items_today_ok_domain_badge(tmp_path, monkeypatch):
     """今日 ok 行带 domain → auto item 徽章透出。"""
-    _flow_root(tmp_path, monkeypatch, [
-        {"ts": NOW_ISO, "date": TODAY, "kind": "daily_digest",
-         "channel": "feishu", "target": "ou_a", "count": 1, "ok": True,
-         "tenant": "default", "domain": "owner"},
-    ])
+    _flow_root(
+        tmp_path,
+        monkeypatch,
+        [
+            {
+                "ts": NOW_ISO,
+                "date": TODAY,
+                "kind": "daily_digest",
+                "channel": "feishu",
+                "target": "ou_a",
+                "count": 1,
+                "ok": True,
+                "tenant": "default",
+                "domain": "owner",
+            },
+        ],
+    )
     items = api_notify.flow_items([])
     auto = [it for it in items if it["id"].startswith("flowauto:")]
     assert len(auto) == 1
@@ -149,11 +169,22 @@ def test_flow_items_today_ok_domain_badge(tmp_path, monkeypatch):
 
 def test_flow_items_legacy_rows_no_domain_key(tmp_path, monkeypatch):
     """旧流水行（无 domain 键）→ item 亦无 domain 键（缺省不出现）。"""
-    _flow_root(tmp_path, monkeypatch, [
-        {"ts": NOW_ISO, "date": TODAY, "kind": "daily_digest",
-         "channel": "feishu", "target": "ou_a", "count": 1, "ok": True,
-         "tenant": "default"},
-    ])
+    _flow_root(
+        tmp_path,
+        monkeypatch,
+        [
+            {
+                "ts": NOW_ISO,
+                "date": TODAY,
+                "kind": "daily_digest",
+                "channel": "feishu",
+                "target": "ou_a",
+                "count": 1,
+                "ok": True,
+                "tenant": "default",
+            },
+        ],
+    )
     items = api_notify.flow_items([])
     auto = [it for it in items if it["id"].startswith("flowauto:")]
     assert len(auto) == 1
@@ -162,14 +193,34 @@ def test_flow_items_legacy_rows_no_domain_key(tmp_path, monkeypatch):
 
 def test_flow_items_multi_domain_merge(tmp_path, monkeypatch):
     """同 (kind,target) 今日聚合行混两域 → 域值排序逗号合并，不丢域。"""
-    _flow_root(tmp_path, monkeypatch, [
-        {"ts": NOW_ISO, "date": TODAY, "kind": "k1", "channel": "feishu",
-         "target": "ou_a", "count": 1, "ok": True, "tenant": "default",
-         "domain": "customer"},
-        {"ts": NOW_ISO, "date": TODAY, "kind": "k1", "channel": "feishu",
-         "target": "ou_a", "count": 1, "ok": True, "tenant": "default",
-         "domain": "ops"},
-    ])
+    _flow_root(
+        tmp_path,
+        monkeypatch,
+        [
+            {
+                "ts": NOW_ISO,
+                "date": TODAY,
+                "kind": "k1",
+                "channel": "feishu",
+                "target": "ou_a",
+                "count": 1,
+                "ok": True,
+                "tenant": "default",
+                "domain": "customer",
+            },
+            {
+                "ts": NOW_ISO,
+                "date": TODAY,
+                "kind": "k1",
+                "channel": "feishu",
+                "target": "ou_a",
+                "count": 1,
+                "ok": True,
+                "tenant": "default",
+                "domain": "ops",
+            },
+        ],
+    )
     items = api_notify.flow_items([])
     auto = [it for it in items if it["id"].startswith("flowauto:")]
     assert len(auto) == 1
@@ -178,11 +229,23 @@ def test_flow_items_multi_domain_merge(tmp_path, monkeypatch):
 
 def test_flow_items_blocked_row_domain(tmp_path, monkeypatch):
     """近 7 天失败行带 domain → blocked item 徽章透出（代表行取值）。"""
-    _flow_root(tmp_path, monkeypatch, [
-        {"ts": NOW_ISO, "date": TODAY, "kind": "k_fail", "channel": "feishu",
-         "target": "ou_b", "count": 1, "ok": False, "tenant": "default",
-         "domain": "customer"},
-    ])
+    _flow_root(
+        tmp_path,
+        monkeypatch,
+        [
+            {
+                "ts": NOW_ISO,
+                "date": TODAY,
+                "kind": "k_fail",
+                "channel": "feishu",
+                "target": "ou_b",
+                "count": 1,
+                "ok": False,
+                "tenant": "default",
+                "domain": "customer",
+            },
+        ],
+    )
     items = api_notify.flow_items([])
     blocked = [it for it in items if it["state"] == "blocked"]
     assert len(blocked) == 1
@@ -190,6 +253,7 @@ def test_flow_items_blocked_row_domain(tmp_path, monkeypatch):
 
 
 # ---------- 4. feishu_client 透传链（urlopen 全桩，零真发） ----------
+
 
 class _FakeResp(io.BytesIO):
     """urlopen 返回体：BytesIO 原生支持 with 与 read。"""
@@ -202,6 +266,7 @@ def _fake_urlopen(capture, resp_body=None):
             {"code": 0, "msg": "ok", "data": {"message_id": "om_fake"}}
         ).encode("utf-8")
         return _FakeResp(body)
+
     return _open
 
 
@@ -231,15 +296,22 @@ def test_send_msg_tracked_forwards_domain_to_hub(monkeypatch):
     """send_msg_tracked(domain=...) → via_hub 分支转发给 _hub_send。"""
     cap = {}
 
-    def fake_hub(content, msg_type, receive_id, receive_id_type,
-                 kind=None, critical=False, timeout=8, route_targets=None,
-                 domain=None):
+    def fake_hub(
+        content,
+        msg_type,
+        receive_id,
+        receive_id_type,
+        kind=None,
+        critical=False,
+        timeout=8,
+        route_targets=None,
+        domain=None,
+    ):
         cap["domain"] = domain
         return (True, "ok", "om_x")
 
     monkeypatch.setattr(fc, "_hub_send", fake_hub)
-    fc.send_msg_tracked("hi", "text", "ou_a", "open_id",
-                        via_hub=True, domain="ops")
+    fc.send_msg_tracked("hi", "text", "ou_a", "open_id", via_hub=True, domain="ops")
     assert cap["domain"] == "ops"
 
 
@@ -247,9 +319,17 @@ def test_send_msg_tracked_domain_default_none(monkeypatch):
     """send_msg_tracked 缺省 → 转发 domain=None（兼容存量调用方）。"""
     cap = {}
 
-    def fake_hub(content, msg_type, receive_id, receive_id_type,
-                 kind=None, critical=False, timeout=8, route_targets=None,
-                 domain=None):
+    def fake_hub(
+        content,
+        msg_type,
+        receive_id,
+        receive_id_type,
+        kind=None,
+        critical=False,
+        timeout=8,
+        route_targets=None,
+        domain=None,
+    ):
         cap["domain"] = domain
         return (True, "ok", "om_x")
 
@@ -264,17 +344,29 @@ def test_send_msg_tracked_webhook_path_accepts_domain(tmp_path, monkeypatch):
     monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "f.jsonl"))
     cap = []
     monkeypatch.setattr("urllib.request.urlopen", _fake_urlopen(cap))
-    fc.send_msg_tracked("hi", "text", "ou_a", "open_id",
-                        via_hub=False, flow_record=False, domain="customer")
+    fc.send_msg_tracked(
+        "hi",
+        "text",
+        "ou_a",
+        "open_id",
+        via_hub=False,
+        flow_record=False,
+        domain="customer",
+    )
     body = json.loads(cap[0].data.decode("utf-8"))
     assert "domain" not in body
 
 
 # ---------- 5. push_admin_server api_send（feishu_client/record 全桩） ----------
 
+
 def _req(**extra):
-    base = {"content": "hello", "msg_type": "text",
-            "receive_id": "ou_test", "critical": True}
+    base = {
+        "content": "hello",
+        "msg_type": "text",
+        "receive_id": "ou_test",
+        "critical": True,
+    }
     base.update(extra)
     return base
 
@@ -283,21 +375,25 @@ def _api_send_env(monkeypatch, sent, records):
     """api_send 全桩：feishu_client 走 sys.modules 假模块（api_send 内
     局部 from feishu_client import），静默窗恒假、配额 internal 永不拦、
     push_flow.record 捕获 observe 留痕。"""
-    def fake_send(content, msg_type, receive_id=None,
-                  receive_id_type="open_id", **kw):
-        sent.append({"content": content, "msg_type": msg_type,
-                     "receive_id": receive_id, "kw": kw})
+
+    def fake_send(content, msg_type, receive_id=None, receive_id_type="open_id", **kw):
+        sent.append(
+            {
+                "content": content,
+                "msg_type": msg_type,
+                "receive_id": receive_id,
+                "kw": kw,
+            }
+        )
         return (True, "ok", "om_t")
 
-    fake_fc = types.SimpleNamespace(send_msg_tracked=fake_send,
-                                    verify_message=lambda mid: True)
+    fake_fc = types.SimpleNamespace(
+        send_msg_tracked=fake_send, verify_message=lambda mid: True
+    )
     monkeypatch.setitem(sys.modules, "feishu_client", fake_fc)
-    monkeypatch.setattr(admin, "_in_silent_window",
-                        lambda now=None, kind="": False)
-    monkeypatch.setattr(push_flow, "quota_check",
-                        lambda: ("internal", 0, 0, False))
-    monkeypatch.setattr(push_flow, "record",
-                        lambda *a, **kw: records.append((a, kw)))
+    monkeypatch.setattr(admin, "_in_silent_window", lambda now=None, kind="": False)
+    monkeypatch.setattr(push_flow, "quota_check", lambda: ("internal", 0, 0, False))
+    monkeypatch.setattr(push_flow, "record", lambda *a, **kw: records.append((a, kw)))
 
 
 def test_api_send_domain_invalid_rejected(monkeypatch):

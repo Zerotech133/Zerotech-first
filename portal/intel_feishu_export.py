@@ -6,6 +6,7 @@
 - 通道: 复用 news_collector/send_feishu.py (本人 open_id 直发)
 - 回执: candidate/shown/attempted/accepted 四分账; HTTP OK ≠ 送达, 以 SEND_OK 为准
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
@@ -14,10 +15,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("Asia/Shanghai")
-WINDOWS = ((dtime(8, 30), dtime(9, 15)),   # 盘前
-           (dtime(15, 10), dtime(16, 0)))  # 盘后
-RECIPIENT_SCOPE = "laotian_only"           # 仅本人
-MAX_EDGES = 5                              # 许可字段范围: top N 候选边
+WINDOWS = (
+    (dtime(8, 30), dtime(9, 15)),  # 盘前
+    (dtime(15, 10), dtime(16, 0)),
+)  # 盘后
+RECIPIENT_SCOPE = "laotian_only"  # 仅本人
+MAX_EDGES = 5  # 许可字段范围: top N 候选边
 
 
 class ExportRejected(RuntimeError):
@@ -43,9 +46,13 @@ def render_digest(dossier: dict) -> str:
     total = dossier["total_edges"]
     if total == 0:
         return f"[情报候选·{code}] 该票暂无候选关系边（空态=无候选，不是无情报）。"
-    lines = [f"[情报候选·{code}] 共 {total} 条候选边，显示 {dossier.get('shown', 0)} 条（全部 candidate 调查方向，非事实）："]
+    lines = [
+        f"[情报候选·{code}] 共 {total} 条候选边，显示 {dossier.get('shown', 0)} 条（全部 candidate 调查方向，非事实）："
+    ]
     for e in dossier.get("edges", [])[:MAX_EDGES]:
-        lines.append(f"· [{e.get('rel_type')}] {e.get('pair')} — {e.get('question', '')}")
+        lines.append(
+            f"· [{e.get('rel_type')}] {e.get('pair')} — {e.get('question', '')}"
+        )
     if dossier.get("truncated"):
         lines.append("（已截断，完整见 /intel-dossier 第六屏）")
     lines.append("— 零界情报中枢·通信部出口（每日两窗口·只读）")
@@ -56,10 +63,10 @@ def render_digest(dossier: dict) -> str:
 class ExportReceipt:
     at: str
     stock_code: str
-    candidate: int          # 总候选数
-    shown: int              # 摘要显示数
-    attempted: bool         # 是否发起发送
-    accepted: bool          # SEND_OK 才为 True
+    candidate: int  # 总候选数
+    shown: int  # 摘要显示数
+    attempted: bool  # 是否发起发送
+    accepted: bool  # SEND_OK 才为 True
     window_state: str
     note: str = ""
 
@@ -72,10 +79,16 @@ def export(dossier: dict, *, now: datetime, sender=None) -> ExportReceipt:
     code = dossier.get("stock_code", "?")
     candidate = int(dossier.get("total_edges", 0))
     if not in_window(now):
-        return ExportReceipt(now.isoformat(), code, candidate,
-                             min(candidate, MAX_EDGES), attempted=False, accepted=False,
-                             window_state="closed",
-                             note="窗口外拒发（盘前08:30-09:15/盘后15:10-16:00，工作日）")
+        return ExportReceipt(
+            now.isoformat(),
+            code,
+            candidate,
+            min(candidate, MAX_EDGES),
+            attempted=False,
+            accepted=False,
+            window_state="closed",
+            note="窗口外拒发（盘前08:30-09:15/盘后15:10-16:00，工作日）",
+        )
     text = render_digest(dossier)
     attempted = True
     if sender is None:
@@ -91,19 +104,33 @@ def export(dossier: dict, *, now: datetime, sender=None) -> ExportReceipt:
     import sys
     import tempfile
     import os
-    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
+
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".txt", delete=False, encoding="utf-8"
+    ) as f:
         f.write(text)
         tmp = f.name
     try:
-        r = subprocess.run([sys.executable, sender, tmp], capture_output=True,
-                           text=True, encoding="utf-8", timeout=60)
+        r = subprocess.run(
+            [sys.executable, sender, tmp],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
     finally:
         os.unlink(tmp)
     accepted = (r.stdout or "").startswith("SEND_OK")
-    return ExportReceipt(now.isoformat(), code, candidate,
-                          min(candidate, MAX_EDGES), attempted=attempted, accepted=accepted,
-                          window_state="open",
-                          note=(r.stdout or r.stderr or "").strip()[:120])
+    return ExportReceipt(
+        now.isoformat(),
+        code,
+        candidate,
+        min(candidate, MAX_EDGES),
+        attempted=attempted,
+        accepted=accepted,
+        window_state="open",
+        note=(r.stdout or r.stderr or "").strip()[:120],
+    )
 
 
 def append_ledger(root: Path, receipt: ExportReceipt) -> None:

@@ -12,6 +12,7 @@ r"""零界·执行 bot（zb.owner.exec）—— 我的远程入口（W2 目标�
 凭据：portal/work/feishu_secrets/zb.owner.exec.json（app_id/app_secret）
 启动：& C:\aios\CowAgent\venv\Scripts\python.exe C:\aios\portal\feishu_dsh_bot.py
 """
+
 from __future__ import annotations
 
 import os
@@ -73,13 +74,18 @@ def machine_entry_text():
         for line in reversed(lines):
             line = line.strip().lstrip("\ufeff").strip()
             if line.startswith("dsh web: "):
-                return ("🖥 远程入口（手机浏览器打开）：\n"
-                        + line[len("dsh web: "):].strip()
-                        + "\n\n· 链接含令牌，勿转发；入口重启后重发「机器」取最新。")
+                return (
+                    "🖥 远程入口（手机浏览器打开）：\n"
+                    + line[len("dsh web: ") :].strip()
+                    + "\n\n· 链接含令牌，勿转发；入口重启后重发「机器」取最新。"
+                )
             if line.startswith("http://") or line.startswith("https://"):
                 if "token=" in line:
-                    return ("🖥 远程入口（手机浏览器打开）：\n" + line
-                            + "\n\n· 链接含令牌，勿转发。")
+                    return (
+                        "🖥 远程入口（手机浏览器打开）：\n"
+                        + line
+                        + "\n\n· 链接含令牌，勿转发。"
+                    )
     return "机器入口未就绪：本机 web 表层未启动。"
 
 
@@ -99,13 +105,19 @@ def run_text(shell, ctx, text, ack=True):
     if low.rstrip("。！!?？ ") in ("机器", "打开机器", "机器入口", "入口", "远程"):
         shell.reply(ctx.get("message_id"), machine_entry_text())
         return
-    if low.rstrip("。！!?？ ") in ("新对话", "重置对话", "重置", "清空对话", "忘记上下文"):
+    if low.rstrip("。！!?？ ") in (
+        "新对话",
+        "重置对话",
+        "重置",
+        "清空对话",
+        "忘记上下文",
+    ):
         relay.reset(ctx.get("open_id"))
-        shell.reply(ctx.get("message_id"),
-                    "🧹 已开新对话（之前的上下文已清空）。")
+        shell.reply(ctx.get("message_id"), "🧹 已开新对话（之前的上下文已清空）。")
         return
-    if not relay.allowed(ctx.get("open_id"), chat_type=ctx.get("chat_type"),
-                         chat_id=ctx.get("chat_id")):
+    if not relay.allowed(
+        ctx.get("open_id"), chat_type=ctx.get("chat_type"), chat_id=ctx.get("chat_id")
+    ):
         shell.reply(ctx.get("message_id"), "无权限：零界·执行仅限老田本人。")
         return
     if ack:
@@ -129,9 +141,14 @@ def on_audio(shell, ctx, msg, data):
 
     def _download(meta):
         from lark_oapi.api.im.v1 import GetMessageResourceRequest
-        req = (GetMessageResourceRequest.builder()
-               .message_id(mid).file_key(meta["file_key"])
-               .type("audio").build())
+
+        req = (
+            GetMessageResourceRequest.builder()
+            .message_id(mid)
+            .file_key(meta["file_key"])
+            .type("audio")
+            .build()
+        )
         resp = shell.api.im.v1.message_resource.get(req)
         if not getattr(resp, "success", lambda: False)():
             raise vi.VoiceError("DOWNLOAD_FAILED", "取回语音失败（飞书接口返回失败）")
@@ -141,21 +158,36 @@ def on_audio(shell, ctx, msg, data):
 
     transcriber, provider, why = vi.build_transcriber()
     rec = vi.ingest_audio(
-        message_id=mid, content=ctx.get("content"), sender_id=sender,
-        chat_type="p2p", download=_download, transcriber=transcriber,
+        message_id=mid,
+        content=ctx.get("content"),
+        sender_id=sender,
+        chat_type="p2p",
+        download=_download,
+        transcriber=transcriber,
         notify=lambda t: shell.reply(mid, t),
         dispatch=lambda t: run_text(shell, ctx, t, ack=False),
-        log=shell.log, auto_execute=vi.auto_execute(),
-        transcriber_reason=why)
-    shell.log("voice %s: status=%s provider=%s dur=%sms chars=%s"
-              % (mid[-8:], rec.get("status"), provider,
-                 rec.get("duration_ms"), rec.get("text_chars")))
+        log=shell.log,
+        auto_execute=vi.auto_execute(),
+        transcriber_reason=why,
+    )
+    shell.log(
+        "voice %s: status=%s provider=%s dur=%sms chars=%s"
+        % (
+            mid[-8:],
+            rec.get("status"),
+            provider,
+            rec.get("duration_ms"),
+            rec.get("text_chars"),
+        )
+    )
 
 
 def on_card(shell, ctx, val):
     # 审批/回执动作在 W3 接线（走 card_actions 注册表与决策账）
-    shell.log("card action pending W3: %r op=%s"
-              % (str(val)[:80], base.mask_open_id(ctx.get("open_id"))))
+    shell.log(
+        "card action pending W3: %r op=%s"
+        % (str(val)[:80], base.mask_open_id(ctx.get("open_id")))
+    )
 
 
 def main():

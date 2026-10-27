@@ -7,6 +7,7 @@
                （今日 14:40 实时复核将用实时 bar 验证同批票）
 只读特征湖，venv 运行。
 """
+
 import glob
 import json
 import sys
@@ -18,8 +19,8 @@ sys.path.insert(0, r"C:\项目\老田的AI助手\agent_platform\engine")
 from quant_double_knife import quant_double_knife  # noqa: E402
 
 DIR = r"C:\项目\老田的AI助手\quant_backtest\data\ashare"
-T1, T2 = "20260929", "20260930"   # T2=回放样本日, T1=其前一交易日
-T3 = "20261008"                    # 后验日（也是第二回放样本日）
+T1, T2 = "20260929", "20260930"  # T2=回放样本日, T1=其前一交易日
+T3 = "20261008"  # 后验日（也是第二回放样本日）
 OUT = {}
 
 t0 = time.time()
@@ -29,8 +30,9 @@ closes = {}  # code -> {date: close} 只存三日的收盘价
 for i, fp in enumerate(files):
     code = fp.split("\\")[-1].replace(".parquet", "").replace("_", ".")
     try:
-        df = pd.read_parquet(fp, columns=["trade_date", "open", "high",
-                                          "low", "close", "amount"])
+        df = pd.read_parquet(
+            fp, columns=["trade_date", "open", "high", "low", "close", "amount"]
+        )
     except Exception:
         continue
     if len(df) < 100:
@@ -52,8 +54,11 @@ for i, fp in enumerate(files):
     if (i + 1) % 1500 == 0:
         print("[pool] %d/%d %.0fs" % (i + 1, len(files), time.time() - t0), flush=True)
 
-print("候选池: T1(%s)十字星 %d 只 → T2 复核 | T2(%s)十字星 %d 只 → T3 复核"
-      % (T1, len(pool_A), T2, len(pool_B)), flush=True)
+print(
+    "候选池: T1(%s)十字星 %d 只 → T2 复核 | T2(%s)十字星 %d 只 → T3 复核"
+    % (T1, len(pool_A), T2, len(pool_B)),
+    flush=True,
+)
 
 
 def recheck(codes, until_day):
@@ -62,9 +67,10 @@ def recheck(codes, until_day):
     sigs = []
     for code in codes:
         try:
-            df = pd.read_parquet(DIR + "\\%s.parquet" % code.replace(".", "_"),
-                                 columns=["trade_date", "open", "high", "low",
-                                          "close", "amount"])
+            df = pd.read_parquet(
+                DIR + "\\%s.parquet" % code.replace(".", "_"),
+                columns=["trade_date", "open", "high", "low", "close", "amount"],
+            )
         except Exception:
             continue
         df = df[df["trade_date"] <= until_day]
@@ -80,7 +86,9 @@ def recheck(codes, until_day):
     return sigs
 
 
-print("\n[回放1] T=%s 尾盘信号（候选池 %d 只复核中...）" % (T2, len(pool_A)), flush=True)
+print(
+    "\n[回放1] T=%s 尾盘信号（候选池 %d 只复核中...）" % (T2, len(pool_A)), flush=True
+)
 s1 = recheck(pool_A, T2)
 print("  尾盘信号 %d 只: %s" % (len(s1), s1))
 post = []
@@ -93,19 +101,27 @@ for code in s1:
 if post:
     avg = sum(r for _, r in post) / len(post)
     win = sum(1 for _, r in post if r > 0)
-    print("  后验（%s 尾盘买 → %s 收盘卖）: 平均 %+.2f%% | 胜率 %d/%d"
-          % (T2, T3, avg, win, len(post)))
+    print(
+        "  后验（%s 尾盘买 → %s 收盘卖）: 平均 %+.2f%% | 胜率 %d/%d"
+        % (T2, T3, avg, win, len(post))
+    )
     for c, r in sorted(post, key=lambda x: -x[1]):
         print("    %s %+.2f%%" % (c, r))
 OUT["replay_t2"] = {"signals": s1, "post": post}
 
-print("\n[回放2] T=%s 尾盘信号（候选池 %d 只复核中...）" % (T3, len(pool_B)), flush=True)
+print(
+    "\n[回放2] T=%s 尾盘信号（候选池 %d 只复核中...）" % (T3, len(pool_B)), flush=True
+)
 s2 = recheck(pool_B, T3)
 print("  尾盘信号 %d 只: %s" % (len(s2), s2))
 print("  含已知 10-08 双刀票:", "600593.SH" in s2 and "600887.SH" in s2)
 OUT["replay_t3"] = {"signals": s2}
 
 OUT["elapsed"] = round(time.time() - t0, 1)
-json.dump(OUT, open(r"C:\项目\老田的AI助手\portal\qd_replay_verify.json", "w",
-                    encoding="utf-8"), ensure_ascii=False, indent=1)
+json.dump(
+    OUT,
+    open(r"C:\项目\老田的AI助手\portal\qd_replay_verify.json", "w", encoding="utf-8"),
+    ensure_ascii=False,
+    indent=1,
+)
 print("\nVERIFY DONE %.0fs → portal/qd_replay_verify.json" % OUT["elapsed"])

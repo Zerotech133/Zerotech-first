@@ -50,6 +50,7 @@ portal_api.py 接线点（等凭据到位后，仅此一处，注释形式示例
   重登（P2 做 refresh-token 自动续期）。
 ====================================================================
 """
+
 import base64
 import hmac
 import ipaddress
@@ -119,11 +120,12 @@ def _ip_trusted(ip: str, sources: list) -> bool:
 @dataclass(frozen=True)
 class VerifyResult:
     """鉴权结果。ok=True 放行；reason 记录判定来源/失败原因。"""
+
     ok: bool
     user_id: Optional[str] = None
-    expiry: Optional[float] = None   # epoch 秒；来自菜鸟 expiresTime(ms)/1000
-    reason: str = ""                 # machine_channel / local_trusted /
-                                     # cainiao_ok / degraded_* / invalid_token / ...
+    expiry: Optional[float] = None  # epoch 秒；来自菜鸟 expiresTime(ms)/1000
+    reason: str = ""  # machine_channel / local_trusted /
+    # cainiao_ok / degraded_* / invalid_token / ...
 
     def __bool__(self):  # 便于 if result: 写法
         return self.ok
@@ -132,7 +134,9 @@ class VerifyResult:
 def _cfg() -> dict:
     """每次调用读 env，便于测试与热改配置。"""
     return {
-        "base_url": (os.environ.get("CAINIAO_BASE_URL") or DEFAULT_BASE_URL).rstrip("/"),
+        "base_url": (os.environ.get("CAINIAO_BASE_URL") or DEFAULT_BASE_URL).rstrip(
+            "/"
+        ),
         "path": os.environ.get("CAINIAO_CHECK_TOKEN_PATH") or DEFAULT_CHECK_TOKEN_PATH,
         "timeout": float(os.environ.get("CAINIAO_TIMEOUT") or DEFAULT_TIMEOUT),
         "mode": (os.environ.get("CAINIAO_AUTH_MODE") or "degraded").strip().lower(),
@@ -206,8 +210,12 @@ def _map_response(payload: dict) -> VerifyResult:
         expiry_ms = data.get("expiresTime")
         expiry = (float(expiry_ms) / 1000.0) if expiry_ms else None
         uid = data.get("userId")
-        return VerifyResult(True, user_id=str(uid) if uid is not None else None,
-                            expiry=expiry, reason="cainiao_ok")
+        return VerifyResult(
+            True,
+            user_id=str(uid) if uid is not None else None,
+            expiry=expiry,
+            reason="cainiao_ok",
+        )
     return VerifyResult(False, reason="invalid_token")
 
 
@@ -238,7 +246,7 @@ def verify_bearer(token: str) -> VerifyResult:
         return _on_unreachable(type(e).__name__)
 
 
-_last_unreachable_warn = 0.0   # 不可达告警节流（60s）
+_last_unreachable_warn = 0.0  # 不可达告警节流（60s）
 
 
 def _on_unreachable(detail: str) -> VerifyResult:
@@ -254,11 +262,14 @@ def _on_unreachable(detail: str) -> VerifyResult:
     global _last_unreachable_warn
     if now - _last_unreachable_warn > 60:
         _last_unreachable_warn = now
-        print("WARN: cainiao auth 服务不可达，写鉴权 fail-closed "
-              "(mode=%s): %s" % (mode, detail), file=sys.stderr)
-    return VerifyResult(False,
-                        reason="auth_unreachable_rejected(mode=%s):%s"
-                               % (mode, detail))
+        print(
+            "WARN: cainiao auth 服务不可达，写鉴权 fail-closed "
+            "(mode=%s): %s" % (mode, detail),
+            file=sys.stderr,
+        )
+    return VerifyResult(
+        False, reason="auth_unreachable_rejected(mode=%s):%s" % (mode, detail)
+    )
 
 
 def verify_request(headers, remote_addr, portal_token: str = "") -> VerifyResult:
@@ -273,6 +284,7 @@ def verify_request(headers, remote_addr, portal_token: str = "") -> VerifyResult
       4. 其余 → 拒绝（调用方落到原有 X-Portal-Token 常量比对逻辑）
     headers 为 dict 或 http.client.HTTPMessage 等 .get() 对象均可。
     """
+
     def _h(name: str) -> str:
         try:
             return (headers.get(name) or "").strip()
@@ -286,9 +298,9 @@ def verify_request(headers, remote_addr, portal_token: str = "") -> VerifyResult
     #    恒回环（8091 绑回环），不得作信任源；真实来源只认 X-Real-IP。
     #    直连 8091（无反代标记）维持 client_address 判定，行为不变。
     if _h("X-Portal-Proxy"):
-        real_ip = _h("X-Real-IP")   # 反代链：缺 X-Real-IP 即不信任（closed on failure）
+        real_ip = _h("X-Real-IP")  # 反代链：缺 X-Real-IP 即不信任（closed on failure）
     else:
-        real_ip = (remote_addr or "").strip()   # 直连：维持原判定源
+        real_ip = (remote_addr or "").strip()  # 直连：维持原判定源
     if _ip_trusted(real_ip, _trusted_sources()):
         return VerifyResult(True, reason="local_trusted")
     auth = _h("Authorization")

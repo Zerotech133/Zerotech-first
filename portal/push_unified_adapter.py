@@ -6,6 +6,7 @@
   · shadow → 记录新旧卡摘要到 shadow jsonl，仍返回旧卡
   · enabled → 返回统一分装卡（失败一律回落旧卡）
 """
+
 from __future__ import annotations
 
 
@@ -24,9 +25,21 @@ def enabled(name):
         return False
 
 
-def adapt(name, legacy, scene, title, sections, ts="", source="",
-          footer="", buttons=None, links=None, level="info",
-          summary=None, kpis=None):
+def adapt(
+    name,
+    legacy,
+    scene,
+    title,
+    sections,
+    ts="",
+    source="",
+    footer="",
+    buttons=None,
+    links=None,
+    level="info",
+    summary=None,
+    kpis=None,
+):
     """旧卡 → 统一卡（按开关决定）；任何异常返回旧卡。"""
     if fp is None:
         return legacy
@@ -40,14 +53,33 @@ def adapt(name, legacy, scene, title, sections, ts="", source="",
                 line = str(s).replace("**", "").strip().split("\n")[0]
                 if line and line != summary:
                     items.append(line)
-            new = fp.build(scene, title, summary=summary, kpis=kpis,
-                           items=items, ts=ts, source=source,
-                           level=level, buttons=buttons, links=links,
-                           note=footer, tags="#unified #%s" % name)
+            new = fp.build(
+                scene,
+                title,
+                summary=summary,
+                kpis=kpis,
+                items=items,
+                ts=ts,
+                source=source,
+                level=level,
+                buttons=buttons,
+                links=links,
+                note=footer,
+                tags="#unified #%s" % name,
+            )
         else:
-            new = fp.from_sections(name, scene, title, sections, ts=ts,
-                                   source=source, footer=footer,
-                                   buttons=buttons, links=links, level=level)
+            new = fp.from_sections(
+                name,
+                scene,
+                title,
+                sections,
+                ts=ts,
+                source=source,
+                footer=footer,
+                buttons=buttons,
+                links=links,
+                level=level,
+            )
         if shadow:
             fp.shadow_log(name, legacy, new)
             return legacy

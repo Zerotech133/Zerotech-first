@@ -26,6 +26,7 @@ K-STOCK-408 双口令过渡（14 天兼容期）：
   - 兼容期截止（OLD_PW_EXPIRE）后：删 OLD_PW 默认值与 expire 注释，
     sync + deploy 一次即作废旧码（工单随轮换执行补记）。
 """
+
 import base64
 import os
 import re
@@ -55,9 +56,11 @@ DETAIL_RE = re.compile(r"^/data/pick_details/([A-Za-z0-9_.\-]+)\.json$")
 # K-PUSH-002 A1：分享令牌访问收口（token 即 72h 限时凭证——商业化
 # 「分享试看」语义；内网链路落 visit 账，公网静态站无此路由降级 404）
 SHARE_RE = re.compile(r"^/s/(st\.[A-Za-z0-9_\-]+\.[0-9a-f]{16})$")
-MIME = {".html": "text/html; charset=utf-8",
-        ".css": "text/css; charset=utf-8",
-        ".json": "application/json; charset=utf-8"}
+MIME = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+}
 
 LOGIN_HTML = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -102,8 +105,7 @@ class Handler(BaseHTTPRequestHandler):
         return u == USERNAME and _key_ok(p)
 
     def _cookie_value(self):
-        m = re.search(r"(?:^|;\s*)%s=([^;]+)" % COOKIE,
-                      self.headers.get("Cookie", ""))
+        m = re.search(r"(?:^|;\s*)%s=([^;]+)" % COOKIE, self.headers.get("Cookie", ""))
         return m.group(1) if m else None
 
     def _cookie_ok(self):
@@ -120,7 +122,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        for k, v in (extra or []):
+        for k, v in extra or []:
             self.send_header(k, v)
         self.end_headers()
         if body:
@@ -151,6 +153,7 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             try:
                 import share_tokens
+
                 payload = share_tokens.visit(m.group(1))
             except Exception:
                 payload = None
@@ -161,25 +164,33 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(302, b"", extra=[("Location", "/login")])
             return
         if not self._gate_ok():
-            body = ("需要访问码。请从带 ?key= 的链接进入，"
-                    "或打开 <a href='/login'>/login</a> 输入访问码。").encode("utf-8")
-            self._send(401, body, "text/plain; charset=utf-8",
-                       [("WWW-Authenticate",
-                         'Basic realm="Picks Portal", charset="UTF-8"')])
+            body = (
+                "需要访问码。请从带 ?key= 的链接进入，"
+                "或打开 <a href='/login'>/login</a> 输入访问码。"
+            ).encode("utf-8")
+            self._send(
+                401,
+                body,
+                "text/plain; charset=utf-8",
+                [("WWW-Authenticate", 'Basic realm="Picks Portal", charset="UTF-8"')],
+            )
             return
         # 查询串带访问码 → 顺手种 30 天 **新码** Cookie；旧码进入即无感换轨
         # （含身上还挂着旧 Cookie 的设备—— Cookie 已是新码则不必重种）
         if self._query_key_ok() and self._cookie_value() != NEW_PW:
             ck = "%s=%s; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax" % (
-                COOKIE, NEW_PW)
+                COOKIE,
+                NEW_PW,
+            )
             for pat, rel in ROUTES:
                 if pat.match(path):
                     self._serve_file(rel, extra=[("Set-Cookie", ck)])
                     return
             m = DETAIL_RE.match(path)
             if m:
-                self._serve_file("data/pick_details/%s.json" % m.group(1),
-                                 extra=[("Set-Cookie", ck)])
+                self._serve_file(
+                    "data/pick_details/%s.json" % m.group(1), extra=[("Set-Cookie", ck)]
+                )
                 return
             self._send(404, b"404 not found", extra=[("Set-Cookie", ck)])
             return
@@ -206,6 +217,7 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             try:
                 import share_tokens
+
                 share_tokens.visit(m.group(1))
             except Exception:
                 pass

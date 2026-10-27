@@ -14,6 +14,7 @@
 object.__new__(portal_api.Handler) 绕过 BaseHTTPRequestHandler.__init__ +
 stub 子类捕获 _json 输出。运行：python -m pytest test_api_zhuge_adoption.py -q
 """
+
 from __future__ import annotations
 
 import importlib
@@ -29,7 +30,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 ROUTE_PATH = "/api/zhuge/adoption"
-REAL_LEDGER = HERE / "data" / "zhuge_adoption.jsonl"   # 只做隔离断言，绝不写入
+REAL_LEDGER = HERE / "data" / "zhuge_adoption.jsonl"  # 只做隔离断言，绝不写入
 
 
 def _load_module(name):
@@ -69,25 +70,29 @@ def _make_handler():
 
 def _h_post(handler, body, path=ROUTE_PATH, length=None):
     handler.path = path
-    handler.headers = {
-        "Content-Length": str(len(body) if length is None else length)}
+    handler.headers = {"Content-Length": str(len(body) if length is None else length)}
     handler.rfile = io.BytesIO(body)
     handler.do_POST()
 
 
 def _items(n=1):
-    return [{"at": "2026-10-27T10:00:%02d+08:00" % i, "domain": "研发"}
-            for i in range(n)]
+    return [
+        {"at": "2026-10-27T10:00:%02d+08:00" % i, "domain": "研发"} for i in range(n)
+    ]
 
 
 def _rows(path):
     assert path.is_file(), "合法请求应落账本"
-    return [json.loads(x) for x in
-            path.read_text(encoding="utf-8").splitlines() if x.strip()]
+    return [
+        json.loads(x)
+        for x in path.read_text(encoding="utf-8").splitlines()
+        if x.strip()
+    ]
 
 
 class _NoRead:
     """超限/负长度时正文不得被读取（读即失败）。"""
+
     def read(self, *args):
         raise AssertionError("超限/非法长度正文不得先读取")
 
@@ -95,10 +100,15 @@ class _NoRead:
 # ── ① 路由 200：合法写入 tmp 账本 + 字段落盘 ─────────────────────────
 def test_post_valid_200_and_appends(ledger):
     h, seen = _make_handler()
-    body = json.dumps({"items": [
-        {"at": "2026-10-27T10:00:00+08:00", "domain": "研发"},
-        {"at": "2026-10-27T10:01:00+08:00", "domain": "情报", "ua": "pytest"},
-    ]}, ensure_ascii=False).encode("utf-8")
+    body = json.dumps(
+        {
+            "items": [
+                {"at": "2026-10-27T10:00:00+08:00", "domain": "研发"},
+                {"at": "2026-10-27T10:01:00+08:00", "domain": "情报", "ua": "pytest"},
+            ]
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
     _h_post(h, body)
     assert seen.get("code") == 200, "POST /api/zhuge/adoption 应 200"
     assert seen["obj"]["ok"] is True
@@ -129,15 +139,24 @@ def test_post_bad_json_400(ledger):
 
 
 # ── ④ 脏数据整批拒 400：非数组/空/字段越界/必填缺失 ──────────────────
-@pytest.mark.parametrize("payload,needle", [
-    ({"items": "not-a-list"}, "非空数组"),
-    ({"items": []}, "非空数组"),
-    ({"items": [{"at": "2026-10-27T10:00:00+08:00",
-                 "domain": "研发", "evil": 1}]}, "字段越界"),
-    ({"items": ["裸字符串"]}, "字段越界"),
-    ({"items": [{"at": "2026-10-27T10:00:00+08:00"}]}, "必填"),
-    ({"items": [{"domain": "研发"}]}, "必填"),
-])
+@pytest.mark.parametrize(
+    "payload,needle",
+    [
+        ({"items": "not-a-list"}, "非空数组"),
+        ({"items": []}, "非空数组"),
+        (
+            {
+                "items": [
+                    {"at": "2026-10-27T10:00:00+08:00", "domain": "研发", "evil": 1}
+                ]
+            },
+            "字段越界",
+        ),
+        ({"items": ["裸字符串"]}, "字段越界"),
+        ({"items": [{"at": "2026-10-27T10:00:00+08:00"}]}, "必填"),
+        ({"items": [{"domain": "研发"}]}, "必填"),
+    ],
+)
 def test_post_invalid_items_400(ledger, payload, needle):
     h, seen = _make_handler()
     _h_post(h, json.dumps(payload, ensure_ascii=False).encode("utf-8"))
@@ -175,9 +194,13 @@ def test_repeated_posts_append_rows(ledger):
 # ── ⑦ 正文超 64KiB → 413，且不读正文不落盘 ───────────────────────────
 def test_post_oversize_body_413(ledger):
     h, seen = _make_handler()
-    big = json.dumps({"items": [
-        {"at": "2026-10-27T10:00:00+08:00", "domain": "研发",
-         "ua": "x" * 70000}]}).encode("utf-8")
+    big = json.dumps(
+        {
+            "items": [
+                {"at": "2026-10-27T10:00:00+08:00", "domain": "研发", "ua": "x" * 70000}
+            ]
+        }
+    ).encode("utf-8")
     assert len(big) > 65536
     h.path = ROUTE_PATH
     h.headers = {"Content-Length": str(len(big))}

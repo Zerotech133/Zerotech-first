@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """收件人重采工具单测：纯匹配逻辑、补丁生成、离线 chats-file、CLI 无凭据降级。"""
+
 import json
 import os
 import tempfile
@@ -17,7 +18,11 @@ import feishu_target_recollect as tr  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -25,14 +30,18 @@ def ws_tmp():
         shutil.rmtree(root, ignore_errors=True)
 
 
-OLD = [{"name": "个人", "type": "open_id", "app": "cli_OLD"},
-       {"name": "内部测试", "type": "chat_id", "app": "cli_OLD"},
-       {"name": "量化群", "type": "chat_id", "app": "cli_OLD"}]
+OLD = [
+    {"name": "个人", "type": "open_id", "app": "cli_OLD"},
+    {"name": "内部测试", "type": "chat_id", "app": "cli_OLD"},
+    {"name": "量化群", "type": "chat_id", "app": "cli_OLD"},
+]
 
 
 def test_build_patch_all_matched_with_alias():
-    chats = [{"chat_id": "oc_new1", "name": "内部测试"},
-             {"chat_id": "oc_new2", "name": "老田的AI量化"}]
+    chats = [
+        {"chat_id": "oc_new1", "name": "内部测试"},
+        {"chat_id": "oc_new2", "name": "老田的AI量化"},
+    ]
     out = tr.build_patch(OLD, chats, owner_open_id="ou_new", app_id="cli_NEW")
     assert out["unmatched"] == []
     assert len(out["patch"]) == 3
@@ -61,25 +70,36 @@ def test_run_without_creds_fails_soft(ws_tmp, monkeypatch):
 
 def test_run_with_chats_file_and_fake_secret(ws_tmp, monkeypatch):
     monkeypatch.setattr(tr, "SECRETS", ws_tmp)
-    with open(os.path.join(ws_tmp, "zb.ops.notify.json"), "w",
-              encoding="utf-8") as f:
+    with open(os.path.join(ws_tmp, "zb.ops.notify.json"), "w", encoding="utf-8") as f:
         json.dump({"app_id": "cli_NEW", "app_secret": "s"}, f)
-    monkeypatch.setattr(tr, "role_creds", lambda role, secrets_dir=None: ("cli_NEW", "tok"))
+    monkeypatch.setattr(
+        tr, "role_creds", lambda role, secrets_dir=None: ("cli_NEW", "tok")
+    )
     chats = os.path.join(ws_tmp, "chats.json")
     with open(chats, "w", encoding="utf-8") as f:
-        json.dump([{"chat_id": "oc_n1", "name": "内部测试"},
-                   {"chat_id": "oc_n2", "name": "老田的AI量化"}], f)
-    rep = tr.run("zb.ops.notify", owner_open_id="ou_new",
-                 chats_file=chats, dry_run=True)
+        json.dump(
+            [
+                {"chat_id": "oc_n1", "name": "内部测试"},
+                {"chat_id": "oc_n2", "name": "老田的AI量化"},
+            ],
+            f,
+        )
+    rep = tr.run(
+        "zb.ops.notify", owner_open_id="ou_new", chats_file=chats, dry_run=True
+    )
     assert rep["ok"] is True
     assert len(rep["patch"]) == 3
 
 
 def test_cli_json_without_creds_returns_nonzero():
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_target_recollect.py")
-    r = subprocess.run([sys.executable, script, "--role", "zb.no.such.role",
-                        "--json"], capture_output=True, timeout=60)
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_target_recollect.py"
+    )
+    r = subprocess.run(
+        [sys.executable, script, "--role", "zb.no.such.role", "--json"],
+        capture_output=True,
+        timeout=60,
+    )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["ok"] is False
     assert "凭据不可用" in data["error"]

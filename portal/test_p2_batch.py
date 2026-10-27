@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """P2 单测：W41 死信补达 + W43 策略工单环 + 投喂补强（抽取/L3 标注）。"""
+
 import ast
 import os
 import sys
@@ -19,8 +20,9 @@ def test_redeliver_flow(monkeypatch, tmp_path):
     monkeypatch.setattr(dead_letter, "DEAD_PATH", str(tmp_path / "dead.jsonl"))
     monkeypatch.setattr(redeliver, "STATE", str(tmp_path / "state.json"))
 
-    good = dead_letter.register("hub", "openapi", "oc_1", "timeout",
-                                payload='{"title":"x"}')
+    good = dead_letter.register(
+        "hub", "openapi", "oc_1", "timeout", payload='{"title":"x"}'
+    )
     legacy = dead_letter.register("hub", "openapi", "oc_2", "timeout")
     assert good and legacy
 
@@ -72,12 +74,21 @@ def test_strategy_pipeline(monkeypatch, tmp_path):
 
     def _fake_bt(order_id, execute=False, d0=None, d1=None):
         row = sr._last_order(order_id)
-        res = {"status": "done", "job_id": "fake",
-               "result": {"summary": {"total_return_pct": 12.3}}, "evidence": "B"}
-        row = sr._update(order_id, status="backtested", backtest=res,
-                         backtest_plan={"window": ["20250101", "20251231"],
-                                        "pit": {"hist_st": True,
-                                                "pit_st": True}})
+        res = {
+            "status": "done",
+            "job_id": "fake",
+            "result": {"summary": {"total_return_pct": 12.3}},
+            "evidence": "B",
+        }
+        row = sr._update(
+            order_id,
+            status="backtested",
+            backtest=res,
+            backtest_plan={
+                "window": ["20250101", "20251231"],
+                "pit": {"hist_st": True, "pit_st": True},
+            },
+        )
         return {"ok": True, "order": row, "backtest": res}
 
     monkeypatch.setattr(sr, "backtest", _fake_bt)
@@ -122,13 +133,19 @@ def test_extract_uses_trafilatura_when_available(monkeypatch):
     """trafilatura 不可用时走 lxml 启发式（诚实标注 extractor）。"""
     r = feed_extract.extract_main(
         "<html><body><article><p>这是一段正文，用于测试抽取器选择逻辑。</p>"
-        "</article></body></html>", "https://e.com")
+        "</article></body></html>",
+        "https://e.com",
+    )
     assert r["extractor"] in ("trafilatura", "lxml-heuristic", "text-fallback")
     assert "正文" in r["text"]
 
 
 def test_extract_size_guard():
-    big = "<html><body><article>" + "<p>内容段落。</p>" * 5000 + "</article></body></html>"
+    big = (
+        "<html><body><article>"
+        + "<p>内容段落。</p>" * 5000
+        + "</article></body></html>"
+    )
     r = feed_extract.extract_main(big)
     assert len(r["text"]) <= feed_extract.TEXT_MAX
 
@@ -150,8 +167,11 @@ def test_shadow_rejects_negative_backtest(monkeypatch, tmp_path):
     sr.draft(oid)
 
     def _neg_bt(order_id_arg, execute=False, d0=None, d1=None):
-        res = {"status": "done", "result": {"summary": {"total_return_pct": -21.9}},
-               "evidence": "B"}
+        res = {
+            "status": "done",
+            "result": {"summary": {"total_return_pct": -21.9}},
+            "evidence": "B",
+        }
         row = sr._update(order_id_arg, status="backtested", backtest=res)
         return {"ok": True, "order": row, "backtest": res}
 

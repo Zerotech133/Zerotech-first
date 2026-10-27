@@ -9,6 +9,7 @@ dead_id 的补达行挂到原行 redeliveries 数组联动展示。
 落盘判例承 push_flow.py：O_APPEND + 单次 os.write 整行 + threading.Lock
 （只保护同进程；fail-safe 吞异常不抛，死信丢失可容忍、主链路不可断）。
 """
+
 import json
 import os
 import threading
@@ -32,24 +33,27 @@ def _append(row):
             os.close(fd)
 
 
-def register(kind, channel, target, why, decision_id=None,
-             evidence="dead_letter", payload=None):
+def register(
+    kind, channel, target, why, decision_id=None, evidence="dead_letter", payload=None
+):
     """登记一条死信 → dead_id（失败 None，不抛）。evidence 缺省
     dead_letter；传入非法级别也醒目归 dead_letter（死信行不冒充其他证据）。"""
     try:
-        row = {"ts": datetime.now().isoformat(timespec="seconds"),
-               "dead_id": str(uuid.uuid4()),
-               "kind": str(kind or "?")[:80],
-               "channel": str(channel or "?")[:40],
-               "target": str(target or "")[:120],
-               "why": str(why or "")[:300],
-               "decision_id": decision_id,
-               "evidence": evidence if evidence in
-                           ("api_accepted", "receiver_verified", "dead_letter")
-                           else "dead_letter",
-               "redelivered_at": None,
-               "redelivery_message_id": None,
-               "payload": (str(payload)[:2000] if payload else None)}
+        row = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "dead_id": str(uuid.uuid4()),
+            "kind": str(kind or "?")[:80],
+            "channel": str(channel or "?")[:40],
+            "target": str(target or "")[:120],
+            "why": str(why or "")[:300],
+            "decision_id": decision_id,
+            "evidence": evidence
+            if evidence in ("api_accepted", "receiver_verified", "dead_letter")
+            else "dead_letter",
+            "redelivered_at": None,
+            "redelivery_message_id": None,
+            "payload": (str(payload)[:2000] if payload else None),
+        }
         _append(row)
         return row["dead_id"]
     except Exception:
@@ -60,12 +64,14 @@ def mark_redelivered(dead_id, ok, message_id=None, why=""):
     """补达回执：追加独立补达行（不改动原行），redelivery_of 引用原 dead_id。
     → True/False。"""
     try:
-        row = {"ts": datetime.now().isoformat(timespec="seconds"),
-               "redelivery_of": dead_id,
-               "action": "redelivery",
-               "ok": bool(ok),
-               "message_id": str(message_id)[:128] if message_id else None,
-               "why": str(why or "")[:300]}
+        row = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "redelivery_of": dead_id,
+            "action": "redelivery",
+            "ok": bool(ok),
+            "message_id": str(message_id)[:128] if message_id else None,
+            "why": str(why or "")[:300],
+        }
         _append(row)
         return True
     except Exception:
@@ -97,7 +103,7 @@ def list_dead_letters(limit=50):
         if linked:
             row["redeliveries"] = linked
     originals.reverse()
-    return originals[:max(0, int(limit))]
+    return originals[: max(0, int(limit))]
 
 
 # ── N6（派工单 2026-10-19 / P0-4）：死信 24h 计数（只读，供观测面） ──
@@ -110,9 +116,9 @@ def count_since(hours=24):
     按 ts 字段解析（缺 ts/损坏行跳过不计）；文件缺失=0（合法空态）；
     读取异常=-1（观测面显示 unknown，不猜数、不假绿）。"""
     import time as _t
+
     now = _t.time()
-    if (now - _COUNT_CACHE["ts"] < 60.0
-            and _COUNT_CACHE["hours"] == hours):
+    if now - _COUNT_CACHE["ts"] < 60.0 and _COUNT_CACHE["hours"] == hours:
         return _COUNT_CACHE["n"]
     n = -1
     try:
@@ -129,11 +135,11 @@ def count_since(hours=24):
                     try:
                         row = json.loads(line)
                         # 只计原始死信：补达行（action=redelivery / 无 dead_id）不是死信
-                        if str(row.get("action") or "") == "redelivery" or \
-                                not row.get("dead_id"):
+                        if str(row.get("action") or "") == "redelivery" or not row.get(
+                            "dead_id"
+                        ):
                             continue
-                        ts = datetime.fromisoformat(
-                            str(row.get("ts") or "")[:19])
+                        ts = datetime.fromisoformat(str(row.get("ts") or "")[:19])
                         if ts >= cutoff:
                             cnt += 1
                     except (ValueError, TypeError):

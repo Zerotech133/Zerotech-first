@@ -11,6 +11,7 @@
   python m_contract.py --check
   python m_contract.py --json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -56,11 +57,16 @@ def validate(contracts):
         if not isinstance(c, dict):
             raise ContractError("缺少契约：%s" % name)
         if c.get("schema") != schema:
-            raise ContractError("%s schema 应为 %s，实际 %r"
-                                % (name, schema, c.get("schema")))
+            raise ContractError(
+                "%s schema 应为 %s，实际 %r" % (name, schema, c.get("schema"))
+            )
 
-    urls, cards, auth, beacon = (contracts["urls"], contracts["cards"],
-                                 contracts["auth"], contracts["beacon"])
+    urls, cards, auth, beacon = (
+        contracts["urls"],
+        contracts["cards"],
+        contracts["auth"],
+        contracts["beacon"],
+    )
 
     # 1) 路由：path 唯一、page 存在、scene 唯一
     routes = urls.get("routes") or []
@@ -96,8 +102,9 @@ def validate(contracts):
             btn = spec.get(bk) or {}
             p = str(btn.get("path") or "")
             if p and not p.startswith("/m"):
-                raise ContractError("卡片按钮路径必须 /m 开头：%s.%s=%r"
-                                    % (scene, bk, p))
+                raise ContractError(
+                    "卡片按钮路径必须 /m 开头：%s.%s=%r" % (scene, bk, p)
+                )
 
     # 3) 鉴权：三壳齐全、TTL 数字、敏感场景已登记
     shells = auth.get("shells") or {}
@@ -127,13 +134,17 @@ def validate(contracts):
         fields = set(spec.get("fields") or [])
         for f in spec["required"]:
             if f not in fields:
-                raise ContractError("beacon.events.%s 必填字段 %s 不在 fields"
-                                    % (ev, f))
+                raise ContractError(
+                    "beacon.events.%s 必填字段 %s 不在 fields" % (ev, f)
+                )
 
-    return {"routes": len(routes), "scenes": len(scenes),
-            "cards": len(cards.get("scenes") or {}),
-            "events": len(beacon.get("events") or {}),
-            "shells": len(shells)}
+    return {
+        "routes": len(routes),
+        "scenes": len(scenes),
+        "cards": len(cards.get("scenes") or {}),
+        "events": len(beacon.get("events") or {}),
+        "shells": len(shells),
+    }
 
 
 def validate_all(base_dir=None):
@@ -154,9 +165,10 @@ def main(argv=None):
     if args.json:
         print(json.dumps(s, ensure_ascii=False, indent=1))
     else:
-        print("契约校验通过：routes=%d scenes=%d cards=%d events=%d shells=%d"
-              % (s["routes"], s["scenes"], s["cards"], s["events"],
-                 s["shells"]))
+        print(
+            "契约校验通过：routes=%d scenes=%d cards=%d events=%d shells=%d"
+            % (s["routes"], s["scenes"], s["cards"], s["events"], s["shells"])
+        )
     return 0
 
 

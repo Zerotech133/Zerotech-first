@@ -13,6 +13,7 @@ test_dataops_v3.py — 门户「指挥操作系统 v3」统一验收脚本
 退出码：0 = 全部 PASS，1 = 存在 FAIL。
 若首轮存在 FAIL，等待 20 秒后整体重试一次（容忍并行工位中间态），以末轮结果为准。
 """
+
 import json
 import time
 import urllib.request
@@ -23,14 +24,28 @@ STATIC = "http://127.0.0.1:8080"
 
 EXPECT_LAYERS = ["服务", "采集", "数据池", "管道", "消费"]
 HEALTH_ENUM = {
-    "ok", "down", "running", "yielding", "blocked",
-    "backoff", "done", "complete", "unknown", "disabled",
+    "ok",
+    "down",
+    "running",
+    "yielding",
+    "blocked",
+    "backoff",
+    "done",
+    "complete",
+    "unknown",
+    "disabled",
     "degraded",  # A06 收口：部分在岗（"N/M 在岗" 下沉 detail）
-    "stale",     # 第二标准强化：armed 但产出落后 ≥1 天（GubaCrawl 判例）
+    "stale",  # 第二标准强化：armed 但产出落后 ≥1 天（GubaCrawl 判例）
 }
 STATIC_URLS = [
-    "/dataops.html", "/home.html", "/xq_intel.html", "/picks.html",
-    "/org.html", "/lineage.html", "/static/dataops_link.js", "/static/nav.js",
+    "/dataops.html",
+    "/home.html",
+    "/xq_intel.html",
+    "/picks.html",
+    "/org.html",
+    "/lineage.html",
+    "/static/dataops_link.js",
+    "/static/nav.js",
 ]
 RETRY_WAIT = 20  # 秒，失败后重试前的等待
 
@@ -40,9 +55,9 @@ class Results:
 
     def __init__(self, group):
         self.group = group
-        self.passed = []   # (name, detail)
-        self.failed = []   # (name, detail)
-        self.warned = []   # (name, detail)
+        self.passed = []  # (name, detail)
+        self.failed = []  # (name, detail)
+        self.warned = []  # (name, detail)
 
     def check(self, name, cond, detail=""):
         if cond:
@@ -81,43 +96,71 @@ def fetch_json(url, timeout=15):
 # ---------------------------------------------------------------- A. map
 def check_map(res):
     status, mp = fetch_json(f"{API}/api/dataops/map")
-    if not res.check("A01 map 接口 200 且 JSON 可解析", status == 200 and isinstance(mp, dict),
-                     f"status={status}"):
+    if not res.check(
+        "A01 map 接口 200 且 JSON 可解析",
+        status == 200 and isinstance(mp, dict),
+        f"status={status}",
+    ):
         return
     if mp is None:
         return
 
     layers = mp.get("layers")
-    res.check("A02 layers 恰为 服务/采集/数据池/管道/消费",
-              layers == EXPECT_LAYERS, f"layers={layers}")
+    res.check(
+        "A02 layers 恰为 服务/采集/数据池/管道/消费",
+        layers == EXPECT_LAYERS,
+        f"layers={layers}",
+    )
 
     nodes = mp.get("nodes")
-    res.check("A03 nodes 为列表且数量 >= 22",
-              isinstance(nodes, list) and len(nodes) >= 22,
-              f"node_count={len(nodes) if isinstance(nodes, list) else 'N/A'}")
+    res.check(
+        "A03 nodes 为列表且数量 >= 22",
+        isinstance(nodes, list) and len(nodes) >= 22,
+        f"node_count={len(nodes) if isinstance(nodes, list) else 'N/A'}",
+    )
 
     if not (isinstance(nodes, list) and nodes):
         return
 
     ids = [n.get("id") for n in nodes if isinstance(n, dict)]
-    res.check("A04 每节点均有 id", all(ids), "存在缺失 id 的节点" if not all(ids) else f"{len(ids)} 个 id")
-    res.check("A05 节点 id 全局唯一", len(ids) == len(set(ids)),
-              f"重复项={sorted({i for i in ids if ids.count(i) > 1})}")
+    res.check(
+        "A04 每节点均有 id",
+        all(ids),
+        "存在缺失 id 的节点" if not all(ids) else f"{len(ids)} 个 id",
+    )
+    res.check(
+        "A05 节点 id 全局唯一",
+        len(ids) == len(set(ids)),
+        f"重复项={sorted({i for i in ids if ids.count(i) > 1})}",
+    )
 
     bad_health = [
         f"{n.get('id')}={n.get('health')!r}"
-        for n in nodes if isinstance(n, dict) and n.get("health") not in HEALTH_ENUM
+        for n in nodes
+        if isinstance(n, dict) and n.get("health") not in HEALTH_ENUM
     ]
-    res.check("A06 所有节点 health 在合法枚举", not bad_health,
-              f"越界值({len(bad_health)}): {', '.join(bad_health[:8])}")
+    res.check(
+        "A06 所有节点 health 在合法枚举",
+        not bad_health,
+        f"越界值({len(bad_health)}): {', '.join(bad_health[:8])}",
+    )
 
-    bad_layer = [n.get("id") for n in nodes
-                 if isinstance(n, dict) and n.get("layer") not in EXPECT_LAYERS]
+    bad_layer = [
+        n.get("id")
+        for n in nodes
+        if isinstance(n, dict) and n.get("layer") not in EXPECT_LAYERS
+    ]
     res.check("A07 每节点 layer 属于五层之一", not bad_layer, f"越界: {bad_layer[:5]}")
 
-    bad_xy = [n.get("id") for n in nodes
-              if isinstance(n, dict)
-              and not (isinstance(n.get("x"), (int, float)) and isinstance(n.get("y"), (int, float)))]
+    bad_xy = [
+        n.get("id")
+        for n in nodes
+        if isinstance(n, dict)
+        and not (
+            isinstance(n.get("x"), (int, float))
+            and isinstance(n.get("y"), (int, float))
+        )
+    ]
     res.check("A08 每节点 x/y 为数值", not bad_xy, f"异常: {bad_xy[:5]}")
     bad_name = [n.get("id") for n in nodes if isinstance(n, dict) and not n.get("name")]
     res.check("A09 每节点有 name", not bad_name, f"缺失: {bad_name[:5]}")
@@ -125,18 +168,32 @@ def check_map(res):
     edges = mp.get("edges")
     id_set = set(ids)
     if isinstance(edges, list) and edges:
-        bad_from = sorted({e.get("from") for e in edges
-                           if isinstance(e, dict) and e.get("from") not in id_set})
-        bad_to = sorted({e.get("to") for e in edges
-                         if isinstance(e, dict) and e.get("to") not in id_set})
-        res.check("A10 edges.from 均在 nodes 集合内", not bad_from, f"悬空 from: {bad_from}")
+        bad_from = sorted(
+            {
+                e.get("from")
+                for e in edges
+                if isinstance(e, dict) and e.get("from") not in id_set
+            }
+        )
+        bad_to = sorted(
+            {
+                e.get("to")
+                for e in edges
+                if isinstance(e, dict) and e.get("to") not in id_set
+            }
+        )
+        res.check(
+            "A10 edges.from 均在 nodes 集合内", not bad_from, f"悬空 from: {bad_from}"
+        )
         res.check("A11 edges.to 均在 nodes 集合内", not bad_to, f"悬空 to: {bad_to}")
         no_rel = [e for e in edges if isinstance(e, dict) and not e.get("rel")]
         res.check("A12 每条边有 rel 字段", not no_rel, f"缺失条数={len(no_rel)}")
     else:
         res.check("A10 edges 为非空列表", False, f"edges={edges!r}")
 
-    res.check("A13 map 含 summary 键", "summary" in mp and isinstance(mp.get("summary"), dict))
+    res.check(
+        "A13 map 含 summary 键", "summary" in mp and isinstance(mp.get("summary"), dict)
+    )
 
     # 告警级：同层内 x 差 <140 且 y 相同 → 视觉重叠
     overlaps = []
@@ -145,13 +202,17 @@ def check_map(res):
             a, b = nodes[i], nodes[j]
             if not (isinstance(a, dict) and isinstance(b, dict)):
                 continue
-            if a.get("layer") == b.get("layer") \
-                    and a.get("y") == b.get("y") \
-                    and isinstance(a.get("x"), (int, float)) \
-                    and abs(a["x"] - b["x"]) < 140:
+            if (
+                a.get("layer") == b.get("layer")
+                and a.get("y") == b.get("y")
+                and isinstance(a.get("x"), (int, float))
+                and abs(a["x"] - b["x"]) < 140
+            ):
                 overlaps.append(f"{a.get('id')}~{b.get('id')}")
     if overlaps:
-        res.warn("W01 同层节点疑似视觉重叠（x 差<140 且 y 相同）", "; ".join(overlaps[:10]))
+        res.warn(
+            "W01 同层节点疑似视觉重叠（x 差<140 且 y 相同）", "; ".join(overlaps[:10])
+        )
     else:
         res.check("A14 无同层节点重叠", True)
 
@@ -160,47 +221,90 @@ def check_map(res):
 def check_entity(res, node_ids):
     # pipe:classify 契约
     status, ent = fetch_json(f"{API}/api/dataops/entity?id=pipe:classify")
-    if not res.check("B01 pipe:classify 200 且 JSON 可解析", status == 200 and isinstance(ent, dict),
-                     f"status={status}"):
+    if not res.check(
+        "B01 pipe:classify 200 且 JSON 可解析",
+        status == 200 and isinstance(ent, dict),
+        f"status={status}",
+    ):
         return
     if ent is None:
         return
 
     ups = [u.get("id") for u in ent.get("upstream", []) if isinstance(u, dict)]
     downs = [d.get("id") for d in ent.get("downstream", []) if isinstance(d, dict)]
-    res.check("B02 pipe:classify upstream 含 pool:xueqiu", "pool:xueqiu" in ups, f"upstream={ups}")
-    res.check("B03 pipe:classify downstream 含 pipe:report", "pipe:report" in downs, f"downstream={downs}")
+    res.check(
+        "B02 pipe:classify upstream 含 pool:xueqiu",
+        "pool:xueqiu" in ups,
+        f"upstream={ups}",
+    )
+    res.check(
+        "B03 pipe:classify downstream 含 pipe:report",
+        "pipe:report" in downs,
+        f"downstream={downs}",
+    )
 
     if node_ids is not None:
         dangling = sorted(set(ups + downs) - node_ids)
-        res.check("B04 pipe:classify 上下游 id 均能在 map.nodes 找到", not dangling,
-                  f"悬空: {dangling}")
+        res.check(
+            "B04 pipe:classify 上下游 id 均能在 map.nodes 找到",
+            not dangling,
+            f"悬空: {dangling}",
+        )
 
     # pool:xueqiu 契约
     status, pool = fetch_json(f"{API}/api/dataops/entity?id=pool:xueqiu")
-    if res.check("B05 pool:xueqiu 200 且 JSON 可解析", status == 200 and isinstance(pool, dict),
-                 f"status={status}") and pool:
-        res.check("B06 pool:xueqiu metrics 非空", bool(pool.get("metrics")),
-                  f"metrics={pool.get('metrics')!r}")
-        pool_ups = [u.get("id") for u in pool.get("upstream", []) if isinstance(u, dict)]
-        pool_downs = [d.get("id") for d in pool.get("downstream", []) if isinstance(d, dict)]
+    if (
+        res.check(
+            "B05 pool:xueqiu 200 且 JSON 可解析",
+            status == 200 and isinstance(pool, dict),
+            f"status={status}",
+        )
+        and pool
+    ):
+        res.check(
+            "B06 pool:xueqiu metrics 非空",
+            bool(pool.get("metrics")),
+            f"metrics={pool.get('metrics')!r}",
+        )
+        pool_ups = [
+            u.get("id") for u in pool.get("upstream", []) if isinstance(u, dict)
+        ]
+        pool_downs = [
+            d.get("id") for d in pool.get("downstream", []) if isinstance(d, dict)
+        ]
         if node_ids is not None:
             dangling2 = sorted(set(pool_ups + pool_downs) - node_ids)
-            res.check("B07 pool:xueqiu 上下游 id 均能在 map.nodes 找到", not dangling2,
-                      f"悬空: {dangling2}")
+            res.check(
+                "B07 pool:xueqiu 上下游 id 均能在 map.nodes 找到",
+                not dangling2,
+                f"悬空: {dangling2}",
+            )
 
     # svc:hermes 契约
     status, hermes = fetch_json(f"{API}/api/dataops/entity?id=svc:hermes")
-    if res.check("B08 svc:hermes 200", status == 200 and isinstance(hermes, dict),
-                 f"status={status}") and hermes:
+    if (
+        res.check(
+            "B08 svc:hermes 200",
+            status == 200 and isinstance(hermes, dict),
+            f"status={status}",
+        )
+        and hermes
+    ):
         h = (hermes.get("status") or {}).get("health")
-        res.check("B09 svc:hermes status.health ∈ {ok, down}", h in ("ok", "down"), f"health={h!r}")
+        res.check(
+            "B09 svc:hermes status.health ∈ {ok, down}",
+            h in ("ok", "down"),
+            f"health={h!r}",
+        )
 
     # 404 / 400
     status, body404 = fetch_json(f"{API}/api/dataops/entity?id=nonexistent:qa_probe")
     res.check("B10 未知 id 返回 HTTP 404", status == 404, f"status={status}")
-    res.check("B11 404 body 含 known 键", isinstance(body404, dict) and "known" in body404,
-              f"keys={list(body404) if isinstance(body404, dict) else body404!r}")
+    res.check(
+        "B11 404 body 含 known 键",
+        isinstance(body404, dict) and "known" in body404,
+        f"keys={list(body404) if isinstance(body404, dict) else body404!r}",
+    )
 
     status, body400 = fetch_json(f"{API}/api/dataops/entity")
     res.check("B12 缺参返回 HTTP 400", status == 400, f"status={status}")
@@ -218,8 +322,11 @@ def check_regression(res):
     status, intel = fetch_json(f"{API}/api/xq/intel", timeout=20)
     ok = status == 200 and isinstance(intel, dict)
     res.check("D01 xq/intel 200", status == 200, f"status={status}")
-    res.check("D02 xq/intel 含 report_exists 键", ok and "report_exists" in intel,
-              f"keys={list(intel)[:10] if ok else 'N/A'}")
+    res.check(
+        "D02 xq/intel 含 report_exists 键",
+        ok and "report_exists" in intel,
+        f"keys={list(intel)[:10] if ok else 'N/A'}",
+    )
 
     status, _ = fetch_json(f"{API}/api/perf/board?limit=1")
     res.check("D03 perf/board?limit=1 200", status == 200, f"status={status}")
@@ -227,10 +334,16 @@ def check_regression(res):
     status, ov = fetch_json(f"{API}/api/dataops/overview?view=summary")
     ok = status == 200 and isinstance(ov, dict)
     res.check("D04 overview?view=summary 200", status == 200, f"status={status}")
-    res.check("D05 overview?view=summary 含 summary 键", ok and "summary" in ov,
-              f"keys={list(ov)[:10] if ok else 'N/A'}")
-    res.check("D06 overview?view=summary 含 errors 键", ok and "errors" in ov,
-              f"keys={list(ov)[:10] if ok else 'N/A'}")
+    res.check(
+        "D05 overview?view=summary 含 summary 键",
+        ok and "summary" in ov,
+        f"keys={list(ov)[:10] if ok else 'N/A'}",
+    )
+    res.check(
+        "D06 overview?view=summary 含 errors 键",
+        ok and "errors" in ov,
+        f"keys={list(ov)[:10] if ok else 'N/A'}",
+    )
 
 
 def run_all():
@@ -286,7 +399,9 @@ def summarize(results, elapsed, retried):
         print(f"\n(首轮存在 FAIL，已等待 {RETRY_WAIT}s 重试一次，以上为末轮结果)")
     print("-" * 72)
     verdict = "PASS" if failed_n == 0 else "FAIL"
-    print(f"总计: {total - failed_n}/{total} 通过  |  耗时 {elapsed:.1f}s  |  结论: {verdict}")
+    print(
+        f"总计: {total - failed_n}/{total} 通过  |  耗时 {elapsed:.1f}s  |  结论: {verdict}"
+    )
     return failed_n == 0
 
 
@@ -301,9 +416,19 @@ _PORTAL_DIR = _os.path.dirname(_os.path.abspath(__file__))
 if _PORTAL_DIR not in _sys.path:
     _sys.path.insert(0, _PORTAL_DIR)
 
-REQUIRED_XQ_FIELDS = ("key", "name", "carrier", "status", "created_at_range",
-                      "fetched_at_range", "raw_total", "classified_total",
-                      "classified_pct", "posts_2024plus", "graph_watermark")
+REQUIRED_XQ_FIELDS = (
+    "key",
+    "name",
+    "carrier",
+    "status",
+    "created_at_range",
+    "fetched_at_range",
+    "raw_total",
+    "classified_total",
+    "classified_pct",
+    "posts_2024plus",
+    "graph_watermark",
+)
 
 
 def _api_dataops():
@@ -313,7 +438,9 @@ def _api_dataops():
 def test_xq_source_card_present():
     ov = _api_dataops().overview()
     cards = [s for s in ov.get("sources", []) if s.get("key") == "xueqiu"]
-    assert cards, "overview.sources 缺少雪球源条目（一源一档未登记）: %r" % (ov.get("sources"),)
+    assert cards, "overview.sources 缺少雪球源条目（一源一档未登记）: %r" % (
+        ov.get("sources"),
+    )
 
 
 def test_xq_source_card_fields():
@@ -352,7 +479,9 @@ def _audit_snapshot():
         return None, None
     with open(files[-1], encoding="utf-8") as fh:
         a = json.load(fh)
-    return (a.get("funnel") or {}).get("cached_candidate_symbols"), a.get("generated_at")
+    return (a.get("funnel") or {}).get("cached_candidate_symbols"), a.get(
+        "generated_at"
+    )
 
 
 def test_xq_card_coverage_fields():
@@ -366,9 +495,13 @@ def test_xq_card_coverage_fields():
     if n_audit is None:
         assert card["cached_symbols"] is None, "无审计产物时覆盖数必须 null"
     else:
-        assert card["cached_symbols"] == int(n_audit), \
-            "覆盖数 %r 与审计 %r 不一致" % (card["cached_symbols"], n_audit)
-        assert isinstance(card["cached_as_of"], str) and card["cached_as_of"][:4] == "2026"
+        assert card["cached_symbols"] == int(n_audit), "覆盖数 %r 与审计 %r 不一致" % (
+            card["cached_symbols"],
+            n_audit,
+        )
+        assert (
+            isinstance(card["cached_as_of"], str) and card["cached_as_of"][:4] == "2026"
+        )
         assert card["cached_as_of"] == ts_audit
 
 
@@ -421,8 +554,9 @@ def test_quote_cache_meta_header_parse():
     assert card["status"] == "ok", "缓存文件在位时不得降级: %r" % card.get("note")
     assert card["days"] == meta["days"]
     assert card["saved_at"] == meta["saved_at"]
-    assert isinstance(card["size_mb"], int) and card["size_mb"] >= 100, \
+    assert isinstance(card["size_mb"], int) and card["size_mb"] >= 100, (
         "daily_cache.json 为百 MB 级，size_mb=%r 异常" % card["size_mb"]
+    )
     assert card["path"] == api.QUOTE_CACHE_PATH
     ov = api.overview()
     qc = next(s for s in ov["sources"] if s["key"] == "xq_quote_cache")
@@ -443,15 +577,29 @@ def test_quote_cache_missing_degrades(tmp_path, monkeypatch):
 def test_batch_collector_row_registered():
     """采集批次行：COLLECTORS 登记且 overview 出卡，目录在位时 detail 列出最新批次文件。"""
     api = _api_dataops()
-    assert any(k == "xq_user_timeline_batch" for k, *_ in api.COLLECTORS), \
+    assert any(k == "xq_user_timeline_batch" for k, *_ in api.COLLECTORS), (
         "COLLECTORS 未登记 xq_user_timeline_batch"
+    )
     ov = api.overview()
     row = next(c for c in ov["collectors"] if c["key"] == "xq_user_timeline_batch")
-    assert row["health"] in {"ok", "down", "running", "yielding", "blocked",
-                             "backoff", "done", "complete", "unknown", "disabled",
-                             "degraded", "stale"}
+    assert row["health"] in {
+        "ok",
+        "down",
+        "running",
+        "yielding",
+        "blocked",
+        "backoff",
+        "done",
+        "complete",
+        "unknown",
+        "disabled",
+        "degraded",
+        "stale",
+    }
     if row["health"] == "ok":
-        assert "batch_result_" in row["detail"], "在岗时 detail 必须列出最新批次文件: %r" % row["detail"]
+        assert "batch_result_" in row["detail"], (
+            "在岗时 detail 必须列出最新批次文件: %r" % row["detail"]
+        )
     else:
         assert row["detail"], "降级必须带 detail 说明"
 

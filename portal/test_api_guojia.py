@@ -29,14 +29,33 @@ def repo(tmp_path, monkeypatch):
 
 
 def _summary():
-    return {"generated_at": "2026-10-18T18:00:00+08:00", "window_days": 180,
-            "overall": {"n_reconciled": 10, "n_hit": 6, "n_miss": 4,
-                        "hit_rate": 0.6, "first_day": "2026-09-01",
-                        "last_day": "2026-10-16"},
-            "markets": {"cn": {"name": "A股", "hit": 6, "miss": 4,
-                               "hit_rate": 0.6, "days": [], "rolling": []}},
-            "pipeline": {"ran_at": "2026-10-18T18:00:00+08:00",
-                         "counts": {"pending": 2}, "sources": {}}}
+    return {
+        "generated_at": "2026-10-18T18:00:00+08:00",
+        "window_days": 180,
+        "overall": {
+            "n_reconciled": 10,
+            "n_hit": 6,
+            "n_miss": 4,
+            "hit_rate": 0.6,
+            "first_day": "2026-09-01",
+            "last_day": "2026-10-16",
+        },
+        "markets": {
+            "cn": {
+                "name": "A股",
+                "hit": 6,
+                "miss": 4,
+                "hit_rate": 0.6,
+                "days": [],
+                "rolling": [],
+            }
+        },
+        "pipeline": {
+            "ran_at": "2026-10-18T18:00:00+08:00",
+            "counts": {"pending": 2},
+            "sources": {},
+        },
+    }
 
 
 class TestGuojiaSection:
@@ -53,9 +72,11 @@ class TestGuojiaSection:
     def test_projection_and_ledger_stats(self, repo):
         api_guojia.GUOJIA_DIR.mkdir(parents=True)
         api_guojia.SUMMARY_JSON.write_text(
-            json.dumps(_summary(), ensure_ascii=False), encoding="utf-8")
+            json.dumps(_summary(), ensure_ascii=False), encoding="utf-8"
+        )
         api_guojia.VERDICTS_JSONL.write_text(
-            "\n".join(["{}"] * 12) + "\n", encoding="utf-8")
+            "\n".join(["{}"] * 12) + "\n", encoding="utf-8"
+        )
         r = api_guojia.guojia_section()
         assert r["exists"] is True
         assert r["overall"]["hit_rate"] == 0.6
@@ -65,8 +86,7 @@ class TestGuojiaSection:
 
 FAKE_MAPS = {
     "code2sec": {"600519": [{"sector": "酿酒行业", "idx": "881121"}]},
-    "sec2mem": {"酿酒行业": {"idx": "881121",
-                             "members": ["600519", "000858"]}},
+    "sec2mem": {"酿酒行业": {"idx": "881121", "members": ["600519", "000858"]}},
     "name2code": {"贵州茅台": "600519"},
     "code2name": {"600519": "贵州茅台"},
     "rps": {"酿酒行业": 88.2},
@@ -79,13 +99,23 @@ def no_sec(monkeypatch):
     monkeypatch.setattr(api_guojia, "_sector_maps", lambda: FAKE_MAPS)
 
 
-def _row(rid, day="2026-10-13", scope="cn", verdict="hit", t1_pct=2.0,
-         title=None, ents=None):
-    return {"rowid": rid, "day": day, "ts": day + " 10:00:00",
-            "scope": scope, "bias": "bull", "conf": 0.9,
-            "event_type": None, "t1_day": day, "t1_pct": t1_pct,
-            "verdict": verdict, "title": title,
-            "ents": ents if ents is not None else []}
+def _row(
+    rid, day="2026-10-13", scope="cn", verdict="hit", t1_pct=2.0, title=None, ents=None
+):
+    return {
+        "rowid": rid,
+        "day": day,
+        "ts": day + " 10:00:00",
+        "scope": scope,
+        "bias": "bull",
+        "conf": 0.9,
+        "event_type": None,
+        "t1_day": day,
+        "t1_pct": t1_pct,
+        "verdict": verdict,
+        "title": title,
+        "ents": ents if ents is not None else [],
+    }
 
 
 class TestDrill:
@@ -94,8 +124,9 @@ class TestDrill:
     def _ledger(self, repo, rows):
         api_guojia.GUOJIA_DIR.mkdir(parents=True, exist_ok=True)
         api_guojia.VERDICTS_JSONL.write_text(
-            "\n".join(json.dumps(r, ensure_ascii=False)
-                      for r in rows) + "\n", encoding="utf-8")
+            "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+            encoding="utf-8",
+        )
 
     def test_no_params_400(self, repo):
         payload, code = api_guojia.drill_data({})
@@ -116,17 +147,19 @@ class TestDrill:
         assert c1 == c2 == c3 == 400
 
     def test_code_and_sector_conflict_400(self, repo):
-        _, code = api_guojia.drill_data({"code": "600519",
-                                         "sector": "酿酒行业"})
+        _, code = api_guojia.drill_data({"code": "600519", "sector": "酿酒行业"})
         assert code == 400
 
     def test_mode_a_sort_and_filter(self, repo):
-        self._ledger(repo, [
-            _row(1, verdict="hit", t1_pct=1.0),
-            _row(2, verdict="hit", t1_pct=-3.0),
-            _row(3, verdict="miss", t1_pct=9.0),
-            _row(4, verdict="hit", t1_pct=None),
-        ])
+        self._ledger(
+            repo,
+            [
+                _row(1, verdict="hit", t1_pct=1.0),
+                _row(2, verdict="hit", t1_pct=-3.0),
+                _row(3, verdict="miss", t1_pct=9.0),
+                _row(4, verdict="hit", t1_pct=None),
+            ],
+        )
         payload, code = api_guojia.drill_data({"verdict": "hit"})
         assert code == 200 and payload["mode"] == "list"
         assert payload["total"] == 3 and len(payload["rows"]) == 3
@@ -134,14 +167,32 @@ class TestDrill:
         assert [r["rowid"] for r in payload["rows"]] == [2, 1, 4]
 
     def test_mode_b_stock_by_code(self, repo, no_sec):
-        self._ledger(repo, [
-            _row(1, verdict="hit", t1_pct=2.0, title="贵州茅台利好",
-                 ents=["贵州茅台"]),
-            _row(2, verdict="miss", t1_pct=-1.0, title="贵州茅台回调",
-                 ents=["贵州茅台"]),
-            _row(3, verdict="hit", t1_pct=5.0, title="宁德时代利好",
-                 ents=["宁德时代"]),
-        ])
+        self._ledger(
+            repo,
+            [
+                _row(
+                    1,
+                    verdict="hit",
+                    t1_pct=2.0,
+                    title="贵州茅台利好",
+                    ents=["贵州茅台"],
+                ),
+                _row(
+                    2,
+                    verdict="miss",
+                    t1_pct=-1.0,
+                    title="贵州茅台回调",
+                    ents=["贵州茅台"],
+                ),
+                _row(
+                    3,
+                    verdict="hit",
+                    t1_pct=5.0,
+                    title="宁德时代利好",
+                    ents=["宁德时代"],
+                ),
+            ],
+        )
         payload, code = api_guojia.drill_data({"code": "600519"})
         assert code == 200 and payload["mode"] == "stock"
         st = payload["stock"]
@@ -152,24 +203,45 @@ class TestDrill:
         assert payload["total"] == 2
 
     def test_mode_b_entity_name_unmapped(self, repo, no_sec):
-        self._ledger(repo, [
-            _row(1, verdict="hit", t1_pct=1.5, title="特斯拉发布新品",
-                 ents=["特斯拉"]),
-        ])
+        self._ledger(
+            repo,
+            [
+                _row(
+                    1,
+                    verdict="hit",
+                    t1_pct=1.5,
+                    title="特斯拉发布新品",
+                    ents=["特斯拉"],
+                ),
+            ],
+        )
         payload, _ = api_guojia.drill_data({"code": "特斯拉"})
         assert payload["stock"]["mapped"] is False
         assert payload["stock"]["name"] == "特斯拉"
         assert payload["total"] == 1 and payload["rows"][0]["rowid"] == 1
 
     def test_mode_c_sector(self, repo, no_sec):
-        self._ledger(repo, [
-            _row(1, verdict="hit", t1_pct=2.0, title="酿酒行业景气上行"),
-            _row(2, verdict="miss", t1_pct=-0.5, title="白酒板块走弱"),
-            _row(3, verdict="hit", t1_pct=3.0, title="白酒动销旺盛",
-                 ents=["贵州茅台"]),   # K-ORG-194: ents 成分股实体反向命中
-            _row(4, verdict="miss", t1_pct=-0.8, title="电池排产回暖",
-                 ents=["宁德时代"]),   # 非成分股 → 不入
-        ])
+        self._ledger(
+            repo,
+            [
+                _row(1, verdict="hit", t1_pct=2.0, title="酿酒行业景气上行"),
+                _row(2, verdict="miss", t1_pct=-0.5, title="白酒板块走弱"),
+                _row(
+                    3,
+                    verdict="hit",
+                    t1_pct=3.0,
+                    title="白酒动销旺盛",
+                    ents=["贵州茅台"],
+                ),  # K-ORG-194: ents 成分股实体反向命中
+                _row(
+                    4,
+                    verdict="miss",
+                    t1_pct=-0.8,
+                    title="电池排产回暖",
+                    ents=["宁德时代"],
+                ),  # 非成分股 → 不入
+            ],
+        )
         payload, code = api_guojia.drill_data({"sector": "酿酒行业"})
         assert code == 200 and payload["mode"] == "sector"
         assert payload["sector"]["n_members"] == 2
@@ -180,16 +252,18 @@ class TestDrill:
 
     def test_handler_thin_wrapper(self, repo, no_sec):
         from urllib.parse import parse_qs
+
         captured = {}
 
         class Stub:
-            _norm_qs = staticmethod(
-                lambda qs: parse_qs(qs, keep_blank_values=True))
-            _json = staticmethod(lambda payload, code=200: captured.update(
-                {"payload": payload, "code": code}))
+            _norm_qs = staticmethod(lambda qs: parse_qs(qs, keep_blank_values=True))
+            _json = staticmethod(
+                lambda payload, code=200: captured.update(
+                    {"payload": payload, "code": code}
+                )
+            )
 
-        api_guojia.Handler._guojia_drill(
-            Stub(), "code=600519&scope=cn&verdict=hit")
+        api_guojia.Handler._guojia_drill(Stub(), "code=600519&scope=cn&verdict=hit")
         assert captured["code"] == 200
         assert captured["payload"]["mode"] == "stock"
         assert captured["payload"]["filters"]["scope"] == "cn"

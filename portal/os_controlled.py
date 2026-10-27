@@ -12,6 +12,7 @@
 
 本模块只做"真实受控"的最小闭环；L2 外部动作仍被风控拒绝（需后续人工审批通道）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -32,7 +33,12 @@ except ImportError:  # pragma: no cover
 BEIJING = timezone(timedelta(hours=8))
 USER_ACTOR = {"kind": "user", "id": "laotian", "seat": "laotian"}
 SYSTEM_ACTOR = {"kind": "system", "id": "os_controlled"}
-CONTROLLED_ACTIONS = ("artifact.generate", "workspace.write", "test.run", "workspace.cleanup")
+CONTROLLED_ACTIONS = (
+    "artifact.generate",
+    "workspace.write",
+    "test.run",
+    "workspace.cleanup",
+)
 L1_ACTIONS = set(CONTROLLED_ACTIONS)
 L2_ACTIONS = {"external.send", "publish", "production.deploy", "trade.execute"}
 SIGNER_METHODS = ("session_nonce", "local_password_session")
@@ -47,7 +53,9 @@ def _now() -> str:
 
 
 def _valid_until(hours: int = 2) -> str:
-    return (datetime.now(BEIJING) + timedelta(hours=hours)).isoformat(timespec="seconds")
+    return (datetime.now(BEIJING) + timedelta(hours=hours)).isoformat(
+        timespec="seconds"
+    )
 
 
 def _parse(ts: Any) -> Optional[datetime]:
@@ -71,9 +79,11 @@ def _usable_grant(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
     p = g["payload"]
     _require(p.get("env") == "controlled", "真实签准环境必须是 controlled")
     _require(_valid_grant(p), "签准已过期，请重新签准")
-    revoked = any(e.get("type") == "grant.revoked"
-                  and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")
-                  for e in evs)
+    revoked = any(
+        e.get("type") == "grant.revoked"
+        and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")
+        for e in evs
+    )
     _require(not revoked, "签准已撤销：%s" % p.get("grant_id"))
     return p
 
@@ -101,7 +111,10 @@ def _consumer(store: S.OsGoalStore, consumer_id: str) -> Optional[Dict[str, Any]
     found = None
     for e in _all_events(store):
         p = e.get("payload") or {}
-        if e.get("type") == "consumer.registered" and p.get("consumer_id") == consumer_id:
+        if (
+            e.get("type") == "consumer.registered"
+            and p.get("consumer_id") == consumer_id
+        ):
             found = p
     return found
 
@@ -129,10 +142,19 @@ def _workspace(store: S.OsGoalStore, item_id: str) -> str:
 
 
 # ---------------- 消费者注册 ----------------
-def register_consumer(store: S.OsGoalStore, consumer_id: str, kind: str = "agent",
-                      display_name: str = "", capabilities: Optional[List[str]] = None,
-                      owner_id: str = "laotian", idem: Optional[str] = None) -> Dict[str, Any]:
-    _require(bool(ID_RE.match(str(consumer_id or ""))), "consumer_id 非法（3-64 位字母数字._-）")
+def register_consumer(
+    store: S.OsGoalStore,
+    consumer_id: str,
+    kind: str = "agent",
+    display_name: str = "",
+    capabilities: Optional[List[str]] = None,
+    owner_id: str = "laotian",
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
+    _require(
+        bool(ID_RE.match(str(consumer_id or ""))),
+        "consumer_id 非法（3-64 位字母数字._-）",
+    )
     _require(kind in CONSUMER_KINDS, "消费者类型必须是 %s" % (CONSUMER_KINDS,))
     caps = [str(c) for c in (capabilities or ["artifact.generate"])]
     _require(all(c in L1_ACTIONS for c in caps), "能力必须属于受控 L1 动作")
@@ -140,13 +162,21 @@ def register_consumer(store: S.OsGoalStore, consumer_id: str, kind: str = "agent
     if existing and existing.get("status") == "active":
         return existing
     ev = store.append_event(
-        "consumer.registered", {},
-        {"consumer_id": consumer_id, "kind": kind,
-         "display_name": display_name or consumer_id,
-         "capabilities": caps, "owner_id": owner_id,
-         "status": "active", "registered_at": _now(),
-         "reactivated": bool(existing)},
-        actor=USER_ACTOR, idem=idem)
+        "consumer.registered",
+        {},
+        {
+            "consumer_id": consumer_id,
+            "kind": kind,
+            "display_name": display_name or consumer_id,
+            "capabilities": caps,
+            "owner_id": owner_id,
+            "status": "active",
+            "registered_at": _now(),
+            "reactivated": bool(existing),
+        },
+        actor=USER_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
 
 
@@ -160,77 +190,135 @@ def list_consumers(store: S.OsGoalStore) -> List[Dict[str, Any]]:
     return list(latest.values())
 
 
-def deactivate_consumer(store: S.OsGoalStore, consumer_id: str, reason: str = "manual",
-                        idem: Optional[str] = None) -> Dict[str, Any]:
+def deactivate_consumer(
+    store: S.OsGoalStore,
+    consumer_id: str,
+    reason: str = "manual",
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _active_consumer(store, consumer_id)
     ev = store.append_event(
-        "consumer.registered", {},
-        {"consumer_id": consumer_id, "status": "inactive",
-         "deactivated_at": _now(), "reason": reason},
-        actor=USER_ACTOR, idem=idem)
+        "consumer.registered",
+        {},
+        {
+            "consumer_id": consumer_id,
+            "status": "inactive",
+            "deactivated_at": _now(),
+            "reason": reason,
+        },
+        actor=USER_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
-
 
 
 # ---------------- 签准 / 工单 ----------------
-def sign_real_grant(store: S.OsGoalStore, item_id: str, actions: List[str],
-                    nonce: str, signer_method: str = "session_nonce",
-                    valid_hours: int = 2, idem: Optional[str] = None) -> Dict[str, Any]:
+def sign_real_grant(
+    store: S.OsGoalStore,
+    item_id: str,
+    actions: List[str],
+    nonce: str,
+    signer_method: str = "session_nonce",
+    valid_hours: int = 2,
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _item(store, item_id)
     _require(signer_method in SIGNER_METHODS, "签准方式必须是 %s" % (SIGNER_METHODS,))
-    _require(isinstance(nonce, str) and len(nonce.strip()) >= 8, "真实签准必须带 nonce（≥8 字符）")
+    _require(
+        isinstance(nonce, str) and len(nonce.strip()) >= 8,
+        "真实签准必须带 nonce（≥8 字符）",
+    )
     acts = [str(a) for a in (actions or [])]
     _require(bool(acts), "签准动作不能为空")
-    _require(all(a in L1_ACTIONS for a in acts), "真实签准只允许 L1 受控动作：%s" % (CONTROLLED_ACTIONS,))
+    _require(
+        all(a in L1_ACTIONS for a in acts),
+        "真实签准只允许 L1 受控动作：%s" % (CONTROLLED_ACTIONS,),
+    )
     _require(1 <= int(valid_hours) <= 24, "真实签准有效期 1-24 小时")
     ev = store.append_event(
-        "grant.signed", {"item_id": item_id},
-        {"grant_id": "GRT-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
-         "grant_version": "g1", "actions": sorted(set(acts)), "env": "controlled",
-         "signer": {"kind": "user", "id": "laotian", "method": signer_method,
-                    "nonce_sha256": "sha256:" + hashlib.sha256(nonce.encode()).hexdigest()},
-         "valid_until": _valid_until(int(valid_hours))},
-        actor=USER_ACTOR, idem=idem)
+        "grant.signed",
+        {"item_id": item_id},
+        {
+            "grant_id": "GRT-%s-%03d"
+            % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+            "grant_version": "g1",
+            "actions": sorted(set(acts)),
+            "env": "controlled",
+            "signer": {
+                "kind": "user",
+                "id": "laotian",
+                "method": signer_method,
+                "nonce_sha256": "sha256:" + hashlib.sha256(nonce.encode()).hexdigest(),
+            },
+            "valid_until": _valid_until(int(valid_hours)),
+        },
+        actor=USER_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
 
 
-def revoke_grant(store: S.OsGoalStore, item_id: str, grant_id: str,
-                 idem: Optional[str] = None) -> Dict[str, Any]:
+def revoke_grant(
+    store: S.OsGoalStore, item_id: str, grant_id: str, idem: Optional[str] = None
+) -> Dict[str, Any]:
     _item(store, item_id)
     g = _find(_evs(store, item_id), "grant.signed")
-    _require(g is not None and g["payload"].get("grant_id") == grant_id,
-             "撤销失败：签准不存在或不是最新签准：%s" % grant_id)
+    _require(
+        g is not None and g["payload"].get("grant_id") == grant_id,
+        "撤销失败：签准不存在或不是最新签准：%s" % grant_id,
+    )
     ev = store.append_event(
-        "grant.revoked", {"item_id": item_id},
+        "grant.revoked",
+        {"item_id": item_id},
         {"grant_id": grant_id, "revoked_at": _now()},
-        actor=USER_ACTOR, idem=idem)
+        actor=USER_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
 
 
-def create_formal_workorder(store: S.OsGoalStore, item_id: str,
-                            acceptance: str, required_capabilities: Optional[List[str]] = None,
-                            idem: Optional[str] = None) -> Dict[str, Any]:
+def create_formal_workorder(
+    store: S.OsGoalStore,
+    item_id: str,
+    acceptance: str,
+    required_capabilities: Optional[List[str]] = None,
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _item(store, item_id)
     evs = _evs(store, item_id)
     grant = _usable_grant(store, item_id)
     _require(bool(str(acceptance or "").strip()), "正式工单必须写验收口径")
     caps = [str(c) for c in (required_capabilities or ["artifact.generate"])]
-    _require(all(c in grant.get("actions", []) for c in caps),
-             "工单要求超出签准动作范围")
+    _require(
+        all(c in grant.get("actions", []) for c in caps), "工单要求超出签准动作范围"
+    )
     ev = store.append_event(
-        "workorder.formal", {"item_id": item_id},
-        {"workorder_id": "WO-%s-%03d" % (time.strftime("%Y%m%d"), len(evs) + 1),
-         "acceptance": acceptance, "required_capabilities": caps,
-         "grant_id": grant.get("grant_id"), "env": "controlled",
-         "created_by": "laotian", "created_at": _now()},
-        actor=SYSTEM_ACTOR, idem=idem)
+        "workorder.formal",
+        {"item_id": item_id},
+        {
+            "workorder_id": "WO-%s-%03d" % (time.strftime("%Y%m%d"), len(evs) + 1),
+            "acceptance": acceptance,
+            "required_capabilities": caps,
+            "grant_id": grant.get("grant_id"),
+            "env": "controlled",
+            "created_by": "laotian",
+            "created_at": _now(),
+        },
+        actor=SYSTEM_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
 
 
 # ---------------- 风控裁决 ----------------
-def risk_verdict(store: S.OsGoalStore, item_id: str, action: str,
-                 consumer_id: Optional[str] = None, context: Optional[Dict[str, Any]] = None,
-                 idem: Optional[str] = None) -> Dict[str, Any]:
+def risk_verdict(
+    store: S.OsGoalStore,
+    item_id: str,
+    action: str,
+    consumer_id: Optional[str] = None,
+    context: Optional[Dict[str, Any]] = None,
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _item(store, item_id)
     action = str(action or "")
     reasons, decision, level = [], "deny", "L2"
@@ -251,18 +339,28 @@ def risk_verdict(store: S.OsGoalStore, item_id: str, action: str,
             decision = "deny"
             reasons.append("消费者校验失败：%s" % exc)
     ev = store.append_event(
-        "risk.verdict", {"item_id": item_id},
-        {"verdict_id": "RSK-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
-         "action": action, "decision": decision, "risk_level": level,
-         "reasons": reasons, "policy": "os-risk-v0",
-         "context": context or {}},
-        actor=SYSTEM_ACTOR, idem=idem)
+        "risk.verdict",
+        {"item_id": item_id},
+        {
+            "verdict_id": "RSK-%s-%03d"
+            % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+            "action": action,
+            "decision": decision,
+            "risk_level": level,
+            "reasons": reasons,
+            "policy": "os-risk-v0",
+            "context": context or {},
+        },
+        actor=SYSTEM_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
 
 
 # ---------------- 真实认领 / 受控产物 ----------------
-def real_claim(store: S.OsGoalStore, item_id: str, consumer_id: str,
-               idem: Optional[str] = None) -> Dict[str, Any]:
+def real_claim(
+    store: S.OsGoalStore, item_id: str, consumer_id: str, idem: Optional[str] = None
+) -> Dict[str, Any]:
     consumer = _active_consumer(store, consumer_id)
     evs = _evs(store, item_id)
     wo = _find(evs, "workorder.formal")
@@ -272,15 +370,25 @@ def real_claim(store: S.OsGoalStore, item_id: str, consumer_id: str,
     _require(caps <= set(grant.get("actions", [])), "签准未覆盖工单要求动作")
     ccaps = set(consumer.get("capabilities") or [])
     _require(caps <= ccaps, "消费者能力不足：缺 %s" % sorted(caps - ccaps))
-    lease = (datetime.now(BEIJING) + timedelta(minutes=LEASE_MINUTES)).isoformat(timespec="seconds")
+    lease = (datetime.now(BEIJING) + timedelta(minutes=LEASE_MINUTES)).isoformat(
+        timespec="seconds"
+    )
     ev = store.append_event(
-        "workorder.claimed", {"item_id": item_id},
-        {"workorder_id": wo["payload"].get("workorder_id"),
-         "claim": {"consumer_id": consumer_id, "method": "real",
-                   "claimed_at": _now(), "lease_until": lease,
-                   "authority_ref": grant.get("grant_id")}},
+        "workorder.claimed",
+        {"item_id": item_id},
+        {
+            "workorder_id": wo["payload"].get("workorder_id"),
+            "claim": {
+                "consumer_id": consumer_id,
+                "method": "real",
+                "claimed_at": _now(),
+                "lease_until": lease,
+                "authority_ref": grant.get("grant_id"),
+            },
+        },
         actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id},
-        idem=idem)
+        idem=idem,
+    )
     return ev["payload"]
 
 
@@ -289,15 +397,26 @@ def _claim_active(claim_event: Optional[Dict[str, Any]], consumer_id: str) -> bo
         return False
     claim = (claim_event.get("payload") or {}).get("claim") or {}
     until = _parse(claim.get("lease_until"))
-    return (claim.get("method") == "real" and claim.get("consumer_id") == consumer_id
-            and bool(until and datetime.now(BEIJING) < until))
+    return (
+        claim.get("method") == "real"
+        and claim.get("consumer_id") == consumer_id
+        and bool(until and datetime.now(BEIJING) < until)
+    )
 
 
-def produce_controlled_artifact(store: S.OsGoalStore, item_id: str, consumer_id: str,
-                                filename: str, content: str,
-                                idem: Optional[str] = None) -> Dict[str, Any]:
+def produce_controlled_artifact(
+    store: S.OsGoalStore,
+    item_id: str,
+    consumer_id: str,
+    filename: str,
+    content: str,
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _active_consumer(store, consumer_id)
-    _require(bool(FILE_RE.match(str(filename or ""))), "文件名必须是安全文件名（html/md/txt/json/log）")
+    _require(
+        bool(FILE_RE.match(str(filename or ""))),
+        "文件名必须是安全文件名（html/md/txt/json/log）",
+    )
     _require(bool(str(content or "").strip()), "产物内容不能为空")
     evs = _evs(store, item_id)
     claim = _find(evs, "workorder.claimed")
@@ -305,45 +424,82 @@ def produce_controlled_artifact(store: S.OsGoalStore, item_id: str, consumer_id:
     grant = _usable_grant(store, item_id)
     wo = _find(evs, "workorder.formal")
     _require(wo is not None, "缺少正式工单")
-    _require("artifact.generate" in (grant.get("actions") or []),
-             "签准未包含 artifact.generate")
+    _require(
+        "artifact.generate" in (grant.get("actions") or []),
+        "签准未包含 artifact.generate",
+    )
     safe = os.path.realpath(os.path.join(_workspace(store, item_id), filename))
     base = os.path.realpath(store.base_dir)
-    _require(safe.startswith(os.path.realpath(os.path.join(base, "items", item_id, "workspace")) + os.sep),
-             "产物路径越界")
+    _require(
+        safe.startswith(
+            os.path.realpath(os.path.join(base, "items", item_id, "workspace")) + os.sep
+        ),
+        "产物路径越界",
+    )
     # 风控：执行前必须有 allow 裁决
     risk = _find(evs, "risk.verdict")
-    if not (risk and risk["payload"].get("action") == "artifact.generate"
-            and risk["payload"].get("decision") == "allow"):
-        risk_ev = risk_verdict(store, item_id, "artifact.generate", consumer_id=consumer_id,
-                               context={"source": "produce_artifact"})
-        _require(risk_ev.get("decision") == "allow", "风控未放行：%s" % risk_ev.get("reasons"))
+    if not (
+        risk
+        and risk["payload"].get("action") == "artifact.generate"
+        and risk["payload"].get("decision") == "allow"
+    ):
+        risk_ev = risk_verdict(
+            store,
+            item_id,
+            "artifact.generate",
+            consumer_id=consumer_id,
+            context={"source": "produce_artifact"},
+        )
+        _require(
+            risk_ev.get("decision") == "allow",
+            "风控未放行：%s" % risk_ev.get("reasons"),
+        )
     data = content.encode("utf-8")
     with open(safe, "wb") as fh:
         fh.write(data)
     sha = "sha256:" + hashlib.sha256(data).hexdigest()
     art = store.append_event(
-        "artifact.produced", {"item_id": item_id},
-        {"artifact_id": "ART-%s-C0" % item_id, "version": "c1",
-         "workorder_id": wo["payload"].get("workorder_id"),
-         "path": safe, "path_rel": os.path.join("items", item_id, "workspace", filename),
-         "sha256": sha, "bytes": len(data), "env": "controlled",
-         "consumer": {"kind": "consumer", "id": consumer_id},
-         "rollback": {"method": "delete_dir",
-                      "recipe": "撤回=删除 %s（进回收站）；事件与指纹保留对账"
-                                % os.path.dirname(safe)}},
-        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id}, idem=idem)
+        "artifact.produced",
+        {"item_id": item_id},
+        {
+            "artifact_id": "ART-%s-C0" % item_id,
+            "version": "c1",
+            "workorder_id": wo["payload"].get("workorder_id"),
+            "path": safe,
+            "path_rel": os.path.join("items", item_id, "workspace", filename),
+            "sha256": sha,
+            "bytes": len(data),
+            "env": "controlled",
+            "consumer": {"kind": "consumer", "id": consumer_id},
+            "rollback": {
+                "method": "delete_dir",
+                "recipe": "撤回=删除 %s（进回收站）；事件与指纹保留对账"
+                % os.path.dirname(safe),
+            },
+        },
+        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id},
+        idem=idem,
+    )
     # 自检回执（与 G1 一致：自检≠独立 QA）
     store.append_event(
-        "test.recorded", {"item_id": item_id},
-        {"evidence_id": "TES-%s-C0" % item_id,
-         "artifact_id": art["payload"]["artifact_id"],
-         "type": "unit", "command": "os_controlled.static_selfcheck",
-         "result": "pass" if len(data) > 0 and safe.startswith(base) else "fail",
-         "output_sha256": sha,
-         "executed_by": "os_controlled.selfcheck（非独立QA）"},
-        actor=SYSTEM_ACTOR)
-    return {"artifact": art["payload"], "risk": risk["payload"] if risk else {}, "claim": claim["payload"]}
+        "test.recorded",
+        {"item_id": item_id},
+        {
+            "evidence_id": "TES-%s-C0" % item_id,
+            "artifact_id": art["payload"]["artifact_id"],
+            "type": "unit",
+            "command": "os_controlled.static_selfcheck",
+            "result": "pass" if len(data) > 0 and safe.startswith(base) else "fail",
+            "output_sha256": sha,
+            "executed_by": "os_controlled.selfcheck（非独立QA）",
+        },
+        actor=SYSTEM_ACTOR,
+    )
+    return {
+        "artifact": art["payload"],
+        "risk": risk["payload"] if risk else {},
+        "claim": claim["payload"],
+    }
 
 
 # ---------------- 审计链 ----------------
@@ -365,32 +521,59 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
         gate("C0-AUTH", "BLOCKED", "缺少真实签准")
     else:
         p = grant["payload"]
-        revokes = [e for e in evs
-                   if e.get("type") == "grant.revoked"
-                   and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")]
+        revokes = [
+            e
+            for e in evs
+            if e.get("type") == "grant.revoked"
+            and (e.get("payload") or {}).get("grant_id") == p.get("grant_id")
+        ]
         signer_ok = (p.get("signer") or {}).get("kind") == "user"
         if art is not None:
             # 历史链：按产物产生时刻判定授权（之后的撤销/过期不追溯翻案）
             produced = _parse(art.get("at")) or datetime.now(BEIJING)
             until = _parse(p.get("valid_until"))
             revoke_before_art = any(
-                art.get("seq") is not None and e.get("seq") is not None
-                and e["seq"] < art["seq"] for e in revokes)
-            ok = (p.get("env") == "controlled" and signer_ok
-                  and bool(until and produced < until) and not revoke_before_art)
-            note = "历史产物按产生时刻判定" + ("；撤销发生在产物之后" if revokes and not revoke_before_art else "")
+                art.get("seq") is not None
+                and e.get("seq") is not None
+                and e["seq"] < art["seq"]
+                for e in revokes
+            )
+            ok = (
+                p.get("env") == "controlled"
+                and signer_ok
+                and bool(until and produced < until)
+                and not revoke_before_art
+            )
+            note = "历史产物按产生时刻判定" + (
+                "；撤销发生在产物之后" if revokes and not revoke_before_art else ""
+            )
         else:
             revoked = bool(revokes)
-            ok = (p.get("env") == "controlled" and signer_ok
-                  and _valid_grant(p) and not revoked)
+            ok = (
+                p.get("env") == "controlled"
+                and signer_ok
+                and _valid_grant(p)
+                and not revoked
+            )
             note = "（已撤销）" if revoked else ""
-        gate("C0-AUTH", "PASS" if ok else "FAIL",
-             "真实签准 env=%s 有效期至 %s%s" % (p.get("env"), p.get("valid_until"), note))
+        gate(
+            "C0-AUTH",
+            "PASS" if ok else "FAIL",
+            "真实签准 env=%s 有效期至 %s%s"
+            % (p.get("env"), p.get("valid_until"), note),
+        )
     if wo is None:
         gate("C0-WO", "BLOCKED", "缺少正式工单")
     else:
-        ok = bool(wo["payload"].get("acceptance")) and wo["payload"].get("env") == "controlled"
-        gate("C0-WO", "PASS" if ok else "FAIL", "正式工单 %s" % wo["payload"].get("workorder_id"))
+        ok = (
+            bool(wo["payload"].get("acceptance"))
+            and wo["payload"].get("env") == "controlled"
+        )
+        gate(
+            "C0-WO",
+            "PASS" if ok else "FAIL",
+            "正式工单 %s" % wo["payload"].get("workorder_id"),
+        )
     if claim is None:
         gate("C0-CLAIM", "BLOCKED", "尚未真实认领")
     else:
@@ -398,34 +581,65 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
         cid = claim_p.get("consumer_id")
         consumer = _consumer(store, cid)
         claim_seq = claim.get("seq")
-        deact_seqs = [e.get("seq") for e in evs
-                      if e.get("type") == "consumer.registered"
-                      and (e.get("payload") or {}).get("consumer_id") == cid
-                      and (e.get("payload") or {}).get("status") == "inactive"
-                      and e.get("seq") is not None]
-        deact_before_claim = any(claim_seq is not None and s2 < claim_seq for s2 in deact_seqs)
-        ok = (claim_p.get("method") == "real" and consumer is not None
-              and not deact_before_claim)
-        note = "；停用发生在认领之后（历史有效）" if deact_seqs and not deact_before_claim else ""
-        gate("C0-CLAIM", "PASS" if ok else "FAIL",
-             "consumer=%s method=%s%s" % (cid, claim_p.get("method"), note))
+        deact_seqs = [
+            e.get("seq")
+            for e in evs
+            if e.get("type") == "consumer.registered"
+            and (e.get("payload") or {}).get("consumer_id") == cid
+            and (e.get("payload") or {}).get("status") == "inactive"
+            and e.get("seq") is not None
+        ]
+        deact_before_claim = any(
+            claim_seq is not None and s2 < claim_seq for s2 in deact_seqs
+        )
+        ok = (
+            claim_p.get("method") == "real"
+            and consumer is not None
+            and not deact_before_claim
+        )
+        note = (
+            "；停用发生在认领之后（历史有效）"
+            if deact_seqs and not deact_before_claim
+            else ""
+        )
+        gate(
+            "C0-CLAIM",
+            "PASS" if ok else "FAIL",
+            "consumer=%s method=%s%s" % (cid, claim_p.get("method"), note),
+        )
     if risk is None:
         gate("C0-RISK", "BLOCKED", "缺少风控裁决")
     else:
         rp = risk["payload"]
         ok = rp.get("action") == "artifact.generate" and rp.get("decision") == "allow"
-        gate("C0-RISK", "PASS" if ok else "FAIL",
-             "action=%s decision=%s" % (rp.get("action"), rp.get("decision")))
+        gate(
+            "C0-RISK",
+            "PASS" if ok else "FAIL",
+            "action=%s decision=%s" % (rp.get("action"), rp.get("decision")),
+        )
     if art is None:
         gate("C0-ART", "BLOCKED", "尚未产出受控产物")
     else:
         ap = art["payload"]
-        ok = (ap.get("env") == "controlled" and str(ap.get("sha256", "")).startswith("sha256:"))
-        gate("C0-ART", "PASS" if ok else "FAIL", "artifact=%s sha=%s" % (ap.get("artifact_id"), ap.get("sha256")))
-    bad_actor = [e.get("seq") for e in evs
-                 if (e.get("actor") or {}).get("kind") not in ("user", "agent", "system", "consumer")]
-    gate("C0-AUDIT", "PASS" if not bad_actor else "FAIL",
-         "actor 审计：%s" % ("全部合法" if not bad_actor else "异常 seq=%s" % bad_actor))
+        ok = ap.get("env") == "controlled" and str(ap.get("sha256", "")).startswith(
+            "sha256:"
+        )
+        gate(
+            "C0-ART",
+            "PASS" if ok else "FAIL",
+            "artifact=%s sha=%s" % (ap.get("artifact_id"), ap.get("sha256")),
+        )
+    bad_actor = [
+        e.get("seq")
+        for e in evs
+        if (e.get("actor") or {}).get("kind")
+        not in ("user", "agent", "system", "consumer")
+    ]
+    gate(
+        "C0-AUDIT",
+        "PASS" if not bad_actor else "FAIL",
+        "actor 审计：%s" % ("全部合法" if not bad_actor else "异常 seq=%s" % bad_actor),
+    )
 
     statuses = [g["status"] for g in gates.values()]
     if "FAIL" in statuses:
@@ -434,71 +648,131 @@ def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any
         verdict, exit_code = "BLOCKED", 3
     else:
         verdict, exit_code = "CONTROLLED_ONLY", 0
-    return {"item_id": item_id, "verdict": verdict, "exit_code": exit_code,
-            "gates": gates, "counts": {"events": len(evs)},
-            "honesty": {"claim": "real", "env": "controlled",
-                        "limit": "L2 外部动作仍被风控拒绝；本链只证本地受控可执行"}}
+    return {
+        "item_id": item_id,
+        "verdict": verdict,
+        "exit_code": exit_code,
+        "gates": gates,
+        "counts": {"events": len(evs)},
+        "honesty": {
+            "claim": "real",
+            "env": "controlled",
+            "limit": "L2 外部动作仍被风控拒绝；本链只证本地受控可执行",
+        },
+    }
 
 
 # ================= C1：L2 人工审批通道（仍本机受控，不实际外发） =================
-def request_l2_approval(store: S.OsGoalStore, item_id: str, action: str, consumer_id: str,
-                        summary: str = "", ttl_minutes: int = 30,
-                        idem: Optional[str] = None) -> Dict[str, Any]:
+def request_l2_approval(
+    store: S.OsGoalStore,
+    item_id: str,
+    action: str,
+    consumer_id: str,
+    summary: str = "",
+    ttl_minutes: int = 30,
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _item(store, item_id)
     action = str(action or "")
-    _require(action in L2_ACTIONS, "只有 L2 外部/不可逆动作需要人工审批：%s" % (sorted(L2_ACTIONS),))
+    _require(
+        action in L2_ACTIONS,
+        "只有 L2 外部/不可逆动作需要人工审批：%s" % (sorted(L2_ACTIONS),),
+    )
     _active_consumer(store, consumer_id)
     _require(1 <= int(ttl_minutes) <= 240, "审批有效期 1-240 分钟")
-    expires = (datetime.now(BEIJING) + timedelta(minutes=int(ttl_minutes))).isoformat(timespec="seconds")
+    expires = (datetime.now(BEIJING) + timedelta(minutes=int(ttl_minutes))).isoformat(
+        timespec="seconds"
+    )
     ev = store.append_event(
-        "approval.requested", {"item_id": item_id},
-        {"approval_id": "APR-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
-         "action": action, "consumer_id": consumer_id,
-         "summary": str(summary or "")[:400], "expires_at": expires,
-         "status": "pending", "requested_by": "consumer",
-         "env": "controlled", "external_sent": False},
-        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id}, idem=idem)
+        "approval.requested",
+        {"item_id": item_id},
+        {
+            "approval_id": "APR-%s-%03d"
+            % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+            "action": action,
+            "consumer_id": consumer_id,
+            "summary": str(summary or "")[:400],
+            "expires_at": expires,
+            "status": "pending",
+            "requested_by": "consumer",
+            "env": "controlled",
+            "external_sent": False,
+        },
+        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id},
+        idem=idem,
+    )
     return ev["payload"]
 
 
-def decide_l2_approval(store: S.OsGoalStore, item_id: str, approval_id: str,
-                       decision: str, nonce: str, note: str = "",
-                       signer_method: str = "session_nonce",
-                       idem: Optional[str] = None) -> Dict[str, Any]:
+def decide_l2_approval(
+    store: S.OsGoalStore,
+    item_id: str,
+    approval_id: str,
+    decision: str,
+    nonce: str,
+    note: str = "",
+    signer_method: str = "session_nonce",
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _item(store, item_id)
     evs = _evs(store, item_id)
     req = None
     for e in reversed(evs):
-        if e.get("type") == "approval.requested" and (e.get("payload") or {}).get("approval_id") == approval_id:
+        if (
+            e.get("type") == "approval.requested"
+            and (e.get("payload") or {}).get("approval_id") == approval_id
+        ):
             req = e["payload"]
             break
     _require(req is not None, "审批单不存在：%s" % approval_id)
-    already = any(e.get("type") == "approval.decided"
-                  and (e.get("payload") or {}).get("approval_id") == approval_id
-                  for e in evs)
+    already = any(
+        e.get("type") == "approval.decided"
+        and (e.get("payload") or {}).get("approval_id") == approval_id
+        for e in evs
+    )
     _require(not already, "审批单已有结论，不能重复裁决：%s" % approval_id)
     exp = _parse(req.get("expires_at"))
     _require(bool(exp and datetime.now(BEIJING) < exp), "审批单已过期，请重新申请")
     _require(decision in ("approved", "denied"), "审批结论必须是 approved / denied")
     _require(signer_method in SIGNER_METHODS, "签准方式不合法")
-    _require(isinstance(nonce, str) and len(nonce.strip()) >= 8, "人工审批必须带 nonce（≥8 字符）")
+    _require(
+        isinstance(nonce, str) and len(nonce.strip()) >= 8,
+        "人工审批必须带 nonce（≥8 字符）",
+    )
     ev = store.append_event(
-        "approval.decided", {"item_id": item_id},
-        {"approval_id": approval_id, "decision": decision, "note": str(note or "")[:300],
-         "action": req.get("action"), "consumer_id": req.get("consumer_id"),
-         "signer": {"kind": "user", "id": "laotian", "method": signer_method,
-                    "nonce_sha256": "sha256:" + hashlib.sha256(nonce.encode()).hexdigest()},
-         "decided_at": _now()},
-        actor=USER_ACTOR, idem=idem)
+        "approval.decided",
+        {"item_id": item_id},
+        {
+            "approval_id": approval_id,
+            "decision": decision,
+            "note": str(note or "")[:300],
+            "action": req.get("action"),
+            "consumer_id": req.get("consumer_id"),
+            "signer": {
+                "kind": "user",
+                "id": "laotian",
+                "method": signer_method,
+                "nonce_sha256": "sha256:" + hashlib.sha256(nonce.encode()).hexdigest(),
+            },
+            "decided_at": _now(),
+        },
+        actor=USER_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
 
 
-def _approval_state(store: S.OsGoalStore, item_id: str, approval_id: str) -> Dict[str, Any]:
+def _approval_state(
+    store: S.OsGoalStore, item_id: str, approval_id: str
+) -> Dict[str, Any]:
     evs = _evs(store, item_id)
     req = dec = None
     for e in evs:
         p = e.get("payload") or {}
-        if e.get("type") == "approval.requested" and p.get("approval_id") == approval_id:
+        if (
+            e.get("type") == "approval.requested"
+            and p.get("approval_id") == approval_id
+        ):
             req = p
         if e.get("type") == "approval.decided" and p.get("approval_id") == approval_id:
             dec = p
@@ -512,9 +786,14 @@ def _approval_state(store: S.OsGoalStore, item_id: str, approval_id: str) -> Dic
     return {"status": dec.get("decision") or "unknown", "request": req, "decision": dec}
 
 
-def risk_verdict_with_approval(store: S.OsGoalStore, item_id: str, action: str,
-                               consumer_id: str, approval_id: str,
-                               idem: Optional[str] = None) -> Dict[str, Any]:
+def risk_verdict_with_approval(
+    store: S.OsGoalStore,
+    item_id: str,
+    action: str,
+    consumer_id: str,
+    approval_id: str,
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _item(store, item_id)
     action = str(action or "")
     reasons = []
@@ -536,18 +815,35 @@ def risk_verdict_with_approval(store: S.OsGoalStore, item_id: str, action: str,
                 decision = "allow"
                 reasons.append("本人逐次审批通过（%s）" % approval_id)
     ev = store.append_event(
-        "risk.verdict", {"item_id": item_id},
-        {"verdict_id": "RSK-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
-         "action": action, "decision": decision, "risk_level": level,
-         "reasons": reasons, "policy": "os-risk-v0-c1",
-         "approval_id": approval_id, "consumer_id": consumer_id},
-        actor=SYSTEM_ACTOR, idem=idem)
+        "risk.verdict",
+        {"item_id": item_id},
+        {
+            "verdict_id": "RSK-%s-%03d"
+            % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+            "action": action,
+            "decision": decision,
+            "risk_level": level,
+            "reasons": reasons,
+            "policy": "os-risk-v0-c1",
+            "approval_id": approval_id,
+            "consumer_id": consumer_id,
+        },
+        actor=SYSTEM_ACTOR,
+        idem=idem,
+    )
     return ev["payload"]
 
 
-def record_l2_outbox(store: S.OsGoalStore, item_id: str, consumer_id: str,
-                     approval_id: str, action: str, summary: str = "",
-                     payload_text: str = "", idem: Optional[str] = None) -> Dict[str, Any]:
+def record_l2_outbox(
+    store: S.OsGoalStore,
+    item_id: str,
+    consumer_id: str,
+    approval_id: str,
+    action: str,
+    summary: str = "",
+    payload_text: str = "",
+    idem: Optional[str] = None,
+) -> Dict[str, Any]:
     _active_consumer(store, consumer_id)
     action = str(action or "")
     _require(action in L2_ACTIONS, "outbox 仅用于 L2 动作")
@@ -555,28 +851,48 @@ def record_l2_outbox(store: S.OsGoalStore, item_id: str, consumer_id: str,
     st = _approval_state(store, item_id, approval_id)
     _require(st["status"] == "approved", "outbox 前必须有本人 approved 审批")
     req = st.get("request") or {}
-    _require(req.get("action") == action and req.get("consumer_id") == consumer_id,
-             "审批与 outbox 的动作/消费者不一致")
+    _require(
+        req.get("action") == action and req.get("consumer_id") == consumer_id,
+        "审批与 outbox 的动作/消费者不一致",
+    )
     rk = risk_verdict_with_approval(store, item_id, action, consumer_id, approval_id)
     _require(rk.get("decision") == "allow", "风控未放行：%s" % rk.get("reasons"))
-    body = {"action": action, "approval_id": approval_id,
-            "consumer_id": consumer_id, "summary": str(summary or "")[:400],
-            "payload": str(payload_text or "")[:4000],
-            "external_sent": False, "env": "controlled",
-            "note": "C1 仅记录受控 outbox；未调用任何外部发送通道"}
+    body = {
+        "action": action,
+        "approval_id": approval_id,
+        "consumer_id": consumer_id,
+        "summary": str(summary or "")[:400],
+        "payload": str(payload_text or "")[:4000],
+        "external_sent": False,
+        "env": "controlled",
+        "note": "C1 仅记录受控 outbox；未调用任何外部发送通道",
+    }
     raw = json.dumps(body, ensure_ascii=False, indent=1).encode("utf-8")
     ws = _workspace(store, item_id)
-    path = os.path.join(ws, "l2_outbox_%s.json" % re.sub(r"[^A-Za-z0-9._-]", "_", approval_id))
+    path = os.path.join(
+        ws, "l2_outbox_%s.json" % re.sub(r"[^A-Za-z0-9._-]", "_", approval_id)
+    )
     with open(path, "wb") as fh:
         fh.write(raw)
     sha = "sha256:" + hashlib.sha256(raw).hexdigest()
     ev = store.append_event(
-        "l2.outbox.recorded", {"item_id": item_id},
-        {"outbox_id": "OUT-%s-%03d" % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
-         "approval_id": approval_id, "action": action, "consumer_id": consumer_id,
-         "path": path, "sha256": sha, "bytes": len(raw),
-         "external_sent": False, "env": "controlled"},
-        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id}, idem=idem)
+        "l2.outbox.recorded",
+        {"item_id": item_id},
+        {
+            "outbox_id": "OUT-%s-%03d"
+            % (time.strftime("%Y%m%d"), len(_evs(store, item_id)) + 1),
+            "approval_id": approval_id,
+            "action": action,
+            "consumer_id": consumer_id,
+            "path": path,
+            "sha256": sha,
+            "bytes": len(raw),
+            "external_sent": False,
+            "env": "controlled",
+        },
+        actor={"kind": "consumer", "id": consumer_id, "seat": consumer_id},
+        idem=idem,
+    )
     return ev["payload"]
 
 
@@ -600,9 +916,15 @@ def chain_report_c1(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
         gates[n] = {"gate": n, "status": st, "detail": d}
 
     gate("C1-ITEM", "PASS", "事项已建档（%s）" % item_id)
-    gate("C1-REQ", "PASS" if req else "BLOCKED",
-         "审批单 %s action=%s" % ((req or {}).get("payload", {}).get("approval_id"),
-                                  (req or {}).get("payload", {}).get("action")))
+    gate(
+        "C1-REQ",
+        "PASS" if req else "BLOCKED",
+        "审批单 %s action=%s"
+        % (
+            (req or {}).get("payload", {}).get("approval_id"),
+            (req or {}).get("payload", {}).get("action"),
+        ),
+    )
     decision = (dec or {}).get("payload", {}).get("decision")
     rid = (req or {}).get("payload", {}).get("approval_id", "-")
     if dec is None:
@@ -613,14 +935,31 @@ def chain_report_c1(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
         exp = _parse((req or {}).get("payload", {}).get("expires_at"))
         ok = bool(outbox) or bool(exp and datetime.now(BEIJING) < exp)
         note = "；outbox 已记录（历史有效）" if outbox else ""
-        gate("C1-DECISION", "PASS" if ok else "BLOCKED",
-             "本人审批：approved（%s）%s" % (rid, note))
-    gate("C1-RISK", "PASS" if risk and (risk.get("payload") or {}).get("decision") == "allow"
-         else "BLOCKED", "风控：%s" % ((risk or {}).get("payload", {}).get("decision") or "未裁决"))
-    gate("C1-OUTBOX", "PASS" if outbox and (outbox.get("payload") or {}).get("external_sent") is False
-         else "BLOCKED", "受控 outbox（不外发）")
-    bad = [e.get("seq") for e in evs
-           if (e.get("actor") or {}).get("kind") not in ("user", "agent", "system", "consumer")]
+        gate(
+            "C1-DECISION",
+            "PASS" if ok else "BLOCKED",
+            "本人审批：approved（%s）%s" % (rid, note),
+        )
+    gate(
+        "C1-RISK",
+        "PASS"
+        if risk and (risk.get("payload") or {}).get("decision") == "allow"
+        else "BLOCKED",
+        "风控：%s" % ((risk or {}).get("payload", {}).get("decision") or "未裁决"),
+    )
+    gate(
+        "C1-OUTBOX",
+        "PASS"
+        if outbox and (outbox.get("payload") or {}).get("external_sent") is False
+        else "BLOCKED",
+        "受控 outbox（不外发）",
+    )
+    bad = [
+        e.get("seq")
+        for e in evs
+        if (e.get("actor") or {}).get("kind")
+        not in ("user", "agent", "system", "consumer")
+    ]
     gate("C1-AUDIT", "PASS" if not bad else "FAIL", "actor 审计")
     statuses = [g["status"] for g in gates.values()]
     if "FAIL" in statuses:
@@ -629,10 +968,18 @@ def chain_report_c1(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
         verdict, code = "BLOCKED", 3
     else:
         verdict, code = "CONTROLLED_L2_APPROVED", 0
-    return {"item_id": item_id, "verdict": verdict, "exit_code": code,
-            "gates": gates, "counts": {"events": len(evs)},
-            "honesty": {"approval": "per_action_user", "external_sent": False,
-                        "limit": "仅审批+outbox 记录；未调用任何外部发送通道"}}
+    return {
+        "item_id": item_id,
+        "verdict": verdict,
+        "exit_code": code,
+        "gates": gates,
+        "counts": {"events": len(evs)},
+        "honesty": {
+            "approval": "per_action_user",
+            "external_sent": False,
+            "limit": "仅审批+outbox 记录；未调用任何外部发送通道",
+        },
+    }
 
 
 def list_approvals(store: S.OsGoalStore, item_id: str) -> List[Dict[str, Any]]:
@@ -662,11 +1009,17 @@ def list_approvals(store: S.OsGoalStore, item_id: str) -> List[Dict[str, Any]]:
             exp = _parse(req.get("expires_at"))
             if exp and datetime.now(BEIJING) >= exp:
                 status = "expired"
-        out.append({"approval_id": aid, "action": req.get("action"),
-                    "consumer_id": req.get("consumer_id"),
-                    "summary": req.get("summary"), "status": status,
-                    "expires_at": req.get("expires_at"),
-                    "requested_at": req.get("requested_at"),
-                    "decided_at": (dec or {}).get("decided_at"),
-                    "decided_note": (dec or {}).get("note")})
+        out.append(
+            {
+                "approval_id": aid,
+                "action": req.get("action"),
+                "consumer_id": req.get("consumer_id"),
+                "summary": req.get("summary"),
+                "status": status,
+                "expires_at": req.get("expires_at"),
+                "requested_at": req.get("requested_at"),
+                "decided_at": (dec or {}).get("decided_at"),
+                "decided_note": (dec or {}).get("note"),
+            }
+        )
     return out

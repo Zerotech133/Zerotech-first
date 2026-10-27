@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-087 冒烟：/algo 页渲染 + 卡密激活闭环 + 主页统计口径。"""
+
 import json
 import os
 import sys
@@ -13,9 +14,11 @@ if h is None:
     # 找 handler 类名
     for n in dir(pa):
         o = getattr(pa, n)
-        if isinstance(o, type) and "BaseHTTPRequestHandler" in [
-                c.__name__ for c in o.__mro__[1:-1]] or (
-                isinstance(o, type) and hasattr(o, "_html")):
+        if (
+            isinstance(o, type)
+            and "BaseHTTPRequestHandler" in [c.__name__ for c in o.__mro__[1:-1]]
+            or (isinstance(o, type) and hasattr(o, "_html"))
+        ):
             h = object.__new__(o)
             print("handler =", n)
             break
@@ -27,8 +30,7 @@ h._html = lambda body, code=200: buf.setdefault("body", body)
 # 1) /algo 页渲染
 h._algo_market_page({})
 body = buf["body"]
-for expect in ("算法商品市场", "量子双刀", "试看结果", "卡密激活",
-               "LTSO", "试看模式"):
+for expect in ("算法商品市场", "量子双刀", "试看结果", "卡密激活", "LTSO", "试看模式"):
     assert expect in body, "missing: " + expect
 print("1) /algo render OK, len=%d" % len(body))
 
@@ -39,6 +41,7 @@ ok, msg = h._algo_activate("LTSO-FAKE-0000")
 assert not ok, msg
 # 4) 真卡激活 → 解锁 → 复原
 import shutil
+
 shutil.copy("licenses.json", "licenses.json.bak")
 ok, msg = h._algo_activate("ltso-neiq8-2026a")
 assert ok, msg
@@ -51,8 +54,9 @@ ok2, msg2 = h._algo_activate("LTSO-NEIQ8-2026A")
 assert ok2 and "已激活" in msg2
 # 还原（测试不留激活痕迹）
 bak = json.load(open("licenses.json.bak", encoding="utf-8"))
-json.dump(bak, open("licenses.json", "w", encoding="utf-8"),
-          ensure_ascii=False, indent=2)
+json.dump(
+    bak, open("licenses.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2
+)
 os.remove("licenses.json.bak")
 assert h._license_state("quant_dual") is False
 print("2-4) license activate/close-loop OK")
@@ -63,8 +67,9 @@ shutil.copy("licenses.json", "licenses.json.bak")
 h._algo_market_page({"key": ["LTSO-NEIQ8-2026A"]})
 assert "激活成功" in buf["body"]
 bak = json.load(open("licenses.json.bak", encoding="utf-8"))
-json.dump(bak, open("licenses.json", "w", encoding="utf-8"),
-          ensure_ascii=False, indent=2)
+json.dump(
+    bak, open("licenses.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2
+)
 os.remove("licenses.json.bak")
 print("5) toast branch OK")
 

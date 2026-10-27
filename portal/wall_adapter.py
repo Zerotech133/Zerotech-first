@@ -39,6 +39,7 @@ G1 自有产物接入（K-STOCK-122 §八挂账，v3 方案 §五缺口 2）：
 - 原子写：同目录 .tmp → os.replace（判例 tools/sync_pipeline_to_strategies.py）；
 - 只读输入文件，绝不修改。
 """
+
 import argparse
 import collections
 import json
@@ -50,22 +51,32 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_TODAYS_PICKS = os.path.join(REPO_ROOT, "portal", "data", "todays_picks.json")
 DEFAULT_VERDICTS = os.path.join(REPO_ROOT, "portal", "data", "pick_verdicts.json")
 DEFAULT_MINUTES = os.path.join(REPO_ROOT, "k_stock", "paper", "minutes.json")
-DEFAULT_LINKAGE_SHADOW = os.path.join(REPO_ROOT, "quant_backtest", "data",
-                                      "linkage_shadow.jsonl")
-DEFAULT_JEV_TRIPLES = os.path.join(REPO_ROOT, "jev-eval", "review_data",
-                                   "triples.jsonl")
+DEFAULT_LINKAGE_SHADOW = os.path.join(
+    REPO_ROOT, "quant_backtest", "data", "linkage_shadow.jsonl"
+)
+DEFAULT_JEV_TRIPLES = os.path.join(
+    REPO_ROOT, "jev-eval", "review_data", "triples.jsonl"
+)
 DEFAULT_OUT = os.path.join(REPO_ROOT, "portal", "data", "wall.json")
 
 MARKETS = {"A": "active", "HK": "planned", "US": "planned", "CRYPTO": "planned"}
-TOP_N = 3          # 每位策略师展示的 top 标的条数
+TOP_N = 3  # 每位策略师展示的 top 标的条数
 # 会议类型标签 + 主持署名换算（三国命名体系 v1.2 §四，纯展示层，零业务语义）：
 # 盘前朝会/收盘夕会主持=司马懿·仲达（量化板块总Agent，组织朝会与复盘）；
 # 真源 portal/persona_registry.json（commander）+ 设计文档 v1.2；未知 kind → 空（不猜）。
 KIND_LABEL = {"pre_open": "盘前朝会", "post_close": "收盘夕会"}
 KIND_HOST = {"pre_open": "司马懿·仲达", "post_close": "司马懿·仲达"}
 # 墙契约顶层键（顺序即输出顺序）
-WALL_KEYS = ["generated_at", "scan_run_date", "trade_basis", "t1_gate",
-             "strategists", "markets", "committee_line", "provenance"]
+WALL_KEYS = [
+    "generated_at",
+    "scan_run_date",
+    "trade_basis",
+    "t1_gate",
+    "strategists",
+    "markets",
+    "committee_line",
+    "provenance",
+]
 STRATEGIST_KEYS = ["id", "name", "score", "picks_count", "top", "view"]
 
 
@@ -93,8 +104,14 @@ def load_todays_picks(path):
     data = load_json(path, required=True, label="todays_picks")
     if not isinstance(data, dict):
         _fail("todays_picks 顶层不是对象：%s" % path)
-    for key in ("generated_at", "scan_run_date", "trade_basis",
-                "strategies", "t1_gate", "stocks"):
+    for key in (
+        "generated_at",
+        "scan_run_date",
+        "trade_basis",
+        "strategies",
+        "t1_gate",
+        "stocks",
+    ):
         if key not in data:
             _fail("todays_picks 缺必需键 %r：%s" % (key, path))
     if not isinstance(data["strategies"], dict) or not data["strategies"]:
@@ -144,28 +161,37 @@ def build_strategists(picks, verdicts):
         picks_count = n if isinstance(n, int) else 0
         # top 标的：按 n_hit 降序 → pct_chg 降序 → code 升序（全确定性）
         rows = by_source.get(sid, [])
-        rows.sort(key=lambda r: (-(r.get("n_hit") or 0),
-                                 -(r.get("pct_chg") or 0),
-                                 str(r.get("code") or "")))
-        top = [{"ticker": r.get("code") or "",
+        rows.sort(
+            key=lambda r: (
+                -(r.get("n_hit") or 0),
+                -(r.get("pct_chg") or 0),
+                str(r.get("code") or ""),
+            )
+        )
+        top = [
+            {
+                "ticker": r.get("code") or "",
                 "name": r.get("name") or "",
-                "score": None}          # 源数据无逐股评分 → null（前端灰标）
-               for r in rows[:TOP_N]]
+                "score": None,
+            }  # 源数据无逐股评分 → null（前端灰标）
+            for r in rows[:TOP_N]
+        ]
         view = _view_for(sid, meta)
         perf = by_strategy_perf.get(sid)
         if isinstance(perf, dict):
             w1 = perf.get("1") or {}
             if isinstance(w1.get("hit"), (int, float)):
-                view += "；考核 1日 hit %.1f%% avg %s%%" % (
-                    w1["hit"], w1.get("avg"))
-        cards.append({
-            "id": sid,
-            "name": meta.get("label") or sid,
-            "score": None,              # 源数据无策略师级评分 → null（前端灰标）
-            "picks_count": picks_count,
-            "top": top,
-            "view": view,
-        })
+                view += "；考核 1日 hit %.1f%% avg %s%%" % (w1["hit"], w1.get("avg"))
+        cards.append(
+            {
+                "id": sid,
+                "name": meta.get("label") or sid,
+                "score": None,  # 源数据无策略师级评分 → null（前端灰标）
+                "picks_count": picks_count,
+                "top": top,
+                "view": view,
+            }
+        )
     return cards
 
 
@@ -179,8 +205,14 @@ def extract_committee(minutes_path):
     （v1.2 §四），未知 kind 不猜主持；真署名原样留痕 meta.title。
     """
     if not os.path.isfile(minutes_path or ""):
-        return None, None, ("committee_line: minutes.json 未找到"
-                            "（可选投研会纪要源）%s" % minutes_path)
+        return (
+            None,
+            None,
+            (
+                "committee_line: minutes.json 未找到"
+                "（可选投研会纪要源）%s" % minutes_path
+            ),
+        )
     try:
         with open(minutes_path, "r", encoding="utf-8") as f:
             d = json.load(f)
@@ -194,8 +226,14 @@ def extract_committee(minutes_path):
     body = str(latest.get("body", ""))
     m = re.search(r"\*\*会议结论\*\*[：:](.+)", body)
     if not m:
-        return None, None, ("committee_line: 最新纪要（%s）无「会议结论」行"
-                            % latest.get("created_at", "?"))
+        return (
+            None,
+            None,
+            (
+                "committee_line: 最新纪要（%s）无「会议结论」行"
+                % latest.get("created_at", "?")
+            ),
+        )
     conclusion = m.group(1).strip()
     created = str(latest.get("created_at", ""))
     kind = str(latest.get("kind", ""))
@@ -203,12 +241,14 @@ def extract_committee(minutes_path):
     host = KIND_HOST.get(kind, "")
     seg = ("%s 主持｜" % host) if host else ""
     line = "%s %s｜%s%s" % (created[5:10], label, seg, conclusion)
-    meta = {"source": os.path.abspath(minutes_path),
-            "meeting_id": latest.get("id", ""),
-            "meeting_at": created,
-            "kind": kind,
-            "host": host,
-            "title": str(latest.get("title", ""))}
+    meta = {
+        "source": os.path.abspath(minutes_path),
+        "meeting_id": latest.get("id", ""),
+        "meeting_at": created,
+        "kind": kind,
+        "host": host,
+        "title": str(latest.get("title", "")),
+    }
     return line, meta, None
 
 
@@ -251,16 +291,23 @@ def linkage_shadow_view(recs, path):
         if d:
             by_date[d].append(r)
     if not by_date:
-        return None, None, "linkage view: linkage_shadow.jsonl 无 ref_date 字段 %s" % path
+        return (
+            None,
+            None,
+            "linkage view: linkage_shadow.jsonl 无 ref_date 字段 %s" % path,
+        )
     latest = max(by_date)
     rows = by_date[latest]
     counts = collections.Counter(str(r.get("signal_name") or "?") for r in rows)
     # 信号名计数降序 → 名称升序（全确定性；五信号最多 5 类，全列）
-    detail = "·".join("%s %d" % (n, c)
-                      for n, c in sorted(counts.items(),
-                                         key=lambda kv: (-kv[1], kv[0])))
-    view = ("最近信号日 %s：五信号命中 %d 条（%s）；观察池口径（持仓+自选+共振 TopN），"
-            "非全市场扫描" % (latest, len(rows), detail))
+    detail = "·".join(
+        "%s %d" % (n, c)
+        for n, c in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    )
+    view = (
+        "最近信号日 %s：五信号命中 %d 条（%s）；观察池口径（持仓+自选+共振 TopN），"
+        "非全市场扫描" % (latest, len(rows), detail)
+    )
     meta = {"source": os.path.abspath(path), "ref_date": latest, "n_hits": len(rows)}
     return view, meta, None
 
@@ -282,23 +329,44 @@ def jev_gate_card(recs, path):
             if d:
                 reviewed_by_date[d].append(r)
     if not reviewed_by_date:
-        return None, None, "jev 卡: triples.jsonl 无已复核记录（status=reviewed）%s" % path
+        return (
+            None,
+            None,
+            "jev 卡: triples.jsonl 无已复核记录（status=reviewed）%s" % path,
+        )
     latest = max(reviewed_by_date)
     rows = reviewed_by_date[latest]
     n = len(rows)
     rej = sum(1 for r in rows if r.get("decision") == "REJECT")
     passed = n - rej
-    view = ("最近复核 %s：复核 %d 只，门通过 %d 只（通过率 %.1f%%）·否决 %d 只；"
-            "影子·只标注不拦截" % (latest[5:10], n, passed, passed * 100.0 / n, rej))
+    view = (
+        "最近复核 %s：复核 %d 只，门通过 %d 只（通过率 %.1f%%）·否决 %d 只；"
+        "影子·只标注不拦截" % (latest[5:10], n, passed, passed * 100.0 / n, rej)
+    )
     # 其后候选池存在但未复核 → 如实标注（绝不把未复核说成已复核）
-    later = sorted({str(r.get("pool_date") or "") for r in recs
-                    if str(r.get("pool_date") or "") > latest})
+    later = sorted(
+        {
+            str(r.get("pool_date") or "")
+            for r in recs
+            if str(r.get("pool_date") or "") > latest
+        }
+    )
     if later:
         view += "；%s 起候选未复核" % later[0]
-    card = {"id": "jev", "name": "Jev 信号复核门（AI 五原子）", "score": None,
-            "picks_count": n, "top": [], "view": view}
-    meta = {"source": os.path.abspath(path), "pool_date": latest,
-            "n_reviewed": n, "n_rejected": rej}
+    card = {
+        "id": "jev",
+        "name": "Jev 信号复核门（AI 五原子）",
+        "score": None,
+        "picks_count": n,
+        "top": [],
+        "view": view,
+    }
+    meta = {
+        "source": os.path.abspath(path),
+        "pool_date": latest,
+        "n_reviewed": n,
+        "n_rejected": rej,
+    }
     return card, meta, None
 
 
@@ -309,8 +377,9 @@ def _apply_linkage(strategists, recs, linkage_path, missing):
     picks 无 linkage 策略时才追加新卡。缺产物/空产物 → 记 missing 继续跑。
     """
     if recs is None:
-        missing.append("linkage view: linkage_shadow.jsonl 未找到"
-                       "（可选联动源）%s" % linkage_path)
+        missing.append(
+            "linkage view: linkage_shadow.jsonl 未找到（可选联动源）%s" % linkage_path
+        )
         return
     view, _lmeta, lmiss = linkage_shadow_view(recs, linkage_path)
     if lmiss:
@@ -321,9 +390,16 @@ def _apply_linkage(strategists, recs, linkage_path, missing):
     if card is not None:
         card["view"] = view
     else:
-        strategists.append({"id": "linkage", "name": "板块联动",
-                            "score": None, "picks_count": 0,
-                            "top": [], "view": view})
+        strategists.append(
+            {
+                "id": "linkage",
+                "name": "板块联动",
+                "score": None,
+                "picks_count": 0,
+                "top": [],
+                "view": view,
+            }
+        )
 
 
 def _apply_jev(strategists, recs, jev_path, missing):
@@ -332,8 +408,7 @@ def _apply_jev(strategists, recs, jev_path, missing):
     jev 是门不是选股策略师 → top 留空；无已复核记录 → 记 missing 继续跑。
     """
     if recs is None:
-        missing.append("jev 卡: triples.jsonl 未找到"
-                       "（可选复核门源）%s" % jev_path)
+        missing.append("jev 卡: triples.jsonl 未找到（可选复核门源）%s" % jev_path)
         return
     jcard, _jmeta, jmiss = jev_gate_card(recs, jev_path)
     if jmiss:
@@ -342,8 +417,15 @@ def _apply_jev(strategists, recs, jev_path, missing):
         strategists.append(jcard)
 
 
-def build_wall(picks, verdicts, picks_path, verdicts_path, minutes_path=None,
-               linkage_path=None, jev_path=None):
+def build_wall(
+    picks,
+    verdicts,
+    picks_path,
+    verdicts_path,
+    minutes_path=None,
+    linkage_path=None,
+    jev_path=None,
+):
     missing = []
     # 策略师级 score：todays_picks/pick_verdicts 均无此口径 → null + 记缺失
     missing.append("strategist.score: 源文件无策略师级评分字段")
@@ -362,10 +444,15 @@ def build_wall(picks, verdicts, picks_path, verdicts_path, minutes_path=None,
         missing.append(cmiss)
     strategists = build_strategists(picks, verdicts)
     # G1 自有产物（可选源，缺失/空产物 → 记 missing 继续跑，绝不编造）
-    _apply_linkage(strategists, load_jsonl(linkage_path, label="linkage_shadow"),
-                   linkage_path, missing)
-    _apply_jev(strategists, load_jsonl(jev_path, label="jev_triples"),
-               jev_path, missing)
+    _apply_linkage(
+        strategists,
+        load_jsonl(linkage_path, label="linkage_shadow"),
+        linkage_path,
+        missing,
+    )
+    _apply_jev(
+        strategists, load_jsonl(jev_path, label="jev_triples"), jev_path, missing
+    )
     return {
         "generated_at": _iso8601_cn(picks["generated_at"]),
         "scan_run_date": str(picks["scan_run_date"]).replace("-", ""),
@@ -376,9 +463,17 @@ def build_wall(picks, verdicts, picks_path, verdicts_path, minutes_path=None,
         "committee_line": committee_line or "",
         "provenance": {
             "todays_picks_path": os.path.abspath(picks_path),
-            "generated_from": [os.path.abspath(p) for p in (picks_path, verdicts_path,
-                               minutes_path, linkage_path, jev_path)
-                               if p and os.path.isfile(p)],
+            "generated_from": [
+                os.path.abspath(p)
+                for p in (
+                    picks_path,
+                    verdicts_path,
+                    minutes_path,
+                    linkage_path,
+                    jev_path,
+                )
+                if p and os.path.isfile(p)
+            ],
             "committee_source": committee_src,
             "missing": missing,
         },
@@ -403,18 +498,27 @@ def atomic_write_json(path, data):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(
-        description="F4：todays_picks (+pick_verdicts) → portal/data/wall.json 观点墙")
+        description="F4：todays_picks (+pick_verdicts) → portal/data/wall.json 观点墙"
+    )
     ap.add_argument("--todays-picks", default=DEFAULT_TODAYS_PICKS)
     ap.add_argument("--verdicts", default=DEFAULT_VERDICTS)
     ap.add_argument("--out", default=DEFAULT_OUT)
-    ap.add_argument("--minutes", default=DEFAULT_MINUTES,
-                    help="投研会纪要源（可选，默认 k_stock/paper/minutes.json）")
-    ap.add_argument("--linkage", default=DEFAULT_LINKAGE_SHADOW,
-                    help="linkage 影子采集源（可选，默认 "
-                         "quant_backtest/data/linkage_shadow.jsonl）")
-    ap.add_argument("--jev", default=DEFAULT_JEV_TRIPLES,
-                    help="jev 复核门产物源（可选，默认 "
-                         "jev-eval/review_data/triples.jsonl）")
+    ap.add_argument(
+        "--minutes",
+        default=DEFAULT_MINUTES,
+        help="投研会纪要源（可选，默认 k_stock/paper/minutes.json）",
+    )
+    ap.add_argument(
+        "--linkage",
+        default=DEFAULT_LINKAGE_SHADOW,
+        help="linkage 影子采集源（可选，默认 "
+        "quant_backtest/data/linkage_shadow.jsonl）",
+    )
+    ap.add_argument(
+        "--jev",
+        default=DEFAULT_JEV_TRIPLES,
+        help="jev 复核门产物源（可选，默认 jev-eval/review_data/triples.jsonl）",
+    )
     ap.add_argument("--dry-run", action="store_true", help="只打印不落盘")
     args = ap.parse_args(argv)
 
@@ -422,15 +526,24 @@ def main(argv=None):
     verdicts = load_json(args.verdicts, required=False, label="pick_verdicts")
     if verdicts is not None and not isinstance(verdicts, dict):
         _fail("pick_verdicts 顶层不是对象：%s" % args.verdicts)
-    wall = build_wall(picks, verdicts, args.todays_picks, args.verdicts,
-                      args.minutes, args.linkage, args.jev)
+    wall = build_wall(
+        picks,
+        verdicts,
+        args.todays_picks,
+        args.verdicts,
+        args.minutes,
+        args.linkage,
+        args.jev,
+    )
     text = json.dumps(wall, ensure_ascii=False, indent=2) + "\n"
     if args.dry_run:
         sys.stdout.write(text)
         return
     atomic_write_json(args.out, wall)
-    print("[wall_adapter] 已写出 %s（strategists=%d）"
-          % (args.out, len(wall["strategists"])))
+    print(
+        "[wall_adapter] 已写出 %s（strategists=%d）"
+        % (args.out, len(wall["strategists"]))
+    )
 
 
 if __name__ == "__main__":

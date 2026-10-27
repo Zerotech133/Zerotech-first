@@ -21,6 +21,7 @@ Token 权限（Custom Token）：
 
 安全：token 只用于本次调用，不落盘；tunnel token 传给 cloudflared 后不打印全文。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,12 +43,10 @@ URLS = os.path.join(HERE, "data", "m", "urls.json")
 
 def _req(method, path, token, body=None):
     data = None
-    headers = {"Authorization": "Bearer " + token,
-               "Content-Type": "application/json"}
+    headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
     if body is not None:
         data = json.dumps(body).encode()
-    req = urllib.request.Request(API + path, data=data, headers=headers,
-                                 method=method)
+    req = urllib.request.Request(API + path, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.status, json.loads(r.read().decode())
@@ -60,8 +59,9 @@ def _req(method, path, token, body=None):
 
 def _fail(step, status, resp):
     errs = (resp or {}).get("errors") or []
-    msg = "; ".join(str(x.get("message") if isinstance(x, dict) else x)
-                    for x in errs)[:300]
+    msg = "; ".join(str(x.get("message") if isinstance(x, dict) else x) for x in errs)[
+        :300
+    ]
     print("FAIL [%s] http=%s %s" % (step, status, msg))
     sys.exit(2)
 
@@ -99,21 +99,31 @@ def pick_zone(token, domain):
     for z in zones:
         if domain == z["name"] or domain.endswith("." + z["name"]):
             return z
-    print("FAIL 域名 %s 不在该 token 可见的 Cloudflare zone 中（需先把域名托管到 Cloudflare）" % domain)
+    print(
+        "FAIL 域名 %s 不在该 token 可见的 Cloudflare zone 中（需先把域名托管到 Cloudflare）"
+        % domain
+    )
     sys.exit(2)
 
 
 def ensure_tunnel(token, account_id, name):
-    st, r = _req("GET", "/accounts/%s/cfd_tunnel?is_deleted=false&per_page=50"
-                 % account_id, token)
+    st, r = _req(
+        "GET",
+        "/accounts/%s/cfd_tunnel?is_deleted=false&per_page=50" % account_id,
+        token,
+    )
     if st != 200 or not (r or {}).get("success"):
         _fail("list tunnel", st, r)
     for t in r.get("result") or []:
         if t.get("name") == name and not t.get("deleted_at"):
             print("OK reuse tunnel:", t.get("id"), name)
             return t
-    st, r = _req("POST", "/accounts/%s/cfd_tunnel" % account_id, token,
-                 {"name": name, "config_src": "local"})
+    st, r = _req(
+        "POST",
+        "/accounts/%s/cfd_tunnel" % account_id,
+        token,
+        {"name": name, "config_src": "local"},
+    )
     if st not in (200, 201) or not (r or {}).get("success"):
         _fail("create tunnel", st, r)
     t = r.get("result") or {}
@@ -122,8 +132,9 @@ def ensure_tunnel(token, account_id, name):
 
 
 def tunnel_token(token, account_id, tunnel_id):
-    st, r = _req("GET", "/accounts/%s/cfd_tunnel/%s/token"
-                 % (account_id, tunnel_id), token)
+    st, r = _req(
+        "GET", "/accounts/%s/cfd_tunnel/%s/token" % (account_id, tunnel_id), token
+    )
     if st != 200 or not (r or {}).get("result"):
         _fail("tunnel token", st, r)
     tk = r.get("result")
@@ -136,11 +147,20 @@ def tunnel_token(token, account_id, tunnel_id):
 
 
 def put_ingress(token, account_id, tunnel_id, hostname):
-    cfg = {"config": {"ingress": [
-        {"hostname": hostname, "service": "http://127.0.0.1:8081"},
-        {"service": "http_status:404"}]}}
-    st, r = _req("PUT", "/accounts/%s/cfd_tunnel/%s/configurations"
-                 % (account_id, tunnel_id), token, cfg)
+    cfg = {
+        "config": {
+            "ingress": [
+                {"hostname": hostname, "service": "http://127.0.0.1:8081"},
+                {"service": "http_status:404"},
+            ]
+        }
+    }
+    st, r = _req(
+        "PUT",
+        "/accounts/%s/cfd_tunnel/%s/configurations" % (account_id, tunnel_id),
+        token,
+        cfg,
+    )
     if st != 200 or not (r or {}).get("success"):
         _fail("ingress config", st, r)
     print("OK ingress ->", hostname, "http://127.0.0.1:8081")
@@ -148,23 +168,30 @@ def put_ingress(token, account_id, tunnel_id, hostname):
 
 def upsert_dns(token, zone_id, hostname, tunnel_id):
     target = tunnel_id + ".cfargotunnel.com"
-    st, r = _req("GET", "/zones/%s/dns_records?name=%s&type=CNAME"
-                 % (zone_id, hostname), token)
+    st, r = _req(
+        "GET", "/zones/%s/dns_records?name=%s&type=CNAME" % (zone_id, hostname), token
+    )
     if st != 200 or not (r or {}).get("success"):
         _fail("list dns", st, r)
     existing = r.get("result") or []
     if existing:
         rid = existing[0].get("id")
-        st2, r2 = _req("PUT", "/zones/%s/dns_records/%s" % (zone_id, rid),
-                       token, {"type": "CNAME", "name": hostname,
-                               "content": target, "proxied": True})
+        st2, r2 = _req(
+            "PUT",
+            "/zones/%s/dns_records/%s" % (zone_id, rid),
+            token,
+            {"type": "CNAME", "name": hostname, "content": target, "proxied": True},
+        )
         if st2 != 200 or not (r2 or {}).get("success"):
             _fail("update dns", st2, r2)
         print("OK updated DNS CNAME", hostname, "->", target)
         return
-    st2, r2 = _req("POST", "/zones/%s/dns_records" % zone_id, token,
-                   {"type": "CNAME", "name": hostname, "content": target,
-                    "proxied": True})
+    st2, r2 = _req(
+        "POST",
+        "/zones/%s/dns_records" % zone_id,
+        token,
+        {"type": "CNAME", "name": hostname, "content": target, "proxied": True},
+    )
     if st2 not in (200, 201) or not (r2 or {}).get("success"):
         _fail("create dns", st2, r2)
     print("OK created DNS CNAME", hostname, "->", target)
@@ -173,14 +200,17 @@ def upsert_dns(token, zone_id, hostname, tunnel_id):
 def start_cloudflared(tk):
     os.makedirs(os.path.dirname(CF_LOG), exist_ok=True)
     # 停旧进程（避免多实例）
-    subprocess.run(["taskkill", "/IM", "cloudflared.exe", "/F"],
-                   capture_output=True)
+    subprocess.run(["taskkill", "/IM", "cloudflared.exe", "/F"], capture_output=True)
     time.sleep(1)
     args = [CF_EXE, "tunnel", "--no-autoupdate", "run", "--token", tk]
     logf = open(CF_LOG, "w", encoding="utf-8")
     errf = open(CF_LOG + ".err", "w", encoding="utf-8")
-    subprocess.Popen(args, stdout=logf, stderr=errf,
-                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    subprocess.Popen(
+        args,
+        stdout=logf,
+        stderr=errf,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
     print("OK cloudflared started (log:", CF_LOG + ")")
 
 
@@ -207,20 +237,17 @@ def update_config(hostname):
     d["enabled"] = True
     d["base"] = base
     d["note"] = "named tunnel (API token mode) %s" % base
-    json.dump(d, open(M_LINK, "w", encoding="utf-8"), ensure_ascii=False,
-              indent=2)
+    json.dump(d, open(M_LINK, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     u = json.load(open(URLS, encoding="utf-8"))
     u["default_base"] = base
-    json.dump(u, open(URLS, "w", encoding="utf-8"), ensure_ascii=False,
-              indent=2)
+    json.dump(u, open(URLS, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     print("OK updated", M_LINK, "and", URLS)
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--token", required=True)
-    ap.add_argument("--domain", required=True,
-                    help="完整主机名，如 m.example.com")
+    ap.add_argument("--domain", required=True, help="完整主机名，如 m.example.com")
     ap.add_argument("--name", default="lingjie-mobile")
     ap.add_argument("--account-id", default="")
     ap.add_argument("--dry-run", action="store_true")
@@ -230,14 +257,21 @@ def main(argv=None):
     verify(args.token)
     acct = pick_account(args.token, args.account_id)
     zone = pick_zone(args.token, domain)
-    print("OK account:", acct.get("id"), acct.get("name"),
-          "| zone:", zone.get("id"), zone.get("name"))
+    print(
+        "OK account:",
+        acct.get("id"),
+        acct.get("name"),
+        "| zone:",
+        zone.get("id"),
+        zone.get("name"),
+    )
     t = ensure_tunnel(args.token, acct.get("id"), args.name)
     tid = t.get("id")
     if args.dry_run:
-        print("DRY_RUN plan: tunnel=%s ingress=%s->127.0.0.1:8081 "
-              "dns=CNAME %s -> %s.cfargotunnel.com"
-              % (tid, domain, domain, tid))
+        print(
+            "DRY_RUN plan: tunnel=%s ingress=%s->127.0.0.1:8081 "
+            "dns=CNAME %s -> %s.cfargotunnel.com" % (tid, domain, domain, tid)
+        )
         return 0
     put_ingress(args.token, acct.get("id"), tid, domain)
     upsert_dns(args.token, zone.get("id"), domain, tid)

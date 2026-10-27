@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """G1 软件面流程单测（同一账本：需求→卡→授权→工单/认领→隔离执行→测试→试用→验收/返工）。"""
+
 import os
 import sys
 
@@ -14,8 +15,12 @@ import os_goal_contract as C  # noqa: E402
 import os_goal_store as S  # noqa: E402
 import os_software_flow as F  # noqa: E402
 
-ACTIONS = ["prototype.generate", "prototype.preview",
-           "prototype.test", "workspace.cleanup"]
+ACTIONS = [
+    "prototype.generate",
+    "prototype.preview",
+    "prototype.test",
+    "workspace.cleanup",
+]
 
 
 @pytest.fixture()
@@ -26,26 +31,47 @@ def store(tmp_path):
 @pytest.fixture()
 def iid(store):
     goal = store.create_goal(
-        "把零界做成持续创业者的个人事业OS", "连续创业者",
+        "把零界做成持续创业者的个人事业OS",
+        "连续创业者",
         [{"id": "A1", "text": "用户愿付费", "status": "hypothesis"}],
-        ["四类成果各验收一次"])
-    return store.create_item(goal["payload"]["goal_id"], "做一页可试用原型",
-                             "老田今天要试用", "software")["payload"]["item_id"]
+        ["四类成果各验收一次"],
+    )
+    return store.create_item(
+        goal["payload"]["goal_id"], "做一页可试用原型", "老田今天要试用", "software"
+    )["payload"]["item_id"]
 
 
 def freeze_all(store, iid, claim_method="simulated"):
-    F.freeze_brief(store, iid, ["把一句需求做成可试用单页"],
-                   [{"id": "SC1", "statement": "页面可打开且含版本标记",
-                     "verify_method": "静态自检 data-artifact"}])
-    F.freeze_card(store, iid,
-                  {"option": "A｜隔离单页", "why": "可逆、可试用"},
-                  [{"option": "B｜改现网首页", "why": "不可逆"}],
-                  "本人打开试用并给一句反馈")
+    F.freeze_brief(
+        store,
+        iid,
+        ["把一句需求做成可试用单页"],
+        [
+            {
+                "id": "SC1",
+                "statement": "页面可打开且含版本标记",
+                "verify_method": "静态自检 data-artifact",
+            }
+        ],
+    )
+    F.freeze_card(
+        store,
+        iid,
+        {"option": "A｜隔离单页", "why": "可逆、可试用"},
+        [{"option": "B｜改现网首页", "why": "不可逆"}],
+        "本人打开试用并给一句反馈",
+    )
     F.select_card(store, iid, "c1")
     F.sign_grant(store, iid, "c1", ACTIONS)
     F.create_workorder(store, iid)
-    F.claim(store, iid, method=claim_method,
-            isolation_label="隔离验证/未获真实认领" if claim_method == "simulated" else None)
+    F.claim(
+        store,
+        iid,
+        method=claim_method,
+        isolation_label="隔离验证/未获真实认领"
+        if claim_method == "simulated"
+        else None,
+    )
 
 
 def test_happy_chain_isolated_only(store, iid):
@@ -85,40 +111,58 @@ def test_rework_produces_v2(store, iid):
     arts = [e for e in store.events_for(iid) if e["type"] == "artifact.produced"]
     assert [a["payload"]["version"] for a in arts] == ["a1", "a2"]
 
+
 def test_brief_twice_rejected(store, iid):
-    F.freeze_brief(store, iid, ["g"], [{"id": "SC1", "statement": "s",
-                                       "verify_method": "v"}])
+    F.freeze_brief(
+        store, iid, ["g"], [{"id": "SC1", "statement": "s", "verify_method": "v"}]
+    )
     with pytest.raises(C.ContractError):
-        F.freeze_brief(store, iid, ["g2"], [{"id": "SC2", "statement": "s",
-                                            "verify_method": "v"}])
+        F.freeze_brief(
+            store, iid, ["g2"], [{"id": "SC2", "statement": "s", "verify_method": "v"}]
+        )
 
 
 def test_card_before_brief_rejected(store, iid):
     with pytest.raises(C.ContractError):
-        F.freeze_card(store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收")
+        F.freeze_card(
+            store,
+            iid,
+            {"option": "A", "why": "w"},
+            [{"option": "B", "why": "w"}],
+            "验收",
+        )
 
 
 def test_select_wrong_version_rejected(store, iid):
-    F.freeze_brief(store, iid, ["g"], [{"id": "SC1", "statement": "s",
-                                       "verify_method": "v"}])
-    F.freeze_card(store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收")
+    F.freeze_brief(
+        store, iid, ["g"], [{"id": "SC1", "statement": "s", "verify_method": "v"}]
+    )
+    F.freeze_card(
+        store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收"
+    )
     with pytest.raises(C.ContractError):
         F.select_card(store, iid, "c9")
 
 
 def test_grant_beyond_whitelist_rejected(store, iid):
-    F.freeze_brief(store, iid, ["g"], [{"id": "SC1", "statement": "s",
-                                       "verify_method": "v"}])
-    F.freeze_card(store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收")
+    F.freeze_brief(
+        store, iid, ["g"], [{"id": "SC1", "statement": "s", "verify_method": "v"}]
+    )
+    F.freeze_card(
+        store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收"
+    )
     F.select_card(store, iid, "c1")
     with pytest.raises(C.ContractError):
         F.sign_grant(store, iid, "c1", ACTIONS + ["data.write.prod"])
 
 
 def test_execute_before_claim_rejected(store, iid):
-    F.freeze_brief(store, iid, ["g"], [{"id": "SC1", "statement": "s",
-                                       "verify_method": "v"}])
-    F.freeze_card(store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收")
+    F.freeze_brief(
+        store, iid, ["g"], [{"id": "SC1", "statement": "s", "verify_method": "v"}]
+    )
+    F.freeze_card(
+        store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收"
+    )
     F.select_card(store, iid, "c1")
     F.sign_grant(store, iid, "c1", ACTIONS)
     F.create_workorder(store, iid)
@@ -127,13 +171,17 @@ def test_execute_before_claim_rejected(store, iid):
 
 
 def test_expired_grant_rejected(store, iid):
-    F.freeze_brief(store, iid, ["g"], [{"id": "SC1", "statement": "s",
-                                       "verify_method": "v"}])
-    F.freeze_card(store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收")
+    F.freeze_brief(
+        store, iid, ["g"], [{"id": "SC1", "statement": "s", "verify_method": "v"}]
+    )
+    F.freeze_card(
+        store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收"
+    )
     F.select_card(store, iid, "c1")
     F.sign_grant(store, iid, "c1", ACTIONS, valid_until="2026-10-01T00:00:00+08:00")
     with pytest.raises(C.ContractError):
         F.create_workorder(store, iid)
+
 
 def test_verdict_before_trial_rejected(store, iid):
     freeze_all(store, iid)
@@ -149,27 +197,42 @@ def test_chain_blocked_when_only_item(store, iid):
 
 
 def test_api_flow_and_chain(store, iid):
-    st, d = A.handle_post(store, "/api/os/item/%s/brief" % iid, {
-        "goals": ["g"],
-        "success_criteria": [{"id": "SC1", "statement": "页面可打开",
-                              "verify_method": "静态自检"}]})
+    st, d = A.handle_post(
+        store,
+        "/api/os/item/%s/brief" % iid,
+        {
+            "goals": ["g"],
+            "success_criteria": [
+                {"id": "SC1", "statement": "页面可打开", "verify_method": "静态自检"}
+            ],
+        },
+    )
     assert st == 201, d
-    st, d = A.handle_post(store, "/api/os/item/%s/card" % iid, {
-        "recommended": {"option": "A", "why": "w"},
-        "discarded": [{"option": "B", "why": "w"}],
-        "acceptance_method": "本人试用并反馈"})
+    st, d = A.handle_post(
+        store,
+        "/api/os/item/%s/card" % iid,
+        {
+            "recommended": {"option": "A", "why": "w"},
+            "discarded": [{"option": "B", "why": "w"}],
+            "acceptance_method": "本人试用并反馈",
+        },
+    )
     assert st == 201, d
-    st, d = A.handle_post(store, "/api/os/item/%s/card/select" % iid,
-                          {"card_version": "c1"})
+    st, d = A.handle_post(
+        store, "/api/os/item/%s/card/select" % iid, {"card_version": "c1"}
+    )
     assert st == 200, d
-    st, d = A.handle_post(store, "/api/os/item/%s/grant" % iid,
-                          {"card_version": "c1", "actions": ACTIONS})
+    st, d = A.handle_post(
+        store, "/api/os/item/%s/grant" % iid, {"card_version": "c1", "actions": ACTIONS}
+    )
     assert st == 200, d
     st, d = A.handle_post(store, "/api/os/item/%s/workorder" % iid, {})
     assert st == 201, d
-    st, d = A.handle_post(store, "/api/os/item/%s/claim" % iid,
-                          {"method": "simulated",
-                           "isolation_label": "隔离验证/未获真实认领"})
+    st, d = A.handle_post(
+        store,
+        "/api/os/item/%s/claim" % iid,
+        {"method": "simulated", "isolation_label": "隔离验证/未获真实认领"},
+    )
     assert st == 200, d
     st, d = A.handle_post(store, "/api/os/item/%s/execute" % iid, {})
     assert st == 201 and d["ok"] is True, d
@@ -177,11 +240,15 @@ def test_api_flow_and_chain(store, iid):
     assert st == 200
     assert rep["gates"]["G6"]["status"] == "PASS"
     assert rep["verdict"] == "BLOCKED"  # 还没试用/验收
+
+
 def test_real_claim_rejected_by_flow(store, iid):
-    F.freeze_brief(store, iid, ["g"], [{"id": "SC1", "statement": "s",
-                                       "verify_method": "v"}])
-    F.freeze_card(store, iid, {"option": "A", "why": "w"},
-                  [{"option": "B", "why": "w"}], "验收")
+    F.freeze_brief(
+        store, iid, ["g"], [{"id": "SC1", "statement": "s", "verify_method": "v"}]
+    )
+    F.freeze_card(
+        store, iid, {"option": "A", "why": "w"}, [{"option": "B", "why": "w"}], "验收"
+    )
     F.select_card(store, iid, "c1")
     F.sign_grant(store, iid, "c1", ACTIONS)
     F.create_workorder(store, iid)
@@ -193,10 +260,17 @@ def test_forged_agent_verdict_fails_chain(store, iid):
     freeze_all(store, iid)
     F.execute(store, iid)
     F.open_trial(store, iid)
-    store.append_event("verdict.recorded", {"item_id": iid},
-                       {"verdict_id": "VER-EVIL", "artifact_id": "x",
-                        "decision": "accepted", "feedback": ""},
-                       actor={"kind": "agent", "id": "zhuge"})
+    store.append_event(
+        "verdict.recorded",
+        {"item_id": iid},
+        {
+            "verdict_id": "VER-EVIL",
+            "artifact_id": "x",
+            "decision": "accepted",
+            "feedback": "",
+        },
+        actor={"kind": "agent", "id": "zhuge"},
+    )
     rep = F.chain_report(store, iid)
     assert rep["verdict"] == "FAIL"
     assert any(c["id"] == "G7_ACTOR" for c in rep["checks"])

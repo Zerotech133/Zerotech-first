@@ -14,6 +14,7 @@
     python feishu_target_recollect.py --role zb.ops.notify --owner-open-id ou_xxx
     python feishu_target_recollect.py --role zb.ops.notify --chats-file chats.json --dry-run
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,6 +46,7 @@ CHAT_NAME_ALIASES = {
 
 def role_creds(role, secrets_dir=None):
     import feishu_client
+
     path = os.path.join(secrets_dir or SECRETS, role + ".json")
     with open(path, encoding="utf-8") as f:
         d = json.load(f)
@@ -76,8 +78,7 @@ def list_chats(token, opener=None):
             raise ValueError("列群失败：code=%s %s" % (d.get("code"), d.get("msg")))
         data = d.get("data") or {}
         for it in data.get("items") or []:
-            chats.append({"chat_id": it.get("chat_id"),
-                          "name": it.get("name") or ""})
+            chats.append({"chat_id": it.get("chat_id"), "name": it.get("name") or ""})
         page = data.get("page_token") or ""
         if not data.get("has_more") or not page:
             return chats
@@ -95,8 +96,12 @@ def discover_owner_open_id(token, mobile="", email="", opener=None):
     payload = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
         OPEN + "/contact/v3/users/batch_get_id?user_id_type=open_id",
-        data=payload, headers={"Authorization": "Bearer " + token,
-                               "Content-Type": "application/json"})
+        data=payload,
+        headers={
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+        },
+    )
     try:
         o = opener or urllib.request.urlopen
         with o(req, timeout=20) as r:
@@ -122,11 +127,18 @@ def build_patch(old_targets, chats, owner_open_id="", app_id=""):
         ttype = t.get("type")
         if ttype == "open_id":
             if owner_open_id:
-                patch.append({"name": name, "type": "open_id",
-                              "id": owner_open_id, "app": app_id})
+                patch.append(
+                    {
+                        "name": name,
+                        "type": "open_id",
+                        "id": owner_open_id,
+                        "app": app_id,
+                    }
+                )
             else:
-                unmatched.append({"name": name,
-                                  "reason": "缺新域 open_id（--owner-open-id）"})
+                unmatched.append(
+                    {"name": name, "reason": "缺新域 open_id（--owner-open-id）"}
+                )
             continue
         hit = None
         for cand in CHAT_NAME_ALIASES.get(name, [name]):
@@ -134,11 +146,11 @@ def build_patch(old_targets, chats, owner_open_id="", app_id=""):
                 hit = by_name[cand]
                 break
         if hit:
-            patch.append({"name": name, "type": "chat_id", "id": hit,
-                          "app": app_id})
+            patch.append({"name": name, "type": "chat_id", "id": hit, "app": app_id})
         else:
-            unmatched.append({"name": name,
-                              "reason": "新 app 群列表未找到（先把机器人拉进群）"})
+            unmatched.append(
+                {"name": name, "reason": "新 app 群列表未找到（先把机器人拉进群）"}
+            )
     if not chats:
         warnings.append("群列表为空：新 app 机器人可能未加入任何群")
     return {"patch": patch, "unmatched": unmatched, "warnings": warnings}
@@ -158,10 +170,20 @@ def apply_patch(new_targets, config_path=None):
     return backup
 
 
-def run(role, dry_run=True, owner_open_id="", chats_file="",
-        mobile="", email="", apply=False):
-    rep = {"ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           "role": role, "dry_run": dry_run}
+def run(
+    role,
+    dry_run=True,
+    owner_open_id="",
+    chats_file="",
+    mobile="",
+    email="",
+    apply=False,
+):
+    rep = {
+        "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "role": role,
+        "dry_run": dry_run,
+    }
     try:
         app_id, token = role_creds(role)
     except Exception as e:  # noqa: BLE001
@@ -200,23 +222,32 @@ def main(argv=None):
     ap.add_argument("--email", default="")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
-    rep = run(args.role, dry_run=not args.apply, owner_open_id=args.owner_open_id,
-              chats_file=args.chats_file, mobile=args.mobile,
-              email=args.email, apply=args.apply)
+    rep = run(
+        args.role,
+        dry_run=not args.apply,
+        owner_open_id=args.owner_open_id,
+        chats_file=args.chats_file,
+        mobile=args.mobile,
+        email=args.email,
+        apply=args.apply,
+    )
     if args.json:
         print(json.dumps(rep, ensure_ascii=False, indent=1))
     else:
-        lines = ["# 收件人重采（新 app 域）· %s" % rep.get("role"),
-                 "时间：%s ｜ dry_run=%s ｜ ok=%s"
-                 % (rep.get("ts"), rep.get("dry_run"), rep.get("ok"))]
+        lines = [
+            "# 收件人重采（新 app 域）· %s" % rep.get("role"),
+            "时间：%s ｜ dry_run=%s ｜ ok=%s"
+            % (rep.get("ts"), rep.get("dry_run"), rep.get("ok")),
+        ]
         if rep.get("error"):
             lines.append("错误：%s" % rep["error"])
         for w in rep.get("warnings") or []:
             lines.append("⚠️ " + w)
         lines.append("## 迁移补丁")
         for p in rep.get("patch") or []:
-            lines.append("+ %s %s %s (app=%s)" % (p["name"], p["type"],
-                                                  p["id"], p["app"]))
+            lines.append(
+                "+ %s %s %s (app=%s)" % (p["name"], p["type"], p["id"], p["app"])
+            )
         lines.append("## 未匹配")
         for u in rep.get("unmatched") or []:
             lines.append("- %s：%s" % (u["name"], u["reason"]))

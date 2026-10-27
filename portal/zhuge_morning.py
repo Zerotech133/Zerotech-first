@@ -83,8 +83,9 @@ def summarize(brief: Dict[str, Any]) -> Dict[str, int]:
     }
 
 
-def generate(clock=None, out_dir=None, dry_run: bool = False,
-             fetchers=None) -> Dict[str, Any]:
+def generate(
+    clock=None, out_dir=None, dry_run: bool = False, fetchers=None
+) -> Dict[str, Any]:
     """聚合七源 → 规则引擎 → （非 dry-run 时）落盘一份 JSON。
 
     返回 {ok, written, path, brief, summary}；dry_run 时 written=False 且不建目录。
@@ -113,26 +114,32 @@ def generate(clock=None, out_dir=None, dry_run: bool = False,
 
 
 def _fmt_summary(summary: Dict[str, int]) -> str:
-    return ("摘要: 建议 %d 条 / gaps %d 项 / 最高优先级 P1 %d 条"
-            % (summary["suggestions"], summary["gaps"],
-               summary["top_priority"]))
+    return "摘要: 建议 %d 条 / gaps %d 项 / 最高优先级 P1 %d 条" % (
+        summary["suggestions"],
+        summary["gaps"],
+        summary["top_priority"],
+    )
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
-        description="诸葛亮晨报生成器（只生成，不发通知、不挂计划任务）")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="只打印摘要与目标路径，不写盘、不建目录")
-    parser.add_argument("--out-dir", default=None,
-                        help="产物目录（默认 portal/data/zhuge_brief）")
-    parser.add_argument("--clock", default=None,
-                        help="测试注入时钟（带时区 ISO8601，如 "
-                             "2026-10-21T09:00:00+08:00）")
+        description="诸葛亮晨报生成器（只生成，不发通知、不挂计划任务）"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="只打印摘要与目标路径，不写盘、不建目录"
+    )
+    parser.add_argument(
+        "--out-dir", default=None, help="产物目录（默认 portal/data/zhuge_brief）"
+    )
+    parser.add_argument(
+        "--clock",
+        default=None,
+        help="测试注入时钟（带时区 ISO8601，如 2026-10-21T09:00:00+08:00）",
+    )
     args = parser.parse_args(argv)
 
     try:
-        res = generate(clock=args.clock, out_dir=args.out_dir,
-                       dry_run=args.dry_run)
+        res = generate(clock=args.clock, out_dir=args.out_dir, dry_run=args.dry_run)
     except (TypeError, ValueError) as exc:
         print("错误: %s" % exc, file=sys.stderr)
         return 2
@@ -143,11 +150,14 @@ def main(argv=None) -> int:
     else:
         print("[dry-run] 未写盘，目标路径: %s" % res["path"])
     print(_fmt_summary(res["summary"]))
-    print("诚实标记: engine=%s model_invoked=%s dispatched=%s"
-          % (brief.get("engine"), brief.get("model_invoked"),
-             brief.get("dispatched")))
-    print("口径: 七源 %d 个；缺口与建议同源可溯；未发送任何通知、未挂任何计划任务"
-          % len(SOURCES))
+    print(
+        "诚实标记: engine=%s model_invoked=%s dispatched=%s"
+        % (brief.get("engine"), brief.get("model_invoked"), brief.get("dispatched"))
+    )
+    print(
+        "口径: 七源 %d 个；缺口与建议同源可溯；未发送任何通知、未挂任何计划任务"
+        % len(SOURCES)
+    )
     return 0
 
 

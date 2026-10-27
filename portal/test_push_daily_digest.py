@@ -7,6 +7,7 @@
 2) 发送走 feishu_client.send_msg_tracked(kind=auto:push_digest, via_hub=True)；
 3) 失败 fail-closed（不回落直发）。
 """
+
 import datetime
 import os
 import sys
@@ -21,21 +22,25 @@ import feishu_client  # noqa: E402
 
 def _patch_silent(monkeypatch, silent):
     monkeypatch.setattr(
-        pdd, "_in_silent_window",
-        lambda now=None: (silent, "silent_window(02:19)" if silent else ""))
+        pdd,
+        "_in_silent_window",
+        lambda now=None: (silent, "silent_window(02:19)" if silent else ""),
+    )
 
 
 def _patch_union(monkeypatch):
-    monkeypatch.setattr(pdd.authorization, "person",
-                        lambda name: {"union_id": "on_test_union"})
+    monkeypatch.setattr(
+        pdd.authorization, "person", lambda name: {"union_id": "on_test_union"}
+    )
 
 
 def test_silent_window_blocks_noncritical(monkeypatch):
     _patch_silent(monkeypatch, True)
     _patch_union(monkeypatch)
     calls = []
-    monkeypatch.setattr(feishu_client, "send_msg_tracked",
-                        lambda *a, **k: calls.append((a, k)))
+    monkeypatch.setattr(
+        feishu_client, "send_msg_tracked", lambda *a, **k: calls.append((a, k))
+    )
     ok, why = pdd.send({"config": {}})
     assert ok is False
     assert "silent_window" in why
@@ -75,8 +80,9 @@ def test_unified_send_success_records_flow(monkeypatch):
 def test_silent_window_critical_allowed(monkeypatch):
     _patch_silent(monkeypatch, True)
     _patch_union(monkeypatch)
-    monkeypatch.setattr(feishu_client, "send_msg_tracked",
-                        lambda *a, **k: (True, "ok", "om_crit"))
+    monkeypatch.setattr(
+        feishu_client, "send_msg_tracked", lambda *a, **k: (True, "ok", "om_crit")
+    )
     ok, _ = pdd.send({"config": {}}, critical=True)
     assert ok is True
 
@@ -84,8 +90,9 @@ def test_silent_window_critical_allowed(monkeypatch):
 def test_failure_fail_closed(monkeypatch):
     _patch_silent(monkeypatch, False)
     _patch_union(monkeypatch)
-    monkeypatch.setattr(feishu_client, "send_msg_tracked",
-                        lambda *a, **k: (False, "hub HTTP 403", None))
+    monkeypatch.setattr(
+        feishu_client, "send_msg_tracked", lambda *a, **k: (False, "hub HTTP 403", None)
+    )
     ok, why = pdd.send({"config": {}})
     assert ok is False
     assert "403" in why

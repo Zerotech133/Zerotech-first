@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """G2a：一句话 → 商业计划（BP v1/v2）同交互测试。"""
+
 import os
 import sys
 
@@ -42,13 +43,24 @@ def test_bp_confirm_generates_document(store):
     assert out["chain"]["verdict"] == "BLOCKED"  # 等待本人第 3 句
     path = out["artifact"]["path"]
     html = open(path, encoding="utf-8").read()
-    for kw in ("假设台账", "依据与引用", "风险", "里程碑", "修订理由",
-               "data-artifact=", "假设", "hypothesis"):
+    for kw in (
+        "假设台账",
+        "依据与引用",
+        "风险",
+        "里程碑",
+        "修订理由",
+        "data-artifact=",
+        "假设",
+        "hypothesis",
+    ):
         assert kw in html, kw
     assert "暂无返工反馈" in html
     # 本人接受 → 隔离链闭环
-    st, _ = A.handle_post(store, "/api/os/item/%s/verdict" % out["item_id"],
-                          {"decision": "accepted", "feedback": "接受"})
+    st, _ = A.handle_post(
+        store,
+        "/api/os/item/%s/verdict" % out["item_id"],
+        {"decision": "accepted", "feedback": "接受"},
+    )
     assert st == 201
     assert F.chain_report(store, out["item_id"])["verdict"] == "ISOLATED_ONLY"
 
@@ -57,8 +69,11 @@ def test_bp_rework_v2_has_revision_reason(store):
     card = _bp_card()
     out = Q.confirm(card["draft_id"], store)
     iid = out["item_id"]
-    A.handle_post(store, "/api/os/item/%s/verdict" % iid,
-                  {"decision": "changes_requested", "feedback": "用户改成独立开发者"})
+    A.handle_post(
+        store,
+        "/api/os/item/%s/verdict" % iid,
+        {"decision": "changes_requested", "feedback": "用户改成独立开发者"},
+    )
     F.rework(store, iid, "用户改成独立开发者")
     F.select_card(store, iid, "c2")
     F.sign_grant(store, iid, "c2", ACTIONS)
@@ -69,8 +84,11 @@ def test_bp_rework_v2_has_revision_reason(store):
     html = open(res["artifact"]["path"], encoding="utf-8").read()
     assert "用户改成独立开发者" in html
     assert "暂无返工反馈" not in html
-    A.handle_post(store, "/api/os/item/%s/verdict" % iid,
-                  {"decision": "accepted", "feedback": "接受"})
+    A.handle_post(
+        store,
+        "/api/os/item/%s/verdict" % iid,
+        {"decision": "accepted", "feedback": "接受"},
+    )
     rep = F.chain_report(store, iid)
     assert rep["verdict"] == "ISOLATED_ONLY", rep
     assert rep["gates"]["G6"]["status"] == "PASS"

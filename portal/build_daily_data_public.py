@@ -17,6 +17,7 @@
 纪律：锚点断言 count==1 先拆后装（红线：替换补丁断言）；退出码 0 成功 /
 1 失败，调用方（daily_report）降级不阻断日报主链。
 """
+
 import json
 import os
 import sys
@@ -35,9 +36,12 @@ EMBED_ANCHOR = "<script>\nfunction el(id)"
 
 def main():
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    raw = opener.open(urllib.request.Request(
-        API, headers={"User-Agent": "build-daily-data-public/1.0"}),
-        timeout=20).read()
+    raw = opener.open(
+        urllib.request.Request(
+            API, headers={"User-Agent": "build-daily-data-public/1.0"}
+        ),
+        timeout=20,
+    ).read()
     data = json.loads(raw.decode("utf-8"))
     with open(SRC, encoding="utf-8") as f:
         html = f.read()
@@ -47,25 +51,29 @@ def main():
             return 1
         name = tag.split('src="')[1].split('"')[0]
         html = html.replace(
-            tag, "<!-- %s 公网快照剥除（build_daily_data_public） -->" % name)
+            tag, "<!-- %s 公网快照剥除（build_daily_data_public） -->" % name
+        )
     payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     if html.count(EMBED_ANCHOR) != 1:
         print("BUILD_FAIL embed anchor count!=1")
         return 1
-    html = html.replace(EMBED_ANCHOR,
-                        "<script>window.__EMBED__=%s</script>\n" % payload
-                        + EMBED_ANCHOR)
+    html = html.replace(
+        EMBED_ANCHOR, "<script>window.__EMBED__=%s</script>\n" % payload + EMBED_ANCHOR
+    )
     if "window.__EMBED__" not in html:
         print("BUILD_FAIL post-assert embed missing")
         return 1
     os.makedirs(os.path.dirname(DST), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(DST),
-                               prefix="data_daily.", suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(
+        dir=os.path.dirname(DST), prefix="data_daily.", suffix=".tmp"
+    )
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(html)
     os.replace(tmp, DST)
-    print("BUILD_OK -> %s (%d bytes, api generated_at=%s)"
-          % (DST, len(html), data.get("generated_at")))
+    print(
+        "BUILD_OK -> %s (%d bytes, api generated_at=%s)"
+        % (DST, len(html), data.get("generated_at"))
+    )
     return 0
 
 

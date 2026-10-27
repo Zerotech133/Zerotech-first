@@ -8,6 +8,7 @@
   4) 机器人公共壳可构造、群策略生效
   5) 管理台数据模型能容纳新角色（registry 校验后即可见）
 """
+
 import json
 import os
 import tempfile
@@ -36,20 +37,22 @@ def _load():
 
 def test_sop_step1_add_role_valid():
     reg, _ = _load()
-    reg["roles"].append({
-        "role": "zb.demo.echo",
-        "display": "零界·演练",
-        "domain": ["owner"],
-        "app_ref": "ZB_DEMO_ECHO",
-        "app_id_current": "",
-        "events": ["im.message.receive_v1"],
-        "perms": ["im:message", "im:message:send_as_bot"],
-        "group_policy": {"mode": "p2p_only", "allow_chats": []},
-        "inputs": "text",
-        "outputs": "text",
-        "owner": "老田",
-        "status": "planned",
-    })
+    reg["roles"].append(
+        {
+            "role": "zb.demo.echo",
+            "display": "零界·演练",
+            "domain": ["owner"],
+            "app_ref": "ZB_DEMO_ECHO",
+            "app_id_current": "",
+            "events": ["im.message.receive_v1"],
+            "perms": ["im:message", "im:message:send_as_bot"],
+            "group_policy": {"mode": "p2p_only", "allow_chats": []},
+            "inputs": "text",
+            "outputs": "text",
+            "owner": "老田",
+            "status": "planned",
+        }
+    )
     roles, warnings = fr.validate_registry(reg)
     assert "zb.demo.echo" in roles
     assert not warnings
@@ -58,42 +61,63 @@ def test_sop_step1_add_role_valid():
 def test_sop_step1_rejects_bad_naming():
     reg, _ = fr.load_registry()  # 返回 index 不是原始结构，改用原始
     raw = json.load(open(fr.DEFAULT_REGISTRY, encoding="utf-8"))
-    raw["roles"].append({
-        "role": "dingzhi", "display": "邓芝",
-        "domain": ["owner"], "events": [], "perms": [],
-        "group_policy": {}, "status": "planned",
-    })
+    raw["roles"].append(
+        {
+            "role": "dingzhi",
+            "display": "邓芝",
+            "domain": ["owner"],
+            "events": [],
+            "perms": [],
+            "group_policy": {},
+            "status": "planned",
+        }
+    )
     with pytest.raises(fr.RegistryError):
         fr.validate_registry(raw)
 
 
 def test_sop_step2_route_for_new_role():
     reg, routes = _load()
-    reg["roles"].append({
-        "role": "zb.demo.echo", "display": "零界·演练", "domain": ["owner"],
-        "events": ["im.message.receive_v1"], "perms": [], "status": "planned",
-        "group_policy": {"mode": "p2p_only"},
-    })
+    reg["roles"].append(
+        {
+            "role": "zb.demo.echo",
+            "display": "零界·演练",
+            "domain": ["owner"],
+            "events": ["im.message.receive_v1"],
+            "perms": [],
+            "status": "planned",
+            "group_policy": {"mode": "p2p_only"},
+        }
+    )
     roles, _ = fr.validate_registry(reg)
-    routes["routes"].append({
-        "id": "r.demo.echo", "match": {"role": "zb.demo.echo"},
-        "handler": "demo:echo", "priority": 70,
-    })
+    routes["routes"].append(
+        {
+            "id": "r.demo.echo",
+            "match": {"role": "zb.demo.echo"},
+            "handler": "demo:echo",
+            "priority": 70,
+        }
+    )
     rs = fr.validate_routes(routes, roles_index=roles)
     assert fr.match_route(rs, role="zb.demo.echo") == "demo:echo"
 
 
 def test_sop_step2_route_unknown_role_rejected():
     _, routes = _load()
-    routes["routes"].append({"id": "r.bad", "match": {"role": "zb.no.such"},
-                             "handler": "x", "priority": 1})
+    routes["routes"].append(
+        {"id": "r.bad", "match": {"role": "zb.no.such"}, "handler": "x", "priority": 1}
+    )
     roles, _ = fr.load_registry()
     with pytest.raises(fr.RegistryError):
         fr.validate_routes(routes, roles_index=roles)
 
 
 def test_sop_step3_credentials_interface(tmp_path=None):
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         p = os.path.join(root, "zb.demo.echo.json")
@@ -103,16 +127,23 @@ def test_sop_step3_credentials_interface(tmp_path=None):
         assert (aid, sec) == ("cli_demo", "demo-secret")
     finally:
         import shutil
+
         shutil.rmtree(root, ignore_errors=True)
 
 
 def test_sop_step4_shell_and_group_policy():
     reg = json.load(open(fr.DEFAULT_REGISTRY, encoding="utf-8"))
-    reg["roles"].append({
-        "role": "zb.demo.echo", "display": "零界·演练", "domain": ["owner"],
-        "events": ["im.message.receive_v1"], "perms": [], "status": "planned",
-        "group_policy": {"mode": "p2p_only"},
-    })
+    reg["roles"].append(
+        {
+            "role": "zb.demo.echo",
+            "display": "零界·演练",
+            "domain": ["owner"],
+            "events": ["im.message.receive_v1"],
+            "perms": [],
+            "status": "planned",
+            "group_policy": {"mode": "p2p_only"},
+        }
+    )
     roles, _ = fr.validate_registry(reg)
     raw = {"_index": roles, "group_whitelist": reg["group_whitelist"]}
     shell = base.Shell("zb.demo.echo", registry=raw)
@@ -124,11 +155,17 @@ def test_sop_step4_shell_and_group_policy():
 def test_sop_step5_console_model_accepts_role():
     # 管理台数据来自 registry 校验结果：新角色只要通过校验即可出现在台账
     reg, _ = _load()
-    reg["roles"].append({
-        "role": "zb.demo.echo", "display": "零界·演练", "domain": ["owner"],
-        "events": [], "perms": [], "status": "planned",
-        "group_policy": {"mode": "p2p_only"},
-    })
+    reg["roles"].append(
+        {
+            "role": "zb.demo.echo",
+            "display": "零界·演练",
+            "domain": ["owner"],
+            "events": [],
+            "perms": [],
+            "status": "planned",
+            "group_policy": {"mode": "p2p_only"},
+        }
+    )
     roles, _ = fr.validate_registry(reg)
     assert roles["zb.demo.echo"]["status"] == "planned"
     # 管理台的两个硬性数据字段（display/app_ref）都可取自 registry
@@ -140,11 +177,24 @@ def test_sop_full_copy_does_not_touch_production_files():
     before_reg = open(fr.DEFAULT_REGISTRY, encoding="utf-8").read()
     before_routes = open(fr.DEFAULT_ROUTES, encoding="utf-8").read()
     reg, routes = _load()
-    reg["roles"].append({"role": "zb.demo.echo", "display": "零界·演练",
-                         "domain": ["owner"], "events": [], "perms": [],
-                         "status": "planned", "group_policy": {}})
-    routes["routes"].append({"id": "r.demo.echo",
-                             "match": {"role": "zb.demo.echo"},
-                             "handler": "demo:echo", "priority": 70})
+    reg["roles"].append(
+        {
+            "role": "zb.demo.echo",
+            "display": "零界·演练",
+            "domain": ["owner"],
+            "events": [],
+            "perms": [],
+            "status": "planned",
+            "group_policy": {},
+        }
+    )
+    routes["routes"].append(
+        {
+            "id": "r.demo.echo",
+            "match": {"role": "zb.demo.echo"},
+            "handler": "demo:echo",
+            "priority": 70,
+        }
+    )
     assert open(fr.DEFAULT_REGISTRY, encoding="utf-8").read() == before_reg
     assert open(fr.DEFAULT_ROUTES, encoding="utf-8").read() == before_routes

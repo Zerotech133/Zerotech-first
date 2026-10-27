@@ -19,6 +19,7 @@
   {"tag": "ctl:tasks"}        # 工单总览文本
   {"tag": "ctl:board"}        # 重生成 devboard.html
 """
+
 import json
 import os
 import subprocess
@@ -40,8 +41,11 @@ BOARD_CMD = [sys.executable, os.path.join(REPO, "tools", "devtask.py"), "board"]
 PRESETS = {
     "push_max_per_run": {"label": "单轮上限", "unit": "条", "steps": [3, 6, 10]},
     "quote_alert_pct": {"label": "异动阈值", "unit": "%", "steps": [2.0, 3.0, 5.0]},
-    "quote_alert_cooldown_min": {"label": "异动冷却", "unit": "min",
-                                 "steps": [15, 30, 60]},
+    "quote_alert_cooldown_min": {
+        "label": "异动冷却",
+        "unit": "min",
+        "steps": [15, 30, 60],
+    },
     "digest_hour": {"label": "晨报时点", "unit": "点", "steps": [7, 8, 9]},
 }
 
@@ -70,18 +74,28 @@ def audit(operator, action, detail=""):
         with _ops_lock:
             os.makedirs(os.path.dirname(OPS), exist_ok=True)
             with open(OPS, "a", encoding="utf-8") as f:
-                f.write(json.dumps({"ts": datetime.now().strftime("%F %T"),
-                                    "operator": operator or "?",
-                                    "action": action, "detail": detail},
-                                   ensure_ascii=False) + "\n")
+                f.write(
+                    json.dumps(
+                        {
+                            "ts": datetime.now().strftime("%F %T"),
+                            "operator": operator or "?",
+                            "action": action,
+                            "detail": detail,
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
     except OSError:
         pass
 
 
 def allowed(open_id):
     """白名单闸门：CTRL_ALLOW_OPEN_IDS → 回落 EXIT_ALLOW_OPEN_IDS → 放行。"""
-    allow = (os.environ.get("CTRL_ALLOW_OPEN_IDS", "").strip()
-             or os.environ.get("EXIT_ALLOW_OPEN_IDS", "").strip())
+    allow = (
+        os.environ.get("CTRL_ALLOW_OPEN_IDS", "").strip()
+        or os.environ.get("EXIT_ALLOW_OPEN_IDS", "").strip()
+    )
     if not allow:
         return True
     return bool(open_id) and open_id in {x.strip() for x in allow.split(",")}
@@ -97,6 +111,7 @@ def _db():
         if JEV_DIR not in sys.path:
             sys.path.insert(0, JEV_DIR)
         import jev_common  # noqa: WPS433  懒加载：DB 断连不应拖垮控制卡
+
         _jev = jev_common
     return _jev
 
@@ -106,12 +121,16 @@ def alert_state():
     try:
         rows = _db().db_rows(
             "SELECT alert_id, level, title, coalesce(message,'') FROM v2_alert "
-            "WHERE status='OPEN' ORDER BY id DESC LIMIT 6")
-        total = _db().db_rows(
-            "SELECT count(*) FROM v2_alert WHERE status='OPEN'")[0][0]
-        return {"total": int(total),
-                "items": [{"alert_id": r[0], "level": r[1],
-                           "title": (r[2] or "")[:36]} for r in rows]}, None
+            "WHERE status='OPEN' ORDER BY id DESC LIMIT 6"
+        )
+        total = _db().db_rows("SELECT count(*) FROM v2_alert WHERE status='OPEN'")[0][0]
+        return {
+            "total": int(total),
+            "items": [
+                {"alert_id": r[0], "level": r[1], "title": (r[2] or "")[:36]}
+                for r in rows
+            ],
+        }, None
     except Exception as e:  # noqa: BLE001
         return None, str(e)[:80]
 
@@ -122,20 +141,29 @@ def _alert_ack(alert_id, ignore=False, operator=""):
     据此按 title 抑制同类新告警 14 天，到期自动恢复推送）。"""
     n = _db().db_execute(
         "UPDATE v2_alert SET status='ACKED', acked_at=now() "
-        "WHERE alert_id=%s AND status='OPEN'", (alert_id,))
+        "WHERE alert_id=%s AND status='OPEN'",
+        (alert_id,),
+    )
     if ignore:
         title = ""
         try:
             rows = _db().db_rows(
-                "SELECT title FROM v2_alert WHERE alert_id=%s", (alert_id,))
+                "SELECT title FROM v2_alert WHERE alert_id=%s", (alert_id,)
+            )
             title = (rows[0][0] or "") if rows else ""
         except Exception:  # noqa: BLE001
             pass  # 查询失败降级仅记 alert_id（同 lark_card_handler）
         ign = _read_json(IGNORE_FILE, [])
         if isinstance(ign, list):
             from datetime import datetime as _dt
-            ign.append({"alert_id": alert_id, "title": title,
-                        "ts": _dt.now().isoformat(timespec="seconds")})
+
+            ign.append(
+                {
+                    "alert_id": alert_id,
+                    "title": title,
+                    "ts": _dt.now().isoformat(timespec="seconds"),
+                }
+            )
             _atomic(IGNORE_FILE, ign[-2000:])
     audit(operator, "alert_ignore" if ignore else "alert_ack", alert_id)
     return n
@@ -156,82 +184,170 @@ def tasks_state():
 
 # ── 卡片构建（v1 兼容，与 er 卡同款：value 按钮） ────────────
 def _btn(text, value, ptype="default"):
-    return {"tag": "button", "text": {"tag": "plain_text", "content": text},
-            "type": ptype, "value": value}
+    return {
+        "tag": "button",
+        "text": {"tag": "plain_text", "content": text},
+        "type": ptype,
+        "value": value,
+    }
 
 
 def build_control_card():
     """四域状态 + 按钮的hub卡。任何读失败降级为该域一行提示。"""
     els = []
     # ① 量化交易线（写路径复用 er:* 既有回路，这里只放入口按钮）
-    els.append({"tag": "markdown", "content":
-                "**① 量化交易线** · 模拟盘止盈止损"})
-    els.append({"tag": "action", "actions": [
-        _btn("止盈单速览", {"tag": "er:list"}, "primary")]})
+    els.append({"tag": "markdown", "content": "**① 量化交易线** · 模拟盘止盈止损"})
+    els.append(
+        {
+            "tag": "action",
+            "actions": [_btn("止盈单速览", {"tag": "er:list"}, "primary")],
+        }
+    )
     # ② 预警与推送
     subs, cfg = push_state()
     lines = ["**② 预警与推送**"]
     for s in subs:
-        lines.append("· %s **%s**（%s）" % (
-            "✅" if s.get("enabled") else "⛔", s.get("name") or s.get("id"),
-            s.get("kind") or ""))
+        lines.append(
+            "· %s **%s**（%s）"
+            % (
+                "✅" if s.get("enabled") else "⛔",
+                s.get("name") or s.get("id"),
+                s.get("kind") or "",
+            )
+        )
     els.append({"tag": "markdown", "content": "\n".join(lines) or "（无订阅）"})
     for s in subs:
         sid = s.get("id")
-        name = (s.get("name") or sid or "")[:8]  # K-STOCK-193: 原 (name or sid) 在同语句解包中引用 sid，首项缺 name 即 NameError，非首项则误用上一项 id
-        els.append({"tag": "action", "actions": [
-            (_btn("关 %s" % name,
-                  {"tag": "ctl:sub_toggle", "id": sid, "to": "off"}, "danger")
-             if s.get("enabled") else
-             _btn("开 %s" % name,
-                  {"tag": "ctl:sub_toggle", "id": sid, "to": "on"}, "primary"))]})
-    pline = ["推送参数：" + " ｜ ".join(
-        "%s %s%s" % (PRESETS[k]["label"], cfg.get(k, "—"), PRESETS[k]["unit"])
-        for k in PRESETS if k in cfg)]
+        name = (s.get("name") or sid or "")[
+            :8
+        ]  # K-STOCK-193: 原 (name or sid) 在同语句解包中引用 sid，首项缺 name 即 NameError，非首项则误用上一项 id
+        els.append(
+            {
+                "tag": "action",
+                "actions": [
+                    (
+                        _btn(
+                            "关 %s" % name,
+                            {"tag": "ctl:sub_toggle", "id": sid, "to": "off"},
+                            "danger",
+                        )
+                        if s.get("enabled")
+                        else _btn(
+                            "开 %s" % name,
+                            {"tag": "ctl:sub_toggle", "id": sid, "to": "on"},
+                            "primary",
+                        )
+                    )
+                ],
+            }
+        )
+    pline = [
+        "推送参数："
+        + " ｜ ".join(
+            "%s %s%s" % (PRESETS[k]["label"], cfg.get(k, "—"), PRESETS[k]["unit"])
+            for k in PRESETS
+            if k in cfg
+        )
+    ]
     els.append({"tag": "markdown", "content": "\n".join(pline)})
     for k, p in PRESETS.items():
         cur = cfg.get(k)
-        els.append({"tag": "action", "actions": [
-            _btn(("%s %s%s" % (p["label"], v, p["unit"]))
-                 + (" ◂" if v == cur else ""),
-                 {"tag": "ctl:param", "key": k, "value": v})
-            for v in p["steps"]]})
+        els.append(
+            {
+                "tag": "action",
+                "actions": [
+                    _btn(
+                        ("%s %s%s" % (p["label"], v, p["unit"]))
+                        + (" ◂" if v == cur else ""),
+                        {"tag": "ctl:param", "key": k, "value": v},
+                    )
+                    for v in p["steps"]
+                ],
+            }
+        )
     # ③ 告警处置
     al, err = alert_state()
     if al is None:
-        els.append({"tag": "markdown", "content":
-                    "**③ 告警处置** · 告警库不可达（%s）" % err})
+        els.append(
+            {"tag": "markdown", "content": "**③ 告警处置** · 告警库不可达（%s）" % err}
+        )
     else:
         lines = ["**③ 告警处置** · OPEN **%d** 条" % al["total"]]
         for a in al["items"]:
             lines.append("· [%s] %s" % (a["level"], a["title"]))
         els.append({"tag": "markdown", "content": "\n".join(lines)})
         for a in al["items"]:
-            els.append({"tag": "action", "actions": [
-                _btn("已处理", {"tag": "ctl:alert_ack",
-                                "alert_id": a["alert_id"]}, "primary"),
-                _btn("忽略", {"tag": "ctl:alert_ignore",
-                              "alert_id": a["alert_id"]}, "default")]})
+            els.append(
+                {
+                    "tag": "action",
+                    "actions": [
+                        _btn(
+                            "已处理",
+                            {"tag": "ctl:alert_ack", "alert_id": a["alert_id"]},
+                            "primary",
+                        ),
+                        _btn(
+                            "忽略",
+                            {"tag": "ctl:alert_ignore", "alert_id": a["alert_id"]},
+                            "default",
+                        ),
+                    ],
+                }
+            )
         if al["total"] > len(al["items"]):
-            els.append({"tag": "action", "actions": [
-                _btn("全部确认（含未展示）", {"tag": "ctl:alert_ack_all"},
-                     "danger")]})
+            els.append(
+                {
+                    "tag": "action",
+                    "actions": [
+                        _btn(
+                            "全部确认（含未展示）",
+                            {"tag": "ctl:alert_ack_all"},
+                            "danger",
+                        )
+                    ],
+                }
+            )
     # ④ 门户外围
     ts = tasks_state()
-    els.append({"tag": "markdown", "content":
-                "**④ 门户外围** · 工单 %d 张（doing %d）" % (
-                    ts["total"], len(ts["doing"]))})
-    els.append({"tag": "action", "actions": [
-        _btn("工单总览", {"tag": "ctl:tasks"}),
-        _btn("重生成看板", {"tag": "ctl:board"}, "primary")]})
-    els.append({"tag": "note", "elements": [{"tag": "plain_text",
-                "content": "操作留痕 portal/data/control_ops.jsonl · "
-                "白名单 CTRL_ALLOW_OPEN_IDS"}]})
-    return {"config": {"wide_screen_mode": True},
-            "header": {"template": "blue", "title": {"tag": "plain_text",
-                      "content": "🎛 控制中枢 · %s" %
-                      datetime.now().strftime("%m-%d %H:%M")}},
-            "elements": els}
+    els.append(
+        {
+            "tag": "markdown",
+            "content": "**④ 门户外围** · 工单 %d 张（doing %d）"
+            % (ts["total"], len(ts["doing"])),
+        }
+    )
+    els.append(
+        {
+            "tag": "action",
+            "actions": [
+                _btn("工单总览", {"tag": "ctl:tasks"}),
+                _btn("重生成看板", {"tag": "ctl:board"}, "primary"),
+            ],
+        }
+    )
+    els.append(
+        {
+            "tag": "note",
+            "elements": [
+                {
+                    "tag": "plain_text",
+                    "content": "操作留痕 portal/data/control_ops.jsonl · "
+                    "白名单 CTRL_ALLOW_OPEN_IDS",
+                }
+            ],
+        }
+    )
+    return {
+        "config": {"wide_screen_mode": True},
+        "header": {
+            "template": "blue",
+            "title": {
+                "tag": "plain_text",
+                "content": "🎛 控制中枢 · %s" % datetime.now().strftime("%m-%d %H:%M"),
+            },
+        },
+        "elements": els,
+    }
 
 
 # ── 动作分发 ────────────────────────────────────────────────
@@ -257,51 +373,64 @@ def handle_ctl(val, operator=""):
                 if s.get("id") == val.get("id"):
                     s["enabled"] = to
                     _atomic(SUBS, d)
-                    audit(operator, "sub_toggle",
-                          "%s->%s" % (val.get("id"), val.get("to")))
-                    return True, "✅ %s 已%s" % (s.get("name") or val.get("id"),
-                                                "开启" if to else "关闭"), \
-                        build_control_card()
+                    audit(
+                        operator,
+                        "sub_toggle",
+                        "%s->%s" % (val.get("id"), val.get("to")),
+                    )
+                    return (
+                        True,
+                        "✅ %s 已%s"
+                        % (s.get("name") or val.get("id"), "开启" if to else "关闭"),
+                        build_control_card(),
+                    )
             return False, "未找到订阅 %s" % val.get("id"), None
         if tag == "ctl:param":
             key, v = val.get("key"), val.get("value")
             if key not in PRESETS:
                 return False, "未知参数 %s" % key, None
             if v not in PRESETS[key]["steps"]:
-                return False, "%s 档位仅支持 %s" % (
-                    key, PRESETS[key]["steps"]), None
+                return False, "%s 档位仅支持 %s" % (key, PRESETS[key]["steps"]), None
             cfg = _read_json(NEWS_CFG, {})
             cfg[key] = v
             _atomic(NEWS_CFG, cfg)
             audit(operator, "param", "%s=%s" % (key, v))
-            return True, "✅ %s 已设为 %s%s" % (
-                PRESETS[key]["label"], v, PRESETS[key]["unit"]), \
-                build_control_card()
+            return (
+                True,
+                "✅ %s 已设为 %s%s" % (PRESETS[key]["label"], v, PRESETS[key]["unit"]),
+                build_control_card(),
+            )
         if tag == "ctl:alert_ack":
             # DB 异常由外层 except 兜底回执「处理失败」（K-STOCK-137 清死分支）
             n = _alert_ack(val.get("alert_id"), False, operator)
-            return True, "✅ 已处理（%s 行，0 行=此前已确认，幂等）" % n, \
-                build_control_card()
+            return (
+                True,
+                "✅ 已处理（%s 行，0 行=此前已确认，幂等）" % n,
+                build_control_card(),
+            )
         if tag == "ctl:alert_ignore":
             n = _alert_ack(val.get("alert_id"), True, operator)
             return True, "✅ 已忽略并确认（%s 行）" % n, build_control_card()
         if tag == "ctl:alert_ack_all":
             n = _db().db_execute(
-                "UPDATE v2_alert SET status='ACKED', acked_at=now() "
-                "WHERE status='OPEN'")
+                "UPDATE v2_alert SET status='ACKED', acked_at=now() WHERE status='OPEN'"
+            )
             audit(operator, "alert_ack_all", "rows=%s" % n)
             return True, "✅ 全部确认（%s 行）" % n, build_control_card()
         if tag == "ctl:tasks":
             audit(operator, "tasks", "view")
             return True, _tasks_text(), None
         if tag == "ctl:board":
-            r = subprocess.run(BOARD_CMD, cwd=REPO, capture_output=True,
-                               timeout=180)
+            r = subprocess.run(BOARD_CMD, cwd=REPO, capture_output=True, timeout=180)
             out = (r.stdout or b"").decode("utf-8", "replace").strip()
             audit(operator, "board", "rc=%s" % r.returncode)
-            return (r.returncode == 0,
-                    ("✅ 看板已重生成\n%s" % out[-120:]) if r.returncode == 0
-                    else "❌ 看板生成失败：%s" % out[-120:], None)
+            return (
+                r.returncode == 0,
+                ("✅ 看板已重生成\n%s" % out[-120:])
+                if r.returncode == 0
+                else "❌ 看板生成失败：%s" % out[-120:],
+                None,
+            )
         return False, "未知动作 %s" % tag, None
     except Exception as e:  # noqa: BLE001  回调链路绝不因单点失败断掉
         return False, "处理失败：%s" % str(e)[:100], None
@@ -316,8 +445,11 @@ def ctl_http(action, alert_id="", operator="hermes-console"):
     遵循 K-ORG-112 原则 2「双表面同源同落点，禁止第二本账」。
     返回 (ok, text)；follow_card 对 HTTP 面无意义，丢弃。
     """
-    tag = {"ack": "ctl:alert_ack", "ignore": "ctl:alert_ignore",
-           "ack_all": "ctl:alert_ack_all"}.get(action)
+    tag = {
+        "ack": "ctl:alert_ack",
+        "ignore": "ctl:alert_ignore",
+        "ack_all": "ctl:alert_ack_all",
+    }.get(action)
     if not tag:
         return False, "未知动作 %s（支持 ack/ignore/ack_all）" % action
     if tag in ("ctl:alert_ack", "ctl:alert_ignore") and not alert_id:

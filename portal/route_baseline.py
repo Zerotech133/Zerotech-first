@@ -15,6 +15,7 @@ path 匹配（非 FastAPI 装饰器），所以字面量清单≈路由全集。
   python portal/route_baseline.py --probe        # 追加 8091 存活探针（/health）
   python portal/route_baseline.py --probe-all    # 逐路由 HTTP 探活（GET，任何响应=活）
 """
+
 from __future__ import annotations
 
 import ast
@@ -48,8 +49,9 @@ def extract_routes() -> dict:
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "source": SRC.name,
-        "source_sha256": __import__("hashlib").sha256(
-            SRC.read_bytes()).hexdigest()[:16],
+        "source_sha256": __import__("hashlib")
+        .sha256(SRC.read_bytes())
+        .hexdigest()[:16],
         "n_routes": len(routes),
         "routes": routes,
     }
@@ -72,7 +74,7 @@ def probe_all(routes: list[str]) -> dict:
         try:
             r = op.open("http://127.0.0.1:8091" + p, timeout=6)
             code = r.status
-        except urllib.error.HTTPError as e:      # noqa: PERF203
+        except urllib.error.HTTPError as e:  # noqa: PERF203
             code = e.code
         except Exception as e:
             out["unreachable"] += 1
@@ -103,10 +105,13 @@ def main(argv: list[str]) -> int:
         if not lost and not added:
             print("✅ 路由清单零漂移")
         return 1 if lost else 0
-    BASELINE.write_text(json.dumps(data, ensure_ascii=False, indent=1),
-                        encoding="utf-8")
-    print(f"路由 {data['n_routes']} 条（源 sha256:{data['source_sha256']}…）"
-          f" 基线已落 {BASELINE.name}")
+    BASELINE.write_text(
+        json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    print(
+        f"路由 {data['n_routes']} 条（源 sha256:{data['source_sha256']}…）"
+        f" 基线已落 {BASELINE.name}"
+    )
     for r in data["routes"]:
         print(f"  L{r['first_line']:<6} {r['path']}  x{r['count']}")
     if "--probe" in argv or "--probe-all" in argv:
@@ -114,8 +119,7 @@ def main(argv: list[str]) -> int:
     if "--probe-all" in argv:
         pr = probe_all([r["path"] for r in data["routes"]])
         print(f"探活: {pr['alive']} 可达 / {pr['unreachable']} 不可达")
-        bad = {k: v for k, v in pr["detail"].items()
-               if str(v).startswith("ERR")}
+        bad = {k: v for k, v in pr["detail"].items() if str(v).startswith("ERR")}
         if bad:
             print("不可达明细:", json.dumps(bad, ensure_ascii=False, indent=1))
     return 0

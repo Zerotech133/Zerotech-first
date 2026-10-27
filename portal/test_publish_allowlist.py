@@ -10,8 +10,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 FAIL = []
 
-SENSITIVE = {"ledger.html", "data" + os.sep + "ledger.json",
-             "data" + os.sep + "pick_details", "server.py"}
+SENSITIVE = {
+    "ledger.html",
+    "data" + os.sep + "ledger.json",
+    "data" + os.sep + "pick_details",
+    "server.py",
+}
 
 
 def check(name, cond):
@@ -24,15 +28,25 @@ import sync_publish as SP  # noqa: E402
 
 # ① 白名单恰三件且零敏感交集
 wl = {rel_dst for _, rel_dst in SP.SINGLE_FILES}
-check("白名单=picks/tokens/todays 三件",
-      wl == {"picks.html", os.path.join("static", "tokens.css"),
-             os.path.join("data", "todays_picks.json")})
+check(
+    "白名单=picks/tokens/todays 三件",
+    wl
+    == {
+        "picks.html",
+        os.path.join("static", "tokens.css"),
+        os.path.join("data", "todays_picks.json"),
+    },
+)
 check("白名单零敏感交集", not (wl & SENSITIVE))
 # 白名单源件存在性：picks.html/tokens.css 在 git（worktree 可验）；
 # todays_picks.json 为运行时数据（gitignored，worktree 无属正常，只验主仓态时才有）
-check("白名单 git 源文件存在",
-      all(os.path.exists(os.path.join(SP.SRC, s)) for s in
-          ("picks.html", os.path.join("static", "tokens.css"))))
+check(
+    "白名单 git 源文件存在",
+    all(
+        os.path.exists(os.path.join(SP.SRC, s))
+        for s in ("picks.html", os.path.join("static", "tokens.css"))
+    ),
+)
 
 # ② 敏感移档清单在册
 sr = {SP.SENSITIVE_REMOVAL[i] for i in range(len(SP.SENSITIVE_REMOVAL))}

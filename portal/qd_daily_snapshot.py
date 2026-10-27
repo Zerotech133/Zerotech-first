@@ -16,6 +16,7 @@
 用法（须 venv 解释器，需 pandas）：
     envs/default/Scripts/python.exe portal/qd_daily_snapshot.py [--date YYYYMMDD]
 """
+
 import argparse
 import glob
 import json
@@ -28,6 +29,7 @@ ASHARE = ROOT / "quant_backtest" / "data" / "ashare"
 OUT_DIR = Path(__file__).parent / "qd_daily_data"
 
 import urllib.request
+
 _op = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # 绕系统代理直连
 
 BATCH = 60  # 腾讯批量行情每批票数
@@ -35,19 +37,25 @@ BATCH = 60  # 腾讯批量行情每批票数
 
 def is_stock(code_plain):
     """指数过滤（T-009 同款规则）：sh 必须 6 开头，sz 必须 0/3 开头"""
-    return (code_plain.startswith("6") if "_SH" in code_plain
-            else code_plain[0] in ("0", "3"))
+    return (
+        code_plain.startswith("6")
+        if "_SH" in code_plain
+        else code_plain[0] in ("0", "3")
+    )
 
 
 def fetch_quotes(plain_codes):
     """腾讯批量行情：{plain_code: {name,close,change_pct,turnover_pct,mktcap_yi,vol}}"""
     out = {}
     for i in range(0, len(plain_codes), BATCH):
-        batch = plain_codes[i:i + BATCH]
+        batch = plain_codes[i : i + BATCH]
         syms = [("sh" if c.startswith("6") else "sz") + c for c in batch]
         try:
-            raw = _op.open("https://qt.gtimg.cn/q=" + ",".join(syms),
-                           timeout=15).read().decode("gbk", "ignore")
+            raw = (
+                _op.open("https://qt.gtimg.cn/q=" + ",".join(syms), timeout=15)
+                .read()
+                .decode("gbk", "ignore")
+            )
         except Exception:
             continue
         for ln in raw.strip().split(";"):
@@ -58,11 +66,13 @@ def fetch_quotes(plain_codes):
             f = ln.split("~")
             if len(f) < 46:
                 continue
+
             def _f(idx):
                 try:
                     return float(f[idx])
                 except (ValueError, IndexError):
                     return 0.0
+
             out[sym[2:]] = {
                 "name": f[1],
                 "close": round(_f(3), 2),
@@ -72,9 +82,15 @@ def fetch_quotes(plain_codes):
                 "vol": _f(36),  # 手（实时累计）
             }
         if (i // BATCH) % 20 == 0:
-            print("[quote] %d/%d 批 %.0fs" % (i // BATCH + 1,
-                  (len(plain_codes) + BATCH - 1) // BATCH, time.time() - t0),
-                  flush=True)
+            print(
+                "[quote] %d/%d 批 %.0fs"
+                % (
+                    i // BATCH + 1,
+                    (len(plain_codes) + BATCH - 1) // BATCH,
+                    time.time() - t0,
+                ),
+                flush=True,
+            )
     return out
 
 
@@ -88,8 +104,9 @@ def tech_from_lake(fp, live_vol):
     ma5 = sum(closes[-5:]) / 5
     ma10 = sum(closes[-10:]) / 10
     ma20 = sum(closes[-20:]) / 20
-    arrange = ("多头排列" if ma5 > ma10 > ma20
-               else "空头排列" if ma5 < ma10 < ma20 else "纠缠")
+    arrange = (
+        "多头排列" if ma5 > ma10 > ma20 else "空头排列" if ma5 < ma10 < ma20 else "纠缠"
+    )
     chg5 = round((closes[-1] / closes[-6] - 1) * 100, 2)
     pos20 = round((closes[-1] / max(closes[-20:]) - 1) * 100, 2)
     avg5 = sum(vols[-5:]) / 5
@@ -113,15 +130,24 @@ def main():
 
     files = sorted(glob.glob(str(ASHARE / "*.parquet")))
     # 指数排除：文件名 600519_SH / 000001_SZ；sh 必须 6 开头，sz 必须 0/3 开头
-    codes = [f for f in files
-             if (Path(f).stem.endswith("_SH") and Path(f).stem[:1] == "6")
-             or (Path(f).stem.endswith("_SZ") and Path(f).stem[:1] in ("0", "3"))]
+    codes = [
+        f
+        for f in files
+        if (Path(f).stem.endswith("_SH") and Path(f).stem[:1] == "6")
+        or (Path(f).stem.endswith("_SZ") and Path(f).stem[:1] in ("0", "3"))
+    ]
     plain_all = [Path(f).stem.split("_")[0] for f in codes]
-    print("[lake] 股票文件 %d（指数已排除，共 %d 文件）" % (len(codes), len(files)), flush=True)
+    print(
+        "[lake] 股票文件 %d（指数已排除，共 %d 文件）" % (len(codes), len(files)),
+        flush=True,
+    )
 
     quotes = fetch_quotes(plain_all)
-    print("[quote] 拿到行情 %d/%d，耗时 %.0fs" % (len(quotes), len(plain_all),
-          time.time() - t0), flush=True)
+    print(
+        "[quote] 拿到行情 %d/%d，耗时 %.0fs"
+        % (len(quotes), len(plain_all), time.time() - t0),
+        flush=True,
+    )
 
     rows, miss_tech = {}, 0
     for fp, plain in zip(codes, plain_all):
@@ -156,9 +182,11 @@ def main():
     }
     out_p.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
     up = sum(1 for r in rows.values() if r["change_pct"] > 0)
-    print("[done] %s 基础数据 %d 只（涨 %d / 跌 %d，技术状态缺失 %d），耗时 %.0fs → %s"
-          % (date, len(rows), up, len(rows) - up, miss_tech,
-             time.time() - t0, out_p), flush=True)
+    print(
+        "[done] %s 基础数据 %d 只（涨 %d / 跌 %d，技术状态缺失 %d），耗时 %.0fs → %s"
+        % (date, len(rows), up, len(rows) - up, miss_tech, time.time() - t0, out_p),
+        flush=True,
+    )
 
 
 if __name__ == "__main__":

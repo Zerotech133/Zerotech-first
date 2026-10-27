@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """m_links 卡片链接自动签发单测（P1 后续批次）。"""
+
 import json
 import os
 import tempfile
@@ -16,12 +17,17 @@ import m_tokens as mt  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
     finally:
         import shutil
+
         shutil.rmtree(root, ignore_errors=True)
 
 
@@ -45,7 +51,9 @@ def _write_cfg(path, d):
 def test_default_disabled(_env):
     assert m_links.enabled() is False
     assert m_links.url_for("picks") == ""
-    assert m_links.url_for("picks", force=True).startswith("http://test.local:8080/m/picks?t=")
+    assert m_links.url_for("picks", force=True).startswith(
+        "http://test.local:8080/m/picks?t="
+    )
 
 
 def test_enabled_by_config(_env, monkeypatch):
@@ -70,8 +78,10 @@ def test_env_enable_overrides_config(_env, monkeypatch):
 def test_signing_failure_returns_empty(monkeypatch):
     monkeypatch.setenv("M_LINK_ENABLE", "1")
     import m_api
-    monkeypatch.setattr(m_api, "page_url",
-                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    monkeypatch.setattr(
+        m_api, "page_url", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
     assert m_links.url_for("picks") == ""
 
 
@@ -85,22 +95,24 @@ def test_url_for_with_st(_env):
 def test_drill_card_button_gated(monkeypatch):
     _write_cfg(m_links.CONFIG, {"enabled": False, "base": ""})
     import feishu_card_v2 as fc
-    card = fc.build_drill_card("605100", {"name": "华丰", "quote": {}},
-                               [("结构", "x")])
+
+    card = fc.build_drill_card("605100", {"name": "华丰", "quote": {}}, [("结构", "x")])
     els = card["body"]["elements"]
-    labels = [e.get("text", {}).get("content") for e in els
-              if e.get("tag") == "button"]
+    labels = [e.get("text", {}).get("content") for e in els if e.get("tag") == "button"]
     assert "移动端详情" not in labels
 
 
 def test_drill_card_button_when_enabled(monkeypatch):
     import feishu_card_v2 as fc
+
     _write_cfg(m_links.CONFIG, {"enabled": True, "base": "http://test.local:8080"})
-    card = fc.build_drill_card("605100", {"name": "华丰", "quote": {}},
-                               [("结构", "x")])
+    card = fc.build_drill_card("605100", {"name": "华丰", "quote": {}}, [("结构", "x")])
     els = card["body"]["elements"]
-    mbtns = [e for e in els if e.get("tag") == "button"
-             and e.get("text", {}).get("content") == "移动端详情"]
+    mbtns = [
+        e
+        for e in els
+        if e.get("tag") == "button" and e.get("text", {}).get("content") == "移动端详情"
+    ]
     assert len(mbtns) == 1
     u = mbtns[0]["behaviors"][0]["default_url"]
     assert "/m/chan?t=" in u

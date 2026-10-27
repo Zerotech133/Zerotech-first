@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """移动端公网受限门单测（白名单/限流）。"""
+
 import os
 import sys
 
@@ -20,7 +21,7 @@ def test_allow_api():
     assert g.match_rule("/api/m/health") is False
     assert g.match_rule("/api/m/data") is False
     assert g.match_rule("/api/m/beacon") is True  # 唯一允许 POST
-    assert g.match_rule("/api/m/link") is None       # 签发入口不进公网
+    assert g.match_rule("/api/m/link") is None  # 签发入口不进公网
     assert g.match_rule("/api/m/share") is None
     # 订阅免登端点（2026-10-25）：start/check GET、exchange POST
     assert g.match_rule("/api/m/auth/start") is False

@@ -7,6 +7,7 @@
 LLM 一律桩注入：单测不依赖 Ollama 在线；真实往返由
 tools/comm_router_smoke.py 承担（--real 时才连模型）。
 """
+
 import json
 import os
 import sys
@@ -93,8 +94,7 @@ def test_06_feed_long_text(log_path):
 
 # ── K1.1 LLM 兜底 ────────────────────────────────
 def test_07_llm_fallback_for_uncovered(log_path):
-    llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.82,'
-                   ' "entities": {}}')
+    llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.82, "entities": {}}')
     r = cr.route_message("你们这个机器人是真人在回吗", llm=llm)
     assert r["intent"] == "smalltalk"
     assert r["channel"] == "llm"
@@ -219,6 +219,12 @@ def test_23_log_disabled_no_write(log_path):
 # ── 共 8 意图词表闭集 ─────────────────────────────
 def test_24_intent_closed_set():
     assert cr.INTENTS == (
-        "stock_consult", "watch_setup", "subscription_qa", "billing",
-        "complaint", "feed", "smalltalk", "unclear",
+        "stock_consult",
+        "watch_setup",
+        "subscription_qa",
+        "billing",
+        "complaint",
+        "feed",
+        "smalltalk",
+        "unclear",
     )

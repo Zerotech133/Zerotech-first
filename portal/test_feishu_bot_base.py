@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """feishu_bot_base 单测（W1）：群策略纯函数、凭据加载、心跳、AT 清洗、注册表联动。"""
+
 import json
 import os
 import tempfile
@@ -17,7 +18,11 @@ import uuid
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -36,7 +41,9 @@ def test_group_p2p_only_rejects_group():
 
 
 def test_mention_requires_at_placeholder():
-    ok, _ = base.group_policy_allows({"mode": "mention"}, "group", "oc_x", "@_user_1 你好")
+    ok, _ = base.group_policy_allows(
+        {"mode": "mention"}, "group", "oc_x", "@_user_1 你好"
+    )
     assert ok
     ok2, _ = base.group_policy_allows({"mode": "mention"}, "group", "oc_x", "你好")
     assert not ok2
@@ -44,14 +51,19 @@ def test_mention_requires_at_placeholder():
 
 def test_whitelist_group_allows_without_at():
     ok, why = base.group_policy_allows(
-        {"mode": "mention_or_whitelist"}, "group", "oc_allowed", "你好",
-        whitelist_chat_ids=["oc_allowed"])
+        {"mode": "mention_or_whitelist"},
+        "group",
+        "oc_allowed",
+        "你好",
+        whitelist_chat_ids=["oc_allowed"],
+    )
     assert ok and why == "whitelist_hit"
 
 
 def test_whitelist_mode_rejects_unknown_group():
     ok, why = base.group_policy_allows(
-        {"mode": "whitelist"}, "group", "oc_other", "hi", whitelist_chat_ids=["oc_ok"])
+        {"mode": "whitelist"}, "group", "oc_other", "hi", whitelist_chat_ids=["oc_ok"]
+    )
     assert not ok and "whitelist" in why
 
 
@@ -95,15 +107,18 @@ def test_shell_uses_registry_policy_and_whitelist():
     raw = {
         "_index": {
             "zb.demo.echo": {
-                "role": "zb.demo.echo", "display": "零界·演练",
-                "domain": ["owner"], "events": ["im.message.receive_v1"],
-                "perms": [], "status": "planned",
-                "group_policy": {"mode": "mention_or_whitelist",
-                                 "allow_chats": []},
+                "role": "zb.demo.echo",
+                "display": "零界·演练",
+                "domain": ["owner"],
+                "events": ["im.message.receive_v1"],
+                "perms": [],
+                "status": "planned",
+                "group_policy": {"mode": "mention_or_whitelist", "allow_chats": []},
             }
         },
         "group_whitelist": [
-            {"name": "内部测试", "chat_id": "oc_6b97bee8b5340e071d0fc10cc6c8569f"}],
+            {"name": "内部测试", "chat_id": "oc_6b97bee8b5340e071d0fc10cc6c8569f"}
+        ],
     }
     shell = base.Shell("zb.demo.echo", registry=raw)
     assert shell.display == "零界·演练"

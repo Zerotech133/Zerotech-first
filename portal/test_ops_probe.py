@@ -38,6 +38,7 @@ webhook 路径共用、kind 不特化 → 原行不可识别，走派工单 b �
 键有白名单（非白名单值强制改写 dead_letter）不可用，故采用 channel 值
 标记（push_flow 零消费方按 channel 过滤，向后兼容）。
 """
+
 import json
 import sys
 import types
@@ -54,8 +55,7 @@ import push_admin_server as admin  # noqa: E402
 import push_flow  # noqa: E402
 
 ADMIN_SRC = (PORTAL / "push_admin_server.py").read_text(encoding="utf-8")
-FEISHU_SRC = (REPO / "news_collector" / "feishu_client.py").read_text(
-    encoding="utf-8")
+FEISHU_SRC = (REPO / "news_collector" / "feishu_client.py").read_text(encoding="utf-8")
 
 
 def _ops_branch_src():
@@ -90,6 +90,7 @@ def _call_public_ops(monkeypatch, count=3):
 
 # ── 1. N6 挂点 ──
 
+
 def test_n6_hook_in_public_ops_branch():
     """/api/public/ops 分支内、构造响应前有 _dead_letter_alert_if_needed()
     恰好一次，注释「天然探针」在位（ops_board 60s 自动刷新即天然探针）。"""
@@ -99,11 +100,13 @@ def test_n6_hook_in_public_ops_branch():
     # 挂点在响应构造（return self._json）之前，且复用同一次 count_since
     # 读取（stats 传入，同请求不双读死信账）
     assert branch.index("_dead_letter_alert_if_needed(stats={") < branch.index(
-        "return self._json(")
+        "return self._json("
+    )
     assert branch.count("dead_letter.count_since(24)") == 1
 
 
 # ── 2. 乱码词修正 ──
+
 
 def test_garbled_word_fixed():
     """api_send docstring 乱码词已修正：全文无 fail-closed（写盘转乱码
@@ -114,12 +117,12 @@ def test_garbled_word_fixed():
 
 # ── 3. fallback_24h 段 ──
 
+
 def test_public_ops_has_fallback_segment(monkeypatch, tmp_path):
     """/api/public/ops 响应含 fallback_24h 段，键恰为
     {"count","total","sent_total"}（G-B 加法扩展），值均为 int
     （读不到账本时为 -1，不猜数）。"""
-    monkeypatch.setattr(push_flow, "FLOW_PATH",
-                        str(tmp_path / "no_such_flow.jsonl"))
+    monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "no_such_flow.jsonl"))
     handler = _call_public_ops(monkeypatch, count=7)
     assert handler.code == 200
     fb = handler.payload["fallback_24h"]
@@ -131,19 +134,28 @@ def test_public_ops_has_fallback_segment(monkeypatch, tmp_path):
 
 # ── 4~7. _fallback_stats_24h 统计函数 ──
 
+
 def _write_flow(tmp_path, rows):
     p = tmp_path / "flow.jsonl"
-    p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n"
-                         for r in rows), encoding="utf-8")
+    p.write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
+        encoding="utf-8",
+    )
     return str(p)
 
 
 def _row(channel, count=1, hours_ago=0.0, ok=True, target="oc_x"):
-    ts = (datetime.now() - timedelta(hours=hours_ago)).isoformat(
-        timespec="seconds")
-    return {"ts": ts, "date": ts[:10], "kind": "auto:probe", "channel":
-            channel, "target": target, "count": count, "ok": ok,
-            "tenant": "default"}
+    ts = (datetime.now() - timedelta(hours=hours_ago)).isoformat(timespec="seconds")
+    return {
+        "ts": ts,
+        "date": ts[:10],
+        "kind": "auto:probe",
+        "channel": channel,
+        "target": target,
+        "count": count,
+        "ok": ok,
+        "tenant": "default",
+    }
 
 
 def test_fallback_stats_counts_sample_jsonl(monkeypatch, tmp_path):
@@ -165,17 +177,27 @@ def test_fallback_stats_skips_bad_lines(monkeypatch, tmp_path):
     """坏行（半行交错残片 / 非 JSON / count 字段损坏）跳过不中断。"""
     p = tmp_path / "flow.jsonl"
     good = json.dumps(_row("openapi-fallback", count=2), ensure_ascii=False)
-    p.write_text("\n".join([
-        good[:30],                # 半行交错残片
-        "{not-json",              # 非 JSON
-        json.dumps(_row("openapi", count=3), ensure_ascii=False),
-        json.dumps({"ts": datetime.now().isoformat(timespec="seconds"),
-                    "channel": "openapi-fallback", "count": "bad"}),  # count 损坏
-        good,
-    ]) + "\n", encoding="utf-8")
+    p.write_text(
+        "\n".join(
+            [
+                good[:30],  # 半行交错残片
+                "{not-json",  # 非 JSON
+                json.dumps(_row("openapi", count=3), ensure_ascii=False),
+                json.dumps(
+                    {
+                        "ts": datetime.now().isoformat(timespec="seconds"),
+                        "channel": "openapi-fallback",
+                        "count": "bad",
+                    }
+                ),  # count 损坏
+                good,
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(push_flow, "FLOW_PATH", str(p))
-    assert admin._fallback_stats_24h() == {"count": 2, "total": 5,
-                                           "sent_total": 5}
+    assert admin._fallback_stats_24h() == {"count": 2, "total": 5, "sent_total": 5}
 
 
 def test_fallback_stats_excludes_outside_24h(monkeypatch, tmp_path):
@@ -186,23 +208,20 @@ def test_fallback_stats_excludes_outside_24h(monkeypatch, tmp_path):
         _row("openapi-fallback", count=1, hours_ago=23),
     ]
     monkeypatch.setattr(push_flow, "FLOW_PATH", _write_flow(tmp_path, rows))
-    assert admin._fallback_stats_24h() == {"count": 1, "total": 1,
-                                           "sent_total": 1}
+    assert admin._fallback_stats_24h() == {"count": 1, "total": 1, "sent_total": 1}
 
 
 def test_fallback_stats_read_error_minus_one(monkeypatch, tmp_path):
     """读异常（文件不存在 / 路径是目录）→ count/total/sent_total 全 -1，
     不猜数（G-B：sent_total 同步 -1）。"""
-    monkeypatch.setattr(push_flow, "FLOW_PATH",
-                        str(tmp_path / "missing.jsonl"))
-    assert admin._fallback_stats_24h() == {"count": -1, "total": -1,
-                                           "sent_total": -1}
+    monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "missing.jsonl"))
+    assert admin._fallback_stats_24h() == {"count": -1, "total": -1, "sent_total": -1}
     monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path))  # 目录 → OSError
-    assert admin._fallback_stats_24h() == {"count": -1, "total": -1,
-                                           "sent_total": -1}
+    assert admin._fallback_stats_24h() == {"count": -1, "total": -1, "sent_total": -1}
 
 
 # ── 8. 写读契约（真实 push_flow.record）──
+
 
 def test_fallback_marker_writer_reader_contract(monkeypatch, tmp_path):
     """端到端约定：真实 push_flow.record 写 channel="openapi-fallback" 行，
@@ -211,17 +230,16 @@ def test_fallback_marker_writer_reader_contract(monkeypatch, tmp_path):
     push_flow.record("auto:probe", "openapi-fallback", "oc_a", 1, True)
     push_flow.record("auto:probe", "openapi-fallback", "oc_a", 1, False)
     push_flow.record("auto:probe", "openapi", "oc_b", 2, True)  # 非降级行
-    assert admin._fallback_stats_24h() == {"count": 2, "total": 4,
-                                           "sent_total": 3}
+    assert admin._fallback_stats_24h() == {"count": 2, "total": 4, "sent_total": 3}
 
 
 # ── 9. 隐私红线 ──
 
+
 def test_public_ops_no_plaintext(monkeypatch, tmp_path):
     """响应零 open_id/target/kind 明文键；fallback_24h 只含三计数键
     （G-B 扩展后）；整包序列化后无 open_id（ou_）/chat_id（oc_）明文泄漏。"""
-    monkeypatch.setattr(push_flow, "FLOW_PATH",
-                        str(tmp_path / "missing.jsonl"))
+    monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "missing.jsonl"))
     payload = _call_public_ops(monkeypatch).payload
     banned = {"open_id", "target", "kind", "receivers"}
     for key in payload:
@@ -233,10 +251,11 @@ def test_public_ops_no_plaintext(monkeypatch, tmp_path):
 
 # ── 10. feishu_client 降级分支标记锚点 ──
 
+
 def test_feishu_client_fallback_marker_anchors():
     """_openapi_direct_send 内 channel="openapi-fallback" 恰 4 处落账；
     _flow_record 缺省 channel 仍为 "openapi"（非降级行零变化）。"""
-    seg = FEISHU_SRC[FEISHU_SRC.index("def _openapi_direct_send("):]
+    seg = FEISHU_SRC[FEISHU_SRC.index("def _openapi_direct_send(") :]
     assert seg.count('channel="openapi-fallback"') == 4
     assert 'def _flow_record(ok, target, channel="openapi"' in FEISHU_SRC
     # why 前缀证据链锚点仍在（降级语义未动）
@@ -245,14 +264,15 @@ def test_feishu_client_fallback_marker_anchors():
 
 # ── 11~15. P2.7 G-B：sent_total 纯发送口径 + 静默窗预埋 ──
 
+
 def test_fallback_stats_sent_total_pure_send_scope(monkeypatch, tmp_path):
     """G-B 纯发送口径：sent_total=近 24h ok=true 有效行 count 合计；
     与 total 差值=被拒/失败行量（hub-gate 拒绝行、降级失败行均不进
     sent_total）；单次读 jsonl 同轮算三值。"""
     rows = [
-        _row("openapi-fallback", count=1, hours_ago=1),            # sent +1
-        _row("hub-gate", count=3, hours_ago=1, ok=False),          # 拒绝不进 sent
-        _row("openapi", count=5, hours_ago=2),                     # sent +5
+        _row("openapi-fallback", count=1, hours_ago=1),  # sent +1
+        _row("hub-gate", count=3, hours_ago=1, ok=False),  # 拒绝不进 sent
+        _row("openapi", count=5, hours_ago=2),  # sent +5
         _row("openapi-fallback", count=2, hours_ago=3, ok=False),  # 失败不进 sent
     ]
     monkeypatch.setattr(push_flow, "FLOW_PATH", _write_flow(tmp_path, rows))
@@ -262,10 +282,8 @@ def test_fallback_stats_sent_total_pure_send_scope(monkeypatch, tmp_path):
 
 def test_fallback_stats_sent_total_read_error_minus_one(monkeypatch, tmp_path):
     """G-B 读异常口径：sent_total 与 count/total 同步 -1，不猜数。"""
-    monkeypatch.setattr(push_flow, "FLOW_PATH",
-                        str(tmp_path / "missing.jsonl"))
-    assert admin._fallback_stats_24h() == {"count": -1, "total": -1,
-                                           "sent_total": -1}
+    monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "missing.jsonl"))
+    assert admin._fallback_stats_24h() == {"count": -1, "total": -1, "sent_total": -1}
 
 
 def test_public_ops_sent_total_privacy_recheck(monkeypatch, tmp_path):
@@ -292,15 +310,14 @@ def test_customer_observe_silent_window_marker(monkeypatch):
     "|silent-window" 后缀；窗外不加。observe 不拦截不发送——缺
     content 早退、零发送调用，纯留痕增强。"""
     cap = []
-    monkeypatch.setattr(push_flow, "record",
-                        lambda *a, **kw: cap.append((a, kw)))
-    monkeypatch.setattr(admin, "_dead_letter_alert_if_needed",
-                        lambda *a, **kw: None)
+    monkeypatch.setattr(push_flow, "record", lambda *a, **kw: cap.append((a, kw)))
+    monkeypatch.setattr(admin, "_dead_letter_alert_if_needed", lambda *a, **kw: None)
     # 窗内：静默窗覆盖全天（同日窗口 00:00-23:59，任意 now 恒命中）
-    monkeypatch.setattr(admin, "load_schedule",
-                        lambda: {"sources": [],
-                                 "silent_start": "00:00",
-                                 "silent_end": "23:59"})
+    monkeypatch.setattr(
+        admin,
+        "load_schedule",
+        lambda: {"sources": [], "silent_start": "00:00", "silent_end": "23:59"},
+    )
     r = admin.api_send({"domain": "customer", "receive_id": "ou_w"})
     assert r["ok"] is False  # 缺 content 早退，不发送
     assert len(cap) == 1
@@ -309,10 +326,11 @@ def test_customer_observe_silent_window_marker(monkeypatch):
     assert a[1] == "domain-observe"
     assert kw.get("domain") == "customer"
     # 窗外：窗口宽 0（同日判定 cur<b 恒假）→ kind 不加后缀
-    monkeypatch.setattr(admin, "load_schedule",
-                        lambda: {"sources": [],
-                                 "silent_start": "00:00",
-                                 "silent_end": "00:00"})
+    monkeypatch.setattr(
+        admin,
+        "load_schedule",
+        lambda: {"sources": [], "silent_start": "00:00", "silent_end": "00:00"},
+    )
     cap.clear()
     r2 = admin.api_send({"domain": "customer", "receive_id": "ou_w"})
     assert r2["ok"] is False

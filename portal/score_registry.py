@@ -12,6 +12,7 @@
   · 证据级别 C/D 仅观察；A/B 才可进决策候选（allow_decision=true 时）；
   · H5/卡片禁止自算分数——展示必须带 metric_id + as_of + evidence_level。
 """
+
 from __future__ import annotations
 
 import datetime
@@ -29,8 +30,7 @@ def load(path=None, force=False):
         mtime = os.path.getmtime(p)
     except OSError:
         return {"schema": "zb.score.v1", "metrics": []}
-    if (not force and _CACHE["data"] is not None
-            and _CACHE["mtime"] == mtime):
+    if not force and _CACHE["data"] is not None and _CACHE["mtime"] == mtime:
         return _CACHE["data"]
     try:
         with open(p, encoding="utf-8") as f:
@@ -53,7 +53,9 @@ def annotate(metric_id, value, as_of=None, evidence_level=None):
     """→ 可安全展示的注解 dict；未登记 metric 抛 KeyError（fail loud）。"""
     m = get(metric_id)
     if not m:
-        raise KeyError("评分指标未登记：%s（先到 score_registry.json 登记）" % metric_id)
+        raise KeyError(
+            "评分指标未登记：%s（先到 score_registry.json 登记）" % metric_id
+        )
     lv = evidence_level or m.get("evidence_level") or "C"
     return {
         "metric_id": metric_id,
@@ -76,8 +78,7 @@ def push_allowed(metric_id):
 
 def decision_allowed(metric_id):
     m = get(metric_id) or {}
-    return bool(m.get("allow_decision")) and (
-        m.get("evidence_level") in ("A", "B"))
+    return bool(m.get("allow_decision")) and (m.get("evidence_level") in ("A", "B"))
 
 
 def validate(path=None):
@@ -87,9 +88,19 @@ def validate(path=None):
     by_level = {}
     for m in d.get("metrics") or []:
         mid = m.get("metric_id")
-        for k in ("metric_id", "label", "definition", "unit", "scale",
-                  "as_of_rule", "source", "coverage", "evidence_level",
-                  "allow_push", "allow_decision"):
+        for k in (
+            "metric_id",
+            "label",
+            "definition",
+            "unit",
+            "scale",
+            "as_of_rule",
+            "source",
+            "coverage",
+            "evidence_level",
+            "allow_push",
+            "allow_decision",
+        ):
             if k not in m:
                 errs.append("%s 缺字段 %s" % (mid or "?", k))
         lv = m.get("evidence_level")
@@ -99,15 +110,22 @@ def validate(path=None):
         if m.get("allow_decision") and lv in ("C", "D"):
             errs.append("%s 证据级别 %s 不允许 allow_decision=true" % (mid, lv))
     push_n = sum(1 for m in d.get("metrics") or [] if m.get("allow_push"))
-    dec_n = sum(1 for m in d.get("metrics") or [] if decision_allowed(
-        m.get("metric_id")))
-    return {"ok": not errs, "total": len(d.get("metrics") or []),
-            "errors": errs, "by_level": by_level,
-            "push_n": push_n, "decision_n": dec_n}
+    dec_n = sum(
+        1 for m in d.get("metrics") or [] if decision_allowed(m.get("metric_id"))
+    )
+    return {
+        "ok": not errs,
+        "total": len(d.get("metrics") or []),
+        "errors": errs,
+        "by_level": by_level,
+        "push_n": push_n,
+        "decision_n": dec_n,
+    }
 
 
 def main(argv=None):
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--json", action="store_true")
@@ -116,8 +134,10 @@ def main(argv=None):
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=1))
     else:
-        print("评分注册表：%d 项 · 证据级别 %s · 可推送 %d · 可决策 %d"
-              % (r["total"], r["by_level"], r["push_n"], r["decision_n"]))
+        print(
+            "评分注册表：%d 项 · 证据级别 %s · 可推送 %d · 可决策 %d"
+            % (r["total"], r["by_level"], r["push_n"], r["decision_n"])
+        )
         for e in r["errors"]:
             print("  ✗", e)
     return 0 if r["ok"] else 1

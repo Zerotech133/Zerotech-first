@@ -49,13 +49,17 @@ def table_names(path):
 # 建表 / 路径 / 种子
 # ---------------------------------------------------------------------------
 
+
 def test_01_create_tables_idempotent(db):
     """首次连接自动建 5 表；重复连接幂等不报错。"""
     make_conn()
     tables = table_names(db)
     assert tables == {
-        "subscriber", "plan", "subscription",
-        "entitlement_log", "payment_order",
+        "subscriber",
+        "plan",
+        "subscription",
+        "entitlement_log",
+        "payment_order",
     }
     make_conn()  # 二次连接幂等
     assert table_names(db) == tables
@@ -100,6 +104,7 @@ def test_03_seed_plans_present(db):
 # 判定四分支 + 豁免 + fail-open
 # ---------------------------------------------------------------------------
 
+
 def _grant_here(open_id, plan_id="basic_monthly", days=30, start=None):
     """测试内直接插一行订阅（绕过 grant_subscription 的 now 取当前）。"""
     start = start or datetime(2026, 10, 20, 8, 0, 0)
@@ -108,8 +113,13 @@ def _grant_here(open_id, plan_id="basic_monthly", days=30, start=None):
         conn.execute(
             "INSERT INTO subscription(subscriber_open_id, plan_id, start, end,"
             " status) VALUES (?,?,?,?,?)",
-            (open_id, plan_id, start.strftime("%Y-%m-%d %H:%M:%S"),
-             end.strftime("%Y-%m-%d %H:%M:%S"), "active"),
+            (
+                open_id,
+                plan_id,
+                start.strftime("%Y-%m-%d %H:%M:%S"),
+                end.strftime("%Y-%m-%d %H:%M:%S"),
+                "active",
+            ),
         )
         conn.commit()
 
@@ -141,7 +151,9 @@ def test_07_judge_quota_exhausted(db):
     _grant_here("ou_quota")
     now = datetime(2026, 10, 20, 9, 0, 0)
     for _ in range(20):  # basic_monthly 日 20 条
-        ss.entitlement_log("ou_quota", "news.brief", True, "subscription_active", now=now)
+        ss.entitlement_log(
+            "ou_quota", "news.brief", True, "subscription_active", now=now
+        )
     ok, reason = ss.is_entitled("ou_quota", "news.brief", now=now)
     assert ok is False and reason == "daily_quota_exhausted"
 
@@ -160,7 +172,9 @@ def test_08_owner_domain_exempt(db, monkeypatch):
 
 def test_09_store_missing_fail_open(db, monkeypatch):
     """store 文件缺失 → (True, store_unavailable_fail_open)，且不建库。"""
-    monkeypatch.setenv("SUBSCRIPTION_DB", str(tmp_path_missing := db.parent / "never.sqlite3"))
+    monkeypatch.setenv(
+        "SUBSCRIPTION_DB", str(tmp_path_missing := db.parent / "never.sqlite3")
+    )
     assert not tmp_path_missing.exists()
     ok, reason = ss.is_entitled("ou_any", "news.brief")
     assert ok is True and reason == "store_unavailable_fail_open"
@@ -180,11 +194,12 @@ def test_10_store_broken_fail_open(db, monkeypatch):
 # 写操作契约
 # ---------------------------------------------------------------------------
 
+
 def test_11_upsert_subscriber(db):
     """upsert：首插建行，再插更新 display_name，不重复建行。"""
     ss.upsert_subscriber("ou_u1", "张三")
     ss.upsert_subscriber("ou_u1", "张三丰")  # 非空名更新
-    ss.upsert_subscriber("ou_u1")            # 空名不覆盖
+    ss.upsert_subscriber("ou_u1")  # 空名不覆盖
     conn = sqlite3.connect(str(db))
     rows = conn.execute(
         "SELECT display_name FROM subscriber WHERE open_id='ou_u1'"
@@ -208,7 +223,7 @@ def test_12_grant_subscription(db):
 
 def test_13_expire_sweep(db):
     """sweep：把 end<now 的生效行置 expired，返回行数；期内行不动。"""
-    _grant_here("ou_s1", days=1, start=datetime(2026, 10, 1))   # 已过期
+    _grant_here("ou_s1", days=1, start=datetime(2026, 10, 1))  # 已过期
     _grant_here("ou_s2", days=30, start=datetime(2026, 10, 15))  # 仍生效
     n = ss.expire_sweep(now=datetime(2026, 10, 20))
     assert n == 1
@@ -262,6 +277,7 @@ def test_16_internal_plan_unlimited(db):
 # 并发只读安全（说明性验证）
 # ---------------------------------------------------------------------------
 
+
 def test_17_concurrent_readonly_threads(db):
     """并发只读安全：多线程同时 is_entitled 无异常、结果一致。
 
@@ -292,6 +308,7 @@ def test_17_concurrent_readonly_threads(db):
 # P3.9-lite N-A 追加：offset 默认值不改变旧调用方结果
 # ---------------------------------------------------------------------------
 
+
 def test_18_offset_default_keeps_legacy_result(db):
     """offset 缺省 == offset=0：旧调用方（关键字 / 位置）结果逐字段不变。"""
     for i in range(3):
@@ -305,8 +322,11 @@ def test_18_offset_default_keeps_legacy_result(db):
     assert legacy["offset"] == explicit["offset"] == 0
     assert legacy["has_more"] is True  # 2 行 == 生效 limit 2，宁松不紧
     # 位置传参仍表示 limit（offset 在签名末尾，不抢位）
-    assert ss.list_subscribers(200)["count"] == ss.list_subscribers(
-        limit=200)["count"] == 3
+    assert (
+        ss.list_subscribers(200)["count"]
+        == ss.list_subscribers(limit=200)["count"]
+        == 3
+    )
 
 
 def test_19_offset_skips_prefix_without_touching_rows(db):

@@ -11,6 +11,7 @@
   python hermes_report_job.py --period week|month
 环境：HERMES_REPORT_ENABLED=0 可关闭定时投递；HERMES_BASE 可覆盖地址。
 """
+
 from __future__ import annotations
 
 import json
@@ -47,8 +48,10 @@ def fetch(period="day"):
 def save(period, md):
     try:
         os.makedirs(OUT_DIR, exist_ok=True)
-        fp = os.path.join(OUT_DIR, "hermes_%s_%s.md"
-                          % (period, datetime.now().strftime("%Y%m%d-%H%M")))
+        fp = os.path.join(
+            OUT_DIR,
+            "hermes_%s_%s.md" % (period, datetime.now().strftime("%Y%m%d-%H%M")),
+        )
         with open(fp, "w", encoding="utf-8") as f:
             f.write(md)
         return fp
@@ -81,35 +84,63 @@ def send_card(period, md):
         sec = json.load(open(SECRETS, encoding="utf-8"))
         req = urllib.request.Request(
             "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
-            data=json.dumps({"app_id": sec["app_id"],
-                             "app_secret": sec["app_secret"]}).encode(),
-            headers={"Content-Type": "application/json"})
+            data=json.dumps(
+                {"app_id": sec["app_id"], "app_secret": sec["app_secret"]}
+            ).encode(),
+            headers={"Content-Type": "application/json"},
+        )
         with urllib.request.urlopen(req, timeout=20) as r:
             tok = json.loads(r.read().decode()).get("tenant_access_token")
         if not tok:
             return False, "token 获取失败"
         label = {"day": "日报", "week": "周报", "month": "月报"}.get(period, "日报")
-        body = md[:1600] + ("\n\n…（完整版见 portal/work/hermes_reports/）"
-                            if len(md) > 1600 else "")
-        card = {"config": {"wide_screen_mode": True},
-                "header": {"template": "turquoise",
-                           "title": {"tag": "plain_text",
-                                     "content": "📋 军机驿 · Hermes %s草稿" % label}},
-                "elements": [{"tag": "markdown", "content": body},
-                             {"tag": "note", "elements": [{
-                                 "tag": "plain_text",
-                                 "content": "Hermes 只读草稿；发送/执行仍需人工；"
-                                            "8097 console 可查决策与审批"}]}]}
-        data = json.dumps({"receive_id": UNION, "msg_type": "interactive",
-                           "content": json.dumps(card, ensure_ascii=False)},
-                          ensure_ascii=False).encode()
+        body = md[:1600] + (
+            "\n\n…（完整版见 portal/work/hermes_reports/）" if len(md) > 1600 else ""
+        )
+        card = {
+            "config": {"wide_screen_mode": True},
+            "header": {
+                "template": "turquoise",
+                "title": {
+                    "tag": "plain_text",
+                    "content": "📋 军机驿 · Hermes %s草稿" % label,
+                },
+            },
+            "elements": [
+                {"tag": "markdown", "content": body},
+                {
+                    "tag": "note",
+                    "elements": [
+                        {
+                            "tag": "plain_text",
+                            "content": "Hermes 只读草稿；发送/执行仍需人工；"
+                            "8097 console 可查决策与审批",
+                        }
+                    ],
+                },
+            ],
+        }
+        data = json.dumps(
+            {
+                "receive_id": UNION,
+                "msg_type": "interactive",
+                "content": json.dumps(card, ensure_ascii=False),
+            },
+            ensure_ascii=False,
+        ).encode()
         req = urllib.request.Request(
             "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=union_id",
-            data=data, headers={"Authorization": "Bearer " + tok,
-                                "Content-Type": "application/json"})
+            data=data,
+            headers={
+                "Authorization": "Bearer " + tok,
+                "Content-Type": "application/json",
+            },
+        )
         with urllib.request.urlopen(req, timeout=25) as r:
             res = json.loads(r.read().decode())
-        return res.get("code") == 0, str((res.get("data") or {}).get("message_id") or res.get("msg"))
+        return res.get("code") == 0, str(
+            (res.get("data") or {}).get("message_id") or res.get("msg")
+        )
     except Exception as e:  # noqa: BLE001
         return False, "%s: %s" % (type(e).__name__, str(e)[:120])
 
@@ -135,6 +166,7 @@ def run_once(period="day", force=False, dry=False):
 def main(argv=None):
     argv = argv or sys.argv[1:]
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--period", default="day")
     ap.add_argument("--dry", action="store_true")

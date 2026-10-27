@@ -6,6 +6,7 @@
 - 全流程写入 work/strategy_worker/<order>.log；
 - 闸门：回测失败/收益≤0 → rejected；正收益 → shadowing（30 天）。
 """
+
 import json
 import os
 import sys
@@ -20,6 +21,7 @@ for p in (ROOT, os.path.join(ROOT, "quant_backtest"), HERE):
 # double_knife 依赖 agent_platform.engine；仓库名为 namespace 包，会被已安装
 # 的 zhice 同名包抢占 → 显式 shim（与 A/B 脚本一致）。
 import types  # noqa: E402
+
 if "agent_platform" not in sys.modules:
     _pkg = types.ModuleType("agent_platform")
     _pkg.__path__ = [os.path.join(ROOT, "agent_platform")]
@@ -54,8 +56,11 @@ def main():
     b = bt.get("backtest") or {}
     log("backtest status=%s why=%s" % (b.get("status"), (b.get("why") or "")[:200]))
     if b.get("status") != "done":
-        sr._update(oid, status="rejected",
-                   reason="回测失败：%s" % (b.get("why") or b.get("status"))[:100])
+        sr._update(
+            oid,
+            status="rejected",
+            reason="回测失败：%s" % (b.get("why") or b.get("status"))[:100],
+        )
         log("REJECTED (backtest not done)")
         return 0
     sm = (b.get("result") or {}).get("summary") or {}

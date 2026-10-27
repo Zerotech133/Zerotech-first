@@ -20,8 +20,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import subscription_store as ss
 
 TOTAL = 250
-ROW_KEYS = {"open_id", "display_name", "plan_id", "status",
-            "start", "end", "daily_quota", "used_today"}
+ROW_KEYS = {
+    "open_id",
+    "display_name",
+    "plan_id",
+    "status",
+    "start",
+    "end",
+    "daily_quota",
+    "used_today",
+}
 
 
 def oid(i):
@@ -45,6 +53,7 @@ def db(tmp_path, monkeypatch):
 # 1. 旧行为不变（纯追加）
 # ---------------------------------------------------------------------------
 
+
 def test_01_default_keeps_legacy_fields_and_rows(db):
     """默认调用：既有的 8 个字段逐字段不变，只在末尾追加 offset/has_more。"""
     r = ss.list_subscribers()
@@ -52,8 +61,9 @@ def test_01_default_keeps_legacy_fields_and_rows(db):
     assert r["count"] == 50 == len(r["subscribers"])
     assert r["offset"] == 0
     assert r["has_more"] is True
-    assert [s["open_id"] for s in r["subscribers"]] == \
-        [oid(i) for i in range(50)]  # ORDER BY open_id 稳定序不变
+    assert [s["open_id"] for s in r["subscribers"]] == [
+        oid(i) for i in range(50)
+    ]  # ORDER BY open_id 稳定序不变
     for i, row in enumerate(r["subscribers"]):
         assert set(row) == ROW_KEYS  # 行内字段零增零减
         assert row["open_id"] == oid(i)
@@ -74,19 +84,21 @@ def test_01_default_keeps_legacy_fields_and_rows(db):
 # 2. offset 取到尾部 / 超界
 # ---------------------------------------------------------------------------
 
+
 def test_02_offset_200_returns_remaining_50(db):
     """offset=200 取到剩余 50 条，尾部 has_more=False。"""
     r = ss.list_subscribers(limit=200, offset=200)
     assert r["ok"] is True and r["offset"] == 200
     assert r["count"] == 50 == len(r["subscribers"])
-    assert [s["open_id"] for s in r["subscribers"]] == \
-        [oid(i) for i in range(200, TOTAL)]
+    assert [s["open_id"] for s in r["subscribers"]] == [
+        oid(i) for i in range(200, TOTAL)
+    ]
     assert r["has_more"] is False
 
 
 def test_03_offset_beyond_end_is_empty_not_error(db):
     """offset 超界 → 空列表但 ok=True（空 ≠ 错误），has_more=False。"""
-    for off in (TOTAL, 10 ** 6):
+    for off in (TOTAL, 10**6):
         r = ss.list_subscribers(limit=200, offset=off)
         assert r["ok"] is True and "error" not in r
         assert r["count"] == 0 and r["subscribers"] == []
@@ -96,6 +108,7 @@ def test_03_offset_beyond_end_is_empty_not_error(db):
 # ---------------------------------------------------------------------------
 # 3. has_more 口径（宁松不紧）
 # ---------------------------------------------------------------------------
+
 
 def test_04_has_more_true_on_exactly_full_page(db):
     """正好取满一页即 has_more=True（无 total 计数，不假装精确）。"""
@@ -111,6 +124,7 @@ def test_04_has_more_true_on_exactly_full_page(db):
 # 4. 非法 offset 归一到 0，不抛
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize("bad", [-5, "abc", None, 3.7, "50"])
 def test_05_bad_offset_normalized_to_zero(db, bad):
     """负 / 非数字串 / None / 浮点 / 数字字符串 → 一律当 0，不抛异常。"""
@@ -122,6 +136,7 @@ def test_05_bad_offset_normalized_to_zero(db, bad):
 # ---------------------------------------------------------------------------
 # 5. limit 钳制保持原样
 # ---------------------------------------------------------------------------
+
 
 def test_06_limit_clamp_still_1_to_200(db):
     """加大 offset 不放宽 limit：500→200、0/-5→1、非整数→50。"""
@@ -137,6 +152,7 @@ def test_06_limit_clamp_still_1_to_200(db):
 # ---------------------------------------------------------------------------
 # 6. iter_all_subscribers：全量 / 截断 / 异常
 # ---------------------------------------------------------------------------
+
 
 def test_07_iter_all_collects_all_250(db):
     """默认参数取全 250 条：2 页、无重复无遗漏、complete=True。"""
@@ -208,6 +224,7 @@ def test_11_iter_missing_store_reports_incomplete(tmp_path, monkeypatch):
 # 7. 分页拼接 == 全集；参数钳制
 # ---------------------------------------------------------------------------
 
+
 def test_12_pages_partition_equals_full_set(db):
     """逐页（limit=50）拼起来 = iter 全集：无重复、无遗漏、顺序一致。"""
     collected = []
@@ -221,8 +238,7 @@ def test_12_pages_partition_equals_full_set(db):
     expected = [oid(i) for i in range(TOTAL)]
     assert collected == expected  # 顺序 + 条数即覆盖全量
     assert len(set(collected)) == TOTAL  # 无重复
-    assert [r["open_id"] for r in ss.iter_all_subscribers()["subscribers"]] \
-        == expected
+    assert [r["open_id"] for r in ss.iter_all_subscribers()["subscribers"]] == expected
 
 
 def test_13_iter_page_size_and_max_pages_clamped(db):

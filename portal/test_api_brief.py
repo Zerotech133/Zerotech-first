@@ -18,22 +18,29 @@ if str(HERE) not in sys.path:
 import api_brief  # noqa: E402
 
 
-def _brief(date="2026-10-18", kind="both", verdict="pass", p1=0,
-           gen="2026-10-18T18:05:00"):
+def _brief(
+    date="2026-10-18", kind="both", verdict="pass", p1=0, gen="2026-10-18T18:05:00"
+):
     """造一条生成器同构简报（字段齐但不塞长文）。"""
     return {
-        "date": date, "kind": kind, "verdict": verdict,
-        "j_items": [{"key": "J1", "name": "无人干预", "ok": True,
-                     "detail": "篮子覆盖率 100%"}],
+        "date": date,
+        "kind": kind,
+        "verdict": verdict,
+        "j_items": [
+            {"key": "J1", "name": "无人干预", "ok": True, "detail": "篮子覆盖率 100%"}
+        ],
         "j_summary": {"pass": 6, "total": 7},
         "anomalies": [],
-        "p1_issues": [{"source": "checkpoint", "title": "t", "reason": "r"}]
-                     * p1,
+        "p1_issues": [{"source": "checkpoint", "title": "t", "reason": "r"}] * p1,
         "brief_text": "【复盘简报 %s】" % date,
         "generated_at": gen,
-        "sources": {"checkpoint_date": date, "checkpoint_verdict": "pass",
-                    "eval_file": None, "eval_date": None,
-                    "eval_verdict": None},
+        "sources": {
+            "checkpoint_date": date,
+            "checkpoint_verdict": "pass",
+            "eval_file": None,
+            "eval_date": None,
+            "eval_verdict": None,
+        },
     }
 
 
@@ -42,8 +49,7 @@ def _write_month(tmp_path, month, briefs, bad_lines=0):
     d.mkdir(parents=True, exist_ok=True)
     lines = ["{broken-%d" % i for i in range(bad_lines)]
     lines += [json.dumps(b, ensure_ascii=False) for b in briefs]
-    (d / ("%s.jsonl" % month)).write_text("\n".join(lines) + "\n",
-                                          encoding="utf-8")
+    (d / ("%s.jsonl" % month)).write_text("\n".join(lines) + "\n", encoding="utf-8")
     return d
 
 
@@ -103,17 +109,20 @@ class TestList:
 
     def test_order_and_whitelist(self, tmp_path):
         """新在前 + 字段白名单（不投 j_items 长文）。"""
-        b1 = _brief(date="2026-10-17", verdict="fail", p1=2,
-                    gen="2026-10-17T18:05:00")
+        b1 = _brief(date="2026-10-17", verdict="fail", p1=2, gen="2026-10-17T18:05:00")
         b2 = _brief(date="2026-10-18")
         d = _write_month(tmp_path, "2026-10", [b1, b2])
         r = api_brief.load_brief_list(briefs_dir=d)
         assert r["count"] == 2
-        assert [i["date"] for i in r["items"]] == ["2026-10-18",
-                                                   "2026-10-17"]
+        assert [i["date"] for i in r["items"]] == ["2026-10-18", "2026-10-17"]
         first = r["items"][0]
-        assert set(first.keys()) == {"date", "kind", "verdict", "p1_count",
-                                     "generated_at"}
+        assert set(first.keys()) == {
+            "date",
+            "kind",
+            "verdict",
+            "p1_count",
+            "generated_at",
+        }
         older = r["items"][1]
         assert older["verdict"] == "fail" and older["p1_count"] == 2
 
@@ -129,12 +138,11 @@ class TestList:
     def test_limit_truncates_across_months(self, tmp_path):
         """跨月截断：当月读满 limit 即停（meta 记 files_scanned）。"""
         _write_month(tmp_path, "2026-09", [_brief(date="2026-09-30")])
-        d = _write_month(tmp_path, "2026-10",
-                         [_brief(date="2026-10-17"),
-                          _brief(date="2026-10-18")])
+        d = _write_month(
+            tmp_path, "2026-10", [_brief(date="2026-10-17"), _brief(date="2026-10-18")]
+        )
         r = api_brief.load_brief_list(limit=2, briefs_dir=d)
-        assert [i["date"] for i in r["items"]] == ["2026-10-18",
-                                                   "2026-10-17"]
+        assert [i["date"] for i in r["items"]] == ["2026-10-18", "2026-10-17"]
         assert r["meta"]["files_scanned"] == 1
 
     def test_bad_lines_counted(self, tmp_path):

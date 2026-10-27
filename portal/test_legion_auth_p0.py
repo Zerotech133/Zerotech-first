@@ -8,6 +8,7 @@
 3. Access-Control-Allow-Origin 不再通配 *，仅回显白名单来源。
 4. confirmed_by 必填且按"自报署名"落来源属性（IP/经反代/鉴权方式）。
 """
+
 import sys
 from pathlib import Path
 
@@ -66,11 +67,15 @@ try:
     check("有 token：本机直连仍放行", h._authorized_mutation())
     h = fake_handler({"X-Portal-Proxy": "1", "X-Real-IP": "127.0.0.1"}, "172.17.0.2")
     check("有 token：经反代本机浏览器放行", h._authorized_mutation())
-    h = fake_handler({"X-Portal-Proxy": "1", "X-Real-IP": "192.168.1.5",
-                      "X-Portal-Token": "s3cret"}, "172.17.0.2")
+    h = fake_handler(
+        {"X-Portal-Proxy": "1", "X-Real-IP": "192.168.1.5", "X-Portal-Token": "s3cret"},
+        "172.17.0.2",
+    )
     check("有 token：反代局域网持正确 token 放行", h._authorized_mutation())
-    h = fake_handler({"X-Portal-Proxy": "1", "X-Real-IP": "192.168.1.5",
-                      "X-Portal-Token": "wrong"}, "172.17.0.2")
+    h = fake_handler(
+        {"X-Portal-Proxy": "1", "X-Real-IP": "192.168.1.5", "X-Portal-Token": "wrong"},
+        "172.17.0.2",
+    )
     check("有 token：错误 token 拒绝", not h._authorized_mutation())
     h = fake_handler({"X-Portal-Proxy": "1", "X-Real-IP": "192.168.1.5"}, "172.17.0.2")
     check("有 token：反代局域网无 token 拒绝", not h._authorized_mutation())
@@ -100,24 +105,50 @@ try:
 
     ops.update_confirmation = fake_update
 
-    r = ops.tri_party_meeting_confirm({"meeting_id": "m1", "status": "confirmed",
-                                       "confirmed_by": "", "note": "ok"})
+    r = ops.tri_party_meeting_confirm(
+        {"meeting_id": "m1", "status": "confirmed", "confirmed_by": "", "note": "ok"}
+    )
     check("空署名拒绝", not r["ok"] and "confirmed_by" in r["err"])
 
     r = ops.tri_party_meeting_confirm(
-        {"meeting_id": "m1", "status": "confirmed", "confirmed_by": "老田", "note": "看过了"},
-        client_ip="127.0.0.1", via_proxy=False, token_matched=False)
+        {
+            "meeting_id": "m1",
+            "status": "confirmed",
+            "confirmed_by": "老田",
+            "note": "看过了",
+        },
+        client_ip="127.0.0.1",
+        via_proxy=False,
+        token_matched=False,
+    )
     check("署名透传", captured["confirmed_by"] == "老田")
-    check("note 并入自报标记", "署名来源:自报" in captured["note"] and "看过了" in captured["note"])
-    check("来源属性含 IP 与鉴权方式", "IP:127.0.0.1" in captured["note"]
-          and "鉴权:本机可信域" in captured["note"])
+    check(
+        "note 并入自报标记",
+        "署名来源:自报" in captured["note"] and "看过了" in captured["note"],
+    )
+    check(
+        "来源属性含 IP 与鉴权方式",
+        "IP:127.0.0.1" in captured["note"] and "鉴权:本机可信域" in captured["note"],
+    )
     check("经反代标记为否", "经反代:否" in captured["note"])
 
     r = ops.tri_party_meeting_confirm(
-        {"meeting_id": "m2", "status": "rejected", "confirmed_by": "田丰代录", "note": ""},
-        client_ip="192.168.1.5", via_proxy=True, token_matched=True)
-    check("token 鉴权方式如实落账", "鉴权:token" in captured["note"]
-          and "经反代:是" in captured["note"] and "IP:192.168.1.5" in captured["note"])
+        {
+            "meeting_id": "m2",
+            "status": "rejected",
+            "confirmed_by": "田丰代录",
+            "note": "",
+        },
+        client_ip="192.168.1.5",
+        via_proxy=True,
+        token_matched=True,
+    )
+    check(
+        "token 鉴权方式如实落账",
+        "鉴权:token" in captured["note"]
+        and "经反代:是" in captured["note"]
+        and "IP:192.168.1.5" in captured["note"],
+    )
 
     long_note = "x" * 600
     note = ops.confirmation_provenance_note(long_note, "127.0.0.1", False, False)
@@ -125,5 +156,7 @@ try:
 finally:
     ops.update_confirmation = orig_update
 
-print("PASS %d checks: authz pure fn, direct-connection spoof ignored, "
-      "proxy-token model, private read gate, CORS allowlist, provenance note" % len(PASS))
+print(
+    "PASS %d checks: authz pure fn, direct-connection spoof ignored, "
+    "proxy-token model, private read gate, CORS allowlist, provenance note" % len(PASS)
+)

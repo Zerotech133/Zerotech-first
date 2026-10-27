@@ -20,14 +20,27 @@ RiskGuard 每次 evaluate（拦截与放行）落一行决策粒度留痕，供�
 import json
 import os
 
-LEDGER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "data", "risk_feedback.jsonl")
+LEDGER_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "data", "risk_feedback.jsonl"
+)
 
 ACTIONS = ("blocked", "allowed")
 
 # schema v0 字段表（白名单序列化：调用方多传的一律丢弃，防大对象入账）
-FIELDS = ("ts", "date", "strategy", "symbol", "action", "rule", "score",
-          "decision_price", "holding_days", "fwd5", "fwd20", "note")
+FIELDS = (
+    "ts",
+    "date",
+    "strategy",
+    "symbol",
+    "action",
+    "rule",
+    "score",
+    "decision_price",
+    "holding_days",
+    "fwd5",
+    "fwd20",
+    "note",
+)
 
 NOTE_MAX = 200
 
@@ -47,8 +60,7 @@ def append(record, path=None):
     d = os.path.dirname(path)
     if d and not os.path.isdir(d):
         os.makedirs(d)
-    line = (json.dumps(row, ensure_ascii=False, sort_keys=True)
-            + "\n").encode("utf-8")
+    line = (json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     try:
         os.write(fd, line)
@@ -84,13 +96,17 @@ def _sanitize(record):
     """白名单序列化 + 必填/枚举校验 + note 截断。"""
     if not isinstance(record, dict):
         raise LedgerError("record 必须是 dict")
-    missing = [k for k in ("ts", "date", "strategy", "symbol", "action",
-                           "rule") if not record.get(k)]
+    missing = [
+        k
+        for k in ("ts", "date", "strategy", "symbol", "action", "rule")
+        if not record.get(k)
+    ]
     if missing:
         raise LedgerError("缺必填字段: %s" % ",".join(missing))
     if record["action"] not in ACTIONS:
-        raise LedgerError("action 非法: %r (须为 blocked|allowed)"
-                          % (record["action"],))
+        raise LedgerError(
+            "action 非法: %r (须为 blocked|allowed)" % (record["action"],)
+        )
     row = {}
     for k in FIELDS:
         if k not in record:

@@ -14,6 +14,7 @@
   python feishu_registry.py --check        # 校验并打印摘要（管理台/CI 用，退出码 0/1）
   from feishu_registry import load_registry, load_routes, match_route
 """
+
 from __future__ import annotations
 
 import json
@@ -25,10 +26,16 @@ DEFAULT_REGISTRY = os.path.join(HERE, "data", "feishu", "registry.json")
 DEFAULT_ROUTES = os.path.join(HERE, "data", "feishu", "routes.json")
 
 DOMAINS = ("owner", "ops", "customer")
-REQUIRED_ROLE_FIELDS = ("role", "display", "domain", "events", "perms",
-                        "group_policy", "status")
-VALID_STATUS = ("planned", "active", "active_rename_pending", "reserved",
-                "disabled")
+REQUIRED_ROLE_FIELDS = (
+    "role",
+    "display",
+    "domain",
+    "events",
+    "perms",
+    "group_policy",
+    "status",
+)
+VALID_STATUS = ("planned", "active", "active_rename_pending", "reserved", "disabled")
 
 
 class RegistryError(ValueError):
@@ -73,8 +80,9 @@ def validate_registry(data):
         if r["status"] not in VALID_STATUS:
             raise RegistryError("角色 %s 的 status 非法：%r" % (role, r["status"]))
         if not str(r["display"]).startswith("零界·"):
-            warnings.append("角色 %s 的 display 未按'零界·<职能>'命名：%r"
-                            % (role, r["display"]))
+            warnings.append(
+                "角色 %s 的 display 未按'零界·<职能>'命名：%r" % (role, r["display"])
+            )
         index[role] = r
     policy = data.get("channel_policy") or {}
     if policy.get("outbound") != "8097 only":
@@ -145,11 +153,19 @@ def match_route(routes, role="", domain="", intent="", chat_type=""):
 def summary():
     roles, warnings = load_registry()
     routes = load_routes(roles_index=roles)
-    lines = ["registry: %d 个角色, %d 条路由, %d 个白名单群"
-             % (len(roles), len(routes), len(_read_json(DEFAULT_REGISTRY).get("group_whitelist") or []))]
+    lines = [
+        "registry: %d 个角色, %d 条路由, %d 个白名单群"
+        % (
+            len(roles),
+            len(routes),
+            len(_read_json(DEFAULT_REGISTRY).get("group_whitelist") or []),
+        )
+    ]
     for rid, r in roles.items():
-        lines.append("  %-20s %-8s %-22s %s"
-                     % (rid, r["display"], "/".join(r["domain"]), r["status"]))
+        lines.append(
+            "  %-20s %-8s %-22s %s"
+            % (rid, r["display"], "/".join(r["domain"]), r["status"])
+        )
     for w in warnings:
         lines.append("  WARN " + w)
     return "\n".join(lines)

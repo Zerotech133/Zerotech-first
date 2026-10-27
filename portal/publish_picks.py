@@ -61,11 +61,22 @@ ONLINE_BASE = "https://quant-picks-board-74446.app.workbuddy.host/"
 KEY_CONFIG = os.path.join(os.path.dirname(PORTAL), "config", "picks.local.json")
 
 # 关键文件：存在性必须校验；hash 记入状态（键一律正斜杠，跨工具可读）
-KEY_FILES = ["picks.html", "index.html", "static/tokens.css", "data/todays_picks.json", "data/pick_verdicts.json"]
+KEY_FILES = [
+    "picks.html",
+    "index.html",
+    "static/tokens.css",
+    "data/todays_picks.json",
+    "data/pick_verdicts.json",
+]
 # 线上比对文件（数据文件参与比对是 v1.1 关键修复，勿回退；index.html 是根入口，
 # 2026-10-18 起参与比对——网关多 HTML 目录自动入口曾挑错页，入口漂移必须能发现；
 # pick_verdicts.json 是 picks.html 后验卡数据源，2026-10-19 起参与比对）
-ONLINE_FILES = ["picks.html", "index.html", "data/todays_picks.json", "data/pick_verdicts.json"]
+ONLINE_FILES = [
+    "picks.html",
+    "index.html",
+    "data/todays_picks.json",
+    "data/pick_verdicts.json",
+]
 
 # 子进程强制 UTF-8 管道，不依赖宿主环境配置（审计 P2-1）
 CHILD_ENV = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
@@ -82,8 +93,9 @@ def sha256_of(path):
 def atomic_write_json(path, obj):
     """原子写 JSON：同目录 mkstemp -> 写入 -> os.replace（审计 P2-2）。"""
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path),
-                               prefix=os.path.basename(path) + ".", suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(
+        dir=os.path.dirname(path), prefix=os.path.basename(path) + ".", suffix=".tmp"
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(obj, f, ensure_ascii=False, indent=2)
@@ -157,9 +169,14 @@ def check_online(rel, key):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="picks 公网发布一键链（sync + 比对 + 留痕）")
-    parser.add_argument("--check-online", action="store_true",
-                        help="同步后逐文件拉线上比对，报告是否需要重新 deploy")
+    parser = argparse.ArgumentParser(
+        description="picks 公网发布一键链（sync + 比对 + 留痕）"
+    )
+    parser.add_argument(
+        "--check-online",
+        action="store_true",
+        help="同步后逐文件拉线上比对，报告是否需要重新 deploy",
+    )
     args = parser.parse_args()
 
     t0 = time.time()
@@ -169,7 +186,9 @@ def main():
     print("== 第 1 步：刷新 picks_public 快照 ==")
     sync_rc, sync_lines = run_sync()
     if sync_rc != 0:
-        print("[失败] sync_publish.py 退出码 %d，中止后续步骤" % sync_rc, file=sys.stderr)
+        print(
+            "[失败] sync_publish.py 退出码 %d，中止后续步骤" % sync_rc, file=sys.stderr
+        )
         return sync_rc
 
     # --- 2. 校验关键文件 + 算 hash ---
@@ -206,12 +225,16 @@ def main():
         if prev.get("online_hash"):
             state["online_hash"] = prev["online_hash"]
         if prev.get("online_hashes"):
-            state["online_hashes"] = prev["online_hashes"]  # 复验 N2：一并保留多文件结论
+            state["online_hashes"] = prev[
+                "online_hashes"
+            ]  # 复验 N2：一并保留多文件结论
         print("[ok] hash 与上次一致，保留上次线上比对结论（未复核）")
     atomic_write_json(STATE_PATH, state)
     print("[ok] %s" % os.path.relpath(STATE_PATH, PORTAL))
 
-    changed = prev is None or prev.get("hashes", {}).get("picks.html") != hashes["picks.html"]
+    changed = (
+        prev is None or prev.get("hashes", {}).get("picks.html") != hashes["picks.html"]
+    )
     if changed:
         print("[注意] picks.html 与上次记录不同（首次运行或快照有更新）")
 
@@ -239,7 +262,10 @@ def main():
             print("[ok] %s 与线上一致" % rel)
         else:
             mismatched.append(rel)
-            print("[滞后] %s 本地 %s... / 线上 %s..." % (rel, hashes[rel][:16], online_hash[:16]))
+            print(
+                "[滞后] %s 本地 %s... / 线上 %s..."
+                % (rel, hashes[rel][:16], online_hash[:16])
+            )
 
     # 比对结果一律回写状态（滞后分支也写——修复审计 P1-1）
     state["online_hashes"] = online_hashes
@@ -247,7 +273,10 @@ def main():
     atomic_write_json(STATE_PATH, state)
 
     if not mismatched:
-        print("[ok] 线上 %d 个比对文件全部与本地快照一致，无需重新 deploy" % len(online_hashes))
+        print(
+            "[ok] 线上 %d 个比对文件全部与本地快照一致，无需重新 deploy"
+            % len(online_hashes)
+        )
         state["deploy_confirmed"] = True
         atomic_write_json(STATE_PATH, state)
         print("总耗时: %.2fs" % (time.time() - t0))

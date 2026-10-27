@@ -32,6 +32,7 @@ idempotency_key = 飞书 msg_id（同一条消息只投一次，飞书重推不�
 `COMM_DISPATCH_ENABLED` 默认 0：关时 dispatch 返回 ok=False/reason=disabled，
 调用方回 stub 话术（与 K1-K4 的开关纪律一致，线上零行为变化）。
 """
+
 from __future__ import annotations
 
 import os
@@ -62,15 +63,21 @@ def enabled():
     """派单开关：env 优先，comm_flags.json 兜底（WO-FS-152）。"""
     try:
         import comm_flags
+
         return comm_flags.get("dispatch")
     except Exception:  # noqa: BLE001 —— 读不到按关，fail-closed
-        return str(os.environ.get("COMM_DISPATCH_ENABLED", "0")).strip().lower() \
-            in ("1", "true", "yes", "on")
+        return str(os.environ.get("COMM_DISPATCH_ENABLED", "0")).strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
 
 
 def _inbox():
     """延迟取门面模块（测试可 monkeypatch 换临时 store）。"""
     from gateway import inbox_gateway as ig
+
     return ig
 
 
@@ -81,13 +88,19 @@ def kind_for(intent):
 def dispatch(intent_result, open_id, msg_id="", deadline_min=None):
     """真投递。→ {ok, dispatch_id, replayed, state, kind, reason, error}"""
     if not enabled():
-        return {"ok": False, "reason": "disabled", "dispatch_id": None,
-                "kind": kind_for(intent_result.get("intent"))}
+        return {
+            "ok": False,
+            "reason": "disabled",
+            "dispatch_id": None,
+            "kind": kind_for(intent_result.get("intent")),
+        }
     intent = intent_result.get("intent")
     ents = intent_result.get("entities") or {}
     trace = intent_result.get("trace_id") or ""
-    dm = int(deadline_min or os.environ.get(
-        "COMM_DISPATCH_DEADLINE_MIN", DEFAULT_DEADLINE_MIN))
+    dm = int(
+        deadline_min
+        or os.environ.get("COMM_DISPATCH_DEADLINE_MIN", DEFAULT_DEADLINE_MIN)
+    )
     payload = {
         "intent": intent,
         "code": ents.get("code") or "",
@@ -99,12 +112,17 @@ def dispatch(intent_result, open_id, msg_id="", deadline_min=None):
     }
     idem = ("feishu-%s" % msg_id) if msg_id else ("trace-%s" % trace)
     try:
-        env = _inbox().submit(kind_for(intent), payload, source=SOURCE,
-                              idempotency_key=idem)
+        env = _inbox().submit(
+            kind_for(intent), payload, source=SOURCE, idempotency_key=idem
+        )
     except Exception as ex:  # noqa: BLE001 —— 投递失败必须让调用方知道
-        return {"ok": False, "reason": "submit_exception",
-                "error": "%s: %s" % (type(ex).__name__, str(ex)[:120]),
-                "dispatch_id": None, "kind": kind_for(intent)}
+        return {
+            "ok": False,
+            "reason": "submit_exception",
+            "error": "%s: %s" % (type(ex).__name__, str(ex)[:120]),
+            "dispatch_id": None,
+            "kind": kind_for(intent),
+        }
     data = env.get("data") or {}
     return {
         "ok": bool(env.get("ok")),
@@ -121,19 +139,25 @@ def check_receipt(dispatch_id):
     try:
         env = _inbox().receipt(dispatch_id)
     except Exception as ex:  # noqa: BLE001
-        return {"ok": False, "state": "error",
-                "error": "%s: %s" % (type(ex).__name__, str(ex)[:120])}
+        return {
+            "ok": False,
+            "state": "error",
+            "error": "%s: %s" % (type(ex).__name__, str(ex)[:120]),
+        }
     data = env.get("data") or {}
-    return {"ok": bool(env.get("ok")), "state": data.get("state", "unknown"),
-            "record": data.get("record") or {}}
+    return {
+        "ok": bool(env.get("ok")),
+        "state": data.get("state", "unknown"),
+        "record": data.get("record") or {},
+    }
 
 
 def _parse_ts(s):
-    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z",
-                "%Y-%m-%d %H:%M:%S"):
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d %H:%M:%S"):
         try:
-            return datetime.strptime(str(s)[:19], fmt[:len(str(s)[:19])]
-                                     if len(fmt) > 19 else fmt)
+            return datetime.strptime(
+                str(s)[:19], fmt[: len(str(s)[:19])] if len(fmt) > 19 else fmt
+            )
         except ValueError:
             continue
     return None
@@ -160,17 +184,18 @@ def sweep_overdue(now=None):
         if ts is None:
             continue
         waited_min = (now_ts - ts.timestamp()) / 60.0
-        dm = int((rec.get("payload") or {}).get("deadline_min")
-                 or DEFAULT_DEADLINE_MIN)
+        dm = int((rec.get("payload") or {}).get("deadline_min") or DEFAULT_DEADLINE_MIN)
         if waited_min < dm:
             continue
-        out.append({
-            "dispatch_id": rec.get("id"),
-            "kind": rec.get("kind"),
-            "waited_min": round(waited_min, 1),
-            "escalate": waited_min >= ESCALATE_AFTER_MIN,
-            "payload": rec.get("payload") or {},
-        })
+        out.append(
+            {
+                "dispatch_id": rec.get("id"),
+                "kind": rec.get("kind"),
+                "waited_min": round(waited_min, 1),
+                "escalate": waited_min >= ESCALATE_AFTER_MIN,
+                "payload": rec.get("payload") or {},
+            }
+        )
     return out
 
 
@@ -186,8 +211,7 @@ def _ensure_dir():
 
 def _load_nudges():
     try:
-        return __import__("json").loads(
-            NUDGE_PATH.read_text(encoding="utf-8"))
+        return __import__("json").loads(NUDGE_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
 
@@ -195,8 +219,9 @@ def _load_nudges():
 def _save_nudges(d):
     _ensure_dir()
     tmp = NUDGE_PATH.with_suffix(".json.tmp")
-    tmp.write_text(__import__("json").dumps(d, ensure_ascii=False, indent=1),
-                   encoding="utf-8")
+    tmp.write_text(
+        __import__("json").dumps(d, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     __import__("os").replace(tmp, NUDGE_PATH)
 
 
@@ -234,8 +259,9 @@ def nudge(dispatch_id, by="customer", note=""):
     item = d.get(dispatch_id) or {"n": 0}
     n = int(item.get("n") or 0) + 1
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    item.update({"n": n, "last": now, "by": str(by or ""),
-                 "note": str(note or "")[:200]})
+    item.update(
+        {"n": n, "last": now, "by": str(by or ""), "note": str(note or "")[:200]}
+    )
     if n == 1:
         item["first"] = now
     wait = waited_min(dispatch_id)
@@ -243,19 +269,27 @@ def nudge(dispatch_id, by="customer", note=""):
     item["escalate"] = escal
     d[dispatch_id] = item
     _save_nudges(d)
-    return {"ok": True, "dispatch_id": dispatch_id, "n": n,
-            "escalate": escal, "waited_min": round(wait, 1),
-            "state": state,
-            "open_id": (rec.get("payload") or {}).get("open_id") or "",
-            "kind": rec.get("kind") or "", "at": now}
+    return {
+        "ok": True,
+        "dispatch_id": dispatch_id,
+        "n": n,
+        "escalate": escal,
+        "waited_min": round(wait, 1),
+        "state": state,
+        "open_id": (rec.get("payload") or {}).get("open_id") or "",
+        "kind": rec.get("kind") or "",
+        "at": now,
+    }
 
 
 def nudge_info(dispatch_id):
     item = _load_nudges().get(str(dispatch_id or "").strip()) or {}
-    return {"n": int(item.get("n") or 0),
-            "last": item.get("last") or "",
-            "first": item.get("first") or "",
-            "escalate": bool(item.get("escalate"))}
+    return {
+        "n": int(item.get("n") or 0),
+        "last": item.get("last") or "",
+        "first": item.get("first") or "",
+        "escalate": bool(item.get("escalate")),
+    }
 
 
 def patrol_stage(dispatch_id):
@@ -276,9 +310,12 @@ def set_patrol_stage(dispatch_id, stage):
 
 def record_reply(dispatch_id, text, by=""):
     _ensure_dir()
-    row = {"ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           "dispatch_id": str(dispatch_id or ""), "by": str(by or ""),
-           "text": str(text or "")[:1000]}
+    row = {
+        "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "dispatch_id": str(dispatch_id or ""),
+        "by": str(by or ""),
+        "text": str(text or "")[:1000],
+    }
     with open(REPLY_PATH, "a", encoding="utf-8") as f:
         f.write(__import__("json").dumps(row, ensure_ascii=False) + "\n")
     return {"ok": True, "at": row["ts"]}
@@ -302,4 +339,3 @@ def replies(dispatch_id, limit=10):
     except OSError:
         return []
     return out[-limit:]
-

@@ -16,6 +16,7 @@ Hard constraints (must hold):
 Run:  python portal/watch_admin_server.py
 Stop: Ctrl-C (or send it a SIGTERM). It does NOT stay resident in the portal.
 """
+
 from __future__ import annotations
 from typing import Any
 
@@ -57,11 +58,15 @@ class _Handler(BaseHTTPRequestHandler):
     """Minimal read-only request handler: two routes, 404 otherwise."""
 
     # ---- helpers -------------------------------------------------------- #
-    def _send(self, code: int, body: Any, ctype: str = "application/json; charset=utf-8") -> None:
+    def _send(
+        self, code: int, body: Any, ctype: str = "application/json; charset=utf-8"
+    ) -> None:
         if isinstance(body, (dict, list)):
             # Sanitize non-finite floats (NaN/Inf from source files like
             # last_backtest.json) so the payload is strictly valid JSON.
-            body = json.dumps(sanitize_inf_nan(body), ensure_ascii=False).encode("utf-8")
+            body = json.dumps(sanitize_inf_nan(body), ensure_ascii=False).encode(
+                "utf-8"
+            )
         elif isinstance(body, str):
             body = body.encode("utf-8")
         else:
@@ -87,8 +92,7 @@ class _Handler(BaseHTTPRequestHandler):
             if PAGE_FILE.exists():
                 self._send_html(200, PAGE_FILE.read_text(encoding="utf-8"))
             else:
-                self._send(404, {"error": "page_not_found",
-                                 "path": str(PAGE_FILE)})
+                self._send(404, {"error": "page_not_found", "path": str(PAGE_FILE)})
             return
 
         if path == "/api/watch-admin/snapshot":
@@ -97,12 +101,15 @@ class _Handler(BaseHTTPRequestHandler):
                 data = WatchAdminAggregator().build(replay_at=replay)
                 self._send(200, data)
             except Exception as exc:  # noqa: BLE001  (fail-visible, still 200-ish)
-                self._send(200, {
-                    "schema": SCHEMA,
-                    "error": "build_failed",
-                    "detail": str(exc)[:300],
-                    "warnings": ["build_failed:%s" % type(exc).__name__],
-                })
+                self._send(
+                    200,
+                    {
+                        "schema": SCHEMA,
+                        "error": "build_failed",
+                        "detail": str(exc)[:300],
+                        "warnings": ["build_failed:%s" % type(exc).__name__],
+                    },
+                )
             return
 
         # ---- dynamic feature routes (parallel-built, isolated modules) ----
@@ -117,9 +124,14 @@ class _Handler(BaseHTTPRequestHandler):
                     _data = _api[path](query)
                     self._send(200, _data)
                 except Exception as _exc:  # noqa: BLE001
-                    self._send(200, {"error": "feature_failed",
-                                     "module": _mod,
-                                     "detail": str(_exc)[:300]})
+                    self._send(
+                        200,
+                        {
+                            "error": "feature_failed",
+                            "module": _mod,
+                            "detail": str(_exc)[:300],
+                        },
+                    )
                 return
             _html = getattr(_m, "HTML_ROUTES", {})
             if path in _html:
@@ -133,11 +145,23 @@ class _Handler(BaseHTTPRequestHandler):
                 return
         # ---- end dynamic feature routes ----
 
-        self._send(404, {"error": "not_found", "path": path,
-                        "routes": ["/watch-admin", "/api/watch-admin/snapshot",
-                                   "/watch-admin/chanlun", "/api/watch-admin/chanlun",
-                                   "/watch-admin/shadow", "/api/watch-admin/shadow",
-                                   "/watch-admin/backtest", "/api/watch-admin/backtest"]})
+        self._send(
+            404,
+            {
+                "error": "not_found",
+                "path": path,
+                "routes": [
+                    "/watch-admin",
+                    "/api/watch-admin/snapshot",
+                    "/watch-admin/chanlun",
+                    "/api/watch-admin/chanlun",
+                    "/watch-admin/shadow",
+                    "/api/watch-admin/shadow",
+                    "/watch-admin/backtest",
+                    "/api/watch-admin/backtest",
+                ],
+            },
+        )
 
     # Silence the default request logging to keep the console clean.
     def log_message(self, *args: Any) -> None:  # noqa: D401
@@ -146,9 +170,13 @@ class _Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     server = ThreadingHTTPServer((HOST, PORT), _Handler)
-    print("[watch-admin] read-only M2/M3 server on http://%s:%d (independent port; 8091 untouched)"
-          % (HOST, PORT))
-    print("[watch-admin] routes: GET /watch-admin · GET /api/watch-admin/snapshot · feature routes (chanlun/shadow/backtest) · others 404")
+    print(
+        "[watch-admin] read-only M2/M3 server on http://%s:%d (independent port; 8091 untouched)"
+        % (HOST, PORT)
+    )
+    print(
+        "[watch-admin] routes: GET /watch-admin · GET /api/watch-admin/snapshot · feature routes (chanlun/shadow/backtest) · others 404"
+    )
     try:
         server.serve_forever()
     except KeyboardInterrupt:
