@@ -560,6 +560,18 @@ class Handler(BaseHTTPRequestHandler):
                     from legion_mcp import registry as mreg
 
                     self._send_json(mreg.summary())
+                elif sub == "quant":
+                    from urllib.parse import parse_qs
+
+                    from legion_command import zhaoyun_quant as zq
+
+                    qs = parse_qs(urlparse(self.path).query)
+                    self._send_json(zq.quant_view(
+                        tool=(qs.get("tool") or ["stock_basic"])[0],
+                        code=(qs.get("code") or [""])[0],
+                        start=(qs.get("start") or [""])[0],
+                        end=(qs.get("end") or [""])[0],
+                        limit=(qs.get("limit") or ["20"])[0]))
                 elif sub == "memory/v2":
                     sys.path.insert(0, str(_PLATFORM))
                     from memory import store as ms

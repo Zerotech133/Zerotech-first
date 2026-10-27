@@ -127,6 +127,21 @@
 
   <section>
     <h2>MCP 工具 <span id="mcp-sub">—</span> <span>只读 server 白名单 · 探测/调用受控</span></h2>
+    <h2>量化只读 <span id="quant-sub">tushare MCP</span></h2>
+    <div class="row">
+      <select id="quant-tool">
+        <option value="stock_basic">stock_basic 股票基础</option>
+        <option value="daily">daily 日线</option>
+        <option value="index_daily">index_daily 指数日线</option>
+        <option value="trade_cal">trade_cal 交易日历</option>
+        <option value="daily_basic">daily_basic 每日指标</option>
+      </select>
+      <input id="quant-code" placeholder="代码 000001.SZ" style="width:130px">
+      <input id="quant-start" placeholder="起始 20261020" style="width:110px">
+      <input id="quant-end" placeholder="结束 20261027" style="width:110px">
+      <button onclick="quantQuery()">查询（只读）</button>
+    </div>
+    <div id="quant-out" class="muted">只读查询：不写库、不落 token；数据源 tushare-http MCP。</div>
     <div id="mcp"></div>
   </section>
 
@@ -536,6 +551,35 @@ function loadDrill() {
     });
   });
 }
+async function quantQuery() {
+  var out = document.getElementById('quant-out');
+  out.textContent = '查询中…';
+  var p = new URLSearchParams({
+    tool: document.getElementById('quant-tool').value,
+    limit: '20'
+  });
+  var code = document.getElementById('quant-code').value.trim();
+  var start = document.getElementById('quant-start').value.trim();
+  var end = document.getElementById('quant-end').value.trim();
+  if (code) p.set('code', code);
+  if (start) p.set('start', start);
+  if (end) p.set('end', end);
+  try {
+    var r = await fetch('/api/zhaoyun/quant?' + p.toString());
+    var d = await r.json();
+    if (!d.ok) { out.textContent = '查询失败：' + (d.error || 'unknown'); return; }
+    var rows = d.rows || [];
+    if (!rows.length) { out.textContent = '（无数据）'; return; }
+    var cols = Object.keys(rows[0]).slice(0, 8);
+    var html = '<table class="tbl"><tr>' + cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>';
+    rows.slice(0, 20).forEach(function (row) {
+      html += '<tr>' + cols.map(function (c) { return '<td>' + String(row[c] == null ? '' : row[c]) + '</td>'; }).join('') + '</tr>';
+    });
+    html += '</table><div class="muted">共 ' + d.count + ' 行（只读）</div>';
+    out.innerHTML = html;
+  } catch (e) { out.textContent = '查询异常：' + e; }
+}
+
 function loadCap2() {
   Promise.all([
     jget('/api/zhaoyun/selfaudit').catch(() => null),
