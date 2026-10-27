@@ -26,6 +26,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import pathlib
 from urllib.parse import urlparse
+from contextlib import nullcontext
 
 _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
@@ -356,7 +357,21 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
+    # ---------- O6 P2c：请求级 run 上下文 ----------
+    def _request_scope(self):
+        """每个 HTTP 请求一个 trace run；trace 不可用时降级为 nullcontext。"""
+        try:
+            from observability import trace as _tr
+
+            return _tr.run_scope()
+        except Exception:  # noqa: BLE001
+            return nullcontext()
+
     def do_GET(self):
+        with self._request_scope():
+            return self._do_GET_impl()
+
+    def _do_GET_impl(self):
         import re
 
         path = urlparse(self.path).path
@@ -972,6 +987,10 @@ class Handler(BaseHTTPRequestHandler):
         }
 
     def do_POST(self):
+        with self._request_scope():
+            return self._do_POST_impl()
+
+    def _do_POST_impl(self):
         import json
 
         path = urlparse(self.path).path
