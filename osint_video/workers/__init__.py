@@ -6,7 +6,11 @@ Compatibility attributes on that callable preserve dotted monkeypatch paths
 """
 
 from workers import run as _run_module
-from workers.composition import CompositionError, WorkerComposition, compose_worker_dependencies
+from workers.composition import (
+    CompositionError,
+    WorkerComposition,
+    compose_worker_dependencies,
+)
 
 WorkerRunResult = _run_module.WorkerRunResult
 run = _run_module.run

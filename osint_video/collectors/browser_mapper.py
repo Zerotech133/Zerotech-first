@@ -7,6 +7,7 @@ projects only collector business fields.  Browser state, credentials,
 headers, temporary paths, and downloader control values are never read or
 returned.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -120,17 +121,29 @@ class BrowserCollectorMapper:
         metadata = self._map_metadata(record, source_link)
         segments = self._map_segments(record)
         # A browser record cannot override the explicitly requested link.
-        return VideoPage(metadata=metadata, text_segments=segments, next_cursor=next_cursor, done=done)
+        return VideoPage(
+            metadata=metadata,
+            text_segments=segments,
+            next_cursor=next_cursor,
+            done=done,
+        )
 
     def resolve_creator(self, request: CreatorResolveRequest) -> CreatorResolveResult:
         """Resolve creator data through the same authenticated browser gate."""
         page = self.fetch_video(request.source_link)
         creator = page.metadata.creator
         if creator is None:
-            return CreatorResolveResult(None, False, request.source_link, "CREATOR_NOT_FOUND")
+            return CreatorResolveResult(
+                None, False, request.source_link, "CREATOR_NOT_FOUND"
+            )
         return CreatorResolveResult(creator, True, request.source_link, None)
 
-    def __call__(self, target: Mapping[str, Any], cursor: str | None, run: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    def __call__(
+        self,
+        target: Mapping[str, Any],
+        cursor: str | None,
+        run: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Expose creator-worker ``PageFetcher`` compatibility."""
         del run
         source_link = target.get("source_link") or target.get("link")
@@ -143,10 +156,14 @@ class BrowserCollectorMapper:
         if health.status is SessionStatus.AUTHENTICATED:
             return
         if health.status in {SessionStatus.LOGIN_REQUIRED, SessionStatus.EXPIRED}:
-            raise CollectionAccessError("AUTHORIZATION_REQUIRED", "browser session requires authorization")
+            raise CollectionAccessError(
+                "AUTHORIZATION_REQUIRED", "browser session requires authorization"
+            )
         if health.status is SessionStatus.BLOCKED:
             raise CollectionAccessError("SESSION_BLOCKED", "browser session is blocked")
-        raise CollectionAccessError("SESSION_UNKNOWN", "browser session health is unknown")
+        raise CollectionAccessError(
+            "SESSION_UNKNOWN", "browser session health is unknown"
+        )
 
     @staticmethod
     def _normalize_health(raw: Any, checked_at: datetime) -> SessionHealth:
@@ -159,11 +176,17 @@ class BrowserCollectorMapper:
         elif isinstance(raw, Mapping):
             status = raw.get("status", BrowserSessionStatus.UNKNOWN)
             value = raw.get("reason")
-            reason = value.strip()[:80] if isinstance(value, str) and value.strip() else None
+            reason = (
+                value.strip()[:80] if isinstance(value, str) and value.strip() else None
+            )
         elif isinstance(raw, BrowserSessionStatus):
             status = raw
         try:
-            value = status.value if isinstance(status, (BrowserSessionStatus, SessionStatus)) else str(status)
+            value = (
+                status.value
+                if isinstance(status, (BrowserSessionStatus, SessionStatus))
+                else str(status)
+            )
             normalized = SessionStatus(value)
         except (TypeError, ValueError):
             normalized = SessionStatus.UNKNOWN
@@ -213,7 +236,9 @@ class BrowserCollectorMapper:
         if not creator_id and not nickname:
             return None
         return CreatorRef(
-            platform=cls._string(raw.get("platform")) or cls._string(platform) or "unknown",
+            platform=cls._string(raw.get("platform"))
+            or cls._string(platform)
+            or "unknown",
             creator_id=creator_id,
             nickname=nickname,
             profile_url=cls._safe_url(raw.get("profile_url")),
@@ -224,15 +249,23 @@ class BrowserCollectorMapper:
     def _map_segments(cls, raw: Any) -> tuple[TextSegment, ...]:
         if not isinstance(raw, Mapping):
             return ()
-        values: Any = raw.get("text_channels", raw.get("text_segments", raw.get("segments", ())))
+        values: Any = raw.get(
+            "text_channels", raw.get("text_segments", raw.get("segments", ()))
+        )
         if isinstance(values, Mapping):
             expanded: list[Mapping[str, Any]] = []
             for channel in TextChannel:
                 candidates = values.get(channel.value, ())
                 if isinstance(candidates, Mapping):
                     candidates = (candidates,)
-                if isinstance(candidates, Sequence) and not isinstance(candidates, (str, bytes)):
-                    expanded.extend({**item, "channel": item.get("channel", channel.value)} for item in candidates if isinstance(item, Mapping))
+                if isinstance(candidates, Sequence) and not isinstance(
+                    candidates, (str, bytes)
+                ):
+                    expanded.extend(
+                        {**item, "channel": item.get("channel", channel.value)}
+                        for item in candidates
+                        if isinstance(item, Mapping)
+                    )
             values = expanded
         if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
             return ()
@@ -244,14 +277,26 @@ class BrowserCollectorMapper:
             if not text:
                 continue
             try:
-                result.append(TextSegment(text=text, channel=item.get("channel", TextChannel.MANUAL), start_sec=item.get("start_sec"), end_sec=item.get("end_sec"), confidence=item.get("confidence")))
+                result.append(
+                    TextSegment(
+                        text=text,
+                        channel=item.get("channel", TextChannel.MANUAL),
+                        start_sec=item.get("start_sec"),
+                        end_sec=item.get("end_sec"),
+                        confidence=item.get("confidence"),
+                    )
+                )
             except (TypeError, ValueError):
                 continue
         return tuple(result)
 
     @classmethod
     def _media_status(cls, value: Any) -> MediaAvailability:
-        key = value.value if isinstance(value, MediaAvailability) else str(value or "unavailable").strip().lower()
+        key = (
+            value.value
+            if isinstance(value, MediaAvailability)
+            else str(value or "unavailable").strip().lower()
+        )
         return cls._MEDIA_STATUS_MAP.get(key, MediaAvailability.UNAVAILABLE)
 
     @staticmethod
@@ -288,4 +333,8 @@ class BrowserCollectorMapper:
 BrowserToCollectorMapper = BrowserCollectorMapper
 BrowserCollectorAdapter = BrowserCollectorMapper
 
-__all__ = ["BrowserCollectorAdapter", "BrowserCollectorMapper", "BrowserToCollectorMapper"]
+__all__ = [
+    "BrowserCollectorAdapter",
+    "BrowserCollectorMapper",
+    "BrowserToCollectorMapper",
+]

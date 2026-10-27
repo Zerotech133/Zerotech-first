@@ -24,8 +24,8 @@ from urllib.error import URLError
 import pytest
 
 _TEST_FILE = Path(__file__).resolve()
-OSINT_ROOT = _TEST_FILE.parent           # osint_video/
-REPO_ROOT = _TEST_FILE.parents[1]        # 老田的AI助手/
+OSINT_ROOT = _TEST_FILE.parent  # osint_video/
+REPO_ROOT = _TEST_FILE.parents[1]  # 老田的AI助手/
 NEWS_DIR = REPO_ROOT / "news_collector"
 
 # sys.path 顺序：osint 包优先于仓库根（防 config 等包名被仓库根遮蔽）
@@ -77,14 +77,21 @@ def _gate_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(push_targets, "targets", lambda: [dict(t) for t in TARGETS])
 
 
-def _patch_hub_urlopen(monkeypatch: pytest.MonkeyPatch, captured: list, payload: dict[str, Any] | None = None, exc: Exception | None = None) -> None:
+def _patch_hub_urlopen(
+    monkeypatch: pytest.MonkeyPatch,
+    captured: list,
+    payload: dict[str, Any] | None = None,
+    exc: Exception | None = None,
+) -> None:
     """monkeypatch urllib.request.urlopen：记录请求、按给定载荷/异常应答。"""
 
     def _urlopen(rq: urllib.request.Request, timeout: float | None = None):
         captured.append(rq)
         if exc is not None:
             raise exc
-        return _FakeResp(payload or {"ok": True, "why": "hub ok", "message_id": "om_hub_test_1"})
+        return _FakeResp(
+            payload or {"ok": True, "why": "hub ok", "message_id": "om_hub_test_1"}
+        )
 
     monkeypatch.setattr(urllib.request, "urlopen", _urlopen)
 
@@ -92,7 +99,9 @@ def _patch_hub_urlopen(monkeypatch: pytest.MonkeyPatch, captured: list, payload:
 # ---------------------------------------------------------------
 # 1. 默认走 8097 且带鉴权键
 # ---------------------------------------------------------------
-def test_default_routes_via_hub_with_auth_key(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_default_routes_via_hub_with_auth_key(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     captured: list = []
     _patch_hub_urlopen(monkeypatch, captured)
 
@@ -109,16 +118,23 @@ def test_default_routes_via_hub_with_auth_key(monkeypatch: pytest.MonkeyPatch, c
     body = json.loads(rq.data.decode("utf-8"))
     assert body["msg_type"] == "text"
     assert "标题" in body["content"]
-    assert body["receive_id"] == "ou_qa_offline"      # 按名取注册表，非写死
+    assert body["receive_id"] == "ou_qa_offline"  # 按名取注册表，非写死
     assert body["receive_id_type"] == "open_id"
-    assert "message_id=om_hub_test_1" in caplog.text  # 成功留 evidence（message_id/why）
+    assert (
+        "message_id=om_hub_test_1" in caplog.text
+    )  # 成功留 evidence（message_id/why）
 
 
-def test_card_routes_via_hub_as_interactive_json(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_card_routes_via_hub_as_interactive_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: list = []
     _patch_hub_urlopen(monkeypatch, captured)
     notifier = FeishuNotifier(target_name="qa_target")
-    assert notifier.send_card({"header": {"title": {"tag": "plain_text", "content": "t"}}}) is True
+    assert (
+        notifier.send_card({"header": {"title": {"tag": "plain_text", "content": "t"}}})
+        is True
+    )
     body = json.loads(captured[0].data.decode("utf-8"))
     assert body["msg_type"] == "interactive"
     assert json.loads(body["content"])["header"]["title"]["content"] == "t"
@@ -127,22 +143,28 @@ def test_card_routes_via_hub_as_interactive_json(monkeypatch: pytest.MonkeyPatch
 # ---------------------------------------------------------------
 # 2. 8097 失败：返回 False、why 落日志、不抛异常、禁静默回落旧 webhook
 # ---------------------------------------------------------------
-def test_hub_failure_closed_on_failure_no_fallback(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_hub_failure_closed_on_failure_no_fallback(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     _patch_hub_urlopen(monkeypatch, [], exc=URLError("connection refused"))
     httpx_calls: list = []
-    monkeypatch.setattr("common.feishu.httpx.post", lambda *a, **k: httpx_calls.append(a))
+    monkeypatch.setattr(
+        "common.feishu.httpx.post", lambda *a, **k: httpx_calls.append(a)
+    )
 
     # webhook 已配置也不得回落（closed on failure，K-PUSH-012 语义）
     notifier = FeishuNotifier(target_name="qa_target", webhook_url=TEST_WEBHOOK)
     with caplog.at_level(logging.WARNING):
         assert notifier.send_text("t", "c") is False
 
-    assert httpx_calls == []                          # 禁静默走老 webhook
-    assert "hub unavailable" in caplog.text           # 失败 why 落日志，不静默
+    assert httpx_calls == []  # 禁静默走老 webhook
+    assert "hub unavailable" in caplog.text  # 失败 why 落日志，不静默
     assert "closed on failure" in caplog.text
 
 
-def test_hub_deny_returns_false_without_raise(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_hub_deny_returns_false_without_raise(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     """闸门拒绝（ok=false 带 why）→ False + why 日志，不抛异常。"""
     _patch_hub_urlopen(monkeypatch, [], payload={"ok": False, "why": "silent window"})
     notifier = FeishuNotifier(target_name="qa_target")
@@ -154,7 +176,9 @@ def test_hub_deny_returns_false_without_raise(monkeypatch: pytest.MonkeyPatch, c
 # ---------------------------------------------------------------
 # 3. FEISHU_OSINT_DIRECT=1 → 旧 webhook 直发（应急逃生口）
 # ---------------------------------------------------------------
-def test_direct_escape_hatch_uses_legacy_webhook(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_direct_escape_hatch_uses_legacy_webhook(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv(DIRECT_ENV, "1")
 
     def no_hub(rq: urllib.request.Request, timeout: float | None = None) -> None:
@@ -171,7 +195,7 @@ def test_direct_escape_hatch_uses_legacy_webhook(monkeypatch: pytest.MonkeyPatch
 
     notifier = FeishuNotifier(webhook_url=TEST_WEBHOOK)
     assert notifier.send_text("t", "c") is True
-    assert httpx_calls == [TEST_WEBHOOK]              # 走旧 webhook，不经计量
+    assert httpx_calls == [TEST_WEBHOOK]  # 走旧 webhook，不经计量
 
 
 def test_direct_default_off_goes_hub(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -180,7 +204,9 @@ def test_direct_default_off_goes_hub(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: list = []
     _patch_hub_urlopen(monkeypatch, captured)
     httpx_calls: list = []
-    monkeypatch.setattr("common.feishu.httpx.post", lambda *a, **k: httpx_calls.append(a))
+    monkeypatch.setattr(
+        "common.feishu.httpx.post", lambda *a, **k: httpx_calls.append(a)
+    )
 
     notifier = FeishuNotifier(target_name="qa_target", webhook_url=TEST_WEBHOOK)
     assert notifier.send_text("t", "c") is True
@@ -191,7 +217,9 @@ def test_direct_default_off_goes_hub(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------
 # 4. 密钥不泄漏到日志
 # ---------------------------------------------------------------
-def test_hub_key_never_leaked_to_logs(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_hub_key_never_leaked_to_logs(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     captured: list = []
     notifier = FeishuNotifier(target_name="qa_target")
     with caplog.at_level(logging.DEBUG):
@@ -212,7 +240,13 @@ def test_hub_key_never_leaked_to_logs(monkeypatch: pytest.MonkeyPatch, caplog: p
 def test_alert_methods_kind_critical_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: dict[str, Any] = {}
 
-    def fake_hub_send(self: FeishuNotifier, content: str, msg_type: str, kind: str | None, critical: bool):
+    def fake_hub_send(
+        self: FeishuNotifier,
+        content: str,
+        msg_type: str,
+        kind: str | None,
+        critical: bool,
+    ):
         seen.update(kind=kind, critical=critical, msg_type=msg_type)
         return True, "hub ok", "om_kind_test"
 
@@ -220,7 +254,11 @@ def test_alert_methods_kind_critical_mapping(monkeypatch: pytest.MonkeyPatch) ->
     notifier = FeishuNotifier(target_name="qa_target")
 
     notifier.alert_cookie_expired(3)
-    assert seen == {"kind": "osint:cookie_expired", "critical": True, "msg_type": "interactive"}
+    assert seen == {
+        "kind": "osint:cookie_expired",
+        "critical": True,
+        "msg_type": "interactive",
+    }
 
     notifier.alert_cookie_updated("op", 2)
     assert seen["kind"] == "osint:cookie_updated"
@@ -239,8 +277,12 @@ def test_alert_methods_kind_critical_mapping(monkeypatch: pytest.MonkeyPatch) ->
 # ---------------------------------------------------------------
 # 6. 旧构造零参可用；hub 未就绪 → 降级日志不触网
 # ---------------------------------------------------------------
-def test_zero_arg_construct_degrades_offline(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
-    monkeypatch.setattr(feishu_client, "_hub_key", lambda: "")  # 键链缺失（不读真实密钥文件）
+def test_zero_arg_construct_degrades_offline(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(
+        feishu_client, "_hub_key", lambda: ""
+    )  # 键链缺失（不读真实密钥文件）
 
     def no_net(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("hub 未就绪时不得发起任何网络请求")
@@ -256,7 +298,9 @@ def test_zero_arg_construct_degrades_offline(monkeypatch: pytest.MonkeyPatch, ca
     assert "closed on failure" in caplog.text
 
 
-def test_unregistered_target_degrades(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_unregistered_target_degrades(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     """目标名不在 push_targets 注册表 → 降级日志，不触网（响亮失败由 push_targets 负责）。"""
 
     def no_net(*args: Any, **kwargs: Any) -> None:

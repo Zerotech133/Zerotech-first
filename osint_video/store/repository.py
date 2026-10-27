@@ -10,7 +10,9 @@ from typing import Any, Iterator
 
 from common import db
 
-_ACTIVE_TRANSACTION: ContextVar[Any | None] = ContextVar("knowledge_repository_transaction", default=None)
+_ACTIVE_TRANSACTION: ContextVar[Any | None] = ContextVar(
+    "knowledge_repository_transaction", default=None
+)
 
 
 @contextmanager
@@ -30,7 +32,9 @@ def transaction() -> Iterator[Any]:
 def _query(sql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Query current atomic transaction when present, otherwise use db helper."""
     conn = _ACTIVE_TRANSACTION.get()
-    return db.query(conn, sql, params) if conn is not None else db.fetch_all(sql, params)
+    return (
+        db.query(conn, sql, params) if conn is not None else db.fetch_all(sql, params)
+    )
 
 
 def _write(sql: str, params: dict[str, Any]) -> list[dict[str, Any]]:
@@ -40,6 +44,8 @@ def _write(sql: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         return db.query(conn, sql, params)
     with db.transaction() as standalone:
         return db.query(standalone, sql, params)
+
+
 from store.models import (
     BloggerHistory,
     IndexTask,
@@ -77,12 +83,18 @@ def upsert_knowledge_resource(resource: KnowledgeResource) -> KnowledgeResource:
     RETURNING *
     """
     params = {
-        "resource_key": resource.resource_key, "blogger_key": resource.blogger_key,
-        "source_url": resource.source_url, "platform_content_id": resource.platform_content_id,
-        "published_at": resource.published_at, "duration_sec": resource.duration_sec,
-        "status": resource.status, "temporary_media_path": resource.temporary_media_path,
-        "media_expires_at": resource.media_expires_at, "asr_text": resource.asr_text,
-        "ocr_text": resource.ocr_text, "subtitle_text": resource.subtitle_text,
+        "resource_key": resource.resource_key,
+        "blogger_key": resource.blogger_key,
+        "source_url": resource.source_url,
+        "platform_content_id": resource.platform_content_id,
+        "published_at": resource.published_at,
+        "duration_sec": resource.duration_sec,
+        "status": resource.status,
+        "temporary_media_path": resource.temporary_media_path,
+        "media_expires_at": resource.media_expires_at,
+        "asr_text": resource.asr_text,
+        "ocr_text": resource.ocr_text,
+        "subtitle_text": resource.subtitle_text,
         "metadata": _json(resource.metadata),
     }
     rows = _write(sql, params)
@@ -91,7 +103,10 @@ def upsert_knowledge_resource(resource: KnowledgeResource) -> KnowledgeResource:
 
 def get_knowledge_resource(resource_key: str) -> KnowledgeResource | None:
     """Fetch one resource by stable key."""
-    rows = db.fetch_all("SELECT * FROM osint_knowledge_resource WHERE resource_key=:key", {"key": resource_key})
+    rows = db.fetch_all(
+        "SELECT * FROM osint_knowledge_resource WHERE resource_key=:key",
+        {"key": resource_key},
+    )
     return row_to_knowledge_resource(rows[0]) if rows else None
 
 
@@ -114,13 +129,28 @@ def upsert_knowledge_unit(unit: KnowledgeUnit) -> KnowledgeUnit:
     if existing and existing[0].get("content_hash") != unit.content_hash:
         unit.unit_version = int(existing[0].get("unit_version", 0) or 0) + 1
     params = {
-        "unit_key": unit.unit_key, "unit_version": unit.unit_version, "unit_type": unit.unit_type, "title": unit.title,
-        "content": unit.content, "source_channel": unit.source_channel, "source_video_id": unit.source_video_id,
-        "source_url": unit.source_url, "source_link": unit.source_link, "start_sec": unit.start_sec,
-        "end_sec": unit.end_sec, "content_hash": unit.content_hash, "review_status": unit.review_status,
-        "blogger_key": unit.blogger_key, "resource_key": unit.resource_key, "facts": _json(unit.facts), "entities": _json(unit.entities),
-        "topics": _json(unit.topics), "evidence_refs": _json(unit.evidence_refs),
-        "quality": _json(unit.quality), "status": unit.status, "truth_status": unit.truth_status,
+        "unit_key": unit.unit_key,
+        "unit_version": unit.unit_version,
+        "unit_type": unit.unit_type,
+        "title": unit.title,
+        "content": unit.content,
+        "source_channel": unit.source_channel,
+        "source_video_id": unit.source_video_id,
+        "source_url": unit.source_url,
+        "source_link": unit.source_link,
+        "start_sec": unit.start_sec,
+        "end_sec": unit.end_sec,
+        "content_hash": unit.content_hash,
+        "review_status": unit.review_status,
+        "blogger_key": unit.blogger_key,
+        "resource_key": unit.resource_key,
+        "facts": _json(unit.facts),
+        "entities": _json(unit.entities),
+        "topics": _json(unit.topics),
+        "evidence_refs": _json(unit.evidence_refs),
+        "quality": _json(unit.quality),
+        "status": unit.status,
+        "truth_status": unit.truth_status,
         "extension": _json(unit.extension),
     }
     rows = _write(sql, params)
@@ -139,10 +169,15 @@ def upsert_blogger_history(history: BloggerHistory) -> BloggerHistory:
     RETURNING *
     """
     params = {
-        "blogger_key": history.blogger_key, "history_key": history.history_key,
-        "observed_at": history.observed_at, "event_type": history.event_type, "observation_hash": history.observation_hash,
-        "summary": history.summary, "attributes": _json(history.attributes),
-        "source_video_id": history.source_video_id, "source_unit_id": history.source_unit_id,
+        "blogger_key": history.blogger_key,
+        "history_key": history.history_key,
+        "observed_at": history.observed_at,
+        "event_type": history.event_type,
+        "observation_hash": history.observation_hash,
+        "summary": history.summary,
+        "attributes": _json(history.attributes),
+        "source_video_id": history.source_video_id,
+        "source_unit_id": history.source_unit_id,
     }
     with db.transaction() as conn:
         rows = db.query(conn, sql, params)
@@ -168,19 +203,29 @@ def upsert_strategy_evidence(evidence: StrategyEvidence) -> StrategyEvidence:
     RETURNING *
     """
     params = {
-        "strategy_key": evidence.strategy_key, "knowledge_unit_key": evidence.knowledge_unit_key,
-        "knowledge_unit_version": int(getattr(evidence, "knowledge_unit_version", 1) or 1),
-        "evidence_key": evidence.evidence_key, "evidence_role": evidence.evidence_role,
-        "quote": evidence.quote, "quote_start_sec": evidence.quote_start_sec, "quote_end_sec": evidence.quote_end_sec,
-        "evidence_status": evidence.evidence_status, "snapshot_hash": evidence.snapshot_hash,
-        "relevance": evidence.relevance, "confidence": evidence.confidence,
+        "strategy_key": evidence.strategy_key,
+        "knowledge_unit_key": evidence.knowledge_unit_key,
+        "knowledge_unit_version": int(
+            getattr(evidence, "knowledge_unit_version", 1) or 1
+        ),
+        "evidence_key": evidence.evidence_key,
+        "evidence_role": evidence.evidence_role,
+        "quote": evidence.quote,
+        "quote_start_sec": evidence.quote_start_sec,
+        "quote_end_sec": evidence.quote_end_sec,
+        "evidence_status": evidence.evidence_status,
+        "snapshot_hash": evidence.snapshot_hash,
+        "relevance": evidence.relevance,
+        "confidence": evidence.confidence,
         "metadata": _json(evidence.metadata),
     }
     rows = _write(sql, params)
     return row_to_strategy_evidence(rows[0])
 
 
-def register_index_tasks(resource_key: str, processing_run_key: str | None = None) -> list[IndexTask]:
+def register_index_tasks(
+    resource_key: str, processing_run_key: str | None = None
+) -> list[IndexTask]:
     """Register PG, Qdrant and graph fan-out tasks idempotently."""
     sql = """
     INSERT INTO osint_index_task (resource_key, target, status, processing_run_key)
@@ -191,17 +236,31 @@ def register_index_tasks(resource_key: str, processing_run_key: str | None = Non
     """
     tasks: list[IndexTask] = []
     for target in ("pg", "qdrant", "graph"):
-        rows = _write(sql, {"resource_key": resource_key, "target": target, "processing_run_key": processing_run_key})
+        rows = _write(
+            sql,
+            {
+                "resource_key": resource_key,
+                "target": target,
+                "processing_run_key": processing_run_key,
+            },
+        )
         tasks.append(row_to_index_task(rows[0]))
     return tasks
 
 
-def update_index_task(resource_key: str, target: str, status: str, error_message: str | None = None) -> IndexTask | None:
+def update_index_task(
+    resource_key: str, target: str, status: str, error_message: str | None = None
+) -> IndexTask | None:
     """Update asynchronous index status without deleting PG facts on failure."""
     sql = """UPDATE osint_index_task SET status=:status, error_message=:error_message,
            attempt_count=attempt_count + 1, updated_at=now()
            WHERE resource_key=:resource_key AND target=:target RETURNING *"""
-    params = {"resource_key": resource_key, "target": target, "status": status, "error_message": error_message}
+    params = {
+        "resource_key": resource_key,
+        "target": target,
+        "status": status,
+        "error_message": error_message,
+    }
     with db.transaction() as conn:
         rows = db.query(conn, sql, params)
     return row_to_index_task(rows[0]) if rows else None
@@ -258,7 +317,9 @@ def replay_index_tasks(
     for task in claimed:
         if task.target == "pg":
             # PG is authoritative and does not need an external replay adapter.
-            completed_task = update_index_task(task.resource_key, task.target, "succeeded")
+            completed_task = update_index_task(
+                task.resource_key, task.target, "succeeded"
+            )
             if completed_task is not None:
                 completed.append(completed_task)
             continue
@@ -266,7 +327,9 @@ def replay_index_tasks(
             adapter(task.resource_key, task.target)
         except Exception as exc:  # noqa: BLE001 - worker must continue fan-out
             message = str(exc)[:2000] or exc.__class__.__name__
-            updated = update_index_task(task.resource_key, task.target, "failed", message)
+            updated = update_index_task(
+                task.resource_key, task.target, "failed", message
+            )
         else:
             updated = update_index_task(task.resource_key, task.target, "succeeded")
         if updated is not None:
@@ -298,7 +361,13 @@ def can_mark_link_done(task_id: int) -> bool:
                        JOIN linked_resource r ON r.resource_key = i.resource_key) AS index_ok""",
         {"task_id": task_id},
     )
-    return bool(rows and all(rows[0][name] for name in ("resource_ok", "unit_ok", "evidence_ok", "index_ok")))
+    return bool(
+        rows
+        and all(
+            rows[0][name]
+            for name in ("resource_ok", "unit_ok", "evidence_ok", "index_ok")
+        )
+    )
 
 
 def purge_media_file(path: str | None) -> tuple[bool, str | None]:
@@ -320,7 +389,8 @@ def purge_expired_media(resource_key: str | None = None) -> int:
         where += " AND resource_key=:resource_key"
         params["resource_key"] = resource_key
     assets = db.fetch_all(
-        f"SELECT resource_key, temporary_media_path FROM osint_knowledge_resource WHERE {where}", params
+        f"SELECT resource_key, temporary_media_path FROM osint_knowledge_resource WHERE {where}",
+        params,
     )
     count = 0
     for row in assets:
@@ -333,8 +403,11 @@ def purge_expired_media(resource_key: str | None = None) -> int:
             """UPDATE osint_media_asset SET media_path=NULL, media_status=:status,
                deleted_at=now(), deletion_reason=:reason, updated_at=now()
                WHERE resource_key=:resource_key AND media_status <> 'deleted'""",
-            {"resource_key": row["resource_key"], "status": "deleted" if ok else "expired",
-             "reason": "retention_expired" if ok else f"unlink_failed: {error}"},
+            {
+                "resource_key": row["resource_key"],
+                "status": "deleted" if ok else "expired",
+                "reason": "retention_expired" if ok else f"unlink_failed: {error}",
+            },
         )
         count += 1
     return count
@@ -342,7 +415,10 @@ def purge_expired_media(resource_key: str | None = None) -> int:
 
 def get_knowledge_unit(unit_key: str) -> KnowledgeUnit | None:
     """Fetch one unit by stable key."""
-    rows = db.fetch_all("SELECT * FROM osint_knowledge_unit WHERE unit_key=:key ORDER BY unit_version DESC LIMIT 1", {"key": unit_key})
+    rows = db.fetch_all(
+        "SELECT * FROM osint_knowledge_unit WHERE unit_key=:key ORDER BY unit_version DESC LIMIT 1",
+        {"key": unit_key},
+    )
     return row_to_knowledge_unit(rows[0]) if rows else None
 
 
@@ -355,7 +431,9 @@ def list_blogger_history(blogger_key: str, limit: int = 100) -> list[BloggerHist
     return [row_to_blogger_history(row) for row in rows]
 
 
-def list_strategy_evidence(strategy_key: str, limit: int = 100) -> list[StrategyEvidence]:
+def list_strategy_evidence(
+    strategy_key: str, limit: int = 100
+) -> list[StrategyEvidence]:
     """List evidence edges for a strategy."""
     rows = db.fetch_all(
         "SELECT * FROM osint_strategy_evidence WHERE strategy_key=:key ORDER BY created_at DESC LIMIT :limit",
@@ -365,8 +443,19 @@ def list_strategy_evidence(strategy_key: str, limit: int = 100) -> list[Strategy
 
 
 __all__ = [
-    "transaction", "upsert_knowledge_resource", "get_knowledge_resource", "upsert_knowledge_unit",
-    "upsert_blogger_history", "upsert_strategy_evidence", "register_index_tasks", "update_index_task",
-    "claim_index_tasks", "replay_index_tasks", "can_mark_link_done", "purge_expired_media",
-    "get_knowledge_unit", "list_blogger_history", "list_strategy_evidence",
+    "transaction",
+    "upsert_knowledge_resource",
+    "get_knowledge_resource",
+    "upsert_knowledge_unit",
+    "upsert_blogger_history",
+    "upsert_strategy_evidence",
+    "register_index_tasks",
+    "update_index_task",
+    "claim_index_tasks",
+    "replay_index_tasks",
+    "can_mark_link_done",
+    "purge_expired_media",
+    "get_knowledge_unit",
+    "list_blogger_history",
+    "list_strategy_evidence",
 ]

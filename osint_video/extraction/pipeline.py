@@ -62,9 +62,7 @@ def _read_json(path: Path) -> Any | None:
 
 def _write_json(path: Path, payload: Any) -> None:
     """写 JSON 检查点（ensure_ascii=False，缩进 2，便于人工检视）。"""
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +85,10 @@ def _run_audio_channel(
         raise ExtractionError(f"音频抽取失败：{exc}") from exc
 
     # ASR：重依赖延迟导入（asr_sensevoice 内部处理）
-    from extraction.asr_sensevoice import ASRModelUnavailableError, transcribe  # 延迟导入
+    from extraction.asr_sensevoice import (
+        ASRModelUnavailableError,
+        transcribe,
+    )  # 延迟导入
 
     try:
         segments = transcribe(wav_path)
@@ -190,9 +191,9 @@ def build_structured_doc(
         "asr_text": asr_text,
         "ocr_text": ocr_text,
         "aligned_segments": aligned,
-        "entities": [],       # T05：规则/LLM 实体抽取回填
-        "topics": [],         # T05：主题聚类回填
-        "compliance": {       # T05：ComplianceFilter 回填（当前为占位默认值）
+        "entities": [],  # T05：规则/LLM 实体抽取回填
+        "topics": [],  # T05：主题聚类回填
+        "compliance": {  # T05：ComplianceFilter 回填（当前为占位默认值）
             "whitelisted": None,
             "whitelist_rule": None,
             "pii_masked": False,
@@ -248,7 +249,9 @@ def run(
     if not src.exists():
         raise ExtractionError(f"视频文件不存在：{src}")
     if src.suffix.lower() not in VIDEO_EXTS:
-        logger.warning("非常见视频扩展名 %s，仍按 ffmpeg 可解容器尝试：%s", src.suffix, src.name)
+        logger.warning(
+            "非常见视频扩展名 %s，仍按 ffmpeg 可解容器尝试：%s", src.suffix, src.name
+        )
 
     work_dir = work_dir_for(video_id)
     doc_path = work_dir / "structured_doc.json"
@@ -263,12 +266,16 @@ def run(
     # 双通道并行（wav 抽取与抽帧互不依赖；模型加载后各自占用线程）
     degraded: list[str] = []
     with ThreadPoolExecutor(max_workers=2) as pool:
-        audio_future = pool.submit(
-            _run_audio_channel, src, work_dir, force
-        ) if enable_asr else None
-        video_future = pool.submit(
-            _run_video_channel, src, work_dir, force
-        ) if enable_ocr else None
+        audio_future = (
+            pool.submit(_run_audio_channel, src, work_dir, force)
+            if enable_asr
+            else None
+        )
+        video_future = (
+            pool.submit(_run_video_channel, src, work_dir, force)
+            if enable_ocr
+            else None
+        )
         asr_segments, asr_err = (
             audio_future.result() if audio_future else ([], "asr_disabled")
         )
@@ -303,7 +310,10 @@ def run(
     _write_json(doc_path, doc)
     logger.info(
         "StructuredDoc 完成：%s（ASR %d 段 / OCR %d 条 / 对齐 %d 段%s）→ %s",
-        video_id, len(asr_segments), len(ocr_items), len(aligned),
+        video_id,
+        len(asr_segments),
+        len(ocr_items),
+        len(aligned),
         f"，降级={degraded}" if degraded else "",
         doc_path.name,
     )

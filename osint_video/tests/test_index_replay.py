@@ -15,14 +15,18 @@ def test_replay_success_and_failure(monkeypatch):
     updates: list[tuple[str, str, str, str | None]] = []
     calls: list[tuple[str, str]] = []
 
-    monkeypatch.setattr(repository, "claim_index_tasks", lambda limit=100, target=None: claimed)
+    monkeypatch.setattr(
+        repository, "claim_index_tasks", lambda limit=100, target=None: claimed
+    )
 
     def adapter(resource_key: str, target: str) -> None:
         calls.append((resource_key, target))
         if resource_key == "r2":
             raise RuntimeError("graph unavailable")
 
-    def update(resource_key: str, target: str, status: str, error_message: str | None = None):
+    def update(
+        resource_key: str, target: str, status: str, error_message: str | None = None
+    ):
         updates.append((resource_key, target, status, error_message))
         return SimpleNamespace(resource_key=resource_key, target=target, status=status)
 

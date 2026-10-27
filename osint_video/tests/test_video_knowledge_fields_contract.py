@@ -4,6 +4,7 @@ These tests intentionally exercise the public/read-model contract rather than
 PostgreSQL.  The repository is mocked so the suite is deterministic and does
 not require a running database.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -72,7 +73,9 @@ def test_video_knowledge_content_types_are_preserved(unit_type: str) -> None:
     assert unit.unit_type == unit_type
 
 
-@pytest.mark.parametrize("truth_status", ["unknown", "correct", "incorrect", "contested"])
+@pytest.mark.parametrize(
+    "truth_status", ["unknown", "correct", "incorrect", "contested"]
+)
 def test_judgment_truth_status_is_explicit(truth_status: str) -> None:
     unit = KnowledgeUnit(unit_key=f"unit-{truth_status}", truth_status=truth_status)
     assert unit.truth_status == truth_status
@@ -82,7 +85,9 @@ def test_judgment_truth_status_is_explicit(truth_status: str) -> None:
     "status",
     ["supported", "refuted", "contested", "uncertain", "unverified"],
 )
-def test_judgment_projection_preserves_five_review_states(unit_row: dict, status: str) -> None:
+def test_judgment_projection_preserves_five_review_states(
+    unit_row: dict, status: str
+) -> None:
     """Judgment is explicit and never inferred from proposition/source text."""
     projected = repository._unit_content_fields(
         {
@@ -92,7 +97,11 @@ def test_judgment_projection_preserves_five_review_states(unit_row: dict, status
                 "proposition_type": "proposition",
                 "source_content": "视频中的原始转写",
                 "extension": {"implications": ["需要外部验证"]},
-                "judgment": {"status": status, "reasoning": "人工审核", "confidence": 0.7},
+                "judgment": {
+                    "status": status,
+                    "reasoning": "人工审核",
+                    "confidence": 0.7,
+                },
             },
         }
     )
@@ -117,7 +126,10 @@ def test_nested_sensitive_metadata_never_enters_evidence_dto(unit_row: dict) -> 
     )
     assert "metadata" not in dto
     serialized = repr(dto)
-    assert all(value not in serialized for value in ("video.mp4", "bearer-secret", "session-secret", "raw.mp4"))
+    assert all(
+        value not in serialized
+        for value in ("video.mp4", "bearer-secret", "session-secret", "raw.mp4")
+    )
 
 
 def test_source_content_alone_does_not_prove_a_fact(unit_row: dict) -> None:
@@ -136,7 +148,9 @@ def test_source_content_alone_does_not_prove_a_fact(unit_row: dict) -> None:
     assert dto["validity"]["status"] == "valid"
 
 
-def test_evidence_relation_counts_supports_contradicts_context(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_evidence_relation_counts_supports_contradicts_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A strategy chain aggregates each supported evidence relation separately."""
     rows = [
         evidence_row(key="ev-support", role="supports"),

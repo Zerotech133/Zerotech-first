@@ -20,7 +20,9 @@ from store.service import validate_evidence_for_resource
 class KnowledgeWritePort(Protocol):
     """Minimal repository contract required by :class:`ItemProcessor`."""
 
-    def upsert_knowledge_resource(self, resource: KnowledgeResource) -> KnowledgeResource:
+    def upsert_knowledge_resource(
+        self, resource: KnowledgeResource
+    ) -> KnowledgeResource:
         """Persist resource metadata and source text."""
 
     def upsert_knowledge_unit(self, unit: KnowledgeUnit) -> KnowledgeUnit:
@@ -29,7 +31,9 @@ class KnowledgeWritePort(Protocol):
     def upsert_strategy_evidence(self, evidence: StrategyEvidence) -> StrategyEvidence:
         """Persist one evidence edge."""
 
-    def register_index_tasks(self, resource_key: str, processing_run_key: str | None = None) -> list[Any]:
+    def register_index_tasks(
+        self, resource_key: str, processing_run_key: str | None = None
+    ) -> list[Any]:
         """Register PG/Qdrant/graph fan-out tasks."""
 
     def transaction(self) -> Any:
@@ -60,22 +64,30 @@ class _NullTransaction:
 class ItemProcessor:
     """Convert one collector page into idempotent durable knowledge records."""
 
-    def __init__(self, repository: KnowledgeWritePort, processing_run_key: str | None = None) -> None:
+    def __init__(
+        self, repository: KnowledgeWritePort, processing_run_key: str | None = None
+    ) -> None:
         if repository is None:
             raise ValueError("repository is required")
         self.repository = repository
         self.processing_run_key = processing_run_key
 
-    def __call__(self, item: Any, target: Any = None, run: Any = None) -> ItemProcessResult:
+    def __call__(
+        self, item: Any, target: Any = None, run: Any = None
+    ) -> ItemProcessResult:
         """Support creator-worker processor shape while accepting a VideoPage."""
         if not isinstance(item, VideoPage):
             raise TypeError("ItemProcessor expects collectors.VideoPage")
         run_key = self.processing_run_key
         if isinstance(run, dict):
-            run_key = str(run.get("run_key") or run.get("run_id") or run_key or "") or None
+            run_key = (
+                str(run.get("run_key") or run.get("run_id") or run_key or "") or None
+            )
         return self.process_page(item, processing_run_key=run_key)
 
-    def process_page(self, page: VideoPage, processing_run_key: str | None = None) -> ItemProcessResult:
+    def process_page(
+        self, page: VideoPage, processing_run_key: str | None = None
+    ) -> ItemProcessResult:
         """Persist a page; media-unavailable pages are valid metadata-only input.
 
         CollectionFailureError is intentionally not caught: callers must mark the
@@ -94,7 +106,11 @@ class ItemProcessor:
         # hard failure and is never converted to metadata-only here. Real PG
         # repositories expose transaction(); simple fakes remain compatible.
         transaction_factory = getattr(self.repository, "transaction", None)
-        context = transaction_factory() if callable(transaction_factory) else _NullTransaction()
+        context = (
+            transaction_factory()
+            if callable(transaction_factory)
+            else _NullTransaction()
+        )
         with context:
             persisted_resource = self.repository.upsert_knowledge_resource(resource)
             del persisted_resource
@@ -118,7 +134,9 @@ class ItemProcessor:
         metadata = page.metadata
         identity = metadata.content_id or metadata.source_link
         platform = metadata.platform or "unknown"
-        digest = hashlib.sha256(f"{platform}|{identity}".encode("utf-8")).hexdigest()[:32]
+        digest = hashlib.sha256(f"{platform}|{identity}".encode("utf-8")).hexdigest()[
+            :32
+        ]
         return f"resource:{platform}:{digest}"
 
     @staticmethod
@@ -130,7 +148,11 @@ class ItemProcessor:
             parsed = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
         except ValueError:
             return None
-        return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+        return (
+            parsed.replace(tzinfo=timezone.utc)
+            if parsed.tzinfo is None
+            else parsed.astimezone(timezone.utc)
+        )
 
     def _resource(self, page: VideoPage, resource_key: str) -> KnowledgeResource:
         metadata = page.metadata
@@ -138,7 +160,9 @@ class ItemProcessor:
         extra: list[str] = []
         for segment in page.text_segments:
             if segment.channel.value in transcripts:
-                transcripts[segment.channel.value] += ("\n" if transcripts[segment.channel.value] else "") + segment.text
+                transcripts[segment.channel.value] += (
+                    "\n" if transcripts[segment.channel.value] else ""
+                ) + segment.text
             else:
                 extra.append(segment.text)
         resource_metadata: dict[str, Any] = {
@@ -167,12 +191,16 @@ class ItemProcessor:
         )
 
     @staticmethod
-    def _records(page: VideoPage, resource_key: str) -> tuple[list[KnowledgeUnit], list[StrategyEvidence]]:
+    def _records(
+        page: VideoPage, resource_key: str
+    ) -> tuple[list[KnowledgeUnit], list[StrategyEvidence]]:
         units: list[KnowledgeUnit] = []
         evidence: list[StrategyEvidence] = []
         for index, segment in enumerate(page.text_segments):
             channel = segment.channel.value
-            source_channel = channel if channel in {"asr", "ocr", "subtitle"} else "manual"
+            source_channel = (
+                channel if channel in {"asr", "ocr", "subtitle"} else "manual"
+            )
             identity = f"{resource_key}|{index}|{channel}|{segment.start_sec}|{segment.end_sec}|{segment.text}"
             digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
             unit_key = f"unit:{digest[:32]}"

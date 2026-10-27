@@ -5,6 +5,7 @@ link and an in-process :class:`AuthorizedBrowserSession`, reads only visible DOM
 text through a caller-supplied extractor, and returns an in-memory DTO. It does
 not persist, enqueue, download media, attach externally, or inspect credentials.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -75,7 +76,9 @@ VisibleFieldsExtractor = Callable[[Any, str], Mapping[str, Any]]
 class BrowserVisiblePagePoc:
     """Extract visible fields from one exact link inside an owned session."""
 
-    def __init__(self, session: AuthorizedBrowserSession, extractor: VisibleFieldsExtractor) -> None:
+    def __init__(
+        self, session: AuthorizedBrowserSession, extractor: VisibleFieldsExtractor
+    ) -> None:
         if session is None:
             raise ValueError("session is required")
         if not callable(extractor):
@@ -87,7 +90,9 @@ class BrowserVisiblePagePoc:
         """Collect one page after a coarse authenticated health check."""
         report = self.collect_report(source_link)
         if report.fields is None:
-            raise VisiblePocError(report.error_code or "DOM_MISMATCH", "visible fields were not found")
+            raise VisiblePocError(
+                report.error_code or "DOM_MISMATCH", "visible fields were not found"
+            )
         return report.fields
 
     def collect_report(self, source_link: str) -> "VisiblePocReport":
@@ -97,30 +102,56 @@ class BrowserVisiblePagePoc:
         source_link = source_link.strip()
         VideoMetadata(source_link=source_link)
         if not _is_supported_link(source_link):
-            raise VisiblePocError("LINK_RESOLUTION_FAILED", "source link is not an allowed public link")
+            raise VisiblePocError(
+                "LINK_RESOLUTION_FAILED", "source link is not an allowed public link"
+            )
         health = self._session.health()
         if health.status is not BrowserSessionStatus.AUTHENTICATED:
-            raise VisiblePocError("HEALTH_GATE", "visible page health is not authenticated")
-        initial_url = self._session.read_visible(lambda page: str(getattr(page, "url", "") or ""))
+            raise VisiblePocError(
+                "HEALTH_GATE", "visible page health is not authenticated"
+            )
+        initial_url = self._session.read_visible(
+            lambda page: str(getattr(page, "url", "") or "")
+        )
         self._session.read_visible(lambda page: _navigate(page, source_link))
-        final_url = self._session.read_visible(lambda page: str(getattr(page, "url", "") or ""))
-        redirects = tuple(VisibleRedirect(url=value) for value in (initial_url, final_url) if value)
+        final_url = self._session.read_visible(
+            lambda page: str(getattr(page, "url", "") or "")
+        )
+        redirects = tuple(
+            VisibleRedirect(url=value) for value in (initial_url, final_url) if value
+        )
         if not _is_allowed_final_url(final_url):
-            raise VisiblePocError("LINK_RESOLUTION_FAILED", "final URL is not an allowed official page")
+            raise VisiblePocError(
+                "LINK_RESOLUTION_FAILED", "final URL is not an allowed official page"
+            )
         if _is_share_link(source_link) and not _is_allowed_final_url(final_url):
-            raise VisiblePocError("LINK_RESOLUTION_FAILED", "share link did not resolve to official page")
+            raise VisiblePocError(
+                "LINK_RESOLUTION_FAILED", "share link did not resolve to official page"
+            )
         if not _urls_match_expected(source_link, final_url):
-            raise VisiblePocError("PAGE_LINK_MISMATCH", "final page URL does not match requested link")
+            raise VisiblePocError(
+                "PAGE_LINK_MISMATCH", "final page URL does not match requested link"
+            )
         health = self._session.health()
         if health.status is not BrowserSessionStatus.AUTHENTICATED:
-            raise VisiblePocError("HEALTH_GATE", "final page health is not authenticated")
-        raw = self._session.read_visible(lambda page: self._extractor(page, source_link))
+            raise VisiblePocError(
+                "HEALTH_GATE", "final page health is not authenticated"
+            )
+        raw = self._session.read_visible(
+            lambda page: self._extractor(page, source_link)
+        )
         if not isinstance(raw, Mapping):
-            raise VisiblePocError("DOM_MISMATCH", "visible extractor returned no mapping")
+            raise VisiblePocError(
+                "DOM_MISMATCH", "visible extractor returned no mapping"
+            )
         fields = self._project(raw, source_link)
-        if not any(value for key, value in fields.as_dict().items() if key != "source_link"):
+        if not any(
+            value for key, value in fields.as_dict().items() if key != "source_link"
+        ):
             raise VisiblePocError("DOM_MISMATCH", "visible fields are empty")
-        return VisiblePocReport(source_link, initial_url, final_url, redirects, fields, None)
+        return VisiblePocReport(
+            source_link, initial_url, final_url, redirects, fields, None
+        )
 
     @staticmethod
     def _project(raw: Mapping[str, Any], source_link: str) -> VisiblePageFields:
@@ -130,10 +161,18 @@ class BrowserVisiblePagePoc:
             duration_value = float(duration) if duration is not None else None
         except (TypeError, ValueError):
             duration_value = None
-        if duration_value is not None and (not math.isfinite(duration_value) or duration_value < 0):
+        if duration_value is not None and (
+            not math.isfinite(duration_value) or duration_value < 0
+        ):
             duration_value = None
         media_status = raw.get("media_status", "unavailable")
-        if media_status not in {"unavailable", "ready", "expired", "error", "processing"}:
+        if media_status not in {
+            "unavailable",
+            "ready",
+            "expired",
+            "error",
+            "processing",
+        }:
             media_status = "unavailable"
 
         def text(key: str) -> str | None:
@@ -170,7 +209,10 @@ def _is_allowed_final_url(final_url: str) -> bool:
     parsed = urlparse(final_url)
     if parsed.scheme.lower() != "https" or parsed.hostname != "channels.weixin.qq.com":
         return False
-    return any(parsed.path == prefix or parsed.path.startswith(prefix + "/") for prefix in ("/", "/platform", "/channels", "/web"))
+    return any(
+        parsed.path == prefix or parsed.path.startswith(prefix + "/")
+        for prefix in ("/", "/platform", "/channels", "/web")
+    )
 
 
 def _urls_match_expected(source_link: str, final_url: str) -> bool:
@@ -182,7 +224,9 @@ def _urls_match_expected(source_link: str, final_url: str) -> bool:
 def _navigate(page: Any, source_link: str) -> None:
     goto = getattr(page, "goto", None)
     if not callable(goto):
-        raise VisiblePocError("LINK_RESOLUTION_FAILED", "page navigation is unavailable")
+        raise VisiblePocError(
+            "LINK_RESOLUTION_FAILED", "page navigation is unavailable"
+        )
     goto(source_link, wait_until="domcontentloaded")
 
 
@@ -216,4 +260,11 @@ def extract_visible_dom_fields(page: Any, source_link: str) -> Mapping[str, Any]
     return values
 
 
-__all__ = ["BrowserVisiblePagePoc", "VisiblePageFields", "VisiblePocError", "VisiblePocReport", "VisibleRedirect", "extract_visible_dom_fields"]
+__all__ = [
+    "BrowserVisiblePagePoc",
+    "VisiblePageFields",
+    "VisiblePocError",
+    "VisiblePocReport",
+    "VisibleRedirect",
+    "extract_visible_dom_fields",
+]

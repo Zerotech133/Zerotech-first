@@ -4,6 +4,7 @@ This module is an orchestration boundary only.  It never invents platform
 responses: each mode requires an injected callable, and missing dependencies
 return a failed result without touching the database.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,7 +14,11 @@ from typing import Any, Callable
 
 from knowledge.creator_workers import DailyScanWorker, HistoryBackfillWorker
 from store import repository as store_repository
-from workers.composition import CompositionError, WorkerComposition, compose_worker_dependencies
+from workers.composition import (
+    CompositionError,
+    WorkerComposition,
+    compose_worker_dependencies,
+)
 
 
 @dataclass(frozen=True)
@@ -65,7 +70,12 @@ def run(
                 return _missing(normalized, f"{exc.code}: {exc}")
             fetcher = composition.fetcher
             processor = composition.processor
-        elif browser_adapter is not None or browser_fetcher is not None or repository is not None or adapter is not None:
+        elif (
+            browser_adapter is not None
+            or browser_fetcher is not None
+            or repository is not None
+            or adapter is not None
+        ):
             try:
                 composition = compose_worker_dependencies(
                     repository=repository,
@@ -83,25 +93,37 @@ def run(
             processor = composition.processor
     if normalized == "daily-scan":
         if not callable(fetcher) or not callable(processor):
-            return _missing(normalized, "daily-scan requires callable fetcher and processor")
+            return _missing(
+                normalized, "daily-scan requires callable fetcher and processor"
+            )
         if limit < 1 or max_items < 1:
             return _missing(normalized, "limit and max_items must be positive")
         try:
-            results = DailyScanWorker(fetcher, processor, max_items=max_items).run_once(limit=limit)
+            results = DailyScanWorker(fetcher, processor, max_items=max_items).run_once(
+                limit=limit
+            )
         except Exception as exc:  # scheduler boundary must remain observable
             return _missing(normalized, str(exc))
-        state = "succeeded" if all(item.state == "succeeded" for item in results) else ("idle" if not results else "failed")
+        state = (
+            "succeeded"
+            if all(item.state == "succeeded" for item in results)
+            else ("idle" if not results else "failed")
+        )
         return WorkerRunResult(normalized, state, tuple(results))
 
     if normalized == "history-backfill":
         if not callable(fetcher) or not callable(processor):
-            return _missing(normalized, "history-backfill requires callable fetcher and processor")
+            return _missing(
+                normalized, "history-backfill requires callable fetcher and processor"
+            )
         if run_id is None:
             return _missing(normalized, "history-backfill requires run_id")
         if max_items < 1:
             return _missing(normalized, "max_items must be positive")
         try:
-            result = HistoryBackfillWorker(fetcher, processor, max_items=max_items).run(int(run_id))
+            result = HistoryBackfillWorker(fetcher, processor, max_items=max_items).run(
+                int(run_id)
+            )
         except Exception as exc:
             return _missing(normalized, str(exc))
         return WorkerRunResult(normalized, result.state, (result,), result.error)
@@ -112,10 +134,16 @@ def run(
         if limit < 1:
             return _missing(normalized, "limit must be positive")
         try:
-            results = store_repository.replay_index_tasks(adapter, limit=limit, target=target)
+            results = store_repository.replay_index_tasks(
+                adapter, limit=limit, target=target
+            )
         except Exception as exc:
             return _missing(normalized, str(exc))
-        state = "succeeded" if all(getattr(item, "status", "") == "succeeded" for item in results) else ("idle" if not results else "failed")
+        state = (
+            "succeeded"
+            if all(getattr(item, "status", "") == "succeeded" for item in results)
+            else ("idle" if not results else "failed")
+        )
         return WorkerRunResult(normalized, state, tuple(results))
 
     return _missing(normalized, f"unsupported worker mode: {mode}")
@@ -124,14 +152,29 @@ def run(
 def main(argv: list[str] | None = None) -> int:
     """CLI validation entry point; real dependencies must be wired by a host service."""
     parser = argparse.ArgumentParser(description="osint_video worker dispatcher")
-    parser.add_argument("--mode", required=True, choices=("daily-scan", "history-backfill", "index-replay"))
+    parser.add_argument(
+        "--mode",
+        required=True,
+        choices=("daily-scan", "history-backfill", "index-replay"),
+    )
     parser.add_argument("--run-id", type=int)
     parser.add_argument("--limit", type=int, default=50)
     parser.add_argument("--max-items", type=int, default=1000)
     parser.add_argument("--target")
     args = parser.parse_args(argv)
-    result = run(args.mode, run_id=args.run_id, limit=args.limit, max_items=args.max_items, target=args.target)
-    print(json.dumps({"mode": result.mode, "state": result.state, "error": result.error}, ensure_ascii=False))
+    result = run(
+        args.mode,
+        run_id=args.run_id,
+        limit=args.limit,
+        max_items=args.max_items,
+        target=args.target,
+    )
+    print(
+        json.dumps(
+            {"mode": result.mode, "state": result.state, "error": result.error},
+            ensure_ascii=False,
+        )
+    )
     return 0 if result.state in {"succeeded", "idle"} else 2
 
 

@@ -70,7 +70,9 @@ class ResDownloaderAdapter:
             or parsed_base.fragment
             or (port is not None and port != 8899)
         ):
-            raise ValueError("base_url must target the local HTTP service without credentials or URL components")
+            raise ValueError(
+                "base_url must target the local HTTP service without credentials or URL components"
+            )
         self._base_url = base_url.rstrip("/")
         self._path_policy = path_policy
         self._timeout = timeout
@@ -81,7 +83,9 @@ class ResDownloaderAdapter:
         try:
             if self._client is not None:
                 response = self._client.post(
-                    f"{self._base_url}{endpoint}", json=dict(payload), timeout=self._timeout
+                    f"{self._base_url}{endpoint}",
+                    json=dict(payload),
+                    timeout=self._timeout,
                 )
             else:
                 with httpx.Client(timeout=self._timeout) as client:
@@ -96,8 +100,14 @@ class ResDownloaderAdapter:
             raise HttpRequestError("res-downloader request failed") from exc
 
         if response.status_code >= 400:
-            _LOGGER.warning("res-downloader HTTP error endpoint=%s status=%s", endpoint, response.status_code)
-            raise HttpRequestError(f"res-downloader returned HTTP {response.status_code}")
+            _LOGGER.warning(
+                "res-downloader HTTP error endpoint=%s status=%s",
+                endpoint,
+                response.status_code,
+            )
+            raise HttpRequestError(
+                f"res-downloader returned HTTP {response.status_code}"
+            )
         try:
             body = response.json()
         except ValueError as exc:
@@ -125,14 +135,18 @@ class ResDownloaderAdapter:
         )
         accepted_value = body.get("accepted", body.get("success"))
         if not isinstance(accepted_value, bool):
-            raise HttpRequestError("res-downloader returned no boolean acceptance status")
+            raise HttpRequestError(
+                "res-downloader returned no boolean acceptance status"
+            )
         accepted = accepted_value
         task_id_value = body.get("task_id", body.get("id"))
         task_id = str(task_id_value) if task_id_value is not None else None
         message = str(body.get("message", ""))
         return DownloadResult(accepted=accepted, task_id=task_id, message=message)
 
-    def decode(self, media: MediaInfo, *, decode_key: str, output_dir: str | Path) -> DownloadResult:
+    def decode(
+        self, media: MediaInfo, *, decode_key: str, output_dir: str | Path
+    ) -> DownloadResult:
         """Submit decode request while keeping decode credentials out of logs/results."""
         if not decode_key:
             raise ValueError("decode_key must not be empty")
@@ -141,13 +155,20 @@ class ResDownloaderAdapter:
         target = self._path_policy.validate_directory(output_dir)
         body = self._post(
             "/api/wx-file-decode",
-            {"media": media.to_payload(), "decode_key": decode_key, "output_dir": str(target)},
+            {
+                "media": media.to_payload(),
+                "decode_key": decode_key,
+                "output_dir": str(target),
+            },
         )
         accepted_value = body.get("accepted", body.get("success"))
         if not isinstance(accepted_value, bool):
-            raise HttpRequestError("res-downloader returned no boolean acceptance status")
+            raise HttpRequestError(
+                "res-downloader returned no boolean acceptance status"
+            )
         accepted = accepted_value
         task_id_value = body.get("task_id", body.get("id"))
         task_id = str(task_id_value) if task_id_value is not None else None
-        return DownloadResult(accepted=accepted, task_id=task_id, message=str(body.get("message", "")))
-
+        return DownloadResult(
+            accepted=accepted, task_id=task_id, message=str(body.get("message", ""))
+        )

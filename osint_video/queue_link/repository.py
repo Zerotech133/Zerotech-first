@@ -71,7 +71,9 @@ def submit_links(
                 {
                     "sph_url": url,
                     "url_hash": url_hash,
-                    "route": route if route in (Route.D, Route.B, Route.AUTO) else Route.D,
+                    "route": route
+                    if route in (Route.D, Route.B, Route.AUTO)
+                    else Route.D,
                     "priority": priority,
                     "created_by": created_by,
                 },
@@ -206,7 +208,12 @@ def mark_failed(
     if task is None:
         return None
     if from_status is not None and task.status != from_status:
-        logger.warning("mark_failed 状态不匹配：task=%s 当前=%s 期望=%s", task_id, task.status, from_status)
+        logger.warning(
+            "mark_failed 状态不匹配：task=%s 当前=%s 期望=%s",
+            task_id,
+            task.status,
+            from_status,
+        )
         return None
 
     cookie_expired = error_code == ErrorCode.COOKIE_EXPIRED
@@ -236,7 +243,9 @@ def mark_failed(
                 """,
                 {"rc": new_retry, "ec": error_code, "em": error_msg, "id": task_id},
             )
-            logger.warning("任务 %s 重试超限进入死信：%s %s", task_id, error_code, error_msg)
+            logger.warning(
+                "任务 %s 重试超限进入死信：%s %s", task_id, error_code, error_msg
+            )
     elif cookie_expired:
         # Cookie 过期 → waiting_cookie 挂起，不计次（人工更新后自动恢复）
         db.execute(
@@ -259,11 +268,16 @@ def mark_failed(
             WHERE id = :id
             """,
             {
-                "rc": new_retry, "ec": error_code, "em": error_msg,
-                "nr": _backoff_deadline(new_retry), "id": task_id,
+                "rc": new_retry,
+                "ec": error_code,
+                "em": error_msg,
+                "nr": _backoff_deadline(new_retry),
+                "id": task_id,
             },
         )
-        logger.info("任务 %s 失败（%s），第 %d 次重试已排期", task_id, error_code, new_retry)
+        logger.info(
+            "任务 %s 失败（%s），第 %d 次重试已排期", task_id, error_code, new_retry
+        )
     return get_by_id(task_id)
 
 
@@ -364,10 +378,13 @@ def _format_retry_record(row: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
-def get_retry_idempotency(task_id: int, action: str, idempotency_key: str) -> dict[str, Any] | None:
+def get_retry_idempotency(
+    task_id: int, action: str, idempotency_key: str
+) -> dict[str, Any] | None:
     """读取已持久化的重试幂等记录。"""
     rows = db.fetch_all(
-        _retry_record_query() + """
+        _retry_record_query()
+        + """
         WHERE task_id = :task_id AND action = :action AND idempotency_key = :key
         LIMIT 1
         """,
@@ -439,7 +456,8 @@ def reserve_retry_idempotency(
             ).rowcount
         rows = db.query(
             conn,
-            _retry_record_query() + """
+            _retry_record_query()
+            + """
             WHERE task_id = :task_id AND action = :action AND idempotency_key = :key
             LIMIT 1
             """,

@@ -1,4 +1,5 @@
 """Pure tests for the explicit worker composition root."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -48,7 +49,9 @@ def test_composition_requires_explicit_repository_and_collector() -> None:
         raise AssertionError("missing repository must fail")
 
     try:
-        compose_worker_dependencies(repository=SimpleNamespace(), adapter=None, browser_fetcher=None)
+        compose_worker_dependencies(
+            repository=SimpleNamespace(), adapter=None, browser_fetcher=None
+        )
     except CompositionError as exc:
         assert exc.code == "COLLECTOR_REQUIRED"
     else:
@@ -73,7 +76,10 @@ def test_composition_rejects_unauthenticated_before_fetch() -> None:
 def test_run_composes_only_authenticated_dependencies(monkeypatch) -> None:
     adapter = Adapter("expired")
     called = []
-    monkeypatch.setattr("workers.run.DailyScanWorker.run_once", lambda *args, **kwargs: called.append(True))
+    monkeypatch.setattr(
+        "workers.run.DailyScanWorker.run_once",
+        lambda *args, **kwargs: called.append(True),
+    )
     result = run(
         "daily-scan",
         browser_adapter=adapter,

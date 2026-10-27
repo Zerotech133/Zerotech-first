@@ -5,6 +5,7 @@ network dependency.  Production handlers inject ``enqueue_link`` and
 ``create_run`` callbacks backed by existing osint_video repositories; tests can
 use in-memory callbacks.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -14,11 +15,27 @@ from typing import Any, Literal, Mapping, Protocol
 RunType = Literal["history_backfill", "daily_scan"]
 _ALLOWED_ROUTES = frozenset({"D", "B", "AUTO"})
 _SAFE_PROVIDER_KEYS = frozenset({"summary", "evidence", "index"})
-_SENSITIVE_KEYS = frozenset({
-    "authorization", "auth", "cookie", "password", "passwd", "secret", "token",
-    "access_token", "refresh_token", "api_key", "apikey", "path", "media_path",
-    "raw_path", "file_path", "url", "media_url",
-})
+_SENSITIVE_KEYS = frozenset(
+    {
+        "authorization",
+        "auth",
+        "cookie",
+        "password",
+        "passwd",
+        "secret",
+        "token",
+        "access_token",
+        "refresh_token",
+        "api_key",
+        "apikey",
+        "path",
+        "media_path",
+        "raw_path",
+        "file_path",
+        "url",
+        "media_url",
+    }
+)
 
 
 def _now() -> datetime:
@@ -35,7 +52,11 @@ class RequestMeta:
     idempotency_key: str | None = None
 
     def __post_init__(self) -> None:
-        if not self.caller.strip() or not self.request_id.strip() or not self.correlation_id.strip():
+        if (
+            not self.caller.strip()
+            or not self.request_id.strip()
+            or not self.correlation_id.strip()
+        ):
             raise ValueError("caller, request_id, and correlation_id are required")
 
 
@@ -110,17 +131,27 @@ class ProviderOutput:
     def from_mapping(cls, value: Mapping[str, Any]) -> "ProviderOutput":
         unknown = set(value) - _SAFE_PROVIDER_KEYS
         if unknown:
-            raise ValueError(f"provider output contains unsafe fields: {sorted(unknown)}")
+            raise ValueError(
+                f"provider output contains unsafe fields: {sorted(unknown)}"
+            )
 
         def validate_nested(item: Any, location: str = "output") -> Any:
             if isinstance(item, Mapping):
                 lowered = {str(key).lower() for key in item}
                 sensitive = lowered & _SENSITIVE_KEYS
                 if sensitive:
-                    raise ValueError(f"provider output contains unsafe nested fields at {location}: {sorted(sensitive)}")
-                return {key: validate_nested(val, f"{location}.{key}") for key, val in item.items()}
+                    raise ValueError(
+                        f"provider output contains unsafe nested fields at {location}: {sorted(sensitive)}"
+                    )
+                return {
+                    key: validate_nested(val, f"{location}.{key}")
+                    for key, val in item.items()
+                }
             if isinstance(item, (list, tuple)):
-                return tuple(validate_nested(val, f"{location}[{index}]") for index, val in enumerate(item))
+                return tuple(
+                    validate_nested(val, f"{location}[{index}]")
+                    for index, val in enumerate(item)
+                )
             return item
 
         raw_evidence = value.get("evidence", ())
@@ -128,7 +159,10 @@ class ProviderOutput:
             raise ValueError("evidence must be a sequence")
         return cls(
             validate_nested(value.get("summary"), "summary"),
-            tuple(validate_nested(item, f"evidence[{index}]") for index, item in enumerate(raw_evidence or ())),
+            tuple(
+                validate_nested(item, f"evidence[{index}]")
+                for index, item in enumerate(raw_evidence or ())
+            ),
             validate_nested(value.get("index"), "index"),
         )
 
@@ -136,33 +170,54 @@ class ProviderOutput:
 class Provider(Protocol):
     """Optional AI/content provider. It may return a ProviderOutput or mapping."""
 
-    def generate(self, command: CreatorRunCommand, run: Mapping[str, Any]) -> ProviderOutput | Mapping[str, Any]:
+    def generate(
+        self, command: CreatorRunCommand, run: Mapping[str, Any]
+    ) -> ProviderOutput | Mapping[str, Any]:
         """Return only safe summary, evidence and index fields."""
 
 
 class EnqueueLink(Protocol):
-    def __call__(self, urls: list[str], created_by: str, route: str, priority: int) -> Any: ...
+    def __call__(
+        self, urls: list[str], created_by: str, route: str, priority: int
+    ) -> Any: ...
 
 
 class CreateRun(Protocol):
-    def __call__(self, target_id: int, run_type: str, input_cursor: str | None = None) -> Mapping[str, Any]: ...
+    def __call__(
+        self, target_id: int, run_type: str, input_cursor: str | None = None
+    ) -> Mapping[str, Any]: ...
 
 
 class HermesOrchestrator:
     """Thin orchestration layer delegating persistence to injected callbacks."""
 
-    def __init__(self, enqueue_link: EnqueueLink, create_run: CreateRun, provider: Provider | None = None) -> None:
+    def __init__(
+        self,
+        enqueue_link: EnqueueLink,
+        create_run: CreateRun,
+        provider: Provider | None = None,
+    ) -> None:
         self._enqueue_link = enqueue_link
         self._create_run = create_run
         self._provider = provider
 
-    def submit_links(self, command: LinkCommand, meta: RequestMeta) -> IntegrationEnvelope:
-        result = self._enqueue_link(list(command.urls), command.created_by, command.route, command.priority)
-        return IntegrationEnvelope(0, result, request_id=meta.request_id, correlation_id=meta.correlation_id)
+    def submit_links(
+        self, command: LinkCommand, meta: RequestMeta
+    ) -> IntegrationEnvelope:
+        result = self._enqueue_link(
+            list(command.urls), command.created_by, command.route, command.priority
+        )
+        return IntegrationEnvelope(
+            0, result, request_id=meta.request_id, correlation_id=meta.correlation_id
+        )
 
-    def create_creator_run(self, command: CreatorRunCommand, meta: RequestMeta) -> IntegrationEnvelope:
+    def create_creator_run(
+        self, command: CreatorRunCommand, meta: RequestMeta
+    ) -> IntegrationEnvelope:
         """Create a pending run only; workers invoke ``process_run`` later."""
-        run = dict(self._create_run(command.target_id, command.run_type, command.input_cursor))
+        run = dict(
+            self._create_run(command.target_id, command.run_type, command.input_cursor)
+        )
         event = HermesEvent(
             "creator.run.created",
             meta.request_id,
@@ -171,24 +226,65 @@ class HermesOrchestrator:
             idempotency_key=meta.idempotency_key,
             data={"run_id": run.get("run_id")},
         )
-        return IntegrationEnvelope(0, {"run": run, "event": event}, request_id=meta.request_id, correlation_id=meta.correlation_id)
+        return IntegrationEnvelope(
+            0,
+            {"run": run, "event": event},
+            request_id=meta.request_id,
+            correlation_id=meta.correlation_id,
+        )
 
-    def process_run(self, command: CreatorRunCommand, run: Mapping[str, Any], meta: RequestMeta) -> IntegrationEnvelope:
+    def process_run(
+        self, command: CreatorRunCommand, run: Mapping[str, Any], meta: RequestMeta
+    ) -> IntegrationEnvelope:
         """Invoke the optional provider from a worker context, never on trigger."""
         if self._provider is None:
             raise RuntimeError("provider is not configured")
-        generated = self._provider.generate(command, run) if hasattr(self._provider, "generate") else self._provider(command, run)  # type: ignore[misc]
-        safe = generated if isinstance(generated, ProviderOutput) else ProviderOutput.from_mapping(generated)
-        return IntegrationEnvelope(0, {"summary": safe.summary, "evidence": list(safe.evidence), "index": safe.index}, request_id=meta.request_id, correlation_id=meta.correlation_id)
+        generated = (
+            self._provider.generate(command, run)
+            if hasattr(self._provider, "generate")
+            else self._provider(command, run)
+        )  # type: ignore[misc]
+        safe = (
+            generated
+            if isinstance(generated, ProviderOutput)
+            else ProviderOutput.from_mapping(generated)
+        )
+        return IntegrationEnvelope(
+            0,
+            {
+                "summary": safe.summary,
+                "evidence": list(safe.evidence),
+                "index": safe.index,
+            },
+            request_id=meta.request_id,
+            correlation_id=meta.correlation_id,
+        )
 
-    def history(self, target_id: int, meta: RequestMeta, input_cursor: str | None = None) -> IntegrationEnvelope:
-        return self.create_creator_run(CreatorRunCommand(target_id, "history_backfill", input_cursor), meta)
+    def history(
+        self, target_id: int, meta: RequestMeta, input_cursor: str | None = None
+    ) -> IntegrationEnvelope:
+        return self.create_creator_run(
+            CreatorRunCommand(target_id, "history_backfill", input_cursor), meta
+        )
 
-    def scan(self, target_id: int, meta: RequestMeta, input_cursor: str | None = None) -> IntegrationEnvelope:
-        return self.create_creator_run(CreatorRunCommand(target_id, "daily_scan", input_cursor), meta)
+    def scan(
+        self, target_id: int, meta: RequestMeta, input_cursor: str | None = None
+    ) -> IntegrationEnvelope:
+        return self.create_creator_run(
+            CreatorRunCommand(target_id, "daily_scan", input_cursor), meta
+        )
 
 
 __all__ = [
-    "CreateRun", "CreatorRunCommand", "EnqueueLink", "HermesEvent", "HermesOrchestrator",
-    "IntegrationEnvelope", "LinkCommand", "Provider", "ProviderOutput", "RequestMeta", "RunType",
+    "CreateRun",
+    "CreatorRunCommand",
+    "EnqueueLink",
+    "HermesEvent",
+    "HermesOrchestrator",
+    "IntegrationEnvelope",
+    "LinkCommand",
+    "Provider",
+    "ProviderOutput",
+    "RequestMeta",
+    "RunType",
 ]

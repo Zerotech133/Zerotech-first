@@ -1,4 +1,5 @@
 """统一导入：公开网页文本及本地文件的独立持久化任务。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -27,9 +28,16 @@ ingest_router = APIRouter(prefix="/api/v1/ingest", tags=["ingest"])
 MAX_FILE = 50 * 1024 * 1024
 MAX_PAGE = 2 * 1024 * 1024
 SUFFIX_TYPES = {
-    ".txt": "text", ".md": "text", ".pdf": "pdf",
-    ".png": "image", ".jpg": "image", ".jpeg": "image", ".webp": "image",
-    ".mp4": "video", ".mov": "video", ".webm": "video",
+    ".txt": "text",
+    ".md": "text",
+    ".pdf": "pdf",
+    ".png": "image",
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".webp": "image",
+    ".mp4": "video",
+    ".mov": "video",
+    ".webm": "video",
 }
 
 
@@ -74,22 +82,42 @@ def _public_address(host: str) -> str:
 def _fetch_public_text(url: str) -> str:
     for _ in range(4):
         parsed = urlsplit(url)
-        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+        ):
             raise ValueError("仅支持公开 HTTP(S) 网页")
         if parsed.port not in (None, 80 if parsed.scheme == "http" else 443):
             raise ValueError("不允许非标准端口")
         address = _public_address(parsed.hostname)
         port = parsed.port or (443 if parsed.scheme == "https" else 80)
+
         # 连接经过验证的 IP，同时保留原主机名用于 TLS SNI/证书验证。
-        class PinnedConnection(http.client.HTTPSConnection if parsed.scheme == "https" else http.client.HTTPConnection):
+        class PinnedConnection(
+            http.client.HTTPSConnection
+            if parsed.scheme == "https"
+            else http.client.HTTPConnection
+        ):
             def connect(self) -> None:
                 self.sock = socket.create_connection((address, port), timeout=5)
                 if parsed.scheme == "https":
-                    self.sock = ssl.create_default_context().wrap_socket(self.sock, server_hostname=parsed.hostname)
+                    self.sock = ssl.create_default_context().wrap_socket(
+                        self.sock, server_hostname=parsed.hostname
+                    )
 
         conn = PinnedConnection(parsed.hostname, port, timeout=5)
         try:
-            conn.request("GET", (parsed.path or "/") + ("?" + parsed.query if parsed.query else ""), headers={"Host": parsed.netloc, "User-Agent": "osint-video-public-text/1.0", "Accept": "text/html"})
+            conn.request(
+                "GET",
+                (parsed.path or "/") + ("?" + parsed.query if parsed.query else ""),
+                headers={
+                    "Host": parsed.netloc,
+                    "User-Agent": "osint-video-public-text/1.0",
+                    "Accept": "text/html",
+                },
+            )
             response = conn.getresponse()
             if response.status in (301, 302, 303, 307, 308):
                 location = response.getheader("Location")
@@ -100,7 +128,10 @@ def _fetch_public_text(url: str) -> str:
             if response.status != 200:
                 raise ValueError(f"公开网页 HTTP {response.status}")
             content_type = response.getheader("Content-Type", "").lower()
-            if not (content_type.startswith("text/html") or content_type.startswith("text/plain")):
+            if not (
+                content_type.startswith("text/html")
+                or content_type.startswith("text/plain")
+            ):
                 raise ValueError("目标不是文本网页")
             raw = response.read(MAX_PAGE + 1)
             if len(raw) > MAX_PAGE:
@@ -119,26 +150,56 @@ def _fetch_public_text(url: str) -> str:
 
 def _create(source_type: str, name: str, url: str | None = None) -> dict:
     with db.transaction() as conn:
-        row = conn.execute(text("""INSERT INTO osint_import_task (source_type, source_name, source_url, status)
+        row = (
+            conn.execute(
+                text("""INSERT INTO osint_import_task (source_type, source_name, source_url, status)
             VALUES (:type, :name, :url, 'processing') RETURNING id"""),
-            {"type": source_type, "name": name, "url": url}).mappings().one()
+                {"type": source_type, "name": name, "url": url},
+            )
+            .mappings()
+            .one()
+        )
     return _get(row["id"])
 
 
-def _update(task_id: int, status: str, *, content: str | None = None, path: str | None = None, digest: str | None = None, error: str | None = None) -> dict:
-    db.execute("""UPDATE osint_import_task SET status=:status, content_text=:content,
+def _update(
+    task_id: int,
+    status: str,
+    *,
+    content: str | None = None,
+    path: str | None = None,
+    digest: str | None = None,
+    error: str | None = None,
+) -> dict:
+    db.execute(
+        """UPDATE osint_import_task SET status=:status, content_text=:content,
         file_path=:path, sha256=:digest, error_message=:error, updated_at=now() WHERE id=:id""",
-        {"id": task_id, "status": status, "content": content, "path": path, "digest": digest, "error": error})
+        {
+            "id": task_id,
+            "status": status,
+            "content": content,
+            "path": path,
+            "digest": digest,
+            "error": error,
+        },
+    )
     return _get(task_id)
 
 
 def _get(task_id: int) -> dict:
-    rows = db.fetch_all("""SELECT id, source_type, source_name, source_url, status, sha256,
-        content_text, error_message, created_at, updated_at FROM osint_import_task WHERE id=:id""", {"id": task_id})
+    rows = db.fetch_all(
+        """SELECT id, source_type, source_name, source_url, status, sha256,
+        content_text, error_message, created_at, updated_at FROM osint_import_task WHERE id=:id""",
+        {"id": task_id},
+    )
     if not rows:
         raise HTTPException(404, "导入任务不存在")
     item = rows[0]
-    return {**item, "created_at": item["created_at"].isoformat(), "updated_at": item["updated_at"].isoformat()}
+    return {
+        **item,
+        "created_at": item["created_at"].isoformat(),
+        "updated_at": item["updated_at"].isoformat(),
+    }
 
 
 def _ok(item: dict) -> dict:
@@ -152,7 +213,9 @@ def _ingest_task(item: dict) -> dict:
         "source_type": item["source_type"],
         "state": item["status"],
         "error": item.get("error_message"),
-        "created_at": item["created_at"].isoformat() if hasattr(item["created_at"], "isoformat") else item["created_at"],
+        "created_at": item["created_at"].isoformat()
+        if hasattr(item["created_at"], "isoformat")
+        else item["created_at"],
     }
 
 
@@ -177,13 +240,24 @@ def _create_ingest_link(url: str) -> tuple[dict, bool]:
     name = (parsed.hostname or url)[:255]
     with db.transaction() as conn:
         # 同一 URL 的并发请求串行化，避免检查后插入的竞争条件。
-        conn.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:url, 0))"), {"url": url})
-        existing = conn.execute(text("SELECT id FROM osint_import_task WHERE source_type='link' AND source_url=:url ORDER BY id DESC LIMIT 1"), {"url": url}).scalar_one_or_none()
+        conn.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:url, 0))"),
+            {"url": url},
+        )
+        existing = conn.execute(
+            text(
+                "SELECT id FROM osint_import_task WHERE source_type='link' AND source_url=:url ORDER BY id DESC LIMIT 1"
+            ),
+            {"url": url},
+        ).scalar_one_or_none()
         if existing is not None:
             task_id, created = existing, False
         else:
-            task_id = conn.execute(text("""INSERT INTO osint_import_task (source_type, source_name, source_url, status)
-                VALUES ('link', :name, :url, 'processing') RETURNING id"""), {"name": name, "url": url}).scalar_one()
+            task_id = conn.execute(
+                text("""INSERT INTO osint_import_task (source_type, source_name, source_url, status)
+                VALUES ('link', :name, :url, 'processing') RETURNING id"""),
+                {"name": name, "url": url},
+            ).scalar_one()
             created = True
     return _get(task_id), created
 
@@ -242,7 +316,14 @@ async def _import_file(file: UploadFile) -> dict:
             raise ValueError("文件没有可提取文本")
         status = "completed" if content else "pending_processing"
         note = "视频/图片已保存，尚未配置自动转写/OCR 处理器" if not content else None
-        return _update(item["id"], status, content=content, path=str(target), digest=digest.hexdigest(), error=note)
+        return _update(
+            item["id"],
+            status,
+            content=content,
+            path=str(target),
+            digest=digest.hexdigest(),
+            error=note,
+        )
     except (ValueError, OSError, UnicodeError, PdfReadError) as exc:
         target.unlink(missing_ok=True)
         return _update(item["id"], "failed", error=str(exc)[:500])
@@ -272,7 +353,14 @@ def ingest_links(payload: IngestLinksInput, background_tasks: BackgroundTasks) -
         url = raw_url.strip()
         try:
             parsed = urlsplit(url)
-            if len(url) > 2048 or parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password or parsed.port not in (None, 80 if parsed.scheme == "http" else 443):
+            if (
+                len(url) > 2048
+                or parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username
+                or parsed.password
+                or parsed.port not in (None, 80 if parsed.scheme == "http" else 443)
+            ):
                 raise ValueError("仅支持标准端口的 HTTP(S) 网页链接")
             item, created = _create_ingest_link(url)
             accepted += int(created)
@@ -282,7 +370,16 @@ def ingest_links(payload: IngestLinksInput, background_tasks: BackgroundTasks) -
             items.append(_ingest_task(item))
         except ValueError as exc:
             # 非法输入只影响自身，不阻止其它链接投递。
-            items.append({"task_id": "", "source_name": url[:255], "source_type": "link", "state": "failed", "error": str(exc), "created_at": ""})
+            items.append(
+                {
+                    "task_id": "",
+                    "source_name": url[:255],
+                    "source_type": "link",
+                    "state": "failed",
+                    "error": str(exc),
+                    "created_at": "",
+                }
+            )
     if queued:
         background_tasks.add_task(_process_links, queued)
     return _ok({"accepted": accepted, "duplicated": duplicated, "items": items})
@@ -299,7 +396,15 @@ async def ingest_files(files: list[UploadFile] = File(...)) -> dict:
 def list_ingest_tasks(cursor: int = 0, size: int = 20) -> dict:
     if cursor < 0 or not 1 <= size <= 100:
         raise HTTPException(400, "非法分页参数")
-    rows = db.fetch_all("""SELECT id, source_name, source_type, status, error_message, created_at
-        FROM osint_import_task ORDER BY id DESC LIMIT :limit OFFSET :offset""", {"limit": size + 1, "offset": cursor})
+    rows = db.fetch_all(
+        """SELECT id, source_name, source_type, status, error_message, created_at
+        FROM osint_import_task ORDER BY id DESC LIMIT :limit OFFSET :offset""",
+        {"limit": size + 1, "offset": cursor},
+    )
     items = [_ingest_task(row) for row in rows[:size]]
-    return _ok({"items": items, "next_cursor": str(cursor + size) if len(rows) > size else None})
+    return _ok(
+        {
+            "items": items,
+            "next_cursor": str(cursor + size) if len(rows) > size else None,
+        }
+    )

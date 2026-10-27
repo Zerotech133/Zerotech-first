@@ -7,6 +7,7 @@ can report coarse session health and return a raw business record.  The public
 fetch result is projected onto an allow-list so credentials and browser state
 can never cross the worker boundary.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -99,7 +100,9 @@ class BrowserFetchResult:
 class BrowserAdapter(Protocol):
     """Injected adapter contract; implementations must own browser details."""
 
-    def check_session_health(self) -> BrowserSessionHealth | BrowserSessionStatus | Mapping[str, Any]:
+    def check_session_health(
+        self,
+    ) -> BrowserSessionHealth | BrowserSessionStatus | Mapping[str, Any]:
         """Return coarse health without exposing browser credentials."""
 
     def fetch(
@@ -112,7 +115,9 @@ class BrowserFetcherProtocol(Protocol):
     """Fetcher protocol compatible with creator worker injection."""
 
     def fetch(
-        self, target: Mapping[str, Any], cursor: str | None = None,
+        self,
+        target: Mapping[str, Any],
+        cursor: str | None = None,
         run: Mapping[str, Any] | None = None,
     ) -> BrowserFetchResult | list[BrowserFetchResult]:
         """Fetch safe business fields only."""
@@ -128,7 +133,9 @@ BrowserFetcherPort = BrowserFetcherProtocol
 class BrowserSessionHealthProbe(Protocol):
     """Callable coarse health probe backed by visible browser state only."""
 
-    def __call__(self) -> BrowserSessionHealth | BrowserSessionStatus | Mapping[str, Any]:
+    def __call__(
+        self,
+    ) -> BrowserSessionHealth | BrowserSessionStatus | Mapping[str, Any]:
         """Return health without reading cookies, tokens, or storage state."""
 
 
@@ -151,7 +158,11 @@ class BrowserFetcher:
         }
     )
 
-    def __init__(self, adapter: BrowserAdapter, health_probe: BrowserSessionHealthProbe | None = None) -> None:
+    def __init__(
+        self,
+        adapter: BrowserAdapter,
+        health_probe: BrowserSessionHealthProbe | None = None,
+    ) -> None:
         if adapter is None:
             raise ValueError("adapter is required")
         self._adapter: BrowserAdapter = adapter
@@ -161,9 +172,15 @@ class BrowserFetcher:
         """Get adapter health and normalize failures to UNKNOWN."""
         checked_at = datetime.now(timezone.utc)
         try:
-            raw = self._health_probe() if self._health_probe is not None else self._adapter.check_session_health()
+            raw = (
+                self._health_probe()
+                if self._health_probe is not None
+                else self._adapter.check_session_health()
+            )
         except Exception:
-            return BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN, checked_at=checked_at)
+            return BrowserSessionHealth(
+                status=BrowserSessionStatus.UNKNOWN, checked_at=checked_at
+            )
         if isinstance(raw, BrowserSessionHealth):
             return raw
         if isinstance(raw, BrowserSessionStatus):
@@ -193,7 +210,11 @@ class BrowserFetcher:
             values = raw.get("items", raw.get("data", []))
             if not isinstance(values, (list, tuple)):
                 values = []
-            return [self._project(item, target) for item in values if isinstance(item, Mapping)]
+            return [
+                self._project(item, target)
+                for item in values
+                if isinstance(item, Mapping)
+            ]
         if isinstance(raw, Mapping):
             return self._project(raw, target)
         raise TypeError("browser adapter fetch must return a mapping")
@@ -207,12 +228,20 @@ class BrowserFetcher:
             values = raw.get("items", raw.get("data", []))
             if not isinstance(values, (list, tuple)):
                 values = []
-            items = [self._project(item, target).internal_dict() for item in values if isinstance(item, Mapping)]
+            items = [
+                self._project(item, target).internal_dict()
+                for item in values
+                if isinstance(item, Mapping)
+            ]
             next_cursor = raw.get("next_cursor", raw.get("cursor"))
             has_more = raw.get("has_more")
             done = raw.get("done")
             if done is None:
-                done = False if has_more is True or next_cursor is not None else not bool(has_more)
+                done = (
+                    False
+                    if has_more is True or next_cursor is not None
+                    else not bool(has_more)
+                )
             return {
                 "items": items,
                 "next_cursor": str(next_cursor) if next_cursor is not None else None,
@@ -228,11 +257,20 @@ class BrowserFetcher:
         status = self.session_health().status
         if status is BrowserSessionStatus.AUTHENTICATED:
             return
-        if status in {BrowserSessionStatus.LOGIN_REQUIRED, BrowserSessionStatus.EXPIRED}:
-            raise BrowserSessionAccessError("AUTHORIZATION_REQUIRED", "browser session requires authorization")
+        if status in {
+            BrowserSessionStatus.LOGIN_REQUIRED,
+            BrowserSessionStatus.EXPIRED,
+        }:
+            raise BrowserSessionAccessError(
+                "AUTHORIZATION_REQUIRED", "browser session requires authorization"
+            )
         if status is BrowserSessionStatus.BLOCKED:
-            raise BrowserSessionAccessError("SESSION_BLOCKED", "browser session is blocked")
-        raise BrowserSessionAccessError("SESSION_UNKNOWN", "browser session health is unknown")
+            raise BrowserSessionAccessError(
+                "SESSION_BLOCKED", "browser session is blocked"
+            )
+        raise BrowserSessionAccessError(
+            "SESSION_UNKNOWN", "browser session health is unknown"
+        )
 
     def _fetch_raw(
         self, target: Mapping[str, Any], cursor: str | None, run: Mapping[str, Any]
@@ -251,9 +289,13 @@ class BrowserFetcher:
         return "items" in value or "data" in value
 
     @classmethod
-    def _project(cls, raw: Mapping[str, Any], target: Mapping[str, Any]) -> BrowserFetchResult:
+    def _project(
+        cls, raw: Mapping[str, Any], target: Mapping[str, Any]
+    ) -> BrowserFetchResult:
         """Project an adapter record; unknown (including sensitive) keys vanish."""
-        source_link = raw.get("source_link") or target.get("source_link") or target.get("link")
+        source_link = (
+            raw.get("source_link") or target.get("source_link") or target.get("link")
+        )
         if not isinstance(source_link, str) or not source_link.strip():
             raise ValueError("source_link is required")
         source_link = source_link.strip()
@@ -262,13 +304,28 @@ class BrowserFetcher:
             raise ValueError("source_link must use https")
         try:
             address = ipaddress.ip_address(parsed_link.hostname)
-            if address.is_private or address.is_loopback or address.is_link_local or address.is_reserved:
+            if (
+                address.is_private
+                or address.is_loopback
+                or address.is_link_local
+                or address.is_reserved
+            ):
                 raise ValueError("source_link host is not allowed")
         except ValueError as exc:
             if str(exc) == "source_link host is not allowed":
                 raise
         query_keys = {key.lower() for key, _ in parse_qsl(parsed_link.query)}
-        if query_keys.intersection({"cookie", "token", "generaltoken", "authorization", "access_token", "refresh_token", "session"}):
+        if query_keys.intersection(
+            {
+                "cookie",
+                "token",
+                "generaltoken",
+                "authorization",
+                "access_token",
+                "refresh_token",
+                "session",
+            }
+        ):
             raise ValueError("source_link contains credential-like query parameters")
         duration = raw.get("duration_sec")
         if duration is not None:
@@ -279,7 +336,13 @@ class BrowserFetcher:
             if duration is not None and (not math.isfinite(duration) or duration < 0):
                 duration = None
         media_status = raw.get("media_status", "unavailable")
-        if not isinstance(media_status, str) or media_status not in {"unavailable", "ready", "expired", "error", "processing"}:
+        if not isinstance(media_status, str) or media_status not in {
+            "unavailable",
+            "ready",
+            "expired",
+            "error",
+            "processing",
+        }:
             media_status = "unavailable"
         published = raw.get("published_at")
         if published is not None and not isinstance(published, str):
@@ -293,14 +356,20 @@ class BrowserFetcher:
         title = raw.get("title")
         title = title.strip() if isinstance(title, str) and title.strip() else None
         description = raw.get("description")
-        description = description.strip() if isinstance(description, str) and description.strip() else None
+        description = (
+            description.strip()
+            if isinstance(description, str) and description.strip()
+            else None
+        )
         creator = raw.get("creator")
         if not isinstance(creator, Mapping):
             creator = None
         else:
             creator = {
-                key: value for key, value in creator.items()
-                if str(key).lower() in {"platform", "creator_id", "nickname", "profile_url", "confidence"}
+                key: value
+                for key, value in creator.items()
+                if str(key).lower()
+                in {"platform", "creator_id", "nickname", "profile_url", "confidence"}
             }
         channels = raw.get("text_channels", raw.get("text_segments", ()))
         safe_channels: tuple[Mapping[str, Any], ...] = ()
@@ -312,17 +381,32 @@ class BrowserFetcher:
                 if isinstance(values, (list, tuple)):
                     expanded.extend(
                         {**item, "channel": item.get("channel", channel_name)}
-                        for item in values if isinstance(item, Mapping)
+                        for item in values
+                        if isinstance(item, Mapping)
                     )
             channels = expanded
         if isinstance(channels, (list, tuple)):
             safe_values: list[Mapping[str, Any]] = []
             for channel in channels:
-                if not isinstance(channel, Mapping) or not isinstance(channel.get("text"), str) or not channel.get("text", "").strip():
+                if (
+                    not isinstance(channel, Mapping)
+                    or not isinstance(channel.get("text"), str)
+                    or not channel.get("text", "").strip()
+                ):
                     continue
-                safe_values.append({
-                    key: channel[key] for key in ("text", "channel", "start_sec", "end_sec", "confidence") if key in channel
-                })
+                safe_values.append(
+                    {
+                        key: channel[key]
+                        for key in (
+                            "text",
+                            "channel",
+                            "start_sec",
+                            "end_sec",
+                            "confidence",
+                        )
+                        if key in channel
+                    }
+                )
             safe_channels = tuple(safe_values)
         return BrowserFetchResult(
             source_link=source_link,
@@ -340,9 +424,21 @@ class BrowserFetcher:
     @staticmethod
     def _strip_sensitive(value: Any) -> Any:
         """Recursively remove credential-like mapping keys before adapter calls."""
-        sensitive = {"cookie", "token", "generaltoken", "authorization", "access_token", "refresh_token", "session"}
+        sensitive = {
+            "cookie",
+            "token",
+            "generaltoken",
+            "authorization",
+            "access_token",
+            "refresh_token",
+            "session",
+        }
         if isinstance(value, Mapping):
-            return {key: BrowserFetcher._strip_sensitive(item) for key, item in value.items() if str(key).lower() not in sensitive}
+            return {
+                key: BrowserFetcher._strip_sensitive(item)
+                for key, item in value.items()
+                if str(key).lower() not in sensitive
+            }
         if isinstance(value, list):
             return [BrowserFetcher._strip_sensitive(item) for item in value]
         if isinstance(value, tuple):
@@ -352,13 +448,24 @@ class BrowserFetcher:
     @staticmethod
     def _safe_target(target: Mapping[str, Any]) -> dict[str, Any]:
         """Pass only routing fields to adapters; never pass credential-like data."""
-        allowed = {"source_link", "link", "platform", "platform_content_id", "target_id", "nickname"}
-        return BrowserFetcher._strip_sensitive({key: value for key, value in target.items() if key in allowed})
+        allowed = {
+            "source_link",
+            "link",
+            "platform",
+            "platform_content_id",
+            "target_id",
+            "nickname",
+        }
+        return BrowserFetcher._strip_sensitive(
+            {key: value for key, value in target.items() if key in allowed}
+        )
 
     @staticmethod
     def _safe_run(run: Mapping[str, Any]) -> dict[str, Any]:
         allowed = {"run_id", "target_id", "run_type", "input_cursor"}
-        return BrowserFetcher._strip_sensitive({key: value for key, value in run.items() if key in allowed})
+        return BrowserFetcher._strip_sensitive(
+            {key: value for key, value in run.items() if key in allowed}
+        )
 
 
 def get_session_health(fetcher: BrowserFetcherProtocol) -> BrowserSessionHealth:

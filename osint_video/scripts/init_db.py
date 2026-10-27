@@ -26,9 +26,20 @@ from config.settings import get_settings  # noqa: E402
 
 #: 库中关注的表清单（打印确认用，与 schema.sql 对齐）
 _TABLES = [
-    "osint_link_task", "osint_import_task", "osint_retry_idempotency", "osint_credential", "osint_target", "osint_comment", "osint_video",
-    "osint_knowledge_unit", "osint_blogger_history", "osint_strategy_evidence",
-    "osint_processing_run", "osint_knowledge_resource", "osint_media_asset", "osint_index_task",
+    "osint_link_task",
+    "osint_import_task",
+    "osint_retry_idempotency",
+    "osint_credential",
+    "osint_target",
+    "osint_comment",
+    "osint_video",
+    "osint_knowledge_unit",
+    "osint_blogger_history",
+    "osint_strategy_evidence",
+    "osint_processing_run",
+    "osint_knowledge_resource",
+    "osint_media_asset",
+    "osint_index_task",
 ]
 
 _DROP_SQL = "DROP TABLE IF EXISTS {name} CASCADE"
@@ -95,14 +106,17 @@ def init_db(drop: bool = False) -> int:
             "排障：1) docker ps 确认容器；2) 检查 .env 的 PG_* 配置；3) pip install 'psycopg[binary]'"
         )
         return 1
-    print(f"[done] schema 初始化完成：{len(statements)} 条语句，{len(_TABLES)} 张表就绪")
+    print(
+        f"[done] schema 初始化完成：{len(statements)} 条语句，{len(_TABLES)} 张表就绪"
+    )
     return 0
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="osint_video 建库脚本（幂等）")
     parser.add_argument(
-        "--drop", action="store_true",
+        "--drop",
+        action="store_true",
         help="危险：先 DROP 全部 osint_* 表再重建（仅开发环境）",
     )
     args = parser.parse_args()

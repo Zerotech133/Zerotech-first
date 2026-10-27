@@ -68,7 +68,9 @@ def get_engine() -> Engine:
             f"PostgreSQL 不可用（{settings.pg_host}:{settings.pg_port}/{settings.pg_db}）：{exc}\n{_TROUBLESHOOT_HINT}"
         ) from exc
     _engine = engine
-    logger.info("PG 连接池就绪：%s:%s/%s", settings.pg_host, settings.pg_port, settings.pg_db)
+    logger.info(
+        "PG 连接池就绪：%s:%s/%s", settings.pg_host, settings.pg_port, settings.pg_db
+    )
     return _engine
 
 
@@ -147,7 +149,9 @@ def transaction() -> Iterator[Connection]:
         conn.close()
 
 
-def query(conn: Connection, sql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def query(
+    conn: Connection, sql: str, params: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
     """在既有事务连接上执行查询，返回 dict 行列表（配合 transaction 使用）。"""
     rows = conn.execute(text(sql), params or {}).mappings().all()
     return [dict(row) for row in rows]

@@ -17,7 +17,9 @@ from typing import Any
 
 try:
     from cryptography.fernet import Fernet
-except ImportError:  # optional at import time; cookie update reports configuration error
+except (
+    ImportError
+):  # optional at import time; cookie update reports configuration error
     Fernet = None  # type: ignore[assignment,misc]
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
@@ -50,6 +52,7 @@ app = FastAPI(
 from knowledge.api import router as knowledge_router  # noqa: E402
 from integration.hermes_api import router as hermes_router  # noqa: E402
 from queue_link.import_api import router as import_router, ingest_router  # noqa: E402
+
 app.include_router(knowledge_router)
 app.include_router(hermes_router)
 app.include_router(import_router)
@@ -65,7 +68,9 @@ def ok(data: Any = None, message: str = "ok") -> dict[str, Any]:
 
 
 @app.exception_handler(DatabaseUnavailableError)
-async def _db_unavailable_handler(_: Request, exc: DatabaseUnavailableError) -> JSONResponse:
+async def _db_unavailable_handler(
+    _: Request, exc: DatabaseUnavailableError
+) -> JSONResponse:
     """PG 不可用 → 统一 503 降级（不 crash 服务）。"""
     logger.error("PG 不可用，API 降级 503：%s", exc)
     return JSONResponse(
@@ -80,7 +85,9 @@ async def _db_unavailable_handler(_: Request, exc: DatabaseUnavailableError) -> 
 class SubmitLinksRequest(BaseModel):
     """POST /api/v1/links 请求体。"""
 
-    urls: list[str] = Field(min_length=1, max_length=200, description="sph 分享链接列表")
+    urls: list[str] = Field(
+        min_length=1, max_length=200, description="sph 分享链接列表"
+    )
     created_by: str = Field(default="feishu", max_length=64, description="投递来源标识")
     route: str = Field(default="D", pattern="^(D|B|AUTO)$", description="采集路由")
     priority: int = Field(default=5, ge=1, le=9, description="数字小先采")
@@ -150,7 +157,13 @@ def get_link(task_id: int) -> dict[str, Any]:
 
 
 @app.get("/api/v1/links")
-def list_links(status: str | None = None, route: str | None = None, cursor: str | None = None, page: int = 1, size: int = 20) -> dict[str, Any]:
+def list_links(
+    status: str | None = None,
+    route: str | None = None,
+    cursor: str | None = None,
+    page: int = 1,
+    size: int = 20,
+) -> dict[str, Any]:
     """队列分页查询：``?status=pending&page=1&size=20``。"""
     if status is not None and status not in ALL_STATUSES:
         raise HTTPException(
@@ -167,7 +180,9 @@ def list_links(status: str | None = None, route: str | None = None, cursor: str 
     result = repo.list_tasks(status=status, page=page, size=size, route=route)
     items = [task_to_dict(t) for t in result["items"]]
     next_cursor = str(page + 1) if len(result["items"]) == result["size"] else None
-    return ok({"items": items, "next_cursor": next_cursor, "as_of": knowledge_repo._as_of()})
+    return ok(
+        {"items": items, "next_cursor": next_cursor, "as_of": knowledge_repo._as_of()}
+    )
 
 
 @app.post("/api/v1/links/{task_id}/retry", response_model=None)
@@ -253,8 +268,12 @@ def update_yuanbao_cookie(req: CookieUpdateRequest) -> dict[str, Any]:
     repo.save_credential("yuanbao_cookie", value_enc, req.updated_by)
     resumed = repo.resume_waiting_cookie()
     notifier.alert_cookie_updated(req.updated_by, resumed)  # 失败仅记日志，不阻塞
-    audit("update_cookie", operator=req.updated_by, name="yuanbao_cookie", resumed=resumed)
-    logger.info("元宝 Cookie 已更新（操作人=%s，恢复挂起任务 %d 条）", req.updated_by, resumed)
+    audit(
+        "update_cookie", operator=req.updated_by, name="yuanbao_cookie", resumed=resumed
+    )
+    logger.info(
+        "元宝 Cookie 已更新（操作人=%s，恢复挂起任务 %d 条）", req.updated_by, resumed
+    )
     return ok(
         {"name": "yuanbao_cookie", "status": "active", "resumed_waiting": resumed},
         "Cookie 已更新，挂起任务已自动恢复",
@@ -274,21 +293,50 @@ def changes(cursor: str | None = None, scope: str = "dashboard") -> dict[str, An
 
 
 @app.get("/api/v1/creators")
-def creators(nickname: str | None = None, topic: str | None = None, entity: str | None = None, finder_id: str | None = None, enabled: bool | None = None, monitor_level: int | None = None, cursor: str | None = None, size: int = 20) -> dict[str, Any]:
+def creators(
+    nickname: str | None = None,
+    topic: str | None = None,
+    entity: str | None = None,
+    finder_id: str | None = None,
+    enabled: bool | None = None,
+    monitor_level: int | None = None,
+    cursor: str | None = None,
+    size: int = 20,
+) -> dict[str, Any]:
     try:
-        data = knowledge_repo.list_creators(nickname, topic, entity, finder_id, enabled, monitor_level, cursor, size)
+        data = knowledge_repo.list_creators(
+            nickname, topic, entity, finder_id, enabled, monitor_level, cursor, size
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return ok(data)
 
 
 @app.get("/api/v1/timeline")
-def timeline(target_id: str | None = None, topic: str | None = None, entity: str | None = None, event_type: str | None = None, from_: str | None = Query(default=None, alias="from"), to: str | None = None, cursor: str | None = None, size: int = 20) -> dict[str, Any]:
-    return ok(knowledge_repo.list_timeline(target_id, topic, entity, event_type, from_, to, cursor, size))
+def timeline(
+    target_id: str | None = None,
+    topic: str | None = None,
+    entity: str | None = None,
+    event_type: str | None = None,
+    from_: str | None = Query(default=None, alias="from"),
+    to: str | None = None,
+    cursor: str | None = None,
+    size: int = 20,
+) -> dict[str, Any]:
+    return ok(
+        knowledge_repo.list_timeline(
+            target_id, topic, entity, event_type, from_, to, cursor, size
+        )
+    )
 
 
 @app.get("/api/v1/jobs")
-def jobs(stage: str | None = None, state: str | None = None, cursor: str | None = None, size: int = 20) -> dict[str, Any]:
+def jobs(
+    stage: str | None = None,
+    state: str | None = None,
+    cursor: str | None = None,
+    size: int = 20,
+) -> dict[str, Any]:
     return ok(knowledge_repo.list_jobs(stage, state, cursor, size))
 
 
@@ -298,7 +346,9 @@ def stats() -> dict[str, Any]:
     result = repo.get_stats()
     dead_count = result.get("dead", 0)
     if dead_count >= 10:  # 死信超阈值即时告警（阈值 PoC 期取 10）
-        samples = [f"#{t.id} {t.error_code} {t.error_msg or ''}" for t in repo.list_dead(5)]
+        samples = [
+            f"#{t.id} {t.error_code} {t.error_msg or ''}" for t in repo.list_dead(5)
+        ]
         notifier.alert_dead_letter(dead_count, samples)
     return ok(result)
 
@@ -309,15 +359,26 @@ def management_healthz() -> dict[str, Any]:
     from common.db import health as pg_health
     import urllib.request
     import urllib.error
+
     pg_ok = pg_health()
     qdrant_state = "unknown"
     try:
-        request = urllib.request.Request(settings.qdrant_url.rstrip("/") + "/healthz", method="GET")
+        request = urllib.request.Request(
+            settings.qdrant_url.rstrip("/") + "/healthz", method="GET"
+        )
         with urllib.request.urlopen(request, timeout=0.8) as response:
             qdrant_state = "healthy" if 200 <= response.status < 300 else "degraded"
     except (urllib.error.URLError, TimeoutError, OSError, ValueError):
         qdrant_state = "unavailable"
-    return ok({"api": "healthy", "pg": "healthy" if pg_ok else "unavailable", "qdrant": qdrant_state, "worker": "unknown", "as_of": knowledge_repo._as_of()})
+    return ok(
+        {
+            "api": "healthy",
+            "pg": "healthy" if pg_ok else "unavailable",
+            "qdrant": qdrant_state,
+            "worker": "unknown",
+            "as_of": knowledge_repo._as_of(),
+        }
+    )
 
 
 @app.get("/healthz")

@@ -82,8 +82,13 @@ class TestLogLevelValidator:
 
 class TestDsnDerivation:
     def test_pg_dsn_plain_format(self):
-        s = _make(pg_host="10.0.0.8", pg_port=15432, pg_user="u1",
-                  pg_password="p w/d", pg_db="osint")
+        s = _make(
+            pg_host="10.0.0.8",
+            pg_port=15432,
+            pg_user="u1",
+            pg_password="p w/d",
+            pg_db="osint",
+        )
         dsn = s.pg_dsn_plain
         assert dsn.startswith("host=10.0.0.8 port=15432 dbname=osint user=u1 ")
         assert "password=p w/d" in dsn  # 特殊字符密码不需 URL 转义

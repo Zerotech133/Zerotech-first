@@ -25,14 +25,14 @@ import re
 class LinkStatus:
     """链接任务状态常量（字符串值即库中存储值）。"""
 
-    PENDING = "pending"            # 已入队待解析
-    PARSED = "parsed"              # D 解析成功（拿到 mediaUrl/decode_key）
-    DOWNLOADED = "downloaded"      # 分片下载完成（md5 校验）
-    DECRYPTED = "decrypted"        # ISAAC64 解密 + ffprobe 校验通过
-    EXTRACTED = "extracted"        # 抽取管线完成
-    DONE = "done"                  # 终态：合规入库完成
-    FAILED = "failed"              # 可重试失败（等 next_retry_at 回 pending）
-    DEAD = "dead"                  # 死信（重试超限，人工处置）
+    PENDING = "pending"  # 已入队待解析
+    PARSED = "parsed"  # D 解析成功（拿到 mediaUrl/decode_key）
+    DOWNLOADED = "downloaded"  # 分片下载完成（md5 校验）
+    DECRYPTED = "decrypted"  # ISAAC64 解密 + ffprobe 校验通过
+    EXTRACTED = "extracted"  # 抽取管线完成
+    DONE = "done"  # 终态：合规入库完成
+    FAILED = "failed"  # 可重试失败（等 next_retry_at 回 pending）
+    DEAD = "dead"  # 死信（重试超限，人工处置）
     WAITING_COOKIE = "waiting_cookie"  # Cookie 过期挂起（人工更新后自动回 pending）
 
 
@@ -40,27 +40,33 @@ class ErrorCode:
     """失败/挂起原因码（osint_link_task.error_code）。"""
 
     COOKIE_EXPIRED = "COOKIE_EXPIRED"  # 401：不计入重试次数
-    PARSE_FAIL = "PARSE_FAIL"          # 解析链失败
-    DOWNLOAD_FAIL = "DOWNLOAD_FAIL"    # 下载失败（分片/校验）
-    DECRYPT_FAIL = "DECRYPT_FAIL"      # 解密失败（ISAAC64/ffprobe）
-    EXTRACT_FAIL = "EXTRACT_FAIL"      # 抽取管线失败（ffmpeg/ASR/OCR）
+    PARSE_FAIL = "PARSE_FAIL"  # 解析链失败
+    DOWNLOAD_FAIL = "DOWNLOAD_FAIL"  # 下载失败（分片/校验）
+    DECRYPT_FAIL = "DECRYPT_FAIL"  # 解密失败（ISAAC64/ffprobe）
+    EXTRACT_FAIL = "EXTRACT_FAIL"  # 抽取管线失败（ffmpeg/ASR/OCR）
     EXTRACT_HARD_FAIL = "EXTRACT_HARD_FAIL"  # 抽取硬失败（文件损坏等，不重试）
 
 
 class Route:
     """采集路由。"""
 
-    D = "D"        # 主力：纯 Python 解析链（ARM/Docker）
-    B = "B"        # 兜底：Go Headless 采集机
+    D = "D"  # 主力：纯 Python 解析链（ARM/Docker）
+    B = "B"  # 兜底：Go Headless 采集机
     AUTO = "AUTO"  # D 失败自动转 B
 
 
 #: 合法状态全集（入参校验用）
 ALL_STATUSES: frozenset[str] = frozenset(
     {
-        LinkStatus.PENDING, LinkStatus.PARSED, LinkStatus.DOWNLOADED,
-        LinkStatus.DECRYPTED, LinkStatus.EXTRACTED, LinkStatus.DONE,
-        LinkStatus.FAILED, LinkStatus.DEAD, LinkStatus.WAITING_COOKIE,
+        LinkStatus.PENDING,
+        LinkStatus.PARSED,
+        LinkStatus.DOWNLOADED,
+        LinkStatus.DECRYPTED,
+        LinkStatus.EXTRACTED,
+        LinkStatus.DONE,
+        LinkStatus.FAILED,
+        LinkStatus.DEAD,
+        LinkStatus.WAITING_COOKIE,
     }
 )
 
@@ -70,9 +76,16 @@ ALL_ROUTES: frozenset[str] = frozenset({Route.D, Route.B, Route.AUTO})
 #: 状态机合法流转表：{当前状态: {可去状态, ...}}
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     LinkStatus.PENDING: frozenset(
-        {LinkStatus.PARSED, LinkStatus.FAILED, LinkStatus.DEAD, LinkStatus.WAITING_COOKIE}
+        {
+            LinkStatus.PARSED,
+            LinkStatus.FAILED,
+            LinkStatus.DEAD,
+            LinkStatus.WAITING_COOKIE,
+        }
     ),
-    LinkStatus.WAITING_COOKIE: frozenset({LinkStatus.PENDING}),  # 仅人工更新 Cookie 后恢复
+    LinkStatus.WAITING_COOKIE: frozenset(
+        {LinkStatus.PENDING}
+    ),  # 仅人工更新 Cookie 后恢复
     LinkStatus.PARSED: frozenset(
         {LinkStatus.DOWNLOADED, LinkStatus.FAILED, LinkStatus.DEAD}
     ),
@@ -82,12 +95,14 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     LinkStatus.DECRYPTED: frozenset(
         {LinkStatus.EXTRACTED, LinkStatus.FAILED, LinkStatus.DEAD}
     ),
-    LinkStatus.EXTRACTED: frozenset({LinkStatus.DONE, LinkStatus.FAILED, LinkStatus.DEAD}),
+    LinkStatus.EXTRACTED: frozenset(
+        {LinkStatus.DONE, LinkStatus.FAILED, LinkStatus.DEAD}
+    ),
     LinkStatus.FAILED: frozenset(
         {LinkStatus.PENDING, LinkStatus.DEAD}  # 退避到期回 pending；超限进 dead
     ),
-    LinkStatus.DEAD: frozenset(),   # 死信终态，仅人工处置
-    LinkStatus.DONE: frozenset(),   # 正常终态
+    LinkStatus.DEAD: frozenset(),  # 死信终态，仅人工处置
+    LinkStatus.DONE: frozenset(),  # 正常终态
 }
 
 #: 指数退避表：第 N 次重试的等待秒数（架构 §2.1：5min/30min/2h，其后封顶 2h）
@@ -134,7 +149,9 @@ def isoformat_z(dt: datetime | None) -> str | None:
         return None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return (
+        dt.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -147,21 +164,23 @@ class LinkTask:
     ``id``/``created_at`` 等库生成字段在新建（未落库）时为 None。
     """
 
-    sph_url: str                                   # 原始分享链接
-    url_hash: str                                  # SHA1(规范化sph_url)，投递去重
-    status: str = LinkStatus.PENDING               # 当前状态
-    route: str = Route.D                           # D / B / AUTO
-    video_id: str | None = None                    # 解析成功后回填
-    parse_result: dict[str, Any] | None = None     # {mediaUrl, urlToken, decode_key, author, ...}
+    sph_url: str  # 原始分享链接
+    url_hash: str  # SHA1(规范化sph_url)，投递去重
+    status: str = LinkStatus.PENDING  # 当前状态
+    route: str = Route.D  # D / B / AUTO
+    video_id: str | None = None  # 解析成功后回填
+    parse_result: dict[str, Any] | None = (
+        None  # {mediaUrl, urlToken, decode_key, author, ...}
+    )
     file_md5: str | None = None
-    raw_path: str | None = None                    # 明文 mp4 落盘路径
+    raw_path: str | None = None  # 明文 mp4 落盘路径
     retry_count: int = 0
     max_retry: int = DEFAULT_MAX_RETRY
     next_retry_at: datetime | None = None
     error_code: str | None = None
     error_msg: str | None = None
-    priority: int = 5                              # 数字小先采
-    created_by: str = "feishu"                     # feishu / manual / watcher / api
+    priority: int = 5  # 数字小先采
+    created_by: str = "feishu"  # feishu / manual / watcher / api
     id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -202,8 +221,19 @@ def row_to_task(row: dict[str, Any]) -> LinkTask:
 
 
 __all__ = [
-    "LinkStatus", "ErrorCode", "Route", "ALL_STATUSES", "ALL_ROUTES",
-    "ALLOWED_TRANSITIONS", "RETRY_BACKOFF_SECONDS", "DEFAULT_MAX_RETRY",
-    "QUERYABLE_STATUSES", "LinkTask", "row_to_task",
-    "normalize_url", "compute_url_hash", "utc_now", "isoformat_z",
+    "LinkStatus",
+    "ErrorCode",
+    "Route",
+    "ALL_STATUSES",
+    "ALL_ROUTES",
+    "ALLOWED_TRANSITIONS",
+    "RETRY_BACKOFF_SECONDS",
+    "DEFAULT_MAX_RETRY",
+    "QUERYABLE_STATUSES",
+    "LinkTask",
+    "row_to_task",
+    "normalize_url",
+    "compute_url_hash",
+    "utc_now",
+    "isoformat_z",
 ]

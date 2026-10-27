@@ -21,8 +21,17 @@ from .ports import (
     VideoMetadata,
     VideoPage,
 )
-from .platform_adapter import BrowserAttach, PageDataParser, PageDataProvider, PlatformAdapter
-from .browser_mapper import BrowserCollectorAdapter, BrowserCollectorMapper, BrowserToCollectorMapper
+from .platform_adapter import (
+    BrowserAttach,
+    PageDataParser,
+    PageDataProvider,
+    PlatformAdapter,
+)
+from .browser_mapper import (
+    BrowserCollectorAdapter,
+    BrowserCollectorMapper,
+    BrowserToCollectorMapper,
+)
 
 __all__ = [
     "CollectionAccessError",

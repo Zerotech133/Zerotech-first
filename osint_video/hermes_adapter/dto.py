@@ -4,6 +4,7 @@ The adapter deliberately uses plain dataclasses rather than Hermes internals.  D
 are JSON-friendly and carry only evidence supplied by an injected fetcher/provider;
 no platform access or media fabrication is performed here.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -38,11 +39,23 @@ class HermesTask:
         # Metadata is caller-controlled; reject credentials and local paths at the
         # boundary rather than allowing accidental event/log disclosure.
         sensitive = {str(key).lower() for key in self.metadata} & {
-            "authorization", "auth", "cookie", "password", "passwd", "secret",
-            "token", "access_token", "refresh_token", "api_key", "apikey", "path",
+            "authorization",
+            "auth",
+            "cookie",
+            "password",
+            "passwd",
+            "secret",
+            "token",
+            "access_token",
+            "refresh_token",
+            "api_key",
+            "apikey",
+            "path",
         }
         if sensitive:
-            raise ValueError(f"sensitive metadata keys are not allowed: {sorted(sensitive)}")
+            raise ValueError(
+                f"sensitive metadata keys are not allowed: {sorted(sensitive)}"
+            )
 
 
 @dataclass(frozen=True)

@@ -28,6 +28,7 @@ def _validate_video_id(video_id: str) -> str:
         raise ValueError("video_id must be a safe filesystem identifier")
     return video_id
 
+
 #: 项目根目录（osint_video/）
 PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
 
@@ -39,8 +40,8 @@ YUANBAO_COOKIE_FILE: Path = SECRETS_DIR / "yuanbao_cookie.txt"
 
 #: 数据根目录（可用 OSINT_DATA_DIR 重定向）
 DATA_DIR: Path = Path(os.environ.get("OSINT_DATA_DIR", str(PROJECT_ROOT / "data")))
-DATA_RAW: Path = DATA_DIR / "raw"      # 明文 mp4
-DATA_WORK: Path = DATA_DIR / "work"    # 抽取中间产物 / 检查点
+DATA_RAW: Path = DATA_DIR / "raw"  # 明文 mp4
+DATA_WORK: Path = DATA_DIR / "work"  # 抽取中间产物 / 检查点
 DATA_STORE: Path = DATA_DIR / "store"  # 本地成品（预留）
 
 #: 日志目录（可用 OSINT_LOG_DIR 重定向）

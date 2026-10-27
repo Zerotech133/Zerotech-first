@@ -37,9 +37,9 @@ class FrameExtractError(RuntimeError):
 class FrameInfo(TypedDict):
     """保留帧的索引条目（OCR 通道输入单元）。"""
 
-    index: int      # 保留帧序号（从 1 起）
-    ts_sec: float   # 帧在原视频中的时间戳（秒）
-    path: str       # 增强后帧文件绝对路径
+    index: int  # 保留帧序号（从 1 起）
+    ts_sec: float  # 帧在原视频中的时间戳（秒）
+    path: str  # 增强后帧文件绝对路径
 
 
 def _run_ffmpeg_extract(video_path: Path, raw_dir: Path, fps: float) -> None:
@@ -51,14 +51,24 @@ def _run_ffmpeg_extract(video_path: Path, raw_dir: Path, fps: float) -> None:
         )
     raw_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
-        ffmpeg, "-y", "-i", str(video_path),
-        "-vf", f"fps={fps},format=gray",
-        "-q:v", "2",  # JPEG 质量（2=高质量）
+        ffmpeg,
+        "-y",
+        "-i",
+        str(video_path),
+        "-vf",
+        f"fps={fps},format=gray",
+        "-q:v",
+        "2",  # JPEG 质量（2=高质量）
         str(raw_dir / "frame_%05d.jpg"),
     ]
     logger.debug("抽帧命令：%s", " ".join(cmd))
     proc = subprocess.run(
-        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=3600
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=3600,
     )
     if proc.returncode != 0:
         raise FrameExtractError(
@@ -113,7 +123,9 @@ def extract_frames(
 
     frame_files = sorted(p for p in raw_dir.iterdir() if _FRAME_NAME_RE.match(p.name))
     if not frame_files:
-        raise FrameExtractError(f"ffmpeg 未产出任何帧（视频损坏或无视频流）：{src.name}")
+        raise FrameExtractError(
+            f"ffmpeg 未产出任何帧（视频损坏或无视频流）：{src.name}"
+        )
 
     for seq, raw_file in enumerate(frame_files, start=1):
         ts_sec = round((seq - 1) / fps, 3)
@@ -139,6 +151,9 @@ def extract_frames(
     shutil.rmtree(raw_dir, ignore_errors=True)
     logger.info(
         "抽帧完成：%s → 保留 %d / %d 帧（MAD<%.3f 去重）",
-        src.name, len(kept), len(frame_files), diff_threshold,
+        src.name,
+        len(kept),
+        len(frame_files),
+        diff_threshold,
     )
     return kept
