@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 16:37",
+ "generated": "2026-10-27 16:38",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 17,
+  "workorders_doing": 16,
   "workorders_review": 2
  },
  "workorders": [
@@ -173,15 +173,6 @@
    "owner": "ARCH1",
    "branch": "task/WO-AGENT-SANDBOX-20261027",
    "created": "2026-10-27 15:53:31",
-   "project": "quant"
-  },
-  {
-   "id": "K-QUANT-20261027-MODELCH",
-   "desc": "/keys 增加模型通道区：本地 qwen3.5:9b（无需Key/状态）+ 平台中转站 GPT-6 gpt-6-sol（需中转Key/状态）；seat_routing 增加 gpt6 别名；/v1/models 增加 gpt6；/api/models/status",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-MODELCH",
-   "created": "2026-10-27 16:37:15",
    "project": "quant"
   }
  ],
