@@ -1,0 +1,560 @@
+{
+  "version": 1,
+  "schema": "aios_quality_scale/v1",
+  "note": "Bronze/Silver 分级证据登记；checker 只验证路径/端口/token/字段完整性，不代跑服务。",
+  "objects": {
+    "seat:ARCH1": {
+      "type": "seat",
+      "owner": "ARCH1",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "seat:DEV1": {
+      "type": "seat",
+      "owner": "DEV1",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "seat:DEV5": {
+      "type": "seat",
+      "owner": "DEV5",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "seat:QA1": {
+      "type": "seat",
+      "owner": "QA1",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "seat:D1": {
+      "type": "seat",
+      "owner": "D1",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "seat:ST1": {
+      "type": "seat",
+      "owner": "ST1",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "seat:WA1": {
+      "type": "seat",
+      "owner": "WA1",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "seat:QS1": {
+      "type": "seat",
+      "owner": "QS1",
+      "docs": [
+        "AGENTS.md",
+        "docs/standards/LCS-1_军团看股标准_v1.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py",
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "无状态；重跑/重新触发即可，不改数据根",
+      "events": [
+        "seat_heartbeat",
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python agent_platform/tools/seat_heartbeat.py --json",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python agent_platform/tools/seat_heartbeat.py --json",
+      "backup_owner": "A0"
+    },
+    "tool:ro_filesystem": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_d2_gates.py",
+        "tools/test_check_ports_json.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_d2_gates.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:ro_git": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_d2_gates.py",
+        "tools/test_check_ports_json.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_d2_gates.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:ro_zhaoyun": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_d2_gates.py",
+        "tools/test_check_ports_json.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_d2_gates.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:tushare-http": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_mcp_security_check.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_mcp_security_check.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1",
+      "token_env": "TUSHARE_MCP_TOKEN",
+      "transport": "http"
+    },
+    "tool:seat_evidence_packet": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_d2_gates.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_d2_gates.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:c6_daily_kpi": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_d2_gates.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_d2_gates.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:ruff_ratchet": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_d2_gates.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_d2_gates.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:night_test_baseline": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_d2_gates.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_d2_gates.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:mcp_security_check": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "docs/testing.md"
+      ],
+      "tests": [
+        "tools/test_mcp_security_check.py"
+      ],
+      "risk": "read-only",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_mcp_security_check.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1"
+    },
+    "tool:devtask": {
+      "type": "tool",
+      "owner": "ARCH1",
+      "docs": [
+        "CONTRIBUTING.md"
+      ],
+      "tests": [
+        "tools/test_check_ports_json.py"
+      ],
+      "risk": "write",
+      "rollback": "工具无状态；代码回滚 git revert，配置走 L2",
+      "events": [
+        "dev_events"
+      ],
+      "fail_visible": true,
+      "health": "python -m compileall -q tools",
+      "acceptance": "python -m pytest tools/test_check_ports_json.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/quality_scale_check.py --json",
+      "backup_owner": "OPS1",
+      "l2_approved": true,
+      "l2_note": "devtask 写工单/分支，属 L1 工具，不触服务与凭据区；写操作仅限仓库内"
+    },
+    "integration:portal_8734": {
+      "type": "integration",
+      "owner": "portal",
+      "docs": [
+        "ARCHITECTURE.md",
+        "docs/testing.md"
+      ],
+      "tests": [
+        "portal/test_m_links.py"
+      ],
+      "risk": "read-only",
+      "rollback": "重启/回滚见对应 L2 五要素包；数据不删除",
+      "events": [
+        "dev_events",
+        "service_health"
+      ],
+      "fail_visible": true,
+      "health": "http://127.0.0.1:8734/",
+      "acceptance": "python -m pytest portal/test_m_links.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "backup_owner": "OPS1",
+      "port": 8734
+    },
+    "integration:portal_api_8091": {
+      "type": "integration",
+      "owner": "portal",
+      "docs": [
+        "ARCHITECTURE.md",
+        "docs/testing.md"
+      ],
+      "tests": [
+        "portal/test_m_analysis.py"
+      ],
+      "risk": "read-only",
+      "rollback": "重启/回滚见对应 L2 五要素包；数据不删除",
+      "events": [
+        "dev_events",
+        "service_health"
+      ],
+      "fail_visible": true,
+      "health": "http://127.0.0.1:8091/health",
+      "acceptance": "python -m pytest portal/test_m_analysis.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "backup_owner": "OPS1",
+      "port": 8091
+    },
+    "integration:legion_8796": {
+      "type": "integration",
+      "owner": "agent_platform",
+      "docs": [
+        "ARCHITECTURE.md",
+        "docs/testing.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_genai_otel.py"
+      ],
+      "risk": "read-only",
+      "rollback": "重启/回滚见对应 L2 五要素包；数据不删除",
+      "events": [
+        "dev_events",
+        "service_health"
+      ],
+      "fail_visible": true,
+      "health": "http://127.0.0.1:8796/api/zhaoyun/mcp",
+      "acceptance": "python -m pytest agent_platform/tests/test_genai_otel.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "backup_owner": "OPS1",
+      "port": 8796
+    },
+    "integration:gateway_8795": {
+      "type": "integration",
+      "owner": "agent_platform",
+      "docs": [
+        "ARCHITECTURE.md",
+        "docs/testing.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_audit.py"
+      ],
+      "risk": "read-only",
+      "rollback": "重启/回滚见对应 L2 五要素包；数据不删除",
+      "events": [
+        "dev_events",
+        "service_health"
+      ],
+      "fail_visible": true,
+      "health": "http://127.0.0.1:8795/health",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_audit.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "backup_owner": "OPS1",
+      "port": 8795
+    },
+    "integration:hermes_8787": {
+      "type": "integration",
+      "owner": "Hermes",
+      "docs": [
+        "ARCHITECTURE.md",
+        "docs/testing.md"
+      ],
+      "tests": [
+        "agent_platform/tests/test_org_profiles.py"
+      ],
+      "risk": "read-only",
+      "rollback": "重启/回滚见对应 L2 五要素包；数据不删除",
+      "events": [
+        "dev_events",
+        "service_health"
+      ],
+      "fail_visible": true,
+      "health": "http://127.0.0.1:8787/",
+      "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "backup_owner": "OPS1",
+      "port": 8787
+    },
+    "integration:feishu_bot": {
+      "type": "integration",
+      "owner": "portal",
+      "docs": [
+        "ARCHITECTURE.md",
+        "docs/testing.md"
+      ],
+      "tests": [
+        "portal/test_m_links.py"
+      ],
+      "risk": "read-only",
+      "rollback": "重启/回滚见对应 L2 五要素包；数据不删除",
+      "events": [
+        "dev_events",
+        "service_health"
+      ],
+      "fail_visible": true,
+      "health": "C:\\aios\\portal\\logs\\feishu_bot.log",
+      "acceptance": "python -m pytest portal/test_m_links.py -q",
+      "version": "v1",
+      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "backup_owner": "OPS1",
+      "port_note": "bot 为出站 WS，无监听端口（看护见 runbooks）"
+    }
+  }
+}
