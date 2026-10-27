@@ -51,7 +51,10 @@ class _FakeTracer:
         span.name = name
         span.attributes = dict(attributes or {})
         self.spans.append(span)
-        yield span
+        try:
+            yield span
+        finally:
+            span.ended = True
 
 
 def test_wrap_llm_emits_span_when_enabled(monkeypatch):
