@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:05",
+ "generated": "2026-10-28 07:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -365,12 +365,12 @@
    "project": "quant"
   },
   {
-   "id": "K-ORG-20261028-JEVSTOP",
-   "desc": "夜跑零积压自动收工：剩余<=5 且连续 3 轮无进展 → 提前收工（防毒丸空转）",
+   "id": "WO-SYNTAX-GATE-20261028",
+   "desc": "修语法门告警：kg_build_p2.py invalid escape '\\ '（3处 \\→\\\\）",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261028-JEVSTOP",
-   "created": "2026-10-28 07:05:03",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-SYNTAX-GATE-20261028",
+   "created": "2026-10-28 07:05:51",
    "project": "general"
   }
  ],
@@ -7051,6 +7051,11 @@
      "id": "WO-HUANGZHONG-20261028",
      "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
      "status": "review"
+    },
+    {
+     "id": "WO-SYNTAX-GATE-20261028",
+     "desc": "修语法门告警：kg_build_p2.py invalid escape '\\ '（3处 \\→\\\\）",
+     "status": "doing"
     }
    ]
   }
