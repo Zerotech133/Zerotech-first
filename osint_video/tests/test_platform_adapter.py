@@ -1,4 +1,5 @@
 """Security-focused tests for the injected PlatformAdapter."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -37,7 +38,9 @@ def _page() -> dict[str, Any]:
 
 
 def test_platform_adapter_maps_explicit_page_data_only() -> None:
-    adapter = PlatformAdapter(page_data={SOURCE: _page()}, initial_status=SessionStatus.AUTHENTICATED)
+    adapter = PlatformAdapter(
+        page_data={SOURCE: _page()}, initial_status=SessionStatus.AUTHENTICATED
+    )
     result = adapter.fetch_video(SOURCE)
     assert result.metadata.content_id == "v1"
     assert result.metadata.duration_sec == 3.5
@@ -49,7 +52,9 @@ def test_platform_adapter_maps_explicit_page_data_only() -> None:
 
 
 def test_platform_adapter_does_not_search_for_missing_link() -> None:
-    adapter = PlatformAdapter(page_data={SOURCE: _page()}, initial_status=SessionStatus.AUTHENTICATED)
+    adapter = PlatformAdapter(
+        page_data={SOURCE: _page()}, initial_status=SessionStatus.AUTHENTICATED
+    )
     with pytest.raises(Exception) as error:
         adapter.fetch_video("https://example.invalid/channels/video/other")
     assert getattr(error.value, "code", None) == "PAGE_NOT_PROVIDED"

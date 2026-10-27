@@ -1,4 +1,5 @@
 """Minimal, injectable Hermes adapter orchestration."""
+
 from __future__ import annotations
 
 import hashlib
@@ -6,10 +7,22 @@ import uuid
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-_SENSITIVE_METADATA_KEYS = frozenset({
-    "authorization", "auth", "cookie", "password", "passwd", "secret",
-    "token", "access_token", "refresh_token", "api_key", "apikey", "path",
-})
+_SENSITIVE_METADATA_KEYS = frozenset(
+    {
+        "authorization",
+        "auth",
+        "cookie",
+        "password",
+        "passwd",
+        "secret",
+        "token",
+        "access_token",
+        "refresh_token",
+        "api_key",
+        "apikey",
+        "path",
+    }
+)
 
 from hermes_adapter import dto
 from hermes_adapter.ports import AIProvider, ContentFetcher, CreatorRunStore, EventSink
@@ -38,7 +51,12 @@ class HermesAdapter:
     def handle_link(self, task: dto.HermesTask) -> dto.HermesResult:
         """Process one task and return summary/evidence/index DTOs."""
         # Do not emit raw links: event sinks may persist or forward payloads.
-        received = self._event(task, "task.received", None, {"url_hash": hashlib.sha256(task.url.strip().encode("utf-8")).hexdigest()})
+        received = self._event(
+            task,
+            "task.received",
+            None,
+            {"url_hash": hashlib.sha256(task.url.strip().encode("utf-8")).hexdigest()},
+        )
         run_row = self._run_store.create_run(task.target_id, task.run_type)
         run_id = int(run_row.get("run_id", run_row.get("id", 0)))
         if run_id < 1:
@@ -69,7 +87,9 @@ class HermesAdapter:
                 target_id=task.target_id,
                 run_id=run.run_id,
                 summary_snapshot_hash=summary.snapshot_hash,
-                payload={"evidence_ids": [item.evidence_id for item in summary.evidence]},
+                payload={
+                    "evidence_ids": [item.evidence_id for item in summary.evidence]
+                },
             )
         except Exception as exc:
             # Keep creator-run state durable even when an injected dependency fails.
@@ -93,12 +113,30 @@ class HermesAdapter:
             summary_version=None,
         )
         if finished_row is not None:
-            run = dto.CreatorRun(run.run_id, run.target_id, run.run_type, str(finished_row.get("state", "succeeded")), run.input_cursor)
-        completed = self._event(task, "run.completed", run.run_id, {"index_task_id": index_task.task_id})
-        return dto.HermesResult(task, run, summary, index_task, (received, running, completed))
+            run = dto.CreatorRun(
+                run.run_id,
+                run.target_id,
+                run.run_type,
+                str(finished_row.get("state", "succeeded")),
+                run.input_cursor,
+            )
+        completed = self._event(
+            task, "run.completed", run.run_id, {"index_task_id": index_task.task_id}
+        )
+        return dto.HermesResult(
+            task, run, summary, index_task, (received, running, completed)
+        )
 
-    def _event(self, task: dto.HermesTask, event_type: str, run_id: int | None, payload: Mapping[str, Any]) -> dto.TaskEvent:
-        event = dto.TaskEvent(uuid.uuid4().hex, task.task_id, event_type, run_id, payload=dict(payload))
+    def _event(
+        self,
+        task: dto.HermesTask,
+        event_type: str,
+        run_id: int | None,
+        payload: Mapping[str, Any],
+    ) -> dto.TaskEvent:
+        event = dto.TaskEvent(
+            uuid.uuid4().hex, task.task_id, event_type, run_id, payload=dict(payload)
+        )
         if self._event_sink is not None:
             self._event_sink.publish(event)
         return event
@@ -118,18 +156,22 @@ class HermesAdapter:
             if isinstance(item, dto.Evidence):
                 evidence.append(item)
             elif isinstance(item, Mapping):
-                evidence.append(dto.Evidence(
-                    evidence_id=str(item.get("evidence_id", f"evidence-{index}")),
-                    source_ref=str(item.get("source_ref", "")),
-                    quote=str(item.get("quote", "")),
-                    locator=item.get("locator"),
-                    confidence=item.get("confidence"),
-                    metadata=item.get("metadata", {}),
-                ))
+                evidence.append(
+                    dto.Evidence(
+                        evidence_id=str(item.get("evidence_id", f"evidence-{index}")),
+                        source_ref=str(item.get("source_ref", "")),
+                        quote=str(item.get("quote", "")),
+                        locator=item.get("locator"),
+                        confidence=item.get("confidence"),
+                        metadata=item.get("metadata", {}),
+                    )
+                )
         return content, tuple(evidence)
 
 
 def snapshot_hash(text: str, evidence: Sequence[dto.Evidence]) -> str:
     """Compute deterministic content hash for providers that need one."""
-    material = text + "\n" + "\n".join(item.source_ref + item.quote for item in evidence)
+    material = (
+        text + "\n" + "\n".join(item.source_ref + item.quote for item in evidence)
+    )
     return hashlib.sha256(material.encode("utf-8")).hexdigest()

@@ -1,4 +1,5 @@
 """Unit tests for the Qdrant adapter without requiring a running service."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -23,7 +24,13 @@ class FakeClient:
         self.points.extend(kwargs["points"])
 
     def query_points(self, **_: object) -> object:
-        return SimpleNamespace(points=[SimpleNamespace(id="u1", score=0.9, payload={"unit_id": "u1", "index_version": 2})])
+        return SimpleNamespace(
+            points=[
+                SimpleNamespace(
+                    id="u1", score=0.9, payload={"unit_id": "u1", "index_version": 2}
+                )
+            ]
+        )
 
     def get_collections(self) -> object:
         return SimpleNamespace(collections=[])
@@ -32,7 +39,9 @@ class FakeClient:
 def test_upsert_and_search_are_safe_projection() -> None:
     client = FakeClient()
     index = VectorIndex(client, collection="test", vector_size=2)
-    point_id = index.upsert({"unit_key": "u1", "content": "secret source text", "embedding": [0.1, 0.2]})
+    point_id = index.upsert(
+        {"unit_key": "u1", "content": "secret source text", "embedding": [0.1, 0.2]}
+    )
     assert point_id
     assert client.points[0].payload["summary"] == "secret source text"
     assert "embedding" not in client.points[0].payload

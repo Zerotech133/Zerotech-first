@@ -1,4 +1,5 @@
 """Security-focused unit tests for the injected browser fetcher boundary."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -10,7 +11,11 @@ from knowledge.browser_fetcher import (
     BrowserSessionHealth,
     BrowserSessionStatus,
 )
-from scripts.launch_authorized_browser import probe_live_context, visible_context_health, visible_page_health
+from scripts.launch_authorized_browser import (
+    probe_live_context,
+    visible_context_health,
+    visible_page_health,
+)
 
 
 class Adapter:
@@ -21,7 +26,9 @@ class Adapter:
     def check_session_health(self) -> dict[str, str]:
         return {"status": "authenticated", "Authorization": "must-not-leak"}
 
-    def fetch(self, target: dict[str, Any], cursor: str | None, run: dict[str, Any]) -> dict[str, Any]:
+    def fetch(
+        self, target: dict[str, Any], cursor: str | None, run: dict[str, Any]
+    ) -> dict[str, Any]:
         self.target = target
         self.run = run
         return {
@@ -41,7 +48,11 @@ def test_fetch_projects_only_business_fields_and_filters_inputs() -> None:
     adapter = Adapter()
     fetcher = BrowserFetcher(adapter)
     result = fetcher.fetch(
-        {"source_link": "https://example.invalid/post/1", "Cookie": "secret", "target_id": 3},
+        {
+            "source_link": "https://example.invalid/post/1",
+            "Cookie": "secret",
+            "target_id": 3,
+        },
         "cursor-1",
         {"run_id": 4, "run_type": "daily_scan", "Authorization": "secret"},
     )
@@ -54,7 +65,10 @@ def test_fetch_projects_only_business_fields_and_filters_inputs() -> None:
         "media_status": "ready",
     }
     assert result.internal_dict()["temporary_media_path"] == "/tmp/p1.mp4"
-    assert adapter.target == {"source_link": "https://example.invalid/post/1", "target_id": 3}
+    assert adapter.target == {
+        "source_link": "https://example.invalid/post/1",
+        "target_id": 3,
+    }
     assert adapter.run == {"run_id": 4, "run_type": "daily_scan"}
 
 
@@ -68,9 +82,16 @@ def test_session_health_normalizes_unknown_status_without_raw_fields() -> None:
 
 def test_call_is_creator_worker_compatible_and_preserves_page_metadata() -> None:
     class PageAdapter(Adapter):
-        def fetch(self, target: dict[str, Any], cursor: str | None, run: dict[str, Any]) -> dict[str, Any]:
+        def fetch(
+            self, target: dict[str, Any], cursor: str | None, run: dict[str, Any]
+        ) -> dict[str, Any]:
             value = super().fetch(target, cursor, run)
-            return {"items": [value], "next_cursor": "n1", "has_more": True, "done": False}
+            return {
+                "items": [value],
+                "next_cursor": "n1",
+                "has_more": True,
+                "done": False,
+            }
 
     fetcher = BrowserFetcher(PageAdapter())
     page = fetcher({"source_link": "https://example.invalid/post/1"}, None, {})
@@ -90,7 +111,9 @@ def test_session_gate_prevents_adapter_fetch_for_non_authenticated_states() -> N
         def check_session_health(self) -> dict[str, str]:
             return {"status": self.status}
 
-        def fetch(self, target: dict[str, Any], cursor: str | None, run: dict[str, Any]) -> dict[str, Any]:
+        def fetch(
+            self, target: dict[str, Any], cursor: str | None, run: dict[str, Any]
+        ) -> dict[str, Any]:
             self.fetch_calls += 1
             return super().fetch(target, cursor, run)
 
@@ -103,7 +126,9 @@ def test_session_gate_prevents_adapter_fetch_for_non_authenticated_states() -> N
     for status, code in expected.items():
         adapter = GateAdapter(status)
         try:
-            BrowserFetcher(adapter)({"source_link": "https://example.invalid/post/1"}, None, {})
+            BrowserFetcher(adapter)(
+                {"source_link": "https://example.invalid/post/1"}, None, {}
+            )
             raise AssertionError("session gate should reject non-authenticated state")
         except BrowserSessionAccessError as exc:
             assert exc.code == code
@@ -133,8 +158,12 @@ def test_visible_page_health_requires_official_video_channel_page() -> None:
         def title(self) -> str:
             return "视频号管理"
 
-    assert visible_page_health(LoginPage()).status is BrowserSessionStatus.LOGIN_REQUIRED
-    assert visible_page_health(SignedInPage()).status is BrowserSessionStatus.AUTHENTICATED
+    assert (
+        visible_page_health(LoginPage()).status is BrowserSessionStatus.LOGIN_REQUIRED
+    )
+    assert (
+        visible_page_health(SignedInPage()).status is BrowserSessionStatus.AUTHENTICATED
+    )
 
 
 def test_visible_page_health_probe_uses_only_url_and_title() -> None:
@@ -172,7 +201,9 @@ def test_live_context_health_uses_visible_page_only() -> None:
 
 def test_injected_health_probe_controls_session_gate() -> None:
     adapter = Adapter()
-    fetcher = BrowserFetcher(adapter, health_probe=lambda: BrowserSessionStatus.LOGIN_REQUIRED)
+    fetcher = BrowserFetcher(
+        adapter, health_probe=lambda: BrowserSessionStatus.LOGIN_REQUIRED
+    )
     try:
         fetcher({"source_link": "https://example.invalid/post/1"}, None, {})
         raise AssertionError("login-required probe must block fetch")
@@ -182,6 +213,8 @@ def test_injected_health_probe_controls_session_gate() -> None:
 
 
 def test_public_dict_hides_temporary_media_path() -> None:
-    result = BrowserFetcher(Adapter()).fetch({"source_link": "https://example.invalid/post/1"})
+    result = BrowserFetcher(Adapter()).fetch(
+        {"source_link": "https://example.invalid/post/1"}
+    )
     assert isinstance(result, BrowserFetchResult)
     assert "temporary_media_path" not in result.public_dict()

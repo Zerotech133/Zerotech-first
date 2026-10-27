@@ -157,7 +157,9 @@ class TestClaimAndTransition:
         url = _urls()[0]
         repo.submit_links([url])
         task = repo.claim_next()  # → parsed
-        ok = repo.transition(task.id, "downloaded", file_md5="a" * 32, raw_path="/x/y.mp4")
+        ok = repo.transition(
+            task.id, "downloaded", file_md5="a" * 32, raw_path="/x/y.mp4"
+        )
         assert ok is not None and ok.status == "downloaded"
         assert ok.file_md5 == "a" * 32
         # 非法：downloaded → parsed（回退）
@@ -207,7 +209,9 @@ class TestMarkFailed:
             # 手动推回 pending 模拟退避到期
             from common import db
 
-            db.execute("UPDATE osint_link_task SET status='pending' WHERE id=:i", {"i": tid})
+            db.execute(
+                "UPDATE osint_link_task SET status='pending' WHERE id=:i", {"i": tid}
+            )
         t = repo.mark_failed(tid, "PARSE_FAIL", "第 4 次")
         assert t.status == "dead"
         assert t.retry_count == 4
@@ -283,7 +287,9 @@ class TestStatsAndCredential:
         # 不再推回——否则 dead 会被本测试自己的推回语句覆盖（Round 1 测试代码笔误）
         for _ in range(3):
             repo.mark_failed(tid, "PARSE_FAIL", "boom")
-            db.execute("UPDATE osint_link_task SET status='pending' WHERE id=:i", {"i": tid})
+            db.execute(
+                "UPDATE osint_link_task SET status='pending' WHERE id=:i", {"i": tid}
+            )
         repo.mark_failed(tid, "PARSE_FAIL", "boom")
         dead = repo.list_dead(5)
         assert len(dead) == 1 and dead[0].id == tid

@@ -5,6 +5,7 @@ either object outside the process. The visible-page adapter reads only
 allow-listed DOM selectors from that bound page. It never evaluates script,
 reads cookies, headers, storage state, tokens, or arbitrary browser paths.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
@@ -49,7 +50,9 @@ class AuthorizedBrowserSession:
         self._closed: bool = False
 
     @classmethod
-    def from_page(cls, page: Any, health_probe: VisiblePageHealthProbe) -> "AuthorizedBrowserSession":
+    def from_page(
+        cls, page: Any, health_probe: VisiblePageHealthProbe
+    ) -> "AuthorizedBrowserSession":
         """Build a page-only session without accepting a context or profile."""
         if page is None:
             raise ValueError("page is required")
@@ -91,7 +94,9 @@ class AuthorizedBrowserSession:
             # Closing is best effort; no browser state is inspected or returned.
             return
 
-    def page_adapter(self, selectors: "VisiblePageSelectors | None" = None) -> "VisiblePageBrowserAdapter":
+    def page_adapter(
+        self, selectors: "VisiblePageSelectors | None" = None
+    ) -> "VisiblePageBrowserAdapter":
         """Create a safe adapter bound to this session's exact page."""
         if self._closed or self._page is None:
             raise RuntimeError("authorized browser session is closed")
@@ -160,19 +165,30 @@ class VisiblePageBrowserAdapter:
         del cursor, run
         health = self._session.health()
         if health.status is not BrowserSessionStatus.AUTHENTICATED:
-            raise BrowserSessionAccessError("SESSION_NOT_AUTHENTICATED", "visible browser page is not authenticated")
+            raise BrowserSessionAccessError(
+                "SESSION_NOT_AUTHENTICATED", "visible browser page is not authenticated"
+            )
         source_link = target.get("source_link") or target.get("link")
         _validate_exact_https_link(source_link)
         bound_url = getattr(self._page, "url", "")
         if not isinstance(bound_url, str) or bound_url.strip() != source_link.strip():
-            raise BrowserSessionAccessError("PAGE_LINK_MISMATCH", "bound visible page does not match requested source link")
+            raise BrowserSessionAccessError(
+                "PAGE_LINK_MISMATCH",
+                "bound visible page does not match requested source link",
+            )
         values: dict[str, Any] = {
             "source_link": source_link,
-            "content_id": self._read_first(self._selectors.content_id, attribute="data-content-id"),
+            "content_id": self._read_first(
+                self._selectors.content_id, attribute="data-content-id"
+            ),
             "title": self._read_first(self._selectors.title),
             "description": self._read_first(self._selectors.description),
-            "published_at": self._read_first(self._selectors.published_at, attribute="datetime"),
-            "duration_sec": self._read_first(self._selectors.duration, attribute="data-duration"),
+            "published_at": self._read_first(
+                self._selectors.published_at, attribute="datetime"
+            ),
+            "duration_sec": self._read_first(
+                self._selectors.duration, attribute="data-duration"
+            ),
         }
         creator = self._creator()
         if creator:
@@ -192,17 +208,34 @@ class VisiblePageBrowserAdapter:
             values["text_channels"] = channels
         result = self._session.health()
         if result.status is not BrowserSessionStatus.AUTHENTICATED:
-            raise BrowserSessionAccessError("SESSION_NOT_AUTHENTICATED", "visible browser page authorization changed")
+            raise BrowserSessionAccessError(
+                "SESSION_NOT_AUTHENTICATED",
+                "visible browser page authorization changed",
+            )
         return values
 
     def _creator(self) -> dict[str, str] | None:
-        creator_id = self._read_first(self._selectors.creator_id, attribute="data-creator-id")
+        creator_id = self._read_first(
+            self._selectors.creator_id, attribute="data-creator-id"
+        )
         nickname = self._read_first(self._selectors.creator_name)
-        profile_url = self._read_first(self._selectors.creator_profile, attribute="href")
-        creator = {key: value for key, value in (("creator_id", creator_id), ("nickname", nickname), ("profile_url", profile_url)) if value}
+        profile_url = self._read_first(
+            self._selectors.creator_profile, attribute="href"
+        )
+        creator = {
+            key: value
+            for key, value in (
+                ("creator_id", creator_id),
+                ("nickname", nickname),
+                ("profile_url", profile_url),
+            )
+            if value
+        }
         return creator or None
 
-    def _read_first(self, selectors: Sequence[str], *, attribute: str | None = None) -> str | None:
+    def _read_first(
+        self, selectors: Sequence[str], *, attribute: str | None = None
+    ) -> str | None:
         for selector in selectors:
             try:
                 locator = self._page.locator(selector).first
@@ -223,7 +256,11 @@ class VisiblePageBrowserAdapter:
             except Exception:
                 continue
             if isinstance(values, list):
-                return [value.strip() for value in values if isinstance(value, str) and value.strip()]
+                return [
+                    value.strip()
+                    for value in values
+                    if isinstance(value, str) and value.strip()
+                ]
         return []
 
 
@@ -238,9 +275,21 @@ def _validate_exact_https_link(value: Any) -> None:
         address = ipaddress.ip_address(parsed.hostname)
     except ValueError:
         address = None
-    if address is not None and (address.is_private or address.is_loopback or address.is_link_local or address.is_reserved):
+    if address is not None and (
+        address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_reserved
+    ):
         raise ValueError("source_link host is not allowed")
-    forbidden = {"cookie", "token", "authorization", "access_token", "refresh_token", "session"}
+    forbidden = {
+        "cookie",
+        "token",
+        "authorization",
+        "access_token",
+        "refresh_token",
+        "session",
+    }
     if forbidden.intersection(key.lower() for key, _ in parse_qsl(parsed.query)):
         raise ValueError("source_link contains credential-like query parameters")
 

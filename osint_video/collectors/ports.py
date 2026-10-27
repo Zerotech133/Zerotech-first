@@ -6,6 +6,7 @@ and storage state are rejected or silently omitted and never serialized.
 Media is optional: metadata and text remain useful when a media URL/file is
 unavailable.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -64,7 +65,9 @@ class SessionHealth:
                 status = SessionStatus.UNKNOWN
             object.__setattr__(self, "status", status)
         if self.checked_at.tzinfo is None:
-            object.__setattr__(self, "checked_at", self.checked_at.replace(tzinfo=timezone.utc))
+            object.__setattr__(
+                self, "checked_at", self.checked_at.replace(tzinfo=timezone.utc)
+            )
 
     def as_dict(self) -> dict[str, Any]:
         """Serialize only safe health fields."""
@@ -92,7 +95,11 @@ class CreatorRef:
         object.__setattr__(self, "platform", platform)
         if self.confidence is not None:
             value = float(self.confidence)
-            object.__setattr__(self, "confidence", min(1.0, max(0.0, value)) if math.isfinite(value) else None)
+            object.__setattr__(
+                self,
+                "confidence",
+                min(1.0, max(0.0, value)) if math.isfinite(value) else None,
+            )
 
     def as_dict(self) -> dict[str, Any]:
         """Return allow-listed creator fields."""
@@ -160,7 +167,11 @@ class VideoMetadata:
             object.__setattr__(self, "media_status", status)
         if self.duration_sec is not None:
             duration = float(self.duration_sec)
-            object.__setattr__(self, "duration_sec", duration if math.isfinite(duration) and duration >= 0 else None)
+            object.__setattr__(
+                self,
+                "duration_sec",
+                duration if math.isfinite(duration) and duration >= 0 else None,
+            )
 
     def as_dict(self) -> dict[str, Any]:
         """Return metadata only; no media paths, URLs, or adapter fields."""
@@ -206,7 +217,11 @@ class TextSegment:
         object.__setattr__(self, "end_sec", end)
         if self.confidence is not None:
             confidence = float(self.confidence)
-            object.__setattr__(self, "confidence", min(1.0, max(0.0, confidence)) if math.isfinite(confidence) else None)
+            object.__setattr__(
+                self,
+                "confidence",
+                min(1.0, max(0.0, confidence)) if math.isfinite(confidence) else None,
+            )
 
     def as_dict(self) -> dict[str, Any]:
         """Return a safe text segment."""
@@ -234,7 +249,9 @@ class VideoPage:
             "items": [
                 {
                     "metadata": self.metadata.as_dict(),
-                    "text_channels": [segment.as_dict() for segment in self.text_segments],
+                    "text_channels": [
+                        segment.as_dict() for segment in self.text_segments
+                    ],
                 }
             ],
             "next_cursor": self.next_cursor,
@@ -248,10 +265,14 @@ class CollectorAdapter(Protocol):
     def session_health(self) -> SessionHealth | SessionStatus | Mapping[str, Any]:
         """Return coarse health; credentials must not appear in the result."""
 
-    def resolve_creator(self, request: CreatorResolveRequest) -> CreatorResolveResult | Mapping[str, Any]:
+    def resolve_creator(
+        self, request: CreatorResolveRequest
+    ) -> CreatorResolveResult | Mapping[str, Any]:
         """Resolve creator identity from an approved source link."""
 
-    def fetch_video(self, source_link: str, cursor: str | None = None) -> VideoPage | Mapping[str, Any]:
+    def fetch_video(
+        self, source_link: str, cursor: str | None = None
+    ) -> VideoPage | Mapping[str, Any]:
         """Fetch metadata/text and optionally media status without requiring media."""
 
 
@@ -310,7 +331,9 @@ class SafeCollector:
                 status_value = SessionStatus(str(status))
             except ValueError:
                 status_value = SessionStatus.UNKNOWN
-            return SessionHealth(status=status_value, checked_at=checked_at, reason=reason)
+            return SessionHealth(
+                status=status_value, checked_at=checked_at, reason=reason
+            )
         return SessionHealth(checked_at=checked_at)
 
     def resolve_creator(self, request: CreatorResolveRequest) -> CreatorResolveResult:
@@ -319,11 +342,15 @@ class SafeCollector:
         try:
             raw = self._adapter.resolve_creator(request)
         except Exception as exc:
-            return CreatorResolveResult(None, False, request.source_link, type(exc).__name__)
+            return CreatorResolveResult(
+                None, False, request.source_link, type(exc).__name__
+            )
         if isinstance(raw, CreatorResolveResult):
             return raw
         if not isinstance(raw, Mapping):
-            return CreatorResolveResult(None, False, request.source_link, "INVALID_RESPONSE")
+            return CreatorResolveResult(
+                None, False, request.source_link, "INVALID_RESPONSE"
+            )
         creator_raw = raw.get("creator")
         creator = _project_creator(creator_raw, request.platform)
         return CreatorResolveResult(
@@ -333,15 +360,26 @@ class SafeCollector:
             error_code=_safe_code(raw.get("error_code")),
         )
 
-    def __call__(self, target: Mapping[str, Any], cursor: str | None, run: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    def __call__(
+        self,
+        target: Mapping[str, Any],
+        cursor: str | None,
+        run: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Expose creator-worker ``PageFetcher`` shape without leaking run state."""
         health = self.session_health()
         if health.status is not SessionStatus.AUTHENTICATED:
             if health.status in {SessionStatus.LOGIN_REQUIRED, SessionStatus.EXPIRED}:
-                raise CollectionAccessError("AUTHORIZATION_REQUIRED", "collector session requires authorization")
+                raise CollectionAccessError(
+                    "AUTHORIZATION_REQUIRED", "collector session requires authorization"
+                )
             if health.status is SessionStatus.BLOCKED:
-                raise CollectionAccessError("SESSION_BLOCKED", "collector session is blocked")
-            raise CollectionAccessError("SESSION_UNKNOWN", "collector session health is unknown")
+                raise CollectionAccessError(
+                    "SESSION_BLOCKED", "collector session is blocked"
+                )
+            raise CollectionAccessError(
+                "SESSION_UNKNOWN", "collector session health is unknown"
+            )
         source_link = target.get("source_link") or target.get("link")
         if not isinstance(source_link, str):
             raise ValueError("target source_link is required")
@@ -354,10 +392,16 @@ class SafeCollector:
         if status is SessionStatus.AUTHENTICATED:
             return
         if status in {SessionStatus.LOGIN_REQUIRED, SessionStatus.EXPIRED}:
-            raise CollectionAccessError("AUTHORIZATION_REQUIRED", "collector session requires authorization")
+            raise CollectionAccessError(
+                "AUTHORIZATION_REQUIRED", "collector session requires authorization"
+            )
         if status is SessionStatus.BLOCKED:
-            raise CollectionAccessError("SESSION_BLOCKED", "collector session is blocked")
-        raise CollectionAccessError("SESSION_UNKNOWN", "collector session health is unknown")
+            raise CollectionAccessError(
+                "SESSION_BLOCKED", "collector session is blocked"
+            )
+        raise CollectionAccessError(
+            "SESSION_UNKNOWN", "collector session health is unknown"
+        )
 
     def fetch_video(self, source_link: str, cursor: str | None = None) -> VideoPage:
         """Fetch safe metadata/text; invalid or unavailable media never blocks output."""
@@ -369,9 +413,13 @@ class SafeCollector:
             raise
         except Exception as exc:
             if _is_media_unavailable_error(exc):
-                metadata = VideoMetadata(source_link=source_link, media_status=MediaAvailability.UNAVAILABLE)
+                metadata = VideoMetadata(
+                    source_link=source_link, media_status=MediaAvailability.UNAVAILABLE
+                )
                 return VideoPage(metadata=metadata, done=True)
-            raise CollectionFailureError("COLLECTION_FAILED", "collector fetch failed") from exc
+            raise CollectionFailureError(
+                "COLLECTION_FAILED", "collector fetch failed"
+            ) from exc
         if isinstance(raw, VideoPage):
             return raw
         if not isinstance(raw, Mapping):
@@ -381,14 +429,30 @@ class SafeCollector:
             metadata_raw = {}
         metadata = _project_metadata(metadata_raw, source_link)
         segments_raw = raw.get("text_channels", raw.get("text_segments", []))
-        segments = tuple(_project_segment(item) for item in segments_raw if isinstance(item, Mapping)) if isinstance(segments_raw, Sequence) and not isinstance(segments_raw, (str, bytes)) else ()
+        segments = (
+            tuple(
+                _project_segment(item)
+                for item in segments_raw
+                if isinstance(item, Mapping)
+            )
+            if isinstance(segments_raw, Sequence)
+            and not isinstance(segments_raw, (str, bytes))
+            else ()
+        )
         next_cursor = raw.get("next_cursor")
-        return VideoPage(metadata, segments, str(next_cursor) if next_cursor is not None else None, bool(raw.get("done", True)))
+        return VideoPage(
+            metadata,
+            segments,
+            str(next_cursor) if next_cursor is not None else None,
+            bool(raw.get("done", True)),
+        )
 
 
 def _is_media_unavailable_error(exc: Exception) -> bool:
     """Recognize only explicit media-unavailable adapter failures for degradation."""
-    return bool(getattr(exc, "media_unavailable", False)) or getattr(exc, "code", "") in {"MEDIA_UNAVAILABLE", "MEDIA_EXPIRED"}
+    return bool(getattr(exc, "media_unavailable", False)) or getattr(
+        exc, "code", ""
+    ) in {"MEDIA_UNAVAILABLE", "MEDIA_EXPIRED"}
 
 
 def _finite_nonnegative(value: Any) -> float | None:
@@ -411,9 +475,22 @@ def _validate_source_link(source_link: str) -> None:
         address = ipaddress.ip_address(parsed.hostname)
     except ValueError:
         address = None
-    if address is not None and (address.is_private or address.is_loopback or address.is_link_local or address.is_reserved):
+    if address is not None and (
+        address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_reserved
+    ):
         raise ValueError("source_link host is not allowed")
-    forbidden = {"cookie", "token", "generaltoken", "authorization", "access_token", "refresh_token", "session"}
+    forbidden = {
+        "cookie",
+        "token",
+        "generaltoken",
+        "authorization",
+        "access_token",
+        "refresh_token",
+        "session",
+    }
     if {key.lower() for key, _ in parse_qsl(parsed.query)} & forbidden:
         raise ValueError("source_link contains credential-like query parameters")
 
@@ -424,21 +501,47 @@ def _project_creator(raw: Any, platform: str | None = None) -> CreatorRef | None
     if not isinstance(raw, Mapping):
         return None
     value = str(raw.get("platform") or platform or "unknown")
-    return CreatorRef(value, _string(raw.get("creator_id")), _string(raw.get("nickname")), _safe_url(raw.get("profile_url")), raw.get("confidence"))
+    return CreatorRef(
+        value,
+        _string(raw.get("creator_id")),
+        _string(raw.get("nickname")),
+        _safe_url(raw.get("profile_url")),
+        raw.get("confidence"),
+    )
 
 
 def _project_metadata(raw: Mapping[str, Any], source_link: str) -> VideoMetadata:
     media = raw.get("media_status", MediaAvailability.UNAVAILABLE)
     creator = _project_creator(raw.get("creator"), raw.get("platform"))
-    return VideoMetadata(source_link=source_link, platform=_string(raw.get("platform")), content_id=_string(raw.get("content_id", raw.get("platform_content_id"))), title=_string(raw.get("title")), description=_string(raw.get("description")), published_at=_string(raw.get("published_at")), duration_sec=_finite_nonnegative(raw.get("duration_sec")), creator=creator, media_status=media)
+    return VideoMetadata(
+        source_link=source_link,
+        platform=_string(raw.get("platform")),
+        content_id=_string(raw.get("content_id", raw.get("platform_content_id"))),
+        title=_string(raw.get("title")),
+        description=_string(raw.get("description")),
+        published_at=_string(raw.get("published_at")),
+        duration_sec=_finite_nonnegative(raw.get("duration_sec")),
+        creator=creator,
+        media_status=media,
+    )
 
 
 def _project_segment(raw: Mapping[str, Any]) -> TextSegment:
-    return TextSegment(text=str(raw.get("text") or ""), channel=raw.get("channel", TextChannel.MANUAL), start_sec=raw.get("start_sec"), end_sec=raw.get("end_sec"), confidence=raw.get("confidence"))
+    return TextSegment(
+        text=str(raw.get("text") or ""),
+        channel=raw.get("channel", TextChannel.MANUAL),
+        start_sec=raw.get("start_sec"),
+        end_sec=raw.get("end_sec"),
+        confidence=raw.get("confidence"),
+    )
 
 
 def _string(value: Any) -> str | None:
-    return value.strip() if isinstance(value, str) and value.strip() else (str(value) if value is not None else None)
+    return (
+        value.strip()
+        if isinstance(value, str) and value.strip()
+        else (str(value) if value is not None else None)
+    )
 
 
 def _safe_code(value: Any) -> str | None:
@@ -462,7 +565,19 @@ def _safe_url(value: Any) -> str | None:
 
 
 __all__ = [
-    "CollectionAccessError", "CollectionFailureError", "CollectorAdapter", "CollectorPort", "CreatorRef", "CreatorResolveRequest", "CreatorResolveResult",
-    "MediaAvailability", "SafeCollector", "SessionHealth", "SessionStatus", "TextChannel", "TextSegment",
-    "VideoMetadata", "VideoPage",
+    "CollectionAccessError",
+    "CollectionFailureError",
+    "CollectorAdapter",
+    "CollectorPort",
+    "CreatorRef",
+    "CreatorResolveRequest",
+    "CreatorResolveResult",
+    "MediaAvailability",
+    "SafeCollector",
+    "SessionHealth",
+    "SessionStatus",
+    "TextChannel",
+    "TextSegment",
+    "VideoMetadata",
+    "VideoPage",
 ]

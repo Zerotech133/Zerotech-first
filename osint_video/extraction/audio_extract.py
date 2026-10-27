@@ -42,11 +42,18 @@ def _run(cmd: list[str], *, timeout: int = 600) -> subprocess.CompletedProcess[s
     """执行子进程（文本输出）；非 0 退出码时抛 RuntimeError 并附 stderr 摘要。"""
     logger.debug("执行命令：%s", " ".join(cmd))
     proc = subprocess.run(
-        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
     )
     if proc.returncode != 0:
         stderr_tail = (proc.stderr or proc.stdout or "").strip()[-800:]
-        raise RuntimeError(f"命令执行失败（exit={proc.returncode}）：{' '.join(cmd[:3])}…\n{stderr_tail}")
+        raise RuntimeError(
+            f"命令执行失败（exit={proc.returncode}）：{' '.join(cmd[:3])}…\n{stderr_tail}"
+        )
     return proc
 
 
@@ -65,9 +72,13 @@ def probe_duration_sec(video_path: str | Path) -> float:
         raise FileNotFoundError(f"视频文件不存在：{path}")
     proc = _run(
         [
-            ffprobe, "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "json",
+            ffprobe,
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "json",
             str(path),
         ],
         timeout=60,

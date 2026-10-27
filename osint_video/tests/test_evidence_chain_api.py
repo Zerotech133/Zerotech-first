@@ -1,4 +1,5 @@
 """EvidenceChain contract and sanitization tests."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -61,7 +62,13 @@ def _evidence(**overrides: object) -> dict:
 
 def test_evidence_dto_validates_version_time_and_allowlist(unit_row: dict) -> None:
     dto = repository._evidence_dto(
-        {**_evidence(), "resource": {"resource_key": "resource-a", "source_url": "https://example.test"}},
+        {
+            **_evidence(),
+            "resource": {
+                "resource_key": "resource-a",
+                "source_url": "https://example.test",
+            },
+        },
         unit_row,
     )
     assert dto["validity"] == {
@@ -77,7 +84,10 @@ def test_evidence_dto_validates_version_time_and_allowlist(unit_row: dict) -> No
 
 def test_evidence_dto_flags_out_of_bounds_and_version_mismatch(unit_row: dict) -> None:
     dto = repository._evidence_dto(
-        {**_evidence(quote_start_sec=29, quote_end_sec=31, knowledge_unit_version=1), "resource": None},
+        {
+            **_evidence(quote_start_sec=29, quote_end_sec=31, knowledge_unit_version=1),
+            "resource": None,
+        },
         unit_row,
     )
     assert dto["validity"]["is_valid"] is False
@@ -86,19 +96,31 @@ def test_evidence_dto_flags_out_of_bounds_and_version_mismatch(unit_row: dict) -
 
 
 @pytest.mark.parametrize("field", ["quote", "snapshot_hash"])
-def test_evidence_dto_requires_quote_and_snapshot_hash(unit_row: dict, field: str) -> None:
-    dto = repository._evidence_dto({**_evidence(**{field: None}), "resource": None}, unit_row)
+def test_evidence_dto_requires_quote_and_snapshot_hash(
+    unit_row: dict, field: str
+) -> None:
+    dto = repository._evidence_dto(
+        {**_evidence(**{field: None}), "resource": None}, unit_row
+    )
     assert dto["validity"]["is_valid"] is False
 
 
-def test_knowledge_detail_joins_exact_version_and_returns_envelope(monkeypatch: pytest.MonkeyPatch, unit_row: dict) -> None:
+def test_knowledge_detail_joins_exact_version_and_returns_envelope(
+    monkeypatch: pytest.MonkeyPatch, unit_row: dict
+) -> None:
     evidence = _evidence()
 
     def fetch_all(sql: str, params: dict) -> list[dict]:
         if "FROM osint_knowledge_unit" in sql:
             return [unit_row]
         if "FROM osint_knowledge_resource" in sql:
-            return [{"resource_key": "resource-a", "source_url": "https://example.test", "duration_sec": 60}]
+            return [
+                {
+                    "resource_key": "resource-a",
+                    "source_url": "https://example.test",
+                    "duration_sec": 60,
+                }
+            ]
         if "FROM osint_strategy_evidence" in sql:
             return [evidence]
         if "FROM osint_index_task" in sql:
@@ -117,13 +139,24 @@ def test_knowledge_detail_joins_exact_version_and_returns_envelope(monkeypatch: 
     assert "raw_path" not in str(body)
 
 
-def test_strategy_chain_filters_requested_unit_version(monkeypatch: pytest.MonkeyPatch, unit_row: dict) -> None:
+def test_strategy_chain_filters_requested_unit_version(
+    monkeypatch: pytest.MonkeyPatch, unit_row: dict
+) -> None:
     seen: list[dict] = []
 
     def fetch_all(sql: str, params: dict) -> list[dict]:
         seen.append(params)
         if "FROM osint_strategy_evidence" in sql:
-            return [{**_evidence(), "resource_key": None, "unit_version": 2, "source_channel": "asr", "start_sec": 10, "end_sec": 30}]
+            return [
+                {
+                    **_evidence(),
+                    "resource_key": None,
+                    "unit_version": 2,
+                    "source_channel": "asr",
+                    "start_sec": 10,
+                    "end_sec": 30,
+                }
+            ]
         if "FROM osint_knowledge_resource" in sql:
             return []
         raise AssertionError(sql)

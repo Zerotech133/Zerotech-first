@@ -78,7 +78,9 @@ class FeishuNotifier:
         kind_prefix: str = "osint",
     ) -> None:
         settings = get_settings()
-        configured = webhook_url if webhook_url is not None else settings.feishu_webhook_url
+        configured = (
+            webhook_url if webhook_url is not None else settings.feishu_webhook_url
+        )
         self.webhook_url: str = (configured or "").strip()
         self.timeout: float = timeout
         # 设计稿 A-13 原定 settings 新增 feishu_push_target 配置项；因本工位
@@ -192,15 +194,21 @@ class FeishuNotifier:
             )
             return False
         try:
-            ok, why, message_id = self._hub_send(content, msg_type, kind, bool(critical))
+            ok, why, message_id = self._hub_send(
+                content, msg_type, kind, bool(critical)
+            )
         except Exception as exc:  # noqa: BLE001 —— 闸门故障绝不阻塞管线
             logger.warning(
-                "[feishu:hub降级] 8097 调用异常（closed on failure，不回落直发）：%s", exc
+                "[feishu:hub降级] 8097 调用异常（closed on failure，不回落直发）：%s",
+                exc,
             )
             return False
         if ok:
             logger.info(
-                "[feishu:hub] 已发送 kind=%s message_id=%s why=%s", kind, message_id, why
+                "[feishu:hub] 已发送 kind=%s message_id=%s why=%s",
+                kind,
+                message_id,
+                why,
             )
             return True
         logger.warning(
@@ -228,7 +236,9 @@ class FeishuNotifier:
             code = data.get("code", data.get("StatusCode", response.status_code))
             if response.status_code == 200 and code in (0, "0"):
                 return True
-            logger.warning("[feishu:降级] 发送失败 status=%s body=%s", response.status_code, data)
+            logger.warning(
+                "[feishu:降级] 发送失败 status=%s body=%s", response.status_code, data
+            )
             return False
         except Exception as exc:  # noqa: BLE001 —— 飞书故障绝不阻塞管线
             logger.warning("[feishu:降级] 发送异常：%s", exc)
@@ -257,7 +267,9 @@ class FeishuNotifier:
 
     # -------------------------------------------------- 预置告警 --
     @staticmethod
-    def _simple_card(title: str, lines: list[str], extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _simple_card(
+        title: str, lines: list[str], extra: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """构造简单文本卡片（绿/黄/红按 tag 前缀由 lines 内容体现）。"""
         elements: list[dict[str, Any]] = [
             {"tag": "div", "text": {"tag": "lark_md", "content": "\n".join(lines)}}

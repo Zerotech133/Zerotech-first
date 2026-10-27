@@ -1,4 +1,5 @@
 """Security tests for browser-to-collector DTO mapping."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -7,21 +8,32 @@ import pytest
 
 from collectors.browser_mapper import BrowserCollectorMapper
 from collectors.ports import CollectionAccessError, MediaAvailability
-from knowledge.browser_fetcher import BrowserFetchResult, BrowserSessionHealth, BrowserSessionStatus
+from knowledge.browser_fetcher import (
+    BrowserFetchResult,
+    BrowserSessionHealth,
+    BrowserSessionStatus,
+)
 
 
 SOURCE = "https://example.invalid/channels/video/1"
 
 
 class FakeFetcher:
-    def __init__(self, status: BrowserSessionStatus = BrowserSessionStatus.AUTHENTICATED) -> None:
+    def __init__(
+        self, status: BrowserSessionStatus = BrowserSessionStatus.AUTHENTICATED
+    ) -> None:
         self.status = status
         self.calls = 0
 
     def session_health(self) -> BrowserSessionHealth:
         return BrowserSessionHealth(self.status)
 
-    def fetch(self, target: dict[str, Any], cursor: str | None = None, run: dict[str, Any] | None = None) -> BrowserFetchResult:
+    def fetch(
+        self,
+        target: dict[str, Any],
+        cursor: str | None = None,
+        run: dict[str, Any] | None = None,
+    ) -> BrowserFetchResult:
         self.calls += 1
         return BrowserFetchResult(
             source_link=target["source_link"],
@@ -32,7 +44,9 @@ class FakeFetcher:
             title="Visible title",
             description="Visible description",
             creator={"creator_id": "c1", "nickname": "Alice", "token": "secret"},
-            text_channels=({"text": "spoken", "channel": "asr", "Authorization": "secret"},),
+            text_channels=(
+                {"text": "spoken", "channel": "asr", "Authorization": "secret"},
+            ),
             temporary_media_path="C:/secret/private.mp4",
         )
 
@@ -69,7 +83,14 @@ def test_mapper_never_returns_browser_or_credential_fields() -> None:
     page = BrowserCollectorMapper(FakeFetcher()).fetch_video(SOURCE)
     serialized = page.as_dict()
     rendered = repr(serialized)
-    for forbidden in ("temporary_media_path", "token", "Authorization", "Cookie", "headers", "storage_state"):
+    for forbidden in (
+        "temporary_media_path",
+        "token",
+        "Authorization",
+        "Cookie",
+        "headers",
+        "storage_state",
+    ):
         assert forbidden not in rendered
 
 
@@ -80,7 +101,12 @@ def test_res_downloader_accepted_is_not_downloaded() -> None:
 
 def test_mapper_accepts_page_shape_and_preserves_safe_pagination() -> None:
     class Paged(FakeFetcher):
-        def fetch(self, target: dict[str, Any], cursor: str | None = None, run: dict[str, Any] | None = None) -> dict[str, Any]:
+        def fetch(
+            self,
+            target: dict[str, Any],
+            cursor: str | None = None,
+            run: dict[str, Any] | None = None,
+        ) -> dict[str, Any]:
             return {
                 "items": [super().fetch(target, cursor, run)],
                 "next_cursor": "next-safe",

@@ -11,6 +11,7 @@ The resulting dependency graph is::
 A session health probe is performed before a composition is returned.  This
 keeps an unauthenticated scheduler invocation from claiming a database run.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -51,7 +52,9 @@ class WorkerComposition:
         """Probe current health and reject all non-authenticated states."""
         health = self.collector.session_health()
         if health.status is not SessionStatus.AUTHENTICATED:
-            raise CompositionError(_health_error_code(health.status), _health_error_message(health.status))
+            raise CompositionError(
+                _health_error_code(health.status), _health_error_message(health.status)
+            )
         return health
 
 
@@ -71,7 +74,9 @@ def compose_worker_dependencies(
     is required and is never defaulted to a global or test repository.
     """
     if repository is None:
-        raise CompositionError("REPOSITORY_REQUIRED", "knowledge repository is required")
+        raise CompositionError(
+            "REPOSITORY_REQUIRED", "knowledge repository is required"
+        )
     if (adapter is None) == (browser_fetcher is None):
         raise CompositionError(
             "COLLECTOR_REQUIRED",
@@ -98,7 +103,9 @@ def compose_worker_dependencies(
         # Keep the exact probe object in the browser fetcher so every fetch
         # rechecks the same visible page. The probe contract is deliberately
         # restricted to typed health values; arbitrary health JSON is rejected.
-        fetcher: BrowserFetcherProtocol = BrowserFetcher(adapter, health_probe=_typed_health_probe(health_probe))
+        fetcher: BrowserFetcherProtocol = BrowserFetcher(
+            adapter, health_probe=_typed_health_probe(health_probe)
+        )
     else:
         assert browser_fetcher is not None
         _require_callable(browser_fetcher, "session_health", "FETCHER_INVALID")
@@ -111,13 +118,18 @@ def compose_worker_dependencies(
         health_probe = _typed_health_probe(health_probe)
         probe_health = _probe_health(health_probe)
         if probe_health.status is not SessionStatus.AUTHENTICATED:
-            raise CompositionError(_health_error_code(probe_health.status), _health_error_message(probe_health.status))
+            raise CompositionError(
+                _health_error_code(probe_health.status),
+                _health_error_message(probe_health.status),
+            )
         fetcher = browser_fetcher
     collector_adapter = BrowserCollectorAdapter(fetcher)
     collector = SafeCollector(collector_adapter)
     health = collector.session_health()
     if health.status is not SessionStatus.AUTHENTICATED:
-        raise CompositionError(_health_error_code(health.status), _health_error_message(health.status))
+        raise CompositionError(
+            _health_error_code(health.status), _health_error_message(health.status)
+        )
     processor = ItemProcessor(repository, processing_run_key=processing_run_key)
 
     def fetch_page(target: Any, cursor: str | None, run: Any = None) -> dict[str, Any]:
@@ -157,6 +169,7 @@ def build_worker_composition(**kwargs: Any) -> WorkerComposition:
 
 def _typed_health_probe(probe: Callable[[], Any]) -> Callable[[], BrowserSessionHealth]:
     """Accept only typed visible-page health, never arbitrary health JSON."""
+
     def invoke() -> BrowserSessionHealth:
         raw = probe()
         if isinstance(raw, BrowserSessionHealth):
@@ -171,11 +184,14 @@ def _typed_health_probe(probe: Callable[[], Any]) -> Callable[[], BrowserSession
             try:
                 return BrowserSessionHealth(status=BrowserSessionStatus(raw.value))
             except (TypeError, ValueError) as exc:
-                raise CompositionError("HEALTH_PROBE_INVALID", "visible page health status is invalid") from exc
+                raise CompositionError(
+                    "HEALTH_PROBE_INVALID", "visible page health status is invalid"
+                ) from exc
         raise CompositionError(
             "HEALTH_PROBE_INVALID",
             "health_probe must return typed visible-page health",
         )
+
     return invoke
 
 
@@ -184,12 +200,16 @@ def _probe_health(probe: Callable[[], Any]) -> SessionHealth:
     try:
         raw = probe()
     except Exception as exc:
-        raise CompositionError("SESSION_UNKNOWN", "visible page health probe failed") from exc
+        raise CompositionError(
+            "SESSION_UNKNOWN", "visible page health probe failed"
+        ) from exc
     if isinstance(raw, SessionHealth):
         return raw
     if isinstance(raw, BrowserSessionHealth):
         try:
-            return SessionHealth(status=SessionStatus(raw.status.value), checked_at=raw.checked_at)
+            return SessionHealth(
+                status=SessionStatus(raw.status.value), checked_at=raw.checked_at
+            )
         except (AttributeError, ValueError):
             return SessionHealth(status=SessionStatus.UNKNOWN)
     if hasattr(raw, "value"):
@@ -202,7 +222,9 @@ def _probe_health(probe: Callable[[], Any]) -> SessionHealth:
 
 def _require_callable(value: Any, attribute: str, code: str) -> None:
     if not callable(getattr(value, attribute, None)):
-        raise CompositionError(code, f"injected dependency must provide callable {attribute}")
+        raise CompositionError(
+            code, f"injected dependency must provide callable {attribute}"
+        )
 
 
 def _health_error_code(status: SessionStatus) -> str:

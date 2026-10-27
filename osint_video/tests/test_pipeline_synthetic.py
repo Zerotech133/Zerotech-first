@@ -61,24 +61,56 @@ def synth_videos(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
 
     subprocess.run(
         [
-            str(_FFMPEG), "-y", "-hide_banner", "-loglevel", "error",
-            "-f", "lavfi", "-i", "testsrc=duration=10:size=320x180:rate=10",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=10",
-            "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", str(plain),
+            str(_FFMPEG),
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=duration=10:size=320x180:rate=10",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:duration=10",
+            "-shortest",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            str(plain),
         ],
         check=True,
     )
     subprocess.run(
         [
-            str(_FFMPEG), "-y", "-hide_banner", "-loglevel", "error",
-            "-f", "lavfi", "-i", "testsrc2=duration=12:size=320x180:rate=10",
-            "-f", "lavfi", "-i", "sine=frequency=600:duration=12",
+            str(_FFMPEG),
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=duration=12:size=320x180:rate=10",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=600:duration=12",
             "-vf",
             "drawtext=text='Hello OSINT QA':fontcolor=white:fontsize=32:"
             "x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.7",
-            "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", str(sub),
+            "-shortest",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            str(sub),
         ],
         check=True,
     )
@@ -131,7 +163,9 @@ def missing_model_dependencies(monkeypatch: pytest.MonkeyPatch):
 
 
 class TestModelUnavailableDegrade:
-    def test_asr_missing_raises_clear_error(self, synth_videos, tmp_path, missing_model_dependencies):
+    def test_asr_missing_raises_clear_error(
+        self, synth_videos, tmp_path, missing_model_dependencies
+    ):
         """Missing funasr is translated to ASRModelUnavailableError, not ImportError."""
         wav = extract_wav16k(synth_videos["plain"], tmp_path / "a.wav")
         with pytest.raises(ASRModelUnavailableError, match=r"funasr|FunASR"):
@@ -142,13 +176,17 @@ class TestModelUnavailableDegrade:
         with pytest.raises(OCREngineUnavailableError, match=r"[Pp]addleOCR"):
             _create_engine()
 
-    def test_pipeline_double_missing_extraction_error(self, synth_videos, missing_model_dependencies):
+    def test_pipeline_double_missing_extraction_error(
+        self, synth_videos, missing_model_dependencies
+    ):
         """双通道模型全缺 → ExtractionError（双通道均无文字产出），进程不崩。"""
         vid = _uid("degrade")
         with pytest.raises(ExtractionError, match=r"双通道均无文字产出"):
             run(synth_videos["sub"], vid, enable_asr=True, enable_ocr=True)
 
-    def test_checkpoints_survive_failure(self, synth_videos, missing_model_dependencies):
+    def test_checkpoints_survive_failure(
+        self, synth_videos, missing_model_dependencies
+    ):
         """失败运行的中间检查点（wav/帧索引）留存 → 修复模型后可断点续跑。"""
         vid = _uid("ckpt_fail")
         with pytest.raises(ExtractionError):
@@ -169,10 +207,16 @@ class TestModelUnavailableDegrade:
 class TestFullOrchestration:
     def test_run_success_with_mocked_channels(self, synth_videos):
         vid = _uid("full")
-        with patch("extraction.asr_sensevoice.transcribe", return_value=FAKE_ASR), \
-             patch("extraction.ocr_paddle.recognize", return_value=FAKE_OCR):
-            doc = run(synth_videos["sub"], vid, source_url="https://sph.example/x",
-                      file_md5="d" * 32)
+        with (
+            patch("extraction.asr_sensevoice.transcribe", return_value=FAKE_ASR),
+            patch("extraction.ocr_paddle.recognize", return_value=FAKE_OCR),
+        ):
+            doc = run(
+                synth_videos["sub"],
+                vid,
+                source_url="https://sph.example/x",
+                file_md5="d" * 32,
+            )
 
         assert doc["video_id"] == vid
         assert doc["schema_version"] == "1.0"
@@ -200,8 +244,10 @@ class TestFullOrchestration:
     def test_checkpoint_reuse_skips_channels(self, synth_videos):
         """二次运行命中 structured_doc.json 最终检查点：通道不重跑、产物 mtime 不变。"""
         vid = _uid("reuse")
-        with patch("extraction.asr_sensevoice.transcribe", return_value=FAKE_ASR), \
-             patch("extraction.ocr_paddle.recognize", return_value=FAKE_OCR):
+        with (
+            patch("extraction.asr_sensevoice.transcribe", return_value=FAKE_ASR),
+            patch("extraction.ocr_paddle.recognize", return_value=FAKE_OCR),
+        ):
             doc1 = run(synth_videos["sub"], vid)
             wav_before = (DATA_WORK / vid / "audio.wav").stat().st_mtime_ns
             doc_before = (DATA_WORK / vid / "structured_doc.json").stat().st_mtime_ns
@@ -220,13 +266,17 @@ class TestFullOrchestration:
 
         assert doc2 == doc1  # 直接返回缓存文档
         assert (DATA_WORK / vid / "audio.wav").stat().st_mtime_ns == wav_before
-        assert (DATA_WORK / vid / "structured_doc.json").stat().st_mtime_ns == doc_before
+        assert (
+            DATA_WORK / vid / "structured_doc.json"
+        ).stat().st_mtime_ns == doc_before
 
     def test_force_rerun_ignores_checkpoints(self, synth_videos):
         """force=True：忽略检查点重跑，最终文档重写。"""
         vid = _uid("force")
-        with patch("extraction.asr_sensevoice.transcribe", return_value=FAKE_ASR), \
-             patch("extraction.ocr_paddle.recognize", return_value=FAKE_OCR):
+        with (
+            patch("extraction.asr_sensevoice.transcribe", return_value=FAKE_ASR),
+            patch("extraction.ocr_paddle.recognize", return_value=FAKE_OCR),
+        ):
             run(synth_videos["sub"], vid)
             before = (DATA_WORK / vid / "structured_doc.json").stat().st_mtime_ns
             doc = run(synth_videos["sub"], vid, force=True)
@@ -244,4 +294,6 @@ class TestFullOrchestration:
     def test_both_channels_disabled_is_hard_error(self, synth_videos):
         """双通道显式关闭 → 无文字产出 → ExtractionError。"""
         with pytest.raises(ExtractionError, match=r"双通道"):
-            run(synth_videos["sub"], _uid("bothoff"), enable_asr=False, enable_ocr=False)
+            run(
+                synth_videos["sub"], _uid("bothoff"), enable_asr=False, enable_ocr=False
+            )

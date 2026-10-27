@@ -26,7 +26,9 @@ def _extracted_task() -> LinkTask:
 
 
 @pytest.mark.parametrize("gate_result", [False, True])
-def test_transition_done_calls_knowledge_gate(monkeypatch: pytest.MonkeyPatch, gate_result: bool) -> None:
+def test_transition_done_calls_knowledge_gate(
+    monkeypatch: pytest.MonkeyPatch, gate_result: bool
+) -> None:
     """The done transition must consult the lifecycle gate before updating PG."""
     task = _extracted_task()
     calls: list[int] = []

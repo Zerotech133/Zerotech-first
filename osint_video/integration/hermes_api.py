@@ -3,6 +3,7 @@
 Endpoints only enqueue links or create pending creator runs. Workers remain the
 sole component allowed to execute provider/collection work.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -46,7 +47,9 @@ def _task_data(task: Any) -> dict[str, Any]:
 @router.post("/links")
 def submit_links(request: LinkRequest) -> dict[str, Any]:
     """Submit links idempotently; no media access occurs here."""
-    result = link_repo.submit_links(request.urls, request.created_by, request.route, request.priority)
+    result = link_repo.submit_links(
+        request.urls, request.created_by, request.route, request.priority
+    )
     payload = dict(result)
     payload["tasks"] = [_task_data(task) for task in result.get("tasks", [])]
     return _ok(payload)
@@ -62,13 +65,22 @@ def create_scan(target_id: int, request: CreatorRequest) -> dict[str, Any]:
     return _create_run(target_id, "daily_scan", request.input_cursor)
 
 
-def _create_run(target_id: int, run_type: str, input_cursor: str | None) -> dict[str, Any]:
+def _create_run(
+    target_id: int, run_type: str, input_cursor: str | None
+) -> dict[str, Any]:
     try:
         result = creator_ops.create_run(target_id, run_type, input_cursor)
     except ValueError as exc:
         message = str(exc)
-        status = 404 if message.startswith("NOT_FOUND") else (409 if message.startswith("CURSOR_REGRESSION") else 400)
-        raise HTTPException(status_code=status, detail={"code": message.split(":", 1)[0], "message": message}) from exc
+        status = (
+            404
+            if message.startswith("NOT_FOUND")
+            else (409 if message.startswith("CURSOR_REGRESSION") else 400)
+        )
+        raise HTTPException(
+            status_code=status,
+            detail={"code": message.split(":", 1)[0], "message": message},
+        ) from exc
     return _ok(result)
 
 
@@ -76,25 +88,43 @@ def _create_run(target_id: int, run_type: str, input_cursor: str | None) -> dict
 def get_run(run_id: int) -> dict[str, Any]:
     result = creator_ops.get_run(run_id)
     if result is None:
-        raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "运行不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "NOT_FOUND", "message": "运行不存在"}
+        )
     return _ok(result)
 
 
 @router.get("/creators/{target_id}/summary")
-def get_summary(target_id: int, cursor: str | None = None, size: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+def get_summary(
+    target_id: int,
+    cursor: str | None = None,
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
     _require_creator(target_id)
     return _ok(creator_ops.list_summaries(target_id, cursor=cursor, size=size))
 
 
 @router.get("/creators/{target_id}/timeline")
-def get_timeline(target_id: int, from_: str | None = Query(default=None, alias="from"), to: str | None = None, cursor: str | None = None, size: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+def get_timeline(
+    target_id: int,
+    from_: str | None = Query(default=None, alias="from"),
+    to: str | None = None,
+    cursor: str | None = None,
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
     _require_creator(target_id)
-    return _ok(creator_ops.list_creator_timeline(target_id, from_=from_, to=to, cursor=cursor, size=size))
+    return _ok(
+        creator_ops.list_creator_timeline(
+            target_id, from_=from_, to=to, cursor=cursor, size=size
+        )
+    )
 
 
 def _require_creator(target_id: int) -> None:
     if creator_ops.get_creator(target_id) is None:
-        raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "博主不存在"})
+        raise HTTPException(
+            status_code=404, detail={"code": "NOT_FOUND", "message": "博主不存在"}
+        )
 
 
 __all__ = ["router"]
