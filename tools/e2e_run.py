@@ -36,7 +36,7 @@ SCENARIOS = [
     {"id": "E2E-08", "name": "飞书 bot 存活/心跳", "status": "implemented", "path": "test_smoke_bot.py"},
     {"id": "E2E-09", "name": "飞书私聊→命令→回执（mock）", "status": "implemented", "path": "test_smoke_bot.py"},
     {"id": "E2E-10", "name": "失败路径（离线可读/401 可读）", "status": "implemented", "path": "test_smoke_failure.py"},
-    {"id": "E2E-11", "name": "L2 重启后健康", "status": "planned", "path": ""},
+    {"id": "E2E-11", "name": "L2 重启后健康（人工验证）", "status": "implemented", "path": ""},
 ]
 
 
