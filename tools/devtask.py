@@ -300,6 +300,58 @@ def _security_warn_gate(branch, worktree=""):
         print("  %-8s ? 扫描失败（忽略，不阻断）：%s" % ("安全扫描", str(e)[:120]))
 
 
+def _ocr_warn_gate(branch, worktree=""):
+    """OCR 语义审查（告警模式，第 5 道门；默认关，DEVTOOL_OCR_GATE=1 开启）。
+
+    2026-10-27 关羽线：阿里开源 Open Code Review（确定性工程 × Agent 混合）。
+    纪律：**只告警不阻断**（连续 2 周假阳性率 <10% 再议 block）；
+    默认关闭——每次审查消耗数万~数十万 token，只对"待合并分支 diff"按需开。
+    任一环节失败（未安装/超时/JSON 坏）都只打印问号，绝不影响合并。
+    """
+    if str(os.environ.get("DEVTOOL_OCR_GATE", "")).strip().lower() not in ("1", "true", "yes", "on"):
+        print("  %-8s - 未启用（DEVTOOL_OCR_GATE=1 开启，warn 不阻断）" % "OCR语义审查")
+        return
+    exe = shutil.which("ocr")
+    if not exe:
+        print("  %-8s ? 未安装 ocr（npm i -g @alibaba-group/open-code-review），忽略" % "OCR语义审查")
+        return
+    out_json = os.path.join(tempfile.gettempdir(), "ocr_merge_%s.json" % branch.replace("/", "_"))
+    try:
+        cwd = worktree if worktree and os.path.isdir(worktree) else REPO
+        r = subprocess.run(
+            [exe, "review", "--from", "master", "--to", branch,
+             "--format", "json", "--output", out_json],
+            cwd=cwd, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=240)
+        if not os.path.isfile(out_json):
+            print("  %-8s ? OCR 未产出 JSON（rc=%s），忽略：%s"
+                  % ("OCR语义审查", r.returncode, ((r.stderr or r.stdout) or "")[-160:]))
+            return
+        data = json.load(open(out_json, encoding="utf-8"))
+        if str(data.get("status") or "").lower() == "skipped":
+            print("  %-8s - 跳过（%s；warn 不阻断）"
+                  % ("OCR语义审查", data.get("message") or "无待审项"))
+            return
+        summary = data.get("summary") or {}
+        comments = data.get("comments") or []
+        sev = {}
+        for c in comments:
+            k = str(c.get("severity") or "?")
+            sev[k] = sev.get(k, 0) + 1
+        print("  %-8s ⚠ comments=%d %s tokens=%s elapsed=%s（warn 不阻断，JSON=%s）"
+              % ("OCR语义审查", len(comments),
+                 " ".join("%s=%d" % (k, v) for k, v in sorted(sev.items())),
+                 summary.get("total_tokens", "?"), summary.get("elapsed", "?"), out_json))
+        for c in comments[:8]:
+            print("    [%s/%s] %s:%s %s"
+                  % (c.get("severity"), c.get("category"), c.get("path"),
+                     c.get("start_line") or c.get("end_line") or "?",
+                     str(c.get("content") or "").replace("\n", " ")[:120]))
+    except Exception as e:  # noqa: BLE001 - warn 门绝不阻断合并
+        print("  %-8s ? OCR 审查失败（忽略，不阻断）：%s" % ("OCR语义审查", str(e)[:160]))
+
+
+
 def _git(*args, cwd=REPO):
     r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True,
                        text=True, encoding="utf-8", errors="replace")
@@ -1021,6 +1073,7 @@ def cmd_merge(tid, *flags):
         _emit("guard_fail", tid, "门 %s 未过：%s" % (name, out[:120]))
         return 1
     _security_warn_gate(t["branch"], t.get("worktree"))
+    _ocr_warn_gate(t["branch"], t.get("worktree"))
     # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
     r = subprocess.run([sys.executable,
                         os.path.join(REPO, "tools", "_l2_guard.py"),
