@@ -62,6 +62,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from watch_tower_snapshot import SnapshotAggregator, parse_replay_at  # noqa: E402
+import logging
 
 
 SCHEMA = "watch_admin.snapshot.v1"
@@ -310,8 +311,8 @@ class WatchAdminAggregator:
                 for sk in ("push_hub_key", "quant_mid_key"):
                     if sec.get(sk):
                         return str(sec[sk]).strip()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/watch_admin_snapshot.py", exc)
         return None
 
     # ------------------------------------------------------------------ #
@@ -586,8 +587,8 @@ class WatchAdminAggregator:
             self._ensure_kpaper_path()
             import combo_registry as _cr  # noqa: WPS433 (lazy, stdlib-only)
             return _cr.load_registry(str(path)), None, "combo_registry.load_registry"
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/watch_admin_snapshot.py", exc)
         try:
             with path.open("r", encoding="utf-8") as handle:
                 return json.load(handle), None, "direct_json"

@@ -47,6 +47,7 @@ import os
 import subprocess
 from dataclasses import dataclass, field
 from typing import Any, Optional
+import logging
 
 # ── 常量 ──────────────────────────────────────────────────────────────
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,8 +103,8 @@ def _load_env_local() -> None:
                 key = key.strip()
                 if key.startswith("XMAP_PG_"):
                     os.environ.setdefault(key, val.strip())
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/aggregator.py", exc)
 
 
 def _pg_connect():
@@ -408,8 +409,8 @@ class SignalAggregator:
                 n = getter(sid)
                 if n is not None:
                     return max(int(n), 1)
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/aggregator.py", exc)
         n = getattr(adapter, "top_n", None)
         try:
             return max(int(n), 1) if n is not None else None

@@ -13,6 +13,7 @@ import os
 import re
 import time
 import requests
+import logging
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.join(BASE, "data", "k266_docs")
@@ -96,8 +97,8 @@ def main():
         for line in open(OUT, encoding="utf-8"):
             try:
                 done.add(json.loads(line)["doc_id"])
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/k266_gold_replay.py", exc)
     n_ok = n_err = 0
     results = {}
     if os.path.exists(OUT):
@@ -106,8 +107,8 @@ def main():
                 r = json.loads(line)
                 if r.get("raw_ok"):
                     results[r["doc_id"]] = r
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/k266_gold_replay.py", exc)
     for did, g in gmap.items():
         if did in done:
             continue

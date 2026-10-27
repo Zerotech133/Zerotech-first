@@ -25,6 +25,7 @@ import math
 import os
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -56,8 +57,8 @@ def _load_jsonl(fp):
                     out.append(json.loads(line))
                 except Exception:
                     continue
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/council_shadow.py", exc)
     return out
 
 
@@ -215,8 +216,8 @@ def refresh():
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/council_shadow.py", exc)
     ap = argparse.ArgumentParser(description="K55-C4 投委会影子对照统计")
     ap.add_argument("--json", action="store_true", help="输出原始 JSON")
     a = ap.parse_args()

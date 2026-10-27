@@ -16,6 +16,7 @@ import argparse
 import json
 import os
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -84,8 +85,8 @@ def load_whitelist():
         items = d.get("modules") if isinstance(d, dict) else d
         if items:
             return set(items)
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/push_legacy_audit.py", exc)
     return set(DEFAULT_WHITELIST)
 
 
@@ -158,8 +159,8 @@ def audit(days=7, log_path=None, source_roots=None):
                     continue
                 if _within(row.get("ts"), days):
                     rows.append(row)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/push_legacy_audit.py", exc)
     wl = load_whitelist()
     grouped = {}
     for r in rows:

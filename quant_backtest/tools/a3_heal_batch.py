@@ -30,6 +30,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime
+import logging
 
 QUANT_DIR = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))
@@ -88,8 +89,8 @@ def find_tdx_sync_procs():
         if "tdx_sync.py" in line and "a3_heal_batch" not in line:
             try:
                 pids.append(int(line.split("|", 1)[0]))
-            except ValueError:
-                pass
+            except ValueError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/a3_heal_batch.py", exc)
     return pids
 
 
@@ -304,8 +305,8 @@ def worker(tables, log_path):
         finally:
             try:
                 os.remove(lock_path)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/a3_heal_batch.py", exc)
 
 
 def main(argv):

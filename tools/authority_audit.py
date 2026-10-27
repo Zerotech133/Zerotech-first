@@ -25,6 +25,7 @@ TOOLS = ROOT / "tools"
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 import devtask  # noqa: E402
+import logging
 
 TASKS = ROOT / ".worktrees" / "tasks.json"
 EVENTS = ROOT / "portal" / "data" / "dev_events.jsonl"
@@ -70,8 +71,8 @@ def load_events(path=EVENTS):
                 rows.append(json.loads(line))
             except ValueError:
                 continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/authority_audit.py", exc)
     return rows
 
 
@@ -104,8 +105,8 @@ def compute(tasks, events, charter, adr_files=(), now=None):
         try:
             if devtask._owner_check(r["owner"])[0] is True:
                 recent_legal += 1
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/authority_audit.py", exc)
     arch1_actions = sum(
         1 for e in events
         if str(e.get("day") or e.get("ts") or "")[:10] >= cut

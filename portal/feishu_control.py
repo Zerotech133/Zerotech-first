@@ -26,6 +26,7 @@ import subprocess
 import sys
 import threading
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -86,8 +87,8 @@ def audit(operator, action, detail=""):
                     )
                     + "\n"
                 )
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_control.py", exc)
 
 
 def allowed(open_id):
@@ -151,8 +152,8 @@ def _alert_ack(alert_id, ignore=False, operator=""):
                 "SELECT title FROM v2_alert WHERE alert_id=%s", (alert_id,)
             )
             title = (rows[0][0] or "") if rows else ""
-        except Exception:  # noqa: BLE001
-            pass  # 查询失败降级仅记 alert_id（同 lark_card_handler）
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_control.py", exc)
         ign = _read_json(IGNORE_FILE, [])
         if isinstance(ign, list):
             from datetime import datetime as _dt

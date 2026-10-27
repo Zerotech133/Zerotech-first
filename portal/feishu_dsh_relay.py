@@ -20,6 +20,7 @@ import subprocess
 import sys
 import threading
 import time
+import logging
 
 DSH_EXE = os.environ.get("DSH_EXE") or (
     r"C:\Users\t\AppData\Local\Programs\DeepSeek Harness"
@@ -88,8 +89,8 @@ def owner_ids():
         legacy = push_targets.target_id("个人")
         if legacy:
             ids.add(legacy)
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_dsh_relay.py", exc)
     return ids
 
 
@@ -129,8 +130,8 @@ def _save_sessions(data):
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=1)
         os.replace(tmp, SESS_FILE)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_dsh_relay.py", exc)
 
 
 def get_session(key):

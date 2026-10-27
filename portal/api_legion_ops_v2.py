@@ -26,6 +26,7 @@ from legion_meeting_room import (RoomError, create_room, load_room, list_rooms,
                                  post_message, board_add_card, board_update_card,
                                  board_resolve_card)
 from api_legion_ops import build_roster, build_feed, build_tasks  # v3 H2 路由用
+import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
@@ -108,8 +109,8 @@ def _hr_of(aid: str) -> dict:
             s = line.strip()
             if s.startswith("name:"): out["name"] = s.split(":", 1)[1].strip()
             elif s.startswith("kind:"): out["kind"] = s.split(":", 1)[1].strip()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_legion_ops_v2.py", exc)
     try:
         txt = (d / "appointment.yaml").read_text(encoding="utf-8").strip()
         if txt.startswith("{"):
@@ -126,8 +127,8 @@ def _hr_of(aid: str) -> dict:
         out.update({"rank": a.get("rank"), "title": a.get("title"), "dept": a.get("dept"),
                     "mode": a.get("mode", ""), "onboarded": a.get("onboarded", ""),
                     "endpoint": a.get("endpoint", "")})
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_legion_ops_v2.py", exc)
     return out
 
 

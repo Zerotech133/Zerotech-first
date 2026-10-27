@@ -18,6 +18,7 @@ import re
 import sys
 import tempfile
 from datetime import datetime, timedelta
+import logging
 
 REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RUNS = r"C:\aios\automation_runs"
@@ -333,8 +334,8 @@ def collect_scripts():
                 finally:
                     try:
                         os.remove(cfile)
-                    except OSError:
-                        pass
+                    except OSError as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/research/xq_preflight_check.py", exc)
             except Exception as exc:  # noqa: BLE001
                 bad.append("%s py_compile 失败: %s" % (os.path.basename(py), exc))
         row["status"] = "FAIL" if bad else "PASS"
@@ -367,8 +368,8 @@ def collect_heartbeat(now):
         with open(HEARTBEAT_LOG, "r", encoding="utf-8", errors="replace") as fh:
             lines = [ln for ln in fh.read().splitlines() if ln.strip()]
         last_line = lines[-1] if lines else ""
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/research/xq_preflight_check.py", exc)
     row = judge_heartbeat(last_line, mtime, now)
     row["item"] = "heartbeat:xq_classify_status.log"
     return [row]

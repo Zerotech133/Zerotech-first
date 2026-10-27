@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -47,8 +48,8 @@ def _jsonl(path, limit=None):
                     rows.append(json.loads(line))
                 except ValueError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_feed.py", exc)
     return rows[-limit:] if limit else rows
 
 
@@ -177,8 +178,8 @@ def _links_block(rows):
                         ),
                     )
                 )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_feed.py", exc)
     if not lines:
         return {
             "type": "md",

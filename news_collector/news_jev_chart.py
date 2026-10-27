@@ -25,6 +25,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "news.db")
@@ -621,8 +622,8 @@ def refresh_doc(now, items):
     finally:
         try:
             os.remove(tmp)
-        except OSError:
-            pass  # 豁免（C2批2）：临时文件清理兜底
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_jev_chart.py", exc)
 
 
 def _card_btns(doc_url, base_url):
@@ -719,8 +720,8 @@ def push(key, n_total, n_day, now, doc_url=None, base_url=None):
                 )
             )
             union = _own.get("union_id") or union
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_jev_chart.py", exc)
         ok, why = send_msg(
             json.dumps(card, ensure_ascii=False),
             "interactive",

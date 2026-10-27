@@ -10,6 +10,7 @@ import shutil
 import sys
 import time
 import urllib.request
+import logging
 
 # K-STOCK-414：旧机 Administrator/D 盘硬编码换机即死 → 动态定位：
 # 优先 PATH 中的 ollama，回退当前用户默认安装位；模型用默认 ~/.ollama/models。
@@ -28,8 +29,8 @@ def _log(msg):
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(line + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_service/serve_wrapper.py", exc)
 
 
 if not os.path.exists(OLLAMA):
@@ -43,8 +44,8 @@ try:
     _log("ALREADY ALIVE")
     time.sleep(2)
     sys.exit(0)
-except Exception:
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_service/serve_wrapper.py", exc)
 
 os.environ["OLLAMA_MODELS"] = MODELS  # os.system 继承进程环境，必须写 os.environ
 _log("starting ollama serve, OLLAMA_MODELS=%s" % MODELS)

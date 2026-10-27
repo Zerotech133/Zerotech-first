@@ -28,6 +28,7 @@ import json
 import os
 import subprocess
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REP = os.path.join(os.path.dirname(HERE), "reports")
@@ -90,8 +91,8 @@ def build_alert(code, r, tpl=None):
                     if not l.lstrip().startswith("#")
                 )
                 return text.format(**f).rstrip("\n")
-            except (KeyError, IndexError, ValueError):
-                pass  # 模板坏 → 回退内置
+            except (KeyError, IndexError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_alert.py", exc)
     return _builtin(f)
 
 
@@ -117,8 +118,8 @@ def load_last(fp):
         for line in f:
             try:
                 last = json.loads(line.lstrip("\ufeff"))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_alert.py", exc)
     return last
 
 

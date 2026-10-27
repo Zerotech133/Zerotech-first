@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 
 from bs4 import BeautifulSoup
+import logging
 
 DROP_TAGS = (
     "script",
@@ -142,8 +143,8 @@ def extract_main(raw, url=""):
         try:
             soup = BeautifulSoup(html, "lxml")
             title = _title(soup, url)
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feed_extract.py", exc)
         return {
             "title": title,
             "text": t[:TEXT_MAX],
@@ -160,8 +161,8 @@ def extract_main(raw, url=""):
                 "extractor": "lxml-heuristic",
                 "chars": len(text),
             }
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feed_extract.py", exc)
     # 3) 纯文本兜底（同样先删隐藏节点/脚本等，防隐藏指令入库）
     try:
         soup = BeautifulSoup(html, "lxml")

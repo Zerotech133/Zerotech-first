@@ -38,6 +38,7 @@ import tempfile
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
+import logging
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -160,8 +161,8 @@ def _load_json(path, default):
         try:
             with io.open(path, encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sellpoint_ai.py", exc)
     return default
 
 
@@ -404,8 +405,8 @@ def make_card(r, paper_row, agent):
             )
             gen_ms += int((time.time() - t0) * 1000)
             strength, action, reason, risk, ok = _parse(out, agent["actions"])
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sellpoint_ai.py", exc)
     card = {
         "market": r.get("market", "CN"),
         "code": r.get("code"),
