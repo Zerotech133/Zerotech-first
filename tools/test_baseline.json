@@ -1,0 +1,32 @@
+{
+  "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27）。known_failures=任何环境都登记；env_failures=仅 worktree 无数据根时豁免（主仓必须过）；新增失败必须修或正式登记，不得直接加白。",
+  "portal/tests": {
+    "known_failures": [],
+    "flaky": []
+  },
+  "k_stock/tests": {
+    "known_failures": [
+      "k_stock/tests/test_report_builder.py::test_no_external_sdk_imported",
+      "k_stock/tests/test_riskguard_topics.py::test_markdown_renders_conclusion_and_groups"
+    ],
+    "flaky": [],
+    "env_failures": [
+      "k_stock/tests/test_datafeed_watchlist.py::TestLakeCode::test_mapping_hits_real_lake_files",
+      "k_stock/tests/test_datafeed_watchlist.py::TestWatchlistFromQuotes::test_prefix_codes_resurface_and_gb_skipped",
+      "k_stock/tests/test_paper_cli.py::test_mark_default_us_failure_is_nonzero_and_no_false_us_row",
+      "k_stock/tests/test_paper_cli.py::test_mark_all_real_engine_cash_only_accounts",
+      "k_stock/tests/test_period_summary.py::test_cn_accounts_normal"
+    ]
+  },
+  "agent_platform/tests": {
+    "known_failures": [],
+    "flaky": [
+      "待识别：2026-10-27 历史 10 项中 2 项隔离单跑通过（需 pytest-randomly 复现后补名字）"
+    ]
+  },
+  "quant_backtest/tests": {
+    "known_failures": [],
+    "flaky": [],
+    "note": "全量 >20min，建议夜间窗口跑；当前仅要求 0 收集错误"
+  }
+}
