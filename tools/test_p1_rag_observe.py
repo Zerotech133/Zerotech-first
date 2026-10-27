@@ -45,3 +45,35 @@ def test_load_skips_bad_lines(tmp_path):
 
 def test_load_missing(tmp_path):
     assert o.load(tmp_path / "nope.jsonl") == []
+
+
+def test_evaluate_no_traffic_info_only():
+    res = o.evaluate(o.summarize([]), {"exists": True, "built_at": "2026-10-27"})
+    assert res["alerts"][0]["code"] == "no_traffic"
+    assert res["high"] == 0 and res["action_required"] is False
+
+
+def test_evaluate_high_alerts():
+    summary = {"total": 10, "rag_enabled_rate": 0.2, "empty_rate": 0.5,
+               "source_count_avg": 0.5,
+               "latency_ms": {"p95": 1200}}
+    res = o.evaluate(summary, {"exists": True, "built_at": "2026-10-20"})
+    codes = {a["code"] for a in res["alerts"]}
+    assert {"rag_not_enabled", "empty_retrieval_high", "latency_p95_high",
+            "source_count_low"} <= codes
+    assert res["high"] >= 2 and res["action_required"] is True
+    assert "ZHUGE_RAG" in res["rollback"]
+
+
+def test_evaluate_healthy():
+    summary = {"total": 10, "rag_enabled_rate": 1.0, "empty_rate": 0.1,
+               "source_count_avg": 3.0, "latency_ms": {"p95": 120}}
+    res = o.evaluate(summary, {"exists": True, "built_at": "2026-10-27"})
+    assert res["alerts"] == [] and res["action_required"] is False
+
+
+def test_evaluate_index_missing_stale():
+    res = o.evaluate({"total": 5, "rag_enabled_rate": 1.0, "empty_rate": 0,
+                      "source_count_avg": 2, "latency_ms": {"p95": 100}},
+                     {"exists": False})
+    assert any(a["code"] == "index_missing" for a in res["alerts"])
