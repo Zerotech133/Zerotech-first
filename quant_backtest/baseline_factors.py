@@ -35,11 +35,11 @@ ROOT = REPO.parent
 
 def _find_data_root() -> Path:
     """主仓/工作树都能定位到 C:\\项目\\老田的AI助手\\quant_backtest\\data\\tdx。"""
-    for anc in [ROOT] + list(ROOT.parents):
+    for anc in [REPO] + list(REPO.parents):
         cand = anc / "quant_backtest" / "data" / "tdx"
         if (cand / "ts_daily").is_dir():
             return cand
-    return ROOT / "quant_backtest" / "data" / "tdx"
+    return REPO / "quant_backtest" / "data" / "tdx"
 
 
 DATA_ROOT = _find_data_root()
