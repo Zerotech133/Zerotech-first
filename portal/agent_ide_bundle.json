@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 35,
+  "workorders_doing": 34,
   "workorders_review": 4
  },
  "workorders": [
@@ -353,15 +353,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-GRADE-20261028",
    "created": "2026-10-28 07:50:50",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-UIW4K-20261028",
-   "desc": "W4 第七批收编：os_goal/os_issues/os_software/os_personal 接入 PageShell adopted；自导航页单独挂载",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIW4K-20261028",
-   "created": "2026-10-28 07:50:58",
    "project": "general"
   }
  ],
@@ -7063,11 +7054,6 @@
     {
      "id": "WO-HUANGZHONG-GRADE-20261028",
      "desc": "黄忠W1批改工具(Rubric自动评分)+观察指标覆盖率+W1提交模板",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-UIW4K-20261028",
-     "desc": "W4 第七批收编：os_goal/os_issues/os_software/os_personal 接入 PageShell adopted；自导航页单独挂载",
      "status": "doing"
     }
    ]
