@@ -43,6 +43,7 @@ import datetime as dt
 import os
 import re
 import sys
+import logging
 
 try:  # 2026-10-26 K-ORG-20261026-ENCPROT: non-UTF8 console printing CJK/checkmark
     # raises UnicodeEncodeError and can crash merge/hook paths; degrade to UTF-8 output.
@@ -53,7 +54,6 @@ except Exception as exc:
 import time
 from dataclasses import dataclass
 from pathlib import Path
-import logging
 
 PROJECT_DIRNAME = "老田的AI助手"
 OUTPUT_FILENAME = "DOCS_INDEX.md"

@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import sys
+import logging
 
 try:  # 2026-10-26 K-ORG-20261026-ENCPROT: 非 UTF-8 控制台打印中文不再崩溃
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -40,7 +41,6 @@ import json  # noqa: E402
 import subprocess  # noqa: E402
 import time  # noqa: E402
 from pathlib import Path  # noqa: E402
-import logging
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_EVENTS_PATH = ROOT / "portal" / "data" / "dev_events.jsonl"
