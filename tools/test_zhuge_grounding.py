@@ -82,3 +82,17 @@ def test_build_grounding_includes_memory(monkeypatch, tmp_path):
     prompt = g.grounded_prompt("诸葛亮载体是什么？", grounded)
     assert "历史经验" in prompt and "BM25 需要同义词扩展" in prompt
     assert "[S1]" in prompt
+
+
+def test_usage_log_skipped_under_pytest(monkeypatch, tmp_path):
+    monkeypatch.setenv("ZHUGE_MCP_REPO", str(tmp_path))
+    g._log_usage("测试问题", [{"path": "docs/x.md"}], 1.0)
+    assert not (tmp_path / "work" / "p1" / "rag" / "grounding_usage.jsonl").exists()
+
+
+def test_usage_log_writes_outside_pytest(monkeypatch, tmp_path):
+    monkeypatch.setenv("ZHUGE_MCP_REPO", str(tmp_path))
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    g._log_usage("真实问题", [{"path": "docs/x.md"}], 1.0)
+    p = tmp_path / "work" / "p1" / "rag" / "grounding_usage.jsonl"
+    assert p.is_file() and '"q_chars": 4' in p.read_text(encoding="utf-8")

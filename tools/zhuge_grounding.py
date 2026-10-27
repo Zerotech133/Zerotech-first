@@ -121,7 +121,13 @@ def retrieve(question: str, limit: int = 3, max_per_doc: int = 2) -> list[dict]:
 
 
 def _log_usage(question: str, sources: list[dict], elapsed_ms: float) -> None:
-    """只记检索遥测（问题哈希/来源/耗时），不落原文；失败不反噬。"""
+    """只记检索遥测（问题哈希/来源/耗时），不落原文；失败不反噬。
+
+    2026-10-27 观察期数据卫生：pytest 下禁止写生产 usage——
+    测试会批量调用 build_grounding，曾污染 15:34-15:58 的 18 条观察样本。
+    """
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return
     if os.environ.get("ZHUGE_USAGE_LOG", "1").strip().lower() in ("0", "false", "no", "off"):
         return
     try:

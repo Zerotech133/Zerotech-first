@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""ui_visual_baseline.py — 通过 Chrome DevTools Protocol 采集视觉基线。
+r"""ui_visual_baseline.py — 通过 Chrome DevTools Protocol 采集视觉基线。
 
 前置：本机 Edge/Chrome 以 CDP 启动，例如：
   msedge --headless=new --disable-gpu --no-sandbox \
