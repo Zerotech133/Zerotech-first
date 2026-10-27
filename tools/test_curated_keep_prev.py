@@ -231,7 +231,7 @@ def case_from_tmp_skips_kg_guard():
         src = sb.root / "tushare"
         src.mkdir()
         out = make_layer(sb.root / "tushare_curated", {"old.parquet": 2})
-        tmp = make_layer(sb.root / "tushare_curated.tmp", {"new.parquet": 3})
+        make_layer(sb.root / "tushare_curated.tmp", {"new.parquet": 3})
         kg = sb.root / "kg_sync_task.log"
         kg.write_text("just written by STAGE\n", encoding="utf-8")  # mtime=now
         old_kg = rc.KG_LOG

@@ -193,46 +193,6 @@ def _artifacts_db() -> Path:
     return _AGENT_PLATFORM / "data" / "artifacts" / "artifacts.db"
 
 
-def register_deck_artifact(deck_id: str,
-                           artifact_store: ArtifactStore = None
-                           ) -> Tuple[Optional[Artifact], bool]:
-    """M3-P2：deck 产物文件存在时登记为统一 Artifact（幂等不设门）。
-
-    登记点：drafted（初稿产物诞生）/ delivered（交付达成，首次或
-    catch-up 补齐）。文件未指定或缺失 → 跳过不伪造（对齐投影
-    _file_fingerprint 的 missing 判例）。kind 按后缀映射，缺省
-    "deck"。同内容重复登记=重放零副作用；deck 改版后二次交付走
-    store 去重产生新行（supersedes 由调用方按需补链，登记层不强制）。
-    """
-    deck = find_deck(deck_id)
-    if deck is None:
-        raise PitchWiringError("deck %s 不存在" % deck_id)
-    rel = deck.get("artifact", "")
-    if not rel:
-        return None, False
-    p = _AGENT_PLATFORM.parent / rel if not Path(rel).is_absolute() else Path(rel)
-    if not p.exists():
-        return None, False
-    chash = fact_hash_of(p.read_bytes())
-    suffix = p.suffix.lstrip(".").lower()
-    kind = suffix if suffix in ("pptx", "ppt", "pdf", "md", "html") else "deck"
-    own_store = artifact_store is None
-    store = artifact_store or ArtifactStore(_artifacts_db())
-    try:
-        return store.record(Artifact(
-            kind=kind,
-            path=rel,
-            fact_hash=chash,
-            content_hash=chash,
-            source_system="pitch.decks",
-            source_ref=deck_id,
-            produced_by="COMM1",
-        ))
-    finally:
-        if own_store:
-            store.close()
-
-
 def add_deck(deck_id: str, title: str, audience: str = "",
              goal: str = "", artifact: str = "") -> dict:
     """登记新 deck（账本真源初始化，无门——登记≠承诺）。"""

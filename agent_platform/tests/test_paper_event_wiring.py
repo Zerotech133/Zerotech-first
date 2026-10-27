@@ -7,7 +7,6 @@ execution_allowed 红线（缺字段也拒）/ 必填字段校验 / 幂等重放
 幂等提议）/ trace 链挂接（两环链+链失败留痕不阻断）/ 证据收集器
 （paper 域 + 绿地空账零 findings）。
 """
-import json
 import sys
 import unittest
 from pathlib import Path

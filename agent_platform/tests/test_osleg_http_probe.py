@@ -64,8 +64,11 @@ def test_dry_run_does_not_bind_8795():
     names = {c["name"] for c in out["checks"]}
     assert {"endpoint_translation_nonempty", "platform_dir_exists",
             "work_dir_writable", "port_8795_free"} <= names
-    # dry-run 只做自检，不监听端口
-    assert P.port_in_use("127.0.0.1", 8795) is False
+    # dry-run 只做自检，不监听端口：无论 8795 原本是否被占用，
+    # dry-run 前后端口状态必须一致（本机已有 gateway 占用时应视为一致）。
+    before = P.port_in_use("127.0.0.1", 8795)
+    out2 = P.dry_run()
+    assert P.port_in_use("127.0.0.1", 8795) is before, out2
 
 
 def test_run_rejects_occupied_8795(monkeypatch):

@@ -4,7 +4,6 @@ from __future__ import annotations
 import importlib.util
 import json
 import socket
-import threading
 from pathlib import Path
 
 _WT = Path(__file__).resolve().parents[2]

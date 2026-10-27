@@ -18,7 +18,6 @@ PLATFORM = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLATFORM))
 sys.path.insert(0, str(PLATFORM / "engine"))
 
-import interpreter as interp_mod  # noqa: E402
 from interpreter import Team, TopologyError, _infer_role  # noqa: E402
 
 REAL_REGISTRY = PLATFORM / "registry" / "team_invest.json"

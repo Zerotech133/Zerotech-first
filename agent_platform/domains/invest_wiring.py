@@ -623,7 +623,7 @@ def main(argv=None) -> int:
                       choices=["reviewed", "adopted", "drafted"])
     p_ap.add_argument("--by", required=True)
     p_ap.add_argument("--reason", default="")
-    p_pe = sub.add_parser("paper-events", parents=[common])
+    sub.add_parser("paper-events", parents=[common])
     p_pr = sub.add_parser("propose-real", parents=[common])
     p_pr.add_argument("trace_id")
     p_pr.add_argument("--by", required=True)

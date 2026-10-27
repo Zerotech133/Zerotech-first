@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import sys
 import threading
-import time
 import urllib.request
 from pathlib import Path
 
@@ -19,7 +18,6 @@ import pytest
 _PLATFORM = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PLATFORM))
 
-from engine.llm import LLMError  # noqa: E402
 from gateway import inbox_gateway, llm_gateway  # noqa: E402
 from gateway.envelope import (EnvelopeError, make_envelope,  # noqa: E402
                               validate_envelope)

@@ -16,7 +16,6 @@
 import sys
 from pathlib import Path
 
-import pytest
 
 TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
 if str(TOOLS_DIR) not in sys.path:

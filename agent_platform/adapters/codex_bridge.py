@@ -36,13 +36,12 @@ from pathlib import Path
 try:
     from strategy_registry import (
         RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError,
-        StrategyRegistry, Verdict)
+        StrategyRegistry, Verdict)  # noqa: F401
 except ImportError:  # 跨目录直接调用时兜底定位 engine/
     _here = Path(__file__).resolve()
     sys.path.insert(0, str(_here.parent.parent / "engine"))
     from strategy_registry import (
-        RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError,
-        StrategyRegistry, Verdict)
+        RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError)
 
 # ---- 拍板①：import 白名单制（§2.2 建议 → 定稿） ----
 # 七件套纯计算库 + 宿主契约模块 strategy_registry（插件基类/Verdict 来源）。
@@ -554,7 +553,7 @@ def load_registered(registry, bridge_dir=None):
     for src in sorted(processed.glob("*/strategy_*.py")):
         try:
             source = src.read_text(encoding="utf-8")
-            agent = register_from_source(source, registry)
+            register_from_source(source, registry)
             loaded += 1
         except StrategyError as e:
             if "重复注册" in str(e):

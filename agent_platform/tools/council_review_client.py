@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import urllib.request
 
 BASE = "http://127.0.0.1:8787"

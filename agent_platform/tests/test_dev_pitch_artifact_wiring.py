@@ -10,7 +10,6 @@ pitch：drafted/delivered 登记 deck 产物文件（存在才登记不伪造；
 from __future__ import annotations
 
 import importlib.util
-import json
 import sys
 import tempfile
 import unittest

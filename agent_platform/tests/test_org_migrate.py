@@ -82,7 +82,7 @@ def test_migrate_keeps_agents_list_when_already_listed(root):
 
 
 def test_migrate_refuses_when_target_has_profile(root):
-    org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
+    json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
     with pytest.raises(M.MigrateError) as ei:
         M.build_migrate_plan(root, agent_id="L1", dept="comm", source="chief",
                              charter="随便一段够长的职责描述文字",

@@ -199,7 +199,7 @@ class SkillApproveGateTests(unittest.TestCase):
         self.elements = dict(
             inputs="i", outputs="o", applies_to="a", not_for="n",
             acceptor="ac", samples="s", version="v1", rollback="r")
-        s = sw.add_skill(self.root, "g1", " gate 测试", "老田", **self.elements)
+        sw.add_skill(self.root, "g1", " gate 测试", "老田", **self.elements)
         sw.move_stage(self.root, "g1", "reviewed", "老田")
 
     def tearDown(self):

@@ -38,7 +38,7 @@ if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
 from contracts import Evidence                    # noqa: E402
-from engine.evidence import EvidenceStore, fact_hash  # noqa: E402
+from engine.evidence import EvidenceStore  # noqa: E402
 
 EVIDENCE_DB = _AGENT_PLATFORM / "data" / "evidence" / "evidence.db"
 

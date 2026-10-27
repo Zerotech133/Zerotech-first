@@ -273,28 +273,6 @@ def cmd_resolve(args):
         sys.exit(0)
 
 
-def cmd_snapshot(args):
-    """子命令 snapshot：生成 JSON 基线。"""
-    all_routes, all_funcs = load_files(args.files)
-    baseline = {}
-    # 每个文件单独记录（便于看分布），整体并集由 check 端重算
-    for p in args.files:
-        r, f = parse_file(p)
-        baseline[p] = {"routes": sorted(r), "funcs": sorted(f)}
-    # 顶层附一份并集，check 实际以此为准（多文件并集视角）
-    out = {"__union__": {"routes": sorted(all_routes), "funcs": sorted(all_funcs)}, "files": baseline}
-
-    with open(args.out, "w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False, indent=1)
-
-    print("[snapshot] 文件数=%d 路由=%d 条 函数/方法=%d 个" % (
-        len(args.files), len(all_routes), len(all_funcs)))
-    for p in args.files:
-        r, f = parse_file(p)
-        print("  - %s: 路由 %d / 函数+方法 %d" % (p, len(r), len(f)))
-    print("[snapshot] 基线已写出: %s" % args.out)
-
-
 def extract_strings_from_decorator(dec):
     """从一个装饰器节点里收集所有以 '/' 开头的字符串常量（即路由路径）。"""
     routes = []

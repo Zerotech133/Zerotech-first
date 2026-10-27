@@ -302,7 +302,6 @@ def main():
     as_json = "--json" in sys.argv
     # --json 模式 stdout 只出纯 JSON（人读横幅关闭），供自动化直接解析
     say = (lambda *a, **k: None) if as_json else print
-    rc = 0
     say("== 注册端口在线状态 ==")
     down = []
     registered = []

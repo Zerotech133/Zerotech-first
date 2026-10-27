@@ -179,7 +179,6 @@ def grounded_chat(question: str, endpoint: str = DEFAULT_ENDPOINT,
 
 def main(argv=None) -> int:
     import argparse
-    import sys
     ap = argparse.ArgumentParser(description="P1-1 zhuge grounding")
     ap.add_argument("--question", default="诸葛亮当前 LLM 载体是什么？")
     ap.add_argument("--ask", action="store_true", help="调用 8795 grounded_chat")

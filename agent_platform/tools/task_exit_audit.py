@@ -320,7 +320,7 @@ def window_diff(hours: float = 24.0) -> dict[str, Any]:
                 if state.get(n, "").lower() != "disabled"
                 and code not in NON_FAILURE_RC}
 
-    now = dt.datetime.now().astimezone()
+    dt.datetime.now().astimezone()
     in_window = [(ts, r) for ts, r in scans if ts > cutoff]
     if not in_window:
         return {"error": f"窗口 {hours}h 内无扫描记录"}

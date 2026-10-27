@@ -130,7 +130,6 @@ def review(card, judge=None) -> ReviewResult:
         scores, rationale, details = judge_by_metrics(card, pool)
     else:
         scores, rationale = judge(pool, card)
-        details = {}
         judge_name = getattr(judge, "__name__", "custom")
     ranking = sorted(scores, key=lambda k: (-scores[k], k))
     return ReviewResult(

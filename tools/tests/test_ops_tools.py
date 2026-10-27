@@ -1366,7 +1366,7 @@ def _run_docs(workspace: Path, *args: str) -> subprocess.CompletedProcess:
 
 def _generate_index(workspace: Path) -> bytes:
     proc = _run_docs(workspace)
-    assert proc.returncode == 0, "生成失败: %r" % (proc.stdout, proc.stderr)
+    assert proc.returncode == 0, "生成失败: stdout=%r stderr=%r" % (proc.stdout, proc.stderr)
     index = workspace / "DOCS_INDEX.md"
     assert index.is_file()
     return index.read_bytes()

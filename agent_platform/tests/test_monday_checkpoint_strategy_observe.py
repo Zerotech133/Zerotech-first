@@ -11,7 +11,6 @@
 import json
 import sys
 import unittest
-from datetime import date
 from pathlib import Path
 
 AP = Path(__file__).resolve().parent.parent

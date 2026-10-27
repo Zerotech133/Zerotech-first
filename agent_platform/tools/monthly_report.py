@@ -303,8 +303,8 @@ def build_org_section(root: Path) -> tuple[str, str]:
     org_f = root / "agent_platform" / "registry" / "org.json"
     hr_d = root / "agent_platform" / "hr"
     if not org_f.is_file() or not hr_d.is_dir():
-        return (f"## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
-                f"态: INCONCLUSIVE（事实源缺失）\n"), "INCONCLUSIVE"
+        return ("## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
+                "态: INCONCLUSIVE（事实源缺失）\n"), "INCONCLUSIVE"
     try:
         j = json.loads(org_f.read_text(encoding="utf-8"))
     except ValueError as e:
@@ -320,8 +320,8 @@ def build_org_section(root: Path) -> tuple[str, str]:
     hr = {p.name for p in hr_d.iterdir() if p.is_dir()}
     org_no_hr = sorted(org - hr)   # 登记缺 profile
     hr_no_org = sorted(hr - org)   # 幽灵目录
-    L = [f"## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
-         f"态: OK（双向 diff 投影，口径=HR 盘点单 541b1690；差集如实列示，处置归过会）"]
+    L = ["## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
+         "态: OK（双向 diff 投影，口径=HR 盘点单 541b1690；差集如实列示，处置归过会）"]
     L.append(f"- org.json 在编引用：{len(org)} 个；hr/ 实存目录：{len(hr)} 个"
              f"（出处：org.json departments[].agents+chief.agent_id、hr/ dir 列表）")
     L.append(f"- org 有 hr 无（登记缺 profile）：{('、'.join(org_no_hr)) if org_no_hr else '（空）'}")

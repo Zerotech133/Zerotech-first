@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import sqlite3
 import sys
 import tempfile
 import unittest
@@ -188,7 +187,6 @@ class CollectTests(unittest.TestCase):
 
     def test_real_repo_read_only(self):
         """真实仓库收编 dry-run（真源零写入，写入仅内存 store）。"""
-        import os
         before = {}
         for rel in ["gzh/drafts/index.json",
                     "agent_platform/data/schedules.json"]:

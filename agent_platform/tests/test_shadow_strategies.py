@@ -7,7 +7,6 @@ Registry 装配、产出全部过 Verdict 白名单、零 pandas 依赖。
 import sys
 from pathlib import Path
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))

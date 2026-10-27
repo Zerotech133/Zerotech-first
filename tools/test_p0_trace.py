@@ -2,7 +2,6 @@
 """p0_trace 单测（P0-6）：离线、无 Phoenix 依赖。"""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 

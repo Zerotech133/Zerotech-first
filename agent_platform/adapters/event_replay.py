@@ -77,7 +77,6 @@ def build_replay(root: str | Path, *, source: str | None = None,
                  trace_id: str | None = None, causation_id: str | None = None,
                  since: str | None = None, until: str | None = None,
                  limit: int = DEFAULT_LIMIT, order: str = "desc") -> dict[str, Any]:
-    import os as _os
     _here = Path(__file__).resolve().parents[1]
     if str(_here) not in sys.path:
         sys.path.insert(0, str(_here))

@@ -167,7 +167,7 @@ class Interpreter:
                         for node_key, text, status in fut.result():
                             ctx["statements"][node_key] = text
                             ctx["status"][node_key] = status
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             self.cp.finish_run(run_id, status="failed")
             raise
 

@@ -20,7 +20,6 @@ import sys
 import time
 from pathlib import Path
 
-import pytest
 
 PLATFORM = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLATFORM))

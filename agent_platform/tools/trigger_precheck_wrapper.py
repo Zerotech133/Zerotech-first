@@ -124,7 +124,7 @@ def _push_feishu(text: str) -> bool:
                 Path(tmp).unlink(missing_ok=True)
             except OSError:
                 pass
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         return False
 
 

@@ -177,7 +177,7 @@ def check_report(report_path: Path, base: Path, sample: int = 10) -> dict:
             for nstr in extract_numbers(sec["lines"][1:]):
                 sampled.append((nstr, state, title))
 
-    coverage = (n_anchored / n_sec) if n_sec else 0.0
+    (n_anchored / n_sec) if n_sec else 0.0
     if n_sec == 0:
         result["violations"].append("查1：报告无任何「## 」段（空报=假绿）")
     result["checks"]["锚覆盖率"] = f"{n_anchored}/{n_sec}"
