@@ -13,6 +13,12 @@ ENGINE = Path(__file__).resolve().parents[1] / "engine"
 if str(ENGINE) not in sys.path:
     sys.path.insert(0, str(ENGINE))
 
+try:  # Windows 管道输出统一 UTF-8（CLI 契约测试解码防 cp936 失败）
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:  # noqa: BLE001
+    pass
+
 from shadow_strategy_runner import SHADOW_MODE, run_shadow_validation  # noqa: E402
 
 
