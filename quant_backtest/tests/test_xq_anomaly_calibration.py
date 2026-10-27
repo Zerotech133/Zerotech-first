@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+import pytest
+pytest.importorskip("jieba")
+# ^ 可选依赖守护：缺 jieba 时跳过而非收集报错（2026-10-28）
 """tests/test_xq_anomaly_calibration.py — 阈值敏感性脚本纯逻辑单测"""
 
 import os
