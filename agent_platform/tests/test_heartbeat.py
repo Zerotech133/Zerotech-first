@@ -79,18 +79,19 @@ def _probe_semantics(probe_result):
 
 
 class _RealRepoSafe(unittest.TestCase):
-    """每个测试前后断言真仓 agent_platform/data/ 字节不变。"""
+    """每个测试后断言真仓 agent_platform/data/ 未被本模块污染。
 
-    def setUp(self):
-        self._snap = _snapshot(DATA)
+    2026-10-27 WO-AUDIT5-FLAKY2：不再做全目录字节快照比对——全量套件跑
+    7 分钟期间，其他会话/常驻服务会持续写 `agent_platform/data/`（实测文件数
+    646→647、DB 侧车 mtime 变化），全目录比对会产生与本模块无关的假阳性。
+    本模块只写 tempfile 隔离根，故只断言「heartbeat 目录未被创建」这一
+    与本模块强相关的污染面。
+    """
 
     def tearDown(self):
         self.assertFalse(
             (DATA / "heartbeat").exists(),
             "真仓 agent_platform/data/heartbeat 被测试创建！",
-        )
-        self.assertEqual(
-            _snapshot(DATA), self._snap, "真仓 agent_platform/data/ 被测试污染！"
         )
 
 
