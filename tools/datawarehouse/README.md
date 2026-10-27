@@ -1,13 +1,15 @@
-# 数据仓治理工具（DATA1 · 只读）
+# 数据仓治理工具（DATA1）
 
-> 归属：**DATA1 张松（数据智能部/兰台 · 数据治理部主官）**｜方案 A（L1）落地件｜全部**只读**
-> 不写数据仓、不连需凭据的服务、不触发任务；所有"运行态"结论来自文件/DB 快照。
+> 归属：**DATA1 张松（数据智能部/兰台 · 数据治理部主官）**｜方案 A（L1）落地件
+> 除 `registry_rebuild.py --apply` 外**全部只读**：不写数据仓、不连需凭据的服务、不触发任务；所有"运行态"结论来自文件/DB 快照。
+> 首个写工具 `registry_rebuild.py` 只在**主仓数据根**重建 `warehouse_registry.json`，严守 AGENTS §3：先读 `C:\Temp\kg_sync_task.log` 尾部→备份→原子写→重读校验→补记日志。
 
 ## 工具清单
 
 | 工具 | 作用 | 命令 | 退出码 |
 |---|---|---|---|
 | `catalog_snapshot.py` | catalog v11 与 registry 一致性（sha256）+ 抽样物理漂移 | `python tools/datawarehouse/catalog_snapshot.py --json` | 0/1/2 |
+| `registry_rebuild.py` | 按 catalog v12 全量重建 registry（旧条目原样保留+新表补登） | `python tools/datawarehouse/registry_rebuild.py --dry-run/--apply [--json]` | 0/1/2 |
 | `freshness_report.py` | 六表 prod_max（footer，不凭 mtime）+ 4 库停摆 | `python tools/datawarehouse/freshness_report.py --json` | 0/1/2 |
 | `manifest_check.py` | 4 个 `_manifest.json` 键 ∩ catalog 表名 | `python tools/datawarehouse/manifest_check.py --json` | 0/1/2 |
 | `quality_test.py` | 空分片/分区重复/行数等确定性检查 | `python tools/datawarehouse/quality_test.py --json [--table daily]` | 0/1/2 |
@@ -19,6 +21,7 @@
 ## 设计边界
 
 - **只读**：sqlite 一律 `mode=ro`；parquet 只读 footer；不调用任何采集/发布/清理脚本。
+- **唯一写口**：`registry_rebuild.py --apply`（重建 registry，数据根结构性操作按 AGENTS §3 互斥纪律：读 kg 日志尾→备份 `.bak-<时间戳>`→tmp+replace 原子写→重读校验→补记日志）。
 - **不替代** `quant_backtest/data_health.py`：那边是**全量仓扫描**（60s 缓存、7 分组）；本目录是**主管日检的轻量断言**（秒级、可进计划任务）。
 - **不凭 mtime 推业务日**：优先 parquet footer statistics；取不到时退化文件名并在输出标 `filename_degraded`。
 - **降级显式**：pyarrow 缺失时标注 `degraded`，不伪造结论。

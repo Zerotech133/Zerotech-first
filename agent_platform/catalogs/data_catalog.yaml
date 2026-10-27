@@ -1,15 +1,21 @@
-# 数据册 v1 种子（K-ORG-119 批1）——全部条目来自 2026-10-16 实战验证的真实位置
-# 登记官：DATA1 ｜ 纪律：新数据源上线不登记=黑户；条目变更走 git
+# 数据册 v2（2026-10-27）｜登记官：DATA1（张松）
+# 纪律不变：新数据源上线不登记=黑户；条目变更走 git（变更留痕）
+# v1→v2 变更摘要：①kg_dataroot 注销（路径不存在，AGENTS §8）；②paper_db/weak_state 路径修正；
+#   ③ashare_kline 补北交所代码段；④tdx_quote 标注按需手动启停；⑤增补 11 条主力源（10 → 21 条）。
+# v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
+version: 2
+updated: "2026-10-27"
+registrar: DATA1（张松）
 resources:
   - id: ashare_kline
     kind: parquet
-    uri: quant_backtest/data/ashare/{code}_{mkt}.parquet   # mkt=SH|SZ；相对主仓根
-    what: A股日K全量（OHLCV/涨跌幅/换手，845日级深度）
+    uri: quant_backtest/data/ashare/{code}_{mkt}.parquet   # mkt=SH|SZ|BJ；BJ 代码段 920xxx_BJ（v2 补注）
+    what: A股日K全量（OHLCV/涨跌幅/换手，845日级深度；含北交所 BJ 代码段 920xxx）
     freshness: 每日17:00后（ts_daily 入库）
     access: "产线311 + pandas.read_parquet(uri)"
     owner: DATA1
     grants: [invest, trading, quality, ops_runtime]
-    verified: 2026-10-16（600337 实测）
+    verified: 2026-10-16（600337 实测）；2026-10-27 v2 补注 BJ 代码段
 
   - id: kg_graph
     kind: neo4j
@@ -52,36 +58,53 @@ resources:
     kind: parquet
     uri: "C:/项目/KGDataRoot（KG_DATA_ROOT）"
     what: KG 特征库全量 parquet（209k 文件）
-    freshness: 随 KgDailySync
+    status: deprecated
+    superseded_by: quant_data_root
+    deprecated_reason: 路径已不存在（2026-10-27 实测）；AGENTS §8 立章：唯一 live 数据根=quant_backtest/data（KGDataRoot 空壳已废）
     owner: DATA1
-    grants: [invest]
-    verified: 2026-10-16
+    grants: []   # 注销后不再授权
+    verified: 2026-10-27（DATA1 实测注销）
+
+  - id: quant_data_root
+    kind: directory
+    uri: quant_backtest/data
+    what: 唯一 live 数据根（catalog v12 / 245 表；本册其余条目均落于此树内）——取代 kg_dataroot
+    layer: 数据根
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 随各产线（catalog.updated 为准）
+    backup: 各子源自治（见各条目 backup 字段）
+    verify_period: 每日（catalog_snapshot / DATA1 日检）
+    fail_mode: 根目录被迁移/换根→全产线断链；结构操作前必须读 kg_sync_task.log 尾部（AGENTS §3）
+    grants: [invest, quality, ops_runtime]
+    verified: 2026-10-27（catalog v12/245 表实测）
 
   - id: tdx_quote
     kind: process
     uri: C:/项目/new_tdx64/TdxW.exe（14571/17709 白名单）
-    what: 通达信实时行情
+    what: 通达信实时行情（第三方外部软件；按需手动启停，非常驻服务）
+    layer: 采集层
     owner: OPS1
     grants: [trading, invest]
-    verified: 2026-10-16（check_ports 判例）
+    verified: 2026-10-16（check_ports 判例）；2026-10-27 v2 注：按需手动启停
 
   - id: weak_state
-    kind: jsonl
-    uri: quant_backtest/data/weak_*.json + reports/weak_track_*.jsonl
-    what: weak 产线状态与三线跟踪记录
-    freshness: 每日 15:30 WeakTrackCheck
+    kind: csv+json
+    uri: quant_backtest/reports/weak_scan_*.csv + quant_backtest/reports/weak_scan_last.json
+    what: weak 扫描产出（CSV 逐日结果 + last.json 最新状态）；弱转强产线，WeakTrackCheck 计划任务已 Disabled（v2 修正路径与状态）
+    freshness: 每日 15:30 WeakTrackCheck（当前 Disabled，按需手动跑）
     owner: T1（业务）
     grants: [invest, trading]
-    verified: 2026-10-16（301216 触发实证）
+    verified: 2026-10-16（301216 触发实证）；2026-10-27 v2 路径修正
 
   - id: paper_db
     kind: sqlite
-    uri: k_stock/paper/paper.db
-    what: 模拟仓（订单/成交/快照，验收五判据）
+    uri: k_stock/data/paper.db
+    what: 模拟仓（订单/成交/快照，验收五判据）；v2 修正：URI 由 k_stock/paper/paper.db 纠正为 k_stock/data/paper.db
     freshness: 每交易日
     owner: TR1
     grants: [trading, quality]
-    verified: 2026-10-16（acceptance_check 全 PASS）
+    verified: 2026-10-16（acceptance_check 全 PASS）；2026-10-27 v2 路径修正
 
   - id: strategy_registry
     kind: json
@@ -100,3 +123,157 @@ resources:
     owner: BACK1 / DATA1
     grants: [academy, invest, quality]
     verified: 2026-10-17
+
+  - id: tushare_raw
+    kind: parquet
+    uri: quant_backtest/data/tushare/
+    what: tushare 原始层（12.80GB / 56 表，DATA1 实测原始层口径；catalog v12 的 tushare 源共 57 表；按日/按代码落 parquet，附 _manifest.json 与 _fetched_at 溯源列）
+    layer: 原始层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 每日 23:30（tushare 日更采集）
+    backup: 无独立备份（原始层可由 tushare 接口重拉；_manifest 记录完成度）
+    verify_period: 每日（catalog verification_status / manifest_status）
+    fail_mode: 接口限流/超时→部分表 manifest 不闭合，catalog freshness 停滞；重拉补偿
+    grants: [invest, quality]
+    verified: 2026-10-27（DATA1 实测：12.80GB / 56 表原始层；catalog v12 tushare 源 57 表）
+
+  - id: tdx_raw
+    kind: parquet
+    uri: quant_backtest/data/tdx/
+    what: 通达信/xtcloud 原始层（21.21GB / 168 表；行情、板块、龙虎榜、财务等抓取落地层）
+    layer: 原始层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 每日 17:30（收盘后 xtcloud 采集）
+    backup: 无独立备份（可由通达信源重拉）
+    verify_period: 每日（catalog manifest_status / 抽样文件数）
+    fail_mode: 终端未启/端口不通→当日采集缺表；按 catalog 缺表清单补拉
+    grants: [invest, quality]
+    verified: 2026-10-27（DATA1 实测：catalog v12 / 168 表 / 21.21GB）
+
+  - id: tushare_curated
+    kind: parquet
+    uri: quant_backtest/data/tushare_curated/
+    what: tushare 整理层（7.22GB / 322.9M 行；清洗+主键去重后的可重建派生层）
+    layer: 整理层（可重建）
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 随原始层增量后重建
+    backup: 无独立备份（从原始层可重建，重建脚本在 quant_backtest 产线）
+    verify_period: 每次重建后（行数/主键唯一性校验）
+    fail_mode: 重建中断→curated 与原始层版本不一致；回滚 tushare_curated.prev
+    grants: [invest, quality]
+    verified: 2026-10-27（DATA1 实测：7.22GB / 322.9M 行）
+
+  - id: tushare_staging
+    kind: parquet
+    uri: quant_backtest/data/tushare_staging/
+    what: 候选区（新表/回补数据的暂存校验区，未晋级不对外）
+    layer: 候选区
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 按需（采集/回补任务写入）
+    backup: 无（候选区数据可重取）
+    verify_period: 晋级前人工核验
+    fail_mode: 候选数据未晋级即被消费→口径混淆；只允许登记表从候选区晋级
+    grants: [invest]
+    verified: 2026-10-27（DATA1 实测：目录在用）
+
+  - id: tushare_v2
+    kind: parquet
+    uri: quant_backtest/data/tushare_v2/
+    what: 物化仓（tushare 新架构物化表；供回测/看板直读）
+    layer: 物化层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 随物化任务（按需/每日）
+    backup: 无（由上游可重建）
+    verify_period: 每日（物化完成标记 + 抽样行数）
+    fail_mode: 物化任务未跑→读旧快照（日期可辨）；不静默伪装当日数据
+    grants: [invest]
+    verified: 2026-10-27（DATA1 实测：目录在用）
+
+  - id: xueqiu
+    kind: parquet+sqlite
+    uri: quant_backtest/data/xueqiu/（10 表，4 在产）+ quant_backtest/data/xueqiu/xueqiu_info.db
+    what: 雪球数据（10 表其中 4 表在产；xueqiu_info.db 约 29MB 含用户/因子辅助信息；抓取需登录态）
+    layer: 采集层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 按需抓取（在产 4 表随采集任务）
+    backup: xueqiu_info.db 无独立备份（可由抓取重建）
+    verify_period: 每周（catalog xueqiu 表 sampled 校验）
+    fail_mode: 登录态失效→抓取空/限流；以 _manifest.json 与行数判活
+    grants: [invest]
+    verified: 2026-10-27（DATA1 实测：10 表 / xueqiu_info.db 29MB）
+
+  - id: anns_pdf
+    kind: pdf
+    uri: quant_backtest/data/anns_pdf/
+    what: 公告 PDF 原文（按公告切片归档，供证据链/原文核对）
+    layer: 原始层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 每日（随公告采集）
+    backup: 无独立备份（公告源可重下；已归档切片不回收）
+    verify_period: 每周（抽样可打开 + 与公告索引对账）
+    fail_mode: 下载失败/PDF 损坏→证据链缺原文；按公告索引补档
+    grants: [invest, legal]
+    verified: 2026-10-27（DATA1 实测：目录在用）
+
+  - id: guba
+    kind: parquet+json
+    uri: quant_backtest/data/guba/
+    what: 股吧帖子/情绪数据（按标的/日期归档；语言情绪信号来源）
+    layer: 采集层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 每日（盘后采集）
+    backup: 无（可重采，历史已归档不回收）
+    verify_period: 每日（当日文件存在性 + 抽样行数）
+    fail_mode: 反爬限流→当日缺采；情绪信号降级为缺失，不插值
+    grants: [invest]
+    verified: 2026-10-27（DATA1 实测：目录 372 项在用）
+
+  - id: cnopendata
+    kind: parquet+part
+    uri: quant_backtest/data/cnopendata/
+    what: CNOpenData 学术数据集（财报附注/情感词典/气候风险等静态历史包，非按日更新）
+    layer: 原始层（静态历史包）
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 静态历史包（下载即固定；verification_status=static_no_date/stale）
+    backup: 无独立备份（原始下载包留档）
+    verify_period: 每季度复核（静态包无 freshness）
+    fail_mode: 包损坏→按校验和重下；静态包被误当每日更新=口径错误
+    grants: [invest]
+    verified: 2026-10-27（DATA1 实测：6 表 / catalog v12）
+
+  - id: quant_meta_pg
+    kind: postgresql
+    uri: 127.0.0.1:5442（库：quant_meta / quant_system）
+    what: 量化元数据库（quant_meta=表元数据/登记；quant_system=系统配置与运行态）；需凭据，凭据走 .env.local
+    layer: 元数据层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 随元数据变更（人工/工具写入）
+    backup: 每日 PG 逻辑备份（由备份任务负责，需另行核验备份回执）
+    verify_period: 每日（连接 + 关键表行数）
+    fail_mode: PG 停机→元数据查询失败；只读校验不得写库
+    grants: [invest, quality]   # 不确定：系统配置库建议最小授权，先按 [invest, quality]
+    verified: 2026-10-27（DATA1 实测：5442 端口 quant_meta/quant_system）
+
+  - id: zhice_os_v2_pg
+    kind: postgresql
+    uri: 127.0.0.1:5446（库：智策 OS v2，表 v2_bar_minute 等）
+    what: 智策 OS v2 数据库（v2_bar_minute 1512 万行 / 8.8GB，分钟线物化；活系统，改名风险见 AGENTS §8）
+    layer: 物化层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 随智策 OS v2 产线写入（盘中/盘后）
+    backup: 无独立备份（随活系统；需另行核验 zhice 备份策略）
+    verify_period: 每日（连接 + v2_bar_minute 最新日期）
+    fail_mode: 活系统停机→分钟线断更；只读连接，禁写禁改
+    grants: [invest]
+    verified: 2026-10-27（DATA1 实测：5446 / v2_bar_minute 1512 万行 / 8.8GB）
