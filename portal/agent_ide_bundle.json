@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:17",
+ "generated": "2026-10-28 07:19",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
-  "workorders_review": 5
+  "workorders_doing": 34,
+  "workorders_review": 4
  },
  "workorders": [
   {
@@ -347,13 +347,13 @@
    "project": "general"
   },
   {
-   "id": "WO-HUANGZHONG-20261028",
-   "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-HUANGZHONG-20261028",
-   "created": "2026-10-28 07:01:26",
-   "project": "general"
+   "id": "K-QUANT-20261028-ALIYUNKEY",
+   "desc": "阿里云 AccessKey ID/Secret 入库：DPAPI 加密两个凭据；credential_registry 增加 cloud 分类条目；验证目录 status ok；不回显明文",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-ALIYUNKEY",
+   "created": "2026-10-28 07:17:53",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -7034,11 +7034,6 @@
     {
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
-     "status": "review"
-    },
-    {
-     "id": "WO-HUANGZHONG-20261028",
-     "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
      "status": "review"
     }
    ]
