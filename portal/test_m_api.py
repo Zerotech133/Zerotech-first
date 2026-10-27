@@ -2,6 +2,7 @@
 """P1 移动端接口单测：令牌→scene 数据、picks 每票短链、埋点校验、HTTP 适配桩。"""
 import json
 import os
+import tempfile
 import shutil
 import sys
 import uuid
@@ -17,7 +18,7 @@ import m_tokens as mt  # noqa: E402
 @pytest.fixture()
 def ws_tmp():
     """沙箱内 temp 目录 ACL 不可写 → 用 workspace 下的临时目录。"""
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root

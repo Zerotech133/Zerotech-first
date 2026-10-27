@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """飞书推送统一封装单测（2026-10-25）。"""
 import os
+import tempfile
 import sys
 import uuid
 
@@ -15,7 +16,7 @@ import feishu_push as fp  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root

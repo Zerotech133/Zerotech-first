@@ -2,6 +2,7 @@
 """W3 前置检查单测：结论口径、凭据判定、渲染、CLI。"""
 import json
 import os
+import tempfile
 import shutil
 import subprocess
 import sys
@@ -16,7 +17,7 @@ import feishu_w3_preflight as pre  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root

@@ -2,6 +2,7 @@
 """feishu_app_pool 单测（W2 前置）：角色凭据确定化、sender 选择、目标域校验、状态报告。"""
 import json
 import os
+import tempfile
 import shutil
 import sys
 import uuid
@@ -15,7 +16,7 @@ import feishu_app_pool as pool  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root
