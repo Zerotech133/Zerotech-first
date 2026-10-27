@@ -152,26 +152,43 @@ body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),
   .spin{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:r .7s linear infinite; vertical-align:-2px; margin-right:6px;}
   @keyframes r{to{transform:rotate(360deg);}}
 </style>
+<link rel="stylesheet" href="/static/paper_workbench.css">
 <script src="/static/nav.js" defer></script></head>
-<body>
+<body class="paper-v2">
 
-<header>
-  <div class="brand">
-    <div class="logo">仓</div>
-    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.9</small></div>
+<header class="pw-hero">
+  <div class="pw-brand-block">
+    <div class="pw-brand">
+      <div class="logo">仓</div>
+      <div>
+        <div class="pw-eyebrow">PAPER · 模拟交易工作台</div>
+        <h1>模拟仓 <span>K-STOCK PAPER · v0.9</span></h1>
+      </div>
+    </div>
+    <p class="pw-lead">先听值班经理接待，再选策略、组团队、跑回测，满意才上岗；纸面研究，不构成投资建议。</p>
+    <div class="pw-tags">
+      <span class="pw-tag live">纸面环境</span>
+      <span class="pw-tag">只读行情</span>
+      <span class="pw-tag">本地写操作</span>
+      <span class="pw-tag">账本快照</span>
+    </div>
   </div>
   <div class="kpis" id="kpis" role="status" aria-live="polite"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
 <nav class="topnav" aria-label="模拟仓快捷导航">
-  <!-- K-STOCK-217 胶囊精简（老田 10-12 拍板：顶端胶囊太多跳来跳去，只留返回+当前页，其余入口走首页门面动线） -->
-  <a class="pill" href="/">🏠 返回首页</a>
+  <a class="pill" href="/">← 返回首页</a>
   <a class="pill" href="/zero_proto.html">🧭 AI 驾驶舱</a>
-  <a class="pill on" href="/paper.html" aria-current="page">🧾 模拟仓</a>
+  <span class="pw-sep" aria-hidden="true"></span>
+  <a class="pill on" href="/paper.html" aria-current="page">🧾 模拟仓工作台</a>
 </nav>
+<div class="pw-context">
+  <div class="pw-crumb">零界 <span>/</span> 模拟仓 <span>/</span> <b>工作台</b></div>
+  <div class="pw-context-meta"><span class="pw-dot"></span> 纸面研究 <span>·</span> 数据来自模拟账本与行情快照</div>
+</div>
 
 <div class="wrap" role="main">
 
-  <div class="tabs">
+  <div class="tabs" role="tablist" aria-label="模拟仓工作区">
     <div class="tab active" data-tab="desk">接待大厅</div>
     <div class="tab" data-tab="strategy">策略中心</div>
     <div class="tab" data-tab="agent">交易员市场</div>
@@ -440,7 +457,11 @@ body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),
     </div>
   </div>
 
-  <div class="legend">
+  <footer class="pw-footer">
+  <div class="pw-footer-left"><span class="pw-dot" aria-hidden="true"></span><span>模拟仓 · 纸面研究，不构成投资建议</span></div>
+  <div>数据源：模拟账本 / 行情快照 · <a href="#" onclick="loadStatus();return false">↻ 刷新数据</a></div>
+</footer>
+<div class="legend">
     <span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a href="#" onclick="loadStatus();return false" style="color:var(--link)">↻ 刷新</a></span>
   </div>
 </div>
