@@ -41,12 +41,24 @@ def run_cli(*args):
     )
 
 
+VOLATILE_SUFFIXES = (".db", ".db-wal", ".db-shm")
+VOLATILE_NAMES = {"governance_clock_state.json"}
+
+
 def snapshot(root: Path):
-    """目录树快照：相对路径 → (mtime_ns, size)；目录不存在返回 None。"""
+    """目录树快照：相对路径 → (mtime_ns, size)；目录不存在返回 None。
+
+    2026-10-27 WO-AUDIT7-MONDAY：排除常驻服务/其他会话会持续写的易变文件
+    （governance_clock_state.json、SQLite 主库及 -wal/-shm 侧车）——全量套件
+    跑 7 分钟期间这些文件会被平台服务刷新，全目录比对会产生与本 CLI 无关的
+    假阳性。其余文件仍严格比对文件集 + mtime/size，只读性断言不放水。
+    """
     if not root.exists():
         return None
     out = {}
     for p in sorted(root.rglob("*")):
+        if p.name in VOLATILE_NAMES or p.name.endswith(VOLATILE_SUFFIXES):
+            continue
         try:
             st = p.stat()
         except OSError:
