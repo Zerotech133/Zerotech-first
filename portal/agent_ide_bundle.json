@@ -356,13 +356,13 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-UIW4D-20261028",
-   "desc": "W4 第二批收编：flow/ops/academy/dataops 接入 PageShell adopted；更新清单与测试",
+   "id": "K-QUANT-20261028-KEYSV2A4",
+   "desc": "Phase A-4 模型路由：平台中转站+模型通道合并为单一可编辑区块；GPT6改为预设；本地模型只读；其它位置只引用",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIW4D-20261028",
-   "created": "2026-10-28 06:56:56",
-   "project": "general"
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-KEYSV2A4",
+   "created": "2026-10-28 06:57:25",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -6996,11 +6996,6 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-UIW4D-20261028",
-     "desc": "W4 第二批收编：flow/ops/academy/dataops 接入 PageShell adopted；更新清单与测试",
-     "status": "doing"
     }
    ]
   }
