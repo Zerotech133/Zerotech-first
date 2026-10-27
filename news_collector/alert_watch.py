@@ -17,6 +17,7 @@
 非交易日（2026-10-26 起）: 按 trading_cal 整轮跳过——不 fetch / 不推送 / 不写
     状态文件，只写 rc=0 + upstream_ok=None 心跳，与交易日上游故障明确区分。
 """
+
 import datetime
 import json
 import os
@@ -45,8 +46,8 @@ EXIT_UPSTREAM_UNTRUSTED = 3
 # ops.alert_watch_liveness 用它区分「本体在跑但上游不可信」与「真的停了」。
 # 固定 C:\Temp（跨会话可读）；环境变量覆盖仅供测试，不影响生产默认路径。
 HEARTBEAT_PATH = os.environ.get(
-    "ALERT_WATCH_HEARTBEAT",
-    os.path.join(r"C:\Temp", "alert_watch_heartbeat.json"))
+    "ALERT_WATCH_HEARTBEAT", os.path.join(r"C:\Temp", "alert_watch_heartbeat.json")
+)
 
 RULES = {
     "盘前倾向": {"kind": "flip"},
@@ -62,7 +63,9 @@ def _load_state():
         with open(STATE_PATH, encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print("ALERT_WATCH_WARN state load err %s" % str(e)[:100])  # C2批2 吞错落盘（状态损坏会重复告警）
+        print(
+            "ALERT_WATCH_WARN state load err %s" % str(e)[:100]
+        )  # C2批2 吞错落盘（状态损坏会重复告警）
         return {}
 
 
@@ -126,8 +129,10 @@ def _skip_reason(now=None):
         return None
     if trading_cal.is_trading_day(day):
         return None
-    return ("non_trading_day: %s 非交易日（trade_cal/周末），"
-            "无 EOD 源预期，按设计静默" % day.isoformat())
+    return (
+        "non_trading_day: %s 非交易日（trade_cal/周末），"
+        "无 EOD 源预期，按设计静默" % day.isoformat()
+    )
 
 
 def _parse_num(name, value):
@@ -146,7 +151,7 @@ def _check(rule, prev, cur, prev_raw, cur_raw):
         return None
     if prev is None or cur is None:
         return None
-    if cur - prev >= rule.get("diff", 1):   # diff=1 即任何增加触发
+    if cur - prev >= rule.get("diff", 1):  # diff=1 即任何增加触发
         return "%s → %s（+%d）" % (prev, cur, cur - prev)
     if rule.get("abs") and cur >= rule["abs"] and prev < rule["abs"]:
         return "首次达 %d（现 %d）" % (rule["abs"], cur)
@@ -155,6 +160,7 @@ def _check(rule, prev, cur, prev_raw, cur_raw):
 
 def main():
     import alert_push
+
     reason = _skip_reason()
     if reason:
         # 周末/节假日：EOD 源按设计不出数，不是上游故障。不写状态文件
@@ -184,25 +190,40 @@ def main():
         # 因此静默了 4 天（10-18 18:15 之后状态文件再没更新，而卡上只显示
         # "9 个任务非零退出"）。约定见 task_exit_audit.EXIT_SEMANTICS。
         # 2026-10-25 EXEC-R8：拒跑也要写执行心跳（状态文件语义不变）。
-        _write_heartbeat(EXIT_UPSTREAM_UNTRUSTED, False, 0,
-                         "invalid source_health: 6 源完成时间证据不足，正确拒跑")
+        _write_heartbeat(
+            EXIT_UPSTREAM_UNTRUSTED,
+            False,
+            0,
+            "invalid source_health: 6 源完成时间证据不足，正确拒跑",
+        )
         return EXIT_UPSTREAM_UNTRUSTED
     res, bad = validated
     if bad and not res["alerts"]:
         print("ALERT_WATCH_SOURCE_UNAVAILABLE partial coverage without alerts")
-        _write_heartbeat(EXIT_UPSTREAM_UNTRUSTED, False, 0,
-                         "partial coverage without alerts: 上游不可信，正确拒跑")
+        _write_heartbeat(
+            EXIT_UPSTREAM_UNTRUSTED,
+            False,
+            0,
+            "partial coverage without alerts: 上游不可信，正确拒跑",
+        )
         return EXIT_UPSTREAM_UNTRUSTED
 
     st = _load_state()
-    if st.get("date") != today:            # 跨日：重置熔断计数，保留基线值
-        st = {"date": today,
-              "routes": {k: {"num": v.get("num"), "raw": v.get("raw")}
-                         for k, v in (st.get("routes") or {}).items()}}
+    if st.get("date") != today:  # 跨日：重置熔断计数，保留基线值
+        st = {
+            "date": today,
+            "routes": {
+                k: {"num": v.get("num"), "raw": v.get("raw")}
+                for k, v in (st.get("routes") or {}).items()
+            },
+        }
     routes = st.setdefault("routes", {})
     first_run = not routes
-    healthy_names = {alert_push.SOURCE_NAMES[source] for source in
-                     (alert_push.EOD_SOURCES) if source not in bad}
+    healthy_names = {
+        alert_push.SOURCE_NAMES[source]
+        for source in (alert_push.EOD_SOURCES)
+        if source not in bad
+    }
     hits = []
     for a in res.get("alerts") or []:
         nm = a.get("name", "")
@@ -212,8 +233,11 @@ def main():
         raw = str(a.get("value", ""))
         num = _parse_num(nm, raw)
         prev = routes.get(nm) or {}
-        fired = None if first_run else _check(
-            rule, prev.get("num"), num, prev.get("raw"), raw)
+        fired = (
+            None
+            if first_run
+            else _check(rule, prev.get("num"), num, prev.get("raw"), raw)
+        )
         if fired:
             pushed = int(prev.get("pushed") or 0)
             if pushed < DAILY_CAP:
@@ -228,29 +252,49 @@ def main():
 
     if hits and not first_run:
         import card_build
+
         targets = alert_push._targets(alert_push._cfg())
         # K42-c：不做内网接入——卡内不放下钻按钮/门户二维码（外网飞书点不开）
         lines = ["**%s** %s" % (nm, fired) for nm, fired, _a, _num, _raw in hits]
         if bad:
-            lines.insert(0, "**⚠️ 覆盖不足：%s 源不可用；仅展示已验证源，不代表全量。**" %
-                         "、".join(alert_push.SOURCE_NAMES[source] for source in bad))
+            lines.insert(
+                0,
+                "**⚠️ 覆盖不足：%s 源不可用；仅展示已验证源，不代表全量。**"
+                % "、".join(alert_push.SOURCE_NAMES[source] for source in bad),
+            )
         card = card_build.build_card3(  # K-PUSH-008：v3 红域预警
-            "alert", "⚡ 即时预警",
+            "alert",
+            "⚡ 即时预警",
             time.strftime("%Y-%m-%d %H:%M") + " · 关键变化触发",
             ["\n".join(lines)],
-            footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议")
+            footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议",
+        )
         # 2026-10-25 P2/P3：统一分装（失败回落旧卡）
         try:
-            sys.path.insert(0, os.path.join(os.path.dirname(
-                os.path.dirname(os.path.abspath(__file__))), "portal"))
+            sys.path.insert(
+                0,
+                os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    "portal",
+                ),
+            )
             from push_unified_adapter import adapt as _adapt
             from feishu_card_v2 import m_url as _m
+
             _u = _m("entry")
             _btn = [("📱 移动端总览（H5）", _u, "primary")] if _u else None
-            card = _adapt("alertwatch", card, "alert", "即时预警",
-                          ["\n".join(lines)], ts=time.strftime("%Y-%m-%d %H:%M"),
-                          source="阈值监听", buttons=_btn, level="bad",
-                          footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议")
+            card = _adapt(
+                "alertwatch",
+                card,
+                "alert",
+                "即时预警",
+                ["\n".join(lines)],
+                ts=time.strftime("%Y-%m-%d %H:%M"),
+                source="阈值监听",
+                buttons=_btn,
+                level="bad",
+                footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议",
+            )
         except Exception:
             pass
         try:
@@ -262,8 +306,12 @@ def main():
         if not ok:  # 文本兜底
             try:
                 tres = alert_push.push_text_multi(
-                    "⚡ 即时预警 " + time.strftime("%m-%d %H:%M") + "\n"
-                    + "\n".join(lines), targets)
+                    "⚡ 即时预警 "
+                    + time.strftime("%m-%d %H:%M")
+                    + "\n"
+                    + "\n".join(lines),
+                    targets,
+                )
                 ok = any(tres.values())
             except Exception as exc:
                 print("ALERT_WATCH_WARN text delivery %s" % str(exc)[:100])
@@ -273,17 +321,26 @@ def main():
                 p2["num"], p2["raw"] = num2, raw2
                 p2["pushed"] = int(p2.get("pushed") or 0) + 1
         _save_state(st)
-        print("ALERT_WATCH_FIRED %d routes ok=%s status=%s %s" % (
-            len(hits), ok, "sent" if ok else "failed",
-            json.dumps(tres, ensure_ascii=False)))
-        _write_heartbeat(0 if ok else 1, True, len(hits),
-                         "fired routes=%d pushes_ok=%s" % (len(hits), ok))
+        print(
+            "ALERT_WATCH_FIRED %d routes ok=%s status=%s %s"
+            % (
+                len(hits),
+                ok,
+                "sent" if ok else "failed",
+                json.dumps(tres, ensure_ascii=False),
+            )
+        )
+        _write_heartbeat(
+            0 if ok else 1,
+            True,
+            len(hits),
+            "fired routes=%d pushes_ok=%s" % (len(hits), ok),
+        )
         return 0 if ok else 1
 
     _save_state(st)
     print("ALERT_WATCH_QUIET%s" % (" (baseline init)" if first_run else ""))
-    _write_heartbeat(0, True, 0,
-                     "quiet" + (" (baseline init)" if first_run else ""))
+    _write_heartbeat(0, True, 0, "quiet" + (" (baseline init)" if first_run else ""))
     return 0
 
 

@@ -35,6 +35,7 @@ logs/alert_state.json 记录上次告警时间，6 小时内不重发（防小�
 
 用法：cd news_collector && python jev_backfill.py [--batch 100] [--deadline 1800]
 """
+
 import argparse
 import json
 import os
@@ -45,10 +46,10 @@ from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import news_ai          # noqa: E402
+import news_ai  # noqa: E402
 
 ALERT_STATE = os.path.join(HERE, "logs", "alert_state.json")
-ALERT_COOLDOWN_S = 6 * 3600   # 同类告警 6 小时内不重发
+ALERT_COOLDOWN_S = 6 * 3600  # 同类告警 6 小时内不重发
 
 # ---- 2026-10-26 EXEC-R28：吞吐计划 A 的两项零质量风险开关 -------------------
 # ① 条间 sleep：原由 news_ai.jev_judge_batch() 硬编码 0.8s（云侧防限流遗留），
@@ -74,7 +75,7 @@ def _item_sleep_seconds() -> float:
         value = float(str(raw).strip())
     except (TypeError, ValueError):
         return JEV_ITEM_SLEEP_DEFAULT_S
-    if value != value:          # NaN
+    if value != value:  # NaN
         return JEV_ITEM_SLEEP_DEFAULT_S
     return max(0.0, min(JEV_ITEM_SLEEP_MAX_S, value))
 
@@ -93,13 +94,21 @@ PREFILTER_ENV = "JEV_PREFILTER"
 def prefilter_enabled() -> bool:
     """两段式推理灰度开关（K-ORG-20261026-JEV2STAGE）。默认 0=关，行为与现状完全一致。"""
     return str(os.environ.get(PREFILTER_ENV, "0")).strip().lower() in (
-        "1", "true", "yes", "on")
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
 
 
 def _lease_yield_disabled() -> bool:
     """JEV_LOCK_YIELD_PAUSED=0/false/no/off → 恢复原租约让位逻辑。"""
     return str(os.environ.get(LOCK_YIELD_PAUSED_ENV, "1")).strip().lower() in (
-        "0", "false", "no", "off")
+        "0",
+        "false",
+        "no",
+        "off",
+    )
 
 
 def _should_skip_lease_yield(paused: bool, disabled: bool) -> bool:
@@ -125,8 +134,9 @@ def _judge_batch_sleep(items, sleep_s: float) -> dict:
     return out
 
 
-def _locked_tick(lock_mod, purpose: str, paused: bool, disabled: bool,
-                 deadline_ts=None) -> bool:
+def _locked_tick(
+    lock_mod, purpose: str, paused: bool, disabled: bool, deadline_ts=None
+) -> bool:
     """持锁续期：M3 暂停时只 heartbeat 不让位；否则走 lock_mod.tick() 原逻辑。
 
     deadline_ts（OS-FIX-JEVLOCK）：本轮自报截止时刻（t0+--deadline），传给 tick()
@@ -164,14 +174,15 @@ def _alert_mark():
 def alert_backlog(left, judged, deadline_hit):
     """积压超阈值告警：飞书推送（失败静默，不影响退出码）。"""
     try:
-        msg = ("【JEV 判断积压告警】\n"
-               "剩余未判断新闻 %d 条（超过阈值）\n"
-               "本轮 judged=%d%s\n"
-               "可能原因：云端 systemone 故障或回填实例异常。\n"
-               "处置：观察下一小时轮；持续恶化检查 "
-               "news_collector\\logs\\ai.log 与 C:\\jev_backfill_task.log"
-               % (left, judged,
-                  "，deadline 提前收工" if deadline_hit else ""))
+        msg = (
+            "【JEV 判断积压告警】\n"
+            "剩余未判断新闻 %d 条（超过阈值）\n"
+            "本轮 judged=%d%s\n"
+            "可能原因：云端 systemone 故障或回填实例异常。\n"
+            "处置：观察下一小时轮；持续恶化检查 "
+            "news_collector\\logs\\ai.log 与 C:\\jev_backfill_task.log"
+            % (left, judged, "，deadline 提前收工" if deadline_hit else "")
+        )
         news_ai.push_message(msg)
         _alert_mark()
         return True
@@ -183,18 +194,26 @@ def alert_backlog(left, judged, deadline_hit):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--batch", type=int, default=100)
-    ap.add_argument("--deadline", type=int, default=1800,
-                    help="单轮硬超时秒数，超限提前收工（0=不限）")
-    ap.add_argument("--alert-threshold", type=int, default=100,
-                    help="剩余积压告警阈值（0=不告警）")
+    ap.add_argument(
+        "--deadline",
+        type=int,
+        default=1800,
+        help="单轮硬超时秒数，超限提前收工（0=不限）",
+    )
+    ap.add_argument(
+        "--alert-threshold", type=int, default=100, help="剩余积压告警阈值（0=不告警）"
+    )
     args = ap.parse_args()
     item_sleep = _item_sleep_seconds()
     m3_is_paused = m3_paused()
     yield_disabled = _lease_yield_disabled()
     skip_yield = _should_skip_lease_yield(m3_is_paused, yield_disabled)
     # 生效配置显式落日志，便于次日核对 EXEC-R28 是否真的生效（不写额外文件）。
-    print("BACKFILL cfg item_sleep=%.3fs m3_paused=%s lease_yield=%s"
-          % (item_sleep, m3_is_paused, "skip" if skip_yield else "normal"), flush=True)
+    print(
+        "BACKFILL cfg item_sleep=%.3fs m3_paused=%s lease_yield=%s"
+        % (item_sleep, m3_is_paused, "skip" if skip_yield else "normal"),
+        flush=True,
+    )
     # Ollama 错峰锁：与 M3 结构化批处理互斥（wait_s≈M3 单条看门狗上限+余量；
     # 正常退出/异常走 atexit 释放，强杀靠锁模块 20 分钟陈旧回收）
     # 2026-10-26 OS-FIX-JEVLOCK（JEV 审计 §四-②）：**先抢锁、再取批**。旧顺序
@@ -205,17 +224,21 @@ def main():
         sys.path.insert(0, _root)
     import atexit
     import ollama_lock
+
     atexit.register(ollama_lock.release)
-    if not ollama_lock.acquire("jev_backfill", wait_s=900):   # K-ORG-20261025-LOCK 覆盖 M3 一个租约周期
+    if not ollama_lock.acquire(
+        "jev_backfill", wait_s=900
+    ):  # K-ORG-20261025-LOCK 覆盖 M3 一个租约周期
         print("BACKFILL skip: ollama 锁被 M3 持有超 900s，本轮让位（小时轮自愈）")
         return
     # 2026-10-16 审计：timeout=30 防与速报链写库竞争立刻抛 locked
-    #（默认 5s 偏短；配合下方组级回滚兜底）
+    # （默认 5s 偏短；配合下方组级回滚兜底）
     db = sqlite3.connect(os.path.join(HERE, "news.db"), timeout=30)
     rows = db.execute(
         "SELECT id, title, stocks, source FROM news "
         "WHERE (jev IS NULL OR jev='') ORDER BY ts DESC LIMIT ?",
-        (args.batch,)).fetchall()
+        (args.batch,),
+    ).fetchall()
     if not rows:
         print("BACKFILL done: no pending")
         return
@@ -225,17 +248,21 @@ def main():
             st = json.loads(stocks) if stocks else []
         except Exception:
             st = []
-        items.append({"id": nid, "title": title, "stocks": st,
-                      "source": str(source or "")})
+        items.append(
+            {"id": nid, "title": title, "stocks": st, "source": str(source or "")}
+        )
     # ── 第一段：规则粗筛（灰度，默认关，K-ORG-20261026-JEV2STAGE）────────
     pref_skipped = 0
     if prefilter_enabled():
         try:
             import jev_prefilter
+
             kept = []
             skipped_jsons = []
             for it in items:
-                j = jev_prefilter.prefilter_jev(it.get("title") or "", it.get("source") or "")
+                j = jev_prefilter.prefilter_jev(
+                    it.get("title") or "", it.get("source") or ""
+                )
                 if j is None:
                     kept.append(it)
                 else:
@@ -245,35 +272,41 @@ def main():
                     for nid, j in skipped_jsons:
                         cur = db.execute(
                             "UPDATE news SET jev=? WHERE id=? AND (jev IS NULL OR jev='')",
-                            (json.dumps(j, ensure_ascii=False), nid))
+                            (json.dumps(j, ensure_ascii=False), nid),
+                        )
                         pref_skipped += int(cur.rowcount or 0)
                     db.commit()
                 except sqlite3.OperationalError as e:
                     db.rollback()
-                    print("BACKFILL prefilter commit FAIL %r（改为全部走 9B）" % e,
-                          file=sys.stderr)
+                    print(
+                        "BACKFILL prefilter commit FAIL %r（改为全部走 9B）" % e,
+                        file=sys.stderr,
+                    )
                     kept = items
                     pref_skipped = 0
             items = kept
-            print("BACKFILL prefilter ON: skip=%d keep=%d（skip 直接写 neutral，带 pref 证据可回退）"
-                  % (pref_skipped, len(items)), flush=True)
+            print(
+                "BACKFILL prefilter ON: skip=%d keep=%d（skip 直接写 neutral，带 pref 证据可回退）"
+                % (pref_skipped, len(items)),
+                flush=True,
+            )
         except Exception as exc:  # noqa: BLE001  粗筛异常 → 全量走 9B（fail-open）
             print("BACKFILL prefilter DISABLED by error: %r" % (exc,), file=sys.stderr)
             pref_skipped = 0
 
     t0 = time.time()
     judged = 0
-    dup_skip = 0        # OS-FIX-JEVLOCK：落库前二次校验发现已被外部先写的行数
+    dup_skip = 0  # OS-FIX-JEVLOCK：落库前二次校验发现已被外部先写的行数
     deadline_hit = 0
-    cloud_fail = 0      # K-STOCK-072：连续空判短路（2026-10-10）
-    _yield_skip_logged = False   # EXEC-R28：免让位只在首轮打印一次，防日志刷屏
+    cloud_fail = 0  # K-STOCK-072：连续空判短路（2026-10-10）
+    _yield_skip_logged = False  # EXEC-R28：免让位只在首轮打印一次，防日志刷屏
     empty_streak = 0
     deadline_ts = (t0 + args.deadline) if args.deadline else None
-    for i in range(0, len(items), 8):        # jev_judge_batch 单次上限 8
+    for i in range(0, len(items), 8):  # jev_judge_batch 单次上限 8
         if args.deadline and (time.time() - t0) >= args.deadline:
             deadline_hit = 1
             break
-        judges = _judge_batch_sleep(items[i:i + 8], item_sleep)
+        judges = _judge_batch_sleep(items[i : i + 8], item_sleep)
         written = 0
         try:
             for nid, j in judges.items():
@@ -281,15 +314,18 @@ def main():
                 # 已被另一实例/外部写入的 jev（锁被陈旧回收时的最后一道防重复写）。
                 cur = db.execute(
                     "UPDATE news SET jev=? WHERE id=? AND (jev IS NULL OR jev='')",
-                    (json.dumps(j, ensure_ascii=False), nid))
+                    (json.dumps(j, ensure_ascii=False), nid),
+                )
                 written += int(cur.rowcount or 0)
             db.commit()
         except sqlite3.OperationalError as e:
             # 2026-10-16 审计：写库瞬态失败（locked/busy）原炸整个轮次，
             # 本组判定全丢；回滚留待下轮重判（jev 判定幂等）。
             db.rollback()
-            print("BACKFILL group commit FAIL %r（跳过本组，下轮重判）" % e,
-                  file=sys.stderr)
+            print(
+                "BACKFILL group commit FAIL %r（跳过本组，下轮重判）" % e,
+                file=sys.stderr,
+            )
             continue
         judged += written
         dup_skip += len(judges) - written
@@ -308,27 +344,53 @@ def main():
             # EXEC-R28：M3 暂停旗存在时不让位（无 M3 竞争，让位纯浪费）；锁仍持有。
             ollama_lock.heartbeat()
             if not _yield_skip_logged:
-                print("BACKFILL lock lease-yield skipped：M3 暂停旗存在（EXEC-R28）",
-                      flush=True)
+                print(
+                    "BACKFILL lock lease-yield skipped：M3 暂停旗存在（EXEC-R28）",
+                    flush=True,
+                )
                 _yield_skip_logged = True
-        elif not _locked_tick(ollama_lock, "jev_backfill", m3_is_paused, yield_disabled,
-                              deadline_ts=deadline_ts):
+        elif not _locked_tick(
+            ollama_lock,
+            "jev_backfill",
+            m3_is_paused,
+            yield_disabled,
+            deadline_ts=deadline_ts,
+        ):
             # 租约制（K-ORG-20261025-LOCK）：也让一手，M3 才不会被长期挤占。
             # OS-FIX-JEVLOCK：tick 已受 deadline_ts 约束，超时会打 OLLAMA_LOCK tick timeout。
-            print("BACKFILL lock lost: tick 未抢回（见 OLLAMA_LOCK tick timeout 日志），本轮收工",
-                  flush=True)
+            print(
+                "BACKFILL lock lost: tick 未抢回（见 OLLAMA_LOCK tick timeout 日志），本轮收工",
+                flush=True,
+            )
             break
     left = db.execute(
-        "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''").fetchone()[0]
+        "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''"
+    ).fetchone()[0]
     alerted = 0
-    if args.alert_threshold and left > args.alert_threshold \
-            and _alert_ok(throttle=True):
+    if (
+        args.alert_threshold
+        and left > args.alert_threshold
+        and _alert_ok(throttle=True)
+    ):
         alerted = 1 if alert_backlog(left, judged, deadline_hit) else 0
-    print("BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d "
-          "cloud_fail=%d item_sleep=%.2f lease_yield=%s dup_skip=%d pref_skip=%d pref_keep=%d" % (
-        judged, len(items), left, time.time() - t0, deadline_hit, alerted,
-        cloud_fail, item_sleep, "skip" if skip_yield else "normal", dup_skip,
-        pref_skipped, len(items)))
+    print(
+        "BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d "
+        "cloud_fail=%d item_sleep=%.2f lease_yield=%s dup_skip=%d pref_skip=%d pref_keep=%d"
+        % (
+            judged,
+            len(items),
+            left,
+            time.time() - t0,
+            deadline_hit,
+            alerted,
+            cloud_fail,
+            item_sleep,
+            "skip" if skip_yield else "normal",
+            dup_skip,
+            pref_skipped,
+            len(items),
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -48,8 +48,8 @@ WORK = ROOT / "portal" / "work"
 LOG_PATH = str(WORK / "deadline_watch.log")
 FLAG_PATH = str(WORK / "deadline_pending.json")
 
-GRACE_MIN = 30    # 判定带宽：deadline <= now <= end + GRACE_MIN 分钟
-ESCALATE_AT = 2   # 连续 pending 次数达到该值即升级 L3 红卡
+GRACE_MIN = 30  # 判定带宽：deadline <= now <= end + GRACE_MIN 分钟
+ESCALATE_AT = 2  # 连续 pending 次数达到该值即升级 L3 红卡
 
 
 def log(msg):
@@ -91,19 +91,32 @@ def run_check(matrix, repo, now):
             checked += 1
             # 2026-10-19 审计（P1-2）：记录本轮实际评估过的锚（含 ok），
             # 供 run_cycle 区分「真恢复」与「仅出判定带」。
-            evaluated.append({"market": mkt, "window": w["name"],
-                              "anchor": w["anchor"], "status": st["status"]})
-            if st["status"] != "ok":
-                pending.append({
+            evaluated.append(
+                {
                     "market": mkt,
                     "window": w["name"],
                     "anchor": w["anchor"],
                     "status": st["status"],
-                    "detail": st["detail"],
-                    "deadline": w["deadline"],
-                })
-    return {"now": now.strftime("%Y-%m-%d %H:%M:%S"), "checked": checked,
-            "skipped": skipped, "evaluated": evaluated, "pending": pending}
+                }
+            )
+            if st["status"] != "ok":
+                pending.append(
+                    {
+                        "market": mkt,
+                        "window": w["name"],
+                        "anchor": w["anchor"],
+                        "status": st["status"],
+                        "detail": st["detail"],
+                        "deadline": w["deadline"],
+                    }
+                )
+    return {
+        "now": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "checked": checked,
+        "skipped": skipped,
+        "evaluated": evaluated,
+        "pending": pending,
+    }
 
 
 def _read_flag(path):
@@ -143,22 +156,35 @@ def _red_md(pending):
         lines.append(
             "- 市场 **%s** / 窗口 %s / 锚 `%s`：**%s**（%s）"
             " 截止 %s，连续未就绪 %s 次"
-            % (it["market"], it["window"], it["anchor"], it["status"],
-               it["detail"] or "无详情", it["deadline"], it["attempts"]))
-    return ("推送矩阵数据锚到点未就绪（L3 升级，连续 %d 轮）：\n\n%s\n\n"
-            "**处置**：优先补跑对应数据采集；恢复后下一轮巡检自动发绿卡销账。"
-            % (ESCALATE_AT, "\n".join(lines)))
+            % (
+                it["market"],
+                it["window"],
+                it["anchor"],
+                it["status"],
+                it["detail"] or "无详情",
+                it["deadline"],
+                it["attempts"],
+            )
+        )
+    return (
+        "推送矩阵数据锚到点未就绪（L3 升级，连续 %d 轮）：\n\n%s\n\n"
+        "**处置**：优先补跑对应数据采集；恢复后下一轮巡检自动发绿卡销账。"
+        % (ESCALATE_AT, "\n".join(lines))
+    )
 
 
 def _green_md(old_pending):
-    lines = ["- %s / %s（锚 %s，%s）" % (it["market"], it["window"],
-                                        it["anchor"], it["status"])
-             for it in old_pending]
+    lines = [
+        "- %s / %s（锚 %s，%s）"
+        % (it["market"], it["window"], it["anchor"], it["status"])
+        for it in old_pending
+    ]
     return "以下数据锚已恢复就绪，升级账本已清：\n\n%s" % "\n".join(lines)
 
 
-def run_cycle(matrix=None, repo=None, now=None, sender=None,
-              flag_path=None, dry_run=False):
+def run_cycle(
+    matrix=None, repo=None, now=None, sender=None, flag_path=None, dry_run=False
+):
     """一次完整巡检 + 升级计数 + 发送；返回 (exit_code, report)。
 
     matrix/repo/now/sender/flag_path 均可注入（默认走真实矩阵与真实通道）；
@@ -187,19 +213,22 @@ def run_cycle(matrix=None, repo=None, now=None, sender=None,
     if report["pending"]:
         if not dry_run:
             keep = {_key(it) for it in report["pending"]}
-            _write_flag(flag_path, {
-                "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "pending": report["pending"],
-                "attempts": {k: v for k, v in attempts.items() if k in keep},
-            })
-            log("[pending] %d 项未就绪（checked=%d skipped=%d）"
-                % (len(report["pending"]), report["checked"],
-                   report["skipped"]))
+            _write_flag(
+                flag_path,
+                {
+                    "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "pending": report["pending"],
+                    "attempts": {k: v for k, v in attempts.items() if k in keep},
+                },
+            )
+            log(
+                "[pending] %d 项未就绪（checked=%d skipped=%d）"
+                % (len(report["pending"]), report["checked"], report["skipped"])
+            )
         if any(it.get("escalated") for it in report["pending"]):
             log("[升级] attempts>=%d，发 L3 红卡" % ESCALATE_AT)
             if not dry_run:
-                sender("数据锚到点升级告警（L3）", "red",
-                       _red_md(report["pending"]))
+                sender("数据锚到点升级告警（L3）", "red", _red_md(report["pending"]))
         exit_code = 2
         return exit_code, report
 
@@ -209,31 +238,35 @@ def run_cycle(matrix=None, repo=None, now=None, sender=None,
         # 清旗标+attempts 归零（假恢复播报、L3 升级链丢失）。现区分：
         # 真恢复=本轮 evaluated 中 status=ok；出带=不在本轮评估面，
         # 保留旗标与 attempts 不销账（日志留痕，下一窗口重新入带再计）。
-        evaluated = {("%s|%s" % (e["market"], e["window"])): e["status"]
-                     for e in report.get("evaluated", [])}
-        recovered = [it for it in old_pending
-                     if evaluated.get(_key(it)) == "ok"]
+        evaluated = {
+            ("%s|%s" % (e["market"], e["window"])): e["status"]
+            for e in report.get("evaluated", [])
+        }
+        recovered = [it for it in old_pending if evaluated.get(_key(it)) == "ok"]
         out_of_band = [it for it in old_pending if _key(it) not in evaluated]
         if recovered and not dry_run:
             sender("数据锚到点已恢复", "green", _green_md(recovered))
         if out_of_band:
             keep = {_key(it) for it in out_of_band}
             if not dry_run:
-                _write_flag(flag_path, {
-                    "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "pending": out_of_band,
-                    "attempts": {k: v for k, v in attempts.items()
-                                 if k in keep},
-                })
-                log("[warn] %d 项已出判定带仍未就绪——旗标保留不销账"
+                _write_flag(
+                    flag_path,
+                    {
+                        "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "pending": out_of_band,
+                        "attempts": {k: v for k, v in attempts.items() if k in keep},
+                    },
+                )
+                log(
+                    "[warn] %d 项已出判定带仍未就绪——旗标保留不销账"
                     "（今日不再自动巡检，需人工补数）：%s"
-                    % (len(out_of_band), sorted(keep)))
+                    % (len(out_of_band), sorted(keep))
+                )
             exit_code = 2
             return exit_code, report
         if not dry_run:
             if _clear_flag(flag_path):
-                log("[恢复] 清除 deadline_pending 旗标（%d 项）"
-                    % len(old_pending))
+                log("[恢复] 清除 deadline_pending 旗标（%d 项）" % len(old_pending))
             else:
                 log("[warn] 旗标清除失败（可能被占用），保留待下次重试")
         return 0, report
@@ -245,10 +278,12 @@ def run_cycle(matrix=None, repo=None, now=None, sender=None,
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="市场推送矩阵数据到点升级器")
-    ap.add_argument("--now", default=None,
-                    help="仅测试用：指定判定时刻 YYYY-MM-DD HH:MM")
-    ap.add_argument("--dry-run", action="store_true",
-                    help="只判不发不写（不落旗标不发送）")
+    ap.add_argument(
+        "--now", default=None, help="仅测试用：指定判定时刻 YYYY-MM-DD HH:MM"
+    )
+    ap.add_argument(
+        "--dry-run", action="store_true", help="只判不发不写（不落旗标不发送）"
+    )
     args = ap.parse_args(argv)
     now = None
     if args.now:

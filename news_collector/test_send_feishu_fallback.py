@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """send_feishu 群兜底单测（W3）：openapi 失败后 lark-cli chat 兜底、失败如实留证。"""
+
 import json
 import os
 import sys
@@ -17,24 +18,38 @@ class _Run:
 
 
 def test_group_fallback_success(monkeypatch, capsys):
-    monkeypatch.setattr(sf, "_send_openapi",
-                        lambda *a, **kw: (False, "openapi_fallback: err HTTP 400 bad"))
+    monkeypatch.setattr(
+        sf,
+        "_send_openapi",
+        lambda *a, **kw: (False, "openapi_fallback: err HTTP 400 bad"),
+    )
     monkeypatch.setattr(sf, "find_lark_cli", lambda: r"C:\fake\lark-cli.exe")
     monkeypatch.setattr(sf, "_flow_record", lambda ok, target: None)
-    monkeypatch.setattr(sf.subprocess, "run", lambda *a, **kw: _Run(
-        stdout=json.dumps({"ok": True, "data": {"message_id": "om_fb"}})))
+    monkeypatch.setattr(
+        sf.subprocess,
+        "run",
+        lambda *a, **kw: _Run(
+            stdout=json.dumps({"ok": True, "data": {"message_id": "om_fb"}})
+        ),
+    )
     ok = sf.send_content_to("oc_x", "chat_id", '{"text":"hi"}', "text")
     assert ok is True
     assert "SEND_OK" in capsys.readouterr().out
 
 
 def test_group_fallback_failure_reports_both(monkeypatch, capsys):
-    monkeypatch.setattr(sf, "_send_openapi",
-                        lambda *a, **kw: (False, "openapi_fallback: err HTTP 400 bad"))
+    monkeypatch.setattr(
+        sf,
+        "_send_openapi",
+        lambda *a, **kw: (False, "openapi_fallback: err HTTP 400 bad"),
+    )
     monkeypatch.setattr(sf, "find_lark_cli", lambda: r"C:\fake\lark-cli.exe")
     monkeypatch.setattr(sf, "_flow_record", lambda ok, target: None)
-    monkeypatch.setattr(sf.subprocess, "run", lambda *a, **kw: _Run(
-        stdout="", stderr="cli denied", rc=1))
+    monkeypatch.setattr(
+        sf.subprocess,
+        "run",
+        lambda *a, **kw: _Run(stdout="", stderr="cli denied", rc=1),
+    )
     ok = sf.send_content_to("oc_x", "chat_id", '{"text":"hi"}', "text")
     assert ok is False
     out = capsys.readouterr().out
@@ -43,13 +58,15 @@ def test_group_fallback_failure_reports_both(monkeypatch, capsys):
 
 def test_openid_target_has_no_cli_fallback(monkeypatch, capsys):
     called = {"run": 0}
-    monkeypatch.setattr(sf, "_send_openapi",
-                        lambda *a, **kw: (False, "openapi_fallback: err"))
+    monkeypatch.setattr(
+        sf, "_send_openapi", lambda *a, **kw: (False, "openapi_fallback: err")
+    )
     monkeypatch.setattr(sf, "find_lark_cli", lambda: r"C:\fake\lark-cli.exe")
 
     def _run(*a, **kw):
         called["run"] += 1
         return _Run(stdout=json.dumps({"ok": True}))
+
     monkeypatch.setattr(sf.subprocess, "run", _run)
     monkeypatch.setattr(sf, "_flow_record", lambda ok, target: None)
     ok = sf.send_content_to("ou_x", "open_id", '{"text":"hi"}', "text")
@@ -71,9 +88,11 @@ def test_lark_cli_send_chat_no_binary(monkeypatch):
 
 
 # ── 2026-10-25 收口：lark-cli 网络类失败重试一次 ─────────────
-_TRANSIENT = ('{\n  "ok": false,\n  "identity": "bot",\n  "error": {\n'
-              '    "type": "network",\n    "subtype": "transport",\n'
-              '    "message": "API transport error"\n  }\n}')
+_TRANSIENT = (
+    '{\n  "ok": false,\n  "identity": "bot",\n  "error": {\n'
+    '    "type": "network",\n    "subtype": "transport",\n'
+    '    "message": "API transport error"\n  }\n}'
+)
 _OK_OUT = '{\n  "ok": true,\n  "message_id": "om_retry"\n}'
 
 
@@ -84,8 +103,9 @@ def test_send_content_retries_transient_network(monkeypatch, capsys):
         calls["n"] += 1
         return _Run(stdout=_TRANSIENT if calls["n"] == 1 else _OK_OUT)
 
-    monkeypatch.setattr(sf, "_send_openapi",
-                        lambda *a, **kw: (False, "openapi_fallback: err"))
+    monkeypatch.setattr(
+        sf, "_send_openapi", lambda *a, **kw: (False, "openapi_fallback: err")
+    )
     monkeypatch.setattr(sf, "find_lark_cli", lambda: r"C:\fake\lark-cli.exe")
     monkeypatch.setattr(sf.subprocess, "run", fake_run)
     monkeypatch.setattr(sf.time, "sleep", lambda s: None)

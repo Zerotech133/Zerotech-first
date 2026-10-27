@@ -10,6 +10,7 @@ OR jev=''` 守卫（事务内二次校验，不新增 DB 列）；③tick 传 de
 测试纪律：**不启动真批处理、不读写 news.db**——桩 news_ai + 桩 sqlite3 连接
 （临时库）+ 桩 ollama_lock；被导入的 jev_backfill 模块在 teardown 时移除。
 """
+
 from __future__ import annotations
 
 import json
@@ -55,10 +56,10 @@ class FakeNewsAI:
             self.hook(title, stocks)
         return {"bias": "bull", "conf": 0.9, "title": title}
 
-    def log(self, msg):        # noqa: D102 - 只吞日志
+    def log(self, msg):  # noqa: D102 - 只吞日志
         pass
 
-    def push_message(self, msg):   # noqa: D102 - 单测不推送
+    def push_message(self, msg):  # noqa: D102 - 单测不推送
         pass
 
 
@@ -94,24 +95,34 @@ class FakeLock:
 def env(monkeypatch, tmp_path):
     dbp = tmp_path / "news.db"
     con = sqlite3.connect(dbp)
-    con.execute("CREATE TABLE news (id INTEGER PRIMARY KEY, title TEXT, "
-                "stocks TEXT, ts TEXT, jev TEXT)")
+    con.execute(
+        "CREATE TABLE news (id INTEGER PRIMARY KEY, title TEXT, "
+        "stocks TEXT, ts TEXT, jev TEXT)"
+    )
     for i in range(1, 4):
-        con.execute("INSERT INTO news(id,title,stocks,ts,jev) VALUES(?,?,?,?,NULL)",
-                    (i, "n%d" % i, "[]", "2026-10-%02d" % i))
+        con.execute(
+            "INSERT INTO news(id,title,stocks,ts,jev) VALUES(?,?,?,?,NULL)",
+            (i, "n%d" % i, "[]", "2026-10-%02d" % i),
+        )
     con.commit()
     fake_ai = FakeNewsAI()
     monkeypatch.setitem(sys.modules, "news_ai", fake_ai)
     sys.modules.pop("jev_backfill", None)
-    import jev_backfill as jb                      # noqa: E402
+    import jev_backfill as jb  # noqa: E402
+
     sink = []
 
     def _connect(*a, **kw):
         sink.append("CONNECT")
         return RecordingConn(con, sink)
 
-    monkeypatch.setattr(jb, "sqlite3", types.SimpleNamespace(
-        connect=_connect, OperationalError=sqlite3.OperationalError))
+    monkeypatch.setattr(
+        jb,
+        "sqlite3",
+        types.SimpleNamespace(
+            connect=_connect, OperationalError=sqlite3.OperationalError
+        ),
+    )
     try:
         yield types.SimpleNamespace(jb=jb, ai=fake_ai, conn=con, dbp=dbp, sink=sink)
     finally:
@@ -120,8 +131,9 @@ def env(monkeypatch, tmp_path):
 
 def _run(monkeypatch, jb, lock):
     monkeypatch.setitem(sys.modules, "ollama_lock", lock)
-    monkeypatch.setattr(sys, "argv", ["jev_backfill.py", "--batch", "8",
-                                      "--alert-threshold", "0"])
+    monkeypatch.setattr(
+        sys, "argv", ["jev_backfill.py", "--batch", "8", "--alert-threshold", "0"]
+    )
     jb.main()
 
 
@@ -133,13 +145,13 @@ def test_lock_failure_does_not_select_or_judge(env, monkeypatch, capsys):
     assert "BACKFILL skip" in out
     assert lock.acquires == 1
     selects = [s for s in env.sink if isinstance(s, str) and "FROM news" in s]
-    assert selects == []          # 旧实现会先 SELECT 再让位 → 这里必须为空
+    assert selects == []  # 旧实现会先 SELECT 再让位 → 这里必须为空
     assert env.ai.calls == []
 
 
 # --- ② 双实例：A 判读中 B 启动，B 不得重复判同一批 ---------------------------
 def test_concurrent_instance_does_not_duplicate_batch(env, monkeypatch, capsys):
-    lock = FakeLock((True, False))          # A 抢到锁；B 被拒
+    lock = FakeLock((True, False))  # A 抢到锁；B 被拒
     state = {"spawned": False}
 
     def hook(title, stocks):
@@ -156,7 +168,8 @@ def test_concurrent_instance_does_not_duplicate_batch(env, monkeypatch, capsys):
     assert len(set(titles)) == 3 and set(titles) == {"n1", "n2", "n3"}
     assert "BACKFILL skip" in out
     left = env.conn.execute(
-        "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''").fetchone()[0]
+        "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''"
+    ).fetchone()[0]
     assert left == 0
 
 
@@ -170,8 +183,9 @@ def test_updates_only_still_pending_rows(env, monkeypatch, capsys):
             fired["done"] = True
             # 模拟锁被陈旧回收后另一实例先落库
             other = sqlite3.connect(env.dbp)
-            other.execute("UPDATE news SET jev=? WHERE id=1",
-                          (json.dumps({"bias": "competing"}),))
+            other.execute(
+                "UPDATE news SET jev=? WHERE id=1", (json.dumps({"bias": "competing"}),)
+            )
             other.commit()
             other.close()
 
@@ -179,7 +193,7 @@ def test_updates_only_still_pending_rows(env, monkeypatch, capsys):
     _run(monkeypatch, env.jb, lock)
     out = capsys.readouterr().out
     row = env.conn.execute("SELECT jev FROM news WHERE id=1").fetchone()[0]
-    assert json.loads(row)["bias"] == "competing"      # 未被本实例覆盖
+    assert json.loads(row)["bias"] == "competing"  # 未被本实例覆盖
     assert "judged=2/3" in out
     assert "dup_skip=1" in out
 
@@ -199,10 +213,14 @@ def test_locked_tick_forwards_deadline_ts(env):
             self.heartbeats += 1
 
     lock = _Lock()
-    assert env.jb._locked_tick(lock, "jev_backfill", False, False,
-                               deadline_ts=123.0) is True
+    assert (
+        env.jb._locked_tick(lock, "jev_backfill", False, False, deadline_ts=123.0)
+        is True
+    )
     assert lock.kw == {"deadline_ts": 123.0}
     # M3 暂停旗分支：只 heartbeat，不让位（原 EXEC-R28 语义不变）
-    assert env.jb._locked_tick(lock, "jev_backfill", True, False,
-                               deadline_ts=123.0) is True
+    assert (
+        env.jb._locked_tick(lock, "jev_backfill", True, False, deadline_ts=123.0)
+        is True
+    )
     assert lock.heartbeats == 1

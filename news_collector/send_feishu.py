@@ -16,6 +16,7 @@
   2. lark-cli 回退——身份自适应 bot→user 双跳（保留原通路，
      Trae 宿主内调用时仍可用）。
 """
+
 import json
 import os
 import subprocess
@@ -24,8 +25,8 @@ import time
 
 # K-STOCK-414：旧机用户 Administrator 硬编码换机断链 → expanduser 动态推导
 LARK_ROOT = os.path.join(
-    os.path.expanduser("~"), ".trae-cn", "plugins",
-    "trae-remote-official", "lark")
+    os.path.expanduser("~"), ".trae-cn", "plugins", "trae-remote-official", "lark"
+)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
 
@@ -34,17 +35,28 @@ USER_ID = push_targets.target_id("个人") or ""  # bot 应用域 open_id（apps
 # push_targets「个人(user域)」条目次之（等价机制——条目待老田确认后
 # 落入 news_config.json，该文件非本工位独占路径，本期不动），缺省回退
 # 历史值；下方 122 行 bot/user 双跳逻辑不动。
-USER_ID_LARK = (os.environ.get("FEISHU_USER_ID_LARK")
-                or next((t.get("id") for t in push_targets.targets()
-                         if t.get("name") == "个人(user域)"), None)
-                or "ou_5c9c4f3c015cbdb3475a44e49a9c1866")  # user 应用域 open_id（另一身份维度，不属收件人表）
+USER_ID_LARK = (
+    os.environ.get("FEISHU_USER_ID_LARK")
+    or next(
+        (
+            t.get("id")
+            for t in push_targets.targets()
+            if t.get("name") == "个人(user域)"
+        ),
+        None,
+    )
+    or "ou_5c9c4f3c015cbdb3475a44e49a9c1866"
+)  # user 应用域 open_id（另一身份维度，不属收件人表）
 
 
 def find_lark_cli():
     # K-STOCK-396 exe 解耦：仓库 bin/ 固定副本优先（不受 Trae 插件目录
     # 升级/清除影响，2026-10-13 巡检判例），插件目录扫描降为回退。
-    _bin = os.path.join(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))), "bin", "lark-cli.exe")
+    _bin = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "bin",
+        "lark-cli.exe",
+    )
     if os.path.isfile(_bin):
         return _bin
     if not os.path.isdir(LARK_ROOT):
@@ -74,8 +86,9 @@ def _load_app_creds():
     return None, None
 
 
-def _send_openapi(content, msg_type, receive_id=None, receive_id_type="open_id",
-                  kind=None):
+def _send_openapi(
+    content, msg_type, receive_id=None, receive_id_type="open_id", kind=None
+):
     """OpenAPI 直连：K-STOCK-228 起内部委托 feishu_client（全仓唯一底座）。
 
     receive_id 缺省=USER_ID（OpenAPI 应用自身域 open_id，与凭证同应用）；
@@ -85,6 +98,7 @@ def _send_openapi(content, msg_type, receive_id=None, receive_id_type="open_id",
     if receive_id is None:
         receive_id = USER_ID
     from feishu_client import send_msg  # 同目录（K-STOCK-228 出口收敛）
+
     if kind is None:
         return send_msg(content, msg_type, receive_id, receive_id_type)
     return send_msg(content, msg_type, receive_id, receive_id_type, kind=kind)
@@ -100,12 +114,21 @@ def _run_lark_cli(args, timeout=30, attempts=2):
     last = None
     for i in range(attempts):
         try:
-            r = subprocess.run(args, capture_output=True, text=True,
-                               encoding="utf-8", timeout=timeout)
+            r = subprocess.run(
+                args, capture_output=True, text=True, encoding="utf-8", timeout=timeout
+            )
             blob = ((r.stdout or "") + (r.stderr or "")).lower()
-            transient = any(k in blob for k in (
-                "network", "transport", "timeout", "timed out",
-                "connection", "econnreset"))
+            transient = any(
+                k in blob
+                for k in (
+                    "network",
+                    "transport",
+                    "timeout",
+                    "timed out",
+                    "connection",
+                    "econnreset",
+                )
+            )
             if transient and i + 1 < attempts:
                 time.sleep(2)
                 last = r
@@ -132,9 +155,21 @@ def _lark_cli_send_chat(content, msg_type, chat_id):
         return False, "no lark-cli"
     try:
         r = _run_lark_cli(
-            [exe, "im", "+messages-send", "--as", "bot",
-             "--chat-id", chat_id, "--msg-type", msg_type,
-             "--content", content], timeout=40)
+            [
+                exe,
+                "im",
+                "+messages-send",
+                "--as",
+                "bot",
+                "--chat-id",
+                chat_id,
+                "--msg-type",
+                msg_type,
+                "--content",
+                content,
+            ],
+            timeout=40,
+        )
     except Exception as e:  # noqa: BLE001
         return False, str(e)[:200]
     out = (r.stdout or "").strip()
@@ -158,8 +193,7 @@ def send_content_to(receive_id, receive_id_type, content, msg_type, kind=None):
     静默丢失。现改为：仅对 chat_id 目标、失败后尝试一次 lark-cli 群发
     （身份域仍为 bot app），失败如实 SEND_FAIL 留证。
     """
-    ok, why = _send_openapi(content, msg_type, receive_id, receive_id_type,
-                            kind=kind)
+    ok, why = _send_openapi(content, msg_type, receive_id, receive_id_type, kind=kind)
     if ok:
         print("SEND_OK")
         return True
@@ -170,8 +204,7 @@ def send_content_to(receive_id, receive_id_type, content, msg_type, kind=None):
             print("SEND_OK (lark-cli chat fallback)")
             return True
         _flow_record(False, receive_id)
-        print("SEND_FAIL openapi:%s lark-cli:%s"
-              % (str(why)[:120], str(detail)[:120]))
+        print("SEND_FAIL openapi:%s lark-cli:%s" % (str(why)[:120], str(detail)[:120]))
         return False
     print("SEND_FAIL " + str(why))
     _flow_record(False, receive_id)
@@ -187,14 +220,16 @@ def _flow_record(ok, target):
         if root not in sys.path:
             sys.path.insert(0, root)
         import push_flow
+
         push_flow.record(push_flow.infer_kind(), "lark-cli", target, 1, ok)
     except Exception:
         pass
 
 
 def send_text(text, kind=None):
-    return send_content(json.dumps({"text": text}, ensure_ascii=False),
-                        "text", kind=kind)
+    return send_content(
+        json.dumps({"text": text}, ensure_ascii=False), "text", kind=kind
+    )
 
 
 def send_content(content, msg_type, kind=None):
@@ -219,9 +254,11 @@ def send_content(content, msg_type, kind=None):
     for ident, uid in ((["--as", "bot"], USER_ID), ([], USER_ID_LARK)):
         try:
             r = _run_lark_cli(
-                [exe, "im", "+messages-send"] + ident +
-                ["--user-id", uid, "--msg-type", msg_type,
-                 "--content", content], timeout=30)
+                [exe, "im", "+messages-send"]
+                + ident
+                + ["--user-id", uid, "--msg-type", msg_type, "--content", content],
+                timeout=30,
+            )
             try:
                 # K-STOCK-400：末尾 JSON 优先——lark-cli stdout 若混入告警/
                 # 版本提示/BOM，整体解析必败 → 误判失败 → 换 user 域重发
@@ -267,6 +304,7 @@ if __name__ == "__main__":
         print("SEND_FAIL no message file arg")
         sys.exit(2)
     from alert_io import sniff_read_text  # E1: BOM 嗅探（utf-16/utf-8-sig/utf-8）
+
     msg = sniff_read_text(pos[0]).strip()  # 兼容旧 BOM 防御语义
     if not msg:
         print("SEND_FAIL empty message")

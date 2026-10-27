@@ -28,16 +28,36 @@ NOW = datetime(2026, 10, 19, 8, 5)
 ANCHOR_REL = "tmp_anchor/x.json"
 
 
-def _make_matrix(deadline="08:00", start="07:40", end="09:15",
-                 anchor="t", anchors=None):
+def _make_matrix(
+    deadline="08:00", start="07:40", end="09:15", anchor="t", anchors=None
+):
     """裁剪真实矩阵为单市场单窗口，并注入测试锚（仿 TestAnchor 手法）。"""
-    m = copy.deepcopy(
-        pm.load_matrix(HERE.parent / "portal" / "push_matrix.json"))
-    m["markets"] = {"cn": {"tz": "Asia/Shanghai", "daily_cap": 2, "windows": [
-        {"name": "morning", "start": start, "end": end, "tier": "daily",
-         "anchor": anchor, "template": "daily_digest", "deadline": deadline}]}}
-    m["anchors"] = {"t": {"path": ANCHOR_REL, "rule": "mtime_today",
-                          "min_mtime": "07:25", "enabled": True}}
+    m = copy.deepcopy(pm.load_matrix(HERE.parent / "portal" / "push_matrix.json"))
+    m["markets"] = {
+        "cn": {
+            "tz": "Asia/Shanghai",
+            "daily_cap": 2,
+            "windows": [
+                {
+                    "name": "morning",
+                    "start": start,
+                    "end": end,
+                    "tier": "daily",
+                    "anchor": anchor,
+                    "template": "daily_digest",
+                    "deadline": deadline,
+                }
+            ],
+        }
+    }
+    m["anchors"] = {
+        "t": {
+            "path": ANCHOR_REL,
+            "rule": "mtime_today",
+            "min_mtime": "07:25",
+            "enabled": True,
+        }
+    }
     if anchors:
         m["anchors"].update(anchors)
     return m
@@ -47,12 +67,14 @@ def _touch(p: Path, ts: datetime):
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text("x", encoding="utf-8")
     import os
+
     os.utime(p, (ts.timestamp(), ts.timestamp()))
 
 
 def _fake_sender(calls):
     def sender(title, template, md):
         calls.append({"title": title, "template": template, "md": md})
+
     return sender
 
 
@@ -60,8 +82,7 @@ def _fake_sender(calls):
 def _iso_env(tmp_path, monkeypatch):
     """每用例把日志/旗标模块路径隔离到 tmp_path，测试不写 worktree 仓库目录。"""
     monkeypatch.setattr(dw, "LOG_PATH", str(tmp_path / "deadline_watch.log"))
-    monkeypatch.setattr(dw, "FLAG_PATH",
-                        str(tmp_path / "deadline_pending.json"))
+    monkeypatch.setattr(dw, "FLAG_PATH", str(tmp_path / "deadline_pending.json"))
 
 
 class TestRunCheck:
@@ -70,8 +91,12 @@ class TestRunCheck:
         r = dw.run_check(m, tmp_path, NOW)  # 未 touch 锚文件 → missing
         assert r["checked"] == 1 and r["skipped"] == 0
         it = r["pending"][0]
-        assert (it["market"], it["window"], it["status"],
-                it["deadline"]) == ("cn", "morning", "missing", "08:00")
+        assert (it["market"], it["window"], it["status"], it["deadline"]) == (
+            "cn",
+            "morning",
+            "missing",
+            "08:00",
+        )
 
         _touch(tmp_path / ANCHOR_REL, datetime(2026, 10, 19, 7, 0))
         r = dw.run_check(m, tmp_path, NOW)  # 今日 mtime 但早于 07:25 → stale
@@ -79,9 +104,16 @@ class TestRunCheck:
         assert "07:25" in r["pending"][0]["detail"]
 
     def test_disabled_and_unknown_never_pending(self, tmp_path):
-        m = _make_matrix(anchors={"t": {
-            "path": ANCHOR_REL, "rule": "mtime_today",
-            "min_mtime": "07:25", "enabled": False}})
+        m = _make_matrix(
+            anchors={
+                "t": {
+                    "path": ANCHOR_REL,
+                    "rule": "mtime_today",
+                    "min_mtime": "07:25",
+                    "enabled": False,
+                }
+            }
+        )
         r = dw.run_check(m, tmp_path, NOW)
         assert r["pending"] == [] and r["checked"] == 0 and r["skipped"] == 1
 
@@ -90,22 +122,21 @@ class TestRunCheck:
         assert r2["pending"] == [] and r2["checked"] == 0 and r2["skipped"] == 1
 
     def test_before_deadline_not_judged(self, tmp_path):
-        r = dw.run_check(_make_matrix(), tmp_path,
-                         datetime(2026, 10, 19, 7, 50))
+        r = dw.run_check(_make_matrix(), tmp_path, datetime(2026, 10, 19, 7, 50))
         assert r["checked"] == 0 and r["pending"] == []
 
     def test_after_grace_band_not_judged(self, tmp_path):
         # end 09:15 + 30min 宽限 = 09:45，09:46 起出带不再判
-        r = dw.run_check(_make_matrix(), tmp_path,
-                         datetime(2026, 10, 19, 9, 46))
+        r = dw.run_check(_make_matrix(), tmp_path, datetime(2026, 10, 19, 9, 46))
         assert r["checked"] == 0 and r["pending"] == []
 
 
 class TestRunCycle:
     def test_pending_writes_flag_rc2_no_card(self, tmp_path):
         calls = []
-        rc, rep = dw.run_cycle(matrix=_make_matrix(), repo=tmp_path, now=NOW,
-                               sender=_fake_sender(calls))
+        rc, rep = dw.run_cycle(
+            matrix=_make_matrix(), repo=tmp_path, now=NOW, sender=_fake_sender(calls)
+        )
         assert rc == 2 and len(rep["pending"]) == 1
         flag = json.loads(Path(dw.FLAG_PATH).read_text(encoding="utf-8"))
         assert flag["attempts"] == {"cn|morning": 1}
@@ -115,10 +146,10 @@ class TestRunCycle:
     def test_twice_escalates_red_card(self, tmp_path):
         calls = []
         m = _make_matrix()
-        dw.run_cycle(matrix=m, repo=tmp_path, now=NOW,
-                     sender=_fake_sender(calls))
-        rc, rep = dw.run_cycle(matrix=m, repo=tmp_path, now=NOW,
-                               sender=_fake_sender(calls))
+        dw.run_cycle(matrix=m, repo=tmp_path, now=NOW, sender=_fake_sender(calls))
+        rc, rep = dw.run_cycle(
+            matrix=m, repo=tmp_path, now=NOW, sender=_fake_sender(calls)
+        )
         assert rc == 2
         assert rep["pending"][0]["attempts"] == 2
         assert rep["pending"][0]["escalated"] is True
@@ -130,12 +161,12 @@ class TestRunCycle:
     def test_recover_green_card_and_clear(self, tmp_path):
         calls = []
         m = _make_matrix()
-        dw.run_cycle(matrix=m, repo=tmp_path, now=NOW,
-                     sender=_fake_sender(calls))
+        dw.run_cycle(matrix=m, repo=tmp_path, now=NOW, sender=_fake_sender(calls))
         assert Path(dw.FLAG_PATH).exists()
         _touch(tmp_path / ANCHOR_REL, datetime(2026, 10, 19, 7, 30))  # ok
-        rc, rep = dw.run_cycle(matrix=m, repo=tmp_path, now=NOW,
-                               sender=_fake_sender(calls))
+        rc, rep = dw.run_cycle(
+            matrix=m, repo=tmp_path, now=NOW, sender=_fake_sender(calls)
+        )
         assert rc == 0 and rep["pending"] == []
         assert len(calls) == 1 and calls[0]["template"] == "green"
         assert "已恢复" in calls[0]["title"]
@@ -149,15 +180,15 @@ class TestRunCycle:
         """
         calls = []
         m = _make_matrix()
-        dw.run_cycle(matrix=m, repo=tmp_path, now=NOW,
-                     sender=_fake_sender(calls))
-        assert json.loads(
-            Path(dw.FLAG_PATH).read_text(encoding="utf-8"))[
-                "attempts"] == {"cn|morning": 1}
+        dw.run_cycle(matrix=m, repo=tmp_path, now=NOW, sender=_fake_sender(calls))
+        assert json.loads(Path(dw.FLAG_PATH).read_text(encoding="utf-8"))[
+            "attempts"
+        ] == {"cn|morning": 1}
         # 下一轮 now 已出宽限带（end 09:15+30min=09:45 之后）：锚仍未就绪
         later = datetime(2026, 10, 19, 11, 0)
-        rc, rep = dw.run_cycle(matrix=m, repo=tmp_path, now=later,
-                               sender=_fake_sender(calls))
+        rc, rep = dw.run_cycle(
+            matrix=m, repo=tmp_path, now=later, sender=_fake_sender(calls)
+        )
         assert rc == 2  # 不冒充恢复
         assert calls == []  # 无绿卡无红卡（出带项不在巡检面，不骚扰）
         flag = json.loads(Path(dw.FLAG_PATH).read_text(encoding="utf-8"))
@@ -165,30 +196,38 @@ class TestRunCycle:
         assert flag["attempts"] == {"cn|morning": 1}  # 账本不归零
         # 再下一日重新入带且仍未就绪：attempts 从保留值继续累计
         next_day = datetime(2026, 10, 20, 8, 5)
-        rc, rep = dw.run_cycle(matrix=m, repo=tmp_path, now=next_day,
-                               sender=_fake_sender(calls))
+        rc, rep = dw.run_cycle(
+            matrix=m, repo=tmp_path, now=next_day, sender=_fake_sender(calls)
+        )
         assert rc == 2 and rep["pending"][0]["attempts"] == 2
 
     def test_ok_without_flag_no_card(self, tmp_path):
         calls = []
         _touch(tmp_path / ANCHOR_REL, datetime(2026, 10, 19, 7, 30))
-        rc, rep = dw.run_cycle(matrix=_make_matrix(), repo=tmp_path, now=NOW,
-                               sender=_fake_sender(calls))
+        rc, rep = dw.run_cycle(
+            matrix=_make_matrix(), repo=tmp_path, now=NOW, sender=_fake_sender(calls)
+        )
         assert rc == 0 and rep["pending"] == []
         assert calls == [] and not Path(dw.FLAG_PATH).exists()
 
     def test_dry_run_writes_nothing(self, tmp_path):
         calls = []
-        rc, _ = dw.run_cycle(matrix=_make_matrix(), repo=tmp_path, now=NOW,
-                             sender=_fake_sender(calls), dry_run=True)
+        rc, _ = dw.run_cycle(
+            matrix=_make_matrix(),
+            repo=tmp_path,
+            now=NOW,
+            sender=_fake_sender(calls),
+            dry_run=True,
+        )
         assert rc == 2
         assert not Path(dw.FLAG_PATH).exists() and calls == []
 
     def test_corrupt_flag_rebuilt_visible(self, tmp_path):
         Path(dw.FLAG_PATH).write_text("{broken", encoding="utf-8")
         calls = []
-        rc, rep = dw.run_cycle(matrix=_make_matrix(), repo=tmp_path, now=NOW,
-                               sender=_fake_sender(calls))
+        rc, rep = dw.run_cycle(
+            matrix=_make_matrix(), repo=tmp_path, now=NOW, sender=_fake_sender(calls)
+        )
         assert rc == 2 and rep.get("flag_error")  # 坏旗标不吞，report 留痕
         flag = json.loads(Path(dw.FLAG_PATH).read_text(encoding="utf-8"))
         assert flag["attempts"] == {"cn|morning": 1}  # 按空账重建，从 1 起算
@@ -199,8 +238,9 @@ class TestCli:
         # monkeypatch 模块路径：矩阵 JSON / 仓库根全部指到 tmp，绝不触 C:/aios
         mjson = tmp_path / "portal" / "push_matrix.json"
         mjson.parent.mkdir(parents=True, exist_ok=True)
-        mjson.write_text(json.dumps(_make_matrix(), ensure_ascii=False),
-                         encoding="utf-8")
+        mjson.write_text(
+            json.dumps(_make_matrix(), ensure_ascii=False), encoding="utf-8"
+        )
         monkeypatch.setattr(pm, "MATRIX_JSON", mjson)
         monkeypatch.setattr(pm, "REPO", tmp_path)
         rc = dw.main(["--now", "2026-10-19 08:05"])  # missing 首轮不发卡，零发送

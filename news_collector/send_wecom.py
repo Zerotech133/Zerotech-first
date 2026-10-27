@@ -10,6 +10,7 @@ key 来源（优先级）：
   python send_wecom.py "测试文本"          # 文本
   python send_wecom.py --image <png> [说明]  # 图片
 """
+
 import base64
 import hashlib
 import json
@@ -45,8 +46,9 @@ def get_webhook():
 def _post(payload, timeout=10):
     url = get_webhook()
     if not url:
-        print("WECOM_SKIP: 未配置 wecom_webhook（news_config.json 或 "
-              "wecom_webhook.txt）")
+        print(
+            "WECOM_SKIP: 未配置 wecom_webhook（news_config.json 或 wecom_webhook.txt）"
+        )
         return False
     try:
         r = requests.post(url, json=payload, timeout=timeout)
@@ -57,8 +59,7 @@ def _post(payload, timeout=10):
 
 
 def send_text(content):
-    return _post({"msgtype": "text",
-                  "text": {"content": content[:2000]}})
+    return _post({"msgtype": "text", "text": {"content": content[:2000]}})
 
 
 def send_markdown(content):
@@ -66,8 +67,7 @@ def send_markdown(content):
     raw = content.encode("utf-8")
     if len(raw) > 4000:
         content = raw[:4000].decode("utf-8", "ignore") + "\n…（截断）"
-    return _post({"msgtype": "markdown",
-                  "markdown": {"content": content}})
+    return _post({"msgtype": "markdown", "markdown": {"content": content}})
 
 
 def send_image(png_path):
@@ -78,12 +78,15 @@ def send_image(png_path):
         if len(data) > 8 * 1024 * 1024:
             print("WECOM_SKIP: image >8MB")
             return False
-        return _post({
-            "msgtype": "image",
-            "image": {
-                "base64": base64.b64encode(data).decode(),
-                "md5": hashlib.md5(data).hexdigest(),
-            }})
+        return _post(
+            {
+                "msgtype": "image",
+                "image": {
+                    "base64": base64.b64encode(data).decode(),
+                    "md5": hashlib.md5(data).hexdigest(),
+                },
+            }
+        )
     except Exception as e:
         print("WECOM_FAIL %s" % str(e)[:120])
         return False
@@ -96,5 +99,4 @@ if __name__ == "__main__":
             send_text(sys.argv[3])
     else:
         ok = send_text(sys.argv[1] if len(sys.argv) > 1 else "wechat ok")
-    print("WECOM_%s" % ("OK" if ok else
-                        "SKIP" if not get_webhook() else "FAIL"))
+    print("WECOM_%s" % ("OK" if ok else "SKIP" if not get_webhook() else "FAIL"))

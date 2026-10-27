@@ -17,6 +17,7 @@ JEV 判读当前每条都要跑 2 次 LLM（9B 判读 + reason），夜间实测
 灰度开关
   news_collector/jev_backfill.py 读环境变量 JEV_PREFILTER（默认 0=关）。
 """
+
 from __future__ import annotations
 
 import re
@@ -67,9 +68,15 @@ NEUTRAL_PATTERNS = [
 
 # ── 来源权重（仅用于 reason 标注，不单独决定 skip）──────────────────────
 SOURCE_TRUST = {
-    "announcement": "high", "govpolicy": "high", "report": "mid",
-    "sina": "mid", "eastmoney": "mid", "chinanews": "mid",
-    "wallstreetcn": "mid", "world": "mid", "survey": "low",
+    "announcement": "high",
+    "govpolicy": "high",
+    "report": "mid",
+    "sina": "mid",
+    "eastmoney": "mid",
+    "chinanews": "mid",
+    "wallstreetcn": "mid",
+    "world": "mid",
+    "survey": "low",
 }
 
 _DIR_RE = [re.compile(p) for p in DIRECTIONAL_PATTERNS]
@@ -103,18 +110,38 @@ def decide(title: str, source: str = "", stocks: list | None = None) -> dict[str
     """
     text = (title or "").strip()
     if not text:
-        return {"decision": "skip", "reason": "空标题", "bias_hint": None,
-                "matched": "", "source": source}
+        return {
+            "decision": "skip",
+            "reason": "空标题",
+            "bias_hint": None,
+            "matched": "",
+            "source": source,
+        }
     d = directional_hit(text)
     if d:
-        return {"decision": "keep", "reason": "方向性词", "bias_hint": None,
-                "matched": d, "source": source}
+        return {
+            "decision": "keep",
+            "reason": "方向性词",
+            "bias_hint": None,
+            "matched": d,
+            "source": source,
+        }
     n = neutral_hit(text)
     if n:
-        return {"decision": "skip", "reason": "例行/行情", "bias_hint": "neutral",
-                "matched": n, "source": source}
-    return {"decision": "keep", "reason": "未命中中性模式（保守保留）",
-            "bias_hint": None, "matched": "", "source": source}
+        return {
+            "decision": "skip",
+            "reason": "例行/行情",
+            "bias_hint": "neutral",
+            "matched": n,
+            "source": source,
+        }
+    return {
+        "decision": "keep",
+        "reason": "未命中中性模式（保守保留）",
+        "bias_hint": None,
+        "matched": "",
+        "source": source,
+    }
 
 
 def prefilter_jev(title: str, source: str = "") -> dict[str, Any] | None:
@@ -127,11 +154,17 @@ def prefilter_jev(title: str, source: str = "") -> dict[str, Any] | None:
     if r["decision"] != "skip":
         return None
     return {
-        "bias": "neutral", "bias_cn": "中性", "conf": 0.5,
-        "scope": "", "scope_cn": "",
-        "event_type": "other", "event_cn": "其他",
-        "impact": "low", "impact_cn": "低",
-        "companies": [], "src": "prefilter",
+        "bias": "neutral",
+        "bias_cn": "中性",
+        "conf": 0.5,
+        "scope": "",
+        "scope_cn": "",
+        "event_type": "other",
+        "event_cn": "其他",
+        "impact": "low",
+        "impact_cn": "低",
+        "companies": [],
+        "src": "prefilter",
         "pref": {"reason": r["reason"], "matched": r["matched"], "source": source},
         "reason": "规则粗筛：%s（%s）" % (r["reason"], r["matched"] or "-"),
         "meter": {"ms": 0, "model": "prefilter", "src": "prefilter"},

@@ -14,6 +14,7 @@ calib_conf = hit_pct1/100（实测命中率归一）——未来置信过滤/净
 
 用法：python jev_calib.py
 """
+
 import os
 import sys
 
@@ -34,11 +35,17 @@ def main():
     for tlo, thi in _TIERS:
         sub = [r for r in rows if tlo <= r["conf"] < thi]
         dr = [r for r in sub if r["bias"] in DIRS]
-        t = {"tier": "%.1f~%.1f" % (tlo, min(thi, 1.0)),
-             "n": len(sub), "n_dir": len(dr)}
+        t = {
+            "tier": "%.1f~%.1f" % (tlo, min(thi, 1.0)),
+            "n": len(sub),
+            "n_dir": len(dr),
+        }
         if dr:
-            hit = sum(1 for r in dr if r["pct1"] is not None
-                      and DIRS[r["bias"]] * r["pct1"] > 0)
+            hit = sum(
+                1
+                for r in dr
+                if r["pct1"] is not None and DIRS[r["bias"]] * r["pct1"] > 0
+            )
             t["hit_pct1"] = round(hit / len(dr) * 100, 1)
             t["calib_conf"] = round(t["hit_pct1"] / 100.0, 3)
         tiers.append(t)
@@ -49,17 +56,25 @@ def main():
         "n_total": res.get("n", 0),
         "conf_monotone": mono,
         "mapping": tiers,
-        "hint": ("未来置信过滤/净倾向加权改用 calib_conf（实测命中率归一），"
-                 "0.9+ 右偏档按实证回写真实命中率；样本不足档位不下发"),
+        "hint": (
+            "未来置信过滤/净倾向加权改用 calib_conf（实测命中率归一），"
+            "0.9+ 右偏档按实证回写真实命中率；样本不足档位不下发"
+        ),
     }
     sbt._write_json(RESULT, obj)
-    print("JEV 后验校准表 %s  n=%d" % (obj["generated_at"][:16],
-                                        res.get("n", 0)))
+    print("JEV 后验校准表 %s  n=%d" % (obj["generated_at"][:16], res.get("n", 0)))
     print("单调=%s" % (mono is True and "是" or (mono is False and "否" or "样本不足")))
     for t in tiers:
-        print("  %s  n=%d 方向n=%d 命中=%.1f%%  calib_conf=%s" % (
-            t["tier"], t["n"], t["n_dir"], t.get("hit_pct1", 0.0),
-            t.get("calib_conf", "-")))
+        print(
+            "  %s  n=%d 方向n=%d 命中=%.1f%%  calib_conf=%s"
+            % (
+                t["tier"],
+                t["n"],
+                t["n_dir"],
+                t.get("hit_pct1", 0.0),
+                t.get("calib_conf", "-"),
+            )
+        )
     print("saved -> %s" % RESULT)
     return obj
 

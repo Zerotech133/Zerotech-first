@@ -42,6 +42,7 @@ rowid 复用由 day+scope 联合防串账。
 退出码：0 正常（含个别行情源降级，见 summary.pipeline）；2 致命
 （news.db 缺失/查询失败）。零第三方依赖，仅标准库。
 """
+
 import bisect
 import json
 import os
@@ -59,11 +60,20 @@ VERDICTS_PATH = os.path.join(OUT_DIR, "verdicts.jsonl")
 SUMMARY_PATH = os.path.join(OUT_DIR, "summary.json")
 
 CST = timezone(timedelta(hours=8))
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      "Referer": "https://finance.sina.com.cn"}
+UA = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Referer": "https://finance.sina.com.cn",
+}
 SCOPES = ("cn", "hk", "us", "commodity", "crypto", "fx")
-SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
-            "crypto": "加密", "fx": "外汇", "macro": "宏观"}
+SCOPE_CN = {
+    "cn": "A股",
+    "hk": "港股",
+    "us": "美股",
+    "commodity": "商品",
+    "crypto": "加密",
+    "fx": "外汇",
+    "macro": "宏观",
+}
 BENCHMARKS = {
     "cn": {"code": "sh000001", "name": "上证指数"},
     "hk": {"code": "hkHSI", "name": "恒生指数"},
@@ -72,11 +82,11 @@ BENCHMARKS = {
     "crypto": {"code": "BTC_USDT", "name": "比特币"},
     "fx": {"code": "fx_susdcnh", "name": "美元/离岸人民币"},
 }
-ROLLING_WINDOW = 20     # 过往能力曲线滚动窗口（按方向样本数计）
-ROLLING_MIN = 5         # 样本 <5 不出点（小样本不输出结论铁律）
+ROLLING_WINDOW = 20  # 过往能力曲线滚动窗口（按方向样本数计）
+ROLLING_MIN = 5  # 样本 <5 不出点（小样本不输出结论铁律）
 NO_BAR_GRACE_DAYS = 40  # 信号日后 40 日仍无基准 K 线 → no_bar 终止重试
-TITLE_MAX = 80          # 账本富化：下钻行标题截断（K-ORG-193）
-ENTS_MAX = 8            # 账本富化：实体名去重上限（K-ORG-193）
+TITLE_MAX = 80  # 账本富化：下钻行标题截断（K-ORG-193）
+ENTS_MAX = 8  # 账本富化：实体名去重上限（K-ORG-193）
 
 
 def now_iso():
@@ -101,17 +111,19 @@ def _slice_json(text):
     """剥 jsonp/脚本头：取首个 '['/'"' 到末个 ']'/'"' 之间的载荷。"""
     i, j = text.find("["), text.rfind("]")
     if 0 <= i < j:
-        return json.loads(text[i:j + 1])
+        return json.loads(text[i : j + 1])
     i, j = text.find('"'), text.rfind('"')
     if 0 <= i < j:
-        return json.loads('"%s"' % text[i + 1:j])
+        return json.loads('"%s"' % text[i + 1 : j])
     raise ValueError("no payload")
 
 
 def _bars_from_closes(pairs):
     """[{"date","close"}...] → 升序 + pct（首根 None）。"""
-    bars = sorted(({"date": d, "close": float(c)} for d, c in pairs
-                   if d and c), key=lambda b: b["date"])
+    bars = sorted(
+        ({"date": d, "close": float(c)} for d, c in pairs if d and c),
+        key=lambda b: b["date"],
+    )
     out = []
     for i, b in enumerate(bars):
         pct = None
@@ -122,59 +134,75 @@ def _bars_from_closes(pairs):
 
 
 def _fetch_cn():
-    t = _http("https://quotes.sina.cn/cn/api/json_v2.php/"
-              "CN_MarketDataService.getKLineData?symbol=sh000001"
-              "&scale=240&ma=no&datalen=800")
+    t = _http(
+        "https://quotes.sina.cn/cn/api/json_v2.php/"
+        "CN_MarketDataService.getKLineData?symbol=sh000001"
+        "&scale=240&ma=no&datalen=800"
+    )
     return [(r["day"], r["close"]) for r in json.loads(t)]
 
 
 def _fetch_hk():
-    t = _http("https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
-              "?param=hkHSI,day,,,800,qfq")
+    t = _http(
+        "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=hkHSI,day,,,800,qfq"
+    )
     rows = json.loads(t)["data"]["hkHSI"]["day"]
-    return [(r[0], r[2]) for r in rows]   # [date, open, close, high, low, vol]
+    return [(r[0], r[2]) for r in rows]  # [date, open, close, high, low, vol]
 
 
 def _fetch_us():
-    t = _http("https://stock.finance.sina.com.cn/usstock/api/json_v2.php/"
-              "US_MinKService.getDailyK?symbol=.INX")
+    t = _http(
+        "https://stock.finance.sina.com.cn/usstock/api/json_v2.php/"
+        "US_MinKService.getDailyK?symbol=.INX"
+    )
     return [(r["d"], r["c"]) for r in json.loads(t)]
 
 
 def _fetch_commodity():
-    t = _http("https://stock2.finance.sina.com.cn/futures/api/jsonp.php/"
-              "var%20t=/GlobalFuturesService.getGlobalFuturesDailyKLine"
-              "?symbol=GC")
+    t = _http(
+        "https://stock2.finance.sina.com.cn/futures/api/jsonp.php/"
+        "var%20t=/GlobalFuturesService.getGlobalFuturesDailyKLine"
+        "?symbol=GC"
+    )
     return [(r["date"], r["close"]) for r in _slice_json(t)]
 
 
 def _fetch_crypto():
-    t = _http("https://api.gateio.ws/api/v4/spot/candlesticks"
-              "?currency_pair=BTC_USDT&interval=1d&limit=800")
+    t = _http(
+        "https://api.gateio.ws/api/v4/spot/candlesticks"
+        "?currency_pair=BTC_USDT&interval=1d&limit=800"
+    )
     out = []
     for r in json.loads(t):
-        if str(r[7]).lower() != "true":   # 未收盘窗不入账
+        if str(r[7]).lower() != "true":  # 未收盘窗不入账
             continue
         day = datetime.fromtimestamp(int(r[0]), timezone.utc).strftime("%Y-%m-%d")
-        out.append((day, r[2]))           # [ts, quote_vol, close, high, low, open, ...]
+        out.append((day, r[2]))  # [ts, quote_vol, close, high, low, open, ...]
     return out
 
 
 def _fetch_fx():
-    t = _http("https://vip.stock.finance.sina.com.cn/forex/api/jsonp.php/"
-              "var%20t=/NewForexService.getDayKLine?symbol=fx_susdcnh&_=1")
+    t = _http(
+        "https://vip.stock.finance.sina.com.cn/forex/api/jsonp.php/"
+        "var%20t=/NewForexService.getDayKLine?symbol=fx_susdcnh&_=1"
+    )
     s = _slice_json(t)
     out = []
     for seg in s.split("|"):
         p = seg.strip().split(",")
         if len(p) >= 5 and p[0]:
-            out.append((p[0], p[4]))      # date,open,low,high,close
+            out.append((p[0], p[4]))  # date,open,low,high,close
     return out
 
 
-FETCHERS = {"cn": _fetch_cn, "hk": _fetch_hk, "us": _fetch_us,
-            "commodity": _fetch_commodity, "crypto": _fetch_crypto,
-            "fx": _fetch_fx}
+FETCHERS = {
+    "cn": _fetch_cn,
+    "hk": _fetch_hk,
+    "us": _fetch_us,
+    "commodity": _fetch_commodity,
+    "crypto": _fetch_crypto,
+    "fx": _fetch_fx,
+}
 
 
 def fetch_bars(scope):
@@ -228,17 +256,21 @@ def load_signals(db_path, window_days):
     counts 观测。title/ents 为 K-ORG-193 富化字段（下钻消费）。
     """
     since = (datetime.now(CST) - timedelta(days=window_days)).strftime(
-        "%Y-%m-%d") + " 00:00"
+        "%Y-%m-%d"
+    ) + " 00:00"
     con = sqlite3.connect("file:%s?mode=ro" % db_path, uri=True)
     try:
         rows = con.execute(
             "SELECT rowid, created_at, jev, title, stocks FROM news "
             "WHERE created_at >= ? AND jev IS NOT NULL AND jev != ''",
-            (since,)).fetchall()
+            (since,),
+        ).fetchall()
     finally:
         con.close()
-    signals, counts = [], {"total_jev": 0, "bad_jev": 0, "macro": 0,
-                           "empty_scope": 0, "other_scope": 0}
+    signals, counts = (
+        [],
+        {"total_jev": 0, "bad_jev": 0, "macro": 0, "empty_scope": 0, "other_scope": 0},
+    )
     for rowid, created_at, raw, n_title, n_stocks in rows:
         counts["total_jev"] += 1
         try:
@@ -260,14 +292,19 @@ def load_signals(db_path, window_days):
         if bias not in ("bull", "bear", "neutral"):
             continue
         conf = j.get("conf")
-        signals.append({
-            "rowid": int(rowid), "day": str(created_at or "")[:10],
-            "ts": str(created_at or ""), "scope": scope, "bias": bias,
-            "conf": conf if isinstance(conf, (int, float)) else None,
-            "event_type": (j.get("event_type") or "").strip() or None,
-            "title": _norm_title(n_title),
-            "ents": _parse_ents(n_stocks, j.get("companies")),
-        })
+        signals.append(
+            {
+                "rowid": int(rowid),
+                "day": str(created_at or "")[:10],
+                "ts": str(created_at or ""),
+                "scope": scope,
+                "bias": bias,
+                "conf": conf if isinstance(conf, (int, float)) else None,
+                "event_type": (j.get("event_type") or "").strip() or None,
+                "title": _norm_title(n_title),
+                "ents": _parse_ents(n_stocks, j.get("companies")),
+            }
+        )
     signals.sort(key=lambda s: (s["day"], s["rowid"]))
     return signals, counts
 
@@ -321,33 +358,42 @@ def reconcile(signals, bars_by_scope, existing):
             merged[key] = _verdict(s, t1["date"], t1["pct"], "skip")
         else:
             hit = (s["bias"] == "bull") == (t1["pct"] > 0)
-            merged[key] = _verdict(s, t1["date"], t1["pct"],
-                                   "hit" if hit else "miss")
+            merged[key] = _verdict(s, t1["date"], t1["pct"], "hit" if hit else "miss")
     return merged, pending
 
 
 def _shift_day(day, ndays):
-    return (datetime.strptime(day, "%Y-%m-%d")
-            + timedelta(days=ndays)).strftime("%Y-%m-%d")
+    return (datetime.strptime(day, "%Y-%m-%d") + timedelta(days=ndays)).strftime(
+        "%Y-%m-%d"
+    )
 
 
 def _verdict(s, t1_day, t1_pct, verdict):
     # title/ents 为 K-ORG-193 富化字段：.get 容错旧测试夹具/存量信号
-    return {"rowid": s["rowid"], "day": s["day"], "ts": s["ts"],
-            "scope": s["scope"], "bias": s["bias"], "conf": s["conf"],
-            "event_type": s["event_type"], "t1_day": t1_day,
-            "t1_pct": t1_pct, "verdict": verdict, "at": now_iso(),
-            "title": s.get("title"), "ents": s.get("ents") or []}
+    return {
+        "rowid": s["rowid"],
+        "day": s["day"],
+        "ts": s["ts"],
+        "scope": s["scope"],
+        "bias": s["bias"],
+        "conf": s["conf"],
+        "event_type": s["event_type"],
+        "t1_day": t1_day,
+        "t1_pct": t1_pct,
+        "verdict": verdict,
+        "at": now_iso(),
+        "title": s.get("title"),
+        "ents": s.get("ents") or [],
+    }
 
 
 def write_verdicts(path, merged):
     """账本原子回写（去重压缩 + 按日排序；tmp + os.replace）。"""
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    rows = sorted(merged.values(),
-                  key=lambda v: (v["day"], v["scope"], v["rowid"]))
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path),
-                               prefix=os.path.basename(path) + ".",
-                               suffix=".tmp")
+    rows = sorted(merged.values(), key=lambda v: (v["day"], v["scope"], v["rowid"]))
+    fd, tmp = tempfile.mkstemp(
+        dir=os.path.dirname(path), prefix=os.path.basename(path) + ".", suffix=".tmp"
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for v in rows:
@@ -363,17 +409,32 @@ def write_verdicts(path, merged):
 def aggregate(merged, pipeline, counts, window_days):
     """账本 → summary.json（分市场战绩 + 推演图日序 + 滚动能力曲线）。"""
     markets = {}
-    overall = {"n_reconciled": 0, "n_hit": 0, "n_miss": 0, "n_neutral": 0,
-               "n_no_bar": 0}
+    overall = {
+        "n_reconciled": 0,
+        "n_hit": 0,
+        "n_miss": 0,
+        "n_neutral": 0,
+        "n_no_bar": 0,
+    }
     by_scope = {}
     for v in merged.values():
         by_scope.setdefault(v["scope"], []).append(v)
     for scope in SCOPES:
         vs = by_scope.get(scope, [])
-        st = {"name": SCOPE_CN[scope], "benchmark": BENCHMARKS[scope]["name"],
-              "code": BENCHMARKS[scope]["code"], "n": 0, "hit": 0, "miss": 0,
-              "neutral": 0, "no_bar": 0, "hit_rate": None, "days": [],
-              "rolling": [], "last_bar": None}
+        st = {
+            "name": SCOPE_CN[scope],
+            "benchmark": BENCHMARKS[scope]["name"],
+            "code": BENCHMARKS[scope]["code"],
+            "n": 0,
+            "hit": 0,
+            "miss": 0,
+            "neutral": 0,
+            "no_bar": 0,
+            "hit_rate": None,
+            "days": [],
+            "rolling": [],
+            "last_bar": None,
+        }
         if pipeline.get(scope, {}).get("last_bar"):
             st["last_bar"] = pipeline[scope]["last_bar"]
         day_map = {}
@@ -387,9 +448,19 @@ def aggregate(merged, pipeline, counts, window_days):
                 st["neutral"] += 1
             else:
                 st["no_bar"] += 1
-            d = day_map.setdefault(v["day"], {
-                "day": v["day"], "t1_day": None, "t1_pct": None,
-                "bull": 0, "bear": 0, "neutral": 0, "hit": 0, "miss": 0})
+            d = day_map.setdefault(
+                v["day"],
+                {
+                    "day": v["day"],
+                    "t1_day": None,
+                    "t1_pct": None,
+                    "bull": 0,
+                    "bear": 0,
+                    "neutral": 0,
+                    "hit": 0,
+                    "miss": 0,
+                },
+            )
             if v["bias"] == "bull":
                 d["bull"] += 1
             elif v["bias"] == "bear":
@@ -403,8 +474,13 @@ def aggregate(merged, pipeline, counts, window_days):
             if v["t1_day"]:
                 d["t1_day"], d["t1_pct"] = v["t1_day"], v["t1_pct"]
         for d in sorted(day_map.values(), key=lambda x: x["day"]):
-            d["dir"] = ("bull" if d["bull"] > d["bear"]
-                        else "bear" if d["bear"] > d["bull"] else "none")
+            d["dir"] = (
+                "bull"
+                if d["bull"] > d["bear"]
+                else "bear"
+                if d["bear"] > d["bull"]
+                else "none"
+            )
             if d["dir"] == "none" or d["t1_pct"] is None:
                 d["verdict"] = "flat"
             else:
@@ -413,18 +489,22 @@ def aggregate(merged, pipeline, counts, window_days):
             st["days"].append(d)
         # 滚动命中率：按信号级真实判定（非日级重算）时序推进，窗口
         # ROLLING_WINDOW，<ROLLING_MIN 不出点（小样本不输出结论铁律）
-        samples = sorted(((v["day"], v["verdict"], v["rowid"]) for v in vs
-                          if v["verdict"] in ("hit", "miss")),
-                         key=lambda x: (x[0], x[2]))
+        samples = sorted(
+            (
+                (v["day"], v["verdict"], v["rowid"])
+                for v in vs
+                if v["verdict"] in ("hit", "miss")
+            ),
+            key=lambda x: (x[0], x[2]),
+        )
         for i in range(len(samples)):
             lo = max(0, i + 1 - ROLLING_WINDOW)
-            win = samples[lo:i + 1]
+            win = samples[lo : i + 1]
             if len(win) < ROLLING_MIN:
                 continue
             rate = round(sum(1 for _, x, _ in win if x == "hit") / len(win), 4)
             if not st["rolling"] or st["rolling"][-1]["day"] != win[-1][0]:
-                st["rolling"].append({"day": win[-1][0], "n": len(win),
-                                      "rate": rate})
+                st["rolling"].append({"day": win[-1][0], "n": len(win), "rate": rate})
             else:
                 st["rolling"][-1].update({"n": len(win), "rate": rate})
         denom = st["hit"] + st["miss"]
@@ -436,15 +516,21 @@ def aggregate(merged, pipeline, counts, window_days):
         overall["n_no_bar"] += st["no_bar"]
         overall["n_reconciled"] += denom
         markets[scope] = st
-    overall["hit_rate"] = (round(overall["n_hit"] / overall["n_reconciled"], 4)
-                           if overall["n_reconciled"] else None)
+    overall["hit_rate"] = (
+        round(overall["n_hit"] / overall["n_reconciled"], 4)
+        if overall["n_reconciled"]
+        else None
+    )
     days_span = sorted({v["day"] for v in merged.values()})
     return {
         "generated_at": now_iso(),
         "window_days": window_days,
-        "overall": {**overall, "n_days": len(days_span),
-                    "first_day": days_span[0] if days_span else None,
-                    "last_day": days_span[-1] if days_span else None},
+        "overall": {
+            **overall,
+            "n_days": len(days_span),
+            "first_day": days_span[0] if days_span else None,
+            "last_day": days_span[-1] if days_span else None,
+        },
         "markets": markets,
         "pipeline": {"ran_at": now_iso(), "counts": counts, "sources": pipeline},
     }
@@ -459,12 +545,15 @@ def run(db_path=DB_PATH, out_dir=OUT_DIR, window_days=180):
     for scope in SCOPES:
         bars, err = fetch_bars(scope)
         if err:
-            pipeline[scope] = {"ok": False, "error": err, "bars": 0,
-                               "last_bar": None}
+            pipeline[scope] = {"ok": False, "error": err, "bars": 0, "last_bar": None}
         else:
             bars_by_scope[scope] = bars
-            pipeline[scope] = {"ok": True, "bars": len(bars), "error": None,
-                               "last_bar": bars[-1]["date"] if bars else None}
+            pipeline[scope] = {
+                "ok": True,
+                "bars": len(bars),
+                "error": None,
+                "last_bar": bars[-1]["date"] if bars else None,
+            }
     existing = load_verdicts(os.path.join(out_dir, "verdicts.jsonl"))
     merged, pending = reconcile(signals, bars_by_scope, existing)
     n_lines = write_verdicts(os.path.join(out_dir, "verdicts.jsonl"), merged)
@@ -474,8 +563,7 @@ def run(db_path=DB_PATH, out_dir=OUT_DIR, window_days=180):
     summary["pipeline"]["verdict_lines"] = n_lines
     summary_path = os.path.join(out_dir, "summary.json")
     os.makedirs(out_dir, exist_ok=True)
-    fd, tmpf = tempfile.mkstemp(dir=out_dir,
-                                prefix="summary.json.", suffix=".tmp")
+    fd, tmpf = tempfile.mkstemp(dir=out_dir, prefix="summary.json.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(summary, f, ensure_ascii=False, indent=1)
@@ -489,6 +577,7 @@ def run(db_path=DB_PATH, out_dir=OUT_DIR, window_days=180):
 
 def main():
     import argparse
+
     ap = argparse.ArgumentParser(description="郭嘉预判对账司跑批")
     ap.add_argument("--db", default=DB_PATH, help="news.db 路径（默认本目录）")
     ap.add_argument("--out-dir", default=OUT_DIR, help="产物目录（默认 data/guojia）")
@@ -497,12 +586,19 @@ def main():
     a = ap.parse_args()
     s = run(db_path=a.db, out_dir=a.out_dir, window_days=a.window)
     o = s["overall"]
-    print("GUOJIA OK reconciled=%s hit=%s miss=%s rate=%s pending=%s "
-          "sources_ok=%d/6 -> %s" % (
-              o["n_reconciled"], o["n_hit"], o["n_miss"], o["hit_rate"],
-              s["pipeline"]["counts"].get("pending"),
-              sum(1 for x in s["pipeline"]["sources"].values() if x["ok"]),
-              os.path.join(a.out_dir, "summary.json")))
+    print(
+        "GUOJIA OK reconciled=%s hit=%s miss=%s rate=%s pending=%s "
+        "sources_ok=%d/6 -> %s"
+        % (
+            o["n_reconciled"],
+            o["n_hit"],
+            o["n_miss"],
+            o["hit_rate"],
+            s["pipeline"]["counts"].get("pending"),
+            sum(1 for x in s["pipeline"]["sources"].values() if x["ok"]),
+            os.path.join(a.out_dir, "summary.json"),
+        )
+    )
     if a.print_summary:
         print(json.dumps(s, ensure_ascii=False, indent=1)[:4000])
 

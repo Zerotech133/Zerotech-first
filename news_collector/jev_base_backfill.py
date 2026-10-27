@@ -9,6 +9,7 @@
   python jev_base_backfill.py --limit 100    # 只回填最早 100 条（试跑）
   python jev_base_backfill.py                # 全量回填（后台跑，落日志）
 """
+
 from __future__ import annotations
 
 import json
@@ -29,6 +30,7 @@ def _load_base_token() -> str:
     """2026-10-26 SEC：Base token 禁止硬编码——env / 私有文件（config_local 链路）。"""
     try:
         from config_local import load_news_config  # 同目录；敏感字段已从 tracked 迁出
+
         tok = (load_news_config().get("jev_base_token") or "").strip()
     except Exception:
         tok = ""
@@ -60,8 +62,14 @@ def log(msg):
 
 
 def lark(args, timeout=120):
-    r = subprocess.run([EXE] + args, cwd=HERE, capture_output=True, text=True,
-                       encoding="utf-8", timeout=timeout)
+    r = subprocess.run(
+        [EXE] + args,
+        cwd=HERE,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=timeout,
+    )
     out = r.stdout or ""
     i = out.find("{")
     if i < 0:
@@ -69,7 +77,7 @@ def lark(args, timeout=120):
     try:
         return json.loads(out[i:])
     except ValueError:
-        return {"ok": False, "error": out[i:i + 200]}
+        return {"ok": False, "error": out[i : i + 200]}
 
 
 def fetch_existing():
@@ -79,9 +87,24 @@ def fetch_existing():
     offset = 0
     limit = 200
     while True:
-        d = lark(["base", "+record-list", "--as", "user", "--base-token", TOK,
-                  "--table-id", TABLE, "--limit", str(limit),
-                  "--offset", str(offset), "--format", "json"])
+        d = lark(
+            [
+                "base",
+                "+record-list",
+                "--as",
+                "user",
+                "--base-token",
+                TOK,
+                "--table-id",
+                TABLE,
+                "--limit",
+                str(limit),
+                "--offset",
+                str(offset),
+                "--format",
+                "json",
+            ]
+        )
         if not d.get("ok"):
             log("fetch_existing FAIL %s" % str(d.get("error"))[:160])
             break
@@ -107,22 +130,34 @@ def fetch_existing():
 
 def build_records():
     import news_jev_chart as C
+
     now, items = C.load()
     BJ = {"bull": "利多", "bear": "利空", "neutral": "中性"}
-    SC = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
-          "crypto": "加密", "macro": "宏观"}
+    SC = {
+        "cn": "A股",
+        "hk": "港股",
+        "us": "美股",
+        "commodity": "商品",
+        "crypto": "加密",
+        "macro": "宏观",
+    }
     recs = []
     for x in items:  # items 新→旧
         ts = x["t"].strftime("%Y-%m-%d %H:%M")
-        recs.append({"ts": ts, "rec": {
-            "标题": x["title"][:200],
-            "方向": [BJ.get(x["bias"], "中性")],
-            "置信度": round(x["conf"] * 100),
-            "市场": [SC.get(x["scope"]) or "其他"],
-            "判断时间": ts,
-            "依据": str(x.get("reason") or "")[:500],
-            "来源": str(x.get("source") or "")[:30],
-        }})
+        recs.append(
+            {
+                "ts": ts,
+                "rec": {
+                    "标题": x["title"][:200],
+                    "方向": [BJ.get(x["bias"], "中性")],
+                    "置信度": round(x["conf"] * 100),
+                    "市场": [SC.get(x["scope"]) or "其他"],
+                    "判断时间": ts,
+                    "依据": str(x.get("reason") or "")[:500],
+                    "来源": str(x.get("source") or "")[:30],
+                },
+            }
+        )
     log("news.db items=%d" % len(recs))
     return recs
 
@@ -137,31 +172,51 @@ def main():
     recs = build_records()
     missing = [r for r in recs if r["ts"] not in existing]
     missing.sort(key=lambda r: r["ts"])  # 旧→新
-    log("missing=%d (existing=%d total=%d) dry=%s limit=%s"
-        % (len(missing), len(existing), len(recs), dry, limit))
+    log(
+        "missing=%d (existing=%d total=%d) dry=%s limit=%s"
+        % (len(missing), len(existing), len(recs), dry, limit)
+    )
     if dry:
         return 0
     if limit:
         missing = missing[:limit]
     ok_n = fail_n = 0
     for i in range(0, len(missing), BATCH):
-        batch = [r["rec"] for r in missing[i:i + BATCH]]
-        d = lark(["base", "+record-batch-create", "--as", "user",
-                  "--base-token", TOK, "--table-id", TABLE,
-                  "--json", json.dumps({"create_records": batch},
-                                       ensure_ascii=False)], timeout=180)
+        batch = [r["rec"] for r in missing[i : i + BATCH]]
+        d = lark(
+            [
+                "base",
+                "+record-batch-create",
+                "--as",
+                "user",
+                "--base-token",
+                TOK,
+                "--table-id",
+                TABLE,
+                "--json",
+                json.dumps({"create_records": batch}, ensure_ascii=False),
+            ],
+            timeout=180,
+        )
         if d.get("ok"):
             ok_n += len(batch)
-            log("batch %d/%d ok (+%d, total_ok=%d)"
-                % (i // BATCH + 1, (len(missing) + BATCH - 1) // BATCH,
-                   len(batch), ok_n))
+            log(
+                "batch %d/%d ok (+%d, total_ok=%d)"
+                % (
+                    i // BATCH + 1,
+                    (len(missing) + BATCH - 1) // BATCH,
+                    len(batch),
+                    ok_n,
+                )
+            )
         else:
             fail_n += len(batch)
-            log("batch FAIL %s" % json.dumps(d.get("error") or d,
-                                             ensure_ascii=False)[:240])
+            log(
+                "batch FAIL %s"
+                % json.dumps(d.get("error") or d, ensure_ascii=False)[:240]
+            )
         time.sleep(0.2)
-    log("DONE ok=%d fail=%d elapsed=%.1fs" % (ok_n, fail_n,
-                                              time.time() - t0))
+    log("DONE ok=%d fail=%d elapsed=%.1fs" % (ok_n, fail_n, time.time() - t0))
     return 0 if fail_n == 0 else 1
 
 

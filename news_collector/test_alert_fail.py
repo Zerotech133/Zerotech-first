@@ -10,6 +10,7 @@
 红线遵守：全程 mock + tempfile 临时目录，不触网、不对外发送、
 不读写真实 outbox（wrap.OUTBOX/SEND_LOG/ALERT_FAIL_PY 全部 patch）。
 """
+
 import json
 import os
 from pathlib import Path
@@ -23,12 +24,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-from alert_io import (append_ascii_log, atomic_write_json, sniff_encoding,
-                      sniff_read_text)
+from alert_io import (
+    append_ascii_log,
+    atomic_write_json,
+    sniff_encoding,
+    sniff_read_text,
+)
 import alert_fail_wrap as wrap
 
-TS_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2} \| task=\S+ "
-                   r"\| channel=\S+ \| result=(OK|FAIL) \| reason=.+$")
+TS_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2} \| task=\S+ "
+    r"\| channel=\S+ \| result=(OK|FAIL) \| reason=.+$"
+)
 
 
 class TmpDirCase(unittest.TestCase):
@@ -90,8 +97,7 @@ class NormalizeErrLogTest(TmpDirCase):
         src = self.wbin("ok.log", "hello".encode("utf-8"))
         self.assertEqual(wrap.normalize_err_log(src), src)
         self.assertEqual(wrap.normalize_err_log(""), "")
-        self.assertEqual(wrap.normalize_err_log(
-            os.path.join(self.dir, "nope.log")), "")
+        self.assertEqual(wrap.normalize_err_log(os.path.join(self.dir, "nope.log")), "")
 
     def test_utf16_log_creates_missing_outbox(self):
         src = self.wbin("missing_outbox.log", "失败原因".encode("utf-16"))
@@ -108,8 +114,7 @@ class SendLogFormatTest(TmpDirCase):
     def test_log_send_line_format_ascii(self):
         with mock.patch.object(wrap, "SEND_LOG", self.send_log):
             wrap.log_send("tdx_sync", "feishu", True, "SEND_OK")
-            wrap.log_send("news_review", "feishu", False,
-                          "SEND_FAIL openapi 中文err")
+            wrap.log_send("news_review", "feishu", False, "SEND_FAIL openapi 中文err")
         with open(self.send_log, encoding="ascii") as f:  # 全 ASCII 可解码
             lines = f.read().splitlines()
         self.assertEqual(len(lines), 2)
@@ -155,10 +160,9 @@ class PendingFlowTest(TmpDirCase):
     def test_failure_keeps_pending_untouched(self):
         p = self._make_pending()
         with mock.patch.object(wrap, "SEND_LOG", self.send_log):
-            action = wrap.handle_send_result(p, "e1task", False,
-                                             "SEND_FAIL mock_down")
+            action = wrap.handle_send_result(p, "e1task", False, "SEND_FAIL mock_down")
         self.assertEqual(action, "kept")
-        self.assertTrue(os.path.exists(p))          # pending 原样保留
+        self.assertTrue(os.path.exists(p))  # pending 原样保留
         self.assertFalse(os.path.exists(p + ".sent"))  # 不产生 .sent
         with open(self.send_log, encoding="ascii") as f:
             self.assertIn("result=FAIL", f.read())
@@ -167,8 +171,8 @@ class PendingFlowTest(TmpDirCase):
         p = os.path.join(self.outbox, "pending_alert_ghost.txt")
         with mock.patch.object(wrap, "SEND_LOG", self.send_log):
             self.assertEqual(
-                wrap.handle_send_result(p, "ghost", True, "SEND_OK"),
-                "no_pending")
+                wrap.handle_send_result(p, "ghost", True, "SEND_OK"), "no_pending"
+            )
 
     def test_sent_collision_uses_timestamp_fallback(self):
         p = self._make_pending()
@@ -178,9 +182,17 @@ class PendingFlowTest(TmpDirCase):
             action = wrap.handle_send_result(p, "e1task", True, "SEND_OK")
         self.assertEqual(action, "sent_existing")
         self.assertFalse(os.path.exists(p))
-        self.assertTrue(os.path.isfile(p + ".sent.1") or len(
-            [n for n in os.listdir(self.outbox)
-             if n.startswith("pending_alert_e1task.txt.sent.")]) == 1)
+        self.assertTrue(
+            os.path.isfile(p + ".sent.1")
+            or len(
+                [
+                    n
+                    for n in os.listdir(self.outbox)
+                    if n.startswith("pending_alert_e1task.txt.sent.")
+                ]
+            )
+            == 1
+        )
 
 
 class ParseSendResultTest(unittest.TestCase):
@@ -206,9 +218,11 @@ class ObservabilityFieldsTest(TmpDirCase):
     def test_wrapper_logs_rc_path_summary_and_exception_class(self):
         fake_py = self.wbin("fake_success.py", b"print('SEND_OK')\n")
         errlog = self.wbin("task_err.log", b"task output\n")
-        with mock.patch.object(wrap, "ALERT_FAIL_PY", fake_py), \
-             mock.patch.object(wrap, "SEND_LOG", self.send_log), \
-             mock.patch.object(wrap, "OUTBOX", self.outbox):
+        with (
+            mock.patch.object(wrap, "ALERT_FAIL_PY", fake_py),
+            mock.patch.object(wrap, "SEND_LOG", self.send_log),
+            mock.patch.object(wrap, "OUTBOX", self.outbox),
+        ):
             rc = wrap.main(["observe_task", "3", errlog])
         self.assertEqual(rc, 0)
         line = Path(self.send_log).read_text(encoding="ascii").splitlines()[-1]
@@ -245,18 +259,20 @@ class WrapEndToEndTest(TmpDirCase):
         errlog = self.wbin("e.log", "raise RuntimeError(GET failed)".encode("utf-16"))
         os.makedirs(self.outbox, exist_ok=True)
         env = {"E1_TEST_OUTBOX": self.outbox, "E1_FAKE_RESULT": result}
-        with mock.patch.object(wrap, "ALERT_FAIL_PY", fake_py), \
-             mock.patch.object(wrap, "SEND_LOG", self.send_log), \
-             mock.patch.object(wrap, "OUTBOX", self.outbox), \
-             mock.patch.dict(os.environ, env):
+        with (
+            mock.patch.object(wrap, "ALERT_FAIL_PY", fake_py),
+            mock.patch.object(wrap, "SEND_LOG", self.send_log),
+            mock.patch.object(wrap, "OUTBOX", self.outbox),
+            mock.patch.dict(os.environ, env),
+        ):
             rc = wrap.main(["e1task", "1", errlog])
         pending = os.path.join(self.outbox, "pending_alert_e1task.txt")
         return rc, pending
 
     def test_ok_path_sends_and_flows(self):
         rc, pending = self._run("OK")
-        self.assertEqual(rc, 0)                      # 观测层不反噬 rc
-        self.assertFalse(os.path.exists(pending))    # pending 已流转
+        self.assertEqual(rc, 0)  # 观测层不反噬 rc
+        self.assertFalse(os.path.exists(pending))  # pending 已流转
         self.assertTrue(os.path.isfile(pending + ".sent"))
         with open(pending + ".sent", encoding="utf-8") as f:
             body = f.read()
@@ -270,7 +286,7 @@ class WrapEndToEndTest(TmpDirCase):
     def test_fail_path_keeps_pending_and_logs_reason(self):
         rc, pending = self._run("FAIL")
         self.assertEqual(rc, 0)
-        self.assertTrue(os.path.exists(pending))     # 失败不流转
+        self.assertTrue(os.path.exists(pending))  # 失败不流转
         self.assertFalse(os.path.exists(pending + ".sent"))
         with open(pending, encoding="utf-8") as f:
             self.assertIn("[FAKE QUANT ALERT]", f.read())
@@ -289,16 +305,16 @@ class AtomicJsonTest(TmpDirCase):
         atomic_write_json(fp, {"ok": True, "名": "值"})
         with open(fp, encoding="utf-8") as f:
             self.assertEqual(json.load(f), {"ok": True, "名": "值"})
-        self.assertEqual([n for n in os.listdir(self.outbox)
-                          if n.endswith(".tmp")], [])
+        self.assertEqual([n for n in os.listdir(self.outbox) if n.endswith(".tmp")], [])
 
 
 class LauncherWiringTest(unittest.TestCase):
     """任务启动器必须走可观测包装器，避免失败只进旧 outbox。"""
 
     def test_todays_picks_uses_observable_alert_wrapper(self):
-        launcher = (Path(__file__).resolve().parents[1]
-                    / "portal" / "start_todays_picks.ps1")
+        launcher = (
+            Path(__file__).resolve().parents[1] / "portal" / "start_todays_picks.ps1"
+        )
         source = launcher.read_text(encoding="utf-8")
         self.assertIn("alert_fail_wrap.py", source)
         self.assertNotRegex(source, r"quant_backtest[\\/]alert_fail\.py")
@@ -314,8 +330,7 @@ class LauncherWiringTest(unittest.TestCase):
             with self.subTest(launcher=launcher):
                 source = launcher.read_text(encoding="utf-8")
                 self.assertIn("alert_fail_wrap.py", source)
-                self.assertNotRegex(
-                    source, r"quant_backtest[\\/]alert_fail\.py")
+                self.assertNotRegex(source, r"quant_backtest[\\/]alert_fail\.py")
 
     def test_python_alert_entries_use_observable_wrapper(self):
         root = Path(__file__).resolve().parents[1]

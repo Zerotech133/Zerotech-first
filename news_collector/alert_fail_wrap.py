@@ -15,6 +15,7 @@
 news_collector 域内活动。包装器自身任何异常都不外抛（告警观测层
 不能反噬任务 rc），异常也记入 alert_send.log。
 """
+
 import os
 import subprocess
 import sys
@@ -27,7 +28,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUTBOX = os.path.join(HERE, "outbox")
 SEND_LOG = os.path.join(HERE, "logs", "alert_send.log")
 ALERT_FAIL_PY = os.path.abspath(
-    os.path.join(HERE, "..", "quant_backtest", "alert_fail.py"))
+    os.path.join(HERE, "..", "quant_backtest", "alert_fail.py")
+)
 
 
 def pending_path(task):
@@ -45,8 +47,7 @@ def normalize_err_log(log_path):
         return log_path
     text = sniff_read_text(log_path)
     os.makedirs(OUTBOX, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=OUTBOX, prefix="norm_err_",
-                               suffix=".log")
+    fd, tmp = tempfile.mkstemp(dir=OUTBOX, prefix="norm_err_", suffix=".log")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
     return tmp
@@ -72,8 +73,7 @@ def _log_field(value, limit=240):
     return text[:limit] or "-"
 
 
-def exception_class(task_rc, ok, reason, wrapper_error=False,
-                    rename_error=False):
+def exception_class(task_rc, ok, reason, wrapper_error=False, rename_error=False):
     """根据任务返回码和发送链结果给出稳定的异常分类。"""
     if wrapper_error:
         return "wrapper_exception"
@@ -92,25 +92,58 @@ def exception_class(task_rc, ok, reason, wrapper_error=False,
     return "send_unknown"
 
 
-def log_send(task, channel, ok, reason, task_rc="?", log_path="",
-             result_summary="", exception_kind="none"):
+def log_send(
+    task,
+    channel,
+    ok,
+    reason,
+    task_rc="?",
+    log_path="",
+    result_summary="",
+    exception_kind="none",
+):
     """单行 ASCII 状态日志，保留旧字段并补齐任务三联证据。"""
     append_ascii_log(
-        SEND_LOG, "%s | task=%s | channel=%s | result=%s | reason=%s"
+        SEND_LOG,
+        "%s | task=%s | channel=%s | result=%s | reason=%s"
         " | task_rc=%s | log_path=%s | result_summary=%s"
-        " | exception_class=%s" % (
-            time.strftime("%Y-%m-%dT%H:%M:%S"), _log_field(task, 80),
-            _log_field(channel, 40), "OK" if ok else "FAIL", _log_field(reason),
-            _log_field(task_rc, 32), _log_field(log_path, 260),
-            _log_field(result_summary or reason), _log_field(exception_kind, 48)))
+        " | exception_class=%s"
+        % (
+            time.strftime("%Y-%m-%dT%H:%M:%S"),
+            _log_field(task, 80),
+            _log_field(channel, 40),
+            "OK" if ok else "FAIL",
+            _log_field(reason),
+            _log_field(task_rc, 32),
+            _log_field(log_path, 260),
+            _log_field(result_summary or reason),
+            _log_field(exception_kind, 48),
+        ),
+    )
 
 
-def handle_send_result(pending, task, ok, reason, task_rc="?", log_path="",
-                       result_summary="", exception_kind="none"):
+def handle_send_result(
+    pending,
+    task,
+    ok,
+    reason,
+    task_rc="?",
+    log_path="",
+    result_summary="",
+    exception_kind="none",
+):
     """发送结果落盘 + 成功时 pending→.sent 流转。返回动作标记：
     sent / sent_existing（.sent 已存在走时间戳兜底）/ no_pending / kept。"""
-    log_send(task, "feishu", ok, reason, task_rc=task_rc, log_path=log_path,
-             result_summary=result_summary, exception_kind=exception_kind)
+    log_send(
+        task,
+        "feishu",
+        ok,
+        reason,
+        task_rc=task_rc,
+        log_path=log_path,
+        result_summary=result_summary,
+        exception_kind=exception_kind,
+    )
     if not ok:
         return "kept"
     if not os.path.isfile(pending):
@@ -132,12 +165,16 @@ def main(argv=None):
     try:
         norm_log = normalize_err_log(raw_log)
         r = subprocess.run(
-            [sys.executable, "-X", "utf8", ALERT_FAIL_PY,
-             task, code, norm_log],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", timeout=120)
+            [sys.executable, "-X", "utf8", ALERT_FAIL_PY, task, code, norm_log],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
         out = (r.stdout or "") + (
-            ("\n" + r.stderr.strip()) if (r.stderr or "").strip() else "")
+            ("\n" + r.stderr.strip()) if (r.stderr or "").strip() else ""
+        )
         ok, reason = parse_send_result(out, r.returncode)
     except Exception as e:  # 观测层自身故障也要留痕
         ok, reason = False, "wrap_err " + str(e)[:100]
@@ -150,18 +187,33 @@ def main(argv=None):
                 pass  # 豁免（C2批2）：临时错误日志清理兜底，发送结果已落 alert_send.log
     try:
         action = handle_send_result(
-            pending_path(task), task, ok, reason, task_rc=code,
-            log_path=raw_log, result_summary=reason,
+            pending_path(task),
+            task,
+            ok,
+            reason,
+            task_rc=code,
+            log_path=raw_log,
+            result_summary=reason,
             exception_kind=exception_class(
-                code, ok, reason, wrapper_error=wrapper_error))
+                code, ok, reason, wrapper_error=wrapper_error
+            ),
+        )
     except Exception as e:  # 改名失败不吞发送事实
-        log_send(task, "feishu", ok, reason + " rename_err " + str(e)[:60],
-                 task_rc=code, log_path=raw_log, result_summary=reason,
-                 exception_kind=exception_class(
-                     code, ok, reason, rename_error=True))
+        log_send(
+            task,
+            "feishu",
+            ok,
+            reason + " rename_err " + str(e)[:60],
+            task_rc=code,
+            log_path=raw_log,
+            result_summary=reason,
+            exception_kind=exception_class(code, ok, reason, rename_error=True),
+        )
         action = "rename_err"
-    print("ALERT_WRAP_%s action=%s reason=%s" % (
-        "OK" if ok else "FAIL", action, reason[:80]))
+    print(
+        "ALERT_WRAP_%s action=%s reason=%s"
+        % ("OK" if ok else "FAIL", action, reason[:80])
+    )
     return 0  # 观测层永远不反噬调用方 rc
 
 

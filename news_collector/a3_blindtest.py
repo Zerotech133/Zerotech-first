@@ -5,6 +5,7 @@ K-STOCK-082。只读评测，不改在线链路。输出落 logs/a3_blindtest.lo
 抽样：bias 三类分层各 10 条（近 90 天，bull/bear/neutral）。
 门（预研文档 §三）：一致率 >=80% 启用；60~80% 启用但 conf 七折；<60% 不启用。
 """
+
 import json
 import random
 import sqlite3
@@ -27,7 +28,8 @@ def sample_rows():
         rows = con.execute(
             "SELECT id, title, stocks, jev FROM news "
             "WHERE jev LIKE ? ORDER BY id DESC LIMIT 400",
-            ('%"bias": "' + bias + '"%',)).fetchall()
+            ('%"bias": "' + bias + '"%',),
+        ).fetchall()
         pick = random.Random(20261010).sample(rows, min(N_PER_CLASS, len(rows)))
         out.extend(pick)
     con.close()
@@ -41,13 +43,20 @@ def local_judge(title, stocks):
         '{"bias":"bull|bear|neutral","conf":0.0到1.0}，不要输出其他内容。'
         "口径：只看对资产价格的直接影响——外交会晤、一般性产业与技术进展、常规信息披露、"
         "国债/政策性金融债发行供给等属 neutral；明确的需求扩张、超预期业绩、降息等利好才判 bull；"
-        "明确的供给冲击、业绩暴雷、加息、制裁等才判 bear。" % (title[:100], tag))
-    r = requests.post(OLLAMA, json={
-        "model": MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "stream": False, "think": False, "format": "json",
-        "options": {"temperature": 0.1, "num_predict": 60},
-    }, timeout=60)
+        "明确的供给冲击、业绩暴雷、加息、制裁等才判 bear。" % (title[:100], tag)
+    )
+    r = requests.post(
+        OLLAMA,
+        json={
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "think": False,
+            "format": "json",
+            "options": {"temperature": 0.1, "num_predict": 60},
+        },
+        timeout=60,
+    )
     j = json.loads(r.json()["message"]["content"])
     b = (j.get("bias") or "").strip().lower()
     if b not in ("bull", "bear", "neutral"):
@@ -58,8 +67,7 @@ def local_judge(title, stocks):
 def main():
     LOG.parent.mkdir(exist_ok=True)
     rows = sample_rows()
-    lines = ["== A-3 blindtest %s n=%d model=%s ==" % (
-        "2026-10-10", len(rows), MODEL)]
+    lines = ["== A-3 blindtest %s n=%d model=%s ==" % ("2026-10-10", len(rows), MODEL)]
     agree = 0
     invalid = 0
     confusions = {}
@@ -77,14 +85,22 @@ def main():
         agree += ok
         if not ok:
             confusions[(truth, pred)] = confusions.get((truth, pred), 0) + 1
-        lines.append("%s id=%s truth=%-7s pred=%-7s conf=%s | %s" % (
-            "OK " if ok else "MISS", nid, truth, pred, conf, title[:50]))
+        lines.append(
+            "%s id=%s truth=%-7s pred=%-7s conf=%s | %s"
+            % ("OK " if ok else "MISS", nid, truth, pred, conf, title[:50])
+        )
     rate = 100.0 * agree / len(rows)
-    lines.append("== 一致率 %.1f%% (%d/%d), 非法输出 %d ==" % (
-        rate, agree, len(rows), invalid))
+    lines.append(
+        "== 一致率 %.1f%% (%d/%d), 非法输出 %d ==" % (rate, agree, len(rows), invalid)
+    )
     lines.append("混淆矩阵: %s" % confusions)
-    verdict = ("ENABLE" if rate >= 80 else
-               "ENABLE-WITH-DISCOUNT(conf 七折)" if rate >= 60 else "REJECT")
+    verdict = (
+        "ENABLE"
+        if rate >= 80
+        else "ENABLE-WITH-DISCOUNT(conf 七折)"
+        if rate >= 60
+        else "REJECT"
+    )
     lines.append("== 门结论: %s ==" % verdict)
     text = "\n".join(lines)
     LOG.write_text(text, encoding="utf-8")

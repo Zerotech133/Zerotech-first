@@ -8,6 +8,7 @@ source/stage 明细、FEED FAILED、rc=1、失败源水位不推进；真实空�
 
 只使用临时 sqlite DB + monkeypatch，不读不写生产 news.db、不起采集/推送。
 """
+
 import contextlib
 import io
 import json
@@ -87,14 +88,13 @@ class JevFeedRunsOkTest(unittest.TestCase):
         con = sqlite3.connect(self.dbpath)
         try:
             row = con.execute(
-                "SELECT ok, new_count, detail FROM runs "
-                "ORDER BY id DESC LIMIT 1").fetchone()
+                "SELECT ok, new_count, detail FROM runs ORDER BY id DESC LIMIT 1"
+            ).fetchone()
         finally:
             con.close()
         if row is None:
             return None
-        return {"ok": row[0], "new_count": row[1],
-                "detail": json.loads(row[2] or "{}")}
+        return {"ok": row[0], "new_count": row[1], "detail": json.loads(row[2] or "{}")}
 
     def _count(self, sql, args=()):
         con = sqlite3.connect(self.dbpath)
@@ -115,8 +115,7 @@ class JevFeedRunsOkTest(unittest.TestCase):
         self.addCleanup(p.stop)
 
     def _patch_judge(self, side_effect):
-        p = mock.patch.object(J.news_ai, "jev_judge_batch",
-                              side_effect=side_effect)
+        p = mock.patch.object(J.news_ai, "jev_judge_batch", side_effect=side_effect)
         p.start()
         self.addCleanup(p.stop)
 
@@ -162,26 +161,27 @@ class JevFeedRunsOkTest(unittest.TestCase):
 
     def test_failed_source_keeps_wm_success_source_advances(self):
         """news 失败、notice 成功：只推进 notice 水位；notice 行仍入库。"""
+
         def read(alias, **_kw):
             if alias == "news":
                 raise TimeoutError("news 源不可达")
             return _one_row_df()
 
         self._patch_read(read)
-        self._patch_judge(
-            lambda items: {it["id"]: {"bias": "bull"} for it in items})
+        self._patch_judge(lambda items: {it["id"]: {"bias": "bull"} for it in items})
         rc, _out, _err = self._run()
         self.assertEqual(rc, 1)
         run = self._latest_run()
         self.assertEqual(run["ok"], 0)
-        self.assertEqual(run["detail"]["wm"], {"notice": "20261025"},
-                         "仅成功源可推进水位")
+        self.assertEqual(
+            run["detail"]["wm"], {"notice": "20261025"}, "仅成功源可推进水位"
+        )
         self.assertNotIn("news", run["detail"]["wm"])
-        self.assertEqual(self._count(
-            "SELECT COUNT(*) FROM news WHERE source='xd_notice'"), 1)
+        self.assertEqual(
+            self._count("SELECT COUNT(*) FROM news WHERE source='xd_notice'"), 1
+        )
         self.assertEqual(run["detail"]["src"]["notice"]["judged"], 1)
-        self.assertEqual(self._count(
-            "SELECT COUNT(*) FROM runs"), 1)
+        self.assertEqual(self._count("SELECT COUNT(*) FROM runs"), 1)
 
     def test_judge_all_fail_marks_runs_failed(self):
         """判定阶段整批 0 条判成（模型挂）→ ok=0 / stage=judge（不再静默计成功）。"""
@@ -200,14 +200,21 @@ class JevFeedRunsOkTest(unittest.TestCase):
 
     def test_partial_judge_missing_is_recorded_not_fatal(self):
         """单条判定失败：judge_missing 留明细，不把整轮判失败（避免噪声红）。"""
-        two_rows = pd.DataFrame([
-            NOTICE_ROW,
-            dict(NOTICE_ROW, url="https://example.test/notice/2",
-                 title="另一条公告", notice_date="20261025"),
-        ])
+        two_rows = pd.DataFrame(
+            [
+                NOTICE_ROW,
+                dict(
+                    NOTICE_ROW,
+                    url="https://example.test/notice/2",
+                    title="另一条公告",
+                    notice_date="20261025",
+                ),
+            ]
+        )
         self._patch_read([_empty_df(), two_rows])
         self._patch_judge(
-            lambda items: {items[0]["id"]: {"bias": "bull"}} if items else {})
+            lambda items: {items[0]["id"]: {"bias": "bull"}} if items else {}
+        )
         rc, _out, _err = self._run()
         self.assertEqual(rc, 0, "单条失败不应整轮失败")
         run = self._latest_run()
@@ -226,10 +233,13 @@ class JevFeedRunsOkTest(unittest.TestCase):
     # ------------------------------------- OS-FIX-JEVFEEDNIGHT 夜间守卫
     def test_in_night_window_boundaries(self):
         from datetime import datetime
+
         check = self._real_in_night_window
         # 隔离本机真实 pause/lock（夜批正在跑时文件存在，不应影响纯时间窗断言）
-        with (mock.patch.object(J, "NIGHT_PAUSE_FLAG", "Z:/nonexistent-pause"),
-              mock.patch.object(J, "NIGHT_LOCK", "Z:/nonexistent-lock")):
+        with (
+            mock.patch.object(J, "NIGHT_PAUSE_FLAG", "Z:/nonexistent-pause"),
+            mock.patch.object(J, "NIGHT_LOCK", "Z:/nonexistent-lock"),
+        ):
             self.assertTrue(check(datetime(2026, 10, 27, 21, 45)))
             self.assertTrue(check(datetime(2026, 10, 27, 23, 0)))
             self.assertTrue(check(datetime(2026, 10, 27, 3, 0)))
@@ -245,8 +255,8 @@ class JevFeedRunsOkTest(unittest.TestCase):
             con.execute(
                 "INSERT INTO news(id, source, ts, title, stocks, jev) "
                 "VALUES (?,?,?,?,?,NULL)",
-                ("xd:news:night1", "xd_news", "2026-10-26 22:00",
-                 "夜间待判新闻", "[]"))
+                ("xd:news:night1", "xd_news", "2026-10-26 22:00", "夜间待判新闻", "[]"),
+            )
             con.commit()
         finally:
             con.close()
@@ -256,9 +266,10 @@ class JevFeedRunsOkTest(unittest.TestCase):
         self.assertEqual(res["judged"], 0)
         self.assertTrue(res.get("skipped_night"))
         self.assertEqual(
-            self._count("SELECT COUNT(*) FROM news WHERE jev IS NULL"), 1,
-            "跳读不应改库，夜批仍能按 jev IS NULL 取到")
-
+            self._count("SELECT COUNT(*) FROM news WHERE jev IS NULL"),
+            1,
+            "跳读不应改库，夜批仍能按 jev IS NULL 取到",
+        )
 
 
 if __name__ == "__main__":

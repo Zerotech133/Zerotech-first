@@ -4,6 +4,7 @@
 复用 sentiment_backtest 的去重与行情链，按 JEV impact 分层计算
 T+1/T+3 累计超额收益（CAR 代理）。当前结果只用于校准，不自动改变生产开关。
 """
+
 import json
 import os
 from datetime import datetime, timezone
@@ -50,7 +51,8 @@ def _group(rows, impact):
             out["car%d_avg" % window] = round(sum(vals) / len(vals), 2)
             out["car%d_n" % window] = len(vals)
             out["car%d_pos_pct" % window] = round(
-                sum(v > 0 for v in vals) / len(vals) * 100, 1)
+                sum(v > 0 for v in vals) / len(vals) * 100, 1
+            )
     dvals = []
     for row in sub:
         if row.get("bias") not in DIRS:
@@ -78,7 +80,9 @@ def run():
         ref = base.get("dir_car1_avg")
         value = g.get("dir_car1_avg")
         applied[impact] = bool(
-            n >= MIN_N and ref is not None and value is not None
+            n >= MIN_N
+            and ref is not None
+            and value is not None
             and value - ref >= CAR_GAP
         )
     out = {
