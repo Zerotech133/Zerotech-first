@@ -110,7 +110,9 @@ button.small{padding:3px 8px;font-size:11px}
   </section>
   <section class="panel" id="tab-creds">
     <h2>接入与凭据</h2>
-    <div class="muted">统一凭据目录（JEV / 数据接口 / 飞书）将迁移到独立页面。</div>
+    <div class="muted" style="margin-bottom:8px">只读目录：显示状态与掩码，不显示密钥；写入走 DPAPI 凭据库。</div>
+    <div id="cred-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+    <div id="cred-table"><div class="muted">加载中…</div></div>
   </section>
 
   <section class="panel" id="tab-vk">
@@ -310,6 +312,22 @@ async function testRelayKey(id){
 }
 document.getElementById("relay-save").onclick=saveRelay;
 loadRouting(); setInterval(loadRouting,30000);
+let CRED_DATA=null, CRED_CAT="all";
+function renderCreds(){
+  if(!CRED_DATA)return;
+  const cats=["all"].concat([...new Set((CRED_DATA.items||[]).map(x=>x.category).filter(Boolean))].sort());
+  document.getElementById("cred-filters").innerHTML=cats.map(c=>'<button class="btn small" style="'+(CRED_CAT===c?'border-color:#bc8cff;color:#e5d4ff':'')+'" onclick="setCredCat(\''+c+'\')">'+(c==="all"?"全部":c)+'</button>').join("");
+  const rows=(CRED_DATA.items||[]).filter(x=>CRED_CAT==="all"||x.category===CRED_CAT);
+  let h='<table><thead><tr><th>名称</th><th>分类</th><th>环境变量</th><th>状态</th><th>加密</th><th>更新</th></tr></thead><tbody>';
+  for(const x of rows) h+='<tr><td>'+esc(x.name)+'</td><td>'+esc(x.category)+'</td><td><code>'+esc(x.env||"—")+'</code></td><td><span class="pill '+(x.status==="ok"?"ok":x.status==="missing"?"bad":"warn")+'">'+esc(x.status)+'</span></td><td>'+(x.encrypted?"🔒 是":"明文")+'</td><td class="muted">'+esc((x.updated||"").slice(0,19))+'</td></tr>';
+  document.getElementById("cred-table").innerHTML=h+'</tbody></table>';
+}
+function setCredCat(c){CRED_CAT=c;renderCreds();}
+async function loadCreds(){
+  try{CRED_DATA=await fetch("/api/credentials",{cache:"no-store"}).then(r=>r.json());renderCreds();}
+  catch(e){document.getElementById("cred-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
+}
+loadCreds(); setInterval(loadCreds,60000);
 async function loadOverview(){
   try{
     const [ks,ms,vk] = await Promise.all([
