@@ -58,7 +58,31 @@
     });
   }
 
+  function initAdvancedFilters() {
+    var filters = document.querySelector('#filters');
+    if (!filters || document.querySelector('#p3-filter-toggle')) return;
+    var searchBtn = document.querySelector('#filters #q');
+    searchBtn = searchBtn ? searchBtn.closest('.fbtn') : null;
+    Array.prototype.forEach.call(filters.children, function (el) {
+      if (el === searchBtn) return;
+      el.classList.add('p3-advanced');
+    });
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'p3-filter-toggle';
+    btn.className = 'p3-filter-toggle';
+    btn.textContent = '高级筛选';
+    btn.setAttribute('aria-expanded', 'false');
+    filters.insertBefore(btn, filters.firstChild);
+    btn.addEventListener('click', function () {
+      var open = filters.classList.toggle('p3-open');
+      btn.textContent = open ? '收起筛选' : '高级筛选';
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+
   function init() {
+    initAdvancedFilters();
     var list = document.querySelector('#list');
     if (!list) return;
     ensureUI();
