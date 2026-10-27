@@ -1,0 +1,82 @@
+{
+  "_note": "P0 策略单源 v1（WO-POLICY-CODE-20261027）。默认 deny；工具 execute 白名单与 agent_platform/rules/tool_matrix.json 对齐（单源迁移第一期：ARCH1）。L2=宿主机级/对外/不可逆动作，须人工五要素批准（K-STOCK-416）。本文件只读决策，不作强制点接入（强制仍由 devtask/工具自身执行该决策）。",
+  "schema": "agent_policy/v1",
+  "updated": "2026-10-27",
+  "approval": {
+    "L0": {
+      "desc": "本地只读/无副作用",
+      "human_required": false
+    },
+    "L1": {
+      "desc": "本地写/受限执行（worktree、docs、事件、请求）",
+      "human_required": false
+    },
+    "L2": {
+      "desc": "宿主机级/对外/不可逆：重启/防火墙/计划任务/发布/外发/真实交易/删除",
+      "human_required": true,
+      "five_elements": true
+    },
+    "L3": {
+      "desc": "保留级（当前未用，预留给生产发布/资金动作）",
+      "human_required": true,
+      "five_elements": true
+    }
+  },
+  "operations": {
+    "read": {
+      "default": "deny",
+      "approval": "L1"
+    },
+    "write": {
+      "default": "deny",
+      "approval": "L1"
+    },
+    "execute": {
+      "default": "deny",
+      "approval": "L1"
+    },
+    "danger": {
+      "default": "deny",
+      "approval": "L2",
+      "desc": "rm/del/格式化/注册表写入等，全岗 deny；回收站删除例外走主控特批通道"
+    },
+    "host_system": {
+      "default": "deny",
+      "approval": "L2",
+      "desc": "系统代理/防火墙/服务启动类型/计划任务增删/宿主机开关"
+    },
+    "external_publish": {
+      "default": "deny",
+      "approval": "L2",
+      "desc": "对外发布/外发/推送/客户可见动作"
+    },
+    "trading": {
+      "default": "deny",
+      "approval": "L2",
+      "desc": "真实交易/下单/资金动作"
+    }
+  },
+  "agents": {
+    "ARCH1": {
+      "read": {
+        "allow": ["*"]
+      },
+      "write": {
+        "allow": [".worktrees/**", "docs/**"]
+      },
+      "execute": {
+        "allow": [
+          "git",
+          "pytest",
+          "python",
+          "codebase_intel",
+          "sandbox_verify",
+          "eval_harness",
+          "trace_log"
+        ],
+        "note": "与 tool_matrix.ARCH1.execute 完全一致（2026-10-27 MATRIX4 收口）"
+      },
+      "danger": "deny"
+    }
+  }
+}
