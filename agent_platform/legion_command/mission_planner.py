@@ -162,7 +162,8 @@ def validate_plan(plan: dict) -> list:
     return errs
 
 
-def plan(name: str, doc: str, use_llm: bool = True) -> dict:
+def plan(name: str, doc: str, use_llm: bool = True,
+         apply_planner_rules: bool = True) -> dict:
     name = str(name or "").strip() or "未命名任务"
     doc = str(doc or "")
     mid = _mission_id(name)
@@ -196,6 +197,15 @@ def plan(name: str, doc: str, use_llm: bool = True) -> dict:
         "doc_path": doc_path,
         "tasks": raw["tasks"],
     }
+    if apply_planner_rules:
+        try:
+            from legion_command import planner_rules
+            active = planner_rules.active_rules()
+            if active.get("enabled"):
+                result = planner_rules.apply_rules(result, active)
+                result["planner_rules_source"] = "accepted-signed"
+        except Exception:
+            pass
     errs = validate_plan(result)
     result["valid"] = not errs
     result["errors"] = errs

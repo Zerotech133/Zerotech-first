@@ -73,6 +73,7 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
   <button id="mission-advance-btn">推进（自动评审门）</button>
   <button id="mission-evolve-btn">采集结果 · 进化建议</button>
   <button id="mission-worker-btn" style="background:#1f3326;border:1px solid #3f7f57;border-radius:8px;color:#d6f5e3;padding:6px 10px;cursor:pointer">Worker 自动接单（低风险）</button>
+  <button id="planner-ab-btn">Planner A/B</button>
   <span id="mission-status" class="muted" style="align-self:center"></span>
 </div>
 <div id="mission-result" style="margin-top:10px"></div>
@@ -405,6 +406,23 @@ async function missionWorker(){
   addLog('Mission Worker：'+(j.ok?'ok':'failed'), 'lg-b');
 }
 document.getElementById('mission-worker-btn').onclick=missionWorker;
+
+
+async function plannerAB(){
+  const doc=document.getElementById('mission-doc').value.trim();
+  const name=document.getElementById('mission-name').value.trim()||'A/B 对比';
+  if(!doc){alert('请先粘贴文档');return}
+  const st=document.getElementById('mission-status'); st.textContent='A/B 对比中（baseline vs rules）…';
+  const r=await fetch('/api/planner/ab',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({doc,name,use_signed:true})});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">A/B 失败：'+(j.error||'')+'</div>';return}
+  const d=j.report, b=d.baseline||{}, c=d.candidate||{};
+  let h='<div class="muted">rules='+d.rules_source+' · signed='+d.rules_signed+' · '+d.note+'</div>';
+  h+='<table><thead><tr><th>指标</th><th>baseline</th><th>rules</th><th>delta</th></tr></thead><tbody>';
+  for(const k of ['tasks','checks','acceptance','conflicts']) h+='<tr><td>'+k+'</td><td>'+b[k]+'</td><td>'+c[k]+'</td><td>'+((c[k]||0)-(b[k]||0))+'</td></tr>';
+  document.getElementById('mission-result').innerHTML=h+'</tbody></table>';
+}
+document.getElementById('planner-ab-btn').onclick=plannerAB;
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);

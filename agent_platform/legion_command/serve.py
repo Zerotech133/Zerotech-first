@@ -598,6 +598,16 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "model_prefs_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/planner/status":
+            try:
+                from legion_command import planner_rules
+                self._send_json({"ok": True, "signed": planner_rules.signed_rules(),
+                                 "candidate": planner_rules.candidate_rules(),
+                                 "active": planner_rules.active_rules()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "planner_status_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/mission/evolve":
             try:
                 from legion_command import mission_evolver
@@ -1324,6 +1334,30 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(res)
             except Exception as e:  # noqa: BLE001
                 self._send_json({"ok": False, "error": "mission_dispatch_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/planner/build-rules":
+            try:
+                from legion_command import planner_rules
+                self._send_json(planner_rules.build_rules())
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "planner_build_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/planner/ab":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import planner_rules
+                rep = planner_rules.ab_compare(str(req.get("doc") or ""),
+                                               str(req.get("name") or "A/B 对比"),
+                                               bool(req.get("use_signed", True)))
+                self._send_json({"ok": True, "report": rep})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "planner_ab_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path == "/api/mission/worker":
