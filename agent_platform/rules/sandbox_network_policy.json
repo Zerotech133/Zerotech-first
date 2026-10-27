@@ -1,0 +1,14 @@
+{
+  "_note": "沙箱网络出口白名单策略 v1（WO-SANDBOX-QUOTA-20261027）。默认 deny；allow 精确 host/port；mode=proxy 表示仅允许经受控代理出网（代理部署=另立 L2，不在本文件执行）。当前沙箱仍用 --network none，本策略尚未启用，仅作配置与校验。",
+  "schema": "sandbox_network_policy/v1",
+  "updated": "2026-10-27",
+  "default": "deny",
+  "mode": "proxy",
+  "proxy": "http://127.0.0.1:3128",
+  "allow": [
+    {"host": "pypi.org", "port": 443, "reason": "Python 包索引（只读下载）"},
+    {"host": "files.pythonhosted.org", "port": 443, "reason": "Python 包文件分发"},
+    {"host": "registry.npmjs.org", "port": 443, "reason": "npm 只读依赖下载（可选）"}
+  ],
+  "note": "host 必须精确（禁通配/禁路径/禁端口拼接）；端口必须整数；任何未列出的 host/port 一律拒绝；启用需先部署受控代理（L2）。"
+}
