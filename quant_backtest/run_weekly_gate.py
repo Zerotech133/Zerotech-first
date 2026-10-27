@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """PytestWeekly 门禁 runner（W9 扩全量，K-STOCK-393）。
 
-替换原 51 用例金样子集，两级门禁：
+替换原 51 用例金样子集，三级门禁：
+  0) weak_scan_guard smoke（脚本式，显式跑；2026-10-27 OS-FIX-PYTESTWEEKLY：
+     它原为 test_weak_scan_guard.py，模块级 sys.exit 会炸 pytest 收集门禁，
+     现改名 weak_scan_guard_smoke.py 并作为 gate0 显式执行）；
   1) collect-only 收集门禁（~30s）：任何 test_*.py 的收集炸窗
      （如脚本式 sys.exit 炸 pytest 收集的 K-STOCK-392 同款）当场现形；
   2) 全量 pytest（全仓 1181+ 用例，~4min）。
@@ -41,6 +44,16 @@ def main():
     if not all_tests:
         print("GATE FAIL: no test_*.py found in", HERE)
         return 2
+    # gate0：weak_scan_guard 是脚本式冒烟（模块级 sys.exit），不能进 pytest 收集。
+    smoke = os.path.join(HERE, "weak_scan_guard_smoke.py")
+    if os.path.isfile(smoke):
+        print("[gate0] weak_scan_guard smoke")
+        rc, out = run([PY, smoke])
+        print("\n".join(out.strip().splitlines()[-3:]))
+        if rc != 0:
+            print("GATE FAIL: weak_scan_guard smoke rc=%d" % rc)
+            print(out[-3000:])
+            return 1
     print("[gate1] collect-only over %d test files" % len(all_tests))
     rc, out = run(
         [PY, "-m", "pytest"]
