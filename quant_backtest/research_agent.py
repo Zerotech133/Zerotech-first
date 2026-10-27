@@ -23,6 +23,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -119,8 +120,8 @@ def _cleanup(keep_days=7):
             p = os.path.join(RESEARCH_DIR, fn)
             if fn.endswith(".json") and os.path.getmtime(p) < cutoff:
                 os.remove(p)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/research_agent.py", exc)
 
 
 # ── 事实包（全部走 agent_tools，异常兜底空） ─────────────────
@@ -319,8 +320,8 @@ def research_for_stock(code, force=False, read_only=False):
                     d = json.load(f)
                 d["cached"] = True
                 return d
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/research_agent.py", exc)
         return {"ok": True, "empty": True, "code": _norm_code(code)}
     facts = _facts(code)
     fp = _fp(facts)
@@ -332,8 +333,8 @@ def research_for_stock(code, force=False, read_only=False):
                 d["cached"] = True
                 d["fp_match"] = True
                 return d
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/research_agent.py", exc)
     text, src = None, None
     for attempt in (1, 2):
         t = _llm(PROMPT.format(facts=_facts_text(facts), actions="/".join(ACTIONS)))

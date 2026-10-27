@@ -41,6 +41,7 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+import logging
 
 TOOL_VERSION = "secvault/0.1.0"
 MANIFEST_SCHEMA = "secvault-manifest/v1"
@@ -387,8 +388,8 @@ def init_vault(home: Path, key_file: Path, backend: str = "auto", force: bool = 
             if tmp.exists():
                 try:
                     tmp.unlink()
-                except OSError:
-                    pass
+                except OSError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/secrets/vault.py", exc)
     elif chosen == "aesgcm":
         raw = os.urandom(32)
         body = base64.b64encode(raw).decode("ascii")
@@ -457,8 +458,8 @@ def _rel_for_source(home: Path, src: Path) -> str:
     plain_root = home / "secrets"
     try:
         return src.relative_to(plain_root).as_posix()
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/secrets/vault.py", exc)
     try:
         return src.relative_to(home).as_posix()
     except ValueError:
@@ -800,8 +801,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, OSError):
-        pass
+    except (AttributeError, OSError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/secrets/vault.py", exc)
     parser = _build_parser()
     # exec-env 的 REMAINDER 需要先剥掉 `--`
     raw = list(sys.argv[1:] if argv is None else argv)

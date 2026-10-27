@@ -19,6 +19,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -46,8 +47,8 @@ def today_events_count():
         for line in EVENTS.read_text(encoding="utf-8", errors="replace").splitlines():
             if today in line:
                 n += 1
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/chief_patrol.py", exc)
     return n
 
 
@@ -70,8 +71,8 @@ def task_summary(tasks):
                     c = datetime.strptime(t.get("created", ""), "%Y-%m-%d %H:%M:%S")
                     if now - c > timedelta(hours=stall_h):
                         t["_stall_h"] = int((now - c).total_seconds() // 3600)
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/chief_patrol.py", exc)
     st["doing_stalled"] = [t for t in
                            [dict(v, id=k) for k, v in tasks.items()
                             if v.get("status") == "doing" and "_stall_h" in v]]
@@ -160,8 +161,8 @@ def main():
                         % (len(ts["doing"]), len(ts["doing_stalled"]), rev_n,
                            today_events_count(), out.name),
             }, ensure_ascii=False) + "\n")
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/chief_patrol.py", exc)
     print("\n[pattern] 判读落盘：%s" % out)
     return 0
 

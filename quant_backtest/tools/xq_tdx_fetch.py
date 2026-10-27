@@ -29,6 +29,7 @@ import struct
 import sys
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent  # tools/
 REPO = HERE.parent  # 仓库根
@@ -171,8 +172,8 @@ def connect_any(api_cls, servers=None, timeout=5):
             last.append("%s:%s %s" % (ip, port, str(e)[:80]))
         try:
             api.disconnect()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_tdx_fetch.py", exc)
     raise ConnectionError(
         "全部 %d 个行情服务器连接失败：%s"
         % (len(servers or HQ_SERVERS), "；".join(last))
@@ -217,8 +218,8 @@ def run(symbols, days, out_root, page=100, timeout=5, verbose=True):
     if api is not None:
         try:
             api.disconnect()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_tdx_fetch.py", exc)
     return written, errors
 
 
@@ -274,8 +275,8 @@ def main(argv=None):
         (RUN_DIR / "fetch_last.json").write_text(
             json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_tdx_fetch.py", exc)
     if not written:
         print(
             "错误：零符号落盘（fail-visible）→ %s" % "；".join(errors), file=sys.stderr

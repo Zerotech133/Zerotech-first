@@ -11,6 +11,7 @@ import json
 import os
 import subprocess
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -46,8 +47,8 @@ def _legacy_note(tag):
         import legacy_telemetry
 
         legacy_telemetry.hit(tag)
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/card_build.py", exc)
 
 
 def build_card(
@@ -156,8 +157,8 @@ def push_card(card, qr_portal=None, kind=None):
     try:
         if "#unified" not in __import__("json").dumps(card, ensure_ascii=False):
             _legacy_note("push_card")
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/card_build.py", exc)
     """写 outbox/pending_card.json → send_feishu.py interactive 模式。
     qr_portal 有值时自动附门户二维码（上传失败自动省略）。
     P3.6-lite K-A：kind 非 None 时给 send_feishu CLI 追加 --kind=X

@@ -197,8 +197,8 @@ def build_verdict(snap, feat, events):
                 rating = "观察偏多"
             elif rating == "观察偏多" and days <= 2:
                 rating = "观察"
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/verdict.py", exc)
 
     # 关键位
     levels = list(tech.get("levels") or [])
@@ -211,8 +211,8 @@ def build_verdict(snap, feat, events):
                                "label": "中枢下沿(%s~%s)" % (p.get("s_dt"), p.get("e_dt"))})
                 pivots.append({"type": "pivot", "price": round(float(p.get("zg")), 2),
                                "label": "中枢上沿(%s~%s)" % (p.get("s_dt"), p.get("e_dt"))})
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/verdict.py", exc)
     levels = pivots[:4] + levels
 
     # 情景

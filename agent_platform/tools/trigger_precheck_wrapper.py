@@ -47,6 +47,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # 本文件在 agent_platform/tools/ 下；被检工具同目录
 _HERE = Path(__file__).resolve().parent
@@ -129,8 +130,8 @@ def _push_feishu(text: str) -> bool:
         finally:
             try:
                 Path(tmp).unlink(missing_ok=True)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/trigger_precheck_wrapper.py", exc)
     except Exception:  # noqa: BLE001
         return False
 
@@ -272,8 +273,8 @@ def main() -> int:
                     "alert_pushed": False,
                 }
             )
-        except Exception:  # noqa: BLE001  连日志面都挂了只能 print（任务计划程序历史可见）
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/trigger_precheck_wrapper.py", exc)
         print(err, file=sys.stderr)
         return 1
 

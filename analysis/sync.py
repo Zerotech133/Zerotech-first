@@ -19,6 +19,7 @@ import time
 import pandas as pd
 
 from . import config
+import logging
 
 TABLES = os.path.join(config.DATA_CACHE, "tables")
 BY_CODE = os.path.join(TABLES, "by_code")
@@ -77,8 +78,8 @@ def _upsert(df, path, keys):
         try:
             old = pd.read_parquet(path)
             df = pd.concat([old, df], ignore_index=True)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/sync.py", exc)
     if len(df):
         df = df.drop_duplicates(subset=[k for k in keys if k in df.columns], keep="last")
         df.to_parquet(path, index=False)
@@ -146,8 +147,8 @@ def sync_daily(days=30, only=None):
                 fields = r.get("fields") or []
                 if fields and r.get("items"):
                     frames.append(pd.DataFrame(r["items"], columns=fields))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/sync.py", exc)
         if not frames:
             out[table] = 0
             continue

@@ -34,6 +34,7 @@ import shutil
 import subprocess
 import time
 import urllib.request
+import logging
 
 OP = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 # K-ORG-079: bundle 路径锚定 __file__ 上溯——原相对路径依赖 cwd=仓库根,
@@ -171,8 +172,8 @@ def resolve_evidence(text):
                     if e.get("task") == m.group(1):
                         rows.append("%s %s %s %s" % (e.get("ts", ""), e.get(
                             "kind", ""), e.get("agent", ""), str(e.get("detail", ""))[:80]))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_coder.py", exc)
         out = "\n".join(rows[-10:]) if rows else None
         hits.append((m.group(0), out))
         return ""
@@ -231,8 +232,8 @@ def _glm_key():
                 zk = json.load(open(p, encoding="utf-8")).get("zhipu_key", "")
                 if zk:
                     return zk
-            except (OSError, ValueError):
-                pass
+            except (OSError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_coder.py", exc)
     return os.environ.get("GLM_API_KEY", "")
 
 
@@ -273,8 +274,8 @@ def _fail(agent_id, channel, msg, attempts):
         p = os.path.join(_data_dir(), "llm_health.jsonl")
         with open(p, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_coder.py", exc)
 
 
 def chat_openai(agent_id, task, timeout=180):

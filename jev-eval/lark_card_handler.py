@@ -31,6 +31,7 @@ from pathlib import Path
 
 import jev_common as jc
 from jev_common import NOOP, atomic_write_text, install_stop, log, new_trace, set_module
+import logging
 
 if jc.METRICS:
     from prometheus_client import Counter
@@ -494,8 +495,8 @@ def main() -> int:
         )
         try:
             proc.kill()
-        except OSError:
-            pass  # 豁免（C2批2）：kill 失败仅因进程已自行退出
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/lark_card_handler.py", exc)
         return 1
 
     jc.start_metrics(METRICS_PORT)  # P1-6：ready 后再开指标端点（启动失败不留孤儿端口）
@@ -534,8 +535,8 @@ def main() -> int:
     try:
         if proc.stdin is not None:
             proc.stdin.close()
-    except Exception:  # noqa: BLE001
-        pass  # 豁免（C2批2）：优雅关闭阶段 stdin 关闭失败无碍（进程即将终止）
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/lark_card_handler.py", exc)
     try:
         proc.wait(timeout=10)
     except Exception:  # noqa: BLE001

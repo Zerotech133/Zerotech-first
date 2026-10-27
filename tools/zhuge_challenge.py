@@ -72,6 +72,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # ---------------------------------------------------------------------------
 # 常量与契约
@@ -253,8 +254,8 @@ def resolve_tasks_ledger(root: Path) -> Path | None:
         from _repo_paths import repo_root as _main_root  # noqa: E402
 
         candidates.append(Path(_main_root(root)) / ".worktrees" / "tasks.json")
-    except Exception:  # noqa: BLE001 —— 解析失败不阻塞，候选列表继续
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_challenge.py", exc)
     for c in candidates:
         if c.is_file():
             return c
@@ -774,8 +775,8 @@ def append_events(path, events: list[dict]) -> None:
         fh.flush()
         try:
             os.fsync(fh.fileno())
-        except OSError:  # 某些文件系统不支持 fsync；不掩盖，仅不阻塞
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_challenge.py", exc)
 
 
 def _find_event(events: list, card_id: str, kind: str, key_field: str, key: str) -> dict | None:
@@ -1209,8 +1210,8 @@ def main(argv=None) -> int:
                     sys.path.insert(0, tools_dir)
                 from zhuge_c1_decisions import sync_all
                 sync_all()
-            except Exception:  # noqa: BLE001 —— 同步失败不反噬 C1 主链
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_challenge.py", exc)
         return rc
     except ZhugeError as exc:
         payload = {"ok": False, "command": getattr(args, "command", None),

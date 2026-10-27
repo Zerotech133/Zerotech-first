@@ -30,6 +30,7 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+import logging
 
 DB = Path(__file__).resolve().parent.parent / "data" / "paper.db"
 OUT_DIR = Path(__file__).resolve().parent.parent / "data" / "judge_reviews"
@@ -278,8 +279,8 @@ def _narrate(review: dict) -> str | None:
             u = d.get("prompt_eval_count"), d.get("eval_count")
             if all(u):
                 record_cost("judge", f"ollama/{LLM_MODEL}", u[0], u[1])
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/judge.py", exc)
         msg = d.get("message", {}).get("content", "").strip()
         # 旧版 Ollama 忽略 think:False → 剥 <think> 段兜底
         if "</think>" in msg:
@@ -421,8 +422,8 @@ def _meeting_narrate(out: dict) -> str | None:
             u = d.get("prompt_eval_count"), d.get("eval_count")
             if all(u):
                 record_cost("manager", f"ollama/{LLM_MODEL}", u[0], u[1])
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/judge.py", exc)
         msg = d.get("message", {}).get("content", "").strip()
         if "</think>" in msg:
             msg = msg.split("</think>", 1)[1].strip()

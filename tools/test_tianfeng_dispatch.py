@@ -7,6 +7,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import tianfeng_dispatch as D  # noqa: E402
+import logging
 
 
 def test_append_and_summary(tmp_path):
@@ -33,18 +34,18 @@ def test_validation(tmp_path):
         try:
             D.append(bad[0], bad[1], path=p)
             assert False, "should raise"
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_tianfeng_dispatch.py", exc)
     try:
         D.append("A", "T", status="weird", path=p)
         assert False, "should raise"
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_tianfeng_dispatch.py", exc)
     try:
         D.append("A", "T", due="2026/01/01", path=p)
         assert False, "should raise"
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_tianfeng_dispatch.py", exc)
 
 
 def test_cli_list(tmp_path, capsys):

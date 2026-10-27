@@ -34,6 +34,7 @@ import sys
 from datetime import datetime
 
 import kg_portal as KP
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
@@ -320,8 +321,8 @@ def _notify_text(doc):
     try:
         with open(os.path.join(HERE, "config.json"), encoding="utf-8") as f:
             cfg = json.load(f)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_sector_flow.py", exc)
     lines.append(
         "口径：同行业同日≥%d股上榜+游资净买同向≥%d（250日定标 "
         "日均0.35单）；共振买/卖=已确认口径 dt=信号日复盘口径" % (N_MIN, M_MIN)
@@ -364,8 +365,8 @@ def notify(doc):
     try:
         with open(os.path.join(HERE, "config.json"), encoding="utf-8") as f:
             cfg = json.load(f)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_sector_flow.py", exc)
     if (cfg.get("sector_flow") or {}).get("push") is False:
         print("notify: disabled by config")
         return False
@@ -377,8 +378,8 @@ def notify(doc):
     try:
         with open(PUSHED_F, encoding="utf-8") as f:
             pushed = set(json.load(f))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_sector_flow.py", exc)
     if d in pushed:
         print("notify: %s already pushed" % d)
         return False
