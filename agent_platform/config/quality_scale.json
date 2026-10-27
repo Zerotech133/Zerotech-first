@@ -199,7 +199,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_d2_gates.py",
@@ -221,7 +222,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_d2_gates.py",
@@ -243,7 +245,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_d2_gates.py",
@@ -265,7 +268,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_mcp_security_check.py"
@@ -288,7 +292,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_d2_gates.py"
@@ -309,7 +314,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_d2_gates.py"
@@ -330,7 +336,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_d2_gates.py"
@@ -351,7 +358,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_d2_gates.py"
@@ -372,7 +380,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "docs/testing.md"
+        "docs/testing.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_mcp_security_check.py"
@@ -393,7 +402,8 @@
       "type": "tool",
       "owner": "ARCH1",
       "docs": [
-        "CONTRIBUTING.md"
+        "CONTRIBUTING.md",
+        "docs/ops/2026-10-27_工具操作手册_v1.md"
       ],
       "tests": [
         "tools/test_check_ports_json.py"
