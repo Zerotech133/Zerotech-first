@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -197,9 +198,16 @@ def run_batch(batch_id: str, timeout: int = 300) -> dict:
         }
     t0 = time.time()
     try:
+        # 2026-10-27 WO-AUDIT4-FLAKY：子进程 pytest 硬化——
+        # ① env 强制 UTF-8（Windows 中文 locale 下避免父进程解码失败）；
+        # ② -p no:cacheprovider 避免与其他 pytest 进程的 .pytest_cache 串扰；
+        # ③ 目标用绝对路径，cwd 固定 MAIN_REPO。
+        env = dict(os.environ)
+        env.setdefault("PYTHONIOENCODING", "utf-8")
         r = subprocess.run(
-            [sys.executable, "-m", "pytest", str(target), "-q"],
+            [sys.executable, "-m", "pytest", str(target), "-q", "-p", "no:cacheprovider"],
             cwd=str(MAIN_REPO),
+            env=env,
             capture_output=True,
             text=True,
             encoding="utf-8",
