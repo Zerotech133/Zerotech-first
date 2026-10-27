@@ -22,6 +22,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+try:  # Windows 管道输出统一 UTF-8（子进程测试/工具捕获防 cp936 解码失败）
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:  # noqa: BLE001
+    pass
+
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
