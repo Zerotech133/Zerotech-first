@@ -11,7 +11,7 @@
 | `k_stock/tests` | 791 passed / **2 既存失败** | `test_report_builder::test_no_external_sdk_imported`、`test_riskguard_topics::test_markdown_renders_conclusion_and_groups`（master 同败） |
 | `agent_platform/tests` | 历史 1,833 passed / 10 failed（8 环境/顺序、2 flaky） | 全量较慢；ENVTEST 已修 6 个环境依赖 |
 | `quant_backtest/tests` | **2,379 collected / 0 collection error** | 全量 >20 分钟，建议夜间窗口 |
-| `tests/e2e` | **13 passed**（2026-10-27） | 冒烟 E2E（服务/工具/mock 回执/失败路径）；依赖 8091/8734/8796/bot 存活，已入夜跑默认套件 |
+| `tests/e2e` | **13 passed**（2026-10-27） | 冒烟 E2E（服务/工具/mock 回执/失败路径）；依赖 8091/8734/8796/bot 存活，已入夜跑默认套件；E2E-11（8091/8796 受控重启健康）2026-10-27 已人工验证 |
 | 全量（带 per-test timeout） | 2,095 passed / 1 xfailed / 0 failed（298.9s，2026-10-27 实测） | 裸跑可能因外部子进程挂起；见 §四 |
 
 ## 二、常用命令
