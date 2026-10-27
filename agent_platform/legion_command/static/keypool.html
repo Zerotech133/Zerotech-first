@@ -69,6 +69,8 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
   <button id="mission-plan-btn">生成计划（LLM，失败回退规则）</button>
   <button id="mission-dry-btn">Dry-run 派工</button>
+  <button id="mission-real-btn" style="background:#2a1f3a;border:1px solid #7b4db3;border-radius:8px;color:#e5d4ff;padding:6px 10px;cursor:pointer">真实派工（建 worktree）</button>
+  <button id="mission-advance-btn">推进（自动评审门）</button>
   <span id="mission-status" class="muted" style="align-self:center"></span>
 </div>
 <div id="mission-result" style="margin-top:10px"></div>
@@ -324,6 +326,39 @@ async function missionDry(){
 }
 document.getElementById("mission-plan-btn").onclick=missionPlan;
 document.getElementById("mission-dry-btn").onclick=missionDry;
+
+
+function renderMissionState(st){
+  if(!st){return}
+  let h='<div class="muted" style="margin-top:8px">mission '+st.mission_id+' · parallel '+st.parallel_limit+' · updated '+(st.updated_at||'')+'</div>';
+  h+='<table><thead><tr><th>任务</th><th>状态</th><th>Owner</th><th>Ticket</th><th>依赖</th><th>最近错误/评审</th></tr></thead><tbody>';
+  for(const [tid,t] of Object.entries(st.tasks||{})){
+    h+='<tr><td>'+tid+' '+t.title+'</td><td>'+t.status+'</td><td>'+t.owner+'</td><td>'+(t.ticket_id||'')+'</td><td>'+((t.deps||[]).join(','))+'</td><td class="muted">'+((t.last_error||t.gate_detail||t.create_detail||'')+'').slice(0,160)+'</td></tr>';
+  }
+  document.getElementById('mission-result').innerHTML=h+'</tbody></table>';
+}
+async function missionReal(){
+  if(!MISSION_PLAN){alert('先生成计划');return}
+  if(!confirm('真实派工会创建工单和 worktree（会写 .worktrees/）。继续？'))return;
+  const st=document.getElementById('mission-status'); st.textContent='真实派工中…';
+  const r=await fetch('/api/mission/dispatch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:MISSION_PLAN,parallel:3,create:true})});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">派工失败：'+(j.error||'')+'</div>';return}
+  renderMissionState(j.state);
+  addLog('Mission 真实派工：created '+(j.created||[]).join(','),'lg-b');
+}
+async function missionAdvance(){
+  const mid=(MISSION_PLAN&&MISSION_PLAN.mission_id)||'';
+  if(!mid){alert('先生成计划');return}
+  const st=document.getElementById('mission-status'); st.textContent='推进中（检测提交 + 评审门）…';
+  const r=await fetch('/api/mission/advance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:mid})});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">推进失败：'+(j.error||'')+'</div>';return}
+  renderMissionState(j.state);
+  addLog('Mission 推进：merged '+(j.merged||[]).join(',')+' failed '+(j.failed||[]).join(','),'lg-b');
+}
+document.getElementById('mission-real-btn').onclick=missionReal;
+document.getElementById('mission-advance-btn').onclick=missionAdvance;
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);

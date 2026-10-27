@@ -5,6 +5,8 @@
   python -X utf8 tools/mission.py plan --name "任务名" --doc doc.md [--no-llm] [--json]
   python -X utf8 tools/mission.py dry-run --plan work/missions/<id>/plan.json [--json]
   python -X utf8 tools/mission.py dry-run --mission <id> [--json]
+  python -X utf8 tools/mission.py dispatch --mission <id> [--parallel 3] [--json]
+  python -X utf8 tools/mission.py advance --mission <id> [--json]
   python -X utf8 tools/mission.py list [--json]
 """
 from __future__ import annotations
@@ -33,6 +35,13 @@ def main(argv=None) -> int:
     d.add_argument("--mission", default="")
     d.add_argument("--parallel", type=int, default=3)
     d.add_argument("--json", action="store_true")
+    dsp = sub.add_parser("dispatch")
+    dsp.add_argument("--mission", required=True)
+    dsp.add_argument("--parallel", type=int, default=3)
+    dsp.add_argument("--json", action="store_true")
+    adv = sub.add_parser("advance")
+    adv.add_argument("--mission", required=True)
+    adv.add_argument("--json", action="store_true")
     l = sub.add_parser("list")
     l.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
@@ -71,6 +80,23 @@ def main(argv=None) -> int:
             if res["conflicts"]:
                 print("scope conflicts:", json.dumps(res["conflicts"], ensure_ascii=False))
         return 0 if res["ok"] else 1
+
+    if args.cmd == "dispatch":
+        plan = P.load_plan(args.mission)
+        res = D.dispatch(plan, args.parallel, create=True)
+        print(json.dumps(res, ensure_ascii=False, indent=1) if args.json else
+              "mission %s created=%s parallel=%s" % (res.get("mission_id"),
+                                                      res.get("created"), res.get("parallel_limit")))
+        return 0 if res.get("ok") else 1
+
+    if args.cmd == "advance":
+        res = D.advance(args.mission)
+        print(json.dumps(res, ensure_ascii=False, indent=1) if args.json else
+              "mission %s merged=%s failed=%s created=%s" % (res.get("mission_id"),
+                                                              res.get("merged"),
+                                                              res.get("failed"),
+                                                              res.get("created")))
+        return 0 if res.get("ok") else 1
 
     rows = P.list_missions()
     print(json.dumps(rows, ensure_ascii=False, indent=1) if args.json else
