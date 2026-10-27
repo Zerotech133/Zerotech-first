@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 16,
+  "workorders_doing": 15,
   "workorders_review": 2
  },
  "workorders": [
@@ -156,15 +156,6 @@
    "branch": "task/WO-LCS1-BASELINE-20261027",
    "created": "2026-10-27 15:44:23",
    "project": "quant"
-  },
-  {
-   "id": "WO-O2B-TOOLDOCS-20261027",
-   "desc": "O2 收尾：补工具层第二份文档（10 工具操作手册），把 quality_scale tool 对象 docs_depth 补齐升 Silver；不改运行代码",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O2B-TOOLDOCS-20261027",
-   "created": "2026-10-27 15:51:43",
-   "project": "portal"
   },
   {
    "id": "WO-AUTHORITY-A1-ORG-20261027",
