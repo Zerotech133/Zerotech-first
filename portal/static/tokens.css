@@ -58,6 +58,16 @@
   --r-s: 6px; --r-m: 10px; --r-l: 14px; --r-pill: 16px;
   --page-w: 1080px;  /* 内容区统一宽度（=首页标准，2026-10-13）*/
 
+  /* ── UI/UX Week1：焦点/阴影/层级/动效（2026-10-27）── */
+  --color-focus: var(--blu-500);
+  --shadow-1: 0 2px 8px rgba(0, 0, 0, .28);
+  --shadow-2: 0 10px 28px rgba(0, 0, 0, .45);
+  --z-nav: 99;
+  --z-dropdown: 100;
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --ease-standard: cubic-bezier(.2, 0, 0, 1);
+
   /* ── 字体（2026-10-12 补：此前无全局字体，market.html 等裸奔页退化为浏览器衬线字）── */
   --font-ui:   'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
   --font-mono: Consolas, 'Courier New', monospace;
@@ -65,4 +75,20 @@
 
 body { font-family: var(--font-ui); }
 code, pre, .mono { font-family: var(--font-mono); }
+
+/* 全局键盘焦点（可访问性默认；页面可覆盖但不得移除） */
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* 尊重系统减少动效设置（无障碍） */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 

@@ -7,15 +7,17 @@
 if(document.documentElement.getAttribute('data-wb-nav')==='1')return;
 document.documentElement.setAttribute('data-wb-nav','1');
 var NAV={"sections": [["quant", "📈 量化", "/quant"], ["intel", "🕵️ 情报", "/intel"], ["creator", "🎬 创作", "/creator"], ["dev", "💻 开发", "/dev"], ["ops", "⚙️ 系统", "/ops"]], "groups": {"quant": [["🌅 盘前与驾驶", [["📺 数据大屏", "/screen", "screen"], ["🌅 盘前", "/premarket", "pre"], ["🌇 盘后复盘", "/afterhours", "afterhours"], ["💰 金融驾驶舱", "/fin", "fin"], ["🎯 量化驾驶舱", "/quant-drill", "quantdrill"], ["🔍 个股分析", "/sa", "sa"], ["💬 查数", "/nl", "nl"]]], ["🚀 指挥", [["🚀 驾驶舱", "/bridge", "bridge"], ["🦸 超级助手", "/hermes/", "hermes"], ["🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"], ["🧠 智策 OS", "http://127.0.0.1:5175", "zhice"], ["🤖 AI 市场", "/aim", "aim"], ["🛒 算法市场", "/algo", "algo"], ["🏛 组织架构 🚧", "/org", "org"]]], ["🎖 策略资产", [["🎖 策略中心", "/strategies", "strategies"], ["🌊 青萍之末 🚧", "/bt-qpzm", "qpzm"], ["🔔 订阅推送", "/bt/subscribe", "subscribe"], ["🧭 缠论", "/bt-chanlun", "chanlun"], ["🧪 TBE 分层", "/bt-tbe", "tbe"], ["⚔ 量子双刀", "/qd/", "qd"], ["🛟 预警池", "/bt-chanlun-pool", "chanlun-pool"], ["🔗 三线联动", "/bt-linkage", "linkage"], ["📚 弱于板块案例", "/bt-weak", "cases"], ["🧮 九维", "/bt-9dim", "9dim"], ["🎯 共振", "/bt-cross", "cross"], ["🏛 投委会", "/council", "council"], ["♠ 操盘锦标赛", "/sim", "sim"], ["🎤 辩论室", "/debate", "debate"]]], ["🚦 实盘跟踪", [["🎯 今日选股", "/picks.html", "picks"], ["🚦 信号", "/bt-signals", "signals"], ["💼 持仓", "/bt-positions", "positions"], ["🧾 模拟仓", "/paper", "paper"], ["🛒 策略市场 🚧", "/market-strategy", "market-strategy"], ["📊 绩效市场 🚧", "/market", "market"], ["📄 报告", "/bt-report", "report"], ["🎯 卖点研判", "/sellpoint", "sellpoint"]]], ["🧰 研究与数据", [["🎯 选股中心", "/bt", "bt"], ["⚔ 板块强弱", "/strong", "strong"], ["🌾 期货量化", "/fut", "fut"], ["📊 寻优", "/bt-opt", "opt"], ["🔥 板块", "/bt-sectors", "sectors"], ["🗄 数据仓", "/bt-data-health", "data-health"]]]], "intel": [["📡 情报流", [["🏠 情报工作台", "/intel", "intel"], ["📰 新闻证据流", "/intel/stream", "intelstream"], ["🤖 AI 晨报", "/bt-brief", "brief"], ["⚖️ JEV 判断", "/bt-jev", "jev"], ["🩺 四件套观测", "/stack", "jevstack"]]], ["🧪 雪球舆情", [["📰 情报日报", "/xq_intel.html", "xqintel"], ["📊 数据日报", "/data_daily.html", "dailydata"], ["📰 新闻情报", "/news_intel.html", "newsintel"]]], ["🕸 知识图谱", [["🎯 知识画布", "/kg/canvasv2", "kgcanvas"], ["🗺 作战地图", "/kg/battle", "kgbattle"], ["📰 事件图谱", "/kg/events", "kgevents"], ["🕸 图谱探索", "/kg", "kg"], ["💬 图谱问答", "/kg/ask", "kgask"], ["💰 游资地图", "/kg/map", "kgmap"], ["🧨 板块工单", "/kg/flow", "kgflow"], ["🖊 画图标注", "/kg/label", "kglabel"], ["🃏 推演卡", "/kg/card", "kgcard"], ["👁 影子面板", "/kg/shadow", "kgshadow"], ["🏢 公司 360", "/kg/company", "kgcompany"], ["📚 图谱词条", "/kg/lexicon", "kglexicon"], ["📄 图谱文档", "/kg/doc", "kgdoc"]]], ["🧬 数据血缘", [["🧬 血缘总览", "/lineage.html", "lineage"]]], ["💼 情报变现", [["🛰 推送中台", "/push/", "pushhub"], ["📨 通知指挥", "/notify-command", "notifycmd"], ["📋 运维对账", "/ops-board", "opsboard"], ["🔐 我的订阅", "/my-subscription", "mysub"], ["📊 订阅运营", "/sub-admin", "subadmin"]]]], "creator": [[null, [["🎬 创作专项", "/creator", "creator"], ["📝 公众号草稿", "/gzh", "gzh"], ["🎞 短视频成片", "/vd", "vd"]]]], "dev": [[null, [["💻 开发者专项", "/dev", "dev"]]], ["🎓 零界学院", [["🎓 零界学院", "/academy", "academy"]]]], "ops": [["🛰 数据运营", [["🎛 数据指挥台", "/dataops", "dataops"]]], ["🪖 军团", [["🏛 组织架构 🚧", "/org", "org"], ["✅ 审批注册表", "/approvals", "approvals"], ["🧩 能力看板", "/capability", "capability"], ["📈 投研绩效", "/perf", "perf"], ["🛡 审计状态", "/audit", "audit"]]], ["⚙️ 系统运维", [["🖥 个人 OS 入口", "/os-entry", "os-entry"], ["🖥 指挥大屏", "/os-board", "os-board"], ["📚 学习成长", "/learn", "learn"], ["🛰 助理雷达", "/radar", "radar"], ["📊 方法库", "/methods", "methods"], ["📊 数据仪表盘", "/dashboard", "dashboard"], ["🎛 OS 控制台", "/ops", "opshome"], ["⚡ 动作流中心", "/flow", "flow"], ["🖥 系统自检", "/sys-health", "sys"]]]]}};
-var PILL='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:999px;color:#8b949e;font-size:12.5px;text-decoration:none;background:#0d1117';
-var PILL_ON=PILL.slice(0,-1)+';color:#e6edf3;border-color:#58a6ff;font-weight:600';
+var CSS='/static/nav.css';
+if(!document.querySelector('link[data-wb-nav-css]')){
+ var lk=document.createElement('link');lk.rel='stylesheet';lk.href=CSS;lk.setAttribute('data-wb-nav-css','1');document.head.appendChild(lk);
+}
 function grp(label,items,cur){
  var h='';
- if(label)h+='<div style="color:#8b949e;font-size:10px;letter-spacing:1px;margin:5px 0 3px">'+label+'</div>';
- h+='<div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;line-height:2">';
+ if(label)h+='<div class="wb-nav-group-label">'+label+'</div>';
+ h+='<div class="wb-nav-group-links">';
  items.forEach(function(it){
   var on=cur&&it[2]===cur;
-  h+=on?'<span style="color:#e6edf3;font-weight:600">'+it[0]+'</span>':'<a href="'+it[1]+'" style="color:#58a6ff;text-decoration:none">'+it[0]+'</a>';
+  h+=on?'<span class="wb-nav-current">'+it[0]+'</span>':'<a class="wb-nav-link" href="'+it[1]+'">'+it[0]+'</a>';
  });
  return h+'</div>';
 }
@@ -30,32 +32,30 @@ document.addEventListener('DOMContentLoaded',function(){
    });
   });
  });
- var bar=document.createElement('div');
- bar.style.cssText='position:sticky;top:0;z-index:99;display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 14px;background:rgba(13,17,23,.92);border-bottom:1px solid #30363d;backdrop-filter:blur(6px)';
- var BACK='display:inline-block;padding:6px 13px;border:1px solid #d29922;border-radius:999px;color:#d29922;font-size:12.5px;text-decoration:none;background:#0d1117;font-weight:600;cursor:pointer';
+ var bar=document.createElement('div');bar.className='wb-nav';
  var FLOW=[['🤖 晨报','/bt-brief'],['🌅 盘前','/premarket'],['🚦 信号','/bt-signals'],['📺 大屏','/screen'],['🌇 盘后','/afterhours'],['📰 日报','/xq_intel.html'],['🧾 模拟仓','/paper'],['🏛 门面','/']];
- var flow='<span style="color:#d29922;font-size:11px;letter-spacing:1px;font-weight:600">⚡ 动线</span>';
+ var flow='<span class="wb-nav-flow-label">⚡ 动线</span>';
  FLOW.forEach(function(f){
   var on=path===f[1];
-  flow+='<a href="'+f[1]+'" style="'+(on?PILL_ON.replace('#58a6ff','#d29922'):PILL)+'">'+f[0]+'</a>';
+  flow+='<a class="wb-nav-pill wb-nav-flow'+(on?' is-active':'')+'" href="'+f[1]+'">'+f[0]+'</a>';
  });
- bar.innerHTML=flow+'<span style="color:#30363d;margin:0 4px">|</span><a href="/" style="'+PILL+'">🏛 零界门面</a><a href="/portal" style="'+PILL+'">🗂 门户</a>';
+ bar.innerHTML=flow+'<span class="wb-nav-sep">|</span>'<a class="wb-nav-pill" href="/">🏛 零界门面</a><a class="wb-nav-pill" href="/portal">🗂 门户</a>';
  NAV.sections.forEach(function(s){
   var on=cur&&sec===s[0];
-  var dd='<details style="position:relative;display:inline-block"><summary style="'+(on?PILL_ON:PILL)+'";cursor:pointer;list-style:none">'+s[1]+'<span style="font-size:9px"> ▾</span></summary><div style="position:absolute;left:0;top:calc(100% + 6px);z-index:100;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:8px 14px 10px;min-width:320px;box-shadow:0 10px 28px rgba(0,0,0,.45)">'+(NAV.groups[s[0]]||[]).map(function(g){return grp(g[0],g[1],cur);}).join('')+'</div></details>';
+  var dd='<details class="wb-nav-details"><summary class="wb-nav-pill'+(on?' is-active':'')+'">'+s[1]+'<span class="wb-nav-caret"> ▾</span></summary><div class="wb-nav-dropdown">'+(NAV.groups[s[0]]||[]).map(function(g){return grp(g[0],g[1],cur);}).join('')+'</div></details>';
   bar.innerHTML+=dd;
  });
  if(path!=='/'&&path!=='/index.html'){
   var backBtn=document.createElement('a');
   backBtn.href='javascript:void(0)';
   backBtn.title='返回上一页';
-  backBtn.style.cssText=BACK;
+  backBtn.className='wb-nav-back';
   backBtn.textContent='← 返回';
   backBtn.addEventListener('click',function(){
    if(history.length>1){history.back();}else{location.href='/';}});
   bar.insertBefore(backBtn,bar.firstChild);
   var sep0=document.createElement('span');
-  sep0.style.cssText='color:#30363d;margin:0 3px';
+  sep0.className='wb-nav-sep';
   sep0.textContent='|';
   bar.insertBefore(sep0,bar.firstChild);
  }
