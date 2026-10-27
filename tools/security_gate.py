@@ -30,7 +30,7 @@ SECRETS = [
     ("bearer_token", re.compile(r"Bearer\s+[A-Za-z0-9._-]{20,}")),
 ]
 SKIP_NAMES = {"_scan_secrets_selftest.py"}  # 扫描器自测夹具，避免自命中
-IGNORE_MARKERS = ("security-gate:ignore", "nosec")
+IGNORE_MARKERS = ("security-gate:ignore", "nosec", "noqa: S")
 DANGER_CALLS = {"eval": "high", "exec": "high", "os.system": "high"}
 DANGER_KW = {"shell": "high", "verify": "medium"}
 

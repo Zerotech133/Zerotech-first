@@ -37,6 +37,6 @@ def test_ignore_marker(tmp_path):
 
 def test_selftest_skipped(tmp_path):
     f = tmp_path / "_scan_secrets_selftest.py"
-    f.write_text("KEY = 'sk-abcdefghijklmnopqrstuvwxyz123456'\n", encoding="utf-8")
+    f.write_text("KEY = 'sk-abcdefghijklmnopqrstuvwxyz123456'\n", encoding="utf-8")  # security-gate:ignore
     res = G.scan(paths=[str(f)], all_files=True)
     assert res["total"] == 0
