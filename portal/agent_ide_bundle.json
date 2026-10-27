@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 17:10",
+ "generated": "2026-10-27 17:12",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -3558,7 +3558,7 @@
    },
    "memory": {
     "decision": {
-     "count": 54,
+     "count": 55,
      "recent": [
       {
        "ts": "",
@@ -3694,7 +3694,7 @@
    },
    "memory": {
     "decision": {
-     "count": 54,
+     "count": 55,
      "recent": [
       {
        "ts": "",
