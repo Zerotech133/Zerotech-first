@@ -293,6 +293,18 @@ def test_refresh_calendar_all_missing_raises(tmp_path):
         hm.refresh_calendar(export_dir=tmp_path / "nope", hk_dir=tmp_path)
 
 
+# ---------------- B1：HK_PAPER_DB 环境变量（副本跑批） ----------------
+
+
+def test_paper_db_env_override(tmp_path, monkeypatch):
+    """B1：HK_PAPER_DB 指向副本库；未设置时回退生产默认库。"""
+    monkeypatch.delenv("HK_PAPER_DB", raising=False)
+    assert hm._paper_db() == hm.DEFAULT_DB
+    target = tmp_path / "copy" / "paper.db"
+    monkeypatch.setenv("HK_PAPER_DB", str(target))
+    assert hm._paper_db() == target
+
+
 # ---------------- T+0（2026-10-27 拍板 D2-A：HK config t_plus=0） ----------------
 
 
