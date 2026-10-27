@@ -1217,6 +1217,11 @@ def _alert_acceptable_days(today):
 # 与 news_collector/alert_push.py 对齐，避免两端漂移。
 ALERT_FRESH_WINDOW = datetime.timedelta(
     minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "1080")))
+# 2026-10-27 OS-FIX-WEAKFRESH：weak（弱于板块）是**周频源**（周一 15:35），
+# 日级 acceptable_days={今天,上一交易日} 会让它周二至周日恒 stale（实测 10-27
+# business_date=10-23 被判 stale）。周频源单独放宽到 8 天：business_date/anchor
+# 在 8 天内视为当期，>8 天仍判真断更。
+WEEKLY_SOURCE_MAX_AGE = datetime.timedelta(days=8)
 
 
 def _read_weak_scan_marker():
@@ -1278,7 +1283,7 @@ def _alert_source_health():
         except ValueError:
             return None
 
-    def dated(name, raw_day, raw_time=None, empty=False):
+    def dated(name, raw_day, raw_time=None, empty=False, weekly=False):
         day = _alert_business_day(raw_day)
         anchor = producer_time(raw_time)
         biz = day.isoformat() if day is not None else None
@@ -1294,6 +1299,14 @@ def _alert_source_health():
             mark(name, "error", "invalid_anchor", business_date=biz)
         elif anchor_day > today or anchor > now + ALERT_FRESH_WINDOW:
             mark(name, "error", "future_anchor", business_date=biz)
+        elif weekly:
+            # 周频源：business_date 与完成时间都在 8 天内即当期；>8 天真断更。
+            if ((today - day).days > 8
+                    or now - anchor > WEEKLY_SOURCE_MAX_AGE):
+                mark(name, "stale", "stale_anchor", anchor, business_date=biz)
+            else:
+                mark(name, "empty" if empty else "ok", None, anchor,
+                     business_date=biz)
         elif day not in acceptable_days:
             # 2026-10-26 EXEC-R36：business_date 只允许「今天 ∪ 上一交易日」；
             # 更早 = 真断更仍拒收（周末/节后开盘前的上一交易日 EOD 批次属正常）。
@@ -1379,8 +1392,9 @@ def _alert_source_health():
     print("[alert_health] weak source: marker=%s"
           % ("hit" if marker else "miss"))
     if marker and marker.get("trade_date") and marker.get("completed_at"):
+        # 2026-10-27 OS-FIX-WEAKFRESH：weak 周频（周一生产），按 weekly 口径判定。
         dated("weak", marker.get("trade_date"), marker.get("completed_at"),
-              empty=marker.get("case_count") == 0)
+              empty=marker.get("case_count") == 0, weekly=True)
     else:
         weak_paths = [path for path in glob.glob(os.path.join(
             STATION, "reports", "weak_track_*.jsonl"))

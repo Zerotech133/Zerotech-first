@@ -288,7 +288,8 @@ class AlertSourceHealthTests(unittest.TestCase):
                     "previous_day",
                     (now - datetime.timedelta(days=1)).date(),
                     now - datetime.timedelta(days=1),
-                    ("stale_anchor",),
+                    # 2026-10-26 EXEC-R36 口径：上一交易日批次属当期，不再 stale。
+                    (),
                 ),
                 (
                     "weekend_previous_friday",
@@ -307,8 +308,12 @@ class AlertSourceHealthTests(unittest.TestCase):
                         },
                     )
                     health = api.build_alerts()["source_health"]["sources"]["nine_dim"]
-                    self.assertNotIn(health["status"], ("ok", "empty"))
-                    self.assertIn(health["reason"], expected)
+                    if label == "previous_day":
+                        self.assertIn(health["status"], ("ok", "empty"))
+                        self.assertIsNone(health["reason"])
+                    else:
+                        self.assertNotIn(health["status"], ("ok", "empty"))
+                        self.assertIn(health["reason"], expected)
                     self.assertEqual(health["business_date"], day.isoformat())
 
     def test_malformed_json_cannot_become_empty(self):
@@ -364,6 +369,44 @@ class AlertSourceHealthTests(unittest.TestCase):
                 self.assertEqual(sources[name]["as_of"], stamp, sources[name])
                 self.assertEqual(sources[name]["business_date"], day, sources[name])
 
+    def test_weekly_weak_marker_within_8_days_is_current(self):
+        """weak 周频：business_date=2 天前、completed_at=1 天前 → ok（周二至周日不再恒 stale）。"""
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+        day = (now - datetime.timedelta(days=2)).date().isoformat()
+        stamp = (now - datetime.timedelta(days=1)).isoformat(timespec="seconds")
+        self.write_json(
+            os.path.join(self.weak, "weak_scan_last.json"),
+            {
+                "schema": "weak_scan_last/v1",
+                "completed_at": stamp,
+                "trade_date": day,
+                "source": "test",
+                "case_count": 1,
+            },
+        )
+        source = api.build_alerts()["source_health"]["sources"]["weak"]
+        self.assertEqual(source["status"], "ok", source)
+        self.assertEqual(source["business_date"], day, source)
+
+    def test_weekly_weak_marker_older_than_8_days_is_stale(self):
+        """weak 周频：完成时间 >8 天 → 真断更仍 stale。"""
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+        day = (now - datetime.timedelta(days=10)).date().isoformat()
+        stamp = (now - datetime.timedelta(days=9)).isoformat(timespec="seconds")
+        self.write_json(
+            os.path.join(self.weak, "weak_scan_last.json"),
+            {
+                "schema": "weak_scan_last/v1",
+                "completed_at": stamp,
+                "trade_date": day,
+                "source": "test",
+                "case_count": 0,
+            },
+        )
+        source = api.build_alerts()["source_health"]["sources"]["weak"]
+        self.assertEqual(source["status"], "stale", source)
+        self.assertEqual(source["reason"], "stale_anchor", source)
+
     def test_cross_council_without_producer_timestamps_stay_unproven(self):
         """缺 completed_at/trade_date 或行级 ts → 维持 stale/unproven，不猜 mtime。"""
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
@@ -384,7 +427,7 @@ class AlertSourceHealthTests(unittest.TestCase):
         旧日"的读感：两个字段分开给出，前端可同时显示业务日与完成时间。
         """
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-        old_day = (now - datetime.timedelta(days=1)).date().isoformat()
+        old_day = (now - datetime.timedelta(days=7)).date().isoformat()
         self.write_json(
             os.path.join(self.data, "nine_dim_scores.json"),
             {"trade_date": old_day, "generated_at": now.isoformat(), "n_alert": 0},
