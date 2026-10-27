@@ -14,12 +14,15 @@ def main(argv=None):
     parser.add_argument("--history", metavar="PATH")
     parser.add_argument("--pool-path", action="append", metavar="PATH")
     args = parser.parse_args(argv)
-    history = args.history if args.history is not None else str(
-        probe.PORTAL_HISTORY / f"todays_{args.trade_date}.json"
+    history = (
+        args.history
+        if args.history is not None
+        else str(probe.PORTAL_HISTORY / f"todays_{args.trade_date}.json")
     )
     try:
-        observation = probe.inspect(args.trade_date, pool_paths=args.pool_path,
-                                    history_path=history)
+        observation = probe.inspect(
+            args.trade_date, pool_paths=args.pool_path, history_path=history
+        )
         comparison = evaluate_comparison(observation)
     except (ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)

@@ -5,14 +5,14 @@
 不触真实 127.0.0.1 端口。范式照抄 test_dashboard_api.py（FakeHandler
 + _send_json 捕获）。
 """
+
 import io
 import socket
 import sys
 import os
 
 
-QUANT_BT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+QUANT_BT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if QUANT_BT not in sys.path:
     sys.path.insert(0, QUANT_BT)
 
@@ -21,23 +21,19 @@ from strategy_layer import dashboard_api  # noqa: E402
 
 def _all_ok_probes(monkeypatch):
     """全通替身：HTTP 探 12ms、TCP 探 3ms。"""
-    monkeypatch.setattr(dashboard_api, "_probe_http",
-                        lambda port, timeout: 12)
-    monkeypatch.setattr(dashboard_api, "_probe_tcp",
-                        lambda port, timeout: 3)
+    monkeypatch.setattr(dashboard_api, "_probe_http", lambda port, timeout: 12)
+    monkeypatch.setattr(dashboard_api, "_probe_tcp", lambda port, timeout: 3)
 
 
 # ── health_payload：结构契约 ─────────────────────────────────────────
 class TestHealthPayload:
-
     def test_all_ok(self, monkeypatch):
         _all_ok_probes(monkeypatch)
         payload = dashboard_api.health_payload()
         assert payload["ok"] is True
         assert payload["ts"]
         names = [c["name"] for c in payload["checks"]]
-        assert names == ["portal", "gateway", "quantapi", "ollama",
-                         "dashboard"]
+        assert names == ["portal", "gateway", "quantapi", "ollama", "dashboard"]
         for c in payload["checks"]:
             assert set(c) == {"port", "name", "ok", "latency_ms", "err"}
             assert c["ok"] is True
@@ -67,21 +63,21 @@ class TestHealthPayload:
         payload = dashboard_api.health_payload()
         # 8791 从未被探测（探测仅外部四项，且本替身中均走 TCP/HTTP 桩）
         assert 8791 not in calls
-        self_entry = [c for c in payload["checks"]
-                      if c["name"] == "dashboard"][0]
+        self_entry = [c for c in payload["checks"] if c["name"] == "dashboard"][0]
         assert self_entry["ok"] is True
         assert self_entry["latency_ms"] == 0
         assert self_entry["err"] is None
 
     def test_portal_refused_isolated(self, monkeypatch):
         """8091 拒绝：该项 ok:false + err，其余项不受阻塞照常探测。"""
+
         def refused(port, timeout):
             raise ConnectionRefusedError(
-                "[WinError 10061] 由于目标计算机积极拒绝，无法连接。")
+                "[WinError 10061] 由于目标计算机积极拒绝，无法连接。"
+            )
 
         monkeypatch.setattr(dashboard_api, "_probe_http", refused)
-        monkeypatch.setattr(dashboard_api, "_probe_tcp",
-                            lambda port, timeout: 3)
+        monkeypatch.setattr(dashboard_api, "_probe_tcp", lambda port, timeout: 3)
         payload = dashboard_api.health_payload()
         assert payload["ok"] is True  # 端点自身恒 ok（靠 checks 表达健康）
         by_name = {c["name"]: c for c in payload["checks"]}
@@ -96,11 +92,11 @@ class TestHealthPayload:
 
     def test_tcp_timeout(self, monkeypatch):
         """TCP 探测超时：ok:false + err 含超时信息。"""
+
         def slow(port, timeout):
             raise socket.timeout("timed out")
 
-        monkeypatch.setattr(dashboard_api, "_probe_http",
-                            lambda port, timeout: 5)
+        monkeypatch.setattr(dashboard_api, "_probe_http", lambda port, timeout: 5)
         monkeypatch.setattr(dashboard_api, "_probe_tcp", slow)
         payload = dashboard_api.health_payload()
         by_name = {c["name"]: c for c in payload["checks"]}
@@ -116,8 +112,7 @@ class TestHealthPayload:
             raise socket.timeout("timed out")
 
         monkeypatch.setattr(dashboard_api, "_probe_http", slow)
-        monkeypatch.setattr(dashboard_api, "_probe_tcp",
-                            lambda port, timeout: 3)
+        monkeypatch.setattr(dashboard_api, "_probe_tcp", lambda port, timeout: 3)
         payload = dashboard_api.health_payload()
         p = [c for c in payload["checks"] if c["name"] == "portal"][0]
         assert p["ok"] is False and "timed out" in p["err"]
@@ -127,8 +122,7 @@ class TestHealthPayload:
             raise ConnectionResetError()
 
         monkeypatch.setattr(dashboard_api, "_probe_http", boom)
-        monkeypatch.setattr(dashboard_api, "_probe_tcp",
-                            lambda port, timeout: 3)
+        monkeypatch.setattr(dashboard_api, "_probe_tcp", lambda port, timeout: 3)
         payload = dashboard_api.health_payload()
         p = [c for c in payload["checks"] if c["name"] == "portal"][0]
         assert p["ok"] is False
@@ -153,6 +147,7 @@ class TestHealthPayload:
 
     def test_no_probe_failure_escapes(self, monkeypatch):
         """任意单项探测抛任意异常都不逃逸（恒有完整 checks 结构）。"""
+
         def boom(port, timeout):
             raise RuntimeError("kaboom")
 
@@ -161,8 +156,9 @@ class TestHealthPayload:
         payload = dashboard_api.health_payload()
         assert payload["ok"] is True
         assert len(payload["checks"]) == 5
-        assert all(c["ok"] is False for c in payload["checks"]
-                   if c["name"] != "dashboard")
+        assert all(
+            c["ok"] is False for c in payload["checks"] if c["name"] != "dashboard"
+        )
 
 
 # ── register_routes：/api/health 路由层 ──────────────────────────────
@@ -199,12 +195,15 @@ class FakeHandler:
 
 
 class TestHealthRoute:
-
     def setup_method(self):
-        self.handler_cls = type("Handler", (FakeHandler,), {
-            "do_GET": FakeHandler.do_GET,
-            "do_POST": FakeHandler.do_POST,
-        })
+        self.handler_cls = type(
+            "Handler",
+            (FakeHandler,),
+            {
+                "do_GET": FakeHandler.do_GET,
+                "do_POST": FakeHandler.do_POST,
+            },
+        )
 
     def _send_capture(self, monkeypatch):
         captured = []
@@ -225,10 +224,16 @@ class TestHealthRoute:
         assert code == 200
         assert payload["ok"] is True
         assert [c["name"] for c in payload["checks"]] == [
-            "portal", "gateway", "quantapi", "ollama", "dashboard"]
+            "portal",
+            "gateway",
+            "quantapi",
+            "ollama",
+            "dashboard",
+        ]
 
     def test_health_route_never_500(self, monkeypatch):
         """health_payload 意外炸掉 → 仍 200 降级返回（探针不放大故障）。"""
+
         def boom():
             raise RuntimeError("probe exploded")
 

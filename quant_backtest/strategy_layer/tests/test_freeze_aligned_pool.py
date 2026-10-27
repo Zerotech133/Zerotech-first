@@ -6,6 +6,7 @@
 契约：签发/消费业务日必须与全部源行 detect_date（YYYY-MM-DD）严格一致；
 不一致 → REJECTED + 非零退出 + 不写出任何可被误读为成功的 manifest。
 """
+
 import json
 import os
 import re
@@ -25,8 +26,9 @@ def _rows(day: str) -> list[dict]:
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> bytes:
-    raw = "".join(json.dumps(row, ensure_ascii=False) + "\n"
-                  for row in rows).encode("utf-8")
+    raw = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows).encode(
+        "utf-8"
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(raw)
     return raw
@@ -40,8 +42,9 @@ def _run(tmp_path, raw_or_rows, business_day, name="src/pool.jsonl"):
         src.parent.mkdir(parents=True, exist_ok=True)
         src.write_bytes(raw_or_rows)
     work = tmp_path / "work"
-    code = main(["--source", str(src), "--business-day", business_day,
-                 "--work-dir", str(work)])
+    code = main(
+        ["--source", str(src), "--business-day", business_day, "--work-dir", str(work)]
+    )
     return src, work, code
 
 
@@ -53,10 +56,15 @@ def test_aligned_freeze_happy_path(tmp_path, capsys):
     assert manifest["freeze_basis"] == "point_in_time_freeze_of_live_pool_file"
     assert manifest["business_date"] == "20261020"
     assert _DAY_RE.fullmatch(manifest["observed_date"])
-    assert manifest["event_count"] == 2 == len(
-        src.read_text(encoding="utf-8").strip().split("\n"))
-    assert manifest["source_sha256"] == __import__("hashlib").sha256(
-        src.read_bytes()).hexdigest()
+    assert (
+        manifest["event_count"]
+        == 2
+        == len(src.read_text(encoding="utf-8").strip().split("\n"))
+    )
+    assert (
+        manifest["source_sha256"]
+        == __import__("hashlib").sha256(src.read_bytes()).hexdigest()
+    )
     assert (work / "source_batch.jsonl").read_bytes() == src.read_bytes()
     assert manifest["source_path"] == str(work / "source_batch.jsonl")
 
@@ -103,8 +111,9 @@ def test_invalid_business_day_rejected(tmp_path, capsys):
 def test_malformed_json_row_rejected(tmp_path, capsys):
     """坏 JSON 行 → REJECTED + 非零退出 + 无 manifest（与验签层同口径）。"""
     rows = _rows("20261020")
-    raw = ("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
-           + "{not json}\n").encode("utf-8")
+    raw = (
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows) + "{not json}\n"
+    ).encode("utf-8")
     _, work, code = _run(tmp_path, raw, "20261020")
     assert code != 0
     assert not (work / "manifest.json").exists()
@@ -116,8 +125,16 @@ def test_source_file_untouched(tmp_path):
     src = tmp_path / "src" / "pool.jsonl"
     raw = _write_jsonl(src, _rows("20261020"))
     before = (raw, src.stat().st_mtime)
-    code = main(["--source", str(src), "--business-day", "20261020",
-                 "--work-dir", str(tmp_path / "work")])
+    code = main(
+        [
+            "--source",
+            str(src),
+            "--business-day",
+            "20261020",
+            "--work-dir",
+            str(tmp_path / "work"),
+        ]
+    )
     assert code == 0
     assert (src.read_bytes(), src.stat().st_mtime) == before
 
@@ -130,15 +147,28 @@ def test_cli_subprocess_exit_codes(tmp_path):
 
     def run_cli(day, work):
         return subprocess.run(
-            [sys.executable, "-m", "strategy_layer.freeze_aligned_pool",
-             "--source", str(src), "--business-day", day,
-             "--work-dir", str(work)],
-            env=env, capture_output=True, text=True, cwd=str(tmp_path))
+            [
+                sys.executable,
+                "-m",
+                "strategy_layer.freeze_aligned_pool",
+                "--source",
+                str(src),
+                "--business-day",
+                day,
+                "--work-dir",
+                str(work),
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+        )
 
     ok = run_cli("20261020", tmp_path / "w_ok")
     assert ok.returncode == 0, ok.stderr
     manifest = json.loads(
-        (tmp_path / "w_ok" / "manifest.json").read_text(encoding="utf-8"))
+        (tmp_path / "w_ok" / "manifest.json").read_text(encoding="utf-8")
+    )
     assert manifest["event_count"] == 2
 
     bad = run_cli("20261019", tmp_path / "w_bad")

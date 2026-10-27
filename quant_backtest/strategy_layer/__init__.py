@@ -22,5 +22,10 @@
 from .adapter import Registry, StrategyAdapter, bootstrap_default_adapters
 from .signal import Signal, VALID_ACTIONS
 
-__all__ = ["Signal", "VALID_ACTIONS", "StrategyAdapter", "Registry",
-           "bootstrap_default_adapters"]
+__all__ = [
+    "Signal",
+    "VALID_ACTIONS",
+    "StrategyAdapter",
+    "Registry",
+    "bootstrap_default_adapters",
+]

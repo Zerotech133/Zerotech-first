@@ -53,6 +53,7 @@ context 与输入 bars 零变更。
 CLI（手动补采/干跑）：
     python li122_shadow.py --symbol 600519.SH --date 20261016
 """
+
 import json
 import os
 import sys
@@ -84,6 +85,7 @@ def _chanlun_data():
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     import chanlun_data  # noqa: F401  导入期读 config.json（隐藏 IO），必须懒
+
     return sys.modules["chanlun_data"]
 
 
@@ -107,11 +109,13 @@ def _rulesets():
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     from chanlun_li122 import RULESETS
+
     return RULESETS
 
 
 def _signal_cls():
     from strategy_layer.signal import Signal
+
     return Signal
 
 
@@ -140,11 +144,12 @@ def resolve_as_of(trade_date=None, calendar_days=None):
       缺省走 datamart._recent_trade_days（仓库现有 provider，1h 缓存）。
     """
     dm = _datamart()
-    days = list(calendar_days) if calendar_days is not None \
-        else dm._recent_trade_days()
+    days = list(calendar_days) if calendar_days is not None else dm._recent_trade_days()
     if not days:
-        raise RuntimeError("交易日历不可用（datamart trade_cal 为空），"
-                           "as_of 无法定案，fail-visible 拒绝猜测")
+        raise RuntimeError(
+            "交易日历不可用（datamart trade_cal 为空），"
+            "as_of 无法定案，fail-visible 拒绝猜测"
+        )
     days = sorted(str(d)[:8] for d in days)
     latest_closed = dm._expected_trade_day(days)
     if not latest_closed:
@@ -154,13 +159,13 @@ def resolve_as_of(trade_date=None, calendar_days=None):
     else:
         d8 = _ymd8(trade_date)
         if d8 not in days:
-            raise ValueError("trade_date=%s 不在交易日历（非交易日），"
-                             "拒绝采集" % d8)
+            raise ValueError("trade_date=%s 不在交易日历（非交易日），拒绝采集" % d8)
         if d8 > latest_closed:
             raise ValueError(
                 "trade_date=%s 晚于最近已收盘交易日 %s——影子调度禁止 "
                 "as_of=当日/未收盘交易日（右沿判例：as_of=信号 dt 时 "
-                "122/122 现算不出信号，S3 对账）" % (d8, latest_closed))
+                "122/122 现算不出信号，S3 对账）" % (d8, latest_closed)
+            )
     return _dash(d8) + CLOSE_SUFFIX
 
 
@@ -171,8 +176,9 @@ def _fetch_kline(code, period, limit):
     cd = _chanlun_data()
     r = cd.load_kline(code, period, limit)
     if not r.get("ok"):
-        raise RuntimeError("chanlun_data.load_kline(%s, %s) 失败：%s"
-                           % (code, period, r.get("error")))
+        raise RuntimeError(
+            "chanlun_data.load_kline(%s, %s) 失败：%s" % (code, period, r.get("error"))
+        )
     return r["bars"], r.get("source", "")
 
 
@@ -187,8 +193,10 @@ def _fetch_1m(code, as_of):
     d8 = _ymd8(as_of[:10])
     y, m, d = int(d8[:4]), int(d8[4:6]), int(d8[6:])
     import datetime as _dt
-    start = (_dt.date(y, m, d)
-             - _dt.timedelta(days=ONE_MIN_LOOKBACK_CAL_DAYS)).strftime("%Y%m%d")
+
+    start = (
+        _dt.date(y, m, d) - _dt.timedelta(days=ONE_MIN_LOOKBACK_CAL_DAYS)
+    ).strftime("%Y%m%d")
     df = dm.read("stk_mins", codes=code, start=start, end=d8)
     if df is None or df.empty:
         return [], "stk_mins 空（标的可能不在本地仓）"
@@ -222,8 +230,9 @@ def _default_fetcher(code, period, as_of):
 # ---------------------------------------------------------------------- #
 # context 构造器
 # ---------------------------------------------------------------------- #
-def build_li122_context(symbol, as_of=None, agent_cls=None, fetcher=None,
-                        calendar_days=None):
+def build_li122_context(
+    symbol, as_of=None, agent_cls=None, fetcher=None, calendar_days=None
+):
     """→ (context, meta)。构造 Li122Agent 自足模式 context（四级只读）。
 
     - as_of：None → resolve_as_of()（前一交易日收盘，强约束）；
@@ -267,17 +276,25 @@ def build_li122_context(symbol, as_of=None, agent_cls=None, fetcher=None,
                 raw = [b for b in raw if b["dt"][:10] in keep]
         cut = cut_bars(raw, as_of)
         bars[p] = cut
-        entry = {"n": len(cut), "n_raw": n_raw,
-                 "source": source, "elapsed_s": round(time.time() - t0, 3)}
+        entry = {
+            "n": len(cut),
+            "n_raw": n_raw,
+            "source": source,
+            "elapsed_s": round(time.time() - t0, 3),
+        }
         if p == "1m":
             entry["bytes"] = len(json.dumps(cut, ensure_ascii=False).encode("utf-8"))
             entry["over_budget"] = entry["bytes"] > ONE_MIN_BUDGET_BYTES
         meta_periods[p] = entry
-    context = {"symbol": symbol, "as_of": as_of, "bars": bars,
-               "trace_id": TRACE_ID}
-    meta = {"symbol": symbol, "as_of": as_of, "ruleset": rule_key,
-            "periods": periods, "bars_meta": meta_periods,
-            "elapsed_s": round(time.time() - t_all, 3)}
+    context = {"symbol": symbol, "as_of": as_of, "bars": bars, "trace_id": TRACE_ID}
+    meta = {
+        "symbol": symbol,
+        "as_of": as_of,
+        "ruleset": rule_key,
+        "periods": periods,
+        "bars_meta": meta_periods,
+        "elapsed_s": round(time.time() - t_all, 3),
+    }
     return context, meta
 
 
@@ -298,11 +315,19 @@ def verdict_to_signal(verdict, trade_date):
     conf = float(getattr(verdict, "confidence", 0.0) or 0.0)
     action = "buy" if rec == "buy" else "hold"
     score = round(conf * 100.0, 2) if action == "buy" else 0.0
-    rationale = str(getattr(verdict, "rationale", "") or "").strip() \
+    rationale = (
+        str(getattr(verdict, "rationale", "") or "").strip()
         or "li122 影子采集：%s（垫片缺省依据）" % rec
-    return Signal(symbol=str(verdict.symbol), action=action, score=score,
-                  confidence=round(conf, 4), rationale=rationale,
-                  strategy=str(verdict.strategy_id), trade_date=_ymd8(trade_date))
+    )
+    return Signal(
+        symbol=str(verdict.symbol),
+        action=action,
+        score=score,
+        confidence=round(conf, 4),
+        rationale=rationale,
+        strategy=str(verdict.strategy_id),
+        trade_date=_ymd8(trade_date),
+    )
 
 
 # ---------------------------------------------------------------------- #
@@ -316,8 +341,7 @@ class Li122ShadowAdapter:
     context/bars 元数据记入 ``self.last_meta``（干跑与可观测性）。
     """
 
-    def __init__(self, symbols, agent_cls=None, fetcher=None,
-                 calendar_days=None):
+    def __init__(self, symbols, agent_cls=None, fetcher=None, calendar_days=None):
         ag = agent_cls if agent_cls is not None else _li122_agent().Li122Agent
         if not symbols:
             raise ValueError("symbols 不能为空")
@@ -334,8 +358,10 @@ class Li122ShadowAdapter:
         try:
             return self._score(trade_date)
         except Exception as exc:
-            print("[%s] 降级：影子采集打分失败，返回空信号列表: %s"
-                  % (self.strategy_id, exc))
+            print(
+                "[%s] 降级：影子采集打分失败，返回空信号列表: %s"
+                % (self.strategy_id, exc)
+            )
             return []
 
     def _score(self, trade_date):
@@ -344,12 +370,18 @@ class Li122ShadowAdapter:
         signals, self.last_meta = [], []
         for symbol in self._symbols:
             context, meta = build_li122_context(
-                symbol, as_of=td8, agent_cls=self.agent_cls,
-                fetcher=self._fetcher, calendar_days=self._calendar_days)
+                symbol,
+                as_of=td8,
+                agent_cls=self.agent_cls,
+                fetcher=self._fetcher,
+                calendar_days=self._calendar_days,
+            )
             verdict = agent.propose(context)
             sig = verdict_to_signal(verdict, td8)
-            meta["verdict"] = {"recommendation": verdict.recommendation,
-                               "confidence": verdict.confidence}
+            meta["verdict"] = {
+                "recommendation": verdict.recommendation,
+                "confidence": verdict.confidence,
+            }
             meta["signal"] = {"action": sig.action, "score": sig.score}
             self.last_meta.append(meta)
             signals.append(sig)
@@ -359,9 +391,16 @@ class Li122ShadowAdapter:
 # ---------------------------------------------------------------------- #
 # 每日采集入口
 # ---------------------------------------------------------------------- #
-def collect_li122_shadow(strategy="chanlun_li122", symbols=(), trade_date=None,
-                         *, agent_cls=None, fetcher=None, calendar_days=None,
-                         out_path=None):
+def collect_li122_shadow(
+    strategy="chanlun_li122",
+    symbols=(),
+    trade_date=None,
+    *,
+    agent_cls=None,
+    fetcher=None,
+    calendar_days=None,
+    out_path=None,
+):
     """单日影子采集：自足模式 propose → 垫片 → collect_once 幂等落档。
 
     trade_date=T（YYYYMMDD）：影子行归属日/前向收益基期日；as_of 自动
@@ -370,12 +409,15 @@ def collect_li122_shadow(strategy="chanlun_li122", symbols=(), trade_date=None,
     skipped_non_event/path）+ contexts 逐标的元数据。
     """
     from strategy_layer.onboarding import shadow_collect as sc
-    adapter = Li122ShadowAdapter(symbols, agent_cls=agent_cls,
-                                 fetcher=fetcher,
-                                 calendar_days=calendar_days)
+
+    adapter = Li122ShadowAdapter(
+        symbols, agent_cls=agent_cls, fetcher=fetcher, calendar_days=calendar_days
+    )
     if strategy and strategy != adapter.strategy_id:
-        raise ValueError("strategy=%s 与 agent strategy_id=%s 不一致"
-                         % (strategy, adapter.strategy_id))
+        raise ValueError(
+            "strategy=%s 与 agent strategy_id=%s 不一致"
+            % (strategy, adapter.strategy_id)
+        )
     if trade_date is None:
         raise ValueError("trade_date 必填（影子行归属日 YYYYMMDD）")
     res = sc.collect_once(adapter, trade_date, out_path=out_path)
@@ -392,15 +434,18 @@ def main(argv=None):
     except Exception:
         pass
     import argparse
+
     ap = argparse.ArgumentParser(description="li122 每日影子采集（干跑/补采）")
     ap.add_argument("--symbol", required=True, help="标的，如 600519.SH")
     ap.add_argument("--date", required=True, help="采集交易日 YYYYMMDD")
     ap.add_argument("--out", default=None, help="影子档路径覆写（干跑用）")
     a = ap.parse_args(argv)
-    res = collect_li122_shadow(symbols=[a.symbol], trade_date=a.date,
-                               out_path=a.out)
-    print(json.dumps({k: v for k, v in res.items() if k != "contexts"},
-                     ensure_ascii=False))
+    res = collect_li122_shadow(symbols=[a.symbol], trade_date=a.date, out_path=a.out)
+    print(
+        json.dumps(
+            {k: v for k, v in res.items() if k != "contexts"}, ensure_ascii=False
+        )
+    )
     for m in res.get("contexts", []):
         print(json.dumps(m, ensure_ascii=False))
     return 0

@@ -5,6 +5,7 @@
 恢复须经显式 repair 并先落备份。不发送、不代签、不接生产简报链；
 接入真实 R1 接收前须另行授权，且真实多进程并发验证属 R1 范围。
 """
+
 from __future__ import annotations
 
 import json
@@ -49,12 +50,14 @@ def _reject_constant(_value):
 
 
 def _valid_record(record) -> bool:
-    return (type(record) is dict
-            and set(record) == _RECORD_FIELDS
-            and type(record["message_id"]) is str
-            and type(record["claimed_at"]) is str
-            and _MSGID.fullmatch(record["message_id"]) is not None
-            and _TS.fullmatch(record["claimed_at"]) is not None)
+    return (
+        type(record) is dict
+        and set(record) == _RECORD_FIELDS
+        and type(record["message_id"]) is str
+        and type(record["claimed_at"]) is str
+        and _MSGID.fullmatch(record["message_id"]) is not None
+        and _TS.fullmatch(record["claimed_at"]) is not None
+    )
 
 
 def _parse(data: bytes) -> list[dict]:
@@ -69,15 +72,16 @@ def _parse(data: bytes) -> list[dict]:
     for line in lines:
         if not line.strip():
             raise ValueError("账本含空白行")
-        record = json.loads(line, object_pairs_hook=_unique_object,
-                            parse_constant=_reject_constant)
+        record = json.loads(
+            line, object_pairs_hook=_unique_object, parse_constant=_reject_constant
+        )
         if not _valid_record(record):
             raise ValueError("账本记录字段无效")
         records.append(record)
     return records
 
 
-_LOCK_ATTEMPTS = 50        # 有界重试：瞬态锁冲突按可重试处理
+_LOCK_ATTEMPTS = 50  # 有界重试：瞬态锁冲突按可重试处理
 _LOCK_RETRY_SECONDS = 0.05  # 最长约 2.5 秒，超限才判 UNAVAILABLE
 
 
@@ -130,8 +134,10 @@ class ReplayLedger:
         fail-closed：账本损坏或锁失败时不追加任何内容、不返回 CLAIMED。
         """
         if type(message_id) is not str or _MSGID.fullmatch(message_id) is None:
-            return {"status": _UNAVAILABLE,
-                    "reason": "message_id 须为 1-128 个可打印 ASCII"}
+            return {
+                "status": _UNAVAILABLE,
+                "reason": "message_id 须为 1-128 个可打印 ASCII",
+            }
         last_error: Exception | None = None
         try:
             # open 也在重试环内：同进程并发下 open 本身可能抛共享冲突
@@ -141,11 +147,9 @@ class ReplayLedger:
                 except OSError as exc:  # open 共享冲突/锁竞争均视为瞬态
                     last_error = exc
                     time.sleep(_LOCK_RETRY_SECONDS)
-            return {"status": _UNAVAILABLE,
-                    "reason": f"账本锁重试超限: {last_error}"}
+            return {"status": _UNAVAILABLE, "reason": f"账本锁重试超限: {last_error}"}
         except (ValueError, RuntimeError) as exc:  # 账本损坏立即 fail-closed
-            return {"status": _UNAVAILABLE,
-                    "reason": f"{type(exc).__name__}: {exc}"}
+            return {"status": _UNAVAILABLE, "reason": f"{type(exc).__name__}: {exc}"}
 
     def _claim_once(self, message_id: str) -> dict:
         with open(self._path, "a+b") as fh:
@@ -155,19 +159,25 @@ class ReplayLedger:
                 records = _parse(fh.read())
                 for record in records:
                     if record["message_id"] == message_id:
-                        return {"status": "DUPLICATE",
-                                "message_id": message_id}
+                        return {"status": "DUPLICATE", "message_id": message_id}
                 claimed_at = _utcnow()
-                payload = json.dumps(
-                    {"message_id": message_id, "claimed_at": claimed_at},
-                    sort_keys=True, separators=(",", ":"),
-                ).encode("utf-8") + b"\n"
+                payload = (
+                    json.dumps(
+                        {"message_id": message_id, "claimed_at": claimed_at},
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                    + b"\n"
+                )
                 fh.seek(0, os.SEEK_END)
                 fh.write(payload)
                 fh.flush()
                 os.fsync(fh.fileno())
-                return {"status": "CLAIMED", "message_id": message_id,
-                        "claimed_at": claimed_at}
+                return {
+                    "status": "CLAIMED",
+                    "message_id": message_id,
+                    "claimed_at": claimed_at,
+                }
             finally:
                 _unlock(fh)
 
@@ -178,14 +188,11 @@ def inspect_ledger(path: str | os.PathLike) -> dict:
     data = b""
     try:
         if not target.exists():
-            return {"status": "MISSING", "records": 0,
-                    "first_corrupt_line": None}
+            return {"status": "MISSING", "records": 0, "first_corrupt_line": None}
         data = target.read_bytes()
         _parse(data)
-        records = 0 if not data else len(
-            data.decode("utf-8").rstrip("\n").split("\n"))
-        return {"status": "OK", "records": records,
-                "first_corrupt_line": None}
+        records = 0 if not data else len(data.decode("utf-8").rstrip("\n").split("\n"))
+        return {"status": "OK", "records": records, "first_corrupt_line": None}
     except (OSError, ValueError) as exc:
         corrupt_line = None
         try:
@@ -194,9 +201,13 @@ def inspect_ledger(path: str | os.PathLike) -> dict:
                 lines.pop()
             for index, line in enumerate(lines, start=1):
                 try:
-                    if line.strip() and _valid_record(json.loads(
-                            line, object_pairs_hook=_unique_object,
-                            parse_constant=_reject_constant)):
+                    if line.strip() and _valid_record(
+                        json.loads(
+                            line,
+                            object_pairs_hook=_unique_object,
+                            parse_constant=_reject_constant,
+                        )
+                    ):
                         continue
                 except ValueError:
                     pass
@@ -204,9 +215,12 @@ def inspect_ledger(path: str | os.PathLike) -> dict:
                 break
         except (OSError, ValueError, UnicodeError):
             corrupt_line = None
-        return {"status": "CORRUPT", "records": None,
-                "first_corrupt_line": corrupt_line,
-                "reason": f"{type(exc).__name__}: {exc}"}
+        return {
+            "status": "CORRUPT",
+            "records": None,
+            "first_corrupt_line": corrupt_line,
+            "reason": f"{type(exc).__name__}: {exc}",
+        }
 
 
 def repair_ledger(path: str | os.PathLike, *, confirm: bool = False) -> dict:
@@ -233,7 +247,8 @@ def repair_ledger(path: str | os.PathLike, *, confirm: bool = False) -> dict:
                         record = json.loads(
                             raw_line.decode("utf-8"),
                             object_pairs_hook=_unique_object,
-                            parse_constant=_reject_constant)
+                            parse_constant=_reject_constant,
+                        )
                         if _valid_record(record):
                             good_end = offset + line_len
                             offset += line_len
@@ -245,7 +260,8 @@ def repair_ledger(path: str | os.PathLike, *, confirm: bool = False) -> dict:
                 if not corrupt:
                     return {"status": "NOTHING_TO_REPAIR"}
                 stamp = datetime.now(timezone.utc).strftime(
-                    "%Y%m%dT%H%M%S%fZ")  # 含微秒，同秒多次恢复不互相覆盖
+                    "%Y%m%dT%H%M%S%fZ"
+                )  # 含微秒，同秒多次恢复不互相覆盖
                 backup = target.with_name(target.name + f".bak-{stamp}")
                 with open(backup, "wb") as bf:
                     bf.write(data)
@@ -254,10 +270,12 @@ def repair_ledger(path: str | os.PathLike, *, confirm: bool = False) -> dict:
                 fh.truncate(good_end)
                 fh.flush()
                 os.fsync(fh.fileno())
-                return {"status": "REPAIRED", "backup": str(backup),
-                        "kept_bytes": good_end}
+                return {
+                    "status": "REPAIRED",
+                    "backup": str(backup),
+                    "kept_bytes": good_end,
+                }
             finally:
                 _unlock(fh)
     except (OSError, ValueError) as exc:
-        return {"status": _UNAVAILABLE,
-                "reason": f"{type(exc).__name__}: {exc}"}
+        return {"status": _UNAVAILABLE, "reason": f"{type(exc).__name__}: {exc}"}

@@ -77,24 +77,34 @@ class TestDualSourceGain:
 
     def test_agree_boost_capped_at_one(self):
         """双源一致增益封顶 1.0：0.95 * 1.15 = 1.0925 → 1.0。"""
-        assert compute_hop_confidence(0.95, 0.0, "kg", dual_source_agree=True) == pytest.approx(1.0)
+        assert compute_hop_confidence(
+            0.95, 0.0, "kg", dual_source_agree=True
+        ) == pytest.approx(1.0)
 
     def test_agree_boost_normal(self):
         """低置信 + 双源一致：0.6 * 1.15 = 0.69。"""
-        assert compute_hop_confidence(0.6, 0.0, "kg", dual_source_agree=True) == pytest.approx(0.69)
+        assert compute_hop_confidence(
+            0.6, 0.0, "kg", dual_source_agree=True
+        ) == pytest.approx(0.69)
 
     def test_conflict_discount(self):
         """双源冲突折价 0.7：0.6 * 0.7 = 0.42。"""
-        assert compute_hop_confidence(0.6, 0.0, "kg", dual_source_agree=False) == pytest.approx(0.42)
+        assert compute_hop_confidence(
+            0.6, 0.0, "kg", dual_source_agree=False
+        ) == pytest.approx(0.42)
 
     def test_none_no_change(self):
         """None（无双源信息）不变。"""
         assert compute_hop_confidence(0.6, 0.0, "kg") == pytest.approx(0.6)
-        assert compute_hop_confidence(0.6, 0.0, "kg", dual_source_agree=None) == pytest.approx(0.6)
+        assert compute_hop_confidence(
+            0.6, 0.0, "kg", dual_source_agree=None
+        ) == pytest.approx(0.6)
 
     def test_agree_never_exceeds_one_even_after_gain(self):
         """任意输入下增益结果不超过 1.0。"""
-        assert compute_hop_confidence(0.9999, 0.0, "news", dual_source_agree=True) <= 1.0
+        assert (
+            compute_hop_confidence(0.9999, 0.0, "news", dual_source_agree=True) <= 1.0
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +115,9 @@ class TestIncidentPenalty:
 
     def test_zero_penalty_no_change(self):
         """惩罚 0 不变。"""
-        assert compute_hop_confidence(0.8, 0.0, "quote", incident_penalty=0.0) == pytest.approx(0.8)
+        assert compute_hop_confidence(
+            0.8, 0.0, "quote", incident_penalty=0.0
+        ) == pytest.approx(0.8)
 
     def test_full_penalty_zeroes_confidence(self):
         """惩罚 1.0 → 置信归零（可击穿时间衰减下限）。"""
@@ -114,12 +126,18 @@ class TestIncidentPenalty:
 
     def test_half_penalty_halves(self):
         """惩罚 0.5 → 置信减半。"""
-        assert compute_hop_confidence(0.8, 0.0, "quote", incident_penalty=0.5) == pytest.approx(0.4)
+        assert compute_hop_confidence(
+            0.8, 0.0, "quote", incident_penalty=0.5
+        ) == pytest.approx(0.4)
 
     def test_penalty_clamped(self):
         """越界惩罚被夹取到 [0,1]。"""
-        assert compute_hop_confidence(0.8, 0.0, "quote", incident_penalty=2.0) == pytest.approx(0.0)
-        assert compute_hop_confidence(0.8, 0.0, "quote", incident_penalty=-1.0) == pytest.approx(0.8)
+        assert compute_hop_confidence(
+            0.8, 0.0, "quote", incident_penalty=2.0
+        ) == pytest.approx(0.0)
+        assert compute_hop_confidence(
+            0.8, 0.0, "quote", incident_penalty=-1.0
+        ) == pytest.approx(0.8)
 
     def test_penalty_can_break_floor(self):
         """惩罚可击穿 CONF_FLOOR 下限（floor 仅作用于时间衰减规则）。"""
@@ -144,7 +162,9 @@ class TestCombinedPropagation:
     def test_monotonic_in_source_conf(self):
         """上游置信越高，传播结果越高（固定其他参数）。"""
         results = [
-            compute_hop_confidence(s, 10.0, "news", dual_source_agree=True, incident_penalty=0.1)
+            compute_hop_confidence(
+                s, 10.0, "news", dual_source_agree=True, incident_penalty=0.1
+            )
             for s in (0.1, 0.3, 0.5, 0.7, 0.9)
         ]
         assert results == sorted(results)
@@ -197,7 +217,9 @@ class TestScoreToConfidence:
 
     def test_sample_convergence(self):
         """样本量增大，置信单调递增并收敛（不超过 score/100）。"""
-        results = [score_to_confidence(85.0, n) for n in (0, 10, 50, 100, 500, 5000, 100_000)]
+        results = [
+            score_to_confidence(85.0, n) for n in (0, 10, 50, 100, 500, 5000, 100_000)
+        ]
         assert all(a < b for a, b in zip(results, results[1:]))
         assert results[-1] == pytest.approx(0.85, abs=1e-3)
 

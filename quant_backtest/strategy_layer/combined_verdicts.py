@@ -27,6 +27,7 @@ K-STOCK-393 判例）。只读工具，默认不写任何 PG/生产数据。
                               [--bench-file f.json]
                               [--view shadow] [--in o.json]
 """
+
 from __future__ import annotations
 
 import json
@@ -43,10 +44,10 @@ OUT_DEFAULT = os.path.join(PORTAL_DIR, "data", "combined_verdicts.json")
 PICK_VERDICTS_DEFAULT = os.path.join(PORTAL_DIR, "data", "pick_verdicts.json")
 
 WINDOWS = (1, 3, 5)
-EXEC_LAG = 2                      # 首次可操作日 = 信号日 + 2 交易日（九审口径）
+EXEC_LAG = 2  # 首次可操作日 = 信号日 + 2 交易日（九审口径）
 WEIGHT_BANDS = ("lt025", "b025_050", "b050_075", "ge075")
 SHADOW_TAGS = ("env_diff", "panic_buy")
-PG_LIMIT_DEFAULT = 60             # 不指定 --date 时默认回看最近 N 个交易日
+PG_LIMIT_DEFAULT = 60  # 不指定 --date 时默认回看最近 N 个交易日
 
 
 # ── 数据源适配层（读） ─────────────────────────────────────────────────
@@ -67,21 +68,25 @@ def normalize_rows(rows) -> list:
         contrib = r.get("contributions") or {}
         if isinstance(contrib, (str, bytes)):
             try:
-                contrib = json.loads(contrib if isinstance(contrib, str)
-                                     else contrib.decode("utf-8"))
+                contrib = json.loads(
+                    contrib if isinstance(contrib, str) else contrib.decode("utf-8")
+                )
             except ValueError:
                 contrib = {}
         if not isinstance(contrib, dict):
             contrib = {}
-        out.append({
-            "trade_date": td, "symbol": sym,
-            "action": str(r.get("action") or "hold"),
-            "score": float(r.get("score") or 0.0),
-            "confidence": float(r.get("confidence") or 0.0),
-            "contributions": contrib,
-            "divergence": bool(r.get("divergence")),
-            "rationale": str(r.get("rationale") or ""),
-        })
+        out.append(
+            {
+                "trade_date": td,
+                "symbol": sym,
+                "action": str(r.get("action") or "hold"),
+                "score": float(r.get("score") or 0.0),
+                "confidence": float(r.get("confidence") or 0.0),
+                "contributions": contrib,
+                "divergence": bool(r.get("divergence")),
+                "rationale": str(r.get("rationale") or ""),
+            }
+        )
     return out
 
 
@@ -101,54 +106,72 @@ def load_rows_pg(trade_date=None, limit=PG_LIMIT_DEFAULT) -> list:
     """
     from strategy_layer.aggregator import _pg_connect, DOCKER_PSQL_BASE
 
-    where = ("WHERE trade_date = '%s'"
-             % str(trade_date).replace("'", "")) if trade_date else ""
+    where = (
+        ("WHERE trade_date = '%s'" % str(trade_date).replace("'", ""))
+        if trade_date
+        else ""
+    )
     tail = " ORDER BY trade_date DESC, score DESC LIMIT %d" % int(limit or 60)
-    cols = ("trade_date, symbol, action, score, confidence, "
-            "contributions::text, divergence::text, rationale")
+    cols = (
+        "trade_date, symbol, action, score, confidence, "
+        "contributions::text, divergence::text, rationale"
+    )
     try:
         conn = _pg_connect()
         try:
             with conn.cursor() as cur:
                 if trade_date:
-                    cur.execute("SELECT %s FROM strategy.signals_combined "
-                                "WHERE trade_date = %%s%s"
-                                % (cols, tail.replace(
-                                    "LIMIT %d" % int(limit or 60), "")),
-                                (str(trade_date),))
+                    cur.execute(
+                        "SELECT %s FROM strategy.signals_combined "
+                        "WHERE trade_date = %%s%s"
+                        % (cols, tail.replace("LIMIT %d" % int(limit or 60), "")),
+                        (str(trade_date),),
+                    )
                 else:
-                    cur.execute("SELECT %s FROM strategy.signals_combined%s"
-                                % (cols, tail))
+                    cur.execute(
+                        "SELECT %s FROM strategy.signals_combined%s" % (cols, tail)
+                    )
                 raw = cur.fetchall()
         finally:
             conn.close()
     except Exception:  # noqa: BLE001 — docker exec 兜底
-        raw = _psql_rows("SELECT %s FROM strategy.signals_combined %s%s"
-                         % (cols, where, tail), DOCKER_PSQL_BASE)
+        raw = _psql_rows(
+            "SELECT %s FROM strategy.signals_combined %s%s" % (cols, where, tail),
+            DOCKER_PSQL_BASE,
+        )
     rows = []
     for r in raw:
-        rows.append({
-            "trade_date": r[0], "symbol": r[1], "action": r[2],
-            "score": r[3], "confidence": r[4], "contributions": r[5],
-            "divergence": r[6], "rationale": r[7],
-        })
+        rows.append(
+            {
+                "trade_date": r[0],
+                "symbol": r[1],
+                "action": r[2],
+                "score": r[3],
+                "confidence": r[4],
+                "contributions": r[5],
+                "divergence": r[6],
+                "rationale": r[7],
+            }
+        )
     return normalize_rows(rows)
 
 
 def _psql_rows(sql: str, base) -> list:
     """docker exec psql COPY TO STDOUT 兜底读（dashboard_api 判例简化版）。"""
     proc = subprocess.run(
-        list(base) + ["-c", "COPY (%s) TO STDOUT WITH (FORMAT csv, HEADER true)"
-                      % sql],
-        capture_output=True, timeout=15)
+        list(base) + ["-c", "COPY (%s) TO STDOUT WITH (FORMAT csv, HEADER true)" % sql],
+        capture_output=True,
+        timeout=15,
+    )
     if proc.returncode != 0:
-        raise RuntimeError("psql 兜底读失败: %s" % proc.stderr.decode(
-            "utf-8", "replace")[:200])
+        raise RuntimeError(
+            "psql 兜底读失败: %s" % proc.stderr.decode("utf-8", "replace")[:200]
+        )
     import csv as _csv
     import io as _io
+
     out = []
-    for row in _csv.DictReader(_io.StringIO(
-            proc.stdout.decode("utf-8", "replace"))):
+    for row in _csv.DictReader(_io.StringIO(proc.stdout.decode("utf-8", "replace"))):
         row["divergence"] = str(row.get("divergence") or "").strip() == "t"
         out.append(row)
     return out
@@ -212,10 +235,12 @@ def blk(vals):
     if not vals:
         return {"n": 0, "hit": None, "avg": None, "med": None}
     s = sorted(vals)
-    return {"n": len(vals),
-            "hit": round(100 * sum(1 for v in vals if v > 0) / len(vals), 1),
-            "avg": round(sum(vals) / len(vals), 2),
-            "med": s[len(s) // 2]}
+    return {
+        "n": len(vals),
+        "hit": round(100 * sum(1 for v in vals if v > 0) / len(vals), 1),
+        "avg": round(sum(vals) / len(vals), 2),
+        "med": s[len(s) // 2],
+    }
 
 
 # ── 读侧视图（只读，供消费"只标不拦"的影子标注） ──────────────────────
@@ -227,13 +252,20 @@ def read_shadow_view(path: str = OUT_DEFAULT) -> dict:
     """
     doc = json.load(open(path, encoding="utf-8"))
     summary = doc.get("summary") or {}
-    codes = {sym: {"date": rec.get("date"), "action": rec.get("action"),
-                   "shadow_tags": rec.get("shadow_tags") or []}
-             for sym, rec in (doc.get("per_code") or {}).items()
-             if rec.get("shadow_tags")}
-    return {"asof": summary.get("asof", ""),
-            "by_shadow": summary.get("by_shadow") or {},
-            "shadow_codes": codes}
+    codes = {
+        sym: {
+            "date": rec.get("date"),
+            "action": rec.get("action"),
+            "shadow_tags": rec.get("shadow_tags") or [],
+        }
+        for sym, rec in (doc.get("per_code") or {}).items()
+        if rec.get("shadow_tags")
+    }
+    return {
+        "asof": summary.get("asof", ""),
+        "by_shadow": summary.get("by_shadow") or {},
+        "shadow_codes": codes,
+    }
 
 
 # ── benchmark 对照表（回收 picks 链 window_mid，不重算不造数） ─────────
@@ -251,8 +283,7 @@ def load_benchmark_mid(path: str = PICK_VERDICTS_DEFAULT) -> dict:
     table = {}
     for rec in (doc.get("per_code") or {}).values():
         for w, v in (rec.get("win") or {}).items():
-            if (isinstance(v, dict) and v.get("base") is not None
-                    and v.get("exec")):
+            if isinstance(v, dict) and v.get("base") is not None and v.get("exec"):
                 try:
                     table[(str(v["exec"]), int(w))] = float(v["base"])
                 except (TypeError, ValueError):
@@ -261,8 +292,7 @@ def load_benchmark_mid(path: str = PICK_VERDICTS_DEFAULT) -> dict:
 
 
 # ── 后验主流程 ─────────────────────────────────────────────────────────
-def build(rows, cal, return_fn, windows=WINDOWS, env=None,
-          benchmark=None) -> dict:
+def build(rows, cal, return_fn, windows=WINDOWS, env=None, benchmark=None) -> dict:
     """signals_combined 后验计算（事件级四十审语义：同票跨档=独立事件）。
 
     Parameters
@@ -277,9 +307,9 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None,
     rows = normalize_rows(rows)
     per_code = {}
     win_buckets = {w: [] for w in windows}
-    ex_buckets = {w: [] for w in windows}   # 超额 r-base（benchmark 可得时）
-    strat_buckets = {}   # sid -> {w: [r]}
-    band_buckets = {}    # sid -> {band: [r]}
+    ex_buckets = {w: [] for w in windows}  # 超额 r-base（benchmark 可得时）
+    strat_buckets = {}  # sid -> {w: [r]}
+    band_buckets = {}  # sid -> {band: [r]}
     shadow_buckets = {}  # tag -> {w: [r]}
     n_events = 0
     for row in sorted(rows, key=lambda r: (r["trade_date"], r["symbol"])):
@@ -287,19 +317,33 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None,
         n_events += 1
         tags = shadow_tags_of(row, env)
         contribs = row["contributions"]
-        rec = per_code.setdefault(sym, {
-            "action": row["action"], "score": row["score"], "date": sig,
-            "strategies": sorted(
-                sid for sid, c in contribs.items() if isinstance(c, dict)),
-            "shadow_tags": tags, "win": {}})
+        rec = per_code.setdefault(
+            sym,
+            {
+                "action": row["action"],
+                "score": row["score"],
+                "date": sig,
+                "strategies": sorted(
+                    sid for sid, c in contribs.items() if isinstance(c, dict)
+                ),
+                "shadow_tags": tags,
+                "win": {},
+            },
+        )
         if sig < rec["date"]:
             continue  # per_code 只留每票最近一次信号；事件桶不受影响
         if sig > rec["date"]:
-            rec.update({"action": row["action"], "score": row["score"],
-                        "date": sig, "win": {},
-                        "strategies": sorted(
-                            sid for sid, c in contribs.items()
-                            if isinstance(c, dict))})
+            rec.update(
+                {
+                    "action": row["action"],
+                    "score": row["score"],
+                    "date": sig,
+                    "win": {},
+                    "strategies": sorted(
+                        sid for sid, c in contribs.items() if isinstance(c, dict)
+                    ),
+                }
+            )
         rec["shadow_tags"] = tags
         exec_d = after_days(cal, sig, EXEC_LAG)
         wins = {}
@@ -317,9 +361,9 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None,
             if benchmark:
                 mid = benchmark.get((exec_d, w))
                 entry["base"] = mid
-                entry["ex"] = (round(r1 - mid, 2)
-                               if r1 is not None and mid is not None
-                               else None)
+                entry["ex"] = (
+                    round(r1 - mid, 2) if r1 is not None and mid is not None else None
+                )
             wins[w] = entry
             if r1 is not None and row["action"] == "buy":
                 win_buckets[w].append(r1)
@@ -330,17 +374,15 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None,
                 for sid, c in contribs.items():
                     if not isinstance(c, dict):
                         continue
-                    strat_buckets.setdefault(sid, {}).setdefault(
-                        w, []).append(r1)
+                    strat_buckets.setdefault(sid, {}).setdefault(w, []).append(r1)
                     if c.get("weight") is not None:
                         band_buckets.setdefault(sid, {}).setdefault(
-                            weight_band(c["weight"]), {}).setdefault(
-                            w, []).append(r1)
+                            weight_band(c["weight"]), {}
+                        ).setdefault(w, []).append(r1)
                 for t in tags:
                     # 只标不拦：被标注事件照常已在 windows/by_strategy 桶，
                     # 影子桶是加法视图
-                    shadow_buckets.setdefault(t, {}).setdefault(
-                        w, []).append(r1)
+                    shadow_buckets.setdefault(t, {}).setdefault(w, []).append(r1)
         rec["win"] = wins
 
     summary = {
@@ -352,31 +394,39 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None,
             "sell": "首买日后 1/3/5 个交易日收盘",
             "return": "return_fn 注入（默认复用 build_pick_verdicts.pct_between，复权/exdiv void 同判例）",
             "layering": "by_strategy=contributions 键（多源跨桶，仅 action=buy 入桶）；"
-                        "by_weight_group=信号时点归一化权重分带×策略；"
-                        "by_shadow=影子标注加法视图，只标不拦，n 勿跨桶加总",
+            "by_weight_group=信号时点归一化权重分带×策略；"
+            "by_shadow=影子标注加法视图，只标不拦，n 勿跨桶加总",
         },
         "excess_caliber": (
             "超额=个股窗口收益-同窗口全市场开盘-收盘中位（复用 picks 链 "
             "pick_verdicts window_mid，不重算不造数；基准不可得则空块）"
-            if benchmark else "benchmark 对照不可得（picks 链 window_mid 缺失），跳过"),
+            if benchmark
+            else "benchmark 对照不可得（picks 链 window_mid 缺失），跳过"
+        ),
         "windows": {str(w): blk(win_buckets[w]) for w in windows},
         "excess": {str(w): blk(ex_buckets[w]) for w in windows},
-        "by_strategy": {s: {str(w): blk(b.get(w) or []) for w in windows}
-                        for s, b in sorted(strat_buckets.items())},
-        "by_weight_group": {s: {b: {str(w): blk(v.get(w) or [])
-                                    for w in windows}
-                                for b, v in sorted(bs.items())}
-                            for s, bs in sorted(band_buckets.items())},
-        "by_shadow": {t: {str(w): blk(b.get(w) or []) for w in windows}
-                      for t, b in sorted(shadow_buckets.items())},
+        "by_strategy": {
+            s: {str(w): blk(b.get(w) or []) for w in windows}
+            for s, b in sorted(strat_buckets.items())
+        },
+        "by_weight_group": {
+            s: {
+                b: {str(w): blk(v.get(w) or []) for w in windows}
+                for b, v in sorted(bs.items())
+            }
+            for s, bs in sorted(band_buckets.items())
+        },
+        "by_shadow": {
+            t: {str(w): blk(b.get(w) or []) for w in windows}
+            for t, b in sorted(shadow_buckets.items())
+        },
     }
     return {"summary": summary, "per_code": per_code}
 
 
 def write_out(out: dict, path: str = OUT_DEFAULT) -> str:
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    doc = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           **out}
+    doc = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), **out}
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False)
@@ -389,6 +439,7 @@ def default_return_fn():
     if PORTAL_DIR not in sys.path:
         sys.path.insert(0, PORTAL_DIR)
     from build_pick_verdicts import pct_between  # noqa: E402
+
     return pct_between
 
 
@@ -397,10 +448,11 @@ def load_calendar() -> list:
     if QB_ROOT not in sys.path:
         sys.path.insert(0, QB_ROOT)
     from tdx_read import read_range  # noqa: E402
-    df = read_range("ts_daily", "20200101", "20991231",
-                    columns=["trade_date"])
-    return sorted({str(d)[:8] for d in
-                   (df["trade_date"].tolist() if df is not None else [])})
+
+    df = read_range("ts_daily", "20200101", "20991231", columns=["trade_date"])
+    return sorted(
+        {str(d)[:8] for d in (df["trade_date"].tolist() if df is not None else [])}
+    )
 
 
 def main() -> int:
@@ -441,26 +493,29 @@ def main() -> int:
     if not cal:
         print("[combined_verdicts] 行情湖不可达（交易日历为空），跳过")
         return 1
-    bench = (load_benchmark_mid(bench_file) if bench_file
-             else load_benchmark_mid())
+    bench = load_benchmark_mid(bench_file) if bench_file else load_benchmark_mid()
     if bench:
-        print("[combined_verdicts] benchmark 对照 %d 组（回收 picks 链 "
-              "window_mid）" % len(bench))
+        print(
+            "[combined_verdicts] benchmark 对照 %d 组（回收 picks 链 "
+            "window_mid）" % len(bench)
+        )
     else:
-        print("[combined_verdicts] benchmark 对照不可得"
-              "（picks 链 window_mid 数据缺失），超额对照显式跳过")
+        print(
+            "[combined_verdicts] benchmark 对照不可得"
+            "（picks 链 window_mid 数据缺失），超额对照显式跳过"
+        )
     res = build(rows, cal, default_return_fn(), benchmark=bench)
     path = write_out(res, out)
     s = res["summary"]
-    print("[combined_verdicts] 事件 %d | asof %s → %s"
-          % (s["events"], s["asof"], path))
+    print("[combined_verdicts] 事件 %d | asof %s → %s" % (s["events"], s["asof"], path))
     for w in WINDOWS:
         b = s["windows"][str(w)]
-        print("  execT+%d: n=%s hit=%s%% avg=%s%%" %
-              (w, b["n"], b["hit"], b["avg"]))
+        print("  execT+%d: n=%s hit=%s%% avg=%s%%" % (w, b["n"], b["hit"], b["avg"]))
     for sid, bs in s["by_strategy"].items():
-        print("  [%s] " % sid + "; ".join(
-            "T+%d n=%s" % (w, bs[str(w)]["n"]) for w in WINDOWS))
+        print(
+            "  [%s] " % sid
+            + "; ".join("T+%d n=%s" % (w, bs[str(w)]["n"]) for w in WINDOWS)
+        )
     return 0
 
 

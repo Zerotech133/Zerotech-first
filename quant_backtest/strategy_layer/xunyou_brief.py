@@ -20,6 +20,7 @@ closed on failure：任何一节缺料/异常均降级占位（DEGRADED + 文案
     python strategy_layer/xunyou_brief.py --date 20261017 # 历史日回看
     可选覆盖：--out-dir / --pool / --evidence-db / --posterior
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,8 +35,13 @@ _QUANT_BT = os.path.dirname(_HERE)
 if _QUANT_BT not in sys.path:
     sys.path.insert(0, _QUANT_BT)
 
-from strategy_layer.xunyou import REPORT_DIR, SCOPE, VERDICT, \
-    read_evidence_state, read_posterior  # noqa: E402
+from strategy_layer.xunyou import (
+    REPORT_DIR,
+    SCOPE,
+    VERDICT,
+    read_evidence_state,
+    read_posterior,
+)  # noqa: E402
 
 AGENT_NAME = "荀攸（公达）参谋简报器"
 
@@ -49,29 +55,31 @@ NO_POSTERIOR_TEXT = "后验档未产出"
 def _pool_section(trade_date: str, pool_path: str) -> dict:
     """只读池档 → 摘要（票数 / tier 分布 / 分歧票清单）。缺档降级。"""
     if not os.path.isfile(pool_path):
-        return {"status": "DEGRADED", "reason": NO_POOL_TEXT,
-                "source": pool_path}
+        return {"status": "DEGRADED", "reason": NO_POOL_TEXT, "source": pool_path}
     with open(pool_path, encoding="utf-8") as fh:
         doc = json.load(fh)
     if not isinstance(doc, dict):
-        return {"status": "DEGRADED", "reason": "池档结构异常",
-                "source": pool_path}
+        return {"status": "DEGRADED", "reason": "池档结构异常", "source": pool_path}
     rows = doc.get("pool") or []
     tier_dist = Counter(str(r.get("tier") or "") for r in rows)
-    divergent = [str(r.get("symbol"))
-                 for r in rows
-                 if r.get("divergence") is True
-                 or r.get("divergence") == "true"
-                 or r.get("review_required")]
+    divergent = [
+        str(r.get("symbol"))
+        for r in rows
+        if r.get("divergence") is True
+        or r.get("divergence") == "true"
+        or r.get("review_required")
+    ]
     stats = doc.get("stats") if isinstance(doc.get("stats"), dict) else {}
     return {
         "status": "OK",
         "source": pool_path,
         "generated_at": doc.get("generated_at", ""),
         "buy_total": int(stats.get("buy_total", len(rows))),
-        "tier_dist": {"T1": tier_dist.get("T1", 0),
-                      "T2": tier_dist.get("T2", 0),
-                      "unrated": tier_dist.get("", 0)},
+        "tier_dist": {
+            "T1": tier_dist.get("T1", 0),
+            "T2": tier_dist.get("T2", 0),
+            "unrated": tier_dist.get("", 0),
+        },
         "divergence_symbols": divergent,
         "divergence_total": len(divergent),
     }
@@ -82,8 +90,11 @@ def _evidence_section(trade_date: str, db_path: str | None) -> dict:
     """read_evidence_state 的 state 计数分布；DEGRADED 显式降级标注。"""
     out = read_evidence_state(trade_date=trade_date, db_path=db_path)
     if out.get("status") != "OK":
-        return {"status": "DEGRADED", "reason": NO_EVIDENCE_TEXT,
-                "detail": out.get("reason", "")}
+        return {
+            "status": "DEGRADED",
+            "reason": NO_EVIDENCE_TEXT,
+            "detail": out.get("reason", ""),
+        }
     states = out.get("states") or []
     counts = Counter(str(row.get("state") or "unknown") for row in states)
     anomalies = []
@@ -91,9 +102,12 @@ def _evidence_section(trade_date: str, db_path: str | None) -> dict:
         anomalies.append("当日无证据记录（可能未接入记账）")
     if out.get("count", 0) >= 200:
         anomalies.append("达到单次查询上限 200，计数可能截断")
-    return {"status": "OK", "count": out.get("count", 0),
-            "state_counts": dict(sorted(counts.items())),
-            "anomalies": anomalies}
+    return {
+        "status": "OK",
+        "count": out.get("count", 0),
+        "state_counts": dict(sorted(counts.items())),
+        "anomalies": anomalies,
+    }
 
 
 # ── 第三节：后验视角 ──────────────────────────────────────────────────
@@ -101,8 +115,12 @@ def _posterior_section(posterior_path: str | None) -> dict:
     """read_posterior 的 by_strategy / by_weight_group 关键数字；缺档降级。"""
     out = read_posterior(posterior_path)
     if out.get("status") != "OK":
-        return {"status": "DEGRADED", "reason": NO_POSTERIOR_TEXT,
-                "detail": out.get("reason", "")}
+        return {
+            "status": "DEGRADED",
+            "reason": NO_POSTERIOR_TEXT,
+            "detail": out.get("reason", ""),
+        }
+
     def _flat(block: dict) -> dict:
         # 单层块 {key: {win: {n,hit,avg,med}}} → 取 1 日窗关键数
         flat = {}
@@ -111,8 +129,7 @@ def _posterior_section(posterior_path: str | None) -> dict:
                 continue
             w1 = wins.get("1") or wins.get(1) or {}
             if isinstance(w1, dict):
-                flat[str(key)] = {k: w1.get(k)
-                                  for k in ("n", "hit", "avg", "med")}
+                flat[str(key)] = {k: w1.get(k) for k in ("n", "hit", "avg", "med")}
         return flat
 
     def _flat2(block: dict) -> dict:
@@ -126,9 +143,12 @@ def _posterior_section(posterior_path: str | None) -> dict:
                 nested[str(strat)] = sub
         return nested
 
-    return {"status": "OK", "asof": out.get("asof", ""),
-            "by_strategy": _flat(out.get("by_strategy")),
-            "by_weight_group": _flat2(out.get("by_weight_group"))}
+    return {
+        "status": "OK",
+        "asof": out.get("asof", ""),
+        "by_strategy": _flat(out.get("by_strategy")),
+        "by_weight_group": _flat2(out.get("by_weight_group")),
+    }
 
 
 # ── 简报组装与落盘 ────────────────────────────────────────────────────
@@ -137,8 +157,11 @@ def _guarded(section_fn, *args, **kwargs) -> dict:
     try:
         return section_fn(*args, **kwargs)
     except Exception as exc:  # noqa: BLE001 — 降级不中断整份简报
-        return {"status": "DEGRADED", "reason": "单节读取异常，已降级占位",
-                "detail": "%s: %s" % (type(exc).__name__, str(exc)[:120])}
+        return {
+            "status": "DEGRADED",
+            "reason": "单节读取异常，已降级占位",
+            "detail": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
+        }
 
 
 def _render_md(trade_date: str, sections: dict) -> str:
@@ -160,12 +183,16 @@ def _render_md(trade_date: str, sections: dict) -> str:
             "- 池内 buy 候选 **%d** 只；tier 分布：T1=%d、T2=%d、未入档=%d"
             % (pool["buy_total"], td["T1"], td["T2"], td["unrated"]),
             "- 分歧/人工复核票 %d 只：%s"
-            % (pool["divergence_total"],
-               "、".join(pool["divergence_symbols"]) or "（无）"),
+            % (
+                pool["divergence_total"],
+                "、".join(pool["divergence_symbols"]) or "（无）",
+            ),
         ]
     else:
-        lines.append("- 状态：DEGRADED ｜ %s（%s）"
-                     % (pool.get("reason", "未知"), pool.get("detail", "缺料降级")))
+        lines.append(
+            "- 状态：DEGRADED ｜ %s（%s）"
+            % (pool.get("reason", "未知"), pool.get("detail", "缺料降级"))
+        )
     lines += ["", "## 二、证据链视角"]
     if evid.get("status") == "OK":
         lines.append("- 状态：OK ｜ 当日证据态 %d 条" % evid["count"])
@@ -174,16 +201,19 @@ def _render_md(trade_date: str, sections: dict) -> str:
         for a in evid["anomalies"]:
             lines.append("  - 异常提示：%s" % a)
     else:
-        lines.append("- 状态：DEGRADED ｜ %s（%s）"
-                     % (evid.get("reason", "未知"), evid.get("detail", "")))
+        lines.append(
+            "- 状态：DEGRADED ｜ %s（%s）"
+            % (evid.get("reason", "未知"), evid.get("detail", ""))
+        )
     lines += ["", "## 三、后验视角"]
     if post.get("status") == "OK":
         lines.append("- 状态：OK ｜ asof=%s" % post["asof"])
         lines.append("- by_strategy（1 日窗）：")
         for key, w in post["by_strategy"].items():
-            lines.append("  - %s：n=%s hit=%s avg=%s med=%s"
-                         % (key, w.get("n"), w.get("hit"),
-                            w.get("avg"), w.get("med")))
+            lines.append(
+                "  - %s：n=%s hit=%s avg=%s med=%s"
+                % (key, w.get("n"), w.get("hit"), w.get("avg"), w.get("med"))
+            )
         if not post["by_strategy"]:
             lines.append("  - （无分层记录）")
         lines.append("- by_weight_group（1 日窗）：")
@@ -191,19 +221,30 @@ def _render_md(trade_date: str, sections: dict) -> str:
             if isinstance(groups, dict) and "n" not in groups:
                 # 两级：strategy → weight_group → 窗口
                 for grp, w in groups.items():
-                    lines.append("  - %s/%s：n=%s hit=%s avg=%s med=%s"
-                                 % (strat, grp, w.get("n"), w.get("hit"),
-                                    w.get("avg"), w.get("med")))
+                    lines.append(
+                        "  - %s/%s：n=%s hit=%s avg=%s med=%s"
+                        % (
+                            strat,
+                            grp,
+                            w.get("n"),
+                            w.get("hit"),
+                            w.get("avg"),
+                            w.get("med"),
+                        )
+                    )
             else:
                 w = groups
-                lines.append("  - %s：n=%s hit=%s avg=%s med=%s"
-                             % (strat, w.get("n"), w.get("hit"),
-                                w.get("avg"), w.get("med")))
+                lines.append(
+                    "  - %s：n=%s hit=%s avg=%s med=%s"
+                    % (strat, w.get("n"), w.get("hit"), w.get("avg"), w.get("med"))
+                )
         if not post["by_weight_group"]:
             lines.append("  - （无分层记录）")
     else:
-        lines.append("- 状态：DEGRADED ｜ %s（%s）"
-                     % (post.get("reason", "未知"), post.get("detail", "")))
+        lines.append(
+            "- 状态：DEGRADED ｜ %s（%s）"
+            % (post.get("reason", "未知"), post.get("detail", ""))
+        )
     lines += [
         "",
         "## 纪律",
@@ -221,10 +262,13 @@ def _atomic_write(path: str, data: bytes) -> None:
     os.replace(tmp, path)
 
 
-def build_brief(trade_date: str, pool_path: str | None = None,
-                evidence_db_path: str | None = None,
-                posterior_path: str | None = None,
-                out_dir: str | None = None) -> dict:
+def build_brief(
+    trade_date: str,
+    pool_path: str | None = None,
+    evidence_db_path: str | None = None,
+    posterior_path: str | None = None,
+    out_dir: str | None = None,
+) -> dict:
     """三节简报：池摘要 + 证据链视角 + 后验视角 → MD + JSON 双落盘。
 
     只读试运行：除本简报自身两份产物外零写入；逐节降级（closed on
@@ -232,8 +276,7 @@ def build_brief(trade_date: str, pool_path: str | None = None,
     """
     date = str(trade_date)
     out_root = out_dir or REPORT_DIR
-    pool_file = pool_path or os.path.join(
-        REPORT_DIR, "xunyou_pool_%s.json" % date)
+    pool_file = pool_path or os.path.join(REPORT_DIR, "xunyou_pool_%s.json" % date)
 
     sections = {
         "pool": _guarded(_pool_section, date, pool_file),
@@ -251,9 +294,9 @@ def build_brief(trade_date: str, pool_path: str | None = None,
     os.makedirs(out_root, exist_ok=True)
     json_path = os.path.join(out_root, "xunyou_brief_%s.json" % date)
     md_path = os.path.join(out_root, "xunyou_brief_%s.md" % date)
-    _atomic_write(json_path,
-                  json.dumps(doc, ensure_ascii=False, indent=2)
-                  .encode("utf-8"))
+    _atomic_write(
+        json_path, json.dumps(doc, ensure_ascii=False, indent=2).encode("utf-8")
+    )
     _atomic_write(md_path, _render_md(date, sections).encode("utf-8"))
     doc["brief_md_path"] = md_path
     doc["brief_json_path"] = json_path
@@ -262,23 +305,28 @@ def build_brief(trade_date: str, pool_path: str | None = None,
 
 def main(argv: list) -> int:
     parser = argparse.ArgumentParser(
-        description="荀攸参谋简报器（只读试运行留痕，零推送零写库）")
-    parser.add_argument("--date", default=datetime.now().strftime("%Y%m%d"),
-                        help="交易日 YYYYMMDD（默认今日）")
-    parser.add_argument("--out-dir", default=None,
-                        help="产物目录（默认 quant_backtest/reports）")
+        description="荀攸参谋简报器（只读试运行留痕，零推送零写库）"
+    )
+    parser.add_argument(
+        "--date",
+        default=datetime.now().strftime("%Y%m%d"),
+        help="交易日 YYYYMMDD（默认今日）",
+    )
+    parser.add_argument(
+        "--out-dir", default=None, help="产物目录（默认 quant_backtest/reports）"
+    )
     parser.add_argument("--pool", default=None, help="池档路径显式覆盖")
-    parser.add_argument("--evidence-db", default=None,
-                        help="证据链库路径显式覆盖")
-    parser.add_argument("--posterior", default=None,
-                        help="后验统计档路径显式覆盖")
+    parser.add_argument("--evidence-db", default=None, help="证据链库路径显式覆盖")
+    parser.add_argument("--posterior", default=None, help="后验统计档路径显式覆盖")
     args = parser.parse_args(argv)
-    doc = build_brief(args.date, pool_path=args.pool,
-                      evidence_db_path=args.evidence_db,
-                      posterior_path=args.posterior,
-                      out_dir=args.out_dir)
-    print("[xunyou_brief] %s %s ｜ %s ｜ %s" % (
-        AGENT_NAME, args.date, SCOPE, VERDICT))
+    doc = build_brief(
+        args.date,
+        pool_path=args.pool,
+        evidence_db_path=args.evidence_db,
+        posterior_path=args.posterior,
+        out_dir=args.out_dir,
+    )
+    print("[xunyou_brief] %s %s ｜ %s ｜ %s" % (AGENT_NAME, args.date, SCOPE, VERDICT))
     for name, sec in doc["sections"].items():
         print("[xunyou_brief] %-9s %s" % (name, sec["status"]))
     print("[xunyou_brief] 简报 → %s" % doc["brief_md_path"])

@@ -29,6 +29,7 @@ CLI（对齐 runner.py 参数风格 --strategy/--market/--symbol/--start/--end�
 （rsi_reversal/boll_breakout）若 start 前已有未平仓触发会对不平——
 此类策略请优先用 runner 导出的 --baseline 文件对账（见报告 warmup 注记）。
 """
+
 import argparse
 import json
 import os
@@ -45,17 +46,22 @@ from strategy_layer.onboarding.classic_adapter import (  # noqa: E402
     strategy_fn,
 )
 
-DEFAULT_THRESHOLD = 0.99      # RC-1 S3 闸门：信号一致率 ≥99%
-MAX_MISMATCH_SHOWN = 20       # 报告最多列出的不一致明细条数
+DEFAULT_THRESHOLD = 0.99  # RC-1 S3 闸门：信号一致率 ≥99%
+MAX_MISMATCH_SHOWN = 20  # 报告最多列出的不一致明细条数
 
 
 # ---------------------------------------------------------------------- #
 # 基线来源 1：策略本体现算（as-of 全历史口径）
 # ---------------------------------------------------------------------- #
-def compute_baseline(strategy_name: str, symbols: List[str], market: str,
-                     start: Optional[str], end: Optional[str],
-                     params: Optional[dict] = None,
-                     loader: Optional[Callable] = None) -> Dict[str, Dict[str, int]]:
+def compute_baseline(
+    strategy_name: str,
+    symbols: List[str],
+    market: str,
+    start: Optional[str],
+    end: Optional[str],
+    params: Optional[dict] = None,
+    loader: Optional[Callable] = None,
+) -> Dict[str, Dict[str, int]]:
     """策略本体逐帧仓位 → {symbol: {YYYYMMDD: position}}。
 
     end 必填（对账窗右沿）；start 传 None 即全历史 as-of（预热最充分，
@@ -65,6 +71,7 @@ def compute_baseline(strategy_name: str, symbols: List[str], market: str,
         raise ValueError("对账窗右沿 end 必填（YYYY-MM-DD 或 YYYYMMDD）")
     if loader is None:
         from data_loader import load_bars
+
         loader = load_bars
     frames = loader(market, symbols, start, end) or {}
     fn = strategy_fn(strategy_name)
@@ -75,9 +82,7 @@ def compute_baseline(strategy_name: str, symbols: List[str], market: str,
         if df is None or len(df) == 0:
             continue
         pos = fn(df, p)
-        baseline[symbol] = {
-            _to_ymd8(dt): int(v) for dt, v in pos.items()
-        }
+        baseline[symbol] = {_to_ymd8(dt): int(v) for dt, v in pos.items()}
     return baseline
 
 
@@ -125,10 +130,11 @@ def load_baseline_jsonl(path: str, strategy_name: str) -> Dict[str, Dict[str, in
 # ---------------------------------------------------------------------- #
 # adapter 侧：走 score() 公开路径逐日重建仓位（S3 对账的正主）
 # ---------------------------------------------------------------------- #
-def adapter_positions_from_scores(adapter: ClassicStrategyAdapter,
-                                  dates_ymd8: List[str],
-                                  symbols: List[str],
-                                  ) -> Dict[str, Dict[str, int]]:
+def adapter_positions_from_scores(
+    adapter: ClassicStrategyAdapter,
+    dates_ymd8: List[str],
+    symbols: List[str],
+) -> Dict[str, Dict[str, int]]:
     """逐日调 adapter.score(td) → 由信号流重建 {symbol: {YYYYMMDD: position}}。
 
     与基线的差异来源因此真实可测：score 每日在 as-of 截断数据上重算本体
@@ -148,17 +154,20 @@ def adapter_positions_from_scores(adapter: ClassicStrategyAdapter,
 
 def _default_loader(market, symbols, start, end):
     from data_loader import load_bars
+
     return load_bars(market, list(symbols), start, end)
 
 
 # ---------------------------------------------------------------------- #
 # 对账核心（纯函数，可单测）
 # ---------------------------------------------------------------------- #
-def run_reconcile(baseline: Dict[str, Dict[str, int]],
-                  adapter_pos: Dict[str, Dict[str, int]],
-                  start: Optional[str] = None,
-                  end: Optional[str] = None,
-                  threshold: float = DEFAULT_THRESHOLD) -> dict:
+def run_reconcile(
+    baseline: Dict[str, Dict[str, int]],
+    adapter_pos: Dict[str, Dict[str, int]],
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+    threshold: float = DEFAULT_THRESHOLD,
+) -> dict:
     """逐 (symbol, trade_date) 比对仓位 → 一致率报告 dict。
 
     只比对两侧共有的 symbol；日期范围可裁剪；baseline 独有的日期视为
@@ -183,9 +192,14 @@ def run_reconcile(baseline: Dict[str, Dict[str, int]],
             if adp_p is not None and int(adp_p) == base_p:
                 matched += 1
             else:
-                mismatches.append({"symbol": symbol, "trade_date": td,
-                                   "baseline": base_p,
-                                   "adapter": adp_p})
+                mismatches.append(
+                    {
+                        "symbol": symbol,
+                        "trade_date": td,
+                        "baseline": base_p,
+                        "adapter": adp_p,
+                    }
+                )
     rate = (matched / total) if total else 0.0
     return {
         "n_total": total,
@@ -196,8 +210,8 @@ def run_reconcile(baseline: Dict[str, Dict[str, int]],
         "passed": bool(total > 0 and rate >= threshold),
         "mismatches": mismatches[:MAX_MISMATCH_SHOWN],
         "warmup_note": "缺省基线为全历史 as-of 口径；runner 单窗口基线"
-                       "在窗口起点可能对不平（事件帧策略预热差异），"
-                       "此类请用 --baseline 文件对账",
+        "在窗口起点可能对不平（事件帧策略预热差异），"
+        "此类请用 --baseline 文件对账",
     }
 
 
@@ -207,16 +221,20 @@ def format_report(report: dict) -> str:
         "REPLAY_RECONCILE 信号一致率报告",
         "  参与对账: %d (symbol, trade_date) 对" % report["n_total"],
         "  一致: %d  不一致: %d" % (report["n_match"], report["n_mismatch"]),
-        "  一致率: %.4f%%  阈值: %.2f%%  判定: %s" % (
-            report["agree_rate"] * 100, report["threshold"] * 100,
-            "PASS" if report["passed"] else "FAIL"),
+        "  一致率: %.4f%%  阈值: %.2f%%  判定: %s"
+        % (
+            report["agree_rate"] * 100,
+            report["threshold"] * 100,
+            "PASS" if report["passed"] else "FAIL",
+        ),
     ]
     if report["mismatches"]:
         lines.append("  不一致明细（前 %d 条）:" % len(report["mismatches"]))
         for m in report["mismatches"]:
-            lines.append("    %s %s baseline=%s adapter=%s"
-                         % (m["symbol"], m["trade_date"],
-                            m["baseline"], m["adapter"]))
+            lines.append(
+                "    %s %s baseline=%s adapter=%s"
+                % (m["symbol"], m["trade_date"], m["baseline"], m["adapter"])
+            )
     lines.append("  口径注记: " + report["warmup_note"])
     return "\n".join(lines)
 
@@ -226,19 +244,28 @@ def format_report(report: dict) -> str:
 # ---------------------------------------------------------------------- #
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
-        description="S3 历史回放对账：adapter vs 策略本体基线一致率")
-    ap.add_argument("--strategy", required=True,
-                    help="策略名（strategies.REGISTRY 键）")
+        description="S3 历史回放对账：adapter vs 策略本体基线一致率"
+    )
+    ap.add_argument(
+        "--strategy", required=True, help="策略名（strategies.REGISTRY 键）"
+    )
     ap.add_argument("--market", default="CN", help="市场（默认 CN）")
-    ap.add_argument("--symbol", required=True,
-                    help="标的，逗号分隔多个（如 600519.SH,000338.SZ）")
+    ap.add_argument(
+        "--symbol", required=True, help="标的，逗号分隔多个（如 600519.SH,000338.SZ）"
+    )
     ap.add_argument("--start", default=None, help="对账窗起点 YYYY-MM-DD")
     ap.add_argument("--end", required=True, help="对账窗右沿 YYYY-MM-DD")
-    ap.add_argument("--baseline", default=None,
-                    help="基线 JSONL（symbol/trade_date/position 行）；"
-                         "缺省用策略本体 as-of 现算")
-    ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD,
-                    help="一致率阈值（默认 0.99）")
+    ap.add_argument(
+        "--baseline",
+        default=None,
+        help="基线 JSONL（symbol/trade_date/position 行）；缺省用策略本体 as-of 现算",
+    )
+    ap.add_argument(
+        "--threshold",
+        type=float,
+        default=DEFAULT_THRESHOLD,
+        help="一致率阈值（默认 0.99）",
+    )
     ap.add_argument("--json", action="store_true", help="输出原始 JSON 报告")
     a = ap.parse_args(argv)
 
@@ -254,8 +281,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 print("RECONCILE_FAIL 基线文件无有效行: %s" % a.baseline)
                 return 2
         else:
-            baseline = compute_baseline(a.strategy, symbols, a.market,
-                                        a.start, a.end)
+            baseline = compute_baseline(a.strategy, symbols, a.market, a.start, a.end)
         dates = sorted({td for days in baseline.values() for td in days})
         adapter = ClassicStrategyAdapter(a.strategy, symbols, market=a.market)
         adapter_pos = adapter_positions_from_scores(adapter, dates, symbols)
@@ -263,8 +289,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("RECONCILE_FAIL 对账准备失败: %s" % exc)
         return 2
 
-    report = run_reconcile(baseline, adapter_pos, start=a.start, end=a.end,
-                           threshold=a.threshold)
+    report = run_reconcile(
+        baseline, adapter_pos, start=a.start, end=a.end, threshold=a.threshold
+    )
     if a.json:
         print(json.dumps(report, ensure_ascii=False, indent=1))
     else:

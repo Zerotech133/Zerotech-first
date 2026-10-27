@@ -10,6 +10,7 @@ scope 字段随数据走）。
 测试侧有同步守卫；chan_monitor 字段表变更时必须同步本文件，
 否则会静默漏统（结构性失真且无告警）。
 """
+
 from __future__ import annotations
 
 _RESONANCE_FIELDS = ("mbei", "bei", "bei2", "vv")
@@ -17,9 +18,15 @@ _SCOPE = "STATISTICS_ONLY_NOT_EVIDENCE"
 
 
 def _rejected(reason: str) -> dict:
-    return {"status": "REJECTED", "scope": _SCOPE, "reasons": [reason],
-            "zero_sample": None, "total_rows": None, "fields": None,
-            "anomalies": None}
+    return {
+        "status": "REJECTED",
+        "scope": _SCOPE,
+        "reasons": [reason],
+        "zero_sample": None,
+        "total_rows": None,
+        "fields": None,
+        "anomalies": None,
+    }
 
 
 def coverage_report(rows) -> dict:
@@ -39,8 +46,13 @@ def coverage_report(rows) -> dict:
     anomalies: list[dict] = []
     fields: dict[str, dict] = {}
     for field in _RESONANCE_FIELDS:
-        counts = {"present_true": 0, "present_false": 0, "present_null": 0,
-                  "present_missing": 0, "present_other": 0}
+        counts = {
+            "present_true": 0,
+            "present_false": 0,
+            "present_null": 0,
+            "present_missing": 0,
+            "present_other": 0,
+        }
         for index, row in enumerate(rows):
             if field not in row:
                 counts["present_missing"] += 1
@@ -54,12 +66,16 @@ def coverage_report(rows) -> dict:
                 counts["present_null"] += 1
             else:
                 counts["present_other"] += 1
-                anomalies.append({
-                    "row_index": index,
-                    "symbol": row.get("code") if type(row.get("code")) is str else None,
-                    "field": field,
-                    "value_type": type(value).__name__,
-                })
+                anomalies.append(
+                    {
+                        "row_index": index,
+                        "symbol": row.get("code")
+                        if type(row.get("code")) is str
+                        else None,
+                        "field": field,
+                        "value_type": type(value).__name__,
+                    }
+                )
         observable = counts["present_true"] + counts["present_false"]
         fields[field] = {
             **counts,

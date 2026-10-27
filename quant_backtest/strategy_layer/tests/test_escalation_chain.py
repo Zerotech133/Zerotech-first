@@ -8,6 +8,7 @@
   - suppressed_trading == True；
   - build_upstream_message 含 RESEARCH_ONLY / BLOCK_CUTOVER 标记。
 """
+
 import pytest
 
 from strategy_layer.escalation_chain import (
@@ -21,9 +22,16 @@ DAY = "20261019"
 
 def row(symbol, score, divergence=False):
     """与 test_xunyou_tier.py 同口径构造 combined 行。"""
-    return {"trade_date": DAY, "symbol": symbol, "action": "buy",
-            "score": score, "confidence": 0.8, "divergence": divergence,
-            "rationale": "r-" + symbol, "contributions": {}}
+    return {
+        "trade_date": DAY,
+        "symbol": symbol,
+        "action": "buy",
+        "score": score,
+        "confidence": 0.8,
+        "divergence": divergence,
+        "rationale": "r-" + symbol,
+        "contributions": {},
+    }
 
 
 def _tiered(*rows):
@@ -33,8 +41,9 @@ def _tiered(*rows):
 
 # ── T1 / T2 / divergence 基础装配 ──────────────────────────────────
 def test_t1_enters_auto_alert_symbols():
-    tiered = _tiered(row("T1A", 99.9), row("T2A", 97.0),
-                     row("DIV", 100.0, divergence=True))
+    tiered = _tiered(
+        row("T1A", 99.9), row("T2A", 97.0), row("DIV", 100.0, divergence=True)
+    )
     notice = select_escalation(tiered)
     assert "T1A" in notice["auto_alert_symbols"]
     assert notice["t1_alerts"][0]["symbol"] == "T1A"
@@ -76,15 +85,17 @@ def test_review_required_rows_also_in_manual_review():
 
 
 def test_suppressed_trading_true():
-    tiered = _tiered(row("T1A", 99.9), row("T2A", 97.0),
-                     row("DIV", 100.0, divergence=True))
+    tiered = _tiered(
+        row("T1A", 99.9), row("T2A", 97.0), row("DIV", 100.0, divergence=True)
+    )
     notice = select_escalation(tiered)
     assert notice["suppressed_trading"] is True
 
 
 def test_upstream_message_carries_markers_and_no_send():
-    tiered = _tiered(row("T1A", 99.9), row("T2A", 97.0),
-                     row("DIV", 100.0, divergence=True))
+    tiered = _tiered(
+        row("T1A", 99.9), row("T2A", 97.0), row("DIV", 100.0, divergence=True)
+    )
     notice = select_escalation(tiered)
     msg = build_upstream_message(notice)
     assert "RESEARCH_ONLY_NOT_PRODUCTION" in msg

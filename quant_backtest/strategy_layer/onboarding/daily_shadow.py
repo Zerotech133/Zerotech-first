@@ -53,6 +53,7 @@ strategy_id|symbol|trade_date 含 symbol，扩容不冲历史档。
     python strategy_layer/onboarding/daily_shadow.py \
         --out-dir C:/aios/automation_runs/<dir>
 """
+
 import argparse
 import json
 import os
@@ -76,10 +77,9 @@ from strategy_layer.onboarding.classic_adapter import (  # noqa: E402
 # ---------------------------------------------------------------------- #
 STRATEGIES = ("ma_cross", "trend_follow", "rsi_reversal", "boll_breakout")
 MARKET = "CN"
-SHADOW_POOL: List[str] = ["600519.SH"]     # 回落默认（shadow_pool.json 缺失时）
-STALE_DAYS = 15          # 最近 bar 距参考日的最大容忍自然日（覆盖春节长假）
-EXIT_OK, EXIT_ARGS, EXIT_NO_DATA, EXIT_STALE, EXIT_ZERO, EXIT_ERROR = \
-    0, 2, 3, 4, 6, 7
+SHADOW_POOL: List[str] = ["600519.SH"]  # 回落默认（shadow_pool.json 缺失时）
+STALE_DAYS = 15  # 最近 bar 距参考日的最大容忍自然日（覆盖春节长假）
+EXIT_OK, EXIT_ARGS, EXIT_NO_DATA, EXIT_STALE, EXIT_ZERO, EXIT_ERROR = 0, 2, 3, 4, 6, 7
 
 # 影子池定案：优先读 data/shadow_onboarding/shadow_pool.json（冻结快照，
 # 来源=chanlun_pool.jsonl 中 dt>=2026-09-18 的 CN A 股标的，2026-10-18 冻结，
@@ -124,17 +124,20 @@ def warn(msg: str) -> None:
 # ---------------------------------------------------------------------- #
 # 交易日解析（T+1 口径；bar 日期快照当交易日历，不硬编码）
 # ---------------------------------------------------------------------- #
-def _default_day_loader(market: str, symbols: Sequence[str],
-                        start: Optional[str], end: Optional[str]) -> Dict[str, Any]:
+def _default_day_loader(
+    market: str, symbols: Sequence[str], start: Optional[str], end: Optional[str]
+) -> Dict[str, Any]:
     """只读日线加载（与 classic_adapter._default_loader 同源判例）。"""
     from data_loader import load_bars
+
     return load_bars(market, list(symbols), start, end)
 
 
 def resolve_prev_trading_day(
     today: Optional[date] = None,
-    loader: Optional[Callable[[str, Sequence[str], Optional[str], Optional[str]],
-                              Dict[str, Any]]] = None,
+    loader: Optional[
+        Callable[[str, Sequence[str], Optional[str], Optional[str]], Dict[str, Any]]
+    ] = None,
     pool: Optional[Sequence[str]] = None,
 ) -> str:
     """返回上一交易日 YYYYMMDD（盘前 T+1 口径的采集日）。
@@ -161,14 +164,18 @@ def resolve_prev_trading_day(
                 dates.add(s)
     if not dates:
         raise DailyShadowError(
-            "no_data", "池标的 %s 在 %s 前无任何已落库日线" % (pool, end_dash))
+            "no_data", "池标的 %s 在 %s 前无任何已落库日线" % (pool, end_dash)
+        )
     latest = max(dates)
-    age = (ref - timedelta(days=1)) - date(int(latest[:4]), int(latest[4:6]),
-                                           int(latest[6:]))
+    age = (ref - timedelta(days=1)) - date(
+        int(latest[:4]), int(latest[4:6]), int(latest[6:])
+    )
     if age.days > STALE_DAYS:
         raise DailyShadowError(
-            "stale", "最近 bar %s 距参考日-1 已 %d 自然日（>%d），疑似数据断流"
-            % (latest, age.days, STALE_DAYS))
+            "stale",
+            "最近 bar %s 距参考日-1 已 %d 自然日（>%d），疑似数据断流"
+            % (latest, age.days, STALE_DAYS),
+        )
     return latest
 
 
@@ -176,8 +183,9 @@ def resolve_prev_trading_day(
 # 前向收益（bar 收盘只读注入；判例 = S4 彩排 make_fwd / council_shadow._fwd）
 # ---------------------------------------------------------------------- #
 def build_bar_fwd(
-    loader: Optional[Callable[[str, Sequence[str], Optional[str], Optional[str]],
-                              Dict[str, Any]]] = None,
+    loader: Optional[
+        Callable[[str, Sequence[str], Optional[str], Optional[str]], Dict[str, Any]]
+    ] = None,
     pool: Optional[Sequence[str]] = None,
     today: Optional[date] = None,
 ) -> Optional[Callable[[str, str], Optional[Dict[int, float]]]]:
@@ -212,8 +220,12 @@ def build_bar_fwd(
         if i is None:
             return None
         closes = entry[1]
-        return {n: round((closes[i + n] / closes[i] - 1) * 100, 2)
-                for n in shadow_collect.NS if i + n < len(closes)} or None
+        return {
+            n: round((closes[i + n] / closes[i] - 1) * 100, 2)
+            for n in shadow_collect.NS
+            if i + n < len(closes)
+        } or None
+
     return fwd if table else None
 
 
@@ -223,16 +235,15 @@ def build_bar_fwd(
 def build_adapters(pool: Optional[Sequence[str]] = None) -> List[Any]:
     """逐策略构造 ClassicStrategyAdapter（参数回落 PARAM_DEFAULTS）。"""
     pool = list(pool or SHADOW_POOL_ACTIVE)
-    return [ClassicStrategyAdapter(name, pool, market=MARKET)
-            for name in STRATEGIES]
+    return [ClassicStrategyAdapter(name, pool, market=MARKET) for name in STRATEGIES]
 
 
-def run_once(trade_date: str,
-             adapters: Sequence[Any],
-             out_dir: Optional[str] = None,
-             fwd_fn: Optional[Callable[[str, str],
-                                       Optional[Dict[int, float]]]] = None,
-             ) -> Dict[str, Any]:
+def run_once(
+    trade_date: str,
+    adapters: Sequence[Any],
+    out_dir: Optional[str] = None,
+    fwd_fn: Optional[Callable[[str, str], Optional[Dict[int, float]]]] = None,
+) -> Dict[str, Any]:
     """单轮采集 + 统计，返回 summary dict（含 exit_code 判定所需的全部字段）。
 
     out_dir None → 生产写点（shadow_collect.shadow_path）；给定 → 干跑
@@ -254,10 +265,8 @@ def run_once(trade_date: str,
     zero_strategies: List[str] = []
     for ad in adapters:
         sid = ad.strategy_id
-        out_path = (os.path.join(out_dir, "%s_shadow.jsonl" % sid)
-                    if out_dir else None)
-        entry: Dict[str, Any] = {"path": out_path or
-                                 shadow_collect.shadow_path(sid)}
+        out_path = os.path.join(out_dir, "%s_shadow.jsonl" % sid) if out_dir else None
+        entry: Dict[str, Any] = {"path": out_path or shadow_collect.shadow_path(sid)}
         # score 预检：抛错显式捕获（adapter 约定不 raise 时此为双保险；
         # ClassicStrategyAdapter 的 as-of 缓存使 collect_once 内二次调用免费）
         try:
@@ -268,18 +277,20 @@ def run_once(trade_date: str,
             per[sid] = entry
             continue
         res = shadow_collect.collect_once(ad, td8, out_path=out_path)
-        entry.update({k: res[k] for k in
-                      ("recorded", "replayed", "skipped_non_event")})
+        entry.update({k: res[k] for k in ("recorded", "replayed", "skipped_non_event")})
         if entry["recorded"] + entry["replayed"] == 0:
             zero_strategies.append(sid)
-            warn("%s 本轮零产出（recorded=0 replayed=0；单标的单日无事件"
-                 "属正常，全策略零产出则以退出码 %d 上报）"
-                 % (sid, EXIT_ZERO))
+            warn(
+                "%s 本轮零产出（recorded=0 replayed=0；单标的单日无事件"
+                "属正常，全策略零产出则以退出码 %d 上报）" % (sid, EXIT_ZERO)
+            )
         per[sid] = entry
 
-    all_zero = all(per[s].get("error")
-                   or (per[s].get("recorded", 0) + per[s].get("replayed", 0)) == 0
-                   for s in (a.strategy_id for a in adapters))
+    all_zero = all(
+        per[s].get("error")
+        or (per[s].get("recorded", 0) + per[s].get("replayed", 0)) == 0
+        for s in (a.strategy_id for a in adapters)
+    )
     exit_code = EXIT_ZERO if all_zero else EXIT_OK
 
     # 统计：只统计不判 gate 升降级（人工评审纪律）；samples 不落日档
@@ -296,10 +307,16 @@ def run_once(trade_date: str,
         stats[sid] = st
         per[sid]["gate"] = st["gate"]["status"]
 
-    summary = {"trade_date": td8, "pool": list(SHADOW_POOL),
-               "market": MARKET, "strategies": per, "stats": stats,
-               "exit_code": exit_code, "zero_strategies": zero_strategies,
-               "finished_at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    summary = {
+        "trade_date": td8,
+        "pool": list(SHADOW_POOL),
+        "market": MARKET,
+        "strategies": per,
+        "stats": stats,
+        "exit_code": exit_code,
+        "zero_strategies": zero_strategies,
+        "finished_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
     base = out_dir or shadow_collect.SHADOW_DIR
     sum_path = os.path.join(base, "daily_shadow_summary_%s.json" % td8)
     tmp = sum_path + ".tmp"
@@ -317,18 +334,22 @@ def main(argv: Optional[List[str]] = None) -> int:
     except Exception:
         pass
     ap = argparse.ArgumentParser(description="S4 影子期每日采集编排（classic 四策略）")
-    ap.add_argument("--date", default=None,
-                    help="采集交易日 YYYYMMDD（缺省=上一交易日，T+1 口径）")
-    ap.add_argument("--out-dir", default=None,
-                    help="影子档/统计重定向目录（干跑用；缺省=业务写点）")
+    ap.add_argument(
+        "--date", default=None, help="采集交易日 YYYYMMDD（缺省=上一交易日，T+1 口径）"
+    )
+    ap.add_argument(
+        "--out-dir", default=None, help="影子档/统计重定向目录（干跑用；缺省=业务写点）"
+    )
     a = ap.parse_args(argv)
 
     try:
         if a.date:
             d = a.date.replace("-", "")
             if len(d) != 8 or not d.isdigit():
-                print("[daily_shadow] --date 必须为 YYYYMMDD: %r" % a.date,
-                      file=sys.stderr)
+                print(
+                    "[daily_shadow] --date 必须为 YYYYMMDD: %r" % a.date,
+                    file=sys.stderr,
+                )
                 return EXIT_ARGS
             td8 = d
         else:
@@ -347,12 +368,22 @@ def main(argv: Optional[List[str]] = None) -> int:
     for sid, e in summary["strategies"].items():
         if e.get("error"):
             continue
-        print("[daily_shadow] %s %s recorded=%d replayed=%d "
-              "skipped_non_event=%d -> %s"
-              % (sid, td8, e["recorded"], e["replayed"],
-                 e["skipped_non_event"], e["path"]))
-    print("[daily_shadow] 完成 trade_date=%s exit=%d summary=%s"
-          % (td8, summary["exit_code"], summary["summary_path"]))
+        print(
+            "[daily_shadow] %s %s recorded=%d replayed=%d "
+            "skipped_non_event=%d -> %s"
+            % (
+                sid,
+                td8,
+                e["recorded"],
+                e["replayed"],
+                e["skipped_non_event"],
+                e["path"],
+            )
+        )
+    print(
+        "[daily_shadow] 完成 trade_date=%s exit=%d summary=%s"
+        % (td8, summary["exit_code"], summary["summary_path"])
+    )
     return summary["exit_code"]
 
 
@@ -360,11 +391,12 @@ if __name__ == "__main__":
     # 自写日志（调度判活看本文件字节增长；仅脚本直跑生效，测试 main() 不受影响）。
     # --out-dir 干跑时日志跟随重定向目录，不落业务写点。
     _argv = sys.argv[1:]
-    _out_dir = (_argv[_argv.index("--out-dir") + 1]
-                if "--out-dir" in _argv
-                and _argv.index("--out-dir") + 1 < len(_argv) else None)
-    _LOG = os.path.join(
-        _out_dir or shadow_collect.SHADOW_DIR, "daily_shadow.log")
+    _out_dir = (
+        _argv[_argv.index("--out-dir") + 1]
+        if "--out-dir" in _argv and _argv.index("--out-dir") + 1 < len(_argv)
+        else None
+    )
+    _LOG = os.path.join(_out_dir or shadow_collect.SHADOW_DIR, "daily_shadow.log")
 
     class _Tee:
         def __init__(self, *streams):

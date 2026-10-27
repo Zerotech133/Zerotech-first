@@ -30,14 +30,14 @@ DataSourceState = ("trial", "proxy", "real_auth")
 
 # 门 N5 清单需摸底的数据源名称（仅名字，无真实值、无凭证）
 KNOWN_DATA_SOURCES = (
-    "Tushare",   # 通联/Tushare
+    "Tushare",  # 通联/Tushare
     "Snowball",  # 雪球
-    "xtcloud",   # 迅投云/xtcloud
-    "东财",       # 东方财富
-    "股吧",       # 股吧
-    "akshare",   # akshare
-    "crypto",    # 加密货币行情
-    "飞书",       # 飞书
+    "xtcloud",  # 迅投云/xtcloud
+    "东财",  # 东方财富
+    "股吧",  # 股吧
+    "akshare",  # akshare
+    "crypto",  # 加密货币行情
+    "飞书",  # 飞书
 )
 
 # 凭证占位符：清单中所有真实凭证一律以该值占位，本模块绝不持有真实值。
@@ -53,6 +53,7 @@ _DEFAULT_STATE = "trial"
 # ---------------------------------------------------------------------------
 # 适配器基类
 # ---------------------------------------------------------------------------
+
 
 class DataSourceAdapter:
     """可插拔数据源适配器基类。
@@ -108,6 +109,7 @@ class DataSourceAdapter:
 # ---------------------------------------------------------------------------
 # 工厂
 # ---------------------------------------------------------------------------
+
 
 def build_adapter(name: str, state: str = "trial") -> DataSourceAdapter:
     """构造一个数据源适配器实例。

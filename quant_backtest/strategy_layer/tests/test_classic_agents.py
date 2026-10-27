@@ -14,6 +14,7 @@
 
 数据全部合成（零 DB 依赖）；strategies.py 只读引用，不修改。
 """
+
 import importlib.util
 import json
 import os
@@ -24,8 +25,8 @@ import pandas as pd
 import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))          # quant_backtest/
-_REPO_ROOT = os.path.dirname(_QB_ROOT)                      # 仓库根
+_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))  # quant_backtest/
+_REPO_ROOT = os.path.dirname(_QB_ROOT)  # 仓库根
 _AGENTS_DIR = os.path.join(_QB_ROOT, "strategy_layer", "onboarding", "agents")
 
 if _QB_ROOT not in sys.path:
@@ -44,8 +45,8 @@ def _load_module(name, path):
 
 # 被测插件包（先加载：其内部单例化 agent_platform 契约模块）
 classic_agents = _load_module(
-    "classic_agents_under_test",
-    os.path.join(_AGENTS_DIR, "classic_agents.py"))
+    "classic_agents_under_test", os.path.join(_AGENTS_DIR, "classic_agents.py")
+)
 # agent_platform 契约（真校验器）：复用插件已加载的同一份模块对象，
 # 保证 StrategyAgent/Verdict 类身份一致（isinstance 可判定）
 _ap_registry = classic_agents.ap_registry_module()
@@ -91,9 +92,17 @@ def test_propose_returns_valid_verdict(cls, synth_closes):
     assert v.strategy_id == cls.strategy_id
     assert v.symbol == SYMBOL
     v.validate()  # 五档枚举 / confidence [0,1] / stance / symbol 白名单
-    d = json.loads(json.dumps({
-        "recommendation": v.recommendation, "confidence": v.confidence,
-        "stance": v.stance, "score": v.score, "extras": v.extras}))
+    d = json.loads(
+        json.dumps(
+            {
+                "recommendation": v.recommendation,
+                "confidence": v.confidence,
+                "stance": v.stance,
+                "score": v.score,
+                "extras": v.extras,
+            }
+        )
+    )
     assert d["recommendation"] in _ap_registry.RECOMMENDATIONS
 
 
@@ -137,10 +146,18 @@ def test_ma_cross_frame_by_frame_matches_direct_compute():
             assert v.extras.get("fail_closed")
             continue
         cur, prev = int(pos.iloc[i - 1]), int(pos.iloc[i - 2])
-        expected = ("buy" if (prev == 0 and cur == 1)
-                    else "sell" if (prev == 1 and cur == 0) else "hold")
+        expected = (
+            "buy"
+            if (prev == 0 and cur == 1)
+            else "sell"
+            if (prev == 1 and cur == 0)
+            else "hold"
+        )
         assert v.recommendation == expected, "frame %d: %s != %s" % (
-            i, v.recommendation, expected)
+            i,
+            v.recommendation,
+            expected,
+        )
         changes += int(expected in ("buy", "sell"))
         if expected == "buy":
             assert v.score == 70.0 and v.stance == "bull"
@@ -160,8 +177,13 @@ def test_trend_follow_frame_by_frame_matches_direct_compute():
     for i in range(agent.min_window, n + 1):
         v = agent.propose(_ctx(closes[:i]))
         cur, prev = int(pos.iloc[i - 1]), int(pos.iloc[i - 2])
-        expected = ("buy" if (prev == 0 and cur == 1)
-                    else "sell" if (prev == 1 and cur == 0) else "hold")
+        expected = (
+            "buy"
+            if (prev == 0 and cur == 1)
+            else "sell"
+            if (prev == 1 and cur == 0)
+            else "hold"
+        )
         assert v.recommendation == expected, "frame %d" % i
         checked += 1
     assert checked > 0
@@ -170,9 +192,11 @@ def test_trend_follow_frame_by_frame_matches_direct_compute():
 # ---------------------------------------------------------------------- #
 # ③ 事件帧 fail-closed（rsi_reversal / boll_breakout）
 # ---------------------------------------------------------------------- #
-@pytest.mark.parametrize("cls", [classic_agents.RsiReversalAgent,
-                                 classic_agents.BollBreakoutAgent],
-                         ids=lambda c: c.strategy_id)
+@pytest.mark.parametrize(
+    "cls",
+    [classic_agents.RsiReversalAgent, classic_agents.BollBreakoutAgent],
+    ids=lambda c: c.strategy_id,
+)
 def test_event_frame_insufficient_window_fail_closed(cls, synth_closes):
     agent = cls()
     for cut in (0, 5, agent.min_window - 1):
@@ -191,16 +215,23 @@ def test_event_frame_window_sufficient_matches_direct():
     closes = _synth_closes(n)
     idx = pd.date_range("2026-04-01", periods=n, freq="B")
     df = pd.DataFrame({"close": closes}, index=idx)
-    for name, cls in (("rsi_reversal", classic_agents.RsiReversalAgent),
-                      ("boll_breakout", classic_agents.BollBreakoutAgent)):
+    for name, cls in (
+        ("rsi_reversal", classic_agents.RsiReversalAgent),
+        ("boll_breakout", classic_agents.BollBreakoutAgent),
+    ):
         pos = _strategies.REGISTRY[name](df, {})
         agent = cls()
         for i in range(agent.min_window, n + 1):
             v = agent.propose(_ctx(closes[:i]))
             assert not v.extras.get("fail_closed"), "frame %d" % i
             cur, prev = int(pos.iloc[i - 1]), int(pos.iloc[i - 2])
-            expected = ("buy" if (prev == 0 and cur == 1)
-                        else "sell" if (prev == 1 and cur == 0) else "hold")
+            expected = (
+                "buy"
+                if (prev == 0 and cur == 1)
+                else "sell"
+                if (prev == 1 and cur == 0)
+                else "hold"
+            )
             assert v.recommendation == expected, "%s frame %d" % (name, i)
 
 
@@ -214,7 +245,7 @@ def test_rsi_hold_from_warmup_zone_fail_closed():
     agent = classic_agents.RsiReversalAgent()
     assert agent.min_window == agent.warmup + agent.max_hold_upper
     n = agent.min_window + 10
-    closes = [100.0 - 2.0 * i for i in range(10)]            # 触发区
+    closes = [100.0 - 2.0 * i for i in range(10)]  # 触发区
     closes += [closes[-1] + 0.01 * i for i in range(n - 10)]  # 长期横盘
     v = agent.propose(_ctx(closes))
     v.validate()
@@ -285,14 +316,20 @@ def test_propose_has_no_write_side_effects(cls, synth_closes):
 
 def test_module_source_free_of_execution_chain():
     """模块源码不引用执行链/账本/下单（红线静态断言）。"""
-    src = open(os.path.join(_AGENTS_DIR, "classic_agents.py"),
-               encoding="utf-8").read()
-    for forbidden in ("execution_engine", "place_order", "cancel_order",
-                      "order_book", "ledger_write", "write_ledger",
-                      "account", "broker", "trade_api"):
+    src = open(os.path.join(_AGENTS_DIR, "classic_agents.py"), encoding="utf-8").read()
+    for forbidden in (
+        "execution_engine",
+        "place_order",
+        "cancel_order",
+        "order_book",
+        "ledger_write",
+        "write_ledger",
+        "account",
+        "broker",
+        "trade_api",
+    ):
         assert forbidden not in src, "源码含禁用标识: %s" % forbidden
-    init_src = open(os.path.join(_AGENTS_DIR, "__init__.py"),
-                    encoding="utf-8").read()
+    init_src = open(os.path.join(_AGENTS_DIR, "__init__.py"), encoding="utf-8").read()
     assert "execution" not in init_src
 
 
@@ -300,8 +337,10 @@ def test_import_does_not_pull_execution_chain():
     """插件模块导入后，执行链模块未被拉起（import 副作用断言）。"""
     fresh = _load_module(
         "classic_agents_fresh_import_check",
-        os.path.join(_AGENTS_DIR, "classic_agents.py"))
+        os.path.join(_AGENTS_DIR, "classic_agents.py"),
+    )
     assert hasattr(fresh, "ClassicStrategyAgent")
     for forbidden in ("execution_engine", "order", "account"):
         assert forbidden not in sys.modules or not sys.modules[
-            forbidden].__name__.startswith("quant_backtest")
+            forbidden
+        ].__name__.startswith("quant_backtest")

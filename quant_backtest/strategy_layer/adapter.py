@@ -19,6 +19,7 @@
 - 文件中已有的开关/权重在对应策略 register 时套用；文件未提及的
   策略用默认值（启用 + 均权）。
 """
+
 import json
 import os
 import tempfile
@@ -28,8 +29,9 @@ from typing import Dict, List, Optional, Protocol, runtime_checkable
 from .signal import Signal
 
 # 开关持久化文件默认路径（与本文件同目录）
-DEFAULT_STORE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  "strategy_registry.json")
+DEFAULT_STORE_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "strategy_registry.json"
+)
 
 
 @runtime_checkable
@@ -68,9 +70,12 @@ class Registry:
     # ------------------------------------------------------------------ #
     # 注册与查询
     # ------------------------------------------------------------------ #
-    def register(self, adapter: StrategyAdapter,
-                 enabled: Optional[bool] = None,
-                 weight: Optional[float] = None) -> None:
+    def register(
+        self,
+        adapter: StrategyAdapter,
+        enabled: Optional[bool] = None,
+        weight: Optional[float] = None,
+    ) -> None:
         """注册一个适配器。
 
         - 首次注册：开关/权重取显式参数；未给参数时优先套用持久化
@@ -206,14 +211,13 @@ class Registry:
             if not isinstance(enabled, list) or not isinstance(weights, dict):
                 raise ValueError("enabled 必须为 list，weights 必须为 dict")
             self._saved_enabled = [str(x) for x in enabled]
-            self._saved_weights = {str(k): float(v)
-                                   for k, v in weights.items()}
+            self._saved_weights = {str(k): float(v) for k, v in weights.items()}
             top_n = data.get("top_n", {})
-            self._saved_top_n = (dict(top_n)
-                                 if isinstance(top_n, dict) else {})
+            self._saved_top_n = dict(top_n) if isinstance(top_n, dict) else {}
         except Exception as exc:  # JSON 缺失/坏 → 默认全开均权
-            print(f"[strategy_layer] registry store 加载失败，回退默认"
-                  f"(全开均权): {exc}")
+            print(
+                f"[strategy_layer] registry store 加载失败，回退默认(全开均权): {exc}"
+            )
             self._saved_enabled = None
             self._saved_weights = None
             self._saved_top_n = None
@@ -227,8 +231,9 @@ class Registry:
         导致 kg_boost 全市场 5597 条灌库）。故落盘前先读盘合并三表，
         并经 tmp+os.replace 原子替换。
         """
-        merged_top_n = {sid: n for sid, n in (self._saved_top_n or {}).items()
-                        if n is not None}
+        merged_top_n = {
+            sid: n for sid, n in (self._saved_top_n or {}).items() if n is not None
+        }
         merged_enabled = None
         merged_weights = None
         try:
@@ -239,14 +244,15 @@ class Registry:
                     # 内存缺失的键以磁盘为准（防 load 失败后的空覆盖）
                     disk_top = disk.get("top_n") or {}
                     if isinstance(disk_top, dict):
-                        merged_top_n.update({k: v for k, v in disk_top.items()
-                                             if k not in merged_top_n})
+                        merged_top_n.update(
+                            {k: v for k, v in disk_top.items() if k not in merged_top_n}
+                        )
         except Exception:
             pass  # 磁盘不可读则以内存状态为准
         payload = {
             "enabled": merged_enabled or self.enabled_ids(),
-            "weights": merged_weights or {sid: self.get_weight(sid)
-                                          for sid in self.list_ids()},
+            "weights": merged_weights
+            or {sid: self.get_weight(sid) for sid in self.list_ids()},
             "top_n": merged_top_n,
         }
         try:
@@ -258,8 +264,7 @@ class Registry:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
             os.replace(tmp, self._store_path)
         except Exception as exc:
-            print(f"[strategy_layer] registry store 写入失败"
-                  f"(内存状态不受影响): {exc}")
+            print(f"[strategy_layer] registry store 写入失败(内存状态不受影响): {exc}")
 
 
 def bootstrap_default_adapters(registry: Registry) -> Registry:

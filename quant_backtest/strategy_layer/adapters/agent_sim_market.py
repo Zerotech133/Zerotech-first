@@ -5,6 +5,7 @@
 转换为 quant_backtest 的 ``OrderIntent``。它不接入 portfolio、账本或公共策略
 主链；``simulate_verdict`` 仅在调用方明确要求时使用内存 ``BarStore`` 执行。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,7 +15,14 @@ from typing import Any, Iterable, Mapping, Optional
 
 from agent_platform.contracts.sim_market import SimMarketBar
 from agent_platform.engine.strategy_registry import Verdict
-from execution_engine import Bar, BarStore, ExecutionConfig, OrderIntent, ensure_utc, run_from_store
+from execution_engine import (
+    Bar,
+    BarStore,
+    ExecutionConfig,
+    OrderIntent,
+    ensure_utc,
+    run_from_store,
+)
 
 
 _RECOMMENDATION_TO_SIDE = {
@@ -37,12 +45,20 @@ def _require_text(value: Any, field_name: str) -> str:
 
 def _validate_verdict(verdict: Any) -> Verdict:
     if not isinstance(verdict, Verdict):
-        raise TypeError("verdict 必须是 agent_platform.engine.strategy_registry.Verdict")
+        raise TypeError(
+            "verdict 必须是 agent_platform.engine.strategy_registry.Verdict"
+        )
     try:
         verdict.validate()
     except Exception as exc:
         raise AgentSimMarketError(f"Verdict 非法：{exc}") from exc
-    if verdict.recommendation not in {"strong_buy", "buy", "hold", "sell", "strong_sell"}:
+    if verdict.recommendation not in {
+        "strong_buy",
+        "buy",
+        "hold",
+        "sell",
+        "strong_sell",
+    }:
         raise AgentSimMarketError("Verdict.recommendation 不在合法五档枚举内")
     return verdict
 
@@ -70,10 +86,19 @@ def sim_market_bar_to_bar(
     if bar.visible_at is None:
         raise AgentSimMarketError("visible_at 不可缺失")
     observed_at = ensure_utc(as_of, "as_of")
-    timestamp = ensure_utc(datetime.fromisoformat(bar.timestamp.replace("Z", "+00:00")), "timestamp")
-    visible_at = ensure_utc(datetime.fromisoformat(bar.visible_at.replace("Z", "+00:00")), "visible_at")
+    timestamp = ensure_utc(
+        datetime.fromisoformat(bar.timestamp.replace("Z", "+00:00")), "timestamp"
+    )
+    visible_at = ensure_utc(
+        datetime.fromisoformat(bar.visible_at.replace("Z", "+00:00")), "visible_at"
+    )
     closed_at = ensure_utc(close_at, "close_at")
-    if observed_at > datetime.now(timezone.utc) or timestamp > observed_at or closed_at > observed_at or visible_at > observed_at:
+    if (
+        observed_at > datetime.now(timezone.utc)
+        or timestamp > observed_at
+        or closed_at > observed_at
+        or visible_at > observed_at
+    ):
         raise AgentSimMarketError("bar 尚未在 as_of 可见或 as_of 位于未来")
     if closed_at < timestamp or visible_at < closed_at:
         raise AgentSimMarketError("close_at 与 visible_at 时间顺序非法")
@@ -88,7 +113,11 @@ def sim_market_bar_to_bar(
         timeframe=_require_text(timeframe, "timeframe"),
         dt=timestamp,
         session_date=session_date,
-        o=bar.open, h=bar.high, l=bar.low, c=bar.close, v=bar.volume,
+        o=bar.open,
+        h=bar.high,
+        l=bar.low,
+        c=bar.close,
+        v=bar.volume,
         amount=None,
         close_at=closed_at,
         available_at=visible_at,
@@ -163,9 +192,17 @@ class SimMarketStatusEvidence:
         _require_text(self.market, "market")
         _require_text(self.source, "source")
         _require_text(self.source_version, "source_version")
-        if not isinstance(self.session_date, date) or isinstance(self.session_date, datetime):
+        if not isinstance(self.session_date, date) or isinstance(
+            self.session_date, datetime
+        ):
             raise AgentSimMarketError("session_date 必须是 date")
-        if self.status not in {"TRADING", "HALTED", "SUSPENDED", "UNLISTED", "DELISTED"}:
+        if self.status not in {
+            "TRADING",
+            "HALTED",
+            "SUSPENDED",
+            "UNLISTED",
+            "DELISTED",
+        }:
             raise AgentSimMarketError("status 必须是明确的交易状态")
         observed = ensure_utc(self.observed_at, "observed_at")
         effective_until = ensure_utc(self.effective_until, "effective_until")
@@ -186,7 +223,10 @@ def _evidence_status_provider(
     if observed_at > datetime.now(timezone.utc):
         raise AgentSimMarketError("as_of 不得位于未来")
     for key, item in snapshot.items():
-        if not isinstance(item, SimMarketStatusEvidence) or key != (item.symbol, item.session_date):
+        if not isinstance(item, SimMarketStatusEvidence) or key != (
+            item.symbol,
+            item.session_date,
+        ):
             raise AgentSimMarketError("市场状态证据键或类型非法")
         if item.market.upper() != market.upper():
             raise AgentSimMarketError("市场状态证据与订单市场不一致")
@@ -196,19 +236,33 @@ def _evidence_status_provider(
             raise AgentSimMarketError("市场状态证据晚于 as_of")
 
     def provider(symbol: str, dt: datetime, bar: Bar) -> str:
-        if not isinstance(bar, Bar) or bar.symbol != symbol or bar.market.upper() != market.upper():
+        if (
+            not isinstance(bar, Bar)
+            or bar.symbol != symbol
+            or bar.market.upper() != market.upper()
+        ):
             return "UNKNOWN"
         item = snapshot.get((symbol, bar.session_date))
         if item is None:
             return "UNKNOWN"
         execution_at = ensure_utc(dt, "dt")
-        if execution_at > observed_at or abs((bar.session_date - bar.dt.date()).days) > 1:
+        if (
+            execution_at > observed_at
+            or abs((bar.session_date - bar.dt.date()).days) > 1
+        ):
             return "UNKNOWN"
-        if (bar.close_at is None or bar.available_at is None
-                or bar.close_at > execution_at or bar.available_at > execution_at):
+        if (
+            bar.close_at is None
+            or bar.available_at is None
+            or bar.close_at > execution_at
+            or bar.available_at > execution_at
+        ):
             return "UNKNOWN"
-        if not (ensure_utc(item.observed_at, "observed_at") <= execution_at
-                < ensure_utc(item.effective_until, "effective_until")):
+        if not (
+            ensure_utc(item.observed_at, "observed_at")
+            <= execution_at
+            < ensure_utc(item.effective_until, "effective_until")
+        ):
             return "UNKNOWN"
         return item.status
 
@@ -232,7 +286,9 @@ def simulate_verdict(
     limit_provider=None,
     calendar_provider=None,
     market_rule_provider=None,
-    status_evidence: Optional[Mapping[tuple[str, date], SimMarketStatusEvidence]] = None,
+    status_evidence: Optional[
+        Mapping[tuple[str, date], SimMarketStatusEvidence]
+    ] = None,
     as_of: Optional[datetime] = None,
     allow_demo_fixture: bool = False,
 ):
@@ -247,11 +303,16 @@ def simulate_verdict(
         raise AgentSimMarketError("状态证据不得混用演示模式")
     if status_evidence is not None and status_provider is not None:
         raise AgentSimMarketError("状态证据必须独立使用，不得混用 status_provider")
-    if status_provider is not None and status_provider is not static_trading_status_fixture:
+    if (
+        status_provider is not None
+        and status_provider is not static_trading_status_fixture
+    ):
         raise AgentSimMarketError("status_provider 不允许外部回调")
     if status_provider is static_trading_status_fixture and not allow_demo_fixture:
         raise AgentSimMarketError("静态状态夹具必须显式启用演示模式")
-    if status_evidence is None and not (allow_demo_fixture and status_provider is static_trading_status_fixture):
+    if status_evidence is None and not (
+        allow_demo_fixture and status_provider is static_trading_status_fixture
+    ):
         raise AgentSimMarketError("缺少状态证据；演示夹具必须显式启用")
     evidence_provider = None
     if status_evidence is not None:
@@ -261,7 +322,10 @@ def simulate_verdict(
             raise AgentSimMarketError("status_evidence 必须是映射")
         checked_verdict = _validate_verdict(verdict)
         evidence_provider = _evidence_status_provider(
-            status_evidence, symbol=checked_verdict.symbol, market=_require_text(market, "market"), as_of=as_of,
+            status_evidence,
+            symbol=checked_verdict.symbol,
+            market=_require_text(market, "market"),
+            as_of=as_of,
         )
         status_provider = evidence_provider
     for name, provider in (
@@ -270,13 +334,28 @@ def simulate_verdict(
         ("calendar_provider", calendar_provider),
         ("market_rule_provider", market_rule_provider),
     ):
-        if provider is not None and not (name == "status_provider" and (provider is static_trading_status_fixture or provider is evidence_provider)):
-            raise AgentSimMarketError(f"{name} 不允许外部回调；仅可使用静态夹具或离线状态证据")
+        if provider is not None and not (
+            name == "status_provider"
+            and (
+                provider is static_trading_status_fixture
+                or provider is evidence_provider
+            )
+        ):
+            raise AgentSimMarketError(
+                f"{name} 不允许外部回调；仅可使用静态夹具或离线状态证据"
+            )
     if config is not None and not isinstance(config, ExecutionConfig):
         raise TypeError("config 必须是 ExecutionConfig")
-    if config is not None and any(getattr(config, name) is not None for name in ("fill_model", "fee_calculator", "fee_provider")):
-        raise AgentSimMarketError("config 不允许 fill_model、fee_calculator 或 fee_provider")
-    if config is not None and (config.calendar_required or config.market_rules_required):
+    if config is not None and any(
+        getattr(config, name) is not None
+        for name in ("fill_model", "fee_calculator", "fee_provider")
+    ):
+        raise AgentSimMarketError(
+            "config 不允许 fill_model、fee_calculator 或 fee_provider"
+        )
+    if config is not None and (
+        config.calendar_required or config.market_rules_required
+    ):
         raise AgentSimMarketError("config 不允许依赖外部日历或市场规则 provider")
     if evidence_provider is not None:
         cutoff = ensure_utc(as_of, "as_of")
@@ -298,13 +377,23 @@ def simulate_verdict(
     store = bars if isinstance(bars, BarStore) else BarStore(bars)
     if evidence_provider is not None:
         for bar in store.all():
-            if (bar.market.upper() != market.upper() or bar.timeframe != timeframe
-                    or bar.adjustment != "none" or not bar.closed
-                    or bar.close_at is None or bar.available_at is None
-                    or bar.dt > cutoff or bar.close_at > cutoff or bar.available_at > cutoff
-                    or bar.close_at < bar.dt or bar.available_at < bar.close_at
-                    or abs((bar.session_date - bar.dt.date()).days) > 1):
-                raise AgentSimMarketError("状态证据模式下 Bar 市场、复权、收盘或可见性不符合 as_of")
+            if (
+                bar.market.upper() != market.upper()
+                or bar.timeframe != timeframe
+                or bar.adjustment != "none"
+                or not bar.closed
+                or bar.close_at is None
+                or bar.available_at is None
+                or bar.dt > cutoff
+                or bar.close_at > cutoff
+                or bar.available_at > cutoff
+                or bar.close_at < bar.dt
+                or bar.available_at < bar.close_at
+                or abs((bar.session_date - bar.dt.date()).days) > 1
+            ):
+                raise AgentSimMarketError(
+                    "状态证据模式下 Bar 市场、复权、收盘或可见性不符合 as_of"
+                )
     policy = config
     if policy is None:
         policy_refs = {
@@ -355,7 +444,20 @@ class AgentSimMarketAdapter:
             asset_class=self.asset_class,
         )
 
-    def simulate(self, verdict: Verdict, bars: BarStore | Iterable[Any], config: Optional[ExecutionConfig] = None, *, status_provider=None, limit_provider=None, calendar_provider=None, market_rule_provider=None, status_evidence=None, as_of=None, allow_demo_fixture=False):
+    def simulate(
+        self,
+        verdict: Verdict,
+        bars: BarStore | Iterable[Any],
+        config: Optional[ExecutionConfig] = None,
+        *,
+        status_provider=None,
+        limit_provider=None,
+        calendar_provider=None,
+        market_rule_provider=None,
+        status_evidence=None,
+        as_of=None,
+        allow_demo_fixture=False,
+    ):
         return simulate_verdict(
             verdict,
             bars,

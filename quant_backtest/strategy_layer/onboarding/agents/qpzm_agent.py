@@ -2,7 +2,7 @@
 """青萍之末（qpzm）S2 Agent 化（QpzmAgent）——首个截面强依赖 Agent。
 
 本体：quant_backtest/qpzm_backtest.py::combine_score（jev_mode="missing"
-单格语义，纯函数逐字复刻——本模块**不 import** qpzm_backtest / 
+单格语义，纯函数逐字复刻——本模块**不 import** qpzm_backtest /
 qpzm_daily_batch / rps_resonance 任何本体，仅以类属性快照常量 + 纯函数
 复刻单格公式，导入期绝对干净，连 pandas/numpy 都不依赖）。
 
@@ -91,6 +91,7 @@ W3-4 分位豁免（定案 2）：分位是推送卡片展示增强（annotate_p
 引用）、不修改 qpzm_backtest.py / qpzm_daily_batch.py / rps_resonance.py
 等任何本体文件与 li122/classic agents（并行线产物）；Agent 是纯包装层。
 """
+
 import importlib.util
 import math
 import os
@@ -99,15 +100,15 @@ import sys
 # ---------------------------------------------------------------- 路径 #
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _QB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))  # quant_backtest/
-_REPO_ROOT = os.path.dirname(_QB_ROOT)                               # 仓库根
+_REPO_ROOT = os.path.dirname(_QB_ROOT)  # 仓库根
 
 # ── 单格公式常量（qpzm_backtest.py 只读抄值快照，不 import） ──
 # W4 共振权重（jev_mode="missing" 下 jev 维整体缺席，其余三维 renorm）
-W_TECH = 0.35    # W4["tech"]
-W_RPS = 0.25     # W4["rps"]
-W_ENV = 0.15     # W4["env"]
-BUY_TH = 75.0    # TH_CUR 买入阈
-OBS_TH = 50.0    # TH_CUR 观察阈
+W_TECH = 0.35  # W4["tech"]
+W_RPS = 0.25  # W4["rps"]
+W_ENV = 0.15  # W4["env"]
+BUY_TH = 75.0  # TH_CUR 买入阈
+OBS_TH = 50.0  # TH_CUR 观察阈
 # 分数不可证（NaN）时信号判定用的 nan_to_num 下探值（本体 combine_score 同款）
 _NAN_GE = -1e9
 
@@ -139,16 +140,18 @@ def _load_ap_contract():
         return mod.StrategyAgent, mod.Verdict
     try:
         from strategy_registry import StrategyAgent, Verdict
+
         mod = sys.modules["strategy_registry"]
     except ImportError:
         try:
             from agent_platform.engine.strategy_registry import StrategyAgent, Verdict
+
             mod = sys.modules["agent_platform.engine.strategy_registry"]
         except ImportError:
-            path = os.path.join(_REPO_ROOT, "agent_platform", "engine",
-                                "strategy_registry.py")
-            spec = importlib.util.spec_from_file_location(
-                _CONTRACT_MOD_NAME, path)
+            path = os.path.join(
+                _REPO_ROOT, "agent_platform", "engine", "strategy_registry.py"
+            )
+            spec = importlib.util.spec_from_file_location(_CONTRACT_MOD_NAME, path)
             mod = importlib.util.module_from_spec(spec)
             sys.modules[_CONTRACT_MOD_NAME] = mod  # 先注册再执行（防环）
             spec.loader.exec_module(mod)
@@ -206,13 +209,15 @@ class QpzmAgent(_STRATEGY_AGENT):
             return self._propose(context, symbol)
         except Exception as exc:  # 兜底降级：对齐 li122 兜底语义
             return self._fail_closed(
-                symbol, "propose 异常降级（绝不 raise）：%r" % (exc,))
+                symbol, "propose 异常降级（绝不 raise）：%r" % (exc,)
+            )
 
     def _propose(self, context, symbol):
         fields = context.get("fields")
         if not isinstance(fields, dict):
             return self._fail_closed(
-                symbol, "fields 缺失或非映射（装配不完整，fail-closed）")
+                symbol, "fields 缺失或非映射（装配不完整，fail-closed）"
+            )
         parsed = self._parse_fields(fields)
         if isinstance(parsed, str):
             return self._fail_closed(symbol, parsed)
@@ -223,86 +228,126 @@ class QpzmAgent(_STRATEGY_AGENT):
         # ── 单格公式（逐字复刻 combine_score jev_mode="missing"，同运算次序） ──
         t = float("nan") if tech is None else float(tech)
         rp = float("nan") if rps_mix is None else float(rps_mix)
-        el = bool(eligible) and not math.isnan(t)   # 本体: eligible & tech.notna()
-        hr = el and not math.isnan(rp)              # 本体: el & ~isnan(rp)
-        wsum = (W_TECH + W_ENV) * (1.0 if el else 0.0) \
-            + W_RPS * (1.0 if hr else 0.0)
-        num = t * W_TECH + env_score * W_ENV \
-            + (0.0 if math.isnan(rp) else rp * W_RPS)
+        el = bool(eligible) and not math.isnan(t)  # 本体: eligible & tech.notna()
+        hr = el and not math.isnan(rp)  # 本体: el & ~isnan(rp)
+        wsum = (W_TECH + W_ENV) * (1.0 if el else 0.0) + W_RPS * (1.0 if hr else 0.0)
+        num = t * W_TECH + env_score * W_ENV + (0.0 if math.isnan(rp) else rp * W_RPS)
         sc = num / wsum if wsum > 0 else float("nan")
         gate_ok = env_safe if self.gate_on else True
-        ge = _NAN_GE if math.isnan(sc) else sc      # 本体 np.nan_to_num 口径
+        ge = _NAN_GE if math.isnan(sc) else sc  # 本体 np.nan_to_num 口径
 
-        base_extras = {"as_of": as_of, "n_avail": n_avail,
-                       "tech": None if math.isnan(t) else t,
-                       "rps_mix": None if math.isnan(rp) else rp,
-                       "env_score": env_score, "env_safe": env_safe,
-                       "eligible": eligible, "gate_on": self.gate_on}
+        base_extras = {
+            "as_of": as_of,
+            "n_avail": n_avail,
+            "tech": None if math.isnan(t) else t,
+            "rps_mix": None if math.isnan(rp) else rp,
+            "env_score": env_score,
+            "env_safe": env_safe,
+            "eligible": eligible,
+            "gate_on": self.gate_on,
+        }
 
         # ── Verdict 映射（定案 4 五档表，行序即优先级） ──
-        if el and hr and gate_ok and ge >= self.buy_th:      # 行 1 买入
-            extras = dict(base_extras, action="买入", s4_calibrate=
-                          "置信为模板基准值（score 为 combine_score 浮点原值），"
-                          "S4 影子期校准置信")
-            return self._signal_verdict(symbol, "buy", CONF_BUY, sc, trace_id,
-                                        "共振买入：combine_score=%.6f ≥ 买入阈"
-                                        " %s（闸门放行）" % (sc, self.buy_th),
-                                        extras)
-        if el and hr and gate_ok and ge >= self.obs_th:      # 行 2 观察（弱买入）
+        if el and hr and gate_ok and ge >= self.buy_th:  # 行 1 买入
+            extras = dict(
+                base_extras,
+                action="买入",
+                s4_calibrate="置信为模板基准值（score 为 combine_score 浮点原值），"
+                "S4 影子期校准置信",
+            )
+            return self._signal_verdict(
+                symbol,
+                "buy",
+                CONF_BUY,
+                sc,
+                trace_id,
+                "共振买入：combine_score=%.6f ≥ 买入阈"
+                " %s（闸门放行）" % (sc, self.buy_th),
+                extras,
+            )
+        if el and hr and gate_ok and ge >= self.obs_th:  # 行 2 观察（弱买入）
             extras = dict(base_extras, action="观察", tier="observe")
-            return self._signal_verdict(symbol, "buy", CONF_OBS, sc, trace_id,
-                                        "共振观察：%.6f ∈ [观察阈 %s, 买入阈 %s)"
-                                        "（弱买入立场，闸门放行）"
-                                        % (sc, self.obs_th, self.buy_th),
-                                        extras)
-        if not el:                                            # 行 6 不入池
-            why = ("tech 缺维（NaN）强制 el=False" if bool(eligible)
-                   else "n_bars < 55 不入池")
+            return self._signal_verdict(
+                symbol,
+                "buy",
+                CONF_OBS,
+                sc,
+                trace_id,
+                "共振观察：%.6f ∈ [观察阈 %s, 买入阈 %s)"
+                "（弱买入立场，闸门放行）" % (sc, self.obs_th, self.buy_th),
+                extras,
+            )
+        if not el:  # 行 6 不入池
+            why = (
+                "tech 缺维（NaN）强制 el=False"
+                if bool(eligible)
+                else "n_bars < 55 不入池"
+            )
             return _VERDICT(
-                strategy_id=self.strategy_id, symbol=symbol,
-                recommendation="hold", confidence=0.0, stance="neutral",
+                strategy_id=self.strategy_id,
+                symbol=symbol,
+                recommendation="hold",
+                confidence=0.0,
+                stance="neutral",
                 score=0.0,
                 rationale="不入池（%s）：合法判定，非 fail-closed" % why,
                 trace_id=trace_id,
-                extras=dict(base_extras, no="min_bars"))
-        if not hr:                                            # 行 5 RPS 缺维
+                extras=dict(base_extras, no="min_bars"),
+            )
+        if not hr:  # 行 5 RPS 缺维
             if math.isnan(sc):
-                rationale = ("RPS 缺维且 env 缺分：伪分不可证，不信号"
-                             "（合法判定）")
+                rationale = "RPS 缺维且 env 缺分：伪分不可证，不信号（合法判定）"
             else:
-                rationale = ("RPS 缺维：renorm 伪分 %.6f 过阈也不信号"
-                             "（hr 压死语义，合法判定）" % sc)
+                rationale = (
+                    "RPS 缺维：renorm 伪分 %.6f 过阈也不信号"
+                    "（hr 压死语义，合法判定）" % sc
+                )
             return _VERDICT(
-                strategy_id=self.strategy_id, symbol=symbol,
-                recommendation="hold", confidence=0.0, stance="neutral",
+                strategy_id=self.strategy_id,
+                symbol=symbol,
+                recommendation="hold",
+                confidence=0.0,
+                stance="neutral",
                 score=0.0 if math.isnan(sc) else sc,
                 rationale=rationale,
                 trace_id=trace_id,
-                extras=dict(base_extras, no="rps_missing"))
-        if not gate_ok:                                       # 行 4 环境闸门否决
+                extras=dict(base_extras, no="rps_missing"),
+            )
+        if not gate_ok:  # 行 4 环境闸门否决
             return _VERDICT(
-                strategy_id=self.strategy_id, symbol=symbol,
-                recommendation="hold", confidence=0.0, stance="neutral",
+                strategy_id=self.strategy_id,
+                symbol=symbol,
+                recommendation="hold",
+                confidence=0.0,
+                stance="neutral",
                 score=0.0 if math.isnan(sc) else sc,
                 rationale="环境闸门否决：env safe=False 一票否决买入/观察"
-                          "（本体确定性否决，合法判定）",
+                "（本体确定性否决，合法判定）",
                 trace_id=trace_id,
-                extras=dict(base_extras, action="回避（环境闸门）",
-                            veto="env_gate"))
+                extras=dict(base_extras, action="回避（环境闸门）", veto="env_gate"),
+            )
         # 行 3 评分不足（el ∧ hr ∧ gate_ok ∧ sc<obs_th）
         if math.isnan(sc):
-            rationale = ("combine_score 不可证（NaN）：按本体 nan_to_num "
-                         "口径远低于阈值，不信号（合法判定）")
+            rationale = (
+                "combine_score 不可证（NaN）：按本体 nan_to_num "
+                "口径远低于阈值，不信号（合法判定）"
+            )
         else:
-            rationale = ("评分不足：combine_score=%.6f < 观察阈 %s"
-                         "（合法判定）" % (sc, self.obs_th))
+            rationale = "评分不足：combine_score=%.6f < 观察阈 %s（合法判定）" % (
+                sc,
+                self.obs_th,
+            )
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol,
-            recommendation="hold", confidence=0.0, stance="neutral",
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation="hold",
+            confidence=0.0,
+            stance="neutral",
             score=0.0 if math.isnan(sc) else sc,
             rationale=rationale,
             trace_id=trace_id,
-            extras=dict(base_extras, no="score_below"))
+            extras=dict(base_extras, no="score_below"),
+        )
 
     # ------------------------------------------------------------------ #
     # fields 解析（缺键/类型坏 → fail-closed 原因文本；None ≡ NaN 缺维）
@@ -312,49 +357,66 @@ class QpzmAgent(_STRATEGY_AGENT):
         fail-closed 原因文本。类型契约见模块 docstring。"""
         out = []
         for key, checker in (
-                ("tech", lambda v: v is None or _is_num(v)),
-                ("rps_mix", lambda v: v is None or _is_num(v)),
-                ("n_avail", lambda v: isinstance(v, int)
-                    and not isinstance(v, bool)),
-                ("env_score", _is_num),
-                ("env_safe", lambda v: isinstance(v, bool)),
-                ("eligible", lambda v: isinstance(v, bool))):
+            ("tech", lambda v: v is None or _is_num(v)),
+            ("rps_mix", lambda v: v is None or _is_num(v)),
+            ("n_avail", lambda v: isinstance(v, int) and not isinstance(v, bool)),
+            ("env_score", _is_num),
+            ("env_safe", lambda v: isinstance(v, bool)),
+            ("eligible", lambda v: isinstance(v, bool)),
+        ):
             if key not in fields:
-                return ("fields 缺键 %r（装配不完整，fail-closed）" % (key,))
+                return "fields 缺键 %r（装配不完整，fail-closed）" % (key,)
             v = fields[key]
             if not checker(v):
-                return ("fields[%r] 类型坏：%r（装配不完整，fail-closed）"
-                        % (key, v))
+                return "fields[%r] 类型坏：%r（装配不完整，fail-closed）" % (key, v)
             out.append(v)
         return tuple(out)
 
     # ------------------------------------------------------------------ #
     # Verdict 构造（只产建议，零写副作用）
     # ------------------------------------------------------------------ #
-    def _signal_verdict(self, symbol, recommendation, confidence, sc,
-                        trace_id, rationale, extras):
+    def _signal_verdict(
+        self, symbol, recommendation, confidence, sc, trace_id, rationale, extras
+    ):
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol,
-            recommendation=recommendation, confidence=confidence,
-            stance="bull", score=0.0 if math.isnan(sc) else sc,
-            rationale=rationale, trace_id=trace_id, extras=extras)
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation=recommendation,
+            confidence=confidence,
+            stance="bull",
+            score=0.0 if math.isnan(sc) else sc,
+            rationale=rationale,
+            trace_id=trace_id,
+            extras=extras,
+        )
 
     def _fail_closed(self, symbol, reason):
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol,
-            recommendation="hold", confidence=0.0, stance="neutral",
-            score=0.0, rationale=reason,
-            extras={"fail_closed": True, "reason": reason,
-                    "buy_th": self.buy_th, "obs_th": self.obs_th,
-                    "gate_on": self.gate_on})
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation="hold",
+            confidence=0.0,
+            stance="neutral",
+            score=0.0,
+            rationale=reason,
+            extras={
+                "fail_closed": True,
+                "reason": reason,
+                "buy_th": self.buy_th,
+                "obs_th": self.obs_th,
+                "gate_on": self.gate_on,
+            },
+        )
 
 
 class QpzmThAltAgent(QpzmAgent):
     """阈值变体：TH_ALT 70/50（网格锚 th7050）。"""
+
     buy_th = 70.0
     obs_th = 50.0
 
 
 class QpzmGateOffAgent(QpzmAgent):
     """闸门关闭变体：env safe=False 不否决（env 分仍计入打分，gate_off）。"""
+
     gate_on = False

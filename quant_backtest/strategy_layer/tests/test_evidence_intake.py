@@ -15,6 +15,7 @@
 红线：全程 tmp_path sqlite（显式 db_path / EVIDENCE_CHAIN_DB），
 不连任何真实 PG、禁读写真实 data/evidence_chain.db、不跑生产任务。
 """
+
 import json
 import os
 import sys
@@ -22,8 +23,7 @@ from unittest import mock
 
 import pytest
 
-QUANT_BT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+QUANT_BT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if QUANT_BT not in sys.path:
     sys.path.insert(0, QUANT_BT)
 
@@ -38,15 +38,26 @@ from strategy_layer.evidence_intake import (  # noqa: E402
 
 
 # ── 桩与工具 ──────────────────────────────────────────────────────────
-def _row(symbol="600000.SH", action="buy", score=72.0, confidence=0.45,
-         divergence=False, sids=("s1", "s2")):
+def _row(
+    symbol="600000.SH",
+    action="buy",
+    score=72.0,
+    confidence=0.45,
+    divergence=False,
+    sids=("s1", "s2"),
+):
     """combined 行桩（键与 SignalAggregator._fuse_symbol 产出一致）。"""
     return {
-        "trade_date": "20261019", "symbol": symbol, "action": action,
-        "score": score, "confidence": confidence,
-        "contributions": {sid: {"score": score, "weight": 0.5,
-                                "action": action} for sid in sids},
-        "divergence": divergence, "rationale": "[s1] 双刀多头；[s2] 均线走平",
+        "trade_date": "20261019",
+        "symbol": symbol,
+        "action": action,
+        "score": score,
+        "confidence": confidence,
+        "contributions": {
+            sid: {"score": score, "weight": 0.5, "action": action} for sid in sids
+        },
+        "divergence": divergence,
+        "rationale": "[s1] 双刀多头；[s2] 均线走平",
     }
 
 
@@ -56,9 +67,16 @@ class _StubAdapter:
     strategy_id = "stubA"
 
     def score(self, trade_date):
-        return [{"symbol": "600000.SH", "action": "buy", "score": 88.0,
-                 "confidence": 0.9, "rationale": "stub",
-                 "trade_date": trade_date}]
+        return [
+            {
+                "symbol": "600000.SH",
+                "action": "buy",
+                "score": 88.0,
+                "confidence": 0.9,
+                "rationale": "stub",
+                "trade_date": trade_date,
+            }
+        ]
 
 
 def _reopen(db_path):
@@ -71,10 +89,17 @@ class TestNormalIntake:
     def test_row_count_entry_id_and_payload(self, tmp_path):
         """两票入池：条数 / entry_id 形态 / payload 字段抽查。"""
         db = str(tmp_path / "ev.db")
-        rows = [_row(), _row(symbol="000338.SZ", action="hold", score=50.0,
-                             confidence=0.5, sids=("kz",))]
-        summary = record_pool_intake("20261019", AggResult(combined=rows),
-                                     db_path=db)
+        rows = [
+            _row(),
+            _row(
+                symbol="000338.SZ",
+                action="hold",
+                score=50.0,
+                confidence=0.5,
+                sids=("kz",),
+            ),
+        ]
+        summary = record_pool_intake("20261019", AggResult(combined=rows), db_path=db)
         assert summary["error"] is None
         assert summary["total"] == 2 and summary["recorded"] == 2
         assert summary["replayed"] == 0 and summary["conflict"] == 0
@@ -89,8 +114,15 @@ class TestNormalIntake:
         assert hist[0]["to_state"] == "pool_in"
         assert hist[0]["actor"] == "aggregator"
         payload = json.loads(hist[0]["payload_json"])
-        for key in ("symbol", "score", "action", "confidence",
-                    "contributions", "divergence", "rationale"):
+        for key in (
+            "symbol",
+            "score",
+            "action",
+            "confidence",
+            "contributions",
+            "divergence",
+            "rationale",
+        ):
             assert key in payload
         assert payload["symbol"] == "600000.SH"
         assert payload["score"] == pytest.approx(72.0)
@@ -107,8 +139,8 @@ class TestNormalIntake:
         """divergence=true 票照常入链（它也是裁决产物）。"""
         db = str(tmp_path / "ev.db")
         summary = record_pool_intake(
-            "20261019", AggResult(combined=[_row(divergence=True)]),
-            db_path=db)
+            "20261019", AggResult(combined=[_row(divergence=True)]), db_path=db
+        )
         assert summary["recorded"] == 1
         store = _reopen(db)
         hist = store.get_history("s1+s2:20261019:600000.SH")
@@ -122,11 +154,9 @@ class TestIdempotency:
         """同日同票同内容重跑：零重复记账，全部幂等重放。"""
         db = str(tmp_path / "ev.db")
         rows = [_row(), _row(symbol="000338.SZ", sids=("kz",))]
-        first = record_pool_intake("20261019", AggResult(combined=rows),
-                                   db_path=db)
+        first = record_pool_intake("20261019", AggResult(combined=rows), db_path=db)
         assert first["recorded"] == 2
-        second = record_pool_intake("20261019", AggResult(combined=rows),
-                                    db_path=db)
+        second = record_pool_intake("20261019", AggResult(combined=rows), db_path=db)
         assert second["recorded"] == 0
         assert second["replayed"] == 2
         # 账本仍只有每票 1 条事件（append-only 不重复）
@@ -138,11 +168,11 @@ class TestIdempotency:
     def test_conflict_payload_skipped_not_raised(self, tmp_path):
         """同 entry+state 不同内容：ConflictError 计 conflict 跳过。"""
         db = str(tmp_path / "ev.db")
-        record_pool_intake("20261019", AggResult(combined=[_row()]),
-                           db_path=db)
+        record_pool_intake("20261019", AggResult(combined=[_row()]), db_path=db)
         changed = _row(score=73.0)  # 同票同日同策略集，分数变了
-        summary = record_pool_intake("20261019", AggResult(combined=[changed]),
-                                     db_path=db)
+        summary = record_pool_intake(
+            "20261019", AggResult(combined=[changed]), db_path=db
+        )
         assert summary["conflict"] == 1
         assert summary["recorded"] == 0 and summary["replayed"] == 0
         # 粘性：旧账不覆盖，事件数不变
@@ -156,10 +186,12 @@ class TestClosedOnFailure:
     def test_store_failure_does_not_block_run(self, tmp_path, capsys):
         """store 打不开（mock 抛异常）→ WARN 降级，run() 返回值不受影响。"""
         db = str(tmp_path / "ev.db")
-        with mock.patch.dict(os.environ,
-                             {"EVIDENCE_CHAIN_DB": db}), \
-             mock.patch.object(ec, "EvidenceChainStore",
-                               side_effect=RuntimeError("boom db")):
+        with (
+            mock.patch.dict(os.environ, {"EVIDENCE_CHAIN_DB": db}),
+            mock.patch.object(
+                ec, "EvidenceChainStore", side_effect=RuntimeError("boom db")
+            ),
+        ):
             summary = record_pool_intake("20261019", AggResult(combined=[_row()]))
             res = SignalAggregator().run("20261019", [_StubAdapter()])
         assert "boom db" in (summary["error"] or "")
@@ -172,12 +204,20 @@ class TestClosedOnFailure:
     def test_row_level_failure_does_not_block_rest(self, tmp_path):
         """单票异常（缺 symbol 行 + 坏 payload 行）不中断其余票。"""
         db = str(tmp_path / "ev.db")
-        rows = [{"trade_date": "20261019", "symbol": "", "action": "buy",
-                 "score": 1.0, "confidence": 0.5, "contributions": {"s": {}},
-                 "divergence": False, "rationale": ""},   # 缺 symbol → skip
-                _row()]
-        summary = record_pool_intake("20261019", AggResult(combined=rows),
-                                     db_path=db)
+        rows = [
+            {
+                "trade_date": "20261019",
+                "symbol": "",
+                "action": "buy",
+                "score": 1.0,
+                "confidence": 0.5,
+                "contributions": {"s": {}},
+                "divergence": False,
+                "rationale": "",
+            },  # 缺 symbol → skip
+            _row(),
+        ]
+        summary = record_pool_intake("20261019", AggResult(combined=rows), db_path=db)
         assert summary["failed"] == 1
         assert summary["recorded"] == 1
         assert summary["db_path"] == db
@@ -229,8 +269,7 @@ class TestPayloadHashStability:
         assert ec.payload_hash(p1) == ec.payload_hash(p2)
         # 幂等键可复现，且重开新 store 同内容命中重放
         entry_id = "s1+s2:20261019:600000.SH"
-        key = ec.make_idempotency_key(entry_id, ec.S_POOL_IN,
-                                      ec.payload_hash(p1))
+        key = ec.make_idempotency_key(entry_id, ec.S_POOL_IN, ec.payload_hash(p1))
         db = str(tmp_path / "ev.db")
         store = ec.EvidenceChainStore(db)
         store.transition(entry_id, ec.S_POOL_IN, p1, actor="aggregator")

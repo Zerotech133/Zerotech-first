@@ -5,14 +5,14 @@
 本地 stub（不 import 真模块、不实现生产 signal.py/adapter.py，避免冲突）。
 DB 写入一律 mock 掉，测试不触库。
 """
+
 import os
 import sys
 import types
 
 import pytest
 
-QUANT_BT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+QUANT_BT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if QUANT_BT not in sys.path:
     sys.path.insert(0, QUANT_BT)
 
@@ -25,8 +25,15 @@ _REAL_PERSIST = aggregator.persist_combined  # autouse mock 之前留底
 class _FakeSignal:
     """最小 duck-type Signal 桩（aggregator 按属性访问）。"""
 
-    def __init__(self, symbol, action="buy", score=50.0, confidence=0.5,
-                 rationale="r", strategy="s"):
+    def __init__(
+        self,
+        symbol,
+        action="buy",
+        score=50.0,
+        confidence=0.5,
+        rationale="r",
+        strategy="s",
+    ):
         self.symbol = symbol
         self.action = action
         self.score = score
@@ -40,8 +47,16 @@ class _FakeSignal:
 class StubSignal:
     """signal.Signal 契约替身（dataclass 形态一致）。"""
 
-    def __init__(self, symbol, action, score, confidence,
-                 rationale="", strategy="", trade_date="20260101"):
+    def __init__(
+        self,
+        symbol,
+        action,
+        score,
+        confidence,
+        rationale="",
+        strategy="",
+        trade_date="20260101",
+    ):
         self.symbol = symbol
         self.action = action
         self.score = score
@@ -74,8 +89,7 @@ class StubRegistry:
 
     def __init__(self, adapters, weights=None, enabled=None):
         self._adapters = {a.strategy_id: a for a in adapters}
-        self._enabled = list(enabled) if enabled is not None \
-            else list(self._adapters)
+        self._enabled = list(enabled) if enabled is not None else list(self._adapters)
         self.weights = weights or {}
 
     def enabled_ids(self):
@@ -102,10 +116,8 @@ def _mock_db_write(monkeypatch):
 class TestFusion:
     def test_weighted_score_and_majority_action(self):
         """组合分 = Σ w_i×score_i（归一化）；action 权重多数决。"""
-        a1 = StubAdapter("s1", [StubSignal("000338.SZ", "buy", 80, 0.9)],
-                         weight=0.6)
-        a2 = StubAdapter("s2", [StubSignal("000338.SZ", "sell", 60, 0.7)],
-                         weight=0.4)
+        a1 = StubAdapter("s1", [StubSignal("000338.SZ", "buy", 80, 0.9)], weight=0.6)
+        a2 = StubAdapter("s2", [StubSignal("000338.SZ", "sell", 60, 0.7)], weight=0.4)
         agg = SignalAggregator()
         res = agg.run("20260101", adapters=[a1, a2])
         assert len(res.combined) == 1
@@ -123,10 +135,8 @@ class TestFusion:
         assert row["divergence"] is True
 
     def test_divergence_buy_vs_sell(self):
-        a1 = StubAdapter("s1", [StubSignal("600000.SH", "buy", 80, 0.9)],
-                         weight=0.5)
-        a2 = StubAdapter("s2", [StubSignal("600000.SH", "sell", 60, 0.7)],
-                         weight=0.5)
+        a1 = StubAdapter("s1", [StubSignal("600000.SH", "buy", 80, 0.9)], weight=0.5)
+        a2 = StubAdapter("s2", [StubSignal("600000.SH", "sell", 60, 0.7)], weight=0.5)
         res = SignalAggregator().run("20260101", adapters=[a1, a2])
         row = res.combined[0]
         assert row["divergence"] is True
@@ -150,8 +160,9 @@ class TestFusion:
         assert res.combined[0]["divergence"] is False
 
     def test_rationale_joined_with_strategy_tags(self):
-        a1 = StubAdapter("s1", [StubSignal("000338.SZ", "buy", 80, 0.9,
-                                           rationale="双刀多头")])
+        a1 = StubAdapter(
+            "s1", [StubSignal("000338.SZ", "buy", 80, 0.9, rationale="双刀多头")]
+        )
         res = SignalAggregator().run("20260101", adapters=[a1])
         assert "[s1] 双刀多头" in res.combined[0]["rationale"]
 
@@ -180,8 +191,7 @@ class TestDegradation:
 
     def test_db_write_failure_warns_but_returns(self, monkeypatch, capsys):
         """写库失败（返回 False）→ 只告警，内存结果照常返回。"""
-        monkeypatch.setattr(aggregator, "persist_combined",
-                            lambda rows: False)
+        monkeypatch.setattr(aggregator, "persist_combined", lambda rows: False)
         good = StubAdapter("good", [StubSignal("000338.SZ", "buy", 70, 0.8)])
         res = SignalAggregator().run("20260101", adapters=[good])
         assert len(res.combined) == 1
@@ -189,6 +199,7 @@ class TestDegradation:
 
     def test_db_write_exception_warns_but_returns(self, monkeypatch, capsys):
         """写库抛异常（psycopg2+docker 双兜底均炸）→ 只告警不中断。"""
+
         def boom(rows):
             raise RuntimeError("DB down")
 
@@ -246,39 +257,61 @@ class TestPersist:
 
     @pytest.fixture(autouse=True)
     def _use_real_persist(self, monkeypatch):
-        monkeypatch.setattr(aggregator, "persist_combined",
-                            _REAL_PERSIST)
+        monkeypatch.setattr(aggregator, "persist_combined", _REAL_PERSIST)
 
     def test_persist_empty_rows_true(self, monkeypatch):
         called = []
-        monkeypatch.setattr(aggregator, "_persist_psycopg2",
-                            lambda rows: called.append(1) or True)
+        monkeypatch.setattr(
+            aggregator, "_persist_psycopg2", lambda rows: called.append(1) or True
+        )
         assert aggregator.persist_combined([]) is True
         assert called == []  # 空行短路，不触库
 
     def test_persist_fallback_to_docker(self, monkeypatch):
         """psycopg2 抛异常 → docker exec 兜底成功。"""
+
         def boom(rows):
             raise RuntimeError("no psycopg2")
 
         calls = []
         monkeypatch.setattr(aggregator, "_persist_psycopg2", boom)
-        monkeypatch.setattr(aggregator, "_persist_docker_exec",
-                            lambda rows: calls.append(1) or True)
-        row = {"trade_date": "20260101", "symbol": "x", "action": "buy",
-               "score": 1.0, "confidence": 0.5, "contributions": {},
-               "divergence": False, "rationale": "r"}
+        monkeypatch.setattr(
+            aggregator, "_persist_docker_exec", lambda rows: calls.append(1) or True
+        )
+        row = {
+            "trade_date": "20260101",
+            "symbol": "x",
+            "action": "buy",
+            "score": 1.0,
+            "confidence": 0.5,
+            "contributions": {},
+            "divergence": False,
+            "rationale": "r",
+        }
         assert aggregator.persist_combined([row]) is True
         assert len(calls) == 1
 
     def test_persist_both_fail_raises(self, monkeypatch):
-        monkeypatch.setattr(aggregator, "_persist_psycopg2",
-                            lambda rows: (_ for _ in ()).throw(RuntimeError("a")))
-        monkeypatch.setattr(aggregator, "_persist_docker_exec",
-                            lambda rows: (_ for _ in ()).throw(RuntimeError("b")))
-        row = {"trade_date": "20260101", "symbol": "x", "action": "buy",
-               "score": 1.0, "confidence": 0.5, "contributions": {},
-               "divergence": False, "rationale": "r"}
+        monkeypatch.setattr(
+            aggregator,
+            "_persist_psycopg2",
+            lambda rows: (_ for _ in ()).throw(RuntimeError("a")),
+        )
+        monkeypatch.setattr(
+            aggregator,
+            "_persist_docker_exec",
+            lambda rows: (_ for _ in ()).throw(RuntimeError("b")),
+        )
+        row = {
+            "trade_date": "20260101",
+            "symbol": "x",
+            "action": "buy",
+            "score": 1.0,
+            "confidence": 0.5,
+            "contributions": {},
+            "divergence": False,
+            "rationale": "r",
+        }
         with pytest.raises(RuntimeError, match="写库失败（全链）") as ei:
             aggregator.persist_combined([row])
         # QA-20261017：全链失败须携带每一级根因，不得吞主路径异常
@@ -328,21 +361,30 @@ class TestUpsertPersist:
                 cur.execute_values(sql, tuples, page_size)
 
         import types
+
         fake = types.ModuleType("psycopg2")
         fake.extras = FakeExtras
         monkeypatch.setitem(sys.modules, "psycopg2", fake)
         monkeypatch.setitem(sys.modules, "psycopg2.extras", FakeExtras)
         monkeypatch.setattr(aggregator, "_pg_connect", lambda: FakeConn())
-        row = {"trade_date": "20260101", "symbol": "x", "action": "buy",
-               "score": 1.0, "confidence": 0.5, "contributions": {},
-               "divergence": False, "rationale": "r"}
+        row = {
+            "trade_date": "20260101",
+            "symbol": "x",
+            "action": "buy",
+            "score": 1.0,
+            "confidence": 0.5,
+            "contributions": {},
+            "divergence": False,
+            "rationale": "r",
+        }
         assert aggregator._persist_psycopg2([row]) is True
         assert "ON CONFLICT (trade_date, symbol) DO UPDATE" in captured["sql"]
         assert "created_at = now()" in captured["sql"]
         # K-STOCK-420：落库前按当日权威替换
         assert "DELETE FROM" in captured["delete_sql"]
-        assert captured["delete_params"] == (["20260101"],) or \
-            captured["delete_params"] == (("20260101",),)
+        assert captured["delete_params"] == (["20260101"],) or captured[
+            "delete_params"
+        ] == (("20260101",),)
 
     def test_docker_exec_three_step_upsert(self, monkeypatch):
         steps_seen = []
@@ -350,21 +392,31 @@ class TestUpsertPersist:
         def fake_run(cmd, input=None, capture_output=True, timeout=None):
             step = cmd[-1]
             steps_seen.append(step)
+
             class P:
                 returncode = 0
                 stderr = b""
+
             return P()
 
         monkeypatch.setattr(aggregator.subprocess, "run", fake_run)
-        row = {"trade_date": "20260101", "symbol": "x", "action": "buy",
-               "score": 1.0, "confidence": 0.5, "contributions": {},
-               "divergence": False, "rationale": "r"}
+        row = {
+            "trade_date": "20260101",
+            "symbol": "x",
+            "action": "buy",
+            "score": 1.0,
+            "confidence": 0.5,
+            "contributions": {},
+            "divergence": False,
+            "rationale": "r",
+        }
         assert aggregator._persist_docker_exec([row]) is True
         # K-STOCK-420：TRUNCATE → DELETE 当日 → \copy → merge，四段式
         assert len(steps_seen) == 4
         assert steps_seen[0] == "TRUNCATE strategy._stg_combined"
-        assert steps_seen[1] == ("DELETE FROM strategy.signals_combined "
-                                 "WHERE trade_date IN ('20260101')")
+        assert steps_seen[1] == (
+            "DELETE FROM strategy.signals_combined WHERE trade_date IN ('20260101')"
+        )
         assert steps_seen[2].startswith("\\copy strategy._stg_combined")
         assert "ON CONFLICT (trade_date, symbol) DO UPDATE" in steps_seen[3]
         # merge 步骤末尾仍带清暂存
@@ -379,8 +431,11 @@ class TestTopNTruncation:
             strategy_id = sid
 
             def score(self, trade_date):
-                return [_FakeSignal(score=float(i), symbol="S%03d.SZ" % i)
-                        for i in range(n_signals)]
+                return [
+                    _FakeSignal(score=float(i), symbol="S%03d.SZ" % i)
+                    for i in range(n_signals)
+                ]
+
         return _A()
 
     def test_truncates_to_registry_top_n(self, monkeypatch):
@@ -412,8 +467,10 @@ class TestTopNTruncation:
             top_n = 2
 
             def score(self, trade_date):
-                return [_FakeSignal(score=float(i), symbol="S%03d.SZ" % i)
-                        for i in range(6)]
+                return [
+                    _FakeSignal(score=float(i), symbol="S%03d.SZ" % i) for i in range(6)
+                ]
+
         reg = types.SimpleNamespace(
             enabled_ids=lambda: ["kg_boost"],
             get=lambda sid: _A(),
@@ -428,23 +485,43 @@ class TestTopNTruncation:
 def test_persist_psycopg2_rejects_bad_trade_date():
     """trade_date 非纯数字时拒绝删除替换（注入面防线）。"""
     import pytest as _pytest
-    _pytest.importorskip("psycopg2.extras",
-                         reason="本环境未装 psycopg2（生产/判例环境有），"
-                                "依赖缺失应 skip 而非 fail 污染基线")
+
+    _pytest.importorskip(
+        "psycopg2.extras",
+        reason="本环境未装 psycopg2（生产/判例环境有），"
+        "依赖缺失应 skip 而非 fail 污染基线",
+    )
     from strategy_layer.aggregator import _persist_psycopg2
-    row = {"trade_date": "2026-10-17'; DROP TABLE x; --", "symbol": "000001.SZ",
-           "action": "buy", "score": 1.0, "confidence": 0.5,
-           "contributions": {}, "divergence": False, "rationale": "t"}
+
+    row = {
+        "trade_date": "2026-10-17'; DROP TABLE x; --",
+        "symbol": "000001.SZ",
+        "action": "buy",
+        "score": 1.0,
+        "confidence": 0.5,
+        "contributions": {},
+        "divergence": False,
+        "rationale": "t",
+    }
     with _pytest.raises(ValueError):
         _persist_psycopg2([row])
 
 
 def test_persist_docker_exec_rejects_bad_trade_date():
     from strategy_layer.aggregator import _persist_docker_exec
-    row = {"trade_date": "2026101; DELETE", "symbol": "000001.SZ",
-           "action": "buy", "score": 1.0, "confidence": 0.5,
-           "contributions": {}, "divergence": False, "rationale": "t"}
+
+    row = {
+        "trade_date": "2026101; DELETE",
+        "symbol": "000001.SZ",
+        "action": "buy",
+        "score": 1.0,
+        "confidence": 0.5,
+        "contributions": {},
+        "divergence": False,
+        "rationale": "t",
+    }
     import pytest as _pytest
+
     with _pytest.raises(ValueError):
         _persist_docker_exec([row])
 
@@ -475,6 +552,7 @@ class TestDtContract:
     def test_datetime_dt_raises_valueerror_via_run(self):
         """dt 为 datetime 对象 → 期望 ValueError（同契约拒收）。"""
         import datetime
+
         s = StubSignal("000338.SZ", "buy", 80, 0.9)
         s.dt = datetime.datetime(2026, 1, 1, 9, 30, 0)
         a1 = StubAdapter("s1", [s])

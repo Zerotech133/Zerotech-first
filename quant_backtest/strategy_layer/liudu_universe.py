@@ -14,6 +14,7 @@
 所有激活开关留待老田在 N1 门拍板：激活 A–E 任一候选须经老田实质圈选 +
 五要素批准；本模块不替用户圈选。
 """
+
 from __future__ import annotations
 
 import re
@@ -120,7 +121,9 @@ def is_ashare_symbol(symbol: str) -> bool:
     return bool(_ASH_RE.match(str(symbol or "")))
 
 
-def apply_universe_filter(rows: List[dict], requested: str | None = None) -> Tuple[List[dict], List[dict]]:
+def apply_universe_filter(
+    rows: List[dict], requested: str | None = None
+) -> Tuple[List[dict], List[dict]]:
     """按已拍板 universe 过滤样本域（纯函数，不改入参）。
 
     纪律（红线）：

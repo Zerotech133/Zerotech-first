@@ -15,6 +15,7 @@
 所有激活开关留待老田在 N8 门拍板：A/B/C 选哪个须经老田实质决策；
 本模块休眠，不改变现有 NOT_VERIFIED 结论。
 """
+
 from __future__ import annotations
 
 from typing import Dict, Optional
@@ -22,8 +23,8 @@ from typing import Dict, Optional
 
 # 三模式常量
 MODE_A_PRODUCTION_MULTISOURCE = "A"  # 生产多源融合
-MODE_B_R1_SINGLESOURCE = "B"        # R1 单源基线
-MODE_C_DUALTRACK = "C"              # 双轨标注
+MODE_B_R1_SINGLESOURCE = "B"  # R1 单源基线
+MODE_C_DUALTRACK = "C"  # 双轨标注
 
 # N8 清单事实常量：R1 单源 32/12 只 vs 生产多源 76/87 只，Jaccard 极低。
 JACCARD_R1_VS_PRODUCTION = 0.0437
@@ -50,7 +51,9 @@ _VALID_MODES = (
 _NOT_VERIFIED_STATUS = "NOT_VERIFIED"
 
 
-def reconcile(trade_date: str, mode: str, probe: Optional[dict] = None) -> Dict[str, object]:
+def reconcile(
+    trade_date: str, mode: str, probe: Optional[dict] = None
+) -> Dict[str, object]:
     """reconcile 调度器（休眠默认，不改变现状）。
 
     按 ``mode`` 分发到内部 ``_reconcile_a/_b/_c``，但无论何种模式，默认一律
@@ -66,9 +69,7 @@ def reconcile(trade_date: str, mode: str, probe: Optional[dict] = None) -> Dict[
     """
     if mode not in _VALID_MODES:
         # 未知模式亦不升级为 READY，保持保守。
-        return _not_verified(
-            trade_date, mode, reason="未知模式，维持 NOT_VERIFIED"
-        )
+        return _not_verified(trade_date, mode, reason="未知模式，维持 NOT_VERIFIED")
     if mode == MODE_A_PRODUCTION_MULTISOURCE:
         return _reconcile_a(trade_date, probe)
     if mode == MODE_B_R1_SINGLESOURCE:

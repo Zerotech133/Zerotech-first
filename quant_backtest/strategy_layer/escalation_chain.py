@@ -22,6 +22,7 @@ r"""上行提醒链模块：荀攸 → 司马懿 → 田丰（N9，执行块 11 
 上行链：
     upstream_chain = ["荀攸", "司马懿", "田丰"]
 """
+
 from __future__ import annotations
 
 import sys
@@ -65,8 +66,10 @@ def _divergence_actions(row: dict):
 
 
 def _t1_reason(row: dict) -> str:
-    return ("score=%.1f 达 T1 告警档（>%s 且当日排名入围），走量化交易部门"
-            "上行链" % (float(row.get("score", 0.0)), xunyou.T1_SCORE_MIN))
+    return "score=%.1f 达 T1 告警档（>%s 且当日排名入围），走量化交易部门上行链" % (
+        float(row.get("score", 0.0)),
+        xunyou.T1_SCORE_MIN,
+    )
 
 
 def select_escalation(tiered_rows: list) -> dict:
@@ -88,8 +91,7 @@ def select_escalation(tiered_rows: list) -> dict:
         if "symbol" not in r:
             raise ValueError("tiered_rows 元素缺 'symbol' 字段（fail-visible）")
         if "tier" not in r:
-            raise ValueError(
-                "tiered_rows 元素缺 'tier' 字段——未经验 assign_tiers 处理")
+            raise ValueError("tiered_rows 元素缺 'tier' 字段——未经验 assign_tiers 处理")
 
     # ── T1 排名（按 score 降序、1 起计；分歧票不占额度）──────────────
     t1_rows = [r for r in tiered_rows if r.get("tier") == "T1"]
@@ -104,28 +106,34 @@ def select_escalation(tiered_rows: list) -> dict:
         # 零串味：即便被标 T1，divergence 也强制排除出自动告警
         if _is_divergent(r):
             continue
-        t1_alerts.append({
-            "symbol": sym,
-            "score": r.get("score"),
-            "rank": t1_rank[sym],
-            "reason": _t1_reason(r),
-        })
+        t1_alerts.append(
+            {
+                "symbol": sym,
+                "score": r.get("score"),
+                "rank": t1_rank[sym],
+                "reason": _t1_reason(r),
+            }
+        )
         if sym not in auto_alert_symbols:
             auto_alert_symbols.append(sym)
 
     t2_watch = []
-    for r in sorted([r for r in tiered_rows if r.get("tier") == "T2"],
-                    key=lambda r: -float(r.get("score", 0.0))):
+    for r in sorted(
+        [r for r in tiered_rows if r.get("tier") == "T2"],
+        key=lambda r: -float(r.get("score", 0.0)),
+    ):
         t2_watch.append({"symbol": r["symbol"], "score": r.get("score")})
 
     divergences = []
     for r in tiered_rows:
         if _is_divergent(r):
-            divergences.append({
-                "symbol": r["symbol"],
-                "actions": _divergence_actions(r),
-                "combined_action": r.get("action"),
-            })
+            divergences.append(
+                {
+                    "symbol": r["symbol"],
+                    "actions": _divergence_actions(r),
+                    "combined_action": r.get("action"),
+                }
+            )
 
     # ── manual_review_required：divergence + 任意 review_required 行 ─
     manual_review_required = []
@@ -138,8 +146,8 @@ def select_escalation(tiered_rows: list) -> dict:
         "上行提醒链（%s→%s→%s）：T1 触发盯盘/提醒、T2 仅人工关注不自动告警；"
         "divergence=true 与任意 review_required 行一律人工复核、绝不自动上行。"
         "本模块不触网/不写库/不交易（%s ｜ %s）。"
-        % (UPSTREAM_CHAIN[0], UPSTREAM_CHAIN[1], UPSTREAM_CHAIN[2],
-           SCOPE, VERDICT))
+        % (UPSTREAM_CHAIN[0], UPSTREAM_CHAIN[1], UPSTREAM_CHAIN[2], SCOPE, VERDICT)
+    )
 
     return {
         "upstream_chain": list(UPSTREAM_CHAIN),
@@ -147,7 +155,7 @@ def select_escalation(tiered_rows: list) -> dict:
         "t2_watch": t2_watch,
         "divergences": divergences,
         "manual_review_required": manual_review_required,
-        "suppressed_trading": True,        # 声明：本模块不产出任何交易指令
+        "suppressed_trading": True,  # 声明：本模块不产出任何交易指令
         "auto_alert_symbols": auto_alert_symbols,
         "notes": notes,
     }
@@ -173,9 +181,10 @@ def build_upstream_message(notice: dict) -> str:
     t1 = notice.get("t1_alerts") or []
     if t1:
         for a in t1:
-            lines.append("  %d. %s | score=%.1f | %s"
-                         % (a["rank"], a["symbol"], float(a["score"] or 0.0),
-                            a["reason"]))
+            lines.append(
+                "  %d. %s | score=%.1f | %s"
+                % (a["rank"], a["symbol"], float(a["score"] or 0.0), a["reason"])
+            )
     else:
         lines.append("  （无）")
 
@@ -186,7 +195,9 @@ def build_upstream_message(notice: dict) -> str:
     t2 = notice.get("t2_watch") or []
     if t2:
         for w in t2:
-            lines.append("  - %s | score=%.1f" % (w["symbol"], float(w["score"] or 0.0)))
+            lines.append(
+                "  - %s | score=%.1f" % (w["symbol"], float(w["score"] or 0.0))
+            )
     else:
         lines.append("  （无）")
 
@@ -197,8 +208,10 @@ def build_upstream_message(notice: dict) -> str:
     divs = notice.get("divergences") or []
     if divs:
         for d in divs:
-            lines.append("  - %s | actions=%s | combined_action=%s"
-                         % (d["symbol"], d["actions"], d["combined_action"]))
+            lines.append(
+                "  - %s | actions=%s | combined_action=%s"
+                % (d["symbol"], d["actions"], d["combined_action"])
+            )
     else:
         lines.append("  （无分歧票）")
 

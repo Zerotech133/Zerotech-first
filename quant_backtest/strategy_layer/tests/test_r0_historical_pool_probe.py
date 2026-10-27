@@ -1,4 +1,5 @@
 """历史多日 CN 池：仅内存事后截取；真实池只核查 20261019。"""
+
 import hashlib
 import json
 from pathlib import Path
@@ -14,16 +15,23 @@ REAL_POOL = Path(__file__).resolve().parents[2] / "data" / "chanlun_pool.jsonl"
 
 
 def row(kind="1买", dt="2026-10-19", **changes):
-    item = {"market": "CN", "code": "002633.SZ", "type": kind,
-            "dt": dt, "detect_date": "2026-10-19", "price": 10.0}
+    item = {
+        "market": "CN",
+        "code": "002633.SZ",
+        "type": kind,
+        "dt": dt,
+        "detect_date": "2026-10-19",
+        "price": 10.0,
+    }
     item.update(changes)
     return item
 
 
 def source(tmp_path, rows):
     path = tmp_path / "pool.jsonl"
-    path.write_bytes(b"".join(json.dumps(r, ensure_ascii=False).encode() + b"\n"
-                              for r in rows))
+    path.write_bytes(
+        b"".join(json.dumps(r, ensure_ascii=False).encode() + b"\n" for r in rows)
+    )
     return path
 
 
@@ -45,9 +53,15 @@ def block_writers(monkeypatch):
 
 
 def test_multiday_snapshot_scheme_c_brief_and_one_read(tmp_path, monkeypatch):
-    path = source(tmp_path, [row("1买", "2026-10-18", detect_date="2026-10-18"),
-                             row("1买", "2026-10-10"), row("1卖", "2026-10-19"),
-                             row("2买", "2026-10-19", code="002634.SZ")])
+    path = source(
+        tmp_path,
+        [
+            row("1买", "2026-10-18", detect_date="2026-10-18"),
+            row("1买", "2026-10-10"),
+            row("1卖", "2026-10-19"),
+            row("2买", "2026-10-19", code="002634.SZ"),
+        ],
+    )
     original = Path.read_bytes
     calls = []
 
@@ -61,15 +75,35 @@ def test_multiday_snapshot_scheme_c_brief_and_one_read(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "read_bytes", read_once)
     result = probe.inspect_historical_pool(DAY, path)
     assert calls == [path.resolve()]
-    assert result["source"]["sha256"] == hashlib.sha256(
-        b"".join(json.dumps(r, ensure_ascii=False).encode() + b"\n"
-                 for r in [row("1买", "2026-10-18", detect_date="2026-10-18"),
-                           row("1买", "2026-10-10"), row("1卖", "2026-10-19"),
-                           row("2买", "2026-10-19", code="002634.SZ")])).hexdigest()
-    assert result["counts"] == {"source_events": 4, "matched_events": 3,
-                                "signals": 3, "kept": 2, "combined": 2, "pool": 1}
+    assert (
+        result["source"]["sha256"]
+        == hashlib.sha256(
+            b"".join(
+                json.dumps(r, ensure_ascii=False).encode() + b"\n"
+                for r in [
+                    row("1买", "2026-10-18", detect_date="2026-10-18"),
+                    row("1买", "2026-10-10"),
+                    row("1卖", "2026-10-19"),
+                    row("2买", "2026-10-19", code="002634.SZ"),
+                ]
+            )
+        ).hexdigest()
+    )
+    assert result["counts"] == {
+        "source_events": 4,
+        "matched_events": 3,
+        "signals": 3,
+        "kept": 2,
+        "combined": 2,
+        "pool": 1,
+    }
     assert result["combined"][0]["action"] == "sell"
-    assert result["combined"][0]["contributions"]["chan_monitor"]["superseded"][0]["action"] == "buy"
+    assert (
+        result["combined"][0]["contributions"]["chan_monitor"]["superseded"][0][
+            "action"
+        ]
+        == "buy"
+    )
     assert result["pool"]["pool"][0]["symbol"] == "002634.SZ"
     assert result["brief"]["scheme_c"]["superseded"] == 1
     assert result["brief"]["pool_summary"]["buy_total"] == 1
@@ -81,15 +115,25 @@ def test_multiday_snapshot_scheme_c_brief_and_one_read(tmp_path, monkeypatch):
     assert not (tmp_path / "research").exists()
 
 
-@pytest.mark.parametrize("bad", [
-    {"market": "HK", "code": "002633.SZ"},
-    {"code": "00700.HK"}, {"code": "AAPL.US"},
-    {"detect_date": "2026-02-30"}, {"dt": "2026-10-20"},
-    {"price": 0}, {"price": True}, {"type": "other"},
-    {"mbei": "true"},
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"market": "HK", "code": "002633.SZ"},
+        {"code": "00700.HK"},
+        {"code": "AAPL.US"},
+        {"detect_date": "2026-02-30"},
+        {"dt": "2026-10-20"},
+        {"price": 0},
+        {"price": True},
+        {"type": "other"},
+        {"mbei": "true"},
+    ],
+)
 def test_invalid_row_any_day_fails_closed(tmp_path, bad):
-    path = source(tmp_path, [row(), row(**{"detect_date": "2026-10-18", "dt": "2026-10-18", **bad})])
+    path = source(
+        tmp_path,
+        [row(), row(**{"detect_date": "2026-10-18", "dt": "2026-10-18", **bad})],
+    )
     result = probe.inspect_historical_pool(DAY, path)
     assert result["status"] == "INVALID_SOURCE"
     assert result["counts"]["matched_events"] is None
@@ -98,16 +142,25 @@ def test_invalid_row_any_day_fails_closed(tmp_path, bad):
     assert "第 2 行" in result["failures"][0]["reason"]
 
 
-@pytest.mark.parametrize("raw", [b'{"market":"CN","market":"CN"}\n',
-                                   b'{"market":"CN",}\n', b'\n',
-                                   b'{"price":NaN}\n', b'\xff\n'])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b'{"market":"CN","market":"CN"}\n',
+        b'{"market":"CN",}\n',
+        b"\n",
+        b'{"price":NaN}\n',
+        b"\xff\n",
+    ],
+)
 def test_malformed_jsonl_fails_closed(tmp_path, raw):
     path = tmp_path / "bad.jsonl"
     path.write_bytes(raw)
     assert probe.inspect_historical_pool(DAY, path)["status"] == "INVALID_SOURCE"
 
 
-@pytest.mark.parametrize("day", ["20260230", "2026-10-19", "２０２６１０１９", "", None])
+@pytest.mark.parametrize(
+    "day", ["20260230", "2026-10-19", "２０２６１０１９", "", None]
+)
 def test_business_day_must_be_explicit_and_valid(tmp_path, day):
     with pytest.raises(ValueError):
         probe.inspect_historical_pool(day, tmp_path / "missing.jsonl")

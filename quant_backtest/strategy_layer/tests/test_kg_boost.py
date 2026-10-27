@@ -5,6 +5,7 @@ K-STOCK-426：打分口径从「社区峰值分位」切换为「Security 自身
 pagerank 全网分位」，概念热度从 MAPS_TO 入度升级为 Concept
 pagerank 分位（旧 parquet 无 Concept 行时回退入度）。
 """
+
 import os
 
 import pandas as pd
@@ -49,8 +50,9 @@ class FakeDriver:
         return FakeSession(self.main_rows, self.heat_rows)
 
 
-def _make_parquet_dir(tmp_path, files=("kg_scores_2026-10-15.parquet",
-                                       "kg_scores_2026-10-16.parquet")):
+def _make_parquet_dir(
+    tmp_path, files=("kg_scores_2026-10-15.parquet", "kg_scores_2026-10-16.parquet")
+):
     """造假的 parquet 文件名（内容无关，读取被 mock）。"""
     d = tmp_path / "kg_analysis"
     d.mkdir(exist_ok=True)
@@ -71,14 +73,16 @@ def _score_df():
     Concept pagerank 分位：c1 20 / c2 40 / c3 60 / c4 80 / c5 100
     （高分概念 >= 60：c3/c4/c5）
     """
-    return pd.DataFrame({
-        "label": ["Security"] * 7 + ["Concept"] * 5,
-        "name": _SEC_NAMES + ["c1", "c2", "c3", "c4", "c5"],
-        "pagerank": [5.0, 10.0, 20.0, 40.0, 80.0, 90.0, 95.0]
-                    + [1.0, 2.0, 3.0, 4.0, 5.0],
-        "community_id": [1, 1, 2, 2, 3, 3, 3] + [9] * 5,
-        "degree_kg": [0.0] * 12,
-    })
+    return pd.DataFrame(
+        {
+            "label": ["Security"] * 7 + ["Concept"] * 5,
+            "name": _SEC_NAMES + ["c1", "c2", "c3", "c4", "c5"],
+            "pagerank": [5.0, 10.0, 20.0, 40.0, 80.0, 90.0, 95.0]
+            + [1.0, 2.0, 3.0, 4.0, 5.0],
+            "community_id": [1, 1, 2, 2, 3, 3, 3] + [9] * 5,
+            "degree_kg": [0.0] * 12,
+        }
+    )
 
 
 def _adapter(tmp_path, driver, main_read_df=_score_df):
@@ -101,10 +105,12 @@ class TestScoreMapping:
     def test_security_percentile_mapping(self, tmp_path):
         # 戊股分位 100（最高 pagerank 80 中排第 5/7？——80 为第 5 名 → 71.43；
         # 用最高/最低两端验证：某股 95→100，甲股 5→14.29
-        drv = FakeDriver(main_rows=[
-            _stock_row("600519.SH", 3, ["白酒"], name="某股"),
-            _stock_row("000338.SZ", 1, ["潍柴动力"], name="甲股"),
-        ])
+        drv = FakeDriver(
+            main_rows=[
+                _stock_row("600519.SH", 3, ["白酒"], name="某股"),
+                _stock_row("000338.SZ", 1, ["潍柴动力"], name="甲股"),
+            ]
+        )
         sigs = _adapter(tmp_path, drv).score("20261016")
         by_sym = {s.symbol: s for s in sigs}
         assert by_sym["600519.SH"].score == 100.0
@@ -112,32 +118,34 @@ class TestScoreMapping:
 
     def test_action_thresholds(self, tmp_path):
         # 100 → buy；42.86 → watch；14.29 → hold
-        drv = FakeDriver(main_rows=[
-            _stock_row("A.SH", 3, ["x"], name="某股"),
-            _stock_row("B.SH", 2, ["y"], name="丙股"),
-            _stock_row("C.SH", 1, ["z"], name="甲股"),
-        ])
+        drv = FakeDriver(
+            main_rows=[
+                _stock_row("A.SH", 3, ["x"], name="某股"),
+                _stock_row("B.SH", 2, ["y"], name="丙股"),
+                _stock_row("C.SH", 1, ["z"], name="甲股"),
+            ]
+        )
         sigs = {s.symbol: s for s in _adapter(tmp_path, drv).score("20261016")}
         assert sigs["A.SH"].action == "buy"
         assert sigs["B.SH"].action == "watch"
         assert sigs["C.SH"].action == "hold"
 
     def test_results_sorted_by_score_desc(self, tmp_path):
-        drv = FakeDriver(main_rows=[
-            _stock_row("A.SH", 1, ["x"], name="乙股"),
-            _stock_row("B.SH", 3, ["y"], name="某股"),
-        ])
+        drv = FakeDriver(
+            main_rows=[
+                _stock_row("A.SH", 1, ["x"], name="乙股"),
+                _stock_row("B.SH", 3, ["y"], name="某股"),
+            ]
+        )
         sigs = _adapter(tmp_path, drv).score("20261016")
-        assert [s.score for s in sigs] == sorted(
-            [s.score for s in sigs], reverse=True)
+        assert [s.score for s in sigs] == sorted([s.score for s in sigs], reverse=True)
 
     def test_no_security_rows_degrades_empty(self, tmp_path):
         """parquet 无 Security 行（异常管线）→ 全量降级空列表。"""
         df = _score_df()
         df = df[df["label"] == "Concept"]
         drv = FakeDriver(main_rows=[_stock_row("A.SH", 1, ["x"])])
-        assert _adapter(tmp_path, drv, main_read_df=lambda: df)\
-            .score("20261016") == []
+        assert _adapter(tmp_path, drv, main_read_df=lambda: df).score("20261016") == []
 
 
 # ---------------------------------------------------------------------- #
@@ -171,8 +179,7 @@ class TestConfidence:
         c5 热度变 0 → 置信度 0.4 而非 0.5），故断言 0.5 即证明
         走的是 parquet Concept pagerank 分位主路径。
         """
-        drv = FakeDriver(main_rows=[_stock_row("600519.SH", 3, ["c5"])],
-                         heat_rows=[])
+        drv = FakeDriver(main_rows=[_stock_row("600519.SH", 3, ["c5"])], heat_rows=[])
         sig = self._sig_for(tmp_path, ["c5"])
         assert sig.confidence == 0.5  # 1 个高分概念（c5 分位 100）
 
@@ -182,10 +189,13 @@ class TestConfidence:
 # ---------------------------------------------------------------------- #
 class TestRationale:
     def test_rationale_contains_concepts(self, tmp_path):
-        drv = FakeDriver(main_rows=[
-            _stock_row("600519.SH", 3, ["白酒概念", "超级品牌", "AI芯片"],
-                       name="贵州茅台"),
-        ])
+        drv = FakeDriver(
+            main_rows=[
+                _stock_row(
+                    "600519.SH", 3, ["白酒概念", "超级品牌", "AI芯片"], name="贵州茅台"
+                ),
+            ]
+        )
         s = _adapter(tmp_path, drv).score("20261016")[0]
         assert "图谱热度" in s.rationale
         assert "pagerank分位86" in s.rationale  # 6/7 = 85.71 → :.0f = 86
@@ -220,16 +230,18 @@ class TestDegradation:
         assert "降级" in capsys.readouterr().out
 
     def test_empty_concepts_skipped(self, tmp_path):
-        drv = FakeDriver(main_rows=[
-            _stock_row("A.SH", 3, []), _stock_row("B.SH", 3, ["x"]),
-        ])
+        drv = FakeDriver(
+            main_rows=[
+                _stock_row("A.SH", 3, []),
+                _stock_row("B.SH", 3, ["x"]),
+            ]
+        )
         sigs = _adapter(tmp_path, drv).score("20261016")
         assert [s.symbol for s in sigs] == ["B.SH"]
 
     def test_unknown_stock_name_skipped(self, tmp_path):
         # parquet 无该股名（新上市/名称变动）→ 跳过不产信号
-        drv = FakeDriver(main_rows=[_stock_row("A.SH", 1, ["x"],
-                                               name="不存在的股")])
+        drv = FakeDriver(main_rows=[_stock_row("A.SH", 1, ["x"], name="不存在的股")])
         assert _adapter(tmp_path, drv).score("20261016") == []
 
     def test_never_raises_to_caller(self, tmp_path, capsys):
@@ -255,8 +267,9 @@ class TestParquetPicking:
             seen["path"] = path
             return _score_df()
 
-        adapter = KgBoostAdapter(score_glob=glob_pat, driver=FakeDriver(),
-                                 read_parquet=fake_read)
+        adapter = KgBoostAdapter(
+            score_glob=glob_pat, driver=FakeDriver(), read_parquet=fake_read
+        )
         adapter._load_scores("20261015")
         assert seen["path"].endswith("kg_scores_2026-10-15.parquet")
 
@@ -268,8 +281,9 @@ class TestParquetPicking:
             seen["path"] = path
             return _score_df()
 
-        adapter = KgBoostAdapter(score_glob=glob_pat, driver=FakeDriver(),
-                                 read_parquet=fake_read)
+        adapter = KgBoostAdapter(
+            score_glob=glob_pat, driver=FakeDriver(), read_parquet=fake_read
+        )
         adapter._load_scores("20200101")
         assert seen["path"].endswith("kg_scores_2026-10-16.parquet")
 
@@ -278,9 +292,9 @@ class TestParquetPicking:
 # 密码处理（绝不打印）
 # ---------------------------------------------------------------------- #
 class TestPasswordSafety:
-    def test_missing_password_degrades_not_leaks(self, tmp_path, monkeypatch,
-                                                 capsys):
+    def test_missing_password_degrades_not_leaks(self, tmp_path, monkeypatch, capsys):
         from strategy_layer.adapters import kg_boost as mod
+
         monkeypatch.setattr(mod, "_neo4j_password", lambda: None)
         adapter = KgBoostAdapter(
             score_glob=_make_parquet_dir(tmp_path),

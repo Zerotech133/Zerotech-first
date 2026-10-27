@@ -34,11 +34,14 @@ def _patch_paths(monkeypatch, tmp_path, pools):
 
 
 def test_scan_pool_ok_counts(tmp_path):
-    pool = _write_pool(tmp_path / "cn.jsonl", [
-        _ok_row("000001.SZ", "2026-10-16"),
-        _ok_row("000002.SZ", "2026-10-16"),
-        _ok_row("000001.SZ", "2026-10-15"),
-    ])
+    pool = _write_pool(
+        tmp_path / "cn.jsonl",
+        [
+            _ok_row("000001.SZ", "2026-10-16"),
+            _ok_row("000002.SZ", "2026-10-16"),
+            _ok_row("000001.SZ", "2026-10-15"),
+        ],
+    )
     result = probe.scan_pool(pool)
     assert result["status"] == "OK"
     assert result["rows"] == 3
@@ -55,27 +58,35 @@ def test_scan_pool_missing_and_bad_json(tmp_path):
     assert missing["path"].endswith("nope.jsonl")
 
     pool = tmp_path / "bad.jsonl"
-    pool.write_text('{"code": "000001.SZ"}\nnot-json\n[1, 2]\n',
-                    encoding="utf-8")
+    pool.write_text('{"code": "000001.SZ"}\nnot-json\n[1, 2]\n', encoding="utf-8")
     result = probe.scan_pool(pool)
     assert result["rows"] == 1
     assert result["bad_json"] == 2  # not-json 与非对象行均计入
 
 
 def test_main_writes_snapshot_and_ok_runlog(monkeypatch, tmp_path):
-    cn = _write_pool(tmp_path / "cn.jsonl", [
-        _ok_row("000001.SZ", "2026-10-16"),
-        _ok_row("000002.SZ", "2026-10-15"),
-    ])
-    us = _write_pool(tmp_path / "us.jsonl", [
-        _ok_row("AAPL.US", "2026-10-16"),
-    ])
-    hk = _write_pool(tmp_path / "hk.jsonl", [
-        _ok_row("00700.HK", "2026-10-16"),
-    ])
+    cn = _write_pool(
+        tmp_path / "cn.jsonl",
+        [
+            _ok_row("000001.SZ", "2026-10-16"),
+            _ok_row("000002.SZ", "2026-10-15"),
+        ],
+    )
+    us = _write_pool(
+        tmp_path / "us.jsonl",
+        [
+            _ok_row("AAPL.US", "2026-10-16"),
+        ],
+    )
+    hk = _write_pool(
+        tmp_path / "hk.jsonl",
+        [
+            _ok_row("00700.HK", "2026-10-16"),
+        ],
+    )
     report_dir, run_log = _patch_paths(
-        monkeypatch, tmp_path,
-        {"CN": cn, "US": us, "HK": hk})
+        monkeypatch, tmp_path, {"CN": cn, "US": us, "HK": hk}
+    )
 
     report = probe.main()
     assert report["verdict"] == "NO_MARKET_SCOPE_DECISION"
@@ -101,8 +112,8 @@ def test_main_fail_open_but_records_missing_hk(monkeypatch, tmp_path):
     cn = _write_pool(tmp_path / "cn.jsonl", [_ok_row("000001.SZ", "2026-10-16")])
     us = _write_pool(tmp_path / "us.jsonl", [_ok_row("AAPL.US", "2026-10-16")])
     report_dir, run_log = _patch_paths(
-        monkeypatch, tmp_path,
-        {"CN": cn, "US": us, "HK": tmp_path / "no_hk.jsonl"})
+        monkeypatch, tmp_path, {"CN": cn, "US": us, "HK": tmp_path / "no_hk.jsonl"}
+    )
 
     report = probe.main()  # HK 缺失不阻断：观测连续性优先，状态显式记录
 

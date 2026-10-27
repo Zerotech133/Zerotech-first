@@ -30,6 +30,7 @@ boll_breakout / trend_follow，签名 ``(df, params) -> position Series(0/1)``�
     ad = ClassicStrategyAdapter("ma_cross", ["600519.SH"], market="CN")
     ad.score("20261016")   # -> [Signal(...)] 或 []
 """
+
 import os
 import sys
 from typing import Any, Callable, Dict, List, Optional, Sequence
@@ -45,8 +46,9 @@ DEFAULT_SELL_SCORE = 30.0
 DEFAULT_CONFIDENCE = 0.5
 
 
-def _default_loader(market: str, symbols: Sequence[str],
-                    start: Optional[str], end: Optional[str]) -> Dict[str, Any]:
+def _default_loader(
+    market: str, symbols: Sequence[str], start: Optional[str], end: Optional[str]
+) -> Dict[str, Any]:
     """默认数据源：data_loader.load_bars（zhice-db 只读接口，不重拉数据）。
 
     懒 import：模块导入期不碰 DB 配置；调用期才挂上。start/end 用
@@ -55,6 +57,7 @@ def _default_loader(market: str, symbols: Sequence[str],
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     from data_loader import load_bars
+
     return load_bars(market, list(symbols), start, end)
 
 
@@ -63,11 +66,13 @@ def strategy_fn(name: str) -> Callable[[Any, dict], Any]:
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     import strategies as _strat
+
     try:
         return _strat.REGISTRY[name]
     except KeyError as exc:
-        raise ValueError("未知经典策略: %s（可选: %s）"
-                         % (name, sorted(_strat.REGISTRY))) from exc
+        raise ValueError(
+            "未知经典策略: %s（可选: %s）" % (name, sorted(_strat.REGISTRY))
+        ) from exc
 
 
 def default_params(name: str) -> dict:
@@ -75,6 +80,7 @@ def default_params(name: str) -> dict:
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     import strategies as _strat
+
     return dict(_strat.PARAM_DEFAULTS.get(name, {}))
 
 
@@ -130,8 +136,9 @@ class ClassicStrategyAdapter:
         symbols: Sequence[str],
         market: str = "CN",
         params: Optional[dict] = None,
-        loader: Optional[Callable[[str, Sequence[str], Optional[str],
-                                   Optional[str]], Dict[str, Any]]] = None,
+        loader: Optional[
+            Callable[[str, Sequence[str], Optional[str], Optional[str]], Dict[str, Any]]
+        ] = None,
         buy_score: float = DEFAULT_BUY_SCORE,
         sell_score: float = DEFAULT_SELL_SCORE,
         confidence: float = DEFAULT_CONFIDENCE,
@@ -140,12 +147,14 @@ class ClassicStrategyAdapter:
             raise ValueError("strategy_name 必须为非空字符串")
         if not symbols:
             raise ValueError("symbols 不能为空")
-        self.strategy_id = strategy_name          # Protocol 要求的类属性口径
+        self.strategy_id = strategy_name  # Protocol 要求的类属性口径
         self._symbols = [str(s).strip() for s in symbols if str(s).strip()]
         if not self._symbols:
             raise ValueError("symbols 全为空串")
         self._market = market
-        self._params = dict(params) if params is not None else default_params(strategy_name)
+        self._params = (
+            dict(params) if params is not None else default_params(strategy_name)
+        )
         self._loader = loader or _default_loader
         self._buy_score = float(buy_score)
         self._sell_score = float(sell_score)
@@ -185,8 +194,9 @@ class ClassicStrategyAdapter:
         """trade_date as-of 截断数据 → {symbol: {日期: 变化后仓位}}。"""
         if td8 in self._cache:
             return self._cache[td8]
-        frames = self._loader(self._market, self._symbols, None,
-                              ymd8_to_dash(td8)) or {}
+        frames = (
+            self._loader(self._market, self._symbols, None, ymd8_to_dash(td8)) or {}
+        )
         result: Dict[str, Dict[Any, int]] = {}
         fn = strategy_fn(self.strategy_id)
         for symbol in self._symbols:
@@ -194,8 +204,9 @@ class ClassicStrategyAdapter:
             if df is None or len(df) == 0:
                 continue
             pos = fn(df, dict(self._params))
-            result[symbol] = {_ymd8(dt): v
-                              for dt, v in position_change_events(pos).items()}
+            result[symbol] = {
+                _ymd8(dt): v for dt, v in position_change_events(pos).items()
+            }
         if len(self._cache) > 8:
             self._cache.clear()  # 防膨胀：只保留近期交易日
         self._cache[td8] = result
@@ -211,8 +222,12 @@ class ClassicStrategyAdapter:
         else:
             action, score = "sell", self._sell_score
             verb = "空仓"
-        rationale = ("%s：仓位切换为 %d（%s），次日开盘生效，"
-                     "参数 %s") % (self.strategy_id, pos, verb, self._params)
+        rationale = ("%s：仓位切换为 %d（%s），次日开盘生效，参数 %s") % (
+            self.strategy_id,
+            pos,
+            verb,
+            self._params,
+        )
         return Signal(
             symbol=symbol,
             action=action,
@@ -232,10 +247,11 @@ if __name__ == "__main__":
 
     idx = pd.date_range("2026-06-01", periods=80, freq="B")
     close = pd.Series(100.0, index=idx)
-    close.iloc[20:40] = 110.0   # 一段上涨触发均线/趋势策略开仓
-    close.iloc[40:] = 95.0      # 一段下跌触发平仓
-    df = pd.DataFrame({"close": close, "open": close, "high": close,
-                       "low": close, "volume": 1000.0})
+    close.iloc[20:40] = 110.0  # 一段上涨触发均线/趋势策略开仓
+    close.iloc[40:] = 95.0  # 一段下跌触发平仓
+    df = pd.DataFrame(
+        {"close": close, "open": close, "high": close, "low": close, "volume": 1000.0}
+    )
 
     def fake_loader(market, symbols, start, end):
         return {s: df for s in symbols}
@@ -246,9 +262,11 @@ if __name__ == "__main__":
         # 取该策略最后一个事件日打分（冒烟日尾段可能恰无事件）
         pos = strategy_fn(name)(df, {})
         ev = position_change_events(pos)
-        td8 = (_ymd8(max(ev)) if ev else last_td)
+        td8 = _ymd8(max(ev)) if ev else last_td
         sigs = ad.score(td8)
         print("%s smoke: %d signals @ %s" % (name, len(sigs), td8))
         for s in sigs:
-            print("  %s %s score=%s conf=%s | %s"
-                  % (s.symbol, s.action, s.score, s.confidence, s.rationale))
+            print(
+                "  %s %s score=%s conf=%s | %s"
+                % (s.symbol, s.action, s.score, s.confidence, s.rationale)
+            )

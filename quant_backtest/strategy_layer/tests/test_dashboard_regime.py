@@ -6,6 +6,7 @@ false + stale 标记；聚合器恒 ok:true 不放大为 5xx；策源只判定�
 快照用 tmp 目录真实文件替身，测试零生产数据依赖。范式照抄
 test_dashboard_sixring.py（FakeHandler + _send_json 捕获）。
 """
+
 import io
 import json
 import os
@@ -14,8 +15,7 @@ import time
 
 import pytest
 
-QUANT_BT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+QUANT_BT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if QUANT_BT not in sys.path:
     sys.path.insert(0, QUANT_BT)
 
@@ -28,11 +28,22 @@ def _snap(trade_date, regime="risk_on", dq_available=True, gaps=None):
         "regime": regime,
         "gates": {"ma60_above": True, "slope_up": True, "dif_positive": True},
         "risk_off_reasons": [],
-        "index": {"available": True, "code": "000001.SH", "close": 3716.2842,
-                  "chg_pct": 0.24, "ma60": 3800.0, "macd_dif": -3.5},
-        "breadth": {"available": True, "up_count": 3301, "down_count": 2128,
-                    "up_ratio": 0.608, "amount_total_yi": 15690.6,
-                    "amount_yi": {"SH": 7323.5, "SZ": 8229.0, "BJ": 138.1}},
+        "index": {
+            "available": True,
+            "code": "000001.SH",
+            "close": 3716.2842,
+            "chg_pct": 0.24,
+            "ma60": 3800.0,
+            "macd_dif": -3.5,
+        },
+        "breadth": {
+            "available": True,
+            "up_count": 3301,
+            "down_count": 2128,
+            "up_ratio": 0.608,
+            "amount_total_yi": 15690.6,
+            "amount_yi": {"SH": 7323.5, "SZ": 8229.0, "BJ": 138.1},
+        },
         "data_quality": {"available": dq_available, "gaps": gaps or []},
         "criteria": {"source": "watching-standard-capability-v1.0 §5.1"},
         "version": "regime_center-1.0.0",
@@ -46,11 +57,9 @@ def _put(tmp_path, snap):
 
 
 class TestRegimePayload:
-
     def test_fresh_snapshot_available(self, tmp_path, monkeypatch):
         today = time.strftime("%Y%m%d")
-        monkeypatch.setattr(dashboard_api, "REGIME_DIR",
-                            _put(tmp_path, _snap(today)))
+        monkeypatch.setattr(dashboard_api, "REGIME_DIR", _put(tmp_path, _snap(today)))
         payload = dashboard_api.regime_payload()
         assert payload["ok"] is True
         reg = payload["regime"]
@@ -76,8 +85,9 @@ class TestRegimePayload:
 
     def test_stale_snapshot_flagged(self, tmp_path, monkeypatch):
         """陈旧快照（>5 自然日）→ stale:true 且 available:false。"""
-        monkeypatch.setattr(dashboard_api, "REGIME_DIR",
-                            _put(tmp_path, _snap("20260101")))
+        monkeypatch.setattr(
+            dashboard_api, "REGIME_DIR", _put(tmp_path, _snap("20260101"))
+        )
         reg = dashboard_api.regime_payload()["regime"]
         assert reg["stale"] is True
         assert reg["available"] is False
@@ -86,8 +96,7 @@ class TestRegimePayload:
     def test_data_quality_gap_forces_grey(self, tmp_path, monkeypatch):
         """快照自报数据缺口 → 即使日期新鲜也不假绿。"""
         today = time.strftime("%Y%m%d")
-        snap = _snap(today, dq_available=False,
-                     gaps=["breadth:ts_daily_empty"])
+        snap = _snap(today, dq_available=False, gaps=["breadth:ts_daily_empty"])
         monkeypatch.setattr(dashboard_api, "REGIME_DIR", _put(tmp_path, snap))
         reg = dashboard_api.regime_payload()["regime"]
         assert reg["available"] is False
@@ -96,8 +105,7 @@ class TestRegimePayload:
     def test_risk_off_reasons_carried(self, tmp_path, monkeypatch):
         today = time.strftime("%Y%m%d")
         snap = _snap(today, regime="risk_off")
-        snap["risk_off_reasons"] = ["ma60_slope_down",
-                                    "close_below_ma60_2d(streak=11)"]
+        snap["risk_off_reasons"] = ["ma60_slope_down", "close_below_ma60_2d(streak=11)"]
         monkeypatch.setattr(dashboard_api, "REGIME_DIR", _put(tmp_path, snap))
         reg = dashboard_api.regime_payload()["regime"]
         assert reg["value"]["regime"] == "risk_off"
@@ -106,8 +114,7 @@ class TestRegimePayload:
 
     def test_unreadable_dir_isolated(self, tmp_path, monkeypatch):
         """目录不存在 → 降级标灰，绝不抛。"""
-        monkeypatch.setattr(dashboard_api, "REGIME_DIR",
-                            str(tmp_path / "absent_dir"))
+        monkeypatch.setattr(dashboard_api, "REGIME_DIR", str(tmp_path / "absent_dir"))
         payload = dashboard_api.regime_payload()
         assert payload["ok"] is True
         assert payload["regime"]["available"] is False
@@ -148,12 +155,15 @@ class FakeHandler:
 
 
 class TestRegimeRoute:
-
     def setup_method(self):
-        self.handler_cls = type("Handler", (FakeHandler,), {
-            "do_GET": FakeHandler.do_GET,
-            "do_POST": FakeHandler.do_POST,
-        })
+        self.handler_cls = type(
+            "Handler",
+            (FakeHandler,),
+            {
+                "do_GET": FakeHandler.do_GET,
+                "do_POST": FakeHandler.do_POST,
+            },
+        )
 
     def _send_capture(self, monkeypatch):
         captured = []
@@ -166,8 +176,7 @@ class TestRegimeRoute:
 
     def test_route_200_and_structure(self, tmp_path, monkeypatch):
         today = time.strftime("%Y%m%d")
-        monkeypatch.setattr(dashboard_api, "REGIME_DIR",
-                            _put(tmp_path, _snap(today)))
+        monkeypatch.setattr(dashboard_api, "REGIME_DIR", _put(tmp_path, _snap(today)))
         captured = self._send_capture(monkeypatch)
         dashboard_api.register_routes(self.handler_cls)
         h = self.handler_cls("/api/regime", "GET")
@@ -175,8 +184,14 @@ class TestRegimeRoute:
         payload, code = captured[0]
         assert code == 200
         assert payload["ok"] is True
-        assert set(payload["regime"]) >= {"available", "value", "detail",
-                                          "source", "stale", "elapsed_ms"}
+        assert set(payload["regime"]) >= {
+            "available",
+            "value",
+            "detail",
+            "source",
+            "stale",
+            "elapsed_ms",
+        }
 
     def test_route_never_500_on_payload_boom(self, monkeypatch):
         def boom():
@@ -210,10 +225,14 @@ class TestCors:
     """
 
     def setup_method(self):
-        self.handler_cls = type("Handler", (FakeHandler,), {
-            "do_GET": FakeHandler.do_GET,
-            "do_POST": FakeHandler.do_POST,
-        })
+        self.handler_cls = type(
+            "Handler",
+            (FakeHandler,),
+            {
+                "do_GET": FakeHandler.do_GET,
+                "do_POST": FakeHandler.do_POST,
+            },
+        )
 
     def test_send_json_carries_cors(self):
         h = self.handler_cls("/api/regime", "GET")
@@ -236,11 +255,15 @@ class TestCors:
         def orig_options(self):
             marker["called"] = True
 
-        cls = type("Handler2", (FakeHandler,), {
-            "do_GET": FakeHandler.do_GET,
-            "do_POST": FakeHandler.do_POST,
-            "do_OPTIONS": orig_options,
-        })
+        cls = type(
+            "Handler2",
+            (FakeHandler,),
+            {
+                "do_GET": FakeHandler.do_GET,
+                "do_POST": FakeHandler.do_POST,
+                "do_OPTIONS": orig_options,
+            },
+        )
         dashboard_api.register_routes(cls)
         h = cls("/x", "OPTIONS")
         h.do_OPTIONS()

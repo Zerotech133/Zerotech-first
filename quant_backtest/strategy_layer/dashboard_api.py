@@ -51,6 +51,7 @@ docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一�
 铁律对齐：本模块不改动 kg_data_dashboard.py 本身——生产仪表盘收官验收
 期间零打扰，接入属后续单独变更。
 """
+
 from __future__ import annotations
 import logging
 
@@ -82,19 +83,35 @@ FEEDBACK_COLS = ("trade_date", "symbol", "strategy", "verdict")
 # verdict 枚举以 PG strategy.feedback 的 CHECK 约束为权威：
 # accept / reject / mute（2026-10-17 conf-dev DDL 实测）
 VERDICTS = ("accept", "reject", "mute")
-MAX_BODY_BYTES = 4096          # POST 请求体封顶（对齐主仪表盘防巨体思路）
-PSQL_TIMEOUT = 10              # docker exec 秒数上限
-CONNECT_TIMEOUT = 10           # psycopg2 秒数上限
-SIGNALS_COLS = ("trade_date", "symbol", "action", "score", "confidence",
-                "contributions", "divergence", "rationale")
-DOCKER_PSQL_BASE = ("docker", "exec", "quant-pg", "psql",
-                    "-U", "quant_user", "-d", "quant_system")
+MAX_BODY_BYTES = 4096  # POST 请求体封顶（对齐主仪表盘防巨体思路）
+PSQL_TIMEOUT = 10  # docker exec 秒数上限
+CONNECT_TIMEOUT = 10  # psycopg2 秒数上限
+SIGNALS_COLS = (
+    "trade_date",
+    "symbol",
+    "action",
+    "score",
+    "confidence",
+    "contributions",
+    "divergence",
+    "rationale",
+)
+DOCKER_PSQL_BASE = (
+    "docker",
+    "exec",
+    "quant-pg",
+    "psql",
+    "-U",
+    "quant_user",
+    "-d",
+    "quant_system",
+)
 
 # ── 提案制（确认制闭环）常量 ──────────────────────────────────────────
 # 提案持久化文件（模块级变量，测试可 patch 到 tmp 目录隔离）
 PROPOSALS_PATH = os.path.join(QUANT_BT, "data", "strategy_proposals.json")
-PROPOSALS_LIST_MAX = 50        # GET /api/strategies/proposals 返回上限
-_ABSENT = "__absent__"         # top_n 缺省哨兵（区别于显式 null=清除截断）
+PROPOSALS_LIST_MAX = 50  # GET /api/strategies/proposals 返回上限
+_ABSENT = "__absent__"  # top_n 缺省哨兵（区别于显式 null=清除截断）
 PROPOSAL_DECISIONS = ("apply", "reject")
 
 # bootstrap_default_adapters 进程内一次性引导标记（幂等，防重复注册开销）
@@ -130,7 +147,9 @@ def _load_env_local() -> None:
                 if key.strip().startswith("XMAP_PG_"):
                     os.environ.setdefault(key.strip(), val.strip())
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "dashboard_api.py", exc
+        )
 
 
 def _pg_connect():
@@ -139,7 +158,9 @@ def _pg_connect():
     _load_env_local()
     pwd = os.environ.get("XMAP_PG_PASSWORD", "").strip()
     if not pwd:
-        raise RuntimeError("XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
+        raise RuntimeError(
+            "XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）"
+        )
     return psycopg2.connect(
         host=os.environ.get("XMAP_PG_HOST", "127.0.0.1"),
         port=int(os.environ.get("XMAP_PG_PORT", "5442")),
@@ -152,12 +173,20 @@ def _pg_connect():
 
 def _psql_exec(sql: str) -> str:
     """docker exec psql 只读查询兜底（-At -F 制表符），10s 超时。"""
-    cmd = list(DOCKER_PSQL_BASE) + ["-At", "-F", "\t", "-v",
-                                    "ON_ERROR_STOP=1", "-c", sql]
+    cmd = list(DOCKER_PSQL_BASE) + [
+        "-At",
+        "-F",
+        "\t",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-c",
+        sql,
+    ]
     proc = subprocess.run(cmd, capture_output=True, timeout=PSQL_TIMEOUT)
     if proc.returncode != 0:
-        raise RuntimeError("docker exec psql 失败: %s"
-                           % proc.stderr.decode("utf-8", "replace")[:200])
+        raise RuntimeError(
+            "docker exec psql 失败: %s" % proc.stderr.decode("utf-8", "replace")[:200]
+        )
     return proc.stdout.decode("utf-8", "replace")
 
 
@@ -178,7 +207,8 @@ def _load_registry() -> Any:
         if not _BOOTSTRAP_DONE["flag"]:
             try:
                 from strategy_layer import (  # noqa: PLC0415
-                    bootstrap_default_adapters)
+                    bootstrap_default_adapters,
+                )
             except ImportError:
                 bootstrap_default_adapters = None  # noqa: F841
             if bootstrap_default_adapters is not None:
@@ -186,17 +216,23 @@ def _load_registry() -> Any:
                     _tmp_reg = Registry()
                     bootstrap_default_adapters(_tmp_reg)
                 except Exception as exc:
-                    logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+                    logging.getLogger(__name__).warning(
+                        "silent-except %s: %s", "dashboard_api.py", exc
+                    )
             _BOOTSTRAP_DONE["flag"] = True
 
         reg = Registry()
         # 面板语义：注册表全量（含停用）；list_ids 缺失则退化为启用子集
-        ids = list(reg.list_ids()) if hasattr(reg, "list_ids") \
+        ids = (
+            list(reg.list_ids())
+            if hasattr(reg, "list_ids")
             else list(reg.enabled_ids() or [])
+        )
         if not ids:
             ids = list(reg.enabled_ids() or [])
-        enabled_fn = reg.is_enabled if hasattr(reg, "is_enabled") \
-            else (lambda sid: True)
+        enabled_fn = (
+            reg.is_enabled if hasattr(reg, "is_enabled") else (lambda sid: True)
+        )
         weights = getattr(reg, "weights", None)
         weights = weights() if callable(weights) else (weights or {})
         out = []
@@ -213,17 +249,21 @@ def _load_registry() -> Any:
                 tn = top_n_fn(sid) if callable(top_n_fn) else None
             except Exception:  # noqa: BLE001 — top_n 缺失不阻断
                 tn = None
-            out.append({
-                "id": sid,
-                "name": str(meta.get("name", sid)),
-                "weight": float(weights.get(sid, 1.0)),
-                "enabled": bool(enabled_fn(sid)),
-                "top_n": int(tn) if tn else None,
-            })
+            out.append(
+                {
+                    "id": sid,
+                    "name": str(meta.get("name", sid)),
+                    "weight": float(weights.get(sid, 1.0)),
+                    "enabled": bool(enabled_fn(sid)),
+                    "top_n": int(tn) if tn else None,
+                }
+            )
         if out:
             return out
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "dashboard_api.py", exc
+        )
 
     # 2) strategy_registry.json 直读兜底（支持两种形状：
     #    store 形 {"enabled": [ids], "weights": {id: w}}；
@@ -241,29 +281,39 @@ def _load_registry() -> Any:
         if not isinstance(data, dict):
             continue
         out = []
-        if isinstance(data.get("enabled"), list) \
-                and isinstance(data.get("weights"), dict):
+        if isinstance(data.get("enabled"), list) and isinstance(
+            data.get("weights"), dict
+        ):
             # store 形（adapter-dev Registry._save 落盘格式）
             enabled_set = {str(x) for x in data["enabled"]}
-            top_n_map = (data.get("top_n") or {}) \
-                if isinstance(data.get("top_n"), dict) else {}
+            top_n_map = (
+                (data.get("top_n") or {}) if isinstance(data.get("top_n"), dict) else {}
+            )
             for sid, w in data["weights"].items():
                 tn = top_n_map.get(str(sid))
-                out.append({
-                    "id": str(sid),
-                    "name": str(sid),
-                    "weight": float(w),
-                    "enabled": str(sid) in enabled_set,
-                    "top_n": int(tn) if tn else None,
-                })
+                out.append(
+                    {
+                        "id": str(sid),
+                        "name": str(sid),
+                        "weight": float(w),
+                        "enabled": str(sid) in enabled_set,
+                        "top_n": int(tn) if tn else None,
+                    }
+                )
             # enabled 但无权重的 id 补行（防 weights 漏记）
             known = {r["id"] for r in out}
             for sid in data["enabled"]:
                 if str(sid) not in known:
                     tn = top_n_map.get(str(sid))
-                    out.append({"id": str(sid), "name": str(sid),
-                                "weight": 1.0, "enabled": True,
-                                "top_n": int(tn) if tn else None})
+                    out.append(
+                        {
+                            "id": str(sid),
+                            "name": str(sid),
+                            "weight": 1.0,
+                            "enabled": True,
+                            "top_n": int(tn) if tn else None,
+                        }
+                    )
             if out:
                 return out
             continue  # store 形但全空 → 试下一个候选
@@ -272,25 +322,29 @@ def _load_registry() -> Any:
             for sid, meta in rows.items():
                 meta = meta if isinstance(meta, dict) else {}
                 tn = meta.get("top_n")
-                out.append({
-                    "id": sid,
-                    "name": str(meta.get("name", sid)),
-                    "weight": float(meta.get("weight", 1.0)),
-                    "enabled": bool(meta.get("enabled", True)),
-                    "top_n": int(tn) if tn else None,
-                })
+                out.append(
+                    {
+                        "id": sid,
+                        "name": str(meta.get("name", sid)),
+                        "weight": float(meta.get("weight", 1.0)),
+                        "enabled": bool(meta.get("enabled", True)),
+                        "top_n": int(tn) if tn else None,
+                    }
+                )
         elif isinstance(rows, list):
             for item in rows:
                 if not isinstance(item, dict) or "id" not in item:
                     continue
                 tn = item.get("top_n")
-                out.append({
-                    "id": str(item["id"]),
-                    "name": str(item.get("name", item["id"])),
-                    "weight": float(item.get("weight", 1.0)),
-                    "enabled": bool(item.get("enabled", True)),
-                    "top_n": int(tn) if tn else None,
-                })
+                out.append(
+                    {
+                        "id": str(item["id"]),
+                        "name": str(item.get("name", item["id"])),
+                        "weight": float(item.get("weight", 1.0)),
+                        "enabled": bool(item.get("enabled", True)),
+                        "top_n": int(tn) if tn else None,
+                    }
+                )
         if out:
             return out
     return []
@@ -320,26 +374,33 @@ def _normalize_date(raw: str) -> Optional[str]:
 
 def _query_signals_db(trade_date: str) -> list:
     """读 strategy.signals_combined 指定日；psycopg2 优先 / docker 兜底。"""
-    sql = ("SELECT trade_date, symbol, action, score, confidence, "
-           "contributions::text, divergence::text, rationale "
-           "FROM strategy.signals_combined WHERE trade_date = '%s' "
-           "ORDER BY score DESC, symbol" % trade_date.replace("'", ""))
+    sql = (
+        "SELECT trade_date, symbol, action, score, confidence, "
+        "contributions::text, divergence::text, rationale "
+        "FROM strategy.signals_combined WHERE trade_date = '%s' "
+        "ORDER BY score DESC, symbol" % trade_date.replace("'", "")
+    )
     conn = None
     try:
         conn = _pg_connect()
         with conn.cursor() as cur:
-            cur.execute("SELECT trade_date, symbol, action, score, "
-                        "confidence, contributions, divergence, rationale "
-                        "FROM strategy.signals_combined "
-                        "WHERE trade_date = %s "
-                        "ORDER BY score DESC, symbol", (trade_date,))
+            cur.execute(
+                "SELECT trade_date, symbol, action, score, "
+                "confidence, contributions, divergence, rationale "
+                "FROM strategy.signals_combined "
+                "WHERE trade_date = %s "
+                "ORDER BY score DESC, symbol",
+                (trade_date,),
+            )
             rows = cur.fetchall()
     except Exception:
         if conn is not None:
             try:
                 conn.close()
             except Exception as exc:
-                logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "dashboard_api.py", exc
+                )
             conn = None
         rows = _parse_psql_rows(_psql_exec(sql))
     else:
@@ -350,20 +411,23 @@ def _query_signals_db(trade_date: str) -> list:
         contrib = r[5]
         if isinstance(contrib, (str, bytes)):
             try:
-                contrib = json.loads(contrib if isinstance(contrib, str)
-                                     else contrib.decode("utf-8"))
+                contrib = json.loads(
+                    contrib if isinstance(contrib, str) else contrib.decode("utf-8")
+                )
             except ValueError:
                 contrib = {}
-        out.append({
-            "trade_date": str(r[0]),
-            "symbol": str(r[1]),
-            "action": str(r[2]),
-            "score": float(r[3]) if r[3] is not None else 0.0,
-            "confidence": float(r[4]) if r[4] is not None else 0.0,
-            "contributions": contrib if isinstance(contrib, dict) else {},
-            "divergence": str(r[6]).lower() in ("t", "true", "1"),
-            "rationale": str(r[7] or ""),
-        })
+        out.append(
+            {
+                "trade_date": str(r[0]),
+                "symbol": str(r[1]),
+                "action": str(r[2]),
+                "score": float(r[3]) if r[3] is not None else 0.0,
+                "confidence": float(r[4]) if r[4] is not None else 0.0,
+                "contributions": contrib if isinstance(contrib, dict) else {},
+                "divergence": str(r[6]).lower() in ("t", "true", "1"),
+                "rationale": str(r[7] or ""),
+            }
+        )
     return out
 
 
@@ -377,7 +441,7 @@ def _parse_psql_rows(text: str) -> list:
         parts = [None if p == "\\N" else p for p in parts]
         if len(parts) < len(SIGNALS_COLS):
             parts += [None] * (len(SIGNALS_COLS) - len(parts))
-        rows.append(tuple(parts[:len(SIGNALS_COLS)]))
+        rows.append(tuple(parts[: len(SIGNALS_COLS)]))
     return rows
 
 
@@ -388,6 +452,7 @@ def risk_payload() -> tuple:
     （前端隐藏风控卡而非报错）。返回 (payload, http_code)。
     """
     from strategy_layer.risk_bridge import risk_context
+
     return ({"ok": True, "risk": risk_context()}, 200)
 
 
@@ -395,27 +460,33 @@ def signals_payload(date: str = "") -> tuple:
     """当日/指定日组合信号。返回 (payload, http_code)。"""
     d = _normalize_date(date)
     if d is None:
-        return ({"ok": False, "error": "date 需为 YYYYMMDD 八位数字"},
-                400)
+        return ({"ok": False, "error": "date 需为 YYYYMMDD 八位数字"}, 400)
     try:
         rows = _query_signals_db(d)
     except Exception as exc:  # noqa: BLE001 — 图/库不可用降级 JSON 报错
         return ({"ok": False, "error": str(exc)[:200]}, 503)
-    return ({
-        "ok": True,
-        "trade_date": d,
-        "count": len(rows),
-        "signals": rows,
-    }, 200)
+    return (
+        {
+            "ok": True,
+            "trade_date": d,
+            "count": len(rows),
+            "signals": rows,
+        },
+        200,
+    )
 
 
 # ── 端点 3：POST /api/feedback ────────────────────────────────────────
 def _write_feedback_db(row: dict) -> bool:
     """写 strategy.feedback；psycopg2 优先 / docker exec 兜底。"""
-    sql_insert = ("INSERT INTO %s (%s) VALUES ('%s','%s','%s','%s')"
-                  % (FEEDBACK_TABLE, ",".join(FEEDBACK_COLS),
-                     row["trade_date"], row["symbol"],
-                     row["strategy"], row["verdict"]))
+    sql_insert = "INSERT INTO %s (%s) VALUES ('%s','%s','%s','%s')" % (
+        FEEDBACK_TABLE,
+        ",".join(FEEDBACK_COLS),
+        row["trade_date"],
+        row["symbol"],
+        row["strategy"],
+        row["verdict"],
+    )
     try:
         conn = _pg_connect()
         try:
@@ -424,8 +495,13 @@ def _write_feedback_db(row: dict) -> bool:
                     cur.execute(
                         "INSERT INTO %s (%s) VALUES (%%s,%%s,%%s,%%s)"
                         % (FEEDBACK_TABLE, ",".join(FEEDBACK_COLS)),
-                        (row["trade_date"], row["symbol"],
-                         row["strategy"], row["verdict"]))
+                        (
+                            row["trade_date"],
+                            row["symbol"],
+                            row["strategy"],
+                            row["verdict"],
+                        ),
+                    )
         finally:
             conn.close()
         return True
@@ -446,25 +522,29 @@ def register_feedback(body: Any) -> tuple:
         if not row[col]:
             return ({"ok": False, "error": "缺少必填字段: %s" % col}, 400)
     if not (len(row["trade_date"]) == 8 and row["trade_date"].isdigit()):
-        return ({"ok": False, "error": "trade_date 需为 YYYYMMDD 八位数字"},
-                400)
+        return ({"ok": False, "error": "trade_date 需为 YYYYMMDD 八位数字"}, 400)
     if row["verdict"] not in VERDICTS:
-        return ({"ok": False,
-                 "error": "verdict 需为 %s 之一" % "/".join(VERDICTS)}, 400)
+        return (
+            {"ok": False, "error": "verdict 需为 %s 之一" % "/".join(VERDICTS)},
+            400,
+        )
     # 白名单校验（QA-20261017）：psycopg2 主路径已参数化，但 docker exec
     # 兜底走 SQL 文本拼接——symbol/strategy 限安全字符集，杜绝单引号
     # 破语句与理论注入面；trade_date 已限 8 位数字。
     for col in ("symbol", "strategy"):
         if not re.fullmatch(r"[A-Za-z0-9._\-]{1,32}", row[col]):
-            return ({"ok": False,
-                     "error": "%s 含非法字符（限字母/数字/._-，≤32位）" % col},
-                    400)
+            return (
+                {"ok": False, "error": "%s 含非法字符（限字母/数字/._-，≤32位）" % col},
+                400,
+            )
     try:
         _write_feedback_db(row)
     except Exception as exc:  # noqa: BLE001 — 库不可用降级 JSON 报错
         return ({"ok": False, "error": str(exc)[:200]}, 503)
-    return ({"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
-             "feedback": row}, 200)
+    return (
+        {"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "feedback": row},
+        200,
+    )
 
 
 # ── 端点 4：POST /api/strategies/adjust（提案制确认闭环）──────────────
@@ -478,6 +558,7 @@ def _open_registry():
     生产路径与原 adjust_strategy 行为一致：bootstrap 幂等注册内置策略。
     """
     from strategy_layer import Registry, bootstrap_default_adapters
+
     return bootstrap_default_adapters(Registry())
 
 
@@ -488,24 +569,37 @@ def _parse_adjust_body(body: Any) -> tuple:
     末项为 (payload, http_code)。top_n 缺省以 _ABSENT 哨兵标记。
     """
     if not isinstance(body, dict):
-        return (None, None, None, _ABSENT,
-                ({"ok": False, "error": "请求体需为 JSON 对象"}, 400))
+        return (
+            None,
+            None,
+            None,
+            _ABSENT,
+            ({"ok": False, "error": "请求体需为 JSON 对象"}, 400),
+        )
     sid = str(body.get("strategy_id", "") or "").strip()
     if not _ID_RE.fullmatch(sid):
-        return (None, None, None, _ABSENT,
-                ({"ok": False, "error": "strategy_id 含非法字符"}, 400))
+        return (
+            None,
+            None,
+            None,
+            _ABSENT,
+            ({"ok": False, "error": "strategy_id 含非法字符"}, 400),
+        )
     enabled = body.get("enabled", None)
     weight = body.get("weight", None)
     top_n = body.get("top_n", _ABSENT)
     if enabled is None and weight is None and top_n == _ABSENT:
-        return (None, None, None, _ABSENT,
-                ({"ok": False,
-                  "error": "enabled / weight / top_n 至少给一项"}, 400))
+        return (
+            None,
+            None,
+            None,
+            _ABSENT,
+            ({"ok": False, "error": "enabled / weight / top_n 至少给一项"}, 400),
+        )
     return (sid, enabled, weight, top_n, None)
 
 
-def _validate_change_values(enabled: Any, weight: Any,
-                            top_n: Any) -> Optional[tuple]:
+def _validate_change_values(enabled: Any, weight: Any, top_n: Any) -> Optional[tuple]:
     """变更值范围校验（不触 Registry）：weight 0~1；top_n 1..2000 或 null。
 
     返回 None 表示通过；否则返回 (payload, http_code) 错误元组。
@@ -518,15 +612,13 @@ def _validate_change_values(enabled: Any, weight: Any,
         if top_n != _ABSENT and top_n is not None:
             n = int(top_n)
             if not (1 <= n <= 2000):
-                return ({"ok": False,
-                         "error": "top_n 需在 1..2000 或 null"}, 400)
+                return ({"ok": False, "error": "top_n 需在 1..2000 或 null"}, 400)
     except (TypeError, ValueError):
         return ({"ok": False, "error": "weight/top_n 需为数字"}, 400)
     return None
 
 
-def _apply_adjust_to_registry(sid: str, enabled: Any, weight: Any,
-                              top_n: Any) -> tuple:
+def _apply_adjust_to_registry(sid: str, enabled: Any, weight: Any, top_n: Any) -> tuple:
     """单条变更落盘核心（提案 confirm apply 与直调链路共用，不复制校验）。
 
     top_n 以 _ABSENT 哨兵表示「未提供」。返回 (状态 dict, None) 或
@@ -540,8 +632,7 @@ def _apply_adjust_to_registry(sid: str, enabled: Any, weight: Any,
     try:
         registry = _open_registry()
         if sid not in registry.list_ids():
-            return (None, ({"ok": False,
-                            "error": "策略未注册: %s" % sid}, 404))
+            return (None, ({"ok": False, "error": "策略未注册: %s" % sid}, 404))
         if enabled is not None:
             registry.set_enabled(sid, bool(enabled))
         if weight is not None:
@@ -552,16 +643,18 @@ def _apply_adjust_to_registry(sid: str, enabled: Any, weight: Any,
         return (None, ({"ok": False, "error": "weight/top_n 需为数字"}, 400))
     except Exception as exc:  # noqa: BLE001 — 写回失败降级报错
         return (None, ({"ok": False, "error": str(exc)[:200]}, 500))
-    return ({
-        "strategy_id": sid,
-        "enabled": registry.is_enabled(sid),
-        "weight": round(registry.get_weight(sid), 4),
-        "top_n": registry.top_n(sid),
-    }, None)
+    return (
+        {
+            "strategy_id": sid,
+            "enabled": registry.is_enabled(sid),
+            "weight": round(registry.get_weight(sid), 4),
+            "top_n": registry.top_n(sid),
+        },
+        None,
+    )
 
 
-def _build_change(sid: str, enabled: Any, weight: Any,
-                  top_n: Any) -> dict:
+def _build_change(sid: str, enabled: Any, weight: Any, top_n: Any) -> dict:
     """把已校验的变更字段收敛为提案 changes 元素（只保留显式给出的键）。"""
     change = {"strategy_id": sid}
     if enabled is not None:
@@ -590,7 +683,9 @@ def _load_proposals() -> list:
         if isinstance(data, dict) and isinstance(data.get("proposals"), list):
             return data["proposals"]
     except (OSError, ValueError) as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "dashboard_api.py", exc
+        )
     return []
 
 
@@ -615,7 +710,9 @@ def _save_proposals(items: list) -> None:
         try:
             os.unlink(tmp)
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "dashboard_api.py", exc
+            )
         raise
 
 
@@ -653,11 +750,16 @@ def create_proposal(body: Any) -> tuple:
             items.append(proposal)
             _save_proposals(items)
     except Exception as exc:  # noqa: BLE001 — 落盘失败降级报错
-        return ({"ok": False,
-                 "error": "提案写入失败: %s" % str(exc)[:150]}, 500)
-    return ({"ok": True, "proposal_id": proposal["id"],
-             "status": "pending",
-             "message": "提案已登记，等待管理台确认"}, 200)
+        return ({"ok": False, "error": "提案写入失败: %s" % str(exc)[:150]}, 500)
+    return (
+        {
+            "ok": True,
+            "proposal_id": proposal["id"],
+            "status": "pending",
+            "message": "提案已登记，等待管理台确认",
+        },
+        200,
+    )
 
 
 def adjust_strategy(body: Any) -> tuple:
@@ -697,20 +799,30 @@ def confirm_proposal(body: Any) -> tuple:
     if not pid:
         return ({"ok": False, "error": "缺少必填字段: id"}, 400)
     if decision not in PROPOSAL_DECISIONS:
-        return ({"ok": False,
-                 "error": "decision 需为 %s 之一"
-                          % "/".join(PROPOSAL_DECISIONS)}, 400)
+        return (
+            {
+                "ok": False,
+                "error": "decision 需为 %s 之一" % "/".join(PROPOSAL_DECISIONS),
+            },
+            400,
+        )
     with _PROPOSALS_LOCK:  # 读-改-写全程持锁，防并发互覆
         items = _load_proposals()
-        prop = next((p for p in items
-                     if isinstance(p, dict) and p.get("id") == pid), None)
+        prop = next(
+            (p for p in items if isinstance(p, dict) and p.get("id") == pid), None
+        )
         if prop is None:
             return ({"ok": False, "error": "提案不存在: %s" % pid}, 404)
         if prop.get("status") != "pending":
-            return ({"ok": False,
-                     "error": "提案非 pending 状态（当前: %s），不可重复操作"
-                              % prop.get("status"),
-                     "proposal_status": prop.get("status")}, 409)
+            return (
+                {
+                    "ok": False,
+                    "error": "提案非 pending 状态（当前: %s），不可重复操作"
+                    % prop.get("status"),
+                    "proposal_status": prop.get("status"),
+                },
+                409,
+            )
         results = []
         all_ok = True
         if decision == "reject":
@@ -720,31 +832,58 @@ def confirm_proposal(body: Any) -> tuple:
             for ch in prop.get("changes", []):
                 if not isinstance(ch, dict) or not ch.get("strategy_id"):
                     all_ok = False
-                    results.append({"strategy_id": None, "ok": False,
-                                    "error": "提案变更项缺少 strategy_id"})
+                    results.append(
+                        {
+                            "strategy_id": None,
+                            "ok": False,
+                            "error": "提案变更项缺少 strategy_id",
+                        }
+                    )
                     continue
                 top_n = ch["top_n"] if "top_n" in ch else _ABSENT
                 state, ch_err = _apply_adjust_to_registry(
-                    str(ch.get("strategy_id")), ch.get("enabled"),
-                    ch.get("weight"), top_n)
+                    str(ch.get("strategy_id")),
+                    ch.get("enabled"),
+                    ch.get("weight"),
+                    top_n,
+                )
                 if ch_err is not None:
                     all_ok = False
-                    results.append({"strategy_id": ch.get("strategy_id"),
-                                    "ok": False,
-                                    "error": str(ch_err[0].get("error", ""))[:200]})
+                    results.append(
+                        {
+                            "strategy_id": ch.get("strategy_id"),
+                            "ok": False,
+                            "error": str(ch_err[0].get("error", ""))[:200],
+                        }
+                    )
                 else:
-                    results.append({"strategy_id": state["strategy_id"],
-                                    "ok": True, "state": state})
+                    results.append(
+                        {
+                            "strategy_id": state["strategy_id"],
+                            "ok": True,
+                            "state": state,
+                        }
+                    )
             if all_ok:
                 prop["status"] = "applied"
                 prop["applied_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         try:
             _save_proposals(items)
         except Exception as exc:  # noqa: BLE001 — 状态写回失败降级报错
-            return ({"ok": False,
-                     "error": "提案状态写回失败: %s" % str(exc)[:150]}, 500)
-    return ({"ok": True, "proposal_id": pid, "decision": decision,
-             "status": prop["status"], "results": results}, 200)
+            return (
+                {"ok": False, "error": "提案状态写回失败: %s" % str(exc)[:150]},
+                500,
+            )
+    return (
+        {
+            "ok": True,
+            "proposal_id": pid,
+            "decision": decision,
+            "status": prop["status"],
+            "results": results,
+        },
+        200,
+    )
 
 
 # ── 端点 N：GET /api/health 健康探针（只读零副作用）──────────────────
@@ -753,12 +892,12 @@ def confirm_proposal(body: Any) -> tuple:
 HEALTH_HOST = "127.0.0.1"
 HEALTH_SPECS = (
     # (env 键, 默认端口, 名称, 探测方式, 超时秒)
-    ("PORTAL",    8091,  "portal",   "http", 0.8),  # HTTP GET /
-    ("GATEWAY",   8098,  "gateway",  "tcp",  0.5),
-    ("QUANTAPI",  8001,  "quantapi", "tcp",  0.5),
-    ("OLLAMA",    11434, "ollama",   "tcp",  0.5),
+    ("PORTAL", 8091, "portal", "http", 0.8),  # HTTP GET /
+    ("GATEWAY", 8098, "gateway", "tcp", 0.5),
+    ("QUANTAPI", 8001, "quantapi", "tcp", 0.5),
+    ("OLLAMA", 11434, "ollama", "tcp", 0.5),
 )
-HEALTH_DASHBOARD_PORT = 8791   # 自身：能收到本请求即活，不做自我探测防递归
+HEALTH_DASHBOARD_PORT = 8791  # 自身：能收到本请求即活，不做自我探测防递归
 
 
 def _load_health_env_local() -> None:
@@ -776,7 +915,9 @@ def _load_health_env_local() -> None:
                 if key.strip().startswith("HEALTH_"):
                     os.environ.setdefault(key.strip(), val.strip())
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "dashboard_api.py", exc
+        )
 
 
 def _health_env_port(env_key: str, default: int) -> int:
@@ -790,12 +931,15 @@ def _health_env_port(env_key: str, default: int) -> int:
 def _probe_tcp(port: int, timeout: float) -> int:
     """TCP 探测：connect 成功即存活，返回耗时 ms；失败抛异常由调用方捕获。"""
     import socket
+
     t0 = time.perf_counter()
     sock = socket.create_connection((HEALTH_HOST, port), timeout=timeout)
     try:
         sock.close()
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "dashboard_api.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "dashboard_api.py", exc
+        )
     return int((time.perf_counter() - t0) * 1000)
 
 
@@ -803,6 +947,7 @@ def _probe_http(port: int, timeout: float) -> int:
     """HTTP 探测（GET /）：收到任何完整应答即视为服务存活（端口级探针，
     语义层健康不在此判定）。失败抛异常由调用方捕获。"""
     import http.client
+
     t0 = time.perf_counter()
     conn = http.client.HTTPConnection(HEALTH_HOST, port, timeout=timeout)
     try:
@@ -828,8 +973,13 @@ def health_payload() -> dict:
     _load_health_env_local()
     checks = []
     for env_key, dflt_port, name, mode, timeout in HEALTH_SPECS:
-        entry = {"port": _health_env_port(env_key, dflt_port),
-                 "name": name, "ok": False, "latency_ms": None, "err": None}
+        entry = {
+            "port": _health_env_port(env_key, dflt_port),
+            "name": name,
+            "ok": False,
+            "latency_ms": None,
+            "err": None,
+        }
         try:
             probe = _probe_http if mode == "http" else _probe_tcp
             entry["latency_ms"] = probe(entry["port"], timeout)
@@ -837,13 +987,16 @@ def health_payload() -> dict:
         except Exception as exc:  # noqa: BLE001 — 单项失败不阻塞整体
             entry["err"] = (str(exc).strip() or exc.__class__.__name__)[:120]
         checks.append(entry)
-    checks.append({"port": _health_env_port("DASHBOARD",
-                                            HEALTH_DASHBOARD_PORT),
-                   "name": "dashboard", "ok": True,
-                   "latency_ms": 0, "err": None})
-    return {"ok": True,
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "checks": checks}
+    checks.append(
+        {
+            "port": _health_env_port("DASHBOARD", HEALTH_DASHBOARD_PORT),
+            "name": "dashboard",
+            "ok": True,
+            "latency_ms": 0,
+            "err": None,
+        }
+    )
+    return {"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "checks": checks}
 
 
 # ── 端点 N：GET /api/sixring 六环状态徽标聚合（只读零副作用）─────────
@@ -852,20 +1005,19 @@ def health_payload() -> dict:
 # 标志，缺源不报错不编造；单环异常降级 available=false + err，绝不
 # 传染、绝不整体 500。全环数据源均为本地文件/库，逐环计时入 detail。
 SIXRING_POOL_PATH = os.path.join(QUANT_BT, "data", "chanlun_pool.jsonl")
-SIXRING_WATCH_PATH = os.path.join(QUANT_BT, "reports",
-                                  "council_watch.jsonl")
-SIXRING_REVIEWS_PATH = os.path.join(QUANT_BT, "reports",
-                                    "council_reviews.jsonl")
-SIXRING_PORTFOLIO_PATH = os.path.join(QUANT_BT, "reports",
-                                      "portfolio.json")
+SIXRING_WATCH_PATH = os.path.join(QUANT_BT, "reports", "council_watch.jsonl")
+SIXRING_REVIEWS_PATH = os.path.join(QUANT_BT, "reports", "council_reviews.jsonl")
+SIXRING_PORTFOLIO_PATH = os.path.join(QUANT_BT, "reports", "portfolio.json")
 # approvals.db 在仓库根 data/（实探 2026-10-19：QUANT_BT 上级目录）
-SIXRING_APPROVALS_DB = os.path.join(os.path.dirname(QUANT_BT), "data",
-                                    "approvals", "approvals.db")
+SIXRING_APPROVALS_DB = os.path.join(
+    os.path.dirname(QUANT_BT), "data", "approvals", "approvals.db"
+)
 
 
 def _sixring_pool() -> dict:
     """环①入池：chanlun_pool.jsonl 最近批次（detect_date）与标的数。"""
     from collections import Counter
+
     cnt = Counter()
     with open(SIXRING_POOL_PATH, "r", encoding="utf-8") as fh:
         for line in fh:
@@ -880,14 +1032,19 @@ def _sixring_pool() -> dict:
             if d:
                 cnt[d] += 1
     if not cnt:
-        return {"available": False, "value": None,
-                "detail": "入池账本无有效行",
-                "source": "data/chanlun_pool.jsonl"}
+        return {
+            "available": False,
+            "value": None,
+            "detail": "入池账本无有效行",
+            "source": "data/chanlun_pool.jsonl",
+        }
     latest = max(cnt)
-    return {"available": True,
-            "value": {"date": latest, "count": cnt[latest]},
-            "detail": "最近批次 %s · %d 只入池" % (latest, cnt[latest]),
-            "source": "data/chanlun_pool.jsonl"}
+    return {
+        "available": True,
+        "value": {"date": latest, "count": cnt[latest]},
+        "detail": "最近批次 %s · %d 只入池" % (latest, cnt[latest]),
+        "source": "data/chanlun_pool.jsonl",
+    }
 
 
 def _sixring_watch() -> dict:
@@ -913,11 +1070,15 @@ def _sixring_watch() -> dict:
             d = str(r.get("d") or (r.get("ts") or "")[:10] or "")
             if d > latest_d:
                 latest_d = d
-    return {"available": True, "value": {"count": len(codes),
-                                         "latest": latest_d or None},
-            "detail": ("在盯 %d 只 · watch %d 条 · 最近 %s"
-                       % (len(codes), n_rows, latest_d or "无")),
-            "source": "reports/council_watch.jsonl"}
+    return {
+        "available": True,
+        "value": {"count": len(codes), "latest": latest_d or None},
+        "detail": (
+            "在盯 %d 只 · watch %d 条 · 最近 %s"
+            % (len(codes), n_rows, latest_d or "无")
+        ),
+        "source": "reports/council_watch.jsonl",
+    }
 
 
 def _sixring_auth() -> dict:
@@ -928,6 +1089,7 @@ def _sixring_auth() -> dict:
     if not os.path.isfile(SIXRING_APPROVALS_DB):
         raise FileNotFoundError("approvals.db 缺失")
     import sqlite3
+
     uri = "file:%s?mode=ro" % SIXRING_APPROVALS_DB.replace("\\", "/")
     conn = sqlite3.connect(uri, uri=True, timeout=0.5)
     try:
@@ -937,35 +1099,49 @@ def _sixring_auth() -> dict:
         conn.close()
     n = int(n or 0)
     if n == 0:
-        return {"available": False, "value": None,
-                "detail": "授权账本未建（approvals.db 空表）",
-                "notes": "投研核实授权账本未建，暂无待授权数据",
-                "source": "data/approvals/approvals.db"}
-    return {"available": True, "value": {"count": n},
-            "detail": "授权决定 %d 条 · 最近 %s" % (n, str(last_at or "")),
-            "source": "data/approvals/approvals.db"}
+        return {
+            "available": False,
+            "value": None,
+            "detail": "授权账本未建（approvals.db 空表）",
+            "notes": "投研核实授权账本未建，暂无待授权数据",
+            "source": "data/approvals/approvals.db",
+        }
+    return {
+        "available": True,
+        "value": {"count": n},
+        "detail": "授权决定 %d 条 · 最近 %s" % (n, str(last_at or "")),
+        "source": "data/approvals/approvals.db",
+    }
 
 
 def _sixring_risk() -> dict:
     """环④风控：复用 /api/risk 的 risk_bridge 只读账本（R1-R4+市场级闸）。"""
     from strategy_layer.risk_bridge import risk_context
+
     ctx = risk_context()
     if not ctx.get("available"):
-        return {"available": False, "value": None,
-                "detail": "风控账本不可达",
-                "notes": str(ctx.get("error") or "ledger 缺失"),
-                "source": "riskguard_ledger/ledger.jsonl"}
+        return {
+            "available": False,
+            "value": None,
+            "detail": "风控账本不可达",
+            "notes": str(ctx.get("error") or "ledger 缺失"),
+            "source": "riskguard_ledger/ledger.jsonl",
+        }
     rules = ctx.get("rules") or {}
-    blocks = {k: int((rules.get(k) or {}).get("block") or 0)
-              for k in ("R1", "R2", "R3", "R4")}
+    blocks = {
+        k: int((rules.get(k) or {}).get("block") or 0) for k in ("R1", "R2", "R3", "R4")
+    }
     mg = ctx.get("market_gate") or {}
     mg_action = str(mg.get("action") or "无")
-    return {"available": True,
-            "value": {"blocks": blocks, "market_gate": mg_action},
-            "detail": ("R1-R4 拦截 %d/%d/%d/%d · 市场级闸 %s"
-                       % (blocks["R1"], blocks["R2"], blocks["R3"],
-                          blocks["R4"], mg_action)),
-            "source": "strategy_layer/risk_bridge.py → riskguard_ledger"}
+    return {
+        "available": True,
+        "value": {"blocks": blocks, "market_gate": mg_action},
+        "detail": (
+            "R1-R4 拦截 %d/%d/%d/%d · 市场级闸 %s"
+            % (blocks["R1"], blocks["R2"], blocks["R3"], blocks["R4"], mg_action)
+        ),
+        "source": "strategy_layer/risk_bridge.py → riskguard_ledger",
+    }
 
 
 def _sixring_trade() -> dict:
@@ -986,13 +1162,15 @@ def _sixring_trade() -> dict:
             if d > latest_d:
                 latest_d = d
     n_today = sum(1 for _, d in trades if d == latest_d) if latest_d else 0
-    return {"available": True,
-            "value": {"date": latest_d or None, "count": n_today,
-                      "total": len(trades)},
-            "detail": ("最近成交 %s · 当日 %d 笔 · %d 账户累计 %d 笔"
-                       % (latest_d or "无", n_today, len(accounts),
-                          len(trades))),
-            "source": "reports/portfolio.json"}
+    return {
+        "available": True,
+        "value": {"date": latest_d or None, "count": n_today, "total": len(trades)},
+        "detail": (
+            "最近成交 %s · 当日 %d 笔 · %d 账户累计 %d 笔"
+            % (latest_d or "无", n_today, len(accounts), len(trades))
+        ),
+        "source": "reports/portfolio.json",
+    }
 
 
 def _sixring_review() -> dict:
@@ -1013,21 +1191,27 @@ def _sixring_review() -> dict:
             if ts > latest_ts:
                 latest_ts = ts
     if n == 0:
-        return {"available": False, "value": None,
-                "detail": "暂无复盘记录", "notes": "复盘账本为空",
-                "source": "reports/council_reviews.jsonl"}
-    return {"available": True, "value": {"date": latest_ts[:10] or None,
-                                         "count": n},
-            "detail": "最近复盘 %s · 共 %d 条" % (latest_ts or "无", n),
-            "source": "reports/council_reviews.jsonl"}
+        return {
+            "available": False,
+            "value": None,
+            "detail": "暂无复盘记录",
+            "notes": "复盘账本为空",
+            "source": "reports/council_reviews.jsonl",
+        }
+    return {
+        "available": True,
+        "value": {"date": latest_ts[:10] or None, "count": n},
+        "detail": "最近复盘 %s · 共 %d 条" % (latest_ts or "无", n),
+        "source": "reports/council_reviews.jsonl",
+    }
 
 
 SIXRING_RING_FUNCS = (
-    ("pool", "_sixring_pool"),      # 环①入池
-    ("watch", "_sixring_watch"),    # 环②盯盘
-    ("auth", "_sixring_auth"),      # 环③待授权
-    ("risk", "_sixring_risk"),      # 环④风控
-    ("trade", "_sixring_trade"),    # 环⑤成交
+    ("pool", "_sixring_pool"),  # 环①入池
+    ("watch", "_sixring_watch"),  # 环②盯盘
+    ("auth", "_sixring_auth"),  # 环③待授权
+    ("risk", "_sixring_risk"),  # 环④风控
+    ("trade", "_sixring_trade"),  # 环⑤成交
     ("review", "_sixring_review"),  # 环⑥复盘
 )
 
@@ -1046,17 +1230,17 @@ def sixring_payload() -> dict:
         try:
             ring = dict(g[fn_name]())
         except Exception as exc:  # noqa: BLE001 — 单环缺源降级标灰
-            ring = {"available": False, "value": None,
-                    "detail": "缺源", "source": "",
-                    "err": (str(exc).strip()
-                            or exc.__class__.__name__)[:200]}
+            ring = {
+                "available": False,
+                "value": None,
+                "detail": "缺源",
+                "source": "",
+                "err": (str(exc).strip() or exc.__class__.__name__)[:200],
+            }
         ring["elapsed_ms"] = int((time.perf_counter() - t0) * 1000)
-        ring["detail"] = "%s · %dms" % (ring.get("detail") or "",
-                                        ring["elapsed_ms"])
+        ring["detail"] = "%s · %dms" % (ring.get("detail") or "", ring["elapsed_ms"])
         rings[key] = ring
-    return {"ok": True,
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "rings": rings}
+    return {"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "rings": rings}
 
 
 # ── 端点 N：GET /api/regime 策源中心当日大盘状况（只读零副作用）──────
@@ -1065,7 +1249,7 @@ def sixring_payload() -> dict:
 # —— 无快照或快照陈旧 → available=false + stale 标记，绝不编造 regime。
 # 策源中心只判定与记录，不拦截任何信号（影子期零否决权）。
 REGIME_DIR = os.path.join(QUANT_BT, "data", "regime_center")
-REGIME_STALE_DAYS = 5   # 快照交易日距今超过 N 个自然日 → 标 stale
+REGIME_STALE_DAYS = 5  # 快照交易日距今超过 N 个自然日 → 标 stale
 
 
 def regime_payload() -> dict:
@@ -1075,25 +1259,36 @@ def regime_payload() -> dict:
     snap, err = None, None
     try:
         import regime_center
+
         snap = regime_center.latest_snapshot(out_dir=REGIME_DIR)
     except Exception as exc:  # noqa: BLE001 — 缺源降级标灰，不放大为 5xx
         err = (str(exc).strip() or exc.__class__.__name__)[:200]
 
     ms = int((time.perf_counter() - t0) * 1000)
     if not snap:
-        return {"ok": True, "ts": ts,
-                "regime": {"available": False, "value": None,
-                           "detail": "无策源快照（先跑 regime_center.py）",
-                           "source": "data/regime_center",
-                           "stale": True, "err": err, "elapsed_ms": ms},
-                "snapshot": None}
+        return {
+            "ok": True,
+            "ts": ts,
+            "regime": {
+                "available": False,
+                "value": None,
+                "detail": "无策源快照（先跑 regime_center.py）",
+                "source": "data/regime_center",
+                "stale": True,
+                "err": err,
+                "elapsed_ms": ms,
+            },
+            "snapshot": None,
+        }
 
     last = str(snap.get("trade_date") or "")
     index = snap.get("index") or {}
     breadth = snap.get("breadth") or {}
     try:
-        gap = (time.mktime(time.strptime(time.strftime("%Y%m%d"), "%Y%m%d"))
-               - time.mktime(time.strptime(last, "%Y%m%d"))) / 86400.0
+        gap = (
+            time.mktime(time.strptime(time.strftime("%Y%m%d"), "%Y%m%d"))
+            - time.mktime(time.strptime(last, "%Y%m%d"))
+        ) / 86400.0
     except (ValueError, TypeError):
         gap = 999.0
     stale = (not last) or gap > REGIME_STALE_DAYS
@@ -1120,18 +1315,21 @@ def regime_payload() -> dict:
         detail_bits.append("两市 %.0f 亿" % breadth["amount_total_yi"])
     if stale:
         detail_bits.append("快照陈旧 %s" % (last or "无"))
-    return {"ok": True, "ts": ts,
-            "regime": {"available": bool(
-                           (snap.get("data_quality") or {}).get("available"))
-                       and not stale,
-                       "value": value,
-                       "detail": " · ".join(detail_bits) + " · %dms" % ms,
-                       "source": "data/regime_center/snapshot_%s.json" % last,
-                       "stale": stale,
-                       "gaps": (snap.get("data_quality") or {}).get("gaps")
-                               or [],
-                       "elapsed_ms": ms},
-            "snapshot": snap}
+    return {
+        "ok": True,
+        "ts": ts,
+        "regime": {
+            "available": bool((snap.get("data_quality") or {}).get("available"))
+            and not stale,
+            "value": value,
+            "detail": " · ".join(detail_bits) + " · %dms" % ms,
+            "source": "data/regime_center/snapshot_%s.json" % last,
+            "stale": stale,
+            "gaps": (snap.get("data_quality") or {}).get("gaps") or [],
+            "elapsed_ms": ms,
+        },
+        "snapshot": snap,
+    }
 
 
 # ── 端点 N：GET /api/admission 市场准入判定（只读零副作用）───────────
@@ -1143,8 +1341,7 @@ def regime_payload() -> dict:
 # 纪律：缺源标 source_missing 不编造；非否决性缺源 → verdict=unknown
 # （禁 fail-open 假绿）；关门一票否决优先。资格口径与 8091 /api/brief
 # fin.verdict 的执行口径分立（契约 §9/§6），禁互改。
-ADMISSION_PREMARKET_PATH = os.path.join(QUANT_BT, "reports",
-                                        "premarket_latest.json")
+ADMISSION_PREMARKET_PATH = os.path.join(QUANT_BT, "reports", "premarket_latest.json")
 
 
 def _admission_premarket_inputs() -> dict:
@@ -1166,24 +1363,25 @@ def _admission_risk_gate_inputs() -> dict:
     """
     try:
         from strategy_layer.risk_bridge import risk_context
+
         ctx = risk_context()
     except Exception:  # noqa: BLE001 — 风控桥缺源降级标灰
-        return {"shadow_block": None, "hard_block": None,
-                "score": None, "reason": None}
+        return {"shadow_block": None, "hard_block": None, "score": None, "reason": None}
     if not ctx.get("available"):
-        return {"shadow_block": None, "hard_block": None,
-                "score": None, "reason": None}
+        return {"shadow_block": None, "hard_block": None, "score": None, "reason": None}
     mg = ctx.get("market_gate") or {}
     if not mg:
         rules = ctx.get("rules") or {}
         mg = (rules.get("R1") or {}).get("market_gate") or {}
     action = str(mg.get("action") or "")
     if not action:
-        return {"shadow_block": None, "hard_block": None,
-                "score": None, "reason": None}
-    return {"shadow_block": action == "shadow_block",
-            "hard_block": action == "block",
-            "score": mg.get("score"), "reason": mg.get("reason")}
+        return {"shadow_block": None, "hard_block": None, "score": None, "reason": None}
+    return {
+        "shadow_block": action == "shadow_block",
+        "hard_block": action == "block",
+        "score": mg.get("score"),
+        "reason": mg.get("reason"),
+    }
 
 
 def _admission_latest_snapshot() -> Any:
@@ -1191,6 +1389,7 @@ def _admission_latest_snapshot() -> Any:
     同语义：snapshot_*.json 文件名序取末个）。直读文件不 import
     regime_center——快照只是 JSON，判定链路不应引入 pandas 重依赖。"""
     import glob
+
     files = sorted(glob.glob(os.path.join(REGIME_DIR, "snapshot_*.json")))
     if not files:
         return None
@@ -1203,8 +1402,13 @@ def _admission_latest_snapshot() -> Any:
 
 def _admission_regime_inputs() -> dict:
     """regime 快照 → regime 值 / 三门通过数 / 广度（反证用）/ 快照标记。"""
-    out = {"regime": None, "gates_passed": None, "up_ratio": None,
-           "trade_date": None, "snapshot": False}
+    out = {
+        "regime": None,
+        "gates_passed": None,
+        "up_ratio": None,
+        "trade_date": None,
+        "snapshot": False,
+    }
     try:
         snap = _admission_latest_snapshot()
     except Exception:  # noqa: BLE001 — 缺快照降级，不放大为 5xx
@@ -1234,6 +1438,7 @@ def admission_payload() -> dict:
     绝不 5xx、绝不 fail-open）。反证：广度偏多等矛盾信号显式同屏。
     """
     import admission as admission_engine
+
     t0 = time.perf_counter()
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -1242,30 +1447,49 @@ def admission_payload() -> dict:
     gate = _admission_risk_gate_inputs()
 
     result = admission_engine.evaluate_admission(
-        regime=reg["regime"], overall=pre["overall"], prob=pre["prob"],
+        regime=reg["regime"],
+        overall=pre["overall"],
+        prob=pre["prob"],
         gates_passed=reg["gates_passed"],
-        shadow_block=gate["shadow_block"], hard_block=gate["hard_block"])
+        shadow_block=gate["shadow_block"],
+        hard_block=gate["hard_block"],
+    )
 
     # 缺源清单（输入名 → 数据源名；引擎 missing 为权威，不重复发明判定）
-    _SRC = {"regime": "regime_snapshot", "overall": "premarket",
-            "prob": "premarket", "gates_passed": "regime_snapshot",
-            "hard_block": "risk_gate"}
+    _SRC = {
+        "regime": "regime_snapshot",
+        "overall": "premarket",
+        "prob": "premarket",
+        "gates_passed": "regime_snapshot",
+        "hard_block": "risk_gate",
+    }
     source_missing = sorted({_SRC[m] for m in result.get("missing", [])})
     sources = {
         "regime_snapshot": ("ok" if reg["regime"] is not None else "missing"),
-        "premarket": ("ok" if pre["overall"] is not None
-                      and pre["prob"] is not None else "missing"),
-        "risk_gate": ("ok" if gate["hard_block"] is not None
-                      or gate["shadow_block"] is not None else "missing"),
+        "premarket": (
+            "ok"
+            if pre["overall"] is not None and pre["prob"] is not None
+            else "missing"
+        ),
+        "risk_gate": (
+            "ok"
+            if gate["hard_block"] is not None or gate["shadow_block"] is not None
+            else "missing"
+        ),
     }
 
     # 反证同屏：快照广度偏多 vs 收缩判定 → 显式列出，不掩盖分歧
     counter = list(result.get("counter_evidence") or [])
     up_ratio = reg.get("up_ratio")
-    if (up_ratio is not None and result["verdict"] in ("closed", "narrow")
-            and up_ratio >= 0.5):
-        counter.append("广度 up_ratio=%.1f%% 偏多（结构性机会仍在，"
-                       "趋势门收缩口径优先，分歧显式并列）" % (up_ratio * 100))
+    if (
+        up_ratio is not None
+        and result["verdict"] in ("closed", "narrow")
+        and up_ratio >= 0.5
+    ):
+        counter.append(
+            "广度 up_ratio=%.1f%% 偏多（结构性机会仍在，"
+            "趋势门收缩口径优先，分歧显式并列）" % (up_ratio * 100)
+        )
 
     ms = int((time.perf_counter() - t0) * 1000)
     admission = dict(result)
@@ -1310,12 +1534,14 @@ def register_routes(server_or_app: Any) -> Any:
         u = urlparse(self.path)
         if u.path in ("/pipeline", "/manage"):
             try:
-                fname = ("pipeline_map.html" if u.path == "/pipeline"
-                         else "management_console.html")
+                fname = (
+                    "pipeline_map.html"
+                    if u.path == "/pipeline"
+                    else "management_console.html"
+                )
                 body = _static_page(fname)
             except OSError as exc:
-                return _send_json(self, {"ok": False,
-                                         "error": str(exc)[:200]}, 500)
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -1327,28 +1553,31 @@ def register_routes(server_or_app: Any) -> Any:
             try:
                 payload, code = risk_payload()
             except Exception as exc:  # noqa: BLE001 — 桥失败降级
-                payload = {"ok": True,
-                           "risk": {"available": False,
-                                    "error": str(exc)[:200]}}
+                payload = {
+                    "ok": True,
+                    "risk": {"available": False, "error": str(exc)[:200]},
+                }
                 code = 200
             return _send_json(self, payload, code)
         if u.path == "/api/chain":
             try:
                 from strategy_layer.chain_watch import chain_payload
+
                 payload, code = chain_payload()
             except Exception as exc:  # noqa: BLE001
-                payload, code = ({"ok": False,
-                                  "error": str(exc)[:200]}, 503)
+                payload, code = ({"ok": False, "error": str(exc)[:200]}, 503)
             return _send_json(self, payload, code)
         if u.path == "/api/brief":
             try:
                 from strategy_layer.chain_watch import brief_payload
-                force = parse_qs(u.query, keep_blank_values=True).get(
-                    "force", [""])[0] == "1"
+
+                force = (
+                    parse_qs(u.query, keep_blank_values=True).get("force", [""])[0]
+                    == "1"
+                )
                 payload, code = brief_payload(force=force)
             except Exception as exc:  # noqa: BLE001
-                payload, code = ({"ok": False,
-                                  "error": str(exc)[:200]}, 503)
+                payload, code = ({"ok": False, "error": str(exc)[:200]}, 503)
             return _send_json(self, payload, code)
         if u.path == "/api/health":
             # 探针自身恒 200：health_payload 按设计不抛，此处兜底仍回
@@ -1356,31 +1585,33 @@ def register_routes(server_or_app: Any) -> Any:
             try:
                 return _send_json(self, health_payload())
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": True,
-                                         "ts": time.strftime(
-                                             "%Y-%m-%dT%H:%M:%S"),
-                                         "checks": [],
-                                         "error": str(exc)[:200]}, 200)
+                return _send_json(
+                    self,
+                    {
+                        "ok": True,
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                        "checks": [],
+                        "error": str(exc)[:200],
+                    },
+                    200,
+                )
         if u.path == "/api/strategies/proposals":
             try:
                 return _send_json(self, proposals_payload())
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": False,
-                                         "error": str(exc)[:200]}, 500)
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
         if u.path == "/api/strategies":
             try:
                 return _send_json(self, strategies_payload())
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": False,
-                                         "error": str(exc)[:200]}, 500)
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
         if u.path == "/api/signals":
             q = parse_qs(u.query, keep_blank_values=True)
-            date = (q.get("date", [""])[0] or "")
+            date = q.get("date", [""])[0] or ""
             try:
                 payload, code = signals_payload(date)
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": False,
-                                         "error": str(exc)[:200]}, 500)
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
         if u.path == "/api/sixring":
             # 六环徽标聚合：payload 逐环自兜底不抛，此处兜底仍回 200
@@ -1388,40 +1619,57 @@ def register_routes(server_or_app: Any) -> Any:
             try:
                 return _send_json(self, sixring_payload())
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": True,
-                                         "ts": time.strftime(
-                                             "%Y-%m-%dT%H:%M:%S"),
-                                         "rings": {},
-                                         "error": str(exc)[:200]}, 200)
+                return _send_json(
+                    self,
+                    {
+                        "ok": True,
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                        "rings": {},
+                        "error": str(exc)[:200],
+                    },
+                    200,
+                )
         if u.path == "/api/regime":
             # 策源中心大盘状况：payload 自兜底不抛，此处兜底仍回 200
             # （聚合器故障不放大为 5xx，前端大盘条整体置灰即可）
             try:
                 return _send_json(self, regime_payload())
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": True,
-                                         "ts": time.strftime(
-                                             "%Y-%m-%dT%H:%M:%S"),
-                                         "regime": {"available": False,
-                                                    "value": None,
-                                                    "detail": "缺源",
-                                                    "err": str(exc)[:200]},
-                                         "snapshot": None}, 200)
+                return _send_json(
+                    self,
+                    {
+                        "ok": True,
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                        "regime": {
+                            "available": False,
+                            "value": None,
+                            "detail": "缺源",
+                            "err": str(exc)[:200],
+                        },
+                        "snapshot": None,
+                    },
+                    200,
+                )
         if u.path == "/api/admission":
             # 市场准入判定：payload 自兜底不抛（缺源→unknown，不放大 5xx）
             try:
                 return _send_json(self, admission_payload())
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": True,
-                                         "ts": time.strftime(
-                                             "%Y-%m-%dT%H:%M:%S"),
-                                         "admission": {"verdict": "unknown",
-                                                       "verdict_cn": "未知",
-                                                       "reasons": ["端点聚合异常"],
-                                                       "source_missing": [
-                                                           "aggregator"],
-                                                       "err": str(exc)[:200]}},
-                                         200)
+                return _send_json(
+                    self,
+                    {
+                        "ok": True,
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                        "admission": {
+                            "verdict": "unknown",
+                            "verdict_cn": "未知",
+                            "reasons": ["端点聚合异常"],
+                            "source_missing": ["aggregator"],
+                            "err": str(exc)[:200],
+                        },
+                    },
+                    200,
+                )
         if orig_get is not None:
             return orig_get(self)
         return _send_json(self, {"ok": False, "error": "未知路由"}, 404)
@@ -1433,12 +1681,12 @@ def register_routes(server_or_app: Any) -> Any:
         except (TypeError, ValueError):
             length = 0
         if length <= 0 or length > limit:
-            return (None, ({"ok": False,
-                            "error": "请求体缺失或超长（1..%d 字节）" % limit},
-                           400))
+            return (
+                None,
+                ({"ok": False, "error": "请求体缺失或超长（1..%d 字节）" % limit}, 400),
+            )
         try:
-            body = json.loads(
-                self.rfile.read(length).decode("utf-8"))
+            body = json.loads(self.rfile.read(length).decode("utf-8"))
         except (ValueError, UnicodeDecodeError):
             return (None, ({"ok": False, "error": "非法 JSON 请求体"}, 400))
         return (body, None)
@@ -1452,11 +1700,9 @@ def register_routes(server_or_app: Any) -> Any:
             try:
                 payload, code = register_feedback(body)
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": False,
-                                         "error": str(exc)[:200]}, 500)
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
-        if u.path in ("/api/strategies/adjust",
-                      "/api/strategies/proposals/confirm"):
+        if u.path in ("/api/strategies/adjust", "/api/strategies/proposals/confirm"):
             body, err = self._read_json_body(512)
             if err is not None:
                 return _send_json(self, err[0], err[1])
@@ -1466,13 +1712,11 @@ def register_routes(server_or_app: Any) -> Any:
                 else:
                     payload, code = confirm_proposal(body)
             except Exception as exc:  # noqa: BLE001
-                return _send_json(self, {"ok": False,
-                                         "error": str(exc)[:200]}, 500)
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
         if orig_post is not None:
             return orig_post(self)
-        return _send_json(self, {"ok": False,
-                                 "error": "只读服务不接受该 POST"}, 405)
+        return _send_json(self, {"ok": False, "error": "只读服务不接受该 POST"}, 405)
 
     def do_OPTIONS(self):  # noqa: N802 — CORS 预检（只读 GET 面）
         self.send_response(204)
@@ -1491,7 +1735,17 @@ def register_routes(server_or_app: Any) -> Any:
     return handler_cls
 
 
-__all__ = ["register_routes", "strategies_payload", "signals_payload",
-           "register_feedback", "VERDICTS", "adjust_strategy",
-           "create_proposal", "proposals_payload", "confirm_proposal",
-           "health_payload", "sixring_payload", "admission_payload"]
+__all__ = [
+    "register_routes",
+    "strategies_payload",
+    "signals_payload",
+    "register_feedback",
+    "VERDICTS",
+    "adjust_strategy",
+    "create_proposal",
+    "proposals_payload",
+    "confirm_proposal",
+    "health_payload",
+    "sixring_payload",
+    "admission_payload",
+]
