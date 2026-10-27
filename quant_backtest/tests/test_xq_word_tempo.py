@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+import pytest
+pytest.importorskip("jieba")
+# ^ 可选依赖守护：缺 jieba 时跳过而非收集报错（2026-10-28）
 """tests/test_xq_word_tempo.py — 词频温度计（word_tempo）纯逻辑单测
 
 覆盖：title_words 复用不变、ratio 平滑（base_avg=0 场景）、
