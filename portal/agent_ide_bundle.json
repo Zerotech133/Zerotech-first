@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:33",
+ "generated": "2026-10-27 23:42",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 21,
+  "workorders_doing": 22,
   "workorders_review": 3
  },
  "workorders": [
@@ -228,6 +228,15 @@
    "branch": "task/K-MISSION-002505-T1",
    "created": "2026-10-27 23:26:11",
    "project": "portal"
+  },
+  {
+   "id": "WO-LEGION-SIMPLE-P1-20261027",
+   "desc": "P1 /strategies 简化：实盘组默认展开，影子/支撑折叠，SOP 折叠；生成器改+受控重启；无 L2 代码风险",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-SIMPLE-P1-20261027",
+   "created": "2026-10-27 23:41:11",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6784,6 +6793,11 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-SIMPLE-P1-20261027",
+     "desc": "P1 /strategies 简化：实盘组默认展开，影子/支撑折叠，SOP 折叠；生成器改+受控重启；无 L2 代码风险",
+     "status": "doing"
     }
    ]
   }
