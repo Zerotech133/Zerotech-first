@@ -36,6 +36,7 @@ def _hits(tmp_path, content, fname="t.py"):
     ("unix = (ft - 116444736000000000) / 10_000_000\n", "t.py"),
     ('boundary = "----QPZMabcdEFGH1234gW"\n', "t.py"),
     ('"sign_field_8": self._secret_fp,\n', "t.py"),
+    ("def _load_neo4j_password() -> str:\n", "t.py"),
 ])
 def test_false_positive_exempt(tmp_path, content, fname):
     assert _hits(tmp_path, content, fname) == []
