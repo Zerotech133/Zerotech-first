@@ -21,5 +21,7 @@ def test_picks_simple_behavior():
     assert "showAll" in s
     assert "T1" in s and "T2" in s
     assert "#p2-toggle" in s
+    assert "activeTier" in s
+    assert "explicit" in s
     css = CSS.read_text(encoding="utf-8")
     assert "#p2-bar" in css
