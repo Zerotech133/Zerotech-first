@@ -575,6 +575,14 @@ class Handler(BaseHTTPRequestHandler):
                                      "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
             self._send_json(out)
             return
+        if path == "/api/model/prefs":
+            try:
+                from legion_command import model_prefs
+                self._send_json(model_prefs.state())
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "model_prefs_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/credentials":
             try:
                 from legion_command import credential_catalog
@@ -987,7 +995,20 @@ class Handler(BaseHTTPRequestHandler):
                              or req.get("agent") or "").strip()
                 _task = str(self.headers.get("X-DSH-Task") or req.get("task") or "").strip()
                 _alloc = None
-                if _model_req in ("", "auto"):
+                _pref = "auto"
+                if _model_req in ("", "auto") and _agent:
+                    try:
+                        from legion_command import model_prefs
+                        _pref = model_prefs.get(_agent)
+                    except Exception:  # noqa: BLE001
+                        _pref = "auto"
+                if _pref and _pref != "auto":
+                    _pr = seat_router.resolve(_pref, _token)
+                    if _pr.get("ok"):
+                        route = _pr
+                        route["alias"] = _pref
+                        route["pref"] = _pref
+                if _model_req in ("", "auto") and (_pref in ("", "auto")):
                     from legion_command import model_allocator
                     _alloc = model_allocator.allocate(_agent, _task, messages)
                     route["seats"] = list(_alloc.get("seats") or [])
@@ -1082,6 +1103,7 @@ class Handler(BaseHTTPRequestHandler):
                     "x_channel": channel,
                     "x_alias": route.get("alias"),
                     "x_allocator": (_alloc or {}),
+                    "x_pref": (route.get("pref") or "auto"),
                     "x_key_owner": route.get("owner"),
                     "x_attempts": res.get("attempts", []),
                 }
@@ -1145,6 +1167,23 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "vk_action_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
                 return
+        if path == "/api/model/prefs":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 16 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import model_prefs
+                out = model_prefs.set_pref(str(req.get("agent") or ""),
+                                           str(req.get("model") or ""))
+                self._send_json(out)
+            except ValueError as e:
+                self._send_json({"ok": False, "error": str(e)[:200]}, 400)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "model_pref_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/keys/action":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
