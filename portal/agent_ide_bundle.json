@@ -230,12 +230,12 @@
    "project": "general"
   },
   {
-   "id": "K-MISSION-5C406F-T1",
-   "desc": "实现统一凭据类别筛选",
+   "id": "WO-O6P1-VIEW-20261027",
+   "desc": "O6 P1 只读派生：tools/run_contract_view.py 从 traces.sqlite 派生 Run/Event JSONL（不改写入/不改 trace 表）+ 单测 + ADR-014 确认记录",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-5C406F-T1",
-   "created": "2026-10-27 23:20:39",
+   "branch": "task/WO-O6P1-VIEW-20261027",
+   "created": "2026-10-27 23:21:38",
    "project": "portal"
   }
  ],
