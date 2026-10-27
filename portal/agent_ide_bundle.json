@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 18,
+  "workorders_doing": 17,
   "workorders_review": 3
  },
  "workorders": [
@@ -192,15 +192,6 @@
    "branch": "task/WO-AUTHORITY-C3-AUDIT-20261027",
    "created": "2026-10-27 15:56:32",
    "project": "general"
-  },
-  {
-   "id": "WO-O3P2-AUDIT-20261027",
-   "desc": "O3-P2 对账：manifest 与 servers.json/tool_matrix 双写只读对账工具 + 4 manifest 加 runtime 映射 + 差异报告（不改运行配置）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O3P2-AUDIT-20261027",
-   "created": "2026-10-27 15:56:56",
-   "project": "portal"
   }
  ],
  "coder_traces": [
