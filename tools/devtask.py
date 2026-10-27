@@ -52,6 +52,10 @@ OWNER_DOMAIN = os.path.join(REPO, "agent_platform", "registry",
 # 改 phase=block 后，显式声明 --dept dev 且缺合法 owner/--acceptance 的单在建
 # worktree 之前拒收（不留空 worktree）。配置文件缺失/损坏一律降级 warn（fail-safe）。
 DEV_GATE = os.path.join(REPO, "agent_platform", "config", "dev_owner_gate.json")
+# 2026-10-27 WO-LEGION-DEVEXEC3-20261027：dev 单路由规则（老田 10-27 批，A0 执行）。
+# 新研发需求优先派 ARCH1/组长，不直接落 DSH/治理席；本配置给试点门提供 dev_seats
+# 口径（owner 非研发席 → warn 告警，phase=block 时拒收）。配置缺失/坏 JSON 不启用。
+DEV_ROUTING = os.path.join(REPO, "agent_platform", "config", "dev_routing_rules.json")
 SCAN_SECRETS = os.path.join(REPO, "tools", "scan_secrets.py")
 # 2026-10-26 EXEC-R33：凭据扫描基线豁免表。存在才传给扫描器；缺失则回退旧行为
 # （不带 --baseline，全部未豁免命中照旧拒绝合并 = fail-closed）。
@@ -613,13 +617,52 @@ def _load_dev_gate():
     return gate
 
 
-def _dev_gate_check(dept, owner_ok, acceptance, gate=None):
-    """研发试点门判定（纯函数：无 IO、无副作用，``gate=None`` 时才读配置）。
+def _load_dev_routing():
+    """读 dev 单路由规则（agent_platform/config/dev_routing_rules.json）。
+
+    缺文件/坏 JSON/结构非法 → 返回 ``{"dev_dept": "dev", "dev_seats": []}``：
+    ``dev_seats`` 为空即**不启用** owner 路由校验（向后兼容，旧调用/旧环境行为不变）。
+    """
+    try:
+        routing = json.load(open(DEV_ROUTING, encoding="utf-8"))
+    except Exception:  # noqa: BLE001  缺文件/坏 JSON/编码异常都降级为空规则
+        routing = {}
+    if not isinstance(routing, dict):
+        routing = {}
+    dept = routing.get("dev_dept")
+    if not isinstance(dept, str) or not dept.strip():
+        dept = "dev"
+    seats = routing.get("dev_seats")
+    norm = []
+    if isinstance(seats, list):
+        for s in seats:
+            if isinstance(s, str) and s.strip() and s.strip() not in norm:
+                norm.append(s.strip())
+    return {"dev_dept": dept, "dev_seats": norm}
+
+
+def _is_routing_exempt(desc):
+    """路由规则例外判据（2026-10-27 老田批规则文档 §三）。
+
+    例外只有三类：A0/老田显式指派、跨部门治理任务、研发部请求支援。
+    为避免靠关键词猜语义，例外单必须在 desc 显式写 **``路由例外=``** 标记
+    （如 ``路由例外=A0指派`` / ``路由例外=跨部门治理`` / ``路由例外=研发部请求支援``）；
+    未写标记的一律按正常研发单判。规则文档：docs/plans/2026-10-27_研发单路由规则_ARCH1优先_v1.md。
+    """
+    return "路由例外=" in str(desc or "")
+
+
+def _dev_gate_check(dept, owner_ok, acceptance, gate=None, owner=None,
+                    routing=None, desc=None):
+    """研发试点门判定（纯函数：无 IO、无副作用，``gate/routing=None`` 时才读配置）。
 
     ``dept``：开单时显式声明的部门代号（``None`` = 旧式未声明单，不进门）；
     ``owner_ok``：``_owner_check`` 三态（True 合法 / False 非法 / None 不可判定）；
     ``acceptance``：``--acceptance`` 验收命令串（None/空白 = 未提供）；
-    ``gate``：门配置，缺省读 ``_load_dev_gate()``。
+    ``gate``：门配置，缺省读 ``_load_dev_gate()``；
+    ``owner``：开单人（``AGENT_NAME``），用于 dev 路由规则校验；
+    ``routing``：路由规则，缺省读 ``_load_dev_routing()``；
+    ``desc``：工单描述，用于识别 ``路由例外=`` 例外标记（规则文档 §三）。
 
     返回 ``(warnings, blocked)``：
       * 仅当 ``dept`` 命中 ``gate["dept"]``（默认 ``dev``，大小写/空白归一）时生效，
@@ -627,8 +670,10 @@ def _dev_gate_check(dept, owner_ok, acceptance, gate=None):
       * ``owner_ok is False`` → 告警「owner 不在合法域」（``None`` = 取值域不可判定，
         不是非法，与 WO-TF-03 三态裁定一致，不告警不拒收）；
       * 无验收命令 → 告警「缺验收命令」；
-      * ``phase == "block"`` 且（owner 非法 或 缺验收命令）→ ``blocked=True``，
-        调用方必须在建 worktree **之前**拒收（避免留空 worktree）。
+      * 路由规则：``owner`` 非空且不在 ``routing["dev_seats"]``，且 desc 未带
+        ``路由例外=`` 标记 → 告警「owner 不在研发部（路由规则：新 dev 需求派 ARCH1/组长）」；
+      * ``phase == "block"`` 且（owner 非法 或 缺验收命令 或 路由违规）
+        → ``blocked=True``，调用方必须在建 worktree **之前**拒收（避免留空 worktree）。
     """
     gate = gate if isinstance(gate, dict) else _load_dev_gate()
     target = str(gate.get("dept") or "dev").strip().lower()
@@ -640,9 +685,19 @@ def _dev_gate_check(dept, owner_ok, acceptance, gate=None):
         warnings.append("owner 不在合法域")
     if not has_acceptance:
         warnings.append("缺验收命令")
+    routing = routing if isinstance(routing, dict) else _load_dev_routing()
+    dev_dept = str(routing.get("dev_dept") or "dev").strip().lower()
+    dev_seats = {s.strip().upper() for s in (routing.get("dev_seats") or [])
+                 if isinstance(s, str) and s.strip()}
+    owner_name = (owner or "").strip().upper()
+    routing_violated = False
+    if (dev_seats and owner_name and dev_dept == target
+            and owner_name not in dev_seats and not _is_routing_exempt(desc)):
+        warnings.append("owner 不在研发部（路由规则：新 dev 需求派 ARCH1/组长）")
+        routing_violated = True
     phase = str(gate.get("phase") or "warn").strip().lower()
     blocked = (phase == "block"
-               and (owner_ok is False or not has_acceptance))
+               and (owner_ok is False or not has_acceptance or routing_violated))
     return warnings, blocked
 
 
@@ -717,10 +772,12 @@ def cmd_new(tid, *desc):
     gate_applies = False
     if dept is not None:
         gate = _load_dev_gate()
+        routing = _load_dev_routing()
         gate_applies = (dept or "").strip().lower() == str(
             gate.get("dept") or "dev").strip().lower()
         gate_warnings, gate_blocked = _dev_gate_check(
-            dept, owner_ok, acceptance, gate=gate)
+            dept, owner_ok, acceptance, gate=gate, owner=owner, routing=routing,
+            desc=desc)
         if gate_blocked:
             raise SystemExit(
                 "研发试点门（phase=block）拒收 dept=%s：%s——未创建 worktree；"

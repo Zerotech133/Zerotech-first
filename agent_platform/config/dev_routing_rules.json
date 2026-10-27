@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "approved_by": "老田",
+  "approved_at": "2026-10-27",
+  "source": "2026-10-27 会话批复（A0 执行）：dev 单路由规则；规则文档 docs/plans/2026-10-27_研发单路由规则_ARCH1优先_v1.md + AGENTS.md §4",
+  "rule": "新研发需求优先派 ARCH1/组长（G1 DEV1 / G2 DEV5），不直接落 DSH-Lead/治理席",
+  "dev_dept": "dev",
+  "dev_seats": ["ARCH1", "DEV1", "DEV2", "DEV3", "DEV4", "DEV5", "DEV6", "DEV7", "DEV8", "OPS1", "DOC1"],
+  "exceptions": [
+    "A0/老田显式指派（desc 写 路由例外=A0指派 并附指令来源）",
+    "跨部门治理任务（desc 写 路由例外=跨部门治理）",
+    "研发部请求支援（desc 写 路由例外=研发部请求支援）"
+  ],
+  "exception_marker": "路由例外=",
+  "note": "devtask 试点门扩展：dept=dev 且 owner 不在 dev_seats、desc 无例外标记 → warn 告警；phase=block 时拒收。配置缺失/坏 JSON 不启用（向后兼容）。"
+}
