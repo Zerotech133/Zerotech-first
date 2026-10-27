@@ -18,6 +18,6 @@ def test_adopted_contract():
 def test_migration_manifest_w4():
     import json
     data = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    assert "/home.html" in data["adopted"]
-    assert "/quant.html" in data["adopted"]
+    for x in ["/home.html","/quant.html","/flow.html","/ops.html","/academy.html","/dataops.html"]:
+        assert x in data["adopted"]
     assert data["redirects"]["/picks_index.html"] == "/picks.html"
