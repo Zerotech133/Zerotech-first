@@ -100,9 +100,19 @@ def sandbox(tmp_root, monkeypatch):
     monkeypatch.setattr(devtask, "OWNER_DOMAIN", str(domain))
     gate_path = tmp_root / "dev_owner_gate.json"
     monkeypatch.setattr(devtask, "DEV_GATE", str(gate_path))
+    # 2026-10-27 WO-LEGION-DEVEXEC3：dev 单路由规则夹具（dev_seats 只含 DEV1/DEV2，
+    # 便于复现「合法 owner=A0 但不在研发部」的路由告警；缺文件=不启用，向后兼容）。
+    routing_path = tmp_root / "dev_routing_rules.json"
+    routing_path.write_text(json.dumps({
+        "version": 1,
+        "dev_dept": "dev",
+        "dev_seats": ["DEV1", "DEV2"],
+        "note": "测试夹具",
+    }, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(devtask, "DEV_ROUTING", str(routing_path))
     monkeypatch.setenv("AGENT_NAME", "DEV1")   # org.json 内的合法成员
     return {"ledger": ledger, "git_calls": git_calls, "events": events,
-            "gate_path": gate_path, "tmp": tmp_root}
+            "gate_path": gate_path, "routing_path": routing_path, "tmp": tmp_root}
 
 
 def _write_gate(path, phase="warn", dept="dev"):
@@ -367,6 +377,72 @@ class TestNonDevUnaffected:
         assert rc == 0
         assert _task(sandbox, "WO-GATE-OPS")["acceptance_cmd"] is None
         assert not sandbox["events"][-1][2].startswith("[dev-gate]")
+
+
+# ----------------------------------------------------------------------
+# 判据②b：dev 单路由规则（2026-10-27 老田批，WO-LEGION-DEVEXEC3）
+# ----------------------------------------------------------------------
+class TestDevRouting:
+    """新研发需求优先派 ARCH1/组长：owner 非研发席 → warn 告警；block 阶段拒收。"""
+
+    def test_warn模式owner非研发部只告警不拒收(self, sandbox, monkeypatch, capsys):
+        monkeypatch.setenv("AGENT_NAME", "A0")   # 合法成员，但不在 dev_seats
+        _write_gate(sandbox["gate_path"], phase="warn")
+        rc = devtask.cmd_new("WO-ROUTE-WARN", "路由规则研发单", "--dept", "dev",
+                             "--acceptance", "python -m pytest -q")
+        assert rc == 0
+        err = capsys.readouterr().err
+        assert "owner 不在研发部" in err
+        assert len(_worktree_adds(sandbox)) == 1
+        detail = sandbox["events"][-1][2]
+        assert detail.startswith("[dev-gate]")
+        assert "owner 不在研发部" in detail
+
+    def test_block模式owner非研发部拒收且不留worktree(self, sandbox, monkeypatch):
+        monkeypatch.setenv("AGENT_NAME", "A0")
+        _write_gate(sandbox["gate_path"], phase="block")
+        with pytest.raises(SystemExit) as ei:
+            devtask.cmd_new("WO-ROUTE-BLOCK", "路由规则研发单", "--dept", "dev",
+                            "--acceptance", "python -m pytest -q")
+        assert "owner 不在研发部" in str(ei.value)
+        assert sandbox["git_calls"] == []
+        assert not sandbox["ledger"].exists()
+
+    def test_研发部owner不告警(self, sandbox, capsys):
+        _write_gate(sandbox["gate_path"], phase="warn")
+        rc = devtask.cmd_new("WO-ROUTE-OK", "研发部owner单", "--dept", "dev",
+                             "--acceptance", "python -m pytest -q")
+        assert rc == 0
+        assert "owner 不在研发部" not in capsys.readouterr().err
+
+    def test_非dev单不受路由规则影响(self, sandbox, monkeypatch, capsys):
+        monkeypatch.setenv("AGENT_NAME", "A0")
+        _write_gate(sandbox["gate_path"], phase="block")
+        rc = devtask.cmd_new("WO-ROUTE-QUANT", "量化单", "--dept", "quant",
+                             "--acceptance", "pytest -q")
+        assert rc == 0
+        assert not sandbox["events"][-1][2].startswith("[dev-gate]")
+
+    def test_路由配置缺失时fail_safe不启用(self, sandbox, monkeypatch):
+        monkeypatch.setattr(devtask, "DEV_ROUTING",
+                            str(sandbox["tmp"] / "nope-routing.json"))
+        assert devtask._load_dev_routing() == {"dev_dept": "dev", "dev_seats": []}
+        warnings, blocked = devtask._dev_gate_check(
+            "dev", True, "pytest -q", gate={"phase": "warn", "dept": "dev"},
+            owner="A0")
+        assert warnings == [] and blocked is False
+
+    def test_例外标记放行且不告警(self, sandbox, monkeypatch, capsys):
+        """规则文档 §三：例外单须显式写 ``路由例外=`` 标记（block 阶段放行）。"""
+        monkeypatch.setenv("AGENT_NAME", "A0")
+        _write_gate(sandbox["gate_path"], phase="block")
+        rc = devtask.cmd_new("WO-ROUTE-EXEMPT", "跨部门治理单 路由例外=跨部门治理",
+                             "--dept", "dev", "--acceptance", "pytest -q")
+        assert rc == 0
+        err = capsys.readouterr().err
+        assert "owner 不在研发部" not in err
+        assert len(_worktree_adds(sandbox)) == 1
+        assert sandbox["events"][-1][2].startswith("[dev-gate]")
 
 
 # ----------------------------------------------------------------------
