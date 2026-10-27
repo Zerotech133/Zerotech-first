@@ -45,6 +45,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve()
 ROOT_DEFAULT = HERE.parents[2]
 ACADEMY_REL = Path("agent_platform") / "data" / "academy"
+DISPATCH_REL = ACADEMY_REL / "dispatch_requests"
+TASKS_REL = Path(".worktrees") / "tasks.json"
 FREEZE_FIELDS = ("data_version", "sample_in", "sample_out", "cost_model")
 EIGHT_FIELDS = (
     ("question", "研究问题"),
@@ -85,6 +87,52 @@ def _read_jsonl(path: Path) -> list[dict]:
             continue
         if isinstance(rec, dict):
             out.append(rec)
+    return out
+
+
+def _safe_json(path: Path):
+    """读 JSON，失败返回 None（派单跟踪只读，不因单文件坏而中断值守）。"""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _dispatch_tracking(root: Path) -> list[dict]:
+    """派单跟踪（只读）：读 dispatch_requests/*.json，对照 .worktrees/tasks.json 判定
+    pending_dispatch→dispatched（建议单号命中，或需求单号出现在工单 desc 中）。"""
+    req_dir = root / DISPATCH_REL
+    if not req_dir.is_dir():
+        return []
+    tasks = _safe_json(root / TASKS_REL)
+    if not isinstance(tasks, dict):
+        tasks = {}
+    out = []
+    for f in sorted(req_dir.glob("*.json")):
+        req = _safe_json(f)
+        if not isinstance(req, dict):
+            continue
+        rid = str(req.get("request_id") or f.stem)
+        suggested = str(req.get("suggested_ticket") or "")
+        hit_id, hit_owner = "", ""
+        for tid, t in tasks.items():
+            desc = str((t or {}).get("desc") or "")
+            if suggested and tid == suggested:
+                hit_id, hit_owner = tid, str((t or {}).get("owner") or "")
+                break
+            if rid and rid in desc:
+                hit_id, hit_owner = tid, str((t or {}).get("owner") or "")
+                break
+        out.append({
+            "request_id": rid,
+            "target": str(req.get("target") or ""),
+            "suggested_ticket": suggested,
+            "requirement_doc": str(req.get("requirement_doc") or ""),
+            "created_at": str(req.get("created_at") or ""),
+            "status": "dispatched" if hit_id else str(req.get("status") or "pending_dispatch"),
+            "ticket": hit_id or str(req.get("dispatched_ticket") or ""),
+            "owner": hit_owner or str(req.get("owner") or ""),
+        })
     return out
 
 
@@ -275,17 +323,34 @@ def build_back1(root: Path) -> tuple[str, dict]:
             "```",
             "路径：agent_platform/data/academy/freeze_receipts/<topic_id>.json",
         ]
+    dispatch = _dispatch_tracking(root)
+    if dispatch:
+        lines += ["", "## 二、派单跟踪（研究前置，只读自动判定）",
+                  "| 需求 | 受理方 | 建议单号 | 状态 | 工单 | 责任 |",
+                  "|---|---|---|---|---|---|"]
+        for d in dispatch:
+            lines.append("| %s | %s | %s | %s | %s | %s |"
+                         % (d["request_id"], d["target"] or "-",
+                            d["suggested_ticket"] or "-", d["status"],
+                            d["ticket"] or "-", d["owner"] or "-"))
+        pend = [d for d in dispatch if d["status"] != "dispatched"]
+        lines.append("- 派单进度：**pending=%d / dispatched=%d**（dispatched=建议单号命中或需求单号出现在工单 desc）"
+                     % (len(pend), len(dispatch) - len(pend)))
+        if pend:
+            lines.append("- 催办：%s 未派单 → 请 ARCH1 按研发路由建单并回填 §9/%s"
+                         % ("、".join(d["request_id"] for d in pend),
+                            "dispatch_requests"))
     if ready:
         lines += [
             "",
-            "## 二、可开跑（四字段齐 + 回执在）",
+            "## 三、可开跑（四字段齐 + 回执在）",
             "命令：python -X utf8 quant_backtest/backtest_engine_v2.py（按任务单参数执行）",
             "跑完登记 backtests.jsonl 的 status/go_no_go，并交 ACAD1 评审。",
         ]
     else:
         lines += [
             "",
-            "## 二、结论",
+            "## 三、结论",
             "- **WAITING_DATA1**：数据未冻结，BACK1 拒跑回测（研究纪律：无冻结不回测）。",
         ]
     summary = {
@@ -294,6 +359,7 @@ def build_back1(root: Path) -> tuple[str, dict]:
         "backtests": len(bts),
         "ready": [r["topic_id"] for r in ready],
         "waiting": [r["topic_id"] for r in waiting],
+        "dispatch": dispatch,
     }
     return "\n".join(lines) + "\n", summary
 
@@ -316,6 +382,11 @@ def build_weekly(root: Path) -> tuple[str, dict]:
         lines.append("- **READY**：%s（可开跑回测）" % "、".join(b_sum["ready"]))
     else:
         lines.append("- **WAITING_DATA1**：数据未冻结，回测未开跑")
+    disp = b_sum.get("dispatch") or []
+    if disp:
+        pend = [d for d in disp if d["status"] != "dispatched"]
+        lines.append("- 研究前置派单：**pending=%d / dispatched=%d**（明细见 back1 值守简报）"
+                     % (len(pend), len(disp) - len(pend)))
     lines += [
         "",
         "## 三、下周动作",
@@ -323,7 +394,8 @@ def build_weekly(root: Path) -> tuple[str, dict]:
         "2. BACK1 收到回执后开跑并登记 status/go_no_go；",
         "3. STRAT1 补齐 LCS-1 策略 Spec，交 ACAD1 评审。",
     ]
-    summary = {"action": "weekly", "date": _today(), "strat1": s_sum, "back1": b_sum}
+    summary = {"action": "weekly", "date": _today(), "strat1": s_sum,
+               "back1": b_sum, "dispatch": b_sum.get("dispatch") or []}
     return "\n".join(lines) + "\n", summary
 
 
