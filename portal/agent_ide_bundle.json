@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 15:36",
+ "generated": "2026-10-27 15:37",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 15,
+  "workorders_doing": 16,
   "workorders_review": 3
  },
  "workorders": [
@@ -158,15 +158,6 @@
    "project": "general"
   },
   {
-   "id": "WO-EVAL-SEATS-20261027",
-   "desc": "P0① 席位评测门（ACAD1 owner）：agent_platform/evals/seat_golden.json（4 席×3 条确定性用例）+ agent_platform/tools/seat_eval.py（跑批/评分/落盘/--json）+ 测试；不改 seat_realness 默认 5 维（评测基线绿后另行接入第 6 维）。验收：seat_eval 对 4 席输出 pass rate；黄金用例 dry-run 零副作用；pytest 过。",
-   "status": "doing",
-   "owner": "A0",
-   "branch": "task/WO-EVAL-SEATS-20261027",
-   "created": "2026-10-27 15:34:11",
-   "project": "quant"
-  },
-  {
    "id": "WO-TRACE-COST-20261027",
    "desc": "P0② Agent trace+成本观测（ARCH1 owner）：trace 记录 schema + 写入/查询 CLI + 日汇总（JSONL，轻量不引依赖）；先接入 arch1_ops/research_seat_ops 两类值守任务；测试。验收：每次值守产出 trace_id/耗时/结果；report 出 P95/top 失败；pytest 过；无 L2。",
    "status": "doing",
@@ -174,6 +165,24 @@
    "branch": "task/WO-TRACE-COST-20261027",
    "created": "2026-10-27 15:34:18",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-UIUX-W2-20261027",
+   "desc": "UI/UX Week2：os_entry 色彩收敛到 tokens（--os-* 主题层，页内 hex→0 或仅定义）；新增 ui_states.css（skeleton/empty/error 状态模板）并接 OS 页；键盘/焦点/aria 走查与静态审计回归；不碰业务逻辑/无 L2",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-UIUX-W2-20261027",
+   "created": "2026-10-27 15:37:01",
+   "project": "general"
+  },
+  {
+   "id": "WO-GITLEAKS-20261027",
+   "desc": "P0 质量门升级(L1)：gitleaks 8.30.1 接入——.gitleaks.toml 降噪(自测假token/docs/__pycache__) + tools/secret_scan_gitleaks.py 包装 + devtask 合并门 warn-only 第二道 + 真凭据正样本测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-GITLEAKS-20261027",
+   "created": "2026-10-27 15:37:11",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -1271,14 +1280,7 @@
    ],
    "experience": "20 年产品+研发复合经验：从需求定义、架构设计到参考实现与验收全链路；不亲自交付代码，以方案/伪代码/代码参考驱动执行 AI 落地；信息不全时能基于证据做最优决策并组织多 AI 自动执行。",
    "dept_name": "",
-   "dept_cn_title": "",
-   "tasks": [
-    {
-     "id": "WO-EVAL-SEATS-20261027",
-     "desc": "P0① 席位评测门（ACAD1 owner）：agent_platform/evals/seat_golden.json（4 席×3 条确定性用例）+ agent_platform/tools/seat_eval.py（跑批/评分/落盘/--json）+ 测试；不改 seat_realness 默认 5 维（评测基线绿后另行接入第 6 维）。验收：seat_eval 对 4 席输出 pass rate；黄金用例 dry-run 零副作用；pytest 过。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": ""
   },
   "ACAD1": {
    "id": "ACAD1",
@@ -6353,6 +6355,11 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-UIUX-W2-20261027",
+     "desc": "UI/UX Week2：os_entry 色彩收敛到 tokens（--os-* 主题层，页内 hex→0 或仅定义）；新增 ui_states.css（skeleton/empty/error 状态模板）并接 OS 页；键盘/焦点/aria 走查与静态审计回归；不碰业务逻辑/无 L2",
+     "status": "doing"
     }
    ]
   }
