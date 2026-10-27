@@ -33,6 +33,18 @@ main{padding:16px 22px 40px;max-width:1500px}
 .pill.ok{color:var(--green);border-color:#2b6b4b}.pill.bad{color:var(--red);border-color:#6b2b2b}.pill.warn{color:var(--amber);border-color:#6b552b}
 table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 a.btn-link{display:inline-block;background:#16263b;border:1px solid #2b4a6d;border-radius:8px;color:var(--fg);padding:6px 10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:14px}
+.card{background:#0d1828;border:1px solid var(--line);border-radius:10px;padding:12px}
+.card h3{font-size:13px;margin:0 0 4px}.card .row{display:flex;justify-content:space-between;gap:6px;font-size:12px;margin:3px 0}
+.card .keys{font-size:11px;color:var(--dim);margin-top:6px}
+.card .actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+button.small{padding:3px 8px;font-size:11px}
+.drawer-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20}
+.drawer-mask.on{display:block}
+.drawer{position:fixed;top:0;right:-520px;width:min(520px,100vw);height:100vh;background:#0c1726;border-left:1px solid var(--line);z-index:21;transition:right .18s;overflow:auto;padding:18px}
+.drawer.on{right:0}
+.drawer h3{margin:0 0 4px}.drawer .field{margin:9px 0}.drawer label{display:block;font-size:11px;color:var(--dim);margin-bottom:3px}
+.drawer input,.drawer select{width:100%}
 </style>
 </head>
 <body>
@@ -74,11 +86,13 @@ a.btn-link{display:inline-block;background:#16263b;border:1px solid #2b4a6d;bord
   </section>
 
   <section class="panel" id="tab-seats">
-    <h2>AI 席位</h2>
-    <div class="muted">A-3 将把部门负责人卡片收成表格 + 配置抽屉。</div>
-    <p><a class="btn-link" href="/keys?v2=0#main">打开旧版席位卡</a></p>
+    <h2>主力席位（指挥部）</h2>
+    <div class="muted" style="margin-bottom:10px">只展示状态与入口；Key 配置收进抽屉。</div>
+    <div class="cards" id="seat-main-cards"><div class="muted">加载中…</div></div>
+    <h2 style="margin-top:16px">部门负责人</h2>
+    <div class="muted" style="margin-bottom:8px">无 Key 席位置灰；点击「配置」打开抽屉。</div>
+    <div id="seat-table"><div class="muted">加载中…</div></div>
   </section>
-
   <section class="panel" id="tab-creds">
     <h2>接入与凭据</h2>
     <div class="muted">统一凭据目录（JEV / 数据接口 / 飞书）将迁移到独立页面。</div>
@@ -103,6 +117,22 @@ a.btn-link{display:inline-block;background:#16263b;border:1px solid #2b4a6d;bord
     <p style="margin-top:12px"><a class="btn-link" id="mission-link" href="/mission">前往 Mission（文档→DAG→派工）</a></p>
   </section>
 </main>
+<div class="drawer-mask" id="drawer-mask" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <h3 id="drawer-title">配置席位</h3>
+  <div class="muted" id="drawer-sub"></div>
+  <div id="drawer-keys" style="margin:10px 0"></div>
+  <div class="field"><label>OpenAI 兼容 URL（自定义/部门席位）</label><input id="drawer-url" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"></div>
+  <div class="field"><label>模型</label><input id="drawer-model" placeholder="qwen-plus / deepseek-chat"></div>
+  <div class="field"><label>Key</label><input id="drawer-key" type="password" placeholder="粘贴 Key（加密存储，只回显掩码）"></div>
+  <div class="field"><label>标签</label><input id="drawer-label" placeholder="主Key/备1"></div>
+  <div class="field"><label>优先级</label><input id="drawer-priority" type="number" min="1" max="5" value="1"></div>
+  <div class="actions" style="display:flex;gap:8px;margin-top:10px">
+    <button class="btn primary" id="drawer-save">保存 Key</button>
+    <button class="btn" id="drawer-close" onclick="closeDrawer()">取消</button>
+  </div>
+</div>
+
 
 <script>
 const TABS=["overview","routing","seats","creds","vk","logs","mission"];
@@ -127,6 +157,91 @@ document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setTab(b.data
   if(document.getElementById("mission-link")) document.getElementById("mission-link").href="/mission"+v2;
 })();
 
+let KEYSTATE=null, DRAWER_SEAT=null;
+const MAIN_SEATS=["tianfeng","zhaoyun","zhuge","guanyu","HUANGZHONG"];
+function seatStatus(s){
+  const keys=(s&&s.keys)||[];
+  if(!keys.length) return {label:"未配置",cls:"",n:0};
+  const ok=keys.filter(k=>k.status==="healthy").length;
+  const inv=keys.filter(k=>k.status==="invalid").length;
+  if(ok) return {label:"可用 "+ok+"/"+keys.length,cls:"ok",n:ok};
+  if(inv===keys.length) return {label:"失效 "+inv+"/"+keys.length,cls:"bad",n:0};
+  return {label:"降级 "+keys.filter(k=>["quota","degraded","pending"].includes(k.status)).length+"/"+keys.length,cls:"warn",n:0};
+}
+function keyRows(keys){
+  return (keys||[]).map(k=>'<div class="row"><span>'+esc(k.masked||"***")+' <span class="muted">'+esc(k.model||"")+'</span></span><span><span class="pill '+seatStatus({keys:[k]}).cls+'">'+esc(k.status||"")+'</span></span></div>').join("");
+}
+function mainCard(id,s){
+  const st=seatStatus(s);
+  return '<div class="card"><h3>'+esc(s.cn||id)+' <span class="muted">'+esc(id)+'</span></h3>'+
+    '<div class="row"><span>状态</span><span class="pill '+st.cls+'">'+st.label+'</span></div>'+
+    '<div class="row"><span>绑定</span><span class="muted">'+esc(s.provider||"")+' · '+esc(s.binding||"")+'</span></div>'+
+    '<div class="keys">'+(keyRows(s.keys)||'<span class="muted">暂无 Key</span>')+'</div>'+
+    '<div class="actions"><button class="btn small" onclick="openDrawer(\''+id+'\')">管理 Key</button></div></div>';
+}
+function seatRow(id,s){
+  const st=seatStatus(s);
+  const model=(s.keys||[])[0]?.model||s.binding||"—";
+  return '<tr'+(st.n?'':' style="opacity:.55"')+'><td>'+esc(s.cn||id)+'<br><span class="muted">'+esc(id)+'</span></td><td>'+esc(id)+'</td><td><span class="pill '+st.cls+'">'+st.label+'</span></td><td>'+esc(model)+'</td><td><button class="btn small" onclick="openDrawer(\''+id+'\')">配置</button></td></tr>';
+}
+async function loadSeats(){
+  try{
+    const v=await fetch("/api/keys/state",{cache:"no-store"}).then(r=>r.json());
+    KEYSTATE=v; const seats=v.seats||{};
+    const main=MAIN_SEATS.map(id=>({id,s:seats[id]})).filter(x=>x.s);
+    document.getElementById("seat-main-cards").innerHTML=main.map(x=>mainCard(x.id,x.s)).join("")||'<div class="muted">主力席位不可用</div>';
+    const extras=Object.entries(seats).filter(([id])=>id!=="relay"&&!MAIN_SEATS.includes(id));
+    let h='<table><thead><tr><th>席位</th><th>ID</th><th>Key 状态</th><th>主力模型</th><th>操作</th></tr></thead><tbody>';
+    for(const [id,s] of extras) h+=seatRow(id,s);
+    document.getElementById("seat-table").innerHTML=h+'</tbody></table>'+(extras.length?'':'<div class="muted">暂无部门负责人席位</div>');
+  }catch(e){document.getElementById("seat-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
+}
+function openDrawer(id){
+  const s=(KEYSTATE&&KEYSTATE.seats||{})[id]; if(!s)return;
+  DRAWER_SEAT=id;
+  document.getElementById("drawer-title").textContent=(s.cn||id)+" · Key 配置";
+  document.getElementById("drawer-sub").textContent=id+" · "+(s.provider||"custom")+" · "+(s.binding||"");
+  document.getElementById("drawer-url").value=(s.keys||[])[0]?.base_url||"";
+  document.getElementById("drawer-model").value=(s.keys||[])[0]?.model||"";
+  document.getElementById("drawer-key").value="";
+  document.getElementById("drawer-label").value="";
+  document.getElementById("drawer-priority").value=((s.keys||[]).length+1);
+  let h='<table><thead><tr><th>Key</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+  for(const k of (s.keys||[])) h+='<tr><td>'+esc(k.masked)+'<br><span class="muted">'+esc(k.model||"")+'</span></td><td>'+esc(k.status)+'</td><td><button class="btn small" onclick="testKey(\''+id+'\',\''+k.id+'\')">测试</button> <button class="btn small" onclick="deleteKey(\''+id+'\',\''+k.id+'\')">删除</button></td></tr>';
+  document.getElementById("drawer-keys").innerHTML=(s.keys||[]).length?h+'</tbody></table>':'<div class="muted">暂无 Key</div>';
+  document.getElementById("drawer-mask").classList.add("on");
+  document.getElementById("drawer").classList.add("on");
+}
+function closeDrawer(){
+  document.getElementById("drawer-mask").classList.remove("on");
+  document.getElementById("drawer").classList.remove("on");
+  DRAWER_SEAT=null;
+}
+async function saveDrawer(){
+  if(!DRAWER_SEAT)return;
+  const secret=document.getElementById("drawer-key").value.trim();
+  if(!secret){alert("请粘贴 Key");return}
+  const body={action:"add",seat:DRAWER_SEAT,secret,label:document.getElementById("drawer-label").value.trim(),priority:Number(document.getElementById("drawer-priority").value)||1};
+  const url=document.getElementById("drawer-url").value.trim(), model=document.getElementById("drawer-model").value.trim();
+  if(url)body.base_url=url; if(model)body.model=model;
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json(); if(!j.ok){alert("保存失败："+(j.error||"unknown"));return}
+  document.getElementById("drawer-key").value="";
+  await loadSeats(); openDrawer(DRAWER_SEAT);
+}
+async function testKey(seat,id){
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"test",seat,key_id:id})});
+  const j=await r.json(); alert(j.ok?"测试完成："+((j.test||{}).status||""):"测试失败："+(j.error||""));
+  await loadSeats(); openDrawer(seat);
+}
+async function deleteKey(seat,id){
+  if(!confirm("删除该 Key？"))return;
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete",seat,key_id:id})});
+  const j=await r.json(); if(!j.ok){alert("失败："+(j.error||""));return}
+  await loadSeats(); openDrawer(seat);
+}
+document.getElementById("drawer-save").onclick=saveDrawer;
+loadSeats(); setInterval(loadSeats,30000);
 async function loadOverview(){
   try{
     const [ks,ms,vk] = await Promise.all([
