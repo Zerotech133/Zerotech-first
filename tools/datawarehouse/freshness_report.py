@@ -91,22 +91,33 @@ def table_latest_date(table: str, date_col: str) -> tuple[str | None, str]:
 
 
 def _parse_day(v) -> dt.date | None:
-    # epoch 秒/毫秒（warehouse_runs.created_at 实测为 float epoch）
-    try:
-        f = float(str(v))
-        if f > 1e12:  # 毫秒
-            f = f / 1000.0
-        if f > 1e9:
-            return dt.datetime.fromtimestamp(f).date()
-    except (TypeError, ValueError) as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/datawarehouse/freshness_report.py", exc)
-    s = _norm_date(v)
+    """解析日期：date/datetime、YYYYMMDD、ISO(2026-10-26)、epoch 秒/毫秒。
+
+    2026-10-28 修复：原实现先 float() 再回退，ISO 日期字符串会触发
+    silent-except 告警（"could not convert string to float: '2026-10-26'"）。
+    日期字符串优先按日期解析；epoch 仅接受 10~13 位数字。
+    """
+    if isinstance(v, dt.datetime):
+        return v.date()
+    if isinstance(v, dt.date):
+        return v
+    s = str(v).strip() if v is not None else ""
     if not s:
         return None
-    try:
-        return dt.date(int(s[:4]), int(s[4:6]), int(s[6:]))
-    except ValueError:
-        return None
+    # epoch 秒/毫秒（纯 10~13 位数字，可带小数）
+    if re.fullmatch(r"\d{10,13}(?:\.\d+)?", s):
+        f = float(s)
+        if f > 1e12:  # 毫秒
+            f = f / 1000.0
+        return dt.datetime.fromtimestamp(f).date()
+    # 日期：20261026 / 2026-10-26 / 2026-10-26T00:30:00 / 2026/10/26
+    m = re.match(r"^(\d{4})[-/.]?(\d{2})[-/.]?(\d{2})(?:$|[T ])", s)
+    if m:
+        try:
+            return dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+    return None
 
 
 def sqlite_latest(db: Path, sql: str):
