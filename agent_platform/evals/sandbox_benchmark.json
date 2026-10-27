@@ -1,0 +1,77 @@
+{
+  "_note": "Agent 沙箱内部 benchmark v1（WO-AGENT-SANDBOX-20261027）。10 条确定性任务（SWE 4 / research 3 / data 3），全部在 --network none、仓库只读挂载、scratch 可写、python3 标准库环境执行；不联网、不写数据根。",
+  "schema": "agent_sandbox_benchmark_tasks/v1",
+  "updated": "2026-10-27",
+  "tasks": [
+    {
+      "id": "SWE-01-hello",
+      "category": "SWE",
+      "cmd": "python3 -c 'print(\"hello\")'",
+      "expect_stdout": "hello",
+      "timeout": 60
+    },
+    {
+      "id": "SWE-02-ast-parse",
+      "category": "SWE",
+      "cmd": "python3 -c 'import ast; ast.parse(open(\"/workspace/tools/events.py\", encoding=\"utf-8\").read()); print(\"parse ok\")'",
+      "expect_stdout": "parse ok",
+      "timeout": 60
+    },
+    {
+      "id": "SWE-03-json-schema",
+      "category": "SWE",
+      "cmd": "python3 -c 'import json; d=json.load(open(\"/workspace/agent_platform/registry/org.json\", encoding=\"utf-8\")); assert d.get(\"departments\"); print(\"org ok\")'",
+      "expect_stdout": "org ok",
+      "timeout": 60
+    },
+    {
+      "id": "SWE-04-doc-read",
+      "category": "SWE",
+      "cmd": "test -f /workspace/AGENTS.md && grep -q 'AGENTS' /workspace/AGENTS.md && echo doc ok",
+      "expect_stdout": "doc ok",
+      "timeout": 60
+    },
+    {
+      "id": "RES-01-golden-shape",
+      "category": "research",
+      "cmd": "python3 -c 'import json; d=json.load(open(\"/workspace/agent_platform/evals/seat_golden.json\", encoding=\"utf-8\")); assert len(d[\"seats\"])>=4; print(\"golden ok\")'",
+      "expect_stdout": "golden ok",
+      "timeout": 60
+    },
+    {
+      "id": "RES-02-sha256",
+      "category": "research",
+      "cmd": "python3 -c 'import hashlib; h=hashlib.sha256(open(\"/workspace/AGENTS.md\",\"rb\").read()).hexdigest(); assert len(h)==64; print(\"sha ok\")'",
+      "expect_stdout": "sha ok",
+      "timeout": 60
+    },
+    {
+      "id": "RES-03-network-blocked",
+      "category": "research",
+      "cmd": "python3 -c 'import socket; s=socket.socket(); s.settimeout(2); print(\"net_blocked\") if s.connect_ex((\"1.1.1.1\",80))!=0 else print(\"net_open\")'",
+      "expect_stdout": "net_blocked",
+      "timeout": 60
+    },
+    {
+      "id": "DATA-01-sqlite-write",
+      "category": "data",
+      "cmd": "python3 -c 'import sqlite3; c=sqlite3.connect(\"/work/t.db\"); c.execute(\"create table t(x)\"); c.execute(\"insert into t values(1)\"); c.commit(); print(\"sqlite ok\")'",
+      "expect_stdout": "sqlite ok",
+      "timeout": 60
+    },
+    {
+      "id": "DATA-02-csv",
+      "category": "data",
+      "cmd": "python3 -c 'import csv, io; rows=list(csv.reader(io.StringIO(\"a,b\\n1,2\\n\"))); assert len(rows)==2; print(\"csv ok\")'",
+      "expect_stdout": "csv ok",
+      "timeout": 60
+    },
+    {
+      "id": "DATA-03-mount",
+      "category": "data",
+      "cmd": "python3 -c 'import pathlib; p=pathlib.Path(\"/workspace\"); n=sum(1 for _ in p.glob(\"*.md\")); assert n>=1; print(\"mount ok\", n)'",
+      "expect_stdout": "mount ok",
+      "timeout": 60
+    }
+  ]
+}
