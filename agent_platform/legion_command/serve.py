@@ -421,7 +421,7 @@ class Handler(BaseHTTPRequestHandler):
                         self._send_json({"ok": False, "error": "no_report"})
                 elif sub == "mcp":
                     sys.path.insert(0, str(_PLATFORM))
-                    from mcp import registry as mreg
+                    from legion_mcp import registry as mreg
 
                     self._send_json(mreg.summary())
                 elif sub == "memory/v2":
@@ -952,7 +952,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/zhaoyun/mcp/probe":
             try:
                 sys.path.insert(0, str(_PLATFORM))
-                from mcp import registry as mreg  # noqa: WPS433
+                from legion_mcp import registry as mreg  # noqa: WPS433
 
                 res = mreg.summary(force=True)
             except Exception as e:  # noqa: BLE001
@@ -975,7 +975,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 sys.path.insert(0, str(_PLATFORM))
-                from mcp import registry as mreg  # noqa: WPS433
+                from legion_mcp import registry as mreg  # noqa: WPS433
 
                 res = mreg.call(
                     str(req.get("server") or ""),

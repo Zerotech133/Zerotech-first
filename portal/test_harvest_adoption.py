@@ -4,28 +4,38 @@ from __future__ import annotations
 
 import os
 import sys
-
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import harvest_adoption as ha
 
+_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def _log_ts(minutes_ago: int) -> str:
+    t = datetime.now() - timedelta(minutes=minutes_ago)
+    return "%02d/%s/%04d:%02d:%02d:%02d +0800" % (
+        t.day, _MONTHS[t.month - 1], t.year, t.hour, t.minute, t.second)
+
 
 def test_parse_and_dedup():
     ref = '" "http://127.0.0.1:8080/os-entry" "-'
+    t20, t19, t10 = _log_ts(20), _log_ts(19), _log_ts(10)
     lines = [
-        f'127.0.0.1 - - [23/Oct/2026:04:50:00 +0800] "GET /dev HTTP/1.1" 200 1{ref}',
-        f'127.0.0.1 - - [23/Oct/2026:04:51:00 +0800] "GET /dev HTTP/1.1" 200 1{ref}',  # 窗口内去重
-        f'127.0.0.1 - - [23/Oct/2026:04:58:00 +0800] "GET /dev HTTP/1.1" 200 1{ref}',  # 窗口外保留
-        f'127.0.0.1 - - [23/Oct/2026:04:50:00 +0800] "GET /intel HTTP/1.1" 200 1{ref}',  # 不同域不去重
-        '127.0.0.1 - - [23/Oct/2026:04:50:00 +0800] "GET /health HTTP/1.1" 200 1 "-" "-"',  # 非建议路径
-        '127.0.0.1 - - [23/Oct/2026:04:50:00 +0800] "GET /dev HTTP/1.1" 404 1 "-" "-"',  # 非 200
+        f'127.0.0.1 - - [{t20}] "GET /dev HTTP/1.1" 200 1{ref}',
+        f'127.0.0.1 - - [{t19}] "GET /dev HTTP/1.1" 200 1{ref}',  # 窗口内去重
+        f'127.0.0.1 - - [{t10}] "GET /dev HTTP/1.1" 200 1{ref}',  # 窗口外保留
+        f'127.0.0.1 - - [{t20}] "GET /intel HTTP/1.1" 200 1{ref}',  # 不同域不去重
+        f'127.0.0.1 - - [{t20}] "GET /health HTTP/1.1" 200 1 "-" "-"',  # 非建议路径
+        f'127.0.0.1 - - [{t20}] "GET /dev HTTP/1.1" 404 1 "-" "-"',  # 非 200
     ]
     entries = ha.parse_entries(lines, since_hours=24)
     assert len(entries) == 4
     rows = ha.dedup_window(entries, minutes=5)
     domains = sorted(r["domain"] for r in rows)
-    assert domains == ["情报", "研发", "研发"]  # 04:50 与 04:58 的 /dev 都留
+    assert domains == ["情报", "研发", "研发"]  # 20 分钟前与 10 分钟前的 /dev 都留
 
 
 def test_append_ledger_dedup(tmp_path, monkeypatch):

@@ -12,9 +12,9 @@ _WT = Path(__file__).resolve().parents[2]
 _PLAT = _WT / "agent_platform"
 sys.path.insert(0, str(_PLAT))
 
-from mcp import registry  # noqa: E402
-from mcp.client import MCPClient, MCPError  # noqa: E402
-from mcp.server import dispatch  # noqa: E402
+from legion_mcp import registry  # noqa: E402
+from legion_mcp.client import MCPClient, MCPError  # noqa: E402
+from legion_mcp.server import dispatch  # noqa: E402
 
 
 def _load(name, path):
