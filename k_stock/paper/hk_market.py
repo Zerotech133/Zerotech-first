@@ -19,16 +19,14 @@
   聚合产物缺失时回退 CAL_SYMBOL="00700"（最稠密单票）。
 
 HK 口径四项（G3 拍板倾向落地，2026-10-19）：
-  · T+0 不做冻结：照 US 挂账先例（P-3）——引擎 available_qty 的 T+1 冻结对 HK
-    依然生效（仅多锁一天可卖，保守无害）。TODO(引擎工单)：available_qty 市场开关，
-    HK 现货实为 T+0 交易（T+2 交收）。
+  · T+0 不冻结（2026-10-27 拍板 D2-A）：引擎 available_qty 增 t_plus 开关
+    （A 股默认 1；HK config t_plus=0），当日买入即可卖（HK 现货 T+0、T+2 交收）。
   · LOT 灰位期放开（P-4）：HK 每手股数各异（腾讯 100/汇丰 400），引擎 LOT=100
     硬卡必错。本模块 apply_hk_engine_waivers() 在跑批进程内运行时豁免
     （engine.LOT=1），不动 engine.py 文件——5 处 A 股硬编码是引擎工单另行拍板。
   · 印花税（P-5 HKD 原币）：HK 现行印花税双边 0.1%（2023-11-17 起由 0.13% 下调，
-    2026-10 查证仍 0.1%），常量 STAMP_DUTY。走 PaperEngine config 参数零侵入；
-    注：引擎 _fee_buy 无印花税参数，买入侧印花税缺失 → 灰位期费用略低估，挂账
-    TODO(引擎工单)：_fee_buy 增加 stamp_tax_buy 参数。
+    2026-10 查证仍 0.1%），常量 STAMP_DUTY。引擎已增 stamp_tax_buy 参数
+    （2026-10-27 拍板 D1-A），HK config 买入/卖出双边各 0.1%。
   · 涨跌停不做 ±10% 硬拦：HK 无涨跌停制度。apply_hk_engine_waivers() 同时包装
     engine.limit_ratio（.HK/1-5 位数字码 → 1.0，照 gb_ 前缀 :189 豁免先例）。
   · 代码规范：5 位数字 00700.HK 形态（与 A 股 6 位 600519.SH 区分）；引擎内
@@ -48,10 +46,9 @@ portal_status.hk_status / /api/paper_status hk 块本轮不做（8091 重启报�
 数据形态已按 us_status 读取口径落库（equity_marks/positions_snapshot 同构）。
 
 TODO(引擎工单拍板后回填，本文件豁免即可下线)：
-  1. limit_ratio 加 hk_/.HK 前缀 → 1.0（照 gb_ :189 一行先例）
-  2. LOT 经 config 参数化（HK 每手表灰位期放开，实装后补每手股数元数据）
-  3. _fee_buy 印花税参数（HK 双边 0.1%）
-  4. available_qty T+0 市场开关（HK 挂账保守起步，与 US 同先例）
+  1. limit_ratio 加 hk_/.HK 前缀 → 1.0（照 gb_ :189 一行先例）— D3 维持豁免，挂账
+  2. LOT 经 config 参数化（HK 每手表；实装后补每手股数元数据）— D3 维持豁免，挂账
+  （3/4 已落地：stamp_tax_buy、t_plus 开关，2026-10-27 拍板 D1-A/D2-A）
 """
 
 from __future__ import annotations
@@ -426,13 +423,15 @@ def hk_default_config() -> dict:
     """HK 费率 config（PaperEngine cfg 覆盖 _DEFAULTS，零侵入）。
 
     HKD 原币口径（P-5）：initial_cash 100 万 HKD；佣金 0.03%/最低 3 HKD；
-    卖出印花税 0.1%（STAMP_DUTY，2023-11-17 起现行）。买入侧印花税引擎无参数，
-    灰位期费用略低估——TODO(引擎工单) _fee_buy 增 stamp_tax_buy。"""
+    印花税双边 0.1%（STAMP_DUTY，2023-11-17 起现行；D1-A 后买入/卖出都计）。
+    T+0：t_plus=0（D2-A），当日买入可卖。"""
     return {
         "initial_cash": 1_000_000.0,
         "commission_rate": COMMISSION_RATE,
         "min_commission": MIN_COMMISSION,
         "stamp_tax": STAMP_DUTY,
+        "stamp_tax_buy": STAMP_DUTY,
+        "t_plus": 0,
     }
 
 

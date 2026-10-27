@@ -81,8 +81,8 @@ def test_hk_fee_sell_includes_stamp_tax(tmp_path):
     )
     # 卖 500 股 @400 = 200,000 → 佣金 max(3, 200000*0.0003)=60 + 印花税 200000*0.001=200
     assert e._fee_sell(200_000.0) == 260.0
-    # 买入无印花税参数（引擎 _fee_buy 无 stamp_tax_buy，灰位期挂账低估）
-    assert e._fee_buy(200_000.0) == 60.0
+    # D1-A（2026-10-27 拍板）：买入侧同样计印花税 0.1% → 60 + 200
+    assert e._fee_buy(200_000.0) == 260.0
 
 
 # ---------------- HkMarket 六方法契约（_read 注入 rows，逻辑层纯 stdlib） ----------------
@@ -293,12 +293,11 @@ def test_refresh_calendar_all_missing_raises(tmp_path):
         hm.refresh_calendar(export_dir=tmp_path / "nope", hk_dir=tmp_path)
 
 
-# ---------------- T+0 挂账（P-3：照 US 先例不豁免，T+1 冻结保守无害） ----------------
+# ---------------- T+0（2026-10-27 拍板 D2-A：HK config t_plus=0） ----------------
 
 
-def test_t0_freeze_kept_as_debt(tmp_path):
-    """HK T+0 不豁免是拍板挂账：当日买入 T+1 冻结语义对 HK 账本依然生效（保守无害）。
-    TODO(引擎工单)：available_qty 市场开关拍板后本测试同步更新。"""
+def test_t0_allows_same_day_sell(tmp_path):
+    """HK T+0：config t_plus=0 后当日买入即可卖（原 T+1 冻结挂账已拍板解除）。"""
     m = FakeMarket(
         {
             "00700.HK": [
@@ -326,9 +325,10 @@ def test_t0_freeze_kept_as_debt(tmp_path):
     )
     r = e.buy("00700.HK", 400, 416.0)  # 指定价须落在最近 bar 区间内且 ≤20% 仓位
     assert r["fill_date"] == "20261016"  # 手动单 fill_date=湖内最后交易日
-    assert e.available_qty("00700.HK") == 0  # T+1 冻结保持（未豁免=挂账行为）
-    with pytest.raises(Exception):
-        e.sell("00700.HK", 400)  # 当日买不可卖（挂账口径下被冻结）
+    assert e.available_qty("00700.HK") == 400  # T+0：当日买入即可卖
+    r2 = e.sell("00700.HK", 400)  # 当日买当日卖应放行
+    assert r2["qty"] == 400
+    assert e.verify()["ok"]
 
 
 # ---------------- 运行时豁免（灰位期落地，进程内生效，不改 engine.py） ----------------
@@ -373,7 +373,9 @@ def test_waiver_lot_non_100_buy(tmp_path, hk_waivers):
     )
     r = e.buy("00005.HK", 400, 88.0)  # 汇丰每手 400 股——A 股 LOT=100 会拒，HK 放行
     assert r["qty"] == 400
-    assert abs(r["fee"] - 400 * 88.0 * hm.COMMISSION_RATE) < 0.01
+    # D1-A：买入费 = 佣金 + 买入印花税 0.1%
+    expect = 400 * 88.0 * hm.COMMISSION_RATE + 400 * 88.0 * hm.STAMP_DUTY
+    assert abs(r["fee"] - expect) < 0.01
 
 
 def test_no_waiver_lot_100_default(tmp_path):
