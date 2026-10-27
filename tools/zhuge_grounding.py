@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -46,8 +47,26 @@ def _keywords(question: str) -> list[str]:
     return terms[:40]
 
 
+def _rag_retrieve(question: str, limit: int) -> list[dict] | None:
+    """ZHUGE_RAG=1 时优先 BM25；失败返回 None 由关键词兜底。"""
+    if os.environ.get("ZHUGE_RAG", "").strip().lower() not in ("1", "true", "yes", "on"):
+        return None
+    try:
+        tools_dir = str(Path(__file__).resolve().parent)
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import zhuge_rag  # noqa: E402
+        hits = zhuge_rag.search(question, k=limit, root=_root())
+        return hits or None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def retrieve(question: str, limit: int = 3, max_per_doc: int = 2) -> list[dict]:
-    """只读检索 docs/，返回 [{'id','path','line','snippet','score'}]。"""
+    """只读检索 docs/：ZHUGE_RAG=1 用 BM25，否则关键词扫描（默认、可回退）。"""
+    rag_hits = _rag_retrieve(question, limit)
+    if rag_hits:
+        return rag_hits
     docs_dir = _root() / "docs"
     if not docs_dir.is_dir():
         return []
