@@ -1,0 +1,32 @@
+# Gitleaks 配置（零界主仓）· 2026-10-27 P0 质量门升级
+# 目标：替换/补强自研 scan_secrets 的高熵误报；默认规则 + 仓库白名单。
+# 用法：gitleaks dir <repo> --config .gitleaks.toml --no-banner -f json -r report.json
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "零界仓库白名单：测试假 token、文档示例、生成物、历史脱敏样例"
+# 自研凭据扫描自测用的假 token（故意写死，非真实凭据）
+regexes = [
+  '''abcd1234efgh5678ijkl''',
+  '''TUSHARE_TOKEN\s*=\s*["']abcd''',
+  '''A7kg[^"'\s]{4,}X0=''',
+]
+
+paths = [
+  '''(^|[\\/])__pycache__([\\/]|$)''',
+  '''(^|[\\/])node_modules([\\/]|$)''',
+  '''(^|[\\/])\.worktrees([\\/]|$)''',
+  '''(^|[\\/])\.venvs([\\/]|$)''',
+  '''(^|[\\/])_archive([\\/]|$)''',
+  '''(^|[\\/])outputs([\\/]|$)''',
+  '''(^|[\\/])tools[\\/]tests[\\/]''',
+  '''(^|[\\/])tools[\\/]_scan_secrets_selftest\.py$''',
+  '''\.bak-''',
+  # 文档/交付层：历史审计与方案里大量脱敏样例/哈希片段，不属凭据面
+  '''(^|[\\/])docs[\\/].*\.md$''',
+  '''(^|[\\/])deliverables[\\/]''',
+  '''(^|[\\/])STATUS\.md$''',
+  '''(^|[\\/])DOCS_INDEX\.md$''',
+]
