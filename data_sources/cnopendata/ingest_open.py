@@ -49,6 +49,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+import logging
 
 BASE = Path(__file__).resolve().parent
 OPEN_DIR = BASE / "open"
@@ -184,8 +185,8 @@ def _norm_prov(value: object) -> str:
     try:
         if pd.isna(value):
             return ""
-    except (TypeError, ValueError):   # 数组类取值不适用标量判空
-        pass
+    except (TypeError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "data_sources/cnopendata/ingest_open.py", exc)
     return _WS_RE.sub("", str(value)).strip()
 
 

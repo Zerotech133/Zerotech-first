@@ -13,6 +13,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -216,6 +217,6 @@ def list_missions() -> list:
             out.append({"mission_id": d.get("mission_id"), "name": d.get("name"),
                         "created": d.get("created"), "source": d.get("source"),
                         "tasks": len(d.get("tasks") or []), "valid": d.get("valid")})
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/mission_planner.py", exc)
     return out

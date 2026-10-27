@@ -18,6 +18,7 @@ import base64
 import io
 import sys
 import time
+import logging
 
 TARGET = r"C:\aios\jev-eval\backup_daily.ps1"
 REG_KEY = r"SOFTWARE\AIStation\BackupDeploy"
@@ -28,8 +29,8 @@ def log(msg):
     line = "%s  %s" % (time.strftime("%F %T"), msg)
     try:
         io.open(LOG, "a", encoding="utf-8").write(line + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/backup_daily_regen.py", exc)
     print(line)
 
 

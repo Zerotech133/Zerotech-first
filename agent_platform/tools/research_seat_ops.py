@@ -42,6 +42,7 @@ import os
 import sys
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve()
 ROOT_DEFAULT = HERE.parents[2]
@@ -448,8 +449,8 @@ def run(
                 root=root,
                 detail="written=%s emits=%s" % (written, {k: v.get("ok") for k, v in emits.items()}),
             )
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/research_seat_ops.py", exc)
     result = {
         "action": action,
         "dry_run": bool(dry_run),

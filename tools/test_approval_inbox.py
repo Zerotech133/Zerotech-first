@@ -5,6 +5,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import approval_inbox as A  # noqa: E402
+import logging
 
 
 def test_request_list_decide(tmp_path):
@@ -25,8 +26,8 @@ def test_reject_and_double_decide(tmp_path):
     try:
         A.decide(item["id"], True, path=p)
         assert False
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_approval_inbox.py", exc)
 
 
 def test_validation(tmp_path):
@@ -34,5 +35,5 @@ def test_validation(tmp_path):
     try:
         A.request("", "x", path=p)
         assert False
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_approval_inbox.py", exc)

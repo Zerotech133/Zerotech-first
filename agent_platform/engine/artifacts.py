@@ -42,6 +42,7 @@ if str(_ENGINE_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_ENGINE_DIR.parent))
 
 from contracts.objects import Artifact  # type: ignore  # noqa: E402
+import logging
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS artifacts (
@@ -98,8 +99,8 @@ class ArtifactStore:
             mode = self._conn.execute("PRAGMA journal_mode").fetchone()[0]
             if str(mode).lower() != "wal":
                 self._conn.execute("PRAGMA journal_mode=WAL")
-        except sqlite3.OperationalError:
-            pass
+        except sqlite3.OperationalError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/artifacts.py", exc)
         self._conn.executescript(SCHEMA)
         self._conn.commit()
 

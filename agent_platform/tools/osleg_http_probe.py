@@ -26,6 +26,7 @@ import time
 from pathlib import Path
 from urllib import error as urlerror
 from urllib import request as urlrequest
+import logging
 
 REPO = Path(__file__).resolve().parents[2]
 PLATFORM = REPO / "agent_platform"
@@ -232,8 +233,8 @@ def run_probe(port: int = 8795) -> dict:
         srv.server_close()
         try:
             inbox_gateway._DEFAULT_STORE = None
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/osleg_http_probe.py", exc)
         time.sleep(0.2)
         result["port_closed"] = not port_in_use("127.0.0.1", port)
         real_after = real_store_snapshot()

@@ -14,6 +14,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -52,8 +53,8 @@ def _keypool_ask(messages: list):
         text = str((r or {}).get("reply") or "").strip()
         if r.get("ok") and text:
             return text, str(r.get("channel") or "keypool")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/eval_harness.py", exc)
     return "", ""
 
 
@@ -65,8 +66,8 @@ def _ask(messages: list):
         text = _local_native(messages)
         if text.strip():
             return text, "local-native"
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/eval_harness.py", exc)
     return _reply(_post(GATEWAY, {"model": "auto", "messages": messages, "stream": False})), "gateway"
 
 

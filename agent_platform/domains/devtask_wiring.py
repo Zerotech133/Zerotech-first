@@ -72,6 +72,7 @@ except ImportError as _exc:  # fail-open 必配诊断（判例）
         file=sys.stderr,
     )
 from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
+import logging
 
 SCHEMA_VERSION = "1.0"
 DOMAIN = "devtask"
@@ -176,8 +177,8 @@ def save_tasks(root: Path, tasks: Dict[str, dict]) -> None:
         # DevtaskWiringError 统一处理）。
         try:
             os.unlink(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/domains/devtask_wiring.py", exc)
         raise DevtaskWiringError(
             "tasks.json 写回失败（目标被占用 PermissionError，稍后重试）: %s" % exc
         ) from exc

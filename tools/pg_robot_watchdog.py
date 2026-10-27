@@ -20,6 +20,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
+import logging
 
 TASK_NAME = "PG-Robot"
 ROBOT_LOG = r"C:\Temp\pg_robot_system.log"
@@ -47,8 +48,8 @@ def wd_log(msg):
             lines = lines[-100:]
         with open(WD_LOG, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
-    except OSError:
-        pass  # 日志失败不阻断主流程
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/pg_robot_watchdog.py", exc)
 
 
 def robot_pids():
@@ -134,8 +135,8 @@ def save_state(st):
     try:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(st, f, ensure_ascii=False)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/pg_robot_watchdog.py", exc)
 
 
 def send_alert(key, text):

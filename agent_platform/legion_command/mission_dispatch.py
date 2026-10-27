@@ -89,8 +89,8 @@ def dry_run(plan: dict, parallel_limit: int = 3) -> dict:
         p = MISSIONS / str(plan.get("mission_id")) / "dry_run.json"
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(result, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/mission_dispatch.py", exc)
     return result
 
 
@@ -101,6 +101,7 @@ import hashlib
 import os
 import subprocess
 import sys
+import logging
 
 
 def _ticket_id(plan: dict, tid: str) -> str:

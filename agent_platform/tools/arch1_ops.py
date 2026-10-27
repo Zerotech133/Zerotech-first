@@ -25,6 +25,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve()
 ROOT_DEFAULT = HERE.parents[2]
@@ -282,8 +283,8 @@ def run(
                 % (len(summary["gates"]) - len(summary["failed_gates"]),
                    len(summary["gates"]), summary["adr"]["count"], summary["worktrees"]),
             )
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/arch1_ops.py", exc)
     result = {
         "action": "weekly",
         "dry_run": bool(dry_run),

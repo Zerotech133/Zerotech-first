@@ -88,6 +88,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from gateway import inbox_gateway
+import logging
 
 __all__ = [
     "ALLOWED_SOURCES",
@@ -409,8 +410,8 @@ def _atomic_write_json(path: Path, data) -> None:
     except BaseException:
         try:
             tmp.unlink()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/gateway/osleg_http_api.py", exc)
         raise
 
 

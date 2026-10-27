@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -79,8 +80,8 @@ def catalog(config_path=None, workspace=None) -> dict:
                           "rotate": "", "note": "自动发现（未登记）"})
             if len(items) > 60:
                 break
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/credential_catalog.py", exc)
     return {"ok": True, "schema": "credential_catalog/v1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "vault": str(vault_enc), "items": items,

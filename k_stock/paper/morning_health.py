@@ -104,6 +104,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
@@ -665,8 +666,8 @@ def _check_h2(
         try:
             mtime_dt = datetime.fromtimestamp(newest.stat().st_mtime)
             mtime_txt = mtime_dt.strftime("%Y-%m-%d %H:%M")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/morning_health.py", exc)
         mtime_note = ("；落盘 mtime %s" % mtime_txt) if mtime_txt else ""
         thr_note = (
             "台账 frequency=%s → 阈值 %d 天" % (entry.get("frequency"), eff_stale)

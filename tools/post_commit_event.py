@@ -14,14 +14,15 @@ try:  # 2026-10-26 K-ORG-20261026-ENCPROT: non-UTF8 console printing CJK/checkma
     # raises UnicodeEncodeError and can crash merge/hook paths; degrade to UTF-8 output.
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001 - non-TTY/old interpreter: ignore
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/post_commit_event.py", exc)
 import os
 import re
 import subprocess
 from pathlib import Path
 
 from events import emit
+import logging
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,9 +60,9 @@ def main() -> int:
             ide=os.environ.get("DEVTOOL_IDE", ""),
             model=os.environ.get("DEVTOOL_MODEL", ""),
         )
-    except Exception:
+    except Exception as exc:
         # 事件层永不阻塞开发动作；hook 需要始终成功返回。
-        pass
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/post_commit_event.py", exc)
     return 0
 
 

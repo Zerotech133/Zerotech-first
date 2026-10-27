@@ -36,6 +36,7 @@ _REPO = Path(__file__).resolve().parent.parent
 # 复用 R1 采集器（一份轮询逻辑两个消费方）：portal 在 _REPO 下
 sys.path.insert(0, str(_REPO / "portal"))
 import api_execution  # noqa: E402
+import logging
 
 # TaskStore 开单底座（run_shadow.open_failed_task 同款先例）：
 # engine path 注入后 from tasks import TaskStore
@@ -110,8 +111,8 @@ def push_feishu(text):
     finally:
         try:
             Path(tmp).unlink(missing_ok=True)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/execution_watchdog.py", exc)
 
 
 # ── 自动开单（org 工单账本） ──────────────────────────────────────────────
@@ -304,8 +305,8 @@ def main(argv=None):
         try:
             if not dry:
                 _write_last_run(ran_at, 1, [{"error": str(e)}], skipped)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/execution_watchdog.py", exc)
         return 1
 
 

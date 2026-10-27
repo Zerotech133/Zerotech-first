@@ -48,6 +48,7 @@ from pathlib import Path
 
 import jev_common as jc
 from jev_common import C_JEV, atomic_write_text, db_rows, install_stop, log, set_module
+import logging
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -541,8 +542,8 @@ def _maybe_archive_triples() -> int:
                 if ts and datetime.fromisoformat(ts).date() < cutoff:
                     arch.append(line)
                     continue
-        except Exception:  # noqa: BLE001
-            pass  # 坏行/坏 ts：保留不归档
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/signal_review_gate.py", exc)
         keep.append(line)
     if arch:
         with ARCHIVE.open("a", encoding="utf-8") as f:

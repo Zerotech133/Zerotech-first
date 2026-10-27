@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """全局配置：路径、常量、评级与数据域定义。"""
 import os
+import logging
 
 PKG = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(PKG)  # 当前 worktree 根（代码所在）
@@ -19,8 +20,8 @@ def _load_env():
                 continue
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/config.py", exc)
 
 
 _load_env()

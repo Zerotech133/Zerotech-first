@@ -19,6 +19,7 @@ import tempfile
 import time
 import uuid
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -41,8 +42,8 @@ def _main_repo() -> Path:
             if not common.is_absolute():
                 common = (REPO / common).resolve()
             return common.parent
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/repair/lane.py", exc)
     return REPO
 
 

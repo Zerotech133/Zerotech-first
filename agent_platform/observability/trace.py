@@ -19,6 +19,7 @@ import urllib.request
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -252,8 +253,8 @@ def span(
                 )
                 conn.commit()
                 conn.close()
-            except sqlite3.Error:
-                pass
+            except sqlite3.Error as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/observability/trace.py", exc)
             export_span(tid, sid, parent, name, kind, start, time.time(),
                         "error" if err else "ok", data)
 

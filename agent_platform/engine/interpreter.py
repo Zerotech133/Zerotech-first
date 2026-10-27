@@ -22,6 +22,7 @@ import sys  # noqa: E402
 sys.path.insert(0, str(sys_dir))
 
 from llm import similarity  # noqa: E402
+import logging
 
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
 
@@ -414,5 +415,5 @@ class Interpreter:
                         "status": status,
                     },
                 )
-        except Exception:  # noqa: BLE001  RBAC 拒绝不阻断主流程（但 smoke 会单测它）
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/interpreter.py", exc)
