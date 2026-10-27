@@ -484,7 +484,16 @@ function renderSide(){
   const star = id => (ME===id ? ' <span style="color:var(--orange)">★我</span>' : '');  // 348 身份视角
   if(VIEW==="org"){
     if(WS==="all"){
+      const chief = B.departments.filter(d=>d.type==="chief");
       const func = B.departments.filter(d=>d.type==="func"), proj = B.departments.filter(d=>d.type==="project");
+      if(chief.length){
+        h += '<div class="s-t">参谋线 / 决策层</div>';
+        for(const d of chief){
+          h += '<div class="dep">'+d.name+'</div>';
+          for(const id of d.agents){ const a=B.agents[id]; if(!a) continue;
+            h += sideItem("agent", id, a.grade, id, esc(a.role_profile)+star(id)); }
+        }
+      }
       h += '<div class="s-t">职能中心</div>';
       for(const d of func){
         h += '<div class="dep">'+d.name+'</div>';

@@ -17,8 +17,17 @@ import os
 import re
 import sys
 import time
+import pathlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 工单真源固定在主仓（worktree 里跑 bundle 时也能看到主任务板）
+try:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from _repo_paths import repo_root
+    MAIN_ROOT = str(repo_root(pathlib.Path(__file__).resolve().parent))
+except Exception:
+    MAIN_ROOT = ROOT
+
 REG = os.path.join(ROOT, "agent_platform", "registry")
 PROMPTS = os.path.join(ROOT, "agent_platform", "prompts")
 OUT = os.path.join(ROOT, "portal", "agent_ide_bundle.json")
@@ -120,7 +129,7 @@ DEPT_META = {  # 部门显示名（org.json name 键值在此冗余固化，避�
 }
 
 # devtask 工单库（K-ORG-024 批C先行：研发工单真实投影进 IDE）
-TASKS = os.path.join(ROOT, ".worktrees", "tasks.json")
+TASKS = os.path.join(MAIN_ROOT, ".worktrees", "tasks.json")
 # 记忆黑板（K-ORG-027a 批C3：agent/<id>/* 只读视图进 IDE）
 MEMORY_DIR = os.path.join(ROOT, "agent_platform", "data", "memory")
 
