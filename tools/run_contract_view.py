@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""O6 P1：从现有 traces.sqlite **只读派生** Run/Event 契约视图。
+"""O6 P1/P2d：从现有 traces.sqlite **只读派生** Run/Event 契约视图（支持任务级聚合）。
 
-- 不改 trace 表、不写运行时；只读打开 sqlite（?mode=ro）并输出 JSONL；
-- 每个 trace_id 派生一个 Run；每个 span 派生一个 Event（类型映射见下）；
-- 输出：runs.jsonl / events.jsonl / summary.json 到 --out 目录。
+- 只读打开 sqlite（?mode=ro），不改 trace 表/运行时；
+- **任务级**：同 `run_id` 的多个 span（attempt）聚合成一个 Run（P2b 起写入 run_id）；
+- **兼容旧数据**：`run_id` 列不存在/为 NULL 时，按 trace_id 派生 attempt 级 Run；
+- 输出：runs.jsonl / events.jsonl / summary.json（含任务级/attempt 级成功率）。
 
 用法：
   python -X utf8 tools/run_contract_view.py
@@ -76,73 +77,123 @@ def _usage(attrs):
             out[dst] = int(v) if "tokens" in dst else float(v)
         except (TypeError, ValueError):
             pass
-    return out or None
+    return out
+
+
+def _merge_usage(total, add):
+    if not add:
+        return total
+    total = dict(total or {})
+    for k, v in add.items():
+        total[k] = round((total.get(k) or 0) + v, 6) if isinstance(v, float) else (total.get(k) or 0) + v
+    return total
+
+
+def _row_run_id(row):
+    return row[8] if len(row) >= 9 else None
 
 
 def derive_rows(rows):
-    """rows: [(trace_id, span_id, name, kind, start_ts, end_ts, status, attrs_json)]"""
-    runs = {}
-    events = []
-    for trace_id, span_id, name, kind, start_ts, end_ts, status, attrs_json in rows:
-        attrs = _attrs(attrs_json)
-        run = runs.get(trace_id)
-        if run is None:
-            runs[trace_id] = {
-                "contract_version": CONTRACT_VERSION,
-                "run_id": "run_" + str(trace_id),
-                "conversation_id": None,
-                "agent": {
-                    "name": str(attrs.get("zhaoyun.agent") or attrs.get("service.name") or "unknown"),
-                    "runtime_id": str(attrs.get("zhaoyun.runtime") or "agent_platform"),
-                },
-                "kind": "chat" if str(kind) == "llm" else ("tool" if str(kind) == "tool" else "task"),
-                "status": _status(status),
-                "started_at": parse_ts(start_ts),
-                "ended_at": parse_ts(end_ts),
-                "input": {"summary": str(name or "")},
-                "output": None,
-                "error": None,
-                "trace_id": str(trace_id),
-                "usage": _usage(attrs),
-                "artifacts": [],
-                "meta": {"source": "trace_derived"},
+    """rows: 8-tuple 旧格式或 9-tuple（含 run_id）；返回 (runs, events)。"""
+    groups = {}
+    order = []
+    for row in rows:
+        trace_id, span_id, name, kind, start_ts, end_ts, status, attrs_json = row[:8]
+        run_id = _row_run_id(row)
+        key = ("run:" + str(run_id)) if run_id else ("trace:" + str(trace_id))
+        if key not in groups:
+            groups[key] = {
+                "run_id": str(run_id) if run_id else ("run_trace_" + str(trace_id)),
+                "level": "task" if run_id else "attempt",
+                "spans": [],
             }
-            run = runs[trace_id]
-        else:
-            # 同 trace 多 span：状态取最差，时间窗扩展，usage 累加
-            if _status(status) == "failed":
-                run["status"] = "failed"
-            for key, val in (("started_at", parse_ts(start_ts)), ("ended_at", parse_ts(end_ts))):
-                if val and (not run.get(key) or val < run[key] if key == "started_at" else val > run[key]):
-                    run[key] = val
-            u = _usage(attrs)
-            if u:
-                run["usage"] = run.get("usage") or {}
-                for k, v in u.items():
-                    run["usage"][k] = round((run["usage"].get(k) or 0) + v, 6) if isinstance(v, float) else (run["usage"].get(k) or 0) + v
-        if _status(status) == "failed":
-            run["error"] = {"code": "span_error", "message": str(attrs.get("error") or "")[:500],
-                            "retryable": None}
-        events.append({
-            "contract_version": CONTRACT_VERSION,
-            "event_id": "evt_" + str(span_id),
-            "run_id": "run_" + str(trace_id),
-            "seq": len([e for e in events if e["run_id"] == "run_" + str(trace_id)]),
-            "type": EVENT_TYPE.get(str(kind), "run.started"),
-            "ts": parse_ts(start_ts),
-            "payload": {"span_name": str(name or ""), "kind": str(kind or ""),
-                        "status": str(status or "")},
-            "trace_id": str(trace_id),
-            "span_id": str(span_id),
+            order.append(key)
+        groups[key]["spans"].append({
+            "trace_id": str(trace_id), "span_id": str(span_id), "name": str(name or ""),
+            "kind": str(kind or ""), "start": parse_ts(start_ts), "end": parse_ts(end_ts),
+            "status": _status(status), "raw_status": str(status or ""),
+            "attrs": _attrs(attrs_json),
         })
-    return list(runs.values()), events
+
+    runs, events = [], []
+    for key in order:
+        g = groups[key]
+        spans = g["spans"]
+        attrs0 = spans[0]["attrs"]
+        models = [s["attrs"].get("gen_ai.request.model") for s in spans]
+        agent = (attrs0.get("zhaoyun.agent") or attrs0.get("service.name")
+                 or next((s["attrs"].get("zhaoyun.agent_id") for s in spans
+                          if s["attrs"].get("zhaoyun.agent_id")), "unknown"))
+        kinds = {s["kind"] for s in spans}
+        kind = "chat" if "llm" in kinds else ("tool" if "tool" in kinds else "task")
+        if len(spans) > 1:
+            kind = "task"
+        statuses = [s["status"] for s in spans]
+        if "succeeded" in statuses:
+            status = "succeeded"
+        elif statuses and all(x == "failed" for x in statuses):
+            status = "failed"
+        else:
+            status = "running"
+        starts = [s["start"] for s in spans if s["start"]]
+        ends = [s["end"] for s in spans if s["end"]]
+        usage = {}
+        for s in spans:
+            usage = _merge_usage(usage, _usage(s["attrs"]))
+        err = None
+        if status == "failed":
+            last = next((s for s in reversed(spans) if s["status"] == "failed"), spans[-1])
+            err = {"code": "attempt_failed", "message": str(last["attrs"].get("error") or "")[:500],
+                   "retryable": None}
+        runs.append({
+            "contract_version": CONTRACT_VERSION,
+            "run_id": g["run_id"],
+            "conversation_id": None,
+            "agent": {
+                "name": str(agent),
+                "runtime_id": str(attrs0.get("zhaoyun.runtime") or "agent_platform"),
+            },
+            "kind": kind,
+            "status": status,
+            "started_at": min(starts) if starts else None,
+            "ended_at": max(ends) if ends else None,
+            "input": {"summary": spans[0]["name"]},
+            "output": None,
+            "error": err,
+            "trace_id": spans[0]["trace_id"],
+            "usage": usage or None,
+            "artifacts": [],
+            "meta": {
+                "level": g["level"],
+                "attempts": len(spans),
+                "trace_ids": sorted({s["trace_id"] for s in spans}),
+                "models": sorted({m for m in models if m}),
+            },
+        })
+        for seq, s in enumerate(spans):
+            events.append({
+                "contract_version": CONTRACT_VERSION,
+                "event_id": "evt_" + s["span_id"],
+                "run_id": g["run_id"],
+                "seq": seq,
+                "type": EVENT_TYPE.get(s["kind"], "run.started"),
+                "ts": s["start"],
+                "payload": {"span_name": s["name"], "kind": s["kind"],
+                            "status": s["raw_status"], "level": g["level"]},
+                "trace_id": s["trace_id"],
+                "span_id": s["span_id"],
+            })
+    return runs, events
 
 
 def read_traces(path, limit=None):
     con = sqlite3.connect("file:%s?mode=ro" % path.replace("\\", "/"), uri=True)
     try:
         cur = con.cursor()
-        q = "select trace_id, span_id, name, kind, start_ts, end_ts, status, attrs_json from spans order by start_ts"
+        cols = [r[1] for r in cur.execute("PRAGMA table_info(spans)").fetchall()]
+        rid_expr = "run_id" if "run_id" in cols else "NULL AS run_id"
+        q = ("select trace_id, span_id, name, kind, start_ts, end_ts, status, attrs_json, "
+             + rid_expr + " from spans order by start_ts")
         if limit:
             q += " limit %d" % int(limit)
         rows = cur.execute(q).fetchall()
@@ -159,13 +210,21 @@ def write_outputs(out_dir, runs, events):
     with io.open(os.path.join(out_dir, "events.jsonl"), "w", encoding="utf-8", newline="\n") as f:
         for e in events:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
+    task = [r for r in runs if r["meta"]["level"] == "task"]
+    attempt = [r for r in runs if r["meta"]["level"] == "attempt"]
     summary = {
         "contract_version": CONTRACT_VERSION,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "runs": len(runs),
         "events": len(events),
+        "task_runs": len(task),
+        "attempt_runs": len(attempt),
         "status_counts": {s: sum(1 for r in runs if r["status"] == s)
                           for s in ("succeeded", "failed", "running")},
+        "task_success_rate": round(sum(1 for r in task if r["status"] == "succeeded") / len(task), 4) if task else None,
+        "attempt_success_rate": round(sum(1 for r in attempt if r["status"] == "succeeded") / len(attempt), 4) if attempt else None,
+        "by_kind": {k: sum(1 for r in runs if r["kind"] == k)
+                    for k in sorted({r["kind"] for r in runs})},
     }
     with io.open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8", newline="") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
@@ -175,13 +234,15 @@ def write_outputs(out_dir, runs, events):
 def validate(runs, events):
     errors = []
     required_run = ("contract_version", "run_id", "agent", "kind", "status", "started_at",
-                    "input", "trace_id")
+                    "input", "trace_id", "meta")
     for r in runs:
         for k in required_run:
             if k not in r:
                 errors.append("run 缺字段 %s (%s)" % (k, r.get("run_id")))
         if r.get("status") not in ("pending", "running", "succeeded", "failed", "cancelled", "timeout"):
             errors.append("run.status 非法: %s" % r.get("status"))
+        if (r.get("meta") or {}).get("level") not in ("task", "attempt"):
+            errors.append("run.meta.level 非法: %s" % r.get("run_id"))
     required_ev = ("contract_version", "event_id", "run_id", "seq", "type", "ts", "payload")
     for e in events:
         for k in required_ev:
@@ -194,7 +255,7 @@ def validate(runs, events):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="O6 P1：从 traces 只读派生 Run/Event 契约视图")
+    ap = argparse.ArgumentParser(description="O6：从 traces 只读派生 Run/Event 契约视图（任务级聚合）")
     ap.add_argument("--traces", default=DEFAULT_TRACES)
     ap.add_argument("--out", default=DEFAULT_OUT)
     ap.add_argument("--limit", type=int, default=None)
@@ -211,8 +272,10 @@ def main(argv=None):
     if args.json:
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     else:
-        print("run contract view: runs=%d events=%d -> %s" % (len(runs), len(events), args.out))
-        print("  status:", summary["status_counts"], "validation_errors=", len(errors))
+        print("run contract view: runs=%d (task=%d attempt=%d) events=%d -> %s" % (
+            len(runs), summary["task_runs"], summary["attempt_runs"], len(events), args.out))
+        print("  task_success_rate=%s attempt_success_rate=%s validation_errors=%d" % (
+            summary["task_success_rate"], summary["attempt_success_rate"], len(errors)))
     return 0 if not errors else 1
 
 
