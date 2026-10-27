@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 33,
   "workorders_review": 4
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-UIW4B-20261028",
-   "desc": "W4b：picks_index 301 加 absolute_redirect off 保留8734端口；补 PageShell adopted/redirect 测试",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIW4B-20261028",
-   "created": "2026-10-28 06:51:46",
    "project": "general"
   }
  ],
@@ -6987,11 +6978,6 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-UIW4B-20261028",
-     "desc": "W4b：picks_index 301 加 absolute_redirect off 保留8734端口；补 PageShell adopted/redirect 测试",
-     "status": "doing"
     }
    ]
   }
