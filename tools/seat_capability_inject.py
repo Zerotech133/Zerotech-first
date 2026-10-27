@@ -1033,7 +1033,7 @@ CAPABILITIES["acad1"] = [
 ]
 
 
-def _acad1_task_exists(name: str) -> bool:
+def _task_exists(name: str) -> bool:
     """只查（不建）计划任务是否存在；失败按不存在处理。"""
     try:
         import subprocess
@@ -1043,10 +1043,17 @@ def _acad1_task_exists(name: str) -> bool:
         return False
 
 
-def _acad1_with_trigger_status(items):
-    """trigger-ops 状态按运行态动态判定：三任务全在=ready，否则 pending_wiring。"""
-    targets = ("AcademyIntakeBrief", "AcademyReview", "AcademyWeeklyReport")
-    installed = all(_acad1_task_exists(t) for t in targets)
+# 席位 → 触发任务清单（trigger-ops 状态按运行态动态判定）
+SEAT_TRIGGER_TASKS = {
+    "acad1": ("AcademyIntakeBrief", "AcademyReview", "AcademyWeeklyReport"),
+    "strat1": ("STRAT1Brief", "SeatsWeekly"),
+    "back1": ("BACK1Check", "SeatsWeekly"),
+}
+
+
+def _with_trigger_status(items, targets):
+    """trigger-ops 状态按运行态动态判定：targets 全在=ready，否则 pending_wiring。"""
+    installed = all(_task_exists(t) for t in targets)
     out = []
     for c in items:
         c = dict(c)
@@ -1111,6 +1118,11 @@ CAPABILITIES["strat1"] = [
      "how": "quant_backtest/agent_tools.py（datamart_read/latest/ready、market_snapshot、data_health、stock_info、recent_events、signal_precedents、pool_rows；org 已授权）",
      "boundary": "只读幂等；取不到=未取得，不编造", "status": "ready",
      "verified_scope": "tool_grant", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "trigger-ops", "what": "研究值守触发：周一 09:40 策略假设值守 / 周五 16:10 双席周报（计划任务）",
+     "how": "tools/install_research_seat_ops.ps1（Windows 计划任务注册，L2 五要素人工批准后安装；-Uninstall 回滚；-DryRun 预演）；任务体=agent_platform/tools/research_seat_ops.py strat1",
+     "boundary": "计划任务增删=L2 宿主级动作，未获批不装；装了才有 trigger 维审计", "status": "pending_wiring",
+     "tasks": ["STRAT1Brief", "SeatsWeekly"], "installed": False,
+     "verified_scope": "installer_dry_run", "verified_at": "2026-10-27T09:55+08:00"},
 ]
 
 CAPABILITIES["back1"] = [
@@ -1138,6 +1150,11 @@ CAPABILITIES["back1"] = [
      "how": "python -X utf8 agent_platform/tools/academy_ops.py review（数据冻结跟踪表，命中待*/空值=未冻结）+ quant_backtest/agent_tools.py（datamart_ready/latest 只读核验）",
      "boundary": "未冻结拒跑回测并回报 DATA1，不自行改口径", "status": "ready",
      "verified_scope": "static_cli+tool_grant", "verified_at": "2026-10-27T08:00+08:00"},
+    {"name": "trigger-ops", "what": "研究值守触发：周三 15:10 冻结/回测值守 / 周五 16:10 双席周报（计划任务）",
+     "how": "tools/install_research_seat_ops.ps1（Windows 计划任务注册，L2 五要素人工批准后安装；-Uninstall 回滚；-DryRun 预演）；任务体=agent_platform/tools/research_seat_ops.py back1",
+     "boundary": "计划任务增删=L2 宿主级动作，未获批不装；装了才有 trigger 维审计", "status": "pending_wiring",
+     "tasks": ["BACK1Check", "SeatsWeekly"], "installed": False,
+     "verified_scope": "installer_dry_run", "verified_at": "2026-10-27T09:55+08:00"},
 ]
 
 WORKING_MEMORY["strat1"] = """# 工作记忆索引 — STRAT1 徐庶（策略研究员 / 研究院）
@@ -1179,8 +1196,8 @@ def inject(dry_run: bool, seats=None) -> int:
         # ① 能力清单
         cap_path = os.path.join(skills_dir, "CAPABILITIES.json")
         items = CAPABILITIES[seat]
-        if seat == "acad1":
-            items = _acad1_with_trigger_status(items)
+        if seat in SEAT_TRIGGER_TASKS:
+            items = _with_trigger_status(items, SEAT_TRIGGER_TASKS[seat])
 
         def _count(status):
             return sum(1 for c in items if c.get("status") == status)
