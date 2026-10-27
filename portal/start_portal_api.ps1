@@ -1,4 +1,4 @@
-# portal api launcher (ASCII only - SYSTEM-safe path via C:\aios junction)
+﻿# portal api launcher (ASCII only - SYSTEM-safe path via C:\aios junction)
 # K98: Start-Process -PassThru ExitCode always EMPTY here (same fake-green
 # family as morning; "python exited code= " x5 today, alert argv collapsed:
 # log path shifted into code slot). Use & + $LASTEXITCODE instead.

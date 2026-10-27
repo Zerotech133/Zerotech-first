@@ -1,4 +1,4 @@
-# run_zhuge_challenge_daily.ps1 — C1 质询卡每日生成包装器（离线版，W5 快照优先）
+﻿# run_zhuge_challenge_daily.ps1 — C1 质询卡每日生成包装器（离线版，W5 快照优先）
 # L2 批准：老田 2026-10-27（五要素包见 C:\项目\deliverables\2026-10-27_诸葛C3排程与C1生产接线_L2五要素待批包_v1.md）
 # 任务：ZhugeChallengeDaily（每日 09:10）；优先读沙盘仓 plans/ 最新快照，无可用回落 .worktrees/tasks.json；
 # P2 试点已启用（老田 2026-10-27 按计划执行）：前 3 问用 OpenClaw 载体生成（失败自动降级规则）；

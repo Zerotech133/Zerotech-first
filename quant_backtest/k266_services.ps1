@@ -46,21 +46,58 @@ function Get-LockPid([string]$path) {
 }
 function Test-PidAlive([int]$procId) {
     if ($procId -le 0) { return $false }
-    return [bool](Get-Process -Id $procId -ErrorAction SilentlyContinue)
+    if (Get-Process -Id $procId -ErrorAction SilentlyContinue) { return $true }
+    # 2026-10-27 OS-FIX-K266GUARD-A04：S4U/异会话下 Get-Process 可能看不到存活进程，
+    # 用 tasklist 兜底再判一次（仍看不到则交由锁文件 mtime 心跳作第二证据）。
+    try {
+        $tl = & tasklist /FI "PID eq $procId" /FO CSV /NH 2>$null
+        if ($tl -and ("$tl" -match '^\s*"')) { return $true }
+    } catch { }
+    return $false
+}
+function Test-LockHeartbeat([string]$path, [int]$maxAgeMin = 15) {
+    # 锁文件 mtime = 持有者心跳（jev_night 每轮 touch）；<15min 视为仍活（第二证据）。
+    # 目的：S4U pid 可见性不足时不误删暂停旗；过期锁仍按「无 owner」清理。
+    try {
+        $f = Get-Item -LiteralPath $path -ErrorAction Stop
+        return (((Get-Date) - $f.LastWriteTime).TotalMinutes -lt $maxAgeMin)
+    } catch { return $false }
+}
+function Get-M3OwnerState([string]$Root, [string]$FallbackLock) {
+    # owner 判定（2026-10-27 A-04）：主锁 2 条 + jev_night fallback 路径。
+    # fallback 来源=tools/jev_night.py LOCK_FALLBACK_PATH（默认 C:\项目\.locks\jev_night.lock，
+    # 可用 env JEV_NIGHT_LOCK_FALLBACK 覆盖；正常不触发 fallback，见 jev_night.py:64-70）。
+    # 每条候选：pid 存活 或 锁 mtime 心跳 <15min 即视为仍持有；命中任一即返回。
+    $cands = @(
+        @{ Kind = 'night_batch'; Path = (Join-Path $Root 'locks\night_batch.lock') },
+        @{ Kind = 'jev_night'; Path = (Join-Path $Root 'locks\jev_night.lock') },
+        @{ Kind = 'jev_night.fallback'; Path = $FallbackLock }
+    )
+    $detail = @()
+    foreach ($c in $cands) {
+        if (-not (Test-Path -LiteralPath $c.Path)) { continue }
+        $lp = Get-LockPid $c.Path
+        $alive = (Test-PidAlive $lp) -or (Test-LockHeartbeat $c.Path)
+        $detail += ('{0}(pid={1},alive={2})' -f $c.Kind, $lp, $alive)
+        if ($alive) { return @{ Alive = $true; Detail = ($detail -join '; ') } }
+    }
+    return @{ Alive = $false; Detail = ($detail -join '; ') }
 }
 
 $m3PauseActive = Test-Path $m3Pause
 if ($m3PauseActive) {
-    $nbPid = Get-LockPid "$root\locks\night_batch.lock"
-    $jnPid = Get-LockPid "$root\locks\jev_night.lock"
-    $ownerAlive = (Test-PidAlive $nbPid) -or (Test-PidAlive $jnPid)
-    if ($ownerAlive) {
-        Log "m3: 暂停旗存在（night_batch/jev_night 持有），本轮不拉起"
+    # 2026-10-27 A-04：owner 判定补 jev_night fallback 锁（C:\项目\.locks\jev_night.lock）
+    # + 锁心跳第二证据；S4U 下 pid 可见性差时不再误删旗。
+    $jnFallback = $env:JEV_NIGHT_LOCK_FALLBACK
+    if (-not $jnFallback) { $jnFallback = 'C:\项目\.locks\jev_night.lock' }
+    $owner = Get-M3OwnerState -Root $root -FallbackLock $jnFallback
+    if ($owner.Alive) {
+        Log "m3: 暂停旗存在（$($owner.Detail)），本轮不拉起"
     } else {
         # 2026-10-27 OS-FIX-K266GUARD：任务被强杀（如 schtasks /End）不会走
-        # finally，暂停旗残留会让 M3 永久停摆。无存活 owner 即清理并恢复 M3。
+        # finally，暂停旗残留会让 M3 永久停摆。无存活 owner（含锁心跳）即清理并恢复 M3。
         Remove-Item -LiteralPath $m3Pause -Force -ErrorAction SilentlyContinue
-        Log "m3: 陈旧暂停旗已清理（无 night_batch/jev_night 活进程），恢复 M3"
+        Log "m3: 陈旧暂停旗已清理（无 night_batch/jev_night 存活 owner；候选=$($owner.Detail)），恢复 M3"
         $m3PauseActive = $false
     }
 }

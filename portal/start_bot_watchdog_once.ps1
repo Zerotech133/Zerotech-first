@@ -1,4 +1,4 @@
-# 单一任务 bot 守护（2026-10-25 老田批准"合并为单一计划任务守护"）
+﻿# 单一任务 bot 守护（2026-10-25 老田批准"合并为单一计划任务守护"）
 # DSHBotWatchdog 每 5 分钟调用本脚本：保证恰好一个 feishu_bot_ws.py 进程。
 # 不再使用常驻 loop，避免"两个看护循环竞速各拉一个 bot"的双实例问题。
 $ErrorActionPreference = "Continue"

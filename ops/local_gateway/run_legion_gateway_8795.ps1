@@ -1,4 +1,4 @@
-# run_legion_gateway_8795.ps1 — 8795 本地网关常驻包装器
+﻿# run_legion_gateway_8795.ps1 — 8795 本地网关常驻包装器
 # L2 批准：老田 2026-10-27（「批准 L2：8795 常驻（登录触发 + 失败重启）」）
 # 任务：LegionGateway8795（AtLogOn 当前用户；失败重启 3 次/1 分钟；仅绑 127.0.0.1:8795）。
 $py = 'C:\Program Files\Python311\python.exe'

@@ -19,6 +19,7 @@ import os
 import argparse
 import json
 import re
+import subprocess
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -202,6 +203,113 @@ def _seat_chat(
         data.setdefault("binding_resolved", fb)
         return fb_env, attempts
     return env, attempts
+
+
+# ---------------------------------------------------------------- LiteLLM 子进程
+# AUDIT-01 A-03（2026-10-27）：LiteLLM 上游子进程三处健壮性修复，纯函数便于 mock 单测。
+# prompt 经 argv 传入：tools/litellm_route.py 的 route 子命令只收位置参数（无 stdin 支持，
+# 2026-10-27 核对 litellm_route.py:162-163），故保持 argv；Windows CreateProcess 命令行
+# 上限 32767 字符，这里留足 exe/工具路径/参数余量取 15000，超限不启子进程直接 413。
+LITELLM_MAX_PROMPT_CHARS = 15000
+LITELLM_TIMEOUT_S = 180
+
+
+def _parse_last_json(stdout: str):
+    """取子进程 stdout 中最靠后的可解析 JSON dict；无则返回 None。
+
+    旧实现「扫到首个 `{` 开头的行就 json.loads(整个 stdout)」：litellm_route 用
+    `json.dumps(indent=1)` **多行**输出，且工具可能先打日志 → 首个 `{` 行匹配后
+    json.loads(整个 stdout) 必然 ValueError → 502。这里三级回退：
+      1) 整个 stdout 就是 JSON（无日志的正常路径，含 indent=1 多行）；
+      2) 逐行倒序取最后一行可单独解析的 JSON（日志 + 单行 JSON）；
+      3) 从每个 `{` 位置 raw_decode，取最后一个成功块（日志 + 多行 JSON）。
+    """
+    text = (stdout or "").strip()
+    if not text:
+        return None
+    try:
+        obj = json.loads(text)
+        if isinstance(obj, dict):
+            return obj
+    except ValueError:
+        pass
+    for raw_line in reversed(text.splitlines()):
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+    decoder = json.JSONDecoder()
+    best = None
+    for idx, char in enumerate(text):
+        if char != "{":
+            continue
+        try:
+            obj, _end = decoder.raw_decode(text[idx:])
+        except ValueError:
+            continue
+        if isinstance(obj, dict):
+            best = obj
+    return best
+
+
+def _litellm_route(prompt: str) -> tuple[dict, int]:
+    """调用 `litellm_route.py route --json`，返回 (result, http_status)。
+
+    状态码：200 成功；400 空 prompt；413 prompt 超长（不启子进程）；502 上游/解析/
+    启动失败（含 stderr 尾部）；504 子进程超时。失败时 result 是带 error 的 dict。
+    """
+    if not isinstance(prompt, str):
+        prompt = str(prompt or "")
+    if not prompt.strip():
+        return {"ok": False, "error": "empty_prompt"}, 400
+    if len(prompt) > LITELLM_MAX_PROMPT_CHARS:
+        return {
+            "ok": False,
+            "error": "prompt_too_long chars=%d max=%d（litellm_route 仅支持 argv 传参，"
+            "超 Windows 32767 命令行上限前拒绝）"
+            % (len(prompt), LITELLM_MAX_PROMPT_CHARS),
+        }, 413
+    tool = _PLATFORM.parent / "tools" / "litellm_route.py"
+    py = Path(r"C:\项目\py312\python.exe")
+    exe = str(py) if py.exists() else sys.executable
+    env2 = dict(
+        os.environ,
+        LITELLM_LOCAL_MODEL_COST_MAP="True",
+        PYTHONIOENCODING="utf-8",
+        PYTHONUTF8="1",
+    )
+    try:
+        cp = subprocess.run(
+            [exe, "-X", "utf8", str(tool), "route", prompt, "--json"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=LITELLM_TIMEOUT_S,
+            env=env2,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False,
+            "error": "litellm_tool_timeout timeout=%ds（上游无响应，未重试）"
+            % LITELLM_TIMEOUT_S,
+            "timeout": LITELLM_TIMEOUT_S,
+        }, 504
+    except OSError as e:
+        return {"ok": False, "error": "litellm_tool_spawn_failed: %s" % e}, 502
+    lr = _parse_last_json(cp.stdout)
+    if lr is None:
+        tail = (cp.stderr or "").strip()[-300:] or "(empty)"
+        return {
+            "ok": False,
+            "error": "litellm_tool_no_json rc=%s stderr=%s" % (cp.returncode, tail),
+        }, 502
+    return lr, (200 if lr.get("ok") else 502)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -700,29 +808,23 @@ class Handler(BaseHTTPRequestHandler):
                     if isinstance(m, dict) and m.get("role") == "user":
                         prompt = str(m.get("content") or "")
                         break
-                try:
-                    import subprocess as _sp
-                    tool = _PLATFORM.parent / "tools" / "litellm_route.py"
-                    py = Path(r"C:\项目\py312\python.exe")
-                    exe = str(py) if py.exists() else sys.executable
-                    env2 = dict(os.environ, LITELLM_LOCAL_MODEL_COST_MAP="True",
-                                PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
-                    cp = _sp.run([exe, "-X", "utf8", str(tool), "route", prompt, "--json"],
-                                 capture_output=True, text=True, encoding="utf-8",
-                                 errors="replace", timeout=180, env=env2)
-                    lr = None
-                    for ln in (cp.stdout or "").splitlines():
-                        if ln.strip().startswith("{"):
-                            lr = json.loads(cp.stdout)
-                            break
-                    if lr is None:
-                        lr = {"ok": False, "error": "litellm_tool_no_json rc=%s" % cp.returncode}
-                except Exception as e:  # noqa: BLE001
-                    lr = {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:200])}
+                lr, lr_status = _litellm_route(prompt)
                 if not lr.get("ok"):
-                    self._send_json({"error": {"message": lr.get("error") or "litellm_failed",
-                                               "type": "upstream_error"},
-                                     "x_backend": "litellm"}, 502)
+                    self._send_json(
+                        {
+                            "error": {
+                                "message": lr.get("error") or "litellm_failed",
+                                "type": (
+                                    "invalid_request_error"
+                                    if lr_status < 500
+                                    else "upstream_error"
+                                ),
+                            },
+                            "x_backend": "litellm",
+                            "x_status": lr_status,
+                        },
+                        lr_status,
+                    )
                     return
                 self._send_json({
                     "id": "chatcmpl-dsh-lite-%s" % int(time.time() * 1000),

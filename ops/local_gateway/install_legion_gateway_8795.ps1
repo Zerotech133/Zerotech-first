@@ -1,4 +1,4 @@
-# install_legion_gateway_8795.ps1 — 安装 8795 本地网关常驻任务（L2 批准 2026-10-27）
+﻿# install_legion_gateway_8795.ps1 — 安装 8795 本地网关常驻任务（L2 批准 2026-10-27）
 # 任务：LegionGateway8795；AtLogOn 当前用户 + 每 5 分钟健康探测触发器（自愈；
 # 2026-10-27 实测：Task Scheduler 的 RestartOnFailure 对「长驻任务被外部杀掉」不触
 # 发，故用同一任务的周期触发器补自愈——wrapper 健康探测存活即秒退，不会重复启动）。
