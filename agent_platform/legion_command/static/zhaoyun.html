@@ -168,6 +168,16 @@
   </section>
 
   <section>
+    <h2>多智能体辩论 <span>三席结构化分歧（只读，不执行）</span></h2>
+    <div class="row">
+      <input id="db-question" placeholder="辩论问题（如：加息周期下是否加仓成长股）" style="flex:2">
+      <input id="db-code" placeholder="可选代码 000001.SZ" style="width:140px">
+      <button onclick="debateRun()">开辩</button>
+    </div>
+    <div id="db-out" class="muted">三席：进取/稳健/风控；输出分歧/共识/待补证据/决策提示。</div>
+  </section>
+
+  <section>
     <h2>记忆 v2（四层） <span id="memv2-sub">—</span> <span>working/episodic/semantic/procedural · 检索评测</span></h2>
     <div id="memv2"></div>
   </section>
@@ -573,6 +583,28 @@ function loadDrill() {
     });
   });
 }
+async function debateRun() {
+  var out = document.getElementById('db-out');
+  out.textContent = '辩论中…';
+  var q = document.getElementById('db-question').value.trim();
+  if (!q) { out.textContent = '先填辩论问题'; return; }
+  var p = new URLSearchParams({ question: q });
+  var code = document.getElementById('db-code').value.trim();
+  if (code) p.set('code', code);
+  try {
+    var r = await fetch('/api/zhaoyun/debate?' + p.toString());
+    var d = await r.json();
+    if (!d.ok) { out.textContent = '辩论失败：' + (d.error || 'unknown'); return; }
+    var html = '<table class="tbl"><tr><th>席位</th><th>立场</th><th>论据</th></tr>';
+    (d.seats || []).forEach(function (s) {
+      html += '<tr><td>' + s.name + '</td><td>' + s.stance + '</td><td>' + s.argument + '</td></tr>';
+    });
+    html += '</table><div class="muted">分歧：' + ((d.divergence || {}).dissent || []).join('；') + '</div>';
+    html += '<div class="muted">决策提示：' + (d.decision_hint || '') + '</div>';
+    out.innerHTML = html;
+  } catch (e) { out.textContent = '辩论异常：' + e; }
+}
+
 async function wargameRun() {
   var out = document.getElementById('wg-out');
   out.textContent = '推演中…';

@@ -723,6 +723,15 @@ class Handler(BaseHTTPRequestHandler):
                         question=(qs.get("question") or [""])[0],
                         code=(qs.get("code") or [""])[0],
                         vars_json=(qs.get("vars") or [""])[0]))
+                elif sub == "debate":
+                    from urllib.parse import parse_qs
+
+                    from legion_command import zhaoyun_debate as zd2
+
+                    qs = parse_qs(urlparse(self.path).query)
+                    self._send_json(zd2.debate_view(
+                        question=(qs.get("question") or [""])[0],
+                        code=(qs.get("code") or [""])[0]))
                 elif sub == "memory/v2":
                     sys.path.insert(0, str(_PLATFORM))
                     from memory import store as ms
