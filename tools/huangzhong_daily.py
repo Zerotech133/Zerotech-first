@@ -44,6 +44,31 @@ def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None)
     return summary
 
 
+def _merge_done_count(days: int = 7) -> int:
+    """窗口内 dev_events 中 merge_done 数（覆盖率分母）；读不到返回 0。"""
+    p = ROOT / "portal" / "data" / "dev_events.jsonl"
+    cutoff = dt.datetime.now().astimezone() - dt.timedelta(days=days)
+    n = 0
+    try:
+        for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if r.get("kind") != "merge_done":
+                continue
+            try:
+                ts = dt.datetime.strptime(r.get("ts", ""), "%Y-%m-%d %H:%M:%S")
+                ts = ts.astimezone()
+            except (ValueError, TypeError):
+                continue
+            if ts >= cutoff:
+                n += 1
+    except OSError:
+        return 0
+    return n
+
+
 def weekly(days: int = 7, out_dir: Path | None = None) -> dict:
     out = Path(out_dir) if out_dir else OUT
     p = out / "daily.jsonl"
@@ -58,13 +83,16 @@ def weekly(days: int = 7, out_dir: Path | None = None) -> dict:
                 continue
             if ts >= cutoff:
                 rows.append(r)
+    merge_done = _merge_done_count(days)
     counts = {"PASS": 0, "REJECT": 0, "OBSERVE": 0}
     for r in rows:
         if r.get("verdict") in counts:
             counts[r["verdict"]] += 1
     total = len(rows)
+    coverage = round(total / merge_done, 3) if merge_done else 0.0
     rep = {
         "ok": True, "window_days": days, "runs": total,
+        "merge_done": merge_done, "coverage_rate": coverage,
         "counts": counts,
         "pass_rate": round(counts["PASS"] / total, 3) if total else 0.0,
         "reject_rate": round(counts["REJECT"] / total, 3) if total else 0.0,
@@ -75,6 +103,8 @@ def weekly(days: int = 7, out_dir: Path | None = None) -> dict:
     }
     md = ["# 黄忠验收观察周报（观察模式）", "",
           "- 窗口：%d 天；运行 %d 次" % (days, total),
+          "- 验收覆盖率：%d/%d merge_done = %.0f%%" % (total, merge_done,
+                                                        coverage * 100),
           "- PASS=%d REJECT=%d OBSERVE=%d（pass_rate=%.0f%%）"
           % (counts["PASS"], counts["REJECT"], counts["OBSERVE"],
              rep["pass_rate"] * 100),
