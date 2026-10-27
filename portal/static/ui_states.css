@@ -1,0 +1,52 @@
+/* ui_states.css — 通用异步状态模板（2026-10-27 Week2）
+   约定：异步区域优先使用 skeleton → empty / error；颜色全部读 tokens。 */
+.wb-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-s, 6px);
+  background: var(--bg-raised);
+}
+.wb-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent,
+    rgba(255, 255, 255, .06), transparent);
+  animation: wb-shimmer 1.4s var(--ease-standard, ease) infinite;
+}
+.wb-skeleton-line { height: 12px; margin: 9px 0; width: 100%; }
+.wb-skeleton-line.short { width: 62%; }
+@keyframes wb-shimmer {
+  100% { transform: translateX(100%); }
+}
+.wb-empty {
+  padding: var(--sp-4, 16px);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-m, 10px);
+  background: var(--bg-surface);
+  color: var(--text-dim);
+}
+.wb-error {
+  padding: var(--sp-4, 16px);
+  border: 1px solid var(--color-err);
+  border-radius: var(--r-m, 10px);
+  background: var(--bg-surface);
+  color: var(--text);
+}
+.wb-error::before { content: "⚠ "; color: var(--color-err); }
+.wb-state { display: flex; align-items: center; gap: var(--sp-2, 8px); }
+
+.wb-skip {
+  position: absolute; left: -9999px; top: 0; z-index: 999;
+  padding: var(--sp-2, 8px) var(--sp-3, 12px);
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--color-focus);
+  border-radius: var(--r-s, 6px);
+}
+.wb-skip:focus { left: 12px; top: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-skeleton::after { animation: none; }
+}

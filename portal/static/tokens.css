@@ -68,6 +68,43 @@
   --dur-base: 180ms;
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
 
+  /* ── OS entry 页面主题（2026-10-27 Week2；从页面内联迁入）── */
+  --os-bg: #090f1c;
+  --os-paper: #111e31;
+  --os-ink: #eef5ff;
+  --os-muted: #a7b8cc;
+  --os-line: #30445d;
+  --os-blue: #6bd7e5;
+  --os-pale: #17324a;
+  --os-amber: #eac48b;
+  --os-red: #ff9b91;
+  --os-badge-bd-light: #e8d4b5;
+  --os-badge-bg-light: #fff9ed;
+  --os-strip-bg-light: #eaf1fb;
+  --os-strip-ink-light: #34506c;
+  --os-strip-btn-bd-light: #bbcef0;
+  --os-white: #fff;
+  --os-pending-bg-light: #fafbfd;
+  --os-action-bd-light: #c6d8f2;
+  --os-action-bg-light: #f6f9ff;
+  --os-empty-bd-light: #c6d5e7;
+  --os-empty-bg-light: #f9fbfe;
+  --os-glow: #15314c;
+  --os-top-bd: #35536b;
+  --os-badge-bd: #456b82;
+  --os-badge-bg: #163047;
+  --os-strip-bg-dark: #10253b;
+  --os-strip-btn-bg-dark: #17344a;
+  --os-card-grad: #15243a;
+  --os-shadow: #02071125;
+  --os-pending-bg-dark: #111b2b;
+  --os-empty-bg-dark: #132136;
+  --os-empty-bd-dark: #436078;
+  --os-action-bg-dark: #17374a;
+  --os-action-ink-dark: #dffaff;
+  --os-action-bd-dark: #4d8095;
+  --os-action-bg-hover: #20516a;
+
   /* ── 字体（2026-10-12 补：此前无全局字体，market.html 等裸奔页退化为浏览器衬线字）── */
   --font-ui:   'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
   --font-mono: Consolas, 'Courier New', monospace;
