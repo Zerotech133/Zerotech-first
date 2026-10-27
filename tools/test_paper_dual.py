@@ -18,7 +18,8 @@ def test_paper_uses_os_dark_tokens():
 def test_paper_v2_shell_and_stylesheet():
     s = PAGE.read_text(encoding="utf-8")
     assert '/static/paper_workbench.css' in s
-    assert '<body class="paper-v2">' in s
+    assert "paper-v2" in s
+    assert "paper-simple" in s
     for cls in ("pw-hero", "pw-context", "pw-footer", "pw-brand"):
         assert cls in s
     assert 'role="tablist"' in s

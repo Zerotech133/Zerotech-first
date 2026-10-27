@@ -154,6 +154,7 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
   @keyframes r{to{transform:rotate(360deg);}}
 </style>
 <link href="/static/paper_workbench.css" rel="stylesheet"/>
+<link href="/static/paper_simple.css" rel="stylesheet"/>
 <style id="pjs-utilities">
 /* pjs-*：/paper 动态 JS 模板静态样式收口（数据驱动样式仍保留在模板内） */
 .pjs-dim{color:var(--text-dim)!important}
@@ -192,7 +193,7 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
 .pw-normal{font-weight:400!important}
 </style>
 <script src="/static/nav.js" defer></script></head>
-<body class="paper-v2">
+<body class="paper-v2 paper-simple">
 <header class="pw-hero">
 <div class="pw-brand-block">
 <div class="pw-brand">
@@ -220,7 +221,7 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
 </nav>
 <div class="pw-context">
 <div class="pw-crumb">零界 <span>/</span> 模拟仓 <span>/</span> <b>工作台</b></div>
-<div class="pw-context-meta"><span class="pw-dot"></span> 纸面研究 <span>·</span> 数据来自模拟账本与行情快照</div>
+<div class="pw-context-meta"><span class="pw-dot"></span> 纸面研究 <span>·</span> 数据来自模拟账本与行情快照 <a class="p0-cockpit" href="/zero_proto.html">🧭 AI 驾驶舱</a></div>
 </div>
 <div class="wrap" role="main">
 <div aria-label="模拟仓工作区" class="tabs" role="tablist">
@@ -1947,5 +1948,6 @@ loadStatus();
 </script>
 <script defer="" src="/static/cainiao.js"></script>
 <script data-entity="tg:策略扫描" defer="" src="/static/dataops_link.js"></script>
+<script src="/static/paper_simple.js" defer></script>
 </body>
 </html>
