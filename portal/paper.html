@@ -6,6 +6,18 @@
 <title>模拟仓平台 · K-STOCK</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <link rel="icon" href="data:,">
+<style id="os-paper-theme">
+/* 双版本 UI 规范：/paper 属深色专业工作台（非浅色驾驶舱）。
+   仅做令牌桥接与可访问性增强，不改交易逻辑。 */
+:root{
+  --bg-page:#090f1c; --bg-surface:#111e31; --bg-raised:#15243a;
+  --text:#eef5ff; --text-dim:#a7b8cc; --border:#30445d; --border-weak:#24364a;
+  --link:#6bd7e5;
+}
+body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),var(--bg-page);}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;}}
+</style>
 <style>
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif; background:var(--bg-page); color:var(--text); min-height:100vh; font-size:14px;}
@@ -148,15 +160,16 @@
     <div class="logo">仓</div>
     <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.9</small></div>
   </div>
-  <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
+  <div class="kpis" id="kpis" role="status" aria-live="polite"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
-<nav class="topnav">
+<nav class="topnav" aria-label="模拟仓快捷导航">
   <!-- K-STOCK-217 胶囊精简（老田 10-12 拍板：顶端胶囊太多跳来跳去，只留返回+当前页，其余入口走首页门面动线） -->
   <a class="pill" href="/">🏠 返回首页</a>
-  <a class="pill on" href="/paper.html">🧾 模拟仓</a>
+  <a class="pill" href="/zero_proto.html">🧭 AI 驾驶舱</a>
+  <a class="pill on" href="/paper.html" aria-current="page">🧾 模拟仓</a>
 </nav>
 
-<div class="wrap">
+<div class="wrap" role="main">
 
   <div class="tabs">
     <div class="tab active" data-tab="desk">接待大厅</div>
