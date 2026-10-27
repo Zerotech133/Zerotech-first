@@ -29,6 +29,24 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <header><div><h1>三席多 Key 池</h1><div class="sub">田丰 · 赵云 · 诸葛亮｜手动录 Key（4–5）｜额度耗尽自动切换｜仅页面/日志告警</div></div>
 <div><button onclick="load()">刷新</button></div></header>
 <div class="banner" id="banner"></div>
+<section class="log" id="relay-hero" style="margin:16px 22px 0">
+<h2>平台中转站（主入口 · 所有 AI 共用）</h2>
+<div class="muted" style="margin-bottom:8px">先配平台中转站；下方席位卡只做路由适配。所有 AI 通过 8796 网关统一使用这里的 Key。</div>
+<div id="relay-presets" style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px">
+  <button type="button" data-rp="dashscope-plus">百炼 DashScope · qwen-plus</button>
+  <button type="button" data-rp="dashscope-max">百炼 DashScope · qwen3-max</button>
+  <button type="button" data-rp="tokenegate">tokenegate · gpt-6-sol</button>
+  <button type="button" data-rp="custom">自定义</button>
+</div>
+<div class="add">
+  <input id="relay-url" placeholder="中转站 URL" value="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions">
+  <input id="relay-model" placeholder="模型" value="qwen-plus">
+  <input id="relay-key" type="password" placeholder="粘贴平台中转站 Key（加密存储，只回显掩码）">
+  <input id="relay-label" placeholder="标签（如 百炼主Key / 备1）" value="平台中转站主Key">
+  <button id="relay-save">保存为平台中转站</button>
+</div>
+<div id="relay-status" class="muted" style="margin-top:8px">加载中…</div>
+</section>
 <main id="main"></main>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
@@ -58,6 +76,7 @@ async function load(){
     $('banner').style.display='none';
     const main=$('main');main.replaceChildren();
     for(const [sid,s] of Object.entries(v.seats)){
+      if(sid==='relay') continue;
       const c=el('div','card');
       c.appendChild(el('h2','',s.cn+' · '+s.provider));
       const meta=el('div','meta','绑定 '+s.binding+' ｜ active '+((s.active_key_id)||'—')+' ｜ ');
@@ -159,6 +178,41 @@ async function disableVK(id){
 }
 document.getElementById('vk-create').onclick=createVK;
 loadVK();
+
+
+const RELAY_PRESETS={
+ 'dashscope-plus':{url:'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',model:'qwen-plus'},
+ 'dashscope-max':{url:'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',model:'qwen3-max'},
+ 'tokenegate':{url:'https://tokenegate.com/v1/chat/completions',model:'gpt-6-sol'},
+ 'custom':{url:'',model:''}
+};
+document.querySelectorAll('#relay-presets button').forEach(b=>{
+  b.onclick=()=>{const v=RELAY_PRESETS[b.dataset.rp]||{}; if(v.url) document.getElementById('relay-url').value=v.url; if(v.model) document.getElementById('relay-model').value=v.model;};
+});
+async function loadRelay(){
+  try{
+    const r=await fetch('/api/keys/state',{cache:'no-store'}); const v=await r.json();
+    const s=(v.seats||{}).relay||{}; const box=document.getElementById('relay-status');
+    const keys=s.keys||[];
+    if(!keys.length){box.textContent='平台中转站未配置 Key。选上方预设，粘贴 Key 后保存。';return}
+    box.innerHTML='当前：'+keys.map(k=>k.masked+' ['+k.status+'] '+(k.model||'')).join(' ｜ ');
+  }catch(e){document.getElementById('relay-status').textContent='读取失败：'+e.message}
+}
+async function saveRelay(){
+  const url=document.getElementById('relay-url').value.trim();
+  const model=document.getElementById('relay-model').value.trim();
+  const key=document.getElementById('relay-key').value.trim();
+  const label=document.getElementById('relay-label').value.trim()||'平台中转站主Key';
+  if(!url||!model||!key){alert('URL / 模型 / Key 都要填');return}
+  const r=await fetch('/api/keys/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',seat:'relay',secret:key,label,base_url:url,model})});
+  const v=await r.json();
+  if(!v.ok){alert('保存失败：'+(v.error||'unknown'));return}
+  document.getElementById('relay-key').value='';
+  alert('已保存到平台中转站（只回显掩码）');
+  loadRelay(); load();
+}
+document.getElementById('relay-save').onclick=saveRelay;
+loadRelay(); setInterval(loadRelay,30000);
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);
