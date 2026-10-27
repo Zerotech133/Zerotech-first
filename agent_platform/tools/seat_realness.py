@@ -30,6 +30,13 @@ ROLLBACK_RE = re.compile(
     r"回滚|撤销|kill\s*switch|Uninstall|_PROBE|_PROBE=|安全停止", re.I
 )
 
+try:  # P0①-2 可选评测维（seat_golden/seat_eval）
+    from seat_eval import GOLDEN as _SEAT_GOLDEN
+    from seat_eval import run as _seat_eval_run
+except Exception:  # noqa: BLE001
+    _SEAT_GOLDEN = None
+    _seat_eval_run = None
+
 
 def _read_json(path: Path):
     try:
@@ -126,7 +133,8 @@ def _tool_impl(root: Path, name: str) -> str:
     return ""
 
 
-def audit(root: Path, seat: str, task: str = "", days: int = 7) -> dict:
+def audit(root: Path, seat: str, task: str = "", days: int = 7,
+          with_eval: bool = False) -> dict:
     root = Path(root)
     profiles = load_org_profiles(root)
     bundle_agents = load_bundle_agents(root)
@@ -198,11 +206,31 @@ def audit(root: Path, seat: str, task: str = "", days: int = 7) -> dict:
         "prompt_rollback_marker=%s" % (rb.group(0) if rb else "none"),
     )
 
+    # 6) 评测（可选：黄金集通过率 ≥80%；默认关闭以保持五维口径）
+    if with_eval:
+        ok = False
+        evidence = "eval=skipped"
+        try:
+            if _seat_eval_run is not None and _SEAT_GOLDEN is not None:
+                rep = _seat_eval_run(Path(root), _SEAT_GOLDEN, only_seat=seat)
+                seat_rep = (rep.get("seats") or [None])[0]
+                if seat_rep:
+                    ok = bool(seat_rep["total"]) and seat_rep["rate"] >= 0.8
+                    evidence = "golden=%d/%d rate=%.0f%%" % (
+                        seat_rep["passed"], seat_rep["total"], seat_rep["rate"] * 100)
+                else:
+                    evidence = "no golden cases for seat"
+            else:
+                evidence = "seat_eval unavailable"
+        except Exception as exc:  # noqa: BLE001
+            evidence = "eval error: %s" % (type(exc).__name__)
+        add("eval", ok, evidence)
+
     score = sum(1 for v in row.values() if v["ok"])
     return {
         "seat": seat,
         "score": score,
-        "total": 5,
+        "total": len(row),
         "rows": row,
         "missing": [k for k, v in row.items() if not v["ok"]],
     }
@@ -228,6 +256,8 @@ def main(argv=None) -> int:
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--limit", type=int, default=20)
     ap.add_argument("--days", type=int, default=7)
+    ap.add_argument("--with-eval", action="store_true",
+                    help="追加第 6 维评测（黄金集通过率≥80%；默认关）")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     root = Path(args.root)
@@ -243,24 +273,24 @@ def main(argv=None) -> int:
             for s, c in agents.items()
             if (c or {}).get("entry_source") != "virtual_governance"
         ][: args.limit]
-        reports = [audit(root, s, days=args.days) for s in seats]
+        reports = [audit(root, s, days=args.days, with_eval=args.with_eval) for s in seats]
         if args.json:
             print(json.dumps({"reports": reports}, ensure_ascii=False, indent=1))
         else:
             for r in reports:
                 print(render(r))
                 print("-" * 60)
-        return 0 if all(r["score"] == 5 for r in reports) else 1
+        return 0 if all(r["score"] == r["total"] for r in reports) else 1
     seat = args.seat.strip()
     if not seat:
         print("用法: --seat <ID> [--task <任务名>] 或 --all", file=sys.stderr)
         return 2
-    report = audit(root, seat, task=args.task, days=args.days)
+    report = audit(root, seat, task=args.task, days=args.days, with_eval=args.with_eval)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1))
     else:
         print(render(report))
-    return 0 if report["score"] == 5 else 1
+    return 0 if report["score"] == report["total"] else 1
 
 
 if __name__ == "__main__":
