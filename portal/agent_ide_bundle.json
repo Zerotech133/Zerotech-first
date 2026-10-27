@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 06:50",
+ "generated": "2026-10-28 06:51",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 34,
   "workorders_review": 4
  },
  "workorders": [
@@ -345,6 +345,15 @@
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
    "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261028-KEYSV2A2",
+   "desc": "Phase A-2 Mission 迁出：新建 /mission 独立页复用 Mission 组件；/keys 任务编排Tab只留摘要+入口；旧锚点#mission重定向/mission；修v2参数保留；flag关闭旧页保留",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-KEYSV2A2",
+   "created": "2026-10-28 06:50:54",
+   "project": "quant"
   }
  ],
  "coder_traces": [
