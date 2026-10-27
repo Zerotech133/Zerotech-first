@@ -39,6 +39,7 @@ def _hits(tmp_path, content, fname="t.py"):
     ("def _load_neo4j_password() -> str:\n", "t.py"),
     ("# 凭据：env → .env.local（见 _load_neo4j_password；不再有硬编码旧值兜底）\n", "t.py"),
     ("NEO4J_PASSWORD = _load_neo4j_password()\n", "t.py"),
+    ("folder.RegisterTaskDefinition(TASK_NAME, td, 6, None, None, 3)  # 6=CREATE_OR_UPDATE, 3=TASK_LOGON_INTERACTIVE_TOKEN\n", "t.py"),
 ])
 def test_false_positive_exempt(tmp_path, content, fname):
     assert _hits(tmp_path, content, fname) == []
