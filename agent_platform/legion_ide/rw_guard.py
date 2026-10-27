@@ -20,6 +20,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Optional
+import logging
 
 RW_ENV = "IDE_RW"
 RW_ON_VALUES = ("1", "true", "yes", "on")
@@ -231,8 +232,8 @@ def release_lock(worktree: Path, owner: str) -> dict:
         return err("lock_owner_mismatch", "锁不属于当前会话（%s）" % info.get("owner"))
     try:
         _lock_path(worktree).unlink()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_ide/rw_guard.py", exc)
     return {"ok": True, "released": True}
 
 
@@ -258,8 +259,8 @@ def audit(repo: Path, kind: str, task: str, agent: str, detail: str) -> dict:
         )
         if isinstance(res, dict) and res.get("ok"):
             return {"ok": True, "via": "events"}
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_ide/rw_guard.py", exc)
     try:
         fb = Path(repo) / "agent_platform" / "data" / "legion_ide_audit.jsonl"
         fb.parent.mkdir(parents=True, exist_ok=True)

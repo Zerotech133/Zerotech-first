@@ -20,6 +20,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import logging
 
 REPO = Path(__file__).resolve().parents[2]
 ORG_REL = Path("agent_platform") / "registry" / "org.json"
@@ -116,8 +117,8 @@ def _tool_impl(root: Path, name: str) -> str:
             r"^def %s\(" % re.escape(name), engine.read_text(encoding="utf-8"), re.M
         ):
             return "agent_platform/engine/tools.py:%s" % name
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/seat_realness.py", exc)
     # 投研/研究只读工具层（2026-10-27 ACAD1 P0）：quant_backtest/agent_tools.py
     # 内以 def <name>( 实现（datamart_read/market_snapshot/signal_precedents…）。
     quant_tools = root / "quant_backtest" / "agent_tools.py"
@@ -128,8 +129,8 @@ def _tool_impl(root: Path, name: str) -> str:
             re.M,
         ):
             return "quant_backtest/agent_tools.py:%s" % name
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/seat_realness.py", exc)
     return ""
 
 

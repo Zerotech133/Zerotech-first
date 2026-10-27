@@ -39,6 +39,7 @@ from jev_common import (
     set_module,
     with_retry,
 )
+import logging
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -369,8 +370,8 @@ def _trim_dead_letter() -> None:
             if ts and datetime.fromisoformat(ts) < cutoff:
                 drop += 1
                 continue
-        except Exception:  # noqa: BLE001
-            pass  # 坏/缺 ts：保守保留
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/jev_gate.py", exc)
         keep.append(line)
     if drop:
         jc.atomic_write_text(DEAD_LETTER, "\n".join(keep) + "\n")
@@ -494,8 +495,8 @@ def _ignored_titles() -> set:
         try:
             if datetime.fromisoformat(it.get("ts") or "") < cutoff:
                 continue  # 过期：恢复推送
-        except ValueError:
-            pass  # ts 缺失/坏值：保守视为未过期（宁可多推不漏推）
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/jev_gate.py", exc)
         titles.add(t)
     return titles
 

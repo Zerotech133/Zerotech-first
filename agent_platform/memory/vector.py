@@ -15,6 +15,7 @@ import os
 import sqlite3
 import time
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 def _main_repo() -> Path:
@@ -28,8 +29,8 @@ def _main_repo() -> Path:
             if not common.is_absolute():
                 common = (PLATFORM / common).resolve()
             return common.parent
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/memory/vector.py", exc)
     return PLATFORM.parent
 
 
@@ -104,8 +105,8 @@ def embed_any(texts: list[str]) -> tuple[list[list[float]], str]:
     if available():
         try:
             return embed(texts), "fastembed:" + MODEL_NAME
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/memory/vector.py", exc)
     return hash_embed(texts), "hash-ngram-256"
 
 

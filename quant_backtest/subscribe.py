@@ -37,6 +37,7 @@ import sys
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -295,8 +296,8 @@ def _build_card(title, sub, blocks, template="blue", footer=None, url_button=Non
             buttons=[url_button] if url_button else None,
             level="info",
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/subscribe.py", exc)
     return card
 
 
@@ -752,8 +753,8 @@ def run_scan(mode, only_sub=None, force=False):
                     count=1,
                     ok=False,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/subscribe.py", exc)
             continue
         tres = _push_card(card, targets)
         ok = _delivery_ok(tres, targets)
@@ -770,8 +771,8 @@ def run_scan(mode, only_sub=None, force=False):
                 count=1,
                 ok=ok,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/subscribe.py", exc)
         # 更新状态（K-STOCK-401：仅成功才落去重指纹——此前失败也写
         # last_date/last_fp，下轮去重误判「已推过」→ 当日漏推）
         st = state.get(sid) or {}

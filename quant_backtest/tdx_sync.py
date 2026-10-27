@@ -31,6 +31,7 @@ import time
 
 import pandas as pd
 import requests
+import logging
 
 BASE = "http://rookie.xtcloud-tech.com:48088"
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -417,8 +418,8 @@ def status():
             try:
                 n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
                 print("tdx_info.db %-14s %d rows" % (t, n))
-            except sqlite3.OperationalError:
-                pass
+            except sqlite3.OperationalError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tdx_sync.py", exc)
         conn.close()
     print(
         "db: %.1f MB" % (os.path.getsize(INFO_DB) / 1e6)
@@ -509,15 +510,15 @@ def _core_lock_acquire():
                 )
             try:
                 os.remove(CORE_LOCK)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tdx_sync.py", exc)
 
 
 def _core_lock_release():
     try:
         os.remove(CORE_LOCK)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tdx_sync.py", exc)
 
 
 def main():

@@ -9,6 +9,7 @@ import subprocess
 import sys
 import threading
 import time
+import logging
 
 
 class MCPError(RuntimeError):
@@ -131,8 +132,8 @@ class MCPClient:
             if self.proc and self.proc.stderr:
                 tail = self.proc.stderr.read() or ""
                 self.stderr_tail = tail.strip().splitlines()[-5:]
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_mcp/client.py", exc)
         return " | ".join(self.stderr_tail)[:300]
 
     def close(self):
@@ -144,8 +145,8 @@ class MCPClient:
         except (OSError, subprocess.TimeoutExpired):
             try:
                 self.proc.kill()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_mcp/client.py", exc)
         self.proc = None
 
     def __enter__(self):

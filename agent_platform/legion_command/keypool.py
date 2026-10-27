@@ -19,6 +19,7 @@ import urllib.error
 import urllib.request
 import uuid
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent  # agent_platform/legion_command -> repo root
@@ -104,8 +105,8 @@ def _fernet():
             FERNET_KEY.write_bytes(Fernet.generate_key())
             try:
                 os.chmod(FERNET_KEY, 0o600)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/keypool.py", exc)
         return Fernet(FERNET_KEY.read_bytes())
     except Exception:
         return None
@@ -137,8 +138,8 @@ def _load() -> dict:
             d.setdefault("policy", dict(POLICY))
             d.setdefault("log", [])
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/keypool.py", exc)
     return _default()
 
 

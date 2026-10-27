@@ -6,6 +6,7 @@ import datetime
 
 import pythoncom
 import win32com.client
+import logging
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "sprint_loop_task_enum_out.txt"
 
@@ -34,12 +35,12 @@ def fmt_trigger(tr):
         parts = ["Type=%d" % tr.Type]
         try:
             parts.append("StartBoundary=%s" % tr.StartBoundary)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/sprint_loop_task_enum.py", exc)
         try:
             parts.append("Enabled=%s" % tr.Enabled)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/sprint_loop_task_enum.py", exc)
         try:
             rep = tr.Repetition
             if rep is not None:
@@ -50,8 +51,8 @@ def fmt_trigger(tr):
                     "Repetition[Interval=%s Duration=%s StopAtEnd=%s]"
                     % (interval, duration, stopat)
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/sprint_loop_task_enum.py", exc)
         return " ".join(parts)
     except Exception as e:
         return "trigger-error: %s" % e

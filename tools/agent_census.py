@@ -78,8 +78,8 @@ def load_names() -> dict[str, str]:
         for aid, nm in _re2.findall(
                 r'"agent_id"\s*:\s*"([^"]+)"[^{}]{0,200}?"cn_name"\s*:\s*"([^"]+)"', text):
             names.setdefault(aid, nm)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_census.py", exc)
     names.setdefault("LUSU1", "阚泽")
     return names
 
@@ -136,8 +136,8 @@ def _parse_ts(value) -> float | None:
         num = float(text)
         if num > 1e9:            # epoch 秒
             return num
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_census.py", exc)
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
         try:
             return datetime.strptime(text[:len(fmt) + 6], fmt).timestamp()
@@ -177,8 +177,8 @@ def load_events(now: float) -> dict[str, dict]:
                     if entry["last_work_ts"] is None or ts > entry["last_work_ts"]:
                         entry["last_work_ts"] = ts
                         entry["last_work_action"] = action
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_census.py", exc)
     return out
 
 
@@ -410,6 +410,7 @@ def render(card: dict, top: int) -> None:
 # 所以收进首页顶部，随 30 分钟刷新自动更新。全部只读；任一数据源缺失 → 该卡降级"不可用"。
 
 import os  # 系统态势四卡需要读 TEMP
+import logging
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _VAULT_DIR = _REPO_ROOT.parent / "_vault"
 # 运行日志统一落 C:\Temp（运维约定）；TEMP 指向用户临时目录，不能替代。

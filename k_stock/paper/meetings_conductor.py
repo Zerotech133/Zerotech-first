@@ -25,6 +25,7 @@ sys.path.insert(0, str(HERE.parent))
 
 import manager  # noqa: E402
 import meeting  # noqa: E402
+import logging
 
 STRATEGIST_LATEST = HERE.parent / "data" / "strategist_latest.json"
 # K-STOCK-158 · S-g：订阅服务开关（客户可选盘前/盘后报告；缺省全开兼容存量）
@@ -115,8 +116,8 @@ def build_context(now: datetime | None = None, source: str | None = None) -> str
         title = d.get("title") or d.get("summary") or ""
         if title:
             lines.append(f"策略官最新产出（{gen}）：{str(title)[:200]}")
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/meetings_conductor.py", exc)
     if source:
         try:
             import plan_review
@@ -124,8 +125,8 @@ def build_context(now: datetime | None = None, source: str | None = None) -> str
             digest = plan_review.collect_context(source, now)
             if digest:
                 lines.append(digest)
-        except Exception:
-            pass  # 意图摘要是增强信息：任何失败静默为空，不阻断会议线
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/meetings_conductor.py", exc)
     return "\n".join(lines)
 
 

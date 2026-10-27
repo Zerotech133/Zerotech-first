@@ -35,6 +35,7 @@ import json
 import os
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -891,16 +892,16 @@ def trust_grade(family):
 
         if family in g.SOURCES:
             return g.SOURCES[family]["grade"]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/ontology.py", exc)
     for fam in str(family).split("+"):
         try:
             import kg_source_rating as g
 
             if fam in g.SOURCES:
                 return g.SOURCES[fam]["grade"]
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/ontology.py", exc)
     return None
 
 
@@ -1032,8 +1033,8 @@ def export(cli=None):
     for old in olds[:-7]:
         try:
             os.remove(old)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/ontology.py", exc)
     for lv, kind, sub, msg in issues:
         print("[%s] %s %s/%s %s" % (lv, kind, "snapshot", sub, msg))
     print(

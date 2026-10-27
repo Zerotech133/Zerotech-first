@@ -25,6 +25,7 @@ import re
 import sys
 import threading
 from datetime import datetime
+import logging
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -79,10 +80,10 @@ def _load_map(fp, cache):
                 try:
                     r = json.loads(line)
                     m[r.get("doc_id")] = r
-                except Exception:
-                    pass
-    except OSError:
-        pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_events_portal.py", exc)
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_events_portal.py", exc)
     with _lock:
         cache["mtime"], cache["map"] = mtime, m
     return cache["map"]
@@ -110,8 +111,8 @@ def _count_jsonl(fp):
         with open(fp, encoding="utf-8") as f:
             for _ in f:
                 n += 1
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_events_portal.py", exc)
     return n
 
 
