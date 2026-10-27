@@ -598,6 +598,23 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "model_prefs_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/mission/evolve":
+            try:
+                from legion_command import mission_evolver
+                self._send_json({"ok": True, "data": mission_evolver.evolve()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_evolve_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/experience":
+            try:
+                from legion_command import mission_evolver
+                self._send_json({"ok": True, "latest": mission_evolver.load_latest(),
+                                 "candidates": mission_evolver.list_candidates()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_experience_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/mission/list":
             try:
                 from legion_command import mission_planner
@@ -1235,6 +1252,22 @@ class Handler(BaseHTTPRequestHandler):
                                  "seconds": round(time.time() - t0, 2)})
             except Exception as e:  # noqa: BLE001
                 self._send_json({"ok": False, "error": "stt_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/promote":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 16 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_evolver
+                out = mission_evolver.promote(str(req.get("candidate_id") or ""),
+                                              str(req.get("signed_by") or ""),
+                                              str(req.get("note") or ""))
+                self._send_json(out)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_promote_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path == "/api/mission/plan":

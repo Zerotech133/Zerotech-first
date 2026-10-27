@@ -71,6 +71,7 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
   <button id="mission-dry-btn">Dry-run 派工</button>
   <button id="mission-real-btn" style="background:#2a1f3a;border:1px solid #7b4db3;border-radius:8px;color:#e5d4ff;padding:6px 10px;cursor:pointer">真实派工（建 worktree）</button>
   <button id="mission-advance-btn">推进（自动评审门）</button>
+  <button id="mission-evolve-btn">采集结果 · 进化建议</button>
   <span id="mission-status" class="muted" style="align-self:center"></span>
 </div>
 <div id="mission-result" style="margin-top:10px"></div>
@@ -359,6 +360,21 @@ async function missionAdvance(){
 }
 document.getElementById('mission-real-btn').onclick=missionReal;
 document.getElementById('mission-advance-btn').onclick=missionAdvance;
+
+
+async function missionEvolve(){
+  const st=document.getElementById('mission-status'); st.textContent='采集结果并生成经验候选…';
+  const r=await fetch('/api/mission/evolve',{cache:'no-store'});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">进化失败：'+(j.error||'')+'</div>';return}
+  const d=j.data, m=d.metrics||{};
+  let h='<div class="muted">candidate '+d.candidate_id+' · status '+d.status+' · 需签字 '+(d.requires_signature?'是':'否')+'</div>';
+  h+='<div class="muted">missions '+m.missions+' · tasks '+m.tasks+' · done '+m.done+' · gate_failed '+m.gate_failed+' · 通过率 '+(m.gate_pass_rate==null?'-':(m.gate_pass_rate*100).toFixed(1)+'%')+' · 冲突 '+m.conflicts+'</div>';
+  h+='<table><thead><tr><th>建议</th><th>优先级</th><th>证据</th><th>动作</th></tr></thead><tbody>';
+  for(const x of (d.suggestions||[])){h+='<tr><td>'+x.id+'</td><td>'+x.priority+'</td><td>'+x.evidence+'</td><td>'+x.action+'</td></tr>'}
+  document.getElementById('mission-result').innerHTML=h+'</tbody></table><div class="muted" style="margin-top:6px">未签字不入经验库；签字走 CLI tools/mission_evolve.py promote --signed-by ...</div>';
+}
+document.getElementById('mission-evolve-btn').onclick=missionEvolve;
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);
