@@ -36,6 +36,17 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <button id="chatsend">发送</button></div>
 <div id="chatmeta" class="muted" style="margin-top:6px"></div>
 </section>
+<section class="log" id="vk-section" style="margin:0 22px 20px">
+<h2>虚拟 Key（给 AI 用，不暴露真 Key）</h2>
+<div id="vk-list" style="margin-bottom:8px"></div>
+<div class="add">
+  <input id="vk-owner" placeholder="归属（如 tianfeng / zhaoyun / agent-name）">
+  <select id="vk-alias"><option value="auto">auto</option><option value="strong">strong</option><option value="local">local</option></select>
+  <input id="vk-allowed" placeholder="允许别名（逗号分隔，留空=全部）">
+  <button id="vk-create">创建虚拟 Key</button>
+</div>
+<div id="vk-token" class="muted" style="margin-top:8px"></div>
+</section>
 <section class="log" style="margin:0 22px 20px"><h2>切换日志</h2><div id="log"></div></section>
 <script>
 const $=id=>document.getElementById(id);
@@ -120,5 +131,41 @@ async function sendChat(){
 document.getElementById('chatsend').onclick=sendChat;
 document.getElementById('chatinput').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))sendChat()});
 
+
+async function loadVK(){
+  try{
+    const r=await fetch('/api/router/vk',{cache:'no-store'}); const v=await r.json();
+    const box=document.getElementById('vk-list');
+    if(!v.ok){box.innerHTML='<div class="muted">虚拟 Key 不可用：'+v.error+'</div>';return}
+    if(!(v.items||[]).length){box.innerHTML='<div class="muted">还没有虚拟 Key</div>';return}
+    let h='<table><thead><tr><th>ID</th><th>归属</th><th>别名</th><th>允许</th><th>掩码</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+    for(const k of v.items){
+      h+='<tr><td>'+k.id+'</td><td>'+k.owner+'</td><td>'+k.alias+'</td><td>'+((k.allowed||[]).join(','))+'</td><td>'+k.masked+'</td><td>'+(k.enabled?'启用':'停用')+'</td>'
+        +'<td>'+(k.enabled?'<button onclick="disableVK(\''+k.id+'\')">禁用</button>':'—')+'</td></tr>';
+    }
+    box.innerHTML=h+'</tbody></table>';
+  }catch(e){document.getElementById('vk-list').innerHTML='<div class="muted">加载失败：'+e.message+'</div>'}
+}
+async function createVK(){
+  const owner=document.getElementById('vk-owner').value.trim();
+  const alias=document.getElementById('vk-alias').value;
+  const raw=document.getElementById('vk-allowed').value.trim();
+  const allowed=raw?raw.split(',').map(x=>x.trim()).filter(Boolean):null;
+  if(!owner){alert('请填归属');return}
+  const r=await fetch('/api/router/vk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',owner,alias,allowed})});
+  const v=await r.json();
+  if(!v.ok){alert('失败：'+v.error);return}
+  document.getElementById('vk-token').textContent='新 Key（只显示一次）：'+v.item.token;
+  loadVK();
+}
+async function disableVK(id){
+  if(!confirm('禁用虚拟 Key '+id+'？'))return;
+  const r=await fetch('/api/router/vk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'disable',id})});
+  const v=await r.json(); if(!v.ok){alert('失败：'+v.error);return} loadVK();
+}
+document.getElementById('vk-create').onclick=createVK;
+loadVK();
+
 load();setInterval(load,30000);
+setInterval(loadVK,30000);
 </script></body></html>
