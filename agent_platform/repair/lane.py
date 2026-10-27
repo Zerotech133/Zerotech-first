@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -198,22 +199,37 @@ def run_batch(batch_id: str, timeout: int = 300) -> dict:
         }
     t0 = time.time()
     try:
-        # 2026-10-27 WO-AUDIT4-FLAKY：子进程 pytest 硬化——
-        # ① env 强制 UTF-8（Windows 中文 locale 下避免父进程解码失败）；
-        # ② -p no:cacheprovider 避免与其他 pytest 进程的 .pytest_cache 串扰；
-        # ③ 目标用绝对路径，cwd 固定 MAIN_REPO。
+        # 2026-10-27 WO-AUDIT6-LANE：子进程 pytest 做 hermetic 隔离——
+        # 全量套件并发跑时偶发 collection FileNotFoundError（相邻进程 TEMP/缓存竞态）。
+        # 独立 --basetemp + TEMP/TMP 私有目录 + 清 PYTEST_CURRENT_TEST/ADDOPTS，
+        # 并在 collection 错误时换新 basetemp 重试一次（仅一次，防放大故障）。
         env = dict(os.environ)
         env.setdefault("PYTHONIOENCODING", "utf-8")
-        r = subprocess.run(
-            [sys.executable, "-m", "pytest", str(target), "-q", "-p", "no:cacheprovider"],
-            cwd=str(MAIN_REPO),
-            env=env,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=max(1, min(int(timeout), 900)),
-        )
+        env.pop("PYTEST_CURRENT_TEST", None)
+        env.pop("PYTEST_ADDOPTS", None)
+
+        def _run_once():
+            base = tempfile.mkdtemp(prefix="lane_pytest_")
+            env2 = dict(env)
+            env2["TEMP"] = env2["TMP"] = base
+            return subprocess.run(
+                [sys.executable, "-m", "pytest", str(target), "-q",
+                 "-p", "no:cacheprovider", "--basetemp", base],
+                cwd=str(MAIN_REPO),
+                env=env2,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=max(1, min(int(timeout), 900)),
+            )
+
+        r = _run_once()
+        combined = (r.stdout or "") + (r.stderr or "")
+        if r.returncode != 0 and (
+                "ERROR collecting" in combined
+                or "error during collection" in combined):
+            r = _run_once()
         ok = r.returncode == 0
         tail = ((r.stdout or "") + "\n" + (r.stderr or ""))[-1200:]
         result = {
