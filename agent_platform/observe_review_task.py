@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""观察点复查计划任务 wrapper（ObservePointReviewOnce，OneTime 17:50）。
+r"""观察点复查计划任务 wrapper（ObservePointReviewOnce，OneTime 17:50）。
 
 职责：跑 observe_point_review.py → 输出落盘 C:\Temp → 结论行追加公告板
 （kg_sync_task.log），使 17:50 后任意会话/老田无需在场即得复查结论。
