@@ -10,10 +10,12 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
@@ -104,8 +106,32 @@ def retrieve(question: str, limit: int = 3, max_per_doc: int = 2) -> list[dict]:
     return out
 
 
+def _log_usage(question: str, sources: list[dict], elapsed_ms: float) -> None:
+    """只记检索遥测（问题哈希/来源/耗时），不落原文；失败不反噬。"""
+    if os.environ.get("ZHUGE_USAGE_LOG", "1").strip().lower() in ("0", "false", "no", "off"):
+        return
+    try:
+        path = _root() / "work" / "p1" / "rag" / "grounding_usage.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "q_sha256_12": hashlib.sha256((question or "").encode("utf-8")).hexdigest()[:12],
+            "q_chars": len(question or ""),
+            "rag_enabled": os.environ.get("ZHUGE_RAG", "").strip().lower() in ("1", "true", "yes", "on"),
+            "source_count": len(sources),
+            "source_paths": [s.get("path") for s in sources[:5]],
+            "elapsed_ms": round(elapsed_ms, 1),
+        }
+        with open(path, "a", encoding="utf-8", newline="\n") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def build_grounding(question: str, limit: int = 3) -> dict:
+    t0 = time.time()
     sources = retrieve(question, limit=limit)
+    _log_usage(question, sources, (time.time() - t0) * 1000)
     context_lines = []
     for src in sources:
         context_lines.append("[%s] %s:%s — %s" % (

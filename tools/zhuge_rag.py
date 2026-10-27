@@ -29,6 +29,23 @@ B = 0.75
 MAX_CHUNKS = 60_000
 _CJK = re.compile(r"[\u4e00-\u9fff]{2,}")
 _ALNUM = re.compile(r"[a-z0-9_./-]{2,}")
+# P1-2 同义词扩展（只扩检索词，不改答案；F04 等「请求体/字段」类问法用）
+SYNONYMS = {
+    "请求体": ["binding", "user", "system", "llm/chat"],
+    "字段": ["binding", "user", "system"],
+    "载体": ["openclaw", "deepseek", "relay"],
+    "质询": ["challenge", "cards.jsonl"],
+    "网关": ["gateway", "8795"],
+    "沙盘": ["plans", "snapshot", "快照"],
+}
+
+
+def expand_query(query: str) -> str:
+    extra = []
+    for key, values in SYNONYMS.items():
+        if key in (query or ""):
+            extra.extend(values)
+    return query if not extra else (query + " " + " ".join(dict.fromkeys(extra)))
 
 
 def _root() -> Path:
@@ -180,7 +197,7 @@ def _bm25(query: str, index: dict, k: int) -> list[dict]:
 def search(query: str, k: int = 3, root: Path | None = None,
            index: dict | None = None) -> list[dict]:
     index = _load_index(root, index)
-    return _bm25(query, index, k)
+    return _bm25(expand_query(query), index, k)
 
 
 def check(root: Path | None = None) -> dict:
