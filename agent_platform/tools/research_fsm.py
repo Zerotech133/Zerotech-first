@@ -27,6 +27,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[2]

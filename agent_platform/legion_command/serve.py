@@ -547,7 +547,7 @@ class Handler(BaseHTTPRequestHandler):
                 out["local"] = {"online": False, "present": False}
             try:
                 import json as _json
-                reg = _json.loads((REPO / "config" / "ai_registry.json").read_text(encoding="utf-8"))
+                reg = _json.loads((_PLATFORM.parent / "config" / "ai_registry.json").read_text(encoding="utf-8"))
                 out["agents"] = {"count": len(reg or [])}
             except Exception:  # noqa: BLE001
                 out["agents"] = {"count": 0}

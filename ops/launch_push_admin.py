@@ -16,6 +16,7 @@ import socket
 import subprocess
 import sys
 import time
+import logging
 
 # ── 一次性强重置（K-PUSH-003 判例 2026-10-17）─────────────────
 # 动机：8097 宿主是 SYSTEM 计划任务，用户终端无权 taskkill 旧进程，
@@ -58,7 +59,6 @@ if os.path.exists(MARKER):
 #   1) 单次 CIM 快查（timeout 25s）供 marker/dedup/ensure 共用
 #   2) 整段 try/except 兜底——bot 守护失败不阻断 8097 主职
 import re as _re
-import logging
 
 BOT_MARKER = r"C:\Temp\feishu_bot_restart.marker"
 DUMP_MARKER = r"C:\Temp\proc_dump.marker"
