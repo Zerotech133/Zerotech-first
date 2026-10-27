@@ -300,3 +300,12 @@ _vault/secrets.enc/
 
 # 本地 Python venv（勿入库；2026-10-27 审计发现 .venvs 落在仓库内）
 .venvs/
+
+# ===== 2026-10-27 快赢卫生（AUDIT-08 L-6）：会话产物/SOPS 工具清单不入库 =====
+# 仓根 STATUS.md 是会话产物（副本）：单一事实源是 repo 外的 C:\项目\STATUS.md（2230 行）；
+# 前导 / 只忽略仓根，不影响其它目录同名文件。
+/STATUS.md
+# bin/SECVAULT-TOOLS.json = SOPS/age 便携工具清单（机器生成，含本机绝对路径；
+# tools/secrets/README.md「机器可读记录…同样未入 git」）；.exe 已由 bin/*.exe 忽略，
+# 此为 bin/ 内唯一剩余未跟踪文件，补齐后 git status 不再出现 ?? bin/。
+bin/SECVAULT-TOOLS.json
