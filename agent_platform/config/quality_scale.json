@@ -442,7 +442,7 @@
       "health": "http://127.0.0.1:8734/",
       "acceptance": "python -m pytest portal/test_m_links.py -q",
       "version": "v1",
-      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "diagnostics": "python -X utf8 tools/diagnostics.py",
       "backup_owner": "OPS1",
       "port": 8734
     },
@@ -466,7 +466,7 @@
       "health": "http://127.0.0.1:8091/health",
       "acceptance": "python -m pytest portal/test_m_analysis.py -q",
       "version": "v1",
-      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "diagnostics": "python -X utf8 tools/diagnostics.py",
       "backup_owner": "OPS1",
       "port": 8091
     },
@@ -490,7 +490,7 @@
       "health": "http://127.0.0.1:8796/api/zhaoyun/mcp",
       "acceptance": "python -m pytest agent_platform/tests/test_genai_otel.py -q",
       "version": "v1",
-      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "diagnostics": "python -X utf8 tools/diagnostics.py",
       "backup_owner": "OPS1",
       "port": 8796
     },
@@ -514,7 +514,7 @@
       "health": "http://127.0.0.1:8795/health",
       "acceptance": "python -m pytest agent_platform/tests/test_org_audit.py -q",
       "version": "v1",
-      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "diagnostics": "python -X utf8 tools/diagnostics.py",
       "backup_owner": "OPS1",
       "port": 8795
     },
@@ -538,7 +538,7 @@
       "health": "http://127.0.0.1:8787/",
       "acceptance": "python -m pytest agent_platform/tests/test_org_profiles.py -q",
       "version": "v1",
-      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "diagnostics": "python -X utf8 tools/diagnostics.py",
       "backup_owner": "OPS1",
       "port": 8787
     },
@@ -562,7 +562,7 @@
       "health": "C:\\aios\\portal\\logs\\feishu_bot.log",
       "acceptance": "python -m pytest portal/test_m_links.py -q",
       "version": "v1",
-      "diagnostics": "python tools/diagnostics.py (待 O7) 或按 runbook 取证",
+      "diagnostics": "python -X utf8 tools/diagnostics.py",
       "backup_owner": "OPS1",
       "port_note": "bot 为出站 WS，无监听端口（看护见 runbooks）"
     }
