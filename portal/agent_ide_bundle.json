@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 15:54",
+ "generated": "2026-10-27 15:56",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -194,12 +194,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-AUTHORITY-B2-DEVTASK-20261027",
-   "desc": "ARCH1 研发域最高权限·第2单：devtask 增加 --approver 署名 + 合并审批校验（warn/block 可配，config/dev_authority_charter.json）；缺署名/非授权人/自审自批告警（block 时拒收）；合并成功发 review_verdict 事件；测试补齐。路由例外=跨部门治理。",
+   "id": "WO-REDTEAM-CITE-20261027",
+   "desc": "红队全量live修复：用例误报 + L5引用越界校验 + 红队--only",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-AUTHORITY-B2-DEVTASK-20261027",
-   "created": "2026-10-27 15:54:40",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-REDTEAM-CITE-20261027",
+   "created": "2026-10-27 15:56:02",
    "project": "general"
   }
  ],
@@ -6395,6 +6395,11 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
+    },
+    {
+     "id": "WO-REDTEAM-CITE-20261027",
+     "desc": "红队全量live修复：用例误报 + L5引用越界校验 + 红队--only",
+     "status": "doing"
     }
    ]
   }
