@@ -11,10 +11,15 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+_TOOLS_DIR = Path(__file__).resolve().parent
+if str(_TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TOOLS_DIR))  # PYTHONSAFEPATH=1 时脚本目录不自动入 sys.path
+
 CASES = REPO_ROOT / "ops" / "p0" / "eval" / "golden_cases.jsonl"
 CITATION_RE = re.compile(r"\[S\d+\]")
 
