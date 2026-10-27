@@ -120,7 +120,10 @@ def main():
         "  sep0.textContent='|';\n"
         "  bar.insertBefore(sep0,bar.firstChild);\n"
         " }\n"
-        " document.body.insertBefore(bar,document.body.firstChild);\n"
+        " var skip=document.querySelector('.wb-skip');\n"
+        " if(skip&&skip.parentNode===document.body){"
+        "document.body.insertBefore(bar,skip.nextSibling);}\n"
+        " else{document.body.insertBefore(bar,document.body.firstChild);}\n"
         "});\n"
         "})();\n")
     open(OUT, "w", encoding="utf-8").write(js)
