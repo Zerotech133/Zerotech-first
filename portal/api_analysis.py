@@ -16,7 +16,7 @@ import re
 import sqlite3
 
 ROOT = r"C:\项目\老田的AI助手"
-WORK = r"C:\项目\work\analysis"
+WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\analysis_work")  # 与 analysis/config.py 同源口径（ANALYSIS_WORK）
 DB = os.path.join(WORK, "analysis.db")
 RUNS = os.path.join(WORK, "runs")
 QUEUE = os.path.join(WORK, "queue")

@@ -25,7 +25,7 @@ def _load_env():
 
 _load_env()
 CURATED = os.path.join(MAIN_ROOT, "quant_backtest", "data", "tushare_curated")
-WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\work\analysis")
+WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\analysis_work")
 DELIVER_ROOT = os.environ.get("ANALYSIS_DELIVER", r"C:\项目\deliverables")
 DATA_CACHE = os.path.join(WORK, "cache")         # sync 缓存（不写 curated 仓库）
 DB_PATH = os.path.join(WORK, "analysis.db")
