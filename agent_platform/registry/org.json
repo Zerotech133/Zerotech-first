@@ -2344,7 +2344,8 @@
     "INTEL1",
     "AI1",
     "GUANYU",
-    "PROD1"
+    "PROD1",
+    "HUANGZHONG"
    ],
    "teams": [
     "academy_strategy",
@@ -2608,6 +2609,22 @@
      "memory_grants": [],
      "grade": "E2",
      "grade_note": "补档初始档，待 KPI 观察后调整",
+     "attributes": {}
+    },
+    {
+     "agent_id": "HUANGZHONG",
+     "cn_name": "黄忠",
+     "cn_name_note": "2026-10-27 老田令：指挥部五席之一，入编研究院",
+     "role_profile": "delivery_acceptance_chief",
+     "analysis_type": "",
+     "charter_detail": "指挥部老将：交付验收/质量终检/上线前把关，对 A0 负责",
+     "llm_binding": "glm/glm-5.3",
+     "binding_note": "2026-10-27 老田令入编指挥部（工单 K-QUANT-20261027-COMMANDHQ）",
+     "tools": [],
+     "tools_note": "按需授权",
+     "memory_grants": [],
+     "grade": "E3",
+     "grade_note": "指挥部老将席",
      "attributes": {}
     }
    ],
@@ -3214,5 +3231,17 @@
    "P1": "1h",
    "P2": "daily"
   }
+ },
+ "command_hq": {
+  "name": "指挥部",
+  "cn": "指挥部",
+  "members": [
+   "A0",
+   "ZHAOYUN",
+   "AI1",
+   "GUANYU",
+   "HUANGZHONG"
+  ],
+  "note": "2026-10-27 老田令：田丰、赵云、诸葛亮、关羽、黄忠组成指挥部；统筹决策/交付验收"
  }
 }
