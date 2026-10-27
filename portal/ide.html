@@ -997,6 +997,7 @@ function modelStatusOf(o){
   const ks=MODEL_STATUS.keys||{}, ms=MODEL_STATUS.models||{};
   if(o.kind==="local"){
     const on=!!(ms.local&&ms.local.online);
+    if(!o.lm) return on?["ok","在线"]:["off","离线"];
     const present=on && ((ms.local.models||[]).some(m=>m.name===o.lm));
     return present?["ok","在线"]:["off","离线"];
   }
