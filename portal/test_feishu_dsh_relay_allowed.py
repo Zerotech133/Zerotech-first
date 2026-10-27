@@ -2,6 +2,7 @@
 """feishu_dsh_relay.allowed 多域白名单单测（2026-10-25 换新 app open_id 修复）。"""
 import json
 import os
+import tempfile
 import shutil
 import sys
 import uuid
@@ -18,7 +19,7 @@ NEW_EXEC_OWNER = "ou_92e4a0000000000000000000000000"
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root

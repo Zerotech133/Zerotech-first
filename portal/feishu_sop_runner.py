@@ -18,6 +18,7 @@ import copy
 import io
 import json
 import os
+import tempfile
 import shutil
 import sys
 import uuid
@@ -30,7 +31,7 @@ REGISTRY = os.path.join(DATA, "registry.json")
 ROUTES = os.path.join(DATA, "routes.json")
 SECRETS = os.path.join(HERE, "work", "feishu_secrets")
 LOGS = os.path.join(HERE, "logs")
-WORK_TMP = os.path.join(os.path.dirname(ROOT), "work", "_dsh_test_tmp")
+WORK_TMP = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_sop_tmp")
 DEFAULT_ROLE = "zb.demo.echo"
 DEFAULT_DISPLAY = "零界·演练"
 

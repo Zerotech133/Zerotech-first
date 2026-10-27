@@ -2,6 +2,7 @@
 """feishu_bot_base 单测（W1）：群策略纯函数、凭据加载、心跳、AT 清洗、注册表联动。"""
 import json
 import os
+import tempfile
 import sys
 
 import pytest
@@ -16,7 +17,7 @@ import uuid
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root

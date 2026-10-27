@@ -7,21 +7,23 @@
   9B 不再负责自由复核与判读，避免路径保真差/输出截断/复核浅的问题。
 
 边界：
-  - 只读源文件；只写 --out 目录（默认 <repo>/work/seat_brief/）；
+  - 只读源文件；只写 --out 目录（默认 %LOCALAPPDATA%\aios\seat_brief\，可用 --out 覆盖）；
   - 不联网、不启动服务、不发消息、不改业务数据；
   - 缺源文件如实记 exists=False，不编造。
 
 用法：
   python -X utf8 tools/seat_evidence_packet.py
-  python -X utf8 tools/seat_evidence_packet.py --out C:\\项目\\work\\seat_brief
+  python -X utf8 tools/seat_evidence_packet.py --out %TEMP%\\seat_brief
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -33,7 +35,8 @@ DEFAULT_STATUS = REPO.parent / "STATUS.md"
 DEFAULT_TASKS = REPO / ".worktrees" / "tasks.json"
 DEFAULT_EXPERIENCE = (Path.home() / ".hermes" / "profiles" / "zhaoyun"
                       / "experience" / "supervision" / "EXPERIENCE.md")
-DEFAULT_OUT = REPO / "work" / "seat_brief"
+DEFAULT_OUT = Path(os.environ.get("SEAT_EVIDENCE_OUT") or
+                     (Path(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()) / "aios" / "seat_brief"))
 STATUSES = ("doing", "review", "done", "aborted", "pending", "blocked")
 
 

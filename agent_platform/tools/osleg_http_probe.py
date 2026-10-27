@@ -9,7 +9,7 @@
   校验信封/幂等/回执，随后 shutdown，并断言真实 agent_platform/bridge_inbox 前后零变化。
 
 红线：不启动生产网关（不写真实 store）、不接消费者、不发真实消息；--run 单次运行 ≤120s。
-证据：%OSLEG_PROBE_ROOT%（默认 C:\\项目\\work\\_dsh_8795probe）下 run-<stamp>/evidence.json。
+证据：%OSLEG_PROBE_ROOT%（默认 %LOCALAPPDATA%\\aios\\osleg_probe，非 Windows 回落 %TEMP%）下 run-<stamp>/evidence.json。
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import json
 import os
+import tempfile
 import socket
 import sys
 import threading
@@ -27,7 +28,8 @@ from urllib import request as urlrequest
 
 REPO = Path(__file__).resolve().parents[2]
 PLATFORM = REPO / "agent_platform"
-WORK = Path(os.environ.get("OSLEG_PROBE_ROOT") or r"C:\项目\work\_dsh_8795probe")
+_DEFAULT_WORK = Path(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()) / "aios" / "osleg_probe"
+WORK = Path(os.environ.get("OSLEG_PROBE_ROOT") or _DEFAULT_WORK)
 
 # 通道②（契约 CH2 定义）端点 vs 现役 gateway/serve.py 实际端点：
 # 真实接线时必须在接线单里补这张翻译（gateway 当前只暴露 submit/receipt 两个 HTTP 端点）。

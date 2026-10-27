@@ -2,6 +2,7 @@
 """P2 适配器单测：disabled 原样 / shadow 只记录 / enabled 换新卡 / 异常回落。"""
 import json
 import os
+import tempfile
 import sys
 import uuid
 
@@ -17,7 +18,7 @@ import push_unified_adapter as A  # noqa: E402
 
 @pytest.fixture()
 def cfg(monkeypatch):
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     path = os.path.join(root, "push_unified.json")
     monkeypatch.setattr(fp, "UNIFIED_CFG", path)

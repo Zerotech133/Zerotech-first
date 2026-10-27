@@ -2,6 +2,7 @@
 """m_links 卡片链接自动签发单测（P1 后续批次）。"""
 import json
 import os
+import tempfile
 import sys
 import uuid
 
@@ -15,7 +16,7 @@ import m_tokens as mt  # noqa: E402
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root

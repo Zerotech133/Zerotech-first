@@ -2,6 +2,7 @@
 """feishu_console（邓芝台 W1 离线版）单测：数据采集结构、检查项、HTML 渲染、JSON 输出。"""
 import json
 import os
+import tempfile
 import subprocess
 import sys
 
@@ -17,7 +18,7 @@ import uuid
 
 @pytest.fixture()
 def ws_tmp():
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         yield root

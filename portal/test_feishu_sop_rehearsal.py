@@ -10,6 +10,7 @@
 """
 import json
 import os
+import tempfile
 import sys
 import uuid
 
@@ -92,7 +93,7 @@ def test_sop_step2_route_unknown_role_rejected():
 
 
 def test_sop_step3_credentials_interface(tmp_path=None):
-    root = os.path.join(r"C:\项目\work\_dsh_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
     os.makedirs(root, exist_ok=True)
     try:
         p = os.path.join(root, "zb.demo.echo.json")
