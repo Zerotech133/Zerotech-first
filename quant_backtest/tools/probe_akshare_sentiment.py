@@ -11,6 +11,7 @@
 
 结果落盘 reports/akshare_sentiment_probe.json（若以 --save 运行）。
 """
+
 import os
 import sys
 import json
@@ -29,14 +30,25 @@ import pandas as pd
 
 TODAY = dt.date.today().strftime("%Y%m%d")
 HIST_DATE = "20261013"
-OUT_JSON = os.path.join(os.path.dirname(__file__), "..", "reports", "akshare_sentiment_probe.json")
+OUT_JSON = os.path.join(
+    os.path.dirname(__file__), "..", "reports", "akshare_sentiment_probe.json"
+)
 
 
 def probe_call(name: str, fn, **kwargs) -> dict:
     """统一探测包装：记录成功与否、行数、字段、耗时、日期锚。"""
-    rec = {"api": name, "params": kwargs, "ok": False, "rows": 0,
-           "columns": [], "elapsed_s": 0.0, "error": None, "date_anchor": None,
-           "sample": None, "extra": {}}
+    rec = {
+        "api": name,
+        "params": kwargs,
+        "ok": False,
+        "rows": 0,
+        "columns": [],
+        "elapsed_s": 0.0,
+        "error": None,
+        "date_anchor": None,
+        "sample": None,
+        "extra": {},
+    }
     t0 = time.time()
     try:
         df = fn(**kwargs)
@@ -60,9 +72,13 @@ def probe_call(name: str, fn, **kwargs) -> dict:
 
 
 def main() -> int:
-    results = {"probe_time": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-               "akshare_version": ak.__version__, "today": TODAY, "hist_date": HIST_DATE,
-               "probes": []}
+    results = {
+        "probe_time": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "akshare_version": ak.__version__,
+        "today": TODAY,
+        "hist_date": HIST_DATE,
+        "probes": [],
+    }
     probes = [
         ("涨停股池-当日", ak.stock_zt_pool_em, {"date": TODAY}),
         ("涨停股池-历史20261013", ak.stock_zt_pool_em, {"date": HIST_DATE}),
@@ -74,32 +90,55 @@ def main() -> int:
     for label, fn, kw in probes:
         rec = probe_call(label, fn, **kw)
         results["probes"].append(rec)
-        status = "OK" if rec["ok"] else ("EMPTY" if rec["error"] is None and rec["rows"] == 0 else "FAIL")
-        print(f"[{status}] {label}  rows={rec['rows']}  {rec['elapsed_s']}s"
-              f"  anchor={rec['date_anchor']}  maxLB={rec['extra'].get('max_lianban', '-')}"
-              + (f"  ERR={rec['error']}" if rec["error"] else ""))
+        status = (
+            "OK"
+            if rec["ok"]
+            else ("EMPTY" if rec["error"] is None and rec["rows"] == 0 else "FAIL")
+        )
+        print(
+            f"[{status}] {label}  rows={rec['rows']}  {rec['elapsed_s']}s"
+            f"  anchor={rec['date_anchor']}  maxLB={rec['extra'].get('max_lianban', '-')}"
+            + (f"  ERR={rec['error']}" if rec["error"] else "")
+        )
 
     # 连板高度推导：从涨停池取 max(连板数)，展示 top5
     lb_detail = None
-    hist = next((r for r in results["probes"] if r["api"] == "涨停股池-历史20261013"), None)
+    hist = next(
+        (r for r in results["probes"] if r["api"] == "涨停股池-历史20261013"), None
+    )
     if hist and hist["ok"]:
         df = ak.stock_zt_pool_em(date=HIST_DATE)
         df["连板数"] = pd.to_numeric(df["连板数"])
         top = df.nlargest(5, "连板数")[["代码", "名称", "连板数"]]
-        lb_detail = {"date": HIST_DATE, "max_lianban": int(df["连板数"].max()),
-                     "top5": top.to_dict(orient="records")}
+        lb_detail = {
+            "date": HIST_DATE,
+            "max_lianban": int(df["连板数"].max()),
+            "top5": top.to_dict(orient="records"),
+        }
         results["lianban_derive"] = lb_detail
         tops = ["{}x{}".format(r["名称"], r["连板数"]) for r in lb_detail["top5"]]
-        print(f"[OK] 连板高度推导 {HIST_DATE}: max={lb_detail['max_lianban']} top5={tops}")
+        print(
+            f"[OK] 连板高度推导 {HIST_DATE}: max={lb_detail['max_lianban']} top5={tops}"
+        )
 
     # 炸板率推导：炸板数/(涨停数+炸板数)
-    zt = next((r for r in results["probes"] if r["api"] == "涨停股池-历史20261013"), None)
-    zb = next((r for r in results["probes"] if r["api"] == "炸板股池-历史20261013"), None)
+    zt = next(
+        (r for r in results["probes"] if r["api"] == "涨停股池-历史20261013"), None
+    )
+    zb = next(
+        (r for r in results["probes"] if r["api"] == "炸板股池-历史20261013"), None
+    )
     if zt and zb and zt["ok"] and zb["ok"]:
         rate = zb["rows"] / (zt["rows"] + zb["rows"])
-        results["zhaban_rate_hist"] = {"date": HIST_DATE, "zt": zt["rows"],
-                                       "zb": zb["rows"], "rate": round(rate, 4)}
-        print(f"[OK] 炸板率推导 {HIST_DATE}: {zb['rows']}/({zt['rows']}+{zb['rows']})={rate:.2%}")
+        results["zhaban_rate_hist"] = {
+            "date": HIST_DATE,
+            "zt": zt["rows"],
+            "zb": zb["rows"],
+            "rate": round(rate, 4),
+        }
+        print(
+            f"[OK] 炸板率推导 {HIST_DATE}: {zb['rows']}/({zt['rows']}+{zb['rows']})={rate:.2%}"
+        )
 
     out = os.path.normpath(OUT_JSON)
     os.makedirs(os.path.dirname(out), exist_ok=True)

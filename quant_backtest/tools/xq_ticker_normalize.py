@@ -33,6 +33,7 @@ canonical 口径（三套既有口径对接，不新造，详见 ticker_map.json
     -> [{"raw": "01810", "kind": "stock_hk", "canonical": "01810"},
         {"raw": "沪深300指数", "kind": "index", "canonical": "000300.SH"}]
 """
+
 from __future__ import annotations
 
 import json
@@ -63,7 +64,9 @@ _SEGMENTS = _MAP["code_segments"]
 _FUND_NAME_CODES = dict(_MAP["fund_name_codes"])
 # 名称词查找同时备一份小写键（词尾 ETF/LOF 大小写不敏感匹配后取码）
 _FUND_NAME_CODES_LOWER = {k.lower(): v for k, v in _FUND_NAME_CODES.items()}
-_FUND_SUFFIXES = tuple(s.lower() for s in _MAP.get("fund_suffixes", ("基金", "ETF", "LOF", "联接")))
+_FUND_SUFFIXES = tuple(
+    s.lower() for s in _MAP.get("fund_suffixes", ("基金", "ETF", "LOF", "联接"))
+)
 _INDEX_SUFFIXES = tuple(_MAP.get("index_suffixes", ("指数",)))
 
 _TABLE = "xq_status_classified"
@@ -82,6 +85,7 @@ KIND_DIST_SQL = (
 # ---------------------------------------------------------------------------
 # 词形判定（纯函数）
 # ---------------------------------------------------------------------------
+
 
 def _compress(text: str) -> str:
     """NFKC 全角→半角 + 去首尾空白。"""
@@ -140,7 +144,8 @@ def classify_token(token) -> dict:
         # 其余位数（金额/点位形）保持 unknown
         return entry
     if t.endswith(_INDEX_SUFFIXES) or (
-            _xim is not None and _xim.normalize_index_name(t) is not None):
+        _xim is not None and _xim.normalize_index_name(t) is not None
+    ):
         entry["kind"] = "index"
         entry["canonical"] = _lookup_index(t)
         return entry
@@ -183,6 +188,7 @@ def normalize_tickers(raw_json_str) -> list:
 # SQLite 落库（幂等迁移 + 批量回填）
 # ---------------------------------------------------------------------------
 
+
 def _is_busy(exc: Exception) -> bool:
     msg = str(exc).lower()
     return "locked" in msg or "busy" in msg
@@ -199,7 +205,7 @@ def _with_retry(fn, retries: int = 3, base_delay: float = 0.5):
         except sqlite3.OperationalError as exc:
             if attempt >= retries or not _is_busy(exc):
                 raise
-            time.sleep(base_delay * (2 ** attempt))
+            time.sleep(base_delay * (2**attempt))
 
 
 def ensure_norm_column(conn: sqlite3.Connection, retries: int = 3) -> bool:
@@ -212,15 +218,14 @@ def ensure_norm_column(conn: sqlite3.Connection, retries: int = 3) -> bool:
     if _NORM_COL in cols:
         return False
     _with_retry(
-        lambda: conn.execute(
-            "ALTER TABLE %s ADD COLUMN %s TEXT" % (_TABLE, _NORM_COL)),
-        retries=retries)
+        lambda: conn.execute("ALTER TABLE %s ADD COLUMN %s TEXT" % (_TABLE, _NORM_COL)),
+        retries=retries,
+    )
     conn.commit()
     return True
 
 
-def backfill(conn: sqlite3.Connection, batch_size: int = 200,
-             retries: int = 3) -> dict:
+def backfill(conn: sqlite3.Connection, batch_size: int = 200, retries: int = 3) -> dict:
     """全表回填 norm_tickers（列不存在时自动 ensure_norm_column）。
 
     - 读 classified 全表逐条 normalize_tickers，JSON 串落新列；
@@ -231,7 +236,8 @@ def backfill(conn: sqlite3.Connection, batch_size: int = 200,
     """
     ensure_norm_column(conn, retries=retries)
     rows = conn.execute(
-        "SELECT status_id, tickers, %s FROM %s" % (_NORM_COL, _TABLE)).fetchall()
+        "SELECT status_id, tickers, %s FROM %s" % (_NORM_COL, _TABLE)
+    ).fetchall()
     total = updated = skipped = 0
     pending = 0
     kinds: Counter = Counter()
@@ -246,9 +252,10 @@ def backfill(conn: sqlite3.Connection, batch_size: int = 200,
             continue
         _with_retry(
             lambda sid=status_id, p=payload: conn.execute(
-                "UPDATE %s SET %s=? WHERE status_id=?" % (_TABLE, _NORM_COL),
-                (p, sid)),
-            retries=retries)
+                "UPDATE %s SET %s=? WHERE status_id=?" % (_TABLE, _NORM_COL), (p, sid)
+            ),
+            retries=retries,
+        )
         updated += 1
         pending += 1
         if pending >= batch_size:
@@ -256,5 +263,9 @@ def backfill(conn: sqlite3.Connection, batch_size: int = 200,
             pending = 0
     if pending:
         conn.commit()
-    return {"total": total, "updated": updated,
-            "skipped": skipped, "kinds": dict(kinds)}
+    return {
+        "total": total,
+        "updated": updated,
+        "skipped": skipped,
+        "kinds": dict(kinds),
+    }

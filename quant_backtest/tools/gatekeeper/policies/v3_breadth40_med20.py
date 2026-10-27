@@ -23,8 +23,8 @@ POLICY_FP = os.path.join(HERE, "policy.json")
 
 # 现行判据参数（qpzm_backtest.env_gate 现值，2026-10-15 冻结）
 POLICY_TEMPLATE = {
-    "breadth_lt": 0.40,     # 宽度低于 40% 触发否决
-    "med20_lt": -0.03,      # 20 日收益中位低于 -3% 触发否决
+    "breadth_lt": 0.40,  # 宽度低于 40% 触发否决
+    "med20_lt": -0.03,  # 20 日收益中位低于 -3% 触发否决
     "policy_sha256": None,  # 冻结后回填，ensure_policy 自证未被改
 }
 
@@ -34,9 +34,11 @@ SHA_KEY = "policy_sha256"
 def _norm_sha(cfg):
     """规范化体 sha256：剔除 sha 键自身后 sort_keys+紧凑分隔+UTF-8。"""
     body = {k: v for k, v in cfg.items() if k != SHA_KEY}
-    return hashlib.sha256(json.dumps(
-        body, sort_keys=True, separators=(",", ":"),
-        ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(
+        json.dumps(
+            body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+    ).hexdigest()[:16]
 
 
 def ensure_policy(fp=POLICY_FP):
@@ -75,11 +77,12 @@ class V3Policy:
         b = feats.get("breadth")
         m = feats.get("med20")
         if b is None or m is None:
-            missing = [k for k, v in (("breadth", b), ("med20", m))
-                       if v is None]
+            missing = [k for k, v in (("breadth", b), ("med20", m)) if v is None]
             return None, {"missing": missing}
         b_kill = float(b) < float(self.cfg["breadth_lt"])
         m_kill = float(m) < float(self.cfg["med20_lt"])
-        cond = {"breadth_lt_%g" % float(self.cfg["breadth_lt"]): b_kill,
-                "med20_lt_%g" % float(self.cfg["med20_lt"]): m_kill}
+        cond = {
+            "breadth_lt_%g" % float(self.cfg["breadth_lt"]): b_kill,
+            "med20_lt_%g" % float(self.cfg["med20_lt"]): m_kill,
+        }
         return (not (b_kill or m_kill)), cond

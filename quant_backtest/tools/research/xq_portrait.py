@@ -31,6 +31,7 @@ xq_anomaly_calibration 的取数面一致；labeled_at 是打标时间（全部�
     python tools/research/xq_portrait.py                # 全量画像 + JSON 快照
     python tools/research/xq_portrait.py --json-only    # 只落 JSON 不打印长报告
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,6 +53,7 @@ TOP_TICKERS = 20
 
 # ---------------------------------------------------------------- 数据读取
 
+
 def read_rows(con: sqlite3.Connection) -> list:
     """读全部已打标行（含 degraded），JOIN 原表取帖子日。
 
@@ -69,12 +71,17 @@ def read_rows(con: sqlite3.Connection) -> list:
             tickers = json.loads(tk) if tk else []
         except Exception:
             tickers = []
-        rows.append({
-            "event_type": et, "sentiment": st, "content_type": ct,
-            "tickers": tickers if isinstance(tickers, list) else [],
-            "prompt_version": pv, "parse_ok": ok,
-            "day": (created_at or "")[:10] or None,
-        })
+        rows.append(
+            {
+                "event_type": et,
+                "sentiment": st,
+                "content_type": ct,
+                "tickers": tickers if isinstance(tickers, list) else [],
+                "prompt_version": pv,
+                "parse_ok": ok,
+                "day": (created_at or "")[:10] or None,
+            }
+        )
     return rows
 
 
@@ -85,6 +92,7 @@ def open_db_ro() -> sqlite3.Connection:
 
 
 # ---------------------------------------------------------------- 纯聚合函数
+
 
 def percentile(sorted_vals: list, p: float):
     """线性插值百分位（输入须升序）。空表返回 None。"""
@@ -112,12 +120,9 @@ def _cross(rows, key_a: str, key_b: str) -> dict:
 def marginals(rows: list) -> dict:
     """节1：三维边缘分布 + sentiment×event_type、content_type×sentiment 交叉表。"""
     return {
-        "sentiment": dict(Counter(
-            (r["sentiment"] or "(空)") for r in rows)),
-        "event_type": dict(Counter(
-            (r["event_type"] or "(空)") for r in rows)),
-        "content_type": dict(Counter(
-            (r["content_type"] or "(空)") for r in rows)),
+        "sentiment": dict(Counter((r["sentiment"] or "(空)") for r in rows)),
+        "event_type": dict(Counter((r["event_type"] or "(空)") for r in rows)),
+        "content_type": dict(Counter((r["content_type"] or "(空)") for r in rows)),
         "crosstab_event_sentiment": _cross(rows, "event_type", "sentiment"),
         "crosstab_content_sentiment": _cross(rows, "content_type", "sentiment"),
     }
@@ -150,11 +155,14 @@ def monthly_trend(rows: list) -> list:
     cur = first
     while True:
         b, t = bear.get(cur, 0), n.get(cur, 0)
-        out.append({
-            "month": cur, "n": t,
-            "bearish": b,
-            "bearish_share": (b / t) if t else None,
-        })
+        out.append(
+            {
+                "month": cur,
+                "n": t,
+                "bearish": b,
+                "bearish_share": (b / t) if t else None,
+            }
+        )
         if cur == months[-1]:
             break
         y, mo = int(cur[:4]), int(cur[5:7])
@@ -175,13 +183,21 @@ def ticker_concentration(rows: list) -> dict:
             with_ticker += 1
             for t in r["tickers"]:
                 per[t][r["sentiment"] or "(空)"] += 1
-    top = sorted(per.items(), key=lambda kv: (-sum(kv[1].values()), kv[0]))[:TOP_TICKERS]
-    top_list = [{
-        "ticker": t, "n": sum(c.values()),
-        "bearish": c.get("bearish", 0),
-        "bullish": c.get("bullish", 0),
-        "bearish_share": (c.get("bearish", 0) / sum(c.values())) if sum(c.values()) else None,
-    } for t, c in top]
+    top = sorted(per.items(), key=lambda kv: (-sum(kv[1].values()), kv[0]))[
+        :TOP_TICKERS
+    ]
+    top_list = [
+        {
+            "ticker": t,
+            "n": sum(c.values()),
+            "bearish": c.get("bearish", 0),
+            "bullish": c.get("bullish", 0),
+            "bearish_share": (c.get("bearish", 0) / sum(c.values()))
+            if sum(c.values())
+            else None,
+        }
+        for t, c in top
+    ]
     return {
         "total": total,
         "with_ticker": with_ticker,
@@ -245,8 +261,10 @@ def daily_ticker_bearish(rows: list) -> dict:
     counts = sorted(pair.values())
     n_pairs = len(counts)
     n_ge2 = sum(1 for c in counts if c >= 2)
-    top_pairs = [{"day": d, "ticker": t, "n": n}
-                 for (d, t), n in sorted(pair.items(), key=lambda kv: -kv[1])[:5]]
+    top_pairs = [
+        {"day": d, "ticker": t, "n": n}
+        for (d, t), n in sorted(pair.items(), key=lambda kv: -kv[1])[:5]
+    ]
     return {
         "n_pairs": n_pairs,
         "pair_counts": counts,
@@ -261,6 +279,7 @@ def daily_ticker_bearish(rows: list) -> dict:
 
 # ---------------------------------------------------------------- 主流程
 
+
 def build_snapshot(rows: list) -> dict:
     ok_rows = [r for r in rows if r["parse_ok"] == 1]
     days = sorted(r["day"] for r in ok_rows if r["day"])
@@ -274,7 +293,7 @@ def build_snapshot(rows: list) -> dict:
             "post_day_min": days[0] if days else None,
             "post_day_max": days[-1] if days else None,
             "note": "存量回填快照：帖子为 2017~2023 爬取存量，labeled_at 集中在打标当日；"
-                    "cls_2026=0（实时采集帖未进分类池），不代表实时分布。",
+            "cls_2026=0（实时采集帖未进分类池），不代表实时分布。",
         },
         "marginals": marginals(rows),
         "monthly_trend": monthly_trend(ok_rows),
@@ -310,10 +329,16 @@ def main() -> int:
     ad = snap["anomaly_dialogue"]
     lin = snap["lineage"]
     print("== 雪球分类存量池画像 %s ==" % snap["meta"]["snapshot_at"])
-    print("total=%d ok=%d degraded=%d 帖子日 %s ~ %s"
-          % (snap["meta"]["total_classified"], snap["meta"]["parse_ok_1"],
-             snap["meta"]["degraded"], snap["meta"]["post_day_min"],
-             snap["meta"]["post_day_max"]))
+    print(
+        "total=%d ok=%d degraded=%d 帖子日 %s ~ %s"
+        % (
+            snap["meta"]["total_classified"],
+            snap["meta"]["parse_ok_1"],
+            snap["meta"]["degraded"],
+            snap["meta"]["post_day_min"],
+            snap["meta"]["post_day_max"],
+        )
+    )
     print("\n[1] sentiment: %s" % m["sentiment"])
     print("    event_type: %s" % m["event_type"])
     print("    content_type: %s" % m["content_type"])
@@ -322,28 +347,49 @@ def main() -> int:
     print("\n[2] 月度趋势（n / bearish_share）:")
     for mo in snap["monthly_trend"]:
         share = mo["bearish_share"]
-        print("    %s  n=%-5d bearish_share=%s"
-              % (mo["month"], mo["n"],
-                 ("%.3f" % share) if share is not None else "-"))
-    print("\n[3] 带码率: %d/%d (%.3f)  distinct=%d"
-          % (tc["with_ticker"], tc["total"], tc["with_ticker_rate"] or 0,
-             tc["distinct_tickers"]))
+        print(
+            "    %s  n=%-5d bearish_share=%s"
+            % (mo["month"], mo["n"], ("%.3f" % share) if share is not None else "-")
+        )
+    print(
+        "\n[3] 带码率: %d/%d (%.3f)  distinct=%d"
+        % (
+            tc["with_ticker"],
+            tc["total"],
+            tc["with_ticker_rate"] or 0,
+            tc["distinct_tickers"],
+        )
+    )
     for t in tc["top20"]:
-        print("    %-8s n=%-4d bear=%-4d bull=%-4d share=%.3f"
-              % (t["ticker"], t["n"], t["bearish"], t["bullish"],
-                 t["bearish_share"] or 0))
+        print(
+            "    %-8s n=%-4d bear=%-4d bull=%-4d share=%.3f"
+            % (t["ticker"], t["n"], t["bearish"], t["bullish"], t["bearish_share"] or 0)
+        )
     print("\n[4] 血缘:")
     for pv, v in lin["versions"].items():
-        print("    %-10s n=%-5d content_type_rate=%s"
-              % (pv, v["n"],
-                 ("%.3f" % v["content_type_rate"])
-                 if v["content_type_rate"] is not None else "-"))
+        print(
+            "    %-10s n=%-5d content_type_rate=%s"
+            % (
+                pv,
+                v["n"],
+                ("%.3f" % v["content_type_rate"])
+                if v["content_type_rate"] is not None
+                else "-",
+            )
+        )
     print("    补标未全覆盖版本: %s" % (lin["incomplete_versions"] or "无"))
     print("\n[5] 单日同标的 bearish 分布（BEARISH_MIN 作用面）:")
-    print("    pairs=%d p50=%s p90=%s max=%s pairs_ge2=%d ge2_share=%s"
-          % (ad["n_pairs"], ad["p50"], ad["p90"], ad["max"],
-             ad["n_pairs_ge2"],
-             ("%.3f" % ad["ge2_share"]) if ad["ge2_share"] is not None else "-"))
+    print(
+        "    pairs=%d p50=%s p90=%s max=%s pairs_ge2=%d ge2_share=%s"
+        % (
+            ad["n_pairs"],
+            ad["p50"],
+            ad["p90"],
+            ad["max"],
+            ad["n_pairs_ge2"],
+            ("%.3f" % ad["ge2_share"]) if ad["ge2_share"] is not None else "-",
+        )
+    )
     for p in ad["top_pairs"]:
         print("    top: %s %s n=%d" % (p["day"], p["ticker"], p["n"]))
     print("\nsnapshot -> %s" % out_path)

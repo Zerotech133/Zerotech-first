@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Forensic dump of non-system scheduled tasks (pywin32 COM, read-only)."""
+
 import sys
 import datetime
 
@@ -23,8 +24,7 @@ def fmt_time(t):
     try:
         if t is None:
             return "None"
-        return "%04d-%02d-%02d %02d:%02d:%02d" % (
-            t[0], t[1], t[2], t[3], t[4], t[5])
+        return "%04d-%02d-%02d %02d:%02d:%02d" % (t[0], t[1], t[2], t[3], t[4], t[5])
     except Exception:
         return str(t)
 
@@ -46,8 +46,10 @@ def fmt_trigger(tr):
                 interval = rep.Interval
                 duration = rep.Duration
                 stopat = rep.StopAtDurationEnd
-                parts.append("Repetition[Interval=%s Duration=%s StopAtEnd=%s]"
-                             % (interval, duration, stopat))
+                parts.append(
+                    "Repetition[Interval=%s Duration=%s StopAtEnd=%s]"
+                    % (interval, duration, stopat)
+                )
         except Exception:
             pass
         return " ".join(parts)
@@ -105,16 +107,20 @@ def main():
                 nrt = "?"
             w("=" * 70)
             w("TASK: %s" % full)
-            w("  State=%s LastRunTime=%s LastResult=0x%08X NextRunTime=%s"
-              % (state, lrt, ltr & 0xFFFFFFFF, nrt))
+            w(
+                "  State=%s LastRunTime=%s LastResult=0x%08X NextRunTime=%s"
+                % (state, lrt, ltr & 0xFFFFFFFF, nrt)
+            )
             try:
                 act = t.Definition.Actions
                 for j in range(1, act.Count + 1):
                     a = act.Item(j)
                     apath = getattr(a, "Path", None)
                     aargs = getattr(a, "Arguments", None)
-                    w("  Action[%d]: Exec=%s Args=%s WorkDir=%s"
-                      % (j, apath, aargs, getattr(a, "WorkingDirectory", "")))
+                    w(
+                        "  Action[%d]: Exec=%s Args=%s WorkDir=%s"
+                        % (j, apath, aargs, getattr(a, "WorkingDirectory", ""))
+                    )
             except Exception as e:
                 w("  Action-error: %s" % e)
             try:
@@ -125,10 +131,14 @@ def main():
             except Exception as e:
                 w("  Trigger-error: %s" % e)
             try:
-                w("  Principal: %s LogonType=%s RunLevel=%s"
-                  % (t.Definition.Principal.UserId,
-                     t.Definition.Principal.LogonType,
-                     t.Definition.Principal.RunLevel))
+                w(
+                    "  Principal: %s LogonType=%s RunLevel=%s"
+                    % (
+                        t.Definition.Principal.UserId,
+                        t.Definition.Principal.LogonType,
+                        t.Definition.Principal.RunLevel,
+                    )
+                )
             except Exception as e:
                 w("  Principal-error: %s" % e)
             w("  XML:")

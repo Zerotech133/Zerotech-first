@@ -4,6 +4,7 @@
 覆盖：委托路径判定正确性 / QPZM_GATEKEEPER=0 回退 / NaN 行旧语义放行 /
 账本只落最新锚日+去重（真实实现+ledger_fp 注入 tmp 账本）。
 """
+
 import importlib
 import json
 import os
@@ -29,16 +30,14 @@ def _make_wide(n_days=30):
     cols = {
         "A": pd.Series([1.0] * n_days, index=dates),
         "B": pd.Series([0.0] * n_days, index=dates),
-        "C": pd.Series([None] * 10 + [1.0] * (n_days - 10), index=dates,
-                       dtype=float),
+        "C": pd.Series([None] * 10 + [1.0] * (n_days - 10), index=dates, dtype=float),
         "D": pd.Series([None] * n_days, index=dates, dtype=float),
     }
     above = pd.DataFrame(cols)
     rcols = {
         "A": pd.Series([0.05] * n_days, index=dates),
         "B": pd.Series([-0.05] * n_days, index=dates),
-        "C": pd.Series([None] * 10 + [0.05] * (n_days - 10), index=dates,
-                       dtype=float),
+        "C": pd.Series([None] * 10 + [0.05] * (n_days - 10), index=dates, dtype=float),
         "D": pd.Series([None] * n_days, index=dates, dtype=float),
     }
     return above, pd.DataFrame(rcols)
@@ -50,9 +49,11 @@ def qb(tmp_path, monkeypatch):
     2026-10-15 判例：合成日期 20260030 曾漏进 data/gate_decisions.jsonl），
     teardown reload 还原（防模块污染判例）。"""
     monkeypatch.setenv("QPZM_GATEKEEPER", "1")
-    monkeypatch.setattr("ledger.DEFAULT_LEDGER_FP",
-                        str(tmp_path / "env_gate_test.jsonl"))
+    monkeypatch.setattr(
+        "ledger.DEFAULT_LEDGER_FP", str(tmp_path / "env_gate_test.jsonl")
+    )
     import qpzm_backtest as m
+
     importlib.reload(m)
     yield m
     importlib.reload(m)
@@ -71,7 +72,7 @@ def test_delegate_safe_verdict(qb):
 def test_delegate_kill_by_med20(qb):
     """med20<-3% 杀伤分支经 policy 判定生效。"""
     above, ret20 = _make_wide()
-    ret20.loc[:, ["A", "C"]] = -0.05              # 全体 med20 杀
+    ret20.loc[:, ["A", "C"]] = -0.05  # 全体 med20 杀
     env = qb.env_gate(above, ret20)
     assert bool(env.iloc[-1]["safe"]) is False
 
@@ -97,6 +98,7 @@ def test_off_switch_identical(qb, monkeypatch):
 def test_ledger_anchor_day_and_dedup(qb, tmp_path):
     """真实实现：只落最新锚日 1 行 + 二次调用去重 + 字段齐全。"""
     from ledger import Ledger
+
     fp = str(tmp_path / "g.jsonl")
     dates = [20260001 + i for i in range(30)]
     breadth = pd.Series([None] * 10 + [0.667] * 20, index=dates, dtype=float)
@@ -111,8 +113,16 @@ def test_ledger_anchor_day_and_dedup(qb, tmp_path):
     rows2 = Ledger(fp=fp).query("CN")
     assert len(rows2) == 1, "重跑应去重"
     row = json.loads(json.dumps(rows2[0]))
-    assert row["date"] == "20260030"          # 最新有效锚日
-    for k in ("market", "date", "safe", "conditions", "features",
-              "policy_ver", "policy_sha", "feeder"):
+    assert row["date"] == "20260030"  # 最新有效锚日
+    for k in (
+        "market",
+        "date",
+        "safe",
+        "conditions",
+        "features",
+        "policy_ver",
+        "policy_sha",
+        "feeder",
+    ):
         assert k in row, "缺字段 %s" % k
     assert row["feeder"] == "qpzm_wide_embedded"

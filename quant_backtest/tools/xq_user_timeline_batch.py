@@ -12,6 +12,7 @@
   python tools/xq_user_timeline_batch.py --start-idx 0 --end-idx 20
   python tools/xq_user_timeline_batch.py --start-idx 20 --end-idx 77
 """
+
 import argparse
 import json
 import os
@@ -38,7 +39,7 @@ PROGRESS_LOG = BATCH_DIR / "batch_progress.log"
 USER_URL = "https://xueqiu.com/u/{uid}"
 HOME_URL = "https://xueqiu.com"
 CUTOFF = "2024-01-01"
-MAX_PAGES = 10          # 每人最多 API 翻页数（约 200 条，对应 8 屏滚动上限）
+MAX_PAGES = 10  # 每人最多 API 翻页数（约 200 条，对应 8 屏滚动上限）
 PAGESIZE = 20
 
 API_JS = """
@@ -106,10 +107,17 @@ def insert_2024(posts, uid):
             " comment_count, retweet_count, like_count, fetched_at) "
             "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (
-                p["status_id"], iso, p.get("title") or "",
-                p.get("desc") or p.get("text") or "", str(uid), p.get("target") or "",
-                p.get("view_count") or 0, p.get("comment_count") or 0,
-                p.get("retweet_count") or 0, p.get("like_count") or 0, now_str(),
+                p["status_id"],
+                iso,
+                p.get("title") or "",
+                p.get("desc") or p.get("text") or "",
+                str(uid),
+                p.get("target") or "",
+                p.get("view_count") or 0,
+                p.get("comment_count") or 0,
+                p.get("retweet_count") or 0,
+                p.get("like_count") or 0,
+                now_str(),
             ),
         )
         inserted += cur.rowcount
@@ -133,17 +141,27 @@ def fetch_user_timeline(page, uid, limit_per_user):
             return posts, "exhausted"
         page_posts = []
         for s in raw:
-            page_posts.append({
-                "status_id": s["status_id"],
-                "created_at": ms_to_iso(s["created_at_ms"]) if isinstance(s["created_at_ms"], (int, float)) else str(s["created_at_ms"] or ""),
-                "title": s["title"], "desc": s["desc"], "text": s["text"],
-                "target": s["target"], "view_count": s["view_count"],
-                "comment_count": s["comment_count"], "like_count": s["like_count"],
-                "retweet_count": s["retweet_count"],
-            })
+            page_posts.append(
+                {
+                    "status_id": s["status_id"],
+                    "created_at": ms_to_iso(s["created_at_ms"])
+                    if isinstance(s["created_at_ms"], (int, float))
+                    else str(s["created_at_ms"] or ""),
+                    "title": s["title"],
+                    "desc": s["desc"],
+                    "text": s["text"],
+                    "target": s["target"],
+                    "view_count": s["view_count"],
+                    "comment_count": s["comment_count"],
+                    "like_count": s["like_count"],
+                    "retweet_count": s["retweet_count"],
+                }
+            )
         posts.extend(page_posts)
         # 翻到 2024 前即停（按本页最旧一条判断）
-        oldest = min((p["created_at"] for p in page_posts if p["created_at"]), default="")
+        oldest = min(
+            (p["created_at"] for p in page_posts if p["created_at"]), default=""
+        )
         if oldest and oldest < CUTOFF:
             return posts, "reached_2024"
         if len(posts) >= limit_per_user:
@@ -161,35 +179,54 @@ def main():
 
     try:
         pool = json.loads(POOL_PATH.read_text(encoding="utf-8"))["pool"]
-        if not isinstance(pool, list) or not 0 <= args.start_idx < args.end_idx <= len(pool):
+        if not isinstance(pool, list) or not 0 <= args.start_idx < args.end_idx <= len(
+            pool
+        ):
             raise ValueError("批次范围无效")
         ids = [u.get("user_id") if isinstance(u, dict) else None for u in pool]
-        if any(not isinstance(uid, str) or not uid.isascii() or not uid.isdecimal()
-               or int(uid) == 0 for uid in ids) or len(ids) != len(set(ids)):
+        if any(
+            not isinstance(uid, str)
+            or not uid.isascii()
+            or not uid.isdecimal()
+            or int(uid) == 0
+            for uid in ids
+        ) or len(ids) != len(set(ids)):
             raise ValueError("候选池 UID 必须是全局唯一的 ASCII 正整数")
     except (OSError, ValueError, KeyError, TypeError) as e:
         print("候选池或批次参数无效: %s" % e, file=sys.stderr, flush=True)
         return 1
-    targets = pool[args.start_idx:args.end_idx]
+    targets = pool[args.start_idx : args.end_idx]
     try:
         BATCH_DIR.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         print("批次目录不可写: %s" % e, file=sys.stderr, flush=True)
         return 1
-    log("=== 批量回填启动: idx[%d:%d) 共 %d 人 ===" % (args.start_idx, args.end_idx, len(targets)))
+    log(
+        "=== 批量回填启动: idx[%d:%d) 共 %d 人 ==="
+        % (args.start_idx, args.end_idx, len(targets))
+    )
 
     report = {
-        "run_at": now_str(), "run_id": uuid.uuid4().hex,
-        "start_idx": args.start_idx, "end_idx": args.end_idx,
-        "target_count": len(targets), "completed_count": 0,
-        "outcome": None, "users": {}, "totals": {"posts": 0, "posts_2024": 0, "db_inserted": 0},
-        "stop_reason": None, "next_start_idx": None,
+        "run_at": now_str(),
+        "run_id": uuid.uuid4().hex,
+        "start_idx": args.start_idx,
+        "end_idx": args.end_idx,
+        "target_count": len(targets),
+        "completed_count": 0,
+        "outcome": None,
+        "users": {},
+        "totals": {"posts": 0, "posts_2024": 0, "db_inserted": 0},
+        "stop_reason": None,
+        "next_start_idx": None,
     }
 
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
-            user_data_dir=str(PROFILE_DIR), headless=False, viewport=None,
-            locale="zh-CN", args=["--disable-blink-features=AutomationControlled"],
+            user_data_dir=str(PROFILE_DIR),
+            headless=False,
+            viewport=None,
+            locale="zh-CN",
+            args=["--disable-blink-features=AutomationControlled"],
         )
         page = ctx.new_page()
         page.set_default_timeout(30000)
@@ -201,8 +238,11 @@ def main():
             reason = detect_slider(page)
             if reason:
                 page.screenshot(path=str(BATCH_DIR / "captcha.png"))
-                report.update(outcome="b", stop_reason="预热即滑块: " + reason,
-                              next_start_idx=args.start_idx)
+                report.update(
+                    outcome="b",
+                    stop_reason="预热即滑块: " + reason,
+                    next_start_idx=args.start_idx,
+                )
                 log("预热即触发滑块: %s，已停。" % reason)
                 return finish(report)
 
@@ -210,64 +250,121 @@ def main():
                 idx = args.start_idx + i
                 uid = u["user_id"]
                 try:
-                    page.goto(USER_URL.format(uid=uid), wait_until="domcontentloaded", timeout=45000)
+                    page.goto(
+                        USER_URL.format(uid=uid),
+                        wait_until="domcontentloaded",
+                        timeout=45000,
+                    )
                     page.wait_for_timeout(5000)
                     reason = detect_slider(page)
                     if reason:
                         page.screenshot(path=str(BATCH_DIR / "captcha.png"))
-                        report.update(outcome="b", stop_reason="第 %d 人 uid=%s 触发滑块: %s" % (idx, uid, reason),
-                                      next_start_idx=idx)
+                        report.update(
+                            outcome="b",
+                            stop_reason="第 %d 人 uid=%s 触发滑块: %s"
+                            % (idx, uid, reason),
+                            next_start_idx=idx,
+                        )
                         log("STOP 在第 %d 人(uid=%s)触发滑块: %s" % (idx, uid, reason))
                         return finish(report)
-                    posts, stop_reason = fetch_user_timeline(page, uid, args.limit_per_user)
+                    posts, stop_reason = fetch_user_timeline(
+                        page, uid, args.limit_per_user
+                    )
                     if stop_reason.startswith("api_error"):
                         # 取证 + 退避后重试一次（HTML 软拦截可能是瞬时限流）
                         try:
-                            page.screenshot(path=str(BATCH_DIR / ("api_err_idx%d.png" % idx)))
+                            page.screenshot(
+                                path=str(BATCH_DIR / ("api_err_idx%d.png" % idx))
+                            )
                         except Exception:
                             pass
                         reason2 = detect_slider(page)
                         if reason2:
                             page.screenshot(path=str(BATCH_DIR / "captcha.png"))
-                            report.update(outcome="b", stop_reason="第 %d 人 uid=%s API异常后确认滑块: %s" % (idx, uid, reason2),
-                                          next_start_idx=idx)
-                            log("STOP 第 %d 人(uid=%s) API异常后确认滑块: %s" % (idx, uid, reason2))
+                            report.update(
+                                outcome="b",
+                                stop_reason="第 %d 人 uid=%s API异常后确认滑块: %s"
+                                % (idx, uid, reason2),
+                                next_start_idx=idx,
+                            )
+                            log(
+                                "STOP 第 %d 人(uid=%s) API异常后确认滑块: %s"
+                                % (idx, uid, reason2)
+                            )
                             return finish(report)
                         backoff = random.uniform(30, 60)
-                        log("idx=%d uid=%s API 异常，退避 %.0fs 后重试一次..." % (idx, uid, backoff))
+                        log(
+                            "idx=%d uid=%s API 异常，退避 %.0fs 后重试一次..."
+                            % (idx, uid, backoff)
+                        )
                         time.sleep(backoff)
-                        page.goto(USER_URL.format(uid=uid), wait_until="domcontentloaded", timeout=45000)
+                        page.goto(
+                            USER_URL.format(uid=uid),
+                            wait_until="domcontentloaded",
+                            timeout=45000,
+                        )
                         page.wait_for_timeout(5000)
                         if detect_slider(page):
                             page.screenshot(path=str(BATCH_DIR / "captcha.png"))
-                            report.update(outcome="b", stop_reason="第 %d 人 uid=%s 重试后出现滑块" % (idx, uid),
-                                          next_start_idx=idx)
+                            report.update(
+                                outcome="b",
+                                stop_reason="第 %d 人 uid=%s 重试后出现滑块"
+                                % (idx, uid),
+                                next_start_idx=idx,
+                            )
                             log("STOP 第 %d 人(uid=%s) 重试后出现滑块" % (idx, uid))
                             return finish(report)
-                        posts, stop_reason = fetch_user_timeline(page, uid, args.limit_per_user)
+                        posts, stop_reason = fetch_user_timeline(
+                            page, uid, args.limit_per_user
+                        )
                 except Exception as e:
                     posts, stop_reason = [], "exception:%s: %s" % (type(e).__name__, e)
 
-                if stop_reason.startswith("api_error") or stop_reason.startswith("exception"):
-                    entry = {"outcome": "c", "n_posts": 0, "n_posts_2024": 0, "db_inserted": 0,
-                             "error": stop_reason}
+                if stop_reason.startswith("api_error") or stop_reason.startswith(
+                    "exception"
+                ):
+                    entry = {
+                        "outcome": "c",
+                        "n_posts": 0,
+                        "n_posts_2024": 0,
+                        "db_inserted": 0,
+                        "error": stop_reason,
+                    }
                     report["users"][uid] = entry
-                    report.update(outcome="c", stop_reason="第 %d 人 uid=%s 失败: %s" % (idx, uid, stop_reason),
-                                  next_start_idx=idx)
+                    report.update(
+                        outcome="c",
+                        stop_reason="第 %d 人 uid=%s 失败: %s"
+                        % (idx, uid, stop_reason),
+                        next_start_idx=idx,
+                    )
                     log("STOP 第 %d 人(uid=%s) 最终失败: %s" % (idx, uid, stop_reason))
                     return finish(report)
                 else:
                     inserted, n2024 = insert_2024(posts, uid) if posts else (0, 0)
-                    entry = {"outcome": "a", "n_posts": len(posts), "n_posts_2024": n2024,
-                             "db_inserted": inserted, "stop_reason": stop_reason}
+                    entry = {
+                        "outcome": "a",
+                        "n_posts": len(posts),
+                        "n_posts_2024": n2024,
+                        "db_inserted": inserted,
+                        "stop_reason": stop_reason,
+                    }
                     report["totals"]["posts"] += len(posts)
                     report["totals"]["posts_2024"] += n2024
                     report["totals"]["db_inserted"] += inserted
 
                 report["users"][uid] = entry
                 report["completed_count"] += 1
-                log("idx=%d uid=%s posts=%d 2024+=%d 新增=%d stop=%s" % (
-                    idx, uid, entry["n_posts"], entry["n_posts_2024"], entry["db_inserted"], stop_reason))
+                log(
+                    "idx=%d uid=%s posts=%d 2024+=%d 新增=%d stop=%s"
+                    % (
+                        idx,
+                        uid,
+                        entry["n_posts"],
+                        entry["n_posts_2024"],
+                        entry["db_inserted"],
+                        stop_reason,
+                    )
+                )
                 if report["outcome"] is None:
                     report["outcome"] = "a"
 
@@ -285,18 +382,22 @@ def main():
 
 
 def finish(report):
-    complete = (report.get("target_count", 0) > 0
-                and report.get("completed_count") == report["target_count"]
-                and len(report["users"]) == report["target_count"]
-                and all(u["outcome"] == "a" for u in report["users"].values()))
+    complete = (
+        report.get("target_count", 0) > 0
+        and report.get("completed_count") == report["target_count"]
+        and len(report["users"]) == report["target_count"]
+        and all(u["outcome"] == "a" for u in report["users"].values())
+    )
     if report["outcome"] == "a" and not complete:
         report["outcome"] = "c"
         report["stop_reason"] = report.get("stop_reason") or "批次未全部成功完成"
     elif report["outcome"] is None:
         report["outcome"] = "c"
         report["stop_reason"] = report.get("stop_reason") or "批次未处理任何目标"
-    name = BATCH_DIR / ("batch_result_%d_%d_%s.json" % (
-        report["start_idx"], report["end_idx"], report["run_id"]))
+    name = BATCH_DIR / (
+        "batch_result_%d_%d_%s.json"
+        % (report["start_idx"], report["end_idx"], report["run_id"])
+    )
     temp = name.with_name(name.name + ".%s.tmp" % uuid.uuid4().hex)
     created = False
     try:
@@ -314,7 +415,9 @@ def finish(report):
             try:
                 temp.unlink()
             except OSError as e:
-                print("临时结果清理失败: %s: %s" % (temp, e), file=sys.stderr, flush=True)
+                print(
+                    "临时结果清理失败: %s: %s" % (temp, e), file=sys.stderr, flush=True
+                )
     result = 0 if report["outcome"] == "a" and complete else 1
     try:
         log("结果已写: %s" % name)
@@ -322,7 +425,11 @@ def finish(report):
         if report.get("next_start_idx") is not None:
             log("断点: 下次用 --start-idx %d" % report["next_start_idx"])
     except OSError as e:
-        print("进度日志失败（不影响已发布报告及退出码）: %s" % e, file=sys.stderr, flush=True)
+        print(
+            "进度日志失败（不影响已发布报告及退出码）: %s" % e,
+            file=sys.stderr,
+            flush=True,
+        )
     return result
 
 

@@ -37,6 +37,7 @@ CLI: python cross_grid_backtest.py [--d0 20240902] [--d1 20260918]
 产物：reports/cross_grid_result.json；日志 /c/Temp/cross_grid.log
 纪律：只读产线（cross_poll/market_scan/positions/生产表零写入）。
 """
+
 import argparse
 import json
 import os
@@ -46,26 +47,31 @@ from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-LOG_FP = "C:/Temp/cross_grid.log" if os.path.isdir("C:/Temp") else \
-    os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid.log")
+LOG_FP = (
+    "C:/Temp/cross_grid.log"
+    if os.path.isdir("C:/Temp")
+    else os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid.log")
+)
 
 # ── 网格与常量 ──────────────────────────────────────────────
-NINE_MODES = ["reverse", "down0.5", "exclude"]      # 线序（相邻=线序邻居）
+NINE_MODES = ["reverse", "down0.5", "exclude"]  # 线序（相邻=线序邻居）
 K_SET = [2, 3]
 THR_SET = [("P50", 0.50), ("P60", 0.60), ("P75", 0.75)]
 SORT_KEYS = ["raw", "net"]
 NINE_W = {"reverse": 1.0, "down0.5": 0.5, "exclude": 0.0}
-ALERT_TH = 75        # nine_dim.ALERT_TH 拥挤警报线
-MIN_COV = 0.75       # nine_dim.MIN_COV 完整评分线
-CHAN_FRESH = 20      # 缠论信号有效窗口（交易日，对齐 cross_poll 90 日历≈20 交易日取紧口径）
-COST = 0.0015        # 单笔往返合计 15bps
+ALERT_TH = 75  # nine_dim.ALERT_TH 拥挤警报线
+MIN_COV = 0.75  # nine_dim.MIN_COV 完整评分线
+CHAN_FRESH = 20  # 缠论信号有效窗口（交易日，对齐 cross_poll 90 日历≈20 交易日取紧口径）
+COST = 0.0015  # 单笔往返合计 15bps
 TOPN = 10
-BAR_N_SIG = 100      # 达标最少信号数（<100 不构成结论，nine_dim 影子纪律）
-BAR_PF = 1.15        # 升格判据 PF 线
-MIN_CAND_DAY = 5     # 当日候选 <5 跳过（分位阈值不稳）
+BAR_N_SIG = 100  # 达标最少信号数（<100 不构成结论，nine_dim 影子纪律）
+BAR_PF = 1.15  # 升格判据 PF 线
+MIN_CAND_DAY = 5  # 当日候选 <5 跳过（分位阈值不稳）
 
 
 _logf = None
+
+
 def log(msg):
     line = "%s %s" % (time.strftime("%H:%M:%S"), msg)
     print(line, flush=True)
@@ -79,9 +85,9 @@ def load_one(args):
     """worker：单只股票对齐日历 → (code, close_vals, open_vals)。"""
     import numpy as np
     import pandas as pd
+
     code, cal = args
-    fp = os.path.join(HERE, "data", "ashare",
-                      code.replace(".", "_") + ".parquet")
+    fp = os.path.join(HERE, "data", "ashare", code.replace(".", "_") + ".parquet")
     try:
         b = pd.read_parquet(fp, columns=["trade_date", "open", "close"])
     except Exception:
@@ -98,11 +104,14 @@ def build_matrices(d0_warm="20230401"):
     """读全市场日线 → close/open 宽表 + 日历。缓存到 /c/Temp 避免重读。"""
     import numpy as np
     import pandas as pd
-    cache = os.path.join(os.environ.get("TEMP", "/tmp"),
-                         "cross_grid_cache_npz.npz")
+
+    cache = os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid_cache_npz.npz")
     cal_fp = os.path.join(HERE, "data", "ashare", "000001_SZ.parquet")
-    cal = pd.read_parquet(cal_fp, columns=["trade_date"])["trade_date"] \
-        .astype(str).tolist()
+    cal = (
+        pd.read_parquet(cal_fp, columns=["trade_date"])["trade_date"]
+        .astype(str)
+        .tolist()
+    )
     cal = [d for d in cal if d >= d0_warm]
     close = open_ = codes = None
     if os.path.exists(cache):
@@ -118,9 +127,11 @@ def build_matrices(d0_warm="20230401"):
     if close is not None:
         return close, open_, cal, codes
     import market_scan
+
     stocks = market_scan.market_stocks()
     log("宇宙 %d 只，开始加载日线（warm=%s）" % (len(stocks), d0_warm))
     from multiprocessing import get_context
+
     ctx = get_context("spawn")
     with ctx.Pool(16) as pool:
         res = pool.map(load_one, [(s, cal) for s in stocks], chunksize=64)
@@ -131,10 +142,11 @@ def build_matrices(d0_warm="20230401"):
         codes.append(code)
         cls.append(c)
         ops.append(o)
-    close = np.ascontiguousarray(np.vstack(cls).T)   # (日期, 股票)
+    close = np.ascontiguousarray(np.vstack(cls).T)  # (日期, 股票)
     open_ = np.ascontiguousarray(np.vstack(ops).T)
-    np.savez_compressed(cache, close=close, open=open_,
-                        cal=np.array(cal), codes=np.array(codes))
+    np.savez_compressed(
+        cache, close=close, open=open_, cal=np.array(cal), codes=np.array(codes)
+    )
     log("加载完成 %d 日 × %d 只，缓存 %s" % (len(cal), len(codes), cache))
     return close, open_, cal, codes
 
@@ -144,15 +156,18 @@ def rps_mix_matrix(close, cal):
     """qpzm 复刻：RPS mix = 0.4*r50+0.3*r120+0.3*r250（缺周期归一）。"""
     import numpy as np
     from scipy.stats import rankdata
+
     out = np.zeros_like(close, dtype=np.float32)
     wsum = np.zeros(close.shape[0], dtype=np.float32)
     for n, w in ((50, 0.4), (120, 0.3), (250, 0.3)):
         with np.errstate(invalid="ignore", divide="ignore"):
-            r = close / np.vstack([np.full((n, close.shape[1]), np.nan),
-                                   close[:-n]]) - 1.0
+            r = (
+                close / np.vstack([np.full((n, close.shape[1]), np.nan), close[:-n]])
+                - 1.0
+            )
         for i in range(close.shape[0]):
             col = r[i]
-            m = ~np.isnan(col)          # 当日有 n 日收益的股票（逐日判定）
+            m = ~np.isnan(col)  # 当日有 n 日收益的股票（逐日判定）
             if m.sum() < 100:
                 continue
             rk = rankdata(col[m], method="average") / m.sum() * 100.0
@@ -167,6 +182,7 @@ def strat_pos(close):
     参数=strategies.PARAM_DEFAULTS，仅用 close 数学一致）。返回 (4, D, N)。"""
     import numpy as np
     import pandas as pd
+
     w = pd.DataFrame(close.astype(np.float64))
     pos = {}
     # ma_cross 5/20
@@ -189,16 +205,21 @@ def strat_pos(close):
     mid = w.rolling(20, min_periods=1).mean()
     sd = w.rolling(20, min_periods=1).std()
     pos["boll_breakout"] = (w > mid + 2 * sd).fillna(False).astype(int)
-    return np.stack([pos[k].values.astype(np.int8)
-                     for k in ("ma_cross", "trend_follow",
-                               "rsi_reversal", "boll_breakout")])
+    return np.stack(
+        [
+            pos[k].values.astype(np.int8)
+            for k in ("ma_cross", "trend_follow", "rsi_reversal", "boll_breakout")
+        ]
+    )
 
 
 def chanlun_votes(cal, code2idx):
     """缠论票：v3 seen-ever 事件 → 当日票矩阵（近 20 交易日 fresh 事件）。"""
     import numpy as np
-    fp = os.path.join(HERE, "data", "sig_events",
-                      "sig_events_market_v3_20231010_20261013.json")
+
+    fp = os.path.join(
+        HERE, "data", "sig_events", "sig_events_market_v3_20231010_20261013.json"
+    )
     d = json.load(open(fp, encoding="utf-8"))
     d2i = {dd: i for i, dd in enumerate(cal)}
     n_d, n_s = len(cal), len(code2idx)
@@ -215,6 +236,7 @@ def chanlun_votes(cal, code2idx):
             ev_long[i, j] = 1
         elif "卖" in str(e["type"]):
             ev_short[i, j] = 1
+
     # 近 CHAN_FRESH 日内有事件 → 票延续；冲突（买+卖并存）取更近者方向
     # （recency 加权：近一日权重+1，20 日外自然衰减为 0）
     def signed(ev_long, ev_short):
@@ -231,6 +253,7 @@ def chanlun_votes(cal, code2idx):
             else:
                 acc += w * ev_long - w * ev_short
         return np.sign(acc).astype(np.int8)
+
     v = signed(ev_long, ev_short)
     log("缠论事件入宇宙 %d/%d" % (n_used, len(d["events"])))
     return v
@@ -239,7 +262,8 @@ def chanlun_votes(cal, code2idx):
 def nine_votes(cal, code2idx):
     """9dim 锚 → (anchor_day_idx, score_vec, cov_vec) 序列。"""
     import numpy as np
-    anchors = defaultdict(dict)   # anchor -> {code: (score, cov)}
+
+    anchors = defaultdict(dict)  # anchor -> {code: (score, cov)}
     fp = os.path.join(HERE, "data", "nine_dim_replay.jsonl")
     for line in open(fp, encoding="utf-8"):
         try:
@@ -247,7 +271,9 @@ def nine_votes(cal, code2idx):
         except Exception:
             continue
         anchors[str(r.get("anchor"))][r.get("code")] = (
-            r.get("score"), r.get("cov") or 0.0)
+            r.get("score"),
+            r.get("cov") or 0.0,
+        )
     d2i = {dd: i for i, dd in enumerate(cal)}
     out = []
     for a in sorted(anchors):
@@ -269,42 +295,52 @@ def nine_votes(cal, code2idx):
 # ── 主流程 ──────────────────────────────────────────────────
 def run(d0, d1, workers_unused=None, env_gate=False):
     import numpy as np
+
     close, open_, cal, codes = build_matrices()
     code2idx = {c: j for j, c in enumerate(codes)}
     n_d, n_s = len(cal), len(codes)
     ts = [i for i, dd in enumerate(cal) if d0 <= dd <= d1]
-    log("回放窗口 %s..%s：%d 个信号日（宇宙 %d，环境闸门=%s）"
-        % (d0, d1, len(ts), n_s, env_gate))
+    log(
+        "回放窗口 %s..%s：%d 个信号日（宇宙 %d，环境闸门=%s）"
+        % (d0, d1, len(ts), n_s, env_gate)
+    )
     # 环境闸门（近似产线 rps_resonance 宽度闸门）：全市场站上 MA20 占比
     import pandas as pd
+
     ma20_all = pd.DataFrame(close).rolling(20, min_periods=20).mean().values
-    breadth = np.array([
-        np.nanmean(close[t] > ma20_all[t]) if t >= 20 else np.nan
-        for t in ts])
+    breadth = np.array(
+        [np.nanmean(close[t] > ma20_all[t]) if t >= 20 else np.nan for t in ts]
+    )
     gate_on = breadth >= 0.40
-    log("环境闸门：宽度中位 %.2f，可交易日 %d/%d"
-        % (np.nanmedian(breadth), gate_on.sum(), len(ts)))
+    log(
+        "环境闸门：宽度中位 %.2f，可交易日 %d/%d"
+        % (np.nanmedian(breadth), gate_on.sum(), len(ts))
+    )
 
     # 前向收益：信号日 t → 买 t+1 开盘，持有 H 日收盘卖（exit=t+H）
     fwd = {}
     for H in (5, 10):
         e = np.array(ts) + 1
-        x = e + H - 1        # 买入日 e 为第 1 根 → 第 H 根收盘 = e+H-1
+        x = e + H - 1  # 买入日 e 为第 1 根 → 第 H 根收盘 = e+H-1
         ok = x < n_d
         f = np.full((len(ts), n_s), np.nan, dtype=np.float32)
         f[ok] = close[x[ok]] / open_[e[ok]] - 1.0 - COST
         fwd[H] = f
     n_ok = (~np.isnan(fwd[5][:, 0])).sum()
-    log("前向收益可评信号日 %d/%d（尾部 %d 日窗口不足）"
-        % (n_ok, len(ts), len(ts) - n_ok))
+    log(
+        "前向收益可评信号日 %d/%d（尾部 %d 日窗口不足）"
+        % (n_ok, len(ts), len(ts) - n_ok)
+    )
 
     # 四源票（as-of T-1 = 行矩阵整体下移一行）
     def shift1(v):
         out = np.zeros_like(v)
         out[1:] = v[:-1]
         return out
+
     qp_raw = rps_mix_matrix(close, cal)
     import pandas as pd
+
     ma20 = pd.DataFrame(close).rolling(20, min_periods=20).mean().values
     v_qp = np.zeros((n_d, n_s), dtype=np.int8)
     v_qp[(qp_raw >= 70) & (close > ma20)] = 1
@@ -315,7 +351,7 @@ def run(d0, d1, workers_unused=None, env_gate=False):
     v_ch = shift1(chanlun_votes(cal, code2idx))
     anchors = nine_votes(cal, code2idx)
     # 9dim：每信号日取 anchor_idx ≤ t-1 的最新锚 → 高分票集合
-    v9_high = np.zeros((len(ts), n_s), dtype=bool)   # as-of 后 score≥75 且 cov 达标
+    v9_high = np.zeros((len(ts), n_s), dtype=bool)  # as-of 后 score≥75 且 cov 达标
     a_idx = [i for i, _, _ in anchors]
     a_sc = np.vstack([sc for _, sc, _ in anchors]) if anchors else None
     a_cv = np.vstack([cv for _, _, cv in anchors]) if anchors else None
@@ -326,11 +362,18 @@ def run(d0, d1, workers_unused=None, env_gate=False):
             continue
         m = (a_sc[k] >= ALERT_TH) & (a_cv[k] >= MIN_COV)
         v9_high[ti] = m
-    log("四源票就绪：qpzm long=%.0f short=%.0f  sig4 long=%.0f  "
+    log(
+        "四源票就绪：qpzm long=%.0f short=%.0f  sig4 long=%.0f  "
         "chanlun long=%.0f short=%.0f  9dim高分日均值=%.1f"
-        % ((v_qp[ts] == 1).sum(), (v_qp[ts] == -1).sum(), (v_s4[ts] == 1).sum(),
-           (v_ch[ts] == 1).sum(), (v_ch[ts] == -1).sum(),
-           v9_high.sum(axis=1).mean() if len(ts) else 0))
+        % (
+            (v_qp[ts] == 1).sum(),
+            (v_qp[ts] == -1).sum(),
+            (v_s4[ts] == 1).sum(),
+            (v_ch[ts] == 1).sum(),
+            (v_ch[ts] == -1).sum(),
+            v9_high.sum(axis=1).mean() if len(ts) else 0,
+        )
+    )
 
     qp_ts, s4_ts, ch_ts = v_qp[ts], v_s4[ts], v_ch[ts]
     results = []
@@ -342,8 +385,11 @@ def run(d0, d1, workers_unused=None, env_gate=False):
             v9[v9_high] = -1.0 * w9
         elif mode == "down0.5":
             v9[v9_high] = 1.0 * w9
-        n_src_base = (qp_ts != 0).astype(np.int8) + (s4_ts != 0).astype(np.int8) \
+        n_src_base = (
+            (qp_ts != 0).astype(np.int8)
+            + (s4_ts != 0).astype(np.int8)
             + (ch_ts != 0).astype(np.int8)
+        )
         if mode == "exclude":
             n_src = n_src_base
         else:
@@ -353,11 +399,18 @@ def run(d0, d1, workers_unused=None, env_gate=False):
             for thr_name, thr_q in THR_SET:
                 for sk in SORT_KEYS:
                     v9l = (v9 > 0).astype(np.float32) * w9
-                    raw = ((qp_ts > 0).astype(np.float32)
-                           + (s4_ts > 0).astype(np.float32)
-                           + (ch_ts > 0).astype(np.float32) + v9l)
-                    net = (qp_ts.astype(np.float32) + s4_ts.astype(np.float32)
-                           + ch_ts.astype(np.float32) + v9)
+                    raw = (
+                        (qp_ts > 0).astype(np.float32)
+                        + (s4_ts > 0).astype(np.float32)
+                        + (ch_ts > 0).astype(np.float32)
+                        + v9l
+                    )
+                    net = (
+                        qp_ts.astype(np.float32)
+                        + s4_ts.astype(np.float32)
+                        + ch_ts.astype(np.float32)
+                        + v9
+                    )
                     score = raw if sk == "raw" else net
                     score = np.where(mask_k, score, np.nan)
                     picks_ret5, picks_ret10 = [], []
@@ -375,39 +428,67 @@ def run(d0, d1, workers_unused=None, env_gate=False):
                         srt = sel[np.lexsort((sel, -row[sel]))][:TOPN]
                         r5, r10 = fwd[5][ti], fwd[10][ti]
                         picks_ret5 += [r5[j] for j in srt if not np.isnan(r5[j])]
-                        picks_ret10 += [r10[j] for j in srt
-                                        if not np.isnan(r10[j])]
+                        picks_ret10 += [r10[j] for j in srt if not np.isnan(r10[j])]
                     res = _metrics(picks_ret5, picks_ret10)
-                    res.update({"nine": mode, "k": k, "thr": thr_name,
-                                "sort": sk})
+                    res.update({"nine": mode, "k": k, "thr": thr_name, "sort": sk})
                     results.append(res)
-                    log("  %-8s k=%d %-3s %-3s | n=%-6d win5=%.3f pf5=%.3f "
+                    log(
+                        "  %-8s k=%d %-3s %-3s | n=%-6d win5=%.3f pf5=%.3f "
                         "avg5=%+.4f pf10=%.3f"
-                        % (mode, k, thr_name, sk, res["n_sig"],
-                           res["win5"], res["pf5"], res["avg5"], res["pf10"]))
+                        % (
+                            mode,
+                            k,
+                            thr_name,
+                            sk,
+                            res["n_sig"],
+                            res["win5"],
+                            res["pf5"],
+                            res["avg5"],
+                            res["pf10"],
+                        )
+                    )
     # 稳健性：平台 vs 尖峰
     _robustness(results)
-    return results, {"d0": d0, "d1": d1, "n_days": len(ts),
-                     "universe": n_s, "cost_bps": COST * 10000,
-                     "topn": TOPN}
+    return results, {
+        "d0": d0,
+        "d1": d1,
+        "n_days": len(ts),
+        "universe": n_s,
+        "cost_bps": COST * 10000,
+        "topn": TOPN,
+    }
 
 
 def _metrics(r5, r10):
     import numpy as np
+
     def m(r):
         a = np.asarray(r, dtype=np.float64)
         if len(a) == 0:
             return dict(n_sig=0, win=0.0, pf=0.0, avg=0.0)
         pos, neg = a[a > 0], a[a < 0]
-        pf = float(pos.sum() / abs(neg.sum())) if len(neg) and neg.sum() else \
-            (float("inf") if len(pos) else 0.0)
-        return dict(n_sig=int(len(a)), win=round(float((a > 0).mean()), 4),
-                    pf=round(pf, 4) if pf != float("inf") else 99.99,
-                    avg=round(float(a.mean()), 5))
+        pf = (
+            float(pos.sum() / abs(neg.sum()))
+            if len(neg) and neg.sum()
+            else (float("inf") if len(pos) else 0.0)
+        )
+        return dict(
+            n_sig=int(len(a)),
+            win=round(float((a > 0).mean()), 4),
+            pf=round(pf, 4) if pf != float("inf") else 99.99,
+            avg=round(float(a.mean()), 5),
+        )
+
     a, b = m(r5), m(r10)
-    return {"n_sig": a["n_sig"], "win5": a["win"], "pf5": a["pf"],
-            "avg5": a["avg"], "win10": b["win"], "pf10": b["pf"],
-            "avg10": b["avg"]}
+    return {
+        "n_sig": a["n_sig"],
+        "win5": a["win"],
+        "pf5": a["pf"],
+        "avg5": a["avg"],
+        "win10": b["win"],
+        "pf10": b["pf"],
+        "avg10": b["avg"],
+    }
 
 
 def _robustness(results):
@@ -428,20 +509,25 @@ def _robustness(results):
             if 0 <= ti + dt < len(order_thr):
                 nb.append((mode, k, order_thr[ti + dt], sk))
         nb.append((mode, k, thr, "net" if sk == "raw" else "raw"))
-        ok_nb = sum(1 for nk in nb if nk in grid
-                    and grid[nk]["pf5"] >= BAR_PF
-                    and grid[nk]["n_sig"] >= BAR_N_SIG)
+        ok_nb = sum(
+            1
+            for nk in nb
+            if nk in grid
+            and grid[nk]["pf5"] >= BAR_PF
+            and grid[nk]["n_sig"] >= BAR_N_SIG
+        )
         ok_self = r["pf5"] >= BAR_PF and r["n_sig"] >= BAR_N_SIG
         r["n_ok_neighbors"] = ok_nb
         r["qualify"] = ok_self
         r["plateau"] = bool(ok_self and ok_nb >= 3)
         r["spike"] = bool(ok_self and ok_nb < 3)
-        r["neighbors_ok_detail"] = ["%s|%s|%s|%s pf=%.2f" %
-                                    (nk[0], nk[1], nk[2], nk[3],
-                                     grid[nk]["pf5"])
-                                    for nk in nb if nk in grid
-                                    and grid[nk]["pf5"] >= BAR_PF
-                                    and grid[nk]["n_sig"] >= BAR_N_SIG]
+        r["neighbors_ok_detail"] = [
+            "%s|%s|%s|%s pf=%.2f" % (nk[0], nk[1], nk[2], nk[3], grid[nk]["pf5"])
+            for nk in nb
+            if nk in grid
+            and grid[nk]["pf5"] >= BAR_PF
+            and grid[nk]["n_sig"] >= BAR_N_SIG
+        ]
 
 
 if __name__ == "__main__":
@@ -453,8 +539,10 @@ if __name__ == "__main__":
     ap.add_argument("--topn", type=int, default=10)
     args = ap.parse_args()
     TOPN = args.topn
-    log("=== cross_grid_backtest 启动 d0=%s d1=%s topn=%d ==="
-        % (args.d0, args.d1, TOPN))
+    log(
+        "=== cross_grid_backtest 启动 d0=%s d1=%s topn=%d ==="
+        % (args.d0, args.d1, TOPN)
+    )
     results, meta = run(args.d0, args.d1)
     results.sort(key=lambda r: -r["pf5"])
     plat = [r for r in results if r.get("plateau")]
@@ -465,25 +553,51 @@ if __name__ == "__main__":
         "upgrade_ready": bool(best and best.get("plateau")),
     }
     if best:
-        rev = next((r for r in results if r["nine"] == "reverse"
-                    and r["k"] == best["k"] and r["thr"] == best["thr"]
-                    and r["sort"] == best["sort"]), None)
-        exc = next((r for r in results if r["nine"] == "exclude"
-                    and r["k"] == best["k"] and r["thr"] == best["thr"]
-                    and r["sort"] == best["sort"]), None)
+        rev = next(
+            (
+                r
+                for r in results
+                if r["nine"] == "reverse"
+                and r["k"] == best["k"]
+                and r["thr"] == best["thr"]
+                and r["sort"] == best["sort"]
+            ),
+            None,
+        )
+        exc = next(
+            (
+                r
+                for r in results
+                if r["nine"] == "exclude"
+                and r["k"] == best["k"]
+                and r["thr"] == best["thr"]
+                and r["sort"] == best["sort"]
+            ),
+            None,
+        )
         if rev and exc:
             concl["9dim_reverse_holds"] = bool(rev["pf5"] > exc["pf5"])
-    out = {"meta": meta, "conclusion": concl,
-           "grid_table": [{k: v for k, v in r.items()} for r in results[:10]],
-           "all_results": results}
+    out = {
+        "meta": meta,
+        "conclusion": concl,
+        "grid_table": [{k: v for k, v in r.items()} for r in results[:10]],
+        "all_results": results,
+    }
     fp = os.path.join(HERE, "reports", "cross_grid_result.json")
-    json.dump(out, open(fp, "w", encoding="utf-8"), ensure_ascii=False,
-              indent=1)
+    json.dump(out, open(fp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     log("产物 %s" % fp)
-    log("最优组合 %s | plateau=%s spike=%s | pf5=%s n_sig=%s"
-        % (best and (best["nine"], best["k"], best["thr"], best["sort"]),
-           best and best.get("plateau"), best and best.get("spike"),
-           best and best["pf5"], best and best["n_sig"]))
-    log("9dim 反向假说: %s | 升格信号层: %s"
-        % (concl["9dim_reverse_holds"], concl["upgrade_ready"]))
+    log(
+        "最优组合 %s | plateau=%s spike=%s | pf5=%s n_sig=%s"
+        % (
+            best and (best["nine"], best["k"], best["thr"], best["sort"]),
+            best and best.get("plateau"),
+            best and best.get("spike"),
+            best and best["pf5"],
+            best and best["n_sig"],
+        )
+    )
+    log(
+        "9dim 反向假说: %s | 升格信号层: %s"
+        % (concl["9dim_reverse_holds"], concl["upgrade_ready"])
+    )
     _logf.close()

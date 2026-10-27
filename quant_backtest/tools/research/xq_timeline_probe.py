@@ -21,6 +21,7 @@
     --cat 102   只探沪深线（默认，号段全局共享可推其余类目）
     --full      探全部 4 类目
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,8 +45,18 @@ INFO_DB = os.path.join(ROOT, "data", "xueqiu", "xueqiu_info.db")
 # 探测点：分类流游标空间为 feed 序号（~20 万档，判例「跨类目共享号段」），
 # 非 status_id 空间（1.48 亿档——首版探针传错空间，全部探点被 API 钳位到
 # 同一锚点 247524865@2023-04-15，实锤两套数字体系不可互推）。
-PROBES = (10_000, 30_000, 60_000, 90_000, 120_000, 150_000, 180_000,
-          210_000, 235_000, 250_000)
+PROBES = (
+    10_000,
+    30_000,
+    60_000,
+    90_000,
+    120_000,
+    150_000,
+    180_000,
+    210_000,
+    235_000,
+    250_000,
+)
 
 
 def first_item(sess, cat: int, max_id):
@@ -76,7 +87,8 @@ def first_item(sess, cat: int, max_id):
 def db_time_span():
     con = sqlite3.connect("file:%s?mode=ro" % INFO_DB.replace("\\", "/"), uri=True)
     lo, hi = con.execute(
-        "SELECT MIN(created_at), MAX(created_at) FROM xq_status").fetchone()
+        "SELECT MIN(created_at), MAX(created_at) FROM xq_status"
+    ).fetchone()
     n = con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
     con.close()
     return lo, hi, n
@@ -97,8 +109,10 @@ def main() -> int:
     sess.proxies.update(pool.proxies() or {})
     sess.headers.update({"User-Agent": ua_for(pool.current())})
 
-    print("\n== 号段→时间映射（cat=%s，count=1，返回首帖为 id<max_id 区段样本）=="
-          % ",".join(map(str, cats)))
+    print(
+        "\n== 号段→时间映射（cat=%s，count=1，返回首帖为 id<max_id 区段样本）=="
+        % ",".join(map(str, cats))
+    )
     rows = []
     for cat in cats:
         for probe in PROBES:
@@ -116,8 +130,10 @@ def main() -> int:
             print("  cat %d @ %-11d → id=%-12s %s" % (cat, probe, sid, ts or "-"))
             time.sleep(2 + random.random() * 2)
 
-    print("\n判读：映射点时间单调递减=号段即时间轴（全局序列）；"
-          "某点返回 2026 当前流内容=无效游标（静默回顶）。")
+    print(
+        "\n判读：映射点时间单调递减=号段即时间轴（全局序列）；"
+        "某点返回 2026 当前流内容=无效游标（静默回顶）。"
+    )
     return 0
 
 

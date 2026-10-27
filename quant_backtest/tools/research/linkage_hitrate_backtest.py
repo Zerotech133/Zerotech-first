@@ -37,6 +37,7 @@ tdx_sector_daily / ts_stock_basic（行业→板块归属 linkage 同源）。
   python linkage_hitrate_backtest.py --start 2024-01-01     # 截窗口
   python linkage_hitrate_backtest.py --out result.json
 """
+
 import argparse
 import json
 import os
@@ -47,19 +48,19 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-WIN = 250          # 归一化窗口（产线 1d DEFAULT_LAST）
-GAP = 5.0          # 超额阈值 pp（linkage_signals.GAP）
+WIN = 250  # 归一化窗口（产线 1d DEFAULT_LAST）
+GAP = 5.0  # 超额阈值 pp（linkage_signals.GAP）
 LO_WIN, HI_WIN = 60, 120
 HORIZONS = (5, 10, 20)
 INDEX_CODE = "000001.SH"
-SIGNALS = {"1": "抗跌", "2": "滞涨", "3": "共振底",
-           "4": "孤军深入", "5": "三共振"}
+SIGNALS = {"1": "抗跌", "2": "滞涨", "3": "共振底", "4": "孤军深入", "5": "三共振"}
 
 
 def load_universe():
     """{stock_code: block_code}，industry→板块归属 linkage 同源。"""
     import linkage as LK
     import tdx_read as tdxr
+
     df = tdxr.read_all("ts_stock_basic", columns=["ts_code", "industry"])
     out = {}
     for _, r in df.iterrows():
@@ -73,6 +74,7 @@ def load_universe():
 def load_frames():
     """(stock_df, block_df, idx_sr, uni)：全部对齐到并集日历，板块/大盘 ffill。"""
     import tdx_read as tdxr
+
     uni = load_universe()
     codes = sorted(uni)
     blocks = sorted(set(uni.values()))
@@ -80,18 +82,14 @@ def load_frames():
     sd = tdxr.read_all("ts_daily", columns=["ts_code", "trade_date", "close"])
     sd = sd[sd["ts_code"].isin(set(codes))]
     sd["trade_date"] = sd["trade_date"].astype(str)
-    stock = sd.pivot(index="trade_date", columns="ts_code", values="close")\
-        .sort_index()
+    stock = sd.pivot(index="trade_date", columns="ts_code", values="close").sort_index()
 
-    bd = tdxr.read_all("tdx_sector_daily",
-                       columns=["code", "trade_date", "close"])
+    bd = tdxr.read_all("tdx_sector_daily", columns=["code", "trade_date", "close"])
     bd = bd[bd["code"].isin(set(blocks))]
     bd["trade_date"] = bd["trade_date"].astype(str)
-    block = bd.pivot(index="trade_date", columns="code", values="close")\
-        .sort_index()
+    block = bd.pivot(index="trade_date", columns="code", values="close").sort_index()
 
-    idf = tdxr.read_all("ts_index_daily",
-                        columns=["ts_code", "trade_date", "close"])
+    idf = tdxr.read_all("ts_index_daily", columns=["ts_code", "trade_date", "close"])
     idf = idf[idf["ts_code"] == INDEX_CODE].copy()
     idf["trade_date"] = idf["trade_date"].astype(str)
     idx = idf.set_index("trade_date")["close"].sort_index()
@@ -129,7 +127,7 @@ def judge_matrix(stock, block, idx, uni):
     r_s = (stock / stock.shift(WIN - 1) - 1) * 100
     r_b_all = (bfull / bfull.shift(WIN - 1) - 1) * 100
     r_b = pd.DataFrame({c: r_b_all[uni[c]] for c in cols})
-    r_i = ((idx / idx.shift(WIN - 1) - 1) * 100)
+    r_i = (idx / idx.shift(WIN - 1) - 1) * 100
     r_i_df = pd.DataFrame({c: r_i for c in cols})
     vb_df = pd.DataFrame({c: valid_b[uni[c]] for c in cols})
     valid = valid_s & vb_df & pd.DataFrame({c: r_i.notna() for c in cols})
@@ -144,12 +142,18 @@ def judge_matrix(stock, block, idx, uni):
     lo_b_all, hi_b_all = _brk(bfull, LO_WIN, "lo"), _brk(bfull, HI_WIN, "hi")
     lo_i = _brk(idx.to_frame("c"), LO_WIN, "lo")["c"]
     hi_i = _brk(idx.to_frame("c"), HI_WIN, "hi")["c"]
-    sig["3"] = _bool(valid & lo_s_all &
-                     pd.DataFrame({c: lo_b_all[uni[c]] for c in cols}) &
-                     pd.DataFrame({c: lo_i for c in cols}))
-    hi5 = _bool(valid & hi_s_all &
-                pd.DataFrame({c: hi_b_all[uni[c]] for c in cols}) &
-                pd.DataFrame({c: hi_i for c in cols}))
+    sig["3"] = _bool(
+        valid
+        & lo_s_all
+        & pd.DataFrame({c: lo_b_all[uni[c]] for c in cols})
+        & pd.DataFrame({c: lo_i for c in cols})
+    )
+    hi5 = _bool(
+        valid
+        & hi_s_all
+        & pd.DataFrame({c: hi_b_all[uni[c]] for c in cols})
+        & pd.DataFrame({c: hi_i for c in cols})
+    )
     sig["5"] = hi5
     sig["4"] = _bool(valid & hi_s_all & ~hi5)
     return sig
@@ -170,9 +174,13 @@ def run(horizons=HORIZONS, start=None, end=None):
 
     # 前向收益（列=股票）与超额，k 只算一次
     fwd_all = {k: stock.shift(-k) / stock - 1 for k in horizons}
-    ex_all = {k: fwd_all[k] - pd.DataFrame(
-        {c: (block[uni[c]].shift(-k) / block[uni[c]] - 1)
-         for c in stock.columns}) for k in horizons}
+    ex_all = {
+        k: fwd_all[k]
+        - pd.DataFrame(
+            {c: (block[uni[c]].shift(-k) / block[uni[c]] - 1) for c in stock.columns}
+        )
+        for k in horizons
+    }
 
     result = {}
     n_ep = {}
@@ -192,7 +200,7 @@ def run(horizons=HORIZONS, start=None, end=None):
                     fv = fwd.at[dt, code]
                     ev = ex.at[dt, code]
                     if pd.isna(fv):
-                        continue        # 前向窗口不足，弃样
+                        continue  # 前向窗口不足，弃样
                     for cal, v in (("abs", fv), ("rel", ev)):
                         if pd.isna(v):
                             continue
@@ -205,10 +213,12 @@ def run(horizons=HORIZONS, start=None, end=None):
             kk = {}
             for cal, (n, win, s, gp, gl) in sorted(rows.items()):
                 kk[cal] = {
-                    "n": n, "hits": win,
+                    "n": n,
+                    "hits": win,
                     "hitrate": round(win / n, 4) if n else None,
                     "avg_ret": round(s / n, 5) if n else None,
-                    "pf": round(gp / gl, 3) if gl > 0 else None}
+                    "pf": round(gp / gl, 3) if gl > 0 else None,
+                }
             outs[k] = kk
         result[tag] = outs
 
@@ -235,8 +245,10 @@ def main():
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     result, verdicts, n_ep = run(start=a.start, end=a.end)
-    print("== 五信号历史命中率回放（窗口%d根｜GAP%.0fpp｜lo%d/hi%d根｜"
-          "episode去重）==" % (WIN, GAP, LO_WIN, HI_WIN))
+    print(
+        "== 五信号历史命中率回放（窗口%d根｜GAP%.0fpp｜lo%d/hi%d根｜"
+        "episode去重）==" % (WIN, GAP, LO_WIN, HI_WIN)
+    )
     print("口径A=绝对收益>0；口径B=跑赢板块；T+k 自信号日收盘起算")
     for tag, name in SIGNALS.items():
         print("-- 信号%s %s（episode数 %d）--" % (tag, name, n_ep[tag]))
@@ -249,18 +261,30 @@ def main():
             def _r(x):
                 return "-" if x is None else "%.2f%%" % (x * 100)
 
-            print("  T+%2d  A: n=%-6d 命中=%-6s 均收=%-7s PF=%-6s | "
-                  "B: n=%-6d 命中=%-6s 超额均=%-7s PF=%-6s → %s" % (
-                      k, A.get("n", 0), _pct(A.get("hitrate")),
-                      _r(A.get("avg_ret")), A.get("pf", "-"),
-                      B.get("n", 0), _pct(B.get("hitrate")),
-                      _r(B.get("avg_ret")), B.get("pf", "-"),
-                      verdicts[tag][k]))
+            print(
+                "  T+%2d  A: n=%-6d 命中=%-6s 均收=%-7s PF=%-6s | "
+                "B: n=%-6d 命中=%-6s 超额均=%-7s PF=%-6s → %s"
+                % (
+                    k,
+                    A.get("n", 0),
+                    _pct(A.get("hitrate")),
+                    _r(A.get("avg_ret")),
+                    A.get("pf", "-"),
+                    B.get("n", 0),
+                    _pct(B.get("hitrate")),
+                    _r(B.get("avg_ret")),
+                    B.get("pf", "-"),
+                    verdicts[tag][k],
+                )
+            )
     if a.out:
         with open(a.out, "w", encoding="utf-8") as f:
-            json.dump({"result": result, "verdicts": verdicts,
-                       "episode_counts": n_ep},
-                      f, ensure_ascii=False, indent=1)
+            json.dump(
+                {"result": result, "verdicts": verdicts, "episode_counts": n_ep},
+                f,
+                ensure_ascii=False,
+                indent=1,
+            )
         print("明细 → %s" % a.out)
     return 0
 

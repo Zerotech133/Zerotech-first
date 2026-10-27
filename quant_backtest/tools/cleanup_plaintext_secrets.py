@@ -24,9 +24,9 @@ from typing import List, Optional
 
 # 文档化散落明文风险点（来自 N6 清单）。仅作风险登记，不自动操作。
 KNOWN_PLAINTEXT_RISK_PATHS = (
-    "config/tushare_token.txt",   # 仓内相对路径
+    "config/tushare_token.txt",  # 仓内相对路径
     "C:/Temp/tushare_token.txt",  # 临时目录明文
-    ".env.local",                 # 仓内本地环境文件
+    ".env.local",  # 仓内本地环境文件
 )
 
 

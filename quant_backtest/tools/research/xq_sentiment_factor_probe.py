@@ -29,6 +29,7 @@ v0.2 变更（分类管道 v1.3 上线后）：
 用法（系统 3.11，pandas 判例）：
     C:/Program Files/Python311/python.exe quant_backtest/tools/research/xq_sentiment_factor_probe.py
 """
+
 from __future__ import annotations
 
 import glob
@@ -48,9 +49,12 @@ MIN_N = 10  # 层样本低于此数标注「样本不足」
 
 def load_monthly():
     import pandas as pd
+
     parts = sorted(glob.glob(MONTHLY_GLOB))
-    df = pd.concat([pd.read_parquet(p, columns=["ts_code", "trade_date", "close"])
-                    for p in parts], ignore_index=True)
+    df = pd.concat(
+        [pd.read_parquet(p, columns=["ts_code", "trade_date", "close"]) for p in parts],
+        ignore_index=True,
+    )
     df["trade_date"] = pd.to_numeric(df["trade_date"], errors="coerce").astype("Int64")
     df = df.dropna(subset=["trade_date", "close"])
     df["ym"] = df["trade_date"].astype(int) // 100
@@ -126,7 +130,7 @@ def main():
     print("parse_ok=1 帖 %d 条 × 月线 %d 行 %d 只" % (len(rows), n_mrows, len(monthly)))
 
     # ---------- 漏斗 ----------
-    skip = defaultdict(int)   # 帖级跳过原因
+    skip = defaultdict(int)  # 帖级跳过原因
     tick_skip = defaultdict(int)  # ticker 级跳过原因（一帖多票可能多次计数）
     samples = []  # (ts_code, ym, sentiment, layer, fwd)
     for tickers, senti, ctype, created in rows:
@@ -173,8 +177,10 @@ def main():
         v = by_senti.get(s, [])
         if v:
             win = sum(1 for x in v if x > 0) / len(v) * 100
-            print("%-8s n=%-4d mean=%+.2f median=%+.2f win=%.0f%%"
-                  % (s, len(v), mean(v), median(v), win))
+            print(
+                "%-8s n=%-4d mean=%+.2f median=%+.2f win=%.0f%%"
+                % (s, len(v), mean(v), median(v), win)
+            )
     if "bearish" not in by_senti:
         print("（bearish 组暂空——样本不足）")
 
@@ -183,8 +189,10 @@ def main():
     for _, _, senti, layer, fwd in samples:
         by_layer[layer][senti].append(fwd)
     print("\n== content_type 分层：bullish 均值 − bearish 均值 = bull-bear 差 % ==")
-    print("%-12s %5s %6s %6s %9s %9s %9s %s"
-          % ("layer", "n", "n_bull", "n_bear", "bull%", "bear%", "diff", "备注"))
+    print(
+        "%-12s %5s %6s %6s %9s %9s %9s %s"
+        % ("layer", "n", "n_bull", "n_bear", "bull%", "bear%", "diff", "备注")
+    )
     for layer in LAYERS:
         d = by_layer.get(layer)
         if not d:
@@ -193,14 +201,34 @@ def main():
         nr = d.get("bearish", [])
         n = sum(len(v) for v in d.values())
         if n < MIN_N or not nb or not nr:
-            print("%-12s %5d %6d %6d %9s %9s %9s %s"
-                  % (layer, n, len(nb), len(nr), "-", "-", "-",
-                     "样本不足（缺 bull/bear 一侧或 n<%d）" % MIN_N))
+            print(
+                "%-12s %5d %6d %6d %9s %9s %9s %s"
+                % (
+                    layer,
+                    n,
+                    len(nb),
+                    len(nr),
+                    "-",
+                    "-",
+                    "-",
+                    "样本不足（缺 bull/bear 一侧或 n<%d）" % MIN_N,
+                )
+            )
             continue
         diff = mean(nb) - mean(nr)
-        print("%-12s %5d %6d %6d %9.2f %9.2f %+9.2f %s"
-              % (layer, n, len(nb), len(nr), mean(nb), mean(nr), diff,
-                 "样本不足" if n < MIN_N else ""))
+        print(
+            "%-12s %5d %6d %6d %9.2f %9.2f %+9.2f %s"
+            % (
+                layer,
+                n,
+                len(nb),
+                len(nr),
+                mean(nb),
+                mean(nr),
+                diff,
+                "样本不足" if n < MIN_N else "",
+            )
+        )
 
     # ---------- 分月稳定性（bull-bear 差符号一致性） ----------
     def monthly_diff(samples_sub):
@@ -225,8 +253,7 @@ def main():
         neg += diff < 0
         print("  %d: n_bull=%d n_bear=%d diff=%+.2f  [%s]" % (ym, nb, nr, diff, sign))
     if md:
-        print("  符号一致性：正 %d 月 / 负 %d 月（共 %d 月）"
-              % (pos, neg, len(md)))
+        print("  符号一致性：正 %d 月 / 负 %d 月（共 %d 月）" % (pos, neg, len(md)))
     else:
         print("  （无同时含 bull 与 bear 样本的月份）")
 
@@ -234,14 +261,17 @@ def main():
         d = by_layer.get(layer) or {}
         if sum(len(v) for v in d.values()) < MIN_N:
             continue
-        md_l = monthly_diff([(c, ym, s, l, f) for c, ym, s, l, f in samples if l == layer])
+        md_l = monthly_diff(
+            [(c, ym, s, l, f) for c, ym, s, l, f in samples if l == layer]
+        )
         if not md_l:
             print("  layer=%s：无两侧均有样本的月份（样本不足）" % layer)
             continue
         lp = sum(1 for _, _, x in md_l.values() if x > 0)
         ln = sum(1 for _, _, x in md_l.values() if x < 0)
-        print("  layer=%s：正 %d 月 / 负 %d 月（共 %d 月）"
-              % (layer, lp, ln, len(md_l)))
+        print(
+            "  layer=%s：正 %d 月 / 负 %d 月（共 %d 月）" % (layer, lp, ln, len(md_l))
+        )
 
     # ---------- 按月分布 ----------
     by_ym = defaultdict(list)

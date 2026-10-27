@@ -20,15 +20,15 @@ import datetime
 class GateDecision:
     """判定即账本行（ledger.append 直接落一行 JSON）。"""
 
-    market: str                # 市场标识（cn/us/...），feeder 只认自己有源的
-    date: str                  # 锚日 YYYYMMDD（feeder 解析后的实际锚位）
-    safe: object               # bool | None；None=特征缺失缺维降权，不误杀
-    conditions: dict           # 各判据子条件命中情况 {"breadth_lt_0.4": True, ...}
-    features: dict             # 特征快照 {"breadth": 0.326, "med20": -0.021, ...}
-    policy_ver: str            # "v3_breadth40_med20"
-    policy_sha: str            # 冻结 sha 前 16 位（复刻 voltarget_ab 范式）
-    feeder: str                # 特征源标识（qpzm_parquet/lake/...）
-    ts: str                    # 判定时刻 ISO 时间
+    market: str  # 市场标识（cn/us/...），feeder 只认自己有源的
+    date: str  # 锚日 YYYYMMDD（feeder 解析后的实际锚位）
+    safe: object  # bool | None；None=特征缺失缺维降权，不误杀
+    conditions: dict  # 各判据子条件命中情况 {"breadth_lt_0.4": True, ...}
+    features: dict  # 特征快照 {"breadth": 0.326, "med20": -0.021, ...}
+    policy_ver: str  # "v3_breadth40_med20"
+    policy_sha: str  # 冻结 sha 前 16 位（复刻 voltarget_ab 范式）
+    feeder: str  # 特征源标识（qpzm_parquet/lake/...）
+    ts: str  # 判定时刻 ISO 时间
 
     def to_row(self):
         """→ 可 JSON 化的账本行 dict。"""

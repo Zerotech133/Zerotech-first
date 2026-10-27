@@ -26,6 +26,7 @@
               ledger.jsonl 当日新行/新码计数（跨仓只读，拿不到=UNKNOWN）
   5 classify  分类追平轮进度：xq_status_classified 总数与今日 labeled_at 增量
 """
+
 import argparse
 import json
 import os
@@ -53,8 +54,13 @@ STATUS_PASS, STATUS_FAIL, STATUS_UNKNOWN = "PASS", "FAIL", "UNKNOWN"
 
 
 def _item(iid, title, status, detail, evidence, extra=None):
-    d = {"id": iid, "title": title, "status": status, "detail": detail,
-         "evidence": evidence}
+    d = {
+        "id": iid,
+        "title": title,
+        "status": status,
+        "detail": detail,
+        "evidence": evidence,
+    }
     if extra:
         d["extra"] = extra
     return d
@@ -65,29 +71,39 @@ def collect_crawl(day, now):
     ev = [XQ_DB, CRAWL_STATUS_LOG]
     try:
         if not os.path.exists(XQ_DB):
-            return _item("crawl", "今日爬虫产物", STATUS_UNKNOWN,
-                         "xueqiu_info.db 不存在（爬虫从未入库）", ev)
+            return _item(
+                "crawl",
+                "今日爬虫产物",
+                STATUS_UNKNOWN,
+                "xueqiu_info.db 不存在（爬虫从未入库）",
+                ev,
+            )
         mtime = datetime.fromtimestamp(os.path.getmtime(XQ_DB))
-        con = sqlite3.connect("file:%s?mode=ro" % XQ_DB.replace("\\", "/"),
-                              uri=True, timeout=5)
+        con = sqlite3.connect(
+            "file:%s?mode=ro" % XQ_DB.replace("\\", "/"), uri=True, timeout=5
+        )
         try:
             con.execute("PRAGMA busy_timeout=5000")
             lo, hi = day + " 00:00:00", day + " 23:59:59"
             fetched = con.execute(
                 "SELECT COUNT(*) FROM xq_status WHERE fetched_at BETWEEN ? AND ?",
-                (lo, hi)).fetchone()[0]
+                (lo, hi),
+            ).fetchone()[0]
             created = con.execute(
                 "SELECT COUNT(*) FROM xq_status WHERE created_at BETWEEN ? AND ?",
-                (lo, hi)).fetchone()[0]
+                (lo, hi),
+            ).fetchone()[0]
         finally:
             con.close()
-        detail = ("db mtime=%s ｜ 当日 fetched=%d 行 ｜ 当日 created=%d 行"
-                  % (mtime.strftime("%Y-%m-%d %H:%M:%S"), fetched, created))
+        detail = "db mtime=%s ｜ 当日 fetched=%d 行 ｜ 当日 created=%d 行" % (
+            mtime.strftime("%Y-%m-%d %H:%M:%S"),
+            fetched,
+            created,
+        )
         # 爬虫 wrapper 状态日志今日 exit 码（ASCII 行：starting/exit=<rc>）
         crawl_rc, crawl_line = None, None
         if os.path.exists(CRAWL_STATUS_LOG):
-            with open(CRAWL_STATUS_LOG, "r", encoding="ascii",
-                      errors="replace") as f:
+            with open(CRAWL_STATUS_LOG, "r", encoding="ascii", errors="replace") as f:
                 for line in f:
                     if day in line:
                         crawl_line = line.strip()
@@ -97,17 +113,31 @@ def collect_crawl(day, now):
                             except ValueError:
                                 pass
         if crawl_rc is not None and crawl_rc != 0:
-            return _item("crawl", "今日爬虫产物", STATUS_FAIL,
-                         detail + " ｜ 今日爬虫 exit=%d（%s）" % (crawl_rc, crawl_line), ev)
+            return _item(
+                "crawl",
+                "今日爬虫产物",
+                STATUS_FAIL,
+                detail + " ｜ 今日爬虫 exit=%d（%s）" % (crawl_rc, crawl_line),
+                ev,
+            )
         if fetched > 0:
-            return _item("crawl", "今日爬虫产物", STATUS_PASS,
-                         detail + " ｜ 今日爬虫 exit=%s" % crawl_rc, ev)
-        return _item("crawl", "今日爬虫产物", STATUS_UNKNOWN,
-                     detail + " ｜ 当日无 fetched 行（18:00 生产轮未跑或空窗口日）"
-                     " ｜ 今日爬虫 exit=%s" % crawl_rc, ev)
+            return _item(
+                "crawl",
+                "今日爬虫产物",
+                STATUS_PASS,
+                detail + " ｜ 今日爬虫 exit=%s" % crawl_rc,
+                ev,
+            )
+        return _item(
+            "crawl",
+            "今日爬虫产物",
+            STATUS_UNKNOWN,
+            detail + " ｜ 当日无 fetched 行（18:00 生产轮未跑或空窗口日）"
+            " ｜ 今日爬虫 exit=%s" % crawl_rc,
+            ev,
+        )
     except Exception as e:  # 只读收集器绝不崩
-        return _item("crawl", "今日爬虫产物", STATUS_UNKNOWN,
-                     "收集异常: %r" % e, ev)
+        return _item("crawl", "今日爬虫产物", STATUS_UNKNOWN, "收集异常: %r" % e, ev)
 
 
 def report_is_fresh(mtime_ts: float, day: str) -> bool:
@@ -129,36 +159,60 @@ def collect_report(day):
     """
     sys.path.insert(0, os.path.join(REPO, "tools"))
     import verify_daily_report as vdr  # noqa: E402
-    daily_json = os.path.join(OUT_ROOT, "daily",
-                              "xq_intel_%s.json" % day.replace("-", ""))
+
+    daily_json = os.path.join(
+        OUT_ROOT, "daily", "xq_intel_%s.json" % day.replace("-", "")
+    )
     ev = [daily_json, LATEST_JSON]
     try:
         if not os.path.exists(daily_json):
-            return _item("report", "今日日报 JSON", STATUS_UNKNOWN,
-                         "daily/xq_intel_%s.json 未生成（19:00 日报未跑或尚未到点）"
-                         % day.replace("-", ""), ev)
+            return _item(
+                "report",
+                "今日日报 JSON",
+                STATUS_UNKNOWN,
+                "daily/xq_intel_%s.json 未生成（19:00 日报未跑或尚未到点）"
+                % day.replace("-", ""),
+                ev,
+            )
         with open(daily_json, "r", encoding="utf-8") as f:
             data = json.load(f)
         fails = vdr.check_payload(data, vdr.load_expected_pipeline())
         if fails:
             why = "; ".join("%s: %s" % (n, w) for n, w in fails)
-            return _item("report", "今日日报 JSON", STATUS_FAIL,
-                         "check_payload %d 项失败：%s" % (len(fails), why), ev)
+            return _item(
+                "report",
+                "今日日报 JSON",
+                STATUS_FAIL,
+                "check_payload %d 项失败：%s" % (len(fails), why),
+                ev,
+            )
         mt = datetime.fromtimestamp(os.path.getmtime(daily_json))
         if not report_is_fresh(os.path.getmtime(daily_json), day):
-            return _item("report", "今日日报 JSON", STATUS_UNKNOWN,
-                         "15 键齐备但报告 JSON 为 18:50 前旧产物（冒烟/残留，"
-                         "mtime=%s），19:00 日报生成未确认——不判 PASS 防假绿"
-                         % mt.strftime("%Y-%m-%d %H:%M:%S"), ev)
-        return _item("report", "今日日报 JSON", STATUS_PASS,
-                     "15 键齐备 + 语义校验全过 + mtime 新鲜（%s，>=当日 18:50）"
-                     "（verify_daily_report.check_payload）｜ posts_today=%s "
-                     "ingested_today=%s"
-                     % (mt.strftime("%Y-%m-%d %H:%M:%S"),
-                        data.get("posts_today"), data.get("ingested_today")), ev)
+            return _item(
+                "report",
+                "今日日报 JSON",
+                STATUS_UNKNOWN,
+                "15 键齐备但报告 JSON 为 18:50 前旧产物（冒烟/残留，"
+                "mtime=%s），19:00 日报生成未确认——不判 PASS 防假绿"
+                % mt.strftime("%Y-%m-%d %H:%M:%S"),
+                ev,
+            )
+        return _item(
+            "report",
+            "今日日报 JSON",
+            STATUS_PASS,
+            "15 键齐备 + 语义校验全过 + mtime 新鲜（%s，>=当日 18:50）"
+            "（verify_daily_report.check_payload）｜ posts_today=%s "
+            "ingested_today=%s"
+            % (
+                mt.strftime("%Y-%m-%d %H:%M:%S"),
+                data.get("posts_today"),
+                data.get("ingested_today"),
+            ),
+            ev,
+        )
     except Exception as e:
-        return _item("report", "今日日报 JSON", STATUS_UNKNOWN,
-                     "收集异常: %r" % e, ev)
+        return _item("report", "今日日报 JSON", STATUS_UNKNOWN, "收集异常: %r" % e, ev)
 
 
 def alert_is_fresh(mtime_ts: float, day: str) -> bool:
@@ -184,36 +238,55 @@ def collect_alert(day):
     ev = [VERIFY_ALERT_LOG]
     try:
         if not os.path.exists(VERIFY_ALERT_LOG):
-            return _item("alert", "验收告警 verify_alert.log", STATUS_UNKNOWN,
-                         "文件不存在=验收从未失败（偏 PASS 说明；19:05 验收正常"
-                         "通过时不落告警文件）", ev)
+            return _item(
+                "alert",
+                "验收告警 verify_alert.log",
+                STATUS_UNKNOWN,
+                "文件不存在=验收从未失败（偏 PASS 说明；19:05 验收正常"
+                "通过时不落告警文件）",
+                ev,
+            )
         mt_ts = os.path.getmtime(VERIFY_ALERT_LOG)
         mtime = datetime.fromtimestamp(mt_ts)
-        with open(VERIFY_ALERT_LOG, "r", encoding="ascii",
-                  errors="replace") as f:
+        with open(VERIFY_ALERT_LOG, "r", encoding="ascii", errors="replace") as f:
             content = f.read()
         fail_lines = [ln for ln in content.splitlines() if "FAIL" in ln]
         excerpt = content.strip()[:600]
         if not alert_is_fresh(mt_ts, day):
-            return _item("alert", "验收告警 verify_alert.log", STATUS_UNKNOWN,
-                         "文件存在（mtime=%s）但为当日 19:00 前旧产物：FAIL 行为 "
-                         "19:05 生产验收前的历史残留（冒烟/上一轮），19:05 验收"
-                         "成功时本工具不落盘故 mtime 不更新——非今晚验收结论，"
-                         "不判 FAIL 防假红：\n%s"
-                         % (mtime.strftime("%Y-%m-%d %H:%M:%S"), excerpt), ev)
+            return _item(
+                "alert",
+                "验收告警 verify_alert.log",
+                STATUS_UNKNOWN,
+                "文件存在（mtime=%s）但为当日 19:00 前旧产物：FAIL 行为 "
+                "19:05 生产验收前的历史残留（冒烟/上一轮），19:05 验收"
+                "成功时本工具不落盘故 mtime 不更新——非今晚验收结论，"
+                "不判 FAIL 防假红：\n%s"
+                % (mtime.strftime("%Y-%m-%d %H:%M:%S"), excerpt),
+                ev,
+            )
         if fail_lines:
-            return _item("alert", "验收告警 verify_alert.log", STATUS_FAIL,
-                         "文件存在（mtime=%s，>=当日 19:00 新鲜）且含 FAIL 行"
-                         "（alert 为覆盖式落盘）：\n%s"
-                         % (mtime.strftime("%Y-%m-%d %H:%M:%S"), excerpt), ev)
-        return _item("alert", "验收告警 verify_alert.log", STATUS_PASS,
-                     "文件存在（mtime=%s，>=当日 19:00 新鲜）且无 FAIL 行"
-                     "（偏 PASS）：%s"
-                     % (mtime.strftime("%Y-%m-%d %H:%M:%S"),
-                        content.strip()[:300] or "(空)"), ev)
+            return _item(
+                "alert",
+                "验收告警 verify_alert.log",
+                STATUS_FAIL,
+                "文件存在（mtime=%s，>=当日 19:00 新鲜）且含 FAIL 行"
+                "（alert 为覆盖式落盘）：\n%s"
+                % (mtime.strftime("%Y-%m-%d %H:%M:%S"), excerpt),
+                ev,
+            )
+        return _item(
+            "alert",
+            "验收告警 verify_alert.log",
+            STATUS_PASS,
+            "文件存在（mtime=%s，>=当日 19:00 新鲜）且无 FAIL 行"
+            "（偏 PASS）：%s"
+            % (mtime.strftime("%Y-%m-%d %H:%M:%S"), content.strip()[:300] or "(空)"),
+            ev,
+        )
     except Exception as e:
-        return _item("alert", "验收告警 verify_alert.log", STATUS_UNKNOWN,
-                     "收集异常: %r" % e, ev)
+        return _item(
+            "alert", "验收告警 verify_alert.log", STATUS_UNKNOWN, "收集异常: %r" % e, ev
+        )
 
 
 def collect_shadow(day):
@@ -221,8 +294,13 @@ def collect_shadow(day):
     ev = [SHADOW_LEDGER, SHADOW_LOG]
     try:
         if not os.path.exists(SHADOW_LEDGER):
-            return _item("shadow", "19:10 日批产物", STATUS_UNKNOWN,
-                         "ledger.jsonl 不存在（日批未跑或部署路径漂移）", ev)
+            return _item(
+                "shadow",
+                "19:10 日批产物",
+                STATUS_UNKNOWN,
+                "ledger.jsonl 不存在（日批未跑或部署路径漂移）",
+                ev,
+            )
         n_today, codes, rules = 0, set(), Counter()
         with open(SHADOW_LEDGER, "r", encoding="utf-8", errors="replace") as f:
             for line in f:
@@ -243,8 +321,11 @@ def collect_shadow(day):
                 if row.get("security"):
                     codes.add(row["security"])
                 rules[row.get("rule_id") or "(none)"] += 1
-        detail = ("当日新行=%d ｜ 当日新码=%d ｜ rule 分布=%s"
-                  % (n_today, len(codes), dict(rules) if rules else "{}"))
+        detail = "当日新行=%d ｜ 当日新码=%d ｜ rule 分布=%s" % (
+            n_today,
+            len(codes),
+            dict(rules) if rules else "{}",
+        )
         # shadow_daily.log 今日 exit 行佐证
         log_line = None
         if os.path.exists(SHADOW_LOG):
@@ -257,39 +338,61 @@ def collect_shadow(day):
         if n_today > 0:
             return _item("shadow", "19:10 日批产物", STATUS_PASS, detail, ev)
         if log_line and "exit=1" in log_line:
-            return _item("shadow", "19:10 日批产物", STATUS_FAIL,
-                         detail + " ｜ 当日无新行且日批 exit=1", ev)
-        return _item("shadow", "19:10 日批产物", STATUS_UNKNOWN,
-                     detail + " ｜ 当日无新行（19:10 未到 / skip 日 / 未跑）", ev)
+            return _item(
+                "shadow",
+                "19:10 日批产物",
+                STATUS_FAIL,
+                detail + " ｜ 当日无新行且日批 exit=1",
+                ev,
+            )
+        return _item(
+            "shadow",
+            "19:10 日批产物",
+            STATUS_UNKNOWN,
+            detail + " ｜ 当日无新行（19:10 未到 / skip 日 / 未跑）",
+            ev,
+        )
     except Exception as e:
-        return _item("shadow", "19:10 日批产物", STATUS_UNKNOWN,
-                     "收集异常: %r" % e, ev)
+        return _item("shadow", "19:10 日批产物", STATUS_UNKNOWN, "收集异常: %r" % e, ev)
 
 
 def collect_classify(day):
     """⑤ 分类追平轮进度（只读查库，busy_timeout 保护）。"""
     ev = [XQ_DB]
     try:
-        con = sqlite3.connect("file:%s?mode=ro" % XQ_DB.replace("\\", "/"),
-                              uri=True, timeout=5)
+        con = sqlite3.connect(
+            "file:%s?mode=ro" % XQ_DB.replace("\\", "/"), uri=True, timeout=5
+        )
         try:
             con.execute("PRAGMA busy_timeout=5000")
             total = con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
             classified = con.execute(
-                "SELECT COUNT(*) FROM xq_status_classified").fetchone()[0]
+                "SELECT COUNT(*) FROM xq_status_classified"
+            ).fetchone()[0]
             today_n = con.execute(
                 "SELECT COUNT(*) FROM xq_status_classified WHERE labeled_at >= ?",
-                (day + " 00:00:00",)).fetchone()[0]
+                (day + " 00:00:00",),
+            ).fetchone()[0]
         finally:
             con.close()
         pct = (100.0 * classified / total) if total else 0.0
-        return _item("classify", "分类追平轮进度", STATUS_PASS,
-                     "库内总量=%d ｜ 已打标=%d（%.1f%%）｜ 今日 labeled_at 增量=%d"
-                     " ｜ 剩余 pending=%d"
-                     % (total, classified, pct, today_n, total - classified), ev)
+        return _item(
+            "classify",
+            "分类追平轮进度",
+            STATUS_PASS,
+            "库内总量=%d ｜ 已打标=%d（%.1f%%）｜ 今日 labeled_at 增量=%d"
+            " ｜ 剩余 pending=%d"
+            % (total, classified, pct, today_n, total - classified),
+            ev,
+        )
     except Exception as e:
-        return _item("classify", "分类追平轮进度", STATUS_UNKNOWN,
-                     "收集异常（库被写锁占用的概率高，重试即可）: %r" % e, ev)
+        return _item(
+            "classify",
+            "分类追平轮进度",
+            STATUS_UNKNOWN,
+            "收集异常（库被写锁占用的概率高，重试即可）: %r" % e,
+            ev,
+        )
 
 
 def render_md(day, mode, items, generated_at):
@@ -297,12 +400,16 @@ def render_md(day, mode, items, generated_at):
     L = []
     L.append("# 雪球生产链时间线守望 · %s" % day)
     L.append("")
-    L.append("> 生成 %s ｜ 模式 %s ｜ 收集器 tools/xq_timeline_watch.py（全程只读）"
-             % (generated_at, mode))
+    L.append(
+        "> 生成 %s ｜ 模式 %s ｜ 收集器 tools/xq_timeline_watch.py（全程只读）"
+        % (generated_at, mode)
+    )
     L.append("")
     if mode == "dry-run":
-        L.append("**本报告为 dry-run 自验产物（生产链未启动时点收集），"
-                 "各 UNKNOWN/缺省值不代表当晚真实状态。**")
+        L.append(
+            "**本报告为 dry-run 自验产物（生产链未启动时点收集），"
+            "各 UNKNOWN/缺省值不代表当晚真实状态。**"
+        )
         L.append("")
     if fails:
         L.append("## !! FAIL 项（%d）" % len(fails))
@@ -326,8 +433,11 @@ def render_md(day, mode, items, generated_at):
 def main() -> int:
     ap = argparse.ArgumentParser(description="雪球生产链时间线守望（只读）")
     ap.add_argument("--date", default=time.strftime("%Y-%m-%d"), help="守望日")
-    ap.add_argument("--dry-run", action="store_true",
-                    help="标注 dry-run（生产链未启动时点的自验运行）")
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="标注 dry-run（生产链未启动时点的自验运行）",
+    )
     a = ap.parse_args()
     day = a.date
     now = datetime.now()
@@ -344,9 +454,13 @@ def main() -> int:
     has_fail = any(it["status"] == STATUS_FAIL for it in items)
 
     md = render_md(day, mode, items, generated_at)
-    payload = {"date": day, "generated_at": generated_at, "mode": mode,
-               "overall": "HAS_FAIL" if has_fail else "ALL_GREEN",
-               "items": items}
+    payload = {
+        "date": day,
+        "generated_at": generated_at,
+        "mode": mode,
+        "overall": "HAS_FAIL" if has_fail else "ALL_GREEN",
+        "items": items,
+    }
     os.makedirs(OUT_ROOT, exist_ok=True)
     stem = os.path.join(OUT_ROOT, "timeline_%s" % day)
     with open(stem + ".md", "w", encoding="utf-8") as f:
@@ -356,8 +470,10 @@ def main() -> int:
 
     # 全绿（含 UNKNOWN）不写任何告警文件；有 FAIL 仅打标退出码 1，
     # 由 wrapper 记入 xq_timeline 状态日志，绝不另写告警文件。
-    print("[timeline-watch] mode=%s overall=%s report=%s.md"
-          % (mode, payload["overall"], stem))
+    print(
+        "[timeline-watch] mode=%s overall=%s report=%s.md"
+        % (mode, payload["overall"], stem)
+    )
     for it in items:
         print("  %-8s %s | %s" % (it["id"], it["status"], it["title"]))
     return 1 if has_fail else 0

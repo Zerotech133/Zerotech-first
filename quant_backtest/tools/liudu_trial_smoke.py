@@ -39,7 +39,9 @@ def main() -> int:
     # --- N8 reconcile：模式 B（R1 单源基线），仍恒 NOT_VERIFIED（不升级为 READY）---
     r = reconcile(trade_date="2026-10-21", mode=SELECTED_RECONCILE_MODE)
     print(f"[N8] reconcile(mode={SELECTED_RECONCILE_MODE}) -> status={r.get('status')}")
-    assert r.get("status") in ("NOT_VERIFIED", "REJECTED"), "reconcile 不得私自输出 READY"
+    assert r.get("status") in ("NOT_VERIFIED", "REJECTED"), (
+        "reconcile 不得私自输出 READY"
+    )
 
     # --- N5 数据源：trial 态合成 fetch（绝不发请求、绝不持真实凭证）---
     adapters = {src: build_adapter(src, state="trial") for src in KNOWN_DATA_SOURCES}
@@ -51,11 +53,18 @@ def main() -> int:
         assert f["state"] == "trial"
 
     # --- N11 signal_pool：构建合成记录，仅落 tempfile 验证 append-only 写入 ---
-    rec = build_record(symbol="SH600000", score=0.82, source="liudu_trial",
-                       trade_date="2026-10-21", meta={"universe": u})
+    rec = build_record(
+        symbol="SH600000",
+        score=0.82,
+        source="liudu_trial",
+        trade_date="2026-10-21",
+        meta={"universe": u},
+    )
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td) / "signal_pool_smoke.jsonl"
-        n = write_signals([rec, build_record("SZ000001", 0.77, "liudu_trial", "2026-10-21")], str(tmp))
+        n = write_signals(
+            [rec, build_record("SZ000001", 0.77, "liudu_trial", "2026-10-21")], str(tmp)
+        )
         print(f"[N11] signal_pool 写入（tempfile）条数={n}，路径={tmp.name}")
 
     # --- N4 止损实验：合成价格序列仿真（fixed 三档 + trailing）---
@@ -63,8 +72,12 @@ def main() -> int:
     params = default_params()
     sim = simulate(prices, "fixed", params)
     trail = simulate(prices, "trailing", params)
-    print(f"[N4] fixed 策略 final_pnl={sim['final_pnl']:.4f} max_dd={sim['max_drawdown']:.4f}")
-    print(f"[N4] trailing 策略 final_pnl={trail['final_pnl']:.4f} max_dd={trail['max_drawdown']:.4f}")
+    print(
+        f"[N4] fixed 策略 final_pnl={sim['final_pnl']:.4f} max_dd={sim['max_drawdown']:.4f}"
+    )
+    print(
+        f"[N4] trailing 策略 final_pnl={trail['final_pnl']:.4f} max_dd={trail['max_drawdown']:.4f}"
+    )
 
     print("-" * 52)
     print("冒烟通过：五大非生产模块 trial/合成路径完整串联，无断点、无生产触碰。")

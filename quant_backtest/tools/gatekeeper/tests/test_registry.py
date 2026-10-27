@@ -26,9 +26,9 @@ def test_freeze_idempotent_same_sha(tmp_path):
     reg = Registry(fp)
     reg.freeze("v3", "a" * 16, note="first")
     first = reg.list_versions()["v3"]
-    reg.freeze("v3", "a" * 16)            # 重申
+    reg.freeze("v3", "a" * 16)  # 重申
     again = reg.list_versions()["v3"]
-    assert again == first                 # frozen_at/note 不变
+    assert again == first  # frozen_at/note 不变
     assert reg.active()[0] == "v3"
 
 
@@ -46,10 +46,8 @@ def test_version_history_and_switch(tmp_path):
     reg = Registry(str(tmp_path / "registry.json"))
     reg.freeze("v3_breadth40_med20", "a" * 16)
     reg.freeze("v4_obsband50", "b" * 16, note="观察带 50")
-    assert reg.active() == ("v4_obsband50",
-                            reg.list_versions()["v4_obsband50"])
-    assert set(reg.list_versions()) == {"v3_breadth40_med20",
-                                        "v4_obsband50"}
+    assert reg.active() == ("v4_obsband50", reg.list_versions()["v4_obsband50"])
+    assert set(reg.list_versions()) == {"v3_breadth40_med20", "v4_obsband50"}
     assert reg.verify("v3_breadth40_med20", "a" * 16)
 
 
@@ -60,9 +58,9 @@ def test_tamper_detected(tmp_path):
     reg.freeze("v3", "a" * 16)
     with open(fp, encoding="utf-8") as f:
         disk = json.load(f)
-    disk["versions"]["v3"]["sha"] = "f" * 16        # 篡改
+    disk["versions"]["v3"]["sha"] = "f" * 16  # 篡改
     with open(fp, "w", encoding="utf-8") as f:
         json.dump(disk, f, ensure_ascii=False)
-    assert reg.verify("v3", "a" * 16) is False      # 与冻结值对不上
-    assert reg.verify("v3", "f" * 16) is True       # 现值即篡改值（可发现）
+    assert reg.verify("v3", "a" * 16) is False  # 与冻结值对不上
+    assert reg.verify("v3", "f" * 16) is True  # 现值即篡改值（可发现）
     assert reg.verify("v_nofile", "a" * 16) is False

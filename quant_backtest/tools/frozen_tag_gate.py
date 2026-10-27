@@ -26,6 +26,7 @@
 
 退出码：0=PASS / 1=FAIL（层1 或层3 非空）/ 2=用法错误
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,8 +38,8 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-QB = os.path.dirname(HERE)                      # quant_backtest/
-REPO = os.path.dirname(QB)                      # 仓库根
+QB = os.path.dirname(HERE)  # quant_backtest/
+REPO = os.path.dirname(QB)  # 仓库根
 
 # ── 配置 ──────────────────────────────────────────────────
 # A 臂复验入口（K-STOCK-381 方案 A · S3 一年窗同窗复验）
@@ -57,8 +58,21 @@ PATH_ENTRIES = [
     "portal/bt2_run",
 ]
 # 遍历时跳过的目录（数据/产物/第三方/缓存）
-SKIP_DIRS = {".git", "node_modules", "site-packages", "__pycache__", "venv", "pylibs",
-             ".worktrees", "data", "reports", "archive", "backup", "backups", "deploy_packages"}
+SKIP_DIRS = {
+    ".git",
+    "node_modules",
+    "site-packages",
+    "__pycache__",
+    "venv",
+    "pylibs",
+    ".worktrees",
+    "data",
+    "reports",
+    "archive",
+    "backup",
+    "backups",
+    "deploy_packages",
+}
 # 产物类特征（记录在案用，不作闸门）
 ARTIFACT_PAT = [
     (r"\.parquet$|\.csv$|\.db$|\.sqlite", "数据文件"),
@@ -72,16 +86,26 @@ ARTIFACT_PAT = [
 
 
 def git(*args, timeout=300) -> str:
-    r = subprocess.run(["git", "-C", REPO] + list(args),
-                       capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=timeout)
+    r = subprocess.run(
+        ["git", "-C", REPO] + list(args),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
     return r.stdout
 
 
 def git_rc(*args, timeout=300) -> tuple[str, int]:
-    r = subprocess.run(["git", "-C", REPO] + list(args),
-                       capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=timeout)
+    r = subprocess.run(
+        ["git", "-C", REPO] + list(args),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
     return r.stdout, r.returncode
 
 
@@ -130,7 +154,9 @@ def closure(entries: list[str]) -> tuple[set, dict]:
         bymod.setdefault(os.path.splitext(os.path.basename(x))[0], []).append(x)
     seen: set = set()
     edges: dict = {}
-    stack = [e for e in entries if os.path.exists(os.path.join(REPO, e.replace("/", os.sep)))]
+    stack = [
+        e for e in entries if os.path.exists(os.path.join(REPO, e.replace("/", os.sep)))
+    ]
     while stack:
         cur = stack.pop()
         if cur in seen:
@@ -140,8 +166,10 @@ def closure(entries: list[str]) -> tuple[set, dict]:
             cands = bymod.get(mod)
             if not cands:
                 continue
-            #优先 quant_backtest/ 根，其次最短路径（避免 tests/ 里的同名影子）
-            cands = sorted(cands, key=lambda c: (not c.startswith("quant_backtest/"), len(c)))
+            # 优先 quant_backtest/ 根，其次最短路径（避免 tests/ 里的同名影子）
+            cands = sorted(
+                cands, key=lambda c: (not c.startswith("quant_backtest/"), len(c))
+            )
             tgt = cands[0]
             edges.setdefault(cur, set()).add(tgt)
             if tgt not in seen:
@@ -150,38 +178,63 @@ def closure(entries: list[str]) -> tuple[set, dict]:
 
 
 def drift(ref: str, head: str, path: str) -> list:
-    return [x for x in git("diff", "--name-only", ref, head, "--", path).splitlines()
-            if x.strip()]
+    return [
+        x
+        for x in git("diff", "--name-only", ref, head, "--", path).splitlines()
+        if x.strip()
+    ]
 
 
 # ── 主流程 ────────────────────────────────────────────────
 def run(ref: str, head: str, signoff: set, signoff_cfg: set | None = None) -> dict:
     signoff_cfg = signoff_cfg or set()
-    res: dict = {"ref": ref, "head": head, "sign_off_cfg": sorted(signoff_cfg),
-                 "pass": True, "checks": []}
+    res: dict = {
+        "ref": ref,
+        "head": head,
+        "sign_off_cfg": sorted(signoff_cfg),
+        "pass": True,
+        "checks": [],
+    }
 
     # ── 层 0：判据自检（先证明本工具有效：drift 非空时能检出来）──
     rule("【层 0】判据自检 —— 证明本闸门不是恒 PASS")
     allp = [x for x in git("diff", "--name-only", ref, head).splitlines() if x.strip()]
-    p("全仓漂移文件 = %d 个（若 = 0 说明 %s..%s 已一致，本闸门无事可做）"
-      % (len(allp), ref, head))
+    p(
+        "全仓漂移文件 = %d 个（若 = 0 说明 %s..%s 已一致，本闸门无事可做）"
+        % (len(allp), ref, head)
+    )
     probe = drift(ref, head, "quant_backtest")
-    p("实测 `git diff --name-only %s %s -- quant_backtest` = %d 行"
-      % (ref, head, len(probe)))
+    p(
+        "实测 `git diff --name-only %s %s -- quant_backtest` = %d 行"
+        % (ref, head, len(probe))
+    )
     p("")
-    p("⚠️ 反面对照（406 判例）：`git diff --name-only %s -- quant_backtest`"
-      % ref)
+    p("⚠️ 反面对照（406 判例）：`git diff --name-only %s -- quant_backtest`" % ref)
     tmp = git_rc("tag", "_k409_selfcheck_%d" % os.getpid())
     if tmp[1] == 0:
         # 注意：这条命令按卡上原写法跑必然恒空 —— 这正是判据缺陷的证明
         git("tag", "-f", "_k409_probe", head)
         out = git("diff", "--name-only", "_k409_probe", "--", "quant_backtest")
-        p("   输出 = %d 行%s" % (len([x for x in out.splitlines() if x.strip()]),
-                                " ★恒空 = 旧判据形同虚设的证明" if not out.strip() else ""))
+        p(
+            "   输出 = %d 行%s"
+            % (
+                len([x for x in out.splitlines() if x.strip()]),
+                " ★恒空 = 旧判据形同虚设的证明" if not out.strip() else "",
+            )
+        )
         git("tag", "-d", "_k409_probe")
-    p("⇒ 本工具一律用 `git diff <refA> <refB> -- <path>`（两个 ref），不使用单 ref 写法。")
-    res["checks"].append({"layer": 0, "name": "判据自检", "drift_total": len(allp),
-                          "qb_drift": len(probe), "ok": True})
+    p(
+        "⇒ 本工具一律用 `git diff <refA> <refB> -- <path>`（两个 ref），不使用单 ref 写法。"
+    )
+    res["checks"].append(
+        {
+            "layer": 0,
+            "name": "判据自检",
+            "drift_total": len(allp),
+            "qb_drift": len(probe),
+            "ok": True,
+        }
+    )
 
     # ── 层 1：入口/路径自身漂移 ──────────────────────────────
     rule("【层 1】入口文件自身漂移（必须为 0）")
@@ -193,8 +246,15 @@ def run(ref: str, head: str, signoff: set, signoff_cfg: set | None = None) -> di
     bad1 = sum(len(v) for v in l1.values())
     p("")
     p("⇒ 层1 合计 = %d %s" % (bad1, "✅ PASS" if bad1 == 0 else "★ FAIL"))
-    res["checks"].append({"layer": 1, "name": "入口自身漂移", "detail": l1,
-                          "total": bad1, "ok": bad1 == 0})
+    res["checks"].append(
+        {
+            "layer": 1,
+            "name": "入口自身漂移",
+            "detail": l1,
+            "total": bad1,
+            "ok": bad1 == 0,
+        }
+    )
     res["pass"] = res["pass"] and bad1 == 0
 
     # ── 层 2：传递依赖闭包 ─────────────────────────────────
@@ -219,8 +279,16 @@ def run(ref: str, head: str, signoff: set, signoff_cfg: set | None = None) -> di
             p("    %s" % x)
     else:
         p("⇒全部漂移均已签收（%s）" % (", ".join(sorted(signoff)) or "白名单为空"))
-    res["checks"].append({"layer": 2, "name": "传递依赖闭包", "closure_size": len(clos),
-                          "drift": cdrift, "unsigned": unsigned, "ok": not unsigned})
+    res["checks"].append(
+        {
+            "layer": 2,
+            "name": "传递依赖闭包",
+            "closure_size": len(clos),
+            "drift": cdrift,
+            "unsigned": unsigned,
+            "ok": not unsigned,
+        }
+    )
 
     # ── 层 3：闭包读到的配置文件 ────────────────────────────
     rule("【层 3】闭包读取的配置文件漂移")
@@ -232,11 +300,16 @@ def run(ref: str, head: str, signoff: set, signoff_cfg: set | None = None) -> di
     cfgs: set = set()
     for f in clos:
         try:
-            src = io.open(os.path.join(REPO, f.replace("/", os.sep)),
-                          encoding="utf-8", errors="replace").read()
+            src = io.open(
+                os.path.join(REPO, f.replace("/", os.sep)),
+                encoding="utf-8",
+                errors="replace",
+            ).read()
         except Exception:
             continue
-        for m in re.finditer(r"""["']([\w/\\.\-]+\.(?:json|yaml|yml|ini|cfg|toml))["']""", src):
+        for m in re.finditer(
+            r"""["']([\w/\\.\-]+\.(?:json|yaml|yml|ini|cfg|toml))["']""", src
+        ):
             cfgs.add(m.group(1))
     blocking: list = []
     advisory: list = []
@@ -272,14 +345,25 @@ def run(ref: str, head: str, signoff: set, signoff_cfg: set | None = None) -> di
     if advisory:
         p("  提示项（运行时产物 / 同名多文件，**不判FAIL**）：")
         for r in advisory:
-            why = ("运行时产物（每日改写）" if r["config"] in ADVISORY_BASE
-                   else "同名不同文件·匹配已收窄")
+            why = (
+                "运行时产物（每日改写）"
+                if r["config"] in ADVISORY_BASE
+                else "同名不同文件·匹配已收窄"
+            )
             p("     %-42s %s← %s" % (r["config"][:42], why, r["paths"][:1][:1]))
     p("")
     p("⇒层3 阻塞项 = %d %s" % (len(blocking), "✅ PASS" if not blocking else "★ FAIL"))
-    res["checks"].append({"layer": 3, "name": "闭包配置漂移", "config_count": len(cfgs),
-                          "blocking": blocking, "advisory": advisory,
-                          "signed": signed_cfg, "ok": not blocking})
+    res["checks"].append(
+        {
+            "layer": 3,
+            "name": "闭包配置漂移",
+            "config_count": len(cfgs),
+            "blocking": blocking,
+            "advisory": advisory,
+            "signed": signed_cfg,
+            "ok": not blocking,
+        }
+    )
     res["pass"] = res["pass"] and not blocking
 
     # ── 附：产物类文件（记录在案，不作闸门）─────────────────
@@ -304,10 +388,19 @@ def run(ref: str, head: str, signoff: set, signoff_cfg: set | None = None) -> di
     rule("【结论】")
     for c in res["checks"]:
         if "layer" in c and c.get("layer"):
-            p("  层%s %-16s %s" % (c["layer"], c["name"], "✅ PASS" if c.get("ok") else "★ FAIL"))
+            p(
+                "  层%s %-16s %s"
+                % (c["layer"], c["name"], "✅ PASS" if c.get("ok") else "★ FAIL")
+            )
     p("")
-    p("  总体 = %s" % ("✅ PASS —— 复验链路可复现，S3 判据可信"
-                        if res["pass"] else "★ FAIL —— 不可开闸"))
+    p(
+        "  总体 = %s"
+        % (
+            "✅ PASS —— 复验链路可复现，S3 判据可信"
+            if res["pass"]
+            else "★ FAIL —— 不可开闸"
+        )
+    )
     return res
 
 
@@ -316,10 +409,16 @@ def main() -> int:
     ap.add_argument("--ref", default="open1016-frozen-d2")
     ap.add_argument("--head", default="HEAD")
     ap.add_argument("--json", action="store_true", help="机器可读输出")
-    ap.add_argument("--sign-off", default="",
-                    help="已签收的漂移 py 文件（逗号分隔，basename 或完整路径）")
-    ap.add_argument("--sign-off-cfg", default="",
-                    help="已实证不影响复验的配置文件（逗号分隔，basename）")
+    ap.add_argument(
+        "--sign-off",
+        default="",
+        help="已签收的漂移 py 文件（逗号分隔，basename 或完整路径）",
+    )
+    ap.add_argument(
+        "--sign-off-cfg",
+        default="",
+        help="已实证不影响复验的配置文件（逗号分隔，basename）",
+    )
     a = ap.parse_args()
     signoff = {x.strip() for x in a.sign_off.split(",") if x.strip()}
     signoff_cfg = {x.strip() for x in a.sign_off_cfg.split(",") if x.strip()}

@@ -18,6 +18,7 @@
 幂等：同 sha8 已部署则跳过（--force 重打包）。回滚=删该版本目录
 + 手动复位 MANIFEST.deploy（脚本不自动复位，防误删在跑版本）。
 """
+
 import argparse
 import hashlib
 import json
@@ -38,8 +39,7 @@ def policy_sha(policy_fp):
     with open(policy_fp, encoding="utf-8") as f:
         cfg = json.load(f)
     cfg.pop("config_sha256", None)
-    body = json.dumps(cfg, sort_keys=True, ensure_ascii=False,
-                      separators=(",", ":"))
+    body = json.dumps(cfg, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 
@@ -57,13 +57,17 @@ def deploy(name, force=False):
         pol = json.load(f)
     frozen = pol.get("config_sha256") or ""
     if not frozen or frozen.upper().startswith(PLACEHOLDER):
-        print("[FAIL] 判据未冻结（config_sha256=%r）——预注册冻结前拒绝部署"
-              "（规格 §4 晋级条件 2，fail-closed）" % frozen[:20])
+        print(
+            "[FAIL] 判据未冻结（config_sha256=%r）——预注册冻结前拒绝部署"
+            "（规格 §4 晋级条件 2，fail-closed）" % frozen[:20]
+        )
         return 3
     sha = policy_sha(policy_fp)
     if sha != frozen:
-        print("[FAIL] sha 不一致：文件体 %s ≠ 冻结值 %s——policy.json 被改过，"
-              "升版重新冻结，禁止带病部署" % (sha[:16], frozen[:16]))
+        print(
+            "[FAIL] sha 不一致：文件体 %s ≠ 冻结值 %s——policy.json 被改过，"
+            "升版重新冻结，禁止带病部署" % (sha[:16], frozen[:16])
+        )
         return 3
     ver = str(pol.get("version") or "v1")
     dest = os.path.join(DEPLOY_DIR, name, "%s_%s" % (ver, sha[:8]))
@@ -74,16 +78,28 @@ def deploy(name, force=False):
     for fn in PKG_FILES:
         shutil.copy2(os.path.join(src, fn), os.path.join(dest, fn))
     with open(os.path.join(dest, "PACKAGE.json"), "w", encoding="utf-8") as f:
-        json.dump({"strategy": name, "version": ver, "policy_sha256": sha,
-                   "packaged_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "source": src, "files": list(PKG_FILES)},
-                  f, ensure_ascii=False, indent=1)
+        json.dump(
+            {
+                "strategy": name,
+                "version": ver,
+                "policy_sha256": sha,
+                "packaged_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "source": src,
+                "files": list(PKG_FILES),
+            },
+            f,
+            ensure_ascii=False,
+            indent=1,
+        )
     # 回写源 MANIFEST.deploy（版本指针，不自动复位）
     man_fp = os.path.join(src, "MANIFEST.json")
     with open(man_fp, encoding="utf-8") as f:
         man = json.load(f)
-    man["deploy"] = {"deployed": True, "sha": sha, "deployed_at":
-                     time.strftime("%Y-%m-%d %H:%M:%S")}
+    man["deploy"] = {
+        "deployed": True,
+        "sha": sha,
+        "deployed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
     tmp = man_fp + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(man, f, ensure_ascii=False, indent=2)
@@ -112,8 +128,7 @@ def list_packages(name):
         if os.path.exists(pj):
             with open(pj, encoding="utf-8") as f:
                 m = json.load(f)
-            print("%s  sha=%s  at=%s" % (v, m["policy_sha256"][:16],
-                                         m["packaged_at"]))
+            print("%s  sha=%s  at=%s" % (v, m["policy_sha256"][:16], m["packaged_at"]))
     return 0
 
 

@@ -78,13 +78,14 @@ def build_snapshot() -> dict:
             cur.execute("SELECT COUNT(*) FROM xq_status_classified")
             snap["classified"] = cur.fetchone()[0]
             cur.execute(
-                "SELECT COUNT(*) FROM xq_status_classified WHERE prompt_version LIKE 'v1.3%'")
+                "SELECT COUNT(*) FROM xq_status_classified WHERE prompt_version LIKE 'v1.3%'"
+            )
             snap["v13_count"] = cur.fetchone()[0]
             cur.execute(
-                "SELECT COUNT(*) FROM xq_status_classified WHERE tickers != '[]'")
+                "SELECT COUNT(*) FROM xq_status_classified WHERE tickers != '[]'"
+            )
             snap["with_tickers"] = cur.fetchone()[0]
-            cur.execute(
-                "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok = 1")
+            cur.execute("SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok = 1")
             snap["parse_ok_count"] = cur.fetchone()[0]
         finally:
             con.close()
@@ -101,7 +102,8 @@ def main() -> int:
     snap = build_snapshot()
     SNAPSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
     SNAPSHOT_PATH.write_text(
-        json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(json.dumps(snap, ensure_ascii=False, indent=2))
     print("snapshot -> %s" % SNAPSHOT_PATH)
     return 0

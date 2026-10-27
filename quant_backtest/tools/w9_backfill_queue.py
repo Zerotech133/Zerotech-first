@@ -17,6 +17,7 @@
   路径断链），队列以"根目录临时副本"方式运行，零侵入原脚本；
 - Windows 计划任务/自动化均可调，退出码=失败步骤数。
 """
+
 import argparse
 import json
 import os
@@ -37,7 +38,9 @@ CROSS_D0, CROSS_D1 = "20251014", "20261014"
 GRID_SCRIPT = os.path.join(HERE, "tools", "research", "cross_grid_backtest.py")
 GRID_COPY = os.path.join(HERE, "cross_grid_backtest.py")  # 根目录临时副本
 GRID_RESULT = os.path.join(HERE, "reports", "cross_grid_result.json")
-GRID_RESULT_1Y = os.path.join(HERE, "reports", "cross_grid_result_1y_%s_%s.json" % (CROSS_D0, CROSS_D1))
+GRID_RESULT_1Y = os.path.join(
+    HERE, "reports", "cross_grid_result_1y_%s_%s.json" % (CROSS_D0, CROSS_D1)
+)
 
 _logf = None
 
@@ -50,8 +53,7 @@ def log(msg):
 
 
 def kill_tree(pid):
-    subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)],
-                   capture_output=True)
+    subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
 
 
 def run_step(name, args, log_fp, cwd=HERE):
@@ -65,7 +67,10 @@ def run_step(name, args, log_fp, cwd=HERE):
             rc = p.wait(timeout=TIMEOUT_S)
         except subprocess.TimeoutExpired:
             kill_tree(p.pid)
-            log("STEP %s 超时 %ds，已 taskkill /T（详见 %s）" % (name, TIMEOUT_S, log_fp))
+            log(
+                "STEP %s 超时 %ds，已 taskkill /T（详见 %s）"
+                % (name, TIMEOUT_S, log_fp)
+            )
             return 124
     dt = time.time() - t0
     log("STEP %s 完成 rc=%d 耗时 %.0fs（日志 %s）" % (name, rc, dt, log_fp))
@@ -75,8 +80,11 @@ def run_step(name, args, log_fp, cwd=HERE):
 def step_qpzm(force=False):
     log_fp = os.path.join(LOG_DIR, "w9_qpzm_backfill240_%s.log" % TS)
     log("=== qpzm --backfill %d（一年批次窗）===" % QPZM_DAYS)
-    return run_step("qpzm-backfill", ["-X", "utf8", "qpzm_daily_batch.py",
-                                      "--backfill", str(QPZM_DAYS)], log_fp)
+    return run_step(
+        "qpzm-backfill",
+        ["-X", "utf8", "qpzm_daily_batch.py", "--backfill", str(QPZM_DAYS)],
+        log_fp,
+    )
 
 
 def step_cross(force=False):
@@ -89,10 +97,11 @@ def step_cross(force=False):
     if os.path.exists(GRID_RESULT):
         try:
             with open(GRID_RESULT, encoding="utf-8") as f:
-                meta = (json.load(f).get("meta") or {})
-            bak = GRID_RESULT.replace(".json", "_2y_%s_%s.json"
-                                      % (meta.get("d0"), meta.get("d1")))
-        except Exception as e:                      # noqa: BLE001
+                meta = json.load(f).get("meta") or {}
+            bak = GRID_RESULT.replace(
+                ".json", "_2y_%s_%s.json" % (meta.get("d0"), meta.get("d1"))
+            )
+        except Exception as e:  # noqa: BLE001
             log("读取两年窗 meta 失败(%s)，回退硬编码名" % e)
             bak = GRID_RESULT.replace(".json", "_2y_20240902_20260918.json")
         if not os.path.exists(bak):
@@ -103,10 +112,19 @@ def step_cross(force=False):
     # 2) 根目录临时副本（修复 HERE 断链，零侵入原脚本）
     shutil.copy2(GRID_SCRIPT, GRID_COPY)
     try:
-        rc = run_step("cross-grid-1y",
-                      ["-X", "utf8", "cross_grid_backtest.py",
-                       "--d0", CROSS_D0, "--d1", CROSS_D1],
-                      log_fp)
+        rc = run_step(
+            "cross-grid-1y",
+            [
+                "-X",
+                "utf8",
+                "cross_grid_backtest.py",
+                "--d0",
+                CROSS_D0,
+                "--d1",
+                CROSS_D1,
+            ],
+            log_fp,
+        )
         if rc != 0:
             return rc
         # 3) 一年窗产物改名落位，恢复两年窗主文件
@@ -131,14 +149,17 @@ def main():
     ap.add_argument("--only", choices=["qpzm", "cross"], default=None)
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
-    log("=== W9 批处理队列启动 pid=%d only=%s force=%s ===" % (os.getpid(), a.only, a.force))
+    log(
+        "=== W9 批处理队列启动 pid=%d only=%s force=%s ==="
+        % (os.getpid(), a.only, a.force)
+    )
     fails = 0
     try:
         if a.only in (None, "qpzm"):
             fails += 1 if step_qpzm(a.force) != 0 else 0
         if a.only in (None, "cross"):
             fails += 1 if step_cross(a.force) != 0 else 0
-    except Exception as e:                          # noqa: BLE001 异常也留日志收尾行+非零退出
+    except Exception as e:  # noqa: BLE001 异常也留日志收尾行+非零退出
         log("STEP 异常未捕获: %r" % e)
         fails += 1
     log("=== 队列结束 fails=%d ===" % fails)

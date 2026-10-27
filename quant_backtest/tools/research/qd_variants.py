@@ -24,6 +24,7 @@
 用法：
     "C:/Program Files/Python311/python.exe" -u quant_backtest/qd_variants.py
 """
+
 import json
 import time
 from datetime import datetime
@@ -57,8 +58,11 @@ def stats(rets):
     if len(a) == 0:
         return {"n": 0}
     gains, losses = a[a > 0], a[a < 0]
-    pf = float(gains.sum() / abs(losses.sum())) if losses.sum() != 0 else \
-        (float("inf") if len(gains) else 0.0)
+    pf = (
+        float(gains.sum() / abs(losses.sum()))
+        if losses.sum() != 0
+        else (float("inf") if len(gains) else 0.0)
+    )
     eq = np.cumprod(1.0 + a)
     dd = float(1.0 - (eq / np.maximum.accumulate(eq)).min())
     # event 复利序列在数千笔下 event_max_dd 恒趋近 100%（退化，无判别力）；
@@ -118,18 +122,32 @@ def full_block(recs, keep=None):
             "overall": stats(subset_stats(recs, h, keep)),
             "by_regime": regime_breakdown(recs, h, keep),
             "by_segment": {
-                name: stats([r["r%d" % h] for r in recs
-                             if "r%d" % h in r and _kept(r, keep)
-                             and seg_of(r["date"]) == name])
+                name: stats(
+                    [
+                        r["r%d" % h]
+                        for r in recs
+                        if "r%d" % h in r
+                        and _kept(r, keep)
+                        and seg_of(r["date"]) == name
+                    ]
+                )
                 for name, _, _ in SEGS
             },
             "is_vs_oos": {
-                IS_NAME: stats([r["r%d" % h] for r in recs
-                                if "r%d" % h in r and _kept(r, keep)
-                                and r["date"] <= "20250930"]),
-                OOS_NAME: stats([r["r%d" % h] for r in recs
-                                 if "r%d" % h in r and _kept(r, keep)
-                                 and r["date"] >= "20251001"]),
+                IS_NAME: stats(
+                    [
+                        r["r%d" % h]
+                        for r in recs
+                        if "r%d" % h in r and _kept(r, keep) and r["date"] <= "20250930"
+                    ]
+                ),
+                OOS_NAME: stats(
+                    [
+                        r["r%d" % h]
+                        for r in recs
+                        if "r%d" % h in r and _kept(r, keep) and r["date"] >= "20251001"
+                    ]
+                ),
             },
         }
     return blk
@@ -150,8 +168,9 @@ def main():
 
     # ── 基线（自明细重算，先与 W3-4 结果 JSON 校验）──
     baseline = {cal: full_block(recs) for cal, recs in data.items()}
-    ref = json.loads((REPORTS / "qd_backtest_1445_result.json")
-                     .read_text(encoding="utf-8"))["overall"]
+    ref = json.loads(
+        (REPORTS / "qd_backtest_1445_result.json").read_text(encoding="utf-8")
+    )["overall"]
     check = {}
     for h in HOLDS:
         got = baseline["raw"]["hold_%d" % h]["overall"]
@@ -159,14 +178,16 @@ def main():
         check["hold_%d" % h] = {
             "pf_match": abs(got["pf"] - exp.get("pf", -1)) < 5e-4,
             "n_match": got["n"] == exp.get("n", -1),
-            "pf_detail": got["pf"], "pf_w34": exp.get("pf"),
+            "pf_detail": got["pf"],
+            "pf_w34": exp.get("pf"),
         }
     print("[check] 明细重算 vs W3-4 基线：", check)
 
     # ── V1：rotation 拦截（raw / hfq 双口径）──
     v1_keep = lambda r: r["regime"] != "rotation"  # noqa: E731
-    variants["V1_rotation_block"] = {cal: full_block(recs, v1_keep)
-                                     for cal, recs in data.items()}
+    variants["V1_rotation_block"] = {
+        cal: full_block(recs, v1_keep) for cal, recs in data.items()
+    }
 
     # ── V2：信号价格切 hfq = hfq 口径基线（引用，不改信号集）──
     variants["V2_signal_hfq"] = {
@@ -187,23 +208,31 @@ def main():
     is_rot = {}
     for cal in ("raw", "hfq"):
         is_rot[cal] = {
-            "hold_%d" % h: stats([r["r%d" % h] for r in data[cal]
-                                  if "r%d" % h in r
-                                  and r["regime"] == "rotation"
-                                  and r["date"] <= "20250930"])
+            "hold_%d" % h: stats(
+                [
+                    r["r%d" % h]
+                    for r in data[cal]
+                    if "r%d" % h in r
+                    and r["regime"] == "rotation"
+                    and r["date"] <= "20250930"
+                ]
+            )
             for h in HOLDS
         }
     # ② OOS 不塌方：后半段 PF ≥ 0.9 × 前半段（对候选组合逐档判）
     oos_check = {}
-    for tag, blk in (("baseline_raw", baseline["raw"]),
-                     ("V1_raw", variants["V1_rotation_block"]["raw"]),
-                     ("V1_hfq", variants["V1_rotation_block"]["hfq"]),
-                     ("combo_V1xV2", variants["combo_V1xV2"]["hfq"])):
+    for tag, blk in (
+        ("baseline_raw", baseline["raw"]),
+        ("V1_raw", variants["V1_rotation_block"]["raw"]),
+        ("V1_hfq", variants["V1_rotation_block"]["hfq"]),
+        ("combo_V1xV2", variants["combo_V1xV2"]["hfq"]),
+    ):
         for h in HOLDS:
             iv = blk["hold_%d" % h]["is_vs_oos"]
             is_pf, oos_pf = iv[IS_NAME].get("pf", 0), iv[OOS_NAME].get("pf", 0)
             oos_check["%s_hold_%d" % (tag, h)] = {
-                "is_pf": is_pf, "oos_pf": oos_pf,
+                "is_pf": is_pf,
+                "oos_pf": oos_pf,
                 "ratio": round(oos_pf / is_pf, 4) if is_pf else None,
                 "pass": bool(is_pf and oos_pf >= 0.9 * is_pf),
             }
@@ -212,25 +241,27 @@ def main():
     combo20 = variants["combo_V1xV2"]["hfq"]["hold_20"]
     base_raw20 = baseline["raw"]["hold_20"]
     pf_ok = combo20["overall"]["pf"] >= 1.1
-    dd_ok = (combo20["overall"]["block_dd_100"]
-             <= base_raw20["overall"]["block_dd_100"])
+    dd_ok = combo20["overall"]["block_dd_100"] <= base_raw20["overall"]["block_dd_100"]
     mean_ok = combo20["overall"]["mean"] >= base_raw20["overall"]["mean"]
     oos_ok = oos_check["combo_V1xV2_hold_20"]["pass"]
     verdict = {
         "hold_20": {
-            "combo_pf": combo20["overall"]["pf"], "pf_ge_1.1": pf_ok,
+            "combo_pf": combo20["overall"]["pf"],
+            "pf_ge_1.1": pf_ok,
             "combo_block_dd": combo20["overall"]["block_dd_100"],
             "baseline_block_dd": base_raw20["overall"]["block_dd_100"],
             "dd_not_worse": dd_ok,
             "dd_metric_note": "event_max_dd 在数千笔复利序列下恒≈100%（退化），"
-                              "回撤判据改用每 100 笔分块复利回撤 block_dd_100",
+            "回撤判据改用每 100 笔分块复利回撤 block_dd_100",
             "combo_mean": combo20["overall"]["mean"],
-            "baseline_mean": base_raw20["overall"]["mean"], "mean_not_worse": mean_ok,
-            "oos_ratio": oos_check["combo_V1xV2_hold_20"]["ratio"], "oos_pass": oos_ok,
+            "baseline_mean": base_raw20["overall"]["mean"],
+            "mean_not_worse": mean_ok,
+            "oos_ratio": oos_check["combo_V1xV2_hold_20"]["ratio"],
+            "oos_pass": oos_ok,
         },
         "all_pass": bool(pf_ok and dd_ok and mean_ok and oos_ok),
         "rule": "组合整体 PF>=1.1 且回撤/均收益不劣于基线同档 且回测内 "
-                "OOS 段 PF>=0.9xIS 段 PF",
+        "OOS 段 PF>=0.9xIS 段 PF",
     }
 
     payload = {
@@ -256,22 +287,34 @@ def main():
         "elapsed_s": round(time.time() - t0, 1),
         "disclaimer": "离线研究回测：结果不构成选股依据；影子验证前不下产线",
     }
-    OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1),
-                        encoding="utf-8")
+    OUT_JSON.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     print("[done] %.0fs → %s" % (time.time() - t0, OUT_JSON))
 
     # 控制台摘要表
     print("\n[combo V1xV2 (hfq) vs 基线]")
-    for tag, blk in (("base_raw", baseline["raw"]), ("base_hfq", baseline["hfq"]),
-                     ("V1_raw", variants["V1_rotation_block"]["raw"]),
-                     ("V1_hfq", variants["V1_rotation_block"]["hfq"]),
-                     ("combo", variants["combo_V1xV2"]["hfq"])):
+    for tag, blk in (
+        ("base_raw", baseline["raw"]),
+        ("base_hfq", baseline["hfq"]),
+        ("V1_raw", variants["V1_rotation_block"]["raw"]),
+        ("V1_hfq", variants["V1_rotation_block"]["hfq"]),
+        ("combo", variants["combo_V1xV2"]["hfq"]),
+    ):
         for h in HOLDS:
             s = blk["hold_%d" % h]["overall"]
-            print("  %-9s hold_%-2d n=%-5d win=%.1f%% PF=%.3f mean=%+.3f%% dd=%.2f%%"
-                  % (tag, h, s.get("n", 0), s.get("win_rate", 0) * 100,
-                     s.get("pf", 0), s.get("mean", 0) * 100,
-                     s.get("event_max_dd", 0) * 100))
+            print(
+                "  %-9s hold_%-2d n=%-5d win=%.1f%% PF=%.3f mean=%+.3f%% dd=%.2f%%"
+                % (
+                    tag,
+                    h,
+                    s.get("n", 0),
+                    s.get("win_rate", 0) * 100,
+                    s.get("pf", 0),
+                    s.get("mean", 0) * 100,
+                    s.get("event_max_dd", 0) * 100,
+                )
+            )
     print("[verdict]", json.dumps(verdict, ensure_ascii=False))
 
 

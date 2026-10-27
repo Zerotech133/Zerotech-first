@@ -28,6 +28,7 @@
 产出:
   reports/linkage_timing_audit.json；日志 C:/Temp/linkage_timing.log
 """
+
 import json
 import logging
 import os
@@ -42,10 +43,10 @@ sys.path.insert(0, HERE)
 LOG_PATH = "C:/Temp/linkage_timing.log"
 OUT_PATH = os.path.join(HERE, "reports", "linkage_timing_audit.json")
 HORIZONS = (5, 10, 20, 60)
-FIXED_THR = 500          # 固定阈值档（只）
-MAX_GAP = 10             # 潮合并：相邻触发日间隔 ≤10 交易日
-BREADTH_EXIT = 45.0      # 两段式解除：宽度回升 >45%
-OFF_CAP = 20             # 两段式兜底：触发后最多空仓 20 交易日
+FIXED_THR = 500  # 固定阈值档（只）
+MAX_GAP = 10  # 潮合并：相邻触发日间隔 ≤10 交易日
+BREADTH_EXIT = 45.0  # 两段式解除：宽度回升 >45%
+OFF_CAP = 20  # 两段式兜底：触发后最多空仓 20 交易日
 VERDICT_EXCESS_PP = 2.0  # 立项判据：20 日超额 ≥2pp
 VERDICT_OVERLAP_MAX = 0.70  # 立项判据：重叠 <70%
 
@@ -66,14 +67,20 @@ def setup_logger():
 
 
 def _pct(x):
-    return None if x is None or (isinstance(x, float) and np.isnan(x)) \
+    return (
+        None
+        if x is None or (isinstance(x, float) and np.isnan(x))
         else round(float(x), 3)
+    )
 
 
 def _r(x):
     """收益小数 → 百分数保留2位。"""
-    return None if x is None or (isinstance(x, float) and np.isnan(x)) \
+    return (
+        None
+        if x is None or (isinstance(x, float) and np.isnan(x))
         else round(float(x) * 100, 2)
+    )
 
 
 def breadth_series(stock):
@@ -102,8 +109,15 @@ def find_tides(cnt, thr, max_gap=MAX_GAP):
             t["total_cnt"] += int(cnt[d])
             t["peak_cnt"] = max(t["peak_cnt"], int(cnt[d]))
         else:
-            tides.append({"start": d, "end": d, "n_days": 1,
-                          "total_cnt": int(cnt[d]), "peak_cnt": int(cnt[d])})
+            tides.append(
+                {
+                    "start": d,
+                    "end": d,
+                    "n_days": 1,
+                    "total_cnt": int(cnt[d]),
+                    "peak_cnt": int(cnt[d]),
+                }
+            )
     for t in tides:
         t["mean_cnt"] = round(t["total_cnt"] / t["n_days"], 1)
     return tides
@@ -122,16 +136,22 @@ def fwd_ret(sr, d, k):
 def tide_row(t, idx, br, med20, baseline):
     """单潮后验表行：触发期当下 + 潮尾锚定的各窗口收益。"""
     d0, d1 = t["start"], t["end"]
-    during = idx[d1] / idx[d0] - 1 if not (pd.isna(idx[d0]) or pd.isna(idx[d1])) else np.nan
+    during = (
+        idx[d1] / idx[d0] - 1 if not (pd.isna(idx[d0]) or pd.isna(idx[d1])) else np.nan
+    )
     row = {
-        "start": d0, "end": d1, "n_days": t["n_days"],
-        "peak_cnt": t["peak_cnt"], "mean_cnt": t["mean_cnt"],
+        "start": d0,
+        "end": d1,
+        "n_days": t["n_days"],
+        "peak_cnt": t["peak_cnt"],
+        "mean_cnt": t["mean_cnt"],
         "during_idx_ret": _r(during),
         "breadth_at_start": _pct(br.get(d0)),
         "breadth_at_end": _pct(br.get(d1)),
         "breadth_min_in_tide": _pct(br.loc[d0:d1].min()),
         "med20_at_start": _pct(med20.get(d0)),
-        "fwd_from_end": {}, "fwd_from_start": {},
+        "fwd_from_end": {},
+        "fwd_from_start": {},
     }
     for k in HORIZONS:
         fe = fwd_ret(idx, d1, k)
@@ -165,16 +185,20 @@ def overlap_stats(cnt, thr, br, idx, baseline):
     n = sum(len(v) for v in buckets.values())
     out = {
         "n_trigger_days": n,
-        "breadth_dist": {k: {"n": len(v),
-                             "share": _pct(len(v) / n) if n else None}
-                         for k, v in buckets.items()},
+        "breadth_dist": {
+            k: {"n": len(v), "share": _pct(len(v) / n) if n else None}
+            for k, v in buckets.items()
+        },
         "overlap_lt40": _pct(len(buckets["<40"]) / n) if n else None,
         "trigger_day_idx_ret": _r(np.mean(same_day)) if same_day else None,
-        "fwd20_by_bucket": {k: {"n": len(v),
-                                "mean_idx_ret": _r(np.mean(v)) if v else None,
-                                "excess_vs_base": _r(np.mean(v) - baseline[20])
-                                if v else None}
-                            for k, v in f20_by_bucket.items()},
+        "fwd20_by_bucket": {
+            k: {
+                "n": len(v),
+                "mean_idx_ret": _r(np.mean(v)) if v else None,
+                "excess_vs_base": _r(np.mean(v) - baseline[20]) if v else None,
+            }
+            for k, v in f20_by_bucket.items()
+        },
     }
     return out
 
@@ -210,16 +234,22 @@ def twostage(cnt, thr, idx, br):
         for j in off_idx:
             if j < len(pos):
                 pos.iloc[j] = 0.0
-        off_ret = float((1 + ret.iloc[[j for j in off_idx if j < len(ret)]])
-                        .prod() - 1) if off_idx else 0.0
-        detail.append({
-            "start": t["start"], "end": t["end"],
-            "off_days": len(off_days),
-            "off_first": off_days[0] if off_days else None,
-            "off_last": off_days[-1] if off_days else None,
-            "exit_reason": "breadth>45%" if resume < cap else "cap20d",
-            "off_window_idx_ret": _r(off_ret),
-        })
+        off_ret = (
+            float((1 + ret.iloc[[j for j in off_idx if j < len(ret)]]).prod() - 1)
+            if off_idx
+            else 0.0
+        )
+        detail.append(
+            {
+                "start": t["start"],
+                "end": t["end"],
+                "off_days": len(off_days),
+                "off_first": off_days[0] if off_days else None,
+                "off_last": off_days[-1] if off_days else None,
+                "exit_reason": "breadth>45%" if resume < cap else "cap20d",
+                "off_window_idx_ret": _r(off_ret),
+            }
+        )
     strat = (1 + ret * pos).cumprod()
     bh = (1 + ret).cumprod()
     valid = bh.dropna().index
@@ -241,57 +271,78 @@ def main():
 
     log.info("== ③共振底 → 大盘择时口径审计（只读）==")
     stock, block, idx, uni = LHB.load_frames()
-    log.info("frames loaded: %d days %s~%s, %d stocks",
-             len(stock.index), stock.index[0], stock.index[-1], stock.shape[1])
+    log.info(
+        "frames loaded: %d days %s~%s, %d stocks",
+        len(stock.index),
+        stock.index[0],
+        stock.index[-1],
+        stock.shape[1],
+    )
 
     sig = LHB.judge_matrix(stock, block, idx, uni)
     sig3 = LHB._bool(sig["3"])
     cnt = sig3.sum(axis=1)
-    log.info("signal3 daily-count series ready, active days=%d, max=%d",
-             int((cnt > 0).sum()), int(cnt.max()))
+    log.info(
+        "signal3 daily-count series ready, active days=%d, max=%d",
+        int((cnt > 0).sum()),
+        int(cnt.max()),
+    )
 
     br, med20 = breadth_series(stock)
-    log.info("breadth ready: mean=%.1f%% min=%.1f%%",
-             float(np.nanmean(br)), float(np.nanmin(br)))
+    log.info(
+        "breadth ready: mean=%.1f%% min=%.1f%%",
+        float(np.nanmean(br)),
+        float(np.nanmin(br)),
+    )
 
     # 基线：全样本无条件前向收益（日均），超额 = 条件 - 基线
     baseline = {}
     for k in HORIZONS:
         f = idx.shift(-k) / idx - 1
         baseline[k] = float(np.nanmean(f.values))
-    log.info("baseline fwd ret: " + ", ".join(
-        "T+%d=%.2f%%" % (k, baseline[k] * 100) for k in HORIZONS))
+    log.info(
+        "baseline fwd ret: "
+        + ", ".join("T+%d=%.2f%%" % (k, baseline[k] * 100) for k in HORIZONS)
+    )
 
     # 阈值两档
     active = cnt[cnt > 0]
     thr_p90 = int(np.ceil(np.percentile(active.values, 90))) if len(active) else 0
     log.info("thresholds: P90(active)=%d, fixed=%d", thr_p90, FIXED_THR)
 
-    result = {"meta": {
-        "script": "linkage_timing_audit.py",
-        "readonly": True,
-        "signal": "③共振底=个股×板块×大盘三线收盘同破近60根前低",
-        "count_caliber": "judge_matrix 与产线 linkage_signals v1 对齐",
-        "sample_days": [str(stock.index[0]), str(stock.index[-1])],
-        "thresholds": {"p90_active": thr_p90, "fixed": FIXED_THR},
-        "baseline_fwd_idx_ret": {str(k): _r(baseline[k]) for k in HORIZONS},
-        "breadth_def": "全市场 close>MA20 占比(%)，闸门参考线 40/45",
-        "note": "qpzm/cross 闸门内信号逐 episode 明细未落盘，策略层后验用指数+宽度代理",
-    }}
+    result = {
+        "meta": {
+            "script": "linkage_timing_audit.py",
+            "readonly": True,
+            "signal": "③共振底=个股×板块×大盘三线收盘同破近60根前低",
+            "count_caliber": "judge_matrix 与产线 linkage_signals v1 对齐",
+            "sample_days": [str(stock.index[0]), str(stock.index[-1])],
+            "thresholds": {"p90_active": thr_p90, "fixed": FIXED_THR},
+            "baseline_fwd_idx_ret": {str(k): _r(baseline[k]) for k in HORIZONS},
+            "breadth_def": "全市场 close>MA20 占比(%)，闸门参考线 40/45",
+            "note": "qpzm/cross 闸门内信号逐 episode 明细未落盘，策略层后验用指数+宽度代理",
+        }
+    }
 
     # 触发潮清单
     for name, thr in (("p90", thr_p90), ("fixed500", FIXED_THR)):
         tides = find_tides(cnt, thr)
         rows = [tide_row(t, idx, br, med20, baseline) for t in tides]
         # 潮级汇总：潮后 20 日均值与超额（表内值已是百分数，勿再 ×100）
-        f20 = [r["fwd_from_end"][20]["idx_ret"] for r in rows
-               if r["fwd_from_end"][20]["idx_ret"] is not None]
-        ex20 = [r["fwd_from_end"][20]["excess_vs_base"] for r in rows
-                if r["fwd_from_end"][20]["excess_vs_base"] is not None]
-        dr = [r["during_idx_ret"] for r in rows
-              if r["during_idx_ret"] is not None]
+        f20 = [
+            r["fwd_from_end"][20]["idx_ret"]
+            for r in rows
+            if r["fwd_from_end"][20]["idx_ret"] is not None
+        ]
+        ex20 = [
+            r["fwd_from_end"][20]["excess_vs_base"]
+            for r in rows
+            if r["fwd_from_end"][20]["excess_vs_base"] is not None
+        ]
+        dr = [r["during_idx_ret"] for r in rows if r["during_idx_ret"] is not None]
         result.setdefault("tides", {})[name] = {
-            "threshold": thr, "n_tides": len(tides),
+            "threshold": thr,
+            "n_tides": len(tides),
             "list": rows,
             "summary": {
                 "mean_fwd20": _pct(np.mean(f20)) if f20 else None,
@@ -299,10 +350,14 @@ def main():
                 "mean_during_ret": _pct(np.mean(dr)) if dr else None,
             },
         }
-        log.info("tides[%s] thr=%d n=%d mean_fwd20=%s mean_excess20=%s",
-                 name, thr, len(tides),
-                 result["tides"][name]["summary"]["mean_fwd20"],
-                 result["tides"][name]["summary"]["mean_excess20"])
+        log.info(
+            "tides[%s] thr=%d n=%d mean_fwd20=%s mean_excess20=%s",
+            name,
+            thr,
+            len(tides),
+            result["tides"][name]["summary"]["mean_fwd20"],
+            result["tides"][name]["summary"]["mean_excess20"],
+        )
 
     # 宽度闸门交叉
     result["gate_cross"] = {
@@ -310,17 +365,27 @@ def main():
         for name, thr in (("p90", thr_p90), ("fixed500", FIXED_THR))
     }
     for name, s in result["gate_cross"].items():
-        log.info("gate_cross[%s] overlap_lt40=%s trigger_day_ret=%s",
-                 name, s["overlap_lt40"], s["trigger_day_idx_ret"])
+        log.info(
+            "gate_cross[%s] overlap_lt40=%s trigger_day_ret=%s",
+            name,
+            s["overlap_lt40"],
+            s["trigger_day_idx_ret"],
+        )
 
     # 两段式后验（主档 fixed500，附 p90）
     result["twostage"] = {}
     for name, thr in (("fixed500", FIXED_THR), ("p90", thr_p90)):
         summ, detail = twostage(cnt, thr, idx, br)
         result["twostage"][name] = {"summary": summ, "tides": detail}
-        log.info("twostage[%s] strat=%s vs bh=%s, mdd %s vs %s, off_days=%d",
-                 name, summ["strategy_ret"], summ["buyhold_ret"],
-                 summ["strategy_mdd"], summ["buyhold_mdd"], summ["n_off_days"])
+        log.info(
+            "twostage[%s] strat=%s vs bh=%s, mdd %s vs %s, off_days=%d",
+            name,
+            summ["strategy_ret"],
+            summ["buyhold_ret"],
+            summ["strategy_mdd"],
+            summ["buyhold_mdd"],
+            summ["n_off_days"],
+        )
 
     # 立项判定（主档 fixed500）
     t_main = result["tides"]["fixed500"]
@@ -330,15 +395,22 @@ def main():
     cond_ex = excess20 is not None and excess20 >= VERDICT_EXCESS_PP
     cond_ov = overlap is not None and overlap < VERDICT_OVERLAP_MAX
     result["verdict"] = {
-        "criteria": {"excess20_pp": VERDICT_EXCESS_PP,
-                     "overlap_max": VERDICT_OVERLAP_MAX},
+        "criteria": {
+            "excess20_pp": VERDICT_EXCESS_PP,
+            "overlap_max": VERDICT_OVERLAP_MAX,
+        },
         "actual": {"mean_excess20": excess20, "overlap_lt40": overlap},
-        "pass_excess": cond_ex, "pass_overlap": cond_ov,
+        "pass_excess": cond_ex,
+        "pass_overlap": cond_ov,
         "worth_project": bool(cond_ex and cond_ov),
         "verdict": ("值得立项" if (cond_ex and cond_ov) else "不值得立项"),
     }
-    log.info("verdict: excess20=%s overlap=%s -> %s",
-             excess20, overlap, result["verdict"]["verdict"])
+    log.info(
+        "verdict: excess20=%s overlap=%s -> %s",
+        excess20,
+        overlap,
+        result["verdict"]["verdict"],
+    )
 
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:

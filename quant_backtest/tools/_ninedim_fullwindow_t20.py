@@ -4,6 +4,7 @@
 口径: 仅 mature20=true 行; 超额 = r20 - bench20（同锚基准）。
 输出: 控制台报告 + reports/_ninedim_fullwindow_t20_20261015.json。
 """
+
 import json
 import statistics as st
 from collections import defaultdict
@@ -32,14 +33,19 @@ def stats(sub):
     }
 
 
-report = {"window": {"first_anchor": min(r["anchor"] for r in rows),
-                     "last_anchor": max(r["anchor"] for r in rows),
-                     "anchors": len(set(r["anchor"] for r in rows)),
-                     "rows_total": len(rows), "rows_mature20": len(mature)},
-          "overall": stats(mature),
-          "by_score_band": {},
-          "by_year": {},
-          "by_cov": {}}
+report = {
+    "window": {
+        "first_anchor": min(r["anchor"] for r in rows),
+        "last_anchor": max(r["anchor"] for r in rows),
+        "anchors": len(set(r["anchor"] for r in rows)),
+        "rows_total": len(rows),
+        "rows_mature20": len(mature),
+    },
+    "overall": stats(mature),
+    "by_score_band": {},
+    "by_year": {},
+    "by_cov": {},
+}
 
 # score 分层（反指验证：高分是否更差）
 bands = [(0, 10), (10, 20), (20, 40), (40, 70), (70, 1e9)]

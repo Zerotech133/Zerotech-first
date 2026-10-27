@@ -4,6 +4,7 @@
 口径对齐 tools/research/xq_anomaly_calibration.py：异动作用面 =
 「帖子日(created_at) × 标的」的 bearish∧带码 计数。
 """
+
 import sys
 from pathlib import Path
 
@@ -19,15 +20,28 @@ from xq_portrait import (  # noqa: E402
 )
 
 
-def row(event="个股研判", sentiment="neutral", content=None,
-        tickers=(), pv="v1.3", day="2020-05-13", ok=1):
+def row(
+    event="个股研判",
+    sentiment="neutral",
+    content=None,
+    tickers=(),
+    pv="v1.3",
+    day="2020-05-13",
+    ok=1,
+):
     return {
-        "event_type": event, "sentiment": sentiment, "content_type": content,
-        "tickers": list(tickers), "prompt_version": pv, "day": day, "parse_ok": ok,
+        "event_type": event,
+        "sentiment": sentiment,
+        "content_type": content,
+        "tickers": list(tickers),
+        "prompt_version": pv,
+        "day": day,
+        "parse_ok": ok,
     }
 
 
 # ---------------------------------------------------------------- percentile
+
 
 def test_percentile_basic():
     assert percentile([1, 2, 3, 4, 5], 50) == 3
@@ -40,6 +54,7 @@ def test_percentile_basic():
 
 
 # ---------------------------------------------------------------- marginals
+
 
 def test_marginals_counts_and_crosstabs():
     rows = [
@@ -66,6 +81,7 @@ def test_marginals_counts_and_crosstabs():
 
 # ---------------------------------------------------------------- monthly
 
+
 def test_monthly_trend_zero_fill_and_bearish_share():
     rows = [
         row(sentiment="bearish", day="2019-01-15"),
@@ -82,6 +98,7 @@ def test_monthly_trend_zero_fill_and_bearish_share():
 
 
 # ---------------------------------------------------------------- tickers
+
 
 def test_ticker_concentration_top_and_rate():
     rows = [
@@ -104,6 +121,7 @@ def test_ticker_concentration_top_and_rate():
 
 # ---------------------------------------------------------------- lineage
 
+
 def test_lineage_version_completeness():
     rows = [
         row(pv="v1.2-re", content="tech"),
@@ -120,11 +138,14 @@ def test_lineage_version_completeness():
     assert lin["versions"]["v1.3-rule"]["content_type_rate"] == 1.0
     # 血缘诚实验证钩子：v1.2-re（补标批次）若 content_type 未全覆盖要被点名
     assert "v1.2-re" in lin["incomplete_versions"]
-    assert lin["versions"]["v1.3-rule"] not in lin["incomplete_versions"] or \
-        lin["versions"]["v1.3-rule"]["content_type_rate"] == 1.0
+    assert (
+        lin["versions"]["v1.3-rule"] not in lin["incomplete_versions"]
+        or lin["versions"]["v1.3-rule"]["content_type_rate"] == 1.0
+    )
 
 
 # ---------------------------------------------------------------- anomaly
+
 
 def test_daily_ticker_bearish_distribution():
     rows = [

@@ -10,6 +10,7 @@
 
 退出码: 0=全 PASS, 1=有 FAIL, 2=仅 UNKNOWN（无 FAIL）。
 """
+
 import argparse
 import json
 import os
@@ -39,14 +40,44 @@ TASK_SPECS = [
 # wrapper -> 被调 py（相对 REPO；绝对路径直接用）
 # zerobound-kg 内文件只查存在性，不 py_compile（该目录不在本工位写权内）
 SCRIPT_MAP = [
-    (os.path.join(REPO, "start_daily_report.ps1"), [os.path.join(REPO, "xq_daily_report.py")], True),
-    (os.path.join(REPO, "start_verify_report.ps1"), [os.path.join(REPO, "tools", "verify_daily_report.py")], True),
-    (os.path.join(REPO, "start_timeline_watch.ps1"), [os.path.join(REPO, "tools", "xq_timeline_watch.py")], True),
-    (os.path.join(REPO, "start_backfill_sprint.ps1"), [os.path.join(REPO, "tools", "backfill_sprint.py")], True),
-    (r"C:\aios\quant_backtest\start_xueqiu_crawl.ps1", [r"C:\aios\quant_backtest\xueqiu_crawl.py"], True),
-    (r"C:\aios\zerobound-kg\riskguard_shadow_daily.ps1",
-     [r"C:\aios\zerobound-kg\kg_riskguard.py", r"C:\aios\zerobound-kg\kg_fourstate.py"], False),
-    (os.path.join(REPO, "xq_classify.py"), [], True),  # 只读+py_compile，内容写权在 xq-quality-dev
+    (
+        os.path.join(REPO, "start_daily_report.ps1"),
+        [os.path.join(REPO, "xq_daily_report.py")],
+        True,
+    ),
+    (
+        os.path.join(REPO, "start_verify_report.ps1"),
+        [os.path.join(REPO, "tools", "verify_daily_report.py")],
+        True,
+    ),
+    (
+        os.path.join(REPO, "start_timeline_watch.ps1"),
+        [os.path.join(REPO, "tools", "xq_timeline_watch.py")],
+        True,
+    ),
+    (
+        os.path.join(REPO, "start_backfill_sprint.ps1"),
+        [os.path.join(REPO, "tools", "backfill_sprint.py")],
+        True,
+    ),
+    (
+        r"C:\aios\quant_backtest\start_xueqiu_crawl.ps1",
+        [r"C:\aios\quant_backtest\xueqiu_crawl.py"],
+        True,
+    ),
+    (
+        r"C:\aios\zerobound-kg\riskguard_shadow_daily.ps1",
+        [
+            r"C:\aios\zerobound-kg\kg_riskguard.py",
+            r"C:\aios\zerobound-kg\kg_fourstate.py",
+        ],
+        False,
+    ),
+    (
+        os.path.join(REPO, "xq_classify.py"),
+        [],
+        True,
+    ),  # 只读+py_compile，内容写权在 xq-quality-dev
 ]
 
 PRODUCT_DIRS = [
@@ -55,7 +86,7 @@ PRODUCT_DIRS = [
     os.path.join(RUNS, "xq_classify"),
 ]
 
-TASK_TRIGGER_TIME = 1   # 一次性
+TASK_TRIGGER_TIME = 1  # 一次性
 TASK_TRIGGER_DAILY = 2  # 每日
 SCHED_HAS_NOT_RUN = 267011  # 0x41303
 
@@ -78,7 +109,11 @@ def trigger_kinds_from_xml(xml):
     kinds = []
     for m in re.finditer(r"<(\w+Trigger)[ >].*?</\1>", xml, re.S):
         block = m.group(0)
-        kind = "once" if m.group(1) == "TimeTrigger" else m.group(1).replace("Trigger", "").lower()
+        kind = (
+            "once"
+            if m.group(1) == "TimeTrigger"
+            else m.group(1).replace("Trigger", "").lower()
+        )
         for marker, name in _XML_TRIGGER_KINDS:
             if marker in block:
                 kind = name
@@ -88,6 +123,7 @@ def trigger_kinds_from_xml(xml):
 
 
 # ---------------- 纯判定逻辑（可注入假数据单测） ----------------
+
 
 def parse_sched_time(s):
     """解析 COM NextRunTime 字符串。COM 给的是本地时间但可能带误导性 '+00:00'
@@ -107,11 +143,20 @@ def judge_next_run(actual_str, expected, tolerance_min=0):
     """NextRunTime 容差比对。actual_str 为 COM 原始字符串。"""
     actual = parse_sched_time(actual_str)
     if actual is None:
-        return {"status": "UNKNOWN", "detail": "NextRunTime 不可解析: %r" % (actual_str,)}
+        return {
+            "status": "UNKNOWN",
+            "detail": "NextRunTime 不可解析: %r" % (actual_str,),
+        }
     delta = abs((actual - expected).total_seconds()) / 60.0
     if delta <= tolerance_min:
-        return {"status": "PASS", "detail": "NextRunTime=%s 期望=%s" % (actual, expected)}
-    return {"status": "FAIL", "detail": "NextRunTime=%s 期望=%s (偏差 %.0f 分钟)" % (actual, expected, delta)}
+        return {
+            "status": "PASS",
+            "detail": "NextRunTime=%s 期望=%s" % (actual, expected),
+        }
+    return {
+        "status": "FAIL",
+        "detail": "NextRunTime=%s 期望=%s (偏差 %.0f 分钟)" % (actual, expected, delta),
+    }
 
 
 def judge_last_result(code):
@@ -119,8 +164,14 @@ def judge_last_result(code):
     if code == 0:
         return {"status": "PASS", "detail": "LastTaskResult=0"}
     if code == SCHED_HAS_NOT_RUN:
-        return {"status": "PASS", "detail": "LastTaskResult=0x41303 (任务尚未运行过, 首跑前正常)"}
-    return {"status": "FAIL", "detail": "LastTaskResult=0x%X (%d) 非零, 只报不修" % (code, code)}
+        return {
+            "status": "PASS",
+            "detail": "LastTaskResult=0x41303 (任务尚未运行过, 首跑前正常)",
+        }
+    return {
+        "status": "FAIL",
+        "detail": "LastTaskResult=0x%X (%d) 非零, 只报不修" % (code, code),
+    }
 
 
 def judge_watch_form(trigger_kind, next_run_str, expected):
@@ -128,10 +179,17 @@ def judge_watch_form(trigger_kind, next_run_str, expected):
     trigger_kind 双口径：XML 形态名 "daily" 或 COM TASK_TRIGGER_DAILY(2)。"""
     nxt = judge_next_run(next_run_str, expected)
     if trigger_kind not in ("daily", TASK_TRIGGER_DAILY):
-        return {"status": "FAIL", "detail": "触发器非每日(kind=%s), 每日化改动形态不达标; %s" % (trigger_kind, nxt["detail"])}
+        return {
+            "status": "FAIL",
+            "detail": "触发器非每日(kind=%s), 每日化改动形态不达标; %s"
+            % (trigger_kind, nxt["detail"]),
+        }
     if nxt["status"] != "PASS":
         return {"status": "FAIL", "detail": "每日触发器达标但 " + nxt["detail"]}
-    return {"status": "PASS", "detail": "每日触发器(ScheduleByDay/DaysInterval=1)且 " + nxt["detail"]}
+    return {
+        "status": "PASS",
+        "detail": "每日触发器(ScheduleByDay/DaysInterval=1)且 " + nxt["detail"],
+    }
 
 
 _FAIL_MARKERS = ("RETRY-HARD-FAIL", "FAIL")
@@ -146,17 +204,32 @@ def judge_heartbeat(last_line, mtime, now, stale_minutes=30):
     age_min = (now - mtime).total_seconds() / 60.0
     fresh = age_min <= stale_minutes
     if fresh:
-        if "RETRY-HARD-FAIL" in (last_line or "") or _HARD_FAIL_RE.search(last_line or ""):
-            return {"status": "FAIL", "detail": "末行含 FAIL 标记: %s" % last_line.strip()[:120]}
-        return {"status": "PASS", "detail": "mtime=%s ( %.0f 分钟前), 末行: %s"
-                % (mtime, age_min, (last_line or "").strip()[:100])}
+        if "RETRY-HARD-FAIL" in (last_line or "") or _HARD_FAIL_RE.search(
+            last_line or ""
+        ):
+            return {
+                "status": "FAIL",
+                "detail": "末行含 FAIL 标记: %s" % last_line.strip()[:120],
+            }
+        return {
+            "status": "PASS",
+            "detail": "mtime=%s ( %.0f 分钟前), 末行: %s"
+            % (mtime, age_min, (last_line or "").strip()[:100]),
+        }
     if "RETRY-HARD-FAIL" in (last_line or ""):
-        return {"status": "UNKNOWN", "detail": "停在 RETRY-HARD-FAIL (mtime %s, %.0f 分钟前)——16:00 班待观察"
-                % (mtime, age_min)}
-    return {"status": "UNKNOWN", "detail": "心跳停滞 mtime=%s (%.0f 分钟前)——16:00 班待观察" % (mtime, age_min)}
+        return {
+            "status": "UNKNOWN",
+            "detail": "停在 RETRY-HARD-FAIL (mtime %s, %.0f 分钟前)——16:00 班待观察"
+            % (mtime, age_min),
+        }
+    return {
+        "status": "UNKNOWN",
+        "detail": "心跳停滞 mtime=%s (%.0f 分钟前)——16:00 班待观察" % (mtime, age_min),
+    }
 
 
 # ---------------- 只读收集 ----------------
+
 
 def collect_schedule(today, tolerance_min=0):
     """COM 直读任务定义与状态，逐项判定。"""
@@ -170,7 +243,9 @@ def collect_schedule(today, tolerance_min=0):
         sched.Connect()
         root = sched.GetFolder("\\")
     except Exception as exc:  # noqa: BLE001
-        return [{"item": "调度面", "status": "UNKNOWN", "detail": "COM 连接失败: %s" % exc}]
+        return [
+            {"item": "调度面", "status": "UNKNOWN", "detail": "COM 连接失败: %s" % exc}
+        ]
 
     for name, (hh, mm), is_watch in TASK_SPECS:
         expected = datetime(today.year, today.month, today.day, hh, mm)
@@ -199,12 +274,29 @@ def collect_schedule(today, tolerance_min=0):
                             kind = None
                     form = judge_watch_form(kind, str(task.NextRunTime), expected)
                     row["status"] = form["status"]
-                    row["detail"] += "; 触发器数=%d 形态=%s; %s; %s" % (len(kinds), kinds, form["detail"], lr["detail"])
+                    row["detail"] += "; 触发器数=%d 形态=%s; %s; %s" % (
+                        len(kinds),
+                        kinds,
+                        form["detail"],
+                        lr["detail"],
+                    )
                 else:
                     kinds = trigger_kinds_from_xml(task.XML)
-                    row["status"] = "PASS" if (nr["status"] == "PASS" and lr["status"] == "PASS") else (
-                        "FAIL" if "FAIL" in (nr["status"], lr["status"]) else "UNKNOWN")
-                    row["detail"] += "; 触发器数=%d 形态=%s; %s; %s" % (len(kinds), kinds, nr["detail"], lr["detail"])
+                    row["status"] = (
+                        "PASS"
+                        if (nr["status"] == "PASS" and lr["status"] == "PASS")
+                        else (
+                            "FAIL"
+                            if "FAIL" in (nr["status"], lr["status"])
+                            else "UNKNOWN"
+                        )
+                    )
+                    row["detail"] += "; 触发器数=%d 形态=%s; %s; %s" % (
+                        len(kinds),
+                        kinds,
+                        nr["detail"],
+                        lr["detail"],
+                    )
         except Exception as exc:  # noqa: BLE001
             row["status"] = "UNKNOWN"
             row["detail"] = "读取失败: %s" % exc
@@ -232,6 +324,7 @@ def collect_scripts():
                 continue
             try:
                 import py_compile
+
                 fd, cfile = tempfile.mkstemp(suffix=".pyc")
                 os.close(fd)
                 try:
@@ -284,8 +377,12 @@ def collect_heartbeat(now):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="六环 T-2h 只读终检")
     ap.add_argument("--json", default=DEFAULT_JSON, help="结果 JSON 落盘路径")
-    ap.add_argument("--date", default=None, help="以该日期为「今日」(YYYY-MM-DD)，默认系统当天")
-    ap.add_argument("--tolerance-min", type=int, default=0, help="NextRunTime 容差分钟数")
+    ap.add_argument(
+        "--date", default=None, help="以该日期为「今日」(YYYY-MM-DD)，默认系统当天"
+    )
+    ap.add_argument(
+        "--tolerance-min", type=int, default=0, help="NextRunTime 容差分钟数"
+    )
     args = ap.parse_args(argv)
 
     if args.date:
@@ -325,7 +422,10 @@ def main(argv=None):
         print("-- %s" % sec)
         for it in its:
             print("  [%-7s] %-42s %s" % (it["status"], it["item"], it["detail"]))
-    print("== 汇总: PASS=%d FAIL=%d UNKNOWN=%d | JSON: %s ==" % (n_pass, n_fail, n_unknown, json_written))
+    print(
+        "== 汇总: PASS=%d FAIL=%d UNKNOWN=%d | JSON: %s =="
+        % (n_pass, n_fail, n_unknown, json_written)
+    )
     if n_fail:
         return 1
     return 2 if n_unknown else 0

@@ -11,10 +11,10 @@ open(append)+flush+fsync，进程崩溃不丢已写行。账本只追加不改
 import json
 import os
 
-PROJECT_ROOT = os.path.normpath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-DEFAULT_LEDGER_FP = os.path.join(PROJECT_ROOT, "data",
-                                 "gate_decisions.jsonl")
+PROJECT_ROOT = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+)
+DEFAULT_LEDGER_FP = os.path.join(PROJECT_ROOT, "data", "gate_decisions.jsonl")
 
 
 class Ledger:
@@ -25,15 +25,14 @@ class Ledger:
 
     def append(self, decision):
         """追加一行；GateDecision 或 plain dict 均可。返回落账行。"""
-        row = (decision.to_row() if hasattr(decision, "to_row")
-               else dict(decision))
+        row = decision.to_row() if hasattr(decision, "to_row") else dict(decision)
         d = os.path.dirname(self.fp)
         if d:
             os.makedirs(d, exist_ok=True)
         with open(self.fp, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
             f.flush()
-            os.fsync(f.fileno())     # 崩溃不丢已写行
+            os.fsync(f.fileno())  # 崩溃不丢已写行
         return row
 
     def query(self, market, date=None):
@@ -49,7 +48,7 @@ class Ledger:
                 try:
                     r = json.loads(line)
                 except Exception:
-                    continue         # 损坏行跳过，不炸查询
+                    continue  # 损坏行跳过，不炸查询
                 if str(r.get("market")) != str(market):
                     continue
                 if date is not None and str(r.get("date")) != str(date):

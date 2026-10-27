@@ -44,26 +44,29 @@ if ROOT not in sys.path:
 
 import xq_daily_report as xqdr  # noqa: E402  （复用生产逻辑，见模块 docstring）
 
-SEED_DAY = "2020-05-13"          # seed 播种验证日（2026-10-18 判例）
-SEED_WINDOW = 3                  # 种子日 ±3 天
-GRID_MIN = (2, 3, 5)             # BEARISH_MIN 网格
-GRID_SHARE = (0.5, 0.6, 0.7)     # BEARISH_SHARE 网格
-CURRENT = (3, 0.6)               # 现行阈值
+SEED_DAY = "2020-05-13"  # seed 播种验证日（2026-10-18 判例）
+SEED_WINDOW = 3  # 种子日 ±3 天
+GRID_MIN = (2, 3, 5)  # BEARISH_MIN 网格
+GRID_SHARE = (0.5, 0.6, 0.7)  # BEARISH_SHARE 网格
+CURRENT = (3, 0.6)  # 现行阈值
 
 
 # ---------------------------------------------------------------- 数据池探查
+
 
 def list_active_days(con):
     """classified(parse_ok=1) 按 created_at 日聚合。
 
     返回 {day: {"posts": 已打标帖数, "bear_t": bearish且带tickers帖数}}。
     """
-    q = ("SELECT substr(s.created_at,1,10) d, COUNT(*),"
-         "       SUM(CASE WHEN c.sentiment='bearish' AND c.tickers IS NOT NULL"
-         "                 AND c.tickers != '[]' THEN 1 ELSE 0 END)"
-         "  FROM xq_status s JOIN xq_status_classified c ON s.status_id = c.status_id"
-         " WHERE c.parse_ok=1 AND s.created_at IS NOT NULL"
-         " GROUP BY d ORDER BY d")
+    q = (
+        "SELECT substr(s.created_at,1,10) d, COUNT(*),"
+        "       SUM(CASE WHEN c.sentiment='bearish' AND c.tickers IS NOT NULL"
+        "                 AND c.tickers != '[]' THEN 1 ELSE 0 END)"
+        "  FROM xq_status s JOIN xq_status_classified c ON s.status_id = c.status_id"
+        " WHERE c.parse_ok=1 AND s.created_at IS NOT NULL"
+        " GROUP BY d ORDER BY d"
+    )
     return {d: {"posts": p, "bear_t": b} for d, p, b in con.execute(q)}
 
 
@@ -76,12 +79,14 @@ def pick_sample_days(active, cap=20):
       C. 最近 3 个活跃日——数据池尾部形态
     """
     cand = set()
-    a_days = sorted((d for d, v in active.items() if v["bear_t"] >= 1),
-                    key=lambda d: (-active[d]["bear_t"], d))
-    cand.update(a_days[:12])                                   # A：top 活跃日（bear_t 降序）
-    for i in range(-SEED_WINDOW, SEED_WINDOW + 1):             # B：种子日窗口
+    a_days = sorted(
+        (d for d, v in active.items() if v["bear_t"] >= 1),
+        key=lambda d: (-active[d]["bear_t"], d),
+    )
+    cand.update(a_days[:12])  # A：top 活跃日（bear_t 降序）
+    for i in range(-SEED_WINDOW, SEED_WINDOW + 1):  # B：种子日窗口
         cand.add(_shift_day(SEED_DAY, i))
-    cand.update(sorted(active)[-3:])                           # C：最近活跃日
+    cand.update(sorted(active)[-3:])  # C：最近活跃日
     cand = [d for d in cand if d in active]
     cand.sort(key=lambda d: (-active[d]["bear_t"], d))
     return sorted(cand[:cap])
@@ -89,10 +94,12 @@ def pick_sample_days(active, cap=20):
 
 def _shift_day(day, n):
     from datetime import datetime, timedelta
+
     return (datetime.strptime(day, "%Y-%m-%d") + timedelta(days=n)).strftime("%Y-%m-%d")
 
 
 # ---------------------------------------------------------------- 网格执行
+
 
 def run_grid(con, days):
     """逐日跑生产口径汇总，再按网格阈值逐格跑 anomaly_signals。
@@ -113,7 +120,7 @@ def run_grid(con, days):
             day_data[day] = (len(tac), xqdr.summarize(tac) if tac else None)
             if not tac:
                 skipped.append(day)
-        except Exception as e:                                 # fail-visible，不中断
+        except Exception as e:  # fail-visible，不中断
             print("    [跳过] %s 汇总失败：%s" % (day, e))
             day_data[day] = (0, None)
             skipped.append(day)
@@ -121,7 +128,7 @@ def run_grid(con, days):
     results, detail = {}, defaultdict(list)
     for m in GRID_MIN:
         for s in GRID_SHARE:
-            xqdr.BEARISH_MIN, xqdr.BEARISH_SHARE = m, s        # 运行时阈值注入
+            xqdr.BEARISH_MIN, xqdr.BEARISH_SHARE = m, s  # 运行时阈值注入
             per_day = {}
             for day, (_n, summ) in day_data.items():
                 sigs = xqdr.anomaly_signals(summ, con, day) if summ else []
@@ -152,45 +159,65 @@ def grid_stats(results, day_data):
 
 # ---------------------------------------------------------------- 评价与建议
 
+
 def make_recommendation(stats):
     """基于网格统计生成（评价, 建议文本）——规则见脚本 docstring 与输出依据行。"""
     cur, lo, hi = stats[CURRENT], stats[(2, 0.5)], stats[(5, 0.7)]
     t, tl = cur["total"], lo["total"]
     if t == 0 and tl == 0:
         verdict = "过严（通道空转）"
-        advice = ("维持代码暂不动：当前数据池为 2017-2023 存量稀疏打标"
-                  "（单日已打标峰值约 25 帖，同标的单日 bearish>=2 都罕见），"
-                  "最低格 (2, 0.5) 亦零触发，说明瓶颈在数据密度而非阈值刻度。"
-                  "实时采集（2026-10-18 起）积累 2-4 周后必须复检；"
-                  "届时若仍零触发再降阈值。")
+        advice = (
+            "维持代码暂不动：当前数据池为 2017-2023 存量稀疏打标"
+            "（单日已打标峰值约 25 帖，同标的单日 bearish>=2 都罕见），"
+            "最低格 (2, 0.5) 亦零触发，说明瓶颈在数据密度而非阈值刻度。"
+            "实时采集（2026-10-18 起）积累 2-4 周后必须复检；"
+            "届时若仍零触发再降阈值。"
+        )
     elif t == 0:
         verdict = "过严"
-        advice = ("建议下调至 (2, 0.5) 或 (2, 0.6)：现行格在样本日零触发，"
-                  "而最低格有 %d 次触发——(3, 0.6) 在当前数据密度下高于触发带。"
-                  "同时参照 RiskGuard 误杀判例，宁可略松勿过严。" % tl)
+        advice = (
+            "建议下调至 (2, 0.5) 或 (2, 0.6)：现行格在样本日零触发，"
+            "而最低格有 %d 次触发——(3, 0.6) 在当前数据密度下高于触发带。"
+            "同时参照 RiskGuard 误杀判例，宁可略松勿过严。" % tl
+        )
     elif tl == 0 and cur["days_hit"] > 0:
         verdict = "合理"
-        advice = ("建议维持 (3, 0.6)：现行格 %d 次触发而最低格零触发，"
-                  "阈值带具区分度——现行刻度恰在「有信号/无信号」分界上，"
-                  "无过严（漏报）或过松（噪音）证据。" % t)
+        advice = (
+            "建议维持 (3, 0.6)：现行格 %d 次触发而最低格零触发，"
+            "阈值带具区分度——现行刻度恰在「有信号/无信号」分界上，"
+            "无过严（漏报）或过松（噪音）证据。" % t
+        )
     elif tl >= t:
         verdict = "过松/无区分度"
-        advice = ("最低格 (2, 0.5) 触发数（%d）不低于现行（%d），"
-                  "网格未覆盖到阈值带——需向更严方向扩格（如 MIN>=5、SHARE>=0.8）复检。"
-                  % (tl, t))
+        advice = (
+            "最低格 (2, 0.5) 触发数（%d）不低于现行（%d），"
+            "网格未覆盖到阈值带——需向更严方向扩格（如 MIN>=5、SHARE>=0.8）复检。"
+            % (tl, t)
+        )
     else:
         verdict = "偏严"
-        advice = ("现行 %d 次触发，最低格 %d 次：现行已滤掉大部分低密度触发。"
-                  "若异动信号定位为「少量高置信预警」可维持；"
-                  "若希望提高召回，建议 (2, 0.6) 折中并人工复核触发样本。" % (t, tl))
-    basis = ("依据：现行(3,0.6) 触发 %d 次/%d 日非零/%d 日多标的；"
-             "(2,0.5) 触发 %d 次；(2,0.6) 触发 %d 次；(5,0.7) 触发 %d 次。"
-             % (t, cur["days_hit"], cur["days_multi"], tl,
-                stats[(2, 0.6)]["total"], hi["total"]))
+        advice = (
+            "现行 %d 次触发，最低格 %d 次：现行已滤掉大部分低密度触发。"
+            "若异动信号定位为「少量高置信预警」可维持；"
+            "若希望提高召回，建议 (2, 0.6) 折中并人工复核触发样本。" % (t, tl)
+        )
+    basis = (
+        "依据：现行(3,0.6) 触发 %d 次/%d 日非零/%d 日多标的；"
+        "(2,0.5) 触发 %d 次；(2,0.6) 触发 %d 次；(5,0.7) 触发 %d 次。"
+        % (
+            t,
+            cur["days_hit"],
+            cur["days_multi"],
+            tl,
+            stats[(2, 0.6)]["total"],
+            hi["total"],
+        )
+    )
     return verdict, advice + "\n    " + basis
 
 
 # ---------------------------------------------------------------- 输出
+
 
 def main():
     ap = argparse.ArgumentParser(description="雪球异动信号阈值敏感性复检（3×3 网格）")
@@ -218,27 +245,44 @@ def main():
         total_bear = sum(v["bear_t"] for v in active.values())
         rng = (min(active), max(active)) if active else ("-", "-")
         print("\n[1] 数据池概况（classified parse_ok=1，created_at 口径）")
-        print("    活跃日 %d 天 ｜ 范围 %s ~ %s ｜ 已打标帖 %d ｜ 其中 bearish+tickers %d"
-              % (len(active), rng[0], rng[1], total_cls, total_bear))
+        print(
+            "    活跃日 %d 天 ｜ 范围 %s ~ %s ｜ 已打标帖 %d ｜ 其中 bearish+tickers %d"
+            % (len(active), rng[0], rng[1], total_cls, total_bear)
+        )
         days = pick_sample_days(active, cap=args.cap)
         if not days:
-            print("    [空态] 无可用样本日（classified 无数据），管道终止（fail-visible）。")
+            print(
+                "    [空态] 无可用样本日（classified 无数据），管道终止（fail-visible）。"
+            )
             return 1
-        print("    样本日 %d 个（活跃日 top + 种子日 %s ±%d 天 + 最近活跃日）："
-              % (len(days), SEED_DAY, SEED_WINDOW))
-        seed_win = {_shift_day(SEED_DAY, i) for i in range(-SEED_WINDOW, SEED_WINDOW + 1)}
+        print(
+            "    样本日 %d 个（活跃日 top + 种子日 %s ±%d 天 + 最近活跃日）："
+            % (len(days), SEED_DAY, SEED_WINDOW)
+        )
+        seed_win = {
+            _shift_day(SEED_DAY, i) for i in range(-SEED_WINDOW, SEED_WINDOW + 1)
+        }
         print("    %-12s %6s %8s" % ("日期", "打标帖", "bear+tk"))
         for d in days:
             mark = "  ← 种子日窗口" if d in seed_win else ""
-            print("    %-12s %6d %8d%s" % (d, active[d]["posts"], active[d]["bear_t"], mark))
+            print(
+                "    %-12s %6d %8d%s"
+                % (d, active[d]["posts"], active[d]["bear_t"], mark)
+            )
 
         # [2] 3×3 敏感性网格
         day_data, results, detail, skipped = run_grid(con, days)
         if skipped:
-            print("\n    [注明] 空窗口/汇总失败日（按零触发计）：%s" % "、".join(skipped))
+            print(
+                "\n    [注明] 空窗口/汇总失败日（按零触发计）：%s" % "、".join(skipped)
+            )
         stats = grid_stats(results, day_data)
-        print("\n[2] 3×3 敏感性网格（行=MIN 列=SHARE；格: 触发标的·日次 | 非零日/多标的日/零日 | 触发日均样本量）")
-        header = "    %-4s" % "MIN\\SHARE" + "".join("%-22s" % ("%.1f" % s) for s in GRID_SHARE)
+        print(
+            "\n[2] 3×3 敏感性网格（行=MIN 列=SHARE；格: 触发标的·日次 | 非零日/多标的日/零日 | 触发日均样本量）"
+        )
+        header = "    %-4s" % "MIN\\SHARE" + "".join(
+            "%-22s" % ("%.1f" % s) for s in GRID_SHARE
+        )
         print(header)
         for m in GRID_MIN:
             row = "    %-8s" % m
@@ -246,13 +290,23 @@ def main():
                 st = stats[(m, s)]
                 avg = "-" if st["avg_n_at_hit"] is None else "%.1f" % st["avg_n_at_hit"]
                 cur_mark = " ←现行" if (m, s) == CURRENT else ""
-                row += "%-22s" % ("%d | %d/%d/%d | %s%s"
-                                  % (st["total"], st["days_hit"], st["days_multi"],
-                                     st["days_zero"], avg, cur_mark))
+                row += "%-22s" % (
+                    "%d | %d/%d/%d | %s%s"
+                    % (
+                        st["total"],
+                        st["days_hit"],
+                        st["days_multi"],
+                        st["days_zero"],
+                        avg,
+                        cur_mark,
+                    )
+                )
             print(row)
 
         # [3] 触发明细（每格前 8 条）
-        print("\n[3] 触发明细（各格最多 8 条：日 | 代码 | 当日样本 | bearish | 前6日基线）")
+        print(
+            "\n[3] 触发明细（各格最多 8 条：日 | 代码 | 当日样本 | bearish | 前6日基线）"
+        )
         any_detail = False
         for m in GRID_MIN:
             for s in GRID_SHARE:
@@ -262,7 +316,10 @@ def main():
                 any_detail = True
                 print("    --- (%d, %.1f) 共 %d 条 ---" % (m, s, len(rows)))
                 for day, code, n, bear, base in rows[:8]:
-                    print("        %s  %s  n=%d  bear=%d  base=%d" % (day, code, n, bear, base))
+                    print(
+                        "        %s  %s  n=%d  bear=%d  base=%d"
+                        % (day, code, n, bear, base)
+                    )
                 if len(rows) > 8:
                     print("        ... 其余 %d 条略" % (len(rows) - 8))
         if not any_detail:

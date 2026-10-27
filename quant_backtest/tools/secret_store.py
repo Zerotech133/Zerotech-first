@@ -89,7 +89,9 @@ class SecretStore:
 
     def __repr__(self) -> str:
         """只读名、不读值。列出已配置密钥名（脱敏状态），绝不输出值。"""
-        configured = [k for k in self._env if k in KNOWN_SECRET_KEYS and self.is_configured(k)]
+        configured = [
+            k for k in self._env if k in KNOWN_SECRET_KEYS and self.is_configured(k)
+        ]
         return (
             f"SecretStore(configured_known_keys={configured!r}, "
             f"known_keys={list(KNOWN_SECRET_KEYS)})"

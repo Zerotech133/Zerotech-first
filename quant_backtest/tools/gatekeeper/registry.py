@@ -13,10 +13,10 @@ import datetime
 import json
 import os
 
-PROJECT_ROOT = os.path.normpath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-DEFAULT_FP = os.path.join(PROJECT_ROOT, "data",
-                          "gatekeeper_registry.json")
+PROJECT_ROOT = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+)
+DEFAULT_FP = os.path.join(PROJECT_ROOT, "data", "gatekeeper_registry.json")
 
 
 class Registry:
@@ -55,13 +55,13 @@ class Registry:
             if old.get("sha") != sha:
                 raise ValueError(
                     "版本 %s 已冻结为 sha=%s，拒绝改写为 %s（历史不可篡改）"
-                    % (ver, old.get("sha"), sha))
-            reg["active"] = ver              # 幂等重申
+                    % (ver, old.get("sha"), sha)
+                )
+            reg["active"] = ver  # 幂等重申
         else:
             reg["versions"][ver] = {
                 "sha": sha,
-                "frozen_at": datetime.datetime.now().isoformat(
-                    timespec="seconds"),
+                "frozen_at": datetime.datetime.now().isoformat(timespec="seconds"),
                 "note": note,
             }
             reg["active"] = ver

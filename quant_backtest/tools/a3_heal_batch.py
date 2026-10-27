@@ -21,6 +21,7 @@
       manifest 的 done/rows 记账值本身可能是假账，不得作为跳过依据）
     - 本脚本自身不接触表数据内容，只动 manifest 条目与分片目录位置
 """
+
 import argparse
 import json
 import os
@@ -30,7 +31,9 @@ import sys
 import time
 from datetime import datetime
 
-QUANT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # quant_backtest/
+QUANT_DIR = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)  # quant_backtest/
 DATA_TDX = os.path.join(QUANT_DIR, "data", "tdx")
 MANIFEST = os.path.join(DATA_TDX, "_manifest.json")
 LOGS = os.path.join(QUANT_DIR, "logs")
@@ -54,15 +57,29 @@ def log_line(f, msg):
 def find_tdx_sync_procs():
     """返回正在运行的 tdx_sync.py 进程的 PID 列表；枚举失败返回 None（未知，不得视为无实例）。"""
     try:
-        out = subprocess.run(
-            ["powershell", "-NoProfile", "-Command",
-             "Get-CimInstance Win32_Process -Filter \"Name like 'python%'\" "
-             "| ForEach-Object { \"$($_.ProcessId)|$($_.CommandLine)\" }"],
-            capture_output=True, text=True, errors="replace", timeout=60).stdout or ""
+        out = (
+            subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    "Get-CimInstance Win32_Process -Filter \"Name like 'python%'\" "
+                    '| ForEach-Object { "$($_.ProcessId)|$($_.CommandLine)" }',
+                ],
+                capture_output=True,
+                text=True,
+                errors="replace",
+                timeout=60,
+            ).stdout
+            or ""
+        )
     except Exception as exc:
-        print("[a3-heal][WARN] 进程枚举失败（按未知处理，不视为无实例）: %s" % str(exc)[:120])
+        print(
+            "[a3-heal][WARN] 进程枚举失败（按未知处理，不视为无实例）: %s"
+            % str(exc)[:120]
+        )
         return None
-    if out.strip() == "" :
+    if out.strip() == "":
         # 枚举成功但无 python 进程：明确为空
         return []
     pids = []
@@ -85,10 +102,18 @@ def acquire_lock(log_path):
             os.kill(pid, 0)
             return None  # 持锁进程存活
         except (ValueError, ProcessLookupError, PermissionError, OSError):
-            log_line(None, "[a3-heal] 陈旧锁（持锁进程 %s 已消亡），强破" % (
-                open(lock_path).read().strip() if os.path.exists(lock_path) else "?"))
+            log_line(
+                None,
+                "[a3-heal] 陈旧锁（持锁进程 %s 已消亡），强破"
+                % (
+                    open(lock_path).read().strip() if os.path.exists(lock_path) else "?"
+                ),
+            )
         except Exception as exc:
-            log_line(None, "[a3-heal][WARN] 锁检查异常（视为存活，本次放弃）: %s" % str(exc)[:120])
+            log_line(
+                None,
+                "[a3-heal][WARN] 锁检查异常（视为存活，本次放弃）: %s" % str(exc)[:120],
+            )
             return None
     with open(lock_path, "w") as f:
         f.write(str(os.getpid()))
@@ -101,14 +126,20 @@ def wait_for_other_sync(max_wait_mins, f):
         pids = find_tdx_sync_procs()
         if pids is None:
             # 枚举失败=状态未知：closed on failure，继续等待重探，不视为无实例
-            log_line(f, "[a3-heal] 进程枚举失败（状态未知），等 120s 重探（剩 %.0f 分钟）"
-                     % ((deadline - time.time()) / 60))
+            log_line(
+                f,
+                "[a3-heal] 进程枚举失败（状态未知），等 120s 重探（剩 %.0f 分钟）"
+                % ((deadline - time.time()) / 60),
+            )
             time.sleep(120)
             continue
         if not pids:
             return True
-        log_line(f, "[a3-heal] 有 tdx_sync 实例在跑 PID=%s，等 120s（剩 %.0f 分钟）"
-                 % (pids, (deadline - time.time()) / 60))
+        log_line(
+            f,
+            "[a3-heal] 有 tdx_sync 实例在跑 PID=%s，等 120s（剩 %.0f 分钟）"
+            % (pids, (deadline - time.time()) / 60),
+        )
         time.sleep(120)
     return False
 
@@ -158,8 +189,20 @@ def run_one_table(table, log_path, f):
     env["PYTHONUTF8"] = "1"
     with open(log_path, "a", encoding="utf-8", errors="replace") as lf:
         proc = subprocess.run(
-            [PY, "-X", "utf8", os.path.join(QUANT_DIR, "tdx_sync.py"), "--tables", table],
-            cwd=QUANT_DIR, stdout=lf, stderr=subprocess.STDOUT, env=env, timeout=8 * 3600)
+            [
+                PY,
+                "-X",
+                "utf8",
+                os.path.join(QUANT_DIR, "tdx_sync.py"),
+                "--tables",
+                table,
+            ],
+            cwd=QUANT_DIR,
+            stdout=lf,
+            stderr=subprocess.STDOUT,
+            env=env,
+            timeout=8 * 3600,
+        )
     return proc.returncode
 
 
@@ -202,7 +245,10 @@ def record_healed(table, rows, done):
             json.dump(data, fh, ensure_ascii=False, indent=2)
         os.replace(tmp, STATE_PATH)
     except Exception as exc:
-        log_line(None, "[a3-heal][WARN] 愈合状态记录失败（不影响本次批次）: %s" % str(exc)[:120])
+        log_line(
+            None,
+            "[a3-heal][WARN] 愈合状态记录失败（不影响本次批次）: %s" % str(exc)[:120],
+        )
 
 
 def worker(tables, log_path):
@@ -215,7 +261,9 @@ def worker(tables, log_path):
             return 2
         try:
             if not wait_for_other_sync(max_wait_mins=300, f=f):
-                log_line(f, "[a3-heal][WARN] 等待其他 tdx_sync 实例超时，本次退出（不硬抢）")
+                log_line(
+                    f, "[a3-heal][WARN] 等待其他 tdx_sync 实例超时，本次退出（不硬抢）"
+                )
                 return 3
             backup_manifest(f)
             healed = load_healed_state()
@@ -223,8 +271,11 @@ def worker(tables, log_path):
             for i, table in enumerate(tables, 1):
                 if table in healed:
                     rows, done = read_manifest_rows(table)
-                    log_line(f, "[a3-heal] (%d/%d) %s 本驱动此前已愈合（状态文件在案，manifest rows=%s done=%s），跳过"
-                             % (i, len(tables), table, rows, done))
+                    log_line(
+                        f,
+                        "[a3-heal] (%d/%d) %s 本驱动此前已愈合（状态文件在案，manifest rows=%s done=%s），跳过"
+                        % (i, len(tables), table, rows, done),
+                    )
                     results.append((table, "SKIP", rows, done))
                     continue
                 log_line(f, "[a3-heal] (%d/%d) %s 开始重拉" % (i, len(tables), table))
@@ -232,10 +283,16 @@ def worker(tables, log_path):
                 move_parts_aside(table, f)
                 rc = run_one_table(table, log_path, f)
                 rows2, done2 = read_manifest_rows(table)
-                verdict = "OK" if (rc == 0 and done2 and (rows2 or 0) > 0) else (
-                    "OK-PARTIAL" if rc == 0 else "FAIL(rc=%s)" % rc)
-                log_line(f, "[a3-heal] (%d/%d) %s -> %s rows=%s done=%s"
-                         % (i, len(tables), table, verdict, rows2, done2))
+                verdict = (
+                    "OK"
+                    if (rc == 0 and done2 and (rows2 or 0) > 0)
+                    else ("OK-PARTIAL" if rc == 0 else "FAIL(rc=%s)" % rc)
+                )
+                log_line(
+                    f,
+                    "[a3-heal] (%d/%d) %s -> %s rows=%s done=%s"
+                    % (i, len(tables), table, verdict, rows2, done2),
+                )
                 if rc == 0 and done2:
                     record_healed(table, rows2, done2)
                     healed = load_healed_state()
@@ -259,7 +316,9 @@ def main(argv):
     ap.add_argument("--detach", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args(argv)
     tables = [t.strip() for t in args.tables.split(",") if t.strip()]
-    log_path = args.log or os.path.join(LOGS, "a3_heal_batch_%s.log" % datetime.now().strftime("%Y%m%d"))
+    log_path = args.log or os.path.join(
+        LOGS, "a3_heal_batch_%s.log" % datetime.now().strftime("%Y%m%d")
+    )
     if args.dry_run:
         print("dry-run 表清单（%d 张，按缺口从大到小）:" % len(tables))
         for t in tables:
@@ -277,22 +336,50 @@ def main(argv):
         breakaway = flags | getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0)
         os.makedirs(LOGS, exist_ok=True)
         with open(log_path, "a", encoding="utf-8", errors="replace") as lf:
-            lf.write("[%s] [a3-heal] launcher 派生 detached worker（%d 张）\n" % (now_s(), len(tables)))
+            lf.write(
+                "[%s] [a3-heal] launcher 派生 detached worker（%d 张）\n"
+                % (now_s(), len(tables))
+            )
         popen_kwargs = dict(
-            cwd=QUANT_DIR, stdin=subprocess.DEVNULL,
+            cwd=QUANT_DIR,
+            stdin=subprocess.DEVNULL,
             stdout=open(log_path, "a", encoding="utf-8", errors="replace"),
-            stderr=subprocess.STDOUT, close_fds=True)
+            stderr=subprocess.STDOUT,
+            close_fds=True,
+        )
         try:
             subprocess.Popen(
-                [sys.executable, "-X", "utf8", os.path.abspath(__file__),
-                 "--tables", ",".join(tables), "--log", log_path, "--detach"],
-                creationflags=breakaway, **popen_kwargs)
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    os.path.abspath(__file__),
+                    "--tables",
+                    ",".join(tables),
+                    "--log",
+                    log_path,
+                    "--detach",
+                ],
+                creationflags=breakaway,
+                **popen_kwargs,
+            )
         except OSError:
             # 当前 Job 禁止 breakaway：回退普通 detached（由调用方存活核验兜底）
             subprocess.Popen(
-                [sys.executable, "-X", "utf8", os.path.abspath(__file__),
-                 "--tables", ",".join(tables), "--log", log_path, "--detach"],
-                creationflags=flags, **popen_kwargs)
+                [
+                    sys.executable,
+                    "-X",
+                    "utf8",
+                    os.path.abspath(__file__),
+                    "--tables",
+                    ",".join(tables),
+                    "--log",
+                    log_path,
+                    "--detach",
+                ],
+                creationflags=flags,
+                **popen_kwargs,
+            )
         print("worker 已派生，日志:", log_path)
         return 0
     return worker(tables, log_path)
