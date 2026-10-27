@@ -27,6 +27,86 @@ SAFE_EXT = {".md", ".txt", ".html", ".htm", ".js", ".css", ".json", ".py", ".svg
 MAX_FILES = 4
 MAX_CHARS_PER_FILE = 120000
 SECRET_PAT = re.compile(r"(sk-[A-Za-z0-9_\-]{16,}|AKIA[0-9A-Z]{12,}|BEGIN (RSA |EC )?PRIVATE KEY|password\s*[:=]\s*['\"][^'\"]{6,})", re.I)
+CMD_PREFIX = ("python", "py ", "node", "npm", "pytest", "git ", "devtask", "mission_worker",
+              "powershell", "pwsh", "cmd ", "curl", "wget", "ollama", "ffmpeg", "make ")
+SLASH_CMD_RE = re.compile(r"^/[a-z][a-z0-9]*(?:-[a-z0-9]+)+$", re.I)
+
+
+def _extract_command_snippets(text: str) -> list:
+    """提取文档中的反引号/代码块命令片段。"""
+    out = []
+    for m in re.finditer(r"```(?:[a-zA-Z0-9_-]+)?\n(.*?)```", text, re.S):
+        for ln in m.group(1).splitlines():
+            s = ln.strip().lstrip("$").strip()
+            if s:
+                out.append(s)
+    for m in re.finditer(r"`([^`\n]{2,})`", text):
+        out.append(m.group(1).strip())
+    return out
+
+
+def _command_is_grounded(s: str, allowed: list) -> bool:
+    s = str(s or "").strip()
+    if not s:
+        return True
+    low = s.lower()
+    command_like = (low.startswith(CMD_PREFIX) or SLASH_CMD_RE.match(s)
+                    or any(x in low for x in ("devtask.py", "mission_worker.py")))
+    if not command_like:
+        return True
+    for a in allowed or []:
+        a = str(a).strip()
+        if not a:
+            continue
+        if a in s or s in a or s.split()[:2] == a.split()[:2]:
+            return True
+    return False
+
+
+def _validate_commands(ops: list, allowed: list) -> str:
+    for rel, content in ops:
+        if Path(rel).suffix.lower() not in (".md", ".txt", ".html", ".htm"):
+            continue
+        for snip in _extract_command_snippets(content):
+            if not _command_is_grounded(snip, allowed):
+                return "ungrounded_command:%s:%s" % (rel, snip[:120])
+    return ""
+
+
+def _run_checks(wt: Path, checks: list) -> str:
+    for c in checks or []:
+        if not isinstance(c, dict):
+            continue
+        typ = str(c.get("type") or "")
+        rel = str(c.get("path") or "").replace("\\", "/")
+        p = wt / rel if rel else None
+        try:
+            if typ == "file_exists":
+                if not p or not p.is_file():
+                    return "check_failed:file_exists:%s" % rel
+            elif typ == "file_min_chars":
+                if not p or not p.is_file() or len(p.read_text(encoding="utf-8", errors="replace")) < int(c.get("min") or 1):
+                    return "check_failed:file_min_chars:%s" % rel
+            elif typ == "file_contains":
+                txt = p.read_text(encoding="utf-8", errors="replace") if p and p.is_file() else ""
+                if str(c.get("text") or "") not in txt:
+                    return "check_failed:file_contains:%s" % rel
+            elif typ == "file_not_contains":
+                txt = p.read_text(encoding="utf-8", errors="replace") if p and p.is_file() else ""
+                if str(c.get("text") or "") in txt:
+                    return "check_failed:file_not_contains:%s" % rel
+            elif typ == "cmd":
+                cmd = c.get("cmd")
+                if isinstance(cmd, str):
+                    cmd = cmd.split()
+                if not isinstance(cmd, list) or not cmd:
+                    return "check_failed:cmd_empty"
+                r = _run(cmd, wt, int(c.get("timeout") or 120))
+                if r.returncode != int(c.get("expect_rc") or 0):
+                    return "check_failed:cmd:%s" % " ".join(cmd)[:120]
+        except Exception as e:  # noqa: BLE001
+            return "check_failed:%s:%s" % (typ, str(e)[:120])
+    return ""
 
 
 def _load(p: Path):
@@ -109,10 +189,14 @@ def _prompt(ctx: dict, context: list) -> str:
               "只能修改 write_scope 内文件；只输出 JSON；不要密钥；不要运行外部命令；保持现有风格。"
               "最多 %d 个文件。内容必须是完整文件，不是 diff。"
               "文档（.md）必须写成可直接照做的说明：给出真实命令、文件路径、安全边界、回滚步骤，"
-              "至少 300 字；禁止只写标题或占位句（如「说明xxx」「列出xxx」）。" % MAX_FILES)
+              "至少 300 字；禁止只写标题或占位句（如「说明xxx」「列出xxx」）。"
+              "文档中提到命令时，只能引用 allowed_commands；不得编造任何命令。"
+              "输出必须满足 checks 列出的验收断言。" % MAX_FILES)
     user = json.dumps({
         "mission": ctx["plan"].get("name"), "task": task,
         "write_scope": task.get("write_scope") or [],
+        "allowed_commands": task.get("allowed_commands") or [],
+        "checks": task.get("checks") or [],
         "acceptance": task.get("acceptance") or [],
         "notes": task.get("description") or "",
         "existing_files": context,
@@ -180,6 +264,8 @@ def run_task(mission_id: str, task_id: str, dry_run: bool = False) -> dict:
     if dry_run:
         return {"ok": True, "mode": "dry-run", "ticket": ctx["ticket"],
                 "task": task.get("title"), "scopes": scopes,
+                "allowed_commands": task.get("allowed_commands") or [],
+                "checks": task.get("checks") or [],
                 "existing_files": [x["path"] for x in context]}
     try:
         out = _call_llm(ctx)
@@ -204,6 +290,9 @@ def run_task(mission_id: str, task_id: str, dry_run: bool = False) -> dict:
             return {"ok": False, "error": "content_too_shallow",
                     "detail": "文档至少 300 字，必须含真实命令/路径/回滚步骤", "path": p}
         ops.append((p, c))
+    cmd_err = _validate_commands(ops, task.get("allowed_commands") or [])
+    if cmd_err:
+        return {"ok": False, "error": "ungrounded_command", "detail": cmd_err}
     changed = []
     try:
         for rel, content in ops:
@@ -215,6 +304,10 @@ def run_task(mission_id: str, task_id: str, dry_run: bool = False) -> dict:
         if err:
             _restore(wt, changed)
             return {"ok": False, "error": "syntax_check_failed", "detail": err}
+        check_err = _run_checks(wt, task.get("checks") or [])
+        if check_err:
+            _restore(wt, changed)
+            return {"ok": False, "error": "checks_failed", "detail": check_err}
     except Exception as e:  # noqa: BLE001
         _restore(wt, changed)
         return {"ok": False, "error": "apply_failed", "detail": str(e)[:300]}
