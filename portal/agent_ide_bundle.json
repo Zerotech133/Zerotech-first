@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 00:01",
+ "generated": "2026-10-28 00:02",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 35,
   "workorders_review": 3
  },
  "workorders": [
@@ -344,6 +344,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-PICKS-MEM-20261027",
    "created": "2026-10-28 00:01:30",
+   "project": "general"
+  },
+  {
+   "id": "WO-BASELINE-DIAG3-20261027",
+   "desc": "bundle ARCH1 role_cn 期望对齐（研发主官 · 架构师）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-BASELINE-DIAG3-20261027",
+   "created": "2026-10-28 00:01:49",
    "project": "general"
   }
  ],
@@ -6977,6 +6986,11 @@
     {
      "id": "WO-LEGION-PICKS-MEM-20261027",
      "desc": "/picks 筛选条件记忆：localStorage 记忆分层/排序/视图/搜索/高级抽屉/显示全部，刷新恢复+重置；静态，无服务变更",
+     "status": "doing"
+    },
+    {
+     "id": "WO-BASELINE-DIAG3-20261027",
+     "desc": "bundle ARCH1 role_cn 期望对齐（研发主官 · 架构师）",
      "status": "doing"
     }
    ]
