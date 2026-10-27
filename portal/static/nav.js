@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded',function(){
   sep0.textContent='|';
   bar.insertBefore(sep0,bar.firstChild);
  }
- document.body.insertBefore(bar,document.body.firstChild);
+ var skip=document.querySelector('.wb-skip');
+ if(skip&&skip.parentNode===document.body){document.body.insertBefore(bar,skip.nextSibling);}
+ else{document.body.insertBefore(bar,document.body.firstChild);}
 });
 })();
