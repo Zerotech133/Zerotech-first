@@ -17,6 +17,8 @@ import freshness_report  # noqa: E402
 import manifest_check  # noqa: E402
 import quality_test  # noqa: E402
 
+_UNSET = object()  # _store(): registered 未显式传入时默认取磁盘文件数
+
 
 class TestCommon(unittest.TestCase):
     def test_sha256_file(self):
@@ -36,11 +38,79 @@ class TestCatalogSnapshot(unittest.TestCase):
         self.assertFalse(catalog_snapshot.compare_sha("abc", {"catalog_sha256": "def"})["match"])
         self.assertFalse(catalog_snapshot.compare_sha(None, {})["match"])
 
+    def _store(self, root: Path, layout: str, files: int, ext: str,
+               registered=_UNSET) -> dict:
+        store = root / (layout + "_store")
+        store.mkdir(exist_ok=True)
+        for i in range(files):
+            (store / ("f%03d%s" % (i, ext))).write_bytes(b"")
+        reg = files if registered is _UNSET else registered
+        return {"tables": {"t1": {"store": str(store), "layout": layout, "files": reg}}}
+
     def test_drift_sample_missing_store(self):
-        cat = {"tables": {"t1": {"store": "Z:/definitely/not/exist", "files": 1}}}
+        cat = {"tables": {"t1": {"store": "Z:/definitely/not/exist",
+                                 "layout": "parquet", "files": 1}}}
         rows = catalog_snapshot.drift_sample(cat)
         self.assertEqual(len(rows), 1)
         self.assertFalse(rows[0]["store_exists"])
+        self.assertEqual(rows[0]["file_check"], "store_missing")
+        self.assertIn("t1", [s["table"] for s in rows
+                             if s["file_check"] == "store_missing"])
+
+    def test_drift_sample_parquet_layout_counts_parquet(self):
+        """part/by_date 等 parquet 系 layout 只数 *.parquet，jsonl 干扰文件不算。"""
+        with tempfile.TemporaryDirectory() as d:
+            cat = self._store(Path(d), "part", 3, ".parquet")
+            store = Path(cat["tables"]["t1"]["store"])
+            (store / "noise.jsonl").write_bytes(b"")
+            rows = catalog_snapshot.drift_sample(cat)
+            self.assertEqual(rows[0]["files_on_disk"], 3)
+            self.assertEqual(rows[0]["file_check"], "ok")
+
+    def test_drift_sample_jsonl_layout_counts_jsonl(self):
+        """jsonl layout 按 *.jsonl 计数（guba_posts 误报回归）。"""
+        with tempfile.TemporaryDirectory() as d:
+            cat = self._store(Path(d), "jsonl", 4, ".jsonl")
+            store = Path(cat["tables"]["t1"]["store"])
+            (store / "noise.parquet").write_bytes(b"")
+            rows = catalog_snapshot.drift_sample(cat)
+            self.assertEqual(rows[0]["files_on_disk"], 4)
+            self.assertEqual(rows[0]["file_check"], "ok")
+
+    def test_drift_sample_sqlite_skipped_files_na(self):
+        """sqlite/pg 库型不数文件，标 files_na，不产生 warn。"""
+        with tempfile.TemporaryDirectory() as d:
+            cat = self._store(Path(d), "sqlite", 0, ".db", registered=99)
+            rows = catalog_snapshot.drift_sample(cat)
+            self.assertTrue(rows[0]["files_na"])
+            self.assertEqual(rows[0]["file_check"], "na")
+            self.assertNotIn("diff", rows[0])
+            self.assertFalse(rows[0].get("mismatch"))
+
+    def test_drift_sample_diff_one_is_info_not_issue(self):
+        """登记时点快照 vs 实时写（cyq_perf 273/274）→ info，不计 mismatch。"""
+        with tempfile.TemporaryDirectory() as d:
+            cat = self._store(Path(d), "by_date", 4, ".parquet", registered=3)
+            rows = catalog_snapshot.drift_sample(cat)
+            self.assertEqual(rows[0]["diff"], 1)
+            self.assertEqual(rows[0]["file_check"], "info")
+            self.assertNotIn("mismatch", rows[0])
+
+    def test_drift_sample_diff_gt_one_is_warn(self):
+        with tempfile.TemporaryDirectory() as d:
+            cat = self._store(Path(d), "by_code", 5, ".parquet", registered=3)
+            rows = catalog_snapshot.drift_sample(cat)
+            self.assertEqual(rows[0]["diff"], 2)
+            self.assertEqual(rows[0]["file_check"], "warn")
+
+    def test_drift_sample_registered_zero_or_null_is_info(self):
+        with tempfile.TemporaryDirectory() as d:
+            cat = self._store(Path(d), "parquet", 2, ".parquet", registered=0)
+            rows = catalog_snapshot.drift_sample(cat)
+            self.assertEqual(rows[0]["file_check"], "info")
+            cat = self._store(Path(d), "parquet", 2, ".parquet", registered=None)
+            rows = catalog_snapshot.drift_sample(cat)
+            self.assertEqual(rows[0]["file_check"], "info")
 
 
 class TestManifestCheck(unittest.TestCase):

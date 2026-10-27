@@ -8,7 +8,7 @@
 
 | 工具 | 作用 | 命令 | 退出码 |
 |---|---|---|---|
-| `catalog_snapshot.py` | catalog v11 与 registry 一致性（sha256）+ 抽样物理漂移 | `python tools/datawarehouse/catalog_snapshot.py --json` | 0/1/2 |
+| `catalog_snapshot.py` | catalog v12 与 registry 一致性（sha256）+ 抽样物理漂移（按 layout 计数；diff≤1 归 info、>1 归 warn；sqlite/pg 跳过文件数） | `python tools/datawarehouse/catalog_snapshot.py --json` | 0/1/2 |
 | `registry_rebuild.py` | 按 catalog v12 全量重建 registry（旧条目原样保留+新表补登） | `python tools/datawarehouse/registry_rebuild.py --dry-run/--apply [--json]` | 0/1/2 |
 | `freshness_report.py` | 六表 prod_max（footer，不凭 mtime）+ 4 库停摆 | `python tools/datawarehouse/freshness_report.py --json` | 0/1/2 |
 | `manifest_check.py` | 4 个 `_manifest.json` 键 ∩ catalog 表名 | `python tools/datawarehouse/manifest_check.py --json` | 0/1/2 |
