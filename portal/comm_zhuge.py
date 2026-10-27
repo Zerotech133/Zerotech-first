@@ -106,6 +106,45 @@ def _apply_citations(text, grounding):
         return text
     try:
         return mod.ensure_citations(text, grounding["sources"])
+    except Exception:  # noqa: BLE001  引用兜底失败不阻断主链
+        return text
+
+
+def _tool_module(name):
+    """从 tools/ 加载可选能力模块；失败返回 None（不阻断主链）。"""
+    try:
+        tools_dir = str(Path(__file__).resolve().parent.parent / "tools")
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        return __import__(name)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _plan_for(question):
+    """P1-6：COMM_ZHUGE_PLAN=1 时附加规划分解（默认关；模板规划零依赖）。"""
+    if str(os.environ.get("COMM_ZHUGE_PLAN", "0")).strip().lower() not in (
+            "1", "true", "yes", "on"):
+        return None
+    mod = _tool_module("zhuge_planner")
+    try:
+        return mod.build_plan(question) if mod else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _reflect_for(text, grounding):
+    """P1-7：默认开启自检（COMM_ZHUGE_REFLECT=0 关），只读不改写答案。"""
+    if str(os.environ.get("COMM_ZHUGE_REFLECT", "1")).strip().lower() in (
+            "0", "false", "no", "off"):
+        return None
+    mod = _tool_module("zhuge_reflector")
+    try:
+        g = grounding or {}
+        return mod.reflect(text, sources=g.get("sources"),
+                           memories=g.get("memory")) if mod else None
+    except Exception:  # noqa: BLE001
+        return None
     except Exception:  # noqa: BLE001
         return text
 
@@ -427,6 +466,8 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
                 "error": None,
                 "sources": grounding.get("sources") if grounding else [],
                 "grounded": bool(grounding and grounding.get("sources")),
+                "plan": _plan_for(q),
+                "reflection": _reflect_for(_trim(raw, max_chars), grounding),
                 "elapsed_ms": int((time.time() - t0) * 1000),
             }
         # 真通道失败 → 继续降级（错误进 error 字段，不吞）
@@ -475,5 +516,7 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
         "llm_status": status,
         "sources": grounding.get("sources") if grounding else [],
         "grounded": bool(grounding and grounding.get("sources")),
+        "plan": _plan_for(q),
+        "reflection": _reflect_for(out, grounding),
         "elapsed_ms": int((time.time() - t0) * 1000),
     }

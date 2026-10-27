@@ -66,7 +66,7 @@ def _rag_retrieve(question: str, limit: int) -> list[dict] | None:
 
 def _memory_context(question: str, k: int = 3) -> list[dict]:
     """ZHUGE_MEMORY=1 时召回历史经验（只读；不自动写记忆）。"""
-    if os.environ.get("ZHUGE_MEMORY", "").strip().lower() not in ("1", "true", "yes", "on"):
+    if os.environ.get("ZHUGE_MEMORY", "1").strip().lower() not in ("1", "true", "yes", "on"):
         return []
     try:
         tools_dir = str(Path(__file__).resolve().parent)
