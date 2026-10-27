@@ -9,16 +9,32 @@
         {
           "id": "acad1-review-dry-run",
           "kind": "cmd",
-          "args": ["agent_platform/tools/academy_ops.py", "review", "--dry-run", "--no-emit"],
+          "args": [
+            "agent_platform/tools/academy_ops.py",
+            "review",
+            "--dry-run",
+            "--no-emit"
+          ],
           "expect_rc": 0,
-          "contains": ["dry_run", "review"]
+          "contains": [
+            "dry_run",
+            "review"
+          ]
         },
         {
           "id": "acad1-weekly-dry-run",
           "kind": "cmd",
-          "args": ["agent_platform/tools/academy_ops.py", "weekly", "--dry-run", "--no-emit"],
+          "args": [
+            "agent_platform/tools/academy_ops.py",
+            "weekly",
+            "--dry-run",
+            "--no-emit"
+          ],
           "expect_rc": 0,
-          "contains": ["weekly", "dry_run"]
+          "contains": [
+            "weekly",
+            "dry_run"
+          ]
         },
         {
           "id": "acad1-ops-tool",
@@ -34,16 +50,30 @@
         {
           "id": "strat1-brief-dry-run",
           "kind": "cmd",
-          "args": ["agent_platform/tools/research_seat_ops.py", "strat1", "--dry-run", "--no-emit"],
+          "args": [
+            "agent_platform/tools/research_seat_ops.py",
+            "strat1",
+            "--dry-run",
+            "--no-emit"
+          ],
           "expect_rc": 0,
-          "contains": ["strat1"]
+          "contains": [
+            "strat1"
+          ]
         },
         {
           "id": "strat1-weekly-dry-run",
           "kind": "cmd",
-          "args": ["agent_platform/tools/research_seat_ops.py", "weekly", "--dry-run", "--no-emit"],
+          "args": [
+            "agent_platform/tools/research_seat_ops.py",
+            "weekly",
+            "--dry-run",
+            "--no-emit"
+          ],
           "expect_rc": 0,
-          "contains": ["weekly"]
+          "contains": [
+            "weekly"
+          ]
         },
         {
           "id": "strat1-lcs1-standard",
@@ -59,16 +89,30 @@
         {
           "id": "back1-brief-dry-run",
           "kind": "cmd",
-          "args": ["agent_platform/tools/research_seat_ops.py", "back1", "--dry-run", "--no-emit"],
+          "args": [
+            "agent_platform/tools/research_seat_ops.py",
+            "back1",
+            "--dry-run",
+            "--no-emit"
+          ],
           "expect_rc": 0,
-          "contains": ["back1"]
+          "contains": [
+            "back1"
+          ]
         },
         {
           "id": "back1-weekly-dry-run",
           "kind": "cmd",
-          "args": ["agent_platform/tools/research_seat_ops.py", "weekly", "--dry-run", "--no-emit"],
+          "args": [
+            "agent_platform/tools/research_seat_ops.py",
+            "weekly",
+            "--dry-run",
+            "--no-emit"
+          ],
           "expect_rc": 0,
-          "contains": ["weekly"]
+          "contains": [
+            "weekly"
+          ]
         },
         {
           "id": "back1-freeze-interface",
@@ -84,9 +128,18 @@
         {
           "id": "arch1-patrol-dry-run",
           "kind": "cmd",
-          "args": ["agent_platform/tools/arch1_ops.py", "weekly", "--dry-run", "--skip-gates", "--no-emit"],
+          "args": [
+            "agent_platform/tools/arch1_ops.py",
+            "weekly",
+            "--dry-run",
+            "--skip-gates",
+            "--no-emit"
+          ],
           "expect_rc": 0,
-          "contains": ["weekly", "dry_run"]
+          "contains": [
+            "weekly",
+            "dry_run"
+          ]
         },
         {
           "id": "arch1-adr-003",
@@ -99,6 +152,36 @@
           "kind": "file",
           "path": "agent_platform/tools/policy_check.py",
           "contains": "policy"
+        },
+        {
+          "id": "arch1-sandbox-benchmark-plan",
+          "kind": "cmd",
+          "args": [
+            "agent_platform/tools/agent_sandbox.py",
+            "benchmark",
+            "--dry-run"
+          ],
+          "expect_rc": 0,
+          "contains": [
+            "SWE-01-hello",
+            "RES-03-network-blocked"
+          ]
+        },
+        {
+          "id": "arch1-devtask-sandbox-plan",
+          "kind": "cmd",
+          "args": [
+            "tools/devtask.py",
+            "sandbox",
+            "--cmd",
+            "python3 -c 'print(1)'",
+            "--dry-run"
+          ],
+          "expect_rc": 0,
+          "contains": [
+            "dry_run",
+            "network"
+          ]
         }
       ]
     }

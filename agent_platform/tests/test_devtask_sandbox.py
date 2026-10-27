@@ -31,3 +31,13 @@ def test_sandbox_requires_cmd():
     r = _run()
     assert r.returncode != 0
     assert "required" in r.stderr.lower() or "usage" in r.stderr.lower()
+
+
+def test_sandbox_quota_passthrough():
+    r = _run("--cmd", "python3 -c 'print(1)'", "--dry-run",
+             "--memory", "128m", "--cpus", "0.25", "--pids-limit", "32")
+    assert r.returncode == 0, r.stdout + r.stderr
+    out = json.loads(r.stdout)
+    assert out["quotas"] == {"memory": "128m", "cpus": "0.25", "pids_limit": 32}
+    joined = " ".join(out["docker_cmd"])
+    assert "--memory 128m" in joined and "--pids-limit 32" in joined

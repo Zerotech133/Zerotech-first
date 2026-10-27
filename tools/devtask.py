@@ -1658,6 +1658,9 @@ def cmd_sandbox(*args):
     ap.add_argument("--image", default="")
     ap.add_argument("--network", default="none", choices=["none", "bridge"])
     ap.add_argument("--timeout", type=int, default=120)
+    ap.add_argument("--memory", default="512m", help="容器内存上限（默认 512m）")
+    ap.add_argument("--cpus", default="1.0", help="CPU 配额（默认 1.0 核）")
+    ap.add_argument("--pids-limit", type=int, default=256, help="进程数上限（默认 256）")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(list(args))
 
@@ -1674,7 +1677,8 @@ def cmd_sandbox(*args):
         print("[warn] --network bridge 会放开容器网络；出口白名单未实现，仅限临时排障",
               file=sys.stderr)
     out = run_cmd(a.cmd, image=a.image or DEFAULT_IMAGE, network=a.network,
-                  timeout=a.timeout, dry_run=a.dry_run)
+                  timeout=a.timeout, dry_run=a.dry_run,
+                  memory=a.memory, cpus=a.cpus, pids_limit=a.pids_limit)
     print(json.dumps(out, ensure_ascii=False, indent=1))
     return 0 if out.get("ok") else 1
 
