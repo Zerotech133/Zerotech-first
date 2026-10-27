@@ -99,7 +99,7 @@ def test_drill_card_button_gated(monkeypatch):
     card = fc.build_drill_card("605100", {"name": "华丰", "quote": {}}, [("结构", "x")])
     els = card["body"]["elements"]
     labels = [e.get("text", {}).get("content") for e in els if e.get("tag") == "button"]
-    assert "移动端详情" not in labels
+    assert not any("移动端详情" in (l or "") for l in labels)
 
 
 def test_drill_card_button_when_enabled(monkeypatch):
@@ -108,10 +108,12 @@ def test_drill_card_button_when_enabled(monkeypatch):
     _write_cfg(m_links.CONFIG, {"enabled": True, "base": "http://test.local:8080"})
     card = fc.build_drill_card("605100", {"name": "华丰", "quote": {}}, [("结构", "x")])
     els = card["body"]["elements"]
+    # 2026-10-25 拍板「用 H5」：按钮文案为「📱 移动端详情（H5）」；此断言随产品口径更新
     mbtns = [
         e
         for e in els
-        if e.get("tag") == "button" and e.get("text", {}).get("content") == "移动端详情"
+        if e.get("tag") == "button"
+        and "移动端详情" in (e.get("text", {}).get("content") or "")
     ]
     assert len(mbtns) == 1
     u = mbtns[0]["behaviors"][0]["default_url"]
