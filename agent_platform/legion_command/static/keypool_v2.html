@@ -176,14 +176,18 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;",
 let KEYSTATE=null, DRAWER_SEAT=null;
 const MAIN_SEATS=["tianfeng","zhaoyun","zhuge","guanyu","HUANGZHONG"];
 function seatStatus(s){
+  if(s&&s.status){
+    const n=s.available_count||0, t=s.total_count||0;
+    const cls=s.status==="available"?"ok":s.status==="invalid"?"bad":s.status==="throttled"?"warn":"";
+    return {label:s.status==="available"?(s.partial?"部分可用 "+n+"/"+t:"可用 "+n+"/"+t):s.status==="throttled"?"限流/降级 "+n+"/"+t:s.status==="invalid"?"失效 0/"+t:"未配置",cls,n: n};
+  }
   const keys=(s&&s.keys)||[];
   if(!keys.length) return {label:"未配置",cls:"",n:0};
   const ok=keys.filter(k=>k.status==="healthy").length;
-  const inv=keys.filter(k=>k.status==="invalid").length;
   if(ok) return {label:"可用 "+ok+"/"+keys.length,cls:"ok",n:ok};
-  if(inv===keys.length) return {label:"失效 "+inv+"/"+keys.length,cls:"bad",n:0};
-  return {label:"降级 "+keys.filter(k=>["quota","degraded","pending"].includes(k.status)).length+"/"+keys.length,cls:"warn",n:0};
+  return {label:"失效/降级",cls:"bad",n:0};
 }
+function testedText(s){return s&&s.last_tested_at?esc(String(s.last_tested_at).replace("T"," ").slice(0,19)):"未测试";}
 function keyRows(keys){
   return (keys||[]).map(k=>'<div class="row"><span>'+esc(k.masked||"***")+' <span class="muted">'+esc(k.model||"")+'</span></span><span><span class="pill '+seatStatus({keys:[k]}).cls+'">'+esc(k.status||"")+'</span></span></div>').join("");
 }
@@ -191,6 +195,7 @@ function mainCard(id,s){
   const st=seatStatus(s);
   return '<div class="card"><h3>'+esc(s.cn||id)+' <span class="muted">'+esc(id)+'</span></h3>'+
     '<div class="row"><span>状态</span><span class="pill '+st.cls+'">'+st.label+'</span></div>'+
+    '<div class="row"><span>最近测试</span><span class="muted">'+testedText(s)+'</span></div>'+
     '<div class="row"><span>绑定</span><span class="muted">'+esc(s.provider||"")+' · '+esc(s.binding||"")+'</span></div>'+
     '<div class="keys">'+(keyRows(s.keys)||'<span class="muted">暂无 Key</span>')+'</div>'+
     '<div class="actions"><button class="btn small" onclick="openDrawer(\''+id+'\')">管理 Key</button></div></div>';
@@ -198,7 +203,7 @@ function mainCard(id,s){
 function seatRow(id,s){
   const st=seatStatus(s);
   const model=(s.keys||[])[0]?.model||s.binding||"—";
-  return '<tr'+(st.n?'':' style="opacity:.55"')+'><td>'+esc(s.cn||id)+'<br><span class="muted">'+esc(id)+'</span></td><td>'+esc(id)+'</td><td><span class="pill '+st.cls+'">'+st.label+'</span></td><td>'+esc(model)+'</td><td><button class="btn small" onclick="openDrawer(\''+id+'\')">配置</button></td></tr>';
+  return '<tr'+(st.n?'':' style="opacity:.55"')+'><td>'+esc(s.cn||id)+'<br><span class="muted">'+esc(id)+'</span></td><td>'+esc(id)+'</td><td><span class="pill '+st.cls+'">'+st.label+'</span></td><td class="muted">'+testedText(s)+'</td><td>'+esc(model)+'</td><td><button class="btn small" onclick="openDrawer(\''+id+'\')">配置</button></td></tr>';
 }
 async function loadSeats(){
   try{
@@ -207,7 +212,7 @@ async function loadSeats(){
     const main=MAIN_SEATS.map(id=>({id,s:seats[id]})).filter(x=>x.s);
     document.getElementById("seat-main-cards").innerHTML=main.map(x=>mainCard(x.id,x.s)).join("")||'<div class="muted">主力席位不可用</div>';
     const extras=Object.entries(seats).filter(([id])=>id!=="relay"&&!MAIN_SEATS.includes(id));
-    let h='<table><thead><tr><th>席位</th><th>ID</th><th>Key 状态</th><th>主力模型</th><th>操作</th></tr></thead><tbody>';
+    let h='<table><thead><tr><th>席位</th><th>ID</th><th>Key 状态</th><th>最近测试</th><th>主力模型</th><th>操作</th></tr></thead><tbody>';
     for(const [id,s] of extras) h+=seatRow(id,s);
     document.getElementById("seat-table").innerHTML=h+'</tbody></table>'+(extras.length?'':'<div class="muted">暂无部门负责人席位</div>');
   }catch(e){document.getElementById("seat-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
