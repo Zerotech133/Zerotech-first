@@ -40,6 +40,30 @@ SEATS = {
     },
     "relay": {"cn": "中转站", "provider": "custom", "binding": "openai-compatible"},
 }
+
+EXTRA_FILE = REPO / "config" / "key_seats.json"
+
+
+def _extra_seats() -> dict:
+    try:
+        d = json.loads(EXTRA_FILE.read_text(encoding="utf-8"))
+        return d.get("seats") or {}
+    except Exception:
+        return {}
+
+
+def all_seats() -> dict:
+    d = dict(SEATS)
+    d.update(_extra_seats())
+    return d
+
+
+def _meta(seat: str) -> dict:
+    m = all_seats().get(seat)
+    return m or {"cn": str(seat), "provider": "custom",
+                 "binding": "openai-compatible"}
+
+
 PROVIDER_URL = {
     "zhipu": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
     "deepseek": "https://api.deepseek.com/chat/completions",
@@ -239,7 +263,7 @@ def state() -> dict:
         "log": d.get("log", [])[-40:][::-1],
         "ok": True,
     }
-    for sid, meta in SEATS.items():
+    for sid, meta in all_seats().items():
         s = d.get("seats", {}).get(sid, {})
         keys = []
         for k in d.get("keys", []):
@@ -267,6 +291,7 @@ def state() -> dict:
             "active_key_id": s.get("active_key_id"),
             "degraded": bool(s.get("degraded")),
             "keys": keys,
+            "extra": sid not in SEATS,
         }
     return out
 
@@ -280,7 +305,7 @@ def action(req: dict) -> dict:
     act = str(req.get("action") or "").strip()
     d = _load()
     seat = str(req.get("seat") or "").strip()
-    if seat not in SEATS:
+    if seat not in all_seats():
         return {"ok": False, "error": "bad_seat"}
     s = d.setdefault("seats", {}).setdefault(seat, {})
     if act == "add":
@@ -360,7 +385,7 @@ def action(req: dict) -> dict:
         except Exception as e:  # noqa: BLE001
             return {"ok": False, "error": "decrypt_failed", "detail": str(e)[:120]}
         r = _provider_test(
-            SEATS[seat]["provider"],
+            _meta(seat).get("provider", "custom"),
             secret,
             base_url=str(k.get("base_url") or ""),
             model=str(k.get("model") or ""),
@@ -550,7 +575,7 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
             attempts.append(
                 {
                     "seat": seat,
-                    "channel": SEATS[seat]["provider"],
+                    "channel": _meta(seat).get("provider", "custom"),
                     "result": "no_active_key",
                 }
             )
@@ -559,13 +584,13 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
             attempts.append(
                 {
                     "seat": seat,
-                    "channel": SEATS[seat]["provider"],
+                    "channel": _meta(seat).get("provider", "custom"),
                     "result": "decrypt_failed",
                 }
             )
             continue
         r = _provider_chat(
-            SEATS[seat]["provider"],
+            _meta(seat).get("provider", "custom"),
             secret,
             messages,
             base_url=str(k.get("base_url") or ""),
@@ -579,12 +604,12 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
                 "reply": r.get("reply", ""),
                 "channel": (
                     "relay/custom"
-                    if SEATS[seat]["provider"] == "custom"
-                    else SEATS[seat]["provider"]
+                    if _meta(seat).get("provider", "custom") == "custom"
+                    else _meta(seat).get("provider", "custom")
                 ),
                 "seat": seat,
                 "attempts": attempts
-                + [{"seat": seat, "channel": SEATS[seat]["provider"], "result": "ok"}],
+                + [{"seat": seat, "channel": _meta(seat).get("provider", "custom"), "result": "ok"}],
             }
         code = str(r.get("code") or "")
         k["status"] = (
@@ -600,8 +625,8 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
                 "seat": seat,
                 "channel": (
                     "relay/custom"
-                    if SEATS[seat]["provider"] == "custom"
-                    else SEATS[seat]["provider"]
+                    if _meta(seat).get("provider", "custom") == "custom"
+                    else _meta(seat).get("provider", "custom")
                 ),
                 "result": "fail:" + code,
                 "switched": sw.get("ok", False),

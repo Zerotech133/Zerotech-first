@@ -1,0 +1,20 @@
+{
+ "schema": "key_seats/v1",
+ "seats": {
+  "guanyu": {"cn": "关羽", "provider": "custom", "binding": "openai-compatible"},
+  "A0A": {"cn": "董允（参谋长助理）", "provider": "custom", "binding": "openai-compatible"},
+  "D1": {"cn": "鲁肃（量化交易负责人）", "provider": "custom", "binding": "openai-compatible"},
+  "ARCH1": {"cn": "曹操（研发负责人）", "provider": "custom", "binding": "openai-compatible"},
+  "TR1": {"cn": "周瑜（交易负责人）", "provider": "custom", "binding": "openai-compatible"},
+  "DATA1": {"cn": "数据智能负责人", "provider": "custom", "binding": "openai-compatible"},
+  "PM1": {"cn": "产品管理负责人", "provider": "custom", "binding": "openai-compatible"},
+  "QA1": {"cn": "质量工程负责人", "provider": "custom", "binding": "openai-compatible"},
+  "DEV3": {"cn": "回测开发负责人", "provider": "custom", "binding": "openai-compatible"},
+  "MKT1": {"cn": "市场负责人", "provider": "custom", "binding": "openai-compatible"},
+  "LEG1": {"cn": "合规法务负责人", "provider": "custom", "binding": "openai-compatible"},
+  "ACAD1": {"cn": "研究院负责人", "provider": "custom", "binding": "openai-compatible"},
+  "INTEL0": {"cn": "情报负责人", "provider": "custom", "binding": "openai-compatible"},
+  "LUSU1": {"cn": "通信客服负责人", "provider": "custom", "binding": "openai-compatible"},
+  "R3": {"cn": "风控负责人", "provider": "custom", "binding": "openai-compatible"}
+ }
+}
