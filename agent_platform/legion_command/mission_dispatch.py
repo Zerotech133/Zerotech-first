@@ -137,8 +137,10 @@ def _run(cmd: list, cwd: Path | None = None, timeout: int = 600):
 
 def _create_ticket(plan: dict, task: dict) -> dict:
     tid = _ticket_id(plan, task["id"])
+    # devtask 只接受已注册项目线；默认 portal，可由 plan.project 指定 quant/watchbot
+    project = str(plan.get("project") or "portal")
     r = _run([sys.executable, "tools/devtask.py", "new", tid,
-              str(task.get("title") or task["id"]), "--project", "mission"])
+              str(task.get("title") or task["id"]), "--project", project])
     return {"ok": r.returncode == 0, "ticket_id": tid,
             "detail": (r.stdout + "\n" + r.stderr).strip()[-800:]}
 
