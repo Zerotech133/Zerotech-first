@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 19,
+  "workorders_doing": 18,
   "workorders_review": 2
  },
  "workorders": [
@@ -191,15 +191,6 @@
    "owner": "DEV7",
    "branch": "task/WO-P0-DEV7-WIKI-20261027",
    "created": "2026-10-27 16:51:10",
-   "project": "general"
-  },
-  {
-   "id": "WO-P2-OTEL-FIX2-20261027",
-   "desc": "OTEL 测试修正(L1)：fail-open 用例误判 span 非 None——改为断言进出 traced 不抛异常 + 关闭导出告警噪声",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-P2-OTEL-FIX2-20261027",
-   "created": "2026-10-27 17:24:53",
    "project": "general"
   }
  ],
@@ -4157,7 +4148,7 @@
    "role_title": "",
    "memory": {
     "decision": {
-     "count": 58,
+     "count": 59,
      "recent": [
       {
        "ts": "",
