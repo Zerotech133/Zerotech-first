@@ -1,4 +1,4 @@
-# K266 文档服务自愈脚本（计划任务 K266-DocServices 每 5 分钟触发）
+﻿# K266 文档服务自愈脚本（计划任务 K266-DocServices 每 5 分钟触发）
 # 职责：① 拉起 clip_watch 常驻（单实例检查） ② doc_ingest --once 幂等单扫
 #       ③ M3 结构化（幂等跳过已判 doc，产出 structure_shadow tags → /kg/doc 词云）
 $ErrorActionPreference = 'SilentlyContinue'
