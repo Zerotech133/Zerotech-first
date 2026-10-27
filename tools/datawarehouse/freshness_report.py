@@ -20,16 +20,26 @@ DATE_COL = {"daily": "trade_date", "adj_factor": "trade_date", "daily_basic": "t
             "index_daily": "trade_date", "moneyflow": "trade_date", "margin_detail": "trade_date"}
 # 管理期望：T+1 交易日内必须有数据（用自然日 2 天做宽松阈值，避免周末误报）
 EXPECTED_LAG_DAYS = 2
+# 源侧发布节奏例外（自然日兜底，2026-10-27 DIAG2）：margin_detail 由交易所
+# T+1 上午发布，21:37 增量守卫取到的是「昨日已发布」数据；叠加周末最长 4 个
+# 自然日仍正常（周一 10:33 时最新=上周五 20261023，非停摆）。
+TABLE_LAG_DAYS = {"margin_detail": 4}
 
 STALL_DBS = [
     {"name": "quant.db", "path": common.DATA / "quant.db",
      "sql": "select max(detect_date) from chanlun_pool", "label": "chanlun_pool.detect_date", "max_days": 2},
     {"name": "ann_history.db", "path": Path(r"C:\项目\zerobound-kg\data\ann_history\ann_history.db"),
      "sql": "select max(notice_date) from ann", "label": "ann.notice_date", "max_days": 2},
+    # 手工 staging 台账（entry 全为 manual，2026-10-11 后无写入）：不是心跳表，
+    # 只有在出现非 manual 的定时写入时才按 max_days 判停摆。
     {"name": "warehouse_runs.sqlite3", "path": common.DATA / "tushare_staging" / "warehouse_runs.sqlite3",
-     "sql": "select max(created_at) from runs", "label": "runs.created_at", "max_days": 7},
+     "sql": "select max(created_at) from runs", "label": "runs.created_at", "max_days": 7,
+     "manual_only_sql": "select count(*) from runs where entry<>'manual'"},
+    # trade_day 是「新闻日 T 的下一个 SSE 交易日（T+1 持有日）」，天然可能在未来；
+    # 台账活性看 updated_at（写入心跳），trade_day 只作信息字段输出。
     {"name": "jev_audit.db", "path": common.REPO / "agent_platform" / "data" / "jev_audit" / "jev_audit.db",
-     "sql": "select max(trade_day) from dec_audit", "label": "dec_audit.trade_day", "max_days": 2},
+     "sql": "select max(substr(updated_at,1,10)) from dec_audit", "label": "dec_audit.updated_at", "max_days": 2,
+     "info_sql": "select max(trade_day) from dec_audit", "info_label": "dec_audit.trade_day(T+1目标日)"},
 ]
 
 
@@ -118,11 +128,16 @@ def collect() -> dict:
     for table, col in DATE_COL.items():
         latest, how = table_latest_date(table, col)
         d = _parse_day(latest)
+        limit = TABLE_LAG_DAYS.get(table, EXPECTED_LAG_DAYS)
         lag = (today - d).days if d else None
         future = bool(d and d > today)
-        ok = bool(d and not future and lag is not None and lag <= EXPECTED_LAG_DAYS)
-        checks.append({"tool": "table", "table": table, "latest": latest, "col": col,
-                       "source": how, "lag_days": lag, "future_date": future, "ok": ok})
+        ok = bool(d and not future and lag is not None and lag <= limit)
+        check = {"tool": "table", "table": table, "latest": latest, "col": col,
+                 "source": how, "lag_days": lag, "future_date": future, "ok": ok}
+        if table in TABLE_LAG_DAYS:
+            check["lag_limit_days"] = limit
+            check["note"] = "源侧 T+1 发布口径，阈值 %d 自然日" % limit
+        checks.append(check)
         if future:
             issues.append("%s 出现未来日期 %s" % (table, latest))
         elif not ok:
@@ -133,9 +148,20 @@ def collect() -> dict:
         lag = (today - d).days if d else None
         future = bool(d and d > today)
         ok = bool(d and not future and lag is not None and lag <= spec["max_days"])
-        checks.append({"tool": "sqlite", "db": spec["name"], "label": spec["label"],
-                       "latest": str(latest), "source": how, "lag_days": lag,
-                       "future_date": future, "ok": ok})
+        note = spec.get("note", "")
+        if spec.get("manual_only_sql"):
+            n_auto, _ = sqlite_latest(spec["path"], spec["manual_only_sql"])
+            if n_auto == 0:
+                ok, note = True, "手工台账（无定时写入），不按心跳判停摆"
+        check = {"tool": "sqlite", "db": spec["name"], "label": spec["label"],
+                 "latest": str(latest), "source": how, "lag_days": lag,
+                 "future_date": future, "ok": ok}
+        if note:
+            check["note"] = note
+        if spec.get("info_sql"):
+            info, _ = sqlite_latest(spec["path"], spec["info_sql"])
+            check["info"] = {spec.get("info_label", "info"): str(info)}
+        checks.append(check)
         if future:
             issues.append("%s 出现未来日期：%s=%s" % (spec["name"], spec["label"], latest))
         elif not ok:
