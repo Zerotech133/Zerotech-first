@@ -157,6 +157,7 @@ document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setTab(b.data
   if(document.getElementById("mission-link")) document.getElementById("mission-link").href="/mission"+v2;
 })();
 
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 let KEYSTATE=null, DRAWER_SEAT=null;
 const MAIN_SEATS=["tianfeng","zhaoyun","zhuge","guanyu","HUANGZHONG"];
 function seatStatus(s){
