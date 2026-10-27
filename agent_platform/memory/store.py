@@ -185,7 +185,13 @@ def search(
     if use_vector and scored:
         try:
             from memory.vector import rerank  # noqa: WPS433
-            scored = rerank(query, scored)
+            _vec = rerank(query, scored)
+            _base = {it["id"]: float(it.get("score") or 0) for it in scored}
+            for it in _vec:
+                it["score"] = round(0.6 * _base.get(it["id"], 0.0)
+                                     + 0.4 * float(it.get("vector_score") or 0), 4)
+            _vec.sort(key=lambda x: (-x["score"], x["id"]))
+            scored = _vec
             vector_used = True
             vector_engine = scored[0].get("vector_engine", "") if scored else ""
         except Exception:  # noqa: BLE001
