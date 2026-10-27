@@ -115,3 +115,15 @@ def test_cli_dry_run_zero_write(tmp_path):
     plan = json.loads(r.stdout)["plan"]
     assert plan["data_ok"] is False
     assert not out.exists()
+
+
+def test_default_data_root_resolves():
+    """主仓/工作树默认数据根都应解析到含 ts_daily 的真实 tdx 目录（本机有数据时）。"""
+    import pytest
+
+    root = BF._find_data_root()
+    if not (root / "ts_daily").is_dir():
+        pytest.skip("本机无 quant 数据根，跳过默认路径解析断言")
+    assert root.name == "tdx"
+    assert root.parent.name == "data"
+    assert (root / "ts_daily").is_dir()
