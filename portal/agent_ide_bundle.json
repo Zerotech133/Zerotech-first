@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 18,
+  "workorders_doing": 17,
   "workorders_review": 3
  },
  "workorders": [
@@ -174,15 +174,6 @@
    "branch": "task/WO-GUANYU-SCANFIX5-20261027",
    "created": "2026-10-27 15:37:47",
    "project": "general"
-  },
-  {
-   "id": "WO-O1-ARCH-20261027",
-   "desc": "O1 架构原则与决策体系：新增 docs/architecture/principles.md + ADR-006~013 回填 + ARCHITECTURE/docs README 串联（纯文档）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O1-ARCH-20261027",
-   "created": "2026-10-27 15:37:57",
-   "project": "portal"
   },
   {
    "id": "WO-O2-QUALITY-20261027",
