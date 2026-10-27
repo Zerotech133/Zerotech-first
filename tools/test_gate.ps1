@@ -14,6 +14,8 @@ param(
     [int]$PytestTimeout = 120
 )
 $ErrorActionPreference = 'Continue'
+$origEAP = $ErrorActionPreference
+$baselineBroken = $false
 if ($PSScriptRoot) { $repo = Split-Path -Parent $PSScriptRoot } else { $repo = 'C:\项目\老田的AI助手' }
 $baselinePath = Join-Path $repo 'tools\test_baseline.json'
 $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
@@ -21,7 +23,7 @@ $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
 $known = @{}
 $envKnown = @{}
 $flaky = @{}
-$inWorktree = ($repo -match '\\\.worktrees\\')
+$inWorktree = ($repo -match '[\\/]\.worktrees[\\/]')
 if (Test-Path -LiteralPath $baselinePath) {
     try {
         $b = Get-Content -LiteralPath $baselinePath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -31,7 +33,8 @@ if (Test-Path -LiteralPath $baselinePath) {
             if ($prop.Value.flaky) { $flaky[$prop.Name] = @($prop.Value.flaky) }
         }
     } catch {
-        Write-Host "[WARN] baseline 解析失败: $($_.Exception.Message)"
+        Write-Host "[ERR] baseline 解析失败: $($_.Exception.Message)" -ForegroundColor Red
+        $baselineBroken = $true
     }
 }
 
@@ -61,9 +64,14 @@ try {
         Write-Host "===== [$name] $path ====="
         python -m pytest $path -q --timeout=$PytestTimeout -p no:cacheprovider *> $log
         $rc = $LASTEXITCODE
+        $rcBad = ($rc -ne 0 -and $rc -ne 1)
+        if ($rcBad) {
+            Write-Host "[$name] pytest 异常退出 rc=$rc（未收集/用法/内部错误，按失败处理）" -ForegroundColor Red
+        }
         $lines = @()
         if (Test-Path -LiteralPath $log) { $lines = @(Get-Content -LiteralPath $log -Encoding UTF8) }
         $failed = @()
+        if ($rcBad) { $failed += "PYTEST_ABNORMAL_RC_$rc" }
         foreach ($line in $lines) {
             if ($line -match '^(FAILED|ERROR) ') {
                 $f = $line -replace '^(FAILED|ERROR) ', ''
@@ -75,7 +83,6 @@ try {
         if ($inWorktree -and $envKnown.ContainsKey($path)) { $knownList = @($knownList) + @($envKnown[$path]) }
         $flakyList = @($flaky[$path])
         if ($flakyList.Count -gt 0) { $knownList = @($knownList) + @($flakyList) }
-        Write-Host "DEBUG name=$name path=$path knownCount=$($knownList.Count)"
         $new = @()
         foreach ($f in $failed) { if ($knownList -notcontains $f) { $new += $f } }
         $newFailures += $new.Count
@@ -94,6 +101,7 @@ try {
     }
 } finally {
     Pop-Location
+    $ErrorActionPreference = $origEAP
 }
 
 Write-Host ''
@@ -102,6 +110,10 @@ $summary | Format-Table -AutoSize
 if ($flaky.Count -gt 0) {
     Write-Host '已知 flaky(不计入新增失败, 需跟踪):'
     foreach ($k in $flaky.Keys) { foreach ($f in $flaky[$k]) { Write-Host "  - [$k] $f" } }
+}
+if ($baselineBroken) {
+    Write-Host 'GATE FAIL: baseline 解析失败（fail-closed，不按已知失败放行）' -ForegroundColor Red
+    exit 1
 }
 if ($newFailures -eq 0) {
     Write-Host 'GATE PASS: 无新增失败' -ForegroundColor Green
