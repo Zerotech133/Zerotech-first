@@ -531,7 +531,7 @@ def _local_chat(messages: list, timeout: int = 60) -> dict:
         return {"ok": False, "error": "%s; fallback=%s" % (err, str(e)[:160])}
 
 
-def auto_chat(messages: list) -> dict:
+def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
     """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
     if not isinstance(messages, list) or not messages:
         return {"ok": False, "error": "empty_messages"}
@@ -543,7 +543,8 @@ def auto_chat(messages: list) -> dict:
     messages = messages[-20:]
     d = _load()
     attempts = []
-    for seat in ("relay", "tianfeng", "zhaoyun", "zhuge"):
+    order = list(seats) if seats else ["relay", "tianfeng", "zhaoyun", "zhuge"]
+    for seat in order:
         k, secret = _active_secret(d, seat)
         if not k:
             attempts.append(
@@ -607,6 +608,9 @@ def auto_chat(messages: list) -> dict:
             }
         )
         _save(d)
+    if not allow_local:
+        return {"ok": False, "error": "all_channels_failed",
+                "detail": "no_cloud_key_and_local_disabled", "attempts": attempts}
     lr = _local_chat(messages)
     if lr.get("ok"):
         return {

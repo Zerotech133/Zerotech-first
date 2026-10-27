@@ -1,0 +1,15 @@
+{
+ "schema": "seat_routing/v1",
+ "aliases": {
+  "auto": {"seats": ["relay", "tianfeng", "zhaoyun", "zhuge"], "allow_local": true},
+  "strong": {"seats": ["relay", "tianfeng", "zhaoyun", "zhuge"], "allow_local": false},
+  "local": {"seats": [], "allow_local": true}
+ },
+ "seats": {
+  "tianfeng": "strong",
+  "zhaoyun": "strong",
+  "zhuge": "strong",
+  "relay": "strong"
+ },
+ "note": "席位→默认别名；虚拟 Key 可覆盖；strong 不允许本地兜底，local 走本地 9B"
+}

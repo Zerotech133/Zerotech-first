@@ -238,6 +238,19 @@
    ],
    "expect_rc": 0,
    "timeout": 120
+  },
+  {
+   "id": "pytest-router",
+   "desc": "席位路由/虚拟Key 单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_seat_router.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
   }
  ]
 }
