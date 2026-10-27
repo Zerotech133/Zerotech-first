@@ -40,11 +40,17 @@
 - **agent → 工具**：`agent_platform/tools/*` 只读优先；MCP server 分 read-only/风险级；`servers.json` 禁明文 token（`token_env`）；
 - **L2 动作**：重启服务/改计划任务/动凭据区/备份链 → 五要素 + 老田批准后才执行（判例 K-STOCK-416）。
 
-## 五、关键决策（ADR 索引）
+## 五、架构原则与关键决策
 
+**原则**：[docs/architecture/principles.md](docs/architecture/principles.md)（P1 本地优先 … P9 文档即产品；评审引用编号）。
+
+**ADR 索引**（`docs/adr/`，一决策一文件、编号连续、状态可 superseded）：
 - ADR-001 repomap 自建；ADR-002 agents 导出单一源；ADR-003 dev 路由+工具矩阵；
 - [ADR-004 文档体系（Diátaxis+ADR）](docs/adr/ADR-004-docs-taxonomy-diataxis.md)；
-- [ADR-005 Agent 可观测（OTel GenAI 语义约定）](docs/adr/ADR-005-agent-observability-otel-genai.md)。
+- [ADR-005 Agent 可观测（OTel GenAI 语义约定）](docs/adr/ADR-005-agent-observability-otel-genai.md)；
+- ADR-006 worktree/devtask 隔离；ADR-007 工具矩阵单源；ADR-008 席位契约；
+- ADR-009 端口注册/127.0.0.1；ADR-010 凭据 vault/token env；ADR-011 数据根与 work 退役；
+- ADR-012 L2 五要素；ADR-013 单机范围与文档纪律。
 
 ## 六、变更规则
 
