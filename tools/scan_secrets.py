@@ -176,6 +176,9 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
     # 真实 token 几乎不可能 20+ 位全小写无数字 → 判为非密钥（HIGH_ENTROPY 误报治理）
     if re.fullmatch(r"[a-z_]{12,}", cand):
         return False
+    # 2026-10-27 补：候选在行内被当作函数调用（如 _load_neo4j_password()）→ 代码名
+    if re.search(re.escape(cand) + r"\s*\(", line):
+        return False
     # 2026-10-27 SCANFIX：multipart boundary / 字典键名 误报
     if cand.startswith("----") or "boundary" in line.lower():
         return False
