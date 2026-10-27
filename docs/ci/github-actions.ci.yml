@@ -1,0 +1,58 @@
+# CI 草案（GitHub Actions）— 未启用，待远端镜像确认后复制到 .github/workflows/ci.yml
+# 参考开源实践：ruff/uv/pytest 统一（OpenAI Agents SDK / AutoGen）；每个 PR 必带测试（QuantConnect Lean）
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  static:
+    name: lint + compile
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: install tools
+        run: python -m pip install --upgrade pip ruff pytest pytest-timeout
+      - name: ruff (F/E9 only, 与本地质量门对齐)
+        run: ruff check --select F,E9 .
+      - name: compileall
+        run: python -m compileall -q portal agent_platform k_stock tools analysis
+
+  test:
+    name: pytest (${{ matrix.suite }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - portal
+          - k_stock/tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: install deps
+        run: python -m pip install --upgrade pip pytest pytest-timeout
+      - name: run suite
+        run: python -m pytest ${{ matrix.suite }} -q --timeout=120 -p no:cacheprovider
+      - name: upload failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-${{ matrix.suite }}
+          path: |
+            **/.pytest_cache
+            **/*.log
+          if-no-files-found: ignore
+
+# 备注：
+# - 本仓库当前为本机 git（无 GitHub 远端），此文件仅为草案，尚未启用；
+# - quant_backtest 全量 >20min，放夜间计划任务/手动 workflow（B3/B4）；
+# - agent_platform 全量较慢，建议分片 matrix；enviroment 依赖用例需 skipif（ENVTEST 已修 6 项）。
