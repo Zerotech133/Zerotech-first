@@ -147,6 +147,24 @@ def _build_grounding(question):
         return None
 
 
+def _sanitize_citations(text, sources):
+    """去掉越界/伪造的 [S#]，不伪造内容；有效引用保留。"""
+    text = text or ""
+    valid = {"S%s" % str(s.get("id", "")).lstrip("S") for s in (sources or [])
+             if s.get("id")}
+    out = re.sub(r"\[S(\d+)\]",
+                 lambda m: m.group(0) if ("S" + m.group(1)) in valid
+                 else "[来源未提供]", text)
+    if sources and not re.search(r"\[S\d+\]", out):
+        mod = _grounding_module()
+        if mod is not None:
+            try:
+                out = mod.ensure_citations(out, sources)
+            except Exception:  # noqa: BLE001
+                pass
+    return out
+
+
 def _apply_citations(text, grounding):
     mod = _grounding_module()
     if not (text or "").strip():
@@ -154,9 +172,11 @@ def _apply_citations(text, grounding):
     if mod is None or not grounding or not grounding.get("sources"):
         return text
     try:
-        return mod.ensure_citations(text, grounding["sources"])
+        return _sanitize_citations(
+            mod.ensure_citations(text, grounding["sources"]),
+            grounding["sources"])
     except Exception:  # noqa: BLE001  引用兜底失败不阻断主链
-        return text
+        return _sanitize_citations(text, grounding["sources"])
 
 
 _INTERNAL_PATH_RE = re.compile(
