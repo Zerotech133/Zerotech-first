@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 16:38",
+ "generated": "2026-10-27 16:47",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 16,
+  "workorders_doing": 18,
   "workorders_review": 2
  },
  "workorders": [
@@ -174,6 +174,24 @@
    "branch": "task/WO-AGENT-SANDBOX-20261027",
    "created": "2026-10-27 15:53:31",
    "project": "quant"
+  },
+  {
+   "id": "WO-PHOENIX-ISOLATED-20261027",
+   "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-PHOENIX-ISOLATED-20261027",
+   "created": "2026-10-27 16:42:40",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-OSVIS-20261027",
+   "desc": "OS 定版视觉规范 v1：以 /os-entry 最终渲染值为准，整理色彩/字体/布局/组件/状态/交互/内容语气；标注 /os-board 偏差与浅色令牌废弃；共享 Shell 落地与验收；不改生产页面/无 L2",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-OSVIS-20261027",
+   "created": "2026-10-27 16:46:43",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6358,6 +6376,16 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
+    },
+    {
+     "id": "WO-PHOENIX-ISOLATED-20261027",
+     "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-OSVIS-20261027",
+     "desc": "OS 定版视觉规范 v1：以 /os-entry 最终渲染值为准，整理色彩/字体/布局/组件/状态/交互/内容语气；标注 /os-board 偏差与浅色令牌废弃；共享 Shell 落地与验收；不改生产页面/无 L2",
+     "status": "doing"
     }
    ]
   }
