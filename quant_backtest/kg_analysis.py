@@ -11,6 +11,7 @@
 
 调度：计划任务 KGAnalysis（每日 07:00，KgDailySync 06:20 之后）。
 """
+
 import io
 import os
 import sys
@@ -39,8 +40,18 @@ PROJ = "kg_core"
 # parquet 导出后拼装 Concept 行（community_id=-1 占位）——kg_boost 概念
 # 热度从 MAPS_TO 入度升级为 pagerank 分位，社区打分零行为变化。
 NODE_LABELS = ["Company", "Security", "Person", "Organization", "Product", "Theme"]
-REL_TYPES = ["HOLDS", "SERVES_AS", "USES_TECH", "PRODUCES", "INVOLVES",
-             "TRADED_ON", "MAPS_TO", "SUBSIDIARY_OF", "SUPPLIES_TO", "COMPETES_WITH"]
+REL_TYPES = [
+    "HOLDS",
+    "SERVES_AS",
+    "USES_TECH",
+    "PRODUCES",
+    "INVOLVES",
+    "TRADED_ON",
+    "MAPS_TO",
+    "SUBSIDIARY_OF",
+    "SUPPLIES_TO",
+    "COMPETES_WITH",
+]
 OUT_DIR = os.path.join(HERE, "data", "kg_analysis")
 
 
@@ -52,23 +63,32 @@ def _concept_pagerank(s):
     重要性分位（kg_boost 消费），旧 MAPS_TO 入度保留为降级路径。
     """
     cproj = "kg_concept"
-    s.run(f"CALL gds.graph.exists('{cproj}') YIELD exists "
-          "WITH exists WHERE exists CALL gds.graph.drop($p) "
-          "YIELD graphName RETURN graphName", p=cproj).consume()
+    s.run(
+        f"CALL gds.graph.exists('{cproj}') YIELD exists "
+        "WITH exists WHERE exists CALL gds.graph.drop($p) "
+        "YIELD graphName RETURN graphName",
+        p=cproj,
+    ).consume()
     proj = s.run(
         f"CALL gds.graph.project('{cproj}', ['Security','Concept'], ['MAPS_TO']) "
         "YIELD nodeCount, relationshipCount "
-        "RETURN nodeCount, relationshipCount").single()
-    print(f"[concept-proj] {cproj}: {proj['nodeCount']} nodes / "
-          f"{proj['relationshipCount']} rels")
+        "RETURN nodeCount, relationshipCount"
+    ).single()
+    print(
+        f"[concept-proj] {cproj}: {proj['nodeCount']} nodes / "
+        f"{proj['relationshipCount']} rels"
+    )
     out = s.run(
         f"CALL gds.pageRank.stream('{cproj}') "
         "YIELD nodeId, score "
         "WITH gds.util.asNode(nodeId) AS n, score "
         "WHERE n:Concept SET n.pagerank = score "
-        "RETURN count(n) AS written").single()
+        "RETURN count(n) AS written"
+    ).single()
     s.run(f"CALL gds.graph.drop('{cproj}')").consume()
-    print(f"[concept] Concept.pagerank 写回 {out['written']} 个（独立子投影，社区零扰动）")
+    print(
+        f"[concept] Concept.pagerank 写回 {out['written']} 个（独立子投影，社区零扰动）"
+    )
 
 
 def main(dry_run=False):
@@ -77,17 +97,27 @@ def main(dry_run=False):
         print("[error] KG_NEO4J_PASSWORD 未配置")
         return 3
     from neo4j import GraphDatabase
+
     drv = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", pw))
 
     with drv.session() as s:
         # 0) 清理旧投影
-        s.run(f"CALL gds.graph.exists('{PROJ}') YIELD exists "
-              "WITH exists WHERE exists CALL gds.graph.drop($p) YIELD graphName RETURN graphName",
-              p=PROJ).consume()
+        s.run(
+            f"CALL gds.graph.exists('{PROJ}') YIELD exists "
+            "WITH exists WHERE exists CALL gds.graph.drop($p) YIELD graphName RETURN graphName",
+            p=PROJ,
+        ).consume()
 
         # 0.5) schema 交集：GDS 投影要求所有声明的标签/关系类型必须存在
-        have_labels = {d["l"] for d in s.run("CALL db.labels() YIELD label AS l RETURN l").data()}
-        have_rels = {d["t"] for d in s.run("CALL db.relationshipTypes() YIELD relationshipType AS t RETURN t").data()}
+        have_labels = {
+            d["l"] for d in s.run("CALL db.labels() YIELD label AS l RETURN l").data()
+        }
+        have_rels = {
+            d["t"]
+            for d in s.run(
+                "CALL db.relationshipTypes() YIELD relationshipType AS t RETURN t"
+            ).data()
+        }
         labels = [x for x in NODE_LABELS if x in have_labels]
         rels = [x for x in REL_TYPES if x in have_rels]
         skipped_l = [x for x in NODE_LABELS if x not in labels]
@@ -102,11 +132,12 @@ def main(dry_run=False):
         proj = s.run(
             f"""
             CALL gds.graph.project('{PROJ}',
-              [{','.join(repr(x) for x in labels)}],
-              [{','.join(repr(x) for x in rels)}])
+              [{",".join(repr(x) for x in labels)}],
+              [{",".join(repr(x) for x in rels)}])
             YIELD graphName, nodeCount, relationshipCount
             RETURN graphName, nodeCount, relationshipCount
-            """).single()
+            """
+        ).single()
         n, r = proj["nodeCount"], proj["relationshipCount"]
         print(f"[proj] {PROJ}: {n} nodes / {r} rels")
         if n == 0:
@@ -118,14 +149,22 @@ def main(dry_run=False):
             return 0
 
         # 2) 三算法写回（社区/影响力/活跃度）
-        lou = s.run(f"CALL gds.louvain.write('{PROJ}', {{writeProperty:'community_id'}}) "
-                    "YIELD communityCount, modularity RETURN communityCount, modularity").single()
-        pr = s.run(f"CALL gds.pageRank.write('{PROJ}', {{writeProperty:'pagerank'}}) "
-                   "YIELD nodePropertiesWritten RETURN nodePropertiesWritten").single()
-        dg = s.run(f"CALL gds.degree.write('{PROJ}', {{writeProperty:'degree_kg'}}) "
-                   "YIELD nodePropertiesWritten RETURN nodePropertiesWritten").single()
-        print(f"[algo] louvain: {lou['communityCount']} 社区 (modularity={lou['modularity']:.4f}) | "
-              f"pagerank 写回 {pr['nodePropertiesWritten']} | degree 写回 {dg['nodePropertiesWritten']}")
+        lou = s.run(
+            f"CALL gds.louvain.write('{PROJ}', {{writeProperty:'community_id'}}) "
+            "YIELD communityCount, modularity RETURN communityCount, modularity"
+        ).single()
+        pr = s.run(
+            f"CALL gds.pageRank.write('{PROJ}', {{writeProperty:'pagerank'}}) "
+            "YIELD nodePropertiesWritten RETURN nodePropertiesWritten"
+        ).single()
+        dg = s.run(
+            f"CALL gds.degree.write('{PROJ}', {{writeProperty:'degree_kg'}}) "
+            "YIELD nodePropertiesWritten RETURN nodePropertiesWritten"
+        ).single()
+        print(
+            f"[algo] louvain: {lou['communityCount']} 社区 (modularity={lou['modularity']:.4f}) | "
+            f"pagerank 写回 {pr['nodePropertiesWritten']} | degree 写回 {dg['nodePropertiesWritten']}"
+        )
 
         # 2.5) Concept pagerank 独立子投影（K-STOCK-426 定稿）
         _concept_pagerank(s)
@@ -139,10 +178,12 @@ def main(dry_run=False):
                    coalesce(x.name, x.symbol, x.code, toString(id(x))) AS name,
                    x.pagerank AS pagerank, x.community_id AS community_id,
                    x.degree_kg AS degree_kg
-            """).data()
+            """
+        ).data()
     drv.close()
 
     import pandas as pd
+
     df = pd.DataFrame(rows).sort_values("pagerank", ascending=False)
     out = os.path.join(OUT_DIR, f"kg_scores_{date.today().isoformat()}.parquet")
     df.to_parquet(out, index=False)

@@ -19,6 +19,7 @@
   python kg_resonance.py query 人形机器人 [--days 30]
   python kg_resonance.py query AI 算力
 """
+
 import argparse
 import json
 import os
@@ -28,8 +29,8 @@ from datetime import datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from kg_client import KgClient               # noqa: E402
-import kg_schema as S                        # noqa: E402
+from kg_client import KgClient  # noqa: E402
+import kg_schema as S  # noqa: E402
 
 OUT = os.path.join(HERE, "data", "kg_resonance_last.json")
 
@@ -48,9 +49,17 @@ def _chain_stocks(s, theme):
         "UNWIND segs AS seg "
         "MATCH (sec:Security)-[sp:%s]->(seg) "
         "RETURN sec.ts_code AS code, sec.name AS name, seg.name AS seg, "
-        "sp.evidence AS ev" % (S.LBL_THEME, S.REL_CONDUCTION, S.LBL_SEGMENT,
-                               S.REL_SUB_OF, S.LBL_SEGMENT,
-                               S.REL_SUPPLIES_TO), t=theme).data()
+        "sp.evidence AS ev"
+        % (
+            S.LBL_THEME,
+            S.REL_CONDUCTION,
+            S.LBL_SEGMENT,
+            S.REL_SUB_OF,
+            S.LBL_SEGMENT,
+            S.REL_SUPPLIES_TO,
+        ),
+        t=theme,
+    ).data()
     out = {}
     for r in rows:
         d = out.setdefault(r["code"], {"name": r["name"], "segs": []})
@@ -63,12 +72,12 @@ def _consensus(s, theme):
     rows = s.run(
         "MATCH (c:%s)-[a:%s {theme:$t}]->(sec:Security) "
         "RETURN sec.ts_code AS code, sec.name AS name, c.name AS school, "
-        "a.verdict AS v, a.stars AS st" % (S.LBL_COMMENTATOR,
-                                           S.REL_ASSESSED), t=theme).data()
+        "a.verdict AS v, a.stars AS st" % (S.LBL_COMMENTATOR, S.REL_ASSESSED),
+        t=theme,
+    ).data()
     out = {}
     for r in rows:
-        d = out.setdefault(r["code"], {"name": r["name"],
-                                       "verdicts": {}, "stars": 0})
+        d = out.setdefault(r["code"], {"name": r["name"], "verdicts": {}, "stars": 0})
         d["verdicts"][r["school"]] = r["v"]
         d["stars"] = r["st"]
     return out
@@ -82,7 +91,8 @@ def _signals(s, d0):
         "RETURN sec.ts_code AS code, sec.name AS name, e.type AS tp, "
         "e.date AS d, e.detect_date AS dd, e.price AS px "
         "ORDER BY dd DESC" % (S.REL_HAS_STRUCTURE, S.LBL_MARKET_EVENT),
-        d0=d0).data()
+        d0=d0,
+    ).data()
     out = {}
     for r in rows:
         d = out.setdefault(r["code"], {"name": r["name"], "sigs": []})
@@ -103,8 +113,9 @@ def query(theme, days=30):
     codes_all = set(chain) | set(cons) | set(sigs)
     full, partial, single = [], [], []
     for c in codes_all:
-        lines = [ln for ln, m in
-                 (("结构", sigs), ("传导", chain), ("共识", cons)) if c in m]
+        lines = [
+            ln for ln, m in (("结构", sigs), ("传导", chain), ("共识", cons)) if c in m
+        ]
         item = {
             "code": c,
             "name": (chain.get(c) or cons.get(c) or sigs.get(c))["name"],
@@ -119,13 +130,12 @@ def query(theme, days=30):
     partial.sort(key=lambda x: -x["stars"])
 
     # —— CLI 输出 ——
-    print("== %s 三线共振（缠论窗口 %d 自然日: %s~今日） =="
-          % (theme, days, d0))
+    print("== %s 三线共振（缠论窗口 %d 自然日: %s~今日） ==" % (theme, days, d0))
     print("\n★ 三线共振（结构×传导×共识）: %d" % len(full))
     for it in full:
         seg_txt = "；".join(
-            "@ %s%s" % (sg, ("（%s）" % ev) if ev else "")
-            for sg, ev in it["segs"])
+            "@ %s%s" % (sg, ("（%s）" % ev) if ev else "") for sg, ev in it["segs"]
+        )
         print("  %s %s（%s）" % (it["name"], it["code"], seg_txt))
         for tp, d, dd, px in it["sigs"][:3]:
             print("    信号: %s %s（detect %s）@ %s" % (tp, d, dd, px))
@@ -134,23 +144,31 @@ def query(theme, days=30):
     print("\n☆ 两线共振（缺线已标注）: %d" % len(partial))
     for it in partial:
         has = "+".join(it["lines"])
-        miss = next(ln for ln in ("结构", "传导", "共识") if ln not in
-                    it["lines"])
+        miss = next(ln for ln in ("结构", "传导", "共识") if ln not in it["lines"])
         seg_txt = (" @%s" % it["segs"][0][0]) if it["segs"] else ""
-        sig_txt = (" 最近: %s %s（detect %s）" % it["sigs"][0][:3]) \
-            if it["sigs"] else ""
-        print("  %s %s（%s，缺%s）%s%s"
-              % (it["name"], it["code"], has, miss, seg_txt, sig_txt))
-    print("\n共 %d 三线 / %d 两线（单线 %d 不输出）"
-          % (len(full), len(partial), len(single)))
+        sig_txt = (
+            (" 最近: %s %s（detect %s）" % it["sigs"][0][:3]) if it["sigs"] else ""
+        )
+        print(
+            "  %s %s（%s，缺%s）%s%s"
+            % (it["name"], it["code"], has, miss, seg_txt, sig_txt)
+        )
+    print(
+        "\n共 %d 三线 / %d 两线（单线 %d 不输出）"
+        % (len(full), len(partial), len(single))
+    )
 
     # —— 影子落盘（原子写） ——
     res = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "theme": theme, "window_days": days, "d0": d0,
-        "n_full": len(full), "n_partial": len(partial),
+        "theme": theme,
+        "window_days": days,
+        "d0": d0,
+        "n_full": len(full),
+        "n_partial": len(partial),
         "n_single": len(single),
-        "full": full, "partial": partial,
+        "full": full,
+        "partial": partial,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(OUT), suffix=".tmp")
@@ -176,12 +194,16 @@ def cross(days=90):
             "RETURN sec.ts_code AS code, sec.name AS name, chains, segs, "
             "evs ORDER BY size(chains) DESC, name" % S.REL_SUPPLIES_TO
         ).data()
-        sigs = {r["code"]: r for r in s.run(
-            "MATCH (sec:Security)-[:%s]->(e:%s {kind:'chanlun'}) "
-            "WHERE e.detect_date >= $d0 "
-            "RETURN sec.ts_code AS code, e.type AS tp, e.detect_date AS dd "
-            "ORDER BY dd DESC" % (S.REL_HAS_STRUCTURE, S.LBL_MARKET_EVENT),
-            d0=d0).data()}
+        sigs = {
+            r["code"]: r
+            for r in s.run(
+                "MATCH (sec:Security)-[:%s]->(e:%s {kind:'chanlun'}) "
+                "WHERE e.detect_date >= $d0 "
+                "RETURN sec.ts_code AS code, e.type AS tp, e.detect_date AS dd "
+                "ORDER BY dd DESC" % (S.REL_HAS_STRUCTURE, S.LBL_MARKET_EVENT),
+                d0=d0,
+            ).data()
+        }
     cli.close()
     print("== 跨链交叉标的（挂 ≥2 链 · 结构信号窗口 %d 自然日） ==" % days)
     if not rows:
@@ -190,16 +212,29 @@ def cross(days=90):
     out = []
     for r in rows:
         sg = sigs.get(r["code"])
-        sig_txt = ("%s %s（detect %s）" % (sg["tp"], "", sg["dd"])) \
-            if sg else "无近期信号"
-        print("  %s %s → %s\n    环节: %s\n    信号: %s"
-              % (r["name"], r["code"], " + ".join(r["chains"]),
-                 "、".join(r["segs"]), sig_txt))
-        out.append({"code": r["code"], "name": r["name"],
-                    "chains": r["chains"], "segs": r["segs"],
-                    "has_signal": bool(sg)})
-    print("\n共 %d 跨链标的（高价值：同一公司吃多条主题的产业共振）"
-          % len(out))
+        sig_txt = (
+            ("%s %s（detect %s）" % (sg["tp"], "", sg["dd"])) if sg else "无近期信号"
+        )
+        print(
+            "  %s %s → %s\n    环节: %s\n    信号: %s"
+            % (
+                r["name"],
+                r["code"],
+                " + ".join(r["chains"]),
+                "、".join(r["segs"]),
+                sig_txt,
+            )
+        )
+        out.append(
+            {
+                "code": r["code"],
+                "name": r["name"],
+                "chains": r["chains"],
+                "segs": r["segs"],
+                "has_signal": bool(sg),
+            }
+        )
+    print("\n共 %d 跨链标的（高价值：同一公司吃多条主题的产业共振）" % len(out))
     return out
 
 

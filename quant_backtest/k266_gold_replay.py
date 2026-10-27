@@ -7,6 +7,7 @@ v2 口径全部锚定 2026-10-08 用户终审定稿：
   - direction_why 只引本文内容（#01 影子混入周报标题瑕疵）
 独立输出 gold_replay_v2.jsonl，不触碰生产 structure_shadow.jsonl。
 用法: python k266_gold_replay.py"""
+
 import json
 import os
 import re
@@ -41,10 +42,18 @@ PROMPT_V2 = """你是金融文档结构化引擎。输入一篇文档文本（�
 
 
 def ask_ollama(text, timeout=180):
-    body = {"model": MODEL, "think": False, "stream": False,
-            "options": {"num_ctx": 16384},
-            "messages": [{"role": "user",
-                          "content": PROMPT_V2 + "\n\n=== 文档文本（截断）===\n" + text[:6000]}]}
+    body = {
+        "model": MODEL,
+        "think": False,
+        "stream": False,
+        "options": {"num_ctx": 16384},
+        "messages": [
+            {
+                "role": "user",
+                "content": PROMPT_V2 + "\n\n=== 文档文本（截断）===\n" + text[:6000],
+            }
+        ],
+    }
     last = ""
     for attempt in (1, 2, 3):
         r = requests.post(OLLAMA, json=body, timeout=timeout)
@@ -107,18 +116,31 @@ def main():
             continue
         try:
             parsed = parse_json(ask_ollama(texts[did]))
-            out = {"doc_id": did, "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "pv": 2, "raw_ok": True, **parsed}
+            out = {
+                "doc_id": did,
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "pv": 2,
+                "raw_ok": True,
+                **parsed,
+            }
         except Exception as e:
-            out = {"doc_id": did, "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "pv": 2, "raw_ok": False, "err": f"{type(e).__name__}: {str(e)[:120]}"}
+            out = {
+                "doc_id": did,
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "pv": 2,
+                "raw_ok": False,
+                "err": f"{type(e).__name__}: {str(e)[:120]}",
+            }
         with open(OUT, "a", encoding="utf-8") as fo:
             fo.write(json.dumps(out, ensure_ascii=False) + "\n")
         if out["raw_ok"]:
             results[did] = out
             n_ok += 1
-            print(f"[{len(results)}/{len(gmap)}] {did[:12]} {out['doc_type']} "
-                  f"{out['direction']} gold={g['gold_direction']}", flush=True)
+            print(
+                f"[{len(results)}/{len(gmap)}] {did[:12]} {out['doc_type']} "
+                f"{out['direction']} gold={g['gold_direction']}",
+                flush=True,
+            )
         else:
             n_err += 1
             print(f"[ERR] {did[:12]} {out['err']}", flush=True)
@@ -131,7 +153,11 @@ def main():
         r = results.get(did)
         if not r or not r.get("raw_ok"):
             continue
-        v2, gold_d, v1 = r["direction"], g["gold_direction"], g.get("shadow_direction", "")
+        v2, gold_d, v1 = (
+            r["direction"],
+            g["gold_direction"],
+            g.get("shadow_direction", ""),
+        )
         if v2 == gold_d:
             agree += 1
         else:
@@ -140,12 +166,16 @@ def main():
             flips.append((did, v1, v2, gold_d))
     tot = agree + diverge
     if tot:
-        print(f"v2 vs 金标: {agree}/{tot} = {agree / tot:.1%}（基线 v1 = 96.7%，门闸 85%）")
+        print(
+            f"v2 vs 金标: {agree}/{tot} = {agree / tot:.1%}（基线 v1 = 96.7%，门闸 85%）"
+        )
     print(f"v2 vs v1 翻转 {len(flips)} 篇：")
     for did, v1, v2, gd in flips:
         mark = "→对齐金标" if v2 == gd else ("→偏离金标!" if v1 == gd else "")
         g = gmap[did]
-        print(f"  {did[:12]} v1={v1} v2={v2} gold={gd} {mark} | {g.get('title_guess', '')[:24]}")
+        print(
+            f"  {did[:12]} v1={v1} v2={v2} gold={gd} {mark} | {g.get('title_guess', '')[:24]}"
+        )
         print(f"    v2 why: {results[did].get('direction_why', '')}")
 
 

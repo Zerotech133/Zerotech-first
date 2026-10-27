@@ -10,6 +10,7 @@
 
 用法：python open1016_run.py [--force]
 """
+
 import json
 import os
 import sys
@@ -24,7 +25,7 @@ PY = sys.executable
 BT2 = os.path.join(QBT, "backtest_engine_v2.py")
 SCAN = os.path.join(QBT, "market_scan.py")
 BT2_DIR = os.path.join(QBT, "data", "bt2")
-SIG_EVENTS_DIR = os.path.join(QBT, "data", "sig_events")   # K-STOCK-358：独立目录
+SIG_EVENTS_DIR = os.path.join(QBT, "data", "sig_events")  # K-STOCK-358：独立目录
 FORCE = "--force" in sys.argv
 # ⚠️ --d1-override 仅供链路自测（用既有缓存窗口），正式开闸禁用
 D1_OVERRIDE = None
@@ -40,29 +41,30 @@ MIN_D1 = "20261012"
 Y3_D0, Y1_D0 = "20231010", "20251013"
 ARMS = [
     # (job_id_suffix, d0, 额外 CLI 参数)
-    ("y3_base",  Y3_D0, ["--gate-mode", "off"]),
-    ("y3_weak",  Y3_D0, ["--gate-mode", "weak"]),
-    ("y3_high",  Y3_D0, ["--gate-mode", "high"]),
-    ("y3_hsc",   Y3_D0, ["--gate-mode", "high", "--slot-mode", "score"]),
+    ("y3_base", Y3_D0, ["--gate-mode", "off"]),
+    ("y3_weak", Y3_D0, ["--gate-mode", "weak"]),
+    ("y3_high", Y3_D0, ["--gate-mode", "high"]),
+    ("y3_hsc", Y3_D0, ["--gate-mode", "high", "--slot-mode", "score"]),
     ("y3_final", Y3_D0, ["--gate-mode", "high", "--min-score", "80"]),
-    ("y1_base",  Y1_D0, ["--gate-mode", "off"]),
+    ("y1_base", Y1_D0, ["--gate-mode", "off"]),
     ("y1_final", Y1_D0, ["--gate-mode", "high", "--min-score", "80"]),
 ]
 # 对照基线（315/311 锚定，旧 d1=20261012 口径）
 BASELINES = {
-    "y3_base":  ("bt2_311y3hst_base.json",  "-32.44"),
-    "y3_weak":  ("bt2_315y3weak.json",      "-23.75"),
-    "y3_high":  ("bt2_315y3high.json",      "-14.45"),
-    "y3_hsc":   ("bt2_315y3hsc.json",       "-21.18"),
+    "y3_base": ("bt2_311y3hst_base.json", "-32.44"),
+    "y3_weak": ("bt2_315y3weak.json", "-23.75"),
+    "y3_high": ("bt2_315y3high.json", "-14.45"),
+    "y3_hsc": ("bt2_315y3hsc.json", "-21.18"),
     "y3_final": ("bt2_311y3hst_final.json", "-4.96"),
-    "y1_base":  ("bt2_311y1hst_base.json",  "-21.90"),
+    "y1_base": ("bt2_311y1hst_base.json", "-21.90"),
     "y1_final": ("bt2_311y1hst_final.json", "-12.43"),
 }
 
 
 def lake_latest():
-    df = pd.read_parquet(os.path.join(QBT, "data", "tdx", "ts_daily"),
-                         columns=["ts_code", "trade_date"])
+    df = pd.read_parquet(
+        os.path.join(QBT, "data", "tdx", "ts_daily"), columns=["ts_code", "trade_date"]
+    )
     return str(df.loc[df.ts_code == "000001.SZ", "trade_date"].max())
 
 
@@ -74,8 +76,12 @@ def ensure_cache(d0, d1, log):
     log.write("cache MISS -> rescan market_scan --d0 %s --d1 %s\n" % (d0, d1))
     t0 = time.time()
     # K-STOCK-337: subprocess.run -> run_guarded（静默挂死杀树+自动重试一次）
-    rc, _used = run_guarded([PY, "-u", SCAN, "--d0", d0, "--d1", d1],
-                            log_fh=log, cwd=QBT, label="market_scan_%s_%s" % (d0, d1))
+    rc, _used = run_guarded(
+        [PY, "-u", SCAN, "--d0", d0, "--d1", d1],
+        log_fh=log,
+        cwd=QBT,
+        label="market_scan_%s_%s" % (d0, d1),
+    )
     ok = rc == 0 and os.path.exists(fp)
     log.write("rescan rc=%s ok=%s (%.0fs)\n" % (rc, ok, time.time() - t0))
     return ok
@@ -87,8 +93,11 @@ def main():
     d1 = D1_OVERRIDE or lake_latest()
     print("lake latest d1 =", d1, "(override=%s)" % D1_OVERRIDE, flush=True)
     if not D1_OVERRIDE and not (d1.isdigit() and d1 > MIN_D1):
-        print("GUARD FAIL: 数据湖最新 %s 未越过 %s —— 先增量拉数（ts_daily/adj_factor），再跑本脚本。"
-              % (d1, MIN_D1), flush=True)
+        print(
+            "GUARD FAIL: 数据湖最新 %s 未越过 %s —— 先增量拉数（ts_daily/adj_factor），再跑本脚本。"
+            % (d1, MIN_D1),
+            flush=True,
+        )
         log.write("guard fail d1=%s\n" % d1)
         log.close()
         sys.exit(2)
@@ -96,7 +105,9 @@ def main():
     d0s = {Y3_D0, Y1_D0}
     for d0 in sorted(d0s):
         if not ensure_cache(d0, d1, log):
-            print("GUARD FAIL: 事件缓存重扫失败（窗口 %s~%s），详见 %s" % (d0, d1, log_fp))
+            print(
+                "GUARD FAIL: 事件缓存重扫失败（窗口 %s~%s），详见 %s" % (d0, d1, log_fp)
+            )
             log.close()
             sys.exit(3)
 
@@ -120,24 +131,51 @@ def main():
             os.remove(out_fp)
         print("RUN", jid, flush=True)
         # K-STOCK-337: subprocess.run -> run_guarded（静默挂死杀树+自动重试一次）
-        rc, _used = run_guarded([PY, "-u", BT2, "--d0", d0, "--d1", d1,
-                                 "--hist-st", "true", "--job-id", jid] + extra,
-                                log_fh=log, cwd=QBT, label=jid)
+        rc, _used = run_guarded(
+            [
+                PY,
+                "-u",
+                BT2,
+                "--d0",
+                d0,
+                "--d1",
+                d1,
+                "--hist-st",
+                "true",
+                "--job-id",
+                jid,
+            ]
+            + extra,
+            log_fh=log,
+            cwd=QBT,
+            label=jid,
+        )
         if rc != 0 or not os.path.exists(out_fp):
             print("FAIL", jid, "rc=%s -> 见 %s" % (rc, log_fp), flush=True)
             sys.exit(4)
         d = json.load(open(out_fp, encoding="utf-8"))
         results.append((suf, d["summary"]))
-        print("DONE %s (%.0fs) ret=%s%% PF=%s trades=%s mdd=%s%% mid_days=%s" % (
-            jid, time.time() - t0, d["summary"]["total_return_pct"],
-            d["summary"]["profit_factor"], d["summary"]["n_trades"],
-            d["summary"]["max_drawdown_pct"],
-            d["summary"].get("n_mid_slot_days", "-")), flush=True)
+        print(
+            "DONE %s (%.0fs) ret=%s%% PF=%s trades=%s mdd=%s%% mid_days=%s"
+            % (
+                jid,
+                time.time() - t0,
+                d["summary"]["total_return_pct"],
+                d["summary"]["profit_factor"],
+                d["summary"]["n_trades"],
+                d["summary"]["max_drawdown_pct"],
+                d["summary"].get("n_mid_slot_days", "-"),
+            ),
+            flush=True,
+        )
 
     # 对照 delta 表
-    lines = ["# open1016 对照 315/311 锚定基线（旧 d1=20261012）", "",
-             "| 臂 | 基线ret% | 本次ret% | delta | 基线PF | 本次PF | 笔数 | 回撤% | 仓位% |",
-             "|---|---|---|---|---|---|---|---|---|"]
+    lines = [
+        "# open1016 对照 315/311 锚定基线（旧 d1=20261012）",
+        "",
+        "| 臂 | 基线ret% | 本次ret% | delta | 基线PF | 本次PF | 笔数 | 回撤% | 仓位% |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
     for suf, s in results:
         bl_fp, bl_ret = BASELINES[suf]
         ret = s["total_return_pct"]
@@ -149,9 +187,20 @@ def main():
         bfp = os.path.join(BT2_DIR, bl_fp)
         if os.path.exists(bfp):
             bl_pf = json.load(open(bfp, encoding="utf-8"))["summary"]["profit_factor"]
-        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
-            suf, bl_ret, ret, delta, bl_pf, s["profit_factor"], s["n_trades"],
-            s["max_drawdown_pct"], s.get("avg_invested_pct")))
+        lines.append(
+            "| %s | %s | %s | %s | %s | %s | %s | %s | %s |"
+            % (
+                suf,
+                bl_ret,
+                ret,
+                delta,
+                bl_pf,
+                s["profit_factor"],
+                s["n_trades"],
+                s["max_drawdown_pct"],
+                s.get("avg_invested_pct"),
+            )
+        )
     cmp_fp = os.path.join(QBT, "_open1016_compare.md")
     open(cmp_fp, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     log.close()

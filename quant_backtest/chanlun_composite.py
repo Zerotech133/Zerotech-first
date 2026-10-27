@@ -23,60 +23,101 @@ judge_all(hit, row, sig_type) → {rule_id: True/False/None}（仅适用规则�
   hit=重放命中信号（样本口径）或 pool tags dict（预警池口径）；
   row=样本行 / 仓位 dict（mt/reg 等行级因子；池口径与 hit 同传 tags）。
 """
+
 from chanlun_flow import aligned as _aligned
 
 
 def _flag(f):
     """直接标注因子：hit 有该键取 hit，否则回退行级字段。"""
+
     def g(hit, row, t):
         if hit is not None and f in hit:
             return hit.get(f)
         return (row or {}).get(f)
+
     return g
 
 
 def _reg_factor(hit, row, t):
-    v = hit.get("reg") if hit is not None and "reg" in hit \
-        else (row or {}).get("reg")
+    v = hit.get("reg") if hit is not None and "reg" in hit else (row or {}).get("reg")
     return _aligned(v, t)
 
 
 # 因子名 → 取值函数（返回 True/False/None）
 FACTOR_GETTERS = {
-    "bei": _flag("bei"),        # P5  盘整背驰（回踩 vs 离开笔，3类）
-    "bei2": _flag("bei2"),      # P6-b 同向腿背驰（vs 离开笔前同向腿，3类）
-    "mbei": _flag("mbei"),      # P6-a MACD 背驰（1类）
-    "tbe": _flag("tbe"),        # P6-c 趋势背驰双中枢（1类）
-    "vv": _flag("vv"),          # P8-a 量能缩量（全类型）
-    "pt": _flag("pt"),          # P2  K线形态共振（全类型，True/False 恒可判）
-    "mt": _flag("mt"),          # P7  60m 次级别共振（行级，池口径无）
-    "reg": _reg_factor,         # P8-b 大盘顺风（行级，方向对齐）
+    "bei": _flag("bei"),  # P5  盘整背驰（回踩 vs 离开笔，3类）
+    "bei2": _flag("bei2"),  # P6-b 同向腿背驰（vs 离开笔前同向腿，3类）
+    "mbei": _flag("mbei"),  # P6-a MACD 背驰（1类）
+    "tbe": _flag("tbe"),  # P6-c 趋势背驰双中枢（1类）
+    "vv": _flag("vv"),  # P8-a 量能缩量（全类型）
+    "pt": _flag("pt"),  # P2  K线形态共振（全类型，True/False 恒可判）
+    "mt": _flag("mt"),  # P7  60m 次级别共振（行级，池口径无）
+    "reg": _reg_factor,  # P8-b 大盘顺风（行级，方向对齐）
 }
 
 # 复合规则表：全部因子同时成立才算复合成立
 RULES = [
-    {"id": "c_mt", "name": "双背驰共振(M+趋)",
-     "types": ("1买", "1卖"), "factors": ("mbei", "tbe")},
-    {"id": "c_tv", "name": "趋✓+量✓",
-     "types": ("1买", "1卖"), "factors": ("tbe", "vv")},
-    {"id": "c_tr", "name": "趋✓+势顺",
-     "types": ("1卖",), "factors": ("tbe", "reg")},
-    {"id": "c_full", "name": "三重共振(M+趋+量)",
-     "types": ("1买", "1卖"), "factors": ("mbei", "tbe", "vv")},
-    {"id": "c_tm", "name": "趋✓+次✓(60m)",
-     "types": ("1买", "1卖"), "factors": ("tbe", "mt")},
-    {"id": "c_dp", "name": "双盘整背驰(✓+盘✓)",
-     "types": ("3买", "3卖"), "factors": ("bei", "bei2")},
-    {"id": "c_bv", "name": "背驰✓+量✓",
-     "types": ("3买", "3卖"), "factors": ("bei", "vv")},
-    {"id": "c_vr", "name": "量✓+势顺",
-     "types": ("3买", "3卖"), "factors": ("vv", "reg")},
-    {"id": "c_tp", "name": "趋✓+形✓",
-     "types": ("1买", "1卖"), "factors": ("tbe", "pt")},
-    {"id": "c_bp", "name": "背驰✓+形✓",
-     "types": ("3买", "3卖"), "factors": ("bei", "pt")},
-    {"id": "c_vp", "name": "量✓+形✓",
-     "types": ("1买", "1卖", "3买", "3卖"), "factors": ("vv", "pt")},
+    {
+        "id": "c_mt",
+        "name": "双背驰共振(M+趋)",
+        "types": ("1买", "1卖"),
+        "factors": ("mbei", "tbe"),
+    },
+    {
+        "id": "c_tv",
+        "name": "趋✓+量✓",
+        "types": ("1买", "1卖"),
+        "factors": ("tbe", "vv"),
+    },
+    {"id": "c_tr", "name": "趋✓+势顺", "types": ("1卖",), "factors": ("tbe", "reg")},
+    {
+        "id": "c_full",
+        "name": "三重共振(M+趋+量)",
+        "types": ("1买", "1卖"),
+        "factors": ("mbei", "tbe", "vv"),
+    },
+    {
+        "id": "c_tm",
+        "name": "趋✓+次✓(60m)",
+        "types": ("1买", "1卖"),
+        "factors": ("tbe", "mt"),
+    },
+    {
+        "id": "c_dp",
+        "name": "双盘整背驰(✓+盘✓)",
+        "types": ("3买", "3卖"),
+        "factors": ("bei", "bei2"),
+    },
+    {
+        "id": "c_bv",
+        "name": "背驰✓+量✓",
+        "types": ("3买", "3卖"),
+        "factors": ("bei", "vv"),
+    },
+    {
+        "id": "c_vr",
+        "name": "量✓+势顺",
+        "types": ("3买", "3卖"),
+        "factors": ("vv", "reg"),
+    },
+    {
+        "id": "c_tp",
+        "name": "趋✓+形✓",
+        "types": ("1买", "1卖"),
+        "factors": ("tbe", "pt"),
+    },
+    {
+        "id": "c_bp",
+        "name": "背驰✓+形✓",
+        "types": ("3买", "3卖"),
+        "factors": ("bei", "pt"),
+    },
+    {
+        "id": "c_vp",
+        "name": "量✓+形✓",
+        "types": ("1买", "1卖", "3买", "3卖"),
+        "factors": ("vv", "pt"),
+    },
 ]
 
 
@@ -94,5 +135,8 @@ def judge(hit, row, sig_type, factors):
 
 def judge_all(hit, row, sig_type):
     """该信号类型适用的全部复合规则判定（rule_id → True/False/None）。"""
-    return {r["id"]: judge(hit, row, sig_type, r["factors"])
-            for r in RULES if sig_type in r["types"]}
+    return {
+        r["id"]: judge(hit, row, sig_type, r["factors"])
+        for r in RULES
+        if sig_type in r["types"]
+    }

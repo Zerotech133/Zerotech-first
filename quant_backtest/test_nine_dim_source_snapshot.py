@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """九维 as-of 来源快照适配层回归。"""
+
 import json
 from pathlib import Path
 
@@ -21,16 +22,13 @@ def _write(path: Path, *, source_code=0, rows=None, asof="20261008"):
             "per_code": {
                 "605100.SH": {
                     "forecast": {
-                        "request_params": {"ts_code": "605100.SH",
-                                            "end_date": asof},
+                        "request_params": {"ts_code": "605100.SH", "end_date": asof},
                         "source_code": source_code,
                         "fields": ["ts_code", "ann_date", "type"],
                         "rows": rows,
                     },
-                    "report_rc": {"source_code": 0, "fields": [],
-                                  "rows": []},
-                    "block_trade": {"source_code": 0, "fields": [],
-                                    "rows": []},
+                    "report_rc": {"source_code": 0, "fields": [], "rows": []},
+                    "block_trade": {"source_code": 0, "fields": [], "rows": []},
                 }
             }
         },
@@ -48,8 +46,9 @@ def test_loads_rows_and_preserves_valid_empty(tmp_path):
     assert record["source_status"] == "source_response_verified"
     assert record["coverage_status"] == "sample_has_data"
     assert record["rows"] == [["605100.SH", "20260715", "预增"]]
-    assert snap.get("report_rc", "605100.SH")["coverage_status"] == \
-        "valid_empty_response"
+    assert (
+        snap.get("report_rc", "605100.SH")["coverage_status"] == "valid_empty_response"
+    )
 
 
 def test_missing_code_is_unknown_and_does_not_raise(tmp_path):
@@ -86,24 +85,35 @@ def test_rejects_production_enabled_snapshot(tmp_path):
 
 
 def test_real_staging_asof_snapshot_is_metadata_safe():
-    path = Path(__file__).parent / "data" / "tushare_staging" / \
-        "nine_dim_source_asof_20261008.json"
+    path = (
+        Path(__file__).parent
+        / "data"
+        / "tushare_staging"
+        / "nine_dim_source_asof_20261008.json"
+    )
     if not path.exists():
         pytest.skip("staging 快照未提供")
 
     snap = SourceSnapshot(path)
 
     assert len(snap.codes) == 218
-    assert snap.get("forecast", "605100.SH")["source_status"] == \
-        "source_response_verified"
+    assert (
+        snap.get("forecast", "605100.SH")["source_status"] == "source_response_verified"
+    )
     assert snap.get("forecast", "605100.SH")["payload_available"] is False
-    assert snap.get("block_trade", "605100.SH")["coverage_status"] == \
-        "valid_empty_response"
+    assert (
+        snap.get("block_trade", "605100.SH")["coverage_status"]
+        == "valid_empty_response"
+    )
 
 
 def test_real_payload_snapshot_exposes_rows_for_replay():
-    path = Path(__file__).parent / "data" / "tushare_staging" / \
-        "nine_dim_source_payload_20261008.json"
+    path = (
+        Path(__file__).parent
+        / "data"
+        / "tushare_staging"
+        / "nine_dim_source_payload_20261008.json"
+    )
     if not path.exists():
         pytest.skip("staging 完整载荷未提供")
 
@@ -118,8 +128,12 @@ def test_real_payload_snapshot_exposes_rows_for_replay():
 def test_backtest_builds_api_record_stores_from_payload_snapshot():
     from nine_dim_backtest import _snapshot_stores
 
-    path = Path(__file__).parent / "data" / "tushare_staging" / \
-        "nine_dim_source_payload_20261008.json"
+    path = (
+        Path(__file__).parent
+        / "data"
+        / "tushare_staging"
+        / "nine_dim_source_payload_20261008.json"
+    )
     if not path.exists():
         pytest.skip("staging 完整载荷未提供")
 
@@ -143,10 +157,8 @@ def test_optional_fina_indicator_payload_is_available_for_replay(tmp_path):
     path.write_text(json.dumps(raw), encoding="utf-8")
 
     record = SourceSnapshot(path).get("fina_indicator", "605100.SH")
-    stores = __import__("nine_dim_backtest")._snapshot_stores(
-        path, ["605100.SH"])
+    stores = __import__("nine_dim_backtest")._snapshot_stores(path, ["605100.SH"])
 
     assert record["source_status"] == "source_response_verified"
     assert record["rows"][0][-1] == 1.2
     assert "fina_indicator" in stores
-

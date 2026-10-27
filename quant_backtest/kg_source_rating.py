@@ -17,6 +17,7 @@ NATO Admiralty 双维体系的本项目落地：
   python kg_source_rating.py           # 跑评级 + staleness，落盘并打印
   python kg_source_rating.py --json    # 仅打印 JSON
 """
+
 import argparse
 import json
 import os
@@ -35,65 +36,116 @@ OUT = os.path.join(HERE, "data", "kg_source_rating.json")
 # feeds=该族在 catalog 的 source 值；graph_sources=图内 source 属性常见值归并
 SOURCES = {
     "tushare_pro": {
-        "grade": "B", "feeds": ["tushare"],
-        "graph_sources": ["stock_company", "stk_managers", "anns_d",
-                          "index_global+ts_index_daily", "tushare.index_member"],
-        "basis": ("官方付费接口主通道；G5 实证 47 条 begin/end 时序倒挂、"
-                  "部分高管 end_date 缺失；断流有 pull_paged 重试+快照幂等")},
+        "grade": "B",
+        "feeds": ["tushare"],
+        "graph_sources": [
+            "stock_company",
+            "stk_managers",
+            "anns_d",
+            "index_global+ts_index_daily",
+            "tushare.index_member",
+        ],
+        "basis": (
+            "官方付费接口主通道；G5 实证 47 条 begin/end 时序倒挂、"
+            "部分高管 end_date 缺失；断流有 pull_paged 重试+快照幂等"
+        ),
+    },
     "xtcloud_local": {
-        "grade": "B", "feeds": ["xtcloud"],
-        "graph_sources": ["ts_top_inst", "ts_daily", "ts_index_daily",
-                          "ts_balancesheet", "ts_fina_indicator"],
-        "basis": ("本地通达信落地（行情/龙虎榜/财务镜像），稳定可控；"
-                  "席位口径含特殊通道行（G4b：机构专用/中小投资者须子串排除）")},
+        "grade": "B",
+        "feeds": ["xtcloud"],
+        "graph_sources": [
+            "ts_top_inst",
+            "ts_daily",
+            "ts_index_daily",
+            "ts_balancesheet",
+            "ts_fina_indicator",
+        ],
+        "basis": (
+            "本地通达信落地（行情/龙虎榜/财务镜像），稳定可控；"
+            "席位口径含特殊通道行（G4b：机构专用/中小投资者须子串排除）"
+        ),
+    },
     "crypto_feed": {
-        "grade": "C", "feeds": ["crypto"],
+        "grade": "C",
+        "feeds": ["crypto"],
         "graph_sources": [],
-        "basis": "单一辅助源（crypto_daily），无交叉验证对象"},
+        "basis": "单一辅助源（crypto_daily），无交叉验证对象",
+    },
     # WO-QT-20261021-108：cnopendata 源族补档（此前 catalog source="cnopendata"
     # 无 feeds 认领 → 断流统计里落成 grade="?" 未定档）。这 6 张表不进知识
     # 图谱（graph_sources=[]），只作为离线研究/回测的历史底料。
     "cnopendata_open": {
-        "grade": "C", "feeds": ["cnopendata"],
+        "grade": "C",
+        "feeds": ["cnopendata"],
         "graph_sources": [],
-        "basis": ("公开/开放原始出处（GitHub / OSF / 人大财税所 / 白鲨在线）——"
-                  "无 SLA、无合同保障；接入方式为一次性批量落盘，非增量订阅"
-                  "（上游版本更新须人工重拉）；6 张表中 5 张是年度静态历史包、"
-                  "1 张无时间维，交付形态即静态。定 C 的依据是「无 SLA + 静态"
-                  "交付」，与是否收费无关")},
+        "basis": (
+            "公开/开放原始出处（GitHub / OSF / 人大财税所 / 白鲨在线）——"
+            "无 SLA、无合同保障；接入方式为一次性批量落盘，非增量订阅"
+            "（上游版本更新须人工重拉）；6 张表中 5 张是年度静态历史包、"
+            "1 张无时间维，交付形态即静态。定 C 的依据是「无 SLA + 静态"
+            "交付」，与是否收费无关"
+        ),
+    },
     "human_curation": {
-        "grade": "A", "feeds": [],
-        "graph_sources": ["youzi_registry", "manual", "m4_alias",
-                          "m4_industry", "concept_dict"],
-        "basis": "人工审核入库（游资词表/别名/行业映射），口径单一可控"},
+        "grade": "A",
+        "feeds": [],
+        "graph_sources": [
+            "youzi_registry",
+            "manual",
+            "m4_alias",
+            "m4_industry",
+            "concept_dict",
+        ],
+        "basis": "人工审核入库（游资词表/别名/行业映射），口径单一可控",
+    },
     "rule_keyword": {
-        "grade": "B", "feeds": [],
+        "grade": "B",
+        "feeds": [],
         "graph_sources": ["semantica_events"],
-        "basis": ("event_graph RULES 14 组词表判偏——确定性 100%（同输入同输出）"
-                  "但召回有限；G6 互检实证误命中 ~7%（质押式回购≠回购股份）")},
+        "basis": (
+            "event_graph RULES 14 组词表判偏——确定性 100%（同输入同输出）"
+            "但召回有限；G6 互检实证误命中 ~7%（质押式回购≠回购股份）"
+        ),
+    },
     "llm_local": {
-        "grade": "C", "feeds": [],
+        "grade": "C",
+        "feeds": [],
         "graph_sources": [],
-        "basis": ("G6 qwen3 本地受控分类——一致性互检反转 0.2%、误判可闭环修复"
-                  "（质押购回 7 条）；conf 为模型自报非客观校准")},
+        "basis": (
+            "G6 qwen3 本地受控分类——一致性互检反转 0.2%、误判可闭环修复"
+            "（质押购回 7 条）；conf 为模型自报非客观校准"
+        ),
+    },
     "jev_feed": {
-        "grade": "D", "feeds": [],
+        "grade": "D",
+        "feeds": [],
         "graph_sources": [],
-        "basis": ("远端 LLM 判偏 feed（news.db）——远端断流教训、无 SLA、"
-                  "恢复靠水位续读；判定质量未经系统性互检")},
+        "basis": (
+            "远端 LLM 判偏 feed（news.db）——远端断流教训、无 SLA、"
+            "恢复靠水位续读；判定质量未经系统性互检"
+        ),
+    },
     "cooccur_stat": {
-        "grade": "C", "feeds": [],
+        "grade": "C",
+        "feeds": [],
         "graph_sources": ["cooccur_lag10"],
-        "basis": ("M2 DRIVE 共现统计——设计即声明只算共现不判因果；"
-                  "p 值随覆盖期自动修正，短覆盖期系统性偏高")},
+        "basis": (
+            "M2 DRIVE 共现统计——设计即声明只算共现不判因果；"
+            "p 值随覆盖期自动修正，短覆盖期系统性偏高"
+        ),
+    },
     "chanlun_engine": {
-        "grade": "B", "feeds": [],
+        "grade": "B",
+        "feeds": [],
         "graph_sources": ["chanlun_pool"],
-        "basis": "本地缠论引擎结构识别，确定性计算；口径阈值可调（人为参数面）"},
+        "basis": "本地缠论引擎结构识别，确定性计算；口径阈值可调（人为参数面）",
+    },
     "candle_local": {
-        "grade": "B", "feeds": [],
+        "grade": "B",
+        "feeds": [],
         "graph_sources": ["stk_mins"],
-        "basis": "本地分钟线盘口事件（熔断/火箭发射等），确定性规则计算"},
+        "basis": "本地分钟线盘口事件（熔断/火箭发射等），确定性规则计算",
+    },
 }
 
 # ── 实例级 credibility 映射（1-6，Admiralty 信息可信度）─────
@@ -114,34 +166,38 @@ STALE_DAYS = {"D": 5, "M": 45, "Q": 130, "Y": 400}
 # 子串匹配（如 ts_balancesheet 含 balancesheet → Q）；EXEMPT=豁免
 # （快照/探针/事实表：断流几无影响，或 catalog 无法测 fresh 的大表）
 FREQ_OVERRIDE = [
-    ("balancesheet", "Q"), ("cashflow", "Q"), ("income", "Q"),
-    ("fina_indicator", "Q"),                    # 季度财务
-    ("index_weight", "Q"),                      # 指数权重季度调整
-    ("irm_qa", "Q"),                            # 互动易低频源
-    ("top10", "Q"),                             # K100：十大股东按季披露
-                                                # （p_<报告期> 分片，Q3 空
-                                                # 壳=未披露非断流，实证
-                                                # fresh=20260831 lag34 误报）
-    ("sf_month", "M"), ("shibor_lpr", "M"),     # 月频发布
-    ("probe", "EXEMPT"),                        # 探针表
-    ("basic", "EXEMPT"),                        # 快照/事实表（stock_basic 等）
-    ("tdx_sector_min", "EXEMPT"),               # 32M 行大表 catalog 测不了 fresh
-    ("member", "EXEMPT"), ("def", "EXEMPT"),    # 定义/成分表
-    ("ths_index", "EXEMPT"),                    # 概念指数列表快照
-    ("stk_managers", "EXEMPT"),                 # K104：高管快照表（周期全量
-                                                # 重拉非日增，0929=最近快照日，
-                                                # D 档误报 lag6）
-    ("us_", "EXEMPT"),                          # 美股系未在 KG/打分消费链（启用时移除）
-    ("moneyflow_hsgt", "D"),                    # K103：精确条目前置——hsgt 是
-                                                # 日频表（远端 xtcloud 国庆断供停
-                                                # 0929 实证），被下行 ("moneyflow","M")
-                                                # 子串误盖 budget=45 → 断供 45 天
-                                                # 不可见；前置匹配恢复 D 档
-    ("moneyflow", "M"),                         # 深表月度拉取策略（tdx_sync SKIP_DEFAULT）
-    ("report", "M"),                            # 研报源低频发布
-    ("adj_factor", "EXEMPT"),                   # K95：复权因子深历史预留（ts_daily_deep
-                                                # 成对回填），无日更消费方——真源在
-                                                # xtcloud ts_daily；启用复权链时移除
+    ("balancesheet", "Q"),
+    ("cashflow", "Q"),
+    ("income", "Q"),
+    ("fina_indicator", "Q"),  # 季度财务
+    ("index_weight", "Q"),  # 指数权重季度调整
+    ("irm_qa", "Q"),  # 互动易低频源
+    ("top10", "Q"),  # K100：十大股东按季披露
+    # （p_<报告期> 分片，Q3 空
+    # 壳=未披露非断流，实证
+    # fresh=20260831 lag34 误报）
+    ("sf_month", "M"),
+    ("shibor_lpr", "M"),  # 月频发布
+    ("probe", "EXEMPT"),  # 探针表
+    ("basic", "EXEMPT"),  # 快照/事实表（stock_basic 等）
+    ("tdx_sector_min", "EXEMPT"),  # 32M 行大表 catalog 测不了 fresh
+    ("member", "EXEMPT"),
+    ("def", "EXEMPT"),  # 定义/成分表
+    ("ths_index", "EXEMPT"),  # 概念指数列表快照
+    ("stk_managers", "EXEMPT"),  # K104：高管快照表（周期全量
+    # 重拉非日增，0929=最近快照日，
+    # D 档误报 lag6）
+    ("us_", "EXEMPT"),  # 美股系未在 KG/打分消费链（启用时移除）
+    ("moneyflow_hsgt", "D"),  # K103：精确条目前置——hsgt 是
+    # 日频表（远端 xtcloud 国庆断供停
+    # 0929 实证），被下行 ("moneyflow","M")
+    # 子串误盖 budget=45 → 断供 45 天
+    # 不可见；前置匹配恢复 D 档
+    ("moneyflow", "M"),  # 深表月度拉取策略（tdx_sync SKIP_DEFAULT）
+    ("report", "M"),  # 研报源低频发布
+    ("adj_factor", "EXEMPT"),  # K95：复权因子深历史预留（ts_daily_deep
+    # 成对回填），无日更消费方——真源在
+    # xtcloud ts_daily；启用复权链时移除
 ]
 
 
@@ -149,8 +205,11 @@ def _budget_for(table, freq):
     """表 → (budget_days, basis)；EXEMPT → (None, ...)。"""
     for kw, f in FREQ_OVERRIDE:
         if kw in table:
-            return (None, "exempt:%s" % kw) if f == "EXEMPT" \
+            return (
+                (None, "exempt:%s" % kw)
+                if f == "EXEMPT"
                 else (STALE_DAYS[f], "override:%s" % f)
+            )
     return STALE_DAYS.get(str(freq or "Q"), STALE_DAYS["Q"]), "freq:%s" % freq
 
 
@@ -185,8 +244,8 @@ def _days_since(fresh):
                 y, m = y + 1, 1
             d = datetime(y, m, 1)
         elif len(f) == 4 and f.isdigit():
-            d = datetime(int(f), 12, 31)      # 年度表：基准日=该年末
-            return max((datetime.now() - d).days, 0)   # 当年/未来年 → 0
+            d = datetime(int(f), 12, 31)  # 年度表：基准日=该年末
+            return max((datetime.now() - d).days, 0)  # 当年/未来年 → 0
         else:
             return None
         return (datetime.now() - d).days
@@ -210,6 +269,7 @@ def trade_days_lag(fresh, today=None):
         return None
     try:
         import datamart as dm
+
         days = dm._recent_trade_days()
         if not days:
             return None
@@ -259,9 +319,16 @@ def stale_tables():
             # 报「有数据但测不到日期」，失明必须可见
             if not (m.get("rows") or 0) and not (m.get("files") or 0):
                 continue  # rows=0 且 files=0：未启用的空表，非断流
-            out.append({"table": t, "source": m.get("source"),
-                        "freshness": None, "lag_days": None,
-                        "budget": 0, "note": "有数据但测不到日期"})
+            out.append(
+                {
+                    "table": t,
+                    "source": m.get("source"),
+                    "freshness": None,
+                    "lag_days": None,
+                    "budget": 0,
+                    "note": "有数据但测不到日期",
+                }
+            )
             continue
         lag = _days_since(fresh)
         if lag is None:
@@ -274,9 +341,16 @@ def stale_tables():
             if tl is not None:
                 lag, note = tl, basis + "+tradeday"
         if lag > budget:
-            out.append({"table": t, "source": m.get("source"),
-                        "freshness": fresh, "lag_days": lag,
-                        "budget": budget, "note": note})
+            out.append(
+                {
+                    "table": t,
+                    "source": m.get("source"),
+                    "freshness": fresh,
+                    "lag_days": lag,
+                    "budget": budget,
+                    "note": note,
+                }
+            )
     return out
 
 
@@ -290,7 +364,7 @@ def judge_credibility(reason, conf):
         return 2
     if reason and reason.startswith("llm:"):
         return 2 if (conf or 0) >= 0.9 else 3
-    if reason:                      # jev 等其他判定路径
+    if reason:  # jev 等其他判定路径
         return 3
     return 6
 
@@ -320,11 +394,16 @@ def build():
     out = {
         "ts": datetime.now().isoformat(timespec="seconds"),
         "admiralty": "reliability A-F(源级,人工定档+实证依据) × "
-                     "credibility 1-6(实例级,reason+conf 可推导)",
-        "sources": {fam: {"grade": m["grade"], "basis": m["basis"],
-                          "feeds": m["feeds"],
-                          "graph_sources": m["graph_sources"]}
-                    for fam, m in SOURCES.items()},
+        "credibility 1-6(实例级,reason+conf 可推导)",
+        "sources": {
+            fam: {
+                "grade": m["grade"],
+                "basis": m["basis"],
+                "feeds": m["feeds"],
+                "graph_sources": m["graph_sources"],
+            }
+            for fam, m in SOURCES.items()
+        },
         "credibility_map": CREDIBILITY_MAP,
         "staleness": {
             "budget_days": STALE_DAYS,
@@ -367,12 +446,16 @@ def main():
             st = " !stale:%s%s" % (",".join(st[:4]), more)
         else:
             st = ""
-        print("  [%s] %-16s %s%s" % (m["grade"], fam,
-                                     m["basis"][:44], st))
-    print("  staleness: %d 表超期 %s" % (
-        len(out["staleness"]["stale_tables"]),
-        "(ok)" if out["ok"] else
-        str([r["table"] for r in out["staleness"]["stale_tables"]])))
+        print("  [%s] %-16s %s%s" % (m["grade"], fam, m["basis"][:44], st))
+    print(
+        "  staleness: %d 表超期 %s"
+        % (
+            len(out["staleness"]["stale_tables"]),
+            "(ok)"
+            if out["ok"]
+            else str([r["table"] for r in out["staleness"]["stale_tables"]]),
+        )
+    )
     print("落盘 %s" % OUT)
     return 0
 

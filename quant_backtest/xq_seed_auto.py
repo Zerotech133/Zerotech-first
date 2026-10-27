@@ -17,6 +17,7 @@ seed 队列依据（探针 v0.2 锚点）：feed 序号空间从远(2014?)到近
 用法：python xq_seed_auto.py   （无参数，由 automation/计划任务触发）
 rc：0=本轮正常结束（含 done 跳过）；1=异常。
 """
+
 import json
 import os
 import subprocess
@@ -36,10 +37,21 @@ PY = r"C:\Program Files\Python311\python.exe"
 TARGET = 1000
 LOW_THRESHOLD = 50
 LOW_LIMIT = 3
-BLOCK_LIMIT = 6      # 连续被挡（rc=1 限流/封禁）轮数上限——放弃该段前的容忍窗口
+BLOCK_LIMIT = 6  # 连续被挡（rc=1 限流/封禁）轮数上限——放弃该段前的容忍窗口
 CATS = (102, 104, 105, 111)
-SEED_QUEUE = [20000, 30000, 45000, 75000, 105000, 130000,
-              150000, 170000, 190000, 210000, 230000]
+SEED_QUEUE = [
+    20000,
+    30000,
+    45000,
+    75000,
+    105000,
+    130000,
+    150000,
+    170000,
+    190000,
+    210000,
+    230000,
+]
 
 
 def status(msg: str) -> None:
@@ -66,6 +78,7 @@ def save_state(st: dict) -> None:
 
 def db_count() -> int:
     import sqlite3
+
     db = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")
     con = sqlite3.connect("file:%s?mode=ro" % db.replace("\\", "/"), uri=True)
     n = con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
@@ -87,6 +100,7 @@ def seed_exhausted(seed: int) -> bool:
 
 def lock_acquire() -> bool:
     import time as _t
+
     try:
         if os.path.exists(LOCK_PATH):
             age = _t.time() - os.path.getmtime(LOCK_PATH)
@@ -130,14 +144,29 @@ def main() -> int:
     stamp = datetime.now().strftime("%m%d_%H%M")
     out_path = os.path.join(LOG_DIR, "seed_round_%s_%d.out" % (stamp, seed))
     err_path = os.path.join(LOG_DIR, "seed_round_%s_%d.err" % (stamp, seed))
-    status("round start seed=%d (queue %d/%d) base=%d target=%d"
-           % (seed, idx + 1, len(SEED_QUEUE), base, TARGET))
-    with open(out_path, "w", encoding="utf-8") as fo, \
-            open(err_path, "w", encoding="utf-8") as fe:
+    status(
+        "round start seed=%d (queue %d/%d) base=%d target=%d"
+        % (seed, idx + 1, len(SEED_QUEUE), base, TARGET)
+    )
+    with (
+        open(out_path, "w", encoding="utf-8") as fo,
+        open(err_path, "w", encoding="utf-8") as fe,
+    ):
         rc = subprocess.call(
-            [PY, "-X", "utf8", os.path.join(HERE, "xq_collect_1000.py"),
-             "--seed", str(seed), "--target", str(TARGET)],
-            stdout=fo, stderr=fe, cwd=HERE)
+            [
+                PY,
+                "-X",
+                "utf8",
+                os.path.join(HERE, "xq_collect_1000.py"),
+                "--seed",
+                str(seed),
+                "--target",
+                str(TARGET),
+            ],
+            stdout=fo,
+            stderr=fe,
+            cwd=HERE,
+        )
     after = db_count()
     added = after - base
     status("round end rc=%d seed=%d added=%d total=%d" % (rc, seed, added, after))
@@ -146,7 +175,8 @@ def main() -> int:
         lock_release()
         return 1
     st.setdefault("rounds", []).append(
-        {"at": datetime.now().strftime("%m-%d %H:%M"), "seed": seed, "added": added})
+        {"at": datetime.now().strftime("%m-%d %H:%M"), "seed": seed, "added": added}
+    )
     st["rounds"] = st["rounds"][-30:]
     advanced = False
     if seed_exhausted(seed):
@@ -160,18 +190,23 @@ def main() -> int:
         if st["blocked_streak"] >= BLOCK_LIMIT and not advanced:
             advanced = True
             st["blocked_streak"] = 0
-            status("seed %d blocked %d rounds -> give up, advance (blocked NOT barren)"
-                   % (seed, BLOCK_LIMIT))
+            status(
+                "seed %d blocked %d rounds -> give up, advance (blocked NOT barren)"
+                % (seed, BLOCK_LIMIT)
+            )
         else:
-            status("seed %d blocked round (rc=1 added=%d) streak=%d, stay"
-                   % (seed, added, st["blocked_streak"]))
+            status(
+                "seed %d blocked round (rc=1 added=%d) streak=%d, stay"
+                % (seed, added, st["blocked_streak"])
+            )
     elif added < LOW_THRESHOLD:
         st["low_streak"] = st.get("low_streak", 0) + 1
         if st["low_streak"] >= LOW_LIMIT and not advanced:
             advanced = True
             st["low_streak"] = 0
-            status("seed %d barren (%d low rounds) -> advance queue"
-                   % (seed, LOW_LIMIT))
+            status(
+                "seed %d barren (%d low rounds) -> advance queue" % (seed, LOW_LIMIT)
+            )
     else:
         st["low_streak"] = 0
         st["blocked_streak"] = 0

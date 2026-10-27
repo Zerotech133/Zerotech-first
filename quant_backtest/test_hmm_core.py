@@ -9,6 +9,7 @@ HMM 核心实现测试：合成两状态数据（低波正收益段 + 高波负�
 运行： "C:/Program Files/Python311/python.exe" test_hmm_core.py
 （亦兼容 pytest test_hmm_core.py）
 """
+
 import numpy as np
 
 from hmm_gate_research import GaussianHMM, fit_hmm_best, n_hmm_params, bic
@@ -20,7 +21,7 @@ def make_synthetic(seed=SEED):
     """两状态序列：前 200 天低波正漂移（state 0），后 200 天高波负漂移（state 1）。"""
     rng = np.random.default_rng(seed)
     n0, n1 = 200, 200
-    seg0 = rng.normal(0.10, 0.30, n0)   # 低波正收益
+    seg0 = rng.normal(0.10, 0.30, n0)  # 低波正收益
     seg1 = rng.normal(-0.35, 1.00, n1)  # 高波负收益
     X = np.concatenate([seg0, seg1]).reshape(-1, 1)
     true_switch = n0  # 第 200 天切换
@@ -44,7 +45,9 @@ def test_viterbi_recovers_switch():
     # 期望恰有一次主切换：取与真实点最近的一次
     assert len(diffs) >= 1, "Viterbi 路径没有任何切换"
     nearest = int(np.min(np.abs(diffs + 1 - true_switch)))  # diff[i] 表示 i->i+1 切换
-    assert nearest <= 3, f"切换点恢复误差 {nearest} 天 > ±3 天容差（切换点集合 {diffs[:10]}）"
+    assert nearest <= 3, (
+        f"切换点恢复误差 {nearest} 天 > ±3 天容差（切换点集合 {diffs[:10]}）"
+    )
     # 两段占比合理：每段至少 80% 归入正确状态
     ratio0 = (path[:true_switch] == path[0]).mean()
     ratio1 = (path[true_switch:] == path[-1]).mean()

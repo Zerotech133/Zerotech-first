@@ -7,6 +7,7 @@
 防串组闸门：批判实体未命中本条原文但整串命中同批邻条 → 该条降级单判重判。
 rel 枚举白名单：落影子前 events.rel 归一（变体映射+白名单外落'其他'）。
 用法: python k266_m3_structure.py [--limit N]（默认全量，幂等跳过已判 doc_id）"""
+
 import difflib
 import json
 import os
@@ -41,9 +42,14 @@ PROMPT = """你是金融文档结构化引擎。输入一篇文档文本（公�
 # 只并真同义/明确变体，不并"股价下跌"类主题+方向复合词（防方向词虚胖）。
 # 2026-10-08 按全量影子数据（2942 词/4767 计数）核定；新变体按数据补录。
 TAG_ALIAS = {
-    "AI算力": "算力", "智算": "算力", "AI": "人工智能",
-    "人形机器人": "机器人", "工业机器人": "机器人",
-    "清洁能源": "新能源", "触及涨停": "涨停", "涨停潮": "涨停",
+    "AI算力": "算力",
+    "智算": "算力",
+    "AI": "人工智能",
+    "人形机器人": "机器人",
+    "工业机器人": "机器人",
+    "清洁能源": "新能源",
+    "触及涨停": "涨停",
+    "涨停潮": "涨停",
     "低硫燃料油": "燃料油",
 }
 
@@ -62,29 +68,73 @@ def norm_tags(tags):
 # rel 枚举白名单（K266-W7 人审结论加固）：与 PROMPT 同步维护。模型实际会
 # 游离出 150+ 变体（全量影子统计），落影子前统一归一，防图谱边类型脏。
 REL_WHITELIST = {
-    "供应", "合作", "投资", "收购", "减持", "增持", "回购", "融资",
-    "质押", "担保", "中标", "投产", "业绩", "裁决", "其他",
+    "供应",
+    "合作",
+    "投资",
+    "收购",
+    "减持",
+    "增持",
+    "回购",
+    "融资",
+    "质押",
+    "担保",
+    "中标",
+    "投产",
+    "业绩",
+    "裁决",
+    "其他",
 }
 
 REL_ALIAS = {
     # 资本类
-    "并购": "投资", "被投资": "投资", "跟投": "投资", "增资": "融资",
-    "增发": "融资", "IPO": "融资", "发行": "融资", "发行股份": "融资",
-    "发行可转债": "融资", "募集配套资金": "融资", "赎回": "回购",
-    "解押": "质押", "拟减持": "减持",
+    "并购": "投资",
+    "被投资": "投资",
+    "跟投": "投资",
+    "增资": "融资",
+    "增发": "融资",
+    "IPO": "融资",
+    "发行": "融资",
+    "发行股份": "融资",
+    "发行可转债": "融资",
+    "募集配套资金": "融资",
+    "赎回": "回购",
+    "解押": "质押",
+    "拟减持": "减持",
     # 供应链类
-    "订单": "供应", "获得订单": "供应", "采购": "供应", "交付": "供应",
-    "出口": "供应", "进口": "供应", "进出口": "供应",
+    "订单": "供应",
+    "获得订单": "供应",
+    "采购": "供应",
+    "交付": "供应",
+    "出口": "供应",
+    "进口": "供应",
+    "进出口": "供应",
     # 合作类
-    "客户": "合作", "研发": "合作", "合作研发": "合作", "合资": "合作",
+    "客户": "合作",
+    "研发": "合作",
+    "合作研发": "合作",
+    "合资": "合作",
     # 裁决/监管类
-    "处罚": "裁决", "制裁": "裁决", "制裁调整": "裁决", "调查": "裁决",
-    "诉讼": "裁决", "管制": "裁决", "警告": "裁决", "垄断": "裁决",
-    "监管": "裁决", "监管批准": "裁决",
+    "处罚": "裁决",
+    "制裁": "裁决",
+    "制裁调整": "裁决",
+    "调查": "裁决",
+    "诉讼": "裁决",
+    "管制": "裁决",
+    "警告": "裁决",
+    "垄断": "裁决",
+    "监管": "裁决",
+    "监管批准": "裁决",
     # 业绩/评价类
-    "评级": "业绩", "评级调整": "业绩", "目标": "业绩", "指引": "业绩",
-    "预测": "业绩", "收入预测": "业绩", "收入": "业绩", "营收": "业绩",
-    "分红": "业绩", "数据统计": "业绩",
+    "评级": "业绩",
+    "评级调整": "业绩",
+    "目标": "业绩",
+    "指引": "业绩",
+    "预测": "业绩",
+    "收入预测": "业绩",
+    "收入": "业绩",
+    "营收": "业绩",
+    "分红": "业绩",
+    "数据统计": "业绩",
 }
 
 
@@ -116,10 +166,37 @@ def norm_events(evs):
 
 # 防串组闸门用：泛词/概念词不参与闸门（邻条命中属正常，不构成串组证据）
 GENERIC_ENTS = {
-    "公司", "董事会", "监事会", "股东大会", "中国", "证监会", "上交所", "深交所",
-    "股权", "股份", "股票", "债券", "可转债", "员工持股", "未知", "未知主体", "无",
-    "自身股票", "股票市场", "营收", "利润", "净利润", "高管变动", "监管争议",
-    "资金募集", "榜单发布", "政治竞选", "第三季度财报", "退休", "增持", "回购",
+    "公司",
+    "董事会",
+    "监事会",
+    "股东大会",
+    "中国",
+    "证监会",
+    "上交所",
+    "深交所",
+    "股权",
+    "股份",
+    "股票",
+    "债券",
+    "可转债",
+    "员工持股",
+    "未知",
+    "未知主体",
+    "无",
+    "自身股票",
+    "股票市场",
+    "营收",
+    "利润",
+    "净利润",
+    "高管变动",
+    "监管争议",
+    "资金募集",
+    "榜单发布",
+    "政治竞选",
+    "第三季度财报",
+    "退休",
+    "增持",
+    "回购",
 }
 
 
@@ -136,9 +213,13 @@ def cross_gate(p, item, sib_text):
         e = (e or "").strip()
         if len(e) < 3 or e in GENERIC_ENTS:
             continue
-        own = e in item or difflib.SequenceMatcher(
-            None, e, item, autojunk=False).find_longest_match(
-            0, len(e), 0, len(item)).size >= 2
+        own = (
+            e in item
+            or difflib.SequenceMatcher(None, e, item, autojunk=False)
+            .find_longest_match(0, len(e), 0, len(item))
+            .size
+            >= 2
+        )
         if not own and e in sib_text:
             return e
     return None
@@ -195,7 +276,9 @@ def split_news_items(text):
 BATCH_K = 6
 BATCH_CHAR_CAP = 1100
 BATCH_ITEM_TRUNC = 400
-BATCH_PROMPT = PROMPT + """
+BATCH_PROMPT = (
+    PROMPT
+    + """
 
 === 新闻合批模式 ===
 输入是 N 条编号新闻（每条以 [n] 行开头，n=1..N），逐条独立判定，互不混串。
@@ -204,10 +287,12 @@ BATCH_PROMPT = PROMPT + """
  {"n":2,"doc_type":"新闻",...}, ...]
 规则：doc_type 恒为 "新闻"；events 每条新闻最多 2 条、companies 最多 5 个、
 key_numbers 最多 2 条；title_guess/direction_why ≤25字；tags 3-5 个。"""
+)
 
 
-def ask_ollama(text, prompt=PROMPT, num_predict=600, trunc=1200,
-               timeout=280, hard_deadline=600):
+def ask_ollama(
+    text, prompt=PROMPT, num_predict=600, trunc=1200, timeout=280, hard_deadline=600
+):
     """三试重试 + 硬超时看门狗。
 
     requests 的 timeout 语义：stream=False 时是"整个生成完成"的时限（首字节=
@@ -218,24 +303,33 @@ def ask_ollama(text, prompt=PROMPT, num_predict=600, trunc=1200,
     合批调用传 BATCH_PROMPT/更大 num_predict/trunc（K266-W7）。
     """
     import threading
+
     box = {}
     abort = threading.Event()
 
     def _worker():
-        body = {"model": MODEL, "think": False, "stream": False,
-                # num_ctx 统一 16384（2026-10-24 收口）：全仓共用一个 ctx，
-                # 避免 Ollama 因 num_ctx 变化整模型重载（实测 15~46s/次，10-24
-                # 一天 99 次）。原先钉 4096 的依据是 2026-10-08 的"8192 卡死
-                # 240s+"对照实验——那是 CPU 推理 + f16 KV cache 时代；iGPU/Vulkan
-                # + KV q8_0 后复测 16384 与 4096 吞吐相同（33.5 vs 33.8 tok/s）。
-                # 正文截断（trunc/BATCH_CHAR_CAP）保持不变：加大 ctx 只放宽上限，
-                # 不改批次口径。num_predict 仍防病态长生成。
-                "options": {"num_ctx": 16384, "num_predict": num_predict},
-                "messages": [{"role": "user",
-                              "content": prompt + "\n\n=== 文档文本（截断）===\n" + text[:trunc]}]}
-        for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
+        body = {
+            "model": MODEL,
+            "think": False,
+            "stream": False,
+            # num_ctx 统一 16384（2026-10-24 收口）：全仓共用一个 ctx，
+            # 避免 Ollama 因 num_ctx 变化整模型重载（实测 15~46s/次，10-24
+            # 一天 99 次）。原先钉 4096 的依据是 2026-10-08 的"8192 卡死
+            # 240s+"对照实验——那是 CPU 推理 + f16 KV cache 时代；iGPU/Vulkan
+            # + KV q8_0 后复测 16384 与 4096 吞吐相同（33.5 vs 33.8 tok/s）。
+            # 正文截断（trunc/BATCH_CHAR_CAP）保持不变：加大 ctx 只放宽上限，
+            # 不改批次口径。num_predict 仍防病态长生成。
+            "options": {"num_ctx": 16384, "num_predict": num_predict},
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt + "\n\n=== 文档文本（截断）===\n" + text[:trunc],
+                }
+            ],
+        }
+        for attempt in (1, 2, 3):  # 并发抢占下偶发空输出/无 JSON，三试
             if abort.is_set():
-                return                  # 看门狗已放弃，勿再发起新请求
+                return  # 看门狗已放弃，勿再发起新请求
             try:
                 r = requests.post(OLLAMA, json=body, timeout=timeout)
                 r.raise_for_status()
@@ -253,7 +347,7 @@ def ask_ollama(text, prompt=PROMPT, num_predict=600, trunc=1200,
     t.start()
     t.join(hard_deadline)
     if t.is_alive():
-        abort.set()     # 当前阻塞中的请求 ≤timeout 内自行退出，不再 3 连击
+        abort.set()  # 当前阻塞中的请求 ≤timeout 内自行退出，不再 3 连击
         raise TimeoutError("ollama hard timeout %ss（慢流/队列饿死）" % hard_deadline)
     return box.get("last", "")
 
@@ -266,8 +360,12 @@ def parse_json(raw):
         raise ValueError("no json object")
     obj = json.loads(m.group(0))
     # 规范化关键字段
-    for k, dflt in (("companies", []), ("events", []), ("key_numbers", []),
-                    ("tags", [])):
+    for k, dflt in (
+        ("companies", []),
+        ("events", []),
+        ("key_numbers", []),
+        ("tags", []),
+    ):
         if not isinstance(obj.get(k), list):
             obj[k] = dflt
     obj.setdefault("doc_type", "其他")
@@ -296,7 +394,7 @@ def _scan_json_objects(s):
         elif ch == "}":
             depth -= 1
             if depth == 0 and start is not None:
-                objs.append(s[start:i + 1])
+                objs.append(s[start : i + 1])
                 start = None
             elif depth < 0:
                 break
@@ -338,8 +436,12 @@ def parse_json_array(raw):
             continue
         if not 1 <= n <= 99:
             continue
-        for k, dflt in (("companies", []), ("events", []), ("tags", []),
-                        ("key_numbers", [])):
+        for k, dflt in (
+            ("companies", []),
+            ("events", []),
+            ("tags", []),
+            ("key_numbers", []),
+        ):
             if not isinstance(obj.get(k), list):
                 obj[k] = dflt
         obj.setdefault("doc_type", "新闻")
@@ -356,9 +458,9 @@ def parse_json_array(raw):
 # K266_PEAK_SHIFT=1 时，m3 长跑避开雪球分类整点班窗口（08/09/10 整点 ± 缓冲，
 # 默认 20 分钟）：窗口内批判定前暂歇到窗口结束，留痕一行 JSON；睡眠分片间插
 # ollama_lock.heartbeat 防 20 分钟陈锁被抢（STALE_S=1200）。默认关闭直通。
-CLASSIFY_HOURS = (8, 9, 10)     # 雪球分类整点班时点（T-I6 实证 08/09/10 班）
-PEAK_SHIFT_BUFFER_M = 20        # 窗口缓冲分钟（env K266_PEAK_SHIFT_BUFFER_M 可覆盖）
-PEAK_SHIFT_CHUNK_S = 300        # 睡眠分片秒数（≤ STALE_S/4，保心跳裕量）
+CLASSIFY_HOURS = (8, 9, 10)  # 雪球分类整点班时点（T-I6 实证 08/09/10 班）
+PEAK_SHIFT_BUFFER_M = 20  # 窗口缓冲分钟（env K266_PEAK_SHIFT_BUFFER_M 可覆盖）
+PEAK_SHIFT_CHUNK_S = 300  # 睡眠分片秒数（≤ STALE_S/4，保心跳裕量）
 
 
 def classify_shift_wait_end(now_t=None, buffer_m=None):
@@ -374,8 +476,9 @@ def classify_shift_wait_end(now_t=None, buffer_m=None):
     return None
 
 
-def yield_to_classify_shifts(log=print, heartbeat=None, sleep=None,
-                             now=None, localtime=None):
+def yield_to_classify_shifts(
+    log=print, heartbeat=None, sleep=None, now=None, localtime=None
+):
     """闸门 2（K266_PEAK_SHIFT=1 才启用，默认直通零变化）：落在分类班窗口
     → 暂歇到窗口结束再继续批判定；每窗口留痕一行 JSON。心跳分片防陈锁。
     依赖晚绑定解析：测试/长跑可注入 time 家族替身。"""
@@ -392,9 +495,18 @@ def yield_to_classify_shifts(log=print, heartbeat=None, sleep=None,
         remain = classify_shift_wait_end(localtime(), buf)
         if remain is None:
             return
-        log(json.dumps({"gate": "k266_peak_shift", "event": "yield_window",
-                        "window_hours": list(CLASSIFY_HOURS), "buffer_m": buf,
-                        "remain_s": round(remain)}, ensure_ascii=False))
+        log(
+            json.dumps(
+                {
+                    "gate": "k266_peak_shift",
+                    "event": "yield_window",
+                    "window_hours": list(CLASSIFY_HOURS),
+                    "buffer_m": buf,
+                    "remain_s": round(remain),
+                },
+                ensure_ascii=False,
+            )
+        )
         end = now() + remain
         while now() < end:
             sleep(min(PEAK_SHIFT_CHUNK_S, max(1.0, end - now())))
@@ -403,7 +515,7 @@ def yield_to_classify_shifts(log=print, heartbeat=None, sleep=None,
 
 
 def main():
-    limit = 10 ** 9
+    limit = 10**9
     if "--limit" in sys.argv:
         limit = int(sys.argv[sys.argv.index("--limit") + 1])
     # 错峰闸门 2：启动即落分类班窗口则先暂歇（默认关闭直通；抢锁前让位免占坑）
@@ -415,6 +527,7 @@ def main():
         sys.path.insert(0, _root)
     import atexit
     import ollama_lock
+
     atexit.register(ollama_lock.release)
     if not ollama_lock.acquire("k266_m3", wait_s=1900):
         print("ollama busy: JEV 回填持锁超 1900s，本轮让位（调度 5 分钟自愈）")
@@ -430,14 +543,30 @@ def main():
             parsed = parse_json(ask_ollama(text))
             parsed["tags"] = norm_tags(parsed.get("tags", []))  # 源头归一，展示端兜底
             parsed["events"] = norm_events(parsed.get("events", []))
-            out = {"doc_id": did, "name": name, "src": rec.get("src"),
-                   "kind": rec.get("kind"), "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "pv": 1, "raw_ok": True, "chars": len(text), **parsed}
+            out = {
+                "doc_id": did,
+                "name": name,
+                "src": rec.get("src"),
+                "kind": rec.get("kind"),
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "pv": 1,
+                "raw_ok": True,
+                "chars": len(text),
+                **parsed,
+            }
             flag = ""
         except Exception as e:
-            out = {"doc_id": did, "name": name, "src": rec.get("src"),
-                   "kind": rec.get("kind"), "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "pv": 1, "raw_ok": False, "chars": len(text), "err": f"{type(e).__name__}: {str(e)[:120]}"}
+            out = {
+                "doc_id": did,
+                "name": name,
+                "src": rec.get("src"),
+                "kind": rec.get("kind"),
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "pv": 1,
+                "raw_ok": False,
+                "chars": len(text),
+                "err": f"{type(e).__name__}: {str(e)[:120]}",
+            }
             parsed, flag = {}, " ERR"
         with open(SHADOW, "a", encoding="utf-8") as fo:
             fo.write(json.dumps(out, ensure_ascii=False) + "\n")
@@ -446,9 +575,12 @@ def main():
         else:
             n_err += 1
         p = out if out["raw_ok"] else {}
-        print(f"[{n_ok + n_err}] {did} {str(name)[:28]}{flag} "
-              f"{p.get('doc_type', '')} {p.get('direction', '')} "
-              f"tags={','.join(p.get('tags', [])[:5])}", flush=True)
+        print(
+            f"[{n_ok + n_err}] {did} {str(name)[:28]}{flag} "
+            f"{p.get('doc_type', '')} {p.get('direction', '')} "
+            f"tags={','.join(p.get('tags', [])[:5])}",
+            flush=True,
+        )
         ollama_lock.heartbeat()
         # 租约制（K-ORG-20261025-LOCK）：握满 300s 交还一手，防长跑把 JEV 饿死
         if not ollama_lock.tick("k266_m3"):
@@ -460,38 +592,56 @@ def main():
         nonlocal n_ok, n_err
         yield_to_classify_shifts(log=print, heartbeat=ollama_lock.heartbeat)
         try:
-            batch_text = "\n".join("[%d] %s" % (i, it[3][:BATCH_ITEM_TRUNC])
-                                   for i, it in enumerate(items, 1))
+            batch_text = "\n".join(
+                "[%d] %s" % (i, it[3][:BATCH_ITEM_TRUNC])
+                for i, it in enumerate(items, 1)
+            )
             by_n = parse_json_array(
-                ask_ollama(batch_text, prompt=BATCH_PROMPT, num_predict=1700,
-                           trunc=BATCH_CHAR_CAP + BATCH_ITEM_TRUNC + 64))
+                ask_ollama(
+                    batch_text,
+                    prompt=BATCH_PROMPT,
+                    num_predict=1700,
+                    trunc=BATCH_CHAR_CAP + BATCH_ITEM_TRUNC + 64,
+                )
+            )
         except Exception:
-            by_n = {}      # 组级失败：整组回退，不落 ERR（回退单判自会记）
+            by_n = {}  # 组级失败：整组回退，不落 ERR（回退单判自会记）
         for i, (did_i, name_i, rec, item) in enumerate(items, 1):
             p = by_n.get(i)
             if not p:
                 judge(did_i, name_i, rec, item)
                 continue
             p.pop("n", None)
-            g = cross_gate(p, item, "".join(
-                it[3] for j, it in enumerate(items, 1) if j != i))
+            g = cross_gate(
+                p, item, "".join(it[3] for j, it in enumerate(items, 1) if j != i)
+            )
             if g:
                 print(f"[gate] {did_i} 疑似串组({g})→单判", flush=True)
                 judge(did_i, name_i, rec, item)
                 continue
-            p["tags"] = norm_tags(p.get("tags", []))   # 源头归一，与单判同口径
+            p["tags"] = norm_tags(p.get("tags", []))  # 源头归一，与单判同口径
             p["events"] = norm_events(p.get("events", []))
-            out = {"doc_id": did_i, "name": name_i, "src": rec.get("src"),
-                   "kind": rec.get("kind"),
-                   "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "pv": 1, "raw_ok": True, "chars": len(item),
-                   "batched": True, **p}
+            out = {
+                "doc_id": did_i,
+                "name": name_i,
+                "src": rec.get("src"),
+                "kind": rec.get("kind"),
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "pv": 1,
+                "raw_ok": True,
+                "chars": len(item),
+                "batched": True,
+                **p,
+            }
             with open(SHADOW, "a", encoding="utf-8") as fo:
                 fo.write(json.dumps(out, ensure_ascii=False) + "\n")
             n_ok += 1
-            print(f"[{n_ok + n_err}] {did_i} {str(name_i)[:28]} "
-                  f"{p.get('direction', '')} tags={','.join(p.get('tags', [])[:5])}"
-                  f" (batch{len(items)})", flush=True)
+            print(
+                f"[{n_ok + n_err}] {did_i} {str(name_i)[:28]} "
+                f"{p.get('direction', '')} tags={','.join(p.get('tags', [])[:5])}"
+                f" (batch{len(items)})",
+                flush=True,
+            )
             ollama_lock.heartbeat()
             # 租约制（K-ORG-20261025-LOCK）：组间让位，JEV 回填才有窗口
             if not ollama_lock.tick("k266_m3"):
@@ -530,14 +680,15 @@ def main():
                     did_i = f"{did}i{idx:02d}"
                     if did_i in done:
                         continue
-                    news_buf.append((did_i, "%s#%02d" % (rec.get("name", ""), idx),
-                                     rec, item))
+                    news_buf.append(
+                        (did_i, "%s#%02d" % (rec.get("name", ""), idx), rec, item)
+                    )
                     news_chars += len(item)
                     if len(news_buf) >= BATCH_K or news_chars >= BATCH_CHAR_CAP:
                         flush_news()
                 continue
             judge(did, rec.get("name"), rec, rec.get("text", ""))
-    flush_news()   # 收尾残组
+    flush_news()  # 收尾残组
     print(f"done ok={n_ok} err={n_err} shadow={SHADOW}")
 
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-315：311 锚定口径（hist_st）五臂对照总表汇总。"""
+
 import json
 
 ROWS = [
@@ -14,6 +15,14 @@ print("%-22s %9s %7s %7s %8s %8s" % ("arm", "ret%", "PF", "trades", "mdd%", "avg
 for label, fp in ROWS:
     d = json.load(open(fp, encoding="utf-8"))
     s = d["summary"]
-    print("%-22s %9s %7s %7s %8s %8s" % (
-        label, s["total_return_pct"], s["profit_factor"], s["n_trades"],
-        s["max_drawdown_pct"], s.get("avg_invested_pct")))
+    print(
+        "%-22s %9s %7s %7s %8s %8s"
+        % (
+            label,
+            s["total_return_pct"],
+            s["profit_factor"],
+            s["n_trades"],
+            s["max_drawdown_pct"],
+            s.get("avg_invested_pct"),
+        )
+    )

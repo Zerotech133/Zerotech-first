@@ -9,17 +9,20 @@ K-STOCK-273 · 数据源全面体检（老田 10-13 06:46 指令「检查我们�
   S5 data/tushare/daily + index_daily 抽查对照
 输出：stdout 摘要 + data/integrity/audit_20261013.json
 """
+
 import os
 import json
 import glob
 import pandas as pd
 
 BASE = r"C:/项目/老田的AI助手/quant_backtest/data"
-TODAY = "20261012"          # 数据应到的最后交易日（10-13 为周二盘前，数据只到 10-12）
+TODAY = "20261012"  # 数据应到的最后交易日（10-13 为周二盘前，数据只到 10-12）
 REPORT = {}
+
 
 def sec(title):
     print("\n" + "=" * 8 + " " + title + " " + "=" * 8, flush=True)
+
 
 # ---------- S1: ashare 全量扫描 ----------
 sec("S1 ashare 日线主库")
@@ -33,7 +36,8 @@ for i, f in enumerate(files):
     try:
         b = pd.read_parquet(f)
     except Exception as e:
-        bad_cols.append((os.path.basename(f), "READ_FAIL:" + str(e)[:50])); continue
+        bad_cols.append((os.path.basename(f), "READ_FAIL:" + str(e)[:50]))
+        continue
     if schema_cols is None:
         schema_cols = list(b.columns)
         print("schema:", schema_cols, flush=True)
@@ -45,11 +49,12 @@ for i, f in enumerate(files):
     if ds.duplicated().any():
         dup_dates.append(s)
     lo, hi = ds.min(), ds.max()
-    latest_dates.append(hi); min_dates.append(lo)
+    latest_dates.append(hi)
+    min_dates.append(lo)
     rows_total += len(b)
     if hi != TODAY:
         stale.append((s, hi, len(b)))
-    if len(b) < 600:                      # ~2.5 年不到 → 短历史
+    if len(b) < 600:  # ~2.5 年不到 → 短历史
         short_hist.append((s, lo, hi, len(b)))
     if not ((b[["open", "high", "low", "close"]] > 0).all().all()):
         neg_price += 1
@@ -70,31 +75,42 @@ lds = pd.Series(latest_dates)
 print(f"最新日期分布: {lds.value_counts().head(3).to_dict()}")
 print(f"未到 {TODAY} 的陈旧文件: {len(stale)}")
 if stale[:8]:
-    for x in stale[:8]: print("  stale:", x)
+    for x in stale[:8]:
+        print("  stale:", x)
 print(f"短历史(<600行): {len(short_hist)}")
-for x in short_hist[:8]: print("  short:", x)
+for x in short_hist[:8]:
+    print("  short:", x)
 print(f"重复交易日文件: {len(dup_dates)}  {dup_dates[:5]}")
 print(f"大空洞(窗口内断档>30日): {len(gap_big)}  {gap_big[:5]}")
 print(f"含非正价格文件: {neg_price}")
-print(f"pct_chg vs close 差异>0.5%的文件数(除权痕迹): {len(exdiv_susp)} (合计 {sum(k for _,k in exdiv_susp)} 根)")
+print(
+    f"pct_chg vs close 差异>0.5%的文件数(除权痕迹): {len(exdiv_susp)} (合计 {sum(k for _, k in exdiv_susp)} 根)"
+)
 w = sorted(exdiv_susp, key=lambda x: -x[1])[:5]
 print("  TOP:", w)
 
 # ---------- S2/S3: 复权因子 ----------
 sec("S2/S3 复权因子湖")
-for tag, d in (("tushare/adj_factor", os.path.join(BASE, "tushare", "adj_factor")),
-               ("tdx/ts_adj_factor", os.path.join(BASE, "tdx", "ts_adj_factor"))):
-    fs = sorted(glob.glob(os.path.join(d, "*.parquet"))) or sorted(glob.glob(os.path.join(d, "*.csv")))
+for tag, d in (
+    ("tushare/adj_factor", os.path.join(BASE, "tushare", "adj_factor")),
+    ("tdx/ts_adj_factor", os.path.join(BASE, "tdx", "ts_adj_factor")),
+):
+    fs = sorted(glob.glob(os.path.join(d, "*.parquet"))) or sorted(
+        glob.glob(os.path.join(d, "*.csv"))
+    )
     if not fs:
-        print(f"{tag}: 目录空或无文件!"); continue
+        print(f"{tag}: 目录空或无文件!")
+        continue
     los, his = [], []
     for f in fs[:400]:
         try:
             a = pd.read_parquet(f) if f.endswith(".parquet") else pd.read_csv(f)
             c = [x for x in a.columns if "trade_date" in x or x == "date"]
-            if not c: continue
+            if not c:
+                continue
             dd = a[c[0]].astype(str)
-            los.append(dd.min()); his.append(dd.max())
+            los.append(dd.min())
+            his.append(dd.max())
         except Exception:
             pass
     print(f"{tag}: 文件 {len(fs)} 个（抽样 {len(los)}）· 范围 {min(los)} → {max(his)}")
@@ -132,15 +148,36 @@ if os.path.isdir(idx):
         try:
             a = pd.read_parquet(f)
             c = [x for x in a.columns if "date" in x or "trade" in x]
-            print(" ", os.path.basename(f), "cols:", list(a.columns)[:8], "range:", str(a[c[0]].min())[:10], "->", str(a[c[0]].max())[:10])
+            print(
+                " ",
+                os.path.basename(f),
+                "cols:",
+                list(a.columns)[:8],
+                "range:",
+                str(a[c[0]].min())[:10],
+                "->",
+                str(a[c[0]].max())[:10],
+            )
         except Exception as e:
             print(" ", os.path.basename(f), "ERR", str(e)[:60])
 
 # ---------- 归档 ----------
-REPORT = {"files": n, "rows": rows_total, "stale": len(stale), "stale_top": stale[:10],
-          "short_hist": len(short_hist), "dup_dates": dup_dates, "gap_big": gap_big,
-          "bad_cols": [list(x) for x in bad_cols[:20]], "exdiv_files": len(exdiv_susp)}
+REPORT = {
+    "files": n,
+    "rows": rows_total,
+    "stale": len(stale),
+    "stale_top": stale[:10],
+    "short_hist": len(short_hist),
+    "dup_dates": dup_dates,
+    "gap_big": gap_big,
+    "bad_cols": [list(x) for x in bad_cols[:20]],
+    "exdiv_files": len(exdiv_susp),
+}
 os.makedirs(os.path.join(BASE, "integrity"), exist_ok=True)
-json.dump(REPORT, open(os.path.join(BASE, "integrity", "audit_20261013.json"), "w", encoding="utf-8"),
-          ensure_ascii=False, indent=1)
+json.dump(
+    REPORT,
+    open(os.path.join(BASE, "integrity", "audit_20261013.json"), "w", encoding="utf-8"),
+    ensure_ascii=False,
+    indent=1,
+)
 print("\nJSON -> data/integrity/audit_20261013.json")

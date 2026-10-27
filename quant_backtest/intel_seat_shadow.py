@@ -4,6 +4,7 @@ tdx/ts_top_inst 分区 parquet (exalter/side/net_buy) 接入:
 D2 batch_co_occurrence 升级为真两两席位共现 (同日同票, 买卖方向标注).
 替换 E2 的近似演示 (榜单信号×原因). 读全部分区, 不 tail.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -37,12 +38,17 @@ def _seat_verdict(a: str, b: str) -> str:
     )
 
 
-def load_seat_rows(repo_root: str | Path, *, limit_parts: int | None = None) -> pd.DataFrame:
+def load_seat_rows(
+    repo_root: str | Path, *, limit_parts: int | None = None
+) -> pd.DataFrame:
     root = Path(repo_root)
-    candidates = [root / "quant_backtest" / "data" / "tdx" / "ts_top_inst",
-                  root / "data" / "tdx" / "ts_top_inst"]
-    candidates += [p / "quant_backtest" / "data" / "tdx" / "ts_top_inst"
-                   for p in root.parents]
+    candidates = [
+        root / "quant_backtest" / "data" / "tdx" / "ts_top_inst",
+        root / "data" / "tdx" / "ts_top_inst",
+    ]
+    candidates += [
+        p / "quant_backtest" / "data" / "tdx" / "ts_top_inst" for p in root.parents
+    ]
     root_dir = next((c for c in candidates if c.exists()), None)
     if root_dir is None:
         raise RelationRejected("DATASET_MISSING: ts_top_inst not found")
@@ -50,14 +56,20 @@ def load_seat_rows(repo_root: str | Path, *, limit_parts: int | None = None) -> 
     if limit_parts:
         parts = parts[-limit_parts:]
     frames = [pd.read_parquet(p, columns=list(_REQUIRED)) for p in parts]
-    df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=list(_REQUIRED))
+    df = (
+        pd.concat(frames, ignore_index=True)
+        if frames
+        else pd.DataFrame(columns=list(_REQUIRED))
+    )
     missing = [c for c in _REQUIRED if c not in df.columns]
     if missing:
         raise RelationRejected(f"SCHEMA_DRIFT: seat detail missing {missing}")
     return df
 
 
-def seat_pairs(df: pd.DataFrame, *, max_pairs_per_day: int = 40) -> list[RelationCandidate]:
+def seat_pairs(
+    df: pd.DataFrame, *, max_pairs_per_day: int = 40
+) -> list[RelationCandidate]:
     """同日同票席位两两配对 → 真共现候选.
 
     side 标注: 0=买方 1=卖方 (Tushare 口径); pair 注明方向组合.
@@ -71,39 +83,64 @@ def seat_pairs(df: pd.DataFrame, *, max_pairs_per_day: int = 40) -> list[Relatio
             continue
         key = f"top_inst:{d}:{code}"
         if len(seats) > 10:
-            out.append(RelationCandidate(
-                "co_occurrence", _seat_key(seats[0]), f"{len(seats)}席群体", key,
-                question=f"{d} {code} 有 {len(seats)} 家营业部同榜——群体交易日, 逐对明细见数据",
-                basis=f"top_inst_group:{d}:{code}:{len(seats)}"))
+            out.append(
+                RelationCandidate(
+                    "co_occurrence",
+                    _seat_key(seats[0]),
+                    f"{len(seats)}席群体",
+                    key,
+                    question=f"{d} {code} 有 {len(seats)} 家营业部同榜——群体交易日, 逐对明细见数据",
+                    basis=f"top_inst_group:{d}:{code}:{len(seats)}",
+                )
+            )
             continue
-        sides = {r["exalter"]: side_map.get(str(r["side"]), "?")
-                 for _, r in grp.iterrows()}
+        sides = {
+            r["exalter"]: side_map.get(str(r["side"]), "?") for _, r in grp.iterrows()
+        }
         made = 0
         for i in range(len(seats)):
             for j in range(i + 1, len(seats)):
                 if made >= max_pairs_per_day:
-                    out.append(RelationCandidate(
-                        "co_occurrence", "…", f"{code}截断", key,
-                        question=f"{d} {code} 配对超上限{max_pairs_per_day}, 已截断可见",
-                        basis=f"top_inst_trunc:{d}:{code}"))
+                    out.append(
+                        RelationCandidate(
+                            "co_occurrence",
+                            "…",
+                            f"{code}截断",
+                            key,
+                            question=f"{d} {code} 配对超上限{max_pairs_per_day}, 已截断可见",
+                            basis=f"top_inst_trunc:{d}:{code}",
+                        )
+                    )
                     break
                 a, b = sorted((seats[i], seats[j]))
                 verdict = _seat_verdict(a, b)
                 if verdict == "candidate":
                     # S2：可能只是同一营业部的分支号写法，不能声称两席共现。
-                    out.append(RelationCandidate(
-                        "co_occurrence", _seat_key(a), _seat_key(b), key,
-                        question=f"{d} {code} 出现 {a} / {b}，分支号差异仅候选同席；"
-                                 "须核地址及原生ID，暂不计入两席共现",
-                        basis=f"seat_S2_candidate:{d}:{code}"))
+                    out.append(
+                        RelationCandidate(
+                            "co_occurrence",
+                            _seat_key(a),
+                            _seat_key(b),
+                            key,
+                            question=f"{d} {code} 出现 {a} / {b}，分支号差异仅候选同席；"
+                            "须核地址及原生ID，暂不计入两席共现",
+                            basis=f"seat_S2_candidate:{d}:{code}",
+                        )
+                    )
                     made += 1
                     continue
                 c = co_occurrence(_seat_key(a), _seat_key(b), str(code), str(d), key)
                 # 增强问题: 方向组合；展示原始席位名而非暂定实体键。
-                combo = f"{sides.get(a,'?')}{sides.get(b,'?')}"
-                c = RelationCandidate(c.rel_type, c.left, c.right, c.evidence_key,
-                                      f"{c.question}（方向: {a[:10]}={sides.get(a,'?')}/"
-                                      f"{b[:10]}={sides.get(b,'?')} 组合{combo}）", c.basis)
+                combo = f"{sides.get(a, '?')}{sides.get(b, '?')}"
+                c = RelationCandidate(
+                    c.rel_type,
+                    c.left,
+                    c.right,
+                    c.evidence_key,
+                    f"{c.question}（方向: {a[:10]}={sides.get(a, '?')}/"
+                    f"{b[:10]}={sides.get(b, '?')} 组合{combo}）",
+                    c.basis,
+                )
                 out.append(c)
                 made += 1
             else:

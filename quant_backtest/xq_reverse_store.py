@@ -86,7 +86,9 @@ def _post_payload(post: RawPostInput) -> tuple[str, dict[str, Any]]:
     else:
         raise TypeError("raw_json must be a JSON object or JSON string")
     if not isinstance(parsed, dict) or parsed.get("id") != post_id:
-        raise ValueError("post_id must equal the original response's top-level string id")
+        raise ValueError(
+            "post_id must equal the original response's top-level string id"
+        )
     if not isinstance(parsed.get("id"), str) or not parsed["id"].strip():
         raise ValueError("original response must have a nonempty string id")
     return raw_text, parsed
@@ -110,18 +112,15 @@ def _symbol_token_in(symbol: str, excerpt: str, original: str) -> bool:
         while j >= 0:
             left_pos = start + j
             left = original[left_pos - 1] if left_pos > 0 else ""
-            right = original[left_pos + len(symbol):
-                             left_pos + len(symbol) + 1]
-            if not (_TOKEN_EDGE_RE.match(left)
-                    or _TOKEN_EDGE_RE.match(right)):
+            right = original[left_pos + len(symbol) : left_pos + len(symbol) + 1]
+            if not (_TOKEN_EDGE_RE.match(left) or _TOKEN_EDGE_RE.match(right)):
                 return True
             j = excerpt.find(symbol, j + 1)
         start = original.find(excerpt, start + 1)
     return False
 
-def _relation_payload(
-    relation: PostSymbolInput, original: dict[str, Any]
-) -> str:
+
+def _relation_payload(relation: PostSymbolInput, original: dict[str, Any]) -> str:
     """Check a per-stock mention against original content, not query metadata."""
     if not isinstance(relation, PostSymbolInput):
         raise TypeError("relations must contain PostSymbolInput values")
@@ -231,9 +230,13 @@ def save_posts(
                 (post.post_id, batch_id),
             ).fetchone()
             if version is not None and version != (
-                raw_text, post.original_url, post.created_at_ms
+                raw_text,
+                post.original_url,
+                post.created_at_ms,
             ):
-                raise ValueError("one post and batch cannot contain conflicting originals")
+                raise ValueError(
+                    "one post and batch cannot contain conflicting originals"
+                )
             stored = conn.execute(
                 """SELECT last_fetched_at, batch_ids_json
                    FROM xq_reverse_raw_post WHERE post_id = ?""",
@@ -246,9 +249,17 @@ def save_posts(
                         first_fetched_at, last_fetched_at, raw_json,
                         first_raw_json, batch_ids_json)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (post.source, post.post_id, post.original_url,
-                     post.created_at_ms, fetched_at, fetched_at, raw_text,
-                     raw_text, json.dumps([batch_id], ensure_ascii=False)),
+                    (
+                        post.source,
+                        post.post_id,
+                        post.original_url,
+                        post.created_at_ms,
+                        fetched_at,
+                        fetched_at,
+                        raw_text,
+                        raw_text,
+                        json.dumps([batch_id], ensure_ascii=False),
+                    ),
                 )
             else:
                 last_fetched_at, batch_json = stored
@@ -266,16 +277,25 @@ def save_posts(
                 conn.execute(
                     """UPDATE xq_reverse_raw_post SET last_fetched_at = ?,
                        batch_ids_json = ? WHERE post_id = ?""",
-                    (max(fetched_at, last_fetched_at),
-                     json.dumps(batches, ensure_ascii=False), post.post_id),
+                    (
+                        max(fetched_at, last_fetched_at),
+                        json.dumps(batches, ensure_ascii=False),
+                        post.post_id,
+                    ),
                 )
             conn.execute(
                 """INSERT INTO xq_reverse_raw_post_version
                    (post_id, batch_id, original_url, created_at_ms, fetched_at, raw_json)
                    VALUES (?, ?, ?, ?, ?, ?)
                    ON CONFLICT(post_id, batch_id) DO NOTHING""",
-                (post.post_id, batch_id, post.original_url, post.created_at_ms,
-                 fetched_at, raw_text),
+                (
+                    post.post_id,
+                    batch_id,
+                    post.original_url,
+                    post.created_at_ms,
+                    fetched_at,
+                    raw_text,
+                ),
             )
         for relation in relations:
             if not isinstance(relation, PostSymbolInput):
@@ -294,9 +314,14 @@ def save_posts(
                    (post_id, symbol, evidence_type, evidence_json, batch_id)
                    VALUES (?, ?, ?, ?, ?)
                    ON CONFLICT(post_id, symbol, batch_id, evidence_type, evidence_json)
-                   DO NOTHING""", 
-                (relation.post_id, relation.symbol, relation.evidence_type,
-                 evidence_json, batch_id),
+                   DO NOTHING""",
+                (
+                    relation.post_id,
+                    relation.symbol,
+                    relation.evidence_type,
+                    evidence_json,
+                    batch_id,
+                ),
             )
     except BaseException:
         conn.execute("ROLLBACK TO SAVEPOINT xq_reverse_save")

@@ -35,6 +35,7 @@ sector_effect.py；打分公式按产线逐条复刻（见 DESIGN 注释与单�
   ... --start 20240401                          # 数据允许的全量信号窗
   ... --stocks-limit 80                         # 冒烟：只取部分股票
 """
+
 import argparse
 import json
 import os
@@ -53,20 +54,19 @@ REPORTS = os.path.join(HERE, "reports")
 
 # ── 产线参数快照（rps_resonance.py / config.json，只读复刻） ──
 PERIODS = (50, 120, 250)
-RPS_W_CUR = {50: 0.4, 120: 0.3, 250: 0.3}       # 现行
+RPS_W_CUR = {50: 0.4, 120: 0.3, 250: 0.3}  # 现行
 RPS_W_EQ = {50: 1 / 3, 120: 1 / 3, 250: 1 / 3}  # 等权
-RPS_W_ALT = {50: 0.5, 120: 0.3, 250: 0.2}       # 替代：短周期加权
+RPS_W_ALT = {50: 0.5, 120: 0.3, 250: 0.2}  # 替代：短周期加权
 W4 = {"tech": 0.35, "jev": 0.25, "rps": 0.25, "env": 0.15}
 # 077k w015 态：JEV 以 50 中性分按 0.15 进权重的权重重组
 W4_W015 = {"tech": 0.40, "jev": 0.15, "rps": 0.30, "env": 0.15}
-JEV_REPLAY_PATH = os.path.join(HERE, "data", "jev_archive",
-                               "jev_replay_series.json")
+JEV_REPLAY_PATH = os.path.join(HERE, "data", "jev_archive", "jev_replay_series.json")
 JEV_MODES = ("missing", "neutral50", "w015", "replay")
-TH_CUR = (75, 50)      # 现行 买入/观察
+TH_CUR = (75, 50)  # 现行 买入/观察
 TH_ALT = (70, 50)
-MIN_BARS_ELIG = 55     # resonance_watchlist 最低 bar 数（缺则不参与打分）
-MIN_BARS_ENV = 21      # market_env 计入宽度要求
-STRAT_PARAMS = {       # config.json strategies（产线现行参数）
+MIN_BARS_ELIG = 55  # resonance_watchlist 最低 bar 数（缺则不参与打分）
+MIN_BARS_ENV = 21  # market_env 计入宽度要求
+STRAT_PARAMS = {  # config.json strategies（产线现行参数）
     "ma_cross": {"fast": 8, "slow": 20},
     "rsi_reversal": {"period": 6, "oversold": 30, "overbought": 65},
     "boll_breakout": {"period": 20, "k": 1.5},
@@ -75,32 +75,32 @@ STRAT_PARAMS = {       # config.json strategies（产线现行参数）
 
 DESIGN = {
     "replay": "逐交易日全 A 截面；每股用自身 bar 序列算涨幅（与产线 "
-              "_load_market 只读自身 close 数组一致），停牌日不占窗口",
+    "_load_market 只读自身 close 数组一致），停牌日不占窗口",
     "rps": "N 日涨幅截面 rank(pct=True)*100（pandas average 法，同产线）；"
-           "复合分按可用周期权重归一；涨幅不可得(NaN)不参与排名",
+    "复合分按可用周期权重归一；涨幅不可得(NaN)不参与排名",
     "sub_new": "上市不足 250 日不跳过（与产线一致），缺周期降权参与，按可用"
-               "周期数(1/2/3)标记并给出信号拆分",
+    "周期数(1/2/3)标记并给出信号拆分",
     "jev": "JEV 维历史不可重放（news.db 仅近 7 天），按产线缺维降权规则取 "
-           "tech/rps/env 三维（归一权重 0.4667/0.3333/0.2），与 "
-           "rps_latest.json 的 dims='tech+rps+env' 一致；"
-           "077k 起可经 --jev-mode 注入四态：missing(默认，同上)/"
-           "neutral50(50 中性分进权重)/w015(权重 tech.40/rps.30/jev.15/"
-           "env.15，jev 按 50 中性进权重)/replay(消费 data/jev_archive/"
-           "jev_replay_series.json 逐日截面，归档仅覆盖其日期范围——"
-           "回测区间早于该范围时相关日期无 jev 数据自然缺维，预期行为)",
+    "tech/rps/env 三维（归一权重 0.4667/0.3333/0.2），与 "
+    "rps_latest.json 的 dims='tech+rps+env' 一致；"
+    "077k 起可经 --jev-mode 注入四态：missing(默认，同上)/"
+    "neutral50(50 中性分进权重)/w015(权重 tech.40/rps.30/jev.15/"
+    "env.15，jev 按 50 中性进权重)/replay(消费 data/jev_archive/"
+    "jev_replay_series.json 逐日截面，归档仅覆盖其日期范围——"
+    "回测区间早于该范围时相关日期无 jev 数据自然缺维，预期行为)",
     "entry_exit": "T 日收盘信号 → T+1 开盘买入 → 持有 N 个交易日后收盘卖出；"
-                  "K254：出场日停牌按最后可得价结算（ffill）并计数"
-                  "(n_dropped 口径变更为 nobar+一字板)；T+1 一字板（开=高=收"
-                  "且开盘涨幅达板）视为无法成交剔除",
+    "K254：出场日停牌按最后可得价结算（ffill）并计数"
+    "(n_dropped 口径变更为 nobar+一字板)；T+1 一字板（开=高=收"
+    "且开盘涨幅达板）视为无法成交剔除",
     "cost": "往返一次性成本（佣金双边+印花税+滑点），默认 0.0015",
     "price": "K254 起后复权口径：逐股 own-bar 因子链 "
-             "f(t)=f(t-1)*close(t-1)/pre_close(t)，close/open 全乘因子；"
-             "（K253 实证旧「未复权」口径近一年 2883 起除权、1131 起单次"
-             "假收益>2pp、最大 -36.77%，远超旧文档所称「轻微失真」）",
+    "f(t)=f(t-1)*close(t-1)/pre_close(t)，close/open 全乘因子；"
+    "（K253 实证旧「未复权」口径近一年 2883 起除权、1131 起单次"
+    "假收益>2pp、最大 -36.77%，远超旧文档所称「轻微失真」）",
     "excess": "超额 = 信号逐笔收益均值 − 基准（同样的 T+1 开盘进/持有 N 日"
-              "收盘出、全体可交易股票等权）限制在同一批信号日内的逐笔均值",
+    "收盘出、全体可交易股票等权）限制在同一批信号日内的逐笔均值",
     "gate_veto": "闸门开 = env safe=False 时买入/观察信号全部否决；"
-                 "闸门关 = 不否决（env 分仍计入打分），用于隔离否决贡献",
+    "闸门关 = 不否决（env 分仍计入打分），用于隔离否决贡献",
 }
 
 
@@ -116,9 +116,9 @@ def cross_rps(chg_by_period, weights):
     den = None
     n_avail = None
     for p, chg in chg_by_period.items():
-        r = (chg.rank(axis=1, pct=True) * 100).round(1)   # 同产线 round(1)
+        r = (chg.rank(axis=1, pct=True) * 100).round(1)  # 同产线 round(1)
         wp = float(weights.get(p, 0.0))
-        rw = (r * wp).fillna(0.0)        # 产线 sum(axis=1) 跳 NaN 的等价写法
+        rw = (r * wp).fillna(0.0)  # 产线 sum(axis=1) 跳 NaN 的等价写法
         num = rw if num is None else num + rw
         m = r.notna().astype(float)
         den = m * wp if den is None else den + m * wp
@@ -153,9 +153,15 @@ def env_gate(above, ret20):
         safe = _env_gate_via_gatekeeper(breadth, med, upfrac)
     else:
         safe = ~((breadth < 0.40) | (med < -0.03))
-    return pd.DataFrame({"breadth": breadth.round(3), "med20": med.round(4),
-                         "upfrac": upfrac.round(3), "score": score,
-                         "safe": safe})
+    return pd.DataFrame(
+        {
+            "breadth": breadth.round(3),
+            "med20": med.round(4),
+            "upfrac": upfrac.round(3),
+            "score": score,
+            "safe": safe,
+        }
+    )
 
 
 def _env_gate_via_gatekeeper(breadth, med, upfrac, ledger_fp=None):
@@ -169,46 +175,61 @@ def _env_gate_via_gatekeeper(breadth, med, upfrac, ledger_fp=None):
     ledger_fp：账本路径注入（仅测试用，None=默认 data/gate_decisions.jsonl）。
     """
     import sys as _sys
-    _gk = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "tools", "gatekeeper")
+
+    _gk = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "tools", "gatekeeper"
+    )
     if _gk not in _sys.path:
         _sys.path.insert(0, _gk)
     from policies.v3_breadth40_med20 import V3Policy  # noqa: PLC0415
-    from ledger import Ledger                         # noqa: PLC0415
+    from ledger import Ledger  # noqa: PLC0415
 
     policy = V3Policy()
     if not policy.intact:
         raise RuntimeError(
             "gatekeeper v3 policy sha 校验失败(%s)：判据疑似被改，"
-            "env_gate fail-closed 拒绝判定" % policy.sha)
+            "env_gate fail-closed 拒绝判定" % policy.sha
+        )
     ledger = Ledger(fp=ledger_fp)
     seen = {str(r.get("date")) for r in ledger.query("CN")}
     # 最新有效锚日（唯一落账日）
-    valid = [d for d in breadth.index
-             if not (pd.isna(breadth.get(d)) or pd.isna(med.get(d)))]
+    valid = [
+        d for d in breadth.index if not (pd.isna(breadth.get(d)) or pd.isna(med.get(d)))
+    ]
     anchor = str(valid[-1]) if valid else None
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     out = {}
     for d in breadth.index:
         b, m = breadth.get(d), med.get(d)
         if pd.isna(b) or pd.isna(m):
-            out[d] = True              # 无票可评：旧语义放行，不落账
+            out[d] = True  # 无票可评：旧语义放行，不落账
             continue
         s, cond = policy.evaluate({"breadth": float(b), "med20": float(m)})
         out[d] = bool(s)
         if anchor is None or str(d) != anchor or str(d) in seen:
-            continue                   # 非锚日或已落账：只判定不追加
+            continue  # 非锚日或已落账：只判定不追加
         try:
-            ledger.append({
-                "market": "CN", "date": str(d), "safe": bool(s),
-                "conditions": cond,
-                "features": {"breadth": float(b), "med20": float(m),
-                             "upfrac": (None if pd.isna(upfrac.get(d))
-                                        else float(upfrac.get(d)))},
-                "policy_ver": policy.ver, "policy_sha": policy.sha,
-                "feeder": "qpzm_wide_embedded", "ts": ts})
+            ledger.append(
+                {
+                    "market": "CN",
+                    "date": str(d),
+                    "safe": bool(s),
+                    "conditions": cond,
+                    "features": {
+                        "breadth": float(b),
+                        "med20": float(m),
+                        "upfrac": (
+                            None if pd.isna(upfrac.get(d)) else float(upfrac.get(d))
+                        ),
+                    },
+                    "policy_ver": policy.ver,
+                    "policy_sha": policy.sha,
+                    "feeder": "qpzm_wide_embedded",
+                    "ts": ts,
+                }
+            )
             seen.add(str(d))
-        except Exception as e:         # noqa: BLE001 账本失败不炸判定
+        except Exception as e:  # noqa: BLE001 账本失败不炸判定
             print("[env_gate] 判定账本写入失败 %s: %s" % (d, e), flush=True)
     return pd.Series(out, index=breadth.index, dtype=bool)
 
@@ -260,8 +281,7 @@ def load_jev_replay(path=JEV_REPLAY_PATH):
                 n_skipped += 1
                 skipped_keys.add(str(code))
                 continue
-            rows.setdefault(d_int, {})[wide_code] = float(
-                rec.get("score", 50.0))
+            rows.setdefault(d_int, {})[wide_code] = float(rec.get("score", 50.0))
     mat = pd.DataFrame.from_dict(rows, orient="index").sort_index()
     meta = payload.get("meta", {})
     if n_skipped:
@@ -274,9 +294,17 @@ def load_jev_replay(path=JEV_REPLAY_PATH):
     return mat, meta
 
 
-def combine_score(tech, rps_mix, env_df, buy_th=75.0, obs_th=50.0,
-                  gate_on=True, eligible=None, jev_mode="missing",
-                  jev_mat=None):
+def combine_score(
+    tech,
+    rps_mix,
+    env_df,
+    buy_th=75.0,
+    obs_th=50.0,
+    gate_on=True,
+    eligible=None,
+    jev_mode="missing",
+    jev_mat=None,
+):
     """共振打分 + 信号（复刻 resonance_watchlist 缺维降权）。
 
     jev_mode 四态（077k）:
@@ -295,41 +323,58 @@ def combine_score(tech, rps_mix, env_df, buy_th=75.0, obs_th=50.0,
         raise ValueError("jev_mode=replay requires jev_mat")
     t = tech.to_numpy(dtype=float)
     rp = rps_mix.to_numpy(dtype=float)
-    el = tech.notna().to_numpy(dtype=bool) if eligible is None \
+    el = (
+        tech.notna().to_numpy(dtype=bool)
+        if eligible is None
         else (eligible & tech.notna()).to_numpy(dtype=bool)
+    )
     hr = el & ~np.isnan(rp)
-    env_score = env_df["score"].to_numpy(dtype=float)      # (D,)
+    env_score = env_df["score"].to_numpy(dtype=float)  # (D,)
     if jev_mode == "missing":
         wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr
-        num = t * W4["tech"] + env_score[:, None] * W4["env"] \
+        num = (
+            t * W4["tech"]
+            + env_score[:, None] * W4["env"]
             + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+        )
     elif jev_mode == "neutral50":
         wsum = (W4["tech"] + W4["env"] + W4["jev"]) * el + W4["rps"] * hr
-        num = t * W4["tech"] + env_score[:, None] * W4["env"] \
-            + 50.0 * W4["jev"] * el \
+        num = (
+            t * W4["tech"]
+            + env_score[:, None] * W4["env"]
+            + 50.0 * W4["jev"] * el
             + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+        )
     elif jev_mode == "w015":
         wt = W4_W015["tech"]
         wr = W4_W015["rps"]
         wj = W4_W015["jev"]
         we = W4_W015["env"]
         wsum = (wt + we + wj) * el + wr * hr
-        num = t * wt + env_score[:, None] * we \
-            + 50.0 * wj * el \
+        num = (
+            t * wt
+            + env_score[:, None] * we
+            + 50.0 * wj * el
             + np.where(np.isnan(rp), 0.0, rp * wr)
+        )
     else:  # replay
-        jm = jev_mat.reindex(index=tech.index,
-                             columns=tech.columns).to_numpy(dtype=float)
+        jm = jev_mat.reindex(index=tech.index, columns=tech.columns).to_numpy(
+            dtype=float
+        )
         jv = el & ~np.isnan(jm)
-        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr \
-            + W4["jev"] * jv
-        num = t * W4["tech"] + env_score[:, None] * W4["env"] \
-            + np.where(np.isnan(rp), 0.0, rp * W4["rps"]) \
+        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr + W4["jev"] * jv
+        num = (
+            t * W4["tech"]
+            + env_score[:, None] * W4["env"]
+            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
             + np.where(np.isnan(jm), 0.0, jm * W4["jev"])
-    sc = np.divide(num, wsum, out=np.full(num.shape, np.nan),
-                   where=wsum > 0)
-    gate = env_df["safe"].to_numpy(dtype=bool) if gate_on \
+        )
+    sc = np.divide(num, wsum, out=np.full(num.shape, np.nan), where=wsum > 0)
+    gate = (
+        env_df["safe"].to_numpy(dtype=bool)
+        if gate_on
         else np.ones(len(env_df), dtype=bool)
+    )
     gate_ok = np.broadcast_to(gate[:, None], sc.shape)
     ge = np.nan_to_num(sc, nan=-1e9)
     buy_m = el & hr & gate_ok & (ge >= buy_th)
@@ -359,8 +404,7 @@ def trade_returns(buy, open_px, close_px, n, cost, unfill=None):
     ret_vals = exit_px / entry - 1.0 - cost
     ok = open_px.shift(-1).notna() & close_px.ffill().shift(-n).notna()
     if unfill is not None:
-        unf = (unfill.shift(-1).fillna(False)
-               .reindex_like(open_px).fillna(False))
+        unf = unfill.shift(-1).fillna(False).reindex_like(open_px).fillna(False)
         ok = ok & ~unf
     valid = buy & ok
     n_dropped = int((buy & ~ok).sum().sum())
@@ -392,26 +436,24 @@ def bench_returns(eligible, open_px, close_px, n, cost, unfill=None):
     exit_px = close_px.ffill().shift(-n)
     valid = eligible & entry.notna() & exit_px.notna()
     if unfill is not None:
-        unf = (unfill.shift(-1).fillna(False)
-               .reindex_like(open_px).fillna(False))
+        unf = unfill.shift(-1).fillna(False).reindex_like(open_px).fillna(False)
         valid = valid & ~unf
     ret_vals = (exit_px / entry - 1.0 - cost).to_numpy(dtype=float)
     return _flat_series(valid, ret_vals, eligible.index, eligible.columns)
 
 
-def eval_hold(buy, open_px, close_px, n, cost, bench_ret=None,
-              eligible=None, unfill=None):
+def eval_hold(
+    buy, open_px, close_px, n, cost, bench_ret=None, eligible=None, unfill=None
+):
     """一个 (信号, 持有期) 组合的后验指标。
 
     bench_ret 未给则现算（同一 hold 下与变体无关，可预计算传入复用）。
     超额 = 信号逐笔均值 − 基准限制在同一批信号日内的逐笔均值。
     """
-    ret, n_drop = trade_returns(buy, open_px, close_px, n, cost,
-                                unfill=unfill)
+    ret, n_drop = trade_returns(buy, open_px, close_px, n, cost, unfill=unfill)
     dm = date_mean(ret)
     if bench_ret is None:
-        bench_ret = bench_returns(eligible, open_px, close_px, n, cost,
-                                  unfill=unfill)
+        bench_ret = bench_returns(eligible, open_px, close_px, n, cost, unfill=unfill)
     if len(dm) and len(bench_ret):
         sig_dates = set(dm.index)
         b = bench_ret[bench_ret.index.get_level_values("date").isin(sig_dates)]
@@ -431,7 +473,8 @@ def eval_hold(buy, open_px, close_px, n, cost, bench_ret=None,
         "max_dd": round(max_drawdown(dm), 4),
         "bench_mean": round(bench_mean, 6) if bench_mean is not None else None,
         "excess_mean": round(float(ret.mean()) - bench_mean, 6)
-        if len(ret) and bench_mean is not None else None,
+        if len(ret) and bench_mean is not None
+        else None,
     }
     return stats
 
@@ -478,17 +521,21 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
     eligible(≥MIN_BARS_ELIG bool), unfill(K254 一字板 bool)；
     K254 起 close/open 为后复权口径（own-bar pre_close 链因子）。
     """
-    files = sorted(f for f in os.listdir(data_dir)
-                   if f.endswith(".parquet") and not f.startswith("_"))
+    files = sorted(
+        f
+        for f in os.listdir(data_dir)
+        if f.endswith(".parquet") and not f.startswith("_")
+    )
     if stocks_limit:
-        files = files[:int(stocks_limit)]
+        files = files[: int(stocks_limit)]
     codes, per = [], []
     t0 = time.time()
     for i, f in enumerate(files):
         try:
-            df = pd.read_parquet(os.path.join(data_dir, f),
-                                 columns=["trade_date", "open", "high",
-                                          "close", "pre_close"])
+            df = pd.read_parquet(
+                os.path.join(data_dir, f),
+                columns=["trade_date", "open", "high", "close", "pre_close"],
+            )
         except Exception as ex:  # A5: 坏样本静默消失会让回测样本集悄悄缩水——留痕
             print("[qpzm] 样本读取失败跳过 %s：%s" % (f, str(ex)[:60]))
             continue
@@ -498,24 +545,40 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
         codes.append(f[:-8].replace("_", "."))
         per.append(df)
         if (i + 1) % log_every == 0:
-            print("  loaded %d/%d (%.0fs)" % (i + 1, len(files),
-                                              time.time() - t0), flush=True)
+            print(
+                "  loaded %d/%d (%.0fs)" % (i + 1, len(files), time.time() - t0),
+                flush=True,
+            )
     if not per:
         raise RuntimeError("no parquet data in %s" % data_dir)
-    union = np.unique(np.concatenate(
-        [d["trade_date"].to_numpy() for d in per])).astype("int64")
+    union = np.unique(np.concatenate([d["trade_date"].to_numpy() for d in per])).astype(
+        "int64"
+    )
     dpos = {int(d): i for i, d in enumerate(union)}
     S, D = len(per), len(union)
-    print("universe %d stocks, union %d dates (%s ~ %s)" % (
-        S, D, union[0], union[-1]), flush=True)
+    print(
+        "universe %d stocks, union %d dates (%s ~ %s)" % (S, D, union[0], union[-1]),
+        flush=True,
+    )
 
     def blank():
         return np.full((D, S), np.nan, dtype="float32")
 
-    arr = {k: blank() for k in ("close", "open", "chg50", "chg120",
-                                "chg250", "ret20", "longs", "n_bars")}
+    arr = {
+        k: blank()
+        for k in (
+            "close",
+            "open",
+            "chg50",
+            "chg120",
+            "chg250",
+            "ret20",
+            "longs",
+            "n_bars",
+        )
+    }
     above_buf = np.zeros((D, S), dtype=bool)
-    unfill_buf = np.zeros((D, S), dtype=bool)   # K254 一字板(T+1 无法成交)
+    unfill_buf = np.zeros((D, S), dtype=bool)  # K254 一字板(T+1 无法成交)
     for j, df in enumerate(per):
         rows = np.array([dpos[int(d)] for d in df["trade_date"].to_numpy()])
         c = df["close"].astype(float)
@@ -539,24 +602,31 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
         # K254 一字板（原始价判定）：开=高=收 且 开盘涨幅达板
         o_raw = df["open"].astype(float)
         h_raw = df["high"].astype(float)
-        rg = (o_raw / pc.replace(0.0, np.nan) - 1.0)
-        lim = 0.295 if codes[j].endswith(".BJ") else (
-            0.195 if codes[j][2:4] in ("30", "68") else 0.095)
-        unfill_buf[rows, j] = ((o_raw >= h_raw - 1e-9)
-                               & ((o_raw - df["close"].astype(float)).abs()
-                                  <= 1e-6)
-                               & (rg >= lim - 0.005)
-                               & rg.notna()).to_numpy()
+        rg = o_raw / pc.replace(0.0, np.nan) - 1.0
+        lim = (
+            0.295
+            if codes[j].endswith(".BJ")
+            else (0.195 if codes[j][2:4] in ("30", "68") else 0.095)
+        )
+        unfill_buf[rows, j] = (
+            (o_raw >= h_raw - 1e-9)
+            & ((o_raw - df["close"].astype(float)).abs() <= 1e-6)
+            & (rg >= lim - 0.005)
+            & rg.notna()
+        ).to_numpy()
 
     wide = {"dates": union, "codes": codes}
     for k, a in arr.items():
         wide[k] = pd.DataFrame(a, index=union, columns=codes)
     # 闸门只计入 ≥21 根自身 bar（market_env: len(c)>=21）
     wide["above20"] = pd.DataFrame(
-        np.where(arr["n_bars"] >= MIN_BARS_ENV, above_buf.astype(float),
-                 np.nan), index=union, columns=codes)
-    wide["eligible"] = pd.DataFrame(arr["n_bars"] >= MIN_BARS_ELIG,
-                                    index=union, columns=codes)
+        np.where(arr["n_bars"] >= MIN_BARS_ENV, above_buf.astype(float), np.nan),
+        index=union,
+        columns=codes,
+    )
+    wide["eligible"] = pd.DataFrame(
+        arr["n_bars"] >= MIN_BARS_ELIG, index=union, columns=codes
+    )
     wide["unfill"] = pd.DataFrame(unfill_buf, index=union, columns=codes)
     return wide
 
@@ -574,8 +644,10 @@ def run_backtest(args):
 
     chg = {p: wide["chg%d" % p] for p in PERIODS}
     env_df = env_gate(wide["above20"], wide["ret20"])
-    print("env computed, unsafe days %d/%d" % (
-        int((~env_df["safe"]).sum()), len(env_df)), flush=True)
+    print(
+        "env computed, unsafe days %d/%d" % (int((~env_df["safe"]).sum()), len(env_df)),
+        flush=True,
+    )
 
     rps_by_w = {}
     for wname, w in GRID_W:
@@ -586,9 +658,16 @@ def run_backtest(args):
     jev_meta = {}
     if args.jev_mode == "replay":
         jev_mat, jev_meta = load_jev_replay()
-        print("jev replay loaded: %s ~ %s (%d codes, %d days)" % (
-            jev_meta.get("start"), jev_meta.get("end"),
-            jev_mat.shape[1], jev_mat.shape[0]), flush=True)
+        print(
+            "jev replay loaded: %s ~ %s (%d codes, %d days)"
+            % (
+                jev_meta.get("start"),
+                jev_meta.get("end"),
+                jev_mat.shape[1],
+                jev_mat.shape[0],
+            ),
+            flush=True,
+        )
     else:
         print("jev_mode=%s" % args.jev_mode, flush=True)
 
@@ -605,9 +684,13 @@ def run_backtest(args):
     bench_by_hold = {}
     for n in holds:
         bench_by_hold[n] = bench_returns(
-            eligible.loc[in_win], wide["open"].loc[in_win],
-            wide["close"].loc[in_win], n, args.cost,
-            unfill=wide.get("unfill"))
+            eligible.loc[in_win],
+            wide["open"].loc[in_win],
+            wide["close"].loc[in_win],
+            n,
+            args.cost,
+            unfill=wide.get("unfill"),
+        )
 
     variants = []
     tech_w = tech_score(wide["longs"], wide["above20"])
@@ -616,36 +699,68 @@ def run_backtest(args):
         for thname, (bth, oth) in GRID_TH:
             for gname, g in GRID_GATE:
                 _score, buy, _obs = combine_score(
-                    tech_w, mix, env_df,
-                    buy_th=bth, obs_th=oth, gate_on=g, eligible=eligible,
-                    jev_mode=args.jev_mode, jev_mat=jev_mat)
+                    tech_w,
+                    mix,
+                    env_df,
+                    buy_th=bth,
+                    obs_th=oth,
+                    gate_on=g,
+                    eligible=eligible,
+                    jev_mode=args.jev_mode,
+                    jev_mat=jev_mat,
+                )
                 buy_w = buy.loc[in_win]
-                v = {"label": "%s_%s_%s" % (wname, thname, gname),
-                     "rps_w": {str(k): round(vv, 4) for k, vv in w.items()},
-                     "buy_th": bth, "obs_th": oth, "gate": g,
-                     "n_buy_in_window": int(buy_w.sum().sum()),
-                     "holds": {}}
+                v = {
+                    "label": "%s_%s_%s" % (wname, thname, gname),
+                    "rps_w": {str(k): round(vv, 4) for k, vv in w.items()},
+                    "buy_th": bth,
+                    "obs_th": oth,
+                    "gate": g,
+                    "n_buy_in_window": int(buy_w.sum().sum()),
+                    "holds": {},
+                }
                 for n in holds:
                     v["holds"][str(n)] = eval_hold(
-                        buy_w, wide["open"].loc[in_win],
-                        wide["close"].loc[in_win], n, args.cost,
+                        buy_w,
+                        wide["open"].loc[in_win],
+                        wide["close"].loc[in_win],
+                        n,
+                        args.cost,
                         bench_ret=bench_by_hold[n],
-                        unfill=wide.get("unfill"))
+                        unfill=wide.get("unfill"),
+                    )
                 variants.append(v)
                 h0 = v["holds"][str(holds[0])]
-                print("%-24s buy=%6d hold%d mean=%s win=%s" % (
-                    v["label"], v["n_buy_in_window"], holds[0],
-                    h0["mean"], h0["win_rate"]), flush=True)
+                print(
+                    "%-24s buy=%6d hold%d mean=%s win=%s"
+                    % (
+                        v["label"],
+                        v["n_buy_in_window"],
+                        holds[0],
+                        h0["mean"],
+                        h0["win_rate"],
+                    ),
+                    flush=True,
+                )
 
     # 次新拆分：买入信号按 RPS 可用周期数（现行权重+闸门开，全窗口）
     mix_cur, n_avail_cur = rps_by_w["w_cur"]
     _, buy_cur, _ = combine_score(
-        tech_w, mix_cur, env_df, gate_on=True, eligible=eligible,
-        jev_mode=args.jev_mode, jev_mat=jev_mat)
+        tech_w,
+        mix_cur,
+        env_df,
+        gate_on=True,
+        eligible=eligible,
+        jev_mode=args.jev_mode,
+        jev_mat=jev_mat,
+    )
     sig_n = n_avail_cur.where(buy_cur).to_numpy().ravel()
     sig_n = sig_n[~np.isnan(sig_n)]
-    subnew = {str(int(k)): int(v) for k, v in
-              zip(*np.unique(sig_n, return_counts=True))} if len(sig_n) else {}
+    subnew = (
+        {str(int(k)): int(v) for k, v in zip(*np.unique(sig_n, return_counts=True))}
+        if len(sig_n)
+        else {}
+    )
     # S5 决策数据：按可用周期数分组的后验收益（全窗口，绝对口径组间可比；
     # 不带基准超额——全窗口基准序列内存不可控，组间对比用绝对收益即可）
     subnew_holds = {}
@@ -654,34 +769,50 @@ def run_backtest(args):
         subnew_holds[k] = {}
         for n in holds:
             ret, _drop = trade_returns(
-                mask, wide["open"], wide["close"], n, args.cost,
-                unfill=wide.get("unfill"))
+                mask,
+                wide["open"],
+                wide["close"],
+                n,
+                args.cost,
+                unfill=wide.get("unfill"),
+            )
             subnew_holds[k][str(n)] = {
                 "n_trades": int(len(ret)),
                 "mean": round(float(ret.mean()), 6) if len(ret) else None,
                 "median": round(float(ret.median()), 6) if len(ret) else None,
-                "win_rate": round(float((ret > 0).mean()), 4)
-                if len(ret) else None}
+                "win_rate": round(float((ret > 0).mean()), 4) if len(ret) else None,
+            }
     all_ret_hold = {}
     for n in holds:
         ret, _drop = trade_returns(
-            buy_cur, wide["open"], wide["close"], n, args.cost,
-            unfill=wide.get("unfill"))
+            buy_cur,
+            wide["open"],
+            wide["close"],
+            n,
+            args.cost,
+            unfill=wide.get("unfill"),
+        )
         all_ret_hold[str(n)] = {
             "n_trades": int(len(ret)),
             "mean": round(float(ret.mean()), 6) if len(ret) else None,
             "median": round(float(ret.median()), 6) if len(ret) else None,
-            "win_rate": round(float((ret > 0).mean()), 4) if len(ret) else None}
+            "win_rate": round(float((ret > 0).mean()), 4) if len(ret) else None,
+        }
 
     env_rows = []
     for d, r in env_df.loc[in_win].iterrows():
         if pd.isna(r["score"]):
             continue
-        env_rows.append({"date": str(int(d)), "breadth": float(r["breadth"]),
-                         "med20": float(r["med20"]),
-                         "upfrac": float(r["upfrac"]),
-                         "score": round(float(r["score"])),
-                         "safe": bool(r["safe"])})
+        env_rows.append(
+            {
+                "date": str(int(d)),
+                "breadth": float(r["breadth"]),
+                "med20": float(r["med20"]),
+                "upfrac": float(r["upfrac"]),
+                "score": round(float(r["score"])),
+                "safe": bool(r["safe"]),
+            }
+        )
 
     report = {
         "meta": {
@@ -690,9 +821,13 @@ def run_backtest(args):
             "data_dir": args.data_dir,
             "n_stocks": len(codes),
             "n_dates_union": int(len(union)),
-            "window": {"start": args.start, "end": args.end,
-                       "signal_days": int(in_win.sum())},
-            "holds": holds, "cost_roundtrip": args.cost,
+            "window": {
+                "start": args.start,
+                "end": args.end,
+                "signal_days": int(in_win.sum()),
+            },
+            "holds": holds,
+            "cost_roundtrip": args.cost,
             "jev_mode": args.jev_mode,
             "jev_replay_meta": jev_meta,
             "sample_mode": bool(args.stocks_limit),
@@ -700,7 +835,8 @@ def run_backtest(args):
         },
         "design": DESIGN,
         "params_snapshot": {
-            "periods": list(PERIODS), "w4": W4,
+            "periods": list(PERIODS),
+            "w4": W4,
             "strategies": STRAT_PARAMS,
             "thresholds_current": list(TH_CUR),
             "min_bars_eligible": MIN_BARS_ELIG,
@@ -710,21 +846,25 @@ def run_backtest(args):
         "variants": variants,
         "subnew_buy_split": {
             "note": "买入信号按 RPS 可用周期数(1/2/3)拆分，现行权重+闸门开，"
-                    "全窗口（不受 --start 限制）；holds_by_period=分组后验"
-                    "（绝对口径），all=全体对照",
+            "全窗口（不受 --start 限制）；holds_by_period=分组后验"
+            "（绝对口径），all=全体对照",
             "counts": subnew,
             "holds_by_period": subnew_holds,
-            "all": all_ret_hold},
+            "all": all_ret_hold,
+        },
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
     if args.killed_details:
-        payload = build_killed_payload(args, wide, env_df, tech_w, mix_cur,
-                                       in_win, bench_by_hold, jev_mat)
+        payload = build_killed_payload(
+            args, wide, env_df, tech_w, mix_cur, in_win, bench_by_hold, jev_mat
+        )
         payload["meta"]["holds"] = holds
         payload["meta"]["anchor_check"] = {
-            v["label"]: v["n_buy_in_window"] for v in variants
-            if v["label"] in ("w_cur_th7550_gate_on", "w_cur_th7550_gate_off")}
+            v["label"]: v["n_buy_in_window"]
+            for v in variants
+            if v["label"] in ("w_cur_th7550_gate_on", "w_cur_th7550_gate_off")
+        }
         atomic_write_json(args.killed_out, payload)
         md_path = os.path.splitext(args.killed_out)[0] + "_summary.md"
         with open(md_path, "w", encoding="utf-8") as f:
@@ -738,14 +878,19 @@ def build_summary(report, env_win):
     w = report["meta"]["window"]
     unsafe = int((~env_win["safe"]).sum()) if len(env_win) else 0
     h0 = str(report["meta"]["holds"][0])
-    lines = ["# 青萍之末回测锚（%s）" % (
-        "小样本" if report["meta"]["sample_mode"] else "全量"), ""]
-    lines.append("- 股票数: %d；信号窗: %s ~ %s（%d 个交易日，闸门收紧 %d 天）"
-                 % (report["meta"]["n_stocks"], w["start"], w["end"],
-                    w["signal_days"], unsafe))
-    lines.append("- 成本: 往返 %.2f%%；口径: T+1 开盘买入，持有 N 日收盘卖出；"
-                 "超额基准 = 同窗口全体可交易股票等权"
-                 % (report["meta"]["cost_roundtrip"] * 100))
+    lines = [
+        "# 青萍之末回测锚（%s）"
+        % ("小样本" if report["meta"]["sample_mode"] else "全量"),
+        "",
+    ]
+    lines.append(
+        "- 股票数: %d；信号窗: %s ~ %s（%d 个交易日，闸门收紧 %d 天）"
+        % (report["meta"]["n_stocks"], w["start"], w["end"], w["signal_days"], unsafe)
+    )
+    lines.append(
+        "- 成本: 往返 %.2f%%；口径: T+1 开盘买入，持有 N 日收盘卖出；"
+        "超额基准 = 同窗口全体可交易股票等权" % (report["meta"]["cost_roundtrip"] * 100)
+    )
     lines.append("")
     lines.append("## 参数网格（hold=%s 日）" % h0)
     lines.append("")
@@ -753,10 +898,18 @@ def build_summary(report, env_win):
     lines.append("|---|---|---|---|---|---|---|")
     for v in report["variants"]:
         s = v["holds"][h0]
-        lines.append("| %s | %d | %s | %s | %s | %s | %s |" % (
-            v["label"], v["n_buy_in_window"],
-            _pct(s["mean"]), _pct(s["median"]), _pct(s["win_rate"], True),
-            _pct(s["excess_mean"]), _pct(s["max_dd"])))
+        lines.append(
+            "| %s | %d | %s | %s | %s | %s | %s |"
+            % (
+                v["label"],
+                v["n_buy_in_window"],
+                _pct(s["mean"]),
+                _pct(s["median"]),
+                _pct(s["win_rate"], True),
+                _pct(s["excess_mean"]),
+                _pct(s["max_dd"]),
+            )
+        )
     lines.append("")
     lines.append("## 多持有期（现行权重 75/50 闸门开）")
     lines.append("")
@@ -765,9 +918,17 @@ def build_summary(report, env_win):
     for v in report["variants"]:
         if v["label"] == "w_cur_th7550_gate_on":
             for n, s in sorted(v["holds"].items(), key=lambda kv: int(kv[0])):
-                lines.append("| %s | %d | %s | %s | %s | %s |" % (
-                    n, s["n_trades"], _pct(s["mean"]), _pct(s["median"]),
-                    _pct(s["win_rate"], True), _pct(s["max_dd"])))
+                lines.append(
+                    "| %s | %d | %s | %s | %s | %s |"
+                    % (
+                        n,
+                        s["n_trades"],
+                        _pct(s["mean"]),
+                        _pct(s["median"]),
+                        _pct(s["win_rate"], True),
+                        _pct(s["max_dd"]),
+                    )
+                )
     return {"headline_md": "\n".join(lines)}
 
 
@@ -779,8 +940,16 @@ def _pct(x, is_ratio=False):
 
 # ── 错杀清单导出（20261014 追加：仅 --killed-details 启用，默认关闭，
 #    不触碰上面任何既有计算路径） ─────────────────────────────
-KILLED_GROUP_ORDER = ("gate_breadth", "gate_med20", "gate_both", "gate_other",
-                      "unfill", "entry_nobar", "rps_missing", "min_bars")
+KILLED_GROUP_ORDER = (
+    "gate_breadth",
+    "gate_med20",
+    "gate_both",
+    "gate_other",
+    "unfill",
+    "entry_nobar",
+    "rps_missing",
+    "min_bars",
+)
 KILLED_GROUP_NOTE = {
     "gate_breadth": "环境闸门否决·仅 breadth<0.40 触发",
     "gate_med20": "环境闸门否决·仅 med20<-3% 触发",
@@ -818,11 +987,11 @@ def _killed_group_stats(rows, def_th, ref_n):
             "mean_%s" % rk: round(float(np.mean(vals)), 6) if vals else None,
             "median_%s" % rk: round(float(np.median(vals)), 6) if vals else None,
             "win_%s" % rk: round(float(np.mean([v > 0 for v in vals])), 4)
-            if vals else None,
+            if vals
+            else None,
             "n_miskill": len(mis),
             "miskill_rate": round(len(mis) / len(vals), 4) if vals else None,
-            "miskill_mean_%s" % rk: round(float(np.mean(mis)), 6)
-            if mis else None,
+            "miskill_mean_%s" % rk: round(float(np.mean(mis)), 6) if mis else None,
             "total_%s" % rk: round(float(np.sum(vals)), 4) if vals else None,
             "mean_r5": round(float(np.mean(r5)), 6) if r5 else None,
             "mean_r20": round(float(np.mean(r20)), 6) if r20 else None,
@@ -830,26 +999,27 @@ def _killed_group_stats(rows, def_th, ref_n):
     return out
 
 
-def gate_counterfactual(args, wide, env_df, tech_w, mix_cur, in_win,
-                        bench_by_hold, jev_mat):
+def gate_counterfactual(
+    args, wide, env_df, tech_w, mix_cur, in_win, bench_by_hold, jev_mat
+):
     """闸门三条件逐条放宽/收紧/移除的反事实回放（hold 网格口径）。"""
     br, md, uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
     bth, oth = TH_CUR
     configs = [
-        ("base_b40_m-3",   0.40, -0.03, None),
-        ("breadth_30",     0.30, -0.03, None),
-        ("breadth_35",     0.35, -0.03, None),
-        ("breadth_45",     0.45, -0.03, None),
-        ("breadth_50",     0.50, -0.03, None),
-        ("med20_m5",       0.40, -0.05, None),
-        ("med20_m4",       0.40, -0.04, None),
-        ("med20_m2",       0.40, -0.02, None),
-        ("med20_0",        0.40,  0.00, None),
-        ("drop_breadth",   None, -0.03, None),
-        ("drop_med20",     0.40, None,  None),
-        ("drop_both",      None, None,  None),
-        ("add_upfrac30",   0.40, -0.03, 0.30),
-        ("add_upfrac40",   0.40, -0.03, 0.40),
+        ("base_b40_m-3", 0.40, -0.03, None),
+        ("breadth_30", 0.30, -0.03, None),
+        ("breadth_35", 0.35, -0.03, None),
+        ("breadth_45", 0.45, -0.03, None),
+        ("breadth_50", 0.50, -0.03, None),
+        ("med20_m5", 0.40, -0.05, None),
+        ("med20_m4", 0.40, -0.04, None),
+        ("med20_m2", 0.40, -0.02, None),
+        ("med20_0", 0.40, 0.00, None),
+        ("drop_breadth", None, -0.03, None),
+        ("drop_med20", 0.40, None, None),
+        ("drop_both", None, None, None),
+        ("add_upfrac30", 0.40, -0.03, 0.30),
+        ("add_upfrac40", 0.40, -0.03, 0.40),
     ]
     rows = []
     for label, b_cf, m_cf, u_cf in configs:
@@ -866,28 +1036,49 @@ def gate_counterfactual(args, wide, env_df, tech_w, mix_cur, in_win,
         env_cf = env_df.copy()
         env_cf["safe"] = safe
         _sc, buy, _ob = combine_score(
-            tech_w, mix_cur, env_cf, buy_th=bth, obs_th=oth, gate_on=True,
-            eligible=wide["eligible"], jev_mode=args.jev_mode,
-            jev_mat=jev_mat)
+            tech_w,
+            mix_cur,
+            env_cf,
+            buy_th=bth,
+            obs_th=oth,
+            gate_on=True,
+            eligible=wide["eligible"],
+            jev_mode=args.jev_mode,
+            jev_mat=jev_mat,
+        )
         buy_w = buy.loc[in_win]
-        v = {"label": label, "breadth_th": b_cf, "med20_th": m_cf,
-             "upfrac_veto": u_cf, "n_buy": int(buy_w.sum().sum()),
-             "unsafe_days": int((~safe.loc[in_win]).sum()), "holds": {}}
+        v = {
+            "label": label,
+            "breadth_th": b_cf,
+            "med20_th": m_cf,
+            "upfrac_veto": u_cf,
+            "n_buy": int(buy_w.sum().sum()),
+            "unsafe_days": int((~safe.loc[in_win]).sum()),
+            "holds": {},
+        }
         for n in args.holds:
             v["holds"][str(n)] = eval_hold(
-                buy_w, wide["open"].loc[in_win], wide["close"].loc[in_win],
-                n, args.cost, bench_ret=bench_by_hold[n],
-                unfill=wide.get("unfill"))
+                buy_w,
+                wide["open"].loc[in_win],
+                wide["close"].loc[in_win],
+                n,
+                args.cost,
+                bench_ret=bench_by_hold[n],
+                unfill=wide.get("unfill"),
+            )
         rows.append(v)
         h0 = v["holds"][str(args.holds[0])]
-        print("  cf %-14s buy=%6d hold%d mean=%s dd=%s" % (
-            label, v["n_buy"], args.holds[0], h0["mean"], h0["max_dd"]),
-            flush=True)
+        print(
+            "  cf %-14s buy=%6d hold%d mean=%s dd=%s"
+            % (label, v["n_buy"], args.holds[0], h0["mean"], h0["max_dd"]),
+            flush=True,
+        )
     return rows
 
 
-def build_killed_payload(args, wide, env_df, tech_w, mix_cur, in_win,
-                         bench_by_hold, jev_mat):
+def build_killed_payload(
+    args, wide, env_df, tech_w, mix_cur, in_win, bench_by_hold, jev_mat
+):
     """错杀清单 + 分组统计 + 闸门反事实（只读，全部在窗口内）。
 
     错杀定义：被剔除信号的 r10 ≥ max(5%, 2×放行成交样本 r10 均值)
@@ -901,16 +1092,37 @@ def build_killed_payload(args, wide, env_df, tech_w, mix_cur, in_win,
     eligible = wide["eligible"]
 
     score, buy_on, _ = combine_score(
-        tech_w, mix_cur, env_df, buy_th=bth, obs_th=oth, gate_on=True,
-        eligible=eligible, jev_mode=args.jev_mode, jev_mat=jev_mat)
+        tech_w,
+        mix_cur,
+        env_df,
+        buy_th=bth,
+        obs_th=oth,
+        gate_on=True,
+        eligible=eligible,
+        jev_mode=args.jev_mode,
+        jev_mat=jev_mat,
+    )
     _s2, buy_off, _ = combine_score(
-        tech_w, mix_cur, env_df, buy_th=bth, obs_th=oth, gate_on=False,
-        eligible=eligible, jev_mode=args.jev_mode, jev_mat=jev_mat)
+        tech_w,
+        mix_cur,
+        env_df,
+        buy_th=bth,
+        obs_th=oth,
+        gate_on=False,
+        eligible=eligible,
+        jev_mode=args.jev_mode,
+        jev_mat=jev_mat,
+    )
 
     # 错杀判定阈值（放行成交样本 r10 均值）
     adm_ret, _drop = trade_returns(
-        buy_on.loc[in_win], open_px.loc[in_win], close_px.loc[in_win],
-        ref_n, cost, unfill=wide.get("unfill"))
+        buy_on.loc[in_win],
+        open_px.loc[in_win],
+        close_px.loc[in_win],
+        ref_n,
+        cost,
+        unfill=wide.get("unfill"),
+    )
     adm_mean = float(adm_ret.mean()) if len(adm_ret) else 0.0
     def_th = max(0.05, 2.0 * adm_mean)
 
@@ -927,20 +1139,21 @@ def build_killed_payload(args, wide, env_df, tech_w, mix_cur, in_win,
         if isinstance(s_bool, pd.DataFrame):
             return s_bool
         return pd.DataFrame(
-            np.broadcast_to(s_bool.to_numpy(dtype=bool)[:, None],
-                            veto_w.shape),
-            index=veto_w.index, columns=veto_w.columns)
+            np.broadcast_to(s_bool.to_numpy(dtype=bool)[:, None], veto_w.shape),
+            index=veto_w.index,
+            columns=veto_w.columns,
+        )
 
     is_br_b = _bcast(br.loc[in_win] < 0.40)
     is_md_b = _bcast(md.loc[in_win] < -0.03)
     safe_b, hr_b = _bcast(safe_w), _bcast(hr_ok)
     # min_bars 假想口径：tech+env 归一（显式非产线行为）
     env_sc = pd.DataFrame(
-        np.broadcast_to(env_df["score"].to_numpy(dtype=float)[:, None],
-                        tech_w.shape),
-        index=tech_w.index, columns=tech_w.columns)
-    pseudo = (tech_w * W4["tech"] + env_sc * W4["env"]) \
-        / (W4["tech"] + W4["env"])
+        np.broadcast_to(env_df["score"].to_numpy(dtype=float)[:, None], tech_w.shape),
+        index=tech_w.index,
+        columns=tech_w.columns,
+    )
+    pseudo = (tech_w * W4["tech"] + env_sc * W4["env"]) / (W4["tech"] + W4["env"])
     masks = {
         "gate_both": veto_w & is_br_b & is_md_b,
         "gate_breadth": veto_w & is_br_b & ~is_md_b,
@@ -948,17 +1161,19 @@ def build_killed_payload(args, wide, env_df, tech_w, mix_cur, in_win,
         "gate_other": veto_w & ~(is_br_b | is_md_b),
         "unfill": on_w & unf_t1,
         "entry_nobar": on_w & entry_na,
-        "rps_missing": (score.loc[in_win] >= bth) & eligible.loc[in_win] \
-            & ~hr_b & safe_b,
-        "min_bars": (pseudo.loc[in_win] >= bth) & ~eligible.loc[in_win] \
-            & safe_b,
+        "rps_missing": (score.loc[in_win] >= bth)
+        & eligible.loc[in_win]
+        & ~hr_b
+        & safe_b,
+        "min_bars": (pseudo.loc[in_win] >= bth) & ~eligible.loc[in_win] & safe_b,
     }
 
-    r_win = {n: _fwd_ret(open_px, close_px, n, cost).loc[in_win]
-             for n in holds}
+    r_win = {n: _fwd_ret(open_px, close_px, n, cost).loc[in_win] for n in holds}
     r_arr = {n: r_win[n].to_numpy(dtype=float) for n in holds}
-    ind = {k: env_df[k].loc[in_win].to_numpy(dtype=float)
-           for k in ("breadth", "med20", "upfrac")}
+    ind = {
+        k: env_df[k].loc[in_win].to_numpy(dtype=float)
+        for k in ("breadth", "med20", "upfrac")
+    }
     sc_a = score.loc[in_win].to_numpy(dtype=float)
     win_dates = [str(int(d)) for d in wide["dates"][in_win]]
     codes = wide["codes"]
@@ -970,31 +1185,41 @@ def build_killed_payload(args, wide, env_df, tech_w, mix_cur, in_win,
     for g in KILLED_GROUP_ORDER:
         a = masks[g].to_numpy(dtype=bool)
         for d_i, s_i in np.argwhere(a):
-            row = {"date": win_dates[d_i], "code": codes[s_i], "reason": g,
-                   "breadth": _v(ind["breadth"][d_i], 4),
-                   "med20": _v(ind["med20"][d_i], 4),
-                   "upfrac": _v(ind["upfrac"][d_i], 4),
-                   "score": _v(sc_a[d_i, s_i], 1)}
+            row = {
+                "date": win_dates[d_i],
+                "code": codes[s_i],
+                "reason": g,
+                "breadth": _v(ind["breadth"][d_i], 4),
+                "med20": _v(ind["med20"][d_i], 4),
+                "upfrac": _v(ind["upfrac"][d_i], 4),
+                "score": _v(sc_a[d_i, s_i], 1),
+            }
             for n in holds:
                 row["r%d" % n] = _v(r_arr[n][d_i, s_i])
             rows.append(row)
 
-    cf = gate_counterfactual(args, wide, env_df, tech_w, mix_cur, in_win,
-                             bench_by_hold, jev_mat)
+    cf = gate_counterfactual(
+        args, wide, env_df, tech_w, mix_cur, in_win, bench_by_hold, jev_mat
+    )
     payload = {
         "meta": {
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "window": {"start": args.start, "end": args.end,
-                       "signal_days": int(in_win.sum())},
+            "window": {
+                "start": args.start,
+                "end": args.end,
+                "signal_days": int(in_win.sum()),
+            },
             "n_stocks": wide["close"].shape[1],
-            "cost_roundtrip": cost, "jev_mode": args.jev_mode,
-            "weights": "w_cur", "thresholds": list(TH_CUR),
+            "cost_roundtrip": cost,
+            "jev_mode": args.jev_mode,
+            "weights": "w_cur",
+            "thresholds": list(TH_CUR),
             "group_note": KILLED_GROUP_NOTE,
         },
         "killed_definition": {
-            "rule": "r%d >= max(5%%, 2×放行成交样本 r%d 均值)"
-                    % (ref_n, ref_n),
-            "abs_th": 0.05, "rel_multiple": 2.0,
+            "rule": "r%d >= max(5%%, 2×放行成交样本 r%d 均值)" % (ref_n, ref_n),
+            "abs_th": 0.05,
+            "rel_multiple": 2.0,
             "admitted_mean_r%d" % ref_n: round(adm_mean, 6),
             "threshold_used": round(def_th, 6),
         },
@@ -1011,52 +1236,72 @@ def build_killed_md(payload):
     d = payload["killed_definition"]
     ref_n = 10 if 10 in m.get("holds", [5, 10, 20]) else 5
     lines = ["# 青萍之末错杀清单摘要", ""]
-    lines.append("- 窗口: %s ~ %s（%d 信号日，%d 股）；成本往返 %.2f%%"
-                 % (m["window"]["start"], m["window"]["end"] or "数据尾",
-                    m["window"]["signal_days"], m["n_stocks"],
-                    m["cost_roundtrip"] * 100))
-    lines.append("- 错杀定义: %s（本窗阈值 %+.2f%%）"
-                 % (d["rule"], d["threshold_used"] * 100))
+    lines.append(
+        "- 窗口: %s ~ %s（%d 信号日，%d 股）；成本往返 %.2f%%"
+        % (
+            m["window"]["start"],
+            m["window"]["end"] or "数据尾",
+            m["window"]["signal_days"],
+            m["n_stocks"],
+            m["cost_roundtrip"] * 100,
+        )
+    )
+    lines.append(
+        "- 错杀定义: %s（本窗阈值 %+.2f%%）" % (d["rule"], d["threshold_used"] * 100)
+    )
     lines.append("")
     lines.append("## 按剔除原因分组")
     lines.append("")
-    lines.append("| 剔除原因 | 被剔除数 | 有前向收益 | r10均值 | r10胜率 "
-                 "| 错杀数 | 错杀率 | 总r10代价 |")
+    lines.append(
+        "| 剔除原因 | 被剔除数 | 有前向收益 | r10均值 | r10胜率 "
+        "| 错杀数 | 错杀率 | 总r10代价 |"
+    )
     lines.append("|---|---|---|---|---|---|---|---|")
     rk = "mean_r%d" % ref_n
     wk = "win_r%d" % ref_n
     for g, s in payload["group_stats"].items():
         if not s.get("n_killed"):
             continue
-        lines.append("| %s | %d | %s | %s | %s | %s | %s | %s |" % (
-            g, s["n_killed"], s.get("n_with_fwd"),
-            _pct(s.get(rk)), _pct(s.get(wk), True), s.get("n_miskill"),
-            _pct(s.get("miskill_rate"), True), _pct(s.get(
-                "total_r%d" % ref_n))))
+        lines.append(
+            "| %s | %d | %s | %s | %s | %s | %s | %s |"
+            % (
+                g,
+                s["n_killed"],
+                s.get("n_with_fwd"),
+                _pct(s.get(rk)),
+                _pct(s.get(wk), True),
+                s.get("n_miskill"),
+                _pct(s.get("miskill_rate"), True),
+                _pct(s.get("total_r%d" % ref_n)),
+            )
+        )
     lines.append("")
     lines.append("## 闸门反事实（hold5/10/20 均值与最大回撤）")
     lines.append("")
-    lines.append("| 配置 | breadth阈 | med20阈 | 收紧天数 | 买入信号 "
-                 "| h5均值 | h10均值 | h20均值 | h10回撤 | h20回撤 |")
+    lines.append(
+        "| 配置 | breadth阈 | med20阈 | 收紧天数 | 买入信号 "
+        "| h5均值 | h10均值 | h20均值 | h10回撤 | h20回撤 |"
+    )
     lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for v in payload["counterfactual"]:
         h = v["holds"]
-        lines.append("| %s | %s | %s | %d | %d | %s | %s | %s | %s | %s |" % (
-            v["label"],
-            "—" if v["breadth_th"] is None else "%d%%" % (
-                v["breadth_th"] * 100),
-            "—" if v["med20_th"] is None else "%d%%" % (v["med20_th"] * 100),
-            v["unsafe_days"], v["n_buy"],
-            _pct(h.get("5", {}).get("mean")),
-            _pct(h.get("10", {}).get("mean")),
-            _pct(h.get("20", {}).get("mean")),
-            _pct(h.get("10", {}).get("max_dd")),
-            _pct(h.get("20", {}).get("max_dd"))))
+        lines.append(
+            "| %s | %s | %s | %d | %d | %s | %s | %s | %s | %s |"
+            % (
+                v["label"],
+                "—" if v["breadth_th"] is None else "%d%%" % (v["breadth_th"] * 100),
+                "—" if v["med20_th"] is None else "%d%%" % (v["med20_th"] * 100),
+                v["unsafe_days"],
+                v["n_buy"],
+                _pct(h.get("5", {}).get("mean")),
+                _pct(h.get("10", {}).get("mean")),
+                _pct(h.get("20", {}).get("mean")),
+                _pct(h.get("10", {}).get("max_dd")),
+                _pct(h.get("20", {}).get("max_dd")),
+            )
+        )
     lines.append("")
     return "\n".join(lines)
-
-
-
 
 
 def atomic_write_json(path, payload):
@@ -1078,26 +1323,35 @@ def parse_args(argv=None):
     ap.add_argument("--start", default="20251001", help="信号窗起 YYYYMMDD")
     ap.add_argument("--end", default=None, help="信号窗止 YYYYMMDD（默认数据尾）")
     ap.add_argument("--hold", default="5,10,20", help="持有交易日，逗号分隔")
-    ap.add_argument("--cost", type=float, default=0.0015,
-                    help="往返成本比例，默认 0.0015")
+    ap.add_argument(
+        "--cost", type=float, default=0.0015, help="往返成本比例，默认 0.0015"
+    )
     ap.add_argument("--data-dir", default=DATA_DIR)
-    ap.add_argument("--out", default=os.path.join(
-        REPORTS, "qpzm_backtest_report.json"))
-    ap.add_argument("--stocks-limit", type=int, default=0,
-                    help=">0 只取前 N 只股票（冒烟用）")
-    ap.add_argument("--jev-mode", default="missing",
-                    choices=list(JEV_MODES),
-                    help="JEV 维注入态：missing=缺维降权（默认，历史基准）；"
-                         "neutral50=50 中性分进权重；w015=权重重组 "
-                         "tech.40/rps.30/jev.15/env.15；replay=消费 "
-                         "jev_replay_series.json 逐日截面（覆盖外日期自然缺维）")
-    ap.add_argument("--killed-details", action="store_true",
-                    help="追加导出被剔除信号错杀清单（闸门否决/一字板/缺维"
-                         "分组 + 前向收益 + 闸门反事实网格），默认关闭，"
-                         "不改既有行为")
-    ap.add_argument("--killed-out", default=os.path.join(
-        REPORTS, "qpzm_killed_signals.json"),
-        help="错杀清单 JSON 输出路径（--killed-details 时生效）")
+    ap.add_argument("--out", default=os.path.join(REPORTS, "qpzm_backtest_report.json"))
+    ap.add_argument(
+        "--stocks-limit", type=int, default=0, help=">0 只取前 N 只股票（冒烟用）"
+    )
+    ap.add_argument(
+        "--jev-mode",
+        default="missing",
+        choices=list(JEV_MODES),
+        help="JEV 维注入态：missing=缺维降权（默认，历史基准）；"
+        "neutral50=50 中性分进权重；w015=权重重组 "
+        "tech.40/rps.30/jev.15/env.15；replay=消费 "
+        "jev_replay_series.json 逐日截面（覆盖外日期自然缺维）",
+    )
+    ap.add_argument(
+        "--killed-details",
+        action="store_true",
+        help="追加导出被剔除信号错杀清单（闸门否决/一字板/缺维"
+        "分组 + 前向收益 + 闸门反事实网格），默认关闭，"
+        "不改既有行为",
+    )
+    ap.add_argument(
+        "--killed-out",
+        default=os.path.join(REPORTS, "qpzm_killed_signals.json"),
+        help="错杀清单 JSON 输出路径（--killed-details 时生效）",
+    )
     args = ap.parse_args(argv)
     args.holds = sorted({int(x) for x in str(args.hold).split(",") if x})
     return args

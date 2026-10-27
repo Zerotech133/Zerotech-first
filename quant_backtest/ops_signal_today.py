@@ -9,6 +9,7 @@ K-STOCK-281 · 每日运营信号账本（运营层·真实状态）
 - 幂等：按 data_asof 缓存；数据文件不更新则直接回缓存，重复调用零重算
 - 无状态依赖：seen-ever 状态自持（data/ops/signal_state.json），首次运行标记 baseline
 """
+
 import sys
 import os
 import json
@@ -24,16 +25,21 @@ STATE_DIR = os.path.join(BASE, "quant_backtest", "data", "ops")
 WARMUP = 250
 BUY_TYPES = {"1买", "2买", "3买"}
 SELL_TYPES = {"1卖", "2卖", "3卖"}
-POLICY = ("K-STOCK-269 终案：组合层=池等权永在场+每10交易日再平衡+regime三档连续调仓（真实执行）；"
-          "信号层=影子蓄水池（只记录不执行，runup帽/笔级提速验证出正edge后作再平衡偏置上岗）")
+POLICY = (
+    "K-STOCK-269 终案：组合层=池等权永在场+每10交易日再平衡+regime三档连续调仓（真实执行）；"
+    "信号层=影子蓄水池（只记录不执行，runup帽/笔级提速验证出正edge后作再平衡偏置上岗）"
+)
 
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
 
 
 def _latest_pool_file():
-    fs = [f for f in os.listdir(POOL_DIR)
-          if f.startswith("poc_adapter_chanlun_") and f.endswith(".json")]
+    fs = [
+        f
+        for f in os.listdir(POOL_DIR)
+        if f.startswith("poc_adapter_chanlun_") and f.endswith(".json")
+    ]
     if not fs:
         raise RuntimeError("无 poc_adapter_chanlun_*.json 池文件")
     return max(fs)
@@ -67,8 +73,11 @@ def _portfolio_context():
         return {"note": "账本无逐日数据"}
     last_day = days[-1]
     last = led["days"][last_day]
-    reb_days = [d for d in days
-                if any(a.get("type") == "rebalance" for a in led["days"][d].get("actions", []))]
+    reb_days = [
+        d
+        for d in days
+        if any(a.get("type") == "rebalance" for a in led["days"][d].get("actions", []))
+    ]
     last_reb = reb_days[-1] if reb_days else None
     nxt = None
     if last_reb:
@@ -114,8 +123,11 @@ def compute(force=False):
     # ---- 数据新鲜度（相对全池最新交易日） ----
     last_dates = {s: str(b["trade_date"].iloc[-1]) for s, b in books.items()}
     asof = max(last_dates.values()) if last_dates else None
-    stale = [{"stock": s, "last": d} for s, d in last_dates.items()
-             if asof and (int(asof) - int(d)) > 30]
+    stale = [
+        {"stock": s, "last": d}
+        for s, d in last_dates.items()
+        if asof and (int(asof) - int(d)) > 30
+    ]
     freshness = {
         "asof": asof,
         "n_stocks": len(stocks),
@@ -132,16 +144,29 @@ def compute(force=False):
         seg = b[b.trade_date <= asof]
         if len(seg) < WARMUP // 2:
             continue
-        bars = [{"dt": int(r.trade_date), "o": float(r.adj_open), "h": float(r.adj_high),
-                 "l": float(r.adj_low), "c": float(r.adj_close)}
-                for r in seg.tail(WARMUP).itertuples()]
-        for sg in ((chan_analyze(bars) or {}).get("signals") or []):
-            cur.setdefault(s, {})[sg["type"]] = {"dt": int(sg["dt"]),
-                                                 "price": round(float(sg.get("price") or 0), 3),
-                                                 "note": sg.get("note") or ""}
+        bars = [
+            {
+                "dt": int(r.trade_date),
+                "o": float(r.adj_open),
+                "h": float(r.adj_high),
+                "l": float(r.adj_low),
+                "c": float(r.adj_close),
+            }
+            for r in seg.tail(WARMUP).itertuples()
+        ]
+        for sg in (chan_analyze(bars) or {}).get("signals") or []:
+            cur.setdefault(s, {})[sg["type"]] = {
+                "dt": int(sg["dt"]),
+                "price": round(float(sg.get("price") or 0), 3),
+                "note": sg.get("note") or "",
+            }
 
     # ---- seen-ever 状态推进（跨数据日只算一次；同日重算=幂等） ----
-    state = json.load(open(state_fp, encoding="utf-8")) if os.path.exists(state_fp) else None
+    state = (
+        json.load(open(state_fp, encoding="utf-8"))
+        if os.path.exists(state_fp)
+        else None
+    )
     first_run = state is None or state.get("asof") != asof
     prev = {} if first_run else state["signals"]
     flat_prev = {(s, tp): v["dt"] for s, d in prev.items() for tp, v in d.items()}
@@ -151,19 +176,25 @@ def compute(force=False):
     for s, d in cur.items():
         for tp, v in d.items():
             if first_run:
-                status = "baseline"          # 运营账本启用日的存量信号
+                status = "baseline"  # 运营账本启用日的存量信号
             elif (s, tp) not in flat_prev:
                 status = "fresh"
                 n_new += 1
             else:
                 status = "seen"
-            sigs.append({
-                "stock": s, "tier": tiers.get(s, "-"), "type": tp,
-                "sig_dt": v["dt"], "price": v["price"], "note": v["note"],
-                "status": status,
-                "executed": False,
-                "exec_note": "影子蓄水池·未执行（269终案：组合层再平衡/regime 才是真实执行动作）",
-            })
+            sigs.append(
+                {
+                    "stock": s,
+                    "tier": tiers.get(s, "-"),
+                    "type": tp,
+                    "sig_dt": v["dt"],
+                    "price": v["price"],
+                    "note": v["note"],
+                    "status": status,
+                    "executed": False,
+                    "exec_note": "影子蓄水池·未执行（269终案：组合层再平衡/regime 才是真实执行动作）",
+                }
+            )
     sigs.sort(key=lambda x: (x["status"] != "fresh", x["type"][-1] == "卖", x["stock"]))
 
     if first_run:
@@ -176,9 +207,14 @@ def compute(force=False):
         "ok": True,
         "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
         "run_day": time.strftime("%Y%m%d"),
-        "pool": {"file": pool_name, "n": len(stocks),
-                 "tiers": {t: sum(1 for v in tiers.values() if v == t)
-                           for t in sorted(set(tiers.values()))}},
+        "pool": {
+            "file": pool_name,
+            "n": len(stocks),
+            "tiers": {
+                t: sum(1 for v in tiers.values() if v == t)
+                for t in sorted(set(tiers.values()))
+            },
+        },
         "freshness": freshness,
         "signals": sigs,
         "n_signals": len(sigs),
@@ -193,7 +229,13 @@ def compute(force=False):
 
 if __name__ == "__main__":
     r = compute(force=True)
-    print("asof:", r["freshness"]["asof"], "fresh:", r["freshness"]["n_fresh"],
-          "/", r["freshness"]["n_stocks"])
+    print(
+        "asof:",
+        r["freshness"]["asof"],
+        "fresh:",
+        r["freshness"]["n_fresh"],
+        "/",
+        r["freshness"]["n_stocks"],
+    )
     print("signals:", r["n_signals"], "new:", r["n_new"])
     print("portfolio:", json.dumps(r["portfolio"], ensure_ascii=False)[:220])

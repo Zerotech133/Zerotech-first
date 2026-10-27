@@ -7,11 +7,13 @@
 去重：同(主体,客体,rel,方向) 1 小时聚窗链式合并（多源重复报道计 n）。
 影子纪律：默认只写 event_shadow.jsonl；--dry 预览不落盘；--commit 入图（人审后）。
 用法: python -X utf8 k266_m3a_events.py [--dry] [--commit]"""
+
 import json
 import os
 import sys
 import hashlib
 from datetime import datetime, timedelta
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kg_client import KgClient
 
@@ -87,8 +89,16 @@ def to_sec(name):
 
 
 # 3) 映射 + 1h 聚窗去重 → 影子事件
-st = {"exact": 0, "alias": 0, "contains": 0, "ambig": 0, "miss": 0, "empty": 0,
-      "generic": 0, "fuzzy": 0}
+st = {
+    "exact": 0,
+    "alias": 0,
+    "contains": 0,
+    "ambig": 0,
+    "miss": 0,
+    "empty": 0,
+    "generic": 0,
+    "fuzzy": 0,
+}
 buckets = {}
 for ts, r, e in events:
     s_raw, o_raw = (e.get("subject") or "").strip(), (e.get("object") or "").strip()
@@ -106,11 +116,19 @@ for ts, r, e in events:
             b["docs"].append(r.get("doc_id"))
     else:
         buckets[key] = {
-            "eid": eid, "subj": s_raw, "subj_sec": s_sec,
-            "obj": o_raw, "obj_sec": o_sec,
-            "rel": e.get("rel", ""), "dir": r.get("direction", "中性"),
-            "date": e.get("date", ""), "amount": e.get("amount", ""),
-            "n": 1, "src": r.get("src", ""), "ts_first": ts, "ts_last": ts,
+            "eid": eid,
+            "subj": s_raw,
+            "subj_sec": s_sec,
+            "obj": o_raw,
+            "obj_sec": o_sec,
+            "rel": e.get("rel", ""),
+            "dir": r.get("direction", "中性"),
+            "date": e.get("date", ""),
+            "amount": e.get("amount", ""),
+            "n": 1,
+            "src": r.get("src", ""),
+            "ts_first": ts,
+            "ts_last": ts,
             "docs": [r.get("doc_id")],
         }
 rows = list(buckets.values())
@@ -125,10 +143,20 @@ print(f"[3] 聚窗后影子事件 {len(rows)} 条，双端命中 Security（入�
 if DRY:
     print("[4] DRY 不落盘，Top10（按 n）预览：")
     for b in sorted(rows, key=lambda x: -x["n"])[:10]:
-        print("   n=%-3d %-8s %s(%s) -[%s]-> %s(%s) %s %s"
-              % (b["n"], b["dir"], b["subj"], b["subj_sec"] or "-",
-                 b["rel"], b["obj"], b["obj_sec"] or "-",
-                 b["date"], b["amount"]))
+        print(
+            "   n=%-3d %-8s %s(%s) -[%s]-> %s(%s) %s %s"
+            % (
+                b["n"],
+                b["dir"],
+                b["subj"],
+                b["subj_sec"] or "-",
+                b["rel"],
+                b["obj"],
+                b["obj_sec"] or "-",
+                b["date"],
+                b["amount"],
+            )
+        )
 else:
     with open(OUT, "w", encoding="utf-8") as f:
         for b in rows:
@@ -144,7 +172,8 @@ if COMMIT:
             "MERGE (a)-[r:DOC_EVENT {rel: e.rel, dir: e.dir}]->(b) "
             "SET r.n = e.n, r.ts_last = e.ts_last, r.src_doc = e.docs[0], "
             "    r.amount = e.amount, r.date = e.date",
-            rows=edges)
+            rows=edges,
+        )
     print(f"[5] 入图 DOC_EVENT {len(edges)} 条（人审放行）")
 else:
     print("[5] 未入图（--commit 需人审后执行）")

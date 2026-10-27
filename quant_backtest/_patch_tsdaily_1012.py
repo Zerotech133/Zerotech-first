@@ -3,6 +3,7 @@
 重拉 202610 月窗口 → 与现有含 202610 的 part 合并 → drop_duplicates 回写 →
 更新 manifest rows。之后跑 adj_factor_sync.py 补复权因子。
 """
+
 import json
 import os
 import sys
@@ -30,7 +31,8 @@ assert len(hit_parts) == 1, "expect exactly 1 oct part, got %d" % len(hit_parts)
 
 old = pd.read_parquet(hit_parts[0])
 merged = pd.concat([old, new[new.columns]]).drop_duplicates(
-    subset=["ts_code", "trade_date"], keep="last")
+    subset=["ts_code", "trade_date"], keep="last"
+)
 merged.to_parquet(hit_parts[0] + ".tmp", index=False)
 os.replace(hit_parts[0] + ".tmp", hit_parts[0])
 added = len(merged) - len(old)

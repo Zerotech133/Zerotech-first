@@ -17,6 +17,7 @@
   "C:\\Program Files\\Python311\\python.exe" -X utf8 index_daily.py --pull    # 强制走 tushare 增量合并
   "C:\\Program Files\\Python311\\python.exe" -X utf8 index_daily.py --show    # 仅读回打印行数与最新日期
 """
+
 import argparse
 import glob
 import os
@@ -76,13 +77,19 @@ def _from_tushare(ts_code, days=PULL_DAYS):
         return pd.DataFrame()
     try:
         import tushare as ts
+
         pro = ts.pro_api(tok)
         end = pd.Timestamp.today().strftime("%Y%m%d")
-        start = (pd.Timestamp.today() - pd.Timedelta(days=int(days * 1.6))).strftime("%Y%m%d")
+        start = (pd.Timestamp.today() - pd.Timedelta(days=int(days * 1.6))).strftime(
+            "%Y%m%d"
+        )
         raw = pro.index_daily(ts_code=ts_code, start_date=start, end_date=end)
         if raw is None or raw.empty:
             return pd.DataFrame()
-        print("tushare pulled %d rows %s~%s" % (len(raw), raw["trade_date"].min(), raw["trade_date"].max()))
+        print(
+            "tushare pulled %d rows %s~%s"
+            % (len(raw), raw["trade_date"].min(), raw["trade_date"].max())
+        )
         return _tidy(raw)
     except Exception as e:
         print("PULL FAIL: %r" % e)
@@ -96,8 +103,12 @@ def _tidy(df):
     df["trade_date"] = df["trade_date"].astype(str).str[:8]
     for c in cols[1:]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
-    return df.dropna(subset=["close"]).drop_duplicates("trade_date") \
-             .sort_values("trade_date").reset_index(drop=True)
+    return (
+        df.dropna(subset=["close"])
+        .drop_duplicates("trade_date")
+        .sort_values("trade_date")
+        .reset_index(drop=True)
+    )
 
 
 def _atomic_write(df, path):
@@ -145,8 +156,10 @@ def update(name, force_pull=False):
             return
     df = _tidy(df)
     _atomic_write(df, path)
-    print("%s <- %s | rows=%d latest=%s" % (name, " + ".join(src) or "existing",
-                                            len(df), df["trade_date"].iloc[-1]))
+    print(
+        "%s <- %s | rows=%d latest=%s"
+        % (name, " + ".join(src) or "existing", len(df), df["trade_date"].iloc[-1])
+    )
 
 
 def show():
@@ -156,14 +169,23 @@ def show():
             print("%s: MISSING" % name)
             continue
         df = pd.read_parquet(path)
-        print("%s rows=%d range=%s~%s cols=%s"
-              % (name, len(df), df["trade_date"].iloc[0],
-                 df["trade_date"].iloc[-1], list(df.columns)))
+        print(
+            "%s rows=%d range=%s~%s cols=%s"
+            % (
+                name,
+                len(df),
+                df["trade_date"].iloc[0],
+                df["trade_date"].iloc[-1],
+                list(df.columns),
+            )
+        )
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="上证指数日线落盘（数据底座，不推送）")
-    ap.add_argument("--pull", action="store_true", help="强制走 tushare 增量合并（默认 tdx 优先）")
+    ap.add_argument(
+        "--pull", action="store_true", help="强制走 tushare 增量合并（默认 tdx 优先）"
+    )
     ap.add_argument("--show", action="store_true", help="仅读回打印行数与最新日期")
     a = ap.parse_args()
     if a.show:

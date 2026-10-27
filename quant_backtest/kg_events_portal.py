@@ -18,6 +18,7 @@
 Neo4j 未启动时立即返回错误 JSON 而非等 75s。影子/原文文件按 mtime
 失效的进程内缓存（门户为 ThreadingHTTPServer，读写均持锁）。
 """
+
 import json
 import os
 import re
@@ -45,6 +46,7 @@ def _client():
     with _lock:
         if _cli is None:
             from kg_client import KgClient
+
             _cli = KgClient(retry=1, retry_wait=1)
         return _cli
 
@@ -94,8 +96,10 @@ def _doc_level(did):
 def _fmeta(fp):
     try:
         st = os.stat(fp)
-        return {"mtime": datetime.fromtimestamp(
-            st.st_mtime).strftime("%Y-%m-%d %H:%M:%S"), "count": _count_jsonl(fp)}
+        return {
+            "mtime": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+            "count": _count_jsonl(fp),
+        }
     except OSError:
         return {"mtime": None, "count": 0}
 
@@ -125,28 +129,43 @@ def _fm(v):
 
 # ── /kg/events/situ：态势感知 ──────────────────────────────
 def situ():
-    out = {"ok": True, "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           "neo4j_up": False, "doc_edges": 0, "latest_event_ts": None,
-           "sec_involved": 0, "inv_markets": {}, "rels": {}, "dirs": {},
-           "cadence_min": INGEST_CADENCE_MIN}
+    out = {
+        "ok": True,
+        "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "neo4j_up": False,
+        "doc_edges": 0,
+        "latest_event_ts": None,
+        "sec_involved": 0,
+        "inv_markets": {},
+        "rels": {},
+        "dirs": {},
+        "cadence_min": INGEST_CADENCE_MIN,
+    }
     try:
-        r = _q("MATCH ()-[r:DOC_EVENT]->() "
-               "RETURN count(r) AS n, max(r.ts_last) AS latest")[0]
+        r = _q(
+            "MATCH ()-[r:DOC_EVENT]->() RETURN count(r) AS n, max(r.ts_last) AS latest"
+        )[0]
         out.update(neo4j_up=True, doc_edges=r["n"], latest_event_ts=r["latest"])
         for row in _q(
-                "MATCH (a:Security)-[:DOC_EVENT]->(b:Security) "
-                "UNWIND [a, b] AS s RETURN count(DISTINCT s) AS n"):
+            "MATCH (a:Security)-[:DOC_EVENT]->(b:Security) "
+            "UNWIND [a, b] AS s RETURN count(DISTINCT s) AS n"
+        ):
             out["sec_involved"] = row["n"]
         for row in _q(
-                "MATCH (a:Security)-[:DOC_EVENT]->(b:Security) "
-                "UNWIND [a, b] AS s RETURN coalesce(s.market,'未分类') AS m, "
-                "count(DISTINCT s) AS n ORDER BY n DESC"):
+            "MATCH (a:Security)-[:DOC_EVENT]->(b:Security) "
+            "UNWIND [a, b] AS s RETURN coalesce(s.market,'未分类') AS m, "
+            "count(DISTINCT s) AS n ORDER BY n DESC"
+        ):
             out["inv_markets"][row["m"]] = row["n"]
-        for row in _q("MATCH ()-[r:DOC_EVENT]->() "
-                      "RETURN r.rel AS k, count(*) AS n ORDER BY n DESC"):
+        for row in _q(
+            "MATCH ()-[r:DOC_EVENT]->() "
+            "RETURN r.rel AS k, count(*) AS n ORDER BY n DESC"
+        ):
             out["rels"][row["k"]] = row["n"]
-        for row in _q("MATCH ()-[r:DOC_EVENT]->() "
-                      "RETURN r.dir AS k, count(*) AS n ORDER BY n DESC"):
+        for row in _q(
+            "MATCH ()-[r:DOC_EVENT]->() "
+            "RETURN r.dir AS k, count(*) AS n ORDER BY n DESC"
+        ):
             out["dirs"][row["k"]] = row["n"]
     except Exception as ex:
         out["ok"] = False
@@ -174,16 +193,21 @@ _GRAPH_CY = (
     "       b.name AS bn, b.ts_code AS bc, b.market AS bm, "
     "       r.rel AS rel, r.dir AS dir, r.n AS n, r.date AS date, "
     "       r.amount AS amount, r.src_doc AS src_doc, r.ts_last AS ts_last "
-    "ORDER BY r.ts_last DESC LIMIT $lim")
+    "ORDER BY r.ts_last DESC LIMIT $lim"
+)
 
 
 def _edges_rows(qp, lim=300):
-    return _q(_GRAPH_CY, m=_fm(qp.get("market") if qp else None),
-              q=_fx(qp.get("q") if qp else None),
-              dir=_fx(qp.get("dir") if qp else None),
-              rel=_fx(qp.get("rel") if qp else None),
-              d0=_fx(qp.get("d0") if qp else None),
-              d1=_fx(qp.get("d1") if qp else None), lim=lim)
+    return _q(
+        _GRAPH_CY,
+        m=_fm(qp.get("market") if qp else None),
+        q=_fx(qp.get("q") if qp else None),
+        dir=_fx(qp.get("dir") if qp else None),
+        rel=_fx(qp.get("rel") if qp else None),
+        d0=_fx(qp.get("d0") if qp else None),
+        d1=_fx(qp.get("d1") if qp else None),
+        lim=lim,
+    )
 
 
 def graph(qp=None):
@@ -194,50 +218,79 @@ def graph(qp=None):
     nodes, seen = {}, {}
     edges = []
     for r in rows:
-        for nm, code, mk in ((r["an"], r["ac"], r["am"]),
-                             (r["bn"], r["bc"], r["bm"])):
+        for nm, code, mk in ((r["an"], r["ac"], r["am"]), (r["bn"], r["bc"], r["bm"])):
             if code and code not in seen:
                 seen[code] = True
-                nodes[code] = {"id": code, "data": {
-                    "name": nm, "code": code,
-                    "market": mk or "未分类", "deg": 0}}
+                nodes[code] = {
+                    "id": code,
+                    "data": {
+                        "name": nm,
+                        "code": code,
+                        "market": mk or "未分类",
+                        "deg": 0,
+                    },
+                }
         eid = "%s>>%s:%s|%s" % (r["ac"], r["bc"], r["rel"], r["dir"])
-        edges.append({"id": eid, "source": r["ac"], "target": r["bc"],
-                      "data": {"rel": r["rel"], "dir": r["dir"],
-                               "n": r["n"] or 1, "date": r["date"] or "",
-                               "amount": r["amount"] or "",
-                               "src_doc": r["src_doc"] or "",
-                               "ts_last": str(r["ts_last"] or "")}})
+        edges.append(
+            {
+                "id": eid,
+                "source": r["ac"],
+                "target": r["bc"],
+                "data": {
+                    "rel": r["rel"],
+                    "dir": r["dir"],
+                    "n": r["n"] or 1,
+                    "date": r["date"] or "",
+                    "amount": r["amount"] or "",
+                    "src_doc": r["src_doc"] or "",
+                    "ts_last": str(r["ts_last"] or ""),
+                },
+            }
+        )
         nodes[r["ac"]]["data"]["deg"] += 1
         if r["bc"] in nodes:
             nodes[r["bc"]]["data"]["deg"] += 1
-    return {"ok": True, "nodes": list(nodes.values()), "edges": edges,
-            "total": len(rows)}
+    return {
+        "ok": True,
+        "nodes": list(nodes.values()),
+        "edges": edges,
+        "total": len(rows),
+    }
 
 
 # ── /kg/events/list：事件行（点公司下钻 / 列表区）──────────
 def list_rows(qp=None):
     qp = qp or {}
     c = _fx(qp.get("c"))
-    cy = ("MATCH (a:Security)-[r:DOC_EVENT]->(b:Security) "
-          "WHERE ($c IS NULL OR a.ts_code=$c OR b.ts_code=$c) "
-          "  AND ($m IS NULL OR a.market=$m OR b.market=$m) "
-          "  AND ($q IS NULL OR a.name CONTAINS $q OR b.name CONTAINS $q "
-          "       OR a.ts_code CONTAINS $q OR b.ts_code CONTAINS $q) "
-          "  AND ($dir IS NULL OR r.dir=$dir) "
-          "  AND ($rel IS NULL OR r.rel=$rel) "
-          "  AND ($d0 IS NULL OR r.date>=$d0) "
-          "  AND ($d1 IS NULL OR r.date<=$d1) "
-          "RETURN a.name AS an, a.ts_code AS ac, a.market AS am, "
-          "       b.name AS bn, b.ts_code AS bc, b.market AS bm, "
-          "       r.rel AS rel, r.dir AS dir, r.n AS n, r.date AS date, "
-          "       r.amount AS amount, r.src_doc AS src_doc, "
-          "       r.ts_last AS ts_last "
-          "ORDER BY r.ts_last DESC LIMIT $lim")
+    cy = (
+        "MATCH (a:Security)-[r:DOC_EVENT]->(b:Security) "
+        "WHERE ($c IS NULL OR a.ts_code=$c OR b.ts_code=$c) "
+        "  AND ($m IS NULL OR a.market=$m OR b.market=$m) "
+        "  AND ($q IS NULL OR a.name CONTAINS $q OR b.name CONTAINS $q "
+        "       OR a.ts_code CONTAINS $q OR b.ts_code CONTAINS $q) "
+        "  AND ($dir IS NULL OR r.dir=$dir) "
+        "  AND ($rel IS NULL OR r.rel=$rel) "
+        "  AND ($d0 IS NULL OR r.date>=$d0) "
+        "  AND ($d1 IS NULL OR r.date<=$d1) "
+        "RETURN a.name AS an, a.ts_code AS ac, a.market AS am, "
+        "       b.name AS bn, b.ts_code AS bc, b.market AS bm, "
+        "       r.rel AS rel, r.dir AS dir, r.n AS n, r.date AS date, "
+        "       r.amount AS amount, r.src_doc AS src_doc, "
+        "       r.ts_last AS ts_last "
+        "ORDER BY r.ts_last DESC LIMIT $lim"
+    )
     try:
-        rows = _q(cy, c=c, m=_fm(qp.get("market")), q=_fx(qp.get("q")),
-                  dir=_fx(qp.get("dir")), rel=_fx(qp.get("rel")),
-                  d0=_fx(qp.get("d0")), d1=_fx(qp.get("d1")), lim=500)
+        rows = _q(
+            cy,
+            c=c,
+            m=_fm(qp.get("market")),
+            q=_fx(qp.get("q")),
+            dir=_fx(qp.get("dir")),
+            rel=_fx(qp.get("rel")),
+            d0=_fx(qp.get("d0")),
+            d1=_fx(qp.get("d1")),
+            lim=500,
+        )
     except Exception as ex:
         return {"ok": False, "error": str(ex)[:200]}
     return {"ok": True, "rows": rows, "total": len(rows)}
@@ -254,35 +307,48 @@ def doc(arg):
     t = texts.get(did) or texts.get(lvl)
     struct = _load_map(STRUCT_FP, _struct_cache)
     s = struct.get(did)
-    if s is None:                      # 条级 miss → 文档级前缀兜底
+    if s is None:  # 条级 miss → 文档级前缀兜底
         for k, v in struct.items():
             if k and lvl and k.startswith(lvl):
                 s = v
                 break
-    out = {"ok": bool(t or s), "doc_id": did, "doc_level": lvl,
-           "found_text": bool(t), "found_struct": bool(s)}
+    out = {
+        "ok": bool(t or s),
+        "doc_id": did,
+        "doc_level": lvl,
+        "found_text": bool(t),
+        "found_struct": bool(s),
+    }
     if t:
-        out.update(text=(t.get("text") or "")[:20000],
-                   text_chars=t.get("text_chars") or 0,
-                   name=t.get("name", ""), kind=t.get("kind", ""),
-                   src=t.get("src", ""), ts=t.get("ts", ""))
+        out.update(
+            text=(t.get("text") or "")[:20000],
+            text_chars=t.get("text_chars") or 0,
+            name=t.get("name", ""),
+            kind=t.get("kind", ""),
+            src=t.get("src", ""),
+            ts=t.get("ts", ""),
+        )
     if s:
+
         def _kn(x):
-            if isinstance(x, dict):     # {"value": "8票同意", "context": "…"}
+            if isinstance(x, dict):  # {"value": "8票同意", "context": "…"}
                 v = str(x.get("value") or x.get("v") or "")
                 c = str(x.get("context") or x.get("k") or "")
                 return ("%s：%s" % (c, v)) if c and v else (v or c)
             return str(x)
+
         out["struct"] = {
             "doc_type": s.get("doc_type", ""),
             "title_guess": s.get("title_guess", ""),
             "direction": s.get("direction", ""),
             "direction_why": s.get("direction_why", ""),
-            "key_numbers": [k for k in (_kn(x) for x in
-                                       s.get("key_numbers", [])[:12]) if k],
+            "key_numbers": [
+                k for k in (_kn(x) for x in s.get("key_numbers", [])[:12]) if k
+            ],
             "tags": s.get("tags", [])[:12],
             "companies": s.get("companies", [])[:8],
-            "events": s.get("events", [])[:10]}
+            "events": s.get("events", [])[:10],
+        }
     if not out["ok"]:
         out["error"] = "doc_id 未命中 doc_texts/structure_shadow"
     return out
@@ -293,20 +359,30 @@ def search(qp=None):
     q = _fx((qp or {}).get("q"))
     if not q:
         return {"ok": True, "hits": []}
-    cy = ("MATCH (s:Security) WHERE s.name CONTAINS $q OR s.ts_code "
-          "CONTAINS $q OR s.symbol CONTAINS $q OR any(x IN coalesce"
-          "(s.aliases,[]) WHERE x CONTAINS $q) "
-          "OPTIONAL MATCH (s)-[r:DOC_EVENT]-() "
-          "RETURN s.name AS name, s.ts_code AS code, s.market AS market, "
-          "count(r) AS n_events ORDER BY n_events DESC, name LIMIT 15")
+    cy = (
+        "MATCH (s:Security) WHERE s.name CONTAINS $q OR s.ts_code "
+        "CONTAINS $q OR s.symbol CONTAINS $q OR any(x IN coalesce"
+        "(s.aliases,[]) WHERE x CONTAINS $q) "
+        "OPTIONAL MATCH (s)-[r:DOC_EVENT]-() "
+        "RETURN s.name AS name, s.ts_code AS code, s.market AS market, "
+        "count(r) AS n_events ORDER BY n_events DESC, name LIMIT 15"
+    )
     try:
         rows = _q(cy, q=q)
     except Exception as ex:
         return {"ok": False, "error": str(ex)[:200]}
-    return {"ok": True, "hits": [
-        {"name": r["name"], "code": r["code"],
-         "market": r["market"] or "未分类", "n_events": r["n_events"]}
-        for r in rows]}
+    return {
+        "ok": True,
+        "hits": [
+            {
+                "name": r["name"],
+                "code": r["code"],
+                "market": r["market"] or "未分类",
+                "n_events": r["n_events"],
+            }
+            for r in rows
+        ],
+    }
 
 
 # ── 统一分发 ────────────────────────────────────────────────

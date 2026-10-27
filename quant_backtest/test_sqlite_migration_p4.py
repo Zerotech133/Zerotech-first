@@ -23,6 +23,7 @@
       →SKIP（注意 Skipped 继承 BaseException，except Exception 接不住）、
       FileNotFoundError→SKIP（JSON 已归档 data/archive/*.gz）。
 """
+
 import json
 import os
 import random
@@ -45,9 +46,11 @@ def _load_json_cache():
         return json.load(f)
 
 
-_SKIP_DIVERGED = ("迁移验收一次性用例：JSON 快照与 SQLite 活库随池窗口各自"
-                  "演进、集合双向分叉（快照 4370 codes vs 活库 4413 rows），"
-                  "全等前提已失效（2026-10-05 查证：missing 300 中 297 在市）")
+_SKIP_DIVERGED = (
+    "迁移验收一次性用例：JSON 快照与 SQLite 活库随池窗口各自"
+    "演进、集合双向分叉（快照 4370 codes vs 活库 4413 rows），"
+    "全等前提已失效（2026-10-05 查证：missing 300 中 297 在市）"
+)
 
 
 def test_row_count():
@@ -65,9 +68,11 @@ def test_meta_st():
         db_st = db.nd_fc_get_st(conn)
     finally:
         conn.close()
-    ok = (json_st == db_st and db_st is not None)
-    print("  JSON st: %s, SQLite st: %s, match: %s" %
-          (json_st, db_st, "YES" if ok else "NO"))
+    ok = json_st == db_st and db_st is not None
+    print(
+        "  JSON st: %s, SQLite st: %s, match: %s"
+        % (json_st, db_st, "YES" if ok else "NO")
+    )
     assert ok, "meta.st 不一致"
 
 
@@ -77,8 +82,9 @@ def test_field_spot_check():
 
 
 def _plus_days(d_int, n):
-    return int((datetime.strptime(str(d_int), "%Y%m%d")
-                + timedelta(days=n)).strftime("%Y%m%d"))
+    return int(
+        (datetime.strptime(str(d_int), "%Y%m%d") + timedelta(days=n)).strftime("%Y%m%d")
+    )
 
 
 def test_fc_at_consistency():
@@ -100,8 +106,7 @@ def test_fc_at_consistency():
             fields = jrec.get("fields") or []
             rows = jrec.get("rows") or []
             i = {f: k for k, f in enumerate(fields)}
-            dk = next((k for k in ("announce_date", "ann_date") if k in i),
-                      None)
+            dk = next((k for k in ("announce_date", "ann_date") if k in i), None)
             valid = []
             for r in rows:
                 if not dk:
@@ -128,8 +133,9 @@ def test_fc_at_consistency():
                     print("  DIFF %s @%d: json=%s db=%s" % (c, ai, jout, sout))
                     ok = False
         # 额外：空 rows 的 code 两路径都应返回 None
-        empty_codes = [k for k in cache if k != "_meta"
-                       and not (cache[k].get("rows"))][:3]
+        empty_codes = [k for k in cache if k != "_meta" and not (cache[k].get("rows"))][
+            :3
+        ]
         for c in empty_codes:
             jout = ndb._fc_at(cache[c], 20260101)
             sout = ndb._fc_at(db.nd_fc_query(conn, c) or {}, 20260101)
@@ -156,19 +162,22 @@ def test_upsert_idempotent():
     try:
         before = db.nd_fc_count(conn)
         sample = conn.execute(
-            "SELECT code, rows_json, fields_json FROM nine_dim_fc "
-            "LIMIT 1").fetchone()
+            "SELECT code, rows_json, fields_json FROM nine_dim_fc LIMIT 1"
+        ).fetchone()
         if sample is None:
             print("  表为空，跳过")
             return
-        db.nd_fc_upsert(conn, sample["code"],
-                        json.loads(sample["rows_json"]),
-                        json.loads(sample["fields_json"]))
+        db.nd_fc_upsert(
+            conn,
+            sample["code"],
+            json.loads(sample["rows_json"]),
+            json.loads(sample["fields_json"]),
+        )
         conn.commit()
         after = db.nd_fc_count(conn)
     finally:
         conn.close()
-    ok = (before == after)
+    ok = before == after
     print("  before=%d, after=%d" % (before, after))
     print("  结果: %s" % ("PASS" if ok else "FAIL"))
     assert ok, "重复 upsert 不应增长行数"
@@ -185,6 +194,7 @@ def main():
             return False
         except pytest.skip.Exception:  # Skipped 继承 BaseException 非 Exception
             return None
+
     results = [
         ("行数对比", _run(test_row_count)),
         ("meta.st 一致", _run(test_meta_st)),

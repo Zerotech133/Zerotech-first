@@ -22,6 +22,7 @@
   python nl_query.py "1卖趋势背驰的左尾统计" --json
   python nl_query.py "预警池最新10条信号" --force
 """
+
 import argparse
 import hashlib
 import json
@@ -36,24 +37,27 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # quant_backtest 产线无此模块 → ImportError 回落 HERE/data（两侧行为均不变）
 try:
     import kg_paths  # noqa: E402  单一数据库指针
+
     _data_root = kg_paths.get_data_root()
 except ImportError:
     _data_root = os.path.join(HERE, "data")
 sys.path.insert(0, HERE)
 
 CACHE_DIR = os.path.join(_data_root, "nlquery")
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434/api/chat")   # 2026-10-07 env 化；注意值需含 /api/chat 路径
-MODEL = "qwen3.5:9b"   # 2026-10-07 修正：qwen3:8b-8k 已不在本机 Ollama（已升级 qwen3.5 系）致 /api/chat 404；9b 含 tools 能力，与 kg_* 系列同源实测可用
-TIMEOUT = 180          # 单请求秒数（含上一轮工具执行后的下一轮生成）
-MAX_ROUNDS = 3         # 带 tools 的 FC 轮数上限
-TOOL_MSG_MAX = 1200    # 回喂模型的单工具结果截断字符数（8k 上下文保护）
+OLLAMA_URL = os.environ.get(
+    "OLLAMA_URL", "http://127.0.0.1:11434/api/chat"
+)  # 2026-10-07 env 化；注意值需含 /api/chat 路径
+MODEL = "qwen3.5:9b"  # 2026-10-07 修正：qwen3:8b-8k 已不在本机 Ollama（已升级 qwen3.5 系）致 /api/chat 404；9b 含 tools 能力，与 kg_* 系列同源实测可用
+TIMEOUT = 180  # 单请求秒数（含上一轮工具执行后的下一轮生成）
+MAX_ROUNDS = 3  # 带 tools 的 FC 轮数上限
+TOOL_MSG_MAX = 1200  # 回喂模型的单工具结果截断字符数（8k 上下文保护）
 
 INT_ARGS = {"days", "limit", "min_n", "k", "n", "topn"}
 BOOL_ARGS = {"tbe"}
 SIG_ENUM = {"1买", "1卖", "2买", "2卖", "3买", "3卖"}
-TBE_WORDS = ("趋✓", "趋势背驰", "tbe")   # 问句含这些才允许 tbe 参数通过
+TBE_WORDS = ("趋✓", "趋势背驰", "tbe")  # 问句含这些才允许 tbe 参数通过
 
-HINTS = {   # schema 参数描述覆盖（放参数旁边比 system prompt 更被 8b 看见）
+HINTS = {  # schema 参数描述覆盖（放参数旁边比 system prompt 更被 8b 看见）
     "tbe": "布尔；仅当用户明确说趋势背驰/趋✓才传；省略=不过滤（更全）",
     "sig_type": "信号类型(1买/1卖/2买/2卖/3买/3卖)；不确定先调 pool_rows 确认",
     "code": "6位股票代码即可，系统自动补交易所后缀",
@@ -87,17 +91,33 @@ def _today8():
 # ── 工具 schema（agent_tools 注册表 → OpenAI tools 格式） ────
 def _schema():
     from agent_tools import TOOLS
+
     ts = []
     for name, (_fn, desc, args) in TOOLS.items():
         props = {}
         for k, hint in (args or {}).items():
-            t = ("integer" if k in INT_ARGS
-                 else "boolean" if k in BOOL_ARGS else "string")
+            t = (
+                "integer"
+                if k in INT_ARGS
+                else "boolean"
+                if k in BOOL_ARGS
+                else "string"
+            )
             props[k] = {"type": t, "description": HINTS.get(k, hint)}
-        ts.append({"type": "function", "function": {
-            "name": name, "description": desc,
-            "parameters": {"type": "object", "properties": props,
-                           "required": []}}})
+        ts.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": desc,
+                    "parameters": {
+                        "type": "object",
+                        "properties": props,
+                        "required": [],
+                    },
+                },
+            }
+        )
     return ts
 
 
@@ -105,6 +125,7 @@ def _coerce(name, args, q=""):
     """系统层参数纠偏：白名单键过滤 + 类型强转 + 枚举校验 + tbe 意图守卫。
     未知工具返回 None。"""
     from agent_tools import TOOLS
+
     reg = TOOLS.get(name)
     if not reg:
         return None
@@ -113,9 +134,9 @@ def _coerce(name, args, q=""):
     out = {}
     for k, v in (args or {}).items():
         if k not in ok_keys:
-            continue                       # 注册表未声明 → 丢弃（防 TypeError）
+            continue  # 注册表未声明 → 丢弃（防 TypeError）
         if k == "tbe" and not tbe_ok:
-            continue                       # 问句未提趋✓ → 强制丢弃（防漏数据）
+            continue  # 问句未提趋✓ → 强制丢弃（防漏数据）
         try:
             if k in INT_ARGS:
                 out[k] = int(v)
@@ -129,7 +150,7 @@ def _coerce(name, args, q=""):
                 # 其它取值丢弃
             else:
                 if k == "sig_type" and str(v) not in SIG_ENUM:
-                    continue               # 非法枚举丢弃
+                    continue  # 非法枚举丢弃
                 out[k] = str(v)
         except (TypeError, ValueError):
             continue
@@ -139,9 +160,14 @@ def _coerce(name, args, q=""):
 # ── LLM（本地 Ollama，think=false 规避思考预算吞噬） ─────────
 def _llm(messages, tools=None):
     import requests
-    body = {"model": MODEL, "stream": False, "think": False,
-            "messages": messages,
-            "options": {"temperature": 0.0, "num_predict": 800}}
+
+    body = {
+        "model": MODEL,
+        "stream": False,
+        "think": False,
+        "messages": messages,
+        "options": {"temperature": 0.0, "num_predict": 800},
+    }
     if tools:
         body["tools"] = tools
     r = requests.post(OLLAMA_URL, json=body, timeout=TIMEOUT)
@@ -158,9 +184,9 @@ def _run(q):
     """FC 循环：≤3 轮带工具；轮尽仍要工具则无工具强汇总一次。
     返回 (answer|None, calls[{tool,args,res}])。"""
     from agent_tools import call as T
+
     tools = _schema()
-    messages = [{"role": "system", "content": SYSTEM},
-                {"role": "user", "content": q}]
+    messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": q}]
     calls = []
     for _ in range(MAX_ROUNDS):
         m = _llm(messages, tools)
@@ -185,8 +211,12 @@ def _run(q):
                 c = c[:TOOL_MSG_MAX] + "…[截断]"
             calls[-1]["res"] = c[:600]
             messages.append({"role": "tool", "content": c, "tool_name": name})
-    messages.append({"role": "user", "content":
-                     "基于以上工具结果直接给出最终中文答案，不要再调用工具。"})
+    messages.append(
+        {
+            "role": "user",
+            "content": "基于以上工具结果直接给出最终中文答案，不要再调用工具。",
+        }
+    )
     m = _llm(messages)
     return (m.get("content") or None), calls
 
@@ -197,10 +227,14 @@ def _fallback(calls):
         return "（未能选出工具·查询失败）"
     lines = ["（最终答案生成失败·降级拼接版）"]
     for c in calls:
-        lines.append("· %s %s → %s" % (c.get("tool"),
-                                       json.dumps(c.get("args"),
-                                                  ensure_ascii=False),
-                                       (c.get("res") or "")[:300]))
+        lines.append(
+            "· %s %s → %s"
+            % (
+                c.get("tool"),
+                json.dumps(c.get("args"), ensure_ascii=False),
+                (c.get("res") or "")[:300],
+            )
+        )
     return "\n".join(lines)
 
 
@@ -248,8 +282,14 @@ def answer(q, force=False):
     degraded = not ans
     if degraded:
         ans = _fallback(calls)
-    out = {"ok": True, "q": q, "answer": ans, "calls": calls,
-           "degraded": degraded, "elapsed_s": round(time.time() - t0, 1)}
+    out = {
+        "ok": True,
+        "q": q,
+        "answer": ans,
+        "calls": calls,
+        "degraded": degraded,
+        "elapsed_s": round(time.time() - t0, 1),
+    }
     _atomic_json(cp, out)
     _cleanup()
     return out
@@ -257,7 +297,8 @@ def answer(q, force=False):
 
 def main():
     ap = argparse.ArgumentParser(
-        description="P-C 自然语言查数（本地 LLM + 只读工具白名单）")
+        description="P-C 自然语言查数（本地 LLM + 只读工具白名单）"
+    )
     ap.add_argument("query", nargs="+", help="中文问句")
     ap.add_argument("--json", action="store_true", help="机器可读输出")
     ap.add_argument("--force", action="store_true", help="跳过当日缓存强制现算")

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Canonical, timezone-safe bar DTOs for historical replay."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +10,11 @@ from typing import Iterable, Optional, Tuple
 
 def ensure_utc(value: datetime, field_name: str = "datetime") -> datetime:
     """Require an aware datetime and normalize it to UTC."""
-    if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+    if (
+        not isinstance(value, datetime)
+        or value.tzinfo is None
+        or value.utcoffset() is None
+    ):
         raise ValueError(f"{field_name} must be timezone-aware")
     return value.astimezone(timezone.utc)
 
@@ -48,19 +53,33 @@ class Bar:
         if self.close_at is not None:
             object.__setattr__(self, "close_at", ensure_utc(self.close_at, "close_at"))
         if self.available_at is not None:
-            object.__setattr__(self, "available_at", ensure_utc(self.available_at, "available_at"))
+            object.__setattr__(
+                self, "available_at", ensure_utc(self.available_at, "available_at")
+            )
         if not self.symbol or not self.market or not self.timeframe:
             raise ValueError("symbol, market, and timeframe are required")
-        if not isinstance(self.session_date, date) or isinstance(self.session_date, datetime):
+        if not isinstance(self.session_date, date) or isinstance(
+            self.session_date, datetime
+        ):
             raise ValueError("session_date must be a date")
         if self.v is not None and self.v < 0:
             raise ValueError("volume cannot be negative")
         if self.amount is not None and self.amount < 0:
             raise ValueError("amount cannot be negative")
-        object.__setattr__(self, "source_trace", tuple(str(item) for item in self.source_trace))
+        object.__setattr__(
+            self, "source_trace", tuple(str(item) for item in self.source_trace)
+        )
         if (self.calendar_ref is None) != (self.calendar_version is None):
-            raise ValueError("calendar_ref and calendar_version must be provided together")
-        for name in ("calendar_ref", "calendar_version", "exchange", "asset_class", "quote_currency"):
+            raise ValueError(
+                "calendar_ref and calendar_version must be provided together"
+            )
+        for name in (
+            "calendar_ref",
+            "calendar_version",
+            "exchange",
+            "asset_class",
+            "quote_currency",
+        ):
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise ValueError(f"{name} must be a non-empty string")
@@ -106,9 +125,15 @@ class BarQuery:
                     continue
                 if bar.close_at is not None and bar.close_at > self.as_of:
                     continue
-            if self.closed_only and (not bar.closed or
-                                     (bar.close_at is not None and
-                                      (self.as_of is None or bar.close_at > self.as_of))):
+            if self.closed_only and (
+                not bar.closed
+                or (
+                    bar.close_at is not None
+                    and (self.as_of is None or bar.close_at > self.as_of)
+                )
+            ):
                 continue
             selected.append(bar)
-        return tuple(sorted(selected, key=lambda item: (item.dt, item.symbol, item.timeframe)))
+        return tuple(
+            sorted(selected, key=lambda item: (item.dt, item.symbol, item.timeframe))
+        )

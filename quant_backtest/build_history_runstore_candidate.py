@@ -3,6 +3,7 @@
 
 本入口只登记来源回执和候选计划，不登记 commit_intent，不触碰生产仓。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -37,16 +38,15 @@ def _iso(value: str | None) -> str:
 def _audit_reason(checks: dict[str, dict]) -> str:
     """根据候选门禁实际结果生成可操作的审计原因。"""
     if all(item["gate_pass"] for item in checks.values()):
-        pending = sorted({
-            field
-            for item in checks.values()
-            for field in item.get("required_pending_fields", [])
-        })
-        pending_text = "、".join(pending) if pending else "无"
-        return (
-            "候选来源门禁已通过；生产门槛待补：%s；未允许生产发布"
-            % pending_text
+        pending = sorted(
+            {
+                field
+                for item in checks.values()
+                for field in item.get("required_pending_fields", [])
+            }
         )
+        pending_text = "、".join(pending) if pending else "无"
+        return "候选来源门禁已通过；生产门槛待补：%s；未允许生产发布" % pending_text
 
     failures = []
     for table, item in checks.items():
@@ -71,7 +71,10 @@ def _audit_reason(checks: dict[str, dict]) -> str:
 
 
 def _registry_audit(registry: dict, registry_path: Path = REGISTRY) -> dict:
-    rows = {row.get("asset_id"): row for row in registry.get("source_registry", {}).get("physical_tables", [])}
+    rows = {
+        row.get("asset_id"): row
+        for row in registry.get("source_registry", {}).get("physical_tables", [])
+    }
     checks = {}
     for table in ("ts_daily_basic", "ts_margin_detail"):
         row = rows.get(table) or {}
@@ -109,10 +112,18 @@ def _registry_audit(registry: dict, registry_path: Path = REGISTRY) -> dict:
 
 def _complete_receipts(receipt_root: Path = STAGE) -> list[tuple[str, str, Path, dict]]:
     entries = []
-    for table, api in (("ts_daily_basic", "daily_basic"), ("ts_margin_detail", "margin_detail")):
-        for receipt_path in sorted(receipt_root.glob(f"annual_*/*{table}_*.receipt.json")):
+    for table, api in (
+        ("ts_daily_basic", "daily_basic"),
+        ("ts_margin_detail", "margin_detail"),
+    ):
+        for receipt_path in sorted(
+            receipt_root.glob(f"annual_*/*{table}_*.receipt.json")
+        ):
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-            if receipt.get("complete") is not True or receipt.get("status") != "candidate_ready":
+            if (
+                receipt.get("complete") is not True
+                or receipt.get("status") != "candidate_ready"
+            ):
                 continue
             date = str(receipt.get("request_params", {}).get("trade_date", ""))
             if len(date) != 8:
@@ -121,8 +132,12 @@ def _complete_receipts(receipt_root: Path = STAGE) -> list[tuple[str, str, Path,
     return entries
 
 
-def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE,
-          receipt_root: Path | None = None) -> dict:
+def build(
+    *,
+    registry_path: Path = REGISTRY,
+    stage_root: Path = STAGE,
+    receipt_root: Path | None = None,
+) -> dict:
     """生成候选运行；来源 registry/回执可来自主工作区，产物只写入 staging_root。"""
     registry_path = Path(registry_path).resolve()
     stage_root = Path(stage_root).resolve()
@@ -134,19 +149,27 @@ def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE,
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     audit = _registry_audit(registry, registry_path)
     stage_root.mkdir(parents=True, exist_ok=True)
-    audit_path.write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
+    audit_path.write_text(
+        json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     entries = _complete_receipts(receipt_root)
     units = []
     for table, _api, receipt_path, receipt in entries:
         date = str(receipt["request_params"]["trade_date"])
-        units.append({
-            "unit_id": f"{table}:{date}",
-            "table": table,
-            "target": str(receipt_path.with_name(receipt_path.name.replace(".receipt.json", ".parquet")).resolve()),
-            "kind": "date",
-            "scope": {"trade_date": date},
-            "selection_reason": "dependency",
-        })
+        units.append(
+            {
+                "unit_id": f"{table}:{date}",
+                "table": table,
+                "target": str(
+                    receipt_path.with_name(
+                        receipt_path.name.replace(".receipt.json", ".parquet")
+                    ).resolve()
+                ),
+                "kind": "date",
+                "scope": {"trade_date": date},
+                "selection_reason": "dependency",
+            }
+        )
     units.sort(key=lambda item: item["unit_id"])
     registry_digest = metadata_digest(registry)
     plan = {
@@ -162,17 +185,35 @@ def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE,
         "targets": [item["target"] for item in units],
         "units": units,
         "operations": [
-            {"table": "ts_daily_basic", "api_name": "daily_basic", "operation": "date_append_staging"},
-            {"table": "ts_margin_detail", "api_name": "margin_detail", "operation": "date_append_staging"},
+            {
+                "table": "ts_daily_basic",
+                "api_name": "daily_basic",
+                "operation": "date_append_staging",
+            },
+            {
+                "table": "ts_margin_detail",
+                "api_name": "margin_detail",
+                "operation": "date_append_staging",
+            },
         ],
         "unsupported": [
-            {"table": "tdx_sector_daily", "missing_keys": 51, "status": "blocked_source_qualification"},
-            {"table": "tdx_sector_min", "missing_keys": 14, "status": "blocked_source_qualification"},
+            {
+                "table": "tdx_sector_daily",
+                "missing_keys": 51,
+                "status": "blocked_source_qualification",
+            },
+            {
+                "table": "tdx_sector_min",
+                "missing_keys": 14,
+                "status": "blocked_source_qualification",
+            },
         ],
         "baseline_digest": _sha(receipt_root / "reconciliation" / "report.json"),
     }
     plan["plan_digest"] = plan_digest(plan)
-    plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    plan_path.write_text(
+        json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     now = datetime.now(timezone.utc).timestamp()
     store = RunStore(runs_path)
@@ -182,23 +223,33 @@ def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE,
         date = str(receipt["request_params"]["trade_date"])
         unit_id = f"{table}:{date}"
         captured = _iso(receipt.get("captured_at_utc"))
-        store.event(run_id, "source_receipt", {
-            "receipt_id": f"staging:{table}:{date}:{receipt.get('body_sha256', '')[:16]}",
-            "run_id": run_id,
-            "unit_id": unit_id,
-            "table": table,
-            "provider": "tushare.pro",
-            "channel": "tushare",
-            "source_id": "https://api.tushare.pro",
-            "api_name": api,
-            "request_scope": {"trade_date": date},
-            "requested_at": captured,
-            "received_at": captured,
-            "source_time": {"value": captured, "timezone": "UTC", "kind": "response_time", "evidence": str(receipt_path.resolve())},
-            "result_rows": int(receipt.get("row_count", 0)),
-            "result_kind": "authorized_data",
-            "error_kind": None,
-        }, now=now)
+        store.event(
+            run_id,
+            "source_receipt",
+            {
+                "receipt_id": f"staging:{table}:{date}:{receipt.get('body_sha256', '')[:16]}",
+                "run_id": run_id,
+                "unit_id": unit_id,
+                "table": table,
+                "provider": "tushare.pro",
+                "channel": "tushare",
+                "source_id": "https://api.tushare.pro",
+                "api_name": api,
+                "request_scope": {"trade_date": date},
+                "requested_at": captured,
+                "received_at": captured,
+                "source_time": {
+                    "value": captured,
+                    "timezone": "UTC",
+                    "kind": "response_time",
+                    "evidence": str(receipt_path.resolve()),
+                },
+                "result_rows": int(receipt.get("row_count", 0)),
+                "result_kind": "authorized_data",
+                "error_kind": None,
+            },
+            now=now,
+        )
     result = {
         "run_id": run_id,
         "plan_digest": plan["plan_digest"],
@@ -212,18 +263,40 @@ def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE,
         "post_publish_fingerprint": "not_started",
         "readback_reconciliation": "not_started",
     }
-    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    result_path.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return result
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="生成历史回补 staging 候选运行")
-    parser.add_argument("--registry", type=Path, default=REGISTRY,
-                        help="只读来源 registry 路径，默认使用当前工作树候选 registry")
-    parser.add_argument("--stage-root", type=Path, default=STAGE,
-                        help="候选产物和 staging 回执目录，默认当前工作树 staging")
-    parser.add_argument("--receipt-root", type=Path, default=None,
-                        help="只读回执与对账基线目录，默认与 stage-root 相同")
+    parser.add_argument(
+        "--registry",
+        type=Path,
+        default=REGISTRY,
+        help="只读来源 registry 路径，默认使用当前工作树候选 registry",
+    )
+    parser.add_argument(
+        "--stage-root",
+        type=Path,
+        default=STAGE,
+        help="候选产物和 staging 回执目录，默认当前工作树 staging",
+    )
+    parser.add_argument(
+        "--receipt-root",
+        type=Path,
+        default=None,
+        help="只读回执与对账基线目录，默认与 stage-root 相同",
+    )
     args = parser.parse_args()
-    print(json.dumps(build(registry_path=args.registry, stage_root=args.stage_root,
-                           receipt_root=args.receipt_root), ensure_ascii=False))
+    print(
+        json.dumps(
+            build(
+                registry_path=args.registry,
+                stage_root=args.stage_root,
+                receipt_root=args.receipt_root,
+            ),
+            ensure_ascii=False,
+        )
+    )

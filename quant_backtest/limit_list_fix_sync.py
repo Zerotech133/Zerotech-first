@@ -26,6 +26,7 @@ df.to_parquet(f, index=False)
 
 纪律：只写 `limit_list_d/d_*.parquet` 与 `top_list/d_*.parquet`；不碰其他表；不删历史文件。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -57,7 +58,10 @@ def token() -> str:
     t = os.environ.get("TUSHARE_TOKEN", "")
     if t:
         return t
-    for c in (r"C:\项目\老田的AI助手\config\tushare_token.txt", r"C:\Temp\tushare_token.txt"):
+    for c in (
+        r"C:\项目\老田的AI助手\config\tushare_token.txt",
+        r"C:\Temp\tushare_token.txt",
+    ):
         if os.path.exists(c):
             return open(c, encoding="utf-8").read().strip()
     raise SystemExit("★找不到 TUSHARE_TOKEN")
@@ -70,14 +74,17 @@ def ts_call(api, params):
     last = None
     for a in range(RETRY):
         try:
-            r = SESS.post(API, json={"api_name": api, "token": TOK,
-                                     "params": params, "fields": ""}, timeout=60)
+            r = SESS.post(
+                API,
+                json={"api_name": api, "token": TOK, "params": params, "fields": ""},
+                timeout=60,
+            )
             j = r.json()
             if j.get("code") == 0:
                 d = j.get("data") or {}
                 return d.get("fields") or [], d.get("items") or []
             last = "code=%s msg=%s" % (j.get("code"), str(j.get("msg"))[:70])
-        except Exception as e:      # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             last = "%s %s" % (type(e).__name__, str(e)[:70])
         time.sleep(1.5 * (a + 1))
     raise RuntimeError("%s %s -> %s" % (api, params, last))
@@ -93,7 +100,7 @@ def pull_paged(api, params, cap):
             fields = f
         if not items:
             break
-        if items == last_items:            # 服务端 offset 无效 → 停（anns_d 死循环教训）
+        if items == last_items:  # 服务端 offset 无效 → 停（anns_d 死循环教训）
             break
         last_items = items
         rows.extend(items)
@@ -116,6 +123,7 @@ def trading_days(start: str, end: str) -> list[str]:
 def scan(tbl: str) -> tuple[dict, list]:
     """返回 (日期→行数, 空壳日期列表)。"""
     import pyarrow.parquet as pq
+
     d = os.path.join(OUT, tbl)
     sizes, shells = {}, []
     for f in sorted(glob.glob(os.path.join(d, "d_*.parquet"))):
@@ -150,9 +158,17 @@ def main() -> int:
         sizes, shells = scan(tbl)
         valid = {k: v for k, v in sizes.items() if v > 0}
         lmax = max(valid) if valid else ""
-        print("\n[%s] 文件=%d 有效=%d 空壳=%d 有效区间 %s..%s"
-              % (tbl, len(sizes), len(valid), len(shells), lmax or "-",
-                 max(sizes) if sizes else "-"))
+        print(
+            "\n[%s] 文件=%d 有效=%d 空壳=%d 有效区间 %s..%s"
+            % (
+                tbl,
+                len(sizes),
+                len(valid),
+                len(shells),
+                lmax or "-",
+                max(sizes) if sizes else "-",
+            )
+        )
         if shells:
             print("  空壳日期(%d): %s" % (len(shells), ", ".join(shells[:20])))
 
@@ -168,12 +184,15 @@ def main() -> int:
         shells_trade = [s for s in shells if s in open_set] if open_set else shells
         offdays = [s for s in shells if open_set and s not in open_set]
         if offdays:
-            print("  ⚠ 跳过休市日空壳 %d 天（is_open=0，源端会回退返回前一交易日数据）: %s"
-                  % (len(offdays), ", ".join(offdays)))
-        todo = sorted(set(shells_trade) |
-                      {d for d in days if d not in valid})
-        print("  待处理 %d 天（%s..%s）" % (len(todo), todo[0] if todo else "-",
-                                       todo[-1] if todo else "-"))
+            print(
+                "  ⚠ 跳过休市日空壳 %d 天（is_open=0，源端会回退返回前一交易日数据）: %s"
+                % (len(offdays), ", ".join(offdays))
+            )
+        todo = sorted(set(shells_trade) | {d for d in days if d not in valid})
+        print(
+            "  待处理 %d 天（%s..%s）"
+            % (len(todo), todo[0] if todo else "-", todo[-1] if todo else "-")
+        )
         if args.dryrun or not todo:
             continue
 
@@ -181,7 +200,7 @@ def main() -> int:
         for day in todo:
             try:
                 df = pull_paged(api, {"trade_date": day}, cap)
-            except Exception as e:      # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 print("  %s FAIL %s" % (day, str(e)[:70]))
                 continue
             if df.empty:
@@ -200,7 +219,9 @@ def main() -> int:
                 print("  %s 新增 rows=%d" % (day, len(df)))
             time.sleep(SLEEP)
 
-        print("  → 修复 %d 天 / 新增 %d 天 / 跳过(源端空) %d 天" % (fixed, new, skipped))
+        print(
+            "  → 修复 %d 天 / 新增 %d 天 / 跳过(源端空) %d 天" % (fixed, new, skipped)
+        )
         total_fixed += fixed
         total_new += new
 

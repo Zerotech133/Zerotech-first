@@ -27,6 +27,7 @@
   python event_graph.py related "储能 中标 订单" [k]  # 语义检索相关事件
   python event_graph.py summary 688411.SH [days]   # 飞书摘要文本
 """
+
 import argparse
 import hashlib
 import json
@@ -43,7 +44,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import datamart as dm                          # noqa: E402
+import datamart as dm  # noqa: E402
 # semantica_mvp 惰性导入（embed/topk 仅在建图/语义检索时需要）——
 # 这样轻量调用方（门户 events_for_stock、飞书 summary_for_stock）
 # 导入本模块不会触发 fastembed ONNX 加载。
@@ -53,9 +54,9 @@ EVENT_F = os.path.join(SNAP, "events.jsonl")
 VEC_F = os.path.join(SNAP, "events_vec.npy")
 STATE_F = os.path.join(SNAP, "event_state.json")
 
-KEEP_DAYS = 180          # 事件滚动保留窗口（超出丢弃，含向量）
-NOTICE_DAYS = 30         # 首跑公告回看天数
-TEXT_MAX = 200           # 嵌入文本截断长度
+KEEP_DAYS = 180  # 事件滚动保留窗口（超出丢弃，含向量）
+NOTICE_DAYS = 30  # 首跑公告回看天数
+TEXT_MAX = 200  # 嵌入文本截断长度
 
 # ── 声明式规则表：公告标题 → 偏性（顺序敏感，先命中先赢；先空后多）──
 # 铁律：宁可 None（未判）不可错判；中性类（质押/理财/常规披露）不设规则。
@@ -66,11 +67,22 @@ RULES = [
     # 删「摘牌」（债券兑付摘牌误中；真退市有"退市/终止上市"）——铁律：宁 None 不错判
     ("业绩预亏", "bear", ["预亏", "预减", "业绩下修"]),
     ("终止重组", "bear", ["终止重大资产", "终止收购", "终止筹划", "终止发行股份"]),
-    ("监管处罚", "bear", ["立案", "处罚", "警示函", "监管函",
-                          "纪律处分", "违规", "行政监管措施", "公开谴责"]),
+    (
+        "监管处罚",
+        "bear",
+        [
+            "立案",
+            "处罚",
+            "警示函",
+            "监管函",
+            "纪律处分",
+            "违规",
+            "行政监管措施",
+            "公开谴责",
+        ],
+    ),
     ("诉讼冻结", "bear", ["诉讼", "仲裁", "冻结", "查封"]),
-    ("退市风险", "bear", ["退市", "终止上市", "终止挂牌",
-                          "破产清算"]),
+    ("退市风险", "bear", ["退市", "终止上市", "终止挂牌", "破产清算"]),
     ("股东减持", "bear", ["减持"]),
     # ── bull ──
     ("业绩预增", "bull", ["预增", "预盈", "扭亏"]),
@@ -122,8 +134,11 @@ def _norm_ts(v):
     m = re.match(r"^(\d{2})-(\d{2})", s)
     if m:
         return "%s-%s-%s %s" % (
-            datetime.now().year, m.group(1), m.group(2),
-            s[6:11] if len(s) >= 11 else "00:00")
+            datetime.now().year,
+            m.group(1),
+            m.group(2),
+            s[6:11] if len(s) >= 11 else "00:00",
+        )
     return None
 
 
@@ -215,15 +230,15 @@ def _seed_newsdb(wm_rowid):
 
     out, wm = [], int(wm_rowid)
     while True:
-        env, status = bus.bus_query({"domain": "jev", "since_id": str(wm),
-                                     "limit": "100"})
+        env, status = bus.bus_query(
+            {"domain": "jev", "since_id": str(wm), "limit": "100"}
+        )
         if status != 200 or not env.get("ok"):
-            raise RuntimeError("intel bus jev 水位读失败: %r"
-                               % (env.get("errors"),))
+            raise RuntimeError("intel bus jev 水位读失败: %r" % (env.get("errors"),))
         for it in env["items"]:
             j = it.get("jev")
-            if not isinstance(j, dict):     # 坏行（bus 已计 bad_rows），
-                continue                    # 水位由 max_rowid 兜住不滞留
+            if not isinstance(j, dict):  # 坏行（bus 已计 bad_rows），
+                continue  # 水位由 max_rowid 兜住不滞留
             title = (it.get("title") or "").strip()
             if not title:
                 continue
@@ -231,25 +246,35 @@ def _seed_newsdb(wm_rowid):
             if not ts:
                 continue
             # bus stocks=原始解析 list（str 化），此处沿用原 ts_code 过滤
-            stocks = [c for c in (it.get("stocks") or [])
-                      if isinstance(c, str)
-                      and re.match(r"^\d{6}\.(SH|SZ|BJ)$", c)]
+            stocks = [
+                c
+                for c in (it.get("stocks") or [])
+                if isinstance(c, str) and re.match(r"^\d{6}\.(SH|SZ|BJ)$", c)
+            ]
             if not stocks:
                 # announcement 源：标题形如 '[301716 鸿富诚] 鸿富诚:...'
                 m = re.match(r"\[(\d{6})\s", title)
                 c6 = _code6(m.group(1)) if m else None
                 if c6:
                     stocks = [c6]
-            out.append(dict(
-                id=str(it["id"]), kind="news", ts=ts, text=title[:TEXT_MAX],
-                source=str(it.get("source") or ""), stocks=stocks,
-                bias=j.get("bias"), conf=j.get("conf"),
-                reason=j.get("reason") or "", tag="jev",
-            ))
+            out.append(
+                dict(
+                    id=str(it["id"]),
+                    kind="news",
+                    ts=ts,
+                    text=title[:TEXT_MAX],
+                    source=str(it.get("source") or ""),
+                    stocks=stocks,
+                    bias=j.get("bias"),
+                    conf=j.get("conf"),
+                    reason=j.get("reason") or "",
+                    tag="jev",
+                )
+            )
         errs = env.get("errors") or {}
         if errs.get("max_rowid") is not None:
             wm = max(wm, int(errs["max_rowid"]))
-        if (env.get("count") or 0) < 100:   # 末页（count=本页扫过行数）
+        if (env.get("count") or 0) < 100:  # 末页（count=本页扫过行数）
             break
     return out, wm
 
@@ -263,8 +288,9 @@ def _seed_notice(wm_date, notice_days):
     """
     start = None
     if wm_date:
-        start = (datetime.strptime(wm_date, "%Y%m%d")
-                 - timedelta(days=1)).strftime("%Y%m%d")
+        start = (datetime.strptime(wm_date, "%Y%m%d") - timedelta(days=1)).strftime(
+            "%Y%m%d"
+        )
     else:
         start = (datetime.now() - timedelta(days=notice_days)).strftime("%Y%m%d")
     df = dm.read("notice", start=start, limit=100000)
@@ -282,15 +308,25 @@ def _seed_notice(wm_date, notice_days):
         if max_date is None or nd > max_date:
             max_date = nd
         an = _an_id(r.get("url"), title)
-        eid = "ev:nt:%s:%s" % (an or hashlib.md5(
-            (nd + title).encode("utf-8")).hexdigest()[:12], code)
+        eid = "ev:nt:%s:%s" % (
+            an or hashlib.md5((nd + title).encode("utf-8")).hexdigest()[:12],
+            code,
+        )
         bias, tag = _rule_judge(title)
-        rows.append(dict(
-            id=eid, kind="notice", ts="%s-%s-%s 00:00" % (
-                nd[:4], nd[4:6], nd[6:8]), text=title[:TEXT_MAX],
-            source="anns_d", stocks=[code], bias=bias,
-            conf=0.7 if bias else None,
-            reason=("规则命中:" + tag) if tag else "", tag=tag))
+        rows.append(
+            dict(
+                id=eid,
+                kind="notice",
+                ts="%s-%s-%s 00:00" % (nd[:4], nd[4:6], nd[6:8]),
+                text=title[:TEXT_MAX],
+                source="anns_d",
+                stocks=[code],
+                bias=bias,
+                conf=0.7 if bias else None,
+                reason=("规则命中:" + tag) if tag else "",
+                tag=tag,
+            )
+        )
     return rows, max_date
 
 
@@ -318,7 +354,8 @@ def _seed_reports():
 
 # ── build（水位增量 + 向量矩阵重建） ─────────────────────────
 def build(notice_days=NOTICE_DAYS, dryrun=False, rebuild=False):
-    from semantica_mvp import embed        # 惰性：建图才加载 fastembed
+    from semantica_mvp import embed  # 惰性：建图才加载 fastembed
+
     st = _load_state()
     seen = {e["id"] for e in _load_events()}
     if rebuild:
@@ -326,10 +363,11 @@ def build(notice_days=NOTICE_DAYS, dryrun=False, rebuild=False):
         # 但向量缺失时，正常 build 会误判「无新增」直接推水位，向量永缺）
         seen = set()
         print("=== event_graph REBUILD 全量重建 ===", flush=True)
-    print("=== event_graph build 水位=%s 现有=%d ==="
-          % ({k: v for k, v in st.items() if k != "updated_at"},
-             len(_load_events())),
-          flush=True)
+    print(
+        "=== event_graph build 水位=%s 现有=%d ==="
+        % ({k: v for k, v in st.items() if k != "updated_at"}, len(_load_events())),
+        flush=True,
+    )
 
     # 1) news.db 已判定行（jev 偏性优先）
     new1, wm_rowid = _seed_newsdb(int(st.get("wm_news_rowid") or 0))
@@ -347,8 +385,10 @@ def build(notice_days=NOTICE_DAYS, dryrun=False, rebuild=False):
         kept2, wm_notice = [], st.get("wm_notice")
     else:
         new2, wm_notice = _seed_notice(st.get("wm_notice"), notice_days)
-        an_seen = {e["id"].split(":")[2] if e["id"].startswith("ev:nt:")
-                   else e["id"] for e in kept1}
+        an_seen = {
+            e["id"].split(":")[2] if e["id"].startswith("ev:nt:") else e["id"]
+            for e in kept1
+        }
         # jev 行的 AN 号（ann:AN... 形态）
         for e in kept1:
             m = re.match(r"ann:(AN\d+)", e["id"])
@@ -400,9 +440,8 @@ def build(notice_days=NOTICE_DAYS, dryrun=False, rebuild=False):
     mats = []
     B = 1024
     for i in range(0, len(texts), B):
-        mats.append(embed(texts[i:i + B]))
-        print("    embed %d/%d" % (min(i + B, len(texts)), len(texts)),
-              flush=True)
+        mats.append(embed(texts[i : i + B]))
+        print("    embed %d/%d" % (min(i + B, len(texts)), len(texts)), flush=True)
     mat = np.vstack(mats) if len(mats) > 1 else mats[0]
     _atomic_npy(VEC_F, mat)
     _atomic_jsonl(EVENT_F, all_rows)
@@ -412,8 +451,10 @@ def build(notice_days=NOTICE_DAYS, dryrun=False, rebuild=False):
     if wm_notice:
         st["wm_notice"] = wm_notice
     _save_state(st)
-    print("BUILD 完成: 共 %d 事件 向量%s %.1fs"
-          % (len(all_rows), mat.shape, time.time() - t0))
+    print(
+        "BUILD 完成: 共 %d 事件 向量%s %.1fs"
+        % (len(all_rows), mat.shape, time.time() - t0)
+    )
     _print_bias_overview(all_rows)
 
 
@@ -429,7 +470,7 @@ def _print_bias_overview(rows):
 
 
 # ── 查询层 ───────────────────────────────────────────────────
-_VEC = None   # (events, mat) 进程缓存
+_VEC = None  # (events, mat) 进程缓存
 
 
 def _vec_cache():
@@ -457,8 +498,11 @@ def events_for_stock(code, days=30, half_life=14):
     """
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     today = datetime.now().date()
-    evs = [e for e in _load_events()
-           if code in (e.get("stocks") or []) and (e.get("ts") or "")[:10] >= cutoff]
+    evs = [
+        e
+        for e in _load_events()
+        if code in (e.get("stocks") or []) and (e.get("ts") or "")[:10] >= cutoff
+    ]
     evs.sort(key=lambda e: e.get("ts") or "", reverse=True)
     bull = [e for e in evs if e.get("bias") == "bull"]
     bear = [e for e in evs if e.get("bias") == "bear"]
@@ -466,21 +510,29 @@ def events_for_stock(code, days=30, half_life=14):
     def _decay(e):
         ts = (e.get("ts") or "")[:10]
         try:
-            d = (datetime.strptime(ts, "%Y-%m-%d") if "-" in ts
-                 else datetime.strptime(ts, "%Y%m%d")).date()
+            d = (
+                datetime.strptime(ts, "%Y-%m-%d")
+                if "-" in ts
+                else datetime.strptime(ts, "%Y%m%d")
+            ).date()
             age = max((today - d).days, 0)
         except Exception:
             age = days
         return 0.5 ** (age / half_life)
 
     def _net(evs_):
-        return sum((e.get("conf") or 0.5) * (1 if e.get("bias") == "bull" else -1)
-                   * _decay(e) for e in evs_)
+        return sum(
+            (e.get("conf") or 0.5) * (1 if e.get("bias") == "bull" else -1) * _decay(e)
+            for e in evs_
+        )
+
     stat = {
-        "bull": len(bull), "bear": len(bear),
+        "bull": len(bull),
+        "bear": len(bear),
         "neutral": sum(1 for e in evs if e.get("bias") == "neutral"),
         "unknown": sum(1 for e in evs if not e.get("bias")),
-        "net": round(_net(bull) + _net(bear), 2), "n": len(evs),
+        "net": round(_net(bull) + _net(bear), 2),
+        "n": len(evs),
     }
     return {"code": code, "n": len(evs), "bias_stat": stat, "events": evs}
 
@@ -488,11 +540,11 @@ def events_for_stock(code, days=30, half_life=14):
 def related_events(query, k=10, kind=None):
     """语义检索相关事件（全库向量余弦 top-k；kind 先过滤后检索）。"""
     from semantica_mvp import embed, topk  # 惰性：仅语义检索加载 fastembed
+
     evs, mat = _vec_cache()
     if not evs or mat is None:
         return []
-    idx = [i for i, e in enumerate(evs)
-           if kind is None or e.get("kind") == kind]
+    idx = [i for i, e in enumerate(evs) if kind is None or e.get("kind") == kind]
     if not idx:
         return []
     qv = embed([query[:TEXT_MAX]])[0]
@@ -500,10 +552,17 @@ def related_events(query, k=10, kind=None):
     out = []
     for j, s in hits:
         e = evs[idx[int(j)]]
-        out.append({"score": round(s, 3), "ts": e.get("ts"),
-                    "text": e.get("text"), "bias": e.get("bias"),
-                    "conf": e.get("conf"), "stocks": e.get("stocks"),
-                    "kind": e.get("kind")})
+        out.append(
+            {
+                "score": round(s, 3),
+                "ts": e.get("ts"),
+                "text": e.get("text"),
+                "bias": e.get("bias"),
+                "conf": e.get("conf"),
+                "stocks": e.get("stocks"),
+                "kind": e.get("kind"),
+            }
+        )
     return out
 
 
@@ -514,14 +573,22 @@ def recent_strong(n=8, days=7):
     Returns: [{ts,text,bias,conf,tag,stocks,reason}]
     """
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-    evs = [e for e in _load_events()
-           if e.get("bias") in ("bull", "bear")
-           and (e.get("ts") or "")[:10] >= cutoff]
-    bull = sorted([e for e in evs if e["bias"] == "bull"],
-                  key=lambda e: e.get("conf") or 0, reverse=True)[:n // 2]
-    bear = sorted([e for e in evs if e["bias"] == "bear"],
-                  key=lambda e: e.get("conf") or 0, reverse=True)[:n - n // 2]
-    out = (bull + bear)
+    evs = [
+        e
+        for e in _load_events()
+        if e.get("bias") in ("bull", "bear") and (e.get("ts") or "")[:10] >= cutoff
+    ]
+    bull = sorted(
+        [e for e in evs if e["bias"] == "bull"],
+        key=lambda e: e.get("conf") or 0,
+        reverse=True,
+    )[: n // 2]
+    bear = sorted(
+        [e for e in evs if e["bias"] == "bear"],
+        key=lambda e: e.get("conf") or 0,
+        reverse=True,
+    )[: n - n // 2]
+    out = bull + bear
     out.sort(key=lambda e: e.get("ts") or "", reverse=True)
     return out[:n]
 
@@ -533,13 +600,19 @@ def summary_for_stock(code, days=7, topn=4):
         return "🗞 事件图谱 %s: 近 %d 天无事件" % (code, days)
     s = r["bias_stat"]
     head = "🗞 事件图谱 %s: 近%d天 %d条 多空%s净%+.2f(时衰加权)" % (
-        code, days, s["n"], "牛%d/熊%d" % (s["bull"], s["bear"]), s["net"])
+        code,
+        days,
+        s["n"],
+        "牛%d/熊%d" % (s["bull"], s["bear"]),
+        s["net"],
+    )
     lines = []
     for e in r["events"][:topn]:
         # K-STOCK-359 A股口径红涨绿跌（对齐 premarket 判例）
         mark = {"bull": "🔴", "bear": "🟢"}.get(e.get("bias"), "⚪")
-        lines.append("  %s %s %s" % (mark, (e.get("ts") or "")[:10],
-                                     (e.get("text") or "")[:40]))
+        lines.append(
+            "  %s %s %s" % (mark, (e.get("ts") or "")[:10], (e.get("text") or "")[:40])
+        )
     return head + "\n" + "\n".join(lines)
 
 
@@ -550,8 +623,11 @@ def main():
     b = sub.add_parser("build")
     b.add_argument("--notice-days", type=int, default=NOTICE_DAYS)
     b.add_argument("--dryrun", action="store_true")
-    b.add_argument("--rebuild", action="store_true",
-                   help="全量重建：忽略 id 幂等，重嵌全部事件（孤儿救治）")
+    b.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="全量重建：忽略 id 幂等，重嵌全部事件（孤儿救治）",
+    )
     s = sub.add_parser("stock")
     s.add_argument("code")
     s.add_argument("days", nargs="?", type=int, default=30)
@@ -565,30 +641,50 @@ def main():
     args = ap.parse_args()
 
     if args.cmd == "build" or args.cmd is None:
-        build(getattr(args, "notice_days", NOTICE_DAYS),
-              getattr(args, "dryrun", False),
-              getattr(args, "rebuild", False))
+        build(
+            getattr(args, "notice_days", NOTICE_DAYS),
+            getattr(args, "dryrun", False),
+            getattr(args, "rebuild", False),
+        )
     elif args.cmd == "stock":
         r_ = events_for_stock(args.code, args.days)
         s = r_["bias_stat"]
         print("=== %s 近 %d 天事件 %d 条 ===" % (args.code, args.days, r_["n"]))
-        print("  bull=%d bear=%d neutral=%d unknown=%d net=%+.2f"
-              % (s["bull"], s["bear"], s["neutral"], s["unknown"], s["net"]))
-        for e in r_["events"][:args.topn]:
+        print(
+            "  bull=%d bear=%d neutral=%d unknown=%d net=%+.2f"
+            % (s["bull"], s["bear"], s["neutral"], s["unknown"], s["net"])
+        )
+        for e in r_["events"][: args.topn]:
             # K-STOCK-359 A股口径红涨绿跌（对齐 premarket 判例）
             mark = {"bull": "🔴", "bear": "🟢"}.get(e.get("bias"), "⚪")
-            print("  %s [%s] %s %s (conf=%s %s)" % (
-                mark, (e.get("ts") or "")[:10], (e.get("text") or "")[:46],
-                e.get("tag"), e.get("conf"), (e.get("reason") or "")[:24]))
+            print(
+                "  %s [%s] %s %s (conf=%s %s)"
+                % (
+                    mark,
+                    (e.get("ts") or "")[:10],
+                    (e.get("text") or "")[:46],
+                    e.get("tag"),
+                    e.get("conf"),
+                    (e.get("reason") or "")[:24],
+                )
+            )
     elif args.cmd == "related":
         for h in related_events(args.query, args.k):
-            print("  [%.3f] %s %s bias=%s %s" % (
-                h["score"], h["ts"], (h["text"] or "")[:44],
-                h["bias"], ",".join(h["stocks"] or [])[:20]))
+            print(
+                "  [%.3f] %s %s bias=%s %s"
+                % (
+                    h["score"],
+                    h["ts"],
+                    (h["text"] or "")[:44],
+                    h["bias"],
+                    ",".join(h["stocks"] or [])[:20],
+                )
+            )
     elif args.cmd == "summary":
         print(summary_for_stock(args.code, args.days))
 
 
 if __name__ == "__main__":
     from linreg import run_with_lineage
+
     run_with_lineage("kg_daily_sync", "evt_build", main)

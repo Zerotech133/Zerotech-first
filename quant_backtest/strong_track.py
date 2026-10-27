@@ -22,6 +22,7 @@ weak（弱于板块案例跟踪）的镜像产线：weak 跟踪立案个股何�
   python strong_track.py 301216            # 单股评估（阶段1 CLI）
   python -m pytest test_strong_track_gold.py -q   # 金样本
 """
+
 import argparse
 import os
 import sys
@@ -31,7 +32,7 @@ sys.path.insert(0, HERE)
 
 from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一
 
-STRONG_EX_TH = 10     # 250 日超额达标阈值：≥ +10pp 显著跑赢板块
+STRONG_EX_TH = 10  # 250 日超额达标阈值：≥ +10pp 显著跑赢板块
 MIN_BLOCK_MEMBERS = 5  # 板块成员数门槛：≥5 只才参与（防小板块噪声）
 
 
@@ -63,8 +64,13 @@ def trend_bull(closes):
     return closes[-1] > ma20 > ma60
 
 
-def strong_verdict(ex250, n_members, stock_trend_bull,
-                   th_ex=STRONG_EX_TH, min_members=MIN_BLOCK_MEMBERS):
+def strong_verdict(
+    ex250,
+    n_members,
+    stock_trend_bull,
+    th_ex=STRONG_EX_TH,
+    min_members=MIN_BLOCK_MEMBERS,
+):
     """综合判定。返回 (is_strong, tag, reasons)。
 
     判定链：
@@ -76,12 +82,13 @@ def strong_verdict(ex250, n_members, stock_trend_bull,
     """
     reasons = []
     if not strong_ex(ex250, th_ex):
-        reasons.append("250日超额未达标（%s）"
-                       % ("不可算" if ex250 is None else "%+.1fpp < %+.0fpp" % (ex250, th_ex)))
+        reasons.append(
+            "250日超额未达标（%s）"
+            % ("不可算" if ex250 is None else "%+.1fpp < %+.0fpp" % (ex250, th_ex))
+        )
         return False, "不构成", reasons
     if not block_quorum(n_members, min_members):
-        reasons.append("板块成员 %s < %d，噪声板块不参与"
-                       % (n_members, min_members))
+        reasons.append("板块成员 %s < %d，噪声板块不参与" % (n_members, min_members))
         return False, "不构成", reasons
     reasons.append("250日超额 %+.1fpp ≥ %+.0fpp" % (ex250, th_ex))
     reasons.append("板块成员 %d ≥ %d" % (n_members, min_members))
@@ -95,14 +102,19 @@ def strong_verdict(ex250, n_members, stock_trend_bull,
 def main():
     ap = argparse.ArgumentParser(description="强于板块领涨识别（阶段1 单股评估）")
     ap.add_argument("code")
-    ap.add_argument("--th-ex", type=float, default=STRONG_EX_TH,
-                    help="超额达标阈值 pp（默认 %d）" % STRONG_EX_TH)
+    ap.add_argument(
+        "--th-ex",
+        type=float,
+        default=STRONG_EX_TH,
+        help="超额达标阈值 pp（默认 %d）" % STRONG_EX_TH,
+    )
     ap.add_argument("--min-members", type=int, default=MIN_BLOCK_MEMBERS)
     ap.add_argument("--no-refresh", action="store_true")
     a = ap.parse_args()
     code = _norm(a.code)
 
     import linkage
+
     blk = linkage.resolve_block(code)
     if not blk:
         print("板块解析失败")
@@ -110,20 +122,26 @@ def main():
     bc, bname = blk["code"], blk["name"]
 
     from chanlun_data import load_kline
+
     sk = load_kline(code, "1d", 500)
     sb = sk.get("bars") or []
     closes = [float(b.get("close", b.get("c"))) for b in sb]
 
     r = linkage.series(code, "1d", limit=250, block=bc)
-    ex = round(r["stock"][-1] - r["block"][-1], 1) if r.get("ok") and r.get("block") else None
+    ex = (
+        round(r["stock"][-1] - r["block"][-1], 1)
+        if r.get("ok") and r.get("block")
+        else None
+    )
     try:
         n_members = linkage.block_member_count(bc)
     except Exception:
         n_members = None
 
     bull = trend_bull(closes)
-    is_strong, tag, reasons = strong_verdict(ex, n_members, bull,
-                                             a.th_ex, a.min_members)
+    is_strong, tag, reasons = strong_verdict(
+        ex, n_members, bull, a.th_ex, a.min_members
+    )
     print("=== strong 单股评估：%s（板块 %s %s）===" % (code, bc, bname))
     for line in reasons:
         print("  · " + line)

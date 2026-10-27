@@ -22,6 +22,7 @@ row_count / captured_at_utc / production_write=false / status=candidate_ready）
 
 发布锁：与 staging_materialize_prod 相同协议（持有-释放，finally 兜底）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,7 +43,7 @@ def _now() -> str:
 
 def _map_path(raw: str) -> Path:
     if raw and raw.lower().startswith(_LEGACY_PREFIX.lower()):
-        return Path(_LOCAL_PREFIX + raw[len(_LEGACY_PREFIX):])
+        return Path(_LOCAL_PREFIX + raw[len(_LEGACY_PREFIX) :])
     return Path(raw)
 
 
@@ -57,6 +58,7 @@ def _sha256(path: Path) -> str:
 def _row_count(path: Path) -> int | None:
     try:
         import pandas as pd  # type: ignore
+
         return int(pd.read_parquet(path).shape[0])
     except Exception:
         return None
@@ -64,21 +66,31 @@ def _row_count(path: Path) -> int | None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="annual 批 full_history → 生产仓受控物化")
-    ap.add_argument("--staging", default=str(Path(__file__).resolve().parent
-                                              / "data" / "tushare_staging"))
-    ap.add_argument("--prod", default=str(Path(__file__).resolve().parent
-                                          / "data" / "tushare"))
-    ap.add_argument("--pattern", default="annual_*_batch_*",
-                    help="staging 内 receipt 目录 glob（tail_fill 单用 tail_fill/*）")
-    ap.add_argument("--report", default="",
-                    help="报告输出路径；空 = 默认时间戳文件名（防覆盖）")
+    ap.add_argument(
+        "--staging",
+        default=str(Path(__file__).resolve().parent / "data" / "tushare_staging"),
+    )
+    ap.add_argument(
+        "--prod", default=str(Path(__file__).resolve().parent / "data" / "tushare")
+    )
+    ap.add_argument(
+        "--pattern",
+        default="annual_*_batch_*",
+        help="staging 内 receipt 目录 glob（tail_fill 单用 tail_fill/*）",
+    )
+    ap.add_argument(
+        "--report", default="", help="报告输出路径；空 = 默认时间戳文件名（防覆盖）"
+    )
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--allow-overwrite", action="store_true",
-                    help="sha 不符时启用 quarantine 覆盖：生产原件移 "
-                         "quarantine_prod_overwrite/<table>/ 留证后写新件"
-                         "（默认关闭=conflict_preserved 保生产版；用于残缺/"
-                         "脏单元修复单，如 index_daily d_20230103 截断、"
-                         "margin_detail d_20260105 脏行）")
+    ap.add_argument(
+        "--allow-overwrite",
+        action="store_true",
+        help="sha 不符时启用 quarantine 覆盖：生产原件移 "
+        "quarantine_prod_overwrite/<table>/ 留证后写新件"
+        "（默认关闭=conflict_preserved 保生产版；用于残缺/"
+        "脏单元修复单，如 index_daily d_20230103 截断、"
+        "margin_detail d_20260105 脏行）",
+    )
     args = ap.parse_args()
 
     staging = Path(args.staging)
@@ -90,21 +102,33 @@ def main() -> int:
         return 2
     receipts = sorted(staging.glob(args.pattern + "/*.receipt.json"))
     if args.limit:
-        receipts = receipts[:args.limit]
+        receipts = receipts[: args.limit]
     if not receipts:
         print(f"[abort] pattern {args.pattern!r} 无 receipt")
         return 2
 
     with open(lock, "w", encoding="utf-8") as f:
-        json.dump({"holder": "staging_materialize_full_history",
-                   "acquired_at": _now(), "units": len(receipts),
-                   "allow_overwrite": bool(args.allow_overwrite),
-                   "approval": "用户 2026-10-17 批准（K-STOCK-211 full_history 单）"},
-                  f, ensure_ascii=False, indent=2)
+        json.dump(
+            {
+                "holder": "staging_materialize_full_history",
+                "acquired_at": _now(),
+                "units": len(receipts),
+                "allow_overwrite": bool(args.allow_overwrite),
+                "approval": "用户 2026-10-17 批准（K-STOCK-211 full_history 单）",
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
 
-    stats = {"ok": 0, "skipped": 0, "conflict_preserved": 0,
-             "overwrite_quarantined": 0,
-             "mismatch": 0, "missing": 0}
+    stats = {
+        "ok": 0,
+        "skipped": 0,
+        "conflict_preserved": 0,
+        "overwrite_quarantined": 0,
+        "mismatch": 0,
+        "missing": 0,
+    }
     rows_ok = 0
     rowcheck_enabled = False
     problems: list[dict] = []
@@ -117,8 +141,9 @@ def main() -> int:
             with open(rp, encoding="utf-8") as f:
                 e = json.load(f)
             t = e.get("table", "?")
-            d = (e.get("request_params") or {}).get("trade_date") or \
-                ((e.get("date_values") or [""])[0])
+            d = (e.get("request_params") or {}).get("trade_date") or (
+                (e.get("date_values") or [""])[0]
+            )
             src = _map_path(e.get("staged_path") or "")
             dir_name = t[3:] if t.startswith("ts_") else t
             dst = prod / dir_name / f"d_{d}.parquet"
@@ -134,9 +159,9 @@ def main() -> int:
                 got = _sha256(dst)
                 if got == want_sha:
                     stats["skipped"] += 1
-                    per_table.setdefault(dir_name,
-                                         {"ok": 0, "skip": 0,
-                                          "conflict": 0})["skip"] += 1
+                    per_table.setdefault(dir_name, {"ok": 0, "skip": 0, "conflict": 0})[
+                        "skip"
+                    ] += 1
                     continue
                 if args.allow_overwrite:
                     # quarantine 覆盖通道：生产原件隔离留证（不删除）后写新件
@@ -147,37 +172,50 @@ def main() -> int:
                     shutil.copyfile(src, dst)
                     got2 = _sha256(dst)
                     rc2 = _row_count(dst)
-                    if got2 != want_sha or (rc2 is not None
-                                            and rc2 != e.get("row_count")):
+                    if got2 != want_sha or (
+                        rc2 is not None and rc2 != e.get("row_count")
+                    ):
                         # 覆盖失败回滚：隔离件还原，勿留半态
                         shutil.move(str(qf), str(dst))
                         stats["mismatch"] += 1
-                        problems.append({**unit,
-                                         "kind": "overwrite_rollback",
-                                         "prod_sha256": got,
-                                         "new_sha256": want_sha})
+                        problems.append(
+                            {
+                                **unit,
+                                "kind": "overwrite_rollback",
+                                "prod_sha256": got,
+                                "new_sha256": want_sha,
+                            }
+                        )
                         continue
                     stats["overwrite_quarantined"] += 1
-                    overwrites.append({**unit, "kind": "overwrite_quarantined",
-                                       "prod_sha256": got,
-                                       "quarantined_to": str(qf),
-                                       "new_sha256": want_sha,
-                                       "new_captured_at":
-                                           e.get("captured_at_utc")})
-                    per_table.setdefault(dir_name,
-                                         {"ok": 0, "skip": 0,
-                                          "conflict": 0})["ok"] += 1
+                    overwrites.append(
+                        {
+                            **unit,
+                            "kind": "overwrite_quarantined",
+                            "prod_sha256": got,
+                            "quarantined_to": str(qf),
+                            "new_sha256": want_sha,
+                            "new_captured_at": e.get("captured_at_utc"),
+                        }
+                    )
+                    per_table.setdefault(dir_name, {"ok": 0, "skip": 0, "conflict": 0})[
+                        "ok"
+                    ] += 1
                     continue
                 # 默认策略：sha 不符 → 保生产版，留证（annual=早期 capture）
                 stats["conflict_preserved"] += 1
-                conflicts.append({**unit, "kind": "conflict_preserved",
-                                  "prod_sha256": got,
-                                  "annual_sha256": want_sha,
-                                  "annual_captured_at":
-                                      e.get("captured_at_utc")})
-                per_table.setdefault(dir_name,
-                                     {"ok": 0, "skip": 0,
-                                      "conflict": 0})["conflict"] += 1
+                conflicts.append(
+                    {
+                        **unit,
+                        "kind": "conflict_preserved",
+                        "prod_sha256": got,
+                        "annual_sha256": want_sha,
+                        "annual_captured_at": e.get("captured_at_utc"),
+                    }
+                )
+                per_table.setdefault(dir_name, {"ok": 0, "skip": 0, "conflict": 0})[
+                    "conflict"
+                ] += 1
                 continue
 
             dst.parent.mkdir(parents=True, exist_ok=True)
@@ -185,8 +223,14 @@ def main() -> int:
             got_sha = _sha256(dst)
             if got_sha != want_sha:
                 stats["mismatch"] += 1
-                problems.append({**unit, "kind": "sha256_mismatch",
-                                 "manifest": want_sha, "actual": got_sha})
+                problems.append(
+                    {
+                        **unit,
+                        "kind": "sha256_mismatch",
+                        "manifest": want_sha,
+                        "actual": got_sha,
+                    }
+                )
                 continue
             rc = _row_count(dst)
             if rc is not None:
@@ -194,20 +238,34 @@ def main() -> int:
                 want_rows = e.get("row_count")
                 if want_rows is not None and rc != want_rows:
                     stats["mismatch"] += 1
-                    problems.append({**unit, "kind": "row_count_mismatch",
-                                     "manifest": want_rows, "actual": rc})
+                    problems.append(
+                        {
+                            **unit,
+                            "kind": "row_count_mismatch",
+                            "manifest": want_rows,
+                            "actual": rc,
+                        }
+                    )
                     continue
             stats["ok"] += 1
             rows_ok += e.get("row_count") or 0
-            per_table.setdefault(dir_name,
-                                 {"ok": 0, "skip": 0, "conflict": 0})["ok"] += 1
+            per_table.setdefault(dir_name, {"ok": 0, "skip": 0, "conflict": 0})[
+                "ok"
+            ] += 1
     finally:
         ok = stats["mismatch"] == 0 and stats["missing"] == 0
         with open(lock, "w", encoding="utf-8") as f:
-            json.dump({"holder": "staging_materialize_full_history",
-                       "released_at": _now(),
-                       "result": "ok" if ok else "failed", "stats": stats},
-                      f, ensure_ascii=False, indent=2)
+            json.dump(
+                {
+                    "holder": "staging_materialize_full_history",
+                    "released_at": _now(),
+                    "result": "ok" if ok else "failed",
+                    "stats": stats,
+                },
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
 
     report = {
         "tool": "staging_materialize_full_history",
@@ -215,7 +273,7 @@ def main() -> int:
         "staging_root": str(staging),
         "production_root": str(prod),
         "approval": "用户逐单批准（K-STOCK-211；history_3y 73ee5ff / annual "
-                    "9b6aeb5 / tail_fill 第三单 ed1205c 第四单 feee32b）",
+        "9b6aeb5 / tail_fill 第三单 ed1205c 第四单 feee32b）",
         "pattern": args.pattern,
         "entries_total": len(receipts),
         "stats": stats,
@@ -226,41 +284,52 @@ def main() -> int:
         "overwrites_quarantined": overwrites,
         "problems": problems,
         "protocol": "只填空不覆盖：dst 缺失 → copy+sha256+行数双回读；"
-                    "sha 相符 → 幂等 skip；sha 不符 → 默认保生产版"
-                    "（conflict_preserved 留证）；--allow-overwrite 时走 "
-                    "quarantine 覆盖（生产原件移 quarantine_prod_overwrite/"
-                    " 留证后写新件，双回读失败自动回滚）。发布锁持有-释放。",
+        "sha 相符 → 幂等 skip；sha 不符 → 默认保生产版"
+        "（conflict_preserved 留证）；--allow-overwrite 时走 "
+        "quarantine 覆盖（生产原件移 quarantine_prod_overwrite/"
+        " 留证后写新件，双回读失败自动回滚）。发布锁持有-释放。",
         "allow_overwrite": bool(args.allow_overwrite),
     }
     stamp = _dt.datetime.now().strftime("%Y%m%dT%H%M%S")
-    rp_out = staging / f"materialize_full_history_report_{stamp}.json" \
-        if not args.report else Path(args.report)  # 默认带时间戳防覆盖（证据保全）
+    rp_out = (
+        staging / f"materialize_full_history_report_{stamp}.json"
+        if not args.report
+        else Path(args.report)
+    )  # 默认带时间戳防覆盖（证据保全）
     with open(rp_out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
     print(f"[fh] staging={staging}")
     print(f"[fh] production={prod}")
-    print(f"[fh] units: ok={stats['ok']} skipped={stats['skipped']} "
-          f"conflict_preserved={stats['conflict_preserved']} "
-          f"overwrite_quarantined={stats['overwrite_quarantined']} "
-          f"mismatch={stats['mismatch']} missing={stats['missing']} / "
-          f"total={len(receipts)}")
+    print(
+        f"[fh] units: ok={stats['ok']} skipped={stats['skipped']} "
+        f"conflict_preserved={stats['conflict_preserved']} "
+        f"overwrite_quarantined={stats['overwrite_quarantined']} "
+        f"mismatch={stats['mismatch']} missing={stats['missing']} / "
+        f"total={len(receipts)}"
+    )
     print(f"[fh] rows materialized (ok units): {rows_ok}")
     print(f"[fh] rowcheck: {'pandas ON' if rowcheck_enabled else 'pandas OFF'}")
     for tname, s in sorted(per_table.items()):
-        print(f"[fh]   {tname:<14} ok={s['ok']:<4} skip={s['skip']:<4} "
-              f"conflict={s['conflict']}")
+        print(
+            f"[fh]   {tname:<14} ok={s['ok']:<4} skip={s['skip']:<4} "
+            f"conflict={s['conflict']}"
+        )
     if conflicts:
         print(f"[fh] CONFLICTS preserved ({len(conflicts)}):")
         for c in conflicts:
-            print(f"    {c['table']} d_{c['date']}: prod {c['prod_sha256'][:12]}"
-                  f" vs annual {c['annual_sha256'][:12]}"
-                  f" (annual captured {c['annual_captured_at']})")
+            print(
+                f"    {c['table']} d_{c['date']}: prod {c['prod_sha256'][:12]}"
+                f" vs annual {c['annual_sha256'][:12]}"
+                f" (annual captured {c['annual_captured_at']})"
+            )
     if overwrites:
         print(f"[fh] OVERWRITES quarantined ({len(overwrites)}):")
         for o in overwrites:
-            print(f"    {o['table']} d_{o['date']}: prod {o['prod_sha256'][:12]}"
-                  f" -> quarantine, new {o['new_sha256'][:12]}")
+            print(
+                f"    {o['table']} d_{o['date']}: prod {o['prod_sha256'][:12]}"
+                f" -> quarantine, new {o['new_sha256'][:12]}"
+            )
     if problems:
         print(f"[fh] PROBLEMS ({len(problems)}):")
         for p in problems[:10]:

@@ -11,6 +11,7 @@
   python nd_lookup.py 301216            # 6 位码自动补后缀
   python nd_lookup.py 301216.SZ
 """
+
 import json
 import os
 import sys
@@ -28,10 +29,12 @@ from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一
 def _ind_of(code):
     try:
         import tdx_read as tdxr
+
         sb = tdxr.read_all("ts_stock_basic", codes=[code])
         if len(sb):
             return str(sb.iloc[0].get("industry") or ""), str(
-                sb.iloc[0].get("name") or "")
+                sb.iloc[0].get("name") or ""
+            )
     except Exception:
         pass
     return "", ""
@@ -51,29 +54,54 @@ def main():
         return 1
 
     print("=== 九维快照 meta ===")
-    print(json.dumps({k: snap.get(k) for k in (
-        "generated_at", "trade_date", "env", "funnel", "n_cand", "n_full",
-        "n_alert", "alert_th", "buy_th")}, ensure_ascii=False, indent=1))
+    print(
+        json.dumps(
+            {
+                k: snap.get(k)
+                for k in (
+                    "generated_at",
+                    "trade_date",
+                    "env",
+                    "funnel",
+                    "n_cand",
+                    "n_full",
+                    "n_alert",
+                    "alert_th",
+                    "buy_th",
+                )
+            },
+            ensure_ascii=False,
+            indent=1,
+        )
+    )
 
     rows = snap.get("rows") or []
-    hit = [r for r in rows if str(r.get("code", "")).startswith(
-        code.split(".")[0])]
+    hit = [r for r in rows if str(r.get("code", "")).startswith(code.split(".")[0])]
     print("\n=== %s 评分行 ===" % code)
     if hit:
         print(json.dumps(hit[0], ensure_ascii=False, indent=1, default=str))
     else:
         ind, name = _ind_of(code)
-        print("缺席：当日 %d 个入围候选中无此票（未过粗筛，粗筛层不落单票"
-              "明细——缺席本身=非强势主流票）" % len(rows))
+        print(
+            "缺席：当日 %d 个入围候选中无此票（未过粗筛，粗筛层不落单票"
+            "明细——缺席本身=非强势主流票）" % len(rows)
+        )
         if ind:
             same = [r for r in rows if r.get("industry") == ind]
             same.sort(key=lambda r: -(r.get("score") or -1))
-            print("同行业「%s」在榜 %d/%d 票（前 5）：" % (ind, len(same),
-                                                      len(rows)))
+            print("同行业「%s」在榜 %d/%d 票（前 5）：" % (ind, len(same), len(rows)))
             for r in same[:5]:
-                print("  %-10s %-8s score=%s band=%s rps50=%s r20=%s" % (
-                    r.get("code"), r.get("name"), r.get("score"),
-                    r.get("band"), r.get("rps50"), r.get("r20")))
+                print(
+                    "  %-10s %-8s score=%s band=%s rps50=%s r20=%s"
+                    % (
+                        r.get("code"),
+                        r.get("name"),
+                        r.get("score"),
+                        r.get("band"),
+                        r.get("rps50"),
+                        r.get("r20"),
+                    )
+                )
 
     print("\n=== 警报池历史（nine_dim_history.jsonl）===")
     n = 0
@@ -86,9 +114,17 @@ def main():
                     continue
                 if str(r.get("code", "")).startswith(code.split(".")[0]):
                     n += 1
-                    print("  %s %s score=%s band=%s pool=%s entry=%s" % (
-                        r.get("dt"), r.get("name"), r.get("score"),
-                        r.get("band"), r.get("pool_type"), r.get("entry_px")))
+                    print(
+                        "  %s %s score=%s band=%s pool=%s entry=%s"
+                        % (
+                            r.get("dt"),
+                            r.get("name"),
+                            r.get("score"),
+                            r.get("band"),
+                            r.get("pool_type"),
+                            r.get("entry_px"),
+                        )
+                    )
     if not n:
         print("  无记录（从未入警报池）")
     return 0

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """TDX 板块日线缺口的只读探针与 staging 适配层。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -12,33 +13,67 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 import pandas as pd
 
 
-REQUIRED_COLUMNS = {"code", "trade_date", "open", "high", "low", "close", "vol", "amount"}
+REQUIRED_COLUMNS = {
+    "code",
+    "trade_date",
+    "open",
+    "high",
+    "low",
+    "close",
+    "vol",
+    "amount",
+}
 
 
 def _payload_sha(payload: Any) -> str:
-    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    raw = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
 
 def _request_parameters(key: Mapping[str, Any]) -> dict[str, Any]:
     code, trade_date = str(key.get("code", "")), str(key.get("trade_date", ""))
-    return {"code": code, "start_date": trade_date, "end_date": trade_date, "limit": 2, "offset": 0}
+    return {
+        "code": code,
+        "start_date": trade_date,
+        "end_date": trade_date,
+        "limit": 2,
+        "offset": 0,
+    }
 
 
 def _valid_date(value: Any) -> bool:
     text = str(value)
     try:
-        return len(text) == 8 and text.isdigit() and datetime.strptime(text, "%Y%m%d").strftime("%Y%m%d") == text
+        return (
+            len(text) == 8
+            and text.isdigit()
+            and datetime.strptime(text, "%Y%m%d").strftime("%Y%m%d") == text
+        )
     except ValueError:
         return False
 
 
-def _result(status: str, key: Mapping[str, Any], *, reason: str | None = None,
-            response: Any = None, row: Mapping[str, Any] | None = None,
-            error: str | None = None) -> dict[str, Any]:
+def _result(
+    status: str,
+    key: Mapping[str, Any],
+    *,
+    reason: str | None = None,
+    response: Any = None,
+    row: Mapping[str, Any] | None = None,
+    error: str | None = None,
+) -> dict[str, Any]:
     result: dict[str, Any] = {
         "table": "tdx_sector_daily",
-        "key": {"code": str(key.get("code", "")), "trade_date": str(key.get("trade_date", ""))},
+        "key": {
+            "code": str(key.get("code", "")),
+            "trade_date": str(key.get("trade_date", "")),
+        },
         "status": status,
         "production_write": False,
         "request_parameters": _request_parameters(key),
@@ -59,40 +94,78 @@ def _result(status: str, key: Mapping[str, Any], *, reason: str | None = None,
     return result
 
 
-def validate_sector_daily_response(key: Mapping[str, Any], response: Mapping[str, Any]) -> dict[str, Any]:
+def validate_sector_daily_response(
+    key: Mapping[str, Any], response: Mapping[str, Any]
+) -> dict[str, Any]:
     """校验远端单键响应；返回 candidate_ready/source_empty/invalid_source。"""
     if not isinstance(response, Mapping):
-        return _result("invalid_source", key, reason="response_not_object", response=response)
+        return _result(
+            "invalid_source", key, reason="response_not_object", response=response
+        )
     rows = response.get("rows")
     columns = response.get("columns")
     total = response.get("total")
-    if not isinstance(rows, list) or not isinstance(columns, list) or len(columns) != len(set(columns)):
-        return _result("invalid_source", key, reason="response_contract_invalid", response=response)
+    if (
+        not isinstance(rows, list)
+        or not isinstance(columns, list)
+        or len(columns) != len(set(columns))
+    ):
+        return _result(
+            "invalid_source", key, reason="response_contract_invalid", response=response
+        )
     if not isinstance(total, int) or isinstance(total, bool) or total != len(rows):
-        return _result("invalid_source", key, reason="total_mismatch", response=response)
+        return _result(
+            "invalid_source", key, reason="total_mismatch", response=response
+        )
     if total == 0:
         return _result("source_empty", key, reason="source_empty", response=response)
     if total != 1:
-        return _result("invalid_source", key, reason="expected_exactly_one_row", response=response)
+        return _result(
+            "invalid_source", key, reason="expected_exactly_one_row", response=response
+        )
     if not REQUIRED_COLUMNS.issubset(set(columns)) or len(rows[0]) != len(columns):
-        return _result("invalid_source", key, reason="required_columns_missing", response=response)
+        return _result(
+            "invalid_source", key, reason="required_columns_missing", response=response
+        )
     row = dict(zip(columns, rows[0]))
     expected = (str(key.get("code", "")), str(key.get("trade_date", "")))
     if (str(row.get("code")), str(row.get("trade_date"))) != expected:
-        return _result("invalid_source", key, reason="key_mismatch", response=response, row=row)
+        return _result(
+            "invalid_source", key, reason="key_mismatch", response=response, row=row
+        )
     if not _valid_date(row.get("trade_date")):
-        return _result("invalid_source", key, reason="invalid_trade_date", response=response, row=row)
+        return _result(
+            "invalid_source",
+            key,
+            reason="invalid_trade_date",
+            response=response,
+            row=row,
+        )
     for field in REQUIRED_COLUMNS:
-        if row.get(field) is None or (isinstance(row.get(field), float) and not math.isfinite(row[field])):
-            return _result("invalid_source", key, reason=f"null_or_nonfinite_{field}", response=response, row=row)
+        if row.get(field) is None or (
+            isinstance(row.get(field), float) and not math.isfinite(row[field])
+        ):
+            return _result(
+                "invalid_source",
+                key,
+                reason=f"null_or_nonfinite_{field}",
+                response=response,
+                row=row,
+            )
     return _result("candidate_ready", key, response=response, row=row)
 
 
-def probe_sector_daily(key: Mapping[str, Any], fetch: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None) -> dict[str, Any]:
+def probe_sector_daily(
+    key: Mapping[str, Any],
+    fetch: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """执行一个板块日线只读探针；默认复用 tdx_sync 的 GET，不触发同步写入。"""
     if fetch is None:
         import tdx_sync
-        response = tdx_sync._get("/api/data/table/tdx_sector_daily", _request_parameters(key))
+
+        response = tdx_sync._get(
+            "/api/data/table/tdx_sector_daily", _request_parameters(key)
+        )
     else:
         response = fetch(key)
     return validate_sector_daily_response(key, response)
@@ -104,20 +177,28 @@ def _records(value: Any) -> list[dict[str, Any]]:
     return [dict(item) for item in value]
 
 
-def stage_sector_daily(keys: Sequence[Mapping[str, Any]], stage_root: str | Path,
-                       probe: Callable[[Mapping[str, Any]], Mapping[str, Any]] = probe_sector_daily) -> dict[str, Any]:
+def stage_sector_daily(
+    keys: Sequence[Mapping[str, Any]],
+    stage_root: str | Path,
+    probe: Callable[[Mapping[str, Any]], Mapping[str, Any]] = probe_sector_daily,
+) -> dict[str, Any]:
     """逐键探针并写入隔离 staging；不写 ``data/tdx`` 生产目录。"""
     root = Path(stage_root)
     raw_dir = root / "raw"
     data_dir = root / "tdx_sector_daily"
     raw_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
-    identities = [(str(item.get("code", "")), str(item.get("trade_date", ""))) for item in keys]
+    identities = [
+        (str(item.get("code", "")), str(item.get("trade_date", ""))) for item in keys
+    ]
     seen: set[tuple[str, str]] = set()
     candidates: list[dict[str, Any]] = []
     receipt_rows: list[dict[str, Any]] = []
     counts = {"added": 0, "blocked": 0, "rejected": 0, "source_empty": 0}
-    for key in sorted(keys, key=lambda item: (str(item.get("trade_date", "")), str(item.get("code", "")))):
+    for key in sorted(
+        keys,
+        key=lambda item: (str(item.get("trade_date", "")), str(item.get("code", ""))),
+    ):
         identity = (str(key.get("code", "")), str(key.get("trade_date", "")))
         if identity in seen:
             result = _result("invalid_source", key, reason="duplicate_requested_key")
@@ -125,88 +206,162 @@ def stage_sector_daily(keys: Sequence[Mapping[str, Any]], stage_root: str | Path
             seen.add(identity)
             try:
                 result = probe(key)
-                if isinstance(result, Mapping) and "rows" in result and "columns" in result:
+                if (
+                    isinstance(result, Mapping)
+                    and "rows" in result
+                    and "columns" in result
+                ):
                     result = validate_sector_daily_response(key, result)
                 if not isinstance(result, Mapping) or "status" not in result:
-                    result = _result("invalid_source", key, reason="probe_result_invalid")
+                    result = _result(
+                        "invalid_source", key, reason="probe_result_invalid"
+                    )
             except Exception as exc:
-                result = _result("invalid_source", key, reason="probe_error", error=f"{type(exc).__name__}: {exc}")
+                result = _result(
+                    "invalid_source",
+                    key,
+                    reason="probe_error",
+                    error=f"{type(exc).__name__}: {exc}",
+                )
         result = dict(result)
         raw = result.get("raw_response")
         if raw is not None:
             raw_path = raw_dir / f"{identity[0]}_{identity[1]}.json"
-            raw_path.write_text(json.dumps(raw, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            raw_path.write_text(
+                json.dumps(raw, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
             result["raw_path"] = str(raw_path)
         status = str(result.get("status"))
         if status == "candidate_ready" and result.get("row"):
             row = dict(result["row"])
-            row.update({
-                "actual_received_at": result.get("captured_at_utc"),
-                "source_provider": "tdx-trading-table",
-                "source_endpoint": "/api/data/table/tdx_sector_daily",
-                "source_request_parameters": json.dumps(result.get("request_parameters", {}), sort_keys=True),
-                "source_response_json_sha256": result.get("source_response_json_sha256"),
-            })
+            row.update(
+                {
+                    "actual_received_at": result.get("captured_at_utc"),
+                    "source_provider": "tdx-trading-table",
+                    "source_endpoint": "/api/data/table/tdx_sector_daily",
+                    "source_request_parameters": json.dumps(
+                        result.get("request_parameters", {}), sort_keys=True
+                    ),
+                    "source_response_json_sha256": result.get(
+                        "source_response_json_sha256"
+                    ),
+                }
+            )
             candidates.append(row)
             counts["added"] += 1
         elif status == "source_empty":
             counts["source_empty"] += 1
             counts["blocked"] += 1
-        elif status == "invalid_source" and result.get("reason") in {"total_mismatch", "expected_exactly_one_row"}:
+        elif status == "invalid_source" and result.get("reason") in {
+            "total_mismatch",
+            "expected_exactly_one_row",
+        }:
             # 远端忽略单键过滤时返回整日/整表结果；无法把行安全归因到请求键，
             # 这是来源能力阻断而非数据本身损坏。
             counts["blocked"] += 1
             status = "blocked"
         else:
             counts["rejected"] += 1
-        receipt_rows.append({
-            "code": identity[0], "trade_date": identity[1], "status": status,
-            "reason": result.get("reason"), "source_response_json_sha256": result.get("source_response_json_sha256"),
-        })
+        receipt_rows.append(
+            {
+                "code": identity[0],
+                "trade_date": identity[1],
+                "status": status,
+                "reason": result.get("reason"),
+                "source_response_json_sha256": result.get(
+                    "source_response_json_sha256"
+                ),
+            }
+        )
 
     if candidates:
-        pd.DataFrame(candidates).sort_values(["trade_date", "code"]).to_parquet(data_dir / "part_0000.parquet", index=False)
+        pd.DataFrame(candidates).sort_values(["trade_date", "code"]).to_parquet(
+            data_dir / "part_0000.parquet", index=False
+        )
     receipt = {
-        "table": "tdx_sector_daily", "production_write": False, "global_activation": False,
-        "counts": counts, "rows": receipt_rows, "candidate_rows": candidates,
+        "table": "tdx_sector_daily",
+        "production_write": False,
+        "global_activation": False,
+        "counts": counts,
+        "rows": receipt_rows,
+        "candidate_rows": candidates,
     }
-    (root / "receipt.json").write_text(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return {"table": "tdx_sector_daily", "production_write": False, "global_activation": False,
-            "counts": counts, "receipt_path": str(root / "receipt.json"), "rows": receipt_rows}
+    (root / "receipt.json").write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "table": "tdx_sector_daily",
+        "production_write": False,
+        "global_activation": False,
+        "counts": counts,
+        "receipt_path": str(root / "receipt.json"),
+        "rows": receipt_rows,
+    }
 
 
-def stage_sector_daily_by_date(keys: Sequence[Mapping[str, Any]], stage_root: str | Path,
-                              fetch_day: Callable[[str], Mapping[str, Any]] | None = None) -> dict[str, Any]:
+def stage_sector_daily_by_date(
+    keys: Sequence[Mapping[str, Any]],
+    stage_root: str | Path,
+    fetch_day: Callable[[str], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """按交易日拉取完整响应，再从响应中严格筛选目标代码。
 
     该路径用于远端忽略 ``code`` 参数的情况；只有响应日期完全一致、目标代码
     唯一存在且字段合同通过时才进入 staging。目标代码不存在记为 source_empty。
     """
-    root = Path(stage_root); raw_dir = root / "raw"; data_dir = root / "tdx_sector_daily"
-    raw_dir.mkdir(parents=True, exist_ok=True); data_dir.mkdir(parents=True, exist_ok=True)
+    root = Path(stage_root)
+    raw_dir = root / "raw"
+    data_dir = root / "tdx_sector_daily"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
     grouped: dict[str, list[Mapping[str, Any]]] = {}
     for key in keys:
         grouped.setdefault(str(key.get("trade_date", "")), []).append(key)
-    candidates: list[dict[str, Any]] = []; receipt_rows: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
+    receipt_rows: list[dict[str, Any]] = []
     counts = {"added": 0, "blocked": 0, "rejected": 0, "source_empty": 0}
     for day, day_keys in sorted(grouped.items()):
         try:
             if fetch_day is None:
                 import tdx_sync
-                payload = tdx_sync._get("/api/data/table/tdx_sector_daily", {"start_date": day, "end_date": day, "limit": 5000, "offset": 0})
+
+                payload = tdx_sync._get(
+                    "/api/data/table/tdx_sector_daily",
+                    {"start_date": day, "end_date": day, "limit": 5000, "offset": 0},
+                )
             else:
                 payload = fetch_day(day)
             if not isinstance(payload, Mapping):
                 raise ValueError("响应不是对象")
             raw_path = raw_dir / f"{day}.json"
-            raw_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            raw_path.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
+                + "\n",
+                encoding="utf-8",
+            )
             response_sha = _payload_sha(payload)
-            rows, columns, total = payload.get("rows"), payload.get("columns"), payload.get("total")
-            if not isinstance(rows, list) or not isinstance(columns, list) or len(columns) != len(set(columns)):
+            rows, columns, total = (
+                payload.get("rows"),
+                payload.get("columns"),
+                payload.get("total"),
+            )
+            if (
+                not isinstance(rows, list)
+                or not isinstance(columns, list)
+                or len(columns) != len(set(columns))
+            ):
                 raise ValueError("响应行列合同无效")
-            if not isinstance(total, int) or isinstance(total, bool) or total != len(rows):
+            if (
+                not isinstance(total, int)
+                or isinstance(total, bool)
+                or total != len(rows)
+            ):
                 raise ValueError("响应 total 与行数不一致")
-            if not REQUIRED_COLUMNS.issubset(set(columns)) or any(len(row) != len(columns) for row in rows):
+            if not REQUIRED_COLUMNS.issubset(set(columns)) or any(
+                len(row) != len(columns) for row in rows
+            ):
                 raise ValueError("响应字段合同不完整")
             date_index = columns.index("trade_date")
             if any(str(row[date_index]) != day for row in rows):
@@ -216,57 +371,148 @@ def stage_sector_daily_by_date(keys: Sequence[Mapping[str, Any]], stage_root: st
             for row in rows:
                 by_code.setdefault(str(row[code_index]), []).append(row)
             for key in sorted(day_keys, key=lambda item: str(item.get("code", ""))):
-                code = str(key.get("code", "")); matches = by_code.get(code, [])
+                code = str(key.get("code", ""))
+                matches = by_code.get(code, [])
                 if not matches:
-                    counts["blocked"] += 1; counts["source_empty"] += 1
-                    receipt_rows.append({"code": code, "trade_date": day, "status": "source_empty", "reason": "source_empty", "source_response_json_sha256": response_sha})
+                    counts["blocked"] += 1
+                    counts["source_empty"] += 1
+                    receipt_rows.append(
+                        {
+                            "code": code,
+                            "trade_date": day,
+                            "status": "source_empty",
+                            "reason": "source_empty",
+                            "source_response_json_sha256": response_sha,
+                        }
+                    )
                     continue
                 if len(matches) != 1:
                     counts["rejected"] += 1
-                    receipt_rows.append({"code": code, "trade_date": day, "status": "invalid_source", "reason": "duplicate_code_in_day", "source_response_json_sha256": response_sha})
+                    receipt_rows.append(
+                        {
+                            "code": code,
+                            "trade_date": day,
+                            "status": "invalid_source",
+                            "reason": "duplicate_code_in_day",
+                            "source_response_json_sha256": response_sha,
+                        }
+                    )
                     continue
-                checked = validate_sector_daily_response(key, {"total": 1, "columns": columns, "rows": matches})
+                checked = validate_sector_daily_response(
+                    key, {"total": 1, "columns": columns, "rows": matches}
+                )
                 if checked.get("status") != "candidate_ready":
                     counts["rejected"] += 1
-                    receipt_rows.append({"code": code, "trade_date": day, "status": "invalid_source", "reason": checked.get("reason"), "source_response_json_sha256": response_sha})
+                    receipt_rows.append(
+                        {
+                            "code": code,
+                            "trade_date": day,
+                            "status": "invalid_source",
+                            "reason": checked.get("reason"),
+                            "source_response_json_sha256": response_sha,
+                        }
+                    )
                     continue
                 row = dict(checked["row"])
-                row.update({"actual_received_at": checked.get("captured_at_utc"), "source_provider": "tdx-trading-table", "source_endpoint": "/api/data/table/tdx_sector_daily?start_date=end_date", "source_request_parameters": json.dumps({"start_date": day, "end_date": day, "limit": 5000, "offset": 0}, sort_keys=True), "source_response_json_sha256": response_sha})
-                candidates.append(row); counts["added"] += 1
-                receipt_rows.append({"code": code, "trade_date": day, "status": "candidate_ready", "reason": "source_verified_by_day", "source_response_json_sha256": response_sha})
+                row.update(
+                    {
+                        "actual_received_at": checked.get("captured_at_utc"),
+                        "source_provider": "tdx-trading-table",
+                        "source_endpoint": "/api/data/table/tdx_sector_daily?start_date=end_date",
+                        "source_request_parameters": json.dumps(
+                            {
+                                "start_date": day,
+                                "end_date": day,
+                                "limit": 5000,
+                                "offset": 0,
+                            },
+                            sort_keys=True,
+                        ),
+                        "source_response_json_sha256": response_sha,
+                    }
+                )
+                candidates.append(row)
+                counts["added"] += 1
+                receipt_rows.append(
+                    {
+                        "code": code,
+                        "trade_date": day,
+                        "status": "candidate_ready",
+                        "reason": "source_verified_by_day",
+                        "source_response_json_sha256": response_sha,
+                    }
+                )
         except Exception as exc:
             for key in day_keys:
                 counts["blocked"] += 1
-                receipt_rows.append({"code": str(key.get("code", "")), "trade_date": day, "status": "blocked", "reason": f"day_probe_error:{type(exc).__name__}"})
+                receipt_rows.append(
+                    {
+                        "code": str(key.get("code", "")),
+                        "trade_date": day,
+                        "status": "blocked",
+                        "reason": f"day_probe_error:{type(exc).__name__}",
+                    }
+                )
     if candidates:
-        pd.DataFrame(candidates).sort_values(["trade_date", "code"]).to_parquet(data_dir / "part_0000.parquet", index=False)
-    receipt = {"table": "tdx_sector_daily", "mode": "date_bulk_fallback", "production_write": False, "global_activation": False, "counts": counts, "rows": receipt_rows}
-    (root / "receipt.json").write_text(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return {"table": "tdx_sector_daily", "mode": "date_bulk_fallback", "production_write": False, "global_activation": False, "counts": counts, "receipt_path": str(root / "receipt.json"), "rows": receipt_rows}
+        pd.DataFrame(candidates).sort_values(["trade_date", "code"]).to_parquet(
+            data_dir / "part_0000.parquet", index=False
+        )
+    receipt = {
+        "table": "tdx_sector_daily",
+        "mode": "date_bulk_fallback",
+        "production_write": False,
+        "global_activation": False,
+        "counts": counts,
+        "rows": receipt_rows,
+    }
+    (root / "receipt.json").write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "table": "tdx_sector_daily",
+        "mode": "date_bulk_fallback",
+        "production_write": False,
+        "global_activation": False,
+        "counts": counts,
+        "receipt_path": str(root / "receipt.json"),
+        "rows": receipt_rows,
+    }
 
 
-def reconcile_sector_definition(definition_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
-                               daily_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
-                               validity_rows: Iterable[Mapping[str, Any]] | pd.DataFrame) -> dict[str, Any]:
+def reconcile_sector_definition(
+    definition_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
+    daily_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
+    validity_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
+) -> dict[str, Any]:
     """按板块有效期核对历史日线，避免用当前定义覆盖历史。"""
     definitions = _records(definition_rows)
     daily = _records(daily_rows)
     validity = _records(validity_rows)
     codes = {str(row.get("code")) for row in definitions if row.get("code") is not None}
-    windows: dict[str, list[tuple[str | None, str | None]]] = {code: [] for code in codes}
+    windows: dict[str, list[tuple[str | None, str | None]]] = {
+        code: [] for code in codes
+    }
     for row in validity:
         code = str(row.get("code"))
         if code not in codes:
             codes.add(code)
             windows[code] = []
-        start = row.get("valid_from") or row.get("start_date") or row.get("effective_date")
+        start = (
+            row.get("valid_from") or row.get("start_date") or row.get("effective_date")
+        )
         end = row.get("valid_to") or row.get("end_date")
-        windows[code].append((str(start)[:8] if start else None, str(end)[:8] if end else None))
+        windows[code].append(
+            (str(start)[:8] if start else None, str(end)[:8] if end else None)
+        )
 
     def active(code: str, date: str) -> bool:
         if not windows.get(code):
             return code in codes
-        return any((not start or date >= start) and (not end or date <= end) for start, end in windows[code])
+        return any(
+            (not start or date >= start) and (not end or date <= end)
+            for start, end in windows[code]
+        )
 
     by_date: dict[str, set[str]] = {}
     for row in daily:
@@ -278,6 +524,11 @@ def reconcile_sector_definition(definition_rows: Iterable[Mapping[str, Any]] | p
         expected = {code for code in codes if active(code, date)}
         missing.extend((code, date) for code in sorted(expected - actual))
         extra.extend((code, date) for code in sorted(actual - expected))
-    return {"checked_dates": sorted(by_date), "missing": sorted(missing), "extra": sorted(extra),
-            "missing_count": len(missing), "extra_count": len(extra), "production_write": False}
-
+    return {
+        "checked_dates": sorted(by_date),
+        "missing": sorted(missing),
+        "extra": sorted(extra),
+        "missing_count": len(missing),
+        "extra_count": len(extra),
+        "production_write": False,
+    }

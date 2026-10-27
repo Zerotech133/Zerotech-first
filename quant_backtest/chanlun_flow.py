@@ -42,7 +42,7 @@ VOL_RATIO = 1.0
 REGIME_INDEX = {"CN": "000001.SH", "CRYPTO": "BTC/USDT"}
 MA_FAST = 20
 MA_SLOW = 60
-MA_TREND = 200           # P9 长周期牛熊分水岭（close>MA200=牛市 regime）
+MA_TREND = 200  # P9 长周期牛熊分水岭（close>MA200=牛市 regime）
 
 
 def _ending_bi(bis, sig):
@@ -78,8 +78,7 @@ def volume_confluence(bars, bis, sig):
     v_prev = _bi_mean_vol(bars, dt2i, prev) if prev is not None else None
     if v_now is None or v_prev is None:
         return None, None
-    return (v_now < v_prev * VOL_RATIO,
-            [round(v_prev, 2), round(v_now, 2)])
+    return (v_now < v_prev * VOL_RATIO, [round(v_prev, 2), round(v_now, 2)])
 
 
 def _ma(vals, n):

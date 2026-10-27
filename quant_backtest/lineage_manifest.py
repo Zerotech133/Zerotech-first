@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """来源回执、staging、发布文件和回读结果的血缘清单。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -31,7 +32,10 @@ def build_lineage_manifest(
     receipt_ids = [str(item.get("receipt_id", "")) for item in receipts]
     if not receipts or any(not value for value in receipt_ids):
         raise ValueError("缺少来源回执")
-    if not isinstance(commit_complete, Mapping) or commit_complete.get("unit_id") != unit_id:
+    if (
+        not isinstance(commit_complete, Mapping)
+        or commit_complete.get("unit_id") != unit_id
+    ):
         raise ValueError("提交完成事实与单元不一致")
     linked = commit_complete.get("receipt_ids")
     if not isinstance(linked, list) or set(linked) != set(receipt_ids):
@@ -43,7 +47,9 @@ def build_lineage_manifest(
     files = commit_complete.get("files") or []
     if not isinstance(files, list) or not files:
         raise ValueError("提交文件清单缺失")
-    target_file = next((item for item in files if item.get("target") == str(published)), None)
+    target_file = next(
+        (item for item in files if item.get("target") == str(published)), None
+    )
     if not target_file or not isinstance(target_file.get("new_sha256"), str):
         raise ValueError("提交文件指纹缺失")
     actual_sha = _sha256(published)
@@ -62,13 +68,22 @@ def build_lineage_manifest(
         "version": 1,
         "unit_id": unit_id,
         "source_receipt_ids": receipt_ids,
-        "source": [{"receipt_id": item.get("receipt_id"), "table": item.get("table"),
-                     "request_scope": item.get("request_scope")} for item in receipts],
+        "source": [
+            {
+                "receipt_id": item.get("receipt_id"),
+                "table": item.get("table"),
+                "request_scope": item.get("request_scope"),
+            }
+            for item in receipts
+        ],
         "staging_path": str(staged),
         "target": str(published),
         "sha256": actual_sha,
         "primary_key": list(primary_key),
-        "row_counts": {"readback": readback.get("rows"), "unique_keys": readback.get("unique_keys")},
+        "row_counts": {
+            "readback": readback.get("rows"),
+            "unique_keys": readback.get("unique_keys"),
+        },
         "published_at": stamp,
         "readback_digest": readback["query_digest"],
         "production_write": False,
@@ -79,10 +94,16 @@ def build_lineage_manifest(
 
 def write_lineage_manifest(manifest: Mapping[str, Any], path: str | Path) -> None:
     """以原子替换方式写入脱敏血缘清单。"""
-    if manifest.get("production_write") is not False or manifest.get("global_activation") is not False:
+    if (
+        manifest.get("production_write") is not False
+        or manifest.get("global_activation") is not False
+    ):
         raise ValueError("血缘清单不能开启生产发布")
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(target.suffix + ".tmp")
-    temporary.write_text(json.dumps(dict(manifest), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.write_text(
+        json.dumps(dict(manifest), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     temporary.replace(target)

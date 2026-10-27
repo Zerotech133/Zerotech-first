@@ -14,6 +14,7 @@
   pool_insert(row)                   # 插入新信号（INSERT OR IGNORE）
   pool_query_recent(days=90)         # 近 N 天信号（cross_poll 用）
 """
+
 import json
 import os
 import sqlite3
@@ -111,30 +112,52 @@ def init_db():
 
 
 # ── 字段映射 ───────────────────────────────────────────────
-_POOL_COLS = ("market", "code", "name", "period", "type", "dt", "price",
-              "detect_date", "entry_px", "lag", "first_seen", "source",
-              "bei", "bei2", "mbei", "tbe", "vv", "mt", "reg")
+_POOL_COLS = (
+    "market",
+    "code",
+    "name",
+    "period",
+    "type",
+    "dt",
+    "price",
+    "detect_date",
+    "entry_px",
+    "lag",
+    "first_seen",
+    "source",
+    "bei",
+    "bei2",
+    "mbei",
+    "tbe",
+    "vv",
+    "mt",
+    "reg",
+)
 
 
 def _row_to_tuple(r):
     """JSONL 行 → SQLite 插入元组（bool → 0/1，None 保留）。"""
+
     def conv(v):
         if v is True:
             return 1
         if v is False:
             return 0
         return v
+
     return tuple(conv(r.get(c) if c != "lag" else r.get(c)) for c in _POOL_COLS)
 
 
 def _row_from_sqlite(row):
     """SQLite Row → dict（0/1 → bool，与 JSONL 口径一致）。"""
+
     def conv(v, col):
         if v is None:
             return None
         if col in ("bei", "bei2", "mbei", "tbe", "vv"):
             return bool(v)
         return v
+
     return {c: conv(row[c], c) for c in _POOL_COLS}
 
 
@@ -147,7 +170,9 @@ def pool_insert(conn, row):
     vals = _row_to_tuple(row)
     placeholders = ",".join("?" * len(_POOL_COLS))
     sql = "INSERT OR IGNORE INTO chanlun_pool (%s) VALUES (%s)" % (
-        ",".join(_POOL_COLS), placeholders)
+        ",".join(_POOL_COLS),
+        placeholders,
+    )
     cur = conn.execute(sql, vals)
     return cur.rowcount
 
@@ -198,7 +223,8 @@ def pool_query_by_key(conn, code, sig_type, dt):
     """按主键查单条（验证用）。"""
     row = conn.execute(
         "SELECT * FROM chanlun_pool WHERE code=? AND type=? AND dt=?",
-        (code, sig_type, dt)).fetchone()
+        (code, sig_type, dt),
+    ).fetchone()
     return _row_from_sqlite(row) if row else None
 
 
@@ -230,9 +256,10 @@ def migrate_pool(verbose=True):
         conn.commit()
         db_count = pool_count(conn)
         if verbose:
-            print("migrate: jsonl=%d, inserted=%d, db=%d (match=%s)"
-                  % (total, inserted, db_count,
-                     "YES" if db_count == total else "NO"))
+            print(
+                "migrate: jsonl=%d, inserted=%d, db=%d (match=%s)"
+                % (total, inserted, db_count, "YES" if db_count == total else "NO")
+            )
     except Exception:
         conn.rollback()
         raise
@@ -247,8 +274,7 @@ ND_RC_JSON = os.path.join(HERE, "data", "nine_dim_bt_rc_cache.json")
 
 def nd_rc_get_st(conn):
     """读 meta.st（窗口起算键，月末取整防逐日失效）。None=未设置/表空。"""
-    row = conn.execute(
-        "SELECT value FROM nine_dim_rc_meta WHERE key='st'").fetchone()
+    row = conn.execute("SELECT value FROM nine_dim_rc_meta WHERE key='st'").fetchone()
     return row[0] if row else None
 
 
@@ -256,7 +282,9 @@ def nd_rc_set_st(conn, st):
     """upsert meta.st。调用方负责在 st 变化时先 nd_rc_clear。"""
     conn.execute(
         "INSERT INTO nine_dim_rc_meta(key, value) VALUES('st', ?) "
-        "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (st,))
+        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (st,),
+    )
 
 
 def nd_rc_clear(conn):
@@ -275,8 +303,13 @@ def nd_rc_upsert(conn, code, rows, fields, err=0):
     conn.execute(
         "INSERT OR REPLACE INTO nine_dim_rc(code, rows_json, fields_json, err) "
         "VALUES(?, ?, ?, ?)",
-        (code, json.dumps(rows, ensure_ascii=False),
-         json.dumps(fields, ensure_ascii=False), 1 if err else 0))
+        (
+            code,
+            json.dumps(rows, ensure_ascii=False),
+            json.dumps(fields, ensure_ascii=False),
+            1 if err else 0,
+        ),
+    )
 
 
 def nd_rc_query(conn, code):
@@ -284,12 +317,14 @@ def nd_rc_query(conn, code):
     与原 JSON cache[code] 结构一致，_rc_at 直接消费。
     """
     row = conn.execute(
-        "SELECT rows_json, fields_json, err FROM nine_dim_rc WHERE code=?",
-        (code,)).fetchone()
+        "SELECT rows_json, fields_json, err FROM nine_dim_rc WHERE code=?", (code,)
+    ).fetchone()
     if row is None:
         return None
-    rec = {"rows": json.loads(row["rows_json"]),
-           "fields": json.loads(row["fields_json"])}
+    rec = {
+        "rows": json.loads(row["rows_json"]),
+        "fields": json.loads(row["fields_json"]),
+    }
     if row["err"]:
         rec["err"] = 1
     return rec
@@ -302,17 +337,16 @@ def nd_rc_missing(conn, codes):
     # 单 code 直接查
     if len(codes) == 1:
         c = codes[0]
-        ex = conn.execute(
-            "SELECT 1 FROM nine_dim_rc WHERE code=?", (c,)).fetchone()
+        ex = conn.execute("SELECT 1 FROM nine_dim_rc WHERE code=?", (c,)).fetchone()
         return [] if ex else [c]
     # 多 code 分批 IN（SQLite 默认 999 变量上限，分片 500 保险）
     present = set()
     for i in range(0, len(codes), 500):
-        chunk = codes[i:i + 500]
+        chunk = codes[i : i + 500]
         ph = ",".join("?" * len(chunk))
         for r in conn.execute(
-                "SELECT code FROM nine_dim_rc WHERE code IN (%s)" % ph,
-                chunk):
+            "SELECT code FROM nine_dim_rc WHERE code IN (%s)" % ph, chunk
+        ):
             present.add(r["code"])
     return [c for c in codes if c not in present]
 
@@ -342,17 +376,23 @@ def migrate_nd_rc(verbose=True):
             nd_rc_set_st(conn, st)
         for c in codes:
             rec = cache[c]
-            nd_rc_upsert(conn, c, rec.get("rows") or [],
-                         rec.get("fields") or [], rec.get("err", 0))
+            nd_rc_upsert(
+                conn,
+                c,
+                rec.get("rows") or [],
+                rec.get("fields") or [],
+                rec.get("err", 0),
+            )
             n += 1
             if verbose and n % 1000 == 0:
                 print("  nd_rc %d/%d" % (n, len(codes)), flush=True)
         conn.commit()
         db_count = nd_rc_count(conn)
         if verbose:
-            print("migrate_nd_rc: json_codes=%d, inserted=%d, db=%d (match=%s)"
-                  % (len(codes), n, db_count,
-                     "YES" if db_count == len(codes) else "NO"))
+            print(
+                "migrate_nd_rc: json_codes=%d, inserted=%d, db=%d (match=%s)"
+                % (len(codes), n, db_count, "YES" if db_count == len(codes) else "NO")
+            )
     except Exception:
         conn.rollback()
         raise
@@ -377,9 +417,13 @@ def nd_fina_upsert(conn, code, rows, fields, fetched_at=None):
     conn.execute(
         "INSERT OR REPLACE INTO nine_dim_fina(code, fetched_at, rows_json, fields_json) "
         "VALUES(?, ?, ?, ?)",
-        (code, fetched_at,
-         json.dumps(rows, ensure_ascii=False),
-         json.dumps(fields, ensure_ascii=False)))
+        (
+            code,
+            fetched_at,
+            json.dumps(rows, ensure_ascii=False),
+            json.dumps(fields, ensure_ascii=False),
+        ),
+    )
 
 
 def nd_fina_query(conn, code):
@@ -388,12 +432,15 @@ def nd_fina_query(conn, code):
     """
     row = conn.execute(
         "SELECT fetched_at, rows_json, fields_json FROM nine_dim_fina WHERE code=?",
-        (code,)).fetchone()
+        (code,),
+    ).fetchone()
     if row is None:
         return None
-    return {"fetched_at": row["fetched_at"],
-            "rows": json.loads(row["rows_json"]),
-            "fields": json.loads(row["fields_json"])}
+    return {
+        "fetched_at": row["fetched_at"],
+        "rows": json.loads(row["rows_json"]),
+        "fields": json.loads(row["fields_json"]),
+    }
 
 
 def nd_fina_need(conn, codes, cutoff_iso):
@@ -403,12 +450,12 @@ def nd_fina_need(conn, codes, cutoff_iso):
         return []
     fresh = set()
     for i in range(0, len(codes), 500):
-        chunk = codes[i:i + 500]
+        chunk = codes[i : i + 500]
         ph = ",".join("?" * len(chunk))
         for r in conn.execute(
-                "SELECT code FROM nine_dim_fina "
-                "WHERE code IN (%s) AND fetched_at>=?" % ph,
-                chunk + [cutoff_iso]):
+            "SELECT code FROM nine_dim_fina WHERE code IN (%s) AND fetched_at>=?" % ph,
+            chunk + [cutoff_iso],
+        ):
             fresh.add(r["code"])
     return [c for c in codes if c not in fresh]
 
@@ -435,18 +482,23 @@ def migrate_nd_fina(verbose=True):
         conn.execute("BEGIN")
         for c in codes:
             rec = cache[c]
-            nd_fina_upsert(conn, c, rec.get("rows") or [],
-                           rec.get("fields") or [],
-                           rec.get("fetched_at"))
+            nd_fina_upsert(
+                conn,
+                c,
+                rec.get("rows") or [],
+                rec.get("fields") or [],
+                rec.get("fetched_at"),
+            )
             n += 1
             if verbose and n % 1000 == 0:
                 print("  nd_fina %d/%d" % (n, len(codes)), flush=True)
         conn.commit()
         db_count = nd_fina_count(conn)
         if verbose:
-            print("migrate_nd_fina: json_codes=%d, inserted=%d, db=%d (match=%s)"
-                  % (len(codes), n, db_count,
-                     "YES" if db_count == len(codes) else "NO"))
+            print(
+                "migrate_nd_fina: json_codes=%d, inserted=%d, db=%d (match=%s)"
+                % (len(codes), n, db_count, "YES" if db_count == len(codes) else "NO")
+            )
     except Exception:
         conn.rollback()
         raise
@@ -462,15 +514,16 @@ ND_FC_JSON = os.path.join(HERE, "data", "nine_dim_bt_fc_cache.json")
 
 def nd_fc_get_st(conn):
     """读 nine_dim_fc_meta.st。None=未设置/表空。"""
-    row = conn.execute(
-        "SELECT value FROM nine_dim_fc_meta WHERE key='st'").fetchone()
+    row = conn.execute("SELECT value FROM nine_dim_fc_meta WHERE key='st'").fetchone()
     return row[0] if row else None
 
 
 def nd_fc_set_st(conn, st):
     conn.execute(
         "INSERT INTO nine_dim_fc_meta(key, value) VALUES('st', ?) "
-        "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (st,))
+        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (st,),
+    )
 
 
 def nd_fc_clear(conn):
@@ -486,19 +539,25 @@ def nd_fc_upsert(conn, code, rows, fields):
     conn.execute(
         "INSERT OR REPLACE INTO nine_dim_fc(code, rows_json, fields_json) "
         "VALUES(?, ?, ?)",
-        (code, json.dumps(rows, ensure_ascii=False),
-         json.dumps(fields, ensure_ascii=False)))
+        (
+            code,
+            json.dumps(rows, ensure_ascii=False),
+            json.dumps(fields, ensure_ascii=False),
+        ),
+    )
 
 
 def nd_fc_query(conn, code):
     """单 code 懒加载 → {rows, fields} 或 None（与原 JSON cache[code] 一致）。"""
     row = conn.execute(
-        "SELECT rows_json, fields_json FROM nine_dim_fc WHERE code=?",
-        (code,)).fetchone()
+        "SELECT rows_json, fields_json FROM nine_dim_fc WHERE code=?", (code,)
+    ).fetchone()
     if row is None:
         return None
-    return {"rows": json.loads(row["rows_json"]),
-            "fields": json.loads(row["fields_json"])}
+    return {
+        "rows": json.loads(row["rows_json"]),
+        "fields": json.loads(row["fields_json"]),
+    }
 
 
 def nd_fc_missing(conn, codes):
@@ -507,16 +566,15 @@ def nd_fc_missing(conn, codes):
         return []
     if len(codes) == 1:
         c = codes[0]
-        ex = conn.execute(
-            "SELECT 1 FROM nine_dim_fc WHERE code=?", (c,)).fetchone()
+        ex = conn.execute("SELECT 1 FROM nine_dim_fc WHERE code=?", (c,)).fetchone()
         return [] if ex else [c]
     present = set()
     for i in range(0, len(codes), 500):
-        chunk = codes[i:i + 500]
+        chunk = codes[i : i + 500]
         ph = ",".join("?" * len(chunk))
         for r in conn.execute(
-                "SELECT code FROM nine_dim_fc WHERE code IN (%s)" % ph,
-                chunk):
+            "SELECT code FROM nine_dim_fc WHERE code IN (%s)" % ph, chunk
+        ):
             present.add(r["code"])
     return [c for c in codes if c not in present]
 
@@ -546,17 +604,17 @@ def migrate_nd_fc(verbose=True):
             nd_fc_set_st(conn, st)
         for c in codes:
             rec = cache[c]
-            nd_fc_upsert(conn, c, rec.get("rows") or [],
-                         rec.get("fields") or [])
+            nd_fc_upsert(conn, c, rec.get("rows") or [], rec.get("fields") or [])
             n += 1
             if verbose and n % 1000 == 0:
                 print("  nd_fc %d/%d" % (n, len(codes)), flush=True)
         conn.commit()
         db_count = nd_fc_count(conn)
         if verbose:
-            print("migrate_nd_fc: json_codes=%d, inserted=%d, db=%d (match=%s)"
-                  % (len(codes), n, db_count,
-                     "YES" if db_count == len(codes) else "NO"))
+            print(
+                "migrate_nd_fc: json_codes=%d, inserted=%d, db=%d (match=%s)"
+                % (len(codes), n, db_count, "YES" if db_count == len(codes) else "NO")
+            )
     except Exception:
         conn.rollback()
         raise
@@ -568,6 +626,7 @@ def migrate_nd_fc(verbose=True):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1] == "nd_rc":
         print("=== SQLite Phase 2: nine_dim_bt_rc_cache migration ===")
         n = migrate_nd_rc()

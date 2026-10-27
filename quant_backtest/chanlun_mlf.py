@@ -41,6 +41,7 @@ pool 行 × paper 仓位按 (code, type, sig_dt) 联接：
 整体 AUC + 按 type 分层 AUC + 特征重要度；模型落 data/models/。
 样本量 4-5k 属影子观察级：结论只用于「质量分方向是否可学」，不谈启用。
 """
+
 import argparse
 import io
 import json
@@ -55,16 +56,32 @@ TREND_BF = os.path.join(HERE, "data", "chanlun_trend_backfill.jsonl")
 DS_OUT = os.path.join(HERE, "data", "features", "chanlun_sig_dataset.parquet")
 MODEL_DIR = os.path.join(HERE, "data", "models")
 
-import chanlun_scan as cs                       # 复用 _bars_from_parquet/_code_path/_load_pool
+import chanlun_scan as cs  # 复用 _bars_from_parquet/_code_path/_load_pool
 from chanlun_signal import analyze
 from chanlun_gray import enrich, _prior_pivots
 from chanlun_flow import aligned
 
-GRAY_KEYS = ("div_area", "fv_area", "div_dif", "fv_dif",
-             "pv_state", "pv_dir", "pv_fv", "conf")
+GRAY_KEYS = (
+    "div_area",
+    "fv_area",
+    "div_dif",
+    "fv_dif",
+    "pv_state",
+    "pv_dir",
+    "pv_fv",
+    "conf",
+)
 
-KG_FEATS = ("deg_total", "deg_product", "peer_industry", "peer_sw_l1",
-            "peer_region", "person_shared", "peer_shared_prod", "n_persons")
+KG_FEATS = (
+    "deg_total",
+    "deg_product",
+    "peer_industry",
+    "peer_sw_l1",
+    "peer_region",
+    "person_shared",
+    "peer_shared_prod",
+    "n_persons",
+)
 
 
 # ── 灰度离线回填 ──────────────────────────────────────────
@@ -88,8 +105,11 @@ def backfill_gray(limit=0):
     已回填键跳过（幂等续跑）；limit>0 只跑前 N 票（调试）。
     """
     led = cs._load_paper()
-    closed = [p for p in led.get("closed", [])
-              if not p.get("adj_flag") and p.get("ret") is not None]
+    closed = [
+        p
+        for p in led.get("closed", [])
+        if not p.get("adj_flag") and p.get("ret") is not None
+    ]
     done = _load_gray_bf()
     by_code = {}
     for p in closed:
@@ -100,8 +120,10 @@ def backfill_gray(limit=0):
     codes = sorted(by_code)
     if limit > 0:
         codes = codes[:limit]
-    print("backfill_gray: %d closed usable, %d codes todo (done=%d)"
-          % (len(closed), len(codes), len(done)))
+    print(
+        "backfill_gray: %d closed usable, %d codes todo (done=%d)"
+        % (len(closed), len(codes), len(done))
+    )
     out_rows, n_drop = [], 0
     for ci, code in enumerate(codes):
         bars = cs._bars_from_parquet(cs._code_path(code))
@@ -119,7 +141,7 @@ def backfill_gray(limit=0):
             by_cut.setdefault(i, []).append(p)
         for cut, poss in sorted(by_cut.items()):
             try:
-                sub = bars[:cut + 1]
+                sub = bars[: cut + 1]
                 st = analyze(sub)
                 enrich(sub, st)
                 sigmap = {(s["type"], s["dt"]): s for s in st["signals"]}
@@ -128,22 +150,27 @@ def backfill_gray(limit=0):
                 continue
             for p in poss:
                 sig = sigmap.get((p["type"], p.get("sig_dt")))
-                if sig is None:             # 截断结构里不可见（口径漂移）
+                if sig is None:  # 截断结构里不可见（口径漂移）
                     n_drop += 1
                     continue
-                row = {"code": code, "type": p["type"], "dt": p["sig_dt"],
-                       "n_prior": len(_prior_pivots(st["pivots"], sig))}
+                row = {
+                    "code": code,
+                    "type": p["type"],
+                    "dt": p["sig_dt"],
+                    "n_prior": len(_prior_pivots(st["pivots"], sig)),
+                }
                 for k in GRAY_KEYS:
                     row[k] = sig.get(k)
                 out_rows.append(row)
         if (ci + 1) % 200 == 0:
-            print("  ..%d/%d codes, +rows=%d" % (ci + 1, len(codes),
-                                                 len(out_rows)))
+            print("  ..%d/%d codes, +rows=%d" % (ci + 1, len(codes), len(out_rows)))
     if out_rows:
         merged = list(done.values()) + out_rows
         cs._write_jsonl(GRAY_BF, merged)
-    print("backfill_gray done: +%d rows (drop=%d), total=%d"
-          % (len(out_rows), n_drop, len(done) + len(out_rows)))
+    print(
+        "backfill_gray done: +%d rows (drop=%d), total=%d"
+        % (len(out_rows), n_drop, len(done) + len(out_rows))
+    )
     return out_rows
 
 
@@ -156,32 +183,41 @@ def _tri(v):
 def build_dataset():
     """pool × paper(closed) × 灰度回填 → parquet。"""
     import pandas as pd
+
     pool = cs._load_pool()
     led = cs._load_paper()
     gray = _load_gray_bf()
-    closed = {(p["code"], p["type"], p.get("sig_dt")): p
-              for p in led.get("closed", [])}
+    closed = {(p["code"], p["type"], p.get("sig_dt")): p for p in led.get("closed", [])}
     rows = []
     for r in pool:
         pos = closed.get((r.get("code"), r.get("type"), r.get("dt")))
         if pos is None or pos.get("adj_flag") or pos.get("ret") is None:
             continue
         g = gray.get((r.get("code"), r.get("type"), r.get("dt"))) or {}
-        rows.append({
-            "code": r["code"], "type": r["type"],
-            "sig_dt": r["dt"], "detect_date": r.get("detect_date"),
-            "exit_reason": pos.get("exit_reason"),
-            "lag": r.get("lag"),
-            "mbei": _tri(r.get("mbei")), "bei": _tri(r.get("bei")),
-            "bei2": _tri(r.get("bei2")), "vv": _tri(r.get("vv")),
-            "tbe": _tri(r.get("tbe")),
-            "reg_fav": _tri(aligned(r.get("reg"), r.get("type"))),
-            "npv": r.get("npv"),
-            "div_area": _tri(g.get("div_area")), "div_dif": _tri(g.get("div_dif")),
-            "pv_state": g.get("pv_state") or "na",
-            "conf": g.get("conf"), "n_prior": g.get("n_prior"),
-            "exe20": pos["ret"], "win": int(pos["ret"] > 0),
-        })
+        rows.append(
+            {
+                "code": r["code"],
+                "type": r["type"],
+                "sig_dt": r["dt"],
+                "detect_date": r.get("detect_date"),
+                "exit_reason": pos.get("exit_reason"),
+                "lag": r.get("lag"),
+                "mbei": _tri(r.get("mbei")),
+                "bei": _tri(r.get("bei")),
+                "bei2": _tri(r.get("bei2")),
+                "vv": _tri(r.get("vv")),
+                "tbe": _tri(r.get("tbe")),
+                "reg_fav": _tri(aligned(r.get("reg"), r.get("type"))),
+                "npv": r.get("npv"),
+                "div_area": _tri(g.get("div_area")),
+                "div_dif": _tri(g.get("div_dif")),
+                "pv_state": g.get("pv_state") or "na",
+                "conf": g.get("conf"),
+                "n_prior": g.get("n_prior"),
+                "exe20": pos["ret"],
+                "win": int(pos["ret"] > 0),
+            }
+        )
     df = pd.DataFrame(rows)
     if df.empty:
         raise SystemExit("dataset empty: closed×pool 联接 0 行")
@@ -193,28 +229,41 @@ def build_dataset():
     if os.path.exists(kg_fp):
         kg = pd.read_parquet(kg_fp)
         kg = kg.rename(columns={c: "kg_" + c for c in KG_FEATS})
-        df = df.merge(kg[["ts_code"] + ["kg_" + c for c in KG_FEATS]],
-                      left_on="code", right_on="ts_code", how="left") \
-               .drop(columns=["ts_code"])
-        print("  kg join: %.0f%% codes matched"
-              % (100.0 * df["kg_deg_total"].notna().mean()))
+        df = df.merge(
+            kg[["ts_code"] + ["kg_" + c for c in KG_FEATS]],
+            left_on="code",
+            right_on="ts_code",
+            how="left",
+        ).drop(columns=["ts_code"])
+        print(
+            "  kg join: %.0f%% codes matched"
+            % (100.0 * df["kg_deg_total"].notna().mean())
+        )
     # TR 批：trend 储备列（信号时点日线趋势，K30 回填）——只落列
     # 不进 feature_cols（旧模型列数锁定，下次重训再入特征表）
     tb = _load_jsonl_map(TREND_BF)
-    df["trend_bf"] = [((tb.get((r.code, r.type, r.sig_dt)) or {})
-                       .get("trend")) for r in df.itertuples()]
-    print("  trend join: %.0f%% matched"
-          % (100.0 * df["trend_bf"].notna().mean()))
+    df["trend_bf"] = [
+        ((tb.get((r.code, r.type, r.sig_dt)) or {}).get("trend"))
+        for r in df.itertuples()
+    ]
+    print("  trend join: %.0f%% matched" % (100.0 * df["trend_bf"].notna().mean()))
     os.makedirs(os.path.dirname(DS_OUT), exist_ok=True)
     df.to_parquet(DS_OUT, index=False)
     print("dataset: %d rows × %d cols -> %s" % (len(df), df.shape[1], DS_OUT))
-    print("  win rate %.1f%% | by type: %s"
-          % (df["win"].mean() * 100,
-             {t: "%d/%.0f%%" % (len(g), g["win"].mean() * 100)
-              for t, g in df.groupby("type")}))
-    print("  gray coverage: conf %.0f%% | pv_state %s"
-          % (100.0 * df["conf"].notna().mean(),
-             df["pv_state"].value_counts().to_dict()))
+    print(
+        "  win rate %.1f%% | by type: %s"
+        % (
+            df["win"].mean() * 100,
+            {
+                t: "%d/%.0f%%" % (len(g), g["win"].mean() * 100)
+                for t, g in df.groupby("type")
+            },
+        )
+    )
+    print(
+        "  gray coverage: conf %.0f%% | pv_state %s"
+        % (100.0 * df["conf"].notna().mean(), df["pv_state"].value_counts().to_dict())
+    )
     return df
 
 
@@ -240,9 +289,13 @@ def backfill_trend(limit=0):
     独立 jsonl（不动灰度库）；幂等键 (code,type,dt) 续跑。
     """
     from chanlun_card import _trend
+
     led = cs._load_paper()
-    closed = [p for p in led.get("closed", [])
-              if not p.get("adj_flag") and p.get("ret") is not None]
+    closed = [
+        p
+        for p in led.get("closed", [])
+        if not p.get("adj_flag") and p.get("ret") is not None
+    ]
     done = _load_jsonl_map(TREND_BF)
     by_code = {}
     for p in closed:
@@ -252,8 +305,10 @@ def backfill_trend(limit=0):
     codes = sorted(by_code)
     if limit > 0:
         codes = codes[:limit]
-    print("backfill_trend: %d usable, %d codes todo (done=%d)"
-          % (len(closed), len(codes), len(done)))
+    print(
+        "backfill_trend: %d usable, %d codes todo (done=%d)"
+        % (len(closed), len(codes), len(done))
+    )
     out_rows, n_drop = [], 0
     for ci, code in enumerate(codes):
         bars = cs._bars_from_parquet(cs._code_path(code))
@@ -261,26 +316,27 @@ def backfill_trend(limit=0):
             n_drop += len(by_code[code])
             continue
         idx = {b["dt"]: i for i, b in enumerate(bars)}
-        for cut, poss in sorted(
-                _cuts_for(by_code[code], idx).items()):
+        for cut, poss in sorted(_cuts_for(by_code[code], idx).items()):
             try:
-                sub = bars[:cut + 1]
+                sub = bars[: cut + 1]
                 st = analyze(sub)
                 t = _trend(st.get("bis") or [], sub[-1]["c"])["state"]
             except Exception:
                 n_drop += len(poss)
                 continue
             for p in poss:
-                out_rows.append({"code": code, "type": p["type"],
-                                 "dt": p["sig_dt"], "trend": t})
+                out_rows.append(
+                    {"code": code, "type": p["type"], "dt": p["sig_dt"], "trend": t}
+                )
         if (ci + 1) % 300 == 0:
-            print("  ..%d/%d codes, +rows=%d" % (ci + 1, len(codes),
-                                                 len(out_rows)))
+            print("  ..%d/%d codes, +rows=%d" % (ci + 1, len(codes), len(out_rows)))
     if out_rows:
         merged = list(done.values()) + out_rows
         cs._write_jsonl(TREND_BF, merged)
-    print("backfill_trend done: +%d rows (drop=%d), total=%d"
-          % (len(out_rows), n_drop, len(done) + len(out_rows)))
+    print(
+        "backfill_trend done: +%d rows (drop=%d), total=%d"
+        % (len(out_rows), n_drop, len(done) + len(out_rows))
+    )
     return out_rows
 
 
@@ -305,9 +361,11 @@ def trend_report():
     if not tb:
         raise SystemExit("trend backfill empty: 先跑 --backfill-trend")
     led = cs._load_paper()
-    closed = {(p["code"], p["type"], p.get("sig_dt")): p
-              for p in led.get("closed", [])
-              if not p.get("adj_flag") and p.get("ret") is not None}
+    closed = {
+        (p["code"], p["type"], p.get("sig_dt")): p
+        for p in led.get("closed", [])
+        if not p.get("adj_flag") and p.get("ret") is not None
+    }
     rows = []
     for k, p in closed.items():
         t = tb.get(k)
@@ -316,19 +374,25 @@ def trend_report():
         rows.append((t["trend"], p["type"], p["ret"]))
     print("trend_report: %d/%d matched" % (len(rows), len(closed)))
     from collections import defaultdict
+
     g = defaultdict(list)
     for tr, ty, ret in rows:
         g[(tr, ty)].append(ret)
     types = sorted({ty for _, ty in g})
-    print("\n%-6s %-4s %5s %7s %8s" % ("trend", "type", "n", "win%",
-                                       "exe20%"))
+    print("\n%-6s %-4s %5s %7s %8s" % ("trend", "type", "n", "win%", "exe20%"))
     for tr in ("up", "range", "down"):
         agg = [r for (a, _), rs in g.items() if a == tr for r in rs]
         if agg:
-            print("%-6s %-4s %5d %6.1f%% %+7.2f%%   ← 全类型合计"
-                  % (tr, "ALL", len(agg),
-                     100.0 * sum(1 for r in agg if r > 0) / len(agg),
-                     sum(agg) / len(agg)))
+            print(
+                "%-6s %-4s %5d %6.1f%% %+7.2f%%   ← 全类型合计"
+                % (
+                    tr,
+                    "ALL",
+                    len(agg),
+                    100.0 * sum(1 for r in agg if r > 0) / len(agg),
+                    sum(agg) / len(agg),
+                )
+            )
         for ty in types:
             rs = g.get((tr, ty)) or []
             if not rs:
@@ -336,33 +400,57 @@ def trend_report():
             win = 100.0 * sum(1 for r in rs if r > 0) / len(rs)
             avg = sum(rs) / len(rs)
             note = "" if len(rs) >= 50 else "  (n<50 仅列不评)"
-            print("%-6s %-4s %5d %6.1f%% %+7.2f%%%s"
-                  % (tr, ty, len(rs), win, avg, note))
+            print(
+                "%-6s %-4s %5d %6.1f%% %+7.2f%%%s" % (tr, ty, len(rs), win, avg, note)
+            )
     # 买点类聚合对照（过滤启用的核心问题：up 买 vs 非up 买）
-    for grp, name in ((("1买", "2买", "3买"), "买点类"),
-                      (("1卖", "2卖", "3卖"), "卖点类")):
-        up = [r for (tr, ty), rs in g.items()
-              if tr == "up" and ty in grp for r in rs]
-        rest = [r for (tr, ty), rs in g.items()
-                if tr != "up" and ty in grp for r in rs]
+    for grp, name in (
+        (("1买", "2买", "3买"), "买点类"),
+        (("1卖", "2卖", "3卖"), "卖点类"),
+    ):
+        up = [r for (tr, ty), rs in g.items() if tr == "up" and ty in grp for r in rs]
+        rest = [r for (tr, ty), rs in g.items() if tr != "up" and ty in grp for r in rs]
         if up and rest:
             wu = 100.0 * sum(1 for r in up if r > 0) / len(up)
             wr = 100.0 * sum(1 for r in rest if r > 0) / len(rest)
-            print("\n[%s] trend=up n=%d win=%.1f%% avg=%+.2f%% | "
-                  "非up n=%d win=%.1f%% avg=%+.2f%% | Δwin=%+.1fpp Δavg=%+.2fpp"
-                  % (name, len(up), wu, sum(up) / len(up),
-                     len(rest), wr, sum(rest) / len(rest),
-                     wu - wr, sum(up) / len(up) - sum(rest) / len(rest)))
+            print(
+                "\n[%s] trend=up n=%d win=%.1f%% avg=%+.2f%% | "
+                "非up n=%d win=%.1f%% avg=%+.2f%% | Δwin=%+.1fpp Δavg=%+.2fpp"
+                % (
+                    name,
+                    len(up),
+                    wu,
+                    sum(up) / len(up),
+                    len(rest),
+                    wr,
+                    sum(rest) / len(rest),
+                    wu - wr,
+                    sum(up) / len(up) - sum(rest) / len(rest),
+                )
+            )
     return rows
 
 
 # ── 影子打分（scan 产线接入，S 批） ───────────────────────
 def feature_cols():
     """训练/打分共用特征列（cat, num）——两端口径永不分叉。"""
-    return (["type", "reg_fav", "pv_state"],
-            ["lag", "npv", "conf", "n_prior",
-             "mbei", "bei", "bei2", "vv", "tbe",
-             "div_area", "div_dif"] + ["kg_" + c for c in KG_FEATS])
+    return (
+        ["type", "reg_fav", "pv_state"],
+        [
+            "lag",
+            "npv",
+            "conf",
+            "n_prior",
+            "mbei",
+            "bei",
+            "bei2",
+            "vv",
+            "tbe",
+            "div_area",
+            "div_dif",
+        ]
+        + ["kg_" + c for c in KG_FEATS],
+    )
 
 
 _MODEL = None
@@ -375,6 +463,7 @@ def _booster():
         import shutil
         import tempfile
         import lightgbm as lgb
+
         fp = os.path.join(MODEL_DIR, "chanlun_sig_lgb.txt")
         if not os.path.exists(fp):
             return None
@@ -395,6 +484,7 @@ def score_rows(rows):
     """
     try:
         import pandas as pd
+
         m = _booster()
         if m is None or not rows:
             return 0
@@ -405,23 +495,29 @@ def score_rows(rows):
             kg = pd.read_parquet(kg_fp).set_index("ts_code")
         recs = []
         for r in rows:
-            rec = {"type": r.get("type"),
-                   "reg_fav": _tri(aligned(r.get("reg"), r.get("type"))),
-                   "pv_state": r.get("pv_state") or "na",
-                   "lag": r.get("lag"), "npv": r.get("npv"),
-                   "conf": r.get("conf"), "n_prior": r.get("n_prior"),
-                   "mbei": _tri(r.get("mbei")), "bei": _tri(r.get("bei")),
-                   "bei2": _tri(r.get("bei2")), "vv": _tri(r.get("vv")),
-                   "tbe": _tri(r.get("tbe")),
-                   "div_area": _tri(r.get("div_area")),
-                   "div_dif": _tri(r.get("div_dif"))}
+            rec = {
+                "type": r.get("type"),
+                "reg_fav": _tri(aligned(r.get("reg"), r.get("type"))),
+                "pv_state": r.get("pv_state") or "na",
+                "lag": r.get("lag"),
+                "npv": r.get("npv"),
+                "conf": r.get("conf"),
+                "n_prior": r.get("n_prior"),
+                "mbei": _tri(r.get("mbei")),
+                "bei": _tri(r.get("bei")),
+                "bei2": _tri(r.get("bei2")),
+                "vv": _tri(r.get("vv")),
+                "tbe": _tri(r.get("tbe")),
+                "div_area": _tri(r.get("div_area")),
+                "div_dif": _tri(r.get("div_dif")),
+            }
             if kg is not None and r.get("code") in kg.index:
                 k = kg.loc[r["code"]]
                 for c in KG_FEATS:
                     rec["kg_" + c] = float(k[c])
             recs.append(rec)
         X = pd.DataFrame(recs)[cat_cols + num_cols]
-        for c in cat_cols:                  # 列序+dtype 与训练严格一致
+        for c in cat_cols:  # 列序+dtype 与训练严格一致
             X[c] = X[c].astype("category")
         for c in num_cols:
             X[c] = pd.to_numeric(X[c], errors="coerce")
@@ -439,6 +535,7 @@ def train():
     import pandas as pd
     import lightgbm as lgb
     from sklearn.metrics import roc_auc_score
+
     df = pd.read_parquet(DS_OUT)
     df = df.sort_values("detect_date").reset_index(drop=True)
     cat_cols, num_cols = feature_cols()
@@ -453,39 +550,59 @@ def train():
     ytr, yte = y.iloc[:n_tr], y.iloc[n_tr:]
     dtr = lgb.Dataset(Xtr, ytr, categorical_feature=cat_cols)
     dte = lgb.Dataset(Xte, yte, reference=dtr)
-    params = {"objective": "binary", "metric": "auc",
-              "learning_rate": 0.05, "num_leaves": 31,
-              "min_data_in_leaf": 40, "feature_fraction": 0.9,
-              "bagging_fraction": 0.8, "bagging_freq": 1,
-              "verbose": -1, "seed": 42}
-    m = lgb.train(params, dtr, num_boost_round=300,
-                  valid_sets=[dte],
-                  callbacks=[lgb.early_stopping(30, verbose=False)])
+    params = {
+        "objective": "binary",
+        "metric": "auc",
+        "learning_rate": 0.05,
+        "num_leaves": 31,
+        "min_data_in_leaf": 40,
+        "feature_fraction": 0.9,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 1,
+        "verbose": -1,
+        "seed": 42,
+    }
+    m = lgb.train(
+        params,
+        dtr,
+        num_boost_round=300,
+        valid_sets=[dte],
+        callbacks=[lgb.early_stopping(30, verbose=False)],
+    )
     pte = m.predict(Xte, num_iteration=m.best_iteration)
     auc = roc_auc_score(yte, pte)
-    print("train: n=%d (tr %d / te %d, split@%s) best_iter=%d"
-          % (len(df), n_tr, len(df) - n_tr, split_dt, m.best_iteration))
-    print("  test AUC = %.4f  (win rate %.1f%%, baseline AUC=0.5)"
-          % (auc, yte.mean() * 100))
+    print(
+        "train: n=%d (tr %d / te %d, split@%s) best_iter=%d"
+        % (len(df), n_tr, len(df) - n_tr, split_dt, m.best_iteration)
+    )
+    print(
+        "  test AUC = %.4f  (win rate %.1f%%, baseline AUC=0.5)"
+        % (auc, yte.mean() * 100)
+    )
     # 分层：测试集按 type
     dte_df = df.iloc[n_tr:].copy()
     dte_df["p"] = pte
     for t, g in dte_df.groupby("type"):
         if len(g) >= 30 and g["win"].nunique() > 1:
-            print("    %-3s n=%-4d AUC=%.4f win=%.0f%%"
-                  % (t, len(g), roc_auc_score(g["win"], g["p"]),
-                     g["win"].mean() * 100))
-    imp = sorted(zip(feats, m.feature_importance("gain")),
-                 key=lambda x: -x[1])
-    print("  importance(gain): " + ", ".join(
-        "%s=%.0f" % (k, v) for k, v in imp[:8]))
+            print(
+                "    %-3s n=%-4d AUC=%.4f win=%.0f%%"
+                % (t, len(g), roc_auc_score(g["win"], g["p"]), g["win"].mean() * 100)
+            )
+    imp = sorted(zip(feats, m.feature_importance("gain")), key=lambda x: -x[1])
+    print("  importance(gain): " + ", ".join("%s=%.0f" % (k, v) for k, v in imp[:8]))
     # 质量分分布（影子观察：高分段胜率是否抬升）
     qs = dte_df["p"].quantile([0.2, 0.4, 0.6, 0.8]).values
     lo = dte_df[dte_df["p"] < qs[0]]
     hi = dte_df[dte_df["p"] >= qs[-1]]
-    print("  score tail: bottom20%% win=%.1f%% (n=%d) | top20%% win=%.1f%% (n=%d)"
-          % (lo["win"].mean() * 100 if len(lo) else -1, len(lo),
-             hi["win"].mean() * 100 if len(hi) else -1, len(hi)))
+    print(
+        "  score tail: bottom20%% win=%.1f%% (n=%d) | top20%% win=%.1f%% (n=%d)"
+        % (
+            lo["win"].mean() * 100 if len(lo) else -1,
+            len(lo),
+            hi["win"].mean() * 100 if len(hi) else -1,
+            len(hi),
+        )
+    )
     os.makedirs(MODEL_DIR, exist_ok=True)
     fp = os.path.join(MODEL_DIR, "chanlun_sig_lgb.txt")
     # LightGBM C 端 fopen 不支持中文路径 → model_to_string + Python 落盘
@@ -500,14 +617,19 @@ def train():
 def main():
     ap = argparse.ArgumentParser(description="chanlun signal ML features")
     ap.add_argument("--backfill-gray", action="store_true")
-    ap.add_argument("--backfill-trend", action="store_true",
-                    help="TR 批：closed 信号回填信号时点日线趋势")
-    ap.add_argument("--trend-report", action="store_true",
-                    help="TR 批：(trend×type×exe20) 三维对照")
+    ap.add_argument(
+        "--backfill-trend",
+        action="store_true",
+        help="TR 批：closed 信号回填信号时点日线趋势",
+    )
+    ap.add_argument(
+        "--trend-report", action="store_true", help="TR 批：(trend×type×exe20) 三维对照"
+    )
     ap.add_argument("--dataset", action="store_true")
     ap.add_argument("--train", action="store_true")
-    ap.add_argument("--limit", type=int, default=0,
-                    help="backfill 系列调试：只跑前 N 票")
+    ap.add_argument(
+        "--limit", type=int, default=0, help="backfill 系列调试：只跑前 N 票"
+    )
     args = ap.parse_args()
     if args.backfill_gray:
         backfill_gray(limit=args.limit)

@@ -15,6 +15,7 @@ score = 50 + 平均净多强度/2，bull/bear 计向、中性不计）。
 
 输出格式：{"meta": {...}, "series": {"2026-10-01": {code: {"score":61,"n":12}}}}
 """
+
 import argparse
 import datetime
 import json
@@ -27,22 +28,24 @@ sys.path.insert(0, HERE)
 NEWS_DB = os.path.join(os.path.dirname(HERE), "news_collector", "news.db")
 OUT = os.path.join(HERE, "data", "jev_archive", "jev_replay_series.json")
 START_DEFAULT = "2026-09-25"
-MATCH_LIMIT = 3000          # 与产线单次读库上限一致
-HITS_CAP = 20               # 每股明细留存上限
+MATCH_LIMIT = 3000  # 与产线单次读库上限一致
+HITS_CAP = 20  # 每股明细留存上限
 
 
 def load_keywords():
     """现行 watchlist → {关键词: code}（与 _jev_pool_scores 同构）。"""
     import runner
-    wl = json.load(open(os.path.join(runner.NEWS_DIR, "news_config.json"),
-                        encoding="utf-8"))["watchlist"]
+
+    wl = json.load(
+        open(os.path.join(runner.NEWS_DIR, "news_config.json"), encoding="utf-8")
+    )["watchlist"]
     kws = {}
     for e in wl:
         code = e.get("code", "")
         if not code:
             continue
         ks = {e.get("name") or ""}
-        for a in (e.get("aliases") or []):
+        for a in e.get("aliases") or []:
             if len(str(a)) >= 2:
                 ks.add(str(a))
         ks.discard("")
@@ -54,10 +57,12 @@ def load_keywords():
 def load_judged():
     """全部已判断新闻 [(created_at, title, bias, conf)]（中性不入）。"""
     import sqlite3
+
     db = sqlite3.connect(NEWS_DB)
     rows = db.execute(
         "SELECT created_at, title, jev FROM news WHERE jev IS NOT NULL "
-        "ORDER BY created_at").fetchall()
+        "ORDER BY created_at"
+    ).fetchall()
     db.close()
     out = []
     for ca, title, j in rows:
@@ -88,13 +93,19 @@ def replay_day(day, news, kws):
                 a["net"] += cf if b == "bull" else -cf
                 a["n"] += 1
                 if len(a["hits"]) < HITS_CAP:
-                    a["hits"].append({"kw": k, "title": title[:80],
-                                      "bias": b, "conf": round(cf, 2)})
+                    a["hits"].append(
+                        {"kw": k, "title": title[:80], "bias": b, "conf": round(cf, 2)}
+                    )
                 break
-    return {code: {"score": round(max(0, min(100,
-                    50 + (a["net"] / a["n"]) / 2))),
-                   "n": a["n"], "hits": a["hits"]}
-            for code, a in agg.items() if a["n"]}
+    return {
+        code: {
+            "score": round(max(0, min(100, 50 + (a["net"] / a["n"]) / 2))),
+            "n": a["n"],
+            "hits": a["hits"],
+        }
+        for code, a in agg.items()
+        if a["n"]
+    }
 
 
 def main():
@@ -105,8 +116,7 @@ def main():
 
     kws = load_keywords()
     news = load_judged()
-    print("keywords=%d news=%d window %s ~ %s"
-          % (len(kws), len(news), a.start, a.end))
+    print("keywords=%d news=%d window %s ~ %s" % (len(kws), len(news), a.start, a.end))
     series, d = {}, datetime.date.fromisoformat(a.start)
     while d.isoformat() <= a.end:
         day = d.isoformat()
@@ -114,15 +124,21 @@ def main():
         if pool:
             series[day] = pool
         d += datetime.timedelta(days=1)
-    doc = {"meta": {"generated_at": datetime.datetime.now().isoformat(
-                        sep=" ", timespec="seconds"),
-                    "start": a.start, "end": a.end,
-                    "days": len(series),
-                    "partial_last_day": True,
-                    "note": "关键词用现行 watchlist（历史池漂移不可还原，"
-                            "与每日归档互补）；末一日为重放时刻前的部分数据"
-                            "（077k 审查注），回测消费建议剔除末日"},
-           "series": series}
+    doc = {
+        "meta": {
+            "generated_at": datetime.datetime.now().isoformat(
+                sep=" ", timespec="seconds"
+            ),
+            "start": a.start,
+            "end": a.end,
+            "days": len(series),
+            "partial_last_day": True,
+            "note": "关键词用现行 watchlist（历史池漂移不可还原，"
+            "与每日归档互补）；末一日为重放时刻前的部分数据"
+            "（077k 审查注），回测消费建议剔除末日",
+        },
+        "series": series,
+    }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(OUT), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -131,9 +147,14 @@ def main():
     print("days=%d -> %s" % (len(series), OUT))
     for day in sorted(series)[-3:]:
         p = series[day]
-        print(" ", day, "pool=%d" % len(p),
-              " ".join("%s:%s(n%d)" % (c, v["score"], v["n"])
-                       for c, v in list(p.items())[:4]))
+        print(
+            " ",
+            day,
+            "pool=%d" % len(p),
+            " ".join(
+                "%s:%s(n%d)" % (c, v["score"], v["n"]) for c, v in list(p.items())[:4]
+            ),
+        )
     return 0
 
 

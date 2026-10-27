@@ -13,13 +13,14 @@ Cookie 只含 token）挂——token 批 5 处 + token_probe 全部中招。
 xq_a_token（token 池换号时数据面 token 与 cookie 保持一致）。
 幂等；任何异常静默降级原样（绝不 raise——采集不因补丁失败而中断）。
 """
+
 import json
 import os
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _BROWSER_CACHE = os.path.join(_HERE, "config", "xq_browser_cookies.json")
-_CACHE_TTL = 11 * 3600            # 略小于 xq_browser 写侧 12h
+_CACHE_TTL = 11 * 3600  # 略小于 xq_browser 写侧 12h
 
 _state = {"patched": False, "cookie_str": "", "cookie_ts": 0.0}
 
@@ -33,19 +34,22 @@ def _browser_cookie_str() -> str:
         with open(_BROWSER_CACHE, encoding="utf-8-sig") as f:
             data = json.load(f)
         if time.time() - float(data.get("harvested_at") or 0) <= _CACHE_TTL:
-            pairs = [(c["name"], c["value"])
-                     for c in data.get("cookies", [])
-                     if isinstance(c, dict) and c.get("name")
-                     and c.get("value")]
+            pairs = [
+                (c["name"], c["value"])
+                for c in data.get("cookies", [])
+                if isinstance(c, dict) and c.get("name") and c.get("value")
+            ]
     except Exception:
         pairs = []
     if not pairs:
         try:
             from xq_browser import harvest_cookies
-            pairs = [(c["name"], c["value"])
-                     for c in harvest_cookies(force=True)
-                     if isinstance(c, dict) and c.get("name")
-                     and c.get("value")]
+
+            pairs = [
+                (c["name"], c["value"])
+                for c in harvest_cookies(force=True)
+                if isinstance(c, dict) and c.get("name") and c.get("value")
+            ]
         except Exception:
             pairs = []
     if not pairs:
@@ -60,8 +64,7 @@ def _full_cookie(token: str) -> str:
     base = _browser_cookie_str()
     if not base:
         return ("xq_a_token=%s" % token) if token else ""
-    out = [p for p in base.split("; ")
-           if not p.startswith("xq_a_token=")]
+    out = [p for p in base.split("; ") if not p.startswith("xq_a_token=")]
     if token:
         out.append("xq_a_token=%s" % token)
     return "; ".join(out)
@@ -74,6 +77,7 @@ def patch_pysnowball_cookies() -> bool:
         return True
     try:
         import requests
+
         _orig = requests.get
 
         def _get(url, *a, **kw):

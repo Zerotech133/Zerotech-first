@@ -14,6 +14,7 @@ basis_day+2 首次可操作日开盘买入 × T+5/T+10 收盘卖出，ts_adj_fac
 
 只读工具，不写任何生产数据。用法：python pick_layer_verdicts.py
 """
+
 import glob
 import json
 import os
@@ -28,8 +29,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "portal")))
 import strong_ts_window_research as R  # noqa: E402  湖加载/日历/收益
 
 HIST = os.path.join(HERE, "..", "portal", "data", "picks_history")
-LAYERS = ("q_toxic", "q_first_buy", "env_diff_exempt", "panic_buy",
-          "env_diff")
+LAYERS = ("q_toxic", "q_first_buy", "env_diff_exempt", "panic_buy", "env_diff")
 WINDOWS = (5, 10)
 
 
@@ -37,8 +37,9 @@ def load_archives(hist_dir=None):
     """(basis_day, stocks) 列表；trade_basis 取前 10 位日期。
     hist_dir：演练用模拟归档目录（--hist 传入，如 picks_history_sim），
     与生产 picks_history 隔离。"""
-    root = os.path.abspath(hist_dir or os.path.join(
-        HERE, "..", "portal", "data", "picks_history"))
+    root = os.path.abspath(
+        hist_dir or os.path.join(HERE, "..", "portal", "data", "picks_history")
+    )
     out = []
     for fp in sorted(glob.glob(os.path.join(root, "todays_*.json"))):
         try:
@@ -62,12 +63,12 @@ def main():
         print("归档目录无档可读：%s" % (hist_dir or HIST))
         return 1
     cal = R.trade_calendar()
-    stocks_k = R.load_table_grouped("ts_daily",
-                                    ["ts_code", "trade_date", "open", "close"],
-                                    "ts_code")
-    adj_all = R.load_table_grouped("ts_adj_factor",
-                                   ["ts_code", "trade_date", "adj_factor"],
-                                   "ts_code")
+    stocks_k = R.load_table_grouped(
+        "ts_daily", ["ts_code", "trade_date", "open", "close"], "ts_code"
+    )
+    adj_all = R.load_table_grouped(
+        "ts_adj_factor", ["ts_code", "trade_date", "adj_factor"], "ts_code"
+    )
 
     rows = []  # (basis, code, layer, wins)
     n_pending = 0
@@ -85,40 +86,58 @@ def main():
             if k is None or k.empty:
                 continue
             adf = adj_all.get(code)
-            adjmap = ({str(t): float(a) for t, a in zip(
-                adf["trade_date"], adf["adj_factor"])} if adf is not None
-                and len(adf) else None)
+            adjmap = (
+                {str(t): float(a) for t, a in zip(adf["trade_date"], adf["adj_factor"])}
+                if adf is not None and len(adf)
+                else None
+            )
             wins = {}
             for w in WINDOWS:
                 d1 = R.after_days(cal, exec_day, w)
-                wins[w] = (R.fast_pct(k, adjmap, exec_day, d1)
-                           if d1 else None)
+                wins[w] = R.fast_pct(k, adjmap, exec_day, d1) if d1 else None
             layer = next((L for L in LAYERS if st.get(L)), None)
-            rows.append({"basis": basis, "code": code,
-                         "tier": st.get("tier"), "layer": layer,
-                         "wins": wins})
+            rows.append(
+                {
+                    "basis": basis,
+                    "code": code,
+                    "tier": st.get("tier"),
+                    "layer": layer,
+                    "wins": wins,
+                }
+            )
 
-    print("归档 %d 份（%s ~ %s），事件 %d（basis+2 未满档 %d 份跳过）"
-          % (len(archs), archs[0][0], archs[-1][0], len(rows), n_pending))
+    print(
+        "归档 %d 份（%s ~ %s），事件 %d（basis+2 未满档 %d 份跳过）"
+        % (len(archs), archs[0][0], archs[-1][0], len(rows), n_pending)
+    )
 
     def stat(sel, w):
         vals = [r["wins"][w] for r in sel]
-        vals = [v for v in vals
-                if isinstance(v, float) and np.isfinite(v)]
+        vals = [v for v in vals if isinstance(v, float) and np.isfinite(v)]
         if not vals:
             return None
         arr = np.array(vals)
-        return (len(vals), round(float(arr.mean()), 2),
-                round(float(np.median(arr)), 2),
-                round(float((arr > 0).mean() * 100), 1))
+        return (
+            len(vals),
+            round(float(arr.mean()), 2),
+            round(float(np.median(arr)), 2),
+            round(float((arr > 0).mean() * 100), 1),
+        )
 
     base = {w: stat(rows, w) for w in WINDOWS}
-    print("基准（全体票）：", "; ".join(
-        "T+%d n=%d 均值%+.2f 中位%+.2f 胜率%.1f%%" % (w, *base[w])
-        for w in WINDOWS if base[w]))
+    print(
+        "基准（全体票）：",
+        "; ".join(
+            "T+%d n=%d 均值%+.2f 中位%+.2f 胜率%.1f%%" % (w, *base[w])
+            for w in WINDOWS
+            if base[w]
+        ),
+    )
     print()
-    print("%-16s %6s | %24s | %24s" %
-          ("层", "n", "T+5 均值/中位/胜率%(差)", "T+10 均值/中位/胜率%(差)"))
+    print(
+        "%-16s %6s | %24s | %24s"
+        % ("层", "n", "T+5 均值/中位/胜率%(差)", "T+10 均值/中位/胜率%(差)")
+    )
     for L in LAYERS:
         sel = [r for r in rows if r["layer"] == L]
         line = "%-16s %6d" % (L, len(sel))
@@ -128,7 +147,11 @@ def main():
                 line += " |          --"
                 continue
             line += " | %6.2f %6.2f %5.1f(%+5.1f)" % (
-                s[1], s[2], s[3], s[2] - base[w][2])
+                s[1],
+                s[2],
+                s[3],
+                s[2] - base[w][2],
+            )
         print(line + ("   [样本积累中·旧档无标注]" if not sel else ""))
     # 层样本达标提示（skill 门槛：n≥10 且显著）
     print()

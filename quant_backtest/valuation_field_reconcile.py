@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """A 股估值字段的只读拼接与空值分类。"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -12,7 +13,9 @@ def _date_series(series: pd.Series) -> pd.Series:
     return series.astype("string").str.replace("-", "", regex=False).str.slice(0, 8)
 
 
-def join_daily_basic_to_kline(kline: pd.DataFrame, daily_basic: pd.DataFrame) -> pd.DataFrame:
+def join_daily_basic_to_kline(
+    kline: pd.DataFrame, daily_basic: pd.DataFrame
+) -> pd.DataFrame:
     """将 daily_basic 拼入行情视图；市值从万元转为元，不改写输入表。"""
     left = kline.copy()
     right = daily_basic.copy()
@@ -26,8 +29,15 @@ def join_daily_basic_to_kline(kline: pd.DataFrame, daily_basic: pd.DataFrame) ->
     right["_join_date"] = _date_series(right["trade_date"])
     right["_daily_basic_match"] = True
     right = right.drop_duplicates(["_join_code", "_join_date"], keep="last")
-    fields = [field for field in ["total_mv", "pe", "turnover_rate"] if field in right.columns]
-    merged = left.merge(right[["_join_code", "_join_date", "_daily_basic_match"] + fields], on=["_join_code", "_join_date"], how="left", suffixes=("", "_basic"))
+    fields = [
+        field for field in ["total_mv", "pe", "turnover_rate"] if field in right.columns
+    ]
+    merged = left.merge(
+        right[["_join_code", "_join_date", "_daily_basic_match"] + fields],
+        on=["_join_code", "_join_date"],
+        how="left",
+        suffixes=("", "_basic"),
+    )
     total_mv = merged.get("total_mv_basic", merged.get("total_mv"))
     if total_mv is not None:
         merged["market_cap"] = pd.to_numeric(total_mv, errors="coerce") * 10000.0
@@ -44,11 +54,17 @@ def join_daily_basic_to_kline(kline: pd.DataFrame, daily_basic: pd.DataFrame) ->
             merged[target] = merged[target].where(merged[target].notna(), basic_source)
         else:
             merged[target] = basic_source
-    merged["_daily_basic_match"] = merged.get("_daily_basic_match", pd.Series(False, index=merged.index)).fillna(False).astype(bool)
+    merged["_daily_basic_match"] = (
+        merged.get("_daily_basic_match", pd.Series(False, index=merged.index))
+        .fillna(False)
+        .astype(bool)
+    )
     return merged.drop(columns=["_join_code", "_join_date"], errors="ignore")
 
 
-def join_daily_basic_from_dir(kline: pd.DataFrame, source_dir: str | Path) -> pd.DataFrame:
+def join_daily_basic_from_dir(
+    kline: pd.DataFrame, source_dir: str | Path
+) -> pd.DataFrame:
     """从本地 ``ts_daily_basic`` parquet 分片拼接估值字段。
 
     只读取行情键命中的行，避免把四百多万行日基本面一次性载入内存。
@@ -59,10 +75,12 @@ def join_daily_basic_from_dir(kline: pd.DataFrame, source_dir: str | Path) -> pd
         raise FileNotFoundError(str(root))
     if "ts_code" not in kline or "trade_date" not in kline:
         raise ValueError("kline 缺少 ts_code/trade_date")
-    keys = pd.DataFrame({
-        "_join_code": kline["ts_code"].astype(str),
-        "_join_date": _date_series(kline["trade_date"]),
-    }).drop_duplicates()
+    keys = pd.DataFrame(
+        {
+            "_join_code": kline["ts_code"].astype(str),
+            "_join_date": _date_series(kline["trade_date"]),
+        }
+    ).drop_duplicates()
     frames: list[pd.DataFrame] = []
     columns = ["ts_code", "trade_date", "total_mv", "pe", "turnover_rate"]
     for path in sorted(root.glob("*.parquet")):
@@ -75,7 +93,11 @@ def join_daily_basic_from_dir(kline: pd.DataFrame, source_dir: str | Path) -> pd
         frame = frame.merge(keys, on=["_join_code", "_join_date"], how="inner")
         if not frame.empty:
             frames.append(frame)
-    basic = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=columns)
+    basic = (
+        pd.concat(frames, ignore_index=True)
+        if frames
+        else pd.DataFrame(columns=columns)
+    )
     return join_daily_basic_to_kline(kline, basic)
 
 
@@ -90,13 +112,20 @@ def valuation_field_coverage(view: pd.DataFrame) -> dict[str, Any]:
             "missing": total - present,
             "coverage": round(present / total, 6) if total else 0.0,
         }
-    matched = int(view["_daily_basic_match"].sum()) if "_daily_basic_match" in view else None
-    return {"rows": total, "source_matched_rows": matched,
-            "source_unmatched_rows": total - matched if matched is not None else None,
-            "fields": fields}
+    matched = (
+        int(view["_daily_basic_match"].sum()) if "_daily_basic_match" in view else None
+    )
+    return {
+        "rows": total,
+        "source_matched_rows": matched,
+        "source_unmatched_rows": total - matched if matched is not None else None,
+        "fields": fields,
+    }
 
 
-def read_only_valuation_check(kline: pd.DataFrame, source_dir: str | Path) -> dict[str, Any]:
+def read_only_valuation_check(
+    kline: pd.DataFrame, source_dir: str | Path
+) -> dict[str, Any]:
     """只读核对估值来源，区分来源空与字段合法空值。
 
     返回的视图和覆盖统计均由副本计算，绝不回写行情文件或来源目录。
@@ -105,11 +134,21 @@ def read_only_valuation_check(kline: pd.DataFrame, source_dir: str | Path) -> di
     """
     root = Path(source_dir)
     files = sorted(root.glob("*.parquet")) if root.exists() else []
-    view = join_daily_basic_from_dir(kline.copy(), root) if files else join_daily_basic_to_kline(
-        kline.copy(), pd.DataFrame(columns=["ts_code", "trade_date", "total_mv", "pe", "turnover_rate"])
+    view = (
+        join_daily_basic_from_dir(kline.copy(), root)
+        if files
+        else join_daily_basic_to_kline(
+            kline.copy(),
+            pd.DataFrame(
+                columns=["ts_code", "trade_date", "total_mv", "pe", "turnover_rate"]
+            ),
+        )
     )
     coverage = valuation_field_coverage(view)
-    matched = sum(coverage["fields"][field]["present"] for field in ("market_cap", "pe", "turnover"))
+    matched = sum(
+        coverage["fields"][field]["present"]
+        for field in ("market_cap", "pe", "turnover")
+    )
     status = "ok" if matched else "source_empty"
     return {
         "status": status,
@@ -124,6 +163,7 @@ def read_only_valuation_check(kline: pd.DataFrame, source_dir: str | Path) -> di
 
 def classify_valuation_null(row: Any) -> str:
     """区分亏损股 PE 空值、停牌换手率空值与未解释空值。"""
+
     def value(name: str):
         if isinstance(row, dict):
             return row.get(name)
@@ -134,7 +174,11 @@ def classify_valuation_null(row: Any) -> str:
     suspended = bool(value("suspended"))
     if pd.isna(pe):
         try:
-            if net_profit is not None and not pd.isna(net_profit) and float(net_profit) <= 0:
+            if (
+                net_profit is not None
+                and not pd.isna(net_profit)
+                and float(net_profit) <= 0
+            ):
                 return "legal_null_loss"
         except (TypeError, ValueError):
             pass

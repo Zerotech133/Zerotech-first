@@ -19,6 +19,7 @@ ip_block_trip 全局冷却（动态池时代熔断=换 IP 非停轮）。
 
 用法：python xq_collect_1000.py [--target 1000] [--clean-junk] [--cursor-file PATH]
 """
+
 import argparse
 import json
 import os
@@ -39,15 +40,22 @@ URL_TIMELINE = SOCIAL + "/v4/statuses/public_timeline_by_category.json"
 CATS = (102, 104, 105, 111)
 COUNT = 20
 MAX_BLOCK_STREAK = 5
-MAX_PAGES_PER_CAT = 120                # 单类目每轮步数上限（续翻后每轮全部花在新鲜区）
+MAX_PAGES_PER_CAT = 120  # 单类目每轮步数上限（续翻后每轮全部花在新鲜区）
 MAX_REQUESTS = 640
-CURSOR_PATH = os.path.join(r"C:\aios\automation_runs", "xq_backfill",
-                           "backfill_cursor.json")   # 定时任务产物统一根（2026-10-18）
-SEED_CURSOR_PATH = os.path.join(r"C:\aios\automation_runs", "xq_backfill",
-                                "seed_cursor.json")  # 播种轮独立断点档（与常规轮隔离）
+CURSOR_PATH = os.path.join(
+    r"C:\aios\automation_runs", "xq_backfill", "backfill_cursor.json"
+)  # 定时任务产物统一根（2026-10-18）
+SEED_CURSOR_PATH = os.path.join(
+    r"C:\aios\automation_runs", "xq_backfill", "seed_cursor.json"
+)  # 播种轮独立断点档（与常规轮隔离）
 
-STATUS_FIELDS = ("view_count", "comment_count", "retweet_count",
-                 "like_count", "reward_count")
+STATUS_FIELDS = (
+    "view_count",
+    "comment_count",
+    "retweet_count",
+    "like_count",
+    "reward_count",
+)
 
 
 def db_count(table: str) -> int:
@@ -92,9 +100,11 @@ def save_seed_cursor(seed: int, cat: int, state: dict) -> None:
             with open(SEED_CURSOR_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
         bucket = data.get(str(seed)) or {}
-        bucket[str(cat)] = {"max_id": state.get("max_id"),
-                            "exhausted": bool(state.get("exhausted")),
-                            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        bucket[str(cat)] = {
+            "max_id": state.get("max_id"),
+            "exhausted": bool(state.get("exhausted")),
+            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
         data[str(seed)] = bucket
         tmp = SEED_CURSOR_PATH + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -116,8 +126,10 @@ def load_cursors() -> dict:
         out = {}
         for k, v in (d or {}).items():
             if isinstance(v, dict):
-                out[str(k)] = {"max_id": v.get("max_id"),
-                               "exhausted": bool(v.get("exhausted"))}
+                out[str(k)] = {
+                    "max_id": v.get("max_id"),
+                    "exhausted": bool(v.get("exhausted")),
+                }
         return out
     except Exception:
         return {}
@@ -140,16 +152,17 @@ def clean_junk() -> int:
     if not rows:
         con.close()
         return 0
-    if len(rows) == total:              # 全是空壳才清，防误伤好行
-        bak = "C:/Temp/xq_status_junk_backup_%s.json" % datetime.now().strftime("%H%M%S")
+    if len(rows) == total:  # 全是空壳才清，防误伤好行
+        bak = "C:/Temp/xq_status_junk_backup_%s.json" % datetime.now().strftime(
+            "%H%M%S"
+        )
         with open(bak, "w", encoding="utf-8") as f:
             json.dump([r[0] for r in rows], f)
         con.execute("DELETE FROM xq_status WHERE created_at='' OR created_at IS NULL")
         con.commit()
         print("[clean] 空壳行 %d 条已清（备份 %s）" % (len(rows), bak))
     else:
-        print("[clean] 空壳 %d/%d 条（非全空壳，跳过清理防误伤）"
-              % (len(rows), total))
+        print("[clean] 空壳 %d/%d 条（非全空壳，跳过清理防误伤）" % (len(rows), total))
     con.close()
     return len(rows)
 
@@ -182,8 +195,9 @@ def parse_item(it: dict, cat: int) -> dict | None:
 
 
 class Collector:
-    def __init__(self, target: int, fresh: bool = False,
-                 seed: int | None = None) -> None:
+    def __init__(
+        self, target: int, fresh: bool = False, seed: int | None = None
+    ) -> None:
         self.c = XqCrawler()
         self.target = target
         self.new = 0
@@ -204,11 +218,11 @@ class Collector:
             self.cursors = {}
             for cat in CATS:
                 st = saved.get(str(cat))
-                self.cursors[str(cat)] = st or {"max_id": str(seed),
-                                                "exhausted": False}
-        print("[collect] 已有 status_id %d 个%s"
-              % (len(self.seen),
-                 "，播种起点 max_id=%s" % seed if seed else ""))
+                self.cursors[str(cat)] = st or {"max_id": str(seed), "exhausted": False}
+        print(
+            "[collect] 已有 status_id %d 个%s"
+            % (len(self.seen), "，播种起点 max_id=%s" % seed if seed else "")
+        )
 
     def _save(self) -> None:
         if self.seed:
@@ -232,8 +246,7 @@ class Collector:
         except Exception as e:
             name = "? (%s)" % str(e)[:40]
         self.rotations += 1
-        print("[rotate] %s → 出口已换 %s（第 %d 次）"
-              % (reason, name, self.rotations))
+        print("[rotate] %s → 出口已换 %s（第 %d 次）" % (reason, name, self.rotations))
         time.sleep(8)
 
     def get_json(self, params: dict) -> dict | None:
@@ -250,7 +263,8 @@ class Collector:
                 print("[403] %s" % str(e)[:60])
                 if self.block_streak >= MAX_BLOCK_STREAK:
                     raise RuntimeError(
-                        "连续 %d 次换新出口仍被封，放弃" % MAX_BLOCK_STREAK)
+                        "连续 %d 次换新出口仍被封，放弃" % MAX_BLOCK_STREAK
+                    )
                 self.rotate("ip_blocked#%d" % self.block_streak)
             except Exception as e:
                 print("[get_json] 请求异常：%s" % str(e)[:70])
@@ -264,16 +278,14 @@ class Collector:
             if state.get("exhausted"):
                 print("[cat %d] 已到底（存档 exhausted），跳过" % cat)
                 continue
-            cursor = state.get("max_id")          # None=首页
+            cursor = state.get("max_id")  # None=首页
             resumed = cursor is not None
             if resumed:
-                print("[cat %d] 从存档游标续翻（%s...）"
-                      % (cat, str(cursor)[:16]))
+                print("[cat %d] 从存档游标续翻（%s...）" % (cat, str(cursor)[:16]))
             for step in range(MAX_PAGES_PER_CAT):
                 if self.new >= self.target or self.requests >= MAX_REQUESTS:
                     return
-                params = {"category": cat, "count": COUNT, "page": 1,
-                          "source": "user"}
+                params = {"category": cat, "count": COUNT, "page": 1, "source": "user"}
                 if cursor:
                     params["max_id"] = cursor
                 data = self.get_json(params)
@@ -284,15 +296,15 @@ class Collector:
                 if not items:
                     if resumed:
                         # 续翻到空页 = 走到既往已达的底部 → 类目挖尽
-                        self.cursors[key] = {"max_id": None,
-                                             "exhausted": True}
+                        self.cursors[key] = {"max_id": None, "exhausted": True}
                         self._save()
-                        print("[cat %d] step %d 空页（续翻），类目已到底"
-                              % (cat, step))
+                        print("[cat %d] step %d 空页（续翻），类目已到底" % (cat, step))
                     else:
-                        print("[cat %d] step %d 空页（非续翻不停档，如周末真空）"
-                              % (cat, step))
-                    break                         # 到底/暂空
+                        print(
+                            "[cat %d] step %d 空页（非续翻不停档，如周末真空）"
+                            % (cat, step)
+                        )
+                    break  # 到底/暂空
                 rows = []
                 for it in items:
                     r = parse_item(it, cat)
@@ -303,21 +315,20 @@ class Collector:
                     self.c.save("xq_status", rows)
                     self.new += len(rows)
                 nxt = (data or {}).get("next_max_id")
-                print("[cat %d] step %2d: %2d 条（新 %2d）| 累计新增 %d/%d"
-                      % (cat, step, len(items), len(rows),
-                         self.new, self.target))
+                print(
+                    "[cat %d] step %2d: %2d 条（新 %2d）| 累计新增 %d/%d"
+                    % (cat, step, len(items), len(rows), self.new, self.target)
+                )
                 if self.new >= self.target:
-                    if nxt and nxt != cursor:     # 断点存档后停机
-                        self.cursors[key] = {"max_id": nxt,
-                                             "exhausted": False}
+                    if nxt and nxt != cursor:  # 断点存档后停机
+                        self.cursors[key] = {"max_id": nxt, "exhausted": False}
                         self._save()
                     return
                 if not nxt or nxt == cursor:
                     # 游标耗尽 = 到底。仅续翻或深走（step>=10）才判 exhausted，
                     # 防周末短 feed 被误标永久跳过
                     if resumed or step >= 10:
-                        self.cursors[key] = {"max_id": None,
-                                             "exhausted": True}
+                        self.cursors[key] = {"max_id": None, "exhausted": True}
                         self._save()
                         print("[cat %d] 游标耗尽，类目已到底" % cat)
                     break
@@ -330,19 +341,30 @@ class Collector:
 def main() -> int:
     ap = argparse.ArgumentParser(description="目标采集 v2（游标深翻）")
     ap.add_argument("--target", type=int, default=1000)
-    ap.add_argument("--clean-junk", action="store_true",
-                    help="先清理 v1 空壳行（created_at=''）")
-    ap.add_argument("--fresh", action="store_true",
-                    help="忽略深翻断点存档，从顶部全量重走（seen 去重防重）")
-    ap.add_argument("--seed", type=int, default=None,
-                    help="号段播种起点（feed 序号，如 30000=2015-03 区段）；"
-                         "播种轮断点不落档，与常规轮隔离")
-    ap.add_argument("--cursor-file", default=None,
-                    help="播种断点档路径覆盖（双实例并行必须分片传参，如 "
-                         "seed_cursor_A.json/_B.json，防整文件读改写互踩）；"
-                         "缺省用默认 seed_cursor.json，行为不变")
+    ap.add_argument(
+        "--clean-junk", action="store_true", help="先清理 v1 空壳行（created_at=''）"
+    )
+    ap.add_argument(
+        "--fresh",
+        action="store_true",
+        help="忽略深翻断点存档，从顶部全量重走（seen 去重防重）",
+    )
+    ap.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="号段播种起点（feed 序号，如 30000=2015-03 区段）；"
+        "播种轮断点不落档，与常规轮隔离",
+    )
+    ap.add_argument(
+        "--cursor-file",
+        default=None,
+        help="播种断点档路径覆盖（双实例并行必须分片传参，如 "
+        "seed_cursor_A.json/_B.json，防整文件读改写互踩）；"
+        "缺省用默认 seed_cursor.json，行为不变",
+    )
     a = ap.parse_args()
-    if a.cursor_file:                     # 双实例分片：覆盖模块级断点档路径
+    if a.cursor_file:  # 双实例分片：覆盖模块级断点档路径
         global SEED_CURSOR_PATH
         SEED_CURSOR_PATH = a.cursor_file
     t0 = time.time()
@@ -358,10 +380,19 @@ def main() -> int:
     except Exception as e:
         print("[ABORT] 意外异常：%s" % str(e)[:120])
     after = db_count("xq_status")
-    print("[collect] 完成：新增 %d/%d | xq_status %d→%d | 请求 %d 次, "
-          "换出口 %d 次, 用时 %.1f 分钟"
-          % (col.new, a.target, base, after, col.requests,
-             col.rotations, (time.time() - t0) / 60))
+    print(
+        "[collect] 完成：新增 %d/%d | xq_status %d→%d | 请求 %d 次, "
+        "换出口 %d 次, 用时 %.1f 分钟"
+        % (
+            col.new,
+            a.target,
+            base,
+            after,
+            col.requests,
+            col.rotations,
+            (time.time() - t0) / 60,
+        )
+    )
     return 0 if col.new >= a.target else 1
 
 

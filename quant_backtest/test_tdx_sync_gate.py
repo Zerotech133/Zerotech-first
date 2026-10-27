@@ -9,6 +9,7 @@
 约定：全部 mock 远端（monkeypatch tdx_sync._get），OUT/MANIFEST 注入 tmp_path，
 禁连真实远端、禁写真实 data/tdx/。
 """
+
 import copy
 from collections import deque
 
@@ -95,9 +96,9 @@ def test_incremental_zero_new_rows_ok(env, monkeypatch):
     fake.set(0, {"rows": _rows(5), "columns": COLS, "total": 5000})
     st = {"offset": 0, "part": 2, "rows": 5000, "done": True}
     m = {"t3": st}
-    _run("t3", 5000, m)               # 全部行日期 <= latest，去重后零新行
+    _run("t3", 5000, m)  # 全部行日期 <= latest，去重后零新行
     assert m["t3"]["done"] is True
-    assert st["rows"] == 5000          # 本次实拉 0，累计不变
+    assert st["rows"] == 5000  # 本次实拉 0，累计不变
     assert st["offset"] == 0
 
 
@@ -135,22 +136,26 @@ def test_failure_manifest_unchanged(env):
 # 7. 空页重探一次后成功：首次空页触发重探拿到数据 → 正常 done
 def test_empty_page_reprobe_recovers(env):
     fake, out = env
-    fake.set(0,
-             {"rows": [], "columns": [], "total": 100},
-             {"rows": _rows(100), "columns": COLS, "total": 100})
+    fake.set(
+        0,
+        {"rows": [], "columns": [], "total": 100},
+        {"rows": _rows(100), "columns": COLS, "total": 100},
+    )
     m = {}
     _run("t7", 100, m)
     assert m["t7"]["done"] is True
     assert m["t7"]["rows"] == 100
-    assert len(fake.calls) == 2        # 首拉 + 重探各一次
+    assert len(fake.calls) == 2  # 首拉 + 重探各一次
 
 
 # 8. 表级 fail 聚合链不破坏：一好一坏 → _run_sync 返回 1（非零退出链）
 def test_run_sync_fail_aggregation(env, monkeypatch):
     fake, out = env
-    fake.set(0,
-             {"rows": _rows(10), "columns": COLS, "total": 10},   # ok 表
-             {"rows": [], "columns": [], "total": 1000})          # bad 表空页
+    fake.set(
+        0,
+        {"rows": _rows(10), "columns": COLS, "total": 10},  # ok 表
+        {"rows": [], "columns": [], "total": 1000},
+    )  # bad 表空页
     m = {}
     monkeypatch.setattr(ts, "_load_manifest", lambda: m)
     remote = {"bad": {"rows": 1000}, "ok": {"rows": 10}}
@@ -174,8 +179,9 @@ def test_total_nonpositive_skips_gate(env):
 def test_full_zero_parts_blocked(env, monkeypatch):
     fake, out = env
     fake.set(0, {"rows": _rows(1000), "columns": COLS, "total": 1000})
-    monkeypatch.setattr(ts.pd.DataFrame, "to_parquet",
-                        lambda self, path, index=False: None)
+    monkeypatch.setattr(
+        ts.pd.DataFrame, "to_parquet", lambda self, path, index=False: None
+    )
     m = {}
     with pytest.raises(RuntimeError, match="零分片落盘"):
         _run("t10", 1000, m)
@@ -192,7 +198,7 @@ def test_incremental_new_rows_complete(env, monkeypatch):
     m = {"t11": st}
     _run("t11", 5000, m)
     assert m["t11"]["done"] is True
-    assert st["rows"] == 5002          # 实拉 2 行入账
+    assert st["rows"] == 5002  # 实拉 2 行入账
     assert st["offset"] == 0
 
 

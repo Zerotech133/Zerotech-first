@@ -120,7 +120,7 @@ def _map_store(store: str) -> str:
     if os.path.exists(s):
         return s
     if s.startswith(STORE_PREFIX_REAL):
-        alt = STORE_PREFIX_JUNCTION + s[len(STORE_PREFIX_REAL):]
+        alt = STORE_PREFIX_JUNCTION + s[len(STORE_PREFIX_REAL) :]
         if os.path.exists(alt):
             return alt
     return s
@@ -159,10 +159,13 @@ def _glob_has_files(glob_expr: str) -> bool:
 # 湖构建
 # --------------------------------------------------------------------------
 
+
 class DuckLake:
     """基于 catalog.json 的 DuckDB 湖查询层（内存库视图）。"""
 
-    def __init__(self, catalog_path: str = DEFAULT_CATALOG, verbose: bool = True) -> None:
+    def __init__(
+        self, catalog_path: str = DEFAULT_CATALOG, verbose: bool = True
+    ) -> None:
         self.catalog_path = catalog_path
         self.verbose = verbose
         self.views: Dict[str, ViewEntry] = {}
@@ -207,7 +210,9 @@ class DuckLake:
         deprecated = bool(meta.get("deprecated", False))
 
         if deprecated:
-            self.skipped.append(SkipEntry(name, "table", "deprecated 表，catalog 标记弃用"))
+            self.skipped.append(
+                SkipEntry(name, "table", "deprecated 表，catalog 标记弃用")
+            )
             return
         if layout in UNSUPPORTED_LAYOUTS:
             self.skipped.append(
@@ -222,7 +227,9 @@ class DuckLake:
 
         mapped_store = _map_store(store)
         if not os.path.exists(mapped_store):
-            self.skipped.append(SkipEntry(name, "table", f"store 目录缺失: {mapped_store}"))
+            self.skipped.append(
+                SkipEntry(name, "table", f"store 目录缺失: {mapped_store}")
+            )
             return
         if not _glob_has_files(glob_expr):
             self.skipped.append(
@@ -259,7 +266,8 @@ class DuckLake:
             # 保留实体表视图，别名视为冗余，不算错误。
             self.skipped.append(
                 SkipEntry(
-                    alias, "alias",
+                    alias,
+                    "alias",
                     "与同名实体表视图冲突，保留实体表；如需多源拼接请直接查询各 resolves 表",
                 )
             )
@@ -275,9 +283,7 @@ class DuckLake:
         except Exception as exc:  # noqa: BLE001
             self.skipped.append(SkipEntry(alias, "alias", f"CREATE VIEW 失败: {exc}"))
             return
-        self.views[alias] = ViewEntry(
-            name=alias, kind="alias", sources=available
-        )
+        self.views[alias] = ViewEntry(name=alias, kind="alias", sources=available)
 
     # -- 展示 / 查询 -------------------------------------------------------
 
@@ -330,15 +336,14 @@ class DuckLake:
 
     def preview(self, table: str, limit: int) -> None:
         if table not in self.views:
-            raise SystemExit(
-                f"视图不存在: {table}（用 --list 查看可用视图）"
-            )
+            raise SystemExit(f"视图不存在: {table}（用 --list 查看可用视图）")
         self.run_sql(f"SELECT * FROM {table} LIMIT {int(limit)}")
 
 
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
+
 
 def main(argv: Optional[List[str]] = None) -> int:
     # Windows 控制台（GBK）下统一用 UTF-8 输出，避免中文乱码；
@@ -351,10 +356,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         description="A股量化情报工作站 Parquet 湖的 DuckDB 查询层（基于 catalog.json）",
     )
     parser.add_argument("--catalog", default=DEFAULT_CATALOG, help="catalog.json 路径")
-    parser.add_argument("--list", action="store_true", help="列出全部可用视图与跳过明细")
+    parser.add_argument(
+        "--list", action="store_true", help="列出全部可用视图与跳过明细"
+    )
     parser.add_argument("--table", default=None, help="预览/查询的目标表或别名")
-    parser.add_argument("--sql", default=None, help="要执行的 SQL（可引用任意视图/别名）")
-    parser.add_argument("--limit", type=int, default=20, help="--table 预览行数（默认 20）")
+    parser.add_argument(
+        "--sql", default=None, help="要执行的 SQL（可引用任意视图/别名）"
+    )
+    parser.add_argument(
+        "--limit", type=int, default=20, help="--table 预览行数（默认 20）"
+    )
     parser.add_argument("-q", "--quiet", action="store_true", help="不打印构建摘要")
     args = parser.parse_args(argv)
 

@@ -9,6 +9,7 @@ kg_source_rating._days_since 只认 6/8 位 → 返回 None → stale_tables 里
   2. 当年/未来年份钳到 0（不为负、不排除）
   3. 6 位/8 位与非法值行为**逐字节不变**（老实现副本对照）
 """
+
 import json
 import os
 import sys
@@ -18,10 +19,11 @@ from datetime import datetime
 # 同目录绝对导入（仓库多处同款写法；使本文件在仓库根或子目录下都能跑）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import kg_source_rating as ksr          # noqa: E402
+import kg_source_rating as ksr  # noqa: E402
 
 
 # ── 老实现副本：6/8 位与非法值行为不得变化 ──────────────────
+
 
 def _old_days_since(fresh):
     """改动前 _days_since 原样副本（只作回归对照，不代表期望语义）。"""
@@ -46,6 +48,7 @@ def _year_end(year):
 
 
 # ── 1. 4 位年份：年末基准 ──────────────────────────────────
+
 
 def test_year_2024_anchor_is_year_end():
     """'2024' → 以 2024-12-31 为基准（最保守的"最新可得时点"）。"""
@@ -100,6 +103,7 @@ def test_int_year_value_supported():
 
 # ── 2. 6 位 / 8 位 / 非法值：行为不变 ──────────────────────
 
+
 def test_six_digit_month_end_approximation_unchanged():
     """YYYYMM 仍取次月 1 日近似月末；12 月跨年进位不变。"""
     now = datetime.now()
@@ -116,17 +120,39 @@ def test_eight_digit_exact_unchanged():
 
 def test_six_eight_digit_equal_old_impl():
     """对 6/8 位样本，新实现与老实现逐值一致（零影响硬门）。"""
-    samples = ["20240101", "20240229", "20240630", "20241231", "20260101",
-               "202401", "202412", "202506", "202605", "202612"]
+    samples = [
+        "20240101",
+        "20240229",
+        "20240630",
+        "20241231",
+        "20260101",
+        "202401",
+        "202412",
+        "202506",
+        "202605",
+        "202612",
+    ]
     for s in samples:
-        assert ksr._days_since(s) == _old_days_since(s), \
-            "%s 计龄相对老实现漂移" % s
+        assert ksr._days_since(s) == _old_days_since(s), "%s 计龄相对老实现漂移" % s
 
 
 def test_invalid_values_still_none():
     """非法值按原逻辑回落 None（不是 0——0 会被当成"今天刚更新"）。"""
-    for bad in ("", "abc", None, "20a4", "202", "2024a", "2024-12",
-                "0000", "99999999", "  ", [], {}, "20241"):
+    for bad in (
+        "",
+        "abc",
+        None,
+        "20a4",
+        "202",
+        "2024a",
+        "2024-12",
+        "0000",
+        "99999999",
+        "  ",
+        [],
+        {},
+        "20241",
+    ):
         assert ksr._days_since(bad) is None, "%r 应回落 None" % (bad,)
 
 
@@ -138,6 +164,7 @@ def test_ymd_invalid_date_still_none():
 
 # ── 3. 集成：年度表必须出现在 stale_tables 里 ──────────────
 
+
 def _write_catalog(tmpdir, tables):
     path = os.path.join(tmpdir, "catalog.json")
     with open(path, "w", encoding="utf-8") as f:
@@ -146,9 +173,16 @@ def _write_catalog(tmpdir, tables):
 
 
 def _annual_entry(fresh, **kw):
-    e = {"source": "cnopendata", "date_col": "year", "freshness": fresh,
-         "freq": "Y", "rows": 100, "files": 1, "date_status": "registered",
-         "verification_status": "verified"}
+    e = {
+        "source": "cnopendata",
+        "date_col": "year",
+        "freshness": fresh,
+        "freq": "Y",
+        "rows": 100,
+        "files": 1,
+        "date_status": "registered",
+        "verification_status": "verified",
+    }
     e.update(kw)
     return e
 
@@ -175,8 +209,10 @@ def test_annual_table_visible_in_stale_tables(monkeypatch):
 
 def test_annual_table_lag_equals_explicit_year_end(monkeypatch):
     """freshness='2024' 与 '20241231' 在同一 catalog 下判定完全一致。"""
-    tables = {"annual_tag": _annual_entry("2024"),
-              "annual_exact": _annual_entry("20241231")}
+    tables = {
+        "annual_tag": _annual_entry("2024"),
+        "annual_exact": _annual_entry("20241231"),
+    }
     with tempfile.TemporaryDirectory() as td:
         monkeypatch.setattr(ksr, "CATALOG", _write_catalog(td, tables))
         stale = {r["table"]: r for r in ksr.stale_tables()}
@@ -193,17 +229,27 @@ def test_daily_table_unaffected_by_year_branch(monkeypatch):
     now = datetime.now()
     fresh_day = now.strftime("%Y%m%d")
     tables = {
-        "daily_ok": {"source": "tushare", "date_col": "trade_date",
-                     "freshness": fresh_day, "freq": "D", "rows": 100},
-        "monthly_ok": {"source": "tushare", "date_col": "trade_date",
-                       "freshness": now.strftime("%Y%m"), "freq": "M",
-                       "rows": 100},
+        "daily_ok": {
+            "source": "tushare",
+            "date_col": "trade_date",
+            "freshness": fresh_day,
+            "freq": "D",
+            "rows": 100,
+        },
+        "monthly_ok": {
+            "source": "tushare",
+            "date_col": "trade_date",
+            "freshness": now.strftime("%Y%m"),
+            "freq": "M",
+            "rows": 100,
+        },
         "annual_old": _annual_entry("2014"),
     }
     monkeypatch.setattr(ksr, "trade_days_lag", lambda *a, **k: None)
     with tempfile.TemporaryDirectory() as td:
         monkeypatch.setattr(ksr, "CATALOG", _write_catalog(td, tables))
         names = {r["table"] for r in ksr.stale_tables()}
-    assert "daily_ok" not in names and "monthly_ok" not in names, \
+    assert "daily_ok" not in names and "monthly_ok" not in names, (
         "日/月频表被年度分支带偏：%r" % (names,)
+    )
     assert "annual_old" in names

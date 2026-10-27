@@ -17,6 +17,7 @@ KgResonanceNotify 读取同主题 digest 段落（K240 接线）。
   python kg_digest.py run                # 图内全部主题
   python kg_digest.py run 人形机器人     # 单主题
 """
+
 import argparse
 import json
 import os
@@ -29,8 +30,8 @@ from datetime import datetime, timedelta
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import requests                                       # noqa: E402
-from kg_client import KgClient                        # noqa: E402
+import requests  # noqa: E402
+from kg_client import KgClient  # noqa: E402
 
 OUT = os.path.join(HERE, "data", "kg_digest_last.json")
 OLLAMA = os.environ.get("KG_OLLAMA", "http://127.0.0.1:11434/api/chat")
@@ -50,8 +51,7 @@ PROMPT = (
 
 def _ollama_ok():
     try:
-        return requests.get(
-            OLLAMA.replace("/api/chat", "/api/tags"), timeout=3).ok
+        return requests.get(OLLAMA.replace("/api/chat", "/api/tags"), timeout=3).ok
     except Exception:
         return False
 
@@ -63,11 +63,12 @@ def gather(cli, theme):
     with cli._session() as s:
         segs = {}
         for r in s.run(
-                "MATCH (t:Theme {name:$t})-[:CONDUCTION]->(g:Segment) "
-                "OPTIONAL MATCH (g)<-[:SUB_OF]-(g2:Segment) "
-                "RETURN g.name AS g1, g.chain AS c, g.desc AS d, "
-                "collect(DISTINCT g2.name) AS subs",
-                t=theme).data():
+            "MATCH (t:Theme {name:$t})-[:CONDUCTION]->(g:Segment) "
+            "OPTIONAL MATCH (g)<-[:SUB_OF]-(g2:Segment) "
+            "RETURN g.name AS g1, g.chain AS c, g.desc AS d, "
+            "collect(DISTINCT g2.name) AS subs",
+            t=theme,
+        ).data():
             segs[r["g1"]] = {"desc": r["d"] or "", "subs": r["subs"] or []}
         for g1, info in segs.items():
             rows = s.run(
@@ -77,7 +78,9 @@ def gather(cli, theme):
                 "{kind:'chanlun'}) WHERE e.detect_date >= $d0 "
                 "RETURN sec.name AS nm, sp.evidence AS ev, "
                 "collect({t:e.type, dd:e.detect_date}) AS sigs",
-                g=g1, d0=d0).data()
+                g=g1,
+                d0=d0,
+            ).data()
             cons = s.run(
                 "MATCH (c:Commentator)-[a:ASSESSED {theme:$t}]->"
                 "(sec:Security) "
@@ -86,19 +89,30 @@ def gather(cli, theme):
                 "(:Segment {name:$g}) } "
                 "RETURN sec.name AS nm, "
                 "collect(c.name + a.verdict) AS vs, a.stars AS st",
-                t=theme, g=g1).data()
+                t=theme,
+                g=g1,
+            ).data()
             cmap = {x["nm"]: x for x in cons}
             items = []
             for r in rows:
-                items.append({
-                    "seg": g1, "stock": r["nm"], "evidence": r["ev"] or "",
-                    "signals": [x["t"] + "(" + (x["dd"] or "") + ")"
-                                for x in (r["sigs"] or []) if x["t"]],
-                    "consensus": cmap.get(r["nm"], {}).get("vs", []),
-                    "stars": cmap.get(r["nm"], {}).get("st", 0)})
+                items.append(
+                    {
+                        "seg": g1,
+                        "stock": r["nm"],
+                        "evidence": r["ev"] or "",
+                        "signals": [
+                            x["t"] + "(" + (x["dd"] or "") + ")"
+                            for x in (r["sigs"] or [])
+                            if x["t"]
+                        ],
+                        "consensus": cmap.get(r["nm"], {}).get("vs", []),
+                        "stars": cmap.get(r["nm"], {}).get("st", 0),
+                    }
+                )
             if items:
-                facts["segments"].append({"seg": g1, "desc": info["desc"],
-                                          "stocks": items})
+                facts["segments"].append(
+                    {"seg": g1, "desc": info["desc"], "stocks": items}
+                )
     return facts
 
 
@@ -107,17 +121,26 @@ def summarize(facts):
     slim = []
     for seg in facts.get("segments") or []:
         for it in seg.get("stocks") or []:
-            slim.append({"环节": seg["seg"], "标的": it["stock"],
-                         "资金证据": it["evidence"][:40],
-                         "近30日信号": it["signals"][:2],
-                         "共识": it["consensus"][:4]})
+            slim.append(
+                {
+                    "环节": seg["seg"],
+                    "标的": it["stock"],
+                    "资金证据": it["evidence"][:40],
+                    "近30日信号": it["signals"][:2],
+                    "共识": it["consensus"][:4],
+                }
+            )
     if not slim:
         return None, []
-    body = {"model": MODEL, "stream": False, "think": False,
-            "messages": [{"role": "user",
-                          "content": PROMPT % json.dumps(
-                              slim, ensure_ascii=False)}],
-            "options": {"temperature": 0.3, "num_predict": 300}}
+    body = {
+        "model": MODEL,
+        "stream": False,
+        "think": False,
+        "messages": [
+            {"role": "user", "content": PROMPT % json.dumps(slim, ensure_ascii=False)}
+        ],
+        "options": {"temperature": 0.3, "num_predict": 300},
+    }
     ents = [x["标的"] for x in slim] + [x["环节"] for x in slim]
     last = None
     for i in range(3):
@@ -126,11 +149,9 @@ def summarize(facts):
             if r.status_code >= 500:
                 raise requests.HTTPError("HTTP %d" % r.status_code)
             r.raise_for_status()
-            txt = re.sub(r"\s+", " ",
-                         r.json()["message"]["content"]).strip().strip('"')
+            txt = re.sub(r"\s+", " ", r.json()["message"]["content"]).strip().strip('"')
             return txt, ents
-        except (requests.RequestException, ValueError, KeyError,
-                TypeError) as e:
+        except (requests.RequestException, ValueError, KeyError, TypeError) as e:
             last = e
             if i < 2:
                 time.sleep(3 * (i + 1))
@@ -147,51 +168,64 @@ def run(theme=None):
     cli = KgClient(retry=1)
     try:
         with cli._session() as s:
-            themes = [r["n"] for r in s.run(
-                "MATCH (t:Theme) RETURN t.name AS n").data()]
-    except Exception as e:                 # K241：图库不可达不崩 run，占位落盘
+            themes = [
+                r["n"] for r in s.run("MATCH (t:Theme) RETURN t.name AS n").data()
+            ]
+    except Exception as e:  # K241：图库不可达不崩 run，占位落盘
         themes = [theme] if theme else []
         print("Neo4j 不可达: %s" % e)
     if theme:
         themes = [t for t in themes if t == theme]
     ok = _ollama_ok()
-    out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           "model": MODEL, "themes": {}}
+    out = {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "model": MODEL,
+        "themes": {},
+    }
     for t in themes:
         try:
             facts = gather(cli, t)
         except Exception as e:
-            out["themes"][t] = {"digest": "", "verified": False,
-                                "note": "Neo4j 不可达"}
+            out["themes"][t] = {"digest": "", "verified": False, "note": "Neo4j 不可达"}
             print("[%s] gather 失败: %s" % (t, e))
             continue
-        ents = [it["stock"] for seg in facts.get("segments", [])
-                for it in seg.get("stocks", [])]
+        ents = [
+            it["stock"]
+            for seg in facts.get("segments", [])
+            for it in seg.get("stocks", [])
+        ]
         if not ok:
-            out["themes"][t] = {"digest": "", "verified": False,
-                                "note": "Ollama 不可达"}
+            out["themes"][t] = {
+                "digest": "",
+                "verified": False,
+                "note": "Ollama 不可达",
+            }
             continue
         try:
             txt, ents2 = summarize(facts)
         except Exception as e:
-            out["themes"][t] = {"digest": "", "verified": False,
-                                "note": str(e)}
+            out["themes"][t] = {"digest": "", "verified": False, "note": str(e)}
             print("[%s] %s" % (t, e))
             continue
         if txt is None:
-            out["themes"][t] = {"digest": "", "verified": True,
-                                "note": "无挂链标的（冷启动）",
-                                "entities": []}
+            out["themes"][t] = {
+                "digest": "",
+                "verified": True,
+                "note": "无挂链标的（冷启动）",
+                "entities": [],
+            }
             continue
         v, bad = verify(txt, ents2)
         if v:
-            out["themes"][t] = {"digest": txt, "verified": True,
-                                "entities": ents2}
-        else:                              # K241：verify 不过不出门，正文不落盘
-            out["themes"][t] = {"digest": "", "verified": False,
-                                "note": "反幻觉校验未过", "entities": ents2}
-        print("[%s] %d 字 / 实体 %d / verified=%s"
-              % (t, len(txt), len(ents2), v))
+            out["themes"][t] = {"digest": txt, "verified": True, "entities": ents2}
+        else:  # K241：verify 不过不出门，正文不落盘
+            out["themes"][t] = {
+                "digest": "",
+                "verified": False,
+                "note": "反幻觉校验未过",
+                "entities": ents2,
+            }
+        print("[%s] %d 字 / 实体 %d / verified=%s" % (t, len(txt), len(ents2), v))
         time.sleep(1)
     cli.close()
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

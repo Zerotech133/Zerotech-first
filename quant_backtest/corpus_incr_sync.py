@@ -27,6 +27,7 @@ tushare 滚动流接口无参只返回**近期**数据，于是每次增量都�
 - 幂等：按本地已有日期集合算缺口，只拉缺失区间；
 - 写入前校验列名（防脏分区，同 396 判例）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,11 +54,11 @@ RETRY = 4
 #    news 的 datetime 字段必须 "YYYY-MM-DD HH:MM:SS"；
 #    其余接口必须 "YYYYMMDD"。写错格式静默返回 0 行（不报错）！
 TABLES = {
-    "news":           ("news", "datetime", "dash"),
-    "major_news":     ("major_news", "pub_time", "dash"),
+    "news": ("news", "datetime", "dash"),
+    "major_news": ("major_news", "pub_time", "dash"),
     "research_report": ("research_report", "trade_date", "compact"),
-    "irm_qa_sh":      ("irm_qa_sh", "trade_date", "compact"),
-    "irm_qa_sz":      ("irm_qa_sz", "trade_date", "compact"),
+    "irm_qa_sh": ("irm_qa_sh", "trade_date", "compact"),
+    "irm_qa_sz": ("irm_qa_sz", "trade_date", "compact"),
 }
 
 
@@ -65,7 +66,10 @@ def token() -> str:
     t = os.environ.get("TUSHARE_TOKEN", "")
     if t:
         return t
-    for c in (r"C:\项目\老田的AI助手\config\tushare_token.txt", r"C:\Temp\tushare_token.txt"):
+    for c in (
+        r"C:\项目\老田的AI助手\config\tushare_token.txt",
+        r"C:\Temp\tushare_token.txt",
+    ):
         if os.path.exists(c):
             return open(c, encoding="utf-8").read().strip()
     raise SystemExit("★找不到 TUSHARE_TOKEN")
@@ -79,8 +83,11 @@ def ts_call(api, params):
     last = None
     for a in range(RETRY):
         try:
-            r = SESS.post(API, json={"api_name": api, "token": TOK,
-                                     "params": params, "fields": ""}, timeout=60)
+            r = SESS.post(
+                API,
+                json={"api_name": api, "token": TOK, "params": params, "fields": ""},
+                timeout=60,
+            )
             j = r.json()
             if j.get("code") == 0:
                 d = j.get("data") or {}
@@ -88,7 +95,7 @@ def ts_call(api, params):
             last = "code=%s msg=%s" % (j.get("code"), str(j.get("msg"))[:70])
             if "权限" in last or "积分" in last:
                 break
-        except Exception as e:      # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             last = "%s %s" % (type(e).__name__, str(e)[:70])
         time.sleep(1.5 * (a + 1))
     raise RuntimeError("%s %s -> %s" % (api, params, last))
@@ -105,7 +112,7 @@ def pull_paged(api, params, cap):
             fields = f
         if not items:
             break
-        if items == last_items:          # 服务端 offset 无效（anns_d 死循环教训）
+        if items == last_items:  # 服务端 offset 无效（anns_d 死循环教训）
             break
         last_items = items
         rows.extend(items)
@@ -119,8 +126,9 @@ def pull_paged(api, params, cap):
 def fmt(d: str, style: str) -> tuple[str, str]:
     """按接口要求格式化日期区间参数。"""
     if style == "dash":
-        return "%s 00:00:00" % "-".join([d[:4], d[4:6], d[6:]]), \
-               "%s 23:59:59" % "-".join([d[:4], d[4:6], d[6:]])
+        return "%s 00:00:00" % "-".join(
+            [d[:4], d[4:6], d[6:]]
+        ), "%s 23:59:59" % "-".join([d[:4], d[4:6], d[6:]])
     return d, d
 
 
@@ -132,9 +140,12 @@ def local_days(tbl: str, dcol: str) -> set[str]:
             if dcol not in pf.schema_arrow.names:
                 continue
             import pyarrow.parquet as pq
-            ds.update(str(x)[:10].replace("-", "").strip()
-                      for x in pq.read_table(p, columns=[dcol]).column(0).to_pylist()
-                      if x)
+
+            ds.update(
+                str(x)[:10].replace("-", "").strip()
+                for x in pq.read_table(p, columns=[dcol]).column(0).to_pylist()
+                if x
+            )
         except Exception:
             continue
     return ds
@@ -160,8 +171,11 @@ def main() -> int:
 
     TOK = token()
     end = args.end or time.strftime("%Y%m%d")
-    names = list(TABLES) if not args.only else \
-        [s.strip() for s in args.only.split(",") if s.strip()]
+    names = (
+        list(TABLES)
+        if not args.only
+        else [s.strip() for s in args.only.split(",") if s.strip()]
+    )
     bad = [n for n in names if n not in TABLES]
     if bad:
         print("无匹配表：%s（可选 %s）" % (bad, ", ".join(TABLES)))
@@ -174,8 +188,10 @@ def main() -> int:
         have = local_days(tbl, dcol)
         lmax = max(have) if have else ""
         start = args.start or (str(int(lmax) + 1) if lmax else "20260801")
-        print("\n[%s] 本地 %d 日，最新 %s → 待补 %s..%s"
-              % (tbl, len(have), lmax or "-", start, end))
+        print(
+            "\n[%s] 本地 %d 日，最新 %s → 待补 %s..%s"
+            % (tbl, len(have), lmax or "-", start, end)
+        )
         if args.dryrun:
             continue
 
@@ -186,6 +202,7 @@ def main() -> int:
             # 计算窗结束日
             y, mo, dd = int(cur[:4]), int(cur[4:6]), int(cur[6:])
             import calendar
+
             last = calendar.monthrange(y, mo)[1]
             endd = min(last, dd + args.span - 1)
             stop = "%s%02d" % (y, mo) + "%02d" % endd
@@ -195,7 +212,7 @@ def main() -> int:
             s, e = s[0], e[1]
             try:
                 df, cols = pull_paged(api, {"start_date": s, "end_date": e}, 1000)
-            except Exception as ex:      # noqa: BLE001
+            except Exception as ex:  # noqa: BLE001
                 print("  %s..%s FAIL %s" % (cur, stop, str(ex)[:70]))
                 fail += 1
                 # 单窗失败不阻塞：下一个窗口继续试
@@ -205,15 +222,19 @@ def main() -> int:
                 print("  %s..%s 空" % (cur, stop))
             else:
                 if dcol not in df.columns:
-                    print("  %s..%s 列名不符 %s → 丢弃（防脏分区）"
-                          % (cur, stop, cols[:5]))
+                    print(
+                        "  %s..%s 列名不符 %s → 丢弃（防脏分区）"
+                        % (cur, stop, cols[:5])
+                    )
                 else:
                     ds = {str(x)[:10].replace("-", "") for x in df[dcol].tolist()}
                     new = ds - have
                     frames.append(df)
                     got_dates |= ds
-                    print("  %s..%s rows=%-6d 覆盖日=%-3d 新日=%d"
-                          % (cur, stop, len(df), len(ds), len(new)))
+                    print(
+                        "  %s..%s rows=%-6d 覆盖日=%-3d 新日=%d"
+                        % (cur, stop, len(df), len(ds), len(new))
+                    )
             cur = _next_day(stop)
 
         if not frames:
@@ -224,12 +245,20 @@ def main() -> int:
         os.makedirs(os.path.join(OUT, tbl), exist_ok=True)
         fp = next_part(tbl)
         new_df.to_parquet(fp, index=False)
-        print("  写入 %s rows=%d 日期 %s..%s"
-              % (os.path.basename(fp), len(new_df),
-                 str(new_df[dcol].astype(str).min())[:19],
-                 str(new_df[dcol].astype(str).max())[:19]))
+        print(
+            "  写入 %s rows=%d 日期 %s..%s"
+            % (
+                os.path.basename(fp),
+                len(new_df),
+                str(new_df[dcol].astype(str).min())[:19],
+                str(new_df[dcol].astype(str).max())[:19],
+            )
+        )
         summary[tbl] = "新增 %d 行 / 新增日期 %d 天 -> %s" % (
-            len(new_df), len(got_dates - have), os.path.basename(fp))
+            len(new_df),
+            len(got_dates - have),
+            os.path.basename(fp),
+        )
 
     print("\n=== 汇总 ===")
     for k, v in summary.items():
@@ -239,8 +268,10 @@ def main() -> int:
 
 def _next_day(d: str) -> str:
     import datetime as dt
-    return (dt.date(int(d[:4]), int(d[4:6]), int(d[6:])) + dt.timedelta(days=1)
-            ).strftime("%Y%m%d")
+
+    return (
+        dt.date(int(d[:4]), int(d[4:6]), int(d[6:])) + dt.timedelta(days=1)
+    ).strftime("%Y%m%d")
 
 
 if __name__ == "__main__":

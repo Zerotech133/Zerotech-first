@@ -14,6 +14,7 @@
 环境（沙箱内运行必备，M1 解法）：
   PADDLE_PDX_CACHE_HOME=C:\Temp\paddlex  PYTHONPYCACHEPREFIX=C:\Temp\pycache
 """
+
 import hashlib
 import json
 import os
@@ -40,6 +41,7 @@ def get_ocr():
     global _ocr
     if _ocr is None:
         from paddleocr import PaddleOCR
+
         _ocr = PaddleOCR(
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
@@ -53,18 +55,21 @@ def get_ocr():
 def ocr_image(path):
     r = get_ocr().predict(path)
     res = r[0]
-    texts = (res.get("rec_texts") if hasattr(res, "get")
-             else getattr(res, "rec_texts", None)) or []
+    texts = (
+        res.get("rec_texts") if hasattr(res, "get") else getattr(res, "rec_texts", None)
+    ) or []
     return "\n".join(str(t) for t in texts)
 
 
 def pdf_text(path):
     """PDF：pypdf 数字文本优先，空则逐页渲染 OCR（上限 8 页）。"""
     from pypdf import PdfReader
+
     txt = "\n".join((p.extract_text() or "") for p in PdfReader(path).pages)
     if len(re.sub(r"\s", "", txt)) >= 50:
         return txt, "pdf"
     import fitz
+
     doc = fitz.open(path)
     parts = []
     for pno in range(min(8, len(doc))):
@@ -90,8 +95,7 @@ def process(path, src, tables=False):
     reg = load_registry()
     if sha in reg:
         log(f"  DUP {os.path.basename(path)} == {reg[sha]['doc_id']}")
-        shutil.move(path, os.path.join(INBOX, "reject",
-                                       os.path.basename(path)))
+        shutil.move(path, os.path.join(INBOX, "reject", os.path.basename(path)))
         return None
     ext = os.path.splitext(path)[1].lower()
     try:
@@ -106,33 +110,38 @@ def process(path, src, tables=False):
             text, how = ocr_image(path), "ocr"
         else:
             log(f"  SKIP {os.path.basename(path)} (unsupport {ext})")
-            shutil.move(path, os.path.join(INBOX, "reject",
-                                           os.path.basename(path)))
+            shutil.move(path, os.path.join(INBOX, "reject", os.path.basename(path)))
             return None
     except Exception as e:
         log(f"  ERR {os.path.basename(path)}: {type(e).__name__}: {e}")
-        shutil.move(path, os.path.join(INBOX, "reject",
-                                       os.path.basename(path)))
+        shutil.move(path, os.path.join(INBOX, "reject", os.path.basename(path)))
         return None
 
     doc_id = "d" + sha[:12]
-    rec = {"doc_id": doc_id, "sha256": sha, "name": os.path.basename(path),
-           "kind": how, "src": src, "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-           "status": "ok", "text_chars": len(text)}
+    rec = {
+        "doc_id": doc_id,
+        "sha256": sha,
+        "name": os.path.basename(path),
+        "kind": how,
+        "src": src,
+        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "ok",
+        "text_chars": len(text),
+    }
     with open(TEXTS, "a", encoding="utf-8") as f:
         f.write(json.dumps({**rec, "text": text}, ensure_ascii=False) + "\n")
     with open(REGFILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     shutil.move(path, os.path.join(INBOX, "done", os.path.basename(path)))
-    log(f"  OK {doc_id} {os.path.basename(path)} {how} "
-        f"{len(text)}c (src={src})")
+    log(f"  OK {doc_id} {os.path.basename(path)} {how} {len(text)}c (src={src})")
     return rec
 
 
 def scan_once(tables=False):
     pend = os.path.join(INBOX, "pending")
-    files = sorted(os.path.join(pend, f) for f in os.listdir(pend)
-                   if not f.startswith("."))
+    files = sorted(
+        os.path.join(pend, f) for f in os.listdir(pend) if not f.startswith(".")
+    )
     if not files:
         return 0
     log(f"scan: {len(files)} pending")
@@ -161,7 +170,10 @@ def main():
         scan_once(tables)
         return
     ivl = 10
-    if len(args) > args.index("--loop") + 1 and args[args.index("--loop") + 1].isdigit():
+    if (
+        len(args) > args.index("--loop") + 1
+        and args[args.index("--loop") + 1].isdigit()
+    ):
         ivl = int(args[args.index("--loop") + 1])
     log(f"daemon loop={ivl}s  inbox={INBOX}")
     idle = 0

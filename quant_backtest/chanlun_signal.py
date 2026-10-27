@@ -49,6 +49,7 @@ P9 长周期趋势 regime reg_trend/reg_trend_ev 同由调用方按市场外部�
 （close>MA200=True 牛市 regime，见 chanlun_flow.regime_trend_at；
 与 P8-b MA20/MA60 并行影子、口径不互相推翻）。
 """
+
 from chanlun_bi import analyze as _az, _bi_h, _bi_l
 from chanlun_macd import macd_series, divergence as _macd_div
 from chanlun_flow import volume_confluence as _vol_cf
@@ -75,8 +76,7 @@ def _panzheng_beichi(leave, pull):
     v_leave, v_pull = _bi_force(leave), _bi_force(pull)
     if v_leave is None or v_pull is None:
         return None, None
-    return (v_pull < v_leave * BEICHI_RATIO,
-            [round(v_leave, 4), round(v_pull, 4)])
+    return (v_pull < v_leave * BEICHI_RATIO, [round(v_leave, 4), round(v_pull, 4)])
 
 
 def _entry_leave_beichi(bis, k, pull):
@@ -97,8 +97,7 @@ def _entry_leave_beichi(bis, k, pull):
     v_prev, v_pull = _bi_force(prev), _bi_force(pull)
     if v_prev is None or v_pull is None:
         return None, None
-    return (v_pull < v_prev * BEICHI_RATIO,
-            [round(v_prev, 4), round(v_pull, 4)])
+    return (v_pull < v_prev * BEICHI_RATIO, [round(v_prev, 4), round(v_pull, 4)])
 
 
 def _seg_range(bis, seg):
@@ -117,24 +116,34 @@ def _seg_signals(bis, segs):
     out = []
     for si, seg in enumerate(segs):
         if si + 1 >= len(segs):
-            break                          # 末段随数据截断，未确认终结
+            break  # 末段随数据截断，未确认终结
         i0, i1 = _seg_range(bis, seg)
         if i0 is None or i1 is None:
             continue
         same = [k for k in range(i0, i1 + 1) if bis[k]["dir"] == seg["dir"]]
         if len(same) < 2:
-            continue                       # 过渡段：无动量对比基准
+            continue  # 过渡段：无动量对比基准
         last_v = abs(bis[same[-1]]["e_price"] - bis[same[-1]]["s_price"])
         prev_v = abs(bis[same[-2]]["e_price"] - bis[same[-2]]["s_price"])
-        if last_v < prev_v:                # 动量衰减
+        if last_v < prev_v:  # 动量衰减
             if seg["dir"] == -1:
-                out.append({"type": "1买", "dt": seg["e_dt"],
-                            "price": seg["e_price"],
-                            "note": "向下线段终结·动量衰减"})
+                out.append(
+                    {
+                        "type": "1买",
+                        "dt": seg["e_dt"],
+                        "price": seg["e_price"],
+                        "note": "向下线段终结·动量衰减",
+                    }
+                )
             else:
-                out.append({"type": "1卖", "dt": seg["e_dt"],
-                            "price": seg["e_price"],
-                            "note": "向上线段终结·动量衰减"})
+                out.append(
+                    {
+                        "type": "1卖",
+                        "dt": seg["e_dt"],
+                        "price": seg["e_price"],
+                        "note": "向上线段终结·动量衰减",
+                    }
+                )
     return out
 
 
@@ -146,21 +155,33 @@ def _second_signals(bis, segs, firsts):
     out = []
     for si, seg in enumerate(segs):
         if si == 0 or si + 1 >= len(segs):
-            continue                       # 首段无一类转折来源；末段未确认
+            continue  # 首段无一类转折来源；末段未确认
         i0, _ = _seg_range(bis, seg)
         if i0 is None or i0 + 1 >= n - 1:
-            continue                       # 回调笔须完结（非最后一根笔）
+            continue  # 回调笔须完结（非最后一根笔）
         base = [f for f in firsts if f["dt"] == segs[si - 1]["e_dt"]]
         if not base:
             continue
         f0 = base[0]
-        pull = bis[i0 + 1]                 # 新段第一根回调 / 反弹笔
+        pull = bis[i0 + 1]  # 新段第一根回调 / 反弹笔
         if seg["dir"] == 1 and pull["dir"] == -1 and _bi_l(pull) > f0["price"]:
-            out.append({"type": "2买", "dt": pull["e_dt"],
-                        "price": pull["e_price"], "note": "转折后首回调不破极值"})
+            out.append(
+                {
+                    "type": "2买",
+                    "dt": pull["e_dt"],
+                    "price": pull["e_price"],
+                    "note": "转折后首回调不破极值",
+                }
+            )
         elif seg["dir"] == -1 and pull["dir"] == 1 and _bi_h(pull) < f0["price"]:
-            out.append({"type": "2卖", "dt": pull["e_dt"],
-                        "price": pull["e_price"], "note": "转折后首反弹不破极值"})
+            out.append(
+                {
+                    "type": "2卖",
+                    "dt": pull["e_dt"],
+                    "price": pull["e_price"],
+                    "note": "转折后首反弹不破极值",
+                }
+            )
     return out
 
 
@@ -175,31 +196,46 @@ def _pivot_signals(bis, pvs):
                 i1 = i
         if i1 is None:
             continue
-        k = i1 + 1                         # 中枢覆盖结束后的第一根笔
-        while k < n - 2:                   # 回踩笔须完结（k+1 非最后一根笔）
+        k = i1 + 1  # 中枢覆盖结束后的第一根笔
+        while k < n - 2:  # 回踩笔须完结（k+1 非最后一根笔）
             b = bis[k]
             if b["dir"] == 1 and b["e_price"] > p["zg"]:
                 r = bis[k + 1]
                 if r["dir"] == -1 and _bi_l(r) > p["zg"]:
                     bei, fv = _panzheng_beichi(b, r)
                     bei2, fv2 = _entry_leave_beichi(bis, k, r)
-                    out.append({"type": "3买", "dt": r["e_dt"],
-                                "price": r["e_price"],
-                                "zg": p["zg"], "zd": p["zd"],
-                                "note": "中枢上沿回踩不破",
-                                "bei": bei, "fv": fv,
-                                "bei2": bei2, "fv2": fv2})
+                    out.append(
+                        {
+                            "type": "3买",
+                            "dt": r["e_dt"],
+                            "price": r["e_price"],
+                            "zg": p["zg"],
+                            "zd": p["zd"],
+                            "note": "中枢上沿回踩不破",
+                            "bei": bei,
+                            "fv": fv,
+                            "bei2": bei2,
+                            "fv2": fv2,
+                        }
+                    )
                     break
             elif b["dir"] == -1 and b["e_price"] < p["zd"]:
                 r = bis[k + 1]
                 if r["dir"] == 1 and _bi_h(r) < p["zd"]:
                     bei, fv = _panzheng_beichi(b, r)
                     bei2, fv2 = _entry_leave_beichi(bis, k, r)
-                    out.append({"type": "3卖", "dt": r["e_dt"],
-                                "price": r["e_price"],
-                                "note": "中枢下沿反抽不破",
-                                "bei": bei, "fv": fv,
-                                "bei2": bei2, "fv2": fv2})
+                    out.append(
+                        {
+                            "type": "3卖",
+                            "dt": r["e_dt"],
+                            "price": r["e_price"],
+                            "note": "中枢下沿反抽不破",
+                            "bei": bei,
+                            "fv": fv,
+                            "bei2": bei2,
+                            "fv2": fv2,
+                        }
+                    )
                     break
             k += 1
     return out
@@ -208,8 +244,7 @@ def _pivot_signals(bis, pvs):
 def find_signals(bis, segments, pivots):
     """笔/线段/中枢 → 三类买卖点列表（dt 升序，同位同型去重）。"""
     firsts = _seg_signals(bis, segments)
-    sigs = firsts + _second_signals(bis, segments, firsts) + \
-        _pivot_signals(bis, pivots)
+    sigs = firsts + _second_signals(bis, segments, firsts) + _pivot_signals(bis, pivots)
     sigs.sort(key=lambda s: s["dt"])
     seen, out = set(), []
     for s in sigs:
@@ -233,8 +268,7 @@ def analyze(bars):
             if s["type"] in ("1买", "1卖"):
                 s["mbei"], s["mfv"] = _macd_div(bars, st["bis"], s, ms)
                 # P6-c：教学完整版趋势背驰（双中枢+末段力度衰减）
-                s["tbe"], s["tfv"] = _trend_beichi(
-                    st["bis"], st["pivots"], s)
+                s["tbe"], s["tfv"] = _trend_beichi(st["bis"], st["pivots"], s)
             # P8-a：全部信号附量能共振（缩量）影子标注
             s["vv"], s["vv_ev"] = _vol_cf(bars, st["bis"], s)
         # P2 K线形态共振影子标注（K172→K175，仅标注不拦截）：
@@ -244,6 +278,7 @@ def analyze(bars):
         # 的K线，无未来函数；识别失败降级 None 不影响结构信号。
         try:
             from chanlun_pattern import detect as _pat_detect
+
             pmap = {}
             for p in _pat_detect(bars):
                 pmap.setdefault(p["dt"], p)

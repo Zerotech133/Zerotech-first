@@ -17,6 +17,7 @@
     超额 <= -1pp  → 偏宽失效（噪声主导，建议收紧）
     其余          → 中性（边际，结合分层看）
 """
+
 import argparse
 import glob
 import json
@@ -62,6 +63,7 @@ def close_series(code: str):
         return None
     try:
         import pandas as pd
+
         df = pd.read_parquet(f, columns=["trade_date", "close"])
     except Exception as ex:  # A5: 复盘样本静默缺失会污染 5 日窗统计——留痕
         print("[strong_review] parquet 读取失败 %s：%s" % (f, str(ex)[:60]))
@@ -131,7 +133,11 @@ def main():
     ap.add_argument("--list", default="", help="strong_list_*.jsonl（默认最新）")
     ap.add_argument("--days", type=int, default=3, help="观察窗交易日数（默认 3）")
     ap.add_argument("--sample", type=int, default=500, help="基线抽样只数")
-    ap.add_argument("--asof", default="", help="基准日 YYYYMMDD（默认=名单 ts 日的前一交易日，自动取名单首个 ts 日期）")
+    ap.add_argument(
+        "--asof",
+        default="",
+        help="基准日 YYYYMMDD（默认=名单 ts 日的前一交易日，自动取名单首个 ts 日期）",
+    )
     ap.add_argument("--save", default="", help="结果另存 json 路径")
     a = ap.parse_args()
     if a.days < 1:
@@ -167,21 +173,31 @@ def main():
             short_flag = False
         if not short_flag:
             rets.append(r)
-        per_code.append({"code": code, "base_day": d, "ret_pp": r, "days_got": got_days})
+        per_code.append(
+            {"code": code, "base_day": d, "ret_pp": r, "days_got": got_days}
+        )
 
     if base_day is None:
-        print("[warn] 湖内无任何可用基准数据（asof=%s）——晨批产物当日傍晚前湖未更新属正常" % asof)
+        print(
+            "[warn] 湖内无任何可用基准数据（asof=%s）——晨批产物当日傍晚前湖未更新属正常"
+            % asof
+        )
         sys.exit(0)
 
     full = sum(1 for p in per_code if p["days_got"] >= a.days)
-    print("基准日: %s | 观察窗: %d 交易日 | 完整窗口: %d/%d（缺湖/停牌 %d）"
-          % (base_day, a.days, full, len(per_code), missing))
+    print(
+        "基准日: %s | 观察窗: %d 交易日 | 完整窗口: %d/%d（缺湖/停牌 %d）"
+        % (base_day, a.days, full, len(per_code), missing)
+    )
 
     watch = stats_block(rets)
     exclude = set(codes)
     base_rets, base_day2, base_short = pick_baseline(asof, a.days, a.sample, exclude)
     base = stats_block(base_rets)
-    print("基线（抽样 %d 只同窗口）: %s" % (a.sample, json.dumps(base, ensure_ascii=False)))
+    print(
+        "基线（抽样 %d 只同窗口）: %s"
+        % (a.sample, json.dumps(base, ensure_ascii=False))
+    )
 
     result = {
         "list_file": path.name,
@@ -216,12 +232,15 @@ def main():
     result["ex250_tiers"] = {k: stats_block(v) for k, v in tier_map.items()}
     for k, v in result["ex250_tiers"].items():
         if v.get("n"):
-            print("  ex250 分层 %s: n=%d 中位 %+.3fpp 胜率 %.1f%%"
-                  % (k, v["n"], v["median_pp"], v["win_rate"] * 100))
+            print(
+                "  ex250 分层 %s: n=%d 中位 %+.3fpp 胜率 %.1f%%"
+                % (k, v["n"], v["median_pp"], v["win_rate"] * 100)
+            )
 
     if a.save:
-        Path(a.save).write_text(json.dumps(result, ensure_ascii=False, indent=2),
-                                encoding="utf-8")
+        Path(a.save).write_text(
+            json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         print("已保存: %s" % a.save)
 
 

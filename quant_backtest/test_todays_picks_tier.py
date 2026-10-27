@@ -6,6 +6,7 @@ load_chanlun 坏行容错——一~十四审累计八条分支（共振计数/cr
 
 挂 PytestWeekly（周一 05:30）每周复核；被测模块在 portal/，跨目录 import。
 """
+
 import json
 import os
 import sys
@@ -124,18 +125,39 @@ def test_t3_chanlun_sell_only():
 def test_load_chanlun_skips_corrupt_lines(tmp_path, monkeypatch):
     fp = tmp_path / "chanlun_pool.jsonl"
     rows = [
-        {"code": "600000.SH", "name": "浦发银行", "type": "3买",
-         "dt": "2026-09-16", "detect_date": "2026-10-09", "price": 8.5},
+        {
+            "code": "600000.SH",
+            "name": "浦发银行",
+            "type": "3买",
+            "dt": "2026-09-16",
+            "detect_date": "2026-10-09",
+            "price": 8.5,
+        },
         "NOT-JSON 坏行 {{{",
-        {"code": "000001.SZ", "name": "平安银行", "type": "1卖",
-         "dt": "2026-09-18", "detect_date": "2026-10-09"},
-        {"code": "600519.SH", "name": "贵州茅台", "type": "2买",
-         "dt": "2026-09-01", "detect_date": "2026-10-08"},  # 旧批次不入
+        {
+            "code": "000001.SZ",
+            "name": "平安银行",
+            "type": "1卖",
+            "dt": "2026-09-18",
+            "detect_date": "2026-10-09",
+        },
+        {
+            "code": "600519.SH",
+            "name": "贵州茅台",
+            "type": "2买",
+            "dt": "2026-09-01",
+            "detect_date": "2026-10-08",
+        },  # 旧批次不入
     ]
-    fp.write_text("\n".join(
-        r if isinstance(r, str) else json.dumps(r, ensure_ascii=False)
-        for r in rows) + "\n", encoding="utf-8")
+    fp.write_text(
+        "\n".join(
+            r if isinstance(r, str) else json.dumps(r, ensure_ascii=False) for r in rows
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     import build_todays_picks as b
+
     monkeypatch.setattr(b, "QB", str(tmp_path.parent))
     # QB/data/chanlun_pool.jsonl 布局
     data_dir = tmp_path.parent / "data"
@@ -152,6 +174,7 @@ def test_load_chanlun_skips_corrupt_lines(tmp_path, monkeypatch):
 
 def test_load_chanlun_hard_fail_when_file_missing(tmp_path, monkeypatch):
     import build_todays_picks as b
+
     monkeypatch.setattr(b, "QB", str(tmp_path))
     with pytest.raises(FileNotFoundError):
         b.load_chanlun({})  # 整文件缺失=源 err → main 捕获 → T1 停挂链路
@@ -185,6 +208,7 @@ def test_stale_gate_fresh_pass_expired_block():
 def test_archive_first_write_wins(tmp_path):
     """周末重跑（basis 仍=上个交易日）不得覆写首版快照——后验地基保真。"""
     from build_todays_picks import _archive_once
+
     d1 = {"scan_run_date": "2026-10-09", "stocks": [{"code": "600000.SH"}]}
     arch, w1 = _archive_once(str(tmp_path), "20261009", d1)
     assert w1 is True and os.path.exists(arch)
@@ -200,6 +224,7 @@ def test_archive_first_write_wins(tmp_path):
 def test_archive_new_day_writes(tmp_path):
     """新交易日（basis 前进）正常落新档，首写锁定不误伤正常节奏。"""
     from build_todays_picks import _archive_once
+
     arch, w = _archive_once(str(tmp_path), "20261012", {"stocks": []})
     assert w is True and os.path.basename(arch) == "todays_20261012.json"
 
@@ -229,13 +254,23 @@ def test_backfill_overwrites_placeholder(monkeypatch):
     76/766 票「close=信号日旧价+pct_chg=最新日」混搭（亚邦 4.32→5.07）。"""
     import pandas as pd
     import tdx_read
+
     monkeypatch.setattr(tdx_read, "latest_date", lambda t: "20261009")
     monkeypatch.setattr(
-        tdx_read, "read_day",
-        lambda *a, **k: pd.DataFrame({"ts_code": ["603188.SH"],
-                                      "close": [5.07], "pct_chg": [0.6]}))
-    stocks = {"603188.SH": {"code": "603188.SH", "name": "亚邦股份",
-                            "close": 4.32, "pct_chg": None}}
+        tdx_read,
+        "read_day",
+        lambda *a, **k: pd.DataFrame(
+            {"ts_code": ["603188.SH"], "close": [5.07], "pct_chg": [0.6]}
+        ),
+    )
+    stocks = {
+        "603188.SH": {
+            "code": "603188.SH",
+            "name": "亚邦股份",
+            "close": 4.32,
+            "pct_chg": None,
+        }
+    }
     day, n = _backfill_quotes(stocks)
     assert day == "20261009" and n == 1
     assert stocks["603188.SH"]["close"] == 5.07
@@ -246,12 +281,21 @@ def test_backfill_keeps_placeholder_on_lake_miss(monkeypatch):
     """湖无行（停牌/退市）→ 保留 loader 占位不动，不误清空。"""
     import pandas as pd
     import tdx_read
+
     monkeypatch.setattr(tdx_read, "latest_date", lambda t: "20261009")
     monkeypatch.setattr(
-        tdx_read, "read_day",
-        lambda *a, **k: pd.DataFrame({"ts_code": [], "close": [], "pct_chg": []}))
-    stocks = {"000582.SZ": {"code": "000582.SZ", "name": "北部湾港",
-                            "close": 7.7, "pct_chg": None}}
+        tdx_read,
+        "read_day",
+        lambda *a, **k: pd.DataFrame({"ts_code": [], "close": [], "pct_chg": []}),
+    )
+    stocks = {
+        "000582.SZ": {
+            "code": "000582.SZ",
+            "name": "北部湾港",
+            "close": 7.7,
+            "pct_chg": None,
+        }
+    }
     day, n = _backfill_quotes(stocks)
     assert day == "20261009" and n == 0
     assert stocks["000582.SZ"]["close"] == 7.7  # 占位保留
@@ -260,8 +304,10 @@ def test_backfill_keeps_placeholder_on_lake_miss(monkeypatch):
 
 # ── 五源全景闸 + 源级降级推送（P2-2/P2-3 2026-10-11）─────────
 def _ok_metas():
-    return {s: {"label": s, "ok": True, "n": 5} for s in
-            ("strong", "weak", "chanlun", "qpzm", "ninedim", "cross")}
+    return {
+        s: {"label": s, "ok": True, "n": 5}
+        for s in ("strong", "weak", "chanlun", "qpzm", "ninedim", "cross")
+    }
 
 
 def test_gate_all_ok_empty():
@@ -274,11 +320,20 @@ def test_a_share_env_extract():
     「A股」开头一条（美股/港股/加密不误取），空/缺失返回 None
     （stale 拦截日 meta 不带 env_gate，后验按缺失跳过该日分层）。"""
     envs = [
-        {"label": "美股全市场(5832只)", "safe": True, "state": "中性",
-         "score": 43, "breadth": 0.404},
-        {"label": "A股全市场(5552只)", "safe": False,
-         "state": "偏冷（宽度 39%，20日中位 -2.8%）— 闸门收紧",
-         "score": 37, "breadth": 0.386},
+        {
+            "label": "美股全市场(5832只)",
+            "safe": True,
+            "state": "中性",
+            "score": 43,
+            "breadth": 0.404,
+        },
+        {
+            "label": "A股全市场(5552只)",
+            "safe": False,
+            "state": "偏冷（宽度 39%，20日中位 -2.8%）— 闸门收紧",
+            "score": 37,
+            "breadth": 0.386,
+        },
     ]
     g = btp._a_share_env(envs)
     assert g["safe"] is False
@@ -317,8 +372,7 @@ def test_source_alert_silent_on_normal_day(monkeypatch, tmp_path):
     """正常日零推送（噪音控制）：不发消息、不落 outbox。"""
     monkeypatch.setattr(btp, "NEWS_DIR", str(tmp_path))
     called = []
-    monkeypatch.setattr(btp.subprocess, "run",
-                        lambda *a, **k: called.append(a))
+    monkeypatch.setattr(btp.subprocess, "run", lambda *a, **k: called.append(a))
     _push_source_alert(_ok_metas(), [], "20261009")
     assert not called
     assert not (tmp_path / "outbox").exists()
@@ -328,8 +382,7 @@ def test_source_alert_skips_when_veto(monkeypatch, tmp_path):
     """停挂路径 rc=3 已走 alert_fail——本函数防双推直接短路。"""
     monkeypatch.setattr(btp, "NEWS_DIR", str(tmp_path))
     called = []
-    monkeypatch.setattr(btp.subprocess, "run",
-                        lambda *a, **k: called.append(a))
+    monkeypatch.setattr(btp.subprocess, "run", lambda *a, **k: called.append(a))
     metas = _ok_metas()
     metas["cross"] = {"label": "cross", "ok": False, "err": "boom"}
     _push_source_alert(metas, ["ninedim"], "20261009")
@@ -340,6 +393,7 @@ def test_source_alert_pushes_cross_fail_and_weak_stale(monkeypatch, tmp_path):
     """rc=0 路径盲区（P2-2 核心场景）：cross 失败 + weak 过期拦截 →
     写 outbox 并调 send_feishu，消息含源名、原因、数据基准日。"""
     from types import SimpleNamespace
+
     monkeypatch.setattr(btp, "NEWS_DIR", str(tmp_path))
     sent = []
 
@@ -350,13 +404,19 @@ def test_source_alert_pushes_cross_fail_and_weak_stale(monkeypatch, tmp_path):
     monkeypatch.setattr(btp.subprocess, "run", fake_run)
     metas = _ok_metas()
     metas["cross"] = {"label": "cross", "ok": False, "err": "探针失败"}
-    metas["weak"] = {"label": "weak", "ok": True, "n": 0, "stale": True,
-                     "note": "数据基准落后行情湖 12 天"}
+    metas["weak"] = {
+        "label": "weak",
+        "ok": True,
+        "n": 0,
+        "stale": True,
+        "note": "数据基准落后行情湖 12 天",
+    }
     _push_source_alert(metas, [], "20261009")
     assert len(sent) == 1
     assert sent[0][-1].endswith("pending_picks_sources.txt")
-    msg = (tmp_path / "outbox" / "pending_picks_sources.txt"
-           ).read_text(encoding="utf-8")
+    msg = (tmp_path / "outbox" / "pending_picks_sources.txt").read_text(
+        encoding="utf-8"
+    )
     assert "cross 异常失败" in msg and "探针失败" in msg
     assert "weak 过期拦截" in msg and "20261009" in msg
 
@@ -380,8 +440,7 @@ import pandas as pd  # noqa: E402
 
 
 def _mk_daily(rows):
-    return pd.DataFrame(rows, columns=[
-        "ts_code", "trade_date", "open", "close"])
+    return pd.DataFrame(rows, columns=["ts_code", "trade_date", "open", "close"])
 
 
 def _mk_adj(rows):
@@ -416,22 +475,19 @@ def test_env_diff_shadow_wide_scope_with_sell():
     """买卖并存票仍标（影子宽口径：环境压制下的买点证据全记录，
     多空并存留给后验分层；tier 侧 cl_buy 严格口径不受影响——
     见 test_veto_cl_sell_same_batch）。"""
-    d, p, _ = btp._env_diff_shadow(
-        _e("多空票", CL_BUY_REG_DOWN, CL_SELL), True)
+    d, p, _ = btp._env_diff_shadow(_e("多空票", CL_BUY_REG_DOWN, CL_SELL), True)
     assert d and p
 
 
 def test_env_diff_shadow_reg_missing_not_panic():
     """reg 缺失（None/旧档无字段）≠ down——不误标恐慌层。"""
-    d, p, why = btp._env_diff_shadow(
-        _e("旧档票", {"s": "chanlun", "tag": "2买"}), True)
+    d, p, why = btp._env_diff_shadow(_e("旧档票", {"s": "chanlun", "tag": "2买"}), True)
     assert d and not p and "reg=down" not in (why or "")
 
 
 # ── 环境闸门差异化·豁免（P4 启用 2026-10-11）─────────────────
 CL_1BUY = {"s": "chanlun", "tag": "1买", "reg": "flat"}
-QPZM_ENV_AVOID = {"s": "qpzm", "tag": "回避", "action": "回避（环境闸门）",
-                  "score": 55}
+QPZM_ENV_AVOID = {"s": "qpzm", "tag": "回避", "action": "回避（环境闸门）", "score": 55}
 QPZM_STOCK_AVOID = {"s": "qpzm", "tag": "回避", "action": "回避", "score": 55}
 QPZM_AVOID_NO_ACTION = {"s": "qpzm", "tag": "回避", "score": 55}
 
@@ -464,8 +520,12 @@ def test_env_diff_exempt_action_missing_still_blocks():
 
 def test_env_diff_exempt_third_buy_not_lifted():
     """非 1买（3买）不豁免——豁免绑定质量分层唯一正 alpha 层。"""
-    e = _e("三买票", STRONG_LEAD,
-           {"s": "chanlun", "tag": "3买", "reg": "down"}, QPZM_ENV_AVOID)
+    e = _e(
+        "三买票",
+        STRONG_LEAD,
+        {"s": "chanlun", "tag": "3买", "reg": "down"},
+        QPZM_ENV_AVOID,
+    )
     assert btp.tier_of(e, True, gate_tight=True) == "T2"
 
 
@@ -520,8 +580,7 @@ def test_nontoxic_buys_unaffected():
 
 def test_toxic_with_qpzm_buy_also_blocked():
     """毒层 chanlun 腿 + qpzm 买入同样不凑成 T1（毒层是 chanlun 腿降权）。"""
-    e = _e("毒腿票", CL_3BUY_BEI_F,
-           {"s": "qpzm", "tag": "买入", "score": 85})
+    e = _e("毒腿票", CL_3BUY_BEI_F, {"s": "qpzm", "tag": "买入", "score": 85})
     assert btp.tier_of(e) == "T2"
 
 
@@ -542,16 +601,18 @@ def test_q_layer_marks_scope():
 def test_pick_sort_first_buy_top_within_tier():
     """同 tier 内 q_first_buy=True 排前；tier 主序不变。"""
     rows = [
-        {"tier": "T1", "n_hit": 3, "code": "000001.SZ",
-         "q_first_buy": True},
+        {"tier": "T1", "n_hit": 3, "code": "000001.SZ", "q_first_buy": True},
         {"tier": "T1", "n_hit": 3, "code": "000002.SZ"},  # 非一买
-        {"tier": "T2", "n_hit": 3, "code": "000003.SZ",
-         "q_first_buy": True},
+        {"tier": "T2", "n_hit": 3, "code": "000003.SZ", "q_first_buy": True},
         {"tier": "T3", "n_hit": 3, "code": "000004.SZ"},
     ]
     s = sorted(rows, key=btp._pick_sort_key)
-    assert [r["code"] for r in s] == ["000001.SZ", "000002.SZ",
-                                      "000003.SZ", "000004.SZ"]
+    assert [r["code"] for r in s] == [
+        "000001.SZ",
+        "000002.SZ",
+        "000003.SZ",
+        "000004.SZ",
+    ]
 
 
 def test_pick_sort_n_hit_desc_after_first_buy():
@@ -575,10 +636,13 @@ def test_pct_between_adjusted_exdiv_window():
 
     def fake_rr(tbl, s, e, codes=None, columns=None):
         if tbl == "ts_daily":
-            return _mk_daily([("600000.SH", "20260501", 10.0, 20.0),
-                              ("600000.SH", "20260502", 10.0, 11.0)])
-        return _mk_adj([("600000.SH", "20260501", 1.0),
-                        ("600000.SH", "20260502", 2.0)])
+            return _mk_daily(
+                [
+                    ("600000.SH", "20260501", 10.0, 20.0),
+                    ("600000.SH", "20260502", 10.0, 11.0),
+                ]
+            )
+        return _mk_adj([("600000.SH", "20260501", 1.0), ("600000.SH", "20260502", 2.0)])
 
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(tdx_read, "read_range", fake_rr)
@@ -595,10 +659,13 @@ def test_pct_between_no_factor_change_same_number():
 
     def fake_rr(tbl, s, e, codes=None, columns=None):
         if tbl == "ts_daily":
-            return _mk_daily([("600000.SH", "20260501", 10.0, 10.5),
-                              ("600000.SH", "20260502", 11.0, 12.0)])
-        return _mk_adj([("600000.SH", "20260501", 3.0),
-                        ("600000.SH", "20260502", 3.0)])
+            return _mk_daily(
+                [
+                    ("600000.SH", "20260501", 10.0, 10.5),
+                    ("600000.SH", "20260502", 11.0, 12.0),
+                ]
+            )
+        return _mk_adj([("600000.SH", "20260501", 3.0), ("600000.SH", "20260502", 3.0)])
 
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(tdx_read, "read_range", fake_rr)
@@ -616,8 +683,12 @@ def test_pct_between_degraded_gap_guard():
     import tdx_read
 
     def fake_rr(tbl, s, e, codes=None, columns=None):
-        return _mk_daily([("600000.SH", "20260501", 10.0, 20.0),
-                          ("600000.SH", "20260502", 10.0, 11.0)])
+        return _mk_daily(
+            [
+                ("600000.SH", "20260501", 10.0, 20.0),
+                ("600000.SH", "20260502", 10.0, 11.0),
+            ]
+        )
 
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(tdx_read, "read_range", fake_rr)
@@ -636,8 +707,12 @@ def test_pct_between_partial_factor_missing_degrades():
 
     def fake_rr(tbl, s, e, codes=None, columns=None):
         if tbl == "ts_daily":
-            return _mk_daily([("600000.SH", "20260501", 10.0, 20.0),
-                              ("600000.SH", "20260502", 10.0, 11.0)])
+            return _mk_daily(
+                [
+                    ("600000.SH", "20260501", 10.0, 20.0),
+                    ("600000.SH", "20260502", 10.0, 11.0),
+                ]
+            )
         return _mk_adj([("600000.SH", "20260502", 2.0)])  # 缺 0501 行
 
     monkeypatch = pytest.MonkeyPatch()

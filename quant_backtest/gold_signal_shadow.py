@@ -15,6 +15,7 @@
 → done（d20 已知）。重复运行幂等（无新信号即只刷面板）。
 退出码：0 正常；1 异常（包装脚本 alert_fail 告警）。
 """
+
 import json
 import os
 import sys
@@ -28,7 +29,7 @@ from chanlun_bi import analyze  # noqa: E402
 
 JOURNAL = os.path.join(HERE, "data", "gold_signal_journal.jsonl")
 PANEL = os.path.join(HERE, "data", "gold_signal_panel.json")
-JOURNAL_START = "2026-10-05"   # 部署日：dt 早于此的历史信号不回填（K226 已统计）
+JOURNAL_START = "2026-10-05"  # 部署日：dt 早于此的历史信号不回填（K226 已统计）
 HOLDS = (5, 10, 20)
 WATCH = ("b3", "s3")
 
@@ -65,10 +66,13 @@ def main():
     if len(df) < 60:
         print("bars insufficient")
         return 1
-    dts = ["%s-%s-%s" % (str(v)[:4], str(v)[4:6], str(v)[6:8])
-           for v in df["trade_date"]]
-    bars = [{"dt": dts[i], "h": float(r["high"]), "l": float(r["low"])}
-            for i, (_, r) in enumerate(df.iterrows())]
+    dts = [
+        "%s-%s-%s" % (str(v)[:4], str(v)[4:6], str(v)[6:8]) for v in df["trade_date"]
+    ]
+    bars = [
+        {"dt": dts[i], "h": float(r["high"]), "l": float(r["low"])}
+        for i, (_, r) in enumerate(df.iterrows())
+    ]
     closes = [float(r["close"]) for _, r in df.iterrows()]
     opens = [float(r["open"]) for _, r in df.iterrows()]
     st = analyze(bars, closes)
@@ -83,10 +87,15 @@ def main():
             continue
         if (s["t"], s["d"]) in known:
             continue
-        new.append({"type": s["t"], "dt": s["d"], "price": s.get("p"),
-                    "detect_date": today,
-                    "first_seen": datetime.now().strftime(
-                        "%Y-%m-%d %H:%M:%S")})
+        new.append(
+            {
+                "type": s["t"],
+                "dt": s["d"],
+                "price": s.get("p"),
+                "detect_date": today,
+                "first_seen": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
     if new:
         _append_journal(new)
         journal = _load_journal()
@@ -106,30 +115,41 @@ def main():
             for h in HOLDS:
                 j2 = i0 + 1 + h
                 if j2 < len(closes) and closes[j2]:
-                    e["d%d" % h] = round(
-                        sign * (closes[j2] / entry - 1.0) * 100, 2)
+                    e["d%d" % h] = round(sign * (closes[j2] / entry - 1.0) * 100, 2)
             if all(("d%d" % h) in e for h in HOLDS):
                 e["status"] = "done"
         entries.append(e)
     done = [e for e in entries if e["status"] == "done"]
     d20 = [e["d20"] for e in done]
     summary = {
-        "n_journal": len(entries), "n_done": len(done),
+        "n_journal": len(entries),
+        "n_done": len(done),
         "n_tracking": sum(1 for e in entries if e["status"] == "tracking"),
         "n_pending": sum(1 for e in entries if e["status"] == "pending_entry"),
         "d20_win": round(sum(1 for x in d20 if x > 0) / len(d20) * 100, 1)
-        if d20 else None,
+        if d20
+        else None,
         "d20_avg": round(sum(d20) / len(d20), 2) if d20 else None,
     }
-    panel = {"generated_at": datetime.now().strftime(
-        "%Y-%m-%d %H:%M:%S"), "symbol": SYM,
-        "journal_start": JOURNAL_START, "summary": summary,
-        "entries": entries}
+    panel = {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "symbol": SYM,
+        "journal_start": JOURNAL_START,
+        "summary": summary,
+        "entries": entries,
+    }
     os.makedirs(os.path.dirname(PANEL), exist_ok=True)
     _atomic_write(PANEL, json.dumps(panel, ensure_ascii=False, indent=1))
-    print("gold shadow: new=%d journal=%d done=%d tracking=%d pending=%d"
-          % (len(new), len(entries), summary["n_done"],
-             summary["n_tracking"], summary["n_pending"]))
+    print(
+        "gold shadow: new=%d journal=%d done=%d tracking=%d pending=%d"
+        % (
+            len(new),
+            len(entries),
+            summary["n_done"],
+            summary["n_tracking"],
+            summary["n_pending"],
+        )
+    )
     return 0
 
 

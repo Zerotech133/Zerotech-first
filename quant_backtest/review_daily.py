@@ -26,6 +26,7 @@ compare_portfolios / render_*），不碰晨会脚本 / 门户 / 计划任务 / 
   python review_daily.py --all
   python review_daily.py --combo combo_wenjian --date 2026-10-21
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,13 +35,13 @@ import sys
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent            # quant_backtest
-PAPER = HERE.parent / "k_stock" / "paper"         # combo_review 所在目录
+HERE = Path(__file__).resolve().parent  # quant_backtest
+PAPER = HERE.parent / "k_stock" / "paper"  # combo_review 所在目录
 if str(PAPER) not in sys.path:
     sys.path.insert(0, str(PAPER))
 
-import combo_registry as creg                     # noqa: E402
-import combo_review as cr                         # noqa: E402
+import combo_registry as creg  # noqa: E402
+import combo_review as cr  # noqa: E402
 
 REVIEW_ROOT = HERE / "reports" / "review"
 SUMMARY_SCHEMA = 1
@@ -66,9 +67,12 @@ def _cost_ledger_state(ledger=None) -> dict:
     事实记进 summary，不改 combo_review 的口径（它一行不改是本单边界）。
     """
     try:
-        p = Path(ledger) if ledger is not None \
+        p = (
+            Path(ledger)
+            if ledger is not None
             else Path(cr.combo_factory.DEFAULT_BUDGET_LEDGER)
-    except Exception:                                # noqa: BLE001
+        )
+    except Exception:  # noqa: BLE001
         return {"path": None, "exists": None}
     try:
         return {"path": str(p), "exists": p.exists()}
@@ -87,9 +91,12 @@ def _cost_state(ledger_path, combo_id, month) -> tuple:
     只读，不写账、不改 combo_review 的计算口径。
     """
     try:
-        p = Path(ledger_path) if ledger_path is not None \
+        p = (
+            Path(ledger_path)
+            if ledger_path is not None
             else Path(cr.combo_factory.DEFAULT_BUDGET_LEDGER)
-    except Exception:                                # noqa: BLE001
+        )
+    except Exception:  # noqa: BLE001
         return "ledger_missing", {"path": None}
     if not p.exists():
         return "ledger_missing", {"path": str(p)}
@@ -105,11 +112,15 @@ def _cost_state(ledger_path, combo_id, month) -> tuple:
         try:
             e = json.loads(line)
         except ValueError:
-            return "ledger_corrupt", {"path": str(p),
-                                     "error": "第 %d 行非法 JSON" % lineno}
+            return "ledger_corrupt", {
+                "path": str(p),
+                "error": "第 %d 行非法 JSON" % lineno,
+            }
         if not isinstance(e, dict):
-            return "ledger_corrupt", {"path": str(p),
-                                     "error": "第 %d 行非对象" % lineno}
+            return "ledger_corrupt", {
+                "path": str(p),
+                "error": "第 %d 行非对象" % lineno,
+            }
         if e.get("combo_id") != combo_id or e.get("kind") != "llm_cost":
             continue
         if str(e.get("ts", ""))[:7] != month:
@@ -118,13 +129,18 @@ def _cost_state(ledger_path, combo_id, month) -> tuple:
         try:
             total += float(e.get("cost") or 0.0)
         except (TypeError, ValueError):
-            return "ledger_corrupt", {"path": str(p),
-                                     "error": "第 %d 行 cost 非法" % lineno}
+            return "ledger_corrupt", {
+                "path": str(p),
+                "error": "第 %d 行 cost 非法" % lineno,
+            }
     if n == 0:
-        return "zero_cost_confirmed", {"path": str(p), "records": 0,
-                                       "month": month}
-    return "has_cost", {"path": str(p), "records": n,
-                        "cost": round(total, 6), "month": month}
+        return "zero_cost_confirmed", {"path": str(p), "records": 0, "month": month}
+    return "has_cost", {
+        "path": str(p),
+        "records": n,
+        "cost": round(total, 6),
+        "month": month,
+    }
 
 
 COST_WARN = """
@@ -146,8 +162,16 @@ def _count_states(cost_states: dict) -> dict:
     return out
 
 
-def run(date=None, combo_ids=None, out_root=None, registry_path=None,
-        ledger=None, receipts=None, snapshot_db=None, month=None) -> dict:
+def run(
+    date=None,
+    combo_ids=None,
+    out_root=None,
+    registry_path=None,
+    ledger=None,
+    receipts=None,
+    snapshot_db=None,
+    month=None,
+) -> dict:
     """跑一轮盘后复盘，返回 summary dict（同时落盘）。
 
     combo_ids=None → 取注册表全量；显式传 [] → 按空态处理（不臆造组合）。
@@ -158,25 +182,31 @@ def run(date=None, combo_ids=None, out_root=None, registry_path=None,
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if combo_ids is None:
-        combo_ids = load_combo_ids(registry_path)      # 注册表坏了就抛，不装空
+        combo_ids = load_combo_ids(registry_path)  # 注册表坏了就抛，不装空
 
     # 归月口径与 combo_review 对齐：显式 month > 归档日所属月 > 当月
-    cur_month = month or (day[:7] if len(day) >= 7 else
-                          time.strftime("%Y-%m"))
+    cur_month = month or (day[:7] if len(day) >= 7 else time.strftime("%Y-%m"))
 
     written, errors, roi_counts, cost_states = [], [], {}, {}
     for cid in combo_ids:
         try:
-            rev = cr.build_review(cid, registry_path=registry_path,
-                                  ledger=ledger, receipts=receipts,
-                                  month=cur_month, snapshot_db=snapshot_db)
-        except Exception as e:                          # noqa: BLE001
+            rev = cr.build_review(
+                cid,
+                registry_path=registry_path,
+                ledger=ledger,
+                receipts=receipts,
+                month=cur_month,
+                snapshot_db=snapshot_db,
+            )
+        except Exception as e:  # noqa: BLE001
             # 失败组合**不产出 md**——给它写一份报告就是造数
-            errors.append({
-                "combo_id": cid,
-                "reason_code": getattr(e, "reason_code", "unknown"),
-                "error": str(e)[:200],
-            })
+            errors.append(
+                {
+                    "combo_id": cid,
+                    "reason_code": getattr(e, "reason_code", "unknown"),
+                    "error": str(e)[:200],
+                }
+            )
             continue
         md = cr.render_markdown(rev)
         # 成本口径三态（WO-107）：账本不在盘时报表里的 0 是缺失不是零成本，
@@ -192,11 +222,17 @@ def run(date=None, combo_ids=None, out_root=None, registry_path=None,
 
     compare_written = False
     if written:
-        cmp_ = cr.compare_portfolios(written, registry_path=registry_path,
-                                     ledger=ledger, receipts=receipts,
-                                     month=month, snapshot_db=snapshot_db)
+        cmp_ = cr.compare_portfolios(
+            written,
+            registry_path=registry_path,
+            ledger=ledger,
+            receipts=receipts,
+            month=month,
+            snapshot_db=snapshot_db,
+        )
         (out_dir / "_compare.md").write_text(
-            cr.render_comparison_markdown(cmp_), encoding="utf-8")
+            cr.render_comparison_markdown(cmp_), encoding="utf-8"
+        )
         compare_written = True
 
     summary = {
@@ -225,24 +261,29 @@ def run(date=None, combo_ids=None, out_root=None, registry_path=None,
         ],
     }
     (out_dir / "_summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return summary
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(
-        description="量化板块盘后复盘（只读聚合 + 归档）")
+    ap = argparse.ArgumentParser(description="量化板块盘后复盘（只读聚合 + 归档）")
     ap.add_argument("--date", help="归档日期 YYYY-MM-DD（默认今天）")
-    ap.add_argument("--combo", action="append", dest="combos",
-                    help="指定组合 id（可重复）；缺省=注册表全量")
+    ap.add_argument(
+        "--combo",
+        action="append",
+        dest="combos",
+        help="指定组合 id（可重复）；缺省=注册表全量",
+    )
     ap.add_argument("--all", action="store_true", help="显式全量（与缺省同义）")
     ap.add_argument("--out", help="输出根目录（默认 reports/review）")
     args = ap.parse_args(argv)
 
-    summary = run(date=args.date, combo_ids=args.combos or None,
-                  out_root=args.out)
-    brief = {k: summary[k] for k in ("date", "combos", "errors",
-                                     "roi_status_counts", "out_dir")}
+    summary = run(date=args.date, combo_ids=args.combos or None, out_root=args.out)
+    brief = {
+        k: summary[k]
+        for k in ("date", "combos", "errors", "roi_status_counts", "out_dir")
+    }
     print(json.dumps(brief, ensure_ascii=False))
     return 0
 

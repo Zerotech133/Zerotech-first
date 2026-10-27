@@ -6,6 +6,7 @@
   2. 三错类边 src(IntelItem AN号) ∩ 175 变更集(Event AN号) —— 源头对齐面
   3. 非三错类边作对照
 """
+
 import io
 import json
 import os
@@ -46,29 +47,40 @@ def main():
     print("175 变更集 AN 号（去重）: %d" % len(changed_ans))
 
     from kg_client import KgClient
+
     cli = KgClient()
     with cli._session() as s:
         for rel in ("SUPPORTS", "CONTRADICTS"):
-            rows = list(s.run(
-                "MATCH (a:IntelItem)-[r:%s]->() WHERE r.tag IN $tags "
-                "RETURN a.item_id AS src, toString(r.mevt_ids) AS mv" % rel,
-                tags=WRONG_TAGS))
+            rows = list(
+                s.run(
+                    "MATCH (a:IntelItem)-[r:%s]->() WHERE r.tag IN $tags "
+                    "RETURN a.item_id AS src, toString(r.mevt_ids) AS mv" % rel,
+                    tags=WRONG_TAGS,
+                )
+            )
             n = len(rows)
             mv_nonempty = len([r for r in rows if (r["mv"] or "").strip()])
             src_ans = set(filter(None, (an_of(r["src"]) for r in rows)))
             hit = src_ans & changed_ans
-            print("[%s] 三错类边 %d | mevt_ids 非空 %d | src AN 去重 %d | "
-                  "∩175 变更集 %d"
-                  % (rel, n, mv_nonempty, len(src_ans), len(hit)))
+            print(
+                "[%s] 三错类边 %d | mevt_ids 非空 %d | src AN 去重 %d | "
+                "∩175 变更集 %d" % (rel, n, mv_nonempty, len(src_ans), len(hit))
+            )
         # 非三错类对照：同样口径
-        rows = list(s.run(
-            "MATCH (a:IntelItem)-[r:SUPPORTS|CONTRADICTS]->() "
-            "WHERE NOT r.tag IN $tags AND r.tag IS NOT NULL "
-            "RETURN a.item_id AS src", tags=WRONG_TAGS))
+        rows = list(
+            s.run(
+                "MATCH (a:IntelItem)-[r:SUPPORTS|CONTRADICTS]->() "
+                "WHERE NOT r.tag IN $tags AND r.tag IS NOT NULL "
+                "RETURN a.item_id AS src",
+                tags=WRONG_TAGS,
+            )
+        )
         src_ans = set(filter(None, (an_of(r["src"]) for r in rows)))
         hit = src_ans & changed_ans
-        print("[对照] 非三错类边 %d | src AN 去重 %d | ∩175 变更集 %d"
-              % (len(rows), len(src_ans), len(hit)))
+        print(
+            "[对照] 非三错类边 %d | src AN 去重 %d | ∩175 变更集 %d"
+            % (len(rows), len(src_ans), len(hit))
+        )
     cli.close()
     print("=== 对齐检查完成（只读）===")
 

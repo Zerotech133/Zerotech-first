@@ -4,6 +4,7 @@
 覆盖：通过(PASS) / 否决(VETO) / 样本不足跳过(SKIP)。
 全部用 mock 折窗结果或合成 df，不读真实数据（纪律：不动 data/）。
 """
+
 import os
 import sys
 
@@ -21,17 +22,18 @@ def _synth_df(n, drift=0.001, seed=7):
     判例：Series 带默认 RangeIndex 时传 index= 会 reindex 成全 NaN 列，
     必须用 list 构造。"""
     import numpy as np
+
     rng = np.random.RandomState(seed)
     rets = rng.normal(drift, 0.01, n)
     px = (100 * (1 + pd.Series(rets)).cumprod()).tolist()
-    return pd.DataFrame({"close": px},
-                        index=pd.date_range("2024-01-01", periods=n, freq="B"))
+    return pd.DataFrame(
+        {"close": px}, index=pd.date_range("2024-01-01", periods=n, freq="B")
+    )
 
 
 def test_gate_pass(monkeypatch):
     """通过路径：OOS ≥ 0.6×IS → PASS，允许 --apply 写入。"""
-    monkeypatch.setattr(od, "_gate_folds",
-                        lambda name, params, frames: (1.00, 0.80, 6))
+    monkeypatch.setattr(od, "_gate_folds", lambda name, params, frames: (1.00, 0.80, 6))
     g = od.discipline_gate("ma_cross", {"fast": 5, "slow": 20}, {})
     assert g["status"] == "PASS"
     assert g["is"] == 1.00 and g["oos"] == 0.80 and g["folds"] == 6
@@ -40,8 +42,7 @@ def test_gate_pass(monkeypatch):
 
 def test_gate_veto(monkeypatch):
     """否决路径：OOS < 0.6×IS → VETO，msg 含标准否决文案。"""
-    monkeypatch.setattr(od, "_gate_folds",
-                        lambda name, params, frames: (1.50, 0.50, 5))
+    monkeypatch.setattr(od, "_gate_folds", lambda name, params, frames: (1.50, 0.50, 5))
     g = od.discipline_gate("trend_follow", {"n": 10, "slope_lookback": 3}, {})
     assert g["status"] == "VETO"
     # 文案格式：纪律门否决：<策略> <参数组> OOS=x.xx < 0.6×IS=y.yy
@@ -60,8 +61,7 @@ def test_gate_skip_insufficient_bars():
 
 def test_gate_skip_zero_folds(monkeypatch):
     """折窗全挂（信号函数异常）→ 0 折 → SKIP，不静默放行。"""
-    monkeypatch.setattr(od, "_gate_folds",
-                        lambda name, params, frames: (None, None, 0))
+    monkeypatch.setattr(od, "_gate_folds", lambda name, params, frames: (None, None, 0))
     g = od.discipline_gate("ma_cross", {"fast": 5, "slow": 20}, {})
     assert g["status"] == "SKIP"
 
@@ -71,7 +71,8 @@ def test_gate_pass_enough_folds_synthetic():
     折数应 ≥ 4（600 bar → floor((600-252)/63)+1=6 折可用段）。"""
     frames = {("CN", "TESTSYN"): _synth_df(600, drift=0.002)}
     is_mean, oos_sh, n_folds = od._gate_folds(
-        "ma_cross", {"fast": 5, "slow": 20}, frames)
+        "ma_cross", {"fast": 5, "slow": 20}, frames
+    )
     assert n_folds >= 4
     assert is_mean is not None and oos_sh is not None
 

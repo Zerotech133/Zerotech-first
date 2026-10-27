@@ -57,8 +57,7 @@ def _required_as_of(value: Any) -> int | str:
         raise ValueError("as_of must be a nonnegative int (ms) or nonempty str")
     if isinstance(value, int):
         if value < 0:
-            raise ValueError(
-                "as_of must be a nonnegative int (ms) or nonempty str")
+            raise ValueError("as_of must be a nonnegative int (ms) or nonempty str")
         return value
     if isinstance(value, str) and value.strip():
         return value
@@ -203,7 +202,8 @@ def _degradation_section(bundle: dict[str, Any]) -> dict[str, Any]:
 
 
 def merge_supplement(
-    evidence_bundle: dict[str, Any], supplements: list[Supplement],
+    evidence_bundle: dict[str, Any],
+    supplements: list[Supplement],
 ) -> dict[str, Any]:
     """Return a read-only merged view of one bundle plus its supplements.
 
@@ -255,8 +255,7 @@ def merge_supplement(
     symbol = bundle["symbol"]
     for row in rows:
         if row.symbol != symbol:
-            raise ValueError(
-                "supplement symbol must exactly match the bundle symbol")
+            raise ValueError("supplement symbol must exactly match the bundle symbol")
     merged: dict[str, Any] = dict(bundle)
     merged["supplements"] = _supplements_section(rows)
     merged["degradation"] = _degradation_section(bundle)

@@ -11,6 +11,7 @@
 
 运行：cd quant_backtest && python export_us_hk.py [--market US|HK|CRYPTO] [--batch 200] [--force]
 """
+
 import argparse
 import json
 import os
@@ -23,28 +24,30 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import data_loader as dl          # noqa: E402
+import data_loader as dl  # noqa: E402
 
 
 def _align_schema(df, symbol, market):
     """对齐 A 股 parquet 字段：ts_code/trade_date/close/open/high/low/
     volume/amount/pre_close/pct_chg。"""
     if market == "HK":
-        ts_code = symbol.zfill(5)            # 00001 → 00700
+        ts_code = symbol.zfill(5)  # 00001 → 00700
     else:
-        ts_code = symbol                     # AAPL / BTC/USDT（保持斜杠格式）
-    out = pd.DataFrame({
-        "ts_code": ts_code,
-        "trade_date": df.index.strftime("%Y%m%d"),
-        "close": df["close"],
-        "open": df["open"],
-        "high": df["high"],
-        "low": df["low"],
-        "volume": df["volume"],
-        # 不依赖 DataFrame.get（pandas 3.x 才有的方法，2.x 会 AttributeError）
-        "amount": df["turnover"] if "turnover" in df.columns else df["volume"],
-        "pre_close": df["pre_close"],
-    })
+        ts_code = symbol  # AAPL / BTC/USDT（保持斜杠格式）
+    out = pd.DataFrame(
+        {
+            "ts_code": ts_code,
+            "trade_date": df.index.strftime("%Y%m%d"),
+            "close": df["close"],
+            "open": df["open"],
+            "high": df["high"],
+            "low": df["low"],
+            "volume": df["volume"],
+            # 不依赖 DataFrame.get（pandas 3.x 才有的方法，2.x 会 AttributeError）
+            "amount": df["turnover"] if "turnover" in df.columns else df["volume"],
+            "pre_close": df["pre_close"],
+        }
+    )
     # WO-QT-20261021-104 审计修复：pre_close 为 0 时 (close/pre_close-1) 得 inf，
     # 会把 inf 写进 parquet 污染下游（均值/排序/归一会全盘失真）。CN 实测已有
     # 609 行 pre_close=0。统一把 0 与非数值置 NaN —— NaN 表示「未知涨跌幅」，
@@ -57,8 +60,7 @@ def _align_schema(df, symbol, market):
 
 
 def _fname(out_dir, symbol):
-    return out_dir / ("%s.parquet"
-                      % symbol.replace("/", "_").replace(".", "_"))
+    return out_dir / ("%s.parquet" % symbol.replace("/", "_").replace(".", "_"))
 
 
 def _local_meta(fn):
@@ -87,17 +89,20 @@ def _topup_symbol(market, symbol, fn, db_max):
     old_max = str(old["trade_date"].max()).replace("-", "")[:8]
     if old_max >= db_max:
         return "skip"
-    frames = dl.load_bars(market, [symbol],
-                          start=(pd.to_datetime(old_max)
-                                 + pd.Timedelta(days=1)
-                                 ).strftime("%Y%m%d"))
+    frames = dl.load_bars(
+        market,
+        [symbol],
+        start=(pd.to_datetime(old_max) + pd.Timedelta(days=1)).strftime("%Y%m%d"),
+    )
     df = frames.get(symbol)
     if df is None or df.empty:
-        return "skip"                      # 库也无新增（罕见：db_max 全市场口径）
+        return "skip"  # 库也无新增（罕见：db_max 全市场口径）
     out = _align_schema(df, symbol, market)
-    merged = (pd.concat([old, out], ignore_index=True)
-                .drop_duplicates(subset=["trade_date"], keep="last")
-                .sort_values("trade_date"))
+    merged = (
+        pd.concat([old, out], ignore_index=True)
+        .drop_duplicates(subset=["trade_date"], keep="last")
+        .sort_values("trade_date")
+    )
     merged.to_parquet(fn, index=False)
     return "upd"
 
@@ -112,7 +117,7 @@ def export_market(market, batch=200, force=False):
     t0 = time.time()
     n_redo = 0
     for i in range(0, len(symbols), batch):
-        batch_syms = symbols[i:i + batch]
+        batch_syms = symbols[i : i + batch]
         # 增量比对（WO-QT-20261021-092）：**两端**比对库内起止——
         #   库内起点更早 → 头部空洞 → 整只重导（redo）
         #   库内终点更新 → 尾部缺口 → 追加增量（topup）
@@ -121,8 +126,7 @@ def export_market(market, batch=200, force=False):
         if force:
             todo = batch_syms
         else:
-            fresh = [s for s in batch_syms
-                     if not _fname(out_dir, s).exists()]
+            fresh = [s for s in batch_syms if not _fname(out_dir, s).exists()]
             todo = list(fresh)
             have = [s for s in batch_syms if s not in todo]
             if have:
@@ -134,12 +138,12 @@ def export_market(market, batch=200, force=False):
                 for s in have:
                     rg = rng.get(s)
                     if not rg:
-                        skip += 1          # 库无数据，无从增量
+                        skip += 1  # 库无数据，无从增量
                         continue
                     db_min, db_max = rg
                     n_old, o_min, o_max = _local_meta(_fname(out_dir, s))
                     if n_old and db_min < o_min:
-                        redo[s] = n_old    # 头部空洞：整只重导
+                        redo[s] = n_old  # 头部空洞：整只重导
                     elif db_max > o_max:
                         topup.append((s, db_max))
                     else:
@@ -172,8 +176,9 @@ def export_market(market, batch=200, force=False):
                 # 保护：重导反而变少（库内残片/回档）→ 保留旧文件不覆盖
                 old_n = redo.get(s)
                 if old_n is not None and len(out) < old_n:
-                    print("  %s 重导行数反而减少 %d<%d，保留旧文件"
-                          % (s, len(out), old_n))
+                    print(
+                        "  %s 重导行数反而减少 %d<%d，保留旧文件" % (s, len(out), old_n)
+                    )
                     kept += 1
                     continue
                 out.to_parquet(_fname(out_dir, s), index=False)
@@ -184,13 +189,23 @@ def export_market(market, batch=200, force=False):
                 print("  %s 写盘失败: %s" % (s, e))
                 fail += 1
         if (i // batch) % 10 == 0:
-            print("  进度 %d/%d，new=%d redo=%d upd=%d skip=%d fail=%d kept=%d"
-                  % (i, len(symbols), ok - n_redo, n_redo, upd, skip, fail, kept))
-    print("%s 完成: new=%d redo=%d upd=%d skip=%d fail=%d kept=%d 耗时 %.1fs"
-          % (market, ok - n_redo, n_redo, upd, skip, fail, kept,
-             time.time() - t0))
-    return {"market": market, "new": ok - n_redo, "redo": n_redo,
-            "upd": upd, "skip": skip, "fail": fail, "kept": kept}
+            print(
+                "  进度 %d/%d，new=%d redo=%d upd=%d skip=%d fail=%d kept=%d"
+                % (i, len(symbols), ok - n_redo, n_redo, upd, skip, fail, kept)
+            )
+    print(
+        "%s 完成: new=%d redo=%d upd=%d skip=%d fail=%d kept=%d 耗时 %.1fs"
+        % (market, ok - n_redo, n_redo, upd, skip, fail, kept, time.time() - t0)
+    )
+    return {
+        "market": market,
+        "new": ok - n_redo,
+        "redo": n_redo,
+        "upd": upd,
+        "skip": skip,
+        "fail": fail,
+        "kept": kept,
+    }
 
 
 def write_active(market, window_days=10):
@@ -211,11 +226,12 @@ def write_active(market, window_days=10):
             "active": active,
         }
         tmp = out_dir / "_active.json.tmp"
-        tmp.write_text(json.dumps(meta, ensure_ascii=False, indent=1),
-                       encoding="utf-8")
-        tmp.replace(out_dir / "_active.json")   # 原子替换
-        print("%s active list: %d/%d (cutoff %s)"
-              % (market, len(active), len(symbols), cutoff))
+        tmp.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+        tmp.replace(out_dir / "_active.json")  # 原子替换
+        print(
+            "%s active list: %d/%d (cutoff %s)"
+            % (market, len(active), len(symbols), cutoff)
+        )
         return len(active)
     except Exception as e:
         print("%s write_active skip: %s" % (market, e))

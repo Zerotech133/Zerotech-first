@@ -22,6 +22,7 @@
   python weak_track_watch.py --send --text       # 推送文本
   python weak_track_watch.py --max-days 90       # 口径可调
 """
+
 import argparse
 import datetime
 import glob
@@ -33,7 +34,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_close as wc          # noqa: E402  (_load/_case_name)
+import weak_track_close as wc  # noqa: E402  (_load/_case_name)
 
 REP = os.path.join(os.path.dirname(HERE), "reports")
 TPL = os.path.join(HERE, "weak_track_watch_tpl.txt")
@@ -43,11 +44,18 @@ NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 def _task_map():
     """全部 WeakTrack* 计划任务 → {任务名: State}（一次查询，测试可 monkeypatch）。"""
     r = subprocess.run(
-        ["powershell", "-NoProfile", "-Command",
-         "Get-ScheduledTask -TaskPath '\\' | Where-Object "
-         "{$_.TaskName -like 'WeakTrack*'} | ForEach-Object "
-         "{ \"$($_.TaskName)|$($_.State)\" }"],
-        capture_output=True, text=True, timeout=60)
+        [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            "Get-ScheduledTask -TaskPath '\\' | Where-Object "
+            "{$_.TaskName -like 'WeakTrack*'} | ForEach-Object "
+            '{ "$($_.TaskName)|$($_.State)" }',
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
     out = {}
     for ln in (r.stdout or "").splitlines():
         ln = ln.strip()
@@ -71,7 +79,7 @@ def watch_cases(rep=None, task_map=None, max_days=60, stall_days=3):
     tm = task_map if task_map is not None else _task_map()
     out = []
     for fp in sorted(glob.glob(os.path.join(rep, "weak_track_*.jsonl"))):
-        if ".closed_" in os.path.basename(fp):       # 归档的不在案
+        if ".closed_" in os.path.basename(fp):  # 归档的不在案
             continue
         rows = wc._load(fp)
         if not rows:
@@ -93,14 +101,22 @@ def watch_cases(rep=None, task_map=None, max_days=60, stall_days=3):
             flags.append("停滞")
         if not any(s == "Ready" for s in states):
             flags.append("任务失联")
-        out.append({
-            "code": rows[-1].get("code", "?"), "c6": c6,
-            "name": wc._case_name(c6),
-            "days_open": days_open, "days_stall": days_stall,
-            "task": ("Ready" if any(s == "Ready" for s in states)
-                     else "、".join(states) or "缺失"),
-            "flags": flags, "md": os.path.basename(fp),
-        })
+        out.append(
+            {
+                "code": rows[-1].get("code", "?"),
+                "c6": c6,
+                "name": wc._case_name(c6),
+                "days_open": days_open,
+                "days_stall": days_stall,
+                "task": (
+                    "Ready"
+                    if any(s == "Ready" for s in states)
+                    else "、".join(states) or "缺失"
+                ),
+                "flags": flags,
+                "md": os.path.basename(fp),
+            }
+        )
     return out
 
 
@@ -115,15 +131,22 @@ def watch_fields(cases):
     """巡检结果 → 推送字段 dict（文案与卡片共用单一数据源）。"""
     bad = [c for c in cases if c["flags"]]
     return {
-        "n": len(cases), "n_bad": len(bad),
+        "n": len(cases),
+        "n_bad": len(bad),
         "ts": time.strftime("%Y-%m-%d %H:%M"),
         "detail": "\n".join(
-            "- %s %s：%s｜跟踪 %s 天·末次 %s 天前·任务 %s\n  → %s" % (
-                c["code"], c.get("name") or "", "、".join(c["flags"]),
+            "- %s %s：%s｜跟踪 %s 天·末次 %s 天前·任务 %s\n  → %s"
+            % (
+                c["code"],
+                c.get("name") or "",
+                "、".join(c["flags"]),
                 c["days_open"] if c["days_open"] is not None else "—",
                 c["days_stall"] if c["days_stall"] is not None else "—",
-                c["task"], "；".join(_ACT[f] for f in c["flags"]))
-            for c in bad),
+                c["task"],
+                "；".join(_ACT[f] for f in c["flags"]),
+            )
+            for c in bad
+        ),
     }
 
 
@@ -131,27 +154,31 @@ def build_watch(f):
     """巡检字段 → 文本文案（外置模板，坏模板回退内置）。"""
     if os.path.isfile(TPL):
         try:
-            text = "".join(l for l in
-                           open(TPL, encoding="utf-8").read().splitlines(True)
-                           if not l.lstrip().startswith("#"))
+            text = "".join(
+                l
+                for l in open(TPL, encoding="utf-8").read().splitlines(True)
+                if not l.lstrip().startswith("#")
+            )
             return text.format(**f).rstrip("\n")
         except (KeyError, IndexError, ValueError):
             pass
-    return ("⏰ [WEAK WATCH] 超期未结案巡检（§12）\n"
-            "在案 {n} 案｜异常 {n_bad} 案｜{ts}\n"
-            "{detail}").format(**f)
+    return (
+        "⏰ [WEAK WATCH] 超期未结案巡检（§12）\n"
+        "在案 {n} 案｜异常 {n_bad} 案｜{ts}\n"
+        "{detail}"
+    ).format(**f)
 
 
 def main():
     ap = argparse.ArgumentParser(description="§12 超期未结案巡检推送")
-    ap.add_argument("--send", action="store_true",
-                    help="执行推送（默认仅预览）")
-    ap.add_argument("--text", action="store_true",
-                    help="文本版推送（默认飞书卡片）")
-    ap.add_argument("--max-days", type=int, default=60,
-                    help="跟踪超龄阈值（天，默认 60）")
-    ap.add_argument("--stall-days", type=int, default=3,
-                    help="状态流停滞阈值（天，默认 3）")
+    ap.add_argument("--send", action="store_true", help="执行推送（默认仅预览）")
+    ap.add_argument("--text", action="store_true", help="文本版推送（默认飞书卡片）")
+    ap.add_argument(
+        "--max-days", type=int, default=60, help="跟踪超龄阈值（天，默认 60）"
+    )
+    ap.add_argument(
+        "--stall-days", type=int, default=3, help="状态流停滞阈值（天，默认 3）"
+    )
     a = ap.parse_args()
     cases = watch_cases(max_days=a.max_days, stall_days=a.stall_days)
     if not cases:
@@ -159,9 +186,10 @@ def main():
         return 0
     f = watch_fields(cases)
     if not f["n_bad"]:
-        print("全部在案案例健康（%d 案，无超龄/停滞/失联）——"
-              "巡检口径：超龄 %d 天 / 停滞 %d 天" % (
-                  f["n"], a.max_days, a.stall_days))
+        print(
+            "全部在案案例健康（%d 案，无超龄/停滞/失联）——"
+            "巡检口径：超龄 %d 天 / 停滞 %d 天" % (f["n"], a.max_days, a.stall_days)
+        )
         return 0
     msg = build_watch(f)
     print(msg)
@@ -169,22 +197,26 @@ def main():
         print("\n（预览模式：加 --send 执行推送）")
         if not a.text:
             import weak_track_card as wcard
+
             print("\n（卡片版预览，--text 可回退文本）")
-            print(json.dumps(wcard.watch_card(f),
-                             ensure_ascii=False, indent=1))
+            print(json.dumps(wcard.watch_card(f), ensure_ascii=False, indent=1))
         return 0
     if not a.text:
         import weak_track_card as wcard
+
         print("\n推送(卡片)：" + wcard.send_card(wcard.watch_card(f)))
     else:
-        tmp = os.path.join(NEWS_DIR, "outbox",
-                           "pending_alert_weak_watch.txt")
+        tmp = os.path.join(NEWS_DIR, "outbox", "pending_alert_weak_watch.txt")
         os.makedirs(os.path.dirname(tmp), exist_ok=True)
         with open(tmp, "w", encoding="utf-8") as fo:
             fo.write(msg)
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         print("\n推送：" + ((r.stdout or "").strip()[:60] or "sent"))
     return 0
 

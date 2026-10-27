@@ -7,6 +7,7 @@
 - 正文限长 60000 字符；首页头部段落即可作「核心摘要」；
 - 所有接口静默容错：抓取失败不影响报告生成。
 """
+
 import io
 import json
 import os
@@ -17,8 +18,10 @@ import time
 BASE = os.path.dirname(os.path.abspath(__file__))
 TEXTS_PATH = os.path.join(BASE, "reports", "report_texts.jsonl")
 MAX_CHARS = 60000
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+)
 
 _lock = threading.Lock()
 
@@ -51,10 +54,15 @@ def _pdf_text(url, timeout=20):
     实证解法 curl_cffi impersonate=chrome131（K266 反爬实验）。"""
     from curl_cffi import requests as creq
     from pypdf import PdfReader
+
     content = b""
     for attempt in (1, 2):
-        r = creq.get(url, timeout=timeout, impersonate="chrome131",
-                     headers={"Referer": "https://data.eastmoney.com/"})
+        r = creq.get(
+            url,
+            timeout=timeout,
+            impersonate="chrome131",
+            headers={"Referer": "https://data.eastmoney.com/"},
+        )
         r.raise_for_status()
         if r.content[:4] == b"%PDF":
             content = r.content
@@ -76,8 +84,10 @@ def _pdf_text(url, timeout=20):
     return text[:MAX_CHARS], len(reader.pages)
 
 
-_TBL = (r"(走势比较|股票数据|市场数据|基本数据|基础数据|相关研究|"
-        r"盈利预测与估值|总股本|总市值|当前股价|52周价格|日均成交)")
+_TBL = (
+    r"(走势比较|股票数据|市场数据|基本数据|基础数据|相关研究|"
+    r"盈利预测与估值|总股本|总市值|当前股价|52周价格|日均成交)"
+)
 _ANCHOR = r"(投资要点|核心观点|点评[:：]|事件[:：]|业绩点评|投资建议[:：]|盈利预测[:：]|首次覆盖|维持「?买入|维持「?增持)"
 
 
@@ -92,7 +102,7 @@ def _clean_head(text, n=90):
     # 择优锚：锚后 200 字窗内 60 字内不撞表格词才可用
     best = -1
     for m in re.finditer(_ANCHOR, t):
-        win = t[m.start():m.start() + 260]
+        win = t[m.start() : m.start() + 260]
         mt = re.search(_TBL, win)
         if mt and mt.start() < 60:
             continue
@@ -106,7 +116,7 @@ def _clean_head(text, n=90):
     # 尾部表格噪音截断
     m3 = re.search(_TBL, t)
     if m3 and m3.start() > 8:
-        t = t[:m3.start()]
+        t = t[: m3.start()]
     return t[:n]
 
 
@@ -115,8 +125,9 @@ def fetch_missing(items, max_fetch=10, per_timeout=20):
     返回本次新增条数；任何失败静默跳过。"""
     with _lock:
         done = load_texts()
-        todo = [it for it in items
-                if it.get("url") and it["url"] not in done][:max_fetch]
+        todo = [it for it in items if it.get("url") and it["url"] not in done][
+            :max_fetch
+        ]
         if not todo:
             return 0
         added = 0
@@ -149,15 +160,48 @@ def fetch_missing(items, max_fetch=10, per_timeout=20):
         return added
 
 
-_STOP = {"认为", "预计", "指出", "表示", "维持", "给予", "判断", "团队",
-         "简介", "声明", "联系"}
+_STOP = {
+    "认为",
+    "预计",
+    "指出",
+    "表示",
+    "维持",
+    "给予",
+    "判断",
+    "团队",
+    "简介",
+    "声明",
+    "联系",
+}
 # 免责声明段「分析师：」后跟非人名文本的特征词
-_STOP_SUB = ("声明", "承诺", "本报", "作者", "具有", "认为", "可靠", "形式",
-             "工作", "报告", "编号", "研究", "撰写", "任何", "准确", "信息",
-             "来源", "独立", "客观", "获得", "登记")
+_STOP_SUB = (
+    "声明",
+    "承诺",
+    "本报",
+    "作者",
+    "具有",
+    "认为",
+    "可靠",
+    "形式",
+    "工作",
+    "报告",
+    "编号",
+    "研究",
+    "撰写",
+    "任何",
+    "准确",
+    "信息",
+    "来源",
+    "独立",
+    "客观",
+    "获得",
+    "登记",
+)
 # 名字尾部粘连词（PDF 抽文本无空格导致）
-_NAME_TAIL = re.compile(r"(电话|执业|登记|编号|证券|联系|证书|邮箱|热线"
-                        r"|客服|作者|电|证).*$")
+_NAME_TAIL = re.compile(
+    r"(电话|执业|登记|编号|证券|联系|证书|邮箱|热线"
+    r"|客服|作者|电|证).*$"
+)
 
 
 def _clean_name(nm):
@@ -198,28 +242,32 @@ def _extract_analysts(text, org=""):
     for m in re.finditer(r"([\u4e00-\u9fa5]{2,4})[（(]分析师[）)]", t):
         _add(m.group(1))
     # 版式C：王晓萱SAC编号：S1340…（名字贴编号标签）
-    for m in re.finditer(r"([\u4e00-\u9fa5]{2,4})"
-                         r"(?:SAC编号|证书编号|资格编号|执业编号)", t):
+    for m in re.finditer(
+        r"([\u4e00-\u9fa5]{2,4})"
+        r"(?:SAC编号|证书编号|资格编号|执业编号)",
+        t,
+    ):
         _add(m.group(1))
     certs = re.findall(r"S\d{8,14}", t)
     mails = []
-    for m in re.findall(
-            r"[A-Za-z0-9._%+\-]+[@＠][A-Za-z0-9.\-]+\.[A-Za-z]{2,4}", t):
+    for m in re.findall(r"[A-Za-z0-9._%+\-]+[@＠][A-Za-z0-9.\-]+\.[A-Za-z]{2,4}", t):
         rest = m
         while rest:
-            mm = re.match(r"^[A-Za-z0-9._%+\-]*[@＠][A-Za-z0-9.\-]+"
-                          r"\.[A-Za-z]{2,4}", rest)
+            mm = re.match(
+                r"^[A-Za-z0-9._%+\-]*[@＠][A-Za-z0-9.\-]+"
+                r"\.[A-Za-z]{2,4}",
+                rest,
+            )
             if not mm:
                 break
             one = mm.group(0)
             # 剥电话前缀（0755-8198…tangxx@ → tangxx@）
             one = re.sub(r"^\d[\d\-]{6,}(?=[A-Za-z])", "", one)
             # 剥粘连执业号前缀（S0790…lixintian@ → lixintian@）
-            one = re.sub(r"^[A-Za-z]?\d{8,14}(?=[A-Za-z])", "", one,
-                         count=1)
+            one = re.sub(r"^[A-Za-z]?\d{8,14}(?=[A-Za-z])", "", one, count=1)
             if "@" in one:
                 mails.append(one)
-            rest = rest[mm.end():]
+            rest = rest[mm.end() :]
             if "@" not in rest:
                 break
     out = []
@@ -245,7 +293,8 @@ def backfill_fields(rebuild_summary=True, rebuild_analysts=False):
                 rec["summary"] = _clean_head(rec.get("text") or "")
             if rebuild_analysts or "analysts" not in rec:
                 rec["analysts"] = _extract_analysts(
-                    rec.get("text") or "", rec.get("org", ""))
+                    rec.get("text") or "", rec.get("org", "")
+                )
                 n += 1
             rec.setdefault("post_perf", None)
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
@@ -261,8 +310,7 @@ def analyst_stats():
             nm = a.get("name")
             if not nm:
                 continue
-            node = g.setdefault(nm, {
-                "orgs": set(), "reports": 0, "stocks": {}})
+            node = g.setdefault(nm, {"orgs": set(), "reports": 0, "stocks": {}})
             if a.get("org"):
                 node["orgs"].add(a["org"])
             if a.get("email"):
@@ -271,9 +319,14 @@ def analyst_stats():
                 node["cert"] = a.get("cert")
             node["reports"] += 1
             node["stocks"].setdefault(rec.get("code") or "?", []).append(
-                (rec.get("date") or "", rec.get("rating") or "",
-                 (rec.get("title") or "")[:36], u,
-                 rec.get("post_perf") or {}))
+                (
+                    rec.get("date") or "",
+                    rec.get("rating") or "",
+                    (rec.get("title") or "")[:36],
+                    u,
+                    rec.get("post_perf") or {},
+                )
+            )
     for nm, node in g.items():
         node["orgs"] = sorted(node["orgs"])
     return g
@@ -284,6 +337,7 @@ def backfill_post_perf():
     基准=报告日（或其之前最近交易日）收盘；N=基准日后第 N 个交易日收盘涨幅%。
     幂等：K 线更新后重跑即可补全（如假期后）。返回更新条数。"""
     from chanlun_data import load_kline
+
     texts = load_texts()
     if not texts:
         return 0
@@ -297,9 +351,11 @@ def backfill_post_perf():
         if bars is None:
             try:
                 r = load_kline(code, "1d", 300)
-                bars = [(b.get("dt"), float(b["c"]))
-                        for b in (r.get("bars") or [])
-                        if b.get("dt") and b.get("c")]
+                bars = [
+                    (b.get("dt"), float(b["c"]))
+                    for b in (r.get("bars") or [])
+                    if b.get("dt") and b.get("c")
+                ]
             except Exception:
                 bars = []
             kcache[code] = bars
@@ -332,7 +388,6 @@ def backfill_post_perf():
 
 def fetch_missing_async(items, max_fetch=10):
     """daemon 线程后台抓取，不阻塞报告生成。"""
-    t = threading.Thread(target=fetch_missing,
-                         args=(items, max_fetch), daemon=True)
+    t = threading.Thread(target=fetch_missing, args=(items, max_fetch), daemon=True)
     t.start()
     return t

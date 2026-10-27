@@ -12,6 +12,7 @@
     - 比对对象 chanlun_pool.jsonl 与 SQLite pool 表仍一致，全部用例有效
       （对比 Phase 2-4 的 nine_dim 快照比对已因池窗口演进分叉而 skip）。
 """
+
 import json
 import os
 import sys
@@ -41,9 +42,11 @@ def test_row_count():
         sqlite_count = db.pool_count(conn)
     finally:
         conn.close()
-    ok = (jsonl_count == sqlite_count)
-    print("  JSONL: %d, SQLite: %d, match: %s" %
-          (jsonl_count, sqlite_count, "YES" if ok else "NO"))
+    ok = jsonl_count == sqlite_count
+    print(
+        "  JSONL: %d, SQLite: %d, match: %s"
+        % (jsonl_count, sqlite_count, "YES" if ok else "NO")
+    )
     assert ok, "JSONL 与 SQLite 行数不一致"
 
 
@@ -51,6 +54,7 @@ def test_field_spot_check():
     """2. 抽检字段：随机取 10 条对比 JSONL vs SQLite。"""
     print("\n=== 测试 2: 字段抽检（10 条）===")
     import random
+
     random.seed(42)
     jsonl_rows = []
     with open(POOL_JSONL, encoding="utf-8") as f:
@@ -64,29 +68,44 @@ def test_field_spot_check():
     ok = True
     try:
         for r in samples:
-            db_row = db.pool_query_by_key(
-                conn, r["code"], r["type"], r["dt"])
+            db_row = db.pool_query_by_key(conn, r["code"], r["type"], r["dt"])
             if db_row is None:
                 print("  MISS: %s %s %s" % (r["code"], r["type"], r["dt"]))
                 ok = False
                 continue
             # 对比关键字段
-            for k in ("market", "code", "type", "dt", "price",
-                      "detect_date", "entry_px", "lag", "source"):
+            for k in (
+                "market",
+                "code",
+                "type",
+                "dt",
+                "price",
+                "detect_date",
+                "entry_px",
+                "lag",
+                "source",
+            ):
                 jv = r.get(k)
                 sv = db_row.get(k)
                 if jv != sv:
-                    print("  DIFF %s: jsonl=%s db=%s (%s %s %s)" %
-                          (k, jv, sv, r["code"], r["type"], r["dt"]))
+                    print(
+                        "  DIFF %s: jsonl=%s db=%s (%s %s %s)"
+                        % (k, jv, sv, r["code"], r["type"], r["dt"])
+                    )
                     ok = False
             # bool 字段
             for k in ("bei", "bei2", "mbei", "tbe", "vv"):
                 jv = r.get(k)
                 sv = db_row.get(k)
-                if bool(jv) != bool(sv) if jv is not None else \
-                        (jv is not None) != (sv is not None):
-                    print("  DIFF %s: jsonl=%s db=%s (%s %s %s)" %
-                          (k, jv, sv, r["code"], r["type"], r["dt"]))
+                if (
+                    bool(jv) != bool(sv)
+                    if jv is not None
+                    else (jv is not None) != (sv is not None)
+                ):
+                    print(
+                        "  DIFF %s: jsonl=%s db=%s (%s %s %s)"
+                        % (k, jv, sv, r["code"], r["type"], r["dt"])
+                    )
                     ok = False
     finally:
         conn.close()
@@ -114,9 +133,11 @@ def test_cross_poll_consistency():
     sqlite_result = cross_poll._src_chanlun()
     # 强制 JSONL 路径（临时禁用 SQLite）
     import db as _db
+
     orig_get_conn = _db.get_conn
     _db.get_conn = lambda *a, **kw: (_ for _ in ()).throw(
-        Exception("test: force JSONL fallback"))
+        Exception("test: force JSONL fallback")
+    )
     try:
         jsonl_result = cross_poll._src_chanlun()
     finally:
@@ -130,9 +151,10 @@ def test_cross_poll_consistency():
     for code in sqlite_codes & jsonl_codes:
         if sqlite_result[code] != jsonl_result[code]:
             diff_labels.append(code)
-    ok = (not only_sqlite and not only_jsonl and not diff_labels)
-    print("  SQLite 标的数: %d, JSONL 标的数: %d" %
-          (len(sqlite_codes), len(jsonl_codes)))
+    ok = not only_sqlite and not only_jsonl and not diff_labels
+    print(
+        "  SQLite 标的数: %d, JSONL 标的数: %d" % (len(sqlite_codes), len(jsonl_codes))
+    )
     if only_sqlite:
         print("  仅 SQLite 有: %s" % sorted(only_sqlite)[:5])
     if only_jsonl:
@@ -154,7 +176,7 @@ def test_insert_idempotent():
         after = db.pool_count(conn)
     finally:
         conn.close()
-    ok = (before == after and n == 0)
+    ok = before == after and n == 0
     print("  before=%d, after=%d, re-inserted=%d" % (before, after, n))
     print("  结果: %s" % ("PASS" if ok else "FAIL"))
     assert ok, "INSERT OR IGNORE 重复插入应零增长"

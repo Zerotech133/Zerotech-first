@@ -6,6 +6,7 @@
 
 用法：python gen_col_audit_summary.py
 """
+
 import glob
 import json
 import os
@@ -14,8 +15,7 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
 KEEP = 4
-_esc = lambda s: (str(s).replace("&", "&amp;").replace("<", "&lt;")
-                  .replace(">", "&gt;"))
+_esc = lambda s: str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def load_report():
@@ -27,6 +27,7 @@ def load_report():
 def table_rows(report):
     """底册 18 表状态行：FAIL 红缺列 / SKIP 灰原因 / 其余绿 OK。"""
     import source_col_audit as sca
+
     fails = {}
     for _, store, rel, msg in report.get("fails") or []:
         fails.setdefault((store, rel), []).append(msg)
@@ -37,13 +38,15 @@ def table_rows(report):
             det = "；".join(_esc(m) for m in fails[(store, rel)])
             cell = "<td class='r'>FAIL：{} </td>".format(det)
         elif (store, rel) in skips:
-            cell = ("<td class='y'>SKIP：{}</td>"
-                    .format(_esc(skips[(store, rel)])))
+            cell = "<td class='y'>SKIP：{}</td>".format(_esc(skips[(store, rel)]))
         else:
             cell = "<td class='g'>OK</td>"
         descs = "；".join(_esc(d) for d, _ in consumers)
-        rows.append("<tr><td>{}</td><td>{}</td><td>{}</td>{}</tr>"
-                    .format(_esc(store), _esc(rel), descs, cell))
+        rows.append(
+            "<tr><td>{}</td><td>{}</td><td>{}</td>{}</tr>".format(
+                _esc(store), _esc(rel), descs, cell
+            )
+        )
     return "\n".join(rows)
 
 
@@ -53,13 +56,12 @@ def gen():
     n_skip = len(rep.get("skips") or [])
     n_tbl = rep.get("n_consumers") or 0
     graph = bool(rep.get("graph_reachable"))
-    verdict = ("全绿" if not n_fail else "{} 项断源嫌疑".format(n_fail))
+    verdict = "全绿" if not n_fail else "{} 项断源嫌疑".format(n_fail)
     vcolor = "g" if not n_fail else "r"
     today = datetime.now().strftime("%Y%m%d")
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     rows = table_rows(rep)
-    gstate = ("可达" if graph else
-              "<span class='y'>不可达（SKIP）</span>")
+    gstate = "可达" if graph else "<span class='y'>不可达（SKIP）</span>"
 
     html = """<!DOCTYPE html>
 <html lang="zh">
@@ -140,29 +142,29 @@ __ROWS__
 </div>
 </body></html>
 """
-    html = (html.replace("__NOW__", now)
-                .replace("__VERDICT__", verdict)
-                .replace("__VC__", vcolor)
-                .replace("__NTBL__", str(n_tbl))
-                .replace("__NFAIL__", str(n_fail))
-                .replace("__NSKIP__", str(n_skip))
-                .replace("__GRAPH__", "可达" if graph else "SKIP")
-                .replace("__GSTATE__", gstate)
-                .replace("__ROWS__", rows)
-                .replace("__KEEP__", str(KEEP)))
+    html = (
+        html.replace("__NOW__", now)
+        .replace("__VERDICT__", verdict)
+        .replace("__VC__", vcolor)
+        .replace("__NTBL__", str(n_tbl))
+        .replace("__NFAIL__", str(n_fail))
+        .replace("__NSKIP__", str(n_skip))
+        .replace("__GRAPH__", "可达" if graph else "SKIP")
+        .replace("__GSTATE__", gstate)
+        .replace("__ROWS__", rows)
+        .replace("__KEEP__", str(KEEP))
+    )
     out = os.path.join(REPORTS, "col_audit_summary_%s.html" % today)
     with open(out, "w", encoding="utf-8") as f:
         f.write(html)
-    olds = sorted(glob.glob(os.path.join(
-        REPORTS, "col_audit_summary_*.html")))
+    olds = sorted(glob.glob(os.path.join(REPORTS, "col_audit_summary_*.html")))
     for old in olds[:-KEEP]:
         try:
             os.remove(old)
             print("pruned:", os.path.basename(old))
         except OSError:
             pass
-    print("summary:", os.path.basename(out),
-          "fails=%d skips=%d" % (n_fail, n_skip))
+    print("summary:", os.path.basename(out), "fails=%d skips=%d" % (n_fail, n_skip))
 
 
 if __name__ == "__main__":

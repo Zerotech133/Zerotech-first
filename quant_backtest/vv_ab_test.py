@@ -6,6 +6,7 @@
 口径：检出日收盘买入，后验 5/10/20 日收益，自算于 data/ashare/*.parquet。
 另附 chanlun_paper.json 模拟盘可匹配样本的口径作参考。
 """
+
 import json
 import os
 from collections import Counter
@@ -68,8 +69,8 @@ def group_stats(rows, label):
     for w in WINDOWS:
         vals = [r[w] for r in rows if r.get(w) is not None]
         if vals:
-            out[f"{w}日均收益"] = f"{sum(vals)/len(vals)*100:+.2f}%"
-            out[f"{w}日胜率"] = f"{sum(v > 0 for v in vals)/len(vals)*100:.1f}%"
+            out[f"{w}日均收益"] = f"{sum(vals) / len(vals) * 100:+.2f}%"
+            out[f"{w}日胜率"] = f"{sum(v > 0 for v in vals) / len(vals) * 100:.1f}%"
         else:
             out[f"{w}日均收益"] = out[f"{w}日胜率"] = "n/a"
     return out
@@ -90,7 +91,9 @@ def main():
             df = pd.read_parquet(p)
             col = "close" if "close" in df.columns else df.columns[0]
             s = df[col]
-            s.index = pd.to_datetime(df["trade_date"] if "trade_date" in df.columns else df.index)
+            s.index = pd.to_datetime(
+                df["trade_date"] if "trade_date" in df.columns else df.index
+            )
             closes[c] = s.sort_index()
     print(f"行情可覆盖 {len(closes)}/{len(codes)} 只标的")
 
@@ -104,8 +107,11 @@ def main():
         vv = s.get("vv")
         groups[vv if vv in (True, False) else None].append(fr)
 
-    rows = [group_stats(g, k) for k, g in
-            ((True, groups[True]), (False, groups[False]), (None, groups[None])) if g]
+    rows = [
+        group_stats(g, k)
+        for k, g in ((True, groups[True]), (False, groups[False]), (None, groups[None]))
+        if g
+    ]
     print("\n=== 后验对照表（检出日收盘买入，% 前复权口径随 parquet）===")
     print(pd.DataFrame(rows).to_string(index=False))
     if missing:
@@ -116,8 +122,11 @@ def main():
         paper = json.load(open(PAPER, encoding="utf-8"))
     except Exception:
         paper = {"closed": []}
-    ptrades = {(t["code"], t["type"], t["sig_dt"]): t.get("ret", t.get("pnl"))
-               for t in paper.get("closed", []) + paper.get("open", []) if isinstance(t, dict)}
+    ptrades = {
+        (t["code"], t["type"], t["sig_dt"]): t.get("ret", t.get("pnl"))
+        for t in paper.get("closed", []) + paper.get("open", [])
+        if isinstance(t, dict)
+    }
     pmap = {True: [], False: []}
     for s in sigs:
         key = (s["code"], s["type"], s["dt"])
@@ -130,9 +139,14 @@ def main():
     for k in (True, False):
         v = pmap[k]
         if v:
-            prows.append({"组别": f"vv={k}", "笔数": len(v),
-                          "均收益": f"{sum(v)/len(v)*100:+.2f}%",
-                          "胜率": f"{sum(x > 0 for x in v)/len(v)*100:.1f}%"})
+            prows.append(
+                {
+                    "组别": f"vv={k}",
+                    "笔数": len(v),
+                    "均收益": f"{sum(v) / len(v) * 100:+.2f}%",
+                    "胜率": f"{sum(x > 0 for x in v) / len(v) * 100:.1f}%",
+                }
+            )
     print(pd.DataFrame(prows).to_string(index=False) if prows else "无可匹配模拟盘样本")
 
 

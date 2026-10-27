@@ -33,11 +33,15 @@ class SourceSnapshot:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise SnapshotFormatError("无法读取来源快照") from exc
-        if not isinstance(raw, dict) or raw.get("snapshot_type") not in \
-                ("nine_dim_source_asof", "nine_dim_source_payload"):
+        if not isinstance(raw, dict) or raw.get("snapshot_type") not in (
+            "nine_dim_source_asof",
+            "nine_dim_source_payload",
+        ):
             raise SnapshotFormatError("快照类型不符")
-        if raw.get("global_activation") is not False or \
-                raw.get("production_write") is not False:
+        if (
+            raw.get("global_activation") is not False
+            or raw.get("production_write") is not False
+        ):
             raise SnapshotFormatError("来源快照不得开启生产资格")
         asof = str(raw.get("asof_trade_date") or "")
         if not self._DATE_RE.fullmatch(asof):
@@ -81,8 +85,7 @@ class SourceSnapshot:
         }
 
     @classmethod
-    def _normalize(cls, api: str, code: str,
-                   rec: Mapping[str, Any]) -> Dict[str, Any]:
+    def _normalize(cls, api: str, code: str, rec: Mapping[str, Any]) -> Dict[str, Any]:
         source_code = rec.get("source_code")
         fields = rec.get("fields") or []
         rows_present = "rows" in rec
@@ -92,7 +95,8 @@ class SourceSnapshot:
         if source_code == 0:
             status = "source_response_verified"
             coverage = rec.get("coverage_status") or (
-                "sample_has_data" if rows else "valid_empty_response")
+                "sample_has_data" if rows else "valid_empty_response"
+            )
         else:
             status = "source_error" if source_code is not None else "unknown"
             coverage = "unknown"
@@ -112,8 +116,9 @@ class SourceSnapshot:
             "payload_available": rows_present,
         }
 
-    def get(self, api: str, code: str,
-            default: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+    def get(
+        self, api: str, code: str, default: Optional[Mapping[str, Any]] = None
+    ) -> Dict[str, Any]:
         """返回单个接口回执副本；缺失时保持 unknown。"""
         if api not in self.SUPPORTED_APIS:
             raise KeyError(api)
@@ -150,4 +155,3 @@ class ApiRecordStore:
 
     def iter_records(self) -> Iterator[Dict[str, Any]]:
         return self.snapshot.iter_records(self.api)
-

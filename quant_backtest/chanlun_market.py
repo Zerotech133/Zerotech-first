@@ -12,6 +12,7 @@
   - 观察语义 = 下方→反抽不回ZD=三卖观察·收复=重回中枢 /
                内→上下沿定方向 / 上方→回踩不破ZG=三买观察
 """
+
 import json
 import os
 import sys
@@ -47,8 +48,7 @@ def levels(code=CODE, periods=PERIODS, limit=500):
             if not bars:
                 continue
             st = analyze(bars)
-            allp = [(float(p["zg"]), float(p["zd"]))
-                    for p in (st.get("pivots") or [])]
+            allp = [(float(p["zg"]), float(p["zd"])) for p in (st.get("pivots") or [])]
             px = float(bars[-1]["c"])
             trend = "盘整"
             if len(allp) >= 2:
@@ -62,8 +62,7 @@ def levels(code=CODE, periods=PERIODS, limit=500):
             pos, zg, zd, tip = "—", None, None, "—"
             if cur:
                 zg, zd = cur
-                pos = ("中枢上方" if px > zg
-                       else "中枢下方" if px < zd else "中枢内")
+                pos = "中枢上方" if px > zg else "中枢下方" if px < zd else "中枢内"
                 if px > zg:
                     tip = "回踩不破 %.0f=三买观察" % zg
                 elif px < zd:
@@ -71,12 +70,20 @@ def levels(code=CODE, periods=PERIODS, limit=500):
                 else:
                     tip = "上沿 %.0f 突破 / 下沿 %.0f 守稳定方向" % (zg, zd)
             sig = (st.get("signals") or [None])[-1]
-            out.append({
-                "per": per, "label": LABELS.get(per, per),
-                "trend": trend, "pos": pos,
-                "piv": ("[%.0f, %.0f]" % (zd, zg)) if cur else "—",
-                "tip": tip, "zg": zg, "zd": zd, "px": px, "sig": sig,
-            })
+            out.append(
+                {
+                    "per": per,
+                    "label": LABELS.get(per, per),
+                    "trend": trend,
+                    "pos": pos,
+                    "piv": ("[%.0f, %.0f]" % (zd, zg)) if cur else "—",
+                    "tip": tip,
+                    "zg": zg,
+                    "zd": zd,
+                    "px": px,
+                    "sig": sig,
+                }
+            )
         except Exception:
             continue
     return out
@@ -93,24 +100,41 @@ def verdict(brief):
     dt, t30, p30 = d["trend"], m30["trend"], m30["pos"]
     if dt == "上升":
         if t30 == "上升" or "上方" in p30:
-            return ("多头共振 · 顺势", "up",
-                    "大级别与中级别同向——回调看回踩不破关键位的三买机会")
+            return (
+                "多头共振 · 顺势",
+                "up",
+                "大级别与中级别同向——回调看回踩不破关键位的三买机会",
+            )
         if t30 == "下降" or "下方" in p30:
-            return ("升势 · 回踩确认期", "warn",
-                    "大级别多、中级别调整——放量收复节奏线=调整结束信号，"
-                    "破日线中枢下沿=升势存疑")
-        return ("升势 · 中级别蓄势", "warn",
-                "大级别多头未破、中级别中枢震荡待选方向——突破定节奏")
+            return (
+                "升势 · 回踩确认期",
+                "warn",
+                "大级别多、中级别调整——放量收复节奏线=调整结束信号，"
+                "破日线中枢下沿=升势存疑",
+            )
+        return (
+            "升势 · 中级别蓄势",
+            "warn",
+            "大级别多头未破、中级别中枢震荡待选方向——突破定节奏",
+        )
     if dt == "下降":
         if t30 == "下降" or "下方" in p30:
-            return ("空头共振 · 规避", "down",
-                    "大级别与中级别同向向下——反弹不接、破位不抄")
+            return (
+                "空头共振 · 规避",
+                "down",
+                "大级别与中级别同向向下——反弹不接、破位不抄",
+            )
         if t30 == "上升" or "上方" in p30:
-            return ("跌势 · 反抽观察期", "warn",
-                    "大级别空、中级别反弹——反弹至承压位关注三卖风险，"
-                    "收复才有反转戏")
-        return ("跌势 · 中级别整理", "warn",
-                "大级别空头未破、中级别中枢震荡——下沿失守续跌、上沿突破修复")
+            return (
+                "跌势 · 反抽观察期",
+                "warn",
+                "大级别空、中级别反弹——反弹至承压位关注三卖风险，收复才有反转戏",
+            )
+        return (
+            "跌势 · 中级别整理",
+            "warn",
+            "大级别空头未破、中级别中枢震荡——下沿失守续跌、上沿突破修复",
+        )
     return ("日线区间震荡", "warn", "方向未选——按日线中枢上下沿观察突破方向")
 
 
@@ -126,35 +150,36 @@ def key_levels(brief):
     if m30:
         p30 = m30["pos"] or ""
         if "下方" in p30 and m30["zd"]:
-            keys.append("节奏 %.0f 30m中枢下沿（放量收复=重回中枢）"
-                        % m30["zd"])
+            keys.append("节奏 %.0f 30m中枢下沿（放量收复=重回中枢）" % m30["zd"])
         elif "上方" in p30 and m30["zg"]:
-            keys.append("节奏 %.0f 30m中枢上沿（回踩不破=三买观察）"
-                        % m30["zg"])
+            keys.append("节奏 %.0f 30m中枢上沿（回踩不破=三买观察）" % m30["zg"])
         elif m30["zg"] and m30["zd"]:
-            keys.append("节奏 %.0f / %.0f 30m中枢上下沿（突破定方向）"
-                        % (m30["zg"], m30["zd"]))
+            keys.append(
+                "节奏 %.0f / %.0f 30m中枢上下沿（突破定方向）" % (m30["zg"], m30["zd"])
+            )
     return keys
 
 
 def action_hint(ck):
     """判定颜色键 → 今晨操作倾向（判定矩阵派生文本，零幻觉；
     研究视角呈现，不构成推送触发/拦截口径）。"""
-    return {"up": "顺势 · 可开新仓，回调看三买",
-            "warn": "观察 · 不追不砍，收复节奏线再定",
-            "down": "防守 · 不接反弹，破位不抄"}.get(ck, "观望——读数不足")
+    return {
+        "up": "顺势 · 可开新仓，回调看三买",
+        "warn": "观察 · 不追不砍，收复节奏线再定",
+        "down": "防守 · 不接反弹，破位不抄",
+    }.get(ck, "观望——读数不足")
 
 
 # 仓位档位表（策略配置参数，非引擎读数；键=(判定颜色键, A股闸门safe)。
 # 三元组=(档名, 分批说明, 档位上限pct)——pct 供动态调仓量化对比。
 # 数字为个人系统风格化配置，按风险偏好调整只改这里。
 POS_SIZE = {
-    ("up", True):    ("标准仓 60~80%", "首笔≤40%，回踩三买确认后加满", 80),
-    ("up", False):   ("半仓 ≤40%",    "首笔≤20%，站稳节奏线后再加", 40),
-    ("warn", True):  ("轻仓 ≤30%",    "首笔≤15%，收复节奏线确认后加", 30),
-    ("warn", False): ("底仓 ≤15%",    "只持有不新开，收复节奏线+闸门放行再补", 15),
-    ("down", True):  ("防守 ≤10%",    "反弹减仓，不接飞刀", 10),
-    ("down", False): ("空仓观望",     "反弹不接、破位不抄，等右侧修复", 0),
+    ("up", True): ("标准仓 60~80%", "首笔≤40%，回踩三买确认后加满", 80),
+    ("up", False): ("半仓 ≤40%", "首笔≤20%，站稳节奏线后再加", 40),
+    ("warn", True): ("轻仓 ≤30%", "首笔≤15%，收复节奏线确认后加", 30),
+    ("warn", False): ("底仓 ≤15%", "只持有不新开，收复节奏线+闸门放行再补", 15),
+    ("down", True): ("防守 ≤10%", "反弹减仓，不接飞刀", 10),
+    ("down", False): ("空仓观望", "反弹不接、破位不抄，等右侧修复", 0),
 }
 
 # 动态调仓影子账本（状态文件：目标档位+调仓动作历史，原子写；
@@ -169,7 +194,7 @@ POS_MGMT = {
         "steps": "首笔 40% → 回踩三买确认 60% → 趋势延续加满 80%",
         "cap": "单票 ≤20% · 总仓 ≤80%",
         "rebalance": "升档：回踩三买确认逐级加；降档：30m 失守 ZD 减半、"
-                     "日线破 ZD 清仓复盘",
+        "日线破 ZD 清仓复盘",
     },
     ("up", False): {
         "steps": "首笔 20% → 站稳节奏线 30% → 闸门放行后补至 40%",
@@ -180,26 +205,23 @@ POS_MGMT = {
         "steps": "首笔 15% → 放量收复节奏线确认 25% → 站稳日线上沿 30%",
         "cap": "单票 ≤10% · 总仓 ≤30%",
         "rebalance": "升档：收复节奏线+站稳日线上沿逐级加；降档：三卖确认"
-                     "止损首笔、日线破 ZD 降至底仓",
+        "止损首笔、日线破 ZD 降至底仓",
     },
     ("warn", False): {
-        "steps": "存量持有 → 闸门放行+收复节奏线后新开 ≤10% → "
-                 "站稳日线上沿 ≤15%",
+        "steps": "存量持有 → 闸门放行+收复节奏线后新开 ≤10% → 站稳日线上沿 ≤15%",
         "cap": "单票 ≤10% · 总仓 ≤15%",
         "rebalance": "升档：闸门放行+收复节奏线 → 轻仓档 ≤30%；降档："
-                     "日线破 ZD → 空仓观望",
+        "日线破 ZD → 空仓观望",
     },
     ("down", True): {
         "steps": "首笔 0 · 存量 ≤10% 只减不加",
         "cap": "单票 ≤10% · 总仓 ≤10%",
-        "rebalance": "降档：反弹承压继续减；升档：仅日线收复 ZG/日线三买"
-                     "后重评",
+        "rebalance": "降档：反弹承压继续减；升档：仅日线收复 ZG/日线三买后重评",
     },
     ("down", False): {
         "steps": "首笔 0 · 存量 0（空仓观望）",
         "cap": "总仓 0",
-        "rebalance": "升档：等日线收复 ZG 或日线三买后重评；期间反弹不接、"
-                     "破位不抄",
+        "rebalance": "升档：等日线收复 ZG 或日线三买后重评；期间反弹不接、破位不抄",
     },
 }
 
@@ -207,11 +229,9 @@ POS_MGMT = {
 def _gate_cn():
     """A股 envs 项；不可用 None。"""
     try:
-        with open(os.path.join(REPORTS, "rps_latest.json"),
-                  encoding="utf-8") as f:
+        with open(os.path.join(REPORTS, "rps_latest.json"), encoding="utf-8") as f:
             envs = json.load(f).get("envs") or []
-        return next((e for e in envs
-                     if "A股" in str(e.get("label", ""))), None)
+        return next((e for e in envs if "A股" in str(e.get("label", ""))), None)
     except Exception:
         return None
 
@@ -269,11 +289,9 @@ def trade_plan(brief):
         if dzg:
             buy.append("站稳 %.0f（日线收复=回踩确认）→ 加仓档" % dzg)
         if m5g and m5d:
-            buy.append("日内 %.0f 上沿突破做短多，破 %.0f 当日离"
-                       % (m5g, m5d))
+            buy.append("日内 %.0f 上沿突破做短多，破 %.0f 当日离" % (m5g, m5d))
         if p30d and m5d:
-            sell.append("反抽不回 %.0f 且失守 %.0f（三卖确认）→ 止损"
-                        % (p30d, m5d))
+            sell.append("反抽不回 %.0f 且失守 %.0f（三卖确认）→ 止损" % (p30d, m5d))
         if dzd:
             sell.append("失守 %.0f（日线破位=升势存疑）→ 底仓/清仓" % dzd)
     elif ck == "warn" and d["trend"] == "下降":
@@ -300,8 +318,14 @@ def trade_plan(brief):
     if not gkey and buy:
         buy.append("（闸门收紧期以上为触发观察位，非开仓许可）")
     mgmt = POS_MGMT.get((ck, gkey)) or POS_MGMT[("warn", False)]
-    return {"size": size, "ladder": ladder, "buy": buy, "sell": sell,
-            "gate": gkey, "mgmt": mgmt}
+    return {
+        "size": size,
+        "ladder": ladder,
+        "buy": buy,
+        "sell": sell,
+        "gate": gkey,
+        "mgmt": mgmt,
+    }
 
 
 def dynamic_pos(brief, write=True):
@@ -336,22 +360,27 @@ def dynamic_pos(brief, write=True):
         action = "降档 %s → %s" % (prev_name, name)
     else:
         action = "维持"
-    out = {"ck": ck, "gate": gkey, "name": name, "pct": pct,
-           "action": action, "prev_name": prev_name,
-           "prev_pct": prev_pct,
-           "at": datetime.now(timezone.utc).strftime(
-               "%Y-%m-%dT%H:%M:%SZ")}
+    out = {
+        "ck": ck,
+        "gate": gkey,
+        "name": name,
+        "pct": pct,
+        "action": action,
+        "prev_name": prev_name,
+        "prev_pct": prev_pct,
+        "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
     changed = prev is None or prev_name != name or prev_pct != pct
     if write and changed:
         try:
             os.makedirs(os.path.dirname(POS_STATE), exist_ok=True)
             hist = list((prev or {}).get("history") or [])
             if prev_name is not None:
-                hist.append({"at": out["at"], "from": prev_name,
-                             "to": name, "pct": pct})
+                hist.append(
+                    {"at": out["at"], "from": prev_name, "to": name, "pct": pct}
+                )
             out["history"] = hist[-30:]
-            fd, tmp = tempfile.mkstemp(dir=os.path.dirname(POS_STATE),
-                                       suffix=".tmp")
+            fd, tmp = tempfile.mkstemp(dir=os.path.dirname(POS_STATE), suffix=".tmp")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(out, f, ensure_ascii=False)
             os.replace(tmp, POS_STATE)
@@ -361,13 +390,14 @@ def dynamic_pos(brief, write=True):
 
 
 # ── 个股研判（四市场通用） ────────────────────────────────
-_LV_CACHE = {}   # (code, periods, limit) → (ts, rows) 60s
-_MB_CACHE = {}   # 大盘默认三级别 → (ts, rows) 60s
+_LV_CACHE = {}  # (code, periods, limit) → (ts, rows) 60s
+_MB_CACHE = {}  # 大盘默认三级别 → (ts, rows) 60s
 
 
 def levels_cached(code=CODE, periods=PERIODS, limit=500, ttl=60):
     """levels() 的模块级 TTL 缓存包装——个股页等高频消费方防重算。"""
     import time as _t
+
     k = (code, tuple(periods), limit)
     _n = _t.time()
     c = _LV_CACHE.get(k)
@@ -382,6 +412,7 @@ def market_brief(ttl=60):
     """大盘默认三级别读数（60s 缓存）——晨报/门户大盘页/个股页共享，
     判定矩阵与级别联动表同源。"""
     import time as _t
+
     _n = _t.time()
     c = _MB_CACHE.get("mb")
     if c and _n - c[0] < ttl:
@@ -402,8 +433,10 @@ def stock_view(code):
         return {"ok": False}
     r = dict(rows[0])
     sig = r.get("sig")
-    r["sig_txt"] = ("%s(%s)" % (sig.get("type"),
-                                (str(sig.get("dt")) or "")[5:])
-                    if isinstance(sig, dict) and sig.get("type") else None)
+    r["sig_txt"] = (
+        "%s(%s)" % (sig.get("type"), (str(sig.get("dt")) or "")[5:])
+        if isinstance(sig, dict) and sig.get("type")
+        else None
+    )
     r["ok"] = True
     return r

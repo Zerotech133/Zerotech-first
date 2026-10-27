@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-271 探针6b：窗口内池本身表现分解（100% 买入持有、逐股复利后平均）"""
+
 import os
 import json
 import pandas as pd
@@ -18,18 +19,20 @@ for s in stocks:
         continue
     b = pd.read_parquet(f).sort_values("trade_date")
     seg = b[(b.trade_date >= D0) & (b.trade_date <= D1)]
-    if len(seg) < 100:      # 窗口内基本全程有数据
+    if len(seg) < 100:  # 窗口内基本全程有数据
         continue
     terms[s] = (1 + seg["pct_chg"] / 100.0).prod() - 1
 
 t = pd.Series(terms).sort_values()
 n = len(t)
 print(f"窗口 {D0}->{D1} 全程在池股票数: {n}")
-print(f"买入持有100%(初始等权,零成本): 总收益 {t.mean()*100:.2f}%  中位数 {t.median()*100:.2f}%")
-print(f"上涨家数: {(t>0).sum()} / 下跌家数: {(t<=0).sum()}")
+print(
+    f"买入持有100%(初始等权,零成本): 总收益 {t.mean() * 100:.2f}%  中位数 {t.median() * 100:.2f}%"
+)
+print(f"上涨家数: {(t > 0).sum()} / 下跌家数: {(t <= 0).sum()}")
 print("最差5只:")
 for s, v in t.head(5).items():
-    print(f"  {s} {v*100:.1f}%")
+    print(f"  {s} {v * 100:.1f}%")
 print("最好5只:")
 for s, v in t.tail(5).items():
-    print(f"  {s} {v*100:.1f}%")
+    print(f"  {s} {v * 100:.1f}%")

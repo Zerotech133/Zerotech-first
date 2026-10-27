@@ -15,8 +15,11 @@ def _report():
                 _metric(
                     "tdx_sector_daily_daily_coverage",
                     {
-                        "20261001": {"missing": ["880002", "880001"], "missing_count": 2,
-                                      "source_state": "source_empty_pending"},
+                        "20261001": {
+                            "missing": ["880002", "880001"],
+                            "missing_count": 2,
+                            "source_state": "source_empty_pending",
+                        },
                         "20260930": {"missing": ["880003"], "missing_count": 1},
                         "_summary": {"latest_missing_count": 0},
                     },
@@ -29,12 +32,21 @@ def _report():
                 ),
                 _metric(
                     "ts_margin_detail_daily_coverage",
-                    {"20261001": {"missing": ["000001.SZ", "600000.SH"], "missing_count": 2}},
+                    {
+                        "20261001": {
+                            "missing": ["000001.SZ", "600000.SH"],
+                            "missing_count": 2,
+                        }
+                    },
                     2,
                 ),
                 _metric(
                     "listed_stock_latest_coverage",
-                    {"date": "20261001", "missing": ["000002.SZ"], "missing_expected_count": 1},
+                    {
+                        "date": "20261001",
+                        "missing": ["000002.SZ"],
+                        "missing_expected_count": 1,
+                    },
                     1,
                 ),
             ]
@@ -53,7 +65,10 @@ def test_build_gap_snapshot_extracts_exact_sorted_keys_and_counts():
         "listed_stock": 1,
         "total": 7,
     }
-    assert snapshot["keys"] == sorted(snapshot["keys"], key=lambda row: tuple(row[k] for k in ("table", "trade_date", "code")))
+    assert snapshot["keys"] == sorted(
+        snapshot["keys"],
+        key=lambda row: tuple(row[k] for k in ("table", "trade_date", "code")),
+    )
     assert snapshot["keys"][0] == {
         "table": "listed_stock",
         "source": "tushare",
@@ -63,8 +78,11 @@ def test_build_gap_snapshot_extracts_exact_sorted_keys_and_counts():
         "status": "pending",
         "reason": "coverage_gap",
     }
-    assert all(row["reason"] == "source_empty_pending"
-               for row in snapshot["keys"] if row["table"] == "tdx_sector_daily" and row["trade_date"] == "20261001")
+    assert all(
+        row["reason"] == "source_empty_pending"
+        for row in snapshot["keys"]
+        if row["table"] == "tdx_sector_daily" and row["trade_date"] == "20261001"
+    )
 
 
 def test_build_gap_snapshot_is_deterministic_and_does_not_include_summary_rows():
@@ -85,12 +103,17 @@ def test_write_key_manifest_persists_json_and_production_guard(tmp_path):
 
 def test_qualify_source_classifies_empty_and_accepts_valid_probe():
     keys = [{"table": "tdx_sector_daily", "code": "880001", "trade_date": "20261001"}]
-    blocked = qualify_source("tdx_sector_daily", keys, lambda key: {"status": "source_empty"})
+    blocked = qualify_source(
+        "tdx_sector_daily", keys, lambda key: {"status": "source_empty"}
+    )
     assert blocked["counts"] == {"qualified": 0, "blocked": 1, "rejected": 0}
     assert blocked["keys"][0]["status"] == "blocked"
     assert blocked["keys"][0]["reason"] == "source_empty"
 
-    valid = qualify_source("tdx_sector_daily", keys, lambda key: {"status": "candidate_ready", "row_count": 1})
+    valid = qualify_source(
+        "tdx_sector_daily",
+        keys,
+        lambda key: {"status": "candidate_ready", "row_count": 1},
+    )
     assert valid["counts"] == {"qualified": 1, "blocked": 0, "rejected": 0}
     assert valid["keys"][0]["status"] == "qualified"
-

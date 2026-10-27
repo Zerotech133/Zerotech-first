@@ -25,6 +25,7 @@
   store.transition(entry_id, "pool_in", payload)   # 逐态推进
   store.get_state(entry_id) / get_history(entry_id)
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -41,10 +42,10 @@ DEFAULT_DB_PATH = os.path.join(HERE, "data", "evidence_chain.db")
 SCHEMA_VERSION = "1.0"
 
 # ── 四态 ────────────────────────────────────────────────────────────────
-S_POOL_IN = "pool_in"          # 入池：决策证据（策略×权重×分数+rationale）
-S_AUTHORIZED = "authorized"    # 授权：出池/后续动作的授权单引用
-S_POOL_OUT = "pool_out"        # 出池：移出清单（附原因）
-S_RESULT = "result"            # 结果：后验收益/判罚归档
+S_POOL_IN = "pool_in"  # 入池：决策证据（策略×权重×分数+rationale）
+S_AUTHORIZED = "authorized"  # 授权：出池/后续动作的授权单引用
+S_POOL_OUT = "pool_out"  # 出池：移出清单（附原因）
+S_RESULT = "result"  # 结果：后验收益/判罚归档
 
 ALL_STATES = (S_POOL_IN, S_AUTHORIZED, S_POOL_OUT, S_RESULT)
 
@@ -67,24 +68,30 @@ class IllegalTransitionError(EvidenceChainError):
         self.entry_id, self.current, self.to_state = entry_id, current, to_state
         super().__init__(
             f"非法跃迁 {current!r} → {to_state!r}（entry_id={entry_id}）；"
-            f"合法目标：{TRANSITIONS.get(current) or ()}")
+            f"合法目标：{TRANSITIONS.get(current) or ()}"
+        )
 
 
 class ConflictError(EvidenceChainError):
     """同 entry+state 但内容不同（幂等键粘性冲突）。"""
 
     def __init__(self, entry_id, to_state, key):
-        self.entry_id, self.to_state, self.idempotency_key = \
-            entry_id, to_state, key
+        self.entry_id, self.to_state, self.idempotency_key = entry_id, to_state, key
         super().__init__(
             f"幂等冲突：entry_id={entry_id} to_state={to_state} 已有"
-            f"不同内容账目（key={key}），须人工介入，不可覆盖。")
+            f"不同内容账目（key={key}），须人工介入，不可覆盖。"
+        )
 
 
 def canonical_json(payload: dict) -> str:
     """canonical JSON：键排序、无空白、禁 NaN/Infinity（对齐平台判例）。"""
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=False, allow_nan=False)
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
 
 
 def payload_hash(payload: dict) -> str:
@@ -129,9 +136,15 @@ class EvidenceChainStore:
         self._con.close()
 
     # ── 写入 ────────────────────────────────────────────────────────────
-    def transition(self, entry_id: str, to_state: str, payload: dict, *,
-                   actor: str = "system",
-                   trace_id: Optional[str] = None) -> dict[str, Any]:
+    def transition(
+        self,
+        entry_id: str,
+        to_state: str,
+        payload: dict,
+        *,
+        actor: str = "system",
+        trace_id: Optional[str] = None,
+    ) -> dict[str, Any]:
         """推进状态机一步。返回 {outcome, event, state}。
 
         outcome:
@@ -151,11 +164,10 @@ class EvidenceChainStore:
 
         # 幂等优先于跃迁校验：同键（同 entry+state+内容）重放返回首次事件
         row = self._con.execute(
-            "SELECT * FROM evidence_events WHERE idempotency_key=?",
-            (key,)).fetchone()
+            "SELECT * FROM evidence_events WHERE idempotency_key=?", (key,)
+        ).fetchone()
         if row is not None:
-            return {"outcome": "replayed", "event": dict(row),
-                    "state": to_state}
+            return {"outcome": "replayed", "event": dict(row), "state": to_state}
 
         cur_state = self._state_of(entry_id)
         # 粘性冲突：同态重试（cur==to）但内容不同（同内容已在上方命中重放）
@@ -163,10 +175,10 @@ class EvidenceChainStore:
             row2 = self._con.execute(
                 "SELECT idempotency_key FROM evidence_events "
                 "WHERE entry_id=? AND to_state=?",
-                (entry_id, to_state)).fetchone()
+                (entry_id, to_state),
+            ).fetchone()
             if row2 is not None:
-                raise ConflictError(entry_id, to_state,
-                                    row2["idempotency_key"])
+                raise ConflictError(entry_id, to_state, row2["idempotency_key"])
         if to_state not in TRANSITIONS.get(cur_state, ()):
             raise IllegalTransitionError(entry_id, cur_state, to_state)
 
@@ -179,65 +191,96 @@ class EvidenceChainStore:
                 " (idempotency_key, entry_id, from_state, to_state,"
                 "  payload_json, payload_hash, trace_id, actor, created_at)"
                 " VALUES (?,?,?,?,?,?,?,?,?)",
-                (key, entry_id, cur_state, to_state,
-                 canonical_json(payload), ph, trace_id, actor, now))
+                (
+                    key,
+                    entry_id,
+                    cur_state,
+                    to_state,
+                    canonical_json(payload),
+                    ph,
+                    trace_id,
+                    actor,
+                    now,
+                ),
+            )
             if cur_state is None:  # 入池初始化投影
                 self._con.execute(
                     "INSERT INTO evidence_state"
                     " (entry_id, state, symbol, trade_date, strategy,"
                     "  last_key, updated_at) VALUES (?,?,?,?,?,?,?)",
-                    (entry_id, to_state, str(meta.get("symbol", "")),
-                     str(meta.get("trade_date", "")),
-                     str(meta.get("strategy", "")), key, now))
+                    (
+                        entry_id,
+                        to_state,
+                        str(meta.get("symbol", "")),
+                        str(meta.get("trade_date", "")),
+                        str(meta.get("strategy", "")),
+                        key,
+                        now,
+                    ),
+                )
             else:
                 self._con.execute(
                     "UPDATE evidence_state SET state=?, last_key=?,"
                     " updated_at=? WHERE entry_id=?",
-                    (to_state, key, now, entry_id))
+                    (to_state, key, now, entry_id),
+                )
             self._con.execute("COMMIT")
         except Exception:
             self._con.execute("ROLLBACK")
             raise
-        return {"outcome": "recorded",
-                "event": self._con.execute(
-                    "SELECT * FROM evidence_events WHERE idempotency_key=?",
-                    (key,)).fetchone(),
-                "state": to_state}
+        return {
+            "outcome": "recorded",
+            "event": self._con.execute(
+                "SELECT * FROM evidence_events WHERE idempotency_key=?", (key,)
+            ).fetchone(),
+            "state": to_state,
+        }
 
     # ── 查询 ────────────────────────────────────────────────────────────
     def _state_of(self, entry_id: str) -> Optional[str]:
         row = self._con.execute(
-            "SELECT state FROM evidence_state WHERE entry_id=?",
-            (entry_id,)).fetchone()
+            "SELECT state FROM evidence_state WHERE entry_id=?", (entry_id,)
+        ).fetchone()
         return row["state"] if row else None
 
     def get_state(self, entry_id: str) -> Optional[dict]:
         row = self._con.execute(
-            "SELECT * FROM evidence_state WHERE entry_id=?",
-            (entry_id,)).fetchone()
+            "SELECT * FROM evidence_state WHERE entry_id=?", (entry_id,)
+        ).fetchone()
         return dict(row) if row else None
 
     def get_history(self, entry_id: str) -> list[dict]:
         """按跃迁顺序返回全链事件（入池→授权→出池→结果）。"""
-        return [dict(r) for r in self._con.execute(
-            "SELECT * FROM evidence_events WHERE entry_id=? ORDER BY id",
-            (entry_id,))]
+        return [
+            dict(r)
+            for r in self._con.execute(
+                "SELECT * FROM evidence_events WHERE entry_id=? ORDER BY id",
+                (entry_id,),
+            )
+        ]
 
     def get_event_by_key(self, idempotency_key: str) -> Optional[dict]:
         row = self._con.execute(
-            "SELECT * FROM evidence_events WHERE idempotency_key=?",
-            (idempotency_key,)).fetchone()
+            "SELECT * FROM evidence_events WHERE idempotency_key=?", (idempotency_key,)
+        ).fetchone()
         return dict(row) if row else None
 
-    def query_state(self, *, trade_date: Optional[str] = None,
-                    state: Optional[str] = None,
-                    symbol: Optional[str] = None,
-                    limit: int = 200) -> list[dict]:
+    def query_state(
+        self,
+        *,
+        trade_date: Optional[str] = None,
+        state: Optional[str] = None,
+        symbol: Optional[str] = None,
+        limit: int = 200,
+    ) -> list[dict]:
         """当前态清单查询（参数白名单，全部完全匹配）。"""
         sql = "SELECT * FROM evidence_state WHERE 1=1"
         args: list[Any] = []
-        for col, val in (("trade_date", trade_date), ("state", state),
-                         ("symbol", symbol)):
+        for col, val in (
+            ("trade_date", trade_date),
+            ("state", state),
+            ("symbol", symbol),
+        ):
             if val not in (None, ""):
                 sql += f" AND {col}=?"
                 args.append(str(val))
@@ -259,19 +302,26 @@ class EvidenceChainStore:
         n = 0
         for r in rows:
             first = self._con.execute(
-                "SELECT payload_json, idempotency_key FROM evidence_events"
-                " WHERE id=?", (r["first_id"],)).fetchone()
+                "SELECT payload_json, idempotency_key FROM evidence_events WHERE id=?",
+                (r["first_id"],),
+            ).fetchone()
             last = self._con.execute(
-                "SELECT to_state FROM evidence_events WHERE id=?",
-                (r["last_id"],)).fetchone()
-            meta = (json.loads(first["payload_json"]).get("_meta") or {})
+                "SELECT to_state FROM evidence_events WHERE id=?", (r["last_id"],)
+            ).fetchone()
+            meta = json.loads(first["payload_json"]).get("_meta") or {}
             self._con.execute(
                 "INSERT INTO evidence_state (entry_id, state, symbol,"
                 " trade_date, strategy, last_key, updated_at)"
                 " VALUES (?,?,?,?,?,?,?)",
-                (r["entry_id"], last["to_state"],
-                 str(meta.get("symbol", "")), str(meta.get("trade_date", "")),
-                 str(meta.get("strategy", "")), first["idempotency_key"],
-                 _iso_now()))
+                (
+                    r["entry_id"],
+                    last["to_state"],
+                    str(meta.get("symbol", "")),
+                    str(meta.get("trade_date", "")),
+                    str(meta.get("strategy", "")),
+                    first["idempotency_key"],
+                    _iso_now(),
+                ),
+            )
             n += 1
         return n

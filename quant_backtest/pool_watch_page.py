@@ -20,6 +20,7 @@
 页面生成：write_html（CLI `python pool_watch_page.py [--out PATH]`）
 或 render_default（portal 路由每请求同步刷新，廉价纯读渲染）。
 """
+
 import json
 import os
 import sys
@@ -30,8 +31,8 @@ ROOT = os.path.dirname(HERE)
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-import pool_watch          # noqa: E402  阈值与监控集单一口径源（只读复用）
-import signal_pool         # noqa: E402  触发事件只读（read_events）
+import pool_watch  # noqa: E402  阈值与监控集单一口径源（只读复用）
+import signal_pool  # noqa: E402  触发事件只读（read_events）
 
 CST = timezone(timedelta(hours=8))
 REPORT_PATH = os.path.join(HERE, "reports", "pool_watch.html")
@@ -42,7 +43,7 @@ SHADOW_START = "2026-10-21"
 SHADOW_END = "2026-11-04"
 
 DIR_LABEL = {"pull": "回踩", "break": "突破"}
-MAX_EVENT_ROWS = 20          # 事件流最多展示最近 20 条（append-only 全量在池）
+MAX_EVENT_ROWS = 20  # 事件流最多展示最近 20 条（append-only 全量在池）
 
 _CSS = """
   :root{--bg:#f5f6f8;--card:#fff;--line:#e3e6ea;--txt:#1c2330;--sub:#6b7686;
@@ -115,11 +116,15 @@ def _rest_rows(picks, watch_codes):
     for st in picks.get("stocks") or []:
         if st.get("code") in watch_codes:
             continue
-        rows.append({"code": st.get("code") or "?",
-                     "name": st.get("name") or st.get("code") or "?",
-                     "tier": st.get("tier") or "-",
-                     "close": st.get("close"),
-                     "pct": st.get("pct_chg")})
+        rows.append(
+            {
+                "code": st.get("code") or "?",
+                "name": st.get("name") or st.get("code") or "?",
+                "tier": st.get("tier") or "-",
+                "close": st.get("close"),
+                "pct": st.get("pct_chg"),
+            }
+        )
     return rows
 
 
@@ -135,20 +140,29 @@ def render_html(picks, events, now=None):
         if st.get("tier") not in pool_watch.TIER_ALLOWED or not picked:
             continue
         entry_px, reg, dt = picked
-        watch.append({"code": st["code"],
-                      "name": st.get("name") or st["code"],
-                      "tier": st.get("tier"), "entry_px": float(entry_px),
-                      "reg": reg, "dt": dt, "n_hit": st.get("n_hit"),
-                      "close": st.get("close"), "pct": st.get("pct_chg")})
+        watch.append(
+            {
+                "code": st["code"],
+                "name": st.get("name") or st["code"],
+                "tier": st.get("tier"),
+                "entry_px": float(entry_px),
+                "reg": reg,
+                "dt": dt,
+                "n_hit": st.get("n_hit"),
+                "close": st.get("close"),
+                "pct": st.get("pct_chg"),
+            }
+        )
     watch_codes = {w["code"] for w in watch}
     rest = _rest_rows(picks, watch_codes)
 
-    ev_today = [e for e in events
-                if str(e.get("triggered_at") or "").startswith(today_s)]
+    ev_today = [
+        e for e in events if str(e.get("triggered_at") or "").startswith(today_s)
+    ]
     hit_codes = {e.get("stock") for e in ev_today}
-    events_sorted = sorted(events,
-                           key=lambda e: str(e.get("triggered_at") or ""),
-                           reverse=True)[:MAX_EVENT_ROWS]
+    events_sorted = sorted(
+        events, key=lambda e: str(e.get("triggered_at") or ""), reverse=True
+    )[:MAX_EVENT_ROWS]
 
     # —— 状态卡 ——
     picks_bad = not picks
@@ -167,20 +181,26 @@ def render_html(picks, events, now=None):
         <div class="k">影子期 <span class="badge b-shadow">只报不执行</span></div>
         <div class="v">%s <span style="font-size:12px;color:var(--sub)">止</span></div>
         <div class="note">%s 起 14 天 · 期间信号不入 combo</div></div>
-    </div>""" % (len(watch),
-                 picks.get("counts", {}).get("total", "-") if picks else "-",
-                 len(rest), len(ev_today), len(events), SHADOW_END,
-                 SHADOW_START)
+    </div>""" % (
+        len(watch),
+        picks.get("counts", {}).get("total", "-") if picks else "-",
+        len(rest),
+        len(ev_today),
+        len(events),
+        SHADOW_END,
+        SHADOW_START,
+    )
 
     # —— 影子期红线（常驻） ——
-    banner = ('<div class="banner">⛔ <b>影子期红线（常驻）</b>：触发信号'
-              '只落 signal_pool.jsonl（append-only），<b>不进 combo 账本、'
-              '不产生真实委托</b>；解锁须 D7 复核+老田签准。回踩线='
-              '<b>entry_px×%s</b> · 突破线=<b>entry_px×%s</b> · 30min 轮询 · '
-              '4h 冷却 · reg=down 突破只标记不报买。姊妹页：'
-              '<a href="/bt-signals">/bt-signals 观察名单信号</a></div>'
-              % (_fmt_px(pool_watch.PULL_FACTOR),
-                 _fmt_px(pool_watch.BREAK_FACTOR)))
+    banner = (
+        '<div class="banner">⛔ <b>影子期红线（常驻）</b>：触发信号'
+        "只落 signal_pool.jsonl（append-only），<b>不进 combo 账本、"
+        "不产生真实委托</b>；解锁须 D7 复核+老田签准。回踩线="
+        "<b>entry_px×%s</b> · 突破线=<b>entry_px×%s</b> · 30min 轮询 · "
+        "4h 冷却 · reg=down 突破只标记不报买。姊妹页："
+        '<a href="/bt-signals">/bt-signals 观察名单信号</a></div>'
+        % (_fmt_px(pool_watch.PULL_FACTOR), _fmt_px(pool_watch.BREAK_FACTOR))
+    )
 
     # —— 事件流 ——
     if events_sorted:
@@ -190,37 +210,51 @@ def render_html(picks, events, now=None):
             d = e.get("direction")
             delta = None
             try:
-                delta = (float(ev.get("trigger_price")) /
-                         float(ev.get("entry_px")) - 1) * 100
+                delta = (
+                    float(ev.get("trigger_price")) / float(ev.get("entry_px")) - 1
+                ) * 100
             except Exception:
                 delta = None
-            rfo = (' <span class="pill p-reg">reg_flag_only·只标记</span>'
-                   if e.get("reg_flag_only") else "")
+            rfo = (
+                ' <span class="pill p-reg">reg_flag_only·只标记</span>'
+                if e.get("reg_flag_only")
+                else ""
+            )
             rows.append(
-                "<tr><td>%s</td><td class=\"sid\">%s</td>"
-                "<td>%s %s</td><td><span class=\"pill p-buy\">%s·%s</span>%s</td>"
-                "<td>%s</td><td>%s</td><td class=\"%s\">%s%%</td>"
-                "<td>%s</td><td><span class=\"pill p-watch\">影子期·仅落池</span></td></tr>"
-                % (str(e.get("triggered_at") or "").replace("T", " "),
-                   e.get("signal_id") or "-", e.get("stock") or "-",
-                   e.get("name") or "", DIR_LABEL.get(d, d or "-"),
-                   e.get("action") or "BUY", rfo,
-                   _fmt_px(ev.get("trigger_price", 0)),
-                   _fmt_px(ev.get("entry_px", 0)),
-                   "up" if (delta or 0) > 0 else "down",
-                   (("%+.1f") % delta) if delta is not None else "-",
-                   ("reg=%s" % ev.get("reg")) if ev.get("reg") else "-"))
-        events_html = ('<table><tr><th>时间</th><th>signal_id</th><th>标的</th>'
-                       '<th>方向</th><th>触发价</th><th>参考买</th><th>偏离</th>'
-                       '<th>reg</th><th>处置</th></tr>%s</table>'
-                       % "".join(rows))
+                '<tr><td>%s</td><td class="sid">%s</td>'
+                '<td>%s %s</td><td><span class="pill p-buy">%s·%s</span>%s</td>'
+                '<td>%s</td><td>%s</td><td class="%s">%s%%</td>'
+                '<td>%s</td><td><span class="pill p-watch">影子期·仅落池</span></td></tr>'
+                % (
+                    str(e.get("triggered_at") or "").replace("T", " "),
+                    e.get("signal_id") or "-",
+                    e.get("stock") or "-",
+                    e.get("name") or "",
+                    DIR_LABEL.get(d, d or "-"),
+                    e.get("action") or "BUY",
+                    rfo,
+                    _fmt_px(ev.get("trigger_price", 0)),
+                    _fmt_px(ev.get("entry_px", 0)),
+                    "up" if (delta or 0) > 0 else "down",
+                    (("%+.1f") % delta) if delta is not None else "-",
+                    ("reg=%s" % ev.get("reg")) if ev.get("reg") else "-",
+                )
+            )
+        events_html = (
+            "<table><tr><th>时间</th><th>signal_id</th><th>标的</th>"
+            "<th>方向</th><th>触发价</th><th>参考买</th><th>偏离</th>"
+            "<th>reg</th><th>处置</th></tr>%s</table>" % "".join(rows)
+        )
     else:
-        events_html = ('<div class="empty">暂无触发事件（触发器未挂计划任务，'
-                       '或影子期静默；挂载后事件在此实时滚动）</div>')
-    events_panel = ('<div class="panel"><h2>⚡ 触发事件流'
-                    '<span class="hint">张郃产生 · signal_id 幂等轮次 · '
-                    '最近 %d 条</span></h2>%s</div>'
-                    % (MAX_EVENT_ROWS, events_html))
+        events_html = (
+            '<div class="empty">暂无触发事件（触发器未挂计划任务，'
+            "或影子期静默；挂载后事件在此实时滚动）</div>"
+        )
+    events_panel = (
+        '<div class="panel"><h2>⚡ 触发事件流'
+        '<span class="hint">张郃产生 · signal_id 幂等轮次 · '
+        "最近 %d 条</span></h2>%s</div>" % (MAX_EVENT_ROWS, events_html)
+    )
 
     # —— 监控集表 ——
     if watch:
@@ -233,25 +267,40 @@ def render_html(picks, events, now=None):
             wrows.append(
                 '<tr><td>%s %s</td><td class="%s">%s</td><td>%s</td>'
                 '<td>%s</td><td class="down">%s</td><td class="up">%s</td>'
-                '<td>%s</td><td>%s</td><td>%s</td></tr>'
-                % (w["code"], w["name"],
-                   "up" if (pct or 0) > 0 else "down",
-                   (("%+.2f%%") % pct) if pct is not None else "-",
-                   w["tier"], _fmt_px(w["entry_px"]),
-                   _fmt_px(pull), _fmt_px(brk),
-                   ('<span class="pill p-reg">down</span>'
-                    if w.get("reg") == "down" else (w.get("reg") or "-")),
-                   w.get("dt") or "-",
-                   ('<span class="pill p-hit">今日已触发</span>' if hit
-                    else '<span class="pill p-watch">监控中</span>')))
-        watch_html = ('<table><tr><th>标的</th><th>现价</th><th>tier</th>'
-                      '<th>参考买 entry_px</th><th>回踩线</th><th>突破线</th>'
-                      '<th>reg</th><th>信号日</th><th>状态</th></tr>%s</table>'
-                      % "".join(wrows))
+                "<td>%s</td><td>%s</td><td>%s</td></tr>"
+                % (
+                    w["code"],
+                    w["name"],
+                    "up" if (pct or 0) > 0 else "down",
+                    (("%+.2f%%") % pct) if pct is not None else "-",
+                    w["tier"],
+                    _fmt_px(w["entry_px"]),
+                    _fmt_px(pull),
+                    _fmt_px(brk),
+                    (
+                        '<span class="pill p-reg">down</span>'
+                        if w.get("reg") == "down"
+                        else (w.get("reg") or "-")
+                    ),
+                    w.get("dt") or "-",
+                    (
+                        '<span class="pill p-hit">今日已触发</span>'
+                        if hit
+                        else '<span class="pill p-watch">监控中</span>'
+                    ),
+                )
+            )
+        watch_html = (
+            "<table><tr><th>标的</th><th>现价</th><th>tier</th>"
+            "<th>参考买 entry_px</th><th>回踩线</th><th>突破线</th>"
+            "<th>reg</th><th>信号日</th><th>状态</th></tr>%s</table>" % "".join(wrows)
+        )
     else:
-        watch_html = ('<div class="empty">监控集为空——%s</div>'
-                      % ("选票池数据不可用（todays_picks.json 缺失或坏 JSON）"
-                         if picks_bad else "池内无 T1/T2 且含买入源的票"))
+        watch_html = '<div class="empty">监控集为空——%s</div>' % (
+            "选票池数据不可用（todays_picks.json 缺失或坏 JSON）"
+            if picks_bad
+            else "池内无 T1/T2 且含买入源的票"
+        )
 
     # —— 未纳监控折叠区 ——
     if rest:
@@ -262,46 +311,59 @@ def render_html(picks, events, now=None):
                 '<tr class="rest"><td>%s %s</td><td>%s</td>'
                 '<td class="%s">%s</td><td>%s</td>'
                 '<td><span class="pill p-rest">未纳监控</span></td></tr>'
-                % (r["code"], r["name"],
-                   _fmt_px(r["close"]) if r.get("close") else "-",
-                   "up" if (pct or 0) > 0 else "down",
-                   (("%+.2f%%") % pct) if pct is not None else "-",
-                   r["tier"]))
-        rest_html = ('<div class="filter">'
-                     '<a id="tg" onclick="var b=document.body;'
-                     'b.classList.toggle(\'show-rest\');'
-                     'this.classList.toggle(\'act\');'
-                     'this.textContent=b.classList.contains(\'show-rest\')'
-                     '?「收起」:「展开未纳监控」">展开未纳监控 %d 只</a>'
-                     '<span style="font-size:11px;color:var(--sub)">'
-                     'T3/无买入源票不属触发器监控对象，仅列示</span></div>'
-                     '<table><tr><th>标的</th><th>现价</th><th>涨跌</th>'
-                     '<th>tier</th><th>状态</th></tr>%s</table>'
-                     % (len(rest), "".join(rrows)))
+                % (
+                    r["code"],
+                    r["name"],
+                    _fmt_px(r["close"]) if r.get("close") else "-",
+                    "up" if (pct or 0) > 0 else "down",
+                    (("%+.2f%%") % pct) if pct is not None else "-",
+                    r["tier"],
+                )
+            )
+        rest_html = (
+            '<div class="filter">'
+            '<a id="tg" onclick="var b=document.body;'
+            "b.classList.toggle('show-rest');"
+            "this.classList.toggle('act');"
+            "this.textContent=b.classList.contains('show-rest')"
+            '?「收起」:「展开未纳监控」">展开未纳监控 %d 只</a>'
+            '<span style="font-size:11px;color:var(--sub)">'
+            "T3/无买入源票不属触发器监控对象，仅列示</span></div>"
+            "<table><tr><th>标的</th><th>现价</th><th>涨跌</th>"
+            "<th>tier</th><th>状态</th></tr>%s</table>" % (len(rest), "".join(rrows))
+        )
     else:
         rest_html = ""
 
-    picks_panel = ('<div class="panel"><h2>📋 选票池触发监控'
-                   '<span class="hint">监控集口径同触发器（pool_watch.'
-                   'load_watchlist）· 池印记 scan_run_date=%s</span></h2>'
-                   '%s%s</div>'
-                   % (picks.get("scan_run_date") or "-",
-                      watch_html, rest_html))
+    picks_panel = (
+        '<div class="panel"><h2>📋 选票池触发监控'
+        '<span class="hint">监控集口径同触发器（pool_watch.'
+        "load_watchlist）· 池印记 scan_run_date=%s</span></h2>"
+        "%s%s</div>" % (picks.get("scan_run_date") or "-", watch_html, rest_html)
+    )
 
-    return ('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>许褚营 · 双池触发监控台</title><style>%s</style></head>'
-            '<body><div class="wrap">'
-            '<h1>🛡️ 许褚营 · 双池触发监控台'
-            '<span class="badge b-off">生产页 · WO-078</span>'
-            '<span class="badge b-shadow">影子期</span></h1>'
-            '<div class="sub">许褚（盯盘域老大）→ 张郃（池内票触发执行体）｜ '
-            '数据源：todays_picks.json（选票池权威实体）× signal_pool.jsonl'
-            '（触发事件账）｜ 生成于 %s</div>'
-            '%s%s%s%s'
-            '</div></body></html>'
-            % (_CSS, now.strftime("%Y-%m-%d %H:%M:%S"),
-               cards, banner, events_panel, picks_panel))
+    return (
+        '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        "<title>许褚营 · 双池触发监控台</title><style>%s</style></head>"
+        '<body><div class="wrap">'
+        "<h1>🛡️ 许褚营 · 双池触发监控台"
+        '<span class="badge b-off">生产页 · WO-078</span>'
+        '<span class="badge b-shadow">影子期</span></h1>'
+        '<div class="sub">许褚（盯盘域老大）→ 张郃（池内票触发执行体）｜ '
+        "数据源：todays_picks.json（选票池权威实体）× signal_pool.jsonl"
+        "（触发事件账）｜ 生成于 %s</div>"
+        "%s%s%s%s"
+        "</div></body></html>"
+        % (
+            _CSS,
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            cards,
+            banner,
+            events_panel,
+            picks_panel,
+        )
+    )
 
 
 def render_default(now=None):
@@ -313,8 +375,7 @@ def render_default(now=None):
 
 def write_html(now=None, pool_path=None, pool_jsonl=None, out_path=None):
     """落盘生成报告页（CLI 用），返回写入路径。"""
-    picks = (load_picks(pool_path) if pool_path
-             else load_picks())
+    picks = load_picks(pool_path) if pool_path else load_picks()
     events = signal_pool.read_events(path=pool_jsonl)
     html = render_html(picks, events, now=now)
     out = out_path or REPORT_PATH

@@ -22,6 +22,7 @@ weak_track_check.py 触发命中时自动调 build_alert+send_alert（任务
   python weak_track_alert.py 301216 --send     # 重发推送
   python weak_track_alert.py 301216 --tpl my.txt --send   # 用自定义模板
 """
+
 import argparse
 import json
 import os
@@ -38,11 +39,15 @@ def _actions(trig):
     """按触发类型生成分流动作行（模板只管放哪，内容在此保证正确）。"""
     acts = []
     if any("超额" in x for x in trig):
-        acts.append("·触发1 turn_lookup 双窗口辨方向：个股涨=修复(情景A升级)"
-                    " vs 板块跌=环境恶化(维持回避)")
+        acts.append(
+            "·触发1 turn_lookup 双窗口辨方向：个股涨=修复(情景A升级)"
+            " vs 板块跌=环境恶化(维持回避)"
+        )
     if any("信号" in x or "池" in x for x in trig):
-        acts.append("·触发2 新信号：3买须过环境核验(本案判例 -34%)；"
-                    "1/2买=情景B右侧候选需三线共振")
+        acts.append(
+            "·触发2 新信号：3买须过环境核验(本案判例 -34%)；"
+            "1/2买=情景B右侧候选需三线共振"
+        )
     if any("归因" in x for x in trig):
         acts.append("·触发3 归因反转：重跑 §2 相关命令块+公告人工核查")
     return "".join(a + "\n" for a in acts)
@@ -50,12 +55,14 @@ def _actions(trig):
 
 def _builtin(f):
     """内置默认格式（模板缺失/损坏时的回退，与模板文件同构）。"""
-    return ("[WEAK TRACK] {code} 复评触发（按 §8 SOP）\n"
-            "触发：{trig}\n"
-            "基线 {px_d}：现价 {px}｜超额250 {ex}｜趋势 个/板/沪 {trend}\n"
-            "第二步：\n{actions}第三步：§4 复评行+追记区落款；情景改判同步 §5/§0 关键位\n"
-            "第四步：结案三选一 → Disable-ScheduledTask WeakTrackCheck\n"
-            "(状态 {ts})").format(**f)
+    return (
+        "[WEAK TRACK] {code} 复评触发（按 §8 SOP）\n"
+        "触发：{trig}\n"
+        "基线 {px_d}：现价 {px}｜超额250 {ex}｜趋势 个/板/沪 {trend}\n"
+        "第二步：\n{actions}第三步：§4 复评行+追记区落款；情景改判同步 §5/§0 关键位\n"
+        "第四步：结案三选一 → Disable-ScheduledTask WeakTrackCheck\n"
+        "(状态 {ts})"
+    ).format(**f)
 
 
 def build_alert(code, r, tpl=None):
@@ -68,17 +75,20 @@ def build_alert(code, r, tpl=None):
         "px_d": str(r.get("px_d", "?"))[5:],
         "px": r.get("px"),
         "ex": "%+.1fpp" % ex if ex is not None else "—",
-        "trend": "/".join(str(x).replace("（均线缠绕）", "")[:4]
-                          for x in (r.get("trend") or [])),
+        "trend": "/".join(
+            str(x).replace("（均线缠绕）", "")[:4] for x in (r.get("trend") or [])
+        ),
         "actions": _actions(trig),
         "ts": r.get("ts", "?"),
     }
-    for p in ([tpl, TPL] if tpl else [TPL]):
+    for p in [tpl, TPL] if tpl else [TPL]:
         if p and os.path.isfile(p):
             try:
-                text = "".join(l for l in
-                               open(p, encoding="utf-8").read().splitlines(True)
-                               if not l.lstrip().startswith("#"))
+                text = "".join(
+                    l
+                    for l in open(p, encoding="utf-8").read().splitlines(True)
+                    if not l.lstrip().startswith("#")
+                )
                 return text.format(**f).rstrip("\n")
             except (KeyError, IndexError, ValueError):
                 pass  # 模板坏 → 回退内置
@@ -93,7 +103,11 @@ def send_alert(msg):
         f.write(msg)
     r = subprocess.run(
         [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-        capture_output=True, text=True, encoding="utf-8", timeout=60)
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+    )
     print((r.stdout or "").strip()[:60] or "sent")
 
 
@@ -113,8 +127,11 @@ def main():
     ap.add_argument("code", nargs="?", default="301216")
     ap.add_argument("--send", action="store_true", help="实际发送（默认仅打印）")
     ap.add_argument("--tpl", help="自定义模板路径（默认 weak_track_alert_tpl.txt）")
-    ap.add_argument("--text", action="store_true",
-                    help="文本版（默认飞书卡片 weak_track_card.alert_card）")
+    ap.add_argument(
+        "--text",
+        action="store_true",
+        help="文本版（默认飞书卡片 weak_track_card.alert_card）",
+    )
     a = ap.parse_args()
     c6 = a.code.strip().upper().split(".")[0]
     fp = os.path.join(REP, "weak_track_%s.jsonl" % c6)
@@ -130,6 +147,7 @@ def main():
         return 0
     if not a.text:
         import weak_track_card as wcard
+
         card = wcard.alert_card(r)
         print(json.dumps(card, ensure_ascii=False, indent=1))
         if a.send:

@@ -39,6 +39,7 @@ W5 净向分排序（20261014 cross-netdev，v1.1 计划滚动项）：
 · 单源缺失（src_state 非 ok）时该源不计入分子、权重同步剔除出分母
   （归一化），与韧性降级语义共存；k 门槛/买入观望分级阈值不动。
 """
+
 import json
 import os
 import time
@@ -51,31 +52,33 @@ REPORTS = os.path.join(HERE, "reports")
 # 北京时间（生产者完成时间戳统一 +08:00，2026-10-26 OS-FIX-MEASURE2）
 CST = timezone(timedelta(hours=8))
 
-CHANLUN_LOOKBACK_DAYS = 90      # 缠论信号有效窗口（检出日起）
-NINE_DIM_LONG = 80              # 九维展示阈值（观察工具口径，非买入建议）
-SIG4_LONG = 3                   # 四策略持仓数 ≥3 记 long
-K_RES = 3                       # W3-4 网格结论：k=3 共振硬门槛（degraded 不降档防放水）
-TOPN_DEFAULT = 10               # k 门槛后 TopN 条数（对齐 cross_grid_backtest.TOPN）
-CACHE_TTL = 60                  # 门户请求级缓存（秒）
-_CACHE = {"t": 0, "d": None}    # 门户请求级缓存状态（test_ui_drilldown mock 点）
+CHANLUN_LOOKBACK_DAYS = 90  # 缠论信号有效窗口（检出日起）
+NINE_DIM_LONG = 80  # 九维展示阈值（观察工具口径，非买入建议）
+SIG4_LONG = 3  # 四策略持仓数 ≥3 记 long
+K_RES = 3  # W3-4 网格结论：k=3 共振硬门槛（degraded 不降档防放水）
+TOPN_DEFAULT = 10  # k 门槛后 TopN 条数（对齐 cross_grid_backtest.TOPN）
+CACHE_TTL = 60  # 门户请求级缓存（秒）
+_CACHE = {"t": 0, "d": None}  # 门户请求级缓存状态（test_ui_drilldown mock 点）
 CONFIG_FP = os.path.join(HERE, "config.json")
 
 # ── W5 净向分排序参数（公式对齐 cross_grid_backtest：Σ dir×w） ──
-SORT_KEY_DEFAULT = "net"        # 排序键缺省：net（W5 直上）；"raw" 回退旧行为
-SRC_W = {                       # 源权重（W3-4 网格口径：qpzm/sig4/chanlun=1.0）
-    "qpzm": 1.0, "sig4": 1.0, "chanlun": 1.0,
-    "9dim": 0.5,                # 9dim 降权 0.5（共振内削弱单源噪声）
+SORT_KEY_DEFAULT = "net"  # 排序键缺省：net（W5 直上）；"raw" 回退旧行为
+SRC_W = {  # 源权重（W3-4 网格口径：qpzm/sig4/chanlun=1.0）
+    "qpzm": 1.0,
+    "sig4": 1.0,
+    "chanlun": 1.0,
+    "9dim": 0.5,  # 9dim 降权 0.5（共振内削弱单源噪声）
 }
-SRC_DIR_SIGN = {"9dim": -1.0}   # 9dim 反指：方向取反（long 计 -1），
-                                # 贡献 = -1×0.5 = -0.5（W5 批准口径，见模块头注释）
+SRC_DIR_SIGN = {"9dim": -1.0}  # 9dim 反指：方向取反（long 计 -1），
+# 贡献 = -1×0.5 = -0.5（W5 批准口径，见模块头注释）
 _DIR_VAL = {"long": 1.0, "short": -1.0, "neutral": 0.0}
 
 # 源健康过期阈值（日历日近似；交易日精确判定见文档遗留风险）
 STALE_DAYS = {
-    "qpzm": 3,     # 日批缺失（容一个周末）
-    "sig4": 5,     # ≈3 交易日未更新（W3-4 口径）
+    "qpzm": 3,  # 日批缺失（容一个周末）
+    "sig4": 5,  # ≈3 交易日未更新（W3-4 口径）
     "chanlun": 4,  # 扫描断档（容周末+批处理延迟）
-    "9dim": 8,     # 锚超 8 日（周频口径）
+    "9dim": 8,  # 锚超 8 日（周频口径）
 }
 
 
@@ -85,6 +88,7 @@ def norm_code(raw):
     2026-10-16 章程 §4.3 收编：A 股判定（含裸 6 位补后缀）委托
     codes.normalize_code 唯一权威；港美股分支本模块自有。"""
     from codes import normalize_code
+
     c = str(raw or "").strip()
     n = normalize_code(c)
     if n is not None:
@@ -149,8 +153,7 @@ def _signal_day(value):
 
 def _source_anchor(hits):
     """单源数据锚 = 该源全部命中信号日 dt 的最大值（YYYY-MM-DD）；无则 ''。"""
-    days = [d for d in (_signal_day(h.get("dt")) for h in (hits or {}).values())
-            if d]
+    days = [d for d in (_signal_day(h.get("dt")) for h in (hits or {}).values()) if d]
     return max(days) if days else ""
 
 
@@ -161,15 +164,15 @@ def _src_qpzm():
     for r in snap.get("res", []):
         act = str(r.get("action", ""))
         base = act.replace("（环境闸门）", "")
-        d = ("long" if base == "买入" else
-             "short" if base == "回避" else "neutral")
+        d = "long" if base == "买入" else "short" if base == "回避" else "neutral"
         out[norm_code(r.get("code"))] = {
             "dir": d,
             "label": "共振%d·%s" % (r.get("score") or 0, base),
             "name": r.get("name") or "",
             "market": r.get("market") or "",
             # 数据锚：rps 快照 ts（日批），供 build_cross 汇总 trade_date
-            "dt": str(snap.get("ts") or "")}
+            "dt": str(snap.get("ts") or ""),
+        }
     return out
 
 
@@ -202,15 +205,17 @@ def _src_sig4():
             "name": r.get("name") or "",
             "market": r.get("market") or "",
             # 数据锚：同 rps 快照 ts
-            "dt": str(snap.get("ts") or "")}
+            "dt": str(snap.get("ts") or ""),
+        }
     return out
 
 
 def _src_chanlun():
     # 数据源：优先 SQLite，fallback JSONL（双写期过渡）
     pool = _src_chanlun_load()
-    cutoff = (datetime.now()
-              - timedelta(days=CHANLUN_LOOKBACK_DAYS)).strftime("%Y-%m-%d")
+    cutoff = (datetime.now() - timedelta(days=CHANLUN_LOOKBACK_DAYS)).strftime(
+        "%Y-%m-%d"
+    )
     latest = {}
     for r in pool:
         dd = str(r.get("detect_date") or r.get("dt") or "")
@@ -223,14 +228,18 @@ def _src_chanlun():
     for code, (_, r) in latest.items():
         t = str(r.get("type") or "")
         d = "long" if "买" in t else "short" if "卖" in t else "neutral"
-        tags = "".join(lb for lb, k in
-                       (("M", "mbei"), ("盘", "bei2"), ("量", "vv"),
-                        ("趋", "tbe")) if r.get(k) is True)
-        out[code] = {"dir": d,
-                     "label": "缠论%s%s" % (t, ("·" + tags) if tags else ""),
-                     "name": r.get("name") or "",
-                     "market": r.get("market") or "CN",
-                     "dt": str(r.get("dt") or "")}
+        tags = "".join(
+            lb
+            for lb, k in (("M", "mbei"), ("盘", "bei2"), ("量", "vv"), ("趋", "tbe"))
+            if r.get(k) is True
+        )
+        out[code] = {
+            "dir": d,
+            "label": "缠论%s%s" % (t, ("·" + tags) if tags else ""),
+            "name": r.get("name") or "",
+            "market": r.get("market") or "CN",
+            "dt": str(r.get("dt") or ""),
+        }
     return out
 
 
@@ -242,6 +251,7 @@ def _src_chanlun_load():
     """
     try:
         import db as _db
+
         conn = _db.get_conn()
         try:
             rows = _db.pool_query_recent(conn, days=CHANLUN_LOOKBACK_DAYS)
@@ -271,25 +281,55 @@ def _src_9dim():
             "name": r.get("name") or "",
             "market": "CN",
             # 数据锚：nine_dim_scores.json trade_date（周频锚），供 trade_date 汇总
-            "dt": str(snap.get("trade_date") or snap.get("generated_at") or "")}
+            "dt": str(snap.get("trade_date") or snap.get("generated_at") or ""),
+        }
     return out
 
 
 # ── 策略注册表：新增策略在此加一条即可 ─────────────────────
 STRATEGIES = [
-    {"id": "qpzm", "name": "RPS共振", "badge": "共振", "color": "#3fb950",
-     "icon": "🌊", "url": "/bt-qpzm", "markets": "CN/US/HK/CRYPTO",
-     "loader": _src_qpzm},
-    {"id": "sig4", "name": "四策略信号", "badge": "4策略", "color": "#58a6ff",
-     "icon": "📊", "url": "/bt-signals", "markets": "自选池",
-     "loader": _src_sig4},
-    {"id": "chanlun", "name": "缠论结构", "badge": "缠论", "color": "#f778ba",
-     "icon": "🧭", "url": "/bt-chanlun-pool", "markets": "CN",
-     "loader": _src_chanlun},
-    {"id": "9dim", "name": "九维评分", "badge": "九维", "color": "#d29922",
-     "icon": "🧮", "url": "/bt-9dim", "markets": "CN", "loader": _src_9dim,
-     # 阈值过滤型源：score≥80 无票是合法结果，空集不算源缺失
-     "allow_empty": True},
+    {
+        "id": "qpzm",
+        "name": "RPS共振",
+        "badge": "共振",
+        "color": "#3fb950",
+        "icon": "🌊",
+        "url": "/bt-qpzm",
+        "markets": "CN/US/HK/CRYPTO",
+        "loader": _src_qpzm,
+    },
+    {
+        "id": "sig4",
+        "name": "四策略信号",
+        "badge": "4策略",
+        "color": "#58a6ff",
+        "icon": "📊",
+        "url": "/bt-signals",
+        "markets": "自选池",
+        "loader": _src_sig4,
+    },
+    {
+        "id": "chanlun",
+        "name": "缠论结构",
+        "badge": "缠论",
+        "color": "#f778ba",
+        "icon": "🧭",
+        "url": "/bt-chanlun-pool",
+        "markets": "CN",
+        "loader": _src_chanlun,
+    },
+    {
+        "id": "9dim",
+        "name": "九维评分",
+        "badge": "九维",
+        "color": "#d29922",
+        "icon": "🧮",
+        "url": "/bt-9dim",
+        "markets": "CN",
+        "loader": _src_9dim,
+        # 阈值过滤型源：score≥80 无票是合法结果，空集不算源缺失
+        "allow_empty": True,
+    },
 ]
 
 
@@ -311,7 +351,7 @@ def net_score_of(st, src_state):
     num, den = 0.0, 0.0
     for sid, w in SRC_W.items():
         if (src_state or {}).get(sid, {}).get("status") != "ok":
-            continue                      # 缺失源：分子分母同步剔除
+            continue  # 缺失源：分子分母同步剔除
         den += w
         for h in st.get("hits", ()):
             if h["sid"] == sid:
@@ -366,33 +406,60 @@ def build_cross(force=False):
                 st = "ok"
             else:
                 st = "missing"
-            src_state[sid] = {"status": st, "n": len(per[sid]), "detail": "",
-                              "anchor": _source_anchor(per[sid])}
+            src_state[sid] = {
+                "status": st,
+                "n": len(per[sid]),
+                "detail": "",
+                "anchor": _source_anchor(per[sid]),
+            }
         except Exception as ex:
             per[sid] = {}
-            src_state[sid] = {"status": "error", "n": 0,
-                              "detail": str(ex)[:120], "anchor": ""}
+            src_state[sid] = {
+                "status": "error",
+                "n": 0,
+                "detail": str(ex)[:120],
+                "anchor": "",
+            }
     stocks = {}
     for s in STRATEGIES:
         sid = s["id"]
         for code, hit in per[sid].items():
-            st = stocks.setdefault(code, {
-                "code": code, "name": hit.get("name") or "",
-                "market": hit.get("market") or "", "hits": []})
+            st = stocks.setdefault(
+                code,
+                {
+                    "code": code,
+                    "name": hit.get("name") or "",
+                    "market": hit.get("market") or "",
+                    "hits": [],
+                },
+            )
             if not st["name"] and hit.get("name"):
                 st["name"] = hit["name"]
-            st["hits"].append({"sid": sid, "dir": hit["dir"],
-                               "label": hit["label"], "url": s["url"],
-                               "badge": s["badge"], "color": s["color"],
-                               "dt": hit.get("dt", "")})
+            st["hits"].append(
+                {
+                    "sid": sid,
+                    "dir": hit["dir"],
+                    "label": hit["label"],
+                    "url": s["url"],
+                    "badge": s["badge"],
+                    "color": s["color"],
+                    "dt": hit.get("dt", ""),
+                }
+            )
     for st in stocks.values():
         dirs = [h["dir"] for h in st["hits"]]
         st["n_hit"] = len(st["hits"])
         st["n_long"] = dirs.count("long")
         st["n_short"] = dirs.count("short")
-        st["state"] = ("mixed" if st["n_long"] and st["n_short"] else
-                       "long" if st["n_long"] else
-                       "short" if st["n_short"] else "neutral")
+        st["state"] = (
+            "mixed"
+            if st["n_long"] and st["n_short"]
+            else "long"
+            if st["n_long"]
+            else "short"
+            if st["n_short"]
+            else "neutral"
+        )
         st["hits"].sort(key=lambda h: h["sid"])
     # 策略两两交集矩阵
     matrix = {a["id"]: {b["id"]: 0 for b in STRATEGIES} for a in STRATEGIES}
@@ -407,12 +474,18 @@ def build_cross(force=False):
     if not bad:
         k_mode, k_note = "normal", "四源齐整，k=%d 共振正常" % K_RES
     elif n_ok >= K_RES:
-        k_mode, k_note = ("degraded_k3", "源缺失[%s]，可用 %d 源仍保持 k=%d "
-                          "（不降门槛）" % (",".join(sorted(bad)), n_ok, K_RES))
+        k_mode, k_note = (
+            "degraded_k3",
+            "源缺失[%s]，可用 %d 源仍保持 k=%d "
+            "（不降门槛）" % (",".join(sorted(bad)), n_ok, K_RES),
+        )
     else:
-        k_mode, k_note = ("blocked", "DEGRADED：可用源 %d <%d，k=%d 共振数学"
-                          "不可达，TopN 产空（不降门槛放水）；缺失[%s]"
-                          % (n_ok, K_RES, K_RES, ",".join(sorted(bad))))
+        k_mode, k_note = (
+            "blocked",
+            "DEGRADED：可用源 %d <%d，k=%d 共振数学"
+            "不可达，TopN 产空（不降门槛放水）；缺失[%s]"
+            % (n_ok, K_RES, K_RES, ",".join(sorted(bad))),
+        )
     k_gate = {"k": K_RES, "n_sources_ok": n_ok, "mode": k_mode, "note": k_note}
     # W5 排序键：net=净向分（每票带 net_score 字段）；raw=旧长票计数回退
     sort_key = _sort_key_cfg()
@@ -428,22 +501,27 @@ def build_cross(force=False):
     # 的 dated() 判"当期是否跑完"——此前只有 generated_at 被拒收为 unproven。
     anchors = [v.get("anchor") for v in src_state.values() if v.get("anchor")]
     trade_date = max(anchors) if anchors else None
-    out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           "completed_at": _now_cst_iso(),
-           "trade_date": trade_date,
-           "strategies": [{k: v for k, v in s.items() if k != "loader"}
-                          for s in STRATEGIES],
-           "n_per": {sid: len(v) for sid, v in per.items()},
-           "src_state": src_state,
-           "degraded": bool(bad),
-           "degrade_note": ("全部源正常" if not bad else
-                            "DEGRADED：源缺失/异常[%s]，%s"
-                            % (",".join(sorted(bad)), k_note)),
-           "k_gate": k_gate,
-           "sort_key": sort_key,
-           "topn": topn[:TOPN_DEFAULT],
-           "stocks": srt,
-           "matrix": matrix}
+    out = {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "completed_at": _now_cst_iso(),
+        "trade_date": trade_date,
+        "strategies": [
+            {k: v for k, v in s.items() if k != "loader"} for s in STRATEGIES
+        ],
+        "n_per": {sid: len(v) for sid, v in per.items()},
+        "src_state": src_state,
+        "degraded": bool(bad),
+        "degrade_note": (
+            "全部源正常"
+            if not bad
+            else "DEGRADED：源缺失/异常[%s]，%s" % (",".join(sorted(bad)), k_note)
+        ),
+        "k_gate": k_gate,
+        "sort_key": sort_key,
+        "topn": topn[:TOPN_DEFAULT],
+        "stocks": srt,
+        "matrix": matrix,
+    }
     _CACHE["t"], _CACHE["d"] = time.time(), out
     return out
 
@@ -489,17 +567,33 @@ def source_health(now=None):
     res = snap.get("res") or []
     ts = str(snap.get("ts") or "")[:10]
     q_ok = bool(res and any(r.get("action") for r in res))
-    h["qpzm"] = dict(zip(("status", "age_days"),
-                         _health_status(ts if q_ok else "", STALE_DAYS["qpzm"])))
-    h["qpzm"].update({"anchor": ts if q_ok else "", "stale_after":
-                      STALE_DAYS["qpzm"],
-                      "detail": "" if q_ok else "res 空/无 action"})
+    h["qpzm"] = dict(
+        zip(
+            ("status", "age_days"),
+            _health_status(ts if q_ok else "", STALE_DAYS["qpzm"]),
+        )
+    )
+    h["qpzm"].update(
+        {
+            "anchor": ts if q_ok else "",
+            "stale_after": STALE_DAYS["qpzm"],
+            "detail": "" if q_ok else "res 空/无 action",
+        }
+    )
     s_ok = bool(res and any(_sig4_count(r) is not None for r in res))
-    h["sig4"] = dict(zip(("status", "age_days"),
-                         _health_status(ts if s_ok else "", STALE_DAYS["sig4"])))
-    h["sig4"].update({"anchor": ts if s_ok else "", "stale_after":
-                      STALE_DAYS["sig4"],
-                      "detail": "" if s_ok else "res 无 longs/sigs"})
+    h["sig4"] = dict(
+        zip(
+            ("status", "age_days"),
+            _health_status(ts if s_ok else "", STALE_DAYS["sig4"]),
+        )
+    )
+    h["sig4"].update(
+        {
+            "anchor": ts if s_ok else "",
+            "stale_after": STALE_DAYS["sig4"],
+            "detail": "" if s_ok else "res 无 longs/sigs",
+        }
+    )
     # chanlun：池内最新检出日
     ch_anchor = ""
     try:
@@ -509,21 +603,33 @@ def source_health(now=None):
             if dd > ch_anchor:
                 ch_anchor = dd[:10] if len(dd) >= 10 else dd
     except Exception as ex:
-        h["chanlun"] = {"status": "missing", "anchor": "", "age_days": None,
-                        "stale_after": STALE_DAYS["chanlun"],
-                        "detail": "error: %s" % str(ex)[:80]}
+        h["chanlun"] = {
+            "status": "missing",
+            "anchor": "",
+            "age_days": None,
+            "stale_after": STALE_DAYS["chanlun"],
+            "detail": "error: %s" % str(ex)[:80],
+        }
     else:
         st, age = _health_status(ch_anchor, STALE_DAYS["chanlun"])
-        h["chanlun"] = {"status": st, "anchor": ch_anchor, "age_days": age,
-                        "stale_after": STALE_DAYS["chanlun"],
-                        "detail": "" if ch_anchor else "信号池空"}
+        h["chanlun"] = {
+            "status": st,
+            "anchor": ch_anchor,
+            "age_days": age,
+            "stale_after": STALE_DAYS["chanlun"],
+            "detail": "" if ch_anchor else "信号池空",
+        }
     # 9dim：最新锚 trade_date
     n9 = _load_json(os.path.join(DATA, "nine_dim_scores.json"))
     n_anchor = str(n9.get("trade_date") or n9.get("generated_at") or "")[:10]
     st, age = _health_status(n_anchor, STALE_DAYS["9dim"])
-    h["9dim"] = {"status": st, "anchor": n_anchor, "age_days": age,
-                 "stale_after": STALE_DAYS["9dim"],
-                 "detail": "" if n9.get("rows") else "rows 空/文件缺"}
+    h["9dim"] = {
+        "status": st,
+        "anchor": n_anchor,
+        "age_days": age,
+        "stale_after": STALE_DAYS["9dim"],
+        "detail": "" if n9.get("rows") else "rows 空/文件缺",
+    }
     return h
 
 
@@ -531,9 +637,10 @@ def health_summary_line(health=None):
     """每日 cross 扫描汇总输出的"源健康"一行：
     源健康: qpzm ok(2026-10-13) | sig4 stale(2026-10-08) | ... | 可用源 2/4"""
     h = health or source_health()
-    parts = ["%s %s%s" % (sid, v["status"],
-                          "(%s)" % v["anchor"] if v["anchor"] else "")
-             for sid, v in h.items()]
+    parts = [
+        "%s %s%s" % (sid, v["status"], "(%s)" % v["anchor"] if v["anchor"] else "")
+        for sid, v in h.items()
+    ]
     n_ok = sum(1 for v in h.values() if v["status"] == "ok")
     return "源健康: %s | 可用源 %d/%d" % (" | ".join(parts), n_ok, len(h))
 
@@ -551,17 +658,30 @@ def push_source_health_alert(health=None, send=None):
     h = health or source_health()
     bad = {sid: v for sid, v in h.items() if v["status"] != "ok"}
     n_ok = len(h) - len(bad)
-    lines = ["⚠️ cross 源健康告警 · %s" %
-             datetime.now().strftime("%Y-%m-%d %H:%M"),
-             health_summary_line(h)]
+    lines = [
+        "⚠️ cross 源健康告警 · %s" % datetime.now().strftime("%Y-%m-%d %H:%M"),
+        health_summary_line(h),
+    ]
     for sid, v in h.items():
-        lines.append("· %-8s %-8s 锚=%-10s %s" %
-                     (sid, v["status"], v["anchor"] or "无",
-                      v["detail"] or ("数据龄 %.1f 天" % v["age_days"]
-                                      if v["age_days"] is not None else "")))
+        lines.append(
+            "· %-8s %-8s 锚=%-10s %s"
+            % (
+                sid,
+                v["status"],
+                v["anchor"] or "无",
+                v["detail"]
+                or (
+                    "数据龄 %.1f 天" % v["age_days"]
+                    if v["age_days"] is not None
+                    else ""
+                ),
+            )
+        )
     if n_ok < K_RES:
-        lines.append("→ 可用源 %d <%d，k=%d 共振不可达，cross 降级（TopN 空）"
-                     % (n_ok, K_RES, K_RES))
+        lines.append(
+            "→ 可用源 %d <%d，k=%d 共振不可达，cross 降级（TopN 空）"
+            % (n_ok, K_RES, K_RES)
+        )
     text = "\n".join(lines)
     if not bad:
         return False, ""
@@ -569,9 +689,10 @@ def push_source_health_alert(health=None, send=None):
         cfg = _load_json(CONFIG_FP, default={}).get("cross") or {}
         send = bool(cfg.get("source_health_alert"))
     if not send:
-        return False, text            # 开关关 / dry：只返回文本不推
+        return False, text  # 开关关 / dry：只返回文本不推
     try:
         import runner
+
         return bool(runner.push_feishu(text)), text
     except Exception as ex:
         return False, text + "\n[push error: %s]" % str(ex)[:80]
@@ -581,19 +702,30 @@ if __name__ == "__main__":
     d = build_cross(force=True)
     multi = [s for s in d["stocks"] if s["n_hit"] >= 2]
     mixed = [s for s in d["stocks"] if s["state"] == "mixed"]
-    print("stocks=%d multi(>=2)=%d mixed=%d" % (len(d["stocks"]),
-                                                len(multi), len(mixed)))
+    print(
+        "stocks=%d multi(>=2)=%d mixed=%d" % (len(d["stocks"]), len(multi), len(mixed))
+    )
     for s in multi[:15]:
-        print(" ", s["code"], s["name"], s["state"],
-              " | ".join(h["label"] for h in s["hits"]))
+        print(
+            " ",
+            s["code"],
+            s["name"],
+            s["state"],
+            " | ".join(h["label"] for h in s["hits"]),
+        )
     # W3-4：每日汇总输出带源健康行 + k 门槛状态
     print(health_summary_line())
     kg = d["k_gate"]
-    print("k 门槛: mode=%s k=%d 可用源=%d | %s" %
-          (kg["mode"], kg["k"], kg["n_sources_ok"], kg["note"]))
+    print(
+        "k 门槛: mode=%s k=%d 可用源=%d | %s"
+        % (kg["mode"], kg["k"], kg["n_sources_ok"], kg["note"])
+    )
     # W5：排序键口径标注（下游/推送卡可见）
-    sk_note = ("净向分 net=Σ(dir×w)/Σw（9dim 反向×0.5）"
-               if d["sort_key"] == "net" else "长票计数（旧行为）")
+    sk_note = (
+        "净向分 net=Σ(dir×w)/Σw（9dim 反向×0.5）"
+        if d["sort_key"] == "net"
+        else "长票计数（旧行为）"
+    )
     print("排序键: sort_key=%s（%s）" % (d["sort_key"], sk_note))
     if d["degraded"]:
         print("[DEGRADED] %s" % d["degrade_note"])

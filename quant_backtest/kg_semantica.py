@@ -17,6 +17,7 @@ MERGE 幂等策略冲突。
   python kg_semantica.py 002261.SZ --paths 英维克 3买   # 时序路径（find_temporal_paths）
   可选 --hops 1|2（默认 2：标的→Event→MarketEvent 等）
 """
+
 import sys
 import os
 import time
@@ -48,21 +49,28 @@ def export_subgraph(cli, ts_code, hops=2, close=True):
     """
     BIZ = ["Event", "MarketEvent", "Company", "Person", "Product"]
     s = cli._session()
-    rec = s.run("MATCH (src:Security {ts_code:$c})-[r]-(m) "
-                "RETURN src, collect(DISTINCT m) AS l1", c=ts_code).single()
+    rec = s.run(
+        "MATCH (src:Security {ts_code:$c})-[r]-(m) "
+        "RETURN src, collect(DISTINCT m) AS l1",
+        c=ts_code,
+    ).single()
     if rec is None:
         raise SystemExit("未找到标的 %s" % ts_code)
     nodes, sec_node = list(rec["l1"]), rec["src"]
     if hops >= 2:
-        q = ("MATCH (src:Security {ts_code:$c})-[]-(m1)-[]-(m2) "
-             "WHERE any(l IN labels(m1) WHERE l IN $biz) "
-             "RETURN collect(DISTINCT m2) AS l2")
+        q = (
+            "MATCH (src:Security {ts_code:$c})-[]-(m1)-[]-(m2) "
+            "WHERE any(l IN labels(m1) WHERE l IN $biz) "
+            "RETURN collect(DISTINCT m2) AS l2"
+        )
         r2 = s.run(q, c=ts_code, biz=BIZ).single()
         nodes += list(r2["l2"])
         # 席位→游资归因链（单向，不扩散其他标的）
-        q2 = ("MATCH (src:Security {ts_code:$c})-[:TRADED_ON]->(st:Seat)"
-              "<-[:OCCUPIES]-(hm:HotMoney) "
-              "RETURN collect(DISTINCT hm) + collect(DISTINCT st) AS l2b")
+        q2 = (
+            "MATCH (src:Security {ts_code:$c})-[:TRADED_ON]->(st:Seat)"
+            "<-[:OCCUPIES]-(hm:HotMoney) "
+            "RETURN collect(DISTINCT hm) + collect(DISTINCT st) AS l2b"
+        )
         r3 = s.run(q2, c=ts_code).single()
         nodes += list(r3["l2b"])
     nodes.append(sec_node)  # 标的自身
@@ -75,27 +83,50 @@ def export_subgraph(cli, ts_code, hops=2, close=True):
         ids.add(eid)
         d = dict(n)
         label = list(n.labels)[0] if n.labels else "Unknown"
-        nm = d.get("name") or d.get("com_name") or d.get("ts_code") \
-            or d.get("index_code") or d.get("kind") or eid
-        entities.append({"id": eid, "label": label, "name": str(nm),
-                         "ts_code": d.get("ts_code"),
-                         "props": {k: str(v)[:60] for k, v in d.items()
-                                   if k in ("kind", "date", "mtype",
-                                            "stype", "group", "industry")}})
+        nm = (
+            d.get("name")
+            or d.get("com_name")
+            or d.get("ts_code")
+            or d.get("index_code")
+            or d.get("kind")
+            or eid
+        )
+        entities.append(
+            {
+                "id": eid,
+                "label": label,
+                "name": str(nm),
+                "ts_code": d.get("ts_code"),
+                "props": {
+                    k: str(v)[:60]
+                    for k, v in d.items()
+                    if k in ("kind", "date", "mtype", "stype", "group", "industry")
+                },
+            }
+        )
     # 边：两端都在节点集内
     rels = []
-    q = ("MATCH (a)-[r]->(b) WHERE elementId(a) IN $ids AND elementId(b) IN $ids "
-         "RETURN elementId(a) AS sa, elementId(b) AS sb, type(r) AS rt, "
-         "properties(r) AS rp ORDER BY rt")
+    q = (
+        "MATCH (a)-[r]->(b) WHERE elementId(a) IN $ids AND elementId(b) IN $ids "
+        "RETURN elementId(a) AS sa, elementId(b) AS sb, type(r) AS rt, "
+        "properties(r) AS rp ORDER BY rt"
+    )
     for row in s.run(q, ids=list(ids)):
         rp = row["rp"]
-        rels.append({"source": row["sa"], "target": row["sb"],
-                     "type": row["rt"],
-                     "valid_from": to_iso(rp.pop("validStart", None)),
-                     "valid_until": to_iso(rp.pop("validEnd", None)),
-                     "props": {k: (round(v, 4) if isinstance(v, float) else v)
-                               for k, v in rp.items()
-                               if k not in ("updated_at", "source")}})
+        rels.append(
+            {
+                "source": row["sa"],
+                "target": row["sb"],
+                "type": row["rt"],
+                "valid_from": to_iso(rp.pop("validStart", None)),
+                "valid_until": to_iso(rp.pop("validEnd", None)),
+                "props": {
+                    k: (round(v, 4) if isinstance(v, float) else v)
+                    for k, v in rp.items()
+                    if k not in ("updated_at", "source")
+                },
+            }
+        )
     if close:
         cli.close()
     return {"entities": entities, "relationships": rels}
@@ -103,9 +134,15 @@ def export_subgraph(cli, ts_code, hops=2, close=True):
 
 def brief(g, tag=""):
     cnt = Counter(r["type"] for r in g["relationships"])
-    print("  %s实体 %d / 关系 %d：%s"
-          % (tag, len(g["entities"]), len(g["relationships"]),
-             " ".join("%s=%d" % kv for kv in cnt.most_common(12)) or "空"))
+    print(
+        "  %s实体 %d / 关系 %d：%s"
+        % (
+            tag,
+            len(g["entities"]),
+            len(g["relationships"]),
+            " ".join("%s=%d" % kv for kv in cnt.most_common(12)) or "空",
+        )
+    )
 
 
 def main():
@@ -120,24 +157,31 @@ def main():
     cli = KgClient()
     g = export_subgraph(cli, code, hops=hops)
     sec = [e for e in g["entities"] if e.get("ts_code") == code][0]
-    print("=== M4.5 只读适配器：%s（%s）%d 跳子图 ==="
-          % (sec["name"], code, hops))
+    print("=== M4.5 只读适配器：%s（%s）%d 跳子图 ===" % (sec["name"], code, hops))
     brief(g, "导出 ")
 
     from semantica.kg.temporal_query import TemporalGraphQuery
+
     tq = TemporalGraphQuery(temporal_granularity="day")
     if not hasattr(tq, "_relationship_key"):
         # workaround：semantica 0.7.0 的 validate_temporal_consistency 调用了
         # 只在 TemporalVersionManager 上定义的 _relationship_key（包内 bug）
-        tq._relationship_key = lambda r: "%s|%s|%s" % (
-            r.get("source", ""), r.get("type", r.get("relationship", "")),
-            r.get("target", ""))
+        tq._relationship_key = lambda r: (
+            "%s|%s|%s"
+            % (
+                r.get("source", ""),
+                r.get("type", r.get("relationship", "")),
+                r.get("target", ""),
+            )
+        )
     idname = {e["id"]: "%s:%s" % (e["label"], e["name"]) for e in g["entities"]}
 
     if "--check" in args:
         rep = tq.validate_temporal_consistency(g)
-        print("\n-- 时序一致性校验：errors=%d warnings=%d"
-              % (len(rep.errors), len(rep.warnings)))
+        print(
+            "\n-- 时序一致性校验：errors=%d warnings=%d"
+            % (len(rep.errors), len(rep.warnings))
+        )
         for e in rep.errors[:8]:
             print("  ✗ [%s] %s (%s)" % (e["issue_type"], e["message"], e["fact_id"]))
         for w in rep.warnings[:8]:
@@ -146,22 +190,32 @@ def main():
     if "--at" in args:
         at = args[args.index("--at") + 1]
         res = tq.query_at_time(g, "", at_time=at)
-        print("\n-- 时点重建 @ %s：活跃实体 %d / 活跃关系 %d"
-              % (res["at_time"].date(), res["num_entities"],
-                 res["num_relationships"]))
+        print(
+            "\n-- 时点重建 @ %s：活跃实体 %d / 活跃关系 %d"
+            % (res["at_time"].date(), res["num_entities"], res["num_relationships"])
+        )
         brief(res, "  ")
         # 展示该时点活跃的时序事实样本
         for r in res["relationships"][:10]:
             vf, vu = r["valid_from"], r["valid_until"] or "…"
-            print("    %s → %s [%s %s~%s] %s"
-                  % (idname.get(r["source"], "?")[:24],
-                     idname.get(r["target"], "?")[:24],
-                     r["type"], vf, vu, r.get("props", "")))
+            print(
+                "    %s → %s [%s %s~%s] %s"
+                % (
+                    idname.get(r["source"], "?")[:24],
+                    idname.get(r["target"], "?")[:24],
+                    r["type"],
+                    vf,
+                    vu,
+                    r.get("props", ""),
+                )
+            )
 
     if "--evolve" in args:
         ev = tq.analyze_evolution(g)
-        print("\n-- 演化分析：关系 %d 条 / 类型 %d 种 / 平均有效期 %.0f 秒"
-              % (ev["count"], ev["diversity"], ev["stability"]))
+        print(
+            "\n-- 演化分析：关系 %d 条 / 类型 %d 种 / 平均有效期 %.0f 秒"
+            % (ev["count"], ev["diversity"], ev["stability"])
+        )
 
     if "--paths" in args:
         i = args.index("--paths")
@@ -169,8 +223,10 @@ def main():
         idm = {e["name"]: e["id"] for e in g["entities"]}
         a, b = idm.get(na), idm.get(nb)
         if not (a and b):
-            print("\n-- 路径查询失败：节点名不在子图内（可用名样本：%s）"
-                  % " / ".join(list(idm)[:8]))
+            print(
+                "\n-- 路径查询失败：节点名不在子图内（可用名样本：%s）"
+                % " / ".join(list(idm)[:8])
+            )
         else:
             pr = tq.find_temporal_paths(g, a, b, max_path_length=4)
             print("\n-- 时序路径 %s → %s：%d 条" % (na, nb, pr["num_paths"]))
@@ -178,8 +234,10 @@ def main():
                 names = [idname.get(nid, nid[:6]) for nid in p["path"]]
                 print("    %s" % " - ".join(names))
                 for e in p["edges"]:
-                    print("      [%s %s~%s]" % (e["type"], e["valid_from"],
-                                                e["valid_until"] or "…"))
+                    print(
+                        "      [%s %s~%s]"
+                        % (e["type"], e["valid_from"], e["valid_until"] or "…")
+                    )
     print("耗时 %.1fs" % (time.time() - t0))
 
 

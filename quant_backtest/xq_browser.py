@@ -22,6 +22,7 @@ wait_until="commit"（domcontentloaded 会被 reload 循环卡死超时）。
 
 本模块绝不打印 cookie 值（凭证）；日志只打计数与 token 掩码。
 """
+
 import asyncio
 import json
 import os
@@ -30,13 +31,15 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE_PATH = os.path.join(HERE, "config", "xq_browser_cookies.json")
 
-CACHE_TTL_SEC = 12 * 3600        # cookie 缓存 TTL（12h）：匿名 token
-                                 # 有效期 20-30 天，12h 足够日频轮次
+CACHE_TTL_SEC = 12 * 3600  # cookie 缓存 TTL（12h）：匿名 token
+# 有效期 20-30 天，12h 足够日频轮次
 HOME_URL = "https://xueqiu.com/"
-CHALLENGE_WAIT_MS = 10_000       # WAF 挑战 JS 执行窗口（spike 实测 10s 过）
+CHALLENGE_WAIT_MS = 10_000  # WAF 挑战 JS 执行窗口（spike 实测 10s 过）
 GOTO_TIMEOUT_MS = 30_000
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")  # 与 common.UA 同串
+UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)  # 与 common.UA 同串
 
 
 def _looks_waf(text: str) -> bool:
@@ -63,8 +66,11 @@ def _load_cache(path: str | None = None) -> list[dict]:
         cookies = data.get("cookies")
         if time.time() - ts > CACHE_TTL_SEC or not isinstance(cookies, list):
             return []
-        if not any(c.get("name") == "xq_a_token" and c.get("value")
-                   for c in cookies if isinstance(c, dict)):
+        if not any(
+            c.get("name") == "xq_a_token" and c.get("value")
+            for c in cookies
+            if isinstance(c, dict)
+        ):
             return []
         return [c for c in cookies if isinstance(c, dict)]
     except Exception:
@@ -78,8 +84,9 @@ def _save_cache(cookies: list[dict], path: str | None = None) -> bool:
         os.makedirs(os.path.dirname(p), exist_ok=True)
         tmp = p + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
-            json.dump({"harvested_at": time.time(), "cookies": cookies},
-                      f, ensure_ascii=False)
+            json.dump(
+                {"harvested_at": time.time(), "cookies": cookies}, f, ensure_ascii=False
+            )
         os.replace(tmp, p)
         return True
     except Exception:
@@ -87,15 +94,18 @@ def _save_cache(cookies: list[dict], path: str | None = None) -> bool:
 
 
 # ── 实采（Playwright）────────────────────────────────────────
-def _harvest_live(timeout_s: float = GOTO_TIMEOUT_MS / 1000,
-                  proxy_url: str = "") -> list[dict]:
+def _harvest_live(
+    timeout_s: float = GOTO_TIMEOUT_MS / 1000, proxy_url: str = ""
+) -> list[dict]:
     """真实采集：headless Edge 开首页过 WAF → 导出 cookie。
 
     同步接口（采集代码全同步），内部 asyncio.run。playwright 未装
     → ModuleNotFoundError 上抛（harvest_cookies 统一捕获）。
     """
+
     async def _run() -> list[dict]:
         from playwright.async_api import async_playwright
+
         kw: dict = {"channel": "msedge", "headless": True}
         if proxy_url:
             kw["proxy"] = {"server": proxy_url}
@@ -103,15 +113,18 @@ def _harvest_live(timeout_s: float = GOTO_TIMEOUT_MS / 1000,
             browser = await p.chromium.launch(**kw)
             try:
                 ctx = await browser.new_context(
-                    user_agent=UA, locale="zh-CN",
-                    viewport={"width": 1366, "height": 768})
+                    user_agent=UA,
+                    locale="zh-CN",
+                    viewport={"width": 1366, "height": 768},
+                )
                 page = await ctx.new_page()
                 # 判例：挑战页自动 reload → commit 级等待，不卡 reload 循环
                 try:
-                    await page.goto(HOME_URL, wait_until="commit",
-                                    timeout=int(timeout_s * 1000))
+                    await page.goto(
+                        HOME_URL, wait_until="commit", timeout=int(timeout_s * 1000)
+                    )
                 except Exception:
-                    pass                  # commit 已提交；reload 由窗口兜
+                    pass  # commit 已提交；reload 由窗口兜
                 await page.wait_for_timeout(CHALLENGE_WAIT_MS)
                 return await ctx.cookies()
             finally:
@@ -135,6 +148,7 @@ def harvest_cookies(force: bool = False, path: str | None = None) -> list[dict]:
     proxy_url = ""
     try:
         from xq_proxy import get_pool
+
         e = get_pool().current()
         proxy_url = e.url if e else ""
     except Exception:
@@ -144,12 +158,16 @@ def harvest_cookies(force: bool = False, path: str | None = None) -> list[dict]:
     except Exception as e:
         print("[xq_browser] harvest 失败（降级直连）：%s" % str(e)[:80])
         return []
-    if not any(isinstance(c, dict) and c.get("name") == "xq_a_token"
-               and c.get("value") for c in cookies):
+    if not any(
+        isinstance(c, dict) and c.get("name") == "xq_a_token" and c.get("value")
+        for c in cookies
+    ):
         print("[xq_browser] WAF 挑战未过（无 xq_a_token）→ 降级直连")
         return []
     tok = next(c["value"] for c in cookies if c["name"] == "xq_a_token")
-    print("[xq_browser] WAF 预热成功：%d cookie（xq_a_token=%s…）"
-          % (len(cookies), str(tok)[:6]))
+    print(
+        "[xq_browser] WAF 预热成功：%d cookie（xq_a_token=%s…）"
+        % (len(cookies), str(tok)[:6])
+    )
     _save_cache(cookies, path)
     return cookies

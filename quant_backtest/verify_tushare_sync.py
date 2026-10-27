@@ -10,6 +10,7 @@
 用法：
   python verify_tushare_sync.py          # anns_d 未跑完时会给 WARNING 不 FAIL
 """
+
 import glob
 import os
 import random
@@ -22,8 +23,12 @@ OUT = os.path.join(HERE, "data", "tushare")
 
 # 2026-09-27 同步基线（anns_d 为本次修复后重跑，预期跑满交易日历）
 BASELINE = {
-    "bak_basic": 5569, "cb_daily": 1171, "etf_mins": 740,
-    "idx_mins": 2010, "stk_mins": 11570, "sw_mins": 2139,
+    "bak_basic": 5569,
+    "cb_daily": 1171,
+    "etf_mins": 740,
+    "idx_mins": 2010,
+    "stk_mins": 11570,
+    "sw_mins": 2139,
 }
 
 
@@ -44,17 +49,23 @@ def test_anns_coverage():
     if days is None:
         print("  trade_cal 缺失，跳过")
         return None
-    have = set(os.path.basename(p)[2:-8]
-               for p in glob.glob(os.path.join(OUT, "anns_d", "d_*.parquet")))
+    have = set(
+        os.path.basename(p)[2:-8]
+        for p in glob.glob(os.path.join(OUT, "anns_d", "d_*.parquet"))
+    )
     missing = [d for d in days if d not in have]
     extra = sorted(have - set(days))
-    print("  开放交易日: %d, 已落盘: %d, 缺失: %d, 多余: %d"
-          % (len(days), len(have), len(missing), len(extra)))
+    print(
+        "  开放交易日: %d, 已落盘: %d, 缺失: %d, 多余: %d"
+        % (len(days), len(have), len(missing), len(extra))
+    )
     if missing:
         print("  缺失样例: %s ... %s" % (missing[:3], missing[-3:]))
-    ok = (len(missing) == 0 and not extra)
-    print("  结果: %s" % ("PASS" if ok else
-                          "WARN(未跑完)" if len(have) < len(days) else "FAIL"))
+    ok = len(missing) == 0 and not extra
+    print(
+        "  结果: %s"
+        % ("PASS" if ok else "WARN(未跑完)" if len(have) < len(days) else "FAIL")
+    )
     return ok if len(have) >= len(days) else None
 
 
@@ -65,8 +76,9 @@ def test_baseline_counts():
         n = len(glob.glob(os.path.join(OUT, tbl, "*.parquet")))
         # 逐码表允许增量（新增标的），不少于基线即正常
         good = n >= expect
-        print("  %-12s %6d (基线 %d) %s"
-              % (tbl, n, expect, "OK" if good else "MISSING"))
+        print(
+            "  %-12s %6d (基线 %d) %s" % (tbl, n, expect, "OK" if good else "MISSING")
+        )
         ok = ok and good
     print("  结果: %s" % ("PASS" if ok else "FAIL"))
     return ok
@@ -87,8 +99,10 @@ def test_anns_sample():
                 print("  EMPTY: %s" % os.path.basename(p))
                 ok = False
             elif "ann_date" not in df.columns:
-                print("  NO ann_date col: %s cols=%s"
-                      % (os.path.basename(p), list(df.columns)[:6]))
+                print(
+                    "  NO ann_date col: %s cols=%s"
+                    % (os.path.basename(p), list(df.columns)[:6])
+                )
                 ok = False
             else:
                 print("  %-22s %6d rows" % (os.path.basename(p), len(df)))

@@ -4,6 +4,7 @@
 全程 tmp SQLite（tempfile），不触碰任何生产库。
 运行：python -m pytest test_evidence_chain.py -q --no-header
 """
+
 import os
 import sqlite3
 import sys
@@ -14,15 +15,29 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from evidence_chain import (  # noqa: E402
-    ConflictError, EvidenceChainStore, IllegalTransitionError,
-    S_AUTHORIZED, S_POOL_IN, S_POOL_OUT, S_RESULT, make_entry_id,
-    make_idempotency_key, payload_hash,
+    ConflictError,
+    EvidenceChainStore,
+    IllegalTransitionError,
+    S_AUTHORIZED,
+    S_POOL_IN,
+    S_POOL_OUT,
+    S_RESULT,
+    make_entry_id,
+    make_idempotency_key,
+    payload_hash,
 )
 
 ENTRY = make_entry_id("chan_monitor", "2026-10-19", "002633.SZ")
-BASE = {"_meta": {"symbol": "002633.SZ", "trade_date": "2026-10-19",
-                  "strategy": "chan_monitor"},
-        "score": 95, "weight": 0.5, "rationale": "一买+背驰"}
+BASE = {
+    "_meta": {
+        "symbol": "002633.SZ",
+        "trade_date": "2026-10-19",
+        "strategy": "chan_monitor",
+    },
+    "score": 95,
+    "weight": 0.5,
+    "rationale": "一买+背驰",
+}
 
 
 @pytest.fixture()
@@ -36,21 +51,34 @@ def store(tmp_path):
 def test_full_happy_path(store):
     r1 = store.transition(ENTRY, S_POOL_IN, dict(BASE))
     assert r1["outcome"] == "recorded" and r1["state"] == S_POOL_IN
-    r2 = store.transition(ENTRY, S_AUTHORIZED,
-                          {"approval_id": "AP-001", "granted_by": "老田"})
-    r3 = store.transition(ENTRY, S_POOL_OUT,
-                          {"reason": "displacement", "note": "换强票"})
-    r4 = store.transition(ENTRY, S_RESULT,
-                          {"ret_t5": 0.031, "ret_t10": -0.012})
-    assert [r["state"] for r in (r1, r2, r3, r4)] == \
-        [S_POOL_IN, S_AUTHORIZED, S_POOL_OUT, S_RESULT]
+    r2 = store.transition(
+        ENTRY, S_AUTHORIZED, {"approval_id": "AP-001", "granted_by": "老田"}
+    )
+    r3 = store.transition(
+        ENTRY, S_POOL_OUT, {"reason": "displacement", "note": "换强票"}
+    )
+    r4 = store.transition(ENTRY, S_RESULT, {"ret_t5": 0.031, "ret_t10": -0.012})
+    assert [r["state"] for r in (r1, r2, r3, r4)] == [
+        S_POOL_IN,
+        S_AUTHORIZED,
+        S_POOL_OUT,
+        S_RESULT,
+    ]
     st = store.get_state(ENTRY)
     assert st["state"] == S_RESULT and st["symbol"] == "002633.SZ"
     hist = store.get_history(ENTRY)
-    assert [e["to_state"] for e in hist] == \
-        [S_POOL_IN, S_AUTHORIZED, S_POOL_OUT, S_RESULT]
-    assert [e["from_state"] for e in hist] == \
-        [None, S_POOL_IN, S_AUTHORIZED, S_POOL_OUT]
+    assert [e["to_state"] for e in hist] == [
+        S_POOL_IN,
+        S_AUTHORIZED,
+        S_POOL_OUT,
+        S_RESULT,
+    ]
+    assert [e["from_state"] for e in hist] == [
+        None,
+        S_POOL_IN,
+        S_AUTHORIZED,
+        S_POOL_OUT,
+    ]
 
 
 def test_entry_id_format(store):
@@ -100,8 +128,8 @@ def test_idempotent_replay(store):
     r1 = store.transition(ENTRY, S_POOL_IN, dict(BASE))
     r2 = store.transition(ENTRY, S_POOL_IN, dict(BASE))  # 同内容重放
     assert r2["outcome"] == "replayed"
-    assert r2["event"]["id"] == r1["event"]["id"]        # 返回首次事件
-    assert len(store.get_history(ENTRY)) == 1            # 不重复记账
+    assert r2["event"]["id"] == r1["event"]["id"]  # 返回首次事件
+    assert len(store.get_history(ENTRY)) == 1  # 不重复记账
 
 
 def test_conflict_same_state_different_payload(store):
@@ -120,10 +148,18 @@ def test_idempotency_key_format():
 def test_independent_entries(store):
     e2 = make_entry_id("strong", "2026-10-19", "600519.SH")
     store.transition(ENTRY, S_POOL_IN, dict(BASE))
-    store.transition(e2, S_POOL_IN,
-                     {"_meta": {"symbol": "600519.SH",
-                                "trade_date": "2026-10-19",
-                                "strategy": "strong"}, "score": 80})
+    store.transition(
+        e2,
+        S_POOL_IN,
+        {
+            "_meta": {
+                "symbol": "600519.SH",
+                "trade_date": "2026-10-19",
+                "strategy": "strong",
+            },
+            "score": 80,
+        },
+    )
     assert store.get_state(ENTRY)["state"] == S_POOL_IN
     assert store.get_state(e2)["state"] == S_POOL_IN
     rows = store.query_state(trade_date="2026-10-19")

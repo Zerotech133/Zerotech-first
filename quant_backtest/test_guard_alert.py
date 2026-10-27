@@ -8,6 +8,7 @@
 
 零真实推送（_push 打桩）、零真实状态（tmp_path），不碰生产数据。
 """
+
 import json
 import sys
 from datetime import datetime
@@ -51,23 +52,30 @@ def fake_push(monkeypatch):
 
 
 T0 = datetime(2026, 10, 14, 6, 30, 0)
-REASON = ("个股锚 600519.SH=2026-10-12（zhice）≠ 板块锚 881019=2026-10-13")
+REASON = "个股锚 600519.SH=2026-10-12（zhice）≠ 板块锚 881019=2026-10-13"
 
 
 def test_dedup_window(state_fp, fake_push):
     """同 key 12h 内只发 1 次；超窗（13h 后）复发重发。"""
-    ok1, _ = ga.guard_alert("StrongEod", REASON, send=True,
-                            state_path=state_fp, now=T0)
+    ok1, _ = ga.guard_alert("StrongEod", REASON, send=True, state_path=state_fp, now=T0)
     assert ok1 and len(fake_push) == 1
     # 11h 后同因再拦截 → 去重跳过
-    ok2, _ = ga.guard_alert("StrongEod", REASON, send=True,
-                            state_path=state_fp,
-                            now=T0.replace(hour=17, minute=30))
+    ok2, _ = ga.guard_alert(
+        "StrongEod",
+        REASON,
+        send=True,
+        state_path=state_fp,
+        now=T0.replace(hour=17, minute=30),
+    )
     assert not ok2 and len(fake_push) == 1
     # 13h 后仍同因 → 窗口外，重发
-    ok3, _ = ga.guard_alert("StrongEod", REASON, send=True,
-                            state_path=state_fp,
-                            now=T0.replace(hour=19, minute=30))
+    ok3, _ = ga.guard_alert(
+        "StrongEod",
+        REASON,
+        send=True,
+        state_path=state_fp,
+        now=T0.replace(hour=19, minute=30),
+    )
     assert ok3 and len(fake_push) == 2
     # 状态文件确为原子写产物且可解析
     st = json.load(open(state_fp, encoding="utf-8"))
@@ -78,8 +86,7 @@ def test_corrupt_state_fail_open(state_fp, fake_push):
     """状态文件损坏 → fail-open：不抛错、照发（宁重发不静默）。"""
     with open(state_fp, "w", encoding="utf-8") as f:
         f.write("{broken json!!!")
-    ok, _ = ga.guard_alert("StrongEod", REASON, send=True,
-                           state_path=state_fp, now=T0)
+    ok, _ = ga.guard_alert("StrongEod", REASON, send=True, state_path=state_fp, now=T0)
     assert ok and len(fake_push) == 1
 
 
@@ -91,26 +98,30 @@ def test_push_fail_no_raise(state_fp, monkeypatch):
         return flaky["up"]
 
     monkeypatch.setattr(ga, "_push", _p)
-    ok, _ = ga.guard_alert("StrongEod", REASON, send=True,
-                           state_path=state_fp, now=T0)
+    ok, _ = ga.guard_alert("StrongEod", REASON, send=True, state_path=state_fp, now=T0)
     assert not ok
     # 通道恢复后同因立即可发（失败不记状态）
     flaky["up"] = True
-    ok2, _ = ga.guard_alert("StrongEod", REASON, send=True,
-                            state_path=state_fp,
-                            now=T0.replace(minute=40))
+    ok2, _ = ga.guard_alert(
+        "StrongEod", REASON, send=True, state_path=state_fp, now=T0.replace(minute=40)
+    )
     assert ok2
 
 
 def test_content_four_elements(state_fp, fake_push):
     """dry 拼装：内容含 任务名/拦截原因/双数据锚/建议动作 四要素。"""
     ok, text = ga.guard_alert(
-        "StrongEod", REASON,
+        "StrongEod",
+        REASON,
         anchors={"板块锚 881019": "2026-10-13", "个股锚": "2026-10-12"},
         suggest="核查 TdxSync；补齐后 --force 重扫",
-        send=False, state_path=state_fp, now=T0)
-    assert not ok and len(fake_push) == 0      # dry 不真推不写状态
+        send=False,
+        state_path=state_fp,
+        now=T0,
+    )
+    assert not ok and len(fake_push) == 0  # dry 不真推不写状态
     import os
+
     assert not os.path.exists(state_fp)
     assert "任务: StrongEod" in text
     assert "拦截原因: %s" % REASON in text

@@ -48,10 +48,15 @@ UNIT_TYPE_MENTION: str = "mention"
 UNIT_TYPE_CONTENT: str = "content"
 
 #: Unit types this splitter can emit. There is no event type (not wired).
-UNIT_TYPES: frozenset[str] = frozenset({
-    UNIT_TYPE_POST, UNIT_TYPE_AUTHOR, UNIT_TYPE_TIME, UNIT_TYPE_MENTION,
-    UNIT_TYPE_CONTENT,
-})
+UNIT_TYPES: frozenset[str] = frozenset(
+    {
+        UNIT_TYPE_POST,
+        UNIT_TYPE_AUTHOR,
+        UNIT_TYPE_TIME,
+        UNIT_TYPE_MENTION,
+        UNIT_TYPE_CONTENT,
+    }
+)
 
 #: Explicit marker key in an author unit when raw_json has no author field.
 AUTHOR_MISSING_KEY: str = "author_missing"
@@ -70,7 +75,10 @@ AUTHOR_FIELD_PATHS: tuple[tuple[str, ...], ...] = (
 
 #: raw_json keys that indicate a time field; the first present key is recorded.
 TIME_FIELD_NAMES: tuple[str, ...] = (
-    "created_at_ms", "created_at", "timestamp", "time",
+    "created_at_ms",
+    "created_at",
+    "timestamp",
+    "time",
 )
 
 #: Nonempty content fields produce one content unit each, in this order.
@@ -154,20 +162,19 @@ def _post_payload(post: Any) -> tuple[str, dict[str, Any]]:
         try:
             parsed = json.loads(post.raw_json)
         except (json.JSONDecodeError, ValueError) as error:
-            raise ValueError(
-                "raw_json must contain a complete JSON object") from error
+            raise ValueError("raw_json must contain a complete JSON object") from error
     elif isinstance(post.raw_json, dict):
         try:
             json.dumps(post.raw_json, ensure_ascii=False, allow_nan=False)
         except (TypeError, ValueError) as error:
-            raise ValueError(
-                "raw_json must be serializable as JSON") from error
+            raise ValueError("raw_json must be serializable as JSON") from error
         parsed = post.raw_json
     else:
         raise TypeError("raw_json must be a JSON object or JSON string")
     if not isinstance(parsed, dict) or parsed.get("id") != post_id:
         raise ValueError(
-            "post_id must equal the original response's top-level string id")
+            "post_id must equal the original response's top-level string id"
+        )
     if not isinstance(parsed.get("id"), str) or not parsed["id"].strip():
         raise ValueError("original response must have a nonempty string id")
     return post_id, parsed
@@ -230,14 +237,13 @@ def _symbol_token_in(symbol: str, excerpt: str, original: str) -> bool:
         while j >= 0:
             left_pos = start + j
             left = original[left_pos - 1] if left_pos > 0 else ""
-            right = original[left_pos + len(symbol):
-                             left_pos + len(symbol) + 1]
-            if not (_TOKEN_EDGE_RE.match(left)
-                    or _TOKEN_EDGE_RE.match(right)):
+            right = original[left_pos + len(symbol) : left_pos + len(symbol) + 1]
+            if not (_TOKEN_EDGE_RE.match(left) or _TOKEN_EDGE_RE.match(right)):
                 return True
             j = excerpt.find(symbol, j + 1)
         start = original.find(excerpt, start + 1)
     return False
+
 
 def _mention_fact(
     relation: Any, post_id: str, original: dict[str, Any]
@@ -284,9 +290,7 @@ def _mention_fact(
     }
 
 
-def _content_fact(
-    field_name: str, original: dict[str, Any]
-) -> dict[str, Any] | None:
+def _content_fact(field_name: str, original: dict[str, Any]) -> dict[str, Any] | None:
     """Return one content fact for a nonempty text field, else ``None``.
 
     The fact records the field name, the full text length in characters and a
@@ -333,59 +337,71 @@ def split_post(
     if isinstance(relations, (str, bytes)) or not isinstance(relations, Sequence):
         raise TypeError("relations must be a sequence of PostSymbolInput values")
     units: list[Unit] = []
-    units.append(Unit(
-        unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_POST, "post"),
-        unit_type=UNIT_TYPE_POST,
-        source=SOURCE_XUEQIU,
-        raw_post_id=post_id,
-        payload={
-            "original_url": post.original_url,
-            "created_at_ms": post.created_at_ms,
-        },
-    ))
+    units.append(
+        Unit(
+            unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_POST, "post"),
+            unit_type=UNIT_TYPE_POST,
+            source=SOURCE_XUEQIU,
+            raw_post_id=post_id,
+            payload={
+                "original_url": post.original_url,
+                "created_at_ms": post.created_at_ms,
+            },
+        )
+    )
     author_payload = _author_fact(original)
     author_key = (
         author_payload["field_name"]
         if AUTHOR_MISSING_KEY not in author_payload
         else AUTHOR_MISSING_KEY
     )
-    units.append(Unit(
-        unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_AUTHOR, author_key),
-        unit_type=UNIT_TYPE_AUTHOR,
-        source=SOURCE_XUEQIU,
-        raw_post_id=post_id,
-        payload=author_payload,
-    ))
-    units.append(Unit(
-        unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_TIME, "time"),
-        unit_type=UNIT_TYPE_TIME,
-        source=SOURCE_XUEQIU,
-        raw_post_id=post_id,
-        payload=_time_fact(post, original),
-    ))
-    for index, relation in enumerate(relations):
-        fact = _mention_fact(relation, post_id, original)
-        units.append(Unit(
-            unit_id=_unit_id(
-                SOURCE_XUEQIU, post_id, UNIT_TYPE_MENTION,
-                "%d\x1f%s\x1f%s" % (index, fact["symbol"], fact["excerpt"]),
-            ),
-            unit_type=UNIT_TYPE_MENTION,
+    units.append(
+        Unit(
+            unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_AUTHOR, author_key),
+            unit_type=UNIT_TYPE_AUTHOR,
             source=SOURCE_XUEQIU,
             raw_post_id=post_id,
-            payload=fact,
-        ))
+            payload=author_payload,
+        )
+    )
+    units.append(
+        Unit(
+            unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_TIME, "time"),
+            unit_type=UNIT_TYPE_TIME,
+            source=SOURCE_XUEQIU,
+            raw_post_id=post_id,
+            payload=_time_fact(post, original),
+        )
+    )
+    for index, relation in enumerate(relations):
+        fact = _mention_fact(relation, post_id, original)
+        units.append(
+            Unit(
+                unit_id=_unit_id(
+                    SOURCE_XUEQIU,
+                    post_id,
+                    UNIT_TYPE_MENTION,
+                    "%d\x1f%s\x1f%s" % (index, fact["symbol"], fact["excerpt"]),
+                ),
+                unit_type=UNIT_TYPE_MENTION,
+                source=SOURCE_XUEQIU,
+                raw_post_id=post_id,
+                payload=fact,
+            )
+        )
     for field_name in CONTENT_FIELD_NAMES:
         fact = _content_fact(field_name, original)
         if fact is None:
             continue
-        units.append(Unit(
-            unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_CONTENT, field_name),
-            unit_type=UNIT_TYPE_CONTENT,
-            source=SOURCE_XUEQIU,
-            raw_post_id=post_id,
-            payload=fact,
-        ))
+        units.append(
+            Unit(
+                unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_CONTENT, field_name),
+                unit_type=UNIT_TYPE_CONTENT,
+                source=SOURCE_XUEQIU,
+                raw_post_id=post_id,
+                payload=fact,
+            )
+        )
     return units
 
 
@@ -410,15 +426,17 @@ def lineage(units: Sequence[Unit]) -> dict[str, dict[str, Any]]:
         _required_string(unit.source, "source")
         if unit.unit_type not in UNIT_TYPES:
             raise ValueError("unknown unit_type in units (closed on failure)")
-        entry = result.setdefault(unit.raw_post_id, {
-            "unit_ids": [],
-            "symbols": [],
-            "source": unit.source,
-            "downstream": DOWNSTREAM_NOT_LINKED,
-        })
+        entry = result.setdefault(
+            unit.raw_post_id,
+            {
+                "unit_ids": [],
+                "symbols": [],
+                "source": unit.source,
+                "downstream": DOWNSTREAM_NOT_LINKED,
+            },
+        )
         if entry["source"] != unit.source:
-            raise ValueError(
-                "one raw_post_id cannot mix sources (closed on failure)")
+            raise ValueError("one raw_post_id cannot mix sources (closed on failure)")
         entry["unit_ids"].append(unit.unit_id)
         if unit.unit_type == UNIT_TYPE_MENTION:
             symbol = unit.payload.get("symbol")

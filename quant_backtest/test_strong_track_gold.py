@@ -11,6 +11,7 @@
 
 运行：cd quant_backtest && python -m pytest test_strong_track_gold.py -q
 """
+
 import os
 import sys
 import unittest
@@ -19,8 +20,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from strong_track import (  # noqa: E402
-    strong_ex, block_quorum, trend_bull, strong_verdict,
-    STRONG_EX_TH, MIN_BLOCK_MEMBERS)
+    strong_ex,
+    block_quorum,
+    trend_bull,
+    strong_verdict,
+    STRONG_EX_TH,
+    MIN_BLOCK_MEMBERS,
+)
 
 
 class TestStrongEx(unittest.TestCase):
@@ -139,6 +145,7 @@ class TestStrongVerdict(unittest.TestCase):
         # 超额 -5pp：weak 触发1 命中（>=-5），strong 不达标（<+10）
         ex = -5.0
         from weak_track_check import trig_ex_converge
+
         self.assertTrue(trig_ex_converge(ex))
         self.assertFalse(strong_ex(ex))
 

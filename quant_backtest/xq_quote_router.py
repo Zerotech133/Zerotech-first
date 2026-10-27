@@ -29,6 +29,7 @@ tools/xq_quote_alt_probe.py P0-4 实测，docs/2026-10-18_行情替代源探针
 requests trust_env 读环境变量——网络调用统一包 no_proxy_env() 临时清
 代理，退出逐键还原（不破坏雪球侧 xq_proxy 出口池语义）。
 """
+
 import os
 import re
 import sys
@@ -40,8 +41,14 @@ sys.path.insert(0, HERE)
 
 import xueqiu_common as X
 
-_PROXY_KEYS = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
-               "http_proxy", "https_proxy", "all_proxy")
+_PROXY_KEYS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+)
 
 
 class no_proxy_env:
@@ -53,8 +60,7 @@ class no_proxy_env:
     """
 
     def __enter__(self):
-        self._saved = {k: os.environ[k] for k in _PROXY_KEYS
-                       if k in os.environ}
+        self._saved = {k: os.environ[k] for k in _PROXY_KEYS if k in os.environ}
         for k in self._saved:
             os.environ.pop(k, None)
         self._saved_np = os.environ.get("NO_PROXY")
@@ -83,8 +89,9 @@ def is_index_symbol(sym: str) -> bool:
     if not m:
         return False
     pfx, code = m.group(1), m.group(2)
-    return ((pfx == "SH" and code.startswith(("000", "880", "899")))
-            or (pfx == "SZ" and code.startswith("399")))
+    return (pfx == "SH" and code.startswith(("000", "880", "899"))) or (
+        pfx == "SZ" and code.startswith("399")
+    )
 
 
 def mask_token(tok: str) -> str:
@@ -130,8 +137,9 @@ def setup_tushare(token: str | None = None, repo_root: str | None = None):
         raise RuntimeError("tushare 未安装: %s" % e) from e
     tok = (token or load_ts_token(repo_root)).strip()
     if not tok:
-        raise RuntimeError("tushare token 不可得"
-                           "（TUSHARE_TOKEN / .env.local XT_DATA_KEY）")
+        raise RuntimeError(
+            "tushare token 不可得（TUSHARE_TOKEN / .env.local XT_DATA_KEY）"
+        )
     tushare.set_token(tok)
     print("[router] tushare set_token ok (token=%s)" % mask_token(tok))
     return tushare, tushare.pro_api(tok)
@@ -141,7 +149,7 @@ def _f(v):
     """安全 float（''/None/NaN → None）。"""
     try:
         f = float(v)
-        return f if f == f else None               # NaN 防御
+        return f if f == f else None  # NaN 防御
     except (TypeError, ValueError):
         return None
 
@@ -155,8 +163,9 @@ def _ts_to_sym(tc: str, pairs: dict) -> str:
     return ""
 
 
-def snapshot_tushare(syms: list[str], ts_mod=None,
-                     batch: int = 50) -> tuple[list, list]:
+def snapshot_tushare(
+    syms: list[str], ts_mod=None, batch: int = 50
+) -> tuple[list, list]:
     """tushare realtime_quote 批量快照 → xq_quote_snap 行口径。
 
     Args:
@@ -171,7 +180,7 @@ def snapshot_tushare(syms: list[str], ts_mod=None,
     """
     rows: list[dict] = []
     errs: list[str] = []
-    pairs = {}                                    # ts_code → xq_symbol
+    pairs = {}  # ts_code → xq_symbol
     for s in syms:
         if is_index_symbol(s):
             errs.append("指数锚不入快照片: %s" % s)
@@ -186,10 +195,10 @@ def snapshot_tushare(syms: list[str], ts_mod=None,
     with no_proxy_env():
         cs = list(pairs)
         for i in range(0, len(cs), batch):
-            part = cs[i:i + batch]
+            part = cs[i : i + batch]
             try:
                 df = ts.realtime_quote(ts_code=",".join(part))
-            except Exception as e:                # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
                 errs.append("batch %d: %s" % (i, str(e)[:60]))
                 continue
             if df is None or df.empty:
@@ -203,25 +212,35 @@ def snapshot_tushare(syms: list[str], ts_mod=None,
                     continue
                 d = str(r.get("DATE") or "").strip()
                 t = str(r.get("TIME") or "").strip()
-                ymd = d if d.isdigit() and len(d) == 8 else \
-                    datetime.now().strftime("%Y%m%d")
-                ts_str = ("%s-%s-%s %s" % (ymd[:4], ymd[4:6], ymd[6:8],
-                                           t)) if t else \
-                    "%s-%s-%s 00:00:00" % (ymd[:4], ymd[4:6], ymd[6:8])
+                ymd = (
+                    d
+                    if d.isdigit() and len(d) == 8
+                    else datetime.now().strftime("%Y%m%d")
+                )
+                ts_str = (
+                    ("%s-%s-%s %s" % (ymd[:4], ymd[4:6], ymd[6:8], t))
+                    if t
+                    else "%s-%s-%s 00:00:00" % (ymd[:4], ymd[4:6], ymd[6:8])
+                )
                 vol = _f(r.get("VOLUME"))
                 amt = _f(r.get("AMOUNT"))
-                rows.append({
-                    "symbol": pairs[tc], "ts_code": tc,
-                    "current": round(price, 4),
-                    "percent": (round((price / pre - 1) * 100, 2)
-                                if pre else None),
-                    "chg": (round(price - pre, 2) if pre else None),
-                    "volume": int(vol) if vol is not None else None,
-                    "amount": amt,
-                    "pe": None, "pb": None,
-                    "market_capital": None, "float_market_capital": None,
-                    "trade_date": ymd, "timestamp": ts_str,
-                })
+                rows.append(
+                    {
+                        "symbol": pairs[tc],
+                        "ts_code": tc,
+                        "current": round(price, 4),
+                        "percent": (round((price / pre - 1) * 100, 2) if pre else None),
+                        "chg": (round(price - pre, 2) if pre else None),
+                        "volume": int(vol) if vol is not None else None,
+                        "amount": amt,
+                        "pe": None,
+                        "pb": None,
+                        "market_capital": None,
+                        "float_market_capital": None,
+                        "trade_date": ymd,
+                        "timestamp": ts_str,
+                    }
+                )
     covered = {r["ts_code"] for r in rows}
     miss = [c for c in pairs if c not in covered]
     if miss:
@@ -247,7 +266,7 @@ def snapshot_akshare(syms: list[str]) -> tuple[list, list]:
     with no_proxy_env():
         try:
             df = akshare.stock_zh_a_spot_em()
-        except Exception as e:                    # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             return [], errs + ["stock_zh_a_spot_em: %s" % str(e)[:80]]
     if df is None or df.empty:
         return [], errs + ["stock_zh_a_spot_em 返回空"]
@@ -265,19 +284,24 @@ def snapshot_akshare(syms: list[str]) -> tuple[list, list]:
         if price is None:
             continue
         got.add(tc)
-        vol = _f(r.get("成交量"))                 # 手 → 股
-        rows.append({
-            "symbol": want[tc], "ts_code": tc,
-            "current": round(price, 4),
-            "percent": _f(r.get("涨跌幅")), "chg": _f(r.get("涨跌额")),
-            "volume": int(vol * 100) if vol is not None else None,
-            "amount": _f(r.get("成交额")),        # 元
-            "pe": _f(r.get("市盈率-动态")), "pb": _f(r.get("市净率")),
-            "market_capital": _f(r.get("总市值")),
-            "float_market_capital": _f(r.get("流通市值")),
-            "trade_date": now.strftime("%Y%m%d"),
-            "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
-        })
+        vol = _f(r.get("成交量"))  # 手 → 股
+        rows.append(
+            {
+                "symbol": want[tc],
+                "ts_code": tc,
+                "current": round(price, 4),
+                "percent": _f(r.get("涨跌幅")),
+                "chg": _f(r.get("涨跌额")),
+                "volume": int(vol * 100) if vol is not None else None,
+                "amount": _f(r.get("成交额")),  # 元
+                "pe": _f(r.get("市盈率-动态")),
+                "pb": _f(r.get("市净率")),
+                "market_capital": _f(r.get("总市值")),
+                "float_market_capital": _f(r.get("流通市值")),
+                "trade_date": now.strftime("%Y%m%d"),
+                "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
     miss = [tc for tc in want if tc not in got]
     if miss:
         errs.append("未覆盖: %s" % ",".join(miss[:8]))
@@ -292,39 +316,43 @@ def fetch_snapshot(syms: list[str]) -> tuple[list, str, list]:
         "akshare"}；两源全挂 rows=[]、source=""、errs 聚合两源原因
         （调用方 fail-visible，绝不静默空）。
     """
-    errs: list[str] = ["指数锚不入快照片: %s" % s for s in syms
-                       if is_index_symbol(s)]
+    errs: list[str] = ["指数锚不入快照片: %s" % s for s in syms if is_index_symbol(s)]
     allowed = [s for s in syms if not is_index_symbol(s)]
     if not allowed:
         return [], "", errs or ["无请求码"]
     try:
         rows, e1 = snapshot_tushare(allowed)
         errs += ["tushare: %s" % x for x in e1]
-        safe_rows = [r for r in rows if r.get("symbol") in allowed
-                     and not is_index_symbol(r.get("symbol"))]
+        safe_rows = [
+            r
+            for r in rows
+            if r.get("symbol") in allowed and not is_index_symbol(r.get("symbol"))
+        ]
         if len(safe_rows) != len(rows):
             errs.append("tushare: 返回非请求股票或指数锚行已剔除")
         if safe_rows:
             return safe_rows, "tushare", errs
-    except Exception as e:                        # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         errs.append("tushare crash: %s" % str(e)[:80])
     try:
         rows, e2 = snapshot_akshare(allowed)
         errs += ["akshare: %s" % x for x in e2]
-        safe_rows = [r for r in rows if r.get("symbol") in allowed
-                     and not is_index_symbol(r.get("symbol"))]
+        safe_rows = [
+            r
+            for r in rows
+            if r.get("symbol") in allowed and not is_index_symbol(r.get("symbol"))
+        ]
         if len(safe_rows) != len(rows):
             errs.append("akshare: 返回非请求股票或指数锚行已剔除")
         if safe_rows:
             return safe_rows, "akshare", errs
-    except Exception as e:                        # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         errs.append("akshare crash: %s" % str(e)[:80])
     return [], "", errs
 
 
 # ── 日线（xq_kline_d 口径）───────────────────────────────────
-def daily_tushare(sym: str, days: int = 300, ts_mod=None,
-                  pro=None) -> tuple[list, str]:
+def daily_tushare(sym: str, days: int = 300, ts_mod=None, pro=None) -> tuple[list, str]:
     """单码日线：pro_bar(qfq) 优先，失败落 pro.daily（不复权）。
 
     Returns:
@@ -341,18 +369,17 @@ def daily_tushare(sym: str, days: int = 300, ts_mod=None,
     if ts_mod is None or pro is None:
         ts_mod, pro = setup_tushare()
     end = datetime.now().strftime("%Y%m%d")
-    start = (datetime.now() - timedelta(days=int(days * 1.7) + 30)
-             ).strftime("%Y%m%d")
+    start = (datetime.now() - timedelta(days=int(days * 1.7) + 30)).strftime("%Y%m%d")
     adj, df = "qfq", None
     with no_proxy_env():
         try:
-            df = ts_mod.pro_bar(ts_code=ts_code, api=pro, adj="qfq",
-                                start_date=start, end_date=end)
-        except Exception:                         # noqa: BLE001
+            df = ts_mod.pro_bar(
+                ts_code=ts_code, api=pro, adj="qfq", start_date=start, end_date=end
+            )
+        except Exception:  # noqa: BLE001
             df = None
-        if df is None or df.empty:                # qfq 不可得 → 不复权
-            df = pro.daily(ts_code=ts_code, start_date=start,
-                           end_date=end)
+        if df is None or df.empty:  # qfq 不可得 → 不复权
+            df = pro.daily(ts_code=ts_code, start_date=start, end_date=end)
             adj = "raw"
     if df is None or df.empty:
         raise RuntimeError("tushare daily 空返回")
@@ -363,18 +390,23 @@ def daily_tushare(sym: str, days: int = 300, ts_mod=None,
         if not (td.isdigit() and len(td) == 8):
             continue
         vol, amt = _f(r.get("vol")), _f(r.get("amount"))
-        rows.append({
-            "symbol": sym, "ts_code": ts_code,
-            "timestamp": "%s-%s-%s 00:00:00"
-                         % (td[:4], td[4:6], td[6:8]),
-            "volume": int(vol * 100) if vol is not None else None,
-            "open": _f(r.get("open")), "high": _f(r.get("high")),
-            "low": _f(r.get("low")), "close": _f(r.get("close")),
-            "chg": _f(r.get("change")), "percent": _f(r.get("pct_chg")),
-            "turnoverrate": None,
-            "amount": amt * 1000 if amt is not None else None,
-            "trade_date": td,
-        })
+        rows.append(
+            {
+                "symbol": sym,
+                "ts_code": ts_code,
+                "timestamp": "%s-%s-%s 00:00:00" % (td[:4], td[4:6], td[6:8]),
+                "volume": int(vol * 100) if vol is not None else None,
+                "open": _f(r.get("open")),
+                "high": _f(r.get("high")),
+                "low": _f(r.get("low")),
+                "close": _f(r.get("close")),
+                "chg": _f(r.get("change")),
+                "percent": _f(r.get("pct_chg")),
+                "turnoverrate": None,
+                "amount": amt * 1000 if amt is not None else None,
+                "trade_date": td,
+            }
+        )
     if not rows:
         raise RuntimeError("tushare daily 行解析为空")
     return rows, adj
@@ -404,33 +436,46 @@ def daily_akshare(sym: str, days: int = 300) -> list:
         if len(d) != 10:
             continue
         close = _f(r.get("close"))
-        rows.append({
-            "symbol": sym, "ts_code": X.to_ts_code(sym),
-            "timestamp": "%s 00:00:00" % d,
-            "volume": (int(_f(r.get("volume")))
-                       if _f(r.get("volume")) is not None else None),
-            "open": _f(r.get("open")), "high": _f(r.get("high")),
-            "low": _f(r.get("low")), "close": close,
-            "chg": (round(close - prev, 2)
-                    if (prev and close is not None) else None),
-            "percent": (round((close / prev - 1) * 100, 2)
-                        if (prev and close) else None),
-            "turnoverrate": None,
-            "amount": _f(r.get("amount")),
-            "trade_date": d.replace("-", ""),
-        })
+        rows.append(
+            {
+                "symbol": sym,
+                "ts_code": X.to_ts_code(sym),
+                "timestamp": "%s 00:00:00" % d,
+                "volume": (
+                    int(_f(r.get("volume")))
+                    if _f(r.get("volume")) is not None
+                    else None
+                ),
+                "open": _f(r.get("open")),
+                "high": _f(r.get("high")),
+                "low": _f(r.get("low")),
+                "close": close,
+                "chg": (
+                    round(close - prev, 2) if (prev and close is not None) else None
+                ),
+                "percent": (
+                    round((close / prev - 1) * 100, 2) if (prev and close) else None
+                ),
+                "turnoverrate": None,
+                "amount": _f(r.get("amount")),
+                "trade_date": d.replace("-", ""),
+            }
+        )
         prev = close
     if not rows:
         raise RuntimeError("akshare daily 行解析为空")
     return rows
 
 
-def _filter_daily_rows(sym: str, rows: list, source: str,
-                       errs: list[str]) -> list:
+def _filter_daily_rows(sym: str, rows: list, source: str, errs: list[str]) -> list:
     """只保留请求股票的日线行；污染或全空均留可诊断错误。"""
-    safe_rows = [row for row in rows if isinstance(row, dict)
-                 and row.get("symbol") == sym
-                 and not is_index_symbol(row.get("symbol"))]
+    safe_rows = [
+        row
+        for row in rows
+        if isinstance(row, dict)
+        and row.get("symbol") == sym
+        and not is_index_symbol(row.get("symbol"))
+    ]
     if len(safe_rows) != len(rows):
         errs.append("%s %s: 返回非请求股票或指数锚行已剔除" % (sym, source))
     if not safe_rows:
@@ -465,14 +510,14 @@ def fetch_daily(syms: list[str], days: int = 300) -> tuple[dict, str, list]:
             by_sym[sym] = safe_rows
             srcs.append("tushare_%s" % adj)
             continue
-        except Exception as e:                    # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             errs.append("%s tushare: %s" % (sym, str(e)[:60]))
         try:
             rows = daily_akshare(sym, days)
             safe_rows = _filter_daily_rows(sym, rows, "akshare", errs)
             by_sym[sym] = safe_rows
             srcs.append("akshare_qfq")
-        except Exception as e:                    # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             errs.append("%s akshare: %s" % (sym, str(e)[:60]))
     if srcs:
         cnt: dict = {}

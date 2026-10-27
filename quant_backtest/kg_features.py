@@ -17,6 +17,7 @@
   python kg_features.py            # 全量计算并落盘
   python kg_features.py --top 10   # 打印各特征 Top N
 """
+
 import datamart as dm
 import argparse
 import os
@@ -33,29 +34,32 @@ OUT = os.path.join(HERE, "data", "features", "kg_features.parquet")
 
 def compute():
     from kg_client import KgClient
+
     cli = KgClient()
     feats = {}
     q = {
-        "deg_total": (
-            "MATCH (s:Security)-[r]-() "
-            "RETURN s.ts_code AS c, count(r) AS v"),
+        "deg_total": ("MATCH (s:Security)-[r]-() RETURN s.ts_code AS c, count(r) AS v"),
         "deg_product": (
             "MATCH (s:Security)-[:OF_COMPANY]->(:Company)"
             "-[:PRODUCES]->(p:Product) "
-            "RETURN s.ts_code AS c, count(DISTINCT p) AS v"),
+            "RETURN s.ts_code AS c, count(DISTINCT p) AS v"
+        ),
         "peer_industry": (
             "MATCH (s:Security)-[:INDUSTRY_OF]->(i:Industry)"
             "<-[:INDUSTRY_OF]-(peer:Security) "
-            "RETURN s.ts_code AS c, count(DISTINCT peer) AS v"),
+            "RETURN s.ts_code AS c, count(DISTINCT peer) AS v"
+        ),
         "peer_sw_l1": (
             "MATCH (s:Security)-[e:SW_L1_OF]->(k:SwL1Industry)"
             "<-[e2:SW_L1_OF]-(peer:Security) "
             "WHERE e.validEnd = '9999-12-31' AND e2.validEnd = '9999-12-31' "
-            "RETURN s.ts_code AS c, count(DISTINCT peer) AS v"),
+            "RETURN s.ts_code AS c, count(DISTINCT peer) AS v"
+        ),
         "peer_region": (
             "MATCH (s:Security)-[:AREA_OF]->(a:Region)"
             "<-[:AREA_OF]-(peer:Security) "
-            "RETURN s.ts_code AS c, count(DISTINCT peer) AS v"),
+            "RETURN s.ts_code AS c, count(DISTINCT peer) AS v"
+        ),
         "person_shared": (
             # 在任兼任（G5 入历史离任边后须过滤 validEnd，
             # 否则已离任的跨公司任职会虚增兼任网络）
@@ -63,18 +67,21 @@ def compute():
             "<-[s1:SERVES_AS]-(p:Person)-[s2:SERVES_AS]->(c2:Company) "
             "WHERE c1 <> c2 AND s1.validEnd = '9999-12-31' "
             "AND s2.validEnd = '9999-12-31' "
-            "RETURN s.ts_code AS c, count(DISTINCT c2) AS v"),
+            "RETURN s.ts_code AS c, count(DISTINCT c2) AS v"
+        ),
         "peer_shared_prod": (
             "MATCH (s:Security)-[:OF_COMPANY]->(c1:Company)"
             "-[:PRODUCES]->(p:Product)<-[:PRODUCES]-(c2:Company) "
             "WHERE c1 <> c2 "
-            "RETURN s.ts_code AS c, count(DISTINCT c2) AS v"),
+            "RETURN s.ts_code AS c, count(DISTINCT c2) AS v"
+        ),
         "n_persons": (
             # 在任高管数（同上 validEnd 过滤）
             "MATCH (s:Security)-[:OF_COMPANY]->(:Company)"
             "<-[sv:SERVES_AS]-(p:Person) "
             "WHERE sv.validEnd = '9999-12-31' "
-            "RETURN s.ts_code AS c, count(DISTINCT p) AS v"),
+            "RETURN s.ts_code AS c, count(DISTINCT p) AS v"
+        ),
     }
     with cli._session() as s:
         for name, cy in q.items():
@@ -107,7 +114,8 @@ def main():
     os.makedirs(hist_dir, exist_ok=True)
     snap = os.path.join(
         hist_dir,
-        "kgf_%s.parquet" % str(df["computed_at"].iloc[0])[:10].replace("-", ""))
+        "kgf_%s.parquet" % str(df["computed_at"].iloc[0])[:10].replace("-", ""),
+    )
     df.to_parquet(snap, index=False)  # 同日重跑幂等覆盖
     olds = sorted(p for p in os.listdir(hist_dir) if p.startswith("kgf_"))
     for p in olds[:-400]:
@@ -117,7 +125,9 @@ def main():
             pass
 
     if args.top:
-        for col in [c for c in df.columns if c.startswith(("deg", "peer", "person", "n_"))]:
+        for col in [
+            c for c in df.columns if c.startswith(("deg", "peer", "person", "n_"))
+        ]:
             top = df.nlargest(args.top, col)[["ts_code", col]]
             basic = dm.read("ts_stock_basic", fields=["ts_code", "name"])
             top = top.merge(basic, on="ts_code", how="left")
@@ -127,4 +137,5 @@ def main():
 
 if __name__ == "__main__":
     from linreg import run_with_lineage
+
     run_with_lineage("kg_daily_sync", "kg_features", main)

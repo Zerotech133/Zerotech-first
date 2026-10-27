@@ -26,6 +26,7 @@
   python sector_effect.py --scan --top 5    # 附带打印前 5 摘要
   python sector_effect.py --sector 黄金概念  # 单板块调试
 """
+
 import argparse
 import glob
 import json
@@ -45,11 +46,11 @@ ASHARE = os.path.join(HERE, "data", "ashare")
 REPORTS = os.path.join(HERE, "reports")
 OUT_JSON = os.path.join(REPORTS, "sector_effect.json")
 
-RPS_N = 50                 # 板块 RPS 主周期
-LEADER_TOPN = 3            # 龙头取前 N
-STRONG_RATIO = 1.5         # 龙头强度阈值: 前3均涨幅 ≥ 板块涨幅 × 1.5
-MIN_MEMBERS = 5            # 成分股不足该数跳过共性/龙头
-TAIL_BARS = 30             # 个股只需尾部 30 根（MA20+斜率5 / chg5）
+RPS_N = 50  # 板块 RPS 主周期
+LEADER_TOPN = 3  # 龙头取前 N
+STRONG_RATIO = 1.5  # 龙头强度阈值: 前3均涨幅 ≥ 板块涨幅 × 1.5
+MIN_MEMBERS = 5  # 成分股不足该数跳过共性/龙头
+TAIL_BARS = 30  # 个股只需尾部 30 根（MA20+斜率5 / chg5）
 # 排除的板块 seg: 统计类与地区类无板块效应意义
 EXCLUDE_SEG = {"stat", "region"}
 
@@ -61,8 +62,9 @@ def _read_parts(tbl, columns=None):
     if not parts:
         return pd.DataFrame()
     try:
-        return pd.concat([pd.read_parquet(p, columns=columns)
-                          for p in parts], ignore_index=True)
+        return pd.concat(
+            [pd.read_parquet(p, columns=columns) for p in parts], ignore_index=True
+        )
     except Exception:
         return pd.DataFrame()
 
@@ -81,13 +83,11 @@ def load_universe():
 
 def load_index_close():
     """全部板块指数日线 → {code: close数组}（按日期升序）。"""
-    df = _read_parts("tdx_sector_daily",
-                     columns=["code", "trade_date", "close"])
+    df = _read_parts("tdx_sector_daily", columns=["code", "trade_date", "close"])
     if df.empty:
         return {}, ""
     df = df.dropna(subset=["close"]).sort_values(["code", "trade_date"])
-    out = {c: g["close"].to_numpy(dtype=float)
-           for c, g in df.groupby("code")}
+    out = {c: g["close"].to_numpy(dtype=float) for c, g in df.groupby("code")}
     latest = str(df["trade_date"].astype(str).max())
     return out, latest
 
@@ -97,10 +97,8 @@ def load_members():
     mem = _read_parts("tdx_sector_member", columns=["block_name", "con_code"])
     if mem.empty:
         return {}
-    mem = mem.dropna(subset=["con_code"]).drop_duplicates(
-        ["block_name", "con_code"])
-    return {b: g["con_code"].astype(str).tolist()
-            for b, g in mem.groupby("block_name")}
+    mem = mem.dropna(subset=["con_code"]).drop_duplicates(["block_name", "con_code"])
+    return {b: g["con_code"].astype(str).tolist() for b, g in mem.groupby("block_name")}
 
 
 def load_stock_closes(codes):
@@ -140,12 +138,12 @@ def calc_cohesion(closes):
     for c in closes.values():
         a = np.asarray(c, dtype=float)
         if len(a) < 21:
-            continue                     # 数据不足不计入分母
+            continue  # 数据不足不计入分母
         valid += 1
         ma5 = a[-5:].mean()
         ma10 = a[-10:].mean()
         ma20 = a[-20:].mean()
-        if len(a) >= 26:                 # 斜率需要 5 根前的 MA20
+        if len(a) >= 26:  # 斜率需要 5 根前的 MA20
             ma20_prev = a[-25:-5].mean()
             slope_up = ma20 > ma20_prev
         else:
@@ -170,13 +168,20 @@ def calc_leaders(chg5: pd.Series, idx_chg5: float, topn=LEADER_TOPN):
     s = chg5.dropna().sort_values(ascending=False)
     if s.empty:
         return [], None, None
-    leaders = [{"code": c, "chg5": round(float(v) * 100, 2),
-                "excess": round((float(v) - idx_chg5) * 100, 2)
-                if idx_chg5 is not None else None}
-               for c, v in s.head(topn).items()]
+    leaders = [
+        {
+            "code": c,
+            "chg5": round(float(v) * 100, 2),
+            "excess": round((float(v) - idx_chg5) * 100, 2)
+            if idx_chg5 is not None
+            else None,
+        }
+        for c, v in s.head(topn).items()
+    ]
     top = s.head(topn)
-    strength = round(float((top - idx_chg5).mean()) * 100, 2) \
-        if idx_chg5 is not None else None
+    strength = (
+        round(float((top - idx_chg5).mean()) * 100, 2) if idx_chg5 is not None else None
+    )
     strong = None
     if idx_chg5 is not None:
         strong = bool(idx_chg5 > 0 and top.mean() >= STRONG_RATIO * idx_chg5)
@@ -194,9 +199,16 @@ def _chg(close_arr, n):
 # ── 板块级组装 ─────────────────────────────────────────────
 def scan_one(name, idx_code, idx_closes, members):
     """单板块 → 指标 dict；任何一步失败返回带 error 的 dict（不抛出）。"""
-    row = {"sector": name, "index_code": idx_code, "rps50": None,
-           "cohesion": None, "ma_align": None,
-           "leaders": [], "leader_strength": None, "leader_strong": None}
+    row = {
+        "sector": name,
+        "index_code": idx_code,
+        "rps50": None,
+        "cohesion": None,
+        "ma_align": None,
+        "leaders": [],
+        "leader_strength": None,
+        "leader_strong": None,
+    }
     try:
         closes = idx_closes.get(idx_code)
         idx_chg5 = _chg(closes, 5) if closes is not None else None
@@ -208,9 +220,10 @@ def scan_one(name, idx_code, idx_closes, members):
         row["n_members"] = len(stock_closes)
         row["cohesion"], row["ma_align"] = calc_cohesion(stock_closes)
         chg = pd.Series({c: _chg(a, 5) for c, a in stock_closes.items()})
-        row["leaders"], row["leader_strength"], row["leader_strong"] = \
-            calc_leaders(chg, idx_chg5)
-    except Exception as ex:                  # 单板块失败不阻断全量
+        row["leaders"], row["leader_strength"], row["leader_strong"] = calc_leaders(
+            chg, idx_chg5
+        )
+    except Exception as ex:  # 单板块失败不阻断全量
         row["error"] = str(ex)[:80]
     return row
 
@@ -229,8 +242,9 @@ def scan(top=None):
     # 成分映射: block_name → def 名称同名即认（member 无行业 881 成分）
     members = load_members()
 
-    chg50 = pd.Series({c: _chg(a, RPS_N)
-                       for c, a in idx_closes.items() if c in universe})
+    chg50 = pd.Series(
+        {c: _chg(a, RPS_N) for c, a in idx_closes.items() if c in universe}
+    )
     rps = calc_rps(chg50)
 
     sectors = []
@@ -239,35 +253,47 @@ def scan(top=None):
         v = rps.get(code)
         row["rps50"] = None if pd.isna(v) else float(v)
         sectors.append(row)
-    sectors.sort(key=lambda r: (r["rps50"] is None,
-                                -(r["rps50"] or 0)))
-    snap = {"ts": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "data_day": latest, "n_sectors": len(sectors),
-            "n_with_members": sum(1 for r in sectors
-                                  if r.get("n_members")),
-            "sectors": sectors}
+    sectors.sort(key=lambda r: (r["rps50"] is None, -(r["rps50"] or 0)))
+    snap = {
+        "ts": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "data_day": latest,
+        "n_sectors": len(sectors),
+        "n_with_members": sum(1 for r in sectors if r.get("n_members")),
+        "sectors": sectors,
+    }
     os.makedirs(REPORTS, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=REPORTS, suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(snap, f, ensure_ascii=False)
-    os.replace(tmp, OUT_JSON)                # 原子替换，防半截文件
-    print("SCAN %d sectors (%d with members) -> %s"
-          % (len(sectors), snap["n_with_members"], OUT_JSON))
+    os.replace(tmp, OUT_JSON)  # 原子替换，防半截文件
+    print(
+        "SCAN %d sectors (%d with members) -> %s"
+        % (len(sectors), snap["n_with_members"], OUT_JSON)
+    )
 
     if top:
         for i, r in enumerate(sectors[:top], 1):
-            ld = " ".join("%s%+.1f%%" % (l["code"], l["chg5"])
-                          for l in (r.get("leaders") or []))
-            print("%2d %-8s %s rps50=%s cohesion=%s align=%s 龙头[%s]"
-                  " 强度=%s" % (
-                      i, r["sector"], r["index_code"],
-                      ("%0.f" % r["rps50"]) if r["rps50"] is not None
-                      else "—",
-                      ("%d%%" % round(r["cohesion"] * 100))
-                      if r["cohesion"] is not None else "—",
-                      ("%d%%" % round(r["ma_align"] * 100))
-                      if r["ma_align"] is not None else "—",
-                      ld or "—", r["leader_strength"]))
+            ld = " ".join(
+                "%s%+.1f%%" % (l["code"], l["chg5"]) for l in (r.get("leaders") or [])
+            )
+            print(
+                "%2d %-8s %s rps50=%s cohesion=%s align=%s 龙头[%s]"
+                " 强度=%s"
+                % (
+                    i,
+                    r["sector"],
+                    r["index_code"],
+                    ("%0.f" % r["rps50"]) if r["rps50"] is not None else "—",
+                    ("%d%%" % round(r["cohesion"] * 100))
+                    if r["cohesion"] is not None
+                    else "—",
+                    ("%d%%" % round(r["ma_align"] * 100))
+                    if r["ma_align"] is not None
+                    else "—",
+                    ld or "—",
+                    r["leader_strength"],
+                )
+            )
     return snap
 
 
@@ -276,8 +302,7 @@ def main():
     ap = argparse.ArgumentParser(description="板块效应层（影子模式）")
     ap.add_argument("--scan", action="store_true", help="全板块扫描")
     ap.add_argument("--sector", help="单板块调试（打印明细）")
-    ap.add_argument("--top", type=int, default=0,
-                    help="配合 --scan 打印前 N 摘要")
+    ap.add_argument("--top", type=int, default=0, help="配合 --scan 打印前 N 摘要")
     a = ap.parse_args()
     if a.scan:
         scan(top=a.top)
@@ -289,12 +314,12 @@ def main():
         members = load_members()
         code = name2code.get(a.sector)
         if code is None:
-            print("板块「%s」不在指数全集（共 %d 个）"
-                  % (a.sector, len(universe)))
+            print("板块「%s」不在指数全集（共 %d 个）" % (a.sector, len(universe)))
             return 1
         row = scan_one(a.sector, code, idx_closes, members)
-        chg50 = pd.Series({c: _chg(x, RPS_N)
-                           for c, x in idx_closes.items() if c in universe})
+        chg50 = pd.Series(
+            {c: _chg(x, RPS_N) for c, x in idx_closes.items() if c in universe}
+        )
         v = calc_rps(chg50).get(code)
         row["rps50"] = None if pd.isna(v) else float(v)
         print(json.dumps(row, ensure_ascii=False, indent=2))

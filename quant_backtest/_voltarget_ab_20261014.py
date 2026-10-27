@@ -12,6 +12,7 @@
 - vol_target：默认参数 target=0.15 / lookback=20 / floor=0.25 / cap=1.0；
 - PF：trade_list 逐笔（缩放后 pnl），盈利笔合计 / 亏损笔合计绝对值。
 """
+
 import json
 import os
 import sys
@@ -21,7 +22,7 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import backtest          # noqa: E402
+import backtest  # noqa: E402
 import strategies as strat  # noqa: E402
 
 SYMBOLS = ["600519.SH", "000001.SH", "600036.SH", "000858.SZ", "601318.SH"]
@@ -30,12 +31,11 @@ STRAT = "trend_follow"
 
 def load_hfq(symbol):
     """ashare parquet → 后复权 df（pre_close 链乘口径）。"""
-    p = os.path.join(HERE, "data", "ashare",
-                     symbol.replace(".", "_") + ".parquet")
+    p = os.path.join(HERE, "data", "ashare", symbol.replace(".", "_") + ".parquet")
     df = pd.read_parquet(p).sort_values("trade_date")
     close = pd.to_numeric(df["close"], errors="coerce")
     pre = pd.to_numeric(df["pre_close"], errors="coerce")
-    r = (close / pre).fillna(1.0).clip(0.05, 20.0)   # _chain_ratio 同守卫
+    r = (close / pre).fillna(1.0).clip(0.05, 20.0)  # _chain_ratio 同守卫
     hfq = close.iloc[0] * r.cumprod()
     idx = pd.to_datetime(df["trade_date"].astype(str))
     return pd.DataFrame({"close": hfq.values}, index=idx)
@@ -54,9 +54,11 @@ def main():
     vt_off = dict(vt, enabled=False)
     vt_on = dict(vt, enabled=True)
     tc = backtest.load_trade_config("CN", cfg=cfg)
-    params = dict(json.load(open(os.path.join(HERE, "config.json"),
-                                 encoding="utf-8"))["strategies"]
-                  .get(STRAT, {}))
+    params = dict(
+        json.load(open(os.path.join(HERE, "config.json"), encoding="utf-8"))[
+            "strategies"
+        ].get(STRAT, {})
+    )
     rows = []
     for sym in SYMBOLS:
         try:
@@ -70,19 +72,31 @@ def main():
         sig = strat.REGISTRY[STRAT](df, params)
         m0 = backtest.run(df, sig, **tc, vol_target=vt_off)
         m1 = backtest.run(df, sig, **tc, vol_target=vt_on)
-        rows.append({
-            "symbol": sym, "bars": len(df),
-            "off_ret": m0["total_return"], "on_ret": m1["total_return"],
-            "off_pf": profit_factor(m0), "on_pf": profit_factor(m1),
-            "off_dd": m0["max_drawdown"], "on_dd": m1["max_drawdown"],
-            "off_trades": m0["trades"], "on_trades": m1["trades"],
-            "off_sharpe": m0["sharpe"], "on_sharpe": m1["sharpe"],
-        })
+        rows.append(
+            {
+                "symbol": sym,
+                "bars": len(df),
+                "off_ret": m0["total_return"],
+                "on_ret": m1["total_return"],
+                "off_pf": profit_factor(m0),
+                "on_pf": profit_factor(m1),
+                "off_dd": m0["max_drawdown"],
+                "on_dd": m1["max_drawdown"],
+                "off_trades": m0["trades"],
+                "on_trades": m1["trades"],
+                "off_sharpe": m0["sharpe"],
+                "on_sharpe": m1["sharpe"],
+            }
+        )
     print(json.dumps(rows, ensure_ascii=False, indent=1))
     out = os.path.join(HERE, "_voltarget_ab_result_20261014.json")
     with open(out, "w", encoding="utf-8") as f:
-        json.dump({"strat": STRAT, "cost": tc, "vt": vt, "rows": rows},
-                  f, ensure_ascii=False, indent=1)
+        json.dump(
+            {"strat": STRAT, "cost": tc, "vt": vt, "rows": rows},
+            f,
+            ensure_ascii=False,
+            indent=1,
+        )
     print("WROTE", out)
 
 

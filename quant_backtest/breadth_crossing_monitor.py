@@ -33,6 +33,7 @@
   ... --dry            # 只推进状态机+落事件，不推飞书不写状态
   ... --seed           # 强制播种模式（状态丢失后重建用）
 """
+
 import argparse
 import json
 import os
@@ -48,9 +49,9 @@ STATE_FP = os.path.join(HERE, "data", "breadth_cross_state.json")
 EVENTS_FP = os.path.join(HERE, "data", "breadth_cross_events.jsonl")
 LOG = "C:/Temp/breadth_cross_monitor.log"
 
-CROSS_TH = 0.45      # 穿越确认线（观察带下限，W8 评审前观察口径）
-FAKE_TH = 0.40       # 假穿越撤回线
-CONFIRM_DAYS = 5     # 假穿越观察窗（交易日）
+CROSS_TH = 0.45  # 穿越确认线（观察带下限，W8 评审前观察口径）
+FAKE_TH = 0.40  # 假穿越撤回线
+CONFIRM_DAYS = 5  # 假穿越观察窗（交易日）
 
 
 def _log(msg):
@@ -77,7 +78,7 @@ def load_series(fp=SERIES_FP):
         try:
             out.append((str(a), float(b)))
         except (TypeError, ValueError):
-            continue                     # null/坏值锚跳过
+            continue  # null/坏值锚跳过
     if not out:
         raise ValueError("series no valid anchors")
     return out
@@ -108,36 +109,56 @@ def save_state(state, fp=STATE_FP):
 
 
 def _event(kind, date, detail):
-    return {"kind": kind, "date": date, "detail": detail,
-            "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    return {
+        "kind": kind,
+        "date": date,
+        "detail": detail,
+        "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
 
 
 def _alert_text(ev):
     """三类事件 → 飞书文本（附复盘出处与行动建议，告警可自解释）。"""
     k, d, det = ev["kind"], ev["date"], ev["detail"]
     if k == "CROSS_UP":
-        return ("\U0001F7E2 宽度穿越提醒 · %s\n"
-                "宽度 %s 上穿 %.0f%%（%s）\n"
-                "行动: 复盘口径下可开始评估抄底/入场信号；注意假穿越条款——"
-                "若 %d 个交易日内跌回 %.0f%% 以下则撤回，届时另行告警。\n"
-                "出处: 历史复盘 2026-10-14（regime_timeline 同款状态后20日"
-                "均值+6.4%%，穿越确认优先于抄底冲动）。"
-                % (d, det["breadth_txt"], det["th"] * 100, det["prev_txt"],
-                   CONFIRM_DAYS, FAKE_TH * 100))
+        return (
+            "\U0001f7e2 宽度穿越提醒 · %s\n"
+            "宽度 %s 上穿 %.0f%%（%s）\n"
+            "行动: 复盘口径下可开始评估抄底/入场信号；注意假穿越条款——"
+            "若 %d 个交易日内跌回 %.0f%% 以下则撤回，届时另行告警。\n"
+            "出处: 历史复盘 2026-10-14（regime_timeline 同款状态后20日"
+            "均值+6.4%%，穿越确认优先于抄底冲动）。"
+            % (
+                d,
+                det["breadth_txt"],
+                det["th"] * 100,
+                det["prev_txt"],
+                CONFIRM_DAYS,
+                FAKE_TH * 100,
+            )
+        )
     if k == "FAKE_EXIT":
-        return ("\U0001F534 假穿越撤回提醒 · %s\n"
-                "%s 穿越后第 %d 个交易日跌回 %.0f%% 以下（%s）\n"
-                "行动: 撤回入场评估，回到等待状态；假穿越防护条款触发，"
-                "与 2026-10-14 复盘「5日跌回<40%%撤回」一致。"
-                % (d, det["cross_date"], det["days_since"],
-                   FAKE_TH * 100, det["breadth_txt"]))
+        return (
+            "\U0001f534 假穿越撤回提醒 · %s\n"
+            "%s 穿越后第 %d 个交易日跌回 %.0f%% 以下（%s）\n"
+            "行动: 撤回入场评估，回到等待状态；假穿越防护条款触发，"
+            "与 2026-10-14 复盘「5日跌回<40%%撤回」一致。"
+            % (
+                d,
+                det["cross_date"],
+                det["days_since"],
+                FAKE_TH * 100,
+                det["breadth_txt"],
+            )
+        )
     if k == "CONFIRM_HOLD":
-        return ("\U0001F535 穿越确认保持 · %s\n"
-                "%s 穿越后满 %d 个交易日未跌回 %.0f%% 以下（%s）\n"
-                "行动: 假穿越防护通过，穿越确认成立；按复盘口径维持"
-                "信号驱动入场，宽度仅作环境背景。"
-                % (d, det["cross_date"], CONFIRM_DAYS,
-                   FAKE_TH * 100, det["breadth_txt"]))
+        return (
+            "\U0001f535 穿越确认保持 · %s\n"
+            "%s 穿越后满 %d 个交易日未跌回 %.0f%% 以下（%s）\n"
+            "行动: 假穿越防护通过，穿越确认成立；按复盘口径维持"
+            "信号驱动入场，宽度仅作环境背景。"
+            % (d, det["cross_date"], CONFIRM_DAYS, FAKE_TH * 100, det["breadth_txt"])
+        )
     return json.dumps(ev, ensure_ascii=False)
 
 
@@ -161,26 +182,52 @@ def advance(pairs, state=None, prev_br=None, seed=False):
             pending = dict(pending)
             pending["days_since"] = int(pending.get("days_since", 0)) + 1
             if br < FAKE_TH:
-                events.append(_event("FAKE_EXIT", date, {
-                    "cross_date": pending["cross_date"],
-                    "days_since": pending["days_since"],
-                    "breadth_txt": "%.2f%%" % (br * 100)}))
+                events.append(
+                    _event(
+                        "FAKE_EXIT",
+                        date,
+                        {
+                            "cross_date": pending["cross_date"],
+                            "days_since": pending["days_since"],
+                            "breadth_txt": "%.2f%%" % (br * 100),
+                        },
+                    )
+                )
                 pending = None
                 armed = True
             elif pending["days_since"] >= CONFIRM_DAYS:
-                events.append(_event("CONFIRM_HOLD", date, {
-                    "cross_date": pending["cross_date"],
-                    "breadth_txt": "%.2f%%" % (br * 100)}))
+                events.append(
+                    _event(
+                        "CONFIRM_HOLD",
+                        date,
+                        {
+                            "cross_date": pending["cross_date"],
+                            "breadth_txt": "%.2f%%" % (br * 100),
+                        },
+                    )
+                )
                 pending = None
         if pending is None and prev_br is not None and br < FAKE_TH:
-            armed = True                        # 深度回落重新武装
+            armed = True  # 深度回落重新武装
         # 仅武装且无观察态时判新上穿（观察窗内回落再上穿不重置假穿越
         # 时钟、不重复告警；假穿越撤回/深度回落后允许再触发）
-        if (armed and pending is None and prev_br is not None
-                and prev_br < CROSS_TH <= br):
-            events.append(_event("CROSS_UP", date, {
-                "prev_txt": "%.2f%%" % (prev_br * 100),
-                "breadth_txt": "%.2f%%" % (br * 100), "th": CROSS_TH}))
+        if (
+            armed
+            and pending is None
+            and prev_br is not None
+            and prev_br < CROSS_TH <= br
+        ):
+            events.append(
+                _event(
+                    "CROSS_UP",
+                    date,
+                    {
+                        "prev_txt": "%.2f%%" % (prev_br * 100),
+                        "breadth_txt": "%.2f%%" % (br * 100),
+                        "th": CROSS_TH,
+                    },
+                )
+            )
             pending = {"cross_date": date, "days_since": 0}
             armed = False
         prev_br = br
@@ -202,8 +249,7 @@ def _append_events(events, fp=EVENTS_FP):
         os.makedirs(os.path.dirname(fp), exist_ok=True)
         fd = os.open(fp, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
         try:
-            payload = "".join(
-                json.dumps(e, ensure_ascii=False) + "\n" for e in events)
+            payload = "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events)
             os.write(fd, payload.encode("utf-8"))
             os.fsync(fd)
         finally:
@@ -214,20 +260,28 @@ def _append_events(events, fp=EVENTS_FP):
         return 0
 
 
-def monitor_run(series_fp=SERIES_FP, state_fp=STATE_FP, events_fp=EVENTS_FP,
-                send=True, dry=False, seed=False):
+def monitor_run(
+    series_fp=SERIES_FP,
+    state_fp=STATE_FP,
+    events_fp=EVENTS_FP,
+    send=True,
+    dry=False,
+    seed=False,
+):
     """日检入口（挂载点调用）：返回本次产生的事件列表。自身不抛。"""
     try:
         series = load_series(series_fp)
         st = load_state(state_fp)
         if st is None or seed:
             # 播种：last_date 置最新锚，不回放历史不告警
-            st = {"last_date": series[-1][0], "pending": None,
-                  "seeded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            st = {
+                "last_date": series[-1][0],
+                "pending": None,
+                "seeded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
             if not dry:
                 save_state(st, state_fp)
-            _log("seed last_date=%s%s" % (st["last_date"],
-                                          " (forced)" if seed else ""))
+            _log("seed last_date=%s%s" % (st["last_date"], " (forced)" if seed else ""))
             return []
         last = str(st.get("last_date"))
         pending_pairs = [(d, b) for d, b in series if str(d) > last]
@@ -244,17 +298,18 @@ def monitor_run(series_fp=SERIES_FP, state_fp=STATE_FP, events_fp=EVENTS_FP,
             if send and not dry:
                 try:
                     from guard_alert import alert_once
-                    ok, _ = alert_once("breadth_%s_%s" % (ev["kind"],
-                                                          ev["date"]),
-                                       text)
+
+                    ok, _ = alert_once("breadth_%s_%s" % (ev["kind"], ev["date"]), text)
                     _log("alert %s %s sent=%s" % (ev["kind"], ev["date"], ok))
                 except Exception as e:
                     _log("alert error %s: %s" % (ev["kind"], str(e)[:120]))
             else:
                 _log("dry/skip alert %s %s" % (ev["kind"], ev["date"]))
         if events:
-            _log("monitor +%d events (last=%s -> %s)"
-                 % (len(events), last, st2.get("last_date")))
+            _log(
+                "monitor +%d events (last=%s -> %s)"
+                % (len(events), last, st2.get("last_date"))
+            )
         return events
     except Exception as e:
         _log("monitor_run fatal: %s" % str(e)[:200])
@@ -272,8 +327,7 @@ def main(argv=None):
     ap.add_argument("--seed", action="store_true", help="强制播种模式")
     a = ap.parse_args(argv)
     events = monitor_run(series_fp=a.series, dry=a.dry, seed=a.seed)
-    print("BREADTH_MONITOR events=%d%s" % (
-        len(events), " (dry)" if a.dry else ""))
+    print("BREADTH_MONITOR events=%d%s" % (len(events), " (dry)" if a.dry else ""))
     for ev in events:
         print("  %s @%s %s" % (ev["kind"], ev["date"], ev["detail"]))
     return 0

@@ -9,6 +9,7 @@
 隔离方式：monkeypatch KE._q 拦截全部 Cypher；影子/原文文件指向
 pytest tmp_path；每用例重置模块级缓存防串扰。
 """
+
 import json
 
 import pytest
@@ -27,6 +28,7 @@ def _reset_caches():
 
 
 # ── 纯函数：过滤归一 / doc_id 关联键 ────────────────────────
+
 
 def test_fx_normalizes_empty():
     assert KE._fx(None) is None
@@ -49,35 +51,67 @@ def test_doc_level_strips_inn_suffix():
     assert KE._doc_level("d4949acc459b0") == "d4949acc459b0"  # 文档级原样
     assert KE._doc_level("") == ""
     assert KE._doc_level(None) == ""
-    assert KE._doc_level("di07") == "d"      # 短 id + iNN 仍剥
+    assert KE._doc_level("di07") == "d"  # 短 id + iNN 仍剥
     assert KE._doc_level("abc123") == "abc123"  # 结尾非 iNN 不动
 
 
 # ── graph：节点/边组装（mock _q）────────────────────────────
 
-def _edge(an="上海电气", ac="601727.SH", am="主板",
-          bn="上海电气", bc="601727.SH", bm="主板",
-          rel="其他", d="中性", n=1, date="", amount="",
-          src="d19b9f5a6fcfai07", ts="2026-10-08 15:56:46"):
-    return {"an": an, "ac": ac, "am": am, "bn": bn, "bc": bc, "bm": bm,
-            "rel": rel, "dir": d, "n": n, "date": date, "amount": amount,
-            "src_doc": src, "ts_last": ts}
+
+def _edge(
+    an="上海电气",
+    ac="601727.SH",
+    am="主板",
+    bn="上海电气",
+    bc="601727.SH",
+    bm="主板",
+    rel="其他",
+    d="中性",
+    n=1,
+    date="",
+    amount="",
+    src="d19b9f5a6fcfai07",
+    ts="2026-10-08 15:56:46",
+):
+    return {
+        "an": an,
+        "ac": ac,
+        "am": am,
+        "bn": bn,
+        "bc": bc,
+        "bm": bm,
+        "rel": rel,
+        "dir": d,
+        "n": n,
+        "date": date,
+        "amount": amount,
+        "src_doc": src,
+        "ts_last": ts,
+    }
 
 
 def test_graph_assembles_nodes_edges_deg(monkeypatch):
     rows = [
-        _edge(an="东吴证券", ac="601555.SH", bn="华锡有色", bc="600301.SH",
-              rel="投资", d="利好", n=3, date="2026-10-08",
-              amount="20亿元", src="db86c33cd4551i25"),
+        _edge(
+            an="东吴证券",
+            ac="601555.SH",
+            bn="华锡有色",
+            bc="600301.SH",
+            rel="投资",
+            d="利好",
+            n=3,
+            date="2026-10-08",
+            amount="20亿元",
+            src="db86c33cd4551i25",
+        ),
         _edge(rel="增持", d="利好", n=2),
     ]
     monkeypatch.setattr(KE, "_q", lambda cy, **kw: rows)
     g = KE.graph({})
     assert g["ok"] and g["total"] == 2
-    assert len(g["nodes"]) == 3                       # 自环两端同节点，去重
+    assert len(g["nodes"]) == 3  # 自环两端同节点，去重
     deg = {n["id"]: n["data"]["deg"] for n in g["nodes"]}
-    assert deg == {"601555.SH": 1, "600301.SH": 1,
-                   "601727.SH": 2}                     # 自环 deg=2
+    assert deg == {"601555.SH": 1, "600301.SH": 1, "601727.SH": 2}  # 自环 deg=2
     e0 = g["edges"][0]
     assert e0["id"] == "601555.SH>>600301.SH:投资|利好"  # 边 id 规范
     assert e0["data"]["n"] == 3 and e0["data"]["src_doc"] == "db86c33cd4551i25"
@@ -92,9 +126,17 @@ def test_graph_passes_filters_and_normalizes_market(monkeypatch):
         return []
 
     monkeypatch.setattr(KE, "_q", fake_q)
-    KE.graph({"market": "全部", "q": "电气", "dir": "利好", "rel": "投资",
-              "d0": "2026-10-01", "d1": "2026-10-09"})
-    assert seen["m"] is None                    # “全部”→不过滤
+    KE.graph(
+        {
+            "market": "全部",
+            "q": "电气",
+            "dir": "利好",
+            "rel": "投资",
+            "d0": "2026-10-01",
+            "d1": "2026-10-09",
+        }
+    )
+    assert seen["m"] is None  # “全部”→不过滤
     assert seen["q"] == "电气" and seen["dir"] == "利好"
     assert seen["rel"] == "投资"
     assert seen["d0"] == "2026-10-01" and seen["d1"] == "2026-10-09"
@@ -108,7 +150,7 @@ def test_graph_defaults_and_empty(monkeypatch):
         return []
 
     monkeypatch.setattr(KE, "_q", fake_q)
-    g = KE.graph(None)                            # None qp 容错
+    g = KE.graph(None)  # None qp 容错
     assert g["ok"] and g["nodes"] == [] and g["edges"] == []
     assert seen["m"] is None and seen["q"] is None
 
@@ -125,10 +167,11 @@ def test_graph_neo4j_down(monkeypatch):
 def test_graph_n_default_1(monkeypatch):
     monkeypatch.setattr(KE, "_q", lambda cy, **kw: [_edge(n=None)])
     g = KE.graph({})
-    assert g["edges"][0]["data"]["n"] == 1        # NULL n → 1
+    assert g["edges"][0]["data"]["n"] == 1  # NULL n → 1
 
 
 # ── list / search（mock _q）─────────────────────────────────
+
 
 def test_list_passes_code_filter(monkeypatch):
     seen = {}
@@ -145,8 +188,9 @@ def test_list_passes_code_filter(monkeypatch):
 
 
 def test_list_neo4j_down(monkeypatch):
-    monkeypatch.setattr(KE, "_q", lambda cy, **kw: (_ for _ in ()).throw(
-        RuntimeError("down")))
+    monkeypatch.setattr(
+        KE, "_q", lambda cy, **kw: (_ for _ in ()).throw(RuntimeError("down"))
+    )
     r = KE.list_rows({})
     assert r["ok"] is False and "down" in r["error"]
 
@@ -164,18 +208,26 @@ def test_search_empty_q_no_db_call(monkeypatch):
 
 
 def test_search_maps_hits(monkeypatch):
-    monkeypatch.setattr(KE, "_q", lambda cy, **kw: [
-        {"name": "上海电气", "code": "601727.SH", "market": "主板",
-         "n_events": 1},
-        {"name": "ST旭电(退)", "code": "000413.SZ", "market": None,
-         "n_events": 0}])
+    monkeypatch.setattr(
+        KE,
+        "_q",
+        lambda cy, **kw: [
+            {"name": "上海电气", "code": "601727.SH", "market": "主板", "n_events": 1},
+            {"name": "ST旭电(退)", "code": "000413.SZ", "market": None, "n_events": 0},
+        ],
+    )
     r = KE.search({"q": "上海"})
-    assert r["hits"][0] == {"name": "上海电气", "code": "601727.SH",
-                            "market": "主板", "n_events": 1}
-    assert r["hits"][1]["market"] == "未分类"      # NULL market 降级
+    assert r["hits"][0] == {
+        "name": "上海电气",
+        "code": "601727.SH",
+        "market": "主板",
+        "n_events": 1,
+    }
+    assert r["hits"][1]["market"] == "未分类"  # NULL market 降级
 
 
 # ── situ：字段级降级（mock _q + tmp 文件）───────────────────
+
 
 def _situ_q(cy, **kw):
     """按 situ() 内五段 Cypher 分发固定数据。
@@ -186,8 +238,11 @@ def _situ_q(cy, **kw):
     if "max(r.ts_last)" in cy:
         return [{"n": 14, "latest": "2026-10-09 00:56:59"}]
     if "coalesce(s.market" in cy:
-        return [{"m": "主板", "n": 13}, {"m": "科创板", "n": 2},
-                {"m": "创业板", "n": 1}]
+        return [
+            {"m": "主板", "n": 13},
+            {"m": "科创板", "n": 2},
+            {"m": "创业板", "n": 1},
+        ]
     if "count(DISTINCT s) AS n" in cy:
         return [{"n": 16}]
     if "r.rel AS k" in cy:
@@ -217,14 +272,15 @@ def test_situ_happy_path(monkeypatch, tmp_path):
 
 def test_situ_neo4j_down_files_still_reported(monkeypatch, tmp_path):
     """Neo4j 挂 → ok False；文件侧字段独立降级不缺席。"""
+
     def boom(cy, **kw):
         raise ConnectionError("neo4j down")
 
     monkeypatch.setattr(KE, "_q", boom)
     p = tmp_path / "structure_shadow.jsonl"
-    p.write_text("{\"doc_id\": \"a\"}\n{\"doc_id\": \"b\"}\n", encoding="utf-8")
+    p.write_text('{"doc_id": "a"}\n{"doc_id": "b"}\n', encoding="utf-8")
     monkeypatch.setattr(KE, "STRUCT_FP", str(p))
-    for attr in ("EVENT_FP", "TEXTS_FP"):        # 缺失文件
+    for attr in ("EVENT_FP", "TEXTS_FP"):  # 缺失文件
         monkeypatch.setattr(KE, attr, str(tmp_path / "missing.jsonl"))
     s = KE.situ()
     assert s["ok"] is False and "neo4j down" in s["error"]
@@ -236,24 +292,52 @@ def test_situ_neo4j_down_files_still_reported(monkeypatch, tmp_path):
 
 # ── doc：条级/文档级关联 + key_numbers 序列化（真实 tmp 文件）──
 
+
 @pytest.fixture()
 def _doc_env(tmp_path, monkeypatch):
     texts = tmp_path / "doc_texts.jsonl"
-    texts.write_text(json.dumps({
-        "doc_id": "dab8c33cd4551", "name": "news.txt", "kind": "txt",
-        "src": "news", "ts": "2026-10-08 14:56:42",
-        "text_chars": 9, "text": "全文内容abc",
-    }, ensure_ascii=False) + "\n", encoding="utf-8")
+    texts.write_text(
+        json.dumps(
+            {
+                "doc_id": "dab8c33cd4551",
+                "name": "news.txt",
+                "kind": "txt",
+                "src": "news",
+                "ts": "2026-10-08 14:56:42",
+                "text_chars": 9,
+                "text": "全文内容abc",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     struct = tmp_path / "structure_shadow.jsonl"
-    struct.write_text(json.dumps({
-        "doc_id": "dab8c33cd4551i25",
-        "doc_type": "新闻快讯", "title_guess": "东吴证券投资华锡有色",
-        "direction": "利好", "direction_why": "对外投资布局上游资源",
-        "key_numbers": [{"value": "20亿元", "context": "投资额"}],
-        "tags": ["投资", "有色"], "companies": ["东吴证券"],
-        "events": [{"subject": "东吴证券", "rel": "投资",
-                    "object": "华锡有色", "amount": "20亿元"}],
-    }, ensure_ascii=False) + "\n", encoding="utf-8")
+    struct.write_text(
+        json.dumps(
+            {
+                "doc_id": "dab8c33cd4551i25",
+                "doc_type": "新闻快讯",
+                "title_guess": "东吴证券投资华锡有色",
+                "direction": "利好",
+                "direction_why": "对外投资布局上游资源",
+                "key_numbers": [{"value": "20亿元", "context": "投资额"}],
+                "tags": ["投资", "有色"],
+                "companies": ["东吴证券"],
+                "events": [
+                    {
+                        "subject": "东吴证券",
+                        "rel": "投资",
+                        "object": "华锡有色",
+                        "amount": "20亿元",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(KE, "TEXTS_FP", str(texts))
     monkeypatch.setattr(KE, "STRUCT_FP", str(struct))
     return texts, struct
@@ -267,7 +351,7 @@ def test_doc_exact_item_level_hit(_doc_env):
     st = d["struct"]
     assert st["title_guess"] == "东吴证券投资华锡有色"
     assert st["direction"] == "利好"
-    assert st["key_numbers"] == ["投资额：20亿元"]   # dict → 串化
+    assert st["key_numbers"] == ["投资额：20亿元"]  # dict → 串化
     assert st["events"][0]["rel"] == "投资"
 
 
@@ -275,24 +359,27 @@ def test_doc_level_fallback_prefix(_doc_env):
     """struct 只有条级 id，但传入文档级 → 前缀兜底命中。"""
     d = KE.doc("dab8c33cd4551")
     assert d["ok"] and d["found_struct"]
-    assert d["found_text"]                          # texts 恒为文档级键
+    assert d["found_text"]  # texts 恒为文档级键
 
 
 def test_doc_key_numbers_variants(_doc_env, monkeypatch):
     p = _doc_env[1]
     row = json.loads(p.read_text(encoding="utf-8"))
     row["key_numbers"] = [
-        {"value": "8票同意", "context": "表决结果"},   # value+context
-        {"value": "99%"},                             # 仅 value
-        {"context": "无值"},                          # 仅 context
-        "裸字符串",                                    # 非 dict
-        {},                                           # 空 dict → 剔除
+        {"value": "8票同意", "context": "表决结果"},  # value+context
+        {"value": "99%"},  # 仅 value
+        {"context": "无值"},  # 仅 context
+        "裸字符串",  # 非 dict
+        {},  # 空 dict → 剔除
     ]
-    p.write_text(json.dumps(row, ensure_ascii=False) + "\n",
-                 encoding="utf-8")
+    p.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
     d = KE.doc("dab8c33cd4551i25")
     assert d["struct"]["key_numbers"] == [
-        "表决结果：8票同意", "99%", "无值", "裸字符串"]
+        "表决结果：8票同意",
+        "99%",
+        "无值",
+        "裸字符串",
+    ]
 
 
 def test_doc_miss_returns_not_ok(_doc_env):
@@ -307,6 +394,7 @@ def test_doc_empty_id(_doc_env):
 
 
 # ── api 分发 / 缓存 ─────────────────────────────────────────
+
 
 def test_api_dispatch_unknown(monkeypatch):
     assert KE.api("nope")["ok"] is False
@@ -329,17 +417,16 @@ def test_api_routes(monkeypatch):
 
 def test_load_map_mtime_invalidate(tmp_path):
     fp = tmp_path / "f.jsonl"
-    fp.write_text("{\"doc_id\": \"a\"}\n", encoding="utf-8")
+    fp.write_text('{"doc_id": "a"}\n', encoding="utf-8")
     cache = {"mtime": -1.0, "map": {}}
     m1 = KE._load_map(str(fp), cache)
     assert "a" in m1
-    fp.write_text("{\"doc_id\": \"a\"}\n{\"doc_id\": \"b\"}\n",
-                  encoding="utf-8")
+    fp.write_text('{"doc_id": "a"}\n{"doc_id": "b"}\n', encoding="utf-8")
     m2 = KE._load_map(str(fp), cache)
-    assert "b" in m2                                 # mtime 变 → 重读
+    assert "b" in m2  # mtime 变 → 重读
 
 
 def test_load_map_missing_file():
     cache = {"mtime": 123.0, "map": {"stale": 1}}
     m = KE._load_map(r"Z:\nope\missing.jsonl", cache)
-    assert m == {} and cache["mtime"] == -1.0       # 缺失 → 清缓存
+    assert m == {} and cache["mtime"] == -1.0  # 缺失 → 清缓存

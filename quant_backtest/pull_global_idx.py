@@ -14,6 +14,7 @@ CKLSE 马来西亚 / HKAH 港股AH溢价
   python pull_global_idx.py            # 全量+增量
   python pull_global_idx.py --from 20200101   # 指定起点重拉
 """
+
 import argparse
 import os
 import sys
@@ -25,14 +26,32 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import tushare_sync as T   # 复用 token/pro 初始化与限频工具
+import tushare_sync as T  # 复用 token/pro 初始化与限频工具
 
 OUT_DIR = os.path.join(HERE, "data", "tushare", "index_global")
 
 GLOBAL_IDX = [
-    "HSI", "HKTECH", "SPX", "DJI", "IXIC", "N225", "KS11",
-    "GDAXI", "FTSE", "FCHI", "SX5E", "RUT", "SENSEX", "AS51",
-    "RTS", "SPTSX", "IBOVESPA", "TWII", "XIN9", "CKLSE", "HKAH",
+    "HSI",
+    "HKTECH",
+    "SPX",
+    "DJI",
+    "IXIC",
+    "N225",
+    "KS11",
+    "GDAXI",
+    "FTSE",
+    "FCHI",
+    "SX5E",
+    "RUT",
+    "SENSEX",
+    "AS51",
+    "RTS",
+    "SPTSX",
+    "IBOVESPA",
+    "TWII",
+    "XIN9",
+    "CKLSE",
+    "HKAH",
 ]
 
 
@@ -54,9 +73,10 @@ def pull_one(code, start, end):
     for s, e in edges:
         for attempt in range(3):
             try:
-                data = T.ts_call("index_global",
-                                 {"ts_code": code, "start_date": str(s),
-                                  "end_date": str(e)})
+                data = T.ts_call(
+                    "index_global",
+                    {"ts_code": code, "start_date": str(s), "end_date": str(e)},
+                )
                 items = (data or {}).get("items") or []
                 if items:
                     fields = data["fields"]
@@ -67,7 +87,7 @@ def pull_one(code, start, end):
                     print("  ! %s %d-%d 失败: %s" % (code, s, e, ex))
                 else:
                     time.sleep(1.2 * (attempt + 1))
-        time.sleep(0.35)   # 限频 ~3次/秒 以内
+        time.sleep(0.35)  # 限频 ~3次/秒 以内
     if not frames:
         return None
     df = pd.concat(frames, ignore_index=True)
@@ -76,8 +96,9 @@ def pull_one(code, start, end):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--from", dest="start", default="20180101",
-                    help="起始日（默认 20180101）")
+    ap.add_argument(
+        "--from", dest="start", default="20180101", help="起始日（默认 20180101）"
+    )
     args = ap.parse_args()
     end = datetime.now().strftime("%Y%m%d")
 
@@ -106,10 +127,14 @@ def main():
         if os.path.exists(f):
             old = pd.read_parquet(f)
             df = pd.concat([old, df], ignore_index=True)
-        df = df.drop_duplicates(subset=["ts_code", "trade_date"]).sort_values("trade_date")
+        df = df.drop_duplicates(subset=["ts_code", "trade_date"]).sort_values(
+            "trade_date"
+        )
         df.to_parquet(f, index=False)
-        print("  + %s: %d 行 (%s→%s)" % (code, len(df),
-                                         df["trade_date"].min(), df["trade_date"].max()))
+        print(
+            "  + %s: %d 行 (%s→%s)"
+            % (code, len(df), df["trade_date"].min(), df["trade_date"].max())
+        )
         total_new += len(df)
 
     print("=== 全球指数拉取完成，共 %d 行 ===" % total_new)
@@ -117,4 +142,5 @@ def main():
 
 if __name__ == "__main__":
     from linreg import run_with_lineage
+
     run_with_lineage("kg_daily_sync", "pull_global_idx", main)

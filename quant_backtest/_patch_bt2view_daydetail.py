@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-293：bt2_view.html 当日详情重构——持仓池/候选池两表 + 评分/名称/量比/背驰可见。"""
+
 P = r"C:/项目/老田的AI助手/portal/bt2_view.html"
 s = open(P, encoding="utf-8").read()
 
-old = '''function showDay(d){
+old = """function showDay(d){
   const dd=DATA.days[d],hs=DATA.holdings[d]||[];
   let h=`<div><b>${d}</b> · 当日 <span class="${dd.pnl_pct>0?"up":"dn"}">${dd.pnl_pct>0?"+":""}${dd.pnl_pct}%</span> · 持仓 ${dd.n_pos} 只 · 现金 ${dd.cash_pct}% · regime=${dd.regime}（帽 ${Math.round(dd.cap*100)}%）</div>`;
   h+=(dd.actions||[]).map(a=>`<div class="act"><span class="ty" style="color:${TY_COLOR[a.type]||"var(--tx)"}">[${TYPE_CN[a.type]||a.type}]</span>${a.stock?a.stock+" ":""}${a.note}${a.pnl_pct!=null?` <span class="${a.pnl_pct>0?"up":"dn"}">(${a.pnl_pct>0?"+":""}${a.pnl_pct}%)</span>`:""}</div>`).join("")||'<div class="act note">无事件</div>';
   h+=`<div style="margin-top:6px" class="note">持仓（盈亏%/权重%）：`+hs.slice(0,24).map(x=>`<span class="${x.pnl_pct>0?"up":"dn"}" style="margin-right:8px;font-size:11px">${x.stock} ${x.pnl_pct>0?"+":""}${x.pnl_pct}%/${x.wgt_pct}%</span>`).join("")+(hs.length>24?` …共${hs.length}只`:"")+"</div>";
   document.getElementById("day-detail").innerHTML=h;
-}'''
+}"""
 
-new = '''const NM=s=>(DATA.meta.names||{})[s]||"";
+new = """const NM=s=>(DATA.meta.names||{})[s]||"";
 const SC=x=>x==null?"-":x;
 const scoreColor=v=>v==null?"var(--note)":(v>=70?"#e5534b":(v>=55?"#d29922":"var(--note)"));
 function showDay(d){
@@ -29,7 +30,7 @@ function showDay(d){
   // ③ 当日决策流水
   h+=(dd.actions||[]).map(a=>`<div class="act"><span class="ty" style="color:${TY_COLOR[a.type]||"var(--tx)"}">[${TYPE_CN[a.type]||a.type}]</span>${a.stock?a.stock+" "+NM(a.stock)+" ":""}${a.note}${a.pnl_pct!=null?` <span class="${a.pnl_pct>0?"up":"dn"}">(${a.pnl_pct>0?"+":""}${a.pnl_pct}%)</span>`:""}</div>`).join("")||'<div class="act note">无决策事件</div>';
   document.getElementById("day-detail").innerHTML=h;
-}'''
+}"""
 
 assert s.count(old) == 1, "showDay anchor not found"
 s = s.replace(old, new)
@@ -37,11 +38,14 @@ s = s.replace(old, new)
 # 表格样式（暗色 tokens 对齐）
 anchor = "/* ==== 293 候选/持仓表样式 ==== */"
 if anchor not in s:
-    css = anchor + '''
+    css = (
+        anchor
+        + """
 .ptab{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:11.5px}
 .ptab th{color:var(--note);text-align:left;font-weight:500;padding:3px 8px;border-bottom:1px solid var(--bd,#2a2f3a)}
 .ptab td{padding:3px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
-'''
+"""
+    )
     # 插入到第一个 </style> 前
     i = s.find("</style>")
     assert i > 0

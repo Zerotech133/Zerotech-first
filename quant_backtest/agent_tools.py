@@ -13,6 +13,7 @@
   python agent_tools.py call tgraph_slots '{"sig_type":"1卖","tbe":true}'
   python agent_tools.py call events_for_stock '{"code":"688411","days":30}'
 """
+
 import argparse
 import json
 import os
@@ -27,13 +28,14 @@ def _norm_code(code):
     """代码归一（2026-10-16 章程 §4.3 收编）：判定委托 codes.normalize_code
     唯一权威（92/8/4→BJ 修复，替代旧 6→SH 简化判定）；非 A 股形态原样返回。"""
     from codes import normalize_code
+
     n = normalize_code(code)
     if n is not None:
         return n
     return str(code or "").strip().upper()
 
 
-_NAME_MAP = None   # 进程内缓存：code(带后缀) → 股票名称（chanlun_pool.jsonl）
+_NAME_MAP = None  # 进程内缓存：code(带后缀) → 股票名称（chanlun_pool.jsonl）
 _STOCK_NAMES = None  # 进程内缓存：全市场名称映射（data/stock_names.json）
 
 
@@ -76,15 +78,17 @@ def _stock_names():
         if not sn.get("name2code"):
             try:
                 import datamart as dm
+
                 df = dm.read("stock_basic")
                 c2n, n2c = {}, {}
-                for c, n in zip(df["ts_code"].astype(str).str.upper(),
-                                df["name"].astype(str).str.strip()):
+                for c, n in zip(
+                    df["ts_code"].astype(str).str.upper(),
+                    df["name"].astype(str).str.strip(),
+                ):
                     if c and n and n.lower() != "nan":
                         c2n[c] = n
                         n2c.setdefault(n, c)
-                sn = {"code2name": c2n, "name2code": n2c,
-                      "alias_of": {}}
+                sn = {"code2name": c2n, "name2code": n2c, "alias_of": {}}
             except Exception:
                 sn = {}
         _STOCK_NAMES = sn
@@ -120,6 +124,7 @@ def _fix_codes(codes):
 def _jsonable(v):
     """递归转 json 安全类型（numpy/datetime/set/tuple → 原生）。"""
     import math
+
     if v is None or isinstance(v, (bool, int, str)):
         return v
     if isinstance(v, float):
@@ -130,15 +135,16 @@ def _jsonable(v):
         return {str(k): _jsonable(x) for k, x in v.items()}
     if hasattr(v, "isoformat"):
         return str(v)
-    if hasattr(v, "item"):          # numpy 标量
+    if hasattr(v, "item"):  # numpy 标量
         return _jsonable(v.item())
-    if hasattr(v, "tolist"):        # numpy 数组
+    if hasattr(v, "tolist"):  # numpy 数组
         return _jsonable(v.tolist())
     return str(v)
 
 
 def tool(fn):
     """工具包装：异常兜底 + jsonable + ok 标记。"""
+
     def wrap(*a, **kw):
         try:
             out = fn(*a, **kw)
@@ -146,8 +152,8 @@ def tool(fn):
                 return _jsonable(out)
             return _jsonable({"ok": True, "data": out})
         except Exception as e:
-            return {"ok": False, "err": "%s: %s" % (type(e).__name__,
-                                                    str(e)[:200])}
+            return {"ok": False, "err": "%s: %s" % (type(e).__name__, str(e)[:200])}
+
     wrap.__name__ = fn.__name__
     wrap.__doc__ = fn.__doc__
     return wrap
@@ -158,6 +164,7 @@ def tool(fn):
 def tgraph_slots(sig_type=None, tbe=None):
     """结构槽位边际战绩：bis6/amp/pv/npv 各取值分组（胜率/均值/左尾）。"""
     from chanlun_tgraph import slot_stats
+
     return slot_stats(sig_type, tbe)
 
 
@@ -165,6 +172,7 @@ def tgraph_slots(sig_type=None, tbe=None):
 def tgraph_eval(sig_type="1卖", tbe=True):
     """P10 升级预演：npv≤2 vs 3+ 的左尾深度/时间分散/regime 分层。"""
     from chanlun_tgraph import eval_upgrade
+
     return eval_upgrade(sig_type, tbe)
 
 
@@ -179,15 +187,17 @@ def tgraph_left_tail(sig_type="1卖", tbe=True):
             return None
         s = sorted(rets)
         n = len(s)
-        i10 = max(0, -(-int(n * 10) // 100) - 1)   # ceil(n*0.10)-1
-        return {"n": n,
-                "win": round(sum(1 for v in s if v > 0) * 100.0 / n, 1),
-                "avg": round(sum(s) * 100.0 / n, 2),
-                "p10": round(s[i10] * 100.0, 2),
-                "worst": round(s[0] * 100.0, 2),
-                "lt10": sum(1 for v in s if v < -0.10),
-                "lt20": sum(1 for v in s if v < -0.20),
-                "lt30": sum(1 for v in s if v < -0.30)}
+        i10 = max(0, -(-int(n * 10) // 100) - 1)  # ceil(n*0.10)-1
+        return {
+            "n": n,
+            "win": round(sum(1 for v in s if v > 0) * 100.0 / n, 1),
+            "avg": round(sum(s) * 100.0 / n, 2),
+            "p10": round(s[i10] * 100.0, 2),
+            "worst": round(s[0] * 100.0, 2),
+            "lt10": sum(1 for v in s if v < -0.10),
+            "lt20": sum(1 for v in s if v < -0.20),
+            "lt30": sum(1 for v in s if v < -0.30),
+        }
 
     rs = _sel(rows(), sig_type, tbe)
     g = {"all": [], "le2": [], "3p": []}
@@ -203,14 +213,19 @@ def tgraph_left_tail(sig_type="1卖", tbe=True):
             g["le2"].append(v)
         else:
             g["3p"].append(v)
-    return {"all": _tail(g["all"]), "le2": _tail(g["le2"]),
-            "3p": _tail(g["3p"]), "na_n": na_n}
+    return {
+        "all": _tail(g["all"]),
+        "le2": _tail(g["le2"]),
+        "3p": _tail(g["3p"]),
+        "na_n": na_n,
+    }
 
 
 @tool
 def tgraph_fps(sig_type=None, tbe=None, min_n=5):
     """结构指纹精确分组战绩（按 n 降序）。"""
     from chanlun_tgraph import fp_stats
+
     return fp_stats(sig_type, tbe, min_n)
 
 
@@ -219,6 +234,7 @@ def tgraph_fps(sig_type=None, tbe=None, min_n=5):
 def signal_precedents(code, sig_type, tbe=None, k=8):
     """先例检索：同型信号历史案例 topk（语义相似度+20日方向收益+左尾）。"""
     from semantica_mvp import precedents
+
     return precedents(_norm_code(code), sig_type, tbe, k)
 
 
@@ -226,6 +242,7 @@ def signal_precedents(code, sig_type, tbe=None, k=8):
 def signal_enrich(code, sig_type, dt, tbe=None):
     """信号增强：先例战绩 + 语义命中摘要（推送/研判复用）。"""
     from semantica_mvp import enrich_signal
+
     return enrich_signal(_norm_code(code), sig_type, dt, tbe)
 
 
@@ -234,6 +251,7 @@ def signal_enrich(code, sig_type, dt, tbe=None):
 def events_for_stock(code, days=30):
     """个股事件流：近 N 天公告/新闻事件（偏性/置信/标题）。"""
     from event_graph import events_for_stock as f
+
     return f(_norm_code(code), days)
 
 
@@ -241,6 +259,7 @@ def events_for_stock(code, days=30):
 def related_events(query, k=10, kind=None):
     """语义检索相关事件（kind=bull/bear 先过滤后 topk）。"""
     from event_graph import related_events as f
+
     return f(query, k, kind)
 
 
@@ -248,6 +267,7 @@ def related_events(query, k=10, kind=None):
 def event_summary(code, days=7, topn=4):
     """飞书摘要口径：个股近期事件多空统计+强事件列表。"""
     from event_graph import summary_for_stock
+
     return summary_for_stock(_norm_code(code), days, topn)
 
 
@@ -255,11 +275,12 @@ def event_summary(code, days=7, topn=4):
 def recent_events(n=8, days=7):
     """近期强事件（bull/bear 各前 n/2，conf 降序）。"""
     from event_graph import recent_strong
+
     return recent_strong(n, days)
 
 
 # ── ④ 数据中台读层（datamart） ───────────────────────────────
-_PQ_ENGINE = None   # 进程内缓存：parquet 引擎探测结果（"pyarrow" / "none"）
+_PQ_ENGINE = None  # 进程内缓存：parquet 引擎探测结果（"pyarrow" / "none"）
 
 
 def _parquet_engine():
@@ -274,6 +295,7 @@ def _parquet_engine():
     if _PQ_ENGINE is None:
         try:
             import pyarrow  # noqa: F401
+
             _PQ_ENGINE = "pyarrow"
         except Exception:
             _PQ_ENGINE = "none"
@@ -289,8 +311,7 @@ def _dm_ready_safe(dm, table):
 
 
 @tool
-def datamart_read(table, start=None, end=None, codes=None, fields=None,
-                  limit=0):
+def datamart_read(table, start=None, end=None, codes=None, fields=None, limit=0):
     """读层统一入口：真源命中即止+别名降级+日期/代码归一（codes 自动纠后缀）。
 
     可观测性（S4 开闸① 2026-10-18）：datamart 模块导入失败/读取异常/
@@ -305,42 +326,68 @@ def datamart_read(table, start=None, end=None, codes=None, fields=None,
     except Exception as e:
         sys.stderr.write(
             "[datamart_read] WARN datamart 模块导入失败: %s: %s\n"
-            % (type(e).__name__, str(e)[:160]))
-        return {"ok": False,
-                "err": "datamart import failed: %s" % type(e).__name__,
-                "n": 0, "rows": [], "engine": eng,
-                "empty_reason": "datamart_import_error"}
+            % (type(e).__name__, str(e)[:160])
+        )
+        return {
+            "ok": False,
+            "err": "datamart import failed: %s" % type(e).__name__,
+            "n": 0,
+            "rows": [],
+            "engine": eng,
+            "empty_reason": "datamart_import_error",
+        }
     try:
-        df = dm.read(table, start=start, end=end, codes=_fix_codes(codes),
-                     fields=fields, limit=limit)
+        df = dm.read(
+            table,
+            start=start,
+            end=end,
+            codes=_fix_codes(codes),
+            fields=fields,
+            limit=limit,
+        )
     except Exception as e:
         sys.stderr.write(
             "[datamart_read] WARN 读取异常 table=%s: %s: %s\n"
-            % (table, type(e).__name__, str(e)[:160]))
-        return {"ok": False,
-                "err": "read failed: %s: %s" % (type(e).__name__,
-                                                str(e)[:160]),
-                "n": 0, "rows": [], "engine": eng,
-                "empty_reason": "read_error:%s" % type(e).__name__}
+            % (table, type(e).__name__, str(e)[:160])
+        )
+        return {
+            "ok": False,
+            "err": "read failed: %s: %s" % (type(e).__name__, str(e)[:160]),
+            "n": 0,
+            "rows": [],
+            "engine": eng,
+            "empty_reason": "read_error:%s" % type(e).__name__,
+        }
     n = len(df) if df is not None else 0
     if n == 0:
-        reason = ("no_parquet_engine" if eng == "none"
-                  else "table_not_ready" if not _dm_ready_safe(dm, table)
-                  else "empty")
+        reason = (
+            "no_parquet_engine"
+            if eng == "none"
+            else "table_not_ready"
+            if not _dm_ready_safe(dm, table)
+            else "empty"
+        )
         sys.stderr.write(
             "[datamart_read] WARN 空结果 table=%s engine=%s reason=%s "
             "start=%s end=%s codes=%s\n"
-            % (table, eng, reason, start, end,
-               ",".join(str(c) for c in codes) if codes else None))
+            % (
+                table,
+                eng,
+                reason,
+                start,
+                end,
+                ",".join(str(c) for c in codes) if codes else None,
+            )
+        )
         return {"n": 0, "rows": [], "engine": eng, "empty_reason": reason}
-    return {"n": n, "rows": df.to_dict("records"),
-            "engine": eng, "empty_reason": None}
+    return {"n": n, "rows": df.to_dict("records"), "engine": eng, "empty_reason": None}
 
 
 @tool
 def datamart_latest(table):
     """新鲜度现算：表/别名最新日期（进程内 TTL 缓存）。"""
     import datamart as dm
+
     return {"table": table, "latest": dm.latest(table)}
 
 
@@ -356,22 +403,37 @@ def datamart_ready(table):
     eng = _parquet_engine()
     if eng == "none":
         sys.stderr.write(
-            "[datamart_ready] WARN parquet 引擎缺失（需 pyarrow）"
-            "table=%s\n" % table)
-        return {"table": table, "ready": False, "engine": None,
-                "explain": None, "reason": "no_parquet_engine"}
+            "[datamart_ready] WARN parquet 引擎缺失（需 pyarrow）table=%s\n" % table
+        )
+        return {
+            "table": table,
+            "ready": False,
+            "engine": None,
+            "explain": None,
+            "reason": "no_parquet_engine",
+        }
     try:
         import datamart as dm
+
         r = bool(dm.ready(table))
     except Exception as e:
         sys.stderr.write(
             "[datamart_ready] WARN datamart 探测异常 table=%s: %s: %s\n"
-            % (table, type(e).__name__, str(e)[:160]))
-        return {"table": table, "ready": False, "engine": eng,
-                "explain": None,
-                "reason": "datamart_error:%s" % type(e).__name__}
-    return {"table": table, "ready": r, "engine": eng,
-            "explain": dm.explain(table) if r else None}
+            % (table, type(e).__name__, str(e)[:160])
+        )
+        return {
+            "table": table,
+            "ready": False,
+            "engine": eng,
+            "explain": None,
+            "reason": "datamart_error:%s" % type(e).__name__,
+        }
+    return {
+        "table": table,
+        "ready": r,
+        "engine": eng,
+        "explain": dm.explain(table) if r else None,
+    }
 
 
 @tool
@@ -381,14 +443,29 @@ def market_snapshot(market=None, days=5):
     成交额"）等非个股问题时用此工具，不要用 stock_info/datamart_read 试。"""
     from datetime import datetime, timedelta
     import datamart as dm
-    alias = {"BJ": ".BJ", "北交所": ".BJ", "北": ".BJ",
-             "SH": ".SH", "沪": ".SH", "沪市": ".SH", "上证": ".SH", "上交所": ".SH",
-             "SZ": ".SZ", "深": ".SZ", "深市": ".SZ", "深证": ".SZ", "深交所": ".SZ"}
+
+    alias = {
+        "BJ": ".BJ",
+        "北交所": ".BJ",
+        "北": ".BJ",
+        "SH": ".SH",
+        "沪": ".SH",
+        "沪市": ".SH",
+        "上证": ".SH",
+        "上交所": ".SH",
+        "SZ": ".SZ",
+        "深": ".SZ",
+        "深市": ".SZ",
+        "深证": ".SZ",
+        "深交所": ".SZ",
+    }
     raw = str(market or "").strip()
     suf = alias.get(raw) or alias.get(raw.upper()) if raw else None
     if raw and not suf:
-        return {"ok": False,
-                "err": "market 仅支持 SH/SZ/BJ（或 沪/深/北交所）；'%s' 不识别" % raw}
+        return {
+            "ok": False,
+            "err": "market 仅支持 SH/SZ/BJ（或 沪/深/北交所）；'%s' 不识别" % raw,
+        }
     days = max(1, min(int(days or 5), 20))
     start = (datetime.now() - timedelta(days=days * 2 + 6)).strftime("%Y%m%d")
     df = dm.read("ts_daily", start=start)
@@ -413,10 +490,14 @@ def market_snapshot(market=None, days=5):
                 "down": int((g["change"] < 0).sum()),
             }
         rows.append(row)
-    return {"ok": True, "market": (suf or "沪+深+北").strip("."),
-            "unit": "amount_yi=成交额(亿元), vol_yi=成交量(亿手)",
-            "note": "日线为收盘后同步；问'今天'时以最新交易日作答并注明日期",
-            "latest_trade_date": str(dates[-1]), "rows": rows}
+    return {
+        "ok": True,
+        "market": (suf or "沪+深+北").strip("."),
+        "unit": "amount_yi=成交额(亿元), vol_yi=成交量(亿手)",
+        "note": "日线为收盘后同步；问'今天'时以最新交易日作答并注明日期",
+        "latest_trade_date": str(dates[-1]),
+        "rows": rows,
+    }
 
 
 # ── ⑤ 数据健康（data_health） ────────────────────────────────
@@ -424,6 +505,7 @@ def market_snapshot(market=None, days=5):
 def data_health():
     """全仓健康扫描：三仓+新鲜度监控组（较重 ~14s，有 TTL 缓存）。"""
     from data_health import scan_warehouse
+
     return scan_warehouse()
 
 
@@ -468,22 +550,22 @@ def stock_info(code):
             c = hit
         else:
             nm = _name_map()
-            name_hits = sorted(k for k, v in nm.items()
-                               if v == s or s in v)
+            name_hits = sorted(k for k, v in nm.items() if v == s or s in v)
             if not name_hits:
-                return {"name_q": s, "code": None,
-                        "hint": "全市场名称映射（含曾用名）无此名称，"
-                                "无法反查代码。答案里明说无法确认，"
-                                "绝不硬猜代码"}
+                return {
+                    "name_q": s,
+                    "code": None,
+                    "hint": "全市场名称映射（含曾用名）无此名称，"
+                    "无法反查代码。答案里明说无法确认，"
+                    "绝不硬猜代码",
+                }
             c = name_hits[0]
     sn = _stock_names()
-    out = {"code": c, "name": _name_map().get(c)
-           or (sn.get("code2name") or {}).get(c)}
+    out = {"code": c, "name": _name_map().get(c) or (sn.get("code2name") or {}).get(c)}
     if s in (sn.get("alias_of") or {}):
         out["name_note"] = "曾用名 %s，现名 %s" % (s, out.get("name"))
     if len(name_hits) > 1:
-        out["name_candidates"] = ["%s %s" % (k, _name_map()[k])
-                                  for k in name_hits]
+        out["name_candidates"] = ["%s %s" % (k, _name_map()[k]) for k in name_hits]
     sigs = []
     path = os.path.join(HERE, "data", "chanlun_pool.jsonl")
     wc = c.split(".")[0]
@@ -495,19 +577,27 @@ def stock_info(code):
                 except Exception:
                     continue
                 if str(r.get("code") or "").startswith(wc):
-                    sigs.append({k: r[k] for k in
-                                 ("dt", "type", "tbe", "trend", "entry_px")
-                                 if r.get(k) is not None})
+                    sigs.append(
+                        {
+                            k: r[k]
+                            for k in ("dt", "type", "tbe", "trend", "entry_px")
+                            if r.get(k) is not None
+                        }
+                    )
     sigs.sort(key=lambda r: r.get("dt") or "", reverse=True)
     out["pool_signals_n"] = len(sigs)
     out["pool_signals_recent"] = sigs[:5]
     try:
         import datamart as dm
+
         df = dm.read("ts_daily", codes=[c])
         if len(df) and "trade_date" in df.columns:
             df = df.sort_values("trade_date")
-        keep = [k for k in ("trade_date", "close", "pct_chg",
-                            "vol", "amount") if k in df.columns]
+        keep = [
+            k
+            for k in ("trade_date", "close", "pct_chg", "vol", "amount")
+            if k in df.columns
+        ]
         out["ts_rows_n"] = len(df)
         out["latest"] = df[keep].tail(3).to_dict("records") if len(df) else []
     except Exception as e:
@@ -523,47 +613,94 @@ def paper_positions():
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             d = json.load(f) or d
-    return {"open": d.get("open", []),
-            "closed": d.get("closed", [])[-30:]}
+    return {"open": d.get("open", []), "closed": d.get("closed", [])[-30:]}
 
 
 # ── 注册表（agent 发现入口） ─────────────────────────────────
 TOOLS = {
-    "tgraph_slots":   (tgraph_slots,   "结构槽位边际战绩", {"sig_type": "信号类型如1卖", "tbe": "趋✓布尔"}),
-    "tgraph_eval":    (tgraph_eval,    "P10 升级预演分层",  {"sig_type": "信号类型", "tbe": "布尔"}),
-    "tgraph_left_tail": (tgraph_left_tail, "npv分层左尾统计",
-                          {"sig_type": "信号类型", "tbe": "布尔"}),
-    "tgraph_fps":     (tgraph_fps,     "结构指纹分组战绩",  {"sig_type": "信号类型", "tbe": "布尔", "min_n": "最小样本"}),
-    "signal_precedents": (signal_precedents, "先例检索topk",
-                          {"code": "代码", "sig_type": "信号类型", "tbe": "布尔", "k": "条数"}),
-    "signal_enrich":  (signal_enrich,  "信号增强(先例+摘要)",
-                          {"code": "代码", "sig_type": "信号类型", "dt": "信号日YYYY-MM-DD", "tbe": "布尔"}),
-    "events_for_stock": (events_for_stock, "个股事件流",
-                          {"code": "代码", "days": "回看天数"}),
-    "related_events": (related_events, "语义检索事件",
-                          {"query": "查询文本", "k": "条数", "kind": "bull/bear"}),
-    "event_summary":  (event_summary,  "个股事件摘要", {"code": "代码", "days": "天数"}),
-    "recent_events":  (recent_events,  "近期强事件", {"n": "条数", "days": "天数"}),
-    "datamart_read":  (datamart_read,  "数据中台读层",
-                          {"table": "表/别名", "start": "YYYYMMDD", "end": "YYYYMMDD",
-                           "codes": "代码列表", "fields": "列列表", "limit": "行数"}),
+    "tgraph_slots": (
+        tgraph_slots,
+        "结构槽位边际战绩",
+        {"sig_type": "信号类型如1卖", "tbe": "趋✓布尔"},
+    ),
+    "tgraph_eval": (
+        tgraph_eval,
+        "P10 升级预演分层",
+        {"sig_type": "信号类型", "tbe": "布尔"},
+    ),
+    "tgraph_left_tail": (
+        tgraph_left_tail,
+        "npv分层左尾统计",
+        {"sig_type": "信号类型", "tbe": "布尔"},
+    ),
+    "tgraph_fps": (
+        tgraph_fps,
+        "结构指纹分组战绩",
+        {"sig_type": "信号类型", "tbe": "布尔", "min_n": "最小样本"},
+    ),
+    "signal_precedents": (
+        signal_precedents,
+        "先例检索topk",
+        {"code": "代码", "sig_type": "信号类型", "tbe": "布尔", "k": "条数"},
+    ),
+    "signal_enrich": (
+        signal_enrich,
+        "信号增强(先例+摘要)",
+        {
+            "code": "代码",
+            "sig_type": "信号类型",
+            "dt": "信号日YYYY-MM-DD",
+            "tbe": "布尔",
+        },
+    ),
+    "events_for_stock": (
+        events_for_stock,
+        "个股事件流",
+        {"code": "代码", "days": "回看天数"},
+    ),
+    "related_events": (
+        related_events,
+        "语义检索事件",
+        {"query": "查询文本", "k": "条数", "kind": "bull/bear"},
+    ),
+    "event_summary": (event_summary, "个股事件摘要", {"code": "代码", "days": "天数"}),
+    "recent_events": (recent_events, "近期强事件", {"n": "条数", "days": "天数"}),
+    "datamart_read": (
+        datamart_read,
+        "数据中台读层",
+        {
+            "table": "表/别名",
+            "start": "YYYYMMDD",
+            "end": "YYYYMMDD",
+            "codes": "代码列表",
+            "fields": "列列表",
+            "limit": "行数",
+        },
+    ),
     "datamart_latest": (datamart_latest, "表最新日期", {"table": "表/别名"}),
     "datamart_ready": (datamart_ready, "表可用性", {"table": "表/别名"}),
-    "market_snapshot": (market_snapshot, "市场总量快照(沪深北成交额/量/涨跌家数;问大盘整体成交额用它)",
-                          {"market": "SH/SZ/BJ或沪/深/北交所,空=全部", "days": "近几日"}),
-    "data_health":    (data_health,    "全仓健康扫描", {}),
-    "pool_rows":      (pool_rows,      "预警池查询",
-                          {"sig_type": "信号类型", "tbe": "布尔",
-                           "code": "股票代码", "limit": "条数"}),
-    "stock_info":     (stock_info,     "股票身份卡(名称+最新行情+池内信号；中文名称可反查代码，支持曾用名如改名前旧称)",
-                          {"code": "6位股票代码或中文名称(含曾用名)"}),
+    "market_snapshot": (
+        market_snapshot,
+        "市场总量快照(沪深北成交额/量/涨跌家数;问大盘整体成交额用它)",
+        {"market": "SH/SZ/BJ或沪/深/北交所,空=全部", "days": "近几日"},
+    ),
+    "data_health": (data_health, "全仓健康扫描", {}),
+    "pool_rows": (
+        pool_rows,
+        "预警池查询",
+        {"sig_type": "信号类型", "tbe": "布尔", "code": "股票代码", "limit": "条数"},
+    ),
+    "stock_info": (
+        stock_info,
+        "股票身份卡(名称+最新行情+池内信号；中文名称可反查代码，支持曾用名如改名前旧称)",
+        {"code": "6位股票代码或中文名称(含曾用名)"},
+    ),
     "paper_positions": (paper_positions, "模拟账本", {}),
 }
 
 
 def list_tools():
-    return [{"name": n, "desc": d, "args": a}
-            for n, (f, d, a) in TOOLS.items()]
+    return [{"name": n, "desc": d, "args": a} for n, (f, d, a) in TOOLS.items()]
 
 
 def call(name, **kw):
@@ -584,14 +721,17 @@ def main():
     a = ap.parse_args()
     if a.cmd == "list":
         for t in list_tools():
-            print("%-18s %s | %s" % (t["name"], t["desc"],
-                                     json.dumps(t["args"], ensure_ascii=False)))
+            print(
+                "%-18s %s | %s"
+                % (t["name"], t["desc"], json.dumps(t["args"], ensure_ascii=False))
+            )
     else:
         try:
             kw = json.loads(a.args) if a.args else {}
         except Exception as e:
-            print(json.dumps({"ok": False, "err": "bad json: %s" % e},
-                             ensure_ascii=False))
+            print(
+                json.dumps({"ok": False, "err": "bad json: %s" % e}, ensure_ascii=False)
+            )
             return
         print(json.dumps(call(a.name, **kw), ensure_ascii=False, indent=1))
 

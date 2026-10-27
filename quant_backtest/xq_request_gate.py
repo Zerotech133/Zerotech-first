@@ -84,7 +84,11 @@ class RequestGate:
         clock: Clock | None = None,
         busy_timeout_seconds: float = 30.0,
     ) -> None:
-        if not isinstance(max_requests, int) or isinstance(max_requests, bool) or max_requests < 1:
+        if (
+            not isinstance(max_requests, int)
+            or isinstance(max_requests, bool)
+            or max_requests < 1
+        ):
             raise ValueError("max_requests must be a positive integer")
         for name, number, allow_zero in (
             ("window_seconds", window_seconds, False),
@@ -94,10 +98,11 @@ class RequestGate:
             if isinstance(number, bool) or not isinstance(number, (float, int)):
                 raise ValueError(f"{name} must be a finite number")
             if not math.isfinite(number) or (number < 0 if allow_zero else number <= 0):
-                raise ValueError(f"{name} must be {'nonnegative' if allow_zero else 'positive'}")
+                raise ValueError(
+                    f"{name} must be {'nonnegative' if allow_zero else 'positive'}"
+                )
         path: str = os.fspath(db_path)
-        if (not path or path == ":memory:" or path.startswith("file:") or
-                "\x00" in path):
+        if not path or path == ":memory:" or path.startswith("file:") or "\x00" in path:
             raise ValueError("db_path must be a persistent local filesystem path")
         if not os.path.isdir(os.path.dirname(os.path.abspath(path))):
             raise ValueError("db_path parent directory must already exist")
@@ -107,10 +112,15 @@ class RequestGate:
         self.db_path: str = os.path.normcase(os.path.realpath(path))
         self.lock_path: str = self.db_path + ".request.lock"
         self.inflight_path: str = self.db_path + ".request.inflight"
-        if (os.path.islink(path) or os.path.islink(self.db_path) or
-                os.path.islink(self.lock_path) or
-                os.path.islink(self.inflight_path)):
-            raise ValueError("gate database and coordination files must not be symlinks")
+        if (
+            os.path.islink(path)
+            or os.path.islink(self.db_path)
+            or os.path.islink(self.lock_path)
+            or os.path.islink(self.inflight_path)
+        ):
+            raise ValueError(
+                "gate database and coordination files must not be symlinks"
+            )
         self.max_requests: int = max_requests
         self.window_seconds: float = float(window_seconds)
         self.min_interval_seconds: float = float(min_interval_seconds)
@@ -129,7 +139,9 @@ class RequestGate:
         connection: sqlite3.Connection = sqlite3.connect(
             self.db_path, timeout=self.busy_timeout_seconds, isolation_level=None
         )
-        connection.execute(f"PRAGMA busy_timeout={int(self.busy_timeout_seconds * 1000)}")
+        connection.execute(
+            f"PRAGMA busy_timeout={int(self.busy_timeout_seconds * 1000)}"
+        )
         return connection
 
     @contextmanager
@@ -146,10 +158,12 @@ class RequestGate:
                 try:
                     if os.name == "nt":
                         import msvcrt
+
                         os.lseek(descriptor, 0, os.SEEK_SET)
                         msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
                     else:
                         import fcntl
+
                         fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     locked = True
                 except OSError as error:
@@ -157,7 +171,9 @@ class RequestGate:
                     if not retryable:
                         raise GateDenied("request coordination lock failed") from error
                     if time.monotonic() >= deadline:
-                        raise GateDenied("request coordination lock timed out") from error
+                        raise GateDenied(
+                            "request coordination lock timed out"
+                        ) from error
                     time.sleep(min(0.01, max(0.0, deadline - time.monotonic())))
             # 若上一进程发送后在持久停轮前崩溃，不能猜测其响应是否
             # 为 403：在任何后继发送前保守停轮并要求人工核准复位。
@@ -173,10 +189,12 @@ class RequestGate:
                 try:
                     if os.name == "nt":
                         import msvcrt
+
                         os.lseek(descriptor, 0, os.SEEK_SET)
                         msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
                     else:
                         import fcntl
+
                         fcntl.flock(descriptor, fcntl.LOCK_UN)
                 except OSError as error:
                     raise GateDenied("request coordination unlock failed") from error
@@ -219,7 +237,11 @@ class RequestGate:
         row = connection.execute(
             "SELECT active FROM gate_inflight WHERE id=1"
         ).fetchone()
-        if row is None or row[0] not in (0, 1) or bool(row[0]) != self._inflight_present():
+        if (
+            row is None
+            or row[0] not in (0, 1)
+            or bool(row[0]) != self._inflight_present()
+        ):
             raise GateDenied("in-flight coordination state inconsistent")
         if row[0]:
             raise GateDenied("unresolved in-flight request; manual review required")
@@ -266,13 +288,21 @@ class RequestGate:
             if existing is None:
                 connection.execute(
                     "INSERT INTO gate_state VALUES (1, ?, ?, ?, ?, 0, 0, NULL, NULL, 0, 0, 0)",
-                    (str(uuid4()), self.max_requests, self.window_seconds,
-                     self.min_interval_seconds),
+                    (
+                        str(uuid4()),
+                        self.max_requests,
+                        self.window_seconds,
+                        self.min_interval_seconds,
+                    ),
                 )
             elif existing != (
-                self.max_requests, self.window_seconds, self.min_interval_seconds
+                self.max_requests,
+                self.window_seconds,
+                self.min_interval_seconds,
             ):
-                raise ValueError("existing gate budget differs; changing limits requires separate approval")
+                raise ValueError(
+                    "existing gate budget differs; changing limits requires separate approval"
+                )
             connection.commit()
         except BaseException:
             connection.rollback()
@@ -292,8 +322,13 @@ class RequestGate:
 
     @staticmethod
     def _audit(
-        connection: sqlite3.Connection, at: float, event: str, generation: int,
-        permit_id: int | None = None, detail: str = "", actor: str = "system",
+        connection: sqlite3.Connection,
+        at: float,
+        event: str,
+        generation: int,
+        permit_id: int | None = None,
+        detail: str = "",
+        actor: str = "system",
     ) -> None:
         connection.execute(
             "INSERT INTO gate_audit (occurred_at, event, generation, permit_id, detail, actor) "
@@ -349,10 +384,16 @@ class RequestGate:
         gate_id, generation, stopped, _, _, _, _, _ = self._state(connection)
         row = connection.execute(
             "SELECT gate_id, generation, issued_at, dispatched_at "
-            "FROM gate_permits WHERE id=?", (permit.permit_id,)
+            "FROM gate_permits WHERE id=?",
+            (permit.permit_id,),
         ).fetchone()
-        if (stopped or permit.gate_id != gate_id or permit.generation != generation
-                or row is None or row != (gate_id, generation, permit.issued_at, None)):
+        if (
+            stopped
+            or permit.gate_id != gate_id
+            or permit.generation != generation
+            or row is None
+            or row != (gate_id, generation, permit.issued_at, None)
+        ):
             raise GateDenied("permit revoked, foreign, or already dispatched")
 
     def _mark_dispatched(self, permit: Permit) -> None:
@@ -370,8 +411,9 @@ class RequestGate:
                 "UPDATE gate_state SET dispatched_total=dispatched_total+1 WHERE id=1"
             )
             connection.execute("UPDATE gate_inflight SET active=1 WHERE id=1")
-            self._audit(connection, at, "permit_dispatched", permit.generation,
-                        permit.permit_id)
+            self._audit(
+                connection, at, "permit_dispatched", permit.generation, permit.permit_id
+            )
             connection.commit()
         except BaseException:
             connection.rollback()
@@ -400,13 +442,24 @@ class RequestGate:
         try:
             connection.execute("BEGIN IMMEDIATE")
             gate_id, generation, stopped, _, _, _, _, _ = self._state(connection)
-            if gate_id == permit.gate_id and generation == permit.generation and not stopped:
+            if (
+                gate_id == permit.gate_id
+                and generation == permit.generation
+                and not stopped
+            ):
                 connection.execute(
                     "UPDATE gate_state SET stopped=1, generation=generation+1, "
-                    "stop_reason=? WHERE id=1", (detail,)
+                    "stop_reason=? WHERE id=1",
+                    (detail,),
                 )
-                self._audit(connection, self._now(), "round_stopped",
-                            generation + 1, permit.permit_id, detail)
+                self._audit(
+                    connection,
+                    self._now(),
+                    "round_stopped",
+                    generation + 1,
+                    permit.permit_id,
+                    detail,
+                )
             connection.commit()
         except BaseException:
             connection.rollback()
@@ -415,7 +468,9 @@ class RequestGate:
             connection.close()
 
     def execute_once(
-        self, send_once: Callable[[], _Result], *,
+        self,
+        send_once: Callable[[], _Result],
+        *,
         status_code: Callable[[_Result], int],
         failure_reason: Callable[[_Result], str | None] | None = None,
     ) -> _Result:
@@ -425,9 +480,14 @@ class RequestGate:
         failure_reason 可记 401/token_invalid、429、5xx 等响应失败，不会退款。
         若分类器/发送异常，保守停轮并原样传播；持久化失败保留悬置标识。
         """
-        if (not callable(send_once) or not callable(status_code) or
-                (failure_reason is not None and not callable(failure_reason))):
-            raise TypeError("send_once, status_code and optional failure_reason must be callable")
+        if (
+            not callable(send_once)
+            or not callable(status_code)
+            or (failure_reason is not None and not callable(failure_reason))
+        ):
+            raise TypeError(
+                "send_once, status_code and optional failure_reason must be callable"
+            )
         with self._round_lock():
             permit: Permit = self._reserve()
             self._inflight_start()
@@ -482,18 +542,23 @@ class RequestGate:
                     raise GateDenied("failure must refer to a dispatched local permit")
                 row = connection.execute(
                     "SELECT gate_id, generation, issued_at, dispatched_at "
-                    "FROM gate_permits WHERE id=?", (permit.permit_id,)
+                    "FROM gate_permits WHERE id=?",
+                    (permit.permit_id,),
                 ).fetchone()
-                if (row is None or
-                        row[:3] != (gate_id, permit.generation, permit.issued_at) or
-                        row[3] is None or permit.gate_id != gate_id):
+                if (
+                    row is None
+                    or row[:3] != (gate_id, permit.generation, permit.issued_at)
+                    or row[3] is None
+                    or permit.gate_id != gate_id
+                ):
                     raise GateDenied("failure must refer to a dispatched local permit")
                 permit_id = permit.permit_id
             connection.execute(
                 "UPDATE gate_state SET failure_total=failure_total+1 WHERE id=1"
             )
-            self._audit(connection, at, "request_failure", generation,
-                        permit_id, detail)
+            self._audit(
+                connection, at, "request_failure", generation, permit_id, detail
+            )
             connection.commit()
         except BaseException:
             connection.rollback()
@@ -515,8 +580,13 @@ class RequestGate:
                         "UPDATE gate_state SET stopped=1, generation=?, stop_reason=? WHERE id=1",
                         (generation, detail),
                     )
-                    self._audit(connection, self._now(), "round_stopped", generation,
-                                detail=detail)
+                    self._audit(
+                        connection,
+                        self._now(),
+                        "round_stopped",
+                        generation,
+                        detail=detail,
+                    )
                 connection.commit()
             except BaseException:
                 connection.rollback()
@@ -532,7 +602,9 @@ class RequestGate:
             connection: sqlite3.Connection = self._connect()
             try:
                 connection.execute("BEGIN IMMEDIATE")
-                row = connection.execute("SELECT active FROM gate_inflight WHERE id=1").fetchone()
+                row = connection.execute(
+                    "SELECT active FROM gate_inflight WHERE id=1"
+                ).fetchone()
                 if row is None or (not row[0] and not self._inflight_present()):
                     raise ValueError("no unresolved in-flight request")
                 _, generation, stopped, _, _, _, _, _ = self._state(connection)
@@ -542,8 +614,14 @@ class RequestGate:
                         "UPDATE gate_state SET stopped=1, generation=?, stop_reason=? WHERE id=1",
                         (generation, "unresolved_inflight"),
                     )
-                self._audit(connection, self._now(), "manual_inflight_review",
-                            generation, detail=detail, actor=actor)
+                self._audit(
+                    connection,
+                    self._now(),
+                    "manual_inflight_review",
+                    generation,
+                    detail=detail,
+                    actor=actor,
+                )
                 connection.commit()
                 if self._inflight_present():
                     self._clear_inflight()
@@ -578,8 +656,14 @@ class RequestGate:
                     "UPDATE gate_state SET stopped=0, generation=?, stop_reason=NULL WHERE id=1",
                     (generation,),
                 )
-                self._audit(connection, self._now(), "manual_reset", generation,
-                            detail=detail, actor=actor)
+                self._audit(
+                    connection,
+                    self._now(),
+                    "manual_reset",
+                    generation,
+                    detail=detail,
+                    actor=actor,
+                )
                 connection.commit()
             except BaseException:
                 connection.rollback()
@@ -591,10 +675,25 @@ class RequestGate:
         """返回当前持久状态，不根据冷却时间自动解除停轮。"""
         connection: sqlite3.Connection = self._connect()
         try:
-            gate_id, generation, stopped, reason, last_at, issued, dispatched, failures = (
-                self._state(connection)
+            (
+                gate_id,
+                generation,
+                stopped,
+                reason,
+                last_at,
+                issued,
+                dispatched,
+                failures,
+            ) = self._state(connection)
+            return GateSnapshot(
+                gate_id,
+                generation,
+                bool(stopped),
+                reason,
+                issued,
+                dispatched,
+                failures,
+                last_at,
             )
-            return GateSnapshot(gate_id, generation, bool(stopped), reason,
-                                issued, dispatched, failures, last_at)
         finally:
             connection.close()

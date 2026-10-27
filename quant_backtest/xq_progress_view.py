@@ -52,15 +52,28 @@ VIEW_KEYS: tuple[str, ...] = ("symbol", "lanes", "generated_as_of_ms", "notes")
 
 #: Exact keys of one lane's progress row.
 LANE_KEYS: tuple[str, ...] = (
-    "queue_state", "watermark", "freshness", "coverage",
-    "samples", "gaps", "failures", "alerts",
+    "queue_state",
+    "watermark",
+    "freshness",
+    "coverage",
+    "samples",
+    "gaps",
+    "failures",
+    "alerts",
 )
 
 #: The ten ledger checkpoint keys carried inside ``watermark``.
 WATERMARK_KEYS: tuple[str, ...] = (
-    "version", "confirmed_page_key", "next_cursor", "first_status_id",
-    "last_status_id", "coverage_started_at", "coverage_updated_at",
-    "state", "batch_id", "fetched_at",
+    "version",
+    "confirmed_page_key",
+    "next_cursor",
+    "first_status_id",
+    "last_status_id",
+    "coverage_started_at",
+    "coverage_updated_at",
+    "state",
+    "batch_id",
+    "fetched_at",
 )
 
 #: Notes every progress view must carry, verbatim.
@@ -105,7 +118,9 @@ def _required_sample_limit(value: Any) -> int:
 
 
 def _queue_state(
-    conn: sqlite3.Connection, symbol: str, lane: str,
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: str,
 ) -> dict[str, Any] | None:
     """Return the durable queue row for one stock-lane, or None when absent.
 
@@ -135,7 +150,9 @@ def _queue_state(
 
 
 def _freshness(
-    as_of_ms: int, coverage: dict[str, Any], checkpoint: dict[str, Any],
+    as_of_ms: int,
+    coverage: dict[str, Any],
+    checkpoint: dict[str, Any],
 ) -> dict[str, Any]:
     """Derive freshness strictly from ``as_of_ms`` and stored timestamps.
 
@@ -160,8 +177,11 @@ def _freshness(
 
 
 def _lane_view(
-    conn: sqlite3.Connection, symbol: str, lane: str,
-    as_of_ms: int, sample_limit: int,
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: str,
+    as_of_ms: int,
+    sample_limit: int,
 ) -> dict[str, Any]:
     """Assemble one lane's progress row from the upstream read models.
 
@@ -187,8 +207,11 @@ def _lane_view(
 
 
 def build_progress_view(
-    conn: sqlite3.Connection, symbol: str, *,
-    as_of_ms: int, sample_limit: int = 5,
+    conn: sqlite3.Connection,
+    symbol: str,
+    *,
+    as_of_ms: int,
+    sample_limit: int = 5,
 ) -> dict[str, Any]:
     """Build the read-only two-lane progress view for one stock.
 
@@ -234,8 +257,7 @@ def build_progress_view(
     as_of_ms = _required_as_of_ms(as_of_ms)
     sample_limit = _required_sample_limit(sample_limit)
     lanes = {
-        lane: _lane_view(conn, symbol, lane, as_of_ms, sample_limit)
-        for lane in LANES
+        lane: _lane_view(conn, symbol, lane, as_of_ms, sample_limit) for lane in LANES
     }
     return {
         "symbol": symbol,
@@ -246,8 +268,11 @@ def build_progress_view(
 
 
 def build_board(
-    conn: sqlite3.Connection, symbols: list[str], *,
-    as_of_ms: int, sample_limit: int = 5,
+    conn: sqlite3.Connection,
+    symbols: list[str],
+    *,
+    as_of_ms: int,
+    sample_limit: int = 5,
 ) -> list[dict[str, Any]]:
     """Build one progress view per stock, preserving the caller's order.
 
@@ -282,7 +307,6 @@ def build_board(
     as_of_ms = _required_as_of_ms(as_of_ms)
     sample_limit = _required_sample_limit(sample_limit)
     return [
-        build_progress_view(
-            conn, item, as_of_ms=as_of_ms, sample_limit=sample_limit)
+        build_progress_view(conn, item, as_of_ms=as_of_ms, sample_limit=sample_limit)
         for item in symbols
     ]

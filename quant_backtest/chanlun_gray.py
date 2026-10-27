@@ -38,6 +38,7 @@ want_dir = -1 if type.endswith("买") else 1——1/2/3 类买点 dt 均落在
 CLI 自测：
   python chanlun_gray.py 600337.SH       # zhice-db 取数 → 全信号灰度表
 """
+
 import sys
 
 from chanlun_macd import macd_series
@@ -64,7 +65,7 @@ def _locate(bis, sig):
 
 def _hist_area(macd, i_s, i_e, dir_):
     """笔区间 MACD 柱面积：下跌笔取负柱和绝对值，上涨笔取正柱和。"""
-    seg = macd[i_s:i_e + 1]
+    seg = macd[i_s : i_e + 1]
     if dir_ == -1:
         return -sum(m["hist"] for m in seg if m["hist"] < 0)
     return sum(m["hist"] for m in seg if m["hist"] > 0)
@@ -72,7 +73,7 @@ def _hist_area(macd, i_s, i_e, dir_):
 
 def _dif_ext(macd, i_s, i_e, dir_):
     """笔区间 DIF 极值：下跌笔取最小（最负），上涨笔取最大。"""
-    seg = [m["dif"] for m in macd[i_s:i_e + 1]]
+    seg = [m["dif"] for m in macd[i_s : i_e + 1]]
     if not seg:
         return None
     return min(seg) if dir_ == -1 else max(seg)
@@ -95,16 +96,16 @@ def _div_dual(bars, bis, sig, macd):
         return None, None, None, None
     want = bis[k]["dir"]
     px_k, px_j = bis[k]["e_price"], bis[j]["e_price"]
-    new_ext = px_k < px_j if want == -1 else px_k > px_j   # 价格创新低/高
+    new_ext = px_k < px_j if want == -1 else px_k > px_j  # 价格创新低/高
     div_area, fv_area = None, None
     a_j, a_k = _hist_area(macd, js, je, want), _hist_area(macd, ks, ke, want)
     if a_j > 0 and a_k > 0:
-        div_area = bool(new_ext and a_k < a_j)             # 面积萎缩
+        div_area = bool(new_ext and a_k < a_j)  # 面积萎缩
         fv_area = [round(a_j, 4), round(a_k, 4)]
     div_dif, fv_dif = None, None
     d_j, d_k = _dif_ext(macd, js, je, want), _dif_ext(macd, ks, ke, want)
     if d_j is not None and d_k is not None:
-        conv = d_k > d_j if want == -1 else d_k < d_j      # 极值收敛
+        conv = d_k > d_j if want == -1 else d_k < d_j  # 极值收敛
         div_dif = bool(new_ext and conv)
         fv_dif = [round(d_j, 4), round(d_k, 4)]
     return div_area, fv_area, div_dif, fv_dif
@@ -160,12 +161,13 @@ def enrich(bars, st):
     n = 0
     for s in sigs:
         try:
-            s["div_area"], s["fv_area"], s["div_dif"], s["fv_dif"] = \
-                _div_dual(bars, st["bis"], s, macd)
+            s["div_area"], s["fv_area"], s["div_dif"], s["fv_dif"] = _div_dual(
+                bars, st["bis"], s, macd
+            )
             prior = _prior_pivots(st["pivots"], s)
             s["pv_state"], s["pv_dir"], s["pv_fv"] = _pivot_evol(prior)
             s["conf"] = _conf(s, len(prior))
-            s["n_prior"] = len(prior)      # S 批：mls 特征直用（原仅回填算）
+            s["n_prior"] = len(prior)  # S 批：mls 特征直用（原仅回填算）
         except Exception:
             s["div_area"] = s["fv_area"] = s["div_dif"] = s["fv_dif"] = None
             s["pv_state"] = s["pv_dir"] = s["pv_fv"] = None
@@ -180,27 +182,38 @@ if __name__ == "__main__":
     code = sys.argv[1] if len(sys.argv) > 1 else "600337.SH"
     from chanlun_data import load_kline
     from chanlun_signal import analyze
+
     r = load_kline(code, "1d", 500)
     if not r.get("ok"):
         raise SystemExit("load_kline failed: %s" % r)
     bars = r["bars"]
     st = analyze(bars)
     n = enrich(bars, st)
-    print("=== %s 灰度层（bars=%d bis=%d pivots=%d signals=%d enrich=%d）==="
-          % (code, len(bars), len(st["bis"]), len(st["pivots"]),
-             len(st["signals"]), n))
-    print("%-10s %-12s %-6s %-6s %-6s %-8s %-4s %-5s %s"
-          % ("type", "dt", "px", "area", "dif", "pv", "dir", "conf",
-             "mbei/vv"))
+    print(
+        "=== %s 灰度层（bars=%d bis=%d pivots=%d signals=%d enrich=%d）==="
+        % (code, len(bars), len(st["bis"]), len(st["pivots"]), len(st["signals"]), n)
+    )
+    print(
+        "%-10s %-12s %-6s %-6s %-6s %-8s %-4s %-5s %s"
+        % ("type", "dt", "px", "area", "dif", "pv", "dir", "conf", "mbei/vv")
+    )
     for s in st["signals"]:
-        print("%-10s %-12s %-6.2f %-6s %-6s %-8s %-4s %-5s %s/%s"
-              % (s["type"], s["dt"], s.get("price") or 0,
-                 "T" if s.get("div_area") else
-                 ("F" if s.get("div_area") is False else "—"),
-                 "T" if s.get("div_dif") else
-                 ("F" if s.get("div_dif") is False else "—"),
-                 s.get("pv_state") or "—", s.get("pv_dir") or "—",
-                 s.get("conf") if s.get("conf") is not None else "—",
-                 "T" if s.get("mbei") else
-                 ("F" if s.get("mbei") is False else "—"),
-                 "T" if s.get("vv") else ("F" if s.get("vv") is False else "—")))
+        print(
+            "%-10s %-12s %-6.2f %-6s %-6s %-8s %-4s %-5s %s/%s"
+            % (
+                s["type"],
+                s["dt"],
+                s.get("price") or 0,
+                "T"
+                if s.get("div_area")
+                else ("F" if s.get("div_area") is False else "—"),
+                "T"
+                if s.get("div_dif")
+                else ("F" if s.get("div_dif") is False else "—"),
+                s.get("pv_state") or "—",
+                s.get("pv_dir") or "—",
+                s.get("conf") if s.get("conf") is not None else "—",
+                "T" if s.get("mbei") else ("F" if s.get("mbei") is False else "—"),
+                "T" if s.get("vv") else ("F" if s.get("vv") is False else "—"),
+            )
+        )

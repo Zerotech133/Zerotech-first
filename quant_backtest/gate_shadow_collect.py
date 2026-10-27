@@ -56,6 +56,7 @@ qd_scanner——双刀侧直接读 qd_scanner 产物）：
   ... --strategies qd,qpzm          # 只采部分策略
   ... --out PATH                    # 落档路径覆盖（测试用）
 """
+
 import argparse
 import glob
 import json
@@ -72,14 +73,12 @@ LOG = "C:/Temp/gate_shadow_collect.log"
 STALE_LOCK_SEC = 120
 THETAS = (40, 45, 50)
 
-QD_CACHE = os.path.abspath(os.path.join(
-    HERE, "..", "portal", "qd_scan_cache.json"))
+QD_CACHE = os.path.abspath(os.path.join(HERE, "..", "portal", "qd_scan_cache.json"))
 QPZM_SNAP = os.path.join(HERE, "reports", "rps_latest.json")
-CROSS_GLOB = os.path.join(HERE, "data", "sig_events",
-                          "sig_events_market_v3_*.json")
+CROSS_GLOB = os.path.join(HERE, "data", "sig_events", "sig_events_market_v3_*.json")
 SERIES_FP = os.path.join(HERE, "reports", "qd_breadth_series.json")
 
-_seen = {}            # 进程内幂等缓存：{落档路径: set("date|strategy|theta|status")}
+_seen = {}  # 进程内幂等缓存：{落档路径: set("date|strategy|theta|status")}
 
 
 def _log(msg):
@@ -92,8 +91,12 @@ def _log(msg):
 
 def _key(rec):
     """幂等键：同日同策略同档同状态不重复。"""
-    return "%s|%s|%s|%s" % (rec["date"], rec["strategy"], rec["theta"],
-                            rec["source_status"])
+    return "%s|%s|%s|%s" % (
+        rec["date"],
+        rec["strategy"],
+        rec["theta"],
+        rec["source_status"],
+    )
 
 
 def _load_seen(path):
@@ -109,7 +112,7 @@ def _load_seen(path):
                     try:
                         seen.add(_key(json.loads(line)))
                     except Exception:
-                        continue     # 坏行跳过，不阻断
+                        continue  # 坏行跳过，不阻断
         _seen[path] = seen
     return _seen[path]
 
@@ -125,7 +128,7 @@ def _acquire_lock(timeout=30):
         except FileExistsError:
             try:
                 if time.time() - os.stat(LOCK).st_mtime > STALE_LOCK_SEC:
-                    os.remove(LOCK)          # 陈旧锁回收
+                    os.remove(LOCK)  # 陈旧锁回收
                     continue
             except OSError:
                 pass
@@ -168,7 +171,7 @@ def read_qd(qd_cache=QD_CACHE, series_fp=SERIES_FP):
     br = None
     for s in sigs:
         if s.get("breadth") is not None:
-            br = float(s["breadth"]) / 100.0     # 百分比 → 0-1
+            br = float(s["breadth"]) / 100.0  # 百分比 → 0-1
             break
     src = str(qd_cache)
     if br is None:
@@ -196,8 +199,9 @@ def read_qpzm(snap_fp=QPZM_SNAP):
     date = str(s.get("latest") or "")
     if not date:
         raise ValueError("rps_latest 无 latest")
-    env_cn = next((e for e in (s.get("envs") or [])
-                   if "A股" in str(e.get("label", ""))), None)
+    env_cn = next(
+        (e for e in (s.get("envs") or []) if "A股" in str(e.get("label", ""))), None
+    )
     if env_cn is None or env_cn.get("breadth") is None:
         raise ValueError("rps_latest 无 A股 env")
     br = float(env_cn["breadth"])
@@ -210,7 +214,7 @@ def read_qpzm(snap_fp=QPZM_SNAP):
     except Exception:
         upf = None
     codes = []
-    for r in (s.get("res") or []):
+    for r in s.get("res") or []:
         if r.get("market") != "CN":
             continue
         # 闸门前信号全集：买入/观察/回避（环境闸门）都算命中过
@@ -235,8 +239,11 @@ def read_cross(cross_glob=CROSS_GLOB, series_fp=SERIES_FP):
     date = str(meta.get("d1") or "")
     if not date:
         raise ValueError("cross 产物无 meta.d1")
-    codes = sorted(str(e.get("stock")) for e in (d.get("events") or [])
-                   if str(e.get("day")) == date)
+    codes = sorted(
+        str(e.get("stock"))
+        for e in (d.get("events") or [])
+        if str(e.get("day")) == date
+    )
     date_s, br = series_anchor(series_fp)
     src = str(fp) + (" (序列锚 %s)" % date_s if date_s != date else "")
     return date, codes, br, src
@@ -257,7 +264,7 @@ def blocked_at(theta, codes, breadth=None, med20=None, strategy="qd"):
     if not codes:
         return 0, []
     if strategy == "qpzm":
-        med_hit = (med20 is not None and med20 < -0.03)
+        med_hit = med20 is not None and med20 < -0.03
         if breadth is None:
             return (len(codes), list(codes)) if med_hit else (0, [])
         hit = (breadth < theta / 100.0) or med_hit
@@ -268,41 +275,62 @@ def blocked_at(theta, codes, breadth=None, med20=None, strategy="qd"):
     return (len(codes), list(codes)) if hit else (0, [])
 
 
-def _mk_rows(date, strategy, n_total, codes, breadth, med20, src,
-             upfrac=None):
+def _mk_rows(date, strategy, n_total, codes, breadth, med20, src, upfrac=None):
     rows = []
     for th in THETAS:
         nb, bc = blocked_at(th, codes, breadth, med20, strategy)
-        rows.append({
-            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "date": date, "strategy": strategy, "theta": th,
-            "n_total": n_total, "n_blocked": nb,
-            "blocked_codes": sorted(bc),
-            "breadth": None if breadth is None else round(breadth, 4),
-            "med20": None if med20 is None else round(med20, 4),
-            # [20261014_m] qpzm 源透传 upfrac；qd/cross 无此字段保持 None
-            "upfrac": None if upfrac is None else round(upfrac, 4),
-            "source_status": "ok", "src": str(src), "fwd": None,
-        })
+        rows.append(
+            {
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "date": date,
+                "strategy": strategy,
+                "theta": th,
+                "n_total": n_total,
+                "n_blocked": nb,
+                "blocked_codes": sorted(bc),
+                "breadth": None if breadth is None else round(breadth, 4),
+                "med20": None if med20 is None else round(med20, 4),
+                # [20261014_m] qpzm 源透传 upfrac；qd/cross 无此字段保持 None
+                "upfrac": None if upfrac is None else round(upfrac, 4),
+                "source_status": "ok",
+                "src": str(src),
+                "fwd": None,
+            }
+        )
     return rows
 
 
 def _mk_missing(date, strategy, reason):
     rows = []
     for th in THETAS:
-        rows.append({
-            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "date": date, "strategy": strategy, "theta": th,
-            "n_total": None, "n_blocked": None, "blocked_codes": None,
-            "breadth": None, "med20": None, "upfrac": None,
-            "source_status": "missing", "src": reason[:160], "fwd": None,
-        })
+        rows.append(
+            {
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "date": date,
+                "strategy": strategy,
+                "theta": th,
+                "n_total": None,
+                "n_blocked": None,
+                "blocked_codes": None,
+                "breadth": None,
+                "med20": None,
+                "upfrac": None,
+                "source_status": "missing",
+                "src": reason[:160],
+                "fwd": None,
+            }
+        )
     return rows
 
 
-def collect_run(strategies=("qd", "qpzm", "cross"), out=SHADOW,
-                qd_cache=QD_CACHE, qpzm_snap=QPZM_SNAP,
-                cross_glob=CROSS_GLOB, series_fp=SERIES_FP):
+def collect_run(
+    strategies=("qd", "qpzm", "cross"),
+    out=SHADOW,
+    qd_cache=QD_CACHE,
+    qpzm_snap=QPZM_SNAP,
+    cross_glob=CROSS_GLOB,
+    series_fp=SERIES_FP,
+):
     """日采入口（挂载点调用）：采三档影子行，返回本次落档行列表。
 
     任一策略源读失败/缺失 → 该策略落 missing 行，不阻塞其他策略；
@@ -314,16 +342,15 @@ def collect_run(strategies=("qd", "qpzm", "cross"), out=SHADOW,
             try:
                 if st == "qd":
                     date, codes, br, src = read_qd(qd_cache, series_fp)
-                    rows = _mk_rows(date, st, len(codes), codes, br,
-                                    None, src)
+                    rows = _mk_rows(date, st, len(codes), codes, br, None, src)
                 elif st == "qpzm":
                     date, codes, br, med, upf, src = read_qpzm(qpzm_snap)
-                    rows = _mk_rows(date, st, len(codes), codes, br,
-                                    med, src, upfrac=upf)
+                    rows = _mk_rows(
+                        date, st, len(codes), codes, br, med, src, upfrac=upf
+                    )
                 elif st == "cross":
                     date, codes, br, src = read_cross(cross_glob, series_fp)
-                    rows = _mk_rows(date, st, len(codes), codes, br,
-                                    None, src)
+                    rows = _mk_rows(date, st, len(codes), codes, br, None, src)
                 else:
                     continue
             except Exception as e:
@@ -334,8 +361,7 @@ def collect_run(strategies=("qd", "qpzm", "cross"), out=SHADOW,
                     date = series_anchor(series_fp)[0]
                 except Exception:
                     date = time.strftime("%Y%m%d")
-                rows = _mk_missing(date, st, "%s: %s"
-                                   % (type(e).__name__, e))
+                rows = _mk_missing(date, st, "%s: %s" % (type(e).__name__, e))
             appended += _append(rows, out)
     except Exception as e:
         _log("collect_run fatal: %s" % e)
@@ -366,8 +392,7 @@ def _append(rows, out=SHADOW):
             return []
         fd = os.open(out, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
         try:
-            payload = "".join(
-                json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
+            payload = "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
             os.write(fd, payload.encode("utf-8"))
             os.fsync(fd)
         finally:
@@ -385,17 +410,27 @@ def main(argv=None):
     except Exception:
         pass
     ap = argparse.ArgumentParser(description="W5 环境闸门三档影子日采")
-    ap.add_argument("--strategies", default="qd,qpzm,cross",
-                    help="逗号分隔：qd,qpzm,cross")
+    ap.add_argument(
+        "--strategies", default="qd,qpzm,cross", help="逗号分隔：qd,qpzm,cross"
+    )
     ap.add_argument("--out", default=SHADOW, help="落档 jsonl 路径")
     a = ap.parse_args(argv)
     sts = [s.strip() for s in str(a.strategies).split(",") if s.strip()]
     rows = collect_run(strategies=tuple(sts), out=a.out)
     print("GATE_SHADOW +%d -> %s" % (len(rows), a.out))
     for r in rows:
-        print("  %s %s θ=%s total=%s blocked=%s br=%s [%s]" % (
-            r["date"], r["strategy"], r["theta"], r["n_total"],
-            r["n_blocked"], r["breadth"], r["source_status"]))
+        print(
+            "  %s %s θ=%s total=%s blocked=%s br=%s [%s]"
+            % (
+                r["date"],
+                r["strategy"],
+                r["theta"],
+                r["n_total"],
+                r["n_blocked"],
+                r["breadth"],
+                r["source_status"],
+            )
+        )
     return 0
 
 

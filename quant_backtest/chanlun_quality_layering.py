@@ -21,6 +21,7 @@ D+2 首次可操作日开盘买入 × T+5/T+10 收盘卖出，ts_adj_factor 复�
 
 用法：python chanlun_quality_layering.py
 """
+
 import collections
 import json
 import os
@@ -58,34 +59,54 @@ def load_events_full():
             if not code or len(dd) != 10:
                 continue
             lag = r.get("lag")
-            evts.append({
-                "code": code, "type": r.get("type"), "D": dd,
-                "trend": str(r.get("trend")), "reg": str(r.get("reg")),
-                "bei": r.get("bei"), "tbe": r.get("tbe"),
-                "vv": r.get("vv"), "lag": lag,
-                "lagb": ("scan(None)" if lag is None else
-                         "≤10" if lag <= 10 else
-                         "11-20" if lag <= 20 else ">20"),
-                "source": str(r.get("source") or ""),
-            })
+            evts.append(
+                {
+                    "code": code,
+                    "type": r.get("type"),
+                    "D": dd,
+                    "trend": str(r.get("trend")),
+                    "reg": str(r.get("reg")),
+                    "bei": r.get("bei"),
+                    "tbe": r.get("tbe"),
+                    "vv": r.get("vv"),
+                    "lag": lag,
+                    "lagb": (
+                        "scan(None)"
+                        if lag is None
+                        else "≤10"
+                        if lag <= 10
+                        else "11-20"
+                        if lag <= 20
+                        else ">20"
+                    ),
+                    "source": str(r.get("source") or ""),
+                }
+            )
     return evts
 
 
 def lag_bucket(lag):
-    return ("scan(None)" if lag is None else "≤10" if lag <= 10
-            else "11-20" if lag <= 20 else ">20")
+    return (
+        "scan(None)"
+        if lag is None
+        else "≤10"
+        if lag <= 10
+        else "11-20"
+        if lag <= 20
+        else ">20"
+    )
 
 
 def main():
     evts = load_events_full()
     print("[1/3] 买点事件 %d" % len(evts), flush=True)
     cal = R.trade_calendar()
-    stocks = R.load_table_grouped("ts_daily",
-                                  ["ts_code", "trade_date", "open", "close"],
-                                  "ts_code")
-    adj_all = R.load_table_grouped("ts_adj_factor",
-                                   ["ts_code", "trade_date", "adj_factor"],
-                                   "ts_code")
+    stocks = R.load_table_grouped(
+        "ts_daily", ["ts_code", "trade_date", "open", "close"], "ts_code"
+    )
+    adj_all = R.load_table_grouped(
+        "ts_adj_factor", ["ts_code", "trade_date", "adj_factor"], "ts_code"
+    )
 
     rows, n_skip = [], 0
     for e in evts:
@@ -95,9 +116,11 @@ def main():
             n_skip += 1
             continue
         adf = adj_all.get(code)
-        adjmap = ({str(t): float(a) for t, a in zip(
-            adf["trade_date"], adf["adj_factor"])} if adf is not None
-            and len(adf) else None)
+        adjmap = (
+            {str(t): float(a) for t, a in zip(adf["trade_date"], adf["adj_factor"])}
+            if adf is not None and len(adf)
+            else None
+        )
         D = R.d8(e["D"])
         exec_day = R.after_days(cal, D, 2)  # 生产口径：D+2 首次可操作
         if exec_day is None:
@@ -105,11 +128,9 @@ def main():
         wins = {}
         for w in WINDOWS:
             d1 = R.after_days(cal, exec_day, w)
-            wins[w] = (R.fast_pct(stock, adjmap, exec_day, d1)
-                       if d1 else None)
+            wins[w] = R.fast_pct(stock, adjmap, exec_day, d1) if d1 else None
         rows.append(dict(e, wins=wins))
-    print("[2/3] 收益计算完成 %d 行（湖缺票跳过 %d）" % (len(rows), n_skip),
-          flush=True)
+    print("[2/3] 收益计算完成 %d 行（湖缺票跳过 %d）" % (len(rows), n_skip), flush=True)
 
     def stat(rs, w):
         vals = [r["wins"][w] for r in rs]
@@ -117,9 +138,12 @@ def main():
         if not vals:
             return None
         arr = np.array(vals)
-        return (len(arr), round(float(arr.mean()), 2),
-                round(float(np.median(arr)), 2),
-                round(float((arr > 0).mean() * 100), 1))
+        return (
+            len(arr),
+            round(float(arr.mean()), 2),
+            round(float(np.median(arr)), 2),
+            round(float((arr > 0).mean() * 100), 1),
+        )
 
     base = {w: stat(rows, w) for w in WINDOWS}
 
@@ -128,8 +152,10 @@ def main():
         for r in rows:
             groups[str(keyfn(r))].append(r)
         print("\n--- %s ---" % title)
-        print("%-18s %6s | %19s | %19s" %
-              ("层", "n", "T+5 均值/中位/胜率%", "T+10 均值/中位/胜率%"))
+        print(
+            "%-18s %6s | %19s | %19s"
+            % ("层", "n", "T+5 均值/中位/胜率%", "T+10 均值/中位/胜率%")
+        )
         for k in sorted(groups, key=lambda x: -len(groups[x])):
             g = groups[k]
             line = "%-18s %6d" % (k, len(g))
@@ -139,12 +165,14 @@ def main():
                     line += " |            --"
                     continue
                 dm = s[2] - base[w][2]
-                line += " | %6.2f %6.2f %5.1f(%+5.1f)" % (
-                    s[1], s[2], s[3], dm)
+                line += " | %6.2f %6.2f %5.1f(%+5.1f)" % (s[1], s[2], s[3], dm)
             print(line)
 
-    print("[3/3] 分层汇总（基准全池：T+5 中位 %.2f / T+10 中位 %.2f；"
-          "括号=中位差 vs 全池）" % (base[5][2], base[10][2]), flush=True)
+    print(
+        "[3/3] 分层汇总（基准全池：T+5 中位 %.2f / T+10 中位 %.2f；"
+        "括号=中位差 vs 全池）" % (base[5][2], base[10][2]),
+        flush=True,
+    )
     layer(lambda r: r["type"], "type 买点类别")
     layer(lambda r: r["trend"], "trend 信号时个股趋势")
     layer(lambda r: r["reg"], "reg 大盘 regime")
@@ -154,12 +182,22 @@ def main():
     layer(lambda r: r["lagb"], "lag 检测滞后桶")
     layer(lambda r: r["source"], "source 检出来源")
     layer(lambda r: "%s×%s" % (r["type"], r["trend"]), "type×trend")
-    layer(lambda r: "1买 tbe=%s vv=%s" % (r["tbe"], r["vv"])
-          if r["type"] == "1买" else "—", "1买内 tbe×vv（—=非1买）")
-    layer(lambda r: "3买 bei=%s vv=%s" % (r["bei"], r["vv"])
-          if r["type"] == "3买" else "—", "3买内 bei×vv（—=非3买）")
-    layer(lambda r: "2买 lag=%s" % r["lagb"]
-          if r["type"] == "2买" else "—", "2买内 lag 分桶（—=非2买）")
+    layer(
+        lambda r: (
+            "1买 tbe=%s vv=%s" % (r["tbe"], r["vv"]) if r["type"] == "1买" else "—"
+        ),
+        "1买内 tbe×vv（—=非1买）",
+    )
+    layer(
+        lambda r: (
+            "3买 bei=%s vv=%s" % (r["bei"], r["vv"]) if r["type"] == "3买" else "—"
+        ),
+        "3买内 bei×vv（—=非3买）",
+    )
+    layer(
+        lambda r: "2买 lag=%s" % r["lagb"] if r["type"] == "2买" else "—",
+        "2买内 lag 分桶（—=非2买）",
+    )
     return 0
 
 

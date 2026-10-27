@@ -7,17 +7,19 @@ from build_history_runstore_candidate import _registry_audit, build
 def _candidate_registry():
     rows = []
     for table in ("ts_daily_basic", "ts_margin_detail"):
-        rows.append({
-            "asset_id": table,
-            "provider": "tushare.pro",
-            "channel": "tushare",
-            "qualification_status": "candidate_ready",
-            "pending_fields": ["runstore_run_id"],
-            "qualification_evidence": {
-                "explicit_receipts": [f"{table}.receipt.json"],
-                "reconciliation": "reconciliation/report.json",
-            },
-        })
+        rows.append(
+            {
+                "asset_id": table,
+                "provider": "tushare.pro",
+                "channel": "tushare",
+                "qualification_status": "candidate_ready",
+                "pending_fields": ["runstore_run_id"],
+                "qualification_evidence": {
+                    "explicit_receipts": [f"{table}.receipt.json"],
+                    "reconciliation": "reconciliation/report.json",
+                },
+            }
+        )
     return {
         "global_activation": False,
         "production_write": False,
@@ -37,7 +39,9 @@ def test_build_reads_external_registry_and_keeps_it_unchanged(tmp_path):
     result = build(registry_path=registry_path, stage_root=stage_root)
 
     assert registry_path.read_bytes() == before
-    audit = json.loads((stage_root / "runstore_candidate_audit.json").read_text(encoding="utf-8"))
+    audit = json.loads(
+        (stage_root / "runstore_candidate_audit.json").read_text(encoding="utf-8")
+    )
     assert audit["registry_sha256"] == hashlib.sha256(before).hexdigest()
     assert audit["all_candidate_gates_pass"] is True
     assert result["production_write"] is False
@@ -67,18 +71,27 @@ def test_build_reads_external_receipts_without_writing_source_stage(tmp_path):
         (batch / f"{table}_20261009.receipt.json").write_text(
             json.dumps(receipt), encoding="utf-8"
         )
-    before = sorted(p.relative_to(source_root).as_posix() for p in source_root.rglob("*"))
+    before = sorted(
+        p.relative_to(source_root).as_posix() for p in source_root.rglob("*")
+    )
     output_root = tmp_path / "candidate-output"
 
-    result = build(registry_path=registry_path, stage_root=output_root, receipt_root=source_root)
+    result = build(
+        registry_path=registry_path, stage_root=output_root, receipt_root=source_root
+    )
 
-    after = sorted(p.relative_to(source_root).as_posix() for p in source_root.rglob("*"))
+    after = sorted(
+        p.relative_to(source_root).as_posix() for p in source_root.rglob("*")
+    )
     assert before == after
     assert result["unit_count"] == 2
-    plan = json.loads((output_root / "runstore_candidate_plan.json").read_text(encoding="utf-8"))
+    plan = json.loads(
+        (output_root / "runstore_candidate_plan.json").read_text(encoding="utf-8")
+    )
     assert plan["resource"] == str(source_root.resolve())
     assert {u["unit_id"] for u in plan["units"]} == {
-        "ts_daily_basic:20261009", "ts_margin_detail:20261009"
+        "ts_daily_basic:20261009",
+        "ts_margin_detail:20261009",
     }
 
 

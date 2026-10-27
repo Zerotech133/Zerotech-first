@@ -41,9 +41,7 @@ def _validate(unit: Any) -> xq_split_units.Unit:
 def _payload_text(payload: dict[str, Any]) -> str:
     """Serialize a payload under the evidence_json contract, fail-closed."""
     try:
-        return json.dumps(
-            payload, ensure_ascii=False, sort_keys=True, allow_nan=False
-        )
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True, allow_nan=False)
     except (TypeError, ValueError) as error:
         raise ValueError("unit payload must be serializable as JSON") from error
 
@@ -104,8 +102,13 @@ def persist(
                 """INSERT OR IGNORE INTO xq_reverse_split_unit
                    (unit_id, source, unit_type, raw_post_id, payload_json)
                    VALUES (?, ?, ?, ?, ?)""",
-                (unit.unit_id, unit.source, unit.unit_type,
-                 unit.raw_post_id, payload_text),
+                (
+                    unit.unit_id,
+                    unit.source,
+                    unit.unit_type,
+                    unit.raw_post_id,
+                    payload_text,
+                ),
             )
             if cursor.rowcount == 1:
                 inserted += 1

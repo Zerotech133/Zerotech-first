@@ -23,6 +23,7 @@
   python a4_multi_market_probe.py --market HK
   python a4_multi_market_probe.py --all      # 两市场连跑
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,11 +43,13 @@ REPORT_DIR = ROOT / "reports"
 MIN_BARS = 120
 SCANNER = ROOT / "chanlun_scan.py"
 
-POOLS = {"US": ROOT / "data" / "chanlun_pool_us.jsonl",
-         "HK": ROOT / "data" / "chanlun_pool_hk.jsonl"}
+POOLS = {
+    "US": ROOT / "data" / "chanlun_pool_us.jsonl",
+    "HK": ROOT / "data" / "chanlun_pool_hk.jsonl",
+}
 BAR_DIR = {"US": ROOT / "data" / "us", "HK": ROOT / "data" / "hk"}
 XQ_DB = ROOT / "data" / "xueqiu" / "xueqiu_info.db"
-ALL_CAP = 30000          # 行情层统计上限（超过则全量，仍逐文件读元数据）
+ALL_CAP = 30000  # 行情层统计上限（超过则全量，仍逐文件读元数据）
 
 
 def _log_run(event: str, detail: dict) -> None:
@@ -55,9 +58,17 @@ def _log_run(event: str, detail: dict) -> None:
         log = REPORT_DIR / "a4_multi_market_snap" / "run_log.jsonl"
         log.parent.mkdir(parents=True, exist_ok=True)
         with log.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                 "event": event, **detail},
-                                ensure_ascii=False) + "\n")
+            fh.write(
+                json.dumps(
+                    {
+                        "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "event": event,
+                        **detail,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     except OSError:
         pass  # 留痕失败不阻断主流程
 
@@ -76,15 +87,18 @@ def _scanner_min_bars() -> int | None:
 
 # ---------- 1. 行情层：parquet 仓覆盖 ----------
 
+
 def _rows_of(path: Path) -> int | None:
     """只读 parquet 行数（pyarrow 元数据优先，回退 pandas 全读）。"""
     try:
         import pyarrow.parquet as pq
+
         return int(pq.ParquetFile(str(path)).metadata.num_rows)
     except Exception:
         pass
     try:
         import pandas as pd
+
         return int(len(pd.read_parquet(path)))
     except Exception:
         return None
@@ -94,11 +108,14 @@ def _span_of(path: Path) -> tuple[str, str] | None:
     """读首末交易日（只读两列，用于历史起点与新鲜度）。"""
     try:
         import pandas as pd
+
         d = pd.read_parquet(path, columns=["trade_date"])
         if d.empty:
             return None
-        return (str(d["trade_date"].min()).replace("-", "")[:8],
-                str(d["trade_date"].max()).replace("-", "")[:8])
+        return (
+            str(d["trade_date"].min()).replace("-", "")[:8],
+            str(d["trade_date"].max()).replace("-", "")[:8],
+        )
     except Exception:
         return None
 
@@ -122,8 +139,11 @@ def probe_bars(market: str) -> dict:
             rows.append(n)
 
     if not rows:
-        return {"status": "ALL_UNREADABLE", "n_files": len(files),
-                "unreadable_sample": unreadable[:10]}
+        return {
+            "status": "ALL_UNREADABLE",
+            "n_files": len(files),
+            "unreadable_sample": unreadable[:10],
+        }
 
     rows_sorted = sorted(rows)
     n_pass = sum(1 for n in rows if n >= MIN_BARS)
@@ -135,8 +155,8 @@ def probe_bars(market: str) -> dict:
     for f in span_samp:
         sp = _span_of(f)
         if sp:
-            starts[sp[0][:6]] += 1      # 月粒度（YYYYMM）
-            ends[sp[1]] += 1            # 日粒度
+            starts[sp[0][:6]] += 1  # 月粒度（YYYYMM）
+            ends[sp[1]] += 1  # 日粒度
     span_ok = sum(1 for f in span_samp if (_span_of(f) or ("", ""))[0])
 
     return {
@@ -163,11 +183,15 @@ def probe_bars(market: str) -> dict:
 
 # ---------- 2. 结构层：缠论池 ----------
 
+
 def probe_pool(market: str) -> dict:
     p = POOLS[market]
     if not p.exists():
-        return {"status": "FILE_MISSING", "path": str(p),
-                "implication": "该市场尚无任何池产出（未跑过或跑过零产出，二者本探针不区分）"}
+        return {
+            "status": "FILE_MISSING",
+            "path": str(p),
+            "implication": "该市场尚无任何池产出（未跑过或跑过零产出，二者本探针不区分）",
+        }
     rows = bad = undated = 0
     dates = Counter()
     codes: set[str] = set()
@@ -215,6 +239,7 @@ def probe_pool(market: str) -> dict:
 
 # ---------- 3. Regime 层：大盘基准 ----------
 
+
 def probe_regime(market: str) -> dict:
     """US/HK 大盘基准在 chanlun_scan 中显式未接（代码事实），此处复核数据面。"""
     idx = {"US": ["SPY", "QQQ", "DIA"], "HK": ["HSI", "2800", "00001"]}[market]
@@ -224,8 +249,11 @@ def probe_regime(market: str) -> dict:
         f = d / ("%s.parquet" % code)
         if f.exists():
             sp = _span_of(f)
-            found[code] = {"n": _rows_of(f), "from": sp[0] if sp else None,
-                           "to": sp[1] if sp else None}
+            found[code] = {
+                "n": _rows_of(f),
+                "from": sp[0] if sp else None,
+                "to": sp[1] if sp else None,
+            }
         else:
             found[code] = None
     return {
@@ -238,21 +266,25 @@ def probe_regime(market: str) -> dict:
 
 # ---------- 4. 舆情层：雪球 norm_tickers.kind 分布（只读） ----------
 
+
 def probe_xueqiu() -> dict:
     if not XQ_DB.exists():
         return {"status": "DB_MISSING", "path": str(XQ_DB)}
     try:
-        con = sqlite3.connect("file:%s?mode=ro" % XQ_DB.as_posix(), uri=True,
-                              timeout=20)
+        con = sqlite3.connect(
+            "file:%s?mode=ro" % XQ_DB.as_posix(), uri=True, timeout=20
+        )
     except sqlite3.Error as e:
         return {"status": "DB_OPEN_ERROR", "error": str(e)[:200]}
     try:
         total = con.execute("select count(*) from xq_status_classified").fetchone()[0]
         rows = con.execute(
             "select norm_tickers from xq_status_classified "
-            "where norm_tickers not in ('','[]')").fetchall()
+            "where norm_tickers not in ('','[]')"
+        ).fetchall()
         last_lab = con.execute(
-            "select max(labeled_at) from xq_status_classified").fetchone()[0]
+            "select max(labeled_at) from xq_status_classified"
+        ).fetchone()[0]
     except sqlite3.Error as e:
         con.close()
         return {"status": "QUERY_ERROR", "error": str(e)[:200]}
@@ -264,7 +296,7 @@ def probe_xueqiu() -> dict:
 
     kinds = Counter()
     uniq: dict[str, set] = {}
-    shape = Counter()          # canonical 形态双轨观测
+    shape = Counter()  # canonical 形态双轨观测
     for (nt,) in rows:
         try:
             arr = json.loads(nt)
@@ -301,27 +333,39 @@ def probe_xueqiu() -> dict:
         "uniq_canonical_by_kind": {k: len(v) for k, v in sorted(uniq.items())},
         "canonical_shape": dict(shape.most_common()),
         "has_us_kind": any("us" in k for k in kinds),
-        "note": ("norm_tickers 是对象数组 [{raw,kind,canonical}]，非字符串数组；"
-                 "下游消费必须按 kind 分流，按字符串直读会得零结果"),
+        "note": (
+            "norm_tickers 是对象数组 [{raw,kind,canonical}]，非字符串数组；"
+            "下游消费必须按 kind 分流，按字符串直读会得零结果"
+        ),
     }
 
 
 # ---------- 5. 策略适配层：三项可用性 ----------
 
+
 def probe_strategy_fitness(market: str) -> dict:
     return {
         "name_book": {"US/HK 名称底册未接": True, "effect": "池内只显示代码，无中文名"},
-        "limit_rule": {"US/HK 无涨跌停停牌口径": True, "effect": "可成交默认 True，不判 mask"},
-        "hfq_factor": {"仅 CN 有后复权因子源": True,
-                       "effect": "US/HK 不复权，长周期结构受除权跳空干扰"},
+        "limit_rule": {
+            "US/HK 无涨跌停停牌口径": True,
+            "effect": "可成交默认 True，不判 mask",
+        },
+        "hfq_factor": {
+            "仅 CN 有后复权因子源": True,
+            "effect": "US/HK 不复权，长周期结构受除权跳空干扰",
+        },
         "reusable": ["缠论买卖点（chanlun_scan --market %s 直跑）" % market],
-        "not_reusable": ["青萍环境闸门（依赖 CN 指数口径）",
-                         "九维评分（CN 特征工程）", "共振筛选（依赖 CN 多策略同池）"],
+        "not_reusable": [
+            "青萍环境闸门（依赖 CN 指数口径）",
+            "九维评分（CN 特征工程）",
+            "共振筛选（依赖 CN 多策略同池）",
+        ],
         "registry_status": "未在 portal/strategies.json 登记（无本市场记分卡）",
     }
 
 
 # ---------- 主流程 ----------
+
 
 def run(market: str) -> dict:
     scanner_gate = _scanner_min_bars()
@@ -351,14 +395,22 @@ def run(market: str) -> dict:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     out = REPORT_DIR / ("a4_%s_coverage_report.json" % market.lower())
     out.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
-    _log_run("ok", {"market": market, "out": str(out),
-                    "n_files": report["layers"]["bar_store"].get("n_files"),
-                    "pass_rate": report["layers"]["bar_store"].get("pass_rate")})
+    _log_run(
+        "ok",
+        {
+            "market": market,
+            "out": str(out),
+            "n_files": report["layers"]["bar_store"].get("n_files"),
+            "pass_rate": report["layers"]["bar_store"].get("pass_rate"),
+        },
+    )
     return report
 
 
 def main():
-    ap = argparse.ArgumentParser(description="A4 multi-market coverage probe (read-only)")
+    ap = argparse.ArgumentParser(
+        description="A4 multi-market coverage probe (read-only)"
+    )
     ap.add_argument("--market", choices=["US", "HK"], help="single market")
     ap.add_argument("--all", action="store_true", help="US + HK")
     args = ap.parse_args()
@@ -368,20 +420,36 @@ def main():
     for m in markets:
         try:
             r = run(m)
-        except Exception as e:            # closed on failure：记 error 后仍 raise
+        except Exception as e:  # closed on failure：记 error 后仍 raise
             _log_run("error", {"market": m, "err": "%s: %s" % (type(e).__name__, e)})
             raise
         bs = r["layers"]["bar_store"]
         pl = r["layers"]["chanlun_pool"]
         xq = r["layers"]["sentiment_xueqiu"]
-        print("[%s] bar_store=%s files=%s pass(min_bars)=%s rate=%s"
-              % (m, bs.get("status"), bs.get("n_files"),
-                 bs.get("n_pass_min_bars"), bs.get("pass_rate")))
-        print("[%s] pool=%s rows=%s codes=%s dates=%s"
-              % (m, pl.get("status"), pl.get("rows"), pl.get("unique_codes"),
-                 pl.get("n_dates")))
-        print("[%s] xueqiu kinds=%s has_us=%s"
-              % (m, xq.get("kind_hits"), xq.get("has_us_kind")))
+        print(
+            "[%s] bar_store=%s files=%s pass(min_bars)=%s rate=%s"
+            % (
+                m,
+                bs.get("status"),
+                bs.get("n_files"),
+                bs.get("n_pass_min_bars"),
+                bs.get("pass_rate"),
+            )
+        )
+        print(
+            "[%s] pool=%s rows=%s codes=%s dates=%s"
+            % (
+                m,
+                pl.get("status"),
+                pl.get("rows"),
+                pl.get("unique_codes"),
+                pl.get("n_dates"),
+            )
+        )
+        print(
+            "[%s] xueqiu kinds=%s has_us=%s"
+            % (m, xq.get("kind_hits"), xq.get("has_us_kind"))
+        )
 
 
 if __name__ == "__main__":

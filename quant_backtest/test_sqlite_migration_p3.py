@@ -23,6 +23,7 @@
       →SKIP（注意 Skipped 继承 BaseException，except Exception 接不住）、
       FileNotFoundError→SKIP（JSON 已归档 data/archive/*.gz）。
 """
+
 import json
 import os
 import random
@@ -45,9 +46,11 @@ def _load_json_cache():
         return json.load(f)
 
 
-_SKIP_DIVERGED = ("迁移验收一次性用例：JSON 快照与 SQLite 活库随池窗口各自"
-                  "演进、集合双向分叉（快照 4370 codes vs 活库 4713 rows），"
-                  "全等前提已失效（2026-10-05 查证）")
+_SKIP_DIVERGED = (
+    "迁移验收一次性用例：JSON 快照与 SQLite 活库随池窗口各自"
+    "演进、集合双向分叉（快照 4370 codes vs 活库 4713 rows），"
+    "全等前提已失效（2026-10-05 查证）"
+)
 
 
 def test_row_count():
@@ -72,9 +75,10 @@ def test_field_spot_check():
                 ok = False
                 continue
             if jrec.get("rows") != srec.get("rows"):
-                print("  DIFF rows: %s (json=%d db=%d)" %
-                      (c, len(jrec.get("rows") or []),
-                       len(srec.get("rows") or [])))
+                print(
+                    "  DIFF rows: %s (json=%d db=%d)"
+                    % (c, len(jrec.get("rows") or []), len(srec.get("rows") or []))
+                )
                 ok = False
                 continue
             if jrec.get("fields") != srec.get("fields"):
@@ -82,8 +86,10 @@ def test_field_spot_check():
                 ok = False
                 continue
             if jrec.get("fetched_at") != srec.get("fetched_at"):
-                print("  DIFF fetched_at: %s json=%s db=%s" %
-                      (c, jrec.get("fetched_at"), srec.get("fetched_at")))
+                print(
+                    "  DIFF fetched_at: %s json=%s db=%s"
+                    % (c, jrec.get("fetched_at"), srec.get("fetched_at"))
+                )
                 ok = False
     finally:
         conn.close()
@@ -144,8 +150,9 @@ def test_fina_asof_consistency():
 
 
 def _plus_days(d_int, n):
-    return int((datetime.strptime(str(d_int), "%Y%m%d")
-                + timedelta(days=n)).strftime("%Y%m%d"))
+    return int(
+        (datetime.strptime(str(d_int), "%Y%m%d") + timedelta(days=n)).strftime("%Y%m%d")
+    )
 
 
 def test_fina_need():
@@ -156,8 +163,9 @@ def test_fina_need():
     conn = db.get_conn()
     try:
         # fresh cutoff（now-30天）：刚迁移的 fetched_at 多为近期，应返回空或极少
-        fresh_cutoff = (datetime.now() - timedelta(days=30)
-                        ).strftime("%Y-%m-%d %H:%M:%S")
+        fresh_cutoff = (datetime.now() - timedelta(days=30)).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         need_fresh = db.nd_fina_need(conn, codes, fresh_cutoff)
         # 旧 cutoff（2000-01-01）：所有 fetched_at >= 2000 → fresh → need 为空
         need_old = db.nd_fina_need(conn, codes, "2000-01-01 00:00:00")
@@ -165,14 +173,17 @@ def test_fina_need():
         need_future = db.nd_fina_need(conn, codes, "2099-01-01 00:00:00")
     finally:
         conn.close()
-    ok_old = (len(need_old) == 0)
-    ok_future = (len(need_future) == len(codes))
+    ok_old = len(need_old) == 0
+    ok_future = len(need_future) == len(codes)
     print("  fresh_cutoff need: %d (近期迁移应≈0)" % len(need_fresh))
-    print("  2000 cutoff need: %d (期望 0): %s" %
-          (len(need_old), "PASS" if ok_old else "FAIL"))
-    print("  2099 cutoff need: %d (期望 %d): %s" %
-          (len(need_future), len(codes),
-           "PASS" if ok_future else "FAIL"))
+    print(
+        "  2000 cutoff need: %d (期望 0): %s"
+        % (len(need_old), "PASS" if ok_old else "FAIL")
+    )
+    print(
+        "  2099 cutoff need: %d (期望 %d): %s"
+        % (len(need_future), len(codes), "PASS" if ok_future else "FAIL")
+    )
     assert ok_old and ok_future, "nd_fina_need TTL 行为不符"
 
 
@@ -182,20 +193,23 @@ def test_upsert_idempotent():
     try:
         before = db.nd_fina_count(conn)
         sample = conn.execute(
-            "SELECT code, fetched_at, rows_json, fields_json FROM nine_dim_fina "
-            "LIMIT 1").fetchone()
+            "SELECT code, fetched_at, rows_json, fields_json FROM nine_dim_fina LIMIT 1"
+        ).fetchone()
         if sample is None:
             print("  表为空，跳过")
             return
-        db.nd_fina_upsert(conn, sample["code"],
-                          json.loads(sample["rows_json"]),
-                          json.loads(sample["fields_json"]),
-                          sample["fetched_at"])
+        db.nd_fina_upsert(
+            conn,
+            sample["code"],
+            json.loads(sample["rows_json"]),
+            json.loads(sample["fields_json"]),
+            sample["fetched_at"],
+        )
         conn.commit()
         after = db.nd_fina_count(conn)
     finally:
         conn.close()
-    ok = (before == after)
+    ok = before == after
     print("  before=%d, after=%d" % (before, after))
     print("  结果: %s" % ("PASS" if ok else "FAIL"))
     assert ok, "重复 upsert 不应增长行数"
@@ -212,6 +226,7 @@ def main():
             return False
         except pytest.skip.Exception:  # Skipped 继承 BaseException 非 Exception
             return None
+
     results = [
         ("行数对比", _run(test_row_count)),
         ("字段抽检", _run(test_field_spot_check)),

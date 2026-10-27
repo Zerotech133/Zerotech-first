@@ -11,6 +11,7 @@
 sector_rank / style_lookup / turn_lookup / weak_track_close /
 weak_track_newcase 各自重复的 _norm 副本（P1-2）。
 """
+
 import re
 
 _PREFIX = re.compile(r"^(SH|SZ|BJ)(\d{6})$")

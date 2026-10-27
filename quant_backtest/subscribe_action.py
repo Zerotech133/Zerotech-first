@@ -21,6 +21,7 @@
     "note": "飞书卡一键订阅（K250）；价触 10.52 不破提醒"
   }
 """
+
 import json
 import os
 
@@ -58,6 +59,7 @@ def _norm_code(code):
     2026-10-16 章程 §4.3 收编：判定委托 codes.normalize_code 唯一权威
     （4 开头北交所等边缘判定随之修复），此处只做 TS→小写前缀形态转换。"""
     from codes import normalize_code
+
     ts = normalize_code(code)
     if ts is None:
         return str(code or "").strip().lower().replace(".", "")
@@ -75,7 +77,7 @@ def stock_name(code6):
     再退订阅表/清单；取不到返回 None——不阻断订阅流程。"""
     # 1) news_config.json watchlist（权威）
     cfg = _read_json(os.path.join(NEWS_DIR, "news_config.json"), {})
-    for it in (cfg.get("watchlist") or []):
+    for it in cfg.get("watchlist") or []:
         if not isinstance(it, dict):
             continue
         c = str(it.get("code") or "").lower().replace(".", "")
@@ -89,7 +91,7 @@ def stock_name(code6):
         if not isinstance(d, dict):
             continue
         for key in ("watchlist", "stocks", "pool", "items"):
-            for it in (d.get(key) or []):
+            for it in d.get(key) or []:
                 if not isinstance(it, dict):
                     continue
                 cd = str(it.get("code") or it.get("ts_code") or "")
@@ -99,6 +101,7 @@ def stock_name(code6):
 
 
 # ------------------------------------------------------------------ 主入口
+
 
 def subscribe_from_card(value, operator=None):
     """飞书卡 callback 的 value → 落订阅 → 返回 (ok, msg, card)。
@@ -123,8 +126,7 @@ def subscribe_from_card(value, operator=None):
             return _unsubscribe(code, kind, operator)
 
         name = stock_name(_code6(code)) or _code6(code)
-        sid = "sub_%s_%s" % ("bp" if kind == "buy_point" else kind[:4],
-                             _code6(code))
+        sid = "sub_%s_%s" % ("bp" if kind == "buy_point" else kind[:4], _code6(code))
 
         # 接收人：优先点击者本人，否则「个人」
         recv = _pick_receiver(operator)
@@ -134,8 +136,7 @@ def subscribe_from_card(value, operator=None):
         for s in subs:
             if s.get("id") == sid:
                 if s.get("enabled"):
-                    card = _confirm_card(
-                        name, code, px, label, kind, already=True)
+                    card = _confirm_card(name, code, px, label, kind, already=True)
                     return True, "已在订阅中", card
                 s["enabled"] = True
                 s["params"] = _params(code, px, kind, label)
@@ -144,17 +145,19 @@ def subscribe_from_card(value, operator=None):
                 card = _confirm_card(name, code, px, label, kind, already=False)
                 return True, "已恢复订阅", card
 
-        subs.append({
-            "id": sid,
-            "name": "%s %s" % (name, KIND_LABEL.get(kind, "提醒")),
-            "kind": kind,
-            "when": ["intraday", "eod"],
-            "params": _params(code, px, kind, label),
-            "receivers": [recv],
-            "enabled": True,
-            "note": "飞书卡一键订阅（K250）%s" % (
-                "；触发位 %.2f %s" % (px, label) if px else ""),
-        })
+        subs.append(
+            {
+                "id": sid,
+                "name": "%s %s" % (name, KIND_LABEL.get(kind, "提醒")),
+                "kind": kind,
+                "when": ["intraday", "eod"],
+                "params": _params(code, px, kind, label),
+                "receivers": [recv],
+                "enabled": True,
+                "note": "飞书卡一键订阅（K250）%s"
+                % ("；触发位 %.2f %s" % (px, label) if px else ""),
+            }
+        )
         _atomic(SUB_PATH, {"subscriptions": subs})
         card = _confirm_card(name, code, px, label, kind, already=False)
         return True, "订阅成功", card
@@ -169,9 +172,13 @@ def _params(code, px, kind, label):
             p["trigger_px"] = round(float(px), 2)
         except (TypeError, ValueError):
             pass
-    p["trigger_kind"] = ("pullback_hold" if kind == "buy_point"
-                         else "break_down" if kind == "sell_point"
-                         else "eod")
+    p["trigger_kind"] = (
+        "pullback_hold"
+        if kind == "buy_point"
+        else "break_down"
+        if kind == "sell_point"
+        else "eod"
+    )
     if label:
         p["trigger_label"] = label
     return p
@@ -194,8 +201,7 @@ def _pick_receiver(operator):
 def _unsubscribe(code, kind, operator):
     d = _read_json(SUB_PATH, {"subscriptions": []})
     subs = d.get("subscriptions") or []
-    sid = "sub_%s_%s" % ("bp" if kind == "buy_point" else kind[:4],
-                         _code6(code))
+    sid = "sub_%s_%s" % ("bp" if kind == "buy_point" else kind[:4], _code6(code))
     hit = False
     for s in subs:
         if s.get("id") == sid:
@@ -205,36 +211,58 @@ def _unsubscribe(code, kind, operator):
         return False, "未找到该订阅", None
     _atomic(SUB_PATH, {"subscriptions": subs})
     name = stock_name(_code6(code)) or _code6(code)
-    return True, "已取消订阅", _confirm_card(
-        name, code, None, "", kind, already=False, cancelled=True)
+    return (
+        True,
+        "已取消订阅",
+        _confirm_card(name, code, None, "", kind, already=False, cancelled=True),
+    )
 
 
 def _confirm_card(name, code, px, label, kind, already=False, cancelled=False):
     """回一条确认卡（飞书卡 v1 兼容结构，与报告卡同风格）。"""
     kl = KIND_LABEL.get(kind, "提醒")
     if cancelled:
-        head, tpl, line = "已取消订阅", "grey", (
-            "已关闭「%s %s」。之后不会再收到该标的的提醒。" % (name, kl))
+        head, tpl, line = (
+            "已取消订阅",
+            "grey",
+            ("已关闭「%s %s」。之后不会再收到该标的的提醒。" % (name, kl)),
+        )
     elif already:
-        head, tpl, line = "已在订阅中", "grey", (
-            "「%s %s」此前已订阅，无需重复操作。" % (name, kl))
+        head, tpl, line = (
+            "已在订阅中",
+            "grey",
+            ("「%s %s」此前已订阅，无需重复操作。" % (name, kl)),
+        )
     else:
         head, tpl, line = "订阅成功", "green", None
     if line is None:
         if px:
-            line = ("已订阅「%s %s」——当价格触及 **%.2f**（%s）时提醒你。"
-                    % (name, kl, px, label or "触发位"))
+            line = "已订阅「%s %s」——当价格触及 **%.2f**（%s）时提醒你。" % (
+                name,
+                kl,
+                px,
+                label or "触发位",
+            )
         else:
             line = "已订阅「%s %s」。" % (name, kl)
     els = [
-        {"tag": "markdown", "content":
-         "%s\n\n标的：**%s**（%s）\n触发条件：%s"
-         % (line, name, code,
-            ("价格触及 %.2f · %s" % (px, label)) if px else "盘后更新")},
+        {
+            "tag": "markdown",
+            "content": "%s\n\n标的：**%s**（%s）\n触发条件：%s"
+            % (
+                line,
+                name,
+                code,
+                ("价格触及 %.2f · %s" % (px, label)) if px else "盘后更新",
+            ),
+        },
         {"tag": "hr"},
-        {"tag": "markdown", "text_size": "notation", "content":
-         "<font color='grey'>青萍之末订阅 · 提醒仅为纸面研究辅助，"
-         "不构成投资建议 · 可在门户 /bt/subscribe 管理</font>"},
+        {
+            "tag": "markdown",
+            "text_size": "notation",
+            "content": "<font color='grey'>青萍之末订阅 · 提醒仅为纸面研究辅助，"
+            "不构成投资建议 · 可在门户 /bt/subscribe 管理</font>",
+        },
     ]
     return {
         "config": {"wide_screen_mode": True},
@@ -248,23 +276,26 @@ def _confirm_card(name, code, px, label, kind, already=False, cancelled=False):
 
 # ---------------------------------------------------- 飞书卡动作按钮组装
 
-def subscribe_button(code, px=None, label=None, kind="buy_point",
-                     text=None):
+
+def subscribe_button(code, px=None, label=None, kind="buy_point", text=None):
     """生成一张卡内的「订阅」按钮元素（v1 兼容结构，与报告卡同款）。
 
     注意：旧版卡片是「兼容模式」，button 需走 v1 结构（tag=button + value），
     不能用 2.0 的 behaviors——这是 runner.py:166 记的坑。
     """
-    val = {"act": "subscribe_buypoint", "code": _norm_code(code),
-           "kind": kind}
+    val = {"act": "subscribe_buypoint", "code": _norm_code(code), "kind": kind}
     if px is not None:
         val["px"] = round(float(px), 2)
     if label:
         val["label"] = label
     if not text:
-        text = ("📌 订阅这个买点" if kind == "buy_point"
-                else "📌 订阅这个卖点" if kind == "sell_point"
-                else "📌 订阅提醒")
+        text = (
+            "📌 订阅这个买点"
+            if kind == "buy_point"
+            else "📌 订阅这个卖点"
+            if kind == "sell_point"
+            else "📌 订阅提醒"
+        )
     return {
         "tag": "button",
         "text": {"tag": "plain_text", "content": text},
@@ -276,12 +307,24 @@ def subscribe_button(code, px=None, label=None, kind="buy_point",
 if __name__ == "__main__":
     # 冒烟：本地模拟一次订阅
     ok, msg, card = subscribe_from_card(
-        {"act": "subscribe_buypoint", "code": "sz000993", "px": 10.52,
-         "kind": "buy_point", "label": "回踩不破"})
+        {
+            "act": "subscribe_buypoint",
+            "code": "sz000993",
+            "px": 10.52,
+            "kind": "buy_point",
+            "label": "回踩不破",
+        }
+    )
     print("ok=%s msg=%s" % (ok, msg))
     print(json.dumps(card, ensure_ascii=False, indent=1)[:600])
     print("--- 幂等复测 ---")
     ok, msg, card = subscribe_from_card(
-        {"act": "subscribe_buypoint", "code": "sz000993", "px": 10.52,
-         "kind": "buy_point", "label": "回踩不破"})
+        {
+            "act": "subscribe_buypoint",
+            "code": "sz000993",
+            "px": 10.52,
+            "kind": "buy_point",
+            "label": "回踩不破",
+        }
+    )
     print("ok=%s msg=%s" % (ok, msg))

@@ -32,6 +32,7 @@
   ... --archive-live    # 从现有 rps_latest.json 归档一次（补今天）
   ... --all             # archive-live + backfill 60 + run
 """
+
 import argparse
 import json
 import os
@@ -54,7 +55,7 @@ SNAP_PATH = os.path.join(REPORTS, "rps_latest.json")
 
 HOLDS = (5, 10, 20)
 COST = 0.0015
-MIN_BARS_ELIG = 55          # 与 qpzm_backtest.MIN_BARS_ELIG 一致
+MIN_BARS_ELIG = 55  # 与 qpzm_backtest.MIN_BARS_ELIG 一致
 _SUF = {"sz": ".SZ", "sh": ".SH", "bj": ".BJ"}
 
 
@@ -79,7 +80,7 @@ def wide_to_code(col):
 def _sel_picks(picks):
     """批次里可回测的票：market=CN 且建议∈{买入,观察}（剥离环境闸门后缀）。"""
     out = []
-    for p in (picks or []):
+    for p in picks or []:
         act = str(p.get("action", "")).replace("（环境闸门）", "")
         if p.get("market") == "CN" and act in ("买入", "观察"):
             out.append(dict(p, _act=act))
@@ -95,15 +96,19 @@ def load_px(data_dir=DATA_DIR, log_every=1500):
     自身 bar 数 ≥ MIN_BARS_ELIG，口径同 qpzm_backtest),
     unfill(bool, T+1 一字板=开=高=收且开盘涨幅达板)。
     """
-    files = sorted(f for f in os.listdir(data_dir)
-                   if f.endswith(".parquet") and not f.startswith("_"))
+    files = sorted(
+        f
+        for f in os.listdir(data_dir)
+        if f.endswith(".parquet") and not f.startswith("_")
+    )
     codes, per = [], []
     t0 = __import__("time").time()
     for i, f in enumerate(files):
         try:
-            df = pd.read_parquet(os.path.join(data_dir, f),
-                                 columns=["trade_date", "open", "high",
-                                          "close", "pre_close"])
+            df = pd.read_parquet(
+                os.path.join(data_dir, f),
+                columns=["trade_date", "open", "high", "close", "pre_close"],
+            )
         except Exception:
             continue
         if len(df) < 2:
@@ -112,16 +117,22 @@ def load_px(data_dir=DATA_DIR, log_every=1500):
         codes.append(f[:-8].replace("_", "."))
         per.append(df)
         if (i + 1) % log_every == 0:
-            print("  px loaded %d/%d (%.0fs)" % (
-                i + 1, len(files), __import__("time").time() - t0), flush=True)
+            print(
+                "  px loaded %d/%d (%.0fs)"
+                % (i + 1, len(files), __import__("time").time() - t0),
+                flush=True,
+            )
     if not per:
         raise RuntimeError("no parquet data in %s" % data_dir)
-    union = np.unique(np.concatenate(
-        [d["trade_date"].to_numpy() for d in per])).astype("int64")
+    union = np.unique(np.concatenate([d["trade_date"].to_numpy() for d in per])).astype(
+        "int64"
+    )
     dpos = {int(d): i for i, d in enumerate(union)}
     S, D = len(per), len(union)
-    print("px universe %d stocks, union %d dates (%s ~ %s)" % (
-        S, D, union[0], union[-1]), flush=True)
+    print(
+        "px universe %d stocks, union %d dates (%s ~ %s)" % (S, D, union[0], union[-1]),
+        flush=True,
+    )
     op = np.full((D, S), np.nan, dtype="float32")
     cl = np.full((D, S), np.nan, dtype="float32")
     nb = np.zeros((D, S), dtype="int32")
@@ -140,19 +151,25 @@ def load_px(data_dir=DATA_DIR, log_every=1500):
         nb[rows, j] = np.arange(1, len(df) + 1)
         # 一字板 mask（原始价判定）：开=高=收 且 开盘涨幅达板
         h_raw = df["high"].astype(float)
-        rg = (o_raw / pc.replace(0.0, np.nan) - 1.0)
+        rg = o_raw / pc.replace(0.0, np.nan) - 1.0
         code6 = codes[j]
-        lim = 0.295 if code6.endswith(".BJ") else (
-            0.195 if code6[2:4] in ("30", "68") else 0.095)
-        uf[rows, j] = ((o_raw >= h_raw - 1e-9)
-                       & ((o_raw - c_raw).abs() <= 1e-6)
-                       & (rg >= lim - 0.005) & rg.notna()).to_numpy()
+        lim = (
+            0.295
+            if code6.endswith(".BJ")
+            else (0.195 if code6[2:4] in ("30", "68") else 0.095)
+        )
+        uf[rows, j] = (
+            (o_raw >= h_raw - 1e-9)
+            & ((o_raw - c_raw).abs() <= 1e-6)
+            & (rg >= lim - 0.005)
+            & rg.notna()
+        ).to_numpy()
     return {
-        "dates": union, "codes": codes,
+        "dates": union,
+        "codes": codes,
         "open": pd.DataFrame(op, index=union, columns=codes),
         "close": pd.DataFrame(cl, index=union, columns=codes),
-        "eligible": pd.DataFrame(nb >= MIN_BARS_ELIG,
-                                 index=union, columns=codes),
+        "eligible": pd.DataFrame(nb >= MIN_BARS_ELIG, index=union, columns=codes),
         "unfill": pd.DataFrame(uf, index=union, columns=codes),
     }
 
@@ -180,8 +197,7 @@ def _write_batches(rows, path=BATCHES_PATH):
         by[str(r.get("date"))] = r
     rows2 = sorted(by.values(), key=lambda r: str(r.get("date")))
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path) or ".",
-                               suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path) or ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for r in rows2:
@@ -202,33 +218,47 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
     if not res or not date:
         print("BATCH archive: empty res/date, skip")
         return None
-    env_cn = next(({"score": ev.get("score"), "safe": ev.get("safe"),
-                    "state": ev.get("state")}
-                   for ev in snap.get("envs", [])
-                   if "A股" in str(ev.get("label", ""))), None)
+    env_cn = next(
+        (
+            {"score": ev.get("score"), "safe": ev.get("safe"), "state": ev.get("state")}
+            for ev in snap.get("envs", [])
+            if "A股" in str(ev.get("label", ""))
+        ),
+        None,
+    )
     row = {
         "date": date,
         "ts": str(snap.get("ts") or ""),
         "source": "live",
         "env": env_cn,
-        "picks": [{"code": r.get("code"), "name": r.get("name"),
-                   "market": r.get("market"), "action": r.get("action"),
-                   "score": r.get("score"), "dims": r.get("dims")}
-                  for r in res],
+        "picks": [
+            {
+                "code": r.get("code"),
+                "name": r.get("name"),
+                "market": r.get("market"),
+                "action": r.get("action"),
+                "score": r.get("score"),
+                "dims": r.get("dims"),
+            }
+            for r in res
+        ],
     }
-    rows = [r for r in _read_batches(batches_path)
-            if str(r.get("date")) != date]
+    rows = [r for r in _read_batches(batches_path) if str(r.get("date")) != date]
     rows.append(row)
     _write_batches(rows, batches_path)
     n_sel = len(_sel_picks(row["picks"]))
-    print("BATCH archive: %s live picks=%d CN买入/观察=%d" % (
-        date, len(row["picks"]), n_sel), flush=True)
+    print(
+        "BATCH archive: %s live picks=%d CN买入/观察=%d"
+        % (date, len(row["picks"]), n_sel),
+        flush=True,
+    )
     # W5 影子采集（gate-shadow-dev 20261014）：环境闸门三档虚拟对照
     # θ∈{40,45,50}，只记不改——双刀直接读 qd_scan_cache 产物（不改
     # qd_scanner），cross 由 market_scan 挂载点自采。注记式 try/except，
     # 采集失败不影响产线；collect_run 自身亦不抛（双保险）。
     try:
         import gate_shadow_collect as _gsc
+
         _gsc.collect_run(strategies=("qd", "qpzm"))
     except Exception as _ex:
         print("GATE_SHADOW fail: %s" % str(_ex)[:120], flush=True)
@@ -237,6 +267,7 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
     # try/except，监测失败不影响产线（monitor_run 自身亦不抛）。
     try:
         import breadth_crossing_monitor as _bcm
+
         _bcm.monitor_run()
     except Exception as _ex:
         print("BREADTH_MONITOR fail: %s" % str(_ex)[:120], flush=True)
@@ -244,6 +275,7 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
     # 只记不改，攒一周以上供口径统一评审；同日幂等，注记式隔离。
     try:
         import breadth_parallel as _bpp
+
         _bpp.run()
     except Exception as _ex:
         print("BREADTH_PARALLEL fail: %s" % str(_ex)[:120], flush=True)
@@ -252,6 +284,7 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
     # 首日冻结 sha 防篡改；纯纸面记录零交易行为，注记式隔离。
     try:
         import voltarget_ab as _vab
+
         _vab.advance()
     except Exception as _ex:
         print("VOLTARGET_AB fail: %s" % str(_ex)[:120], flush=True)
@@ -261,10 +294,12 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
 def _env_at(env_df, d):
     """env_gate DataFrame 取某日快照。"""
     r = env_df.loc[d]
-    return {"breadth": None if pd.isna(r["breadth"]) else float(r["breadth"]),
-            "med20": None if pd.isna(r["med20"]) else float(r["med20"]),
-            "score": None if pd.isna(r["score"]) else round(float(r["score"])),
-            "safe": bool(r["safe"])}
+    return {
+        "breadth": None if pd.isna(r["breadth"]) else float(r["breadth"]),
+        "med20": None if pd.isna(r["med20"]) else float(r["med20"]),
+        "score": None if pd.isna(r["score"]) else round(float(r["score"])),
+        "safe": bool(r["safe"]),
+    }
 
 
 def _pool_codes_cn():
@@ -274,8 +309,7 @@ def _pool_codes_cn():
     ../news_collector）；复算批次 = 今天的池子在历史上的信号（池子随
     时间变化属已知近似，页面以「复算口径」chip 标注）。
     """
-    p = os.path.abspath(os.path.join(HERE, "..", "news_collector",
-                                     "news_config.json"))
+    p = os.path.abspath(os.path.join(HERE, "..", "news_collector", "news_config.json"))
     with open(p, encoding="utf-8") as f:
         wl = json.load(f)["watchlist"]
     return {c for c in (code_to_wide(e.get("code")) for e in wl) if c}
@@ -289,27 +323,34 @@ def backfill(n_days=60, batches_path=BATCHES_PATH):
     闸门开。live 行不覆盖；窗口内旧 replay 行整体刷新；空批次日不归档。
     """
     import qpzm_backtest as QB
+
     wide = QB.load_wide(QB.DATA_DIR)
     pool = _pool_codes_cn()
     cols = [c for c in wide["codes"] if c in pool]
     if not cols:
         raise RuntimeError("pool codes not found in wide universe")
-    print("BATCH pool: %d/%d CN codes in universe" % (len(cols), len(pool)),
-          flush=True)
+    print("BATCH pool: %d/%d CN codes in universe" % (len(cols), len(pool)), flush=True)
     env_df = QB.env_gate(wide["above20"], wide["ret20"])
-    mix, _na = QB.cross_rps({p: wide["chg%d" % p] for p in QB.PERIODS},
-                            QB.RPS_W_CUR)
+    mix, _na = QB.cross_rps({p: wide["chg%d" % p] for p in QB.PERIODS}, QB.RPS_W_CUR)
     tech_w = QB.tech_score(wide["longs"], wide["above20"])
     _score, buy, obs = QB.combine_score(
-        tech_w[cols], mix[cols], env_df, buy_th=QB.TH_CUR[0],
-        obs_th=QB.TH_CUR[1], gate_on=True, eligible=wide["eligible"][cols])
+        tech_w[cols],
+        mix[cols],
+        env_df,
+        buy_th=QB.TH_CUR[0],
+        obs_th=QB.TH_CUR[1],
+        gate_on=True,
+        eligible=wide["eligible"][cols],
+    )
     sig = buy | obs
-    dates = [int(d) for d in list(wide["dates"])[-int(n_days):]]
+    dates = [int(d) for d in list(wide["dates"])[-int(n_days) :]]
     win = {str(d) for d in dates}
     # 窗口内旧 replay 行整体清掉（口径变更不残留），live 与窗口外不动
-    existing = {str(r.get("date")): r for r in _read_batches(batches_path)
-                if not (str(r.get("date")) in win
-                        and r.get("source") == "replay")}
+    existing = {
+        str(r.get("date")): r
+        for r in _read_batches(batches_path)
+        if not (str(r.get("date")) in win and r.get("source") == "replay")
+    }
     n_new = n_keep = 0
     d_first = d_last = None
     for d in dates:
@@ -323,19 +364,31 @@ def backfill(n_days=60, batches_path=BATCHES_PATH):
             continue
         buy_d = buy.loc[d]
         existing[ds] = {
-            "date": ds, "ts": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "source": "replay", "env": _env_at(env_df, d),
-            "picks": [{"code": wide_to_code(c), "name": "",
-                       "market": "CN",
-                       "action": "买入" if bool(buy_d.get(c)) else "观察",
-                       "score": None, "dims": "tech+rps+env"}
-                      for c in sel]}
+            "date": ds,
+            "ts": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "source": "replay",
+            "env": _env_at(env_df, d),
+            "picks": [
+                {
+                    "code": wide_to_code(c),
+                    "name": "",
+                    "market": "CN",
+                    "action": "买入" if bool(buy_d.get(c)) else "观察",
+                    "score": None,
+                    "dims": "tech+rps+env",
+                }
+                for c in sel
+            ],
+        }
         n_new += 1
         d_first = d_first or ds
         d_last = ds
     _write_batches(existing.values(), batches_path)
-    print("BATCH backfill: +%d replay (%s ~ %s), live kept %d" % (
-        n_new, d_first or "-", d_last or "-", n_keep), flush=True)
+    print(
+        "BATCH backfill: +%d replay (%s ~ %s), live kept %d"
+        % (n_new, d_first or "-", d_last or "-", n_keep),
+        flush=True,
+    )
     return n_new
 
 
@@ -373,38 +426,54 @@ def _daily_curve(px, i, cols, max_n, cost):
     if not cols_v:
         return None
     # 批次曲线
-    C = px["close"].iloc[i + 1:i + 1 + n_av][cols_v].ffill()
+    C = px["close"].iloc[i + 1 : i + 1 + n_av][cols_v].ffill()
     cum = C.div(entry[cols_v], axis=1).mean(axis=1) - 1.0 - cost
     cum = cum.ffill()
     # 基准曲线（全体可交易票，同窗口同口径）
     e0 = px["open"].iloc[i + 1]
     bun = px["unfill"].iloc[i + 1] if "unfill" in px else None
-    bcols = [c for c in px["close"].columns
-             if bool(px["eligible"].iloc[i].get(c)) and pd.notna(e0.get(c))
-             and not (bun is not None and bool(bun.get(c)))]
+    bcols = [
+        c
+        for c in px["close"].columns
+        if bool(px["eligible"].iloc[i].get(c))
+        and pd.notna(e0.get(c))
+        and not (bun is not None and bool(bun.get(c)))
+    ]
     if bcols:
-        B = px["close"].iloc[i + 1:i + 1 + n_av][bcols].ffill()
+        B = px["close"].iloc[i + 1 : i + 1 + n_av][bcols].ffill()
         bcum = B.div(e0[bcols], axis=1).mean(axis=1) - 1.0 - cost
         bcum = bcum.ffill()
         bcum_l = [_r6(v) for v in bcum.tolist()]
     else:
         bcum_l = [None] * n_av
     cum_l = [_r6(v) for v in cum.tolist()]
-    ex_l = [_r6(a - b) if (a is not None and b is not None) else None
-            for a, b in zip(cum_l, bcum_l)]
+    ex_l = [
+        _r6(a - b) if (a is not None and b is not None) else None
+        for a, b in zip(cum_l, bcum_l)
+    ]
     day_l = [cum_l[0]]
     for t in range(1, len(cum_l)):
         a, b = cum_l[t], cum_l[t - 1]
         day_l.append(_r6(a - b) if (a is not None and b is not None) else None)
-    return {"k": list(range(1, len(cum_l) + 1)),
-            "date": [int(d) for d in cum.index],
-            "day": day_l, "cum": cum_l, "bench_cum": bcum_l,
-            "excess": ex_l, "n_traded": len(cols_v),
-            "partial": bool(n_av < int(max_n))}
+    return {
+        "k": list(range(1, len(cum_l) + 1)),
+        "date": [int(d) for d in cum.index],
+        "day": day_l,
+        "cum": cum_l,
+        "bench_cum": bcum_l,
+        "excess": ex_l,
+        "n_traded": len(cols_v),
+        "partial": bool(n_av < int(max_n)),
+    }
 
 
-def run_batch_backtest(batches_path=BATCHES_PATH, out_path=REPORT_PATH,
-                       holds=HOLDS, cost=COST, data_dir=DATA_DIR):
+def run_batch_backtest(
+    batches_path=BATCHES_PATH,
+    out_path=REPORT_PATH,
+    holds=HOLDS,
+    cost=COST,
+    data_dir=DATA_DIR,
+):
     """逐批次算 holds 各档收益/胜率/超额 → rps_batch_backtest.json。"""
     batches = _read_batches(batches_path)
     if not batches:
@@ -420,27 +489,30 @@ def run_batch_backtest(batches_path=BATCHES_PATH, out_path=REPORT_PATH,
             # K255 自定义批次：latest=最新可回测信号日（T+1 已开盘）
             date = str(px["dates"][-2])
         picks = _sel_picks(b.get("picks"))
-        row = {"date": date, "source": b.get("source"),
-               "env_safe": (b.get("env") or {}).get("safe"),
-               "n_picks": len(picks),
-               "n_buy": sum(1 for p in picks if p["_act"] == "买入"),
-               "n_obs": sum(1 for p in picks if p["_act"] == "观察"),
-               "holds": {}}
+        row = {
+            "date": date,
+            "source": b.get("source"),
+            "env_safe": (b.get("env") or {}).get("safe"),
+            "n_picks": len(picks),
+            "n_buy": sum(1 for p in picks if p["_act"] == "买入"),
+            "n_obs": sum(1 for p in picks if p["_act"] == "观察"),
+            "holds": {},
+        }
         d = int(date) if date.isdigit() else None
         if d is None or d not in dpos:
             row["note"] = "no_bar"
         elif not picks:
             row["note"] = "empty"
         elif dpos[d] + 1 >= n_dates:
-            row["note"] = "await_t1"       # 信号日=数据尾，T+1 未开
+            row["note"] = "await_t1"  # 信号日=数据尾，T+1 未开
         else:
             i = dpos[d]
-            cols = [c for c in (code_to_wide(p.get("code"))
-                                for p in picks) if c]
+            cols = [c for c in (code_to_wide(p.get("code")) for p in picks) if c]
             entry = px["open"].iloc[i + 1][cols]
-            unf = (px["unfill"].iloc[i + 1][cols].fillna(False)
-                   if "unfill" in px else None)
-            CL = px["close"].ffill()   # K254 停牌按最后可得价结算
+            unf = (
+                px["unfill"].iloc[i + 1][cols].fillna(False) if "unfill" in px else None
+            )
+            CL = px["close"].ffill()  # K254 停牌按最后可得价结算
             for n in holds:
                 partial = (i + n) > (n_dates - 1)
                 i_exit = min(i + n, n_dates - 1)
@@ -448,21 +520,30 @@ def run_batch_backtest(batches_path=BATCHES_PATH, out_path=REPORT_PATH,
                 valid = entry.notna() & exitp.notna()
                 if unf is not None:
                     valid = valid & ~unf
-                r = (exitp[valid] / entry[valid] - 1.0 - cost)
+                r = exitp[valid] / entry[valid] - 1.0 - cost
                 # 基准：同信号日全体可交易股票，同窗口等权（K254 对称口径）
-                bmask = (px["eligible"].iloc[i]
-                         & px["open"].iloc[i + 1].notna()
-                         & CL.iloc[i_exit].notna())
+                bmask = (
+                    px["eligible"].iloc[i]
+                    & px["open"].iloc[i + 1].notna()
+                    & CL.iloc[i_exit].notna()
+                )
                 if unf is not None:
                     bmask = bmask & ~px["unfill"].iloc[i + 1]
-                br = (CL.iloc[i_exit][bmask]
-                      / px["open"].iloc[i + 1][bmask] - 1.0 - cost)
+                br = CL.iloc[i_exit][bmask] / px["open"].iloc[i + 1][bmask] - 1.0 - cost
                 raw_close = px["close"].iloc[i_exit][cols]
-                n_unfill = (int((entry.notna() & exitp.notna() & unf).sum())
-                            if unf is not None else 0)
-                n_susp = int((entry.notna() & exitp.notna()
-                              & raw_close.isna()
-                              & (~unf if unf is not None else True)).sum())
+                n_unfill = (
+                    int((entry.notna() & exitp.notna() & unf).sum())
+                    if unf is not None
+                    else 0
+                )
+                n_susp = int(
+                    (
+                        entry.notna()
+                        & exitp.notna()
+                        & raw_close.isna()
+                        & (~unf if unf is not None else True)
+                    ).sum()
+                )
                 mean = _r6(r.mean()) if len(r) else None
                 bench = _r6(br.mean()) if len(br) else None
                 row["holds"][str(n)] = {
@@ -470,12 +551,15 @@ def run_batch_backtest(batches_path=BATCHES_PATH, out_path=REPORT_PATH,
                     "n_dropped": int(len(cols) - int(valid.sum())),
                     "n_unfillable": n_unfill,
                     "n_suspend_exit": n_susp,
-                    "mean": mean, "bench_mean": bench,
+                    "mean": mean,
+                    "bench_mean": bench,
                     "excess": _r6(r.mean() - br.mean())
-                    if (mean is not None and bench is not None) else None,
+                    if (mean is not None and bench is not None)
+                    else None,
                     "median": _r6(r.median()) if len(r) else None,
                     "win_rate": _r4((r > 0).mean()) if len(r) else None,
-                    "partial": bool(partial)}
+                    "partial": bool(partial),
+                }
             # K251 逐日盯市：每天的收益全部展开（不打包）
             try:
                 row["daily"] = _daily_curve(px, i, cols, max(holds), cost)
@@ -483,31 +567,31 @@ def run_batch_backtest(batches_path=BATCHES_PATH, out_path=REPORT_PATH,
                 row["daily"] = None
                 row["daily_err"] = str(_ex)[:80]
         out.append(row)
-    out.reverse()                      # date 倒序，页面直接渲染
+    out.reverse()  # date 倒序，页面直接渲染
     report = {
         "meta": {
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "interpreter": sys.executable,
             "n_batches": len(out),
-            "holds": list(holds), "cost_roundtrip": cost,
+            "holds": list(holds),
+            "cost_roundtrip": cost,
             "min_bars_eligible": MIN_BARS_ELIG,
             "design": "T 日收盘批次 → T+1 开盘买入 → 持有 N 日收盘卖出；"
-                      "成本 0.15% 往返；基准=同日全体可交易等权；"
-                      "持有期未满取最新收盘=至今收益(partial)；"
-                      "仅 CN 买入+观察，环境闸门回避不计；"
-                      "K254：后复权口径(pre_close 链)、T+1 一字板剔除"
-                      "(n_unfillable)、出场停牌按最后可得价结算"
-                      "(n_suspend_exit)，基准对称同口径",
+            "成本 0.15% 往返；基准=同日全体可交易等权；"
+            "持有期未满取最新收盘=至今收益(partial)；"
+            "仅 CN 买入+观察，环境闸门回避不计；"
+            "K254：后复权口径(pre_close 链)、T+1 一字板剔除"
+            "(n_unfillable)、出场停牌按最后可得价结算"
+            "(n_suspend_exit)，基准对称同口径",
             "daily_curve": "K251 逐日盯市：T+1 开盘进场起每天给出 当日/累计/"
-                           "超额；等权、停牌日 close 前值填充、成本按日常数扣"
-                           "（cum 含 −cost，差分即纯日收益）；深度=max(holds)；"
-                           "K254 起后复权口径+一字板剔除",
+            "超额；等权、停牌日 close 前值填充、成本按日常数扣"
+            "（cum 含 −cost，差分即纯日收益）；深度=max(holds)；"
+            "K254 起后复权口径+一字板剔除",
         },
         "batches": out,
     }
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(out_path) or ".",
-                               suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(out_path) or ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=1, default=str)
@@ -517,8 +601,10 @@ def run_batch_backtest(batches_path=BATCHES_PATH, out_path=REPORT_PATH,
             os.remove(tmp)
         raise
     n_ok = sum(1 for r in out if r["holds"])
-    print("BATCH run: %d batches (%d priced) -> %s" % (
-        len(out), n_ok, out_path), flush=True)
+    print(
+        "BATCH run: %d batches (%d priced) -> %s" % (len(out), n_ok, out_path),
+        flush=True,
+    )
     return report
 
 
@@ -533,10 +619,12 @@ def spawn_backtest(log_path=None):
     logf = open(log_path, "ab")
     p = subprocess.Popen(
         [sys.executable, os.path.abspath(__file__), "--run"],
-        stdout=logf, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-        creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
-    print("BATCH backtest spawned pid=%s log=%s" % (p.pid, log_path),
-          flush=True)
+        stdout=logf,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
+        creationflags=getattr(subprocess, "DETACHED_PROCESS", 0),
+    )
+    print("BATCH backtest spawned pid=%s log=%s" % (p.pid, log_path), flush=True)
     return p.pid
 
 
@@ -546,19 +634,31 @@ def main(argv=None):
     except Exception:
         pass
     ap = argparse.ArgumentParser(description="青萍之末每日选股批次回测")
-    ap.add_argument("--backfill", type=int, default=0, metavar="N",
-                    help="回填近 N 个交易日 replay 批次")
+    ap.add_argument(
+        "--backfill",
+        type=int,
+        default=0,
+        metavar="N",
+        help="回填近 N 个交易日 replay 批次",
+    )
     ap.add_argument("--run", action="store_true", help="批次回测主流程")
-    ap.add_argument("--archive-live", action="store_true",
-                    help="从 rps_latest.json 归档当日 live 批次")
-    ap.add_argument("--all", action="store_true",
-                    help="archive-live + backfill 60 + run")
+    ap.add_argument(
+        "--archive-live",
+        action="store_true",
+        help="从 rps_latest.json 归档当日 live 批次",
+    )
+    ap.add_argument(
+        "--all", action="store_true", help="archive-live + backfill 60 + run"
+    )
     ap.add_argument("--hold", default="5,10,20", help="持有交易日，逗号分隔")
     ap.add_argument("--cost", type=float, default=COST)
     ap.add_argument("--data-dir", default=DATA_DIR)
     ap.add_argument("--out", default=REPORT_PATH)
-    ap.add_argument("--batches", default=BATCHES_PATH,
-                    help="批次 JSONL 输入路径（K255 自定义批次用）")
+    ap.add_argument(
+        "--batches",
+        default=BATCHES_PATH,
+        help="批次 JSONL 输入路径（K255 自定义批次用）",
+    )
     args = ap.parse_args(argv)
     holds = sorted({int(x) for x in str(args.hold).split(",") if x})
     if args.all:
@@ -573,8 +673,12 @@ def main(argv=None):
     if args.backfill:
         backfill(args.backfill)
     if args.run:
-        run_batch_backtest(batches_path=args.batches, holds=holds,
-                           data_dir=args.data_dir, out_path=args.out)
+        run_batch_backtest(
+            batches_path=args.batches,
+            holds=holds,
+            data_dir=args.data_dir,
+            out_path=args.out,
+        )
     return 0
 
 

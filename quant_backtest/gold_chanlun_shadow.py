@@ -15,6 +15,7 @@
 产出：stdout 摘要 + data/gold_chanlun_shadow.json（原子写）。
 用法：python gold_chanlun_shadow.py [years]   # 默认 20（AU 2008 上市全史）
 """
+
 import json
 import os
 import sys
@@ -30,8 +31,7 @@ from chanlun_bi import analyze  # noqa: E402
 
 OUT = os.path.join(HERE, "data", "gold_chanlun_shadow.json")
 HOLDS = (1, 3, 5, 10, 20)
-CN = {"b1": "1买", "s1": "1卖", "b2": "2买", "s2": "2卖",
-      "b3": "3买", "s3": "3卖"}
+CN = {"b1": "1买", "s1": "1卖", "b2": "2买", "s2": "2卖", "b3": "3买", "s3": "3卖"}
 SYM = "AU.SHF"
 
 
@@ -48,32 +48,34 @@ def build_continuous(sym: str, years: int) -> pd.DataFrame:
     mp = pro.fut_mapping(ts_code=sym)
     if mp is None or len(mp) == 0:
         return pd.DataFrame()
-    mp = mp.sort_values('trade_date').reset_index(drop=True)
+    mp = mp.sort_values("trade_date").reset_index(drop=True)
     if years:
-        cut = (pd.Timestamp.today() - pd.DateOffset(years=years)) \
-            .strftime('%Y%m%d')
-        mp = mp[mp['trade_date'] >= cut]
+        cut = (pd.Timestamp.today() - pd.DateOffset(years=years)).strftime("%Y%m%d")
+        mp = mp[mp["trade_date"] >= cut]
     seg = mp.copy()
-    seg['new_seg'] = seg['mapping_ts_code'] != seg['mapping_ts_code'].shift()
-    seg['seg_id'] = seg['new_seg'].cumsum()
+    seg["new_seg"] = seg["mapping_ts_code"] != seg["mapping_ts_code"].shift()
+    seg["seg_id"] = seg["new_seg"].cumsum()
     frames = []
-    for sid, g in seg.groupby('seg_id'):
-        contract = g.iloc[0]['mapping_ts_code']
-        s, e = g['trade_date'].min(), g['trade_date'].max()
+    for sid, g in seg.groupby("seg_id"):
+        contract = g.iloc[0]["mapping_ts_code"]
+        s, e = g["trade_date"].min(), g["trade_date"].max()
         try:
             d = pro.fut_daily(ts_code=contract, start_date=s, end_date=e)
             if len(d):
-                frames.append(d[['trade_date', 'open', 'high', 'low',
-                                 'close', 'vol']])
+                frames.append(d[["trade_date", "open", "high", "low", "close", "vol"]])
         except Exception:
             continue
     if not frames:
         return pd.DataFrame()
-    df = pd.concat(frames).drop_duplicates('trade_date') \
-        .sort_values('trade_date').reset_index(drop=True)
-    for c in ('open', 'high', 'low', 'close'):
-        df[c] = pd.to_numeric(df[c], errors='coerce')
-    return df.dropna(subset=['close', 'high', 'low'])
+    df = (
+        pd.concat(frames)
+        .drop_duplicates("trade_date")
+        .sort_values("trade_date")
+        .reset_index(drop=True)
+    )
+    for c in ("open", "high", "low", "close"):
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df.dropna(subset=["close", "high", "low"])
 
 
 def _grp(rs):
@@ -84,8 +86,7 @@ def _grp(rs):
     win = sum(1 for x in v if x > 0) / n * 100
     avg = sum(v) / n * 100
     med = v[n // 2] * 100 if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2 * 100
-    return {"n": n, "win": round(win, 1), "avg": round(avg, 2),
-            "med": round(med, 2)}
+    return {"n": n, "win": round(win, 1), "avg": round(avg, 2), "med": round(med, 2)}
 
 
 def main():
@@ -95,10 +96,13 @@ def main():
         print("bars insufficient: %d" % len(df))
         return 1
 
-    dts = ["%s-%s-%s" % (str(v)[:4], str(v)[4:6], str(v)[6:8])
-           for v in df["trade_date"]]
-    bars = [{"dt": dts[i], "h": float(r["high"]), "l": float(r["low"])}
-            for i, (_, r) in enumerate(df.iterrows())]
+    dts = [
+        "%s-%s-%s" % (str(v)[:4], str(v)[4:6], str(v)[6:8]) for v in df["trade_date"]
+    ]
+    bars = [
+        {"dt": dts[i], "h": float(r["high"]), "l": float(r["low"])}
+        for i, (_, r) in enumerate(df.iterrows())
+    ]
     closes = [float(r["close"]) for _, r in df.iterrows()]
     opens = [float(r["open"]) for _, r in df.iterrows()]
     st = analyze(bars, closes)
@@ -121,13 +125,15 @@ def main():
         if j20 < len(closes) and closes[i0]:
             yr = s["d"][:4]
             by_year.setdefault((s["t"], sub, yr), []).append(
-                sign * (closes[j20] / closes[i0] - 1.0))
+                sign * (closes[j20] / closes[i0] - 1.0)
+            )
 
     # beta 对照：全样本任意日进场同持有期
     beta = {}
     for h in HOLDS:
-        beta[h] = _grp([closes[i + h] / closes[i] - 1.0
-                        for i in range(len(closes) - h)])
+        beta[h] = _grp(
+            [closes[i + h] / closes[i] - 1.0 for i in range(len(closes) - h)]
+        )
 
     # —— 可成交价确认滞后重放（b3/s3）：信号日后第 L 根以开盘价进场 ——
     # dN = 进场日开盘价 → N 个交易日后收盘；L=1 为 T+1 开盘现实口径，
@@ -155,17 +161,20 @@ def main():
     # beta_open：任意日开盘进场（同口径基准，L=1 视角）
     for h in HOLDS:
         replay["beta_open_L1_d%d" % h] = _grp(
-            [closes[i + 1 + h] / opens[i + 1] - 1.0
-             for i in range(len(closes) - 1 - h)])
+            [closes[i + 1 + h] / opens[i + 1] - 1.0 for i in range(len(closes) - 1 - h)]
+        )
 
     out_groups = {}
-    lines = ["== 沪金 AU.SHF 缠论影子统计（%s ~ %s，%d 根日线，主力连续未复权）"
-             % (dts[0], dts[-1], len(bars)),
-             "beta 对照（任意日进场）: " + " | ".join(
-                 "d%d avg%+.2f%% win%.0f%%" % (h, beta[h]["avg"],
-                                              beta[h]["win"])
-                 for h in HOLDS)]
-    for (t, sub) in sorted(groups):
+    lines = [
+        "== 沪金 AU.SHF 缠论影子统计（%s ~ %s，%d 根日线，主力连续未复权）"
+        % (dts[0], dts[-1], len(bars)),
+        "beta 对照（任意日进场）: "
+        + " | ".join(
+            "d%d avg%+.2f%% win%.0f%%" % (h, beta[h]["avg"], beta[h]["win"])
+            for h in HOLDS
+        ),
+    ]
+    for t, sub in sorted(groups):
         g = groups[(t, sub)]
         label = CN.get(t, t) + (("·" + sub) if sub else "")
         segs = []
@@ -174,13 +183,15 @@ def main():
             r = _grp(g[h])
             row["d%d" % h] = r
             if r:
-                segs.append("d%d n=%d win=%.0f%% avg=%+.2f%%"
-                            % (h, r["n"], r["win"], r["avg"]))
+                segs.append(
+                    "d%d n=%d win=%.0f%% avg=%+.2f%%" % (h, r["n"], r["win"], r["avg"])
+                )
         out_groups["%s_%s" % (t, sub) if sub else t] = row
-        lines.append("%s: %s" % (label, " | ".join(segs) if segs
-                                 else "无（窗不足）"))
-    out_by_year = {"%s_%s_%s" % (t, sub or "-", y): _grp(v)
-                   for (t, sub, y), v in sorted(by_year.items())}
+        lines.append("%s: %s" % (label, " | ".join(segs) if segs else "无（窗不足）"))
+    out_by_year = {
+        "%s_%s_%s" % (t, sub or "-", y): _grp(v)
+        for (t, sub, y), v in sorted(by_year.items())
+    }
     lines.append("d20 年度分桶 → json（by_year 键）")
     lines.append("—— 可成交价重放（b3，开盘价进场，d5/d10/d20）——")
     for L in LAGS:
@@ -188,22 +199,33 @@ def main():
         for h in (5, 10, 20):
             r = replay.get("%s_L%d_d%d" % ("b3", L, h))
             if r:
-                segs.append("d%d n=%d win=%.0f%% avg=%+.2f%%"
-                            % (h, r["n"], r["win"], r["avg"]))
+                segs.append(
+                    "d%d n=%d win=%.0f%% avg=%+.2f%%" % (h, r["n"], r["win"], r["avg"])
+                )
         lines.append("  L=%d: %s" % (L, " | ".join(segs) or "无"))
     r1 = replay.get("s3_L1_d10")
     if r1:
-        lines.append("  s3 L=1 d10: n=%d win=%.0f%% avg=%+.2f%%"
-                     % (r1["n"], r1["win"], r1["avg"]))
+        lines.append(
+            "  s3 L=1 d10: n=%d win=%.0f%% avg=%+.2f%%"
+            % (r1["n"], r1["win"], r1["avg"])
+        )
     bo = replay.get("beta_open_L1_d20")
     if bo:
-        lines.append("  beta_open L=1 d20: avg=%+.2f%% win=%.0f%%"
-                     % (bo["avg"], bo["win"]))
+        lines.append(
+            "  beta_open L=1 d20: avg=%+.2f%% win=%.0f%%" % (bo["avg"], bo["win"])
+        )
 
-    out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           "symbol": SYM, "bars": len(bars), "range": [dts[0], dts[-1]],
-           "n_signals": len(st["signals"]), "beta": beta,
-           "replay": replay, "groups": out_groups, "by_year": out_by_year}
+    out = {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "symbol": SYM,
+        "bars": len(bars),
+        "range": [dts[0], dts[-1]],
+        "n_signals": len(st["signals"]),
+        "beta": beta,
+        "replay": replay,
+        "groups": out_groups,
+        "by_year": out_by_year,
+    }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     _atomic_write(OUT, json.dumps(out, ensure_ascii=False, indent=1))
     print("\n".join(lines))

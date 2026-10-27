@@ -12,6 +12,7 @@
 判例：登录态 token 靠 token_probe 验活区分（浏览器匿名也有 xq_a_token，
 probe valid=False 的丢弃不灌池）；绝不打印 token 明文。
 """
+
 import argparse
 import os
 import sys
@@ -23,18 +24,24 @@ sys.path.insert(0, HERE)
 def grab(browser: str) -> str:
     """rookiepy 抓指定浏览器 .xueqiu.com 的 xq_a_token。"""
     import rookiepy
+
     getter = getattr(rookiepy, browser)
     cookies = getter([".xueqiu.com"])
     if not isinstance(cookies, list):
         return ""
-    return next((str(c.get("value", "")) for c in cookies
-                 if c.get("name") == "xq_a_token" and c.get("value")), "")
+    return next(
+        (
+            str(c.get("value", ""))
+            for c in cookies
+            if c.get("name") == "xq_a_token" and c.get("value")
+        ),
+        "",
+    )
 
 
 def main() -> int:
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace",
-                                line_buffering=True)
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     except Exception:
         pass
     ap = argparse.ArgumentParser()
@@ -43,8 +50,11 @@ def main() -> int:
     ap.add_argument("--firefox-name", default="")
     a = ap.parse_args()
 
-    plan = [("edge", a.edge_name), ("chrome", a.chrome_name),
-            ("firefox", a.firefox_name)]
+    plan = [
+        ("edge", a.edge_name),
+        ("chrome", a.chrome_name),
+        ("firefox", a.firefox_name),
+    ]
     ok_any = False
     for browser, name in plan:
         if not name:
@@ -52,19 +62,21 @@ def main() -> int:
         try:
             tok = grab(browser)
         except Exception as e:
-            print("[%s] 抓取失败：%s（浏览器是否未完全关闭？）"
-                  % (browser, str(e)[:100]))
+            print(
+                "[%s] 抓取失败：%s（浏览器是否未完全关闭？）" % (browser, str(e)[:100])
+            )
             continue
         if not tok:
             print("[%s] 无 xq_a_token（未登录或 cookie 已清）" % browser)
             continue
-        print("[%s] 抓到 xq_a_token=%s" % (browser, tok[:4] + "…(len=%d)"
-                                           % len(tok)))
+        print("[%s] 抓到 xq_a_token=%s" % (browser, tok[:4] + "…(len=%d)" % len(tok)))
         from xq_login import verify_token, save_to_pool
+
         tp = verify_token(tok)
-        print("[%s] token_probe ok=%s valid=%s latency=%dms err=%s"
-              % (browser, tp["ok"], tp.get("valid"),
-                 tp["latency_ms"], tp["err"] or "-"))
+        print(
+            "[%s] token_probe ok=%s valid=%s latency=%dms err=%s"
+            % (browser, tp["ok"], tp.get("valid"), tp["latency_ms"], tp["err"] or "-")
+        )
         if tp["ok"] and tp.get("valid"):
             save_to_pool(name, tok)
             ok_any = True

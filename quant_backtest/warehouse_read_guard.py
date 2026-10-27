@@ -1,4 +1,5 @@
 """受管读的同根嵌套复用与跨仓有序发布保护；不访问配置或远端。"""
+
 from contextlib import contextmanager, ExitStack
 from functools import wraps
 import os
@@ -27,17 +28,17 @@ def resource_paths(resources):
 def read_resources(resources):
     """一次锁住所有候选仓，嵌套同根共享原锁；禁止倒序追加锁。"""
     paths = resource_paths(resources)
-    held = getattr(_READ_STATE, 'held', None)
+    held = getattr(_READ_STATE, "held", None)
     if held is None:
         held = _READ_STATE.held = {}
     new = [p for p in paths if os.path.normcase(str(p)) not in held]
     if held and new and os.path.normcase(str(new[0])) < max(held):
-        raise RuntimeError('嵌套读取必须在外层按顺序锁定全部候选仓')
+        raise RuntimeError("嵌套读取必须在外层按顺序锁定全部候选仓")
     acquired = []
     with ExitStack() as stack:
         try:
             for path in new:
-                stack.enter_context(publication_guard(path, mode='read'))
+                stack.enter_context(publication_guard(path, mode="read"))
                 key = os.path.normcase(str(path))
                 held[key] = path
                 acquired.append(key)
@@ -49,12 +50,15 @@ def read_resources(resources):
 
 def guarded_read(resources):
     """动态仓根在每次调用时解析，整个返回值必须在保护范围内物化。"""
+
     def decorate(function):
         @wraps(function)
         def wrapped(*args, **kwargs):
             with read_resources(resources(*args, **kwargs)):
                 return function(*args, **kwargs)
+
         return wrapped
+
     return decorate
 
 
@@ -67,7 +71,7 @@ def publication_stamp(resource):
     values = []
     with os.scandir(root) as entries:
         for entry in entries:
-            if entry.name.startswith('.warehouse-publication'):
+            if entry.name.startswith(".warehouse-publication"):
                 continue
             try:
                 stat = entry.stat()

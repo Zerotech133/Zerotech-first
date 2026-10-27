@@ -24,6 +24,7 @@ manifest（4dc69546 预批准模式通道化）。
 安全边界：无新开市日→NO_GAP 直落报告；capture 非零退出→已合格单元照发
 （缺口明日自愈）+ 报告记 rc；发布锁由发布器内建持有-释放。
 """
+
 import argparse
 import datetime as dt
 import json
@@ -52,8 +53,7 @@ def _safe_print(text: str, limit: int, file=None) -> None:
     try:
         print(chunk, end="", file=file)
     except UnicodeEncodeError:
-        print(chunk.encode("ascii", "replace").decode("ascii"),
-              end="", file=file)
+        print(chunk.encode("ascii", "replace").decode("ascii"), end="", file=file)
 
 
 _configure_stdio()
@@ -65,8 +65,14 @@ HELD = STAGING / "held_tail_fill"
 PROD = QB / "data" / "tushare"
 WORK = QB.parent / "work"
 
-TABLES = ["ts_daily", "ts_adj_factor", "ts_daily_basic", "ts_margin_detail",
-          "ts_index_daily", "ts_moneyflow"]
+TABLES = [
+    "ts_daily",
+    "ts_adj_factor",
+    "ts_daily_basic",
+    "ts_margin_detail",
+    "ts_index_daily",
+    "ts_moneyflow",
+]
 # 行数下限：近期完整日分位取松下限（margin_detail ~4455 完整 / 2001 一所）
 MIN_ROWS = {
     "ts_daily": 5000,
@@ -81,13 +87,21 @@ GIT_ID = ["-c", "user.name=laotian", "-c", "user.email=laotian@local"]
 
 
 def run(cmd, **kw):
-    return subprocess.run(cmd, cwd=str(QB), capture_output=True,
-                          text=True, encoding="utf-8", errors="replace", **kw)
+    return subprocess.run(
+        cmd,
+        cwd=str(QB),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        **kw,
+    )
 
 
 def receipts(tbl_dir: Path) -> set:
-    return {p.name for p in tbl_dir.glob("*.receipt.json")} \
-        if tbl_dir.is_dir() else set()
+    return (
+        {p.name for p in tbl_dir.glob("*.receipt.json")} if tbl_dir.is_dir() else set()
+    )
 
 
 def table_of(receipt_name: str) -> str:
@@ -95,40 +109,50 @@ def table_of(receipt_name: str) -> str:
 
 
 def prod_max_date(dir_name: str) -> str:
-    fs = sorted((PROD / dir_name).glob("d_*.parquet")) \
-        if (PROD / dir_name).is_dir() else []
+    fs = (
+        sorted((PROD / dir_name).glob("d_*.parquet"))
+        if (PROD / dir_name).is_dir()
+        else []
+    )
     return fs[-1].stem[2:] if fs else "-"
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--tables", default=",".join(TABLES))
-    ap.add_argument("--dryrun", action="store_true",
-                    help="只预览缺口/阈值/生产 max，不 capture 不发布")
+    ap.add_argument(
+        "--dryrun",
+        action="store_true",
+        help="只预览缺口/阈值/生产 max，不 capture 不发布",
+    )
     args = ap.parse_args()
     tables = [t for t in args.tables.split(",") if t in TABLES]
     stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S")
-    report = {"tool": "increment_guard", "generated_at":
-              dt.datetime.now().astimezone().isoformat(timespec="seconds"),
-              "tables": tables, "dryrun": args.dryrun}
+    report = {
+        "tool": "increment_guard",
+        "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "tables": tables,
+        "dryrun": args.dryrun,
+    }
 
     # -- dryrun：缺口预览（读生产 max，不调 API） --
     if args.dryrun:
         preview = {}
         for t in tables:
-            preview[t] = {"prod_max": prod_max_date(t[3:]),
-                          "min_rows": MIN_ROWS[t]}
+            preview[t] = {"prod_max": prod_max_date(t[3:]), "min_rows": MIN_ROWS[t]}
         report["preview"] = preview
         print(f"[dryrun] {json.dumps(preview, ensure_ascii=False)}")
         print("[dryrun] 计划任务真跑链路：capture→门禁→发布→manifest→git")
         (WORK / f"increment_guard_{stamp}.json").write_text(
-            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         return 0
 
     # 1. capture（前后 receipt 集合 diff 得新单元）
     before = {t: receipts(TAIL / t) for t in tables}
-    cap = run([sys.executable, "-u", "tail_fill_capture.py",
-               "--tables", ",".join(tables)])
+    cap = run(
+        [sys.executable, "-u", "tail_fill_capture.py", "--tables", ",".join(tables)]
+    )
     rc_cap = cap.returncode
     report["capture_rc"] = rc_cap
     _safe_print(cap.stdout, 2000)
@@ -143,23 +167,34 @@ def main() -> int:
             e = json.loads(rp.read_text(encoding="utf-8"))
             rows, dup = e.get("row_count"), int(e.get("duplicate_keys") or 0)
             if rows is None or rows < MIN_ROWS[t] or dup:
-                held.append({"table": t, "receipt": name, "row_count": rows,
-                             "duplicate_keys": dup,
-                             "min_rows": MIN_ROWS[t]})
+                held.append(
+                    {
+                        "table": t,
+                        "receipt": name,
+                        "row_count": rows,
+                        "duplicate_keys": dup,
+                        "min_rows": MIN_ROWS[t],
+                    }
+                )
                 HELD.joinpath(t).mkdir(parents=True, exist_ok=True)
                 pq = rp.with_name(rp.name.replace(".receipt.json", ".parquet"))
                 for f in (rp, pq):
                     if f.is_file():
                         f.replace(HELD / t / f.name)
             else:
-                passed.append({"table": t, "date":
-                               (e.get("request_params") or {}).get("trade_date"),
-                               "row_count": rows})
+                passed.append(
+                    {
+                        "table": t,
+                        "date": (e.get("request_params") or {}).get("trade_date"),
+                        "row_count": rows,
+                    }
+                )
     report["units_passed"], report["units_held"] = passed, held
     if held:
-        print(f"[held] {len(held)} 单元移 held_tail_fill（源侧滞后/行数不足）："
-              + "; ".join(f"{h['table']}/{h['receipt']}({h['row_count']})" 
-                          for h in held))
+        print(
+            f"[held] {len(held)} 单元移 held_tail_fill（源侧滞后/行数不足）："
+            + "; ".join(f"{h['table']}/{h['receipt']}({h['row_count']})" for h in held)
+        )
 
     if not passed:
         report["status"] = "NO_GAP" if not held else "HELD_ONLY"
@@ -169,8 +204,17 @@ def main() -> int:
 
     # 3. 发布（增量只填空，绝不带 --allow-overwrite）
     mat_report = WORK / f"increment_guard_materialize_{stamp}.json"
-    mat = run([sys.executable, "-u", "staging_materialize_full_history.py",
-               "--pattern", "tail_fill/*", "--report", str(mat_report)])
+    mat = run(
+        [
+            sys.executable,
+            "-u",
+            "staging_materialize_full_history.py",
+            "--pattern",
+            "tail_fill/*",
+            "--report",
+            str(mat_report),
+        ]
+    )
     report["materialize_rc"] = mat.returncode
     print(mat.stdout[-1500:] if mat.stdout else "", end="")
     try:
@@ -180,11 +224,17 @@ def main() -> int:
     except Exception as exc:
         stats, report["materialize_error"] = {}, str(exc)
 
-    if (stats.get("mismatch") or stats.get("missing")
-            or stats.get("conflict_preserved") or mat.returncode != 0):
+    if (
+        stats.get("mismatch")
+        or stats.get("missing")
+        or stats.get("conflict_preserved")
+        or mat.returncode != 0
+    ):
         report["status"] = "DEGRADED"
-        print("[degraded] 发布异常（mismatch/missing/conflict），"
-              "manifest/git 不动，留人工处置")
+        print(
+            "[degraded] 发布异常（mismatch/missing/conflict），"
+            "manifest/git 不动，留人工处置"
+        )
         _write(report, stamp)
         return 3
 
@@ -193,8 +243,7 @@ def main() -> int:
     man = json.loads(mp.read_text(encoding="utf-8"))
     per_tbl = {}
     for u in passed:
-        a = per_tbl.setdefault(u["table"],
-                                {"rows": 0, "dates": []})
+        a = per_tbl.setdefault(u["table"], {"rows": 0, "dates": []})
         a["rows"] += u["row_count"]
         a["dates"].append(u["date"])
     for t, a in per_tbl.items():
@@ -203,25 +252,35 @@ def main() -> int:
         ent["done"] = True
         ent["rows"] = int(ent.get("rows") or 0) + a["rows"]
         ent["file"] = f"d_{max(a['dates'])}.parquet"
-        notes = [n for n in (ent.get("note") or "").split("；")
-                 if CHANNEL_TAG not in n]
-        notes.append(f"{CHANNEL_TAG} {dt.date.today().isoformat()} "
-                     f"+{len(a['dates'])} 单元 +{a['rows']} 行")
+        notes = [n for n in (ent.get("note") or "").split("；") if CHANNEL_TAG not in n]
+        notes.append(
+            f"{CHANNEL_TAG} {dt.date.today().isoformat()} "
+            f"+{len(a['dates'])} 单元 +{a['rows']} 行"
+        )
         ent["note"] = "；".join(notes[-12:])  # 滚动保留（含固定历史段）
-        print(f"[manifest] {key}: +{len(a['dates'])} 单元 +{a['rows']} 行 "
-              f"→ file={ent['file']} rows={ent['rows']}")
-    mp.write_text(json.dumps(man, ensure_ascii=False, indent=2),
-                  encoding="utf-8")
+        print(
+            f"[manifest] {key}: +{len(a['dates'])} 单元 +{a['rows']} 行 "
+            f"→ file={ent['file']} rows={ent['rows']}"
+        )
+    mp.write_text(json.dumps(man, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # 5. git（内联身份，有 diff 才提交）
     g = run(["git", *GIT_ID, "add", "_manifest.json"])
     st = run(["git", "status", "--short", "--", "_manifest.json"])
     if st.stdout.strip():
-        c = run(["git", *GIT_ID, "commit", "-m",
-                 f"chore(data): {CHANNEL_TAG} {dt.date.today().isoformat()} "
-                 f"增量 +{len(passed)} 单元",
-                 "-m", "increment_guard 自动提交（用户 2026-10-17 裁决通道化）；"
-                       "单元明细见 work/increment_guard_*.json"])
+        c = run(
+            [
+                "git",
+                *GIT_ID,
+                "commit",
+                "-m",
+                f"chore(data): {CHANNEL_TAG} {dt.date.today().isoformat()} "
+                f"增量 +{len(passed)} 单元",
+                "-m",
+                "increment_guard 自动提交（用户 2026-10-17 裁决通道化）；"
+                "单元明细见 work/increment_guard_*.json",
+            ]
+        )
         report["git_commit"] = (c.returncode, (c.stdout or c.stderr)[-200:])
         print(f"[git] commit rc={c.returncode}")
     else:
@@ -237,7 +296,8 @@ def main() -> int:
 def _write(report, stamp):
     WORK.mkdir(parents=True, exist_ok=True)
     (WORK / f"increment_guard_{stamp}.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(f"[report] work/increment_guard_{stamp}.json")
 
 

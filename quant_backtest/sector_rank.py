@@ -13,6 +13,7 @@ tushare 行业口径（两者经名称映射同源，个别边缘票可能有出
   python sector_rank.py 301216.SZ --days 5
   python sector_rank.py 301216 --days 60 --top 8
 """
+
 import argparse
 import os
 import sys
@@ -30,8 +31,7 @@ from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一
 def main():
     ap = argparse.ArgumentParser(description="板块内分位排名")
     ap.add_argument("code")
-    ap.add_argument("--days", type=int, default=20,
-                    help="区间交易日数，默认 20（r20）")
+    ap.add_argument("--days", type=int, default=20, help="区间交易日数，默认 20（r20）")
     ap.add_argument("--top", type=int, default=5, help="展示前 N 名")
     a = ap.parse_args()
     code = _norm(a.code)
@@ -41,10 +41,16 @@ def main():
     if "industry" not in sb.columns or not len(sb):
         print("ts_stock_basic 不可用")
         return 1
-    ind = str(sb.loc[sb["ts_code"] == code, "industry"].iloc[0]) \
-        if (sb["ts_code"] == code).any() else ""
-    name = str(sb.loc[sb["ts_code"] == code, "name"].iloc[0]) \
-        if (sb["ts_code"] == code).any() else code
+    ind = (
+        str(sb.loc[sb["ts_code"] == code, "industry"].iloc[0])
+        if (sb["ts_code"] == code).any()
+        else ""
+    )
+    name = (
+        str(sb.loc[sb["ts_code"] == code, "name"].iloc[0])
+        if (sb["ts_code"] == code).any()
+        else code
+    )
     if not ind:
         print("%s 不在 ts_stock_basic" % code)
         return 1
@@ -52,15 +58,15 @@ def main():
     if code not in peers:
         peers.append(code)
 
-    start = (datetime.now() - timedelta(days=int(days * 2.2) + 20)
-             ).strftime("%Y-%m-%d")
-    df = tdxr.read_range("ts_daily", start=start,
-                         columns=["ts_code", "trade_date", "close"])
+    start = (datetime.now() - timedelta(days=int(days * 2.2) + 20)).strftime("%Y-%m-%d")
+    df = tdxr.read_range(
+        "ts_daily", start=start, columns=["ts_code", "trade_date", "close"]
+    )
     df = df.dropna(subset=["close"])
     df["d"] = df["trade_date"].astype(str).str.slice(0, 10)
     df = df[df["ts_code"].isin(peers)]
     last_day = df["d"].max()
-    base_day = (df[df["d"] < last_day]["d"].unique())
+    base_day = df[df["d"] < last_day]["d"].unique()
     base_day = sorted(base_day)[-days] if len(base_day) >= days else None
     if base_day is None:
         print("历史不足 %d 根（最新 %s）" % (days, last_day))
@@ -71,20 +77,34 @@ def main():
     r = ((last / base - 1) * 100).dropna().sort_values(ascending=False)
     data_day = last_day.replace("-", "")
 
-    print("行业「%s」 r%d 分位排名（数据日 %s，基准日 %s，有效 %d/%d 票）"
-          % (ind, days, data_day, base_day.replace("-", ""), len(r),
-             len(peers)))
+    print(
+        "行业「%s」 r%d 分位排名（数据日 %s，基准日 %s，有效 %d/%d 票）"
+        % (ind, days, data_day, base_day.replace("-", ""), len(r), len(peers))
+    )
     med = float(r.median())
     if code in r.index:
         rank = int(r.index.get_loc(code)) + 1
         pct = round((rank - 1) / max(len(r) - 1, 1) * 100, 1)
-        print("目标 %s %s：r%d=%+.2f%%  名次 %d/%d  分位 %.1f（0=最强 "
-              "100=最弱）  行业中位 %+.2f%%  相对中位 %+.2fpp" % (
-                  code, name, days, float(r[code]), rank, len(r), pct, med,
-                  float(r[code]) - med))
+        print(
+            "目标 %s %s：r%d=%+.2f%%  名次 %d/%d  分位 %.1f（0=最强 "
+            "100=最弱）  行业中位 %+.2f%%  相对中位 %+.2fpp"
+            % (
+                code,
+                name,
+                days,
+                float(r[code]),
+                rank,
+                len(r),
+                pct,
+                med,
+                float(r[code]) - med,
+            )
+        )
     else:
-        print("目标 %s %s：区间数据缺失（停牌/新股？）行业中位 %+.2f%%"
-              % (code, name, med))
+        print(
+            "目标 %s %s：区间数据缺失（停牌/新股？）行业中位 %+.2f%%"
+            % (code, name, med)
+        )
     print("\n前 %d 名：" % a.top)
     nm = dict(zip(sb["ts_code"], sb["name"]))
     for i, (c, v) in enumerate(r.head(a.top).items(), 1):
@@ -94,10 +114,9 @@ def main():
         rank = int(r.index.get_loc(code)) + 1
         print("  …")
         lo = max(0, rank - 2)
-        for i, (c, v) in enumerate(r.iloc[lo:rank + 1].items(), lo + 1):
+        for i, (c, v) in enumerate(r.iloc[lo : rank + 1].items(), lo + 1):
             tag = " ←目标" if c == code else ""
-            print("  %2d %-10s %-8s %+.2f%%%s" % (i, c, nm.get(c, ""), v,
-                                                  tag))
+            print("  %2d %-10s %-8s %+.2f%%%s" % (i, c, nm.get(c, ""), v, tag))
     print("\n后 3 名：")
     for i, (c, v) in enumerate(r.tail(3).items(), len(r) - 2):
         tag = " ←目标" if c == code else ""

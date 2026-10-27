@@ -8,6 +8,7 @@
 用途：量化门②评审所需的“现行 hist_st 全窗剔除的前视影响面”。
 不是新口径的采纳证据；口径变更须 BACK1/STRAT1 评审拍板。
 """
+
 import json
 import sys
 from collections import Counter, defaultdict
@@ -39,11 +40,13 @@ def load_st_intervals(use_ann=True):
     - 若 use_ann=False（或 ann 缺失），public_start 退化为 raw_start（等价于原探针）。
     """
     import pandas as pd
+
     df = pd.read_parquet(NC_FP)
     st = df[df["name"].astype(str).str.upper().str.contains("ST", na=False)]
     intervals = defaultdict(list)
-    for code, start, end, ann in zip(st["ts_code"], st["start_date"],
-                                    st["end_date"], st["ann_date"]):
+    for code, start, end, ann in zip(
+        st["ts_code"], st["start_date"], st["end_date"], st["ann_date"]
+    ):
         s = str(start)
         e = None if pd.isna(end) else str(end)
         a = None if pd.isna(ann) else str(ann)
@@ -91,7 +94,9 @@ def pool_batch_codes():
 def main():
     events, meta = load_events()
     intervals = load_st_intervals()
-    print(f"events={len(events)} universe={meta.get('universe')} st_codes={len(intervals)}")
+    print(
+        f"events={len(events)} universe={meta.get('universe')} st_codes={len(intervals)}"
+    )
 
     legacy_codes = {code for code in intervals if in_window_any(intervals, code)}
     legacy_dropped = [ev for ev in events if ev["stock"] in legacy_codes]
@@ -120,9 +125,12 @@ def main():
             "events": len(legacy_only),
             "codes": len({ev["stock"] for ev in legacy_only}),
             "by_year": year_hist(legacy_only),
-            "share_of_total_pct": round(len(legacy_only) * 100.0 / max(len(events), 1), 3),
+            "share_of_total_pct": round(
+                len(legacy_only) * 100.0 / max(len(events), 1), 3
+            ),
             "share_of_legacy_dropped_pct": round(
-                len(legacy_only) * 100.0 / max(len(legacy_dropped), 1), 3),
+                len(legacy_only) * 100.0 / max(len(legacy_dropped), 1), 3
+            ),
         },
         "scope": "OFFLINE_READONLY_NOT_ADOPTION_EVIDENCE",
     }
@@ -144,12 +152,13 @@ def main():
         "released_codes_total": len(released_codes),
         "latest_batch_overlap": released_in_batch,
         "note": "released = 全窗剔除但 PIT 生效日口径保留的事件（未来 ST 回写删除）；"
-                "批次交集仅名单对照，不代表这些票应入选或应剔除（产品语义待拍板）",
+        "批次交集仅名单对照，不代表这些票应入选或应剔除（产品语义待拍板）",
     }
 
     # 仅检查 namechange ST 行的两个日期字段顺序；不检验逐事件公告原文、
     # 盘中/盘后披露与数据入库可用时点，也不能推出完整公告规则等价。
     import pandas as pd
+
     nc = pd.read_parquet(NC_FP)
     st_rows = nc[nc["name"].astype(str).str.upper().str.contains("ST", na=False)]
     a = st_rows["ann_date"].astype(str).str.replace("-", "", regex=False).str[:8]
@@ -158,7 +167,7 @@ def main():
     d = a[valid].astype(int) - s[valid].astype(int)
     report["ann_date_consistency"] = {
         "definition": "仅统计 namechange ST 行 ann_date 与 start_date 的日期先后；"
-                      "未验证逐事件公告可知时点或完整公告过滤规则",
+        "未验证逐事件公告可知时点或完整公告过滤规则",
         "st_rows": int(len(st_rows)),
         "both_dates_valid": int(valid.sum()),
         "ann_le_start": int((d <= 0).sum()),
@@ -168,7 +177,9 @@ def main():
         "announcement_rule_equivalence": "NOT_VERIFIED",
     }
     REPORT_FP.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_FP.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    REPORT_FP.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(json.dumps(report["lookahead_impact"], ensure_ascii=False))
     print("report:", REPORT_FP)
 

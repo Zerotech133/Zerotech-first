@@ -9,6 +9,7 @@ quant_backtest/reports/a4_cn_pool_gap_report.json。结论边界：
   （未运行/失败/当日无事件）；当日无事件与断供在此口径下不可区分；
 - 大批量日只标记为"批量离群"，不判定为回填。
 """
+
 import json
 import statistics
 from collections import Counter
@@ -67,21 +68,26 @@ def main() -> dict:
     cal_days = load_calendar()
     pool_dates, bad_rows = load_pool_dates()
     if not cal_days or not pool_dates:
-        report = {"status": "INSUFFICIENT_INPUT",
-                  "cal_days": len(cal_days), "pool_dates": len(pool_dates)}
+        report = {
+            "status": "INSUFFICIENT_INPUT",
+            "cal_days": len(cal_days),
+            "pool_dates": len(pool_dates),
+        }
     else:
         # 窗口 = 池自身日期范围内的交易日（不是日历全区间）
         lo = min(pool_dates)
         hi = max(pool_dates)
         cal_set = set(cal_days)
-        window = sorted(set(pool_dates)
-                        | {d for d in cal_set if lo <= d <= hi})
+        window = sorted(set(pool_dates) | {d for d in cal_set if lo <= d <= hi})
         covered = {d for d in window if d in pool_dates}
         missing = [d for d in window if d not in pool_dates]
         counts = dict(pool_dates)
         med = statistics.median(counts.values())
-        outliers = {d: n for d, n in sorted(counts.items())
-                    if n > med * OUTLIER_MED_RATIO and n >= OUTLIER_MIN_ROWS}
+        outliers = {
+            d: n
+            for d, n in sorted(counts.items())
+            if n > med * OUTLIER_MED_RATIO and n >= OUTLIER_MIN_ROWS
+        }
         report = {
             "status": "OK",
             "scope": "LOCAL_OBSERVATION_NOT_SUPPLY_CERTIFICATION",
@@ -94,28 +100,30 @@ def main() -> dict:
             "missing_recent_10": missing[-10:],
             "missing_by_year": dict(Counter(d[:4] for d in missing)),
             "non_trading_dates_in_pool": sorted(
-                d for d in pool_dates if d not in set(window)),
+                d for d in pool_dates if d not in set(window)
+            ),
             "rows_per_date_median": med,
             "batch_outliers": outliers,
             "outlier_rule": "> median*%d and >= %d rows; NOT a backfill "
-                            "verdict" % (OUTLIER_MED_RATIO, OUTLIER_MIN_ROWS),
+            "verdict" % (OUTLIER_MED_RATIO, OUTLIER_MIN_ROWS),
             "bad_rows": bad_rows,
             "note": "missing date means no detect_date record; cannot "
-                    "distinguish no-events vs not-run vs failed; calendar "
-                    "is local snapshot",
+            "distinguish no-events vs not-run vs failed; calendar "
+            "is local snapshot",
         }
     REPORT.parent.mkdir(exist_ok=True)
-    REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2),
-                      encoding="utf-8")
+    REPORT.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     if report.get("status") == "OK":
-        print("window %s..%s trading=%d pool_dates=%d covered=%d missing=%d"
-              % (lo, hi, len(window), len(pool_dates), len(covered),
-                 len(missing)))
+        print(
+            "window %s..%s trading=%d pool_dates=%d covered=%d missing=%d"
+            % (lo, hi, len(window), len(pool_dates), len(covered), len(missing))
+        )
         print("missing_by_year:", report["missing_by_year"])
         print("missing last 10:", report["missing_recent_10"])
         print("batch_outliers:", report["batch_outliers"])
-        print("non_trading_dates_in_pool:",
-              report["non_trading_dates_in_pool"])
+        print("non_trading_dates_in_pool:", report["non_trading_dates_in_pool"])
     else:
         print(report)
     print("report:", REPORT)

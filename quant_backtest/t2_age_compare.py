@@ -24,6 +24,7 @@
 
 用法：python t2_age_compare.py   （固定三组边界，无需参数）
 """
+
 import json
 import sys
 from datetime import datetime, timedelta
@@ -38,22 +39,37 @@ GROUPS = (("<=30", 0, 30), ("31-60", 31, 60), (">60", 61, 9999))
 
 def load_picks():
     d = json.load(open(PICKS, encoding="utf-8"))
-    basis = datetime.strptime(d["scan_run_date"], "%Y-%m-%d")  # 数据基准日=scan_run_date（与 verdicts 的 sig 口径一致）
+    basis = datetime.strptime(
+        d["scan_run_date"], "%Y-%m-%d"
+    )  # 数据基准日=scan_run_date（与 verdicts 的 sig 口径一致）
     picks = []
     for r in d["stocks"]:
         if r.get("tier") != "T2":
             continue
-        buys = [s for s in r["sources"] if s["s"] == "chanlun"
-                and "买" in (s.get("tag") or "") and s.get("dt")]
+        buys = [
+            s
+            for s in r["sources"]
+            if s["s"] == "chanlun" and "买" in (s.get("tag") or "") and s.get("dt")
+        ]
         if not buys:
             continue  # 四十一审：无 dt 买点跳过（age 无法计算，防 ValueError）
         b = max(buys, key=lambda s: s.get("dt") or "")
-        sells = [s for s in r["sources"] if s["s"] == "chanlun"
-                 and "卖" in (s.get("tag") or "")]
+        sells = [
+            s
+            for s in r["sources"]
+            if s["s"] == "chanlun" and "卖" in (s.get("tag") or "")
+        ]
         age = (basis - datetime.strptime(b["dt"], "%Y-%m-%d")).days
-        picks.append({"code": r["code"], "name": r.get("name") or "",
-                      "tag": b["tag"], "dt": b["dt"], "age": age,
-                      "has_sell": bool(sells)})
+        picks.append(
+            {
+                "code": r["code"],
+                "name": r.get("name") or "",
+                "tag": b["tag"],
+                "dt": b["dt"],
+                "age": age,
+                "has_sell": bool(sells),
+            }
+        )
     return d, basis, picks
 
 
@@ -82,20 +98,28 @@ def calc_returns(p, basis):
     2026-10-11 复权口径（ts_adj_factor 入湖）：全窗因子齐备时
     buy=open×adj、sell=close×adj——除权窗口自动修正、样本保留不再
     剔除（四十一审的 exdiv_w* 剔除降级为因子不可用时的回退路径）。"""
-    df = read_range("ts_daily", "20260101", basis.strftime("%Y%m%d"),
-                    codes=[p["code"]],
-                    columns=["ts_code", "trade_date", "open", "close"])
+    df = read_range(
+        "ts_daily",
+        "20260101",
+        basis.strftime("%Y%m%d"),
+        codes=[p["code"]],
+        columns=["ts_code", "trade_date", "open", "close"],
+    )
     if df is None or len(df) == 0:
         return
     df = df.sort_values("trade_date").reset_index(drop=True)
     # 复权因子：全窗口齐备才走修正路径（缺一行即降级守卫剔除）
     adj_ok = False
     if table_ready("ts_adj_factor"):
-        da = read_range("ts_adj_factor", "20260101",
-                        basis.strftime("%Y%m%d"), codes=[p["code"]])
+        da = read_range(
+            "ts_adj_factor", "20260101", basis.strftime("%Y%m%d"), codes=[p["code"]]
+        )
         if da is not None and len(da):
-            am = {str(t)[:8]: a for t, a in zip(
-                da["trade_date"], da["adj_factor"]) if a is not None}
+            am = {
+                str(t)[:8]: a
+                for t, a in zip(da["trade_date"], da["adj_factor"])
+                if a is not None
+            }
             if am:
                 df["adj"] = [am.get(str(t)[:8]) for t in df["trade_date"]]
                 adj_ok = df["adj"].notna().all()
@@ -113,49 +137,64 @@ def calc_returns(p, basis):
                         s_adj = float(post["adj"].iloc[1 + w])
                         p["w%d" % w] = round(
                             (float(post["close"].iloc[1 + w]) * s_adj)
-                            / (buy * b_adj) * 100 - 100, 2)
+                            / (buy * b_adj)
+                            * 100
+                            - 100,
+                            2,
+                        )
                         continue
                     # 降级：除权污染窗 = 买入日之后至卖出日（价格尺度断裂）
-                    span = {str(x)[:8] for x in
-                            post["trade_date"].iloc[2:2 + w + 1]}
+                    span = {str(x)[:8] for x in post["trade_date"].iloc[2 : 2 + w + 1]}
                     if span & exd:
                         p["exdiv_w%d" % w] = True
                         continue
                     p["w%d" % w] = round(
-                        (float(post["close"].iloc[1 + w]) / buy - 1) * 100, 2)
-    uw = df[(df.trade_date >= (basis - timedelta(days=13)).strftime("%Y%m%d"))
-            & (df.trade_date <= basis.strftime("%Y%m%d"))]
+                        (float(post["close"].iloc[1 + w]) / buy - 1) * 100, 2
+                    )
+    uw = df[
+        (df.trade_date >= (basis - timedelta(days=13)).strftime("%Y%m%d"))
+        & (df.trade_date <= basis.strftime("%Y%m%d"))
+    ]
     if len(uw) >= 2:
         if adj_ok:
             p["uw"] = round(
                 (float(uw["close"].iloc[-1]) * float(uw["adj"].iloc[-1]))
                 / (float(uw["open"].iloc[0]) * float(uw["adj"].iloc[0]))
-                * 100 - 100, 2)
+                * 100
+                - 100,
+                2,
+            )
         else:
             span = {str(x)[:8] for x in uw["trade_date"].iloc[1:]}
             if span & exd:
                 p["exdiv_uw"] = True
             else:
                 p["uw"] = round(
-                    (float(uw["close"].iloc[-1]) / float(uw["open"].iloc[0])
-                     - 1) * 100, 2)
+                    (float(uw["close"].iloc[-1]) / float(uw["open"].iloc[0]) - 1) * 100,
+                    2,
+                )
 
 
 def stat(ps, key):
     vs = sorted(p[key] for p in ps if p.get(key) is not None)
     if not vs:
         return "n=0"
-    return ("n=%d mean=%+.1f%% med=%+.1f%% win=%d%% "
-            "best=%+.1f worst=%+.1f" % (
-                len(vs), sum(vs) / len(vs), vs[len(vs) // 2],
-                sum(1 for v in vs if v > 0) / len(vs) * 100,
-                max(vs), min(vs)))
+    return "n=%d mean=%+.1f%% med=%+.1f%% win=%d%% best=%+.1f worst=%+.1f" % (
+        len(vs),
+        sum(vs) / len(vs),
+        vs[len(vs) // 2],
+        sum(1 for v in vs if v > 0) / len(vs) * 100,
+        max(vs),
+        min(vs),
+    )
 
 
 def main():
     d, basis, picks = load_picks()
-    print("清单 scan_run_date=%s（basis=%s 收盘画像）T2 缠论票 %d 只"
-          % (d["scan_run_date"], basis.date(), len(picks)))
+    print(
+        "清单 scan_run_date=%s（basis=%s 收盘画像）T2 缠论票 %d 只"
+        % (d["scan_run_date"], basis.date(), len(picks))
+    )
     groups = {g[0]: [] for g in GROUPS}
     for p in picks:
         calc_returns(p, basis)
@@ -165,23 +204,36 @@ def main():
                 break
     for g, _, _ in GROUPS:
         ps = groups[g]
-        print("\n── age %s 组（%d 只，卖点并存 %d 只）──"
-              % (g, len(ps), sum(1 for p in ps if p["has_sell"])))
+        print(
+            "\n── age %s 组（%d 只，卖点并存 %d 只）──"
+            % (g, len(ps), sum(1 for p in ps if p["has_sell"]))
+        )
         for k in tuple("w%d" % w for w in WINDOWS) + ("uw",):
             print("  %-3s %s" % (k, stat(ps, k)))
     for g in (GROUPS[0][0], GROUPS[2][0]):  # <=30 与 >60 两组明细
         print("\n── %s 组明细 ──" % g)
         for p in sorted(groups[g], key=lambda x: -x["age"]):
             ws = " ".join(
-                ("w%d=%s" % (w, p.get("w%d" % w))) if p.get("w%d" % w) is not None
-                else ("w%d=除权剔" % w) if p.get("exdiv_w%d" % w) else
-                ("w%d=未满" % w)
-                for w in WINDOWS)
-            print("  %-10s %-6s %s %s age=%3d %s 近窗=%s%s"
-                  % (p["code"], p["name"][:4], p["tag"], p["dt"], p["age"],
-                     ws,
-                     "除权剔" if p.get("exdiv_uw") else p.get("uw"),
-                     " ⚠含卖点" if p["has_sell"] else ""))
+                ("w%d=%s" % (w, p.get("w%d" % w)))
+                if p.get("w%d" % w) is not None
+                else ("w%d=除权剔" % w)
+                if p.get("exdiv_w%d" % w)
+                else ("w%d=未满" % w)
+                for w in WINDOWS
+            )
+            print(
+                "  %-10s %-6s %s %s age=%3d %s 近窗=%s%s"
+                % (
+                    p["code"],
+                    p["name"][:4],
+                    p["tag"],
+                    p["dt"],
+                    p["age"],
+                    ws,
+                    "除权剔" if p.get("exdiv_uw") else p.get("uw"),
+                    " ⚠含卖点" if p["has_sell"] else "",
+                )
+            )
 
 
 if __name__ == "__main__":

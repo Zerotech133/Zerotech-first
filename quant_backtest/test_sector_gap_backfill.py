@@ -18,7 +18,16 @@ def reply(rows=None, total=None):
     rows = rows if rows is not None else [["880001", "20261001", 1, 2, 1, 2, 10, 20]]
     return {
         "total": len(rows) if total is None else total,
-        "columns": ["code", "trade_date", "open", "high", "low", "close", "vol", "amount"],
+        "columns": [
+            "code",
+            "trade_date",
+            "open",
+            "high",
+            "low",
+            "close",
+            "vol",
+            "amount",
+        ],
         "rows": rows,
     }
 
@@ -35,10 +44,16 @@ def test_probe_validates_one_matching_row():
     "payload, expected",
     [
         (reply(rows=[], total=0), "source_empty"),
-        (reply(rows=[
-            ["880001", "20261001", 1, 2, 1, 2, 10, 20],
-            ["880001", "20261001", 1, 2, 1, 2, 10, 20],
-        ], total=2), "invalid_source"),
+        (
+            reply(
+                rows=[
+                    ["880001", "20261001", 1, 2, 1, 2, 10, 20],
+                    ["880001", "20261001", 1, 2, 1, 2, 10, 20],
+                ],
+                total=2,
+            ),
+            "invalid_source",
+        ),
         (reply(rows=[["880002", "20261001", 1, 2, 1, 2, 10, 20]]), "invalid_source"),
         (reply(rows=[["880001", "20261001", 1, 2, 1, 2, None, 20]]), "invalid_source"),
     ],
@@ -52,7 +67,12 @@ def test_probe_rejects_empty_mismatch_null_and_duplicate(payload, expected):
 def test_stage_saves_raw_payload_and_candidate_receipt(tmp_path):
     keys = [key()]
     result = stage_sector_daily(keys, tmp_path, probe=lambda item: reply())
-    assert result["counts"] == {"added": 1, "blocked": 0, "rejected": 0, "source_empty": 0}
+    assert result["counts"] == {
+        "added": 1,
+        "blocked": 0,
+        "rejected": 0,
+        "source_empty": 0,
+    }
     assert result["production_write"] is False
     assert (tmp_path / "raw" / "880001_20261001.json").exists()
     assert (tmp_path / "tdx_sector_daily" / "part_0000.parquet").exists()
@@ -80,9 +100,14 @@ def test_reconcile_definition_uses_validity_window_for_historical_rows():
 def test_stage_by_date_uses_full_day_response_and_marks_missing_source_empty(tmp_path):
     payload = reply(rows=[["880001", "20261001", 1, 2, 1, 2, 10, 20]], total=1)
     result = stage_sector_daily_by_date(
-        [key("880001"), key("880002")], tmp_path,
+        [key("880001"), key("880002")],
+        tmp_path,
         fetch_day=lambda day: payload,
     )
-    assert result["counts"] == {"added": 1, "blocked": 1, "rejected": 0, "source_empty": 1}
+    assert result["counts"] == {
+        "added": 1,
+        "blocked": 1,
+        "rejected": 0,
+        "source_empty": 1,
+    }
     assert result["production_write"] is False
-

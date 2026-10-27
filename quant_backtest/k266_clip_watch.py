@@ -4,6 +4,7 @@
 用法：python k266_clip_watch.py [间隔秒，默认3]
 退出：Ctrl+C。落在 C:\项目\老田的AI助手\inbox\docs\pending\clip_YYYYmmdd_HHMMSS.png
 """
+
 import io
 import time
 
@@ -15,9 +16,11 @@ _last = None
 
 def main():
     import os
+
     os.makedirs(INBOX, exist_ok=True)
     ivl = 3
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1].isdigit():
         ivl = int(sys.argv[1])
     global _last
@@ -35,7 +38,7 @@ def main():
                     path = os.path.join(INBOX, fn)
                     with open(path, "wb") as f:
                         f.write(data)
-                    print(f"[clip] saved {fn} {len(data)//1024}KB", flush=True)
+                    print(f"[clip] saved {fn} {len(data) // 1024}KB", flush=True)
         except Exception as e:
             # 剪贴板被占用/非位图内容：静默跳过
             if "clipboard" not in str(e).lower() and "OpenClipboard" not in str(e):

@@ -31,6 +31,7 @@
 旧机路径映射：manifest 里 staged_path 是 C:\\项目\\老田的AI助手\\... 旧机绝对路径，
 本机等价物为 c:\\aios\\...（junction C:\\aios -> C:\\项目\\老田的AI助手）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,7 @@ def _now() -> str:
 def _map_path(raw: str) -> Path:
     """旧机 E:\\ 绝对路径 → 本机路径；其余原样。"""
     if raw and raw.lower().startswith(_LEGACY_PREFIX.lower()):
-        return Path(_LOCAL_PREFIX + raw[len(_LEGACY_PREFIX):])
+        return Path(_LOCAL_PREFIX + raw[len(_LEGACY_PREFIX) :])
     return Path(raw)
 
 
@@ -85,10 +86,15 @@ def _production_target(prod_root: Path, table: str, trade_date: str) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="staging 物化 dry-run（零生产写入）")
-    ap.add_argument("--staging", default=str(Path(__file__).resolve().parent
-                                              / "data" / "tushare_staging"))
-    ap.add_argument("--verify-all", action="store_true",
-                    help="全量重算 staged parquet sha256（默认每表抽 2 个）")
+    ap.add_argument(
+        "--staging",
+        default=str(Path(__file__).resolve().parent / "data" / "tushare_staging"),
+    )
+    ap.add_argument(
+        "--verify-all",
+        action="store_true",
+        help="全量重算 staged parquet sha256（默认每表抽 2 个）",
+    )
     args = ap.parse_args()
 
     staging = Path(args.staging)
@@ -136,19 +142,29 @@ def main() -> int:
 
     for e in entries:
         t = e.get("table", "?")
-        tbl = tables.setdefault(t, {
-            "units": 0, "rows": 0, "dup_keys_total": 0,
-            "null_pk_total": 0, "dates": [], "columns": None,
-            "staged_missing": 0, "prod_already": 0, "prod_new": 0,
-            "prod_new_rows": 0,
-        })
+        tbl = tables.setdefault(
+            t,
+            {
+                "units": 0,
+                "rows": 0,
+                "dup_keys_total": 0,
+                "null_pk_total": 0,
+                "dates": [],
+                "columns": None,
+                "staged_missing": 0,
+                "prod_already": 0,
+                "prod_new": 0,
+                "prod_new_rows": 0,
+            },
+        )
         tbl["units"] += 1
         tbl["rows"] += e.get("row_count") or 0
         tbl["dup_keys_total"] += e.get("duplicate_keys") or 0
         npk = e.get("null_primary_key") or {}
         tbl["null_pk_total"] += sum(v for v in npk.values() if isinstance(v, int))
-        d = (e.get("request_params") or {}).get("trade_date") or \
-            ((e.get("date_values") or [""])[0])
+        d = (e.get("request_params") or {}).get("trade_date") or (
+            (e.get("date_values") or [""])[0]
+        )
         if d:
             tbl["dates"].append(d)
         if tbl["columns"] is None:
@@ -168,8 +184,7 @@ def main() -> int:
                 got = _sha256(sp)
                 sample_by_table[t].append(str(sp))
                 if got != want:
-                    hash_fail.append({"path": str(sp), "manifest": want,
-                                      "actual": got})
+                    hash_fail.append({"path": str(sp), "manifest": want, "actual": got})
         # 生产对照（只读）
         target = _production_target(prod_root, t, d) if d else None
         if target is not None:
@@ -195,15 +210,19 @@ def main() -> int:
 
     # ── annual / recent30 辅助登记（轻量）──
     annuals = sorted(staging.glob("annual_*_batch_*_summary.json"))
-    ann_info = {"files": len(annuals), "production_write_false": 0,
-                "dates_total": 0, "tables": set()}
+    ann_info = {
+        "files": len(annuals),
+        "production_write_false": 0,
+        "dates_total": 0,
+        "tables": set(),
+    }
     for af in annuals:
         with open(af, encoding="utf-8") as f:
             a = json.load(f)
         if a.get("production_write") is False:
             ann_info["production_write_false"] += 1
         ann_info["dates_total"] += len(a.get("dates") or [])
-        for k in (a.get("tables") or {}):
+        for k in a.get("tables") or {}:
             ann_info["tables"].add(k if isinstance(k, str) else str(k))
     ann_info["tables"] = sorted(ann_info["tables"])
     report["annual_summaries"] = ann_info
@@ -217,15 +236,17 @@ def main() -> int:
     new_rows = sum(t["prod_new_rows"] for t in tables.values())
     overwrite_units = sum(t["prod_already"] for t in tables.values())
     report["plan_if_approved"] = {
-        "new_files": new_units, "new_rows": new_rows,
+        "new_files": new_units,
+        "new_rows": new_rows,
         "overwrite_files": overwrite_units,
         "note": "overwrite = 生产 d_YYYYMMDD.parquet 已存在的单元，需人工复核"
-                "替换语义（增量合并 vs 整文件替换）后方可执行",
+        "替换语义（增量合并 vs 整文件替换）后方可执行",
     }
     report["readback_protocol"] = (
         "正式物化时：写入后立即读回 parquet，重算 sha256+行数，与 staging 指纹"
         "（staged_sha256, row_count, columns）三元组全等才算成功；不等 → 标记 "
-        "mismatch 待裁决，不自动重试。本 dry-run 已完成写前指纹对账（抽样）。")
+        "mismatch 待裁决，不自动重试。本 dry-run 已完成写前指纹对账（抽样）。"
+    )
 
     out = staging / "materialize_dryrun_report.json"
     with open(out, "w", encoding="utf-8") as f:
@@ -233,25 +254,37 @@ def main() -> int:
 
     # ── 控制台摘要 ──
     print(f"[dry-run] staging: {staging}")
-    print(f"[dry-run] gate: control={gate.get('qualification_control')} "
-          f"review_required={gate.get('review_required')}")
-    print(f"[dry-run] closure: run={closure.get('run_id')} "
-          f"units={closure.get('completed_units')}/{closure.get('total_units')} "
-          f"blocked={closure.get('blocked_reason')}")
-    print(f"[dry-run] history_3y: entries={len(entries)} "
-          f"tables={len(tables)} sha256_mismatch={len(hash_fail)} "
-          f"staged_missing={len(missing_files)}")
+    print(
+        f"[dry-run] gate: control={gate.get('qualification_control')} "
+        f"review_required={gate.get('review_required')}"
+    )
+    print(
+        f"[dry-run] closure: run={closure.get('run_id')} "
+        f"units={closure.get('completed_units')}/{closure.get('total_units')} "
+        f"blocked={closure.get('blocked_reason')}"
+    )
+    print(
+        f"[dry-run] history_3y: entries={len(entries)} "
+        f"tables={len(tables)} sha256_mismatch={len(hash_fail)} "
+        f"staged_missing={len(missing_files)}"
+    )
     for t, tbl in sorted(tables.items()):
-        print(f"    {t:24s} units={tbl['units']:4d} rows={tbl['rows']:8d} "
-              f"dates={tbl['date_min']}..{tbl['date_max']} "
-              f"prod_new={tbl['prod_new']:4d} overwrite={tbl['prod_already']:4d} "
-              f"dup={tbl['dup_keys_total']} nullpk={tbl['null_pk_total']}")
-    print(f"[dry-run] annual: {ann_info['files']} summaries, "
-          f"pw_false={ann_info['production_write_false']}, "
-          f"dates={ann_info['dates_total']} | recent30 parquet: "
-          f"{len(r30_files)}")
-    print(f"[dry-run] plan_if_approved: new_files={new_units} "
-          f"new_rows={new_rows} overwrite_files={overwrite_units}")
+        print(
+            f"    {t:24s} units={tbl['units']:4d} rows={tbl['rows']:8d} "
+            f"dates={tbl['date_min']}..{tbl['date_max']} "
+            f"prod_new={tbl['prod_new']:4d} overwrite={tbl['prod_already']:4d} "
+            f"dup={tbl['dup_keys_total']} nullpk={tbl['null_pk_total']}"
+        )
+    print(
+        f"[dry-run] annual: {ann_info['files']} summaries, "
+        f"pw_false={ann_info['production_write_false']}, "
+        f"dates={ann_info['dates_total']} | recent30 parquet: "
+        f"{len(r30_files)}"
+    )
+    print(
+        f"[dry-run] plan_if_approved: new_files={new_units} "
+        f"new_rows={new_rows} overwrite_files={overwrite_units}"
+    )
     print(f"[dry-run] report -> {out}")
     print("[dry-run] 生产仓零写入（production_write=False 全程）")
     return 0

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """最近 30 个交易日刷新：来源资格、staging 和回读对账。"""
+
 from __future__ import annotations
 
 import json
@@ -42,7 +43,12 @@ def test_recent_refresh_blocks_without_qualified_source_and_writes_receipts(tmp_
     assert (tmp_path / "commit_intent.jsonl").exists()
     assert (tmp_path / "commit_complete.jsonl").exists()
     assert (tmp_path / "verification.json").exists()
-    receipts = [json.loads(line) for line in (tmp_path / "source_receipt.jsonl").read_text(encoding="utf-8").splitlines()]
+    receipts = [
+        json.loads(line)
+        for line in (tmp_path / "source_receipt.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
     assert all(item["status"] == "blocked" for item in receipts)
 
 
@@ -70,16 +76,23 @@ def test_recent_refresh_rejects_duplicate_fact_keys_and_keeps_staging(tmp_path):
 
 
 def test_recent_refresh_uses_twenty_to_thirty_day_windows(tmp_path):
-    days = [(date(2026, 9, 1) + timedelta(days=i)).strftime("%Y%m%d") for i in range(60)]
+    days = [
+        (date(2026, 9, 1) + timedelta(days=i)).strftime("%Y%m%d") for i in range(60)
+    ]
     result = execute_recent_refresh(
-        [], tmp_path, source_probe=lambda _key: {"status": "qualified", "row_count": 0},
-        trading_days=days, batch_days=30,
+        [],
+        tmp_path,
+        source_probe=lambda _key: {"status": "qualified", "row_count": 0},
+        trading_days=days,
+        batch_days=30,
     )
     assert result["windows"] == [30, 30]
 
 
 def test_valuation_check_reports_view_coverage_without_mutating_input(tmp_path):
-    kline = pd.DataFrame([{"ts_code": "000001.SZ", "trade_date": "20261009", "close": 10.0}])
+    kline = pd.DataFrame(
+        [{"ts_code": "000001.SZ", "trade_date": "20261009", "close": 10.0}]
+    )
     source = tmp_path / "ts_daily_basic"
     source.mkdir()
     # 没有来源分片时必须明确返回 source_empty，而不是把空值当成已补齐。
@@ -91,7 +104,8 @@ def test_valuation_check_reports_view_coverage_without_mutating_input(tmp_path):
 
 def test_health_scan_reads_recent_receipt_status_and_volume(tmp_path):
     execute_recent_refresh(
-        _gaps(), tmp_path,
+        _gaps(),
+        tmp_path,
         source_probe=lambda _key: {"status": "source_empty", "row_count": 0},
         trading_days=[f"202609{i:02d}" for i in range(1, 31)],
     )
@@ -99,4 +113,3 @@ def test_health_scan_reads_recent_receipt_status_and_volume(tmp_path):
     assert health["status"] == "blocked"
     assert health["blocked"] == 4
     assert health["production_write"] is False
-

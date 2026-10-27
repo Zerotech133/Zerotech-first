@@ -13,6 +13,7 @@
   python guba_crawl.py 000338.SZ,600519.SH --pages 1
   python guba_crawl.py --pool                # 日链模式：近30天缠论池活跃股
 """
+
 import argparse
 import json
 import os
@@ -24,12 +25,13 @@ import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(HERE, "data", "guba")
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
-THROTTLE = 1.5          # 秒/页
-MAX_PAGES = 10          # 硬上限（防失控翻页）
-ART_RE = re.compile(r"var article_list=(\{.*?\});?\s*(?:var|</script>)",
-                    re.S)
+UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
+THROTTLE = 1.5  # 秒/页
+MAX_PAGES = 10  # 硬上限（防失控翻页）
+ART_RE = re.compile(r"var article_list=(\{.*?\});?\s*(?:var|</script>)", re.S)
 
 
 def code6(tc):
@@ -43,8 +45,10 @@ def code6(tc):
 
 def fetch_page(c6, page, timeout=12):
     """单页 → [{核心字段}] 或 []（失败/空页）。"""
-    u = ("https://guba.eastmoney.com/list,%s%s.html"
-         % (c6, ",%d" % page if page > 1 else ""))
+    u = "https://guba.eastmoney.com/list,%s%s.html" % (
+        c6,
+        ",%d" % page if page > 1 else "",
+    )
     try:
         r = requests.get(u, headers={"User-Agent": UA}, timeout=timeout)
         m = ART_RE.search(r.text)
@@ -59,16 +63,18 @@ def fetch_page(c6, page, timeout=12):
             continue
         # 资讯(CMS)/帖子区分：media_type 非空为资讯，保留但打标记
         is_news = bool(a.get("media_type") or a.get("cms_media_type"))
-        out.append({
-            "post_id": a["post_id"],
-            "title": str(a["post_title"]).strip()[:120],
-            "ts": a.get("post_publish_time") or a.get("post_display_time"),
-            "click": a.get("post_click_count") or 0,
-            "comment": a.get("post_comment_count") or 0,
-            "user": a.get("user_nickname") or "",
-            "bb": a.get("bullish_bearish"),   # 1 看多 -1 看空 None 无
-            "news": 1 if is_news else 0,
-        })
+        out.append(
+            {
+                "post_id": a["post_id"],
+                "title": str(a["post_title"]).strip()[:120],
+                "ts": a.get("post_publish_time") or a.get("post_display_time"),
+                "click": a.get("post_click_count") or 0,
+                "comment": a.get("post_comment_count") or 0,
+                "user": a.get("user_nickname") or "",
+                "bb": a.get("bullish_bearish"),  # 1 看多 -1 看空 None 无
+                "news": 1 if is_news else 0,
+            }
+        )
     return out
 
 
@@ -126,8 +132,7 @@ def pool_codes(pool_days=30, limit=60):
     path = os.path.join(HERE, "data", "chanlun_pool.jsonl")
     if not os.path.exists(path):
         return []
-    cutoff = (datetime.now() - timedelta(days=pool_days)
-              ).strftime("%Y%m%d")
+    cutoff = (datetime.now() - timedelta(days=pool_days)).strftime("%Y%m%d")
     seen = {}
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -138,28 +143,34 @@ def pool_codes(pool_days=30, limit=60):
             c = str(r.get("code") or "")
             m = re.match(r"^(\d{6})\.(SZ|SH|BJ)$", c, re.I)
             if not m:
-                continue                     # 指数/US/HK 不采
+                continue  # 指数/US/HK 不采
             if str(r.get("dt") or "").replace("-", "")[:8] < cutoff:
                 continue
-            seen.setdefault(m.group(1), c)   # 首见序 = 信号日序
+            seen.setdefault(m.group(1), c)  # 首见序 = 信号日序
     return list(seen.values())[:limit]
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("codes", nargs="?", default=None,
-                    help="代码（逗号分隔）；省略且 --pool 时自动取池")
+    ap.add_argument(
+        "codes",
+        nargs="?",
+        default=None,
+        help="代码（逗号分隔）；省略且 --pool 时自动取池",
+    )
     ap.add_argument("--pages", type=int, default=2)
-    ap.add_argument("--pool", action="store_true",
-                    help="日链模式：近30天缠论池活跃股")
+    ap.add_argument("--pool", action="store_true", help="日链模式：近30天缠论池活跃股")
     ap.add_argument("--pool-days", type=int, default=30)
     ap.add_argument("--limit", type=int, default=60)
     a = ap.parse_args()
     os.makedirs(OUT_DIR, exist_ok=True)
     if a.pool:
         codes = pool_codes(a.pool_days, a.limit)
-        print("池模式：近 %d 天活跃股 %d 只（上限 %d）"
-              % (a.pool_days, len(codes), a.limit), flush=True)
+        print(
+            "池模式：近 %d 天活跃股 %d 只（上限 %d）"
+            % (a.pool_days, len(codes), a.limit),
+            flush=True,
+        )
         if not codes:
             print("池为空，正常退出")
             return
@@ -169,10 +180,14 @@ def main():
     for i, tc in enumerate(codes, 1):
         n_new, n_all = crawl(tc, a.pages)
         n_all_new += n_new
-        print("[%d/%d] %s: 新增 %d 累计 %d" % (i, len(codes), tc, n_new, n_all),
-              flush=True)
-    print("池模式完成：%d 只，新增 %d 帖，用时 %.0fs"
-          % (len(codes), n_all_new, time.time() - t0))
+        print(
+            "[%d/%d] %s: 新增 %d 累计 %d" % (i, len(codes), tc, n_new, n_all),
+            flush=True,
+        )
+    print(
+        "池模式完成：%d 只，新增 %d 帖，用时 %.0fs"
+        % (len(codes), n_all_new, time.time() - t0)
+    )
 
 
 if __name__ == "__main__":

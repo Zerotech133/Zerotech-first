@@ -17,20 +17,20 @@
     「怎么执行」执行口径分立，禁互改；
   · 阈值常量化：调参只动 THRESHOLDS，禁止散落魔数。
 """
+
 from datetime import datetime
 
 # ── 判定阈值（定稿 2026-10-19，调参只改这里）─────────────────────────
 THRESHOLDS = {
-    "wide_prob_min": 55,        # 宽门胜率下限（%），≥ 才可宽门
-    "wide_overall_min_gt": 0,   # 宽门 overall 严格大于此值
-    "wide_gates_min": 2,        # 宽门三门通过数下限（X/3）
-    "narrow_prob_lt": 50,       # neutral 下 prob 低于此值触发窄门条件
-    "narrow_overall_lt": 0,     # neutral 下 overall 低于此值触发窄门条件
-    "counter_prob_margin": 5,   # 反证：宽门 prob 距下限不足此值标注逼近
+    "wide_prob_min": 55,  # 宽门胜率下限（%），≥ 才可宽门
+    "wide_overall_min_gt": 0,  # 宽门 overall 严格大于此值
+    "wide_gates_min": 2,  # 宽门三门通过数下限（X/3）
+    "narrow_prob_lt": 50,  # neutral 下 prob 低于此值触发窄门条件
+    "narrow_overall_lt": 0,  # neutral 下 overall 低于此值触发窄门条件
+    "counter_prob_margin": 5,  # 反证：宽门 prob 距下限不足此值标注逼近
 }
 
-VERDICT_CN = {"closed": "关门", "narrow": "窄门", "wide": "宽门",
-              "unknown": "未知"}
+VERDICT_CN = {"closed": "关门", "narrow": "窄门", "wide": "宽门", "unknown": "未知"}
 
 REGIMES = ("risk_off", "risk_on", "neutral")
 
@@ -50,8 +50,9 @@ def _num(v):
         return None
 
 
-def evaluate_admission(regime, overall, prob, gates_passed,
-                       shadow_block, hard_block, now=None):
+def evaluate_admission(
+    regime, overall, prob, gates_passed, shadow_block, hard_block, now=None
+):
     """纯函数准入判定。
 
     参数
@@ -89,15 +90,23 @@ def evaluate_admission(regime, overall, prob, gates_passed,
     counter = []
 
     def _closed():
-        reasons.append("regime=risk_off（策源三态一票否决）"
-                       if regime == "risk_off"
-                       else "风控硬拦：市场级闸 action=block")
+        reasons.append(
+            "regime=risk_off（策源三态一票否决）"
+            if regime == "risk_off"
+            else "风控硬拦：市场级闸 action=block"
+        )
         if regime == "risk_off" and hard_block:
             reasons.append("风控硬拦：市场级闸 action=block（双判据同向）")
-        if (ov is not None and ov > THRESHOLDS["wide_overall_min_gt"]
-                and pb is not None and pb >= THRESHOLDS["wide_prob_min"]):
-            counter.append("关门但 overall/prob 已达宽门线"
-                           "（regime/风控否决优先，禁止据 overall/prob 放行）")
+        if (
+            ov is not None
+            and ov > THRESHOLDS["wide_overall_min_gt"]
+            and pb is not None
+            and pb >= THRESHOLDS["wide_prob_min"]
+        ):
+            counter.append(
+                "关门但 overall/prob 已达宽门线"
+                "（regime/风控否决优先，禁止据 overall/prob 放行）"
+            )
 
     def _narrow(trigger_bits):
         if regime == "risk_on":
@@ -108,19 +117,23 @@ def evaluate_admission(regime, overall, prob, gates_passed,
                 fails.append("overall %g≤%g" % (ov, THRESHOLDS["wide_overall_min_gt"]))
             if pb is not None and pb < THRESHOLDS["wide_prob_min"]:
                 fails.append("prob %g<%g" % (pb, THRESHOLDS["wide_prob_min"]))
-            reasons.append(("regime=risk_on 但宽门条件不全（%s）→ 兜底窄门"
-                            % "；".join(fails)) if fails
-                           else "regime=risk_on 但宽门条件不全 → 兜底窄门")
-            counter.append("窄门但 regime=risk_on（多转信号与准入不一致，"
-                           "关注宽门条件补齐节奏）")
+            reasons.append(
+                ("regime=risk_on 但宽门条件不全（%s）→ 兜底窄门" % "；".join(fails))
+                if fails
+                else "regime=risk_on 但宽门条件不全 → 兜底窄门"
+            )
+            counter.append(
+                "窄门但 regime=risk_on（多转信号与准入不一致，关注宽门条件补齐节奏）"
+            )
         else:  # neutral
             if trigger_bits:
                 reasons.append("neutral 且 %s" % "、".join(trigger_bits))
             else:
                 reasons.append("neutral 未达宽门条件 → 兜底窄门")
         if shadow_block:
-            counter.append("影子闸拦截与当前判定并存（影子语义只记不拦，"
-                           "升级 enforce 须拍板）")
+            counter.append(
+                "影子闸拦截与当前判定并存（影子语义只记不拦，升级 enforce 须拍板）"
+            )
 
     if regime == "risk_off" or hard_block is True:
         verdict = "closed"
@@ -129,17 +142,22 @@ def evaluate_admission(regime, overall, prob, gates_passed,
         # 非关门但判定依赖缺源字段 → unknown，绝不 fail-open 假绿
         verdict = "unknown"
         reasons.append("判定输入缺源: %s" % ", ".join(missing))
-    elif regime == "risk_on" and gp >= THRESHOLDS["wide_gates_min"] \
-            and ov > THRESHOLDS["wide_overall_min_gt"] \
-            and pb >= THRESHOLDS["wide_prob_min"]:
+    elif (
+        regime == "risk_on"
+        and gp >= THRESHOLDS["wide_gates_min"]
+        and ov > THRESHOLDS["wide_overall_min_gt"]
+        and pb >= THRESHOLDS["wide_prob_min"]
+    ):
         verdict = "wide"
         reasons.append("regime=risk_on")
         reasons.append("三门 %d/3≥%d" % (gp, THRESHOLDS["wide_gates_min"]))
         reasons.append("overall %g>%g" % (ov, THRESHOLDS["wide_overall_min_gt"]))
         reasons.append("prob %g≥%g" % (pb, THRESHOLDS["wide_prob_min"]))
         if pb < THRESHOLDS["wide_prob_min"] + THRESHOLDS["counter_prob_margin"]:
-            counter.append("宽门但胜率 %g%% 逼近下限 %g%%（边际宽门）"
-                           % (pb, THRESHOLDS["wide_prob_min"]))
+            counter.append(
+                "宽门但胜率 %g%% 逼近下限 %g%%（边际宽门）"
+                % (pb, THRESHOLDS["wide_prob_min"])
+            )
         if gp == THRESHOLDS["wide_gates_min"]:
             counter.append("宽门且三门 %d/3 刚好压线（无冗余余量）" % gp)
     else:
@@ -169,7 +187,7 @@ def evaluate_admission(regime, overall, prob, gates_passed,
         },
         "thresholds": dict(THRESHOLDS),
         "missing": missing,
-        "computed_at": (datetime.now().astimezone() if now is None
-                        else now.astimezone()
-                        ).isoformat(timespec="seconds"),
+        "computed_at": (
+            datetime.now().astimezone() if now is None else now.astimezone()
+        ).isoformat(timespec="seconds"),
     }

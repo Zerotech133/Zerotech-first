@@ -21,6 +21,7 @@
   m = day_map("ts_daily_basic", "20260926",
               ["pe", "total_mv", "turnover_rate"])              # {code: {...}}
 """
+
 import glob
 import json
 import os
@@ -40,8 +41,12 @@ MANIFEST = os.path.join(OUT, "_manifest.json")
 
 SQLITE_TABLES = {"stock_notice", "stock_news", "stock_report"}
 # 财务类表的日期列是 end_date，其余结构化表用 trade_date
-DATE_COL = {"ts_income": "end_date", "ts_balancesheet": "end_date",
-            "ts_cashflow": "end_date", "ts_fina_indicator": "end_date"}
+DATE_COL = {
+    "ts_income": "end_date",
+    "ts_balancesheet": "end_date",
+    "ts_cashflow": "end_date",
+    "ts_fina_indicator": "end_date",
+}
 # tdx_sector_daily 用 code 而非 ts_code
 CODE_COL_DEFAULT = "ts_code"
 
@@ -136,8 +141,7 @@ def _apply_code_filter(df, tbl, codes):
     exact, prefix = _norm_codes(codes)
     if exact is None and prefix is None:
         return df
-    cols = [c for c in ("ts_code", "con_code", "code", "symbol")
-            if c in df.columns]
+    cols = [c for c in ("ts_code", "con_code", "code", "symbol") if c in df.columns]
     if not cols:
         return df.iloc[0:0]
     mask = pd.Series(False, index=df.index)
@@ -163,17 +167,17 @@ def read_day(tbl, day, codes=None, columns=None):
     cols = None
     if columns:
         want = set(columns) | {dcol}
-        try:                       # 用首片探测真实列名，避免请求不存在的列
+        try:  # 用首片探测真实列名，避免请求不存在的列
             head = pd.read_parquet(parts[0])
-            cols = [c for c in head.columns
-                    if c in want or c == _code_col(head)]
+            cols = [c for c in head.columns if c in want or c == _code_col(head)]
         except PublicationPending:
             raise
         except Exception:
             cols = None
     try:
-        df = pd.concat([pd.read_parquet(p, columns=cols) for p in parts],
-                       ignore_index=True)
+        df = pd.concat(
+            [pd.read_parquet(p, columns=cols) for p in parts], ignore_index=True
+        )
     except PublicationPending:
         raise
     except Exception:
@@ -194,8 +198,9 @@ def read_range(tbl, start=None, end=None, codes=None, columns=None):
         return pd.DataFrame()
     dcol = date_col_of(tbl)
     try:
-        df = pd.concat([pd.read_parquet(p, columns=columns) for p in parts],
-                       ignore_index=True)
+        df = pd.concat(
+            [pd.read_parquet(p, columns=columns) for p in parts], ignore_index=True
+        )
     except PublicationPending:
         raise
     except Exception:
@@ -219,8 +224,9 @@ def read_all(tbl, columns=None, codes=None):
     if not parts:
         return pd.DataFrame()
     try:
-        df = pd.concat([pd.read_parquet(p, columns=columns) for p in parts],
-                       ignore_index=True)
+        df = pd.concat(
+            [pd.read_parquet(p, columns=columns) for p in parts], ignore_index=True
+        )
     except PublicationPending:
         raise
     except Exception:
@@ -231,8 +237,7 @@ def read_all(tbl, columns=None, codes=None):
 @guarded_read(lambda *args, **kwargs: [OUT])
 def day_map(tbl, day, fields, codes=None):
     """单日 → {ts_code: {field: value}}，nine_dim 各 fetch 函数的直接替身。"""
-    df = read_day(tbl, day, codes=codes,
-                  columns=list(fields) if fields else None)
+    df = read_day(tbl, day, codes=codes, columns=list(fields) if fields else None)
     if df.empty:
         return {}
     code_col = _code_col(df)
@@ -262,8 +267,11 @@ def read_info(tbl, codes=None, limit=200, since=None):
         raise ValueError("%s 不是信息表" % tbl)
     if not os.path.exists(INFO_DB):
         return []
-    date_col = {"stock_notice": "notice_date", "stock_news": "pub_date",
-                "stock_report": "pub_date"}[tbl]
+    date_col = {
+        "stock_notice": "notice_date",
+        "stock_news": "pub_date",
+        "stock_report": "pub_date",
+    }[tbl]
     where, params = [], []
     if codes:
         exact, prefix = _norm_codes(codes)
@@ -271,12 +279,11 @@ def read_info(tbl, codes=None, limit=200, since=None):
             where.append("ts_code IN (%s)" % ",".join("?" * len(exact)))
             params.extend(str(c) for c in exact)
         if prefix:
-            where.append("substr(ts_code,1,6) IN (%s)"
-                         % ",".join("?" * len(prefix)))
+            where.append("substr(ts_code,1,6) IN (%s)" % ",".join("?" * len(prefix)))
             params.extend(prefix)
     if since:
         where.append("%s >= ?" % date_col)
-        nd = _norm_day(since)                 # 库内存 'YYYY-MM-DD'
+        nd = _norm_day(since)  # 库内存 'YYYY-MM-DD'
         params.append("%s-%s-%s" % (nd[:4], nd[4:6], nd[6:8]))
     sql = "SELECT * FROM %s" % tbl
     if where:
@@ -308,6 +315,7 @@ if __name__ == "__main__":
                     conn.close()
                 print("%-22s %-6s %-10s" % (t, "Y", "%d rows" % n))
             else:
-                print("%-22s %-6s %-10s"
-                      % (t, "Y" if table_ready(t) else "-",
-                         latest_date(t) or "—"))
+                print(
+                    "%-22s %-6s %-10s"
+                    % (t, "Y" if table_ready(t) else "-", latest_date(t) or "—")
+                )

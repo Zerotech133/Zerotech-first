@@ -18,6 +18,7 @@ C 的理由是「无 SLA + 静态交付」，与是否收费无关（不是"因�
   ③ 未知源仍回落 "?"（反例：回落逻辑没被顺手改掉）
   ④ graph_sources=[] 不导致 KeyError/异常，且族表 schema 完整
 """
+
 import json
 import os
 import sys
@@ -27,7 +28,7 @@ from datetime import datetime
 # 同目录绝对导入（仓库多处同款写法；使本文件在仓库根或子目录下都能跑）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import kg_source_rating as ksr          # noqa: E402
+import kg_source_rating as ksr  # noqa: E402
 
 
 NEW_FAM = "cnopendata_open"
@@ -52,20 +53,29 @@ VALID_GRADES = ("A", "B", "C", "D", "E", "F")
 
 # ── 测试脚手架 ────────────────────────────────────────────
 
+
 def _write_catalog(tmpdir, tables):
     """写一份最小 catalog（含 aliases 空表，与真实结构同形）。"""
     path = os.path.join(tmpdir, "catalog.json")
     with open(path, "w", encoding="utf-8") as f:
-        json.dump({"version": 1, "tables": tables, "aliases": {}}, f,
-                  ensure_ascii=False)
+        json.dump(
+            {"version": 1, "tables": tables, "aliases": {}}, f, ensure_ascii=False
+        )
     return path
 
 
 def _entry(fresh, date_col="year", source=NEW_SOURCE, **kw):
     """catalog 单表条目（默认 cnopendata 年度表）。"""
-    e = {"source": source, "date_col": date_col, "freshness": fresh,
-         "freq": "Y", "rows": 100, "files": 1,
-         "date_status": "registered", "verification_status": "verified"}
+    e = {
+        "source": source,
+        "date_col": date_col,
+        "freshness": fresh,
+        "freq": "Y",
+        "rows": 100,
+        "files": 1,
+        "date_status": "registered",
+        "verification_status": "verified",
+    }
     e.update(kw)
     return e
 
@@ -88,17 +98,20 @@ def _grade_of_feed():
 
 # ── ① cnopendata 归到新族且 grade=C ───────────────────────
 
+
 def test_new_family_exists_with_grade_c():
     assert NEW_FAM in ksr.SOURCES, "cnopendata 族未注册，断流里仍会是 grade=?"
-    assert ksr.SOURCES[NEW_FAM]["grade"] == "C", \
-        "档位应为 C，实得 %r" % (ksr.SOURCES[NEW_FAM]["grade"],)
+    assert ksr.SOURCES[NEW_FAM]["grade"] == "C", "档位应为 C，实得 %r" % (
+        ksr.SOURCES[NEW_FAM]["grade"],
+    )
 
 
 def test_feeds_claims_cnopendata_source():
     """feeds 必须字面等于 ["cnopendata"]（catalog source 值精确匹配）。"""
     assert ksr.SOURCES[NEW_FAM]["feeds"] == [NEW_SOURCE]
-    assert _grade_of_feed()[NEW_SOURCE] == (NEW_FAM, "C"), \
+    assert _grade_of_feed()[NEW_SOURCE] == (NEW_FAM, "C"), (
         "source='cnopendata' 未被新族认领：%r" % (_grade_of_feed(),)
+    )
 
 
 def test_graph_sources_is_empty_list():
@@ -116,7 +129,9 @@ def test_basis_states_three_facts():
     for origin in ("GitHub", "OSF"):
         assert origin in b, "basis 未写原始出处：%s" % origin
     for bad in ("免费", "零成本", "不花钱"):
-        assert bad not in b, "定档理由写成价格因果（%s）——C 的依据是「无 SLA + 静态交付」" % bad
+        assert bad not in b, (
+            "定档理由写成价格因果（%s）——C 的依据是「无 SLA + 静态交付」" % bad
+        )
 
 
 def test_cnopendata_tables_grouped_under_new_family(monkeypatch):
@@ -131,8 +146,7 @@ def test_cnopendata_tables_grouped_under_new_family(monkeypatch):
     out = _build_with(monkeypatch, tables)
     fam = out["staleness"]["stale_by_family"]
     assert NEW_FAM in fam, "新族未出现在断流聚合里：%r" % (sorted(fam),)
-    assert fam[NEW_FAM] == sorted(tables), \
-        "聚合表集合不符：%r" % (fam[NEW_FAM],)
+    assert fam[NEW_FAM] == sorted(tables), "聚合表集合不符：%r" % (fam[NEW_FAM],)
     assert NEW_SOURCE not in fam, "裸 source key 仍在（说明仍走 ? 回落）"
     assert out["sources"][NEW_FAM]["grade"] == "C"
     # 族内表超期只告警不降档（档随证据走，断流是状态）
@@ -143,7 +157,8 @@ def test_no_time_dimension_table_still_excluded(monkeypatch):
     """第 6 张表（无 date_col）不进 stale_tables，但不影响族定档。"""
     tables = {
         "chinese-dictionary-of-financial-sentiment": _entry(
-            None, date_col=None, rows=9228, files=2),
+            None, date_col=None, rows=9228, files=2
+        ),
         "yspl": _entry("2017", date_col="年份"),
     }
     out = _build_with(monkeypatch, tables)
@@ -164,6 +179,7 @@ def test_current_year_pack_not_stale_but_family_kept(monkeypatch):
 
 # ── ② 既有族 grade 逐一不变 ───────────────────────────────
 
+
 def test_existing_family_grades_unchanged():
     for fam, want in EXISTING_GRADES.items():
         assert fam in ksr.SOURCES, "既有族 %s 不见了" % fam
@@ -173,21 +189,26 @@ def test_existing_family_grades_unchanged():
 
 def test_existing_family_stale_grouping_unchanged(monkeypatch):
     """既有族的 feeds 与聚合行为不得因新增族而改变（逐族对照）。"""
-    before = {f: (fam, ksr.SOURCES[fam]["grade"])
-              for fam, meta in ksr.SOURCES.items()
-              if fam != NEW_FAM
-              for f in meta["feeds"]}
+    before = {
+        f: (fam, ksr.SOURCES[fam]["grade"])
+        for fam, meta in ksr.SOURCES.items()
+        if fam != NEW_FAM
+        for f in meta["feeds"]
+    }
     assert before["tushare"] == ("tushare_pro", "B")
     assert before["xtcloud"] == ("xtcloud_local", "B")
     assert before["crypto"] == ("crypto_feed", "C")
 
     tables = {
-        "ts_index_daily": _entry("2014", source="xtcloud",
-                                 date_col="trade_date", freq="D"),
-        "limit_list_d": _entry("2014", source="tushare",
-                               date_col="trade_date", freq="D"),
-        "crypto_daily": _entry("2014", source="crypto",
-                               date_col="trade_date", freq="D"),
+        "ts_index_daily": _entry(
+            "2014", source="xtcloud", date_col="trade_date", freq="D"
+        ),
+        "limit_list_d": _entry(
+            "2014", source="tushare", date_col="trade_date", freq="D"
+        ),
+        "crypto_daily": _entry(
+            "2014", source="crypto", date_col="trade_date", freq="D"
+        ),
         "yspl": _entry("2017", date_col="年份"),
     }
     monkeypatch.setattr(ksr, "trade_days_lag", lambda *a, **k: None)
@@ -203,22 +224,28 @@ def test_no_feed_claimed_by_two_families():
     owner = {}
     for fam, meta in ksr.SOURCES.items():
         for f in meta["feeds"]:
-            assert f not in owner, \
-                "feeds=%r 被 %s 与 %s 同时认领" % (f, owner.get(f), fam)
+            assert f not in owner, "feeds=%r 被 %s 与 %s 同时认领" % (
+                f,
+                owner.get(f),
+                fam,
+            )
             owner[f] = fam
 
 
 # ── ③ 反例：未知源仍回落 "?" ──────────────────────────────
+
 
 def test_unknown_source_still_falls_back_to_question_mark(monkeypatch):
     """source 不在任何 feeds 里的表 → 族名=裸 source、grade="?"（未定档可见）。"""
     tables = {"mystery_table": _entry("2014", source="mystery_feed")}
     out = _build_with(monkeypatch, tables)
     fam = out["staleness"]["stale_by_family"]
-    assert fam.get("mystery_feed") == ["mystery_table"], \
+    assert fam.get("mystery_feed") == ["mystery_table"], (
         "未知源未回落裸 source key：%r" % (fam,)
-    assert "mystery_feed" not in out["sources"], \
+    )
+    assert "mystery_feed" not in out["sources"], (
         "未知源被错误地写进 sources（应保持未定档）"
+    )
     assert out["sources"].get(NEW_FAM, {}).get("grade") == "C"
 
 
@@ -231,13 +258,16 @@ def test_near_miss_source_not_claimed(monkeypatch):
     任何 feeds → 未定档），下面两条分别钉住"不认领"与"档位不来自 SOURCES"。
     """
     near = ("cnopendata2", NEW_FAM, "CnOpenData")
-    tables = {"approx_0": _entry("2014", source=near[0]),
-              "approx_1": _entry("2014", source=near[1]),
-              "approx_2": _entry("2014", source=near[2])}
+    tables = {
+        "approx_0": _entry("2014", source=near[0]),
+        "approx_1": _entry("2014", source=near[1]),
+        "approx_2": _entry("2014", source=near[2]),
+    }
     fam = _build_with(monkeypatch, tables)["staleness"]["stale_by_family"]
     for i, src in enumerate(near):
-        assert fam.get(src) == ["approx_%d" % i], \
+        assert fam.get(src) == ["approx_%d" % i], (
             "近似源 %r 未按裸 source 独立成 key：%r" % (src, fam)
+        )
     # 关键：这些近似源都没被新族 feeds 认领（否则会被误判为 C 档）
     lookup = _grade_of_feed()
     for src in near:
@@ -258,10 +288,11 @@ def test_grade_lookup_unknown_returns_question_mark():
 
 # ── ④ graph_sources=[] 不炸 + 族表 schema 完整 ────────────
 
+
 def test_empty_graph_sources_no_exception(monkeypatch):
     """graph_sources=[] 的族跑完整 build() 不抛 KeyError/异常。"""
     tables = {"yspl": _entry("2017", date_col="年份")}
-    out = _build_with(monkeypatch, tables)          # 不抛异常即通过
+    out = _build_with(monkeypatch, tables)  # 不抛异常即通过
     assert out["sources"][NEW_FAM]["graph_sources"] == []
     assert out["sources"][NEW_FAM]["feeds"] == [NEW_SOURCE]
 
@@ -271,8 +302,10 @@ def test_sources_schema_complete_all_families():
     for fam, meta in ksr.SOURCES.items():
         for key in ("grade", "feeds", "graph_sources", "basis"):
             assert key in meta, "族 %s 缺字段 %s" % (fam, key)
-        assert meta["grade"] in VALID_GRADES, \
-            "族 %s 档位非法：%r" % (fam, meta["grade"])
+        assert meta["grade"] in VALID_GRADES, "族 %s 档位非法：%r" % (
+            fam,
+            meta["grade"],
+        )
         assert isinstance(meta["feeds"], list)
         assert isinstance(meta["graph_sources"], list)
         assert isinstance(meta["basis"], str) and meta["basis"].strip()

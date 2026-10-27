@@ -18,6 +18,7 @@
   python kg_build_m2.py            # 实跑入图
   python kg_build_m2.py --dryrun   # 只打印配对/组合表，不写库
 """
+
 import sys
 import os
 import time
@@ -30,14 +31,17 @@ from kg_client import KgClient
 DRYRUN = "--dryrun" in sys.argv
 LAG_WIN = 10  # 天
 
-CYP_PAIRS = """
+CYP_PAIRS = (
+    """
 MATCH (sec:Security)-[:HAS_STRUCTURE|HAS_VOL_EVENT]->(m:MarketEvent)
 MATCH (sec)-[:INVOLVES]->(e:Event)
 WHERE m.date >= e.date
   AND duration.inDays(date(e.date), date(m.date)).days <= %d
 RETURN e.id AS eid, e.date AS edate, coalesce(e.tag, e.kind) AS grp,
        m.evt_id AS mevt, m.type AS mtype, m.date AS mdate
-""" % LAG_WIN
+"""
+    % LAG_WIN
+)
 
 CYP_DENOM = """
 MATCH (:Security)-[:HAS_STRUCTURE|HAS_VOL_EVENT]->(m:MarketEvent)
@@ -76,22 +80,33 @@ def build_edges(s):
         pair_cnt[(p["grp"], p["mtype"])] = pair_cnt.get((p["grp"], p["mtype"]), 0) + 1
     for (grp, mtype), c in sorted(pair_cnt.items(), key=lambda kv: -kv[1])[:25]:
         v = combo[(grp, mtype)]
-        print("  %-12s %-4s 实例%5d 信号%5d/%-5d p=%.3f"
-              % (grp, mtype, c, v["num"], v["total"], v["p"]))
+        print(
+            "  %-12s %-4s 实例%5d 信号%5d/%-5d p=%.3f"
+            % (grp, mtype, c, v["num"], v["total"], v["p"])
+        )
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     edges = []
     for p in pairs:
         v = combo[(p["grp"], p["mtype"])]
-        edges.append({
-            "src": p["eid"], "dst": p["mevt"],
-            "validStart": p["edate"], "validEnd": S.VALID_END_OPEN,
-            "lag_days": (datetime.strptime(p["mdate"], "%Y%m%d")
-                         - datetime.strptime(p["edate"], "%Y%m%d")).days,
-            "group": p["grp"], "mtype": p["mtype"],
-            "p": v["p"], "n_pairs": pair_cnt[(p["grp"], p["mtype"])],
-            "source": "cooccur_lag%d" % LAG_WIN, "updated_at": now,
-        })
+        edges.append(
+            {
+                "src": p["eid"],
+                "dst": p["mevt"],
+                "validStart": p["edate"],
+                "validEnd": S.VALID_END_OPEN,
+                "lag_days": (
+                    datetime.strptime(p["mdate"], "%Y%m%d")
+                    - datetime.strptime(p["edate"], "%Y%m%d")
+                ).days,
+                "group": p["grp"],
+                "mtype": p["mtype"],
+                "p": v["p"],
+                "n_pairs": pair_cnt[(p["grp"], p["mtype"])],
+                "source": "cooccur_lag%d" % LAG_WIN,
+                "updated_at": now,
+            }
+        )
     print("\nDRIVE 边 %d 条" % len(edges))
     return edges
 
@@ -120,7 +135,9 @@ def enrich_structure_edges(s, dryrun):
     base = ["notice", "news", "jev"]
 
     # 单一实时计算查询（佐证 + 游资双向窗口一起聚合，dryrun 天然只读）
-    rows = list(s.run("""
+    rows = list(
+        s.run(
+            """
         MATCH (sec:Security)-[r:HAS_STRUCTURE]->(m:MarketEvent {kind:'chanlun'})
         OPTIONAL MATCH (:Event)-[d:DRIVE]->(m)
         WITH sec, r, m,
@@ -138,7 +155,11 @@ def enrich_structure_edges(s, dryrun):
              CASE WHEN date(m.date) + duration('P10D') <= date($today)
                   THEN sum(coalesce(q.net_buy, 0)) ELSE null END AS hm_post
         RETURN m.evt_id AS evt, m.bei AS bei, m.bei2 AS bei2, m.vv AS vv,
-               cc, cb, hm_net, hm_post""", base=base, today=today))
+               cc, cb, hm_net, hm_post""",
+            base=base,
+            today=today,
+        )
+    )
     out = []
     tags = {"follow_confirm": 0, "lure_warn": 0, "none": 0, "pending": 0}
     for x in rows:
@@ -149,7 +170,7 @@ def enrich_structure_edges(s, dryrun):
         q_h = 1.0 if pre > 1e8 else 0.0
         hp = x["hm_post"]
         if hp is None:
-            tag = "pending"          # 信号后 10 日窗口未满（每日链自动补）
+            tag = "pending"  # 信号后 10 日窗口未满（每日链自动补）
         elif 0 < hp <= 1e8 and pre <= 0:
             tag = "follow_confirm"
         elif hp > 0 and pre > 0:
@@ -157,22 +178,38 @@ def enrich_structure_edges(s, dryrun):
         else:
             tag = "none"
         tags[tag] += 1
-        out.append({"evt": x["evt"], "cc": x["cc"] or 0, "cb": x["cb"] or 0,
-                    "conf": round(0.40 * q_s + 0.35 * q_e + 0.25 * q_h, 4),
-                    "qs": round(q_s, 4), "qe": round(q_e, 4), "qh": round(q_h, 4),
-                    "hp": hp, "tag": tag})
+        out.append(
+            {
+                "evt": x["evt"],
+                "cc": x["cc"] or 0,
+                "cb": x["cb"] or 0,
+                "conf": round(0.40 * q_s + 0.35 * q_e + 0.25 * q_h, 4),
+                "qs": round(q_s, 4),
+                "qe": round(q_e, 4),
+                "qh": round(q_h, 4),
+                "hp": hp,
+                "tag": tag,
+            }
+        )
     buckets = {}
     for o in out:
-        buckets[int(o["conf"] * 10) / 10.0] = buckets.get(int(o["conf"] * 10) / 10.0, 0) + 1
-    print("覆盖 %d 条 HAS_STRUCTURE；confidence 分布: %s"
-          % (len(out), " ".join("%.1f:%d" % (k, buckets[k]) for k in sorted(buckets))))
-    print("hm_tag: follow_confirm=%d(纯跟随确认) lure_warn=%d(诱多) "
-          "none=%d pending=%d(窗口未满)" % (tags["follow_confirm"],
-          tags["lure_warn"], tags["none"], tags["pending"]))
+        buckets[int(o["conf"] * 10) / 10.0] = (
+            buckets.get(int(o["conf"] * 10) / 10.0, 0) + 1
+        )
+    print(
+        "覆盖 %d 条 HAS_STRUCTURE；confidence 分布: %s"
+        % (len(out), " ".join("%.1f:%d" % (k, buckets[k]) for k in sorted(buckets)))
+    )
+    print(
+        "hm_tag: follow_confirm=%d(纯跟随确认) lure_warn=%d(诱多) "
+        "none=%d pending=%d(窗口未满)"
+        % (tags["follow_confirm"], tags["lure_warn"], tags["none"], tags["pending"])
+    )
     if dryrun:
         print("[dryrun] 元属性未写库")
         return
-    s.run("""
+    s.run(
+        """
         UNWIND $rows AS row
         MATCH (sec:Security)-[r:HAS_STRUCTURE]->(m:MarketEvent {evt_id: row.evt})
         SET r.corroboration_count = row.cc, r.corroboration_baseline = row.cb,
@@ -181,9 +218,12 @@ def enrich_structure_edges(s, dryrun):
             r.post_hm10 = coalesce(row.hp, r.post_hm10),
             r.hm_tag = CASE WHEN row.tag = 'pending' THEN r.hm_tag ELSE row.tag END,
             r.updated_at = $now""",
-          rows=out, now=now)
-    print("元属性回填: %d 条（佐证 + confidence(阶跃q_hm) + post_hm10/hm_tag）"
-          % len(out))
+        rows=out,
+        now=now,
+    )
+    print(
+        "元属性回填: %d 条（佐证 + confidence(阶跃q_hm) + post_hm10/hm_tag）" % len(out)
+    )
 
 
 def main():
@@ -194,16 +234,17 @@ def main():
     if DRYRUN:
         print("[dryrun] 未写库")
     else:
-        n = cli.upsert_edge("Event", "id", "MarketEvent", "evt_id",
-                            S.REL_DRIVE, edges)
+        n = cli.upsert_edge("Event", "id", "MarketEvent", "evt_id", S.REL_DRIVE, edges)
         print("DRIVE upsert 完成: %d 条" % n)
         # 抽检：一条三买信号的 DRIVE 边
         for r in s.run("""
             MATCH (e:Event)-[d:DRIVE]->(m:MarketEvent {kind:'chanlun'})
             RETURN e.id AS eid, d.group AS g, d.lag_days AS lag, d.p AS p,
                    m.evt_id AS mevt, m.type AS mt LIMIT 5"""):
-            print("  抽检 %s -[DRIVE g=%s lag=%dd p=%.3f]-> %s %s"
-                  % (r["eid"], r["g"], r["lag"], r["p"], r["mevt"], r["mt"]))
+            print(
+                "  抽检 %s -[DRIVE g=%s lag=%dd p=%.3f]-> %s %s"
+                % (r["eid"], r["g"], r["lag"], r["p"], r["mevt"], r["mt"])
+            )
     # M2-W2：元属性回填（dryrun 时也打印分布预览，佐证计数除外）
     enrich_structure_edges(s, DRYRUN)
     if not DRYRUN:
@@ -213,8 +254,10 @@ def main():
             RETURN sec.ts_code AS c, m.type AS t, m.date AS d,
                    r.confidence AS conf, r.corroboration_count AS cc,
                    r.q_hm AS qh ORDER BY r.confidence DESC LIMIT 5"""):
-            print("  高分样本 %s %s %s conf=%.2f cc=%d q_hm=%.2f"
-                  % (r["c"], r["t"], r["d"], r["conf"], r["cc"], r["qh"]))
+            print(
+                "  高分样本 %s %s %s conf=%.2f cc=%d q_hm=%.2f"
+                % (r["c"], r["t"], r["d"], r["conf"], r["cc"], r["qh"])
+            )
     cli.close()
 
 

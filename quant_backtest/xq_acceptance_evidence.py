@@ -50,7 +50,9 @@ def _required_sample_limit(value: Any) -> int:
 
 
 def _coverage_section(
-    conn: sqlite3.Connection, symbol: str, lane: str,
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: str,
 ) -> dict[str, Any]:
     """Build the coverage block, closed on failure without invented numbers.
 
@@ -78,7 +80,9 @@ def _coverage_section(
 
 
 def _post_samples(
-    conn: sqlite3.Connection, symbol: str, sample_limit: int,
+    conn: sqlite3.Connection,
+    symbol: str,
+    sample_limit: int,
 ) -> list[dict[str, Any]]:
     """Sample evidenced originals, newest content time first.
 
@@ -103,16 +107,26 @@ def _post_samples(
         (symbol,),
     ).fetchall()
     per_post: dict[str, dict[str, Any]] = {}
-    for (post_id, batch_id, created_at_ms, first_fetched_at,
-         last_fetched_at, original_url, batch_ids_json) in rows:
+    for (
+        post_id,
+        batch_id,
+        created_at_ms,
+        first_fetched_at,
+        last_fetched_at,
+        original_url,
+        batch_ids_json,
+    ) in rows:
         if post_id in per_post:
             continue
         try:
             batch_ids = json.loads(batch_ids_json)
         except (TypeError, ValueError) as error:
             raise ValueError("stored batch_ids_json must be a JSON list") from error
-        if not isinstance(batch_ids, list) or not batch_ids or any(
-                not isinstance(item, str) or not item.strip() for item in batch_ids):
+        if (
+            not isinstance(batch_ids, list)
+            or not batch_ids
+            or any(not isinstance(item, str) or not item.strip() for item in batch_ids)
+        ):
             raise ValueError("stored batch_ids_json must list nonempty batch strings")
         per_post[post_id] = {
             "post_id": post_id,
@@ -145,11 +159,13 @@ def _source_chain(conn: sqlite3.Connection, symbol: str) -> dict[str, Any]:
     ).fetchall()
     links: dict[str, list[dict[str, str]]] = {}
     for post_id, evidence_type, batch_id in rows:
-        links.setdefault(post_id, []).append({
-            "symbol": symbol,
-            "evidence_type": evidence_type,
-            "batch_id": batch_id,
-        })
+        links.setdefault(post_id, []).append(
+            {
+                "symbol": symbol,
+                "evidence_type": evidence_type,
+                "batch_id": batch_id,
+            }
+        )
     return {
         "downstream_units": "not_linked",
         "post_links": links,
@@ -194,14 +210,23 @@ def _pending(conn: sqlite3.Connection, symbol: str, lane: str) -> dict[str, Any]
         (symbol, lane),
     ).fetchone()
     if row is None:
-        return {"queue": "initialized", "state": None,
-                "page_key": None, "claim_id": None}
-    return {"queue": "initialized", "state": row[0],
-            "page_key": row[1], "claim_id": row[2]}
+        return {
+            "queue": "initialized",
+            "state": None,
+            "page_key": None,
+            "claim_id": None,
+        }
+    return {
+        "queue": "initialized",
+        "state": row[0],
+        "page_key": row[1],
+        "claim_id": row[2],
+    }
 
 
-def _gaps(lane: str, watermark: dict[str, Any],
-          pending: dict[str, Any]) -> dict[str, Any]:
+def _gaps(
+    lane: str, watermark: dict[str, Any], pending: dict[str, Any]
+) -> dict[str, Any]:
     """Infer only watermark-provable gaps; never fabricate dates or an end.
 
     A history lane with a confirmed ``next_cursor`` is demonstrably
@@ -214,14 +239,17 @@ def _gaps(lane: str, watermark: dict[str, Any],
         cursor = watermark.get("next_cursor")
         if cursor is not None:
             return {"type": "history_unfinished", "next_cursor": cursor}
-        if (pending.get("queue") == "initialized"
-                and pending.get("state") == "awaiting_cursor"):
+        if (
+            pending.get("queue") == "initialized"
+            and pending.get("state") == "awaiting_cursor"
+        ):
             return {"type": "history_unfinished", "next_cursor": None}
     return {"type": "unknown"}
 
 
-def export_evidence(conn: sqlite3.Connection, symbol: str, lane: str,
-                    sample_limit: int = 5) -> dict[str, Any]:
+def export_evidence(
+    conn: sqlite3.Connection, symbol: str, lane: str, sample_limit: int = 5
+) -> dict[str, Any]:
     """Export one read-only acceptance-evidence bundle for a stock and lane.
 
     The bundle contains: ``symbol`` and ``lane``; ``watermark`` with the

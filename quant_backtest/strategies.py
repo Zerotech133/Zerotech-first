@@ -4,6 +4,7 @@
 新策略只需在此注册：返回与 df 同索引的 0/1 序列即可被 runner 调用。
 仅做多（A股无做空）；信号在次日开盘生效（backtest 引擎 shift(1) 避免未来函数）。
 """
+
 import numpy as np
 import pandas as pd
 

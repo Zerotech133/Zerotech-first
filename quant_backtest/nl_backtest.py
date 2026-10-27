@@ -9,12 +9,13 @@ K-STOCK-299 · 自然语言回测解析器（nl_backtest）
 输出 params 只含 schema 内键，由前端回填表单供老田确认后再提交
 （_bt2_start 还会再做一遍数值校验——双保险）。
 """
+
 import json
 import re
 import datetime
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-OLLAMA_MODEL = "qwen3.5:4b"      # 快档；35b 属重炮不用于表单解析
+OLLAMA_MODEL = "qwen3.5:4b"  # 快档；35b 属重炮不用于表单解析
 OLLAMA_TIMEOUT = 60
 
 # 参数 schema：类型与合法域（与 backtest_engine_v2.run_job / portal _bt2_start 对齐）
@@ -22,17 +23,26 @@ SCHEMA = {
     "strategy": ("chanlun", "double_knife"),
     "universe": ("market", "pool76"),
     "buy_filter": ("3", "23", "2", "all"),
-    "d0": "date8", "d1": "date8",
-    "top_n": (1, 50), "slot_pct": (0.005, 0.5),
+    "d0": "date8",
+    "d1": "date8",
+    "top_n": (1, 50),
+    "slot_pct": (0.005, 0.5),
     "slot_mode": ("fixed", "random", "score"),
-    "slot_min": (0.005, 0.5), "slot_max": (0.005, 0.5),
+    "slot_min": (0.005, 0.5),
+    "slot_max": (0.005, 0.5),
     "cap_mode": ("regime_8050", "fixed"),
-    "cap_high": (0.05, 1.0), "cap_mid": (0.05, 1.0), "cap_low": (0.0, 1.0),
+    "cap_high": (0.05, 1.0),
+    "cap_mid": (0.05, 1.0),
+    "cap_low": (0.0, 1.0),
     "cap_fixed": (0.05, 1.0),
-    "sig_expiry": (0, 60), "runup_cap": (0.0, 0.5),
-    "three_fail_exit": (True, False), "fail_level": ("zg", "zd"),
-    "fail_buffer": (0.0, 0.2), "stop_pct": (-0.5, 0.0),
-    "holding_max_days": (0, 60), "regime_gate": (True, False),
+    "sig_expiry": (0, 60),
+    "runup_cap": (0.0, 0.5),
+    "three_fail_exit": (True, False),
+    "fail_level": ("zg", "zd"),
+    "fail_buffer": (0.0, 0.2),
+    "stop_pct": (-0.5, 0.0),
+    "holding_max_days": (0, 60),
+    "regime_gate": (True, False),
     "manual_picks": "codes",
 }
 
@@ -63,7 +73,10 @@ def _rule_parse(text, params, notes, unknown):
     t = text.replace("，", " ").replace("。", " ").replace("；", " ").replace("？", " ")
 
     # ── 窗口 ──
-    m = re.search(r"(20\d{2})\s*年?\s*(\d{1,2})?\s*月?\s*(?:到|至|–|-|~|—)\s*(20\d{2})\s*年?\s*(\d{1,2})?\s*月?", t)
+    m = re.search(
+        r"(20\d{2})\s*年?\s*(\d{1,2})?\s*月?\s*(?:到|至|–|-|~|—)\s*(20\d{2})\s*年?\s*(\d{1,2})?\s*月?",
+        t,
+    )
     if m:
         y1, m1, y2, m2 = m.groups()
         params["d0"] = "%s%02d01" % (y1, int(m1 or 1))
@@ -128,21 +141,28 @@ def _rule_parse(text, params, notes, unknown):
         notes.append("买点等级：一二三类全要")
 
     # ── 槽数 ──
-    m = re.search(r"(?:持仓|槽数|同时持有|最多)\s*(\d{1,2})\s*只", t) or \
-        re.search(r"(\d{1,2})\s*只?持仓", t) or \
-        re.search(r"(\d{1,2})\s*只\s*[，,]?\s*(?:单票|每股|每只|仓位|评分)", t)
+    m = (
+        re.search(r"(?:持仓|槽数|同时持有|最多)\s*(\d{1,2})\s*只", t)
+        or re.search(r"(\d{1,2})\s*只?持仓", t)
+        or re.search(r"(\d{1,2})\s*只\s*[，,]?\s*(?:单票|每股|每只|仓位|评分)", t)
+    )
     if m:
         params["top_n"] = _clamp(int(m.group(1)), 1, 50)
         notes.append("持仓槽数：%d" % params["top_n"])
 
     # ── 单票仓位三模式 ──
-    m = re.search(r"(\d+(?:\.\d+)?)\s*%\s*(?:到|至|~|—|-)\s*(\d+(?:\.\d+)?)\s*%\s*(?:随机|之间|区间)?", t)
+    m = re.search(
+        r"(\d+(?:\.\d+)?)\s*%\s*(?:到|至|~|—|-)\s*(\d+(?:\.\d+)?)\s*%\s*(?:随机|之间|区间)?",
+        t,
+    )
     if m:
         params["slot_mode"] = "random"
         params["slot_min"] = _clamp(_pct(m.group(1)), 0.005, 0.5)
         params["slot_max"] = _clamp(_pct(m.group(2)), 0.01, 0.5)
-        notes.append("单票仓位：区间随机 %.1f%%~%.1f%%（固定种子可复现）"
-                     % (params["slot_min"] * 100, params["slot_max"] * 100))
+        notes.append(
+            "单票仓位：区间随机 %.1f%%~%.1f%%（固定种子可复现）"
+            % (params["slot_min"] * 100, params["slot_max"] * 100)
+        )
     elif re.search(r"(?:按|根据)评分|评分权重|权重自动|按权重", t):
         params["slot_mode"] = "score"
         notes.append("单票仓位：评分权重自动（评分占比×总仓位帽）")
@@ -165,23 +185,36 @@ def _rule_parse(text, params, notes, unknown):
             params["cap_mid"] = _clamp(_pct(mid.group(1)), 0.05, 1.0)
         if lo:
             params["cap_low"] = _clamp(_pct(lo.group(1)), 0.0, 1.0)
-        notes.append("总仓位：regime 三档 %s/%s/%s"
-                     % (params.get("cap_high", 0.8), params.get("cap_mid", 0.5), params.get("cap_low", 0.3)))
+        notes.append(
+            "总仓位：regime 三档 %s/%s/%s"
+            % (
+                params.get("cap_high", 0.8),
+                params.get("cap_mid", 0.5),
+                params.get("cap_low", 0.3),
+            )
+        )
     else:
-        m = re.search(r"(?:总仓位|总持仓|总体仓位)\s*(?:固定|保持|留)?\s*(\d{1,3})\s*%", t)
+        m = re.search(
+            r"(?:总仓位|总持仓|总体仓位)\s*(?:固定|保持|留)?\s*(\d{1,3})\s*%", t
+        )
         if m:
             params["cap_mode"] = "fixed"
             params["cap_fixed"] = _clamp(_pct(m.group(1)), 0.05, 1.0)
             notes.append("总仓位：固定 %.0f%%" % (params["cap_fixed"] * 100))
 
     # ── 补仓规则 ──
-    m = re.search(r"信号\s*(\d{1,2})\s*(?:天|日)\s*(?:内)?(?:有效|入场)|(\d{1,2})\s*(?:天|日)\s*(?:内)?有效", t)
+    m = re.search(
+        r"信号\s*(\d{1,2})\s*(?:天|日)\s*(?:内)?(?:有效|入场)|(\d{1,2})\s*(?:天|日)\s*(?:内)?有效",
+        t,
+    )
     if m:
         params["sig_expiry"] = _clamp(int(m.group(1) or m.group(2)), 0, 60)
         notes.append("信号有效期：%d 日" % params["sig_expiry"])
     m = re.search(r"(?:追高|追涨)(?:帽)?\s*(\d{1,2})\s*%|涨停.{0,4}不追", t)
     if m:
-        params["runup_cap"] = _clamp(_pct(m.group(1)) if m.group(1) else 0.095, 0.0, 0.5)
+        params["runup_cap"] = _clamp(
+            _pct(m.group(1)) if m.group(1) else 0.095, 0.0, 0.5
+        )
         notes.append("追高帽：%.1f%%" % (params["runup_cap"] * 100))
 
     # ── 清仓规则 ──
@@ -198,13 +231,19 @@ def _rule_parse(text, params, notes, unknown):
     m = re.search(r"止损\s*(\d{1,2})\s*%", t)
     if m:
         params["stop_pct"] = -_clamp(_pct(m.group(1)), 0.005, 0.5)
-        notes.append("个股止损：-%.1f%%（默认关·显式设置即开）" % (-params["stop_pct"] * 100))
-    m = re.search(r"(?:持有|拿)(?:不?超过|上限|最多)\s*(\d{1,2})\s*(?:天|日|个交易日)", t) or \
-        re.search(r"(?:持有|拿)\s*(\d{1,2})\s*(?:天|日|个交易日)(?:就|后|离场|卖)", t)
+        notes.append(
+            "个股止损：-%.1f%%（默认关·显式设置即开）" % (-params["stop_pct"] * 100)
+        )
+    m = re.search(
+        r"(?:持有|拿)(?:不?超过|上限|最多)\s*(\d{1,2})\s*(?:天|日|个交易日)", t
+    ) or re.search(r"(?:持有|拿)\s*(\d{1,2})\s*(?:天|日|个交易日)(?:就|后|离场|卖)", t)
     if m:
         params["holding_max_days"] = _clamp(int(m.group(1)), 0, 60)
         notes.append("持有上限：%d 日" % params["holding_max_days"])
-    if re.search(r"(?:弱市|行情差|弱势|熊市|大盘差)\D{0,8}?(?:不|别|禁|莫)\s*(?:开|加|买)|闸门.{0,3}开", t):
+    if re.search(
+        r"(?:弱市|行情差|弱势|熊市|大盘差)\D{0,8}?(?:不|别|禁|莫)\s*(?:开|加|买)|闸门.{0,3}开",
+        t,
+    ):
         params["regime_gate"] = True
         notes.append("弱市闸门：开（指数<MA60 不开新仓）")
 
@@ -230,9 +269,20 @@ def _rule_parse(text, params, notes, unknown):
 # ──────────────────────────────────────────────
 # LLM 兜底只允许「映射/日期/槽数」类键——数值类（仓位/止损/有效期等）禁止 LLM 编造，
 # 一律走表单默认值（10-13 实测 4b 在模糊输入下会编造全部数值，危险）。
-LLM_KEYS = {"strategy", "universe", "buy_filter", "d0", "d1", "top_n",
-            "slot_mode", "cap_mode", "fail_level", "three_fail_exit",
-            "regime_gate", "manual_picks"}
+LLM_KEYS = {
+    "strategy",
+    "universe",
+    "buy_filter",
+    "d0",
+    "d1",
+    "top_n",
+    "slot_mode",
+    "cap_mode",
+    "fail_level",
+    "three_fail_exit",
+    "regime_gate",
+    "manual_picks",
+}
 
 _LLM_PROMPT = """你是量化回测参数解析器。把用户的自然语言回测需求转成 JSON 参数。
 只输出 JSON，不要解释。只允许这些键（其它一律不要输出）：
@@ -258,20 +308,34 @@ def _llm_parse(text, params, have_keys, notes, unknown):
     字段、content 为空 ⇒ 必须带 think:false（1.5s 出结果）+ thinking 兜底抽取。"""
     try:
         import urllib.request
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # 127.0.0.1 直连·不走系统代理
-        body = json.dumps({"model": OLLAMA_MODEL, "stream": False, "format": "json",
-                           "think": False,
-                           "options": {"temperature": 0, "num_predict": 400},
-                           "messages": [{"role": "user", "content": _LLM_PROMPT + text}]}).encode("utf-8")
-        resp = opener.open(urllib.request.Request(OLLAMA_URL, data=body,
-                                                  headers={"Content-Type": "application/json"}),
-                           timeout=OLLAMA_TIMEOUT)
+
+        opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({})
+        )  # 127.0.0.1 直连·不走系统代理
+        body = json.dumps(
+            {
+                "model": OLLAMA_MODEL,
+                "stream": False,
+                "format": "json",
+                "think": False,
+                "options": {"temperature": 0, "num_predict": 400},
+                "messages": [{"role": "user", "content": _LLM_PROMPT + text}],
+            }
+        ).encode("utf-8")
+        resp = opener.open(
+            urllib.request.Request(
+                OLLAMA_URL, data=body, headers={"Content-Type": "application/json"}
+            ),
+            timeout=OLLAMA_TIMEOUT,
+        )
         raw = json.loads(resp.read().decode("utf-8"))
         msg = raw.get("message") or {}
         content = msg.get("content") or ""
         m = re.search(r"\{.*\}", content, re.S)
         if not m and msg.get("thinking"):
-            m = re.search(r"\{.*\}", msg["thinking"], re.S)   # thinking 兜底（兼容旧行为）
+            m = re.search(
+                r"\{.*\}", msg["thinking"], re.S
+            )  # thinking 兜底（兼容旧行为）
         if not m:
             unknown.append("LLM 输出无 JSON，已忽略")
             return 0
@@ -285,7 +349,7 @@ def _llm_parse(text, params, have_keys, notes, unknown):
                 unknown.append("LLM 给了数值类键 %s，已丢弃（数值一律走表单默认）" % k)
                 continue
             if k in have_keys:
-                continue                       # 规则结果优先，LLM 只补空
+                continue  # 规则结果优先，LLM 只补空
             ok = True
             dom = SCHEMA[k]
             if isinstance(dom, tuple):
@@ -325,15 +389,33 @@ def parse_nl(text, use_llm=True):
     if use_llm and (len(notes) < 3 or unknown):
         _llm_parse(text, params, set(params.keys()), notes, unknown)
     if not params:
-        return {"ok": False, "params": {}, "notes": notes, "unknown": unknown,
-                "error": "没能从这句话识别出任何回测参数——换个说法试试，或手动填表单"}
+        return {
+            "ok": False,
+            "params": {},
+            "notes": notes,
+            "unknown": unknown,
+            "error": "没能从这句话识别出任何回测参数——换个说法试试，或手动填表单",
+        }
     if len(notes) <= 4:
-        notes.append("提示：这句话可解析的内容有限——解析结果仅供参考，请核对下方表单再回测")
-    return {"ok": True, "params": params, "notes": notes, "unknown": unknown,
-            "engine": "规则" + ("+LLM(qwen3.5:4b)" if any("LLM 补充" in x for x in notes) else "")}
+        notes.append(
+            "提示：这句话可解析的内容有限——解析结果仅供参考，请核对下方表单再回测"
+        )
+    return {
+        "ok": True,
+        "params": params,
+        "notes": notes,
+        "unknown": unknown,
+        "engine": "规则"
+        + ("+LLM(qwen3.5:4b)" if any("LLM 补充" in x for x in notes) else ""),
+    }
 
 
 if __name__ == "__main__":
     import sys
-    r = parse_nl(sys.argv[1] if len(sys.argv) > 1 else "最近一年全市场只看三买，持仓10只，单票5%到10%随机")
+
+    r = parse_nl(
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else "最近一年全市场只看三买，持仓10只，单票5%到10%随机"
+    )
     print(json.dumps(r, ensure_ascii=False, indent=1))

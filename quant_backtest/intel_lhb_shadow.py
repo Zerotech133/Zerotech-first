@@ -6,6 +6,7 @@ paths, row counts, schema, clock-semantics notes (occurred≠disclosed) and
 honest unknowns. Fail-closed on missing/renamed columns; zero network,
 zero writes to source data.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,8 +26,13 @@ class ShadowCatalog:
     clock_notes: dict
 
     def as_dict(self) -> dict:
-        return {"key": self.key, "path": str(self.path), "rows": self.rows,
-                "columns": list(self.columns), "clock_notes": self.clock_notes}
+        return {
+            "key": self.key,
+            "path": str(self.path),
+            "rows": self.rows,
+            "columns": list(self.columns),
+            "clock_notes": self.clock_notes,
+        }
 
 
 _LHB_REQUIRED = ("trade_date", "ts_code", "name", "l_buy", "l_sell", "reason")
@@ -35,6 +41,7 @@ _HOLD_REQUIRED = ("ts_code", "ann_date", "end_date", "holder_name", "hold_ratio"
 
 def _load_parquet(path: Path):
     import pandas as pd  # deferred: heavy import stays out of module init
+
     if not path.exists():
         raise ShadowRejected(f"DATASET_MISSING: {path}")
     return pd.read_parquet(path)
@@ -49,13 +56,21 @@ def lhb_shadow(root: str | Path, *, limit: int = 5) -> dict:
         raise ShadowRejected(f"SCHEMA_DRIFT: lhb missing {missing}")
     recent = df.tail(limit)
     return {
-        "catalog": ShadowCatalog("lhb", path, len(df), tuple(df.columns), {
-            "occurred_at": "trade_date (list date = event date, 天级精度)",
-            "disclosed_at": "trade_date (榜单随收盘公开发布)",
-            "first_seen_at": "unknown — 入库时刻未事件化, 不可倒填",
-            "available_at": "unknown — 消费者可读时刻未事件化",
-        }).as_dict(),
-        "preview": recent[["trade_date", "ts_code", "name", "l_buy", "l_sell"]].to_dict("records"),
+        "catalog": ShadowCatalog(
+            "lhb",
+            path,
+            len(df),
+            tuple(df.columns),
+            {
+                "occurred_at": "trade_date (list date = event date, 天级精度)",
+                "disclosed_at": "trade_date (榜单随收盘公开发布)",
+                "first_seen_at": "unknown — 入库时刻未事件化, 不可倒填",
+                "available_at": "unknown — 消费者可读时刻未事件化",
+            },
+        ).as_dict(),
+        "preview": recent[["trade_date", "ts_code", "name", "l_buy", "l_sell"]].to_dict(
+            "records"
+        ),
     }
 
 
@@ -69,15 +84,22 @@ def holders_shadow(root: str | Path, *, floater: bool = False, limit: int = 5) -
         raise ShadowRejected(f"SCHEMA_DRIFT: {name} missing {missing}")
     late = (df["ann_date"] < df["end_date"]).sum()
     return {
-        "catalog": ShadowCatalog(name, path, len(df), tuple(df.columns), {
-            "occurred_at": "end_date (报告期末, 天级)",
-            "disclosed_at": f"ann_date (公告日; 实测 {late} 行 ann<end 视为脏数据待核)",
-            "first_seen_at": "unknown — 采集入库时刻未事件化",
-            "available_at": "unknown — 消费者可读时刻未事件化",
-            "holder_identity": "holder_name 仅字符串 — 同名异人/一人多名未消歧, 归 D1 判据",
-        }).as_dict(),
-        "preview": df.tail(limit)[["ts_code", "ann_date", "end_date",
-                                    "holder_name", "hold_ratio"]].to_dict("records"),
+        "catalog": ShadowCatalog(
+            name,
+            path,
+            len(df),
+            tuple(df.columns),
+            {
+                "occurred_at": "end_date (报告期末, 天级)",
+                "disclosed_at": f"ann_date (公告日; 实测 {late} 行 ann<end 视为脏数据待核)",
+                "first_seen_at": "unknown — 采集入库时刻未事件化",
+                "available_at": "unknown — 消费者可读时刻未事件化",
+                "holder_identity": "holder_name 仅字符串 — 同名异人/一人多名未消歧, 归 D1 判据",
+            },
+        ).as_dict(),
+        "preview": df.tail(limit)[
+            ["ts_code", "ann_date", "end_date", "holder_name", "hold_ratio"]
+        ].to_dict("records"),
     }
 
 

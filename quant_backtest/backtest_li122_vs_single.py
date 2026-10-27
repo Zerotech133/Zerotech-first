@@ -19,6 +19,7 @@
 5 月为 30m 结构预热，9-15 后留评估缓冲。
 只读数据（stk_mins parquet / ashare 日线 parquet），不写任何库与共享文件。
 """
+
 import argparse
 import json
 import os
@@ -28,37 +29,38 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import pandas as pd                                    # noqa: E402
-import datamart                                        # noqa: E402
-from chanlun_signal import analyze as sig_analyze      # noqa: E402
-from chanlun_li122 import judge                        # noqa: E402
-from chanlun_data import _bucket_label, TZ_CN          # noqa: E402
+import pandas as pd  # noqa: E402
+import datamart  # noqa: E402
+from chanlun_signal import analyze as sig_analyze  # noqa: E402
+from chanlun_li122 import judge  # noqa: E402
+from chanlun_data import _bucket_label, TZ_CN  # noqa: E402
 
 # ── 回测参数（口径常量，改动即换口径，报告须同步） ──────────────
-DATA_START = "20260401"          # 1min 读取起点（30m 结构预热）
-SIG_START, SIG_END = "2026-06-01", "2026-09-15"   # 信号窗口（含）
-SL = 0.02                        # 止损带（假阳=窗口内触发 −SL）
-EVAL_LOW_N = {"1m": 1200, "5m": 240}   # 评估窗根数 ≈ 5 交易日
+DATA_START = "20260401"  # 1min 读取起点（30m 结构预热）
+SIG_START, SIG_END = "2026-06-01", "2026-09-15"  # 信号窗口（含）
+SL = 0.02  # 止损带（假阳=窗口内触发 −SL）
+EVAL_LOW_N = {"1m": 1200, "5m": 240}  # 评估窗根数 ≈ 5 交易日
 BUY_TYPES = ("1买", "2买", "3买")
 UNIVERSE_N = 40
 SMOKE_N = 10
-RULE_KEYS_A = ("A_30F_5F_1F", "A1_30F_5F_1F_only1")   # 用 1m/5m 评估
-RULE_KEY_B = "B_D_30F_5F"                              # 用 5m 评估
+RULE_KEYS_A = ("A_30F_5F_1F", "A1_30F_5F_1F_only1")  # 用 1m/5m 评估
+RULE_KEY_B = "B_D_30F_5F"  # 用 5m 评估
 ASHARE = os.path.join(HERE, "data", "ashare")
 
 
 def pick_universe(n):
     """沪深主板等距抽样（剔 BJ），返回 ts_code 列表。"""
-    names = sorted(f[:-8] for f in os.listdir(ASHARE)
-                   if f.endswith(".parquet"))
-    codes = [f.replace("_", ".") for f in names
-             if f.startswith(("600", "601", "603", "605", "000", "001", "003"))]
+    names = sorted(f[:-8] for f in os.listdir(ASHARE) if f.endswith(".parquet"))
+    codes = [
+        f.replace("_", ".")
+        for f in names
+        if f.startswith(("600", "601", "603", "605", "000", "001", "003"))
+    ]
     step = max(1, len(codes) // (n * 6))
     cand = codes[::step]
     out = []
     for c in cand:
-        df = datamart.read("stk_mins", codes=c, start=DATA_START,
-                           end="20261009")
+        df = datamart.read("stk_mins", codes=c, start=DATA_START, end="20261009")
         if df is not None and len(df) > 1000:
             out.append(c)
         if len(out) >= n:
@@ -68,8 +70,7 @@ def pick_universe(n):
 
 def load_minutes(code):
     """1min 原始 → (bars1, bars5, bars30)（统一 bar dict，dt 北京时区）。"""
-    df = datamart.read("stk_mins", codes=code, start=DATA_START,
-                       end="20261009")
+    df = datamart.read("stk_mins", codes=code, start=DATA_START, end="20261009")
     if df is None or df.empty:
         return [], [], []
     rows = []
@@ -86,8 +87,10 @@ def load_minutes(code):
         rows.append((t, o, h, l, c, v))
     rows.sort(key=lambda x: x[0])
     fmt = "%Y-%m-%d %H:%M"
-    bars1 = [{"dt": t.strftime(fmt), "o": o, "h": h, "l": l, "c": c, "v": v}
-             for t, o, h, l, c, v in rows]
+    bars1 = [
+        {"dt": t.strftime(fmt), "o": o, "h": h, "l": l, "c": c, "v": v}
+        for t, o, h, l, c, v in rows
+    ]
     return (bars1, _resample(rows, 5), _resample(rows, 30))
 
 
@@ -108,8 +111,10 @@ def _resample(rows, bm_min):
     if cur:
         out.append(cur)
     fmt = "%Y-%m-%d %H:%M"
-    return [{"dt": t.strftime(fmt), "o": o, "h": h, "l": l, "c": c, "v": v}
-            for t, o, h, l, c, v in out]
+    return [
+        {"dt": t.strftime(fmt), "o": o, "h": h, "l": l, "c": c, "v": v}
+        for t, o, h, l, c, v in out
+    ]
 
 
 def load_daily(code):
@@ -119,10 +124,16 @@ def load_daily(code):
     out = []
     for r in df.to_dict("records"):
         d = str(r["trade_date"])
-        out.append({"dt": "%s-%s-%s" % (d[:4], d[4:6], d[6:]),
-                    "o": float(r["open"]), "h": float(r["high"]),
-                    "l": float(r["low"]), "c": float(r["close"]),
-                    "v": float(r.get("volume") or 0)})
+        out.append(
+            {
+                "dt": "%s-%s-%s" % (d[:4], d[4:6], d[6:]),
+                "o": float(r["open"]),
+                "h": float(r["high"]),
+                "l": float(r["low"]),
+                "c": float(r["close"]),
+                "v": float(r.get("volume") or 0),
+            }
+        )
     out.sort(key=lambda b: b["dt"])
     return out
 
@@ -132,7 +143,7 @@ def eval_return(bars_low, sig_dt, entry):
     −SL 即记 −SL（=假阳，无论此前涨幅）；未触记期末收盘收益（不封顶）。
     冒烟校准说明：先到优先口径下 +TP1 先到率 >95% 无区分度，弃用。"""
     freq = _low_freq(bars_low)
-    fwd = [b for b in bars_low if b["dt"] > sig_dt][:EVAL_LOW_N[freq]]
+    fwd = [b for b in bars_low if b["dt"] > sig_dt][: EVAL_LOW_N[freq]]
     if not fwd:
         return None
     for b in fwd:
@@ -165,13 +176,16 @@ def collect(code):
         ret = eval_return(bars1, s["dt"], s["price"])
         if ret is None:
             continue
-        row = {"code": code, "type": s["type"], "dt": s["dt"],
-               "price": s["price"], "ret": ret,
-               "A_30F_5F_1F": judge(s, bars5, bars1, "A_30F_5F_1F")["ok"],
-               "A1_30F_5F_1F_only1":
-                   judge(s, bars5, bars1, "A1_30F_5F_1F_only1")["ok"],
-               "A2_30F_5F_1F_wide":
-                   judge(s, bars5, bars1, "A2_30F_5F_1F_wide")["ok"]}
+        row = {
+            "code": code,
+            "type": s["type"],
+            "dt": s["dt"],
+            "price": s["price"],
+            "ret": ret,
+            "A_30F_5F_1F": judge(s, bars5, bars1, "A_30F_5F_1F")["ok"],
+            "A1_30F_5F_1F_only1": judge(s, bars5, bars1, "A1_30F_5F_1F_only1")["ok"],
+            "A2_30F_5F_1F_wide": judge(s, bars5, bars1, "A2_30F_5F_1F_wide")["ok"],
+        }
         out.append(row)
     # 档B：日线上级 → 30m 底分型 + 5m 不新低
     try:
@@ -185,10 +199,17 @@ def collect(code):
             ret = eval_return(bars5, s["dt"], s["price"])
             if ret is None:
                 continue
-            out.append({"code": code, "type": s["type"], "dt": s["dt"],
-                        "price": s["price"], "ret": ret, "period": "1d",
-                        "B_D_30F_5F": judge(s, bars30, bars5,
-                                            "B_D_30F_5F")["ok"]})
+            out.append(
+                {
+                    "code": code,
+                    "type": s["type"],
+                    "dt": s["dt"],
+                    "price": s["price"],
+                    "ret": ret,
+                    "period": "1d",
+                    "B_D_30F_5F": judge(s, bars30, bars5, "B_D_30F_5F")["ok"],
+                }
+            )
     except Exception:
         pass
     return out
@@ -202,9 +223,12 @@ def stats(rows, key):
         return {"n": 0}
     fp = sum(1 for r in sub if r["ret"] <= -SL)
     rets = [r["ret"] for r in sub]
-    return {"n": n, "fp_rate": round(fp / n, 4),
-            "avg_ret": round(sum(rets) / n, 5),
-            "sum_ret": round(sum(rets), 4)}
+    return {
+        "n": n,
+        "fp_rate": round(fp / n, 4),
+        "avg_ret": round(sum(rets) / n, 5),
+        "sum_ret": round(sum(rets), 4),
+    }
 
 
 def main():
@@ -220,26 +244,31 @@ def main():
         rows += collect(c)
         done += 1
         if done % 5 == 0:
-            print("  %d/%d done, %.1fs" % (done, len(uni),
-                                           time.time() - t0), flush=True)
-    base = [r for r in rows if "period" not in r]     # 30m 上级（档A 组）
+            print(
+                "  %d/%d done, %.1fs" % (done, len(uni), time.time() - t0), flush=True
+            )
+    base = [r for r in rows if "period" not in r]  # 30m 上级（档A 组）
     db = [r for r in rows if r.get("period") == "1d"]  # 日线上级（档B 组）
     res = {
-        "window": [SIG_START, SIG_END], "universe_n": len(uni),
-        "sl": SL, "eval_low_n": EVAL_LOW_N,
+        "window": [SIG_START, SIG_END],
+        "universe_n": len(uni),
+        "sl": SL,
+        "eval_low_n": EVAL_LOW_N,
         "A_base_30m": stats(base, "_none_"),
-        "A_base_1buy": stats([r for r in base if r["type"] == "1买"],
-                             "_none_"),
+        "A_base_1buy": stats([r for r in base if r["type"] == "1买"], "_none_"),
         "A_li_30F_5F_1F": stats(base, "A_30F_5F_1F"),
         "A2_li_wide": stats(base, "A2_30F_5F_1F_wide"),
-        "A1_li_only1": stats([r for r in base if r["type"] == "1买"],
-                             "A1_30F_5F_1F_only1"),
+        "A1_li_only1": stats(
+            [r for r in base if r["type"] == "1买"], "A1_30F_5F_1F_only1"
+        ),
         "B_base_1d": stats(db, "_none_"),
         "B_li_D_30F_5F": stats(db, "B_D_30F_5F"),
-        "A_by_type": {t: stats([r for r in base if r["type"] == t],
-                               "_none_") for t in BUY_TYPES},
-        "B_by_type": {t: stats([r for r in db if r["type"] == t],
-                               "_none_") for t in BUY_TYPES},
+        "A_by_type": {
+            t: stats([r for r in base if r["type"] == t], "_none_") for t in BUY_TYPES
+        },
+        "B_by_type": {
+            t: stats([r for r in db if r["type"] == t], "_none_") for t in BUY_TYPES
+        },
         "elapsed_s": round(time.time() - t0, 1),
     }
     print(json.dumps(res, ensure_ascii=False, indent=1))

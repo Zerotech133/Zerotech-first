@@ -26,19 +26,21 @@
       判定仍由调用方完成。
     - os.fstat 直接读共享句柄的文件尾，无需子进程 flush（python -u 无缓冲）。
 """
+
 import os
 import subprocess
 import time
 
-KILLED_RC = -137          # 被 watchdog 杀树的哨兵退出码（沿用 SIGKILL 语义）
+KILLED_RC = -137  # 被 watchdog 杀树的哨兵退出码（沿用 SIGKILL 语义）
 DEFAULT_QUIET_SECS = 300.0  # 静默超时默认 300s（335 实测全市场装载远短于此）
 
 
 def _kill_tree(pid):
     """杀整棵进程树。taskkill 必须经 python subprocess 调（bash 会吞 / 开关）。"""
     try:
-        r = subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)],
-                           capture_output=True)
+        r = subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True
+        )
         # taskkill 输出为 GBK（中文系统），bytes 捕获+容错解码，防 reader 线程炸
         out = (r.stdout or b"").decode("utf-8", "replace").strip()
         err = (r.stderr or b"").decode("utf-8", "replace").strip()
@@ -47,8 +49,15 @@ def _kill_tree(pid):
         return 1, "", "taskkill spawn error: %s" % e
 
 
-def run_guarded(cmd, log_fh, cwd=None, quiet_secs=DEFAULT_QUIET_SECS,
-                poll_secs=2.0, label="", attempts=2):
+def run_guarded(
+    cmd,
+    log_fh,
+    cwd=None,
+    quiet_secs=DEFAULT_QUIET_SECS,
+    poll_secs=2.0,
+    label="",
+    attempts=2,
+):
     """带 watchdog 的子进程执行。
 
     参数：
@@ -70,12 +79,12 @@ def run_guarded(cmd, log_fh, cwd=None, quiet_secs=DEFAULT_QUIET_SECS,
     killed_final = False
     for attempt in range(1, attempts + 1):
         used = attempt
-        log_fh.write("%s attempt %d/%d start: %s\n"
-                     % (tag, attempt, attempts, " ".join(cmd)))
+        log_fh.write(
+            "%s attempt %d/%d start: %s\n" % (tag, attempt, attempts, " ".join(cmd))
+        )
         log_fh.flush()
         t0 = time.time()
-        proc = subprocess.Popen(cmd, stdout=log_fh, stderr=subprocess.STDOUT,
-                                cwd=cwd)
+        proc = subprocess.Popen(cmd, stdout=log_fh, stderr=subprocess.STDOUT, cwd=cwd)
         last_size = os.fstat(fd).st_size
         last_progress = time.time()
         killed = False
@@ -103,7 +112,8 @@ def run_guarded(cmd, log_fh, cwd=None, quiet_secs=DEFAULT_QUIET_SECS,
                         log_fh.write(
                             "%s attempt %d 杀灭窗口内子进程已自行退出 rc=%s"
                             " -> 真实 rc 透传上层·不重试 (tk_rc=%s %s%s)\n"
-                            % (tag, attempt, rc, tk_rc, tk_out, tk_err))
+                            % (tag, attempt, rc, tk_rc, tk_out, tk_err)
+                        )
                         log_fh.flush()
                         return rc, used
                 if tk_rc != 0 and proc.poll() is None:
@@ -113,7 +123,8 @@ def run_guarded(cmd, log_fh, cwd=None, quiet_secs=DEFAULT_QUIET_SECS,
                     log_fh.write(
                         "%s WATCHDOG 杀灭失败且子进程仍存活 pid=%s tk_rc=%s %s%s"
                         " -> 放弃重试防并发双跑·需人工 taskkill /F /T /PID %s\n"
-                        % (tag, proc.pid, tk_rc, tk_out, tk_err, proc.pid))
+                        % (tag, proc.pid, tk_rc, tk_out, tk_err, proc.pid)
+                    )
                     log_fh.flush()
                     rc = KILLED_RC
                     killed = True
@@ -122,23 +133,49 @@ def run_guarded(cmd, log_fh, cwd=None, quiet_secs=DEFAULT_QUIET_SECS,
                 log_fh.write(
                     "%s WATCHDOG 触发: attempt %d 静默 %.0fs(阈值 %.0fs) 无日志增长"
                     " -> taskkill /F /T pid=%s tk_rc=%s %s%s (elapsed %.0fs)\n"
-                    % (tag, attempt, silent, quiet_secs, proc.pid, tk_rc,
-                       tk_out, tk_err, time.time() - t0))
+                    % (
+                        tag,
+                        attempt,
+                        silent,
+                        quiet_secs,
+                        proc.pid,
+                        tk_rc,
+                        tk_out,
+                        tk_err,
+                        time.time() - t0,
+                    )
+                )
                 log_fh.flush()
                 killed = True
                 break
         if not killed:
             # 正常退出：rc=0 直接过；rc!=0 是子进程自己的失败语义，立即透传
             # 给上层原 FAIL 判定收口，不重试（保持既有语义）。
-            log_fh.write("%s attempt %d/%d exit rc=%s (%.0fs)%s\n"
-                         % (tag, attempt, attempts, rc, time.time() - t0,
-                            "" if rc == 0 else " (非守护杀灭·透传上层·不重试)"))
+            log_fh.write(
+                "%s attempt %d/%d exit rc=%s (%.0fs)%s\n"
+                % (
+                    tag,
+                    attempt,
+                    attempts,
+                    rc,
+                    time.time() - t0,
+                    "" if rc == 0 else " (非守护杀灭·透传上层·不重试)",
+                )
+            )
             log_fh.flush()
             return rc, used
         if killed:
             rc = KILLED_RC
-        log_fh.write("%s attempt %d/%d FAIL rc=%s (%.0fs)%s\n"
-                     % (tag, attempt, attempts, rc, time.time() - t0,
-                        " -> 自动重试" if attempt < attempts else ""))
+        log_fh.write(
+            "%s attempt %d/%d FAIL rc=%s (%.0fs)%s\n"
+            % (
+                tag,
+                attempt,
+                attempts,
+                rc,
+                time.time() - t0,
+                " -> 自动重试" if attempt < attempts else "",
+            )
+        )
         log_fh.flush()
     return rc, used

@@ -37,16 +37,17 @@ OUT_JSON = os.path.join(REPO, "reports", "hmm_gate_research.json")
 SEED = 42
 N_RESTARTS = 8
 N_SAMPLE_STOCKS = 400
-MOM_LAG = 5          # 动量回看天数
-HORIZON = 20         # 前向收益天数
-HYST_HI = 0.6        # 迟滞进入阈值（风险后验）
-HYST_LO = 0.4        # 迟滞退出阈值
+MOM_LAG = 5  # 动量回看天数
+HORIZON = 20  # 前向收益天数
+HYST_HI = 0.6  # 迟滞进入阈值（风险后验）
+HYST_LO = 0.4  # 迟滞退出阈值
 HARD_THRESHOLDS = [40.0, 45.0, 50.0]  # 宽度硬阈值（0-100 刻度）
 
 
 # ============================================================
 # 1. 纯 numpy 高斯 HMM
 # ============================================================
+
 
 def _logmatvec(logA, x):
     """log-sum-exp 矩阵乘：out[i] = logsumexp_j(logA[i,j] + x[j])"""
@@ -223,6 +224,7 @@ def bic(loglik, T, n_params):
 # 2. 数据构建（只读）
 # ============================================================
 
+
 def load_breadth():
     d = json.load(open(BREADTH_JSON, encoding="utf-8"))
     df = pd.DataFrame({"date": d["dates"], "breadth": d["breadth"]})
@@ -263,8 +265,13 @@ def build_market_returns(dates_index):
         df = df.dropna(subset=["pct_chg"])
         if len(df) < 100:
             continue
-        ret_frames.append(pd.Series(df["pct_chg"].to_numpy() / 100.0,
-                                    index=df["trade_date"].to_numpy(), name=code))
+        ret_frames.append(
+            pd.Series(
+                df["pct_chg"].to_numpy() / 100.0,
+                index=df["trade_date"].to_numpy(),
+                name=code,
+            )
+        )
     panel = pd.concat(ret_frames, axis=1)
     mkt = panel.mean(axis=1, skipna=True)  # 等权日收益
     print(f"[data] 收益矩阵 {panel.shape}，市场日收益 {len(mkt)} 天", flush=True)
@@ -275,13 +282,17 @@ def build_market_returns(dates_index):
 # 3. 对照分析
 # ============================================================
 
+
 def fwd_stats(mask, fwd):
     """mask=True 的日子上 T+20 前向收益均值/胜率。"""
     v = fwd[mask & ~np.isnan(fwd)]
     if len(v) == 0:
         return {"n": 0, "mean": None, "win": None}
-    return {"n": int(len(v)), "mean": round(float(v.mean()) * 100, 3),
-            "win": round(float((v > 0).mean()) * 100, 2)}
+    return {
+        "n": int(len(v)),
+        "mean": round(float(v.mean()) * 100, 3),
+        "win": round(float((v > 0).mean()) * 100, 2),
+    }
 
 
 def flips_per_year(gate, dates):
@@ -317,15 +328,21 @@ def main():
     mu, sd = Xv.mean(axis=0), Xv.std(axis=0)
     Xz = (Xv - mu) / sd
     T = len(Xz)
-    print(f"[feat] 特征有效样本 {T}（去动量 warmup {MOM_LAG} 天），标准化后拟合", flush=True)
+    print(
+        f"[feat] 特征有效样本 {T}（去动量 warmup {MOM_LAG} 天），标准化后拟合",
+        flush=True,
+    )
 
     # ---- K=2 / K=3 拟合与 BIC 选优 ----
     models = {}
     for K in (2, 3):
         m = fit_hmm_best(Xz, K)
         models[K] = m
-        print(f"[hmm] K={K} loglik={m.loglik_:.2f} converged={m.converged_} "
-              f"iters={m.n_iter_} BIC={bic(m.loglik_, T, n_hmm_params(K, 2)):.1f}", flush=True)
+        print(
+            f"[hmm] K={K} loglik={m.loglik_:.2f} converged={m.converged_} "
+            f"iters={m.n_iter_} BIC={bic(m.loglik_, T, n_hmm_params(K, 2)):.1f}",
+            flush=True,
+        )
     bics = {K: bic(m.loglik_, T, n_hmm_params(K, 2)) for K, m in models.items()}
     best_K = min(bics, key=bics.get)
     best = models[best_K]
@@ -334,18 +351,22 @@ def main():
     # ---- 状态标注：按特征1（宽度水平）均值排序，低宽度=风险态 ----
     gamma = best.predict_proba(Xz, smoothed=True)
     state_breadth = [Xz[gamma[:, k] > 0.5, 0].mean() for k in range(best.K)]
-    order = np.argsort(state_breadth)          # 低宽度在前
-    risk_label = int(order[0])                 # 原始状态索引中的风险态
+    order = np.argsort(state_breadth)  # 低宽度在前
+    risk_label = int(order[0])  # 原始状态索引中的风险态
     # 后验重排：列按宽度从低到高
     gamma_o = gamma[:, order]
     p_risk_filtered = best.predict_proba(Xz, smoothed=False)[:, risk_label]
     p_risk_smoothed = gamma[:, risk_label]
-    print(f"[hmm] 状态宽度均值(标准化) {[round(x,3) for x in state_breadth]}，风险态=原状态 {risk_label}", flush=True)
+    print(
+        f"[hmm] 状态宽度均值(标准化) {[round(x, 3) for x in state_breadth]}，风险态=原状态 {risk_label}",
+        flush=True,
+    )
 
     # ---- 市场收益与前向收益 ----
     mkt, n_stocks = build_market_returns(dates)
     df = pd.DataFrame({"date": dates, "breadth": b}).merge(
-        mkt.rename("ret"), left_on="date", right_index=True, how="left")
+        mkt.rename("ret"), left_on="date", right_index=True, how="left"
+    )
     df = df.dropna(subset=["ret"]).reset_index(drop=True)
     d = df["date"].to_numpy()
     bb = df["breadth"].to_numpy()
@@ -355,13 +376,17 @@ def main():
     # 这里闸门在 t 日收盘后计算、作用于 t+1 起的收益，故从 t+1 复利到 t+20）
     fwd = np.full(n, np.nan)
     for t in range(n - HORIZON):
-        fwd[t] = np.prod(1.0 + r[t + 1:t + 1 + HORIZON]) - 1.0
+        fwd[t] = np.prod(1.0 + r[t + 1 : t + 1 + HORIZON]) - 1.0
     # 对齐特征有效起点（动量 warmup 在 breadth 序列内）：日期 → 后验数组行号
     feat_dates = dates[valid]
-    feat_pos = pd.Series(np.arange(len(feat_dates)), index=feat_dates).reindex(df["date"])
+    feat_pos = pd.Series(np.arange(len(feat_dates)), index=feat_dates).reindex(
+        df["date"]
+    )
     assert feat_pos.notna().all(), "对齐后有日期缺少特征后验"
     pos = feat_pos.to_numpy(dtype=int)
-    print(f"[align] breadth∩行情有效 {n} 天（{d[0]}~{d[-1]}），特征全部对齐", flush=True)
+    print(
+        f"[align] breadth∩行情有效 {n} 天（{d[0]}~{d[-1]}），特征全部对齐", flush=True
+    )
 
     rows = []
 
@@ -371,12 +396,19 @@ def main():
         st = fwd_stats(gate.astype(bool), fwd)
         st_allow = fwd_stats(~gate.astype(bool), fwd)
         f_total, f_per_year, _ = flips_per_year(gate, d)
-        rows.append({"name": f"硬阈值 breadth<{th:.0f}", "type": "hard",
-                     "blocked": st, "allowed": st_allow,
-                     "flips": f_total, "flips_per_year": round(f_per_year, 2)})
+        rows.append(
+            {
+                "name": f"硬阈值 breadth<{th:.0f}",
+                "type": "hard",
+                "blocked": st,
+                "allowed": st_allow,
+                "flips": f_total,
+                "flips_per_year": round(f_per_year, 2),
+            }
+        )
 
     # ---- HMM 状态档（过滤口径，防未来函数）----
-    p_risk_f = p_risk_filtered[pos]      # 与行情对齐后的 853 天一一对应
+    p_risk_f = p_risk_filtered[pos]  # 与行情对齐后的 853 天一一对应
     p_risk_s = p_risk_smoothed[pos]
     state_row = gamma_o.argmax(axis=1)[pos]  # 重排后第0列=风险态
     for mode, p in (("filtered", p_risk_f), ("smoothed", p_risk_s)):
@@ -385,18 +417,32 @@ def main():
         st = fwd_stats(gate.astype(bool), fwd)
         st_allow = fwd_stats(~gate.astype(bool), fwd)
         f_total, f_per_year, _ = flips_per_year(gate, d)
-        rows.append({"name": tag, "type": f"hmm_{mode}",
-                     "blocked": st, "allowed": st_allow,
-                     "flips": f_total, "flips_per_year": round(f_per_year, 2)})
+        rows.append(
+            {
+                "name": tag,
+                "type": f"hmm_{mode}",
+                "blocked": st,
+                "allowed": st_allow,
+                "flips": f_total,
+                "flips_per_year": round(f_per_year, 2),
+            }
+        )
 
     # ---- 迟滞软闸门 ----
     gate_soft = hysteresis_gate(p_risk_f, HYST_HI, HYST_LO)
     st = fwd_stats(gate_soft.astype(bool), fwd)
     st_allow = fwd_stats(~gate_soft.astype(bool), fwd)
     f_total, f_per_year, _ = flips_per_year(gate_soft, d)
-    rows.append({"name": f"HMM迟滞软闸门({HYST_HI}/{HYST_LO})", "type": "hmm_hysteresis",
-                 "blocked": st, "allowed": st_allow,
-                 "flips": f_total, "flips_per_year": round(f_per_year, 2)})
+    rows.append(
+        {
+            "name": f"HMM迟滞软闸门({HYST_HI}/{HYST_LO})",
+            "type": "hmm_hysteresis",
+            "blocked": st,
+            "allowed": st_allow,
+            "flips": f_total,
+            "flips_per_year": round(f_per_year, 2),
+        }
+    )
 
     # ---- 重合度：HMM 风险态 vs 各硬阈值 ----
     overlap = []
@@ -405,28 +451,43 @@ def main():
         g = (bb * 100.0 < th).astype(int)
         hard_gates[th] = g
         both = int(((gate_soft == 1) & (g == 1)).sum())
-        prec = both / max(int(gate_soft.sum()), 1)   # 软闸门命中中硬闸门也关闸的比例
-        rec = both / max(int(g.sum()), 1)            # 硬闸门关闸日被软闸门覆盖的比例
+        prec = both / max(int(gate_soft.sum()), 1)  # 软闸门命中中硬闸门也关闸的比例
+        rec = both / max(int(g.sum()), 1)  # 硬闸门关闸日被软闸门覆盖的比例
         agree = float((gate_soft == g).mean())
-        overlap.append({"threshold": th, "both_days": both, "soft_blocked": int(gate_soft.sum()),
-                        "hard_blocked": int(g.sum()),
-                        "precision": round(prec, 3), "recall": round(rec, 3),
-                        "agree_rate": round(agree, 3)})
+        overlap.append(
+            {
+                "threshold": th,
+                "both_days": both,
+                "soft_blocked": int(gate_soft.sum()),
+                "hard_blocked": int(g.sum()),
+                "precision": round(prec, 3),
+                "recall": round(rec, 3),
+                "agree_rate": round(agree, 3),
+            }
+        )
 
     # ---- 状态统计 ----
     state_stats = []
     for k in range(best_K):
         sel = state_row == k
         stf = fwd_stats(sel, fwd)
-        state_stats.append({
-            "state": k,
-            "name": ["risk", "mid", "bull"][k] if best_K == 3 else ["risk", "bull"][k],
-            "days": int(sel.sum()),
-            "share_pct": round(float(sel.mean()) * 100, 1),
-            "posterior_mean_breadth_raw": round(float((bb * gamma_o[pos, k]).sum()
-                                                      / max(gamma_o[pos, k].sum(), 1e-9)), 4),
-            "fwd20": stf,
-        })
+        state_stats.append(
+            {
+                "state": k,
+                "name": ["risk", "mid", "bull"][k]
+                if best_K == 3
+                else ["risk", "bull"][k],
+                "days": int(sel.sum()),
+                "share_pct": round(float(sel.mean()) * 100, 1),
+                "posterior_mean_breadth_raw": round(
+                    float(
+                        (bb * gamma_o[pos, k]).sum() / max(gamma_o[pos, k].sum(), 1e-9)
+                    ),
+                    4,
+                ),
+                "fwd20": stf,
+            }
+        )
 
     result = {
         "meta": {
@@ -436,7 +497,8 @@ def main():
             "aligned_days": int(n),
             "features": ["breadth_t", f"breadth_t-breadth_t-{MOM_LAG}"],
             "standardize": {"mean": mu.tolist(), "std": sd.tolist()},
-            "n_restarts": N_RESTARTS, "seed": SEED,
+            "n_restarts": N_RESTARTS,
+            "seed": SEED,
             "sample_stocks": n_stocks,
             "horizon": HORIZON,
         },
@@ -444,7 +506,8 @@ def main():
         "best_k": best_K,
         "model": {
             "loglik": round(best.loglik_, 2),
-            "converged": bool(best.converged_), "iters": best.n_iter_,
+            "converged": bool(best.converged_),
+            "iters": best.n_iter_,
             "transition": np.round(best.A_, 4).tolist(),
             "means_z": np.round(best.means_, 4).tolist(),
             "state_order_by_breadth": [int(x) for x in order],
@@ -460,51 +523,76 @@ def main():
     # ---- Markdown 报告 ----
     lines = []
     lines.append("# HMM 软闸门离线对照研究\n")
-    lines.append(f"- 生成时间：{result['meta']['generated_at']}（研究线，只读数据，未接入产线）")
-    lines.append(f"- breadth 序列：{result['meta']['breadth_range']}，共 {result['meta']['breadth_days']} 个交易日，"
-                 f"与湖内行情对齐后 {result['meta']['aligned_days']} 天")
-    lines.append(f"- 市场收益：湖抽样 {result['meta']['sample_stocks']} 只（全程在市、按均值成交额取流动性前列），"
-                 f"pct_chg 字段（除权后口径，等价后复权日收益），等权合成")
-    lines.append(f"- 特征：[breadth_t, breadth_t−breadth_t−{MOM_LAG}]，标准化；"
-                 f"高斯 HMM 对角协方差，{N_RESTARTS} 次随机重启（seed={SEED}）\n")
+    lines.append(
+        f"- 生成时间：{result['meta']['generated_at']}（研究线，只读数据，未接入产线）"
+    )
+    lines.append(
+        f"- breadth 序列：{result['meta']['breadth_range']}，共 {result['meta']['breadth_days']} 个交易日，"
+        f"与湖内行情对齐后 {result['meta']['aligned_days']} 天"
+    )
+    lines.append(
+        f"- 市场收益：湖抽样 {result['meta']['sample_stocks']} 只（全程在市、按均值成交额取流动性前列），"
+        f"pct_chg 字段（除权后口径，等价后复权日收益），等权合成"
+    )
+    lines.append(
+        f"- 特征：[breadth_t, breadth_t−breadth_t−{MOM_LAG}]，标准化；"
+        f"高斯 HMM 对角协方差，{N_RESTARTS} 次随机重启（seed={SEED}）\n"
+    )
 
     lines.append("## 1. 状态数选择（BIC）\n")
     lines.append("| K | log-likelihood | 参数数 | BIC |")
     lines.append("|---|---|---|---|")
     for K, m in models.items():
-        lines.append(f"| {K} | {m.loglik_:.1f} | {n_hmm_params(K, 2)} | {bics[K]:.1f} |")
-    lines.append(f"\n**BIC 选优：K = {best_K}**（" +
-                 ("K=2 与 K=3 差距不大时建议保守取 2" if best_K == 2 else "K=3 增量明显") + "）\n")
+        lines.append(
+            f"| {K} | {m.loglik_:.1f} | {n_hmm_params(K, 2)} | {bics[K]:.1f} |"
+        )
+    lines.append(
+        f"\n**BIC 选优：K = {best_K}**（"
+        + ("K=2 与 K=3 差距不大时建议保守取 2" if best_K == 2 else "K=3 增量明显")
+        + "）\n"
+    )
 
     lines.append("## 2. 状态统计与 T+20 前向收益（对齐样本内）\n")
     lines.append("| 状态 | 天数 | 占比 | 后验均值宽度(raw) | T+20均值% | T+20胜率% |")
     lines.append("|---|---|---|---|---|---|")
     for s in state_stats:
         f = s["fwd20"]
-        lines.append(f"| {s['name']} | {s['days']} | {s['share_pct']}% | "
-                     f"{s['posterior_mean_breadth_raw']} | "
-                     f"{f['mean'] if f['mean'] is not None else '—'} | "
-                     f"{f['win'] if f['win'] is not None else '—'} |")
+        lines.append(
+            f"| {s['name']} | {s['days']} | {s['share_pct']}% | "
+            f"{s['posterior_mean_breadth_raw']} | "
+            f"{f['mean'] if f['mean'] is not None else '—'} | "
+            f"{f['win'] if f['win'] is not None else '—'} |"
+        )
     lines.append("")
 
     lines.append("## 3. 闸门对照表：T+20 前向收益（关闸日 vs 放行日）与翻转成本\n")
-    lines.append("| 闸门 | 关闸天数 | 关闸T+20均值% | 关闸胜率% | 放行T+20均值% | 放行胜率% | 翻转次数 | 次/年 |")
+    lines.append(
+        "| 闸门 | 关闸天数 | 关闸T+20均值% | 关闸胜率% | 放行T+20均值% | 放行胜率% | 翻转次数 | 次/年 |"
+    )
     lines.append("|---|---|---|---|---|---|---|---|")
     for row in rows:
         bl, al = row["blocked"], row["allowed"]
         fmt = lambda x: "—" if x is None else x
-        lines.append(f"| {row['name']} | {bl['n']} | {fmt(bl['mean'])} | {fmt(bl['win'])} | "
-                     f"{fmt(al['mean'])} | {fmt(al['win'])} | {row['flips']} | {row['flips_per_year']} |")
+        lines.append(
+            f"| {row['name']} | {bl['n']} | {fmt(bl['mean'])} | {fmt(bl['win'])} | "
+            f"{fmt(al['mean'])} | {fmt(al['win'])} | {row['flips']} | {row['flips_per_year']} |"
+        )
     lines.append("")
-    lines.append("> 防未来函数：主口径为 HMM 过滤后验（仅用截至 t 的数据）；平滑口径单独列示、仅供参考。"
-                 f"硬阈值档：breadth×100 低于阈值即关闸（与产线环境闸门同向）。前向收益自 t+1 复利到 t+{HORIZON}。\n")
+    lines.append(
+        "> 防未来函数：主口径为 HMM 过滤后验（仅用截至 t 的数据）；平滑口径单独列示、仅供参考。"
+        f"硬阈值档：breadth×100 低于阈值即关闸（与产线环境闸门同向）。前向收益自 t+1 复利到 t+{HORIZON}。\n"
+    )
 
     lines.append("## 4. 迟滞软闸门 vs 硬闸门：重合度\n")
-    lines.append("| 硬阈值 | 硬关闸天数 | 软关闸天数 | 双双关闸 | precision | recall | 全序列一致率 |")
+    lines.append(
+        "| 硬阈值 | 硬关闸天数 | 软关闸天数 | 双双关闸 | precision | recall | 全序列一致率 |"
+    )
     lines.append("|---|---|---|---|---|---|---|")
     for o in overlap:
-        lines.append(f"| {o['threshold']:.0f} | {o['hard_blocked']} | {o['soft_blocked']} | "
-                     f"{o['both_days']} | {o['precision']} | {o['recall']} | {o['agree_rate']} |")
+        lines.append(
+            f"| {o['threshold']:.0f} | {o['hard_blocked']} | {o['soft_blocked']} | "
+            f"{o['both_days']} | {o['precision']} | {o['recall']} | {o['agree_rate']} |"
+        )
     lines.append("")
 
     # ---- 自动结论 ----
@@ -513,33 +601,53 @@ def main():
     hyst = next(r for r in rows if r["type"] == "hmm_hysteresis")
     ov45 = next(o for o in overlap if o["threshold"] == 45.0)
     lines.append("## 5. 结论\n")
-    lines.append(f"1. **BIC 选 K={best_K}**（BIC {bics[best_K]:.0f} vs 次优 {min(v for k, v in bics.items() if k != best_K):.0f}，"
-                 f"差距显著，多出的状态在宽度维度上是可分的）。"
-                 f"各状态 T+20 前向收益：risk {state_stats[0]['fwd20']['mean']}%（胜率 {state_stats[0]['fwd20']['win']}%），"
-                 f"mid {state_stats[1]['fwd20']['mean']}% / bull {state_stats[-1]['fwd20']['mean']}%（两者接近）——"
-                 f"风险态与常态区分度真实存在，但 mid/bull 之间增量有限。")
-    lines.append(f"2. **HMM 有增量信息**：迟滞软闸门关闸日仅 {hyst['blocked']['n']} 天（全样本 1 个连续恐慌段），"
-                 f"T+20 均值 {hyst['blocked']['mean']}%、胜率 {hyst['blocked']['win']}%，显著差于硬阈值档"
-                 f"（如 breadth<45 关闸日均值 {hard45['blocked']['mean']}%）——HMM 风险态捕捉的是"
-                 f"「宽度极低+动量加速恶化」的极端恐慌组合，比单点宽度阈值更挑剔。")
-    lines.append(f"3. **硬阈值在本样本期方向失效**：三档硬阈值关闸日的 T+20 均值（{hard45['blocked']['mean']}% 等）"
-                 f"反而**高于**放行日（{hard45['allowed']['mean']}% 等）——本期为反转市，"
-                 f"低宽度后 20 日常见修复，按现方向硬闸门在样本内是负贡献。这是对产线现行闸门方向的警示信号，"
-                 f"但仅一期样本，需跨周期验证。")
-    lines.append(f"4. **重合度**：软闸门 vs 硬阈值45 一致率仅 {ov45['agree_rate']:.1%}"
-                 f"（precision {ov45['precision']:.0%} / recall {ov45['recall']:.0%}）："
-                 f"软闸门关闸日是硬阈值45 关闸日的极小子集，两者不是同一信号的重参——"
-                 f"结合第 2 条，该子集质量显著更高，HMM 动量维度带来了真增量。")
-    lines.append(f"5. **成本**：迟滞软闸门 {hyst['flips_per_year']} 次/年 vs 硬阈值45 {hard45['flips_per_year']} 次/年，"
-                 f"切换频率下降约 {100 * (1 - hyst['flips_per_year'] / hard45['flips_per_year']):.0f}%；"
-                 f"但软闸门本期只进出一次，频次优势部分来自状态过稀（{hyst['blocked']['n']} 天），不能直接外推。")
-    lines.append(f"6. **建议**：研究线上 HMM 软闸门值得继续（K=3、加宽度动量特征、迟滞 0.6/0.4），"
-                 f"下一步做滚动拟合（防全样本信息泄露）与 2021-2022 等更早行情的外推验证，再考虑与硬阈值并联（仅在最极端状态加险）而非替换。")
+    lines.append(
+        f"1. **BIC 选 K={best_K}**（BIC {bics[best_K]:.0f} vs 次优 {min(v for k, v in bics.items() if k != best_K):.0f}，"
+        f"差距显著，多出的状态在宽度维度上是可分的）。"
+        f"各状态 T+20 前向收益：risk {state_stats[0]['fwd20']['mean']}%（胜率 {state_stats[0]['fwd20']['win']}%），"
+        f"mid {state_stats[1]['fwd20']['mean']}% / bull {state_stats[-1]['fwd20']['mean']}%（两者接近）——"
+        f"风险态与常态区分度真实存在，但 mid/bull 之间增量有限。"
+    )
+    lines.append(
+        f"2. **HMM 有增量信息**：迟滞软闸门关闸日仅 {hyst['blocked']['n']} 天（全样本 1 个连续恐慌段），"
+        f"T+20 均值 {hyst['blocked']['mean']}%、胜率 {hyst['blocked']['win']}%，显著差于硬阈值档"
+        f"（如 breadth<45 关闸日均值 {hard45['blocked']['mean']}%）——HMM 风险态捕捉的是"
+        f"「宽度极低+动量加速恶化」的极端恐慌组合，比单点宽度阈值更挑剔。"
+    )
+    lines.append(
+        f"3. **硬阈值在本样本期方向失效**：三档硬阈值关闸日的 T+20 均值（{hard45['blocked']['mean']}% 等）"
+        f"反而**高于**放行日（{hard45['allowed']['mean']}% 等）——本期为反转市，"
+        f"低宽度后 20 日常见修复，按现方向硬闸门在样本内是负贡献。这是对产线现行闸门方向的警示信号，"
+        f"但仅一期样本，需跨周期验证。"
+    )
+    lines.append(
+        f"4. **重合度**：软闸门 vs 硬阈值45 一致率仅 {ov45['agree_rate']:.1%}"
+        f"（precision {ov45['precision']:.0%} / recall {ov45['recall']:.0%}）："
+        f"软闸门关闸日是硬阈值45 关闸日的极小子集，两者不是同一信号的重参——"
+        f"结合第 2 条，该子集质量显著更高，HMM 动量维度带来了真增量。"
+    )
+    lines.append(
+        f"5. **成本**：迟滞软闸门 {hyst['flips_per_year']} 次/年 vs 硬阈值45 {hard45['flips_per_year']} 次/年，"
+        f"切换频率下降约 {100 * (1 - hyst['flips_per_year'] / hard45['flips_per_year']):.0f}%；"
+        f"但软闸门本期只进出一次，频次优势部分来自状态过稀（{hyst['blocked']['n']} 天），不能直接外推。"
+    )
+    lines.append(
+        f"6. **建议**：研究线上 HMM 软闸门值得继续（K=3、加宽度动量特征、迟滞 0.6/0.4），"
+        f"下一步做滚动拟合（防全样本信息泄露）与 2021-2022 等更早行情的外推验证，再考虑与硬阈值并联（仅在最极端状态加险）而非替换。"
+    )
     lines.append("\n## 6. 局限\n")
-    lines.append("- 离线研究：EM 全样本拟合，状态标注用了全样本特征均值（过滤后验本身无未来函数，但模型参数含全样本信息）；实盘需滚动/增量拟合。")
-    lines.append(f"- 风险态仅 {hyst['blocked']['n']} 天且集中于单一恐慌段，其收益统计（均值/胜率）自由度极低。")
-    lines.append(f"- 市场收益为 {result['meta']['sample_stocks']} 只抽样等权，非全市场口径；与 breadth（湖内全量）存在口径差。")
-    lines.append("- 样本期 2023-04~2026-10 不足四个完整牛熊循环，且恰为反转特征明显的一期，硬阈值结论外推需谨慎。")
+    lines.append(
+        "- 离线研究：EM 全样本拟合，状态标注用了全样本特征均值（过滤后验本身无未来函数，但模型参数含全样本信息）；实盘需滚动/增量拟合。"
+    )
+    lines.append(
+        f"- 风险态仅 {hyst['blocked']['n']} 天且集中于单一恐慌段，其收益统计（均值/胜率）自由度极低。"
+    )
+    lines.append(
+        f"- 市场收益为 {result['meta']['sample_stocks']} 只抽样等权，非全市场口径；与 breadth（湖内全量）存在口径差。"
+    )
+    lines.append(
+        "- 样本期 2023-04~2026-10 不足四个完整牛熊循环，且恰为反转特征明显的一期，硬阈值结论外推需谨慎。"
+    )
     lines.append("- 迟滞参数 0.6/0.4 为先验设定，未做网格寻优。")
 
     with open(OUT_MD, "w", encoding="utf-8") as fp:

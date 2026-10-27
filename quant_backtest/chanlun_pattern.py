@@ -18,9 +18,10 @@ docstring 漏列导致「Technique 第 22 节点」疑云）：
   看跌：上吊线 / 流星线 / 看跌吞没 / 黄昏星 / 乌云盖顶 / 三乌鸦 /
         墓碑十字 / 看跌孕线
 """
+
 TREND_WIN = 5
-TREND_THR = 0.015      # 1.5% 视为有前置趋势
-DOJI_BODY = 0.08       # 实体/全幅 ≤8% 视为十字
+TREND_THR = 0.015  # 1.5% 视为有前置趋势
+DOJI_BODY = 0.08  # 实体/全幅 ≤8% 视为十字
 
 
 def _trend(bars, i):
@@ -28,8 +29,11 @@ def _trend(bars, i):
     j = i - TREND_WIN
     if j < 0 or not bars[j]["c"]:
         return 0
-    return 1 if bars[i]["c"] >= bars[j]["c"] * (1 + TREND_THR) else \
-        (-1 if bars[i]["c"] <= bars[j]["c"] * (1 - TREND_THR) else 0)
+    return (
+        1
+        if bars[i]["c"] >= bars[j]["c"] * (1 + TREND_THR)
+        else (-1 if bars[i]["c"] <= bars[j]["c"] * (1 - TREND_THR) else 0)
+    )
 
 
 def _geo(b):
@@ -73,23 +77,47 @@ def detect(bars):
 
         # —— 两根吞没/孕线/刺透/乌云 ——
         if name is None and b1_body > 0 and body > 0:
-            if (not b1_up) and up and b["c"] > p1["o"] and b["o"] < p1["c"] \
-                    and body > b1_body and tr == -1:
+            if (
+                (not b1_up)
+                and up
+                and b["c"] > p1["o"]
+                and b["o"] < p1["c"]
+                and body > b1_body
+                and tr == -1
+            ):
                 name, dir_ = "看涨吞没", 1
-            elif b1_up and (not up) and b["c"] < p1["o"] and \
-                    b["o"] > p1["c"] and body > b1_body and tr == 1:
+            elif (
+                b1_up
+                and (not up)
+                and b["c"] < p1["o"]
+                and b["o"] > p1["c"]
+                and body > b1_body
+                and tr == 1
+            ):
                 name, dir_ = "看跌吞没", -1
-            elif (not b1_up) and up and b["o"] < p1["c"] and \
-                    b["c"] > (p1["o"] + p1["c"]) / 2 and \
-                    b["c"] < p1["o"] and tr == -1:
+            elif (
+                (not b1_up)
+                and up
+                and b["o"] < p1["c"]
+                and b["c"] > (p1["o"] + p1["c"]) / 2
+                and b["c"] < p1["o"]
+                and tr == -1
+            ):
                 name, dir_ = "刺透", 1
-            elif b1_up and (not up) and b["o"] > p1["c"] and \
-                    b["c"] < (p1["o"] + p1["c"]) / 2 and \
-                    b["c"] > p1["o"] and tr == 1:
+            elif (
+                b1_up
+                and (not up)
+                and b["o"] > p1["c"]
+                and b["c"] < (p1["o"] + p1["c"]) / 2
+                and b["c"] > p1["o"]
+                and tr == 1
+            ):
                 name, dir_ = "乌云盖顶", -1
-            elif body < b1_body and \
-                    min(b["o"], b["c"]) >= min(p1["o"], p1["c"]) - 1e-9 and \
-                    max(b["o"], b["c"]) <= max(p1["o"], p1["c"]) + 1e-9:
+            elif (
+                body < b1_body
+                and min(b["o"], b["c"]) >= min(p1["o"], p1["c"]) - 1e-9
+                and max(b["o"], b["c"]) <= max(p1["o"], p1["c"]) + 1e-9
+            ):
                 # 孕线：第二根实体完全含于第一根实体内，方向=反转第一根
                 if b1_up and tr >= 0:
                     name, dir_ = "看跌孕线", -1
@@ -100,23 +128,44 @@ def detect(bars):
         if name is None and i >= 2:
             b2_body, _, _, _, b2_up = _geo(p2)
             b1_body, _, _, _, b1_up = _geo(p1)
-            if (not b2_up) and b2_body > 0 and \
-                    b1_body <= b2_body * 0.5 and up and \
-                    b["c"] > (p2["o"] + p2["c"]) / 2 and tr == -1:
+            if (
+                (not b2_up)
+                and b2_body > 0
+                and b1_body <= b2_body * 0.5
+                and up
+                and b["c"] > (p2["o"] + p2["c"]) / 2
+                and tr == -1
+            ):
                 name, dir_ = "启明星", 1
-            elif b2_up and b2_body > 0 and \
-                    b1_body <= b2_body * 0.5 and (not up) and \
-                    b["c"] < (p2["o"] + p2["c"]) / 2 and tr == 1:
+            elif (
+                b2_up
+                and b2_body > 0
+                and b1_body <= b2_body * 0.5
+                and (not up)
+                and b["c"] < (p2["o"] + p2["c"]) / 2
+                and tr == 1
+            ):
                 name, dir_ = "黄昏星", -1
-            elif i >= 2 and up and b1_up and b2_up and \
-                    b["c"] > p1["c"] > p2["c"] and \
-                    body >= b1_body >= b2_body and \
-                    us <= body * 0.3 and tr == 1:
+            elif (
+                i >= 2
+                and up
+                and b1_up
+                and b2_up
+                and b["c"] > p1["c"] > p2["c"]
+                and body >= b1_body >= b2_body
+                and us <= body * 0.3
+                and tr == 1
+            ):
                 name, dir_ = "三白兵", 1
-            elif (not up) and (not b1_up) and (not b2_up) and \
-                    b["c"] < p1["c"] < p2["c"] and \
-                    body >= b1_body >= b2_body and \
-                    ls <= body * 0.3 and tr == -1:
+            elif (
+                (not up)
+                and (not b1_up)
+                and (not b2_up)
+                and b["c"] < p1["c"] < p2["c"]
+                and body >= b1_body >= b2_body
+                and ls <= body * 0.3
+                and tr == -1
+            ):
                 name, dir_ = "三乌鸦", -1
 
         if name:
@@ -133,7 +182,10 @@ def resonmap(patterns, signal_dts):
         if p["dt"] not in sig:
             continue
         cur = byd.get(p["dt"])
-        if cur is None or (p["dir"] != 0 and cur["dir"] == 0) or \
-                (len(p["name"]) < len(cur["name"])):
+        if (
+            cur is None
+            or (p["dir"] != 0 and cur["dir"] == 0)
+            or (len(p["name"]) < len(cur["name"]))
+        ):
             byd[p["dt"]] = p
     return {d: p["name"] for d, p in byd.items()}

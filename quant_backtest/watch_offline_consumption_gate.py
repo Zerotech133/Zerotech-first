@@ -69,7 +69,9 @@ def consume_watch_offline_sources(
     membership, time, calendar, and provider checks. Unexpected failures fail
     closed rather than leaking an exception into a downstream decision path.
     """
-    unavailable = OfflineConsumptionDiagnosis("SOURCE_UNVERIFIED", "AUTHORITY_UNAVAILABLE")
+    unavailable = OfflineConsumptionDiagnosis(
+        "SOURCE_UNVERIFIED", "AUTHORITY_UNAVAILABLE"
+    )
     if (
         authority is None
         or type(evaluation_as_of) is not datetime
@@ -91,11 +93,7 @@ def consume_watch_offline_sources(
             return unavailable
         if result.status == "QUALIFIED_OFFLINE" and result.code == "OK":
             return OfflineConsumptionDiagnosis(result.status, result.code)
-        if (
-            result.status == "SOURCE_UNVERIFIED"
-            and result.code
-            and result.code != "OK"
-        ):
+        if result.status == "SOURCE_UNVERIFIED" and result.code and result.code != "OK":
             return OfflineConsumptionDiagnosis(result.status, result.code)
     except Exception:
         return unavailable

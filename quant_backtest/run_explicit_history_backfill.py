@@ -3,6 +3,7 @@
 导入本模块只提供计划函数，不会在导入阶段访问 TuShare；真正的公网请求
 必须由命令行显式执行，并仍然只写入 staging。
 """
+
 import json
 from pathlib import Path
 import sys
@@ -17,7 +18,10 @@ def build_explicit_retry_units(receipts):
     for receipt in receipts:
         if not isinstance(receipt, dict):
             continue
-        if receipt.get("complete") is True and receipt.get("status") == "candidate_ready":
+        if (
+            receipt.get("complete") is True
+            and receipt.get("status") == "candidate_ready"
+        ):
             continue
         params = receipt.get("request_params") or {}
         trade_date = str(params.get("trade_date", ""))
@@ -33,10 +37,29 @@ def main() -> None:
         pull_one("ts_daily_basic", "daily_basic", "20260928", stage),
         pull_one("ts_margin_detail", "margin_detail", "20261008", stage),
     ]
-    print(json.dumps([{key: item.get(key) for key in (
-        "table", "api_name", "status", "complete", "row_count", "unique_keys",
-        "duplicate_keys", "body_sha256", "staged_sha256", "reused")}
-        for item in items], ensure_ascii=False))
+    print(
+        json.dumps(
+            [
+                {
+                    key: item.get(key)
+                    for key in (
+                        "table",
+                        "api_name",
+                        "status",
+                        "complete",
+                        "row_count",
+                        "unique_keys",
+                        "duplicate_keys",
+                        "body_sha256",
+                        "staged_sha256",
+                        "reused",
+                    )
+                }
+                for item in items
+            ],
+            ensure_ascii=False,
+        )
+    )
 
 
 if __name__ == "__main__":

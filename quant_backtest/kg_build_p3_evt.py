@@ -18,6 +18,7 @@ validEnd=9999-12-31（事件关联持续，不随 jsonl 窗口滚动删除）。
   python kg_build_p3_evt.py --dryrun
   python kg_build_p3_evt.py --sample 600519.SH   # 抽检个股事件流
 """
+
 import argparse
 import io
 import json
@@ -32,7 +33,7 @@ import kg_schema as S
 
 EVENT_F = os.path.join(HERE, "data", "semantica", "events.jsonl")
 
-TEXT_MAX = 300          # 事件文本截断（图查询展示用）
+TEXT_MAX = 300  # 事件文本截断（图查询展示用）
 
 
 def load_events():
@@ -48,31 +49,45 @@ def load_events():
                 continue
             text = (e.get("text") or "")[:TEXT_MAX]
             reason = (e.get("reason") or "")[:200] or None
-            events.append({
-                "id": e["id"], "kind": e.get("kind"),
-                "ts": e.get("ts"), "date": ts,
-                "text": text, "bias": e.get("bias"),
-                "conf": e.get("conf"), "reason": reason,
-                "tag": e.get("tag"), "source": e.get("source"),
-            })
-            for code in (e.get("stocks") or []):
-                stock_pairs.append({"src": code, "dst": e["id"],
-                                    "validStart": ts,
-                                    "validEnd": S.VALID_END_OPEN,
-                                    "source": "semantica_events",
-                                    "updated_at": datetime.now().strftime(
-                                        "%Y-%m-%dT%H:%M:%S")})
+            events.append(
+                {
+                    "id": e["id"],
+                    "kind": e.get("kind"),
+                    "ts": e.get("ts"),
+                    "date": ts,
+                    "text": text,
+                    "bias": e.get("bias"),
+                    "conf": e.get("conf"),
+                    "reason": reason,
+                    "tag": e.get("tag"),
+                    "source": e.get("source"),
+                }
+            )
+            for code in e.get("stocks") or []:
+                stock_pairs.append(
+                    {
+                        "src": code,
+                        "dst": e["id"],
+                        "validStart": ts,
+                        "validEnd": S.VALID_END_OPEN,
+                        "source": "semantica_events",
+                        "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                    }
+                )
     return events, stock_pairs
 
 
 def build(dryrun=False):
-    print("=== 知识图谱 Phase 3-B 事件实体开始 %s ==="
-          % datetime.now().strftime("%F %T"))
+    print(
+        "=== 知识图谱 Phase 3-B 事件实体开始 %s ===" % datetime.now().strftime("%F %T")
+    )
     print("[1/3] 读 events.jsonl…")
     events, pairs = load_events()
     n_bias = len([e for e in events if e["bias"] in ("bull", "bear")])
-    print("  事件 %d（bull/bear 已判 %d），个股关联 %d"
-          % (len(events), n_bias, len(pairs)))
+    print(
+        "  事件 %d（bull/bear 已判 %d），个股关联 %d"
+        % (len(events), n_bias, len(pairs))
+    )
 
     if dryrun:
         print("DRYRUN 结束。")
@@ -80,13 +95,13 @@ def build(dryrun=False):
 
     print("[2/3] 落库…")
     from kg_client import KgClient
+
     cli = KgClient()
     cli.ensure_schema()
     n1 = cli.upsert_nodes("Event", ["id"], events)
     print("  Event upsert: %d" % n1)
     # 关联不上的（股票代码不在 Security 图）会被 MATCH 自然跳过
-    n2 = cli.upsert_edge(S.LBL_SECURITY, "ts_code", "Event", "id",
-                         "INVOLVES", pairs)
+    n2 = cli.upsert_edge(S.LBL_SECURITY, "ts_code", "Event", "id", "INVOLVES", pairs)
     print("  INVOLVES upsert: %d" % n2)
 
     print("[3/3] 统计…")
@@ -101,21 +116,32 @@ def build(dryrun=False):
 
 def sample(ts_code):
     from kg_client import KgClient
+
     cli = KgClient()
     with cli._session() as s:
-        rows = list(s.run(
-            "MATCH (sec:Security {ts_code: $c})-[r:INVOLVES]->(e:Event) "
-            "RETURN e.date AS d, e.bias AS b, e.tag AS tag, "
-            "e.kind AS k, substring(e.text, 0, 60) AS t "
-            "ORDER BY d DESC LIMIT 15", c=ts_code))
+        rows = list(
+            s.run(
+                "MATCH (sec:Security {ts_code: $c})-[r:INVOLVES]->(e:Event) "
+                "RETURN e.date AS d, e.bias AS b, e.tag AS tag, "
+                "e.kind AS k, substring(e.text, 0, 60) AS t "
+                "ORDER BY d DESC LIMIT 15",
+                c=ts_code,
+            )
+        )
         print("=== %s 事件流（最新 %d 条）===" % (ts_code, len(rows)))
         for r in rows:
-            print("  %s %-7s %-6s %-8s %s"
-                  % (r["d"], r["b"] or "-", r["k"], r["tag"] or "-", r["t"]))
-        stat = list(s.run(
-            "MATCH (sec:Security {ts_code: $c})-[r:INVOLVES]->(e:Event) "
-            "WHERE e.bias IN ['bull','bear'] "
-            "RETURN e.bias AS b, count(*) AS n", c=ts_code))
+            print(
+                "  %s %-7s %-6s %-8s %s"
+                % (r["d"], r["b"] or "-", r["k"], r["tag"] or "-", r["t"])
+            )
+        stat = list(
+            s.run(
+                "MATCH (sec:Security {ts_code: $c})-[r:INVOLVES]->(e:Event) "
+                "WHERE e.bias IN ['bull','bear'] "
+                "RETURN e.bias AS b, count(*) AS n",
+                c=ts_code,
+            )
+        )
         for r in stat:
             print("  %s: %d" % (r["b"], r["n"]))
     cli.close()
@@ -134,4 +160,5 @@ def main():
 
 if __name__ == "__main__":
     from linreg import run_with_lineage
+
     run_with_lineage("kg_daily_sync", "kg_evt_sync", main)

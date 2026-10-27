@@ -17,6 +17,7 @@
   python report_ai.py --force    # 全量重抽
   python report_ai.py --sync     # 只重建 report_events.jsonl（不调 LLM）
 """
+
 import argparse
 import hashlib
 import json
@@ -37,11 +38,21 @@ SNAP_DIR = os.path.join(HERE, "data", "semantica")
 EVT_OUT = os.path.join(SNAP_DIR, "report_events.jsonl")
 OLLAMA = "http://127.0.0.1:11434/api/chat"
 MODEL = os.environ.get("OLLAMA_MODEL", "qwen3:8b-8k")
-TIMEOUT = 120          # 单篇超时（4k 字输入 + JSON 输出较慢）
-INPUT_CHARS = 4000     # 送入正文上限（浓缩后观点流，qwen3:8k 覆盖全篇）
-FAIL_STREAK_MAX = 6    # 连续失败熔断
-EVENT_TYPES = ("业绩点评", "首次覆盖", "行业景气", "产能扩张", "并购重组",
-               "政策利好", "技术突破", "订单中标", "风险提示", "点评更新")
+TIMEOUT = 120  # 单篇超时（4k 字输入 + JSON 输出较慢）
+INPUT_CHARS = 4000  # 送入正文上限（浓缩后观点流，qwen3:8k 覆盖全篇）
+FAIL_STREAK_MAX = 6  # 连续失败熔断
+EVENT_TYPES = (
+    "业绩点评",
+    "首次覆盖",
+    "行业景气",
+    "产能扩张",
+    "并购重组",
+    "政策利好",
+    "技术突破",
+    "订单中标",
+    "风险提示",
+    "点评更新",
+)
 
 PROMPT = (
     "你是券商研报结构化助手。通读研报正文，输出严格 JSON"
@@ -67,8 +78,15 @@ PROMPT = (
     "研报正文（可能截断）：\n%s"
 )
 
-_ANCHORS = ("事件：", "投资要点", "核心观点", "投资建议", "业绩点评",
-            "公司点评", "盈利预测")
+_ANCHORS = (
+    "事件：",
+    "投资要点",
+    "核心观点",
+    "投资建议",
+    "业绩点评",
+    "公司点评",
+    "盈利预测",
+)
 
 
 def _trim_text(text):
@@ -93,7 +111,7 @@ def digest_text(text):
             continue
         han = len(re.findall(r"[\u4e00-\u9fff]", s))
         if len(s) > 4 and (han < 8 or (len(s) > 20 and han / len(s) < 0.35)):
-            continue          # 表格行 / 财务数据行
+            continue  # 表格行 / 财务数据行
         out.append(s)
     return "\n".join(out)
 
@@ -101,12 +119,9 @@ def digest_text(text):
 def ollama_ok():
     """探活：Ollama 服务与模型在位才开跑。"""
     try:
-        r = requests.get(OLLAMA.replace("/api/chat", "/api/tags"),
-                         timeout=5)
-        names = [m.get("name", "") for m in
-                 (r.json().get("models") or [])]
-        return MODEL in names or any(n.startswith(MODEL.split(":")[0])
-                                     for n in names)
+        r = requests.get(OLLAMA.replace("/api/chat", "/api/tags"), timeout=5)
+        names = [m.get("name", "") for m in (r.json().get("models") or [])]
+        return MODEL in names or any(n.startswith(MODEL.split(":")[0]) for n in names)
     except Exception:
         return False
 
@@ -123,7 +138,7 @@ def _balance_json(s):
                 depth -= 1
                 if depth == 0:
                     try:
-                        return json.loads(s[start:i + 1])
+                        return json.loads(s[start : i + 1])
                     except ValueError:
                         break
         start = s.find("{", start + 1)
@@ -136,11 +151,13 @@ def extract(text, timeout=TIMEOUT):
     # num_ctx 变化整模型重载（实测 15~46s/次）。原值 8192 属"各调用方各设各的"
     # 历史遗留，iGPU/Vulkan + KV q8_0 后 16384 与 4096 生成吞吐相同。
     body = {
-        "model": MODEL, "stream": False, "think": False,
-        "messages": [{"role": "user",
-                      "content": PROMPT % digest_text(text)[:INPUT_CHARS]}],
-        "options": {"temperature": 0.1, "num_predict": 600,
-                    "num_ctx": 16384},
+        "model": MODEL,
+        "stream": False,
+        "think": False,
+        "messages": [
+            {"role": "user", "content": PROMPT % digest_text(text)[:INPUT_CHARS]}
+        ],
+        "options": {"temperature": 0.1, "num_predict": 600, "num_ctx": 16384},
     }
     for _ in range(2):
         try:
@@ -156,13 +173,15 @@ def extract(text, timeout=TIMEOUT):
             if et not in EVENT_TYPES:
                 et = "点评更新"
             conf = min(1.0, max(0.0, float(d.get("conf", 0) or 0)))
+
             def strs(k, n, ln):
                 """取前 n 条、每条限 ln 字（两个维度独立）。"""
-                return [str(x)[:ln] for x in (d.get(k) or [])
-                        if str(x).strip()][:n]
+                return [str(x)[:ln] for x in (d.get(k) or []) if str(x).strip()][:n]
 
             return {
-                "event_type": et, "bias": bias, "conf": round(conf, 2),
+                "event_type": et,
+                "bias": bias,
+                "conf": round(conf, 2),
                 "reason": str(d.get("reason", ""))[:80],
                 "target_price": str(d.get("target_price", ""))[:20],
                 "earnings": str(d.get("earnings", ""))[:90],
@@ -186,8 +205,7 @@ def run_all(force=False):
     if not ollama_ok():
         print("AI抽取: Ollama/模型不可用，跳过（熔断）")
         return 0
-    todo = [u for u, r in texts.items()
-            if force or "ai" not in r or not r["ai"]]
+    todo = [u for u, r in texts.items() if force or "ai" not in r or not r["ai"]]
     print("AI抽取: 待处理 %d / %d 篇" % (len(todo), len(texts)))
     done, fails, streak = 0, 0, 0
     for u in todo:
@@ -199,9 +217,15 @@ def run_all(force=False):
             texts[u]["ai"] = ai
             done += 1
             streak = 0
-            print("  ✓ %s %s %s conf=%.2f"
-                  % ((texts[u].get("code") or "?")[:6],
-                     ai["event_type"], ai["bias"], ai["conf"]))
+            print(
+                "  ✓ %s %s %s conf=%.2f"
+                % (
+                    (texts[u].get("code") or "?")[:6],
+                    ai["event_type"],
+                    ai["bias"],
+                    ai["conf"],
+                )
+            )
             with open(TEXTS_PATH, "w", encoding="utf-8") as f:
                 for _, rec in texts.items():
                     f.write(json.dumps(rec, ensure_ascii=False) + "\n")
@@ -227,16 +251,20 @@ def sync_events():
         ai = r.get("ai")
         if not ai:
             continue
-        rows.append({
-            "id": _evt_id(u), "kind": "report",
-            "ts": (r.get("pub_date") or r.get("date") or "") + " 08:00",
-            "text": ((r.get("title") or "") + "｜" + ai.get("reason", ""))[:200],
-            "source": "report:" + (r.get("org") or ""),
-            "stocks": [r["code"]] if r.get("code") else [],
-            "bias": ai["bias"], "conf": ai["conf"],
-            "reason": ai.get("reason", ""),
-            "tag": ai["event_type"],
-        })
+        rows.append(
+            {
+                "id": _evt_id(u),
+                "kind": "report",
+                "ts": (r.get("pub_date") or r.get("date") or "") + " 08:00",
+                "text": ((r.get("title") or "") + "｜" + ai.get("reason", ""))[:200],
+                "source": "report:" + (r.get("org") or ""),
+                "stocks": [r["code"]] if r.get("code") else [],
+                "bias": ai["bias"],
+                "conf": ai["conf"],
+                "reason": ai.get("reason", ""),
+                "tag": ai["event_type"],
+            }
+        )
     if rows:
         os.makedirs(SNAP_DIR, exist_ok=True)
         with open(EVT_OUT, "w", encoding="utf-8") as f:
@@ -249,8 +277,7 @@ def sync_events():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true", help="全量重抽")
-    ap.add_argument("--sync", action="store_true",
-                    help="只重建 report_events.jsonl")
+    ap.add_argument("--sync", action="store_true", help="只重建 report_events.jsonl")
     a = ap.parse_args()
     if a.sync:
         sync_events()

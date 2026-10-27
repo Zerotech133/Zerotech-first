@@ -22,6 +22,7 @@
 注意（P1-3）：--pivots / --since 为个案参数（来自 start_weak_track.ps1
 显式传参），不再提供默认值——新案例忘传参直接报错退出，防止静默跑错案例。
 """
+
 import argparse
 import json
 import os
@@ -38,7 +39,7 @@ OUT_DIR = os.path.join(os.path.dirname(HERE), "reports")
 
 from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
 
-TRIG_EX_TH = -5     # §6 触发1 阈值：250 日超额收敛至 -5pp 以内
+TRIG_EX_TH = -5  # §6 触发1 阈值：250 日超额收敛至 -5pp 以内
 
 
 def stood_on(px, pivot):
@@ -103,8 +104,7 @@ def block_daily_bc(bc, refresh=True):
     agg = {}
     for b in mm:
         agg[b["dt"][:10]] = b["close"]
-    extra = [{"dt": d, "close": c} for d, c in sorted(agg.items())
-             if d > have]
+    extra = [{"dt": d, "close": c} for d, c in sorted(agg.items()) if d > have]
     return bb + extra, len(extra)
 
 
@@ -113,8 +113,12 @@ def main():
     ap.add_argument("code", nargs="?", default="301216")
     # P1-3：个案参数必填（唯一自动化调用方 start_weak_track.ps1 恒显式传参，
     # 已核对计划任务注册链 WeakTrackCheck → start_weak_track.ps1）。
-    ap.add_argument("--pivots", required=True, help="个股关键位,逗号分隔（个案参数，必填）")
-    ap.add_argument("--since", required=True, help="立案日(池信号扫描起点，个案参数，必填)")
+    ap.add_argument(
+        "--pivots", required=True, help="个股关键位,逗号分隔（个案参数，必填）"
+    )
+    ap.add_argument(
+        "--since", required=True, help="立案日(池信号扫描起点，个案参数，必填)"
+    )
     ap.add_argument("--no-refresh", action="store_true")
     a = ap.parse_args()
     code = _norm(a.code)
@@ -122,6 +126,7 @@ def main():
     trig = []
 
     from chanlun_data import load_kline
+
     blk = linkage.resolve_block(code)
     if not blk:
         print("板块解析失败")
@@ -140,25 +145,44 @@ def main():
     bpx = _closes(bd)[-1] if bd else None
     bpx_d = bd[-1]["dt"][:10] if bd else "?"
     ipx = _closes(ib)[-1] if ib else None
-    print("=== A/B. 三线现价 × 关键位 × 日线趋势（个股 %s / 板块 %s %s / 上证）==="
-          % (px_d, bpx_d, bc))
+    print(
+        "=== A/B. 三线现价 × 关键位 × 日线趋势（个股 %s / 板块 %s %s / 上证）==="
+        % (px_d, bpx_d, bc)
+    )
     if px:
         near = min(pivots, key=lambda p: abs(p - px))
-        print("  个股 %.2f｜关键位 %s｜最近 %s（%+.2f%%）｜趋势 %s"
-              % (px, "/".join("%.2f" % p for p in pivots), near,
-                 (px / near - 1) * 100, trend_tag(_closes(sb))))
+        print(
+            "  个股 %.2f｜关键位 %s｜最近 %s（%+.2f%%）｜趋势 %s"
+            % (
+                px,
+                "/".join("%.2f" % p for p in pivots),
+                near,
+                (px / near - 1) * 100,
+                trend_tag(_closes(sb)),
+            )
+        )
     if bpx and len(bd) >= 60:
-        lo = min(float(b.get("low", b.get("close", 0)) or b["close"])
-                 for b in bd[-60:])
-        hi = max(float(b.get("high", b.get("close", 0)) or b["close"])
-                 for b in bd[-120:])
-        print("  板块 %.2f｜前低(60日) %.2f（%+.2f%%）｜前高(120日) %.2f｜趋势 %s%s"
-              % (bpx, lo, (bpx / lo - 1) * 100, hi, trend_tag(_closes(bd)),
-                 "（%d 日由分钟聚合补尾）" % n_ext if n_ext else ""))
+        lo = min(float(b.get("low", b.get("close", 0)) or b["close"]) for b in bd[-60:])
+        hi = max(
+            float(b.get("high", b.get("close", 0)) or b["close"]) for b in bd[-120:]
+        )
+        print(
+            "  板块 %.2f｜前低(60日) %.2f（%+.2f%%）｜前高(120日) %.2f｜趋势 %s%s"
+            % (
+                bpx,
+                lo,
+                (bpx / lo - 1) * 100,
+                hi,
+                trend_tag(_closes(bd)),
+                "（%d 日由分钟聚合补尾）" % n_ext if n_ext else "",
+            )
+        )
     if ipx:
         ilo = min(float(b.get("l", 0) or b.get("c")) for b in ib[-60:])
-        print("  上证 %.2f｜前低(60日) %.2f（%+.2f%%）｜趋势 %s"
-              % (ipx, ilo, (ipx / ilo - 1) * 100, trend_tag(_closes(ib))))
+        print(
+            "  上证 %.2f｜前低(60日) %.2f（%+.2f%%）｜趋势 %s"
+            % (ipx, ilo, (ipx / ilo - 1) * 100, trend_tag(_closes(ib)))
+        )
 
     # 5 分钟检查项（§4 第三行）
     s5 = load_kline(code, "5m", 60)
@@ -166,27 +190,36 @@ def main():
     if s5.get("bars") and b5:
         s5c, b5c = _closes(s5["bars"]), _closes(b5)
         ma20 = sum(b5c[-20:]) / 20
-        print("  [5m] 个股 %.2f vs 站位 %.2f：%s｜板块 %.2f vs 5m MA20 %.2f：%s"
-              % (s5c[-1], pivots[min(1, len(pivots) - 1)],
-                 "已站上" if stood_on(s5c[-1], pivots[min(1, len(pivots) - 1)])
-                 else "未站上", b5c[-1], ma20,
-                 "已站上" if b5c[-1] >= ma20 else "未站上"))
+        print(
+            "  [5m] 个股 %.2f vs 站位 %.2f：%s｜板块 %.2f vs 5m MA20 %.2f：%s"
+            % (
+                s5c[-1],
+                pivots[min(1, len(pivots) - 1)],
+                "已站上"
+                if stood_on(s5c[-1], pivots[min(1, len(pivots) - 1)])
+                else "未站上",
+                b5c[-1],
+                ma20,
+                "已站上" if b5c[-1] >= ma20 else "未站上",
+            )
+        )
 
     # --- C. 250 日超额 ---
     r = linkage.series(code, "1d", limit=250, block=bc)
     ex = None
     if r.get("ok") and r.get("block"):
         ex = round(r["stock"][-1] - r["block"][-1], 1)
-        print("\n=== C. 250 日超额（个股-板块）：%+.1fpp（个股 %+.1f%% vs 板块"
-              " %+.1f%%）===" % (ex, r["stock"][-1], r["block"][-1]))
+        print(
+            "\n=== C. 250 日超额（个股-板块）：%+.1fpp（个股 %+.1f%% vs 板块"
+            " %+.1f%%）===" % (ex, r["stock"][-1], r["block"][-1])
+        )
 
     # --- D. §6 三触发 ---
     print("\n=== D. §6 复评触发判定 ===")
     if trig_ex_converge(ex):
         trig.append("超额收敛至 %+.1fpp（≥-5pp，触发1）" % ex)
     if trig_pivot_break(px, pivots[0] if pivots else None):
-        trig.append("破左侧关键位 %.2f（现价 %.2f，情景B前置·触发4）"
-                    % (pivots[0], px))
+        trig.append("破左侧关键位 %.2f（现价 %.2f，情景B前置·触发4）" % (pivots[0], px))
     new_sig = []
     if os.path.exists(POOL):
         with open(POOL, encoding="utf-8") as f:
@@ -197,54 +230,75 @@ def main():
                     q = json.loads(line)
                 except Exception:
                     continue
-                if str(q.get("code", "")).startswith(code.split(".")[0]) \
-                        and trig_pool_new_sig(q.get("detect_date", ""),
-                                              a.since):
-                    new_sig.append("%s %s@%s" % (q.get("detect_date"),
-                                                 q.get("type"),
-                                                 q.get("price")))
+                if str(q.get("code", "")).startswith(
+                    code.split(".")[0]
+                ) and trig_pool_new_sig(q.get("detect_date", ""), a.since):
+                    new_sig.append(
+                        "%s %s@%s"
+                        % (q.get("detect_date"), q.get("type"), q.get("price"))
+                    )
     if new_sig:
         trig.append("池内新信号：%s（触发2）" % "; ".join(new_sig))
-    print("  触发1（超额收敛≥-5pp）：%s" % (
-        "命中 %+.1fpp" % ex if trig_ex_converge(ex) else
-        ("未命中（%+.1fpp）" % ex if ex is not None else "超额不可算")))
-    print("  触发2（池内新信号，detect>%s）：%s" % (
-        a.since, "；".join(new_sig) if new_sig else "无"))
+    print(
+        "  触发1（超额收敛≥-5pp）：%s"
+        % (
+            "命中 %+.1fpp" % ex
+            if trig_ex_converge(ex)
+            else ("未命中（%+.1fpp）" % ex if ex is not None else "超额不可算")
+        )
+    )
+    print(
+        "  触发2（池内新信号，detect>%s）：%s"
+        % (a.since, "；".join(new_sig) if new_sig else "无")
+    )
     print("  触发3（归因反转）：人工项，不机查")
-    print("  触发4（破左侧关键位 %s）：%s" % (
-        "%.2f" % pivots[0] if pivots else "—",
-        "命中：%.2f < %s" % (px, "%.2f" % pivots[0])
-        if trig_pivot_break(px, pivots[0] if pivots else None)
-        else ("未命中（现价 %.2f）" % px if px else "现价不可算")))
+    print(
+        "  触发4（破左侧关键位 %s）：%s"
+        % (
+            "%.2f" % pivots[0] if pivots else "—",
+            "命中：%.2f < %s" % (px, "%.2f" % pivots[0])
+            if trig_pivot_break(px, pivots[0] if pivots else None)
+            else ("未命中（现价 %.2f）" % px if px else "现价不可算"),
+        )
+    )
     # 状态统一构造（推送+落盘共用）
     state = {
-        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "code": code,
-        "px": px, "px_d": px_d, "ex250": ex,
-        "trend": [trend_tag(_closes(sb)), trend_tag(_closes(bd)),
-                  trend_tag(_closes(ib))],
-        "trig": trig}
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "code": code,
+        "px": px,
+        "px_d": px_d,
+        "ex250": ex,
+        "trend": [
+            trend_tag(_closes(sb)),
+            trend_tag(_closes(bd)),
+            trend_tag(_closes(ib)),
+        ],
+        "trig": trig,
+    }
     if trig:
         print("  >>> 触发复评！按 §6 重跑模板（执行 SOP 见 §8）。")
         # 推送主通路：飞书卡片版（默认；环境变量 WEAK_TRACK_TEXT=1 回退文本）
         try:
             from weak_track_card import alert_card, send_card
+
             if os.environ.get("WEAK_TRACK_TEXT"):
                 from weak_track_alert import build_alert, send_alert
+
                 send_alert(build_alert(code, state))
             else:
                 send_card(alert_card(state))
-            print("  §8 推送已发送（重发：weak_track_alert.py %s --send）"
-                  % code)
+            print("  §8 推送已发送（重发：weak_track_alert.py %s --send）" % code)
         except Exception as e:
-            print("  §8 推送发送失败（可用 weak_track_alert.py --send 补发）：%s"
-                  % str(e)[:80])
+            print(
+                "  §8 推送发送失败（可用 weak_track_alert.py --send 补发）：%s"
+                % str(e)[:80]
+            )
     else:
         print("  >>> 无触发，继续影子跟踪。")
 
     # 状态落盘
     os.makedirs(OUT_DIR, exist_ok=True)
-    fp = os.path.join(OUT_DIR, "weak_track_%s.jsonl"
-                      % code.split(".")[0])
+    fp = os.path.join(OUT_DIR, "weak_track_%s.jsonl" % code.split(".")[0])
     with open(fp, "a", encoding="utf-8") as f:
         f.write(json.dumps(state, ensure_ascii=False) + "\n")
     print("\n状态已追加 %s" % fp)

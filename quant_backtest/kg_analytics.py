@@ -17,6 +17,7 @@ CLI 自测：
   python kg_analytics.py community 陈小群 --hops 2
   python kg_analytics.py centrality 陈小群
 """
+
 import argparse
 import json
 import os
@@ -30,7 +31,7 @@ from neo4j.time import Date, DateTime, Duration, Time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from kg_client import KgClient   # noqa: E402
+from kg_client import KgClient  # noqa: E402
 from kg_portal import CANVAS_LABELS, CANVAS_TERMINAL  # noqa: E402
 
 # 历史字段只用于检索；定位和画布 ID 始终使用 CANVAS_LABELS 主键。
@@ -41,8 +42,8 @@ _RESOLVE = {
     "SwL1Industry": "n.industry_name = $n",
     "Segment": "n.chain = $n",
 }
-_MAX_SUB = 600        # 子图节点上限（社群/中心性，防大图拖死）
-_MAX_PATH = 6         # 六度：默认 6 跳
+_MAX_SUB = 600  # 子图节点上限（社群/中心性，防大图拖死）
+_MAX_PATH = 6  # 六度：默认 6 跳
 
 
 def _scope_params(scope):
@@ -54,14 +55,17 @@ def _scope_params(scope):
     if "types" in scope:
         types = scope["types"]
         if not isinstance(types, list) or any(
-                not isinstance(t, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", t)
-                for t in types):
+            not isinstance(t, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", t)
+            for t in types
+        ):
             raise ValueError("scope.types 必须是合法关系类型列表")
         result["types"] = list(types)
         params["rel_types"] = list(types)
     if "at" in scope:
         at = scope["at"]
-        if not isinstance(at, str) or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", at):
+        if not isinstance(at, str) or not re.fullmatch(
+            r"[0-9]{4}-[0-9]{2}-[0-9]{2}", at
+        ):
             raise ValueError("scope.at 必须是 YYYY-MM-DD")
         try:
             date.fromisoformat(at)
@@ -77,11 +81,14 @@ def _rel_filter(var, scope):
     if "types" in scope:
         parts.append("type(%s) IN $rel_types" % var)
     if "at" in scope:
-        parts.extend((
-            "%s.validStart IS NOT NULL" % var,
-            "replace(toString(%s.validStart), '-', '') <= $at" % var,
-            "(%s.validEnd IS NULL OR " % var +
-            "replace(toString(%s.validEnd), '-', '') >= $at)" % var))
+        parts.extend(
+            (
+                "%s.validStart IS NOT NULL" % var,
+                "replace(toString(%s.validStart), '-', '') <= $at" % var,
+                "(%s.validEnd IS NULL OR " % var
+                + "replace(toString(%s.validEnd), '-', '') >= $at)" % var,
+            )
+        )
     return " AND ".join(parts)
 
 
@@ -120,8 +127,7 @@ def _resolve(cli, name):
         cond = "toString(n.%s) = $n" % key
         if "|" not in str(name) and lbl in _RESOLVE:
             cond += " OR " + _RESOLVE[lbl]
-        cy = ("MATCH (n:%s) WHERE %s RETURN n.%s AS k LIMIT 1"
-              % (lbl, cond, key))
+        cy = "MATCH (n:%s) WHERE %s RETURN n.%s AS k LIMIT 1" % (lbl, cond, key)
         with cli._session() as session:
             r = session.run(cy, n=text).single()
             if r and r["k"] is not None:
@@ -135,8 +141,9 @@ def _find_node(cli, ent):
         lbl = ent.get("label")
         if lbl not in CANVAS_LABELS:
             return None
-        return _resolve(cli, ent.get("id") or "%s|%s" % (
-            lbl, ent.get("key", ent.get("name", ""))))
+        return _resolve(
+            cli, ent.get("id") or "%s|%s" % (lbl, ent.get("key", ent.get("name", "")))
+        )
     return _resolve(cli, ent)
 
 
@@ -144,8 +151,10 @@ def _node_match(e):
     """定位结果 → 画布主键 Cypher MATCH 片段。"""
     lbl = e["label"]
     key = CANVAS_LABELS[lbl][0]
-    return ("(a:%s) WHERE toString(a.%s) = $an" % (lbl, key),
-            "(b:%s) WHERE toString(b.%s) = $bn" % (lbl, key))
+    return (
+        "(a:%s) WHERE toString(a.%s) = $an" % (lbl, key),
+        "(b:%s) WHERE toString(b.%s) = $bn" % (lbl, key),
+    )
 
 
 def graph_path(a, b, hops=None, scope=None):
@@ -156,21 +165,25 @@ def graph_path(a, b, hops=None, scope=None):
     try:
         ea, eb = _find_node(cli, a), _find_node(cli, b)
         if not ea or not eb:
-            return {"ok": False, "error": "实体未找到：%s" % (
-                a if not ea else b)}
+            return {"ok": False, "error": "实体未找到：%s" % (a if not ea else b)}
         ma, _ = _node_match(ea)
         _, mb = _node_match(eb)
-        path_where = ("WHERE ALL(r IN relationships(p) WHERE %s) "
-                      % _rel_filter("r", scope)) if scope else ""
-        cy = ("MATCH %s MATCH %s "
-              "MATCH p = shortestPath((a)-[*..%d]-(b)) "
-              + path_where +
-              "RETURN [n IN nodes(p) | {ls:labels(n), p:properties(n), "
-              "eid:elementId(n)}] AS ns, "
-              "[r IN relationships(p) | {type:type(r), "
-              "s:elementId(startNode(r)), "
-              "t:elementId(endNode(r)), id:elementId(r), "
-              "p:properties(r)}] AS rs, length(p) AS d") % (ma, mb, hops)
+        path_where = (
+            ("WHERE ALL(r IN relationships(p) WHERE %s) " % _rel_filter("r", scope))
+            if scope
+            else ""
+        )
+        cy = (
+            "MATCH %s MATCH %s "
+            "MATCH p = shortestPath((a)-[*..%d]-(b)) "
+            + path_where
+            + "RETURN [n IN nodes(p) | {ls:labels(n), p:properties(n), "
+            "eid:elementId(n)}] AS ns, "
+            "[r IN relationships(p) | {type:type(r), "
+            "s:elementId(startNode(r)), "
+            "t:elementId(endNode(r)), id:elementId(r), "
+            "p:properties(r)}] AS rs, length(p) AS d"
+        ) % (ma, mb, hops)
         with cli._session() as session:
             result = session.run(cy, an=ea["name"], bn=eb["name"], **params).single()
         if result:
@@ -190,29 +203,58 @@ def graph_path(a, b, hops=None, scope=None):
                     node_id = "?|%s" % raw["eid"]
                     name = str(p.get("name") or node_id)[:24]
                     details = {}
-                nodes.append({"id": node_id, "label": lbl,
-                              "category": cat, "name": name,
-                              "fields": details,
-                              "terminal": lbl in CANVAS_TERMINAL or lbl == "?"})
-            ids = {raw["eid"]: node["id"]
-                   for raw, node in zip(r["ns"], nodes)}
+                nodes.append(
+                    {
+                        "id": node_id,
+                        "label": lbl,
+                        "category": cat,
+                        "name": name,
+                        "fields": details,
+                        "terminal": lbl in CANVAS_TERMINAL or lbl == "?",
+                    }
+                )
+            ids = {raw["eid"]: node["id"] for raw, node in zip(r["ns"], nodes)}
             rels = [rel["type"] for rel in r["rs"]]
-            graph = {"nodes": nodes,
-                     "edges": [{"s": ids[rel["s"]], "t": ids[rel["t"]],
-                                "type": rel["type"], "id": rel["id"],
-                                "properties": _json_value(rel["p"] or {}),
-                                "source": _json_value((rel["p"] or {}).get("source")),
-                                "validStart": _json_value((rel["p"] or {}).get("validStart")),
-                                "validEnd": _json_value((rel["p"] or {}).get("validEnd")),
-                                "weight": _json_value((rel["p"] or {}).get("weight"))}
-                               for rel in r["rs"]]}
-            return {"ok": True, "a": ea, "b": eb, "hops": r["d"],
-                    "nodes": [n["name"] for n in nodes], "rels": rels,
-                    "六度内": r["d"] <= 6, "graph": graph, "scope": scope}
-        return {"ok": True, "a": ea, "b": eb, "hops": None,
-                "nodes": [], "rels": [], "六度内": False,
-                "graph": {"nodes": [], "edges": []}, "scope": scope,
-                "note": "%d 跳内无路径（不连通或超深）" % hops}
+            graph = {
+                "nodes": nodes,
+                "edges": [
+                    {
+                        "s": ids[rel["s"]],
+                        "t": ids[rel["t"]],
+                        "type": rel["type"],
+                        "id": rel["id"],
+                        "properties": _json_value(rel["p"] or {}),
+                        "source": _json_value((rel["p"] or {}).get("source")),
+                        "validStart": _json_value((rel["p"] or {}).get("validStart")),
+                        "validEnd": _json_value((rel["p"] or {}).get("validEnd")),
+                        "weight": _json_value((rel["p"] or {}).get("weight")),
+                    }
+                    for rel in r["rs"]
+                ],
+            }
+            return {
+                "ok": True,
+                "a": ea,
+                "b": eb,
+                "hops": r["d"],
+                "nodes": [n["name"] for n in nodes],
+                "rels": rels,
+                "六度内": r["d"] <= 6,
+                "graph": graph,
+                "scope": scope,
+            }
+        return {
+            "ok": True,
+            "a": ea,
+            "b": eb,
+            "hops": None,
+            "nodes": [],
+            "rels": [],
+            "六度内": False,
+            "graph": {"nodes": [], "edges": []},
+            "scope": scope,
+            "note": "%d 跳内无路径（不连通或超深）" % hops,
+        }
     finally:
         cli.close()
 
@@ -224,31 +266,46 @@ def shared_neighbors(a, b, top=15, scope=None):
     try:
         ea, eb = _find_node(cli, a), _find_node(cli, b)
         if not ea or not eb:
-            return {"ok": False, "error": "实体未找到：%s" % (
-                a if not ea else b)}
+            return {"ok": False, "error": "实体未找到：%s" % (a if not ea else b)}
         ma, _ = _node_match(ea)
         _, mb = _node_match(eb)
         top = 15 if top is None else int(top)
-        where = ("WHERE %s AND %s " % (_rel_filter("r1", scope),
-                                       _rel_filter("r2", scope))) if scope else ""
-        cy = ("MATCH %s MATCH %s MATCH (a)-[r1]-(x)-[r2]-(b) "
-              + where +
-              "RETURN labels(x) AS ls, properties(x) AS p, "
-              "coalesce(x.name, x.ts_code, x.com_name, "
-              "x.industry_name) AS nm, count(*) AS w "
-              "ORDER BY w DESC LIMIT %d") % (ma, mb, top * 3)
+        where = (
+            ("WHERE %s AND %s " % (_rel_filter("r1", scope), _rel_filter("r2", scope)))
+            if scope
+            else ""
+        )
+        cy = (
+            "MATCH %s MATCH %s MATCH (a)-[r1]-(x)-[r2]-(b) "
+            + where
+            + "RETURN labels(x) AS ls, properties(x) AS p, "
+            "coalesce(x.name, x.ts_code, x.com_name, "
+            "x.industry_name) AS nm, count(*) AS w "
+            "ORDER BY w DESC LIMIT %d"
+        ) % (ma, mb, top * 3)
         with cli._session() as session:
-            rows = [{"labels": [l for l in r["ls"] if l != "_GraphMetaData"],
-                     "name": r["nm"], "w": r["w"],
-                     "id": _canvas_identity(r["ls"], r["p"] or {})[0]}
-                    for r in session.run(cy, an=ea["name"], bn=eb["name"], **params)]
+            rows = [
+                {
+                    "labels": [l for l in r["ls"] if l != "_GraphMetaData"],
+                    "name": r["nm"],
+                    "w": r["w"],
+                    "id": _canvas_identity(r["ls"], r["p"] or {})[0],
+                }
+                for r in session.run(cy, an=ea["name"], bn=eb["name"], **params)
+            ]
         by_label = Counter()
         for r in rows:
             for l in r["labels"]:
                 by_label[l] += r["w"]
-        return {"ok": True, "a": ea, "b": eb, "n": len(rows),
-                "neighbors": rows[:top], "scope": scope,
-                "by_label": dict(by_label.most_common(8))}
+        return {
+            "ok": True,
+            "a": ea,
+            "b": eb,
+            "n": len(rows),
+            "neighbors": rows[:top],
+            "scope": scope,
+            "by_label": dict(by_label.most_common(8)),
+        }
     finally:
         cli.close()
 
@@ -260,29 +317,34 @@ def _subgraph(cli, seed, hops=2, scope=None):
     同一对节点的平行关系保存在 relations 中。游资 seed 可选 hops=3。
     """
     import networkx as nx
+
     scope, params = _scope_params(scope)
     e = _find_node(cli, seed)
     if not e:
         return None, None, "实体未找到：%s" % seed
     ma, _ = _node_match(e)
     hops = min(int(hops or 2), 3)
-    traversal = ("WHERE ALL(edge IN relationships(p) WHERE %s) "
-                 % _rel_filter("edge", scope)) if scope else ""
+    traversal = (
+        ("WHERE ALL(edge IN relationships(p) WHERE %s) " % _rel_filter("edge", scope))
+        if scope
+        else ""
+    )
     internal = (" AND %s" % _rel_filter("r", scope)) if scope else ""
-    cy = ("MATCH %s "
-          "OPTIONAL MATCH p = (a)-[*1..%d]-(x) "
-          + traversal +
-          "WITH a, [n IN collect(DISTINCT x) WHERE n <> a] AS candidates "
-          "WITH a, size(candidates) > %d AS sampled, "
-          "candidates[..%d] AS ns "
-          "WITH a, sampled, ns + [a] AS all "
-          "UNWIND all AS n "
-          "OPTIONAL MATCH (n)-[r]-(m) WHERE m IN all" + internal + " "
-          "RETURN properties(n) AS sp, labels(n) AS ls, "
-          "properties(m) AS tp, labels(m) AS lt, "
-          "elementId(r) AS rid, type(r) AS rtype, "
-          "properties(r) AS rp, sampled") % (
-              ma, hops, _MAX_SUB - 1, _MAX_SUB - 1)
+    cy = (
+        "MATCH %s "
+        "OPTIONAL MATCH p = (a)-[*1..%d]-(x) "
+        + traversal
+        + "WITH a, [n IN collect(DISTINCT x) WHERE n <> a] AS candidates "
+        "WITH a, size(candidates) > %d AS sampled, "
+        "candidates[..%d] AS ns "
+        "WITH a, sampled, ns + [a] AS all "
+        "UNWIND all AS n "
+        "OPTIONAL MATCH (n)-[r]-(m) WHERE m IN all" + internal + " "
+        "RETURN properties(n) AS sp, labels(n) AS ls, "
+        "properties(m) AS tp, labels(m) AS lt, "
+        "elementId(r) AS rid, type(r) AS rtype, "
+        "properties(r) AS rp, sampled"
+    ) % (ma, hops, _MAX_SUB - 1, _MAX_SUB - 1)
     g = nx.Graph()
     sampled = False
     seen_rels = set()
@@ -316,30 +378,46 @@ def _subgraph(cli, seed, hops=2, scope=None):
 _LEAF_LABELS = {"MarketEvent", "Event", "IntelItem", "TradeDate"}
 _HUB_LABELS = {"Region", "Industry", "SwL1Industry", "TradeDate"}
 _STRONG_RELS = {"SUPPLIES_TO", "IN_GROUP", "OCCUPIES", "SERVES_AS"}
-_WEIGHT_BASIS = ("算法语义权重：SUPPLIES_TO/IN_GROUP/OCCUPIES/SERVES_AS=3，"
-                 "其他=1；事件叶节点边×0.2，Region/Industry/SwL1Industry/TradeDate"
-                 "枢纽边×0.1；有效正数关系属性 weight 乘入（非数据库权重时使用1）；"
-                 "平行关系求和，原图度数为去重邻居数。核心排除事件及通用枢纽，"
-                 "附属按邻接总权重回填，按原图加权 modularity 评价。")
+_WEIGHT_BASIS = (
+    "算法语义权重：SUPPLIES_TO/IN_GROUP/OCCUPIES/SERVES_AS=3，"
+    "其他=1；事件叶节点边×0.2，Region/Industry/SwL1Industry/TradeDate"
+    "枢纽边×0.1；有效正数关系属性 weight 乘入（非数据库权重时使用1）；"
+    "平行关系求和，原图度数为去重邻居数。核心排除事件及通用枢纽，"
+    "附属按邻接总权重回填，按原图加权 modularity 评价。"
+)
 
 
 def _community_weights(g):
     """保留原图拓扑，仅在社群专用副本上计算语义权重。"""
     import networkx as nx
+
     weighted = nx.Graph()
     weighted.add_nodes_from(g.nodes(data=True))
     for u, v, data in g.edges(data=True):
-        factor = 0.2 if (g.nodes[u].get("label") in _LEAF_LABELS or
-                         g.nodes[v].get("label") in _LEAF_LABELS) else 1.0
-        if (g.nodes[u].get("label") in _HUB_LABELS or
-                g.nodes[v].get("label") in _HUB_LABELS):
+        factor = (
+            0.2
+            if (
+                g.nodes[u].get("label") in _LEAF_LABELS
+                or g.nodes[v].get("label") in _LEAF_LABELS
+            )
+            else 1.0
+        )
+        if (
+            g.nodes[u].get("label") in _HUB_LABELS
+            or g.nodes[v].get("label") in _HUB_LABELS
+        ):
             factor *= 0.1
         weight = 0.0
         for rtype, props in data.get("relations", [(None, {})]):
             raw = props.get("weight")
-            db_weight = (float(raw) if isinstance(raw, (int, float))
-                         and not isinstance(raw, bool) and math.isfinite(raw)
-                         and raw > 0 else 1.0)
+            db_weight = (
+                float(raw)
+                if isinstance(raw, (int, float))
+                and not isinstance(raw, bool)
+                and math.isfinite(raw)
+                and raw > 0
+                else 1.0
+            )
             weight += (3.0 if rtype in _STRONG_RELS else 1.0) * db_weight * factor
         weighted.add_edge(u, v, weight=weight)
     return weighted
@@ -349,31 +427,47 @@ def community(seed, hops=2, scope=None):
     """语义加权 Louvain 核心划分，附属回填并修正社区连通性。"""
     import networkx as nx
     from networkx.algorithms.community import louvain_communities, modularity
+
     scope, _ = _scope_params(scope)
     cli = KgClient(retry=1, retry_wait=1)
     try:
         e, g, err = _subgraph(cli, seed, hops, scope)
         if err:
             return {"ok": False, "error": err}
-        result = {"ok": True, "seed": e, "n_nodes": g.number_of_nodes(),
-                  "n_edges": g.number_of_edges(), "sampled": g.graph["sampled"],
-                  "scope": scope, "algorithm": "语义加权 Louvain + 连通性修正",
-                  "weight_basis": _WEIGHT_BASIS}
+        result = {
+            "ok": True,
+            "seed": e,
+            "n_nodes": g.number_of_nodes(),
+            "n_edges": g.number_of_edges(),
+            "sampled": g.graph["sampled"],
+            "scope": scope,
+            "algorithm": "语义加权 Louvain + 连通性修正",
+            "weight_basis": _WEIGHT_BASIS,
+        }
         if g.number_of_nodes() < 3:
-            result.update(n_communities=0, communities=[], modularity=None,
-                          note="子图太小（<3 节点）")
+            result.update(
+                n_communities=0,
+                communities=[],
+                modularity=None,
+                note="子图太小（<3 节点）",
+            )
             return result
         weighted = _community_weights(g)
-        core = {n for n in g if g.nodes[n].get("label") not in
-                (_LEAF_LABELS | _HUB_LABELS)}
+        core = {
+            n for n in g if g.nodes[n].get("label") not in (_LEAF_LABELS | _HUB_LABELS)
+        }
         core_graph = weighted.subgraph(core).copy()
         # 排序节点顺序使 Louvain 的随机种子在相同图上稳定。
         ordered = nx.Graph()
         ordered.add_nodes_from((n, core_graph.nodes[n]) for n in sorted(core))
-        ordered.add_edges_from((u, v, core_graph[u][v]) for u, v in
-                               sorted((min(u, v), max(u, v)) for u, v in core_graph.edges))
-        groups = sorted((set(c) for c in louvain_communities(
-            ordered, seed=7, weight="weight")), key=lambda c: min(c))
+        ordered.add_edges_from(
+            (u, v, core_graph[u][v])
+            for u, v in sorted((min(u, v), max(u, v)) for u, v in core_graph.edges)
+        )
+        groups = sorted(
+            (set(c) for c in louvain_communities(ordered, seed=7, weight="weight")),
+            key=lambda c: min(c),
+        )
         owner = {n: i for i, c in enumerate(groups) for n in c}
         # 优先回填直接连接核心的节点，再迭代处理附属链；无核心的连通分量独立成群。
         pending = set(g) - set(owner)
@@ -400,24 +494,40 @@ def community(seed, hops=2, scope=None):
                 owner[n] = i
                 pending.remove(n)
         # Louvain 并不保证每个结果连通；回填也可能造成断裂。
-        groups = [set(cc) for c in groups for cc in
-                  nx.connected_components(weighted.subgraph(c))]
+        groups = [
+            set(cc)
+            for c in groups
+            for cc in nx.connected_components(weighted.subgraph(c))
+        ]
         groups.sort(key=lambda c: (-len(c), min(c)))
         out = []
         for i, c in enumerate(groups, 1):
             cores = c & core
             ranking = sorted(c, key=lambda n: (n not in cores, -g.degree(n), n))
             lbls = Counter(g.nodes[n].get("label", "?") for n in c)
-            out.append({"id": i, "size": len(c), "core_members": sorted(cores),
-                        "core_size": len(cores), "attachment_size": len(c) - len(cores),
-                        "labels": dict(lbls.most_common(4)),
-                        "tops": [{"id": n, "name": g.nodes[n]["name"],
-                                  "deg": g.degree(n)} for n in ranking[:6]],
-                        "members": sorted(c),
-                        "has_seed": "%s|%s" % (e["label"], e["name"]) in c})
-        result.update(n_communities=len(out), communities=out,
-                      modularity=round(modularity(weighted, groups, weight="weight"), 4)
-                      if weighted.number_of_edges() else None)
+            out.append(
+                {
+                    "id": i,
+                    "size": len(c),
+                    "core_members": sorted(cores),
+                    "core_size": len(cores),
+                    "attachment_size": len(c) - len(cores),
+                    "labels": dict(lbls.most_common(4)),
+                    "tops": [
+                        {"id": n, "name": g.nodes[n]["name"], "deg": g.degree(n)}
+                        for n in ranking[:6]
+                    ],
+                    "members": sorted(c),
+                    "has_seed": "%s|%s" % (e["label"], e["name"]) in c,
+                }
+            )
+        result.update(
+            n_communities=len(out),
+            communities=out,
+            modularity=round(modularity(weighted, groups, weight="weight"), 4)
+            if weighted.number_of_edges()
+            else None,
+        )
         return result
     finally:
         cli.close()
@@ -426,6 +536,7 @@ def community(seed, hops=2, scope=None):
 def centrality(seed, hops=2, top=10, scope=None):
     """中心性：degree / betweenness / pagerank 三口径 TopN。"""
     import networkx as nx
+
     scope, _ = _scope_params(scope)
     cli = KgClient(retry=1, retry_wait=1)
     try:
@@ -433,24 +544,38 @@ def centrality(seed, hops=2, top=10, scope=None):
         if err:
             return {"ok": False, "error": err}
         if g.number_of_nodes() < 2:
-            return {"ok": True, "seed": e, "n_nodes": g.number_of_nodes(),
-                    "n_edges": g.number_of_edges(), "sampled": g.graph["sampled"],
-                    "scope": scope, "degree": [], "betweenness": [], "pagerank": []}
+            return {
+                "ok": True,
+                "seed": e,
+                "n_nodes": g.number_of_nodes(),
+                "n_edges": g.number_of_edges(),
+                "sampled": g.graph["sampled"],
+                "scope": scope,
+                "degree": [],
+                "betweenness": [],
+                "pagerank": [],
+            }
         top = 10 if top is None else int(top)
-        deg = sorted(nx.degree_centrality(g).items(),
-                     key=lambda kv: -kv[1])[:top]
-        bt = sorted(nx.betweenness_centrality(g).items(),
-                    key=lambda kv: -kv[1])[:top]
-        pr = sorted(nx.pagerank(g).items(),
-                    key=lambda kv: -kv[1])[:top]
-        return {"ok": True, "seed": e, "n_nodes": g.number_of_nodes(),
-                "n_edges": g.number_of_edges(), "sampled": g.graph["sampled"],
-                "scope": scope, "degree": [{"id": n, "name": g.nodes[n]["name"],
-                            "v": round(v, 4)} for n, v in deg],
-                "betweenness": [{"id": n, "name": g.nodes[n]["name"],
-                                 "v": round(v, 4)} for n, v in bt],
-                "pagerank": [{"id": n, "name": g.nodes[n]["name"],
-                               "v": round(v, 5)} for n, v in pr]}
+        deg = sorted(nx.degree_centrality(g).items(), key=lambda kv: -kv[1])[:top]
+        bt = sorted(nx.betweenness_centrality(g).items(), key=lambda kv: -kv[1])[:top]
+        pr = sorted(nx.pagerank(g).items(), key=lambda kv: -kv[1])[:top]
+        return {
+            "ok": True,
+            "seed": e,
+            "n_nodes": g.number_of_nodes(),
+            "n_edges": g.number_of_edges(),
+            "sampled": g.graph["sampled"],
+            "scope": scope,
+            "degree": [
+                {"id": n, "name": g.nodes[n]["name"], "v": round(v, 4)} for n, v in deg
+            ],
+            "betweenness": [
+                {"id": n, "name": g.nodes[n]["name"], "v": round(v, 4)} for n, v in bt
+            ],
+            "pagerank": [
+                {"id": n, "name": g.nodes[n]["name"], "v": round(v, 5)} for n, v in pr
+            ],
+        }
     finally:
         cli.close()
 
@@ -465,18 +590,24 @@ def run(sub, a, b=None, hops=None, top=None, scope=None):
         return community(a, hops, scope)
     if sub == "centrality":
         return centrality(a, hops, top, scope)
-    return {"ok": False, "error": "未知子命令 %s（path/shared/community/"
-            "centrality）" % sub}
+    return {
+        "ok": False,
+        "error": "未知子命令 %s（path/shared/community/centrality）" % sub,
+    }
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("sub", choices=["path", "shared", "community",
-                                    "centrality"])
+    ap.add_argument("sub", choices=["path", "shared", "community", "centrality"])
     ap.add_argument("a")
     ap.add_argument("b", nargs="?", default=None)
     ap.add_argument("--hops", type=int, default=None)
     ap.add_argument("--top", type=int, default=None)
     args = ap.parse_args()
-    print(json.dumps(run(args.sub, args.a, args.b, args.hops, args.top),
-                     ensure_ascii=False, indent=1))
+    print(
+        json.dumps(
+            run(args.sub, args.a, args.b, args.hops, args.top),
+            ensure_ascii=False,
+            indent=1,
+        )
+    )

@@ -8,6 +8,7 @@
 数据源：data/nine_dim_history.jsonl + data/ashare 本地行情（复用 nine_dim._bars）。
 用法：python k33_shadow_check.py
 """
+
 import json
 import os
 
@@ -15,8 +16,8 @@ import nine_dim as nd
 
 HIST = nd.HIST
 BENCH = "000300.SH"
-N_TH = 30          # B2 前置门槛（thinned）
-FWD = 20           # 成熟窗口（交易日）
+N_TH = 30  # B2 前置门槛（thinned）
+FWD = 20  # 成熟窗口（交易日）
 
 
 def main():
@@ -28,9 +29,9 @@ def main():
         rows = [json.loads(l) for l in f if l.strip()]
 
     from collections import Counter
+
     pt = Counter(r.get("pool_type") or "buy_legacy" for r in rows)
-    print("B1: history 总 %d 行；pool_type 分布 %s"
-          % (len(rows), dict(pt)))
+    print("B1: history 总 %d 行；pool_type 分布 %s" % (len(rows), dict(pt)))
 
     alerts = [r for r in rows if r.get("pool_type") == "alert"]
     if not alerts:
@@ -50,15 +51,17 @@ def main():
         p = idx.get(r["dt"])
         if p is None:
             continue
-        if p - last_pos.get(c, -10 ** 9) >= FWD:
+        if p - last_pos.get(c, -(10**9)) >= FWD:
             thinned.append(r)
             last_pos[c] = p
     n = len(thinned)
     print("B1: alert 原始 %d 行 → thinned 等效 n=%d" % (len(alerts), n))
 
     if n < N_TH:
-        print("B2: n=%d < %d → 仅记录不评判，B 节通过（低频累积属预期，"
-              "勿因入池少调整 ALERT_TH）" % (n, N_TH))
+        print(
+            "B2: n=%d < %d → 仅记录不评判，B 节通过（低频累积属预期，"
+            "勿因入池少调整 ALERT_TH）" % (n, N_TH)
+        )
         return 0
 
     # B3/B4：成熟样本 r20 × 超额
@@ -75,8 +78,11 @@ def main():
         px = r.get("entry_px") or bars[ei]["c"]
         r20 = bars[ei + FWD]["c"] / px - 1
         bi = bidx.get(r["dt"])
-        b20 = (bench_bars[bi + FWD]["c"] / bench_bars[bi]["c"] - 1
-               if bi is not None else None)
+        b20 = (
+            bench_bars[bi + FWD]["c"] / bench_bars[bi]["c"] - 1
+            if bi is not None
+            else None
+        )
         r20s.append(r20)
         if b20 is not None:
             excs.append(r20 - b20)
@@ -84,8 +90,10 @@ def main():
     avg = sum(r20s) / m if m else 0.0
     exc = sum(excs) / len(excs) if excs else 0.0
     win = sum(1 for x in r20s if x > 0) * 100.0 / m if m else 0.0
-    print("B3/B4: 成熟 %d/%d，r20 均值 %+.1f%% 胜率 %.0f%% 超额均值 %+.1f%%"
-          % (m, n, avg * 100, win, exc * 100))
+    print(
+        "B3/B4: 成熟 %d/%d，r20 均值 %+.1f%% 胜率 %.0f%% 超额均值 %+.1f%%"
+        % (m, n, avg * 100, win, exc * 100)
+    )
     if m >= N_TH:
         if avg < 0 and exc < 0:
             print("B3: 判据通过——预期负收益=警报有效，继续观察")

@@ -27,6 +27,7 @@ kg_riskguard.enforce_allowed()）。
   python r3_shadow_replay.py --json             # 机器可读
   环境变量 R3_SHADOW_LEDGER 可覆盖默认账本路径。
 """
+
 import argparse
 import json
 import os
@@ -36,17 +37,18 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_LEDGER = os.environ.get("R3_SHADOW_LEDGER") or os.path.join(
-    HERE, os.pardir, os.pardir, "zerobound-kg", "riskguard_ledger",
-    "ledger.jsonl")
+    HERE, os.pardir, os.pardir, "zerobound-kg", "riskguard_ledger", "ledger.jsonl"
+)
 
 R3_RULE_ID = "R3-event-risk"
-SHADOW_MIN_N = 8          # 影子候选档（绝不写生产）
+SHADOW_MIN_N = 8  # 影子候选档（绝不写生产）
 NARROWING_EXPECTED = 0.64  # WS-RG §3.3 回放预期收窄量级（~64%）
 
 # reason 解析：bear事件{a}+矛盾边{b}={n} 密度{d}/日(阈{dt}中|未中) 绝对数闸(阈{m}中|未中)
 RE_R3_REASON = re.compile(
     r"bear事件(\d+)\+矛盾边(\d+)=(\d+)\s+密度([\d.]+)/日"
-    r"\(阈([\d.]+)(中|未中)\)\s+绝对数闸\(阈(\d+)(中|未中)\)")
+    r"\(阈([\d.]+)(中|未中)\)\s+绝对数闸\(阈(\d+)(中|未中)\)"
+)
 
 
 def parse_r3_reason(reason):
@@ -58,10 +60,16 @@ def parse_r3_reason(reason):
     if not m:
         return None
     a, b, n, d, dt, d_hit, mn, n_hit = m.groups()
-    return {"n_bear": int(a), "n_con": int(b), "n_tot": int(n),
-            "density": float(d), "density_th": float(dt),
-            "hit_d": d_hit == "中",
-            "recorded_min_n": int(mn), "hit_n": n_hit == "中"}
+    return {
+        "n_bear": int(a),
+        "n_con": int(b),
+        "n_tot": int(n),
+        "density": float(d),
+        "density_th": float(dt),
+        "hit_d": d_hit == "中",
+        "recorded_min_n": int(mn),
+        "hit_n": n_hit == "中",
+    }
 
 
 def _recorded_block(action):
@@ -72,12 +80,21 @@ def replay_row(row, shadow_min_n=SHADOW_MIN_N):
     """单行重放：5 档实录 vs 8 档假想。非 R3 行返回 None。"""
     if row.get("rule_id") != R3_RULE_ID:
         return None
-    base = {"ts": row.get("ts"), "security": row.get("security"),
-            "action": row.get("action")}
+    base = {
+        "ts": row.get("ts"),
+        "security": row.get("security"),
+        "action": row.get("action"),
+    }
     parsed = parse_r3_reason(row.get("reason"))
     if parsed is None:
-        return dict(base, status="not_evaluated", delta=None,
-                    block_n5=None, block_n8=None, replay_mismatch=False)
+        return dict(
+            base,
+            status="not_evaluated",
+            delta=None,
+            block_n5=None,
+            block_n8=None,
+            replay_mismatch=False,
+        )
     block_n5 = parsed["hit_d"] or (parsed["n_tot"] >= parsed["recorded_min_n"])
     block_n8 = parsed["hit_d"] or (parsed["n_tot"] >= shadow_min_n)
     if block_n5 and block_n8:
@@ -85,14 +102,20 @@ def replay_row(row, shadow_min_n=SHADOW_MIN_N):
     elif not block_n5 and not block_n8:
         delta = "both_pass"
     elif block_n5:
-        delta = "only_n5"      # 5→8 收窄样本
+        delta = "only_n5"  # 5→8 收窄样本
     else:
-        delta = "only_n8"      # 8>5 不应收窄反扩 → 不一致
-    return dict(base, status="evaluated", delta=delta,
-                n_tot=parsed["n_tot"], density=parsed["density"],
-                hit_d=parsed["hit_d"],
-                block_n5=block_n5, block_n8=block_n8,
-                replay_mismatch=(block_n5 != _recorded_block(row.get("action"))))
+        delta = "only_n8"  # 8>5 不应收窄反扩 → 不一致
+    return dict(
+        base,
+        status="evaluated",
+        delta=delta,
+        n_tot=parsed["n_tot"],
+        density=parsed["density"],
+        hit_d=parsed["hit_d"],
+        block_n5=block_n5,
+        block_n8=block_n8,
+        replay_mismatch=(block_n5 != _recorded_block(row.get("action"))),
+    )
 
 
 def aggregate(replays, since=None, until=None):
@@ -103,25 +126,28 @@ def aggregate(replays, since=None, until=None):
     if until:
         rows = [r for r in rows if (r["ts"] or "")[:10] <= until]
     ev = [r for r in rows if r["status"] == "evaluated"]
-    s = {"total_r3_rows": len(rows), "evaluated": len(ev),
-         "not_evaluated": len(rows) - len(ev),
-         "block_n5": sum(1 for r in ev if r["block_n5"]),
-         "block_n8": sum(1 for r in ev if r["block_n8"]),
-         "only_n5": sum(1 for r in ev if r["delta"] == "only_n5"),
-         "only_n8": sum(1 for r in ev if r["delta"] == "only_n8"),
-         "mismatch": sum(1 for r in ev if r["replay_mismatch"]),
-         "narrowing_expected": NARROWING_EXPECTED}
-    s["intercept_rate_n5"] = (round(s["block_n5"] / len(ev), 4)
-                              if ev else None)
-    s["intercept_rate_n8"] = (round(s["block_n8"] / len(ev), 4)
-                              if ev else None)
-    s["narrowing"] = (round(1 - s["block_n8"] / s["block_n5"], 4)
-                      if s["block_n5"] else None)
+    s = {
+        "total_r3_rows": len(rows),
+        "evaluated": len(ev),
+        "not_evaluated": len(rows) - len(ev),
+        "block_n5": sum(1 for r in ev if r["block_n5"]),
+        "block_n8": sum(1 for r in ev if r["block_n8"]),
+        "only_n5": sum(1 for r in ev if r["delta"] == "only_n5"),
+        "only_n8": sum(1 for r in ev if r["delta"] == "only_n8"),
+        "mismatch": sum(1 for r in ev if r["replay_mismatch"]),
+        "narrowing_expected": NARROWING_EXPECTED,
+    }
+    s["intercept_rate_n5"] = round(s["block_n5"] / len(ev), 4) if ev else None
+    s["intercept_rate_n8"] = round(s["block_n8"] / len(ev), 4) if ev else None
+    s["narrowing"] = (
+        round(1 - s["block_n8"] / s["block_n5"], 4) if s["block_n5"] else None
+    )
     by_day = {}
     for r in ev:
         d = (r["ts"] or "")[:10]
-        day = by_day.setdefault(d, {"evaluated": 0, "block_n5": 0,
-                                    "block_n8": 0, "only_n5": 0})
+        day = by_day.setdefault(
+            d, {"evaluated": 0, "block_n5": 0, "block_n8": 0, "only_n5": 0}
+        )
         day["evaluated"] += 1
         day["block_n5"] += 1 if r["block_n5"] else 0
         day["block_n8"] += 1 if r["block_n8"] else 0
@@ -133,32 +159,45 @@ def aggregate(replays, since=None, until=None):
 def _print_human(s, ledger):
     print("=== R3 绝对数闸 5→8 影子对账（只读）===")
     print("账本: %s" % os.path.normpath(ledger))
-    print("R3 行: %d（其中可重放 %d，不可重放/不评 %d）"
-          % (s["total_r3_rows"], s["evaluated"], s["not_evaluated"]))
+    print(
+        "R3 行: %d（其中可重放 %d，不可重放/不评 %d）"
+        % (s["total_r3_rows"], s["evaluated"], s["not_evaluated"])
+    )
     if s["evaluated"] == 0:
         print("（窗口内无可重放 R3 行）")
         return
-    print("拦截(min_n=5 实录): %d（拦截率 %.2f%%）"
-          % (s["block_n5"], (s["intercept_rate_n5"] or 0) * 100))
-    print("假想(min_n=8 重放): %d（拦截率 %.2f%%）"
-          % (s["block_n8"], (s["intercept_rate_n8"] or 0) * 100))
-    print("收窄样本 only_n5: %d ｜ 反扩 only_n8: %d（应为 0）"
-          % (s["only_n5"], s["only_n8"]))
+    print(
+        "拦截(min_n=5 实录): %d（拦截率 %.2f%%）"
+        % (s["block_n5"], (s["intercept_rate_n5"] or 0) * 100)
+    )
+    print(
+        "假想(min_n=8 重放): %d（拦截率 %.2f%%）"
+        % (s["block_n8"], (s["intercept_rate_n8"] or 0) * 100)
+    )
+    print(
+        "收窄样本 only_n5: %d ｜ 反扩 only_n8: %d（应为 0）"
+        % (s["only_n5"], s["only_n8"])
+    )
     if s["narrowing"] is not None:
-        print("拦截面收窄: %.2f%%（回放预期 ~%.0f%%）"
-              % (s["narrowing"] * 100, s["narrowing_expected"] * 100))
+        print(
+            "拦截面收窄: %.2f%%（回放预期 ~%.0f%%）"
+            % (s["narrowing"] * 100, s["narrowing_expected"] * 100)
+        )
     print("账本-重放自洽 mismatch: %d（每日读账应为 0）" % s["mismatch"])
     for d, day in s["by_day"].items():
-        print("  %s 评%d 5档拦%d 8档拦%d 收窄%d"
-              % (d, day["evaluated"], day["block_n5"], day["block_n8"],
-                 day["only_n5"]))
+        print(
+            "  %s 评%d 5档拦%d 8档拦%d 收窄%d"
+            % (d, day["evaluated"], day["block_n5"], day["block_n8"], day["only_n5"])
+        )
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(
-        description="R3 绝对数闸 5→8 影子期只读对账（零写入）")
-    ap.add_argument("--ledger", default=DEFAULT_LEDGER,
-                    help="ledger.jsonl 路径（默认 zerobound-kg 影子账本）")
+    ap = argparse.ArgumentParser(description="R3 绝对数闸 5→8 影子期只读对账（零写入）")
+    ap.add_argument(
+        "--ledger",
+        default=DEFAULT_LEDGER,
+        help="ledger.jsonl 路径（默认 zerobound-kg 影子账本）",
+    )
     ap.add_argument("--since", default=None, help="起始日 YYYY-MM-DD（含）")
     ap.add_argument("--until", default=None, help="截止日 YYYY-MM-DD（含）")
     ap.add_argument("--json", action="store_true", help="机器可读输出")
@@ -177,7 +216,7 @@ def main(argv=None):
             try:
                 row = json.loads(line)
             except ValueError:
-                continue          # 坏行跳过（只读对账不修复）
+                continue  # 坏行跳过（只读对账不修复）
             rep = replay_row(row)
             if rep is not None:
                 replays.append(rep)

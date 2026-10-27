@@ -9,6 +9,7 @@
 
 运行： "C:/Program Files/Python311/python.exe" -m pytest quant_backtest/test_qd_backtest_1445.py -q
 """
+
 import os
 import sys
 
@@ -31,10 +32,17 @@ def _frame(open_, high, low, close, amount=200_000.0):
     """合成 bars：amount 常数 20 万千元 → 20 日累计 4e6 > strict 阈值 3e6。"""
     n = len(close)
     return pd.DataFrame(
-        {"open": open_, "high": high, "low": low, "close": close,
-         "amount": [amount] * n},
-        index=[f"20240{i:02d}{d:02d}" for i, d in
-               enumerate([(k % 28) + 1 for k in range(n)])],
+        {
+            "open": open_,
+            "high": high,
+            "low": low,
+            "close": close,
+            "amount": [amount] * n,
+        },
+        index=[
+            f"20240{i:02d}{d:02d}"
+            for i, d in enumerate([(k % 28) + 1 for k in range(n)])
+        ],
     )
 
 
@@ -89,9 +97,16 @@ def _append_double_star(df):
     px = last
     for _ in range(2):
         o = px
-        c = px * 1.001          # 微涨、小实体、且 close>=open
-        rows.append({"open": o, "high": c * 1.012, "low": o * 0.988,
-                     "close": c, "amount": 200_000.0})
+        c = px * 1.001  # 微涨、小实体、且 close>=open
+        rows.append(
+            {
+                "open": o,
+                "high": c * 1.012,
+                "low": o * 0.988,
+                "close": c,
+                "amount": 200_000.0,
+            }
+        )
         px = c
     return pd.concat([df, pd.DataFrame(rows, index=df.index[-2:] + "_x")], axis=0)
 
@@ -101,8 +116,15 @@ def test_eight_filters_all_pass_signal_fires():
     df = _append_double_star(_uptrend(80, accel=20))
     out = quant_double_knife(df, profile="strict")
     assert bool(out["double_knife_signal"].iloc[-1]) is True
-    for col in ("range_ok", "price_ok", "amount_ok", "ma_stack_ok",
-                "ma_distance_ok", "macd_ok", "regime_ok"):
+    for col in (
+        "range_ok",
+        "price_ok",
+        "amount_ok",
+        "ma_stack_ok",
+        "ma_distance_ok",
+        "macd_ok",
+        "regime_ok",
+    ):
         assert bool(out[col].iloc[-1]) is True, col
 
 
@@ -143,8 +165,11 @@ def _uptrend_arrays(n=80, start=100.0, drift=0.002):
 
 # ── 3. Regime 三条路径 ──────────────────────────────────────
 def _regime_label_of(df):
-    return str(_compute_regime(df["close"], df["high"], df["low"],
-                               df["amount"])["regime_label"].iloc[-1])
+    return str(
+        _compute_regime(df["close"], df["high"], df["low"], df["amount"])[
+            "regime_label"
+        ].iloc[-1]
+    )
 
 
 def test_regime_trend_up():
@@ -152,17 +177,27 @@ def test_regime_trend_up():
     df = _uptrend(90)
     label = _regime_label_of(df)
     out = _compute_regime(df["close"], df["high"], df["low"], df["amount"]).iloc[-1]
-    tsi, vb, sent = out["regime_tsi"], out["regime_volume_balance"], out["regime_sentiment"]
+    tsi, vb, sent = (
+        out["regime_tsi"],
+        out["regime_volume_balance"],
+        out["regime_sentiment"],
+    )
     # label 必须与三元组按引擎规则映射一致（一致性判据，防实现漂移）
-    expect = ("trend_up" if (tsi >= 0.7 and vb >= 0.1 and sent >= 0.55) else
-              "trend_down" if (tsi <= 0.3 and vb <= -0.1 and sent <= 0.45) else
-              "rotation" if (tsi >= 0.55 and abs(vb) < 0.1) else "range")
+    expect = (
+        "trend_up"
+        if (tsi >= 0.7 and vb >= 0.1 and sent >= 0.55)
+        else "trend_down"
+        if (tsi <= 0.3 and vb <= -0.1 and sent <= 0.45)
+        else "rotation"
+        if (tsi >= 0.55 and abs(vb) < 0.1)
+        else "range"
+    )
     assert label == expect == "trend_up"
 
 
 def test_regime_trend_down_and_blocked():
     """持续阴跌 → trend_down；strict 下 regime_ok=False 阻断信号。"""
-    close = (100.0 / np.cumprod(1.0 + np.full(90, 0.002)))
+    close = 100.0 / np.cumprod(1.0 + np.full(90, 0.002))
     open_ = np.roll(close, 1)
     open_[0] = 100.0
     high = np.maximum(open_, close) * 1.001
@@ -170,10 +205,20 @@ def test_regime_trend_down_and_blocked():
     df = _frame(open_, high, low, close)
     label = _regime_label_of(df)
     out = _compute_regime(df["close"], df["high"], df["low"], df["amount"]).iloc[-1]
-    tsi, vb, sent = out["regime_tsi"], out["regime_volume_balance"], out["regime_sentiment"]
-    expect = ("trend_up" if (tsi >= 0.7 and vb >= 0.1 and sent >= 0.55) else
-              "trend_down" if (tsi <= 0.3 and vb <= -0.1 and sent <= 0.45) else
-              "rotation" if (tsi >= 0.55 and abs(vb) < 0.1) else "range")
+    tsi, vb, sent = (
+        out["regime_tsi"],
+        out["regime_volume_balance"],
+        out["regime_sentiment"],
+    )
+    expect = (
+        "trend_up"
+        if (tsi >= 0.7 and vb >= 0.1 and sent >= 0.55)
+        else "trend_down"
+        if (tsi <= 0.3 and vb <= -0.1 and sent <= 0.45)
+        else "rotation"
+        if (tsi >= 0.55 and abs(vb) < 0.1)
+        else "range"
+    )
     assert label == expect
     full = quant_double_knife(df, profile="strict")
     last = full.iloc[-1]
@@ -194,10 +239,20 @@ def test_regime_rotation_path():
     low = np.minimum(open_, close) * 0.998
     df = _frame(open_, high, low, close)
     out = _compute_regime(df["close"], df["high"], df["low"], df["amount"]).iloc[-1]
-    tsi, vb, sent = out["regime_tsi"], out["regime_volume_balance"], out["regime_sentiment"]
-    expect = ("trend_up" if (tsi >= 0.7 and vb >= 0.1 and sent >= 0.55) else
-              "trend_down" if (tsi <= 0.3 and vb <= -0.1 and sent <= 0.45) else
-              "rotation" if (tsi >= 0.55 and abs(vb) < 0.1) else "range")
+    tsi, vb, sent = (
+        out["regime_tsi"],
+        out["regime_volume_balance"],
+        out["regime_sentiment"],
+    )
+    expect = (
+        "trend_up"
+        if (tsi >= 0.7 and vb >= 0.1 and sent >= 0.55)
+        else "trend_down"
+        if (tsi <= 0.3 and vb <= -0.1 and sent <= 0.45)
+        else "rotation"
+        if (tsi >= 0.55 and abs(vb) < 0.1)
+        else "range"
+    )
     assert str(out["regime_label"]) == expect  # 三元组→label 映射一致
     if expect == "rotation":
         assert 0.55 <= tsi < 0.7 and abs(vb) < 0.1
@@ -207,6 +262,7 @@ def test_regime_rotation_path():
 def test_hfq_return_across_exdiv():
     """构造除权（价 100→50、因子 ×2）：后复权收益应为 0（无假腰斩）。"""
     import importlib
+
     qbt = importlib.import_module("qd_backtest_1445")
 
     dates = np.array(["20260101", "20260102", "20260103"])

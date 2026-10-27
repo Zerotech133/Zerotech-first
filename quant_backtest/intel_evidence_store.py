@@ -8,6 +8,7 @@ Idempotency key carries full provenance (source_ref/receipt_id) per R02FIX
 PROVENANCE_CONFLICT semantics. Watermark only advances over a contiguous run
 of persisted-or-visible records — an unconfirmed hole blocks advancement.
 """
+
 from __future__ import annotations
 
 import json
@@ -35,16 +36,28 @@ class EvidenceItem:
     receipt_id: str
 
     def __post_init__(self) -> None:
-        for name in ("source_id", "content_type", "source_record_id",
-                     "content_hash", "source_ref", "receipt_id"):
+        for name in (
+            "source_id",
+            "content_type",
+            "source_record_id",
+            "content_hash",
+            "source_ref",
+            "receipt_id",
+        ):
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise StoreRejected(f"{name}: nonempty provenance string required")
 
     @property
     def key(self) -> tuple[str, str, str, str, str, str]:
-        return (self.source_id, self.content_type, self.source_record_id,
-                self.content_hash, self.source_ref, self.receipt_id)
+        return (
+            self.source_id,
+            self.content_type,
+            self.source_record_id,
+            self.content_hash,
+            self.source_ref,
+            self.receipt_id,
+        )
 
     @property
     def key_json(self) -> str:
@@ -52,7 +65,12 @@ class EvidenceItem:
 
     @property
     def content_key(self) -> tuple[str, str, str, str]:
-        return (self.source_id, self.content_type, self.source_record_id, self.content_hash)
+        return (
+            self.source_id,
+            self.content_type,
+            self.source_record_id,
+            self.content_hash,
+        )
 
 
 class EvidenceStore:
@@ -64,9 +82,11 @@ class EvidenceStore:
         self._root = Path(root)
         self._root.mkdir(parents=True, exist_ok=True)
         self._capacity = capacity
-        self._inflight: dict[str, dict] = {}      # key_json -> record (in-memory tail)
-        self._content_index: dict[tuple, str] = {}  # content_key -> key_json (provenance guard)
-        self._records: dict[str, dict] = {}        # key_json -> record (all epochs)
+        self._inflight: dict[str, dict] = {}  # key_json -> record (in-memory tail)
+        self._content_index: dict[
+            tuple, str
+        ] = {}  # content_key -> key_json (provenance guard)
+        self._records: dict[str, dict] = {}  # key_json -> record (all epochs)
         self._next_seq = 1
         self.drop_count = 0
         self._load()
@@ -91,8 +111,15 @@ class EvidenceStore:
                 self._inflight[key_json] = record
 
     def _flush(self) -> None:
-        payload = json.dumps({"records": self._records, "next_seq": self._next_seq,
-                              "drop_count": self.drop_count}, ensure_ascii=False, sort_keys=True)
+        payload = json.dumps(
+            {
+                "records": self._records,
+                "next_seq": self._next_seq,
+                "drop_count": self.drop_count,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
         tmp = self._path().with_suffix(".tmp")
         tmp.write_text(payload, encoding="utf-8")
         os.replace(tmp, self._path())  # atomic: readers never see a torn ledger
@@ -109,13 +136,18 @@ class EvidenceStore:
         if drifted is not None:
             raise StoreRejected(
                 "PROVENANCE_CONFLICT: same content with changed source_ref/receipt_id "
-                "requires explicit versioning decision, not silent reuse")
+                "requires explicit versioning decision, not silent reuse"
+            )
         if len(self._inflight) >= self._capacity:
             self.drop_count += 1
             self._flush()
             raise StoreRejected("OFFER_BUFFER_FULL: inflight buffer at capacity")
-        record = {"item": list(item.key), "seq": self._next_seq, "state": OFFERED,
-                  "visibility": {}}
+        record = {
+            "item": list(item.key),
+            "seq": self._next_seq,
+            "state": OFFERED,
+            "visibility": {},
+        }
         self._next_seq += 1
         self._records[item.key_json] = record
         self._content_index[item.content_key] = item.key_json
@@ -132,9 +164,13 @@ class EvidenceStore:
     def _advance(self, item: EvidenceItem, target: str) -> dict:
         record = self._record_of(item.key_json)
         if _ORDER[record["state"]] > _ORDER[target]:
-            raise StoreRejected(f"STATE_INVALID: {record['state']} cannot move back to {target}")
+            raise StoreRejected(
+                f"STATE_INVALID: {record['state']} cannot move back to {target}"
+            )
         if _ORDER[record["state"]] < _ORDER[target] - 1:
-            raise StoreRejected(f"STATE_INVALID: cannot jump {record['state']} -> {target}")
+            raise StoreRejected(
+                f"STATE_INVALID: cannot jump {record['state']} -> {target}"
+            )
         record["state"] = target
         if target in (PERSISTED, VISIBLE):
             self._inflight.pop(item.key_json, None)
@@ -144,8 +180,9 @@ class EvidenceStore:
     def accept(self, item: EvidenceItem) -> dict:
         return self._advance(item, ACCEPTED)
 
-    def persist(self, item: EvidenceItem, *,
-                after_write: Callable[[], None] | None = None) -> dict:
+    def persist(
+        self, item: EvidenceItem, *, after_write: Callable[[], None] | None = None
+    ) -> dict:
         """Persist accepted item; ledger is durably written BEFORE after_write runs.
 
         If after_write raises, the record is already persisted — replay keeps it
@@ -165,7 +202,9 @@ class EvidenceStore:
         # Reject before mutating the receipt map: _advance would otherwise
         # reject offered/accepted -> visible *after* recording a false receipt.
         if record["state"] not in (PERSISTED, VISIBLE):
-            raise StoreRejected(f"STATE_INVALID: cannot jump {record['state']} -> {VISIBLE}")
+            raise StoreRejected(
+                f"STATE_INVALID: cannot jump {record['state']} -> {VISIBLE}"
+            )
         record["visibility"][consumer_id] = receipt
         return self._advance(item, VISIBLE)
 

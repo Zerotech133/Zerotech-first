@@ -18,9 +18,10 @@ analyze(bars) 在 P2 结果基础上追加（所有 dt 均为分型 dt，前端�
   "segments": [{"s_dt","e_dt","s_price","e_price","dir","n_bi"}]
   "pivots":   [{"s_dt","e_dt","zg","zd","n_bi"}]
 """
+
 from chanlun_fractal import _merge_inclusion as _mi, find_fractals as _ff
 
-BI_MIN_GAP = 4   # 笔最小跨度：两分型中点处理后索引差（>=4 即至少 5 根）
+BI_MIN_GAP = 4  # 笔最小跨度：两分型中点处理后索引差（>=4 即至少 5 根）
 
 
 def find_bis(fractals, merged):
@@ -35,17 +36,24 @@ def find_bis(fractals, merged):
         if f["type"] == pend["type"]:
             # 同性分型：保留更极值（顶取更高、底取更低）；若已有笔终结于
             # pend，同步修正上一笔终点（行情延伸，笔随极值修正）
-            if ((f["type"] == "顶" and f["price"] > pend["price"])
-                    or (f["type"] == "底" and f["price"] < pend["price"])):
+            if (f["type"] == "顶" and f["price"] > pend["price"]) or (
+                f["type"] == "底" and f["price"] < pend["price"]
+            ):
                 if bis and bis[-1]["e_dt"] == pend["dt"]:
                     bis[-1]["e_dt"] = f["dt"]
                     bis[-1]["e_price"] = f["price"]
                 pend = f
             continue
         if idx[f["dt"]] - idx[pend["dt"]] >= BI_MIN_GAP:
-            bis.append({"s_dt": pend["dt"], "e_dt": f["dt"],
-                        "s_price": pend["price"], "e_price": f["price"],
-                        "dir": 1 if f["type"] == "顶" else -1})
+            bis.append(
+                {
+                    "s_dt": pend["dt"],
+                    "e_dt": f["dt"],
+                    "s_price": pend["price"],
+                    "e_price": f["price"],
+                    "dir": 1 if f["type"] == "顶" else -1,
+                }
+            )
             pend = f
         # 跨度不足：该分型不成笔，弃用（pend 不变，等更远的异性分型）
     return bis
@@ -74,8 +82,9 @@ def find_segments(bis):
         return []
     start = None
     for i in range(n - 2):
-        if max(_bi_l(bis[i]), _bi_l(bis[i + 1]), _bi_l(bis[i + 2])) <= \
-                min(_bi_h(bis[i]), _bi_h(bis[i + 1]), _bi_h(bis[i + 2])):
+        if max(_bi_l(bis[i]), _bi_l(bis[i + 1]), _bi_l(bis[i + 2])) <= min(
+            _bi_h(bis[i]), _bi_h(bis[i + 1]), _bi_h(bis[i + 2])
+        ):
             start = i
             break
     if start is None:
@@ -84,42 +93,56 @@ def find_segments(bis):
     i = start
     while i < n - 1:
         up = bis[i]["dir"] == 1
-        ext_v, ext_k = bis[i]["e_price"], i   # 线段极值（同向笔终点）
-        prev_opp = None                        # 前一个反向笔终点
-        pending = None                         # 破坏候选笔索引
+        ext_v, ext_k = bis[i]["e_price"], i  # 线段极值（同向笔终点）
+        prev_opp = None  # 前一个反向笔终点
+        pending = None  # 破坏候选笔索引
         end_k = None
         k = i + 1
         while k < n:
             b = bis[k]
             if b["dir"] == (1 if up else -1):
-                new_ext = ((up and b["e_price"] > ext_v) or
-                           (not up and b["e_price"] < ext_v))
+                new_ext = (up and b["e_price"] > ext_v) or (
+                    not up and b["e_price"] < ext_v
+                )
                 if pending is not None:
                     if new_ext:
-                        pending = None          # 解除：创线段新极值
+                        pending = None  # 解除：创线段新极值
                     else:
-                        end_k = ext_k           # 确认：未创极值
+                        end_k = ext_k  # 确认：未创极值
                         break
                 if new_ext:
                     ext_v, ext_k = b["e_price"], k
             else:
-                if prev_opp is not None and \
-                        ((up and b["e_price"] < prev_opp) or
-                         (not up and b["e_price"] > prev_opp)):
-                    pending = k                 # 破坏候选
+                if prev_opp is not None and (
+                    (up and b["e_price"] < prev_opp)
+                    or (not up and b["e_price"] > prev_opp)
+                ):
+                    pending = k  # 破坏候选
                 prev_opp = b["e_price"]
             k += 1
         if end_k is not None:
-            segs.append({"s_dt": bis[i]["s_dt"], "s_price": bis[i]["s_price"],
-                         "e_dt": bis[end_k]["e_dt"],
-                         "e_price": bis[end_k]["e_price"],
-                         "dir": 1 if up else -1, "n_bi": end_k - i + 1})
+            segs.append(
+                {
+                    "s_dt": bis[i]["s_dt"],
+                    "s_price": bis[i]["s_price"],
+                    "e_dt": bis[end_k]["e_dt"],
+                    "e_price": bis[end_k]["e_price"],
+                    "dir": 1 if up else -1,
+                    "n_bi": end_k - i + 1,
+                }
+            )
             i = end_k + 1
         else:
-            segs.append({"s_dt": bis[i]["s_dt"], "s_price": bis[i]["s_price"],
-                         "e_dt": bis[ext_k]["e_dt"],
-                         "e_price": bis[ext_k]["e_price"],
-                         "dir": 1 if up else -1, "n_bi": n - i})
+            segs.append(
+                {
+                    "s_dt": bis[i]["s_dt"],
+                    "s_price": bis[i]["s_price"],
+                    "e_dt": bis[ext_k]["e_dt"],
+                    "e_price": bis[ext_k]["e_price"],
+                    "dir": 1 if up else -1,
+                    "n_bi": n - i,
+                }
+            )
             i = n
     return segs
 
@@ -143,9 +166,16 @@ def find_pivots(bis):
                     j += 1
                 else:
                     break
-            out.append({"s_dt": bis[i]["s_dt"], "e_dt": bis[end_j]["e_dt"],
-                        "zg": zg, "zd": zd, "n_bi": end_j - i + 1})
-            i = j            # 离开笔作为下一中枢候选起点
+            out.append(
+                {
+                    "s_dt": bis[i]["s_dt"],
+                    "e_dt": bis[end_j]["e_dt"],
+                    "zg": zg,
+                    "zd": zd,
+                    "n_bi": end_j - i + 1,
+                }
+            )
+            i = j  # 离开笔作为下一中枢候选起点
         else:
             i += 1
     return out
@@ -194,13 +224,14 @@ def find_signals(bis, pivots, macd=None):
         k = idx.get(pv["e_dt"])
         if k is None:
             continue
-        lv = bis[k - 1] if k >= 1 else None     # 离开笔（中枢终点笔）
-        rj = bis[k]                             # 回抽/反抽笔
+        lv = bis[k - 1] if k >= 1 else None  # 离开笔（中枢终点笔）
+        rj = bis[k]  # 回抽/反抽笔
         # 1 类：离开笔背驰（破沿 + 幅衰减或 MACD 面积萎缩）
         if lv is not None:
-            broke = (lv["dir"] == -1 and lv["e_price"] < pv["zd"]) or \
-                    (lv["dir"] == 1 and lv["e_price"] > pv["zg"])
-            last_same = None                    # 中枢内离开笔之外最后同向笔
+            broke = (lv["dir"] == -1 and lv["e_price"] < pv["zd"]) or (
+                lv["dir"] == 1 and lv["e_price"] > pv["zg"]
+            )
+            last_same = None  # 中枢内离开笔之外最后同向笔
             for j in range(k - 2, -1, -1):
                 if bis[j]["e_dt"] > pv["e_dt"]:
                     break
@@ -211,35 +242,41 @@ def find_signals(bis, pivots, macd=None):
             if broke and last_same is not None:
                 if macd is not None:
                     # K153：MACD 面积背驰 OR 幅衰减（灵敏度增强）
-                    div = (_macd_area(macd, lv["s_dt"], lv["e_dt"]) <
-                           _macd_area(macd, last_same["s_dt"],
-                                      last_same["e_dt"])) or \
-                        abs(lv["e_price"] - lv["s_price"]) < \
-                        abs(last_same["e_price"] - last_same["s_price"])
+                    div = (
+                        _macd_area(macd, lv["s_dt"], lv["e_dt"])
+                        < _macd_area(macd, last_same["s_dt"], last_same["e_dt"])
+                    ) or abs(lv["e_price"] - lv["s_price"]) < abs(
+                        last_same["e_price"] - last_same["s_price"]
+                    )
                 else:
-                    div = abs(lv["e_price"] - lv["s_price"]) < \
-                        abs(last_same["e_price"] - last_same["s_price"])
+                    div = abs(lv["e_price"] - lv["s_price"]) < abs(
+                        last_same["e_price"] - last_same["s_price"]
+                    )
             if broke and div:
                 # K154 sub 子类标注：趋势背驰=紧邻前序中枢与当前中枢
                 # 同向顺序排列且无重叠（向下趋势 ZG<prev.ZD / 向上 ZD>prev.ZG）
                 sub = "pbe"
                 if pi >= 1:
                     pv0 = pivots[pi - 1]
-                    if (lv["dir"] == -1 and pv["zg"] < pv0["zd"]) or \
-                            (lv["dir"] == 1 and pv["zd"] > pv0["zg"]):
+                    if (lv["dir"] == -1 and pv["zg"] < pv0["zd"]) or (
+                        lv["dir"] == 1 and pv["zd"] > pv0["zg"]
+                    ):
                         sub = "tbe"
-                out.append({"d": lv["e_dt"], "p": lv["e_price"],
-                            "t": "b1" if lv["dir"] == -1 else "s1",
-                            "sub": sub})
+                out.append(
+                    {
+                        "d": lv["e_dt"],
+                        "p": lv["e_price"],
+                        "t": "b1" if lv["dir"] == -1 else "s1",
+                        "sub": sub,
+                    }
+                )
                 # 2 类：1 类后第一个同向笔（k 反向、k+1 同向）不创新极值
                 if k + 1 < len(bis) and bis[k + 1]["dir"] == lv["dir"]:
                     r2 = bis[k + 1]
                     if lv["dir"] == -1 and r2["e_price"] > lv["e_price"]:
-                        out.append({"d": r2["e_dt"], "p": r2["e_price"],
-                                    "t": "b2"})
+                        out.append({"d": r2["e_dt"], "p": r2["e_price"], "t": "b2"})
                     elif lv["dir"] == 1 and r2["e_price"] < lv["e_price"]:
-                        out.append({"d": r2["e_dt"], "p": r2["e_price"],
-                                    "t": "s2"})
+                        out.append({"d": r2["e_dt"], "p": r2["e_price"], "t": "s2"})
         # 3 类：回抽/反抽笔极值不回区间（中枢终结机制天然镜像）
         if rj["dir"] == -1 and rj["e_price"] > pv["zg"]:
             out.append({"d": rj["e_dt"], "p": rj["e_price"], "t": "b3"})
@@ -262,8 +299,13 @@ def analyze(bars, closes=None):
     macd = None
     if closes is not None and len(closes) == len(bars or []):
         macd = dict(zip((b["dt"] for b in bars), _macd_hist(closes)))
-    return {"merged_n": len(merged), "fractals": frs,
-            "top_n": sum(1 for x in frs if x["type"] == "顶"),
-            "bottom_n": sum(1 for x in frs if x["type"] == "底"),
-            "bis": bis, "segments": find_segments(bis),
-            "pivots": pivots, "signals": find_signals(bis, pivots, macd)}
+    return {
+        "merged_n": len(merged),
+        "fractals": frs,
+        "top_n": sum(1 for x in frs if x["type"] == "顶"),
+        "bottom_n": sum(1 for x in frs if x["type"] == "底"),
+        "bis": bis,
+        "segments": find_segments(bis),
+        "pivots": pivots,
+        "signals": find_signals(bis, pivots, macd),
+    }

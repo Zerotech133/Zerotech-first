@@ -31,6 +31,7 @@
 - 跳过 0 行文件与**非交易日**（trade_cal is_open=0）——tushare 对休市日会回退返回
   前一交易日数据，直接入库会污染情绪面板（398 判例）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -56,18 +57,21 @@ def trading_days() -> set[str]:
     parts = sorted(glob.glob(os.path.join(CAL, "part_*.parquet")))
     if not parts:
         return set()
-    cal = pd.concat([pd.read_parquet(p, columns=["cal_date", "is_open"]) for p in parts])
+    cal = pd.concat(
+        [pd.read_parquet(p, columns=["cal_date", "is_open"]) for p in parts]
+    )
     cal["cal_date"] = cal["cal_date"].astype(str)
     return set(cal[cal["is_open"] == 1]["cal_date"])
 
 
 def load(src: str) -> pd.DataFrame:
     import pyarrow.parquet as pq
+
     ok = trading_days()
     frames = []
     for f in sorted(glob.glob(os.path.join(src, "d_*.parquet"))):
         day = os.path.basename(f)[2:10]
-        if ok and day not in ok:            # 休市日跳过（398 判例）
+        if ok and day not in ok:  # 休市日跳过（398 判例）
             continue
         try:
             df = pq.read_table(f).to_pandas()
@@ -103,25 +107,55 @@ def build(df: pd.DataFrame):
     # 封板强度（fd_amount = 封单额）
     if "fd_amount" in u.columns:
         fa = u.groupby("trade_date")["fd_amount"].apply(
-            lambda s: round(float(pd.to_numeric(s, errors="coerce").mean()), 2))
+            lambda s: round(float(pd.to_numeric(s, errors="coerce").mean()), 2)
+        )
         g["平均封单额"] = fa
-    g["总封单额"] = u.groupby("trade_date")["fd_amount"].apply(
-        lambda s: float(pd.to_numeric(s, errors="coerce").sum())).round(0) \
-        if "fd_amount" in u.columns else None
+    g["总封单额"] = (
+        u.groupby("trade_date")["fd_amount"]
+        .apply(lambda s: float(pd.to_numeric(s, errors="coerce").sum()))
+        .round(0)
+        if "fd_amount" in u.columns
+        else None
+    )
     g = g.fillna({"连板家数": 0, "首板家数": 0, "晋级率": 0})
     g.index.name = "trade_date"
     g = g.reset_index().sort_values("trade_date").reset_index(drop=True)
 
     # 连板梯队明细（≥2 板）
-    ladder = lt[lt["limit_times"] >= 2][
-        ["trade_date", "ts_code", "name", "industry", "limit_times",
-         "open_times", "fd_amount", "float_mv", "first_time", "last_time"]
-    ].copy() if all(c in lt.columns for c in
-                    ("ts_code", "name", "industry", "open_times", "fd_amount",
-                     "float_mv", "first_time", "last_time")) else pd.DataFrame()
+    ladder = (
+        lt[lt["limit_times"] >= 2][
+            [
+                "trade_date",
+                "ts_code",
+                "name",
+                "industry",
+                "limit_times",
+                "open_times",
+                "fd_amount",
+                "float_mv",
+                "first_time",
+                "last_time",
+            ]
+        ].copy()
+        if all(
+            c in lt.columns
+            for c in (
+                "ts_code",
+                "name",
+                "industry",
+                "open_times",
+                "fd_amount",
+                "float_mv",
+                "first_time",
+                "last_time",
+            )
+        )
+        else pd.DataFrame()
+    )
     if not ladder.empty:
-        ladder = ladder.sort_values(["trade_date", "limit_times"],
-                                    ascending=[True, False]).reset_index(drop=True)
+        ladder = ladder.sort_values(
+            ["trade_date", "limit_times"], ascending=[True, False]
+        ).reset_index(drop=True)
     return g, ladder
 
 
@@ -166,24 +200,55 @@ def main() -> int:
         return 1
     panel, ladder = build(df)
 
-    print("=== 打板情绪面板 · %d 交易日（%s..%s）==="
-          % (len(panel), panel["trade_date"].iloc[0], panel["trade_date"].iloc[-1]))
-    cols = [c for c in ("trade_date", "涨停家数", "跌停家数", "炸板家数", "最高连板",
-                        "连板家数", "首板家数", "封板率", "晋级率")
-            if c in panel.columns]
+    print(
+        "=== 打板情绪面板 · %d 交易日（%s..%s）==="
+        % (len(panel), panel["trade_date"].iloc[0], panel["trade_date"].iloc[-1])
+    )
+    cols = [
+        c
+        for c in (
+            "trade_date",
+            "涨停家数",
+            "跌停家数",
+            "炸板家数",
+            "最高连板",
+            "连板家数",
+            "首板家数",
+            "封板率",
+            "晋级率",
+        )
+        if c in panel.columns
+    ]
     print(panel[cols].tail(args.tail).to_string(index=False))
     if "平均封单额" in panel.columns:
-        print("\n平均封单额(万): %.2f  |  总封单额(万): %.2f"
-              % (panel["平均封单额"].tail(args.tail).mean() / 1e4,
-                 panel["总封单额"].tail(args.tail).mean() / 1e4))
+        print(
+            "\n平均封单额(万): %.2f  |  总封单额(万): %.2f"
+            % (
+                panel["平均封单额"].tail(args.tail).mean() / 1e4,
+                panel["总封单额"].tail(args.tail).mean() / 1e4,
+            )
+        )
 
     if not ladder.empty:
         top = ladder[ladder["limit_times"] >= ladder["limit_times"].max()]
-        print("\n=== 当前最高板梯队（%d 板，共 %d 只）===" % (int(top["limit_times"].max()),
-                                                  len(top)))
-        cols2 = [c for c in ("ts_code", "name", "industry", "limit_times",
-                             "open_times", "fd_amount", "first_time", "last_time")
-                 if c in top.columns]
+        print(
+            "\n=== 当前最高板梯队（%d 板，共 %d 只）==="
+            % (int(top["limit_times"].max()), len(top))
+        )
+        cols2 = [
+            c
+            for c in (
+                "ts_code",
+                "name",
+                "industry",
+                "limit_times",
+                "open_times",
+                "fd_amount",
+                "first_time",
+                "last_time",
+            )
+            if c in top.columns
+        ]
         print(top[cols2].head(12).to_string(index=False))
 
     if args.dryrun:

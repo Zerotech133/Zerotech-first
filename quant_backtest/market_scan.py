@@ -10,6 +10,7 @@
   data/bt2_state/sig_events_market_<d0>_<d1>.json（引擎直接吃）。
 - CLI: python market_scan.py --d0 20251013 --d1 20261012 [--workers 16]
 """
+
 import argparse
 import json
 import os
@@ -17,12 +18,20 @@ import sys
 import time
 from collections import Counter, defaultdict
 
-BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else r"C:/项目/老田的AI助手/quant_backtest"
+BASE = (
+    os.path.dirname(os.path.abspath(__file__))
+    if "__file__" in dir()
+    else r"C:/项目/老田的AI助手/quant_backtest"
+)
 QBT = BASE
 DATA = os.path.join(QBT, "data", "ashare")
 NAMES_FP = os.path.join(QBT, "data", "stock_names.json")
-OUT_DIR = os.path.join(QBT, "data", "sig_events")   # K-STOCK-358：事件缓存独立目录（原混在 bt2_state）
-NC_FP = os.path.join(QBT, "data", "tdx", "ts_namechange.parquet")   # K-STOCK-311 历史曾用名
+OUT_DIR = os.path.join(
+    QBT, "data", "sig_events"
+)  # K-STOCK-358：事件缓存独立目录（原混在 bt2_state）
+NC_FP = os.path.join(
+    QBT, "data", "tdx", "ts_namechange.parquet"
+)  # K-STOCK-311 历史曾用名
 WARMUP = 250
 
 sys.path.insert(0, QBT)
@@ -35,8 +44,8 @@ def market_stocks():
     for fn in os.listdir(DATA):
         if not fn.endswith(".parquet"):
             continue
-        code = fn[:-8].replace("_", ".")      # 000001_SZ -> 000001.SZ
-        if code.endswith(".BJ"):              # 北交所（老田口径：不分析）
+        code = fn[:-8].replace("_", ".")  # 000001_SZ -> 000001.SZ
+        if code.endswith(".BJ"):  # 北交所（老田口径：不分析）
             continue
         # 指数混入剔除（K-STOCK-303·273 体检实锤 000001_SH/399001/399006 混入）：
         # SH 指数=000xxx/880xxx/999xxx 段（股票是 60/68 段，不会误伤 000688.SZ 国城矿业这类同名码）；
@@ -46,9 +55,9 @@ def market_stocks():
         if code.startswith("399"):
             continue
         nm = names.get(code)
-        if nm is None:                        # 指数/北交所/名单外
+        if nm is None:  # 指数/北交所/名单外
             continue
-        if "ST" in str(nm).upper():           # ST（按 2026-10-08 现名，历史 ST 未回溯）
+        if "ST" in str(nm).upper():  # ST（按 2026-10-08 现名，历史 ST 未回溯）
             continue
         out.append(code)
     return sorted(out)
@@ -64,6 +73,7 @@ def hist_st_set(d0, d1):
     现名大概率仍为 ST（现名过滤已覆盖），漏网风险极小。
     """
     import pandas as pd
+
     if not os.path.exists(NC_FP):
         return set()
     nc = pd.read_parquet(NC_FP)
@@ -90,14 +100,16 @@ def _load_st_pit_intervals():
     if _ST_PIT_INTERVALS_CACHE is not None:
         return _ST_PIT_INTERVALS_CACHE
     import pandas as pd
+
     if not os.path.exists(NC_FP):
         _ST_PIT_INTERVALS_CACHE = {}
         return _ST_PIT_INTERVALS_CACHE
     nc = pd.read_parquet(NC_FP)
     nc = nc[nc["name"].astype(str).str.upper().str.contains("ST")]
     intervals = defaultdict(list)
-    for code, start, end, ann in zip(nc["ts_code"], nc["start_date"],
-                                    nc["end_date"], nc["ann_date"]):
+    for code, start, end, ann in zip(
+        nc["ts_code"], nc["start_date"], nc["end_date"], nc["ann_date"]
+    ):
         s = str(start)
         e = None if pd.isna(end) else str(end)
         a = None if pd.isna(ann) else str(ann)
@@ -179,30 +191,39 @@ def scan_stock(args):
     r.iloc[0] = 0.0
     kfac = (1.0 + r).cumprod() / b["close"]
     amt = b["amount"].astype(float).tolist() if "amount" in b.columns else None
-    bars_all = [{"dt": int(t), "o": float(o), "h": float(h), "l": float(l), "c": float(c)}
-                for t, o, h, l, c in zip(b["trade_date"], b["open"], b["high"],
-                                         b["low"], b["close"] * kfac)]
+    bars_all = [
+        {"dt": int(t), "o": float(o), "h": float(h), "l": float(l), "c": float(c)}
+        for t, o, h, l, c in zip(
+            b["trade_date"], b["open"], b["high"], b["low"], b["close"] * kfac
+        )
+    ]
     date2i = {int(t): i for i, t in enumerate(b["trade_date"])}
 
     def run_day(day):
         i = date2i.get(int(day))
         if i is None or i + 1 < WARMUP // 2:
             return {}
-        seg = bars_all[:i + 1][-WARMUP:]
+        seg = bars_all[: i + 1][-WARMUP:]
         vr = None
         if amt is not None and i >= 19:
-            w = amt[i - 19:i + 1]
+            w = amt[i - 19 : i + 1]
             m = sum(w) / 20.0
             vr = amt[i] / m if m > 0 else None
         close = bars_all[i]["c"]
         out = {}
-        for sg in ((chan_analyze(seg) or {}).get("signals") or []):
+        for sg in (chan_analyze(seg) or {}).get("signals") or []:
             sc = None
             if sg["type"] == "3买":
                 sc = score_3buy(close, sg.get("zg"), vr, sg.get("bei"), sg.get("bei2"))
-            out[(code, sg["type"])] = {"dt": int(sg["dt"]), "zg": sg.get("zg"),
-                                       "zd": sg.get("zd"), "vr": vr, "bei": sg.get("bei"),
-                                       "bei2": sg.get("bei2"), "score": sc}
+            out[(code, sg["type"])] = {
+                "dt": int(sg["dt"]),
+                "zg": sg.get("zg"),
+                "zd": sg.get("zd"),
+                "vr": vr,
+                "bei": sg.get("bei"),
+                "bei2": sg.get("bei2"),
+                "score": sc,
+            }
         return out
 
     events = []
@@ -211,8 +232,12 @@ def scan_stock(args):
         cur = run_day(day)
         fresh = [k for k in cur if k not in seen]
         seen |= set(cur)
-        events += [{"stock": s, "type": tp, "day": day, **cur[k]}
-                   for (s, tp) in fresh for k in ((s, tp),) if k in cur]
+        events += [
+            {"stock": s, "type": tp, "day": day, **cur[k]}
+            for (s, tp) in fresh
+            for k in ((s, tp),)
+            if k in cur
+        ]
     return events
 
 
@@ -227,7 +252,11 @@ def scan_market(d0, d1, workers=None, progress=None):
     cal = None
     # 日历：用 000001_SZ（2023-04 起全量；000001_SH 指数文件是 300 行残片勿用）
     idx_fp = os.path.join(DATA, "000001_SZ.parquet")
-    cal_all = pd.read_parquet(idx_fp, columns=["trade_date"])["trade_date"].astype(str).tolist()
+    cal_all = (
+        pd.read_parquet(idx_fp, columns=["trade_date"])["trade_date"]
+        .astype(str)
+        .tolist()
+    )
     prior = [d for d in cal_all if d < d0]
     init_day = prior[-1] if prior else d0
     win = [d for d in cal_all if d0 <= d <= d1]
@@ -241,26 +270,44 @@ def scan_market(d0, d1, workers=None, progress=None):
         for i, ev in enumerate(pool.imap_unordered(scan_stock, tasks, chunksize=8)):
             events += ev
             if progress and (i % 200 == 0 or i == len(tasks) - 1):
-                progress("扫描", 5 + int(90 * (i + 1) / len(tasks)),
-                         f"全市场扫描 {i+1}/{len(tasks)} 只（{round(time.time()-t0)}s）")
+                progress(
+                    "扫描",
+                    5 + int(90 * (i + 1) / len(tasks)),
+                    f"全市场扫描 {i + 1}/{len(tasks)} 只（{round(time.time() - t0)}s）",
+                )
     cnt = Counter(e["type"] for e in events)
-    meta = {"d0": d0, "d1": d1, "universe": len(stocks), "n_events": len(events),
-            "type_dist": dict(cnt), "workers": n, "seconds": round(time.time() - t0, 1),
-            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    meta = {
+        "d0": d0,
+        "d1": d1,
+        "universe": len(stocks),
+        "n_events": len(events),
+        "type_dist": dict(cnt),
+        "workers": n,
+        "seconds": round(time.time() - t0, 1),
+        "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
     os.makedirs(OUT_DIR, exist_ok=True)
     fp = os.path.join(OUT_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
-    json.dump({"meta": meta, "events": events}, open(fp, "w", encoding="utf-8"),
-              ensure_ascii=False)
+    json.dump(
+        {"meta": meta, "events": events},
+        open(fp, "w", encoding="utf-8"),
+        ensure_ascii=False,
+    )
     # W5 影子采集（gate-shadow-dev 20261014）：cross 三档虚拟对照
     # θ∈{40,45,50}，只记不改——读本产物 meta.d1 当日事件 + 宽度序列锚。
     # 注记式 try/except，采集失败不影响扫描产线；collect_run 自身亦不抛。
     try:
         import gate_shadow_collect as _gsc
+
         _gsc.collect_run(strategies=("cross",))
     except Exception as _ex:
         print("GATE_SHADOW fail: %s" % str(_ex)[:100], flush=True)
     if progress:
-        progress("扫描", 100, f"完成：{len(stocks)} 只 · {len(events)} 事件 · {meta['seconds']}s")
+        progress(
+            "扫描",
+            100,
+            f"完成：{len(stocks)} 只 · {len(events)} 事件 · {meta['seconds']}s",
+        )
     return events, meta
 
 
@@ -270,6 +317,10 @@ if __name__ == "__main__":
     ap.add_argument("--d1", default="20261012")
     ap.add_argument("--workers", type=int, default=None)
     a = ap.parse_args()
-    ev, mt = scan_market(a.d0, a.d1, workers=a.workers,
-                         progress=lambda st, pc, note: print(f"[{st} {pc}%] {note}", flush=True))
+    ev, mt = scan_market(
+        a.d0,
+        a.d1,
+        workers=a.workers,
+        progress=lambda st, pc, note: print(f"[{st} {pc}%] {note}", flush=True),
+    )
     print("DONE", json.dumps(mt, ensure_ascii=False), flush=True)

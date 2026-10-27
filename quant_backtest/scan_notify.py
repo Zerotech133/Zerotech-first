@@ -21,6 +21,7 @@ SEND_OK 口径，与 chanlun_scan._push_feishu_text 同通道）。
 
 退出码: 0=已推送或当日已推送；3=轮询超时（此时仍会推超时告警）。
 """
+
 import json
 import os
 import subprocess
@@ -37,9 +38,9 @@ EVAL = os.path.join(DATA, "chanlun_pool_eval_cache.json")
 STATE = os.path.join(DATA, "scan_notify_state.json")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 
-POLL_SEC = 60          # 轮询间隔
-POLL_MAX = 45          # 最多 45 分钟
-CUTOFF = "15:30"       # 收尾标志时间下限（cache generated_at）
+POLL_SEC = 60  # 轮询间隔
+POLL_MAX = 45  # 最多 45 分钟
+CUTOFF = "15:30"  # 收尾标志时间下限（cache generated_at）
 
 TYPES = ("1买", "2买", "3买", "1卖", "2卖", "3卖")
 
@@ -68,13 +69,14 @@ def _scan_done():
     现解析为 aware 时间转本地再比较；无时区的旧格式串保留原切片逻辑兼容。"""
     try:
         with open(EVAL, encoding="utf-8") as f:
-            gen = (json.load(f).get("generated_at") or "")
+            gen = json.load(f).get("generated_at") or ""
         gen_dt = datetime.fromisoformat(gen.replace("Z", "+00:00"))
         if gen_dt.tzinfo is None:  # 旧格式：无时区，视为本地时间字符串
             return gen.startswith(_today_dashed()) and gen[11:16] >= CUTOFF, gen
         gen_local = gen_dt.astimezone().replace(tzinfo=None)  # 转本地 naive
-        cutoff = datetime.strptime("%s %s" % (_today_dashed(), CUTOFF),
-                                   "%Y-%m-%d %H:%M")
+        cutoff = datetime.strptime(
+            "%s %s" % (_today_dashed(), CUTOFF), "%Y-%m-%d %H:%M"
+        )
         return gen_local >= cutoff, gen
     except Exception:
         return False, ""
@@ -90,8 +92,9 @@ def _today_rows():
                 except Exception:
                     continue
                 dd = str(r.get("detect_date") or "")
-                if dd.startswith(_today_dashed()) or \
-                        dd.replace("-", "") == _today_dashed().replace("-", ""):
+                if dd.startswith(_today_dashed()) or dd.replace(
+                    "-", ""
+                ) == _today_dashed().replace("-", ""):
                     rows.append(r)
     except OSError:
         pass
@@ -101,39 +104,54 @@ def _today_rows():
 def _summary(rows):
     n = len(rows)
     if not n:
-        return ("📊 缠论扫描哨兵 · %s\n15:35 主跑已收尾（eval 缓存 %s）。\n"
-                "今日新入池 0 条（节假日数据未更新属正常，管线在位）。"
-                % (_today_dashed(), _now().strftime("%H:%M")))
+        return (
+            "📊 缠论扫描哨兵 · %s\n15:35 主跑已收尾（eval 缓存 %s）。\n"
+            "今日新入池 0 条（节假日数据未更新属正常，管线在位）。"
+            % (_today_dashed(), _now().strftime("%H:%M"))
+        )
     dist = {}
     for r in rows:
         dist[r.get("type") or "?"] = dist.get(r.get("type") or "?", 0) + 1
     pt_rows = [r for r in rows if r.get("pt") is True]
-    strong = [r for r in rows if r.get("type") == "1卖"
-              and r.get("tbe") is True]
-    lines = ["📊 缠论扫描哨兵 · %s（收尾 %s）" % (_today_dashed(),
-                                                _now().strftime("%H:%M")),
-             "今日新入池 %d 条：%s" % (
-                 n, " / ".join("%s×%d" % (t, dist[t]) for t in TYPES
-                               if t in dist) or "—")]
+    strong = [r for r in rows if r.get("type") == "1卖" and r.get("tbe") is True]
+    lines = [
+        "📊 缠论扫描哨兵 · %s（收尾 %s）" % (_today_dashed(), _now().strftime("%H:%M")),
+        "今日新入池 %d 条：%s"
+        % (n, " / ".join("%s×%d" % (t, dist[t]) for t in TYPES if t in dist) or "—"),
+    ]
     # K267 复评 10-08 老田拍板 A：负期望信号族警示行（有新信号才附）
     if any(t in dist for t in ("2买", "3买")):
-        lines.append("⚠ 2买/3买 日线20天口径负期望（win 38%/32%，"
-                     "avg −2.3%/−5.3%，10-08 复评）——仅研究参考")
+        lines.append(
+            "⚠ 2买/3买 日线20天口径负期望（win 38%/32%，"
+            "avg −2.3%/−5.3%，10-08 复评）——仅研究参考"
+        )
     if pt_rows:
         lines.append("形✓ 形态共振 %d 条（K175 首日积累）：" % len(pt_rows))
         for r in pt_rows[:10]:
-            lines.append("  · %s %s %s〔%s〕" % (
-                r.get("code"), (r.get("name") or "")[:8], r.get("type"),
-                r.get("pt_name") or "?"))
+            lines.append(
+                "  · %s %s %s〔%s〕"
+                % (
+                    r.get("code"),
+                    (r.get("name") or "")[:8],
+                    r.get("type"),
+                    r.get("pt_name") or "?",
+                )
+            )
         if len(pt_rows) > 10:
             lines.append("  · …等 %d 条" % len(pt_rows))
     else:
         lines.append("形✓ 形态共振 0 条")
     if strong:
-        lines.append("🚨 1卖·趋✓ 强预警 %d 条：%s" % (
-            len(strong), " · ".join(
-                "%s %s" % (r.get("code"), (r.get("name") or "")[:8])
-                for r in strong[:8])))
+        lines.append(
+            "🚨 1卖·趋✓ 强预警 %d 条：%s"
+            % (
+                len(strong),
+                " · ".join(
+                    "%s %s" % (r.get("code"), (r.get("name") or "")[:8])
+                    for r in strong[:8]
+                ),
+            )
+        )
     lines.append("详情 → /bt-chanlun-pool")
     return "\n".join(lines)
 
@@ -141,14 +159,17 @@ def _summary(rows):
 def _push(text):
     """outbox 临时文件 → send_feishu.py（SEND_OK 口径）。"""
     os.makedirs(os.path.join(NEWS_DIR, "outbox"), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.join(NEWS_DIR, "outbox"),
-                               suffix=".txt")
+    fd, tmp = tempfile.mkstemp(dir=os.path.join(NEWS_DIR, "outbox"), suffix=".txt")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
     try:
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         ok = "SEND_OK" in (r.stdout or "")
         print((r.stdout or r.stderr or "").strip()[:100])
         return ok
@@ -178,15 +199,23 @@ def main():
         ok = _push(_summary(_today_rows()))
         status = "pushed" if ok else "push_failed"
     else:
-        ok = _push("⚠️ 缠论扫描哨兵 · %s\n%d 分钟未见 15:35 主跑收尾标志"
-                   "（eval 缓存未重生）——请查任务 ChanlunScan 状态与日志。"
-                   % (_today_dashed(), POLL_MAX))
+        ok = _push(
+            "⚠️ 缠论扫描哨兵 · %s\n%d 分钟未见 15:35 主跑收尾标志"
+            "（eval 缓存未重生）——请查任务 ChanlunScan 状态与日志。"
+            % (_today_dashed(), POLL_MAX)
+        )
         status = "timeout"
-        ok = True   # 超时告警已发即视为已处理（发失败下次重试）
+        ok = True  # 超时告警已发即视为已处理（发失败下次重试）
     if ok:
-        _write_json(STATE, {"date": _today_dashed(), "status": status,
-                            "ts": _now().isoformat(timespec="seconds"),
-                            "eval_generated_at": gen})
+        _write_json(
+            STATE,
+            {
+                "date": _today_dashed(),
+                "status": status,
+                "ts": _now().isoformat(timespec="seconds"),
+                "eval_generated_at": gen,
+            },
+        )
         print("state=%s" % status)
         sys.exit(0 if status != "timeout" else 3)
     sys.exit(4)
