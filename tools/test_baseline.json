@@ -21,8 +21,10 @@
   "agent_platform/tests": {
     "known_failures": [],
     "flaky": [
-      "待识别：2026-10-27 历史 10 项中 2 项隔离单跑通过（需 pytest-randomly 复现后补名字）"
-    ]
+      "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
+      "agent_platform/tests/test_repair_lane.py::test_create_and_run_batch"
+    ],
+    "_flaky_note": "2026-10-27 全量实测 2 failed/2093 passed/1 xfail；两项单项与同跑均通过 → 顺序依赖 flaky。"
   },
   "quant_backtest/tests": {
     "known_failures": [],

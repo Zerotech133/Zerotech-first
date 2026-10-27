@@ -73,6 +73,8 @@ try {
         }
         $knownList = @($known[$path])
         if ($inWorktree -and $envKnown.ContainsKey($path)) { $knownList = @($knownList) + @($envKnown[$path]) }
+        $flakyList = @($flaky[$path])
+        if ($flakyList.Count -gt 0) { $knownList = @($knownList) + @($flakyList) }
         Write-Host "DEBUG name=$name path=$path knownCount=$($knownList.Count)"
         $new = @()
         foreach ($f in $failed) { if ($knownList -notcontains $f) { $new += $f } }
