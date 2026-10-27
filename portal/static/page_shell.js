@@ -113,7 +113,12 @@
     if (document.querySelector('.wb-crumb')) return null;
     var info = navMatch();
     if (!info.item && isAdopted()) {
-      var tt = (document.title || '').split('·')[0].split('｜')[0].trim();
+      var parts = (document.title || '').split('·').map(function (x) { return x.trim(); }).filter(Boolean);
+      var tt = '';
+      for (var pi = 0; pi < parts.length; pi++) {
+        if (parts[pi] !== '零界') { tt = parts[pi].split('｜')[0].trim(); break; }
+      }
+      if (!tt) tt = parts[0] || '';
       if (tt) info.item = tt;
     }
     var el = document.createElement('nav');
