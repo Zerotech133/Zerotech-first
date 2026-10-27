@@ -18,6 +18,7 @@ CLI（feishu_bot_ws 经子进程调用，--json 单行输出）：
   python exit_rules.py clear --code 605100 --kind tp [--account main] [--json]
   python exit_rules.py check [--account main] [--dry-run] [--json]
 """
+
 from __future__ import annotations
 
 import json
@@ -29,11 +30,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from engine import PaperEngine          # noqa: E402
-from market import ParquetMarket                # noqa: E402
+from engine import PaperEngine  # noqa: E402
+from market import ParquetMarket  # noqa: E402
 
 try:  # 与 trainee 同款相对导入兜底
-    from trainee import DEFAULT_DB              # type: ignore  # noqa: E402
+    from trainee import DEFAULT_DB  # type: ignore  # noqa: E402
 except Exception:  # noqa: BLE001
     DEFAULT_DB = HERE.parent / "data" / "paper.db"
 
@@ -54,11 +55,16 @@ def _norm_code(raw: str) -> str:
         return s
     digits = "".join(ch for ch in s if ch.isdigit())[:6]
     if len(digits) == 6:
-        suf = ("SH" if digits.startswith("6")
-               else "BJ" if digits.startswith(("8", "4"))
-               else "SZ")
+        suf = (
+            "SH"
+            if digits.startswith("6")
+            else "BJ"
+            if digits.startswith(("8", "4"))
+            else "SZ"
+        )
         return "%s.%s" % (digits, suf)
     from engine import _norm_stock
+
     return _norm_stock(raw)
 
 
@@ -84,6 +90,7 @@ def _engine(account: str) -> PaperEngine:
 
 # ---------------- 指令动作 ----------------
 
+
 def set_line(account: str, code: str, kind: str, pct: float) -> dict:
     """设止盈/止损线。pct 一律为正数（触发幅度）。止损→引擎 stop_price；
     止盈→exit_rules.json（触发价=持仓成本×(1+pct/100)）。"""
@@ -101,34 +108,57 @@ def set_line(account: str, code: str, kind: str, pct: float) -> dict:
     stock = _norm_code(code)
     eng = _engine(account)
     try:
-        pos = next((p for p in eng.positions(account)
-                    if p["stock"] == stock), None)
+        pos = next((p for p in eng.positions(account) if p["stock"] == stock), None)
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "账本不可用: %r" % e}
     if not pos:
         return {"ok": False, "error": "%s 在账本 %s 无持仓" % (stock, account)}
     cost = pos["avg_cost"]
     if kind == "sl":
-        r = eng.set_stop(stock, round(cost * (1 - pct / 100), 2),
-                         account_id=account)
-        out = {"ok": True, "kind": "sl", "account": account,
-               "stock": stock, "avg_cost": cost,
-               "line": r["stop_price"], "pct": -pct,
-               "note": "已设止损（复用既有 check_stops 链，触线次日开盘清仓）",
-               "at": _now()}
+        r = eng.set_stop(stock, round(cost * (1 - pct / 100), 2), account_id=account)
+        out = {
+            "ok": True,
+            "kind": "sl",
+            "account": account,
+            "stock": stock,
+            "avg_cost": cost,
+            "line": r["stop_price"],
+            "pct": -pct,
+            "note": "已设止损（复用既有 check_stops 链，触线次日开盘清仓）",
+            "at": _now(),
+        }
     else:
         line = round(cost * (1 + pct / 100), 2)
         d = _load()
-        d["rules"] = [x for x in d.get("rules", [])
-                      if not (x["account"] == account and x["stock"] == stock)]
-        d["rules"].append({"account": account, "stock": stock, "kind": "tp",
-                           "avg_cost": cost, "line": line, "pct": pct,
-                           "set_at": _now(), "source": "feishu"})
+        d["rules"] = [
+            x
+            for x in d.get("rules", [])
+            if not (x["account"] == account and x["stock"] == stock)
+        ]
+        d["rules"].append(
+            {
+                "account": account,
+                "stock": stock,
+                "kind": "tp",
+                "avg_cost": cost,
+                "line": line,
+                "pct": pct,
+                "set_at": _now(),
+                "source": "feishu",
+            }
+        )
         _save(d)
-        out = {"ok": True, "kind": "tp", "account": account,
-               "stock": stock, "avg_cost": cost, "line": line, "pct": pct,
-               "note": "已设止盈（每日 routine 检查，触线次日开盘清仓）",
-               "at": _now()}
+        out = {
+            "ok": True,
+            "kind": "tp",
+            "account": account,
+            "stock": stock,
+            "avg_cost": cost,
+            "line": line,
+            "pct": pct,
+            "note": "已设止盈（每日 routine 检查，触线次日开盘清仓）",
+            "at": _now(),
+        }
     out["qty"] = pos["qty"]
     return out
 
@@ -138,19 +168,33 @@ def clear_line(account: str, code: str, kind: str) -> dict:
     stock = _norm_code(code)
     if kind == "sl":
         _engine(account).clear_stop(stock, account_id=account)
-        return {"ok": True, "kind": "sl", "stock": stock,
-                "note": "已撤销止损", "at": _now()}
+        return {
+            "ok": True,
+            "kind": "sl",
+            "stock": stock,
+            "note": "已撤销止损",
+            "at": _now(),
+        }
     if kind == "tp":
         d = _load()
         n0 = len(d.get("rules", []))
-        d["rules"] = [x for x in d.get("rules", [])
-                      if not (x["account"] == account and x["stock"] == stock
-                              and x["kind"] == "tp")]
+        d["rules"] = [
+            x
+            for x in d.get("rules", [])
+            if not (
+                x["account"] == account and x["stock"] == stock and x["kind"] == "tp"
+            )
+        ]
         _save(d)
         if len(d["rules"]) == n0:
             return {"ok": False, "error": "%s 无止盈线可撤" % stock}
-        return {"ok": True, "kind": "tp", "stock": stock,
-                "note": "已撤销止盈", "at": _now()}
+        return {
+            "ok": True,
+            "kind": "tp",
+            "stock": stock,
+            "note": "已撤销止盈",
+            "at": _now(),
+        }
     return {"ok": False, "error": "kind 须为 tp 或 sl"}
 
 
@@ -164,34 +208,42 @@ def list_lines(account: str = DEFAULT_ACCOUNT) -> dict:
         stops = {}
     for pos in eng.positions(account):
         s = stops.get(pos["stock"])
-        rows.append({
-            "stock": pos["stock"], "qty": pos["qty"],
-            "avg_cost": pos["avg_cost"], "last": (s or {}).get("last"),
-            "stop_price": (s or {}).get("stop_price"),
-            "stop_distance_pct": (s or {}).get("distance_pct"),
-        })
-    tps = [x for x in _load().get("rules", [])
-           if x["account"] == account and x["kind"] == "tp"]
-    return {"ok": True, "account": account, "positions": rows,
-            "tp_rules": tps}
+        rows.append(
+            {
+                "stock": pos["stock"],
+                "qty": pos["qty"],
+                "avg_cost": pos["avg_cost"],
+                "last": (s or {}).get("last"),
+                "stop_price": (s or {}).get("stop_price"),
+                "stop_distance_pct": (s or {}).get("distance_pct"),
+            }
+        )
+    tps = [
+        x
+        for x in _load().get("rules", [])
+        if x["account"] == account and x["kind"] == "tp"
+    ]
+    return {"ok": True, "account": account, "positions": rows, "tp_rules": tps}
 
 
-def check_tps(account: str, eng: PaperEngine | None = None,
-              dry_run: bool = False) -> dict:
+def check_tps(
+    account: str, eng: PaperEngine | None = None, dry_run: bool = False
+) -> dict:
     """止盈检查（每日 routine 在 check_stops 后调用）。
     镜像 engine.check_stops：收盘 >= 触发价 → SELL pending（order_kind='tp'）。"""
     eng = eng or _engine(account)
-    out = {"triggered": [], "watch": [], "account": account,
-           "dry_run": dry_run}
-    for rule in [x for x in _load().get("rules", [])
-                 if x["account"] == account and x["kind"] == "tp"]:
+    out = {"triggered": [], "watch": [], "account": account, "dry_run": dry_run}
+    for rule in [
+        x
+        for x in _load().get("rules", [])
+        if x["account"] == account and x["kind"] == "tp"
+    ]:
         stock = rule["stock"]
         try:
-            pos = next((p for p in eng.positions(account)
-                        if p["stock"] == stock), None)
+            pos = next((p for p in eng.positions(account) if p["stock"] == stock), None)
         except Exception:  # noqa: BLE001
             continue
-        if not pos:   # 已清仓 → 规则失效，就地清除
+        if not pos:  # 已清仓 → 规则失效，就地清除
             if not dry_run:
                 clear_line(account, stock, "tp")
             out["watch"].append({"stock": stock, "why": "无持仓，规则已清除"})
@@ -203,44 +255,71 @@ def check_tps(account: str, eng: PaperEngine | None = None,
         if bar is None:
             continue
         if bar["close"] < rule["line"] - _EPS:
-            out["watch"].append({"stock": stock, "close": bar["close"],
-                                 "line": rule["line"]})
+            out["watch"].append(
+                {"stock": stock, "close": bar["close"], "line": rule["line"]}
+            )
             continue
         ref = "tp#%s@%s#%s" % (account, stock, bar["trade_date"])
-        dup = eng.con.execute("SELECT id FROM orders WHERE ref=?",
-                              (ref,)).fetchone()
+        dup = eng.con.execute("SELECT id FROM orders WHERE ref=?", (ref,)).fetchone()
         if dup:
-            out["triggered"].append({"stock": stock,
-                                     "why": "幂等跳过（%s 已存在）" % ref})
+            out["triggered"].append(
+                {"stock": stock, "why": "幂等跳过（%s 已存在）" % ref}
+            )
             continue
         avail = eng.available_qty(stock, account)
         if avail <= 0:
-            out["triggered"].append({"stock": stock,
-                                     "why": "触发但可卖 0（T+1 冻结），明日再查"})
+            out["triggered"].append(
+                {"stock": stock, "why": "触发但可卖 0（T+1 冻结），明日再查"}
+            )
             continue
         plan_date = eng.market.next_trading_day(
-            datetime.now().isoformat(timespec="seconds"))
+            datetime.now().isoformat(timespec="seconds")
+        )
         if plan_date is None:
-            out["triggered"].append({"stock": stock,
-                                     "why": "湖无后续交易日，明日再查"})
+            out["triggered"].append({"stock": stock, "why": "湖无后续交易日，明日再查"})
             continue
-        reason = ("止盈触发：收盘 %s >= 触发价 %s（+%s%%，%s），"
-                  "明日开盘清仓 %s 股" % (bar["close"], rule["line"],
-                                          rule["pct"], bar["trade_date"],
-                                          avail))
+        reason = "止盈触发：收盘 %s >= 触发价 %s（+%s%%，%s），明日开盘清仓 %s 股" % (
+            bar["close"],
+            rule["line"],
+            rule["pct"],
+            bar["trade_date"],
+            avail,
+        )
         if not dry_run:
             eng.con.execute(
                 "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,"
                 "price_base,status,reason,conf,strategy,order_kind,"
                 "account_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (_now(), "ai", ref, stock, "SELL", avail, plan_date, "open",
-                 "pending", reason, None, "take_profit", "tp", account,
-                 _now()))
+                (
+                    _now(),
+                    "ai",
+                    ref,
+                    stock,
+                    "SELL",
+                    avail,
+                    plan_date,
+                    "open",
+                    "pending",
+                    reason,
+                    None,
+                    "take_profit",
+                    "tp",
+                    account,
+                    _now(),
+                ),
+            )
             # 触发后规则完成使命，就地清除
             clear_line(account, stock, "tp")
-        out["triggered"].append({"stock": stock, "qty": avail,
-                                 "plan_date": plan_date, "ref": ref,
-                                 "reason": reason, "status": "pending"})
+        out["triggered"].append(
+            {
+                "stock": stock,
+                "qty": avail,
+                "plan_date": plan_date,
+                "ref": ref,
+                "reason": reason,
+                "status": "pending",
+            }
+        )
     if not dry_run:
         eng.con.commit()
     return out
@@ -248,8 +327,10 @@ def check_tps(account: str, eng: PaperEngine | None = None,
 
 # ---------------- CLI ----------------
 
+
 def main(argv=None) -> int:
     import argparse
+
     ap = argparse.ArgumentParser(prog="exit_rules", description=__doc__)
     # 全局参数同时挂主 parser 与各子命令（调用方习惯 `set ... --account x`）
     common = argparse.ArgumentParser(add_help=False)

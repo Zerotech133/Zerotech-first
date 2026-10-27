@@ -17,6 +17,7 @@
      data/poc_run_fuse.json），有进展清零；连续 3 次无进展 → 注销
      兜底任务 + 写 aborted 记录，止损等人工介入。
 """
+
 import ctypes
 import json
 import os
@@ -24,8 +25,8 @@ import subprocess
 import sys
 import time
 
-REPO = os.path.dirname(os.path.abspath(__file__))        # .../k_stock
-RUN_CWD = os.path.dirname(REPO)                           # 仓库根（-m k_stock 需要）
+REPO = os.path.dirname(os.path.abspath(__file__))  # .../k_stock
+RUN_CWD = os.path.dirname(REPO)  # 仓库根（-m k_stock 需要）
 DATA = os.path.join(REPO, "data")
 LOCK = os.path.join(DATA, "poc_run.lock")
 FUSE_FILE = os.path.join(DATA, "poc_run_fuse.json")
@@ -77,6 +78,7 @@ def _today() -> str:
     误判"已完成"——按调用时日期动态取；调用点均为每次触发的新进程，
     加载期日期即当日，无需缓存。）"""
     from datetime import datetime
+
     return datetime.now().strftime("%Y%m%d")
 
 
@@ -128,13 +130,20 @@ def run_poc_alive() -> bool:
     try:
         # 统一走 CIM：无第三方依赖，父 powershell 自身是 python.exe 之外的进程
         out = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-Command",
-             "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
-             "Where-Object { $_.CommandLine -match 'run_poc' -and "
-             "$_.ProcessId -ne $PID } | Measure-Object | "
-             "Select-Object -ExpandProperty Count"],
-            capture_output=True, text=True, timeout=30,
-            creationflags=subprocess.CREATE_NO_WINDOW)
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-Command",
+                "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
+                "Where-Object { $_.CommandLine -match 'run_poc' -and "
+                "$_.ProcessId -ne $PID } | Measure-Object | "
+                "Select-Object -ExpandProperty Count",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
         n = int((out.stdout or "0").strip() or 0)
         return n > 0
     except Exception:
@@ -166,8 +175,8 @@ def acquire_lock() -> bool:
 def dereg_bootstrap():
     try:
         subprocess.run(
-            ["schtasks", "/Delete", "/TN", BOOTSTRAP_TASK, "/F"],
-            capture_output=True)
+            ["schtasks", "/Delete", "/TN", BOOTSTRAP_TASK, "/F"], capture_output=True
+        )
     except Exception:
         pass
 
@@ -186,22 +195,44 @@ def main() -> int:
     if not acquire_lock():
         return 0
     before = ledger_progress()  # 本轮拉起前账本行数（熔断判基线）
-    cmd = [sys.executable, "-X", "utf8", "-u", "-m", "k_stock.run_poc",
-           "--auto", "--watchlist", str(WATCHLIST_N)]
-    flags = (subprocess.DETACHED_PROCESS
-             | subprocess.CREATE_NEW_PROCESS_GROUP
-             | subprocess.CREATE_BREAKAWAY_FROM_JOB)
+    cmd = [
+        sys.executable,
+        "-X",
+        "utf8",
+        "-u",
+        "-m",
+        "k_stock.run_poc",
+        "--auto",
+        "--watchlist",
+        str(WATCHLIST_N),
+    ]
+    flags = (
+        subprocess.DETACHED_PROCESS
+        | subprocess.CREATE_NEW_PROCESS_GROUP
+        | subprocess.CREATE_BREAKAWAY_FROM_JOB
+    )
     try:
         with open(_log_path(), "ab") as lf:
             try:
-                proc = subprocess.Popen(cmd, stdout=lf, stderr=lf, cwd=RUN_CWD,
-                                        creationflags=flags, close_fds=True)
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=lf,
+                    stderr=lf,
+                    cwd=RUN_CWD,
+                    creationflags=flags,
+                    close_fds=True,
+                )
             except OSError:
                 # 本 Job 不允许 breakaway 时退回普通 DETACHED（仍会被收割，但可试）
                 proc = subprocess.Popen(
-                    cmd, stdout=lf, stderr=lf, cwd=RUN_CWD,
+                    cmd,
+                    stdout=lf,
+                    stderr=lf,
+                    cwd=RUN_CWD,
                     creationflags=subprocess.DETACHED_PROCESS
-                    | subprocess.CREATE_NEW_PROCESS_GROUP, close_fds=True)
+                    | subprocess.CREATE_NEW_PROCESS_GROUP,
+                    close_fds=True,
+                )
         # 持锁等待至 run_poc 退出（上限 6h），防 5 分钟重复触发竞态双跑。
         # 拉起器被任务 ExecutionTimeLimit 收割时锁变 stale，下轮自愈。
         deadline = time.time() + 6 * 3600
@@ -224,11 +255,13 @@ def main() -> int:
                 state["aborted_ts"] = now
                 _save_fuse(state)
                 dereg_bootstrap()
-                print("[WARN] K-STOCK fuse tripped: %d consecutive rounds "
-                      "with no ledger progress; bootstrap task '%s' "
-                      "deregistered, resume aborted." %
-                      (state["no_progress"], BOOTSTRAP_TASK),
-                      file=sys.stderr)
+                print(
+                    "[WARN] K-STOCK fuse tripped: %d consecutive rounds "
+                    "with no ledger progress; bootstrap task '%s' "
+                    "deregistered, resume aborted."
+                    % (state["no_progress"], BOOTSTRAP_TASK),
+                    file=sys.stderr,
+                )
             else:
                 _save_fuse(state)
     finally:

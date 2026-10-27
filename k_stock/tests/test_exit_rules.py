@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-122 M7：手机端止盈止损指令层测试。
 临时 db + 假行情 + exit_rules.json 重定向到 tmp，不碰真库。"""
+
 import json
 import sys
 from pathlib import Path
@@ -11,8 +12,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "paper"))
 
-import exit_rules                      # noqa: E402
-from engine import PaperEngine         # noqa: E402
+import exit_rules  # noqa: E402
+from engine import PaperEngine  # noqa: E402
 
 ACCT = "t7x"
 
@@ -44,7 +45,8 @@ def _eng(tmp_path, close=11.0):
     eng.con.execute(
         "INSERT INTO positions(account_id,stock,qty,avg_cost,updated_at,"
         "strategy,stop_price) VALUES(?,?,?,?,?,?,?)",
-        (ACCT, "605100.SH", 1000, 10.0, "2026-10-11T15:00:00", "test", None))
+        (ACCT, "605100.SH", 1000, 10.0, "2026-10-11T15:00:00", "test", None),
+    )
     eng.con.commit()
     return eng
 
@@ -66,7 +68,7 @@ def test_set_tp_writes_rule(tmp_path):
 def test_set_sl_updates_engine_stop(tmp_path):
     eng = _eng(tmp_path)
     r = exit_rules.set_line(ACCT, "605100", "sl", "5")
-    assert r["ok"] and r["line"] == 9.5      # 10.0 × (1-5%)
+    assert r["ok"] and r["line"] == 9.5  # 10.0 × (1-5%)
     pos = eng.positions(ACCT)[0]
     assert pos["stop_price"] == 9.5
 
@@ -78,7 +80,7 @@ def test_set_rejects_no_position(tmp_path):
 
 
 def test_check_tp_triggers_sell_pending(tmp_path):
-    eng = _eng(tmp_path, close=11.0)          # 收盘 11 >= 触发 10.8
+    eng = _eng(tmp_path, close=11.0)  # 收盘 11 >= 触发 10.8
     exit_rules.set_line(ACCT, "605100", "tp", 8)
     out = exit_rules.check_tps(ACCT, eng=eng)
     assert len(out["triggered"]) == 1
@@ -92,7 +94,7 @@ def test_check_tp_triggers_sell_pending(tmp_path):
 
 
 def test_check_tp_watches_below_line(tmp_path):
-    eng = _eng(tmp_path, close=10.5)          # 未触线
+    eng = _eng(tmp_path, close=10.5)  # 未触线
     exit_rules.set_line(ACCT, "605100", "tp", 8)
     out = exit_rules.check_tps(ACCT, eng=eng)
     assert out["triggered"] == [] and out["watch"]

@@ -6,6 +6,7 @@ analysis_type 枚举对齐 ai_team_role DDL：
   → investment_advice（A1）→ final_decision（D1）
 结构化输出契约：各节点固定 JSON schema，D1 落 stock_trade_strategy_pool 语义。
 """
+
 from __future__ import annotations
 
 import json
@@ -27,29 +28,40 @@ SCHEMAS: dict[str, str] = {
     "fundamental": '{"stance": "BULL|BEAR|NEUTRAL", "confidence": 0~1, "key_points": ["..."], "risks": ["..."]}',
     "investment_advice": '{"stance": "BULL|BEAR|NEUTRAL", "confidence": 0~1, "key_points": ["..."], "risks": ["..."]}',
     "final_decision": '{"action": "STRONG_BUY|BUY|HOLD|SELL|STRONG_SELL", "confidence": 0~1, '
-                      '"target_price_low": 数字, "target_price_high": 数字, "risk_level": "LOW|MEDIUM|HIGH", '
-                      '"reason": "一句话", "stock": "代码"}',
+    '"target_price_low": 数字, "target_price_high": 数字, "risk_level": "LOW|MEDIUM|HIGH", '
+    '"reason": "一句话", "stock": "代码"}',
 }
 
 
-def build_messages(node: dict[str, Any], stock: str, context: str,
-                   outputs: dict[str, Any], opponent_last: str = "",
-                   round_no: int = 1) -> list[dict[str, str]]:
+def build_messages(
+    node: dict[str, Any],
+    stock: str,
+    context: str,
+    outputs: dict[str, Any],
+    opponent_last: str = "",
+    round_no: int = 1,
+) -> list[dict[str, str]]:
     at = node.get("analysis_type", "final_decision")
-    persona = node.get("persona") or ROLES.get(node.get("node_key", ""), "你是专业分析师。")
+    persona = node.get("persona") or ROLES.get(
+        node.get("node_key", ""), "你是专业分析师。"
+    )
     schema = SCHEMAS.get(at, SCHEMAS["final_decision"])
-    system = (f"{persona}\n只输出 JSON，不要多余文字。输出 schema：{schema}")
+    system = f"{persona}\n只输出 JSON，不要多余文字。输出 schema：{schema}"
     user_parts = [f"股票：{stock}", f"分析日期：{node.get('asof', '今日')}"]
     if context:
         user_parts.append(f"输入数据：\n{context}")
     deps = node.get("parent_node_keys") or []
     if deps:
-        dep_txt = json.dumps({k: outputs.get(k, {}) for k in deps},
-                             ensure_ascii=False, default=str)[:2000]
+        dep_txt = json.dumps(
+            {k: outputs.get(k, {}) for k in deps}, ensure_ascii=False, default=str
+        )[:2000]
         user_parts.append(f"上游结论：\n{dep_txt}")
     if node.get("is_debate_node") and opponent_last:
         user_parts.append(
             f"【辩论第 {round_no} 轮】你的辩论对手上一轮观点：\n{opponent_last[:800]}\n"
-            "请直接回应对方论据：坚持或修正你的立场，给出新论据。")
-    return [{"role": "system", "content": system},
-            {"role": "user", "content": "\n".join(user_parts)}]
+            "请直接回应对方论据：坚持或修正你的立场，给出新论据。"
+        )
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": "\n".join(user_parts)},
+    ]

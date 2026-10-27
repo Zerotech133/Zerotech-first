@@ -7,6 +7,7 @@
       python k_stock/eval_rank.py --file data/poc_20261008_xxx.json
 判据：spearman > 0（方向正确即通过；S2 后加显著性与分位收益）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,6 +25,7 @@ ACTION_SCORE = {"STRONG_BUY": 2, "BUY": 1, "HOLD": 0, "SELL": -1, "STRONG_SELL":
 def next_day_return(code: str, asof_date: str, bars_dir: Path) -> float | None:
     """特征湖取 asof 之后第一个交易日的 pct_chg（真实次日收益）。"""
     import pandas as pd
+
     f = bars_dir / (code.replace(".", "_") + ".parquet")
     if not f.exists():
         return None
@@ -103,19 +105,23 @@ def main():
         files = [Path(args.file)]
     else:
         import time
+
         cutoff = time.time() - args.days * 86400
-        files = [p for p in (HERE / "data").glob("poc_*.json")
-                 if p.stat().st_mtime >= cutoff]
+        files = [
+            p for p in (HERE / "data").glob("poc_*.json") if p.stat().st_mtime >= cutoff
+        ]
     pairs, skipped = collect(files)
     rho, n = spearman(pairs)
     print(f"样本 {n} 对（跳过 {skipped}）来自 {len(files)} 个文件")
     if rho is None:
         print("样本不足（<3），S1 累计中——继续每日跑")
         return
-    print(f"Spearman 秩相关 = {rho:+.3f}  → 判据: {'✅ 通过(>0)' if rho > 0 else '❌ 未过(≤0)'}")
+    print(
+        f"Spearman 秩相关 = {rho:+.3f}  → 判据: {'✅ 通过(>0)' if rho > 0 else '❌ 未过(≤0)'}"
+    )
     # 附：方向命中率
     hit = sum(1 for s, r in pairs if (s > 0) == (r > 0) or s == 0)
-    print(f"方向命中率 {hit}/{n} = {hit/n*100:.0f}%")
+    print(f"方向命中率 {hit}/{n} = {hit / n * 100:.0f}%")
 
 
 if __name__ == "__main__":

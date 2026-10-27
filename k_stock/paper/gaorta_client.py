@@ -8,6 +8,7 @@ key 从环境变量 GAORTA_API_KEY 读取；未配置时 fail-closed 报清晰�
     from gaorta_client import chat
     reply = chat("GLM-5.2", [{"role": "user", "content": "你好"}])
 """
+
 import json
 import os
 import urllib.error
@@ -41,8 +42,7 @@ def chat(model, messages, timeout=60, temperature=None):
     req = urllib.request.Request(
         BASE_URL,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + key},
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key},
         method="POST",
     )
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -51,8 +51,7 @@ def chat(model, messages, timeout=60, temperature=None):
             data = json.loads(resp.read())
     except urllib.error.HTTPError as e:
         # K-STOCK-147 P2-9：保留状态码/原因但包装为 RuntimeError，不裸抛 HTTPError
-        raise RuntimeError(
-            f"gaorta HTTP {e.code}: {e.reason}（模型 {model}）") from e
+        raise RuntimeError(f"gaorta HTTP {e.code}: {e.reason}（模型 {model}）") from e
     try:
         content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as e:
@@ -60,7 +59,8 @@ def chat(model, messages, timeout=60, temperature=None):
         top_keys = sorted(data) if isinstance(data, dict) else type(data).__name__
         raise RuntimeError(
             f"gaorta 响应结构异常：缺 choices[0].message.content"
-            f"（模型 {model}），顶层键={top_keys}") from e
+            f"（模型 {model}），顶层键={top_keys}"
+        ) from e
     return {
         "content": content,
         "model": data.get("model", model),
@@ -81,16 +81,21 @@ def chat_for_hire(mid, source, messages, timeout=60):
     无该 mid+source 的 active 雇佣记录时 raise RuntimeError（fail-closed，不降级、不猜测）。
     """
     import manager  # 延迟 import：manager 顶部亦引用 gaorta_client，避免循环依赖
+
     model = None
     for h in manager._load_hires().get("hires", []):
-        if (h.get("manager") == mid and h.get("source") == source
-                and h.get("status") == "active"):
+        if (
+            h.get("manager") == mid
+            and h.get("source") == source
+            and h.get("status") == "active"
+        ):
             model = h.get("model")
             break
     if not model:
         raise RuntimeError(
             f"chat_for_hire 拒绝：无 {mid}×{source} 的 active 雇佣记录"
-            f"（账本 {manager.HIRES_PATH}），运行层调用模型前必须先由经理雇佣建立（fail-closed）")
+            f"（账本 {manager.HIRES_PATH}），运行层调用模型前必须先由经理雇佣建立（fail-closed）"
+        )
     # chat() 内部再过 allowed_models() 精确匹配白名单——双重校验第二道
     return chat(model, messages, timeout=timeout)
 

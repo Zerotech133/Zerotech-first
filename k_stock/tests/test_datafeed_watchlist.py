@@ -5,6 +5,7 @@
 点分下划线式（300750_SZ.parquet）。格式错位致 exists() 恒 False、
 watchlist 恒空、07:05 主 PoC 聚合连续空跑（10-12/13/15 三日实证）。
 """
+
 import sys
 import unittest
 from pathlib import Path
@@ -22,27 +23,32 @@ class TestLakeCode(unittest.TestCase):
         self.assertEqual(D._lake_code("bj920028"), "920028.BJ")
 
     def test_dotted_passthrough_and_garbage(self):
-        self.assertEqual(D._lake_code("600519.SH"), "600519.SH")   # 已点分式
-        self.assertIsNone(D._lake_code("gb_be"))                   # 美股跳过
+        self.assertEqual(D._lake_code("600519.SH"), "600519.SH")  # 已点分式
+        self.assertIsNone(D._lake_code("gb_be"))  # 美股跳过
         self.assertIsNone(D._lake_code("gb_mrvl"))
         self.assertIsNone(D._lake_code(""))
         self.assertIsNone(D._lake_code(None))
-        self.assertIsNone(D._lake_code("sz12345"))                 # 非 6 位数字
-        self.assertIsNone(D._lake_code("hk00700"))                 # 未支持市场
+        self.assertIsNone(D._lake_code("sz12345"))  # 非 6 位数字
+        self.assertIsNone(D._lake_code("hk00700"))  # 未支持市场
 
     def test_mapping_hits_real_lake_files(self):
         for code in ("sz300750", "sh600519", "bj920028"):
             lake = D._lake_code(code)
             assert lake is not None
-            self.assertTrue(D._code_to_file(lake).exists(),
-                            "湖缺文件: %s -> %s" % (code, lake))
+            self.assertTrue(
+                D._code_to_file(lake).exists(), "湖缺文件: %s -> %s" % (code, lake)
+            )
 
 
 class TestWatchlistFromQuotes(unittest.TestCase):
     def test_prefix_codes_resurface_and_gb_skipped(self):
-        rows = [("gb_be", 9e9), ("gb_mrvl", 8e9),           # 美股霸榜（应跳过）
-                ("sz300750", 8.3e9), ("sh600519", 4.8e9),
-                ("bj920028", 1.0e9)]
+        rows = [
+            ("gb_be", 9e9),
+            ("gb_mrvl", 8e9),  # 美股霸榜（应跳过）
+            ("sz300750", 8.3e9),
+            ("sh600519", 4.8e9),
+            ("bj920028", 1.0e9),
+        ]
         with mock.patch.object(D.sqlite3, "connect") as mc:
             mc.return_value.__enter__ = mock.Mock()
             con = mc.return_value

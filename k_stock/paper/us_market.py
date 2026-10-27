@@ -16,6 +16,7 @@
   · 前复权理由：模拟盘买入都在近期，前复权近期价=真实价、pct 连续、止损与 max_dd 不被拆股假触发
   · CRYPTO 不在此范围（无日历语义，独立再议）
 """
+
 from __future__ import annotations
 
 import csv
@@ -31,8 +32,10 @@ ROOT = HERE.parent.parent  # C:\项目\老田的AI助手
 DEFAULT_US_DIR = ROOT / "quant_backtest" / "data" / "us"
 CAL_SYMBOL = "SPY"  # 日历基准（宽基 ETF，流动性最好、不会退市）
 
-_SINA_URL = ("https://stock.finance.sina.com.cn/usstock/api/jsonp_v2.php"
-             "/abc/US_MinKService.getDailyK?symbol={sym}")
+_SINA_URL = (
+    "https://stock.finance.sina.com.cn/usstock/api/jsonp_v2.php"
+    "/abc/US_MinKService.getDailyK?symbol={sym}"
+)
 _HEADERS = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.sina.com.cn"}
 _TIMEOUT = 30
 
@@ -56,8 +59,12 @@ def _et_date_hhmm(ts_iso: str) -> tuple[str, str]:
     try:
         from datetime import datetime as _dt
         from zoneinfo import ZoneInfo
-        dt = (_dt.fromisoformat(str(ts_iso)[:19]).replace(tzinfo=ZoneInfo("Asia/Shanghai"))
-              .astimezone(ZoneInfo("America/New_York")))
+
+        dt = (
+            _dt.fromisoformat(str(ts_iso)[:19])
+            .replace(tzinfo=ZoneInfo("Asia/Shanghai"))
+            .astimezone(ZoneInfo("America/New_York"))
+        )
         return dt.strftime("%Y%m%d"), dt.strftime("%H%M")
     except Exception:  # noqa: BLE001  ZoneInfo 找不到 tzdata 等
         dt = datetime.fromisoformat(str(ts_iso)[:19]) - timedelta(hours=12)
@@ -73,14 +80,22 @@ def _fetch_sina(sym: str) -> list[dict]:
         s, e = body.index("(") + 1, body.rindex(")")
         rows = json.loads(body[s:e])
     except (ValueError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"新浪 {sym} 返回非预期（反爬或端点变更）: {body[:80]!r}") from exc
+        raise RuntimeError(
+            f"新浪 {sym} 返回非预期（反爬或端点变更）: {body[:80]!r}"
+        ) from exc
     out = []
     for row in rows:
         try:
-            out.append({"date": str(row["d"]),
-                        "open": float(row["o"]), "high": float(row["h"]),
-                        "low": float(row["l"]), "close": float(row["c"]),
-                        "volume": float(row["v"])})
+            out.append(
+                {
+                    "date": str(row["d"]),
+                    "open": float(row["o"]),
+                    "high": float(row["h"]),
+                    "low": float(row["l"]),
+                    "close": float(row["c"]),
+                    "volume": float(row["v"]),
+                }
+            )
         except (KeyError, TypeError, ValueError):
             continue  # 单行脏数据跳过，不断链
     if not out:
@@ -92,16 +107,23 @@ def _fetch_yf(sym: str) -> list[dict]:
     """备源 yfinance（K-STOCK-045d G1）：auto_adjust=False 拿未复权原始价——
     与新浪同口径，走同一 split_adjust 拆股修复，两源缓存字节级可比对。"""
     import yfinance as yf  # 惰性：主源健康时零开销（import 约 2s）
+
     df = yf.Ticker(sym.upper()).history(period="max", auto_adjust=False)
     if df is None or df.empty:
         raise RuntimeError(f"yfinance {sym} 无数据（限流或代码不存在）")
     out = []
     for idx, row in df.iterrows():
         try:
-            out.append({"date": str(idx)[:10],
-                        "open": float(row["Open"]), "high": float(row["High"]),
-                        "low": float(row["Low"]), "close": float(row["Close"]),
-                        "volume": float(row["Volume"])})
+            out.append(
+                {
+                    "date": str(idx)[:10],
+                    "open": float(row["Open"]),
+                    "high": float(row["High"]),
+                    "low": float(row["Low"]),
+                    "close": float(row["Close"]),
+                    "volume": float(row["Volume"]),
+                }
+            )
         except (KeyError, TypeError, ValueError):
             continue
     if not out:
@@ -118,7 +140,9 @@ def fetch_daily(sym: str) -> list[dict]:
         try:
             return _fetch_yf(sym)
         except Exception as yf_err:  # noqa: BLE001
-            raise RuntimeError(f"双源均失败 {sym}: 新浪={sina_err} | yfinance={yf_err}") from yf_err
+            raise RuntimeError(
+                f"双源均失败 {sym}: 新浪={sina_err} | yfinance={yf_err}"
+            ) from yf_err
 
 
 def _split_ratio(prev_close: float, cur_close: float) -> int:
@@ -159,8 +183,17 @@ def refresh(symbol: str, us_dir: Path | str | None = None) -> Path:
         w.writerow(["date", "open", "high", "low", "close", "volume", "pre_close"])
         prev_close = ""
         for row in rows:
-            w.writerow([row["date"], row["open"], row["high"], row["low"],
-                        row["close"], row["volume"], prev_close])
+            w.writerow(
+                [
+                    row["date"],
+                    row["open"],
+                    row["high"],
+                    row["low"],
+                    row["close"],
+                    row["volume"],
+                    prev_close,
+                ]
+            )
             prev_close = row["close"]
     tmp.replace(out)  # 原子写（同 hires.json 口径）
     return out
@@ -189,8 +222,10 @@ class UsMarket:
         if self._days is None:
             rows = self._read(self.cal_symbol)
             if not rows:
-                raise FileNotFoundError(f"日历基准票缺失: {self._file(self.cal_symbol)}"
-                                        f"（先跑 python paper/us_market.py refresh spy）")
+                raise FileNotFoundError(
+                    f"日历基准票缺失: {self._file(self.cal_symbol)}"
+                    f"（先跑 python paper/us_market.py refresh spy）"
+                )
             self._days = [r["date"].replace("-", "") for r in rows]
         return self._days
 
@@ -202,10 +237,16 @@ class UsMarket:
         want = str(trade_date)
         for r in rows:
             if r["date"].replace("-", "") == want:
-                return {"trade_date": want,
-                        "open": float(r["open"]), "high": float(r["high"]),
-                        "low": float(r["low"]), "close": float(r["close"]),
-                        "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+                return {
+                    "trade_date": want,
+                    "open": float(r["open"]),
+                    "high": float(r["high"]),
+                    "low": float(r["low"]),
+                    "close": float(r["close"]),
+                    "pre_close": float(r["pre_close"])
+                    if r["pre_close"]
+                    else float(r["close"]),
+                }
         return None
 
     # ---- 引擎契约的其余方法（与 ParquetMarket 同形；CSV 顺序即日期升序） ----
@@ -215,10 +256,14 @@ class UsMarket:
         if not rows:
             return None
         r = rows[-1]
-        return {"trade_date": r["date"].replace("-", ""),
-                "open": float(r["open"]), "high": float(r["high"]),
-                "low": float(r["low"]), "close": float(r["close"]),
-                "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+        return {
+            "trade_date": r["date"].replace("-", ""),
+            "open": float(r["open"]),
+            "high": float(r["high"]),
+            "low": float(r["low"]),
+            "close": float(r["close"]),
+            "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"]),
+        }
 
     def last_bar_before(self, code: str, trade_date: str) -> dict | None:
         """≤ 给定日的最后一根 bar（AsOfMarket 时点视角用）。"""
@@ -230,10 +275,14 @@ class UsMarket:
         if not hit:
             return None
         r = hit[-1]
-        return {"trade_date": r["date"].replace("-", ""),
-                "open": float(r["open"]), "high": float(r["high"]),
-                "low": float(r["low"]), "close": float(r["close"]),
-                "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+        return {
+            "trade_date": r["date"].replace("-", ""),
+            "open": float(r["open"]),
+            "high": float(r["high"]),
+            "low": float(r["low"]),
+            "close": float(r["close"]),
+            "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"]),
+        }
 
     def first_bar_on_or_after(self, code: str, trade_date: str) -> dict | None:
         """≥ 给定日的第一根 bar（settle 纠偏用：plan_date 无行情时顺延）。"""
@@ -243,10 +292,16 @@ class UsMarket:
         want = str(trade_date)
         for r in rows:
             if r["date"].replace("-", "") >= want:
-                return {"trade_date": r["date"].replace("-", ""),
-                        "open": float(r["open"]), "high": float(r["high"]),
-                        "low": float(r["low"]), "close": float(r["close"]),
-                        "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+                return {
+                    "trade_date": r["date"].replace("-", ""),
+                    "open": float(r["open"]),
+                    "high": float(r["high"]),
+                    "low": float(r["low"]),
+                    "close": float(r["close"]),
+                    "pre_close": float(r["pre_close"])
+                    if r["pre_close"]
+                    else float(r["close"]),
+                }
         return None
 
     def next_trading_day(self, ts_iso: str) -> str | None:
@@ -263,11 +318,11 @@ class UsMarket:
         days = self.trading_days()
         day, hhmm = _et_date_hhmm(ts_iso)
         if day in days and hhmm < "0930":
-            return day                      # 美东盘前：当日开盘价尚未产生，可成交
+            return day  # 美东盘前：当日开盘价尚未产生，可成交
         for d in days:
             if d > day:
                 return d
-        cur = datetime.strptime(day, "%Y%m%d")   # 湖尾外推（周末规则，上限防死循环）
+        cur = datetime.strptime(day, "%Y%m%d")  # 湖尾外推（周末规则，上限防死循环）
         if hhmm >= "0930":
             cur += timedelta(days=1)
         for _ in range(10):
@@ -282,6 +337,7 @@ def us_symbols_in_db(db_path: Path | str) -> list[str]:
 
     settle 前自动 refresh 用：只拉有真实敞口的票，不盲目全量。"""
     import sqlite3
+
     con = sqlite3.connect(str(db_path))
     try:
         rows = con.execute(
@@ -300,8 +356,12 @@ def main(argv: list[str], us_dir: Path | str | None = None) -> int:
         for sym in argv[1:]:
             p = refresh(sym, us_dir)
             n = len(list(csv.DictReader(open(p, encoding="utf-8"))))
-            print(json.dumps({"ok": True, "symbol": sina_symbol(sym),
-                              "rows": n, "path": str(p)}, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"ok": True, "symbol": sina_symbol(sym), "rows": n, "path": str(p)},
+                    ensure_ascii=False,
+                )
+            )
         return 0
     print(__doc__)
     return 1

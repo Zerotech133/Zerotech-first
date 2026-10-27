@@ -5,6 +5,7 @@
 models.json 损坏拒/mid·source·note 非法拒/fire 周期/tmp 账本原子写无残留。
 全部 monkeypatch 临时目录，真账本与真档案零触碰。
 """
+
 import contextlib
 import io
 import json
@@ -27,16 +28,26 @@ def _setup(tmp: Path):
     mdir.mkdir()
     manager.MANAGERS_DIR = mdir
     manager.HERE = tmp  # _hire_price 读 HERE/"models.json"
-    (tmp / "models.json").write_text(json.dumps(
-        {"models": [{"model": "GLM-5.2", "coef_vs_glm52": 1.0}]}), encoding="utf-8")
+    (tmp / "models.json").write_text(
+        json.dumps({"models": [{"model": "GLM-5.2", "coef_vs_glm52": 1.0}]}),
+        encoding="utf-8",
+    )
     _profile(tmp, "bull_desk", "live")
 
 
-def _profile(tmp: Path, mid: str, status: str, model: str = "GLM-5.2",
-             base: int = 99):
-    (manager.MANAGERS_DIR / f"{mid}.json").write_text(json.dumps(
-        {"id": mid, "name": mid, "status": status, "model": model,
-         "hire_base_price_cny": base}), encoding="utf-8")
+def _profile(tmp: Path, mid: str, status: str, model: str = "GLM-5.2", base: int = 99):
+    (manager.MANAGERS_DIR / f"{mid}.json").write_text(
+        json.dumps(
+            {
+                "id": mid,
+                "name": mid,
+                "status": status,
+                "model": model,
+                "hire_base_price_cny": base,
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def _rejects(fn, why: str):
@@ -51,16 +62,21 @@ def test_hire_normal_path_price_snapshot():
     with tempfile.TemporaryDirectory() as tmp:
         _setup(Path(tmp))
         # coef=0.5 → 聘请价 = 99 × 0.5 = 50（快照落账本）
-        (Path(tmp) / "models.json").write_text(json.dumps(
-            {"models": [{"model": "GLM-5.2", "coef_vs_glm52": 0.5}]}),
-            encoding="utf-8")
+        (Path(tmp) / "models.json").write_text(
+            json.dumps({"models": [{"model": "GLM-5.2", "coef_vs_glm52": 0.5}]}),
+            encoding="utf-8",
+        )
         rec = hire("bull_desk", "qd", note="首单")
         assert rec["status"] == "active"
         assert rec["hire_price_cny"] == 50
         rows = hires_list()
         assert len(rows) == 1 and rows[0]["hire_price_cny"] == 50
-        assert json.loads(manager.HIRES_PATH.read_text(encoding="utf-8")
-                          )["hires"][0]["status"] == "active"
+        assert (
+            json.loads(manager.HIRES_PATH.read_text(encoding="utf-8"))["hires"][0][
+                "status"
+            ]
+            == "active"
+        )
     print("PASS test_hire_normal_path_price_snapshot")
 
 
@@ -71,7 +87,7 @@ def test_hire_duplicate_rejected():
         _rejects(lambda: hire("bull_desk", "qd"), "同 mid+source 重复雇佣应拒")
         hire("bull_desk", "qpzm")  # 同人可被多源雇
         fire("bull_desk", "qd")
-        hire("bull_desk", "qd")    # fire 后可再雇
+        hire("bull_desk", "qd")  # fire 后可再雇
     print("PASS test_hire_duplicate_rejected")
 
 
@@ -90,7 +106,9 @@ def test_hire_rejects_model_not_in_catalog():
         tmp = Path(tmp)
         _setup(tmp)
         _profile(tmp, "bull_desk", "live", model="evil-model")
-        _rejects(lambda: hire("bull_desk", "qd"), "模型不在目录应拒（137c fail-closed）")
+        _rejects(
+            lambda: hire("bull_desk", "qd"), "模型不在目录应拒（137c fail-closed）"
+        )
         _rejects(lambda: load_profile("bull_desk"), "load_profile 计价同样应拒")
     print("PASS test_hire_rejects_model_not_in_catalog")
 
@@ -100,7 +118,9 @@ def test_hire_rejects_broken_models_json():
         tmp = Path(tmp)
         _setup(tmp)
         (tmp / "models.json").write_text("{bad json!!", encoding="utf-8")
-        _rejects(lambda: hire("bull_desk", "qd"), "models.json 损坏应拒（不静默 coef=1.0）")
+        _rejects(
+            lambda: hire("bull_desk", "qd"), "models.json 损坏应拒（不静默 coef=1.0）"
+        )
     print("PASS test_hire_rejects_broken_models_json")
 
 
@@ -161,7 +181,9 @@ def test_hires_list_manager_status_audit():
         assert hires_list()[0]["manager_status"] == "retired"
         (manager.MANAGERS_DIR / "bull_desk.json").unlink()
         assert hires_list()[0]["manager_status"] == "missing"
-        (manager.MANAGERS_DIR / "bull_desk.json").write_text("{bad json!!", encoding="utf-8")
+        (manager.MANAGERS_DIR / "bull_desk.json").write_text(
+            "{bad json!!", encoding="utf-8"
+        )
         assert hires_list()[0]["manager_status"] == "corrupted"
         # 账本行原样保留（悬空雇佣不丢）
         assert hires_list()[0]["status"] == "active"
@@ -200,14 +222,19 @@ def test_load_profile_corrupted_json_rejected():
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         _setup(tmp)
-        (manager.MANAGERS_DIR / "bull_desk.json").write_text("{bad json!!", encoding="utf-8")
+        (manager.MANAGERS_DIR / "bull_desk.json").write_text(
+            "{bad json!!", encoding="utf-8"
+        )
         try:
             load_profile("bull_desk")
             raise AssertionError("损坏档案应拒")
         except Reject as e:
             assert "bull_desk.json" in str(e) and "损坏" in str(e)
         # hire 同样收敛为 Reject，CLI 不再 traceback 裸退
-        _rejects(lambda: hire("bull_desk", "qd"), "损坏档案 hire 应拒（Reject 非 JSONDecodeError）")
+        _rejects(
+            lambda: hire("bull_desk", "qd"),
+            "损坏档案 hire 应拒（Reject 非 JSONDecodeError）",
+        )
     print("PASS test_load_profile_corrupted_json_rejected")
 
 

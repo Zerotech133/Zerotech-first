@@ -50,6 +50,7 @@ event_receipts（-007 四类回执 completeness）、plan_meeting_ledger（-006 
   - **后验收益自动配对**：同 -013 挂账（当前仅人工/显式喂入）。
   - **1.3 HK 灰度起算日**：automation 69b51985 恢复后由 015 侧顺延，本单不估。
 """
+
 from __future__ import annotations
 
 import json
@@ -79,18 +80,20 @@ SECTION_TITLES = {
 }
 
 # 章节可用性三态
-STATUS_OK = "ok"                    # 有数据
-STATUS_NOT_WIRED = "not_wired"      # 未接入（未喂入数据源）
-STATUS_NO_DATA = "no_data"          # 已接入但源内无数据
+STATUS_OK = "ok"  # 有数据
+STATUS_NOT_WIRED = "not_wired"  # 未接入（未喂入数据源）
+STATUS_NO_DATA = "no_data"  # 已接入但源内无数据
 
 STATUS_LABEL = {STATUS_NOT_WIRED: "未接入", STATUS_NO_DATA: "无数据"}
 
 # ROI 三态（复用 -013 字面量，不另立口径）
-ROI_STATUSES = frozenset({
-    combo_review.ROI_COMPUTED,
-    combo_review.ROI_PENDING_BACKFILL,
-    combo_review.ROI_UNIT_MISMATCH,
-})
+ROI_STATUSES = frozenset(
+    {
+        combo_review.ROI_COMPUTED,
+        combo_review.ROI_PENDING_BACKFILL,
+        combo_review.ROI_UNIT_MISMATCH,
+    }
+)
 ROI_DISPLAY_TOKEN = {
     combo_review.ROI_COMPUTED: "computed",
     combo_review.ROI_PENDING_BACKFILL: "pending_backfill",
@@ -113,7 +116,8 @@ GRAYSCALE_LABEL = "灰度"
 # 只查键名不查值：值里自然可能出现「realized」这类词，但键一旦叫 live_pnl /
 # real_account / 实盘收益 就是口径越界，必须拒。
 _LIVE_KEY_PATTERN = re.compile(
-    r"(^|[_\-])(live|real|realized|broker|settled|actual)([_\-]|$)")
+    r"(^|[_\-])(live|real|realized|broker|settled|actual)([_\-]|$)"
+)
 _LIVE_KEY_SUBSTRINGS = ("实盘",)
 
 
@@ -126,6 +130,7 @@ class ReportError(Exception):
 
 
 # ---------- 通用小工具 ----------
+
 
 def _fmt(v, digits: int = 4):
     """数值渲染：None → 「—」（不填 0 充数）；浮点去尾零。"""
@@ -150,16 +155,19 @@ def _month_of(ts) -> str:
 
 # ---------- 实盘字段守卫 ----------
 
+
 def _assert_no_live_fields(obj, path: str = "$") -> None:
     """递归守卫：输出结构**永远不含实盘字段**。命中即抛（closed on failure）。"""
     if isinstance(obj, dict):
         for k, v in obj.items():
             key = str(k)
-            if _LIVE_KEY_PATTERN.search(key.lower()) or \
-                    any(s in key for s in _LIVE_KEY_SUBSTRINGS):
+            if _LIVE_KEY_PATTERN.search(key.lower()) or any(
+                s in key for s in _LIVE_KEY_SUBSTRINGS
+            ):
                 raise ReportError(
                     "live_field_forbidden",
-                    f"汇报输出不得含实盘字段（防误用）: {path}.{key}")
+                    f"汇报输出不得含实盘字段（防误用）: {path}.{key}",
+                )
             _assert_no_live_fields(v, f"{path}.{key}")
     elif isinstance(obj, (list, tuple)):
         for i, v in enumerate(obj):
@@ -167,6 +175,7 @@ def _assert_no_live_fields(obj, path: str = "$") -> None:
 
 
 # ---------- 段落骨架 ----------
+
 
 def _ok(reason: str | None = None, **payload) -> dict:
     """有数据章节。"""
@@ -184,6 +193,7 @@ def _no_data(reason: str, **payload) -> dict:
 
 
 # ---------- 一、本期研究了什么（-006 计划与会议版本账，只读） ----------
+
 
 def _research_section(plan_db, month: str | None) -> dict:
     """预案版本数 / 会议场次 / 分歧率（读 -006 两张 append-only 账）。
@@ -207,22 +217,30 @@ def _research_section(plan_db, month: str | None) -> dict:
         return _no_data(f"plan_db_unreadable: {e}")
     try:
         con.row_factory = sqlite3.Row
-        tables = {r[0] for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' "
-            "AND name IN ('plan_versions','meeting_records')").fetchall()}
+        tables = {
+            r[0]
+            for r in con.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name IN ('plan_versions','meeting_records')"
+            ).fetchall()
+        }
         if not {"plan_versions", "meeting_records"} <= tables:
             return _no_data("plan_ledger_table_missing")
         pv = con.execute(
             "SELECT COUNT(*) AS n, COUNT(DISTINCT stock) AS stocks, "
             "COUNT(DISTINCT combo_id) AS combos, "
             "SUM(CASE WHEN prev_version IS NOT NULL THEN 1 ELSE 0 END) AS chained "
-            "FROM plan_versions").fetchone()
+            "FROM plan_versions"
+        ).fetchone()
         mr_rows = con.execute(
             "SELECT meeting_id, conclusion, dissent_json FROM meeting_records "
-            "ORDER BY meeting_id").fetchall()
+            "ORDER BY meeting_id"
+        ).fetchall()
     except sqlite3.Error as e:
-        raise ReportError("plan_ledger_query_failed",
-                          f"-006 版本账查询失败（closed on failure）: {p} ({e})") from e
+        raise ReportError(
+            "plan_ledger_query_failed",
+            f"-006 版本账查询失败（closed on failure）: {p} ({e})",
+        ) from e
     finally:
         con.close()
 
@@ -237,21 +255,32 @@ def _research_section(plan_db, month: str | None) -> dict:
             raise ReportError(
                 "dissent_corrupt",
                 f"会议 {row['meeting_id']} 的 dissent_json 非法（closed on failure）: "
-                f"{row['dissent_json']!r}") from e
+                f"{row['dissent_json']!r}",
+            ) from e
         if not isinstance(dissent, list):
-            raise ReportError("dissent_corrupt",
-                              f"会议 {row['meeting_id']} 的 dissent_json 非 list")
+            raise ReportError(
+                "dissent_corrupt", f"会议 {row['meeting_id']} 的 dissent_json 非 list"
+            )
         dissent_items += len(dissent)
 
     meetings_total = len(mr_rows)
     divergent = sum(v for k, v in conclusions.items() if k != "maintain")
     plan_versions_total = int(pv["n"] or 0)
     if plan_versions_total == 0 and meetings_total == 0:
-        return _no_data("plan_ledger_empty", plan_db=str(p), month=month,
-                        plan_versions_total=0, plan_stocks_total=0,
-                        plan_combos_total=0, plan_chained_total=0,
-                        meetings_total=0, conclusions={}, divergence_total=0,
-                        divergence_rate=None, dissent_items_total=0)
+        return _no_data(
+            "plan_ledger_empty",
+            plan_db=str(p),
+            month=month,
+            plan_versions_total=0,
+            plan_stocks_total=0,
+            plan_combos_total=0,
+            plan_chained_total=0,
+            meetings_total=0,
+            conclusions={},
+            divergence_total=0,
+            divergence_rate=None,
+            dissent_items_total=0,
+        )
     return _ok(
         plan_db=str(p),
         month=month,
@@ -265,11 +294,14 @@ def _research_section(plan_db, month: str | None) -> dict:
         divergence_rate=_rate(divergent, meetings_total),
         divergence_formula="conclusions(revise+veto) / meetings_total",
         dissent_items_total=dissent_items,
-        divergence_note=(None if meetings_total else
-                         "会议场次为 0 → 分歧率不可计算（不以 0 充数）"))
+        divergence_note=(
+            None if meetings_total else "会议场次为 0 → 分歧率不可计算（不以 0 充数）"
+        ),
+    )
 
 
 # ---------- 二、模拟达到什么（-013 复盘，只读） ----------
+
 
 def _roi_display(roi: dict) -> dict:
     """ROI 呈现：算出数才给数值；未算出**原样透出状态词**，绝不渲染 0。
@@ -277,13 +309,25 @@ def _roi_display(roi: dict) -> dict:
     roi_status 白名单外的异常状态 → 透出原值并标注（不臆断其语义）。"""
     status = roi.get("status")
     if status == combo_review.ROI_COMPUTED and roi.get("value") is not None:
-        return {"status": status, "value": _fmt(roi["value"]),
-                "display": _fmt(roi["value"]), "is_number": True}
+        return {
+            "status": status,
+            "value": _fmt(roi["value"]),
+            "display": _fmt(roi["value"]),
+            "is_number": True,
+        }
     if status in ROI_STATUSES:
-        return {"status": status, "value": None,
-                "display": ROI_DISPLAY_TOKEN[status], "is_number": False}
-    return {"status": status, "value": None,
-            "display": f"{status}(未登记口径)", "is_number": False}
+        return {
+            "status": status,
+            "value": None,
+            "display": ROI_DISPLAY_TOKEN[status],
+            "is_number": False,
+        }
+    return {
+        "status": status,
+        "value": None,
+        "display": f"{status}(未登记口径)",
+        "is_number": False,
+    }
 
 
 def _simulation_section(reviews_by_id: dict, combo_order: list[str]) -> dict:
@@ -295,27 +339,31 @@ def _simulation_section(reviews_by_id: dict, combo_order: list[str]) -> dict:
         roi = rev["roi"]
         rd = _roi_display(roi)
         counts[rd["status"]] = counts.get(rd["status"], 0) + 1
-        combos.append({
-            "combo_id": cid,
-            "name": rev["combo"].get("name"),
-            "roi": rd,
-            "roi_note": roi.get("note"),
-            "revenue": rev["revenue"].get("total"),
-            "revenue_status": rev["revenue"].get("status"),
-            "revenue_unit": rev["revenue"].get("unit"),
-            "cost_accumulated": rev["cost"].get("cost_accumulated"),
-            "cost_unit": rev["cost"].get("unit"),
-        })
+        combos.append(
+            {
+                "combo_id": cid,
+                "name": rev["combo"].get("name"),
+                "roi": rd,
+                "roi_note": roi.get("note"),
+                "revenue": rev["revenue"].get("total"),
+                "revenue_status": rev["revenue"].get("status"),
+                "revenue_unit": rev["revenue"].get("unit"),
+                "cost_accumulated": rev["cost"].get("cost_accumulated"),
+                "cost_unit": rev["cost"].get("unit"),
+            }
+        )
     return _ok(
         combos=combos,
         combo_count=len(combos),
         roi_status_counts=dict(sorted(counts.items())),
         pending_backfill_count=counts.get(combo_review.ROI_PENDING_BACKFILL, 0),
         unit_mismatch_count=counts.get(combo_review.ROI_UNIT_MISMATCH, 0),
-        roi_note="ROI 未算出时原样透出 pending_backfill / unit_mismatch，绝不填 0")
+        roi_note="ROI 未算出时原样透出 pending_backfill / unit_mismatch，绝不填 0",
+    )
 
 
 # ---------- 三、各分支状态对比（-008 + -007，只读） ----------
+
 
 def _branches_section(reviews_by_id: dict, combo_order: list[str]) -> dict:
     """跟随 vs 激进：执行 / 放弃 / 分歧留痕数 + 四类回执 4/4 达成率。
@@ -335,11 +383,21 @@ def _branches_section(reviews_by_id: dict, combo_order: list[str]) -> dict:
         if not receipt_kinds:
             receipt_kinds = list(rc.get("receipt_kinds") or [])
         for b in rev.get("branches") or []:
-            row = per_branch.setdefault(b["branch_id"], {
-                "branch_id": b["branch_id"], "combos": [], "decisions": 0,
-                "executed": 0, "abstained": 0, "divergence_traces": 0,
-                "reason_codes": {}, "plan_versions": [],
-                "posterior_available": 0, "posterior_pending_backfill": 0})
+            row = per_branch.setdefault(
+                b["branch_id"],
+                {
+                    "branch_id": b["branch_id"],
+                    "combos": [],
+                    "decisions": 0,
+                    "executed": 0,
+                    "abstained": 0,
+                    "divergence_traces": 0,
+                    "reason_codes": {},
+                    "plan_versions": [],
+                    "posterior_available": 0,
+                    "posterior_pending_backfill": 0,
+                },
+            )
             row["combos"].append(cid)
             row["decisions"] += b.get("decisions") or 0
             row["executed"] += b.get("executed") or 0
@@ -373,12 +431,16 @@ def _branches_section(reviews_by_id: dict, combo_order: list[str]) -> dict:
             "signals_total": signals_total,
             "signals_full_4_of_4": signals_full,
             "rate_4_of_4": _rate(signals_full, signals_total),
-        })
+        },
+    )
 
 
 # ---------- 四、成本与预算（-011 combo_budget_status 口径，只读） ----------
 
-def _cost_section(reviews_by_id: dict, combo_order: list[str], month: str | None) -> dict:
+
+def _cost_section(
+    reviews_by_id: dict, combo_order: list[str], month: str | None
+) -> dict:
     """成本与预算：逐组合预算 / 当月累计 / 剩余 / 超预算 + 合计。
 
     预算未登记（-003 早期条目无 budget）→ budget/remaining/over_budget 记 null
@@ -400,17 +462,19 @@ def _cost_section(reviews_by_id: dict, combo_order: list[str], month: str | None
             budget_all_registered = False
         if c.get("over_budget"):
             over_count += 1
-        rows.append({
-            "combo_id": cid,
-            "month": c.get("month"),
-            "budget": c.get("budget"),
-            "cost_accumulated": c.get("cost_accumulated"),
-            "remaining": c.get("remaining"),
-            "over_budget": c.get("over_budget"),
-            "status": c.get("status"),
-            "budget_registered": registered,
-            "unit": c.get("unit"),
-        })
+        rows.append(
+            {
+                "combo_id": cid,
+                "month": c.get("month"),
+                "budget": c.get("budget"),
+                "cost_accumulated": c.get("cost_accumulated"),
+                "remaining": c.get("remaining"),
+                "over_budget": c.get("over_budget"),
+                "status": c.get("status"),
+                "budget_registered": registered,
+                "unit": c.get("unit"),
+            }
+        )
     unregistered = [r["combo_id"] for r in rows if not r["budget_registered"]]
     return _ok(
         month=month,
@@ -424,12 +488,17 @@ def _cost_section(reviews_by_id: dict, combo_order: list[str], month: str | None
             "unregistered_combos": unregistered,
             "unit": rows[0]["unit"] if rows else None,
         },
-        unregistered_note=(None if not unregistered else
-                           f"预算未登记组合 {unregistered}：预算/剩余/超预算记 null，"
-                           f"合计预算记 null（不臆造）"))
+        unregistered_note=(
+            None
+            if not unregistered
+            else f"预算未登记组合 {unregistered}：预算/剩余/超预算记 null，"
+            f"合计预算记 null（不臆造）"
+        ),
+    )
 
 
 # ---------- 五、红黄绿告警（-0.2 每日三查分级输出，只读消费） ----------
+
 
 def _alerts_section(findings) -> dict:
     """红黄绿告警行：P0 红 / P1 黄 / P2 绿，逐条透出三查项与账号。
@@ -441,8 +510,9 @@ def _alerts_section(findings) -> dict:
     if findings is None:
         return _not_wired("findings_not_provided")
     if not isinstance(findings, list):
-        raise ReportError("findings_invalid",
-                          f"findings 须为 list 或 None: {type(findings).__name__}")
+        raise ReportError(
+            "findings_invalid", f"findings 须为 list 或 None: {type(findings).__name__}"
+        )
     rows = []
     counts: dict[str, int] = {}
     grayscale_count = 0
@@ -457,21 +527,26 @@ def _alerts_section(findings) -> dict:
         if gray:
             grayscale_count += 1
         category = CHECK_CATEGORY.get(check, CATEGORY_OTHER)
-        rows.append({
-            "severity": sev,
-            "level": SEVERITY_LEVEL.get(sev, "green"),
-            "check": check,
-            "account": account,
-            "category": f"{GRAYSCALE_LABEL}/{category}" if gray else category,
-            "grayscale": gray,
-            "detail": f.get("detail"),
-        })
+        rows.append(
+            {
+                "severity": sev,
+                "level": SEVERITY_LEVEL.get(sev, "green"),
+                "check": check,
+                "account": account,
+                "category": f"{GRAYSCALE_LABEL}/{category}" if gray else category,
+                "grayscale": gray,
+                "detail": f.get("detail"),
+            }
+        )
     worst = "green"
     for r in rows:
         if LEVEL_ORDER[r["level"]] > LEVEL_ORDER[worst]:
             worst = r["level"]
-    verdict = (f"{LEVEL_LABEL[worst]}（{SEVERITY_LEVEL_INV[worst]}）" if rows
-               else LEVEL_ALL_GREEN)
+    verdict = (
+        f"{LEVEL_LABEL[worst]}（{SEVERITY_LEVEL_INV[worst]}）"
+        if rows
+        else LEVEL_ALL_GREEN
+    )
     return _ok(
         rows=rows,
         finding_total=len(rows),
@@ -480,15 +555,27 @@ def _alerts_section(findings) -> dict:
         highest_level=worst,
         verdict=verdict,
         grayscale_count=grayscale_count,
-        source="acceptance_check.run_daily_checks findings（只读消费）")
+        source="acceptance_check.run_daily_checks findings（只读消费）",
+    )
 
 
 # ---------- 主入口：build_report ----------
 
-def build_report(combo_ids=None, *, plan_db=None, registry_path=None, ledger=None,
-                 receipts=None, reviews_by_combo=None, posterior_by_combo=None,
-                 findings=None, month: str | None = None, snapshot_db=None,
-                 clock: str | None = None) -> dict:
+
+def build_report(
+    combo_ids=None,
+    *,
+    plan_db=None,
+    registry_path=None,
+    ledger=None,
+    receipts=None,
+    reviews_by_combo=None,
+    posterior_by_combo=None,
+    findings=None,
+    month: str | None = None,
+    snapshot_db=None,
+    clock: str | None = None,
+) -> dict:
     """产出司马懿汇报 payload（JSON dict；Markdown 见 `render_markdown`）。
 
     **DRYRUN**：本函数只组装文本，绝不推送任何出口。
@@ -511,8 +598,10 @@ def build_report(combo_ids=None, *, plan_db=None, registry_path=None, ledger=Non
     `ReportError`（带 reason_code），禁静默降级、禁填 0 充数。
     """
     if combo_ids is not None and not isinstance(combo_ids, (list, tuple)):
-        raise ReportError("combo_ids_invalid",
-                          f"combo_ids 须为 list/tuple 或 None: {type(combo_ids).__name__}")
+        raise ReportError(
+            "combo_ids_invalid",
+            f"combo_ids 须为 list/tuple 或 None: {type(combo_ids).__name__}",
+        )
     order = [str(c) for c in (combo_ids or [])]
     generated_at = clock or datetime.now().isoformat(timespec="seconds")
     cur_month = month or _month_of(generated_at)
@@ -522,24 +611,35 @@ def build_report(combo_ids=None, *, plan_db=None, registry_path=None, ledger=Non
         for cid in order:
             try:
                 reviews_by_id[cid] = combo_review.build_review(
-                    cid, registry_path=registry_path, ledger=ledger, receipts=receipts,
+                    cid,
+                    registry_path=registry_path,
+                    ledger=ledger,
+                    receipts=receipts,
                     reviews=(reviews_by_combo or {}).get(cid),
                     posterior=(posterior_by_combo or {}).get(cid),
-                    month=cur_month, snapshot_db=snapshot_db)
+                    month=cur_month,
+                    snapshot_db=snapshot_db,
+                )
             except combo_review.ComboReviewError as e:
-                raise ReportError("upstream_review_failed",
-                                  f"-013 复盘失败（closed on failure）: {cid} "
-                                  f"[{e.reason_code}] {e}") from e
+                raise ReportError(
+                    "upstream_review_failed",
+                    f"-013 复盘失败（closed on failure）: {cid} [{e.reason_code}] {e}",
+                ) from e
 
     no_combo = "no_combo_specified"
     sections = {
         "research": _research_section(plan_db, cur_month),
-        "simulation": (_simulation_section(reviews_by_id, order) if order
-                       else _not_wired(no_combo)),
-        "branches": (_branches_section(reviews_by_id, order) if order
-                     else _not_wired(no_combo)),
-        "cost_budget": (_cost_section(reviews_by_id, order, cur_month) if order
-                        else _not_wired(no_combo)),
+        "simulation": (
+            _simulation_section(reviews_by_id, order) if order else _not_wired(no_combo)
+        ),
+        "branches": (
+            _branches_section(reviews_by_id, order) if order else _not_wired(no_combo)
+        ),
+        "cost_budget": (
+            _cost_section(reviews_by_id, order, cur_month)
+            if order
+            else _not_wired(no_combo)
+        ),
         "alerts": _alerts_section(findings),
     }
     report = {
@@ -563,7 +663,8 @@ def build_report(combo_ids=None, *, plan_db=None, registry_path=None, ledger=Non
         "section_order": list(SECTIONS),
         "sections": sections,
         "sources": [
-            "plan_meeting_ledger(-006 只读)", "combo_review(-013 只读)",
+            "plan_meeting_ledger(-006 只读)",
+            "combo_review(-013 只读)",
             "strategy_branch(-008 compare_reviews 只读)",
             "event_receipts(-007 completeness 只读)",
             "combo_factory(-011 预算口径只读)",
@@ -581,6 +682,7 @@ def build_report(combo_ids=None, *, plan_db=None, registry_path=None, ledger=Non
 
 
 # ---------- Markdown 渲染（同一份数据，两种呈现） ----------
+
 
 def _section_header(title: str, sec: dict) -> list[str]:
     """章节标题恒出现；不可用时写明「未接入 / 无数据」+ 原因。"""
@@ -618,8 +720,7 @@ def render_markdown(report: dict) -> str:
             f"{r['plan_stocks_total']}、组合 {r['plan_combos_total']}、"
             f"版本链续版 {r['plan_chained_total']}）",
             f"- 会议场次：{r['meetings_total']}｜结论分布：{concl}",
-            f"- 分歧率：{_fmt(r['divergence_rate'])}"
-            f"（口径 {r['divergence_formula']}）",
+            f"- 分歧率：{_fmt(r['divergence_rate'])}（口径 {r['divergence_formula']}）",
             f"- 会前分歧条目合计：{r['dissent_items_total']}",
         ]
         if r.get("divergence_note"):
@@ -629,13 +730,16 @@ def render_markdown(report: dict) -> str:
     lines += _section_header(SECTION_TITLES["simulation"], sec["simulation"])
     s = sec["simulation"]
     if s.get("available"):
-        lines += ["| 组合 | 收益 | 收益状态 | 当月成本 | ROI | ROI 状态 |",
-                  "|---|---|---|---|---|---|"]
+        lines += [
+            "| 组合 | 收益 | 收益状态 | 当月成本 | ROI | ROI 状态 |",
+            "|---|---|---|---|---|---|",
+        ]
         for c in s["combos"]:
             lines.append(
                 f"| {c['combo_id']} | {_fmt(c['revenue'])} | {c['revenue_status']} | "
                 f"{_fmt(c['cost_accumulated'])} | {c['roi']['display']} | "
-                f"{c['roi']['status']} |")
+                f"{c['roi']['status']} |"
+            )
         lines += [
             "",
             f"- ROI 三态分布：{s['roi_status_counts']}（待回填 "
@@ -647,15 +751,18 @@ def render_markdown(report: dict) -> str:
     lines += _section_header(SECTION_TITLES["branches"], sec["branches"])
     b = sec["branches"]
     if b.get("available"):
-        lines += ["| 分支 | 决策 | 执行 | 放弃 | 分歧留痕 | 后验已得 | 后验待回填 | 原因码 |",
-                  "|---|---|---|---|---|---|---|---|"]
+        lines += [
+            "| 分支 | 决策 | 执行 | 放弃 | 分歧留痕 | 后验已得 | 后验待回填 | 原因码 |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
         for row in b["branches"]:
             rcs = ", ".join(f"{k}×{v}" for k, v in row["reason_codes"].items()) or "—"
             lines.append(
                 f"| {row['branch_id']} | {row['decisions']} | {row['executed']} | "
                 f"{row['abstained']} | {row['divergence_traces']} | "
                 f"{row['posterior_available']} | {row['posterior_pending_backfill']} | "
-                f"{rcs} |")
+                f"{rcs} |"
+            )
         rc = b["receipts"]
         lines += [
             "",
@@ -670,13 +777,16 @@ def render_markdown(report: dict) -> str:
     c4 = sec["cost_budget"]
     if c4.get("available"):
         t = c4["totals"]
-        lines += ["| 组合 | 预算 | 当月累计 | 剩余 | 超预算 | 预算已登记 |",
-                  "|---|---|---|---|---|---|"]
+        lines += [
+            "| 组合 | 预算 | 当月累计 | 剩余 | 超预算 | 预算已登记 |",
+            "|---|---|---|---|---|---|",
+        ]
         for row in c4["rows"]:
             lines.append(
                 f"| {row['combo_id']} | {_fmt(row['budget'])} | "
                 f"{_fmt(row['cost_accumulated'])} | {_fmt(row['remaining'])} | "
-                f"{_fmt(row['over_budget'])} | {row['budget_registered']} |")
+                f"{_fmt(row['over_budget'])} | {row['budget_registered']} |"
+            )
         unit = t["unit"] or ""
         lines += [
             "",
@@ -691,14 +801,20 @@ def render_markdown(report: dict) -> str:
     lines += _section_header(SECTION_TITLES["alerts"], sec["alerts"])
     a = sec["alerts"]
     if a.get("available"):
-        lines += ["| 灯 | 级别 | 类别 | 三查项 | 账号 | 明细 |",
-                  "|---|---|---|---|---|---|"]
+        lines += [
+            "| 灯 | 级别 | 类别 | 三查项 | 账号 | 明细 |",
+            "|---|---|---|---|---|---|",
+        ]
         for row in a["rows"]:
-            detail = (json.dumps(row.get("detail"), ensure_ascii=False)
-                      if row.get("detail") else "—")
+            detail = (
+                json.dumps(row.get("detail"), ensure_ascii=False)
+                if row.get("detail")
+                else "—"
+            )
             lines.append(
                 f"| {LEVEL_LABEL[row['level']]} | {row['severity']} | {row['category']} | "
-                f"{row['check']} | {row['account']} | {detail} |")
+                f"{row['check']} | {row['account']} | {detail} |"
+            )
         lines += [
             "",
             f"- 结论：**{a['verdict']}**｜P0 {a['p0_count']} 条｜灰度条目 "

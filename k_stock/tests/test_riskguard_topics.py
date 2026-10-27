@@ -16,6 +16,7 @@
 隔离纪律：全部账/库走 tmp 临时路径；生产账本与生产 params.yaml 只读断言
 （跑完字节与 mtime 必须不变）。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -26,7 +27,7 @@ HERE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE / "paper"))
 sys.path.insert(0, str(HERE / "tests"))
 
-import riskguard_topics as rgt                               # noqa: E402
+import riskguard_topics as rgt  # noqa: E402
 
 # 生产件只读锚点（测试只读它们，绝不写）
 PROD_PARAMS = HERE.parent.parent / "zerobound-kg" / "params.yaml"
@@ -40,23 +41,47 @@ V2 = "2026-10-08-user-approved"
 
 # ---------- 构造器 ----------
 
-def _rec(rule_id=R1, rule_version=V1, decision="blocked", posterior=0.05,
-         ts="2026-10-20T10:00:00", provenance="canonical_ledger", **extra):
+
+def _rec(
+    rule_id=R1,
+    rule_version=V1,
+    decision="blocked",
+    posterior=0.05,
+    ts="2026-10-20T10:00:00",
+    provenance="canonical_ledger",
+    **extra,
+):
     """5 键契约记录（+ provenance 来源标注）。"""
-    r = {"ts": ts, "rule_id": rule_id, "rule_version": rule_version,
-         "decision": decision, "posterior_return": posterior}
+    r = {
+        "ts": ts,
+        "rule_id": rule_id,
+        "rule_version": rule_version,
+        "decision": decision,
+        "posterior_return": posterior,
+    }
     if provenance is not None:
         r[rgt.PROVENANCE_KEY] = provenance
     r.update(extra)
     return r
 
 
-def _ledger_line(ts, rule_id, action, security="300808.SZ",
-                 data_version=V1, score=1.0, reason="ok"):
-    return json.dumps({"ts": ts, "security": security, "rule_id": rule_id,
-                       "action": action, "ref_px": 12.3, "score": score,
-                       "reason": reason, "data_version": data_version,
-                       "mode": "shadow"}, ensure_ascii=False)
+def _ledger_line(
+    ts, rule_id, action, security="300808.SZ", data_version=V1, score=1.0, reason="ok"
+):
+    return json.dumps(
+        {
+            "ts": ts,
+            "security": security,
+            "rule_id": rule_id,
+            "action": action,
+            "ref_px": 12.3,
+            "score": score,
+            "reason": reason,
+            "data_version": data_version,
+            "mode": "shadow",
+        },
+        ensure_ascii=False,
+    )
 
 
 class _FakeProvider:
@@ -74,6 +99,7 @@ class _FakeProvider:
 
 # ---------- 验收①：零误杀证据 → "无证据"结论（不是空数组充数） ----------
 
+
 def test_zero_evidence_yields_explicit_conclusion_not_empty_array():
     """无规则级误杀证据 → status 显式 + conclusion 非空 + 逐组统计齐备。"""
     recs = [_rec(decision="blocked", posterior=-0.05 - 0.001 * i) for i in range(40)]
@@ -81,7 +107,7 @@ def test_zero_evidence_yields_explicit_conclusion_not_empty_array():
     out = rgt.mine_topics(recs)
     assert out["status"] == rgt.STATUS_NO_EVIDENCE
     assert out["implemented"] is True
-    assert out["topics"] == []                     # 0 条议题
+    assert out["topics"] == []  # 0 条议题
     # **不是空数组充数**：必须有非空结论 + 可复核的逐组证据
     assert out["conclusion"].strip()
     assert "无规则级误杀证据" in out["conclusion"]
@@ -109,20 +135,21 @@ def test_zero_records_still_reports_reason_not_silent():
 
 # ---------- 验收②：误杀定义严格 ----------
 
+
 def test_false_kill_definition_is_strict():
     """仅 decision=blocked 且 posterior_return>0 算命中；其余一律不算。"""
     recs = [
-        _rec(decision="blocked", posterior=0.05),     # 命中
-        _rec(decision="blocked", posterior=0.0),      # 边界 0 → 不算
-        _rec(decision="blocked", posterior=-0.01),    # 负 → 不算
-        _rec(decision="blocked", posterior=None),     # 未成熟 → 不算
-        _rec(decision="passed", posterior=0.05),      # 放行 → 不算
+        _rec(decision="blocked", posterior=0.05),  # 命中
+        _rec(decision="blocked", posterior=0.0),  # 边界 0 → 不算
+        _rec(decision="blocked", posterior=-0.01),  # 负 → 不算
+        _rec(decision="blocked", posterior=None),  # 未成熟 → 不算
+        _rec(decision="passed", posterior=0.05),  # 放行 → 不算
     ]
     out = rgt.mine_topics(recs)
     assert out["counts"]["false_kill_hits"] == 1
     g = out["groups"][0]
     assert g["false_kill_hits"] == 1
-    assert g["settled_blocked"] == 3      # 0.05 / 0.0 / -0.01（None 不算成熟）
+    assert g["settled_blocked"] == 3  # 0.05 / 0.0 / -0.01（None 不算成熟）
     assert g["hit_examples"][0]["posterior_return"] == 0.05
 
 
@@ -136,23 +163,36 @@ def test_passed_records_never_counted_as_false_kill():
 
 # ---------- 验收③：按 (rule_id, rule_version) 归集 ----------
 
+
 def test_grouped_by_rule_id_and_rule_version():
     """同 rule_id 不同 rule_version → 分开归集，不混成一组。"""
-    recs = [_rec(rule_id=R1, rule_version=V1, decision="blocked", posterior=0.05)
-            for _ in range(40)]
-    recs += [_rec(rule_id=R1, rule_version=V2, decision="blocked", posterior=0.05)
-             for _ in range(40)]
-    recs += [_rec(rule_id=R2, rule_version=V1, decision="blocked", posterior=0.05)
-             for _ in range(40)]
-    recs += [_rec(rule_id=R2, rule_version=V1, decision="passed", posterior=-0.05)
-             for _ in range(40)]
+    recs = [
+        _rec(rule_id=R1, rule_version=V1, decision="blocked", posterior=0.05)
+        for _ in range(40)
+    ]
+    recs += [
+        _rec(rule_id=R1, rule_version=V2, decision="blocked", posterior=0.05)
+        for _ in range(40)
+    ]
+    recs += [
+        _rec(rule_id=R2, rule_version=V1, decision="blocked", posterior=0.05)
+        for _ in range(40)
+    ]
+    recs += [
+        _rec(rule_id=R2, rule_version=V1, decision="passed", posterior=-0.05)
+        for _ in range(40)
+    ]
     out = rgt.mine_topics(recs)
     keys = [(g["rule_id"], g["rule_version"]) for g in out["groups"]]
     assert len(keys) == 3
     assert (R1, V1) in keys and (R1, V2) in keys and (R2, V1) in keys
     assert out["counts"]["groups"] == 3
-    r1v1 = [g for g in out["groups"] if (g["rule_id"], g["rule_version"]) == (R1, V1)][0]
-    r1v2 = [g for g in out["groups"] if (g["rule_id"], g["rule_version"]) == (R1, V2)][0]
+    r1v1 = [g for g in out["groups"] if (g["rule_id"], g["rule_version"]) == (R1, V1)][
+        0
+    ]
+    r1v2 = [g for g in out["groups"] if (g["rule_id"], g["rule_version"]) == (R1, V2)][
+        0
+    ]
     assert r1v1["records"] == 40 and r1v2["records"] == 40
 
 
@@ -174,6 +214,7 @@ def test_miskill_evidence_produces_topic_with_group_evidence():
 
 # ---------- 验收④：213 历史口径不参与计算 ----------
 
+
 def test_historical_213_records_excluded_from_computation():
     """非 canonical_ledger 来源（历史 213 判案）不参与计算，且计数可见。"""
     used = [_rec(decision="blocked", posterior=0.05) for _ in range(40)]
@@ -194,8 +235,7 @@ def test_historical_213_records_excluded_from_computation():
 
 def test_records_without_provenance_are_excluded_not_silently_used():
     """来源不可自证（无 provenance）→ 不参与计算（宁严勿松，不静默混入）。"""
-    recs = [_rec(decision="blocked", posterior=0.05, provenance=None)
-            for _ in range(5)]
+    recs = [_rec(decision="blocked", posterior=0.05, provenance=None) for _ in range(5)]
     out = rgt.mine_topics(recs)
     assert out["status"] == rgt.STATUS_NO_RECORDS
     assert out["counts"]["records_used"] == 0
@@ -204,13 +244,17 @@ def test_records_without_provenance_are_excluded_not_silently_used():
 
 # ---------- 验收⑤：只读零写入（账本 + 日线） ----------
 
+
 def test_ledger_read_is_readonly(tmp_path):
     """读账本不改字节、不改 mtime（只读断言）。"""
     led = tmp_path / "ledger.jsonl"
     led.write_text(
-        _ledger_line("2026-10-08 10:00:00", R1, "shadow_block") + "\n" +
-        _ledger_line("2026-10-08 10:00:00", R2, "pass") + "\n",
-        encoding="utf-8")
+        _ledger_line("2026-10-08 10:00:00", R1, "shadow_block")
+        + "\n"
+        + _ledger_line("2026-10-08 10:00:00", R2, "pass")
+        + "\n",
+        encoding="utf-8",
+    )
     before_bytes = led.read_bytes()
     before_mtime = led.stat().st_mtime_ns
     provider = _FakeProvider(default=0.01)
@@ -228,16 +272,26 @@ def test_build_records_filters_and_dedups(tmp_path):
     """unknown / insufficient_sample 行剔除；(rule,security,day) 取首次评估。"""
     led = tmp_path / "ledger.jsonl"
     led.write_text(
-        _ledger_line("2026-10-08 10:00:00", R1, "shadow_block", security="A.SZ") + "\n" +
-        _ledger_line("2026-10-08 11:00:00", R1, "shadow_block", security="A.SZ") + "\n" +
-        _ledger_line("2026-10-08 10:00:00", R1, "unknown", security="B.SZ") + "\n" +
-        _ledger_line("2026-10-08 10:00:00", R2, "pass", security="C.SZ",
-                     reason="insufficient_sample(四态覆盖 181<500)-不评") + "\n",
-        encoding="utf-8")
+        _ledger_line("2026-10-08 10:00:00", R1, "shadow_block", security="A.SZ")
+        + "\n"
+        + _ledger_line("2026-10-08 11:00:00", R1, "shadow_block", security="A.SZ")
+        + "\n"
+        + _ledger_line("2026-10-08 10:00:00", R1, "unknown", security="B.SZ")
+        + "\n"
+        + _ledger_line(
+            "2026-10-08 10:00:00",
+            R2,
+            "pass",
+            security="C.SZ",
+            reason="insufficient_sample(四态覆盖 181<500)-不评",
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     recs = rgt.build_records(led, price_provider=_FakeProvider(default=0.01))
     assert len(recs) == 1
     assert recs[0]["security"] == "A.SZ"
-    assert recs[0]["ts"] == "2026-10-08 10:00:00"      # 首次评估
+    assert recs[0]["ts"] == "2026-10-08 10:00:00"  # 首次评估
 
 
 def test_real_production_files_unchanged_by_topic_run():
@@ -256,13 +310,17 @@ def test_real_production_files_unchanged_by_topic_run():
     before = (PROD_LEDGER.stat().st_size, PROD_LEDGER.stat().st_mtime_ns)
     out = rgt.run_topic(ledger_path=PROD_LEDGER)
     assert out["implemented"] is True
-    assert out["status"] in (rgt.STATUS_NO_EVIDENCE, rgt.STATUS_INCONCLUSIVE,
-                              rgt.STATUS_TOPICS_FOUND)
+    assert out["status"] in (
+        rgt.STATUS_NO_EVIDENCE,
+        rgt.STATUS_INCONCLUSIVE,
+        rgt.STATUS_TOPICS_FOUND,
+    )
     after = (PROD_LEDGER.stat().st_size, PROD_LEDGER.stat().st_mtime_ns)
     assert after == before, "生产账本被修改（只读纪律违例）"
 
 
 # ---------- 验收⑥：准备件不改生产 ----------
+
 
 def test_prep_package_does_not_touch_production_params():
     """准备件（参数候选 + 登记草案）不改生产 params.yaml（字节 + mtime 不变）。"""
@@ -289,24 +347,42 @@ def test_prep_package_is_review_only_and_not_applied():
 def _prep_package():
     """b 项准备件（审查件口径）——本单只出准备件，不落生产。"""
     from importlib import import_module
+
     mod = import_module("riskguard_prep")
     return mod.build_r3_threshold_prep_package()
 
 
 # ---------- 验收⑦：closed on failure ----------
 
+
 def test_invalid_records_raise():
     """坏记录 → 显式抛（不静默跳过、不放宽容错）。"""
-    for bad in ({"ts": "t", "rule_id": R1, "rule_version": V1, "decision": "blocked"},
-                {"ts": "t", "rule_id": R1, "rule_version": V1,
-                 "decision": "unknown", "posterior_return": 0.1},
-                {"ts": "t", "rule_id": R1, "rule_version": V1,
-                 "decision": "blocked", "posterior_return": "0.1"},
-                {"ts": "", "rule_id": R1, "rule_version": V1,
-                 "decision": "blocked", "posterior_return": 0.1},
-                "not-a-dict"):
-        with pytest.raises(rgt.RiskGuardTopicError,
-                           match="riskguard_records_invalid"):
+    for bad in (
+        {"ts": "t", "rule_id": R1, "rule_version": V1, "decision": "blocked"},
+        {
+            "ts": "t",
+            "rule_id": R1,
+            "rule_version": V1,
+            "decision": "unknown",
+            "posterior_return": 0.1,
+        },
+        {
+            "ts": "t",
+            "rule_id": R1,
+            "rule_version": V1,
+            "decision": "blocked",
+            "posterior_return": "0.1",
+        },
+        {
+            "ts": "",
+            "rule_id": R1,
+            "rule_version": V1,
+            "decision": "blocked",
+            "posterior_return": 0.1,
+        },
+        "not-a-dict",
+    ):
+        with pytest.raises(rgt.RiskGuardTopicError, match="riskguard_records_invalid"):
             rgt.mine_topics([bad])
     # 整个 records 非 list → 同样显式抛
     with pytest.raises(rgt.RiskGuardTopicError, match="riskguard_records_invalid"):
@@ -336,6 +412,7 @@ def test_corrupt_calibration_log_raises(tmp_path):
 
 
 # ---------- 呈现 ----------
+
 
 def test_markdown_renders_conclusion_and_groups():
     """Markdown：状态/结论/逐组证据/议题清单/口径边界 五段恒出现。"""

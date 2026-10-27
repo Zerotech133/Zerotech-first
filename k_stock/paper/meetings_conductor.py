@@ -10,6 +10,7 @@
 开会只是纪要内容不含休市说明，接受此限制）。
 失败隔离：单对雇佣失败不阻断其余；有失败则 exit 2（供调度层汇报）。
 """
+
 import argparse
 import json
 import os
@@ -27,7 +28,9 @@ import meeting  # noqa: E402
 
 STRATEGIST_LATEST = HERE.parent / "data" / "strategist_latest.json"
 # K-STOCK-158 · S-g：订阅服务开关（客户可选盘前/盘后报告；缺省全开兼容存量）
-STRATEGY_SUBSCRIPTIONS = HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
+STRATEGY_SUBSCRIPTIONS = (
+    HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
+)
 
 
 def kind_auto(now: datetime | None = None) -> str:
@@ -52,6 +55,7 @@ def already_held(mid: str, kind: str, now: datetime | None = None) -> bool:
 
 def minutes_list(mid):
     import minutes
+
     return minutes.list_minutes(mid)
 
 
@@ -74,11 +78,16 @@ def _load_services() -> dict[str, dict]:
     try:
         d = json.loads(STRATEGY_SUBSCRIPTIONS.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
-        print(f"WARN 订阅清单不可读（{STRATEGY_SUBSCRIPTIONS}：{e}），报告服务开关全开",
-              file=sys.stderr)
+        print(
+            f"WARN 订阅清单不可读（{STRATEGY_SUBSCRIPTIONS}：{e}），报告服务开关全开",
+            file=sys.stderr,
+        )
         return {}
-    return {p.get("id"): (p.get("services") or {})
-            for p in d.get("portfolios", []) if p.get("id")}
+    return {
+        p.get("id"): (p.get("services") or {})
+        for p in d.get("portfolios", [])
+        if p.get("id")
+    }
 
 
 def service_enabled(services_map: dict, source: str, kind: str) -> bool:
@@ -111,6 +120,7 @@ def build_context(now: datetime | None = None, source: str | None = None) -> str
     if source:
         try:
             import plan_review
+
             digest = plan_review.collect_context(source, now)
             if digest:
                 lines.append(digest)
@@ -131,6 +141,7 @@ def build_postclose_context(pf_id: str, now: datetime | None = None) -> str:
     today = now.strftime("%Y-%m-%d")
     try:
         import plan_review
+
         trader = plan_review._pf_trader(pf_id)
         db = plan_review.DB_PATH
         if not trader or not db.exists():
@@ -140,14 +151,20 @@ def build_postclose_context(pf_id: str, now: datetime | None = None) -> str:
             fills = con.execute(
                 "SELECT stock, side, filled_qty, filled_price FROM orders "
                 "WHERE account_id=? AND status='filled' AND (fill_date=? OR plan_date=?) "
-                "ORDER BY id", (trader, today, today)).fetchall()
+                "ORDER BY id",
+                (trader, today, today),
+            ).fetchall()
             pending = con.execute(
                 "SELECT stock, side, qty FROM orders "
                 "WHERE account_id=? AND status='pending' AND (plan_date=? OR fill_date=?) "
-                "ORDER BY id", (trader, today, today)).fetchall()
+                "ORDER BY id",
+                (trader, today, today),
+            ).fetchall()
             marks = con.execute(
                 "SELECT date, total, pos_pct FROM equity_marks WHERE account_id=? "
-                "ORDER BY date DESC LIMIT 2", (trader,)).fetchall()
+                "ORDER BY date DESC LIMIT 2",
+                (trader,),
+            ).fetchall()
         finally:
             con.close()
     except Exception:
@@ -167,7 +184,7 @@ def build_postclose_context(pf_id: str, now: datetime | None = None) -> str:
         for r in pending:
             lines.append(f"  {r[0]} {r[1]} {r[2]}股（挂单未撮合）")
     latest, prev = marks[0], (marks[1] if len(marks) > 1 else None)
-    eq = (f"最新权益：{latest[1]:.2f} 元（仓位 {latest[2] * 100:.0f}%，{latest[0]}）")
+    eq = f"最新权益：{latest[1]:.2f} 元（仓位 {latest[2] * 100:.0f}%，{latest[0]}）"
     if prev:
         delta = latest[1] - prev[1]
         eq += f"，较前一日（{prev[0]}）{delta:+.2f} 元"
@@ -199,7 +216,9 @@ def _auto_plan_review(mid: str, source: str) -> None:
         print(f"WARN 审批单生成失败 {source}: {e}")
 
 
-def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[int, list[dict]]:
+def run(
+    kind: str, dry_run: bool = False, now: datetime | None = None
+) -> tuple[int, list[dict]]:
     """编排一轮会议。返回 (exit_code, 结果明细)。"""
     now = now or datetime.now()
     if kind == "auto":
@@ -237,17 +256,32 @@ def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[
                 if digest:
                     ctx = f"{ctx}\n{digest}" if ctx else digest
             rec, provider = meeting.hold_meeting(mid, source, kind, context=ctx)
-            print(f"OK {mid}×{source} {kind} → {rec.get('title')} "
-                  f"(channel={rec.get('channel')}, provider={provider})")
-            results.append({"mid": mid, "source": source, "status": "ok",
-                            "title": rec.get("title"), "provider": provider})
-            if kind == "pre_open":   # K-STOCK-168：审批单属盘前语义，盘后不生成
+            print(
+                f"OK {mid}×{source} {kind} → {rec.get('title')} "
+                f"(channel={rec.get('channel')}, provider={provider})"
+            )
+            results.append(
+                {
+                    "mid": mid,
+                    "source": source,
+                    "status": "ok",
+                    "title": rec.get("title"),
+                    "provider": provider,
+                }
+            )
+            if kind == "pre_open":  # K-STOCK-168：审批单属盘前语义，盘后不生成
                 _auto_plan_review(mid, source)
         except meeting.MeetingError as e:
             failed += 1
             print(f"FAIL {mid}×{source} {kind} → {e}")
-            results.append({"mid": mid, "source": source, "status": "failed",
-                            "error": str(e)[:200]})
+            results.append(
+                {
+                    "mid": mid,
+                    "source": source,
+                    "status": "failed",
+                    "error": str(e)[:200],
+                }
+            )
     if failed:
         print(f"SUMMARY {len(pairs) - failed}/{len(pairs)} 成功，{failed} 失败")
         return 2, results
@@ -256,9 +290,13 @@ def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[
 
 
 def _main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="meetings_conductor",
-                                 description="经理会议线触发编排（交易日/去重/失败隔离）")
-    ap.add_argument("--kind", default="auto", help="pre_open|post_close|auto（按小时判定）")
+    ap = argparse.ArgumentParser(
+        prog="meetings_conductor",
+        description="经理会议线触发编排（交易日/去重/失败隔离）",
+    )
+    ap.add_argument(
+        "--kind", default="auto", help="pre_open|post_close|auto（按小时判定）"
+    )
     ap.add_argument("--dry-run", action="store_true", help="只枚举不实际开会")
     args = ap.parse_args(argv)
     code, _ = run(args.kind, dry_run=args.dry_run)

@@ -21,6 +21,7 @@ review_minutes（分歧/决议）、tier_gate 触发（orders reason 含"纪律�
   python period_summary.py --monthly [--push] [--llm] [--pf all|account_id]
 落盘：k_stock/data/summary/weekly-YYYY-Www.json | monthly-YYYY-MM.json
 """
+
 from __future__ import annotations
 
 import json
@@ -58,8 +59,11 @@ def cn_accounts() -> set:
             if t:
                 accounts.add(t)
     except Exception as exc:  # noqa: BLE001
-        print("WARN: strategy_subscriptions 读取失败，账户集兜底 "
-              "{main, chaser}：%s" % exc, file=sys.stderr)
+        print(
+            "WARN: strategy_subscriptions 读取失败，账户集兜底 "
+            "{main, chaser}：%s" % exc,
+            file=sys.stderr,
+        )
         accounts |= set(FALLBACK_ACCOUNTS)
     accounts.discard(USD_LEDGER)
     return accounts
@@ -68,16 +72,15 @@ def cn_accounts() -> set:
 def _period(kind: str):
     today = datetime.now().date()
     if kind == "weekly":
-        start = today - timedelta(days=today.weekday() + 7)   # 上周一
+        start = today - timedelta(days=today.weekday() + 7)  # 上周一
         end = start + timedelta(days=6)
-        tag = "weekly-%s-W%02d" % (start.isocalendar()[0],
-                                   start.isocalendar()[1])
+        tag = "weekly-%s-W%02d" % (start.isocalendar()[0], start.isocalendar()[1])
     else:
         # 月报由每周日 20:30 计划任务触发（Windows 月末触发器注册繁琐），
         # 此处守卫：仅当今天是本月最后一日才真正产出+推送，否则静默退出。
         tomorrow = today + timedelta(days=1)
         if tomorrow.month != today.month:
-            pass        # 今天是月末 → 继续
+            pass  # 今天是月末 → 继续
         else:
             return None, None, None
         end = today
@@ -88,8 +91,7 @@ def _period(kind: str):
 
 def build(kind: str, llm: bool = False, account: str = "all") -> dict:
     start, end, tag = _period(kind)
-    out: dict = {"ok": True, "kind": kind, "tag": tag,
-                 "period": [start, end]}
+    out: dict = {"ok": True, "kind": kind, "tag": tag, "period": [start, end]}
     # 口径（2026-10-12 多组合对齐）：--pf all 聚合 main+全部组合 trader 账本；
     # 指定 account_id 则只看该账户。us_qingping 不在推导集内（USD 独立账本）。
     accounts = {account} if account != "all" else cn_accounts()
@@ -98,10 +100,14 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
     con = _connect()
     try:
         # ① 成绩：净值序列（多账户） + 成交统计（同口径过滤）
-        eq_all = [dict(r) for r in con.execute(
-            "SELECT account_id,date,total FROM equity_marks "
-            "WHERE account_id IN (%s) AND date BETWEEN ? AND ? ORDER BY date"
-            % ph, accts + (start, end))]
+        eq_all = [
+            dict(r)
+            for r in con.execute(
+                "SELECT account_id,date,total FROM equity_marks "
+                "WHERE account_id IN (%s) AND date BETWEEN ? AND ? ORDER BY date" % ph,
+                accts + (start, end),
+            )
+        ]
         # 兼容：equity 字段仍为 main 曲线（--pf 单账户时为该账户曲线）
         base = account if account != "all" else "main"
         eq = [r for r in eq_all if r["account_id"] == base]
@@ -113,15 +119,20 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
         fills = con.execute(
             "SELECT COUNT(*) n, SUM(CASE WHEN side='BUY' THEN 1 ELSE 0 END) b "
             "FROM orders WHERE status='filled' AND fill_date BETWEEN ? AND ? "
-            "AND account_id IN (%s)" % ph, (start, end) + accts).fetchone()
+            "AND account_id IN (%s)" % ph,
+            (start, end) + accts,
+        ).fetchone()
         # per-account 成交拆分（口径同上：人民币侧账户集合）
-        by_acct = {r["acct"]: {"fills": r["n"], "buys": r["b"] or 0}
-                   for r in con.execute(
-                       "SELECT account_id acct, COUNT(*) n, SUM(CASE WHEN "
-                       "side='BUY' THEN 1 ELSE 0 END) b FROM orders "
-                       "WHERE status='filled' AND fill_date BETWEEN ? AND ? "
-                       "AND account_id IN (%s) GROUP BY account_id" % ph,
-                       (start, end) + accts)}
+        by_acct = {
+            r["acct"]: {"fills": r["n"], "buys": r["b"] or 0}
+            for r in con.execute(
+                "SELECT account_id acct, COUNT(*) n, SUM(CASE WHEN "
+                "side='BUY' THEN 1 ELSE 0 END) b FROM orders "
+                "WHERE status='filled' AND fill_date BETWEEN ? AND ? "
+                "AND account_id IN (%s) GROUP BY account_id" % ph,
+                (start, end) + accts,
+            )
+        }
         # 合并权益：逐账户周期内最新 mark 求和
         latest = {}
         for r in eq_all:
@@ -132,10 +143,11 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
             "fills": fills["n"],
             "buys": fills["b"] or 0,
             "total_equity": round(sum(latest.values()), 2) if latest else None,
-            "equity_by_account": {a: [r for r in eq_all
-                                      if r["account_id"] == a]
-                                  for a in sorted(latest)},
-            "accounts": by_acct}
+            "equity_by_account": {
+                a: [r for r in eq_all if r["account_id"] == a] for a in sorted(latest)
+            },
+            "accounts": by_acct,
+        }
         # ② 问题：judge 评审低分日（JSON 目录）+ 纪律拦截（DB）
         low = []
         jdir = DATA / "judge_reviews"
@@ -143,11 +155,17 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
             for fp in jdir.glob("*.json"):
                 try:
                     d = json.loads(fp.read_text(encoding="utf-8"))
-                    if (start <= (d.get("date") or "") <= end
-                            and (d.get("score") or 100) < 70):
-                        low.append({"date": d.get("date"),
-                                    "score": d.get("score"),
-                                    "grade": d.get("grade")})
+                    if (
+                        start <= (d.get("date") or "") <= end
+                        and (d.get("score") or 100) < 70
+                    ):
+                        low.append(
+                            {
+                                "date": d.get("date"),
+                                "score": d.get("score"),
+                                "grade": d.get("grade"),
+                            }
+                        )
                 except Exception:  # noqa: BLE001
                     pass
         # 口径修正：纪律拦截同 account 过滤（原混入 USD 独立账本拒单）
@@ -156,9 +174,9 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
             "AND (reason LIKE '%纪律%' OR reason LIKE '%门槛%') "
             "AND substr(ts,1,10) BETWEEN ? AND ? "
             "AND account_id IN (" + ph + ")",
-            (start, end) + accts).fetchone()[0]
-        out["problems"] = {"low_judge_days": low,
-                           "discipline_blocks": blocks}
+            (start, end) + accts,
+        ).fetchone()[0]
+        out["problems"] = {"low_judge_days": low, "discipline_blocks": blocks}
     finally:
         con.close()
     # 分歧/决议统计（review_minutes）
@@ -176,14 +194,12 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
     out["problems"]["meeting_disagreements"] = dis_total
     out["problems"]["meeting_resolutions"] = res_total
     # ③ 下步方向 + ④ 待裁决
-    out["next_steps"] = (_llm_next_steps(out) if llm
-                         else _rule_next_steps(out))
+    out["next_steps"] = _llm_next_steps(out) if llm else _rule_next_steps(out)
     out["decisions_needed"] = _decisions(out)
     out_dir = DATA / "summary"
     out_dir.mkdir(parents=True, exist_ok=True)
     fp = out_dir / (tag + ".json")
-    fp.write_text(json.dumps(out, ensure_ascii=False, indent=1),
-                  encoding="utf-8")
+    fp.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     out["_path"] = str(fp)
     return out
 
@@ -192,12 +208,14 @@ def _rule_next_steps(out: dict) -> list:
     p = out["problems"]
     steps = []
     if p["low_judge_days"]:
-        steps.append("评审低分 %d 天：优先归因 %s" % (
-            len(p["low_judge_days"]),
-            p["low_judge_days"][0].get("date")))
+        steps.append(
+            "评审低分 %d 天：优先归因 %s"
+            % (len(p["low_judge_days"]), p["low_judge_days"][0].get("date"))
+        )
     if p["discipline_blocks"]:
-        steps.append("纪律拦截 %d 次：核对 tier_gate 参数是否需重校准"
-                     % p["discipline_blocks"])
+        steps.append(
+            "纪律拦截 %d 次：核对 tier_gate 参数是否需重校准" % p["discipline_blocks"]
+        )
     if p["meeting_disagreements"]:
         steps.append("复盘会分歧 %d 次：跟踪决议执行率" % p["meeting_disagreements"])
     if out["performance"]["fills"] == 0:
@@ -208,22 +226,34 @@ def _rule_next_steps(out: dict) -> list:
 def _llm_next_steps(out: dict) -> list:
     try:
         import urllib.request
-        brief = json.dumps({k: out.get(k) for k in
-                            ("performance", "problems")},
-                           ensure_ascii=False)[:1200]
-        prompt = ("你是投研经理。基于以下周期总结数据，给出下阶段 3-5 条工作方向，"
-                  "每条一行、以 - 开头、不超过 40 字：\n%s" % brief)
-        body = json.dumps({"model": LLM_MODEL, "stream": False, "think": False,
-                           "messages": [{"role": "user", "content": prompt}]}).encode()
-        req = urllib.request.Request(OLLAMA, data=body,
-                                     headers={"Content-Type": "application/json"})
-        d = json.loads(urllib.request.urlopen(req, timeout=120).read()
-                       .decode("utf-8"))
+
+        brief = json.dumps(
+            {k: out.get(k) for k in ("performance", "problems")}, ensure_ascii=False
+        )[:1200]
+        prompt = (
+            "你是投研经理。基于以下周期总结数据，给出下阶段 3-5 条工作方向，"
+            "每条一行、以 - 开头、不超过 40 字：\n%s" % brief
+        )
+        body = json.dumps(
+            {
+                "model": LLM_MODEL,
+                "stream": False,
+                "think": False,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        ).encode()
+        req = urllib.request.Request(
+            OLLAMA, data=body, headers={"Content-Type": "application/json"}
+        )
+        d = json.loads(urllib.request.urlopen(req, timeout=120).read().decode("utf-8"))
         msg = d.get("message", {}).get("content", "")
         if "</think>" in msg:
             msg = msg.split("</think>", 1)[1]
-        lines = [ln.strip()[2:].strip() for ln in msg.splitlines()
-                 if ln.strip().startswith("-")]
+        lines = [
+            ln.strip()[2:].strip()
+            for ln in msg.splitlines()
+            if ln.strip().startswith("-")
+        ]
         return lines[:5] or _rule_next_steps(out)
     except Exception:  # noqa: BLE001
         return _rule_next_steps(out)
@@ -234,8 +264,10 @@ def _decisions(out: dict) -> list:
     need = []
     try:
         import sys as _s
+
         _s.path.insert(0, str(HERE.parent.parent / "portal"))
         import subscriptions as _sub
+
         for pf in _sub.portfolios().get("portfolios") or []:
             for sid in pf.get("_shadow") or []:
                 need.append("组合含 shadow 态策略 %s：是否继续保留订阅？" % sid)
@@ -251,69 +283,104 @@ def _push(out: dict) -> tuple:
     portal = HERE.parent.parent / "portal"
     sys.path.insert(0, str(portal))
     from feishu_card_v2 import send_card
+
     perf = out["performance"]
-    chg = ("%.2f%%" % perf["change_pct"]) if perf["change_pct"] is not None \
+    chg = (
+        ("%.2f%%" % perf["change_pct"])
+        if perf["change_pct"] is not None
         else "数据不足"
+    )
 
     def layer(title, md, expanded=False):
-        return {"tag": "collapsible_panel", "expanded": expanded,
-                "header": {"title": {"tag": "plain_text", "content": title}},
-                "elements": [{"tag": "markdown", "content": md}]}
+        return {
+            "tag": "collapsible_panel",
+            "expanded": expanded,
+            "header": {"title": {"tag": "plain_text", "content": title}},
+            "elements": [{"tag": "markdown", "content": md}],
+        }
 
     card = {
         "config": {"wide_screen_mode": True},
-        "header": {"template": "purple", "title": {"tag": "plain_text",
-                   "content": "%s 总结 · %s" % (
-                       "周报" if out["kind"] == "weekly" else "月报",
-                       out["tag"])}},
+        "header": {
+            "template": "purple",
+            "title": {
+                "tag": "plain_text",
+                "content": "%s 总结 · %s"
+                % ("周报" if out["kind"] == "weekly" else "月报", out["tag"]),
+            },
+        },
         "elements": [
-            {"tag": "div", "text": {"tag": "lark_md", "content":
-                "**📈 成绩**\n净值变化 %s · 成交 %d 笔（买 %d）"
-                % (chg, perf["fills"], perf["buys"])}},
+            {
+                "tag": "div",
+                "text": {
+                    "tag": "lark_md",
+                    "content": "**📈 成绩**\n净值变化 %s · 成交 %d 笔（买 %d）"
+                    % (chg, perf["fills"], perf["buys"]),
+                },
+            },
             {"tag": "hr"},
-            layer("② 存在的问题",
-                  "\n".join("- %s 评审 %s（%s）" % (d["date"], d["score"],
-                                                     d["grade"])
-                            for d in out["problems"]["low_judge_days"])
-                  + "\n- 纪律拦截 %d 次 · 复盘会分歧 %d 次"
-                  % (out["problems"]["discipline_blocks"],
-                     out["problems"]["meeting_disagreements"])
-                  or "（无）"),
-            layer("③ 下步工作方向",
-                  "\n".join("- " + s for s in out["next_steps"]), True),
-            layer("④ 待你裁决",
-                  "\n".join("- " + s for s in out["decisions_needed"])),
-            {"tag": "note", "elements": [{"tag": "plain_text", "content":
-                "模拟盘周期总结 · 详见门户"}]},
+            layer(
+                "② 存在的问题",
+                "\n".join(
+                    "- %s 评审 %s（%s）" % (d["date"], d["score"], d["grade"])
+                    for d in out["problems"]["low_judge_days"]
+                )
+                + "\n- 纪律拦截 %d 次 · 复盘会分歧 %d 次"
+                % (
+                    out["problems"]["discipline_blocks"],
+                    out["problems"]["meeting_disagreements"],
+                )
+                or "（无）",
+            ),
+            layer(
+                "③ 下步工作方向", "\n".join("- " + s for s in out["next_steps"]), True
+            ),
+            layer("④ 待你裁决", "\n".join("- " + s for s in out["decisions_needed"])),
+            {
+                "tag": "note",
+                "elements": [
+                    {"tag": "plain_text", "content": "模拟盘周期总结 · 详见门户"}
+                ],
+            },
             # 联动：按钮 → 机器人指令回路
-            {"tag": "action", "actions": [
-                {"tag": "button", "text": {"tag": "plain_text",
-                                           "content": "📊 持仓线位/下指令"},
-                 "type": "primary", "value": {"tag": "er:list"}},
-            ]},
-        ]}
+            {
+                "tag": "action",
+                "actions": [
+                    {
+                        "tag": "button",
+                        "text": {"tag": "plain_text", "content": "📊 持仓线位/下指令"},
+                        "type": "primary",
+                        "value": {"tag": "er:list"},
+                    },
+                ],
+            },
+        ],
+    }
     return send_card(card)
 
 
 def main(argv=None) -> int:
     import argparse
+
     ap = argparse.ArgumentParser(prog="period_summary")
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--weekly", action="store_true")
     g.add_argument("--monthly", action="store_true")
     ap.add_argument("--push", action="store_true", help="推飞书手机")
     ap.add_argument("--llm", action="store_true", help="下步方向 LLM 生成")
-    ap.add_argument("--pf", default="all",
-                    help="账户口径：all=聚合 main+全部已订阅组合 trader 账本"
-                         "（默认，2026-10-12 起；剔除 us_qingping USD 独立"
-                         "账本），或指定 account_id（main/chaser/taishan…）"
-                         "看单账户")
+    ap.add_argument(
+        "--pf",
+        default="all",
+        help="账户口径：all=聚合 main+全部已订阅组合 trader 账本"
+        "（默认，2026-10-12 起；剔除 us_qingping USD 独立"
+        "账本），或指定 account_id（main/chaser/taishan…）"
+        "看单账户",
+    )
     a = ap.parse_args(argv)
     kind = "weekly" if a.weekly else "monthly"
     s, e, tag = _period(kind)
-    if tag is None:   # 月末守卫：非月末日的 monthly 触发静默退出
-        print(json.dumps({"ok": True, "skipped": "not month-end"},
-                         ensure_ascii=False))
+    if tag is None:  # 月末守卫：非月末日的 monthly 触发静默退出
+        print(json.dumps({"ok": True, "skipped": "not month-end"}, ensure_ascii=False))
         return 0
     out = build(kind, llm=a.llm, account=a.pf)
     if a.push and out.get("ok"):
@@ -325,13 +392,18 @@ def main(argv=None) -> int:
             _fp = out.get("_path")
             if _fp:
                 from pathlib import Path as _Path
+
                 _Path(_fp).write_text(
-                    json.dumps(out, ensure_ascii=False, indent=1),
-                    encoding="utf-8")
+                    json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8"
+                )
         except Exception:
             pass  # 落盘失败不掩盖 push 事实，rc 仍按 push 结果判
-    print(json.dumps({k: v for k, v in out.items()
-                      if k != "performance" or True}, ensure_ascii=False)[:800])
+    print(
+        json.dumps(
+            {k: v for k, v in out.items() if k != "performance" or True},
+            ensure_ascii=False,
+        )[:800]
+    )
     if not out.get("ok"):
         return 1
     if a.push and out.get("push") and not out["push"].get("ok"):

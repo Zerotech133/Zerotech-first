@@ -5,6 +5,7 @@
 账本 model 被篡改 → chat 层白名单二次拦截（含大小写别名拒绝——精确匹配纪律 P2-3）/ timeout 透传。
 全部 monkeypatch 临时区 + 拦截 urllib，真账本/真目录/真网络零触碰。
 """
+
 import json
 import os
 import sys
@@ -40,13 +41,19 @@ class _FakeResp:
 
 class _FakeOpener:
     """拦截 urllib：记录请求并回放固定应答，绝不触网。"""
+
     captured = None
 
     def open(self, req, timeout=None):
         _FakeOpener.captured = {"req": req, "timeout": timeout}
         body = json.loads(req.data.decode("utf-8"))
-        return _FakeResp({"choices": [{"message": {"content": "pong"}}],
-                          "model": body["model"], "usage": {"total_tokens": 1}})
+        return _FakeResp(
+            {
+                "choices": [{"message": {"content": "pong"}}],
+                "model": body["model"],
+                "usage": {"total_tokens": 1},
+            }
+        )
 
 
 def _setup(tmp: Path, monkeypatch):
@@ -56,15 +63,27 @@ def _setup(tmp: Path, monkeypatch):
     mdir.mkdir()
     manager.MANAGERS_DIR = mdir
     manager.HERE = tmp  # _hire_price 读 HERE/"models.json"
-    (tmp / "models.json").write_text(json.dumps(
-        {"models": [{"model": LEGAL_MODEL, "coef_vs_glm52": 1.0}]}), encoding="utf-8")
+    (tmp / "models.json").write_text(
+        json.dumps({"models": [{"model": LEGAL_MODEL, "coef_vs_glm52": 1.0}]}),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(gaorta_client, "MODELS_FP", tmp / "models.json")
-    monkeypatch.setattr(gaorta_client.urllib.request, "build_opener",
-                        lambda handler=None: _FakeOpener())
+    monkeypatch.setattr(
+        gaorta_client.urllib.request, "build_opener", lambda handler=None: _FakeOpener()
+    )
     monkeypatch.setenv("GAORTA_API_KEY", "test-key")
-    (mdir / "bull_desk.json").write_text(json.dumps(
-        {"id": "bull_desk", "name": "牛市台", "status": "live", "model": LEGAL_MODEL,
-         "hire_base_price_cny": 99}), encoding="utf-8")
+    (mdir / "bull_desk.json").write_text(
+        json.dumps(
+            {
+                "id": "bull_desk",
+                "name": "牛市台",
+                "status": "live",
+                "model": LEGAL_MODEL,
+                "hire_base_price_cny": 99,
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def test_active_hire_uses_ledger_model(monkeypatch):
@@ -154,18 +173,26 @@ def test_http_error_wrapped_with_context(monkeypatch):
         class _RaisingOpener:
             def open(self, req, timeout=None):
                 raise urllib.error.HTTPError(
-                    "https://client.gaorta.com/v1/chat/completions", 405,
-                    "Method Not Allowed", None, None)
+                    "https://client.gaorta.com/v1/chat/completions",
+                    405,
+                    "Method Not Allowed",
+                    None,
+                    None,
+                )
 
-        monkeypatch.setattr(gaorta_client.urllib.request, "build_opener",
-                            lambda handler=None: _RaisingOpener())
+        monkeypatch.setattr(
+            gaorta_client.urllib.request,
+            "build_opener",
+            lambda handler=None: _RaisingOpener(),
+        )
         try:
             gaorta_client.chat(LEGAL_MODEL, MSG)
             raise AssertionError("HTTP 405 应包装为 RuntimeError")
         except RuntimeError as e:
             msg = str(e)
-            assert "405" in msg and "Method Not Allowed" in msg \
-                and LEGAL_MODEL in msg, f"错误消息缺上下文: {msg!r}"
+            assert (
+                "405" in msg and "Method Not Allowed" in msg and LEGAL_MODEL in msg
+            ), f"错误消息缺上下文: {msg!r}"
             assert not isinstance(e, urllib.error.HTTPError)
     print("PASS test_http_error_wrapped_with_context")
 
@@ -179,24 +206,28 @@ def test_malformed_response_wrapped(monkeypatch):
         class _BareOpener:
             def open(self, req, timeout=None):
                 body = json.loads(req.data.decode("utf-8"))
-                return _FakeResp({"object": "chat.completion",
-                                  "model": body["model"]})
+                return _FakeResp({"object": "chat.completion", "model": body["model"]})
 
-        monkeypatch.setattr(gaorta_client.urllib.request, "build_opener",
-                            lambda handler=None: _BareOpener())
+        monkeypatch.setattr(
+            gaorta_client.urllib.request,
+            "build_opener",
+            lambda handler=None: _BareOpener(),
+        )
         try:
             gaorta_client.chat(LEGAL_MODEL, MSG)
             raise AssertionError("缺 choices 应包装为 RuntimeError")
         except RuntimeError as e:
             msg = str(e)
-            assert "结构异常" in msg and LEGAL_MODEL in msg, \
+            assert "结构异常" in msg and LEGAL_MODEL in msg, (
                 f"错误消息缺上下文: {msg!r}"
+            )
         except KeyError:
             raise AssertionError("不应裸抛 KeyError")
     print("PASS test_malformed_response_wrapped")
 
 
 if __name__ == "__main__":
+
     class _MP:
         def setattr(self, obj, name, val):
             setattr(obj, name, val)

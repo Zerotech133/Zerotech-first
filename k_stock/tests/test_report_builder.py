@@ -17,6 +17,7 @@
 未接线路径照契约：三查 findings 由调用方喂入（本单不主动连 paper.db）；
 015 真实推送 BLOCK 待授权。
 """
+
 import json
 import sqlite3
 import sys
@@ -28,12 +29,12 @@ HERE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE / "paper"))
 sys.path.insert(0, str(HERE / "tests"))
 
-import combo_factory                                    # noqa: E402
-import combo_registry                                   # noqa: E402
-import combo_review                                     # noqa: E402
-import event_receipts as er                             # noqa: E402
-import plan_meeting_ledger as pml                       # noqa: E402
-import report_builder as rb                             # noqa: E402
+import combo_factory  # noqa: E402
+import combo_registry  # noqa: E402
+import combo_review  # noqa: E402
+import event_receipts as er  # noqa: E402
+import plan_meeting_ledger as pml  # noqa: E402
+import report_builder as rb  # noqa: E402
 
 SIG = "sig-20261020-0141"
 CLOCK = "2026-10-20T14:00:00"
@@ -42,11 +43,13 @@ MONTH = "2026-10"
 
 # ---------- fixture 与构造 ----------
 
+
 def _registry_copy(tmp_path) -> Path:
     """拷贝默认注册表到临时路径（不污染默认 combos.json）。"""
     dst = tmp_path / "registry.json"
-    dst.write_text(json.dumps(combo_registry.load_registry(), ensure_ascii=False),
-                   encoding="utf-8")
+    dst.write_text(
+        json.dumps(combo_registry.load_registry(), ensure_ascii=False), encoding="utf-8"
+    )
     return dst
 
 
@@ -58,11 +61,16 @@ def _registration(tmp_path, combo_id, budget=100.0) -> Path:
         "name": f"汇报测试组合 {combo_id}",
         "quad": {
             "pick_source": {"id": "src_review", "version": "v1"},
-            "persona": {"id": "persona_review", "version": "v1",
-                        "params": {"risk_appetite": "balanced",
-                                   "conf_floor": 0.55,
-                                   "max_pos_pct": 0.25,
-                                   "max_total_pct": 0.80}},
+            "persona": {
+                "id": "persona_review",
+                "version": "v1",
+                "params": {
+                    "risk_appetite": "balanced",
+                    "conf_floor": 0.55,
+                    "max_pos_pct": 0.25,
+                    "max_total_pct": 0.80,
+                },
+            },
             "watch_style": {"id": "watch_review", "version": "v1"},
             "trader": {"id": "trader_review", "version": "v1"},
         },
@@ -86,45 +94,76 @@ def env(tmp_path):
     pml.ensure_table(con)
     con.commit()
     con.close()
-    return {"registry_path": reg, "ledger": ledger, "subscription_log": subs,
-            "receipts": receipts, "plan_db": plan_db, "tmp_path": tmp_path}
+    return {
+        "registry_path": reg,
+        "ledger": ledger,
+        "subscription_log": subs,
+        "receipts": receipts,
+        "plan_db": plan_db,
+        "tmp_path": tmp_path,
+    }
 
 
 def _make_combo(env, combo_id, budget=100.0):
     """用 -011 工厂造一个带预算的组合（复用其注册/校验口径）。"""
     combo_factory.create_combo(
         _registration(env["registry_path"].parent, combo_id, budget=budget),
-        registry_path=env["registry_path"], subscription_log=env["subscription_log"])
+        registry_path=env["registry_path"],
+        subscription_log=env["subscription_log"],
+    )
     return combo_id
 
 
 def _reviews(signal_id=SIG, combo_id="combo_report_a"):
     """-008 compare_reviews 输出形态（两分支并排对比）。"""
-    return {"signal_id": signal_id, "combo_id": combo_id, "comparison_ready": True,
-            "reviews": {
-                "follow_research": {
-                    "branch_id": "follow_research", "signal_id": signal_id,
-                    "decided_action": "abstain", "action": "SELL",
-                    "reason_code": "plan_conflict", "plan_version": "pv-20261020-001",
-                    "basis_chain": [{"step": "direction_check", "match": False}],
-                    "deviation": {"type": "plan_conflict", "note": "预案与信号方向分歧"}},
-                "aggressive_direct": {
-                    "branch_id": "aggressive_direct", "signal_id": signal_id,
-                    "decided_action": "execute", "action": "BUY",
-                    "reason_code": "persona_direct_hit", "plan_version": None,
-                    "basis_chain": [{"step": "persona_direct", "conf_floor": 0.55}],
-                    "deviation": {"type": "no_plan_reference", "note": "未对照投研预案"}},
-            }}
+    return {
+        "signal_id": signal_id,
+        "combo_id": combo_id,
+        "comparison_ready": True,
+        "reviews": {
+            "follow_research": {
+                "branch_id": "follow_research",
+                "signal_id": signal_id,
+                "decided_action": "abstain",
+                "action": "SELL",
+                "reason_code": "plan_conflict",
+                "plan_version": "pv-20261020-001",
+                "basis_chain": [{"step": "direction_check", "match": False}],
+                "deviation": {"type": "plan_conflict", "note": "预案与信号方向分歧"},
+            },
+            "aggressive_direct": {
+                "branch_id": "aggressive_direct",
+                "signal_id": signal_id,
+                "decided_action": "execute",
+                "action": "BUY",
+                "reason_code": "persona_direct_hit",
+                "plan_version": None,
+                "basis_chain": [{"step": "persona_direct", "conf_floor": 0.55}],
+                "deviation": {"type": "no_plan_reference", "note": "未对照投研预案"},
+            },
+        },
+    }
 
 
 def _four_receipts(receipts_path, signal_id=SIG, combo_id="combo_report_a"):
     """入账四类回执（-007 契约）→ completeness 4/4。"""
     er.record_receipt(receipts_path, signal_id, er.RESEARCH_ACK, "research_team")
     er.record_receipt(receipts_path, signal_id, er.TRADER_ACK, "trader_room")
-    er.record_receipt(receipts_path, signal_id, er.RESEARCH_CONCLUSION, "research_team",
-                      payload={"verdict": "hold_plan"})
-    er.record_receipt(receipts_path, signal_id, er.TRADER_ACTION, "trader_room",
-                      payload={"decided_action": "abstain"}, combo_id=combo_id)
+    er.record_receipt(
+        receipts_path,
+        signal_id,
+        er.RESEARCH_CONCLUSION,
+        "research_team",
+        payload={"verdict": "hold_plan"},
+    )
+    er.record_receipt(
+        receipts_path,
+        signal_id,
+        er.TRADER_ACTION,
+        "trader_room",
+        payload={"decided_action": "abstain"},
+        combo_id=combo_id,
+    )
 
 
 def _seed_plan_ledger(env, plans=3, meetings=("maintain", "revise")):
@@ -133,28 +172,41 @@ def _seed_plan_ledger(env, plans=3, meetings=("maintain", "revise")):
     con.row_factory = sqlite3.Row
     for i in range(plans):
         pml.add_plan_version(
-            con, combo_id="combo_report_a", stock="600000",
-            plan_version=f"pv-{i:03d}", plan={"action": "BUY", "pos_pct": 0.1},
-            risk_profile="balanced", effective_at=f"2026-10-1{i}T09:30:00",
-            source="unit_test", prev_version=(f"pv-{i - 1:03d}" if i else None))
+            con,
+            combo_id="combo_report_a",
+            stock="600000",
+            plan_version=f"pv-{i:03d}",
+            plan={"action": "BUY", "pos_pct": 0.1},
+            risk_profile="balanced",
+            effective_at=f"2026-10-1{i}T09:30:00",
+            source="unit_test",
+            prev_version=(f"pv-{i - 1:03d}" if i else None),
+        )
     for j, concl in enumerate(meetings):
         pml.add_meeting_record(
-            con, meeting_id=f"mt-{j:03d}", topic_type="stock_date",
-            topic_ref=f"60000{j}/2026-10-10", topic_time="2026-10-10T09:30:00",
-            dissent=[{"role": "research", "stance": "buy",
-                      "reason": "预案偏保守"},
-                     {"role": "trader", "stance": "hold", "reason": "量能不足"}],
-            conclusion=concl, effective_at="2026-10-10T15:00:00",
+            con,
+            meeting_id=f"mt-{j:03d}",
+            topic_type="stock_date",
+            topic_ref=f"60000{j}/2026-10-10",
+            topic_time="2026-10-10T09:30:00",
+            dissent=[
+                {"role": "research", "stance": "buy", "reason": "预案偏保守"},
+                {"role": "trader", "stance": "hold", "reason": "量能不足"},
+            ],
+            conclusion=concl,
+            effective_at="2026-10-10T15:00:00",
             attendees=["research_team", "trader_room"],
-            revised_plan_version=("pv-002" if concl == "revise" else None))
+            revised_plan_version=("pv-002" if concl == "revise" else None),
+        )
     con.commit()
     con.close()
 
 
 def _findings(*specs):
     """构造 -0.2 三查 findings：(severity, check, account, detail)。"""
-    return [{"severity": s, "check": c, "account": a, "detail": d}
-            for s, c, a, d in specs]
+    return [
+        {"severity": s, "check": c, "account": a, "detail": d} for s, c, a, d in specs
+    ]
 
 
 def _build(env, combo_ids, **kw):
@@ -168,6 +220,7 @@ def _build(env, combo_ids, **kw):
 
 
 # ---------- 验收①：五段口径齐全 ----------
+
 
 def test_five_sections_always_present(env):
     """即便一个数据源都不喂，五段标题恒出现于 Markdown，且各段显式标注缺失。"""
@@ -190,29 +243,34 @@ def test_five_sections_with_full_data(env):
     combo_factory.record_combo_cost(cid, 4.0, note="b1", ledger=env["ledger"])
     _four_receipts(env["receipts"], combo_id=cid)
     _seed_plan_ledger(env)
-    rep = _build(env, [cid], plan_db=env["plan_db"],
-                 reviews_by_combo={cid: _reviews(combo_id=cid)},
-                 findings=_findings(("P0", "ledger_freshness", "main",
-                                    {"gap_trading_days": 5})))
+    rep = _build(
+        env,
+        [cid],
+        plan_db=env["plan_db"],
+        reviews_by_combo={cid: _reviews(combo_id=cid)},
+        findings=_findings(("P0", "ledger_freshness", "main", {"gap_trading_days": 5})),
+    )
     md = rb.render_markdown(rep)
     for key in rb.SECTIONS:
         assert rep["sections"][key]["available"] is True, f"{key} 段应 available"
     r = rep["sections"]["research"]
     assert r["plan_versions_total"] == 3
     assert r["meetings_total"] == 2
-    assert r["divergence_rate"] == 0.5            # revise 1 / 2 场
+    assert r["divergence_rate"] == 0.5  # revise 1 / 2 场
     assert rep["sections"]["branches"]["receipts"]["rate_4_of_4"] == 1.0
     assert "分歧率：0.5" in md
 
 
 # ---------- 验收②：不造数 ----------
 
+
 def test_roi_null_renders_pending_backfill_not_zero(env):
     """后验收益缺失 → ROI 原样透出 pending_backfill，绝不渲染 0（「打平」是造数）。"""
     cid = _make_combo(env, "combo_report_a")
     combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
-    rep = _build(env, [cid], reviews_by_combo={cid: _reviews(combo_id=cid)},
-                 findings=[])
+    rep = _build(
+        env, [cid], reviews_by_combo={cid: _reviews(combo_id=cid)}, findings=[]
+    )
     row = rep["sections"]["simulation"]["combos"][0]
     assert row["roi"]["status"] == combo_review.ROI_PENDING_BACKFILL
     assert row["roi"]["value"] is None
@@ -231,8 +289,9 @@ def test_roi_unit_mismatch_renders_token(env):
     """收益单位与成本单位不可减 → unit_mismatch，不出数、不填 0。"""
     cid = _make_combo(env, "combo_report_a")
     combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
-    rep = _build(env, [cid], findings=[],
-                 posterior_by_combo={cid: {"unit": "PCT", "total": 3.5}})
+    rep = _build(
+        env, [cid], findings=[], posterior_by_combo={cid: {"unit": "PCT", "total": 3.5}}
+    )
     row = rep["sections"]["simulation"]["combos"][0]
     assert row["roi"]["status"] == combo_review.ROI_UNIT_MISMATCH
     assert row["roi"]["display"] == "unit_mismatch"
@@ -243,8 +302,12 @@ def test_roi_computed_shows_number(env):
     """算出数时才给数值（对照组：确保 pending_backfill 不是恒定文案）。"""
     cid = _make_combo(env, "combo_report_a")
     combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
-    rep = _build(env, [cid], findings=[],
-                 posterior_by_combo={cid: {"unit": "CNY", "total": 12.0}})
+    rep = _build(
+        env,
+        [cid],
+        findings=[],
+        posterior_by_combo={cid: {"unit": "CNY", "total": 12.0}},
+    )
     row = rep["sections"]["simulation"]["combos"][0]
     assert row["roi"]["status"] == combo_review.ROI_COMPUTED
     assert row["roi"]["value"] == "8"
@@ -255,10 +318,16 @@ def test_divergence_rate_null_when_no_meetings(env):
     """会议场次为 0 → 分歧率记 null（不以 0 充数）。"""
     con = sqlite3.connect(env["plan_db"])
     con.row_factory = sqlite3.Row
-    pml.add_plan_version(con, combo_id="combo_report_a", stock="600000",
-                         plan_version="pv-only", plan={"action": "HOLD"},
-                         risk_profile="balanced", effective_at="2026-10-10T09:30:00",
-                         source="unit_test")
+    pml.add_plan_version(
+        con,
+        combo_id="combo_report_a",
+        stock="600000",
+        plan_version="pv-only",
+        plan={"action": "HOLD"},
+        risk_profile="balanced",
+        effective_at="2026-10-10T09:30:00",
+        source="unit_test",
+    )
     con.commit()
     con.close()
     rep = _build(env, None, plan_db=env["plan_db"])
@@ -277,27 +346,36 @@ def test_budget_unregistered_stays_null(env):
     reg = json.loads(env["registry_path"].read_text(encoding="utf-8"))
     entry = next(e for e in reg["combos"] if e["combo_id"] == no_budget)
     entry.pop("budget", None)
-    env["registry_path"].write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
+    env["registry_path"].write_text(
+        json.dumps(reg, ensure_ascii=False), encoding="utf-8"
+    )
     combo_factory.record_combo_cost(with_budget, 4.0, ledger=env["ledger"])
     combo_factory.record_combo_cost(no_budget, 6.0, ledger=env["ledger"])
     rep = _build(env, [with_budget, no_budget], findings=[])
     t = rep["sections"]["cost_budget"]["totals"]
-    assert t["cost_accumulated"] == 10.0        # 成本照实
-    assert t["budget"] is None                 # 预算不臆造
+    assert t["cost_accumulated"] == 10.0  # 成本照实
+    assert t["budget"] is None  # 预算不臆造
     assert t["budget_complete"] is False
     assert t["unregistered_combos"] == [no_budget]
-    row = [r for r in rep["sections"]["cost_budget"]["rows"]
-           if r["combo_id"] == no_budget][0]
+    row = [
+        r for r in rep["sections"]["cost_budget"]["rows"] if r["combo_id"] == no_budget
+    ][0]
     assert row["budget"] is None and row["remaining"] is None
     assert row["over_budget"] is None
 
 
 # ---------- 验收③：P0 告警行透出 ----------
 
+
 def test_p0_alert_row_transparent(env):
     """P0 红灯行必须逐条透出（数据断线 / 消费链停摆 / 灰度异常三源）。"""
     findings = _findings(
-        ("P0", "ledger_freshness", "main", {"gap_trading_days": 7, "last_mark": "2026-10-09"}),
+        (
+            "P0",
+            "ledger_freshness",
+            "main",
+            {"gap_trading_days": 7, "last_mark": "2026-10-09"},
+        ),
         ("P1", "consumer_chain", "*", {"max_stall_run": 3}),
         ("P2", "ledger_freshness", "hk_qingping", {"ok": True}),
     )
@@ -321,14 +399,20 @@ def test_alerts_level_mapping_and_all_green():
     a = rep["sections"]["alerts"]
     assert a["verdict"] == rb.LEVEL_ALL_GREEN
     assert a["highest_level"] == "green" and a["p0_count"] == 0
-    mixed = rb.build_report(None, clock=CLOCK, month=MONTH,
-                            findings=_findings(("P1", "consumer_chain", "*", {}),
-                                               ("P2", "ledger_freshness", "main", {})))
+    mixed = rb.build_report(
+        None,
+        clock=CLOCK,
+        month=MONTH,
+        findings=_findings(
+            ("P1", "consumer_chain", "*", {}), ("P2", "ledger_freshness", "main", {})
+        ),
+    )
     assert mixed["sections"]["alerts"]["highest_level"] == "yellow"
     assert mixed["sections"]["alerts"]["verdict"].startswith("黄")
 
 
 # ---------- 验收④：DRYRUN 标记与零真实出口 ----------
+
 
 def test_dryrun_marker_present_both_surfaces(env):
     """DRYRUN 标记在 Markdown 头部与 JSON payload 双处恒带。"""
@@ -348,12 +432,16 @@ def test_dryrun_marker_present_both_surfaces(env):
 
 def test_zero_real_outlet_under_network_clamp(env, monkeypatch):
     """网络出口全程钳制下跑通全链路——任何真实出口尝试即炸（沿用 -008 判例）。"""
+
     def _no_socket(*a, **kw):
         raise AssertionError("检测到真实网络出口尝试（socket 被钳制）")
+
     def _no_urlopen(*a, **kw):
         raise AssertionError("检测到真实网络出口尝试（urlopen 被钳制）")
+
     import socket
     import urllib.request
+
     monkeypatch.setattr(socket, "socket", _no_socket)
     monkeypatch.setattr(urllib.request, "urlopen", _no_urlopen)
 
@@ -361,9 +449,13 @@ def test_zero_real_outlet_under_network_clamp(env, monkeypatch):
     combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
     _four_receipts(env["receipts"], combo_id=cid)
     _seed_plan_ledger(env)
-    rep = _build(env, [cid], plan_db=env["plan_db"],
-                 reviews_by_combo={cid: _reviews(combo_id=cid)},
-                 findings=_findings(("P0", "ledger_freshness", "main", {})))
+    rep = _build(
+        env,
+        [cid],
+        plan_db=env["plan_db"],
+        reviews_by_combo={cid: _reviews(combo_id=cid)},
+        findings=_findings(("P0", "ledger_freshness", "main", {})),
+    )
     md = rb.render_markdown(rep)
     assert rb.DRYRUN_NOTICE in md
     assert rep["outlet"]["pushed"] is False
@@ -372,9 +464,20 @@ def test_zero_real_outlet_under_network_clamp(env, monkeypatch):
 def test_source_level_no_outlet_tokens():
     """源级断言：生成器模块不含通知/网络出口字样（无飞书 SDK / 无 webhook）。"""
     src = (HERE / "paper" / "report_builder.py").read_text(encoding="utf-8").lower()
-    for token in ("feishu", "webhook", "urlopen", "urllib", "requests.",
-                  "socket", "httpx", "aiohttp", "notify_", "send_message",
-                  "open.feishu", "lark"):
+    for token in (
+        "feishu",
+        "webhook",
+        "urlopen",
+        "urllib",
+        "requests.",
+        "socket",
+        "httpx",
+        "aiohttp",
+        "notify_",
+        "send_message",
+        "open.feishu",
+        "lark",
+    ):
         assert token not in src, f"生成器模块不得出现真实出口字样: {token}"
 
 
@@ -382,6 +485,7 @@ def test_no_external_sdk_imported():
     """运行期核对：生成器只依赖 stdlib + 板块内模块，不加载任何对外推送 SDK。"""
     import ast
     import sys as _sys
+
     tree = ast.parse((HERE / "paper" / "report_builder.py").read_text(encoding="utf-8"))
     imported = set()
     for node in ast.walk(tree):
@@ -389,14 +493,22 @@ def test_no_external_sdk_imported():
             imported.update(a.name.split(".")[0] for a in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             imported.add(node.module.split(".")[0])
-    assert imported <= {"json", "re", "sqlite3", "datetime", "pathlib",
-                        "acceptance_check", "combo_review", "__future__"}, \
-        f"生成器只应依赖 stdlib + 板块内模块，实际: {sorted(imported)}"
+    assert imported <= {
+        "json",
+        "re",
+        "sqlite3",
+        "datetime",
+        "pathlib",
+        "acceptance_check",
+        "combo_review",
+        "__future__",
+    }, f"生成器只应依赖 stdlib + 板块内模块，实际: {sorted(imported)}"
     for mod in ("lark_oapi", "httpx", "aiohttp", "feishu"):
         assert mod not in _sys.modules, f"生成器不应加载对外推送 SDK: {mod}"
 
 
 # ---------- 验收⑤：输出永远不含实盘字段 ----------
+
 
 def _all_keys(obj, acc=None):
     """递归收集输出结构全部键名（供实盘字段扫描）。"""
@@ -416,10 +528,14 @@ def test_output_has_no_live_fields(env):
     cid = _make_combo(env, "combo_report_a")
     _four_receipts(env["receipts"], combo_id=cid)
     _seed_plan_ledger(env)
-    rep = _build(env, [cid], plan_db=env["plan_db"],
-                 reviews_by_combo={cid: _reviews(combo_id=cid)},
-                 findings=_findings(("P0", "ledger_freshness", "main", {})))
-    rb._assert_no_live_fields(rep)                 # 不抛即通过
+    rep = _build(
+        env,
+        [cid],
+        plan_db=env["plan_db"],
+        reviews_by_combo={cid: _reviews(combo_id=cid)},
+        findings=_findings(("P0", "ledger_freshness", "main", {})),
+    )
+    rb._assert_no_live_fields(rep)  # 不抛即通过
     keys = _all_keys(rep)
     assert keys, "应能收集到输出键名"
     for k in keys:
@@ -430,10 +546,19 @@ def test_output_has_no_live_fields(env):
     assert rep["scope"]["trading_mode"] == "simulation_only"
 
 
-@pytest.mark.parametrize("bad_key", [
-    "live_pnl", "real_account", "realized_pnl", "broker_account",
-    "live_orders", "settled_amount", "actual_return", "实盘收益",
-])
+@pytest.mark.parametrize(
+    "bad_key",
+    [
+        "live_pnl",
+        "real_account",
+        "realized_pnl",
+        "broker_account",
+        "live_orders",
+        "settled_amount",
+        "actual_return",
+        "实盘收益",
+    ],
+)
 def test_live_field_guard_raises(bad_key):
     """守卫命中实盘字段即抛（防误用，不静默放行）。"""
     with pytest.raises(rb.ReportError) as ei:
@@ -449,14 +574,18 @@ def test_live_field_guard_recurses_into_lists():
 
 # ---------- 验收⑥：roundtrip 可复现 ----------
 
+
 def test_roundtrip_same_input_twice_identical(env):
     """同输入两次生成完全一致（clock 注入 → 可复现，供 015 归档复现比对）。"""
     cid = _make_combo(env, "combo_report_a")
     combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
     _four_receipts(env["receipts"], combo_id=cid)
     _seed_plan_ledger(env)
-    kw = dict(plan_db=env["plan_db"], reviews_by_combo={cid: _reviews(combo_id=cid)},
-              findings=_findings(("P0", "ledger_freshness", "main", {"gap": 5})))
+    kw = dict(
+        plan_db=env["plan_db"],
+        reviews_by_combo={cid: _reviews(combo_id=cid)},
+        findings=_findings(("P0", "ledger_freshness", "main", {"gap": 5})),
+    )
     r1 = _build(env, [cid], **kw)
     r2 = _build(env, [cid], **kw)
     assert rb.render_markdown(r1) == rb.render_markdown(r2)
@@ -464,6 +593,7 @@ def test_roundtrip_same_input_twice_identical(env):
 
 
 # ---------- 验收⑦：closed on failure ----------
+
 
 def test_combo_ids_invalid_raises():
     """非法 combo_ids 显式抛错（不静默降级）。"""
@@ -493,11 +623,13 @@ def test_findings_invalid_raises():
 def test_dissent_corrupt_raises(env):
     """-006 dissent_json 损坏显式抛错（不静默跳过会议）。"""
     con = sqlite3.connect(env["plan_db"])
-    con.execute("INSERT INTO meeting_records(meeting_id,topic_type,topic_ref,topic_time,"
-                "dissent_json,conclusion,revised_plan_version,effective_at,"
-                "attendees_json,corrects_meeting_id,created_at) "
-                "VALUES('mt-bad','stock_date','x/2026-10-10','2026-10-10T09:30:00',"
-                "'NOT-JSON','maintain',NULL,'2026-10-10T15:00:00','[\"a\"]',NULL,'t')")
+    con.execute(
+        "INSERT INTO meeting_records(meeting_id,topic_type,topic_ref,topic_time,"
+        "dissent_json,conclusion,revised_plan_version,effective_at,"
+        "attendees_json,corrects_meeting_id,created_at) "
+        "VALUES('mt-bad','stock_date','x/2026-10-10','2026-10-10T09:30:00',"
+        "'NOT-JSON','maintain',NULL,'2026-10-10T15:00:00','[\"a\"]',NULL,'t')"
+    )
     con.commit()
     con.close()
     with pytest.raises(rb.ReportError) as ei:
@@ -516,6 +648,7 @@ def test_empty_plan_db_is_no_data_not_crash(env):
 
 # ---------- 附加：只读性与分支对比口径 ----------
 
+
 def test_plan_db_not_written_by_report(env):
     """生成器对 -006 版本账零写入（只读 mode=ro）。"""
     _seed_plan_ledger(env)
@@ -528,8 +661,9 @@ def test_branch_comparison_counts(env):
     """跟随 vs 激进：执行/放弃/分歧留痕逐项计数（-008 口径）。"""
     cid = _make_combo(env, "combo_report_a")
     _four_receipts(env["receipts"], combo_id=cid)
-    rep = _build(env, [cid], reviews_by_combo={cid: _reviews(combo_id=cid)},
-                 findings=[])
+    rep = _build(
+        env, [cid], reviews_by_combo={cid: _reviews(combo_id=cid)}, findings=[]
+    )
     rows = {r["branch_id"]: r for r in rep["sections"]["branches"]["branches"]}
     assert rows["follow_research"]["executed"] == 0
     assert rows["follow_research"]["abstained"] == 1
@@ -548,11 +682,13 @@ def test_multi_combo_aggregation(env):
     combo_factory.record_combo_cost(a, 4.0, ledger=env["ledger"])
     combo_factory.record_combo_cost(b, 6.0, ledger=env["ledger"])
     _four_receipts(env["receipts"], signal_id=SIG, combo_id=a)
-    rep = _build(env, [a, b],
-                 reviews_by_combo={a: _reviews(combo_id=a),
-                                   b: _reviews(combo_id=b)},
-                 posterior_by_combo={b: {"unit": "CNY", "total": 20.0}},
-                 findings=[])
+    rep = _build(
+        env,
+        [a, b],
+        reviews_by_combo={a: _reviews(combo_id=a), b: _reviews(combo_id=b)},
+        posterior_by_combo={b: {"unit": "CNY", "total": 20.0}},
+        findings=[],
+    )
     sim = rep["sections"]["simulation"]
     assert sim["combo_count"] == 2
     assert sim["pending_backfill_count"] == 1

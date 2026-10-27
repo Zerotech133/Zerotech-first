@@ -25,6 +25,7 @@ CLI 自测：python picks_adapter.py chanlun
   build_todays_picks.load_cross 聚合进 todays_picks.json（sources[].s
   ="cross"，tag=「多策略共振」），走下方通用 build_run 通道即可。
 """
+
 from __future__ import annotations
 
 import json
@@ -35,8 +36,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-import trainee                                  # noqa: E402
-from engine import _norm_stock                  # noqa: E402
+import trainee  # noqa: E402
+from engine import _norm_stock  # noqa: E402
 
 PICKS = HERE.parent.parent / "portal" / "data" / "todays_picks.json"
 SELL_TAGS = ("1卖", "2卖", "3卖", "回避")
@@ -47,8 +48,10 @@ ADAPTER_STRATS = ("chanlun", "ninedim", "strong", "weak", "jev-gate", "cross")
 def build_run(sid: str) -> Path:
     """生成（或取当日缓存）sid 策略的 poc run 文件，返回路径。"""
     if sid not in ADAPTER_STRATS:
-        raise trainee.Reject("picks_adapter 不覆盖策略: %s（可覆盖 %s）"
-                             % (sid, "/".join(ADAPTER_STRATS)))
+        raise trainee.Reject(
+            "picks_adapter 不覆盖策略: %s（可覆盖 %s）"
+            % (sid, "/".join(ADAPTER_STRATS))
+        )
     if not PICKS.exists():
         raise trainee.Reject("todays_picks.json 不存在")
     d = json.loads(PICKS.read_text(encoding="utf-8"))
@@ -64,16 +67,20 @@ def build_run(sid: str) -> Path:
         src = srcs[0]
         tag = src.get("tag") or ""
         action = "SELL" if any(t in tag for t in SELL_TAGS) else "BUY"
-        items.append({
-            "stock": code,
-            "asof": asof,
-            "outputs": {"D1": {
-                "action": action,
-                "confidence": TIER_CONF.get(s.get("tier"), 0.5),
-                "reason": "%s %s（%s）" % (sid, tag, s.get("tier") or "?"),
-            }},
-            "_tier": s.get("tier"),
-        })
+        items.append(
+            {
+                "stock": code,
+                "asof": asof,
+                "outputs": {
+                    "D1": {
+                        "action": action,
+                        "confidence": TIER_CONF.get(s.get("tier"), 0.5),
+                        "reason": "%s %s（%s）" % (sid, tag, s.get("tier") or "?"),
+                    }
+                },
+                "_tier": s.get("tier"),
+            }
+        )
     day = datetime.now().strftime("%Y%m%d")
     fp = trainee.DATA_DIR / ("poc_adapter_%s_%s.json" % (sid, day))
     fp.write_text(json.dumps(items, ensure_ascii=False), encoding="utf-8")
@@ -86,6 +93,10 @@ if __name__ == "__main__":
     items = json.loads(fp.read_text(encoding="utf-8"))
     print("%s: %d items → %s" % (sid, len(items), fp.name))
     for it in items[:3]:
-        print(" ", it["stock"], it["outputs"]["D1"]["action"],
-              it["outputs"]["D1"]["confidence"],
-              it["outputs"]["D1"]["reason"])
+        print(
+            " ",
+            it["stock"],
+            it["outputs"]["D1"]["action"],
+            it["outputs"]["D1"]["confidence"],
+            it["outputs"]["D1"]["reason"],
+        )

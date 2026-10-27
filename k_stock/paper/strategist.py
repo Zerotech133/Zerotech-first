@@ -4,6 +4,7 @@
 只读分析 paper.db 的 orders 表，按 strategy 维度打分并产出路由建议。
 本模块不接 automation、不写 paper.db，仅落盘建议文件 strategist_latest.json。
 """
+
 import argparse
 import json
 import os
@@ -11,10 +12,14 @@ import sqlite3
 import tempfile
 from datetime import datetime, timedelta
 
-DEFAULT_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                          "data", "paper.db")
-OUTPUT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                           "data", "strategist_latest.json")
+DEFAULT_DB = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "paper.db"
+)
+OUTPUT_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data",
+    "strategist_latest.json",
+)
 
 SHADOW_DECLARATION = {
     "mode": "shadow",
@@ -52,8 +57,9 @@ def _score_source(rows, now=None):
     n_cancelled = sum(1 for s, _ in rows if s == "cancelled")
     n_stale_block = sum(1 for _, r in rows if r and "陈旧产物" in r)
     n_superseded = sum(1 for _, r in rows if r and "superseded" in r)
-    guard_hits = sum(1 for _, r in rows
-                     if r and any(k in r for k in ("superseded", "陈旧", "涨停")))
+    guard_hits = sum(
+        1 for _, r in rows if r and any(k in r for k in ("superseded", "陈旧", "涨停"))
+    )
 
     freshness_ratio = n_stale_block / total
     match_rate = n_filled / (n_filled + n_rejected) if (n_filled + n_rejected) else 1.0
@@ -107,7 +113,9 @@ def review(db_path=None, days=7, now=None):
     try:
         cur = con.execute(
             "SELECT strategy, status, reason FROM orders "
-            "WHERE created_at >= ? AND strategy != 'manual'", (cutoff,))
+            "WHERE created_at >= ? AND strategy != 'manual'",
+            (cutoff,),
+        )
         by_source = {}
         for strategy, status, reason in cur:
             by_source.setdefault(strategy, []).append((status, reason or ""))

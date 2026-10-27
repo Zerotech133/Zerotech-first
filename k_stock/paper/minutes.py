@@ -9,6 +9,7 @@
   - feishu 读 FEISHU_WEBHOOK 环境变量；未配置 fail-closed 返回 False+原因，不抛，不硬编码 URL
 经理档案可选字段 delivery_channels（空/缺省=默认站内），send 时校验声明通道子集合法。
 """
+
 import argparse
 import json
 import os
@@ -42,9 +43,11 @@ DELIVERY_CHANNELS: dict = {}
 
 def register_channel(name: str):
     """通道插件装饰器：注册 name -> deliver(record)->bool。"""
+
     def deco(fn):
         DELIVERY_CHANNELS[name] = fn
         return fn
+
     return deco
 
 
@@ -78,7 +81,9 @@ def _profile(mid: str) -> dict:
 def _check_channels(mid: str, channel: str) -> None:
     """channel 必须在注册表内；经理档案 delivery_channels 若声明则须覆盖之（子集合法校验）。"""
     if channel not in DELIVERY_CHANNELS:
-        raise Reject(f"未知投递通道: {channel!r}（可选: {', '.join(sorted(DELIVERY_CHANNELS))}）")
+        raise Reject(
+            f"未知投递通道: {channel!r}（可选: {', '.join(sorted(DELIVERY_CHANNELS))}）"
+        )
     declared = _profile(mid).get("delivery_channels")
     if declared and channel not in declared:
         raise Reject(f"经理 {mid} 未声明通道 {channel!r}（声明: {declared}）")
@@ -111,12 +116,17 @@ def _deliver_feishu(record: dict) -> bool:
         record["meta"]["error"] = "FEISHU_WEBHOOK 未配置，fail-closed 不投递"
         return False
     try:
-        payload = json.dumps({
-            "msg_type": "text",
-            "content": {"text": f"[{record['kind']}] {record['title']}\n{record['body']}"},
-        }).encode("utf-8")
-        req = urllib.request.Request(url, data=payload,
-                                     headers={"Content-Type": "application/json"})
+        payload = json.dumps(
+            {
+                "msg_type": "text",
+                "content": {
+                    "text": f"[{record['kind']}] {record['title']}\n{record['body']}"
+                },
+            }
+        ).encode("utf-8")
+        req = urllib.request.Request(
+            url, data=payload, headers={"Content-Type": "application/json"}
+        )
         with urllib.request.urlopen(req, timeout=10) as resp:
             return resp.status == 200
     except Exception as e:  # fail-closed：网络失败不抛，只记原因
@@ -125,8 +135,14 @@ def _deliver_feishu(record: dict) -> bool:
 
 
 # ── 对外 API ─────────────────────────────────────────────────────
-def send(mid: str, kind: str, title: str, body: str = "",
-         channel: str = "site", meta: dict | None = None) -> dict:
+def send(
+    mid: str,
+    kind: str,
+    title: str,
+    body: str = "",
+    channel: str = "site",
+    meta: dict | None = None,
+) -> dict:
     """纪要投递：校验通道 → 写账本 → 经通道投递 → 回写状态。"""
     _profile(mid)
     if kind not in _KINDS:
@@ -134,11 +150,17 @@ def send(mid: str, kind: str, title: str, body: str = "",
     if not isinstance(title, str) or not title.strip():
         raise Reject("标题不可为空")
     _check_channels(mid, channel)
-    rec = {"id": f"min_{datetime.now().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(3)}",
-           "mid": mid, "kind": kind,
-           "created_at": datetime.now().isoformat(timespec="seconds"),
-           "title": title.strip()[:100], "body": str(body or "")[:5000],
-           "channel": channel, "status": "pending", "meta": dict(meta or {})}
+    rec = {
+        "id": f"min_{datetime.now().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(3)}",
+        "mid": mid,
+        "kind": kind,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "title": title.strip()[:100],
+        "body": str(body or "")[:5000],
+        "channel": channel,
+        "status": "pending",
+        "meta": dict(meta or {}),
+    }
     d = _load(MINUTES_PATH, {"items": []})
     d["items"].append(rec)
     _atomic_save(MINUTES_PATH, d)
@@ -164,17 +186,31 @@ def inbox(mid: str | None = None) -> list[dict]:
 
 # ── CLI ──────────────────────────────────────────────────────────
 def _main(argv=None):
-    ap = argparse.ArgumentParser(prog="minutes", description="会议纪要投递管线（通道插件化）")
+    ap = argparse.ArgumentParser(
+        prog="minutes", description="会议纪要投递管线（通道插件化）"
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("send", help="投递纪要")
-    p.add_argument("mid"); p.add_argument("kind", choices=_KINDS); p.add_argument("title")
+    p.add_argument("mid")
+    p.add_argument("kind", choices=_KINDS)
+    p.add_argument("title")
     p.add_argument("--channel", default="site", choices=sorted(DELIVERY_CHANNELS))
     p.add_argument("--body-file", default=None, help="正文从文件读（缺省空正文）")
     p.add_argument("--json", action="store_true")
-    p.set_defaults(fn=lambda a: [send(a.mid, a.kind, a.title,
-                                      body=(Path(a.body_file).read_text(encoding="utf-8")
-                                            if a.body_file else ""),
-                                      channel=a.channel)], cmd_name="send")
+    p.set_defaults(
+        fn=lambda a: [
+            send(
+                a.mid,
+                a.kind,
+                a.title,
+                body=(
+                    Path(a.body_file).read_text(encoding="utf-8") if a.body_file else ""
+                ),
+                channel=a.channel,
+            )
+        ],
+        cmd_name="send",
+    )
     p = sub.add_parser("list")
     p.add_argument("mid", nargs="?", default=None)
     p.set_defaults(fn=lambda a: list_minutes(a.mid))

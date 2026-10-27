@@ -7,6 +7,7 @@
   基本面      → 日线衍生素（波动率/量能稳定性/回撤）——真财务字段等 Tushare token（挂账 K-STOCK-F1）
 产出：三路 context 文本（喂给 N1/F1/T1/T2 节点），全部数值来自真实数据。
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -89,7 +90,9 @@ def funda_context(code: str) -> str:
     drawdown = (c.iloc[-1] / hi60 - 1) * 100
     off_low = (c.iloc[-1] / lo60 - 1) * 100
     vol_cv = v.tail(30).std() / max(v.tail(30).mean(), 1)
-    amount_mean = df["amount"].astype(float).tail(20).mean() / 1e5  # tushare amount=千元, /1e5 → 亿元
+    amount_mean = (
+        df["amount"].astype(float).tail(20).mean() / 1e5
+    )  # tushare amount=千元, /1e5 → 亿元
     return (
         f"中长期结构（近 120 交易日）：现价距 60 日高点 {drawdown:+.1f}%、"
         f"距 60 日低点 {off_low:+.1f}%。近 30 日量能变异系数 {vol_cv:.2f}"
@@ -103,7 +106,11 @@ def funda_context(code: str) -> str:
 def build_context(code: str) -> dict[str, str]:
     """三路 context 一次生成。单源失败不阻塞（返回缺失声明）。"""
     out: dict[str, str] = {}
-    for key, fn in (("tech", tech_context), ("news", news_context), ("funda", funda_context)):
+    for key, fn in (
+        ("tech", tech_context),
+        ("news", news_context),
+        ("funda", funda_context),
+    ):
         try:
             out[key] = fn(code)
         except Exception as e:
@@ -125,7 +132,7 @@ def _lake_code(code: str) -> str | None:
         if c.startswith(pfx) and len(c) == 8 and c[2:].isdigit():
             return "%s.%s" % (c[2:], suf)
     if code and "." in code and len(code.split(".", 1)[0]) == 6:
-        return code.upper()          # 已是点分式（兼容旧数据）
+        return code.upper()  # 已是点分式（兼容旧数据）
     return None
 
 
@@ -137,7 +144,8 @@ def watchlist_from_quotes(limit: int = 10) -> list[str]:
         # TOP30 全被占），过滤后余量不足会再次空跑
         rows = con.execute(
             "SELECT code, MAX(amount) AS amt FROM quotes GROUP BY code "
-            "ORDER BY amt DESC LIMIT ?", (limit * 6,),
+            "ORDER BY amt DESC LIMIT ?",
+            (limit * 6,),
         ).fetchall()
     finally:
         con.close()
@@ -155,6 +163,7 @@ def watchlist_from_quotes(limit: int = 10) -> list[str]:
 
 if __name__ == "__main__":
     import sys
+
     code = sys.argv[1] if len(sys.argv) > 1 else "000001.SZ"
     ctx = build_context(code)
     for k, v in ctx.items():

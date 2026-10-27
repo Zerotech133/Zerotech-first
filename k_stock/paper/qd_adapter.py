@@ -13,6 +13,7 @@
   · regime=trend_down 的信号一票否决（双刀 Regime 分层纪律：下行市况不接刀）
   · 幂等：exec_run 的 ref={run文件}#{stock} 天然防重，同缓存重复导入自动跳过
 """
+
 from __future__ import annotations
 
 import json
@@ -29,7 +30,10 @@ BLOCKED_REGIMES = {"trend_down"}
 
 
 def _cache_path() -> Path:
-    for p in (STATION_PORTAL / "qd_scan_cache.json", HERE.parent / "qd_scan_cache.json"):
+    for p in (
+        STATION_PORTAL / "qd_scan_cache.json",
+        HERE.parent / "qd_scan_cache.json",
+    ):
         if p.exists():
             return p
     raise FileNotFoundError("找不到 qd_scan_cache.json（先跑 qd_scanner 生成扫描缓存）")
@@ -49,14 +53,20 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None) ->
         if regime in BLOCKED_REGIMES:
             skipped.append({"stock": code, "why": f"regime={regime} 下行市况一票否决"})
             continue
-        items.append({
-            "stock": code,
-            "asof": d.get("ts") or datetime.now().isoformat(timespec="seconds"),
-            "outputs": {"D1": {"action": "BUY", "confidence": DOUBLE_KNIFE_CONF}},
-            "_meta": {"source": "double_knife", "regime": regime,
-                      "name": sig.get("name"), "close": sig.get("close"),
-                      "tech": sig.get("tech")},
-        })
+        items.append(
+            {
+                "stock": code,
+                "asof": d.get("ts") or datetime.now().isoformat(timespec="seconds"),
+                "outputs": {"D1": {"action": "BUY", "confidence": DOUBLE_KNIFE_CONF}},
+                "_meta": {
+                    "source": "double_knife",
+                    "regime": regime,
+                    "name": sig.get("name"),
+                    "close": sig.get("close"),
+                    "tech": sig.get("tech"),
+                },
+            }
+        )
     if not items and not skipped:
         raise ValueError("扫描缓存无当日信号（signals_now 为空）")
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -69,8 +79,8 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None) ->
 def run(dry_run: bool = False, cache_path: Path | None = None) -> dict:
     """一条龙：缓存 → 产物 → exec 落单（strategy=double_knife）。"""
     sys.path.insert(0, str(HERE))
-    from engine import PaperEngine          # noqa: E402
-    from market import ParquetMarket        # noqa: E402
+    from engine import PaperEngine  # noqa: E402
+    from market import ParquetMarket  # noqa: E402
 
     run_path = cache_to_run(cache_path)
     eng = PaperEngine(DATA_DIR / "paper.db", ParquetMarket())
@@ -81,30 +91,53 @@ def run(dry_run: bool = False, cache_path: Path | None = None) -> dict:
 
 if __name__ == "__main__":
     import argparse
+
     ap = argparse.ArgumentParser(description="量子双刀信号 → 模拟仓落单")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--cache", default=None, help="指定扫描缓存路径（默认 portal/qd_scan_cache.json）")
-    ap.add_argument("--json", action="store_true", help="JSON 输出（供门户 API 子进程解析）")
+    ap.add_argument(
+        "--cache",
+        default=None,
+        help="指定扫描缓存路径（默认 portal/qd_scan_cache.json）",
+    )
+    ap.add_argument(
+        "--json", action="store_true", help="JSON 输出（供门户 API 子进程解析）"
+    )
     a = ap.parse_args()
     try:
         res = run(dry_run=a.dry_run, cache_path=a.cache)
         res["ok"] = True
     except Exception as e:  # 缓存缺失/无信号等 → fail loud（JSON 化）
         if a.json:
-            print(json.dumps({"ok": False, "error": f"{type(e).__name__}: {e}"},
-                             ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"ok": False, "error": f"{type(e).__name__}: {e}"},
+                    ensure_ascii=False,
+                )
+            )
             sys.exit(2)
         raise
     if a.json:
         n_pend = len([o for o in res["orders"] if o.get("status") == "pending"])
-        print(json.dumps({"ok": True, "run_path": res["run_path"],
-                          "pending": n_pend, "orders": res["orders"],
-                          "skipped": res["skipped"]},
-                         ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "run_path": res["run_path"],
+                    "pending": n_pend,
+                    "orders": res["orders"],
+                    "skipped": res["skipped"],
+                },
+                ensure_ascii=False,
+            )
+        )
     else:
-        print(f"双刀产物 {Path(res['run_path']).name}: 落单 "
-              f"{len([o for o in res['orders'] if o.get('status') == 'pending'])} 笔")
+        print(
+            f"双刀产物 {Path(res['run_path']).name}: 落单 "
+            f"{len([o for o in res['orders'] if o.get('status') == 'pending'])} 笔"
+        )
         for o in res["orders"]:
-            print(f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}")
+            print(
+                f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}"
+            )
         for s in res["skipped"]:
             print(f"  [skip] {s['stock']}: {s['why']}")

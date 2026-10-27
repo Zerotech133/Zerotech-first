@@ -39,6 +39,7 @@ append-only，与 -005 signal_rejections 同风格）。
 meeting_records.dissent_json 取「会前分歧」料；engine.exec_run→capture
 的 plan_version 透传尚未接线（引擎不给该参数=零变化），属后续工单。
 """
+
 from __future__ import annotations
 
 import json
@@ -52,7 +53,9 @@ CONCLUSIONS = ("maintain", "revise", "veto")
 TOPIC_TYPES = ("signal", "stock_date")
 
 # 禁回写留痕文件（append-only jsonl；测试注入临时路径）
-DEFAULT_BACKDATE_LOG = Path(__file__).resolve().parent.parent / "data" / "plan_backdate_attempts.jsonl"
+DEFAULT_BACKDATE_LOG = (
+    Path(__file__).resolve().parent.parent / "data" / "plan_backdate_attempts.jsonl"
+)
 
 
 class PlanLedgerError(Exception):
@@ -76,7 +79,9 @@ def _parse_iso(s: str, what: str) -> datetime:
     try:
         dt = datetime.fromisoformat(s)
     except ValueError as e:
-        raise PlanLedgerError("time_invalid", f"{what} 不是可解析 ISO 时刻: {s!r}") from e
+        raise PlanLedgerError(
+            "time_invalid", f"{what} 不是可解析 ISO 时刻: {s!r}"
+        ) from e
     if dt.tzinfo is not None:
         dt = dt.astimezone().replace(tzinfo=None)
     return dt
@@ -134,14 +139,26 @@ def ensure_table(con) -> None:
     「快照失败=落单一并失败」的 fail-visible 语义。缺任一对象时才建。
     """
     need_tables = ("plan_versions", "meeting_records")
-    need_triggers = ("plan_versions_no_update", "plan_versions_no_delete",
-                     "meeting_records_no_update", "meeting_records_no_delete")
-    have_tables = {r[0] for r in con.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name IN (?,?)",
-        need_tables).fetchall()}
-    have_triggers = {r[0] for r in con.execute(
-        "SELECT name FROM sqlite_master WHERE type='trigger' AND name IN (?,?,?,?)",
-        need_triggers).fetchall()}
+    need_triggers = (
+        "plan_versions_no_update",
+        "plan_versions_no_delete",
+        "meeting_records_no_update",
+        "meeting_records_no_delete",
+    )
+    have_tables = {
+        r[0]
+        for r in con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN (?,?)",
+            need_tables,
+        ).fetchall()
+    }
+    have_triggers = {
+        r[0]
+        for r in con.execute(
+            "SELECT name FROM sqlite_master WHERE type='trigger' AND name IN (?,?,?,?)",
+            need_triggers,
+        ).fetchall()
+    }
     if have_tables.issuperset(need_tables) and have_triggers.issuperset(need_triggers):
         return
     con.executescript(_DDL)
@@ -157,17 +174,31 @@ def append_backdate_trace(log_path: Path | str, entry: dict) -> dict:
 
 
 def _backdate_entry(stage: str, **kw) -> dict:
-    e = {"ts": _now(), "kind": "plan_backdate_attempt", "stage": stage,
-         "ledger_schema_version": PLAN_LEDGER_SCHEMA_VERSION}
+    e = {
+        "ts": _now(),
+        "kind": "plan_backdate_attempt",
+        "stage": stage,
+        "ledger_schema_version": PLAN_LEDGER_SCHEMA_VERSION,
+    }
     e.update(kw)
     return e
 
 
 # ---------- plan_versions：个股预案版本链 ----------
 
-def add_plan_version(con, *, combo_id: str, stock: str, plan_version: str,
-                     plan: dict, risk_profile: str, effective_at: str,
-                     source: str, prev_version: str | None = None) -> dict:
+
+def add_plan_version(
+    con,
+    *,
+    combo_id: str,
+    stock: str,
+    plan_version: str,
+    plan: dict,
+    risk_profile: str,
+    effective_at: str,
+    source: str,
+    prev_version: str | None = None,
+) -> dict:
     """追加一条预案版本（append-only：同 (combo_id, stock, plan_version)
     重复即拒，无 update 路径）。
 
@@ -175,46 +206,70 @@ def add_plan_version(con, *, combo_id: str, stock: str, plan_version: str,
     不断裂；前序版本须先入库——append-only 追加顺序即演变顺序）。
     """
     ensure_table(con)
-    for k, v in (("combo_id", combo_id), ("stock", stock),
-                 ("plan_version", plan_version), ("risk_profile", risk_profile),
-                 ("source", source)):
+    for k, v in (
+        ("combo_id", combo_id),
+        ("stock", stock),
+        ("plan_version", plan_version),
+        ("risk_profile", risk_profile),
+        ("source", source),
+    ):
         if not isinstance(v, str) or not v.strip():
-            raise PlanLedgerError("field_invalid", f"plan_versions.{k} 须为非空字符串: {v!r}")
+            raise PlanLedgerError(
+                "field_invalid", f"plan_versions.{k} 须为非空字符串: {v!r}"
+            )
     if not isinstance(plan, dict) or not plan:
-        raise PlanLedgerError("plan_invalid", f"plan 须为非空 dict（买卖点/仓位方案）: {plan!r}")
+        raise PlanLedgerError(
+            "plan_invalid", f"plan 须为非空 dict（买卖点/仓位方案）: {plan!r}"
+        )
     eff = _parse_iso(effective_at, "plan_versions.effective_at")
     if prev_version is not None:
         if not isinstance(prev_version, str) or not prev_version.strip():
-            raise PlanLedgerError("prev_invalid", f"prev_version 须为非空字符串或 None: {prev_version!r}")
+            raise PlanLedgerError(
+                "prev_invalid", f"prev_version 须为非空字符串或 None: {prev_version!r}"
+            )
         row = con.execute(
             "SELECT 1 FROM plan_versions WHERE combo_id=? AND stock=? AND plan_version=?",
-            (combo_id, stock, prev_version)).fetchone()
+            (combo_id, stock, prev_version),
+        ).fetchone()
         if row is None:
             raise PlanLedgerError(
                 "prev_not_found",
                 f"prev_version {prev_version!r} 在 ({combo_id}, {stock}) 版本链中不存在"
-                "（版本链不可断裂，前序须先入库）")
-    if con.execute("SELECT 1 FROM plan_versions WHERE combo_id=? AND stock=? AND plan_version=?",
-                   (combo_id, stock, plan_version)).fetchone():
+                "（版本链不可断裂，前序须先入库）",
+            )
+    if con.execute(
+        "SELECT 1 FROM plan_versions WHERE combo_id=? AND stock=? AND plan_version=?",
+        (combo_id, stock, plan_version),
+    ).fetchone():
         raise PlanLedgerError(
             "duplicate_plan_version",
             f"({combo_id}, {stock}, {plan_version}) 已存在——append-only 禁覆盖，"
-            "新预案请用新 plan_version 追加")
-    row = {"combo_id": combo_id, "stock": stock, "plan_version": plan_version,
-           "plan_json": json.dumps(plan, ensure_ascii=False),
-           "risk_profile": risk_profile,
-           "effective_at": effective_at, "source": source,
-           "prev_version": prev_version, "created_at": _now()}
+            "新预案请用新 plan_version 追加",
+        )
+    row = {
+        "combo_id": combo_id,
+        "stock": stock,
+        "plan_version": plan_version,
+        "plan_json": json.dumps(plan, ensure_ascii=False),
+        "risk_profile": risk_profile,
+        "effective_at": effective_at,
+        "source": source,
+        "prev_version": prev_version,
+        "created_at": _now(),
+    }
     con.execute(
         "INSERT INTO plan_versions(combo_id,stock,plan_version,plan_json,"
         "risk_profile,effective_at,source,prev_version,created_at) "
         "VALUES(:combo_id,:stock,:plan_version,:plan_json,:risk_profile,"
-        ":effective_at,:source,:prev_version,:created_at)", row)
+        ":effective_at,:source,:prev_version,:created_at)",
+        row,
+    )
     return {**row, "plan": plan}
 
 
-def as_of_plan(con, combo_id: str, stock: str, at_time: str,
-               risk_profile: str | None = None) -> dict | None:
+def as_of_plan(
+    con, combo_id: str, stock: str, at_time: str, risk_profile: str | None = None
+) -> dict | None:
     """按「信号时刻」反查当时生效的预案版本。
 
     取生效时点 ≤ at_time 的版本中生效最晚者（同票多版本/多画像时，
@@ -225,7 +280,8 @@ def as_of_plan(con, combo_id: str, stock: str, at_time: str,
     rows = con.execute(
         "SELECT * FROM plan_versions WHERE combo_id=? AND stock=?"
         + (" AND risk_profile=?" if risk_profile else ""),
-        (combo_id, stock, risk_profile) if risk_profile else (combo_id, stock)).fetchall()
+        (combo_id, stock, risk_profile) if risk_profile else (combo_id, stock),
+    ).fetchall()
     best, best_key = None, None
     for r in rows:
         eff = _parse_iso(r["effective_at"], "plan_versions.effective_at")
@@ -237,9 +293,15 @@ def as_of_plan(con, combo_id: str, stock: str, at_time: str,
     return best
 
 
-def assert_plan_effective(con, combo_id: str, stock: str, plan_version: str,
-                          at_time: str, log_path: Path | str | None = None,
-                          stage: str = "assert") -> dict:
+def assert_plan_effective(
+    con,
+    combo_id: str,
+    stock: str,
+    plan_version: str,
+    at_time: str,
+    log_path: Path | str | None = None,
+    stage: str = "assert",
+) -> dict:
     """断言某预案版本在 at_time（信号/快照时刻）已生效：effective_at ≤ at_time。
 
     版本不存在 → PlanLedgerError(plan_not_found)；
@@ -249,30 +311,43 @@ def assert_plan_effective(con, combo_id: str, stock: str, plan_version: str,
     ensure_table(con)
     row = con.execute(
         "SELECT * FROM plan_versions WHERE combo_id=? AND stock=? AND plan_version=?",
-        (combo_id, stock, plan_version)).fetchone()
+        (combo_id, stock, plan_version),
+    ).fetchone()
     if row is None:
         raise PlanLedgerError(
             "plan_not_found",
             f"plan_versions 无 ({combo_id}, {stock}, {plan_version})——快照引用的"
-            "预案版本必须先入库（closed on failure）")
+            "预案版本必须先入库（closed on failure）",
+        )
     eff = _parse_iso(row["effective_at"], "plan_versions.effective_at")
     at = _parse_iso(at_time, "at_time")
     if eff > at:
-        entry = append_backdate_trace(log_path or DEFAULT_BACKDATE_LOG, _backdate_entry(
-            stage, combo_id=combo_id, stock=stock, plan_version=plan_version,
-            at_time=at_time, effective_at=row["effective_at"],
-            reason=f"禁回写：plan 生效时点 {row['effective_at']} 晚于信号/快照时刻 "
-                   f"{at_time}——不得用会后版本冒充信号时刻版本"))
+        entry = append_backdate_trace(
+            log_path or DEFAULT_BACKDATE_LOG,
+            _backdate_entry(
+                stage,
+                combo_id=combo_id,
+                stock=stock,
+                plan_version=plan_version,
+                at_time=at_time,
+                effective_at=row["effective_at"],
+                reason=f"禁回写：plan 生效时点 {row['effective_at']} 晚于信号/快照时刻 "
+                f"{at_time}——不得用会后版本冒充信号时刻版本",
+            ),
+        )
         raise PlanBackdateError(
             "plan_backdate",
             f"禁回写违例：plan_version={plan_version} 生效时点 {row['effective_at']} "
-            f"> 信号/快照时刻 {at_time}（已留痕 {entry['ts']}）")
+            f"> 信号/快照时刻 {at_time}（已留痕 {entry['ts']}）",
+        )
     d = dict(row)
     d["plan"] = json.loads(d["plan_json"])
     return d
 
 
-def assert_snapshot_plan(con, snapshot, log_path: Path | str | None = None) -> dict | None:
+def assert_snapshot_plan(
+    con, snapshot, log_path: Path | str | None = None
+) -> dict | None:
     """审计断言：给定决策快照（by_ref 产物或含 ts/context_json 的行），
     断言其引用（context_json["plan_version"]）的预案版本生效时点 ≤ 快照时刻。
 
@@ -289,21 +364,39 @@ def assert_snapshot_plan(con, snapshot, log_path: Path | str | None = None) -> d
     if not stamp:
         return None
     if not isinstance(stamp, dict):
-        raise PlanLedgerError("plan_stamp_invalid",
-                              f"快照 plan_version 印记须为 dict: {type(stamp).__name__}")
+        raise PlanLedgerError(
+            "plan_stamp_invalid",
+            f"快照 plan_version 印记须为 dict: {type(stamp).__name__}",
+        )
     return assert_plan_effective(
-        con, stamp.get("combo_id"), stamp.get("stock"), stamp.get("plan_version"),
-        at_time=snapshot.get("ts"), log_path=log_path, stage="assert_snapshot")
+        con,
+        stamp.get("combo_id"),
+        stamp.get("stock"),
+        stamp.get("plan_version"),
+        at_time=snapshot.get("ts"),
+        log_path=log_path,
+        stage="assert_snapshot",
+    )
 
 
 # ---------- meeting_records：会议账 ----------
 
-def add_meeting_record(con, *, meeting_id: str, topic_type: str, topic_ref: str,
-                       topic_time: str, dissent: list, conclusion: str,
-                       effective_at: str, attendees: list,
-                       revised_plan_version: str | None = None,
-                       corrects_meeting_id: str | None = None,
-                       log_path: Path | str | None = None) -> dict:
+
+def add_meeting_record(
+    con,
+    *,
+    meeting_id: str,
+    topic_type: str,
+    topic_ref: str,
+    topic_time: str,
+    dissent: list,
+    conclusion: str,
+    effective_at: str,
+    attendees: list,
+    revised_plan_version: str | None = None,
+    corrects_meeting_id: str | None = None,
+    log_path: Path | str | None = None,
+) -> dict:
     """追加一条会议记录（append-only：同 meeting_id 重复即拒，无 update 路径）。
 
     禁回写（定纲核心）：会后记录的生效时点必须**晚于**其引用的信号/
@@ -315,90 +408,134 @@ def add_meeting_record(con, *, meeting_id: str, topic_type: str, topic_ref: str,
     corrects_meeting_id 指向被更正记录。"""
     ensure_table(con)
     if not isinstance(meeting_id, str) or not meeting_id.strip():
-        raise PlanLedgerError("field_invalid", f"meeting_id 须为非空字符串: {meeting_id!r}")
+        raise PlanLedgerError(
+            "field_invalid", f"meeting_id 须为非空字符串: {meeting_id!r}"
+        )
     if topic_type not in TOPIC_TYPES:
-        raise PlanLedgerError("topic_type_invalid",
-                              f"topic_type 只认 {TOPIC_TYPES}: {topic_type!r}")
+        raise PlanLedgerError(
+            "topic_type_invalid", f"topic_type 只认 {TOPIC_TYPES}: {topic_type!r}"
+        )
     if not isinstance(topic_ref, str) or not topic_ref.strip():
-        raise PlanLedgerError("field_invalid", f"topic_ref 须为非空字符串: {topic_ref!r}")
+        raise PlanLedgerError(
+            "field_invalid", f"topic_ref 须为非空字符串: {topic_ref!r}"
+        )
     topic_dt = _parse_iso(topic_time, "meeting_records.topic_time")
     # 会前分歧：定纲——只存共识=丢掉最有价值的反例与分歧，分歧记录必填
     if not isinstance(dissent, list) or not dissent:
-        raise PlanLedgerError("dissent_missing",
-                              "dissent 须为非空 list（会前分歧记录必填——定纲："
-                              "只存共识=丢掉最有价值的反例与分歧）")
+        raise PlanLedgerError(
+            "dissent_missing",
+            "dissent 须为非空 list（会前分歧记录必填——定纲："
+            "只存共识=丢掉最有价值的反例与分歧）",
+        )
     for i, d in enumerate(dissent):
         if not isinstance(d, dict):
             raise PlanLedgerError("dissent_invalid", f"dissent[{i}] 须为 dict: {d!r}")
         for k in ("role", "stance", "reason"):
             if not isinstance(d.get(k), str) or not d[k].strip():
-                raise PlanLedgerError("dissent_invalid",
-                                      f"dissent[{i}].{k} 须为非空字符串（立场+理由必录）")
+                raise PlanLedgerError(
+                    "dissent_invalid",
+                    f"dissent[{i}].{k} 须为非空字符串（立场+理由必录）",
+                )
     if conclusion not in CONCLUSIONS:
-        raise PlanLedgerError("conclusion_invalid",
-                              f"conclusion 只认 {CONCLUSIONS}: {conclusion!r}")
-    if not isinstance(attendees, list) or not attendees or \
-            not all(isinstance(a, str) and a.strip() for a in attendees):
+        raise PlanLedgerError(
+            "conclusion_invalid", f"conclusion 只认 {CONCLUSIONS}: {conclusion!r}"
+        )
+    if (
+        not isinstance(attendees, list)
+        or not attendees
+        or not all(isinstance(a, str) and a.strip() for a in attendees)
+    ):
         raise PlanLedgerError("attendees_invalid", "attendees 须为非空角色字符串 list")
     eff_dt = _parse_iso(effective_at, "meeting_records.effective_at")
     # 禁回写防线③：会后生效时点必须晚于议题引用的信号/快照时间
     if eff_dt <= topic_dt:
-        entry = append_backdate_trace(log_path or DEFAULT_BACKDATE_LOG, _backdate_entry(
-            "meeting", meeting_id=meeting_id, topic_ref=topic_ref,
-            topic_time=topic_time, effective_at=effective_at,
-            reason=f"禁回写：会议生效时点 {effective_at} 未晚于议题引用时刻 "
-                   f"{topic_time}（会后结论不得追溯为议题时刻已生效）"))
+        entry = append_backdate_trace(
+            log_path or DEFAULT_BACKDATE_LOG,
+            _backdate_entry(
+                "meeting",
+                meeting_id=meeting_id,
+                topic_ref=topic_ref,
+                topic_time=topic_time,
+                effective_at=effective_at,
+                reason=f"禁回写：会议生效时点 {effective_at} 未晚于议题引用时刻 "
+                f"{topic_time}（会后结论不得追溯为议题时刻已生效）",
+            ),
+        )
         raise PlanBackdateError(
             "meeting_backdate",
             f"禁回写违例：meeting {meeting_id} 生效时点 {effective_at} ≤ 议题引用"
-            f"时刻 {topic_time}（已留痕 {entry['ts']}）")
+            f"时刻 {topic_time}（已留痕 {entry['ts']}）",
+        )
     if conclusion == "revise":
         if not revised_plan_version:
             raise PlanLedgerError(
                 "revise_without_plan",
-                "conclusion=revise 须给 revised_plan_version（修订后指向哪个版本）")
+                "conclusion=revise 须给 revised_plan_version（修订后指向哪个版本）",
+            )
         row = con.execute(
             "SELECT effective_at FROM plan_versions WHERE plan_version=?",
-            (revised_plan_version,)).fetchone()
+            (revised_plan_version,),
+        ).fetchone()
         if row is None:
             raise PlanLedgerError(
                 "plan_not_found",
                 f"revised_plan_version {revised_plan_version!r} 不在 plan_versions"
-                "（修订指向的版本须先入库）")
+                "（修订指向的版本须先入库）",
+            )
         rev_eff = _parse_iso(row["effective_at"], "plan_versions.effective_at")
         if rev_eff < eff_dt:
             raise PlanLedgerError(
                 "revise_plan_early",
                 f"修订指向版本 {revised_plan_version} 生效时点 {row['effective_at']} "
-                f"早于会议生效时点 {effective_at}——防回写：新版本不得早于会议生效")
-    if corrects_meeting_id is not None and not con.execute(
-            "SELECT 1 FROM meeting_records WHERE meeting_id=?", (corrects_meeting_id,)).fetchone():
-        raise PlanLedgerError("corrects_not_found",
-                              f"corrects_meeting_id {corrects_meeting_id!r} 不存在")
-    if con.execute("SELECT 1 FROM meeting_records WHERE meeting_id=?", (meeting_id,)).fetchone():
-        raise PlanLedgerError("duplicate_meeting_id",
-                              f"meeting_id {meeting_id!r} 已存在——append-only 禁覆盖，"
-                              "更正请追加新记录并指 corrects_meeting_id")
-    row = {"meeting_id": meeting_id, "topic_type": topic_type, "topic_ref": topic_ref,
-           "topic_time": topic_time,
-           "dissent_json": json.dumps(dissent, ensure_ascii=False),
-           "conclusion": conclusion, "revised_plan_version": revised_plan_version,
-           "effective_at": effective_at,
-           "attendees_json": json.dumps(attendees, ensure_ascii=False),
-           "corrects_meeting_id": corrects_meeting_id, "created_at": _now()}
+                f"早于会议生效时点 {effective_at}——防回写：新版本不得早于会议生效",
+            )
+    if (
+        corrects_meeting_id is not None
+        and not con.execute(
+            "SELECT 1 FROM meeting_records WHERE meeting_id=?", (corrects_meeting_id,)
+        ).fetchone()
+    ):
+        raise PlanLedgerError(
+            "corrects_not_found", f"corrects_meeting_id {corrects_meeting_id!r} 不存在"
+        )
+    if con.execute(
+        "SELECT 1 FROM meeting_records WHERE meeting_id=?", (meeting_id,)
+    ).fetchone():
+        raise PlanLedgerError(
+            "duplicate_meeting_id",
+            f"meeting_id {meeting_id!r} 已存在——append-only 禁覆盖，"
+            "更正请追加新记录并指 corrects_meeting_id",
+        )
+    row = {
+        "meeting_id": meeting_id,
+        "topic_type": topic_type,
+        "topic_ref": topic_ref,
+        "topic_time": topic_time,
+        "dissent_json": json.dumps(dissent, ensure_ascii=False),
+        "conclusion": conclusion,
+        "revised_plan_version": revised_plan_version,
+        "effective_at": effective_at,
+        "attendees_json": json.dumps(attendees, ensure_ascii=False),
+        "corrects_meeting_id": corrects_meeting_id,
+        "created_at": _now(),
+    }
     con.execute(
         "INSERT INTO meeting_records(meeting_id,topic_type,topic_ref,topic_time,"
         "dissent_json,conclusion,revised_plan_version,effective_at,attendees_json,"
         "corrects_meeting_id,created_at) VALUES(:meeting_id,:topic_type,:topic_ref,"
         ":topic_time,:dissent_json,:conclusion,:revised_plan_version,:effective_at,"
-        ":attendees_json,:corrects_meeting_id,:created_at)", row)
+        ":attendees_json,:corrects_meeting_id,:created_at)",
+        row,
+    )
     return {**row, "dissent": dissent, "attendees": attendees}
 
 
 def meeting_by_id(con, meeting_id: str) -> dict | None:
     """按 meeting_id 取会议记录（含 dissent/attendees 已解析），供议题自动化取料。"""
     ensure_table(con)
-    row = con.execute("SELECT * FROM meeting_records WHERE meeting_id=?", (meeting_id,)).fetchone()
+    row = con.execute(
+        "SELECT * FROM meeting_records WHERE meeting_id=?", (meeting_id,)
+    ).fetchone()
     if row is None:
         return None
     d = dict(row)

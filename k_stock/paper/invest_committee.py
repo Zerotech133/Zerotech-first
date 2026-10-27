@@ -48,6 +48,7 @@ combo 执行解锁（影子期 D14=2026-11-04 评审 + 老田签准）前绝不�
   - 失败语义 closed on failure：v1 池缺失/坏 JSON/缺 stocks → 显式抛
     InvestCommitteeError，禁静默降级。
 """
+
 from __future__ import annotations
 
 import json
@@ -55,14 +56,15 @@ import os
 from datetime import datetime
 
 WO = "WO-QT-20261020-083"
-NAMING_WO = "WO-QT-20261021-091"       # 聚合席去人格化修订单
+NAMING_WO = "WO-QT-20261021-091"  # 聚合席去人格化修订单
 
 LEDGER_SCHEMA_VERSION = 1
 POOL_ID = "todays_picks"
 
 # v2 账本默认落点（新立独立文件；生产未写——测试注入 tmp_path）
-DEFAULT_LEDGER = os.path.join("k_stock", "data", "invest_committee",
-                              "pool_v2_sessions.jsonl")
+DEFAULT_LEDGER = os.path.join(
+    "k_stock", "data", "invest_committee", "pool_v2_sessions.jsonl"
+)
 
 # 评级阈值（三席共用口径，persona 可覆盖）
 RATING_BUY = 0.65
@@ -72,33 +74,69 @@ V2_FLOOR = 0.62
 
 # 会审组织者（WO-091 起为无名确定性引擎：聚合是加权纯函数，不是一个人；
 # 不带 zi/字号等人格字段。席权配置即会审章程，与人格无关）
-ORGANIZER = {"id": "anonymous_engine", "name": "确定性聚合引擎",
-             "kind": "deterministic_engine", "org": "投顾团队"}
+ORGANIZER = {
+    "id": "anonymous_engine",
+    "name": "确定性聚合引擎",
+    "kind": "deterministic_engine",
+    "org": "投顾团队",
+}
 SEAT_WEIGHTS = {"seat_jishu": 0.40, "seat_jiazhi": 0.30, "seat_fengkong": 0.30}
 RISK_SEAT_ID = "seat_fengkong"
 
 # 三分析师席配置（persona 各异：阈值/风格参数即人格；纯人格化层）
 SEATS = [
-    {"seat_id": "seat_jishu", "name": "刘晔", "zi": "子扬",
-     "title": "技术面席", "org": "投顾团队",
-     "style": {"evidence": "chanlun 买卖点 + qpzm 环境闸门信号",
-               "buy_base": 0.50, "buy_step": 0.25, "sell_step": -0.25,
-               "qpzm_buy": 0.15, "qpzm_avoid": -0.25,
-               "hit_bonus": 0.05, "hit_cap": 3},
-     "thresholds": {"buy": RATING_BUY, "avoid": RATING_AVOID}},
-    {"seat_id": "seat_jiazhi", "name": "满宠", "zi": "伯宁",
-     "title": "价值面席", "org": "投顾团队",
-     "style": {"evidence": "九维出分 + 池层 Tier + 多源共振",
-               "buy_base": 0.50, "scored": 0.25, "shadow_unscored": -0.10,
-               "tier2": 0.15, "multihit": 0.10},
-     "thresholds": {"buy": RATING_BUY, "avoid": RATING_AVOID}},
-    {"seat_id": "seat_fengkong", "name": "蒋济", "zi": "子通",
-     "title": "风控席", "org": "投顾团队",
-     "style": {"evidence": "弱势标签 + 恐慌/毒性影子标记 + 异动",
-               "buy_base": 0.60, "weak": -0.20, "panic_buy": -0.15,
-               "q_toxic": -0.30, "big_move": -0.10, "big_move_pct": 5.0,
-               "calm_bonus": 0.05},
-     "thresholds": {"buy": RATING_BUY, "avoid": RATING_AVOID}},
+    {
+        "seat_id": "seat_jishu",
+        "name": "刘晔",
+        "zi": "子扬",
+        "title": "技术面席",
+        "org": "投顾团队",
+        "style": {
+            "evidence": "chanlun 买卖点 + qpzm 环境闸门信号",
+            "buy_base": 0.50,
+            "buy_step": 0.25,
+            "sell_step": -0.25,
+            "qpzm_buy": 0.15,
+            "qpzm_avoid": -0.25,
+            "hit_bonus": 0.05,
+            "hit_cap": 3,
+        },
+        "thresholds": {"buy": RATING_BUY, "avoid": RATING_AVOID},
+    },
+    {
+        "seat_id": "seat_jiazhi",
+        "name": "满宠",
+        "zi": "伯宁",
+        "title": "价值面席",
+        "org": "投顾团队",
+        "style": {
+            "evidence": "九维出分 + 池层 Tier + 多源共振",
+            "buy_base": 0.50,
+            "scored": 0.25,
+            "shadow_unscored": -0.10,
+            "tier2": 0.15,
+            "multihit": 0.10,
+        },
+        "thresholds": {"buy": RATING_BUY, "avoid": RATING_AVOID},
+    },
+    {
+        "seat_id": "seat_fengkong",
+        "name": "蒋济",
+        "zi": "子通",
+        "title": "风控席",
+        "org": "投顾团队",
+        "style": {
+            "evidence": "弱势标签 + 恐慌/毒性影子标记 + 异动",
+            "buy_base": 0.60,
+            "weak": -0.20,
+            "panic_buy": -0.15,
+            "q_toxic": -0.30,
+            "big_move": -0.10,
+            "big_move_pct": 5.0,
+            "calm_bonus": 0.05,
+        },
+        "thresholds": {"buy": RATING_BUY, "avoid": RATING_AVOID},
+    },
 ]
 
 _SEAT_BY_ID = {s["seat_id"]: s for s in SEATS}
@@ -110,6 +148,7 @@ class InvestCommitteeError(Exception):
 
 # ---------- 股票池 v1 读入（只读，无源不伪造） ----------
 
+
 def load_picks(path):
     """读股票池 v1（todays_picks.json）。缺文件/坏 JSON/缺 stocks → 抛错。"""
     try:
@@ -117,7 +156,9 @@ def load_picks(path):
     except FileNotFoundError as e:
         raise InvestCommitteeError(f"股票池 v1 不存在: {path}") from e
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
-        raise InvestCommitteeError(f"股票池 v1 不是合法 UTF-8 JSON: {path} ({e})") from e
+        raise InvestCommitteeError(
+            f"股票池 v1 不是合法 UTF-8 JSON: {path} ({e})"
+        ) from e
     if not isinstance(raw, dict) or not isinstance(raw.get("stocks"), list):
         raise InvestCommitteeError(f"股票池 v1 缺 stocks 数组: {path}")
     return raw
@@ -125,19 +166,30 @@ def load_picks(path):
 
 # ---------- 确定性证据提取（v1 单票证据 → 布尔事实） ----------
 
+
 def _facts(stock):
     srcs = stock.get("sources") or []
     return {
-        "chanlun_buys": sum(1 for s in srcs
-                            if s.get("s") == "chanlun" and str(s.get("tag", "")).endswith("买")),
-        "chanlun_sells": sum(1 for s in srcs
-                             if s.get("s") == "chanlun" and str(s.get("tag", "")).endswith("卖")),
+        "chanlun_buys": sum(
+            1
+            for s in srcs
+            if s.get("s") == "chanlun" and str(s.get("tag", "")).endswith("买")
+        ),
+        "chanlun_sells": sum(
+            1
+            for s in srcs
+            if s.get("s") == "chanlun" and str(s.get("tag", "")).endswith("卖")
+        ),
         "qpzm_buy": any(s.get("s") == "qpzm" and s.get("tag") != "回避" for s in srcs),
-        "qpzm_avoid": any(s.get("s") == "qpzm" and s.get("tag") == "回避" for s in srcs),
-        "ninedim_scored": any(s.get("s") == "ninedim" and s.get("tag") == "九维出分"
-                              for s in srcs),
-        "ninedim_shadow": any(s.get("s") == "ninedim" and "影子" in str(s.get("tag", ""))
-                              for s in srcs),
+        "qpzm_avoid": any(
+            s.get("s") == "qpzm" and s.get("tag") == "回避" for s in srcs
+        ),
+        "ninedim_scored": any(
+            s.get("s") == "ninedim" and s.get("tag") == "九维出分" for s in srcs
+        ),
+        "ninedim_shadow": any(
+            s.get("s") == "ninedim" and "影子" in str(s.get("tag", "")) for s in srcs
+        ),
         "weak": any(s.get("s") == "weak" for s in srcs),
         "tier2": stock.get("tier") == "T2",
         "n_hit": int(stock.get("n_hit") or 1),
@@ -149,6 +201,7 @@ def _facts(stock):
 
 
 # ---------- 三分析师席：确定性评级规则引擎 ----------
+
 
 def _clamp01(x):
     return round(max(0.0, min(1.0, x)), 4)
@@ -216,16 +269,24 @@ def rate_stock(seat, stock):
 
     score = _clamp01(score)
     th = seat["thresholds"]
-    rating = "BUY" if score >= th["buy"] else (
-        "AVOID" if score <= th["avoid"] else "HOLD")
+    rating = (
+        "BUY" if score >= th["buy"] else ("AVOID" if score <= th["avoid"] else "HOLD")
+    )
     if not reasons:
         reasons.append("无强证据，按席基准分中性处理")
-    return {"seat_id": seat["seat_id"], "name": seat["name"], "zi": seat["zi"],
-            "title": seat["title"], "score": score, "rating": rating,
-            "reasons": reasons}
+    return {
+        "seat_id": seat["seat_id"],
+        "name": seat["name"],
+        "zi": seat["zi"],
+        "title": seat["title"],
+        "score": score,
+        "rating": rating,
+        "reasons": reasons,
+    }
 
 
 # ---------- 确定性聚合引擎（无名纯函数，可复算） ----------
+
 
 def aggregate(opinions, seat_weights=None, v2_floor=V2_FLOOR):
     """三席意见加权聚合：score=Σ(席分×席权)；精选=过 v2 线且风控席非 AVOID。
@@ -236,12 +297,15 @@ def aggregate(opinions, seat_weights=None, v2_floor=V2_FLOOR):
     score = round(sum(o["score"] * w[o["seat_id"]] for o in opinions), 4)
     risk = [o for o in opinions if o["seat_id"] == RISK_SEAT_ID]
     risk_ok = bool(risk) and risk[0]["rating"] != "AVOID"
-    return {"score": score,
-            "rating": "SELECT" if (score >= v2_floor and risk_ok) else "PASS",
-            "selected": bool(score >= v2_floor and risk_ok)}
+    return {
+        "score": score,
+        "rating": "SELECT" if (score >= v2_floor and risk_ok) else "PASS",
+        "selected": bool(score >= v2_floor and risk_ok),
+    }
 
 
 # ---------- 会审场次构造与落账 ----------
+
 
 def run_session(picks, now=None, ledger_path=None):
     """对股票池 v1 跑一场投研会审（三席意见→确定性聚合→v2 精选+minutes）。
@@ -261,9 +325,15 @@ def run_session(picks, now=None, ledger_path=None):
     for stock in picks["stocks"]:
         ops = [rate_stock(seat, stock) for seat in SEATS]
         agg = aggregate(ops)
-        reviews.append({"code": stock.get("code"), "name": stock.get("name"),
-                        "tier": stock.get("tier"),
-                        "opinions": ops, "aggregate": agg})
+        reviews.append(
+            {
+                "code": stock.get("code"),
+                "name": stock.get("name"),
+                "tier": stock.get("tier"),
+                "opinions": ops,
+                "aggregate": agg,
+            }
+        )
 
     selected = [r["code"] for r in reviews if r["aggregate"]["selected"]]
     n_round = _count_rounds(scan_run_date, ledger_path)
@@ -271,7 +341,7 @@ def run_session(picks, now=None, ledger_path=None):
     return {
         "ledger_schema_version": LEDGER_SCHEMA_VERSION,
         "wo": WO,
-        "naming_revision": NAMING_WO,      # WO-091 聚合席去人格化（字段只增不改）
+        "naming_revision": NAMING_WO,  # WO-091 聚合席去人格化（字段只增不改）
         "session_id": f"poolv2.{scan_run_date}.r{n_round}",
         "kind": "invest_committee_v2",
         "ts": now,
@@ -283,26 +353,41 @@ def run_session(picks, now=None, ledger_path=None):
         "seat_weights": dict(SEAT_WEIGHTS),
         "v2_floor": V2_FLOOR,
         "reviews": reviews,
-        "summary": {"n_reviewed": len(reviews), "n_selected": len(selected),
-                    "codes_selected": selected},
+        "summary": {
+            "n_reviewed": len(reviews),
+            "n_selected": len(selected),
+            "codes_selected": selected,
+        },
         "minutes": {
             "kind": "invest_committee",
             "title": f"投研会审 {mm_dd}",
             "host": "确定性聚合引擎",
-            "conclusion": (f"{mm_dd} 投研会审｜确定性聚合引擎 汇总三席意见｜"
-                           f"审 {len(reviews)} 只精选 {len(selected)} 只"
-                           f"（v2 线 {V2_FLOOR}，风控席一票谨慎权）"),
-            "boundary": ("本纪要仅用于模拟盘决策辅助，不涉及真实资金；"
-                         "影子期内本账不接 combo 执行链"
-                         "（D14=2026-11-04 解锁评审须老田签准）"),
+            "conclusion": (
+                f"{mm_dd} 投研会审｜确定性聚合引擎 汇总三席意见｜"
+                f"审 {len(reviews)} 只精选 {len(selected)} 只"
+                f"（v2 线 {V2_FLOOR}，风控席一票谨慎权）"
+            ),
+            "boundary": (
+                "本纪要仅用于模拟盘决策辅助，不涉及真实资金；"
+                "影子期内本账不接 combo 执行链"
+                "（D14=2026-11-04 解锁评审须老田签准）"
+            ),
         },
     }
 
 
 def _count_rounds(scan_run_date, ledger_path):
     """同 scan_run_date 已有场次数 + 1（轮次口径，确定性）。"""
-    return len([s for s in read_sessions(ledger_path=ledger_path)
-                if s.get("scan_run_date") == scan_run_date]) + 1
+    return (
+        len(
+            [
+                s
+                for s in read_sessions(ledger_path=ledger_path)
+                if s.get("scan_run_date") == scan_run_date
+            ]
+        )
+        + 1
+    )
 
 
 def append_session(session, ledger_path=None):

@@ -19,6 +19,7 @@
 回填后自动生效）；后验**自动**回填（快照 run_ref → 结算后验）属后续工单，本文件
 只用显式喂入/回填一条路径，不为自动回填留桩。
 """
+
 import sqlite3
 import sys
 from pathlib import Path
@@ -29,15 +30,16 @@ HERE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE / "paper"))
 sys.path.insert(0, str(HERE / "tests"))
 
-import baseline as bl                                       # noqa: E402
-import decision_snapshot                                    # noqa: E402
+import baseline as bl  # noqa: E402
+import decision_snapshot  # noqa: E402
 
 COMBO = "combo_base_a"
-BR_FOLLOW = f"{COMBO}@follow_research"        # -008/-011 隔离账口径 combo@branch
+BR_FOLLOW = f"{COMBO}@follow_research"  # -008/-011 隔离账口径 combo@branch
 BR_AGG = f"{COMBO}@aggressive_direct"
 
 
 # ---------- fixture 与构造 ----------
+
 
 @pytest.fixture()
 def env(tmp_path):
@@ -45,8 +47,15 @@ def env(tmp_path):
     return {"tmp_path": tmp_path, "_seq": 0, "snapshot_db": tmp_path / "snap.db"}
 
 
-def _add_snapshot(env, *, account_id=BR_FOLLOW, combo_id=COMBO,
-                  stock="000002.SZ", orders=None, context=None):
+def _add_snapshot(
+    env,
+    *,
+    account_id=BR_FOLLOW,
+    combo_id=COMBO,
+    stock="000002.SZ",
+    orders=None,
+    context=None,
+):
     """用 -004 正规入口 capture 一份快照（走其校验口径，不手搓表）。
 
     带 combo 印记（E-1 四元组口径）→ combo_id 列=注册表组合 id，与 account_id
@@ -61,15 +70,23 @@ def _add_snapshot(env, *, account_id=BR_FOLLOW, combo_id=COMBO,
         # orders 用 `is not None` 判缺省而非真值：`orders=[]`（明确表示「本快照
         # 不下单」）必须原样落成空列表。早先用 `orders or [默认BUY]` 会把空列表
         # 悄悄变成一笔 BUY——命中率判方向时那等于凭空给样本造了一次下单。
-        payload = ([{"order_id": "o1", "stock": stock, "action": "BUY"}]
-                   if orders is None else orders)
+        payload = (
+            [{"order_id": "o1", "stock": stock, "action": "BUY"}]
+            if orders is None
+            else orders
+        )
         snap = decision_snapshot.capture(
-            con, run_path=run, run_name=run.name,
+            con,
+            run_path=run,
+            run_name=run.name,
             out={"orders": payload},
-            account_id=account_id, strategy="qingping",
+            account_id=account_id,
+            strategy="qingping",
             combo={"combo_id": combo_id},
-            context=context if context is not None else
-            {"signal": {"signal_id": "sig-20261020-0181", "stock": stock}})
+            context=context
+            if context is not None
+            else {"signal": {"signal_id": "sig-20261020-0181", "stock": stock}},
+        )
         con.commit()
     finally:
         con.close()
@@ -86,8 +103,9 @@ def _feed(env, *, branch=BR_FOLLOW, count=35, pattern=None, unit="pct"):
     post = None
     for i in range(count):
         snap = _add_snapshot(env, account_id=branch)
-        post = bl.backfill_posterior(post, snap["snapshot_id"], unit=unit,
-                                     value=pattern[i], source="settle:test")
+        post = bl.backfill_posterior(
+            post, snap["snapshot_id"], unit=unit, value=pattern[i], source="settle:test"
+        )
     return post
 
 
@@ -101,21 +119,34 @@ def _merge(*posts) -> dict:
 
 def _posterior(mapping: dict, unit="pct") -> dict:
     """后验喂入（-016 同口径：unit 必填）。"""
-    return {"snapshots": {sid: {"unit": unit, "value": v, "source": "settle:test"}
-                          for sid, v in mapping.items()}}
+    return {
+        "snapshots": {
+            sid: {"unit": unit, "value": v, "source": "settle:test"}
+            for sid, v in mapping.items()
+        }
+    }
 
 
 # ---------- 验收①：样本量门槛（n<30 不出数） ----------
 
+
 def test_empty_snapshot_db_no_metrics(env):
     """无快照样本 → `empty_sample`，六项指标全 null（不造数）。"""
-    _add_snapshot(env, account_id=BR_AGG)      # 快照存在但属别的分支
+    _add_snapshot(env, account_id=BR_AGG)  # 快照存在但属别的分支
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"])
     assert b["status"] == bl.STATUS_EMPTY
     m = b["metrics"]
     assert m["n"] == 0 and m["n_total"] == 0
-    for k in ("hit_rate", "avg_return", "max_drawdown", "win_rate",
-              "profit_loss_ratio", "wins", "losses", "breakeven"):
+    for k in (
+        "hit_rate",
+        "avg_return",
+        "max_drawdown",
+        "win_rate",
+        "profit_loss_ratio",
+        "wins",
+        "losses",
+        "breakeven",
+    ):
         assert m[k] is None, f"{k} 必须为 None，不得填 0"
     assert m["note"] and "无决策快照样本" in m["note"]
 
@@ -127,8 +158,16 @@ def test_below_threshold_no_metrics(env):
     assert b["metrics"]["n"] == 29
     assert b["status"] == bl.STATUS_INSUFFICIENT
     m = b["metrics"]
-    for k in ("hit_rate", "avg_return", "max_drawdown", "win_rate",
-              "profit_loss_ratio", "wins", "losses", "breakeven"):
+    for k in (
+        "hit_rate",
+        "avg_return",
+        "max_drawdown",
+        "win_rate",
+        "profit_loss_ratio",
+        "wins",
+        "losses",
+        "breakeven",
+    ):
         assert m[k] is None, f"{k} 低于门槛必须为 None"
     assert f"门槛 {bl.MIN_SAMPLE}" in m["note"]
 
@@ -147,19 +186,22 @@ def test_threshold_boundary_exactly_30_computes(env):
 def test_custom_threshold_respected(env):
     """门槛可配（min_sample 参数），口径不硬编码在单测里。"""
     post = _feed(env, count=10)
-    b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post,
-                          min_sample=10)
+    b = bl.build_baseline(
+        BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post, min_sample=10
+    )
     assert b["status"] == bl.STATUS_COMPUTED
-    b2 = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post,
-                           min_sample=11)
+    b2 = bl.build_baseline(
+        BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post, min_sample=11
+    )
     assert b2["status"] == bl.STATUS_INSUFFICIENT
 
 
 # ---------- 验收②：pending_backfill 不填 0 ----------
 
+
 def test_no_posterior_pending_backfill_not_zero(env):
     """有快照无后验 → `pending_backfill`，**绝不返回 0% 胜率 / 0 收益**。"""
-    _feed(env, count=35)                     # 只造快照，不回填
+    _feed(env, count=35)  # 只造快照，不回填
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"])
     assert b["status"] == bl.STATUS_PENDING
     m = b["metrics"]
@@ -175,7 +217,7 @@ def test_no_posterior_pending_backfill_not_zero(env):
 def test_partial_posterior_uses_only_backfilled(env):
     """部分回填 → 只用已回填样本入指标（n=30 达门槛出数），待回填留痕可回放。"""
     post = _feed(env, count=30)
-    _add_snapshot(env)                        # 第 31 份：未回填
+    _add_snapshot(env)  # 第 31 份：未回填
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
     assert b["metrics"]["n"] == 30
     assert b["metrics"]["n_total"] == 31
@@ -187,10 +229,12 @@ def test_pending_uses_same_vocabulary_as_013_016(env):
     """`pending_backfill` 与 -013/-016 同一词汇族（禁另造词）。"""
     import combo_review as cr
     import topic_miner as tm
+
     assert bl.STATUS_PENDING == cr.ROI_PENDING_BACKFILL == tm.POSTERIOR_PENDING
 
 
 # ---------- 验收③：指标算式 ----------
+
 
 def test_metrics_formulas_exact(env):
     """六项指标算式逐位核对（35 样本：21 胜 +0.05、14 负 -0.03）。
@@ -303,47 +347,76 @@ def test_mixed_units_flagged_inconsistent(env):
     post = bl.backfill_posterior(post, snap["snapshot_id"], unit="CNY", value=100.0)
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
     assert b["unit_consistency"]["consistent"] is False
-    assert "CNY" in b["unit_consistency"]["units"] and "pct" in b["unit_consistency"]["units"]
+    assert (
+        "CNY" in b["unit_consistency"]["units"]
+        and "pct" in b["unit_consistency"]["units"]
+    )
     assert "不可加总" in b["unit_consistency"]["note"]
 
 
 # ---------- 验收③b：命中率 vs 胜率 拆口径（WO-QT-20261020-024） ----------
 
-def _add_plan(env, *, combo_id=COMBO, stock="000002.SZ", plan_version,
-              plan_action, effective_at="2026-10-20T09:00:00"):
+
+def _add_plan(
+    env,
+    *,
+    combo_id=COMBO,
+    stock="000002.SZ",
+    plan_version,
+    plan_action,
+    effective_at="2026-10-20T09:00:00",
+):
     """往快照库（同库）写一条 -006 预案版本，供命中率取方向基准。"""
     con = sqlite3.connect(env["snapshot_db"])
     try:
         import plan_meeting_ledger as pml
+
         pml.ensure_table(con)
         pml.add_plan_version(
-            con, combo_id=combo_id, stock=stock, plan_version=plan_version,
+            con,
+            combo_id=combo_id,
+            stock=stock,
+            plan_version=plan_version,
             plan={"action": plan_action, "buy_point": "回踩 100.0"},
-            risk_profile="aggressive", effective_at=effective_at,
-            source="role_invest_a")
+            risk_profile="aggressive",
+            effective_at=effective_at,
+            source="role_invest_a",
+        )
         con.commit()
     finally:
         con.close()
 
 
-def _add_dir_snapshot(env, *, plan_version, plan_action, order_action,
-                      branch=BR_FOLLOW, stock="000002.SZ"):
+def _add_dir_snapshot(
+    env, *, plan_version, plan_action, order_action, branch=BR_FOLLOW, stock="000002.SZ"
+):
     """造一份**带 plan_version 印记**的快照（命中率可判定的最小单元）。
 
     order_action=None 表示「不改变持仓」（无 BUY/SELL 订单 → 方向记 HOLD）。
     印记须满足 -006 的时点强制：plan 生效时点 ≤ 快照时刻，故 effective_at 取
     09:00（快照 capture 用当前时刻，恒晚于它）。
     """
-    _add_plan(env, stock=stock, plan_version=plan_version,
-              plan_action=plan_action)
-    orders = ([{"order_id": "o1", "stock": stock, "action": order_action}]
-              if order_action else [])
+    _add_plan(env, stock=stock, plan_version=plan_version, plan_action=plan_action)
+    orders = (
+        [{"order_id": "o1", "stock": stock, "action": order_action}]
+        if order_action
+        else []
+    )
     return _add_snapshot(
-        env, account_id=branch, stock=stock, orders=orders,
-        context={"signal": {"signal_id": "sig-20261020-0181", "stock": stock},
-                 "plan_version": {"combo_id": COMBO, "stock": stock,
-                                  "plan_version": plan_version,
-                                  "effective_at": "2026-10-20T09:00:00"}})
+        env,
+        account_id=branch,
+        stock=stock,
+        orders=orders,
+        context={
+            "signal": {"signal_id": "sig-20261020-0181", "stock": stock},
+            "plan_version": {
+                "combo_id": COMBO,
+                "stock": stock,
+                "plan_version": plan_version,
+                "effective_at": "2026-10-20T09:00:00",
+            },
+        },
+    )
 
 
 def _feed_directions(env, *, pairs, branch=BR_FOLLOW, pattern=None):
@@ -360,13 +433,18 @@ def _feed_directions(env, *, pairs, branch=BR_FOLLOW, pattern=None):
     tag = branch.split("@")[-1]
     post = None
     for i, (plan_action, order_action) in enumerate(pairs):
-        snap = _add_dir_snapshot(env, plan_version=f"pv-{tag}-{i:03d}",
-                                 plan_action=plan_action,
-                                 order_action=order_action, branch=branch)
+        snap = _add_dir_snapshot(
+            env,
+            plan_version=f"pv-{tag}-{i:03d}",
+            plan_action=plan_action,
+            order_action=order_action,
+            branch=branch,
+        )
         matched = (order_action or "HOLD") == plan_action
         value = pattern[i] if i < len(pattern) else (-0.02 if matched else 0.08)
-        post = bl.backfill_posterior(post, snap["snapshot_id"], unit="pct",
-                                     value=value, source="settle:test")
+        post = bl.backfill_posterior(
+            post, snap["snapshot_id"], unit="pct", value=value, source="settle:test"
+        )
     return post
 
 
@@ -378,13 +456,13 @@ def test_hit_rate_and_win_rate_computed_under_separate_definitions(env):
     两率算式不同、分母不同、数据源不同，故 **1.0 ≠ 0.6**。
     若有人把 hit_rate 又改回 `count(后验>0)/n`，本用例立刻红。"""
     pairs = [("BUY", "BUY")] * 35
-    post = _feed_directions(env, pairs=pairs,
-                            pattern=[0.05] * 21 + [-0.03] * 14)
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    post = _feed_directions(env, pairs=pairs, pattern=[0.05] * 21 + [-0.03] * 14)
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["status"] == bl.STATUS_COMPUTED
-    assert m["hit_rate"] == 1.0                     # 方向全一致
-    assert m["win_rate"] == round(21 / 35, 6)      # 21 胜 14 负
+    assert m["hit_rate"] == 1.0  # 方向全一致
+    assert m["win_rate"] == round(21 / 35, 6)  # 21 胜 14 负
     assert m["hit_rate"] != m["win_rate"], "两率必须不再同值"
     assert m["hit_rate_status"] == bl.HIT_STATUS_COMPUTED
     assert m["hit_rate_judged"] == 35 and m["hit_rate_matched"] == 35
@@ -401,8 +479,9 @@ def test_hit_rate_counts_direction_mismatch_not_pnl(env):
     这组数据专治「拿胜率冒充命中率」：两者方向完全相反。"""
     pairs = [("BUY", "SELL")] * 10 + [("BUY", "BUY")] * 20
     post = _feed_directions(env, pairs=pairs, pattern=[0.05] * 30)
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["win_rate"] == 1.0, "全正收益 → 胜率 1.0（赚到没）"
     assert m["hit_rate"] == round(20 / 30, 6), "方向错 10 个 → 命中率 2/3"
     assert m["hit_rate"] != m["win_rate"]
@@ -416,8 +495,9 @@ def test_hit_rate_direction_right_but_lost_money(env):
     （胜率 0.0）。若两率仍是同算式，本用例必红。"""
     pairs = [("BUY", "BUY")] * 30
     post = _feed_directions(env, pairs=pairs, pattern=[-0.02] * 30)
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["hit_rate"] == 1.0
     assert m["win_rate"] == 0.0
     assert m["hit_rate"] != m["win_rate"]
@@ -430,8 +510,9 @@ def test_hit_rate_pending_when_no_plan_reference_not_zero_not_win_rate(env):
     纪律要求：命中率**不得**取胜率值（0.6）、**不得**填 0（会被读成「一条都没
     判对」）。若实现里写了 `hit_rate = win_rate` 或 `hit_rate = 0`，此用例红。"""
     post = _feed(env, count=35)
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["win_rate"] == round(21 / 35, 6)
     assert m["hit_rate"] is None, "无方向依据 → 必须 null"
     assert m["hit_rate"] != 0, "不得填 0"
@@ -449,16 +530,24 @@ def test_hit_rate_pending_when_plan_version_missing_from_ledger(env):
     for i in range(30):
         # 只写快照印记，不写 plan_versions 行
         _add_snapshot(
-            env, account_id=BR_FOLLOW, stock="000002.SZ",
+            env,
+            account_id=BR_FOLLOW,
+            stock="000002.SZ",
             orders=[{"order_id": "o1", "stock": "000002.SZ", "action": "BUY"}],
-            context={"signal": {"signal_id": "sig-20261020-0181",
-                                "stock": "000002.SZ"},
-                     "plan_version": {"combo_id": COMBO, "stock": "000002.SZ",
-                                      "plan_version": f"pv-ghost-{i:03d}",
-                                      "effective_at": "2026-10-20T09:00:00"}})
+            context={
+                "signal": {"signal_id": "sig-20261020-0181", "stock": "000002.SZ"},
+                "plan_version": {
+                    "combo_id": COMBO,
+                    "stock": "000002.SZ",
+                    "plan_version": f"pv-ghost-{i:03d}",
+                    "effective_at": "2026-10-20T09:00:00",
+                },
+            },
+        )
     post = _posterior({sid: 0.05 for sid in _pending_ids(env, BR_FOLLOW)})
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["status"] == bl.STATUS_COMPUTED
     assert m["win_rate"] == 1.0
     assert m["hit_rate"] is None
@@ -472,17 +561,22 @@ def test_hit_rate_hold_direction_when_no_order(env):
     正常的放弃决策整批剔出分母——那是冤枉数据。"""
     pairs = [("HOLD", None)] * 30
     post = _feed_directions(env, pairs=pairs, pattern=[0.01] * 30)
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["hit_rate_judged"] == 30
     assert m["hit_rate"] == 1.0
     # 反向：预案 BUY 但没下单（HOLD）→ 方向不一致
     pairs2 = [("BUY", None)] * 30
-    env2 = {"tmp_path": env["tmp_path"], "_seq": 900,
-            "snapshot_db": env["tmp_path"] / "snap2.db"}
+    env2 = {
+        "tmp_path": env["tmp_path"],
+        "_seq": 900,
+        "snapshot_db": env["tmp_path"] / "snap2.db",
+    }
     post2 = _feed_directions(env2, pairs=pairs2, pattern=[0.01] * 30)
-    m2 = bl.build_baseline(BR_FOLLOW, snapshot_db=env2["snapshot_db"],
-                           posterior=post2)["metrics"]
+    m2 = bl.build_baseline(BR_FOLLOW, snapshot_db=env2["snapshot_db"], posterior=post2)[
+        "metrics"
+    ]
     assert m2["hit_rate_judged"] == 30
     assert m2["hit_rate"] == 0.0, "预案 BUY 却按住不动 → 方向不一致"
 
@@ -493,25 +587,32 @@ def test_hit_rate_threshold_uses_judged_samples_not_n(env):
     30 个样本全部达收益门槛，但只有 10 个方向可判定 → 命中率判
     insufficient（不出数）。分母不同源正是拆口径的必然结果。"""
     for i in range(10):
-        _add_dir_snapshot(env, plan_version=f"pv-ok-{i:03d}",
-                          plan_action="BUY", order_action="BUY")
+        _add_dir_snapshot(
+            env, plan_version=f"pv-ok-{i:03d}", plan_action="BUY", order_action="BUY"
+        )
     for i in range(20):
-        _add_snapshot(env, account_id=BR_FOLLOW, stock="000002.SZ",
-                      orders=[{"order_id": "o", "stock": "000002.SZ",
-                               "action": "BUY"}],
-                      context={"signal": {"signal_id": "sig-20261020-0181",
-                                          "stock": "000002.SZ"}})
+        _add_snapshot(
+            env,
+            account_id=BR_FOLLOW,
+            stock="000002.SZ",
+            orders=[{"order_id": "o", "stock": "000002.SZ", "action": "BUY"}],
+            context={
+                "signal": {"signal_id": "sig-20261020-0181", "stock": "000002.SZ"}
+            },
+        )
     post = _posterior({sid: 0.05 for sid in _pending_ids(env, BR_FOLLOW)})
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["n"] == 30, "收益侧样本量达门槛"
     assert m["hit_rate_judged"] == 10, "方向侧只有 10 个可判定"
     assert m["hit_rate"] is None, "可判定样本不足门槛 → 不出数"
     assert m["hit_rate_status"] == bl.HIT_STATUS_INSUFFICIENT
     assert "insufficient_direction_sample" in m["hit_rate_note"]
     # 门槛可配：降到 10 即出数（口径不硬编码）
-    m2 = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                           posterior=post, min_sample=10)["metrics"]
+    m2 = bl.build_baseline(
+        BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post, min_sample=10
+    )["metrics"]
     assert m2["hit_rate"] == 1.0
     assert m2["hit_rate_status"] == bl.HIT_STATUS_COMPUTED
 
@@ -520,16 +621,27 @@ def test_hit_rate_unjudged_excluded_from_denominator_not_counted_wrong(env):
     """不可判定样本**剔出分母**，不当判错（避免凭空压低命中率）。"""
     pairs = [("BUY", "BUY")] * 30 + [("BUY", "SELL")] * 0
     post = _feed_directions(env, pairs=pairs, pattern=[0.05] * 30)
-    for i in range(10):                      # 再补 10 个无印记快照（不可判定）
-        _add_snapshot(env, account_id=BR_FOLLOW, stock="000002.SZ",
-                      orders=[{"order_id": "o", "stock": "000002.SZ",
-                               "action": "BUY"}],
-                      context={"signal": {"signal_id": "sig-x", "stock": "000002.SZ"}})
-    post = _merge(post, _posterior(
-        {sid: 0.05 for sid in _pending_ids(env, BR_FOLLOW)
-         if sid not in post["snapshots"]}))
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    for i in range(10):  # 再补 10 个无印记快照（不可判定）
+        _add_snapshot(
+            env,
+            account_id=BR_FOLLOW,
+            stock="000002.SZ",
+            orders=[{"order_id": "o", "stock": "000002.SZ", "action": "BUY"}],
+            context={"signal": {"signal_id": "sig-x", "stock": "000002.SZ"}},
+        )
+    post = _merge(
+        post,
+        _posterior(
+            {
+                sid: 0.05
+                for sid in _pending_ids(env, BR_FOLLOW)
+                if sid not in post["snapshots"]
+            }
+        ),
+    )
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["n_total"] == 40
     assert m["hit_rate_judged"] == 30
     assert m["hit_rate_unjudged"] == 10
@@ -541,8 +653,9 @@ def test_hit_rate_matched_empty_orders_but_plan_hold_judged(env):
     """边界：空 orders + 预案 HOLD → 可判定且一致（不被当成「无方向」）。"""
     pairs = [("HOLD", None)] * 30
     post = _feed_directions(env, pairs=pairs, pattern=[0.0] * 30)
-    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior=post)["metrics"]
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)[
+        "metrics"
+    ]
     assert m["hit_rate_status"] == bl.HIT_STATUS_COMPUTED
     assert m["hit_rate"] == 1.0
     # 收益侧：全 0 → 胜率 0.0（有效数据），与命中率 1.0 分流
@@ -555,6 +668,7 @@ def test_hit_rate_actions_aligned_with_008_plan_actions():
     不对齐的后果很具体：-008 认 HOLD 而本模块不认，则「预案 HOLD」的样本会被
     判成不可判定，命中率被系统性低估。故此项为承重断言，不是形式检查。"""
     import strategy_branch as sb
+
     assert tuple(bl._HIT_ACTIONS) == tuple(sb.PLAN_ACTIONS)
 
 
@@ -565,8 +679,11 @@ def test_metric_semantics_change_record_is_versioned():
     裁决人/裁决日期/工单号；③ v1 的旧算式仍可从 changelog 里查到（可核对
     原点，否则「变更记录」只是一句空话）。"""
     assert bl.METRIC_SEMANTICS_VERSION == 2
-    vs = [c for c in bl.METRIC_SEMANTICS_CHANGELOG
-          if c["semantics_version"] == bl.METRIC_SEMANTICS_VERSION]
+    vs = [
+        c
+        for c in bl.METRIC_SEMANTICS_CHANGELOG
+        if c["semantics_version"] == bl.METRIC_SEMANTICS_VERSION
+    ]
     assert len(vs) == 1
     cur = vs[0]
     assert cur["ruled_by"] == "老田"
@@ -599,23 +716,27 @@ def test_compare_hit_rate_diff_null_not_zero_when_unjudgeable(env):
 
     `(x or 0.0)` 会把「判不了」变成「差 0」，等于凭空断言「两侧命中率相同」
     ——比不出数严重得多。故此处断言 null 且带说明。"""
-    a = _feed(env, branch=BR_FOLLOW, count=30)      # 无方向证据 → 命中率 null
+    a = _feed(env, branch=BR_FOLLOW, count=30)  # 无方向证据 → 命中率 null
     b = _feed(env, branch=BR_AGG, count=30, pattern=[0.02] * 30)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
     assert c["deltas"]["hit_rate_diff"] is None
     assert "不可判定" in c["deltas"]["hit_rate_diff_note"]
 
 
 def test_compare_hit_rate_diff_computed_when_both_judgeable(env):
     """两侧方向都可判定 → 命中率差值照实出数（不因拆分而失效）。"""
-    a = _feed_directions(env, pairs=[("BUY", "BUY")] * 30, branch=BR_FOLLOW,
-                         pattern=[0.05] * 30)
-    b = _feed_directions(env, pairs=[("BUY", "SELL")] * 30, branch=BR_AGG,
-                         pattern=[0.05] * 30)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
-    assert c["deltas"]["hit_rate_diff"] == 1.0     # 1.0 - 0.0
+    a = _feed_directions(
+        env, pairs=[("BUY", "BUY")] * 30, branch=BR_FOLLOW, pattern=[0.05] * 30
+    )
+    b = _feed_directions(
+        env, pairs=[("BUY", "SELL")] * 30, branch=BR_AGG, pattern=[0.05] * 30
+    )
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
+    assert c["deltas"]["hit_rate_diff"] == 1.0  # 1.0 - 0.0
     assert c["deltas"]["hit_rate_diff_note"] is None
 
 
@@ -628,8 +749,10 @@ def test_hit_rate_reads_snapshot_db_without_writing(env):
     db = env["snapshot_db"]
     con = sqlite3.connect(db)
     try:
-        before_tables = {r[0] for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'")}
+        before_tables = {
+            r[0]
+            for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
         before_rows = con.execute("SELECT COUNT(*) FROM plan_versions").fetchone()[0]
         before_mtime = db.stat().st_mtime_ns
     finally:
@@ -637,8 +760,10 @@ def test_hit_rate_reads_snapshot_db_without_writing(env):
     bl.build_baseline(BR_FOLLOW, snapshot_db=db, posterior=post)
     con = sqlite3.connect(db)
     try:
-        after_tables = {r[0] for r in con.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'")}
+        after_tables = {
+            r[0]
+            for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
         after_rows = con.execute("SELECT COUNT(*) FROM plan_versions").fetchone()[0]
     finally:
         con.close()
@@ -656,7 +781,7 @@ def test_hit_rate_missing_plan_table_yields_pending_not_crash(env):
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
     m = b["metrics"]
     assert m["status"] == bl.STATUS_COMPUTED
-    assert m["win_rate"] == round(21 / 30, 6)   # 收益侧照常出数（与方向侧无关）
+    assert m["win_rate"] == round(21 / 30, 6)  # 收益侧照常出数（与方向侧无关）
     assert m["hit_rate"] is None
     assert m["hit_rate_status"] == bl.HIT_STATUS_PENDING
 
@@ -667,13 +792,23 @@ def test_hit_rate_roi_view_unaffected_by_split(env):
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
     assert b["cost_view"] is None
     assert "-013" in b["cost_view_note"] and "-011" in b["cost_view_note"]
-    review = {"roi": {"status": "computed", "value": 12.5,
-                      "formula": "revenue - compute_cost", "unit": "CNY"},
-              "cost": {"cost_accumulated": 1.0, "budget": 100.0,
-                       "remaining": 99.0, "unit": "CNY"}}
+    review = {
+        "roi": {
+            "status": "computed",
+            "value": 12.5,
+            "formula": "revenue - compute_cost",
+            "unit": "CNY",
+        },
+        "cost": {
+            "cost_accumulated": 1.0,
+            "budget": 100.0,
+            "remaining": 99.0,
+            "unit": "CNY",
+        },
+    }
     out = bl.attach_cost_view(b, review)
     assert out["cost_view"]["roi"]["value"] == 12.5
-    assert out["metrics"]["hit_rate"] == 1.0     # 命中率口径与 ROI 各自独立
+    assert out["metrics"]["hit_rate"] == 1.0  # 命中率口径与 ROI 各自独立
 
 
 def test_topics_miner_does_not_consume_hit_rate(env):
@@ -684,6 +819,7 @@ def test_topics_miner_does_not_consume_hit_rate(env):
     -016 用 preservation/conversion/density，不认 hit/win）。
     """
     import topic_miner as tm
+
     d = tm.dissent_metrics(None)
     assert not any(k.startswith(("hit_", "win_")) for k in d)
     assert tm.FORMULA_DIVERGENCE_DENSITY == "dissent_items_total / meetings_total"
@@ -691,14 +827,17 @@ def test_topics_miner_does_not_consume_hit_rate(env):
 
 # ---------- 验收④：分支归集（account_id=combo@branch） ----------
 
+
 def test_branch_dimension_groups_by_account(env):
     """分支维度按 account_id=combo@branch 归集（-008/-011 隔离账口径）。"""
     p1 = _feed(env, branch=BR_FOLLOW, count=30)
     p2 = _feed(env, branch=BR_AGG, count=30, pattern=[0.01] * 20 + [-0.01] * 10)
-    bf = bl.build_baseline(BR_FOLLOW, dimension=bl.DIM_BRANCH,
-                           snapshot_db=env["snapshot_db"], posterior=p1)
-    ba = bl.build_baseline(BR_AGG, dimension=bl.DIM_BRANCH,
-                           snapshot_db=env["snapshot_db"], posterior=p2)
+    bf = bl.build_baseline(
+        BR_FOLLOW, dimension=bl.DIM_BRANCH, snapshot_db=env["snapshot_db"], posterior=p1
+    )
+    ba = bl.build_baseline(
+        BR_AGG, dimension=bl.DIM_BRANCH, snapshot_db=env["snapshot_db"], posterior=p2
+    )
     assert bf["metrics"]["n"] == 30 and ba["metrics"]["n"] == 30
     assert bf["variant"] == BR_FOLLOW
     assert "account_id = combo@branch" in bf["dimension_semantics"]
@@ -709,21 +848,24 @@ def test_combo_dimension_groups_by_combo_id(env):
     """组合维度按 combo_id 归集（两分支样本合并计入同组合）。"""
     post = _feed(env, branch=BR_FOLLOW, count=30)
     _feed(env, branch=BR_AGG, count=30)
-    b = bl.build_baseline(COMBO, dimension=bl.DIM_COMBO,
-                          snapshot_db=env["snapshot_db"], posterior=post)
-    assert b["metrics"]["n"] == 30          # 只有 follow 的 30 条回填了后验
+    b = bl.build_baseline(
+        COMBO, dimension=bl.DIM_COMBO, snapshot_db=env["snapshot_db"], posterior=post
+    )
+    assert b["metrics"]["n"] == 30  # 只有 follow 的 30 条回填了后验
     assert b["metrics"]["n_total"] == 60
     assert "combo_id" in b["dimension_semantics"]
 
 
 # ---------- 验收⑤：对比 API（禁吹功） ----------
 
+
 def test_compare_insufficient_sample_no_conclusion(env):
     """任一侧样本不足 → `insufficient_sample`，**不下结论**（禁吹功）。"""
     p1 = _feed(env, branch=BR_FOLLOW, count=30)
-    p2 = _feed(env, branch=BR_AGG, count=10)     # 远低于门槛
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(p1, p2))
+    p2 = _feed(env, branch=BR_AGG, count=10)  # 远低于门槛
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(p1, p2)
+    )
     assert c["verdict"] == bl.STATUS_INSUFFICIENT
     assert "不下结论" in c["verdict_text"]
     assert c["test"] is None, "样本量不足时不得跑检验"
@@ -732,21 +874,21 @@ def test_compare_insufficient_sample_no_conclusion(env):
 def test_compare_pending_side_no_conclusion(env):
     """任一侧无后验 → `pending_backfill`，不下结论（不以 0 充数）。"""
     p1 = _feed(env, branch=BR_FOLLOW, count=35)
-    _feed(env, branch=BR_AGG, count=35)          # 激进分支未回填
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=p1)
+    _feed(env, branch=BR_AGG, count=35)  # 激进分支未回填
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=p1
+    )
     assert c["verdict"] == bl.STATUS_PENDING
     assert c["test"] is None
 
 
 def test_compare_no_significant_difference_says_so(env):
     """差异不显著 → 明确写「无显著差异」，**不得宣称改进**（禁吹功）。"""
-    a = _feed(env, branch=BR_FOLLOW, count=35,
-              pattern=[0.05] * 18 + [-0.03] * 17)
-    b = _feed(env, branch=BR_AGG, count=35,
-              pattern=[0.05] * 18 + [-0.03] * 17)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
+    a = _feed(env, branch=BR_FOLLOW, count=35, pattern=[0.05] * 18 + [-0.03] * 17)
+    b = _feed(env, branch=BR_AGG, count=35, pattern=[0.05] * 18 + [-0.03] * 17)
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
     assert c["verdict"] == "no_significant_difference"
     assert "无显著差异" in c["verdict_text"]
     assert c["test"]["p_two_sided"] >= c["alpha"]
@@ -755,17 +897,17 @@ def test_compare_no_significant_difference_says_so(env):
 
 def test_compare_significant_difference_states_direction(env):
     """差异显著 → 出结论并注明「显著 ≠ 更优定论」。"""
-    a = _feed(env, branch=BR_FOLLOW, count=35,
-              pattern=[0.10] * 20 + [-0.02] * 15)
-    b = _feed(env, branch=BR_AGG, count=35,
-              pattern=[0.01] * 20 + [-0.02] * 15)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
+    a = _feed(env, branch=BR_FOLLOW, count=35, pattern=[0.10] * 20 + [-0.02] * 15)
+    b = _feed(env, branch=BR_AGG, count=35, pattern=[0.01] * 20 + [-0.02] * 15)
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
     assert c["verdict"] == "significant_difference"
     assert c["test"]["p_two_sided"] < c["alpha"]
     assert "a 优于 b" in c["verdict_text"]
-    assert "不等同于策略更优定论" in " ".join(c["notes"]) or \
-        any("不构成" in n for n in c["notes"])
+    assert "不等同于策略更优定论" in " ".join(c["notes"]) or any(
+        "不构成" in n for n in c["notes"]
+    )
     assert c["deltas"]["avg_return_diff"] > 0
 
 
@@ -773,8 +915,9 @@ def test_compare_unit_mismatch_no_number(env):
     """两侧单位不可比 → `unit_mismatch`，不出数（不混算）。"""
     a = _feed(env, branch=BR_FOLLOW, count=30, pattern=[0.05] * 30)
     b = _feed(env, branch=BR_AGG, count=30, pattern=[5.0] * 30, unit="CNY")
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
     assert c["verdict"] == "unit_mismatch"
     assert c["test"] is None
     assert "不可比" in c["verdict_text"]
@@ -784,8 +927,9 @@ def test_compare_identical_zero_variance_no_difference(env):
     """两侧收益完全相同（方差 0）→ p=1，判「无显著差异」（不编造显著性）。"""
     a = _feed(env, branch=BR_FOLLOW, count=30, pattern=[0.05] * 30)
     b = _feed(env, branch=BR_AGG, count=30, pattern=[0.05] * 30)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
     assert c["test"]["p_two_sided"] == 1.0
     assert c["verdict"] == "no_significant_difference"
 
@@ -794,8 +938,9 @@ def test_compare_zero_variance_different_means_is_real(env):
     """方差 0 且均值不等 → 确定性差异（p=0，照实出数不装看不见）。"""
     a = _feed(env, branch=BR_FOLLOW, count=30, pattern=[-0.05] * 30)
     b = _feed(env, branch=BR_AGG, count=30, pattern=[0.05] * 30)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
     assert c["test"]["p_two_sided"] == 0.0
     assert c["verdict"] == "significant_difference"
     assert "b 优于 a" in c["verdict_text"]
@@ -806,8 +951,9 @@ def test_significance_note_declares_simplified_method(env):
     assert "简化口径" in bl.SIGNIFICANCE_NOTE
     assert "未做多重比较校正" in bl.SIGNIFICANCE_NOTE
     post = _feed(env, count=30)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=post)
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=post
+    )
     assert c["significance_note"] == bl.SIGNIFICANCE_NOTE
 
 
@@ -820,6 +966,7 @@ def test_t_distribution_p_matches_critical_value():
 
 # ---------- 验收⑥：数据接入与回填接口 ----------
 
+
 def test_backfill_interface_wires_data_without_code_change(env):
     """回填接口生效：回填前 pending_backfill → 回填后同 API 自动出数（无需改代码）。"""
     _feed(env, count=30)
@@ -829,9 +976,13 @@ def test_backfill_interface_wires_data_without_code_change(env):
     snaps = _pending_ids(env, BR_FOLLOW)
     post = None
     for i, sid in enumerate(snaps):
-        post = bl.backfill_posterior(post, sid, unit="pct",
-                                     value=0.05 if i % 3 else -0.02,
-                                     source="settle:backfill-test")
+        post = bl.backfill_posterior(
+            post,
+            sid,
+            unit="pct",
+            value=0.05 if i % 3 else -0.02,
+            source="settle:backfill-test",
+        )
     after = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
     assert after["status"] == bl.STATUS_COMPUTED
     assert after["metrics"]["n"] == 30
@@ -843,9 +994,14 @@ def _pending_ids(env, account_id) -> list[str]:
     """读快照库拿该分支的 snapshot_id 列表（测试侧只读取证）。"""
     con = sqlite3.connect(env["snapshot_db"])
     try:
-        return [r[0] for r in con.execute(
-            "SELECT snapshot_id FROM decision_snapshots WHERE account_id=? "
-            "ORDER BY snapshot_id", (account_id,)).fetchall()]
+        return [
+            r[0]
+            for r in con.execute(
+                "SELECT snapshot_id FROM decision_snapshots WHERE account_id=? "
+                "ORDER BY snapshot_id",
+                (account_id,),
+            ).fetchall()
+        ]
     finally:
         con.close()
 
@@ -855,8 +1011,7 @@ def test_backfill_does_not_mutate_input():
     base = {"snapshots": {}}
     out = bl.backfill_posterior(base, "snap-1", unit="pct", value=0.01)
     assert base == {"snapshots": {}}
-    assert out["snapshots"]["snap-1"] == {"unit": "pct", "value": 0.01,
-                                          "source": None}
+    assert out["snapshots"]["snap-1"] == {"unit": "pct", "value": 0.01, "source": None}
 
 
 def test_backfill_requires_unit():
@@ -897,6 +1052,7 @@ def test_posterior_bool_value_rejected(env):
 
 
 # ---------- 验收⑦：只读零写入（-004 快照库不被本单改动） ----------
+
 
 def test_snapshot_db_zero_write_mtime_and_filecount(env):
     """只读连接零写入：mtime 不变 + 目录文件数不变（无 -wal/-journal 新生）。"""
@@ -946,6 +1102,7 @@ def test_default_paper_db_not_touched():
 
 # ---------- 验收⑧：成本/ROI 视图只读复用 -013 ----------
 
+
 def test_cost_view_none_by_default(env):
     """默认不带成本视图（不臆造 ROI），并注明口径唯一定义处。"""
     post = _feed(env, count=30)
@@ -958,10 +1115,20 @@ def test_attach_cost_view_readonly_reuse(env):
     """挂载 -013 输出：只搬运，不重算口径；-013 pending 时本视图同样不出数。"""
     post = _feed(env, count=30)
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
-    review = {"roi": {"status": "pending_backfill", "value": None, "formula":
-                      "revenue - compute_cost", "unit": "CNY"},
-              "cost": {"cost_accumulated": 3.5, "budget": 100.0,
-                       "remaining": 96.5, "unit": "CNY"}}
+    review = {
+        "roi": {
+            "status": "pending_backfill",
+            "value": None,
+            "formula": "revenue - compute_cost",
+            "unit": "CNY",
+        },
+        "cost": {
+            "cost_accumulated": 3.5,
+            "budget": 100.0,
+            "remaining": 96.5,
+            "unit": "CNY",
+        },
+    }
     out = bl.attach_cost_view(b, review)
     assert out["cost_view"]["roi"]["status"] == "pending_backfill"
     assert out["cost_view"]["roi"]["value"] is None
@@ -978,6 +1145,7 @@ def test_attach_cost_view_invalid_raises(env):
 
 
 # ---------- 验收⑨：closed on failure ----------
+
 
 def test_missing_snapshot_db_raises():
     """快照库不存在 → 抛错（closed on failure，不静默返回空基线）。"""
@@ -1023,18 +1191,23 @@ def test_posterior_non_dict_raises(env):
 def test_posterior_snapshots_non_dict_raises(env):
     """posterior.snapshots 非 dict → 抛错。"""
     with pytest.raises(bl.BaselineError, match="snapshots 须为 dict"):
-        bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior={"snapshots": [1, 2]})
+        bl.build_baseline(
+            BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior={"snapshots": [1, 2]}
+        )
 
 
 def test_posterior_snapshot_key_empty_raises(env):
     """snapshot_id 为空串 → 抛错（不接受无主样本）。"""
     with pytest.raises(bl.BaselineError, match="非空 snapshot_id"):
-        bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
-                          posterior={"snapshots": {"": {"unit": "pct", "value": 1}}})
+        bl.build_baseline(
+            BR_FOLLOW,
+            snapshot_db=env["snapshot_db"],
+            posterior={"snapshots": {"": {"unit": "pct", "value": 1}}},
+        )
 
 
 # ---------- 验收⑩：呈现与未接线口径 ----------
+
 
 def test_markdown_contains_six_metrics_and_three_sections(env):
     """Markdown 三段恒出现（指标 / 成本视图 / 不造数与未接线）。"""
@@ -1070,8 +1243,9 @@ def test_comparison_markdown_states_verdict(env):
     """对比 Markdown 带结论行 + 禁吹功尾注。"""
     a = _feed(env, branch=BR_FOLLOW, count=30)
     b = _feed(env, branch=BR_AGG, count=30)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=_merge(a, b))
+    c = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=_merge(a, b)
+    )
     md = bl.render_comparison_markdown(c)
     assert "**结论：" in md
     assert "禁吹功纪律" in md
@@ -1097,6 +1271,7 @@ def test_baseline_notes_declare_clock_dependency(env):
 # ======================================================================
 
 # ---------- 048①：校正器（挂账③） ----------
+
 
 def test_bonferroni_known_adjustment():
     """Bonferroni：p_adj = min(1, p·k)，构造用例逐位核对（含封顶与空族）。"""
@@ -1132,6 +1307,7 @@ def test_correction_rejects_invalid_p_values():
 
 
 # ---------- 048②：统计口径升级（挂账④）+ 精度验证 ----------
+
 
 def test_norm_sf_critical_values():
     """正态双尾 p 值对临界值表：z=1.959964→0.05、z=2.575829→0.01（erfc 高精度）。"""
@@ -1173,7 +1349,7 @@ def test_wilcoxon_rank_sum_exact_case():
     assert r["u"] == 0.0
     # z 输出经 _round 留 6 位小数，1e-12 容差与之不对齐（实测偏差 7.7e-8）；
     # μ/σ²/U 任一真错偏移都远大于 1e-6，容差放宽不断言承重力。
-    assert abs(r["z"] - (-4 / 3 ** 0.5)) < 1e-6
+    assert abs(r["z"] - (-4 / 3**0.5)) < 1e-6
     assert abs(r["p_two_sided"] - 0.0209) < 1e-3
     assert r["tie_groups"] == 0
 
@@ -1225,22 +1401,29 @@ def test_wilcoxon_robust_where_welch_blinded_by_outlier():
 
 # ---------- 048③：compare_baselines 增量（method 参数 + 胜率差检验） ----------
 
+
 def test_compare_baselines_method_wilcoxon_and_win_rate_test(env):
     """method='wilcoxon' 增量生效：test 换秩和、verdict 语义不动；胜率差检验随出。"""
     a = _feed(env, branch=BR_FOLLOW, count=30, pattern=[0.10] * 20 + [-0.02] * 15)
     b = _feed(env, branch=BR_AGG, count=30, pattern=[0.01] * 20 + [-0.02] * 15)
     post = _merge(a, b)
-    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                             posterior=post, method="wilcoxon")
+    c = bl.compare_baselines(
+        BR_FOLLOW,
+        BR_AGG,
+        snapshot_db=env["snapshot_db"],
+        posterior=post,
+        method="wilcoxon",
+    )
     assert c["method"] == "wilcoxon"
     assert c["test"]["test"] == "wilcoxon_rank_sum"
-    assert c["verdict"] == "significant_difference"      # verdict 词汇族不动
+    assert c["verdict"] == "significant_difference"  # verdict 词汇族不动
     # 挂账④：胜率差两比例检验随出（次级证据，verdict 仍由均值差检验驱动）
     assert c["win_rate_test"]["test"] == "two_proportion_z"
     assert c["win_rate_test"]["p_two_sided"] is not None
     # 缺省 welch_t 维持 018 原口径（回归护栏）
-    c2 = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
-                              posterior=post)
+    c2 = bl.compare_baselines(
+        BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"], posterior=post
+    )
     assert c2["test"]["test"] == "welch_t" and c2["method"] == "welch_t"
     assert c2["win_rate_test"]["test"] == "two_proportion_z"
 
@@ -1266,8 +1449,12 @@ def test_batch_significant_after_correction_bonferroni(env):
     c1 = _feed(env, branch=BR_AGG, count=10, pattern=[0.10] * 10)
     c2 = _feed(env, branch=BR_HOLD, count=10, pattern=[0.01] * 10)
     b = bl.compare_baselines_batch(
-        BR_FOLLOW, [BR_AGG, BR_HOLD], snapshot_db=env["snapshot_db"],
-        posterior=_merge(base, c1, c2), min_sample=10)
+        BR_FOLLOW,
+        [BR_AGG, BR_HOLD],
+        snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, c1, c2),
+        min_sample=10,
+    )
     assert b["batch_schema_version"] == 1
     assert b["family"]["tested"] == 2 and b["family"]["declared"] == 2
     by = {c["candidate"]: c for c in b["comparisons"]}
@@ -1298,16 +1485,19 @@ def test_batch_correction_reverts_raw_significant(env):
     胜率差族另算（base 8 胜 vs 候选 0 胜，p≈0.0003，×5 仍显著）→ 两族分开
     判读在 verdict_text 显式提及。
     """
-    base = _feed(env, branch=BR_FOLLOW, count=10,
-                 pattern=[0.05] * 8 + [-0.03] * 2)
+    base = _feed(env, branch=BR_FOLLOW, count=10, pattern=[0.05] * 8 + [-0.03] * 2)
     posts, cands = [base], []
     for i in range(5):
         br = f"{COMBO}@scan{i}"
         cands.append(br)
         posts.append(_feed(env, branch=br, count=10, pattern=[0.0] * 10))
     b = bl.compare_baselines_batch(
-        BR_FOLLOW, cands, snapshot_db=env["snapshot_db"],
-        posterior=_merge(*posts), min_sample=10)
+        BR_FOLLOW,
+        cands,
+        snapshot_db=env["snapshot_db"],
+        posterior=_merge(*posts),
+        min_sample=10,
+    )
     assert b["family"]["tested"] == 5
     for c in b["comparisons"]:
         assert c["significant_raw"] is True, "raw p ∈ (0.01, 0.05) 必显著"
@@ -1325,9 +1515,13 @@ def test_batch_bh_fdr_correction_option(env):
     base = _feed(env, branch=BR_FOLLOW, count=10, pattern=[0.01] * 10)
     c1 = _feed(env, branch=BR_AGG, count=10, pattern=[0.10] * 10)
     b = bl.compare_baselines_batch(
-        BR_FOLLOW, [BR_AGG], snapshot_db=env["snapshot_db"],
-        posterior=_merge(base, c1), min_sample=10,
-        correction=bl.CORRECTION_BH_FDR)
+        BR_FOLLOW,
+        [BR_AGG],
+        snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, c1),
+        min_sample=10,
+        correction=bl.CORRECTION_BH_FDR,
+    )
     assert b["correction"] == "bh_fdr"
     assert b["comparisons"][0]["p_adjusted"] == 0.0
     assert b["batch_verdict"] == "significant_after_correction"
@@ -1340,11 +1534,17 @@ def test_batch_gate_blocks_before_tests(env):
     # 勘误（048 收尾）：原夹具漏 merge agg 的后验 → BR_AGG"有样本无后验"按
     # contract 正确判 pending_backfill（PENDING 先于 INSUFFICIENT），预期
     # insufficient 必须给足后验、只欠样本量 → 须并入 posterior。
-    agg = _feed(env, branch=BR_AGG, count=5, pattern=[0.05] * 5)  # n=5 < 10 → insufficient
-    _feed(env, branch=BR_HOLD, count=10)                      # 无后验 → pending
+    agg = _feed(
+        env, branch=BR_AGG, count=5, pattern=[0.05] * 5
+    )  # n=5 < 10 → insufficient
+    _feed(env, branch=BR_HOLD, count=10)  # 无后验 → pending
     b = bl.compare_baselines_batch(
-        BR_FOLLOW, [BR_AGG, BR_HOLD], snapshot_db=env["snapshot_db"],
-        posterior=_merge(base, agg), min_sample=10)
+        BR_FOLLOW,
+        [BR_AGG, BR_HOLD],
+        snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, agg),
+        min_sample=10,
+    )
     by = {c["candidate"]: c for c in b["comparisons"]}
     assert by[BR_AGG]["verdict_raw"] == bl.STATUS_INSUFFICIENT
     assert by[BR_AGG]["test"] is None and by[BR_AGG]["p_raw"] is None
@@ -1361,8 +1561,12 @@ def test_batch_unit_mismatch_short_circuits(env):
     cny = _feed(env, branch=BR_AGG, count=10, pattern=[5.0] * 10, unit="CNY")
     ok = _feed(env, branch=BR_HOLD, count=10, pattern=[0.01] * 10)
     b = bl.compare_baselines_batch(
-        BR_FOLLOW, [BR_AGG, BR_HOLD], snapshot_db=env["snapshot_db"],
-        posterior=_merge(base, cny, ok), min_sample=10)
+        BR_FOLLOW,
+        [BR_AGG, BR_HOLD],
+        snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, cny, ok),
+        min_sample=10,
+    )
     by = {c["candidate"]: c for c in b["comparisons"]}
     assert by[BR_AGG]["verdict_raw"] == "unit_mismatch"
     assert by[BR_AGG]["p_raw"] is None
@@ -1391,8 +1595,12 @@ def test_batch_markdown_renders_correction_table(env):
     base = _feed(env, branch=BR_FOLLOW, count=10, pattern=[0.01] * 10)
     c1 = _feed(env, branch=BR_AGG, count=10, pattern=[0.10] * 10)
     b = bl.compare_baselines_batch(
-        BR_FOLLOW, [BR_AGG], snapshot_db=env["snapshot_db"],
-        posterior=_merge(base, c1), min_sample=10)
+        BR_FOLLOW,
+        [BR_AGG],
+        snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, c1),
+        min_sample=10,
+    )
     md = bl.render_batch_comparison_markdown(b)
     assert "| 候选 | raw p | 校正后 p | raw 判定 | 校正后显著 |" in md
     assert "批量结论" in md and "家族定义" in md

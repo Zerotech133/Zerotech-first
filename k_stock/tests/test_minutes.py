@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-137 S-c 会议纪要投递通道测试：site 默认投递/非法通道 Reject/trader 追加/
 feishu 未配置 fail-closed/账本原子写可解析。全部 monkeypatch 临时账本，真库零触碰。"""
+
 import json
 import sys
 import tempfile
@@ -20,9 +21,17 @@ def _setup(tmp: Path):
     minutes.TRADER_FEED_PATH = tmp / "minutes_trader_feed.json"
     mdir = tmp / "managers"
     mdir.mkdir()
-    (mdir / "bull_desk.json").write_text(json.dumps(
-        {"id": "bull_desk", "name": "多头台", "status": "live",
-         "delivery_channels": ["site", "trader"]}), encoding="utf-8")
+    (mdir / "bull_desk.json").write_text(
+        json.dumps(
+            {
+                "id": "bull_desk",
+                "name": "多头台",
+                "status": "live",
+                "delivery_channels": ["site", "trader"],
+            }
+        ),
+        encoding="utf-8",
+    )
     minutes.MANAGERS_DIR = mdir
 
 
@@ -70,14 +79,23 @@ def test_trader_feed_append():
 def test_feishu_fail_closed():
     with tempfile.TemporaryDirectory() as tmp:
         _setup(Path(tmp))
-        (mdir := Path(tmp) / "managers" / "bull_desk.json").write_text(json.dumps(
-            {"id": "bull_desk", "name": "多头台", "status": "live",
-             "delivery_channels": ["feishu"]}), encoding="utf-8")
+        (mdir := Path(tmp) / "managers" / "bull_desk.json").write_text(
+            json.dumps(
+                {
+                    "id": "bull_desk",
+                    "name": "多头台",
+                    "status": "live",
+                    "delivery_channels": ["feishu"],
+                }
+            ),
+            encoding="utf-8",
+        )
         import os
+
         old = os.environ.pop("FEISHU_WEBHOOK", None)
         try:
             rec = send("bull_desk", "pre_open", "飞书纪要", channel="feishu")
-            assert rec["status"] == "failed"          # fail-closed：False 不抛
+            assert rec["status"] == "failed"  # fail-closed：False 不抛
             assert "FEISHU_WEBHOOK" in rec["meta"]["error"]
         finally:
             if old is not None:

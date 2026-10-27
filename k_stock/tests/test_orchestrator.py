@@ -3,6 +3,7 @@
 
 跑法：python -m pytest k_stock/tests/test_orchestrator.py -q
 """
+
 import sys
 from pathlib import Path
 
@@ -29,8 +30,18 @@ def test_topo_waves():
 
 
 def test_cycle_detected():
-    bad = [{"node_key": "A", "analysis_type": "market_technical", "parent_node_keys": ["B"]},
-           {"node_key": "B", "analysis_type": "market_technical", "parent_node_keys": ["A"]}]
+    bad = [
+        {
+            "node_key": "A",
+            "analysis_type": "market_technical",
+            "parent_node_keys": ["B"],
+        },
+        {
+            "node_key": "B",
+            "analysis_type": "market_technical",
+            "parent_node_keys": ["A"],
+        },
+    ]
     try:
         topo_waves(bad)
         assert False, "应抛环异常"
@@ -43,7 +54,10 @@ def test_full_run_mock():
     nodes = load_team(TEAM)
     chat = LLMClient(mock=True).chat
     orch = Orchestrator(nodes, chat)
-    result = orch.run(stock="600519.SH 贵州茅台", context="收盘价 1450.00，5/10/20 日均线多头排列；无重大新闻。")
+    result = orch.run(
+        stock="600519.SH 贵州茅台",
+        context="收盘价 1450.00，5/10/20 日均线多头排列；无重大新闻。",
+    )
     outs = result["outputs"]
     # 五节点全产出
     assert set(outs) == {"T1", "T2", "N1", "F1", "D1"}
@@ -62,6 +76,7 @@ def test_full_run_mock():
 
 def test_degraded_path():
     """LLM 全挂：五节点全部降级输出，全链不崩，degraded 有记录。"""
+
     class DeadLLM:
         def chat(self, *a, **kw):
             raise ConnectionError("down")

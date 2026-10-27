@@ -85,6 +85,7 @@ topic_miner（-016 后验喂入口径：需带 unit，缺 unit 抛错）、combo
 
 标准库依赖：`json / math / sqlite3 / datetime / pathlib`。**零网络出口**。
 """
+
 from __future__ import annotations
 
 import json
@@ -107,10 +108,10 @@ METRIC_SEMANTICS_VERSION = 2
 MIN_SAMPLE = 30
 
 # 指标状态（不造数三态 + 正常态）
-STATUS_COMPUTED = "computed"                       # 样本量达门槛 → 出数
-STATUS_INSUFFICIENT = "insufficient_sample"       # n < 门槛 → 指标不出数
-STATUS_PENDING = "pending_backfill"               # 无后验数据 → 待回填（不填 0）
-STATUS_EMPTY = "empty_sample"                     # 该分支/组合压根无快照
+STATUS_COMPUTED = "computed"  # 样本量达门槛 → 出数
+STATUS_INSUFFICIENT = "insufficient_sample"  # n < 门槛 → 指标不出数
+STATUS_PENDING = "pending_backfill"  # 无后验数据 → 待回填（不填 0）
+STATUS_EMPTY = "empty_sample"  # 该分支/组合压根无快照
 
 # 维度：分支隔离账（account_id=combo@branch，-008/-011 口径）/ 组合
 DIM_BRANCH = "branch"
@@ -123,18 +124,20 @@ DEFAULT_ALPHA = 0.05
 BATCH_SCHEMA_VERSION = 1
 
 # 检验方法：均值差检验的选择（048 挂账④增量，缺省维持 018 的 Welch t）
-METHOD_WELCH_T = "welch_t"        # 均值差，正态假定下的参数检验（018 原口径）
-METHOD_WILCOXON = "wilcoxon"      # 秩和检验，非正态稳健（并列秩校正）
+METHOD_WELCH_T = "welch_t"  # 均值差，正态假定下的参数检验（018 原口径）
+METHOD_WILCOXON = "wilcoxon"  # 秩和检验，非正态稳健（并列秩校正）
 
 # 多重比较校正方法（048 挂账③；两法语义差异见契约文档）
-CORRECTION_BONFERRONI = "bonferroni"   # 最保守：p_adj = min(1, p·k)，控 FWER
-CORRECTION_BH_FDR = "bh_fdr"           # Benjamini-Hochberg step-up，控 FDR
+CORRECTION_BONFERRONI = "bonferroni"  # 最保守：p_adj = min(1, p·k)，控 FWER
+CORRECTION_BH_FDR = "bh_fdr"  # Benjamini-Hochberg step-up，控 FDR
 
 # 指标算式（写进输出字段，可审计——对齐 -016 三率口径风格）
 FORMULA_SAMPLE_SIZE = "count(可用样本)  # 已回填后验的快照数"
 # 命中率 v2（024 拆口径）：方向与预案一致 / 可判定方向样本数
-FORMULA_HIT_RATE_V2 = ("count(实际决策方向 == 所引用 plan_version 的 plan_json.action) "
-                      "/ count(两侧方向均可判定的样本)")
+FORMULA_HIT_RATE_V2 = (
+    "count(实际决策方向 == 所引用 plan_version 的 plan_json.action) "
+    "/ count(两侧方向均可判定的样本)"
+)
 # 保留 v1 字面量供变更记录引用（不得删——删了变更记录就失去可核对的原点）
 FORMULA_HIT_RATE_V1 = "count(后验收益 > 0) / n"
 # 兼容别名：FORMULA_HIT_RATE 现指**当前生效**口径（v2）。历史代码/用例若引用该
@@ -143,7 +146,9 @@ FORMULA_HIT_RATE = FORMULA_HIT_RATE_V2
 FORMULA_AVG_RETURN = "sum(后验收益) / n"
 FORMULA_WIN_RATE = "count(后验收益 > 0) / n  # 赚到没（口径自 v1 未变）"
 FORMULA_PROFIT_LOSS_RATIO = "平均盈利 / abs(平均亏损)"
-FORMULA_MAX_DRAWDOWN = "max over t of (peak_t - equity_t) / peak_t  # 净值按 ts 复合累乘"
+FORMULA_MAX_DRAWDOWN = (
+    "max over t of (peak_t - equity_t) / peak_t  # 净值按 ts 复合累乘"
+)
 
 # 变更记录（不得静默改口径：每条都写明谁裁的、什么时候、依据是什么）。
 # 读这个模块的人若发现 hit_rate 与历史对不上，先来这里看。
@@ -162,18 +167,22 @@ METRIC_SEMANTICS_CHANGELOG = [
         "ruled_at": "2026-10-20",
         "ticket": "WO-QT-20261020-024",
         "change": "命中率由「后验>0 比例」改为「方向与预案一致比例」；胜率口径**不变**。",
-        "rationale": ("两率同算式导致「命中率」名不副实：它衡量的是赚钱比例，"
-                      "却被读作信号方向判对否。拆开后胜率=赚到没、命中率=方向判对否，"
-                      "分母亦不同源（n vs 可判定方向样本数）。"),
-        "backward_compat": ("字段名与输出结构**未删改**（仍是 metrics.hit_rate / "
-                            "metrics.win_rate + *_formula），但 hit_rate 的**值与含义**"
-                            "已变；语义版本 +1 并随输出下发 metric_semantics，"
-                            "下游须按新口径读，不得与历史值直接比较。"),
+        "rationale": (
+            "两率同算式导致「命中率」名不副实：它衡量的是赚钱比例，"
+            "却被读作信号方向判对否。拆开后胜率=赚到没、命中率=方向判对否，"
+            "分母亦不同源（n vs 可判定方向样本数）。"
+        ),
+        "backward_compat": (
+            "字段名与输出结构**未删改**（仍是 metrics.hit_rate / "
+            "metrics.win_rate + *_formula），但 hit_rate 的**值与含义**"
+            "已变；语义版本 +1 并随输出下发 metric_semantics，"
+            "下游须按新口径读，不得与历史值直接比较。"
+        ),
     },
 ]
 
 # 命中率状态（可判定方向样本不足时**显式不可判定**，不沿用胜率值、不填 0）
-HIT_STATUS_COMPUTED = "computed"                 # 可判定样本达门槛 → 出数
+HIT_STATUS_COMPUTED = "computed"  # 可判定样本达门槛 → 出数
 HIT_STATUS_PENDING = "pending_direction_evidence"  # 无可判定方向样本 → null
 HIT_STATUS_INSUFFICIENT = "insufficient_direction_sample"  # 不足门槛 → null
 
@@ -187,6 +196,7 @@ class BaselineError(Exception):
 
 
 # ---------- 通用工具 ----------
+
 
 def _now() -> str:
     return datetime.now().isoformat(timespec="seconds")
@@ -206,6 +216,7 @@ def _nonempty_str(v) -> bool:
 
 # ---------- 净值曲线 / 最大回撤 ----------
 
+
 def _equity_curve(returns: list[float]) -> list[float]:
     """按时间序把逐笔收益率复合累乘成净值曲线（起点 1.0）。
 
@@ -216,7 +227,7 @@ def _equity_curve(returns: list[float]) -> list[float]:
     eq = 1.0
     curve = [1.0]
     for r in returns:
-        eq *= (1.0 + r)
+        eq *= 1.0 + r
         curve.append(eq)
     return curve
 
@@ -233,6 +244,7 @@ def _max_drawdown_from_curve(curve: list[float]) -> float:
 
 
 # ---------- t 分布双尾 p 值（简化显著性口径） ----------
+
 
 def _betacf(a: float, b: float, x: float) -> float:
     """连分式展开（Lentz 算法），供不完全 Beta 函数用。"""
@@ -276,8 +288,13 @@ def _betai(a: float, b: float, x: float) -> float:
         return 0.0
     if x >= 1.0:
         return 1.0
-    ln_beta = (math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
-               + a * math.log(x) + b * math.log(1.0 - x))
+    ln_beta = (
+        math.lgamma(a + b)
+        - math.lgamma(a)
+        - math.lgamma(b)
+        + a * math.log(x)
+        + b * math.log(1.0 - x)
+    )
     if x < (a + 1.0) / (a + b + 2.0):
         return math.exp(ln_beta) * _betacf(a, b, x) / a
     return 1.0 - math.exp(ln_beta) * _betacf(b, a, 1.0 - x) / b
@@ -302,36 +319,64 @@ def _welch_ttest(a: list[float], b: list[float]) -> dict:
     """
     na, nb = len(a), len(b)
     if na < 2 or nb < 2:
-        return {"test": "welch_t", "t": None, "df": None, "p_two_sided": None,
-                "mean_a": _round(sum(a) / na) if na else None,
-                "mean_b": _round(sum(b) / nb) if nb else None,
-                "note": "两侧样本各 < 2 → 无法做 t 检验（不以 0/1 充数）"}
+        return {
+            "test": "welch_t",
+            "t": None,
+            "df": None,
+            "p_two_sided": None,
+            "mean_a": _round(sum(a) / na) if na else None,
+            "mean_b": _round(sum(b) / nb) if nb else None,
+            "note": "两侧样本各 < 2 → 无法做 t 检验（不以 0/1 充数）",
+        }
     ma, mb = sum(a) / na, sum(b) / nb
     va = sum((x - ma) ** 2 for x in a) / (na - 1)
     vb = sum((x - mb) ** 2 for x in b) / (nb - 1)
     sa2, sb2 = va / na, vb / nb
     denom = sa2 + sb2
     diff = ma - mb
-    out = {"test": "welch_t", "mean_a": _round(ma), "mean_b": _round(mb),
-           "diff": _round(diff), "var_a": _round(va), "var_b": _round(vb)}
+    out = {
+        "test": "welch_t",
+        "mean_a": _round(ma),
+        "mean_b": _round(mb),
+        "diff": _round(diff),
+        "var_a": _round(va),
+        "var_b": _round(vb),
+    }
     if denom <= 0.0:
         # 双侧方差皆 0
         if abs(diff) <= 1e-15:
-            out.update({"t": 0.0, "df": None, "p_two_sided": 1.0,
-                        "note": "两侧收益方差皆为 0 且均值相等 → 无差异（p=1）"})
+            out.update(
+                {
+                    "t": 0.0,
+                    "df": None,
+                    "p_two_sided": 1.0,
+                    "note": "两侧收益方差皆为 0 且均值相等 → 无差异（p=1）",
+                }
+            )
         else:
-            out.update({"t": math.copysign(math.inf, diff), "df": None,
-                        "p_two_sided": 0.0,
-                        "note": "两侧收益方差皆为 0 且均值不等 → 确定性差异（p=0）"})
+            out.update(
+                {
+                    "t": math.copysign(math.inf, diff),
+                    "df": None,
+                    "p_two_sided": 0.0,
+                    "note": "两侧收益方差皆为 0 且均值不等 → 确定性差异（p=0）",
+                }
+            )
         return out
     t = diff / math.sqrt(denom)
-    df = (denom ** 2) / ((sa2 ** 2) / (na - 1) + (sb2 ** 2) / (nb - 1))
-    out.update({"t": _round(t), "df": _round(df),
-                "p_two_sided": _round(_t_sf_two_sided(t, df))})
+    df = (denom**2) / ((sa2**2) / (na - 1) + (sb2**2) / (nb - 1))
+    out.update(
+        {
+            "t": _round(t),
+            "df": _round(df),
+            "p_two_sided": _round(_t_sf_two_sided(t, df)),
+        }
+    )
     return out
 
 
 # ---------- 标准正态双尾 p 值（048 两比例 / Wilcoxon 正态近似共用） ----------
+
 
 def _norm_sf_two_sided(z: float) -> float:
     """标准正态双尾 p 值：p = erfc(|z| / sqrt(2))。
@@ -343,6 +388,7 @@ def _norm_sf_two_sided(z: float) -> float:
 
 
 # ---------- 挂账④：胜率差二项检验（两比例 z 检验，正态近似） ----------
+
 
 def _proportions_test(wins_a: int, n_a: int, wins_b: int, n_b: int) -> dict:
     """两比例 z 检验（胜率差用；pooled 方差，双尾正态近似）。
@@ -356,12 +402,23 @@ def _proportions_test(wins_a: int, n_a: int, wins_b: int, n_b: int) -> dict:
       - 合并比例 0 或 1（方差 0）且胜率相等 → z=0, p=1；
       - 合并比例 0 或 1 且胜率不等 → z=±inf, p=0（确定性差异，照实出数）。
     """
-    out = {"test": "two_proportion_z",
-           "wins_a": wins_a, "n_a": n_a, "wins_b": wins_b, "n_b": n_b}
+    out = {
+        "test": "two_proportion_z",
+        "wins_a": wins_a,
+        "n_a": n_a,
+        "wins_b": wins_b,
+        "n_b": n_b,
+    }
     if n_a < 2 or n_b < 2:
-        out.update({"rate_a": None, "rate_b": None, "z": None,
-                    "p_two_sided": None,
-                    "note": "任一侧 n < 2 → 无法做两比例检验（不以 0/1 充数）"})
+        out.update(
+            {
+                "rate_a": None,
+                "rate_b": None,
+                "z": None,
+                "p_two_sided": None,
+                "note": "任一侧 n < 2 → 无法做两比例检验（不以 0/1 充数）",
+            }
+        )
         return out
     pa, pb = wins_a / n_a, wins_b / n_b
     diff = pa - pb
@@ -370,18 +427,30 @@ def _proportions_test(wins_a: int, n_a: int, wins_b: int, n_b: int) -> dict:
     se_sq = pool * (1.0 - pool) * (1.0 / n_a + 1.0 / n_b)
     if se_sq <= 0.0:
         if abs(diff) <= 1e-15:
-            out.update({"z": 0.0, "p_two_sided": 1.0,
-                        "note": "合并比例 0 或 1（方差 0）且两侧胜率相等 → 无差异（p=1）"})
+            out.update(
+                {
+                    "z": 0.0,
+                    "p_two_sided": 1.0,
+                    "note": "合并比例 0 或 1（方差 0）且两侧胜率相等 → 无差异（p=1）",
+                }
+            )
         else:
-            out.update({"z": math.copysign(math.inf, diff), "p_two_sided": 0.0,
-                        "note": "合并比例 0 或 1（方差 0）且胜率不等 → 确定性差异（p=0）"})
+            out.update(
+                {
+                    "z": math.copysign(math.inf, diff),
+                    "p_two_sided": 0.0,
+                    "note": "合并比例 0 或 1（方差 0）且胜率不等 → 确定性差异（p=0）",
+                }
+            )
         return out
     z = diff / math.sqrt(se_sq)
     notes = []
     m = min(n_a, n_b)
     if m * pool < 5 or m * (1.0 - pool) < 5:
-        notes.append("合并比例下最小期望计数 < 5 → 正态近似偏乐观"
-                     "（照常出数，判读时留心；样本量门槛通常已挡住此区间）")
+        notes.append(
+            "合并比例下最小期望计数 < 5 → 正态近似偏乐观"
+            "（照常出数，判读时留心；样本量门槛通常已挡住此区间）"
+        )
     out.update({"z": _round(z), "p_two_sided": _round(_norm_sf_two_sided(z))})
     if notes:
         out["note"] = "；".join(notes)
@@ -389,6 +458,7 @@ def _proportions_test(wins_a: int, n_a: int, wins_b: int, n_b: int) -> dict:
 
 
 # ---------- 挂账④：Wilcoxon 秩和检验（Mann-Whitney U，非正态稳健） ----------
+
 
 def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> dict:
     """Wilcoxon 秩和检验（等价 Mann-Whitney U，双尾正态近似 + 并列秩校正）。
@@ -409,8 +479,14 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> dict:
     na, nb = len(a), len(b)
     out = {"test": "wilcoxon_rank_sum", "n_a": na, "n_b": nb}
     if na < 2 or nb < 2:
-        out.update({"u": None, "z": None, "p_two_sided": None,
-                    "note": "任一侧 n < 2 → 秩分布无从谈起（不以 0/1 充数）"})
+        out.update(
+            {
+                "u": None,
+                "z": None,
+                "p_two_sided": None,
+                "note": "任一侧 n < 2 → 秩分布无从谈起（不以 0/1 充数）",
+            }
+        )
         return out
     n = na + nb
     values = [float(x) for x in a] + [float(x) for x in b]
@@ -423,10 +499,10 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> dict:
         j = i
         while j + 1 < n and values[order[j + 1]] == values[order[i]]:
             j += 1
-        avg_rank = (i + j + 2) / 2.0          # 1-based 位置 i+1..j+1 的平均秩
+        avg_rank = (i + j + 2) / 2.0  # 1-based 位置 i+1..j+1 的平均秩
         if j > i:
             t = j - i + 1
-            tie_term += t ** 3 - t
+            tie_term += t**3 - t
             tie_groups += 1
         for k in range(i, j + 1):
             ranks[order[k]] = avg_rank
@@ -436,23 +512,34 @@ def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> dict:
     u_b = na * nb - u_a
     u = min(u_a, u_b)
     mu = na * nb / 2.0
-    out.update({"u": _round(u), "rank_sum_a": _round(r_a),
-                "tie_groups": tie_groups})
+    out.update({"u": _round(u), "rank_sum_a": _round(r_a), "tie_groups": tie_groups})
     sigma2 = (na * nb / 12.0) * ((n + 1) - tie_term / (n * (n - 1)))
     if sigma2 <= 0.0:
         # 全部值并入一个并列组 → U=μ 恒成立 → 无差异可言（p=1，不是造数：
         # 两侧数据逐值相同，秩和检验确实测不出任何东西）
-        out.update({"z": 0.0, "p_two_sided": 1.0,
-                    "note": "全部样本值并列（两侧分布逐值相同）→ p=1"})
+        out.update(
+            {
+                "z": 0.0,
+                "p_two_sided": 1.0,
+                "note": "全部样本值并列（两侧分布逐值相同）→ p=1",
+            }
+        )
         return out
     z = (u - mu) / math.sqrt(sigma2)
-    out.update({"z": _round(z), "p_two_sided": _round(_norm_sf_two_sided(z)),
-                "note": None if tie_groups == 0
-                else f"存在 {tie_groups} 组并列值 → 并列秩校正已生效"})
+    out.update(
+        {
+            "z": _round(z),
+            "p_two_sided": _round(_norm_sf_two_sided(z)),
+            "note": None
+            if tie_groups == 0
+            else f"存在 {tie_groups} 组并列值 → 并列秩校正已生效",
+        }
+    )
     return out
 
 
 # ---------- 挂账③：多重比较校正（Bonferroni / BH-FDR） ----------
+
 
 def bonferroni(p_values: list[float]) -> list[float | None]:
     """Bonferroni 校正：p_adj = min(1, p·k)（k = 家族大小）。
@@ -464,8 +551,9 @@ def bonferroni(p_values: list[float]) -> list[float | None]:
     k = len(p_values)
     for p in p_values:
         if not _is_number(p) or p < 0.0 or p > 1.0:
-            raise BaselineError("p_values_invalid",
-                                f"bonferroni 输入须为 [0,1] 内数值: {p!r}")
+            raise BaselineError(
+                "p_values_invalid", f"bonferroni 输入须为 [0,1] 内数值: {p!r}"
+            )
     return [min(1.0, p * k) for p in p_values]
 
 
@@ -482,12 +570,13 @@ def bh_fdr(p_values: list[float]) -> list[float | None]:
     k = len(p_values)
     for p in p_values:
         if not _is_number(p) or p < 0.0 or p > 1.0:
-            raise BaselineError("p_values_invalid",
-                                f"bh_fdr 输入须为 [0,1] 内数值: {p!r}")
+            raise BaselineError(
+                "p_values_invalid", f"bh_fdr 输入须为 [0,1] 内数值: {p!r}"
+            )
     order = sorted(range(k), key=lambda i: p_values[i])
     adj = [0.0] * k
     prev = 1.0
-    for r in range(k, 0, -1):                 # r = k..1（升序位次，从大到小）
+    for r in range(k, 0, -1):  # r = k..1（升序位次，从大到小）
         idx = order[r - 1]
         val = min(p_values[idx] * k / r, prev, 1.0)
         adj[idx] = val
@@ -497,8 +586,10 @@ def bh_fdr(p_values: list[float]) -> list[float | None]:
 
 # ---------- 数据接入：-004 决策快照（只读 mode=ro） ----------
 
-def _read_snapshots(snapshot_db, *, account_id: str | None = None,
-                    combo_id: str | None = None) -> list[dict]:
+
+def _read_snapshots(
+    snapshot_db, *, account_id: str | None = None, combo_id: str | None = None
+) -> list[dict]:
     """只读 -004 决策快照表（sqlite mode=ro + 纯 SELECT，**不调 ensure_table**
     ——那是 -004 的写路径，本单零写入）。
 
@@ -509,26 +600,34 @@ def _read_snapshots(snapshot_db, *, account_id: str | None = None,
         return []
     p = Path(snapshot_db)
     if not p.exists():
-        raise BaselineError("snapshot_db_missing",
-                            f"决策快照库不存在（closed on failure）: {p}")
+        raise BaselineError(
+            "snapshot_db_missing", f"决策快照库不存在（closed on failure）: {p}"
+        )
     uri = f"file:{p.resolve().as_posix()}?mode=ro"
     try:
         con = sqlite3.connect(uri, uri=True)
     except sqlite3.Error as e:
-        raise BaselineError("snapshot_db_unreadable",
-                            f"决策快照库不可读（closed on failure）: {p} ({e})") from e
+        raise BaselineError(
+            "snapshot_db_unreadable",
+            f"决策快照库不可读（closed on failure）: {p} ({e})",
+        ) from e
     try:
         con.row_factory = sqlite3.Row
-        row = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                          ("decision_snapshots",)).fetchone()
+        row = con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            ("decision_snapshots",),
+        ).fetchone()
         if row is None:
             raise BaselineError(
                 "snapshot_table_missing",
                 f"决策快照库无 decision_snapshots 表（closed on failure）: {p}——"
-                "今日零落单（D-1 快照零积累），口径已就位、等数据回填自动生效")
-        sql = ("SELECT snapshot_id, ts, schema_version, combo_id, account_id, "
-               "strategy, run_ref, run_path, orders_json, context_json "
-               "FROM decision_snapshots")
+                "今日零落单（D-1 快照零积累），口径已就位、等数据回填自动生效",
+            )
+        sql = (
+            "SELECT snapshot_id, ts, schema_version, combo_id, account_id, "
+            "strategy, run_ref, run_path, orders_json, context_json "
+            "FROM decision_snapshots"
+        )
         params: list = []
         if account_id is not None:
             sql += " WHERE account_id=?"
@@ -542,8 +641,10 @@ def _read_snapshots(snapshot_db, *, account_id: str | None = None,
         # plan_version 去对 plan_json.action。**同库同连接**，不加连接、不新建表。
         plan_actions = _read_plan_actions(con)
     except sqlite3.Error as e:
-        raise BaselineError("snapshot_query_failed",
-                            f"-004 快照表查询失败（closed on failure）: {p} ({e})") from e
+        raise BaselineError(
+            "snapshot_query_failed",
+            f"-004 快照表查询失败（closed on failure）: {p} ({e})",
+        ) from e
     finally:
         con.close()
     out = []
@@ -592,12 +693,14 @@ def _read_plan_actions(con) -> dict:
     尚未建表，那是部署事实而非调用方错误。
     """
     try:
-        row = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND "
-                          "name='plan_versions'").fetchone()
+        row = con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='plan_versions'"
+        ).fetchone()
         if row is None:
             return {}
-        rows = con.execute("SELECT combo_id, stock, plan_version, plan_json "
-                           "FROM plan_versions").fetchall()
+        rows = con.execute(
+            "SELECT combo_id, stock, plan_version, plan_json FROM plan_versions"
+        ).fetchall()
     except sqlite3.Error:
         return {}
     out = {}
@@ -616,6 +719,7 @@ def _read_plan_actions(con) -> dict:
 
 # ---------- 数据接入：后验收益喂入 / 回填接口（复用 -016 口径） ----------
 
+
 def _validate_posterior(posterior) -> dict:
     """校验后验收益喂入/回填，返回 {snapshot_id: {value, unit, source}}。
 
@@ -631,41 +735,59 @@ def _validate_posterior(posterior) -> dict:
     if posterior is None:
         return {}
     if not isinstance(posterior, dict):
-        raise BaselineError("posterior_invalid",
-                            f"posterior 须为 dict 或 None: {type(posterior).__name__}")
+        raise BaselineError(
+            "posterior_invalid",
+            f"posterior 须为 dict 或 None: {type(posterior).__name__}",
+        )
     snaps = posterior.get("snapshots")
     if snaps is None:
         return {}
     if not isinstance(snaps, dict):
-        raise BaselineError("posterior_invalid",
-                            f"posterior.snapshots 须为 dict: {type(snaps).__name__}")
+        raise BaselineError(
+            "posterior_invalid",
+            f"posterior.snapshots 须为 dict: {type(snaps).__name__}",
+        )
     out = {}
     for sid, item in snaps.items():
         if not _nonempty_str(sid):
-            raise BaselineError("posterior_invalid",
-                                f"posterior.snapshots 键须为非空 snapshot_id: {sid!r}")
+            raise BaselineError(
+                "posterior_invalid",
+                f"posterior.snapshots 键须为非空 snapshot_id: {sid!r}",
+            )
         if not isinstance(item, dict):
-            raise BaselineError("posterior_invalid",
-                                f"posterior.snapshots[{sid!r}] 须为 dict: "
-                                f"{type(item).__name__}")
+            raise BaselineError(
+                "posterior_invalid",
+                f"posterior.snapshots[{sid!r}] 须为 dict: {type(item).__name__}",
+            )
         unit, value = item.get("unit"), item.get("value")
         if not _nonempty_str(unit):
             raise BaselineError(
                 "posterior_invalid",
                 f"posterior.snapshots[{sid!r}].unit 必填（非空字符串）——"
-                "单位不声明即不造数（-016 同口径）")
+                "单位不声明即不造数（-016 同口径）",
+            )
         if not _is_number(value):
             raise BaselineError(
                 "posterior_invalid",
                 f"posterior.snapshots[{sid!r}].value 须为数值（不得为 None/字符串/"
-                f"bool）: {value!r}")
-        out[sid] = {"value": _round(value), "unit": unit.strip(),
-                    "source": item.get("source")}
+                f"bool）: {value!r}",
+            )
+        out[sid] = {
+            "value": _round(value),
+            "unit": unit.strip(),
+            "source": item.get("source"),
+        }
     return out
 
 
-def backfill_posterior(posterior: dict | None, snapshot_id: str, *, unit: str,
-                       value, source: str | None = None) -> dict:
+def backfill_posterior(
+    posterior: dict | None,
+    snapshot_id: str,
+    *,
+    unit: str,
+    value,
+    source: str | None = None,
+) -> dict:
     """回填单条快照的后验收益（**数据回填后基线自动生效**的接线口）。
 
     就地追加进 posterior 映射并返回新映射（不改传入对象）；unit 必填——缺 unit
@@ -676,18 +798,25 @@ def backfill_posterior(posterior: dict | None, snapshot_id: str, *, unit: str,
     的人工/显式回填路径。
     """
     if not _nonempty_str(snapshot_id):
-        raise BaselineError("posterior_invalid",
-                            f"snapshot_id 须为非空字符串: {snapshot_id!r}")
+        raise BaselineError(
+            "posterior_invalid", f"snapshot_id 须为非空字符串: {snapshot_id!r}"
+        )
     if not _nonempty_str(unit):
-        raise BaselineError("posterior_invalid",
-                            "unit 必填（非空字符串）——单位不声明即不造数（-016 同口径）")
+        raise BaselineError(
+            "posterior_invalid",
+            "unit 必填（非空字符串）——单位不声明即不造数（-016 同口径）",
+        )
     if not _is_number(value):
-        raise BaselineError("posterior_invalid",
-                            f"value 须为数值（不得为 None/字符串/bool）: {value!r}")
+        raise BaselineError(
+            "posterior_invalid", f"value 须为数值（不得为 None/字符串/bool）: {value!r}"
+        )
     base = dict(_validate_posterior(posterior))
     snaps = dict(base)
-    snaps[snapshot_id] = {"unit": unit.strip(), "value": _round(value),
-                          "source": source}
+    snaps[snapshot_id] = {
+        "unit": unit.strip(),
+        "value": _round(value),
+        "source": source,
+    }
     return {"snapshots": snaps}
 
 
@@ -730,8 +859,10 @@ def _judge_direction(sample: dict) -> tuple[bool | None, str]:
         return None, "快照无 plan_version 印记（该决策不跟预案可比）→ 不可判定"
     plan_action = actions.get(key)
     if not plan_action:
-        return None, ("plan_versions 缺 (%s, %s, %s) 或其 plan_json 无 action"
-                      " → 不可判定" % (key[0], key[1], key[2]))
+        return None, (
+            "plan_versions 缺 (%s, %s, %s) 或其 plan_json 无 action"
+            " → 不可判定" % (key[0], key[1], key[2])
+        )
 
     decided = set()
     for o in orders:
@@ -740,11 +871,14 @@ def _judge_direction(sample: dict) -> tuple[bool | None, str]:
             if a in ("BUY", "SELL"):
                 decided.add(a)
     if len(decided) > 1:
-        return None, "同一快照内出现多个方向 %s → 不可判定（拒绝瞎配对）" % sorted(decided)
+        return None, "同一快照内出现多个方向 %s → 不可判定（拒绝瞎配对）" % sorted(
+            decided
+        )
     # 没有 BUY/SELL 订单 = 未改变持仓 = HOLD（与 -008 abstain 同义）。
     d = decided.pop() if decided else _HOLD
-    return (d == plan_action), ("实际 %s vs 预案 %s（plan_version=%s）"
-                                % (d, plan_action, key[2]))
+    return (d == plan_action), (
+        "实际 %s vs 预案 %s（plan_version=%s）" % (d, plan_action, key[2])
+    )
 
 
 def _hit_rate_block(samples: list[dict], *, min_sample: int) -> dict:
@@ -778,7 +912,8 @@ def _hit_rate_block(samples: list[dict], *, min_sample: int) -> dict:
                 "无可判定的方向样本（快照缺 plan_version 印记或缺合法 orders 动作）"
                 "→ 命中率不可判定，**不沿用胜率值、不填 0**。判方向与判赚钱是"
                 "两件事：前者要预案印记 + 实际下单动作，后者要后验收益。"
-                + ("样例依据：%s" % reasons[0] if reasons else "")),
+                + ("样例依据：%s" % reasons[0] if reasons else "")
+            ),
         }
     if judged < min_sample:
         return {
@@ -789,7 +924,8 @@ def _hit_rate_block(samples: list[dict], *, min_sample: int) -> dict:
             "hit_rate_unjudged": len(samples) - judged,
             "hit_rate_note": (
                 f"可判定方向样本 {judged} < 门槛 {min_sample} → 命中率不出数"
-                "（insufficient_direction_sample），低于门槛不下结论"),
+                "（insufficient_direction_sample），低于门槛不下结论"
+            ),
         }
     return {
         "hit_rate": _round(matched / judged),
@@ -798,16 +934,26 @@ def _hit_rate_block(samples: list[dict], *, min_sample: int) -> dict:
         "hit_rate_matched": matched,
         "hit_rate_unjudged": len(samples) - judged,
         "hit_rate_note": (
-            None if not reasons else
-            "另有 %d 个样本方向不可判定（已剔出分母，未按判错处理）" % len(reasons)),
+            None
+            if not reasons
+            else "另有 %d 个样本方向不可判定（已剔出分母，未按判错处理）" % len(reasons)
+        ),
     }
 
 
 # ---------- 指标计算 ----------
 
+
 def _unit_is_return_unit(unit: str) -> bool:
     """单位是否收益率口径（决定能否复合累乘算最大回撤）。"""
-    return unit.strip().lower() in {"pct", "percent", "ratio", "fraction", "收益率", "%"}
+    return unit.strip().lower() in {
+        "pct",
+        "percent",
+        "ratio",
+        "fraction",
+        "收益率",
+        "%",
+    }
 
 
 def compute_metrics(samples: list[dict], *, min_sample: int = MIN_SAMPLE) -> dict:
@@ -830,37 +976,63 @@ def compute_metrics(samples: list[dict], *, min_sample: int = MIN_SAMPLE) -> dic
         "n": n,
         "min_sample": min_sample,
         "sample_size_formula": FORMULA_SAMPLE_SIZE,
-        "hit_rate": None, "hit_rate_formula": FORMULA_HIT_RATE,
-        "hit_rate_status": None, "hit_rate_judged": None,
-        "hit_rate_matched": None, "hit_rate_unjudged": None,
+        "hit_rate": None,
+        "hit_rate_formula": FORMULA_HIT_RATE,
+        "hit_rate_status": None,
+        "hit_rate_judged": None,
+        "hit_rate_matched": None,
+        "hit_rate_unjudged": None,
         "hit_rate_note": None,
-        "avg_return": None, "avg_return_formula": FORMULA_AVG_RETURN,
-        "max_drawdown": None, "max_drawdown_formula": FORMULA_MAX_DRAWDOWN,
-        "win_rate": None, "win_rate_formula": FORMULA_WIN_RATE,
-        "profit_loss_ratio": None, "profit_loss_ratio_formula": FORMULA_PROFIT_LOSS_RATIO,
-        "wins": None, "losses": None, "breakeven": None,
-        "unit": None, "note": None,
+        "avg_return": None,
+        "avg_return_formula": FORMULA_AVG_RETURN,
+        "max_drawdown": None,
+        "max_drawdown_formula": FORMULA_MAX_DRAWDOWN,
+        "win_rate": None,
+        "win_rate_formula": FORMULA_WIN_RATE,
+        "profit_loss_ratio": None,
+        "profit_loss_ratio_formula": FORMULA_PROFIT_LOSS_RATIO,
+        "wins": None,
+        "losses": None,
+        "breakeven": None,
+        "unit": None,
+        "note": None,
         # 语义版本随每次输出下发：下游读到 hit_rate 就能知道它是哪套口径的
         # 命中率（v1 与 v2 同名字段、值不可比——这是拆口径必须显式化的理由）。
         "metric_semantics_version": METRIC_SEMANTICS_VERSION,
     }
     if n_total == 0:
-        base.update({"status": STATUS_EMPTY,
-                     "hit_rate_status": HIT_STATUS_PENDING,
-                     "note": "该维度无决策快照样本（D-1 零落单）→ 指标不出数（不造数）"})
+        base.update(
+            {
+                "status": STATUS_EMPTY,
+                "hit_rate_status": HIT_STATUS_PENDING,
+                "note": "该维度无决策快照样本（D-1 零落单）→ 指标不出数（不造数）",
+            }
+        )
         return base
     if n == 0:
-        base.update({"status": STATUS_PENDING,
-                     "hit_rate_status": HIT_STATUS_PENDING,
-                     "note": (f"{n_total} 个快照全部无后验收益回填 → "
-                              "pending_backfill，指标不出数（不以 0 充数）")})
+        base.update(
+            {
+                "status": STATUS_PENDING,
+                "hit_rate_status": HIT_STATUS_PENDING,
+                "note": (
+                    f"{n_total} 个快照全部无后验收益回填 → "
+                    "pending_backfill，指标不出数（不以 0 充数）"
+                ),
+            }
+        )
         return base
     if n < min_sample:
-        base.update({"status": STATUS_INSUFFICIENT,
-                     "hit_rate_status": HIT_STATUS_INSUFFICIENT,
-                     "note": (f"可用样本 n={n} < 门槛 {min_sample} → 指标不出数"
-                              f"（insufficient_sample），低于门槛不下结论；"
-                              f"待回填样本 {n_total - n} 个")})
+        base.update(
+            {
+                "status": STATUS_INSUFFICIENT,
+                "hit_rate_status": HIT_STATUS_INSUFFICIENT,
+                "note": (
+                    f"可用样本 n={n} < 门槛 {min_sample} → 指标不出数"
+                    f"（insufficient_sample），低于门槛不下结论；"
+                    f"待回填样本 {n_total - n} 个"
+                ),
+            }
+        )
         return base
 
     values = [float(s["value"]) for s in usable]
@@ -883,23 +1055,32 @@ def compute_metrics(samples: list[dict], *, min_sample: int = MIN_SAMPLE) -> dic
 
     note_parts = []
     if not losses:
-        note_parts.append("无亏损样本 → 盈亏比不可计算（分母 0，不填 0；胜率=1.0 照实填）")
+        note_parts.append(
+            "无亏损样本 → 盈亏比不可计算（分母 0，不填 0；胜率=1.0 照实填）"
+        )
     if not wins:
-        note_parts.append("无盈利样本 → 胜率=0.0 为有效数据照实填，盈亏比无分子（null）")
+        note_parts.append(
+            "无盈利样本 → 胜率=0.0 为有效数据照实填，盈亏比无分子（null）"
+        )
     if mdd is None:
-        note_parts.append(f"单位 {unit!r} 非收益率口径 → 最大回撤不出数"
-                          "（金额累加≠复利，混算即造数）")
+        note_parts.append(
+            f"单位 {unit!r} 非收益率口径 → 最大回撤不出数（金额累加≠复利，混算即造数）"
+        )
 
-    base.update({
-        "status": STATUS_COMPUTED,
-        "avg_return": _round(avg),
-        "max_drawdown": _round(mdd),
-        "win_rate": _round(len(wins) / n),
-        "profit_loss_ratio": _round(plr),
-        "wins": len(wins), "losses": len(losses), "breakeven": breakeven,
-        "unit": unit,
-        "note": "；".join(note_parts) if note_parts else None,
-    })
+    base.update(
+        {
+            "status": STATUS_COMPUTED,
+            "avg_return": _round(avg),
+            "max_drawdown": _round(mdd),
+            "win_rate": _round(len(wins) / n),
+            "profit_loss_ratio": _round(plr),
+            "wins": len(wins),
+            "losses": len(losses),
+            "breakeven": breakeven,
+            "unit": unit,
+            "note": "；".join(note_parts) if note_parts else None,
+        }
+    )
     # 命中率 v2：**独立于胜率计算**（不同分母、不同数据源）。绝不在此处写
     # `hit_rate = win_rate` ——那正是本次要拆掉的同算式问题。
     base.update(_hit_rate_block(samples, min_sample=min_sample))
@@ -908,9 +1089,15 @@ def compute_metrics(samples: list[dict], *, min_sample: int = MIN_SAMPLE) -> dic
 
 # ---------- 主入口：build_baseline ----------
 
-def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
-                   snapshot_db=None, posterior=None,
-                   min_sample: int = MIN_SAMPLE) -> dict:
+
+def build_baseline(
+    variant: str,
+    *,
+    dimension: str = DIM_BRANCH,
+    snapshot_db=None,
+    posterior=None,
+    min_sample: int = MIN_SAMPLE,
+) -> dict:
     """产出单个 variant（策略分支或组合）的训练基线。
 
     参数：
@@ -926,14 +1113,23 @@ def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
     六项指标全 null + note，绝不返回 0% 胜率/0 收益。
     """
     if dimension not in (DIM_BRANCH, DIM_COMBO):
-        raise BaselineError("dimension_invalid",
-                            f"dimension 只认 {DIM_BRANCH}/{DIM_COMBO}: {dimension!r}")
+        raise BaselineError(
+            "dimension_invalid",
+            f"dimension 只认 {DIM_BRANCH}/{DIM_COMBO}: {dimension!r}",
+        )
     if not _nonempty_str(variant):
-        raise BaselineError("variant_invalid",
-                            f"variant 须为非空字符串（combo@branch 或 combo_id）: {variant!r}")
-    if not isinstance(min_sample, int) or isinstance(min_sample, bool) or min_sample < 1:
-        raise BaselineError("min_sample_invalid",
-                            f"min_sample 须为 >=1 的 int: {min_sample!r}")
+        raise BaselineError(
+            "variant_invalid",
+            f"variant 须为非空字符串（combo@branch 或 combo_id）: {variant!r}",
+        )
+    if (
+        not isinstance(min_sample, int)
+        or isinstance(min_sample, bool)
+        or min_sample < 1
+    ):
+        raise BaselineError(
+            "min_sample_invalid", f"min_sample 须为 >=1 的 int: {min_sample!r}"
+        )
 
     post = _validate_posterior(posterior)
     if dimension == DIM_BRANCH:
@@ -947,23 +1143,39 @@ def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
         # 方向判定素材（命中率 v2 用）随样本透传，与后验回填**互不影响**：
         # 方向可判但后验未回填的样本，命中率能判、胜率判不了——这正是拆口径
         # 的意义（两率不再被同一份数据绑死）。
-        dir_material = {"_orders": s.get("_orders"),
-                        "_plan_stamp": s.get("_plan_stamp"),
-                        "_plan_actions": s.get("_plan_actions")}
+        dir_material = {
+            "_orders": s.get("_orders"),
+            "_plan_stamp": s.get("_plan_stamp"),
+            "_plan_actions": s.get("_plan_actions"),
+        }
         p = post.get(sid)
         if p is None:
             # 后验未回填 → 该样本不参与收益类指标（不填 0），但留痕可回放引用
-            samples.append({"snapshot_id": sid, "ts": s.get("ts"),
-                            "run_ref": s.get("run_ref"), "value": None,
-                            "unit": None, "status": STATUS_PENDING,
-                            **dir_material,
-                            "note": "后验收益未回填 → 不参与收益指标（pending_backfill）"})
+            samples.append(
+                {
+                    "snapshot_id": sid,
+                    "ts": s.get("ts"),
+                    "run_ref": s.get("run_ref"),
+                    "value": None,
+                    "unit": None,
+                    "status": STATUS_PENDING,
+                    **dir_material,
+                    "note": "后验收益未回填 → 不参与收益指标（pending_backfill）",
+                }
+            )
             continue
-        samples.append({"snapshot_id": sid, "ts": s.get("ts"),
-                        "run_ref": s.get("run_ref"), "value": p["value"],
-                        "unit": p["unit"], "status": "available",
-                        **dir_material,
-                        "source": p.get("source")})
+        samples.append(
+            {
+                "snapshot_id": sid,
+                "ts": s.get("ts"),
+                "run_ref": s.get("run_ref"),
+                "value": p["value"],
+                "unit": p["unit"],
+                "status": "available",
+                **dir_material,
+                "source": p.get("source"),
+            }
+        )
 
     metrics = compute_metrics(samples, min_sample=min_sample)
     pending = [s for s in samples if s["status"] == STATUS_PENDING]
@@ -972,20 +1184,31 @@ def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
         "generated_at": _now(),
         "variant": variant,
         "dimension": dimension,
-        "dimension_semantics": ("account_id = combo@branch（-008 隔离账 / -011 "
-                                "branch_account_ids 口径）" if dimension == DIM_BRANCH
-                                else "combo_id（-003 四元组注册表口径）"),
+        "dimension_semantics": (
+            "account_id = combo@branch（-008 隔离账 / -011 branch_account_ids 口径）"
+            if dimension == DIM_BRANCH
+            else "combo_id（-003 四元组注册表口径）"
+        ),
         "status": metrics["status"],
         "metrics": metrics,
         "samples_total": len(samples),
         "samples_pending_backfill": len(pending),
-        "pending_samples": [{"snapshot_id": s["snapshot_id"], "ts": s["ts"],
-                             "run_ref": s["run_ref"]} for s in pending],
+        "pending_samples": [
+            {"snapshot_id": s["snapshot_id"], "ts": s["ts"], "run_ref": s["run_ref"]}
+            for s in pending
+        ],
         # 样本级收益（仅可用样本，按 ts 时间序）——对比 API 的检验输入，避免
         # 从均值反推损失信息。只含已回填后验的样本，pending 一律不进。
-        "sample_returns": [{"snapshot_id": s["snapshot_id"], "ts": s["ts"],
-                            "value": s["value"], "unit": s["unit"]}
-                           for s in samples if s["value"] is not None],
+        "sample_returns": [
+            {
+                "snapshot_id": s["snapshot_id"],
+                "ts": s["ts"],
+                "value": s["value"],
+                "unit": s["unit"],
+            }
+            for s in samples
+            if s["value"] is not None
+        ],
         "unit_consistency": _unit_consistency(samples),
         # 口径变更记录随每次输出下发：同名字段 hit_rate 在 v1/v2 下值不可比，
         # 下游不拿到这段就无法判断手上这个数是新口径还是旧口径（=静默改口径）。
@@ -996,9 +1219,11 @@ def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
             "changelog": METRIC_SEMANTICS_CHANGELOG,
         },
         "cost_view": None,
-        "cost_view_note": ("成本/ROI 视图唯一定义处为 -013 combo_review（成本账为 "
-                           "-011），本单只读不重写——本单元默认 None，由调用方"
-                           "喂入 -013 输出后回填"),
+        "cost_view_note": (
+            "成本/ROI 视图唯一定义处为 -013 combo_review（成本账为 "
+            "-011），本单只读不重写——本单元默认 None，由调用方"
+            "喂入 -013 输出后回填"
+        ),
         "notes": [
             "样本单位 = 一条决策快照（-004），分支维度按 account_id=combo@branch 归集",
             f"样本量门槛 n<{min_sample} → 指标不出数（insufficient_sample），低于门槛不下结论",
@@ -1011,12 +1236,17 @@ def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
 def _unit_consistency(samples: list[dict]) -> dict:
     """单位一致性核查：多单位混喂 → 指标不可加总，显式标（不静默混算）。"""
     units = sorted({s["unit"] for s in samples if s.get("unit")})
-    return {"units": units, "consistent": len(units) <= 1,
-            "note": None if len(units) <= 1
-            else f"多单位混喂 {units} → 均值类指标不可加总，需先统一单位"}
+    return {
+        "units": units,
+        "consistent": len(units) <= 1,
+        "note": None
+        if len(units) <= 1
+        else f"多单位混喂 {units} → 均值类指标不可加总，需先统一单位",
+    }
 
 
 # ---------- 成本/ROI 视图（-013 只读复用，本单不重写口径） ----------
+
 
 def attach_cost_view(baseline: dict, review: dict | None) -> dict:
     """把 -013 combo_review 的成本/ROI 结论挂到基线上（**只读复用，不重写**）。
@@ -1028,15 +1258,19 @@ def attach_cost_view(baseline: dict, review: dict | None) -> dict:
     if review is None:
         return baseline
     if not isinstance(review, dict) or "roi" not in review:
-        raise BaselineError("cost_view_invalid",
-                            "review 须为 combo_review.build_review 输出（含 roi 字段）")
+        raise BaselineError(
+            "cost_view_invalid",
+            "review 须为 combo_review.build_review 输出（含 roi 字段）",
+        )
     baseline["cost_view"] = {
         "source": "combo_review.build_review（-013，只读复用）",
         "roi": review.get("roi"),
         "cost": review.get("cost"),
         "cost_ledger": "-011 成本账（口径唯一定义处，本单零重写）",
-        "note": ("ROI 口径为 收益 − 算力成本（计划 3.3，-013 定义）；"
-                 "-013 侧 pending_backfill / unit_mismatch 时本视图同样不出数"),
+        "note": (
+            "ROI 口径为 收益 − 算力成本（计划 3.3，-013 定义）；"
+            "-013 侧 pending_backfill / unit_mismatch 时本视图同样不出数"
+        ),
     }
     return baseline
 
@@ -1054,11 +1288,17 @@ SIGNIFICANCE_NOTE = (
 )
 
 
-def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
-                      snapshot_db=None, posterior=None,
-                      min_sample: int = MIN_SAMPLE,
-                      alpha: float = DEFAULT_ALPHA,
-                      method: str = METHOD_WELCH_T) -> dict:
+def compare_baselines(
+    a: str,
+    b: str,
+    *,
+    dimension: str = DIM_BRANCH,
+    snapshot_db=None,
+    posterior=None,
+    min_sample: int = MIN_SAMPLE,
+    alpha: float = DEFAULT_ALPHA,
+    method: str = METHOD_WELCH_T,
+) -> dict:
     """两个 variant 的基线对比（差异显著性带样本量前提）。
 
     **禁吹功**纪律：
@@ -1075,14 +1315,24 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
     if method not in (METHOD_WELCH_T, METHOD_WILCOXON):
         raise BaselineError(
             "method_invalid",
-            f"method 只认 {METHOD_WELCH_T}/{METHOD_WILCOXON}: {method!r}")
+            f"method 只认 {METHOD_WELCH_T}/{METHOD_WILCOXON}: {method!r}",
+        )
     if not (0.0 < alpha < 1.0):
-        raise BaselineError("alpha_invalid",
-                            f"alpha 须在 (0,1) 开区间内: {alpha!r}")
-    ba = build_baseline(a, dimension=dimension, snapshot_db=snapshot_db,
-                        posterior=posterior, min_sample=min_sample)
-    bb = build_baseline(b, dimension=dimension, snapshot_db=snapshot_db,
-                        posterior=posterior, min_sample=min_sample)
+        raise BaselineError("alpha_invalid", f"alpha 须在 (0,1) 开区间内: {alpha!r}")
+    ba = build_baseline(
+        a,
+        dimension=dimension,
+        snapshot_db=snapshot_db,
+        posterior=posterior,
+        min_sample=min_sample,
+    )
+    bb = build_baseline(
+        b,
+        dimension=dimension,
+        snapshot_db=snapshot_db,
+        posterior=posterior,
+        min_sample=min_sample,
+    )
 
     out = {
         "compare_schema_version": COMPARE_SCHEMA_VERSION,
@@ -1090,10 +1340,20 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
         "dimension": dimension,
         "alpha": alpha,
         "min_sample": min_sample,
-        "a": {"variant": a, "status": ba["status"], "n": ba["metrics"]["n"],
-              "unit": ba["metrics"]["unit"], "metrics": ba["metrics"]},
-        "b": {"variant": b, "status": bb["status"], "n": bb["metrics"]["n"],
-              "unit": bb["metrics"]["unit"], "metrics": bb["metrics"]},
+        "a": {
+            "variant": a,
+            "status": ba["status"],
+            "n": ba["metrics"]["n"],
+            "unit": ba["metrics"]["unit"],
+            "metrics": ba["metrics"],
+        },
+        "b": {
+            "variant": b,
+            "status": bb["status"],
+            "n": bb["metrics"]["n"],
+            "unit": bb["metrics"]["unit"],
+            "metrics": bb["metrics"],
+        },
         "verdict": None,
         "verdict_text": None,
         "test": None,
@@ -1108,18 +1368,21 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
     blocking = [ba["status"], bb["status"]]
     if STATUS_PENDING in blocking:
         out["verdict"] = STATUS_PENDING
-        out["verdict_text"] = ("pending_backfill：至少一侧无后验收益数据 → "
-                               "不下结论（不以 0 充数）")
+        out["verdict_text"] = (
+            "pending_backfill：至少一侧无后验收益数据 → 不下结论（不以 0 充数）"
+        )
         out["notes"].append("数据未到位：先回填后验，再谈基线对比")
         return out
     if STATUS_EMPTY in blocking:
         out["verdict"] = STATUS_EMPTY
-        out["verdict_text"] = ("empty_sample：至少一侧无决策快照样本 → 不下结论")
+        out["verdict_text"] = "empty_sample：至少一侧无决策快照样本 → 不下结论"
         return out
     if STATUS_INSUFFICIENT in blocking:
         out["verdict"] = STATUS_INSUFFICIENT
-        out["verdict_text"] = (f"insufficient_sample：至少一侧可用样本 < {min_sample} → "
-                               "不下结论（低于门槛不出数、不吹功）")
+        out["verdict_text"] = (
+            f"insufficient_sample：至少一侧可用样本 < {min_sample} → "
+            "不下结论（低于门槛不出数、不吹功）"
+        )
         out["notes"].append(f"样本量前提未达（门槛 n>={min_sample}）→ 禁止宣称改进")
         return out
 
@@ -1127,8 +1390,9 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
     ua, ub = ba["metrics"]["unit"], bb["metrics"]["unit"]
     if ua != ub:
         out["verdict"] = "unit_mismatch"
-        out["verdict_text"] = (f"unit_mismatch：两侧单位 {ua!r} vs {ub!r} 不可比 → "
-                               "不出数（不混算）")
+        out["verdict_text"] = (
+            f"unit_mismatch：两侧单位 {ua!r} vs {ub!r} 不可比 → 不出数（不混算）"
+        )
         return out
 
     # ---- 达门槛后才跑检验 ----
@@ -1137,47 +1401,61 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
     # 048 增量：method 选检验（缺省 welch_t 维持 018 口径）；胜率差两比例
     # 检验（挂账④）一并随出，作为**次级证据**（verdict 语义仍由均值差检验
     # 驱动，向后兼容不动）。
-    test = (_welch_ttest(va, vb) if method == METHOD_WELCH_T
-            else _wilcoxon_rank_sum(va, vb))
+    test = (
+        _welch_ttest(va, vb) if method == METHOD_WELCH_T else _wilcoxon_rank_sum(va, vb)
+    )
     out["test"] = test
     out["win_rate_test"] = _proportions_test(
-        sum(1 for v in va if v > 0), len(va),
-        sum(1 for v in vb if v > 0), len(vb))
+        sum(1 for v in va if v > 0), len(va), sum(1 for v in vb if v > 0), len(vb)
+    )
     p = test.get("p_two_sided")
     ma, mb = ba["metrics"]["avg_return"], bb["metrics"]["avg_return"]
     if ma is not None and mb is not None:
         out["deltas"] = {
             "avg_return_diff": _round(ma - mb),
-            "win_rate_diff": _round((ba["metrics"]["win_rate"] or 0.0)
-                                    - (bb["metrics"]["win_rate"] or 0.0)),
+            "win_rate_diff": _round(
+                (ba["metrics"]["win_rate"] or 0.0) - (bb["metrics"]["win_rate"] or 0.0)
+            ),
             # 命中率差值**不兜底 0**：任一侧不可判定（null）即整体 null。
             # `(x or 0.0)` 会把「判不了」变成「差 0」，那是凭空造出一个
             # 「两侧命中率相同」的结论——比不出数严重得多。
-            "hit_rate_diff": (_round(ba["metrics"]["hit_rate"]
-                                     - bb["metrics"]["hit_rate"])
-                              if (ba["metrics"]["hit_rate"] is not None
-                                  and bb["metrics"]["hit_rate"] is not None)
-                              else None),
+            "hit_rate_diff": (
+                _round(ba["metrics"]["hit_rate"] - bb["metrics"]["hit_rate"])
+                if (
+                    ba["metrics"]["hit_rate"] is not None
+                    and bb["metrics"]["hit_rate"] is not None
+                )
+                else None
+            ),
             "hit_rate_diff_note": (
-                None if (ba["metrics"]["hit_rate"] is not None
-                         and bb["metrics"]["hit_rate"] is not None)
-                else "至少一侧命中率不可判定（方向证据不足）→ 差值不出数，不兜底 0"),
-            "max_drawdown_diff": (_round(ba["metrics"]["max_drawdown"]
-                                         - bb["metrics"]["max_drawdown"])
-                                  if (ba["metrics"]["max_drawdown"] is not None
-                                      and bb["metrics"]["max_drawdown"] is not None)
-                                  else None),
+                None
+                if (
+                    ba["metrics"]["hit_rate"] is not None
+                    and bb["metrics"]["hit_rate"] is not None
+                )
+                else "至少一侧命中率不可判定（方向证据不足）→ 差值不出数，不兜底 0"
+            ),
+            "max_drawdown_diff": (
+                _round(ba["metrics"]["max_drawdown"] - bb["metrics"]["max_drawdown"])
+                if (
+                    ba["metrics"]["max_drawdown"] is not None
+                    and bb["metrics"]["max_drawdown"] is not None
+                )
+                else None
+            ),
         }
 
     if p is None:
         out["verdict"] = STATUS_INSUFFICIENT
-        out["verdict_text"] = ("样本量不足以做显著性检验 → 不下结论")
+        out["verdict_text"] = "样本量不足以做显著性检验 → 不下结论"
         return out
     if p >= alpha:
         # **禁吹功**：不显著就是「无显著差异」，不得因均值波动宣称改进
         out["verdict"] = "no_significant_difference"
-        out["verdict_text"] = (f"**无显著差异**（p={p} ≥ alpha={alpha}）——"
-                               "差异在样本噪声范围内，不得据此宣称任一侧改进")
+        out["verdict_text"] = (
+            f"**无显著差异**（p={p} ≥ alpha={alpha}）——"
+            "差异在样本噪声范围内，不得据此宣称任一侧改进"
+        )
         out["notes"].append("禁吹功纪律：不显著即写无显著差异，禁止小样本波动吹改进")
         return out
 
@@ -1187,7 +1465,8 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
         f"平均收益差异**统计显著**（p={p} < alpha={alpha}）："
         f"{a}={ma} vs {b}={mb} → "
         f"{'a 优于 b' if improved else 'b 优于 a'}"
-        "（注：统计显著 ≠ 策略优劣定论，仍需结合样本量与回撤审阅）")
+        "（注：统计显著 ≠ 策略优劣定论，仍需结合样本量与回撤审阅）"
+    )
     out["notes"].append("显著差异亦不构成「策略更优」定论——须结合样本量/回撤/成本审阅")
     return out
 
@@ -1221,14 +1500,19 @@ _FAMILY_DEFINITION = (
 )
 
 # 前置门短路后的批量 verdict 优先级（pending 是最底层数据问题，优先上报）
-_BATCH_BLOCK_PRIORITY = [STATUS_PENDING, STATUS_EMPTY, STATUS_INSUFFICIENT,
-                         "unit_mismatch"]
+_BATCH_BLOCK_PRIORITY = [
+    STATUS_PENDING,
+    STATUS_EMPTY,
+    STATUS_INSUFFICIENT,
+    "unit_mismatch",
+]
 
 
 def _validate_alpha(alpha, *, prefix: str = "alpha") -> None:
     if not _is_number(alpha) or not (0.0 < alpha < 1.0):
-        raise BaselineError(f"{prefix}_invalid",
-                            f"alpha 须为 (0,1) 开区间内数值: {alpha!r}")
+        raise BaselineError(
+            f"{prefix}_invalid", f"alpha 须为 (0,1) 开区间内数值: {alpha!r}"
+        )
 
 
 def _batch_entry(candidate: str, base_status: str, cand_status: str) -> dict:
@@ -1236,24 +1520,30 @@ def _batch_entry(candidate: str, base_status: str, cand_status: str) -> dict:
         "candidate": candidate,
         "base_status": base_status,
         "candidate_status": cand_status,
-        "verdict_raw": None,       # 与 compare_baselines verdict 同词汇族
+        "verdict_raw": None,  # 与 compare_baselines verdict 同词汇族
         "verdict_text": None,
-        "test": None,              # 均值差检验（method 选 welch_t/wilcoxon）
-        "win_rate_test": None,     # 胜率差两比例检验（048 挂账④）
-        "p_raw": None,             # 均值差检验 raw p（未校正）
-        "p_adjusted": None,        # 均值差检验校正后 p
-        "significant_raw": None,   # raw p < alpha（未校正，仅参考）
+        "test": None,  # 均值差检验（method 选 welch_t/wilcoxon）
+        "win_rate_test": None,  # 胜率差两比例检验（048 挂账④）
+        "p_raw": None,  # 均值差检验 raw p（未校正）
+        "p_adjusted": None,  # 均值差检验校正后 p
+        "significant_raw": None,  # raw p < alpha（未校正，仅参考）
         "significant_after_correction": None,
         "deltas": None,
     }
 
 
-def compare_baselines_batch(base: str, candidates: list[str], *,
-                            dimension: str = DIM_BRANCH, snapshot_db=None,
-                            posterior=None, min_sample: int = MIN_SAMPLE,
-                            alpha: float = DEFAULT_ALPHA,
-                            method: str = METHOD_WELCH_T,
-                            correction: str = CORRECTION_BONFERRONI) -> dict:
+def compare_baselines_batch(
+    base: str,
+    candidates: list[str],
+    *,
+    dimension: str = DIM_BRANCH,
+    snapshot_db=None,
+    posterior=None,
+    min_sample: int = MIN_SAMPLE,
+    alpha: float = DEFAULT_ALPHA,
+    method: str = METHOD_WELCH_T,
+    correction: str = CORRECTION_BONFERRONI,
+) -> dict:
     """批量对比：N 个候选分支 vs 同一基准，**带多重比较校正**（048 挂账③）。
 
     为什么必须有它：批量扫描「哪个分支最好」时逐个跑两两对比并按 raw p 判
@@ -1282,41 +1572,63 @@ def compare_baselines_batch(base: str, candidates: list[str], *,
       significance_note 恒随结果下发（SIGNIFICANCE_NOTE）。
     """
     if not _nonempty_str(base):
-        raise BaselineError("variant_invalid",
-                            f"base 须为非空字符串（combo@branch 或 combo_id）: {base!r}")
+        raise BaselineError(
+            "variant_invalid",
+            f"base 须为非空字符串（combo@branch 或 combo_id）: {base!r}",
+        )
     if not isinstance(candidates, (list, tuple)) or not candidates:
-        raise BaselineError("candidates_invalid",
-                            "candidates 须为非空列表（批量对比至少 1 个候选）")
+        raise BaselineError(
+            "candidates_invalid", "candidates 须为非空列表（批量对比至少 1 个候选）"
+        )
     if any(not _nonempty_str(c) for c in candidates):
-        raise BaselineError("candidates_invalid",
-                            f"候选 variant 须为非空字符串: {candidates!r}")
+        raise BaselineError(
+            "candidates_invalid", f"候选 variant 须为非空字符串: {candidates!r}"
+        )
     if len(set(candidates)) != len(candidates):
-        raise BaselineError("candidates_invalid",
-                            "候选 variant 重复 → 家族定义含糊（同一候选出现两次"
-                            "会让校正名额虚增），拒绝")
+        raise BaselineError(
+            "candidates_invalid",
+            "候选 variant 重复 → 家族定义含糊（同一候选出现两次"
+            "会让校正名额虚增），拒绝",
+        )
     if base in candidates:
-        raise BaselineError("candidates_invalid",
-                            f"候选含 base 自身（vs 自己无差异可言，只占校正名额）: {base!r}")
+        raise BaselineError(
+            "candidates_invalid",
+            f"候选含 base 自身（vs 自己无差异可言，只占校正名额）: {base!r}",
+        )
     if method not in (METHOD_WELCH_T, METHOD_WILCOXON):
-        raise BaselineError("method_invalid",
-                            f"method 只认 {METHOD_WELCH_T}/{METHOD_WILCOXON}: {method!r}")
+        raise BaselineError(
+            "method_invalid",
+            f"method 只认 {METHOD_WELCH_T}/{METHOD_WILCOXON}: {method!r}",
+        )
     if correction not in (CORRECTION_BONFERRONI, CORRECTION_BH_FDR):
-        raise BaselineError("correction_invalid",
-                            f"correction 只认 {CORRECTION_BONFERRONI}/"
-                            f"{CORRECTION_BH_FDR}: {correction!r}")
+        raise BaselineError(
+            "correction_invalid",
+            f"correction 只认 {CORRECTION_BONFERRONI}/"
+            f"{CORRECTION_BH_FDR}: {correction!r}",
+        )
     _validate_alpha(alpha)
 
-    b_base = build_baseline(base, dimension=dimension, snapshot_db=snapshot_db,
-                            posterior=posterior, min_sample=min_sample)
+    b_base = build_baseline(
+        base,
+        dimension=dimension,
+        snapshot_db=snapshot_db,
+        posterior=posterior,
+        min_sample=min_sample,
+    )
     cand_baselines = {
-        c: build_baseline(c, dimension=dimension, snapshot_db=snapshot_db,
-                          posterior=posterior, min_sample=min_sample)
+        c: build_baseline(
+            c,
+            dimension=dimension,
+            snapshot_db=snapshot_db,
+            posterior=posterior,
+            min_sample=min_sample,
+        )
         for c in candidates
     }
 
     adjust = bonferroni if correction == CORRECTION_BONFERRONI else bh_fdr
     comparisons: list[dict] = []
-    mean_family: list[tuple[int, float]] = []   # (comparisons 下标, raw p)
+    mean_family: list[tuple[int, float]] = []  # (comparisons 下标, raw p)
     wr_family: list[tuple[int, float]] = []
 
     for c in candidates:
@@ -1327,8 +1639,10 @@ def compare_baselines_batch(base: str, candidates: list[str], *,
         # ---- 前置门（先于任何检验短路） ----
         if STATUS_PENDING in blocking:
             entry["verdict_raw"] = STATUS_PENDING
-            entry["verdict_text"] = ("pending_backfill：至少一侧无后验收益数据 → "
-                                     "不跑检验、不下结论（不以 0 充数）")
+            entry["verdict_text"] = (
+                "pending_backfill：至少一侧无后验收益数据 → "
+                "不跑检验、不下结论（不以 0 充数）"
+            )
             comparisons.append(entry)
             continue
         if STATUS_EMPTY in blocking:
@@ -1338,36 +1652,50 @@ def compare_baselines_batch(base: str, candidates: list[str], *,
             continue
         if STATUS_INSUFFICIENT in blocking:
             entry["verdict_raw"] = STATUS_INSUFFICIENT
-            entry["verdict_text"] = (f"insufficient_sample：至少一侧可用样本 < "
-                                     f"{min_sample} → 不跑检验（低于门槛不出数）")
+            entry["verdict_text"] = (
+                f"insufficient_sample：至少一侧可用样本 < "
+                f"{min_sample} → 不跑检验（低于门槛不出数）"
+            )
             comparisons.append(entry)
             continue
         ua, ub = b_base["metrics"]["unit"], bc["metrics"]["unit"]
         if ua != ub:
             entry["verdict_raw"] = "unit_mismatch"
-            entry["verdict_text"] = (f"unit_mismatch：单位 {ua!r} vs {ub!r} 不可比 → "
-                                     "不出数（不混算）")
+            entry["verdict_text"] = (
+                f"unit_mismatch：单位 {ua!r} vs {ub!r} 不可比 → 不出数（不混算）"
+            )
             comparisons.append(entry)
             continue
 
         # ---- 达门槛后才跑检验（均值差 + 胜率差） ----
         v_base = _usable_values(b_base)
         v_cand = _usable_values(bc)
-        test = (_welch_ttest(v_base, v_cand) if method == METHOD_WELCH_T
-                else _wilcoxon_rank_sum(v_base, v_cand))
+        test = (
+            _welch_ttest(v_base, v_cand)
+            if method == METHOD_WELCH_T
+            else _wilcoxon_rank_sum(v_base, v_cand)
+        )
         wr = _proportions_test(
-            sum(1 for v in v_base if v > 0), len(v_base),
-            sum(1 for v in v_cand if v > 0), len(v_cand))
+            sum(1 for v in v_base if v > 0),
+            len(v_base),
+            sum(1 for v in v_cand if v > 0),
+            len(v_cand),
+        )
         entry["test"] = test
         entry["win_rate_test"] = wr
         p = test.get("p_two_sided")
         entry["p_raw"] = p
         ma, mc = b_base["metrics"]["avg_return"], bc["metrics"]["avg_return"]
         entry["deltas"] = {
-            "avg_return_diff": (_round(ma - mc)
-                                if ma is not None and mc is not None else None),
-            "win_rate_diff": (_round((b_base["metrics"]["win_rate"] or 0.0)
-                                     - (bc["metrics"]["win_rate"] or 0.0))),
+            "avg_return_diff": (
+                _round(ma - mc) if ma is not None and mc is not None else None
+            ),
+            "win_rate_diff": (
+                _round(
+                    (b_base["metrics"]["win_rate"] or 0.0)
+                    - (bc["metrics"]["win_rate"] or 0.0)
+                )
+            ),
         }
         if p is None:
             entry["verdict_raw"] = STATUS_INSUFFICIENT
@@ -1378,7 +1706,8 @@ def compare_baselines_batch(base: str, candidates: list[str], *,
         if p < alpha:
             entry["verdict_raw"] = "significant_difference"
             entry["verdict_text"] = (
-                f"raw p={p} < alpha={alpha}（**未校正**——是否算数以校正后为准）")
+                f"raw p={p} < alpha={alpha}（**未校正**——是否算数以校正后为准）"
+            )
         else:
             entry["verdict_raw"] = "no_significant_difference"
             entry["verdict_text"] = f"raw p={p} ≥ alpha={alpha} → 无显著差异"
@@ -1394,50 +1723,67 @@ def compare_baselines_batch(base: str, candidates: list[str], *,
     for (idx, _p), padj in zip(mean_family, mean_adj):
         comparisons[idx]["p_adjusted"] = _round(padj)
         comparisons[idx]["significant_after_correction"] = bool(padj < alpha)
-        if (comparisons[idx]["verdict_raw"] == "significant_difference"
-                and not comparisons[idx]["significant_after_correction"]):
+        if (
+            comparisons[idx]["verdict_raw"] == "significant_difference"
+            and not comparisons[idx]["significant_after_correction"]
+        ):
             comparisons[idx]["verdict_text"] += (
                 "；**多重比较校正后不显著**（raw 显著系批量扫描假阳性嫌疑）"
-                "→ 不得据此宣称改进")
+                "→ 不得据此宣称改进"
+            )
     for (idx, _p), padj in zip(wr_family, wr_adj):
         comparisons[idx]["win_rate_test"]["p_adjusted"] = _round(padj)
-        comparisons[idx]["win_rate_test"]["significant_after_correction"] = \
-            bool(padj < alpha)
+        comparisons[idx]["win_rate_test"]["significant_after_correction"] = bool(
+            padj < alpha
+        )
 
     # ---- 批量 verdict（只认校正后显著性） ----
     tested_idx = [i for i, c in enumerate(comparisons) if c["p_raw"] is not None]
     if not tested_idx:
         verdicts = [c["verdict_raw"] for c in comparisons]
-        batch_verdict = next((v for v in _BATCH_BLOCK_PRIORITY if v in verdicts),
-                             verdicts[0] if verdicts else STATUS_EMPTY)
-        batch_verdict_text = ("前置门全部短路 → 未跑任何检验、未做校正（不造数、"
-                              "不吹功）：先回填数据/积累样本/统一单位，再谈批量对比")
+        batch_verdict = next(
+            (v for v in _BATCH_BLOCK_PRIORITY if v in verdicts),
+            verdicts[0] if verdicts else STATUS_EMPTY,
+        )
+        batch_verdict_text = (
+            "前置门全部短路 → 未跑任何检验、未做校正（不造数、"
+            "不吹功）：先回填数据/积累样本/统一单位，再谈批量对比"
+        )
     else:
-        sig = [comparisons[i]["candidate"] for i in tested_idx
-               if comparisons[i]["significant_after_correction"]]
-        sig_wr = [comparisons[i]["candidate"] for i in tested_idx
-                  if comparisons[i]["win_rate_test"]
-                  and comparisons[i]["win_rate_test"].get(
-                      "significant_after_correction")]
+        sig = [
+            comparisons[i]["candidate"]
+            for i in tested_idx
+            if comparisons[i]["significant_after_correction"]
+        ]
+        sig_wr = [
+            comparisons[i]["candidate"]
+            for i in tested_idx
+            if comparisons[i]["win_rate_test"]
+            and comparisons[i]["win_rate_test"].get("significant_after_correction")
+        ]
         if sig:
             batch_verdict = "significant_after_correction"
             batch_verdict_text = (
                 f"多重比较校正后 {len(sig)}/{len(tested_idx)} 个比较显著"
                 f"（均值差族，{correction}，alpha={alpha}）：{', '.join(sig)}"
-                "——统计显著 ≠ 策略优劣定论，仍需结合样本量与回撤审阅")
+                "——统计显著 ≠ 策略优劣定论，仍需结合样本量与回撤审阅"
+            )
             if sig_wr:
-                batch_verdict_text += (f"；胜率差族校正后显著：{', '.join(sig_wr)}"
-                                       "（两族分开判读）")
+                batch_verdict_text += (
+                    f"；胜率差族校正后显著：{', '.join(sig_wr)}（两族分开判读）"
+                )
         else:
             batch_verdict = "no_significant_after_correction"
             batch_verdict_text = (
                 "**多重比较校正后无显著差异**（均值差族）——raw p 的显著在校正后"
                 f"不作数（{correction} 校正的作用正是压回批量扫描的假阳性），"
-                "不得据此宣称任一候选优于基准")
+                "不得据此宣称任一候选优于基准"
+            )
             if sig_wr:
                 batch_verdict_text += (
                     f"；注意：胜率差族校正后显著（{', '.join(sig_wr)}）——"
-                    "胜率高 ≠ 赚得多，仍不得据单一指标宣称改进")
+                    "胜率高 ≠ 赚得多，仍不得据单一指标宣称改进"
+                )
 
     return {
         "batch_schema_version": BATCH_SCHEMA_VERSION,
@@ -1447,23 +1793,34 @@ def compare_baselines_batch(base: str, candidates: list[str], *,
         "min_sample": min_sample,
         "method": method,
         "correction": correction,
-        "base": {"variant": base, "status": b_base["status"],
-                 "n": b_base["metrics"]["n"], "unit": b_base["metrics"]["unit"],
-                 "metrics": b_base["metrics"]},
-        "candidates": [{"variant": c, "status": cand_baselines[c]["status"],
-                        "n": cand_baselines[c]["metrics"]["n"],
-                        "unit": cand_baselines[c]["metrics"]["unit"],
-                        "metrics": cand_baselines[c]["metrics"]}
-                       for c in candidates],
+        "base": {
+            "variant": base,
+            "status": b_base["status"],
+            "n": b_base["metrics"]["n"],
+            "unit": b_base["metrics"]["unit"],
+            "metrics": b_base["metrics"],
+        },
+        "candidates": [
+            {
+                "variant": c,
+                "status": cand_baselines[c]["status"],
+                "n": cand_baselines[c]["metrics"]["n"],
+                "unit": cand_baselines[c]["metrics"]["unit"],
+                "metrics": cand_baselines[c]["metrics"],
+            }
+            for c in candidates
+        ],
         "comparisons": comparisons,
         "family": {
             "definition": _FAMILY_DEFINITION,
             "declared": len(candidates),
             "tested": len(tested_idx),
             "short_circuited": len(comparisons) - len(tested_idx),
-            "correction_scope": ("均值差检验族与胜率差检验族各 k 个 p 值，"
-                                 f"分别以 {correction} 校正；两族均限于本批次"
-                                 "本次调用，不跨批次合并"),
+            "correction_scope": (
+                "均值差检验族与胜率差检验族各 k 个 p 值，"
+                f"分别以 {correction} 校正；两族均限于本批次"
+                "本次调用，不跨批次合并"
+            ),
         },
         "batch_verdict": batch_verdict,
         "batch_verdict_text": batch_verdict_text,
@@ -1494,7 +1851,8 @@ def render_batch_comparison_markdown(batch: dict) -> str:
         lines.append(
             f"| {c['candidate']} | {_fmt(c['p_raw'])} | {_fmt(c['p_adjusted'])} "
             f"| {c['verdict_raw']} | "
-            f"{'是' if sig else ('否' if sig is not None else '—')} |")
+            f"{'是' if sig else ('否' if sig is not None else '—')} |"
+        )
     lines += [
         "",
         f"- **批量结论：{batch['batch_verdict']}**",
@@ -1510,6 +1868,7 @@ def render_batch_comparison_markdown(batch: dict) -> str:
 
 
 # ---------- Markdown 渲染 ----------
+
 
 def _fmt(v, digits: int = 4):
     if v is None:
@@ -1547,9 +1906,11 @@ def render_markdown(baseline: dict) -> str:
     # 命中率状态显式上墙：不可判定时必须让读者看见「这个数没出来」，
     # 而不是把 — 误读成 0 或漏读。
     if m.get("hit_rate_status"):
-        lines.append(f"- 命中率状态：**{m['hit_rate_status']}**"
-                     f"（可判定 {m.get('hit_rate_judged')} / 一致 {m.get('hit_rate_matched')}"
-                     f" / 不可判定 {m.get('hit_rate_unjudged')}）")
+        lines.append(
+            f"- 命中率状态：**{m['hit_rate_status']}**"
+            f"（可判定 {m.get('hit_rate_judged')} / 一致 {m.get('hit_rate_matched')}"
+            f" / 不可判定 {m.get('hit_rate_unjudged')}）"
+        )
     if m.get("hit_rate_note"):
         lines.append(f"- 命中率说明：{m['hit_rate_note']}")
     if m.get("note"):
@@ -1561,13 +1922,19 @@ def render_markdown(baseline: dict) -> str:
     else:
         roi = cv.get("roi") or {}
         cost = cv.get("cost") or {}
-        lines.append(f"- ROI 状态：**{roi.get('status')}**｜值 {_fmt(roi.get('value'))}"
-                     f"（{roi.get('formula')}，单位 {roi.get('unit')}）")
-        lines.append(f"- 当月算力成本：{_fmt(cost.get('cost_accumulated'))}"
-                     f"｜预算 {_fmt(cost.get('budget'))}｜剩余 {_fmt(cost.get('remaining'))}")
+        lines.append(
+            f"- ROI 状态：**{roi.get('status')}**｜值 {_fmt(roi.get('value'))}"
+            f"（{roi.get('formula')}，单位 {roi.get('unit')}）"
+        )
+        lines.append(
+            f"- 当月算力成本：{_fmt(cost.get('cost_accumulated'))}"
+            f"｜预算 {_fmt(cost.get('budget'))}｜剩余 {_fmt(cost.get('remaining'))}"
+        )
         lines.append(f"- 口径来源：{cv.get('cost_ledger')}")
     lines += [
-        "", "## 三、不造数与未接线", "",
+        "",
+        "## 三、不造数与未接线",
+        "",
         "- n < 门槛 → 指标不出数（insufficient_sample），低于门槛不下结论",
         "- 无后验 → pending_backfill，指标全 null（绝不返回 0% 胜率/0 收益）",
         f"- 命中率口径 v{METRIC_SEMANTICS_VERSION}：{FORMULA_HIT_RATE}；"
@@ -1604,27 +1971,40 @@ def render_comparison_markdown(comparison: dict) -> str:
     for side, key in (("a", "a"), ("b", "b")):
         st = comparison[key]["metrics"].get("hit_rate_status")
         if st:
-            lines.append(f"- {side} 侧命中率状态：{st}（可判定 "
-                         f"{comparison[key]['metrics'].get('hit_rate_judged')}）")
+            lines.append(
+                f"- {side} 侧命中率状态：{st}（可判定 "
+                f"{comparison[key]['metrics'].get('hit_rate_judged')}）"
+            )
     if comparison.get("test"):
         t = comparison["test"]
         if t.get("test") == "wilcoxon_rank_sum":
-            lines.append(f"- 检验：Wilcoxon U={_fmt(t.get('u'))}"
-                         f"｜z={_fmt(t.get('z'))}｜双尾 p={_fmt(t.get('p_two_sided'))}")
+            lines.append(
+                f"- 检验：Wilcoxon U={_fmt(t.get('u'))}"
+                f"｜z={_fmt(t.get('z'))}｜双尾 p={_fmt(t.get('p_two_sided'))}"
+            )
         else:
-            lines.append(f"- 检验：Welch t={_fmt(t.get('t'))}｜df={_fmt(t.get('df'))}"
-                         f"｜双尾 p={_fmt(t.get('p_two_sided'))}")
+            lines.append(
+                f"- 检验：Welch t={_fmt(t.get('t'))}｜df={_fmt(t.get('df'))}"
+                f"｜双尾 p={_fmt(t.get('p_two_sided'))}"
+            )
     if comparison.get("win_rate_test"):
         wrt = comparison["win_rate_test"]
-        lines.append(f"- 胜率差检验：两比例 z={_fmt(wrt.get('z'))}"
-                     f"（{_fmt(wrt.get('wins_a'))}/{wrt.get('n_a')} vs "
-                     f"{_fmt(wrt.get('wins_b'))}/{wrt.get('n_b')}）"
-                     f"｜双尾 p={_fmt(wrt.get('p_two_sided'))}")
+        lines.append(
+            f"- 胜率差检验：两比例 z={_fmt(wrt.get('z'))}"
+            f"（{_fmt(wrt.get('wins_a'))}/{wrt.get('n_a')} vs "
+            f"{_fmt(wrt.get('wins_b'))}/{wrt.get('n_b')}）"
+            f"｜双尾 p={_fmt(wrt.get('p_two_sided'))}"
+        )
     if comparison.get("deltas"):
         d = comparison["deltas"]
-        lines.append(f"- 差值：平均收益 {_fmt(d.get('avg_return_diff'))}"
-                     f"｜胜率 {_fmt(d.get('win_rate_diff'))}"
-                     f"｜最大回撤 {_fmt(d.get('max_drawdown_diff'))}")
-    lines += ["", "> 禁吹功纪律：p ≥ alpha 一律写「无显著差异」，"
-              "不得因小样本波动宣称改进；任一侧样本不足即不下结论。"]
+        lines.append(
+            f"- 差值：平均收益 {_fmt(d.get('avg_return_diff'))}"
+            f"｜胜率 {_fmt(d.get('win_rate_diff'))}"
+            f"｜最大回撤 {_fmt(d.get('max_drawdown_diff'))}"
+        )
+    lines += [
+        "",
+        "> 禁吹功纪律：p ≥ alpha 一律写「无显著差异」，"
+        "不得因小样本波动宣称改进；任一侧样本不足即不下结论。",
+    ]
     return "\n".join(lines)
