@@ -32,13 +32,18 @@ class TestNoop(unittest.TestCase):
         self.assertEqual(add(2, 3), 5)
         self.assertEqual(add.__name__, "add")
 
-    def test_fail_open_when_enabled_but_no_exporter(self):
+    def test_fail_open_when_enabled_but_endpoint_dead(self):
+        """fail-open 语义：启用+端点不可达时，进出 traced 不得抛异常（导出失败由 OTEL 异步处理）。"""
         os.environ[ot.ENV_ENABLED] = "1"
         os.environ[ot.ENV_ENDPOINT] = "http://127.0.0.1:1/v1/traces"
         try:
-            # 初始化失败也应静默降级：不抛异常、yield None
-            with ot.traced("x") as span:
-                self.assertIsNone(span)
+            raised = False
+            try:
+                with ot.traced("x"):
+                    pass
+            except Exception:  # noqa: BLE001
+                raised = True
+            self.assertFalse(raised, "fail-open 失败：traced 不应抛异常")
         finally:
             os.environ.pop(ot.ENV_ENABLED, None)
             os.environ.pop(ot.ENV_ENDPOINT, None)
