@@ -22,8 +22,11 @@ def _load(name, path):
     return mod
 
 
-HC = _load("http_client", _WT / "agent_platform" / "mcp" / "http_client.py")
-REG = _load("mcp_registry", _WT / "agent_platform" / "mcp" / "registry.py")
+import importlib  # noqa: E402
+
+importlib.import_module("legion_mcp")  # 确保包已导入（相对导入可解析）
+HC = importlib.import_module("legion_mcp.http_client")
+REG = importlib.import_module("legion_mcp.registry")
 OD = _load("office_doc", _WT / "agent_platform" / "tools" / "office_doc.py")
 
 
