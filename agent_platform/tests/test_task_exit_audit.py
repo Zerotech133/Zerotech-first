@@ -79,10 +79,12 @@ def test_scan_classifies_and_writes(isolated_data_dir, monkeypatch):
     names = {f["name"] for f in s["failures"]}
     assert names == {"QuantWatchdog", "AlertWatch"}
 
-    # 账本与摘要都落盘
-    ledger = os.path.join(isolated_data_dir, ta.LEDGER_NAME)
-    summary = os.path.join(isolated_data_dir, ta.SUMMARY_NAME)
+    # 账本与摘要都落盘（全量扫描 → 独立 _all 文件，不污染 canonical）
+    ledger = os.path.join(isolated_data_dir, ta.LEDGER_ALL_NAME)
+    summary = os.path.join(isolated_data_dir, ta.SUMMARY_ALL_NAME)
     assert os.path.isfile(ledger) and os.path.isfile(summary)
+    assert not os.path.exists(os.path.join(isolated_data_dir, ta.LEDGER_NAME))
+    assert not os.path.exists(os.path.join(isolated_data_dir, ta.SUMMARY_NAME))
     lines = [json.loads(x) for x in open(ledger, encoding="utf-8") if x.strip()]
     assert len(lines) == 5  # append-only，含全部扫描记录
     # 0xC000013A 语义可读，且单列在 cancelled_tasks（不计 failed）
@@ -117,6 +119,32 @@ def test_family_filter(isolated_data_dir, monkeypatch):
     )
     s = ta.scan(audit_family_only=True)
     assert s["total_scanned"] == 5  # 系统任务被滤除
+
+
+def test_family_scan_writes_canonical_only(isolated_data_dir, monkeypatch):
+    """canonical（军团系）扫描只写 canonical 文件，不动 _all 文件。"""
+    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: list(FAKE_TASKS))
+    s = ta.scan(audit_family_only=True)
+    assert s["canonical"] is True
+    assert os.path.isfile(os.path.join(isolated_data_dir, ta.LEDGER_NAME))
+    assert os.path.isfile(os.path.join(isolated_data_dir, ta.SUMMARY_NAME))
+    assert not os.path.exists(os.path.join(isolated_data_dir, ta.LEDGER_ALL_NAME))
+    assert not os.path.exists(os.path.join(isolated_data_dir, ta.SUMMARY_ALL_NAME))
+
+
+def test_all_families_does_not_touch_canonical(isolated_data_dir, monkeypatch):
+    """全量扫描不能覆盖 canonical 摘要/账本（健康卡防污染回归）。"""
+    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: list(FAKE_TASKS))
+    ta.scan(audit_family_only=True)
+    canonical_summary = os.path.join(isolated_data_dir, ta.SUMMARY_NAME)
+    canonical_ledger = os.path.join(isolated_data_dir, ta.LEDGER_NAME)
+    before_summary = open(canonical_summary, encoding="utf-8").read()
+    before_ledger = open(canonical_ledger, encoding="utf-8").read()
+    s = ta.scan(audit_family_only=False)
+    assert s["canonical"] is False
+    assert open(canonical_summary, encoding="utf-8").read() == before_summary
+    assert open(canonical_ledger, encoding="utf-8").read() == before_ledger
+    assert os.path.isfile(os.path.join(isolated_data_dir, ta.SUMMARY_ALL_NAME))
 
 
 def test_never_run_not_failure(isolated_data_dir, monkeypatch):
@@ -170,7 +198,7 @@ def test_ledger_append_only(isolated_data_dir, monkeypatch):
     monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: list(FAKE_TASKS[:2]))
     ta.scan(audit_family_only=False)
     ta.scan(audit_family_only=False)
-    ledger = os.path.join(isolated_data_dir, ta.LEDGER_NAME)
+    ledger = os.path.join(isolated_data_dir, ta.LEDGER_ALL_NAME)
     lines = [x for x in open(ledger, encoding="utf-8") if x.strip()]
     assert len(lines) == 4  # 2 任务 × 2 轮
 
