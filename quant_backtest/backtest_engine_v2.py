@@ -1704,7 +1704,7 @@ if __name__ == "__main__":
         "--slot-mode",
         default="fixed",
         choices=["fixed", "random", "score"],
-        help="单票仓位分配：fixed=固定X%(默认) random=区间随机(a~b%%·固定种子可复现) score=评分权重(评分/当日候选评分和×总仓位帽)",
+        help="单票仓位分配：fixed=固定X%%(默认) random=区间随机(a~b%%·固定种子可复现) score=评分权重(评分/当日候选评分和×总仓位帽)",
     )
     ap.add_argument(
         "--slot-min", type=float, default=0.05, help="随机模式下限（默认0.05）"
@@ -1747,7 +1747,7 @@ if __name__ == "__main__":
         "--runup-cap",
         type=float,
         default=0.05,
-        help="追高帽：开盘较昨收涨幅>此值放弃（307 定稿 5%·智策跳空纪律）",
+        help="追高帽：开盘较昨收涨幅>此值放弃（307 定稿 5%%·智策跳空纪律）",
     )
     ap.add_argument("--stop-pct", type=float, default=0.0)
     ap.add_argument("--holding-max", type=int, default=0)
