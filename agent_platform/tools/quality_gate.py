@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """质量门自检工具（B2-d 研发/质量席）。
 
-只读/可回滚：依次执行六项平台确定性检查（全部现有工具，不新增逻辑）：
+只读/可回滚：依次执行七项平台确定性检查（全部现有工具，不新增逻辑）：
   1. `python -m compileall -q agent_platform tools`（语法/字节码编译）
   2. `python tools/check_ports.py`（端口注册自检，非 strict）
   3. `python agent_platform/tools/scan_secrets.py --paths ...`（明文凭据扫描，不依赖 git）
   4. `python tools/check_name_uniqueness.py --json`（P3：编制一名一席 / 治理席带限定）
   5. `python agent_platform/tools/capability_self_audit.py --json`（P1：技能注册表 verify）
   6. `python agent_platform/evals/run_evals.py --smoke --json`（P1：行为评估 smoke 子集）
+  7. `pytest <核心套件>`（P0：测试基线，排除 live-state 组）
 每次执行：结果写 `agent_platform/data/quality_gate/status.json` + history.jsonl，
 并给每席写 `agent_platform/data/quality_gate/<席>/status.json` + `dev_events`（patrol_verdict）。
 
@@ -67,6 +68,28 @@ def _run(argv: list, timeout: int = TIMEOUT, env=None) -> dict:
         return {"ok": False, "rc": None, "error": type(exc).__name__}
 
 
+_TEST_BASELINE = [
+    "agent_platform/tests/test_check_trigger_chain.py",
+    "agent_platform/tests/test_codex_bridge.py",
+    "agent_platform/tests/test_evals.py",
+    "agent_platform/tests/test_judge.py",
+    "agent_platform/tests/test_mcp_client.py",
+    "agent_platform/tests/test_mcp_http_docx.py",
+    "agent_platform/tests/test_memory_v2.py",
+    "agent_platform/tests/test_model_apply.py",
+    "agent_platform/tests/test_model_router.py",
+    "agent_platform/tests/test_office_lark.py",
+    "agent_platform/tests/test_repair_lane.py",
+    "agent_platform/tests/test_sandbox.py",
+    "agent_platform/tests/test_skill_registry.py",
+    "agent_platform/tests/test_trace_store.py",
+    "agent_platform/tests/test_trace_usage.py",
+    "agent_platform/tests/test_web_research.py",
+    "agent_platform/tests/test_zhaoyun_cap2.py",
+    "agent_platform/tests/test_zhaoyun_drill.py",
+]
+
+
 def run_checks(py: str = sys.executable) -> dict:
     checks = {
         "compileall": _run([py, "-m", "compileall", "-q", "agent_platform", "tools"]),
@@ -81,6 +104,10 @@ def run_checks(py: str = sys.executable) -> dict:
                               "--json"]),
         # P1 评估飞轮：行为目录 smoke 子集（快速，失败即阻断）
         "evals": _run([py, "agent_platform/evals/run_evals.py", "--smoke", "--json"]),
+        # P0 测试基线：核心套件（排除 live-state 组：activity/glm/monday/真仓只读）
+        "tests": _run([py, "-m", "pytest", "-q", "-p", "no:cacheprovider",
+                       "-o", "addopts="] + _TEST_BASELINE,
+                      timeout=240),
     }
     return {"schema": "quality_gate/v1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),

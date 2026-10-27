@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -21,6 +22,19 @@ for _p in (str(_PLATFORM), str(_REPO / "tools")):
 import evolve_sign_payloads as G  # noqa: E402
 import sign_approval as SA  # noqa: E402
 from engine import signature_guard as SG  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _isolate_env_and_cwd():
+    """顺序污染隔离：用例前后恢复环境变量与 cwd。"""
+    env = dict(os.environ)
+    cwd = os.getcwd()
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(env)
+        os.chdir(cwd)
 
 
 def test_payloads_are_7_with_canonical_hex():

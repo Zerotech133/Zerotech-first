@@ -222,6 +222,12 @@ def test_http_chat_unknown_agent_default_binding(server, monkeypatch):
 def test_http_chat_glm_quota_fallback_to_local(server, monkeypatch):
     """glm 限额/故障 → 会议通道显式降级本地 9b（degraded + fallback 原因，不静默）。"""
     from gateway import llm_gateway
+    from legion_command import serve as srv_mod
+    # live-state 隔离：固定 A0 主绑 glm、降级链本地 9b（不读并发改动的 org）
+    monkeypatch.setattr(srv_mod, "resolve_binding",
+                        lambda agent, platform_dir=None: "glm/glm-5.3")
+    monkeypatch.setattr(srv_mod, "resolve_fallbacks",
+                        lambda agent, platform_dir=None: ["ollama/qwen3.5:9b"])
     calls = []
 
     def fake(binding=None, system="", user=""):
@@ -297,25 +303,62 @@ def test_http_chat_openai_openclaw_unavailable(server, monkeypatch):
 
 # ---------------------------------------------------------------- 在途归属映射（S29）
 
-def test_activity_mapping_covers_real_tasks():
-    """真实 tasks.json 的 doing 应全部可归属到部门（0 unmapped）。"""
-    data = build_snapshot()
-    act = data["activity"]
-    assert act["rules_version"] == "1.2"  # 1.1 前缀规则；1.2 项目注册表兜底
-    if act["doing"]:
-        assert act["unmapped"] == [], "存在未归属在途单：%s" % act["unmapped"]
-        assert sum(len(v) for v in act["by_dept"].values()) == len(act["doing"])
+_FIXTURE_TASKS = {
+    "legion-1021093009": {"status": "doing", "desc": "盘前 weak 池三线扫描",
+                          "owner": "D1", "project": "general"},
+    "K-INTEL-20261018-RO": {"status": "doing", "desc": "情报盘点",
+                            "owner": "INTEL0", "project": "general"},
+    "K-ORG-180": {"status": "doing", "desc": "组织调整",
+                  "owner": "A0", "project": "general"},
+    "K-QUANT-123": {"status": "doing", "desc": "量化专项",
+                    "owner": "unknown-agent", "project": "general"},
+    "CM-20261027-A": {"status": "doing", "desc": "参谋长交办",
+                      "owner": "INTEL0", "project": "general"},
+    "OS-CLOSE-1": {"status": "doing", "desc": "运行体收口",
+                   "owner": "OPS1", "project": "general"},
+    "WO-LEGION-1": {"status": "doing", "desc": "军团研发",
+                    "owner": "unknown-agent", "project": "general"},
+    "WO-GUANYU-1": {"status": "doing", "desc": "代码审计",
+                    "owner": "unknown-agent", "project": "general"},
+    "WO-NEW-20261027": {"status": "doing", "desc": "任意新研发单",
+                        "owner": "unknown-agent", "project": "general"},
+}
 
 
-def test_activity_maps_known_prefixes():
-    data = build_snapshot()
+def _with_fixture_tasks(monkeypatch):
+    """只替换 tasks.json 的读取，org/schedules 仍走真实源（稳定）。"""
+    import legion_command.snapshot as snap_mod
+    orig = snap_mod._load_json
+
+    def fake(path):
+        if Path(str(path)).name == "tasks.json":
+            return dict(_FIXTURE_TASKS)
+        return orig(path)
+
+    monkeypatch.setattr(snap_mod, "_load_json", fake)
+    return snap_mod
+
+
+def test_activity_mapping_covers_real_tasks(monkeypatch):
+    """夹具 tasks.json：doing 应全部可归属到部门（0 unmapped）。"""
+    snap_mod = _with_fixture_tasks(monkeypatch)
+    data = snap_mod.build_snapshot()
     act = data["activity"]
-    if not act["doing"]:
-        pytest.skip("当前无在途单")
+    assert act["rules_version"] == "1.2"
+    assert act["doing"], "夹具 tasks 未生效"
+    assert act["unmapped"] == [], "存在未归属在途单：%s" % act["unmapped"]
+    assert sum(len(v) for v in act["by_dept"].values()) == len(act["doing"])
+
+
+def test_activity_maps_known_prefixes(monkeypatch):
+    snap_mod = _with_fixture_tasks(monkeypatch)
+    act = snap_mod.build_snapshot()["activity"]
+    by_key = {t["key"]: t for t in act["doing"]}
+    assert by_key["K-INTEL-20261018-RO"]["dept"] == "intel"
+    assert by_key["WO-GUANYU-1"]["dept"] == "academy"
+    assert by_key["WO-NEW-20261027"]["dept"] == "dev"
     for t in act["doing"]:
         assert t["dept"], "任务 %s 未归属" % t["key"]
-    if any(t["key"].startswith("K-INTEL") for t in act["doing"]):
-        assert "intel" in act["by_dept"]
 
 
 def test_activity_mapping_does_not_touch_tasks_json():
