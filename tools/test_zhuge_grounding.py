@@ -65,3 +65,20 @@ def test_grounded_chat_with_mock(monkeypatch, tmp_path):
     out = g.grounded_chat("诸葛亮载体是什么？")
     assert out["ok"] and out["grounded"] is True
     assert out["sources"] and "[S1]" in out["text"]
+
+
+def test_memory_context_off_by_default(monkeypatch):
+    monkeypatch.delenv("ZHUGE_MEMORY", raising=False)
+    assert g._memory_context("任何问题") == []
+
+
+def test_build_grounding_includes_memory(monkeypatch, tmp_path):
+    repo = make_repo(tmp_path)
+    monkeypatch.setenv("ZHUGE_MCP_REPO", str(repo))
+    monkeypatch.setattr(g, "_memory_context", lambda q, k=3: [
+        {"kind": "lesson", "text": "BM25 需要同义词扩展"}])
+    grounded = g.build_grounding("诸葛亮载体是什么？")
+    assert grounded["memory"] and "[M1]" in grounded["memory_context"]
+    prompt = g.grounded_prompt("诸葛亮载体是什么？", grounded)
+    assert "历史经验" in prompt and "BM25 需要同义词扩展" in prompt
+    assert "[S1]" in prompt
