@@ -387,12 +387,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(_STATIC / "tianfeng.html", "text/html; charset=utf-8")
             return
         if path in ("/keys", "/keys/", "/keys.html"):
-            # Phase A 灰度：KEYS_V2=1 或 ?v2=1 走新页；默认仍旧页，可随时回滚
+            # Phase A 收口：默认新页；KEYS_V2=0 或 ?v2=0 回滚旧页
             try:
                 from urllib.parse import parse_qs
                 _q = parse_qs(urlparse(self.path).query)
                 _qv = (_q.get("v2") or [""])[0]
-                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "0") == "1")
+                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "1") == "1")
             except Exception:
                 _on = False
             _page = "keypool_v2.html" if _on else "keypool.html"
@@ -403,7 +403,7 @@ class Handler(BaseHTTPRequestHandler):
                 from urllib.parse import parse_qs
                 _q = parse_qs(urlparse(self.path).query)
                 _qv = (_q.get("v2") or [""])[0]
-                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "0") == "1")
+                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "1") == "1")
             except Exception:
                 _on = False
             if _on and (_STATIC / "mission.html").exists():

@@ -165,8 +165,15 @@ document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setTab(b.data
 (function(){
   const hash=location.hash||"";
   const v2=location.search.includes("v2=1")?"?v2=1":"";
-  if(hash==="#mission"){ location.replace("/mission"+v2); return; }
-  if(hash==="#logs"){ setTab("logs",false); return; }
+  if(hash==="#mission"||hash==="#mission-section"){ location.replace("/mission"+v2); return; }
+  const tabMap={"#logs":"logs","#log":"logs","#relay-hero":"routing","#main":"seats","#vk-section":"vk","#cred-section":"creds"};
+  if(tabMap[hash]){
+    const q=new URLSearchParams(location.search);
+    q.set("tab",tabMap[hash]);
+    history.replaceState(null,"","?"+q.toString());
+    setTab(tabMap[hash],false);
+    return;
+  }
   const q=new URLSearchParams(location.search);
   setTab(q.get("tab")||"overview", false);
   if(document.getElementById("mission-link")) document.getElementById("mission-link").href="/mission"+v2;

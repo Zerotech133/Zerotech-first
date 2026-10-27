@@ -413,7 +413,12 @@ def main(argv=None) -> int:
         touch_lock()
 
         # ③ 循环 JEV 直到结束/清空/停止旗
+        # 2026-10-28 JEVSTOP：清零后若剩极少量"毒丸"（判读永远失败），旧逻辑会
+        # 27s/轮空转到 07:00；加「连续无进展」收工闸，避免整夜空耗 GPU。
         rounds = 0
+        stall = 0
+        STALL_MAX_LEFT = 5
+        STALL_ROUNDS = 3
         try:
             while datetime.now() < end:
                 if stop.exists():
@@ -430,6 +435,15 @@ def main(argv=None) -> int:
                 if rc != 0:
                     time.sleep(60)
                 touch_lock()
+                new_left = backlog()
+                if new_left is not None and new_left <= STALL_MAX_LEFT and new_left >= left:
+                    stall += 1
+                    if stall >= STALL_ROUNDS:
+                        log("STALL 剩余 %s 条连续 %d 轮无进展（疑似毒丸），提前收工"
+                            % (new_left, stall))
+                        break
+                else:
+                    stall = 0
         finally:
             left1 = backlog()
             resume_m3(log)

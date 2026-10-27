@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:02",
+ "generated": "2026-10-28 07:13",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,15 +9,15 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 37,
-  "workorders_review": 4
+  "workorders_doing": 33,
+  "workorders_review": 5
  },
  "workorders": [
   {
    "id": "legion-1027093009",
    "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
    "status": "doing",
-   "owner": "unknown-agent",
+   "owner": "T1",
    "branch": "task/legion-1027093009",
    "created": "2026-10-27 09:30:15",
    "project": "general"
@@ -26,7 +26,7 @@
    "id": "WO-GUANYU-SQL-20261027",
    "desc": "SQL triage A类参数化 [UNOWNED]",
    "status": "doing",
-   "owner": "unknown-agent",
+   "owner": "DATA1",
    "branch": "task/WO-GUANYU-SQL-20261027",
    "created": "2026-10-27 10:04:55",
    "project": "general"
@@ -35,7 +35,7 @@
    "id": "WO-GUANYU-HTTP-20261027",
    "desc": "HTTP统一封装+迁移首批 [UNOWNED]",
    "status": "doing",
-   "owner": "unknown-agent",
+   "owner": "DEV3",
    "branch": "task/WO-GUANYU-HTTP-20261027",
    "created": "2026-10-27 10:07:50",
    "project": "general"
@@ -53,7 +53,7 @@
    "id": "WO-GUANYU-FMT11-20261027",
    "desc": "补格式化L2误报文件 [UNOWNED]",
    "status": "review",
-   "owner": "unknown-agent",
+   "owner": "QA1",
    "branch": "task/WO-GUANYU-FMT11-20261027",
    "created": "2026-10-27 11:27:20",
    "project": "general"
@@ -89,7 +89,7 @@
    "id": "WO-GUANYU-APMCP-20261027",
    "desc": "mcp改名后测试路径修复 [UNOWNED]",
    "status": "doing",
-   "owner": "unknown-agent",
+   "owner": "DEV2",
    "branch": "task/WO-GUANYU-APMCP-20261027",
    "created": "2026-10-27 14:18:44",
    "project": "general"
@@ -125,7 +125,7 @@
    "id": "WO-RUFF-F841-20261027",
    "desc": "[排期工单·A阶段质量] ruff F841 清理（23 处未用变量，低风险）：portal/api_backtest.py:382,6087; api_chanlun_pages.py:2202; api_events.py:366; api_kg.py:3605,5094; api_legion_ops_v2.py:107; api_misc.py:243,2268; council_ops.py:904; feishu_sop_runner.py:189; m_feed.py:198,211; os_controlled.py:508,809; portal_api.py:1264; portal_report.py:414,608; route_baseline.py:90; test_api_zhuge_brief.py:85,237; test_bot_ws_backoff.py:100; warehouse_update_services.py:123。要求逐处确认 RHS 是否有副作用（有副作用保留调用、仅去掉变量名），改后 ruff F841=0 且全量测试绿。",
    "status": "doing",
-   "owner": "DEV5",
+   "owner": "DEV8",
    "branch": "task/WO-RUFF-F841-20261027",
    "created": "2026-10-27 15:09:26",
    "project": "general"
@@ -134,7 +134,7 @@
    "id": "WO-RUFF-F401F821-20261027",
    "desc": "[排期工单·A阶段质量] ruff F401/F821/F601/F541 清理（14 处，含 2 处真风险）：真风险=①tools/secrets/rotate_item.py:108 与 rotate_tushare_token.py:53 `NoReturn` 未导入（补 from typing import NoReturn 或去注解）；②portal/m_api.py:570 字典键 ok 重复（确认语义后修正）。其余=quant_mid/__init__.py 11 条 F401 导出面（加 __all__ 或 redundant alias）、test_a_phase_group_board.py/test_zhuge_suggestion_map.py 未用 json、council_ops.py:802 F541 无占位 f-string。要求 ruff F401,F541,F601,F821=0 且全量测试绿。",
    "status": "doing",
-   "owner": "DEV7",
+   "owner": "DEV4",
    "branch": "task/WO-RUFF-F401F821-20261027",
    "created": "2026-10-27 15:09:31",
    "project": "general"
@@ -143,7 +143,7 @@
    "id": "WO-GUANYU-B4-20261027",
    "desc": "B4机械修 [UNOWNED]",
    "status": "doing",
-   "owner": "unknown-agent",
+   "owner": "DEV4",
    "branch": "task/WO-GUANYU-B4-20261027",
    "created": "2026-10-27 15:13:23",
    "project": "general"
@@ -197,7 +197,7 @@
    "id": "legion-1027175009",
    "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]",
    "status": "doing",
-   "owner": "unknown-agent",
+   "owner": "A0A",
    "branch": "task/legion-1027175009",
    "created": "2026-10-27 17:50:16",
    "project": "general"
@@ -349,37 +349,10 @@
   {
    "id": "WO-HUANGZHONG-20261028",
    "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
-   "status": "doing",
+   "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-20261028",
    "created": "2026-10-28 07:01:26",
-   "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261028-KEYSV2ON",
-   "desc": "Phase A 收口：KEYS_V2 默认启用新页；旧页 ?v2=0/KEYS_V2=0 回滚；/mission 默认可用；全量验收",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-KEYSV2ON",
-   "created": "2026-10-28 07:01:37",
-   "project": "quant"
-  },
-  {
-   "id": "WO-LEGION-UIW4E-20261028",
-   "desc": "W4 第三批收编：capability/perf/ledger 接入 PageShell adopted；flow 复核（上批已收编）；更新清单与测试",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIW4E-20261028",
-   "created": "2026-10-28 07:01:56",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261028-JEVTRUNC",
-   "desc": "JEV 本地判读输出预算 80→220 token：修复长公司名单 JSON 截断（毒丸 2 条）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261028-JEVTRUNC",
-   "created": "2026-10-28 07:01:58",
    "project": "general"
   }
  ],
@@ -1811,7 +1784,14 @@
    ],
    "experience": "10 年调度执行经验：研发方案按部门并发分发、产出归集初筛（聚类/异常标红·宁松勿严）、修改命令下发台账跟踪；只调度不决策，判断类一律上浮田丰/SEC2。",
    "dept_name": "",
-   "dept_cn_title": ""
+   "dept_cn_title": "",
+   "tasks": [
+    {
+     "id": "legion-1027175009",
+     "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]",
+     "status": "doing"
+    }
+   ]
   },
   "LUSU1": {
    "id": "LUSU1",
@@ -2006,6 +1986,11 @@
    "dept_name": "数据智能部",
    "dept_cn_title": "兰台",
    "tasks": [
+    {
+     "id": "WO-GUANYU-SQL-20261027",
+     "desc": "SQL triage A类参数化 [UNOWNED]",
+     "status": "doing"
+    },
     {
      "id": "WO-LCS1-FREEZE-20261027",
      "desc": "LCS-1 数据冻结回执（DATA1 主责，ACAD1 请求单 WO-LEGION-LCS1-FREEZE-REQ-20261027 / 请求单 2026-10-27_DATA1_LCS1冻结回执请求单_v1）：按四字段写 freeze_receipts/AC-20261017-LCS1.json（data_version/sample_in/sample_out/cost_model+sha256+frozen_at+by），同步 backtests.jsonl 四字段；数据不足则出《冻结不可用报告》不伪造；deadline 2026-10-28 12:00；验收=research_seat_ops back1 显示 READY。非目标：不改数据根结构/不跑回测/不代签。回滚：git revert merge-commit。",
@@ -2231,6 +2216,11 @@
    "dept_cn_title": "将作监",
    "tasks": [
     {
+     "id": "WO-GUANYU-APMCP-20261027",
+     "desc": "mcp改名后测试路径修复 [UNOWNED]",
+     "status": "doing"
+    },
+    {
      "id": "WO-LS05-AICARD-20261027",
      "desc": "LS-05 AI 席位卡数据（模型/档位/评估状态；v1 不调外部模型）",
      "status": "doing"
@@ -2338,6 +2328,11 @@
    "dept_name": "研发部",
    "dept_cn_title": "将作监",
    "tasks": [
+    {
+     "id": "WO-GUANYU-HTTP-20261027",
+     "desc": "HTTP统一封装+迁移首批 [UNOWNED]",
+     "status": "doing"
+    },
     {
      "id": "WO-LS06-QUANTCARD-20261027",
      "desc": "LS-06 量化席位卡数据（策略注册/影子状态口径；无数据标注未接，不伪造）",
@@ -2447,6 +2442,16 @@
    "dept_cn_title": "将作监",
    "tasks": [
     {
+     "id": "WO-RUFF-F401F821-20261027",
+     "desc": "[排期工单·A阶段质量] ruff F401/F821/F601/F541 清理（14 处，含 2 处真风险）：真风险=①tools/secrets/rotate_item.py:108 与 rotate_tushare_token.py:53 `NoReturn` 未导入（补 from typing import NoReturn 或去注解）；②portal/m_api.py:570 字典键 ok 重复（确认语义后修正）。其余=quant_mid/__init__.py 11 条 F401 导出面（加 __all__ 或 redundant alias）、test_a_phase_group_board.py/test_zhuge_suggestion_map.py 未用 json、council_ops.py:802 F541 无占位 f-string。要求 ruff F401,F541,F601,F821=0 且全量测试绿。",
+     "status": "doing"
+    },
+    {
+     "id": "WO-GUANYU-B4-20261027",
+     "desc": "B4机械修 [UNOWNED]",
+     "status": "doing"
+    },
+    {
      "id": "WO-LS07-RISKCARD-20261027",
      "desc": "LS-07 回测/风控卡数据（Go-No-Go/判据冻结状态口径）",
      "status": "doing"
@@ -2536,11 +2541,6 @@
     {
      "id": "WO-DEV-X3-EVALTIMEOUT-20261027",
      "desc": "run_evals 子进程挂起治理（曾 54min）：所有子进程调用加超时+trace，CI/裸跑加 per-test timeout；复跑全量不挂",
-     "status": "doing"
-    },
-    {
-     "id": "WO-RUFF-F841-20261027",
-     "desc": "[排期工单·A阶段质量] ruff F841 清理（23 处未用变量，低风险）：portal/api_backtest.py:382,6087; api_chanlun_pages.py:2202; api_events.py:366; api_kg.py:3605,5094; api_legion_ops_v2.py:107; api_misc.py:243,2268; council_ops.py:904; feishu_sop_runner.py:189; m_feed.py:198,211; os_controlled.py:508,809; portal_api.py:1264; portal_report.py:414,608; route_baseline.py:90; test_api_zhuge_brief.py:85,237; test_bot_ws_backoff.py:100; warehouse_update_services.py:123。要求逐处确认 RHS 是否有副作用（有副作用保留调用、仅去掉变量名），改后 ruff F841=0 且全量测试绿。",
      "status": "doing"
     },
     {
@@ -3019,11 +3019,6 @@
    "dept_cn_title": "将作监",
    "tasks": [
     {
-     "id": "WO-RUFF-F401F821-20261027",
-     "desc": "[排期工单·A阶段质量] ruff F401/F821/F601/F541 清理（14 处，含 2 处真风险）：真风险=①tools/secrets/rotate_item.py:108 与 rotate_tushare_token.py:53 `NoReturn` 未导入（补 from typing import NoReturn 或去注解）；②portal/m_api.py:570 字典键 ok 重复（确认语义后修正）。其余=quant_mid/__init__.py 11 条 F401 导出面（加 __all__ 或 redundant alias）、test_a_phase_group_board.py/test_zhuge_suggestion_map.py 未用 json、council_ops.py:802 F541 无占位 f-string。要求 ruff F401,F541,F601,F821=0 且全量测试绿。",
-     "status": "doing"
-    },
-    {
      "id": "WO-P0-DEV7-WIKI-20261027",
      "desc": "P0 派工周-4（DEV7）：O5 project wiki 生成器——tools/project_wiki.py 用 codebase_intel 生成 docs/project_wiki.md（仓库地图/ADR 索引/约定），--check 校验；验收=生成物存在且 --check rc0",
      "status": "doing"
@@ -3113,6 +3108,11 @@
    "dept_name": "研发部",
    "dept_cn_title": "将作监",
    "tasks": [
+    {
+     "id": "WO-RUFF-F841-20261027",
+     "desc": "[排期工单·A阶段质量] ruff F841 清理（23 处未用变量，低风险）：portal/api_backtest.py:382,6087; api_chanlun_pages.py:2202; api_events.py:366; api_kg.py:3605,5094; api_legion_ops_v2.py:107; api_misc.py:243,2268; council_ops.py:904; feishu_sop_runner.py:189; m_feed.py:198,211; os_controlled.py:508,809; portal_api.py:1264; portal_report.py:414,608; route_baseline.py:90; test_api_zhuge_brief.py:85,237; test_bot_ws_backoff.py:100; warehouse_update_services.py:123。要求逐处确认 RHS 是否有副作用（有副作用保留调用、仅去掉变量名），改后 ruff F841=0 且全量测试绿。",
+     "status": "doing"
+    },
     {
      "id": "WO-LS09-UI-20261027",
      "desc": "LS-09 前端组件实现（席位卡/组卡/任务卡/指标卡/红线；空错态/响应式）",
@@ -3299,7 +3299,14 @@
    ],
    "experience": "15 年多头研究经验：成长股挖掘与产业趋势研判，擅长从产能周期与订单数据里找拐点；立场纪律=只为多头论点找最强证据。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府"
+   "dept_cn_title": "谋略府",
+   "tasks": [
+    {
+     "id": "legion-1027093009",
+     "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
+     "status": "doing"
+    }
+   ]
   },
   "T2": {
    "id": "T2",
@@ -4100,7 +4107,14 @@
    ],
    "experience": "30 年质量工程经验：验收测试执行、三守卫（AST gate/金样本/回测判据）人化复核、review 积压质检分派、质量红线亮牌；连续多轮抓出产码方增量违规，质量判断独立不受产码方影响。",
    "dept_name": "质量工程部",
-   "dept_cn_title": "监军府"
+   "dept_cn_title": "监军府",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-FMT11-20261027",
+     "desc": "补格式化L2误报文件 [UNOWNED]",
+     "status": "review"
+    }
+   ]
   },
   "SEC1": {
    "id": "SEC1",
@@ -5599,12 +5613,7 @@
     {
      "id": "WO-HUANGZHONG-20261028",
      "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-UIW4E-20261028",
-     "desc": "W4 第三批收编：capability/perf/ledger 接入 PageShell adopted；flow 复核（上批已收编）；更新清单与测试",
-     "status": "doing"
+     "status": "review"
     }
    ]
   }
