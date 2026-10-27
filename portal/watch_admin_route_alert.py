@@ -34,6 +34,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import logging
 
 # --------------------------------------------------------------------------- #
 # 路径解析：让 quant_backtest 作为命名空间包可被导入
@@ -172,8 +173,8 @@ def _build_contract_summary() -> List[Dict[str, Any]]:
             "codes": codes,
             "desc": "validate_alert 实际抛出的结构自洽拒绝码（部分会再拼 '_TIME' 后缀）",
         })
-    except Exception:  # noqa: BLE001 - 提取失败不是致命错误
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/watch_admin_route_alert.py", exc)
 
     summary.append({
         "point": "scope",

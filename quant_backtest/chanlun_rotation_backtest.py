@@ -24,6 +24,7 @@ POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.j
 OUT = os.path.join(BASE, "quant_backtest", "chanlun_rotation_result.json")
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
+import logging
 
 D0 = "20251013"  # 视角日
 WARMUP = 250  # 结构识别预热（与实时链路同参）
@@ -232,8 +233,8 @@ def stats(equity, trades, rot, label):
     for t in trades:
         try:
             hold.append(cal.index(t["exit_day"]) - cal.index(t["entry_day"]))
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_rotation_backtest.py", exc)
     r = {
         "label": label,
         "total_return_pct": round(total * 100, 2),

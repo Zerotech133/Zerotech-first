@@ -34,6 +34,7 @@ import chanlun_data as CD
 from chanlun_signal import analyze as sig_analyze
 from chanlun_macd import macd_series
 from chanlun_card import LEVELS, ANCHOR_BIS, refine_label, card
+import logging
 
 SHOW_DEFAULT = {"1d": 500, "30m": 480, "5m": 480, "1w": 260, "1M": 120}
 OUT_DIR = os.path.normpath(
@@ -491,8 +492,8 @@ def plot_level(
                 )
             except Exception:
                 continue
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_plot.py", exc)
 
     # ── 落盘 ─────────────────────────────────────────────
     tag = str(bars[-1]["dt"])[:16].replace("-", "").replace(":", "").replace(" ", "_")

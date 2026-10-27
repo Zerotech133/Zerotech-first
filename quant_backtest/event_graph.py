@@ -45,6 +45,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import datamart as dm  # noqa: E402
+import logging
 # semantica_mvp 惰性导入（embed/topk 仅在建图/语义检索时需要）——
 # 这样轻量调用方（门户 events_for_stock、飞书 summary_for_stock）
 # 导入本模块不会触发 fastembed ONNX 加载。
@@ -190,8 +191,8 @@ def _load_state():
     if os.path.exists(STATE_F):
         try:
             return json.load(open(STATE_F, encoding="utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/event_graph.py", exc)
     return {}
 
 

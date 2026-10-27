@@ -37,6 +37,7 @@ import threading
 
 import comm_router as cr
 import comm_zhuge as zhuge
+import logging
 
 # 处理动作 → 上游（inbound_gateway）据此决定回卡形态
 ACTION_REPLY = "reply"  # 直接回文本卡
@@ -304,8 +305,8 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
             if async_sink:
                 try:
                     async_sink(open_id, text, zr, trace)
-                except Exception:  # noqa: BLE001 —— 回调异常不反噬
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/comm_intake.py", exc)
 
         threading.Thread(target=_bg_consult, daemon=True).start()
     else:

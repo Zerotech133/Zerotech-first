@@ -47,6 +47,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(HERE, "data", "ashare")
@@ -1360,8 +1361,8 @@ def parse_args(argv=None):
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/qpzm_backtest.py", exc)
     args = parse_args(argv)
     report = run_backtest(args)
     atomic_write_json(args.out, report)

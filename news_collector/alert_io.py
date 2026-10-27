@@ -10,6 +10,7 @@ ASCII 状态日志范式：单行管道分隔、写前 ascii 消毒，对齐 K20
 import json
 import os
 import tempfile
+import logging
 
 
 def sniff_encoding(path):
@@ -51,6 +52,6 @@ def atomic_write_json(path, obj, indent=None):
     except Exception:
         try:
             os.unlink(tmp)
-        except OSError:
-            pass  # 豁免（C2批2）：临时文件清理兜底，原异常随后 raise 不丢
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/alert_io.py", exc)
         raise

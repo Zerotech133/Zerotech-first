@@ -22,6 +22,7 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
+import logging
 
 try:
     import os_goal_contract as C
@@ -336,8 +337,8 @@ def execute(store, item_id, idem=None):
                 "conversation/quickstart/%s"
                 % str(item.get("why_now") or "").split("quickstart ")[-1].split("）")[0]
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/os_software_flow.py", exc)
         page = os_bp.render_bp(
             title=title,
             goals=goals,

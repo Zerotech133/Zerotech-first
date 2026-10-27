@@ -26,6 +26,7 @@ import json
 import os
 import sqlite3
 from urllib.parse import parse_qs
+import logging
 
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DB = os.path.join(STATION, "news_collector", "news.db")
@@ -169,8 +170,8 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
                 n = _norm_code(c)
                 if n:
                     stock_codes.append(n)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_jev.py", exc)
         for c in companies:
             n = _norm_code(c)
             if n:

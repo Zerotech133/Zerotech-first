@@ -15,6 +15,7 @@ import os
 import threading
 import uuid
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -145,7 +146,7 @@ def count_since(hours=24):
                     except (ValueError, TypeError):
                         continue
             n = cnt  # 完整读完才落计数——读中断/异常保持 -1，不假绿
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/dead_letter.py", exc)
     _COUNT_CACHE.update({"ts": now, "n": n, "hours": hours})
     return n

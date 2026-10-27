@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 import pandas as pd
 import pyarrow.parquet as pq
+import logging
 
 HERE = Path(__file__).resolve().parent
 TABLES = {
@@ -251,8 +252,8 @@ def _stock_list_dates(root):
                         if parsed.strftime(fmt) == value:
                             normalized = parsed.strftime("%Y%m%d")
                             break
-                    except ValueError:
-                        pass
+                    except ValueError as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/data_integrity.py", exc)
                 if normalized is None:
                     invalid += 1
                     continue

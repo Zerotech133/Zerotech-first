@@ -21,6 +21,7 @@ import json
 import sys
 
 from chanlun_card import LEVELS, ANCHOR_BIS, level_view
+import logging
 
 _STATE_NAME = {1: "持有", 2: "警戒", 3: "减仓", 4: "清仓", 5: "终结"}
 
@@ -273,8 +274,8 @@ def main():
     if "--cost" in sys.argv:
         try:
             cost = float(sys.argv[sys.argv.index("--cost") + 1])
-        except (ValueError, IndexError):
-            pass
+        except (ValueError, IndexError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_position.py", exc)
     c = position_card(code, cost)
     if "--json" in sys.argv:
         print(json.dumps(c, ensure_ascii=False, indent=1, default=str))

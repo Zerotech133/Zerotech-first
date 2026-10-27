@@ -28,6 +28,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Callable, Optional
+import logging
 
 _REPO = Path(__file__).resolve().parents[1]
 _PLATFORM = _REPO / "agent_platform"
@@ -211,8 +212,8 @@ def release_lock(path: Optional[Path]) -> None:
         return
     try:
         Path(path).unlink()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ops/governance_clock.py", exc)
 
 
 def main(argv: list[str] | None = None) -> int:

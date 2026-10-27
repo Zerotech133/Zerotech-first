@@ -22,6 +22,7 @@ import socket
 import subprocess
 import sys
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -51,8 +52,8 @@ def _task_exists(name):
         )
         if r.returncode == 0:
             return True
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_rollback_drill.py", exc)
     return os.path.exists(os.path.join(r"C:\Windows\System32\Tasks", name))
 
 

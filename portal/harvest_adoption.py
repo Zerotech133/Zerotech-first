@@ -22,6 +22,7 @@ import json
 import os
 import re
 import urllib.parse
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "zhuge_adoption.jsonl")
@@ -54,8 +55,8 @@ def read_log_lines() -> list[str]:
         )
         if r.returncode == 0:
             return r.stdout.decode("utf-8", errors="replace").splitlines()
-    except (OSError, subprocess.TimeoutExpired):
-        pass
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/harvest_adoption.py", exc)
     # 兜底：宿主 LogPath 在 Windows 不可用（原 Linux 探测函数已移除）
     return []
 

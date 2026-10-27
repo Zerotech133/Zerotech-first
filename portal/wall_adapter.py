@@ -46,6 +46,7 @@ import json
 import os
 import re
 import sys
+import logging
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_TODAYS_PICKS = os.path.join(REPO_ROOT, "portal", "data", "todays_picks.json")
@@ -492,8 +493,8 @@ def atomic_write_json(path, data):
         if os.path.exists(tmp):
             try:
                 os.remove(tmp)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/wall_adapter.py", exc)
 
 
 def main(argv=None):

@@ -33,6 +33,7 @@ import time
 import urllib.request
 
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -289,8 +290,8 @@ def min_local_max_date():
                 v = pd.read_parquet(p, columns=["trade_date"])["trade_date"]
                 v = v.astype(str).max()
                 hi = max(hi, v)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linkage.py", exc)
     return hi
 
 

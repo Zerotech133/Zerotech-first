@@ -13,6 +13,7 @@ sys_path = ROOT / "tools"
 import sys
 sys.path.insert(0, str(sys_path))
 from legion_pulse import recent
+import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
@@ -48,8 +49,8 @@ def build_roster() -> dict:
                         nm = line.split(":", 1)[1].strip(); break
                     if line.startswith("name:"):
                         nm = line.split(":", 1)[1].strip()
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_legion_ops.py", exc)
             members.append({"id": aid, "name": nm, "dept": d.get("dept", "?"),
                             "title": d.get("name", ""), "state": state_of(aid, acts.get(aid))})
     # v4: 组织架构树（K-ORG-123）

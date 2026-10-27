@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "portal"))
 
 import api_legion_ops_v2 as ops
+import logging
 
 TOKEN = "livetest-token-0f3a"
 ops._load_token = lambda: TOKEN
@@ -52,8 +53,8 @@ def req(path, headers=None, data=None):
         body = e.read().decode("utf-8")
         try:
             body = json.loads(body)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/test_legion_live_boot_p0.py", exc)
         return e.code, dict(e.headers), body
 
 

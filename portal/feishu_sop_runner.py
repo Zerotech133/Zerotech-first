@@ -24,6 +24,7 @@ import shutil
 import sys
 import uuid
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -239,8 +240,8 @@ def live_check(role):
         try:
             with open(os.path.join(SECRETS, "canonical.json"), encoding="utf-8") as f:
                 canonical = str(json.load(f).get("app_id") or "")
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_sop_runner.py", exc)
         app = roles.get(role, {}).get("app_id_current") or ""
         if app and app == canonical:
             age = console._age_sec(legacy)

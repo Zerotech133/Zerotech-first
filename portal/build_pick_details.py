@@ -19,6 +19,7 @@ import os
 import sys
 import time
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -76,8 +77,8 @@ def main():
                     if not stale:
                         skip += 1
                         continue
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/build_pick_details.py", exc)
         try:
             f = pr.collect_facts(portal, code, r.get("name"))
             f["tier"] = r["tier"]

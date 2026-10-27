@@ -14,6 +14,7 @@ from typing import Any, Mapping, Protocol, Sequence
 from common import db
 from collectors.ports import CollectionAccessError
 from knowledge import creator_ops
+import logging
 
 
 class PageFetcher(Protocol):
@@ -313,8 +314,8 @@ class DailyScanWorker:
                             if "result" in locals()
                             else False,
                         )
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "osint_video/knowledge/creator_workers.py", exc)
             results.append(result)
         return results
 

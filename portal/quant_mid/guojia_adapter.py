@@ -32,6 +32,7 @@ import requests  # noqa: E402
 from quant_backtest.strategy_layer.adapters.chan_monitor import (  # noqa: E402
     ChanMonitorAdapter,
 )
+import logging
 
 # 8097 地址 (env 优先)
 HUB_URL = os.environ.get("QUANT_HUB_URL", "http://127.0.0.1:8097")
@@ -51,8 +52,8 @@ def _hub_key() -> Optional[str]:
         if os.path.exists(sp):
             with open(sp, encoding="utf-8") as f:
                 return json.load(f).get("push_hub_key")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/quant_mid/guojia_adapter.py", exc)
     return None
 
 

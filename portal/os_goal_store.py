@@ -22,6 +22,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterator, List, Optional
+import logging
 
 try:  # 组合判据（同目录模块）
     import os_goal_contract as C
@@ -73,8 +74,8 @@ def _file_lock(path: str) -> Iterator[None]:
                 import msvcrt
 
                 msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
-            except (ImportError, OSError):
-                pass
+            except (ImportError, OSError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/os_goal_store.py", exc)
         os.close(fd)
 
 

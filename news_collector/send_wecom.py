@@ -18,6 +18,7 @@ import os
 import sys
 
 import requests
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CFG_PATH = os.path.join(HERE, "news_config.json")
@@ -31,8 +32,8 @@ def get_webhook():
     try:
         with open(CFG_PATH, encoding="utf-8") as f:
             url = (json.load(f) or {}).get("wecom_webhook") or ""
-    except Exception:
-        pass  # 豁免（C2批2）：未配置/读取失败同归 KEY_PATH 兜底→None 出口，调用方跳过发送
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/send_wecom.py", exc)
     if not url and os.path.exists(KEY_PATH):
         with open(KEY_PATH, encoding="utf-8") as f:
             url = f.read().strip()

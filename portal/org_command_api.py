@@ -29,6 +29,7 @@ import re
 import shutil
 import time
 import urllib.request
+import logging
 
 __all__ = [
     "api_org",
@@ -185,8 +186,8 @@ def _prompt_for(ag, station):
             try:
                 with open(p, encoding="utf-8") as f:
                     return f.read()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/org_command_api.py", exc)
     cj = _read_json(_reg(station, "claude_agents.json")) or {}
     seg = cj.get(ag.get("agent_id", "")) or {}
     return seg.get("prompt")

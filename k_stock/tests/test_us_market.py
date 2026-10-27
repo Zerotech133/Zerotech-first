@@ -10,6 +10,7 @@ HERE = Path(__file__).resolve().parent.parent / "paper"
 sys.path.insert(0, str(HERE))
 
 import us_market as um
+import logging
 
 
 def _row(d, o, c, h=None, l=None, v=1000.0):
@@ -87,8 +88,8 @@ def test_trading_days_missing_cal(tmpdir):
     try:
         um.UsMarket(us_dir=Path(tmpdir)).trading_days()
         raise AssertionError("应抛 FileNotFoundError")
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_us_market.py", exc)
 
 
 def test_refresh_writes_csv(tmpdir, monkeypatch):
