@@ -63,7 +63,7 @@ def test_bundle_names_and_capabilities_contract():
     with_caps = [c for c in agents.values() if c.get("capabilities")]
     assert len(with_caps) >= 39, "专长覆盖应 >= 39/61"
     assert agents["DEV1"]["cn_name"] == "马钧"
-    assert agents["ARCH1"]["role_cn"] == "架构师"
+    assert agents["ARCH1"]["role_cn"] == "研发主官 · 架构师"
     assert agents["ST1"]["dept_cn_title"] == "谋略府"
     assert agents["A0"]["cn_name"] == "田丰"
     assert agents["DENGZHI1"]["cn_name"] == "邓芝"
