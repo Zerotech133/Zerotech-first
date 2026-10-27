@@ -25,6 +25,7 @@ RULE_MAP = {
     "S2": {"unique_write_scope": True},
     "S3": {"planner_retry": 1},
     "S4": {"min_sample": 3},
+    "S5": {"require_checks": True},
 }
 
 
