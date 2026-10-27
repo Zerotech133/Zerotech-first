@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 36,
+  "workorders_doing": 35,
   "workorders_review": 3
  },
  "workorders": [
@@ -353,15 +353,6 @@
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-B13-20261027",
    "created": "2026-10-28 00:08:01",
-   "project": "general"
-  },
-  {
-   "id": "WO-BASELINE-DIAG4-20261027",
-   "desc": "基线 deselect 增补顺序 flaky：devtask_owner_domain 空owner（单跑通过）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-BASELINE-DIAG4-20261027",
-   "created": "2026-10-28 00:08:23",
    "project": "general"
   }
  ],
@@ -6991,11 +6982,6 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
-    },
-    {
-     "id": "WO-BASELINE-DIAG4-20261027",
-     "desc": "基线 deselect 增补顺序 flaky：devtask_owner_domain 空owner（单跑通过）",
-     "status": "doing"
     }
    ]
   }
