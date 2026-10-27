@@ -20,6 +20,7 @@ KgClient 每主题独立开闭。推送经 news_collector/send_feishu.py
 SEND_OK 才写状态）。全部主题查询失败 → 推失败告警（失败可见），
 exit 3；推送失败 exit 4 下次重试。
 """
+
 import json
 import os
 import subprocess
@@ -32,9 +33,9 @@ sys.path.insert(0, HERE)
 STATE = os.path.join(HERE, "data", "kg_resonance_notify_state.json")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 
-THEMES = ("AI 算力", "商业航天", "人形机器人")   # last 查询留机器人（见 docstring 口径）
+THEMES = ("AI 算力", "商业航天", "人形机器人")  # last 查询留机器人（见 docstring 口径）
 DAYS = 30
-MAX_FULL = 6          # 三线明细条数上限
+MAX_FULL = 6  # 三线明细条数上限
 MAX_PARTIAL_NAMES = 8  # 两线候选仅列名上限
 
 
@@ -52,14 +53,17 @@ def _write_json(path, obj):
 def _push(text):
     """outbox 临时文件 → send_feishu.py（SEND_OK 口径）。"""
     os.makedirs(os.path.join(NEWS_DIR, "outbox"), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.join(NEWS_DIR, "outbox"),
-                               suffix=".txt")
+    fd, tmp = tempfile.mkstemp(dir=os.path.join(NEWS_DIR, "outbox"), suffix=".txt")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
     try:
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         ok = "SEND_OK" in (r.stdout or "")
         print((r.stdout or r.stderr or "").strip()[:100])
         return ok
@@ -73,9 +77,10 @@ def _theme_block(theme, res, err):
         return "【%s】❌ 查询失败：%s" % (theme, str(err)[:60])
     full = res.get("full") or []
     partial = res.get("partial") or []
-    lines = ["【%s】★三线 %d / ☆两线 %d / 单线 %d 不输出"
-             % (theme, len(full), len(partial),
-                int(res.get("n_single") or 0))]
+    lines = [
+        "【%s】★三线 %d / ☆两线 %d / 单线 %d 不输出"
+        % (theme, len(full), len(partial), int(res.get("n_single") or 0))
+    ]
     if not full and not partial:
         lines.append("  （冷启动：链骨架已入图，标的挂链随研报抽取生长）")
     for it in full[:MAX_FULL]:
@@ -87,15 +92,22 @@ def _theme_block(theme, res, err):
         if it.get("sigs"):
             tp, d, dd = it["sigs"][0][:3]
             sig = "（%s detect %s）" % (tp, dd)
-        lines.append("  · %s %s%s%s%s" % (
-            it.get("name"), it.get("code"), seg, star, sig))
+        lines.append(
+            "  · %s %s%s%s%s" % (it.get("name"), it.get("code"), seg, star, sig)
+        )
     if len(full) > MAX_FULL:
         lines.append("  · …等 %d 条" % len(full))
     if partial:
         names = []
         for it in partial[:MAX_PARTIAL_NAMES]:
-            miss = next((ln for ln in ("结构", "传导", "共识")
-                         if ln not in (it.get("lines") or [])), "?")
+            miss = next(
+                (
+                    ln
+                    for ln in ("结构", "传导", "共识")
+                    if ln not in (it.get("lines") or [])
+                ),
+                "?",
+            )
             names.append("%s（缺%s）" % (it.get("name"), miss))
         lines.append("  ☆ 两线候选：%s" % "、".join(names))
     # K239 三期：图谱叙事段（kg_digest 影子产物，verified 才上）
@@ -128,6 +140,7 @@ def main():
     for theme in THEMES:
         try:
             import kg_resonance as KR
+
             res = KR.query(theme, DAYS)
             blocks.append(_theme_block(theme, res, None))
         except Exception as e:
@@ -135,26 +148,39 @@ def main():
             blocks.append(_theme_block(theme, None, e))
 
     if errs >= len(THEMES):
-        text = ("⚠️ 三线共振晨报 · %s\n全部主题查询失败（图谱服务异常？）"
-                "——请查 kg 图服务与本任务日志。" % _today_dashed())
+        text = (
+            "⚠️ 三线共振晨报 · %s\n全部主题查询失败（图谱服务异常？）"
+            "——请查 kg 图服务与本任务日志。" % _today_dashed()
+        )
         ok = _push(text)
         if ok:
-            _write_json(STATE, {"date": _today_dashed(), "status":
-                                "all_query_failed",
-                                "ts": datetime.now().isoformat(
-                                    timespec="seconds")})
+            _write_json(
+                STATE,
+                {
+                    "date": _today_dashed(),
+                    "status": "all_query_failed",
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                },
+            )
             sys.exit(3)
         sys.exit(4)
 
-    text = ("🎯 三线共振晨报 · %s（窗口 %d 自然日，图内最近同步数据）\n%s\n"
-            "详情 → /kg/shadow（E2 看板卡直读影子快照）"
-            % (_today_dashed(), DAYS, "\n".join(blocks)))
+    text = (
+        "🎯 三线共振晨报 · %s（窗口 %d 自然日，图内最近同步数据）\n%s\n"
+        "详情 → /kg/shadow（E2 看板卡直读影子快照）"
+        % (_today_dashed(), DAYS, "\n".join(blocks))
+    )
     ok = _push(text)
     if ok:
-        _write_json(STATE, {"date": _today_dashed(), "status": "pushed",
-                            "ts": datetime.now().isoformat(
-                                timespec="seconds"),
-                            "themes": list(THEMES)})
+        _write_json(
+            STATE,
+            {
+                "date": _today_dashed(),
+                "status": "pushed",
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "themes": list(THEMES),
+            },
+        )
         print("state=pushed")
         sys.exit(0)
     sys.exit(4)

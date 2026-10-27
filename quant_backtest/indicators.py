@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """技术指标（pandas 向量化）。"""
+
 import numpy as np
 import pandas as pd
 
@@ -23,7 +24,9 @@ def rsi(series, n=14):
 def atr(df, n=14):
     h, l, c = df["high"], df["low"], df["close"]
     prev_c = c.shift(1)
-    tr = pd.concat([(h - l), (h - prev_c).abs(), (l - prev_c).abs()], axis=1).max(axis=1)
+    tr = pd.concat([(h - l), (h - prev_c).abs(), (l - prev_c).abs()], axis=1).max(
+        axis=1
+    )
     return tr.rolling(window=int(n), min_periods=1).mean()
 
 

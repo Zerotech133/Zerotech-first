@@ -6,6 +6,7 @@
 - 次日开盘收益 = ashare 全市场等权（open vs 前收，剔停牌）
 - 分桶：偏多(>=55)/中性(45-55)/偏空(<45)，看各桶次日开盘收益均值/胜率
 """
+
 import glob
 import json
 import os
@@ -19,8 +20,12 @@ ASHARE = os.path.join(HERE, "data", "ashare")
 OUT = os.path.join(HERE, "reports", "premarket_backtest.json")
 
 # A 股指数近似外围（权重对齐 GLOBAL_IDX 风格）
-PROXY_IDX = [("000001_SH", "上证", .40), ("399001_SZ", "深成", .25),
-             ("399006_SZ", "创业板", .20), ("000688_SH", "科创50", .15)]
+PROXY_IDX = [
+    ("000001_SH", "上证", 0.40),
+    ("399001_SZ", "深成", 0.25),
+    ("399006_SZ", "创业板", 0.20),
+    ("000688_SH", "科创50", 0.15),
+]
 
 
 def _clip(v, lo=-100, hi=100):
@@ -36,9 +41,12 @@ def load_index_hist():
             continue
         df = pd.read_parquet(path, columns=["trade_date", "close"])
         df = df.dropna()
-        out[code] = dict(zip(
-            df["trade_date"].astype(str).str.replace("-", ""),
-            df["close"].astype(float)))
+        out[code] = dict(
+            zip(
+                df["trade_date"].astype(str).str.replace("-", ""),
+                df["close"].astype(float),
+            )
+        )
     return out
 
 
@@ -66,9 +74,12 @@ def ashare_open_returns(dates):
             df = pd.read_parquet(f, columns=["trade_date", "open", "pre_close"])
             df = df.dropna(subset=["open", "pre_close"])
             df = df[df["pre_close"] > 0]
-            frames[code] = dict(zip(
-                df["trade_date"].astype(str).str.replace("-", ""),
-                df["open"] / df["pre_close"] - 1))
+            frames[code] = dict(
+                zip(
+                    df["trade_date"].astype(str).str.replace("-", ""),
+                    df["open"] / df["pre_close"] - 1,
+                )
+            )
         except Exception:
             continue
     out = {}
@@ -106,9 +117,12 @@ def run():
         buckets[b].append(r)
 
     print("\n=== 外围近似评分分桶 vs 次日开盘收益 ===")
-    report = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-              "n_total": len(rows), "buckets": {},
-              "note": "外围=A股指数近似（非真实隔夜）"}
+    report = {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "n_total": len(rows),
+        "buckets": {},
+        "note": "外围=A股指数近似（非真实隔夜）",
+    }
     for name, rs in buckets.items():
         if not rs:
             print("%s: 无样本" % name)
@@ -117,8 +131,11 @@ def run():
         avg = float(np.mean(rets))
         win = sum(1 for x in rets if x > 0) / len(rets) * 100
         print("%s: n=%d 均=%.3f%% 胜率=%.0f%%" % (name, len(rs), avg, win))
-        report["buckets"][name] = {"n": len(rs), "avg_open_ret": round(avg, 3),
-                                    "win_rate": round(win, 1)}
+        report["buckets"][name] = {
+            "n": len(rs),
+            "avg_open_ret": round(avg, 3),
+            "win_rate": round(win, 1),
+        }
 
     scores = [r["score"] for r in rows]
     rets = [r["open_ret"] for r in rows]

@@ -16,6 +16,7 @@ close=末笔 close、vol/amount=当日累计至 14:45（两源均为分钟增量
   python dknife_snap.py --src rtmin [--verify]
   python dknife_snap.py --src tushare --ym0 202606 --ym1 202610 [--verify]
 """
+
 import glob
 import os
 import sys
@@ -36,12 +37,19 @@ def _agg(win_parts, cum_parts):
     w["trade_date"] = w["time"].str[:10].str.replace("-", "")
     w = w.sort_values("time")
     g = w.groupby(["ts_code", "trade_date"], sort=True)
-    snap = g.agg(open=("open", "first"), high=("high", "max"), low=("low", "min"),
-                 close=("close", "last"), n_ticks=("close", "size")).reset_index()
+    snap = g.agg(
+        open=("open", "first"),
+        high=("high", "max"),
+        low=("low", "min"),
+        close=("close", "last"),
+        n_ticks=("close", "size"),
+    ).reset_index()
     c = pd.concat(cum_parts, ignore_index=True)
     c["trade_date"] = c["time"].str[:10].str.replace("-", "")
     gc = c.groupby(["ts_code", "trade_date"], sort=True).agg(
-        vol=("vol", lambda x: x.sum() / 100.0), amount=("amount", lambda x: x.sum() / 1000.0))
+        vol=("vol", lambda x: x.sum() / 100.0),
+        amount=("amount", lambda x: x.sum() / 1000.0),
+    )
     return snap.merge(gc.reset_index(), on=["ts_code", "trade_date"], how="left")
 
 
@@ -53,7 +61,19 @@ def build_rtmin():
     t0 = time.time()
     win_parts, cum_parts = [], []
     for i, fp in enumerate(fs):
-        d = pd.read_parquet(fp, columns=["ts_code", "time", "open", "high", "low", "close", "vol", "amount"])
+        d = pd.read_parquet(
+            fp,
+            columns=[
+                "ts_code",
+                "time",
+                "open",
+                "high",
+                "low",
+                "close",
+                "vol",
+                "amount",
+            ],
+        )
         d["time"] = d["time"].astype(str)
         hm = d["time"].str[11:16]
         m_win = hm.isin(WIN_MM)
@@ -98,25 +118,43 @@ def verify(snap):
     print("\n== verify ==")
     # 1) 每日票数
     per_day = snap.groupby("trade_date").size()
-    print("每日票数 min/median/max:", per_day.min(), int(per_day.median()), per_day.max())
+    print(
+        "每日票数 min/median/max:", per_day.min(), int(per_day.median()), per_day.max()
+    )
     # 2) n_ticks 分布（应≈5，缺失=快照断点）
     print("n_ticks 分布:", snap.n_ticks.value_counts().sort_index().to_dict())
     # 3) close 偏差 vs 日线湖（同日同票）
-    daily = pd.read_parquet(os.path.join(QBT, "data", "tdx", "ts_daily"),
-                            columns=["ts_code", "trade_date", "close"])
+    daily = pd.read_parquet(
+        os.path.join(QBT, "data", "tdx", "ts_daily"),
+        columns=["ts_code", "trade_date", "close"],
+    )
     m = snap.merge(daily, on=["ts_code", "trade_date"], suffixes=("_snap", "_daily"))
     m["dev_pct"] = (m.close_snap - m.close_daily) / m.close_daily * 100
-    print("对齐行:", len(m), "/", len(snap),
-          "| close偏差 mean={:.3f} abs_median={:.3f} abs_p95={:.3f}".format(
-              m.dev_pct.mean(), m.dev_pct.abs().median(), m.dev_pct.abs().quantile(0.95)))
+    print(
+        "对齐行:",
+        len(m),
+        "/",
+        len(snap),
+        "| close偏差 mean={:.3f} abs_median={:.3f} abs_p95={:.3f}".format(
+            m.dev_pct.mean(), m.dev_pct.abs().median(), m.dev_pct.abs().quantile(0.95)
+        ),
+    )
     # 4) amount 量纲 vs 日线全天额（14:45 累计应≈全天 88~95%）
-    daily_amt = pd.read_parquet(os.path.join(QBT, "data", "tdx", "ts_daily"),
-                                columns=["ts_code", "trade_date", "amount"])
-    m3 = snap.merge(daily_amt, on=["ts_code", "trade_date"], suffixes=("_snap", "_daily"))
+    daily_amt = pd.read_parquet(
+        os.path.join(QBT, "data", "tdx", "ts_daily"),
+        columns=["ts_code", "trade_date", "amount"],
+    )
+    m3 = snap.merge(
+        daily_amt, on=["ts_code", "trade_date"], suffixes=("_snap", "_daily")
+    )
     m3["ratio"] = m3.amount_snap / m3.amount_daily
     ok = m3[(m3.ratio > 0.5) & (m3.ratio < 1.5)]
-    print("amount 对齐行:", len(m3), "| ratio 中位=%.3f p05=%.3f p95=%.3f" % (
-        ok.ratio.median(), ok.ratio.quantile(0.05), ok.ratio.quantile(0.95)))
+    print(
+        "amount 对齐行:",
+        len(m3),
+        "| ratio 中位=%.3f p05=%.3f p95=%.3f"
+        % (ok.ratio.median(), ok.ratio.quantile(0.05), ok.ratio.quantile(0.95)),
+    )
     return m
 
 
@@ -129,9 +167,13 @@ def verify_cross(snap):
     old = pd.read_parquet(old_fp)
     j = snap.merge(old, on=["ts_code", "trade_date"], suffixes=("_new", "_old"))
     j["dev_pct"] = (j.close_new - j.close_old) / j.close_old * 100
-    print("交叉验证（vs 旧 rtmin 快照）重叠行:", len(j),
-          "| close偏差 mean={:.4f} abs_median={:.4f} abs_p99={:.4f}".format(
-              j.dev_pct.mean(), j.dev_pct.abs().median(), j.dev_pct.abs().quantile(0.99)))
+    print(
+        "交叉验证（vs 旧 rtmin 快照）重叠行:",
+        len(j),
+        "| close偏差 mean={:.4f} abs_median={:.4f} abs_p99={:.4f}".format(
+            j.dev_pct.mean(), j.dev_pct.abs().median(), j.dev_pct.abs().quantile(0.99)
+        ),
+    )
 
 
 if __name__ == "__main__":
@@ -142,11 +184,22 @@ if __name__ == "__main__":
         verify(pd.read_parquet(OUT))
     else:
         if src == "tushare":
-            ym0 = sys.argv[sys.argv.index("--ym0") + 1] if "--ym0" in sys.argv else "202606"
-            ym1 = sys.argv[sys.argv.index("--ym1") + 1] if "--ym1" in sys.argv else "202610"
-            old_fp = os.path.join(QBT, "data", "tdx", "dknife_snap", "_old_rtmin_snap.parquet")
+            ym0 = (
+                sys.argv[sys.argv.index("--ym0") + 1]
+                if "--ym0" in sys.argv
+                else "202606"
+            )
+            ym1 = (
+                sys.argv[sys.argv.index("--ym1") + 1]
+                if "--ym1" in sys.argv
+                else "202610"
+            )
+            old_fp = os.path.join(
+                QBT, "data", "tdx", "dknife_snap", "_old_rtmin_snap.parquet"
+            )
             if os.path.exists(OUT) and not os.path.exists(old_fp):
                 import shutil
+
                 shutil.copy2(OUT, old_fp)
                 print("旧 rtmin 快照已备份:", old_fp)
             s = build_tushare(ym0, ym1)
@@ -154,8 +207,17 @@ if __name__ == "__main__":
             s = build_rtmin()
         os.makedirs(os.path.dirname(OUT), exist_ok=True)
         s.to_parquet(OUT, index=False)
-        print("saved:", OUT, os.path.getsize(OUT), "bytes | rows:", len(s),
-              "| days:", s.trade_date.nunique(), "| codes:", s.ts_code.nunique())
+        print(
+            "saved:",
+            OUT,
+            os.path.getsize(OUT),
+            "bytes | rows:",
+            len(s),
+            "| days:",
+            s.trade_date.nunique(),
+            "| codes:",
+            s.ts_code.nunique(),
+        )
         verify(s)
         if src == "tushare":
             verify_cross(s)

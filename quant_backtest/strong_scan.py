@@ -33,6 +33,7 @@
   python strong_scan.py --force --limit 5  # 全池小样本强制重扫
   python strong_scan.py --full --dry       # 全量评估演练（先测耗时再定计划任务）
 """
+
 import argparse
 import datetime as _dt
 import json
@@ -42,16 +43,21 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from strong_track import (MIN_BLOCK_MEMBERS, STRONG_EX_TH,  # noqa: E402
-                          block_quorum, strong_verdict, trend_bull)
+from strong_track import (
+    MIN_BLOCK_MEMBERS,
+    STRONG_EX_TH,  # noqa: E402
+    block_quorum,
+    strong_verdict,
+    trend_bull,
+)
 
 POOL_SEGS = ("industry881", "industry_l1", "old_industry")
-PER_BLOCK_CAP = 20          # 单板块逐股评估默认上限（控制取数代价）
-FULL_BLOCK_CAP = 200        # --full 防极端板块兜底：成员>200 按成交额截 200
+PER_BLOCK_CAP = 20  # 单板块逐股评估默认上限（控制取数代价）
+FULL_BLOCK_CAP = 200  # --full 防极端板块兜底：成员>200 按成交额截 200
 REPORTS = os.path.join(HERE, "reports")
 GUARD_SAMPLE = ("600519.SH", "000001.SZ", "300750.SZ")  # 个股锚抽样（主流票）
-GUARD_BLOCK = "881019"      # 板块锚（行业881 池内示例板块）
-GUARD_MIN_CN = 5000         # zhice CN 全量水位阈（实测全市场≈5557，90% 折）
+GUARD_BLOCK = "881019"  # 板块锚（行业881 池内示例板块）
+GUARD_MIN_CN = 5000  # zhice CN 全量水位阈（实测全市场≈5557，90% 折）
 
 
 def freshness_guard():
@@ -69,6 +75,7 @@ def freshness_guard():
     """
     import chanlun_data
     import linkage
+
     blk = linkage.block_bars(GUARD_BLOCK, "1d", limit=3)
     if not blk:
         return False, "板块锚 %s 无K线（tdx_sector_daily 空？）" % GUARD_BLOCK, None
@@ -79,20 +86,33 @@ def freshness_guard():
             return False, "个股锚 %s 无K线（%s）" % (c, r.get("error", "")), blk_d
         d = str(r["bars"][-1]["dt"])[:10]
         if d != blk_d:
-            return False, "个股锚 %s=%s（%s）≠ 板块锚 %s=%s" % (
-                c, d, r.get("source"), GUARD_BLOCK, blk_d), blk_d
+            return (
+                False,
+                "个股锚 %s=%s（%s）≠ 板块锚 %s=%s"
+                % (c, d, r.get("source"), GUARD_BLOCK, blk_d),
+                blk_d,
+            )
     # 全量水位：抽样票可能恰在「零星成功」名单（权重票优先）而全池仍
     # T-1（10-08 21:31 实测前车），计数校验拦「部分补齐」的半 T-1 名单
     rows = chanlun_data._db_query(
-        "SELECT count(*) FROM v2_bar_daily WHERE market='CN' AND trade_date=%s",
-        [blk_d])
+        "SELECT count(*) FROM v2_bar_daily WHERE market='CN' AND trade_date=%s", [blk_d]
+    )
     n_cn = int(rows[0][0]) if rows else 0
     if n_cn < GUARD_MIN_CN:
-        return False, ("zhice CN %s bar 计数 %d < 阈 %d"
-                       "（全量未补齐，名单将半 T-1）"
-                       % (blk_d, n_cn, GUARD_MIN_CN)), blk_d
-    return True, "锚一致 %s + CN 计数 %d ≥ %d（个股抽样×%d + 板块 %s）" % (
-        blk_d, n_cn, GUARD_MIN_CN, len(GUARD_SAMPLE), GUARD_BLOCK), blk_d
+        return (
+            False,
+            (
+                "zhice CN %s bar 计数 %d < 阈 %d"
+                "（全量未补齐，名单将半 T-1）" % (blk_d, n_cn, GUARD_MIN_CN)
+            ),
+            blk_d,
+        )
+    return (
+        True,
+        "锚一致 %s + CN 计数 %d ≥ %d（个股抽样×%d + 板块 %s）"
+        % (blk_d, n_cn, GUARD_MIN_CN, len(GUARD_SAMPLE), GUARD_BLOCK),
+        blk_d,
+    )
 
 
 def now_iso():
@@ -106,21 +126,21 @@ def today_str():
 def block_pool():
     """行业板块池 [(code,name)]，按代码升序（进度行稳定可续跟）。"""
     import linkage
+
     defs = linkage.sector_defs()
-    return [(bc, d["name"]) for bc, d in sorted(defs.items())
-            if d["seg"] in POOL_SEGS]
+    return [(bc, d["name"]) for bc, d in sorted(defs.items()) if d["seg"] in POOL_SEGS]
 
 
 def eval_stock(code, block_code):
     """单股 250 日超额 + 日线趋势 → (ex250, trend_bull, ok, n_bars)。"""
     import linkage
+
     r = linkage.series(code, "1d", limit=250, block=block_code)
     if not r.get("ok"):
         return None, False, False, 0
     pct = r.get("stock") or []
     ex = None
-    if r.get("block") and pct and r["block"][-1] is not None \
-            and pct[-1] is not None:
+    if r.get("block") and pct and r["block"][-1] is not None and pct[-1] is not None:
         ex = round(pct[-1] - r["block"][-1], 1)
     return ex, trend_bull(pct), True, len(pct)
 
@@ -134,6 +154,7 @@ def rank_by_amount_20d(members, cap):
     返回 (截断后成员, 排序是否可用)。
     """
     import chanlun_data
+
     codes = [m["code"] for m in members]
     try:
         rows = chanlun_data._db_query(
@@ -141,21 +162,20 @@ def rank_by_amount_20d(members, cap):
             "WHERE market='CN' AND symbol = ANY(%s) AND trade_date IN "
             "(SELECT DISTINCT trade_date FROM v2_bar_daily "
             "WHERE market='CN' ORDER BY trade_date DESC LIMIT 20) "
-            "GROUP BY symbol", [codes])
+            "GROUP BY symbol",
+            [codes],
+        )
         amt = {r[0]: float(r[1] or 0) for r in rows}
     except Exception as e:
-        sys.stderr.write("    ! 成交额排序查询失败，回退清单序截断: %s\n"
-                         % str(e)[:80])
+        sys.stderr.write("    ! 成交额排序查询失败，回退清单序截断: %s\n" % str(e)[:80])
         return members[:cap], False
     if not amt:
         return members[:cap], False
-    ranked = sorted(members,
-                    key=lambda m: amt.get(m["code"], -1.0), reverse=True)
+    ranked = sorted(members, key=lambda m: amt.get(m["code"], -1.0), reverse=True)
     return ranked[:cap], True
 
 
-def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter,
-               full=False):
+def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter, full=False):
     """单板块扫描 → (hits, n_members, n_eval, skip_reason, cap_flag)。
 
     hits 已过 strong_verdict（tag=板块领涨/逆板块强势）；skip_reason
@@ -164,6 +184,7 @@ def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter,
     时按 20 日成交额降序截 200 防极端板块拖垮（cap_flag=True 上报）。
     """
     import linkage
+
     members = linkage.block_members(bc)
     n = len(members)
     if not block_quorum(n, min_members):
@@ -174,7 +195,7 @@ def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter,
         if n > FULL_BLOCK_CAP:
             sel, cap_flag = rank_by_amount_20d(members, FULL_BLOCK_CAP)
     else:
-        sel = members[:max(1, int(limit))]
+        sel = members[: max(1, int(limit))]
     hits, n_eval = [], 0
     for m in sel:
         code = m["code"]
@@ -187,37 +208,53 @@ def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter,
             continue  # K 线取数失败：跳过个股，不计评估数
         n_eval += 1
         n_eval_counter[0] += 1
-        is_strong, tag, reasons = strong_verdict(ex, n, bull,
-                                                 th_ex, min_members)
+        is_strong, tag, reasons = strong_verdict(ex, n, bull, th_ex, min_members)
         # S2 修复(077e 选股审计): 次新闸——K 线 <250 根时 series 归一
         # base 落在上市首根, ex250 实为「上市以来超额」, 上市即涨的次新
         # 虚高涌入领涨名单(rps_resonance new_flag 同哲学, 此前 strong 无
         # 对称闸)。降级「逆板块强势」观察层=不推送只进名单人工复核。
         if is_strong and tag == "板块领涨" and 0 < n_bars < 250:
             tag = "逆板块强势"
-            reasons.append("次新(%d<250根, ex250=上市以来口径) 降级观察"
-                           % n_bars)
+            reasons.append("次新(%d<250根, ex250=上市以来口径) 降级观察" % n_bars)
         if is_strong:
-            hits.append({"ts": now_iso(), "code": code, "name": m["name"],
-                         "block": bname, "block_code": bc, "ex250": ex,
-                         "tag": tag, "reasons": reasons})
+            hits.append(
+                {
+                    "ts": now_iso(),
+                    "code": code,
+                    "name": m["name"],
+                    "block": bname,
+                    "block_code": bc,
+                    "ex250": ex,
+                    "tag": tag,
+                    "reasons": reasons,
+                }
+            )
     return hits, n, n_eval, None, cap_flag
 
 
 def main():
     ap = argparse.ArgumentParser(description="strong 阶段2a 全板块池扫描")
-    ap.add_argument("--block", default=None,
-                    help="只扫单板块（代码如 881019，调试用）")
-    ap.add_argument("--limit", type=int, default=PER_BLOCK_CAP,
-                    help="单板块逐股评估上限（默认 %d；--full 时忽略）"
-                         % PER_BLOCK_CAP)
-    ap.add_argument("--full", action="store_true",
-                    help="全量评估板块全部成员（去 %d 截断；成员>%d 按 20 日"
-                         "成交额降序截 %d 防极端板块；全市场实测耗时见"
-                         " docs/changes 留痕，先手动测时再考虑改计划任务）"
-                         % (PER_BLOCK_CAP, FULL_BLOCK_CAP, FULL_BLOCK_CAP))
-    ap.add_argument("--th-ex", type=float, default=STRONG_EX_TH,
-                    help="超额达标阈值 pp（默认 %g）" % STRONG_EX_TH)
+    ap.add_argument("--block", default=None, help="只扫单板块（代码如 881019，调试用）")
+    ap.add_argument(
+        "--limit",
+        type=int,
+        default=PER_BLOCK_CAP,
+        help="单板块逐股评估上限（默认 %d；--full 时忽略）" % PER_BLOCK_CAP,
+    )
+    ap.add_argument(
+        "--full",
+        action="store_true",
+        help="全量评估板块全部成员（去 %d 截断；成员>%d 按 20 日"
+        "成交额降序截 %d 防极端板块；全市场实测耗时见"
+        " docs/changes 留痕，先手动测时再考虑改计划任务）"
+        % (PER_BLOCK_CAP, FULL_BLOCK_CAP, FULL_BLOCK_CAP),
+    )
+    ap.add_argument(
+        "--th-ex",
+        type=float,
+        default=STRONG_EX_TH,
+        help="超额达标阈值 pp（默认 %g）" % STRONG_EX_TH,
+    )
     ap.add_argument("--min-members", type=int, default=MIN_BLOCK_MEMBERS)
     ap.add_argument("--dry", action="store_true", help="只打印不落盘")
     ap.add_argument("--force", action="store_true", help="忽略当日已扫熔断")
@@ -229,38 +266,49 @@ def main():
             with open(latest_fp, encoding="utf-8") as f:
                 prev = json.load(f)
             if prev.get("date") == today_str():
-                print("今日（%s）已扫描过，熔断跳过（--force 可强制重扫）"
-                      % prev.get("date"))
+                print(
+                    "今日（%s）已扫描过，熔断跳过（--force 可强制重扫）"
+                    % prev.get("date")
+                )
                 return 0
         except Exception:
             pass  # 汇总文件损坏视为未扫，继续
 
     ok_g, msg, g_basis = freshness_guard()
     if not ok_g:
-        print("[守卫] 数据新鲜度未过：%s —— 拦截退出（防 T-1 静默名单）"
-              % msg, flush=True)
+        print(
+            "[守卫] 数据新鲜度未过：%s —— 拦截退出（防 T-1 静默名单）" % msg, flush=True
+        )
         # 2026-10-14 告警闭环（alert-loop P0-2）：正确的拦截不再静默——
         # 今晨 StrongEod 06:30 exit 3 无告警教训；注记式调用，告警异常
         # 不改变拦截退出码；--dry 不真推不写状态（演练路径）
         try:
             import re as _re_a
             import guard_alert as _ga
+
             _dates = _re_a.findall(r"\d{4}-\d{2}-\d{2}", msg)
             _ga.guard_alert(
-                "StrongEod", msg,
-                anchors={"板块锚 %s" % GUARD_BLOCK: g_basis or "无",
-                         "个股锚": next((d for d in _dates if d != g_basis),
-                                        g_basis or "见拦截原因")},
+                "StrongEod",
+                msg,
+                anchors={
+                    "板块锚 %s" % GUARD_BLOCK: g_basis or "无",
+                    "个股锚": next(
+                        (d for d in _dates if d != g_basis), g_basis or "见拦截原因"
+                    ),
+                },
                 suggest="核查 TdxSync 与凌晨 zhice 补数；补齐后 "
-                        "--force 重扫 StrongEod（10-13 板块仓停教训判例）",
-                send=not a.dry)
+                "--force 重扫 StrongEod（10-13 板块仓停教训判例）",
+                send=not a.dry,
+            )
         except Exception as _e:
-            print("[守卫] 告警推送异常（不影响拦截退出）: %s" % str(_e)[:120],
-                  flush=True)
+            print(
+                "[守卫] 告警推送异常（不影响拦截退出）: %s" % str(_e)[:120], flush=True
+            )
         return 3
     print("[守卫] %s" % msg, flush=True)
 
     import linkage
+
     pool = block_pool()
     if a.block:
         b = str(a.block).split(".")[0]
@@ -274,30 +322,36 @@ def main():
     n_eval_total = [0]
     n_members_total = [0]
     n_scanned = 0
-    cap_blocks = 0           # --full 下触发 200 兜底截断的板块数
+    cap_blocks = 0  # --full 下触发 200 兜底截断的板块数
     t0 = _dt.datetime.now()  # 耗时记录（--full 测时依据，15:45 窗口评估用）
     for i, (bc, bname) in enumerate(pool, 1):
         try:
             hits, n, n_eval, skip, cap_flag = scan_block(
-                bc, bname, a.limit, a.th_ex, a.min_members, n_eval_total,
-                full=a.full)
+                bc, bname, a.limit, a.th_ex, a.min_members, n_eval_total, full=a.full
+            )
         except Exception as e:
             skipped += 1
-            print("[%d/%d] %s %s 板块级异常跳过: %s"
-                  % (i, len(pool), bc, bname, e), flush=True)
+            print(
+                "[%d/%d] %s %s 板块级异常跳过: %s" % (i, len(pool), bc, bname, e),
+                flush=True,
+            )
             continue
         if skip:
             skipped += 1
-            print("[%d/%d] %s %s 成员=%s —— %s"
-                  % (i, len(pool), bc, bname, n, skip), flush=True)
+            print(
+                "[%d/%d] %s %s 成员=%s —— %s" % (i, len(pool), bc, bname, n, skip),
+                flush=True,
+            )
             continue
         n_scanned += 1
         cap_blocks += 1 if cap_flag else 0
         n_members_total[0] += n
         lead = sum(1 for h in hits if h["tag"] == "板块领涨")
-        print("[%d/%d] %s %s 成员=%d 评估=%d 命中=%d（领涨=%d 观察=%d）"
-              % (i, len(pool), bc, bname, n, n_eval, len(hits), lead,
-                 len(hits) - lead), flush=True)
+        print(
+            "[%d/%d] %s %s 成员=%d 评估=%d 命中=%d（领涨=%d 观察=%d）"
+            % (i, len(pool), bc, bname, n, n_eval, len(hits), lead, len(hits) - lead),
+            flush=True,
+        )
         all_hits.extend(hits)
 
     lead_rows = [h for h in all_hits if h["tag"] == "板块领涨"]
@@ -305,16 +359,28 @@ def main():
     # S4 收口桥接：items/list 平铺全量（每行含 tag+reasons），三方消费对齐——
     # strong_card.py 消费 items（别名容错）、portal/strong.html 消费 list、
     # lead/observe 保留为分列速览（历史兼容）。
-    items = [{"ts": h["ts"], "code": h["code"], "name": h["name"],
-              "block": h["block"], "ex250": h["ex250"], "tag": h["tag"],
-              "reasons": h["reasons"]} for h in all_hits]
+    items = [
+        {
+            "ts": h["ts"],
+            "code": h["code"],
+            "name": h["name"],
+            "block": h["block"],
+            "ex250": h["ex250"],
+            "tag": h["tag"],
+            "reasons": h["reasons"],
+        }
+        for h in all_hits
+    ]
     elapsed_sec = round((_dt.datetime.now() - t0).total_seconds(), 1)
     if a.full:
         # W1-2（2026-10-14）：全量扫描模式——名单语义升级为「板块领涨」
         coverage_note = "全量评估板块全部成员（--full）"
         if cap_blocks:
-            coverage_note += ("；%d 个板块成员>%d，按近 20 日成交额降序截前 %d"
-                              % (cap_blocks, FULL_BLOCK_CAP, FULL_BLOCK_CAP))
+            coverage_note += "；%d 个板块成员>%d，按近 20 日成交额降序截前 %d" % (
+                cap_blocks,
+                FULL_BLOCK_CAP,
+                FULL_BLOCK_CAP,
+            )
     else:
         # S1 修复(077e 选股审计): 覆盖率显式化——每板块仅评清单前 N
         # (ts_stock_basic 顺序, 非全量), 名单语义=「前 N 里领涨」而非
@@ -323,28 +389,47 @@ def main():
         coverage_note %= int(a.limit)
         coverage_note += "——名单=前 N 里领涨，非全量板块领涨"
     summary = {
-        "date": today_str(), "ts": now_iso(),
+        "date": today_str(),
+        "ts": now_iso(),
         # 八审：数据基准日（板块锚同日校验值）——date 是运行日，下游
         # stale 闸门若拿 date 比对行情湖基准恒得 lag=-1（单日漏跑 lag=0
         # 永不拦），basis 才是真实的「基于哪天行情」。
         "basis": g_basis,
-        "blocks_total": len(pool), "blocks_scanned": n_scanned,
-        "blocks_skipped": skipped, "stocks_evaluated": n_eval_total[0],
+        "blocks_total": len(pool),
+        "blocks_scanned": n_scanned,
+        "blocks_skipped": skipped,
+        "stocks_evaluated": n_eval_total[0],
         "per_block_cap": 0 if a.full else int(a.limit),
         # W1-2（2026-10-14）：--full 模式标记 + 耗时（秒）——下游可据此
         # 区分名单口径；计划任务默认不带 --full（防 15:45 窗口超时）
         "full_scan": bool(a.full),
         "elapsed_sec": elapsed_sec,
-        "member_coverage": (round(n_eval_total[0] / n_members_total[0], 3)
-                            if n_members_total[0] else None),
+        "member_coverage": (
+            round(n_eval_total[0] / n_members_total[0], 3)
+            if n_members_total[0]
+            else None
+        ),
         "counts": {"板块领涨": len(lead_rows), "逆板块强势": len(obs_rows)},
-        "items": items, "list": items,
-        "lead": [{"code": h["code"], "name": h["name"],
-                  "block": h["block"], "ex250": h["ex250"]}
-                 for h in lead_rows],
-        "observe": [{"code": h["code"], "name": h["name"],
-                     "block": h["block"], "ex250": h["ex250"]}
-                    for h in obs_rows],
+        "items": items,
+        "list": items,
+        "lead": [
+            {
+                "code": h["code"],
+                "name": h["name"],
+                "block": h["block"],
+                "ex250": h["ex250"],
+            }
+            for h in lead_rows
+        ],
+        "observe": [
+            {
+                "code": h["code"],
+                "name": h["name"],
+                "block": h["block"],
+                "ex250": h["ex250"],
+            }
+            for h in obs_rows
+        ],
     }
 
     if a.dry:
@@ -353,8 +438,9 @@ def main():
             print(json.dumps(h, ensure_ascii=False))
     else:
         os.makedirs(REPORTS, exist_ok=True)
-        list_fp = os.path.join(REPORTS, "strong_list_%s.jsonl"
-                               % today_str().replace("-", ""))
+        list_fp = os.path.join(
+            REPORTS, "strong_list_%s.jsonl" % today_str().replace("-", "")
+        )
         with open(list_fp, "w", encoding="utf-8") as f:
             for h in all_hits:
                 f.write(json.dumps(h, ensure_ascii=False) + "\n")
@@ -365,18 +451,27 @@ def main():
         try:
             pub = os.path.join(os.path.dirname(HERE), "portal", "data")
             os.makedirs(pub, exist_ok=True)
-            with open(os.path.join(pub, "strong_latest.json"), "w",
-                      encoding="utf-8") as f:
+            with open(
+                os.path.join(pub, "strong_latest.json"), "w", encoding="utf-8"
+            ) as f:
                 json.dump(summary, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print("webroot 副本落盘失败(不影响本体): %s" % str(e)[:100])
         print("落盘 %s（%d 行）+ %s" % (list_fp, len(all_hits), latest_fp))
-    print("汇总：板块 %d/%d（跳过 %d），个股评估 %d，"
-          "板块领涨 %d，逆板块强势 %d，耗时 %.1fs%s"
-          % (n_scanned, len(pool), skipped, n_eval_total[0],
-             len(lead_rows), len(obs_rows), elapsed_sec,
-             "，full=%s（200兜底板块 %d 个）" % (a.full, cap_blocks)
-             if a.full else ""))
+    print(
+        "汇总：板块 %d/%d（跳过 %d），个股评估 %d，"
+        "板块领涨 %d，逆板块强势 %d，耗时 %.1fs%s"
+        % (
+            n_scanned,
+            len(pool),
+            skipped,
+            n_eval_total[0],
+            len(lead_rows),
+            len(obs_rows),
+            elapsed_sec,
+            "，full=%s（200兜底板块 %d 个）" % (a.full, cap_blocks) if a.full else "",
+        )
+    )
     return 0
 
 

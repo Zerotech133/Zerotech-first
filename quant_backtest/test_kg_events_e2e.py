@@ -19,6 +19,7 @@
   · 公司样本从 /kg/events/list 动态取，不锁具体数据
 运行：cd quant_backtest && python -m pytest test_kg_events_e2e.py -v
 """
+
 import json
 import urllib.parse
 import urllib.request
@@ -27,16 +28,14 @@ import pytest
 
 PORTAL = "http://127.0.0.1:8091"
 
-pw = pytest.importorskip("playwright.sync_api",
-                         reason="需要 pip install playwright")
+pw = pytest.importorskip("playwright.sync_api", reason="需要 pip install playwright")
 
 
 @pytest.fixture(scope="module")
 def sample():
     """从真实端点取一行事件作交互样本（公司名/代码/原文 id）。"""
     try:
-        with urllib.request.urlopen(PORTAL + "/kg/events/list",
-                                    timeout=5) as r:
+        with urllib.request.urlopen(PORTAL + "/kg/events/list", timeout=5) as r:
             rows = json.loads(r.read().decode("utf-8"))["rows"]
     except Exception as ex:
         pytest.skip("portal(8091) 不可用：%s" % ex)
@@ -83,11 +82,12 @@ def page(sample):
 
 def _open(page):
     page.goto(PORTAL + "/kg/events")
-    page.wait_for_selector("#evlist .evrow")   # INIT 数据渲染完成标志
+    page.wait_for_selector("#evlist .evrow")  # INIT 数据渲染完成标志
     return page
 
 
 # ── ① 页面首屏：态势条 / Tab / G6 canvas ────────────────────
+
 
 def test_e2e_first_paint(page, sample):
     _open(page)
@@ -95,10 +95,9 @@ def test_e2e_first_paint(page, sample):
     cards = page.locator(".situgrid .sc")
     assert cards.count() == 5
     labels = [cards.nth(i).locator(".sl").inner_text() for i in range(5)]
-    assert labels == ["NEO4J 连接", "入图事件", "最新入图", "影子管线",
-                      "更新节奏"]
+    assert labels == ["NEO4J 连接", "入图事件", "最新入图", "影子管线", "更新节奏"]
     assert "已连接" in cards.nth(0).inner_text()
-    assert page.locator(".situgrid .sc.w").count() == 0   # 无告警格
+    assert page.locator(".situgrid .sc.w").count() == 0  # 无告警格
     assert "条" in cards.nth(1).inner_text() and "标的" in cards.nth(1).inner_text()
     # 市场 Tab：5 个实 Tab + 3 个预留灰置；默认「全部」选中
     tabs = page.locator(".tabs a.tab")
@@ -118,11 +117,12 @@ def test_e2e_first_paint(page, sample):
 
 # ── ② 搜索联想 → 下钻（focusCo）────────────────────────────
 
+
 def test_e2e_search_suggest_drilldown(page, sample):
     _open(page)
     name = sample["an"]
     page.fill("#qi", name)
-    page.wait_for_selector("#hits .hit")           # 防抖+fetch 后出现候选
+    page.wait_for_selector("#hits .hit")  # 防抖+fetch 后出现候选
     hits = page.locator("#hits .hit")
     target, found = None, False
     for i in range(hits.count()):
@@ -130,17 +130,19 @@ def test_e2e_search_suggest_drilldown(page, sample):
             target, found = hits.nth(i), True
             break
     assert found, "联想候选缺少目标公司"
-    target.click()                                 # 候选点击 → focusCo
+    target.click()  # 候选点击 → focusCo
     page.wait_for_function(
-        "document.getElementById('lh').textContent.includes('事件 ·')")
+        "document.getElementById('lh').textContent.includes('事件 ·')"
+    )
     lh = page.locator("#lh").inner_text()
-    assert name in lh and "(" in lh                # 「事件 · 公司 (N)」
-    assert "图谱全景" in lh and "K线研判" in lh     # 下钻附带跳转入口
+    assert name in lh and "(" in lh  # 「事件 · 公司 (N)」
+    assert "图谱全景" in lh and "K线研判" in lh  # 下钻附带跳转入口
     assert page.locator("#evlist .evrow").count() >= 1
     assert not page._e2e_errors
 
 
 # ── ③ 行内公司下钻 + 原文弹层 + Escape ──────────────────────
+
 
 def test_e2e_row_company_and_doc_modal(page, sample):
     _open(page)
@@ -148,29 +150,31 @@ def test_e2e_row_company_and_doc_modal(page, sample):
     name = co.inner_text()
     co.click()
     page.wait_for_function(
-        "document.getElementById('lh').textContent.includes('事件 ·')")
+        "document.getElementById('lh').textContent.includes('事件 ·')"
+    )
     assert name in page.locator("#lh").inner_text()
     # 下钻后的列表行仍带原文链接 → 打开弹层
     page.locator("#evlist .evrow .emeta a").first.click()
     page.wait_for_selector("#modal", state="visible")
-    page.wait_for_function(                        # fetch 完成替换标题
-        "var t=document.getElementById('mtitle').textContent;"
-        "t && t!=='加载中…'")
+    page.wait_for_function(  # fetch 完成替换标题
+        "var t=document.getElementById('mtitle').textContent;t && t!=='加载中…'"
+    )
     mbody = page.locator("#mbody")
-    assert len(mbody.locator(".mtext").inner_text()) > 50   # 真原文而非占位
-    assert mbody.locator(".mmeta").count() == 1             # 源/字数/doc_id
-    page.keyboard.press("Escape")                  # 键盘关闭
+    assert len(mbody.locator(".mtext").inner_text()) > 50  # 真原文而非占位
+    assert mbody.locator(".mmeta").count() == 1  # 源/字数/doc_id
+    page.keyboard.press("Escape")  # 键盘关闭
     page.wait_for_function(
-        "getComputedStyle(document.getElementById('modal')).display==='none'")
+        "getComputedStyle(document.getElementById('modal')).display==='none'"
+    )
     assert not page._e2e_errors
 
 
 # ── ④ 市场 Tab 导航 ────────────────────────────────────────
 
+
 def test_e2e_market_tab_navigation(page, sample):
     try:
-        with urllib.request.urlopen(PORTAL + "/kg/events/situ",
-                                    timeout=5) as r:
+        with urllib.request.urlopen(PORTAL + "/kg/events/situ", timeout=5) as r:
             mk = json.loads(r.read().decode("utf-8"))["inv_markets"]
     except Exception as ex:
         pytest.skip("portal(8091) 不可用：%s" % ex)
@@ -181,21 +185,22 @@ def test_e2e_market_tab_navigation(page, sample):
     page.wait_for_load_state("domcontentloaded")
     assert "market=主板" in urllib.parse.unquote(page.url)
     assert page.locator(".tabs a.tab.on").inner_text() == "主板"
-    page.wait_for_selector("#evlist .evrow")       # 过滤后仍有主板事件
+    page.wait_for_selector("#evlist .evrow")  # 过滤后仍有主板事件
     assert page.locator(".situgrid .sc.w").count() == 0
     assert not page._e2e_errors
 
 
 # ── ⑤ G6 canvas 点击：点节点下钻 / 点边看原文 ───────────────
 
+
 def _modal_shown(page):
     return page.evaluate(
-        "getComputedStyle(document.getElementById('modal')).display==='flex'")
+        "getComputedStyle(document.getElementById('modal')).display==='flex'"
+    )
 
 
 def _focused(page):
-    return page.evaluate(
-        "document.getElementById('lh').textContent.includes('事件 ·')")
+    return page.evaluate("document.getElementById('lh').textContent.includes('事件 ·')")
 
 
 def test_e2e_graph_canvas_click(page, sample):
@@ -203,13 +208,13 @@ def test_e2e_graph_canvas_click(page, sample):
     命中节点 → focusCo（#lh 公司视图）；命中边 → openDoc（modal）。
     两者取其一即证明 canvas 事件链路（node:click/edge:click）通。"""
     _open(page)
-    page.wait_for_timeout(1500)                    # d3-force 布局收敛
+    page.wait_for_timeout(1500)  # d3-force 布局收敛
     box = page.locator("#evg canvas").first.bounding_box()
     cx, cy = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
     responded = False
     for dx, dy in ((0, 0), (35, 20), (-30, -25), (15, -45)):
         page.mouse.click(cx + dx, cy + dy)
-        page.wait_for_timeout(600)                 # fetch 往返
+        page.wait_for_timeout(600)  # fetch 往返
         if _modal_shown(page) or _focused(page):
             responded = True
             break
@@ -217,16 +222,17 @@ def test_e2e_graph_canvas_click(page, sample):
     if _modal_shown(page):
         # 点边打开的弹层：顺带验证点遮罩关闭（mbox 居中，边角属遮罩）
         page.wait_for_function(
-            "var t=document.getElementById('mtitle').textContent;"
-            "t && t!=='加载中…'")
+            "var t=document.getElementById('mtitle').textContent;t && t!=='加载中…'"
+        )
         page.mouse.click(8, 8)
         page.wait_for_function(
-            "getComputedStyle(document.getElementById('modal'))"
-            ".display==='none'")
+            "getComputedStyle(document.getElementById('modal')).display==='none'"
+        )
     assert not page._e2e_errors
 
 
 # ── ⑥ 查询表单 GET 提交（q + 方向下拉）─────────────────────
+
 
 def test_e2e_form_submit_filters(page, sample):
     name, direction = sample["an"], (sample.get("dir") or "").strip()
@@ -235,29 +241,31 @@ def test_e2e_form_submit_filters(page, sample):
     _open(page)
     page.fill("#qi", name)
     page.select_option("select[name=dir]", direction)
-    page.click(".kfbtn")                           # form GET → 页面跳转
+    page.click(".kfbtn")  # form GET → 页面跳转
     page.wait_for_url("**/kg/events?*")
     u = urllib.parse.unquote(page.url)
-    assert "market=全部" in u                       # hidden input 全量提交
+    assert "market=全部" in u  # hidden input 全量提交
     assert "q=" in u and ("dir=" + direction) in u
-    page.wait_for_selector("#evlist .evrow")       # 样本行自身必在结果内
-    assert page.input_value("#qi") == name         # 服务端回显
+    page.wait_for_selector("#evlist .evrow")  # 样本行自身必在结果内
+    assert page.input_value("#qi") == name  # 服务端回显
     assert page.locator("#evlist .bdgx").first.inner_text() == direction
     assert not page._e2e_errors
 
 
 # ── ⑦ 下钻返回全部 / 重置：导航闭环 ────────────────────────
 
+
 def test_e2e_back_to_all_and_reset(page, sample):
     _open(page)
     page.locator("#evlist .evrow .co").first.click()
     page.wait_for_function(
-        "document.getElementById('lh').textContent.includes('事件 ·')")
-    page.locator("#lh a", has_text="返回全部").click()   # reload 回全量
+        "document.getElementById('lh').textContent.includes('事件 ·')"
+    )
+    page.locator("#lh a", has_text="返回全部").click()  # reload 回全量
     page.wait_for_load_state()
     page.wait_for_selector("#evlist .evrow")
     assert "事件列表" in page.locator("#lh").inner_text()
-    page.locator("a.tab", has_text="重置").click()       # href 无参
+    page.locator("a.tab", has_text="重置").click()  # href 无参
     page.wait_for_load_state()
-    assert page.url == PORTAL + "/kg/events"            # query 清空
+    assert page.url == PORTAL + "/kg/events"  # query 清空
     assert not page._e2e_errors

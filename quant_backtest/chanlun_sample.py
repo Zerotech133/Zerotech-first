@@ -14,6 +14,7 @@
 用法:
   python chanlun_sample.py            # 跑一轮积累并打印库存统计
 """
+
 import json
 import os
 import sys
@@ -33,6 +34,7 @@ def _watchlist():
     """自选池 → [(market, db_symbol, name)]（去重，US/CRYPTO 双注册原样保留）。"""
     sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "news_collector")))
     import runner
+
     cfg = os.path.join(runner.NEWS_DIR, "news_config.json")
     wl = json.load(open(cfg, encoding="utf-8")).get("watchlist", [])
     return runner.resolve_watchlist(wl)
@@ -47,8 +49,15 @@ def _load_keys(path):
                     r = json.loads(line)
                 except Exception:
                     continue
-                keys.add((r.get("market"), r.get("code"), r.get("period"),
-                          r.get("type"), r.get("dt")))
+                keys.add(
+                    (
+                        r.get("market"),
+                        r.get("code"),
+                        r.get("period"),
+                        r.get("type"),
+                        r.get("dt"),
+                    )
+                )
     return keys
 
 
@@ -75,8 +84,7 @@ def _backfill_r60(rows, kl):
         i0 = idx.get(r.get("dt"))
         if i0 is None or i0 + 60 >= len(bars):
             continue
-        r["r60"] = round(_dir_ret(r["type"], r["price"],
-                                  bars[i0 + 60]["c"]), 4)
+        r["r60"] = round(_dir_ret(r["type"], r["price"], bars[i0 + 60]["c"]), 4)
         n += 1
     return n
 
@@ -92,12 +100,13 @@ def _refresh_eval_cache():
                 except Exception:
                     continue
     from chanlun_backtest import eval_samples, TYPES
+
     ev = eval_samples(rows)
     ok = [t for t in TYPES if (ev["types"].get(t) or {}).get("pass")]
-    ev["generated_at"] = datetime.now(timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ")
-    ev["verdict"] = ("可成交口径达标：%s；其余 n<10 或方向存疑，"
-                     "推送链路保持冻结" % ("、".join(ok) if ok else "暂无"))
+    ev["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ev["verdict"] = "可成交口径达标：%s；其余 n<10 或方向存疑，推送链路保持冻结" % (
+        "、".join(ok) if ok else "暂无"
+    )
     _atomic_write(EVAL_CACHE, [ev])
     print("eval_cache refreshed: %s" % ev["verdict"])
 
@@ -105,19 +114,28 @@ def _refresh_eval_cache():
 def _backfill_mt(rows, kl, st, sub_bars):
     """对既有样本中缺 mt 且 60m 窗口已覆盖的行回填 P7 共振标注；返回条数。"""
     from chanlun_mtf import confluence as _cf
+
     n = 0
     for r in rows:
-        if (r.get("market"), r.get("code")) != (kl["market"], kl["code"]) \
-                or r.get("period") != "1d" or "mt" in r:
+        if (
+            (r.get("market"), r.get("code")) != (kl["market"], kl["code"])
+            or r.get("period") != "1d"
+            or "mt" in r
+        ):
             continue
-        sig = next((s for s in st["signals"]
-                    if s["dt"] == r.get("dt") and s["type"] == r.get("type")),
-                   None)
+        sig = next(
+            (
+                s
+                for s in st["signals"]
+                if s["dt"] == r.get("dt") and s["type"] == r.get("type")
+            ),
+            None,
+        )
         if sig is None:
             continue
         mt, mtv = _cf(st["bis"], sig, sub_bars)
         if mt is None:
-            continue          # 窗口仍未覆盖，等分钟数据自然增长
+            continue  # 窗口仍未覆盖，等分钟数据自然增长
         r["mt"] = mt
         r["mt_hit"] = (mtv or {}).get("hit")
         n += 1
@@ -127,14 +145,21 @@ def _backfill_mt(rows, kl, st, sub_bars):
 def _backfill_flow(rows, kl, st, idx_bars):
     """对存量样本回填 P8-a 量能 vv 与 P8-b 大盘 reg（只填缺失、可判才写）。"""
     from chanlun_flow import regime_at as _reg
+
     n = 0
     for r in rows:
-        if (r.get("market"), r.get("code")) != (kl["market"], kl["code"]) \
-                or r.get("period") != "1d":
+        if (r.get("market"), r.get("code")) != (kl["market"], kl["code"]) or r.get(
+            "period"
+        ) != "1d":
             continue
-        sig = next((s for s in st["signals"]
-                    if s["dt"] == r.get("dt") and s["type"] == r.get("type")),
-                   None)
+        sig = next(
+            (
+                s
+                for s in st["signals"]
+                if s["dt"] == r.get("dt") and s["type"] == r.get("type")
+            ),
+            None,
+        )
         if sig is None:
             continue
         if "vv" not in r and sig.get("vv") is not None:
@@ -151,12 +176,14 @@ def _backfill_flow(rows, kl, st, idx_bars):
 def _backfill_reg_trend(rows, kl, idx_bars):
     """P9 长周期趋势 regime 回填（close>MA200=True；只填缺失、可判才写）。"""
     from chanlun_flow import regime_trend_at as _rt
+
     n = 0
     if not idx_bars:
         return 0
     for r in rows:
-        if (r.get("market"), r.get("code")) != (kl["market"], kl["code"]) \
-                or r.get("period") != "1d":
+        if (r.get("market"), r.get("code")) != (kl["market"], kl["code"]) or r.get(
+            "period"
+        ) != "1d":
             continue
         if "reg_trend" in r:
             continue
@@ -171,12 +198,18 @@ def _backfill_trend(rows, kl, st):
     """对存量 1买/1卖 回填 P6-c 完整版趋势背驰 tbe（只填缺失、可判才写）。"""
     n = 0
     for r in rows:
-        if (r.get("market"), r.get("code")) != (kl["market"], kl["code"]) \
-                or r.get("type") not in ("1买", "1卖"):
+        if (r.get("market"), r.get("code")) != (kl["market"], kl["code"]) or r.get(
+            "type"
+        ) not in ("1买", "1卖"):
             continue
-        sig = next((s for s in st["signals"]
-                    if s["dt"] == r.get("dt") and s["type"] == r.get("type")),
-                   None)
+        sig = next(
+            (
+                s
+                for s in st["signals"]
+                if s["dt"] == r.get("dt") and s["type"] == r.get("type")
+            ),
+            None,
+        )
         if sig is None or "tbe" in r or sig.get("tbe") is None:
             continue
         r["tbe"] = sig["tbe"]
@@ -189,6 +222,7 @@ def run():
     from chanlun_backtest import analyze
     from chanlun_mtf import confluence
     from chanlun_flow import REGIME_INDEX, regime_at, regime_trend_at
+
     entries = _watchlist()
     print("watchlist: %d entries" % len(entries))
     keys = _load_keys(SAMPLES)
@@ -207,12 +241,12 @@ def run():
     n_flow = 0
     n_tr = 0
     n_rt = 0
-    idx_cache = {}         # market → 指数日线（P8-b，每市场只加载一次）
+    idx_cache = {}  # market → 指数日线（P8-b，每市场只加载一次）
     for mkt, sym, nm in entries:
         try:
             kl = load_kline(sym, "1d", 500)
             if not kl.get("ok"):
-                continue          # 双注册另一市场兜底 / 无数据标的跳过
+                continue  # 双注册另一市场兜底 / 无数据标的跳过
             n_ok += 1
             n_bf += _backfill_r60(lib, kl)
             st = analyze(kl["bars"])
@@ -238,14 +272,19 @@ def run():
                 n_rt += _backfill_reg_trend(lib, kl, idx_bars)
             for ev in st["events"]:
                 if ev.get("r20") is None:
-                    continue      # 20 根窗口未成熟，等后续自然成熟再收
+                    continue  # 20 根窗口未成熟，等后续自然成熟再收
                 key = (kl["market"], kl["code"], "1d", ev["type"], ev["dt"])
                 if key in keys:
                     continue
                 keys.add(key)
-                sig0 = next((s for s in st["signals"]
-                             if s["dt"] == ev["dt"]
-                             and s["type"] == ev["type"]), None)
+                sig0 = next(
+                    (
+                        s
+                        for s in st["signals"]
+                        if s["dt"] == ev["dt"] and s["type"] == ev["type"]
+                    ),
+                    None,
+                )
                 mt, mtv = (None, None)
                 if sub_bars and sig0 is not None:
                     mt, mtv = confluence(st["bis"], sig0, sub_bars)
@@ -255,20 +294,30 @@ def run():
                 reg_trend = None
                 if idx_bars:
                     reg_trend, _ = regime_trend_at(kl["market"], ev["dt"], idx_bars)
-                new_rows.append({
-                    "market": kl["market"], "code": kl["code"],
-                    "name": (nm or "")[:16], "period": "1d",
-                    "type": ev["type"], "dt": ev["dt"], "price": ev["price"],
-                    "r5": ev["r5"], "r10": ev["r10"], "r20": ev["r20"],
-                    "r60": ev["r60"],
-                    "mt": mt,
-                    "mt_hit": (mtv or {}).get("hit") if mtv else None,
-                    "vv": (sig0 or {}).get("vv"),
-                    "reg": reg,
-                    "reg_trend": reg_trend,
-                    "tbe": (sig0 or {}).get("tbe"),
-                    "first_seen": datetime.now(timezone.utc).strftime(
-                        "%Y-%m-%dT%H:%M:%SZ")})
+                new_rows.append(
+                    {
+                        "market": kl["market"],
+                        "code": kl["code"],
+                        "name": (nm or "")[:16],
+                        "period": "1d",
+                        "type": ev["type"],
+                        "dt": ev["dt"],
+                        "price": ev["price"],
+                        "r5": ev["r5"],
+                        "r10": ev["r10"],
+                        "r20": ev["r20"],
+                        "r60": ev["r60"],
+                        "mt": mt,
+                        "mt_hit": (mtv or {}).get("hit") if mtv else None,
+                        "vv": (sig0 or {}).get("vv"),
+                        "reg": reg,
+                        "reg_trend": reg_trend,
+                        "tbe": (sig0 or {}).get("tbe"),
+                        "first_seen": datetime.now(timezone.utc).strftime(
+                            "%Y-%m-%dT%H:%M:%SZ"
+                        ),
+                    }
+                )
         except Exception as e:
             print("  skip %s/%s: %s" % (mkt, sym, str(e)[:80]))
     if new_rows or n_bf or n_mt or n_flow or n_tr or n_rt:
@@ -289,15 +338,18 @@ def run():
             a[0] += 1
             a[1] += 1 if r["r20"] > 0 else 0
             a[2] += r["r20"]
-    print("loaded=%d ok, new=%d, backfill_r60=%d, backfill_mt=%d, "
-          "backfill_flow=%d, backfill_trend=%d, backfill_reg_trend=%d, "
-          "library=%d (r20 mature)" % (
-              n_ok, len(new_rows), n_bf, n_mt, n_flow, n_tr, n_rt, total))
+    print(
+        "loaded=%d ok, new=%d, backfill_r60=%d, backfill_mt=%d, "
+        "backfill_flow=%d, backfill_trend=%d, backfill_reg_trend=%d, "
+        "library=%d (r20 mature)"
+        % (n_ok, len(new_rows), n_bf, n_mt, n_flow, n_tr, n_rt, total)
+    )
     for t in ("1买", "2买", "3买", "1卖", "2卖", "3卖"):
         if t in agg:
             n, w, s = agg[t]
-            print("  %s n=%d win=%.0f%% avg=%.2f%%" % (
-                t, n, w * 100.0 / n, s * 100.0 / n))
+            print(
+                "  %s n=%d win=%.0f%% avg=%.2f%%" % (t, n, w * 100.0 / n, s * 100.0 / n)
+            )
     try:
         _refresh_eval_cache()
     except Exception as e:

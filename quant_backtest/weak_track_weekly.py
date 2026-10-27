@@ -17,6 +17,7 @@
   python weak_track_weekly.py --send         # 推送周报卡
   python weak_track_weekly.py --send --text  # 推送文本
 """
+
 import argparse
 import datetime
 import glob
@@ -29,9 +30,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_watch as ww       # noqa: E402  (§12 巡检)
-import weak_track_audit as wa       # noqa: E402  (§13 审计)
-import weak_track_close as wc       # noqa: E402  (_load/_case_name)
+import weak_track_watch as ww  # noqa: E402  (§12 巡检)
+import weak_track_audit as wa  # noqa: E402  (§13 审计)
+import weak_track_close as wc  # noqa: E402  (_load/_case_name)
 
 TPL = os.path.join(HERE, "weak_track_weekly_tpl.txt")
 STATE = os.path.join(HERE, "weak_weekly_state.json")
@@ -58,16 +59,21 @@ def shadow_weekly_tail():
     try:
         r = subprocess.run(
             [sys.executable, SHADOW_SCRIPT, "--json-only"],
-            cwd=HERE, capture_output=True, text=True, encoding="utf-8",
-            timeout=300)
+            cwd=HERE,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=300,
+        )
         tail = (r.stdout or "").strip().splitlines()
-        print("SHADOW_TAIL rc=%s %s" % (
-            r.returncode, tail[-1] if tail else "(无输出)"))
+        print("SHADOW_TAIL rc=%s %s" % (r.returncode, tail[-1] if tail else "(无输出)"))
         if r.returncode != 0 and (r.stderr or "").strip():
             print("SHADOW_TAIL stderr: %s" % r.stderr.strip()[:200])
     except Exception as e:
-        print("SHADOW_TAIL FAIL（只落日志，不影响周报主流程）: %s: %s" % (
-            type(e).__name__, e))
+        print(
+            "SHADOW_TAIL FAIL（只落日志，不影响周报主流程）: %s: %s"
+            % (type(e).__name__, e)
+        )
 
 
 def weekly_activity(cases, rep=None, week_start=None):
@@ -79,16 +85,15 @@ def weekly_activity(cases, rep=None, week_start=None):
     """
     rep = rep or REP
     ws = week_start or (
-        datetime.date.today()
-        - datetime.timedelta(days=datetime.date.today().weekday()))
+        datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday())
+    )
     new_open = rows_week = trig_week = 0
     act = []
     for fp in sorted(glob.glob(os.path.join(rep, "weak_track_*.jsonl"))):
         rows = wc._load(fp)
         if not rows:
             continue
-        wk = [r for r in rows
-              if str(r.get("ts", ""))[:10] >= ws.strftime("%Y-%m-%d")]
+        wk = [r for r in rows if str(r.get("ts", ""))[:10] >= ws.strftime("%Y-%m-%d")]
         if str(rows[0].get("ts", ""))[:10] >= ws.strftime("%Y-%m-%d"):
             new_open += 1
         rows_week += len(wk)
@@ -97,15 +102,18 @@ def weekly_activity(cases, rep=None, week_start=None):
         if wk:
             c6 = str(rows[-1].get("code", "?")).split(".")[0]
             act.append((c6, wc._case_name(c6), len(wk), nt))
-    closed_week = sum(1 for c in cases
-                      if c["ts"] >= ws.strftime("%Y-%m-%d"))
+    closed_week = sum(1 for c in cases if c["ts"] >= ws.strftime("%Y-%m-%d"))
     detail = "\n".join(
-        "- %s %s：打点 %s 行%s" % (c6, nm or "", n,
-                                   ("·触发 %s" % t) if t else "")
-        for c6, nm, n, t in act)
-    return {"new_open": new_open, "closed_week": closed_week,
-            "rows_week": rows_week, "trig_week": trig_week,
-            "act_detail": detail}
+        "- %s %s：打点 %s 行%s" % (c6, nm or "", n, ("·触发 %s" % t) if t else "")
+        for c6, nm, n, t in act
+    )
+    return {
+        "new_open": new_open,
+        "closed_week": closed_week,
+        "rows_week": rows_week,
+        "trig_week": trig_week,
+        "act_detail": detail,
+    }
 
 
 def _trend_text(closed_total, open_bad, closed_bad):
@@ -116,9 +124,8 @@ def _trend_text(closed_total, open_bad, closed_bad):
             d_c = closed_total - int(prev.get("closed", closed_total))
             d_o = open_bad - int(prev.get("open_bad", open_bad))
             d_a = closed_bad - int(prev.get("closed_bad", closed_bad))
-            fmt = lambda d: ("+%d" % d) if d > 0 else str(d)   # noqa: E731
-            return "结案 %s｜巡检异常 %s｜审计异常 %s" % (
-                fmt(d_c), fmt(d_o), fmt(d_a))
+            fmt = lambda d: ("+%d" % d) if d > 0 else str(d)  # noqa: E731
+            return "结案 %s｜巡检异常 %s｜审计异常 %s" % (fmt(d_c), fmt(d_o), fmt(d_a))
         except (OSError, ValueError):
             pass
     return "首期无环比"
@@ -137,18 +144,26 @@ def weekly_fields(watch, audit, act, trend):
     if audit["n_bad"]:
         parts.append("【审计明细（§13）】\n" + audit["detail"])
     return {
-        "n_open": watch["n"], "n_open_bad": watch["n_bad"],
-        "n_closed": audit["n"], "n_closed_bad": audit["n_bad"],
+        "n_open": watch["n"],
+        "n_open_bad": watch["n_bad"],
+        "n_closed": audit["n"],
+        "n_closed_bad": audit["n_bad"],
         "green": green,
         "trend": trend,
-        "new_open": act["new_open"], "closed_week": act["closed_week"],
-        "rows_week": act["rows_week"], "trig_week": act["trig_week"],
+        "new_open": act["new_open"],
+        "closed_week": act["closed_week"],
+        "rows_week": act["rows_week"],
+        "trig_week": act["trig_week"],
         "act_detail": act["act_detail"],
-        "verdict": ("本周全绿：无超龄/停滞/失联，结案产物五项全过。"
-                    if green else "存在待办，见下方明细。"),
+        "verdict": (
+            "本周全绿：无超龄/停滞/失联，结案产物五项全过。"
+            if green
+            else "存在待办，见下方明细。"
+        ),
         "extra": "\n".join(parts),
         "ts": time.strftime("%Y-%m-%d %H:%M"),
-        "wdetail": watch["detail"], "adetail": audit["detail"],
+        "wdetail": watch["detail"],
+        "adetail": audit["detail"],
     }
 
 
@@ -161,42 +176,49 @@ def build_weekly(f):
     """
     if os.path.isfile(TPL):
         try:
-            text = "".join(l for l in
-                           open(TPL, encoding="utf-8").read().splitlines(True)
-                           if not l.lstrip().startswith("#"))
-            return re.sub(r"\n{3,}", "\n\n",
-                          text.format(**f).rstrip("\n"))
+            text = "".join(
+                l
+                for l in open(TPL, encoding="utf-8").read().splitlines(True)
+                if not l.lstrip().startswith("#")
+            )
+            return re.sub(r"\n{3,}", "\n\n", text.format(**f).rstrip("\n"))
         except (KeyError, IndexError, ValueError):
             pass
-    return re.sub(r"\n{3,}", "\n\n", (
-        "📋 [WEAK WEEKLY] weak 产线周报（§15）\n"
-        "在案 {n_open} 案（巡检异常 {n_open_bad}）｜已结案 {n_closed} 例"
-        "（审计异常 {n_closed_bad}）｜较上周：{trend}\n"
-        "本周动态：新立案 {new_open}｜结案 {closed_week}｜打点 {rows_week} 行"
-        "｜触发 {trig_week} 次\n{act_detail}\n{recent}\n{verdict}\n{extra}"
-        ).format(**f).rstrip("\n"))
+    return re.sub(
+        r"\n{3,}",
+        "\n\n",
+        (
+            "📋 [WEAK WEEKLY] weak 产线周报（§15）\n"
+            "在案 {n_open} 案（巡检异常 {n_open_bad}）｜已结案 {n_closed} 例"
+            "（审计异常 {n_closed_bad}）｜较上周：{trend}\n"
+            "本周动态：新立案 {new_open}｜结案 {closed_week}｜打点 {rows_week} 行"
+            "｜触发 {trig_week} 次\n{act_detail}\n{recent}\n{verdict}\n{extra}"
+        )
+        .format(**f)
+        .rstrip("\n"),
+    )
 
 
 def main():
     ap = argparse.ArgumentParser(description="§15 周报聚合推送")
-    ap.add_argument("--send", action="store_true",
-                    help="执行推送（默认仅预览）")
-    ap.add_argument("--text", action="store_true",
-                    help="文本版推送（默认飞书卡片）")
-    ap.add_argument("--max-days", type=int, default=60,
-                    help="§12 超龄阈值（天，默认 60）")
-    ap.add_argument("--stall-days", type=int, default=3,
-                    help="§12 停滞阈值（天，默认 3）")
+    ap.add_argument("--send", action="store_true", help="执行推送（默认仅预览）")
+    ap.add_argument("--text", action="store_true", help="文本版推送（默认飞书卡片）")
+    ap.add_argument(
+        "--max-days", type=int, default=60, help="§12 超龄阈值（天，默认 60）"
+    )
+    ap.add_argument(
+        "--stall-days", type=int, default=3, help="§12 停滞阈值（天，默认 3）"
+    )
     a = ap.parse_args()
     import weak_track_summary as wts
+
     cases = wts.parse_cases(wts.CASES)
-    wf = ww.watch_fields(ww.watch_cases(max_days=a.max_days,
-                                        stall_days=a.stall_days))
+    wf = ww.watch_fields(ww.watch_cases(max_days=a.max_days, stall_days=a.stall_days))
     af = wa.audit_fields(wa.audit_cases())
     act = weekly_activity(cases)
-    f = weekly_fields(wf, af, act,
-                      _trend_text(af["n"], wf["n_bad"], af["n_bad"]))
+    f = weekly_fields(wf, af, act, _trend_text(af["n"], wf["n_bad"], af["n_bad"]))
     import weak_track_card as wcard
+
     f = dict(f, recent=wcard.recent_lines(cases))
     if not f["n_open"] and not f["n_closed"]:
         print("产线空转（无在案、无已结案）——周报跳过本期（state 不更新）")
@@ -207,30 +229,40 @@ def main():
     # 环比基线：本期出报后落盘（下期对比用；预览不写 state）
     if a.send:
         with open(STATE, "w", encoding="utf-8") as fo:
-            json.dump({"closed": af["n"], "open_bad": wf["n_bad"],
-                       "closed_bad": af["n_bad"],
-                       "ts": time.strftime("%Y-%m-%d %H:%M")}, fo)
+            json.dump(
+                {
+                    "closed": af["n"],
+                    "open_bad": wf["n_bad"],
+                    "closed_bad": af["n_bad"],
+                    "ts": time.strftime("%Y-%m-%d %H:%M"),
+                },
+                fo,
+            )
     if not a.send:
         print("\n（预览模式：加 --send 执行推送）")
         if not a.text:
             import weak_track_card as wcard
+
             print("\n（卡片版预览，--text 可回退文本）")
-            print(json.dumps(wcard.weekly_card(f),
-                             ensure_ascii=False, indent=1))
+            print(json.dumps(wcard.weekly_card(f), ensure_ascii=False, indent=1))
         shadow_weekly_tail()  # 预览路径同样顺带刷影子周报（注记式）
         return 0
     if not a.text:
         import weak_track_card as wcard
+
         print("\n推送(卡片)：" + wcard.send_card(wcard.weekly_card(f)))
     else:
-        tmp = os.path.join(NEWS_DIR, "outbox",
-                           "pending_alert_weak_weekly.txt")
+        tmp = os.path.join(NEWS_DIR, "outbox", "pending_alert_weak_weekly.txt")
         os.makedirs(os.path.dirname(tmp), exist_ok=True)
         with open(tmp, "w", encoding="utf-8") as fo:
             fo.write(msg)
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         print("\n推送：" + ((r.stdout or "").strip()[:60] or "sent"))
     shadow_weekly_tail()  # [20261014_p1_tail] 任务尾部追加影子周报（注记式）
     return 0

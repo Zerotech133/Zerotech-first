@@ -15,6 +15,7 @@
 纪律：临时目录合成产物；mock 点与 test_ui_drilldown 同口径
 （REPORTS/DATA/_CACHE/_src_chanlun_load/CONFIG_FP）。
 """
+
 import json
 import os
 import shutil
@@ -26,13 +27,12 @@ from datetime import datetime, timedelta
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import cross_poll           # noqa: E402
+import cross_poll  # noqa: E402
 
 
 def _rps_row(code, name, longs=None, sigs=None, action="买入"):
     """合成 rps_latest.json res[] 行（longs/sigs 字段级可控）。"""
-    r = {"code": code, "name": name, "market": "CN", "action": action,
-         "score": 80}
+    r = {"code": code, "name": name, "market": "CN", "action": action, "score": 80}
     if longs is not None:
         r["longs"] = longs
     if sigs is not None:
@@ -55,34 +55,69 @@ class _Base(unittest.TestCase):
         self.data = os.path.join(self.tmp, "data")
         os.makedirs(self.reports, exist_ok=True)
         os.makedirs(self.data, exist_ok=True)
-        self._orig = (cross_poll.REPORTS, cross_poll.DATA,
-                      cross_poll._CACHE, cross_poll._src_chanlun_load,
-                      cross_poll.CONFIG_FP)
+        self._orig = (
+            cross_poll.REPORTS,
+            cross_poll.DATA,
+            cross_poll._CACHE,
+            cross_poll._src_chanlun_load,
+            cross_poll.CONFIG_FP,
+        )
         cross_poll.REPORTS = self.reports
         cross_poll.DATA = self.data
         cross_poll._CACHE = {"t": 0, "d": None}
-        cross_poll._src_chanlun_load = lambda: []     # chanlun 默认空池
+        cross_poll._src_chanlun_load = lambda: []  # chanlun 默认空池
         cross_poll.CONFIG_FP = os.path.join(self.tmp, "config.json")
         # 默认合成：rps 产物（qpzm+sig4 共源）+ 9dim 新鲜锚
         self.ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-        _write_json(os.path.join(self.reports, "rps_latest.json"), {
-            "ts": self.ts, "res": [
-                _rps_row("600519.SH", "贵州茅台", longs=4),
-                _rps_row("000001.SZ", "平安银行", longs=1,
-                         sigs={"ma_cross": 1, "trend_follow": 0,
-                               "rsi_reversal": 0, "boll_breakout": 0}),
-                _rps_row("300750.SZ", "宁德时代",
-                         sigs={"ma_cross": 1, "trend_follow": 1,
-                               "rsi_reversal": 1, "boll_breakout": 1})]})
-        _write_json(os.path.join(self.data, "nine_dim_scores.json"), {
-            "generated_at": self.ts,
-            "trade_date": datetime.now().strftime("%Y%m%d"),
-            "rows": [{"code": "600519.SH", "name": "贵州茅台",
-                      "score": 85.0, "cov": 0.9}]})
+        _write_json(
+            os.path.join(self.reports, "rps_latest.json"),
+            {
+                "ts": self.ts,
+                "res": [
+                    _rps_row("600519.SH", "贵州茅台", longs=4),
+                    _rps_row(
+                        "000001.SZ",
+                        "平安银行",
+                        longs=1,
+                        sigs={
+                            "ma_cross": 1,
+                            "trend_follow": 0,
+                            "rsi_reversal": 0,
+                            "boll_breakout": 0,
+                        },
+                    ),
+                    _rps_row(
+                        "300750.SZ",
+                        "宁德时代",
+                        sigs={
+                            "ma_cross": 1,
+                            "trend_follow": 1,
+                            "rsi_reversal": 1,
+                            "boll_breakout": 1,
+                        },
+                    ),
+                ],
+            },
+        )
+        _write_json(
+            os.path.join(self.data, "nine_dim_scores.json"),
+            {
+                "generated_at": self.ts,
+                "trade_date": datetime.now().strftime("%Y%m%d"),
+                "rows": [
+                    {"code": "600519.SH", "name": "贵州茅台", "score": 85.0, "cov": 0.9}
+                ],
+            },
+        )
 
     def tearDown(self):
-        (cross_poll.REPORTS, cross_poll.DATA, cross_poll._CACHE,
-         cross_poll._src_chanlun_load, cross_poll.CONFIG_FP) = self._orig
+        (
+            cross_poll.REPORTS,
+            cross_poll.DATA,
+            cross_poll._CACHE,
+            cross_poll._src_chanlun_load,
+            cross_poll.CONFIG_FP,
+        ) = self._orig
         shutil.rmtree(self.tmp, ignore_errors=True)
 
 
@@ -91,14 +126,15 @@ class TestSig4Decouple(_Base):
 
     def test_sig4_from_sigs_when_longs_missing(self):
         """longs 缺失 → 从 sigs 现算持仓数（3/4 → long）。"""
+
         def sig4_hit(d, code):
             st = {s["code"]: s for s in d["stocks"]}[code]
             return next(h for h in st["hits"] if h["sid"] == "sig4")
 
         d = cross_poll.build_cross(force=True)
-        self.assertEqual(sig4_hit(d, "300750.SZ")["dir"], "long")    # sigs 4/4
+        self.assertEqual(sig4_hit(d, "300750.SZ")["dir"], "long")  # sigs 4/4
         self.assertEqual(sig4_hit(d, "000001.SZ")["dir"], "neutral")  # sigs 1/4
-        self.assertEqual(sig4_hit(d, "600519.SH")["dir"], "long")     # longs=4
+        self.assertEqual(sig4_hit(d, "600519.SH")["dir"], "long")  # longs=4
 
     def test_single_source_error_degrades_no_crash(self):
         """sig4 loader 抛异常 → 整体不崩，src_state=error，其余源照常。"""
@@ -138,9 +174,15 @@ class TestDegradedMark(_Base):
     def test_all_ok_not_degraded(self):
         """四源齐整（chanlun 有票）→ degraded=False，mode=normal。"""
         cross_poll._src_chanlun_load = lambda: [
-            {"code": "600519.SH", "type": "3买", "detect_date":
-             datetime.now().strftime("%Y-%m-%d"), "name": "贵州茅台",
-             "market": "CN", "dt": "2026-10-13"}]
+            {
+                "code": "600519.SH",
+                "type": "3买",
+                "detect_date": datetime.now().strftime("%Y-%m-%d"),
+                "name": "贵州茅台",
+                "market": "CN",
+                "dt": "2026-10-13",
+            }
+        ]
         d = cross_poll.build_cross(force=True)
         self.assertFalse(d["degraded"])
         self.assertEqual(d["k_gate"]["mode"], "normal")
@@ -152,7 +194,7 @@ class TestKGate(_Base):
 
     def test_three_sources_keep_k3(self):
         """可用源=3（degraded_k3）：k 仍=3，仅 n_hit≥3 票进 topn。"""
-        d = cross_poll.build_cross(force=True)   # chanlun 空池 → 可用 3 源
+        d = cross_poll.build_cross(force=True)  # chanlun 空池 → 可用 3 源
         self.assertEqual(d["k_gate"]["mode"], "degraded_k3")
         self.assertEqual(d["k_gate"]["k"], 3)
         # 合成里 600519 有 qpzm+sig4+9dim 三源命中 → 进 topn；两源票不进
@@ -168,10 +210,10 @@ class TestKGate(_Base):
         d = cross_poll.build_cross(force=True)
         kg = d["k_gate"]
         self.assertEqual(kg["mode"], "blocked")
-        self.assertEqual(kg["k"], 3)              # 不自动降 k
+        self.assertEqual(kg["k"], 3)  # 不自动降 k
         self.assertLess(kg["n_sources_ok"], 3)
-        self.assertEqual(d["topn"], [])           # 产空结果
-        self.assertIn("DEGRADED", kg["note"])     # 醒目标注
+        self.assertEqual(d["topn"], [])  # 产空结果
+        self.assertIn("DEGRADED", kg["note"])  # 醒目标注
         self.assertIn("DEGRADED", d["degrade_note"])
 
 
@@ -179,16 +221,16 @@ class TestSourceHealth(_Base):
     """路径 4：健康检查三态 ok/stale/missing。"""
 
     def _stale_rps(self, days_ago):
-        old = (datetime.now() - timedelta(days=days_ago)) \
-            .strftime("%Y-%m-%d %H:%M")
-        snap = json.load(open(os.path.join(self.reports, "rps_latest.json"),
-                              encoding="utf-8"))
+        old = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d %H:%M")
+        snap = json.load(
+            open(os.path.join(self.reports, "rps_latest.json"), encoding="utf-8")
+        )
         snap["ts"] = old
         _write_json(os.path.join(self.reports, "rps_latest.json"), snap)
 
     def test_three_states(self):
         h = cross_poll.source_health()
-        self.assertEqual(h["qpzm"]["status"], "ok")       # 新鲜锚
+        self.assertEqual(h["qpzm"]["status"], "ok")  # 新鲜锚
         self.assertEqual(h["sig4"]["status"], "ok")
         self.assertEqual(h["chanlun"]["status"], "missing")  # 池空=missing
         self.assertEqual(h["9dim"]["status"], "ok")
@@ -201,9 +243,10 @@ class TestSourceHealth(_Base):
         h = cross_poll.source_health()
         self.assertEqual(h["qpzm"]["status"], "stale")
         self.assertEqual(h["sig4"]["status"], "stale")
-        self.assertEqual(h["qpzm"]["anchor"],
-                         (datetime.now() - timedelta(days=days))
-                         .strftime("%Y-%m-%d"))
+        self.assertEqual(
+            h["qpzm"]["anchor"],
+            (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d"),
+        )
 
     def test_missing_when_file_absent(self):
         """rps 产物缺失 → qpzm/sig4 missing（锚空）；9dim 文件缺 → missing。"""
@@ -220,8 +263,7 @@ class TestAlertToggle(_Base):
 
     def test_toggle_off_no_push(self):
         """config cross.source_health_alert=false → 不推（旧行为）。"""
-        _write_json(cross_poll.CONFIG_FP,
-                    {"cross": {"source_health_alert": False}})
+        _write_json(cross_poll.CONFIG_FP, {"cross": {"source_health_alert": False}})
         sent, text = cross_poll.push_source_health_alert()
         self.assertFalse(sent)
         # 存在 stale/missing 源时仍返回文本（人工可查），但不发送
@@ -230,20 +272,27 @@ class TestAlertToggle(_Base):
     def test_dry_mode_no_outbox(self):
         """send=False 显式 dry：返回 (False, 文本)，不 import runner 不落盘。"""
         import tempfile as _tf
+
         outbox = os.path.join(_tf.gettempdir(), "pending_bt.txt")
         if os.path.exists(outbox):
             os.remove(outbox)
         sent, text = cross_poll.push_source_health_alert(send=False)
         self.assertFalse(sent)
         self.assertIn("源健康", text)
-        self.assertFalse(os.path.exists(outbox))      # 不写 outbox
+        self.assertFalse(os.path.exists(outbox))  # 不写 outbox
 
     def test_all_ok_no_alert_even_if_on(self):
         """全源 ok → 即便开关开也不告警。"""
         cross_poll._src_chanlun_load = lambda: [
-            {"code": "600519.SH", "type": "3买",
-             "detect_date": datetime.now().strftime("%Y-%m-%d"),
-             "name": "贵州茅台", "market": "CN", "dt": "2026-10-13"}]
+            {
+                "code": "600519.SH",
+                "type": "3买",
+                "detect_date": datetime.now().strftime("%Y-%m-%d"),
+                "name": "贵州茅台",
+                "market": "CN",
+                "dt": "2026-10-13",
+            }
+        ]
         h = cross_poll.source_health()
         self.assertTrue(all(v["status"] == "ok" for v in h.values()))
         sent, text = cross_poll.push_source_health_alert(h, send=None)
@@ -252,8 +301,7 @@ class TestAlertToggle(_Base):
 
     def test_toggle_on_would_push_via_runner(self):
         """开关开 + 存在异常源 → 走 runner.push_feishu（此处 mock 验证路径）。"""
-        _write_json(cross_poll.CONFIG_FP,
-                    {"cross": {"source_health_alert": True}})
+        _write_json(cross_poll.CONFIG_FP, {"cross": {"source_health_alert": True}})
         calls = []
 
         class _FakeRunner:
@@ -270,7 +318,7 @@ class TestAlertToggle(_Base):
         _orig_runner = sys_mod.get("runner", _MISSING := object())
         sys_mod["runner"] = _FakeRunner
         try:
-            h = cross_poll.source_health()            # chanlun missing
+            h = cross_poll.source_health()  # chanlun missing
             sent, _ = cross_poll.push_source_health_alert(h, send=None)
         finally:
             if _orig_runner is _MISSING:
@@ -279,7 +327,7 @@ class TestAlertToggle(_Base):
                 sys_mod["runner"] = _orig_runner
         self.assertTrue(sent)
         self.assertEqual(len(calls), 1)
-        self.assertIn("chanlun missing", calls[0])    # 推送含各源锚状态
+        self.assertIn("chanlun missing", calls[0])  # 推送含各源锚状态
 
 
 if __name__ == "__main__":

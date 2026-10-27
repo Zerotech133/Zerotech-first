@@ -46,9 +46,14 @@ def macd_series(bars, fast=FAST, slow=SLOW, sig=SIG):
     dea = [dif[0]]
     for d in dif[1:]:
         dea.append(dea[-1] + a * (d - dea[-1]))
-    return [{"dif": round(dif[i], 6), "dea": round(dea[i], 6),
-             "hist": round(2 * (dif[i] - dea[i]), 6)}
-            for i in range(len(closes))]
+    return [
+        {
+            "dif": round(dif[i], 6),
+            "dea": round(dea[i], 6),
+            "hist": round(2 * (dif[i] - dea[i]), 6),
+        }
+        for i in range(len(closes))
+    ]
 
 
 def divergence(bars, bis, sig, macd=None):
@@ -84,8 +89,12 @@ def divergence(bars, bis, sig, macd=None):
     d_prev = macd[i_prev]["dif"]
     px_this, px_prev = this_b["e_price"], prev_b["e_price"]
     if want_dir == -1:
-        ok = px_this < px_prev and d_this > d_prev      # 底背驰
+        ok = px_this < px_prev and d_this > d_prev  # 底背驰
     else:
-        ok = px_this > px_prev and d_this < d_prev      # 顶背驰
-    return bool(ok), [round(px_prev, 4), round(px_this, 4),
-                      round(d_prev, 4), round(d_this, 4)]
+        ok = px_this > px_prev and d_this < d_prev  # 顶背驰
+    return bool(ok), [
+        round(px_prev, 4),
+        round(px_this, 4),
+        round(d_prev, 4),
+        round(d_this, 4),
+    ]

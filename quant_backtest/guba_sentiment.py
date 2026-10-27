@@ -9,6 +9,7 @@
 被 kg_portal.api(kind="guba") 消费（门户作战地图舆论面板）。
 CLI 自测：python guba_sentiment.py 000338.SZ --days 30
 """
+
 import json
 import os
 import re
@@ -22,7 +23,8 @@ GUBA_DIR = os.path.join(HERE, "data", "guba")
 # 停用词：通用虚词 + 股吧高频噪声（不承载情绪/主题）。
 # 2026-10-08 增补财务公告虚词（关于/万元/同比/点评…）——与帖子级噪声正则
 # NOISE_PAT 配套：整帖是机构的剔帖，散落在股民帖里的机构话语剔词。
-STOP = set("""的 了 是 在 我 你 他 她 它 们 和 与 及 或 就 都 而 及 跟 被 把
+STOP = set(
+    """的 了 是 在 我 你 他 她 它 们 和 与 及 或 就 都 而 及 跟 被 把
 这个 那个 什么 怎么 怎样 为什么 哪个 哪些 谁 多少 现在 今天 明天 昨天
 大家 你们 我们 他们 一个 一些 有点 真的 还是 就是 不是 没有 还是 觉得
 知道 应该 可能 可以 这样 那样 东西 时候 问题 事情 直接 继续 一下
@@ -30,7 +32,8 @@ STOP = set("""的 了 是 在 我 你 他 她 它 们 和 与 及 或 就 都 �
 股票 股吧 楼主 分享 查看 点击 回复 收藏 举报 阅读 评论 首页 更多
 说 看 走 来 去 做 说 想 问 让 给 拿 等 才 又 再 也 很 太 挺 蛮 更
 有 无 好 坏 大 小 多 少 高 低 上 下 中 前 后 个 只 条 亿 万 百
-关于 万元 亿元 同比 点评 快报 报告 事项 摘要 预案""".split())
+关于 万元 亿元 同比 点评 快报 报告 事项 摘要 预案""".split()
+)
 
 # 帖子级噪声（K263-W2 公告噪声治理）：机构/机器帖混在 news=0 里污染词频
 # 与情绪，整帖剔除。三类（2026-10-08 按全量 2842 帖实测 490+ 条）：
@@ -45,15 +48,49 @@ NOISE_PAT = re.compile(
     r"调研快报|机构调研|投资者关系管理|业绩说明会|路演|"
     r"融资净(?:买入|偿还)|两融(?:数据|余额)|"
     r"关于.{2,25}的(?:公告|说明|通知)|招股意向|(?:简式|详式)权益|"
-    r"回购报告书|提示性公告|上市公告书|减持计划|解除质押|质押式回购")
+    r"回购报告书|提示性公告|上市公告书|减持计划|解除质押|质押式回购"
+)
 
 # 情绪词表（启发式，非全量情感词典——够用优先）
-PANIC_WORDS = ["跑路", "出逃", "割肉", "完了", "暴跌", "崩盘", "垃圾",
-               "退市", "索赔", "跌停", "血亏", "套牢", "傻眼", "雷了",
-               "闪崩", "跳水", "绝望", "清仓", "避险"]
-HOPE_WORDS = ["涨停", "大涨", "起飞", "满仓", "加仓", "抄底", "翻倍",
-              "牛市", "利好", "突破", "新高", "启动", "爆发", "龙头",
-              "中签", "分红"]
+PANIC_WORDS = [
+    "跑路",
+    "出逃",
+    "割肉",
+    "完了",
+    "暴跌",
+    "崩盘",
+    "垃圾",
+    "退市",
+    "索赔",
+    "跌停",
+    "血亏",
+    "套牢",
+    "傻眼",
+    "雷了",
+    "闪崩",
+    "跳水",
+    "绝望",
+    "清仓",
+    "避险",
+]
+HOPE_WORDS = [
+    "涨停",
+    "大涨",
+    "起飞",
+    "满仓",
+    "加仓",
+    "抄底",
+    "翻倍",
+    "牛市",
+    "利好",
+    "突破",
+    "新高",
+    "启动",
+    "爆发",
+    "龙头",
+    "中签",
+    "分红",
+]
 
 # 事件 tag → 舆论契合词组（tag 词 + 股民口语变体）
 TAG_WORDS = {
@@ -137,8 +174,7 @@ def _load_posts(tc, days):
     p = os.path.join(GUBA_DIR, _code6(tc) + ".jsonl")
     if not os.path.exists(p):
         return []
-    cutoff = (datetime.now() - timedelta(days=days)
-              ).strftime("%Y-%m-%d %H:%M:%S")
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     out = []
     with open(p, encoding="utf-8") as f:
         for line in f:
@@ -159,9 +195,14 @@ def _load_posts(tc, days):
 
 def _tokens(title):
     import jieba
-    return [w for w in jieba.lcut(str(title))
-            if len(w) >= 2 and w not in STOP and not re.match(
-                r"^[\dA-Za-z%.:：,，！!？?]+$", w)]
+
+    return [
+        w
+        for w in jieba.lcut(str(title))
+        if len(w) >= 2
+        and w not in STOP
+        and not re.match(r"^[\dA-Za-z%.:：,，！!？?]+$", w)
+    ]
 
 
 def guba_summary(tc, days=30, top_n=40, word=None):
@@ -170,26 +211,36 @@ def guba_summary(tc, days=30, top_n=40, word=None):
     K263 二期②：word 非空 → 词反查模式，返回含该词的帖子列表
     （标题子串命中，最新在前，上限 50）。
     """
-    _apply_lexicon()          # 词表热加载（portal 维护页改完免重启生效）
+    _apply_lexicon()  # 词表热加载（portal 维护页改完免重启生效）
     posts = _load_posts(tc, days)
     if not posts:
-        return {"ok": False, "error": "无采集数据（先跑 guba_crawl.py）",
-                "code": tc}
+        return {"ok": False, "error": "无采集数据（先跑 guba_crawl.py）", "code": tc}
     if word:
         # 词反查：规范词自动扩展变体（点"地产"能搜回标题写"房地产"的帖）
         variants = [word] + [k for k, v in WORD_ALIAS.items() if v == word]
-        hits = [r for r in posts
-                if any(v in str(r.get("title") or "") for v in variants)][:50]
-        return {"ok": True, "code": tc, "word": word, "n": len(hits),
-                "posts": [{"ts": (r.get("ts") or "")[:10],
-                           "title": r.get("title"),
-                           "click": r.get("click"),
-                           "comment": r.get("comment"),
-                           "user": r.get("user"), "bb": r.get("bb")}
-                          for r in reversed(hits)]}
+        hits = [
+            r for r in posts if any(v in str(r.get("title") or "") for v in variants)
+        ][:50]
+        return {
+            "ok": True,
+            "code": tc,
+            "word": word,
+            "n": len(hits),
+            "posts": [
+                {
+                    "ts": (r.get("ts") or "")[:10],
+                    "title": r.get("title"),
+                    "click": r.get("click"),
+                    "comment": r.get("comment"),
+                    "user": r.get("user"),
+                    "bb": r.get("bb"),
+                }
+                for r in reversed(hits)
+            ],
+        }
     # 全窗词频（词云）
     wf = Counter()
-    day_posts = {}      # date → [(title, bb)]
+    day_posts = {}  # date → [(title, bb)]
     for r in posts:
         toks = _tokens(r["title"])
         wf.update(WORD_ALIAS.get(w, w) for w in toks)
@@ -202,19 +253,29 @@ def guba_summary(tc, days=30, top_n=40, word=None):
         bbs = [b for _, b in day_posts[d] if b in (1, -1)]
         panic = sum(len(re.findall("|".join(PANIC_WORDS), t)) for t in titles)
         hope = sum(len(re.findall("|".join(HOPE_WORDS), t)) for t in titles)
-        days_out.append({
-            "date": d.replace("-", ""), "n": len(titles),
-            "panic": panic, "hope": hope,
-            "bb_bull": sum(1 for b in bbs if b == 1),
-            "bb_bear": sum(1 for b in bbs if b == -1),
-            "mood": ("panic" if panic > hope + 1 else
-                     "hope" if hope > panic + 1 else "flat"),
-        })
+        days_out.append(
+            {
+                "date": d.replace("-", ""),
+                "n": len(titles),
+                "panic": panic,
+                "hope": hope,
+                "bb_bull": sum(1 for b in bbs if b == 1),
+                "bb_bear": sum(1 for b in bbs if b == -1),
+                "mood": (
+                    "panic"
+                    if panic > hope + 1
+                    else "hope"
+                    if hope > panic + 1
+                    else "flat"
+                ),
+            }
+        )
     # 事件契合：公告 tag 日 ↔ 前后 1 日词频命中
     events = []
     try:
         sys.path.insert(0, HERE)
         from event_graph import events_for_stock
+
         ev = events_for_stock(tc, days=days)
         day_set = {d.replace("-", ""): d for d in day_posts}
         for e in ev.get("events", []):
@@ -226,8 +287,10 @@ def guba_summary(tc, days=30, top_n=40, word=None):
                 anchor = datetime.strptime(d8, "%Y%m%d").date()
             except Exception:
                 continue
-            win = [(anchor + timedelta(days=offs)).strftime("%Y%m%d")
-                   for offs in (-1, 0, 1)]
+            win = [
+                (anchor + timedelta(days=offs)).strftime("%Y%m%d")
+                for offs in (-1, 0, 1)
+            ]
             hit = []
             for w in win:
                 dd = day_set.get(w)
@@ -237,28 +300,39 @@ def guba_summary(tc, days=30, top_n=40, word=None):
                     for kw in TAG_WORDS[tag]:
                         if kw in t and kw not in hit:
                             hit.append(kw)
-            events.append({"date": d8, "tag": tag, "dir": e.get("bias"),
-                           "hit_words": hit,
-                           "matched": bool(hit)})
+            events.append(
+                {
+                    "date": d8,
+                    "tag": tag,
+                    "dir": e.get("bias"),
+                    "hit_words": hit,
+                    "matched": bool(hit),
+                }
+            )
     except Exception:
         pass
     bb_bull = sum(1 for r in posts if r.get("bb") == 1)
     bb_bear = sum(1 for r in posts if r.get("bb") == -1)
     return {
-        "ok": True, "code": tc, "n_posts": len(posts),
-        "range": [(posts[0].get("ts") or "")[:10],
-                  (posts[-1].get("ts") or "")[:10]],
+        "ok": True,
+        "code": tc,
+        "n_posts": len(posts),
+        "range": [(posts[0].get("ts") or "")[:10], (posts[-1].get("ts") or "")[:10]],
         "words": [{"w": w, "n": n} for w, n in wf.most_common(top_n)],
         "days": days_out,
         "bb": {"bull": bb_bull, "bear": bb_bear},
         "events": events,
-        "event_match_rate": (round(sum(1 for e in events if e["matched"])
-                                   / len(events), 2) if events else None),
+        "event_match_rate": (
+            round(sum(1 for e in events if e["matched"]) / len(events), 2)
+            if events
+            else None
+        ),
     }
 
 
 if __name__ == "__main__":
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("code")
     ap.add_argument("--days", type=int, default=30)

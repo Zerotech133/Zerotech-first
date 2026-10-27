@@ -110,12 +110,10 @@ def _optional_marginal_output_hint(value: Any) -> float | None:
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(
-            "marginal_output_hint must be a nonnegative number or None")
+        raise ValueError("marginal_output_hint must be a nonnegative number or None")
     hint = float(value)
     if not (0.0 <= hint < float("inf")):
-        raise ValueError(
-            "marginal_output_hint must be a nonnegative number or None")
+        raise ValueError("marginal_output_hint must be a nonnegative number or None")
     return hint
 
 
@@ -181,7 +179,8 @@ def _required_bundle(bundle: Any) -> dict[str, Any]:
     _required_cursor(gaps)
     failures = bundle.get("failures", [])
     if not isinstance(failures, list) or any(
-            not isinstance(item, dict) for item in failures):
+        not isinstance(item, dict) for item in failures
+    ):
         raise ValueError("failures must be a list of dicts when present")
     pending = bundle.get("pending", {})
     if not isinstance(pending, dict):
@@ -251,16 +250,17 @@ class ScoreResult:
         _required_string(self.symbol, "symbol")
         _required_string(self.lane, "lane")
         if isinstance(self.priority_score, bool) or not isinstance(
-                self.priority_score, (int, float)):
+            self.priority_score, (int, float)
+        ):
             raise ValueError("priority_score must be a number")
         if not isinstance(self.reasons, list) or any(
-                not isinstance(item, str) for item in self.reasons):
+            not isinstance(item, str) for item in self.reasons
+        ):
             raise ValueError("reasons must be a list of strings")
         if not isinstance(self.trend_inputs, dict):
             raise ValueError("trend_inputs must be a dict")
         if self.advisory is not True:
-            raise ValueError(
-                "advisory is always True; results are recommendation_only")
+            raise ValueError("advisory is always True; results are recommendation_only")
 
 
 @dataclass(frozen=True)
@@ -366,12 +366,13 @@ def score_history_backlog(
     # nonempty string here, so "is not None" means exactly "resumable".
     if gaps_type == "history_unfinished" and gaps.get("next_cursor") is not None:
         gap_factor = GAP_UNFINISHED_WITH_CURSOR_WEIGHT
-        gap_note = (f"gaps.type={gaps_type} with next_cursor "
-                    "(resumable backlog, marginal output expected)")
+        gap_note = (
+            f"gaps.type={gaps_type} with next_cursor "
+            "(resumable backlog, marginal output expected)"
+        )
     elif gaps_type == "history_unfinished":
         gap_factor = GAP_UNFINISHED_NO_CURSOR_WEIGHT
-        gap_note = (f"gaps.type={gaps_type} without next_cursor "
-                    "(resume key unknown)")
+        gap_note = f"gaps.type={gaps_type} without next_cursor (resume key unknown)"
     else:
         gap_factor = 0.0
         gap_note = f"gaps.type={gaps_type} (no watermark-provable history backlog)"
@@ -385,44 +386,45 @@ def score_history_backlog(
     else:
         marginal_factor = MARGINAL_OUTPUT_WEIGHT * hint
         marginal_note = f"marginal_output_hint={hint} (external observation)"
-    reasons.append(
-        f"marginal_factor={_fmt_factor(marginal_factor)}: {marginal_note}")
+    reasons.append(f"marginal_factor={_fmt_factor(marginal_factor)}: {marginal_note}")
 
     # 3) Failure cost: dense 403/timeout in the recent window demotes.
     window = _recent_failures(data)
     statuses = [item.get("status") for item in window]
     risk_count = sum(1 for value in statuses if _is_risk_status(value))
     if window and (
-            risk_count * RISK_DENSE_DENOMINATOR
-            >= len(window) * RISK_DENSE_NUMERATOR):
+        risk_count * RISK_DENSE_DENOMINATOR >= len(window) * RISK_DENSE_NUMERATOR
+    ):
         failure_factor = RISK_COOLING_PENALTY
-        failure_note = (f"risk-cooling dense: {risk_count} of {len(window)} "
-                        "recent failures are 403/timeout")
+        failure_note = (
+            f"risk-cooling dense: {risk_count} of {len(window)} "
+            "recent failures are 403/timeout"
+        )
     elif window:
         failure_factor = 0.0
-        failure_note = (f"no dense 403/timeout in {len(window)} "
-                        "recent failures")
+        failure_note = f"no dense 403/timeout in {len(window)} recent failures"
     else:
         failure_factor = 0.0
         failure_note = "no recent failures recorded"
-    reasons.append(
-        f"failure_factor={_fmt_factor(failure_factor)}: {failure_note}")
+    reasons.append(f"failure_factor={_fmt_factor(failure_factor)}: {failure_note}")
 
     # 4) Attribution: blocked coverage is demoted out of the ranking top.
     if status == "blocked":
         blocked_factor = ATTRIBUTION_BLOCKED_PENALTY
-        blocked_note = ("attribution blocked (coverage.status=blocked); "
-                        "excluded from top of advisory ranking")
+        blocked_note = (
+            "attribution blocked (coverage.status=blocked); "
+            "excluded from top of advisory ranking"
+        )
     else:
         blocked_factor = 0.0
         blocked_note = f"coverage.status={status}"
-    reasons.append(
-        f"blocked_factor={_fmt_factor(blocked_factor)}: {blocked_note}")
+    reasons.append(f"blocked_factor={_fmt_factor(blocked_factor)}: {blocked_note}")
 
     raw_score = gap_factor + marginal_factor + failure_factor + blocked_factor
     priority_score = float(raw_score) / float(budget)
     reasons.append(
-        f"budget_divisor={budget}: priority_score = raw_score / budget_units")
+        f"budget_divisor={budget}: priority_score = raw_score / budget_units"
+    )
 
     trend_inputs = {
         "recent_failure_count": len(window),
@@ -488,67 +490,81 @@ def gap_alerts(bundle: dict[str, Any]) -> list[GapAlert]:
         # "is not None" means exactly "resumable cursor present".
         cursor = gaps.get("next_cursor")
         if cursor is not None:
-            detail = ("history backlog unfinished; next_cursor present "
-                      "(resumable)")
+            detail = "history backlog unfinished; next_cursor present (resumable)"
         else:
-            detail = ("history backlog unfinished; next_cursor missing "
-                      "(resume key unknown)")
-        alerts.append(GapAlert(
-            symbol=symbol,
-            lane=lane,
-            alert_type="history_unfinished",
-            severity="warning",
-            detail=detail,
-            evidence={"gaps_type": gaps["type"], "next_cursor": cursor},
-        ))
+            detail = (
+                "history backlog unfinished; next_cursor missing (resume key unknown)"
+            )
+        alerts.append(
+            GapAlert(
+                symbol=symbol,
+                lane=lane,
+                alert_type="history_unfinished",
+                severity="warning",
+                detail=detail,
+                evidence={"gaps_type": gaps["type"], "next_cursor": cursor},
+            )
+        )
 
     # Rule 2: coverage attribution blocked.
     if coverage["status"] == "blocked":
-        alerts.append(GapAlert(
-            symbol=symbol,
-            lane=lane,
-            alert_type="attribution_blocked",
-            severity="warning",
-            detail=("coverage attribution blocked; stock is not eligible "
-                    "for the top of the advisory ranking"),
-            evidence={
-                "coverage_status": coverage["status"],
-                "coverage_reason": coverage.get("reason"),
-            },
-        ))
+        alerts.append(
+            GapAlert(
+                symbol=symbol,
+                lane=lane,
+                alert_type="attribution_blocked",
+                severity="warning",
+                detail=(
+                    "coverage attribution blocked; stock is not eligible "
+                    "for the top of the advisory ranking"
+                ),
+                evidence={
+                    "coverage_status": coverage["status"],
+                    "coverage_reason": coverage.get("reason"),
+                },
+            )
+        )
 
     # Rule 3: offline queue collection paused (informational only).
     if pending.get("state") == "paused":
-        alerts.append(GapAlert(
-            symbol=symbol,
-            lane=lane,
-            alert_type="collection_paused",
-            severity="info",
-            detail=("collection task paused in the offline queue "
-                    "(state=paused); informational only"),
-            evidence={
-                "pending_state": "paused",
-                "pending_page_key": pending.get("page_key"),
-            },
-        ))
+        alerts.append(
+            GapAlert(
+                symbol=symbol,
+                lane=lane,
+                alert_type="collection_paused",
+                severity="info",
+                detail=(
+                    "collection task paused in the offline queue "
+                    "(state=paused); informational only"
+                ),
+                evidence={
+                    "pending_state": "paused",
+                    "pending_page_key": pending.get("page_key"),
+                },
+            )
+        )
 
     # Rule 4: recent risk-control cooling signals in failures.
     window = _recent_failures(data)
     statuses = [item.get("status") for item in window]
     risk_count = sum(1 for value in statuses if _is_risk_status(value))
     if risk_count > 0:
-        alerts.append(GapAlert(
-            symbol=symbol,
-            lane=lane,
-            alert_type="risk_cooling",
-            severity="warning",
-            detail=(f"recent failures include 403/timeout risk-cooling "
-                    f"signals ({risk_count} of {len(window)} in window)"),
-            evidence={
-                "recent_failure_statuses": statuses,
-                "risk_failure_count_recent": risk_count,
-            },
-        ))
+        alerts.append(
+            GapAlert(
+                symbol=symbol,
+                lane=lane,
+                alert_type="risk_cooling",
+                severity="warning",
+                detail=(
+                    f"recent failures include 403/timeout risk-cooling "
+                    f"signals ({risk_count} of {len(window)} in window)"
+                ),
+                evidence={
+                    "recent_failure_statuses": statuses,
+                    "risk_failure_count_recent": risk_count,
+                },
+            )
+        )
 
     return alerts
 
@@ -598,13 +614,14 @@ def rank_history_targets(
         raise ValueError("bundles must be a list")
     budget = _required_budget_units(budget_units)
     validated = [_required_bundle(item) for item in bundles]
-    scored = [
-        score_history_backlog(item, budget_units=budget)
-        for item in validated
-    ]
+    scored = [score_history_backlog(item, budget_units=budget) for item in validated]
     # Three-key deterministic order: score desc, symbol asc, then the new
     # lane before the history lane (同分时 new 先于 history).
-    scored.sort(key=lambda result: (
-        -result.priority_score, result.symbol,
-        0 if result.lane == "new" else 1))
+    scored.sort(
+        key=lambda result: (
+            -result.priority_score,
+            result.symbol,
+            0 if result.lane == "new" else 1,
+        )
+    )
     return scored[:budget]

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """卡片素材：门户二维码生成 + 飞书 image_key 上传（带缓存复用）。
 任何一步失败都返回 None，卡片自动降级为无二维码（不影响推送）。"""
+
 import json
 import os
 import subprocess
@@ -10,8 +11,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ASSET_DIR = os.path.join(HERE, "assets")
 CACHE = os.path.join(ASSET_DIR, "qr_cache.json")
 # 20261016换机：不再硬编码旧机 Administrator 路径，跟随当前用户动态定位
-LARK_ROOT = os.path.join(os.path.expanduser("~"),
-                         r".trae-cn\plugins\trae-remote-official\lark")
+LARK_ROOT = os.path.join(
+    os.path.expanduser("~"), r".trae-cn\plugins\trae-remote-official\lark"
+)
 PYLIBS = os.path.abspath(os.path.join(HERE, "..", "pylibs"))
 
 
@@ -55,6 +57,7 @@ def ensure_qr_image_key(url=None):
         if PYLIBS not in sys.path:
             sys.path.insert(0, PYLIBS)
         import qrcode
+
         qrcode.make(url, box_size=10, border=2).save(png)
     except Exception:
         return None
@@ -63,9 +66,23 @@ def ensure_qr_image_key(url=None):
         return None
     try:
         r = subprocess.run(
-            [exe, "im", "images", "create", "--as", "bot",
-             "--data", json.dumps({"image_type": "message"}), "--file", png],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            [
+                exe,
+                "im",
+                "images",
+                "create",
+                "--as",
+                "bot",
+                "--data",
+                json.dumps({"image_type": "message"}),
+                "--file",
+                png,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         data = json.loads(r.stdout or "{}")
         key = (data.get("data") or {}).get("image_key") or data.get("image_key")
         if not key:

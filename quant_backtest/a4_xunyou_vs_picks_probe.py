@@ -31,9 +31,13 @@ import sys
 from datetime import datetime
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-XUNYOU_POOL = os.path.join(BASE, "quant_backtest", "reports", "xunyou_pool_20261019.json")
+XUNYOU_POOL = os.path.join(
+    BASE, "quant_backtest", "reports", "xunyou_pool_20261019.json"
+)
 PICKS_DIR = os.path.join(BASE, "portal", "data", "picks_history")
-REPORT_OUT = os.path.join(BASE, "quant_backtest", "reports", "a4_xunyou_vs_picks_report.json")
+REPORT_OUT = os.path.join(
+    BASE, "quant_backtest", "reports", "a4_xunyou_vs_picks_report.json"
+)
 
 SCOPE = "READONLY_CROSS_CHAIN_OBSERVATION_NOT_ADOPTION_EVIDENCE"
 SAMPLE_LIMIT = 15
@@ -58,7 +62,8 @@ def load_xunyou_symbols():
 def latest_picks_file():
     """取 picks_history 下存在的最新 todays_YYYYMMDD.json。"""
     cands = sorted(
-        fn for fn in os.listdir(PICKS_DIR)
+        fn
+        for fn in os.listdir(PICKS_DIR)
         if fn.startswith("todays_") and fn.endswith(".json")
     )
     if not cands:
@@ -85,7 +90,8 @@ def load_picks_symbols():
         "trade_basis": doc.get("trade_basis"),
         "counts_total": (doc.get("counts") or {}).get("total"),
         "tier_distribution": {
-            t: sum(1 for v in tiers.values() if v == t) for t in sorted(set(tiers.values()))
+            t: sum(1 for v in tiers.values() if v == t)
+            for t in sorted(set(tiers.values()))
         },
     }
     return syms, meta
@@ -102,7 +108,9 @@ def main():
 
     overlap_rate_vs_xun = round(len(inter) / len(xun_set), 4) if xun_set else None
     overlap_rate_vs_old = round(len(inter) / len(old_set), 4) if old_set else None
-    jaccard = round(len(inter) / len(xun_set | old_set), 4) if (xun_set | old_set) else None
+    jaccard = (
+        round(len(inter) / len(xun_set | old_set), 4) if (xun_set | old_set) else None
+    )
 
     report = {
         "report_id": "a4_xunyou_vs_picks",
@@ -146,14 +154,26 @@ def main():
     print("=" * 64)
     print("A4 荀攸池 vs 旧 picks 链 只读对照 | SCOPE =", SCOPE)
     print("=" * 64)
-    print(f"荀攸池 buy 名单 : {len(xun_set)} 只  (xunyou_pool_20261019.json, buy_total={xun_meta['stats'].get('buy_total')})")
-    print(f"旧链 live 名单  : {len(old_set)} 只  ({old_meta['file']}, scan_run_date={old_meta['scan_run_date']})")
+    print(
+        f"荀攸池 buy 名单 : {len(xun_set)} 只  (xunyou_pool_20261019.json, buy_total={xun_meta['stats'].get('buy_total')})"
+    )
+    print(
+        f"旧链 live 名单  : {len(old_set)} 只  ({old_meta['file']}, scan_run_date={old_meta['scan_run_date']})"
+    )
     print("-" * 64)
-    print(f"交集            : {len(inter)}  重合率(占荀攸)={overlap_rate_vs_xun}  重合率(占旧链)={overlap_rate_vs_old}  Jaccard={jaccard}")
-    print(f"仅荀攸          : {len(only_xun)}  样例: {', '.join(only_xun[:SAMPLE_LIMIT])}")
-    print(f"仅旧链          : {len(only_old)}  样例: {', '.join(only_old[:SAMPLE_LIMIT])}")
+    print(
+        f"交集            : {len(inter)}  重合率(占荀攸)={overlap_rate_vs_xun}  重合率(占旧链)={overlap_rate_vs_old}  Jaccard={jaccard}"
+    )
+    print(
+        f"仅荀攸          : {len(only_xun)}  样例: {', '.join(only_xun[:SAMPLE_LIMIT])}"
+    )
+    print(
+        f"仅旧链          : {len(only_old)}  样例: {', '.join(only_old[:SAMPLE_LIMIT])}"
+    )
     print("-" * 64)
-    print("说明：两链来源不同（旧链=chanlun池+降级规则；荀攸池=kg_boost+chan_monitor 融合），")
+    print(
+        "说明：两链来源不同（旧链=chanlun池+降级规则；荀攸池=kg_boost+chan_monitor 融合），"
+    )
     print("      名单差异属预期；本对照仅供门③合龙预研参考，不构成采纳/互替证据。")
     print(f"报告已写入: {REPORT_OUT}")
 

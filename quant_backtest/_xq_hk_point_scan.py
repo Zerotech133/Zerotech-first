@@ -5,6 +5,7 @@
 用当前 RE_HK bare 通道同口径判定该 5 位是否会被收码，再查点位语境词。
 零 DB 写入（mode=ro）。
 """
+
 import re
 import sqlite3
 import sys
@@ -14,7 +15,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import xq_classify as xc
 
 # 点位语境词（刀二观察项：v1.3 硬排除未覆盖「关口」等语境）
-POINT_CTX = re.compile(r"关口|点位|大关|恒指|恒生指数|国企指数|阻力|支撑|突破|跌破|站上|整数")
+POINT_CTX = re.compile(
+    r"关口|点位|大关|恒指|恒生指数|国企指数|阻力|支撑|突破|跌破|站上|整数"
+)
 
 con = sqlite3.connect("file:%s?mode=ro" % xc.DB_PATH.as_posix(), uri=True, timeout=30)
 con.execute("PRAGMA busy_timeout=30000")
@@ -31,7 +34,7 @@ for sid, title, desc in rows:
     for m in re.finditer(r"(?<![0-9.\-])([0-9]{5})(?![0-9\-])", text):
         code = m.group(1)
         # 复刻 bare 通道硬排除：后缀 点/元/块/万/手
-        tail = text[m.end():m.end() + 2]
+        tail = text[m.end() : m.end() + 2]
         if re.match(r"\s*[元块万亿手点]", tail):
             continue
         # 复刻 bare 收码口径：有语境 → 收；无语境 → 仅中文紧贴名收
@@ -42,11 +45,12 @@ for sid, title, desc in rows:
             captured = True
         else:
             captured = False
-        ctx_span = text[max(0, m.start() - 30):m.end() + 30]
+        ctx_span = text[max(0, m.start() - 30) : m.end() + 30]
         point_hit = bool(POINT_CTX.search(ctx_span))
         if captured or point_hit:
-            hits.append((sid, code, captured, point_hit, hk_ctx,
-                         ctx_span.replace("\n", " ")))
+            hits.append(
+                (sid, code, captured, point_hit, hk_ctx, ctx_span.replace("\n", " "))
+            )
 
 print("candidate 5-digit hits:", len(hits))
 cap_point = [h for h in hits if h[2] and h[3]]

@@ -5,10 +5,12 @@
 铁律「宁 None 不错判」——但 RULES 变更无任何测试保护。本文件固化为
 黄金用例：误判词必须返回 (None, None)；正例仍命中；复合词优先级。
 """
+
 import event_graph as eg
 
 
 # ── 误判词守卫（2026-10-08 删除的三词不得再命中）──────────────
+
 
 def test_xiuzheng_no_longer_bear():
     """「向下修正」已删：转债转股价下修是中性流程，不是业绩预亏。"""
@@ -31,6 +33,7 @@ def test_zhaipai_no_longer_bear():
 
 
 # ── 正例仍命中（各组代表词）─────────────────────────────────
+
 
 def test_bear_still_hits():
     assert eg._rule_judge("公司预计前三季度业绩预亏") == ("bear", "业绩预亏")

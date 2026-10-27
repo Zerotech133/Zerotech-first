@@ -5,6 +5,7 @@
 解析对照）、SR0 公式、逆正态精度、台账幂等/原子追加/坏行容忍、CLI record。
 运行：python -m pytest test_trial_ledger.py -q
 """
+
 import math
 import os
 import tempfile
@@ -57,6 +58,7 @@ def test_sharpe_from_returns():
     assert n == 7 and sr > 0 and kurt > 0
     # 与 numpy 手算一致
     import numpy as np
+
     a = np.array(rets)
     assert abs(sr - a.mean() / a.std(ddof=1)) < 1e-12
 
@@ -64,8 +66,14 @@ def test_sharpe_from_returns():
 def test_ledger_record_idempotent():
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "ledger.jsonl")
-        e = {"strategy": "cross", "config_fingerprint": '{"k":3,"q":75}',
-             "sharpe": 0.12, "t": 252, "n_trials": 36, "verdict": "kept"}
+        e = {
+            "strategy": "cross",
+            "config_fingerprint": '{"k":3,"q":75}',
+            "sharpe": 0.12,
+            "t": 252,
+            "n_trials": 36,
+            "verdict": "kept",
+        }
         ok1, tid = tl.record_trial(e, path)
         ok2, tid2 = tl.record_trial(e, path)
         assert ok1 and not ok2 and tid == tid2
@@ -76,26 +84,44 @@ def test_ledger_record_idempotent():
 def test_ledger_stats_and_bad_lines():
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "ledger.jsonl")
-        tl.record_trial({"strategy": "cross", "config_fingerprint": "a",
-                         "verdict": "kept"}, path)
-        tl.record_trial({"strategy": "cross", "config_fingerprint": "b",
-                         "verdict": "rejected"}, path)
+        tl.record_trial(
+            {"strategy": "cross", "config_fingerprint": "a", "verdict": "kept"}, path
+        )
+        tl.record_trial(
+            {"strategy": "cross", "config_fingerprint": "b", "verdict": "rejected"},
+            path,
+        )
         with open(path, "a", encoding="utf-8") as f:
-            f.write("{bad line\n")            # 坏行容忍
+            f.write("{bad line\n")  # 坏行容忍
         st = tl.ledger_stats(path)
         assert st["total"] == 2
-        assert st["by_strategy"]["cross"] == {"n": 2, "kept": 1,
-                                              "rejected": 1}
+        assert st["by_strategy"]["cross"] == {"n": 2, "kept": 1, "rejected": 1}
 
 
 def test_cli_record_and_dsr(tmp_path=None):
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "ledger.jsonl")
-        rc = tl.main(["record", "--strategy", "chanlun",
-                      "--config", '{"beichi":"P6-a-3"}', "--sharpe", "-0.02",
-                      "--t", "219", "--n-trials", "9",
-                      "--verdict", "rejected", "--note", "全否决",
-                      "--path", path])
+        rc = tl.main(
+            [
+                "record",
+                "--strategy",
+                "chanlun",
+                "--config",
+                '{"beichi":"P6-a-3"}',
+                "--sharpe",
+                "-0.02",
+                "--t",
+                "219",
+                "--n-trials",
+                "9",
+                "--verdict",
+                "rejected",
+                "--note",
+                "全否决",
+                "--path",
+                path,
+            ]
+        )
         assert rc == 0
         rows = tl.load_trials(path)
         assert rows[0]["verdict"] == "rejected"
@@ -104,4 +130,5 @@ def test_cli_record_and_dsr(tmp_path=None):
 
 if __name__ == "__main__":
     import pytest
+
     raise SystemExit(pytest.main([__file__, "-q"]))

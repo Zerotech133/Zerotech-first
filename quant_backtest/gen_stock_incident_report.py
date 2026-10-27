@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """生成 /bt/stock 报错排查报告（一次性事故复盘，K157 文案 %/ 未转义）。"""
+
 import os
 from datetime import datetime, timezone
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                   "reports", "portal_stock_incident_20261005.html")
+OUT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "reports",
+    "portal_stock_incident_20261005.html",
+)
 
 HTML = """<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

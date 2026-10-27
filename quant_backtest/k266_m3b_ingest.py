@@ -5,10 +5,12 @@
 映射三级：精确 name → aliases → CONTAINS 唯一命中；歧义/未命中跳过并计数（多为非 A 股实体）。
 幂等：每次从影子全量重算后覆盖写（doc_* 属性），可随影子续跑重刷。
 用法: python -X utf8 k266_m3b_ingest.py [--dry]"""
+
 import json
 import os
 import sys
 import time
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kg_client import KgClient
 
@@ -56,7 +58,7 @@ for r in secs:
     elif isinstance(a, str) and a:
         alias_map[a] = r["n"]
 
-mapped = {}   # security_name -> agg（多公司名映射到同一 Security 合并）
+mapped = {}  # security_name -> agg（多公司名映射到同一 Security 合并）
 st = {"exact": 0, "alias": 0, "contains": 0, "ambig": 0, "miss": 0}
 miss_list = []
 for cname, a in agg.items():
@@ -79,14 +81,24 @@ for cname, a in agg.items():
                 miss_list.append((cname, "未命中"))
             continue
     m = mapped.setdefault(tgt, {"pos": 0, "neg": 0, "neu": 0, "docs": []})
-    m["pos"] += a["pos"]; m["neg"] += a["neg"]; m["neu"] += a["neu"]
+    m["pos"] += a["pos"]
+    m["neg"] += a["neg"]
+    m["neu"] += a["neu"]
     m["docs"].extend(a["docs"])
 print(f"[2] 映射 {st} -> Security 节点 {len(mapped)}")
 
 # 3) 写图（UNWIND 批量，doc_* 属性覆盖）
-rows = [{"n": n, "pos": m["pos"], "neg": m["neg"], "neu": m["neu"],
-         "cnt": m["pos"] + m["neg"] + m["neu"], "last": time.strftime("%Y-%m-%d")}
-        for n, m in mapped.items()]
+rows = [
+    {
+        "n": n,
+        "pos": m["pos"],
+        "neg": m["neg"],
+        "neu": m["neu"],
+        "cnt": m["pos"] + m["neg"] + m["neu"],
+        "last": time.strftime("%Y-%m-%d"),
+    }
+    for n, m in mapped.items()
+]
 if DRY:
     print("[3] DRY 不写图，top10 预览：")
     for r in sorted(rows, key=lambda x: -x["cnt"])[:10]:
@@ -96,14 +108,20 @@ else:
         s.run(
             "UNWIND $rows AS r MATCH (sec:Security {name: r.n}) "
             "SET sec.doc_pos = r.pos, sec.doc_neg = r.neg, sec.doc_neu = r.neu, "
-            "    sec.doc_n = r.cnt, sec.doc_last = r.last", rows=rows)
+            "    sec.doc_n = r.cnt, sec.doc_last = r.last",
+            rows=rows,
+        )
     print(f"[3] 写图完成 {len(rows)} 节点")
     chk = c._session().__enter__()
     try:
-        got = chk.run("MATCH (s:Security) WHERE s.doc_n IS NOT NULL "
-                      "RETURN count(s) AS n, sum(s.doc_pos) AS p, sum(s.doc_neg) AS g, "
-                      "sum(s.doc_neu) AS e").data()[0]
-        print(f"[4] 验证 doc_n 节点={got['n']} pos={got['p']} neg={got['g']} neu={got['e']}")
+        got = chk.run(
+            "MATCH (s:Security) WHERE s.doc_n IS NOT NULL "
+            "RETURN count(s) AS n, sum(s.doc_pos) AS p, sum(s.doc_neg) AS g, "
+            "sum(s.doc_neu) AS e"
+        ).data()[0]
+        print(
+            f"[4] 验证 doc_n 节点={got['n']} pos={got['p']} neg={got['g']} neu={got['e']}"
+        )
     finally:
         chk.close()
 print("--- 未映射样例（歧义+未命中 前 20） ---")

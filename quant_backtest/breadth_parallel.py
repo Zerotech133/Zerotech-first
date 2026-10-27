@@ -31,7 +31,7 @@ def _load(fp):
 
 def _qpzm_cn_breadth(rps):
     """rps_latest.json → (date, breadth)。取 label 含 A股 的环境。"""
-    for e in (rps.get("envs") or []):
+    for e in rps.get("envs") or []:
         if "A股" in str(e.get("label", "")):
             b = e.get("breadth")
             b = round(float(b), 4) if isinstance(b, (int, float)) else None
@@ -59,7 +59,7 @@ def collect_pair(rps_fp=RPS_FP, series_fp=SERIES_FP):
         diff = round(lake_b - qpzm_b, 4)
     anchor_match = None
     if lake_date and qpzm_date:
-        anchor_match = (lake_date == qpzm_date)
+        anchor_match = lake_date == qpzm_date
     return {
         # 主锚取湖口径（穿越监测器/复盘同源，对齐周报市况节）
         "date": lake_date or qpzm_date or None,
@@ -100,7 +100,7 @@ def append_row(row, fp=OUT_FP):
 def run(rps_fp=RPS_FP, series_fp=SERIES_FP, out_fp=OUT_FP):
     row = collect_pair(rps_fp, series_fp)
     if row.get("lake_breadth") is None and row.get("qpzm_breadth") is None:
-        return None                      # 两产物全缺 → 不落空行
+        return None  # 两产物全缺 → 不落空行
     append_row(row, out_fp)
     return row
 

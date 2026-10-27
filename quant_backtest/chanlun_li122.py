@@ -22,6 +22,7 @@ judge(upper_signal, mid_bars, low_bars, ruleset_key) →
   {"ok": bool, "ruleset": key, "checks": [{"name","ok","detail"}], "no": 拦截原因}
 纯函数无 IO；输入序列不修改（内部截断拷贝）。
 """
+
 from chanlun_fractal import _merge_inclusion as _mi, find_fractals as _ff
 
 # ── 联立规则集（参数化；回测对照至少跑 A/B 两档） ──────────────
@@ -30,25 +31,31 @@ from chanlun_fractal import _merge_inclusion as _mi, find_fractals as _ff
 RULESETS = {
     # 草案默认档：30F 买向 + 5F 底分型成立 + 1F 不新低
     "A_30F_5F_1F": {
-        "upper_period": "30m", "mid_period": "5m", "low_period": "1m",
+        "upper_period": "30m",
+        "mid_period": "5m",
+        "low_period": "1m",
         "upper_types": ("1买", "2买", "3买"),
-        "mid_lookback": 24,         # 底分型确认窗：中级前 24 根（5m 半日）
-        "mid_confirm_bars": 2,      # 分型后 ≥2 根中级 K 线才视为成立
-        "low_window": 60,           # 不新低：低级近 60 根 vs 前 60 根（各 1 小时）
-        "low_tol": 0.002,           # 低级低点容差 0.2%
+        "mid_lookback": 24,  # 底分型确认窗：中级前 24 根（5m 半日）
+        "mid_confirm_bars": 2,  # 分型后 ≥2 根中级 K 线才视为成立
+        "low_window": 60,  # 不新低：低级近 60 根 vs 前 60 根（各 1 小时）
+        "low_tol": 0.002,  # 低级低点容差 0.2%
     },
     # 草案简化档：日线买向 + 30F 底分型成立 + 5F 不新低
     "B_D_30F_5F": {
-        "upper_period": "1d", "mid_period": "30m", "low_period": "5m",
+        "upper_period": "1d",
+        "mid_period": "30m",
+        "low_period": "5m",
         "upper_types": ("1买", "2买", "3买"),
-        "mid_lookback": 8,          # 30m×8 = 1 日
+        "mid_lookback": 8,  # 30m×8 = 1 日
         "mid_confirm_bars": 2,
-        "low_window": 24,           # 5m×24 = 2 小时
+        "low_window": 24,  # 5m×24 = 2 小时
         "low_tol": 0.002,
     },
     # 严格变体（草案字面口径）：上级仅一买参与联立，其余同默认档
     "A1_30F_5F_1F_only1": {
-        "upper_period": "30m", "mid_period": "5m", "low_period": "1m",
+        "upper_period": "30m",
+        "mid_period": "5m",
+        "low_period": "1m",
         "upper_types": ("1买",),
         "mid_lookback": 24,
         "mid_confirm_bars": 2,
@@ -58,12 +65,14 @@ RULESETS = {
     # 敏感性变体（宽松档）：更长观察窗 + 更大容差，保留更多信号，
     # 用于检验结论是否对参数敏感（回测对照第 3 组合）
     "A2_30F_5F_1F_wide": {
-        "upper_period": "30m", "mid_period": "5m", "low_period": "1m",
+        "upper_period": "30m",
+        "mid_period": "5m",
+        "low_period": "1m",
         "upper_types": ("1买", "2买", "3买"),
-        "mid_lookback": 48,         # 5m 一日
+        "mid_lookback": 48,  # 5m 一日
         "mid_confirm_bars": 2,
-        "low_window": 120,          # 各 2 小时
-        "low_tol": 0.005,           # 容差放宽至 0.5%
+        "low_window": 120,  # 各 2 小时
+        "low_tol": 0.005,  # 容差放宽至 0.5%
     },
 }
 
@@ -77,9 +86,12 @@ def _cut(bars, dt, n=None):
 def check_upper_type(upper_signal, mid_bars, low_bars, rule):
     """上级信号类型在放行集合内。"""
     ok = upper_signal.get("type") in rule["upper_types"]
-    return {"name": "upper_type", "ok": ok,
-            "detail": "%s in %s" % (upper_signal.get("type"),
-                                    "/".join(rule["upper_types"]))}
+    return {
+        "name": "upper_type",
+        "ok": ok,
+        "detail": "%s in %s"
+        % (upper_signal.get("type"), "/".join(rule["upper_types"])),
+    }
 
 
 def check_mid_bottom_fractal(upper_signal, mid_bars, low_bars, rule):
@@ -89,16 +101,25 @@ def check_mid_bottom_fractal(upper_signal, mid_bars, low_bars, rule):
     cut = _cut(mid_bars, upper_signal["dt"])
     detail = "mid_bars=%d" % len(cut)
     if len(cut) < conf + 1:
-        return {"name": "mid_bottom_fractal", "ok": False,
-                "detail": detail + " 中级数据不足"}
+        return {
+            "name": "mid_bottom_fractal",
+            "ok": False,
+            "detail": detail + " 中级数据不足",
+        }
     frs = _ff(_mi(cut))
     window = frs[-lookback:] if len(frs) > lookback else frs
     # 已确认：分型之后还需 conf 根 K 线（分型第 3 根已在其内，再留余量）
     n_c = len(cut)
-    hits = [f for f in window if f["type"] == "底" and
-            n_c - 1 - _dt_index(cut, f["dt"]) >= conf]
-    return {"name": "mid_bottom_fractal", "ok": bool(hits),
-            "detail": detail + " 底分型=%d" % len(hits)}
+    hits = [
+        f
+        for f in window
+        if f["type"] == "底" and n_c - 1 - _dt_index(cut, f["dt"]) >= conf
+    ]
+    return {
+        "name": "mid_bottom_fractal",
+        "ok": bool(hits),
+        "detail": detail + " 底分型=%d" % len(hits),
+    }
 
 
 def check_low_no_lower_low(upper_signal, mid_bars, low_bars, rule):
@@ -108,16 +129,21 @@ def check_low_no_lower_low(upper_signal, mid_bars, low_bars, rule):
     几乎恒真（笔终点即低点），无判别力，弃用。"""
     w = rule["low_window"]
     tol = rule["low_tol"]
-    cut = _cut(low_bars, upper_signal["dt"])[-2 * w:]
+    cut = _cut(low_bars, upper_signal["dt"])[-2 * w :]
     if len(cut) < 2 * w:
-        return {"name": "low_no_lower_low", "ok": False,
-                "detail": "低级数据不足 %d/%d" % (len(cut), 2 * w)}
+        return {
+            "name": "low_no_lower_low",
+            "ok": False,
+            "detail": "低级数据不足 %d/%d" % (len(cut), 2 * w),
+        }
     recent = min(b.get("l") or b.get("c") for b in cut[w:])
     prior = min(b.get("l") or b.get("c") for b in cut[:w])
     floor = prior * (1 - tol)
-    return {"name": "low_no_lower_low", "ok": recent >= floor,
-            "detail": "recent_min=%.4g prior_min=%.4g floor=%.4g"
-                      % (recent, prior, floor)}
+    return {
+        "name": "low_no_lower_low",
+        "ok": recent >= floor,
+        "detail": "recent_min=%.4g prior_min=%.4g floor=%.4g" % (recent, prior, floor),
+    }
 
 
 def _dt_index(bars, dt):
@@ -128,8 +154,7 @@ def _dt_index(bars, dt):
     return len(bars) - 1
 
 
-CHECKS = (check_upper_type, check_mid_bottom_fractal,
-          check_low_no_lower_low)
+CHECKS = (check_upper_type, check_mid_bottom_fractal, check_low_no_lower_low)
 
 
 def judge(upper_signal, mid_bars, low_bars, ruleset_key):
@@ -140,5 +165,4 @@ def judge(upper_signal, mid_bars, low_bars, ruleset_key):
     rule = RULESETS[ruleset_key]
     checks = [fn(upper_signal, mid_bars, low_bars, rule) for fn in CHECKS]
     no = next((c["name"] for c in checks if not c["ok"]), None)
-    return {"ok": no is None, "ruleset": ruleset_key,
-            "checks": checks, "no": no}
+    return {"ok": no is None, "ruleset": ruleset_key, "checks": checks, "no": no}

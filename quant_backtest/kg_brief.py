@@ -19,6 +19,7 @@
   python kg_brief.py --dry      # 只打印不发送不写水位
   python kg_brief.py [--d 20260928] [--force]
 """
+
 import argparse
 import json
 import os
@@ -31,8 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from kg_client import KgClient  # noqa: E402
 
-SHADOW_PARQUET = os.path.join(HERE, "data", "semantica",
-                              "notice_llm.parquet")
+SHADOW_PARQUET = os.path.join(HERE, "data", "semantica", "notice_llm.parquet")
 
 STATE = os.path.join(HERE, "data", "kg_brief_state.json")
 CHECK_LATEST = os.path.join(HERE, "data", "graph_check", "latest.json")
@@ -41,12 +41,19 @@ NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 SEND_PY = os.path.join(NEWS_DIR, "send_feishu.py")
 DISCLAIMER = "个人研究·知识图谱情报简报·非投资建议"
 
-CANDLE_CN = {"early_seal": "早盘封板", "seal": "封板", "late_seal": "尾盘封板",
-             "broken": "炸板", "late_surge": "尾盘抢筹", "late_dump": "尾盘砸盘"}
-CANDLE_ORDER = ["early_seal", "seal", "late_seal", "broken",
-                "late_surge", "late_dump"]
-BLIND_NOTE = ("盲区: 盘口事件仅覆盖分钟库890标的(约15%非全市场); "
-              "龙虎榜仅上榜日; 缠论信号确认滞后5-9交易日")
+CANDLE_CN = {
+    "early_seal": "早盘封板",
+    "seal": "封板",
+    "late_seal": "尾盘封板",
+    "broken": "炸板",
+    "late_surge": "尾盘抢筹",
+    "late_dump": "尾盘砸盘",
+}
+CANDLE_ORDER = ["early_seal", "seal", "late_seal", "broken", "late_surge", "late_dump"]
+BLIND_NOTE = (
+    "盲区: 盘口事件仅覆盖分钟库890标的(约15%非全市场); "
+    "龙虎榜仅上榜日; 缠论信号确认滞后5-9交易日"
+)
 
 
 def _today8():
@@ -85,12 +92,12 @@ def _surge_lines():
     突增=历史≥10日且≥2次，窗口日均≥历史日均 3 倍。"""
     try:
         import kg_portal
+
         mg = kg_portal.map_graph()
     except Exception as e:
         return ["⑤ 席位突变: 画布数据不可用(%s)" % str(e)[:60]]
     if not mg.get("ok"):
-        return ["⑤ 席位突变: 画布数据不可用(%s)"
-                % str(mg.get("error", "?"))[:60]]
+        return ["⑤ 席位突变: 画布数据不可用(%s)" % str(mg.get("error", "?"))[:60]]
     edges = mg.get("edges") or []
     dset = sorted({seg[0] for e in edges for seg in e["s"]})
     if not dset:
@@ -124,20 +131,18 @@ def _surge_lines():
             if r >= 3:
                 typ, ratio = "突增", r
         if typ:
-            sigs.append((winW, typ, e["a"], e["b"], ratio,
-                         e["s"][0][0]))
+            sigs.append((winW, typ, e["a"], e["b"], ratio, e["s"][0][0]))
     head = "⑤ 席位突变(截至%s·近%d日): " % (dset[-1], W)
     if not sigs:
         return [head + "无突变信号"]
     sigs.sort(key=lambda x: -x[0])
     nNew = sum(1 for s in sigs if s[1] == "新结盟")
-    out = [head + "%d 条（新结盟×%d · 突增×%d）"
-           % (len(sigs), nNew, len(sigs) - nNew)]
+    out = [head + "%d 条（新结盟×%d · 突增×%d）" % (len(sigs), nNew, len(sigs) - nNew)]
     for winW, typ, a, b, ratio, first in sigs[:5]:
-        tail = (("首现%s" % first) if typ == "新结盟"
-                else "%.1fx" % ratio)
-        out.append("  · %s ↔ %s %s %d次 %s"
-                   % (_short_seat(a), _short_seat(b), typ, winW, tail))
+        tail = ("首现%s" % first) if typ == "新结盟" else "%.1fx" % ratio
+        out.append(
+            "  · %s ↔ %s %s %d次 %s" % (_short_seat(a), _short_seat(b), typ, winW, tail)
+        )
     if len(sigs) > 5:
         out.append("  …等 %d 条（/kg/map ⚡ 突变 查看）" % (len(sigs) - 5))
     return out
@@ -154,21 +159,24 @@ def build(d):
             "{kind:'chanlun'}) WHERE e.date=$d "
             "RETURN sec.ts_code AS tc, sec.name AS nm, e.type AS t, "
             "e.vv AS vv, e.bei AS bei, e.price AS px "
-            "ORDER BY tc", d=d).data()
+            "ORDER BY tc",
+            d=d,
+        ).data()
         if not rows:
             L.append("① 结构信号(%s): 无（含确认窗口内滞后，见⑤）" % d)
         else:
             byt = {}
             for r in rows:
                 byt[r["t"]] = byt.get(r["t"], 0) + 1
-            L.append("① 结构信号(%s): %d 个（%s）" % (
-                d, len(rows),
-                " · ".join("%s×%d" % kv for kv in sorted(byt.items()))))
+            L.append(
+                "① 结构信号(%s): %d 个（%s）"
+                % (d, len(rows), " · ".join("%s×%d" % kv for kv in sorted(byt.items())))
+            )
             for r in rows[:8]:
-                tags = (("趋✓" if r["vv"] else "") +
-                        ("背" if r["bei"] else ""))
-                L.append("  · %s %s %s%s px=%s" % (
-                    r["tc"], r["nm"], r["t"], tags, r["px"]))
+                tags = ("趋✓" if r["vv"] else "") + ("背" if r["bei"] else "")
+                L.append(
+                    "  · %s %s %s%s px=%s" % (r["tc"], r["nm"], r["t"], tags, r["px"])
+                )
             if len(rows) > 8:
                 L.append("  …等 %d 个" % (len(rows) - 8))
 
@@ -179,29 +187,50 @@ def build(d):
             "RETURN sec.ts_code AS tc, sec.name AS nm, e.type AS t, "
             "e.mtime AS mt, e.pct AS pct, e.n_touch AS nt, "
             "e.tail_vol AS tv "
-            "ORDER BY tc", d=d).data()
+            "ORDER BY tc",
+            d=d,
+        ).data()
         if not rows:
             L.append("② 盘口异动(%s): 无（或分钟库滞后）" % d)
         else:
             byt = {}
             for r in rows:
                 byt[r["t"]] = byt.get(r["t"], 0) + 1
-            L.append("② 盘口异动(%s): %d 起（%s）" % (
-                d, len(rows),
-                " · ".join("%s×%d" % (CANDLE_CN.get(k, k), v)
-                           for k, v in sorted(
-                               byt.items(), key=lambda x: -x[1]))))
-            pri = sorted(rows, key=lambda r: (
-                CANDLE_ORDER.index(r["t"]) if r["t"] in CANDLE_ORDER
-                else 9, -(r["nt"] or 0)))
+            L.append(
+                "② 盘口异动(%s): %d 起（%s）"
+                % (
+                    d,
+                    len(rows),
+                    " · ".join(
+                        "%s×%d" % (CANDLE_CN.get(k, k), v)
+                        for k, v in sorted(byt.items(), key=lambda x: -x[1])
+                    ),
+                )
+            )
+            pri = sorted(
+                rows,
+                key=lambda r: (
+                    CANDLE_ORDER.index(r["t"]) if r["t"] in CANDLE_ORDER else 9,
+                    -(r["nt"] or 0),
+                ),
+            )
             for r in pri[:6]:
-                extra = ("触%d分" % r["nt"] if r["nt"] else
-                         ("尾量%d%%" % round(r["tv"] * 100) if r["tv"]
-                          else ""))
-                L.append("  · %s %s %s %s %+.1f%% %s" % (
-                    r["tc"], r["nm"], CANDLE_CN.get(r["t"], r["t"]),
-                    r["mt"] or "-", r["pct"] if r["pct"] is not None else 0,
-                    extra))
+                extra = (
+                    "触%d分" % r["nt"]
+                    if r["nt"]
+                    else ("尾量%d%%" % round(r["tv"] * 100) if r["tv"] else "")
+                )
+                L.append(
+                    "  · %s %s %s %s %+.1f%% %s"
+                    % (
+                        r["tc"],
+                        r["nm"],
+                        CANDLE_CN.get(r["t"], r["t"]),
+                        r["mt"] or "-",
+                        r["pct"] if r["pct"] is not None else 0,
+                        extra,
+                    )
+                )
 
         # ③ 资金动向（席位口径，当日净买）
         rows = s.run(
@@ -210,15 +239,14 @@ def build(d):
             "WITH st, sum(t.net_buy) AS nb, count(*) AS ns "
             "WHERE nb IS NOT NULL "
             "RETURN st.name AS nm, nb, ns ORDER BY nb DESC LIMIT 5",
-            d=d).data()
+            d=d,
+        ).data()
         if not rows:
-            L.append("③ 资金动向(%s): 龙虎榜当日无席位数据（披露滞后或未上榜）"
-                     % d)
+            L.append("③ 资金动向(%s): 龙虎榜当日无席位数据（披露滞后或未上榜）" % d)
         else:
             L.append("③ 资金动向(%s): 席位净买 top5" % d)
             for r in rows:
-                L.append("  · %s %s / %d 标的" % (
-                    r["nm"], _wan(r["nb"]), r["ns"]))
+                L.append("  · %s %s / %d 标的" % (r["nm"], _wan(r["nb"]), r["ns"]))
 
         # ④ 传导链（Event.text -> MarketEvent.type(date)）
         rows = s.run(
@@ -227,16 +255,28 @@ def build(d):
             "RETURN left(a.text, 18) AS an, "
             "b.type + '(' + b.date + ')' AS bn, r.p AS p, "
             "r.lag_days AS lg "
-            "ORDER BY r.p DESC LIMIT 5", d=d).data()
+            "ORDER BY r.p DESC LIMIT 5",
+            d=d,
+        ).data()
         if not rows:
             L.append("④ 传导链(%s): 无新 DRIVE 边" % d)
         else:
-            L.append("④ 传导链(%s): 新增 %d 组（top5）" % (
-                d, s.run("MATCH ()-[r:DRIVE]->() WHERE r.validStart=$d "
-                         "RETURN count(r) AS n", d=d).data()[0]["n"]))
+            L.append(
+                "④ 传导链(%s): 新增 %d 组（top5）"
+                % (
+                    d,
+                    s.run(
+                        "MATCH ()-[r:DRIVE]->() WHERE r.validStart=$d "
+                        "RETURN count(r) AS n",
+                        d=d,
+                    ).data()[0]["n"],
+                )
+            )
             for r in rows:
-                L.append("  · %s → %s (p=%.2f lag=%s)" % (
-                    r["an"], r["bn"], r["p"] or 0, r["lg"]))
+                L.append(
+                    "  · %s → %s (p=%.2f lag=%s)"
+                    % (r["an"], r["bn"], r["p"] or 0, r["lg"])
+                )
     cli.close()
 
     # ⑤ 席位突变（KG-V7 口径，画布数据自洽锚最新共现日）
@@ -249,9 +289,15 @@ def build(d):
         parts = []
         for t, c in chk.get("coverage", {}).items():
             parts.append("%s=%s" % (c.get("cn", t), (c.get("max") or "-")[-4:]))
-        qa = "OK" if chk.get("ok") else "WARN " + json.dumps(
-            {k: v for k, v in chk.get("issues", {}).items()
-             if not v.get("ok")}, ensure_ascii=False)
+        qa = (
+            "OK"
+            if chk.get("ok")
+            else "WARN "
+            + json.dumps(
+                {k: v for k, v in chk.get("issues", {}).items() if not v.get("ok")},
+                ensure_ascii=False,
+            )
+        )
         ts = (chk.get("ts") or "")[:16]
         L.append("⑥ 数据健康: QA %s（%s）" % (qa, ts))
         L.append("  覆盖: " + " | ".join(parts))
@@ -261,18 +307,21 @@ def build(d):
     # 每日链 graph_check→kg_brief 顺序保证此处读到当日值）
     try:
         with open(RATING_LATEST, encoding="utf-8-sig") as f:
-            st = (json.load(f).get("staleness") or {})
+            st = json.load(f).get("staleness") or {}
         stale = st.get("stale_tables") or []
         if stale:
             byf = st.get("stale_by_family") or {}
-            fam = " · ".join("%s:%s" % (k, "/".join(v[:2]))
-                             for k, v in byf.items()) \
-                or " / ".join(stale[:4])
-            L.append("  ⚠ 源断流 %d 表: %s（/kg 面板·恢复即消）"
-                     % (len(stale), fam[:80]))
+            fam = " · ".join(
+                "%s:%s" % (k, "/".join(v[:2])) for k, v in byf.items()
+            ) or " / ".join(stale[:4])
+            L.append(
+                "  ⚠ 源断流 %d 表: %s（/kg 面板·恢复即消）" % (len(stale), fam[:80])
+            )
         if st.get("catalog_stale"):
-            L.append("  ⚠ catalog 滞后 %s 天（freshness 判据失真）"
-                     % st.get("catalog_age_days"))
+            L.append(
+                "  ⚠ catalog 滞后 %s 天（freshness 判据失真）"
+                % st.get("catalog_age_days")
+            )
         if not stale and not st.get("catalog_stale"):
             L.append("  源健康: 无断流 · catalog 当日")
     except Exception as e:
@@ -281,19 +330,23 @@ def build(d):
     # 已证 fail=裸 bull/bear 输出被设计拒绝，属样本分布非故障）
     try:
         import pandas as pd
-        sd = pd.read_parquet(SHADOW_PARQUET,
-                             columns=["conf", "judged_at"])
+
+        sd = pd.read_parquet(SHADOW_PARQUET, columns=["conf", "judged_at"])
         n = len(sd)
         nf = int((sd["conf"] == 0).sum())
         last = str(sd["judged_at"].max())[:16]
         if n:
             pct = 100.0 * nf / n
             if pct > 2:
-                L.append("  ⚠ 影子层 fail %.1f%%（%d/%d，>2%% 阈值·查 "
-                         "Ollama/裸标签率）" % (pct, nf, n))
+                L.append(
+                    "  ⚠ 影子层 fail %.1f%%（%d/%d，>2%% 阈值·查 "
+                    "Ollama/裸标签率）" % (pct, nf, n)
+                )
             else:
-                L.append("  影子层健康: fail %.2f%%（%d/%d · 判定至 %s）"
-                         % (pct, nf, n, last))
+                L.append(
+                    "  影子层健康: fail %.2f%%（%d/%d · 判定至 %s）"
+                    % (pct, nf, n, last)
+                )
     except Exception as e:
         L.append("  影子层: notice_llm.parquet 不可读(%s)" % str(e)[:50])
     L.append("  " + BLIND_NOTE)
@@ -337,11 +390,13 @@ def _send(text):
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
     try:
-        r = subprocess.run([sys.executable, SEND_PY, tmp],
-                           capture_output=True, text=True, timeout=90)
+        r = subprocess.run(
+            [sys.executable, SEND_PY, tmp], capture_output=True, text=True, timeout=90
+        )
         ok = "SEND_OK" in (r.stdout or "")
-        print("send ->", "SEND_OK" if ok else
-              (r.stdout or r.stderr or "?").strip()[:200])
+        print(
+            "send ->", "SEND_OK" if ok else (r.stdout or r.stderr or "?").strip()[:200]
+        )
         return ok
     except Exception as e:
         print("send err:", e)
@@ -355,8 +410,7 @@ def _send(text):
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "news_collector")))
 import push_targets  # noqa: E402
 
-SYNC_GROUPS = [(n, push_targets.target_id(n) or "")
-               for n in ("内部测试", "量化群")]
+SYNC_GROUPS = [(n, push_targets.target_id(n) or "") for n in ("内部测试", "量化群")]
 
 
 def _build_card_payload(secs):
@@ -371,9 +425,9 @@ def _build_card_payload(secs):
         blocks.append("\n".join(lines))
     buttons = None
     try:
-        sys.path.insert(0, os.path.abspath(
-            os.path.join(HERE, "..", "portal")))
+        sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "portal")))
         from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY, m_url
+
         # 2026-10-25：优先 /m H5 链接（账本/选股），未启用回退旧公网链
         _ledger = m_url("ledger") or "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
         _picks = m_url("picks") or "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY)
@@ -385,10 +439,15 @@ def _build_card_payload(secs):
         pass  # 按钮可选组件：域名模块不可用→纯分区卡照发
     sys.path.insert(0, NEWS_DIR)
     from card_build import build_card
+
     return build_card(
-        "🕸 KG 每日情报简报", "结构 × 盘口 × 资金 × 传导 × 席位 × 健康",
-        "turquoise", blocks,
-        footer="个人研究·知识图谱情报简报·非投资建议", buttons=buttons)
+        "🕸 KG 每日情报简报",
+        "结构 × 盘口 × 资金 × 传导 × 席位 × 健康",
+        "turquoise",
+        blocks,
+        footer="个人研究·知识图谱情报简报·非投资建议",
+        buttons=buttons,
+    )
 
 
 def _send_card(card):
@@ -396,6 +455,7 @@ def _send_card(card):
     try:
         sys.path.insert(0, NEWS_DIR)
         from card_build import push_card
+
         return push_card(card)
     except Exception as e:
         print("card send error: %s" % str(e)[:120])
@@ -407,6 +467,7 @@ def _sync_groups(card, text):
     try:
         sys.path.insert(0, NEWS_DIR)
         from send_feishu import send_content_to
+
         card_str = json.dumps(card, ensure_ascii=False)
         if len(text) > 12000:  # 群文本同护栏（WinError 206 判例）
             text = text[:12000] + "\n…(发送截断，全文见 /kg 面板)"
@@ -435,8 +496,9 @@ def main():
     if not d:
         cli = KgClient(retry=1)
         with cli._session() as s:
-            d = s.run("MATCH ()-[r:HAS_VOL_EVENT]->() "
-                      "RETURN max(r.validStart) AS d").data()[0]["d"]
+            d = s.run(
+                "MATCH ()-[r:HAS_VOL_EVENT]->() RETURN max(r.validStart) AS d"
+            ).data()[0]["d"]
         cli.close()
 
     if not a.force and not a.dry:
@@ -464,8 +526,9 @@ def main():
     if card is not None:
         _sync_groups(card, text)
     if ok:
-        _save_state({"last_date": d, "sent_at":
-                     datetime.now().isoformat(timespec="seconds")})
+        _save_state(
+            {"last_date": d, "sent_at": datetime.now().isoformat(timespec="seconds")}
+        )
         print("brief %s sent + state saved" % d)
     else:
         print("brief %s send FAILED (state untouched)" % d)
@@ -475,4 +538,5 @@ def main():
 
 if __name__ == "__main__":
     from linreg import run_with_lineage
+
     run_with_lineage("kg_daily_sync", "kg_brief", lambda: sys.exit(main()))

@@ -5,6 +5,7 @@
 所有空响应、来源错误和探针异常都保留为明确的 blocked/rejected 状态，不能被
 转换成成功或补零数据。
 """
+
 from __future__ import annotations
 
 import json
@@ -27,7 +28,9 @@ def _metrics(report: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         candidate = integrity.get("metrics") if isinstance(integrity, Mapping) else None
     if not isinstance(candidate, list):
         raise ValueError("完整性报告缺少 metrics 列表")
-    return [item for item in candidate if isinstance(item, Mapping) and item.get("name")]
+    return [
+        item for item in candidate if isinstance(item, Mapping) and item.get("name")
+    ]
 
 
 def _metric_map(report: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
@@ -44,8 +47,13 @@ def _dates(details: Mapping[str, Any]):
                 yield str(value), item
 
 
-def _append_coverage(keys: list[dict[str, Any]], metric: Mapping[str, Any], table: str,
-                     source: str, code_field: str) -> None:
+def _append_coverage(
+    keys: list[dict[str, Any]],
+    metric: Mapping[str, Any],
+    table: str,
+    source: str,
+    code_field: str,
+) -> None:
     details = metric.get("details")
     if not isinstance(details, Mapping):
         return
@@ -56,15 +64,19 @@ def _append_coverage(keys: list[dict[str, Any]], metric: Mapping[str, Any], tabl
         for code in missing:
             if code is None or str(code) == "_summary":
                 continue
-            keys.append({
-                "table": table,
-                "source": source,
-                "market": "A",
-                "code": str(code),
-                "trade_date": trade_date,
-                "status": "pending",
-                "reason": "source_empty_pending" if day.get("source_state") == "source_empty_pending" else "coverage_gap",
-            })
+            keys.append(
+                {
+                    "table": table,
+                    "source": source,
+                    "market": "A",
+                    "code": str(code),
+                    "trade_date": trade_date,
+                    "status": "pending",
+                    "reason": "source_empty_pending"
+                    if day.get("source_state") == "source_empty_pending"
+                    else "coverage_gap",
+                }
+            )
 
 
 def _append_latest_stock(keys: list[dict[str, Any]], metric: Mapping[str, Any]) -> None:
@@ -73,24 +85,32 @@ def _append_latest_stock(keys: list[dict[str, Any]], metric: Mapping[str, Any]) 
         return
     trade_date = str(details.get("date", ""))
     missing = details.get("missing", [])
-    if not trade_date or not isinstance(missing, Sequence) or isinstance(missing, (str, bytes)):
+    if (
+        not trade_date
+        or not isinstance(missing, Sequence)
+        or isinstance(missing, (str, bytes))
+    ):
         return
     for code in missing:
         if code is None:
             continue
-        keys.append({
-            "table": "listed_stock",
-            "source": "tushare",
-            "market": "A",
-            "code": str(code),
-            "trade_date": trade_date,
-            "status": "pending",
-            "reason": "coverage_gap",
-        })
+        keys.append(
+            {
+                "table": "listed_stock",
+                "source": "tushare",
+                "market": "A",
+                "code": str(code),
+                "trade_date": trade_date,
+                "status": "pending",
+                "reason": "coverage_gap",
+            }
+        )
 
 
 def _sort_key(row: Mapping[str, Any]) -> tuple[str, str, str, str]:
-    return tuple(str(row.get(field, "")) for field in ("table", "trade_date", "code", "source"))
+    return tuple(
+        str(row.get(field, "")) for field in ("table", "trade_date", "code", "source")
+    )
 
 
 def build_gap_snapshot(integrity_report: Mapping[str, Any]) -> dict[str, Any]:
@@ -101,11 +121,16 @@ def build_gap_snapshot(integrity_report: Mapping[str, Any]) -> dict[str, Any]:
         metric = metrics.get(metric_name)
         # 日线 coverage 在旧版扫描中只有 missing_count，具体代码由定义对账指标提供。
         if metric_name == "tdx_sector_daily_daily_coverage":
-            has_codes = any(
-                isinstance(day, Mapping) and isinstance(day.get("missing"), Sequence)
-                and not isinstance(day.get("missing"), (str, bytes))
-                for date, day in _dates(metric.get("details", {}))
-            ) if metric else False
+            has_codes = (
+                any(
+                    isinstance(day, Mapping)
+                    and isinstance(day.get("missing"), Sequence)
+                    and not isinstance(day.get("missing"), (str, bytes))
+                    for date, day in _dates(metric.get("details", {}))
+                )
+                if metric
+                else False
+            )
             if not has_codes:
                 metric = metrics.get("sector_definition_key_reconciliation")
         if metric:
@@ -150,11 +175,17 @@ def write_key_manifest(snapshot: Mapping[str, Any], path: str | Path) -> None:
         raise ValueError("缺口清单必须保持 production_write=false")
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
-def qualify_source(table: str, keys: Sequence[Mapping[str, Any]],
-                   probe: Callable[[Mapping[str, Any]], Mapping[str, Any]]) -> dict[str, Any]:
+def qualify_source(
+    table: str,
+    keys: Sequence[Mapping[str, Any]],
+    probe: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+) -> dict[str, Any]:
     """逐键执行只读探针并分类资格，绝不把空响应视为有效数据。"""
     qualified: list[dict[str, Any]] = []
     blocked: list[dict[str, Any]] = []
@@ -168,11 +199,20 @@ def qualify_source(table: str, keys: Sequence[Mapping[str, Any]],
                 raise ValueError("探针返回值不是对象")
             status = str(result.get("status", "")).lower()
             row["source_status"] = status or "unknown"
-            if status in {"source_empty", "blocked", "source_error", "no_supply", "unavailable"}:
+            if status in {
+                "source_empty",
+                "blocked",
+                "source_error",
+                "no_supply",
+                "unavailable",
+            }:
                 row["status"] = "blocked"
                 row["reason"] = status
                 blocked.append(row)
-            elif status in {"candidate_ready", "qualified", "ok", "success"} and result.get("row_count", 1) != 0:
+            elif (
+                status in {"candidate_ready", "qualified", "ok", "success"}
+                and result.get("row_count", 1) != 0
+            ):
                 row["status"] = "qualified"
                 row["reason"] = "source_verified"
                 qualified.append(row)
@@ -194,7 +234,10 @@ def qualify_source(table: str, keys: Sequence[Mapping[str, Any]],
         "table": table,
         "production_write": False,
         "global_activation": False,
-        "counts": {"qualified": len(qualified), "blocked": len(blocked), "rejected": len(rejected)},
+        "counts": {
+            "qualified": len(qualified),
+            "blocked": len(blocked),
+            "rejected": len(rejected),
+        },
         "keys": qualified + blocked + rejected,
     }
-

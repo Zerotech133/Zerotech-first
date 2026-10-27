@@ -3,6 +3,7 @@
 Parsing validates shape, not source rights. Unknown clocks stay unknown; a caller
 must never use these objects as evidence of real authorization or durable ack.
 """
+
 from __future__ import annotations
 
 import re
@@ -16,7 +17,9 @@ class ProjectionRejected(ValueError):
 
 
 _CODE = re.compile(r"(?:6\d{5}\.SH|[03]\d{5}\.SZ|[489]\d{5}\.BJ)\Z", re.ASCII)
-_LINK_STATES = frozenset({"fact", "candidate"})  # fact is reserved until a trusted source verifier exists
+_LINK_STATES = frozenset(
+    {"fact", "candidate"}
+)  # fact is reserved until a trusted source verifier exists
 
 
 def _required(value: object, field: str) -> str:
@@ -42,7 +45,11 @@ class SourceClock:
         if (self.value is None) != (self.provenance == "unknown"):
             raise ProjectionRejected("clock: unknown provenance requires missing value")
         if self.value is not None:
-            if not isinstance(self.value, datetime) or self.value.tzinfo is None or self.value.utcoffset() is None:
+            if (
+                not isinstance(self.value, datetime)
+                or self.value.tzinfo is None
+                or self.value.utcoffset() is None
+            ):
                 raise ProjectionRejected("clock: timezone-aware datetime required")
             object.__setattr__(self, "value", self.value.astimezone(timezone.utc))
 
@@ -80,7 +87,12 @@ class EvidenceRef:
             _required(getattr(self, name), name)
         if self.content_hash is not None:
             _required(self.content_hash, "content_hash")
-        clocks = (self.occurred_at, self.published_at, self.first_seen_at, self.available_at)
+        clocks = (
+            self.occurred_at,
+            self.published_at,
+            self.first_seen_at,
+            self.available_at,
+        )
         if not all(isinstance(c, SourceClock) for c in clocks):
             raise ProjectionRejected("four clocks required")
         publication, seen, available = (c.value for c in clocks[1:])
@@ -95,21 +107,58 @@ class EvidenceRef:
 
     @classmethod
     def parse(cls, data: Mapping[str, Any]) -> EvidenceRef:
-        names = {"source_id", "subsource", "native_id", "version", "source_ref", "content_hash",
-                 "occurred_at", "published_at", "first_seen_at", "available_at"}
+        names = {
+            "source_id",
+            "subsource",
+            "native_id",
+            "version",
+            "source_ref",
+            "content_hash",
+            "occurred_at",
+            "published_at",
+            "first_seen_at",
+            "available_at",
+        }
         _exact(data, names)
         if not names <= set(data):
             raise ProjectionRejected("missing evidence projection field")
-        return cls(*(data[n] for n in ("source_id", "subsource", "native_id", "version", "source_ref", "content_hash")),
-                   *(SourceClock.parse(data[n]) for n in ("occurred_at", "published_at", "first_seen_at", "available_at")))
+        return cls(
+            *(
+                data[n]
+                for n in (
+                    "source_id",
+                    "subsource",
+                    "native_id",
+                    "version",
+                    "source_ref",
+                    "content_hash",
+                )
+            ),
+            *(
+                SourceClock.parse(data[n])
+                for n in (
+                    "occurred_at",
+                    "published_at",
+                    "first_seen_at",
+                    "available_at",
+                )
+            ),
+        )
 
     def available_as_of(self, at: datetime) -> bool:
         if not isinstance(at, datetime) or at.tzinfo is None or at.utcoffset() is None:
             raise ProjectionRejected("as_of: timezone-aware datetime required")
-        if self.published_at.value is None or self.first_seen_at.value is None or self.available_at.value is None:
+        if (
+            self.published_at.value is None
+            or self.first_seen_at.value is None
+            or self.available_at.value is None
+        ):
             return False
         instant = at.astimezone(timezone.utc)
-        return all(c.value <= instant for c in (self.published_at, self.first_seen_at, self.available_at))
+        return all(
+            c.value <= instant
+            for c in (self.published_at, self.first_seen_at, self.available_at)
+        )
 
 
 def assert_consistent_evidence(left: EvidenceRef, right: EvidenceRef) -> None:
@@ -145,30 +194,47 @@ class EvidenceSecurityLink:
     relation_available_at: SourceClock | None = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.evidence, EvidenceRef) or not isinstance(self.security, SecurityRef):
+        if not isinstance(self.evidence, EvidenceRef) or not isinstance(
+            self.security, SecurityRef
+        ):
             raise ProjectionRejected("evidence and security required")
         _required(self.relation_type, "relation_type")
         _required(self.match_basis, "match_basis")
         if not isinstance(self.state, str) or self.state not in _LINK_STATES:
             raise ProjectionRejected("link state must be fact or candidate")
         if self.state == "fact":
-            raise ProjectionRejected("fact requires a trusted source verifier, not a caller-supplied basis")
-        if not isinstance(self.valid_from, SourceClock) or not isinstance(self.valid_to, SourceClock):
+            raise ProjectionRejected(
+                "fact requires a trusted source verifier, not a caller-supplied basis"
+            )
+        if not isinstance(self.valid_from, SourceClock) or not isinstance(
+            self.valid_to, SourceClock
+        ):
             raise ProjectionRejected("validity clocks required")
-        if self.valid_from.value is not None and self.valid_to.value is not None and self.valid_from.value > self.valid_to.value:
+        if (
+            self.valid_from.value is not None
+            and self.valid_to.value is not None
+            and self.valid_from.value > self.valid_to.value
+        ):
             raise ProjectionRejected("invalid relation validity")
-        if self.relation_available_at is not None and not isinstance(self.relation_available_at, SourceClock):
+        if self.relation_available_at is not None and not isinstance(
+            self.relation_available_at, SourceClock
+        ):
             raise ProjectionRejected("relation availability clock required")
 
     def available_as_of(self, at: datetime) -> bool:
         if not self.evidence.available_as_of(at):
             return False
-        if self.relation_available_at is None or self.relation_available_at.value is None:
+        if (
+            self.relation_available_at is None
+            or self.relation_available_at.value is None
+        ):
             return False
         instant = at.astimezone(timezone.utc)
-        return ((self.valid_from.value is None or self.valid_from.value <= instant)
-                and (self.valid_to.value is None or instant <= self.valid_to.value)
-                and self.relation_available_at.value <= instant)
+        return (
+            (self.valid_from.value is None or self.valid_from.value <= instant)
+            and (self.valid_to.value is None or instant <= self.valid_to.value)
+            and self.relation_available_at.value <= instant
+        )
 
 
 @dataclass(frozen=True)
@@ -181,7 +247,14 @@ class ModelJudgement:
 
     def __post_init__(self) -> None:
         import math
-        if self.bias not in ("bull", "bear", "neutral") or isinstance(self.confidence, bool) or not isinstance(self.confidence, (int, float)) or not math.isfinite(self.confidence) or not 0 <= self.confidence <= 1:
+
+        if (
+            self.bias not in ("bull", "bear", "neutral")
+            or isinstance(self.confidence, bool)
+            or not isinstance(self.confidence, (int, float))
+            or not math.isfinite(self.confidence)
+            or not 0 <= self.confidence <= 1
+        ):
             raise ProjectionRejected("invalid model judgement")
         _required(self.model_version, "model_version")
 
@@ -202,13 +275,31 @@ class RightsDecision:
             raise ProjectionRejected("reviewed rights require reference")
 
 
-def page_status(total: int, shown: int, *, partial: bool, errors: tuple[str, ...] = ()) -> dict[str, object]:
+def page_status(
+    total: int, shown: int, *, partial: bool, errors: tuple[str, ...] = ()
+) -> dict[str, object]:
     """Report a bounded projection, not a claim of full graph coverage."""
-    if any(isinstance(n, bool) or not isinstance(n, int) or n < 0 for n in (total, shown)) or shown > total:
+    if (
+        any(
+            isinstance(n, bool) or not isinstance(n, int) or n < 0
+            for n in (total, shown)
+        )
+        or shown > total
+    ):
         raise ProjectionRejected("invalid page counts")
-    if not isinstance(partial, bool) or not isinstance(errors, tuple) or any(not isinstance(e, str) or not e for e in errors):
+    if (
+        not isinstance(partial, bool)
+        or not isinstance(errors, tuple)
+        or any(not isinstance(e, str) or not e for e in errors)
+    ):
         raise ProjectionRejected("invalid page status")
     if errors and not partial:
         raise ProjectionRejected("errors require partial status")
-    return {"total": total, "shown": shown, "truncated": shown < total, "partial": partial,
-            "errors": list(errors), "coverage": "loaded_authorized_scope_only"}
+    return {
+        "total": total,
+        "shown": shown,
+        "truncated": shown < total,
+        "partial": partial,
+        "errors": list(errors),
+        "coverage": "loaded_authorized_scope_only",
+    }

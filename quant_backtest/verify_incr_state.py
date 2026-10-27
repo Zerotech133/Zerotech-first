@@ -4,6 +4,7 @@
 用法： python verify_incr_state.py [标签]
 输出 JSON 落 C:\\Temp\\lake_state_<标签>.json，同时打印人读摘要。
 """
+
 from __future__ import annotations
 
 import glob
@@ -21,20 +22,24 @@ TDX = os.path.join(HERE, "data", "tdx")
 
 # 表根目录：语料类在 data/tushare，概念日线在 data/tdx（ths_dc_incr_sync.py 的 OUT）
 TABLE_ROOT = {
-    "irm_qa_sh": TS, "irm_qa_sz": TS, "news": TS,
-    "major_news": TS, "research_report": TS,
-    "ts_ths_daily": TDX, "ts_dc_daily": TDX,
+    "irm_qa_sh": TS,
+    "irm_qa_sz": TS,
+    "news": TS,
+    "major_news": TS,
+    "research_report": TS,
+    "ts_ths_daily": TDX,
+    "ts_dc_daily": TDX,
 }
 
 # 表 -> 日期列候选（按序取第一个命中列）
 TARGETS = {
-    "irm_qa_sh":      ["trade_date", "pub_date", "date"],
-    "irm_qa_sz":      ["trade_date", "pub_date", "date"],
-    "news":           ["datetime", "pub_time", "date"],
-    "major_news":     ["pub_time", "datetime", "date"],
+    "irm_qa_sh": ["trade_date", "pub_date", "date"],
+    "irm_qa_sz": ["trade_date", "pub_date", "date"],
+    "news": ["datetime", "pub_time", "date"],
+    "major_news": ["pub_time", "datetime", "date"],
     "research_report": ["trade_date", "pub_date", "date"],
-    "ts_ths_daily":   ["trade_date", "date"],
-    "ts_dc_daily":    ["trade_date", "date"],
+    "ts_ths_daily": ["trade_date", "date"],
+    "ts_dc_daily": ["trade_date", "date"],
 }
 
 
@@ -83,18 +88,27 @@ def scan_table(tbl: str):
 def scan_global_fut():
     """外盘商品：GF_*.parquet 在 ts_global_fut/ 与 data/ 两处都查。"""
     found = {}
-    for root in (os.path.join(HERE, "ts_global_fut"),
-                 os.path.join(HERE, "data", "ts_global_fut")):
-        for p in sorted(glob.glob(os.path.join(root, "**", "GF_*.parquet"), recursive=True)):
+    for root in (
+        os.path.join(HERE, "ts_global_fut"),
+        os.path.join(HERE, "data", "ts_global_fut"),
+    ):
+        for p in sorted(
+            glob.glob(os.path.join(root, "**", "GF_*.parquet"), recursive=True)
+        ):
             try:
                 pf = pq.ParquetFile(p)
                 rows = pf.metadata.num_rows
                 names = pf.schema_arrow.names
-                cand = next((c for c in ("trade_date", "date", "date_str") if c in names), None)
+                cand = next(
+                    (c for c in ("trade_date", "date", "date_str") if c in names), None
+                )
                 ds = []
                 if cand:
-                    ds = [norm(x) for x in
-                          pq.read_table(p, columns=[cand]).column(0).to_pylist() if x]
+                    ds = [
+                        norm(x)
+                        for x in pq.read_table(p, columns=[cand]).column(0).to_pylist()
+                        if x
+                    ]
                 rel = os.path.relpath(p, HERE)
                 found[rel] = {
                     "rows": rows,
@@ -118,23 +132,35 @@ def main():
         json.dump(res, f, ensure_ascii=False, indent=1)
 
     print("== tushare 分区表（label=%s）==" % label)
-    print("%-18s %6s %10s %-13s %-11s %-11s %s"
-          % ("表", "分区数", "行数", "日期列", "最早", "最新", "异常分区"))
+    print(
+        "%-18s %6s %10s %-13s %-11s %-11s %s"
+        % ("表", "分区数", "行数", "日期列", "最早", "最新", "异常分区")
+    )
     for t, v in res["tables"].items():
         if not v.get("exists"):
             print("%-18s %6s %10s  —— 主表不存在 ——" % (t, 0, 0))
             continue
-        print("%-18s %6d %10d %-13s %-11s %-11s %s"
-              % (t, v["parts"], v["rows"], v.get("date_col") or "-",
-                 v.get("min_date") or "-", v.get("max_date") or "-",
-                 ",".join(v.get("no_date_col_parts") or []) or "-"))
+        print(
+            "%-18s %6d %10d %-13s %-11s %-11s %s"
+            % (
+                t,
+                v["parts"],
+                v["rows"],
+                v.get("date_col") or "-",
+                v.get("min_date") or "-",
+                v.get("max_date") or "-",
+                ",".join(v.get("no_date_col_parts") or []) or "-",
+            )
+        )
     gf = res["global_fut"]
     print("\n== 外盘商品 GF_*.parquet：%d 个 ==" % len(gf))
     tot = 0
     for k, v in sorted(gf.items()):
         tot += v.get("rows", 0)
-        print("  %-42s rows=%-7s 日期列=%-8s 最新=%s"
-              % (k, v.get("rows"), v.get("date_col"), v.get("max_date")))
+        print(
+            "  %-42s rows=%-7s 日期列=%-8s 最新=%s"
+            % (k, v.get("rows"), v.get("date_col"), v.get("max_date"))
+        )
     print("  合计行数=%d" % tot)
     print("\nJSON -> %s" % p)
 

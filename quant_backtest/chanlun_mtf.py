@@ -43,16 +43,19 @@ def _covered(bars_sub, d0, d1):
     if ds[0] > d0:
         return False
     # 末日数据：不晚于 d1 太多即可（次级别信号可能在 d1 当日盘中确认）
-    return ds[-1] >= d0 and not (ds[-1] < d1 and
-                                 (ds[-1] < _shift_day(d1, -_TAIL_TOL_DAYS)))
+    return ds[-1] >= d0 and not (
+        ds[-1] < d1 and (ds[-1] < _shift_day(d1, -_TAIL_TOL_DAYS))
+    )
 
 
 def _shift_day(d, n):
     """YYYY-MM-DD 粗移 n 个自然日（仅覆盖判定容差用，不要求交易日历）。"""
     from datetime import datetime, timedelta
+
     try:
-        return (datetime.strptime(d, "%Y-%m-%d") + timedelta(days=n)
-                ).strftime("%Y-%m-%d")
+        return (datetime.strptime(d, "%Y-%m-%d") + timedelta(days=n)).strftime(
+            "%Y-%m-%d"
+        )
     except ValueError:
         return d
 
@@ -71,7 +74,10 @@ def confluence(bis_d, sig, bars_sub, sub_period=SUB_PERIOD):
             continue
         sd = s["dt"][:10]
         if d0 <= sd <= d1:
-            return True, {"sub": sub_period, "win": [d0, d1],
-                          "hit": s["dt"], "mfv": s.get("mfv")}
-    return False, {"sub": sub_period, "win": [d0, d1],
-                   "hit": None, "mfv": None}
+            return True, {
+                "sub": sub_period,
+                "win": [d0, d1],
+                "hit": s["dt"],
+                "mfv": s.get("mfv"),
+            }
+    return False, {"sub": sub_period, "win": [d0, d1], "hit": None, "mfv": None}

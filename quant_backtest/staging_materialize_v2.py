@@ -21,6 +21,7 @@ data/tushare_v2/（**独立验证目录，绝不触碰生产仓 data/tushare/**�
       [--limit N] [--report PATH]
       --limit  只物化前 N 个单元（试点用，如 --limit 20）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,7 +42,7 @@ def _now() -> str:
 
 def _map_path(raw: str) -> Path:
     if raw and raw.lower().startswith(_LEGACY_PREFIX.lower()):
-        return Path(_LOCAL_PREFIX + raw[len(_LEGACY_PREFIX):])
+        return Path(_LOCAL_PREFIX + raw[len(_LEGACY_PREFIX) :])
     return Path(raw)
 
 
@@ -57,6 +58,7 @@ def _row_count(path: Path) -> int | None:
     """读 parquet 行数；无 pandas/pyarrow 时返回 None（降级）。"""
     try:
         import pandas as pd  # type: ignore
+
         return int(pd.read_parquet(path).shape[0])
     except Exception:
         return None
@@ -64,10 +66,14 @@ def _row_count(path: Path) -> int | None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="staging → tushare_v2 物化 + 回读验证")
-    ap.add_argument("--staging", default=str(Path(__file__).resolve().parent
-                                              / "data" / "tushare_staging"))
-    ap.add_argument("--out-dir", default=str(Path(__file__).resolve().parent
-                                              / "data" / "tushare_v2"))
+    ap.add_argument(
+        "--staging",
+        default=str(Path(__file__).resolve().parent / "data" / "tushare_staging"),
+    )
+    ap.add_argument(
+        "--out-dir",
+        default=str(Path(__file__).resolve().parent / "data" / "tushare_v2"),
+    )
     ap.add_argument("--limit", type=int, default=0, help="只物化前 N 单元（0=全部）")
     ap.add_argument("--report", default="", help="报告输出路径（默认 staging 内）")
     args = ap.parse_args()
@@ -87,7 +93,7 @@ def main() -> int:
         with open(mf, encoding="utf-8") as f:
             entries.extend(json.load(f).get("entries", []))
     if args.limit:
-        entries = entries[:args.limit]
+        entries = entries[: args.limit]
 
     stats = {"ok": 0, "skipped": 0, "mismatch": 0, "missing": 0}
     rows_ok = 0
@@ -96,8 +102,9 @@ def main() -> int:
 
     for e in entries:
         t = e.get("table", "?")
-        d = (e.get("request_params") or {}).get("trade_date") or \
-            ((e.get("date_values") or [""])[0])
+        d = (e.get("request_params") or {}).get("trade_date") or (
+            (e.get("date_values") or [""])[0]
+        )
         src = _map_path(e.get("staged_path") or "")
         dir_name = t[3:] if t.startswith("ts_") else t
         dst = out_dir / dir_name / f"d_{d}.parquet"
@@ -118,8 +125,14 @@ def main() -> int:
         got_sha = _sha256(dst)
         if got_sha != want_sha:
             stats["mismatch"] += 1
-            problems.append({**unit, "kind": "sha256_mismatch",
-                             "manifest": want_sha, "actual": got_sha})
+            problems.append(
+                {
+                    **unit,
+                    "kind": "sha256_mismatch",
+                    "manifest": want_sha,
+                    "actual": got_sha,
+                }
+            )
             continue
         # 回读行数（降级开关）
         rc = _row_count(dst)
@@ -128,8 +141,14 @@ def main() -> int:
             want_rows = e.get("row_count")
             if want_rows is not None and rc != want_rows:
                 stats["mismatch"] += 1
-                problems.append({**unit, "kind": "row_count_mismatch",
-                                 "manifest": want_rows, "actual": rc})
+                problems.append(
+                    {
+                        **unit,
+                        "kind": "row_count_mismatch",
+                        "manifest": want_rows,
+                        "actual": rc,
+                    }
+                )
                 continue
         stats["ok"] += 1
         rows_ok += e.get("row_count") or 0
@@ -146,8 +165,8 @@ def main() -> int:
         "rowcheck_enabled": rowcheck_enabled,
         "problems": problems,
         "protocol": "每单元 copy 后回读：sha256 必须等于 manifest.staged_sha256；"
-                    "pandas 可用时行数必须等于 manifest.row_count；mismatch 不删"
-                    "不重试，留待裁决。",
+        "pandas 可用时行数必须等于 manifest.row_count；mismatch 不删"
+        "不重试，留待裁决。",
     }
     rp = Path(args.report) if args.report else staging / "materialize_v2_report.json"
     with open(rp, "w", encoding="utf-8") as f:
@@ -155,11 +174,15 @@ def main() -> int:
 
     print(f"[v2] staging={staging}")
     print(f"[v2] out_dir={out_dir}（生产仓 {prod} 零写入）")
-    print(f"[v2] units: ok={stats['ok']} skipped={stats['skipped']} "
-          f"mismatch={stats['mismatch']} missing={stats['missing']} / "
-          f"total={len(entries)}")
+    print(
+        f"[v2] units: ok={stats['ok']} skipped={stats['skipped']} "
+        f"mismatch={stats['mismatch']} missing={stats['missing']} / "
+        f"total={len(entries)}"
+    )
     print(f"[v2] rows materialized (ok units): {rows_ok}")
-    print(f"[v2] rowcheck: {'pandas ON' if rowcheck_enabled else 'pandas OFF (sha256-only)'}")
+    print(
+        f"[v2] rowcheck: {'pandas ON' if rowcheck_enabled else 'pandas OFF (sha256-only)'}"
+    )
     if problems:
         print(f"[v2] PROBLEMS ({len(problems)}):")
         for p in problems[:10]:

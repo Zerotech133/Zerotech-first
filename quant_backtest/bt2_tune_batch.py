@@ -6,13 +6,14 @@ intent 有规则模板、非 running），串行跑自动回测对比。
 幂等：draft.bt2_result.status in (running, done) 跳过；失败单（inconclusive）次日
 批次重跑兜底。
 """
+
 import os
 import sys
 import json
 import glob
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_STATION = os.path.dirname(_HERE)          # 站根 c:\项目\老田的AI助手
+_STATION = os.path.dirname(_HERE)  # 站根 c:\项目\老田的AI助手
 _PORTAL = os.path.join(_STATION, "portal")
 for _p in (_STATION, _PORTAL, _HERE):
     if _p not in sys.path:
@@ -54,8 +55,10 @@ def _candidates():
             started = bt2r.get("started_at") or ""
             try:
                 from datetime import datetime
-                stale = (datetime.now() - datetime.fromisoformat(started)
-                         ).total_seconds() > 1800
+
+                stale = (
+                    datetime.now() - datetime.fromisoformat(started)
+                ).total_seconds() > 1800
             except Exception:
                 stale = True
             if not stale:
@@ -69,31 +72,48 @@ def main():
     print("candidates: %d" % len(cands), flush=True)
     for rid, doc in cands:
         r = _btc.run_compare(rid, doc, vip)
-        print("  %s -> %s (%s, %ss)" % (rid, r.get("verdict"),
-                                        r.get("reason", ""),
-                                        r.get("elapsed", "?")), flush=True)
+        print(
+            "  %s -> %s (%s, %ss)"
+            % (rid, r.get("verdict"), r.get("reason", ""), r.get("elapsed", "?")),
+            flush=True,
+        )
         # 回写 store + 账本（与 _auto_compare 同语义）
         from datetime import datetime
+
         doc2 = tune_gate._load_store(rid) or {}
         draft = doc2.setdefault("draft", {})
-        draft["bt2_result"] = dict(r, status="done",
-                                   finished_at=datetime.now().isoformat(
-                                       timespec="seconds"))
+        draft["bt2_result"] = dict(
+            r, status="done", finished_at=datetime.now().isoformat(timespec="seconds")
+        )
         tune_gate._save_store(doc2)
         intent = doc2.get("intent", "opinion")
         scope = doc2.get("scope", "private")
         note = "批次自动回测%s：%s（%ss）" % (
-            r.get("verdict", "?"), r.get("reason", ""), r.get("elapsed", "?"))
+            r.get("verdict", "?"),
+            r.get("reason", ""),
+            r.get("elapsed", "?"),
+        )
         if r.get("verdict") == "pass":
-            feedback_flow.record(rid, "pending_manual",
-                                 note=note[:200], intent=intent, scope=scope)
+            feedback_flow.record(
+                rid, "pending_manual", note=note[:200], intent=intent, scope=scope
+            )
         elif r.get("verdict") == "fail":
-            feedback_flow.record(rid, "rejected", operator="auto-bt2-batch",
-                                 note=note[:200], intent=intent, scope=scope)
+            feedback_flow.record(
+                rid,
+                "rejected",
+                operator="auto-bt2-batch",
+                note=note[:200],
+                intent=intent,
+                scope=scope,
+            )
         else:
-            feedback_flow.record(rid, "pending_manual",
-                                 note=(note + "（可重跑）")[:200],
-                                 intent=intent, scope=scope)
+            feedback_flow.record(
+                rid,
+                "pending_manual",
+                note=(note + "（可重跑）")[:200],
+                intent=intent,
+                scope=scope,
+            )
     print("batch done", flush=True)
 
 

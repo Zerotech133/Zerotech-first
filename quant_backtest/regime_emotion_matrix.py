@@ -31,6 +31,7 @@ K-STOCK-400 已证：冰点日全市场均涨 -0.99% vs 非冰点 +0.40%（t=-7.
 - **防前视**：情绪分位只用窗口内已发生的数据；周归属用该周**已收盘**的情绪档；
 - D-Day 冻结期（10-16 验收）内本脚本**不接入任何生产链路**，仅离线归因报告。
 """
+
 from __future__ import annotations
 
 import glob
@@ -50,7 +51,7 @@ ASHARE = os.path.join(HERE, "data", "ashare")
 EMO = os.path.join(HERE, "data", "tdx", "ts_emotion_daily")
 REPORTS = os.path.join(HERE, "reports")
 
-W0, W1 = "20250901", "20261014"      # 情绪表覆盖窗口（更短，如实标注）
+W0, W1 = "20250901", "20261014"  # 情绪表覆盖窗口（更短，如实标注）
 INDEX_FILES = {"000001_SH", "000688_SH", "399001_SZ", "399006_SZ"}
 HOLDS = ("r5", "r10", "r20")
 REGIME_ORDER = ["trend_up", "rotation", "range", "trend_down"]
@@ -75,7 +76,9 @@ def load_emotion() -> pd.DataFrame:
         return pd.DataFrame()
     d = pd.concat([pd.read_parquet(p) for p in f], ignore_index=True)
     d["trade_date"] = d["trade_date"].astype(str)
-    return d.drop_duplicates("trade_date").sort_values("trade_date").reset_index(drop=True)
+    return (
+        d.drop_duplicates("trade_date").sort_values("trade_date").reset_index(drop=True)
+    )
 
 
 def add_emotion_tier(emo: pd.DataFrame) -> pd.DataFrame:
@@ -91,8 +94,9 @@ def add_emotion_tier(emo: pd.DataFrame) -> pd.DataFrame:
         lo, hi = np.percentile(s.dropna(), 10), np.percentile(s.dropna(), 90)
         total += np.select([s >= hi, s <= lo], [2, 0], 1)
     d["情绪总分"] = total
-    d["情绪档"] = pd.cut(d["情绪总分"], bins=[-1, 3, 6, 8],
-                        labels=["冰点", "中性", "亢奋"]).astype(str)
+    d["情绪档"] = pd.cut(
+        d["情绪总分"], bins=[-1, 3, 6, 8], labels=["冰点", "中性", "亢奋"]
+    ).astype(str)
     return d
 
 
@@ -121,8 +125,10 @@ def market_proxy() -> pd.DataFrame:
     ew_rets, rel_highs, rel_lows, amts = [], [], [], []
     for fp in files:
         try:
-            df = pd.read_parquet(fp, columns=["trade_date", "pre_close",
-                                              "high", "low", "pct_chg", "amount"])
+            df = pd.read_parquet(
+                fp,
+                columns=["trade_date", "pre_close", "high", "low", "pct_chg", "amount"],
+            )
         except Exception:
             continue
         if len(df) < 100:
@@ -150,14 +156,16 @@ def market_proxy() -> pd.DataFrame:
     am = pd.concat(amts, axis=1).sum(axis=1).sort_index()
 
     close_m = (1.0 + ew.fillna(0.0)).cumprod()
-    px = pd.DataFrame({
-        "trade_date": [str(x) for x in ew.index],
-        "close": close_m.values,
-        "high": (close_m * (1.0 + rh.fillna(0.0))).values,
-        "low": (close_m * (1.0 + rl.fillna(0.0))).values,
-        "amount": am.values,
-        "eq_ret": ew.values,
-    })
+    px = pd.DataFrame(
+        {
+            "trade_date": [str(x) for x in ew.index],
+            "close": close_m.values,
+            "high": (close_m * (1.0 + rh.fillna(0.0))).values,
+            "low": (close_m * (1.0 + rl.fillna(0.0))).values,
+            "amount": am.values,
+            "eq_ret": ew.values,
+        }
+    )
     return px
 
 
@@ -168,14 +176,16 @@ def build_regime(px: pd.DataFrame):
        regime_sentiment / regime_label），不是 dict——按dict 迭代会拿到列名而丢掉数据。
     """
     from quant_double_knife import _compute_regime
+
     r = _compute_regime(px["close"], px["high"], px["low"], px["amount"])
     if isinstance(r, pd.DataFrame):
         out = r.reset_index(drop=True)
-    else:                                  # 兜底：万一以后改返回 dict
+    else:  # 兜底：万一以后改返回 dict
         out = pd.DataFrame(r)
     if len(out) != len(px):
-        raise SystemExit("regime 长度(%d)与代理序列(%d)不一致——代理构造有问题"
-                         % (len(out), len(px)))
+        raise SystemExit(
+            "regime 长度(%d)与代理序列(%d)不一致——代理构造有问题" % (len(out), len(px))
+        )
     out.insert(0, "trade_date", px["trade_date"].values)
     return out
 
@@ -204,17 +214,39 @@ def main() -> int:
     for c in ("close", "eq_ret"):
         if c in rg.columns:
             keep.append(c)
-    d = rg[keep].merge(emo[["trade_date", "情绪总分", "情绪档", "涨停家数",
-                           "封板率", "晋级率", "最高连板"]],
-                      on="trade_date", how="inner")
+    d = rg[keep].merge(
+        emo[
+            [
+                "trade_date",
+                "情绪总分",
+                "情绪档",
+                "涨停家数",
+                "封板率",
+                "晋级率",
+                "最高连板",
+            ]
+        ],
+        on="trade_date",
+        how="inner",
+    )
     if "close" not in d.columns:
         # 兜底：用情绪表日期回贴代理净值
         d = d.merge(px[["trade_date", "close"]], on="trade_date", how="inner")
-    d = d[d["trade_date"].between(W0, W1)].sort_values("trade_date").reset_index(drop=True)
+    d = (
+        d[d["trade_date"].between(W0, W1)]
+        .sort_values("trade_date")
+        .reset_index(drop=True)
+    )
     rcol = "regime_label"
-    log("合并后 %d 交易日（%s..%s）| regime 分布: %s"
-        % (len(d), d["trade_date"].iloc[0], d["trade_date"].iloc[-1],
-           d[rcol].value_counts().to_dict()))
+    log(
+        "合并后 %d 交易日（%s..%s）| regime 分布: %s"
+        % (
+            len(d),
+            d["trade_date"].iloc[0],
+            d["trade_date"].iloc[-1],
+            d[rcol].value_counts().to_dict(),
+        )
+    )
     if d.empty:
         log("★合并后为空")
         return 1
@@ -224,7 +256,9 @@ def main() -> int:
         d["fwd" + h] = d["close"].shift(-int(h[1:])) / d["close"] - 1
     # 下行幅度（区间内最低价 / 起点 - 1）——固定 10 日窗口
     n_dd = 10
-    roll_min = pd.concat([d["close"].shift(i) for i in range(n_dd + 1)], axis=1).min(axis=1)
+    roll_min = pd.concat([d["close"].shift(i) for i in range(n_dd + 1)], axis=1).min(
+        axis=1
+    )
     d["dd10"] = roll_min.shift(-n_dd) / d["close"] - 1
 
     os.makedirs(REPORTS, exist_ok=True)
@@ -240,16 +274,26 @@ def main() -> int:
             rec[h] = jround(g["fwd" + h].mean() * 100, 3)
         rec["dd10"] = jround(g["dd10"].mean() * 100, 3)
         xt["%s|%s" % (r_, e_)] = rec
-    log("%-26s %5s %9s %9s %9s %9s" % ("市况|情绪", "天数", "fwd_r5%", "fwd_r10%",
-                                "fwd_r20%", "dd10%"))
+    log(
+        "%-26s %5s %9s %9s %9s %9s"
+        % ("市况|情绪", "天数", "fwd_r5%", "fwd_r10%", "fwd_r20%", "dd10%")
+    )
     for rgv in REGIME_ORDER:
         for ev in ("冰点", "中性", "亢奋"):
             k = "%s|%s" % (rgv, ev)
             if k in xt:
                 v = xt[k]
-                log("%-26s %5d %9s %9s %9s %9s"
-                    % (k, v["n"], v.get("r5"), v.get("r10"), v.get("r20"),
-                       v.get("dd10")))
+                log(
+                    "%-26s %5d %9s %9s %9s %9s"
+                    % (
+                        k,
+                        v["n"],
+                        v.get("r5"),
+                        v.get("r10"),
+                        v.get("r20"),
+                        v.get("dd10"),
+                    )
+                )
 
     # ── 2. 边际贡献：同一市况内冰点 vs 非冰点 ────────────────
     log("\n【2】边际贡献（同一市况内：冰点 − 非冰点），策略层检验")
@@ -271,18 +315,31 @@ def main() -> int:
             diff = mean(a) - mean(b)
             se = np.sqrt(stdev(a) ** 2 / len(a) + stdev(b) ** 2 / len(b))
             t = diff / se if se else 0
-            rec[h] = {"冰点": jround(mean(a) * 100, 3), "非冰点": jround(mean(b) * 100, 3),
-                      "差pp": jround(diff * 100, 3), "t": jround(t, 2),
-                      "显著": bool(abs(t) > 1.96),
-                      "n_ice": len(a), "n_oth": len(b)}
+            rec[h] = {
+                "冰点": jround(mean(a) * 100, 3),
+                "非冰点": jround(mean(b) * 100, 3),
+                "差pp": jround(diff * 100, 3),
+                "t": jround(t, 2),
+                "显著": bool(abs(t) > 1.96),
+                "n_ice": len(a),
+                "n_oth": len(b),
+            }
         marg[rgv] = rec
         if "r20" in rec:
             v = rec["r20"]
             # 🔴 单位判例：rec 里 冰点/非冰点/差pp 三者已是**百分数**（rec 构造时 ×100），
             #    打印时不能再 ×100（首版把 0.786% 打成 78.60%）。
-            log("  %-12s r20: 冰点%+.3f%% vs 非冰点%+.3f%%  差%+.3fpp  t=%+.2f %s"
-                % (rgv, v["冰点"], v["非冰点"], v["差pp"],
-                   v["t"], "★显著" if v["显著"] else ""))
+            log(
+                "  %-12s r20: 冰点%+.3f%% vs 非冰点%+.3f%%  差%+.3fpp  t=%+.2f %s"
+                % (
+                    rgv,
+                    v["冰点"],
+                    v["非冰点"],
+                    v["差pp"],
+                    v["t"],
+                    "★显著" if v["显著"] else "",
+                )
+            )
 
     # ── 3. 情绪作为独立维度的信息量 ─────────────────────────
     log("\n【3】情绪档单独分层（全市场口径，策略无关）")
@@ -294,8 +351,10 @@ def main() -> int:
             rec[h] = jround(g["fwd" + h].mean() * 100, 3)
         rec["胜率r10"] = jround((g["fwdr10"] > 0).mean(), 4)
         solo[ev] = rec
-        log("  %-6s 天数=%-4d fwd_r5%%=%-9s fwd_r10%%=%-9s fwd_r20%%=%-9s 胜率r10=%s"
-            % (ev, rec["n"], rec["r5"], rec["r10"], rec["r20"], rec["胜率r10"]))
+        log(
+            "  %-6s 天数=%-4d fwd_r5%%=%-9s fwd_r10%%=%-9s fwd_r20%%=%-9s 胜率r10=%s"
+            % (ev, rec["n"], rec["r5"], rec["r10"], rec["r20"], rec["胜率r10"])
+        )
 
     # ── 4. 市况单独分层（对照：情绪是否带来增量信息）───────
     log("\n【4】市况单独分层（对照）")
@@ -304,17 +363,32 @@ def main() -> int:
         g = d[d[rcol] == rgv]
         if not len(g):
             continue
-        log("  %-12s 天数=%-4d fwd_r5%%=%-9s fwd_r10%%=%-9s fwd_r20%%=%-9s"
-            % (rgv, len(g), jround(g["fwdr5"].mean() * 100, 3),
-               jround(g["fwdr10"].mean() * 100, 3),
-               jround(g["fwdr20"].mean() * 100, 3)))
+        log(
+            "  %-12s 天数=%-4d fwd_r5%%=%-9s fwd_r10%%=%-9s fwd_r20%%=%-9s"
+            % (
+                rgv,
+                len(g),
+                jround(g["fwdr5"].mean() * 100, 3),
+                jround(g["fwdr10"].mean() * 100, 3),
+                jround(g["fwdr20"].mean() * 100, 3),
+            )
+        )
 
     # 当前状态
     cur = d.iloc[-1]
     log("\n【5】当前状态（%s）" % cur["trade_date"])
-    log("  市况=%s 情绪=%s（总分%d）涨停=%s 封板率=%s 晋级率=%s 最高板=%s"
-        % (cur[rcol], cur["情绪档"], int(cur["情绪总分"]),
-           cur["涨停家数"], cur["封板率"], cur["晋级率"], cur["最高连板"]))
+    log(
+        "  市况=%s 情绪=%s（总分%d）涨停=%s 封板率=%s 晋级率=%s 最高板=%s"
+        % (
+            cur[rcol],
+            cur["情绪档"],
+            int(cur["情绪总分"]),
+            cur["涨停家数"],
+            cur["封板率"],
+            cur["晋级率"],
+            cur["最高连板"],
+        )
+    )
 
     payload = {
         "window": [W0, W1],
@@ -325,10 +399,16 @@ def main() -> int:
         "matrix_regime_x_emotion": xt,
         "marginal_by_regime": marg,
         "emotion_solo": solo,
-        "current": {"trade_date": cur["trade_date"], "regime": cur[rcol],
-                    "emotion": cur["情绪档"], "emotion_score": int(cur["情绪总分"])},
-        "note": ("情绪分位用全窗口一次性计算，仅用于事后归因；"
-                 "实盘须改滚动分位。本脚本不产信号、不接入生产链路。"),
+        "current": {
+            "trade_date": cur["trade_date"],
+            "regime": cur[rcol],
+            "emotion": cur["情绪档"],
+            "emotion_score": int(cur["情绪总分"]),
+        },
+        "note": (
+            "情绪分位用全窗口一次性计算，仅用于事后归因；"
+            "实盘须改滚动分位。本脚本不产信号、不接入生产链路。"
+        ),
         "generated": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     jp = os.path.join(REPORTS, "regime_emotion_matrix.json")

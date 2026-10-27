@@ -14,6 +14,7 @@
 
 用法：python _327_paired.py [--force] [--only dknife,chan_base,chan_final]
 """
+
 import json
 import os
 import sys
@@ -28,8 +29,9 @@ PY = sys.executable
 BT2 = os.path.join(QBT, "backtest_engine_v2.py")
 SNAP = os.path.join(QBT, "data", "tdx", "dknife_snap", "dknife_snap.parquet")
 BT2_DIR = os.path.join(QBT, "data", "bt2")
-CACHE = os.path.join(QBT, "data", "sig_events",
-                     "sig_events_market_v3_20260901_20261012.json")
+CACHE = os.path.join(
+    QBT, "data", "sig_events", "sig_events_market_v3_20260901_20261012.json"
+)
 D0, D1 = "20260901", "20261012"
 FORCE = "--force" in sys.argv
 ONLY = None
@@ -55,16 +57,36 @@ def main():
 
     ARMS = [
         ("dknife", ["--strategy", "double_knife"]),
-        ("chan_base", ["--strategy", "chanlun", "--manual-picks-file", picks_file,
-                       "--gate-mode", "off"]),
-        ("chan_final", ["--strategy", "chanlun", "--manual-picks-file", picks_file,
-                        "--gate-mode", "high", "--min-score", "80"]),
+        (
+            "chan_base",
+            [
+                "--strategy",
+                "chanlun",
+                "--manual-picks-file",
+                picks_file,
+                "--gate-mode",
+                "off",
+            ],
+        ),
+        (
+            "chan_final",
+            [
+                "--strategy",
+                "chanlun",
+                "--manual-picks-file",
+                picks_file,
+                "--gate-mode",
+                "high",
+                "--min-score",
+                "80",
+            ],
+        ),
     ]
     results = []
     for suf, extra in ARMS:
         if ONLY and suf not in ONLY:
             continue
-        jid = "327_%s" % suf   # 引擎落盘自动加 bt2_ 前缀 → bt2_327_*.json
+        jid = "327_%s" % suf  # 引擎落盘自动加 bt2_ 前缀 → bt2_327_*.json
         out_fp = os.path.join(BT2_DIR, "bt2_%s.json" % jid)
         if os.path.exists(out_fp) and not FORCE:
             print("skip (exists):", jid)
@@ -72,33 +94,73 @@ def main():
             continue
         t0 = time.time()
         if os.path.exists(out_fp):
-            os.remove(out_fp)   # --force 语义前移：先删旧产物，杜绝“引擎没写文件→读旧 json 误判 DONE”
+            os.remove(
+                out_fp
+            )  # --force 语义前移：先删旧产物，杜绝“引擎没写文件→读旧 json 误判 DONE”
         print("RUN", jid, flush=True)
         # K-STOCK-337: subprocess.run -> run_guarded（静默挂死杀树+自动重试一次）
         rc, _used = run_guarded(
-            [PY, "-u", BT2, "--d0", D0, "--d1", D1, "--hist-st", "true",
-             "--job-id", jid] + extra,
-            log_fh=log, cwd=QBT, label=jid)
+            [
+                PY,
+                "-u",
+                BT2,
+                "--d0",
+                D0,
+                "--d1",
+                D1,
+                "--hist-st",
+                "true",
+                "--job-id",
+                jid,
+            ]
+            + extra,
+            log_fh=log,
+            cwd=QBT,
+            label=jid,
+        )
         if rc != 0 or not os.path.exists(out_fp):
-            print("FAIL %s rc=%s out_exists=%s -> _327_paired.log"
-                  % (jid, rc, os.path.exists(out_fp)))
+            print(
+                "FAIL %s rc=%s out_exists=%s -> _327_paired.log"
+                % (jid, rc, os.path.exists(out_fp))
+            )
             sys.exit(4)
         s = json.load(open(out_fp, encoding="utf-8"))["summary"]
         results.append((suf, s))
-        print("DONE %s (%.0fs) ret=%s%% PF=%s trades=%s mdd=%s%%" % (
-            jid, time.time() - t0, s["total_return_pct"], s["profit_factor"],
-            s["n_trades"], s["max_drawdown_pct"]), flush=True)
+        print(
+            "DONE %s (%.0fs) ret=%s%% PF=%s trades=%s mdd=%s%%"
+            % (
+                jid,
+                time.time() - t0,
+                s["total_return_pct"],
+                s["profit_factor"],
+                s["n_trades"],
+                s["max_drawdown_pct"],
+            ),
+            flush=True,
+        )
 
     # 对照表
-    lines = ["# K-STOCK-327 双刀×缠论并轨对照（窗 %s~%s·同宇宙 %d 只）"
-             % (D0, D1, len(picks)), "",
-             "| 臂 | ret% | annual% | PF | 胜率% | 笔数 | 回撤% | 平均仓位% |",
-             "|---|---|---|---|---|---|---|---|"]
+    lines = [
+        "# K-STOCK-327 双刀×缠论并轨对照（窗 %s~%s·同宇宙 %d 只）"
+        % (D0, D1, len(picks)),
+        "",
+        "| 臂 | ret% | annual% | PF | 胜率% | 笔数 | 回撤% | 平均仓位% |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
     for suf, s in results:
-        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
-            suf, s["total_return_pct"], s["annualized_pct"], s["profit_factor"],
-            s["win_rate_pct"], s["n_trades"], s["max_drawdown_pct"],
-            s.get("avg_invested_pct")))
+        lines.append(
+            "| %s | %s | %s | %s | %s | %s | %s | %s |"
+            % (
+                suf,
+                s["total_return_pct"],
+                s["annualized_pct"],
+                s["profit_factor"],
+                s["win_rate_pct"],
+                s["n_trades"],
+                s["max_drawdown_pct"],
+                s.get("avg_invested_pct"),
+            )
+        )
     cmp_fp = os.path.join(QBT, "_327_compare.md")
     open(cmp_fp, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     log.close()

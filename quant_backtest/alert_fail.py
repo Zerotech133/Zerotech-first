@@ -14,6 +14,7 @@ K268（2026-10-08）：掉电击杀标注——本机近 7 天数十次 AC 掉�
 查询失败按无掉电处理（诊断不能反噬告警）。五个受害任务电池策略已关闭
 （CryptoSync/ChanlunScanUS/JEVBackfill-Hourly/RtdxRtMinPull/_sentinelEOD）。
 """
+
 import os
 import subprocess
 import sys
@@ -30,12 +31,17 @@ def recent_power_loss(window_min=10):
     """
     try:
         since = (datetime.utcnow() - timedelta(minutes=window_min)).strftime(
-            "%Y-%m-%dT%H:%M:%S")
-        q = ("*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and EventID=105"
-             " and TimeCreated[@SystemTime>='%s.000Z']]]" % since)
+            "%Y-%m-%dT%H:%M:%S"
+        )
+        q = (
+            "*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and EventID=105"
+            " and TimeCreated[@SystemTime>='%s.000Z']]]" % since
+        )
         r = subprocess.run(
             ["wevtutil", "qe", "System", "/q:" + q, "/f:xml", "/rd:true", "/c:10"],
-            capture_output=True, timeout=20)
+            capture_output=True,
+            timeout=20,
+        )
         out = r.stdout.decode("utf-8", "replace")
         return out.count("AcOnline'>false")
     except Exception:
@@ -45,7 +51,10 @@ def recent_power_loss(window_min=10):
 def alert(task, code, log=""):
     """python 侧直接调用（launcher 走 main/argv 口径）。"""
     msg = "[QUANT ALERT] task failed: %s exit=%s %s" % (
-        task, code, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        task,
+        code,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
     if log and os.path.isfile(log):
         try:
             # 二十一审：日志编码三态——Start-Process 重定向=raw UTF-8；PS5.1
@@ -68,7 +77,8 @@ def alert(task, code, log=""):
             if "锛" in txt or "鏄" in txt or "鏃" in txt:
                 try:
                     txt = txt.encode("gbk", errors="replace").decode(
-                        "utf-8", errors="replace")
+                        "utf-8", errors="replace"
+                    )
                 except UnicodeDecodeError:
                     pass
             tail = txt.splitlines()[-5:]
@@ -78,9 +88,11 @@ def alert(task, code, log=""):
             pass
     n = recent_power_loss()
     if n:
-        msg = ("[疑似掉电击杀·电池策略] 近10分钟 AC 掉电事件 %d 条，"
-               "Windows 默认'用电池时停止任务'会批量终止运行中任务(0x8007050B)，"
-               "非任务自身故障；供电恢复后下个触发器自动重跑。\n%s" % (n, msg))
+        msg = (
+            "[疑似掉电击杀·电池策略] 近10分钟 AC 掉电事件 %d 条，"
+            "Windows 默认'用电池时停止任务'会批量终止运行中任务(0x8007050B)，"
+            "非任务自身故障；供电恢复后下个触发器自动重跑。\n%s" % (n, msg)
+        )
     tmp = os.path.join(NEWS_DIR, "outbox", "pending_alert_%s.txt" % task)
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     with open(tmp, "w", encoding="utf-8") as f:
@@ -88,7 +100,11 @@ def alert(task, code, log=""):
     try:
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         print((r.stdout or "").strip()[:60])
     except Exception as e:
         print("alert send error: %s" % str(e)[:80])

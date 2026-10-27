@@ -20,6 +20,7 @@ SEND_OK 才写状态。超时（60 分钟未见收尾行——挂死场景 alert
 失败告警分工: rc≠0 → start_fut_daily.ps1 内 alert_fail 即时告警；
 挂死/未跑 → 本哨兵超时路径。两者互补不重复。
 """
+
 import glob
 import json
 import os
@@ -37,13 +38,14 @@ TASK_LOG = r"C:\Temp\fut_daily_task.log"
 OUT_DIR = os.path.join(os.path.dirname(HERE), "tools", "out")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 
-POLL_SEC = 60           # 轮询间隔
-POLL_MAX = 60           # 最多 60 分钟
-CUTOFF = "09:30"        # 收尾行时间下限（计划任务启动时刻）
+POLL_SEC = 60  # 轮询间隔
+POLL_MAX = 60  # 最多 60 分钟
+CUTOFF = "09:30"  # 收尾行时间下限（计划任务启动时刻）
 LINE_RE = re.compile(
     r"fut_scan exit=(\d+) fut_backtest exit=(\d+) "
     r"fut_walkforward exit=(\d+) cn_fut exit=(\d+) (\d{4}-\d{2}-\d{2}T"
-    r"\d{2}:\d{2}:\d{2})")
+    r"\d{2}:\d{2}:\d{2})"
+)
 
 
 def _now():
@@ -65,8 +67,7 @@ def _done():
     """收尾标志: task.log 最后一行 cn_fut exit 且时间戳 ≥ 今日 09:30。"""
     try:
         with open(TASK_LOG, encoding="utf-8", errors="replace") as f:
-            lines = [x for x in f.read().splitlines()
-                     if "cn_fut exit=" in x]
+            lines = [x for x in f.read().splitlines() if "cn_fut exit=" in x]
         if not lines:
             return None
         m = LINE_RE.search(lines[-1])
@@ -84,12 +85,13 @@ def _today_artifacts():
     """当日产物清单 [(名, 存在)]。"""
     out = []
     for pre in ("fut_scan", "fut_backtest", "fut_strat", "fut_walkforward"):
-        hits = sorted(glob.glob(os.path.join(
-            OUT_DIR, pre + "_*.json")))
+        hits = sorted(glob.glob(os.path.join(OUT_DIR, pre + "_*.json")))
         hit = hits[-1] if hits else None
-        ok = bool(hit) and os.path.getmtime(hit) >= \
-            _now().replace(hour=0, minute=0, second=0, microsecond=0) \
-            .timestamp()
+        ok = (
+            bool(hit)
+            and os.path.getmtime(hit)
+            >= _now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        )
         out.append((pre, ok))
     return out
 
@@ -108,59 +110,69 @@ def _matrix_readout():
     ok = [r for r in rows if not r.get("error")]
     beat, best = 0, None
     for r in ok:
-        rk = [x for x in (r.get("ranking") or [])
-              if x.get("total_return_pct") is not None]
+        rk = [
+            x for x in (r.get("ranking") or []) if x.get("total_return_pct") is not None
+        ]
         if not rk:
             continue
         top = max(rk, key=lambda x: x["total_return_pct"])
         bh = r.get("buy_and_hold_pct")
         if bh is not None and top["total_return_pct"] > bh:
             beat += 1
-        if best is None or (bh is not None and
-                            top["total_return_pct"] - bh >
-                            best[1]):
+        if best is None or (bh is not None and top["total_return_pct"] - bh > best[1]):
             wf = (r.get("wf") or {}).get("robustness_score")
             tag = "（WF%.2f）" % wf if wf is not None else ""
-            best = ("%s %s%s" % (r.get("symbol"), top["strategy"], tag),
-                    top["total_return_pct"] - (bh or 0))
+            best = (
+                "%s %s%s" % (r.get("symbol"), top["strategy"], tag),
+                top["total_return_pct"] - (bh or 0),
+            )
     return {"n": len(rows), "n_ok": len(ok), "beat": beat, "best": best}
 
 
 def _summary(exits, ts):
     rc = exits[:4]
     arts = _today_artifacts()
-    lines = ["🛰 FutQuant 晨报哨兵 · %s（收尾 %s）" % (_today(), ts[11:16]),
-             "四步 exit: scan=%d backtest=%d walkforward=%d cn_fut=%d %s"
-             % (rc[0], rc[1], rc[2], rc[3],
-                "✅ 全绿" if all(v == 0 for v in rc) else "⚠️ 有非 0——"
-                "详 C:\\Temp\\fut_daily_task.log 与 alert_fail 告警")]
-    lines += ["产物 %s: %s" % (name, "✅" if ok else "❌ 缺")
-              for name, ok in arts]
+    lines = [
+        "🛰 FutQuant 晨报哨兵 · %s（收尾 %s）" % (_today(), ts[11:16]),
+        "四步 exit: scan=%d backtest=%d walkforward=%d cn_fut=%d %s"
+        % (
+            rc[0],
+            rc[1],
+            rc[2],
+            rc[3],
+            "✅ 全绿"
+            if all(v == 0 for v in rc)
+            else "⚠️ 有非 0——详 C:\\Temp\\fut_daily_task.log 与 alert_fail 告警",
+        ),
+    ]
+    lines += ["产物 %s: %s" % (name, "✅" if ok else "❌ 缺") for name, ok in arts]
     m = _matrix_readout()
     if m is None:
         lines.append("F3 矩阵读数不可得（fut_strat json 缺/坏）")
     elif m.get("best"):
         lines.append(
             "F3 矩阵: %d 品种（错 %d）· 跑赢 B&H %d · 最佳 %s 超额 %+.1f%%"
-            % (m["n"], m["n"] - m["n_ok"], m["beat"],
-               m["best"][0], m["best"][1]))
+            % (m["n"], m["n"] - m["n_ok"], m["beat"], m["best"][0], m["best"][1])
+        )
     else:
-        lines.append("F3 矩阵: %d 品种（错 %d）"
-                     % (m["n"], m["n"] - m["n_ok"]))
+        lines.append("F3 矩阵: %d 品种（错 %d）" % (m["n"], m["n"] - m["n_ok"]))
     lines.append("明早无人值守首轮=本哨兵首个正式班次")
     return "\n".join(lines)
 
 
 def _push(text):
     os.makedirs(os.path.join(NEWS_DIR, "outbox"), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.join(NEWS_DIR, "outbox"),
-                               suffix=".txt")
+    fd, tmp = tempfile.mkstemp(dir=os.path.join(NEWS_DIR, "outbox"), suffix=".txt")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
     try:
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         ok = "SEND_OK" in (r.stdout or "")
         print((r.stdout or r.stderr or "").strip()[:100])
         return ok
@@ -192,13 +204,21 @@ def main():
         if not ok:
             sys.exit(4)
     else:
-        _push("⚠️ FutQuant 哨兵 · %s\n%d 分钟未见 %s 后收尾行"
-              "（fut_daily_task.log 无今日时间戳行）——任务可能挂死/未跑，"
-              "请查任务 FutQuant 与 C:\\Temp\\fut_daily_task.log。"
-              % (_today(), POLL_MAX, CUTOFF))
+        _push(
+            "⚠️ FutQuant 哨兵 · %s\n%d 分钟未见 %s 后收尾行"
+            "（fut_daily_task.log 无今日时间戳行）——任务可能挂死/未跑，"
+            "请查任务 FutQuant 与 C:\\Temp\\fut_daily_task.log。"
+            % (_today(), POLL_MAX, CUTOFF)
+        )
         status = "timeout"
-    _write_json(STATE, {"date": _today(), "status": status,
-                        "ts": _now().isoformat(timespec="seconds")})
+    _write_json(
+        STATE,
+        {
+            "date": _today(),
+            "status": status,
+            "ts": _now().isoformat(timespec="seconds"),
+        },
+    )
     print("state=%s" % status)
     sys.exit(0 if status != "timeout" else 3)
 

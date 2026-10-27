@@ -12,6 +12,7 @@
 
 运行：cd quant_backtest && python -m pytest test_weak_track_check_trigger.py -q
 """
+
 import os
 import sys
 import unittest
@@ -20,8 +21,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from weak_track_check import (  # noqa: E402
-    stood_on, trig_ex_converge, trig_pool_new_sig, trig_pivot_break,
-    trend_tag, TRIG_EX_TH)
+    stood_on,
+    trig_ex_converge,
+    trig_pool_new_sig,
+    trig_pivot_break,
+    trend_tag,
+    TRIG_EX_TH,
+)
 
 
 class TestStoodOn(unittest.TestCase):

@@ -22,6 +22,7 @@
   python weak_monthly_review.py --send         # 落盘 + 飞书推摘要
   python weak_monthly_review.py --dry          # 只打印，不落盘不推送
 """
+
 import argparse
 import datetime
 import glob
@@ -99,7 +100,7 @@ def _case_status(last_ex, trig_cnt):
 def collect(month):
     """聚合指定月份指标。返回 (metrics dict, per-case list)。"""
     lo, hi = _month_range(month)
-    codes = {}          # code -> list[record]（当月）
+    codes = {}  # code -> list[record]（当月）
     for fp in sorted(glob.glob(os.path.join(REPORTS, "weak_track_*.jsonl"))):
         try:
             with open(fp, "r", encoding="utf-8") as f:
@@ -139,8 +140,9 @@ def collect(month):
         d0 = str(days[0].get("ts", ""))[:10]
         d1 = str(days[-1].get("ts", ""))[:10]
         try:
-            track_days = (datetime.date.fromisoformat(d1)
-                          - datetime.date.fromisoformat(d0)).days + 1
+            track_days = (
+                datetime.date.fromisoformat(d1) - datetime.date.fromisoformat(d0)
+            ).days + 1
         except ValueError:
             track_days = 1
         trig = [r for r in recs if r.get("trig")]
@@ -152,14 +154,16 @@ def collect(month):
             trig_type[_trig_type(r["trig"])] += 1
         last = recs[-1]
         last_ex = last.get("ex250")
-        cases.append({
-            "code": code,
-            "days": track_days,
-            "trig": trig_cnt,
-            "ex250": last_ex,
-            "trend": _trend_bucket((last.get("trend") or [""])[0]),
-            "status": _case_status(last_ex, trig_cnt),
-        })
+        cases.append(
+            {
+                "code": code,
+                "days": track_days,
+                "trig": trig_cnt,
+                "ex250": last_ex,
+                "trend": _trend_bucket((last.get("trend") or [""])[0]),
+                "status": _case_status(last_ex, trig_cnt),
+            }
+        )
 
     ex_dist = {b: 0 for b in EX_BUCKETS}
     for c in cases:
@@ -225,9 +229,10 @@ def render(metrics, cases, now=None):
     if cases:
         for c in cases:
             exs = "n/a" if c["ex250"] is None else "%+.1f" % c["ex250"]
-            lines.append("| %s | %d | %d | %s | %s | %s |"
-                         % (c["code"], c["days"], c["trig"], exs,
-                            c["trend"], c["status"]))
+            lines.append(
+                "| %s | %d | %d | %s | %s | %s |"
+                % (c["code"], c["days"], c["trig"], exs, c["trend"], c["status"])
+            )
     else:
         lines.append("| （无） | - | - | - | - | - |")
     lines += [
@@ -257,8 +262,7 @@ def main():
     ap = argparse.ArgumentParser(description="weak 案例库月度复盘")
     ap.add_argument("--month", default=None, help="YYYY-MM，默认上个月")
     ap.add_argument("--send", action="store_true", help="推飞书摘要")
-    ap.add_argument("--dry", action="store_true",
-                    help="只打印报告，不落盘不推送")
+    ap.add_argument("--dry", action="store_true", help="只打印报告，不落盘不推送")
     args = ap.parse_args()
     month = args.month or _default_month()
     if len(month) != 7 or month[4] != "-":
@@ -271,8 +275,7 @@ def main():
         print(report)
         return 0
 
-    out = os.path.join(REPORTS, "weak_monthly_%s.md"
-                       % month.replace("-", ""))
+    out = os.path.join(REPORTS, "weak_monthly_%s.md" % month.replace("-", ""))
     with open(out, "w", encoding="utf-8") as f:
         f.write(report)
     print("REPORT_OK " + out)

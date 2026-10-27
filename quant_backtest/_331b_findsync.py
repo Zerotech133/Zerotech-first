@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """331b：定位 tdx_sync 进程并报告 CPU/内存（区分解析慢 vs 卡死）。"""
+
 import subprocess
 import sys
 import time
@@ -15,11 +16,16 @@ def cpu_and_mem(pid):
         return None, None
     try:
         ct, et, kt, ut = wt.FILETIME(), wt.FILETIME(), wt.FILETIME(), wt.FILETIME()
-        if not k32.GetProcessTimes(h, ctypes.byref(ct), ctypes.byref(et),
-                                   ctypes.byref(kt), ctypes.byref(ut)):
+        if not k32.GetProcessTimes(
+            h, ctypes.byref(ct), ctypes.byref(et), ctypes.byref(kt), ctypes.byref(ut)
+        ):
             return None, None
-        cpu = ((kt.dwHighDateTime << 32) + kt.dwLowDateTime +
-               (ut.dwHighDateTime << 32) + ut.dwLowDateTime) / 1e7
+        cpu = (
+            (kt.dwHighDateTime << 32)
+            + kt.dwLowDateTime
+            + (ut.dwHighDateTime << 32)
+            + ut.dwLowDateTime
+        ) / 1e7
         pmc = (ctypes.c_size_t * 9)()  # PROCESS_MEMORY_COUNTERS
         pmc[0] = ctypes.sizeof(pmc)
         psapi = ctypes.WinDLL("psapi")

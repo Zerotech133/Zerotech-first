@@ -11,6 +11,7 @@ test_kg_portal_integration.py 与每日链 graph_check 后的 export 步覆盖�
   · registry_json/trust_grade 视图组装（档随 kg_source_rating 实证走）
   · snapshot 离线降级：Neo4j 不可达 → ok=False 不抛（warn-only）
 """
+
 import pytest
 
 import ontology as OT
@@ -18,6 +19,7 @@ import kg_schema as S
 
 
 # ── 完备性：schema 常量 ↔ 注册表 ────────────────────────────
+
 
 def _schema_labels():
     lbls = set()
@@ -55,12 +57,13 @@ def test_registry_size_floor():
 
 # ── 元数据纪律 ──────────────────────────────────────────────
 
+
 @pytest.mark.parametrize("lbl,m", sorted(OT.NODE_TYPES.items()))
 def test_node_meta_complete(lbl, m):
     assert m["domain"] and m["trust"] in OT.TRUST_SCALE
     assert m["source"] and m["writer"] and m["desc"]
-    assert m.get("key")                      # 无唯一约束也须显式声明
-    assert "date_field" in m                 # 静态=None 亦须显式
+    assert m.get("key")  # 无唯一约束也须显式声明
+    assert "date_field" in m  # 静态=None 亦须显式
 
 
 @pytest.mark.parametrize("rel,m", sorted(OT.EDGE_TYPES.items()))
@@ -91,13 +94,16 @@ def test_prop_meta_only_known_labels():
 
 # ── 视图组装 ────────────────────────────────────────────────
 
+
 def test_registry_json_shape():
     r = OT.registry_json()
-    assert r["counts"] == {"node_types": len(OT.NODE_TYPES),
-                           "edge_types": len(OT.EDGE_TYPES)}
+    assert r["counts"] == {
+        "node_types": len(OT.NODE_TYPES),
+        "edge_types": len(OT.EDGE_TYPES),
+    }
     sec = r["node_types"]["Security"]
-    assert sec["props"]["ts_code"]["note"]      # 属性元数据已带上
-    assert "count" not in sec                   # 纯注册表不含计数
+    assert sec["props"]["ts_code"]["note"]  # 属性元数据已带上
+    assert "count" not in sec  # 纯注册表不含计数
     tr = r["edge_types"]["TRADED_ON"]
     assert tr["frm"] == "Seat" and tr["to"] == "Security"
 
@@ -117,6 +123,7 @@ def test_labels_rels_sorted():
 
 
 # ── 碰图路径离线降级 ────────────────────────────────────────
+
 
 def test_snapshot_degrades_offline(monkeypatch):
     """Neo4j 不可达 → ok=False + error，不抛（warn-only 语义）。"""

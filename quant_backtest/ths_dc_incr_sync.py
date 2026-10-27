@@ -12,6 +12,7 @@
 本脚本：只从本地已有代码清单续拉缺口日期，**追加式写新分区**，不改历史分区。
 纪律：只写 ts_ths_daily / ts_dc_daily / ts_ths_hot / ts_dc_hot 四个表的增量分区。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,8 +30,8 @@ OUT = os.path.join(HERE, "data", "tdx")
 BASE = "http://rookie.xtcloud-tech.com:48088"
 SESS = requests.Session()
 RETRY = 3
-SLEEP = 0.6                    # ⚠️ 2026-10-15 判例：0.2s 会触发远端 403 限流；
-                               #   单日单页已验证可通，故节流到 0.6s + 403 冷却 20s。
+SLEEP = 0.6  # ⚠️ 2026-10-15 判例：0.2s 会触发远端 403 限流；
+#   单日单页已验证可通，故节流到 0.6s + 403 冷却 20s。
 PAGE = 5000
 LIMIT_COOLDOWN = 20.0
 
@@ -44,7 +45,7 @@ LIMIT_COOLDOWN = 20.0
 #     杜绝「过滤失效 → 全表翻页 → 重复行」这类静默脏数据。
 TARGETS = {
     "ts_ths_daily": ("/api/data/table/ts_ths_daily", "trade_date"),
-    "ts_dc_daily":  ("/api/data/table/ts_dc_daily", "trade_date"),
+    "ts_dc_daily": ("/api/data/table/ts_dc_daily", "trade_date"),
 }
 
 # 单区间总行数安全阀（ths 缺口 7 天≈1.2 万行；留足余量但防失控翻页）
@@ -64,7 +65,7 @@ def _get(path, params=None, timeout=60):
                 time.sleep(LIMIT_COOLDOWN * (i + 1))
                 continue
             last = "HTTP %s %s" % (r.status_code, r.text[:80])
-        except Exception as e:      # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             last = "%s %s" % (type(e).__name__, str(e)[:80])
         time.sleep(1.5 * (i + 1))
     raise RuntimeError("GET %s failed: %s" % (path, last))
@@ -73,14 +74,18 @@ def _get(path, params=None, timeout=60):
 def local_days(tbl: str, date_col: str = "trade_date") -> set[str]:
     import glob
     import pyarrow.parquet as pq
+
     ds = set()
     for p in sorted(glob.glob(os.path.join(OUT, tbl, "part_*.parquet"))):
         try:
             pf = pq.ParquetFile(p)
             if date_col not in pf.schema_arrow.names:
                 continue
-            ds.update(str(x) for x in pq.read_table(p, columns=[date_col])
-                      .column(0).to_pylist() if x is not None)
+            ds.update(
+                str(x)
+                for x in pq.read_table(p, columns=[date_col]).column(0).to_pylist()
+                if x is not None
+            )
         except Exception:
             continue
     return ds
@@ -109,6 +114,7 @@ def save_mf(p: str, m: dict) -> None:
 
 def next_part(tbl: str) -> str:
     import glob
+
     parts = sorted(glob.glob(os.path.join(OUT, tbl, "part_*.parquet")))
     idx = 0
     if parts:
@@ -120,7 +126,7 @@ def next_part(tbl: str) -> str:
 def _chunks(days: list[str], span: int = 3):
     """把交易日列表按span 个一组切成连续区间（连续日合并成一次区间查询）。"""
     for i in range(0, len(days), span):
-        part = days[i:i + span]
+        part = days[i : i + span]
         yield part[0], part[-1]
 
 
@@ -128,8 +134,10 @@ def trading_days_since(start: str, end: str) -> list[str]:
     """用 trade_cal（本地湖）取 start..end 之间的交易日。"""
     import glob
     import pyarrow.parquet as pq
-    cal_parts = sorted(glob.glob(os.path.join(HERE, "data", "tushare",
-                                             "trade_cal", "part_*.parquet")))
+
+    cal_parts = sorted(
+        glob.glob(os.path.join(HERE, "data", "tushare", "trade_cal", "part_*.parquet"))
+    )
     if not cal_parts:
         return []
     cols = None
@@ -144,17 +152,19 @@ def trading_days_since(start: str, end: str) -> list[str]:
     if not frames:
         return []
     import pandas as pd
+
     df = pd.concat(frames, ignore_index=True)
     df["cal_date"] = df["cal_date"].astype(str)
-    sel = df[(df["is_open"] == 1) & (df["cal_date"] >= start)
-             & (df["cal_date"] <= end)]
+    sel = df[(df["is_open"] == 1) & (df["cal_date"] >= start) & (df["cal_date"] <= end)]
     return sorted(sel["cal_date"].unique().tolist())
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="ths/dc 概念系列增量续拉")
     ap.add_argument("--dryrun", action="store_true")
-    ap.add_argument("--start", default="", help="起始交易日 YYYYMMDD（默认自动取本地最新+1）")
+    ap.add_argument(
+        "--start", default="", help="起始交易日 YYYYMMDD（默认自动取本地最新+1）"
+    )
     ap.add_argument("--end", default="", help="结束交易日（默认今天）")
     ap.add_argument("--only", default="", help="只拉某表（逗号分隔）")
     args = ap.parse_args()
@@ -171,17 +181,22 @@ def main() -> int:
     print("=== ths/dc 增量续拉 · end=%s ===" % end)
 
     import pandas as pd
+
     for tbl in tbls:
         path, dcol = TARGETS[tbl]
         have = local_days(tbl, dcol)
         local_max = max(have) if have else ""
         start = args.start or (str(int(local_max) + 1) if local_max else "20260901")
-        print("\n[%s] 本地 %d 交易日，最新 %s → 待补 %s..%s"
-              % (tbl, len(have), local_max or "-", start, end))
+        print(
+            "\n[%s] 本地 %d 交易日，最新 %s → 待补 %s..%s"
+            % (tbl, len(have), local_max or "-", start, end)
+        )
         days = trading_days_since(start, end)
         missing = [d for d in days if d not in have]
-        print("  区间交易日 %d 个，真缺 %d 个 %s"
-              % (len(days), len(missing), missing[:12]))
+        print(
+            "  区间交易日 %d 个，真缺 %d 个 %s"
+            % (len(days), len(missing), missing[:12])
+        )
         if not missing:
             print("  无缺口，跳过")
             continue
@@ -196,34 +211,50 @@ def main() -> int:
             offset = 0
             chunk_frames = []
             while True:
-                params = {"start_date": chunk_start, "end_date": chunk_end,
-                          "limit": PAGE, "offset": offset}
+                params = {
+                    "start_date": chunk_start,
+                    "end_date": chunk_end,
+                    "limit": PAGE,
+                    "offset": offset,
+                }
                 try:
                     j = _get(path, params)
-                except Exception as e:      # noqa: BLE001
-                    print("  %s..%s offset=%d FAIL %s"
-                          % (chunk_start, chunk_end, offset, str(e)[:70]))
+                except Exception as e:  # noqa: BLE001
+                    print(
+                        "  %s..%s offset=%d FAIL %s"
+                        % (chunk_start, chunk_end, offset, str(e)[:70])
+                    )
                     break
                 cols = j.get("columns") or []
                 rows = j.get("rows") or []
                 if not rows:
                     break
                 # 过滤生效自证：返回日期必须落在请求区间内，否则过滤参数被忽略
-                bad = [r for r in rows
-                       if not (chunk_start <= str(r[cols.index(dcol)]) <= chunk_end)]
+                bad = [
+                    r
+                    for r in rows
+                    if not (chunk_start <= str(r[cols.index(dcol)]) <= chunk_end)
+                ]
                 if bad:
                     raise RuntimeError(
                         "过滤失效：请求 %s..%s 返回越界日期 %s（API 已变更过滤参数名）"
-                        % (chunk_start, chunk_end, sorted({str(r[cols.index(dcol)]) for r in bad})[:5]))
+                        % (
+                            chunk_start,
+                            chunk_end,
+                            sorted({str(r[cols.index(dcol)]) for r in bad})[:5],
+                        )
+                    )
                 # 该 API 返回 rows 为**数组**（配 columns 元组），不是对象数组
                 chunk_frames.append(pd.DataFrame(rows, columns=cols))
                 got += len(rows)
                 if len(rows) < PAGE:
                     break
                 offset += PAGE
-                if offset > MAX_RANGE_ROWS:      # 安全阀
-                    raise RuntimeError("区间 %s..%s 超过安全阀 %d 行，疑似过滤失效"
-                                       % (chunk_start, chunk_end, MAX_RANGE_ROWS))
+                if offset > MAX_RANGE_ROWS:  # 安全阀
+                    raise RuntimeError(
+                        "区间 %s..%s 超过安全阀 %d 行，疑似过滤失效"
+                        % (chunk_start, chunk_end, MAX_RANGE_ROWS)
+                    )
                 time.sleep(SLEEP)
             if chunk_frames:
                 frames.extend(chunk_frames)
@@ -254,14 +285,22 @@ def main() -> int:
         os.makedirs(os.path.join(OUT, tbl), exist_ok=True)
         op = next_part(tbl)
         new.to_parquet(op, index=False)
-        rng = "%s..%s" % (str(new[dcol].astype(str).min()), str(new[dcol].astype(str).max()))
-        print("  写入 %s rows=%d 期间 %s 覆盖 %d/%d 天"
-              % (os.path.basename(op), len(new), rng, len(got_days), len(missing)))
+        rng = "%s..%s" % (
+            str(new[dcol].astype(str).min()),
+            str(new[dcol].astype(str).max()),
+        )
+        print(
+            "  写入 %s rows=%d 期间 %s 覆盖 %d/%d 天"
+            % (os.path.basename(op), len(new), rng, len(got_days), len(missing))
+        )
         mp = manifest_path(tbl)
         mf = load_mf(mp)
-        mf["last_incr"] = {"at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                           "part": os.path.basename(op), "rows": int(len(new)),
-                           "range": "%s..%s" % (start, end)}
+        mf["last_incr"] = {
+            "at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "part": os.path.basename(op),
+            "rows": int(len(new)),
+            "range": "%s..%s" % (start, end),
+        }
         save_mf(mp, mf)
 
     print("\n完成 %s" % time.strftime("%H:%M:%S"))

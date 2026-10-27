@@ -9,6 +9,7 @@ ts_daily（上榜后走势对照）。
   python badnews_lookup.py 301216            # 默认近 365 自然日
   python badnews_lookup.py 301216.SZ --days 180
 """
+
 import argparse
 import os
 import sys
@@ -25,15 +26,15 @@ from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一
 def main():
     ap = argparse.ArgumentParser(description="利空明细查询（龙虎榜+席位）")
     ap.add_argument("code")
-    ap.add_argument("--days", type=int, default=365,
-                    help="回看自然日窗口，默认 365")
+    ap.add_argument("--days", type=int, default=365, help="回看自然日窗口，默认 365")
     a = ap.parse_args()
     code = _norm(a.code)
     start = (datetime.now() - timedelta(days=a.days)).strftime("%Y-%m-%d")
 
     # 日线收盘（上榜后走势对照）
-    px = tdxr.read_range("ts_daily", start=start,
-                         columns=["ts_code", "trade_date", "close"])
+    px = tdxr.read_range(
+        "ts_daily", start=start, columns=["ts_code", "trade_date", "close"]
+    )
     px = px[px["ts_code"] == code].sort_values("trade_date")
     last_day = px["trade_date"].iloc[-1] if len(px) else ""
     last_px = float(px["close"].iloc[-1]) if len(px) else 0.0
@@ -52,12 +53,23 @@ def main():
             if len(seg) and last_px and float(r["close"]):
                 chg = (last_px / float(r["close"]) - 1) * 100
                 after = "  榜后至今 %+.1f%%（%.2f→%.2f）" % (
-                    chg, float(r["close"]), last_px)
-            print("  %s  %s  收 %.2f  涨跌 %+.2f%%  榜上净买 %+.0f 万  "
-                  "原因：%s%s" % (d, r.get("name", ""), float(r["close"]),
-                                  float(r["pct_change"]),
-                                  float(r["net_amount"]) / 1e4, r["reason"],
-                                  after))
+                    chg,
+                    float(r["close"]),
+                    last_px,
+                )
+            print(
+                "  %s  %s  收 %.2f  涨跌 %+.2f%%  榜上净买 %+.0f 万  "
+                "原因：%s%s"
+                % (
+                    d,
+                    r.get("name", ""),
+                    float(r["close"]),
+                    float(r["pct_change"]),
+                    float(r["net_amount"]) / 1e4,
+                    r["reason"],
+                    after,
+                )
+            )
 
     # --- B. 席位明细 ---
     ti = tdxr.read_range("ts_top_inst", start=start)
@@ -74,30 +86,41 @@ def main():
             n_org = sub["exalter"].astype(str).str.contains("机构专用").sum()
             for _, r in sub.iterrows():
                 tag = "买方" if str(r["side"]) in ("1", "1.0") else "卖方"
-                print("    [%s] %-40s 买 %.0f 万 / 卖 %.0f 万 → 净 %+.0f 万" % (
-                    tag, str(r["exalter"])[:40], float(r["buy"]) / 1e4,
-                    float(r["sell"]) / 1e4, float(r["net_buy"]) / 1e4))
+                print(
+                    "    [%s] %-40s 买 %.0f 万 / 卖 %.0f 万 → 净 %+.0f 万"
+                    % (
+                        tag,
+                        str(r["exalter"])[:40],
+                        float(r["buy"]) / 1e4,
+                        float(r["sell"]) / 1e4,
+                        float(r["net_buy"]) / 1e4,
+                    )
+                )
             if n_org:
-                net_org = float(sub[sub["exalter"].astype(str).str.contains(
-                    "机构专用")]["net_buy"].sum())
-                print("    机构专用 %d 席，合计净 %+.0f 万" % (n_org,
-                                                             net_org / 1e4))
+                net_org = float(
+                    sub[sub["exalter"].astype(str).str.contains("机构专用")][
+                        "net_buy"
+                    ].sum()
+                )
+                print("    机构专用 %d 席，合计净 %+.0f 万" % (n_org, net_org / 1e4))
 
     # --- C. 公告文本声明 + 人工指引 ---
     print("\n=== C. 公告/新闻文本 ===")
-    print("  本地 notice / news 表未入库（rows=0），文本利空无法机查。"
-          "人工核查：")
-    print("  - 巨潮资讯 http://www.cninfo.com.cn 搜「%s」：看近 3 月是否"
-          "有 减持/质押/问询函/业绩预告下调/大宗交易 公告" % code)
+    print("  本地 notice / news 表未入库（rows=0），文本利空无法机查。人工核查：")
+    print(
+        "  - 巨潮资讯 http://www.cninfo.com.cn 搜「%s」：看近 3 月是否"
+        "有 减持/质押/问询函/业绩预告下调/大宗交易 公告" % code
+    )
     print("  - 东方财富 F10 → 股东研究（增减持/质押）/ 分红融资")
     print("\n=== D. §2① 判读 ===")
     if len(tl):
-        print("  龙虎榜有记录：结合 A 段「榜后至今」走势读——上榜后大幅回撤"
-              "多为游资一日游/情绪顶，属资金行为利空而非基本面利空；"
-              "机构席位净卖方向才指向基本面分歧。")
+        print(
+            "  龙虎榜有记录：结合 A 段「榜后至今」走势读——上榜后大幅回撤"
+            "多为游资一日游/情绪顶，属资金行为利空而非基本面利空；"
+            "机构席位净卖方向才指向基本面分歧。"
+        )
     else:
-        print("  龙虎榜无记录 + 文本未入库：① 暂无机查证据，保持「待人工」"
-              "状态。")
+        print("  龙虎榜无记录 + 文本未入库：① 暂无机查证据，保持「待人工」状态。")
     return 0
 
 

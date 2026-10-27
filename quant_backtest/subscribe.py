@@ -28,6 +28,7 @@
     python subscribe.py --list              # 打印订阅清单（调试）
     python subscribe.py --test <sub_id>     # 试推某订阅（门户一键试推）
 """
+
 import json
 import math
 import os
@@ -45,12 +46,13 @@ SUB_PATH = os.path.join(HERE, "subscriptions.json")
 RECV_PATH = os.path.join(HERE, "receivers.json")
 STATE_PATH = os.path.join(HERE, "outbox", "subscribe_state.json")
 
-DAILY_CAP = 3          # 每个订阅每日最多推 3 次（盘中防轰炸，对齐 alert_watch）
-SUBP_BAND_PCT = 1.5    # K250 买点触发带半宽（%）：回踩到约定位 ±1.5% 视为「到位」
+DAILY_CAP = 3  # 每个订阅每日最多推 3 次（盘中防轰炸，对齐 alert_watch）
+SUBP_BAND_PCT = 1.5  # K250 买点触发带半宽（%）：回踩到约定位 ±1.5% 视为「到位」
 ALERT_URL = PORTAL_API + "/api/alerts"
 
 
 # ---------------------------------------------------------------- IO
+
 
 def _read_json(path, default):
     try:
@@ -80,8 +82,7 @@ def load_receivers():
     out = {}
     for r in d.get("receivers") or []:
         if r.get("name"):
-            out[r["name"]] = {"type": r.get("type", "open_id"),
-                              "id": r.get("id")}
+            out[r["name"]] = {"type": r.get("type", "open_id"), "id": r.get("id")}
     return out
 
 
@@ -92,10 +93,14 @@ def _valid_target(target):
     identifier = target.get("id")
     prefix = "ou_" if target["type"] == "open_id" else "oc_"
     name = target.get("name")
-    return (isinstance(identifier, str) and identifier.startswith(prefix) and
-            bool(identifier[len(prefix):].strip()) and
-            isinstance(name, str) and bool(name.strip()) and
-            not name.startswith("_"))
+    return (
+        isinstance(identifier, str)
+        and identifier.startswith(prefix)
+        and bool(identifier[len(prefix) :].strip())
+        and isinstance(name, str)
+        and bool(name.strip())
+        and not name.startswith("_")
+    )
 
 
 def _resolve_targets(sub, receivers):
@@ -105,19 +110,24 @@ def _resolve_targets(sub, receivers):
         cfg = _read_json(os.path.join(NEWS_DIR, "news_config.json"), {})
         targets = cfg.get("push_targets") if isinstance(cfg, dict) else None
     elif isinstance(names, list) and all(isinstance(n, str) for n in names):
-        targets = [dict(name=n, **receivers[n]) if n in receivers else None
-                   for n in names]
+        targets = [
+            dict(name=n, **receivers[n]) if n in receivers else None for n in names
+        ]
     else:
         return []
-    if (not isinstance(targets, list) or not targets or
-            not all(_valid_target(t) for t in targets) or
-            len({t["name"] for t in targets}) != len(targets) or
-            len({(t["type"], t["id"]) for t in targets}) != len(targets)):
+    if (
+        not isinstance(targets, list)
+        or not targets
+        or not all(_valid_target(t) for t in targets)
+        or len({t["name"] for t in targets}) != len(targets)
+        or len({(t["type"], t["id"]) for t in targets}) != len(targets)
+    ):
         return []
     return targets
 
 
 # ---------------------------------------------------------------- 状态 / 熔断
+
 
 def _load_state():
     return _read_json(STATE_PATH, {})
@@ -146,12 +156,14 @@ def _mark_pushed(state, sub_id):
 
 # ---------------------------------------------------------------- 推送
 
+
 def _push_card(card, targets):
     """所有消息均按目标显式发送；逐目标卡片失败才回退文本。"""
     if not targets or not all(_valid_target(t) for t in targets):
         return {"_err": "invalid_targets"}
     if len({(t["type"], t["id"]) for t in targets}) != len(targets) or len(
-            {t["name"] for t in targets}) != len(targets):
+        {t["name"] for t in targets}
+    ) != len(targets):
         return {"_err": "duplicate_targets"}
     try:
         sys.path.insert(0, NEWS_DIR)
@@ -181,14 +193,19 @@ def _push_card(card, targets):
 
 def _delivery_ok(results, targets):
     """以原始显式目标集核验全部回执，绝不从结果键名推断收件人。"""
-    if (not isinstance(results, dict) or not isinstance(targets, list) or
-            not targets or not all(_valid_target(t) for t in targets) or
-            len({t["name"] for t in targets}) != len(targets) or
-            len({(t["type"], t["id"]) for t in targets}) != len(targets)):
+    if (
+        not isinstance(results, dict)
+        or not isinstance(targets, list)
+        or not targets
+        or not all(_valid_target(t) for t in targets)
+        or len({t["name"] for t in targets}) != len(targets)
+        or len({(t["type"], t["id"]) for t in targets}) != len(targets)
+    ):
         return False
-    return all(results.get(t["name"]) is True or
-               results.get("_textfb_" + t["name"]) is True
-               for t in targets)
+    return all(
+        results.get(t["name"]) is True or results.get("_textfb_" + t["name"]) is True
+        for t in targets
+    )
 
 
 def _strip_md_card(card):
@@ -199,9 +216,13 @@ def _strip_md_card(card):
     for e in els:
         if e.get("tag") == "markdown":
             s = e.get("content") or ""
-            s = (s.replace("**", "").replace("<font color='red'>", "")
-                  .replace("<font color='green'>", "")
-                  .replace("<font color='grey'>", "").replace("</font>", ""))
+            s = (
+                s.replace("**", "")
+                .replace("<font color='red'>", "")
+                .replace("<font color='green'>", "")
+                .replace("<font color='grey'>", "")
+                .replace("</font>", "")
+            )
             if s.strip():
                 parts.append(s.strip())
     return "\n".join(parts)
@@ -216,6 +237,7 @@ def _portal_link(kind="subscribe_push"):
         sys.path.insert(0, os.path.join(STATION, "portal"))
         import share_tokens
         from feishu_card_v2 import PORTAL_BASE, _load_portal_key, m_url
+
         tok = share_tokens.gen(kind=kind, ttl_hours=72)
         url = m_url("picks", st=tok)
         if not url:
@@ -227,14 +249,18 @@ def _portal_link(kind="subscribe_push"):
         return ""
 
 
-def _build_card(title, sub, blocks, template="blue", footer=None,
-                url_button=None):
+def _build_card(title, sub, blocks, template="blue", footer=None, url_button=None):
     sys.path.insert(0, NEWS_DIR)
     import card_build
+
     card = card_build.build_card(
-        title, sub, template, blocks,
+        title,
+        sub,
+        template,
+        blocks,
         footer=footer or "AI工作站 · 订阅推送 · 不构成投资建议",
-        use_schema2=True)
+        use_schema2=True,
+    )
     # K-PUSH-002 A2：2.0 卡深链按钮。坑位判例 K-STOCK-354：card_build
     # 的 buttons 参数走 v1 tag=action，2.0 卡下实测拒发——必须原生
     # button 元素 + behaviors.open_url（push_picks_public_link 实证可点）。
@@ -242,19 +268,33 @@ def _build_card(title, sub, blocks, template="blue", footer=None,
     if url_button:
         label, url = url_button
         els = card["body"]["elements"]
-        els.insert(max(len(els) - 2, 0), {
-            "tag": "button", "type": "primary", "size": "medium",
-            "text": {"tag": "plain_text", "content": label},
-            "behaviors": [{"type": "open_url", "default_url": url}]})
+        els.insert(
+            max(len(els) - 2, 0),
+            {
+                "tag": "button",
+                "type": "primary",
+                "size": "medium",
+                "text": {"tag": "plain_text", "content": label},
+                "behaviors": [{"type": "open_url", "default_url": url}],
+            },
+        )
     # 2026-10-25 P2：统一分装（失败回落旧卡）
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(HERE), "portal"))
         from push_unified_adapter import adapt as _adapt
+
         card = _adapt(
-            "subscribe", card, "subscription", title, blocks,
-            ts="", source="量化订阅引擎",
+            "subscribe",
+            card,
+            "subscription",
+            title,
+            blocks,
+            ts="",
+            source="量化订阅引擎",
             footer=footer or "AI工作站 · 订阅推送 · 不构成投资建议",
-            buttons=[url_button] if url_button else None, level="info")
+            buttons=[url_button] if url_button else None,
+            level="info",
+        )
     except Exception:
         pass
     return card
@@ -262,11 +302,11 @@ def _build_card(title, sub, blocks, template="blue", footer=None,
 
 def _cnpct(v):
     """行情生产者 pct 已经是百分数单位，不再做比例转换。"""
-    return ("<font color='%s'>%+.2f%%</font>"
-            % ("red" if v >= 0 else "green", v))
+    return "<font color='%s'>%+.2f%%</font>" % ("red" if v >= 0 else "green", v)
 
 
 # ---------------------------------------------------------------- 订阅构造器
+
 
 def _sub_stock_report(sub, mode):
     """个股分析师报告：调门户 /api/analyst-report 取报告。"""
@@ -278,8 +318,12 @@ def _sub_stock_report(sub, mode):
         with urllib.request.urlopen(url, timeout=90) as r:
             rep = json.loads(r.read().decode("utf-8"))
     except Exception as e:
-        return ("⚠️ 报告订阅异常", "生成失败 %s" % str(e)[:80],
-                ["该股报告暂时无法生成，请稍后重试。"], "orange")
+        return (
+            "⚠️ 报告订阅异常",
+            "生成失败 %s" % str(e)[:80],
+            ["该股报告暂时无法生成，请稍后重试。"],
+            "orange",
+        )
     if not rep.get("ok"):
         return None
     name = rep.get("name") or code
@@ -334,20 +378,25 @@ def _sub_daily_batch(sub, mode):
     buy = [p for p in picks if "买入" in (p.get("action") or "")]
     obs = [p for p in picks if "观察" in (p.get("action") or "")]
     blocks = []
-    blocks.append("**📅 批次日期** %s · 源 %s\n**🌡 环境** %s"
-                  % (dstr, latest.get("source", "—"),
-                     env.get("state", "—")))
+    blocks.append(
+        "**📅 批次日期** %s · 源 %s\n**🌡 环境** %s"
+        % (dstr, latest.get("source", "—"), env.get("state", "—"))
+    )
     if buy:
         bl = ["**✅ 买入建议（%d）**" % len(buy)]
         for p in buy[:10]:
-            bl.append("%s %s  score %s" % (p.get("code", ""), p.get("name", ""),
-                                           p.get("score", "")))
+            bl.append(
+                "%s %s  score %s"
+                % (p.get("code", ""), p.get("name", ""), p.get("score", ""))
+            )
         blocks.append("\n".join(bl))
     if obs:
         bl = ["**👀 观察（%d）**" % len(obs)]
         for p in obs[:10]:
-            bl.append("%s %s  score %s" % (p.get("code", ""), p.get("name", ""),
-                                           p.get("score", "")))
+            bl.append(
+                "%s %s  score %s"
+                % (p.get("code", ""), p.get("name", ""), p.get("score", ""))
+            )
         blocks.append("\n".join(bl))
     if not picks:
         blocks.append("**（当日选股为空——环境闸门收紧）**")
@@ -364,7 +413,7 @@ def _batch_perf_line(date):
     """最近批次回测表现（5/10/20 日超额 + K251 逐日明细）。"""
     p = os.path.join(HERE, "reports", "rps_batch_backtest.json")
     d = _read_json(p, {})
-    for b in (d.get("batches") or []):
+    for b in d.get("batches") or []:
         if b.get("date") == date:
             hs = b.get("holds") or {}
             parts = []
@@ -372,36 +421,67 @@ def _batch_perf_line(date):
                 hd = hs.get(h)
                 if hd and hd.get("excess") is not None:
                     ex = float(hd["excess"])
-                    parts.append("持%s日 %s" % (
-                        h, ("<font color='%s'>%+.2f%%</font>"
-                            % ("red" if ex >= 0 else "green", ex * 100))))
+                    parts.append(
+                        "持%s日 %s"
+                        % (
+                            h,
+                            (
+                                "<font color='%s'>%+.2f%%</font>"
+                                % ("red" if ex >= 0 else "green", ex * 100)
+                            ),
+                        )
+                    )
             if not parts:
                 return None
             line = "**📊 批次后验（至今/已满期）** " + " · ".join(parts)
             # K251 逐日盯市：每天的收益不打包，全展开（最多 20 日）
             dl = b.get("daily") or {}
-            ks, days, cums = (dl.get("k") or [], dl.get("day") or [],
-                              dl.get("cum") or [])
+            ks, days, cums = (
+                dl.get("k") or [],
+                dl.get("day") or [],
+                dl.get("cum") or [],
+            )
             if ks and days:
                 seg = " ".join(
-                    "D%s%s" % (k, ("<font color='%s'>%+.2f</font>"
-                                   % ("red" if v >= 0 else "green",
-                                      v * 100)) if v is not None else "—")
-                    for k, v in list(zip(ks, days))[:20])
+                    "D%s%s"
+                    % (
+                        k,
+                        (
+                            "<font color='%s'>%+.2f</font>"
+                            % ("red" if v >= 0 else "green", v * 100)
+                        )
+                        if v is not None
+                        else "—",
+                    )
+                    for k, v in list(zip(ks, days))[:20]
+                )
                 last = cums[-1] if cums else None
-                tail = ("" if last is None else
-                        " ｜ 累计净 <font color='%s'>%+.2f%%</font>%s"
-                        % ("red" if last >= 0 else "green", last * 100,
-                           "（至今）" if dl.get("partial") else ""))
-                line += ("\n**📅 逐日（当日收益%%，T+1 开盘进场起）**\n%s%s"
-                         % (seg, tail))
+                tail = (
+                    ""
+                    if last is None
+                    else " ｜ 累计净 <font color='%s'>%+.2f%%</font>%s"
+                    % (
+                        "red" if last >= 0 else "green",
+                        last * 100,
+                        "（至今）" if dl.get("partial") else "",
+                    )
+                )
+                line += "\n**📅 逐日（当日收益%%，T+1 开盘进场起）**\n%s%s" % (
+                    seg,
+                    tail,
+                )
             return line
     return None
 
 
-_ALERT_SOURCES = {"盘前倾向": "premarket", "缠论信号": "chanlun",
-                  "九维警报池": "nine_dim", "弱于板块在案": "weak",
-                  "共振做多": "cross", "🏛 投委会": "council"}
+_ALERT_SOURCES = {
+    "盘前倾向": "premarket",
+    "缠论信号": "chanlun",
+    "九维警报池": "nine_dim",
+    "弱于板块在案": "weak",
+    "共振做多": "cross",
+    "🏛 投委会": "council",
+}
 _CST = timezone(timedelta(hours=8))
 
 
@@ -412,7 +492,9 @@ def _fresh_time(value, minutes=15):
     try:
         stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
         age = datetime.now(_CST) - stamp
-        return stamp.utcoffset() is not None and timedelta(0) <= age <= timedelta(minutes=minutes)
+        return stamp.utcoffset() is not None and timedelta(0) <= age <= timedelta(
+            minutes=minutes
+        )
     except (TypeError, ValueError, OverflowError):
         return False
 
@@ -427,9 +509,12 @@ def _sub_alert_signal(sub, mode):
     if not isinstance(res, dict):
         return None
     health = res.get("source_health")
-    if (not isinstance(health, dict) or type(health.get("version")) is not int or
-            health["version"] != 1 or not _fresh_time(
-                health.get("checked_at"), minutes=5)):
+    if (
+        not isinstance(health, dict)
+        or type(health.get("version")) is not int
+        or health["version"] != 1
+        or not _fresh_time(health.get("checked_at"), minutes=5)
+    ):
         return None
     sources = health.get("sources")
     alerts = res.get("alerts")
@@ -438,10 +523,12 @@ def _sub_alert_signal(sub, mode):
     # 聚合卡只报告六源速览；缺任一核心源时无法宣称完整变化。
     for source_name in ("premarket", "chanlun", "nine_dim", "weak", "cross"):
         source = sources.get(source_name)
-        if (not isinstance(source, dict) or
-                source.get("status") not in ("ok", "empty") or
-                source.get("reason") is not None or
-                not _fresh_time(source.get("as_of"), minutes=5)):
+        if (
+            not isinstance(source, dict)
+            or source.get("status") not in ("ok", "empty")
+            or source.get("reason") is not None
+            or not _fresh_time(source.get("as_of"), minutes=5)
+        ):
             return None
     trusted = []
     for a in alerts:
@@ -452,22 +539,35 @@ def _sub_alert_signal(sub, mode):
         source = sources.get(source_name)
         if isinstance(source, dict) and source.get("status") == "empty":
             # 完成的零结果源与非零展示卡矛盾：整包拒绝，不能只删矛盾卡。
-            zero_pattern = {"chanlun": r"\s*买\s*0\s*·\s*卖\s*0\s*",
-                            "nine_dim": r"\s*0\s*只\s*",
-                            "weak": r"\s*0\s*案\s*",
-                            "cross": r"\s*0\s*只\s*"}.get(source_name)
+            zero_pattern = {
+                "chanlun": r"\s*买\s*0\s*·\s*卖\s*0\s*",
+                "nine_dim": r"\s*0\s*只\s*",
+                "weak": r"\s*0\s*案\s*",
+                "cross": r"\s*0\s*只\s*",
+            }.get(source_name)
             if source_name == "premarket":
-                if (source.get("reason") is not None or not isinstance(val, str) or
-                        val.strip() not in ("", "—", "-", "暂无")):
+                if (
+                    source.get("reason") is not None
+                    or not isinstance(val, str)
+                    or val.strip() not in ("", "—", "-", "暂无")
+                ):
                     return None
-            elif zero_pattern is None or not isinstance(val, str) or re.fullmatch(
-                    zero_pattern, val) is None:
+            elif (
+                zero_pattern is None
+                or not isinstance(val, str)
+                or re.fullmatch(zero_pattern, val) is None
+            ):
                 return None
             continue
-        if (not isinstance(nm, str) or not isinstance(source, dict) or
-                source.get("status") != "ok" or source.get("reason") is not None or
-                not _fresh_time(source.get("as_of"), minutes=5) or
-                not isinstance(val, str) or not val.strip()):
+        if (
+            not isinstance(nm, str)
+            or not isinstance(source, dict)
+            or source.get("status") != "ok"
+            or source.get("reason") is not None
+            or not _fresh_time(source.get("as_of"), minutes=5)
+            or not isinstance(val, str)
+            or not val.strip()
+        ):
             continue
         trusted.append(a)
     if not trusted:
@@ -485,7 +585,10 @@ def _sub_alert_signal(sub, mode):
         d = a.get("delta")
         if isinstance(d, int) and not isinstance(d, bool):
             ln += " <font color='%s'>（较前日 %s%d）</font>" % (
-                "red" if d >= 0 else "green", "+" if d >= 0 else "", d)
+                "red" if d >= 0 else "green",
+                "+" if d >= 0 else "",
+                d,
+            )
         blocks.append(ln)
     sub["_alerts_new"] = {a["name"]: a["value"] for a in trusted}
     title = "⚡ 预警速览" + ("变化" if mode == "intraday" else "汇总")
@@ -507,14 +610,21 @@ def _quote_time(value):
 def _sub_quote_move(sub, mode):
     """依赖健康的 quotes_status.items 实测涨跌幅；冷却状态不是行情。"""
     st = _read_json(os.path.join(NEWS_DIR, "quotes_status.json"), None)
-    if (not isinstance(st, dict) or st.get("ok") is not True or
-            not _quote_time(st.get("updated")) or
-            not isinstance(st.get("items"), list) or
-            type(st.get("count")) is not int or st["count"] != len(st["items"])):
+    if (
+        not isinstance(st, dict)
+        or st.get("ok") is not True
+        or not _quote_time(st.get("updated"))
+        or not isinstance(st.get("items"), list)
+        or type(st.get("count")) is not int
+        or st["count"] != len(st["items"])
+    ):
         return None
     threshold = st.get("alert_threshold")
-    if (type(threshold) not in (int, float) or not math.isfinite(threshold) or
-            threshold <= 0):
+    if (
+        type(threshold) not in (int, float)
+        or not math.isfinite(threshold)
+        or threshold <= 0
+    ):
         return None
     hits = []
     for item in st["items"]:
@@ -523,14 +633,15 @@ def _sub_quote_move(sub, mode):
         code, pct = item.get("code"), item.get("pct")
         # 港美行情无源事件时间，生产者会用本机 updated 回填 ts；整包拒绝。
         # A 股缺原生时间时生产者亦可能回填，消费端无法辨别，尚不可生产放行。
-        if (not isinstance(code, str) or
-                re.fullmatch(r"(?:sh|sz|bj)\d{6}", code) is None or
-                not _quote_time(item.get("ts"))):
+        if (
+            not isinstance(code, str)
+            or re.fullmatch(r"(?:sh|sz|bj)\d{6}", code) is None
+            or not _quote_time(item.get("ts"))
+        ):
             return None
         if pct is None:
             continue
-        if (type(pct) not in (int, float) or not math.isfinite(pct) or
-                abs(pct) > 25.0):
+        if type(pct) not in (int, float) or not math.isfinite(pct) or abs(pct) > 25.0:
             return None
         if abs(pct) >= threshold:
             hits.append({"code": code, "pct": float(pct)})
@@ -562,6 +673,7 @@ _BUILDERS = {
 
 
 # ---------------------------------------------------------------- 主流程
+
 
 def run_scan(mode, only_sub=None, force=False):
     """扫描全部启用的订阅，触发即推。返回 {sub_id: (ok, targets_res)}。"""
@@ -607,8 +719,13 @@ def run_scan(mode, only_sub=None, force=False):
         try:
             # K-PUSH-002 A2：订阅卡统一挂「看板直达」深链按钮（带码+st）
             link = _portal_link("subscribe_push")
-            card = _build_card(title, sub2, blocks, template=tpl,
-                               url_button=("看板直达", link) if link else None)
+            card = _build_card(
+                title,
+                sub2,
+                blocks,
+                template=tpl,
+                url_button=("看板直达", link) if link else None,
+            )
         except Exception as e:
             out[sid] = ("card_err:%s" % str(e)[:120], {})
             continue
@@ -621,16 +738,20 @@ def run_scan(mode, only_sub=None, force=False):
             sys.path.insert(0, STATION)  # K-STOCK-401：push_flow 在仓库根，
             # 此前缺该行 → ModuleNotFoundError 被吞 → 配额检查静默旁路
             import push_flow as _pf
+
             _plan, _q, _sent, _blk = _pf.quota_check()
         except Exception:
             _blk = False
         if _blk:
             out[sid] = ("quota_block", {})
             try:
-                _pf.record(kind="quota_block:subscribe:%s" % kind,
-                           channel="feishu", target=",".join(
-                               t["name"] for t in targets),
-                           count=1, ok=False)
+                _pf.record(
+                    kind="quota_block:subscribe:%s" % kind,
+                    channel="feishu",
+                    target=",".join(t["name"] for t in targets),
+                    count=1,
+                    ok=False,
+                )
             except Exception:
                 pass
             continue
@@ -641,9 +762,14 @@ def run_scan(mode, only_sub=None, force=False):
         try:
             sys.path.insert(0, STATION)
             import push_flow
-            push_flow.record(kind="subscribe:%s" % kind, channel="feishu",
-                             target=",".join(t["name"] for t in targets),
-                             count=1, ok=ok)
+
+            push_flow.record(
+                kind="subscribe:%s" % kind,
+                channel="feishu",
+                target=",".join(t["name"] for t in targets),
+                count=1,
+                ok=ok,
+            )
         except Exception:
             pass
         # 更新状态（K-STOCK-401：仅成功才落去重指纹——此前失败也写
@@ -685,9 +811,16 @@ def main():
         mode = "eod"
     if "--list" in args:
         for s in load_subs():
-            print("%s  kind=%s  when=%s  enabled=%s  recv=%s"
-                  % (s.get("id"), s.get("kind"), s.get("when"),
-                     s.get("enabled"), s.get("receivers")))
+            print(
+                "%s  kind=%s  when=%s  enabled=%s  recv=%s"
+                % (
+                    s.get("id"),
+                    s.get("kind"),
+                    s.get("when"),
+                    s.get("enabled"),
+                    s.get("receivers"),
+                )
+            )
         return 0
     only = None
     force = False
@@ -699,9 +832,16 @@ def main():
         mode = "intraday"
     res = run_scan(mode, only_sub=only, force=force)
     ok_n = sum(1 for v in res.values() if v[0] == "ok")
-    print("SUBSCRIBE_%s mode=%s subs=%d ok=%d  %s"
-          % ("OK" if ok_n else "IDLE", mode, len(res), ok_n,
-             json.dumps({k: v[0] for k, v in res.items()}, ensure_ascii=False)))
+    print(
+        "SUBSCRIBE_%s mode=%s subs=%d ok=%d  %s"
+        % (
+            "OK" if ok_n else "IDLE",
+            mode,
+            len(res),
+            ok_n,
+            json.dumps({k: v[0] for k, v in res.items()}, ensure_ascii=False),
+        )
+    )
     return 0
 
 

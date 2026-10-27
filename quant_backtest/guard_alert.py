@@ -20,6 +20,7 @@
 用法:
   guard_alert("StrongEod", "个股锚 600519.SH=2026-10-12 ≠ 板块锚 ...")
 """
+
 import hashlib
 import json
 import os
@@ -34,9 +35,9 @@ sys.path.insert(0, HERE)
 
 STATE_PATH = os.path.join(HERE, "data", "guard_alert_state.json")
 LOG_PATH = os.path.join(HERE, "logs", "guard_alert.log")
-DEDUP_WINDOW_H = 12          # 同 key 去重窗口（小时）
-_LOCK_STALE_S = 75           # 锁文件超龄视为残留（持锁进程已消亡）强破
-_LOCK_TIMEOUT_S = 80         # 等锁上限（> runner.push_feishu 60s 子进程超时）
+DEDUP_WINDOW_H = 12  # 同 key 去重窗口（小时）
+_LOCK_STALE_S = 75  # 锁文件超龄视为残留（持锁进程已消亡）强破
+_LOCK_TIMEOUT_S = 80  # 等锁上限（> runner.push_feishu 60s 子进程超时）
 
 
 def log(msg):
@@ -44,14 +45,13 @@ def log(msg):
     try:
         os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
         with open(LOG_PATH, "a", encoding="utf-8") as f:
-            f.write("[%s] %s\n" % (
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
+            f.write("[%s] %s\n" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
     except Exception:
         pass
 
 
-_last_fail_reason = ""   # 最近一次 _push 失败原因（SEND_FAIL 原因行/stderr
-                         # 摘要，≤120 字符），供 push fail 日志取证
+_last_fail_reason = ""  # 最近一次 _push 失败原因（SEND_FAIL 原因行/stderr
+# 摘要，≤120 字符），供 push fail 日志取证
 
 
 def _push(text):
@@ -64,11 +64,13 @@ def _push(text):
     global _last_fail_reason
     _last_fail_reason = ""
     import runner
+
     ok = bool(runner.push_feishu(text))
     if not ok:
         reason = (getattr(runner, "LAST_PUSH_FAIL", "") or "").strip()
-        _last_fail_reason = reason[:120] if reason \
-            else "push_feishu False（底座未落原因）"
+        _last_fail_reason = (
+            reason[:120] if reason else "push_feishu False（底座未落原因）"
+        )
     return ok
 
 
@@ -92,13 +94,12 @@ def _locked(path, timeout_s=_LOCK_TIMEOUT_S):
         except FileExistsError:
             try:
                 if time.time() - os.path.getmtime(lock_path) > _LOCK_STALE_S:
-                    os.remove(lock_path)        # 陈旧锁强破
+                    os.remove(lock_path)  # 陈旧锁强破
                     continue
             except OSError:
                 pass
             if time.time() - t0 > timeout_s:
-                log("state lock timeout (proceed unlocked) %s"
-                    % os.path.basename(path))
+                log("state lock timeout (proceed unlocked) %s" % os.path.basename(path))
                 break
             time.sleep(0.05)
     try:
@@ -142,8 +143,9 @@ def _save_state(path, state):
         log("state save error: %s" % str(e)[:120])
 
 
-def alert_once(key, text, send=True, state_path=None, now=None,
-               window_h=DEDUP_WINDOW_H):
+def alert_once(
+    key, text, send=True, state_path=None, now=None, window_h=DEDUP_WINDOW_H
+):
     """通用去重告警：同 key 窗口内只发 1 次。返回 (是否发送, 文本)。
 
     · 窗口内已发 → (False, text)，不重复打扰；
@@ -156,36 +158,38 @@ def alert_once(key, text, send=True, state_path=None, now=None,
     try:
         state = _load_state(path)
         if _fresh(state.get(key), now, window_h):
-            log("dedup skip key=%s (sent %s)"
-                % (key[:24], state[key].get("ts")))
+            log("dedup skip key=%s (sent %s)" % (key[:24], state[key].get("ts")))
             return False, text
         if not send:
-            return False, text                  # dry：只拼装
+            return False, text  # dry：只拼装
         with _locked(path) as got:
             if got:
                 # 锁内重读：等锁期间并发进程可能已发出同 key 告警
                 state = _load_state(path)
                 if _fresh(state.get(key), now, window_h):
-                    log("dedup skip key=%s (sent %s)"
-                        % (key[:24], state[key].get("ts")))
+                    log(
+                        "dedup skip key=%s (sent %s)" % (key[:24], state[key].get("ts"))
+                    )
                     return False, text
             ok = _push(text)
             if ok:
-                state[key] = {"ts": now.strftime("%Y-%m-%d %H:%M:%S"),
-                              "key": key[:64]}
+                state[key] = {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "key": key[:64]}
                 _save_state(path, state)
             else:
                 reason = (_last_fail_reason or "unknown").strip() or "unknown"
-                log("push fail key=%s reason=%s（不写状态，下轮重试）"
-                    % (key[:24], reason[:120]))
+                log(
+                    "push fail key=%s reason=%s（不写状态，下轮重试）"
+                    % (key[:24], reason[:120])
+                )
         return ok, text
     except Exception as e:
         log("alert_once error key=%s: %s" % (key[:24], str(e)[:120]))
         return False, text
 
 
-def guard_alert(task, reason, anchors=None, suggest=None, send=True,
-                state_path=None, now=None):
+def guard_alert(
+    task, reason, anchors=None, suggest=None, send=True, state_path=None, now=None
+):
     """守卫拦截告警（四要素卡）：任务名 / 拦截原因 / 双数据锚 / 建议动作。
 
     anchors 缺省时从原因文本提取 ISO 日期兜底（freshness_guard 的
@@ -198,16 +202,18 @@ def guard_alert(task, reason, anchors=None, suggest=None, send=True,
         anchors = {"数据锚": "、".join(dates) if dates else "无（原因未含日期）"}
     if suggest is None:
         suggest = "人工核查上游同步/补数任务；数据补齐后按任务手册强制重跑"
-    lines = ["⛔ 守卫拦截告警 · %s" %
-             (now or datetime.now()).strftime("%Y-%m-%d %H:%M"),
-             "任务: %s" % task,
-             "拦截原因: %s" % reason,
-             "数据锚: %s" % "；".join("%s=%s" % (k, v)
-                                     for k, v in anchors.items()),
-             "建议动作: %s" % suggest]
+    lines = [
+        "⛔ 守卫拦截告警 · %s" % (now or datetime.now()).strftime("%Y-%m-%d %H:%M"),
+        "任务: %s" % task,
+        "拦截原因: %s" % reason,
+        "数据锚: %s" % "；".join("%s=%s" % (k, v) for k, v in anchors.items()),
+        "建议动作: %s" % suggest,
+    ]
     text = "\n".join(lines)
-    key = "guard_" + hashlib.sha1(
-        ("%s|%s" % (task, reason)).encode("utf-8")).hexdigest()[:16]
+    key = (
+        "guard_"
+        + hashlib.sha1(("%s|%s" % (task, reason)).encode("utf-8")).hexdigest()[:16]
+    )
     return alert_once(key, text, send=send, state_path=state_path, now=now)
 
 

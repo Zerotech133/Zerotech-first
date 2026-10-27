@@ -115,12 +115,19 @@ def _lane(value: str) -> Lane:
 
 def _outside_transaction(conn: sqlite3.Connection) -> None:
     if conn.in_transaction:
-        raise RuntimeError("queue operation requires a connection outside a transaction")
+        raise RuntimeError(
+            "queue operation requires a connection outside a transaction"
+        )
 
 
-def _record_action(conn: sqlite3.Connection, symbol: str, lane: Lane,
-                   audit: _ActionAudit, prior_state: str,
-                   resulting_state: str) -> None:
+def _record_action(
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: Lane,
+    audit: _ActionAudit,
+    prior_state: str,
+    resulting_state: str,
+) -> None:
     """Append one audit row inside the caller's already-open transaction.
 
     The audit row never commits alone: it is written in the same BEGIN
@@ -132,8 +139,17 @@ def _record_action(conn: sqlite3.Connection, symbol: str, lane: Lane,
         "INSERT INTO xq_offline_action_log "
         "(symbol,lane,action,approved_by,reason,prior_state,resulting_state,acted_at) "
         "VALUES (?,?,?,?,?,?,?,?)",
-        (symbol, lane, audit.action, audit.approved_by, audit.reason,
-         prior_state, resulting_state, audit.acted_at))
+        (
+            symbol,
+            lane,
+            audit.action,
+            audit.approved_by,
+            audit.reason,
+            prior_state,
+            resulting_state,
+            audit.acted_at,
+        ),
+    )
 
 
 def init_schema(conn: sqlite3.Connection) -> None:
@@ -176,7 +192,9 @@ def init_schema(conn: sqlite3.Connection) -> None:
 
 def _next_sequence(conn: sqlite3.Connection) -> int:
     conn.execute("UPDATE xq_offline_sequence SET last_value=last_value+1 WHERE id=1")
-    row = conn.execute("SELECT last_value FROM xq_offline_sequence WHERE id=1").fetchone()
+    row = conn.execute(
+        "SELECT last_value FROM xq_offline_sequence WHERE id=1"
+    ).fetchone()
     if row is None:
         raise RuntimeError("offline queue schema is not initialized")
     return int(row[0])
@@ -189,20 +207,31 @@ def _task(row: tuple[object, ...]) -> QueueTask:
     claim_id = row[6]
     if claim_id is not None and not isinstance(claim_id, str):
         raise ValueError("invalid stored queue claim")
-    return QueueTask(str(row[0]), _lane(str(row[1])), str(row[2]),
-                     str(row[3]), cast(TaskState, state), int(row[5]), claim_id)
+    return QueueTask(
+        str(row[0]),
+        _lane(str(row[1])),
+        str(row[2]),
+        str(row[3]),
+        cast(TaskState, state),
+        int(row[5]),
+        claim_id,
+    )
 
 
 def tasks(conn: sqlite3.Connection) -> list[QueueTask]:
     """Read all durable tasks, including paused and unresolved claimed work."""
-    return [_task(row) for row in conn.execute(
-        "SELECT symbol,lane,batch_id,page_key,state,sequence,claim_id "
-        "FROM xq_offline_queue ORDER BY sequence,symbol,lane"
-    ).fetchall()]
+    return [
+        _task(row)
+        for row in conn.execute(
+            "SELECT symbol,lane,batch_id,page_key,state,sequence,claim_id "
+            "FROM xq_offline_queue ORDER BY sequence,symbol,lane"
+        ).fetchall()
+    ]
 
 
-def enqueue(conn: sqlite3.Connection, symbol: str, lane: Lane,
-            batch_id: str, page_key: str) -> QueueTask:
+def enqueue(
+    conn: sqlite3.Connection, symbol: str, lane: Lane, batch_id: str, page_key: str
+) -> QueueTask:
     """Add a new lane or explicitly start a new batch after a cursorless page.
 
     Existing pending/claimed work cannot be replaced. A paused task is resumed
@@ -216,23 +245,32 @@ def enqueue(conn: sqlite3.Connection, symbol: str, lane: Lane,
     _outside_transaction(conn)
     try:
         conn.execute("BEGIN IMMEDIATE")
-        row = conn.execute("SELECT state FROM xq_offline_queue WHERE symbol=? AND lane=?",
-                           (symbol, lane)).fetchone()
+        row = conn.execute(
+            "SELECT state FROM xq_offline_queue WHERE symbol=? AND lane=?",
+            (symbol, lane),
+        ).fetchone()
         if row is not None and row[0] != "awaiting_cursor":
             raise ValueError("existing task must be resolved before enqueue")
         checkpoint = ledger.get_checkpoint(conn, symbol, lane)
         if row is not None:
             if lane == "history":
-                raise ValueError("history has no confirmed next cursor; cannot infer continuation")
+                raise ValueError(
+                    "history has no confirmed next cursor; cannot infer continuation"
+                )
             if checkpoint["batch_id"] == batch_id:
                 raise ValueError("a new-post batch must have a fresh batch_id")
-            conn.execute("DELETE FROM xq_offline_queue WHERE symbol=? AND lane=?",
-                         (symbol, lane))
+            conn.execute(
+                "DELETE FROM xq_offline_queue WHERE symbol=? AND lane=?", (symbol, lane)
+            )
         if lane == "history" and checkpoint["version"] > 0:
-            raise ValueError("history continuation is already scheduled or lacks a cursor")
+            raise ValueError(
+                "history continuation is already scheduled or lacks a cursor"
+            )
         sequence = _next_sequence(conn)
-        conn.execute("INSERT INTO xq_offline_queue VALUES (?,?,?,?,?,?,NULL)",
-                     (symbol, lane, batch_id, page_key, "pending", sequence))
+        conn.execute(
+            "INSERT INTO xq_offline_queue VALUES (?,?,?,?,?,?,NULL)",
+            (symbol, lane, batch_id, page_key, "pending", sequence),
+        )
         conn.commit()
         return QueueTask(symbol, lane, batch_id, page_key, "pending", sequence, None)
     except BaseException:
@@ -240,8 +278,14 @@ def enqueue(conn: sqlite3.Connection, symbol: str, lane: Lane,
         raise
 
 
-def resume_task(conn: sqlite3.Connection, symbol: str, lane: Lane,
-                approved_by: str, reason: str, acted_at: int) -> None:
+def resume_task(
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: Lane,
+    approved_by: str,
+    reason: str,
+    acted_at: int,
+) -> None:
     """Manually resume a paused task; gate reset is a separate human action.
 
     The audit row and the paused→pending state change commit in the same
@@ -251,8 +295,11 @@ def resume_task(conn: sqlite3.Connection, symbol: str, lane: Lane,
     caller's declaration of who approved the resume. acted_at is the explicit
     action timestamp as a nonnegative Unix millisecond integer.
     """
-    for field, value in (("symbol", symbol), ("approved_by", approved_by),
-                         ("reason", reason)):
+    for field, value in (
+        ("symbol", symbol),
+        ("approved_by", approved_by),
+        ("reason", reason),
+    ):
         _text(value, field)
     _lane(lane)
     _time(acted_at, "acted_at")
@@ -263,20 +310,32 @@ def resume_task(conn: sqlite3.Connection, symbol: str, lane: Lane,
         changed = conn.execute(
             "UPDATE xq_offline_queue SET state='pending',sequence=? "
             "WHERE symbol=? AND lane=? AND state='paused'",
-            (sequence, symbol, lane)).rowcount
+            (sequence, symbol, lane),
+        ).rowcount
         if changed != 1:
             raise ValueError("only a paused task may be resumed")
-        _record_action(conn, symbol, lane,
-                       _ActionAudit("resume", approved_by, reason, acted_at),
-                       "paused", "pending")
+        _record_action(
+            conn,
+            symbol,
+            lane,
+            _ActionAudit("resume", approved_by, reason, acted_at),
+            "paused",
+            "pending",
+        )
         conn.commit()
     except BaseException:
         conn.rollback()
         raise
 
 
-def pause_task(conn: sqlite3.Connection, symbol: str, lane: Lane,
-               approved_by: str, reason: str, acted_at: int) -> None:
+def pause_task(
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: Lane,
+    approved_by: str,
+    reason: str,
+    acted_at: int,
+) -> None:
     """Manually pause a pending task; only pending→paused is permitted.
 
     Pausing a claimed, paused, or awaiting_cursor task raises ValueError and
@@ -287,8 +346,11 @@ def pause_task(conn: sqlite3.Connection, symbol: str, lane: Lane,
     approved_by is the caller's declaration of who approved the pause. acted_at
     is the explicit action timestamp as a nonnegative Unix millisecond integer.
     """
-    for field, value in (("symbol", symbol), ("approved_by", approved_by),
-                         ("reason", reason)):
+    for field, value in (
+        ("symbol", symbol),
+        ("approved_by", approved_by),
+        ("reason", reason),
+    ):
         _text(value, field)
     _lane(lane)
     _time(acted_at, "acted_at")
@@ -298,19 +360,27 @@ def pause_task(conn: sqlite3.Connection, symbol: str, lane: Lane,
         changed = conn.execute(
             "UPDATE xq_offline_queue SET state='paused' "
             "WHERE symbol=? AND lane=? AND state='pending'",
-            (symbol, lane)).rowcount
+            (symbol, lane),
+        ).rowcount
         if changed != 1:
             raise ValueError("only a pending task may be paused")
-        _record_action(conn, symbol, lane,
-                       _ActionAudit("pause", approved_by, reason, acted_at),
-                       "pending", "paused")
+        _record_action(
+            conn,
+            symbol,
+            lane,
+            _ActionAudit("pause", approved_by, reason, acted_at),
+            "pending",
+            "paused",
+        )
         conn.commit()
     except BaseException:
         conn.rollback()
         raise
 
 
-def action_log(conn: sqlite3.Connection, symbol: str, lane: Lane) -> list[dict[str, object]]:
+def action_log(
+    conn: sqlite3.Connection, symbol: str, lane: Lane
+) -> list[dict[str, object]]:
     """Read one symbol/lane audit trail ordered by ascending action_id.
 
     Read-only: performs zero writes and never opens a transaction, so the
@@ -324,11 +394,20 @@ def action_log(conn: sqlite3.Connection, symbol: str, lane: Lane) -> list[dict[s
     rows = conn.execute(
         "SELECT action_id,action,approved_by,reason,prior_state,resulting_state,acted_at "
         "FROM xq_offline_action_log WHERE symbol=? AND lane=? ORDER BY action_id",
-        (symbol, lane)).fetchall()
-    return [{"action_id": int(row[0]), "action": str(row[1]),
-             "approved_by": str(row[2]), "reason": str(row[3]),
-             "prior_state": str(row[4]), "resulting_state": str(row[5]),
-             "acted_at": int(row[6])} for row in rows]
+        (symbol, lane),
+    ).fetchall()
+    return [
+        {
+            "action_id": int(row[0]),
+            "action": str(row[1]),
+            "approved_by": str(row[2]),
+            "reason": str(row[3]),
+            "prior_state": str(row[4]),
+            "resulting_state": str(row[5]),
+            "acted_at": int(row[6]),
+        }
+        for row in rows
+    ]
 
 
 def _claim(conn: sqlite3.Connection) -> QueueTask | None:
@@ -344,20 +423,33 @@ def _claim(conn: sqlite3.Connection) -> QueueTask | None:
             return None
         item = _task(row)
         claim_id = str(uuid4())
-        conn.execute("UPDATE xq_offline_queue SET state='claimed',claim_id=? "
-                     "WHERE symbol=? AND lane=? AND state='pending'",
-                     (claim_id, item.symbol, item.lane))
+        conn.execute(
+            "UPDATE xq_offline_queue SET state='claimed',claim_id=? "
+            "WHERE symbol=? AND lane=? AND state='pending'",
+            (claim_id, item.symbol, item.lane),
+        )
         conn.commit()
-        return QueueTask(item.symbol, item.lane, item.batch_id, item.page_key,
-                         "claimed", item.sequence, claim_id)
+        return QueueTask(
+            item.symbol,
+            item.lane,
+            item.batch_id,
+            item.page_key,
+            "claimed",
+            item.sequence,
+            claim_id,
+        )
     except BaseException:
         conn.rollback()
         raise
 
 
-def _finish(conn: sqlite3.Connection, item: QueueTask, state: TaskState,
-            next_cursor: str | None = None,
-            audit: _ActionAudit | None = None) -> None:
+def _finish(
+    conn: sqlite3.Connection,
+    item: QueueTask,
+    state: TaskState,
+    next_cursor: str | None = None,
+    audit: _ActionAudit | None = None,
+) -> None:
     """Release one claim; optionally record a manual action in the same transaction.
 
     When audit is provided its row is written in the same BEGIN IMMEDIATE block
@@ -378,7 +470,8 @@ def _finish(conn: sqlite3.Connection, item: QueueTask, state: TaskState,
         changed = conn.execute(
             "UPDATE xq_offline_queue SET state=?,page_key=?,sequence=?,claim_id=NULL "
             "WHERE symbol=? AND lane=? AND claim_id=? AND state='claimed'",
-            (state, cursor, sequence, item.symbol, item.lane, item.claim_id)).rowcount
+            (state, cursor, sequence, item.symbol, item.lane, item.claim_id),
+        ).rowcount
         if changed != 1:
             raise RuntimeError("queue claim changed; task remains unresolved")
         if audit is not None:
@@ -392,24 +485,37 @@ def _finish(conn: sqlite3.Connection, item: QueueTask, state: TaskState,
 def _validate_page(page: CompletePage, item: QueueTask) -> None:
     if not isinstance(page, CompletePage):
         raise ValueError("response needs an explicitly attested complete page")
-    if (page.complete is not True or page.query_binding_verified is not True
-            or page.descending_time_verified is not True
-            or page.query_symbol != item.symbol or page.page_key != item.page_key):
+    if (
+        page.complete is not True
+        or page.query_binding_verified is not True
+        or page.descending_time_verified is not True
+        or page.query_symbol != item.symbol
+        or page.page_key != item.page_key
+    ):
         raise ValueError("page completeness, ordering, query binding or key unverified")
     if not isinstance(page.posts, tuple) or not page.posts:
         raise ValueError("empty/partial pages cannot advance a checkpoint")
-    if not isinstance(page.relations, tuple) or not isinstance(page.ordered_post_ids, tuple):
+    if not isinstance(page.relations, tuple) or not isinstance(
+        page.ordered_post_ids, tuple
+    ):
         raise ValueError("page fields must be complete immutable sequences")
     if any(not isinstance(post, store.RawPostInput) for post in page.posts):
         raise ValueError("page posts must be original post inputs")
     ids = tuple(post.post_id for post in page.posts)
-    if (page.ordered_post_ids != ids or
-            any(not isinstance(identifier, str) or not identifier.strip()
-                for identifier in ids) or len(set(ids)) != len(ids)):
+    if (
+        page.ordered_post_ids != ids
+        or any(
+            not isinstance(identifier, str) or not identifier.strip()
+            for identifier in ids
+        )
+        or len(set(ids)) != len(ids)
+    ):
         raise ValueError("ordered post IDs must exactly match unique original posts")
     times = tuple(post.created_at_ms for post in page.posts)
-    if any(isinstance(value, bool) or not isinstance(value, int) or value < 0
-           for value in times) or any(a < b for a, b in zip(times, times[1:])):
+    if any(
+        isinstance(value, bool) or not isinstance(value, int) or value < 0
+        for value in times
+    ) or any(a < b for a, b in zip(times, times[1:])):
         raise ValueError("original post times must be descending")
     if page.next_cursor is not None:
         _text(page.next_cursor, "next_cursor")
@@ -417,19 +523,31 @@ def _validate_page(page: CompletePage, item: QueueTask) -> None:
             raise ValueError("next cursor must not repeat current page")
 
 
-def _attempt(conn: sqlite3.Connection, item: QueueTask, status: str,
-             fetched_at: int, detail: str) -> StepResult:
+def _attempt(
+    conn: sqlite3.Connection, item: QueueTask, status: str, fetched_at: int, detail: str
+) -> StepResult:
     # Persist the failure first. If this write fails, leave claim unresolved;
     # never release a task after silently dropping its attempt receipt.
-    ledger.record_page_attempt(conn, item.symbol, item.lane, item.batch_id,
-                               item.page_key, status, fetched_at, detail[:1024])
+    ledger.record_page_attempt(
+        conn,
+        item.symbol,
+        item.lane,
+        item.batch_id,
+        item.page_key,
+        status,
+        fetched_at,
+        detail[:1024],
+    )
     _finish(conn, item, "paused")
     return StepResult(status, item, detail)
 
 
-def run_one(conn: sqlite3.Connection, gate: RequestGate,
-            send_once: Callable[[QueueTask], OfflineResponse],
-            fetched_at: int) -> StepResult:
+def run_one(
+    conn: sqlite3.Connection,
+    gate: RequestGate,
+    send_once: Callable[[QueueTask], OfflineResponse],
+    fetched_at: int,
+) -> StepResult:
     """Fairly claim one task; execute exactly one callback through the gate.
 
     Callback must do at most one physical request. This offline adapter makes no
@@ -458,65 +576,124 @@ def run_one(conn: sqlite3.Connection, gate: RequestGate,
             stopped = gate.snapshot().stopped
         except Exception:
             stopped = True
-        status = "stopped" if stopped else "page_limit" if "budget" in reason else "failed"
+        status = (
+            "stopped" if stopped else "page_limit" if "budget" in reason else "failed"
+        )
         return _attempt(conn, item, status, fetched_at, reason)
     except Exception as error:
-        return _attempt(conn, item, "failed", fetched_at,
-                        f"send or response classification failed: {type(error).__name__}")
+        return _attempt(
+            conn,
+            item,
+            "failed",
+            fetched_at,
+            f"send or response classification failed: {type(error).__name__}",
+        )
     if response.status_code == 403:
-        return _attempt(conn, item, "403", fetched_at, "request gate stopped on HTTP 403")
+        return _attempt(
+            conn, item, "403", fetched_at, "request gate stopped on HTTP 403"
+        )
     if response.status_code != 200:
-        status = "http_404" if response.status_code == 404 else (
-            "token_invalid" if response.status_code == 401 else "failed")
-        return _attempt(conn, item, status, fetched_at,
-                        f"HTTP {response.status_code}: {response.failure_reason or ''}")
+        status = (
+            "http_404"
+            if response.status_code == 404
+            else ("token_invalid" if response.status_code == 401 else "failed")
+        )
+        return _attempt(
+            conn,
+            item,
+            status,
+            fetched_at,
+            f"HTTP {response.status_code}: {response.failure_reason or ''}",
+        )
     if response.failure_reason is not None:
         return _attempt(conn, item, "failed", fetched_at, response.failure_reason)
     try:
         _validate_page(response.page, item)
     except (TypeError, ValueError) as error:
-        status = ("empty" if isinstance(response.page, CompletePage)
-                  and isinstance(response.page.posts, tuple) and not response.page.posts
-                  else "partial_page_failed")
+        status = (
+            "empty"
+            if isinstance(response.page, CompletePage)
+            and isinstance(response.page.posts, tuple)
+            and not response.page.posts
+            else "partial_page_failed"
+        )
         return _attempt(conn, item, status, fetched_at, str(error))
     page = response.page
     if page is None:
         raise RuntimeError("validated page unexpectedly absent")
     checkpoint = ledger.get_checkpoint(conn, item.symbol, item.lane)
-    if (checkpoint["version"] > 0 and
-            (item.lane == "history" or checkpoint["batch_id"] == item.batch_id)
-            and not (checkpoint["batch_id"] == item.batch_id
-                     and checkpoint["confirmed_page_key"] == item.page_key)):
+    if (
+        checkpoint["version"] > 0
+        and (item.lane == "history" or checkpoint["batch_id"] == item.batch_id)
+        and not (
+            checkpoint["batch_id"] == item.batch_id
+            and checkpoint["confirmed_page_key"] == item.page_key
+        )
+    ):
         preceding = conn.execute(
             "SELECT p.created_at_ms FROM xq_reverse_page_receipt AS r "
             "JOIN xq_reverse_raw_post_version AS p "
             "ON p.post_id=r.last_status_id AND p.batch_id=r.batch_id "
             "WHERE r.symbol=? AND r.lane=? AND r.batch_id=? AND r.page_key=?",
-            (item.symbol, item.lane, checkpoint["batch_id"],
-             checkpoint["confirmed_page_key"])).fetchone()
+            (
+                item.symbol,
+                item.lane,
+                checkpoint["batch_id"],
+                checkpoint["confirmed_page_key"],
+            ),
+        ).fetchone()
         if preceding is None or page.posts[0].created_at_ms > preceding[0]:
-            return _attempt(conn, item, "partial_page_failed", fetched_at,
-                            "cross-page descending time boundary cannot be verified")
+            return _attempt(
+                conn,
+                item,
+                "partial_page_failed",
+                fetched_at,
+                "cross-page descending time boundary cannot be verified",
+            )
     try:
-        result = ledger.commit_page(conn, item.symbol, item.lane, item.batch_id,
-                                    item.page_key, page.posts, page.relations,
-                                    page.next_cursor, checkpoint["version"], fetched_at)
+        result = ledger.commit_page(
+            conn,
+            item.symbol,
+            item.lane,
+            item.batch_id,
+            item.page_key,
+            page.posts,
+            page.relations,
+            page.next_cursor,
+            checkpoint["version"],
+            fetched_at,
+        )
     except ledger.CheckpointConflictError as error:
         return _attempt(conn, item, "duplicate", fetched_at, str(error))
     except Exception as error:
-        return _attempt(conn, item, "partial_page_failed", fetched_at,
-                        f"commit failed: {type(error).__name__}: {error}")
+        return _attempt(
+            conn,
+            item,
+            "partial_page_failed",
+            fetched_at,
+            f"commit failed: {type(error).__name__}: {error}",
+        )
     if result["replayed"]:
         return _attempt(conn, item, "duplicate", fetched_at, "already confirmed page")
     # A failure to finish the queue row leaves a claim for manual reconciliation;
     # the independently committed original+checkpoint can never be rolled back.
-    _finish(conn, item, "pending" if page.next_cursor is not None else "awaiting_cursor",
-            page.next_cursor)
+    _finish(
+        conn,
+        item,
+        "pending" if page.next_cursor is not None else "awaiting_cursor",
+        page.next_cursor,
+    )
     return StepResult("confirmed", item)
 
 
-def reconcile_claim(conn: sqlite3.Connection, symbol: str, lane: Lane,
-                    approved_by: str, reason: str, acted_at: int) -> StepResult:
+def reconcile_claim(
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: Lane,
+    approved_by: str,
+    reason: str,
+    acted_at: int,
+) -> StepResult:
     """Manually resolve a crashed claim without silently repeating its send.
 
     If its receipt/checkpoint is present, recover its confirmed next cursor;
@@ -530,35 +707,58 @@ def reconcile_claim(conn: sqlite3.Connection, symbol: str, lane: Lane,
     not an approval mechanism by itself. acted_at is the explicit action
     timestamp as a nonnegative Unix millisecond integer.
     """
-    for field, value in (("symbol", symbol), ("approved_by", approved_by),
-                         ("reason", reason)):
+    for field, value in (
+        ("symbol", symbol),
+        ("approved_by", approved_by),
+        ("reason", reason),
+    ):
         _text(value, field)
     _lane(lane)
     _time(acted_at, "acted_at")
     _outside_transaction(conn)
     audit = _ActionAudit("reconcile", approved_by, reason, acted_at)
-    row = conn.execute("SELECT symbol,lane,batch_id,page_key,state,sequence,claim_id "
-                       "FROM xq_offline_queue WHERE symbol=? AND lane=?",
-                       (symbol, lane)).fetchone()
+    row = conn.execute(
+        "SELECT symbol,lane,batch_id,page_key,state,sequence,claim_id "
+        "FROM xq_offline_queue WHERE symbol=? AND lane=?",
+        (symbol, lane),
+    ).fetchone()
     if row is None or row[4] != "claimed":
         raise ValueError("task has no unresolved claim")
     item = _task(row)
     receipt = conn.execute(
         "SELECT next_cursor FROM xq_reverse_page_receipt "
         "WHERE symbol=? AND lane=? AND batch_id=? AND page_key=?",
-        (symbol, lane, item.batch_id, item.page_key)).fetchone()
+        (symbol, lane, item.batch_id, item.page_key),
+    ).fetchone()
     if receipt is not None:
         checkpoint = ledger.get_checkpoint(conn, symbol, lane)
-        if checkpoint["batch_id"] != item.batch_id or checkpoint["confirmed_page_key"] != item.page_key:
-            raise RuntimeError("confirmed checkpoint moved; manual ledger review required")
+        if (
+            checkpoint["batch_id"] != item.batch_id
+            or checkpoint["confirmed_page_key"] != item.page_key
+        ):
+            raise RuntimeError(
+                "confirmed checkpoint moved; manual ledger review required"
+            )
         cursor = receipt[0]
         if cursor != checkpoint["next_cursor"]:
-            raise RuntimeError("receipt/checkpoint cursor mismatch; manual ledger review required")
-        _finish(conn, item, "pending" if cursor is not None else "awaiting_cursor", cursor, audit)
+            raise RuntimeError(
+                "receipt/checkpoint cursor mismatch; manual ledger review required"
+            )
+        _finish(
+            conn,
+            item,
+            "pending" if cursor is not None else "awaiting_cursor",
+            cursor,
+            audit,
+        )
         return StepResult("recovered_confirmed", item)
     checkpoint = ledger.get_checkpoint(conn, symbol, lane)
-    if (checkpoint["batch_id"] == item.batch_id and
-            checkpoint["confirmed_page_key"] == item.page_key):
-        raise RuntimeError("checkpoint exists without page receipt; manual ledger review required")
+    if (
+        checkpoint["batch_id"] == item.batch_id
+        and checkpoint["confirmed_page_key"] == item.page_key
+    ):
+        raise RuntimeError(
+            "checkpoint exists without page receipt; manual ledger review required"
+        )
     _finish(conn, item, "paused", None, audit)
     return StepResult("quarantined", item, reason)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """sentiment_collect_daily 纯函数测试（不触网：fetch_day 打桩）。"""
+
 import json
 import os
 import tempfile
@@ -28,8 +29,7 @@ def test_fetch_day_counts_and_rate(monkeypatch):
     import pandas as pd
 
     def fake_zt(date):
-        return pd.DataFrame({"连板数": [1, 2, 2, 3, 10],
-                             "代码": list("abcde")})
+        return pd.DataFrame({"连板数": [1, 2, 2, 3, 10], "代码": list("abcde")})
 
     def fake_zb(date):
         return pd.DataFrame({"代码": list("fg")})
@@ -64,24 +64,26 @@ def test_fetch_day_zb_out_of_window_degrades(monkeypatch):
 def test_fetch_day_both_empty_returns_none(monkeypatch):
     import pandas as pd
 
-    monkeypatch.setattr(
-        "akshare.stock_zt_pool_em", lambda date: pd.DataFrame())
-    monkeypatch.setattr(
-        "akshare.stock_zt_pool_zbgc_em", lambda date: pd.DataFrame())
+    monkeypatch.setattr("akshare.stock_zt_pool_em", lambda date: pd.DataFrame())
+    monkeypatch.setattr("akshare.stock_zt_pool_zbgc_em", lambda date: pd.DataFrame())
     assert sc.fetch_day("20260101") is None
 
 
 def test_append_idempotent_and_badline():
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "s.jsonl")
-        rows = [{"date": "20261014", "zt_count": 36, "status": "ok"},
-                {"date": "20261015", "zt_count": 40, "status": "ok"}]
+        rows = [
+            {"date": "20261014", "zt_count": 36, "status": "ok"},
+            {"date": "20261015", "zt_count": 40, "status": "ok"},
+        ]
         assert sc.append_rows(rows, path) == 2
         with open(path, "a", encoding="utf-8") as f:
             f.write("{bad\n")
-        assert sc.append_rows(rows, path) == 0          # 幂等+坏行容忍
-        assert sc.append_rows([{"date": "20261016", "zt_count": 1,
-                                "status": "ok"}], path) == 1
+        assert sc.append_rows(rows, path) == 0  # 幂等+坏行容忍
+        assert (
+            sc.append_rows([{"date": "20261016", "zt_count": 1, "status": "ok"}], path)
+            == 1
+        )
         n = 0
         for l in open(path, encoding="utf-8"):
             try:
@@ -89,9 +91,10 @@ def test_append_idempotent_and_badline():
                 n += 1
             except Exception:
                 continue
-        assert n == 3                                 # 坏行不计
+        assert n == 3  # 坏行不计
 
 
 if __name__ == "__main__":
     import pytest
+
     raise SystemExit(pytest.main([__file__, "-q"]))

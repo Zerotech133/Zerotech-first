@@ -10,6 +10,7 @@
      （手续费 3bps+滑点 1bps），000001.SZ，2025Q1，产出交易数/胜率/收益/回撤。
 输出：同目录 combo_e2e_result.json + 控制台摘要。
 """
+
 import json
 import math
 import os
@@ -22,15 +23,15 @@ DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_FILE = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")
 OUT = os.path.join(BASE, "quant_backtest", "combo_e2e_result.json")
 
-W0, W1 = "20250101", "20250331"          # 用户示例窗口：2025-01-01 起跑 3 个月
-TRADING_DAYS_Y = 242                      # A 股年化惯例
+W0, W1 = "20250101", "20250331"  # 用户示例窗口：2025-01-01 起跑 3 个月
+TRADING_DAYS_Y = 242  # A 股年化惯例
 
 pool = json.load(open(POOL_FILE, encoding="utf-8"))
 codes = []
 for it in pool:
     sc = it.get("stock", "")
     if "." in sc:
-        codes.append(sc)                  # 形如 000001.SZ
+        codes.append(sc)  # 形如 000001.SZ
 codes = sorted(set(codes))
 print(f"池子 {len(codes)} 只（json {len(pool)} 条去重后）", flush=True)
 
@@ -65,7 +66,7 @@ all_idx = sorted(set().union(*[set(r.index) for r in rets.values()]))
 port = pd.Series(0.0, index=all_idx)
 for c in used:
     r = rets[c].dropna()
-    port.loc[r.index] += r / len(used)    # 缺日个股该日不计收益（现金态，简化口径）
+    port.loc[r.index] += r / len(used)  # 缺日个股该日不计收益（现金态，简化口径）
 
 equity = (1 + port.fillna(0)).cumprod()
 total = float(equity.iloc[-1] - 1)
@@ -74,9 +75,15 @@ ann = (1 + total) ** (TRADING_DAYS_Y / days) - 1 if days > 0 else None
 roll_max = equity.cummax()
 dd = float((equity / roll_max - 1).min())
 daily = port.fillna(0)
-sharpe = float(daily.mean() / daily.std() * math.sqrt(TRADING_DAYS_Y)) if daily.std() > 0 else None
+sharpe = (
+    float(daily.mean() / daily.std() * math.sqrt(TRADING_DAYS_Y))
+    if daily.std() > 0
+    else None
+)
 win_days = int((daily > 0).sum())
-buy_hold_med = float(pd.Series([float((1 + r.dropna()).prod() - 1) for r in rets.values()]).median())
+buy_hold_med = float(
+    pd.Series([float((1 + r.dropna()).prod() - 1) for r in rets.values()]).median()
+)
 
 # 个股贡献 top/bottom（期末累计贡献≈等权买入持有各自收益/池大小）
 contrib = {c: float((1 + rets[c].dropna()).prod() - 1) / len(used) for c in used}
@@ -85,13 +92,16 @@ bottom = sorted(contrib.items(), key=lambda x: x[1])[:5]
 
 resA = {
     "run": "A_baseline_equalweight",
-    "pool_size": len(used), "pool_missing": missing,
-    "window": [W0, W1], "trade_days": days,
+    "pool_size": len(used),
+    "pool_missing": missing,
+    "window": [W0, W1],
+    "trade_days": days,
     "total_return_pct": round(total * 100, 2),
     "annualized_pct": round(ann * 100, 2) if ann is not None else None,
     "max_drawdown_pct": round(dd * 100, 2),
     "sharpe": round(sharpe, 2) if sharpe is not None else None,
-    "win_days": win_days, "win_day_ratio": round(win_days / days, 3),
+    "win_days": win_days,
+    "win_day_ratio": round(win_days / days, 3),
     "median_stock_buyhold_pct": round(buy_hold_med * 100, 2),
     "top_contrib": [(c, round(v * 100, 2)) for c, v in top],
     "bottom_contrib": [(c, round(v * 100, 2)) for c, v in bottom],
@@ -101,21 +111,32 @@ print("A) 基准等权组合:", json.dumps(resA, ensure_ascii=False)[:400], flus
 
 # ── B) chanlun 信号引擎 E2E（扫池内多只，取有真实成交者）──────────────────
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
-from chanlun_backtest import run_backtest          # noqa: E402
+from chanlun_backtest import run_backtest  # noqa: E402
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
 
-BW0 = "20241001"                                   # 预热窗：结构识别需历史 K 线
+BW0 = "20241001"  # 预热窗：结构识别需历史 K 线
 b_runs = []
 for c in [x for x, _ in top] + [x for x, _ in bottom] + used[:12]:
     df = pd.read_parquet(os.path.join(DATA, c.replace(".", "_") + ".parquet"))
     df = df[df.trade_date <= W1].sort_values("trade_date")
-    bars = [{"dt": r.trade_date, "o": r.open, "h": r.high, "l": r.low, "c": r.close}
-            for r in df.itertuples()]
-    sigs = [s for s in ((chan_analyze(bars) or {}).get("signals") or [])
-            if BW0 <= s["dt"] <= W1]
+    bars = [
+        {"dt": r.trade_date, "o": r.open, "h": r.high, "l": r.low, "c": r.close}
+        for r in df.itertuples()
+    ]
+    sigs = [
+        s
+        for s in ((chan_analyze(bars) or {}).get("signals") or [])
+        if BW0 <= s["dt"] <= W1
+    ]
     bt = run_backtest(bars, sigs, cost_bps=3, slip_bps=1)
-    b_runs.append({"stock": c, "signals_in_window": len(sigs),
-                   "types": sorted({s["type"] for s in sigs}), "stats": bt["stats"]})
+    b_runs.append(
+        {
+            "stock": c,
+            "signals_in_window": len(sigs),
+            "types": sorted({s["type"] for s in sigs}),
+            "stats": bt["stats"],
+        }
+    )
     if len(b_runs) >= 20:
         break
 hit = [r for r in b_runs if r["stats"]["trades"] > 0]
@@ -128,6 +149,10 @@ resB = {
 }
 print("B) chanlun 信号引擎: 扫", len(b_runs), "只有成交", len(hit), "只", flush=True)
 
-json.dump({"ts": "2026-10-13T01:35", "A": resA, "B": resB},
-          open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+json.dump(
+    {"ts": "2026-10-13T01:35", "A": resA, "B": resB},
+    open(OUT, "w", encoding="utf-8"),
+    ensure_ascii=False,
+    indent=1,
+)
 print("saved ->", OUT, flush=True)

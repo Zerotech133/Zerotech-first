@@ -12,6 +12,7 @@
   · 数据持续增长 → 结构性断言不锁具体计数。
 运行：cd quant_backtest && python -m pytest test_kg_portal_integration.py -v
 """
+
 import json
 import urllib.request
 
@@ -23,6 +24,7 @@ PORTAL = "http://127.0.0.1:8091"
 
 
 # ── 环境探测（不可达即 skip）────────────────────────────────
+
 
 @pytest.fixture(scope="module")
 def live():
@@ -49,9 +51,10 @@ def _get(path, timeout=30):
 
 # ── A. 数据层直连（真实 Neo4j）─────────────────────────────
 
+
 def test_stats_live(live):
     r = live
-    assert r["nodes"]["Security"] >= 5000          # K266 入图主节点池
+    assert r["nodes"]["Security"] >= 5000  # K266 入图主节点池
     assert all(isinstance(v, int) for v in r["edges"].values())
     assert r["edges"] and sum(r["edges"].values()) > 0
     assert "freshness" in r and "hm_tags" in r
@@ -61,7 +64,7 @@ def test_lookup_live_prefix(live):
     r = KP.api("lookup", "600")
     assert r["ok"] and 1 <= len(r["matches"]) <= 8
     assert any(m["tc"].startswith("600") for m in r["matches"])
-    for m in r["matches"]:                        # 返回字段契约
+    for m in r["matches"]:  # 返回字段契约
         assert "tc" in m and "nm" in m and "ind" in m
 
 
@@ -69,7 +72,7 @@ def test_signals_live_structure(live):
     r = KP.api("signals", None, 14)
     assert r["ok"] and r["window_days"] == 14
     assert isinstance(r["signals"], list) and len(r["signals"]) <= 50
-    for s in r["signals"]:                        # 行字段契约
+    for s in r["signals"]:  # 行字段契约
         assert s["tag"] in ("follow_confirm", "lure_warn")
         assert len(s["date"]) == 8
 
@@ -86,18 +89,19 @@ def test_geo_live_structure(live):
     r = KP.api("geo", None, 90)
     assert r["ok"] and r["days"] == 90
     assert isinstance(r["cities"], list) and isinstance(r["provs"], list)
-    nets = [abs(c["net"]) for c in r["cities"]]   # |net| 降序
+    nets = [abs(c["net"]) for c in r["cities"]]  # |net| 降序
     assert nets == sorted(nets, reverse=True)
-    for c in r["cities"]:                         # 命中城市必有坐标
+    for c in r["cities"]:  # 命中城市必有坐标
         assert c["city"] in KP.CITY_COORDS and len(c["coord"]) == 2
 
 
 # ── B. HTTP 层（运行中的 portal 8091）───────────────────────
 
+
 def test_http_json_endpoints(http):
     st, body = _get("/kg/stats")
     assert st == 200 and json.loads(body)["ok"]
-    st, body = _get("/kg/sources")                # 结构或 ok 键必居其一
+    st, body = _get("/kg/sources")  # 结构或 ok 键必居其一
     d = json.loads(body)
     assert st == 200 and ("ok" in d or "sources" in d)
 
@@ -108,9 +112,9 @@ def test_ontology_live_snapshot(live):
     assert r["ok"], r.get("error")
     sec = r["node_types"]["Security"]
     assert sec["count"] >= 5000 and sec["key"] == "ts_code"
-    assert sec["trust"] and sec["writer"]          # 元数据四件套在线
+    assert sec["trust"] and sec["writer"]  # 元数据四件套在线
     d = r["drift"]
-    assert d["unregistered_labels"] == []          # 图内类型必须全注册
+    assert d["unregistered_labels"] == []  # 图内类型必须全注册
     assert d["unregistered_rels"] == []
     assert r["graph_counts"]["nodes_total"] > 1_000_000
     # 保鲜锚：MarketEvent 有 date 字段且非空（防前视锚点可用）
@@ -130,12 +134,10 @@ def test_objectview_live(live):
     assert r["ok"], r.get("error")
     assert "_stock" not in r
     ids = {s["id"] for s in r["sectors"]}
-    assert {"basic", "structures", "hotmoney", "holders",
-            "similar"} <= ids
+    assert {"basic", "structures", "hotmoney", "holders", "similar"} <= ids
     for s in r["sectors"]:
         assert s["grade"] in ("ok", "stale", "empty", "static")
-        assert s["trust"] in ("A", "B", "C", "D", "E", "F") or \
-            s["id"] == "basic"
+        assert s["trust"] in ("A", "B", "C", "D", "E", "F") or s["id"] == "basic"
         if s["grade"] in ("ok", "stale"):
             assert s["fresh"] and len(s["fresh"]) == 8  # 有锚才有档
 
@@ -156,10 +158,12 @@ def test_http_stock_page_has_objectview(http):
 
 
 def test_http_pages_render(http):
-    for path, mark in (("/kg", "图谱探索"),
-                       ("/kg/map", "游资地图"),
-                       ("/kg/canvasv2", "知识画布")):
-        st, html = _get(path, timeout=60)         # 服务端渲染可能较慢
+    for path, mark in (
+        ("/kg", "图谱探索"),
+        ("/kg/map", "游资地图"),
+        ("/kg/canvasv2", "知识画布"),
+    ):
+        st, html = _get(path, timeout=60)  # 服务端渲染可能较慢
         assert st == 200 and mark in html and len(html) > 1000
 
 
@@ -170,6 +174,6 @@ def test_http_canvasv2_js_escape(http):
     正确形态：送达 JS 内必须是转义引号 onclick=\\"…（含收尾 \\\">"）。"""
     st, html = _get("/kg/canvasv2")
     assert st == 200
-    assert r'onclick=\"document' in html            # 开引号已转义（修复指纹）
-    assert r"(new Event('submit'))\">" in html      # 收尾引号已转义
-    assert 'onclick="document' not in html          # 裸引号（坏形态）不得再现
+    assert r"onclick=\"document" in html  # 开引号已转义（修复指纹）
+    assert r"(new Event('submit'))\">" in html  # 收尾引号已转义
+    assert 'onclick="document' not in html  # 裸引号（坏形态）不得再现

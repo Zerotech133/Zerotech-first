@@ -2,6 +2,7 @@
 """回测报告 HTML 页面生成（自包含单文件、零依赖、暗色主题）。
 runner 每次回测/推送后调用 write_report_html() 原子覆盖 reports/report.html，
 门户 /bt-report 路由读取该文件，飞书卡片「回测报告」按钮跳转到它。"""
+
 import html
 import json
 import os
@@ -14,15 +15,26 @@ REPORT = os.path.join(HERE, "reports", "report.html")
 
 # 策略参数中文说明（含义与 strategies.py 各策略 docstring/默认值对应）
 STRATEGY_DOCS = {
-    "ma_cross": ("均线交叉：快线上穿慢线做多，下穿空仓", {
-        "fast": "快均线天数", "slow": "慢均线天数"}),
-    "rsi_reversal": ("RSI 反转：RSI 跌破超卖线做多，升破超买线平仓", {
-        "period": "RSI 计算周期", "oversold": "超卖阈值（低于买入）",
-        "overbought": "超买阈值（升破平仓）"}),
-    "boll_breakout": ("布林突破：收盘突破上轨做多，跌破中轨空仓", {
-        "period": "布林带周期", "k": "带宽倍数（±标准差 × k）"}),
-    "trend_follow": ("趋势跟随：价格在 N 日均线上方且均线向上 → 做多", {
-        "n": "趋势均线天数", "slope_lookback": "均线斜率回看天数"}),
+    "ma_cross": (
+        "均线交叉：快线上穿慢线做多，下穿空仓",
+        {"fast": "快均线天数", "slow": "慢均线天数"},
+    ),
+    "rsi_reversal": (
+        "RSI 反转：RSI 跌破超卖线做多，升破超买线平仓",
+        {
+            "period": "RSI 计算周期",
+            "oversold": "超卖阈值（低于买入）",
+            "overbought": "超买阈值（升破平仓）",
+        },
+    ),
+    "boll_breakout": (
+        "布林突破：收盘突破上轨做多，跌破中轨空仓",
+        {"period": "布林带周期", "k": "带宽倍数（±标准差 × k）"},
+    ),
+    "trend_follow": (
+        "趋势跟随：价格在 N 日均线上方且均线向上 → 做多",
+        {"n": "趋势均线天数", "slope_lookback": "均线斜率回看天数"},
+    ),
 }
 
 CSS = """
@@ -72,25 +84,29 @@ table.sticky th{position:sticky;top:0;background:#0f141c;z-index:1}
 # K39 面包屑：与门户 SSR 同源（portal_api.pill_nav 单一数据源）。
 # 旧 NAV_PAGES 七胶囊互跳废除——☰ 域内下拉已覆盖全部互跳目标。
 # exclude=当前页 key（report/signals/positions/opt，与 PAGE_SECTION 同名）。
-_NAV_FALLBACK = ('<div class="nav"><a href="/">🏠 首页</a>'
-                 '<a href="/quant">📈 量化</a></div>')
+_NAV_FALLBACK = (
+    '<div class="nav"><a href="/">🏠 首页</a><a href="/quant">📈 量化</a></div>'
+)
 
 
 def _nav_html(exclude=None):
     try:
         import sys
-        _p = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "portal")
+
+        _p = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "portal"
+        )
         if _p not in sys.path:
             sys.path.insert(0, _p)
         from portal_api import pill_nav
+
         return pill_nav(exclude or "report")
     except Exception:
         return _NAV_FALLBACK
 
 
 # ── 统一下钻链接（L1 发现层 → L2 个股全景 / 策略纵切） ──
-_LK = ("color:#58a6ff;text-decoration:none;border-bottom:1px dotted #30363d")
+_LK = "color:#58a6ff;text-decoration:none;border-bottom:1px dotted #30363d"
 
 
 def _stock_link(name, symbol):
@@ -102,15 +118,21 @@ def _stock_link(name, symbol):
         return nm
     if c.endswith(".SH") or c.endswith(".SZ"):
         c = c[:6]
-    return ('<a href="/kg/stock/%s" style="%s" title="下钻到个股全景">'
-            '%s</a>' % (quote(c, safe=""), _LK, nm))
+    return '<a href="/kg/stock/%s" style="%s" title="下钻到个股全景">%s</a>' % (
+        quote(c, safe=""),
+        _LK,
+        nm,
+    )
 
 
 def _strat_link(sn):
     """策略 → 独立纵切页 /bt/strategy/<sn>（宽度/自选状态/回测/寻优）。"""
     lb = html.escape(OPT_HEAD.get(sn, sn))
-    return ('<a href="/bt/strategy/%s" style="%s" title="下钻到策略纵切页">'
-            '%s</a>' % (sn, _LK, lb))
+    return '<a href="/bt/strategy/%s" style="%s" title="下钻到策略纵切页">%s</a>' % (
+        sn,
+        _LK,
+        lb,
+    )
 
 
 def _downsample(series, cap=240):
@@ -163,8 +185,10 @@ def _equity_svg(strat, bench):
 
 
 def _kpi(label, value, cls=""):
-    return '<div class="kpi"><div class="l">%s</div><div class="v %s">%s</div></div>' % (
-        html.escape(label), cls, value)
+    return (
+        '<div class="kpi"><div class="l">%s</div><div class="v %s">%s</div></div>'
+        % (html.escape(label), cls, value)
+    )
 
 
 def _dd_svg(dd, bench_dd):
@@ -185,25 +209,29 @@ def _dd_svg(dd, bench_dd):
 
     strat_pts = xy(dd)
     x0, x1 = PAD, W - PAD
-    fill = "%s %.1f %s" % (strat_pts.split()[0].split(",")[0],
-                           PAD, strat_pts.split()[-1].split(",")[0])
-    return "".join([
-        '<svg viewBox="0 0 %d %d" preserveAspectRatio="none">' % (W, H),
-        '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#30363d"/>' % (
-            x0, PAD, x1, PAD),
-        '<polyline fill="none" stroke="#8b949e" stroke-width="1.2" '
-        'points="%s"/>' % xy(bench_dd),
-        '<polygon fill="#3fb950" fill-opacity="0.22" stroke="#3fb950" '
-        'stroke-width="1.6" points="%s %d,%.1f"/>' % (
-            strat_pts, x1, float(PAD)),
-        '<text x="%d" y="%d-4" fill="#3fb950" font-size="11">最深 %.1f%%</text>'
-        % (PAD, H - PAD, lo * 100),
-        '<text x="%d" y="14" fill="#8b949e" font-size="11">%s</text>' % (
-            PAD, dd[0][0]),
-        '<text x="%d" y="14" fill="#8b949e" font-size="11" '
-        'text-anchor="end">%s</text>' % (x1, dd[-1][0]),
-        "</svg>",
-    ])
+    fill = "%s %.1f %s" % (
+        strat_pts.split()[0].split(",")[0],
+        PAD,
+        strat_pts.split()[-1].split(",")[0],
+    )
+    return "".join(
+        [
+            '<svg viewBox="0 0 %d %d" preserveAspectRatio="none">' % (W, H),
+            '<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#30363d"/>'
+            % (x0, PAD, x1, PAD),
+            '<polyline fill="none" stroke="#8b949e" stroke-width="1.2" '
+            'points="%s"/>' % xy(bench_dd),
+            '<polygon fill="#3fb950" fill-opacity="0.22" stroke="#3fb950" '
+            'stroke-width="1.6" points="%s %d,%.1f"/>' % (strat_pts, x1, float(PAD)),
+            '<text x="%d" y="%d-4" fill="#3fb950" font-size="11">最深 %.1f%%</text>'
+            % (PAD, H - PAD, lo * 100),
+            '<text x="%d" y="14" fill="#8b949e" font-size="11">%s</text>'
+            % (PAD, dd[0][0]),
+            '<text x="%d" y="14" fill="#8b949e" font-size="11" '
+            'text-anchor="end">%s</text>' % (x1, dd[-1][0]),
+            "</svg>",
+        ]
+    )
 
 
 def _opt_table(rows, base_params):
@@ -213,17 +241,31 @@ def _opt_table(rows, base_params):
     tr = []
     for i, r in enumerate(rows):
         pj = json.dumps(r["params"], ensure_ascii=False)
-        cur = isinstance(base_params, dict) and all(
-            r["params"].get(k) == v for k, v in base_params.items()
-            if k in r["params"]) and all(k in base_params for k in r["params"])
-        tr.append('<tr%s><td>%s</td><td>%s%s</td><td class="%s">%+.1f%%</td>'
-                  '<td><b>%.2f</b></td><td class="dn">%.1f%%</td><td>%d</td>'
-                  "</tr>" % (
-                      ' style="background:#1c2a3a"' if cur else "",
-                      "★" if cur else str(i + 1),
-                      html.escape(pj), "（当前）" if cur else "",
-                      "up" if r["ret"] >= 0 else "dn", r["ret"] * 100,
-                      r["sharpe"], r["dd"] * 100, r["trades"]))
+        cur = (
+            isinstance(base_params, dict)
+            and all(
+                r["params"].get(k) == v
+                for k, v in base_params.items()
+                if k in r["params"]
+            )
+            and all(k in base_params for k in r["params"])
+        )
+        tr.append(
+            '<tr%s><td>%s</td><td>%s%s</td><td class="%s">%+.1f%%</td>'
+            '<td><b>%.2f</b></td><td class="dn">%.1f%%</td><td>%d</td>'
+            "</tr>"
+            % (
+                ' style="background:#1c2a3a"' if cur else "",
+                "★" if cur else str(i + 1),
+                html.escape(pj),
+                "（当前）" if cur else "",
+                "up" if r["ret"] >= 0 else "dn",
+                r["ret"] * 100,
+                r["sharpe"],
+                r["dd"] * 100,
+                r["trades"],
+            )
+        )
     return """
 <h2 style="margin-top:16px;font-size:13px">参数寻优 Top %d（按夏普）</h2>
 <table><tr><th>#</th><th>参数组合</th><th>收益</th><th>夏普</th><th>回撤</th>
@@ -239,15 +281,25 @@ def _monthly_table(monthly):
     tr = []
     for ym, s_r, b_r in monthly:
         d = s_r - b_r
-        tr.append('<tr><td>%s</td><td class="%s">%+.1f%%</td>'
-                  '<td class="%s">%+.1f%%</td><td class="%s">%+.1f%%</td></tr>'
-                  % (ym, "up" if s_r >= 0 else "dn", s_r * 100,
-                     "up" if b_r >= 0 else "dn", b_r * 100,
-                     "up" if d >= 0 else "dn", d * 100))
+        tr.append(
+            '<tr><td>%s</td><td class="%s">%+.1f%%</td>'
+            '<td class="%s">%+.1f%%</td><td class="%s">%+.1f%%</td></tr>'
+            % (
+                ym,
+                "up" if s_r >= 0 else "dn",
+                s_r * 100,
+                "up" if b_r >= 0 else "dn",
+                b_r * 100,
+                "up" if d >= 0 else "dn",
+                d * 100,
+            )
+        )
     return """
 <h2 style="margin-top:16px;font-size:13px">月度收益</h2>
 <table><tr><th>月份</th><th>策略</th><th>买入持有</th><th>超额</th></tr>%s</table>
-<div class="leg">首月为区间起始的不足月 · 红涨绿跌为习惯色（正=红）</div>""" % "".join(tr)
+<div class="leg">首月为区间起始的不足月 · 红涨绿跌为习惯色（正=红）</div>""" % "".join(
+        tr
+    )
 
 
 def _heat_table(heat):
@@ -268,13 +320,16 @@ def _heat_table(heat):
                 tds.append(
                     '<td title="%02d %s %+.2f%%" style="border:none;'
                     'background:rgba(%s,%.2f);border-radius:3px"></td>'
-                    % (day, ym, r * 100, rgb, a))
+                    % (day, ym, r * 100, rgb, a)
+                )
             else:
-                tds.append('<td title="%02d %s 空仓" style="border:none;'
-                           'background:#21262d;border-radius:3px"></td>'
-                           % (day, ym))
-        rows.append('<tr><th style="text-align:left">%s</th>%s</tr>'
-                    % (ym, "".join(tds)))
+                tds.append(
+                    '<td title="%02d %s 空仓" style="border:none;'
+                    'background:#21262d;border-radius:3px"></td>' % (day, ym)
+                )
+        rows.append(
+            '<tr><th style="text-align:left">%s</th>%s</tr>' % (ym, "".join(tds))
+        )
     return """
 <h2 style="margin-top:16px;font-size:13px">日收益热力（持仓区间着色）</h2>
 <table style="table-layout:fixed">%s</table>
@@ -287,28 +342,36 @@ def _charts_html(s):
     png = s.get("png")
     if png:
         u = "/bt-report/img/" + png
-        return ('<img src="%s" style="width:100%%;border-radius:8px;'
-                'border:1px solid #21262d">' % u +
-                '<div class="leg"><a href="%s" download="%s">⬇ 下载图表 PNG'
-                "</a>　<a href=\"javascript:window.print()\">🖨 打印 / 存 PDF"
-                "</a></div>" % (u, png))
+        return (
+            '<img src="%s" style="width:100%%;border-radius:8px;'
+            'border:1px solid #21262d">'
+            % u
+            + '<div class="leg"><a href="%s" download="%s">⬇ 下载图表 PNG'
+            '</a>　<a href="javascript:window.print()">🖨 打印 / 存 PDF'
+            "</a></div>" % (u, png)
+        )
     deepest = min(v for _, v in s["dd"]) * 100
-    return "".join([
-        _equity_svg(s["equity"], s["bench_equity"]),
-        '<div class="leg">— 策略净值　— 买入持有（灰）　虚线 = 1.0 基线</div>',
-        '<h2 style="margin-top:16px;font-size:13px">回撤曲线</h2>',
-        _dd_svg(s["dd"], s["bench_dd"]),
-        '<div class="leg">红色区域 = 策略回撤　灰线 = 买入持有回撤　'
-        "最深 %.1f%%</div>" % deepest,
-    ])
+    return "".join(
+        [
+            _equity_svg(s["equity"], s["bench_equity"]),
+            '<div class="leg">— 策略净值　— 买入持有（灰）　虚线 = 1.0 基线</div>',
+            '<h2 style="margin-top:16px;font-size:13px">回撤曲线</h2>',
+            _dd_svg(s["dd"], s["bench_dd"]),
+            '<div class="leg">红色区域 = 策略回撤　灰线 = 买入持有回撤　'
+            "最深 %.1f%%</div>" % deepest,
+        ]
+    )
 
 
 def _section_html(s):
     m, bh = s["m"], s["bh"]
     ex = m["total_return"] - bh["total_return"]
     rows = [
-        _kpi("总收益", "%+.1f%%" % (m["total_return"] * 100),
-             "up" if m["total_return"] >= 0 else "dn"),
+        _kpi(
+            "总收益",
+            "%+.1f%%" % (m["total_return"] * 100),
+            "up" if m["total_return"] >= 0 else "dn",
+        ),
         _kpi("年化", "%+.1f%%" % (m["cagr"] * 100)),
         _kpi("夏普", "%.2f" % m["sharpe"]),
         _kpi("索提诺", "%.2f" % m["sortino"]),
@@ -316,17 +379,27 @@ def _section_html(s):
         _kpi("最大回撤", "%.1f%%" % (m["max_drawdown"] * 100), "dn"),
         _kpi("胜率", "%.0f%%" % (m["win_rate"] * 100)),
         _kpi("交易次数", str(m["trades"])),
-        _kpi("买入持有", "%+.1f%%" % (bh["total_return"] * 100),
-             "up" if bh["total_return"] >= 0 else "dn"),
+        _kpi(
+            "买入持有",
+            "%+.1f%%" % (bh["total_return"] * 100),
+            "up" if bh["total_return"] >= 0 else "dn",
+        ),
         _kpi("超额收益", "%+.1f%%" % (ex * 100), "up" if ex >= 0 else "dn"),
     ]
     tr_rows = "".join(
         "<tr><td>%s</td><td>%.2f</td><td>%s</td><td>%.2f</td>"
-        '<td class="%s">%+.1f%%</td><td>%s</td></tr>' % (
-            t["in"], t["in_px"], t["out"], t["out_px"],
-            "up" if t["pnl"] >= 0 else "dn", t["pnl"] * 100,
-            "未平仓" if t.get("open") else "")
-        for t in s["trades"])
+        '<td class="%s">%+.1f%%</td><td>%s</td></tr>'
+        % (
+            t["in"],
+            t["in_px"],
+            t["out"],
+            t["out_px"],
+            "up" if t["pnl"] >= 0 else "dn",
+            t["pnl"] * 100,
+            "未平仓" if t.get("open") else "",
+        )
+        for t in s["trades"]
+    )
     cmp_li = "".join("<li>%s</li>" % html.escape(c) for c in s["compare"])
     return """
 <section>
@@ -343,16 +416,23 @@ def _section_html(s):
   <table><tr><th>买入日</th><th>买价</th><th>卖出日</th><th>卖价</th>
   <th>盈亏</th><th>状态</th></tr>%s</table>
 </section>""" % (
-        html.escape(s["name"]), html.escape(s["strategy"]),
-        html.escape(s["window"]), html.escape(json.dumps(
-            s["params"], ensure_ascii=False)),
-        s["last_px"], s["last_date"], s["day_chg"] * 100,
-        html.escape(s["status"]), "".join(rows),
+        html.escape(s["name"]),
+        html.escape(s["strategy"]),
+        html.escape(s["window"]),
+        html.escape(json.dumps(s["params"], ensure_ascii=False)),
+        s["last_px"],
+        s["last_date"],
+        s["day_chg"] * 100,
+        html.escape(s["status"]),
+        "".join(rows),
         _charts_html(s),
-        cmp_li, _opt_table(s.get("opt") or [], s.get("opt_base", "")),
+        cmp_li,
+        _opt_table(s.get("opt") or [], s.get("opt_base", "")),
         _monthly_table(s.get("monthly") or []),
         _heat_table(s.get("heat") or []),
-        len(s["trades"]), tr_rows)
+        len(s["trades"]),
+        tr_rows,
+    )
 
 
 def _strategy_docs_html():
@@ -371,19 +451,41 @@ def _strategy_docs_html():
             v = cur_p.get(k, "—")
             d = dflt.get(k, "—")
             tag = "" if str(v) == str(d) else " <span class='up'>★调参</span>"
-            head = ("<b>" + name + "</b><br><span class='mu' style='font-size:11px'>"
-                    + logic + "</span>") if first else ""
-            trs.append("<tr><td>" + head + "</td><td><code>" + k
-                       + "</code></td><td>" + desc + "</td><td>" + str(d)
-                       + "</td><td><b>" + str(v) + "</b>" + tag
-                       + "</td></tr>")
+            head = (
+                (
+                    "<b>"
+                    + name
+                    + "</b><br><span class='mu' style='font-size:11px'>"
+                    + logic
+                    + "</span>"
+                )
+                if first
+                else ""
+            )
+            trs.append(
+                "<tr><td>"
+                + head
+                + "</td><td><code>"
+                + k
+                + "</code></td><td>"
+                + desc
+                + "</td><td>"
+                + str(d)
+                + "</td><td><b>"
+                + str(v)
+                + "</b>"
+                + tag
+                + "</td></tr>"
+            )
             first = False
-    return ("<section><h2>策略参数说明 <span class='mu' style='font-size:12px'>"
-            "· 默认 vs 当前生效（季度自动调参）</span></h2><table><tr>"
-            "<th style='width:27%'>策略 / 逻辑</th><th>参数</th><th>含义</th>"
-            "<th>默认</th><th>当前</th></tr>" + "".join(trs) + "</table>"
-            "<p class='leg'>信号均为次日开盘生效（T+1，避免未来函数）· 仅做多策略"
-            " · ★调参 = 当前值来自全池寻优，与代码默认不同</p></section>")
+    return (
+        "<section><h2>策略参数说明 <span class='mu' style='font-size:12px'>"
+        "· 默认 vs 当前生效（季度自动调参）</span></h2><table><tr>"
+        "<th style='width:27%'>策略 / 逻辑</th><th>参数</th><th>含义</th>"
+        "<th>默认</th><th>当前</th></tr>" + "".join(trs) + "</table>"
+        "<p class='leg'>信号均为次日开盘生效（T+1，避免未来函数）· 仅做多策略"
+        " · ★调参 = 当前值来自全池寻优，与代码默认不同</p></section>"
+    )
 
 
 def _page_html(title, sections):
@@ -393,9 +495,14 @@ def _page_html(title, sections):
 <title>%s</title><style>%s</style></head><body><div class="wrap">
 <h1>📈 %s</h1><div class="meta">生成于 %s · 量化回测域 · 仅回测参考，不构成投资建议</div>
 %s%s%s<div class="foot">AI 工作站 · 门户 /bt-report</div></div></body></html>""" % (
-        html.escape(title), CSS, html.escape(title),
+        html.escape(title),
+        CSS,
+        html.escape(title),
         sections[0]["gen"] if sections else "",
-        _nav_html(exclude="report"), body, _strategy_docs_html())
+        _nav_html(exclude="report"),
+        body,
+        _strategy_docs_html(),
+    )
 
 
 def write_report_html(title, sections):
@@ -410,13 +517,18 @@ def write_report_html(title, sections):
 
 SIGNALS = os.path.join(HERE, "reports", "signals.html")
 SIG_STRATS = ["trend_follow", "ma_cross", "boll_breakout", "rsi_reversal"]
-SIG_HEAD = {"trend_follow": "趋势跟随", "ma_cross": "均线交叉",
-            "boll_breakout": "布林突破", "rsi_reversal": "RSI 反转"}
+SIG_HEAD = {
+    "trend_follow": "趋势跟随",
+    "ma_cross": "均线交叉",
+    "boll_breakout": "布林突破",
+    "rsi_reversal": "RSI 反转",
+}
 # [20261021_wo-qt-072 来源列] 机器聚合选票池（portal /picks.html 数据源）。
 # watchlist code 经 resolve_watchlist 归一为 "301047.SZ"/"603580.SH"，
 # 与 todays_picks stocks[].code 同格式，可直接精确匹配。
 PICKS_JSON = os.path.abspath(
-    os.path.join(HERE, "..", "portal", "data", "todays_picks.json"))
+    os.path.join(HERE, "..", "portal", "data", "todays_picks.json")
+)
 
 
 def _load_picks_index():
@@ -451,9 +563,11 @@ def _src_cell(symbol, picks, picks_ok):
     hit = picks.get(symbol or "")
     if hit and (hit[0] or hit[1]):
         tcls = "t1" if hit[1] == "T1" else "t2"
-        return ('<td class="src1">%s<span class="tier %s">%s</span></td>'
-                % (html.escape(hit[0] or ""), tcls,
-                   html.escape(hit[1] or "—")))
+        return '<td class="src1">%s<span class="tier %s">%s</span></td>' % (
+            html.escape(hit[0] or ""),
+            tcls,
+            html.escape(hit[1] or "—"),
+        )
     return '<td class="src0">观察名单</td>'
 
 
@@ -463,8 +577,9 @@ def write_signals_html(rows, gen_ts, hold_only=False):
     hold_only=True 时只显示有任一策略持仓的标的。"""
     head_cells = "".join(
         '<th><a href="/bt/strategy/%s" style="%s" title="下钻到策略纵切页">'
-        '%s</a></th>' % (s, _LK, SIG_HEAD[s])
-        for s in SIG_STRATS)
+        "%s</a></th>" % (s, _LK, SIG_HEAD[s])
+        for s in SIG_STRATS
+    )
     picks, picks_ok = _load_picks_index()  # [来源列] 双池口径：join 选票池
     n_picks = str(len(picks)) if picks_ok else "—"
     n_hold = sum(1 for r in rows if any(r["sigs"].values()))
@@ -474,16 +589,25 @@ def write_signals_html(rows, gen_ts, hold_only=False):
             continue
         cells = "".join(
             ('<td class="s1" title="自 %s">●</td>' % r["since"][s])
-            if r["sigs"][s] else
-            ('<td class="s0" title="自 %s">○</td>' % r["since"][s])
-            for s in SIG_STRATS)
+            if r["sigs"][s]
+            else ('<td class="s0" title="自 %s">○</td>' % r["since"][s])
+            for s in SIG_STRATS
+        )
         res_cls = ' class="hi"' if r["res"] >= 3 else ""
-        tr.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%.4g</td>"
-                  "<td>%s</td>%s<td%s>%d/4</td></tr>" % (
-                      _stock_link(r["name"], r.get("symbol", "")),
-                      _src_cell(r.get("symbol", ""), picks, picks_ok),
-                      r["market"], r["px"], r["date"], cells,
-                      res_cls, r["res"]))
+        tr.append(
+            "<tr><td>%s</td><td>%s</td><td>%s</td><td>%.4g</td>"
+            "<td>%s</td>%s<td%s>%d/4</td></tr>"
+            % (
+                _stock_link(r["name"], r.get("symbol", "")),
+                _src_cell(r.get("symbol", ""), picks, picks_ok),
+                r["market"],
+                r["px"],
+                r["date"],
+                cells,
+                res_cls,
+                r["res"],
+            )
+        )
     page = """<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>全池策略信号</title><style>%s
@@ -515,21 +639,35 @@ font-size:11px;line-height:17px;vertical-align:1px}
 <div class="leg">● 持仓 ○ 空仓（悬停可见信号起始日）· 共振=4 策略同时持仓数（≥3 橙色）
 · 点标的 → 个股全景 · 点策略列头 → 策略纵切页
 · 信号基于最新收盘数据，按下一交易日执行（T+1）· 不构成投资建议</div>
-</div></body></html>""" % (CSS, gen_ts, len(rows), len(rows),
-                          n_picks,
-                          _nav_html(exclude="signals"),
-                          "on" if not hold_only else "", len(rows),
-                          "on" if hold_only else "", n_hold,
-                          head_cells, "".join(tr))
+</div></body></html>""" % (
+        CSS,
+        gen_ts,
+        len(rows),
+        len(rows),
+        n_picks,
+        _nav_html(exclude="signals"),
+        "on" if not hold_only else "",
+        len(rows),
+        "on" if hold_only else "",
+        n_hold,
+        head_cells,
+        "".join(tr),
+    )
     os.makedirs(os.path.dirname(SIGNALS), exist_ok=True)
     tmp = SIGNALS + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(page)
     os.replace(tmp, SIGNALS)
     return SIGNALS
+
+
 OPT = os.path.join(HERE, "reports", "opt.html")
-OPT_HEAD = {"trend_follow": "趋势跟随", "ma_cross": "均线交叉",
-            "boll_breakout": "布林突破", "rsi_reversal": "RSI 反转"}
+OPT_HEAD = {
+    "trend_follow": "趋势跟随",
+    "ma_cross": "均线交叉",
+    "boll_breakout": "布林突破",
+    "rsi_reversal": "RSI 反转",
+}
 
 
 def write_opt_html(data, gen_ts):
@@ -540,23 +678,33 @@ def write_opt_html(data, gen_ts):
         for i, r in enumerate(d["rows"]):
             pj = json.dumps(r["params"], ensure_ascii=False)
             cur = r["params"] == d["cur"]
-            tr.append('<tr%s><td>%s</td><td>%s%s</td><td class="%s">%+.1f%%'
-                      "</td><td><b>%.2f</b></td><td>%d/51</td></tr>" % (
-                          ' style="background:#1c2a3a"' if cur else "",
-                          "★" if cur else str(i + 1),
-                          html.escape(pj), "（当前）" if cur else "",
-                          "up" if r["mean_ret"] >= 0 else "dn",
-                          r["mean_ret"] * 100, r["mean_sharpe"],
-                          r.get("top3", 0)))
-        secs.append("""
+            tr.append(
+                '<tr%s><td>%s</td><td>%s%s</td><td class="%s">%+.1f%%'
+                "</td><td><b>%.2f</b></td><td>%d/51</td></tr>"
+                % (
+                    ' style="background:#1c2a3a"' if cur else "",
+                    "★" if cur else str(i + 1),
+                    html.escape(pj),
+                    "（当前）" if cur else "",
+                    "up" if r["mean_ret"] >= 0 else "dn",
+                    r["mean_ret"] * 100,
+                    r["mean_sharpe"],
+                    r.get("top3", 0),
+                )
+            )
+        secs.append(
+            """
 <details class="sec"%s><summary><h2>%s</h2>
 <span class="dim">当前 %s</span></summary><div class="sec-body">
 <table><tr><th>#</th><th>参数组合</th><th>全池平均收益</th><th>平均夏普</th>
-<th>Top3命中</th></tr>%s</table></div></details>""" % (
-            " open" if i == 0 else "",
-            OPT_HEAD.get(d["name"], d["name"]),
-            html.escape(json.dumps(d["cur"], ensure_ascii=False)),
-            "".join(tr)))
+<th>Top3命中</th></tr>%s</table></div></details>"""
+            % (
+                " open" if i == 0 else "",
+                OPT_HEAD.get(d["name"], d["name"]),
+                html.escape(json.dumps(d["cur"], ensure_ascii=False)),
+                "".join(tr),
+            )
+        )
     page = """<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>全池参数寻优榜单</title><style>%s
@@ -571,8 +719,7 @@ table{border-collapse:collapse;width:100%%;font-size:13px}
 %s
 <div class="leg">按（全池平均夏普, Top3 命中数）排序取前 5 · ★ 当前生效参数 ·
 样本内寻优仅供敏感性参考，谨防过拟合</div>
-</div></body></html>""" % (CSS, gen_ts,
-                           365, _nav_html(exclude="opt"), "".join(secs))
+</div></body></html>""" % (CSS, gen_ts, 365, _nav_html(exclude="opt"), "".join(secs))
     os.makedirs(os.path.dirname(OPT), exist_ok=True)
     tmp = OPT + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -612,8 +759,7 @@ def nine_dim_cn_code(market, symbol):
     s = str(symbol).strip().upper()
     if "." in s:
         return s
-    return s + (".SH" if s[0] == "6" else
-                ".BJ" if s[0] in "489" else ".SZ")
+    return s + (".SH" if s[0] == "6" else ".BJ" if s[0] in "489" else ".SZ")
 
 
 def nine_dim_alert_check(codes, path=None, recent_n=NINE_DIM_RECENT_N):
@@ -637,9 +783,9 @@ def nine_dim_alert_check(codes, path=None, recent_n=NINE_DIM_RECENT_N):
                 try:
                     r = json.loads(line)
                 except Exception:
-                    continue          # 坏行跳过，不因单行损坏丢弃全池
+                    continue  # 坏行跳过，不因单行损坏丢弃全池
                 if r.get("pool_type") != "alert":
-                    continue          # 只认警报池（键=code+dt，见 nine_dim 入池段）
+                    continue  # 只认警报池（键=code+dt，见 nine_dim 入池段）
                 dts.add(str(r.get("dt") or ""))
                 c = str(r.get("code") or "")
                 if c in want:
@@ -654,7 +800,7 @@ def nine_dim_alert_check(codes, path=None, recent_n=NINE_DIM_RECENT_N):
                 hits[r["code"]] = (dt, r.get("score"), r.get("band"))
         return hits
     except Exception:
-        return {}                     # 文件缺失等一律 fail-open
+        return {}  # 文件缺失等一律 fail-open
 
 
 def _ledger_alert_hits(entries, alert_hits=None):
@@ -664,8 +810,11 @@ def _ledger_alert_hits(entries, alert_hits=None):
         return alert_hits
     if not _cfg_flag("nine_dim_alert_card", True):
         return {}
-    codes = {c for c in (nine_dim_cn_code(e.get("market"), e.get("symbol"))
-                         for e in entries) if c}
+    codes = {
+        c
+        for c in (nine_dim_cn_code(e.get("market"), e.get("symbol")) for e in entries)
+        if c
+    }
     return nine_dim_alert_check(codes)
 
 
@@ -675,12 +824,19 @@ def _alert_deco(e, hits):
     h = hits.get(c) if c else None
     if not h:
         return "", ""
-    tip = ("九维警报池命中 %s-%s-%s · 分数 %s（%s）· 高分=拥挤警报，非买入信号"
-           % (h[0][:4], h[0][4:6], h[0][6:8], h[1], h[2] or "alert"))
-    return (POOL_ROW_BG,
-            "<span title='%s' style='background:#b62324;color:#fff;"
-            "border-radius:4px;padding:0 5px;font-size:11px;"
-            "margin-left:6px'>⚠️警报池</span>" % tip)
+    tip = "九维警报池命中 %s-%s-%s · 分数 %s（%s）· 高分=拥挤警报，非买入信号" % (
+        h[0][:4],
+        h[0][4:6],
+        h[0][6:8],
+        h[1],
+        h[2] or "alert",
+    )
+    return (
+        POOL_ROW_BG,
+        "<span title='%s' style='background:#b62324;color:#fff;"
+        "border-radius:4px;padding:0 5px;font-size:11px;"
+        "margin-left:6px'>⚠️警报池</span>" % tip,
+    )
 
 
 def write_positions_html(led, gen_ts, alert_hits=None):
@@ -689,8 +845,9 @@ def write_positions_html(led, gen_ts, alert_hits=None):
     全表可下钻：点标的 → 个股全景 /bt/stock · 点策略 → 策略纵切页。"""
 
     def pct_td(p):
-        return ("<td class='up'>%+.2f%%</td>" if p >= 0 else
-                "<td class='dn'>%+.2f%%</td>") % (p * 100)
+        return (
+            "<td class='up'>%+.2f%%</td>" if p >= 0 else "<td class='dn'>%+.2f%%</td>"
+        ) % (p * 100)
 
     def trail_td(e):
         """近 5 日收盘浮盈轨迹（update_ledger marks 留痕）。"""
@@ -699,11 +856,15 @@ def write_positions_html(led, gen_ts, alert_hits=None):
             return "<td style='color:#8b949e'>—</td>"
         spans = "".join(
             "<span class='%s' title='%s 收 %s'>%+.1f%%</span> "
-            % ("up" if m["pnl"] >= 0 else "dn",
-               m["d"][5:], ("%.4g" % m["px"]), m["pnl"] * 100)
-            for m in ms)
-        return ("<td style='font-size:11px;white-space:nowrap'>%s</td>"
-                % spans)
+            % (
+                "up" if m["pnl"] >= 0 else "dn",
+                m["d"][5:],
+                ("%.4g" % m["px"]),
+                m["pnl"] * 100,
+            )
+            for m in ms
+        )
+        return "<td style='font-size:11px;white-space:nowrap'>%s</td>" % spans
 
     pend = led.get("pending") or []
     open_ = led.get("open") or []
@@ -715,49 +876,84 @@ def write_positions_html(led, gen_ts, alert_hits=None):
     p_rows = ""
     for e in pend:
         bg, badge = _alert_deco(e, hits)
-        p_rows += ("<tr%s><td>%s%s</td><td>%s</td><td>%s</td><td>%s</td>"
-                   "<td>%.4g</td></tr>" % (
-                       bg, _stock_link(e["name"], e.get("symbol")), badge,
-                       e["market"], _strat_link(e["strategy"]),
-                       e.get("sig_date", ""), e.get("last_px") or 0))
+        p_rows += (
+            "<tr%s><td>%s%s</td><td>%s</td><td>%s</td><td>%s</td>"
+            "<td>%.4g</td></tr>"
+            % (
+                bg,
+                _stock_link(e["name"], e.get("symbol")),
+                badge,
+                e["market"],
+                _strat_link(e["strategy"]),
+                e.get("sig_date", ""),
+                e.get("last_px") or 0,
+            )
+        )
     p_rows = p_rows or "<tr><td colspan=5>—</td></tr>"
 
     o_rows = ""
     for e in sorted(open_, key=lambda x: -x.get("pnl", 0)):
         bg, badge = _alert_deco(e, hits)
-        o_rows += ("<tr%s><td>%s%s</td><td>%s</td><td>%s</td><td>%s</td>"
-                   "<td>%.4g</td><td>%.4g</td>%s<td>%d</td>%s</tr>" % (
-                       bg, _stock_link(e["name"], e.get("symbol")), badge,
-                       e["market"], _strat_link(e["strategy"]),
-                       e.get("entry_date", ""), e["entry_px"],
-                       e.get("last_px") or e["entry_px"], pct_td(e.get("pnl", 0)),
-                       e.get("days", 0), trail_td(e)))
+        o_rows += (
+            "<tr%s><td>%s%s</td><td>%s</td><td>%s</td><td>%s</td>"
+            "<td>%.4g</td><td>%.4g</td>%s<td>%d</td>%s</tr>"
+            % (
+                bg,
+                _stock_link(e["name"], e.get("symbol")),
+                badge,
+                e["market"],
+                _strat_link(e["strategy"]),
+                e.get("entry_date", ""),
+                e["entry_px"],
+                e.get("last_px") or e["entry_px"],
+                pct_td(e.get("pnl", 0)),
+                e.get("days", 0),
+                trail_td(e),
+            )
+        )
     o_rows = o_rows or "<tr><td colspan=9>—</td></tr>"
 
-    c_rows = "".join(
-        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s → %s</td>"
-        "<td>%.4g → %.4g</td>%s<td>%d天</td></tr>" % (
-            _stock_link(e["name"], e.get("symbol")), e["market"],
-            _strat_link(e["strategy"]),
-            e.get("entry_date", ""), e.get("exit_date", ""),
-            e["entry_px"], e["exit_px"], pct_td(e.get("pnl", 0)),
-            e.get("days", 0))
-        for e in closed) or "<tr><td colspan=8>—</td></tr>"
+    c_rows = (
+        "".join(
+            "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s → %s</td>"
+            "<td>%.4g → %.4g</td>%s<td>%d天</td></tr>"
+            % (
+                _stock_link(e["name"], e.get("symbol")),
+                e["market"],
+                _strat_link(e["strategy"]),
+                e.get("entry_date", ""),
+                e.get("exit_date", ""),
+                e["entry_px"],
+                e["exit_px"],
+                pct_td(e.get("pnl", 0)),
+                e.get("days", 0),
+            )
+            for e in closed
+        )
+        or "<tr><td colspan=8>—</td></tr>"
+    )
 
     n_all = len(led.get("closed") or [])
     wins = sum(1 for c in led.get("closed") or [] if c.get("pnl", 0) > 0)
-    avg = (sum(c.get("pnl", 0) for c in led.get("closed") or [])
-           / n_all) if n_all else 0
+    avg = (
+        (sum(c.get("pnl", 0) for c in led.get("closed") or []) / n_all) if n_all else 0
+    )
     tot = sum(c.get("pnl", 0) for c in led.get("closed") or [])
-    stats = ("累计平仓 %d 笔 · 胜率 %.0f%% · 平均 %+.2f%% · 合计 %+.2f%%"
-             "（等权单笔，不含手续费）" % (
-                 n_all, wins * 100.0 / n_all if n_all else 0,
-                 avg * 100, tot * 100))
+    stats = (
+        "累计平仓 %d 笔 · 胜率 %.0f%% · 平均 %+.2f%% · 合计 %+.2f%%"
+        "（等权单笔，不含手续费）"
+        % (n_all, wins * 100.0 / n_all if n_all else 0, avg * 100, tot * 100)
+    )
     # W1-2：命中时页脚标注数据源与口径（未命中不加，免噪音）
-    alert_foot = (" · ⚠️ 警报池标记：data/nine_dim_history.jsonl"
-                  "（九维 score≥75 拥挤反指，近 %d 个池内交易日）· "
-                  "高分=拥挤警报，非买入信号" % NINE_DIM_RECENT_N
-                  ) if hits else ""
+    alert_foot = (
+        (
+            " · ⚠️ 警报池标记：data/nine_dim_history.jsonl"
+            "（九维 score≥75 拥挤反指，近 %d 个池内交易日）· "
+            "高分=拥挤警报，非买入信号" % NINE_DIM_RECENT_N
+        )
+        if hits
+        else ""
+    )
 
     page = """<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -783,10 +979,19 @@ table{border-collapse:collapse;width:100%%;font-size:13px}
 <table class="sticky"><tr><th>标的</th><th>市场</th><th>策略</th><th>买入 → 卖出</th>
 <th>买价 → 卖价</th><th>盈亏</th><th>持有</th></tr>%s</table></div></details>
 <div class="leg">纸面模拟：信号 T+1 开盘建仓、翻空收盘平仓 · 点标的 → 个股全景（行情/信号/共振/AI展望）· 点策略 → 策略纵切页（宽度/回测/寻优）· 不构成投资建议%s</div>
-</div></body></html>""" % (CSS, gen_ts, stats,
-                           _nav_html(exclude="positions"),
-                           len(pend), p_rows, len(open_), o_rows,
-                           len(closed), c_rows, alert_foot)
+</div></body></html>""" % (
+        CSS,
+        gen_ts,
+        stats,
+        _nav_html(exclude="positions"),
+        len(pend),
+        p_rows,
+        len(open_),
+        o_rows,
+        len(closed),
+        c_rows,
+        alert_foot,
+    )
     os.makedirs(os.path.dirname(POSITIONS), exist_ok=True)
     tmp = POSITIONS + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -804,6 +1009,7 @@ def write_snapshot(title, sections, tag=""):
     返回文件名（不含路径）；失败返回 None。"""
     import re
     import time
+
     safe = re.sub(r"[^0-9A-Za-z_.\-]+", "_", tag)[:40] or "bt"
     name = "%s-%s.html" % (time.strftime("%Y%m%d-%H%M%S"), safe)
     try:

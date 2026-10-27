@@ -20,6 +20,7 @@ draft 硬约束（闭集纪律，与 kg_extract 同款降幻觉三板斧）：
 · 已有图内环节在 prompt 中列出供复用交叉引用，避免同义重复建环。
 审核闸门：draft 产物必须人工编辑确认后才可 adopt；adopt 默认 dryrun。
 """
+
 import argparse
 import json
 import os
@@ -30,8 +31,8 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import requests                                       # noqa: E402
-from kg_client import KgClient                        # noqa: E402
+import requests  # noqa: E402
+from kg_client import KgClient  # noqa: E402
 
 SEEDS = os.path.join(HERE, "data", "kg_chain_seeds.json")
 DRAFT_DIR = os.path.join(HERE, "data", "kg_theme_draft")
@@ -56,17 +57,16 @@ PROMPT = (
     "「算力-AI服务器」conduction=供应链、「算力-散热」conduction=物理"
     "约束；二级「算力-液冷」parent=「算力-散热」。desc 直接写定义，不要"
     "复读环节名。\n"
-    "只输出JSON不要任何其他文字：{\"theme\":\"%s\",\"segments\":["
-    "{\"name\":\"%s-…\",\"level\":1,\"conduction\":\"枚举\",\"desc\":"
-    "\"…含边界条件\"},{\"name\":\"%s-…\",\"level\":2,\"parent\":\"%s-…\","
-    "\"desc\":\"…\"}]}"
+    '只输出JSON不要任何其他文字：{"theme":"%s","segments":['
+    '{"name":"%s-…","level":1,"conduction":"枚举","desc":'
+    '"…含边界条件"},{"name":"%s-…","level":2,"parent":"%s-…",'
+    '"desc":"…"}]}'
 )
 
 
 def _ollama_ok():
     try:
-        return requests.get(
-            OLLAMA.replace("/api/chat", "/api/tags"), timeout=3).ok
+        return requests.get(OLLAMA.replace("/api/chat", "/api/tags"), timeout=3).ok
     except Exception:
         return False
 
@@ -75,8 +75,10 @@ def _seg_names():
     """图内已有环节全集（供 prompt 防重复 + 交叉引用）。"""
     cli = KgClient(retry=1)
     with cli._session() as s:
-        return [r["n"] for r in s.run(
-            "MATCH (g:Segment) RETURN g.name AS n ORDER BY n").data()]
+        return [
+            r["n"]
+            for r in s.run("MATCH (g:Segment) RETURN g.name AS n ORDER BY n").data()
+        ]
 
 
 def _validate(theme, segs, existing):
@@ -102,8 +104,9 @@ def _validate(theme, segs, existing):
         if len(d) < 10:
             errs.append("%s：desc 过短（须含边界条件）" % nm)
             continue
-        if lv == 2 and s.get("parent") not in \
-                {x.get("name") for x in segs if x.get("level") == 1}:
+        if lv == 2 and s.get("parent") not in {
+            x.get("name") for x in segs if x.get("level") == 1
+        }:
             errs.append("%s：parent 不在一级清单" % nm)
             continue
         names.add(nm)
@@ -118,11 +121,24 @@ def draft(theme):
         return
     existing = _seg_names()
     body = {
-        "model": MODEL, "stream": False, "think": False,
-        "messages": [{"role": "user",
-                      "content": PROMPT % (theme, theme,
-                                           "、".join(existing) or "（无）",
-                                           theme, theme, theme, theme)}],
+        "model": MODEL,
+        "stream": False,
+        "think": False,
+        "messages": [
+            {
+                "role": "user",
+                "content": PROMPT
+                % (
+                    theme,
+                    theme,
+                    "、".join(existing) or "（无）",
+                    theme,
+                    theme,
+                    theme,
+                    theme,
+                ),
+            }
+        ],
         "options": {"temperature": 0.3, "num_predict": 800},
     }
     print("起草 %s …（LLM 调用中）" % theme)
@@ -141,9 +157,14 @@ def draft(theme):
         print("FAIL：LLM 输出解析失败（重试 1 次未果）")
         return
     segs, errs = _validate(theme, d.get("segments") or [], set(existing))
-    out = {"theme": theme, "drafted_at": time.strftime("%Y-%m-%d %H:%M"),
-           "model": MODEL, "segments": segs, "errors": errs,
-           "status": "drafted（人工编辑确认后 adopt --yes）"}
+    out = {
+        "theme": theme,
+        "drafted_at": time.strftime("%Y-%m-%d %H:%M"),
+        "model": MODEL,
+        "segments": segs,
+        "errors": errs,
+        "status": "drafted（人工编辑确认后 adopt --yes）",
+    }
     os.makedirs(DRAFT_DIR, exist_ok=True)
     fp = os.path.join(DRAFT_DIR, "%s.json" % theme)
     tmp = fp + ".tmp"
@@ -151,17 +172,20 @@ def draft(theme):
         json.dump(out, f, ensure_ascii=False, indent=1)
     os.replace(tmp, fp)
     n1 = sum(1 for s in segs if s.get("level") == 1)
-    print("草稿: %s（一级 %d / 环节 %d / 校验问题 %d）"
-          % (fp, n1, len(segs), len(errs)))
+    print(
+        "草稿: %s（一级 %d / 环节 %d / 校验问题 %d）" % (fp, n1, len(segs), len(errs))
+    )
     for e in errs:
         print("  WARN %s" % e)
     for s in segs:
-        p = ("  └ %s" % s["name"]) if s.get("level") == 2 \
+        p = (
+            ("  └ %s" % s["name"])
+            if s.get("level") == 2
             else ("%s [%s]" % (s["name"], s.get("conduction")))
+        )
         print(p)
         print("      ＝%s" % s.get("desc"))
-    print("审核闸门：人工编辑 %s 后执行 adopt %s --yes 收编种子"
-          % (fp, theme))
+    print("审核闸门：人工编辑 %s 后执行 adopt %s --yes 收编种子" % (fp, theme))
 
 
 def adopt(theme, yes=False):
@@ -173,16 +197,19 @@ def adopt(theme, yes=False):
     with open(fp, encoding="utf-8") as f:
         d = json.load(f)
     if d.get("errors"):
-        print("草稿存在未清校验问题 %d 条，先人工编辑清除再 adopt"
-              % len(d["errors"]))
+        print("草稿存在未清校验问题 %d 条，先人工编辑清除再 adopt" % len(d["errors"]))
         return
-    segs = [{"name": s["name"], "level": s.get("level") or 1,
-             "parent": s.get("parent"),
-             "conduction": s.get("conduction"),
-             "desc": s.get("desc") or ""}
-            for s in d.get("segments") or []]
-    chain = {"theme": theme, "segments": segs, "conductions": [],
-             "supplies": []}
+    segs = [
+        {
+            "name": s["name"],
+            "level": s.get("level") or 1,
+            "parent": s.get("parent"),
+            "conduction": s.get("conduction"),
+            "desc": s.get("desc") or "",
+        }
+        for s in d.get("segments") or []
+    ]
+    chain = {"theme": theme, "segments": segs, "conductions": [], "supplies": []}
     if not yes:
         print("=== DRYRUN：将向 %s 追加 ===" % os.path.basename(SEEDS))
         print(json.dumps(chain, ensure_ascii=False, indent=1))
@@ -198,8 +225,7 @@ def adopt(theme, yes=False):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(seeds, f, ensure_ascii=False, indent=1)
     os.replace(tmp, SEEDS)
-    print("已收编 %s（环节 %d）。执行 kg_chain.py build 入图。"
-          % (theme, len(segs)))
+    print("已收编 %s（环节 %d）。执行 kg_chain.py build 入图。" % (theme, len(segs)))
 
 
 def main():

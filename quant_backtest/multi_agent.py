@@ -19,6 +19,7 @@
   python multi_agent.py "1卖趋势背驰的左尾与688411近期事件" --json
   python multi_agent.py "预警池最新10条信号" --force
 """
+
 import argparse
 import hashlib
 import json
@@ -31,8 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 # 复用 P-C nl_query 的本地 FC 范式（_llm 已含 think=false+temp0+剥思考块）
-from nl_query import (_llm, _coerce, _atomic_json, _today8,
-                      TOOL_MSG_MAX, MAX_ROUNDS)
+from nl_query import _llm, _coerce, _atomic_json, _today8, TOOL_MSG_MAX, MAX_ROUNDS
 from agent_tools import call as T
 
 CACHE_DIR = os.path.join(HERE, "data", "nlmulti")
@@ -40,67 +40,84 @@ CACHE_DIR = os.path.join(HERE, "data", "nlmulti")
 SPECIALISTS = {
     "quant_judge": {
         "desc": "缠论结构槽位/信号先例/预警池/模拟账本",
-        "tools": ["stock_info", "tgraph_slots", "tgraph_eval",
-                  "tgraph_left_tail", "tgraph_fps",
-                  "signal_precedents", "signal_enrich", "pool_rows",
-                  "paper_positions"],
+        "tools": [
+            "stock_info",
+            "tgraph_slots",
+            "tgraph_eval",
+            "tgraph_left_tail",
+            "tgraph_fps",
+            "signal_precedents",
+            "signal_enrich",
+            "pool_rows",
+            "paper_positions",
+        ],
         "system": "你是缠论量化研判 specialist，只用提供的工具查结构/先例/账本数据，"
-                  "不得编造任何数字。\n"
-                  "规则：\n"
-                  "· 用户没提趋势背驰/趋✓时，绝对不要传 tbe 参数\n"
-                  "· sub_q 含 6 位股票代码时先调 stock_info(code) 拿名称与池内"
-                  "信号概况；查该股信号明细用 pool_rows(code=...)，不要全池扫描\n"
-                  "· sub_q 是股票名称（非代码）时：先调 stock_info(code=名称)"
-                  "反查代码（全市场映射，支持曾用名/改名前旧称）；拿不到代码就"
-                  "明说无法确认，绝不自己猜代码\n"
-                  "· sig_type 不确定时先查 pool_rows 确认该股信号类型\n"
-                  "· 工具没返回股票名称时答案只写代码，绝不猜名称\n"
-                  "· 拿到足够事实后直接给中文答案（≤200字，引用具体数字），"
-                  "不要再调用工具",
+        "不得编造任何数字。\n"
+        "规则：\n"
+        "· 用户没提趋势背驰/趋✓时，绝对不要传 tbe 参数\n"
+        "· sub_q 含 6 位股票代码时先调 stock_info(code) 拿名称与池内"
+        "信号概况；查该股信号明细用 pool_rows(code=...)，不要全池扫描\n"
+        "· sub_q 是股票名称（非代码）时：先调 stock_info(code=名称)"
+        "反查代码（全市场映射，支持曾用名/改名前旧称）；拿不到代码就"
+        "明说无法确认，绝不自己猜代码\n"
+        "· sig_type 不确定时先查 pool_rows 确认该股信号类型\n"
+        "· 工具没返回股票名称时答案只写代码，绝不猜名称\n"
+        "· 拿到足够事实后直接给中文答案（≤200字，引用具体数字），"
+        "不要再调用工具",
     },
     "event_face": {
         "desc": "个股事件流/相关事件语义检索/事件摘要/近期强事件",
-        "tools": ["events_for_stock", "related_events", "event_summary",
-                  "recent_events"],
+        "tools": [
+            "events_for_stock",
+            "related_events",
+            "event_summary",
+            "recent_events",
+        ],
         "system": "你是事件面 specialist，只用提供的工具查事件，不得编造。\n"
-                  "规则：\n"
-                  "· 工具选择：查某只股票的事件用 events_for_stock(code)；"
-                  "查全市场近期强事件用 recent_events；语义检索相关事件用 "
-                  "related_events(query)；个股事件多空摘要用 event_summary(code)\n"
-                  "· sub_q 含 6 位股票代码时，绝对用 events_for_stock(code) 查该股"
-                  "事件，不要用 recent_events（那是全市场事件，不含个股）\n"
-                  "· 工具没返回股票名称时答案只写代码，绝不编造名称\n"
-                  "· recent_events 是全市场新闻：新闻里出现的公司名与所查代码"
-                  "无关（如问 300419 时新闻里出现'新思科技'不代表 300419 是"
-                  "新思科技）；绝不把全市场新闻里的公司名当作所查股票名称\n"
-                  "· 拿到足够事实后直接给中文答案（≤200字，引用具体事件标题"
-                  "与偏性），不要再调用工具",
+        "规则：\n"
+        "· 工具选择：查某只股票的事件用 events_for_stock(code)；"
+        "查全市场近期强事件用 recent_events；语义检索相关事件用 "
+        "related_events(query)；个股事件多空摘要用 event_summary(code)\n"
+        "· sub_q 含 6 位股票代码时，绝对用 events_for_stock(code) 查该股"
+        "事件，不要用 recent_events（那是全市场事件，不含个股）\n"
+        "· 工具没返回股票名称时答案只写代码，绝不编造名称\n"
+        "· recent_events 是全市场新闻：新闻里出现的公司名与所查代码"
+        "无关（如问 300419 时新闻里出现'新思科技'不代表 300419 是"
+        "新思科技）；绝不把全市场新闻里的公司名当作所查股票名称\n"
+        "· 拿到足够事实后直接给中文答案（≤200字，引用具体事件标题"
+        "与偏性），不要再调用工具",
     },
     "data_lookup": {
         "desc": "数据中台读层/表新鲜度/可用性/全仓健康/市场总量",
-        "tools": ["stock_info", "market_snapshot", "datamart_read",
-                  "datamart_latest", "datamart_ready", "data_health"],
+        "tools": [
+            "stock_info",
+            "market_snapshot",
+            "datamart_read",
+            "datamart_latest",
+            "datamart_ready",
+            "data_health",
+        ],
         "system": "你是数据查数 specialist，只用提供的工具读数据中台，不得编造。\n"
-                  "规则：\n"
-                  "· 市场总量问题（大盘/交易所整体成交额、量能、涨跌家数，"
-                  "如'北交所今天成交额'）：用 market_snapshot(market=..., days=...)，"
-                  "不要用 stock_info/datamart_read 试\n"
-                  "· table 参数是表名（如 ts_daily/news/notice/chanlun_pool），"
-                  "不是股票代码\n"
-                  "· 查个股名称/最新行情/池内信号：先调 stock_info(code)，"
-                  "股票名称以它返回为准，绝不编造\n"
-                  "· 用户给股票名称时：先调 stock_info(code=名称) 反查代码"
-                  "（全市场映射，含曾用名/改名前旧称，name_note 会标注现名）；"
-                  "code=null 就明说无法确认，绝不硬猜代码\n"
-                  "· datamart_read 的 codes 传 6 位裸码，"
-                  "系统自动补后缀；不要自己加 .SH/.SZ\n"
-                  "· fields 只传真实存在的列（trade_date/close/pct_chg/vol/"
-                  "amount 等）；price/name/turnover_rate 不存在，不要传\n"
-                  "· 用户没指定时间区间就不要猜年份，不传 start/end 即查最近\n"
-                  "· datamart_ready/datamart_latest 需具体表名，不支持通配符 *\n"
-                  "· 用户问'有哪些表'或'表可用'时，用 data_health 看全仓状态\n"
-                  "· 拿到足够事实后直接给中文答案（≤200字，引用具体表名/日期/"
-                  "行数），不要再调用工具",
+        "规则：\n"
+        "· 市场总量问题（大盘/交易所整体成交额、量能、涨跌家数，"
+        "如'北交所今天成交额'）：用 market_snapshot(market=..., days=...)，"
+        "不要用 stock_info/datamart_read 试\n"
+        "· table 参数是表名（如 ts_daily/news/notice/chanlun_pool），"
+        "不是股票代码\n"
+        "· 查个股名称/最新行情/池内信号：先调 stock_info(code)，"
+        "股票名称以它返回为准，绝不编造\n"
+        "· 用户给股票名称时：先调 stock_info(code=名称) 反查代码"
+        "（全市场映射，含曾用名/改名前旧称，name_note 会标注现名）；"
+        "code=null 就明说无法确认，绝不硬猜代码\n"
+        "· datamart_read 的 codes 传 6 位裸码，"
+        "系统自动补后缀；不要自己加 .SH/.SZ\n"
+        "· fields 只传真实存在的列（trade_date/close/pct_chg/vol/"
+        "amount 等）；price/name/turnover_rate 不存在，不要传\n"
+        "· 用户没指定时间区间就不要猜年份，不传 start/end 即查最近\n"
+        "· datamart_ready/datamart_latest 需具体表名，不支持通配符 *\n"
+        "· 用户问'有哪些表'或'表可用'时，用 data_health 看全仓状态\n"
+        "· 拿到足够事实后直接给中文答案（≤200字，引用具体表名/日期/"
+        "行数），不要再调用工具",
     },
 }
 
@@ -147,6 +164,7 @@ except Exception:
 def _schema_subset(tool_names):
     """specialist 子集工具 schema（OpenAI tools 格式）。"""
     from nl_query import _schema
+
     full = {t["function"]["name"]: t for t in _schema()}
     return [full[n] for n in tool_names if n in full]
 
@@ -156,8 +174,10 @@ def _specialist_run(sub_q, spec_name, parent_q=""):
     """单 specialist 的 FC 循环 ≤3 轮。返回 (answer|None, calls)。"""
     spec = SPECIALISTS[spec_name]
     tools = _schema_subset(spec["tools"])
-    messages = [{"role": "system", "content": spec["system"]},
-                {"role": "user", "content": sub_q}]
+    messages = [
+        {"role": "system", "content": spec["system"]},
+        {"role": "user", "content": sub_q},
+    ]
     calls = []
     for _ in range(MAX_ROUNDS):
         m = _llm(messages, tools)
@@ -172,8 +192,7 @@ def _specialist_run(sub_q, spec_name, parent_q=""):
             f = tc.get("function") or {}
             name = f.get("name")
             # tbe 意图守卫用用户原问句（更准），sig_type 等仍按 sub_q
-            args = _coerce(name, f.get("arguments") or {},
-                           parent_q or sub_q)
+            args = _coerce(name, f.get("arguments") or {}, parent_q or sub_q)
             calls.append({"tool": name, "args": args})
             if args is None:
                 res = {"ok": False, "err": "unknown tool"}
@@ -184,8 +203,12 @@ def _specialist_run(sub_q, spec_name, parent_q=""):
                 c = c[:TOOL_MSG_MAX] + "…[截断]"
             calls[-1]["res"] = c[:600]
             messages.append({"role": "tool", "content": c, "tool_name": name})
-    messages.append({"role": "user", "content":
-                     "基于以上工具结果直接给出最终中文答案，不要再调用工具。"})
+    messages.append(
+        {
+            "role": "user",
+            "content": "基于以上工具结果直接给出最终中文答案，不要再调用工具。",
+        }
+    )
     m = _llm(messages)
     return (m.get("content") or None), calls
 
@@ -195,10 +218,14 @@ def _fallback_specialist(spec_name, calls):
         return "（%s 未能选出工具·查数失败）" % spec_name
     lines = ["（%s 最终答案生成失败·降级拼接版）" % spec_name]
     for c in calls:
-        lines.append("· %s %s → %s" % (c.get("tool"),
-                                       json.dumps(c.get("args"),
-                                                  ensure_ascii=False),
-                                       (c.get("res") or "")[:300]))
+        lines.append(
+            "· %s %s → %s"
+            % (
+                c.get("tool"),
+                json.dumps(c.get("args"), ensure_ascii=False),
+                (c.get("res") or "")[:300],
+            )
+        )
     return "\n".join(lines)
 
 
@@ -209,8 +236,10 @@ _JSON_RE = re.compile(r"\{[\s\S]*\}")
 def _router(q):
     """LLM 路由。返回 (plan, raw_text)。plan=[(spec_name, sub_q), ...]。
     解析失败降级：全 specialist 各跑原问句。"""
-    messages = [{"role": "system", "content": ROUTER_SYSTEM},
-                {"role": "user", "content": q}]
+    messages = [
+        {"role": "system", "content": ROUTER_SYSTEM},
+        {"role": "user", "content": q},
+    ]
     m = _llm(messages)  # 无工具
     t = m.get("content") or ""
     plan = []
@@ -239,10 +268,12 @@ def _synth(q, spec_answers):
         parts.append("结果：%s" % ans)
         parts.append("")
     parts.append("请综合上述信息给出最终中文答案。")
-    messages = [{"role": "system", "content": SYNTH_SYSTEM},
-                {"role": "user", "content": "\n".join(parts)}]
+    messages = [
+        {"role": "system", "content": SYNTH_SYSTEM},
+        {"role": "user", "content": "\n".join(parts)},
+    ]
     m = _llm(messages)
-    return (m.get("content") or None)
+    return m.get("content") or None
 
 
 # ── 缓存（当日 md5，--force 跳过，7天滚动清理） ────────────────
@@ -283,9 +314,13 @@ def answer(q, force=False, read_only=False):
 
     # read_only：缓存未命中不触发 LLM（页面加载零算力口径）
     if read_only:
-        return {"ok": True, "empty": True, "q": q,
-                "msg": "暂无当日缓存，点按钮触发现算（10-30s）",
-                "elapsed_s": round(time.time() - t0, 1)}
+        return {
+            "ok": True,
+            "empty": True,
+            "q": q,
+            "msg": "暂无当日缓存，点按钮触发现算（10-30s）",
+            "elapsed_s": round(time.time() - t0, 1),
+        }
 
     # 1) router
     plan, router_raw = _router(q)
@@ -301,15 +336,13 @@ def answer(q, force=False, read_only=False):
         ans, calls = _specialist_run(sub_q, spec_name, parent_q=q)
         if not ans:
             ans = _fallback_specialist(spec_name, calls)
-        return {"specialist": spec_name, "sub_q": sub_q,
-                "answer": ans, "calls": calls}
+        return {"specialist": spec_name, "sub_q": sub_q, "answer": ans, "calls": calls}
 
     with ThreadPoolExecutor(max_workers=len(plan)) as ex:
         spec_results = list(ex.map(_run_spec, plan))
 
     # 3) synthesizer
-    synth_in = [(r["specialist"], r["sub_q"], r["answer"])
-                for r in spec_results]
+    synth_in = [(r["specialist"], r["sub_q"], r["answer"]) for r in spec_results]
     final = _synth(q, synth_in)
     degraded = not final
     if degraded:
@@ -318,12 +351,16 @@ def answer(q, force=False, read_only=False):
             lines.append("【%s】%s" % (r["specialist"], r["answer"]))
         final = "\n".join(lines)
 
-    out = {"ok": True, "q": q, "answer": final,
-           "router_raw": router_raw,
-           "plan": [{"to": n, "sub_q": sq} for n, sq in plan],
-           "specialists": spec_results,
-           "degraded": degraded,
-           "elapsed_s": round(time.time() - t0, 1)}
+    out = {
+        "ok": True,
+        "q": q,
+        "answer": final,
+        "router_raw": router_raw,
+        "plan": [{"to": n, "sub_q": sq} for n, sq in plan],
+        "specialists": spec_results,
+        "degraded": degraded,
+        "elapsed_s": round(time.time() - t0, 1),
+    }
     _atomic_json(cp, out)
     _cleanup_cache()
     return out
@@ -331,7 +368,8 @@ def answer(q, force=False, read_only=False):
 
 def main():
     ap = argparse.ArgumentParser(
-        description="P-D 多 agent 编排（router+specialists+synth，本地 LLM）")
+        description="P-D 多 agent 编排（router+specialists+synth，本地 LLM）"
+    )
     ap.add_argument("query", nargs="+", help="中文问句")
     ap.add_argument("--json", action="store_true", help="机器可读输出")
     ap.add_argument("--force", action="store_true", help="跳过当日缓存强制现算")

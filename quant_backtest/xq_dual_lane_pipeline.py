@@ -101,8 +101,11 @@ class SyntheticPage:
         if self.lane not in LANES:
             raise ValueError("lane must be 'new' or 'history'")
         _text(self.segment_id, "segment_id")
-        if isinstance(self.page_no, bool) or not isinstance(self.page_no, int) \
-                or self.page_no < 1:
+        if (
+            isinstance(self.page_no, bool)
+            or not isinstance(self.page_no, int)
+            or self.page_no < 1
+        ):
             raise ValueError("page_no must be a positive integer")
         if not isinstance(self.entries, tuple):
             object.__setattr__(self, "entries", tuple(self.entries))
@@ -206,8 +209,9 @@ class BoundedOutputBuffer:
     （stats() 暴露）；'backpressure' 则阻塞等待写者排空腾位。
     """
 
-    def __init__(self, maxsize: int = 1024,
-                 overflow_policy: str = "drop_count") -> None:
+    def __init__(
+        self, maxsize: int = 1024, overflow_policy: str = "drop_count"
+    ) -> None:
         if isinstance(maxsize, bool) or not isinstance(maxsize, int) or maxsize < 1:
             raise ValueError("maxsize must be a positive integer")
         if overflow_policy not in OVERFLOW_POLICIES:
@@ -256,8 +260,13 @@ class BoundedOutputBuffer:
         """仅在单写者会话内排空缓冲并逐条交给 handler。"""
         while True:
             with self._lock:
-                if not self._writer_active or self._writer_thread != threading.get_ident():
-                    raise RuntimeError("drain requires the owning single writer context")
+                if (
+                    not self._writer_active
+                    or self._writer_thread != threading.get_ident()
+                ):
+                    raise RuntimeError(
+                        "drain requires the owning single writer context"
+                    )
                 if not self._items:
                     return
                 item = self._items[0]
@@ -270,17 +279,24 @@ class BoundedOutputBuffer:
     def stats(self) -> dict[str, object]:
         """缓冲运行统计：capacity/size/published/dropped/写者状态。"""
         with self._lock:
-            return {"capacity": self._maxsize, "size": len(self._items),
-                    "published": self._published, "dropped": self._dropped,
-                    "overflow_policy": self._policy,
-                    "writer_active": self._writer_active}
+            return {
+                "capacity": self._maxsize,
+                "size": len(self._items),
+                "published": self._published,
+                "dropped": self._dropped,
+                "overflow_policy": self._policy,
+                "writer_active": self._writer_active,
+            }
 
 
 class DualLanePipeline:
     """追新优先/回溯双 lane 离线流水线（合成页驱动，来源无关）。"""
 
-    def __init__(self, lane_slots: dict[str, int] | None = None,
-                 output_buffer: BoundedOutputBuffer | None = None) -> None:
+    def __init__(
+        self,
+        lane_slots: dict[str, int] | None = None,
+        output_buffer: BoundedOutputBuffer | None = None,
+    ) -> None:
         slots = dict(lane_slots) if lane_slots is not None else {"new": 1, "history": 1}
         if set(slots) != set(LANES):
             raise ValueError("lane_slots must define quotas for 'new' and 'history'")
@@ -288,11 +304,16 @@ class DualLanePipeline:
             if isinstance(quota, bool) or not isinstance(quota, int) or quota < 1:
                 raise ValueError("lane quotas must be positive integers")
         self._slots: dict[Lane, int] = {lane: slots[lane] for lane in LANES}
-        self._pending: dict[Lane, deque[PageTask]] = {"new": deque(), "history": deque()}
+        self._pending: dict[Lane, deque[PageTask]] = {
+            "new": deque(),
+            "history": deque(),
+        }
         self._tasks: list[PageTask] = []
         self._segments: dict[tuple[Lane, str, str], Segment] = {}
         self._records: dict[str, EntryRecord] = {}
-        self.buffer = output_buffer if output_buffer is not None else BoundedOutputBuffer()
+        self.buffer = (
+            output_buffer if output_buffer is not None else BoundedOutputBuffer()
+        )
         self._dedup_hits = 0
         self._run_lock = threading.Lock()
         self._published_tags: dict[str, set[str]] = {}
@@ -313,12 +334,16 @@ class DualLanePipeline:
             self._segments[key] = segment
         if segment.state == "failed_closed":
             return SubmitResult(
-                "segment_closed", page,
-                f"segment closed after gap after page {segment.gap_after}")
+                "segment_closed",
+                page,
+                f"segment closed after gap after page {segment.gap_after}",
+            )
         if segment.last_page_no and page.page_no <= segment.last_page_no:
             return SubmitResult(
-                "stale_page", page,
-                f"page {page.page_no} not after confirmed page {segment.last_page_no}")
+                "stale_page",
+                page,
+                f"page {page.page_no} not after confirmed page {segment.last_page_no}",
+            )
         if segment.last_page_no and page.page_no > segment.last_page_no + 1:
             return self._fail_closed(segment, page)
         task = PageTask(page)
@@ -331,14 +356,19 @@ class DualLanePipeline:
         """页级断档：封闭整段并把该段全部待处理任务置 failed_closed。"""
         segment.state = "failed_closed"
         segment.gap_after = segment.last_page_no
-        detail = (f"page sequence gap in segment {segment.segment_id}: "
-                  f"page {segment.gap_after} -> {page.page_no} "
-                  f"(expected page {segment.gap_after + 1})")
+        detail = (
+            f"page sequence gap in segment {segment.segment_id}: "
+            f"page {segment.gap_after} -> {page.page_no} "
+            f"(expected page {segment.gap_after + 1})"
+        )
         closed = 0
         for task in self._tasks:
-            if task.state == "pending" and task.page.lane == segment.lane \
-                    and task.page.source_key == segment.source_key \
-                    and task.page.segment_id == segment.segment_id:
+            if (
+                task.state == "pending"
+                and task.page.lane == segment.lane
+                and task.page.source_key == segment.source_key
+                and task.page.segment_id == segment.segment_id
+            ):
                 task.state = "failed_closed"
                 task.detail = detail
                 closed += 1
@@ -363,8 +393,7 @@ class DualLanePipeline:
                     taken += 1
         return batch
 
-    def run_all(self, judged_at_ms: int,
-                freshness_window_ms: int) -> RunSummary:
+    def run_all(self, judged_at_ms: int, freshness_window_ms: int) -> RunSummary:
         """串行处理待处理页；并发调用直接拒绝而非重复发布。"""
         if not self._run_lock.acquire(blocking=False):
             raise RuntimeError("run_all already active")
@@ -373,8 +402,7 @@ class DualLanePipeline:
         finally:
             self._run_lock.release()
 
-    def _run_all(self, judged_at_ms: int,
-                 freshness_window_ms: int) -> RunSummary:
+    def _run_all(self, judged_at_ms: int, freshness_window_ms: int) -> RunSummary:
         _nonneg_int(judged_at_ms, "judged_at_ms")
         _nonneg_int(freshness_window_ms, "freshness_window_ms")
         processed: list[OutputRecord] = []
@@ -399,11 +427,14 @@ class DualLanePipeline:
             fresh_ids=tuple(fresh),
             pages_done=sum(1 for t in self._tasks if t.state == "done"),
             pages_failed_closed=sum(
-                1 for t in self._tasks if t.state == "failed_closed"),
+                1 for t in self._tasks if t.state == "failed_closed"
+            ),
             buffer_dropped=self.buffer.stats()["dropped"],
             segments_failed_closed=tuple(
-                seg.key for seg in self._segments.values()
-                if seg.state == "failed_closed"),
+                seg.key
+                for seg in self._segments.values()
+                if seg.state == "failed_closed"
+            ),
             relation_updates=tuple(updates),
         )
 
@@ -412,8 +443,7 @@ class DualLanePipeline:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _judge_freshness(record: EntryRecord, judged_at_ms: int,
-                         window_ms: int) -> str:
+    def _judge_freshness(record: EntryRecord, judged_at_ms: int, window_ms: int) -> str:
         """新鲜判定：缺任一证据一律 unverified，绝不判 fresh。"""
         if record.fetched_at_ms is None or record.available_at_ms is None:
             return "unverified"
@@ -426,13 +456,17 @@ class DualLanePipeline:
         for post_id, original in tuple(self._pending_original.items()):
             record = self._records[post_id]
             final_original = OutputRecord(
-                post_id=original.post_id, source_key=original.source_key,
-                lane=original.lane, segment_id=original.segment_id,
-                page_no=original.page_no, created_at_ms=original.created_at_ms,
+                post_id=original.post_id,
+                source_key=original.source_key,
+                lane=original.lane,
+                segment_id=original.segment_id,
+                page_no=original.page_no,
+                created_at_ms=original.created_at_ms,
                 cashtags=tuple(sorted(record.cashtags)),
                 fetched_at_ms=original.fetched_at_ms,
                 available_at_ms=original.available_at_ms,
-                freshness=original.freshness)
+                freshness=original.freshness,
+            )
             if self.buffer.offer(final_original):
                 self._published_tags[post_id] = set(record.cashtags)
                 del self._pending_original[post_id]
@@ -450,8 +484,9 @@ class DualLanePipeline:
                 else:
                     return
 
-    def _process(self, task: PageTask, judged_at_ms: int,
-                 window_ms: int) -> tuple[list[OutputRecord], list[RelationUpdate]]:
+    def _process(
+        self, task: PageTask, judged_at_ms: int, window_ms: int
+    ) -> tuple[list[OutputRecord], list[RelationUpdate]]:
         """原帖只发布一次；重复 ID 的新增关系以独立事件发布。"""
         page = task.page
         if task.state != "pending":
@@ -469,7 +504,8 @@ class DualLanePipeline:
                     available_at_ms=entry.available_at_ms,
                 )
                 record.freshness = self._judge_freshness(
-                    record, judged_at_ms, window_ms)
+                    record, judged_at_ms, window_ms
+                )
                 self._records[entry.post_id] = record
                 output = OutputRecord(
                     post_id=record.post_id,
@@ -518,7 +554,7 @@ class DualLanePipeline:
             "processed_entries": len(self._records),
             "dedup_hits": self._dedup_hits,
             "segments_failed_closed": sum(
-                1 for seg in self._segments.values()
-                if seg.state == "failed_closed"),
+                1 for seg in self._segments.values() if seg.state == "failed_closed"
+            ),
             "output": self.buffer.stats(),
         }

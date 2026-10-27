@@ -6,6 +6,7 @@ a. _get 网络抖动重试退避（3 次、2s/8s 间隔、DNS 错误码留痕）
 b. _core_lock_acquire 陈锁自愈（pid 存活佐证 + LOCK-CLEAR 留痕）
 mock 全部网络与锁路径，不触 C:\\Temp 真锁、不连 rookie 数据源。
 """
+
 import os
 import sys
 import time
@@ -16,15 +17,14 @@ from unittest import mock
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tdx_sync as M                              # noqa: E402
+import tdx_sync as M  # noqa: E402
 
 
 class TestGetRetry(unittest.TestCase):
     def setUp(self):
         self.sleeps = []
         self.patchers = [
-            mock.patch.object(M.time, "sleep",
-                              side_effect=self.sleeps.append),
+            mock.patch.object(M.time, "sleep", side_effect=self.sleeps.append),
             mock.patch.object(M, "_dns_probe", return_value=None),
         ]
         for p in self.patchers:
@@ -38,12 +38,13 @@ class TestGetRetry(unittest.TestCase):
         """DNS 间歇故障：3 次尝试、退避 2s/8s、错误码 ERR_DNS 入异常。"""
         boom = requests.exceptions.ConnectionError(
             "HTTPSConnectionPool(host='rookie.xtcloud-tech.com', port=48088): "
-            "NameResolutionError: Failed to resolve 'rookie.xtcloud-tech.com'")
+            "NameResolutionError: Failed to resolve 'rookie.xtcloud-tech.com'"
+        )
         with mock.patch.object(M.SESS, "get", side_effect=boom) as mg:
             with self.assertRaises(RuntimeError) as cm:
                 M._get("/api/data/status")
-        self.assertEqual(mg.call_count, M.RETRY)          # 3 次
-        self.assertEqual(self.sleeps, [2, 8])             # 2s/8s 退避
+        self.assertEqual(mg.call_count, M.RETRY)  # 3 次
+        self.assertEqual(self.sleeps, [2, 8])  # 2s/8s 退避
         self.assertIn("ERR_DNS", str(cm.exception))
         self.assertIn("NameResolutionError", str(cm.exception))
 
@@ -51,10 +52,9 @@ class TestGetRetry(unittest.TestCase):
         """瞬时抖动：第 1 次败第 2 次成 → 只退避一次 2s，不发第 3 请求。"""
         boom = requests.exceptions.ConnectionError("NameResolutionError x")
         ok = types.SimpleNamespace(
-            status_code=200,
-            json=lambda: {"tables": [{"table": "ts_daily"}]})
-        with mock.patch.object(M.SESS, "get",
-                               side_effect=[boom, ok]) as mg:
+            status_code=200, json=lambda: {"tables": [{"table": "ts_daily"}]}
+        )
+        with mock.patch.object(M.SESS, "get", side_effect=[boom, ok]) as mg:
             d = M._get("/api/data/status")
         self.assertEqual(mg.call_count, 2)
         self.assertEqual(self.sleeps, [2])
@@ -62,8 +62,7 @@ class TestGetRetry(unittest.TestCase):
 
     def test_http_502_errcode_carried(self):
         """非 200：错误码 HTTP 502 与 body 头部随异常带出。"""
-        bad = types.SimpleNamespace(
-            status_code=502, content=b"bad gateway")
+        bad = types.SimpleNamespace(status_code=502, content=b"bad gateway")
         with mock.patch.object(M.SESS, "get", return_value=bad):
             with self.assertRaises(RuntimeError) as cm:
                 M._get("/api/data/table/ts_daily")
@@ -76,6 +75,7 @@ class TestStaleLockHeal(unittest.TestCase):
 
     def setUp(self):
         import tempfile
+
         self.tmp = tempfile.mkdtemp()
         self.lock = os.path.join(self.tmp, "core.lock")
         self._old = M.CORE_LOCK
@@ -104,9 +104,8 @@ class TestStaleLockHeal(unittest.TestCase):
 
     def test_alive_pid_stale_lock_not_killed(self):
         """age>2h 但 pid 存活：SKIP 不误杀（ts_rt_min 全量 3-4h 长任务）。"""
-        self._mk("%d %d\n" % (os.getpid(), int(time.time())),
-                 age_s=3 * 3600)
-        self.assertFalse(M._core_lock_acquire())   # 自身 pid 必然存活
+        self._mk("%d %d\n" % (os.getpid(), int(time.time())), age_s=3 * 3600)
+        self.assertFalse(M._core_lock_acquire())  # 自身 pid 必然存活
         with open(self.lock, encoding="ascii") as f:
             self.assertEqual(int(f.readline().split()[0]), os.getpid())
 

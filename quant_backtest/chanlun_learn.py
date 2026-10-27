@@ -51,6 +51,7 @@ docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md（K-ORG-187/188 �
 测试注入点：_analyze/_enrich/_fingerprint/_load_close 可替换（tmp 根
 全链单测不依赖真实缠论引擎与 parquet）。
 """
+
 import argparse
 import hashlib
 import json
@@ -61,56 +62,68 @@ from datetime import datetime, timedelta
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-BASE = os.path.dirname(HERE)                          # 仓根（C:/项目/老田的AI助手）
-DATA_DIR = os.path.join(HERE, "data", "ashare")       # hfq parquet 源
-LEDGER_JSON = os.path.join(HERE, "data", "daily_ledger",
-                           "ledger_20251013_20261012.json")
+BASE = os.path.dirname(HERE)  # 仓根（C:/项目/老田的AI助手）
+DATA_DIR = os.path.join(HERE, "data", "ashare")  # hfq parquet 源
+LEDGER_JSON = os.path.join(
+    HERE, "data", "daily_ledger", "ledger_20251013_20261012.json"
+)
 LEARN_DIR = os.path.join(HERE, "data", "chanlun_learn")
 MEMORY_DIR = os.path.join(BASE, "agent_platform", "data", "memory")
 ORG_JSON = os.path.join(BASE, "agent_platform", "registry", "org.json")
 
 AGENT_ID = "ST1"
-WARMUP = 250                # analyze 窗口（chanlun_daily_ledger 同款）
-MIN_SEG = WARMUP // 2       # run_day 门槛：len(seg) < 125 跳过
+WARMUP = 250  # analyze 窗口（chanlun_daily_ledger 同款）
+MIN_SEG = WARMUP // 2  # run_day 门槛：len(seg) < 125 跳过
 BUY_TYPES = ("1买", "2买", "3买")
 SELL_TYPES = ("1卖", "2卖", "3卖")
 HORIZONS = (5, 10, 20)
-MAIN_HORIZON = 10           # 归因/草案主口径（施工裁量，见 docstring）
-N_MIN = 30                  # 小样本不凭据（设计 §2 红线 4）
-P10_FLOOR = -10.0           # 降置信候选：p10 ≤ -10%
-WIN_EDGE_PP = 10.0          # 升置信候选：win 超全域基线 +10pp
-TAIL_FLAG_N_MIN = 20        # E-01 S2 左尾观察标注 n 门槛（<N_MIN：先可见后凭据）
-TAIL_RET_FLOOR = -10.0      # E-01 S1 左尾哨兵：T+20 深亏案例门槛
-DRAFT_MAX_STEP = 0.05       # 单次调幅上限（设计 §2 红线 4）
-SHADOW_NATURAL_DAYS = 28    # 影子期 ≥20 交易日 ≈ 28 自然日（设计 §3 L4A）
-CONF_BANDS = ((0.65, "high"), (0.55, "mid"), (0.0, "low"))   # 降序取首命中
+MAIN_HORIZON = 10  # 归因/草案主口径（施工裁量，见 docstring）
+N_MIN = 30  # 小样本不凭据（设计 §2 红线 4）
+P10_FLOOR = -10.0  # 降置信候选：p10 ≤ -10%
+WIN_EDGE_PP = 10.0  # 升置信候选：win 超全域基线 +10pp
+TAIL_FLAG_N_MIN = 20  # E-01 S2 左尾观察标注 n 门槛（<N_MIN：先可见后凭据）
+TAIL_RET_FLOOR = -10.0  # E-01 S1 左尾哨兵：T+20 深亏案例门槛
+DRAFT_MAX_STEP = 0.05  # 单次调幅上限（设计 §2 红线 4）
+SHADOW_NATURAL_DAYS = 28  # 影子期 ≥20 交易日 ≈ 28 自然日（设计 §3 L4A）
+CONF_BANDS = ((0.65, "high"), (0.55, "mid"), (0.0, "low"))  # 降序取首命中
 
 # L3 维度组合（固定顺序；cell = "|".join(f"{k}={v}")）
 DIM_1 = ("type", "regime", "conf_band", "bis6", "amp", "pv", "npv")
-DIM_2 = (("type", "regime"), ("type", "conf_band"), ("type", "npv"),
-         ("type", "amp"), ("type", "pv"), ("type", "bis6"),
-         ("regime", "npv"), ("regime", "conf_band"))
+DIM_2 = (
+    ("type", "regime"),
+    ("type", "conf_band"),
+    ("type", "npv"),
+    ("type", "amp"),
+    ("type", "pv"),
+    ("type", "bis6"),
+    ("regime", "npv"),
+    ("regime", "conf_band"),
+)
 DIM_3 = (("type", "regime", "npv"), ("type", "regime", "conf_band"))
 
 # L4 可学习权重位映射（chanlun_gray._conf 三参数之一；其余 cell 无参数
 # 位，verdict 留档人工判读——不硬造映射）
-PARAM_MAP = {"npv=3p": {"param": "multi_hub_decay", "from": 0.85,
-                        "lo": 0.70, "hi": 1.00}}
+PARAM_MAP = {
+    "npv=3p": {"param": "multi_hub_decay", "from": 0.85, "lo": 0.70, "hi": 1.00}
+}
 
 
 # ── 注入点（生产默认真实现；测试替换） ──────────────────────
 def _analyze(bars):
     from chanlun_signal import analyze
+
     return analyze(bars)
 
 
 def _enrich(bars, st):
     from chanlun_gray import enrich
+
     return enrich(bars, st)
 
 
 def _fingerprint(res, sig):
     from chanlun_tgraph import _fp
+
     return _fp(res, sig)
 
 
@@ -123,6 +136,7 @@ def _load_bars(code, data_dir=DATA_DIR):
     账本 JSON 错位（fallback 泛滥 → 幂等不收敛，已实证）。缺文件返回
     (None, None)。"""
     import pandas as pd
+
     f = os.path.join(data_dir, code.replace(".", "_") + ".parquet")
     if not os.path.exists(f):
         return None, None
@@ -130,13 +144,19 @@ def _load_bars(code, data_dir=DATA_DIR):
     r = b["pct_chg"] / 100.0
     r.iloc[0] = 0.0
     kfac = (1.0 + r).cumprod() / b["close"]
-    bars = [{"dt": int(d), "o": float(o * k), "h": float(h * k),
-             "l": float(lo * k), "c": float(c * k)}
-            for d, o, h, lo, c, k in zip(b["trade_date"], b["open"],
-                                         b["high"], b["low"],
-                                         b["close"], kfac)]
-    closes = {int(d): v["c"] for d, v in
-              ((x["dt"], x) for x in bars)}
+    bars = [
+        {
+            "dt": int(d),
+            "o": float(o * k),
+            "h": float(h * k),
+            "l": float(lo * k),
+            "c": float(c * k),
+        }
+        for d, o, h, lo, c, k in zip(
+            b["trade_date"], b["open"], b["high"], b["low"], b["close"], kfac
+        )
+    ]
+    closes = {int(d): v["c"] for d, v in ((x["dt"], x) for x in bars)}
     return bars, closes
 
 
@@ -200,6 +220,7 @@ def memory_store(memory_dir=MEMORY_DIR, org_path=ORG_JSON):
     if ep not in sys.path:
         sys.path.insert(0, ep)
     from memory import MemoryStore
+
     grants = {}
     try:
         org = json.load(open(org_path, encoding="utf-8"))
@@ -223,7 +244,7 @@ def _memory_write(ms, gns, payload, fp, findings):
                 return False
         ms.write(AGENT_ID, gns, dict(payload, fingerprint=fp))
         return True
-    except Exception as e:                      # 越权等异常：留 finding 不拖账
+    except Exception as e:  # 越权等异常：留 finding 不拖账
         findings.append("memory 写入失败 %s: %s" % (gns, e))
         return False
 
@@ -233,8 +254,7 @@ def _conf_parts(sig):
     """conf 三分解（gray._conf 同判据）：beichi/vv 布尔，multi_hub=n_prior≥3。"""
     n_prior = sig.get("n_prior")
     return {
-        "beichi": any(sig.get(x) is True
-                      for x in ("mbei", "div_area", "div_dif")),
+        "beichi": any(sig.get(x) is True for x in ("mbei", "div_area", "div_dif")),
         "vv": sig.get("vv") is True,
         "multi_hub": bool(n_prior is not None and n_prior >= 3),
     }
@@ -260,9 +280,16 @@ def _found_stamp(day):
     return "%sT17:10:00+08:00" % day
 
 
-def l1_run(ledger_json=LEDGER_JSON, d0=None, d1=None,
-           learn_dir=LEARN_DIR, data_dir=DATA_DIR, ms=None,
-           limit_stocks=0, findings=None):
+def l1_run(
+    ledger_json=LEDGER_JSON,
+    d0=None,
+    d1=None,
+    learn_dir=LEARN_DIR,
+    data_dir=DATA_DIR,
+    ms=None,
+    limit_stocks=0,
+    findings=None,
+):
     """重放 daily_ledger seen-ever 信号流 → ledger.jsonl + ST1 observation。
 
     逐日复刻 chanlun_daily_ledger.run_day 口径（tail(WARMUP)、MIN_SEG
@@ -286,15 +313,15 @@ def l1_run(ledger_json=LEDGER_JSON, d0=None, d1=None,
             t = a.get("type")
             if t in ("sig_buy", "sig_sell"):
                 ev.setdefault((day, a.get("stock")), set()).add(
-                    "buy" if t == "sig_buy" else "sell")
+                    "buy" if t == "sig_buy" else "sell"
+                )
     codes = sorted({c for (_, c) in ev})
     if limit_stocks:
         codes = codes[:limit_stocks]
     by_code_events = {}
     for (day, code), cats in ev.items():
         if code in codes:
-            by_code_events.setdefault(code, {}).setdefault(day,
-                                                           set()).update(cats)
+            by_code_events.setdefault(code, {}).setdefault(day, set()).update(cats)
 
     lp = ledger_path(learn_dir)
     index = {r.get("sig_id"): r for r in _read_jsonl(lp) if r.get("sig_id")}
@@ -336,14 +363,14 @@ def l1_run(ledger_json=LEDGER_JSON, d0=None, d1=None,
             if len(bars_day) < MIN_SEG:
                 continue
             st, sigs = _analyze_sig(bars_day[-WARMUP:])
-            fresh = [s for s in sigs
-                     if (s.get("type"), s.get("dt")) not in seen]
+            fresh = [s for s in sigs if (s.get("type"), s.get("dt")) not in seen]
             seen |= {(s.get("type"), s.get("dt")) for s in sigs}
             cats_json = day_ev.get(ds)
             if not cats_json:
-                continue                       # 当日无 JSON 记账 → 只推进 seen
-            cats_replay = {("buy" if s.get("type") in BUY_TYPES else "sell")
-                           for s in fresh}
+                continue  # 当日无 JSON 记账 → 只推进 seen
+            cats_replay = {
+                ("buy" if s.get("type") in BUY_TYPES else "sell") for s in fresh
+            }
             for cat in sorted(cats_json):
                 want = BUY_TYPES if cat == "buy" else SELL_TYPES
                 pinned = pos.get((ds, code, cat))
@@ -351,15 +378,20 @@ def l1_run(ledger_json=LEDGER_JSON, d0=None, d1=None,
                     # 事件位已固化：复核固化信号而非重挑（重挑随 taken
                     # 漂移不幂等，已实证）。固化信号在重放中缺失属口径
                     # 漂移 → finding 亮牌不记账。
-                    m = [s for s in sigs if s.get("type") == pinned.get("type")
-                         and s.get("dt") == pinned.get("dt")]
+                    m = [
+                        s
+                        for s in sigs
+                        if s.get("type") == pinned.get("type")
+                        and s.get("dt") == pinned.get("dt")
+                    ]
                     if not m:
                         findings.append(
-                            "L1 %s %s 固化信号重放缺失（口径漂移亮牌）" %
-                            (ds, code))
+                            "L1 %s %s 固化信号重放缺失（口径漂移亮牌）" % (ds, code)
+                        )
                         continue
-                    row = _l1_row(code, m[0], st, day, regime_of.get(ds),
-                                  closes, findings)
+                    row = _l1_row(
+                        code, m[0], st, day, regime_of.get(ds), closes, findings
+                    )
                     if row is None:
                         continue
                     n_signals += 1
@@ -368,8 +400,8 @@ def l1_run(ledger_json=LEDGER_JSON, d0=None, d1=None,
                         if _sig_core(old) != _sig_core(row):
                             raise ValueError(
                                 "ledger 冲突：sig_id=%s 已存在但内容不一致"
-                                "（同键异值拒绝；口径漂移须人工判读）"
-                                % row["sig_id"])
+                                "（同键异值拒绝；口径漂移须人工判读）" % row["sig_id"]
+                            )
                         replayed += 1
                     else:
                         index[row["sig_id"]] = row
@@ -383,51 +415,57 @@ def l1_run(ledger_json=LEDGER_JSON, d0=None, d1=None,
                     # 取当日可见同类中 dt 最大且未被本大类记账者 + finding
                     # （taken 按 (code,大类) 收敛，跨 run 选择一致 → 幂等）
                     got = taken.get((code, cat), set())
-                    cand = [s for s in sigs if s.get("type") in want
-                            and s.get("dt") not in got]
+                    cand = [
+                        s
+                        for s in sigs
+                        if s.get("type") in want and s.get("dt") not in got
+                    ]
                     findings.append(
-                        "L1 %s %s 重放未 fresh（fallback 取最近未记账同类）" %
-                        (ds, code))
+                        "L1 %s %s 重放未 fresh（fallback 取最近未记账同类）"
+                        % (ds, code)
+                    )
                 extra = cats_replay - cats_json
                 if extra:
                     findings.append(
-                        "L1 %s %s 重放多出大类 %s（以账本 JSON 为准丢弃）" %
-                        (ds, code, sorted(extra)))
+                        "L1 %s %s 重放多出大类 %s（以账本 JSON 为准丢弃）"
+                        % (ds, code, sorted(extra))
+                    )
                 if not cand:
-                    findings.append("L1 %s %s 无未记账同类信号可记账" %
-                                    (ds, code))
+                    findings.append("L1 %s %s 无未记账同类信号可记账" % (ds, code))
                     continue
                 sig = max(cand, key=lambda s: s.get("dt") or 0)
                 taken.setdefault((code, cat), set()).add(sig.get("dt"))
-                row = _l1_row(code, sig, st, day, regime_of.get(ds),
-                              closes, findings)
+                row = _l1_row(code, sig, st, day, regime_of.get(ds), closes, findings)
                 if row is None:
                     continue
-                pos.setdefault((ds, code, cat), row)   # 事件位首见固化
+                pos.setdefault((ds, code, cat), row)  # 事件位首见固化
                 n_signals += 1
                 old = index.get(row["sig_id"])
                 if old is not None:
                     if _sig_core(old) != _sig_core(row):
                         raise ValueError(
                             "ledger 冲突：sig_id=%s 已存在但内容不一致"
-                            "（同键异值拒绝；口径漂移须人工判读）"
-                            % row["sig_id"])
+                            "（同键异值拒绝；口径漂移须人工判读）" % row["sig_id"]
+                        )
                     replayed += 1
                     continue
                 index[row["sig_id"]] = row
                 _append_line(lp, row)
                 recorded += 1
                 _l1_memory(ms, row, findings)
-    return {"recorded": recorded, "replayed": replayed,
-            "findings": findings, "n_signals": n_signals}
+    return {
+        "recorded": recorded,
+        "replayed": replayed,
+        "findings": findings,
+        "n_signals": n_signals,
+    }
 
 
 def _sig_core(row):
     """幂等比对域：sig_id=sha1(code|type|dt) 是信号身份，found_day/
     declared_at 是记账时戳（fallback 场景同信号可在多个记账日出现），
     均不参与同键异值判定——首见固化，重放零副作用。"""
-    return {k: v for k, v in row.items()
-            if k not in ("declared_at", "found_day")}
+    return {k: v for k, v in row.items() if k not in ("declared_at", "found_day")}
 
 
 def _bars_upto(bars, upto_day):
@@ -475,8 +513,7 @@ def _l1_row(code, sig, st, found_day, regime, closes, findings):
         "declared_at": _found_stamp(found_day),
     }
     if row["entry_px"] is None:
-        findings.append("L1 %s dt=%s 缺收盘价（entry_px=None）" %
-                        (code, dt))
+        findings.append("L1 %s dt=%s 缺收盘价（entry_px=None）" % (code, dt))
     return row
 
 
@@ -485,27 +522,48 @@ def _l1_memory(ms, row, findings):
     if ms is None:
         return
     cp = row["conf_parts"]
-    marks = "%s/%s/%s" % ("背驰✓" if cp["beichi"] else "背驰✗",
-                          "共振✓" if cp["vv"] else "共振✗",
-                          "多枢" if cp["multi_hub"] else "少枢")
+    marks = "%s/%s/%s" % (
+        "背驰✓" if cp["beichi"] else "背驰✗",
+        "共振✓" if cp["vv"] else "共振✗",
+        "多枢" if cp["multi_hub"] else "少枢",
+    )
     note = "%s %s（%s）：regime=%s，%s，conf=%s——影子记账，T+5/10/20 待对账" % (
-        row["type"], row["code"], row["level"], row["regime"], marks,
-        row["conf"] if row["conf"] is not None else "不可判")
-    _memory_write(ms, "agent/%s/observation" % AGENT_ID, {
-        "kind": "shadow_signal",
-        "sig_id": row["sig_id"], "code": row["code"],
-        "type": row["type"], "dt": row["dt"],
-        "regime": row["regime"], "conf": row["conf"],
-        "conf_parts": row["conf_parts"],
-        "fingerprint": row["fingerprint"],
-        "note": note,
-        "declared_at": row["declared_at"],
-    }, "l1|%s" % row["sig_id"], findings)
+        row["type"],
+        row["code"],
+        row["level"],
+        row["regime"],
+        marks,
+        row["conf"] if row["conf"] is not None else "不可判",
+    )
+    _memory_write(
+        ms,
+        "agent/%s/observation" % AGENT_ID,
+        {
+            "kind": "shadow_signal",
+            "sig_id": row["sig_id"],
+            "code": row["code"],
+            "type": row["type"],
+            "dt": row["dt"],
+            "regime": row["regime"],
+            "conf": row["conf"],
+            "conf_parts": row["conf_parts"],
+            "fingerprint": row["fingerprint"],
+            "note": note,
+            "declared_at": row["declared_at"],
+        },
+        "l1|%s" % row["sig_id"],
+        findings,
+    )
 
 
 # ── L2 验证对账 ─────────────────────────────────────────────
-def l2_run(learn_dir=LEARN_DIR, data_dir=DATA_DIR, horizons=HORIZONS,
-           close_map=None, findings=None):
+def l2_run(
+    learn_dir=LEARN_DIR,
+    data_dir=DATA_DIR,
+    horizons=HORIZONS,
+    close_map=None,
+    findings=None,
+):
     """T+5/10/20 后验 → verify.jsonl。卖点反向口径（看跌是否兑现）。
 
     行情未入库（交易日不足 N 档）自动顺延——pending 不落行，下次重跑
@@ -534,8 +592,7 @@ def l2_run(learn_dir=LEARN_DIR, data_dir=DATA_DIR, horizons=HORIZONS,
         try:
             i = dts.index(int(r["dt"]))
         except ValueError:
-            findings.append("L2 %s dt=%s 不在交易日历，顺延" %
-                            (code, r["dt"]))
+            findings.append("L2 %s dt=%s 不在交易日历，顺延" % (code, r["dt"]))
             pending += len(horizons)
             continue
         for h in horizons:
@@ -546,7 +603,7 @@ def l2_run(learn_dir=LEARN_DIR, data_dir=DATA_DIR, horizons=HORIZONS,
             v_dt = dts[j]
             ret = (closes[v_dt] / closes[dts[i]] - 1) * 100.0
             if str(r.get("type", "")).endswith("卖"):
-                ret = -ret                     # 卖点反向口径
+                ret = -ret  # 卖点反向口径
             ret = round(ret, 4)
             key = _sha1("%s|%s" % (r["sig_id"], h))
             old = index.get(key)
@@ -555,18 +612,30 @@ def l2_run(learn_dir=LEARN_DIR, data_dir=DATA_DIR, horizons=HORIZONS,
                     raise ValueError(
                         "verify 冲突：verify_key=%s 已存在但 ret 不一致 "
                         "(existing=%s new=%s；M0 契约：同键异值拒绝，"
-                        "后验漂移须人工判读)" % (key, old.get("ret_pct"), ret))
+                        "后验漂移须人工判读)" % (key, old.get("ret_pct"), ret)
+                    )
                 replayed += 1
                 continue
-            row = {"verify_key": key, "sig_id": r["sig_id"],
-                   "code": code, "type": r.get("type"),
-                   "horizon": h, "dt": int(r["dt"]), "verify_dt": v_dt,
-                   "ret_pct": ret, "declared_at": _found_stamp(str(v_dt))}
+            row = {
+                "verify_key": key,
+                "sig_id": r["sig_id"],
+                "code": code,
+                "type": r.get("type"),
+                "horizon": h,
+                "dt": int(r["dt"]),
+                "verify_dt": v_dt,
+                "ret_pct": ret,
+                "declared_at": _found_stamp(str(v_dt)),
+            }
             index[key] = row
             _append_line(verify_path(learn_dir), row)
             recorded += 1
-    return {"recorded": recorded, "replayed": replayed,
-            "pending": pending, "findings": findings}
+    return {
+        "recorded": recorded,
+        "replayed": replayed,
+        "pending": pending,
+        "findings": findings,
+    }
 
 
 def _tail_stats(rets):
@@ -575,12 +644,14 @@ def _tail_stats(rets):
         return None
     s = sorted(rets)
     n = len(s)
-    i10 = max(0, -(-int(n * 10) // 100) - 1)      # ceil(n*0.10)-1
-    return {"n": n,
-            "win": round(sum(1 for v in s if v > 0) * 100.0 / n, 1),
-            "avg": round(sum(s) / n, 2),
-            "p10": round(s[i10], 2),
-            "worst": round(s[0], 2)}
+    i10 = max(0, -(-int(n * 10) // 100) - 1)  # ceil(n*0.10)-1
+    return {
+        "n": n,
+        "win": round(sum(1 for v in s if v > 0) * 100.0 / n, 1),
+        "avg": round(sum(s) / n, 2),
+        "p10": round(s[i10], 2),
+        "worst": round(s[0], 2),
+    }
 
 
 def l2_summary(learn_dir=LEARN_DIR, horizons=HORIZONS):
@@ -593,11 +664,11 @@ def l2_summary(learn_dir=LEARN_DIR, horizons=HORIZONS):
         by.setdefault((r.get("type"), h), []).append(r["ret_pct"])
     out = {}
     for (t, h), rets in sorted(by.items()):
-        out.setdefault("by_type", {})[t] = \
-            dict(out.get("by_type", {}).get(t, {}), **{str(h): _tail_stats(rets)})
+        out.setdefault("by_type", {})[t] = dict(
+            out.get("by_type", {}).get(t, {}), **{str(h): _tail_stats(rets)}
+        )
     for h in horizons:
-        allr = [v for (t, hh), vs in by.items()
-                for v in vs if hh == h]
+        allr = [v for (t, hh), vs in by.items() for v in vs if hh == h]
         out["all_%d" % h] = _tail_stats(allr)
     return out
 
@@ -606,21 +677,22 @@ def l2_summary(learn_dir=LEARN_DIR, horizons=HORIZONS):
 def _dims_of(row, vrow):
     """一行信号 → 维度取值 dict（L3 维度矩阵原子）。"""
     fp = row.get("fingerprint") or {}
-    return {"type": row.get("type"),
-            "regime": row.get("regime") or "na",
-            "conf_band": conf_band(row.get("conf")),
-            "bis6": fp.get("bis6") or "na",
-            "amp": fp.get("amp") or "na",
-            "pv": fp.get("pv") or "na",
-            "npv": npv_band(fp.get("npv"))}
+    return {
+        "type": row.get("type"),
+        "regime": row.get("regime") or "na",
+        "conf_band": conf_band(row.get("conf")),
+        "bis6": fp.get("bis6") or "na",
+        "amp": fp.get("amp") or "na",
+        "pv": fp.get("pv") or "na",
+        "npv": npv_band(fp.get("npv")),
+    }
 
 
 def _cell_key(dims, combo):
     return "|".join("%s=%s" % (k, dims.get(k, "na")) for k in combo)
 
 
-def l3_run(learn_dir=LEARN_DIR, as_of=None, horizons=HORIZONS,
-           findings=None):
+def l3_run(learn_dir=LEARN_DIR, as_of=None, horizons=HORIZONS, findings=None):
     """维度矩阵聚合 → attribution.jsonl（append-only，统计指纹幂等）。
 
     判读规则（显式阈值、可回放，设计 §3）：
@@ -634,25 +706,26 @@ def l3_run(learn_dir=LEARN_DIR, as_of=None, horizons=HORIZONS,
     """
     findings = findings if findings is not None else []
     as_of = as_of or datetime.now().strftime("%Y%m%d")
-    ledger = {r["sig_id"]: r for r in _read_jsonl(ledger_path(learn_dir))
-              if r.get("sig_id")}
-    vrows = [v for v in _read_jsonl(verify_path(learn_dir))
-             if v.get("sig_id") in ledger and v.get("ret_pct") is not None]
+    ledger = {
+        r["sig_id"]: r for r in _read_jsonl(ledger_path(learn_dir)) if r.get("sig_id")
+    }
+    vrows = [
+        v
+        for v in _read_jsonl(verify_path(learn_dir))
+        if v.get("sig_id") in ledger and v.get("ret_pct") is not None
+    ]
     # 全域基线（每 horizon）
     base = {}
     for h in horizons:
-        base[h] = _tail_stats([v["ret_pct"] for v in vrows
-                               if v["horizon"] == h])
+        base[h] = _tail_stats([v["ret_pct"] for v in vrows if v["horizon"] == h])
     # 维度组合 → cell → rets
-    combos = [(k,) for k in DIM_1] + [c for c in DIM_2] + \
-             [c for c in DIM_3]
+    combos = [(k,) for k in DIM_1] + [c for c in DIM_2] + [c for c in DIM_3]
     cells = {}
     for v in vrows:
         row = ledger[v["sig_id"]]
         dims = _dims_of(row, v)
         for combo in combos:
-            cells.setdefault((_cell_key(dims, combo),
-                              tuple(combo)), []).append(v)
+            cells.setdefault((_cell_key(dims, combo), tuple(combo)), []).append(v)
     ap = attribution_path(learn_dir)
     known = {_sha1_json(r) for r in _read_jsonl(ap)}
     recorded = 0
@@ -664,44 +737,68 @@ def l3_run(learn_dir=LEARN_DIR, as_of=None, horizons=HORIZONS,
                 continue
             b = base.get(h) or {}
             baseline_win = b.get("win")
-            dims_now = {k: v for k, v in
-                        (kv.split("=", 1) for kv in cell.split("|"))}
+            dims_now = {k: v for k, v in (kv.split("=", 1) for kv in cell.split("|"))}
             verdict, delta = _verdict(st, baseline_win)
-            ev = {"baseline_win": baseline_win,
-                  "delta_pp": delta,
-                  "dist": {str(hh): _tail_stats(
-                      [x["ret_pct"] for x in vs if x["horizon"] == hh])
-                      for hh in horizons},
-                  "samples": sorted({x["sig_id"] for x in vs})[:5],
-                  "rule": ("n<30 只观察" if st["n"] < N_MIN else
-                           "avg<0 且 p10<=%.0f%%" % P10_FLOOR if
-                           verdict == "降置信候选" else
-                           "win≥基线+%.0fpp" % WIN_EDGE_PP if
-                           verdict == "升置信候选" else "无阈值命中")}
-            row = {"attr_key": _sha1("%s|%s|%s" % (cell, h, json.dumps(
-                       [st["n"], st["win"], st["avg"], st["p10"]],
-                       sort_keys=True))),
-                   "as_of": as_of, "cell": cell,
-                   "dims": {k: dims_now[k] for k in combo},
-                   "horizon": h, "n": st["n"], "win": st["win"],
-                   "avg": st["avg"], "p10": st["p10"],
-                   "verdict": verdict, "evidence": ev}
-            if h == 20 and st["p10"] <= P10_FLOOR and \
-               st["n"] >= TAIL_FLAG_N_MIN:
-                row["tail_flag"] = "左尾观察"   # E-01 S2：只读标注，不参与判读
+            ev = {
+                "baseline_win": baseline_win,
+                "delta_pp": delta,
+                "dist": {
+                    str(hh): _tail_stats(
+                        [x["ret_pct"] for x in vs if x["horizon"] == hh]
+                    )
+                    for hh in horizons
+                },
+                "samples": sorted({x["sig_id"] for x in vs})[:5],
+                "rule": (
+                    "n<30 只观察"
+                    if st["n"] < N_MIN
+                    else "avg<0 且 p10<=%.0f%%" % P10_FLOOR
+                    if verdict == "降置信候选"
+                    else "win≥基线+%.0fpp" % WIN_EDGE_PP
+                    if verdict == "升置信候选"
+                    else "无阈值命中"
+                ),
+            }
+            row = {
+                "attr_key": _sha1(
+                    "%s|%s|%s"
+                    % (
+                        cell,
+                        h,
+                        json.dumps(
+                            [st["n"], st["win"], st["avg"], st["p10"]], sort_keys=True
+                        ),
+                    )
+                ),
+                "as_of": as_of,
+                "cell": cell,
+                "dims": {k: dims_now[k] for k in combo},
+                "horizon": h,
+                "n": st["n"],
+                "win": st["win"],
+                "avg": st["avg"],
+                "p10": st["p10"],
+                "verdict": verdict,
+                "evidence": ev,
+            }
+            if h == 20 and st["p10"] <= P10_FLOOR and st["n"] >= TAIL_FLAG_N_MIN:
+                row["tail_flag"] = "左尾观察"  # E-01 S2：只读标注，不参与判读
             if _sha1_json(row) in known:
-                continue                        # 同统计指纹重放零副作用
+                continue  # 同统计指纹重放零副作用
             known.add(_sha1_json(row))
             _append_line(ap, row)
             recorded += 1
-    return {"recorded": recorded,
-            "cells": len(cells), "findings": findings}
+    return {"recorded": recorded, "cells": len(cells), "findings": findings}
 
 
 def _sha1_json(row):
-    return hashlib.sha1(json.dumps(
-        {k: v for k, v in row.items() if k not in ("as_of",)},
-        sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(
+        json.dumps(
+            {k: v for k, v in row.items() if k not in ("as_of",)},
+            sort_keys=True,
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()[:16]
 
 
 def _verdict(st, baseline_win):
@@ -709,12 +806,14 @@ def _verdict(st, baseline_win):
     if st["n"] < N_MIN:
         return "observation_only", None
     if st["avg"] < 0 and st["p10"] <= P10_FLOOR:
-        return "降置信候选", (baseline_win if baseline_win is None
-                             else round(st["win"] - baseline_win, 1))
+        return "降置信候选", (
+            baseline_win if baseline_win is None else round(st["win"] - baseline_win, 1)
+        )
     if baseline_win is not None and st["win"] >= baseline_win + WIN_EDGE_PP:
         return "升置信候选", round(st["win"] - baseline_win, 1)
-    return "正常", (round(st["win"] - baseline_win, 1)
-                    if baseline_win is not None else None)
+    return "正常", (
+        round(st["win"] - baseline_win, 1) if baseline_win is not None else None
+    )
 
 
 # ── L4 修正（两个出口，都是建议权） ─────────────────────────
@@ -735,9 +834,11 @@ def l4_drafts(learn_dir=LEARN_DIR, now=None, findings=None):
     for f in sorted(os.listdir(drafts_dir(learn_dir))):
         if f.endswith(".json"):
             try:
-                existing.append(json.load(open(
-                    os.path.join(drafts_dir(learn_dir), f),
-                    encoding="utf-8")))
+                existing.append(
+                    json.load(
+                        open(os.path.join(drafts_dir(learn_dir), f), encoding="utf-8")
+                    )
+                )
             except Exception:
                 continue
     drafted = skipped = 0
@@ -751,48 +852,72 @@ def l4_drafts(learn_dir=LEARN_DIR, now=None, findings=None):
         cell = row.get("cell") or ""
         m = PARAM_MAP.get(cell.split("|")[-1]) if cell else None
         if m is None:
-            manual.append({"cell": cell, "verdict": v, "n": row.get("n"),
-                           "why": "无对应可学习权重位，留人工判读"})
+            manual.append(
+                {
+                    "cell": cell,
+                    "verdict": v,
+                    "n": row.get("n"),
+                    "why": "无对应可学习权重位，留人工判读",
+                }
+            )
             continue
         direction = "down" if v == "降置信候选" else "up"
         step = -DRAFT_MAX_STEP if direction == "down" else DRAFT_MAX_STEP
         to = round(min(max(m["from"] + step, m["lo"]), m["hi"]), 3)
         if to == m["from"]:
-            manual.append({"cell": cell, "verdict": v,
-                           "why": "参数已到边界 %s" % m["lo"]})
+            manual.append(
+                {"cell": cell, "verdict": v, "why": "参数已到边界 %s" % m["lo"]}
+            )
             continue
         fp = "l4a|%s|%s|%s" % (cell, m["param"], direction)
-        if any((e.get("fingerprint") == fp and
-                str(e.get("shadow_until", "")) >= now.strftime("%Y-%m-%d"))
-               for e in existing):
+        if any(
+            (
+                e.get("fingerprint") == fp
+                and str(e.get("shadow_until", "")) >= now.strftime("%Y-%m-%d")
+            )
+            for e in existing
+        ):
             skipped += 1
             continue
-        shadow_until = (now + timedelta(days=SHADOW_NATURAL_DAYS)).strftime(
-            "%Y-%m-%d")
-        draft = {"param": m["param"], "from": m["from"], "to": to,
-                 "cell": cell, "n": row.get("n"),
-                 "verdict": v,
-                 "rationale": "L3 归因 %s（n=%s, win=%s%%, avg=%s%%, "
-                              "p10=%s%%，基线 win=%s%%）→ 建议灰度参数 "
-                              "%s %s→%s；draft 建议权，adopt 须人工凭据，"
-                              "影子对照 ≥20 交易日后呈老田拍板"
-                              % (v, row.get("n"), row.get("win"),
-                                 row.get("avg"), row.get("p10"),
-                                 (row.get("evidence") or {})
-                                 .get("baseline_win"),
-                                 m["param"], m["from"], to),
-                 "shadow_until": shadow_until,
-                 "created": now.strftime("%Y-%m-%d"),
-                 "fingerprint": fp,
-                 "source": "chanlun_learn L4A (K-ORG-190)"}
-        name = "%s_%s.json" % (now.strftime("%Y%m%d%H%M%S"),
-                               _sha1(fp))
+        shadow_until = (now + timedelta(days=SHADOW_NATURAL_DAYS)).strftime("%Y-%m-%d")
+        draft = {
+            "param": m["param"],
+            "from": m["from"],
+            "to": to,
+            "cell": cell,
+            "n": row.get("n"),
+            "verdict": v,
+            "rationale": "L3 归因 %s（n=%s, win=%s%%, avg=%s%%, "
+            "p10=%s%%，基线 win=%s%%）→ 建议灰度参数 "
+            "%s %s→%s；draft 建议权，adopt 须人工凭据，"
+            "影子对照 ≥20 交易日后呈老田拍板"
+            % (
+                v,
+                row.get("n"),
+                row.get("win"),
+                row.get("avg"),
+                row.get("p10"),
+                (row.get("evidence") or {}).get("baseline_win"),
+                m["param"],
+                m["from"],
+                to,
+            ),
+            "shadow_until": shadow_until,
+            "created": now.strftime("%Y-%m-%d"),
+            "fingerprint": fp,
+            "source": "chanlun_learn L4A (K-ORG-190)",
+        }
+        name = "%s_%s.json" % (now.strftime("%Y%m%d%H%M%S"), _sha1(fp))
         path = os.path.join(drafts_dir(learn_dir), name)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(draft, f, ensure_ascii=False, indent=1)
         drafted += 1
-    return {"drafted": drafted, "skipped": skipped,
-            "manual": manual, "findings": findings}
+    return {
+        "drafted": drafted,
+        "skipped": skipped,
+        "manual": manual,
+        "findings": findings,
+    }
 
 
 def l4_thesis(learn_dir=LEARN_DIR, ms=None, findings=None):
@@ -809,28 +934,38 @@ def l4_thesis(learn_dir=LEARN_DIR, ms=None, findings=None):
     if ms is None:
         findings.append("thesis 降级：MemoryStore 不可达")
         return {"st_thesis": 0, "dept_thesis": 0, "findings": findings}
-    ledger = {r["sig_id"]: r for r in _read_jsonl(ledger_path(learn_dir))
-              if r.get("sig_id")}
-    v10 = [v for v in _read_jsonl(verify_path(learn_dir))
-           if v.get("horizon") == MAIN_HORIZON
-           and v.get("sig_id") in ledger]
+    ledger = {
+        r["sig_id"]: r for r in _read_jsonl(ledger_path(learn_dir)) if r.get("sig_id")
+    }
+    v10 = [
+        v
+        for v in _read_jsonl(verify_path(learn_dir))
+        if v.get("horizon") == MAIN_HORIZON and v.get("sig_id") in ledger
+    ]
     st_n = dept_n = 0
     # ① 左尾触发
     for v in v10:
         if (v.get("ret_pct") or 0) > P10_FLOOR:
             continue
         row = ledger[v["sig_id"]]
-        ok = _memory_write(ms, "agent/%s/thesis" % AGENT_ID, {
-            "kind": "left_tail",
-            "sig_id": v["sig_id"], "code": v["code"],
-            "type": v["type"], "dt": v["dt"],
-            "ret_pct": v["ret_pct"],
-            "note": "左尾触发：%s %s T+%d 后验 %.1f%%（≤%.0f%% 阈）——"
-                    "该信号结构判读需复核（影子，不涉持仓）"
-                    % (v["type"], v["code"], MAIN_HORIZON,
-                       v["ret_pct"], P10_FLOOR),
-            "declared_at": v.get("declared_at"),
-        }, "left_tail|%s" % v["sig_id"], findings)
+        ok = _memory_write(
+            ms,
+            "agent/%s/thesis" % AGENT_ID,
+            {
+                "kind": "left_tail",
+                "sig_id": v["sig_id"],
+                "code": v["code"],
+                "type": v["type"],
+                "dt": v["dt"],
+                "ret_pct": v["ret_pct"],
+                "note": "左尾触发：%s %s T+%d 后验 %.1f%%（≤%.0f%% 阈）——"
+                "该信号结构判读需复核（影子，不涉持仓）"
+                % (v["type"], v["code"], MAIN_HORIZON, v["ret_pct"], P10_FLOOR),
+                "declared_at": v.get("declared_at"),
+            },
+            "left_tail|%s" % v["sig_id"],
+            findings,
+        )
         st_n += 1 if ok else 0
     # ② 同型连败（负段 ≥3 笔结束时报一次，避免连环重复）
     by_type = {}
@@ -839,7 +974,7 @@ def l4_thesis(learn_dir=LEARN_DIR, ms=None, findings=None):
     for t, vs in sorted(by_type.items()):
         vs.sort(key=lambda x: x.get("dt") or 0)
         segs, run = [], []
-        for v in vs + [None]:                     # sentinel 收段
+        for v in vs + [None]:  # sentinel 收段
             if v is not None and (v.get("ret_pct") or 0) < 0:
                 run.append(v)
                 continue
@@ -848,47 +983,64 @@ def l4_thesis(learn_dir=LEARN_DIR, ms=None, findings=None):
             run = []
         for run in segs:
             last = run[-1]
-            ok = _memory_write(ms, "agent/%s/thesis" % AGENT_ID, {
-                "kind": "streak_loss",
-                "sig_type": t, "n": len(run),
-                "sig_ids": [x["sig_id"] for x in run],
-                "note": "同型连败：%s 连续 %d 笔 T+%d 后验为负"
-                        "（末笔 %s %.1f%%）——该类型在本阶段市场状态下"
-                        "判读可信度下降（影子观察）"
-                        % (t, len(run), MAIN_HORIZON, last["code"],
-                           last["ret_pct"]),
-                "declared_at": last.get("declared_at"),
-            }, "streak|%s|%s" % (t, last["sig_id"]), findings)
+            ok = _memory_write(
+                ms,
+                "agent/%s/thesis" % AGENT_ID,
+                {
+                    "kind": "streak_loss",
+                    "sig_type": t,
+                    "n": len(run),
+                    "sig_ids": [x["sig_id"] for x in run],
+                    "note": "同型连败：%s 连续 %d 笔 T+%d 后验为负"
+                    "（末笔 %s %.1f%%）——该类型在本阶段市场状态下"
+                    "判读可信度下降（影子观察）"
+                    % (t, len(run), MAIN_HORIZON, last["code"], last["ret_pct"]),
+                    "declared_at": last.get("declared_at"),
+                },
+                "streak|%s|%s" % (t, last["sig_id"]),
+                findings,
+            )
             st_n += 1 if ok else 0
     # ③ 理论演进（dept/invest/thesis）
     for row in _read_jsonl(attribution_path(learn_dir)):
-        if row.get("horizon") != MAIN_HORIZON or \
-           row.get("verdict") != "降置信候选":
+        if row.get("horizon") != MAIN_HORIZON or row.get("verdict") != "降置信候选":
             continue
-        ok = _memory_write(ms, "dept/invest/thesis", {
-            "kind": "chan_regime_failure",
-            "source": "agent/%s (chanlun_learn K-ORG-190)" % AGENT_ID,
-            "cell": row.get("cell"), "n": row.get("n"),
-            "win": row.get("win"), "avg": row.get("avg"),
-            "p10": row.get("p10"),
-            "note": "缠论结构失效观察：cell=%s 在 T+%d 口径 n=%d、"
-                    "win=%s%%（基线 %s%%）、avg=%s%%、p10=%s%%——"
-                    "降置信候选，建议权重草案待人工 adopt"
-                    % (row.get("cell"), MAIN_HORIZON, row.get("n"),
-                       row.get("win"),
-                       (row.get("evidence") or {}).get("baseline_win"),
-                       row.get("avg"), row.get("p10")),
-            "declared_at": row.get("as_of"),
-        }, "attr_fail|%s" % row.get("attr_key"), findings)
+        ok = _memory_write(
+            ms,
+            "dept/invest/thesis",
+            {
+                "kind": "chan_regime_failure",
+                "source": "agent/%s (chanlun_learn K-ORG-190)" % AGENT_ID,
+                "cell": row.get("cell"),
+                "n": row.get("n"),
+                "win": row.get("win"),
+                "avg": row.get("avg"),
+                "p10": row.get("p10"),
+                "note": "缠论结构失效观察：cell=%s 在 T+%d 口径 n=%d、"
+                "win=%s%%（基线 %s%%）、avg=%s%%、p10=%s%%——"
+                "降置信候选，建议权重草案待人工 adopt"
+                % (
+                    row.get("cell"),
+                    MAIN_HORIZON,
+                    row.get("n"),
+                    row.get("win"),
+                    (row.get("evidence") or {}).get("baseline_win"),
+                    row.get("avg"),
+                    row.get("p10"),
+                ),
+                "declared_at": row.get("as_of"),
+            },
+            "attr_fail|%s" % row.get("attr_key"),
+            findings,
+        )
         dept_n += 1 if ok else 0
-    return {"st_thesis": st_n, "dept_thesis": dept_n,
-            "findings": findings}
+    return {"st_thesis": st_n, "dept_thesis": dept_n, "findings": findings}
 
 
 def l4_weekly(learn_dir=LEARN_DIR, out=None, as_of=None):
     """周记《缠论结构观察》聚合（署名产出；stdout 或 --out 文件）。"""
     as_of = as_of or datetime.now()
-    if isinstance(as_of, str):                     # CLI --as-of 字符串锚点
+    if isinstance(as_of, str):  # CLI --as-of 字符串锚点
         for fmt in ("%Y-%m-%d", "%Y%m%d"):
             try:
                 as_of = datetime.strptime(as_of, fmt)
@@ -896,12 +1048,17 @@ def l4_weekly(learn_dir=LEARN_DIR, out=None, as_of=None):
             except ValueError:
                 continue
     week_ago = (as_of - timedelta(days=7)).strftime("%Y%m%d")
-    ledger = [r for r in _read_jsonl(ledger_path(learn_dir))
-              if str(r.get("found_day", "")) >= week_ago]
-    v10 = {(v.get("sig_id")): v for v in _read_jsonl(
-        verify_path(learn_dir)) if v.get("horizon") == MAIN_HORIZON}
-    rets = [v["ret_pct"] for s in ledger
-            for v in [v10.get(s.get("sig_id"))] if v]
+    ledger = [
+        r
+        for r in _read_jsonl(ledger_path(learn_dir))
+        if str(r.get("found_day", "")) >= week_ago
+    ]
+    v10 = {
+        (v.get("sig_id")): v
+        for v in _read_jsonl(verify_path(learn_dir))
+        if v.get("horizon") == MAIN_HORIZON
+    }
+    rets = [v["ret_pct"] for s in ledger for v in [v10.get(s.get("sig_id"))] if v]
     st_all = _tail_stats(rets)
     lines = [
         "# 缠论结构观察（%s 周）" % as_of.strftime("%Y-%m-%d"),
@@ -910,44 +1067,70 @@ def l4_weekly(learn_dir=LEARN_DIR, out=None, as_of=None):
         "",
         "## 本周影子信号",
         "- 记账 %d 条（%s 起）" % (len(ledger), week_ago),
-        "- T+%d 对账：%s" % (
+        "- T+%d 对账：%s"
+        % (
             MAIN_HORIZON,
-            "n=%d，win=%s%%，avg=%s%%" % (st_all["n"], st_all["win"],
-                                          st_all["avg"])
-            if st_all else "无已对账样本"),
+            "n=%d，win=%s%%，avg=%s%%" % (st_all["n"], st_all["win"], st_all["avg"])
+            if st_all
+            else "无已对账样本",
+        ),
         "",
         "## 归因候选（T+%d 主口径）" % MAIN_HORIZON,
     ]
     for row in _read_jsonl(attribution_path(learn_dir)):
-        if row.get("horizon") == MAIN_HORIZON and \
-           row.get("verdict") in ("降置信候选", "升置信候选"):
-            lines.append("- [%s] %s（n=%s，win=%s%%，p10=%s%%）" % (
-                row["verdict"], row["cell"], row["n"],
-                row["win"], row["p10"]))
+        if row.get("horizon") == MAIN_HORIZON and row.get("verdict") in (
+            "降置信候选",
+            "升置信候选",
+        ):
+            lines.append(
+                "- [%s] %s（n=%s，win=%s%%，p10=%s%%）"
+                % (row["verdict"], row["cell"], row["n"], row["win"], row["p10"])
+            )
     # ── E-01 S1：T+20 左尾哨兵（只读 verify.jsonl，观察增强不判读） ──
-    v20 = [v for v in _read_jsonl(verify_path(learn_dir))
-           if v.get("horizon") == 20 and v.get("ret_pct") is not None]
-    deep = sorted((v for v in v20
-                   if v["ret_pct"] <= TAIL_RET_FLOOR
-                   and str(v.get("verify_dt", "")) >= week_ago),
-                  key=lambda x: x["ret_pct"])
-    lines += ["", "## T+20 左尾哨兵（E-01 观察增强）",
-              "- 本周新对账 ret≤%.0f%% 案例：%d 条" % (
-                  TAIL_RET_FLOOR, len(deep))]
+    v20 = [
+        v
+        for v in _read_jsonl(verify_path(learn_dir))
+        if v.get("horizon") == 20 and v.get("ret_pct") is not None
+    ]
+    deep = sorted(
+        (
+            v
+            for v in v20
+            if v["ret_pct"] <= TAIL_RET_FLOOR
+            and str(v.get("verify_dt", "")) >= week_ago
+        ),
+        key=lambda x: x["ret_pct"],
+    )
+    lines += [
+        "",
+        "## T+20 左尾哨兵（E-01 观察增强）",
+        "- 本周新对账 ret≤%.0f%% 案例：%d 条" % (TAIL_RET_FLOOR, len(deep)),
+    ]
     for v in deep:
         r10 = v10.get(v.get("sig_id"))
-        lines.append("  - %s %s ret20=%+.2f%% ret10=%s" % (
-            v.get("code"), v.get("type"), v["ret_pct"],
-            "n/a" if not r10 else "%+.2f%%" % r10["ret_pct"]))
+        lines.append(
+            "  - %s %s ret20=%+.2f%% ret10=%s"
+            % (
+                v.get("code"),
+                v.get("type"),
+                v["ret_pct"],
+                "n/a" if not r10 else "%+.2f%%" % r10["ret_pct"],
+            )
+        )
     lines.append("- 卖向 T+20 滚动读数（全量窗口）：")
     for t in SELL_TYPES:
-        st_t = _tail_stats([v["ret_pct"] for v in v20
-                            if v.get("type") == t])
+        st_t = _tail_stats([v["ret_pct"] for v in v20 if v.get("type") == t])
         if st_t:
-            lines.append("  - %s：n=%d，win=%s%%，avg=%s%%，p10=%s%%" % (
-                t, st_t["n"], st_t["win"], st_t["avg"], st_t["p10"]))
-    lines += ["", "## 下周关注", "- 候选 cell 的影子对照与左尾跟踪"
-              "（草案 adopt 永远人工凭据）", ""]
+            lines.append(
+                "  - %s：n=%d，win=%s%%，avg=%s%%，p10=%s%%"
+                % (t, st_t["n"], st_t["win"], st_t["avg"], st_t["p10"])
+            )
+    lines += [
+        "",
+        "## 下周关注",
+        "- 候选 cell 的影子对照与左尾跟踪（草案 adopt 永远人工凭据）",
+        "",
+    ]
     text = "\n".join(lines)
     if out:
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
@@ -958,9 +1141,15 @@ def l4_weekly(learn_dir=LEARN_DIR, out=None, as_of=None):
 
 # ── CLI ─────────────────────────────────────────────────────
 def _print(tag, rep):
-    print("[%s] %s" % (tag, json.dumps(
-        {k: v for k, v in rep.items() if k != "findings"},
-        ensure_ascii=False)))
+    print(
+        "[%s] %s"
+        % (
+            tag,
+            json.dumps(
+                {k: v for k, v in rep.items() if k != "findings"}, ensure_ascii=False
+            ),
+        )
+    )
     for f in rep.get("findings") or []:
         print("  [finding] %s" % f)
 
@@ -978,8 +1167,9 @@ def main(argv=None):
     ap.add_argument("--limit-stocks", type=int, default=0)
     ap.add_argument("--as-of", default=None)
     ap.add_argument("--out", default=None)
-    ap.add_argument("--l4-cmd", default="drafts",
-                    choices=["drafts", "thesis", "weekly"])
+    ap.add_argument(
+        "--l4-cmd", default="drafts", choices=["drafts", "thesis", "weekly"]
+    )
     ap.add_argument("--no-memory", action="store_true")
     a = ap.parse_args(argv)
     ms = None
@@ -990,8 +1180,12 @@ def main(argv=None):
             print("[warn] MemoryStore 不可达（记忆腿降级）: %s" % e)
     try:
         if a.cmd in ("l1", "all"):
-            _print("L1", l1_run(a.ledger, a.d0, a.d1, a.learn_dir,
-                                a.data_dir, ms, a.limit_stocks))
+            _print(
+                "L1",
+                l1_run(
+                    a.ledger, a.d0, a.d1, a.learn_dir, a.data_dir, ms, a.limit_stocks
+                ),
+            )
         if a.cmd in ("l2", "all"):
             _print("L2", l2_run(a.learn_dir, a.data_dir))
         if a.cmd in ("l3", "all"):
@@ -1007,7 +1201,7 @@ def main(argv=None):
             if a.cmd == "all":
                 _print("L4B", l4_thesis(a.learn_dir, ms))
         return 0
-    except ValueError as e:                       # 同键异值拒绝 → 非零退出
+    except ValueError as e:  # 同键异值拒绝 → 非零退出
         print("[ERROR] %s" % e, file=sys.stderr)
         return 2
 

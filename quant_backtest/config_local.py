@@ -17,6 +17,7 @@
 设计约束：**私有值绝不写回 tracked config.json**。`_doc_sync` 首次建文档后调用
 save_report_url() 写私有文件；缺失时由 load_config() 明确打印告警（不静默）。
 """
+
 import json
 import os
 
@@ -32,8 +33,10 @@ _warned = False
 
 def private_path():
     """本地私有覆盖文件路径（未跟踪；默认在 _vault/secrets，可用 env 覆盖）。"""
-    return os.environ.get(
-        "QUANT_CONFIG_PRIVATE") or r"C:\项目\_vault\secrets\quant_config_private.json"
+    return (
+        os.environ.get("QUANT_CONFIG_PRIVATE")
+        or r"C:\项目\_vault\secrets\quant_config_private.json"
+    )
 
 
 def _read_json(path):
@@ -68,16 +71,21 @@ def load_config():
     if missing and not _warned:
         # 明确告警而非静默：缺 doc URL 时卡片不带「详情文档」链接（主卡仍推送）
         _warned = True
-        print("QUANT_CFG WARN: 文档 URL 未配置（env 或 %s）：%s；"
-              "卡片将不带文档链接" % (private_path(), ",".join(missing)))
+        print(
+            "QUANT_CFG WARN: 文档 URL 未配置（env 或 %s）：%s；"
+            "卡片将不带文档链接" % (private_path(), ",".join(missing))
+        )
     # pos_card.buttons 里「详情文档」按钮是 report.doc_url 的派生副本：tracked 里留空占位，
     # 这里用解析出的 doc_url 回填（watch_positions 按 b.get("url") 过滤，空=不生成按钮）。
     pos_card = cfg.get("pos_card")
     if isinstance(pos_card, dict):
         doc_url = report.get("doc_url") or ""
         for btn in pos_card.get("buttons") or []:
-            if (isinstance(btn, dict) and not btn.get("url")
-                    and "文档" in str(btn.get("label", ""))):
+            if (
+                isinstance(btn, dict)
+                and not btn.get("url")
+                and "文档" in str(btn.get("label", ""))
+            ):
                 btn["url"] = doc_url
     return cfg
 

@@ -12,6 +12,7 @@
   --force    忽略交易时段门控（调试/链路验证）
   --ledger   指定账本路径（默认 positions.json；验证链路用临时账本）
 """
+
 import json
 import os
 import sys
@@ -32,16 +33,14 @@ NEWS_CFG = os.path.join(runner.NEWS_DIR, "news_config.json")
 def log(msg):
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write("[%s] %s\n" % (
-            datetime.now(CST).strftime("%m-%d %H:%M:%S"), msg))
+        f.write("[%s] %s\n" % (datetime.now(CST).strftime("%m-%d %H:%M:%S"), msg))
 
 
 def mkt_open(mkt, now):
     """市场交易时段（北京时间粗粒度窗口，覆盖冬夏令时）。"""
     wd, t = now.weekday(), now.hour * 60 + now.minute
-    if mkt == "US":     # 北京 21:30-次日 04:00（夏令）；冬令 22:30-05:00 亦在窗内
-        return (wd <= 4 and t >= 21 * 60 + 20) or \
-               (1 <= wd <= 5 and t <= 5 * 60 + 20)
+    if mkt == "US":  # 北京 21:30-次日 04:00（夏令）；冬令 22:30-05:00 亦在窗内
+        return (wd <= 4 and t >= 21 * 60 + 20) or (1 <= wd <= 5 and t <= 5 * 60 + 20)
     if mkt == "HK":
         return wd <= 4 and 9 * 60 + 15 <= t <= 16 * 60 + 15
     if mkt == "CN":
@@ -74,15 +73,16 @@ def _load_news_cfg():
 def _recent_hits(hours=24):
     """近 N 小时命中新闻 [(ts, title, stocks_json)]，失败静默降级为空。"""
     import sqlite3
-    cutoff = (datetime.now(CST) - timedelta(hours=hours)
-              ).strftime("%Y-%m-%d %H:%M")
+
+    cutoff = (datetime.now(CST) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M")
     try:
         db = sqlite3.connect(NEWS_DB)
         try:
             return db.execute(
                 "SELECT ts, title, stocks FROM news"
                 " WHERE hit=1 AND ts>=? ORDER BY ts DESC",
-                (cutoff,)).fetchall()
+                (cutoff,),
+            ).fetchall()
         finally:
             db.close()
     except Exception as e:
@@ -109,6 +109,7 @@ def _drill_reasons(rows, terms, cap=3):
         return []
     sys.path.insert(0, runner.NEWS_DIR)
     from news_collector import term_in
+
     out = []
     for ts, title, stocks in rows:
         tagged = False
@@ -153,24 +154,35 @@ def _build_alert_card(lines, n_alerts, n_open, stamp, cooldown_min, n_kw=0):
                columns: [{label, value: alerts|open|kw, color}],
                buttons: [{label, path, type}]}"""
     cc = runner.CFG.get("pos_card") or {}
-    footer = ("纸面模拟，不构成投资建议 · 同票同方向 %d 分钟冷却 · %s"
-              % (cooldown_min, stamp))
+    footer = "纸面模拟，不构成投资建议 · 同票同方向 %d 分钟冷却 · %s" % (
+        cooldown_min,
+        stamp,
+    )
 
     vals = {"alerts": str(n_alerts), "open": str(n_open), "kw": str(n_kw)}
-    cols = [(
-        str(c.get("label", "?")),
-        vals.get(c.get("value", ""), "?"),
-        str(c.get("color", "grey-50")),
-    ) for c in (cc.get("columns")
-                or [{"label": "触发", "value": "alerts", "color": "orange-50"},
-                    {"label": "持仓中", "value": "open", "color": "grey-50"}])]
+    cols = [
+        (
+            str(c.get("label", "?")),
+            vals.get(c.get("value", ""), "?"),
+            str(c.get("color", "grey-50")),
+        )
+        for c in (
+            cc.get("columns")
+            or [
+                {"label": "触发", "value": "alerts", "color": "orange-50"},
+                {"label": "持仓中", "value": "open", "color": "grey-50"},
+            ]
+        )
+    ]
 
     # K42-c 判例：卡内只放外网可达链接（url 直链，如飞书文档/东财）；
     # portal path 按钮（内网）与门户二维码手机不可达，一律不生成
     buttons = qr = None
-    btns = [(str(b.get("label", "")), str(b.get("url")),
-             str(b.get("type", "default")))
-            for b in (cc.get("buttons") or []) if b.get("url")]
+    btns = [
+        (str(b.get("label", "")), str(b.get("url")), str(b.get("type", "default")))
+        for b in (cc.get("buttons") or [])
+        if b.get("url")
+    ]
     if btns:
         buttons = btns
 
@@ -178,8 +190,13 @@ def _build_alert_card(lines, n_alerts, n_open, stamp, cooldown_min, n_kw=0):
         str(cc.get("title", "🎯 持仓异动提醒")),
         "%s · %s" % (stamp, cc.get("subtitle", "量化信号实战（纸面）")),
         str(cc.get("template", "orange")),
-        ["\n".join(lines)], footer=footer, columns=cols,
-        buttons=buttons, qr_key=qr, use_schema2=True)
+        ["\n".join(lines)],
+        footer=footer,
+        columns=cols,
+        buttons=buttons,
+        qr_key=qr,
+        use_schema2=True,
+    )
 
 
 def main():
@@ -197,8 +214,7 @@ def main():
         return
     now = datetime.now(CST)
     watch = [(e, sina_code(e["market"], e["symbol"])) for e in open_]
-    watch = [(e, c) for e, c in watch
-             if c and (force or mkt_open(e["market"], now))]
+    watch = [(e, c) for e, c in watch if c and (force or mkt_open(e["market"], now))]
     skipped_hrs = len(open_) - len(watch)
     if not watch:
         print("WATCH skip: %d open, none in market hours" % len(open_))
@@ -206,6 +222,7 @@ def main():
 
     sys.path.insert(0, runner.NEWS_DIR)
     from quote_snapshot import fetch_quotes
+
     try:
         quotes = {q["code"]: q for q in fetch_quotes([c for _, c in watch])}
     except Exception as e:
@@ -236,9 +253,9 @@ def main():
         last = (state.get(key) or {}).get(d)
         if last and not force:
             try:
-                if now - datetime.strptime(
-                        last, "%Y-%m-%d %H:%M:%S").replace(
-                        tzinfo=CST) < timedelta(minutes=cooldown_min):
+                if now - datetime.strptime(last, "%Y-%m-%d %H:%M:%S").replace(
+                    tzinfo=CST
+                ) < timedelta(minutes=cooldown_min):
                     continue  # 冷却内同票同方向不重复
             except Exception:
                 pass
@@ -246,11 +263,21 @@ def main():
         state.setdefault(key, {})[d] = now.strftime("%Y-%m-%d %H:%M:%S")
 
     stamp = now.strftime("%Y-%m-%d %H:%M")
-    print("WATCH ok candidates=%d open=%d off_hours=%d%s" % (
-        len(alerts), len(open_), skipped_hrs,
-        " " + json.dumps([(e["name"], round(p * 100, 2))
-                          for e, _, p in alerts], ensure_ascii=False)
-        if alerts and dry else ""))
+    print(
+        "WATCH ok candidates=%d open=%d off_hours=%d%s"
+        % (
+            len(alerts),
+            len(open_),
+            skipped_hrs,
+            " "
+            + json.dumps(
+                [(e["name"], round(p * 100, 2)) for e, _, p in alerts],
+                ensure_ascii=False,
+            )
+            if alerts and dry
+            else "",
+        )
+    )
     if not alerts or dry:
         return
 
@@ -258,19 +285,27 @@ def main():
     news_rows = _recent_hits(24)
     kw_ranked = _alert_keywords(news_rows, wcfg)
 
-    lines = ["**触发 %d 笔（浮盈/浮亏触及 ±%.1f%%）**" % (
-        len(alerts), threshold * 100)]
+    lines = ["**触发 %d 笔（浮盈/浮亏触及 ±%.1f%%）**" % (len(alerts), threshold * 100)]
     if kw_ranked:
-        lines.append("24h 预警词：" + " / ".join(
-            ("%s×%d" % (w, c)) if c > 1 else w
-            for w, c in kw_ranked[:6]))
+        lines.append(
+            "24h 预警词："
+            + " / ".join(("%s×%d" % (w, c)) if c > 1 else w for w, c in kw_ranked[:6])
+        )
     for e, q, p in alerts[:8]:
         day = q.get("pct")
         day_s = ("当日 %+.2f%%" % day) if day is not None else ""
-        lines.append("· [%s] %s · %s\n  买 %.4g → 现 %.4g  %s（%s）" % (
-            e["market"], e["name"],
-            report_strategy(e), e["entry_px"], q["price"],
-            runner._c_pct(p), day_s))
+        lines.append(
+            "· [%s] %s · %s\n  买 %.4g → 现 %.4g  %s（%s）"
+            % (
+                e["market"],
+                e["name"],
+                report_strategy(e),
+                e["entry_px"],
+                q["price"],
+                runner._c_pct(p),
+                day_s,
+            )
+        )
         reasons = _drill_reasons(news_rows, _stock_terms(e, wcfg))
         for ts, title in reasons:
             lines.append("  📌 %s %s" % (ts[5:], title[:32]))
@@ -279,17 +314,24 @@ def main():
         url = _ext_quote_url(e["market"], e["symbol"])
         if url:
             lines.append("  [📈 东财行情·可唤起App](%s)" % url)
-    footer = ("纸面模拟，不构成投资建议 · 同票同方向 %d 分钟冷却 · %s"
-              % (cooldown_min, stamp))
+    footer = "纸面模拟，不构成投资建议 · 同票同方向 %d 分钟冷却 · %s" % (
+        cooldown_min,
+        stamp,
+    )
     try:  # 异动同步进详情看板（失败不影响推送）
         import doc_board
-        doc_board.refresh(alerts_md=[
-            "> %s 触发 %d 笔（±%.1f%%）" % (stamp, len(alerts), threshold * 100)]
-            + lines)
+
+        doc_board.refresh(
+            alerts_md=[
+                "> %s 触发 %d 笔（±%.1f%%）" % (stamp, len(alerts), threshold * 100)
+            ]
+            + lines
+        )
     except Exception:
         pass
-    card = _build_alert_card(lines, len(alerts), len(open_), stamp,
-                             cooldown_min, len(kw_ranked))
+    card = _build_alert_card(
+        lines, len(alerts), len(open_), stamp, cooldown_min, len(kw_ranked)
+    )
     if runner.push_feishu(json.dumps(card, ensure_ascii=False), card=True):
         runner._atomic(STATE_PATH, state)
         log("pushed alerts=%d" % len(alerts))
@@ -305,6 +347,7 @@ def main():
 
 def report_strategy(e):
     import report_page
+
     return report_page.OPT_HEAD.get(e["strategy"], e["strategy"])
 
 

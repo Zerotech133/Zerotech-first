@@ -24,6 +24,7 @@
 
 用法：python miss_check.py run [--json]
 """
+
 import argparse
 import json
 import os
@@ -37,7 +38,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 OUT = os.path.join(HERE, "data", "miss_check_last.json")
-GRACE_MIN = 90          # 排程后宽限（错过补跑 AIColAudit 实测隔 4h，先 90min 起步）
+GRACE_MIN = 90  # 排程后宽限（错过补跑 AIColAudit 实测隔 4h，先 90min 起步）
 
 # 2026-10-24 加：机器刚醒时的结算窗口（分钟）。
 # 为什么需要：本哨兵用 `now` 判断"是否已过宽限期"，而 `now` 会被挂起/睡醒打乱。
@@ -60,48 +61,50 @@ _RESUME_PS = (
 
 # 交易日无关子集：白名单底册（显式 expect，since=生效日）
 REGISTRY = {
-    "KG-TushareSync":    {"expect": "00:10", "since": "2026-10-06"},
-    "AIColAudit":        {"expect": "06:10", "since": "2026-09-01"},
-    "TbeStats":          {"expect": "06:45", "since": "2026-10-05"},
-    "KgExtractShadow":   {"expect": "06:50", "since": "2026-10-05"},
-    "MorningReport":     {"expect": "07:00", "since": "2026-09-28"},
+    "KG-TushareSync": {"expect": "00:10", "since": "2026-10-06"},
+    "AIColAudit": {"expect": "06:10", "since": "2026-09-01"},
+    "TbeStats": {"expect": "06:45", "since": "2026-10-05"},
+    "KgExtractShadow": {"expect": "06:50", "since": "2026-10-05"},
+    "MorningReport": {"expect": "07:00", "since": "2026-09-28"},
     "KgResonanceNotify": {"expect": "08:05", "since": "2026-10-06"},
-    "CryptoSync":        {"expect": "08:10", "since": "2026-09-20"},
-    "KG-TdxSync":        {"expect": "17:40", "since": "2026-09-01"},
-    "KG-Cl1Sync":        {"expect": "18:10", "since": "2026-10-05"},
+    "CryptoSync": {"expect": "08:10", "since": "2026-09-20"},
+    "KG-TdxSync": {"expect": "17:40", "since": "2026-09-01"},
+    "KG-Cl1Sync": {"expect": "18:10", "since": "2026-10-05"},
     # 10-08 补：JEV 20:30 曾被睡眠窗口静默吃掉，哨兵底册原缺此项——
     # 手动守候才撞见；CainiaoPull 明晚首跑（R4 数据链）
-    "CainiaoPull":       {"expect": "19:00", "since": "2026-10-09"},
+    "CainiaoPull": {"expect": "19:00", "since": "2026-10-09"},
     "JevReviewBackfill": {"expect": "20:30", "since": "2026-10-07"},
     # 10-09 补：晨间三连（06:20/06:30/06:40）原全不在册——恰处夜间睡眠
     # 窗口尾段，被静默吃掉将无人报（JEV 前车）；三任务已同批加
     # StartWhenAvailable，本册兜底「唤醒后也没补跑」的最后情形
-    "KgDailySync":         {"expect": "06:20", "since": "2026-10-09"},
-    "StrongEod":           {"expect": "06:30", "since": "2026-10-09"},
+    "KgDailySync": {"expect": "06:20", "since": "2026-10-09"},
+    "StrongEod": {"expect": "06:30", "since": "2026-10-09"},
     "K260RegressionDaily": {"expect": "06:40", "since": "2026-10-09"},
     # 10-09 凌晨整理补（项目全面整理役）：两大盲区入册——
     # TushareSync 23:30 老田侧全量（1.5~3.5h，10-09 误杀事故主角；
     # alert_fail 兜跑挂，本册兜没跑，21:30 档次日检出）；AI工作站
     # 每日备份 03:00（B4 链核心，深睡高危时段，21:30 档当晚检出，
     # 08:30 晨档 3.8h 检出——晨档与 21:30 双跑位同批部署）
-    "TushareSync":        {"expect": "23:30", "since": "2026-10-09"},
-    "AI工作站每日备份":     {"expect": "03:00", "since": "2026-10-09"},
+    "TushareSync": {"expect": "23:30", "since": "2026-10-09"},
+    "AI工作站每日备份": {"expect": "03:00", "since": "2026-10-09"},
     # 10-10 补（八审 TodaysPicks 时序核查）：T1 聚合链四任务原全不在册。
     # 单日漏跑时 alert_fail 不推（没跑≠失败）、聚合闸门 4 天容差拦不住
     # （lag=1<4），T1 错日共振整链静默。ChanlunRefill=聚合消费的早批
     # （ChanlunScan 15:35 晚批在 15:10 聚合后落盘，不参与当日聚合）。
     # RpsDaily 仅交易日跑 → trade_only（非交易日跳过，见 _trade_today）。
-    "ChanlunRefill":      {"expect": "06:30", "since": "2026-10-10"},
-    "NineDimScan":        {"expect": "06:40", "since": "2026-10-10"},
-    "TodaysPicks":        {"expect": "15:10", "since": "2026-10-10"},
-    "RpsDaily":           {"expect": "16:05", "since": "2026-10-10",
-                           "trade_only": True},
+    "ChanlunRefill": {"expect": "06:30", "since": "2026-10-10"},
+    "NineDimScan": {"expect": "06:40", "since": "2026-10-10"},
+    "TodaysPicks": {"expect": "15:10", "since": "2026-10-10"},
+    "RpsDaily": {"expect": "16:05", "since": "2026-10-10", "trade_only": True},
     # 10-10 补（十三审字段契约审计）：WeakScan 周扫（周一 15:35）原不在册
     # ——漏跑时 weak 源静默断供，lag>10 后 stale 拦截属设计内放行（不触发
     # T1 停挂），weak 否决长期失效无人报。周任务用 weekday 语义防误报；
     # 周一 21:30 档检出当日漏跑；若当日档也挂，下周一复查仍报（last 恒旧）。
-    "WeakScan":           {"expect": "15:35", "since": "2026-10-10",
-                           "weekday": 0},   # 0=周一（Python weekday 约定）
+    "WeakScan": {
+        "expect": "15:35",
+        "since": "2026-10-10",
+        "weekday": 0,
+    },  # 0=周一（Python weekday 约定）
 }
 
 
@@ -115,15 +118,17 @@ def _task_last_run(name):
     try:
         p = subprocess.run(
             ["schtasks", "/query", "/tn", name, "/v", "/fo", "list"],
-            capture_output=True, timeout=20)
+            capture_output=True,
+            timeout=20,
+        )
         for enc in ("utf-8", "mbcs"):
             out = p.stdout.decode(enc, errors="replace")
-            m = (re.search(r"Last Run Time:\s*(\S+ \S+)", out)
-                 or re.search(r"上次运行时间:\s*(\S+ \S+)", out))
+            m = re.search(r"Last Run Time:\s*(\S+ \S+)", out) or re.search(
+                r"上次运行时间:\s*(\S+ \S+)", out
+            )
             if m and not m.group(1).startswith("1999/"):
                 try:
-                    return datetime.strptime(
-                        m.group(1), "%Y/%m/%d %H:%M:%S")
+                    return datetime.strptime(m.group(1), "%Y/%m/%d %H:%M:%S")
                 except ValueError:
                     continue
         return None
@@ -144,7 +149,9 @@ def _recent_resume_minutes(now=None):
     try:
         p = subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", _RESUME_PS],
-            capture_output=True, timeout=_RESUME_QUERY_TIMEOUT)
+            capture_output=True,
+            timeout=_RESUME_QUERY_TIMEOUT,
+        )
     except Exception:
         return None
     raw = p.stdout.decode("utf-8", errors="replace").strip()
@@ -170,7 +177,10 @@ def _recent_resume_minutes(now=None):
             deltas = re.findall(r"(-?\d[\d,]*)\s*ms", str(ev.get("Message") or ""))
             for d in deltas:
                 try:
-                    if abs(float(d.replace(",", ""))) / 1000.0 >= SUSPEND_DELTA_MIN_SECONDS:
+                    if (
+                        abs(float(d.replace(",", ""))) / 1000.0
+                        >= SUSPEND_DELTA_MIN_SECONDS
+                    ):
                         candidate = True
                         break
                 except ValueError:
@@ -211,11 +221,10 @@ def _trade_today(now=None):
     """
     try:
         from tdx_read import latest_date
-        return latest_date("ts_daily") == \
-            (now or datetime.now()).strftime("%Y%m%d")
+
+        return latest_date("ts_daily") == (now or datetime.now()).strftime("%Y%m%d")
     except Exception as e:
-        print("trade_today 查询失败（trade_only 项按非交易日跳过）: %s"
-              % str(e)[:60])
+        print("trade_today 查询失败（trade_only 项按非交易日跳过）: %s" % str(e)[:60])
         return False
 
 
@@ -227,45 +236,55 @@ def run(now=None):
     minutes_since_resume = _recent_resume_minutes(now)
     wake_grace = wake_grace_minutes(minutes_since_resume)
     if wake_grace > 0:
-        print("机器 %.1f 分钟前从挂起恢复：本轮判定窗口顺延 %.0f 分钟"
-              "（补跑结算中，先不下 MISS 结论）"
-              % (minutes_since_resume, wake_grace))
+        print(
+            "机器 %.1f 分钟前从挂起恢复：本轮判定窗口顺延 %.0f 分钟"
+            "（补跑结算中，先不下 MISS 结论）" % (minutes_since_resume, wake_grace)
+        )
     miss, checked = [], 0
     for name, cfg in REGISTRY.items():
         if cfg.get("since") and today < cfg["since"]:
-            continue                     # 生效日前不检（新任务防误报）
+            continue  # 生效日前不检（新任务防误报）
         if cfg.get("trade_only") and not _trade_today(now):
-            continue                     # 仅交易日任务：非交易日不检（八审）
+            continue  # 仅交易日任务：非交易日不检（八审）
         if cfg.get("weekday") is not None and now.weekday() != cfg["weekday"]:
-            continue                     # 周任务：仅指定星期检查（十三审）
+            continue  # 周任务：仅指定星期检查（十三审）
         exp_h, exp_m = map(int, cfg["expect"].split(":"))
         expect = now.replace(hour=exp_h, minute=exp_m, second=0)
         deadline = expect + timedelta(minutes=GRACE_MIN + wake_grace)
         if now < deadline:
-            continue                     # 未到宽限期不检
+            continue  # 未到宽限期不检
         checked += 1
         # 锚点是任务自己的「最后成功时间」（schtasks Last Run），不是 now；
         # now 只回答一个问题：过去够久了吗、现在能不能下结论。
         last_success = _task_last_run(name)
         if last_success is None or last_success < expect:
-            stamp = (last_success.strftime("%Y-%m-%d %H:%M")
-                     if last_success else "never")
-            miss.append({"task": name, "expect": cfg["expect"],
-                         "last_success_at": stamp,
-                         "last_run": stamp})   # last_run 保留：既有消费方兼容
+            stamp = last_success.strftime("%Y-%m-%d %H:%M") if last_success else "never"
+            miss.append(
+                {
+                    "task": name,
+                    "expect": cfg["expect"],
+                    "last_success_at": stamp,
+                    "last_run": stamp,
+                }
+            )  # last_run 保留：既有消费方兼容
     for m_ in miss:
-        print("MISS  %s  expect %s  last %s"
-              % (m_["task"], m_["expect"], m_["last_run"]))
-    print("checked %d / miss %d（交易日无关子集 · 宽限 %d+%.0f 分钟）"
-          % (checked, len(miss), GRACE_MIN, wake_grace))
+        print(
+            "MISS  %s  expect %s  last %s" % (m_["task"], m_["expect"], m_["last_run"])
+        )
+    print(
+        "checked %d / miss %d（交易日无关子集 · 宽限 %d+%.0f 分钟）"
+        % (checked, len(miss), GRACE_MIN, wake_grace)
+    )
     res = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         "grace_min": GRACE_MIN,
-        "minutes_since_resume": (round(minutes_since_resume, 1)
-                                 if minutes_since_resume is not None else None),
+        "minutes_since_resume": (
+            round(minutes_since_resume, 1) if minutes_since_resume is not None else None
+        ),
         "wake_grace_min": round(wake_grace, 1),
         "checked": checked,
-        "n_miss": len(miss), "miss": miss,
+        "n_miss": len(miss),
+        "miss": miss,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(OUT), suffix=".tmp")
@@ -276,11 +295,15 @@ def run(now=None):
         # 失败可见：alert_fail 承担推送（复用既有通道）
         try:
             subprocess.run(
-                [sys.executable,
-                 os.path.join(HERE, "..", "news_collector", "alert_fail_wrap.py"),
-                 "miss_check", "MISS×%d" % len(miss),
-                 json.dumps(miss, ensure_ascii=False)],
-                timeout=30)
+                [
+                    sys.executable,
+                    os.path.join(HERE, "..", "news_collector", "alert_fail_wrap.py"),
+                    "miss_check",
+                    "MISS×%d" % len(miss),
+                    json.dumps(miss, ensure_ascii=False),
+                ],
+                timeout=30,
+            )
         except Exception as e:
             print("alert_fail 调用失败: %s" % str(e)[:60])
     else:

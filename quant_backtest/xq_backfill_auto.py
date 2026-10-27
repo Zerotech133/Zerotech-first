@@ -12,6 +12,7 @@
 用法：python xq_backfill_auto.py   （无参数，由计划任务每 30 分钟触发）
 rc：0=本轮正常结束（含 done 跳过）；1=异常（由计划任务告警链处理）。
 """
+
 import json
 import os
 import subprocess
@@ -19,16 +20,16 @@ import sys
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RUNS_ROOT = r"C:\aios\automation_runs"   # 定时任务产物统一根（2026-10-18 老田拍板：产物/日志/临时文件不再散落）
+RUNS_ROOT = r"C:\aios\automation_runs"  # 定时任务产物统一根（2026-10-18 老田拍板：产物/日志/临时文件不再散落）
 STATE_PATH = os.path.join(RUNS_ROOT, "xq_backfill", "backfill_state.json")
 LOCK_PATH = os.path.join(RUNS_ROOT, "xq_backfill", "backfill.lock")
-LOCK_STALE_SEC = 45 * 60    # 锁超过 45 分钟视为残留（正常轮 10-20 分钟），自愈抢断
+LOCK_STALE_SEC = 45 * 60  # 锁超过 45 分钟视为残留（正常轮 10-20 分钟），自愈抢断
 LOG_DIR = os.path.join(RUNS_ROOT, "xq_backfill")
 STATUS_LOG = os.path.join(LOG_DIR, "xq_backfill_status.log")
 PY = r"C:\Program Files\Python311\python.exe"
 TARGET = 500
-LOW_THRESHOLD = 50          # 单轮净增低于此 = 见顶信号
-LOW_LIMIT = 2               # 连续 N 轮低产 = 缺口补完
+LOW_THRESHOLD = 50  # 单轮净增低于此 = 见顶信号
+LOW_LIMIT = 2  # 连续 N 轮低产 = 缺口补完
 
 
 def status(msg: str) -> None:
@@ -55,6 +56,7 @@ def save_state(st: dict) -> None:
 
 def db_count() -> int:
     import sqlite3
+
     db = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")
     con = sqlite3.connect("file:%s?mode=ro" % db.replace("\\", "/"), uri=True)
     n = con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
@@ -65,6 +67,7 @@ def db_count() -> int:
 def lock_acquire() -> bool:
     """非阻塞互斥锁：存在且新鲜则拒绝并发轮；残留旧锁自愈抢断。"""
     import time as _t
+
     try:
         if os.path.exists(LOCK_PATH):
             age = _t.time() - os.path.getmtime(LOCK_PATH)
@@ -92,8 +95,10 @@ def main() -> int:
     os.makedirs(LOG_DIR, exist_ok=True)
     st = load_state()
     if st.get("done"):
-        status("skip done=true (backfill finished, daily 18:00 job covers)"
-               " total=%d" % db_count())
+        status(
+            "skip done=true (backfill finished, daily 18:00 job covers)"
+            " total=%d" % db_count()
+        )
         return 0
     if not lock_acquire():
         status("skip lock held (another round active or fresh)")
@@ -103,12 +108,23 @@ def main() -> int:
     out_path = os.path.join(LOG_DIR, "xq_backfill_round_%s.out" % stamp)
     err_path = os.path.join(LOG_DIR, "xq_backfill_round_%s.err" % stamp)
     status("round start base=%d target=%d" % (base, TARGET))
-    with open(out_path, "w", encoding="utf-8") as fo, \
-            open(err_path, "w", encoding="utf-8") as fe:
+    with (
+        open(out_path, "w", encoding="utf-8") as fo,
+        open(err_path, "w", encoding="utf-8") as fe,
+    ):
         rc = subprocess.call(
-            [PY, "-X", "utf8", os.path.join(HERE, "xq_collect_1000.py"),
-             "--target", str(TARGET)],
-            stdout=fo, stderr=fe, cwd=HERE)
+            [
+                PY,
+                "-X",
+                "utf8",
+                os.path.join(HERE, "xq_collect_1000.py"),
+                "--target",
+                str(TARGET),
+            ],
+            stdout=fo,
+            stderr=fe,
+            cwd=HERE,
+        )
     after = db_count()
     added = after - base
     status("round end rc=%d added=%d total=%d" % (rc, added, after))
@@ -117,18 +133,20 @@ def main() -> int:
         lock_release()
         return 1
     st.setdefault("rounds", []).append(
-        {"at": datetime.now().strftime("%m-%d %H:%M"), "added": added})
+        {"at": datetime.now().strftime("%m-%d %H:%M"), "added": added}
+    )
     st["rounds"] = st["rounds"][-30:]
     if added < LOW_THRESHOLD:
         st["consecutive_low"] = st.get("consecutive_low", 0) + 1
-        status("low yield round (%d<%d) consecutive=%d/%d"
-               % (added, LOW_THRESHOLD, st["consecutive_low"], LOW_LIMIT))
+        status(
+            "low yield round (%d<%d) consecutive=%d/%d"
+            % (added, LOW_THRESHOLD, st["consecutive_low"], LOW_LIMIT)
+        )
     else:
         st["consecutive_low"] = 0
     if st["consecutive_low"] >= LOW_LIMIT:
         st["done"] = True
-        status("BACKFILL DONE (cursor exhausted after %d low rounds)"
-               % LOW_LIMIT)
+        status("BACKFILL DONE (cursor exhausted after %d low rounds)" % LOW_LIMIT)
     save_state(st)
     lock_release()
     return 0

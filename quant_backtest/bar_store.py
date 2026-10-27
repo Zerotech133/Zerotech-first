@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Small in-memory historical BarStore with strict as-of visibility."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Tuple
@@ -20,7 +21,9 @@ else:
 class BarStore:
     """Read-only collection of canonical bars for replay/backtest queries."""
 
-    def __init__(self, bars: Iterable[Bar] = (), metadata: Dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, bars: Iterable[Bar] = (), metadata: Dict[str, Any] | None = None
+    ) -> None:
         self._bars: Tuple[Bar, ...] = tuple(bars)
         self._metadata: Dict[str, Any] = dict(metadata or {})
         self._validate()
@@ -50,7 +53,9 @@ class BarStore:
             return next(iter(identities))
         return None
 
-    def validate_calendar_identity(self, calendar_ref: str, calendar_version: str) -> None:
+    def validate_calendar_identity(
+        self, calendar_ref: str, calendar_version: str
+    ) -> None:
         """Require the store identity to match the expected calendar snapshot."""
         actual = self.calendar_identity()
         if actual is None:
@@ -72,7 +77,9 @@ class BarStore:
 
     def explain(self) -> Dict[str, Any]:
         """Return source/coverage metadata for this store."""
-        sources = sorted({item for bar in self._bars for item in (bar.source_trace or (bar.source,))})
+        sources = sorted(
+            {item for bar in self._bars for item in (bar.source_trace or (bar.source,))}
+        )
         result: Dict[str, Any] = dict(self._metadata)
         result.setdefault("sources", sources)
         result.setdefault("rows", len(self._bars))
@@ -82,14 +89,18 @@ class BarStore:
 
     def all(self) -> Tuple[Bar, ...]:
         """Return deterministic all-bars view without exposing mutable storage."""
-        return tuple(sorted(self._bars, key=lambda item: (item.dt, item.symbol, item.timeframe)))
+        return tuple(
+            sorted(self._bars, key=lambda item: (item.dt, item.symbol, item.timeframe))
+        )
 
     @classmethod
-    def from_source(cls, source: object, query: BarQuery, **kwargs: object) -> "BarStore":
+    def from_source(
+        cls, source: object, query: BarQuery, **kwargs: object
+    ) -> "BarStore":
         """Load one explicitly selected source; failures are never hidden."""
         reader = getattr(source, "read", None)
         if not callable(reader):
-            raise TypeError("source must provide read(query, ...)" )
+            raise TypeError("source must provide read(query, ...)")
         try:
             bars = reader(query, **kwargs)
         except SourceReadError:

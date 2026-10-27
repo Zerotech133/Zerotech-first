@@ -3,6 +3,7 @@
 
 全 mock 零真实网络（RESEARCH_MEDIACRAWLER_XUEQIU_20261017.md §E P0-3）。
 """
+
 import json
 import os
 import sys
@@ -41,9 +42,14 @@ class TestLoadPool(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             p = os.path.join(td, "x.json")
             with open(p, "w", encoding="utf-8-sig") as f:
-                json.dump([{"name": "a", "url": "http://1.1.1.1:1"},
-                           {"name": "", "url": "http://2.2.2.2:2"},
-                           {"name": "b", "url": ""}], f)
+                json.dump(
+                    [
+                        {"name": "a", "url": "http://1.1.1.1:1"},
+                        {"name": "", "url": "http://2.2.2.2:2"},
+                        {"name": "b", "url": ""},
+                    ],
+                    f,
+                )
             pool = P.load_pool(p)
         self.assertTrue(pool.enabled())
         self.assertEqual([e.name for e in pool.entries], ["a"])
@@ -53,30 +59,27 @@ class TestPoolRotation(unittest.TestCase):
     """轮换语义：健康优先 / 冷却跳过 / 全冷却直连降级。"""
 
     def test_proxies_dict_shape(self):
-        pool = P.ProxyPool([_entry("a"),
-                            _entry("b", "http://2.2.2.2:2")])
-        self.assertEqual(pool.proxies(),
-                         {"http": "http://u:p@1.1.1.1:8080",
-                          "https": "http://u:p@1.1.1.1:8080"})
+        pool = P.ProxyPool([_entry("a"), _entry("b", "http://2.2.2.2:2")])
+        self.assertEqual(
+            pool.proxies(),
+            {"http": "http://u:p@1.1.1.1:8080", "https": "http://u:p@1.1.1.1:8080"},
+        )
 
     def test_current_skips_cooldown_exit(self):
-        pool = P.ProxyPool([_entry("a"),
-                            _entry("b", "http://2.2.2.2:2")])
+        pool = P.ProxyPool([_entry("a"), _entry("b", "http://2.2.2.2:2")])
         pool.entries[0].cooldown_until = time.time() + 999
         self.assertEqual(pool.current().name, "b")
 
     def test_all_cooldown_degrades_direct(self):
         """绝不硬选脏出口：全冷却 → current/proxies 均 None（直连）。"""
-        pool = P.ProxyPool([_entry("a"),
-                            _entry("b", "http://2.2.2.2:2")])
+        pool = P.ProxyPool([_entry("a"), _entry("b", "http://2.2.2.2:2")])
         for e in pool.entries:
             e.cooldown_until = time.time() + 999
         self.assertIsNone(pool.current())
         self.assertIsNone(pool.proxies())
 
     def test_mark_fail_puts_current_cooldown(self):
-        pool = P.ProxyPool([_entry("a"),
-                            _entry("b", "http://2.2.2.2:2")])
+        pool = P.ProxyPool([_entry("a"), _entry("b", "http://2.2.2.2:2")])
         pool.mark_fail()
         self.assertGreater(pool.entries[0].cooldown_until, time.time())
         self.assertEqual(pool.entries[0].fails, 1)
@@ -91,6 +94,7 @@ class TestApplyEnv(unittest.TestCase):
 
     setUp/tearDown 快照恢复四键，防止污染进程环境。
     """
+
     PROXY_KEYS = ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy")
 
     def setUp(self):
@@ -117,8 +121,7 @@ class TestApplyEnv(unittest.TestCase):
 
     def test_notify_blocked_rotates_and_reapplies(self):
         """熔断联动：当前出口进冷却 → 轮换下一健康出口并刷新 env。"""
-        pool = P.ProxyPool([_entry("a"),
-                            _entry("b", "http://2.2.2.2:2")])
+        pool = P.ProxyPool([_entry("a"), _entry("b", "http://2.2.2.2:2")])
         self.assertEqual(P.notify_blocked(pool=pool), "b")
         self.assertEqual(os.environ["HTTP_PROXY"], "http://2.2.2.2:2")
         self.assertEqual(pool.entries[0].fails, 1)
@@ -138,8 +141,8 @@ class TestTripHook(unittest.TestCase):
 
     def test_ip_block_trip_rotates_exit(self):
         import xueqiu_common as X
-        pool = P.ProxyPool([_entry("a"),
-                            _entry("b", "http://2.2.2.2:2")])
+
+        pool = P.ProxyPool([_entry("a"), _entry("b", "http://2.2.2.2:2")])
         old = P._POOL
         P._POOL = pool
         try:
@@ -147,12 +150,13 @@ class TestTripHook(unittest.TestCase):
             X.ip_block_trip(mf)
         finally:
             P._POOL = old
-        self.assertEqual(pool.entries[0].fails, 1)   # 当前出口被标脏
-        self.assertEqual(pool.current().name, "b")   # 已切到健康出口
+        self.assertEqual(pool.entries[0].fails, 1)  # 当前出口被标脏
+        self.assertEqual(pool.current().name, "b")  # 已切到健康出口
 
     def test_ip_block_trip_without_pool_noop(self):
         """空池（未配置代理）→ 钩子静默，熔断行为不变（P0-1 回归）。"""
         import xueqiu_common as X
+
         old = P._POOL
         P._POOL = P.ProxyPool([])
         try:
@@ -193,10 +197,13 @@ class TestUaStickiness(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "xq_proxies.json")
             with open(p, "w", encoding="utf-8") as f:
-                json.dump([{"name": "a1", "url": "http://u:p@1.1.1.1:8080",
-                            "ua": "UA/X"},
-                           {"name": "a2", "url": "http://u:p@2.2.2.2:8080"}],
-                          f)
+                json.dump(
+                    [
+                        {"name": "a1", "url": "http://u:p@1.1.1.1:8080", "ua": "UA/X"},
+                        {"name": "a2", "url": "http://u:p@2.2.2.2:8080"},
+                    ],
+                    f,
+                )
             pool = P.load_pool(p)
         self.assertEqual(pool.entries[0].ua, "UA/X")
         self.assertEqual(pool.entries[1].ua, "")

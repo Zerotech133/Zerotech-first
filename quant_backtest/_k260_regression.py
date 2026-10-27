@@ -13,6 +13,7 @@
      以 jsonl 为锚的同步性不变量）
   E. 图谱无 tag=None 且 reason/conf 残留的节点
 """
+
 import io
 import json
 import os
@@ -29,8 +30,9 @@ fails = []
 
 
 def check(name, ok, detail):
-    print("[%s] %s%s" % ("PASS" if ok else "FAIL", name,
-                         "" if ok else "  <-- " + detail))
+    print(
+        "[%s] %s%s" % ("PASS" if ok else "FAIL", name, "" if ok else "  <-- " + detail)
+    )
     if not ok:
         fails.append(name)
 
@@ -44,14 +46,19 @@ def main():
                 rows.append(json.loads(ln))
 
     # A. 行数
-    check("A jsonl 行数", len(rows) >= BASE_TOTAL,
-          "实际 %d < 基线 %d" % (len(rows), BASE_TOTAL))
+    check(
+        "A jsonl 行数",
+        len(rows) >= BASE_TOTAL,
+        "实际 %d < 基线 %d" % (len(rows), BASE_TOTAL),
+    )
 
     # B. 变更集字段自洽（全库口径：tag=None 不得带规则命中 reason/conf）
-    n_bad = sum(1 for e in rows
-                if e.get("tag") is None
-                and ("规则命中" in (e.get("reason") or "")
-                     or e.get("conf") == 0.7))
+    n_bad = sum(
+        1
+        for e in rows
+        if e.get("tag") is None
+        and ("规则命中" in (e.get("reason") or "") or e.get("conf") == 0.7)
+    )
     check("B jsonl 字段自洽残留=0", n_bad == 0, "残留 %d" % n_bad)
 
     # C. jsonl 三错类
@@ -60,24 +67,34 @@ def main():
         if e.get("tag") in WRONG_TAGS:
             tags[e["tag"]] = tags.get(e["tag"], 0) + 1
     n_wrong = sum(tags.values())
-    check("C jsonl 三错类>=%d（防回流下限，当前 %d）" % (BASE_WRONG, n_wrong),
-          n_wrong >= BASE_WRONG, "实际 %d %s" % (n_wrong, tags))
+    check(
+        "C jsonl 三错类>=%d（防回流下限，当前 %d）" % (BASE_WRONG, n_wrong),
+        n_wrong >= BASE_WRONG,
+        "实际 %d %s" % (n_wrong, tags),
+    )
 
     # D/E. 图谱侧
     from kg_client import KgClient
+
     cli = KgClient()
     with cli._session() as s:
         g_tags = {}
-        for r in s.run("MATCH (e:Event) WHERE e.tag IN $tags "
-                       "RETURN e.tag AS t, count(*) AS n", tags=WRONG_TAGS):
+        for r in s.run(
+            "MATCH (e:Event) WHERE e.tag IN $tags RETURN e.tag AS t, count(*) AS n",
+            tags=WRONG_TAGS,
+        ):
             g_tags[r["t"]] = r["n"]
         g_wrong = sum(g_tags.values())
-        check("D 图谱三错类==jsonl(%d) 且逐类一致" % n_wrong,
-              g_wrong == n_wrong and g_tags == tags,
-              "图谱 %d %s vs jsonl %d %s" % (g_wrong, g_tags, n_wrong, tags))
-        r = s.run("MATCH (e:Event) WHERE e.tag IS NULL AND "
-                  "(e.reason CONTAINS '规则命中' OR e.conf = 0.7) "
-                  "RETURN count(e) AS c").single()
+        check(
+            "D 图谱三错类==jsonl(%d) 且逐类一致" % n_wrong,
+            g_wrong == n_wrong and g_tags == tags,
+            "图谱 %d %s vs jsonl %d %s" % (g_wrong, g_tags, n_wrong, tags),
+        )
+        r = s.run(
+            "MATCH (e:Event) WHERE e.tag IS NULL AND "
+            "(e.reason CONTAINS '规则命中' OR e.conf = 0.7) "
+            "RETURN count(e) AS c"
+        ).single()
         check("E 图谱 reason/conf 残留=0", r["c"] == 0, "残留 %d" % r["c"])
     cli.close()
 
@@ -85,8 +102,10 @@ def main():
     if fails:
         print("回归失败 %d 项: %s" % (len(fails), "、".join(fails)))
         sys.exit(1)
-    print("K260 回归全绿（行数>=%d / 三错类>=%d 当前 %d / 残留 0）"
-          % (BASE_TOTAL, BASE_WRONG, n_wrong))
+    print(
+        "K260 回归全绿（行数>=%d / 三错类>=%d 当前 %d / 残留 0）"
+        % (BASE_TOTAL, BASE_WRONG, n_wrong)
+    )
 
 
 if __name__ == "__main__":

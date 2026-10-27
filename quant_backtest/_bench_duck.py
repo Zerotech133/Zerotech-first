@@ -32,13 +32,20 @@ ADJ_GLOB = LAKE.views["adj_factor"].glob
 def glob_to_files(glob_expr: str) -> list:
     """把 duck_lake 推导的 glob 展开为确定性的文件列表（pandas 基线用同一集合）。"""
     import glob as g
+
     py_expr = glob_expr.replace("[!_]*", "*")
     if "**" in py_expr:
-        files = [f for f in g.glob(py_expr, recursive=True)
-                 if not f.replace("\\", "/").rsplit("/", 1)[1].startswith("_")]
+        files = [
+            f
+            for f in g.glob(py_expr, recursive=True)
+            if not f.replace("\\", "/").rsplit("/", 1)[1].startswith("_")
+        ]
     else:
-        files = [f for f in g.glob(py_expr)
-                 if not f.replace("\\", "/").rsplit("/", 1)[1].startswith("_")]
+        files = [
+            f
+            for f in g.glob(py_expr)
+            if not f.replace("\\", "/").rsplit("/", 1)[1].startswith("_")
+        ]
     return sorted(files)
 
 
@@ -150,8 +157,13 @@ def q4_duck() -> str:
 
 def q4_pandas() -> str:
     import glob as g
-    files = sorted(f for f in g.glob(
-        r"C:\aios\quant_backtest\data\tushare\etf_mins\*_202610.parquet"))
+
+    files = sorted(
+        f
+        for f in g.glob(
+            r"C:\aios\quant_backtest\data\tushare\etf_mins\*_202610.parquet"
+        )
+    )
     tbl = ds.dataset(files, format="parquet").to_table()
     df = tbl.to_pandas()
     col = ETF_TCOL
@@ -180,6 +192,8 @@ if __name__ == "__main__":
         d = timed("DuckDB ", duck_fn)
         p = timed("pandas ", pd_fn)
         speedup = p["best"] / d["best"] if d["best"] > 0 else float("inf")
-        print(f"  >>> best: DuckDB {d['best']:.3f}s vs pandas {p['best']:.3f}s"
-              f"  (DuckDB 快 {speedup:.1f}x)")
+        print(
+            f"  >>> best: DuckDB {d['best']:.3f}s vs pandas {p['best']:.3f}s"
+            f"  (DuckDB 快 {speedup:.1f}x)"
+        )
         print()

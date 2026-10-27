@@ -31,6 +31,7 @@
   python nine_dim_backtest.py --step 5            # 周频
   python nine_dim_backtest.py --force             # 忽略已回放锚点重跑
 """
+
 import argparse
 import logging
 import json
@@ -46,11 +47,13 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import nine_dim as nd                     # noqa: E402  单一规则来源
-import rps_resonance as rps               # noqa: E402
-import db                                 # noqa: E402  SQLite 数据层（Phase 2）
-from nine_dim_source_snapshot import (    # noqa: E402
-    ApiRecordStore, SourceSnapshot, SnapshotFormatError,
+import nine_dim as nd  # noqa: E402  单一规则来源
+import rps_resonance as rps  # noqa: E402
+import db  # noqa: E402  SQLite 数据层（Phase 2）
+from nine_dim_source_snapshot import (  # noqa: E402
+    ApiRecordStore,
+    SourceSnapshot,
+    SnapshotFormatError,
 )
 
 DATA = nd.DATA
@@ -61,15 +64,15 @@ BT_RC = os.path.join(DATA, "nine_dim_bt_rc_cache.json")
 BT_FC = os.path.join(DATA, "nine_dim_bt_fc_cache.json")
 BT_IDX = os.path.join(DATA, "nine_dim_bt_idx_cache.json")
 
-WINDOW_BARS = 500       # 回放窗口（交易日，近 2 年）
-STEP = 10               # 锚点步长（交易日）；5=周频
-MIN_ANCHOR_BARS = 260   # 锚点前最少 bar 数（对齐 live 260 根窗口）
-FWD = 20                # 前向持有窗口（交易日）
-KEEP = 260              # as-of 切片长度（对齐 live _load_market tail）
-BENCH = "000300.SH"     # 超额基准
-MIN_FR = 3000           # 锚点本地数据少于该股票数 → 跳过（数据缺口）
-RC_WIN_DAYS = 30        # report_rc 窗口（日历日，同 live）
-FC_WIN_DAYS = 120       # forecast 窗口（日历日，同 live）
+WINDOW_BARS = 500  # 回放窗口（交易日，近 2 年）
+STEP = 10  # 锚点步长（交易日）；5=周频
+MIN_ANCHOR_BARS = 260  # 锚点前最少 bar 数（对齐 live 260 根窗口）
+FWD = 20  # 前向持有窗口（交易日）
+KEEP = 260  # as-of 切片长度（对齐 live _load_market tail）
+BENCH = "000300.SH"  # 超额基准
+MIN_FR = 3000  # 锚点本地数据少于该股票数 → 跳过（数据缺口）
+RC_WIN_DAYS = 30  # report_rc 窗口（日历日，同 live）
+FC_WIN_DAYS = 120  # forecast 窗口（日历日，同 live）
 
 
 def _snapshot_stores(path, codes):
@@ -77,13 +80,14 @@ def _snapshot_stores(path, codes):
     snapshot = SourceSnapshot(path)
     missing = sorted(set(codes) - set(snapshot.codes))
     if missing:
-        raise SnapshotFormatError("来源快照缺少候选代码: %s" %
-                                  ",".join(missing[:5]))
+        raise SnapshotFormatError("来源快照缺少候选代码: %s" % ",".join(missing[:5]))
     apis = list(SourceSnapshot.APIS)
     # fina_indicator 为可选扩展：旧快照没有该回执时保持原有 SQLite/JSON
     # 路径；新 staging 快照带回执时，回放必须优先消费同一份 as-of 载荷。
-    if any(snapshot.get("fina_indicator", c)["source_status"] !=
-           "missing_receipt" for c in snapshot.codes):
+    if any(
+        snapshot.get("fina_indicator", c)["source_status"] != "missing_receipt"
+        for c in snapshot.codes
+    ):
         apis.append("fina_indicator")
     return {api: ApiRecordStore(snapshot, api) for api in apis}
 
@@ -104,8 +108,7 @@ def _cal_shift(anchor_i, days):
 def _atomic_rewrite(path, rows):
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
-        f.write("".join(json.dumps(r, ensure_ascii=False) + "\n"
-                        for r in rows))
+        f.write("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows))
     os.replace(tmp, path)
 
 
@@ -137,11 +140,24 @@ def _load_full():
             df = pd.read_parquet(os.path.join(nd.LOCAL, f))
             if len(df) < 30:
                 continue
-            keepc = [c for c in ("trade_date", "close", "volume",
-                                 "amount", "pct_chg", "pre_close")
-                     if c in df.columns]
-            d = df[keepc].drop_duplicates("trade_date", keep="last") \
-                         .sort_values("trade_date").reset_index(drop=True)
+            keepc = [
+                c
+                for c in (
+                    "trade_date",
+                    "close",
+                    "volume",
+                    "amount",
+                    "pct_chg",
+                    "pre_close",
+                )
+                if c in df.columns
+            ]
+            d = (
+                df[keepc]
+                .drop_duplicates("trade_date", keep="last")
+                .sort_values("trade_date")
+                .reset_index(drop=True)
+            )
             t = d["trade_date"].map(_i8)
             d = d.assign(td8=t)
             d = d[d["td8"] > 0].reset_index(drop=True)
@@ -160,31 +176,39 @@ def _asof(code, frames, tds, anchor_i, min_rows=30):
     j = int(np.searchsorted(tds[code], anchor_i, side="right"))
     if j < min_rows:
         return None
-    return frames[code].iloc[max(0, j - KEEP):j]
+    return frames[code].iloc[max(0, j - KEEP) : j]
 
 
 # ── ② 交易日历 / 指数 / 北向（窗口级一次拉取） ──────────────
 def _trade_days(latest):
-    st = (datetime.strptime(latest, "%Y%m%d")
-          - timedelta(days=int((MIN_ANCHOR_BARS + WINDOW_BARS + 400)
-                               * 1.55))).strftime("%Y%m%d")
+    st = (
+        datetime.strptime(latest, "%Y%m%d")
+        - timedelta(days=int((MIN_ANCHOR_BARS + WINDOW_BARS + 400) * 1.55))
+    ).strftime("%Y%m%d")
     # 本地中台读层优先（trade_cal 全量日历，免 API 配额）
     try:
         import datamart
+
         df = datamart.read("trade_cal", start=st, end=latest)
-        if df is not None and not df.empty and \
-                {"cal_date", "is_open"} <= set(df.columns):
+        if (
+            df is not None
+            and not df.empty
+            and {"cal_date", "is_open"} <= set(df.columns)
+        ):
             if "exchange" in df.columns:
                 df = df[df["exchange"].astype(str) == "SSE"]
-            days = sorted(df.loc[pd.to_numeric(df["is_open"],
-                                               errors="coerce") == 1,
-                                 "cal_date"].astype(str))
+            days = sorted(
+                df.loc[
+                    pd.to_numeric(df["is_open"], errors="coerce") == 1, "cal_date"
+                ].astype(str)
+            )
             if days:
                 return days
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
-    rows, fields = nd._ts("trade_cal", exchange="SSE",
-                          start_date=st, end_date=latest)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "nine_dim_backtest.py", exc
+        )
+    rows, fields = nd._ts("trade_cal", exchange="SSE", start_date=st, end_date=latest)
     i_o, i_c = fields.index("is_open"), fields.index("cal_date")
     return sorted(r[i_c] for r in rows if r[i_o] == 1)
 
@@ -197,14 +221,19 @@ def _idx_series(code, st):
         except Exception:
             cache = {}
     if cache.get(code, {}).get("st") != st:
-        rows, fields = nd._ts("index_daily", ts_code=code,
-                              start_date=st, end_date="20991231")
+        rows, fields = nd._ts(
+            "index_daily", ts_code=code, start_date=st, end_date="20991231"
+        )
         i = {f: k for k, f in enumerate(fields)}
-        pts = sorted(((_i8(r[i["trade_date"]]), float(r[i["close"]]))
-                      for r in rows), key=lambda x: x[0])
-        cache[code] = {"st": st,
-                       "tds": [p[0] for p in pts],
-                       "closes": [p[1] for p in pts]}
+        pts = sorted(
+            ((_i8(r[i["trade_date"]]), float(r[i["close"]])) for r in rows),
+            key=lambda x: x[0],
+        )
+        cache[code] = {
+            "st": st,
+            "tds": [p[0] for p in pts],
+            "closes": [p[1] for p in pts],
+        }
         nd._write_json(BT_IDX, cache)
     return cache[code]
 
@@ -216,10 +245,10 @@ def _hsgt_series(st):
     today = int(datetime.now().strftime("%Y%m%d"))
     while guard < 20:
         guard += 1
-        nxt = (datetime.strptime(str(cur), "%Y%m%d")
-               + timedelta(days=180)).strftime("%Y%m%d")
-        rows, fields = nd._ts("moneyflow_hsgt", start_date=cur,
-                              end_date=nxt)
+        nxt = (datetime.strptime(str(cur), "%Y%m%d") + timedelta(days=180)).strftime(
+            "%Y%m%d"
+        )
+        rows, fields = nd._ts("moneyflow_hsgt", start_date=cur, end_date=nxt)
         i_d, i_n = fields.index("trade_date"), fields.index("north_money")
         for r in rows:
             v, t = nd._f(r[i_n]), _i8(r[i_d])
@@ -238,7 +267,9 @@ def _load_cache(path):
         try:
             return json.load(open(path, encoding="utf-8"))
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim_backtest.py", exc
+            )
     return {}
 
 
@@ -252,37 +283,48 @@ def _fina_bt(codes):
     try:
         conn = db.get_conn()
     except Exception as e:
-        print("  fina_bt: sqlite open failed (%s), fallback to json" % e,
-              flush=True)
+        print("  fina_bt: sqlite open failed (%s), fallback to json" % e, flush=True)
         return _fina_bt_json(codes)
     try:
-        cutoff = (datetime.now() - timedelta(days=30)
-                  ).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
         need = db.nd_fina_need(conn, codes, cutoff)
         if need:
-            flds = ("ts_code,ann_date,end_date,or_yoy,netprofit_yoy,"
-                    "grossprofit_margin,roe,ocf_to_or,ebitda,debt_to_assets")
+            flds = (
+                "ts_code,ann_date,end_date,or_yoy,netprofit_yoy,"
+                "grossprofit_margin,roe,ocf_to_or,ebitda,debt_to_assets"
+            )
             conn.execute("BEGIN")
             for k, c in enumerate(need):
-                rec = {"fetched_at": nd._now_iso(), "rows": [],
-                       "fields": flds.split(",")}
+                rec = {
+                    "fetched_at": nd._now_iso(),
+                    "rows": [],
+                    "fields": flds.split(","),
+                }
                 try:
-                    rows, fields = nd._ts("fina_indicator", ts_code=c,
-                                          limit=12, fields=flds)
+                    rows, fields = nd._ts(
+                        "fina_indicator", ts_code=c, limit=12, fields=flds
+                    )
                     i = {f: j for j, f in enumerate(fields)}
-                    rec["rows"] = sorted(rows, key=lambda r: (
-                        nd._td8(r[i["end_date"]]), nd._td8(r[i["ann_date"]])))
+                    rec["rows"] = sorted(
+                        rows,
+                        key=lambda r: (
+                            nd._td8(r[i["end_date"]]),
+                            nd._td8(r[i["ann_date"]]),
+                        ),
+                    )
                     rec["fields"] = fields
                 except Exception as exc:
-                    logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
-                db.nd_fina_upsert(conn, c, rec["rows"], rec["fields"],
-                                  rec["fetched_at"])
+                    logging.getLogger(__name__).warning(
+                        "silent-except %s: %s", "nine_dim_backtest.py", exc
+                    )
+                db.nd_fina_upsert(
+                    conn, c, rec["rows"], rec["fields"], rec["fetched_at"]
+                )
                 time.sleep(0.12)
                 if (k + 1) % 50 == 0:
                     conn.commit()
                     conn.execute("BEGIN")
-                    print("  fina_bt(sqlite) %d/%d" % (k + 1, len(need)),
-                          flush=True)
+                    print("  fina_bt(sqlite) %d/%d" % (k + 1, len(need)), flush=True)
             conn.commit()
             print("  fina_bt(sqlite) done: +%d codes" % len(need), flush=True)
         return _FinaStore(conn)
@@ -290,33 +332,46 @@ def _fina_bt(codes):
         try:
             conn.close()
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
-        print("  fina_bt: sqlite path failed (%s), fallback to json" % e,
-              flush=True)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim_backtest.py", exc
+            )
+        print("  fina_bt: sqlite path failed (%s), fallback to json" % e, flush=True)
         return _fina_bt_json(codes)
 
 
 def _fina_bt_json(codes):
     """JSON 全量路径（fallback）：原 _fina_bt 实现。"""
     cache = _load_cache(BT_FIN)
-    need = [c for c in codes if not cache.get(c)
-            or (datetime.now() - datetime.strptime(
-                cache[c].get("fetched_at", "2000-01-01"),
-                "%Y-%m-%d %H:%M:%S")).days >= 30]
-    flds = ("ts_code,ann_date,end_date,or_yoy,netprofit_yoy,"
-            "grossprofit_margin,roe,ocf_to_or,ebitda,debt_to_assets")
+    need = [
+        c
+        for c in codes
+        if not cache.get(c)
+        or (
+            datetime.now()
+            - datetime.strptime(
+                cache[c].get("fetched_at", "2000-01-01"), "%Y-%m-%d %H:%M:%S"
+            )
+        ).days
+        >= 30
+    ]
+    flds = (
+        "ts_code,ann_date,end_date,or_yoy,netprofit_yoy,"
+        "grossprofit_margin,roe,ocf_to_or,ebitda,debt_to_assets"
+    )
     for k, c in enumerate(need):
-        rec = {"fetched_at": nd._now_iso(), "rows": [],
-               "fields": flds.split(",")}
+        rec = {"fetched_at": nd._now_iso(), "rows": [], "fields": flds.split(",")}
         try:
-            rows, fields = nd._ts("fina_indicator", ts_code=c,
-                                  limit=12, fields=flds)
+            rows, fields = nd._ts("fina_indicator", ts_code=c, limit=12, fields=flds)
             i = {f: j for j, f in enumerate(fields)}
-            rec["rows"] = sorted(rows, key=lambda r: (
-                nd._td8(r[i["end_date"]]), nd._td8(r[i["ann_date"]])))
+            rec["rows"] = sorted(
+                rows,
+                key=lambda r: (nd._td8(r[i["end_date"]]), nd._td8(r[i["ann_date"]])),
+            )
             rec["fields"] = fields
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim_backtest.py", exc
+            )
         cache[c] = rec
         time.sleep(0.12)
         if (k + 1) % 50 == 0:
@@ -328,6 +383,7 @@ def _fina_bt_json(codes):
 
 class _FinaStore:
     """SQLite-backed 懒加载 fina rec 容器。.get(code) 同 dict 语义。"""
+
     def __init__(self, conn):
         self._conn = conn
         self._mem = {}
@@ -386,8 +442,7 @@ def _rc_bt(codes, st):
     try:
         conn = db.get_conn()
     except Exception as e:
-        print("  rc_bt: sqlite open failed (%s), fallback to json" % e,
-              flush=True)
+        print("  rc_bt: sqlite open failed (%s), fallback to json" % e, flush=True)
         return _rc_bt_json(codes, st)
     try:
         # st 失效 → 清表重建（与原 cache 重置同义）
@@ -401,9 +456,13 @@ def _rc_bt(codes, st):
             conn.execute("BEGIN")
             for k, c in enumerate(need):
                 try:
-                    rows, fields = nd._ts("report_rc", ts_code=c,
-                                          start_date=st, end_date="20991231",
-                                          limit=600)
+                    rows, fields = nd._ts(
+                        "report_rc",
+                        ts_code=c,
+                        start_date=st,
+                        end_date="20991231",
+                        limit=600,
+                    )
                     err = 0
                 except Exception:
                     rows, fields, err = [], [], 1
@@ -412,8 +471,7 @@ def _rc_bt(codes, st):
                 if (k + 1) % 50 == 0:
                     conn.commit()
                     conn.execute("BEGIN")
-                    print("  rc_bt(sqlite) %d/%d" % (k + 1, len(need)),
-                          flush=True)
+                    print("  rc_bt(sqlite) %d/%d" % (k + 1, len(need)), flush=True)
             conn.commit()
             print("  rc_bt(sqlite) done: +%d codes" % len(need), flush=True)
         return _RcStore(conn)
@@ -421,9 +479,10 @@ def _rc_bt(codes, st):
         try:
             conn.close()
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
-        print("  rc_bt: sqlite path failed (%s), fallback to json" % e,
-              flush=True)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim_backtest.py", exc
+            )
+        print("  rc_bt: sqlite path failed (%s), fallback to json" % e, flush=True)
         return _rc_bt_json(codes, st)
 
 
@@ -435,9 +494,9 @@ def _rc_bt_json(codes, st):
     need = [c for c in codes if c not in cache]
     for k, c in enumerate(need):
         try:
-            rows, fields = nd._ts("report_rc", ts_code=c,
-                                  start_date=st, end_date="20991231",
-                                  limit=600)
+            rows, fields = nd._ts(
+                "report_rc", ts_code=c, start_date=st, end_date="20991231", limit=600
+            )
             cache[c] = {"rows": rows, "fields": fields}
         except Exception:
             cache[c] = {"rows": [], "fields": [], "err": 1}
@@ -453,6 +512,7 @@ class _RcStore:
     """SQLite-backed 懒加载 rc rec 容器。.get(code) 同 dict 语义，
     供 score_anchor 的 `rc_bt_c.get(c)` 无感消费。
     持有 conn 至回测结束（一次性研究脚本，进程退出即释放）。"""
+
     def __init__(self, conn):
         self._conn = conn
         self._mem = {}
@@ -499,8 +559,7 @@ def _fc_bt(codes, st):
     try:
         conn = db.get_conn()
     except Exception as e:
-        print("  fc_bt: sqlite open failed (%s), fallback to json" % e,
-              flush=True)
+        print("  fc_bt: sqlite open failed (%s), fallback to json" % e, flush=True)
         return _fc_bt_json(codes, st)
     try:
         if db.nd_fc_get_st(conn) != st:
@@ -513,9 +572,13 @@ def _fc_bt(codes, st):
             conn.execute("BEGIN")
             for k, c in enumerate(need):
                 try:
-                    rows, fields = nd._ts("forecast", ts_code=c,
-                                          start_date=st, end_date="20991231",
-                                          limit=10)
+                    rows, fields = nd._ts(
+                        "forecast",
+                        ts_code=c,
+                        start_date=st,
+                        end_date="20991231",
+                        limit=10,
+                    )
                 except Exception:
                     rows, fields = [], []
                 db.nd_fc_upsert(conn, c, rows, fields)
@@ -523,8 +586,7 @@ def _fc_bt(codes, st):
                 if (k + 1) % 50 == 0:
                     conn.commit()
                     conn.execute("BEGIN")
-                    print("  fc_bt(sqlite) %d/%d" % (k + 1, len(need)),
-                          flush=True)
+                    print("  fc_bt(sqlite) %d/%d" % (k + 1, len(need)), flush=True)
             conn.commit()
             print("  fc_bt(sqlite) done: +%d codes" % len(need), flush=True)
         return _FcStore(conn)
@@ -532,9 +594,10 @@ def _fc_bt(codes, st):
         try:
             conn.close()
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
-        print("  fc_bt: sqlite path failed (%s), fallback to json" % e,
-              flush=True)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim_backtest.py", exc
+            )
+        print("  fc_bt: sqlite path failed (%s), fallback to json" % e, flush=True)
         return _fc_bt_json(codes, st)
 
 
@@ -546,9 +609,9 @@ def _fc_bt_json(codes, st):
     need = [c for c in codes if c not in cache]
     for k, c in enumerate(need):
         try:
-            rows, fields = nd._ts("forecast", ts_code=c,
-                                  start_date=st, end_date="20991231",
-                                  limit=10)
+            rows, fields = nd._ts(
+                "forecast", ts_code=c, start_date=st, end_date="20991231", limit=10
+            )
             cache[c] = {"rows": rows, "fields": fields}
         except Exception:
             cache[c] = {"rows": [], "fields": []}
@@ -562,6 +625,7 @@ def _fc_bt_json(codes, st):
 
 class _FcStore:
     """SQLite-backed 懒加载 fc rec 容器。.get(code) 同 dict 语义。"""
+
     def __init__(self, conn):
         self._conn = conn
         self._mem = {}
@@ -591,16 +655,14 @@ def _fc_at(rec, anchor_i):
     dk = next((k for k in ("announce_date", "ann_date") if k in i), None)
     di = i.get(dk, 0) if dk else 0
     lo = _cal_shift(anchor_i, FC_WIN_DAYS)
-    rows = [r for r in rows_all
-            if (not dk and True) or (lo <= _i8(r[di]) <= anchor_i)]
+    rows = [r for r in rows_all if (not dk and True) or (lo <= _i8(r[di]) <= anchor_i)]
     return nd._fc_pick(rows, fields)
 
 
 # ── ④ 新闻情绪/政策（锚点窗口版；同 live 缺数据语义） ─────────
 def _news_stats_at(codes, basic, anchor_i):
     """同 nd._news_stats，窗口改为锚点前 7/14 日历日。"""
-    stats = {c: {"n7": 0, "n_prev7": 0, "bull": 0, "bear": 0, "n": 0}
-             for c in codes}
+    stats = {c: {"n7": 0, "n_prev7": 0, "bull": 0, "bear": 0, "n": 0} for c in codes}
     nm = {c: (basic.get(c) or ["", ""])[0] for c in codes}
     nm = {c: n for c, n in nm.items() if n}
     if not os.path.exists(nd.NEWS_DB) or not nm:
@@ -611,9 +673,11 @@ def _news_stats_at(codes, basic, anchor_i):
     try:
         db = sqlite3.connect(nd.NEWS_DB)
         for title, j, ca in db.execute(
-                "SELECT title, jev, created_at FROM news "
-                "WHERE jev IS NOT NULL AND created_at>=? "
-                "ORDER BY id DESC LIMIT 8000", (since,)):
+            "SELECT title, jev, created_at FROM news "
+            "WHERE jev IS NOT NULL AND created_at>=? "
+            "ORDER BY id DESC LIMIT 8000",
+            (since,),
+        ):
             if not title:
                 continue
             for c, n in nm.items():
@@ -636,7 +700,9 @@ def _news_stats_at(codes, basic, anchor_i):
                         s["bear"] += 1
         db.close()
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "nine_dim_backtest.py", exc
+        )
     return stats
 
 
@@ -647,8 +713,19 @@ def _pol_titles_at(anchor_i):
     live 在 news.db 缺表/异常时也传 None（V3 同步改动）。"""
     a = datetime.strptime(str(anchor_i), "%Y%m%d")
     since = (a - timedelta(days=3)).strftime("%Y-%m-%d %H:%M")
-    pol_kw = ("政策", "部委", "规划", "央行", "监管", "降准", "降息",
-              "补贴", "试点", "条例", "意见")
+    pol_kw = (
+        "政策",
+        "部委",
+        "规划",
+        "央行",
+        "监管",
+        "降准",
+        "降息",
+        "补贴",
+        "试点",
+        "条例",
+        "意见",
+    )
     out = set()
     try:
         db = sqlite3.connect(nd.NEWS_DB)
@@ -656,10 +733,11 @@ def _pol_titles_at(anchor_i):
         first = str(row[0])[:16] if row and row[0] else None
         if first is None or since < first:
             db.close()
-            return None                  # 未开始收集 → 诚实不可判
+            return None  # 未开始收集 → 诚实不可判
         for (t,) in db.execute(
-                "SELECT title FROM news WHERE created_at>=? "
-                "ORDER BY id DESC LIMIT 3000", (since,)):
+            "SELECT title FROM news WHERE created_at>=? ORDER BY id DESC LIMIT 3000",
+            (since,),
+        ):
             if t and any(k in t for k in pol_kw):
                 out.add(t)
         db.close()
@@ -683,19 +761,20 @@ def pass_a(frames, tds, basic, anchors, idx688):
         if len(fr) < MIN_FR:
             print("  [%s] skip: only %d frames" % (dt, len(fr)))
             continue
-        closes = {c: d["close"].to_numpy(dtype=float)
-                  for c, d in fr.items()}
+        closes = {c: d["close"].to_numpy(dtype=float) for c, d in fr.items()}
         rdf = rps.batch_rps(closes)
-        rps50 = {kk: float(v) for kk, v in
-                 (rdf["rps_50"] if "rps_50" in rdf.columns
-                  else pd.Series(dtype=float)).items()}
+        rps50 = {
+            kk: float(v)
+            for kk, v in (
+                rdf["rps_50"] if "rps_50" in rdf.columns else pd.Series(dtype=float)
+            ).items()
+        }
         cand, funnel = nd.coarse_filter(fr, basic, rps50)
-        amt_sum = sum(float(d["amount"].iloc[-1] or 0) * 1000
-                      for d in fr.values())
-        cl = [c for t, c in zip(idx688["tds"], idx688["closes"])
-              if t <= ai][-300:]
-        env = nd.market_env(amt_sum, closes=np.array(cl, dtype=float),
-                            as_of_month=int(dt[4:6]))
+        amt_sum = sum(float(d["amount"].iloc[-1] or 0) * 1000 for d in fr.values())
+        cl = [c for t, c in zip(idx688["tds"], idx688["closes"]) if t <= ai][-300:]
+        env = nd.market_env(
+            amt_sum, closes=np.array(cl, dtype=float), as_of_month=int(dt[4:6])
+        )
         wd = nd.dynamic_weight(env)
         ind_of = {c: (basic.get(c) or ["", ""])[1] for c in fr}
         buf5, bufr = {}, {}
@@ -710,23 +789,46 @@ def pass_a(frames, tds, basic, anchors, idx688):
                 bufr.setdefault(g, []).append(rps50[c])
         ind_ret5 = {g: float(np.median(v)) for g, v in buf5.items()}
         out[dt] = {
-            "cand": cand, "rps50": rps50, "env": env, "wdelta": wd,
-            "funnel": funnel, "n_cand": len(cand),
-            "ind_top3": sorted(ind_ret5,
-                               key=lambda g: -ind_ret5[g])[:3],
-            "ind_rps": {g: round(float(np.median(v)), 1)
-                        for g, v in bufr.items()},
-            "amt_yi": round(amt_sum / 1e8)}
-        print("  [%d/%d] %s cand=%d env(vol=%s,bull=%s) %.1fs"
-              % (k + 1, len(anchors), dt, len(cand),
-                 env.get("vol_pct"), env.get("bull"),
-                 time.time() - t0), flush=True)
+            "cand": cand,
+            "rps50": rps50,
+            "env": env,
+            "wdelta": wd,
+            "funnel": funnel,
+            "n_cand": len(cand),
+            "ind_top3": sorted(ind_ret5, key=lambda g: -ind_ret5[g])[:3],
+            "ind_rps": {g: round(float(np.median(v)), 1) for g, v in bufr.items()},
+            "amt_yi": round(amt_sum / 1e8),
+        }
+        print(
+            "  [%d/%d] %s cand=%d env(vol=%s,bull=%s) %.1fs"
+            % (
+                k + 1,
+                len(anchors),
+                dt,
+                len(cand),
+                env.get("vol_pct"),
+                env.get("bull"),
+                time.time() - t0,
+            ),
+            flush=True,
+        )
     return out
 
 
 # ── ⑥ 评分阶段（锚点 × 候选 → 样本行） ─────────────────────
-def score_anchor(dt, meta, frames, tds, basic, prev5, fina_bt_c,
-                 rc_bt_c, fc_bt_c, hsgt, source_stores=None):
+def score_anchor(
+    dt,
+    meta,
+    frames,
+    tds,
+    basic,
+    prev5,
+    fina_bt_c,
+    rc_bt_c,
+    fc_bt_c,
+    hsgt,
+    source_stores=None,
+):
     ai = int(dt)
     cand = meta["cand"]
     fr = {}
@@ -737,8 +839,7 @@ def score_anchor(dt, meta, frames, tds, basic, prev5, fina_bt_c,
     if not fr:
         return []
 
-    block_store = source_stores.get("block_trade") \
-        if source_stores else None
+    block_store = source_stores.get("block_trade") if source_stores else None
     flow = nd._fetch_flow(dt, source_snapshot=block_store)
     marg = nd._fetch_margin(dt, prev5)
     pts = [(t, v) for t, v in hsgt if t <= ai]
@@ -766,36 +867,60 @@ def score_anchor(dt, meta, frames, tds, basic, prev5, fina_bt_c,
         tmv = nd._f((flow["basic"].get(c) or {}).get("total_mv"))
         if ebd and ebd > 0 and tmv:
             ev_by.setdefault(g, []).append(tmv * 1e4 / (ebd * 1e8))
-    ctx = {"gm_p70": {g: round(float(np.percentile(v, 70)), 2)
-                      for g, v in gm_by.items()},
-           "ev_mean": {g: round(float(np.mean(v)), 2)
-                       for g, v in ev_by.items()},
-           "pe_med": {g: round(float(np.median(v)), 2)
-                      for g, v in pe_by.items()},
-           "ind_top3": meta["ind_top3"], "ind_rps": meta["ind_rps"],
-           "north_buy3": north3,
-           "margin_global_growth": marg.get("global_growth")}
+    ctx = {
+        "gm_p70": {g: round(float(np.percentile(v, 70)), 2) for g, v in gm_by.items()},
+        "ev_mean": {g: round(float(np.mean(v)), 2) for g, v in ev_by.items()},
+        "pe_med": {g: round(float(np.median(v)), 2) for g, v in pe_by.items()},
+        "ind_top3": meta["ind_top3"],
+        "ind_rps": meta["ind_rps"],
+        "north_buy3": north3,
+        "margin_global_growth": marg.get("global_growth"),
+    }
 
     out = []
     for c in fr:
-        s = nd._build_stock(c, fr, basic, meta["rps50"], flow, marg,
-                            north3, fina_map, rc_map, fc_map, nstats,
-                            pol, ctx, meta["env"])
+        s = nd._build_stock(
+            c,
+            fr,
+            basic,
+            meta["rps50"],
+            flow,
+            marg,
+            north3,
+            fina_map,
+            rc_map,
+            fc_map,
+            nstats,
+            pol,
+            ctx,
+            meta["env"],
+        )
         res = nd.score_one(s, meta["wdelta"])
         if res["score"] is None:
             continue
         d = fr[c]
-        out.append({"anchor": dt, "code": c, "name": s["name"],
-                    "industry": s["industry"],
-                    "rps50": meta["rps50"].get(c),
-                    "entry_px": round(float(
-                        d["close"].to_numpy(dtype=float)[-1]), 2),
-                    "score": res["score"], "cov": res["cov"],
-                    "v": {it["id"]: it["state"]
-                          for g in res["detail"] for it in g["items"]},
-                    "r5": None, "r20": None, "mature5": False,
-                    "mature20": False, "adj": False,
-                    "bench5": None, "bench20": None})
+        out.append(
+            {
+                "anchor": dt,
+                "code": c,
+                "name": s["name"],
+                "industry": s["industry"],
+                "rps50": meta["rps50"].get(c),
+                "entry_px": round(float(d["close"].to_numpy(dtype=float)[-1]), 2),
+                "score": res["score"],
+                "cov": res["cov"],
+                "v": {
+                    it["id"]: it["state"] for g in res["detail"] for it in g["items"]
+                },
+                "r5": None,
+                "r20": None,
+                "mature5": False,
+                "mature20": False,
+                "adj": False,
+                "bench5": None,
+                "bench20": None,
+            }
+        )
     return out
 
 
@@ -804,11 +929,15 @@ def _bars_of(code, frames):
     d = frames.get(code)
     if d is None:
         return []
-    pc = d["pre_close"] if "pre_close" in d.columns \
-        else pd.Series([np.nan] * len(d))
-    return [{"dt": int(t), "c": float(c),
-             "pc": None if (pcv != pcv or not pcv) else float(pcv)}
-            for t, c, pcv in zip(d["td8"], d["close"], pc)]
+    pc = d["pre_close"] if "pre_close" in d.columns else pd.Series([np.nan] * len(d))
+    return [
+        {
+            "dt": int(t),
+            "c": float(c),
+            "pc": None if (pcv != pcv or not pcv) else float(pcv),
+        }
+        for t, c, pcv in zip(d["td8"], d["close"], pc)
+    ]
 
 
 def fill_forward(rows, frames, tds, bench):
@@ -821,15 +950,19 @@ def fill_forward(rows, frames, tds, bench):
         ai = int(r["anchor"])
         if code not in bcache:
             bars = _bars_of(code, frames)
-            bpos = int(np.searchsorted(
-                np.array([b["dt"] for b in bars]), ai,
-                side="right")) - 1 if bars else -1
+            bpos = (
+                int(
+                    np.searchsorted(np.array([b["dt"] for b in bars]), ai, side="right")
+                )
+                - 1
+                if bars
+                else -1
+            )
             bcache[code] = (bars, bpos)
         bars, b = bcache[code]
         if 0 <= b < len(bars):
             px = r["entry_px"] or bars[b]["c"]
-            for w, rk, mk in ((nd.R5, "r5", "mature5"),
-                              (nd.R20, "r20", "mature20")):
+            for w, rk, mk in ((nd.R5, "r5", "mature5"), (nd.R20, "r20", "mature20")):
                 j = b + w
                 if j < len(bars):
                     r[rk] = round((bars[j]["c"] / px - 1) * 100, 2)
@@ -842,24 +975,30 @@ def fill_forward(rows, frames, tds, bench):
         if p >= 0:
             for w, bk in ((nd.R5, "bench5"), (nd.R20, "bench20")):
                 k = p + w
-                r[bk] = round((bc[k] / bc[p] - 1) * 100, 2) \
-                    if k < len(bc) else None
+                r[bk] = round((bc[k] / bc[p] - 1) * 100, 2) if k < len(bc) else None
     return rows
 
 
 # ── ⑧ 聚合：分桶 × 前向收益 × 超额 × 左尾 ──────────────────
-BUCKETS = [("ge90", 90, 1e9), ("85_90", 85, 90), ("80_85", 80, 85),
-           ("70_80", 70, 80), ("lt70", -1e9, 70)]
+BUCKETS = [
+    ("ge90", 90, 1e9),
+    ("85_90", 85, 90),
+    ("80_85", 80, 85),
+    ("70_80", 70, 80),
+    ("lt70", -1e9, 70),
+]
 
 
 def _stat(vals, exc):
     if not vals:
         return None
     n = len(vals)
-    d = {"n": n,
-         "win": round(sum(1 for x in vals if x > 0) * 100.0 / n, 1),
-         "avg": round(sum(vals) / n, 2),
-         "med": round(float(np.median(vals)), 2)}
+    d = {
+        "n": n,
+        "win": round(sum(1 for x in vals if x > 0) * 100.0 / n, 1),
+        "avg": round(sum(vals) / n, 2),
+        "med": round(float(np.median(vals)), 2),
+    }
     ev = [e for e in exc if e is not None]
     if len(ev) >= 3:
         d["exc"] = round(sum(ev) / len(ev), 2)
@@ -871,57 +1010,74 @@ def _stat(vals, exc):
 
 
 def aggregate(all_rows, pass_a_meta, cal_pos):
-    ev = {"generated_at": nd._now_iso(),
-          "bench": BENCH, "step": STEP, "fwd": FWD}
+    ev = {"generated_at": nd._now_iso(), "bench": BENCH, "step": STEP, "fwd": FWD}
     for w, bk in (("r5", "bench5"), ("r20", "bench20")):
         bk_out = {}
         for name, lo, hi in BUCKETS:
-            sel = [r for r in all_rows if r[w] is not None
-                   and not r["adj"] and lo <= (r["score"] or 0) < hi]
-            st = _stat([r[w] for r in sel],
-                       [r[w] - r[bk] for r in sel
-                        if r.get(bk) is not None])
+            sel = [
+                r
+                for r in all_rows
+                if r[w] is not None and not r["adj"] and lo <= (r["score"] or 0) < hi
+            ]
+            st = _stat(
+                [r[w] for r in sel],
+                [r[w] - r[bk] for r in sel if r.get(bk) is not None],
+            )
             if st:
                 worst = sorted(sel, key=lambda r: r[w])[:5]
-                st["worst"] = [{"anchor": r["anchor"], "code": r["code"],
-                                "name": r["name"], w: r[w]}
-                               for r in worst]
+                st["worst"] = [
+                    {
+                        "anchor": r["anchor"],
+                        "code": r["code"],
+                        "name": r["name"],
+                        w: r[w],
+                    }
+                    for r in worst
+                ]
             # thinned：同票 20 交易日内去重（按锚点在交易日历的位置）
             seen, thin = {}, []
             for r in sorted(sel, key=lambda x: x["anchor"]):
-                p = cal_pos.get(r["anchor"], -10 ** 9)
+                p = cal_pos.get(r["anchor"], -(10**9))
                 last = seen.get(r["code"])
                 if last is None or p - last >= FWD:
                     thin.append(r)
                     seen[r["code"]] = p
-            st2 = _stat([r[w] for r in thin],
-                        [r[w] - r[bk] for r in thin
-                         if r.get(bk) is not None]) if thin else None
+            st2 = (
+                _stat(
+                    [r[w] for r in thin],
+                    [r[w] - r[bk] for r in thin if r.get(bk) is not None],
+                )
+                if thin
+                else None
+            )
             bk_out[name] = {"raw": st, "thinned": st2}
         ev[w] = bk_out
     by_anchor = {}
     for r in all_rows:
-        a = by_anchor.setdefault(r["anchor"], {"n_full": 0, "ge90": 0,
-                                               "ge85": 0})
+        a = by_anchor.setdefault(r["anchor"], {"n_full": 0, "ge90": 0, "ge85": 0})
         a["n_full"] += 1
         a["ge90"] += 1 if (r["score"] or 0) >= 90 else 0
         a["ge85"] += 1 if (r["score"] or 0) >= 85 else 0
     ev["by_anchor"] = [
-        {"dt": dt, "n_cand": (pass_a_meta.get(dt) or {}).get("n_cand"),
-         "amt_yi": (pass_a_meta.get(dt) or {}).get("amt_yi"),
-         "vol_pct": ((pass_a_meta.get(dt) or {}).get("env") or {})
-         .get("vol_pct"),
-         "bull": ((pass_a_meta.get(dt) or {}).get("env") or {})
-         .get("bull"),
-         **(by_anchor.get(dt) or {"n_full": 0, "ge90": 0, "ge85": 0})}
-        for dt in sorted(pass_a_meta)]
+        {
+            "dt": dt,
+            "n_cand": (pass_a_meta.get(dt) or {}).get("n_cand"),
+            "amt_yi": (pass_a_meta.get(dt) or {}).get("amt_yi"),
+            "vol_pct": ((pass_a_meta.get(dt) or {}).get("env") or {}).get("vol_pct"),
+            "bull": ((pass_a_meta.get(dt) or {}).get("env") or {}).get("bull"),
+            **(by_anchor.get(dt) or {"n_full": 0, "ge90": 0, "ge85": 0}),
+        }
+        for dt in sorted(pass_a_meta)
+    ]
     ev["n_rows"] = len(all_rows)
-    ev["note"] = ("V3评分(78分制,去f1/v3/e1/f3/t2,q_p>35%,s_p<50%) · "
-                  "样本=锚点日完整评分(cov≥0.75,sv体系性缺失豁免)全部入样"
-                  " · 成熟窗口入统计 · 跨除权(adj)>0.5%剔除 · "
-                  "基准=同锚点沪深300 · thinned=同票20交易日去重 · "
-                  "历史锚点情绪/政策/大宗/融资明细=体系性缺失(sv豁免cov)"
-                  " · n<10 不构成结论 · 影子研究不推送")
+    ev["note"] = (
+        "V3评分(78分制,去f1/v3/e1/f3/t2,q_p>35%,s_p<50%) · "
+        "样本=锚点日完整评分(cov≥0.75,sv体系性缺失豁免)全部入样"
+        " · 成熟窗口入统计 · 跨除权(adj)>0.5%剔除 · "
+        "基准=同锚点沪深300 · thinned=同票20交易日去重 · "
+        "历史锚点情绪/政策/大宗/融资明细=体系性缺失(sv豁免cov)"
+        " · n<10 不构成结论 · 影子研究不推送"
+    )
     return ev
 
 
@@ -939,7 +1095,7 @@ def run(args):
         print("9DIM-BT calendar too short: %d" % len(cal))
         return
     pos_start = max(MIN_ANCHOR_BARS, len(cal) - 1 - WINDOW_BARS)
-    anchors = cal[pos_start::args.step]
+    anchors = cal[pos_start :: args.step]
     if anchors[-1] != cal[-1]:
         anchors.append(cal[-1])
     if args.anchor:
@@ -948,12 +1104,15 @@ def run(args):
             print("9DIM-BT anchor %s not in anchor list" % args.anchor)
             return
     if args.last:
-        anchors = anchors[-args.last:]
-    cal_pos = {a: pos_start + i * args.step for i, a in
-               enumerate(cal[pos_start::args.step])}
+        anchors = anchors[-args.last :]
+    cal_pos = {
+        a: pos_start + i * args.step for i, a in enumerate(cal[pos_start :: args.step])
+    }
     cal_pos[cal[-1]] = len(cal) - 1
-    print("anchors=%d (%s .. %s, step=%d)"
-          % (len(anchors), anchors[0], anchors[-1], args.step))
+    print(
+        "anchors=%d (%s .. %s, step=%d)"
+        % (len(anchors), anchors[0], anchors[-1], args.step)
+    )
 
     idx_st = cal[max(0, pos_start - 350)]
     idx688 = _idx_series(nd.INDEX_CODE, idx_st)
@@ -964,55 +1123,95 @@ def run(args):
     meta = pass_a(frames, tds, basic, anchors, idx688)
     anchors = [a for a in anchors if a in meta]
     union = sorted({c for a in anchors for c in meta[a]["cand"]})
-    print("union candidates=%d over %d anchors" % (len(union),
-                                                   len(anchors)))
+    print("union candidates=%d over %d anchors" % (len(union), len(anchors)))
 
     # 样本库已有锚点（幂等）
     old_rows, done = _load_replay_rows(
         REPLAY_JSONL, replace_anchors=anchors if args.force else ()
     )
     todo = list(anchors) if args.force else [a for a in anchors if a not in done]
-    print("todo anchors=%d (done=%d, force=%s)"
-          % (len(todo), len(done), args.force))
+    print("todo anchors=%d (done=%d, force=%s)" % (len(todo), len(done), args.force))
 
     if args.dryrun:
         for dt in anchors[-3:]:
             m = meta[dt]
-            print("  %s cand=%d env=%s" % (dt, m["n_cand"],
-                  {k: m["env"].get(k) for k in
-                   ("idx_above_ma20", "vol_pct", "amount_yi", "bull",
-                    "high_vol", "report_season")}))
+            print(
+                "  %s cand=%d env=%s"
+                % (
+                    dt,
+                    m["n_cand"],
+                    {
+                        k: m["env"].get(k)
+                        for k in (
+                            "idx_above_ma20",
+                            "vol_pct",
+                            "amount_yi",
+                            "bull",
+                            "high_vol",
+                            "report_season",
+                        )
+                    },
+                )
+            )
         print("9DIM-BT dryrun done %.1fs" % (time.time() - t0))
         return
 
     # API 缓存（窗口取全部锚点范围，st 月末取整防逐日失效）
     win_first = int(anchors[0]) if anchors else int(latest)
-    rc_st = "%s01" % datetime.strptime(str(_cal_shift(win_first,
-                                                    RC_WIN_DAYS + 10)),
-                                       "%Y%m%d").strftime("%Y%m")
-    fc_st = "%s01" % datetime.strptime(str(_cal_shift(win_first,
-                                                    FC_WIN_DAYS + 10)),
-                                       "%Y%m%d").strftime("%Y%m")
-    snapshot_stores = (_snapshot_stores(args.source_snapshot, union)
-                       if args.source_snapshot else None)
-    fina_c = (snapshot_stores["fina_indicator"]
-              if snapshot_stores and "fina_indicator" in snapshot_stores
-              else _fina_bt(union) if todo else _load_cache(BT_FIN))
-    rc_c = (snapshot_stores["report_rc"] if snapshot_stores
-            else _rc_bt(union, rc_st) if todo else _load_cache(BT_RC))
-    fc_c = (snapshot_stores["forecast"] if snapshot_stores
-            else _fc_bt(union, fc_st) if todo else _load_cache(BT_FC))
+    rc_st = "%s01" % datetime.strptime(
+        str(_cal_shift(win_first, RC_WIN_DAYS + 10)), "%Y%m%d"
+    ).strftime("%Y%m")
+    fc_st = "%s01" % datetime.strptime(
+        str(_cal_shift(win_first, FC_WIN_DAYS + 10)), "%Y%m%d"
+    ).strftime("%Y%m")
+    snapshot_stores = (
+        _snapshot_stores(args.source_snapshot, union) if args.source_snapshot else None
+    )
+    fina_c = (
+        snapshot_stores["fina_indicator"]
+        if snapshot_stores and "fina_indicator" in snapshot_stores
+        else _fina_bt(union)
+        if todo
+        else _load_cache(BT_FIN)
+    )
+    rc_c = (
+        snapshot_stores["report_rc"]
+        if snapshot_stores
+        else _rc_bt(union, rc_st)
+        if todo
+        else _load_cache(BT_RC)
+    )
+    fc_c = (
+        snapshot_stores["forecast"]
+        if snapshot_stores
+        else _fc_bt(union, fc_st)
+        if todo
+        else _load_cache(BT_FC)
+    )
 
     new_rows = []
     for k, dt in enumerate(todo):
         t1 = time.time()
         prev5 = cal[cal_pos[dt] - 5] if cal_pos[dt] >= 5 else None
-        rows = score_anchor(dt, meta[dt], frames, tds, basic, prev5,
-                            fina_c, rc_c, fc_c, hsgt, snapshot_stores)
+        rows = score_anchor(
+            dt,
+            meta[dt],
+            frames,
+            tds,
+            basic,
+            prev5,
+            fina_c,
+            rc_c,
+            fc_c,
+            hsgt,
+            snapshot_stores,
+        )
         n90 = sum(1 for r in rows if (r["score"] or 0) >= 90)
-        print("  [%d/%d] %s scored=%d ge90=%d  %.1fs"
-              % (k + 1, len(todo), dt, len(rows), n90,
-                 time.time() - t1), flush=True)
+        print(
+            "  [%d/%d] %s scored=%d ge90=%d  %.1fs"
+            % (k + 1, len(todo), dt, len(rows), n90, time.time() - t1),
+            flush=True,
+        )
         new_rows.extend(rows)
         if new_rows and (k + 1) % 5 == 0:
             _atomic_rewrite(REPLAY_JSONL, old_rows + new_rows)
@@ -1028,11 +1227,23 @@ def run(args):
     for name, _lo, _hi in BUCKETS:
         st = (ev["r20"][name] or {}).get("raw")
         if st:
-            print("  %-6s n=%-5d win=%-6s avg=%-7s exc=%-7s p5=%-7s "
-                  "min=%s" % (name, st["n"], st["win"], st["avg"],
-                              st.get("exc"), st["p5"], st["min"]))
-    print("9DIM-BT done: rows=%d anchors=%d  %.1fs"
-          % (len(all_rows), len(meta), time.time() - t0))
+            print(
+                "  %-6s n=%-5d win=%-6s avg=%-7s exc=%-7s p5=%-7s "
+                "min=%s"
+                % (
+                    name,
+                    st["n"],
+                    st["win"],
+                    st["avg"],
+                    st.get("exc"),
+                    st["p5"],
+                    st["min"],
+                )
+            )
+    print(
+        "9DIM-BT done: rows=%d anchors=%d  %.1fs"
+        % (len(all_rows), len(meta), time.time() - t0)
+    )
 
 
 def main():
@@ -1042,8 +1253,11 @@ def main():
     ap.add_argument("--anchor", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dryrun", action="store_true")
-    ap.add_argument("--source-snapshot", default="",
-                    help="使用 staging as-of 完整载荷，禁止公网回源")
+    ap.add_argument(
+        "--source-snapshot",
+        default="",
+        help="使用 staging as-of 完整载荷，禁止公网回源",
+    )
     run(ap.parse_args())
 
 

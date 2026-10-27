@@ -15,6 +15,7 @@ dt 取分型所在「处理后 K 线」组内首根原始 K 线的 dt（必存�
 2) 分型：处理后相邻三根，中间 K 线高、低点均为三者最高 → 顶分型；均为最低
    → 底分型。处理后相邻 K 线不再有包含关系，故顶/底分型严格交替。
 """
+
 from chanlun_data import _f  # 复用同一容错数值转换
 
 
@@ -37,9 +38,11 @@ def _merge_inclusion(bars):
                     p["l"] = min(p["l"], l)
                 p["n"] += 1
                 continue
-            direction = (1 if (h > p["h"] and l > p["l"])
-                         else (-1 if (h < p["h"] and l < p["l"])
-                               else direction))
+            direction = (
+                1
+                if (h > p["h"] and l > p["l"])
+                else (-1 if (h < p["h"] and l < p["l"]) else direction)
+            )
         out.append({"dt": b.get("dt"), "h": h, "l": l, "n": 1})
     return out
 
@@ -49,11 +52,11 @@ def find_fractals(merged):
     fr = []
     for i in range(1, len(merged) - 1):
         a, b, c = merged[i - 1], merged[i], merged[i + 1]
-        if (b["h"] > a["h"] and b["h"] > c["h"]
-                and b["l"] > a["l"] and b["l"] > c["l"]):
+        if b["h"] > a["h"] and b["h"] > c["h"] and b["l"] > a["l"] and b["l"] > c["l"]:
             fr.append({"dt": b["dt"], "type": "顶", "price": b["h"]})
-        elif (b["l"] < a["l"] and b["l"] < c["l"]
-                and b["h"] < a["h"] and b["h"] < c["h"]):
+        elif (
+            b["l"] < a["l"] and b["l"] < c["l"] and b["h"] < a["h"] and b["h"] < c["h"]
+        ):
             fr.append({"dt": b["dt"], "type": "底", "price": b["l"]})
     return fr
 
@@ -62,6 +65,9 @@ def analyze(bars):
     """P2 入口：原始升序 K 线 → 包含处理 + 分型识别结果。"""
     merged = _merge_inclusion(bars or [])
     fr = find_fractals(merged)
-    return {"merged_n": len(merged), "fractals": fr,
-            "top_n": sum(1 for x in fr if x["type"] == "顶"),
-            "bottom_n": sum(1 for x in fr if x["type"] == "底")}
+    return {
+        "merged_n": len(merged),
+        "fractals": fr,
+        "top_n": sum(1 for x in fr if x["type"] == "顶"),
+        "bottom_n": sum(1 for x in fr if x["type"] == "底"),
+    }

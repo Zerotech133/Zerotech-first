@@ -21,6 +21,7 @@
 用法：python xq_seed_parallel.py --instance A   （automation/计划任务触发）
 rc：0=本轮正常结束（含 done 跳过）；1=异常。
 """
+
 import argparse
 import json
 import os
@@ -40,8 +41,19 @@ BLOCK_LIMIT = 6
 CATS = (102, 104, 105, 111)
 
 # 与 xq_seed_auto.SEED_QUEUE 同源同序；奇偶分片保证两实例种子集不相交
-SEED_QUEUE = [20000, 30000, 45000, 75000, 105000, 130000,
-              150000, 170000, 190000, 210000, 230000]
+SEED_QUEUE = [
+    20000,
+    30000,
+    45000,
+    75000,
+    105000,
+    130000,
+    150000,
+    170000,
+    190000,
+    210000,
+    230000,
+]
 SHARDS = {
     "A": [s for i, s in enumerate(SEED_QUEUE) if i % 2 == 0],
     "B": [s for i, s in enumerate(SEED_QUEUE) if i % 2 == 1],
@@ -57,8 +69,11 @@ def paths_for(instance: str) -> dict:
 
 
 def status(instance: str, msg: str) -> None:
-    line = "%s [%s] %s" % (datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                           instance, msg)
+    line = "%s [%s] %s" % (
+        datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        instance,
+        msg,
+    )
     print(line, flush=True)
     # v1.0.1 延迟求值（10-18 疑案2 判例）：模块级常量在 import 时按真实
     # BASE_DIR 求值，测试 monkeypatch BASE_DIR 后仍写生产日志（[A] 泄漏）。
@@ -73,8 +88,13 @@ def load_state(p_state: str) -> dict:
         with open(p_state, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
-        return {"queue_idx": 0, "done": False, "low_streak": 0,
-                "blocked_streak": 0, "rounds": []}
+        return {
+            "queue_idx": 0,
+            "done": False,
+            "low_streak": 0,
+            "blocked_streak": 0,
+            "rounds": [],
+        }
 
 
 def save_state(p_state: str, st: dict) -> None:
@@ -86,6 +106,7 @@ def save_state(p_state: str, st: dict) -> None:
 
 def db_count() -> int:
     import sqlite3
+
     db = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")
     con = sqlite3.connect("file:%s?mode=ro" % db.replace("\\", "/"), uri=True)
     n = con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
@@ -107,6 +128,7 @@ def seed_exhausted(p_cursor: str, seed: int) -> bool:
 
 def lock_acquire(p_lock: str, instance: str) -> bool:
     import time as _t
+
     try:
         if os.path.exists(p_lock):
             age = _t.time() - os.path.getmtime(p_lock)
@@ -157,15 +179,32 @@ def main(argv=None) -> int:
     stamp = datetime.now().strftime("%m%d_%H%M")
     out_path = os.path.join(BASE_DIR, "seed_round_%s_%s_%d.out" % (stamp, inst, seed))
     err_path = os.path.join(BASE_DIR, "seed_round_%s_%s_%d.err" % (stamp, inst, seed))
-    status(inst, "round start seed=%d (shard queue %d/%d) base=%d target=%d"
-           % (seed, idx + 1, len(queue), base, TARGET))
-    with open(out_path, "w", encoding="utf-8") as fo, \
-            open(err_path, "w", encoding="utf-8") as fe:
+    status(
+        inst,
+        "round start seed=%d (shard queue %d/%d) base=%d target=%d"
+        % (seed, idx + 1, len(queue), base, TARGET),
+    )
+    with (
+        open(out_path, "w", encoding="utf-8") as fo,
+        open(err_path, "w", encoding="utf-8") as fe,
+    ):
         rc = subprocess.call(
-            [PY, "-X", "utf8", os.path.join(HERE, "xq_collect_1000.py"),
-             "--seed", str(seed), "--target", str(TARGET),
-             "--cursor-file", p["cursor"]],
-            stdout=fo, stderr=fe, cwd=HERE)
+            [
+                PY,
+                "-X",
+                "utf8",
+                os.path.join(HERE, "xq_collect_1000.py"),
+                "--seed",
+                str(seed),
+                "--target",
+                str(TARGET),
+                "--cursor-file",
+                p["cursor"],
+            ],
+            stdout=fo,
+            stderr=fe,
+            cwd=HERE,
+        )
     after = db_count()
     added = after - base
     status(inst, "round end rc=%d seed=%d added=%d total=%d" % (rc, seed, added, after))
@@ -174,7 +213,8 @@ def main(argv=None) -> int:
         lock_release(p["lock"])
         return 1
     st.setdefault("rounds", []).append(
-        {"at": datetime.now().strftime("%m-%d %H:%M"), "seed": seed, "added": added})
+        {"at": datetime.now().strftime("%m-%d %H:%M"), "seed": seed, "added": added}
+    )
     st["rounds"] = st["rounds"][-30:]
     advanced = False
     if seed_exhausted(p["cursor"], seed):
@@ -185,18 +225,26 @@ def main(argv=None) -> int:
         if st["blocked_streak"] >= BLOCK_LIMIT and not advanced:
             advanced = True
             st["blocked_streak"] = 0
-            status(inst, "seed %d blocked %d rounds -> give up, advance"
-                   % (seed, BLOCK_LIMIT))
+            status(
+                inst,
+                "seed %d blocked %d rounds -> give up, advance" % (seed, BLOCK_LIMIT),
+            )
         else:
-            status(inst, "seed %d blocked round (rc=1 added=%d) streak=%d, stay"
-                   % (seed, added, st["blocked_streak"]))
+            status(
+                inst,
+                "seed %d blocked round (rc=1 added=%d) streak=%d, stay"
+                % (seed, added, st["blocked_streak"]),
+            )
     elif added < LOW_THRESHOLD:
         st["low_streak"] = st.get("low_streak", 0) + 1
         if st["low_streak"] >= LOW_LIMIT and not advanced:
             advanced = True
             st["low_streak"] = 0
-            status(inst, "seed %d barren (%d low rounds) -> advance shard queue"
-                   % (seed, LOW_LIMIT))
+            status(
+                inst,
+                "seed %d barren (%d low rounds) -> advance shard queue"
+                % (seed, LOW_LIMIT),
+            )
     else:
         st["low_streak"] = 0
         st["blocked_streak"] = 0

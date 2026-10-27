@@ -33,6 +33,7 @@
   python kg_build_p2.py --dryrun    # 只打印不落库
   python kg_build_p2.py --sample 688411.SH   # 抽检某标的的人物
 """
+
 import argparse
 import os
 import sys
@@ -63,9 +64,9 @@ def _safe_str(v):
 
 # 人物角色映射：stock_company 字段 → SERVES_AS.role
 ROLE_FIELDS = [
-    ("chairman",  "chairman"),    # 董事长
-    ("manager",   "manager"),     # 总经理
-    ("secretary", "secretary"),   # 董秘
+    ("chairman", "chairman"),  # 董事长
+    ("manager", "manager"),  # 总经理
+    ("secretary", "secretary"),  # 董秘
 ]
 
 
@@ -122,18 +123,22 @@ def build_serves_as_edges(df_company, df_basic):
             if not name:
                 skip_no_name += 1
                 continue
-            edges.append({
-                "src": name,
-                "dst": com_id,
-                "role": role,
-                "validStart": list_date,
-                "validEnd": S.VALID_END_OPEN,
-                "source": "stock_company",
-                "updated_at": now,
-            })
+            edges.append(
+                {
+                    "src": name,
+                    "dst": com_id,
+                    "role": role,
+                    "validStart": list_date,
+                    "validEnd": S.VALID_END_OPEN,
+                    "source": "stock_company",
+                    "updated_at": now,
+                }
+            )
     if skip_no_com or skip_no_ld or skip_no_name:
-        print("  SERVES_AS 跳过: no_com=%d no_list_date=%d no_name=%d"
-              % (skip_no_com, skip_no_ld, skip_no_name))
+        print(
+            "  SERVES_AS 跳过: no_com=%d no_list_date=%d no_name=%d"
+            % (skip_no_com, skip_no_ld, skip_no_name)
+        )
     return edges
 
 
@@ -161,12 +166,13 @@ def build_managers(dryrun=False):
     # 同日批量公告多名高管的行（57.5万行口径实测保持）。
     df = dm.read("stk_managers")
     if df is None or df.empty:
-        raise SystemExit("stk_managers 为空，先跑 "
-                         "tushare_sync.py --batch managers")
+        raise SystemExit("stk_managers 为空，先跑 tushare_sync.py --batch managers")
     print("  源数据: %d 行（dm.read）" % len(df))
     df_comp = dm.read("stock_company")
-    tc2com = {str(r.ts_code): str(r.com_id)
-              for r in df_comp[["ts_code", "com_id"]].dropna().itertuples()}
+    tc2com = {
+        str(r.ts_code): str(r.com_id)
+        for r in df_comp[["ts_code", "com_id"]].dropna().itertuples()
+    }
 
     df = df.dropna(subset=["name"])
     for c in ("begin_date", "end_date", "ann_date"):
@@ -197,8 +203,9 @@ def build_managers(dryrun=False):
         if not title:
             skip_no_title += 1
             continue
-        vs = _safe_str(getattr(r, "begin_date", None)) or \
-            _safe_str(getattr(r, "ann_date", None))
+        vs = _safe_str(getattr(r, "begin_date", None)) or _safe_str(
+            getattr(r, "ann_date", None)
+        )
         if not vs:
             skip_no_date += 1
             continue
@@ -212,46 +219,58 @@ def build_managers(dryrun=False):
             t = t.strip()
             if not t:
                 continue
-            e = {"src": r.name, "dst": tc2com[r.ts_code], "role": t,
-                 "validStart": vs, "validEnd": ve,
-                 "source": "stk_managers", "updated_at": now}
+            e = {
+                "src": r.name,
+                "dst": tc2com[r.ts_code],
+                "role": t,
+                "validStart": vs,
+                "validEnd": ve,
+                "source": "stk_managers",
+                "updated_at": now,
+            }
             if lev:
                 e["lev"] = lev
             edge_rows.append(e)
     edges = len(edge_rows)
 
     # 统计：在任/离任 + 跨公司同名污染面
-    n_open = sum(1 for e in edge_rows
-                 if e["validEnd"] == S.VALID_END_OPEN)
+    n_open = sum(1 for e in edge_rows if e["validEnd"] == S.VALID_END_OPEN)
     name2coms = {}
     for e in edge_rows:
         name2coms.setdefault(e["src"], set()).add(e["dst"])
     dup = {k: len(v) for k, v in name2coms.items() if len(v) > 1}
     top_dup = sorted(dup.items(), key=lambda x: -x[1])[:8]
-    print("  Person（去重后）: %d；SERVES_AS 新边: %d（在任 %d / 离任 %d）"
-          % (len(person_rows), edges, n_open, edges - n_open))
-    print("  跳过: 未映射 ts_code=%d 无日期=%d 无职务=%d 时序倒挂=%d"
-          % (n_miss, skip_no_date, skip_no_title, skip_inverted))
-    print("  跨公司同名: %d 人（一人多职或重名污染不可分辨）；top: %s"
-          % (len(dup),
-             "·".join("%s(%d)" % kv for kv in top_dup) or "无"))
+    print(
+        "  Person（去重后）: %d；SERVES_AS 新边: %d（在任 %d / 离任 %d）"
+        % (len(person_rows), edges, n_open, edges - n_open)
+    )
+    print(
+        "  跳过: 未映射 ts_code=%d 无日期=%d 无职务=%d 时序倒挂=%d"
+        % (n_miss, skip_no_date, skip_no_title, skip_inverted)
+    )
+    print(
+        "  跨公司同名: %d 人（一人多职或重名污染不可分辨）；top: %s"
+        % (len(dup), "·".join("%s(%d)" % kv for kv in top_dup) or "无")
+    )
 
     if dryrun:
         print("DRYRUN 抽样 5 条边:")
         for e in edge_rows[:5]:
-            print("  %s -[role=%s]-> %s [%s,%s]"
-                  % (e["src"], e["role"], e["dst"],
-                     e["validStart"], e["validEnd"]))
+            print(
+                "  %s -[role=%s]-> %s [%s,%s]"
+                % (e["src"], e["role"], e["dst"], e["validStart"], e["validEnd"])
+            )
         return
 
     from kg_client import KgClient
+
     cli = KgClient()
     cli.ensure_schema()
     n_p = cli.upsert_nodes(S.LBL_PERSON, ["name"], person_rows)
     print("  Person upsert: %d" % n_p)
     n_e = upsert_edge_with_role(
-        cli, S.LBL_PERSON, "name", S.LBL_COMPANY, "com_id",
-        S.REL_SERVES_AS, edge_rows)
+        cli, S.LBL_PERSON, "name", S.LBL_COMPANY, "com_id", S.REL_SERVES_AS, edge_rows
+    )
     print("  SERVES_AS upsert: %d" % n_e)
     cli.close()
 
@@ -285,9 +304,10 @@ def build(dryrun=False):
         # dryrun 抽样 5 条边
         print("DRYRUN 抽样 5 条边:")
         for e in edges[:5]:
-            print("  %s -[role=%s]-> %s  [%s, %s]"
-                  % (e["src"], e["role"], e["dst"], e["validStart"],
-                     e["validEnd"]))
+            print(
+                "  %s -[role=%s]-> %s  [%s, %s]"
+                % (e["src"], e["role"], e["dst"], e["validStart"], e["validEnd"])
+            )
         print("[5/5] G5 高管层（stk_managers）dryrun…")
         build_managers(dryrun=True)
         print("DRYRUN 结束，未连接 Neo4j。")
@@ -296,6 +316,7 @@ def build(dryrun=False):
     # 4) 落库
     print("[4/4] 连接 Neo4j 落库…")
     from kg_client import KgClient
+
     cli = KgClient()
     cli.ensure_schema()  # 幂等，会创建 person_name 约束
 
@@ -307,8 +328,8 @@ def build(dryrun=False):
     # 同一人同一公司同一上市日下，不同 role 会冲突（MERGE 单边）。
     # 修复：把 role 也加入 MERGE 键。
     n_e = upsert_edge_with_role(
-        cli, S.LBL_PERSON, "name", S.LBL_COMPANY, "com_id",
-        S.REL_SERVES_AS, edges)
+        cli, S.LBL_PERSON, "name", S.LBL_COMPANY, "com_id", S.REL_SERVES_AS, edges
+    )
     print("  SERVES_AS upsert: %d" % n_e)
     cli.close()
 
@@ -318,8 +339,9 @@ def build(dryrun=False):
     print("=== Phase 2-A 完成 %s ===" % _now())
 
 
-def upsert_edge_with_role(cli, src_lbl, src_key, dst_lbl, dst_key,
-                          rel_type, edge_rows, batch=2000):
+def upsert_edge_with_role(
+    cli, src_lbl, src_key, dst_lbl, dst_key, rel_type, edge_rows, batch=2000
+):
     """带 role 的 SERVES_AS 边 upsert（MERGE 键含 role 防冲突）。
 
     普通人-公司-上市日可能同一个人有多个 role（chairman+manager），
@@ -337,13 +359,12 @@ def upsert_edge_with_role(cli, src_lbl, src_key, dst_lbl, dst_key,
         "MATCH (s:%s {%s: row.src}) "
         "MATCH (d:%s {%s: row.dst}) "
         "MERGE (s)-[r:%s {validStart: row.validStart, role: row.role}]->(d) "
-        "SET %s" % (src_lbl, src_key, dst_lbl, dst_key,
-                    rel_type, set_clause)
+        "SET %s" % (src_lbl, src_key, dst_lbl, dst_key, rel_type, set_clause)
     )
     n = 0
     with cli._session() as s:
         for i in range(0, len(edge_rows), batch):
-            chunk = edge_rows[i:i + batch]
+            chunk = edge_rows[i : i + batch]
             s.run(cy, rows=chunk)
             n += len(chunk)
     return n
@@ -351,13 +372,13 @@ def upsert_edge_with_role(cli, src_lbl, src_key, dst_lbl, dst_key,
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dryrun", action="store_true",
-                    help="只打印不连接 Neo4j")
+    ap.add_argument("--dryrun", action="store_true", help="只打印不连接 Neo4j")
     ap.add_argument("--sample", help="抽检某 ts_code 子图（含人物）")
     args = ap.parse_args()
 
     if args.sample:
         from kg_client import KgClient
+
         cli = KgClient()
         cli.sample_subgraph(args.sample)
         cli.close()

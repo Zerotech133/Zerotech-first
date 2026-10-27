@@ -18,6 +18,7 @@
   python kg_link.py --eval 100           # 小样评测（LLM 交叉验证）
   python kg_link.py --dict                # 词典规模统计
 """
+
 import argparse
 import json
 import os
@@ -32,24 +33,24 @@ from kg_client import KgClient
 # 可链接实体标签 → (唯一键字段, 名称字段, 类别)
 # 与门户 CANVAS_LABELS 对齐（事件类锚点后续再加：Event text 过长噪声大）
 LINK_LABELS = {
-    "Security":   ("ts_code", ("name", "ts_code"), "thing"),
-    "Company":    ("com_name",("com_name",),   "org"),
-    "Concept":    ("name",    ("name",),          "org"),
-    "Product":    ("name",    ("name",),          "thing"),
-    "Industry":   ("name",    ("name",),          "org"),
+    "Security": ("ts_code", ("name", "ts_code"), "thing"),
+    "Company": ("com_name", ("com_name",), "org"),
+    "Concept": ("name", ("name",), "org"),
+    "Product": ("name", ("name",), "thing"),
+    "Industry": ("name", ("name",), "org"),
     "SwL1Industry": ("industry_name", ("industry_name",), "org"),
-    "Theme":      ("name",    ("name",),          "event"),
-    "Segment":    ("name",    ("name", "chain"),  "thing"),
-    "Technique":  ("name",    ("name",),          "thing"),
-    "HotMoney":   ("name",    ("name",),          "person"),
-    "Commentator":("name",    ("name",),          "person"),
-    "Seat":       ("name",    ("name",),          "person"),
-    "Region":     ("name",    ("name",),          "place"),
-    "EXP_Community": ("name", ("name",),          "org"),
+    "Theme": ("name", ("name",), "event"),
+    "Segment": ("name", ("name", "chain"), "thing"),
+    "Technique": ("name", ("name",), "thing"),
+    "HotMoney": ("name", ("name",), "person"),
+    "Commentator": ("name", ("name",), "person"),
+    "Seat": ("name", ("name",), "person"),
+    "Region": ("name", ("name",), "place"),
+    "EXP_Community": ("name", ("name",), "org"),
 }
-MAX_PER_LABEL = 4    # 单标签锚点上限（少而精：L1 门闸 precision>=85% 优先）
-MAX_TOTAL = 12       # 单文本锚点总量上限（长名优先下天然挤出短碎片）
-MIN_NAME_LEN = 2     # 过短名称不参与匹配（1 字名称噪声大）
+MAX_PER_LABEL = 4  # 单标签锚点上限（少而精：L1 门闸 precision>=85% 优先）
+MAX_TOTAL = 12  # 单文本锚点总量上限（长名优先下天然挤出短碎片）
+MIN_NAME_LEN = 2  # 过短名称不参与匹配（1 字名称噪声大）
 # 按 label 分级最小长度：Product 图内 2 字垃圾/通用词多（会议/法律/控股/第二…），
 # Region 2 字大城市名在公告里多含于公司全称（上海/北京/深圳…）误报高，均提为 3；
 # 行业类（Industry/SwL1Industry）2 字名在公告标题里多为公司名碎片（XX证券→证券），提为 3
@@ -61,16 +62,30 @@ STOP_NAMES = {"提供担保", "管理信息"}
 LLM_PROMPT = (
     "你是金融文本实体抽取器。提取下面文本中出现的实体，只收这些类别："
     "公司/股票、产品、概念题材、行业。剔除日期/数字/普通动词。\n"
-    "只输出JSON数组，不要任何其他文字：[\"实体名1\",\"实体名2\"]\n"
+    '只输出JSON数组，不要任何其他文字：["实体名1","实体名2"]\n'
     "文本：%s"
 )
 OLLAMA = "http://127.0.0.1:11434/api/chat"
 MODEL = os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
 
 # 公司名后缀归一（链接结果 vs LLM 文本比较用；词典名保持原样）
-_SUFFIX = ("股份有限公司", "有限责任公司", "有限公司", "股份有限公司分公司",
-           "集团股份有限公司", "集团有限责任公司", "科技集团", "控股集团",
-           "集团有限公司", "股份公司", "集团公司", "股份", "集团", "公司", "科技")
+_SUFFIX = (
+    "股份有限公司",
+    "有限责任公司",
+    "有限公司",
+    "股份有限公司分公司",
+    "集团股份有限公司",
+    "集团有限责任公司",
+    "科技集团",
+    "控股集团",
+    "集团有限公司",
+    "股份公司",
+    "集团公司",
+    "股份",
+    "集团",
+    "公司",
+    "科技",
+)
 _SPACE_RE = re.compile(r"\s+")
 
 
@@ -95,30 +110,35 @@ def name_dictionary(cli=None):
     out = []
     try:
         for lbl, (key, fields, _cat) in LINK_LABELS.items():
-            cond = " OR ".join("toString(n.%s) IS NOT NULL" % f
-                               for f in fields)
+            cond = " OR ".join("toString(n.%s) IS NOT NULL" % f for f in fields)
             if lbl == "Security":
                 # Security 带曾用名/别名（K235 namechange 入图 LIST 属性）
-                cy = ("MATCH (n:Security) WHERE %s RETURN n.%s AS k, "
-                      "coalesce(n.%s, n.%s) AS nm, n.aliases AS aliases"
-                      % (cond, key, fields[0], fields[-1]))
+                cy = (
+                    "MATCH (n:Security) WHERE %s RETURN n.%s AS k, "
+                    "coalesce(n.%s, n.%s) AS nm, n.aliases AS aliases"
+                    % (cond, key, fields[0], fields[-1])
+                )
             else:
-                cy = ("MATCH (n:%s) WHERE %s RETURN n.%s AS k, "
-                      "coalesce(n.%s, n.%s) AS nm, null AS aliases"
-                      % (lbl, cond, key, fields[0], fields[-1]))
+                cy = (
+                    "MATCH (n:%s) WHERE %s RETURN n.%s AS k, "
+                    "coalesce(n.%s, n.%s) AS nm, null AS aliases"
+                    % (lbl, cond, key, fields[0], fields[-1])
+                )
             for r in cli._session().run(cy):
                 nm = r["nm"]
                 if not nm or len(str(nm)) < MIN_NAME_LEN:
                     continue
                 names = [nm]
                 if r["aliases"]:
-                    names += [a for a in (r["aliases"] or [])
-                              if len(str(a)) >= MIN_NAME_LEN]
+                    names += [
+                        a for a in (r["aliases"] or []) if len(str(a)) >= MIN_NAME_LEN
+                    ]
                 for name in dict.fromkeys(str(x).strip() for x in names):
                     if not name:
                         continue
-                    out.append({"id": "%s|%s" % (lbl, r["k"]),
-                                "label": lbl, "name": name})
+                    out.append(
+                        {"id": "%s|%s" % (lbl, r["k"]), "label": lbl, "name": name}
+                    )
     finally:
         if own:
             cli.close()
@@ -149,13 +169,15 @@ def link_text(text, dictionary=None):
         if k in seen:
             continue
         # 已命中更长的同类名时，跳过短名（防子串重复锚）
-        if any(o["id"].split("|")[0] == d["label"]
-               and d["name"] in o["name"] and d["name"] != o["name"]
-               for o in out):
+        if any(
+            o["id"].split("|")[0] == d["label"]
+            and d["name"] in o["name"]
+            and d["name"] != o["name"]
+            for o in out
+        ):
             continue
         seen.add(k)
-        out.append({"id": k, "label": d["label"], "name": d["name"],
-                    "span": pos})
+        out.append({"id": k, "label": d["label"], "name": d["name"], "span": pos})
         if len(out) >= MAX_TOTAL:
             break
     # 按标签截断（防单标签刷屏），然后按出现位置重排
@@ -172,6 +194,7 @@ def link_text(text, dictionary=None):
 def ollama_ok():
     try:
         import requests
+
         r = requests.get(OLLAMA.replace("/api/chat", "/api/tags"), timeout=3)
         return r.status_code == 200
     except Exception:
@@ -181,10 +204,14 @@ def ollama_ok():
 def llm_extract(text, timeout=45):
     """LLM 独立提取锚点 → [归一化名称]。失败返回 None。"""
     import requests
-    body = {"model": MODEL, "stream": False, "think": False,
-            "messages": [{"role": "user",
-                          "content": LLM_PROMPT % str(text)[:300]}],
-            "options": {"temperature": 0.1, "num_predict": 120}}
+
+    body = {
+        "model": MODEL,
+        "stream": False,
+        "think": False,
+        "messages": [{"role": "user", "content": LLM_PROMPT % str(text)[:300]}],
+        "options": {"temperature": 0.1, "num_predict": 120},
+    }
     for _ in range(2):
         try:
             r = requests.post(OLLAMA, json=body, timeout=timeout)
@@ -195,8 +222,7 @@ def llm_extract(text, timeout=45):
             arr = json.loads(m.group(0))
             if not isinstance(arr, list):
                 continue
-            return [_norm(x) for x in arr
-                    if isinstance(x, str) and len(_norm(x)) >= 2]
+            return [_norm(x) for x in arr if isinstance(x, str) and len(_norm(x)) >= 2]
         except Exception:
             time.sleep(1.0)
     return None
@@ -208,8 +234,9 @@ def eval_sample(n=100, seed=7):
     输出「锚点一致率：precision X% / recall Y%（n=锚点数, 文本 m）」，
     precision（我方锚点被 LLM 确认的比例）≥85% 视为通过门闸。
     """
-    evt_f = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         "data", "semantica", "events.jsonl")
+    evt_f = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "data", "semantica", "events.jsonl"
+    )
     rows = []
     with open(evt_f, encoding="utf-8") as f:
         for line in f:
@@ -238,25 +265,35 @@ def eval_sample(n=100, seed=7):
         tp += len(a_names & llm_set)
         fp += len(a_names - llm_set)
         llm_anchors += len(llm_set)
-        details.append({"text": text, "anchors": sorted(a_names),
-                        "llm": sorted(llm_set),
-                        "fp": sorted(a_names - llm_set),
-                        "miss": sorted(llm_set - a_names)})
+        details.append(
+            {
+                "text": text,
+                "anchors": sorted(a_names),
+                "llm": sorted(llm_set),
+                "fp": sorted(a_names - llm_set),
+                "miss": sorted(llm_set - a_names),
+            }
+        )
         if i % 10 == 0:
-            print("  %d/%d (tp=%d fp=%d llm=%d)" % (i, len(sample),
-                                                     tp, fp, llm_anchors),
-                  flush=True)
+            print(
+                "  %d/%d (tp=%d fp=%d llm=%d)" % (i, len(sample), tp, fp, llm_anchors),
+                flush=True,
+            )
     prec = 100.0 * tp / (tp + fp) if (tp + fp) else 0.0
     rec = 100.0 * tp / llm_anchors if llm_anchors else 0.0
-    print("\n锚点一致率: precision %.1f%% / recall %.1f%% "
-          "（我方锚点 %d，LLM 锚点 %d，文本 %d 条，含锚文本 %d 条）"
-          % (prec, rec, tp + fp, llm_anchors, len(sample),
-             texts_with_anchor))
-    print("门闸：precision>=85%% %s"
-          % ("通过" if prec >= 85 else "未过（先修再全量）"))
+    print(
+        "\n锚点一致率: precision %.1f%% / recall %.1f%% "
+        "（我方锚点 %d，LLM 锚点 %d，文本 %d 条，含锚文本 %d 条）"
+        % (prec, rec, tp + fp, llm_anchors, len(sample), texts_with_anchor)
+    )
+    print("门闸：precision>=85%% %s" % ("通过" if prec >= 85 else "未过（先修再全量）"))
     # 落评估明细（每文本 anchors/llm/fp/miss，供噪音归因）
-    detail_f = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "data", "semantica", "kg_link_eval_detail.jsonl")
+    detail_f = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "data",
+        "semantica",
+        "kg_link_eval_detail.jsonl",
+    )
     with open(detail_f, "w", encoding="utf-8") as f:
         for d in details:
             f.write(json.dumps(d, ensure_ascii=False) + "\n")
@@ -274,8 +311,8 @@ def main():
     if args.dict:
         d = name_dictionary()
         from collections import Counter
-        print("词典 %d 条：%s"
-              % (len(d), dict(Counter(x["label"] for x in d))))
+
+        print("词典 %d 条：%s" % (len(d), dict(Counter(x["label"] for x in d))))
         return
     if args.eval:
         eval_sample(args.eval)

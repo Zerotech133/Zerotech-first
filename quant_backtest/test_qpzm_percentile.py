@@ -10,6 +10,7 @@
 判例式注释沿用仓库风格。运行：
   "C:/Program Files/Python311/python.exe" test_qpzm_percentile.py
 """
+
 import json
 import os
 import sys
@@ -31,9 +32,11 @@ def _write_batches(rows):
 
 def _day(date, scores, source="live"):
     """一天 live/replay 行：score=None 的票模拟 replay 口径。"""
-    return {"date": date, "source": source,
-            "picks": [{"code": "sz%06d" % i, "score": s}
-                      for i, s in enumerate(scores)]}
+    return {
+        "date": date,
+        "source": source,
+        "picks": [{"code": "sz%06d" % i, "score": s} for i, s in enumerate(scores)],
+    }
 
 
 def test_percentile_edges():
@@ -76,10 +79,8 @@ def test_switch_off():
     assert all("percentile" not in r for r in out), "开关关 → 无字段"
     # 开关缺省（cfg 里无 qpzm 节）→ 默认开，字段应加上
     dflt = {"qpzm": {}}
-    out2 = RR.annotate_percentile([dict(r) for r in res],
-                                  batches_path=path, cfg=dflt)
-    assert all(r.get("percentile") is not None for r in out2), \
-        "缺省 true：字段注入"
+    out2 = RR.annotate_percentile([dict(r) for r in res], batches_path=path, cfg=dflt)
+    assert all(r.get("percentile") is not None for r in out2), "缺省 true：字段注入"
     os.remove(path)
     print("PASS 路径3 开关关闭不加字段/缺省true")
 
@@ -91,16 +92,16 @@ def test_history_fallback():
     path = _write_batches(rows)
     hist = RR.load_hist_scores(path)
     assert hist == [10.0, 20.0, 30.0], "不足 60 日 → 全部可得"
-    res = [{"name": "甲", "score": 20}]     # 与 20 并列计高位 → P33.3
-    out = RR.annotate_percentile(res, batches_path=path,
-                                 cfg={"qpzm": {}})
+    res = [{"name": "甲", "score": 20}]  # 与 20 并列计高位 → P33.3
+    out = RR.annotate_percentile(res, batches_path=path, cfg={"qpzm": {}})
     assert out[0]["percentile"] == 33.3, "小样本分位=33.3（一位小数）"
     os.remove(path)
     # 零历史（文件不存在）→ 不加字段不炸
-    out2 = RR.annotate_percentile([{"name": "乙", "score": 80}],
-                                  batches_path=os.path.join(
-                                      tempfile.gettempdir(), "_no_such.jsonl"),
-                                  cfg={"qpzm": {}})
+    out2 = RR.annotate_percentile(
+        [{"name": "乙", "score": 80}],
+        batches_path=os.path.join(tempfile.gettempdir(), "_no_such.jsonl"),
+        cfg={"qpzm": {}},
+    )
     assert "percentile" not in out2[0], "零历史 fail-open 不加字段"
     print("PASS 路径4 历史不足回退/零历史兜底")
 

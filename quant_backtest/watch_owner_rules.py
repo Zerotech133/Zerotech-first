@@ -160,9 +160,12 @@ def _label(value: object, pattern: re.Pattern[str] = _LABEL) -> bool:
 
 
 def _instant(value: object) -> bool:
-    return (type(value) is datetime and value.tzinfo is not None
-            and value.utcoffset() is not None
-            and value.utcoffset().total_seconds() == 0)
+    return (
+        type(value) is datetime
+        and value.tzinfo is not None
+        and value.utcoffset() is not None
+        and value.utcoffset().total_seconds() == 0
+    )
 
 
 def _window(start: datetime, end: datetime, as_of: datetime) -> bool:
@@ -177,18 +180,30 @@ def _trusted(authority: RuleAuthority, method: str, *args: object) -> Any:
 
 
 def _identity(key: SecurityKey) -> None:
-    _ensure(type(key) is SecurityKey and _label(key.market, _MARKET)
-            and _label(key.code, _CODE) and _label(key.owner), "IDENTITY_INVALID")
+    _ensure(
+        type(key) is SecurityKey
+        and _label(key.market, _MARKET)
+        and _label(key.code, _CODE)
+        and _label(key.owner),
+        "IDENTITY_INVALID",
+    )
 
 
-def _access(authority: RuleAuthority, context: object, key: SecurityKey,
-            operation: str) -> Principal:
+def _access(
+    authority: RuleAuthority, context: object, key: SecurityKey, operation: str
+) -> Principal:
     _identity(key)
     principal = _trusted(authority, "authenticate", context)
-    _ensure(type(principal) is Principal and _label(principal.principal_id)
-            and principal.principal_id == key.owner, "ACCESS_DENIED")
-    _ensure(_trusted(authority, "authorize", principal, key, operation) is True,
-            "ACCESS_DENIED")
+    _ensure(
+        type(principal) is Principal
+        and _label(principal.principal_id)
+        and principal.principal_id == key.owner,
+        "ACCESS_DENIED",
+    )
+    _ensure(
+        _trusted(authority, "authorize", principal, key, operation) is True,
+        "ACCESS_DENIED",
+    )
     return principal
 
 
@@ -197,68 +212,113 @@ def event_digest(event: RuleEvent) -> str:
     if type(event) is not RuleEvent:
         raise ValueError("EVENT_INVALID")
     data = {
-        "key": {"market": event.key.market, "code": event.key.code,
-                "owner": event.key.owner},
-        "event_id": event.event_id, "sequence": event.sequence,
-        "previous_hash": event.previous_hash, "action": event.action,
-        "rule_id": event.rule_id, "rule_version": event.rule_version,
-        "input_version": event.input_version, "principal_id": event.principal_id,
+        "key": {
+            "market": event.key.market,
+            "code": event.key.code,
+            "owner": event.key.owner,
+        },
+        "event_id": event.event_id,
+        "sequence": event.sequence,
+        "previous_hash": event.previous_hash,
+        "action": event.action,
+        "rule_id": event.rule_id,
+        "rule_version": event.rule_version,
+        "input_version": event.input_version,
+        "principal_id": event.principal_id,
         "issued_at": event.issued_at.isoformat(),
         "valid_from": event.valid_from.isoformat(),
         "valid_until": event.valid_until.isoformat(),
-        "rule_body": event.rule_body, "consent_id": event.consent_id,
+        "rule_body": event.rule_body,
+        "consent_id": event.consent_id,
     }
-    return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False,
-                                     separators=(",", ":")).encode("utf-8")).hexdigest()
+    return hashlib.sha256(
+        json.dumps(
+            data, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
 
 
-def _consent(authority: RuleAuthority, event: RuleEvent, as_of: datetime, *,
-             require_active: bool = True) -> None:
+def _consent(
+    authority: RuleAuthority,
+    event: RuleEvent,
+    as_of: datetime,
+    *,
+    require_active: bool = True,
+) -> None:
     _ensure(_label(event.consent_id), "CONSENT_REQUIRED")
     proof = _trusted(authority, "cost_consent", event.consent_id)
     digest = hashlib.sha256(event.rule_body.encode("utf-8")).hexdigest()
-    _ensure(type(proof) is ConsentProof and proof.consent_id == event.consent_id
-            and proof.key == event.key and proof.principal_id == event.principal_id
-            and proof.rule_id == event.rule_id
-            and type(proof.rule_version) is int
-            and proof.rule_version == event.rule_version
-            and proof.rule_sha256 == digest
-            and (not require_active or proof.revoked is False)
-            and _window(proof.valid_from, proof.valid_until, event.issued_at)
-            and proof.valid_until > event.valid_from
-            and (not require_active or _window(proof.valid_from, proof.valid_until,
-                                               as_of)), "CONSENT_INVALID")
+    _ensure(
+        type(proof) is ConsentProof
+        and proof.consent_id == event.consent_id
+        and proof.key == event.key
+        and proof.principal_id == event.principal_id
+        and proof.rule_id == event.rule_id
+        and type(proof.rule_version) is int
+        and proof.rule_version == event.rule_version
+        and proof.rule_sha256 == digest
+        and (not require_active or proof.revoked is False)
+        and _window(proof.valid_from, proof.valid_until, event.issued_at)
+        and proof.valid_until > event.valid_from
+        and (not require_active or _window(proof.valid_from, proof.valid_until, as_of)),
+        "CONSENT_INVALID",
+    )
 
 
-def _validate_event(event: RuleEvent, key: SecurityKey, principal: Principal,
-                    expected_seq: int, previous: str, last_time: datetime | None,
-                    as_of: datetime, states: dict[str, RuleEvent],
-                    tombstones: set[str], authority: RuleAuthority,
-                    seen_ids: set[str], last_input_version: int) -> None:
-    _ensure(type(event) is RuleEvent and type(event.key) is SecurityKey
-            and event.key == key and _label(event.event_id)
-            and event.event_id not in seen_ids
-            and type(event.sequence) is int and event.sequence == expected_seq
-            and event.previous_hash == previous and event.action in _ACTIONS
-            and _label(event.rule_id) and type(event.rule_version) is int
-            and event.rule_version > 0 and type(event.input_version) is int
-            and event.input_version > last_input_version
-            and event.principal_id == principal.principal_id
-            and _instant(event.issued_at) and event.issued_at <= as_of
-            and (last_time is None or event.issued_at >= last_time)
-            and _instant(event.valid_from) and _instant(event.valid_until)
-            and event.valid_from < event.valid_until, "EVENT_INVALID")
+def _validate_event(
+    event: RuleEvent,
+    key: SecurityKey,
+    principal: Principal,
+    expected_seq: int,
+    previous: str,
+    last_time: datetime | None,
+    as_of: datetime,
+    states: dict[str, RuleEvent],
+    tombstones: set[str],
+    authority: RuleAuthority,
+    seen_ids: set[str],
+    last_input_version: int,
+) -> None:
+    _ensure(
+        type(event) is RuleEvent
+        and type(event.key) is SecurityKey
+        and event.key == key
+        and _label(event.event_id)
+        and event.event_id not in seen_ids
+        and type(event.sequence) is int
+        and event.sequence == expected_seq
+        and event.previous_hash == previous
+        and event.action in _ACTIONS
+        and _label(event.rule_id)
+        and type(event.rule_version) is int
+        and event.rule_version > 0
+        and type(event.input_version) is int
+        and event.input_version > last_input_version
+        and event.principal_id == principal.principal_id
+        and _instant(event.issued_at)
+        and event.issued_at <= as_of
+        and (last_time is None or event.issued_at >= last_time)
+        and _instant(event.valid_from)
+        and _instant(event.valid_until)
+        and event.valid_from < event.valid_until,
+        "EVENT_INVALID",
+    )
     existing = states.get(event.rule_id)
     _ensure(event.rule_id not in tombstones, "TOMBSTONE_REPLAY")
     if event.action == "CREATE":
         _ensure(existing is None and event.rule_version == 1, "VERSION_REPLAY")
     else:
-        _ensure(existing is not None and event.rule_version == existing.rule_version + 1,
-                "VERSION_REPLAY")
+        _ensure(
+            existing is not None and event.rule_version == existing.rule_version + 1,
+            "VERSION_REPLAY",
+        )
     if event.action in ("CREATE", "UPDATE"):
-        _ensure(type(event.rule_body) is str and bool(event.rule_body.strip())
-                and len(event.rule_body.encode("utf-8")) <= 65536,
-                "RULE_BODY_INVALID")
+        _ensure(
+            type(event.rule_body) is str
+            and bool(event.rule_body.strip())
+            and len(event.rule_body.encode("utf-8")) <= 65536,
+            "RULE_BODY_INVALID",
+        )
         classification = _trusted(authority, "classify_rule", event.rule_body)
         _ensure(classification in ("STANDARD", "COST"), "RULE_CLASSIFICATION_UNKNOWN")
         if classification == "COST":
@@ -271,23 +331,36 @@ def _validate_event(event: RuleEvent, key: SecurityKey, principal: Principal,
     else:
         # Tombstones take effect exactly at issuance. Reject both backdated and
         # future effective starts so the persisted event has no timing ambiguity.
-        _ensure(event.rule_body == "" and event.consent_id == ""
-                and event.valid_from == event.issued_at
-                and _window(event.valid_from, event.valid_until, event.issued_at),
-                "TOMBSTONE_INVALID")
+        _ensure(
+            event.rule_body == ""
+            and event.consent_id == ""
+            and event.valid_from == event.issued_at
+            and _window(event.valid_from, event.valid_until, event.issued_at),
+            "TOMBSTONE_INVALID",
+        )
         tombstones.add(event.rule_id)
         states.pop(event.rule_id)
     seen_ids.add(event.event_id)
 
 
-def _replay(events: Sequence[RuleEvent], key: SecurityKey, principal: Principal,
-            as_of: datetime, authority: RuleAuthority) -> tuple[dict[str, RuleEvent], str, int]:
+def _replay(
+    events: Sequence[RuleEvent],
+    key: SecurityKey,
+    principal: Principal,
+    as_of: datetime,
+    authority: RuleAuthority,
+) -> tuple[dict[str, RuleEvent], str, int]:
     _ensure(type(events) in (tuple, list), "EVENT_STREAM_INVALID")
     head = _trusted(authority, "stream_head", key)
-    _ensure(type(head) is StreamHead and head.key == key
-            and type(head.count) is int and head.count >= 0
-            and _label(head.digest, _SHA) and head.count == len(events),
-            "STREAM_ANCHOR_INVALID")
+    _ensure(
+        type(head) is StreamHead
+        and head.key == key
+        and type(head.count) is int
+        and head.count >= 0
+        and _label(head.digest, _SHA)
+        and head.count == len(events),
+        "STREAM_ANCHOR_INVALID",
+    )
     previous = _GENESIS
     states: dict[str, RuleEvent] = {}
     tombstones: set[str] = set()
@@ -295,8 +368,20 @@ def _replay(events: Sequence[RuleEvent], key: SecurityKey, principal: Principal,
     last_time: datetime | None = None
     last_input_version = 0
     for index, event in enumerate(events, 1):
-        _validate_event(event, key, principal, index, previous, last_time, as_of,
-                        states, tombstones, authority, seen_ids, last_input_version)
+        _validate_event(
+            event,
+            key,
+            principal,
+            index,
+            previous,
+            last_time,
+            as_of,
+            states,
+            tombstones,
+            authority,
+            seen_ids,
+            last_input_version,
+        )
         previous = event_digest(event)
         last_time = event.issued_at
         last_input_version = event.input_version
@@ -304,9 +389,14 @@ def _replay(events: Sequence[RuleEvent], key: SecurityKey, principal: Principal,
     return states, previous, last_input_version
 
 
-def read_owner_rules(events: Sequence[RuleEvent], *, key: SecurityKey,
-                     context: object, as_of: datetime,
-                     authority: RuleAuthority) -> RuleVerdict:
+def read_owner_rules(
+    events: Sequence[RuleEvent],
+    *,
+    key: SecurityKey,
+    context: object,
+    as_of: datetime,
+    authority: RuleAuthority,
+) -> RuleVerdict:
     """Read only authenticated owner's current rules after full anchored replay."""
     try:
         _ensure(_instant(as_of), "TIME_INVALID")
@@ -316,25 +406,50 @@ def read_owner_rules(events: Sequence[RuleEvent], *, key: SecurityKey,
         for event in states.values():
             if _window(event.valid_from, event.valid_until, as_of):
                 classification = _trusted(authority, "classify_rule", event.rule_body)
-                _ensure(classification in ("STANDARD", "COST"),
-                        "RULE_CLASSIFICATION_UNKNOWN")
+                _ensure(
+                    classification in ("STANDARD", "COST"),
+                    "RULE_CLASSIFICATION_UNKNOWN",
+                )
                 if classification == "COST":
                     _consent(authority, event, as_of)
                 else:
                     _ensure(event.consent_id == "", "CONSENT_UNEXPECTED")
-                views.append(RuleView(event.rule_id, event.rule_version,
-                                      event.input_version, event.rule_body,
-                                      classification, event.valid_from, event.valid_until))
-        return RuleVerdict("VERIFIED_OFFLINE", "OK", tuple(sorted(views, key=lambda v: v.rule_id)))
-    except (_Rejected, TypeError, ValueError, AttributeError, OverflowError,
-            UnicodeError) as exc:
-        return RuleVerdict("UNVERIFIED", str(exc) if isinstance(exc, _Rejected)
-                           else "INPUT_INVALID")
+                views.append(
+                    RuleView(
+                        event.rule_id,
+                        event.rule_version,
+                        event.input_version,
+                        event.rule_body,
+                        classification,
+                        event.valid_from,
+                        event.valid_until,
+                    )
+                )
+        return RuleVerdict(
+            "VERIFIED_OFFLINE", "OK", tuple(sorted(views, key=lambda v: v.rule_id))
+        )
+    except (
+        _Rejected,
+        TypeError,
+        ValueError,
+        AttributeError,
+        OverflowError,
+        UnicodeError,
+    ) as exc:
+        return RuleVerdict(
+            "UNVERIFIED", str(exc) if isinstance(exc, _Rejected) else "INPUT_INVALID"
+        )
 
 
-def propose_owner_rule(events: Sequence[RuleEvent], command: RuleCommand, *,
-                       key: SecurityKey, context: object, as_of: datetime,
-                       authority: RuleAuthority) -> RuleVerdict:
+def propose_owner_rule(
+    events: Sequence[RuleEvent],
+    command: RuleCommand,
+    *,
+    key: SecurityKey,
+    context: object,
+    as_of: datetime,
+    authority: RuleAuthority,
+) -> RuleVerdict:
     """Prepare an uncommitted event; external writer must persist and anchor it.
 
     The returned proposal has no effect in read_owner_rules until the independent
@@ -343,27 +458,54 @@ def propose_owner_rule(events: Sequence[RuleEvent], command: RuleCommand, *,
     try:
         _ensure(_instant(as_of) and type(command) is RuleCommand, "INPUT_INVALID")
         principal = _access(authority, context, key, "write")
-        states, previous, last_input_version = _replay(events, key, principal,
-                                                         as_of, authority)
-        _ensure(type(command.input_version) is int
-                and command.input_version > last_input_version, "VERSION_REPLAY")
-        event = RuleEvent(key, command.event_id, len(events) + 1, previous,
-                          command.action, command.rule_id, command.rule_version,
-                          command.input_version, principal.principal_id, as_of,
-                          command.valid_from, command.valid_until,
-                          command.rule_body, command.consent_id)
-        tombstones = {old.rule_id for old in events
-                      if old.action in ("DELETE", "REVOKE")}
-        _validate_event(event, key, principal, len(events) + 1, previous,
-                        events[-1].issued_at if events else None, as_of,
-                        states, tombstones, authority,
-                        {old.event_id for old in events}, last_input_version)
+        states, previous, last_input_version = _replay(
+            events, key, principal, as_of, authority
+        )
+        _ensure(
+            type(command.input_version) is int
+            and command.input_version > last_input_version,
+            "VERSION_REPLAY",
+        )
+        event = RuleEvent(
+            key,
+            command.event_id,
+            len(events) + 1,
+            previous,
+            command.action,
+            command.rule_id,
+            command.rule_version,
+            command.input_version,
+            principal.principal_id,
+            as_of,
+            command.valid_from,
+            command.valid_until,
+            command.rule_body,
+            command.consent_id,
+        )
+        tombstones = {
+            old.rule_id for old in events if old.action in ("DELETE", "REVOKE")
+        }
+        _validate_event(
+            event,
+            key,
+            principal,
+            len(events) + 1,
+            previous,
+            events[-1].issued_at if events else None,
+            as_of,
+            states,
+            tombstones,
+            authority,
+            {old.event_id for old in events},
+            last_input_version,
+        )
         if event.action in ("CREATE", "UPDATE"):
             # Historical replay permits subsequently withdrawn consent solely to
             # reach tombstones; a fresh proposal must have live consent right now.
             classification = _trusted(authority, "classify_rule", event.rule_body)
-            _ensure(classification in ("STANDARD", "COST"),
-                    "RULE_CLASSIFICATION_UNKNOWN")
+            _ensure(
+                classification in ("STANDARD", "COST"), "RULE_CLASSIFICATION_UNKNOWN"
+            )
             if classification == "COST":
                 _consent(authority, event, as_of)
             else:
@@ -371,7 +513,14 @@ def propose_owner_rule(events: Sequence[RuleEvent], command: RuleCommand, *,
                 # validated COST revision carrying an independent consent ID.
                 _ensure(event.consent_id == "", "RULE_CLASSIFICATION_CHANGED")
         return RuleVerdict("PROPOSED_UNCOMMITTED", "OK", proposal=event)
-    except (_Rejected, TypeError, ValueError, AttributeError, OverflowError,
-            UnicodeError) as exc:
-        return RuleVerdict("UNVERIFIED", str(exc) if isinstance(exc, _Rejected)
-                           else "INPUT_INVALID")
+    except (
+        _Rejected,
+        TypeError,
+        ValueError,
+        AttributeError,
+        OverflowError,
+        UnicodeError,
+    ) as exc:
+        return RuleVerdict(
+            "UNVERIFIED", str(exc) if isinstance(exc, _Rejected) else "INPUT_INVALID"
+        )

@@ -31,6 +31,7 @@ pos_alert_state 同款机制）；CN 市场交易时段门控（--force 跳过�
   --now    注入当前时刻（测试/回放）
   --force  跳过交易时段门控
 """
+
 import json
 import os
 import sys
@@ -47,10 +48,10 @@ import signal_pool  # noqa: E402
 CST = timezone(timedelta(hours=8))
 
 # —— 影子期初值，全部可调（模块常量）——
-PULL_FACTOR = 0.99      # 回踩触发线：entry_px × 0.99（-1%）
-BREAK_FACTOR = 1.03     # 突破触发线：entry_px × 1.03（+3%）
-COOLDOWN_HOURS = 4      # 同票同方向冷却
-POLL_MINUTES = 30       # 轮询间隔
+PULL_FACTOR = 0.99  # 回踩触发线：entry_px × 0.99（-1%）
+BREAK_FACTOR = 1.03  # 突破触发线：entry_px × 1.03（+3%）
+COOLDOWN_HOURS = 4  # 同票同方向冷却
+POLL_MINUTES = 30  # 轮询间隔
 TIER_ALLOWED = ("T1", "T2")
 
 POOL_PATH = os.path.join(ROOT, "portal", "data", "todays_picks.json")
@@ -62,8 +63,7 @@ def log(msg):
     try:
         os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
         with open(LOG_PATH, "a", encoding="utf-8") as f:
-            f.write("[%s] %s\n" % (
-                datetime.now(CST).strftime("%m-%d %H:%M:%S"), msg))
+            f.write("[%s] %s\n" % (datetime.now(CST).strftime("%m-%d %H:%M:%S"), msg))
     except Exception:
         pass
 
@@ -103,9 +103,17 @@ def load_watchlist(pool_path=POOL_PATH):
         if not picked or not picked[0]:
             continue
         entry_px, reg, dt = picked
-        out.append({"code": st["code"], "name": st.get("name") or st["code"],
-                    "tier": st.get("tier"), "entry_px": float(entry_px),
-                    "reg": reg, "dt": dt, "n_hit": st.get("n_hit")})
+        out.append(
+            {
+                "code": st["code"],
+                "name": st.get("name") or st["code"],
+                "tier": st.get("tier"),
+                "entry_px": float(entry_px),
+                "reg": reg,
+                "dt": dt,
+                "n_hit": st.get("n_hit"),
+            }
+        )
     return out
 
 
@@ -121,6 +129,7 @@ def fetch_quotes(codes):
     """新浪实时行情（watch_positions 同款接口，真实路径仅 main 使用）。"""
     sys.path.insert(0, os.path.join(ROOT, "news_collector"))
     from quote_snapshot import fetch_quotes as _fq
+
     return _fq(codes)
 
 
@@ -151,15 +160,14 @@ def in_cooldown(state, code, direction, now, hours=COOLDOWN_HOURS):
     if not last:
         return False
     try:
-        return now - datetime.strptime(
-            last, "%Y-%m-%d %H:%M:%S").replace(tzinfo=now.tzinfo) \
-            < timedelta(hours=hours)
+        return now - datetime.strptime(last, "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=now.tzinfo
+        ) < timedelta(hours=hours)
     except Exception:
         return False
 
 
-def evaluate(price, entry_px,
-             pull_factor=PULL_FACTOR, break_factor=BREAK_FACTOR):
+def evaluate(price, entry_px, pull_factor=PULL_FACTOR, break_factor=BREAK_FACTOR):
     """触发判定：pull 优先（价格不可能同时回踩与突破）。"""
     if price <= entry_px * pull_factor:
         return "pull"
@@ -171,30 +179,57 @@ def evaluate(price, entry_px,
 def push_feishu(text):
     """watch_positions 同款推送路径（runner.push_feishu，延迟 import 零副作用）。"""
     import runner
+
     return runner.push_feishu(text)
 
 
-def run_once(fetch, now, pool_path=POOL_PATH, state_path=STATE_PATH,
-             pool_jsonl=None, send=False, dry=False, push=None, gate=True):
+def run_once(
+    fetch,
+    now,
+    pool_path=POOL_PATH,
+    state_path=STATE_PATH,
+    pool_jsonl=None,
+    send=False,
+    dry=False,
+    push=None,
+    gate=True,
+):
     """单轮扫描。fetch(codes)->[{code:新浪码, price:现价}]；push(text)->bool。
 
     返回 summary dict：{n_watch, n_trigger, triggers, pushed, appended, skipped_gate}。
     触发动作：落池（signal_pool）+ 写冷却 + （--send 且非 reg_flag_only）推送。
     """
     if gate and not mkt_open_cn(now):
-        return {"n_watch": 0, "n_trigger": 0, "triggers": [],
-                "pushed": False, "appended": 0, "skipped_gate": True}
+        return {
+            "n_watch": 0,
+            "n_trigger": 0,
+            "triggers": [],
+            "pushed": False,
+            "appended": 0,
+            "skipped_gate": True,
+        }
     picks = load_watchlist(pool_path)
     if not picks:
-        return {"n_watch": 0, "n_trigger": 0, "triggers": [],
-                "pushed": False, "appended": 0, "skipped_gate": False}
+        return {
+            "n_watch": 0,
+            "n_trigger": 0,
+            "triggers": [],
+            "pushed": False,
+            "appended": 0,
+            "skipped_gate": False,
+        }
     try:
-        quotes = {q["code"]: q for q in fetch([to_sina(p["code"])
-                                               for p in picks])}
+        quotes = {q["code"]: q for q in fetch([to_sina(p["code"]) for p in picks])}
     except Exception as e:
         log("fetch FAIL %s" % str(e)[:120])
-        return {"n_watch": len(picks), "n_trigger": 0, "triggers": [],
-                "pushed": False, "appended": 0, "skipped_gate": False}
+        return {
+            "n_watch": len(picks),
+            "n_trigger": 0,
+            "triggers": [],
+            "pushed": False,
+            "appended": 0,
+            "skipped_gate": False,
+        }
 
     state = {} if dry else load_state(state_path)
     triggers = []
@@ -208,8 +243,9 @@ def run_once(fetch, now, pool_path=POOL_PATH, state_path=STATE_PATH,
             continue
         # 择势门：reg=down 的 break 降级（落池不提醒），reg 与 entry_px 同源
         reg_flag_only = bool(d == "break" and p["reg"] == "down")
-        triggers.append(dict(p, direction=d, price=float(price),
-                             reg_flag_only=reg_flag_only))
+        triggers.append(
+            dict(p, direction=d, price=float(price), reg_flag_only=reg_flag_only)
+        )
         state.setdefault(p["code"], {})[d] = now.strftime("%Y-%m-%d %H:%M:%S")
 
     appended = 0
@@ -218,11 +254,20 @@ def run_once(fetch, now, pool_path=POOL_PATH, state_path=STATE_PATH,
         if dry:
             continue
         ev = signal_pool.build_signal(
-            code=t["code"], name=t["name"], direction=t["direction"],
-            trigger_price=t["price"], entry_px=t["entry_px"], now=now,
-            reg=t["reg"], source_dt=t["dt"], tier=t["tier"],
-            n_hit=t.get("n_hit"), reg_flag_only=t["reg_flag_only"],
-            pool_path=pool_path, pool_jsonl=pool_jsonl)
+            code=t["code"],
+            name=t["name"],
+            direction=t["direction"],
+            trigger_price=t["price"],
+            entry_px=t["entry_px"],
+            now=now,
+            reg=t["reg"],
+            source_dt=t["dt"],
+            tier=t["tier"],
+            n_hit=t.get("n_hit"),
+            reg_flag_only=t["reg_flag_only"],
+            pool_path=pool_path,
+            pool_jsonl=pool_jsonl,
+        )
         try:
             _, ok = signal_pool.append_event(ev, path=pool_jsonl)
         except signal_pool.signal_consumer.SignalPointError as e:
@@ -234,20 +279,42 @@ def run_once(fetch, now, pool_path=POOL_PATH, state_path=STATE_PATH,
         ok_push = (push or push_feishu)(
             "【选票池触发·影子】%s %s\n· %s(%s) %s 触发：现 %.2f ≤/≥ 参考买 %.2f"
             " · tier %s · reg %s · 冷却 %dh · 纸面模拟不构成投资建议"
-            % (now.strftime("%m-%d %H:%M"), "回踩" if t["direction"] == "pull"
-               else "突破", t["name"], t["code"], t["direction"],
-               t["price"], t["entry_px"], t["tier"], t["reg"],
-               COOLDOWN_HOURS))
+            % (
+                now.strftime("%m-%d %H:%M"),
+                "回踩" if t["direction"] == "pull" else "突破",
+                t["name"],
+                t["code"],
+                t["direction"],
+                t["price"],
+                t["entry_px"],
+                t["tier"],
+                t["reg"],
+                COOLDOWN_HOURS,
+            )
+        )
         pushed = pushed or bool(ok_push)
     if not dry:
         save_state(state, state_path)
         if triggers:
-            log("triggers=%s appended=%d pushed=%s" % (
-                json.dumps([(t["code"], t["direction"]) for t in triggers],
-                           ensure_ascii=False), appended, pushed))
-    return {"n_watch": len(picks), "n_trigger": len(triggers),
-            "triggers": triggers, "pushed": pushed, "appended": appended,
-            "skipped_gate": False}
+            log(
+                "triggers=%s appended=%d pushed=%s"
+                % (
+                    json.dumps(
+                        [(t["code"], t["direction"]) for t in triggers],
+                        ensure_ascii=False,
+                    ),
+                    appended,
+                    pushed,
+                )
+            )
+    return {
+        "n_watch": len(picks),
+        "n_trigger": len(triggers),
+        "triggers": triggers,
+        "pushed": pushed,
+        "appended": appended,
+        "skipped_gate": False,
+    }
 
 
 def main():
@@ -258,20 +325,41 @@ def main():
     now = datetime.now(CST)
     if "--now" in sys.argv:
         raw = sys.argv[sys.argv.index("--now") + 1]
-        now = (datetime.strptime(raw, "%Y-%m-%d %H:%M")
-               if "-" in raw and raw.count("-") >= 2 and "T" not in raw
-               else datetime.fromisoformat(raw))
+        now = (
+            datetime.strptime(raw, "%Y-%m-%d %H:%M")
+            if "-" in raw and raw.count("-") >= 2 and "T" not in raw
+            else datetime.fromisoformat(raw)
+        )
         now = now.replace(tzinfo=CST)
     while True:
         rep = run_once(fetch_quotes, now, send=send, dry=dry, gate=not force)
-        print("POOL_WATCH ok watch=%d trigger=%d appended=%d pushed=%s%s" % (
-            rep["n_watch"], rep["n_trigger"], rep["appended"], rep["pushed"],
-            " gate_skip" if rep["skipped_gate"] else "")
-            + (" " + json.dumps(
-                [(t["name"], t["direction"], round(t["price"], 2),
-                  "flag_only" if t["reg_flag_only"] else "")
-                 for t in rep["triggers"]], ensure_ascii=False)
-               if rep["triggers"] and dry else ""))
+        print(
+            "POOL_WATCH ok watch=%d trigger=%d appended=%d pushed=%s%s"
+            % (
+                rep["n_watch"],
+                rep["n_trigger"],
+                rep["appended"],
+                rep["pushed"],
+                " gate_skip" if rep["skipped_gate"] else "",
+            )
+            + (
+                " "
+                + json.dumps(
+                    [
+                        (
+                            t["name"],
+                            t["direction"],
+                            round(t["price"], 2),
+                            "flag_only" if t["reg_flag_only"] else "",
+                        )
+                        for t in rep["triggers"]
+                    ],
+                    ensure_ascii=False,
+                )
+                if rep["triggers"] and dry
+                else ""
+            )
+        )
         if once or dry:
             return
         time.sleep(POLL_MINUTES * 60)

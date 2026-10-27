@@ -28,6 +28,7 @@ r"""雪球 canonical 双轨格式适配层（工单 WO-QT-20261020-079）。
   norm_from_suffix("600519.SH") -> "SH600519"
   norm_to_suffix_many(["SZ300750", "00700"])  -> (["300750.SZ", None], 1)
 """
+
 from __future__ import annotations
 
 import re

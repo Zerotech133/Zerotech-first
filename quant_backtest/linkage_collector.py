@@ -33,6 +33,7 @@
   python linkage_collector.py 301216.SZ              # 现判现收（三周期）
   python linkage_collector.py 301216.SZ --periods 1d
 """
+
 import argparse
 import json
 import os
@@ -47,7 +48,7 @@ LOCK = SHADOW + ".lock"
 LOG = "C:/Temp/linkage_collector.log"
 STALE_LOCK_SEC = 120
 
-_seen = None          # 进程内幂等缓存：set("ref|code|period|signal")
+_seen = None  # 进程内幂等缓存：set("ref|code|period|signal")
 _block_cache = {}
 
 
@@ -60,8 +61,7 @@ def _log(msg):
 
 
 def _key(rec):
-    return "%s|%s|%s|%s" % (rec["ref_date"], rec["code"], rec["period"],
-                            rec["signal"])
+    return "%s|%s|%s|%s" % (rec["ref_date"], rec["code"], rec["period"], rec["signal"])
 
 
 def _load_seen():
@@ -77,7 +77,7 @@ def _load_seen():
                     try:
                         seen.add(_key(json.loads(line)))
                     except Exception:
-                        continue     # 坏行跳过，不阻断
+                        continue  # 坏行跳过，不阻断
         _seen = seen
     return _seen
 
@@ -93,7 +93,7 @@ def _acquire_lock(timeout=30):
         except FileExistsError:
             try:
                 if time.time() - os.stat(LOCK).st_mtime > STALE_LOCK_SEC:
-                    os.remove(LOCK)          # 陈旧锁回收
+                    os.remove(LOCK)  # 陈旧锁回收
                     continue
             except OSError:
                 pass
@@ -113,6 +113,7 @@ def _resolve_block(code):
     if code not in _block_cache:
         try:
             import linkage as LK
+
             _block_cache[code] = LK.resolve_block(code)
         except Exception as e:
             _log("resolve_block %s fail: %s" % (code, e))
@@ -136,11 +137,18 @@ def collect(code, res, name=None, source="linkage_signals"):
         if not isinstance(d, dict) or not d.get("signals"):
             continue
         sig_ctx = d.get("ctx") or d.get("sig_ctx") or {}
-        ref = d.get("stock_last_dt") or \
-            (d.get("meta", {}) or {}).get("stock", {}).get("last") or ""
+        ref = (
+            d.get("stock_last_dt")
+            or (d.get("meta", {}) or {}).get("stock", {}).get("last")
+            or ""
+        )
         rec_base = {
-            "ts": now, "code": code, "name": name, "period": per,
-            "block": blk, "snapshot": {
+            "ts": now,
+            "code": code,
+            "name": name,
+            "period": per,
+            "block": blk,
+            "snapshot": {
                 "last_pct": d.get("last_pct"),
                 "excess_vs_block": sig_ctx.get("excess_vs_block"),
                 "prev_low": sig_ctx.get("prev_low"),
@@ -158,7 +166,7 @@ def collect(code, res, name=None, source="linkage_signals"):
             rec["note"] = s.get("note")
             k = _key(rec)
             if k in seen:
-                continue                      # 幂等：同日同股同周期同信号
+                continue  # 幂等：同日同股同周期同信号
             out.append(rec)
             seen.add(k)
     if not out:
@@ -184,22 +192,23 @@ def collect(code, res, name=None, source="linkage_signals"):
             return []
         fd = os.open(SHADOW, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
         try:
-            payload = "".join(
-                json.dumps(r, ensure_ascii=False) + "\n" for r in out)
+            payload = "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in out)
             os.write(fd, payload.encode("utf-8"))
             os.fsync(fd)
         finally:
             os.close(fd)
     finally:
         _release_lock()
-    _log("collect %s: +%d (%s)" % (code, len(out),
-                                   ",".join(r["period"] + "#" + r["signal"]
-                                            for r in out)))
+    _log(
+        "collect %s: +%d (%s)"
+        % (code, len(out), ",".join(r["period"] + "#" + r["signal"] for r in out))
+    )
     return out
 
 
 def _judge_and_collect(code, periods, source="linkage_collector"):
     from linkage_signals import judge
+
     res = judge(code, periods)
     recs = collect(code, res, source=source)
     return res, recs
@@ -212,6 +221,7 @@ def main():
     a = ap.parse_args()
     res, recs = _judge_and_collect(a.code, a.periods.split(","))
     from linkage_signals import report
+
     print(report(res, a.code))
     print("shadow +%d -> %s" % (len(recs), SHADOW))
     return 0

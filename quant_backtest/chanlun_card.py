@@ -25,6 +25,7 @@ v2 增量（K22，学习素材 5 批 18 图 + 开源对标 chan.py 定标参数�
   python chanlun_card.py 301216.SZ            # 卡面
   python chanlun_card.py 301216.SZ --json     # 原始 JSON
 """
+
 import json
 import sys
 
@@ -33,12 +34,12 @@ from chanlun_signal import analyze as sig_analyze
 
 # 三级联立（聊天口径）与装载根数
 LEVELS = {"1d": 500, "30m": 1500, "5m": 2400}
-ANCHOR_BIS = 8        # 锚位回看笔数（近端分型极值窗）
-SIG_WIN = 20          # 「近端信号」窗口（K 线根数）
+ANCHOR_BIS = 8  # 锚位回看笔数（近端分型极值窗）
+SIG_WIN = 20  # 「近端信号」窗口（K 线根数）
 
 # v2 定标参数（开源对标吸收，推演卡展示口径、不拦截）
-KP_NEAR_PCT = 2.5     # 灯1/灯3 距离阈值：现价距锚/均线 ±2.5% 内=到位
-BS2_STOP_MAX = 5.0    # 2 买止损距离铁律（%）：交易纪律图「亏损 5% 坚决止损」
+KP_NEAR_PCT = 2.5  # 灯1/灯3 距离阈值：现价距锚/均线 ±2.5% 内=到位
+BS2_STOP_MAX = 5.0  # 2 买止损距离铁律（%）：交易纪律图「亏损 5% 坚决止损」
 BS2_RETRACE_MAX = 0.618  # chan.py max_bs2_rate：二买回撤黄金分割上限
 
 
@@ -63,9 +64,9 @@ def _trend(bis, last_px=None):
     hl_prev = dns[-2]["e_price"] if len(dns) > 1 else None
     if last_px and bis:
         if bis[-1]["dir"] == 1 and hh is not None and last_px > hh:
-            hh = last_px            # 上笔延伸新高
+            hh = last_px  # 上笔延伸新高
         if bis[-1]["dir"] == -1 and hl is not None and last_px < hl:
-            hl = last_px            # 下笔延伸新低
+            hl = last_px  # 下笔延伸新低
     state = "range"
     if None not in (hh, hl, hh_prev, hl_prev):
         if hh > hh_prev and hl > hl_prev:
@@ -78,8 +79,14 @@ def _trend(bis, last_px=None):
         dn_amp = bis[-1]["e_price"] - bis[-1]["s_price"]
         if dn_amp < 0 < up_amp and up_amp >= 2 * (-dn_amp):
             short_adj = True
-    return {"state": state, "short_adjust": short_adj,
-            "hh": hh, "hh_prev": hh_prev, "hl": hl, "hl_prev": hl_prev}
+    return {
+        "state": state,
+        "short_adjust": short_adj,
+        "hh": hh,
+        "hh_prev": hh_prev,
+        "hl": hl,
+        "hl_prev": hl_prev,
+    }
 
 
 def level_view(code, period):
@@ -117,39 +124,62 @@ def level_view(code, period):
 
     # 锚位：近 ANCHOR_BIS 笔端点极值（分型极值）+ 中枢上下沿
     win = bis[-ANCHOR_BIS:]
-    his = [b["e_price"] for b in win if b["dir"] == 1] + \
-          [b["s_price"] for b in win if b["dir"] == -1]
-    los = [b["s_price"] for b in win if b["dir"] == 1] + \
-          [b["e_price"] for b in win if b["dir"] == -1]
+    his = [b["e_price"] for b in win if b["dir"] == 1] + [
+        b["s_price"] for b in win if b["dir"] == -1
+    ]
+    los = [b["s_price"] for b in win if b["dir"] == 1] + [
+        b["e_price"] for b in win if b["dir"] == -1
+    ]
 
     cutoff_idx = max(0, len(bars) - SIG_WIN)
     cutoff = bars[cutoff_idx]["dt"]
     sigs = [s for s in st.get("signals", []) if s["dt"] >= cutoff]
 
     closes = [b["c"] for b in bars]
-    _BT = 8     # 持仓卡用的近端笔尾（含趋势判定所需 ups/dns）
+    _BT = 8  # 持仓卡用的近端笔尾（含趋势判定所需 ups/dns）
     return {
-        "bars_n": len(bars), "range": [bars[0]["dt"], bars[-1]["dt"]],
+        "bars_n": len(bars),
+        "range": [bars[0]["dt"], bars[-1]["dt"]],
         "last_px": bars[-1]["c"],
-        "ma20": _ma(closes, 20), "ma60": _ma(closes, 60),
+        "ma20": _ma(closes, 20),
+        "ma60": _ma(closes, 60),
         "trend": _trend(bis, bars[-1]["c"]),
-        "bis_tail": [{k: b[k] for k in
-                      ("s_dt", "e_dt", "s_price", "e_price", "dir")}
-                     for b in bis[-_BT:]],
-        "last_bi": {"dir": "上" if last["dir"] == 1 else "下",
-                    "s_dt": last["s_dt"], "e_dt": last["e_dt"],
-                    "s_price": last["s_price"], "e_price": last["e_price"],
-                    "pending": True,
-                    "confirmed_tail": prev is not None},
-        "last_fractal": ({"dt": last_fr["dt"], "type": last_fr["type"],
-                          "price": last_fr["price"]} if last_fr else None),
-        "pivot": ({"zg": pv["zg"], "zd": pv["zd"], "s_dt": pv["s_dt"],
-                   "e_dt": pv["e_dt"], "state": pv_state} if pv else None),
-        "anchors": {"high_%d" % ANCHOR_BIS: max(his) if his else None,
-                    "low_%d" % ANCHOR_BIS: min(los) if los else None,
-                    "pivot_zg": pv["zg"] if pv else None,
-                    "pivot_zd": pv["zd"] if pv else None},
-        "signals_recent": sigs,      # v2：保留全字段（bei/bei2/mbei/tbe/vv）
+        "bis_tail": [
+            {k: b[k] for k in ("s_dt", "e_dt", "s_price", "e_price", "dir")}
+            for b in bis[-_BT:]
+        ],
+        "last_bi": {
+            "dir": "上" if last["dir"] == 1 else "下",
+            "s_dt": last["s_dt"],
+            "e_dt": last["e_dt"],
+            "s_price": last["s_price"],
+            "e_price": last["e_price"],
+            "pending": True,
+            "confirmed_tail": prev is not None,
+        },
+        "last_fractal": (
+            {"dt": last_fr["dt"], "type": last_fr["type"], "price": last_fr["price"]}
+            if last_fr
+            else None
+        ),
+        "pivot": (
+            {
+                "zg": pv["zg"],
+                "zd": pv["zd"],
+                "s_dt": pv["s_dt"],
+                "e_dt": pv["e_dt"],
+                "state": pv_state,
+            }
+            if pv
+            else None
+        ),
+        "anchors": {
+            "high_%d" % ANCHOR_BIS: max(his) if his else None,
+            "low_%d" % ANCHOR_BIS: min(los) if los else None,
+            "pivot_zg": pv["zg"] if pv else None,
+            "pivot_zd": pv["zd"] if pv else None,
+        },
+        "signals_recent": sigs,  # v2：保留全字段（bei/bei2/mbei/tbe/vv）
     }
 
 
@@ -172,8 +202,7 @@ def refine_label(sigs):
             else:
                 lab = "1类·动量衰减"
         elif t == "2买":
-            earlier = any(x["type"] == "2买" and x["dt"] < s["dt"]
-                          for x in sigs[:i])
+            earlier = any(x["type"] == "2买" and x["dt"] < s["dt"] for x in sigs[:i])
             lab = "2s·类二" if earlier else "2买"
         elif t == "3买":
             f1 = [x for x in sigs[:i] if x["type"] == "1买" and x["dt"] < s["dt"]]
@@ -181,8 +210,7 @@ def refine_label(sigs):
                 lab = "3·盘整三买"
             else:
                 pv_s = s.get("_pv_s_dt")
-                lab = ("3a·趋势三买" if (pv_s and f1[-1]["dt"] < pv_s)
-                       else "3b·转折三买")
+                lab = "3a·趋势三买" if (pv_s and f1[-1]["dt"] < pv_s) else "3b·转折三买"
         elif t.endswith("卖"):
             lab = t
         else:
@@ -210,28 +238,40 @@ def two_buy(views):
             px = s["price"]
             pos = None
             if pv and px:
-                pos = ("上方" if px > pv["zg"] else
-                       "内部" if px >= pv["zd"] else "下方")
+                pos = "上方" if px > pv["zg"] else "内部" if px >= pv["zd"] else "下方"
             stop = round((px - lo) / px * 100, 1) if (px and lo) else None
             # 回撤比例：前 1 买价 → 之间高点 → 本 2 买价
             retrace = None
-            f1 = [x for x in v.get("signals_recent", [])
-                  if x["type"] == "1买" and x["dt"] < s["dt"]]
+            f1 = [
+                x
+                for x in v.get("signals_recent", [])
+                if x["type"] == "1买" and x["dt"] < s["dt"]
+            ]
             if f1 and px:
                 lo0 = f1[-1]["price"]
                 hi = v["anchors"]["high_%d" % ANCHOR_BIS]
                 if lo0 and hi and hi > lo0:
                     retrace = round((hi - px) / (hi - lo0), 3)
-            ok = ((stop is None or stop <= BS2_STOP_MAX) and
-                  (retrace is None or retrace <= BS2_RETRACE_MAX))
-            found.append({"level": p, "sig_dt": s["dt"], "sig_px": px,
-                          "pos": pos, "stop_dist_pct": stop,
-                          "retrace": retrace, "pass": ok})
+            ok = (stop is None or stop <= BS2_STOP_MAX) and (
+                retrace is None or retrace <= BS2_RETRACE_MAX
+            )
+            found.append(
+                {
+                    "level": p,
+                    "sig_dt": s["dt"],
+                    "sig_px": px,
+                    "pos": pos,
+                    "stop_dist_pct": stop,
+                    "retrace": retrace,
+                    "pass": ok,
+                }
+            )
     best = None
     if found:
-        best = min(found, key=lambda x: (x["stop_dist_pct"]
-                                         if x["stop_dist_pct"] is not None
-                                         else 999))
+        best = min(
+            found,
+            key=lambda x: x["stop_dist_pct"] if x["stop_dist_pct"] is not None else 999,
+        )
     return {"best": best, "all": found}
 
 
@@ -248,19 +288,18 @@ def key_point(views):
         return None
     px = d["last_px"]
     # 灯1：中枢底距离
-    zd = (d.get("pivot") or {}).get("zd") or \
-        d["anchors"]["low_%d" % ANCHOR_BIS]
+    zd = (d.get("pivot") or {}).get("zd") or d["anchors"]["low_%d" % ANCHOR_BIS]
     l1 = {"on": False, "detail": "无锚"}
     if zd and px:
         pct = (px - zd) / px * 100
         if pct <= KP_NEAR_PCT:
-            l1 = {"on": True,
-                  "detail": "锚 %.2f · 现价 %s（%+.1f%%）"
-                            % (zd, "已到/破下方" if pct <= 0 else "上方",
-                               pct)}
+            l1 = {
+                "on": True,
+                "detail": "锚 %.2f · 现价 %s（%+.1f%%）"
+                % (zd, "已到/破下方" if pct <= 0 else "上方", pct),
+            }
         else:
-            l1 = {"on": False, "detail": "锚 %.2f · 现价上方 %+.1f%% 未到"
-                                         % (zd, pct)}
+            l1 = {"on": False, "detail": "锚 %.2f · 现价上方 %+.1f%% 未到" % (zd, pct)}
     # 灯2：次级别走势完成
     l2 = {"on": False, "detail": "次级别不可用"}
     for p in ("30m", "5m"):
@@ -268,10 +307,16 @@ def key_point(views):
         if not sv:
             continue
         lb, fr = sv["last_bi"], sv.get("last_fractal")
-        if lb["dir"] == "下" and fr and fr["type"] == "底" \
-                and str(fr["dt"]) >= str(lb["e_dt"]):
-            l2 = {"on": True, "detail": "%s 末分型 底@%.2f（%s）"
-                  % (p, fr["price"], fr["dt"])}
+        if (
+            lb["dir"] == "下"
+            and fr
+            and fr["type"] == "底"
+            and str(fr["dt"]) >= str(lb["e_dt"])
+        ):
+            l2 = {
+                "on": True,
+                "detail": "%s 末分型 底@%.2f（%s）" % (p, fr["price"], fr["dt"]),
+            }
         elif lb["dir"] == "下":
             l2 = {"on": False, "detail": "%s 末笔向下延伸中·无底分型" % p}
         else:
@@ -284,19 +329,28 @@ def key_point(views):
         pct = (px - ma20) / px * 100
         bull = ma20 > ma60
         if bull and abs(pct) <= KP_NEAR_PCT:
-            l3 = {"on": True, "detail": "MA20 %.2f · 距 %+.1f%% · 多头排列"
-                  % (ma20, pct)}
+            l3 = {
+                "on": True,
+                "detail": "MA20 %.2f · 距 %+.1f%% · 多头排列" % (ma20, pct),
+            }
         elif not bull:
             l3 = {"on": False, "detail": "MA20<MA60 空头排列·等反转"}
         else:
-            l3 = {"on": False, "detail": "MA20 %.2f · 距 %+.1f%% 未到"
-                  % (ma20, pct)}
+            l3 = {"on": False, "detail": "MA20 %.2f · 距 %+.1f%% 未到" % (ma20, pct)}
     lights = [l1, l2, l3]
     n_on = sum(1 for x in lights if x["on"])
-    verdict = ("三灯齐 · 关键点到（果断评估开仓）" if n_on == 3 else
-               "差 %d 灯 · 继续等（不到关键位不动手）" % (3 - n_on))
-    return {"pivot_bottom": l1, "sub_done": l2, "ma_ok": l3,
-            "n_on": n_on, "verdict": verdict}
+    verdict = (
+        "三灯齐 · 关键点到（果断评估开仓）"
+        if n_on == 3
+        else "差 %d 灯 · 继续等（不到关键位不动手）" % (3 - n_on)
+    )
+    return {
+        "pivot_bottom": l1,
+        "sub_done": l2,
+        "ma_ok": l3,
+        "n_on": n_on,
+        "verdict": verdict,
+    }
 
 
 def qjt(views):
@@ -305,8 +359,9 @@ def qjt(views):
     d = views.get("1d")
     if not d:
         return out
-    mains = [s for s in d.get("signals_recent", [])
-             if s["type"] in ("1买", "2买", "3买")]
+    mains = [
+        s for s in d.get("signals_recent", []) if s["type"] in ("1买", "2买", "3买")
+    ]
     for p in ("30m", "5m"):
         sv = views.get(p)
         if not sv:
@@ -314,11 +369,17 @@ def qjt(views):
         subs = [s for s in sv.get("signals_recent", []) if s["type"] == "1买"]
         for m in mains:
             for s in subs:
-                out.append({"main_lv": "1d", "main": m["type"],
-                            "main_dt": m["dt"], "sub_lv": p,
-                            "sub_dt": s["dt"],
-                            "note": "日线 %s（%s）+ %s 一买（%s）联立"
-                                    % (m["type"], m["dt"], p, s["dt"])})
+                out.append(
+                    {
+                        "main_lv": "1d",
+                        "main": m["type"],
+                        "main_dt": m["dt"],
+                        "sub_lv": p,
+                        "sub_dt": s["dt"],
+                        "note": "日线 %s（%s）+ %s 一买（%s）联立"
+                        % (m["type"], m["dt"], p, s["dt"]),
+                    }
+                )
     return out
 
 
@@ -331,12 +392,15 @@ def classify(views):
         if not v or not v.get("pivot"):
             continue
         zg, zd = v["pivot"]["zg"], v["pivot"]["zd"]
-        hi, lo = v["anchors"]["high_%d" % ANCHOR_BIS], \
-            v["anchors"]["low_%d" % ANCHOR_BIS]
-        out.append("[%s] 站稳 %.2f → 有机会；放量站上 %.2f → 转折成立"
-                   % (lab[p], zg, hi if hi else zg))
-        out.append("[%s] 跌破 %.2f 后反抽不进 → %s 3卖"
-                   % (lab[p], zd, lab[p]))
+        hi, lo = (
+            v["anchors"]["high_%d" % ANCHOR_BIS],
+            v["anchors"]["low_%d" % ANCHOR_BIS],
+        )
+        out.append(
+            "[%s] 站稳 %.2f → 有机会；放量站上 %.2f → 转折成立"
+            % (lab[p], zg, hi if hi else zg)
+        )
+        out.append("[%s] 跌破 %.2f 后反抽不进 → %s 3卖" % (lab[p], zd, lab[p]))
         if lo:
             out.append("[%s] 回踩 %.2f 不破 → 2 买观察位" % (lab[p], lo))
     return out
@@ -351,11 +415,14 @@ def card(code):
         for s in v.get("signals_recent", []):
             s["_pv_s_dt"] = pv_s
         v["sig_labels"] = refine_label(v["signals_recent"])
-    return {"code": code, "levels": views,
-            "classify": classify(views),
-            "two_buy": two_buy(views),
-            "key_point": key_point(views),
-            "qjt": qjt(views)}
+    return {
+        "code": code,
+        "levels": views,
+        "classify": classify(views),
+        "two_buy": two_buy(views),
+        "key_point": key_point(views),
+        "qjt": qjt(views),
+    }
 
 
 def _fd(dt):
@@ -366,8 +433,7 @@ def _fd(dt):
 
 def _print(c):
     """卡面人类可读打印（对齐聊天语言）。"""
-    lab = {"1d": "日线（定方向）", "30m": "30 分钟（定段落）",
-           "5m": "5 分钟（定时点）"}
+    lab = {"1d": "日线（定方向）", "30m": "30 分钟（定段落）", "5m": "5 分钟（定时点）"}
     print("═" * 62)
     print("多级别推演卡 · %s" % c["code"])
     kp = c.get("key_point")
@@ -391,24 +457,43 @@ def _print(c):
             tr_s += "·长升短调✓"
         if tr.get("hh") and tr.get("hl"):
             tr_s += "（HH %.2f / HL %.2f）" % (tr["hh"], tr["hl"])
-        print("%s：%d 根，现价 %.2f · 趋势 %s"
-              % (lab[p], v["bars_n"], v["last_px"], tr_s))
-        print("  末笔：%s %s→%s（%.2f→%.2f）· %s"
-              % (b["dir"], _fd(b["s_dt"]), _fd(b["e_dt"]),
-                 b["s_price"], b["e_price"], pend))
+        print(
+            "%s：%d 根，现价 %.2f · 趋势 %s" % (lab[p], v["bars_n"], v["last_px"], tr_s)
+        )
+        print(
+            "  末笔：%s %s→%s（%.2f→%.2f）· %s"
+            % (
+                b["dir"],
+                _fd(b["s_dt"]),
+                _fd(b["e_dt"]),
+                b["s_price"],
+                b["e_price"],
+                pend,
+            )
+        )
         if pv:
-            print("  中枢：ZG %.2f / ZD %.2f（%s~%s）· %s"
-                  % (pv["zg"], pv["zd"], pv["s_dt"][:10], pv["e_dt"][:10],
-                     pv["state"]))
+            print(
+                "  中枢：ZG %.2f / ZD %.2f（%s~%s）· %s"
+                % (pv["zg"], pv["zd"], pv["s_dt"][:10], pv["e_dt"][:10], pv["state"])
+            )
         a = v["anchors"]
-        print("  锚位：高 %.2f / 低 %.2f（近 %d 笔）"
-              % (a["high_%d" % ANCHOR_BIS] or 0,
-                 a["low_%d" % ANCHOR_BIS] or 0, ANCHOR_BIS))
+        print(
+            "  锚位：高 %.2f / 低 %.2f（近 %d 笔）"
+            % (
+                a["high_%d" % ANCHOR_BIS] or 0,
+                a["low_%d" % ANCHOR_BIS] or 0,
+                ANCHOR_BIS,
+            )
+        )
         if v["signals_recent"]:
             lbls = v.get("sig_labels") or refine_label(v["signals_recent"])
-            print("  近端信号：%s" % "；".join(
-                "%s@%.2f(%s)" % (lb, s["price"], _fd(s["dt"]))
-                for s, lb in zip(v["signals_recent"][-3:], lbls[-3:])))
+            print(
+                "  近端信号：%s"
+                % "；".join(
+                    "%s@%.2f(%s)" % (lb, s["price"], _fd(s["dt"]))
+                    for s, lb in zip(v["signals_recent"][-3:], lbls[-3:])
+                )
+            )
     print("─" * 62)
     print("分类应对：")
     for line in c["classify"]:
@@ -417,18 +502,38 @@ def _print(c):
     best = tb.get("best")
     print("─" * 62)
     if best:
-        print("2 买质量：%s级 %s @%.2f · 位置[%s] · 止损 %.1f%%%s · 回撤 %s%s"
-              % (best["level"], _fd(best["sig_dt"]), best["sig_px"],
-                 best["pos"] or "?", best["stop_dist_pct"],
-                 "" if (best["stop_dist_pct"] is None or
-                        best["stop_dist_pct"] <= BS2_STOP_MAX) else " ⚠超5%铁律",
-                 ("%.3f" % best["retrace"]) if best["retrace"] is not None
-                 else "无1买基准",
-                 "" if best["pass"] else " · ⚠不合规"))
+        print(
+            "2 买质量：%s级 %s @%.2f · 位置[%s] · 止损 %.1f%%%s · 回撤 %s%s"
+            % (
+                best["level"],
+                _fd(best["sig_dt"]),
+                best["sig_px"],
+                best["pos"] or "?",
+                best["stop_dist_pct"],
+                ""
+                if (
+                    best["stop_dist_pct"] is None
+                    or best["stop_dist_pct"] <= BS2_STOP_MAX
+                )
+                else " ⚠超5%铁律",
+                ("%.3f" % best["retrace"])
+                if best["retrace"] is not None
+                else "无1买基准",
+                "" if best["pass"] else " · ⚠不合规",
+            )
+        )
         for x in tb.get("all", [])[1:]:
-            print("        另：%s级 %s @%.2f [%s] stop %s retr %s"
-                  % (x["level"], _fd(x["sig_dt"]), x["sig_px"],
-                     x["pos"] or "?", x["stop_dist_pct"], x["retrace"]))
+            print(
+                "        另：%s级 %s @%.2f [%s] stop %s retr %s"
+                % (
+                    x["level"],
+                    _fd(x["sig_dt"]),
+                    x["sig_px"],
+                    x["pos"] or "?",
+                    x["stop_dist_pct"],
+                    x["retrace"],
+                )
+            )
     else:
         print("2 买质量：近端无 2 买信号")
     q = c.get("qjt") or []

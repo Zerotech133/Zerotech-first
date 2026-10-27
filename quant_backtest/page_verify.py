@@ -17,6 +17,7 @@ $OutputEncoding 默认 ASCII 的坑（脚本内中文变 `?`）。固化为本�
     --host       覆盖默认 127.0.0.1:8091
     --count      额外统计这些子串的出现次数（可与关键词检查同用）
 """
+
 import argparse
 import sys
 import urllib.request
@@ -24,18 +25,22 @@ import urllib.request
 
 def main():
     ap = argparse.ArgumentParser(description="门户页面关键词验证")
-    ap.add_argument("url", nargs="?", default="/bt-9dim",
-                    help="页面路径，如 /bt-9dim（默认）")
+    ap.add_argument(
+        "url", nargs="?", default="/bt-9dim", help="页面路径，如 /bt-9dim（默认）"
+    )
     ap.add_argument("keywords", nargs="*", help="需命中的关键词列表")
     ap.add_argument("--host", default="127.0.0.1:8091")
-    ap.add_argument("--count", nargs="*", default=[],
-                    help="额外统计出现次数的子串")
+    ap.add_argument("--count", nargs="*", default=[], help="额外统计出现次数的子串")
     args = ap.parse_args()
 
-    full = args.url if args.url.startswith("http") \
+    full = (
+        args.url
+        if args.url.startswith("http")
         else "http://%s%s" % (args.host, args.url)
+    )
     op = urllib.request.build_opener(
-        urllib.request.ProxyHandler({}))          # 显式绕过系统代理
+        urllib.request.ProxyHandler({})
+    )  # 显式绕过系统代理
     try:
         h = op.open(full, timeout=30).read().decode("utf-8")
     except Exception as ex:

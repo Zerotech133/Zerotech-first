@@ -12,19 +12,22 @@ eval_stock / chanlun_data._db_query，只验证 scan_block 两条路径的
 
 用法: python _full_scan_logic_check.py   # 全断言通过打印 CHECK_OK
 """
+
 import sys
 
 HERE = __file__.rsplit("\\", 1)[0].rsplit("/", 1)[0]
 sys.path.insert(0, HERE)
 
-import chanlun_data                    # noqa: E402
-import linkage                         # noqa: E402
-import strong_scan                     # noqa: E402
+import chanlun_data  # noqa: E402
+import linkage  # noqa: E402
+import strong_scan  # noqa: E402
 
 
 def fake_members(prefix, n):
-    return [{"code": "%s%04d.SZ" % (prefix, i), "name": "fake%d" % i,
-             "industry": "x"} for i in range(n)]
+    return [
+        {"code": "%s%04d.SZ" % (prefix, i), "name": "fake%d" % i, "industry": "x"}
+        for i in range(n)
+    ]
 
 
 def install_env(n_members, fake_amt=None):
@@ -36,6 +39,7 @@ def install_env(n_members, fake_amt=None):
         # 全员 bull；ex250=i 取余——保证每个位置都有机会命中，
         # 截断路径的差异只能来自「评了谁」而非「谁命中」
         return (float(i % 50), True, True, 250)
+
     strong_scan.eval_stock = fake_eval
 
     if fake_amt is not None:
@@ -49,8 +53,8 @@ def run(full, n_members, fake_amt=None):
     counter[0] = 0
     install_env(n_members, fake_amt)
     hits, n, n_eval, skip, cap = strong_scan.scan_block(
-        "881019", "合成板块", strong_scan.PER_BLOCK_CAP, 0.0, 1,
-        counter, full=full)
+        "881019", "合成板块", strong_scan.PER_BLOCK_CAP, 0.0, 1, counter, full=full
+    )
     return hits, n, n_eval, cap
 
 
@@ -78,12 +82,13 @@ def main():
     print("3) full 兜底 250 成员 → 截 200，高额票入选、低额头部被挤出 OK")
 
     # 4) 兜底降级：成交额查询失败 → 清单序截 200（可用性优先）
-    hits, n, n_eval, cap = run(True, 250,
-                               fake_amt=None)  # 不 patch 时真查会失败?
+    hits, n, n_eval, cap = run(True, 250, fake_amt=None)  # 不 patch 时真查会失败?
+
     # 上一步 patch 已被 install_env(fake_amt=None) 保留旧 patch——
     # 直接验证 rank_by_amount_20d 的异常分支：
     def boom(sql, params):
         raise RuntimeError("合成故障")
+
     chanlun_data._db_query = boom
     sel, ok = strong_scan.rank_by_amount_20d(fake_members("3001", 250), 200)
     assert ok is False and len(sel) == 200, (ok, len(sel))

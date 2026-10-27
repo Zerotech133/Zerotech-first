@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """321 勘查：远端 ts_rt_min 最新日期与 14:45 快照可用性验证。"""
+
 import time
 
 import requests
@@ -24,7 +25,7 @@ def get(path, **params):
 # 1) 远端表状态
 st = get("/api/data/status")
 if st:
-    for t in (st.get("tables") or []):
+    for t in st.get("tables") or []:
         if isinstance(t, dict) and t.get("name") == "ts_rt_min":
             print("remote ts_rt_min status:", t)
             break
@@ -38,6 +39,13 @@ for day in ("20260902", "20260915", "20261012", "20261013"):
         print(day, "FAIL")
         continue
     rows = d.get("rows") or []
-    print(day, "rows(sampled)=", len(rows), "total=", d.get("total"),
-          "| first time=", rows[0].get("time") if rows else "-")
+    print(
+        day,
+        "rows(sampled)=",
+        len(rows),
+        "total=",
+        d.get("total"),
+        "| first time=",
+        rows[0].get("time") if rows else "-",
+    )
     time.sleep(0.5)

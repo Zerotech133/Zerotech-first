@@ -15,6 +15,7 @@ DPAPI 不可用 → L2 在调度会话必败；而交互会话 L2 实测可用
 安全约定：绝不打印 token 值（只打印长度）；浏览器未登录时
 静默保留旧值退出 0；原子写（tmp + os.replace）防半行损坏。
 """
+
 import os
 import sys
 

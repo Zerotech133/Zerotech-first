@@ -16,6 +16,7 @@ docs/changes/20261014_cross_netsort_changes.md。
 纪律：临时目录合成产物；mock 点与 test_cross_resilience 同口径
 （REPORTS/DATA/_CACHE/_src_chanlun_load/CONFIG_FP）。
 """
+
 import json
 import os
 import shutil
@@ -27,13 +28,12 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import cross_poll           # noqa: E402
+import cross_poll  # noqa: E402
 
 
 def _rps_row(code, name, longs=None, sigs=None, action="买入"):
     """合成 rps_latest.json res[] 行（longs/sigs 字段级可控）。"""
-    r = {"code": code, "name": name, "market": "CN", "action": action,
-         "score": 80}
+    r = {"code": code, "name": name, "market": "CN", "action": action, "score": 80}
     if longs is not None:
         r["longs"] = longs
     if sigs is not None:
@@ -75,47 +75,82 @@ class _Base(unittest.TestCase):
         self.data = os.path.join(self.tmp, "data")
         os.makedirs(self.reports, exist_ok=True)
         os.makedirs(self.data, exist_ok=True)
-        self._orig = (cross_poll.REPORTS, cross_poll.DATA,
-                      cross_poll._CACHE, cross_poll._src_chanlun_load,
-                      cross_poll.CONFIG_FP)
+        self._orig = (
+            cross_poll.REPORTS,
+            cross_poll.DATA,
+            cross_poll._CACHE,
+            cross_poll._src_chanlun_load,
+            cross_poll.CONFIG_FP,
+        )
         cross_poll.REPORTS = self.reports
         cross_poll.DATA = self.data
         cross_poll._CACHE = {"t": 0, "d": None}
         cross_poll.CONFIG_FP = os.path.join(self.tmp, "config.json")
-        self._write_config({"cross": {"source_health_alert": False,
-                                      "sort_key": "net"}})
+        self._write_config({"cross": {"source_health_alert": False, "sort_key": "net"}})
         ts = datetime.now().strftime("%Y-%m-%d %H:%M")
         self._write_fixtures(ts)
         # chanlun 默认满池（四源齐整基线）；单测按需覆盖为空池/异常
         cross_poll._src_chanlun_load = lambda: [
-            {"code": "600519.SH", "type": "3买", "detect_date":
-             datetime.now().strftime("%Y-%m-%d"), "name": "贵州茅台",
-             "market": "CN", "dt": "2026-10-13"},
-            {"code": "000001.SZ", "type": "3买", "detect_date":
-             datetime.now().strftime("%Y-%m-%d"), "name": "平安银行",
-             "market": "CN", "dt": "2026-10-13"},
-            {"code": "300750.SZ", "type": "一卖", "detect_date":
-             datetime.now().strftime("%Y-%m-%d"), "name": "宁德时代",
-             "market": "CN", "dt": "2026-10-13"}]
+            {
+                "code": "600519.SH",
+                "type": "3买",
+                "detect_date": datetime.now().strftime("%Y-%m-%d"),
+                "name": "贵州茅台",
+                "market": "CN",
+                "dt": "2026-10-13",
+            },
+            {
+                "code": "000001.SZ",
+                "type": "3买",
+                "detect_date": datetime.now().strftime("%Y-%m-%d"),
+                "name": "平安银行",
+                "market": "CN",
+                "dt": "2026-10-13",
+            },
+            {
+                "code": "300750.SZ",
+                "type": "一卖",
+                "detect_date": datetime.now().strftime("%Y-%m-%d"),
+                "name": "宁德时代",
+                "market": "CN",
+                "dt": "2026-10-13",
+            },
+        ]
 
     def _write_config(self, cfg):
         _write_json(cross_poll.CONFIG_FP, cfg)
 
     def _write_fixtures(self, ts):
-        _write_json(os.path.join(self.reports, "rps_latest.json"), {
-            "ts": ts, "res": [
-                _rps_row("600519.SH", "贵州茅台", longs=4),
-                _rps_row("000001.SZ", "平安银行", longs=4),
-                _rps_row("300750.SZ", "宁德时代", longs=1)]})
-        _write_json(os.path.join(self.data, "nine_dim_scores.json"), {
-            "generated_at": ts,
-            "trade_date": datetime.now().strftime("%Y%m%d"),
-            "rows": [{"code": "600519.SH", "name": "贵州茅台",
-                      "score": 85.0, "cov": 0.9}]})
+        _write_json(
+            os.path.join(self.reports, "rps_latest.json"),
+            {
+                "ts": ts,
+                "res": [
+                    _rps_row("600519.SH", "贵州茅台", longs=4),
+                    _rps_row("000001.SZ", "平安银行", longs=4),
+                    _rps_row("300750.SZ", "宁德时代", longs=1),
+                ],
+            },
+        )
+        _write_json(
+            os.path.join(self.data, "nine_dim_scores.json"),
+            {
+                "generated_at": ts,
+                "trade_date": datetime.now().strftime("%Y%m%d"),
+                "rows": [
+                    {"code": "600519.SH", "name": "贵州茅台", "score": 85.0, "cov": 0.9}
+                ],
+            },
+        )
 
     def tearDown(self):
-        (cross_poll.REPORTS, cross_poll.DATA, cross_poll._CACHE,
-         cross_poll._src_chanlun_load, cross_poll.CONFIG_FP) = self._orig
+        (
+            cross_poll.REPORTS,
+            cross_poll.DATA,
+            cross_poll._CACHE,
+            cross_poll._src_chanlun_load,
+            cross_poll.CONFIG_FP,
+        ) = self._orig
         shutil.rmtree(self.tmp, ignore_errors=True)
 
 
@@ -126,14 +161,15 @@ class TestNetScoreCalc(_Base):
         """四源齐整：9dim 命中按 -0.5 计入（方向取反×权重 0.5）。"""
         d = cross_poll.build_cross(force=True)
         self.assertEqual(d["sort_key"], "net")
-        a, b, c = (_st(d, "600519.SH"), _st(d, "000001.SZ"),
-                   _st(d, "300750.SZ"))
+        a, b, c = (_st(d, "600519.SH"), _st(d, "000001.SZ"), _st(d, "300750.SZ"))
         # 9dim 反指：a 四源全命中（含 9dim long）反被拖到 2.5/3.5
-        self.assertAlmostEqual(a["net_score"], round(
-            (W_Q + W_S + W_C - 0.5) / (W_Q + W_S + W_C + W_9), 4))
+        self.assertAlmostEqual(
+            a["net_score"], round((W_Q + W_S + W_C - 0.5) / (W_Q + W_S + W_C + W_9), 4)
+        )
         # b 三源多头无 9dim → 满分口径 3/3.5
-        self.assertAlmostEqual(b["net_score"], round(
-            (W_Q + W_S + W_C) / (W_Q + W_S + W_C + W_9), 4))
+        self.assertAlmostEqual(
+            b["net_score"], round((W_Q + W_S + W_C) / (W_Q + W_S + W_C + W_9), 4)
+        )
         # c 冲突票：+1(qpzm) + 0(sig4 neutral) + -1(chanlun 卖) = 0
         self.assertAlmostEqual(c["net_score"], 0.0)
 
@@ -145,25 +181,23 @@ class TestNetScoreCalc(_Base):
         self.assertEqual(codes_net[0], "000001.SZ")
         self.assertEqual(codes_net[1], "600519.SH")
         # 同一聚合下 raw 排序应为旧口径（-n_hit,-n_long,code）
-        raw = sorted(d["stocks"], key=lambda x: (-x["n_hit"],
-                                                 -x["n_long"], x["code"]))
-        self.assertEqual([s["code"] for s in raw][:2],
-                         ["600519.SH", "000001.SZ"])
-        self.assertNotEqual([s["code"] for s in d["topn"]][:2],
-                            [s["code"] for s in raw][:2])
+        raw = sorted(d["stocks"], key=lambda x: (-x["n_hit"], -x["n_long"], x["code"]))
+        self.assertEqual([s["code"] for s in raw][:2], ["600519.SH", "000001.SZ"])
+        self.assertNotEqual(
+            [s["code"] for s in d["topn"]][:2], [s["code"] for s in raw][:2]
+        )
 
     def test_missing_source_normalized(self):
         """单源缺失（chanlun 池空 → missing）：分子分母同步剔除并归一化，
         a=(1+1-0.5)/2.5=0.6；且 degraded_k3 共存、k 门槛不动。"""
-        cross_poll._src_chanlun_load = lambda: []      # chanlun 缺席
+        cross_poll._src_chanlun_load = lambda: []  # chanlun 缺席
         d = cross_poll.build_cross(force=True)
         a = _st(d, "600519.SH")
-        den = W_Q + W_S + W_9                          # 2.5
-        self.assertAlmostEqual(a["net_score"],
-                               round((W_Q + W_S - 0.5) / den, 4))
+        den = W_Q + W_S + W_9  # 2.5
+        self.assertAlmostEqual(a["net_score"], round((W_Q + W_S - 0.5) / den, 4))
         self.assertTrue(d["degraded"])
         self.assertEqual(d["k_gate"]["mode"], "degraded_k3")
-        self.assertEqual(d["k_gate"]["k"], 3)          # 门槛不因排序而变
+        self.assertEqual(d["k_gate"]["k"], 3)  # 门槛不因排序而变
         self.assertTrue(all(s["n_hit"] >= 3 for s in d["topn"]))
 
     def test_extreme_all_sources_missing_zero(self):
@@ -173,7 +207,7 @@ class TestNetScoreCalc(_Base):
         cross_poll._src_chanlun_load = lambda: []
         d = cross_poll.build_cross(force=True)
         self.assertEqual(d["k_gate"]["mode"], "blocked")
-        self.assertEqual(d["topn"], [])                # blocked 产空
+        self.assertEqual(d["topn"], [])  # blocked 产空
         for s in d["stocks"]:
             self.assertEqual(s["net_score"], 0.0)
 
@@ -183,16 +217,15 @@ class TestRawFallback(_Base):
 
     def test_raw_config_restores_legacy_order(self):
         """sort_key=raw → 旧长票计数排序、无 net_score 字段（零残留）。"""
-        self._write_config({"cross": {"source_health_alert": False,
-                                      "sort_key": "raw"}})
+        self._write_config({"cross": {"source_health_alert": False, "sort_key": "raw"}})
         d = cross_poll.build_cross(force=True)
         self.assertEqual(d["sort_key"], "raw")
-        raw = sorted(d["stocks"], key=lambda x: (-x["n_hit"],
-                                                 -x["n_long"], x["code"]))
-        self.assertEqual([s["code"] for s in d["stocks"]],
-                         [s["code"] for s in raw])
-        self.assertEqual([s["code"] for s in d["topn"]],
-                         [s["code"] for s in raw][:cross_poll.TOPN_DEFAULT])
+        raw = sorted(d["stocks"], key=lambda x: (-x["n_hit"], -x["n_long"], x["code"]))
+        self.assertEqual([s["code"] for s in d["stocks"]], [s["code"] for s in raw])
+        self.assertEqual(
+            [s["code"] for s in d["topn"]],
+            [s["code"] for s in raw][: cross_poll.TOPN_DEFAULT],
+        )
         self.assertFalse(any("net_score" in s for s in d["stocks"]))
 
     def test_missing_sort_key_defaults_net(self):
@@ -215,14 +248,15 @@ class TestResilienceCoexist(_Base):
     def test_source_error_degrades_with_net_sort(self):
         """单源 loader 抛异常（error）→ 净向分按缺失源归一化继续出。"""
         cross_poll._src_chanlun_load = lambda: (_ for _ in ()).throw(
-            RuntimeError("chanlun 库炸了"))
+            RuntimeError("chanlun 库炸了")
+        )
         d = cross_poll.build_cross(force=True)
         self.assertEqual(d["src_state"]["chanlun"]["status"], "error")
         self.assertTrue(d["degraded"])
         a = _st(d, "600519.SH")
-        self.assertAlmostEqual(a["net_score"],
-                               round((W_Q + W_S - 0.5) / (W_Q + W_S + W_9),
-                                     4))
+        self.assertAlmostEqual(
+            a["net_score"], round((W_Q + W_S - 0.5) / (W_Q + W_S + W_9), 4)
+        )
         # k=3 门槛不动：000001/300750 只剩 2 源命中被挡，a（3 源）居首
         self.assertEqual([s["code"] for s in d["topn"]][0], "600519.SH")
         self.assertNotIn("000001.SZ", [s["code"] for s in d["topn"]])
@@ -240,10 +274,9 @@ class TestResilienceCoexist(_Base):
         影响（9dim 反向只进排序键，不改变 n_hit/n_long 原始计数）。"""
         d = cross_poll.build_cross(force=True)
         a = _st(d, "600519.SH")
-        self.assertEqual(a["n_hit"], 4)      # 9dim 仍计一次 hit
-        self.assertEqual(a["n_long"], 4)     # 9dim 仍计一次 long（原始计数）
-        self.assertTrue(all(s["n_hit"] >= cross_poll.K_RES
-                            for s in d["topn"]))
+        self.assertEqual(a["n_hit"], 4)  # 9dim 仍计一次 hit
+        self.assertEqual(a["n_long"], 4)  # 9dim 仍计一次 long（原始计数）
+        self.assertTrue(all(s["n_hit"] >= cross_poll.K_RES for s in d["topn"]))
 
     def test_health_summary_still_works(self):
         """source_health / health_summary_line 与排序改造互不干扰。"""

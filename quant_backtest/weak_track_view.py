@@ -8,6 +8,7 @@
   python weak_track_view.py 301216            # 默认尾部 10 行
   python weak_track_view.py 301216 --tail 30
 """
+
 import argparse
 import json
 import os
@@ -34,11 +35,15 @@ def main():
             except Exception:
                 bad += 1
     total = len(rows)
-    rows = rows[-a.tail:]
-    print("跟踪状态流 %s（尾部 %d / 共 %d 行%s）\n" % (
-        fp, len(rows), total, "，坏行 %d" % bad if bad else ""))
-    print("%-19s %-15s %7s  %-12s %s" % (
-        "时间", "数据日·现价", "超额250", "趋势 个/板/沪", "触发"))
+    rows = rows[-a.tail :]
+    print(
+        "跟踪状态流 %s（尾部 %d / 共 %d 行%s）\n"
+        % (fp, len(rows), total, "，坏行 %d" % bad if bad else "")
+    )
+    print(
+        "%-19s %-15s %7s  %-12s %s"
+        % ("时间", "数据日·现价", "超额250", "趋势 个/板/沪", "触发")
+    )
     print("-" * 78)
     _t = lambda s: str(s).replace("（均线缠绕）", "·缠")[:8]  # noqa: E731
     for r in rows:
@@ -46,10 +51,16 @@ def main():
         exs = "%+.1fpp" % ex if ex is not None else "—"
         trig = r.get("trig") or []
         t = "；".join(trig) + " ⚠复评" if trig else "—"
-        print("%-19s %-15s %7s  %-12s %s" % (
-            str(r.get("ts", "?"))[:19],
-            "%s·%s" % (str(r.get("px_d", "?"))[5:], r.get("px")),
-            exs, "/".join(_t(x) for x in (r.get("trend") or [])), t))
+        print(
+            "%-19s %-15s %7s  %-12s %s"
+            % (
+                str(r.get("ts", "?"))[:19],
+                "%s·%s" % (str(r.get("px_d", "?"))[5:], r.get("px")),
+                exs,
+                "/".join(_t(x) for x in (r.get("trend") or [])),
+                t,
+            )
+        )
     if rows and not any(r.get("trig") for r in rows):
         print("\n（区间内无 §6 触发，继续影子跟踪）")
     return 0

@@ -6,7 +6,10 @@ s = open(p, encoding="utf-8").read()
 
 # ① 表单加样本域下拉（放在缠论买点等级之后）
 old1 = '<div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="3">仅三买（默认）</option><option value="23">二买+三买</option><option value="2">仅二买</option><option value="all">一二三类全要</option></select></div>'
-new1 = old1 + '\n  <div class="fld"><label>样本域</label><select name="universe"><option value="market">全市场 5000+（剔ST/北交所）</option><option value="pool76">静态 76 只池</option></select></div>'
+new1 = (
+    old1
+    + '\n  <div class="fld"><label>样本域</label><select name="universe"><option value="market">全市场 5000+（剔ST/北交所）</option><option value="pool76">静态 76 只池</option></select></div>'
+)
 assert s.count(old1) == 1, "form anchor"
 s = s.replace(old1, new1)
 

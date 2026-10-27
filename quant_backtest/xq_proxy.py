@@ -14,6 +14,7 @@
 本模块不 import 项目内其他模块（供 common/crawl/sync 单向引用，无环）。
 配置绝不打印 url（可能含代理认证），只打印 name。
 """
+
 import json
 import os
 import time
@@ -44,10 +45,9 @@ UA_VARIANTS = (
     "(KHTML, like Gecko) Chrome/121.0 Safari/537.36 Edg/121.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/119.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) "
-    "Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
 )
-DEFAULT_UA = UA_VARIANTS[0]     # 与 xueqiu_common.UA 同串（guba 判例）
+DEFAULT_UA = UA_VARIANTS[0]  # 与 xueqiu_common.UA 同串（guba 判例）
 
 
 @dataclass
@@ -57,11 +57,12 @@ class ProxyEntry:
     ua 为出口绑定指纹（P2-7）：空串=加载时按 name 确定性分配；
     配置显式给 ua 字段则优先（人工指定精确版本时用）。
     """
+
     name: str
     url: str
     ua: str = ""
     fails: int = 0
-    cooldown_until: float = 0.0    # time.time() 纪（进程内即可）
+    cooldown_until: float = 0.0  # time.time() 纪（进程内即可）
 
     def healthy(self) -> bool:
         return time.time() >= self.cooldown_until
@@ -72,7 +73,7 @@ class ProxyPool:
 
     def __init__(self, entries: list[ProxyEntry] | None = None) -> None:
         self.entries: list[ProxyEntry] = list(entries or [])
-        self.idx = 0               # 当前出口下标（entries 为空时无意义）
+        self.idx = 0  # 当前出口下标（entries 为空时无意义）
 
     def enabled(self) -> bool:
         return bool(self.entries)
@@ -100,8 +101,9 @@ class ProxyPool:
         print("[proxy] 全部 %d 出口冷却中（%s）→ 直连降级" % (n, reason))
         return None
 
-    def mark_fail(self, entry: ProxyEntry | None = None,
-                  cooldown: int = EXIT_COOLDOWN_SEC) -> None:
+    def mark_fail(
+        self, entry: ProxyEntry | None = None, cooldown: int = EXIT_COOLDOWN_SEC
+    ) -> None:
         """标记出口失败进冷却（403 拉黑等脏出口场景）。"""
         e = entry or self.current()
         if e is None:
@@ -128,8 +130,8 @@ def ua_for(entry: ProxyEntry | None) -> str:
         if entry.ua:
             return entry.ua
         import zlib
-        return UA_VARIANTS[zlib.crc32(entry.name.encode("utf-8"))
-                           % len(UA_VARIANTS)]
+
+        return UA_VARIANTS[zlib.crc32(entry.name.encode("utf-8")) % len(UA_VARIANTS)]
     except Exception:
         return DEFAULT_UA
 
@@ -149,16 +151,21 @@ def load_pool(path: str | None = None) -> ProxyPool:
                 data = json.load(f)
             if isinstance(data, list):
                 for it in data:
-                    if isinstance(it, dict) and it.get("name") \
-                            and it.get("url"):
-                        entries.append(ProxyEntry(
-                            name=str(it["name"]), url=str(it["url"]),
-                            ua=str(it.get("ua") or "")))
+                    if isinstance(it, dict) and it.get("name") and it.get("url"):
+                        entries.append(
+                            ProxyEntry(
+                                name=str(it["name"]),
+                                url=str(it["url"]),
+                                ua=str(it.get("ua") or ""),
+                            )
+                        )
         except Exception:
             entries = []
     if entries:
-        print("[proxy] 出口池已启用：%d 个静态出口（%s）"
-              % (len(entries), ",".join(e.name for e in entries)))
+        print(
+            "[proxy] 出口池已启用：%d 个静态出口（%s）"
+            % (len(entries), ",".join(e.name for e in entries))
+        )
     return ProxyPool(entries)
 
 
@@ -172,10 +179,10 @@ _POOL: ProxyPool | None = None
 #   - TTL 到期 → current() 下次取用时被动换新；
 #   - 拉取失败 → 60s 限频冷却后重试，期间直连降级（绝不刷爆配额）。
 DYNAMIC_CONFIG_PATH = os.path.join(HERE, "config", "xq_proxy_api.json")
-DYNAMIC_TTL_SEC = 240          # 1-5 分钟寿命取保守主动换值
-FETCH_COOLDOWN_SEC = 60        # API 拉取失败后的限频冷却
-VERIFY_TIMEOUT = 8             # 新出口验活超时（秒）
-VERIFY_URL = "https://xueqiu.com/robots.txt"   # 轻量端点（雪球自判可达性）
+DYNAMIC_TTL_SEC = 240  # 1-5 分钟寿命取保守主动换值
+FETCH_COOLDOWN_SEC = 60  # API 拉取失败后的限频冷却
+VERIFY_TIMEOUT = 8  # 新出口验活超时（秒）
+VERIFY_URL = "https://xueqiu.com/robots.txt"  # 轻量端点（雪球自判可达性）
 
 
 def load_dynamic_config(path: str | None = None) -> dict:
@@ -201,15 +208,19 @@ def parse_proxy_line(line: str) -> str:
     if not s:
         return ""
     parts = s.split(":")
-    if len(parts) == 2:                     # ip:port（免认证）
+    if len(parts) == 2:  # ip:port（免认证）
         ip, port = parts
-    elif len(parts) >= 4:                   # ip:port:user:pass
+    elif len(parts) >= 4:  # ip:port:user:pass
         ip, port, user = parts[0], parts[1], parts[2]
         pwd = ":".join(parts[3:])
         if not user or not re_match_ip_port(ip, port):
             return ""
         return "http://%s:%s@%s:%s" % (
-            quote(user, safe=""), quote(pwd, safe=""), ip, port)
+            quote(user, safe=""),
+            quote(pwd, safe=""),
+            ip,
+            port,
+        )
     else:
         return ""
     if not re_match_ip_port(ip, port):
@@ -219,8 +230,11 @@ def parse_proxy_line(line: str) -> str:
 
 def re_match_ip_port(ip: str, port: str) -> bool:
     import re as _re
-    if not (_re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip or "")
-            and _re.match(r"^\d{1,5}$", port or "")):
+
+    if not (
+        _re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip or "")
+        and _re.match(r"^\d{1,5}$", port or "")
+    ):
         return False
     return all(int(o) <= 255 for o in ip.split(".")) and int(port) <= 65535
 
@@ -237,8 +251,9 @@ class DynamicPool:
     拉取 API 本身用 trust_env=False 独立会话（防环境变量代理回环）。
     """
 
-    def __init__(self, api_url: str, ttl_sec: int = DYNAMIC_TTL_SEC,
-                 fetch_timeout: int = 15) -> None:
+    def __init__(
+        self, api_url: str, ttl_sec: int = DYNAMIC_TTL_SEC, fetch_timeout: int = 15
+    ) -> None:
         self.api_url = api_url
         self.ttl_sec = max(30, int(ttl_sec))
         self.fetch_timeout = max(5, int(fetch_timeout))
@@ -256,8 +271,9 @@ class DynamicPool:
             return ""
         try:
             import requests as _rq
+
             sess = _rq.Session()
-            sess.trust_env = False          # 绕开 HTTP(S)_PROXY 环境变量
+            sess.trust_env = False  # 绕开 HTTP(S)_PROXY 环境变量
             r = sess.get(self.api_url, timeout=self.fetch_timeout)
             return r.text.strip() if r.status_code == 200 else ""
         except Exception as e:
@@ -269,12 +285,11 @@ class DynamicPool:
         for _ in range(2):
             raw = self._fetch_raw()
             if not raw:
-                self._fetch_cooldown_until = (
-                    time.time() + FETCH_COOLDOWN_SEC)
+                self._fetch_cooldown_until = time.time() + FETCH_COOLDOWN_SEC
                 return None
             url = parse_proxy_line(raw.splitlines()[0] if raw else "")
             if not url:
-                continue                    # 格式坏：再试一个候选
+                continue  # 格式坏：再试一个候选
             ip_port = url.split("@")[-1]
             entry = ProxyEntry(name="kdl-%s" % ip_port, url=url)
             if self._verify(entry):
@@ -291,17 +306,21 @@ class DynamicPool:
         """轻量验活：经代理 GET 雪球轻端点，网络通且非 blacklisted。"""
         try:
             import requests as _rq
+
             sess = _rq.Session()
             sess.trust_env = False
-            r = sess.get(VERIFY_URL, timeout=VERIFY_TIMEOUT,
-                         proxies={"http": entry.url, "https": entry.url},
-                         headers={"User-Agent": ua_for(entry)})
+            r = sess.get(
+                VERIFY_URL,
+                timeout=VERIFY_TIMEOUT,
+                proxies={"http": entry.url, "https": entry.url},
+                headers={"User-Agent": ua_for(entry)},
+            )
             body = str(getattr(r, "text", "") or "")[:200].lower()
             if r.status_code == 403 and "blacklisted" in body:
-                return False                # 出口 IP 也被雪球拉黑
-            return True                     # 200/挑战页/其他状态=网络通
+                return False  # 出口 IP 也被雪球拉黑
+            return True  # 200/挑战页/其他状态=网络通
         except Exception:
-            return False                    # 代理连不通/超时
+            return False  # 代理连不通/超时
 
     def current(self) -> ProxyEntry | None:
         """当前出口；无/TTL 过期 → 被动拉新；不可得 → None 直连。"""
@@ -313,8 +332,7 @@ class DynamicPool:
         """强制拉新出口（notify_blocked 熔断联动）。"""
         return self._fetch_new(reason or "rotate")
 
-    def mark_fail(self, entry: ProxyEntry | None = None,
-                  cooldown: int = 0) -> None:
+    def mark_fail(self, entry: ProxyEntry | None = None, cooldown: int = 0) -> None:
         """记失败计数（动态 IP 寿命短，不做长冷却——rotate 换新即可）。"""
         e = entry or self._entry
         if e is not None:
@@ -338,12 +356,13 @@ def get_pool() -> ProxyPool | DynamicPool:
         api = str(cfg.get("api_url") or "")
         if api:
             _POOL = DynamicPool(
-                api, ttl_sec=int(cfg.get("ttl_sec") or DYNAMIC_TTL_SEC),
-                fetch_timeout=int(cfg.get("fetch_timeout") or 15))
-            print("[proxy] 动态出口池已启用（快代理 API，TTL %ds）"
-                  % _POOL.ttl_sec)
+                api,
+                ttl_sec=int(cfg.get("ttl_sec") or DYNAMIC_TTL_SEC),
+                fetch_timeout=int(cfg.get("fetch_timeout") or 15),
+            )
+            print("[proxy] 动态出口池已启用（快代理 API，TTL %ds）" % _POOL.ttl_sec)
         else:
-            _POOL = static                  # 空静态池=直连（原行为）
+            _POOL = static  # 空静态池=直连（原行为）
     return _POOL
 
 
@@ -365,8 +384,9 @@ def apply_proxy_env(pool: ProxyPool | None = None) -> str:
     return e.name
 
 
-def notify_blocked(cooldown: int = EXIT_COOLDOWN_SEC,
-                   pool: ProxyPool | None = None) -> str:
+def notify_blocked(
+    cooldown: int = EXIT_COOLDOWN_SEC, pool: ProxyPool | None = None
+) -> str:
     """熔断钩子（xueqiu_common.ip_block_trip 调用）：当前出口进冷却
     并轮换；sync 层随后以新出口刷新环境变量由下轮进程生效。返回
     新出口名（""=直连降级或未启用）。绝不打印 url。"""
@@ -376,7 +396,7 @@ def notify_blocked(cooldown: int = EXIT_COOLDOWN_SEC,
     p.mark_fail(cooldown=cooldown)
     new = p.rotate("ip_blocked")
     if new is not None:
-        apply_proxy_env(p)         # 同进程后续请求（若有）即刻走新出口
+        apply_proxy_env(p)  # 同进程后续请求（若有）即刻走新出口
     else:
         for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
             os.environ.pop(k, None)

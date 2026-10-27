@@ -29,6 +29,7 @@
   python xq_classify.py --order desc --limit 500           # v1.7 status_id 降序吃远端历史存量
   python xq_classify.py --order engagement --limit 500     # v1.7 view_count 降序高互动优先打标
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,9 @@ else:
 
 HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "data" / "xueqiu" / "xueqiu_info.db"
-LOG_DIR = Path(r"C:\aios\automation_runs") / "xq_classify"   # 定时任务产物统一根（2026-10-18 老田拍板）
+LOG_DIR = (
+    Path(r"C:\aios\automation_runs") / "xq_classify"
+)  # 定时任务产物统一根（2026-10-18 老田拍板）
 STATUS_LOG = LOG_DIR / "xq_classify_status.log"
 
 # v1.7 multi-instance parallel (2026-10-18): --worker-id shards the status log
@@ -64,11 +67,11 @@ _WORKER_ID = ""
 _WORKER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 MODEL = "qwen3.5:9b"
-PROMPT_VERSION = "v1.3"    # v1.3：+ad/edu 出口、tech 定义收紧（实效检验揪出广告污染 98 条，老田拍板 2026-10-18）
+PROMPT_VERSION = "v1.3"  # v1.3：+ad/edu 出口、tech 定义收紧（实效检验揪出广告污染 98 条，老田拍板 2026-10-18）
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-TIMEOUT_SEC = 60           # think:false 后单条 ~1s；60s 纯兜底
-BODY_CHARS = 300           # 正文截断（短文本分类足够）
-DEGRADED_MAX_RETRY = 3     # v1.4 degraded 重试封顶：≥3 次不再重试（防死循环耗 token）
+TIMEOUT_SEC = 60  # think:false 后单条 ~1s；60s 纯兜底
+BODY_CHARS = 300  # 正文截断（短文本分类足够）
+DEGRADED_MAX_RETRY = 3  # v1.4 degraded 重试封顶：≥3 次不再重试（防死循环耗 token）
 
 # v1.5 速率旋钮（rate-opt 工位 2026-10-18）：环境变量可覆盖 LLM options，
 # 未设置时取下面常量。
@@ -93,9 +96,9 @@ DEFAULT_NUM_PREDICT = 256
 # 1800s ≈ 半个整点班间隔——k266 m3 占用以小时计，等半班仍挤则整班所剩无几，
 # 让位比半速硬挤干净。开关默认关闭：env 缺省时 gate 直通，行为零变化。
 PEAK_SHIFT_FLAG = "XQ_PEAK_SHIFT"
-PEAK_SHIFT_THRESH_S = 6.0      # busy 阈（秒）：与 K-STOCK 守卫 6s 阈对齐
-PEAK_SHIFT_WAIT_S = 1800       # 单轮让位等待上限：半个整点班间隔
-PEAK_SHIFT_POLL_S = 60         # 等待期重探间隔
+PEAK_SHIFT_THRESH_S = 6.0  # busy 阈（秒）：与 K-STOCK 守卫 6s 阈对齐
+PEAK_SHIFT_WAIT_S = 1800  # 单轮让位等待上限：半个整点班间隔
+PEAK_SHIFT_POLL_S = 60  # 等待期重探间隔
 PEAK_SHIFT_PROBE_TIMEOUT_S = 10  # 单次探测超时（A1 报告现网 probe 同口径）
 PEAK_SHIFT_PING_URL = "http://127.0.0.1:11434/api/generate"
 
@@ -110,7 +113,9 @@ def _peak_shift_conf():
         wait_s = int(os.environ.get("XQ_PEAK_SHIFT_WAIT_S") or wait_s)
         poll_s = int(os.environ.get("XQ_PEAK_SHIFT_POLL_S") or poll_s)
     except ValueError:
-        sys.stderr.write("[xq_classify] WARN invalid XQ_PEAK_SHIFT_* env, fallback defaults\n")
+        sys.stderr.write(
+            "[xq_classify] WARN invalid XQ_PEAK_SHIFT_* env, fallback defaults\n"
+        )
     return on, thresh, wait_s, poll_s
 
 
@@ -122,12 +127,18 @@ def ollama_probe_busy(thresh_s, timeout_s=PEAK_SHIFT_PROBE_TIMEOUT_S):
     # 的"最小占用"探针，但 ctx 与主调用不一致时，探测本身就会让 Ollama 重载一次
     # 模型（15~46s），既污染延迟读数、又把模型拉成 512 驻留、害下一条正式请求
     # 再重载。统一 16384 后，探针只是"同一实例上的极短请求"，测的才是真占用。
-    payload = json.dumps({"model": MODEL, "prompt": "ping", "stream": False,
-                          "think": False,
-                          "options": {"num_ctx": DEFAULT_NUM_CTX,
-                                      "num_predict": 1}}).encode("utf-8")
-    req = urllib.request.Request(PEAK_SHIFT_PING_URL, data=payload,
-                                 headers={"Content-Type": "application/json"})
+    payload = json.dumps(
+        {
+            "model": MODEL,
+            "prompt": "ping",
+            "stream": False,
+            "think": False,
+            "options": {"num_ctx": DEFAULT_NUM_CTX, "num_predict": 1},
+        }
+    ).encode("utf-8")
+    req = urllib.request.Request(
+        PEAK_SHIFT_PING_URL, data=payload, headers={"Content-Type": "application/json"}
+    )
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     t0 = time.time()
     try:
@@ -144,30 +155,45 @@ def ollama_occupants():
     进程名。解析失败返回 []（留痕空列表，不阻塞让位决策）。"""
     pids = set()
     try:
-        ns = subprocess.run(["netstat", "-ano", "-p", "TCP"], capture_output=True,
-                            text=True, errors="replace", timeout=15).stdout
+        ns = subprocess.run(
+            ["netstat", "-ano", "-p", "TCP"],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=15,
+        ).stdout
         for line in ns.splitlines():
             parts = line.split()
             # 列形：Proto Local Foreign State PID
-            if (len(parts) >= 5 and parts[0] == "TCP"
-                    and parts[2].endswith(":11434") and parts[3] == "ESTABLISHED"):
+            if (
+                len(parts) >= 5
+                and parts[0] == "TCP"
+                and parts[2].endswith(":11434")
+                and parts[3] == "ESTABLISHED"
+            ):
                 pids.add(parts[4])
     except Exception:
         return []
     if not pids:
         return []
     try:
-        tl = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True,
-                            text=True, errors="replace", timeout=15).stdout
-        return ["%s pid=%s" % (row[0], row[1].strip())
-                for row in csv.reader(tl.splitlines())
-                if len(row) >= 2 and row[1].strip() in pids]
+        tl = subprocess.run(
+            ["tasklist", "/FO", "CSV", "/NH"],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=15,
+        ).stdout
+        return [
+            "%s pid=%s" % (row[0], row[1].strip())
+            for row in csv.reader(tl.splitlines())
+            if len(row) >= 2 and row[1].strip() in pids
+        ]
     except Exception:
         return []
 
 
-def peak_shift_gate(now=None, sleep=None,
-                    probe=None, occupants=None):
+def peak_shift_gate(now=None, sleep=None, probe=None, occupants=None):
     """闸门 1（XQ_PEAK_SHIFT=1 才启用，默认直通零变化）：round 前探测让位。
     返回 True=放行开轮；False=让位超时本轮跳过。busy 期间每次重探留痕一行
     JSON（occupant PID + 让位决策），格式贴 guard_aborts.jsonl 结构化判例。
@@ -185,17 +211,30 @@ def peak_shift_gate(now=None, sleep=None,
         attempt += 1
         busy, latency = probe(thresh)
         if not busy:
-            log("peak-shift probe ok attempt=%d latency_s=%.1f threshold_s=%.1f"
-                % (attempt, latency, thresh))
+            log(
+                "peak-shift probe ok attempt=%d latency_s=%.1f threshold_s=%.1f"
+                % (attempt, latency, thresh)
+            )
             return True
-        log(json.dumps({"gate": "xq_peak_shift", "event": "busy_yield",
-                        "attempt": attempt, "latency_s": round(latency, 1),
-                        "threshold_s": thresh, "occupant": occupants(),
-                        "wait_left_s": max(0, round(deadline - now()))},
-                       ensure_ascii=False))
+        log(
+            json.dumps(
+                {
+                    "gate": "xq_peak_shift",
+                    "event": "busy_yield",
+                    "attempt": attempt,
+                    "latency_s": round(latency, 1),
+                    "threshold_s": thresh,
+                    "occupant": occupants(),
+                    "wait_left_s": max(0, round(deadline - now())),
+                },
+                ensure_ascii=False,
+            )
+        )
         if now() >= deadline:
-            log("peak-shift wait expired wait_s=%d -> skip round (next shift retries)"
-                % wait_s)
+            log(
+                "peak-shift wait expired wait_s=%d -> skip round (next shift retries)"
+                % wait_s
+            )
             return False
         sleep(min(poll_s, max(1, deadline - now())))
 
@@ -210,8 +249,9 @@ def _resolve_int_knob(raw, default: int, name: str) -> int:
             raise ValueError(v)
         return v
     except ValueError:
-        sys.stderr.write("[xq_classify] WARN invalid %s=%r, fallback to %d\n"
-                         % (name, raw, default))
+        sys.stderr.write(
+            "[xq_classify] WARN invalid %s=%r, fallback to %d\n" % (name, raw, default)
+        )
         return default
 
 
@@ -222,16 +262,27 @@ def build_llm_options(num_ctx=None, num_predict=None) -> dict:
     显式实参传 None 表示"未指定"，交由环境变量/默认接管。
     """
     ctx_raw = num_ctx if num_ctx is not None else os.environ.get("XQ_LLM_NUM_CTX")
-    pred_raw = (num_predict if num_predict is not None
-                else os.environ.get("XQ_LLM_NUM_PREDICT"))
+    pred_raw = (
+        num_predict if num_predict is not None else os.environ.get("XQ_LLM_NUM_PREDICT")
+    )
     return {
         "temperature": 0.1,
         "num_ctx": _resolve_int_knob(ctx_raw, DEFAULT_NUM_CTX, "XQ_LLM_NUM_CTX"),
-        "num_predict": _resolve_int_knob(pred_raw, DEFAULT_NUM_PREDICT,
-                                         "XQ_LLM_NUM_PREDICT"),
+        "num_predict": _resolve_int_knob(
+            pred_raw, DEFAULT_NUM_PREDICT, "XQ_LLM_NUM_PREDICT"
+        ),
     }
 
-EVENT_TYPES = ["行情观点", "个股研判", "宏观政策", "基金理财", "交易策略", "广告推广", "闲聊杂谈"]
+
+EVENT_TYPES = [
+    "行情观点",
+    "个股研判",
+    "宏观政策",
+    "基金理财",
+    "交易策略",
+    "广告推广",
+    "闲聊杂谈",
+]
 SENTIMENTS = ["bullish", "bearish", "neutral"]
 CONTENT_TYPES = ["tech", "community", "news", "fundamental", "edu", "ad"]
 
@@ -244,7 +295,7 @@ CONTENT_TYPES = ["tech", "community", "news", "fundamental", "edu", "ad"]
 # parse 侧确定性短路（同「广告推广→ad」判例），别名自带形态信息，覆盖
 # content_type；未收录的漂移标签仍走 degraded（宁可降级不乱归类）。
 EVENT_TYPE_ALIASES = {
-    "投教科普": ("闲聊杂谈", "edu"),   # 教学科普帖 → 杂谈 + edu 形态保真
+    "投教科普": ("闲聊杂谈", "edu"),  # 教学科普帖 → 杂谈 + edu 形态保真
     "个股资讯": ("个股研判", "news"),  # 事实性转述 → 个股维度 + news 形态
     "港股打新": ("交易策略", "news"),  # 打新认购 → 操作策略 + news 形态
 }
@@ -263,8 +314,9 @@ SYSTEM_PROMPT = (
     '{"event_type":"<七选一>","content_type":"<六选一>",'
     '"sentiment":"<三选一>","confidence":<0到1小数>}。'
     "event_type 只能取：" + "、".join(EVENT_TYPES) + "。"
-    "content_type 只能取（内容形态，与 event_type 正交）：" +
-    "；".join("%s=%s" % (k, v) for k, v in CONTENT_TYPE_DESC.items()) + "。"
+    "content_type 只能取（内容形态，与 event_type 正交）："
+    + "；".join("%s=%s" % (k, v) for k, v in CONTENT_TYPE_DESC.items())
+    + "。"
     "sentiment 只能取：" + "、".join(SENTIMENTS) + "（对 A股/港股大盘或个股的态度）。"
 )
 
@@ -310,40 +362,65 @@ RE_HK = re.compile(
     # b3: 补「笔」「币」后缀 2026-10-19（量词后缀「2万笔/3万币」→ 20000笔/30000币
     #     形残类出局；版本号保持 v1.6 不动，在途测试锚定 v16）
     r"|(?<![0-9.\-])(?P<bare>[0-9]{5})(?![0-9\-])(?![.．][0-9])(?!\s*(?:整数)?[元块万亿手点关附笔币])"
-    r"|[(（$](?P<ct>[0-9]{5})(?![0-9\-])(?![.．][0-9])(?!\s*(?:整数)?[元块万亿手点关附笔币])")
+    r"|[(（$](?P<ct>[0-9]{5})(?![0-9\-])(?![.．][0-9])(?!\s*(?:整数)?[元块万亿手点关附笔币])"
+)
 # 港股语境词（v1.3 bare 通道共现检测，整条 title+desc 匹配一次）。
 # 「恒生」不单列——恒生电子(600570) 是 A 股，只收「恒指/恒生指数/恒生科技」。
-_HK_CONTEXT_RE = re.compile(r"港股|港交所|恒指|恒生指数|恒生科技|国企指数|红筹|(?<![A-Za-z])[Hh][Kk](?![A-Za-z])")
+_HK_CONTEXT_RE = re.compile(
+    r"港股|港交所|恒指|恒生指数|恒生科技|国企指数|红筹|(?<![A-Za-z])[Hh][Kk](?![A-Za-z])"
+)
 # 中文紧贴名的前置字黑名单（v1.3）：「赚了18000」「涨到20000」这类动词+数字
 # 不是公司名紧贴形；白名单制不现实（公司名无限），黑名单兜高频虚词/动词。
 _ADJ_NOISE = set("了的到至达约近超破剩付花收给缴补返省欠赔是价净均倍赢输")
-RE_FUND = re.compile(r"([0-9]{6})(?:\.OF| 基金)|((?:沪深300|中证500|中证1000|创业板|科创50|纳斯达克|标普500|恒生科技|红利|白酒|医药|半导体|新能源|军工|黄金|债券|货币)(?:ETF|基金|指数|LOF|联接))")
+RE_FUND = re.compile(
+    r"([0-9]{6})(?:\.OF| 基金)|((?:沪深300|中证500|中证1000|创业板|科创50|纳斯达克|标普500|恒生科技|红利|白酒|医药|半导体|新能源|军工|黄金|债券|货币)(?:ETF|基金|指数|LOF|联接))"
+)
 _RE_NOISE = re.compile(r"[<>]|br/|[的了这那哦吧呀]")
 # 6 位代码段白名单（v1.2）：命中任一前缀才算场内证券，其余 6 位数字（编号/
 # 年月/订单号）一律出局。港股东 5 位不走此表（港股 00-99 段全合法）。
 _CODE_SEGS = (
-    "600", "601", "603", "605", "688", "689",   # 沪：主板 + 科创板
-    "000", "001", "002", "003",                 # 深：主板 + 原中小板
-    "300", "301", "302",                        # 创业板
-    "430", "920", "83", "87",                   # 北交所 / 新三板
-    "50", "51", "52", "56", "58", "15", "16",   # 场内基金：ETF / LOF
+    "600",
+    "601",
+    "603",
+    "605",
+    "688",
+    "689",  # 沪：主板 + 科创板
+    "000",
+    "001",
+    "002",
+    "003",  # 深：主板 + 原中小板
+    "300",
+    "301",
+    "302",  # 创业板
+    "430",
+    "920",
+    "83",
+    "87",  # 北交所 / 新三板
+    "50",
+    "51",
+    "52",
+    "56",
+    "58",
+    "15",
+    "16",  # 场内基金：ETF / LOF
 )
-_TICKER_VERSION = "v1.6"   # v1.6-b2（2026-10-18，刀二补丁2）：后缀排除集支持
-                           # 可选「整数」前缀，堵「31000整数关口」形（实证 103804289）；
-                           # v1.3 观察项「关口」语境第二阶段落锤。
-                           # 版本号暂留 v1.6 的理由：v1.6 本刀即「港股指位语境硬排除」，
-                           # 「整数关口」是同一语境漏收的第二条实证，非谱系新版本；且
-                           # tests/test_xq_ticker_extract.py 现有断言锚定 v1.6（该件为他人在途，
-                           # 依并行施工不干预原则不代改）。待该件所有者把断言升至 v1.7 后，
-                           # 本行随之升版，**并必须补跑一次 `--reticker` 全量重算**清除旧
-                           # 版本残留（20000×2 / 31000 等整数关口形）。
-                           # v1.6（2026-10-18，xq-quality-dev 刀二）：裸 5 位/cashtag
-                           # 通道加小数前瞻（NNNNN.dd点/亿 形点位金额出局）+ 后缀排除集
-                           # 补「关/附」（关口/附近）。版本谱系：v1.4 已被 --retry-degraded
-                           # 占用、v1.5 已被速率旋钮占用，ticker 谱系自 v1.3 跳 v1.6。
-                           # （v1.3 2026-10-18：港股裸 5 位改三通道判定——前缀/.HK 后缀
-                           # 直接命中、中文紧贴名命中、裸数字需港股语境共现；加数字区间
-                           # 连字符双界与「点/元/块/万/手」后缀硬排除，144250900 实证。）
+_TICKER_VERSION = "v1.6"  # v1.6-b2（2026-10-18，刀二补丁2）：后缀排除集支持
+# 可选「整数」前缀，堵「31000整数关口」形（实证 103804289）；
+# v1.3 观察项「关口」语境第二阶段落锤。
+# 版本号暂留 v1.6 的理由：v1.6 本刀即「港股指位语境硬排除」，
+# 「整数关口」是同一语境漏收的第二条实证，非谱系新版本；且
+# tests/test_xq_ticker_extract.py 现有断言锚定 v1.6（该件为他人在途，
+# 依并行施工不干预原则不代改）。待该件所有者把断言升至 v1.7 后，
+# 本行随之升版，**并必须补跑一次 `--reticker` 全量重算**清除旧
+# 版本残留（20000×2 / 31000 等整数关口形）。
+# v1.6（2026-10-18，xq-quality-dev 刀二）：裸 5 位/cashtag
+# 通道加小数前瞻（NNNNN.dd点/亿 形点位金额出局）+ 后缀排除集
+# 补「关/附」（关口/附近）。版本谱系：v1.4 已被 --retry-degraded
+# 占用、v1.5 已被速率旋钮占用，ticker 谱系自 v1.3 跳 v1.6。
+# （v1.3 2026-10-18：港股裸 5 位改三通道判定——前缀/.HK 后缀
+# 直接命中、中文紧贴名命中、裸数字需港股语境共现；加数字区间
+# 连字符双界与「点/元/块/万/手」后缀硬排除，144250900 实证。）
+
 
 def _clean_ticker(code: str) -> bool:
     """噪音清洗（v1.2 白名单制）：6 位纯数字必须命中 _CODE_SEGS 合法段；
@@ -408,7 +485,8 @@ def ensure_table(con: sqlite3.Connection) -> None:
     # v1.4 迁移：retry_count 列（degraded 重标通道计次，幂等）
     if "retry_count" not in cols:
         con.execute(
-            "ALTER TABLE xq_status_classified ADD COLUMN retry_count INTEGER DEFAULT 0")
+            "ALTER TABLE xq_status_classified ADD COLUMN retry_count INTEGER DEFAULT 0"
+        )
         con.commit()
     if "norm_tickers" not in cols:
         con.execute("ALTER TABLE xq_status_classified ADD COLUMN norm_tickers TEXT")
@@ -430,9 +508,9 @@ def extract_tickers(title: str, desc: str) -> list:
             if not hk_ctx:  # 裸 5 位：无语境时仅「中文紧贴名」形放行
                 prev = text[m.start() - 1] if m.start() > 0 else ""
                 if prev not in _ADJ_NOISE and "\u4e00" <= prev <= "\u9fff":
-                    pass            # 紧贴名（腾讯00700）
+                    pass  # 紧贴名（腾讯00700）
                 else:
-                    continue        # 孤立裸数字，无语境不出局
+                    continue  # 孤立裸数字，无语境不出局
         if code and code not in out and len(out) < 8 and _clean_ticker(code):
             out.append(code)
     for m in RE_FUND.findall(text):
@@ -445,20 +523,22 @@ def extract_tickers(title: str, desc: str) -> list:
 def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     """单条标注：成功(含 degraded)返回 True（落账），硬异常返回 False。"""
     status_id, title, desc, category = row
-    body = ((title or "") + "\n" + (desc or "")).strip()[:BODY_CHARS + 60]
-    payload = json.dumps({
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": body or "（无文字内容）"},
-        ],
-        "stream": False,
-        "think": False,        # 判例：qwen3.5 思考块吃满小 ctx 会把答案挤空（探针实证 0.7s vs 34.8s/失控分钟级）
-        "options": build_llm_options(),
-    }).encode("utf-8")
+    body = ((title or "") + "\n" + (desc or "")).strip()[: BODY_CHARS + 60]
+    payload = json.dumps(
+        {
+            "model": MODEL,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": body or "（无文字内容）"},
+            ],
+            "stream": False,
+            "think": False,  # 判例：qwen3.5 思考块吃满小 ctx 会把答案挤空（探针实证 0.7s vs 34.8s/失控分钟级）
+            "options": build_llm_options(),
+        }
+    ).encode("utf-8")
     req = urllib.request.Request(
-        OLLAMA_URL, data=payload,
-        headers={"Content-Type": "application/json"})
+        OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}
+    )
     try:
         t0 = time.time()
         resp = urllib.request.urlopen(req, timeout=TIMEOUT_SEC)
@@ -476,7 +556,9 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     try:
         m = re.search(r"\{.*\}", answer, re.S)
         obj = json.loads(m.group(0)) if m else {}
-        if obj.get("content_type") in CONTENT_TYPES:   # v1.2 内容形态（缺失不降级 parse_ok，可 --recontent 补）
+        if (
+            obj.get("content_type") in CONTENT_TYPES
+        ):  # v1.2 内容形态（缺失不降级 parse_ok，可 --recontent 补）
             content_type = obj["content_type"]
         if obj.get("event_type") in EVENT_TYPES:
             event_type = obj["event_type"]
@@ -486,8 +568,10 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
             event_type, content_type = EVENT_TYPE_ALIASES[obj["event_type"]]
             # v1.4.1 兜底留痕（fail-visible 判例）：别名命中写 stderr 一条，
             # 供审计命中率/发现新漂移标签；不进 STATUS_LOG（避免自动化日志噪音）
-            sys.stderr.write("[xq_classify] ALIAS-FALLBACK %s: event_type=%r -> %r/%r\n"
-                             % (status_id, obj["event_type"], event_type, content_type))
+            sys.stderr.write(
+                "[xq_classify] ALIAS-FALLBACK %s: event_type=%r -> %r/%r\n"
+                % (status_id, obj["event_type"], event_type, content_type)
+            )
         if obj.get("sentiment") in SENTIMENTS:
             sentiment = obj["sentiment"]
         conf = obj.get("confidence")
@@ -513,28 +597,53 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
         # classify_one 单体只负责「不改别人的计次」。
         old_retry = con.execute(
             "SELECT retry_count FROM xq_status_classified WHERE status_id=?",
-            (str(status_id),)).fetchone()
+            (str(status_id),),
+        ).fetchone()
         tickers = json.dumps(extract_tickers(title, desc), ensure_ascii=False)
-        norm_tickers = json.dumps(normalize_tickers(tickers), ensure_ascii=False,
-                                  separators=(",", ":"))
+        norm_tickers = json.dumps(
+            normalize_tickers(tickers), ensure_ascii=False, separators=(",", ":")
+        )
         con.execute(
             """INSERT OR REPLACE INTO xq_status_classified
                (status_id, event_type, sentiment, tickers, confidence,
                 parse_ok, model, prompt_version, labeled_at, content_type,
                 retry_count, norm_tickers)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (str(status_id), event_type, sentiment, tickers,
-             confidence, parse_ok, MODEL, PROMPT_VERSION,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), content_type,
-             (old_retry[0] or 0) if old_retry else 0, norm_tickers))
+            (
+                str(status_id),
+                event_type,
+                sentiment,
+                tickers,
+                confidence,
+                parse_ok,
+                MODEL,
+                PROMPT_VERSION,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                content_type,
+                (old_retry[0] or 0) if old_retry else 0,
+                norm_tickers,
+            ),
+        )
     except Exception as e:
-        sys.stderr.write("[xq_classify] DB-FAIL %s: %s: %s\n"
-                         % (status_id, type(e).__name__, str(e)[:120]))
+        sys.stderr.write(
+            "[xq_classify] DB-FAIL %s: %s: %s\n"
+            % (status_id, type(e).__name__, str(e)[:120])
+        )
         traceback.print_exc()
         return False
     if parse_ok:
-        log("OK %s cat=%s %s/%s | %s conf=%s %.1fs"
-            % (status_id, category, event_type, content_type or "-", sentiment, confidence, dt))
+        log(
+            "OK %s cat=%s %s/%s | %s conf=%s %.1fs"
+            % (
+                status_id,
+                category,
+                event_type,
+                content_type or "-",
+                sentiment,
+                confidence,
+                dt,
+            )
+        )
     return True
 
 
@@ -551,7 +660,8 @@ def recontent_run(limit: int) -> int:
         """SELECT c.status_id, s.title, s.desc
            FROM xq_status_classified c JOIN xq_status s ON s.status_id = c.status_id
            WHERE c.parse_ok = 1 AND c.content_type IS NULL LIMIT ?""",
-        (limit,)).fetchall()
+        (limit,),
+    ).fetchall()
     log("recontent start n=%d" % len(rows))
     if not rows:
         log("recontent end rc=0 nothing-to-backfill")
@@ -559,18 +669,22 @@ def recontent_run(limit: int) -> int:
         return 0
     ok = hard = consec = 0
     for status_id, title, desc in rows:
-        body = ((title or "") + "\n" + (desc or "")).strip()[:BODY_CHARS + 60]
-        payload = json.dumps({
-            "model": MODEL,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": body or "（无文字内容）"},
-            ],
-            "stream": False, "think": False,
-            "options": build_llm_options(),
-        }).encode("utf-8")
-        req = urllib.request.Request(OLLAMA_URL, data=payload,
-                                     headers={"Content-Type": "application/json"})
+        body = ((title or "") + "\n" + (desc or "")).strip()[: BODY_CHARS + 60]
+        payload = json.dumps(
+            {
+                "model": MODEL,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": body or "（无文字内容）"},
+                ],
+                "stream": False,
+                "think": False,
+                "options": build_llm_options(),
+            }
+        ).encode("utf-8")
+        req = urllib.request.Request(
+            OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}
+        )
         try:
             resp = urllib.request.urlopen(req, timeout=TIMEOUT_SEC)
             answer = json.loads(resp.read())["message"]["content"].strip()
@@ -587,17 +701,28 @@ def recontent_run(limit: int) -> int:
         try:
             m = re.search(r"\{.*\}", answer, re.S)
             obj = json.loads(m.group(0)) if m else {}
-            ct = obj.get("content_type") if obj.get("content_type") in CONTENT_TYPES else None
+            ct = (
+                obj.get("content_type")
+                if obj.get("content_type") in CONTENT_TYPES
+                else None
+            )
         except Exception:
             ct = None
         con.execute(
             "UPDATE xq_status_classified SET content_type=?, prompt_version=?, labeled_at=? WHERE status_id=?",
-            (ct, "v1.2-re", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(status_id)))
+            (
+                ct,
+                "v1.2-re",
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                str(status_id),
+            ),
+        )
         ok += 1
         con.commit()
     con.commit()
     n_left = con.execute(
-        "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=1 AND content_type IS NULL").fetchone()[0]
+        "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=1 AND content_type IS NULL"
+    ).fetchone()[0]
     con.close()
     # v1.2.1 刀 B：手动通道硬失败全量可见——hard>0 报 1，与「recontent 是
     # 有人盯着跑的补标」语义对齐（run() 的 consec>=8 属长跑自动通道让路，
@@ -625,9 +750,12 @@ def retry_degraded(limit: int) -> int:
            FROM xq_status_classified c JOIN xq_status s ON s.status_id = c.status_id
            WHERE c.parse_ok = 0 AND COALESCE(c.retry_count, 0) < ?
            ORDER BY c.labeled_at LIMIT ?""",
-        (DEGRADED_MAX_RETRY, limit)).fetchall()
-    log("retry-degraded start candidates=%d limit=%d cap=%d"
-        % (len(rows), limit, DEGRADED_MAX_RETRY))
+        (DEGRADED_MAX_RETRY, limit),
+    ).fetchall()
+    log(
+        "retry-degraded start candidates=%d limit=%d cap=%d"
+        % (len(rows), limit, DEGRADED_MAX_RETRY)
+    )
     if not rows:
         log("retry-degraded end rc=0 nothing-to-retry")
         con.close()
@@ -643,36 +771,44 @@ def retry_degraded(limit: int) -> int:
                 consec += 1
                 log("RETRY-HARD-FAIL %s" % status_id)
                 if consec >= 8:
-                    log("RETRY-ABORT %d consecutive hard-fails (model/network busy?)"
-                        % consec)
+                    log(
+                        "RETRY-ABORT %d consecutive hard-fails (model/network busy?)"
+                        % consec
+                    )
                     break
                 con.commit()
                 continue
             consec = 0
             cur = con.execute(
                 "SELECT parse_ok FROM xq_status_classified WHERE status_id=?",
-                (str(status_id),)).fetchone()
+                (str(status_id),),
+            ).fetchone()
             if cur and cur[0] == 1:
-                upgraded += 1   # 升级：显式归零（v1.4.3 刀 A 后 REPLACE 不再隐式清零）
+                upgraded += 1  # 升级：显式归零（v1.4.3 刀 A 后 REPLACE 不再隐式清零）
                 con.execute(
                     "UPDATE xq_status_classified SET retry_count=0 WHERE status_id=?",
-                    (str(status_id),))
+                    (str(status_id),),
+                )
             else:
-                still += 1      # 仍截断：保持 degraded，累加计次
+                still += 1  # 仍截断：保持 degraded，累加计次
                 con.execute(
                     "UPDATE xq_status_classified SET retry_count=? WHERE status_id=?",
-                    ((old_retry or 0) + 1, str(status_id)))
+                    ((old_retry or 0) + 1, str(status_id)),
+                )
             con.commit()
         con.commit()
         n_left = con.execute(
-            "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=0").fetchone()[0]
+            "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=0"
+        ).fetchone()[0]
     except Exception as e:
         traceback.print_exc()
         log("RETRY-ABORT-ERROR %s: %s" % (type(e).__name__, str(e)[:120]))
         n_left = -1
     con.close()
-    log("retry-degraded end rc=0 upgraded=%d still_degraded=%d hard_fail=%d degraded_left=%d"
-        % (upgraded, still, hard, n_left))
+    log(
+        "retry-degraded end rc=0 upgraded=%d still_degraded=%d hard_fail=%d degraded_left=%d"
+        % (upgraded, still, hard, n_left)
+    )
     return 0
 
 
@@ -733,7 +869,7 @@ def run(limit: int, order: str = "asc", segment: str = "") -> int:
     exactly (same SQL shape, same log line types); non-default values only
     add one extra "round params" log line for parallel-run observability.
     """
-    if not peak_shift_gate():   # v1.8 错峰闸门 1：默认关闭时直通零变化
+    if not peak_shift_gate():  # v1.8 错峰闸门 1：默认关闭时直通零变化
         return 0
     con = sqlite3.connect(str(DB_PATH), timeout=30)
     con.execute("PRAGMA busy_timeout=30000")
@@ -743,8 +879,10 @@ def run(limit: int, order: str = "asc", segment: str = "") -> int:
     if order != "asc" or segment:
         log("round params order=%s segment=%s" % (order, segment or "-"))
     if not rows:
-        log("round end rc=0 all-caught-up total=%d"
-            % con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0])
+        log(
+            "round end rc=0 all-caught-up total=%d"
+            % con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
+        )
         con.close()
         return 0
     ok = hard = consec = 0
@@ -762,8 +900,9 @@ def run(limit: int, order: str = "asc", segment: str = "") -> int:
                     # 熔断看「连续失败」而非累计占比：前期成功抬高占比分母会让
                     # 后期超时空转数小时（07-18 实证：385 ok 后每条 60s 超时，
                     # 旧条件需再熬 200 条才触发）
-                    log("ABORT %d consecutive hard-fails (model/network busy?)"
-                        % consec)
+                    log(
+                        "ABORT %d consecutive hard-fails (model/network busy?)" % consec
+                    )
                     break
             con.commit()
             if (i + 1) % 25 == 0:
@@ -776,8 +915,10 @@ def run(limit: int, order: str = "asc", segment: str = "") -> int:
         rc = 1
     else:
         rc = 1 if consec >= 8 else 0
-    log("round end rc=%d labeled_this=%d hard_fail=%d derived_total=%d"
-        % (rc, ok, hard, total_c))
+    log(
+        "round end rc=%d labeled_this=%d hard_fail=%d derived_total=%d"
+        % (rc, ok, hard, total_c)
+    )
     con.close()
     return rc
 
@@ -788,17 +929,21 @@ def show_status() -> int:
     try:
         c = con.execute("SELECT COUNT(*) FROM xq_status_classified").fetchone()[0]
         ok = con.execute(
-            "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=1").fetchone()[0]
+            "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=1"
+        ).fetchone()[0]
         deg = c - ok
         dist = con.execute(
             """SELECT event_type, sentiment, COUNT(*) FROM xq_status_classified
                WHERE parse_ok=1 GROUP BY event_type, sentiment
-               ORDER BY 3 DESC LIMIT 10""").fetchall()
+               ORDER BY 3 DESC LIMIT 10"""
+        ).fetchall()
     except sqlite3.OperationalError:
         print("derived table not created yet; source=%d" % src)
         return 0
-    print("source=%d classified=%d (ok=%d degraded=%d) pending=%d"
-          % (src, c, ok, deg, src - c))
+    print(
+        "source=%d classified=%d (ok=%d degraded=%d) pending=%d"
+        % (src, c, ok, deg, src - c)
+    )
     for r in dist:
         print("  %-8s %-8s %d" % r)
     con.close()
@@ -819,21 +964,27 @@ def reticker() -> int:
     rows = con.execute(
         "SELECT status_id, (SELECT s.title FROM xq_status s WHERE s.status_id=c.status_id),"
         " (SELECT s.desc FROM xq_status s WHERE s.status_id=c.status_id), tickers"
-        " FROM xq_status_classified c").fetchall()
+        " FROM xq_status_classified c"
+    ).fetchall()
     changed = kept = 0
     for status_id, title, desc, old in rows:
         new = json.dumps(extract_tickers(title, desc), ensure_ascii=False)
         if new != (old or "[]"):
-            con.execute("UPDATE xq_status_classified SET tickers=? WHERE status_id=?",
-                        (new, status_id))
+            con.execute(
+                "UPDATE xq_status_classified SET tickers=? WHERE status_id=?",
+                (new, status_id),
+            )
             changed += 1
         else:
             kept += 1
     con.commit()
     n_t = con.execute(
-        "SELECT COUNT(*) FROM xq_status_classified WHERE tickers != '[]'").fetchone()[0]
-    log("reticker done total=%d changed=%d kept=%d now_with_ticker=%d version=%s"
-        % (len(rows), changed, kept, n_t, _TICKER_VERSION))
+        "SELECT COUNT(*) FROM xq_status_classified WHERE tickers != '[]'"
+    ).fetchone()[0]
+    log(
+        "reticker done total=%d changed=%d kept=%d now_with_ticker=%d version=%s"
+        % (len(rows), changed, kept, n_t, _TICKER_VERSION)
+    )
     con.close()
     return 0
 
@@ -843,25 +994,46 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="雪球舆情分类管道 v1")
     ap.add_argument("--limit", type=int, default=500)
     ap.add_argument("--status", action="store_true")
-    ap.add_argument("--reticker", action="store_true",
-                    help="v1.1 按新正则重算已分类行的 tickers（不过 LLM）")
-    ap.add_argument("--recontent", action="store_true",
-                    help="v1.2 对已分类但 content_type 为空的行重跑 LLM 补内容形态")
-    ap.add_argument("--retry-degraded", action="store_true",
-                    help="v1.4 重跑 degraded（parse_ok=0）行：成功升级，仍截断累加 "
-                         "retry_count，>=3 次不再重试")
+    ap.add_argument(
+        "--reticker",
+        action="store_true",
+        help="v1.1 按新正则重算已分类行的 tickers（不过 LLM）",
+    )
+    ap.add_argument(
+        "--recontent",
+        action="store_true",
+        help="v1.2 对已分类但 content_type 为空的行重跑 LLM 补内容形态",
+    )
+    ap.add_argument(
+        "--retry-degraded",
+        action="store_true",
+        help="v1.4 重跑 degraded（parse_ok=0）行：成功升级，仍截断累加 "
+        "retry_count，>=3 次不再重试",
+    )
     # v1.7 multi-instance parallel knobs (all default = historical behavior)
-    ap.add_argument("--worker-id", default="", dest="worker_id", metavar="ID",
-                    help="v1.7 多实例并行：非空时状态日志写分片文件 "
-                         "xq_classify_status_<ID>.log（同目录）；空 = 完全现状")
-    ap.add_argument("--order", default="asc",
-                    choices=("asc", "desc", "engagement"),
-                    help="v1.7 取数顺序：asc=现状（created_at 降序新帖优先）；"
-                         "desc=status_id 降序吃远端历史；engagement=view_count "
-                         "降序高互动优先")
-    ap.add_argument("--segment", default="", choices=("A", "B"),
-                    help="v1.7 奇偶分片：A=status_id 偶数尾，B=奇数尾；"
-                         "双实例各吃一半互不重叠；缺省 = 不分片")
+    ap.add_argument(
+        "--worker-id",
+        default="",
+        dest="worker_id",
+        metavar="ID",
+        help="v1.7 多实例并行：非空时状态日志写分片文件 "
+        "xq_classify_status_<ID>.log（同目录）；空 = 完全现状",
+    )
+    ap.add_argument(
+        "--order",
+        default="asc",
+        choices=("asc", "desc", "engagement"),
+        help="v1.7 取数顺序：asc=现状（created_at 降序新帖优先）；"
+        "desc=status_id 降序吃远端历史；engagement=view_count "
+        "降序高互动优先",
+    )
+    ap.add_argument(
+        "--segment",
+        default="",
+        choices=("A", "B"),
+        help="v1.7 奇偶分片：A=status_id 偶数尾，B=奇数尾；"
+        "双实例各吃一半互不重叠；缺省 = 不分片",
+    )
     return ap
 
 

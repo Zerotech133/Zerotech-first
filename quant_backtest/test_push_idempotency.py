@@ -26,6 +26,7 @@
 
 注意：默认模式零飞书副作用；跑完自动清理 pushed 文件，不留测试痕迹。
 """
+
 import os
 import sys
 import json
@@ -75,19 +76,40 @@ def test_1_first_push():
     _section("测试 1: 首次推送 2 条新信号")
     _cleanup()
     batch = [
-        {"code": "TEST_A.SZ", "name": "测试A", "type": "1卖",
-         "dt": "2026-09-25", "price": 10, "detect_date": "2026-09-27",
-         "lag": 3, "entry_px": 9.8, "tbe": True},
-        {"code": "TEST_B.SZ", "name": "测试B", "type": "1卖",
-         "dt": "2026-09-26", "price": 20, "detect_date": "2026-09-27",
-         "lag": 5, "entry_px": 19.5, "tbe": True},
+        {
+            "code": "TEST_A.SZ",
+            "name": "测试A",
+            "type": "1卖",
+            "dt": "2026-09-25",
+            "price": 10,
+            "detect_date": "2026-09-27",
+            "lag": 3,
+            "entry_px": 9.8,
+            "tbe": True,
+        },
+        {
+            "code": "TEST_B.SZ",
+            "name": "测试B",
+            "type": "1卖",
+            "dt": "2026-09-26",
+            "price": 20,
+            "detect_date": "2026-09-27",
+            "lag": 5,
+            "entry_px": 19.5,
+            "tbe": True,
+        },
     ]
     n = cs.push_1sell_tbe_alert(batch)
     pushed = cs._load_pushed()
     # 桩调用数=飞书消息批次数：fresh 拼单条文本一次发送（K187 修正，
     # 原 erroneously 期望 2——2 条信号合 1 条消息）
-    ok = (n == 2 and len(pushed) == 2 and len(_PUSH_CALLS) == 1
-          and "TEST_A.SZ" in _PUSH_CALLS[0] and "TEST_B.SZ" in _PUSH_CALLS[0])
+    ok = (
+        n == 2
+        and len(pushed) == 2
+        and len(_PUSH_CALLS) == 1
+        and "TEST_A.SZ" in _PUSH_CALLS[0]
+        and "TEST_B.SZ" in _PUSH_CALLS[0]
+    )
     print("  推送数: %d (期望 2)" % n)
     print("  pushed 键: %s" % sorted(pushed))
     print("  桩调用数(飞书批次): %d (期望 1，2 条合 1 条消息)" % len(_PUSH_CALLS))
@@ -98,15 +120,31 @@ def test_1_first_push():
 def test_2_repush_same():
     _section("测试 2: 重发同样 2 条，应全部跳过（幂等核心）")
     batch = [
-        {"code": "TEST_A.SZ", "name": "测试A", "type": "1卖",
-         "dt": "2026-09-25", "price": 10, "detect_date": "2026-09-27",
-         "lag": 3, "entry_px": 9.8, "tbe": True},
-        {"code": "TEST_B.SZ", "name": "测试B", "type": "1卖",
-         "dt": "2026-09-26", "price": 20, "detect_date": "2026-09-27",
-         "lag": 5, "entry_px": 19.5, "tbe": True},
+        {
+            "code": "TEST_A.SZ",
+            "name": "测试A",
+            "type": "1卖",
+            "dt": "2026-09-25",
+            "price": 10,
+            "detect_date": "2026-09-27",
+            "lag": 3,
+            "entry_px": 9.8,
+            "tbe": True,
+        },
+        {
+            "code": "TEST_B.SZ",
+            "name": "测试B",
+            "type": "1卖",
+            "dt": "2026-09-26",
+            "price": 20,
+            "detect_date": "2026-09-27",
+            "lag": 5,
+            "entry_px": 19.5,
+            "tbe": True,
+        },
     ]
     n = cs.push_1sell_tbe_alert(batch)
-    ok = (n == 0)
+    ok = n == 0
     print("  推送数: %d (期望 0)" % n)
     print("  结果: %s" % ("PASS" if ok else "FAIL"))
     assert ok, "重发同样批次：应全部跳过"
@@ -115,16 +153,32 @@ def test_2_repush_same():
 def test_3_mixed_old_new():
     _section("测试 3: 1 条已推送 + 1 条新信号 → 只推新的")
     batch = [
-        {"code": "TEST_A.SZ", "name": "测试A", "type": "1卖",
-         "dt": "2026-09-25", "price": 10, "detect_date": "2026-09-27",
-         "lag": 3, "entry_px": 9.8, "tbe": True},   # 已推送
-        {"code": "TEST_C.SZ", "name": "测试C", "type": "1卖",
-         "dt": "2026-09-24", "price": 30, "detect_date": "2026-09-27",
-         "lag": 7, "entry_px": 29.0, "tbe": True},  # 新
+        {
+            "code": "TEST_A.SZ",
+            "name": "测试A",
+            "type": "1卖",
+            "dt": "2026-09-25",
+            "price": 10,
+            "detect_date": "2026-09-27",
+            "lag": 3,
+            "entry_px": 9.8,
+            "tbe": True,
+        },  # 已推送
+        {
+            "code": "TEST_C.SZ",
+            "name": "测试C",
+            "type": "1卖",
+            "dt": "2026-09-24",
+            "price": 30,
+            "detect_date": "2026-09-27",
+            "lag": 7,
+            "entry_px": 29.0,
+            "tbe": True,
+        },  # 新
     ]
     n = cs.push_1sell_tbe_alert(batch)
     pushed = cs._load_pushed()
-    ok = (n == 1 and len(pushed) == 3)
+    ok = n == 1 and len(pushed) == 3
     print("  推送数: %d (期望 1)" % n)
     print("  pushed 键数: %d (期望 3)" % len(pushed))
     print("  结果: %s" % ("PASS" if ok else "FAIL"))
@@ -134,16 +188,31 @@ def test_3_mixed_old_new():
 def test_4_wrong_type_or_tbe():
     _section("测试 4: 非 1卖 或 tbe!=True → 不触发推送")
     batch = [
-        {"code": "TEST_D.SZ", "name": "测试D", "type": "2买",
-         "dt": "2026-09-23", "tbe": True},            # 非 1卖
-        {"code": "TEST_E.SZ", "name": "测试E", "type": "1卖",
-         "dt": "2026-09-22", "tbe": False},            # tbe=False
-        {"code": "TEST_F.SZ", "name": "测试F", "type": "1卖",
-         "dt": "2026-09-21", "tbe": None},             # tbe=None
+        {
+            "code": "TEST_D.SZ",
+            "name": "测试D",
+            "type": "2买",
+            "dt": "2026-09-23",
+            "tbe": True,
+        },  # 非 1卖
+        {
+            "code": "TEST_E.SZ",
+            "name": "测试E",
+            "type": "1卖",
+            "dt": "2026-09-22",
+            "tbe": False,
+        },  # tbe=False
+        {
+            "code": "TEST_F.SZ",
+            "name": "测试F",
+            "type": "1卖",
+            "dt": "2026-09-21",
+            "tbe": None,
+        },  # tbe=None
     ]
     n = cs.push_1sell_tbe_alert(batch)
     pushed = cs._load_pushed()
-    ok = (n == 0 and len(pushed) == 3)  # pushed 不应变
+    ok = n == 0 and len(pushed) == 3  # pushed 不应变
     print("  推送数: %d (期望 0)" % n)
     print("  pushed 键数: %d (期望仍 3)" % len(pushed))
     print("  结果: %s" % ("PASS" if ok else "FAIL"))
@@ -160,10 +229,17 @@ def test_5_config_switch_off():
     with open(cfg_path, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=1)
     try:
-        batch = [{"code": "TEST_G.SZ", "name": "测试G", "type": "1卖",
-                  "dt": "2026-09-20", "tbe": True}]
+        batch = [
+            {
+                "code": "TEST_G.SZ",
+                "name": "测试G",
+                "type": "1卖",
+                "dt": "2026-09-20",
+                "tbe": True,
+            }
+        ]
         n = cs.push_1sell_tbe_alert(batch)
-        ok = (n == 0)
+        ok = n == 0
         print("  推送数: %d (期望 0)" % n)
         print("  结果: %s" % ("PASS" if ok else "FAIL"))
     finally:
@@ -178,7 +254,7 @@ def test_6_empty_input():
     _section("测试 6: 空输入 / None → 安全返回 0")
     n1 = cs.push_1sell_tbe_alert([])
     n2 = cs.push_1sell_tbe_alert(None)
-    ok = (n1 == 0 and n2 == 0)
+    ok = n1 == 0 and n2 == 0
     print("  空列表推送数: %d (期望 0)" % n1)
     print("  None 输入推送数: %d (期望 0)" % n2)
     print("  结果: %s" % ("PASS" if ok else "FAIL"))

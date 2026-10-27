@@ -19,6 +19,7 @@
   python kg_conduction_lag.py run            # 图内全部主题
   python kg_conduction_lag.py run 人形机器人 [--days 365]
 """
+
 import argparse
 import json
 import os
@@ -29,15 +30,15 @@ from datetime import datetime, timedelta
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import pandas as pd                                    # noqa: E402
-from kg_client import KgClient                         # noqa: E402
+import pandas as pd  # noqa: E402
+from kg_client import KgClient  # noqa: E402
 
 ASHARE = os.path.join(HERE, "data", "ashare")
 OUT = os.path.join(HERE, "data", "kg_conduction_lag.json")
-MOVE_THR = 0.03      # 发起环节异动阈值（日收益 ≥3%）
-FOLLOW_THR = 0.015   # 跟动判定阈值（响应环节日收益 ≥1.5%）
-FOLLOW_WIN = 3       # 跟动判定窗口（T+1..T+3）
-LAGS = 5             # 时滞分布窗口（T+1..T+5）
+MOVE_THR = 0.03  # 发起环节异动阈值（日收益 ≥3%）
+FOLLOW_THR = 0.015  # 跟动判定阈值（响应环节日收益 ≥1.5%）
+FOLLOW_WIN = 3  # 跟动判定窗口（T+1..T+3）
+LAGS = 5  # 时滞分布窗口（T+1..T+5）
 
 
 def _members(cli):
@@ -46,7 +47,8 @@ def _members(cli):
         rows = s.run(
             "MATCH (sec:Security)-[sp:SUPPLIES_TO]->(g:Segment) "
             "RETURN sp.chain AS theme, g.name AS seg, sec.ts_code AS code, "
-            "sec.name AS name").data()
+            "sec.name AS name"
+        ).data()
     tree, names = {}, {}
     for r in rows:
         th = r["theme"] or "（未标注链）"
@@ -69,12 +71,12 @@ def _closes(codes, days):
             continue
         if not {"trade_date", "close"}.issubset(df.columns):
             continue
-        s = (df.drop_duplicates("trade_date", keep="last")
-               .sort_values("trade_date"))
+        s = df.drop_duplicates("trade_date", keep="last").sort_values("trade_date")
         s = s[s["trade_date"].astype(str).str[:8] >= d0]
         out[c] = pd.Series(
             s["close"].astype(float).values,
-            index=s["trade_date"].astype(str).str[:8].values)
+            index=s["trade_date"].astype(str).str[:8].values,
+        )
     return out
 
 
@@ -101,15 +103,14 @@ def run(theme=None, days=365):
         if not tree:
             print("（图内无主题 %s 的 SUPPLIES_TO 成员）" % theme)
             return
-    codes = sorted({c for segs in tree.values()
-                    for cs in segs.values() for c in cs})
+    codes = sorted({c for segs in tree.values() for cs in segs.values() for c in cs})
     closes = _closes(codes, days)
     rets = _seg_returns(tree, closes)
 
     pairs, n_events = [], 0
     for th, seg_rets in rets.items():
         all_r = pd.concat(list(seg_rets.values()), axis=1)
-        r_mkt = all_r.mean(axis=1)          # 链内基准（全体成员等权）
+        r_mkt = all_r.mean(axis=1)  # 链内基准（全体成员等权）
         segs = sorted(seg_rets)
         for a in segs:
             ra = seg_rets[a]
@@ -128,16 +129,15 @@ def run(theme=None, days=365):
                     i0 = int(i[0]) if i.size and i[0] >= 0 else -1
                     if i0 < 0:
                         continue
-                    lm = rb.index.get_indexer(rb.index[i0 + 1:i0 + 1 + LAGS])
+                    lm = rb.index.get_indexer(rb.index[i0 + 1 : i0 + 1 + LAGS])
                     lm = lm[lm >= 0]
-                    if lm.size < LAGS:      # 右端截断（缺未来行情）不计
+                    if lm.size < LAGS:  # 右端截断（缺未来行情）不计
                         continue
                     im = r_mkt.index.get_indexer(rb.index[lm])
                     im = im[im >= 0]
                     if im.size < LAGS:
                         continue
-                    ex = (rb.iloc[lm].values
-                          - r_mkt.iloc[im].values)
+                    ex = rb.iloc[lm].values - r_mkt.iloc[im].values
                     for k in range(LAGS):
                         lags[k].append(float(ex[k]))
                     if max(rb.iloc[lm[:FOLLOW_WIN]]) >= FOLLOW_THR:
@@ -146,36 +146,59 @@ def run(theme=None, days=365):
                         miss += 1
                 if not (hit + miss):
                     continue
-                pairs.append({
-                    "theme": th, "src": a, "dst": b,
-                    "n_t0": hit + miss,
-                    "lag_ex": [round(sum(x) / len(x), 4) if x else None
-                               for x in lags],
-                    "follow_rate": round(hit / (hit + miss), 3),
-                    "src_moves": len(ev),
-                })
-    pairs.sort(key=lambda p: -(p["lag_ex"][2] or 0))    # 按 T+3 超额排序
+                pairs.append(
+                    {
+                        "theme": th,
+                        "src": a,
+                        "dst": b,
+                        "n_t0": hit + miss,
+                        "lag_ex": [
+                            round(sum(x) / len(x), 4) if x else None for x in lags
+                        ],
+                        "follow_rate": round(hit / (hit + miss), 3),
+                        "src_moves": len(ev),
+                    }
+                )
+    pairs.sort(key=lambda p: -(p["lag_ex"][2] or 0))  # 按 T+3 超额排序
 
-    print("== 传导时滞回测（异动≥%.0f%% · 链内基准 · 窗口 %d 自然日） =="
-          % (MOVE_THR * 100, days))
-    print("环节 %d · 发起事件 %d · 环节对 %d（样本小打样统计，非显著结论）"
-          % (sum(len(x) for x in rets.values()), n_events, len(pairs)))
-    hdr = ("发起环节 → 响应环节".ljust(34) + "T0".ljust(5)
-           + "".join("T+%d" % (k + 1) for k in range(LAGS)) + " 跟动率")
+    print(
+        "== 传导时滞回测（异动≥%.0f%% · 链内基准 · 窗口 %d 自然日） =="
+        % (MOVE_THR * 100, days)
+    )
+    print(
+        "环节 %d · 发起事件 %d · 环节对 %d（样本小打样统计，非显著结论）"
+        % (sum(len(x) for x in rets.values()), n_events, len(pairs))
+    )
+    hdr = (
+        "发起环节 → 响应环节".ljust(34)
+        + "T0".ljust(5)
+        + "".join("T+%d" % (k + 1) for k in range(LAGS))
+        + " 跟动率"
+    )
     print(hdr)
     for p in pairs[:20]:
         lags_txt = "".join(
-            ("%+5.1f%%" % (x * 100)) if x is not None else "    —"
-            for x in p["lag_ex"])
-        print("%s %-5d %s %5.0f%%"
-              % (("%s → %s" % (p["src"], p["dst"])).ljust(34),
-                 p["n_t0"], lags_txt, p["follow_rate"] * 100))
+            ("%+5.1f%%" % (x * 100)) if x is not None else "    —" for x in p["lag_ex"]
+        )
+        print(
+            "%s %-5d %s %5.0f%%"
+            % (
+                ("%s → %s" % (p["src"], p["dst"])).ljust(34),
+                p["n_t0"],
+                lags_txt,
+                p["follow_rate"] * 100,
+            )
+        )
     res = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "window_days": days, "move_thr": MOVE_THR,
-        "follow_thr": FOLLOW_THR, "follow_win": FOLLOW_WIN, "lags": LAGS,
+        "window_days": days,
+        "move_thr": MOVE_THR,
+        "follow_thr": FOLLOW_THR,
+        "follow_win": FOLLOW_WIN,
+        "lags": LAGS,
         "n_segments": sum(len(x) for x in rets.values()),
-        "n_events": n_events, "n_pairs": len(pairs),
+        "n_events": n_events,
+        "n_pairs": len(pairs),
         "pairs": pairs,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

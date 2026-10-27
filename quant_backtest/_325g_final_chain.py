@@ -14,6 +14,7 @@
   python _325g_final_chain.py --check   # 只跑守卫+打印计划，不动数据
   python _325g_final_chain.py           # 全链执行
 """
+
 import argparse
 import json
 import os
@@ -50,8 +51,10 @@ def guard_backfill_quiet():
         return "SKIP(无 _325b 日志)"
     age = time.time() - os.path.getmtime(BACKFILL_LOG)
     if age < 15 * 60:
-        raise SystemExit("GUARD FAIL: _325b_backfill.log %.0f 分钟前仍在写入——"
-                         "回补可能未完成，晚点再跑本链" % (age / 60))
+        raise SystemExit(
+            "GUARD FAIL: _325b_backfill.log %.0f 分钟前仍在写入——"
+            "回补可能未完成，晚点再跑本链" % (age / 60)
+        )
     return "PASS(静默 %.1f 小时)" % (age / 3600.0)
 
 
@@ -76,36 +79,53 @@ def main():
         except ImportError:
             raise SystemExit(
                 "FAIL: 当前解释器无 pandas（%s）——请用 %s 启动本链"
-                % (sys.executable, PY311))
+                % (sys.executable, PY311)
+            )
 
     log("== 325G 衔接链启动 ==")
     g = guard_backfill_quiet()
     log("守卫①回补静默检查: %s" % g)
-    log("计划: ②幂等补拉 _325b_backfill.py → ③终版快照 dknife_snap(tushare "
-        "202606-202610) → ④首窗 calc_dknife_signals_market(20260601→今日)")
+    log(
+        "计划: ②幂等补拉 _325b_backfill.py → ③终版快照 dknife_snap(tushare "
+        "202606-202610) → ④首窗 calc_dknife_signals_market(20260601→今日)"
+    )
     if args.check:
         log("--check 模式到此为止")
         return
 
-    rc = run_step("②幂等补拉", [PY, "-u", "_325b_backfill.py"],
-                  os.path.join(HERE, "_325g_step2_backfill.log"))
+    rc = run_step(
+        "②幂等补拉",
+        [PY, "-u", "_325b_backfill.py"],
+        os.path.join(HERE, "_325g_step2_backfill.log"),
+    )
     if rc != 0:
         log("FAIL@②补拉 rc=%d——停链（快照不基于残缺数据）" % rc)
         sys.exit(2)
 
-    rc = run_step("③终版快照",
-                  [PY, "-u", "dknife_snap.py", "--src", "tushare",
-                   "--ym0", "202606", "--ym1", "202610"],
-                  os.path.join(HERE, "_325g_step3_snap.log"))
+    rc = run_step(
+        "③终版快照",
+        [
+            PY,
+            "-u",
+            "dknife_snap.py",
+            "--src",
+            "tushare",
+            "--ym0",
+            "202606",
+            "--ym1",
+            "202610",
+        ],
+        os.path.join(HERE, "_325g_step3_snap.log"),
+    )
     if rc != 0:
         log("FAIL@③快照 rc=%d——停链" % rc)
         sys.exit(3)
 
     log("④首窗回测开始（全市场双刀信号 20260601→今日）")
     from backtest_engine_v2 import calc_dknife_signals_market
+
     today = time.strftime("%Y%m%d")
-    sig, pool, meta, err = calc_dknife_signals_market("20260601", today,
-                                                      hist_st=True)
+    sig, pool, meta, err = calc_dknife_signals_market("20260601", today, hist_st=True)
     if err:
         log("FAIL@④信号: %s" % err)
         sys.exit(4)
@@ -118,9 +138,10 @@ def main():
     }
     with open(RESULT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1, default=str)
-    log("④完成: universe=%s 只·信号日=%s·信号总数=%s → %s"
-        % (meta.get("universe"), len(sig), meta.get("n_sig"),
-           os.path.basename(RESULT)))
+    log(
+        "④完成: universe=%s 只·信号日=%s·信号总数=%s → %s"
+        % (meta.get("universe"), len(sig), meta.get("n_sig"), os.path.basename(RESULT))
+    )
     log("== 325G 衔接链全部完成 ==")
 
 

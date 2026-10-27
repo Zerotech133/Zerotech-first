@@ -23,6 +23,7 @@ status=candidate_ready/complete/staged_path/staged_sha256/receipt_path）。
 按 ts_code 排序存储。幂等：staging parquet 已存在且 sha==receipt sha → skip
 （中断重跑友好）。trade_cal 有重复行陷阱：必须 drop_duplicates 后再取开市日。
 """
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -48,31 +49,107 @@ STAGING = HERE / "data" / "tushare_staging"
 # history_3y 分片，键 str + 数值 float64/int64——新单元数值统一 float64，
 # int64 列混合 dtype 按判例豁免，消费安全）。
 TABLES = [
-    ("ts_daily", "daily", ["ts_code", "trade_date"],
-     ["open", "high", "low", "close", "pre_close",
-      "change", "pct_chg", "vol", "amount"], "string"),
-    ("ts_adj_factor", "adj_factor", ["ts_code", "trade_date"],
-     ["adj_factor"], "string"),
-    ("ts_daily_basic", "daily_basic", ["ts_code", "trade_date"],
-     ["close", "turnover_rate", "turnover_rate_f", "volume_ratio",
-      "pe", "pe_ttm", "pb", "ps", "ps_ttm", "dv_ratio", "dv_ttm",
-      "total_share", "float_share", "free_share", "total_mv",
-      "circ_mv"], "str"),
-    ("ts_margin_detail", "margin_detail", ["trade_date", "ts_code"],
-     ["rzye", "rqye", "rzmre", "rqyl", "rzche", "rqchl",
-      "rqmcl", "rzrqye"], "str"),
-    ("ts_index_daily", "index_daily", ["ts_code", "trade_date"],
-     ["close", "open", "high", "low", "pre_close", "change",
-      "pct_chg", "vol", "amount"], "str"),
-    ("ts_moneyflow", "moneyflow", ["ts_code", "trade_date"],
-     ["buy_sm_vol", "buy_sm_amount", "sell_sm_vol", "sell_sm_amount",
-      "buy_md_vol", "buy_md_amount", "sell_md_vol", "sell_md_amount",
-      "buy_lg_vol", "buy_lg_amount", "sell_lg_vol", "sell_lg_amount",
-      "buy_elg_vol", "buy_elg_amount", "sell_elg_vol",
-      "sell_elg_amount", "net_mf_vol", "net_mf_amount"], "str"),
+    (
+        "ts_daily",
+        "daily",
+        ["ts_code", "trade_date"],
+        [
+            "open",
+            "high",
+            "low",
+            "close",
+            "pre_close",
+            "change",
+            "pct_chg",
+            "vol",
+            "amount",
+        ],
+        "string",
+    ),
+    (
+        "ts_adj_factor",
+        "adj_factor",
+        ["ts_code", "trade_date"],
+        ["adj_factor"],
+        "string",
+    ),
+    (
+        "ts_daily_basic",
+        "daily_basic",
+        ["ts_code", "trade_date"],
+        [
+            "close",
+            "turnover_rate",
+            "turnover_rate_f",
+            "volume_ratio",
+            "pe",
+            "pe_ttm",
+            "pb",
+            "ps",
+            "ps_ttm",
+            "dv_ratio",
+            "dv_ttm",
+            "total_share",
+            "float_share",
+            "free_share",
+            "total_mv",
+            "circ_mv",
+        ],
+        "str",
+    ),
+    (
+        "ts_margin_detail",
+        "margin_detail",
+        ["trade_date", "ts_code"],
+        ["rzye", "rqye", "rzmre", "rqyl", "rzche", "rqchl", "rqmcl", "rzrqye"],
+        "str",
+    ),
+    (
+        "ts_index_daily",
+        "index_daily",
+        ["ts_code", "trade_date"],
+        [
+            "close",
+            "open",
+            "high",
+            "low",
+            "pre_close",
+            "change",
+            "pct_chg",
+            "vol",
+            "amount",
+        ],
+        "str",
+    ),
+    (
+        "ts_moneyflow",
+        "moneyflow",
+        ["ts_code", "trade_date"],
+        [
+            "buy_sm_vol",
+            "buy_sm_amount",
+            "sell_sm_vol",
+            "sell_sm_amount",
+            "buy_md_vol",
+            "buy_md_amount",
+            "sell_md_vol",
+            "sell_md_amount",
+            "buy_lg_vol",
+            "buy_lg_amount",
+            "sell_lg_vol",
+            "sell_lg_amount",
+            "buy_elg_vol",
+            "buy_elg_amount",
+            "sell_elg_vol",
+            "sell_elg_amount",
+            "net_mf_vol",
+            "net_mf_amount",
+        ],
+        "str",
+    ),
 ]
 
-CALL_INTERVAL = 0.15      # 500 次/分钟限频内（777×2≈1554 次调用）
+CALL_INTERVAL = 0.15  # 500 次/分钟限频内（777×2≈1554 次调用）
 PROGRESS_EVERY = 20
 
 # 源侧脏行判据：ts_code 含非 ASCII 字符（中文/全角）即脏。实锤
@@ -99,6 +176,7 @@ def _sha256_body(data: dict) -> str:
 def load_open_days() -> list[str]:
     """trade_cal 去重（陷阱：直接过滤 is_open==1 会得 18.9 万重复行）。"""
     import glob
+
     parts = sorted(glob.glob(str(PROD / "trade_cal" / "part_*.parquet")))
     if not parts:
         raise SystemExit("[abort] 生产仓 trade_cal part_*.parquet 缺失")
@@ -112,6 +190,7 @@ def load_open_days() -> list[str]:
 def table_gap_days(ts_table: str, open_days: list[str]) -> tuple[list[str], str]:
     """缺口 = 开市日 ∩ > 生产表内最大 d_*.parquet（按实盘文件算，不信任口径）。"""
     import glob
+
     prod_dir = PROD / ts_table[3:]
     fs = sorted(glob.glob(str(prod_dir / "d_*.parquet")))
     if not fs:
@@ -120,9 +199,15 @@ def table_gap_days(ts_table: str, open_days: list[str]) -> tuple[list[str], str]
     return [d for d in open_days if d > mx], mx
 
 
-def capture_unit(ts_table: str, api: str, key_cols: list[str],
-                 num_cols: list[str], key_dtype: str, d: str,
-                 out_dir: Path) -> str:
+def capture_unit(
+    ts_table: str,
+    api: str,
+    key_cols: list[str],
+    num_cols: list[str],
+    key_dtype: str,
+    d: str,
+    out_dir: Path,
+) -> str:
     """单日 capture → parquet + receipt。返回 ok/skip/failed。"""
     pq = out_dir / f"{ts_table}_{d}.parquet"
     rc_path = out_dir / f"{ts_table}_{d}.receipt.json"
@@ -133,7 +218,7 @@ def capture_unit(ts_table: str, api: str, key_cols: list[str],
         if _sha256_file(pq) == old.get("staged_sha256"):
             return "skip"
 
-    data = ts_call(api, {"trade_date": d})   # 限频退避内建
+    data = ts_call(api, {"trade_date": d})  # 限频退避内建
     fields = data.get("fields") or []
     items = list(data.get("items") or [])
     PAGE = 10000
@@ -143,8 +228,7 @@ def capture_unit(ts_table: str, api: str, key_cols: list[str],
         # 行为不变。
         offset = PAGE
         for _ in range(6):
-            page = ts_call(api, {"trade_date": d,
-                                 "offset": offset, "limit": PAGE})
+            page = ts_call(api, {"trade_date": d, "offset": offset, "limit": PAGE})
             chunk = page.get("items") or []
             items.extend(chunk)
             if len(chunk) < PAGE:
@@ -168,8 +252,11 @@ def capture_unit(ts_table: str, api: str, key_cols: list[str],
     keys = df[["ts_code", "trade_date"]].copy()
     dup = int(keys.duplicated().sum()) if len(df) else 0
     if dup:
-        df = df.drop_duplicates(subset=["ts_code", "trade_date"]) \
-               .sort_values("ts_code").reset_index(drop=True)
+        df = (
+            df.drop_duplicates(subset=["ts_code", "trade_date"])
+            .sort_values("ts_code")
+            .reset_index(drop=True)
+        )
 
     # 源侧脏行过滤（ts_code 含非 ASCII 字符（中文/全角）整行 drop；
     # [^\x00-\x7f] 为搜索模式用 contains 非锚定 match；计数入 receipt 留证）
@@ -199,11 +286,13 @@ def capture_unit(ts_table: str, api: str, key_cols: list[str],
         "production_write": False,
         "row_count": int(df.shape[0]),
         "unique_keys": int(df[["ts_code", "trade_date"]].drop_duplicates().shape[0])
-                       if len(df) else 0,
+        if len(df)
+        else 0,
         "duplicate_keys": dup,
         "dirty_filtered": dirty_filtered,
         "date_values": sorted(df["trade_date"].dropna().unique().tolist())
-                       if len(df) else [],
+        if len(df)
+        else [],
         "null_primary_key": {
             "ts_code": int(df["ts_code"].isna().sum()) if len(df) else 0,
             "trade_date": int(df["trade_date"].isna().sum()) if len(df) else 0,
@@ -222,17 +311,23 @@ def capture_unit(ts_table: str, api: str, key_cols: list[str],
 
 def main() -> int:
     import argparse
+
     ap = argparse.ArgumentParser(description="tail_fill capture")
-    ap.add_argument("--tables", default="",
-                    help="逗号分隔 ts 表名过滤（如 ts_daily_basic,ts_margin_detail）；"
-                         "空 = 全部 6 表（幂等 skip 保护重跑）")
-    ap.add_argument("--dates", default="",
-                    help="显式日期列表（逗号分隔，如 20230103）——绕过缺口算法"
-                         "直接 capture 指定日；用于残缺/脏单元覆盖 capture"
-                         "（发布需 --allow-overwrite 通道），须配合 --tables")
+    ap.add_argument(
+        "--tables",
+        default="",
+        help="逗号分隔 ts 表名过滤（如 ts_daily_basic,ts_margin_detail）；"
+        "空 = 全部 6 表（幂等 skip 保护重跑）",
+    )
+    ap.add_argument(
+        "--dates",
+        default="",
+        help="显式日期列表（逗号分隔，如 20230103）——绕过缺口算法"
+        "直接 capture 指定日；用于残缺/脏单元覆盖 capture"
+        "（发布需 --allow-overwrite 通道），须配合 --tables",
+    )
     args = ap.parse_args()
-    selected = [t for t in TABLES
-                if not args.tables or t[0] in args.tables.split(",")]
+    selected = [t for t in TABLES if not args.tables or t[0] in args.tables.split(",")]
     if not selected:
         print("[abort] --tables 未命中任何表定义")
         return 2
@@ -242,8 +337,10 @@ def main() -> int:
         return 2
 
     open_days = load_open_days()
-    print(f"[tf] 开市日 ≤ 今日: {len(open_days)} "
-          f"({open_days[0]}..{open_days[-1]})", flush=True)
+    print(
+        f"[tf] 开市日 ≤ 今日: {len(open_days)} ({open_days[0]}..{open_days[-1]})",
+        flush=True,
+    )
 
     totals = {"ok": 0, "skip": 0, "failed": 0, "empty": 0}
     failures: list[dict] = []
@@ -253,54 +350,64 @@ def main() -> int:
         if explicit_dates:
             gap, mx = list(explicit_dates), "(explicit)"
             out_dir = STAGING / "tail_fill" / ts_table
-            print(f"[tf] {ts_table}: 显式日期模式 {len(gap)} 日 "
-                  f"({','.join(gap)})", flush=True)
+            print(
+                f"[tf] {ts_table}: 显式日期模式 {len(gap)} 日 ({','.join(gap)})",
+                flush=True,
+            )
         else:
             gap, mx = table_gap_days(ts_table, open_days)
             if not gap:
                 # 空缺口保护：勿索引 gap[0]（补发后再重跑会走到这里）
-                print(f"[tf] {ts_table}: 生产最新 d_{mx}，缺口 0 日，跳过",
-                      flush=True)
+                print(f"[tf] {ts_table}: 生产最新 d_{mx}，缺口 0 日，跳过", flush=True)
                 continue
-            print(f"[tf] {ts_table}: 生产最新 d_{mx}，缺口 {len(gap)} 日 "
-                  f"({gap[0]}..{gap[-1]})", flush=True)
+            print(
+                f"[tf] {ts_table}: 生产最新 d_{mx}，缺口 {len(gap)} 日 "
+                f"({gap[0]}..{gap[-1]})",
+                flush=True,
+            )
             out_dir = STAGING / "tail_fill" / ts_table
         for i, d in enumerate(gap, 1):
             try:
-                r = capture_unit(ts_table, api, key_cols, num_cols,
-                                 key_dtype, d, out_dir)
+                r = capture_unit(
+                    ts_table, api, key_cols, num_cols, key_dtype, d, out_dir
+                )
                 totals[r] += 1
             except Exception as e:
                 totals["failed"] += 1
-                failures.append({"table": ts_table, "date": d,
-                                 "error": str(e)[:200]})
+                failures.append({"table": ts_table, "date": d, "error": str(e)[:200]})
                 print(f"[tf][ERR] {ts_table} {d}: {e}", flush=True)
             if i % PROGRESS_EVERY == 0 or i == len(gap):
                 el = time.time() - started
-                print(f"[tf] {ts_table} {i}/{len(gap)} "
-                      f"(ok={totals['ok']} skip={totals['skip']} "
-                      f"failed={totals['failed']} {el:.0f}s)", flush=True)
+                print(
+                    f"[tf] {ts_table} {i}/{len(gap)} "
+                    f"(ok={totals['ok']} skip={totals['skip']} "
+                    f"failed={totals['failed']} {el:.0f}s)",
+                    flush=True,
+                )
             time.sleep(CALL_INTERVAL)
 
     report = {
         "tool": "tail_fill_capture",
-        "generated_at": _dt.datetime.now().astimezone().isoformat(
-            timespec="seconds"),
+        "generated_at": _dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "tables": [t[0] for t in selected],
         "stats": totals,
         "failures": failures,
         "note": "production_write=false，候选落 staging/tail_fill/，"
-                "发布走 staging_materialize_full_history.py --pattern "
-                "'tail_fill/*'",
+        "发布走 staging_materialize_full_history.py --pattern "
+        "'tail_fill/*'",
     }
     stamp = _dt.datetime.now().strftime("%Y%m%dT%H%M%S")
-    rp = STAGING / f"tail_fill_capture_report_{stamp}.json"  # 带时间戳防覆盖（证据保全）
+    rp = (
+        STAGING / f"tail_fill_capture_report_{stamp}.json"
+    )  # 带时间戳防覆盖（证据保全）
     with open(rp, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
-    print(f"[tf] DONE ok={totals['ok']} skip={totals['skip']} "
-          f"failed={totals['failed']} ({time.time() - started:.0f}s)",
-          flush=True)
+    print(
+        f"[tf] DONE ok={totals['ok']} skip={totals['skip']} "
+        f"failed={totals['failed']} ({time.time() - started:.0f}s)",
+        flush=True,
+    )
     print(f"[tf] report -> {rp}", flush=True)
     return 1 if totals["failed"] else 0
 

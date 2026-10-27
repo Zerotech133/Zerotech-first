@@ -21,6 +21,7 @@ report_ai.py 维护）抽取「标的→环节」供应关系候选，扩链 SUP
   python kg_extract.py run            # 增量抽取（幂等，跳过已判 id）
   python kg_extract.py stats          # 影子候选统计
 """
+
 import argparse
 import json
 import os
@@ -31,8 +32,8 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import requests                                       # noqa: E402
-from kg_client import KgClient                        # noqa: E402
+import requests  # noqa: E402
+from kg_client import KgClient  # noqa: E402
 
 REPORTS = os.path.join(HERE, "data", "semantica", "report_events.jsonl")
 OUT = os.path.join(HERE, "data", "kg_extract_shadow.jsonl")
@@ -53,11 +54,11 @@ PROMPT = (
     "满足（如「算力-电力」要求电力业务直接供给数据中心/算力设施，泛新能源"
     "/一般用电不算）；②单纯业绩增长、行业景气、泛化转型愿景不构成挂链；"
     "③枚举中没有合适环节才用 NEW，new_seg 给 ≤12 字的产业环节名（不含"
-    "标点；公司自身行为如「运力扩张」不是环节）；④无关时输出 {\"links\":[]}"
+    '标点；公司自身行为如「运力扩张」不是环节）；④无关时输出 {"links":[]}'
     "；⑤evidence 必须是研报原文连续片段。\n"
-    "只输出JSON不要任何其他文字：{\"links\":[{\"seg\":\"环节名或NEW\","
-    "\"new_seg\":\"新环节名或空\",\"type\":\"枚举\",\"evidence\":\"原文\","
-    "\"conf\":0到1}]}\n"
+    '只输出JSON不要任何其他文字：{"links":[{"seg":"环节名或NEW",'
+    '"new_seg":"新环节名或空","type":"枚举","evidence":"原文",'
+    '"conf":0到1}]}\n'
     "研报：%s\n标的：%s（%s）"
 )
 
@@ -68,16 +69,16 @@ def _segments():
     with cli._session() as s:
         rows = s.run(
             "MATCH (g:Segment) RETURN g.name AS n, g.chain AS c, "
-            "g.desc AS d ORDER BY c, n").data()
+            "g.desc AS d ORDER BY c, n"
+        ).data()
     cli.close()
     by_chain = {}
     for r in rows:
-        by_chain.setdefault(r["c"] or "其他", []).append(
-            (r["n"], r["d"] or ""))
+        by_chain.setdefault(r["c"] or "其他", []).append((r["n"], r["d"] or ""))
     txt = "\n".join(
-        "【%s】\n%s" % (c, "\n".join(
-            "%s＝%s" % (n, d) if d else n for n, d in ns))
-        for c, ns in by_chain.items())
+        "【%s】\n%s" % (c, "\n".join("%s＝%s" % (n, d) if d else n for n, d in ns))
+        for c, ns in by_chain.items()
+    )
     return txt, {r["n"] for r in rows}
 
 
@@ -110,8 +111,7 @@ def _load_done():
 
 def _ollama_ok():
     try:
-        return requests.get(
-            OLLAMA.replace("/api/chat", "/api/tags"), timeout=3).ok
+        return requests.get(OLLAMA.replace("/api/chat", "/api/tags"), timeout=3).ok
     except Exception:
         return False
 
@@ -119,18 +119,19 @@ def _ollama_ok():
 def judge(text, stock, name, seg_txt, timeout=60):
     """单条研报 → [link 候选] 或 None（解析失败重试一次）。"""
     body = {
-        "model": MODEL, "stream": False, "think": False,
-        "messages": [{"role": "user",
-                      "content": PROMPT % (seg_txt, text[:300],
-                                           stock, name)}],
+        "model": MODEL,
+        "stream": False,
+        "think": False,
+        "messages": [
+            {"role": "user", "content": PROMPT % (seg_txt, text[:300], stock, name)}
+        ],
         "options": {"temperature": 0.1, "num_predict": 200},
     }
     for _ in range(2):
         try:
             r = requests.post(OLLAMA, json=body, timeout=timeout)
             r.raise_for_status()
-            m = re.search(r"\{.*\}", r.json()["message"]["content"],
-                          re.S)
+            m = re.search(r"\{.*\}", r.json()["message"]["content"], re.S)
             if not m:
                 continue
             d = json.loads(m.group(0))
@@ -143,8 +144,11 @@ def judge(text, stock, name, seg_txt, timeout=60):
 def _clean_new(name):
     """新环节名白名单清洗：≤12 字、无标点空白。"""
     n = re.sub(r"[\s，。；：、/／·\-—()（）]+", "", str(name or ""))
-    return n[:12] if n and len(n) <= 12 and not re.search(
-        r"[^\u4e00-\u9fa5A-Za-z0-9]", n) else ""
+    return (
+        n[:12]
+        if n and len(n) <= 12 and not re.search(r"[^\u4e00-\u9fa5A-Za-z0-9]", n)
+        else ""
+    )
 
 
 def run():
@@ -158,27 +162,32 @@ def run():
     done = _load_done()
     reports = _load_reports()
     todo = [r for r in reports if r["id"] not in done]
-    print("研报 %d 条 / 待抽 %d（已抽 %d 跳过）/ 环节闭集 %d"
-          % (len(reports), len(todo), len(done), len(seg_set)))
+    print(
+        "研报 %d 条 / 待抽 %d（已抽 %d 跳过）/ 环节闭集 %d"
+        % (len(reports), len(todo), len(done), len(seg_set))
+    )
     n_link = n_new = n_ev_bad = 0
     fail_streak = 0
     with open(OUT, "a", encoding="utf-8") as fo:
         for i, r in enumerate(todo, 1):
             code = r["stocks"][0] if r.get("stocks") else ""
-            links = judge(r.get("text") or "", code,
-                          r.get("reason") or "", seg_txt)
+            links = judge(r.get("text") or "", code, r.get("reason") or "", seg_txt)
             if links is None:
                 fail_streak += 1
                 print("  [%d/%d] FAIL %s" % (i, len(todo), r["id"]))
                 if fail_streak >= FAIL_STREAK_MAX:
-                    print("  熔断：连续 %d 条失败，中止（断点续跑）"
-                          % fail_streak)
+                    print("  熔断：连续 %d 条失败，中止（断点续跑）" % fail_streak)
                     break
                 continue
             fail_streak = 0
-            row = {"rid": r["id"], "ts": r.get("ts"), "stock": code,
-                   "text": (r.get("text") or "")[:120], "links": [],
-                   "new_segs": []}
+            row = {
+                "rid": r["id"],
+                "ts": r.get("ts"),
+                "stock": code,
+                "text": (r.get("text") or "")[:120],
+                "links": [],
+                "new_segs": [],
+            }
             for lk in links:
                 if not isinstance(lk, dict):
                     continue
@@ -187,31 +196,49 @@ def run():
                     continue
                 raw_ev = str(lk.get("evidence") or "")
                 if raw_ev and raw_ev not in (r.get("text") or ""):
-                    n_ev_bad += 1      # evidence 非研报原文（如抄 prompt
-                    continue           # 定义文本）——确定性校验直接拦截
+                    n_ev_bad += 1  # evidence 非研报原文（如抄 prompt
+                    continue  # 定义文本）——确定性校验直接拦截
                 seg = str(lk.get("seg") or "").strip()
                 if seg == "NEW":
                     nm = _clean_new(lk.get("new_seg"))
                     if not nm:
                         continue
                     row["new_segs"].append(
-                        {"seg": nm, "type": tp,
-                         "evidence": (lk.get("evidence") or "")[:80],
-                         "conf": lk.get("conf")})
+                        {
+                            "seg": nm,
+                            "type": tp,
+                            "evidence": (lk.get("evidence") or "")[:80],
+                            "conf": lk.get("conf"),
+                        }
+                    )
                     n_new += 1
                 elif seg in seg_set:
                     row["links"].append(
-                        {"seg": seg, "type": tp,
-                         "evidence": (lk.get("evidence") or "")[:80],
-                         "conf": lk.get("conf")})
+                        {
+                            "seg": seg,
+                            "type": tp,
+                            "evidence": (lk.get("evidence") or "")[:80],
+                            "conf": lk.get("conf"),
+                        }
+                    )
                     n_link += 1
             fo.write(json.dumps(row, ensure_ascii=False) + "\n")
             fo.flush()
-            print("  [%d/%d] %s %s → 挂链 %d 新环节 %d"
-                  % (i, len(todo), code, r["id"][:14],
-                     len(row["links"]), len(row["new_segs"])))
-    print("影子落盘: %s（本批挂链 %d / 新环节候选 %d / evidence 非原文拦截 %d）"
-          % (OUT, n_link, n_new, n_ev_bad))
+            print(
+                "  [%d/%d] %s %s → 挂链 %d 新环节 %d"
+                % (
+                    i,
+                    len(todo),
+                    code,
+                    r["id"][:14],
+                    len(row["links"]),
+                    len(row["new_segs"]),
+                )
+            )
+    print(
+        "影子落盘: %s（本批挂链 %d / 新环节候选 %d / evidence 非原文拦截 %d）"
+        % (OUT, n_link, n_new, n_ev_bad)
+    )
 
 
 def stats():
@@ -238,8 +265,10 @@ def stats():
                 k = "%s(%s)" % (ns["seg"], ns["type"])
                 new_cnt[k] = new_cnt.get(k, 0) + 1
     print("== kg_extract 影子统计（conf≥0.85 记高置信） ==")
-    print("研报行 %d / 挂链候选 %d（高置信 %d）/ 新环节候选 %d 种"
-          % (n_row, n_link, n_hi, len(new_cnt)))
+    print(
+        "研报行 %d / 挂链候选 %d（高置信 %d）/ 新环节候选 %d 种"
+        % (n_row, n_link, n_hi, len(new_cnt))
+    )
     print("-- 挂链环节分布 --")
     for k, v in sorted(seg_cnt.items(), key=lambda x: -x[1][0]):
         print("  %-18s %d（高置信 %d）" % (k, v[0], v[1]))

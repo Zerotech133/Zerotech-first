@@ -25,6 +25,7 @@
   python linkage_collect_daily.py --max 30       # 控制单次票数
   python linkage_collect_daily.py --dry-run      # 只列观察池不采集
 """
+
 import argparse
 import json
 import os
@@ -35,7 +36,8 @@ sys.path.insert(0, HERE)
 
 POSITIONS = os.path.join(HERE, "positions.json")
 NEWS_CONFIG = os.path.abspath(
-    os.path.join(HERE, "..", "news_collector", "news_config.json"))
+    os.path.join(HERE, "..", "news_collector", "news_config.json")
+)
 PERIODS = ["1d"]
 
 
@@ -82,6 +84,7 @@ def pool_cross_topn():
     out = []
     try:
         import cross_poll
+
         res = cross_poll.build_cross()
         for st in (res or {}).get("topn") or []:
             code = str(st.get("code") or "")
@@ -110,9 +113,9 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
-    pool = build_pool()[:max(0, a.max)]
+    pool = build_pool()[: max(0, a.max)]
     if not pool:
-        return 0                              # 观察池为空：静默退出
+        return 0  # 观察池为空：静默退出
     if a.dry_run:
         for code, name in pool:
             print("POOL %s %s" % (code, name))
@@ -120,6 +123,7 @@ def main():
         return 0
 
     from linkage_collector import _judge_and_collect
+
     n_rec, n_ok, n_fail = 0, 0, 0
     for code, name in pool:
         try:
@@ -131,8 +135,9 @@ def main():
         except Exception as e:
             n_fail += 1
             print("FAIL %s %s: %s" % (code, name, e))
-    print("DONE pool=%d ok=%d fail=%d new_records=%d" % (
-        len(pool), n_ok, n_fail, n_rec))
+    print(
+        "DONE pool=%d ok=%d fail=%d new_records=%d" % (len(pool), n_ok, n_fail, n_rec)
+    )
     return 0 if n_fail < len(pool) else 1
 
 

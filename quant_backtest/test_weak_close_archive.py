@@ -10,6 +10,7 @@ T5 预览无副作用：真实数据跑 close --type A 预览 → weak_cases 无
 隔离：T1-T4 monkeypatch REP 到 C:\\Temp 临时目录，不碰真实 reports；
      测试标的 code6=999999（不存在冲突）。全部 PASS 退出码 0。
 """
+
 import os
 import shutil
 import subprocess
@@ -27,20 +28,45 @@ CODE = "999999.SZ"
 C6 = "999999"
 
 ROWS = [
-    {"ts": "2026-10-02T15:30:01", "px_d": "2026-10-02", "px": 16.69,
-     "ex250": -18.2, "trend": ["平（均线缠绕）", "空", "平（均线缠绕）"], "trig": []},
-    {"ts": "2026-10-03T15:30:02", "px_d": "2026-10-03", "px": 16.05,
-     "ex250": -19.0, "trend": ["空", "空", "平"], "trig": ["跌破关键位16.12"]},
-    {"ts": "2026-10-04T15:30:03", "px_d": "2026-10-04", "px": 15.8, "code": CODE,
-     "ex250": None, "trend": ["空", "空", "空"], "trig": []},
+    {
+        "ts": "2026-10-02T15:30:01",
+        "px_d": "2026-10-02",
+        "px": 16.69,
+        "ex250": -18.2,
+        "trend": ["平（均线缠绕）", "空", "平（均线缠绕）"],
+        "trig": [],
+    },
+    {
+        "ts": "2026-10-03T15:30:02",
+        "px_d": "2026-10-03",
+        "px": 16.05,
+        "ex250": -19.0,
+        "trend": ["空", "空", "平"],
+        "trig": ["跌破关键位16.12"],
+    },
+    {
+        "ts": "2026-10-04T15:30:03",
+        "px_d": "2026-10-04",
+        "px": 15.8,
+        "code": CODE,
+        "ex250": None,
+        "trend": ["空", "空", "空"],
+        "trig": [],
+    },
 ]
 MSG = None  # build_close 在 T1 前生成
 fails = []
 
 
 def check(name, cond, detail=""):
-    print("%s %s%s" % ("PASS" if cond else "FAIL", name,
-                       "｜" + detail if detail and not cond else ""))
+    print(
+        "%s %s%s"
+        % (
+            "PASS" if cond else "FAIL",
+            name,
+            "｜" + detail if detail and not cond else "",
+        )
+    )
     if not cond:
         fails.append(name)
 
@@ -96,28 +122,44 @@ def t3_locate():
 def t5_preview_noside():
     before = set(os.listdir(REAL_CASES)) if os.path.isdir(REAL_CASES) else set()
     r = subprocess.run(
-        [PY, "-X", "utf8", os.path.join(HERE, "weak_track_close.py"),
-         "301216", "--type", "A", "--note", "测试预览"],
-        capture_output=True, text=True, encoding="utf-8", timeout=60)
+        [
+            PY,
+            "-X",
+            "utf8",
+            os.path.join(HERE, "weak_track_close.py"),
+            "301216",
+            "--type",
+            "A",
+            "--note",
+            "测试预览",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+    )
     after = set(os.listdir(REAL_CASES)) if os.path.isdir(REAL_CASES) else set()
     check("T5 预览退出码0", r.returncode == 0)
     check("T5 预览提示--send", "--send" in (r.stdout or ""))
-    check("T5 预览零副作用", before == after,
-          "新增：%s" % (after - before))
+    check("T5 预览零副作用", before == after, "新增：%s" % (after - before))
 
 
 def main():
     global MSG
     setup()
-    MSG = wc.build_close(ROWS, wc.CTYPE["A"], "测试结案", "weak_track_%s.closed_x.jsonl" % C6)
+    MSG = wc.build_close(
+        ROWS, wc.CTYPE["A"], "测试结案", "weak_track_%s.closed_x.jsonl" % C6
+    )
     arch = "weak_track_%s.closed_20261004.jsonl" % C6
     t1_basic(arch)
     t2_seq()
     t3_locate()
     t5_preview_noside()
     shutil.rmtree(TMP, ignore_errors=True)
-    print("\n%s（%d 项失败）" % ("ALL PASS" if not fails else "FAILED: %s" % fails,
-                               len(fails)))
+    print(
+        "\n%s（%d 项失败）"
+        % ("ALL PASS" if not fails else "FAILED: %s" % fails, len(fails))
+    )
     return 1 if fails else 0
 
 

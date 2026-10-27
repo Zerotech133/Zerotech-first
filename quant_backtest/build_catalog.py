@@ -18,6 +18,7 @@
 用法：
   python build_catalog.py            # 重建 data/catalog.json 并打印摘要
 """
+
 import glob
 import json
 import os
@@ -41,7 +42,10 @@ CNOD_MANIFEST = os.path.join(CNOD_DIR, "_manifest.json")
 CNOD_TABLES = (
     "chinese-dictionary-of-financial-sentiment",
     "firm-level-climate-change-exposure",
-    "fepu", "czyx", "yspl", "gjzfssfc",
+    "fepu",
+    "czyx",
+    "yspl",
+    "gjzfssfc",
 )
 
 # freq 枚举（catalog 的节奏词表，唯一定义处）：
@@ -57,26 +61,43 @@ CNOD_TABLES = (
 FREQ_ENUM = ("D", "W", "M", "Q", "Y", "1min")
 
 WAREHOUSES = [  # (source, 数据根, manifest 路径)
-    ("xtcloud", os.path.join(HERE, "data", "tdx"),
-     os.path.join(HERE, "data", "tdx", "_manifest.json")),
-    ("tushare", os.path.join(HERE, "data", "tushare"),
-     os.path.join(HERE, "data", "tushare", "_manifest.json")),
+    (
+        "xtcloud",
+        os.path.join(HERE, "data", "tdx"),
+        os.path.join(HERE, "data", "tdx", "_manifest.json"),
+    ),
+    (
+        "tushare",
+        os.path.join(HERE, "data", "tushare"),
+        os.path.join(HERE, "data", "tushare", "_manifest.json"),
+    ),
     # 雪球仓（xueqiu-collector，设计 xueqiu-collector-design-2026-10-16 §3.3）
-    ("xueqiu", os.path.join(HERE, "data", "xueqiu"),
-     os.path.join(HERE, "data", "xueqiu", "_manifest.json")),
+    (
+        "xueqiu",
+        os.path.join(HERE, "data", "xueqiu"),
+        os.path.join(HERE, "data", "xueqiu", "_manifest.json"),
+    ),
     # CnOpenData 静态历史包（WO-QT-20261021-088）：6 张表各一目录
     # （part_000N.parquet），表级溯源在包清单 _manifest.json 内层 "tables"。
     (CNOD_SOURCE, CNOD_DIR, CNOD_MANIFEST),
 ]
-LEGACY_US = os.path.join(HERE, "data", "us")       # 旧美股逐股（deprecated）
+LEGACY_US = os.path.join(HERE, "data", "us")  # 旧美股逐股（deprecated）
 CRYPTO_DIR = os.path.join(HERE, "data", "crypto")  # 加密货币日线
 INFO_DB = os.path.join(HERE, "data", "tdx", "tdx_info.db")
 XQ_INFO_DB = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")  # 雪球舆情库
-GUBA_DIR = os.path.join(HERE, "data", "guba")  # guba 150 码 jsonl（kg-graph-storage-design §3.1）
+GUBA_DIR = os.path.join(
+    HERE, "data", "guba"
+)  # guba 150 码 jsonl（kg-graph-storage-design §3.1）
 # 设计 §3.2：三个新扫描分支对应的雪球 parquet 表（采集器首跑前目录不存在 → 占位注册）
-XQ_PARQUET_TABLES = ["xq_quote_snap", "xq_kline_d", "xq_capital_flow",
-                     "xq_northbound", "xq_earningforecast", "xq_hot_deal",
-                     "xq_inner_trade"]
+XQ_PARQUET_TABLES = [
+    "xq_quote_snap",
+    "xq_kline_d",
+    "xq_capital_flow",
+    "xq_northbound",
+    "xq_earningforecast",
+    "xq_hot_deal",
+    "xq_inner_trade",
+]
 
 # 数据地基模块章程 §3（2026-10-16）：外部库表登记（代码即契约）。
 # PG/Neo4j 等物理独立存储不搬数据，只在 catalog 登记元数据让读层可路由；
@@ -84,328 +105,552 @@ XQ_PARQUET_TABLES = ["xq_quote_snap", "xq_kline_d", "xq_capital_flow",
 # layout "pg" → data_loader.load_table（直连 5432 zhice-db，失败 docker 兜底）。
 EXTERNAL_TABLES = {
     "v2_bar_daily": {
-        "source": "pg", "store": "pg://zhice-db:5446/zhice_os_v2/v2_bar_daily",
-        "layout": "pg", "schema": ["symbol", "market", "trade_date", "open",
-                                   "high", "low", "close", "volume",
-                                   "turnover", "pre_close"],
-        "date_col": "trade_date", "code_col": "symbol",
+        "source": "pg",
+        "store": "pg://zhice-db:5446/zhice_os_v2/v2_bar_daily",
+        "layout": "pg",
+        "schema": [
+            "symbol",
+            "market",
+            "trade_date",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "turnover",
+            "pre_close",
+        ],
+        "date_col": "trade_date",
+        "code_col": "symbol",
         "primary_key": ["symbol", "trade_date"],
-        "freq": "D", "priority": 3, "manifest": None,
-        "freshness": None, "rows": None, "files": 0,
-        "done": True, "deprecated": False,
+        "freq": "D",
+        "priority": 3,
+        "manifest": None,
+        "freshness": None,
+        "rows": None,
+        "files": 0,
+        "done": True,
+        "deprecated": False,
         "desc": "PG zhice-db 日线（zhice-os v2，多市场；symbol 为库内形态）",
-        "readiness_basis": "external_db", "verification_status": "unknown",
-        "manifest_status": "not_applicable", "status": "registered",
+        "readiness_basis": "external_db",
+        "verification_status": "unknown",
+        "manifest_status": "not_applicable",
+        "status": "registered",
     },
 }
 
 # tdx_read 同款口径：财务类日期列 end_date
-END_DATE_TABLES = {"ts_income", "ts_balancesheet", "ts_cashflow",
-                   "ts_fina_indicator",
-                   "income", "balancesheet", "cashflow", "fina_indicator"}
+END_DATE_TABLES = {
+    "ts_income",
+    "ts_balancesheet",
+    "ts_cashflow",
+    "ts_fina_indicator",
+    "income",
+    "balancesheet",
+    "cashflow",
+    "fina_indicator",
+}
 # 特例声明（未列出的表给默认值）。
 TABLE_DEFS = {
     # ── tushare 仓 ──
-    "anns_d":          {"date_col": "ann_date", "freq": "D",
-                        "desc": "公告（按日分片，tushare 兜底源）"},
-    "trade_cal":       {"date_col": "cal_date", "code_col": None,
-                        "primary_key": ["exchange", "cal_date"],
-                        "desc": "交易日历（SSE 全量）"},
-    "stock_basic":     {"primary_key": ["ts_code"],
-                        "desc": "A股基础信息（tushare）"},
-    "stock_company":   {"code_col": "ts_code", "freq": "Q",
-                        "desc": "A股上市公司详情（经营范围/高管/员工，图谱公司实体源）"},
-    "income":          {"code_col": "ts_code", "date_col": "end_date", "freq": "Q",
-                        "desc": "A股利润表（全字段85列，逐码，图谱质量因子源）"},
-    "balancesheet":    {"code_col": "ts_code", "date_col": "end_date", "freq": "Q",
-                        "desc": "A股资产负债表（全字段152列，逐码）"},
-    "cashflow":        {"code_col": "ts_code", "date_col": "end_date", "freq": "Q",
-                        "desc": "A股现金流量表（全字段97列，逐码，FCFF/FCFE）"},
-    "fina_indicator":  {"code_col": "ts_code", "date_col": "end_date", "freq": "Q",
-                        "desc": "A股财务指标（全字段108列，逐码，ROE/ROA/ROIC）"},
-    "shibor_lpr":      {"date_col": "date", "freq": "M",
-                        "desc": "LPR 利率 1y/5y（monetary_policy 收紧后的替代）"},
-    "sf_month":        {"date_col": "month", "freq": "M",
-                        "desc": "社融月度（增量/累计/存量，月份 6 位）"},
-    "hk_basic":        {"desc": "港股基础信息"},
-    "us_basic":        {"desc": "美股基础信息"},
-    "us_daily":        {"freq": "D", "desc": "美股日线（逐码，建设中）"},
-    "daily":           {"date_col": "trade_date", "code_col": "ts_code",
-                        "freq": "D",
-                        "desc": "A股日线深历史（tushare 按日，1990→2023-07）"},
-    "adj_factor":      {"date_col": "trade_date", "code_col": "ts_code",
-                        "freq": "D",
-                        "desc": "A股复权因子（tushare 按日，回测前复权源）"},
-    "cb_basic":        {"desc": "可转债基础"},
-    "cb_daily":        {"freq": "D", "desc": "可转债日线（逐码）"},
-    "bak_basic":       {"freq": "D", "desc": "备选基础信息（逐码）"},
-    "stk_mins":        {"date_col": "trade_time", "freq": "1min",
-                        "desc": "A股 1 分钟线（中证800成分，逐码月度）"},
-    "idx_mins":        {"date_col": "trade_time", "freq": "1min",
-                        "desc": "指数 1 分钟线（逐码月度）"},
-    "sw_mins":         {"date_col": "trade_time", "freq": "1min",
-                        "desc": "申万指数 1 分钟线（逐码月度）"},
-    "etf_mins":        {"date_col": "trade_time", "freq": "1min",
-                        "desc": "ETF 1 分钟线（逐码月度）"},
-    "sw_classify_l1":  {"code_col": None, "desc": "申万一级分类"},
-    "crypto_daily":    {"date_col": "trade_date", "code_col": "ts_code",
-                        "freq": "D", "manifest": None,
-                        "desc": "加密货币日线（37 交易对，BTC/ETH 等，逐对单文件）"},
-    "index_global":    {"date_col": "trade_date", "code_col": "ts_code",
-                        "freq": "D", "manifest": None,
-                        "desc": "全球指数日线（20 指数 HSI/SPX/DJI/IXIC/N225 等，逐指数单文件）"},
-    "ts_global_fut":   {"date_col": "trade_date", "code_col": "ts_code",
-                        "freq": "D", "manifest": None,
-                        "desc": "外盘商品期货日线（GF_CL00Y/GC00Y/HG00Y 逐品种单文件，"
-                                "global_fut_sync 维护；2026-10-16 收编回 data/）"},
-    "news":            {"date_col": "datetime", "freq": "D",
-                        "desc": "新闻快讯（tushare）"},
-    "major_news":      {"date_col": "pub_time", "freq": "D",
-                        "desc": "大事提醒（tushare）"},
-    "npr":             {"date_col": "pubtime", "freq": "D",
-                        "desc": "停复牌（tushare，事件驱动节奏）"},
+    "anns_d": {
+        "date_col": "ann_date",
+        "freq": "D",
+        "desc": "公告（按日分片，tushare 兜底源）",
+    },
+    "trade_cal": {
+        "date_col": "cal_date",
+        "code_col": None,
+        "primary_key": ["exchange", "cal_date"],
+        "desc": "交易日历（SSE 全量）",
+    },
+    "stock_basic": {"primary_key": ["ts_code"], "desc": "A股基础信息（tushare）"},
+    "stock_company": {
+        "code_col": "ts_code",
+        "freq": "Q",
+        "desc": "A股上市公司详情（经营范围/高管/员工，图谱公司实体源）",
+    },
+    "income": {
+        "code_col": "ts_code",
+        "date_col": "end_date",
+        "freq": "Q",
+        "desc": "A股利润表（全字段85列，逐码，图谱质量因子源）",
+    },
+    "balancesheet": {
+        "code_col": "ts_code",
+        "date_col": "end_date",
+        "freq": "Q",
+        "desc": "A股资产负债表（全字段152列，逐码）",
+    },
+    "cashflow": {
+        "code_col": "ts_code",
+        "date_col": "end_date",
+        "freq": "Q",
+        "desc": "A股现金流量表（全字段97列，逐码，FCFF/FCFE）",
+    },
+    "fina_indicator": {
+        "code_col": "ts_code",
+        "date_col": "end_date",
+        "freq": "Q",
+        "desc": "A股财务指标（全字段108列，逐码，ROE/ROA/ROIC）",
+    },
+    "shibor_lpr": {
+        "date_col": "date",
+        "freq": "M",
+        "desc": "LPR 利率 1y/5y（monetary_policy 收紧后的替代）",
+    },
+    "sf_month": {
+        "date_col": "month",
+        "freq": "M",
+        "desc": "社融月度（增量/累计/存量，月份 6 位）",
+    },
+    "hk_basic": {"desc": "港股基础信息"},
+    "us_basic": {"desc": "美股基础信息"},
+    "us_daily": {"freq": "D", "desc": "美股日线（逐码，建设中）"},
+    "daily": {
+        "date_col": "trade_date",
+        "code_col": "ts_code",
+        "freq": "D",
+        "desc": "A股日线深历史（tushare 按日，1990→2023-07）",
+    },
+    "adj_factor": {
+        "date_col": "trade_date",
+        "code_col": "ts_code",
+        "freq": "D",
+        "desc": "A股复权因子（tushare 按日，回测前复权源）",
+    },
+    "cb_basic": {"desc": "可转债基础"},
+    "cb_daily": {"freq": "D", "desc": "可转债日线（逐码）"},
+    "bak_basic": {"freq": "D", "desc": "备选基础信息（逐码）"},
+    "stk_mins": {
+        "date_col": "trade_time",
+        "freq": "1min",
+        "desc": "A股 1 分钟线（中证800成分，逐码月度）",
+    },
+    "idx_mins": {
+        "date_col": "trade_time",
+        "freq": "1min",
+        "desc": "指数 1 分钟线（逐码月度）",
+    },
+    "sw_mins": {
+        "date_col": "trade_time",
+        "freq": "1min",
+        "desc": "申万指数 1 分钟线（逐码月度）",
+    },
+    "etf_mins": {
+        "date_col": "trade_time",
+        "freq": "1min",
+        "desc": "ETF 1 分钟线（逐码月度）",
+    },
+    "sw_classify_l1": {"code_col": None, "desc": "申万一级分类"},
+    "crypto_daily": {
+        "date_col": "trade_date",
+        "code_col": "ts_code",
+        "freq": "D",
+        "manifest": None,
+        "desc": "加密货币日线（37 交易对，BTC/ETH 等，逐对单文件）",
+    },
+    "index_global": {
+        "date_col": "trade_date",
+        "code_col": "ts_code",
+        "freq": "D",
+        "manifest": None,
+        "desc": "全球指数日线（20 指数 HSI/SPX/DJI/IXIC/N225 等，逐指数单文件）",
+    },
+    "ts_global_fut": {
+        "date_col": "trade_date",
+        "code_col": "ts_code",
+        "freq": "D",
+        "manifest": None,
+        "desc": "外盘商品期货日线（GF_CL00Y/GC00Y/HG00Y 逐品种单文件，"
+        "global_fut_sync 维护；2026-10-16 收编回 data/）",
+    },
+    "news": {"date_col": "datetime", "freq": "D", "desc": "新闻快讯（tushare）"},
+    "major_news": {"date_col": "pub_time", "freq": "D", "desc": "大事提醒（tushare）"},
+    "npr": {
+        "date_col": "pubtime",
+        "freq": "D",
+        "desc": "停复牌（tushare，事件驱动节奏）",
+    },
     "research_report": {"desc": "研报（tushare 兜底源）"},
-    "top10_holders":   {"layout": "by_period", "date_col": "ann_date",
-                        "primary_key": ["ts_code", "ann_date", "end_date",
-                                        "holder_name", "holder_type"],
-                        "freq": "Q", "desc": "十大股东（报告期分片，公告日查询）"},
-    "top10_floatholders": {"layout": "by_period", "date_col": "ann_date",
-                          "primary_key": ["ts_code", "ann_date", "end_date",
-                                          "holder_name", "holder_type"],
-                          "freq": "Q", "desc": "十大流通股东（报告期分片）"},
-    "top_list":        {"date_col": "trade_date", "freq": "D",
-                        "desc": "龙虎榜每日明细（tushare 兜底源）"},
-    "irm_qa_sh":       {"freq": "D", "desc": "互动易问答-沪（逐码）"},
-    "irm_qa_sz":       {"freq": "D", "desc": "互动易问答-深（逐码）"},
+    "top10_holders": {
+        "layout": "by_period",
+        "date_col": "ann_date",
+        "primary_key": [
+            "ts_code",
+            "ann_date",
+            "end_date",
+            "holder_name",
+            "holder_type",
+        ],
+        "freq": "Q",
+        "desc": "十大股东（报告期分片，公告日查询）",
+    },
+    "top10_floatholders": {
+        "layout": "by_period",
+        "date_col": "ann_date",
+        "primary_key": [
+            "ts_code",
+            "ann_date",
+            "end_date",
+            "holder_name",
+            "holder_type",
+        ],
+        "freq": "Q",
+        "desc": "十大流通股东（报告期分片）",
+    },
+    "top_list": {
+        "date_col": "trade_date",
+        "freq": "D",
+        "desc": "龙虎榜每日明细（tushare 兜底源）",
+    },
+    "irm_qa_sh": {"freq": "D", "desc": "互动易问答-沪（逐码）"},
+    "irm_qa_sz": {"freq": "D", "desc": "互动易问答-深（逐码）"},
     # ── tdx 仓（仅 desc；其余与 tdx_read 口径一致）──
-    "ts_adj_factor":  {"date_col": "trade_date", "freq": "D",
-                        "desc": "复权因子（tushare 直连，adj_factor_sync 维护，"
-                                "AdjFactorSync 18:10）"},
-    "ts_daily":        {"freq": "D", "desc": "A股日线行情（xtcloud，真源）"},
-    "ts_stock_basic":  {"primary_key": ["ts_code"],
-                        "desc": "A股基础信息（xtcloud，真源）"},
-    "ts_daily_basic":  {"freq": "D", "desc": "A股每日指标（xtcloud）"},
-    "ts_hk_daily":     {"freq": "D", "desc": "港股日线（xtcloud，真源）"},
-    "ts_index_daily":  {"freq": "D", "desc": "指数日线（xtcloud）"},
-    "ts_index_basic":  {"desc": "指数基础信息"},
+    "ts_adj_factor": {
+        "date_col": "trade_date",
+        "freq": "D",
+        "desc": "复权因子（tushare 直连，adj_factor_sync 维护，AdjFactorSync 18:10）",
+    },
+    "ts_daily": {"freq": "D", "desc": "A股日线行情（xtcloud，真源）"},
+    "ts_stock_basic": {
+        "primary_key": ["ts_code"],
+        "desc": "A股基础信息（xtcloud，真源）",
+    },
+    "ts_daily_basic": {"freq": "D", "desc": "A股每日指标（xtcloud）"},
+    "ts_hk_daily": {"freq": "D", "desc": "港股日线（xtcloud，真源）"},
+    "ts_index_daily": {"freq": "D", "desc": "指数日线（xtcloud）"},
+    "ts_index_basic": {"desc": "指数基础信息"},
     "ts_index_weight": {"desc": "指数成分权重"},
-    "ts_etf_basic":    {"desc": "ETF 基础信息"},
-    "ts_fund_basic":   {"desc": "基金基础信息"},
-    "ts_fund_daily":   {"freq": "D", "desc": "基金日线"},
+    "ts_etf_basic": {"desc": "ETF 基础信息"},
+    "ts_fund_basic": {"desc": "基金基础信息"},
+    "ts_fund_daily": {"freq": "D", "desc": "基金日线"},
     "ts_margin_detail": {"freq": "D", "desc": "融资融券明细"},
-    "ts_moneyflow":    {"freq": "D", "desc": "个股资金流向"},
+    "ts_moneyflow": {"freq": "D", "desc": "个股资金流向"},
     "ts_moneyflow_hsgt": {"freq": "D", "desc": "沪深港通资金"},
-    "ts_top_list":     {"freq": "D", "desc": "龙虎榜"},
-    "ts_top_inst":     {"freq": "D", "desc": "龙虎榜机构明细"},
-    "ts_ths_daily":    {"freq": "D", "desc": "同花顺板块日线"},
-    "ts_ths_index":    {"desc": "同花顺指数"},
-    "ts_ths_member":   {"desc": "同花顺板块成分"},
-    "tdx_sector_daily": {"code_col": "code", "freq": "D",
-                         "desc": "通达信板块日线"},
-    "tdx_sector_def":  {"desc": "通达信板块定义"},
+    "ts_top_list": {"freq": "D", "desc": "龙虎榜"},
+    "ts_top_inst": {"freq": "D", "desc": "龙虎榜机构明细"},
+    "ts_ths_daily": {"freq": "D", "desc": "同花顺板块日线"},
+    "ts_ths_index": {"desc": "同花顺指数"},
+    "ts_ths_member": {"desc": "同花顺板块成分"},
+    "tdx_sector_daily": {"code_col": "code", "freq": "D", "desc": "通达信板块日线"},
+    "tdx_sector_def": {"desc": "通达信板块定义"},
     "tdx_sector_member": {"desc": "通达信板块成分"},
-    "tdx_sector_min":  {"date_col": "trade_date", "code_col": "code",
-                        "primary_key": ["code", "trade_date", "trade_time"],
-                        "freq": "1min",
-                        "desc": "通达信板块分钟线"},
-    "tdx_sector_min_tail": {"date_col": "trade_date", "code_col": "code",
-                            "primary_key": ["code", "trade_date", "trade_time"],
-                            "freq": "1min", "desc": "通达信板块分钟线增量尾部"},
-    "us_legacy":       {"source": "legacy", "priority": 2, "deprecated": True,
-                        "freq": "D", "manifest": None,
-                        "desc": "旧美股日线（逐股单文件，待 us_daily 收口后废弃）"},
+    "tdx_sector_min": {
+        "date_col": "trade_date",
+        "code_col": "code",
+        "primary_key": ["code", "trade_date", "trade_time"],
+        "freq": "1min",
+        "desc": "通达信板块分钟线",
+    },
+    "tdx_sector_min_tail": {
+        "date_col": "trade_date",
+        "code_col": "code",
+        "primary_key": ["code", "trade_date", "trade_time"],
+        "freq": "1min",
+        "desc": "通达信板块分钟线增量尾部",
+    },
+    "us_legacy": {
+        "source": "legacy",
+        "priority": 2,
+        "deprecated": True,
+        "freq": "D",
+        "manifest": None,
+        "desc": "旧美股日线（逐股单文件，待 us_daily 收口后废弃）",
+    },
 }
 
 # 信息说明不推定采集完成或业务覆盖。
 for _name, _desc in {
-    'ts_balancesheet': 'A股资产负债表（xtcloud）',
-    'ts_cashflow': 'A股现金流量表（xtcloud）',
-    'ts_fina_indicator': 'A股财务指标（xtcloud）',
-    'ts_income': 'A股利润表（xtcloud）',
-    'cyq_chips': '筹码分布（逐码，文件名提供证券身份）',
-    'cyq_perf': '筹码胜率与成本指标',
-    'index_weight': '指数成分及权重（成分身份见 con_code）',
-    'irm_qa_sh_probe': '沪市互动问答单日探针（不代表全量覆盖）',
-    'irm_qa_sz_probe': '深市互动问答单日探针（不代表全量覆盖）',
-    'limit_list_d': '每日涨跌停明细',
-    'stk_holdernumber': '股东户数',
-    'stk_managers': '上市公司管理层信息',
-    'sw_l1_member': '申万一级行业成分关系（静态集合）',
+    "ts_balancesheet": "A股资产负债表（xtcloud）",
+    "ts_cashflow": "A股现金流量表（xtcloud）",
+    "ts_fina_indicator": "A股财务指标（xtcloud）",
+    "ts_income": "A股利润表（xtcloud）",
+    "cyq_chips": "筹码分布（逐码，文件名提供证券身份）",
+    "cyq_perf": "筹码胜率与成本指标",
+    "index_weight": "指数成分及权重（成分身份见 con_code）",
+    "irm_qa_sh_probe": "沪市互动问答单日探针（不代表全量覆盖）",
+    "irm_qa_sz_probe": "深市互动问答单日探针（不代表全量覆盖）",
+    "limit_list_d": "每日涨跌停明细",
+    "stk_holdernumber": "股东户数",
+    "stk_managers": "上市公司管理层信息",
+    "sw_l1_member": "申万一级行业成分关系（静态集合）",
 }.items():
-    TABLE_DEFS.setdefault(_name, {})['desc'] = _desc
-for _market, _label in (('hk', '港股'), ('us', '美股')):
-    for _table, _label_table in (('balancesheet', '资产负债表'), ('cashflow', '现金流量表'),
-                               ('fina_indicator', '财务指标'), ('income', '利润表')):
-        TABLE_DEFS[_market + '_' + _table] = {
-            'desc': _label + _label_table + '（Tushare）', 'date_col': 'end_date', 'freq': 'Q'}
-TABLE_DEFS['ts_rt_min'] = {'desc': '实时分钟行情（xtcloud，按实际 time 字段核验）',
-                          'date_col': 'time', 'freq': '1min'}
+    TABLE_DEFS.setdefault(_name, {})["desc"] = _desc
+for _market, _label in (("hk", "港股"), ("us", "美股")):
+    for _table, _label_table in (
+        ("balancesheet", "资产负债表"),
+        ("cashflow", "现金流量表"),
+        ("fina_indicator", "财务指标"),
+        ("income", "利润表"),
+    ):
+        TABLE_DEFS[_market + "_" + _table] = {
+            "desc": _label + _label_table + "（Tushare）",
+            "date_col": "end_date",
+            "freq": "Q",
+        }
+TABLE_DEFS["ts_rt_min"] = {
+    "desc": "实时分钟行情（xtcloud，按实际 time 字段核验）",
+    "date_col": "time",
+    "freq": "1min",
+}
 # ── 雪球仓（xueqiu，设计 §3.3：7 张 parquet 表）──
-TABLE_DEFS.update({
-    "xq_quote_snap":      {"date_col": "trade_date", "code_col": "ts_code",
-                           "freq": "D",
-                           "desc": "雪球收盘快照（quotec 免 token，缠论池）"},
-    "xq_kline_d":         {"date_col": "timestamp", "code_col": "ts_code",
-                           "freq": "D",
-                           "desc": "雪球前复权日线（逐码，交叉验证源）"},
-    "xq_capital_flow":    {"date_col": "trade_date", "code_col": "ts_code",
-                           "freq": "D", "desc": "雪球个股资金流"},
-    "xq_northbound":      {"date_col": "trade_date", "code_col": "ts_code",
-                           "freq": "D", "desc": "雪球北向持股（空日不落片）"},
-    "xq_earningforecast": {"date_col": "ann_date", "code_col": "ts_code",
-                           "freq": "W", "desc": "券商盈利预测（雪球）"},
-    "xq_hot_deal":        {"date_col": "trade_date", "code_col": "ts_code",
-                           "freq": "D",
-                           "desc": "雪球热度交易榜（akshare 补充源）"},
-    "xq_inner_trade":     {"date_col": "trade_date", "code_col": "ts_code",
-                           "freq": "D",
-                           "desc": "雪球内部交易/高管增减持（akshare）"},
-})
+TABLE_DEFS.update(
+    {
+        "xq_quote_snap": {
+            "date_col": "trade_date",
+            "code_col": "ts_code",
+            "freq": "D",
+            "desc": "雪球收盘快照（quotec 免 token，缠论池）",
+        },
+        "xq_kline_d": {
+            "date_col": "timestamp",
+            "code_col": "ts_code",
+            "freq": "D",
+            "desc": "雪球前复权日线（逐码，交叉验证源）",
+        },
+        "xq_capital_flow": {
+            "date_col": "trade_date",
+            "code_col": "ts_code",
+            "freq": "D",
+            "desc": "雪球个股资金流",
+        },
+        "xq_northbound": {
+            "date_col": "trade_date",
+            "code_col": "ts_code",
+            "freq": "D",
+            "desc": "雪球北向持股（空日不落片）",
+        },
+        "xq_earningforecast": {
+            "date_col": "ann_date",
+            "code_col": "ts_code",
+            "freq": "W",
+            "desc": "券商盈利预测（雪球）",
+        },
+        "xq_hot_deal": {
+            "date_col": "trade_date",
+            "code_col": "ts_code",
+            "freq": "D",
+            "desc": "雪球热度交易榜（akshare 补充源）",
+        },
+        "xq_inner_trade": {
+            "date_col": "trade_date",
+            "code_col": "ts_code",
+            "freq": "D",
+            "desc": "雪球内部交易/高管增减持（akshare）",
+        },
+    }
+)
 # K-STOCK-398（10-15）：打板情绪周期底座。源limit_list_d 自算，不依赖 tushare 打板套餐。
-TABLE_DEFS['ts_emotion_daily'] = {
-    'desc': '打板情绪周期日频面板（涨停/炸板/最高板/封板率/晋级率/封单额）',
-    'date_col': 'trade_date', 'freq': 'D', 'layout': 'single'}
-TABLE_DEFS['ts_emotion_ladder'] = {
-    'desc': '连板梯队明细（≥2板：连板数/炸板/封单额/首末封/流通市值）',
-    'date_col': 'trade_date', 'freq': 'D', 'layout': 'single'}
-for _name in ('tdx_sector_def', 'tdx_sector_member', 'ts_ths_member',
-              'stock_company', 'sw_classify_l1', 'sw_l1_member'):
-    TABLE_DEFS[_name]['date_col'] = None
-    TABLE_DEFS[_name]['date_status'] = 'not_applicable'
+TABLE_DEFS["ts_emotion_daily"] = {
+    "desc": "打板情绪周期日频面板（涨停/炸板/最高板/封板率/晋级率/封单额）",
+    "date_col": "trade_date",
+    "freq": "D",
+    "layout": "single",
+}
+TABLE_DEFS["ts_emotion_ladder"] = {
+    "desc": "连板梯队明细（≥2板：连板数/炸板/封单额/首末封/流通市值）",
+    "date_col": "trade_date",
+    "freq": "D",
+    "layout": "single",
+}
+for _name in (
+    "tdx_sector_def",
+    "tdx_sector_member",
+    "ts_ths_member",
+    "stock_company",
+    "sw_classify_l1",
+    "sw_l1_member",
+):
+    TABLE_DEFS[_name]["date_col"] = None
+    TABLE_DEFS[_name]["date_status"] = "not_applicable"
 
 # ── CnOpenData 静态历史包（WO-QT-20261021-088）──
 # 6 表一次落地即终态（非按日更新）：freshness 停在包内末年（或无可测日期），
 # _verify_status 因此判 verified_stale；desc 均写明覆盖区间与静态包属性。
 # date_col/code_col 只登记列名，不改写源数据形态（fepu.stkcd 等整数保持整数）。
-TABLE_DEFS.update({
-    "chinese-dictionary-of-financial-sentiment": {
-        "layout": "part", "date_col": None, "code_col": None,
-        "date_status": "not_applicable", "primary_key": [], "freq": "Y",
-        # WO-QT-20261021-102：无时间维的**静态数据**（词表本身不带日期），
-        # 与 tdx_sector_def/stock_company 等「快照表」不是一回事：快照表有
-        # 采集时点语义、只是没登记日期列；词表永远没有时间维。显式打标 →
-        # _verify_status 判 static_no_date（正常态，disk_health 不告警），
-        # 不再借 verified 冒充「已验证有日期」。
-        "static_no_date": True,
-        "desc": "中文金融情感词典（姜富伟等 2020，正向 3338 + 负向 5890 共 "
-                "9228 词，词表无时间维度；静态历史包，非按日更新）",
-    },
-    "firm-level-climate-change-exposure": {
-        "layout": "part", "date_col": "year", "code_col": "isin",
-        "primary_key": ["isin", "year", "quarter"], "freq": "Y",
-        "desc": "公司层面气候变化暴露指数（OSF 2024Q4 版，81759 行，"
-                "2001–2024；主表按年度 year 登记，同表另含季度面板 quarter"
-                "（firmquarter，年度片无该列）；静态历史包，非按日更新）",
-    },
-    "fepu": {
-        "layout": "part", "date_col": "year", "code_col": "stkcd",
-        "primary_key": ["stkcd", "year"], "freq": "Y",
-        "desc": "企业年报前瞻性信息披露（fepu 句子级/词级强度，A股 2006–2024，"
-                "57044 行，(stkcd,year) 唯一；静态历史包，非按日更新）",
-    },
-    "czyx": {
-        # WO-QT-20261021-101：主键 (prov, year, dim)。
-        # 6 个分片是同一「省×年」网格上的 6 张维度表（收入/支出/债务/社保/
-        # 公共服务/均等化），过去没有维度列可加入身份，只能留空主键换取
-        # 「不去重、保留全部 1995 行」；代价是 (prov,year) 在分片间大量重复，
-        # 消费方无从判断某行属于哪张指数表。
-        # 现 ingest_open.py 对多工作表 Excel 按片写入 dim=工作表名，使
-        # (prov,year,dim) 成为真唯一键（实测 1860 个非空键全唯一），主键因此
-        # 可以声明：声明后 datamart 去重仍保留 1995 行（末片 part_0005 无
-        # prov/year，键不全 → _normalize 的 ~complete 分支保留全部 135 行）。
-        # WO-QT-20261021-106：增 prov_std（官方全称），prov 保留源值。
-        "layout": "part", "date_col": "year", "code_col": "prov",
-        "primary_key": ["prov", "year", "dim"], "freq": "Y",
-        "desc": "中国财政可持续性指数（省级六维面板：收入/支出/债务/社保/"
-                "公共服务/均等化，6 分片同省年网格，2008–2019，31 省；dim 列"
-                "标识来源工作表；末片 part_0005 为宽表无 year 列；prov 已做"
-                "空白归一（归一前 91 个取值 / 归一后各分片内 31 省），"
-                "prov_std 为官方全称归一列（上海→上海市、内蒙古→内蒙古自治区；"
-                "原 prov 保留源值，片 0000 用简称 / 片 0001–0004 用全称），"
-                "跨表按省份 join 请用 prov_std；静态历史包，非按日更新）",
-    },
-    "yspl": {
-        # WO-QT-20261021-106：增 prov_std（官方全称）；省份 保留源值（简称）。
-        "layout": "part", "date_col": "年份", "code_col": "省份",
-        "primary_key": ["省份", "年份"], "freq": "Y",
-        "desc": "省级预算决算收支面板（四本预算：一般公共/政府性基金/国有资本/"
-                "社会保险，决算+预算口径，31 省 1994–2017，744 行；省份 为源"
-                "简称，prov_std 为官方全称归一列，跨表 join 请用 prov_std；"
-                "静态历史包，非按日更新）",
-    },
-    "gjzfssfc": {
-        # WO-QT-20261021-106：省份（简称）→ 增 prov_std；省份代码 是 11/12
-        # 这类数字代码，保持原样，不做名称归一。
-        "layout": "part", "date_col": "年", "code_col": "省份代码",
-        "primary_key": ["省份代码", "年"], "freq": "Y",
-        "desc": "国家政府支出财政分成（中央/地方/省本级/市本级各税种占比，"
-                "31 省 1994–2014，651 行；省份代码 为数字代码（11/12…），"
-                "省份 为源简称，prov_std 为官方全称归一列，跨表 join 请用 "
-                "prov_std；静态历史包，非按日更新）",
-    },
-})
+TABLE_DEFS.update(
+    {
+        "chinese-dictionary-of-financial-sentiment": {
+            "layout": "part",
+            "date_col": None,
+            "code_col": None,
+            "date_status": "not_applicable",
+            "primary_key": [],
+            "freq": "Y",
+            # WO-QT-20261021-102：无时间维的**静态数据**（词表本身不带日期），
+            # 与 tdx_sector_def/stock_company 等「快照表」不是一回事：快照表有
+            # 采集时点语义、只是没登记日期列；词表永远没有时间维。显式打标 →
+            # _verify_status 判 static_no_date（正常态，disk_health 不告警），
+            # 不再借 verified 冒充「已验证有日期」。
+            "static_no_date": True,
+            "desc": "中文金融情感词典（姜富伟等 2020，正向 3338 + 负向 5890 共 "
+            "9228 词，词表无时间维度；静态历史包，非按日更新）",
+        },
+        "firm-level-climate-change-exposure": {
+            "layout": "part",
+            "date_col": "year",
+            "code_col": "isin",
+            "primary_key": ["isin", "year", "quarter"],
+            "freq": "Y",
+            "desc": "公司层面气候变化暴露指数（OSF 2024Q4 版，81759 行，"
+            "2001–2024；主表按年度 year 登记，同表另含季度面板 quarter"
+            "（firmquarter，年度片无该列）；静态历史包，非按日更新）",
+        },
+        "fepu": {
+            "layout": "part",
+            "date_col": "year",
+            "code_col": "stkcd",
+            "primary_key": ["stkcd", "year"],
+            "freq": "Y",
+            "desc": "企业年报前瞻性信息披露（fepu 句子级/词级强度，A股 2006–2024，"
+            "57044 行，(stkcd,year) 唯一；静态历史包，非按日更新）",
+        },
+        "czyx": {
+            # WO-QT-20261021-101：主键 (prov, year, dim)。
+            # 6 个分片是同一「省×年」网格上的 6 张维度表（收入/支出/债务/社保/
+            # 公共服务/均等化），过去没有维度列可加入身份，只能留空主键换取
+            # 「不去重、保留全部 1995 行」；代价是 (prov,year) 在分片间大量重复，
+            # 消费方无从判断某行属于哪张指数表。
+            # 现 ingest_open.py 对多工作表 Excel 按片写入 dim=工作表名，使
+            # (prov,year,dim) 成为真唯一键（实测 1860 个非空键全唯一），主键因此
+            # 可以声明：声明后 datamart 去重仍保留 1995 行（末片 part_0005 无
+            # prov/year，键不全 → _normalize 的 ~complete 分支保留全部 135 行）。
+            # WO-QT-20261021-106：增 prov_std（官方全称），prov 保留源值。
+            "layout": "part",
+            "date_col": "year",
+            "code_col": "prov",
+            "primary_key": ["prov", "year", "dim"],
+            "freq": "Y",
+            "desc": "中国财政可持续性指数（省级六维面板：收入/支出/债务/社保/"
+            "公共服务/均等化，6 分片同省年网格，2008–2019，31 省；dim 列"
+            "标识来源工作表；末片 part_0005 为宽表无 year 列；prov 已做"
+            "空白归一（归一前 91 个取值 / 归一后各分片内 31 省），"
+            "prov_std 为官方全称归一列（上海→上海市、内蒙古→内蒙古自治区；"
+            "原 prov 保留源值，片 0000 用简称 / 片 0001–0004 用全称），"
+            "跨表按省份 join 请用 prov_std；静态历史包，非按日更新）",
+        },
+        "yspl": {
+            # WO-QT-20261021-106：增 prov_std（官方全称）；省份 保留源值（简称）。
+            "layout": "part",
+            "date_col": "年份",
+            "code_col": "省份",
+            "primary_key": ["省份", "年份"],
+            "freq": "Y",
+            "desc": "省级预算决算收支面板（四本预算：一般公共/政府性基金/国有资本/"
+            "社会保险，决算+预算口径，31 省 1994–2017，744 行；省份 为源"
+            "简称，prov_std 为官方全称归一列，跨表 join 请用 prov_std；"
+            "静态历史包，非按日更新）",
+        },
+        "gjzfssfc": {
+            # WO-QT-20261021-106：省份（简称）→ 增 prov_std；省份代码 是 11/12
+            # 这类数字代码，保持原样，不做名称归一。
+            "layout": "part",
+            "date_col": "年",
+            "code_col": "省份代码",
+            "primary_key": ["省份代码", "年"],
+            "freq": "Y",
+            "desc": "国家政府支出财政分成（中央/地方/省本级/市本级各税种占比，"
+            "31 省 1994–2014，651 行；省份代码 为数字代码（11/12…），"
+            "省份 为源简称，prov_std 为官方全称归一列，跨表 join 请用 "
+            "prov_std；静态历史包，非按日更新）",
+        },
+    }
+)
 
 # 财报主键保留同报告期的报表类型及披露版本；不存在的列在扫描时剔除。
 for _tbl in ("income", "balancesheet", "cashflow", "fina_indicator"):
     for _name in (_tbl, "ts_" + _tbl):
         TABLE_DEFS.setdefault(_name, {})["primary_key"] = [
-            "ts_code", "end_date", "ann_date", "f_ann_date", "report_type",
-            "comp_type", "end_type", "update_flag"]
+            "ts_code",
+            "end_date",
+            "ann_date",
+            "f_ann_date",
+            "report_type",
+            "comp_type",
+            "end_type",
+            "update_flag",
+        ]
 for _tbl in ("anns_d", "research_report", "news", "major_news", "npr"):
     TABLE_DEFS[_tbl]["primary_key"] = []
 # 高管事件表无时序唯一键：同日公告多名高管/一人多职都是独立事件行，
 # 主键必须覆盖姓名+职务+任期，否则 dm.read 去重会折叠（57.5万→12万判例）。
 # 不在 schema 的列扫描时自动剔除（_scan_dir L456 同款过滤）。
 TABLE_DEFS.setdefault("stk_managers", {})["primary_key"] = [
-    "ts_code", "name", "title", "ann_date", "begin_date", "end_date"]
+    "ts_code",
+    "name",
+    "title",
+    "ann_date",
+    "begin_date",
+    "end_date",
+]
 
 # §5.3 逻辑别名（resolves 按真源优先级排序）
 ALIASES = {
-    "daily":       {"resolves": ["ts_daily", "daily"],
-                    "primary": "ts_daily",
-                    "note": "xtcloud 真源（2023-07 起）+ tushare 深历史（1990 起），"
-                            "零重叠 concat，read() 按(code,date)去重"},
-    "stock_basic": {"resolves": ["ts_stock_basic", "stock_basic"],
-                    "primary": "ts_stock_basic",
-                    "merge_key": ["ts_code"],
-                    "note": "xtcloud 优先，tushare 补深度"},
-    "hk_daily":    {"resolves": ["ts_hk_daily"],
-                    "note": "tushare hk_daily 未建仓，仅 xtcloud"},
-    "us_daily":    {"resolves": ["us_daily", "us_legacy"],
-                    "primary": "us_daily",
-                    "note": "tushare 收口前降级旧美股（done 联动自动切换）"},
-    "notice":      {"resolves": ["stock_notice", "anns_d"],
-                    "primary": "stock_notice",
-                    "merge_key": [],
-                    "merge_mode": "fallback",
-                    "note": "公告：tdx 优先，tushare 补深度"},
-    "report":      {"resolves": ["stock_report", "research_report"],
-                    "primary": "stock_report",
-                    "merge_key": [],
-                    "merge_mode": "fallback",
-                    "note": "研报：tdx 优先，tushare 补深度"},
-    "news":        {"resolves": ["stock_news"],
-                    "note": "JEV 已接线情报总线（event_graph 经 "
-                            "/api/intel/bus since_id 水位读，2026-10-19）；"
-                            "premarket 报告聚合仍直读（created_at 窗口口径，待切）"},
-    "index_daily": {"resolves": ["ts_index_daily"],
-                    "note": "指数日线（xtcloud）"},
-    "moneyflow":   {"resolves": ["ts_moneyflow"],
-                    "note": "个股资金流向（xtcloud）"},
-    "margin":      {"resolves": ["ts_margin_detail"],
-                    "note": "融资融券明细（xtcloud）"},
-    "income":      {"resolves": ["income", "ts_income"],
-                    "merge_key": ["ts_code", "end_date"],
-                    "note": "A股利润表：tushare 全字段优先，xtcloud 有限字段降级"},
-    "balancesheet":{"resolves": ["balancesheet", "ts_balancesheet"],
-                    "merge_key": ["ts_code", "end_date"],
-                    "note": "A股资产负债表：tushare 全字段优先，xtcloud 降级"},
-    "cashflow":    {"resolves": ["cashflow", "ts_cashflow"],
-                    "merge_key": ["ts_code", "end_date"],
-                    "note": "A股现金流量表：tushare 全字段优先，xtcloud 降级"},
-    "fina_indicator":{"resolves": ["fina_indicator", "ts_fina_indicator"],
-                      "merge_key": ["ts_code", "end_date"],
-                      "note": "A股财务指标：tushare 全字段优先，xtcloud 降级"},
+    "daily": {
+        "resolves": ["ts_daily", "daily"],
+        "primary": "ts_daily",
+        "note": "xtcloud 真源（2023-07 起）+ tushare 深历史（1990 起），"
+        "零重叠 concat，read() 按(code,date)去重",
+    },
+    "stock_basic": {
+        "resolves": ["ts_stock_basic", "stock_basic"],
+        "primary": "ts_stock_basic",
+        "merge_key": ["ts_code"],
+        "note": "xtcloud 优先，tushare 补深度",
+    },
+    "hk_daily": {
+        "resolves": ["ts_hk_daily"],
+        "note": "tushare hk_daily 未建仓，仅 xtcloud",
+    },
+    "us_daily": {
+        "resolves": ["us_daily", "us_legacy"],
+        "primary": "us_daily",
+        "note": "tushare 收口前降级旧美股（done 联动自动切换）",
+    },
+    "notice": {
+        "resolves": ["stock_notice", "anns_d"],
+        "primary": "stock_notice",
+        "merge_key": [],
+        "merge_mode": "fallback",
+        "note": "公告：tdx 优先，tushare 补深度",
+    },
+    "report": {
+        "resolves": ["stock_report", "research_report"],
+        "primary": "stock_report",
+        "merge_key": [],
+        "merge_mode": "fallback",
+        "note": "研报：tdx 优先，tushare 补深度",
+    },
+    "news": {
+        "resolves": ["stock_news"],
+        "note": "JEV 已接线情报总线（event_graph 经 "
+        "/api/intel/bus since_id 水位读，2026-10-19）；"
+        "premarket 报告聚合仍直读（created_at 窗口口径，待切）",
+    },
+    "index_daily": {"resolves": ["ts_index_daily"], "note": "指数日线（xtcloud）"},
+    "moneyflow": {"resolves": ["ts_moneyflow"], "note": "个股资金流向（xtcloud）"},
+    "margin": {"resolves": ["ts_margin_detail"], "note": "融资融券明细（xtcloud）"},
+    "income": {
+        "resolves": ["income", "ts_income"],
+        "merge_key": ["ts_code", "end_date"],
+        "note": "A股利润表：tushare 全字段优先，xtcloud 有限字段降级",
+    },
+    "balancesheet": {
+        "resolves": ["balancesheet", "ts_balancesheet"],
+        "merge_key": ["ts_code", "end_date"],
+        "note": "A股资产负债表：tushare 全字段优先，xtcloud 降级",
+    },
+    "cashflow": {
+        "resolves": ["cashflow", "ts_cashflow"],
+        "merge_key": ["ts_code", "end_date"],
+        "note": "A股现金流量表：tushare 全字段优先，xtcloud 降级",
+    },
+    "fina_indicator": {
+        "resolves": ["fina_indicator", "ts_fina_indicator"],
+        "merge_key": ["ts_code", "end_date"],
+        "note": "A股财务指标：tushare 全字段优先，xtcloud 降级",
+    },
 }
 
 
@@ -427,8 +672,8 @@ def _infer_layout(files):
 
 def _dcol(tbl, layout):
     definition = TABLE_DEFS.get(tbl, {})
-    if 'date_col' in definition:
-        return definition['date_col']
+    if "date_col" in definition:
+        return definition["date_col"]
     if layout == "by_code_month":
         return "trade_time"
     if tbl in END_DATE_TABLES:
@@ -450,6 +695,7 @@ def _rows_of(path):
     """parquet 行数（footer 快读不解数据，~0.1ms/文件）；失败返回 -1。"""
     try:
         from pyarrow.parquet import ParquetFile
+
         return ParquetFile(path).metadata.num_rows
     except Exception:
         return -1
@@ -483,28 +729,28 @@ def _freshness(store, layout, dcol, files):
                     try:
                         df = pd.read_parquet(os.path.join(store, f))
                     except Exception:
-                        continue          # 单文件损坏：看更旧的
+                        continue  # 单文件损坏：看更旧的
                     if dcol not in df.columns:
-                        break              # 列不存在：回退文件名口径
+                        break  # 列不存在：回退文件名口径
                     v = _dmax(df[dcol])
                     if v:
-                        return v           # 最新非空分片的数据日期
+                        return v  # 最新非空分片的数据日期
                 else:
-                    return None            # 循环走完=全是空片
+                    return None  # 循环走完=全是空片
             return max(re.search(r"d_(\d{8})", f).group(1) for f in dated)
         if layout == "by_code_month":
             # K100：文件名（月）降序 footer 筛跳空壳，首个非空读 dcol
-            cands = sorted((f for f in files
-                            if re.search(r"_\d{6}\.parquet$", f)),
-                           reverse=True)
+            cands = sorted(
+                (f for f in files if re.search(r"_\d{6}\.parquet$", f)), reverse=True
+            )
             for f in cands:
                 p = os.path.join(store, f)
                 if _rows_of(p) == 0:
-                    continue          # 空壳：停牌/未披露个体常态
+                    continue  # 空壳：停牌/未披露个体常态
                 try:
                     v = _dmax(pd.read_parquet(p, columns=[dcol])[dcol])
                 except Exception:
-                    continue          # 损坏或列缺失：看次新
+                    continue  # 损坏或列缺失：看次新
                 if v:
                     return v
             return None
@@ -514,18 +760,21 @@ def _freshness(store, layout, dcol, files):
             # K102：非空中取前 8 个读 dcol 取 max——「首个非空」有随机
             # 偏差（同批写入 mtime 平局，排序不稳定，实证 us_daily 取到
             # 停更票尾 09-30 而全表主力水位 10-02）；8 采样全停更概率≈0
-            cands = sorted(files, key=lambda f: os.path.getmtime(
-                os.path.join(store, f)), reverse=True)
+            cands = sorted(
+                files,
+                key=lambda f: os.path.getmtime(os.path.join(store, f)),
+                reverse=True,
+            )
             seen = 0
             best = None
             for f in cands:
                 p = os.path.join(store, f)
                 if _rows_of(p) == 0:
-                    continue          # 空壳：增量拉取无新数据的个体
+                    continue  # 空壳：增量拉取无新数据的个体
                 try:
                     v = _dmax(pd.read_parquet(p, columns=[dcol])[dcol])
                 except Exception:
-                    continue          # 损坏或列缺失：看次新
+                    continue  # 损坏或列缺失：看次新
                 if v and (not best or v > best):
                     best = v
                 seen += 1
@@ -541,8 +790,9 @@ def _freshness(store, layout, dcol, files):
         vals = []
         for f in files:
             try:
-                vals.append(pd.read_parquet(os.path.join(store, f),
-                                            columns=[dcol])[dcol])
+                vals.append(
+                    pd.read_parquet(os.path.join(store, f), columns=[dcol])[dcol]
+                )
             except Exception:
                 continue
         if not vals:
@@ -573,26 +823,27 @@ def _verify_status(e, stale_before):
     一刀切会把它们的判定一起改掉。
     """
     if e.get("schema_errors"):
-        return 'schema_error'
-    if e.get("readiness_basis") == 'external_db':
-        return 'verified_external'
+        return "schema_error"
+    if e.get("readiness_basis") == "external_db":
+        return "verified_external"
     if not ((e.get("rows") or 0) > 0 or (e.get("files") or 0) > 0):
-        return 'placeholder_empty'
-    if e.get("manifest_status") == 'missing':
-        return 'manifest_missing'
+        return "placeholder_empty"
+    if e.get("manifest_status") == "missing":
+        return "manifest_missing"
     if e.get("static_no_date"):
-        return 'static_no_date'
+        return "static_no_date"
     f = str(e.get("freshness") or "")
     if f[:8].isdigit() and f[:8] < stale_before:
-        return 'verified_stale'
-    return 'verified'
+        return "verified_stale"
+    return "verified"
 
 
 def _scan_dir(source, root, mpath, tbl, mf, store=None):
     """扫单个表目录 → catalog 条目。store 可覆盖（us_legacy→data/us）。"""
     store = store or os.path.join(root, tbl)
-    files = sorted(os.path.basename(f) for f in
-                   glob.glob(os.path.join(store, "*.parquet")))
+    files = sorted(
+        os.path.basename(f) for f in glob.glob(os.path.join(store, "*.parquet"))
+    )
     d = TABLE_DEFS.get(tbl, {})
     layout = d.get("layout") or (_infer_layout(files) if files else "part")
     schema, freshness = [], None
@@ -600,17 +851,20 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     if files:
         try:
             from pyarrow.parquet import ParquetFile
+
             declared = set(d.get("primary_key") or [])
             # 单片损坏仍继续检查其余footer；保留错误，不能标全面结构。
             for filename in files:
                 try:
-                    names = ParquetFile(os.path.join(store, filename)).schema_arrow.names
+                    names = ParquetFile(
+                        os.path.join(store, filename)
+                    ).schema_arrow.names
                 except Exception:
                     schema_errors.append(filename)
                     continue
                 schema_inspected += 1
                 schema.extend(c for c in names if c not in schema)
-                if layout != 'part' and declared.issubset(schema):
+                if layout != "part" and declared.issubset(schema):
                     break
         except Exception:
             schema = []
@@ -619,36 +873,74 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     if files and schema:
         if dcol is not None and dcol not in schema:
             dcol = d.get("date_col") or next(
-                (c for c in ("trade_date", "cal_date", "ann_date",
-                             "end_date", "trade_time", "time", "list_date")
-                 if c in schema), None)
-        ccol = ccol if ccol in schema else next(
-            (c for c in ("ts_code", "code", "symbol") if c in schema), None)
+                (
+                    c
+                    for c in (
+                        "trade_date",
+                        "cal_date",
+                        "ann_date",
+                        "end_date",
+                        "trade_time",
+                        "time",
+                        "list_date",
+                    )
+                    if c in schema
+                ),
+                None,
+            )
+        ccol = (
+            ccol
+            if ccol in schema
+            else next((c for c in ("ts_code", "code", "symbol") if c in schema), None)
+        )
     freshness = _freshness(store, layout, dcol, files)
     ent = mf.get(tbl) or {}
     done = bool(ent.get("done")) if ent else bool(files)
     primary_key = d.get("primary_key", [c for c in (ccol, dcol) if c])
     return {
-        "source": source, "store": store.replace("\\", "/"), "layout": layout,
-        "schema": schema, "date_col": dcol, "code_col": ccol,
-        "schema_scope": 'all_footers' if layout == 'part' and schema_inspected == len(files) and files and not schema_errors else 'sampled' if schema_inspected else 'unknown',
-        "schema_files_inspected": schema_inspected, "schema_errors": schema_errors,
-        "date_status": d.get('date_status', 'registered' if dcol else 'unknown'),
+        "source": source,
+        "store": store.replace("\\", "/"),
+        "layout": layout,
+        "schema": schema,
+        "date_col": dcol,
+        "code_col": ccol,
+        "schema_scope": "all_footers"
+        if layout == "part"
+        and schema_inspected == len(files)
+        and files
+        and not schema_errors
+        else "sampled"
+        if schema_inspected
+        else "unknown",
+        "schema_files_inspected": schema_inspected,
+        "schema_errors": schema_errors,
+        "date_status": d.get("date_status", "registered" if dcol else "unknown"),
         # WO-QT-20261021-102：静态无日期数据的显式标记（默认 False），由
         # _verify_status 消费，决定 verification_status 是否判 static_no_date
-        "static_no_date": bool(d.get('static_no_date', False)),
+        "static_no_date": bool(d.get("static_no_date", False)),
         "primary_key": [c for c in primary_key if c in schema],
         "freq": d.get("freq", "D"),
         "priority": d.get("priority", 1),
-        "manifest": (None if d.get("manifest", "unset") is None
-                     else (mpath or "").replace("\\", "/") or None),
+        "manifest": (
+            None
+            if d.get("manifest", "unset") is None
+            else (mpath or "").replace("\\", "/") or None
+        ),
         "freshness": freshness,
         "rows": ent.get("rows") if ent else None,
-        "files": len(files), "done": done,
-        "readiness_basis": 'manifest' if ent else 'file_presence',
-        "verification_status": 'unknown',
-        "manifest_status": ('not_applicable' if d.get('manifest', 'unset') is None else
-                            'closed' if ent.get('done') else 'open' if tbl in mf else 'missing'),
+        "files": len(files),
+        "done": done,
+        "readiness_basis": "manifest" if ent else "file_presence",
+        "verification_status": "unknown",
+        "manifest_status": (
+            "not_applicable"
+            if d.get("manifest", "unset") is None
+            else "closed"
+            if ent.get("done")
+            else "open"
+            if tbl in mf
+            else "missing"
+        ),
         "deprecated": d.get("deprecated", False),
         "desc": d.get("desc", ""),
     }
@@ -692,9 +984,9 @@ def _mark_static_done(tables, mf):
             continue
         rec = mf.get(name) or {}
         if rec.get("errors"):
-            continue                      # 解析留错：不认定终态
+            continue  # 解析留错：不认定终态
         if (rec.get("rows") or 0) <= 0 and (e.get("files") or 0) <= 0:
-            continue                      # 无行且无分片：保持未完成
+            continue  # 无行且无分片：保持未完成
         e["done"] = True
         e["readiness_basis"] = "manifest"
         e["manifest_status"] = "closed"
@@ -707,15 +999,20 @@ def _scan_sqlite(mf):
     out = {}
     if not os.path.exists(INFO_DB):
         return out
-    dcol = {"stock_notice": "notice_date", "stock_news": "pub_date",
-            "stock_report": "pub_date"}
+    dcol = {
+        "stock_notice": "notice_date",
+        "stock_news": "pub_date",
+        "stock_report": "pub_date",
+    }
     fresh, schemas, rows = {}, {}, {}
     try:
-        conn = sqlite3.connect('file:' + INFO_DB.replace('\\', '/') + '?mode=ro', uri=True, timeout=10)
+        conn = sqlite3.connect(
+            "file:" + INFO_DB.replace("\\", "/") + "?mode=ro", uri=True, timeout=10
+        )
         for t, c in dcol.items():
             try:
-                schemas[t] = [r[1] for r in conn.execute('PRAGMA table_info(%s)' % t)]
-                rows[t] = conn.execute('SELECT COUNT(*) FROM %s' % t).fetchone()[0]
+                schemas[t] = [r[1] for r in conn.execute("PRAGMA table_info(%s)" % t)]
+                rows[t] = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
                 v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
                 s = str(v[0]) if v and v[0] else ""
                 fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() else None
@@ -727,18 +1024,30 @@ def _scan_sqlite(mf):
     for t in ("stock_notice", "stock_news", "stock_report"):
         ent = mf.get(t) or {}
         out[t] = {
-            "source": "xtcloud", "store": INFO_DB.replace("\\", "/"),
-            "layout": "sqlite", "schema": schemas.get(t, []), "date_col": dcol[t],
-            "schema_scope": 'sqlite_pragma' if schemas.get(t) else 'unknown',
-            "code_col": "ts_code", "freq": "D", "priority": 1,
+            "source": "xtcloud",
+            "store": INFO_DB.replace("\\", "/"),
+            "layout": "sqlite",
+            "schema": schemas.get(t, []),
+            "date_col": dcol[t],
+            "schema_scope": "sqlite_pragma" if schemas.get(t) else "unknown",
+            "code_col": "ts_code",
+            "freq": "D",
+            "priority": 1,
             "primary_key": [],
             "manifest": WAREHOUSES[0][2].replace("\\", "/"),
-            "freshness": fresh.get(t), "rows": rows.get(t),
-            "files": 0, "done": bool(ent.get("done")),
-            "deprecated": False, "desc": "tdx 信息库（公告/个股新闻/研报）",
-            "readiness_basis": 'manifest' if ent else 'sqlite_table_presence',
-            "verification_status": 'unknown',
-            "manifest_status": 'closed' if ent.get('done') else 'open' if t in mf else 'missing',
+            "freshness": fresh.get(t),
+            "rows": rows.get(t),
+            "files": 0,
+            "done": bool(ent.get("done")),
+            "deprecated": False,
+            "desc": "tdx 信息库（公告/个股新闻/研报）",
+            "readiness_basis": "manifest" if ent else "sqlite_table_presence",
+            "verification_status": "unknown",
+            "manifest_status": "closed"
+            if ent.get("done")
+            else "open"
+            if t in mf
+            else "missing",
         }
     return out
 
@@ -753,50 +1062,59 @@ def _scan_xq_info_db(mf):
     out = {}
     if not os.path.exists(XQ_INFO_DB):
         return out
-    dcol = {"xq_status": "created_at", "xq_hot_post": "created_at",
-            "xq_comment": "created_at"}
-    desc = {"xq_status": "雪球分类帖流（L3 直爬，讨论热度原始层）",
-            "xq_hot_post": "雪球全站热帖（L3 直爬，含 hot_rank）",
-            "xq_comment": "雪球个股讨论帖（L3 直爬，池内活跃股）"}
+    dcol = {
+        "xq_status": "created_at",
+        "xq_hot_post": "created_at",
+        "xq_comment": "created_at",
+    }
+    desc = {
+        "xq_status": "雪球分类帖流（L3 直爬，讨论热度原始层）",
+        "xq_hot_post": "雪球全站热帖（L3 直爬，含 hot_rank）",
+        "xq_comment": "雪球个股讨论帖（L3 直爬，池内活跃股）",
+    }
     fresh, schemas, rows = {}, {}, {}
     try:
         conn = sqlite3.connect(
-            'file:' + XQ_INFO_DB.replace('\\', '/') + '?mode=ro',
-            uri=True, timeout=10)
+            "file:" + XQ_INFO_DB.replace("\\", "/") + "?mode=ro", uri=True, timeout=10
+        )
         for t, c in dcol.items():
             try:
-                schemas[t] = [r[1] for r in
-                              conn.execute('PRAGMA table_info(%s)' % t)]
-                rows[t] = conn.execute(
-                    'SELECT COUNT(*) FROM %s' % t).fetchone()[0]
-                v = conn.execute(
-                    "SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
+                schemas[t] = [r[1] for r in conn.execute("PRAGMA table_info(%s)" % t)]
+                rows[t] = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
                 s = str(v[0]) if v and v[0] else ""
-                fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() \
-                    else None
+                fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() else None
             except sqlite3.OperationalError:
                 pass
         conn.close()
     except Exception:
         pass
-    xq_mf = (os.path.join(HERE, "data", "xueqiu", "_manifest.json")
-             ).replace("\\", "/")
+    xq_mf = (os.path.join(HERE, "data", "xueqiu", "_manifest.json")).replace("\\", "/")
     for t in ("xq_status", "xq_hot_post", "xq_comment"):
         ent = mf.get(t) or {}
         out[t] = {
-            "source": "xueqiu", "store": XQ_INFO_DB.replace("\\", "/"),
-            "layout": "sqlite", "schema": schemas.get(t, []),
+            "source": "xueqiu",
+            "store": XQ_INFO_DB.replace("\\", "/"),
+            "layout": "sqlite",
+            "schema": schemas.get(t, []),
             "date_col": dcol[t],
-            "schema_scope": 'sqlite_pragma' if schemas.get(t) else 'unknown',
-            "code_col": "ts_code", "freq": "D", "priority": 1,
-            "primary_key": [], "manifest": xq_mf,
-            "freshness": fresh.get(t), "rows": rows.get(t),
-            "files": 0, "done": bool(ent.get("done")),
-            "deprecated": False, "desc": desc[t],
-            "readiness_basis": 'manifest' if ent else 'sqlite_table_presence',
-            "verification_status": 'unknown',
-            "manifest_status": ('closed' if ent.get('done') else
-                                'open' if t in mf else 'missing'),
+            "schema_scope": "sqlite_pragma" if schemas.get(t) else "unknown",
+            "code_col": "ts_code",
+            "freq": "D",
+            "priority": 1,
+            "primary_key": [],
+            "manifest": xq_mf,
+            "freshness": fresh.get(t),
+            "rows": rows.get(t),
+            "files": 0,
+            "done": bool(ent.get("done")),
+            "deprecated": False,
+            "desc": desc[t],
+            "readiness_basis": "manifest" if ent else "sqlite_table_presence",
+            "verification_status": "unknown",
+            "manifest_status": (
+                "closed" if ent.get("done") else "open" if t in mf else "missing"
+            ),
         }
     return out
 
@@ -808,16 +1126,30 @@ def _empty_entry(name, source, store, layout, desc=""):
     读层自动跳过，注册本身可见可查。
     """
     return {
-        "source": source, "store": str(store).replace("\\", "/"),
-        "layout": layout, "schema": [], "date_col": None, "code_col": None,
-        "schema_scope": "unknown", "schema_files_inspected": 0,
-        "schema_errors": [], "date_status": "unknown", "primary_key": [],
+        "source": source,
+        "store": str(store).replace("\\", "/"),
+        "layout": layout,
+        "schema": [],
+        "date_col": None,
+        "code_col": None,
+        "schema_scope": "unknown",
+        "schema_files_inspected": 0,
+        "schema_errors": [],
+        "date_status": "unknown",
+        "primary_key": [],
         "freq": TABLE_DEFS.get(name, {}).get("freq", "D"),
         "priority": TABLE_DEFS.get(name, {}).get("priority", 1),
-        "manifest": None, "freshness": None, "rows": None, "files": 0,
-        "done": False, "deprecated": False, "desc": desc,
-        "readiness_basis": "placeholder_empty", "verification_status": "unknown",
-        "manifest_status": "missing", "status": "empty",
+        "manifest": None,
+        "freshness": None,
+        "rows": None,
+        "files": 0,
+        "done": False,
+        "deprecated": False,
+        "desc": desc,
+        "readiness_basis": "placeholder_empty",
+        "verification_status": "unknown",
+        "manifest_status": "missing",
+        "status": "empty",
     }
 
 
@@ -840,8 +1172,13 @@ def scan_parquet_dir(root, logical_name):
         ent = _scan_dir("xueqiu", parent, mpath, logical_name, mf)
         ent["status"] = "registered"
         return ent
-    return _empty_entry(logical_name, "xueqiu", root, "parquet",
-                        TABLE_DEFS.get(logical_name, {}).get("desc", ""))
+    return _empty_entry(
+        logical_name,
+        "xueqiu",
+        root,
+        "parquet",
+        TABLE_DEFS.get(logical_name, {}).get("desc", ""),
+    )
 
 
 def scan_sqlite_tables(db_path, table_pattern="xq_"):
@@ -857,9 +1194,11 @@ def scan_sqlite_tables(db_path, table_pattern="xq_"):
         entries.update(_scan_xq_info_db({}))
         for e in entries.values():
             e["status"] = "registered"
-    known = {"xq_status": "雪球分类帖流（L3 直爬，讨论热度原始层）",
-             "xq_hot_post": "雪球全站热帖（L3 直爬，含 hot_rank）",
-             "xq_comment": "雪球个股讨论帖（L3 直爬，池内活跃股）"}
+    known = {
+        "xq_status": "雪球分类帖流（L3 直爬，讨论热度原始层）",
+        "xq_hot_post": "雪球全站热帖（L3 直爬，含 hot_rank）",
+        "xq_comment": "雪球个股讨论帖（L3 直爬，池内活跃股）",
+    }
     for t, desc in known.items():
         if t.startswith(table_pattern) and t not in entries:
             entries[t] = _empty_entry(t, "xueqiu", db_path, "sqlite", desc)
@@ -875,9 +1214,15 @@ def scan_jsonl_glob(root, logical_name):
     """
     files = sorted(glob.glob(os.path.join(root, "*.jsonl")))
     if not files:
-        return {"guba_posts": _empty_entry(
-            logical_name, "guba", root, "jsonl",
-            "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）")}
+        return {
+            "guba_posts": _empty_entry(
+                logical_name,
+                "guba",
+                root,
+                "jsonl",
+                "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）",
+            )
+        }
     schema, total_lines, bad_lines = [], 0, 0
     for fp in files:
         try:
@@ -887,33 +1232,53 @@ def scan_jsonl_glob(root, logical_name):
                     if not ln:
                         continue
                     total_lines += 1
-                    if schema:          # schema 已推断出：只计数
+                    if schema:  # schema 已推断出：只计数
                         continue
                     try:
                         row = json.loads(ln)
                     except ValueError:
                         bad_lines += 1
                         continue
-                    schema.extend(row.keys())   # 首有效行 schema 推断
+                    schema.extend(row.keys())  # 首有效行 schema 推断
         except OSError:
             continue
     if not total_lines:
-        return {"guba_posts": _empty_entry(
-            logical_name, "guba", root, "jsonl",
-            "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）")}
+        return {
+            "guba_posts": _empty_entry(
+                logical_name,
+                "guba",
+                root,
+                "jsonl",
+                "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）",
+            )
+        }
     ent = {
-        "source": "guba", "store": root.replace("\\", "/"),
-        "layout": "jsonl", "schema": schema, "date_col": "ts",
-        "code_col": None, "schema_scope": "sampled",
-        "schema_files_inspected": 1, "schema_errors": [],
-        "date_status": "registered", "primary_key": ["post_id"],
-        "freq": "D", "priority": 1, "manifest": None,
-        "freshness": None, "rows": total_lines, "files": len(files),
-        "done": True, "deprecated": False,
+        "source": "guba",
+        "store": root.replace("\\", "/"),
+        "layout": "jsonl",
+        "schema": schema,
+        "date_col": "ts",
+        "code_col": None,
+        "schema_scope": "sampled",
+        "schema_files_inspected": 1,
+        "schema_errors": [],
+        "date_status": "registered",
+        "primary_key": ["post_id"],
+        "freq": "D",
+        "priority": 1,
+        "manifest": None,
+        "freshness": None,
+        "rows": total_lines,
+        "files": len(files),
+        "done": True,
+        "deprecated": False,
         "desc": "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）",
-        "readiness_basis": "file_presence", "verification_status": "unknown",
-        "manifest_status": "missing", "status": "registered",
-        "file_count": len(files), "total_lines": total_lines,
+        "readiness_basis": "file_presence",
+        "verification_status": "unknown",
+        "manifest_status": "missing",
+        "status": "registered",
+        "file_count": len(files),
+        "total_lines": total_lines,
         "bad_lines": bad_lines,
     }
     return {"guba_posts": ent}
@@ -939,9 +1304,10 @@ def _changelog_note(prev_tables, new_tables):
     added = set(new_tables) - set(prev_tables)
     cnod_added = [t for t in CNOD_TABLES if t in added]
     if cnod_added:
-        return ("WO-QT-20261021-088 CnOpenData %d 表接入 catalog"
-                "（freq=Y；静态历史包标 not_applicable/verified_stale）"
-                % len(cnod_added))
+        return (
+            "WO-QT-20261021-088 CnOpenData %d 表接入 catalog"
+            "（freq=Y；静态历史包标 not_applicable/verified_stale）" % len(cnod_added)
+        )
     return None
 
 
@@ -959,13 +1325,15 @@ def _changelog(prev_tables, new_tables, version, path=None, note=None):
     removed = sorted(set(prev_tables) - set(new_tables))
     if not added and not removed:
         return None
-    path = path or os.path.join(os.path.dirname(OUT),
-                                "catalog_changelog.jsonl")
+    path = path or os.path.join(os.path.dirname(OUT), "catalog_changelog.jsonl")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     entry = {
         "ts": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "version": version, "added": added, "removed": removed,
-        "note": note or "kg-graph-storage-design §3 catalog 注册 xq_* 10 表 + guba_posts",
+        "version": version,
+        "added": added,
+        "removed": removed,
+        "note": note
+        or "kg-graph-storage-design §3 catalog 注册 xq_* 10 表 + guba_posts",
     }
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -975,34 +1343,44 @@ def _changelog(prev_tables, new_tables, version, path=None, note=None):
 def build(data_root=None, out_path=None):
     """扫描两仓 → catalog dict（并原子落盘）。测试可传自定义根目录。"""
     tables = {}
-    for source, root, mpath in (WAREHOUSES if data_root is None else
-                                [(s, os.path.join(data_root, "data", n),
-                                  os.path.join(data_root, "data", n,
-                                               "_manifest.json"))
-                                 for s, n in (("xtcloud", "tdx"),
-                                              ("tushare", "tushare"))]):
-        mf = _load_manifest(mpath)      # cnopendata 双层壳在此摊平
+    for source, root, mpath in (
+        WAREHOUSES
+        if data_root is None
+        else [
+            (
+                s,
+                os.path.join(data_root, "data", n),
+                os.path.join(data_root, "data", n, "_manifest.json"),
+            )
+            for s, n in (("xtcloud", "tdx"), ("tushare", "tushare"))
+        ]
+    ):
+        mf = _load_manifest(mpath)  # cnopendata 双层壳在此摊平
         for tbl in sorted(os.listdir(root)) if os.path.isdir(root) else []:
             # 点前缀=隐藏目录（.git 等 VCS 残留），误收会产出 placeholder
             # 垃圾表（2026-10-17 实证 data/tushare/.git 被收为 228 表之一）
-            if not os.path.isdir(os.path.join(root, tbl)) or \
-                    tbl.startswith(("_", ".")):
+            if not os.path.isdir(os.path.join(root, tbl)) or tbl.startswith(("_", ".")):
                 continue
             tables[tbl] = _scan_dir(source, root, mpath, tbl, mf)
-        if data_root is None and source == "xtcloud":   # tdx 信息库三表
+        if data_root is None and source == "xtcloud":  # tdx 信息库三表
             tables.update(_scan_sqlite(mf))
-        if data_root is None and source == "xueqiu":    # 雪球舆情库三表
+        if data_root is None and source == "xueqiu":  # 雪球舆情库三表
             tables.update(_scan_xq_info_db(mf))
         if data_root is None and source == CNOD_SOURCE:  # 静态历史包终态标记
             _mark_static_done(tables, mf)
     if data_root is None and os.path.isdir(LEGACY_US):
         tables["us_legacy"] = _scan_dir(
-            "legacy", os.path.dirname(LEGACY_US), None, "us_legacy", {},
-            store=LEGACY_US)
+            "legacy", os.path.dirname(LEGACY_US), None, "us_legacy", {}, store=LEGACY_US
+        )
     if data_root is None and os.path.isdir(CRYPTO_DIR):
         tables["crypto_daily"] = _scan_dir(
-            "crypto", os.path.dirname(CRYPTO_DIR), None, "crypto_daily", {},
-            store=CRYPTO_DIR)
+            "crypto",
+            os.path.dirname(CRYPTO_DIR),
+            None,
+            "crypto_daily",
+            {},
+            store=CRYPTO_DIR,
+        )
     # 设计 §3：xq_* 10 表 + guba_posts 注册（空数据占位，不 fail）
     prev_tables = {}
     prev_version = 0
@@ -1015,7 +1393,7 @@ def build(data_root=None, out_path=None):
         pass
     intel = _register_intel_tables()
     tables.update(intel)
-    tables.update(EXTERNAL_TABLES)   # 章程 §3：外部库表（PG 等）并入目录
+    tables.update(EXTERNAL_TABLES)  # 章程 §3：外部库表（PG 等）并入目录
     # 验证体系：全表统一推导 verification_status（此前 222 表全 unknown，
     # catalog 仅有登记没有可信度判定——2026-10-17 治理补齐）
     stale_before = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
@@ -1023,16 +1401,26 @@ def build(data_root=None, out_path=None):
         e["verification_status"] = _verify_status(e, stale_before)
     # freq 词表校验（软）：未登记值不阻断重建，但必须可见——静默接受拼写
     # 错误（如 "Annual"）会让下游 kg_source_rating 回落 Q 档预算而无人知。
-    _bad_freq = sorted({str(e.get("freq")) for e in tables.values()
-                        if str(e.get("freq")) not in FREQ_ENUM})
+    _bad_freq = sorted(
+        {
+            str(e.get("freq"))
+            for e in tables.values()
+            if str(e.get("freq")) not in FREQ_ENUM
+        }
+    )
     if _bad_freq:
-        print("[catalog] 警告：freq 不在枚举 %s 内：%s"
-              % ("/".join(FREQ_ENUM), ", ".join(_bad_freq)))
+        print(
+            "[catalog] 警告：freq 不在枚举 %s 内：%s"
+            % ("/".join(FREQ_ENUM), ", ".join(_bad_freq))
+        )
     version = prev_version + 1 if set(tables) != prev_tables else max(prev_version, 1)
-    _changelog(prev_tables, tables, version,
-               os.path.join(os.path.dirname(out_path or OUT),
-                            "catalog_changelog.jsonl"),
-               note=_changelog_note(prev_tables, tables))
+    _changelog(
+        prev_tables,
+        tables,
+        version,
+        os.path.join(os.path.dirname(out_path or OUT), "catalog_changelog.jsonl"),
+        note=_changelog_note(prev_tables, tables),
+    )
     cat = {
         "version": version,
         "updated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
@@ -1049,13 +1437,23 @@ def build(data_root=None, out_path=None):
 
 
 def _summarize(cat):
-    print("%-18s %-8s %-14s %-6s %-10s %-8s %s"
-          % ("table", "source", "layout", "done", "freshness", "files",
-             "desc"))
+    print(
+        "%-18s %-8s %-14s %-6s %-10s %-8s %s"
+        % ("table", "source", "layout", "done", "freshness", "files", "desc")
+    )
     for t, e in sorted(cat["tables"].items()):
-        print("%-18s %-8s %-14s %-6s %-10s %-8d %s"
-              % (t, e["source"], e["layout"], "Y" if e["done"] else "-",
-                 e["freshness"] or "—", e["files"], e["desc"][:24]))
+        print(
+            "%-18s %-8s %-14s %-6s %-10s %-8d %s"
+            % (
+                t,
+                e["source"],
+                e["layout"],
+                "Y" if e["done"] else "-",
+                e["freshness"] or "—",
+                e["files"],
+                e["desc"][:24],
+            )
+        )
     print("\naliases:")
     for a, d in sorted(cat["aliases"].items()):
         print("  %-12s → %s" % (a, " > ".join(d["resolves"])))
@@ -1063,5 +1461,5 @@ def _summarize(cat):
 
 if __name__ == "__main__":
     from linreg import run_with_lineage
-    run_with_lineage("kg_daily_sync", "catalog_build",
-                     lambda: _summarize(build()))
+
+    run_with_lineage("kg_daily_sync", "catalog_build", lambda: _summarize(build()))

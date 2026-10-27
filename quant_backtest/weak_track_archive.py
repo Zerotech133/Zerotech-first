@@ -22,6 +22,7 @@ tenant_access_token 通道无人值守可靠）：
   python weak_track_archive.py                # 预览快照 md
   python weak_track_archive.py --send         # 归档+推卡片
 """
+
 import argparse
 import json
 import os
@@ -32,13 +33,15 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_summary as wts     # noqa: E402  (parse_cases 唯一解析器)
-import weak_track_learn as wl        # noqa: E402  (learn_fields 统计复用)
+import weak_track_summary as wts  # noqa: E402  (parse_cases 唯一解析器)
+import weak_track_learn as wl  # noqa: E402  (learn_fields 统计复用)
 
 CASES = os.path.join(os.path.dirname(HERE), "reports", "weak_cases")
 OPEN = "https://open.feishu.cn/open-apis"
-APP_ID_SCOPE_URL = ("https://open.feishu.cn/app/cli_aa3e4f1b58f85cdd/auth"
-                    "?q=%s&op_from=openapi&token_type=tenant")
+APP_ID_SCOPE_URL = (
+    "https://open.feishu.cn/app/cli_aa3e4f1b58f85cdd/auth"
+    "?q=%s&op_from=openapi&token_type=tenant"
+)
 SCOPE_UPLOAD = "drive:file:upload"
 SCOPE_IMPORT = "docs:document:import"
 
@@ -47,8 +50,9 @@ _CNAME = {"A": "情景A兑现", "B": "情景B立案·滚动新案", "C": "利空
 
 
 def _cfg():
-    cfg = json.load(open(os.path.expanduser("~/.lark-cli/config.json"),
-                         encoding="utf-8"))
+    cfg = json.load(
+        open(os.path.expanduser("~/.lark-cli/config.json"), encoding="utf-8")
+    )
     aid, sec = cfg["apps"][0]["appId"], cfg["apps"][0]["appSecret"]
     # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
     if not isinstance(sec, str):
@@ -61,6 +65,7 @@ def _token():
     # ScopeError 守卫保留在本文件（授权后需新 token → use_cache=False）。
     sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
     from feishu_client import get_tat
+
     a, s = _cfg()
     tok = get_tat(a, s, use_cache=False)
     if not tok:
@@ -81,26 +86,28 @@ class ScopeError(Exception):
         super().__init__("missing scopes: %s" % scopes)
 
 
-def _api(tok, url, data=None, headers=None, ctype="application/json",
-         method=None):
+def _api(tok, url, data=None, headers=None, ctype="application/json", method=None):
     """OpenAPI 调用：HTTPError 时识别 scope 缺失抛 ScopeError。
 
     99991672 响应体自带 scopes 列表与授权直达链接，正则透传。
     """
     import re
+
     h = {"Authorization": "Bearer " + tok}
     if ctype:
         h["Content-Type"] = ctype
     try:
-        req = urllib.request.Request(url, data=data, headers=headers or h,
-                                     method=method)
+        req = urllib.request.Request(
+            url, data=data, headers=headers or h, method=method
+        )
         return json.loads(urllib.request.urlopen(req, timeout=60).read())
     except urllib.error.HTTPError as e:
         txt = e.read().decode("utf-8", "replace")
         if " scopes is required" in txt:
             m = re.search(r"required: \[([^\]]+)\]", txt)
-            scopes = [s.strip() for s in m.group(1).split(",")] if m \
-                else ["drive:drive"]
+            scopes = (
+                [s.strip() for s in m.group(1).split(",")] if m else ["drive:drive"]
+            )
             m2 = re.search(r"https://open\.feishu\.cn/app/[^\"\s]+", txt)
             raise ScopeError(scopes, m2.group(0) if m2 else "")
         raise RuntimeError("%s %s %s" % (e.code, url.split("?")[0], txt[:200]))
@@ -114,34 +121,67 @@ def build_archive_md(cases, snap=None, watch=None):
     """
     snap = snap or time.strftime("%Y%m%d")
     f = wl.learn_fields(cases)
-    md = ["# weak 案例库 %s" % snap, "",
-          "> 结案 %s 例（A %s/B %s/C %s）· 命中率 %s · "
-          "时长均 %s 天 · 超额修复 %s/%s" % (
-              f["n"], f["na"], f["nb"], f["nc"], f["a_rate"],
-              f["dur_avg"], f["ex_fix"], f["ex_tagged"]), "",
-          "## 经验条目", "", f["lessons"], ""]
+    md = [
+        "# weak 案例库 %s" % snap,
+        "",
+        "> 结案 %s 例（A %s/B %s/C %s）· 命中率 %s · "
+        "时长均 %s 天 · 超额修复 %s/%s"
+        % (
+            f["n"],
+            f["na"],
+            f["nb"],
+            f["nc"],
+            f["a_rate"],
+            f["dur_avg"],
+            f["ex_fix"],
+            f["ex_tagged"],
+        ),
+        "",
+        "## 经验条目",
+        "",
+        f["lessons"],
+        "",
+    ]
     if watch:
         md += ["## 在案观察中", ""]
-        md += ["- %s %s：跟踪 %s 天·末次 %s 天前·任务 %s" % (
-                   w["code"], w.get("name") or "",
-                   w["days_open"] if w["days_open"] is not None else "—",
-                   w["days_stall"] if w["days_stall"] is not None else "—",
-                   w["task"]) for w in watch]
+        md += [
+            "- %s %s：跟踪 %s 天·末次 %s 天前·任务 %s"
+            % (
+                w["code"],
+                w.get("name") or "",
+                w["days_open"] if w["days_open"] is not None else "—",
+                w["days_stall"] if w["days_stall"] is not None else "—",
+                w["task"],
+            )
+            for w in watch
+        ]
         md.append("")
     for c in cases:
-        md.append("## %s %s %s（%s）" % (
-            _EMOJI.get(c.get("type"), "⚪"), c["code"],
-            c.get("name") or "", _CNAME.get(c.get("type"), "?")))
+        md.append(
+            "## %s %s %s（%s）"
+            % (
+                _EMOJI.get(c.get("type"), "⚪"),
+                c["code"],
+                c.get("name") or "",
+                _CNAME.get(c.get("type"), "?"),
+            )
+        )
         md += [
-            "- 结案：%s（立案 %s，跟踪 %s 天）" % (
-                c["ts"], c.get("open") or "—",
-                wl._days(c) if wl._days(c) is not None else "—"),
-            "- 区间涨跌：%s%%｜超额250：%s%s" % (
+            "- 结案：%s（立案 %s，跟踪 %s 天）"
+            % (
+                c["ts"],
+                c.get("open") or "—",
+                wl._days(c) if wl._days(c) is not None else "—",
+            ),
+            "- 区间涨跌：%s%%｜超额250：%s%s"
+            % (
                 ("%+.1f" % c["chg"]) if c["chg"] is not None else "—",
                 "" if c.get("exd") else "无标签 ",
-                c.get("exd") or ""),
+                c.get("exd") or "",
+            ),
             "- 触发：共 %d 次｜源文件：%s" % (c["ntrig"], c["md"]),
-            ""]
+            "",
+        ]
     return "\n".join(md).rstrip("\n")
 
 
@@ -150,18 +190,35 @@ def _upload_md(tok, folder, name, md):
     bd = md.encode("utf-8")
     b = "----weakarch%s" % int(time.time() * 1000)
     parts = []
-    for k, v in [("file_name", name), ("parent_type", "explorer"),
-                 ("parent_node", folder), ("size", str(len(bd)))]:
-        parts.append(("--%s\r\nContent-Disposition: form-data; name=\"%s\""
-                      "\r\n\r\n%s\r\n" % (b, k, v)).encode())
-    parts.append(("--%s\r\nContent-Disposition: form-data; name=\"file\"; "
-                  "filename=\"%s\"\r\nContent-Type: text/markdown\r\n\r\n"
-                  % (b, name)).encode())
+    for k, v in [
+        ("file_name", name),
+        ("parent_type", "explorer"),
+        ("parent_node", folder),
+        ("size", str(len(bd))),
+    ]:
+        parts.append(
+            (
+                '--%s\r\nContent-Disposition: form-data; name="%s"'
+                "\r\n\r\n%s\r\n" % (b, k, v)
+            ).encode()
+        )
+    parts.append(
+        (
+            '--%s\r\nContent-Disposition: form-data; name="file"; '
+            'filename="%s"\r\nContent-Type: text/markdown\r\n\r\n' % (b, name)
+        ).encode()
+    )
     parts.append(bd + b"\r\n--" + b.encode() + b"--\r\n")
-    r = _api(tok, OPEN + "/drive/v1/files/upload_all",
-             data=b"".join(parts), ctype=None,
-             headers={"Authorization": "Bearer " + tok,
-                      "Content-Type": "multipart/form-data; boundary=" + b})
+    r = _api(
+        tok,
+        OPEN + "/drive/v1/files/upload_all",
+        data=b"".join(parts),
+        ctype=None,
+        headers={
+            "Authorization": "Bearer " + tok,
+            "Content-Type": "multipart/form-data; boundary=" + b,
+        },
+    )
     if r.get("code") != 0:
         raise RuntimeError("upload failed: %s" % json.dumps(r)[:200])
     return r["data"]["file_token"]
@@ -173,11 +230,19 @@ def _import_docx(tok, file_token, folder, name):
     K43-e 判例：导入是异步任务，30s 窗口对大 md 不够（实测超时后任务
     仍在服务端跑完），放宽到 180s；月频任务不差这几分钟。
     """
-    r = _api(tok, OPEN + "/drive/v1/import_tasks", data=json.dumps({
-        "file_extension": "md", "file_token": file_token,
-        "point": {"mount_type": 1, "mount_key": folder},
-        "type": "docx", "file_name": name,
-    }).encode())
+    r = _api(
+        tok,
+        OPEN + "/drive/v1/import_tasks",
+        data=json.dumps(
+            {
+                "file_extension": "md",
+                "file_token": file_token,
+                "point": {"mount_type": 1, "mount_key": folder},
+                "type": "docx",
+                "file_name": name,
+            }
+        ).encode(),
+    )
     if r.get("code") != 0:
         raise RuntimeError("import create failed: %s" % json.dumps(r)[:200])
     ticket = r["data"]["ticket"]
@@ -186,11 +251,11 @@ def _import_docx(tok, file_token, folder, name):
         j = _api(tok, OPEN + "/drive/v1/import_tasks/" + ticket)
         # K43-e 判例：GET 返回结构是 data.result.job_status（非 data.job_status），
         # 读错键=永远等不到成功，轮询耗尽误报 timeout（实际服务端秒级完成）
-        st = ((j.get("data") or {}).get("result") or {})
-        if st.get("job_status") == 0:                   # SUCCESS
+        st = (j.get("data") or {}).get("result") or {}
+        if st.get("job_status") == 0:  # SUCCESS
             token = st["token"]
             return token, st.get("url") or ("https://feishu.cn/docx/%s" % token)
-        if st.get("job_status") in (3, 4):                 # FAILED/CANCEL
+        if st.get("job_status") in (3, 4):  # FAILED/CANCEL
             raise RuntimeError("import failed: %s" % json.dumps(j)[:200])
     raise RuntimeError("import timeout (180s)")
 
@@ -212,8 +277,11 @@ def _ensure_folder(tok, root):
                 return ft
         except (OSError, ValueError):
             pass
-    r = _api(tok, OPEN + "/drive/v1/files/create_folder", data=json.dumps({
-        "name": FOLDER_NAME, "folder_token": root}).encode())
+    r = _api(
+        tok,
+        OPEN + "/drive/v1/files/create_folder",
+        data=json.dumps({"name": FOLDER_NAME, "folder_token": root}).encode(),
+    )
     if r.get("code") != 0:
         raise RuntimeError("create_folder failed: %s" % json.dumps(r)[:200])
     ft = r["data"]["token"]
@@ -228,10 +296,11 @@ def _delete_file(tok, file_token):
     非致命：失败（含无权限）只 warn，不影响归档结果——清理是锦上添花。
     """
     try:
-        r = _api(tok, OPEN + "/drive/v1/files/%s?type=file" % file_token,
-                 method="DELETE")
+        r = _api(
+            tok, OPEN + "/drive/v1/files/%s?type=file" % file_token, method="DELETE"
+        )
         return r.get("code") == 0
-    except Exception as e:                                    # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         print("（warn）源 md 清理跳过：%s" % str(e)[:120])
         return False
 
@@ -239,37 +308,42 @@ def _delete_file(tok, file_token):
 def archive_send(md, snap):
     """全链路：root → 专属文件夹 → upload → import → 清理 → 卡片推送。"""
     import weak_track_card as wcard
+
     tok = _token()
-    root = _api(tok, OPEN + "/drive/explorer/v2/root_folder/meta")[
-        "data"]["token"]
+    root = _api(tok, OPEN + "/drive/explorer/v2/root_folder/meta")["data"]["token"]
     folder = _ensure_folder(tok, root)
     name = "weak案例库_%s.md" % snap
     ft = _upload_md(tok, folder, name, md)
     doc_tok, url = _import_docx(tok, ft, folder, "weak 案例库 %s" % snap)
     _delete_file(tok, ft)
     cases = wts.parse_cases(CASES)
-    f = {"n": len(cases), "na": sum(1 for c in cases if c["type"] == "A"),
-         "nb": sum(1 for c in cases if c["type"] == "B"),
-         "nc": sum(1 for c in cases if c["type"] == "C"),
-         "trig": sum(c["ntrig"] for c in cases),
-         "recent": wcard.recent_lines(cases),
-         "snap": snap, "doc_url": url,
-         "ts": time.strftime("%Y-%m-%d %H:%M")}
+    f = {
+        "n": len(cases),
+        "na": sum(1 for c in cases if c["type"] == "A"),
+        "nb": sum(1 for c in cases if c["type"] == "B"),
+        "nc": sum(1 for c in cases if c["type"] == "C"),
+        "trig": sum(c["ntrig"] for c in cases),
+        "recent": wcard.recent_lines(cases),
+        "snap": snap,
+        "doc_url": url,
+        "ts": time.strftime("%Y-%m-%d %H:%M"),
+    }
     rcpt = wcard.send_card(wcard.archive_card(f))
     return url, rcpt
 
 
 def main():
     ap = argparse.ArgumentParser(description="§14 案例库飞书归档推送")
-    ap.add_argument("--send", action="store_true",
-                    help="执行归档+推送（默认仅预览快照 md）")
+    ap.add_argument(
+        "--send", action="store_true", help="执行归档+推送（默认仅预览快照 md）"
+    )
     a = ap.parse_args()
     import weak_track_watch as ww
+
     watch = ww.watch_cases()
     cases = wts.parse_cases(CASES)
     if not cases and not watch:
-        print("暂无已结案案例且无在案（%s 空）——§9 结案后本节才有数据"
-              % CASES)
+        print("暂无已结案案例且无在案（%s 空）——§9 结案后本节才有数据" % CASES)
         return 0
     snap = time.strftime("%Y%m%d")
     md = build_archive_md(cases, snap, watch=watch)
@@ -286,11 +360,12 @@ def main():
         if e.url:
             print("  直达：%s" % e.url)
         else:
-            print("  上传：%s\n  导入：%s" % (
-                APP_ID_SCOPE_URL % SCOPE_UPLOAD,
-                APP_ID_SCOPE_URL % SCOPE_IMPORT))
+            print(
+                "  上传：%s\n  导入：%s"
+                % (APP_ID_SCOPE_URL % SCOPE_UPLOAD, APP_ID_SCOPE_URL % SCOPE_IMPORT)
+            )
         return 2
-    except Exception as e:                                   # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         print("归档失败：%s" % str(e)[:300])
         return 1
 

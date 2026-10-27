@@ -14,6 +14,7 @@
 
 用法：python namechange_sync.py [--dryrun]
 """
+
 import json
 import os
 import sys
@@ -30,6 +31,7 @@ def _load_all():
     """tushare namechange 分页全量。"""
     import tushare as ts
     from dotenv import load_dotenv
+
     load_dotenv(os.path.join(HERE, ".env.local"))
     pro = ts.pro_api(os.getenv("TUSHARE_TOKEN"))
     fields = "ts_code,name,start_date,end_date,change_reason"
@@ -43,6 +45,7 @@ def _load_all():
             break
         offset += len(df)
     import pandas as pd
+
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
@@ -61,15 +64,18 @@ def run(dryrun=False):
         if hist:
             aliases[tc] = hist
     from kg_client import KgClient
+
     cli = KgClient(retry=1)
     with cli._session() as s:
-        gset = {r["c"] for r in s.run(
-            "MATCH (n:Security) RETURN n.ts_code AS c").data()}
+        gset = {
+            r["c"] for r in s.run("MATCH (n:Security) RETURN n.ts_code AS c").data()
+        }
     hits = {tc: a for tc, a in aliases.items() if tc in gset}
     n_alias_total = sum(len(a) for a in hits.values())
-    print("namechange %d 行 / %d 标的有别名 / 图内命中 %d 标的 / "
-          "别名共 %d 个" % (len(df), len(aliases), len(hits),
-                            n_alias_total))
+    print(
+        "namechange %d 行 / %d 标的有别名 / 图内命中 %d 标的 / "
+        "别名共 %d 个" % (len(df), len(aliases), len(hits), n_alias_total)
+    )
     if dryrun:
         cli.close()
         return
@@ -77,13 +83,17 @@ def run(dryrun=False):
     rows = [{"tc": tc, "al": a} for tc, a in hits.items()]
     with cli._session() as s:
         for i in range(0, len(rows), 1000):
-            s.run("UNWIND $rows AS r "
-                  "MATCH (n:Security {ts_code: r.tc}) "
-                  "SET n.aliases = r.al", rows=rows[i:i + 1000])
+            s.run(
+                "UNWIND $rows AS r "
+                "MATCH (n:Security {ts_code: r.tc}) "
+                "SET n.aliases = r.al",
+                rows=rows[i : i + 1000],
+            )
     cli.close()
     res = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "rows": len(df), "n_codes_with_alias": len(hits),
+        "rows": len(df),
+        "n_codes_with_alias": len(hits),
         "n_alias_total": n_alias_total,
         "updated": len(rows),
     }

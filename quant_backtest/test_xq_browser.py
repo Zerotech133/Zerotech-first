@@ -6,6 +6,7 @@
 浏览器实采（_harvest_live）由 S4U 冒烟与 spike 脚本覆盖
 （C:/Temp/xq_s4u_smoke.py、xq_waf_spike*.py），不在 pytest 面。
 """
+
 import json
 import os
 import sys
@@ -20,8 +21,10 @@ import xq_browser as B
 
 
 def _tok_cookies(tok: str = "a" * 40) -> list[dict]:
-    return [{"name": "xq_a_token", "value": tok, "domain": ".xueqiu.com"},
-            {"name": "acw_tc", "value": "x", "domain": ".xueqiu.com"}]
+    return [
+        {"name": "xq_a_token", "value": tok, "domain": ".xueqiu.com"},
+        {"name": "acw_tc", "value": "x", "domain": ".xueqiu.com"},
+    ]
 
 
 class TestCache(unittest.TestCase):
@@ -69,37 +72,36 @@ class TestHarvest(unittest.TestCase):
         with mock.patch.object(B, "_harvest_live") as m:
             got = B.harvest_cookies(path=self.path)
         self.assertEqual(len(got), 2)
-        m.assert_not_called()               # TTL 内免开浏览器
+        m.assert_not_called()  # TTL 内免开浏览器
 
     def test_live_success_saves_cache(self):
-        with mock.patch.object(B, "_harvest_live",
-                               return_value=_tok_cookies()) as m:
+        with mock.patch.object(B, "_harvest_live", return_value=_tok_cookies()) as m:
             got = B.harvest_cookies(path=self.path)
         self.assertEqual(got[0]["value"], "a" * 40)
         m.assert_called_once()
-        self.assertEqual(len(B._load_cache(self.path)), 2)   # 已落缓存
+        self.assertEqual(len(B._load_cache(self.path)), 2)  # 已落缓存
 
     def test_live_no_token_degrades(self):
-        with mock.patch.object(B, "_harvest_live",
-                               return_value=[{"name": "acw_tc",
-                                              "value": "x"}]):
+        with mock.patch.object(
+            B, "_harvest_live", return_value=[{"name": "acw_tc", "value": "x"}]
+        ):
             got = B.harvest_cookies(force=True, path=self.path)
-        self.assertEqual(got, [])           # 挑战未过 → 降级
+        self.assertEqual(got, [])  # 挑战未过 → 降级
         self.assertEqual(B._load_cache(self.path), [])  # 不写缓存
 
     def test_live_crash_degrades(self):
-        with mock.patch.object(B, "_harvest_live",
-                               side_effect=RuntimeError("boom")):
+        with mock.patch.object(B, "_harvest_live", side_effect=RuntimeError("boom")):
             got = B.harvest_cookies(force=True, path=self.path)
-        self.assertEqual(got, [])           # 异常吞掉，绝不 raise
+        self.assertEqual(got, [])  # 异常吞掉，绝不 raise
 
     def test_force_bypasses_cache(self):
         B._save_cache(_tok_cookies("b" * 40), self.path)
-        with mock.patch.object(B, "_harvest_live",
-                               return_value=_tok_cookies("c" * 40)) as m:
+        with mock.patch.object(
+            B, "_harvest_live", return_value=_tok_cookies("c" * 40)
+        ) as m:
             got = B.harvest_cookies(force=True, path=self.path)
         m.assert_called_once()
-        self.assertEqual(got[0]["value"], "c" * 40)   # 强刷生效
+        self.assertEqual(got[0]["value"], "c" * 40)  # 强刷生效
 
 
 if __name__ == "__main__":

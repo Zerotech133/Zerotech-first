@@ -20,9 +20,7 @@ def test_force_replay_replaces_only_requested_anchors(tmp_path):
         encoding="utf-8",
     )
 
-    kept, done = backtest._load_replay_rows(
-        str(path), replace_anchors={"20260930"}
-    )
+    kept, done = backtest._load_replay_rows(str(path), replace_anchors={"20260930"})
 
     assert kept == [{"anchor": "20260924", "code": "000002.SZ"}]
     assert done == {"20260924"}

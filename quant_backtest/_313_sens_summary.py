@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-313：终选参数敏感性复验汇总（311 hist_st 新宇宙）。"""
+
 import json
 
 ROWS = [
@@ -23,5 +24,13 @@ print("%-20s %9s %7s %7s %8s" % ("arm", "ret%", "PF", "trades", "mdd%"))
 for label, fp in ROWS:
     d = json.load(open(fp, encoding="utf-8"))
     s = d["summary"]
-    print("%-20s %9s %7s %7s %8s" % (
-        label, s["total_return_pct"], s["profit_factor"], s["n_trades"], s["max_drawdown_pct"]))
+    print(
+        "%-20s %9s %7s %7s %8s"
+        % (
+            label,
+            s["total_return_pct"],
+            s["profit_factor"],
+            s["n_trades"],
+            s["max_drawdown_pct"],
+        )
+    )

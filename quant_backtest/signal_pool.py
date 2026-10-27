@@ -25,6 +25,7 @@ signal_id 确定性生成（幂等防重）：{pool}.{code}.{方向}.{yyyymmdd}.
 边界：影子期 14 天内本模块只落账，绝不调 signal_consumer 消费链/engine
 （不进 combo 执行）；不碰生产 k_stock/data 下任何文件。
 """
+
 import json
 import os
 import sys
@@ -52,9 +53,22 @@ def _pool_jsonl_path(path=None):
     return path or DEFAULT_POOL_JSONL
 
 
-def build_signal(*, code, name, direction, trigger_price, entry_px, now,
-                 reg=None, source_dt=None, tier=None, n_hit=None,
-                 reg_flag_only=False, pool_path=None, pool_jsonl=None):
+def build_signal(
+    *,
+    code,
+    name,
+    direction,
+    trigger_price,
+    entry_px,
+    now,
+    reg=None,
+    source_dt=None,
+    tier=None,
+    n_hit=None,
+    reg_flag_only=False,
+    pool_path=None,
+    pool_jsonl=None,
+):
     """构造一条合法信号点事件（过 normalize_signal 校验的确定性产物）。
 
     direction: "pull"（回踩 -1%）| "break"（突破 +3%）
@@ -67,18 +81,18 @@ def build_signal(*, code, name, direction, trigger_price, entry_px, now,
     n = count_events(code, direction, date_s, path=_pool_jsonl_path(pool_jsonl))
     rule_id = "pool_watch_%s" % direction
     ev = {
-        "signal_id": "%s.%s.%s.%s.r%d" % (POOL_ID, code, direction,
-                                          date_s, n + 1),
+        "signal_id": "%s.%s.%s.%s.r%d" % (POOL_ID, code, direction, date_s, n + 1),
         "kind": signal_consumer.SIGNAL_KIND_TRIGGER,
         "stock": code,
         "name": name,
-        "action": "BUY",           # 回踩买/突破买均为入场类触发
+        "action": "BUY",  # 回踩买/突破买均为入场类触发
         "confidence": SIGNAL_CONFIDENCE,
         "rule_id": rule_id,
         "rule_version": RULE_VERSION,
         "triggered_at": now.isoformat(timespec="seconds"),
-        "valid_until": (now + timedelta(hours=VALID_HOURS)
-                        ).isoformat(timespec="seconds"),
+        "valid_until": (now + timedelta(hours=VALID_HOURS)).isoformat(
+            timespec="seconds"
+        ),
         "evidence": {
             "trigger_price": float(trigger_price),
             "entry_px": float(entry_px),
@@ -91,7 +105,7 @@ def build_signal(*, code, name, direction, trigger_price, entry_px, now,
         },
         "pool_stamp": {
             "pool_id": POOL_ID,
-            "pool_version": 0,     # 文件型池软版本（decision_snapshot 口径）
+            "pool_version": 0,  # 文件型池软版本（decision_snapshot 口径）
             "scan_run_date": meta.get("scan_run_date"),
             "generated_at": meta.get("generated_at"),
         },
@@ -106,8 +120,10 @@ def pool_meta(pool_path):
     try:
         with open(pool_path, encoding="utf-8") as f:
             d = json.load(f)
-        return {"scan_run_date": d.get("scan_run_date"),
-                "generated_at": d.get("generated_at")}
+        return {
+            "scan_run_date": d.get("scan_run_date"),
+            "generated_at": d.get("generated_at"),
+        }
     except Exception:
         return {}
 
@@ -115,8 +131,11 @@ def pool_meta(pool_path):
 def count_events(code, direction, date_s, path=None):
     """池中该票该方向该日期已有事件数（signal_id 前缀精确计数）。"""
     prefix = "%s.%s.%s.%s." % (POOL_ID, code, direction, date_s)
-    return sum(1 for e in read_events(path=path)
-               if str(e.get("signal_id", "")).startswith(prefix))
+    return sum(
+        1
+        for e in read_events(path=path)
+        if str(e.get("signal_id", "")).startswith(prefix)
+    )
 
 
 def append_event(event, path=None):

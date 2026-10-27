@@ -13,6 +13,7 @@
 永不进 verdict / L3 判读 / L4 出口，不产生交易指令；生产三账本（ledger/verify/
 attribution）只读。
 """
+
 import argparse
 import json
 import math
@@ -38,6 +39,7 @@ SCHEMA_V = 2  # v2: 增加 found_day 元数据
 
 # ───────────────────────── 编排器（主环境） ─────────────────────────
 
+
 def extract_codes(ledger_path):
     """最近一个 found_day 的去重票集。返回 (found_day, codes)。"""
     rows = [json.loads(l) for l in open(ledger_path, encoding="utf-8") if l.strip()]
@@ -59,8 +61,13 @@ def mtime_is_today(path, now=None):
     return datetime.fromtimestamp(os.path.getmtime(path)).date() == now.date()
 
 
-def orchestrate(venv_py=VENV_PY, ledger_path=LEDGER_PATH, out_path=CZSC_LEDGER_PATH,
-                ashare_dir=ASHARE_DIR, now=None):
+def orchestrate(
+    venv_py=VENV_PY,
+    ledger_path=LEDGER_PATH,
+    out_path=CZSC_LEDGER_PATH,
+    ashare_dir=ASHARE_DIR,
+    now=None,
+):
     """编排一次影子落账。返回 (status, detail)。status ∈ ran/skip_*。"""
     if not os.path.exists(venv_py):
         return "skip_no_venv", f"venv python 不存在: {venv_py}"
@@ -74,9 +81,19 @@ def orchestrate(venv_py=VENV_PY, ledger_path=LEDGER_PATH, out_path=CZSC_LEDGER_P
         return "skip_empty_universe", "最近 found_day 无票"
     codes_file = out_path + ".codes.json"
     json.dump(codes, open(codes_file, "w", encoding="utf-8"))
-    cmd = [venv_py, os.path.abspath(__file__), "--worker",
-           "--codes", codes_file, "--out", out_path,
-           "--ashare-dir", ashare_dir, "--meta", str(found_day)]
+    cmd = [
+        venv_py,
+        os.path.abspath(__file__),
+        "--worker",
+        "--codes",
+        codes_file,
+        "--out",
+        out_path,
+        "--ashare-dir",
+        ashare_dir,
+        "--meta",
+        str(found_day),
+    ]
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
     proc = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=900)
     if proc.returncode != 0:
@@ -92,6 +109,7 @@ def main_orchestrate():
 
 
 # ───────────────────────── worker（venv 子进程） ─────────────────────────
+
 
 def _fnum(v):
     try:
@@ -110,22 +128,39 @@ def worker_row(tk, ashare_dir, cfg):
 
     raw = pd.read_parquet(p).sort_values("trade_date").reset_index(drop=True)
     dates = raw["trade_date"].astype(str).tolist()
-    df = pd.DataFrame({
-        "symbol": tk, "dt": pd.to_datetime(raw["trade_date"].astype(str)),
-        "open": raw["open"].astype(float), "close": raw["close"].astype(float),
-        "high": raw["high"].astype(float), "low": raw["low"].astype(float),
-        "vol": raw["volume"].astype(float), "amount": raw["amount"].astype(float),
-    })
+    df = pd.DataFrame(
+        {
+            "symbol": tk,
+            "dt": pd.to_datetime(raw["trade_date"].astype(str)),
+            "open": raw["open"].astype(float),
+            "close": raw["close"].astype(float),
+            "high": raw["high"].astype(float),
+            "low": raw["low"].astype(float),
+            "vol": raw["volume"].astype(float),
+            "amount": raw["amount"].astype(float),
+        }
+    )
     bars = format_standard_kline(df, freq="日线")
     c = CZSC(bars, max_bi_num=500)
     as_of = dates[-1]
     close = float(raw["close"].iloc[-1])
-    feats = {"power": None, "slope": None, "rsq": None,
-             "angle": None, "accel": None, "zz_rel": None}
+    feats = {
+        "power": None,
+        "slope": None,
+        "rsq": None,
+        "angle": None,
+        "accel": None,
+        "zz_rel": None,
+    }
     if c.bi_list:
         b = c.bi_list[-1]
-        for k, attr in (("power", "power"), ("slope", "slope"), ("rsq", "rsq"),
-                        ("angle", "angle"), ("accel", "acceleration")):
+        for k, attr in (
+            ("power", "power"),
+            ("slope", "slope"),
+            ("rsq", "rsq"),
+            ("angle", "angle"),
+            ("accel", "acceleration"),
+        ):
             feats[k] = _fnum(getattr(b, attr, None))
     for zs in reversed(get_zs_seq(c.bi_list)):
         try:
@@ -137,7 +172,8 @@ def worker_row(tk, ashare_dir, cfg):
         except Exception:
             continue
     sig = generate_czsc_signals(
-        bars, signals_config=cfg, sdt=dates[max(0, len(dates) - 250)], df=True)
+        bars, signals_config=cfg, sdt=dates[max(0, len(dates) - 250)], df=True
+    )
     sig["dt"] = pd.to_datetime(sig["dt"]).dt.strftime("%Y%m%d")
     last = sig.iloc[-1]
     fired = {}
@@ -148,9 +184,15 @@ def worker_row(tk, ashare_dir, cfg):
             continue
         h = str(last[base]).split("_")[0]
         fired[base] = (h != "其他") if fire == "!其他" else (h == fire)
-    return {"code": tk, "dt": as_of, "close": round(close, 3),
-            "feats": feats, "fired": fired,
-            "bi_n": len(c.bi_list), "zs_n": len(get_zs_seq(c.bi_list))}
+    return {
+        "code": tk,
+        "dt": as_of,
+        "close": round(close, 3),
+        "feats": feats,
+        "fired": fired,
+        "bi_n": len(c.bi_list),
+        "zs_n": len(get_zs_seq(c.bi_list)),
+    }
 
 
 def worker_main(codes, out_path, ashare_dir, meta):
@@ -173,9 +215,18 @@ def worker_main(codes, out_path, ashare_dir, meta):
                     skipped += 1
                 else:
                     have.add((tk, "ERROR"))
-                    f.write(json.dumps({"schema_v": SCHEMA_V, "code": tk,
-                                        "meta": meta, "error": str(e)[:160]},
-                                       ensure_ascii=False) + "\n")
+                    f.write(
+                        json.dumps(
+                            {
+                                "schema_v": SCHEMA_V,
+                                "code": tk,
+                                "meta": meta,
+                                "error": str(e)[:160],
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
                     errored += 1
                 continue
             if row is None:
@@ -186,8 +237,16 @@ def worker_main(codes, out_path, ashare_dir, meta):
                 continue
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             written += 1
-    print(json.dumps({"written": written, "skipped_existing": skipped,
-                      "errored": errored, "meta": meta}))
+    print(
+        json.dumps(
+            {
+                "written": written,
+                "skipped_existing": skipped,
+                "errored": errored,
+                "meta": meta,
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

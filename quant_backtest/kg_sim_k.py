@@ -21,6 +21,7 @@
 守"图写入先于特征重算"纪律）。展示：kg_portal.stock 个股页相似块 +
 席位交集（形态相似+同席位近期双碰=手法复现线索）。
 """
+
 import sys
 import time
 from datetime import datetime, timedelta
@@ -32,11 +33,11 @@ import tdx_read as tdxr
 from kg_client import KgClient
 import linreg  # X3 血缘登记（best-effort，不阻断）
 
-WIN = 60          # 特征窗口（交易日）
-TOP_CAND = 20     # 欧氏预筛每票候选数
-TOP_K = 5         # 每票相似边数
-BAND = 7          # Sakoe-Chiba 带宽 |i-j|<=BAND
-LOOKBACK_DAYS = 130   # ts_daily 回读自然日（~88 交易日，留余量）
+WIN = 60  # 特征窗口（交易日）
+TOP_CAND = 20  # 欧氏预筛每票候选数
+TOP_K = 5  # 每票相似边数
+BAND = 7  # Sakoe-Chiba 带宽 |i-j|<=BAND
+LOOKBACK_DAYS = 130  # ts_daily 回读自然日（~88 交易日，留余量）
 
 
 def _now():
@@ -47,7 +48,7 @@ def _dtw(a, b, w=BAND):
     """Sakoe-Chiba 带宽 DTW，返回累计距离（纯列表实现，~1ms/对）。"""
     n = len(a)
     inf = float("inf")
-    prev = [0.0] + [inf] * n          # D[0][j]
+    prev = [0.0] + [inf] * n  # D[0][j]
     for i in range(1, n + 1):
         cur = [inf] * (n + 1)
         lo = max(1, i - w)
@@ -84,15 +85,20 @@ def calc(verbose=True):
     cli = KgClient()
     try:
         with cli._session() as s:
-            secs = [dict(r) for r in s.run(
-                "MATCH (n:Security) RETURN n.ts_code AS tc, n.name AS nm")]
+            secs = [
+                dict(r)
+                for r in s.run(
+                    "MATCH (n:Security) RETURN n.ts_code AS tc, n.name AS nm"
+                )
+            ]
     finally:
         cli.close()
     in_graph = {r["tc"] for r in secs}
 
     start = (datetime.now() - timedelta(days=LOOKBACK_DAYS)).strftime("%Y%m%d")
-    dd = tdxr.read_range("ts_daily", start=start,
-                         columns=["ts_code", "trade_date", "close"])
+    dd = tdxr.read_range(
+        "ts_daily", start=start, columns=["ts_code", "trade_date", "close"]
+    )
     if dd.empty:
         raise SystemExit("ts_daily 为空，先跑 tdx 同步")
     dd = dd[dd["ts_code"].isin(in_graph)]
@@ -108,14 +114,22 @@ def calc(verbose=True):
 
     piv = win.pivot(index="ts_code", columns="seq", values="close")
     codes = list(piv.index)
-    P = piv.values                            # (N, WIN) 收盘价
-    X = np.log(P / P[:, [0]])                 # 对数路径，起点归零
+    P = piv.values  # (N, WIN) 收盘价
+    X = np.log(P / P[:, [0]])  # 对数路径，起点归零
     win_start = win.groupby("ts_code")["d"].min().to_dict()
     win_end = win.groupby("ts_code")["d"].max().to_dict()
     if verbose:
-        print("  池 %d 票（图内 %d，ts_daily 满窗 %d/%d）· 窗口示例 %s~%s"
-              % (len(codes), len(in_graph), len(keep), len(cnt),
-                 min(win_start.values()), max(win_end.values())))
+        print(
+            "  池 %d 票（图内 %d，ts_daily 满窗 %d/%d）· 窗口示例 %s~%s"
+            % (
+                len(codes),
+                len(in_graph),
+                len(keep),
+                len(cnt),
+                min(win_start.values()),
+                max(win_end.values()),
+            )
+        )
 
     # ── 第一级：欧氏预筛（GEMM 矩阵化，float32 省半内存）
     Xf = X.astype(np.float32)
@@ -131,18 +145,25 @@ def calc(verbose=True):
             j = int(j)
             pairs.add((i, j) if i < j else (j, i))
     if verbose:
-        print("  欧氏预筛：每票 top-%d → 去重候选对 %d（%.1fs）"
-              % (TOP_CAND, len(pairs), time.time() - t0))
+        print(
+            "  欧氏预筛：每票 top-%d → 去重候选对 %d（%.1fs）"
+            % (TOP_CAND, len(pairs), time.time() - t0)
+        )
 
     # ── 第二级：带宽 DTW 精算 + Pearson corr
     t1 = time.time()
     res = {}
-    for (i, j) in pairs:
+    for i, j in pairs:
         res[(i, j)] = (_dtw(X[i], X[j]), _corr(X[i], X[j]))
     if verbose:
-        print("  DTW 精算 %d 对完成（%.1fs，约 %.2f ms/对）"
-              % (len(pairs), time.time() - t1,
-                 1000.0 * (time.time() - t1) / max(len(pairs), 1)))
+        print(
+            "  DTW 精算 %d 对完成（%.1fs，约 %.2f ms/对）"
+            % (
+                len(pairs),
+                time.time() - t1,
+                1000.0 * (time.time() - t1) / max(len(pairs), 1),
+            )
+        )
 
     # ── 每票 top-K → 字典序定向出边（同对同窗只留一条）
     best = {}
@@ -159,23 +180,34 @@ def calc(verbose=True):
                 ca, cb = cb, ca
             we = max(win_end[ca], win_end[cb])
             edge_map[(ca, cb, we)] = {
-                "src": ca, "dst": cb, "validStart": we,
+                "src": ca,
+                "dst": cb,
+                "validStart": we,
                 "validEnd": S.VALID_END_OPEN,
-                "dist": round(d, 4), "corr": round(c, 3),
+                "dist": round(d, 4),
+                "corr": round(c, 3),
                 "win_start": min(win_start[ca], win_start[cb]),
                 "win_end": we,
                 "source": "ts_daily+euclid20+dtw_band7",
-                "updated_at": ts}
+                "updated_at": ts,
+            }
     edge_rows = list(edge_map.values())
     dv = sorted(r["dist"] for r in edge_rows)
     cv = [r["corr"] for r in edge_rows]
-    stats = ("K线相似 %d 票 · 候选 %d 对 · 边 %d（去重后）· "
-             "dist 中位 %.3f / p90 %.3f · corr>0.5 占比 %.1f%% · "
-             "总耗时 %.0fs"
-             % (len(codes), len(pairs), len(edge_rows),
-                dv[len(dv) // 2], dv[int(len(dv) * 0.9)],
-                100.0 * sum(1 for c in cv if c > 0.5) / max(len(cv), 1),
-                time.time() - t0))
+    stats = (
+        "K线相似 %d 票 · 候选 %d 对 · 边 %d（去重后）· "
+        "dist 中位 %.3f / p90 %.3f · corr>0.5 占比 %.1f%% · "
+        "总耗时 %.0fs"
+        % (
+            len(codes),
+            len(pairs),
+            len(edge_rows),
+            dv[len(dv) // 2],
+            dv[int(len(dv) * 0.9)],
+            100.0 * sum(1 for c in cv if c > 0.5) / max(len(cv), 1),
+            time.time() - t0,
+        )
+    )
     return edge_rows, stats
 
 
@@ -188,15 +220,29 @@ def main():
     if dry:
         print("  [dryrun] 跳过写库，示例边：")
         for r in edge_rows[:3]:
-            print("    %s -> %s dist=%.3f corr=%.2f win=%s~%s"
-                  % (r["src"], r["dst"], r["dist"], r["corr"],
-                     r["win_start"], r["win_end"]))
+            print(
+                "    %s -> %s dist=%.3f corr=%.2f win=%s~%s"
+                % (
+                    r["src"],
+                    r["dst"],
+                    r["dist"],
+                    r["corr"],
+                    r["win_start"],
+                    r["win_end"],
+                )
+            )
         _jr.finish("ok")  # X3 血缘（显式收尾）
         return
     cli = KgClient()
     try:
-        n = cli.upsert_edge(S.LBL_SECURITY, "ts_code", S.LBL_SECURITY,
-                            "ts_code", S.REL_SIMILAR_K, edge_rows)
+        n = cli.upsert_edge(
+            S.LBL_SECURITY,
+            "ts_code",
+            S.LBL_SECURITY,
+            "ts_code",
+            S.REL_SIMILAR_K,
+            edge_rows,
+        )
     finally:
         cli.close()
     print("  写回 SIMILAR_K %d 边" % n)

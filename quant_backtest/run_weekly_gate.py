@@ -11,6 +11,7 @@
   --quick: 只跑收集门禁（调试用）
 路径经由 C:\aios junction（ASCII），适配 SYSTEM 计划任务环境。
 """
+
 import os
 import subprocess
 import sys
@@ -21,21 +22,31 @@ PY = sys.executable or r"C:\Program Files\Python311\python.exe"
 
 
 def run(args):
-    proc = subprocess.run(args, cwd=HERE, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+    proc = subprocess.run(
+        args,
+        cwd=HERE,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
 
 
 def main():
     t0 = time.time()
-    all_tests = sorted(f for f in os.listdir(HERE)
-                       if f.startswith("test_") and f.endswith(".py"))
+    all_tests = sorted(
+        f for f in os.listdir(HERE) if f.startswith("test_") and f.endswith(".py")
+    )
     if not all_tests:
         print("GATE FAIL: no test_*.py found in", HERE)
         return 2
     print("[gate1] collect-only over %d test files" % len(all_tests))
-    rc, out = run([PY, "-m", "pytest"] + all_tests
-                  + ["-q", "--collect-only", "-p", "no:cacheprovider"])
+    rc, out = run(
+        [PY, "-m", "pytest"]
+        + all_tests
+        + ["-q", "--collect-only", "-p", "no:cacheprovider"]
+    )
     tail = "\n".join(out.strip().splitlines()[-3:])
     print(tail)
     if rc != 0:
@@ -43,12 +54,14 @@ def main():
         print(out[-3000:])
         return 1
     if "--quick" in sys.argv:
-        print("[gate1] PASS in %.0fs (--quick, skip full run)" %
-              (time.time() - t0))
+        print("[gate1] PASS in %.0fs (--quick, skip full run)" % (time.time() - t0))
         return 0
     print("[gate2] full pytest run")
-    rc, out = run([PY, "-m", "pytest"] + all_tests
-                  + ["-q", "--tb=short", "-p", "no:cacheprovider"])
+    rc, out = run(
+        [PY, "-m", "pytest"]
+        + all_tests
+        + ["-q", "--tb=short", "-p", "no:cacheprovider"]
+    )
     tail = "\n".join(out.strip().splitlines()[-25:])
     print(tail)
     print("[gate2] rc=%d total %.0fs" % (rc, time.time() - t0))

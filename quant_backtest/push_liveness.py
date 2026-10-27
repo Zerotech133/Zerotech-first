@@ -14,6 +14,7 @@
 
 自测：python push_liveness.py --selftest（离线用例，不动生产）
 """
+
 import json
 import os
 import re
@@ -25,9 +26,12 @@ WD_LOG = r"C:\Temp\push_liveness.log"
 STATE_FILE = r"C:\Temp\push_liveness_state.json"
 ALERT_FILE = r"C:\Temp\push_liveness_alert.txt"
 # K-PUSH-001 P0：换机路径残留（旧机 E 盘）→ __file__ 动态推导
-SEND_FEISHU = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))), "news_collector", "send_feishu.py")
-GRACE_MIN = 45          # 时点后宽限（分钟）：过宽限仍无签名才告警
+SEND_FEISHU = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "news_collector",
+    "send_feishu.py",
+)
+GRACE_MIN = 45  # 时点后宽限（分钟）：过宽限仍无签名才告警
 
 ALERT_TASK_LOG = r"C:\Temp\alert_push_task.log"
 NEWS_AI_LOG = r"C:\aios\news_collector\logs\ai.log"
@@ -78,16 +82,32 @@ def _mtime_today_after(path, hh, mm):
 
 LIVE_FEEDS = [
     # key, 名称, 时点(hh,mm), 检查函数
-    ("alert_morning", "预警晨报(07:10)", (7, 10),
-     lambda: _sig_ok(ALERT_TASK_LOG, [r"starting morning " + TODAY,
-                                      r"exit=0 " + TODAY])),
-    ("ai_morning", "AI晨报(08:00)", (8, 0),
-     lambda: _mtime_today_after(NEWS_AI_LOG, 8, 0)),
-    ("subpush_eod", "订阅EOD推送(15:30)", (15, 30),
-     lambda: _mtime_today_after(SUB_LOG, 15, 30)),
-    ("alert_eod", "预警日报(16:05)", (16, 5),
-     lambda: _sig_ok(ALERT_TASK_LOG, [r"starting eod " + TODAY,
-                                      r"exit=0 " + TODAY])),
+    (
+        "alert_morning",
+        "预警晨报(07:10)",
+        (7, 10),
+        lambda: _sig_ok(
+            ALERT_TASK_LOG, [r"starting morning " + TODAY, r"exit=0 " + TODAY]
+        ),
+    ),
+    (
+        "ai_morning",
+        "AI晨报(08:00)",
+        (8, 0),
+        lambda: _mtime_today_after(NEWS_AI_LOG, 8, 0),
+    ),
+    (
+        "subpush_eod",
+        "订阅EOD推送(15:30)",
+        (15, 30),
+        lambda: _mtime_today_after(SUB_LOG, 15, 30),
+    ),
+    (
+        "alert_eod",
+        "预警日报(16:05)",
+        (16, 5),
+        lambda: _sig_ok(ALERT_TASK_LOG, [r"starting eod " + TODAY, r"exit=0 " + TODAY]),
+    ),
 ]
 
 
@@ -116,12 +136,17 @@ def send_alert(key, text):
     try:
         with open(ALERT_FILE, "w", encoding="utf-8") as f:
             f.write(text)
-        r = subprocess.run([sys.executable, SEND_FEISHU, ALERT_FILE],
-                           capture_output=True, text=True, timeout=60)
+        r = subprocess.run(
+            [sys.executable, SEND_FEISHU, ALERT_FILE],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
         sent = "SEND_OK" in (r.stdout or "")
-        wd_log("alert %s -> %s" % (key,
-                                   ((r.stdout or "").strip().splitlines()
-                                    or ["?"])[-1]))
+        wd_log(
+            "alert %s -> %s"
+            % (key, ((r.stdout or "").strip().splitlines() or ["?"])[-1])
+        )
     except (OSError, subprocess.SubprocessError) as e:
         wd_log("alert %s EXC %s" % (key, e))
         sent = False
@@ -139,7 +164,7 @@ def check(now=None):
         due = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
         grace_end = due.timestamp() + GRACE_MIN * 60
         if now.timestamp() < grace_end:
-            continue                      # 未到检查窗口
+            continue  # 未到检查窗口
         out.append((key, name, bool(fn())))
     return out
 
@@ -147,13 +172,17 @@ def check(now=None):
 def selftest():
     """离线用例：签名解析与窗口判断（不动生产）。"""
     import tempfile
+
     fails = 0
     # 用例1：当日 eod 双签名齐 → ok
-    with tempfile.NamedTemporaryFile("w", suffix=".log",
-                                     delete=False, encoding="utf-8") as f:
-        f.write("starting morning %sT07:10:02\nexit=0 %sT07:10:06\n"
-                "starting eod %sT16:05:02\nexit=0 %sT16:05:09\n"
-                % (TODAY, TODAY, TODAY, TODAY))
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".log", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(
+            "starting morning %sT07:10:02\nexit=0 %sT07:10:06\n"
+            "starting eod %sT16:05:02\nexit=0 %sT16:05:09\n"
+            % (TODAY, TODAY, TODAY, TODAY)
+        )
         p1 = f.name
     if not _sig_ok(p1, [r"starting eod " + TODAY, r"exit=0 " + TODAY]):
         fails += 1
@@ -161,8 +190,9 @@ def selftest():
     os.unlink(p1)
     # 用例2：昨日签名 → 不算
     yd = datetime.now().strftime("%Y-%m-") + "%02d" % (datetime.now().day - 1 or 1)
-    with tempfile.NamedTemporaryFile("w", suffix=".log",
-                                     delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".log", delete=False, encoding="utf-8"
+    ) as f:
         f.write("starting eod %sT16:05:02\nexit=0 %sT16:05:09\n" % (yd, yd))
         p2 = f.name
     if _sig_ok(p2, [r"starting eod " + TODAY]):
@@ -198,10 +228,11 @@ def main():
         wd_log("ok: %s" % ",".join(good))
     for key, name in bad:
         wd_log("MISSING %s" % key)
-        send_alert(key,
-                   "推送巡检：%s 该到未到（已过 %d 分钟宽限）。"
-                   "请查对应任务日志；本告警当日不重复。"
-                   % (name, GRACE_MIN))
+        send_alert(
+            key,
+            "推送巡检：%s 该到未到（已过 %d 分钟宽限）。"
+            "请查对应任务日志；本告警当日不重复。" % (name, GRACE_MIN),
+        )
     return 0
 
 

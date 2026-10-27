@@ -21,6 +21,7 @@
 字段：id/text/ts_code/ts/tag/bias/source/conf/model/judged_at/note
 用法：python distill_pool.py [--dry]（--dry 只打印统计不落盘）
 """
+
 import argparse
 import hashlib
 import os
@@ -55,13 +56,25 @@ def _build_rule_rows():
         if not bias:
             continue
         an = _an_id(r.get("url"), title)
-        eid = "ev:nt:%s:%s" % (an or hashlib.md5(
-            (nd + title).encode("utf-8")).hexdigest()[:12], code)
-        rows.append(dict(
-            id=eid, text=title[:TEXT_MAX], ts_code=code,
-            ts="%s-%s-%s 00:00" % (nd[:4], nd[4:6], nd[6:8]),
-            tag=tag, bias=bias, source="rule", conf=0.7,
-            model="rules_v2(G6-W1)", judged_at=None, note=""))
+        eid = "ev:nt:%s:%s" % (
+            an or hashlib.md5((nd + title).encode("utf-8")).hexdigest()[:12],
+            code,
+        )
+        rows.append(
+            dict(
+                id=eid,
+                text=title[:TEXT_MAX],
+                ts_code=code,
+                ts="%s-%s-%s 00:00" % (nd[:4], nd[4:6], nd[6:8]),
+                tag=tag,
+                bias=bias,
+                source="rule",
+                conf=0.7,
+                model="rules_v2(G6-W1)",
+                judged_at=None,
+                note="",
+            )
+        )
     return pd.DataFrame(rows)
 
 
@@ -69,18 +82,29 @@ def build(dry=False):
     rdf = _build_rule_rows()
     sdf = pd.read_parquet(SHADOW_PARQUET)
     n_fail = int((sdf["conf"] == 0).sum())
-    sdf = sdf[sdf["conf"] > 0].copy()          # fail 剔除（两连败不作标签）
+    sdf = sdf[sdf["conf"] > 0].copy()  # fail 剔除（两连败不作标签）
     sdf["ts_code"] = sdf["id"].str.split(":").str[-1]
     sdf["source"] = "shadow"
     sdf["note"] = ""
-    sdf = sdf[["id", "text", "ts_code", "ts", "tag", "bias",
-               "source", "conf", "model", "judged_at", "note"]]
+    sdf = sdf[
+        [
+            "id",
+            "text",
+            "ts_code",
+            "ts",
+            "tag",
+            "bias",
+            "source",
+            "conf",
+            "model",
+            "judged_at",
+            "note",
+        ]
+    ]
 
-    m = rdf.merge(sdf, on="id", how="outer",
-                  suffixes=("_r", "_s"), indicator=True)
+    m = rdf.merge(sdf, on="id", how="outer", suffixes=("_r", "_s"), indicator=True)
     # 统一列：影子侧(_s)为底，规则侧(_r)补缺
-    for c in ("text", "ts_code", "ts", "tag", "bias", "conf",
-              "model", "judged_at"):
+    for c in ("text", "ts_code", "ts", "tag", "bias", "conf", "model", "judged_at"):
         m[c] = m[c + "_s"].where(m[c + "_s"].notna(), m[c + "_r"])
     m["source"] = "shadow"
     m.loc[m["_merge"] == "left_only", "source"] = "rule"
@@ -93,18 +117,36 @@ def build(dry=False):
     m.loc[agree, "note"] = "互证(rule+llm)"  # conf 已取 LLM 侧
     m.loc[dis, "source"] = "dual"
     m.loc[dis, "note"] = "disagree"
-    m.loc[dis, "conf"] = 0.0                 # 分歧=不训（宁可不用不可错标）
+    m.loc[dis, "conf"] = 0.0  # 分歧=不训（宁可不用不可错标）
 
-    out = m[["id", "text", "ts_code", "ts", "tag", "bias",
-             "source", "conf", "model", "judged_at", "note"]]
+    out = m[
+        [
+            "id",
+            "text",
+            "ts_code",
+            "ts",
+            "tag",
+            "bias",
+            "source",
+            "conf",
+            "model",
+            "judged_at",
+            "note",
+        ]
+    ]
 
     # 统计报告
-    L = ["=== M5 distill_pool ===",
-         "rule(词表命中) %d | shadow(LLM) %d | fail 剔除 %d" % (
-             int((out["source"] == "rule").sum()),
-             int((out["source"] == "shadow").sum()), n_fail),
-         "dual: 互证 %d | 分歧(不训) %d" % (int(agree.sum()), int(dis.sum())),
-         "total %d" % len(out)]
+    L = [
+        "=== M5 distill_pool ===",
+        "rule(词表命中) %d | shadow(LLM) %d | fail 剔除 %d"
+        % (
+            int((out["source"] == "rule").sum()),
+            int((out["source"] == "shadow").sum()),
+            n_fail,
+        ),
+        "dual: 互证 %d | 分歧(不训) %d" % (int(agree.sum()), int(dis.sum())),
+        "total %d" % len(out),
+    ]
     train = out[(out["note"] != "disagree")]
     L.append("--- 训练可用 bias ---")
     L.append(train["bias"].value_counts().to_string())

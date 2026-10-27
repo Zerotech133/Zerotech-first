@@ -8,6 +8,7 @@
   3. kg_source_rating.trade_days_lag：交易日历感知纯函数用例（efe7b18）
 零网络零数据库：stats 用 fake session，日历用 monkeypatch。
 """
+
 import inspect
 import re
 from unittest import mock
@@ -17,6 +18,7 @@ import kg_source_rating as ksr
 
 
 # ── 1. kg_schema 常量纪律 ────────────────────────────────────
+
 
 def test_rel_values_unique():
     """全部 REL_* 常量值唯一（防重复定义/复制粘贴改漏）。"""
@@ -51,6 +53,7 @@ def test_correlates_name_value_trap():
 
 # ── 2. kg_client.stats 边清单覆盖（schema 注册 ⇒ stats 可见）──
 
+
 class _FakeResult:
     def single(self):
         return {"c": 1}
@@ -79,6 +82,7 @@ def test_stats_source_covers_schema():
     schema 分叉病根——本测试守护「注册即可见」纪律。
     """
     import kg_client as kc
+
     src = inspect.getsource(kc.KgClient.stats)
     used = set(re.findall(r"S\.(REL_\w+)", src))
     missing = _schema_rel_names() - used
@@ -88,7 +92,8 @@ def test_stats_source_covers_schema():
 def test_stats_runs_and_lists_k264_edges(capsys):
     """fake session 真跑 stats()：K264 全部 11 边型行可见且各一次。"""
     import kg_client as kc
-    c = kc.KgClient.__new__(kc.KgClient)          # 跳过 __init__ 不连库
+
+    c = kc.KgClient.__new__(kc.KgClient)  # 跳过 __init__ 不连库
     with mock.patch.object(c, "_session", lambda: _FakeSession()):
         c.stats()
     out = capsys.readouterr().out
@@ -103,12 +108,14 @@ def test_stats_runs_and_lists_k264_edges(capsys):
 
 # ── 3. trade_days_lag（交易日历感知，efe7b18）────────────────
 
+
 def test_trade_days_lag_basic(monkeypatch):
     """20260930(周三开市)→20261008(节后开市)：自然日 8 天=交易日 1 天。"""
     import datamart
+
     monkeypatch.setattr(
-        datamart, "_recent_trade_days",
-        lambda: ["20260930", "20261008"])
+        datamart, "_recent_trade_days", lambda: ["20260930", "20261008"]
+    )
     assert ksr.trade_days_lag("20260930", today="20261008") == 1
     assert ksr.trade_days_lag("20261008", today="20261008") == 0
 
@@ -116,9 +123,10 @@ def test_trade_days_lag_basic(monkeypatch):
 def test_trade_days_lag_degrades(monkeypatch):
     """坏格式/区间外/日历不可用 → None（调用方退自然日口径）。"""
     import datamart
+
     monkeypatch.setattr(
-        datamart, "_recent_trade_days",
-        lambda: ["20260930", "20261008"])
+        datamart, "_recent_trade_days", lambda: ["20260930", "20261008"]
+    )
     assert ksr.trade_days_lag("bad", today="20261008") is None
     assert ksr.trade_days_lag("", today="20261008") is None
     assert ksr.trade_days_lag("20261101", today="20261008") is None

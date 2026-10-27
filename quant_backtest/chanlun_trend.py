@@ -40,7 +40,7 @@ def _force(b):
 
 
 def trend_beichi(bis, pivots, sig):
-    want = -1 if sig["type"].endswith("买") else 1     # 下跌趋势/上涨趋势
+    want = -1 if sig["type"].endswith("买") else 1  # 下跌趋势/上涨趋势
     # 信号终结笔（与 chanlun_macd.divergence 同定位口径）
     k = None
     for i, b in enumerate(bis):
@@ -58,9 +58,9 @@ def trend_beichi(bis, pivots, sig):
         if i0 is not None and i1 is not None and i1 < k:
             pv.append((i0, i1, p))
     if len(pv) < 2:
-        return None, None                    # 窗口内趋势结构不足，不判
-    ai0, ai1, A = pv[-2]                     # 相邻的前中枢
-    bi0, bi1, B = pv[-1]                     # 末中枢（信号笔前最后一个）
+        return None, None  # 窗口内趋势结构不足，不判
+    ai0, ai1, A = pv[-2]  # 相邻的前中枢
+    bi0, bi1, B = pv[-1]  # 末中枢（信号笔前最后一个）
     ev0 = {"np": len(pv)}
     # 趋势方向：两中枢区间须完全不重叠、依次沿趋势方向排列
     if want == -1:
@@ -77,18 +77,24 @@ def trend_beichi(bis, pivots, sig):
     # b 段：A 末笔起（find_pivots 按区间重叠延伸，贯穿中枢的离开笔会被
     # 记为中枢末笔）、至 B 成枢三笔窗口内，取最强的趋势同向笔
     b_idx = None
-    j_hi = min(bi0 + 2, bi1)                 # B 的前三笔（中枢成枢段）
+    j_hi = min(bi0 + 2, bi1)  # B 的前三笔（中枢成枢段）
     for j in range(ai1, j_hi + 1):
         if bis[j]["dir"] == want and (
-                b_idx is None or _force(bis[j]) > _force(bis[b_idx])):
+            b_idx is None or _force(bis[j]) > _force(bis[b_idx])
+        ):
             b_idx = j
     if b_idx is None:
         return False, dict(ev0, reason="no_b")
     fb, fc = _force(bis[b_idx]), _force(bis[k])
     if fb is None or fc is None:
         return None, None
-    return (fc < fb * TRENDBEI_RATIO,
-            {"np": len(pv),
-             "A": [round(A["zg"], 4), round(A["zd"], 4)],
-             "B": [round(B["zg"], 4), round(B["zd"], 4)],
-             "fb": round(fb, 4), "fc": round(fc, 4)})
+    return (
+        fc < fb * TRENDBEI_RATIO,
+        {
+            "np": len(pv),
+            "A": [round(A["zg"], 4), round(A["zd"], 4)],
+            "B": [round(B["zg"], 4), round(B["zd"], 4)],
+            "fb": round(fb, 4),
+            "fc": round(fc, 4),
+        },
+    )

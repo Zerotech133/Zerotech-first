@@ -12,6 +12,7 @@
 
 结果落盘: backtest_results.jsonl（全量）+ last_backtest.json（最新，供门户）。
 """
+
 import json
 import math
 import os
@@ -31,6 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # 2026-10-25 SEC 收口（EXEC-R16）：config.json 的 report 文档 URL 走环境变量/本地私有覆盖，
 # 见 config_local.py；禁止把真值写回 tracked config。
 from config_local import load_config as _load_quant_config  # noqa: E402
+
 CFG = _load_quant_config()
 RESULTS_JSONL = os.path.join(HERE, "backtest_results.jsonl")
 LAST_JSON = os.path.join(HERE, "last_backtest.json")
@@ -49,30 +51,31 @@ def _atomic(path, obj):
 
 
 LAST_PUSH_FAIL = ""  # 最近一次 push_feishu 失败原因（SEND_FAIL 行/stderr 摘要，
-                     # 供 guard_alert 告警日志取证；成功发送即清空）
+# 供 guard_alert 告警日志取证；成功发送即清空）
 
 
 def push_feishu(text, card=False):
     """text 模式传文本；card 模式传卡片 JSON 字符串。"""
     global LAST_PUSH_FAIL
-    tmp = os.path.join(NEWS_DIR, "outbox",
-                       "pending_bt_card.json" if card else "pending_bt.txt")
+    tmp = os.path.join(
+        NEWS_DIR, "outbox", "pending_bt_card.json" if card else "pending_bt.txt"
+    )
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
     args = [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp]
     if card:
         args.append("interactive")
-    r = subprocess.run(args, capture_output=True, text=True,
-                       encoding="utf-8", timeout=60)
+    r = subprocess.run(
+        args, capture_output=True, text=True, encoding="utf-8", timeout=60
+    )
     out = (r.stdout or "").strip()
     if out.startswith("SEND_OK"):
         LAST_PUSH_FAIL = ""
         return True
     # A4 20261019：失败原因不再丢弃——SEND_FAIL 原因行/stderr 摘要落
     # 模块变量（返回值仍为 bool，调用方零改动）。
-    LAST_PUSH_FAIL = (out or (r.stderr or "").strip()
-                      or "send_feishu no output")[:200]
+    LAST_PUSH_FAIL = (out or (r.stderr or "").strip() or "send_feishu no output")[:200]
     return False
 
 
@@ -91,12 +94,19 @@ def fmt_trades(m, color=False):
     if not tl:
         return "（无成交）"
     lines = []
-    for t in tl[-_trades_shown():][::-1]:
+    for t in tl[-_trades_shown() :][::-1]:
         pnl = _c_pct(t["pnl"]) if color else "%+.1f%%" % (t["pnl"] * 100)
-        tail = "<font color='grey'>（未平仓）</font>" if color and t.get("open") \
-            else "（未平仓）" if t.get("open") else ""
-        lines.append("%s 买 %.2f → %s 卖 %.2f   %s%s" % (
-            t["in"], t["in_px"], t["out"], t["out_px"], pnl, tail))
+        tail = (
+            "<font color='grey'>（未平仓）</font>"
+            if color and t.get("open")
+            else "（未平仓）"
+            if t.get("open")
+            else ""
+        )
+        lines.append(
+            "%s 买 %.2f → %s 卖 %.2f   %s%s"
+            % (t["in"], t["in_px"], t["out"], t["out_px"], pnl, tail)
+        )
     return "\n".join(lines)
 
 
@@ -104,13 +114,21 @@ def fmt_status(m, df, sig):
     """最新现价（含当日涨跌）/ 当前持仓 / 最近信号切换。"""
     px = float(df["close"].iloc[-1])
     d_last = df.index[-1].strftime("%m-%d")
-    day_chg = (float(df["close"].iloc[-1]) / float(df["close"].iloc[-2]) - 1.0
-               ) if len(df) > 1 else 0.0
+    day_chg = (
+        (float(df["close"].iloc[-1]) / float(df["close"].iloc[-2]) - 1.0)
+        if len(df) > 1
+        else 0.0
+    )
     holding = "持有多头" if m["position"].iloc[-1] > 0 else "空仓观望"
     flips = sig[sig.diff() != 0].index
     flip_s = flips[-1].strftime("%m-%d") if len(flips) else "-"
     return "现价 %.2f（%s · 日 %+.1f%%）· 持仓 %s · 最近信号切换 %s" % (
-        px, d_last, day_chg * 100, holding, flip_s)
+        px,
+        d_last,
+        day_chg * 100,
+        holding,
+        flip_s,
+    )
 
 
 def cost_note(market=None):
@@ -118,8 +136,12 @@ def cost_note(market=None):
     tc = backtest.load_trade_config(market or "CN")
     t1 = "T+1" if tc["t_plus_one"] else "T+0"
     return "成本假设 %s=%dbps（成本%d+滑点%d）· %s" % (
-        market or "CN", tc["cost_bps"] + tc["slippage_bps"],
-        tc["cost_bps"], tc["slippage_bps"], t1)
+        market or "CN",
+        tc["cost_bps"] + tc["slippage_bps"],
+        tc["cost_bps"],
+        tc["slippage_bps"],
+        t1,
+    )
 
 
 def compare_strategies(df, mark_name=None, color=False, market=None):
@@ -135,34 +157,56 @@ def compare_strategies(df, mark_name=None, color=False, market=None):
             mm = backtest.run(df, s, **tc)
         except Exception:
             continue
-        ret = _c_pct(mm["total_return"]) if color else "%+.1f%%" % (
-            mm["total_return"] * 100)
-        rows.append("%s%s：%s · 夏普 %.2f · 回撤 %.1f%% · %d 笔" % (
-            sname, "（本报告）" if sname == mark_name else "",
-            ret, mm["sharpe"], mm["max_drawdown"] * 100, mm["trades"]))
+        ret = (
+            _c_pct(mm["total_return"])
+            if color
+            else "%+.1f%%" % (mm["total_return"] * 100)
+        )
+        rows.append(
+            "%s%s：%s · 夏普 %.2f · 回撤 %.1f%% · %d 笔"
+            % (
+                sname,
+                "（本报告）" if sname == mark_name else "",
+                ret,
+                mm["sharpe"],
+                mm["max_drawdown"] * 100,
+                mm["trades"],
+            )
+        )
     return rows
 
 
-def report_markdown(name, strat_name, params, m, bh, window, df, sig,
-                    market=None):
+def report_markdown(name, strat_name, params, m, bh, window, df, sig, market=None):
     """单股报告 → 卡片 markdown 块列表（每块一个元素，块间自动 hr）。"""
     emoji = "📈" if m["total_return"] >= 0 else "📉"
     excess = m["total_return"] - bh["total_return"]
     md = [
-        "%s **%s** · 策略 %s\n区间 %s · 参数 %s" % (
-            emoji, name, strat_name, window,
-            json.dumps(params, ensure_ascii=False)),
+        "%s **%s** · 策略 %s\n区间 %s · 参数 %s"
+        % (emoji, name, strat_name, window, json.dumps(params, ensure_ascii=False)),
         "**最新状态**\n" + fmt_status(m, df, sig),
         "**绩效**：收益 %s · 年化 %+.1f%% · 波动 %.1f%% · 夏普 %.2f · 索提诺 %.2f · 卡玛 %.2f\n"
-        "回撤 %.1f%% · 胜率 %.0f%% · %d 笔 · 连亏 %d" % (
-            _c_pct(m["total_return"]), m["cagr"] * 100, m["annual_vol"] * 100,
-            m["sharpe"], m["sortino"], m["calmar"], m["max_drawdown"] * 100,
-            m["win_rate"] * 100, m["trades"], m["max_loss_streak"]),
-        "**基准（买入持有）**：%+.1f%% · 夏普 %.2f · 回撤 %.1f%%  →  超额 %s" % (
-            bh["total_return"] * 100, bh["sharpe"], bh["max_drawdown"] * 100,
-            _c_pct(excess)),
-        "**四策略同期对比**\n" + "\n".join(
-            compare_strategies(df, strat_name, color=True, market=market)),
+        "回撤 %.1f%% · 胜率 %.0f%% · %d 笔 · 连亏 %d"
+        % (
+            _c_pct(m["total_return"]),
+            m["cagr"] * 100,
+            m["annual_vol"] * 100,
+            m["sharpe"],
+            m["sortino"],
+            m["calmar"],
+            m["max_drawdown"] * 100,
+            m["win_rate"] * 100,
+            m["trades"],
+            m["max_loss_streak"],
+        ),
+        "**基准（买入持有）**：%+.1f%% · 夏普 %.2f · 回撤 %.1f%%  →  超额 %s"
+        % (
+            bh["total_return"] * 100,
+            bh["sharpe"],
+            bh["max_drawdown"] * 100,
+            _c_pct(excess),
+        ),
+        "**四策略同期对比**\n"
+        + "\n".join(compare_strategies(df, strat_name, color=True, market=market)),
         "**近 %d 笔交易**\n" % _trades_shown() + fmt_trades(m, color=True),
         "<font color='grey'>" + cost_note(market) + "</font>",
     ]
@@ -171,21 +215,32 @@ def report_markdown(name, strat_name, params, m, bh, window, df, sig,
 
 def _metric_col(label, value, bg):
     """关键指标列（复用 backup_alert 已验证的 Card 2.0 模式）。"""
-    return {"tag": "column", "width": "weighted", "weight": 1,
-            "background_style": bg, "padding": "12px",
-            "vertical_spacing": "2px",
-            "elements": [
-                {"tag": "markdown", "text_size": "notation",
-                 "content": "<font color='grey'>" + label + "</font>"},
-                {"tag": "markdown", "text_size": "heading-3", "content": value},
-            ]}
+    return {
+        "tag": "column",
+        "width": "weighted",
+        "weight": 1,
+        "background_style": bg,
+        "padding": "12px",
+        "vertical_spacing": "2px",
+        "elements": [
+            {
+                "tag": "markdown",
+                "text_size": "notation",
+                "content": "<font color='grey'>" + label + "</font>",
+            },
+            {"tag": "markdown", "text_size": "heading-3", "content": value},
+        ],
+    }
 
 
 def key_columns(m):
     """卡片顶部三列关键指标：收益按正负绿/红底，夏普浅蓝，回撤橙。"""
     return [
-        ("总收益", _c_pct(m["total_return"]),
-         "green-50" if m["total_return"] >= 0 else "red-50"),
+        (
+            "总收益",
+            _c_pct(m["total_return"]),
+            "green-50" if m["total_return"] >= 0 else "red-50",
+        ),
         ("夏普", "%.2f" % m["sharpe"], "wathet-50"),
         ("最大回撤", "%.1f%%" % (m["max_drawdown"] * 100), "orange-50"),
     ]
@@ -197,29 +252,60 @@ def _url_buttons(buttons):
     v1 标准结构（tag=action + url）：兼容模式卡片下手机端可点。
     坑: 兼容模式卡片混用 2.0 的 column_set+behaviors 按钮时，
         桌面端容错渲染、手机端点击行为失效。"""
-    return {"tag": "action",
-            "actions": [
-                {"tag": "button",
-                 "text": {"tag": "plain_text", "content": label},
-                 "type": "primary" if "primary" in btype else btype,
-                 "url": url}
-                for label, url, btype in buttons]}
+    return {
+        "tag": "action",
+        "actions": [
+            {
+                "tag": "button",
+                "text": {"tag": "plain_text", "content": label},
+                "type": "primary" if "primary" in btype else btype,
+                "url": url,
+            }
+            for label, url, btype in buttons
+        ],
+    }
 
 
 def _qr_element(qr_key, caption):
-    return {"tag": "column_set", "flex_mode": "none", "columns": [
-        {"tag": "column", "width": "weighted", "weight": 1, "elements": [
-            {"tag": "img", "img_key": qr_key,
-             "alt": {"tag": "plain_text", "content": caption},
-             "custom_width": 200, "custom_height": 200},
-            {"tag": "markdown", "text_size": "notation",
-             "content": "<font color='grey'>" + caption + "</font>"},
-        ]}]}
+    return {
+        "tag": "column_set",
+        "flex_mode": "none",
+        "columns": [
+            {
+                "tag": "column",
+                "width": "weighted",
+                "weight": 1,
+                "elements": [
+                    {
+                        "tag": "img",
+                        "img_key": qr_key,
+                        "alt": {"tag": "plain_text", "content": caption},
+                        "custom_width": 200,
+                        "custom_height": 200,
+                    },
+                    {
+                        "tag": "markdown",
+                        "text_size": "notation",
+                        "content": "<font color='grey'>" + caption + "</font>",
+                    },
+                ],
+            }
+        ],
+    }
 
 
-def build_card(title, subtitle, template, md_blocks, footer=None, columns=None,
-               buttons=None, qr_key=None, qr_caption="扫码打开门户控制台",
-               use_schema2=False):
+def build_card(
+    title,
+    subtitle,
+    template,
+    md_blocks,
+    footer=None,
+    columns=None,
+    buttons=None,
+    qr_key=None,
+    qr_caption="扫码打开门户控制台",
+    use_schema2=False,
+):
     # K43 use_schema2：真 Card 2.0（schema+body 包装）——手机端渲染需要
     # （混血卡手机空白判例）；2.0 下 v1 action 按钮被 400 拒、img 被 200621 拒，
     # 故 v2 模式提前把 buttons 降级为 md 超链接块、忽略 qr_key
@@ -228,14 +314,19 @@ def build_card(title, subtitle, template, md_blocks, footer=None, columns=None,
         qr_key = None
         if buttons:
             md_blocks = list(md_blocks) + [
-                " · ".join("[%s](%s)" % (l, u) for l, u, _ in buttons)]
+                " · ".join("[%s](%s)" % (l, u) for l, u, _ in buttons)
+            ]
             buttons = None
     els = []
     if columns:
-        els.append({"tag": "column_set", "flex_mode": "none",
-                    "horizontal_spacing": "8px",
-                    "columns": [_metric_col(l, v, bg)
-                                for l, v, bg in columns]})
+        els.append(
+            {
+                "tag": "column_set",
+                "flex_mode": "none",
+                "horizontal_spacing": "8px",
+                "columns": [_metric_col(l, v, bg) for l, v, bg in columns],
+            }
+        )
     for i, md in enumerate(md_blocks):
         if i or columns:
             els.append({"tag": "hr"})
@@ -251,9 +342,13 @@ def build_card(title, subtitle, template, md_blocks, footer=None, columns=None,
         els.append({"tag": "markdown", "content": footer})
     elif qr_key:
         # column_set 不能作为末元素（200621），无 footer 时补尾部小字
-        els.append({"tag": "markdown", "text_size": "notation",
-                    "content": "<font color='grey'>长按识别二维码 · "
-                               "手机直达</font>"})
+        els.append(
+            {
+                "tag": "markdown",
+                "text_size": "notation",
+                "content": "<font color='grey'>长按识别二维码 · 手机直达</font>",
+            }
+        )
     # v1 标准结构：elements 必须在顶层。
     # 坑: 用 2.0 的 body 包装但不带 schema 字段时，服务端容错渲染内容、
     #     但按钮点击行为失效（手机/桌面均不可点）——实测定位。
@@ -301,9 +396,15 @@ def optimize_run(df, strat_name, cap=10, market=None):
         try:
             s = strat.REGISTRY[strat_name](df, c)
             mm = backtest.run(df, s, **tc)
-            rows.append({"params": c, "ret": mm["total_return"],
-                         "sharpe": mm["sharpe"], "dd": mm["max_drawdown"],
-                         "trades": mm["trades"]})
+            rows.append(
+                {
+                    "params": c,
+                    "ret": mm["total_return"],
+                    "sharpe": mm["sharpe"],
+                    "dd": mm["max_drawdown"],
+                    "trades": mm["trades"],
+                }
+            )
         except Exception:
             continue
     rows.sort(key=lambda x: x["sharpe"], reverse=True)
@@ -313,6 +414,7 @@ def optimize_run(df, strat_name, cap=10, market=None):
 def write_opt_page(frames=None):
     """全池寻优榜单页（/bt-opt）：4 策略各 Top5，当前参数高亮。"""
     import opt_defaults as od
+
     if frames is None:
         look = int(CFG.get("daily_scan", {}).get("lookback_days", 365))
         start = (datetime.now() - timedelta(days=look)).strftime("%Y-%m-%d")
@@ -321,17 +423,22 @@ def write_opt_page(frames=None):
     for name in report_page.SIG_STRATS:
         rows = od.tune(name, frames, CFG["trade"])[:5]
         if rows:
-            data.append({"name": name, "rows": rows,
-                         "cur": _effective_params(
-                             name, CFG["strategies"].get(name, {}))})
+            data.append(
+                {
+                    "name": name,
+                    "rows": rows,
+                    "cur": _effective_params(name, CFG["strategies"].get(name, {})),
+                }
+            )
     report_page.write_opt_html(data, _now())
     print("OPT_PAGE %d strategies %d stocks" % (len(data), len(frames)))
 
 
 def _collect_signals():
     """全池 51 只 × 4 策略最新信号（信号页与持仓账本共用数据源）。"""
-    wl = json.load(open(os.path.join(NEWS_DIR, "news_config.json"),
-                        encoding="utf-8")).get("watchlist", [])
+    wl = json.load(
+        open(os.path.join(NEWS_DIR, "news_config.json"), encoding="utf-8")
+    ).get("watchlist", [])
     entries = resolve_watchlist(wl)
     by_mkt = {}
     for mkt, sym, nm in entries:
@@ -347,8 +454,7 @@ def _collect_signals():
             sigs, since, since_full = {}, {}, {}
             for sn in report_page.SIG_STRATS:
                 try:
-                    sig = strat.REGISTRY[sn](
-                        df, dict(CFG["strategies"].get(sn, {})))
+                    sig = strat.REGISTRY[sn](df, dict(CFG["strategies"].get(sn, {})))
                 except Exception:
                     sigs[sn], since[sn], since_full[sn] = 0, "", ""
                     continue
@@ -359,13 +465,20 @@ def _collect_signals():
                 sigs[sn] = int(arr[-1])
                 since[sn] = sig.index[i].strftime("%m-%d")
                 since_full[sn] = sig.index[i].strftime("%Y-%m-%d")
-            rows.append({"market": mkt, "symbol": sym, "name": nm,
-                         "px": float(df["close"].iloc[-1]),
-                         "open": float(df["open"].iloc[-1]),
-                         "date": df.index[-1].strftime("%Y-%m-%d"),
-                         "sigs": sigs, "since": since,
-                         "since_full": since_full,
-                         "res": sum(sigs.values())})
+            rows.append(
+                {
+                    "market": mkt,
+                    "symbol": sym,
+                    "name": nm,
+                    "px": float(df["close"].iloc[-1]),
+                    "open": float(df["open"].iloc[-1]),
+                    "date": df.index[-1].strftime("%Y-%m-%d"),
+                    "sigs": sigs,
+                    "since": since,
+                    "since_full": since_full,
+                    "res": sum(sigs.values()),
+                }
+            )
     return rows
 
 
@@ -406,8 +519,7 @@ def max_holding_days(cfg=None):
 def _sig_key(e):
     """入账幂等键（[20261014_p1_tail]）：code+signal_date+strategy。
     判例：审计发现同信号重复入账风险——同键已入账（含历史已平仓）即跳过。"""
-    return (e.get("market"), e.get("symbol"), e.get("sig_date"),
-            e.get("strategy"))
+    return (e.get("market"), e.get("symbol"), e.get("sig_date"), e.get("strategy"))
 
 
 def update_ledger(refresh_signals=True, ledger_path=None):
@@ -428,7 +540,8 @@ def update_ledger(refresh_signals=True, ledger_path=None):
     rows = _collect_signals()
     if refresh_signals:
         report_page.write_signals_html(
-            sorted(rows, key=lambda r: (-r["res"], r["name"])), _now())
+            sorted(rows, key=lambda r: (-r["res"], r["name"])), _now()
+        )
     info = {(r["market"], r["symbol"]): r for r in rows}
     led = _load_ledger(led_path)
 
@@ -437,10 +550,15 @@ def update_ledger(refresh_signals=True, ledger_path=None):
     for e in led["pending"]:
         r = info.get((e["market"], e["symbol"]))
         if r and r["date"] > e["sig_date"]:
-            e.update({"entry_date": r["date"],
-                      "entry_px": r["open"] or r["px"],
-                      "last_px": r["px"], "last_date": r["date"],
-                      "bars_held": 1})  # 建仓日即第 1 个持有交易日
+            e.update(
+                {
+                    "entry_date": r["date"],
+                    "entry_px": r["open"] or r["px"],
+                    "last_px": r["px"],
+                    "last_date": r["date"],
+                    "bars_held": 1,
+                }
+            )  # 建仓日即第 1 个持有交易日
             opened.append(e)
         else:
             e["last_px"] = r["px"] if r else e.get("last_px")
@@ -451,15 +569,17 @@ def update_ledger(refresh_signals=True, ledger_path=None):
     keep, closed, forced = [], [], []
     for e in led["open"]:
         r = info.get((e["market"], e["symbol"]))
-        if not r:                 # 已移出自选：保留不动
+        if not r:  # 已移出自选：保留不动
             keep.append(e)
             continue
         # 持有交易日计数：每日新 bar 才 +1（ffill 打点同语义，重复跑同日不胀）
         if "bars_held" not in e:
             seed = len(e.get("marks") or [])
             if not seed and e.get("entry_date"):
-                seed = max((_d8(e.get("last_date") or r["date"])
-                            - _d8(e["entry_date"])).days, 1)
+                seed = max(
+                    (_d8(e.get("last_date") or r["date"]) - _d8(e["entry_date"])).days,
+                    1,
+                )
             e["bars_held"] = max(seed, 1)
         elif e.get("last_date") != r["date"]:
             e["bars_held"] += 1
@@ -484,8 +604,10 @@ def update_ledger(refresh_signals=True, ledger_path=None):
     # 既有持仓语义：同 code+strategy 在册（pending/open/closed 本轮）不加；
     # 幂等键语义：同 code+signal_date+strategy 已入过账（含历史已平仓）
     # 不重复入账，跳过计数（判例：同信号重复入账风险）
-    have_pos = {(e["market"], e["symbol"], e["strategy"])
-                for e in still + opened + keep + closed}
+    have_pos = {
+        (e["market"], e["symbol"], e["strategy"])
+        for e in still + opened + keep + closed
+    }
     have_sig, dup_skip = set(), 0
     for sec in ("pending", "open", "closed"):
         for e in led[sec]:
@@ -496,16 +618,25 @@ def update_ledger(refresh_signals=True, ledger_path=None):
                 have_sig.add(k)
     for r in rows:
         for sn in report_page.SIG_STRATS:
-            if (r["sigs"].get(sn) == 1
-                    and r["since_full"].get(sn) == r["date"]
-                    and (r["market"], r["symbol"], sn) not in have_pos):
+            if (
+                r["sigs"].get(sn) == 1
+                and r["since_full"].get(sn) == r["date"]
+                and (r["market"], r["symbol"], sn) not in have_pos
+            ):
                 k = (r["market"], r["symbol"], r["date"], sn)
                 if k in have_sig:
                     dup_skip += 1
                     continue
-                still.append({"market": r["market"], "symbol": r["symbol"],
-                              "name": r["name"], "strategy": sn,
-                              "sig_date": r["date"], "last_px": r["px"]})
+                still.append(
+                    {
+                        "market": r["market"],
+                        "symbol": r["symbol"],
+                        "name": r["name"],
+                        "strategy": sn,
+                        "sig_date": r["date"],
+                        "last_px": r["px"],
+                    }
+                )
                 have_pos.add((r["market"], r["symbol"], sn))
                 have_sig.add(k)
 
@@ -518,24 +649,30 @@ def update_ledger(refresh_signals=True, ledger_path=None):
         # 每日收盘浮盈留痕（近 60 日轨迹，供持仓页复盘）
         marks = e.setdefault("marks", [])
         if not marks or marks[-1].get("d") != e["last_date"]:
-            marks.append({"d": e["last_date"], "px": e["last_px"],
-                          "pnl": round(e["pnl"], 5)})
+            marks.append(
+                {"d": e["last_date"], "px": e["last_px"], "pnl": round(e["pnl"], 5)}
+            )
             e["marks"] = marks[-60:]
     led["ts"] = _now()
     _atomic(led_path, led)
     report_page.write_positions_html(led, _now())
     try:  # 详情看板镜像（失败不影响主流程）
         import doc_board
+
         doc_board.refresh()
     except Exception:
         pass
     if dup_skip:
         print("LEDGER dedup_skip=%d（同信号重复入账已跳过）" % dup_skip)
     if forced:
-        print("LEDGER forced_close=%d（超 max_holding_days=%d 强平）" % (
-            len(forced), max_hold))
-    print("LEDGER pending=%d open=%d closed_today=%d total_closed=%d" % (
-        len(still), len(led["open"]), len(closed), len(led["closed"])))
+        print(
+            "LEDGER forced_close=%d（超 max_holding_days=%d 强平）"
+            % (len(forced), max_hold)
+        )
+    print(
+        "LEDGER pending=%d open=%d closed_today=%d total_closed=%d"
+        % (len(still), len(led["open"]), len(closed), len(led["closed"]))
+    )
     return led
 
 
@@ -543,10 +680,13 @@ def _today_open():
     """K98：今日是否 A 股交易日（作战卡服务于当日开盘，K97 观察项②）。fail-open。"""
     try:
         import glob
-        files = sorted(glob.glob(os.path.join(
-            HERE, "data", "tushare", "trade_cal", "*.parquet")))
+
+        files = sorted(
+            glob.glob(os.path.join(HERE, "data", "tushare", "trade_cal", "*.parquet"))
+        )
         cal = pd.concat([pd.read_parquet(f) for f in files]).drop_duplicates(
-            subset=["cal_date"])
+            subset=["cal_date"]
+        )
         today = datetime.now().strftime("%Y%m%d")
         r = cal[cal["cal_date"] == today]
         return True if r.empty else bool(int(r.iloc[0]["is_open"]) == 1)
@@ -569,63 +709,100 @@ def morning_push():
     if pend:
         lines = ["**今日应买入（开盘执行）**"]
         for e in pend:
-            lines.append("· [%s] %s · %s · 昨收 %.4g" % (
-                e["market"], e["name"],
-                report_page.OPT_HEAD.get(e["strategy"], e["strategy"]),
-                e.get("last_px") or 0))
+            lines.append(
+                "· [%s] %s · %s · 昨收 %.4g"
+                % (
+                    e["market"],
+                    e["name"],
+                    report_page.OPT_HEAD.get(e["strategy"], e["strategy"]),
+                    e.get("last_px") or 0,
+                )
+            )
         blocks.append("\n".join(lines))
     # W1-2：持仓/待买命中九维警报池 → 卡片加警示块（反指实证 K32/K33：
     # score≥75 前向收益显著为负，≥85 段 r20 -71.5%；命中=风险提醒非买入信号）
     # 开关 nine_dim_alert_card（config.json 顶层，默认开）；fail-open 不炸卡
     if CFG.get("nine_dim_alert_card", True):
         try:
-            codes = {c for c in (
-                report_page.nine_dim_cn_code(e.get("market"), e.get("symbol"))
-                for e in pend + open_) if c}
+            codes = {
+                c
+                for c in (
+                    report_page.nine_dim_cn_code(e.get("market"), e.get("symbol"))
+                    for e in pend + open_
+                )
+                if c
+            }
             hits = report_page.nine_dim_alert_check(codes)
         except Exception:
             hits = {}
         if hits:
             by_code = {}
-            for e in pend + open_:   # 同码待买优先展示（pending 在前）
-                c = report_page.nine_dim_cn_code(e.get("market"),
-                                                 e.get("symbol"))
+            for e in pend + open_:  # 同码待买优先展示（pending 在前）
+                c = report_page.nine_dim_cn_code(e.get("market"), e.get("symbol"))
                 if c in hits and c not in by_code:
                     by_code[c] = e
             lines = ["**⚠️ 警报池命中（九维反指）**"]
             for c, e in sorted(by_code.items()):
                 dt, score, band = hits[c]
-                lines.append("· [%s] %s · 命中 %s-%s-%s · 分数 %s（%s）" % (
-                    e["market"], e["name"],
-                    dt[:4], dt[4:6], dt[6:8], score, band or "alert"))
+                lines.append(
+                    "· [%s] %s · 命中 %s-%s-%s · 分数 %s（%s）"
+                    % (
+                        e["market"],
+                        e["name"],
+                        dt[:4],
+                        dt[4:6],
+                        dt[6:8],
+                        score,
+                        band or "alert",
+                    )
+                )
             lines.append("提示：高分=拥挤警报，非买入信号")
             blocks.append("\n".join(lines))
-            print("MORNING nine_dim_alert hits=%d: %s" % (
-                len(hits), " ".join(sorted(by_code))))
+            print(
+                "MORNING nine_dim_alert hits=%d: %s"
+                % (len(hits), " ".join(sorted(by_code)))
+            )
     if open_:
         lines = ["**持仓中（信号未翻空前继续持有）**"]
         for e in sorted(open_, key=lambda x: -x.get("pnl", 0)):
-            lines.append("· [%s] %s · %s · 买 %.4g → 现 %.4g  %s（%d天）" % (
-                e["market"], e["name"],
-                report_page.OPT_HEAD.get(e["strategy"], e["strategy"]),
-                e["entry_px"], e.get("last_px") or e["entry_px"],
-                _c_pct(e.get("pnl", 0)), e.get("days", 0)))
+            lines.append(
+                "· [%s] %s · %s · 买 %.4g → 现 %.4g  %s（%d天）"
+                % (
+                    e["market"],
+                    e["name"],
+                    report_page.OPT_HEAD.get(e["strategy"], e["strategy"]),
+                    e["entry_px"],
+                    e.get("last_px") or e["entry_px"],
+                    _c_pct(e.get("pnl", 0)),
+                    e.get("days", 0),
+                )
+            )
         blocks.append("\n".join(lines))
     n_c = len(led.get("closed") or [])
     wins = sum(1 for c in led["closed"] if c.get("pnl", 0) > 0)
-    footer = ("纸面模拟，不构成投资建议 · 累计平仓 %d 笔 · 胜率 %.0f%%"
-              % (n_c, wins * 100.0 / n_c if n_c else 0))
+    footer = "纸面模拟，不构成投资建议 · 累计平仓 %d 笔 · 胜率 %.0f%%" % (
+        n_c,
+        wins * 100.0 / n_c if n_c else 0,
+    )
     doc_url = CFG.get("report", {}).get("doc_url")
     # K42-c 判例：内网按钮/二维码不进卡（手机不可达），仅留飞书文档链接
     buttons = [("📄 详情文档", doc_url, "default")] if doc_url else None
     qr = None
-    card = build_card("💼 盘前作战计划", "%s · 量化信号实战（纸面）" % _now(),
-                      "turquoise", blocks, footer=footer,
-                      use_schema2=True,
-                      columns=[("待买入", str(len(pend)), "blue-50"),
-                               ("持仓中", str(len(open_)), "wathet-50"),
-                               ("平仓累计", str(n_c), "grey-50")],
-                      buttons=buttons, qr_key=qr)
+    card = build_card(
+        "💼 盘前作战计划",
+        "%s · 量化信号实战（纸面）" % _now(),
+        "turquoise",
+        blocks,
+        footer=footer,
+        use_schema2=True,
+        columns=[
+            ("待买入", str(len(pend)), "blue-50"),
+            ("持仓中", str(len(open_)), "wathet-50"),
+            ("平仓累计", str(n_c), "grey-50"),
+        ],
+        buttons=buttons,
+        qr_key=qr,
+    )
     if push_feishu(json.dumps(card, ensure_ascii=False), card=True):
         print("MORNING pushed buy=%d hold=%d" % (len(pend), len(open_)))
     else:
@@ -673,7 +850,9 @@ def _heat(eq, sig):
         rows = {}
         for d, r in dr.items():
             rows.setdefault(d.strftime("%Y-%m"), [None] * 32)[d.day] = (
-                float(r), int(held.loc[d]))
+                float(r),
+                int(held.loc[d]),
+            )
         return [(ym, cells[1:]) for ym, cells in sorted(rows.items())]
     except Exception:
         return []
@@ -683,16 +862,20 @@ def _chart_png(tag, m, bh):
     """matplotlib 暗色双联图（净值+回撤）→ reports/charts/；失败返回 None。"""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
+
         plt.rcParams["font.sans-serif"] = ["Microsoft YaHei"]
         plt.rcParams["axes.unicode_minus"] = False
         import re
+
         eq, beq = m["equity"], bh["equity"]
         dd = eq / eq.cummax() - 1
         bdd = beq / beq.cummax() - 1
-        fig, (a1, a2) = plt.subplots(2, 1, figsize=(10, 6.4), dpi=130,
-                                     sharex=True, facecolor="#0d1117")
+        fig, (a1, a2) = plt.subplots(
+            2, 1, figsize=(10, 6.4), dpi=130, sharex=True, facecolor="#0d1117"
+        )
         for a in (a1, a2):
             a.set_facecolor("#0d1117")
             a.tick_params(colors="#8b949e", labelsize=8)
@@ -700,28 +883,38 @@ def _chart_png(tag, m, bh):
                 sp.set_color("#30363d")
             a.grid(color="#21262d", lw=0.6)
         up = m["total_return"] >= 0
-        a1.plot(eq.index, eq.values, lw=1.4,
-                color="#f85149" if up else "#3fb950", label="策略")
-        a1.plot(beq.index, beq.values, color="#8b949e", lw=1.0, ls="--",
-                label="买入持有")
+        a1.plot(
+            eq.index,
+            eq.values,
+            lw=1.4,
+            color="#f85149" if up else "#3fb950",
+            label="策略",
+        )
+        a1.plot(
+            beq.index, beq.values, color="#8b949e", lw=1.0, ls="--", label="买入持有"
+        )
         a1.axhline(1.0, color="#30363d", lw=0.8, ls=":")
-        a1.legend(facecolor="#161b22", labelcolor="#c9d1d9", fontsize=8,
-                  edgecolor="#30363d")
+        a1.legend(
+            facecolor="#161b22", labelcolor="#c9d1d9", fontsize=8, edgecolor="#30363d"
+        )
         a1.set_title("策略净值 vs 买入持有", color="#c9d1d9", fontsize=10)
-        a2.fill_between(dd.index, dd.values * 100, 0, color="#f85149",
-                        alpha=0.28, label="策略")
-        a2.plot(bdd.index, bdd.values * 100, color="#8b949e", lw=0.9,
-                label="买入持有")
-        a2.set_title("回撤曲线 %（灰 = 买入持有）", color="#c9d1d9",
-                     fontsize=10)
-        a2.legend(facecolor="#161b22", labelcolor="#c9d1d9", fontsize=8,
-                  edgecolor="#30363d")
+        a2.fill_between(
+            dd.index, dd.values * 100, 0, color="#f85149", alpha=0.28, label="策略"
+        )
+        a2.plot(bdd.index, bdd.values * 100, color="#8b949e", lw=0.9, label="买入持有")
+        a2.set_title("回撤曲线 %（灰 = 买入持有）", color="#c9d1d9", fontsize=10)
+        a2.legend(
+            facecolor="#161b22", labelcolor="#c9d1d9", fontsize=8, edgecolor="#30363d"
+        )
         d = os.path.join(HERE, "reports", "charts")
         os.makedirs(d, exist_ok=True)
         import uuid
-        fn = "%s_%s_%s.png" % (datetime.now().strftime("%Y%m%d-%H%M%S"),
-                               uuid.uuid4().hex[:4],
-                               re.sub(r"[^0-9A-Za-z_.\-]+", "_", tag)[:30])
+
+        fn = "%s_%s_%s.png" % (
+            datetime.now().strftime("%Y%m%d-%H%M%S"),
+            uuid.uuid4().hex[:4],
+            re.sub(r"[^0-9A-Za-z_.\-]+", "_", tag)[:30],
+        )
         fig.tight_layout()
         fig.savefig(os.path.join(d, fn), facecolor="#0d1117")
         plt.close(fig)
@@ -736,21 +929,25 @@ def _chart_png(tag, m, bh):
         return None
 
 
-def _page_section(name, strat_name, params, m, bh, window, df, sig,
-                  market=None):
+def _page_section(name, strat_name, params, m, bh, window, df, sig, market=None):
     """报告页 section 数据（净值降采样 + 交易表 + 对比）。"""
     return {
-        "name": name, "strategy": strat_name, "window": window,
-        "params": params, "m": {k: v for k, v in m.items()
-                                if k not in ("equity", "net_ret",
-                                             "position", "trade_list")},
-        "bh": {k: v for k, v in bh.items()
-               if k not in ("equity", "net_ret", "position")},
+        "name": name,
+        "strategy": strat_name,
+        "window": window,
+        "params": params,
+        "m": {
+            k: v
+            for k, v in m.items()
+            if k not in ("equity", "net_ret", "position", "trade_list")
+        },
+        "bh": {
+            k: v for k, v in bh.items() if k not in ("equity", "net_ret", "position")
+        },
         "equity": report_page._downsample(m["equity"]),
         "bench_equity": report_page._downsample(bh["equity"]),
         "dd": report_page._downsample(m["equity"] / m["equity"].cummax() - 1),
-        "bench_dd": report_page._downsample(
-            bh["equity"] / bh["equity"].cummax() - 1),
+        "bench_dd": report_page._downsample(bh["equity"] / bh["equity"].cummax() - 1),
         "opt": optimize_run(df, strat_name, market=market),
         "opt_base": _effective_params(strat_name, params),
         "monthly": _monthly(m["equity"], bh["equity"]),
@@ -760,34 +957,51 @@ def _page_section(name, strat_name, params, m, bh, window, df, sig,
         "compare": compare_strategies(df, strat_name, market=market),
         "last_px": float(df["close"].iloc[-1]),
         "last_date": df.index[-1].strftime("%m-%d"),
-        "day_chg": (float(df["close"].iloc[-1]) / float(df["close"].iloc[-2]) - 1.0
-                    ) if len(df) > 1 else 0.0,
+        "day_chg": (float(df["close"].iloc[-1]) / float(df["close"].iloc[-2]) - 1.0)
+        if len(df) > 1
+        else 0.0,
         "status": "持有多头" if m["position"].iloc[-1] > 0 else "空仓观望",
         "gen": _now(),
     }
 
 
-def push_report_card(name, strat_name, params, m, bh, window, df, sig,
-                     title_prefix="📈 单股回测", report_file=None,
-                     news_name=None):
+def push_report_card(
+    name,
+    strat_name,
+    params,
+    m,
+    bh,
+    window,
+    df,
+    sig,
+    title_prefix="📈 单股回测",
+    report_file=None,
+    news_name=None,
+):
     """推送单股报告卡片；失败降级文本报告。返回是否成功。"""
     excess = m["total_return"] - bh["total_return"]
     buttons, qr = _card_actions(report_file, news_name)
     card = build_card(
-        "%s · %s" % (title_prefix, name), window,
+        "%s · %s" % (title_prefix, name),
+        window,
         "turquoise" if excess >= 0 else "red",
         report_markdown(name, strat_name, params, m, bh, window, df, sig),
         footer="仅回测参考，不构成投资建议 · 量化回测域",
-        columns=key_columns(m), buttons=buttons, qr_key=qr,
-        use_schema2=True)
+        columns=key_columns(m),
+        buttons=buttons,
+        qr_key=qr,
+        use_schema2=True,
+    )
     if push_feishu(json.dumps(card, ensure_ascii=False), card=True):
         return True
-    return push_feishu(fmt_report(name, strat_name, params, m, bh, window,
-                                  df=df, sig=sig))
+    return push_feishu(
+        fmt_report(name, strat_name, params, m, bh, window, df=df, sig=sig)
+    )
 
 
-def fmt_report(symbol, strat_name, params, m, bh, window, df=None, sig=None,
-               market=None):
+def fmt_report(
+    symbol, strat_name, params, m, bh, window, df=None, sig=None, market=None
+):
     lines = [
         "📊 量化回测报告",
         "标的 %s · 策略 %s" % (symbol, strat_name),
@@ -795,28 +1009,29 @@ def fmt_report(symbol, strat_name, params, m, bh, window, df=None, sig=None,
         "",
         "策略绩效:",
         "  总收益 %+.2f%%   年化 %+.2f%%" % (m["total_return"] * 100, m["cagr"] * 100),
-        "  夏普 %.2f   索提诺 %.2f   最大回撤 %.2f%%" % (
-            m["sharpe"], m["sortino"], m["max_drawdown"] * 100),
-        "  胜率 %.1f%%   交易 %d 次   连亏 %d" % (
-            m["win_rate"] * 100, m["trades"], m["max_loss_streak"]),
+        "  夏普 %.2f   索提诺 %.2f   最大回撤 %.2f%%"
+        % (m["sharpe"], m["sortino"], m["max_drawdown"] * 100),
+        "  胜率 %.1f%%   交易 %d 次   连亏 %d"
+        % (m["win_rate"] * 100, m["trades"], m["max_loss_streak"]),
     ]
     if df is not None:
         lines += ["", "最新状态:  " + fmt_status(m, df, sig)]
     lines += [
         "",
         "基准（买入持有）:",
-        "  总收益 %+.2f%%   夏普 %.2f   最大回撤 %.2f%%" % (
-            bh["total_return"] * 100, bh["sharpe"], bh["max_drawdown"] * 100),
+        "  总收益 %+.2f%%   夏普 %.2f   最大回撤 %.2f%%"
+        % (bh["total_return"] * 100, bh["sharpe"], bh["max_drawdown"] * 100),
         "",
-        "超额: 策略 %+.2f%% vs 持有 %+.2f%%" % (
-            m["total_return"] * 100, bh["total_return"] * 100),
+        "超额: 策略 %+.2f%% vs 持有 %+.2f%%"
+        % (m["total_return"] * 100, bh["total_return"] * 100),
     ]
     if df is not None:
         lines += ["", "四策略同期对比:"] + [
-            "  " + r for r in compare_strategies(df, strat_name,
-                                                 market=market)]
+            "  " + r for r in compare_strategies(df, strat_name, market=market)
+        ]
         lines += ["", "近 %d 笔交易:" % _trades_shown()] + [
-            "  " + x for x in fmt_trades(m).splitlines()]
+            "  " + x for x in fmt_trades(m).splitlines()
+        ]
     lines.append("成本口径: " + cost_note(market))
     lines.append("—— 量化回测域 · 仅回测参考，不构成投资建议")
     return "\n".join(lines)
@@ -834,20 +1049,31 @@ def run_single(strategy_name, symbol, market, start, end, push=False):
 
     params = dict(CFG["strategies"].get(strategy_name, {}))
     sig = strat.REGISTRY[strategy_name](df, params)
-    tc = backtest.load_trade_config(market)   # 成本按市场分层（CN/US/HK/CRYPTO）
+    tc = backtest.load_trade_config(market)  # 成本按市场分层（CN/US/HK/CRYPTO）
     m = backtest.run(df, sig, **tc)
     bh = backtest.buy_and_hold(df)
 
-    window = "%s ~ %s" % (df.index[0].strftime("%Y-%m-%d"),
-                          df.index[-1].strftime("%Y-%m-%d"))
+    window = "%s ~ %s" % (
+        df.index[0].strftime("%Y-%m-%d"),
+        df.index[-1].strftime("%Y-%m-%d"),
+    )
     out = {
-        "ts": _now(), "strategy": strategy_name, "market": market, "symbol": symbol,
-        "window": window, "params": params,
-        "total_return": m["total_return"], "cagr": m["cagr"],
-        "sharpe": m["sharpe"], "sortino": m["sortino"],
-        "max_drawdown": m["max_drawdown"], "win_rate": m["win_rate"],
-        "trades": m["trades"], "bar_count": m["bar_count"],
-        "benchmark_return": bh["total_return"], "benchmark_sharpe": bh["sharpe"],
+        "ts": _now(),
+        "strategy": strategy_name,
+        "market": market,
+        "symbol": symbol,
+        "window": window,
+        "params": params,
+        "total_return": m["total_return"],
+        "cagr": m["cagr"],
+        "sharpe": m["sharpe"],
+        "sortino": m["sortino"],
+        "max_drawdown": m["max_drawdown"],
+        "win_rate": m["win_rate"],
+        "trades": m["trades"],
+        "bar_count": m["bar_count"],
+        "benchmark_return": bh["total_return"],
+        "benchmark_sharpe": bh["sharpe"],
     }
     with open(RESULTS_JSONL, "a", encoding="utf-8") as f:
         f.write(json.dumps(out, ensure_ascii=False) + "\n")
@@ -855,20 +1081,23 @@ def run_single(strategy_name, symbol, market, start, end, push=False):
     snap_file = None
     try:
         title = "单股回测 · %s" % symbol
-        sec = _page_section(symbol, strategy_name, params, m, bh,
-                            window, df, sig, market=market)
+        sec = _page_section(
+            symbol, strategy_name, params, m, bh, window, df, sig, market=market
+        )
         report_page.write_report_html(title, [sec])
         snap_file = report_page.write_snapshot(title, [sec], tag=symbol)
     except Exception:
         pass
 
-    report = fmt_report(symbol, strategy_name, params, m, bh, window,
-                        df=df, sig=sig, market=market)
+    report = fmt_report(
+        symbol, strategy_name, params, m, bh, window, df=df, sig=sig, market=market
+    )
     sent = False
     news_name = None
     try:
-        wl = json.load(open(os.path.join(NEWS_DIR, "news_config.json"),
-                            encoding="utf-8")).get("watchlist", [])
+        wl = json.load(
+            open(os.path.join(NEWS_DIR, "news_config.json"), encoding="utf-8")
+        ).get("watchlist", [])
         for _m, _s, _n in resolve_watchlist(wl):
             if _s == symbol:
                 news_name = _n
@@ -876,12 +1105,22 @@ def run_single(strategy_name, symbol, market, start, end, push=False):
     except Exception:
         pass
     if push and CFG["feishu"].get("push", True):
-        sent = push_report_card(symbol, strategy_name, params, m, bh,
-                                window, df, sig, report_file=snap_file,
-                                news_name=news_name)
-    print("BT_OK %s sharpe=%.2f ret=%+.2f%% bh=%+.2f%% sent=%s" % (
-        symbol, m["sharpe"], m["total_return"] * 100,
-        bh["total_return"] * 100, sent))
+        sent = push_report_card(
+            symbol,
+            strategy_name,
+            params,
+            m,
+            bh,
+            window,
+            df,
+            sig,
+            report_file=snap_file,
+            news_name=news_name,
+        )
+    print(
+        "BT_OK %s sharpe=%.2f ret=%+.2f%% bh=%+.2f%% sent=%s"
+        % (symbol, m["sharpe"], m["total_return"] * 100, bh["total_return"] * 100, sent)
+    )
     if not push:
         print(report)
     return out
@@ -891,6 +1130,7 @@ def resolve_watchlist(wl):
     """watchlist 代码 → [(market, db_symbol, name)]。纯符号先按 US，运行时无数据再降级 CRYPTO。"""
     sys.path.insert(0, NEWS_DIR)
     from quote_snapshot import normalize_code
+
     out = []
     for w in wl:
         c = normalize_code(w.get("code", ""))
@@ -942,11 +1182,22 @@ def scan_text(strategy_name, results, mkts):
     """扫描文本版（卡片推送失败时的降级面；基准 nan 以 — 展示）。"""
     lines = ["🔍 策略扫描 %s（%d 只 · 按夏普排名）" % (strategy_name, len(results))]
     for r in results:
-        bench = ("—" if _is_nan(r["benchmark_return"])
-                 else "%+.1f%%" % (r["benchmark_return"] * 100))
-        lines.append("· [%s] %s 夏普%.2f 收益%+.1f%% 基准%s 回撤%.1f%%" % (
-            r["market"], r["name"], r["sharpe"], r["total_return"] * 100,
-            bench, r["max_drawdown"] * 100))
+        bench = (
+            "—"
+            if _is_nan(r["benchmark_return"])
+            else "%+.1f%%" % (r["benchmark_return"] * 100)
+        )
+        lines.append(
+            "· [%s] %s 夏普%.2f 收益%+.1f%% 基准%s 回撤%.1f%%"
+            % (
+                r["market"],
+                r["name"],
+                r["sharpe"],
+                r["total_return"] * 100,
+                bench,
+                r["max_drawdown"] * 100,
+            )
+        )
     # 成本口径标注：让下游看到各市场回测假设（口径变化可见）
     lines.append("—— " + " · ".join(cost_note(m) for m in mkts))
     lines.append("—— 量化回测域")
@@ -958,24 +1209,38 @@ def scan_card(strategy_name, results, mkts, ts):
     结构：顶部三列指标（跑赢基准/平均夏普/最深回撤）→ 正负夏普分区榜单 →
     成本口径灰字尾注。榜单行=奖牌|#名次 名称[可下钻→/kg/stock][市场灰标]
     ｜夏普｜收益｜基准｜超额｜回撤；超额=收益-基准（基准 nan 以 — 展示，不出现 nan%）。"""
-    beat = sum(1 for r in results
-               if not _is_nan(r["benchmark_return"])
-               and r["total_return"] > r["benchmark_return"])
-    avg_sharpe = (sum(r["sharpe"] for r in results) / len(results)
-                  if results else 0.0)
+    beat = sum(
+        1
+        for r in results
+        if not _is_nan(r["benchmark_return"])
+        and r["total_return"] > r["benchmark_return"]
+    )
+    avg_sharpe = sum(r["sharpe"] for r in results) / len(results) if results else 0.0
     worst_dd = min((r["max_drawdown"] for r in results), default=0.0)
 
     def line(i, r):
         rank = _SCAN_MEDALS[i] if i < 3 else "#%d" % (i + 1)
         bench = r["benchmark_return"]
-        b = ("<font color='grey'>—</font>" if _is_nan(bench) else _c_pct(bench))
-        exc = ("<font color='grey'>—</font>" if _is_nan(bench)
-               else _c_pct(r["total_return"] - bench))
-        nm = _stock_drill(r["name"], r["symbol"])   # K-STOCK-388 可下钻
-        return ("%s %s <font color='grey'>[%s]</font>｜夏普 **%.2f**"
-                "｜收益 %s｜基准 %s｜超额 %s｜回撤 %.1f%%") % (
-            rank, nm, r["market"], r["sharpe"],
-            _c_pct(r["total_return"]), b, exc, r["max_drawdown"] * 100)
+        b = "<font color='grey'>—</font>" if _is_nan(bench) else _c_pct(bench)
+        exc = (
+            "<font color='grey'>—</font>"
+            if _is_nan(bench)
+            else _c_pct(r["total_return"] - bench)
+        )
+        nm = _stock_drill(r["name"], r["symbol"])  # K-STOCK-388 可下钻
+        return (
+            "%s %s <font color='grey'>[%s]</font>｜夏普 **%.2f**"
+            "｜收益 %s｜基准 %s｜超额 %s｜回撤 %.1f%%"
+        ) % (
+            rank,
+            nm,
+            r["market"],
+            r["sharpe"],
+            _c_pct(r["total_return"]),
+            b,
+            exc,
+            r["max_drawdown"] * 100,
+        )
 
     md = []
     pos = [line(i, r) for i, r in enumerate(results) if r["sharpe"] >= 0]
@@ -984,23 +1249,30 @@ def scan_card(strategy_name, results, mkts, ts):
         md.append("**📈 正夏普区（%d 只）**\n" % len(pos) + "\n".join(pos))
     if neg:
         md.append("**📉 负夏普区（%d 只）**\n" % len(neg) + "\n".join(neg))
-    footer = ("<font color='grey'>%s</font>\n"
-              "<font color='grey'>仅回测参考，不构成投资建议 · 量化回测域</font>"
-              % " · ".join(cost_note(m) for m in mkts))
+    footer = (
+        "<font color='grey'>%s</font>\n"
+        "<font color='grey'>仅回测参考，不构成投资建议 · 量化回测域</font>"
+        % " · ".join(cost_note(m) for m in mkts)
+    )
     return build_card(
         "🔍 策略扫描 · %s" % strategy_name,
         "%d 只 · 按夏普排名 · %s" % (len(results), ts),
         "turquoise" if avg_sharpe >= 0 else "red",
-        md, footer=footer,
-        columns=[("跑赢基准", "%d/%d" % (beat, len(results)), "wathet-50"),
-                 ("平均夏普", "%.2f" % avg_sharpe, "wathet-50"),
-                 ("最深回撤", "%.1f%%" % (worst_dd * 100), "orange-50")],
-        use_schema2=True)
+        md,
+        footer=footer,
+        columns=[
+            ("跑赢基准", "%d/%d" % (beat, len(results)), "wathet-50"),
+            ("平均夏普", "%.2f" % avg_sharpe, "wathet-50"),
+            ("最深回撤", "%.1f%%" % (worst_dd * 100), "orange-50"),
+        ],
+        use_schema2=True,
+    )
 
 
 def run_scan(strategy_name, market, start, end, push=False):
-    wl = json.load(open(os.path.join(NEWS_DIR, "news_config.json"),
-                        encoding="utf-8")).get("watchlist", [])
+    wl = json.load(
+        open(os.path.join(NEWS_DIR, "news_config.json"), encoding="utf-8")
+    ).get("watchlist", [])
     entries = resolve_watchlist(wl)
     if market and market != "ALL":
         entries = [e for e in entries if e[0] == market]
@@ -1026,18 +1298,29 @@ def run_scan(strategy_name, market, start, end, push=False):
     results = []
     for (mkt, sym), df in frames.items():
         sig = strat.REGISTRY[strategy_name](df, params)
-        tc = backtest.load_trade_config(mkt)   # 成本按市场分层
+        tc = backtest.load_trade_config(mkt)  # 成本按市场分层
         m = backtest.run(df, sig, **tc)
         bh = backtest.buy_and_hold(df)
-        results.append({
-            "market": mkt, "symbol": sym, "name": name_of.get((mkt, sym), sym),
-            "sharpe": m["sharpe"], "total_return": m["total_return"],
-            "max_drawdown": m["max_drawdown"], "win_rate": m["win_rate"],
-            "benchmark_return": bh["total_return"],
-        })
+        results.append(
+            {
+                "market": mkt,
+                "symbol": sym,
+                "name": name_of.get((mkt, sym), sym),
+                "sharpe": m["sharpe"],
+                "total_return": m["total_return"],
+                "max_drawdown": m["max_drawdown"],
+                "win_rate": m["win_rate"],
+                "benchmark_return": bh["total_return"],
+            }
+        )
     results.sort(key=lambda x: x["sharpe"], reverse=True)
-    out = {"ts": _now(), "strategy": strategy_name, "market": market or "ALL",
-           "mode": "scan", "results": results}
+    out = {
+        "ts": _now(),
+        "strategy": strategy_name,
+        "market": market or "ALL",
+        "mode": "scan",
+        "results": results,
+    }
     _atomic(LAST_JSON, out)
     mkts = sorted({r["market"] for r in results})
     txt = scan_text(strategy_name, results, mkts)
@@ -1045,8 +1328,9 @@ def run_scan(strategy_name, market, start, end, push=False):
     if push and CFG["feishu"].get("push", True):
         card = scan_card(strategy_name, results, mkts, out["ts"])
         # 卡片优先，失败降级文本（同单票卡 push_report_card 判例）
-        sent = (push_feishu(json.dumps(card, ensure_ascii=False), card=True)
-                or push_feishu(txt))
+        sent = push_feishu(
+            json.dumps(card, ensure_ascii=False), card=True
+        ) or push_feishu(txt)
     print("SCAN done %d stocks sent=%s" % (len(results), sent))
     if not push:
         print(txt)
@@ -1057,10 +1341,10 @@ def run_daily():
     """计划任务入口：读 config daily_scan（strategy/lookback_days/push/top_reports）。"""
     d = CFG.get("daily_scan", {})
     strategy_name = d.get("strategy", "trend_follow")
-    start = (datetime.now() - timedelta(days=int(d.get("lookback_days", 365)))
-             ).strftime("%Y-%m-%d")
-    out = run_scan(strategy_name, "ALL", start, None,
-                   push=bool(d.get("push", True)))
+    start = (
+        datetime.now() - timedelta(days=int(d.get("lookback_days", 365)))
+    ).strftime("%Y-%m-%d")
+    out = run_scan(strategy_name, "ALL", start, None, push=bool(d.get("push", True)))
     try:
         update_ledger()  # 16:00 顺带：信号页刷新 + 纸面持仓账本更新
     except Exception:
@@ -1079,16 +1363,22 @@ def run_daily():
             continue
         df = got[r["symbol"]]
         sig = strat.REGISTRY[strategy_name](df, params)
-        tc = backtest.load_trade_config(r["market"])   # 成本按市场分层
+        tc = backtest.load_trade_config(r["market"])  # 成本按市场分层
         m = backtest.run(df, sig, **tc)
         bh = backtest.buy_and_hold(df)
-        window = "%s ~ %s" % (df.index[0].strftime("%Y-%m-%d"),
-                              df.index[-1].strftime("%Y-%m-%d"))
+        window = "%s ~ %s" % (
+            df.index[0].strftime("%Y-%m-%d"),
+            df.index[-1].strftime("%Y-%m-%d"),
+        )
         name = "[%s] %s" % (r["market"], r["name"])
-        blocks += report_markdown(name, strategy_name, params, m, bh,
-                                  window, df, sig, market=r["market"])
-        page_secs.append(_page_section(name, strategy_name, params, m, bh,
-                                       window, df, sig, market=r["market"]))
+        blocks += report_markdown(
+            name, strategy_name, params, m, bh, window, df, sig, market=r["market"]
+        )
+        page_secs.append(
+            _page_section(
+                name, strategy_name, params, m, bh, window, df, sig, market=r["market"]
+            )
+        )
         n_ok += 1
     if not n_ok:
         return
@@ -1102,11 +1392,15 @@ def run_daily():
     buttons, qr = _card_actions(snap_file)
     card = build_card(
         "📈 每日扫描 Top%d 单股回测详情" % n_ok,
-        "16:00 自动 · %s · 近 %d 天" % (strategy_name,
-                                        int(d.get("lookback_days", 365))),
-        "indigo", blocks,
+        "16:00 自动 · %s · 近 %d 天"
+        % (strategy_name, int(d.get("lookback_days", 365))),
+        "indigo",
+        blocks,
         footer="仅回测参考，不构成投资建议 · 量化回测域",
-        buttons=buttons, qr_key=qr, use_schema2=True)
+        buttons=buttons,
+        qr_key=qr,
+        use_schema2=True,
+    )
     if push_feishu(json.dumps(card, ensure_ascii=False), card=True):
         print("TOP_REPORTS pushed %d" % n_ok)
     else:
@@ -1118,39 +1412,64 @@ def run_daily():
                 continue
             df = got[r["symbol"]]
             sig = strat.REGISTRY[strategy_name](df, params)
-            tc = backtest.load_trade_config(r["market"])   # 成本按市场分层
+            tc = backtest.load_trade_config(r["market"])  # 成本按市场分层
             m = backtest.run(df, sig, **tc)
             bh = backtest.buy_and_hold(df)
-            window = "%s ~ %s" % (df.index[0].strftime("%Y-%m-%d"),
-                                  df.index[-1].strftime("%Y-%m-%d"))
-            texts.append(fmt_report("[%s] %s" % (r["market"], r["name"]),
-                                    strategy_name, params, m, bh, window,
-                                    df=df, sig=sig, market=r["market"]))
+            window = "%s ~ %s" % (
+                df.index[0].strftime("%Y-%m-%d"),
+                df.index[-1].strftime("%Y-%m-%d"),
+            )
+            texts.append(
+                fmt_report(
+                    "[%s] %s" % (r["market"], r["name"]),
+                    strategy_name,
+                    params,
+                    m,
+                    bh,
+                    window,
+                    df=df,
+                    sig=sig,
+                    market=r["market"],
+                )
+            )
         if texts and push_feishu("\n\n────────────\n\n".join(texts)):
             print("TOP_REPORTS pushed %d (text fallback)" % len(texts))
 
 
 def main():
     import argparse
+
     p = argparse.ArgumentParser()
     p.add_argument("--strategy", default="ma_cross", choices=list(strat.REGISTRY))
-    p.add_argument("--market", default="ALL",
-                   choices=["ALL", "CN", "HK", "US", "CRYPTO"],
-                   help="单股模式必填；扫描模式默认 ALL")
+    p.add_argument(
+        "--market",
+        default="ALL",
+        choices=["ALL", "CN", "HK", "US", "CRYPTO"],
+        help="单股模式必填；扫描模式默认 ALL",
+    )
     p.add_argument("--symbol")
     p.add_argument("--start")
     p.add_argument("--end")
     p.add_argument("--scan", action="store_true")
-    p.add_argument("--daily", action="store_true",
-                   help="计划任务模式：读 config daily_scan")
-    p.add_argument("--signals", action="store_true",
-                   help="只刷新全池信号页（/bt-signals），不回测不推送")
-    p.add_argument("--ledger", action="store_true",
-                   help="盘后更新纸面持仓账本并刷新 /bt-positions 页")
-    p.add_argument("--morning", action="store_true",
-                   help="盘前推送作战计划卡（计划任务用，纸面）")
-    p.add_argument("--optpage", action="store_true",
-                   help="只刷新全池寻优榜单页（/bt-opt），不推送")
+    p.add_argument(
+        "--daily", action="store_true", help="计划任务模式：读 config daily_scan"
+    )
+    p.add_argument(
+        "--signals",
+        action="store_true",
+        help="只刷新全池信号页（/bt-signals），不回测不推送",
+    )
+    p.add_argument(
+        "--ledger",
+        action="store_true",
+        help="盘后更新纸面持仓账本并刷新 /bt-positions 页",
+    )
+    p.add_argument(
+        "--morning", action="store_true", help="盘前推送作战计划卡（计划任务用，纸面）"
+    )
+    p.add_argument(
+        "--optpage", action="store_true", help="只刷新全池寻优榜单页（/bt-opt），不推送"
+    )
     p.add_argument("--push", action="store_true")
     a = p.parse_args()
     if a.daily:
@@ -1169,8 +1488,15 @@ def main():
         mkt = a.market
         if mkt == "ALL":  # 按代码格式推断
             s = a.symbol.upper()
-            mkt = ("CRYPTO" if "/" in s else "HK" if s.isdigit() and len(s) == 5
-                   else "CN" if s.endswith((".SH", ".SZ", ".BJ")) else "US")
+            mkt = (
+                "CRYPTO"
+                if "/" in s
+                else "HK"
+                if s.isdigit() and len(s) == 5
+                else "CN"
+                if s.endswith((".SH", ".SZ", ".BJ"))
+                else "US"
+            )
         run_single(a.strategy, a.symbol, mkt, a.start, a.end, push=a.push)
     else:
         p.print_help()

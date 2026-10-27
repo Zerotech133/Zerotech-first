@@ -13,6 +13,7 @@
 断点续传：data/tdx/_tsdaily_monthly.json 记录已完成月份。
 完成后写 manifest ts_daily done=True（今晚 23:00 计划任务自动跳过）。
 """
+
 import json
 import os
 import sys
@@ -37,8 +38,9 @@ SESS = requests.Session()
 def _get(params, timeout=90):
     for i in range(RETRY):
         try:
-            r = SESS.get(BASE + "/api/data/table/ts_daily",
-                         params=params, timeout=timeout)
+            r = SESS.get(
+                BASE + "/api/data/table/ts_daily", params=params, timeout=timeout
+            )
             if r.status_code == 200:
                 return r.json()
             err = "HTTP %s" % r.status_code
@@ -75,8 +77,7 @@ def pull_month(y, m):
     rows, cols = list(d.get("rows") or []), d.get("columns") or []
     off = len(rows)
     while rows and off < total:
-        d2 = _get({"start_date": s, "end_date": e, "offset": off,
-                   "limit": PAGE})
+        d2 = _get({"start_date": s, "end_date": e, "offset": off, "limit": PAGE})
         chunk = d2.get("rows") or []
         if not chunk:
             break
@@ -103,38 +104,45 @@ def main(from_ym=None):
         tm = time.time()
         rows, cols, total = pull_month(y, m)
         if total and len(rows) < total:
-            raise RuntimeError("%04d-%02d rows=%d < total=%d"
-                               % (y, m, len(rows), total))
+            raise RuntimeError(
+                "%04d-%02d rows=%d < total=%d" % (y, m, len(rows), total)
+            )
         if rows:
             idx = next_part_idx()
             df = pd.DataFrame([dict(zip(cols, r)) for r in rows])
-            df.to_parquet(os.path.join(OUT, "part_%04d.parquet" % idx),
-                          index=False)
+            df.to_parquet(os.path.join(OUT, "part_%04d.parquet" % idx), index=False)
         st["done_months"].append([y, m])
         save_state(st)
         el = time.time() - t0
         eta = el / (k + 1) * (len(months) - k - 1)
-        print("[%02d/%02d] %04d-%02d rows=%d (%.1fs) | 已用 %.0fs ETA %.0fs"
-              % (k + 1, len(months), y, m, len(rows), time.time() - tm,
-                 el, eta), flush=True)
+        print(
+            "[%02d/%02d] %04d-%02d rows=%d (%.1fs) | 已用 %.0fs ETA %.0fs"
+            % (k + 1, len(months), y, m, len(rows), time.time() - tm, el, eta),
+            flush=True,
+        )
         time.sleep(SLEEP)
     # manifest 收口
     n_parts = next_part_idx()
     n_rows = 0
     for f in sorted(os.listdir(OUT)):
         if f.endswith(".parquet"):
-            n_rows += pd.read_parquet(os.path.join(OUT, f),
-                                      columns=["ts_code"]).shape[0]
+            n_rows += pd.read_parquet(os.path.join(OUT, f), columns=["ts_code"]).shape[
+                0
+            ]
     mm = json.load(open(MANIFEST, encoding="utf-8"))
-    mm["ts_daily"] = {"offset": n_rows, "part": n_parts, "rows": n_rows,
-                      "done": True, "mode": "monthly"}
+    mm["ts_daily"] = {
+        "offset": n_rows,
+        "part": n_parts,
+        "rows": n_rows,
+        "done": True,
+        "mode": "monthly",
+    }
     tmp = MANIFEST + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(mm, fh)
     os.replace(tmp, MANIFEST)
     os.remove(STATE)
-    print("TS_DAILY_PULL_DONE parts=%d rows=%d" % (n_parts, n_rows),
-          flush=True)
+    print("TS_DAILY_PULL_DONE parts=%d rows=%d" % (n_parts, n_rows), flush=True)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-283 · 原型展示页生成器：bt2_prototype.html（静态自包含·暗色·红涨绿跌）"""
+
 import json
 import os
 
@@ -10,15 +11,27 @@ OUT = os.path.join(DL, "bt2_prototype.html")
 A = json.load(open(os.path.join(DL, "bt2_chanlun_wait.json"), encoding="utf-8"))
 B = json.load(open(os.path.join(DL, "bt2_double_knife.json"), encoding="utf-8"))
 
+
 def slim(x):
     return {
-        "meta": x["meta"], "summary": x["summary"],
+        "meta": x["meta"],
+        "summary": x["summary"],
         "equity_curve": x["equity_curve"],
-        "days": {d: {"pnl_pct": v["pnl_pct"], "n_pos": v["n_pos"], "cap": v["cap"],
-                     "regime": v["regime"], "cash_pct": v["cash_pct"], "actions": v["actions"]}
-                 for d, v in x["days"].items()},
-        "holdings": x["holdings"], "trades": x["trades"],
+        "days": {
+            d: {
+                "pnl_pct": v["pnl_pct"],
+                "n_pos": v["n_pos"],
+                "cap": v["cap"],
+                "regime": v["regime"],
+                "cash_pct": v["cash_pct"],
+                "actions": v["actions"],
+            }
+            for d, v in x["days"].items()
+        },
+        "holdings": x["holdings"],
+        "trades": x["trades"],
     }
+
 
 DATA = {"chanlun": slim(A), "dknife": slim(B)}
 DATA_JS = json.dumps(DATA, ensure_ascii=False, separators=(",", ":"))
@@ -191,4 +204,4 @@ document.querySelector(".tab").click();
 
 html = HTML.replace("__DATA__", DATA_JS)
 open(OUT, "w", encoding="utf-8").write(html)
-print("HTML:", OUT, f"({os.path.getsize(OUT)//1024} KB)")
+print("HTML:", OUT, f"({os.path.getsize(OUT) // 1024} KB)")

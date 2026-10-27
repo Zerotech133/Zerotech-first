@@ -61,6 +61,7 @@ V3 结构修订（2026-09-27，P2 V2-final 1565 样本逐维诊断驱动；
 
 影子纪律：只写门户数据文件，不接推送；n<10 不构成结论。
 """
+
 import json
 import logging
 import os
@@ -86,19 +87,19 @@ RC_CACHE = os.path.join(DATA, "nine_dim_rc_cache.json")
 NEWS_DB = os.path.join(HERE, "..", "news_collector", "news.db")
 KG_FEAT = os.path.join(HERE, "data", "features", "kg_features.parquet")
 
-BUY_TH = 90          # （退役 2026-10-02）V3 复评两仪 2 年仅 1 票，保留仅作参照展示
-ALERT_TH = 75        # 拥挤警报线（K32：分数与前向收益单调负相关，反用为回避警报）
-MIN_COV = 0.75       # 可判权重占比低于此 → 未完整评分，不入池
-CAND_CAP = 400       # 候选池上限（RPS50 降序截断）
-R5, R20 = 5, 20      # 前向收益窗口（交易日）
-FINA_TTL_DAYS = 5    # 财报缓存 5 日内更新（规格：财报发布后5日内）
-INDEX_CODE = "000688.SH"   # 科创50
+BUY_TH = 90  # （退役 2026-10-02）V3 复评两仪 2 年仅 1 票，保留仅作参照展示
+ALERT_TH = 75  # 拥挤警报线（K32：分数与前向收益单调负相关，反用为回避警报）
+MIN_COV = 0.75  # 可判权重占比低于此 → 未完整评分，不入池
+CAND_CAP = 400  # 候选池上限（RPS50 降序截断）
+R5, R20 = 5, 20  # 前向收益窗口（交易日）
+FINA_TTL_DAYS = 5  # 财报缓存 5 日内更新（规格：财报发布后5日内）
+INDEX_CODE = "000688.SH"  # 科创50
 
 try:
-    import tdx_read as tdxr          # TDX 数据仓本地读取层（data/tdx/）
+    import tdx_read as tdxr  # TDX 数据仓本地读取层（data/tdx/）
 except Exception:
     tdxr = None
-TDX_LOCAL = True   # live 本地仓优先；置 False 强制全走 tushare API（排查用）
+TDX_LOCAL = True  # live 本地仓优先；置 False 强制全走 tushare API（排查用）
 
 
 def _now_iso():
@@ -126,6 +127,7 @@ def _write_json(path, obj):
 
 def _ts(api, **params):
     import rps_resonance as rps
+
     return rps._ts(api, **params)
 
 
@@ -138,8 +140,7 @@ def _atomic_append(path, rows):
     old.extend(rows)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
-        f.write("".join(json.dumps(r, ensure_ascii=False) + "\n"
-                        for r in old))
+        f.write("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in old))
     os.replace(tmp, path)
 
 
@@ -165,17 +166,20 @@ def build_history_record(snap, rows):
     for r in rows or ():
         b = (r or {}).get("band") or "na"
         bands[b] = bands.get(b, 0) + 1
-    history = [{"code": r.get("code"), "score": r.get("score"),
-                "band": r.get("band")}
-               for r in list(rows or ())[:HIST_TOP_N]]
-    return {"schema": HIST_SCHEMA,
-            "generated_at": snap.get("generated_at"),
-            "trade_date": snap.get("trade_date"),
-            "n_alert": snap.get("n_alert"),
-            "n_cand": snap.get("n_cand"),
-            "n_full": snap.get("n_full"),
-            "bands": bands,
-            "history": history}
+    history = [
+        {"code": r.get("code"), "score": r.get("score"), "band": r.get("band")}
+        for r in list(rows or ())[:HIST_TOP_N]
+    ]
+    return {
+        "schema": HIST_SCHEMA,
+        "generated_at": snap.get("generated_at"),
+        "trade_date": snap.get("trade_date"),
+        "n_alert": snap.get("n_alert"),
+        "n_cand": snap.get("n_cand"),
+        "n_full": snap.get("n_full"),
+        "bands": bands,
+        "history": history,
+    }
 
 
 def _history_records(path=None):
@@ -227,17 +231,18 @@ def append_history(record, path=None):
         try:
             os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim.py", exc
+            )
         fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
         try:
             os.write(fd, payload)
-            os.fsync(fd)             # 单行写完即落盘；崩溃最多留一行坏行（读取跳过）
+            os.fsync(fd)  # 单行写完即落盘；崩溃最多留一行坏行（读取跳过）
         finally:
             os.close(fd)
         return True
-    except Exception as e:           # noqa: BLE001 - 账本失败不得影响主计算
-        print("9DIM history WARN 追加失败 %r（不阻断主计算）" % e,
-              file=sys.stderr)
+    except Exception as e:  # noqa: BLE001 - 账本失败不得影响主计算
+        print("9DIM history WARN 追加失败 %r（不阻断主计算）" % e, file=sys.stderr)
         return False
 
 
@@ -270,9 +275,11 @@ def record_run_history(snap, rows, path=None):
     """
     try:
         return append_history(build_history_record(snap, rows), path=path)
-    except Exception as e:           # noqa: BLE001 - 历史账本失败不得影响主计算
-        print("9DIM history WARN %r（历史账本未追加，不影响主计算结果）" % e,
-              file=sys.stderr)
+    except Exception as e:  # noqa: BLE001 - 历史账本失败不得影响主计算
+        print(
+            "9DIM history WARN %r（历史账本未追加，不影响主计算结果）" % e,
+            file=sys.stderr,
+        )
         return False
 
 
@@ -287,8 +294,12 @@ def _load_market():
             df = pd.read_parquet(os.path.join(LOCAL, f))
             if len(df) < 30:
                 continue
-            df = df.drop_duplicates("trade_date", keep="last") \
-                   .sort_values("trade_date").tail(260).reset_index(drop=True)
+            df = (
+                df.drop_duplicates("trade_date", keep="last")
+                .sort_values("trade_date")
+                .tail(260)
+                .reset_index(drop=True)
+            )
             code = f[:-8].replace("_", ".")
             frames[code] = df
             latest = max(latest, _td8(df["trade_date"].iloc[-1]))
@@ -302,27 +313,36 @@ def _basic():
 
     本地中台读层优先（ts_stock_basic > stock_basic，免 API 配额），
     读层无数据时回源 tushare 远程，远程失败回落旧缓存。"""
-    if os.path.exists(BASIC_CACHE) and \
-            time.time() - os.path.getmtime(BASIC_CACHE) < 86400:
+    if (
+        os.path.exists(BASIC_CACHE)
+        and time.time() - os.path.getmtime(BASIC_CACHE) < 86400
+    ):
         return json.load(open(BASIC_CACHE, encoding="utf-8"))
     m = {}
     try:
         import datamart
+
         df = datamart.read("stock_basic")
         if df is not None and not df.empty:
             if "list_status" in df.columns:
                 df = df[df["list_status"].astype(str) == "L"]
-            m = {r["ts_code"]: [r["name"], r.get("industry") or ""]
-                 for r in df.to_dict("records")
-                 if r.get("ts_code") and r.get("name")}
+            m = {
+                r["ts_code"]: [r["name"], r.get("industry") or ""]
+                for r in df.to_dict("records")
+                if r.get("ts_code") and r.get("name")
+            }
     except Exception:
         m = {}
     if not m:
         try:
-            rows, fields = _ts("stock_basic", list_status="L",
-                               fields="ts_code,name,industry")
-            i, n, g = (fields.index("ts_code"), fields.index("name"),
-                       fields.index("industry"))
+            rows, fields = _ts(
+                "stock_basic", list_status="L", fields="ts_code,name,industry"
+            )
+            i, n, g = (
+                fields.index("ts_code"),
+                fields.index("name"),
+                fields.index("industry"),
+            )
             m = {r[i]: [r[n], r[g] or ""] for r in rows}
         except Exception:
             if os.path.exists(BASIC_CACHE):
@@ -337,7 +357,7 @@ def _boll(close, n=20, k=2):
         return None, None
     ma = close[-n:].mean()
     sd = close[-n:].std(ddof=0)
-    return ma + k * sd, ma            # 上轨, 中轨
+    return ma + k * sd, ma  # 上轨, 中轨
 
 
 def _macd(close, fast=12, slow=26, sig=9):
@@ -345,8 +365,7 @@ def _macd(close, fast=12, slow=26, sig=9):
     if len(close) < slow + sig:
         return None, None, None, None
     c = pd.Series(close)
-    dif = c.ewm(span=fast, adjust=False).mean() - \
-        c.ewm(span=slow, adjust=False).mean()
+    dif = c.ewm(span=fast, adjust=False).mean() - c.ewm(span=slow, adjust=False).mean()
     dea = dif.ewm(span=sig, adjust=False).mean()
     diff = (dif - dea).to_numpy()
     cross, above = None, 0
@@ -371,11 +390,11 @@ def _band(score):
     if score is None:
         return "na"
     if score >= 85:
-        return "alert2"      # 强警报（85+ 两仪 4 样本全亏，左尾 p5 -85.9%）
+        return "alert2"  # 强警报（85+ 两仪 4 样本全亏，左尾 p5 -85.9%）
     if score >= 75:
-        return "alert"       # 警报（75+ thinned 胜率 9%）
+        return "alert"  # 警报（75+ thinned 胜率 9%）
     if score >= 60:
-        return "mid"         # 中段（无信号；低波期 60-65 有 beta 倾向非 alpha）
+        return "mid"  # 中段（无信号；低波期 60-65 有 beta 倾向非 alpha）
     return "low"
 
 
@@ -399,7 +418,7 @@ def coarse_filter(frames, basic, rps50):
         close = df["close"].to_numpy(dtype=float)
         vol = df["volume"].to_numpy(dtype=float)
         amt = df["amount"].to_numpy(dtype=float)
-        if amt[-1] * 1000 < 2e8:      # tushare amount 单位千元
+        if amt[-1] * 1000 < 2e8:  # tushare amount 单位千元
             continue
         up, _mid = _boll(close)
         vma = vol[-120:].mean()
@@ -419,18 +438,24 @@ def _idx_bars():
     if os.path.exists(IDX_CACHE):
         try:
             c = json.load(open(IDX_CACHE, encoding="utf-8"))
-            if c.get("trade_date", "") >= \
-                    (datetime.now() - timedelta(days=4)) \
-                    .strftime("%Y%m%d"):
+            if c.get("trade_date", "") >= (datetime.now() - timedelta(days=4)).strftime(
+                "%Y%m%d"
+            ):
                 return c
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim.py", exc
+            )
     rows, fields = _ts("index_daily", ts_code=INDEX_CODE)
     i = {f: k for k, f in enumerate(fields)}
-    bars = sorted(((_td8(r[i["trade_date"]]), float(r[i["close"]]))
-                   for r in rows), key=lambda x: x[0])
-    c = {"trade_date": bars[-1][0] if bars else "",
-         "closes": [b[1] for b in bars][-300:]}
+    bars = sorted(
+        ((_td8(r[i["trade_date"]]), float(r[i["close"]])) for r in rows),
+        key=lambda x: x[0],
+    )
+    c = {
+        "trade_date": bars[-1][0] if bars else "",
+        "closes": [b[1] for b in bars][-300:],
+    }
     _write_json(IDX_CACHE, c)
     return c
 
@@ -444,31 +469,34 @@ def market_env(amount_sum_yuan, closes=None, as_of_month=None):
         if closes is None:
             closes = np.array(_idx_bars()["closes"], dtype=float)
         closes = np.asarray(closes, dtype=float)
-        out["idx_above_ma20"] = bool(len(closes) >= 20 and
-                                     closes[-1] > closes[-20:].mean())
-        out["idx_month_chg"] = round(
-            (closes[-1] / closes[-21] - 1) * 100, 2) if len(closes) > 21 \
-            else None
+        out["idx_above_ma20"] = bool(
+            len(closes) >= 20 and closes[-1] > closes[-20:].mean()
+        )
+        out["idx_month_chg"] = (
+            round((closes[-1] / closes[-21] - 1) * 100, 2) if len(closes) > 21 else None
+        )
         ret = np.diff(closes) / closes[:-1]
         win = pd.Series(ret).rolling(20).std().dropna().to_numpy()
-        out["vol_pct"] = round(float((win < win[-1]).mean() * 100), 1) \
-            if len(win) >= 60 else None
+        out["vol_pct"] = (
+            round(float((win < win[-1]).mean() * 100), 1) if len(win) >= 60 else None
+        )
     except Exception as ex:
         out["idx_err"] = str(ex)[:80]
         out["idx_above_ma20"] = out["idx_month_chg"] = out["vol_pct"] = None
-    out["amount_yi"] = round(amount_sum_yuan / 1e8)      # 亿元
+    out["amount_yi"] = round(amount_sum_yuan / 1e8)  # 亿元
     out["amount_ge_wan_yi"] = bool(amount_sum_yuan >= 1e12)
-    out["report_season"] = (datetime.now().month if as_of_month is None
-                            else as_of_month) in (1, 2, 3, 4, 7, 8)
-    out["idx_month_chg"] = None if out.get("idx_month_chg") is None \
-        else float(out["idx_month_chg"])
-    out["vol_pct"] = None if out.get("vol_pct") is None \
-        else float(out["vol_pct"])
-    out["idx_above_ma20"] = None if out.get("idx_above_ma20") is None \
-        else bool(out["idx_above_ma20"])
+    out["report_season"] = (
+        datetime.now().month if as_of_month is None else as_of_month
+    ) in (1, 2, 3, 4, 7, 8)
+    out["idx_month_chg"] = (
+        None if out.get("idx_month_chg") is None else float(out["idx_month_chg"])
+    )
+    out["vol_pct"] = None if out.get("vol_pct") is None else float(out["vol_pct"])
+    out["idx_above_ma20"] = (
+        None if out.get("idx_above_ma20") is None else bool(out["idx_above_ma20"])
+    )
     out["bull"] = bool((out.get("idx_month_chg") or 0) > 10)
-    out["high_vol"] = out.get("vol_pct") is not None and \
-        out["vol_pct"] > 80
+    out["high_vol"] = out.get("vol_pct") is not None and out["vol_pct"] > 80
     return out
 
 
@@ -510,16 +538,20 @@ def _kg_enrich(codes, evt_days=30):
     # 近 N 天 bull/bear 事件计数（Neo4j）
     try:
         from kg_client import KgClient
-        since = (datetime.now() - timedelta(days=evt_days)) \
-            .strftime("%Y%m%d")
+
+        since = (datetime.now() - timedelta(days=evt_days)).strftime("%Y%m%d")
         cli = KgClient()
         with cli._session() as s:
-            rows = list(s.run(
-                "UNWIND $codes AS c "
-                "MATCH (:Security {ts_code: c})-[:INVOLVES]->(e:Event) "
-                "WHERE e.date >= $since AND e.bias IN ['bull','bear'] "
-                "RETURN c AS code, e.bias AS bias, count(*) AS n",
-                codes=list(codes), since=since))
+            rows = list(
+                s.run(
+                    "UNWIND $codes AS c "
+                    "MATCH (:Security {ts_code: c})-[:INVOLVES]->(e:Event) "
+                    "WHERE e.date >= $since AND e.bias IN ['bull','bear'] "
+                    "RETURN c AS code, e.bias AS bias, count(*) AS n",
+                    codes=list(codes),
+                    since=since,
+                )
+            )
         cli.close()
         for r in rows:
             out.setdefault(r["code"], {})["evt_" + r["bias"]] = r["n"]
@@ -545,15 +577,17 @@ def _paged(api, **params):
 def _by_trade_date(api, tday, fields_needed):
     """按交易日全市场一次拉 → ({code: dict}, ok)。"""
     try:
-        rows, fields = _ts(api, trade_date=tday) if api != "daily_basic" \
+        rows, fields = (
+            _ts(api, trade_date=tday)
+            if api != "daily_basic"
             else (_paged(api, trade_date=tday), [])
-        if api == "daily_basic":             # _paged 不回 fields
+        )
+        if api == "daily_basic":  # _paged 不回 fields
             _r, fields = _ts(api, trade_date=tday, offset=0, limit=1)
         i = {f: k for k, f in enumerate(fields)}
         out = {}
         for r in rows:
-            out[r[i["ts_code"]]] = {f: r[i[f]] for f in fields_needed
-                                    if f in i}
+            out[r[i["ts_code"]]] = {f: r[i[f]] for f in fields_needed if f in i}
         return out, True
     except Exception:
         return {}, False
@@ -576,8 +610,13 @@ def _tdx_day(tbl, tday, fields, codes=None):
 
 def _nan2none(d):
     """本地 parquet 读出的 NaN 统一洗成 None（与 API JSON 口径对齐）。"""
-    return {c: {k: (v if (v is not None and v == v) else None)
-                for k, v in (dv or {}).items()} for c, dv in d.items()}
+    return {
+        c: {
+            k: (v if (v is not None and v == v) else None)
+            for k, v in (dv or {}).items()
+        }
+        for c, dv in d.items()
+    }
 
 
 def _daily_basic(tday):
@@ -591,35 +630,62 @@ def _daily_basic(tday):
     if TDX_LOCAL and tdxr is not None and tdxr.fresh("ts_daily_basic", tday):
         try:
             df = tdxr.read_day("ts_daily_basic", tday)
-            required = {"ts_code", "trade_date", "pe_ttm", "total_mv",
-                        "circ_mv", "source_provider", "actual_received_at",
-                        "source_raw_sha256"}
+            required = {
+                "ts_code",
+                "trade_date",
+                "pe_ttm",
+                "total_mv",
+                "circ_mv",
+                "source_provider",
+                "actual_received_at",
+                "source_raw_sha256",
+            }
             if required.issubset(df.columns):
-                received = pd.to_datetime(df["actual_received_at"],
-                                          utc=True, errors="coerce")
-                eligible = (df["trade_date"].astype(str).map(_td8) == tday) & \
-                    (df["source_provider"] == "tushare.daily_basic") & \
-                    received.notna() & (received <= pd.Timestamp.now(tz="UTC")) & \
-                    df["source_raw_sha256"].fillna("").astype(str).str.fullmatch(
-                        r"[0-9a-fA-F]{64}")
+                received = pd.to_datetime(
+                    df["actual_received_at"], utc=True, errors="coerce"
+                )
+                eligible = (
+                    (df["trade_date"].astype(str).map(_td8) == tday)
+                    & (df["source_provider"] == "tushare.daily_basic")
+                    & received.notna()
+                    & (received <= pd.Timestamp.now(tz="UTC"))
+                    & df["source_raw_sha256"]
+                    .fillna("")
+                    .astype(str)
+                    .str.fullmatch(r"[0-9a-fA-F]{64}")
+                )
                 rows = df.loc[eligible].copy()
                 rows["_received"] = received.loc[eligible]
                 rows = rows.sort_values("_received").drop_duplicates(
-                    "ts_code", keep="last")
+                    "ts_code", keep="last"
+                )
                 if not rows.empty:
-                    local = _nan2none({r["ts_code"]: {
-                        "pe_ttm": r["pe_ttm"], "total_mv": r["total_mv"],
-                        "float_mv": r["circ_mv"]}
-                        for r in rows.to_dict("records")})
+                    local = _nan2none(
+                        {
+                            r["ts_code"]: {
+                                "pe_ttm": r["pe_ttm"],
+                                "total_mv": r["total_mv"],
+                                "float_mv": r["circ_mv"],
+                            }
+                            for r in rows.to_dict("records")
+                        }
+                    )
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
-    rows, ok = _by_trade_date("daily_basic", tday,
-                             ["pe_ttm", "total_mv", "circ_mv"])
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim.py", exc
+            )
+    rows, ok = _by_trade_date("daily_basic", tday, ["pe_ttm", "total_mv", "circ_mv"])
     if ok:
-        remote = _nan2none({c: {"pe_ttm": r.get("pe_ttm"),
-                              "total_mv": r.get("total_mv"),
-                              "float_mv": r.get("circ_mv")}
-                           for c, r in rows.items()})
+        remote = _nan2none(
+            {
+                c: {
+                    "pe_ttm": r.get("pe_ttm"),
+                    "total_mv": r.get("total_mv"),
+                    "float_mv": r.get("circ_mv"),
+                }
+                for c, r in rows.items()
+            }
+        )
         for code, values in remote.items():
             dst = local.setdefault(code, {})
             for field, value in values.items():
@@ -643,9 +709,14 @@ def _block_from_snapshot(tday, source_snapshot):
         end_day = _norm_day(params.get("end_date"))
         if exact_day and exact_day != target_day:
             continue
-        if not exact_day and (start_day or end_day) and not (
-                (not start_day or start_day <= target_day) and
-                (not end_day or target_day <= end_day)):
+        if (
+            not exact_day
+            and (start_day or end_day)
+            and not (
+                (not start_day or start_day <= target_day)
+                and (not end_day or target_day <= end_day)
+            )
+        ):
             continue
         if not exact_day and not start_day and not end_day:
             # 缺失回执没有任何 as-of 边界，不能证明 block_trade 覆盖了
@@ -685,36 +756,38 @@ def _fetch_flow(tday, source_snapshot=None):
     got["basic"], got["basic_ok"] = _daily_basic(tday)
     # moneyflow（大小单金额，字段名与 tushare 一致）：历史分区真实，
     # 2026-09-27 单日窗口 parity 14/14 后恢复本地优先。
-    mf = _tdx_day("ts_moneyflow", tday,
-                  ["buy_lg_amount", "sell_lg_amount",
-                   "buy_elg_amount", "sell_elg_amount"])
+    mf = _tdx_day(
+        "ts_moneyflow",
+        tday,
+        ["buy_lg_amount", "sell_lg_amount", "buy_elg_amount", "sell_elg_amount"],
+    )
     if mf is None:
         mf, ok = _by_trade_date(
-            "moneyflow", tday,
-            ["buy_lg_amount", "sell_lg_amount", "buy_elg_amount",
-             "sell_elg_amount"])
+            "moneyflow",
+            tday,
+            ["buy_lg_amount", "sell_lg_amount", "buy_elg_amount", "sell_elg_amount"],
+        )
         if not mf:
-            mf, ok = _by_trade_date("moneyflow", tday,
-                                    ["buy_lg_amount", "sell_lg_amount"])
+            mf, ok = _by_trade_date(
+                "moneyflow", tday, ["buy_lg_amount", "sell_lg_amount"]
+            )
     mf = _nan2none(mf) if mf is not None else {}
     net = {}
     for c, d in mf.items():
         b = (d.get("buy_lg_amount") or 0) + (d.get("buy_elg_amount") or 0)
         s = (d.get("sell_lg_amount") or 0) + (d.get("sell_elg_amount") or 0)
-        net[c] = round(b - s, 1)             # 万元
+        net[c] = round(b - s, 1)  # 万元
     got["main_net"], got["flow_ok"] = net, bool(mf)
     # 龙虎榜
     tl = _tdx_day("ts_top_list", tday, ["net_amount"])
     if tl is None:
-        got["top"], got["top_ok"] = _by_trade_date("top_list", tday,
-                                                   ["net_amount"])
+        got["top"], got["top_ok"] = _by_trade_date("top_list", tday, ["net_amount"])
     else:
         got["top"], got["top_ok"] = _nan2none(tl), True
     # 机构席位：TDX 行粒度=席位（同 code 多行），须按 code 聚合
     if TDX_LOCAL and tdxr is not None and tdxr.fresh("ts_top_inst", tday):
         try:
-            df = tdxr.read_day("ts_top_inst", tday,
-                               columns=["ts_code", "buy", "sell"])
+            df = tdxr.read_day("ts_top_inst", tday, columns=["ts_code", "buy", "sell"])
             net2 = {}
             for r in df.to_dict("records"):
                 c = r.get("ts_code")
@@ -722,12 +795,14 @@ def _fetch_flow(tday, source_snapshot=None):
                 b = b if (b is not None and b == b) else 0
                 s = s if (s is not None and s == s) else 0
                 net2[c] = net2.get(c, 0) + (b or 0) - (s or 0)
-            got["inst_net"], got["inst_ok"] = \
-                {c: round(v, 1) for c, v in net2.items()}, True
+            got["inst_net"], got["inst_ok"] = (
+                {c: round(v, 1) for c, v in net2.items()},
+                True,
+            )
         except Exception:
             got["inst_net"], got["inst_ok"] = None, False
     else:
-        try:                                 # 龙虎榜机构席位净买（单位=元）
+        try:  # 龙虎榜机构席位净买（单位=元）
             rows, fields = _ts("top_inst", trade_date=tday)
             i = {f: k for k, f in enumerate(fields)}
             inst = {}
@@ -740,16 +815,14 @@ def _fetch_flow(tday, source_snapshot=None):
         except Exception:
             got["inst_net"], got["inst_ok"] = None, False
     if source_snapshot is not None:
-        got["block"], got["block_ok"] = _block_from_snapshot(
-            tday, source_snapshot)
+        got["block"], got["block_ok"] = _block_from_snapshot(tday, source_snapshot)
     else:
-        try:                                 # 大宗成交价列表（折价率用）
+        try:  # 大宗成交价列表（折价率用）
             rows, fields = _ts("block_trade", trade_date=tday)
             i = {f: k for k, f in enumerate(fields)}
             blk = {}
             for r in rows:
-                blk.setdefault(r[i["ts_code"]], []).append(
-                    _f(r[i["price"]]))
+                blk.setdefault(r[i["ts_code"]], []).append(_f(r[i["price"]]))
             got["block"], got["block_ok"] = blk, True
         except Exception:
             got["block"], got["block_ok"] = {}, False
@@ -763,7 +836,7 @@ def _fetch_margin(tday, prev_tday):
     if prev_tday:
         cur = _tdx_day("ts_margin_detail", tday, ["rzye"])
         prev = _tdx_day("ts_margin_detail", prev_tday, ["rzye"])
-        if cur and prev:                     # 任一日为空 → 回退 API 取全
+        if cur and prev:  # 任一日为空 → 回退 API 取全
             det = {}
             for src, m in (("cur", cur), ("prev", prev)):
                 for c, d in m.items():
@@ -780,14 +853,15 @@ def _fetch_margin(tday, prev_tday):
                 i = {f: k for k, f in enumerate(fields)}
                 for r in rows:
                     c = r[i["ts_code"]]
-                    out["detail"].setdefault(c, {})[key] = \
-                        _f(r[i["rzye"]]) or 0
+                    out["detail"].setdefault(c, {})[key] = _f(r[i["rzye"]]) or 0
             if out["detail"]:
                 out["mode"] = "detail"
                 return out
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
-    try:                                     # 全局回退：rzye 近 2 周增幅
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim.py", exc
+            )
+    try:  # 全局回退：rzye 近 2 周增幅
         st = (datetime.now() - timedelta(days=14)).strftime("%Y%m%d")
         rows, fields = _ts("margin", start_date=st, end_date="20991231")
         i = {f: k for k, f in enumerate(fields)}
@@ -798,8 +872,7 @@ def _fetch_margin(tday, prev_tday):
             cnt[d] = cnt.get(d, 0) + 1
         days = sorted(d for d in tot if cnt[d] >= 2)
         if len(days) >= 2:
-            out["global_growth"] = round(
-                (tot[days[-1]] / tot[days[0]] - 1) * 100, 2)
+            out["global_growth"] = round((tot[days[-1]] / tot[days[0]] - 1) * 100, 2)
             out["mode"] = "global"
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
@@ -810,11 +883,13 @@ def _fetch_hsgt():
     """北向近 3 日净买全为正（全球级）→ True/False；异常 None。"""
     try:
         st = (datetime.now() - timedelta(days=12)).strftime("%Y%m%d")
-        rows, fields = _ts("moneyflow_hsgt", start_date=st,
-                           end_date="20991231")
+        rows, fields = _ts("moneyflow_hsgt", start_date=st, end_date="20991231")
         i = {f: k for k, f in enumerate(fields)}
-        recs = sorted((r[i["trade_date"]], _f(r[i["north_money"]]))
-                      for r in rows if _f(r[i["north_money"]]) is not None)
+        recs = sorted(
+            (r[i["trade_date"]], _f(r[i["north_money"]]))
+            for r in rows
+            if _f(r[i["north_money"]]) is not None
+        )
         if len(recs) < 3:
             return None
         return all(v > 0 for _d, v in recs[-3:])
@@ -832,36 +907,45 @@ def _fina(codes):
             cache = json.load(open(FINA_CACHE, encoding="utf-8"))
         except Exception:
             cache = {}
-    need = [c for c in codes
-            if not cache.get(c)
-            or (datetime.now() - datetime.strptime(
-                cache[c].get("fetched_at", "2000-01-01"),
-                "%Y-%m-%d %H:%M:%S")).days >= FINA_TTL_DAYS]
-    flds = ("ts_code,ann_date,end_date,or_yoy,netprofit_yoy,"
-            "grossprofit_margin,roe,ocf_to_or,ebitda,debt_to_assets")
+    need = [
+        c
+        for c in codes
+        if not cache.get(c)
+        or (
+            datetime.now()
+            - datetime.strptime(
+                cache[c].get("fetched_at", "2000-01-01"), "%Y-%m-%d %H:%M:%S"
+            )
+        ).days
+        >= FINA_TTL_DAYS
+    ]
+    flds = (
+        "ts_code,ann_date,end_date,or_yoy,netprofit_yoy,"
+        "grossprofit_margin,roe,ocf_to_or,ebitda,debt_to_assets"
+    )
     for k, c in enumerate(need):
         rec = {"fetched_at": _now_iso()}
         try:
-            rows, fields = _ts("fina_indicator", ts_code=c, limit=2,
-                               fields=flds)
+            rows, fields = _ts("fina_indicator", ts_code=c, limit=2, fields=flds)
             i = {f: j for j, f in enumerate(fields)}
             per = {}
-            for r in sorted(rows, key=lambda r: _td8(r[i["ann_date"]])
-                            if r[i["ann_date"]] else "", reverse=True):
+            for r in sorted(
+                rows,
+                key=lambda r: _td8(r[i["ann_date"]]) if r[i["ann_date"]] else "",
+                reverse=True,
+            ):
                 per.setdefault(_td8(r[i["end_date"]]), r)  # 同期取最新公告
             eds = sorted(per, reverse=True)
             if eds:
-                rec["cur"] = {f: per[eds[0]][i[f]] for f in fields
-                              if f != "ts_code"}
+                rec["cur"] = {f: per[eds[0]][i[f]] for f in fields if f != "ts_code"}
             if len(eds) > 1:
-                rec["prev"] = {f: per[eds[1]][i[f]] for f in fields
-                               if f != "ts_code"}
+                rec["prev"] = {f: per[eds[1]][i[f]] for f in fields if f != "ts_code"}
         except Exception:
             rec["err"] = 1
         cache[c] = rec
         time.sleep(0.12)
         if (k + 1) % 50 == 0:
-            _write_json(FINA_CACHE, cache)   # 中途落盘防中断
+            _write_json(FINA_CACHE, cache)  # 中途落盘防中断
     _write_json(FINA_CACHE, cache)
     return cache
 
@@ -879,8 +963,7 @@ def _rc_stats(rows, fields):
         cov.add((d, org))
         if d and q and eps is not None:
             events.append((d, org, q, eps))
-    rec = {"n_rep": len(cov) if rows else 0, "up": 0, "down": 0,
-           "up_q4": 0}
+    rec = {"n_rep": len(cov) if rows else 0, "up": 0, "down": 0, "up_q4": 0}
     seq = {}
     for d, org, q, eps in events:
         seq.setdefault((org, q), []).append((d, eps))
@@ -910,11 +993,14 @@ def _report_rc(codes):
     for c in codes:
         rec = {"n_rep": None, "up": None, "down": None, "up_q4": None}
         try:
-            rows, fields = _ts("report_rc", ts_code=c,
-                               start_date=st, end_date=ed, limit=300)
+            rows, fields = _ts(
+                "report_rc", ts_code=c, start_date=st, end_date=ed, limit=300
+            )
             rec.update(_rc_stats(rows, fields))
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "nine_dim.py", exc
+            )
         out[c] = rec
         time.sleep(0.1)
     return out
@@ -926,10 +1012,9 @@ def _fc_pick(rows, fields):
     i = {f: k for k, f in enumerate(fields)}
     dk = next((k for k in ("announce_date", "ann_date") if k in i), None)
     if dk:
-        pts = sorted(((str(r[i[dk]] or ""), r) for r in rows),
-                     reverse=True)
+        pts = sorted(((str(r[i[dk]] or ""), r) for r in rows), reverse=True)
     else:
-        pts = [("", r) for r in rows]     # 无日期字段保持 API 原序
+        pts = [("", r) for r in rows]  # 无日期字段保持 API 原序
     for _d, r in pts:
         t = str(r[i["type"]] or "")
         if "预增" in t or "略增" in t or "扭亏" in t:
@@ -946,8 +1031,9 @@ def _forecast_flags(codes):
     ed = datetime.now().strftime("%Y%m%d")
     for c in codes:
         try:
-            rows, fields = _ts("forecast", ts_code=c, start_date=st,
-                               end_date=ed, limit=5)
+            rows, fields = _ts(
+                "forecast", ts_code=c, start_date=st, end_date=ed, limit=5
+            )
             out[c] = _fc_pick(rows, fields)
         except Exception:
             out[c] = None
@@ -957,21 +1043,21 @@ def _forecast_flags(codes):
 
 def _news_stats(codes, basic):
     """news.db 近 14 日个股新闻：周环比 + JEV 多空占比。"""
-    stats = {c: {"n7": 0, "n_prev7": 0, "bull": 0, "bear": 0, "n": 0}
-             for c in codes}
+    stats = {c: {"n7": 0, "n_prev7": 0, "bull": 0, "bear": 0, "n": 0} for c in codes}
     nm = {c: (basic.get(c) or ["", ""])[0] for c in codes}
     nm = {c: n for c, n in nm.items() if n}
     if not os.path.exists(NEWS_DB) or not nm:
         return stats
-    since = (datetime.now() - timedelta(days=14)) \
-        .strftime("%Y-%m-%d %H:%M")
+    since = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d %H:%M")
     cut = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d %H:%M")
     try:
         db = sqlite3.connect(NEWS_DB)
         for title, j, ca in db.execute(
-                "SELECT title, jev, created_at FROM news "
-                "WHERE jev IS NOT NULL AND created_at>=? "
-                "ORDER BY id DESC LIMIT 8000", (since,)):
+            "SELECT title, jev, created_at FROM news "
+            "WHERE jev IS NOT NULL AND created_at>=? "
+            "ORDER BY id DESC LIMIT 8000",
+            (since,),
+        ):
             if not title:
                 continue
             for c, n in nm.items():
@@ -1011,8 +1097,10 @@ def _j_q2(s):
 
 
 def _j_q3(s):
-    cur, prev = _f(s["fin"].get("cur", {}).get("roe")), \
-        _f(s["fin"].get("prev", {}).get("roe"))
+    cur, prev = (
+        _f(s["fin"].get("cur", {}).get("roe")),
+        _f(s["fin"].get("prev", {}).get("roe")),
+    )
     return None if cur is None or prev is None else cur > prev
 
 
@@ -1021,7 +1109,7 @@ def _j_q4(s):
     return None if v is None else v > 0
 
 
-def _j_qp(s):                                # 营收增速/ROE 恶化>35%（V3收紧）
+def _j_qp(s):  # 营收增速/ROE 恶化>35%（V3收紧）
     cur, prev = s["fin"].get("cur", {}), s["fin"].get("prev", {})
     for k in ("or_yoy", "roe"):
         a, b = _f(cur.get(k)), _f(prev.get(k))
@@ -1032,11 +1120,11 @@ def _j_qp(s):                                # 营收增速/ROE 恶化>35%（V3�
     return False
 
 
-def _j_e2(s):                                # 超预期→业绩预告预增近似
+def _j_e2(s):  # 超预期→业绩预告预增近似
     return s.get("fc_flag")
 
 
-def _j_ep(s):                                # 盈利预测下调扣2
+def _j_ep(s):  # 盈利预测下调扣2
     rc = s.get("rc") or {}
     return None if rc.get("down") is None else rc["down"] >= 1
 
@@ -1045,7 +1133,7 @@ def _j_v1(s):
     return s["env"].get("idx_above_ma20")
 
 
-def _j_v2(s):                                # VIX 降级：波动分位≤30
+def _j_v2(s):  # VIX 降级：波动分位≤30
     v = s["env"].get("vol_pct")
     return None if v is None else v <= 30
 
@@ -1059,64 +1147,63 @@ def _j_s2(s):
     return s.get("policy_hit")
 
 
-def _j_sp(s):                                # 行业RPS<50 扣3（V3收紧）
+def _j_sp(s):  # 行业RPS<50 扣3（V3收紧）
     v = s["ctx"].get("ind_rps", {}).get(s.get("industry") or "")
     return None if v is None else v < 50
 
 
-def _j_i1(s):                                # 机构净买≥5000万（10分）
+def _j_i1(s):  # 机构净买≥5000万（10分）
     # top_inst/top_list 金额单位=元（2026-09-27 验证：机构专用 buy
     # 2167万元=2.16e7 元），5000万 = 5e7 元；旧阈值 5000 实际只挡
     # 0.5 万元，判定形同虚设（pre-existing，2026-09-27 修复）。
     v = s.get("inst_net")
     if v is None:
-        v = s.get("top_net")                 # 回退：龙虎榜净买额代理
+        v = s.get("top_net")  # 回退：龙虎榜净买额代理
     return None if v is None else v >= 5e7
 
 
-def _j_i2(s):                                # 大宗最深折价≤5%
+def _j_i2(s):  # 大宗最深折价≤5%
     return s.get("block_disc_lo")
 
 
-def _j_ip(s):                                # 大宗折价>8% 扣4
+def _j_ip(s):  # 大宗折价>8% 扣4
     return s.get("block_disc_hi")
 
 
-def _j_m1(s):                                # 新闻量周环比≥100%
+def _j_m1(s):  # 新闻量周环比≥100%
     n, p = s["news"].get("n7", 0), s["news"].get("n_prev7", 0)
     return None if (n == 0 and p == 0) else (n >= 2 * p and n >= 2)
 
 
-def _j_m2(s):                                # JEV 利多占比≥60%
+def _j_m2(s):  # JEV 利多占比≥60%
     n = s["news"].get("n", 0)
     return None if n == 0 else s["news"]["bull"] * 100.0 / n >= 60
 
 
-def _j_m3(s):                                # 券商覆盖≥3篇（report_rc）
+def _j_m3(s):  # 券商覆盖≥3篇（report_rc）
     v = (s.get("rc") or {}).get("n_rep")
     return None if v is None else v >= 3
 
 
-def _j_mp(s):                                # JEV 负面>30% 扣3
+def _j_mp(s):  # JEV 负面>30% 扣3
     n = s["news"].get("n", 0)
     return None if n == 0 else s["news"]["bear"] * 100.0 / n > 30
 
 
-def _j_f2(s):                                # 融资余额周增≥5%（个股）
+def _j_f2(s):  # 融资余额周增≥5%（个股）
     d = s.get("margin_detail") or {}
     if d.get("cur") and d.get("prev") and d["prev"] > 0:
         return (d["cur"] / d["prev"] - 1) * 100 >= 5
-    return None                              # 个股缺 → 不用全局替代给分
+    return None  # 个股缺 → 不用全局替代给分
 
 
-def _j_fp(s):                                # 主力净流出>5%流通市值
+def _j_fp(s):  # 主力净流出>5%流通市值
     mn, fv = s.get("main_net"), s.get("float_mv")
     return None if mn is None or not fv else (-mn / fv) > 0.05
 
 
-def _j_g1(s):                                # PEG≤1.0（净利负增长=False）
-    pe, g = s.get("pe_ttm"), _f(s["fin"].get("cur", {})
-                                .get("netprofit_yoy"))
+def _j_g1(s):  # PEG≤1.0（净利负增长=False）
+    pe, g = s.get("pe_ttm"), _f(s["fin"].get("cur", {}).get("netprofit_yoy"))
     if pe is None or g is None:
         return None
     if g <= 0:
@@ -1124,19 +1211,18 @@ def _j_g1(s):                                # PEG≤1.0（净利负增长=False
     return pe / g <= 1.0
 
 
-def _j_g2(s):                                # EV/EBITDA≤行业均值（近似）
+def _j_g2(s):  # EV/EBITDA≤行业均值（近似）
     ev = s.get("ev_ebitda")
     if ev is not None:
         th = s["ctx"].get("ev_mean", {}).get(s.get("industry") or "")
         return None if th is None else ev <= th
-    pe = s.get("pe_ttm")                     # 回退：PE≤行业中位
+    pe = s.get("pe_ttm")  # 回退：PE≤行业中位
     th2 = s["ctx"].get("pe_med", {}).get(s.get("industry") or "")
     return None if pe is None or th2 is None else pe <= th2
 
 
-def _j_gp(s):                                # PEG>1.5 扣3
-    pe, g = s.get("pe_ttm"), _f(s["fin"].get("cur", {})
-                                .get("netprofit_yoy"))
+def _j_gp(s):  # PEG>1.5 扣3
+    pe, g = s.get("pe_ttm"), _f(s["fin"].get("cur", {}).get("netprofit_yoy"))
     if pe is None or g is None or g <= 0:
         return None
     return pe / g > 1.5
@@ -1150,63 +1236,121 @@ def _j_t3(s):
     return s.get("macd_gold_zero")
 
 
-def _j_tp(s):                                # 假突破：近3日破上轨后收中轨下
+def _j_tp(s):  # 假突破：近3日破上轨后收中轨下
     return s.get("fake_break")
 
 
 # V3：sv=True=structural-void——数据体系性缺失（历史未收集/接口停发/
 # 字段不存在）判 None 时从 cov 分母同步剔除；个股级缺失不标 sv 仍压 cov。
 FACTORS = [
-    {"id": "quality", "name": "公司质量", "max": 15, "items": [
-        {"id": "q1", "label": "营收增速≥25%", "pts": 6, "j": _j_q1},
-        {"id": "q2", "label": "毛利率行业TOP30%", "pts": 4, "j": _j_q2},
-        {"id": "q3", "label": "ROE环比提升", "pts": 3, "j": _j_q3},
-        {"id": "q4", "label": "经营现金流为正", "pts": 2, "j": _j_q4,
-         "sv": True}]},
-    {"id": "eps", "name": "盈利预期", "max": 4, "items": [
-        {"id": "e2", "label": "业绩预告预增(超预期近似)", "pts": 4,
-         "j": _j_e2}]},
-    {"id": "env", "name": "大盘环境", "max": 7, "items": [
-        {"id": "v1", "label": "科创50站上20日线", "pts": 4, "j": _j_v1},
-        {"id": "v2", "label": "波动率分位≤30%(VIX降级)", "pts": 3,
-         "j": _j_v2}]},
-    {"id": "sector", "name": "板块协同", "max": 10, "items": [
-        {"id": "s1", "label": "行业5日涨幅前3", "pts": 6, "j": _j_s1},
-        {"id": "s2", "label": "政策利好(新闻关键词)", "pts": 4,
-         "j": _j_s2, "sv": True}]},
-    {"id": "inst", "name": "机构行为", "max": 15, "items": [
-        {"id": "i1", "label": "龙虎榜机构净买≥5000万", "pts": 10,
-         "j": _j_i1},
-        {"id": "i2", "label": "大宗最深折价≤5%", "pts": 5, "j": _j_i2,
-         "sv": True}]},
-    {"id": "sentiment", "name": "市场情绪", "max": 8, "items": [
-        {"id": "m1", "label": "新闻量周环比≥100%", "pts": 4, "j": _j_m1,
-         "sv": True},
-        {"id": "m2", "label": "JEV利多占比≥60%", "pts": 3, "j": _j_m2,
-         "sv": True},
-        {"id": "m3", "label": "券商覆盖≥3篇", "pts": 1, "j": _j_m3}]},
-    {"id": "momentum", "name": "动量资金", "max": 4, "items": [
-        {"id": "f2", "label": "融资余额周增≥5%", "pts": 4, "j": _j_f2,
-         "sv": True}]},
-    {"id": "val", "name": "估值安全", "max": 10, "items": [
-        {"id": "g1", "label": "PEG≤1.0", "pts": 6, "j": _j_g1},
-        {"id": "g2", "label": "EV/EBITDA≤行业均值", "pts": 4, "j": _j_g2}]},
-    {"id": "tech", "name": "技术结构", "max": 5, "items": [
-        {"id": "t1", "label": "放量突破布林上轨", "pts": 4, "j": _j_t1},
-        {"id": "t3", "label": "MACD零轴上金叉", "pts": 1, "j": _j_t3}]},
+    {
+        "id": "quality",
+        "name": "公司质量",
+        "max": 15,
+        "items": [
+            {"id": "q1", "label": "营收增速≥25%", "pts": 6, "j": _j_q1},
+            {"id": "q2", "label": "毛利率行业TOP30%", "pts": 4, "j": _j_q2},
+            {"id": "q3", "label": "ROE环比提升", "pts": 3, "j": _j_q3},
+            {"id": "q4", "label": "经营现金流为正", "pts": 2, "j": _j_q4, "sv": True},
+        ],
+    },
+    {
+        "id": "eps",
+        "name": "盈利预期",
+        "max": 4,
+        "items": [
+            {"id": "e2", "label": "业绩预告预增(超预期近似)", "pts": 4, "j": _j_e2}
+        ],
+    },
+    {
+        "id": "env",
+        "name": "大盘环境",
+        "max": 7,
+        "items": [
+            {"id": "v1", "label": "科创50站上20日线", "pts": 4, "j": _j_v1},
+            {"id": "v2", "label": "波动率分位≤30%(VIX降级)", "pts": 3, "j": _j_v2},
+        ],
+    },
+    {
+        "id": "sector",
+        "name": "板块协同",
+        "max": 10,
+        "items": [
+            {"id": "s1", "label": "行业5日涨幅前3", "pts": 6, "j": _j_s1},
+            {
+                "id": "s2",
+                "label": "政策利好(新闻关键词)",
+                "pts": 4,
+                "j": _j_s2,
+                "sv": True,
+            },
+        ],
+    },
+    {
+        "id": "inst",
+        "name": "机构行为",
+        "max": 15,
+        "items": [
+            {"id": "i1", "label": "龙虎榜机构净买≥5000万", "pts": 10, "j": _j_i1},
+            {"id": "i2", "label": "大宗最深折价≤5%", "pts": 5, "j": _j_i2, "sv": True},
+        ],
+    },
+    {
+        "id": "sentiment",
+        "name": "市场情绪",
+        "max": 8,
+        "items": [
+            {
+                "id": "m1",
+                "label": "新闻量周环比≥100%",
+                "pts": 4,
+                "j": _j_m1,
+                "sv": True,
+            },
+            {"id": "m2", "label": "JEV利多占比≥60%", "pts": 3, "j": _j_m2, "sv": True},
+            {"id": "m3", "label": "券商覆盖≥3篇", "pts": 1, "j": _j_m3},
+        ],
+    },
+    {
+        "id": "momentum",
+        "name": "动量资金",
+        "max": 4,
+        "items": [
+            {"id": "f2", "label": "融资余额周增≥5%", "pts": 4, "j": _j_f2, "sv": True}
+        ],
+    },
+    {
+        "id": "val",
+        "name": "估值安全",
+        "max": 10,
+        "items": [
+            {"id": "g1", "label": "PEG≤1.0", "pts": 6, "j": _j_g1},
+            {"id": "g2", "label": "EV/EBITDA≤行业均值", "pts": 4, "j": _j_g2},
+        ],
+    },
+    {
+        "id": "tech",
+        "name": "技术结构",
+        "max": 5,
+        "items": [
+            {"id": "t1", "label": "放量突破布林上轨", "pts": 4, "j": _j_t1},
+            {"id": "t3", "label": "MACD零轴上金叉", "pts": 1, "j": _j_t3},
+        ],
+    },
 ]
 
 PENALTIES = [
-    {"fid": "quality", "id": "q_p", "label": "质量指标恶化>35%", "pts": 3,
-     "j": _j_qp},
-    {"fid": "sector", "id": "s_p", "label": "行业RPS<50", "pts": 3,
-     "j": _j_sp},
-    {"fid": "inst", "id": "i_p", "label": "大宗折价>8%", "pts": 4,
-     "j": _j_ip},
-    {"fid": "sentiment", "id": "m_p", "label": "JEV负面>30%", "pts": 3,
-     "j": _j_mp},
-    {"fid": "momentum", "id": "f_p", "label": "主力净流出>5%流通盘",
-     "pts": 2, "j": _j_fp},
+    {"fid": "quality", "id": "q_p", "label": "质量指标恶化>35%", "pts": 3, "j": _j_qp},
+    {"fid": "sector", "id": "s_p", "label": "行业RPS<50", "pts": 3, "j": _j_sp},
+    {"fid": "inst", "id": "i_p", "label": "大宗折价>8%", "pts": 4, "j": _j_ip},
+    {"fid": "sentiment", "id": "m_p", "label": "JEV负面>30%", "pts": 3, "j": _j_mp},
+    {
+        "fid": "momentum",
+        "id": "f_p",
+        "label": "主力净流出>5%流通盘",
+        "pts": 2,
+        "j": _j_fp,
+    },
     {"fid": "val", "id": "g_p", "label": "PEG>1.5", "pts": 3, "j": _j_gp},
     {"fid": "tech", "id": "t_p", "label": "假突破", "pts": 4, "j": _j_tp},
 ]
@@ -1227,38 +1371,73 @@ def score_one(s, wdelta):
             if v is not None:
                 f_judg += it["pts"]
             elif it.get("sv"):
-                f_svvoid += it["pts"]   # 体系性缺失 → cov 分母剔除
+                f_svvoid += it["pts"]  # 体系性缺失 → cov 分母剔除
             f_earned += got
-            f_items.append({"id": it["id"], "label": it["label"],
-                            "state": (None if v is None else bool(v)),
-                            "pts": it["pts"], "got": got})
+            f_items.append(
+                {
+                    "id": it["id"],
+                    "label": it["label"],
+                    "state": (None if v is None else bool(v)),
+                    "pts": it["pts"],
+                    "got": got,
+                }
+            )
         p = pens.get(fa["id"])
         if p:
             v = p["j"](s)
-            f_items.append({"id": p["id"], "label": p["label"],
-                            "state": (None if v is None else bool(v)),
-                            "pts": -p["pts"],
-                            "got": (-p["pts"]) if v is True else 0})
+            f_items.append(
+                {
+                    "id": p["id"],
+                    "label": p["label"],
+                    "state": (None if v is None else bool(v)),
+                    "pts": -p["pts"],
+                    "got": (-p["pts"]) if v is True else 0,
+                }
+            )
             if v is True:
                 f_earned -= p["pts"]
-        detail.append({"id": fa["id"], "name": fa["name"], "max": adj,
-                       "earned": round(f_earned, 1),
-                       "cov": round(f_judg / adj, 2) if adj else 0,
-                       "items": f_items})
+        detail.append(
+            {
+                "id": fa["id"],
+                "name": fa["name"],
+                "max": adj,
+                "earned": round(f_earned, 1),
+                "cov": round(f_judg / adj, 2) if adj else 0,
+                "items": f_items,
+            }
+        )
         total_max += max(adj - f_svvoid, f_judg)
         judg_max += f_judg
         earned += f_earned
     cov = judg_max / total_max if total_max else 0
     full = cov >= MIN_COV
-    return {"score": round(100.0 * earned / judg_max, 1)
-            if (judg_max and full) else None,
-            "raw": round(earned, 1), "cov": round(cov, 2), "full": full,
-            "detail": detail}
+    return {
+        "score": round(100.0 * earned / judg_max, 1) if (judg_max and full) else None,
+        "raw": round(earned, 1),
+        "cov": round(cov, 2),
+        "full": full,
+        "detail": detail,
+    }
 
 
 # ── ⑤ 编排 ────────────────────────────────────────────────
-def _build_stock(code, frames, basic, rps50, flow, marg, north, fina,
-                 rc, fc_flags, nstats, pol_titles, ctx, env, kg=None):
+def _build_stock(
+    code,
+    frames,
+    basic,
+    rps50,
+    flow,
+    marg,
+    north,
+    fina,
+    rc,
+    fc_flags,
+    nstats,
+    pol_titles,
+    ctx,
+    env,
+    kg=None,
+):
     df = frames[code]
     bi = basic.get(code) or ["", ""]
     cl = df["close"].to_numpy(dtype=float)
@@ -1275,44 +1454,58 @@ def _build_stock(code, frames, basic, rps50, flow, marg, north, fina,
             disc_lo = min(discs) <= 0.05
             disc_hi = max(discs) > 0.08
     db = flow["basic"].get(code) or {}
-    pe, tmv, fmv = _f(db.get("pe_ttm")), _f(db.get("total_mv")), \
-        _f(db.get("float_mv"))
+    pe, tmv, fmv = _f(db.get("pe_ttm")), _f(db.get("total_mv")), _f(db.get("float_mv"))
     ebd = _f(fin.get("cur", {}).get("ebitda"))
-    ev = round(tmv * 1e4 / (ebd * 1e8), 2) \
-        if (tmv and ebd and ebd > 0) else None
-    return {"code": code, "name": bi[0], "industry": bi[1], "env": env,
-            "ctx": ctx, "fin": fin, "pe_ttm": pe, "ev_ebitda": ev,
-            "float_mv": fmv, "main_net": flow["main_net"].get(code),
-            "inst_net": flow["inst_net"].get(code)
-            if flow["inst_ok"] else None,
-            "top_net": _f((flow["top"].get(code) or {}).get("net_amount")),
-            "block_disc_lo": disc_lo, "block_disc_hi": disc_hi,
-            "margin_detail": marg["detail"].get(code),
-            "boll_break": bool(up and cl[-1] >= up and vma and
-                               vol[-1] >= 1.5 * vma),
-            "fake_break": bool(up and mid and
-                               any(cl[-j] >= up for j in (2, 3, 4)) and
-                               cl[-1] < mid),
-            "vol_ratio": round(float(vol[-1] / vma), 2) if vma else None,
-            "macd_gold_zero": bool(cross is not None and cross <= 3 and
-                                   dif and dif > 0),
-            "pct_chg": float(df["pct_chg"].iloc[-1] or 0),
-            "rc": rc.get(code), "fc_flag": fc_flags.get(code),
-            "news": nstats.get(code, {}),
-            "policy_hit": (None if pol_titles is None else
-                           any((bi[0] and bi[0] in t) or
-                               (bi[1] and bi[1] in t)
-                               for t in pol_titles)),
-            "kg": (kg or {}).get(code) or None}
+    ev = round(tmv * 1e4 / (ebd * 1e8), 2) if (tmv and ebd and ebd > 0) else None
+    return {
+        "code": code,
+        "name": bi[0],
+        "industry": bi[1],
+        "env": env,
+        "ctx": ctx,
+        "fin": fin,
+        "pe_ttm": pe,
+        "ev_ebitda": ev,
+        "float_mv": fmv,
+        "main_net": flow["main_net"].get(code),
+        "inst_net": flow["inst_net"].get(code) if flow["inst_ok"] else None,
+        "top_net": _f((flow["top"].get(code) or {}).get("net_amount")),
+        "block_disc_lo": disc_lo,
+        "block_disc_hi": disc_hi,
+        "margin_detail": marg["detail"].get(code),
+        "boll_break": bool(up and cl[-1] >= up and vma and vol[-1] >= 1.5 * vma),
+        "fake_break": bool(
+            up and mid and any(cl[-j] >= up for j in (2, 3, 4)) and cl[-1] < mid
+        ),
+        "vol_ratio": round(float(vol[-1] / vma), 2) if vma else None,
+        "macd_gold_zero": bool(cross is not None and cross <= 3 and dif and dif > 0),
+        "pct_chg": float(df["pct_chg"].iloc[-1] or 0),
+        "rc": rc.get(code),
+        "fc_flag": fc_flags.get(code),
+        "news": nstats.get(code, {}),
+        "policy_hit": (
+            None
+            if pol_titles is None
+            else any(
+                (bi[0] and bi[0] in t) or (bi[1] and bi[1] in t) for t in pol_titles
+            )
+        ),
+        "kg": (kg or {}).get(code) or None,
+    }
 
 
 def run_scan(dryrun=False):
     import rps_resonance as rps
+
     t0 = time.time()
-    try:      # 数据时点提示（校对：数据停在几号 vs 期望几号；失败不阻塞）
+    try:  # 数据时点提示（校对：数据停在几号 vs 期望几号；失败不阻塞）
         import datamart as _dm
-        print(_dm.freshness_banner(
-            ["daily", "moneyflow", "margin", "news", "notice", "report"]))
+
+        print(
+            _dm.freshness_banner(
+                ["daily", "moneyflow", "margin", "news", "notice", "report"]
+            )
+        )
     except Exception as ex:
         print("[数据时点] 探测跳过: %s" % ex)
     frames, latest = _load_market()
@@ -1320,11 +1513,9 @@ def run_scan(dryrun=False):
         print("9DIM no local data")
         return
     basic = _basic()
-    closes = {c: df["close"].to_numpy(dtype=float)
-              for c, df in frames.items()}
+    closes = {c: df["close"].to_numpy(dtype=float) for c, df in frames.items()}
     rdf = rps.batch_rps(closes)
-    rps50 = (rdf["rps_50"] if "rps_50" in rdf.columns
-             else pd.Series(dtype=float))
+    rps50 = rdf["rps_50"] if "rps_50" in rdf.columns else pd.Series(dtype=float)
     rps50 = {k: float(v) for k, v in rps50.items()}
     cand, funnel = coarse_filter(frames, basic, rps50)
     print("funnel: %s" % funnel)
@@ -1346,29 +1537,43 @@ def run_scan(dryrun=False):
         if rps50.get(c) is not None:
             bufr.setdefault(g, []).append(rps50[c])
     ind_ret5 = {g: float(np.median(v)) for g, v in buf5.items()}
-    ind_rps50 = {g: round(float(np.median(v)), 1)
-                 for g, v in bufr.items()}
+    ind_rps50 = {g: round(float(np.median(v)), 1) for g, v in bufr.items()}
     ind_top3 = set(sorted(ind_ret5, key=lambda g: -ind_ret5[g])[:3])
 
     env = market_env(amt_sum)
     wdelta = dynamic_weight(env)
-    print("env: %s" % {k: env.get(k) for k in
-                       ("idx_above_ma20", "idx_month_chg", "vol_pct",
-                        "amount_yi", "bull", "high_vol",
-                        "report_season")})
+    print(
+        "env: %s"
+        % {
+            k: env.get(k)
+            for k in (
+                "idx_above_ma20",
+                "idx_month_chg",
+                "vol_pct",
+                "amount_yi",
+                "bull",
+                "high_vol",
+                "report_season",
+            )
+        }
+    )
     print("wdelta: %s" % wdelta)
 
     # API 数据
     prev8 = None
     try:
-        rows, fields = _ts("trade_cal", exchange="SSE",
-                           start_date=(datetime.strptime(latest, "%Y%m%d")
-                                       - timedelta(days=20))
-                           .strftime("%Y%m%d"), end_date=latest)
+        rows, fields = _ts(
+            "trade_cal",
+            exchange="SSE",
+            start_date=(
+                datetime.strptime(latest, "%Y%m%d") - timedelta(days=20)
+            ).strftime("%Y%m%d"),
+            end_date=latest,
+        )
         i_o, i_c = fields.index("is_open"), fields.index("cal_date")
         days = sorted(r[i_c] for r in rows if r[i_o] == 1)
         if len(days) >= 6:
-            prev8 = days[-6]                 # 5 个交易日前
+            prev8 = days[-6]  # 5 个交易日前
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     flow = _fetch_flow(latest)
@@ -1387,23 +1592,33 @@ def run_scan(dryrun=False):
     else:
         rc = _report_rc(cand)
         fc_flags = _forecast_flags(cand)
-        _write_json(RC_CACHE, {"date": latest, "codes": cand,
-                               "rc": rc, "fc": fc_flags})
+        _write_json(RC_CACHE, {"date": latest, "codes": cand, "rc": rc, "fc": fc_flags})
     nstats = _news_stats(cand, basic)
-    kg = _kg_enrich(cand)      # 知识图谱特征（图特征+事件统计，缺失降级）
+    kg = _kg_enrich(cand)  # 知识图谱特征（图特征+事件统计，缺失降级）
 
     # 政策利好：候选股名字/行业命中近3日政策关键词新闻
     # None=news 源不可用（诚实不可判，s2 豁免 cov）；set=已覆盖
-    pol_kw = ("政策", "部委", "规划", "央行", "监管", "降准", "降息",
-              "补贴", "试点", "条例", "意见")
+    pol_kw = (
+        "政策",
+        "部委",
+        "规划",
+        "央行",
+        "监管",
+        "降准",
+        "降息",
+        "补贴",
+        "试点",
+        "条例",
+        "意见",
+    )
     pol_titles = set()
     try:
-        since = (datetime.now() - timedelta(days=3)) \
-            .strftime("%Y-%m-%d %H:%M")
+        since = (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d %H:%M")
         db = sqlite3.connect(NEWS_DB)
         for (t,) in db.execute(
-                "SELECT title FROM news WHERE created_at>=? "
-                "ORDER BY id DESC LIMIT 3000", (since,)):
+            "SELECT title FROM news WHERE created_at>=? ORDER BY id DESC LIMIT 3000",
+            (since,),
+        ):
             if t and any(k in t for k in pol_kw):
                 pol_titles.add(t)
         db.close()
@@ -1425,36 +1640,55 @@ def run_scan(dryrun=False):
         tmv = _f((flow["basic"].get(code) or {}).get("total_mv"))
         if ebd and ebd > 0 and tmv:
             ev_by.setdefault(g, []).append(tmv * 1e4 / (ebd * 1e8))
-    ctx = {"gm_p70": {g: round(float(np.percentile(v, 70)), 2)
-                      for g, v in gm_by.items()},
-           "ev_mean": {g: round(float(np.mean(v)), 2)
-                       for g, v in ev_by.items()},
-           "pe_med": {g: round(float(np.median(v)), 2)
-                      for g, v in pe_by.items()},
-           "ind_top3": sorted(ind_top3), "ind_rps": ind_rps50,
-           "north_buy3": north,
-           "margin_global_growth": marg.get("global_growth")}
+    ctx = {
+        "gm_p70": {g: round(float(np.percentile(v, 70)), 2) for g, v in gm_by.items()},
+        "ev_mean": {g: round(float(np.mean(v)), 2) for g, v in ev_by.items()},
+        "pe_med": {g: round(float(np.median(v)), 2) for g, v in pe_by.items()},
+        "ind_top3": sorted(ind_top3),
+        "ind_rps": ind_rps50,
+        "north_buy3": north,
+        "margin_global_growth": marg.get("global_growth"),
+    }
 
     # 评分
     rows_out = []
     for code in cand:
-        s = _build_stock(code, frames, basic, rps50, flow, marg, north,
-                         fina, rc, fc_flags, nstats, pol_titles,
-                         ctx, env, kg)
+        s = _build_stock(
+            code,
+            frames,
+            basic,
+            rps50,
+            flow,
+            marg,
+            north,
+            fina,
+            rc,
+            fc_flags,
+            nstats,
+            pol_titles,
+            ctx,
+            env,
+            kg,
+        )
         res = score_one(s, wdelta)
         df = frames[code]
-        rows_out.append({"code": code, "name": s["name"],
-                         "industry": s["industry"],
-                         "rps50": rps50.get(code),
-                         "close": round(float(
-                             df["close"].to_numpy(dtype=float)[-1]), 2),
-                         "pct_chg": s["pct_chg"], "score": res["score"],
-                         "cov": res["cov"], "full": res["full"],
-                         "band": _band(res["score"]),
-                         "kg": s["kg"],
-                         "detail": res["detail"]})
-    rows_out.sort(key=lambda r: -(r["score"] if r["score"] is not None
-                                  else -1))
+        rows_out.append(
+            {
+                "code": code,
+                "name": s["name"],
+                "industry": s["industry"],
+                "rps50": rps50.get(code),
+                "close": round(float(df["close"].to_numpy(dtype=float)[-1]), 2),
+                "pct_chg": s["pct_chg"],
+                "score": res["score"],
+                "cov": res["cov"],
+                "full": res["full"],
+                "band": _band(res["score"]),
+                "kg": s["kg"],
+                "detail": res["detail"],
+            }
+        )
+    rows_out.sort(key=lambda r: -(r["score"] if r["score"] is not None else -1))
     n_full = sum(1 for r in rows_out if r["full"])
     n_buy = sum(1 for r in rows_out if (r["score"] or 0) >= BUY_TH)
     n_alert = sum(1 for r in rows_out if r["band"] in ("alert", "alert2"))
@@ -1464,23 +1698,42 @@ def run_scan(dryrun=False):
     # 2026-10-22 之前这里用 _now_iso()（"%Y-%m-%d %H:%M:%S"，无时区）。
     # 只改这一处生成时间，不动 _now_iso 本身——它还被别处用着，
     # 全局改格式会波及其它消费方对旧格式的假设。
-    snap = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-            "trade_date": latest,
-            "env": env, "wdelta": wdelta, "funnel": funnel,
-            "n_cand": len(cand), "n_full": n_full, "n_buy": n_buy,
-            "n_alert": n_alert, "alert_th": ALERT_TH,
-            "buy_th": BUY_TH, "min_cov": MIN_COV, "rows": rows_out,
-            "note": "影子评分不推送 · cov=可判权重占比 · 未完整评分"
-                    "(cov<%.2f)不出分 · 规格降级口径见工作台说明 · "
-                    "K33 重定位：高分=拥挤警报（回避位）非买入信号" % MIN_COV}
-    print("scored: cand=%d full=%d alert(>=%d)=%d  %.1fs"
-          % (len(cand), n_full, ALERT_TH, n_alert, time.time() - t0))
+    snap = {
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "trade_date": latest,
+        "env": env,
+        "wdelta": wdelta,
+        "funnel": funnel,
+        "n_cand": len(cand),
+        "n_full": n_full,
+        "n_buy": n_buy,
+        "n_alert": n_alert,
+        "alert_th": ALERT_TH,
+        "buy_th": BUY_TH,
+        "min_cov": MIN_COV,
+        "rows": rows_out,
+        "note": "影子评分不推送 · cov=可判权重占比 · 未完整评分"
+        "(cov<%.2f)不出分 · 规格降级口径见工作台说明 · "
+        "K33 重定位：高分=拥挤警报（回避位）非买入信号" % MIN_COV,
+    }
+    print(
+        "scored: cand=%d full=%d alert(>=%d)=%d  %.1fs"
+        % (len(cand), n_full, ALERT_TH, n_alert, time.time() - t0)
+    )
 
     if dryrun:
         for r in rows_out[:20]:
-            print("  %s %-10s score=%s cov=%s ind=%s rps=%s"
-                  % (r["code"], r["name"], r["score"], r["cov"],
-                     r["industry"], r["rps50"]))
+            print(
+                "  %s %-10s score=%s cov=%s ind=%s rps=%s"
+                % (
+                    r["code"],
+                    r["name"],
+                    r["score"],
+                    r["cov"],
+                    r["industry"],
+                    r["rps50"],
+                )
+            )
         return snap
 
     _write_json(SNAP, snap)
@@ -1498,14 +1751,24 @@ def run_scan(dryrun=False):
                     have.add((r["code"], r["dt"]))
                 except Exception:
                     continue
-    new = [{"code": r["code"], "name": r["name"],
-            "industry": r["industry"], "dt": latest, "score": r["score"],
-            "cov": r["cov"], "band": r["band"], "pool_type": "alert",
+    new = [
+        {
+            "code": r["code"],
+            "name": r["name"],
+            "industry": r["industry"],
+            "dt": latest,
+            "score": r["score"],
+            "cov": r["cov"],
+            "band": r["band"],
+            "pool_type": "alert",
             "entry_px": r["close"],
-            "first_seen": _now_iso()}
-           for r in rows_out
-           if r["band"] in ("alert", "alert2") and r["full"]
-           and (r["code"], latest) not in have]
+            "first_seen": _now_iso(),
+        }
+        for r in rows_out
+        if r["band"] in ("alert", "alert2")
+        and r["full"]
+        and (r["code"], latest) not in have
+    ]
     if new:
         _atomic_append(HIST, new)
     update_perf()
@@ -1527,11 +1790,15 @@ def _bars(code):
         if miss:
             print("9DIM _bars WARN %s 源列缺失: %s" % (code, sorted(miss)))
             return []
-        df = df.drop_duplicates(
-            "trade_date", keep="last").sort_values("trade_date")
-        return [{"dt": _td8(r.trade_date), "c": float(r.close),
-                 "pc": float(r.pre_close) if r.pre_close else None}
-                for r in df.itertuples()]
+        df = df.drop_duplicates("trade_date", keep="last").sort_values("trade_date")
+        return [
+            {
+                "dt": _td8(r.trade_date),
+                "c": float(r.close),
+                "pc": float(r.pre_close) if r.pre_close else None,
+            }
+            for r in df.itertuples()
+        ]
     except Exception as e:
         print("9DIM _bars WARN %s 读取失败: %r" % (code, e))
         return []
@@ -1569,11 +1836,11 @@ def update_perf():
             if not isinstance(r, dict):
                 skipped += 1
                 continue
-            if r.get("schema"):       # 运行级记录（有 schema 字段）不进战绩
+            if r.get("schema"):  # 运行级记录（有 schema 字段）不进战绩
                 skipped += 1
                 continue
             if "code" not in r or "dt" not in r:
-                skipped += 1          # 字段不全/未知行：当坏行跳过
+                skipped += 1  # 字段不全/未知行：当坏行跳过
                 continue
             rows.append(r)
     if not rows:
@@ -1593,8 +1860,7 @@ def update_perf():
         rec["adj"] = False
         if ei is not None:
             px = r.get("entry_px") or bars[ei]["c"]
-            for w, key, mat in ((R5, "r5", "mature5"),
-                                (R20, "r20", "mature20")):
+            for w, key, mat in ((R5, "r5", "mature5"), (R20, "r20", "mature20")):
                 j = ei + w
                 if j < len(bars):
                     rec[key] = round((bars[j]["c"] / px - 1) * 100, 2)
@@ -1609,26 +1875,39 @@ def update_perf():
         if not vals:
             return None
         n = len(vals)
-        return {"n": n, "win": round(sum(1 for x in vals if x > 0)
-                                     * 100.0 / n, 1),
-                "avg": round(sum(vals) * 100.0 / n, 2)}
+        return {
+            "n": n,
+            "win": round(sum(1 for x in vals if x > 0) * 100.0 / n, 1),
+            "avg": round(sum(vals) * 100.0 / n, 2),
+        }
 
     bands = {}
     for w, mat in (("r5", "mature5"), ("r20", "mature20")):
-        clean = [r[w] for r in out
-                 if r[w] is not None and not r["adj"] and r[mat]]
-        bands[w] = {"all": _stats(clean),
-                    "ge95": _stats([r[w] for r in out
-                                    if r[w] is not None and not r["adj"]
-                                    and r[mat] and r["score"] >= 95])}
-    ev = {"generated_at": _now_iso(), "n_pool": len(out),
-          "r5": bands["r5"], "r20": bands["r20"],
-          "note": "入池日收盘价基准 · 交易日窗口 · 跨除权(adj)>0.5%剔除 · "
-                  "未成熟窗口取盯市不入统计 · n<10 不构成结论 · "
-                  "影子观察不推送"}
+        clean = [r[w] for r in out if r[w] is not None and not r["adj"] and r[mat]]
+        bands[w] = {
+            "all": _stats(clean),
+            "ge95": _stats(
+                [
+                    r[w]
+                    for r in out
+                    if r[w] is not None and not r["adj"] and r[mat] and r["score"] >= 95
+                ]
+            ),
+        }
+    ev = {
+        "generated_at": _now_iso(),
+        "n_pool": len(out),
+        "r5": bands["r5"],
+        "r20": bands["r20"],
+        "note": "入池日收盘价基准 · 交易日窗口 · 跨除权(adj)>0.5%剔除 · "
+        "未成熟窗口取盯市不入统计 · n<10 不构成结论 · "
+        "影子观察不推送",
+    }
     _write_json(EVAL_CACHE, ev)
-    print("perf: pool=%d r5=%s r20=%s"
-          % (len(out), bands["r5"]["all"], bands["r20"]["all"]))
+    print(
+        "perf: pool=%d r5=%s r20=%s"
+        % (len(out), bands["r5"]["all"], bands["r20"]["all"])
+    )
     return ev
 
 

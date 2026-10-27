@@ -25,11 +25,21 @@ except ImportError:
 
 
 LANES: frozenset[str] = frozenset({"new", "history"})
-ATTEMPT_STATUSES: frozenset[str] = frozenset({
-    "page_limit", "active_stop", "stopped", "timeout", "empty", "duplicate", "403",
-    "http_404",
-    "token_invalid", "partial_page_failed", "failed",
-})
+ATTEMPT_STATUSES: frozenset[str] = frozenset(
+    {
+        "page_limit",
+        "active_stop",
+        "stopped",
+        "timeout",
+        "empty",
+        "duplicate",
+        "403",
+        "http_404",
+        "token_invalid",
+        "partial_page_failed",
+        "failed",
+    }
+)
 
 
 class CheckpointConflictError(RuntimeError):
@@ -136,23 +146,31 @@ def _validate_page(posts: Sequence[xq_reverse_store.RawPostInput]) -> tuple[str,
             # Reject invented IDs before any receipt or watermark is considered.
             xq_reverse_store._post_payload(post)
         except (TypeError, ValueError) as error:
-            raise PageIdentityError("original post identity or payload is invalid") from error
+            raise PageIdentityError(
+                "original post identity or payload is invalid"
+            ) from error
         identities.append(identity)
     if len(set(identities)) != len(identities):
         raise PageIdentityError("duplicate original posts cannot confirm a page")
     return identities[0], identities[-1]
 
 
-def _page_digest(posts: Sequence[xq_reverse_store.RawPostInput],
-                 relations: Sequence[xq_reverse_store.PostSymbolInput],
-                 next_cursor: str | None) -> str:
+def _page_digest(
+    posts: Sequence[xq_reverse_store.RawPostInput],
+    relations: Sequence[xq_reverse_store.PostSymbolInput],
+    next_cursor: str | None,
+) -> str:
     """Fingerprint replay payloads, so a page key cannot alias different data."""
     try:
         payload = json.dumps(
-            {"posts": [asdict(post) for post in posts],
-             "relations": [asdict(relation) for relation in relations],
-             "next_cursor": next_cursor},
-            ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+            {
+                "posts": [asdict(post) for post in posts],
+                "relations": [asdict(relation) for relation in relations],
+                "next_cursor": next_cursor,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
             allow_nan=False,
         )
     except (TypeError, ValueError) as error:
@@ -160,29 +178,50 @@ def _page_digest(posts: Sequence[xq_reverse_store.RawPostInput],
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def get_checkpoint(conn: sqlite3.Connection, symbol: str,
-                   lane: str) -> dict[str, Any]:
+def get_checkpoint(conn: sqlite3.Connection, symbol: str, lane: str) -> dict[str, Any]:
     """Read one independently confirmed lane (or its unstarted defaults)."""
     symbol = _nonempty(symbol, "symbol")
     if lane not in LANES:
         raise ValueError("lane must be 'new' or 'history'")
-    row = conn.execute("""
+    row = conn.execute(
+        """
         SELECT version, confirmed_page_key, next_cursor, first_status_id,
                last_status_id, coverage_started_at, coverage_updated_at,
                state, batch_id, fetched_at
           FROM xq_reverse_checkpoint WHERE symbol = ? AND lane = ?
-    """, (symbol, lane)).fetchone()
-    names = ("version", "confirmed_page_key", "next_cursor",
-             "first_status_id", "last_status_id", "coverage_started_at",
-             "coverage_updated_at", "state", "batch_id", "fetched_at")
-    values = row if row is not None else (0, None, None, None, None,
-                                          None, None, "pending", None, None)
+    """,
+        (symbol, lane),
+    ).fetchone()
+    names = (
+        "version",
+        "confirmed_page_key",
+        "next_cursor",
+        "first_status_id",
+        "last_status_id",
+        "coverage_started_at",
+        "coverage_updated_at",
+        "state",
+        "batch_id",
+        "fetched_at",
+    )
+    values = (
+        row
+        if row is not None
+        else (0, None, None, None, None, None, None, "pending", None, None)
+    )
     return {"symbol": symbol, "lane": lane, **dict(zip(names, values))}
 
 
-def record_page_attempt(conn: sqlite3.Connection, symbol: str, lane: str,
-                        batch_id: str, page_key: str, status: str,
-                        fetched_at: int, detail: str = "") -> int:
+def record_page_attempt(
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: str,
+    batch_id: str,
+    page_key: str,
+    status: str,
+    fetched_at: int,
+    detail: str = "",
+) -> int:
     """Record an unconfirmed outcome without changing either lane's waterline.
 
     Must be called outside another transaction; a failing commit_page already
@@ -203,11 +242,14 @@ def record_page_attempt(conn: sqlite3.Connection, symbol: str, lane: str,
         raise RuntimeError("record_page_attempt requires a standalone transaction")
     try:
         conn.execute("BEGIN IMMEDIATE")
-        result = conn.execute("""
+        result = conn.execute(
+            """
             INSERT INTO xq_reverse_page_attempt
                 (symbol, lane, batch_id, page_key, status, detail, fetched_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (symbol, lane, batch_id, page_key, status, detail, fetched_at))
+        """,
+            (symbol, lane, batch_id, page_key, status, detail, fetched_at),
+        )
         attempt_id = result.lastrowid
         conn.commit()
         assert attempt_id is not None
@@ -217,12 +259,18 @@ def record_page_attempt(conn: sqlite3.Connection, symbol: str, lane: str,
         raise
 
 
-def commit_page(conn: sqlite3.Connection, symbol: str, lane: str,
-                batch_id: str, page_key: str,
-                validated_posts: Sequence[xq_reverse_store.RawPostInput],
-                relations: Sequence[xq_reverse_store.PostSymbolInput],
-                next_cursor: str | None, expected_version: int,
-                fetched_at: int) -> dict[str, Any]:
+def commit_page(
+    conn: sqlite3.Connection,
+    symbol: str,
+    lane: str,
+    batch_id: str,
+    page_key: str,
+    validated_posts: Sequence[xq_reverse_store.RawPostInput],
+    relations: Sequence[xq_reverse_store.PostSymbolInput],
+    next_cursor: str | None,
+    expected_version: int,
+    fetched_at: int,
+) -> dict[str, Any]:
     """Atomically save original posts and advance only the selected lane.
 
     The *caller* supplies opaque page keys and next cursors; neither is
@@ -245,7 +293,11 @@ def commit_page(conn: sqlite3.Connection, symbol: str, lane: str,
     fetched_at = _timestamp(fetched_at)
     if next_cursor is not None:
         next_cursor = _nonempty(next_cursor, "next_cursor")
-    if isinstance(expected_version, bool) or not isinstance(expected_version, int) or expected_version < 0:
+    if (
+        isinstance(expected_version, bool)
+        or not isinstance(expected_version, int)
+        or expected_version < 0
+    ):
         raise ValueError("expected_version must be a nonnegative integer")
     first_id, last_id = _validate_page(validated_posts)
     if not isinstance(relations, (list, tuple)) or any(
@@ -261,14 +313,19 @@ def commit_page(conn: sqlite3.Connection, symbol: str, lane: str,
         raise RuntimeError("commit_page requires a connection outside a transaction")
     try:
         conn.execute("BEGIN IMMEDIATE")
-        receipt = conn.execute("""
+        receipt = conn.execute(
+            """
             SELECT payload_hash, confirmed_version
               FROM xq_reverse_page_receipt
              WHERE symbol = ? AND lane = ? AND batch_id = ? AND page_key = ?
-        """, (symbol, lane, batch_id, page_key)).fetchone()
+        """,
+            (symbol, lane, batch_id, page_key),
+        ).fetchone()
         if receipt is not None:
             if receipt[0] != digest:
-                raise CheckpointConflictError("page key already confirmed with another payload")
+                raise CheckpointConflictError(
+                    "page key already confirmed with another payload"
+                )
             checkpoint = get_checkpoint(conn, symbol, lane)
             conn.commit()
             return {**checkpoint, "replayed": True, "receipt_version": receipt[1]}
@@ -277,43 +334,68 @@ def commit_page(conn: sqlite3.Connection, symbol: str, lane: str,
         if checkpoint["version"] != expected_version:
             raise CheckpointConflictError(
                 f"stale {lane} checkpoint: expected {expected_version}, "
-                f"current {checkpoint['version']}")
+                f"current {checkpoint['version']}"
+            )
         if checkpoint["version"] > 0:
             if lane == "history" or checkpoint["batch_id"] == batch_id:
                 expected_page_key = checkpoint["next_cursor"]
                 if expected_page_key is None or page_key != expected_page_key:
                     raise CheckpointConflictError(
-                        "page is not contiguous with the confirmed next_cursor")
+                        "page is not contiguous with the confirmed next_cursor"
+                    )
 
         xq_reverse_store.save_posts(
-            conn, validated_posts, relations, batch_id, fetched_at)
+            conn, validated_posts, relations, batch_id, fetched_at
+        )
         # A fetch target is not evidence. Only same-page posts with validated
         # content relations to this symbol can advance evidence coverage.
-        target_post_ids = {relation.post_id for relation in relations
-                           if relation.symbol == symbol}
-        evidenced_ids = [post.post_id for post in validated_posts
-                         if post.post_id in target_post_ids]
+        target_post_ids = {
+            relation.post_id for relation in relations if relation.symbol == symbol
+        }
+        evidenced_ids = [
+            post.post_id for post in validated_posts if post.post_id in target_post_ids
+        ]
         coverage_first_id = evidenced_ids[0] if evidenced_ids else None
         coverage_last_id = evidenced_ids[-1] if evidenced_ids else None
         coverage_at = fetched_at if evidenced_ids else None
         version = expected_version + 1
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO xq_reverse_page_receipt
                 (symbol, lane, page_key, batch_id, payload_hash, post_count,
                  first_status_id, last_status_id, next_cursor,
                  confirmed_version, fetched_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (symbol, lane, page_key, batch_id, digest, len(validated_posts),
-              first_id, last_id, next_cursor, version, fetched_at))
+        """,
+            (
+                symbol,
+                lane,
+                page_key,
+                batch_id,
+                digest,
+                len(validated_posts),
+                first_id,
+                last_id,
+                next_cursor,
+                version,
+                fetched_at,
+            ),
+        )
         # Persist the whole-page member roster in the same transaction, so
         # multi-post receipts stay exactly attributable on the read side.
-        conn.executemany("""
+        conn.executemany(
+            """
             INSERT INTO xq_reverse_page_member
                 (symbol, lane, batch_id, page_key, ordinal, post_id)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, [(symbol, lane, batch_id, page_key, ordinal, post.post_id)
-              for ordinal, post in enumerate(validated_posts, start=1)])
-        conn.execute("""
+        """,
+            [
+                (symbol, lane, batch_id, page_key, ordinal, post.post_id)
+                for ordinal, post in enumerate(validated_posts, start=1)
+            ],
+        )
+        conn.execute(
+            """
             INSERT INTO xq_reverse_checkpoint
                 (symbol, lane, version, confirmed_page_key, next_cursor,
                  first_status_id, last_status_id, coverage_started_at,
@@ -337,9 +419,22 @@ def commit_page(conn: sqlite3.Connection, symbol: str, lane: str,
                 batch_id = excluded.batch_id,
                 fetched_at = excluded.fetched_at
             WHERE xq_reverse_checkpoint.version = ?
-        """, (symbol, lane, version, page_key, next_cursor,
-              coverage_first_id, coverage_last_id, coverage_at, coverage_at,
-              batch_id, fetched_at, expected_version))
+        """,
+            (
+                symbol,
+                lane,
+                version,
+                page_key,
+                next_cursor,
+                coverage_first_id,
+                coverage_last_id,
+                coverage_at,
+                coverage_at,
+                batch_id,
+                fetched_at,
+                expected_version,
+            ),
+        )
         checkpoint = get_checkpoint(conn, symbol, lane)
         if checkpoint["version"] != version:
             raise CheckpointConflictError("checkpoint CAS failed")

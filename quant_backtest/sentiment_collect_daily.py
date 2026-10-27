@@ -24,6 +24,7 @@
   ... --backfill 20260401 20261014   # 历史回补（逐日探测，空日跳过）
   ...                                # 默认采当日
 """
+
 import argparse
 import io
 import json
@@ -61,7 +62,8 @@ def _no_proxy():
 def fetch_day(ymd):
     """采一天 → dict（date=YYYYMMDD）。两池全空返回 None（非交易日）。"""
     import akshare as ak
-    with redirect_stdout(io.StringIO()):          # akshare 啰嗦进度打印
+
+    with redirect_stdout(io.StringIO()):  # akshare 啰嗦进度打印
         zt = ak.stock_zt_pool_em(date=ymd)
         try:
             zb = ak.stock_zt_pool_zbgc_em(date=ymd)
@@ -70,7 +72,7 @@ def fetch_day(ymd):
             # ValueError）：超窗历史降级为仅涨停口径，zb 字段记 None
             zb = None
     zt = zt if isinstance(zt, pd.DataFrame) else pd.DataFrame()
-    zb_missing = zb is None                      # 超窗降级标记（None 不转空表）
+    zb_missing = zb is None  # 超窗降级标记（None 不转空表）
     zb = zb if isinstance(zb, pd.DataFrame) else pd.DataFrame()
     if zt.empty and (zb_missing or zb.empty):
         return None
@@ -82,13 +84,24 @@ def fetch_day(ymd):
         lbs = pd.to_numeric(zt[lb_col], errors="coerce").dropna().astype(int)
         if len(lbs):
             max_lb = int(lbs.max())
-            lb_dist = {"%d板" % k: int(v) for k, v in
-                       lbs[lbs >= 2].value_counts().sort_index().items()}
-    rate = None if zb_n is None else (
-        round(zb_n / (zt_n + zb_n), 4) if (zt_n + zb_n) else None)
-    return {"date": str(ymd), "zt_count": zt_n, "zb_count": zb_n,
-            "zha_ban_rate": rate, "max_lb": max_lb, "lb_dist": lb_dist,
-            "status": "ok"}
+            lb_dist = {
+                "%d板" % k: int(v)
+                for k, v in lbs[lbs >= 2].value_counts().sort_index().items()
+            }
+    rate = (
+        None
+        if zb_n is None
+        else (round(zb_n / (zt_n + zb_n), 4) if (zt_n + zb_n) else None)
+    )
+    return {
+        "date": str(ymd),
+        "zt_count": zt_n,
+        "zb_count": zb_n,
+        "zha_ban_rate": rate,
+        "max_lb": max_lb,
+        "lb_dist": lb_dist,
+        "status": "ok",
+    }
 
 
 def _acquire_lock(timeout=30):
@@ -150,8 +163,7 @@ def append_rows(rows, path=SHADOW):
             return 0
         fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
         try:
-            payload = "".join(json.dumps(r, ensure_ascii=False) + "\n"
-                              for r in rows)
+            payload = "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
             os.write(fd, payload.encode("utf-8"))
             os.fsync(fd)
         finally:
@@ -169,22 +181,31 @@ def collect_today(path=SHADOW):
             _log("today %s empty (非交易日或未收盘)" % ymd)
             return 0
         n = append_rows([row], path)
-        _log("today +%d %s zt=%s zb=%s rate=%s maxlb=%s"
-             % (n, ymd, row["zt_count"], row["zb_count"],
-                row["zha_ban_rate"], row["max_lb"]))
+        _log(
+            "today +%d %s zt=%s zb=%s rate=%s maxlb=%s"
+            % (
+                n,
+                ymd,
+                row["zt_count"],
+                row["zb_count"],
+                row["zha_ban_rate"],
+                row["max_lb"],
+            )
+        )
         return n
     except Exception as e:
         _log("today fail %s: %s" % (ymd, str(e)[:160]))
-        append_rows([{"date": ymd, "status": "error",
-                      "err": str(e)[:160]}], path)
+        append_rows([{"date": ymd, "status": "error", "err": str(e)[:160]}], path)
         return 0
 
 
 def backfill(d0, d1, path=SHADOW):
     """区间逐日回补（空日跳过不落行）。返回 (实写, 跳过空日)。"""
     seen = _load_dates(path)
-    days = [d.strftime("%Y%m%d") for d in
-            pd.bdate_range(pd.to_datetime(d0), pd.to_datetime(d1))]
+    days = [
+        d.strftime("%Y%m%d")
+        for d in pd.bdate_range(pd.to_datetime(d0), pd.to_datetime(d1))
+    ]
     rows, skipped = [], 0
     for d in days:
         if d in seen:
@@ -198,7 +219,7 @@ def backfill(d0, d1, path=SHADOW):
             skipped += 1
             continue
         rows.append(row)
-        time.sleep(0.35)                     # 温和限速
+        time.sleep(0.35)  # 温和限速
     n = append_rows(rows, path)
     _log("backfill %s~%s +%d skip=%d" % (d0, d1, n, skipped))
     return n, skipped
@@ -207,25 +228,37 @@ def backfill(d0, d1, path=SHADOW):
 def corr_with_breadth(path=SHADOW, series_fp=SERIES_FP, min_n=20):
     """影子 × 湖口径宽度 相关初析（只读，min_n 不足则返回提示）。"""
     try:
-        rows = [r for r in (json.loads(l) for l in open(
-            path, encoding="utf-8")) if r.get("status") == "ok"]
+        rows = [
+            r
+            for r in (json.loads(l) for l in open(path, encoding="utf-8"))
+            if r.get("status") == "ok"
+        ]
         with open(series_fp, encoding="utf-8") as f:
             s = json.load(f)
-        br = {str(d): float(b) for d, b in zip(s["dates"], s["breadth"])
-              if b is not None}
-        pairs = [(r["zha_ban_rate"], br[r["date"]]) for r in rows
-                 if r.get("zha_ban_rate") is not None and r["date"] in br]
-        pairs_lb = [(r["max_lb"], br[r["date"]]) for r in rows
-                    if r.get("max_lb") is not None and r["date"] in br]
+        br = {
+            str(d): float(b) for d, b in zip(s["dates"], s["breadth"]) if b is not None
+        }
+        pairs = [
+            (r["zha_ban_rate"], br[r["date"]])
+            for r in rows
+            if r.get("zha_ban_rate") is not None and r["date"] in br
+        ]
+        pairs_lb = [
+            (r["max_lb"], br[r["date"]])
+            for r in rows
+            if r.get("max_lb") is not None and r["date"] in br
+        ]
         if len(pairs) < min_n:
-            return {"n": len(pairs),
-                    "note": "重叠样本 <%d，攒数据后再算" % min_n}
+            return {"n": len(pairs), "note": "重叠样本 <%d，攒数据后再算" % min_n}
         import numpy as np
+
         a = np.array(pairs, dtype=float)
         b = np.array(pairs_lb, dtype=float)
-        return {"n": len(pairs),
-                "corr_zhaban_breadth": round(float(np.corrcoef(a.T)[0, 1]), 3),
-                "corr_maxlb_breadth": round(float(np.corrcoef(b.T)[0, 1]), 3)}
+        return {
+            "n": len(pairs),
+            "corr_zhaban_breadth": round(float(np.corrcoef(a.T)[0, 1]), 3),
+            "corr_maxlb_breadth": round(float(np.corrcoef(b.T)[0, 1]), 3),
+        }
     except Exception as e:
         return {"error": str(e)[:160]}
 
@@ -237,8 +270,9 @@ def main(argv=None):
         pass
     _no_proxy()
     ap = argparse.ArgumentParser(description="情绪影子日采（涨停/炸板/连板）")
-    ap.add_argument("--backfill", nargs=2, metavar=("D0", "D1"),
-                    help="回补区间 YYYYMMDD YYYYMMDD")
+    ap.add_argument(
+        "--backfill", nargs=2, metavar=("D0", "D1"), help="回补区间 YYYYMMDD YYYYMMDD"
+    )
     a = ap.parse_args(argv)
     if a.backfill:
         n, skipped = backfill(a.backfill[0], a.backfill[1])

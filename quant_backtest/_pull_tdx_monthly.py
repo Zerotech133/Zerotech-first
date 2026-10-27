@@ -18,6 +18,7 @@ done_months 对齐——写片前先清 idx>=len(done) 的残片，防中断残�
 收口：manifest <table> = {rows, part, done: true, mode: "monthly"}
 （行数按 parquet metadata 重算，不信任累计值）。
 """
+
 import argparse
 import glob
 import json
@@ -43,8 +44,7 @@ def get(tbl, params):
     err = None
     for i in range(RETRY):
         try:
-            r = SESS.get(BASE + "/api/data/table/" + tbl,
-                         params=params, timeout=90)
+            r = SESS.get(BASE + "/api/data/table/" + tbl, params=params, timeout=90)
             if r.status_code == 200:
                 return r.json()
             err = r.status_code
@@ -97,8 +97,7 @@ def pull_month(tbl, y, m):
         return None, 0
     rows, cols, off = [], None, 0
     while off < total:
-        d = get(tbl, {"start_date": s, "end_date": e,
-                      "limit": PAGE, "offset": off})
+        d = get(tbl, {"start_date": s, "end_date": e, "limit": PAGE, "offset": off})
         rk, ck = d.get("rows", []), d.get("columns", [])
         if not rk:
             break
@@ -106,16 +105,25 @@ def pull_month(tbl, y, m):
         rows.extend(rk)
         off += len(rk)
         time.sleep(SLEEP)
-    assert rows and len(rows) == total, \
-        "%s %04d-%02d 行数不符 %d != %d" % (tbl, y, m, len(rows), total)
+    assert rows and len(rows) == total, "%s %04d-%02d 行数不符 %d != %d" % (
+        tbl,
+        y,
+        m,
+        len(rows),
+        total,
+    )
     return pd.DataFrame(rows, columns=cols), total
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--table", required=True)
-    ap.add_argument("--from", dest="frm", default="2020,1",
-                    help="起始 年,月（total=0 的月自动跳过）")
+    ap.add_argument(
+        "--from",
+        dest="frm",
+        default="2020,1",
+        help="起始 年,月（total=0 的月自动跳过）",
+    )
     args = ap.parse_args()
     tbl = args.table
     y, m = (int(x) for x in args.frm.split(","))
@@ -135,8 +143,7 @@ def main():
         cm += 1
         if cm > 12:
             cy, cm = cy + 1, 1
-    print("[%s] 待拉 %d 月（已完成 %d）" % (tbl, len(months), len(done)),
-          flush=True)
+    print("[%s] 待拉 %d 月（已完成 %d）" % (tbl, len(months), len(done)), flush=True)
 
     t0 = time.time()
     for k, (yy, mm) in enumerate(months):
@@ -145,33 +152,44 @@ def main():
         if df is None:
             st["done_months"].append([yy, mm])
             save_state(tbl, st)
-            print("[%d/%d] %04d-%02d total=0 跳过"
-                  % (k + 1, len(months), yy, mm), flush=True)
+            print(
+                "[%d/%d] %04d-%02d total=0 跳过" % (k + 1, len(months), yy, mm),
+                flush=True,
+            )
             continue
         _clear_stale_parts(out_dir, len(st["done_months"]))
-        df.to_parquet(_part_file(out_dir, len(st["done_months"])),
-                      index=False)
+        df.to_parquet(_part_file(out_dir, len(st["done_months"])), index=False)
         st["done_months"].append([yy, mm])
         save_state(tbl, st)
         el = time.time() - t0
         eta = el / (k + 1) * (len(months) - k - 1)
-        print("[%d/%d] %04d-%02d rows=%d (%.1fs) | 已用 %.0fs ETA %.0fs"
-              % (k + 1, len(months), yy, mm, len(df), time.time() - ts,
-                 el, eta), flush=True)
+        print(
+            "[%d/%d] %04d-%02d rows=%d (%.1fs) | 已用 %.0fs ETA %.0fs"
+            % (k + 1, len(months), yy, mm, len(df), time.time() - ts, el, eta),
+            flush=True,
+        )
 
     # manifest 收口：行数按 parquet metadata 重算
     parts = sorted(glob.glob(os.path.join(out_dir, "part_*.parquet")))
     n_total = sum(pq.ParquetFile(p).metadata.num_rows for p in parts)
     with open(MANIFEST, encoding="utf-8") as f:
         man = json.load(f)
-    man[tbl] = {"offset": n_total, "part": len(parts), "rows": n_total,
-                "done": True, "mode": "monthly"}
+    man[tbl] = {
+        "offset": n_total,
+        "part": len(parts),
+        "rows": n_total,
+        "done": True,
+        "mode": "monthly",
+    }
     tmp = MANIFEST + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(man, f, ensure_ascii=False, indent=1)
     os.replace(tmp, MANIFEST)
-    print("[%s] DONE rows=%d parts=%d %.0fs"
-          % (tbl, n_total, len(parts), time.time() - t0), flush=True)
+    print(
+        "[%s] DONE rows=%d parts=%d %.0fs"
+        % (tbl, n_total, len(parts), time.time() - t0),
+        flush=True,
+    )
 
 
 if __name__ == "__main__":

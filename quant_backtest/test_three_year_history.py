@@ -17,7 +17,10 @@ def _calendar(root: Path, rows: list[tuple[str, str, int]]) -> None:
 
 def test_load_trade_dates_filters_sse_open_days_and_rejects_duplicates(tmp_path):
     root = tmp_path / "calendar"
-    _calendar(root, [("SSE", "2023-01-03", 1), ("SSE", "2023-01-04", 0), ("SZSE", "2023-01-05", 1)])
+    _calendar(
+        root,
+        [("SSE", "2023-01-03", 1), ("SSE", "2023-01-04", 0), ("SZSE", "2023-01-05", 1)],
+    )
     assert tyh.load_trade_dates(root, "20230101", "20230131") == ["20230103"]
 
     _calendar(root, [("SSE", "2023-01-03", 1), ("SSE", "20230103", 1)])
@@ -34,7 +37,10 @@ def test_load_trade_dates_ignores_identical_calendar_snapshots(tmp_path):
     root.mkdir(parents=True)
     frame.to_parquet(root / "part_0000.parquet", index=False)
     frame.to_parquet(root / "part_0001.parquet", index=False)
-    assert tyh.load_trade_dates(root, "20230101", "20230131") == ["20230103", "20230104"]
+    assert tyh.load_trade_dates(root, "20230101", "20230131") == [
+        "20230103",
+        "20230104",
+    ]
 
 
 def test_build_batches_keeps_20_to_50_dates_per_batch():
@@ -71,7 +77,9 @@ def test_audit_batches_requires_complete_receipt_and_raw_payload(tmp_path):
     assert report["missing"] == ["batch_001:ts_daily_basic:20230103"]
 
 
-def test_run_three_year_reuses_complete_units_and_writes_raw_payload(tmp_path, monkeypatch):
+def test_run_three_year_reuses_complete_units_and_writes_raw_payload(
+    tmp_path, monkeypatch
+):
     calls = []
 
     def fake_pull(table, api, day, stage_dir, primary_key):
@@ -79,23 +87,38 @@ def test_run_three_year_reuses_complete_units_and_writes_raw_payload(tmp_path, m
         stage_dir = Path(stage_dir)
         stage_dir.mkdir(parents=True, exist_ok=True)
         raw = stage_dir / f"{table}_{day}.json"
-        raw.write_text(json.dumps({"code": 0, "data": {"items": [], "fields": []}}), encoding="utf-8")
+        raw.write_text(
+            json.dumps({"code": 0, "data": {"items": [], "fields": []}}),
+            encoding="utf-8",
+        )
         parquet = stage_dir / f"{table}_{day}.parquet"
         parquet.write_bytes(b"parquet-placeholder")
-        return {"table": table, "api_name": api, "request_params": {"trade_date": day}, "complete": True,
-                "status": "candidate_ready", "raw_path": str(raw), "staged_path": str(parquet), "row_count": 0}
+        return {
+            "table": table,
+            "api_name": api,
+            "request_params": {"trade_date": day},
+            "complete": True,
+            "status": "candidate_ready",
+            "raw_path": str(raw),
+            "staged_path": str(parquet),
+            "row_count": 0,
+        }
 
     monkeypatch.setattr(tyh, "pull_one_with_raw", fake_pull)
     result = tyh.run_three_year(
         [tyh.TableSpec("ts_daily_basic", "daily_basic", ("ts_code", "trade_date"))],
-        ["20230103"], tmp_path / "stage", batch_size=20,
+        ["20230103"],
+        tmp_path / "stage",
+        batch_size=20,
     )
     assert result["production_write"] is False
     assert calls == [("ts_daily_basic", "daily_basic", "20230103")]
 
     result = tyh.run_three_year(
         [tyh.TableSpec("ts_daily_basic", "daily_basic", ("ts_code", "trade_date"))],
-        ["20230103"], tmp_path / "stage", batch_size=20,
+        ["20230103"],
+        tmp_path / "stage",
+        batch_size=20,
     )
     assert result["reused_count"] == 1
     assert len(calls) == 1
@@ -117,14 +140,30 @@ def test_cli_writes_audit_report_for_dry_run(tmp_path, monkeypatch):
     work = tmp_path / "work"
     monkeypatch.setattr(runner, "DEFAULT_WORK", work)
 
-    assert runner.main([
-        "--calendar-root", str(calendar),
-        "--stage-root", str(tmp_path / "stage"),
-        "--start", "20230101", "--end", "20230131",
-        "--batch-size", "20", "--table", "ts_daily", "--dry-run",
-    ]) == 0
+    assert (
+        runner.main(
+            [
+                "--calendar-root",
+                str(calendar),
+                "--stage-root",
+                str(tmp_path / "stage"),
+                "--start",
+                "20230101",
+                "--end",
+                "20230131",
+                "--batch-size",
+                "20",
+                "--table",
+                "ts_daily",
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
 
-    audit = json.loads((work / "three_year_history_audit.json").read_text(encoding="utf-8"))
+    audit = json.loads(
+        (work / "three_year_history_audit.json").read_text(encoding="utf-8")
+    )
     assert audit["total_count"] == 2
     assert audit["complete_count"] == 0
     assert audit["production_write"] is False

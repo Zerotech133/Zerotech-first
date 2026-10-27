@@ -21,6 +21,7 @@ n >= 5 才出全量规律——防止小样本过度归纳（§6 触发阈值同
   python weak_track_learn.py --send         # 推送卡片
   python weak_track_learn.py --send --text  # 推送文本
 """
+
 import argparse
 import datetime
 import json
@@ -31,13 +32,13 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_summary as wts          # noqa: E402  (parse_cases 唯一解析器)
+import weak_track_summary as wts  # noqa: E402  (parse_cases 唯一解析器)
 
 REP = os.path.join(os.path.dirname(HERE), "reports")
 CASES = os.path.join(REP, "weak_cases")
 TPL = os.path.join(HERE, "weak_track_learn_tpl.txt")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
-MIN_N = 5                                  # 规律结论样本门槛
+MIN_N = 5  # 规律结论样本门槛
 
 
 def _days(c):
@@ -68,11 +69,14 @@ def learn_fields(cases):
     hi = [c for c in cases if c["ntrig"] >= 2]
     hi_bc = sum(1 for c in hi if c.get("type") in ("B", "C"))
     pct = lambda a, b: "%d%%" % round(a * 100.0 / b) if b else "—"  # noqa: E731
-    _avg = lambda xs: (sum(xs) / len(xs)) if xs else None          # noqa: E731
+    _avg = lambda xs: (sum(xs) / len(xs)) if xs else None  # noqa: E731
     trig_a = _avg([c["ntrig"] for c in cases if c.get("type") == "A"])
     trig_bc = _avg([c["ntrig"] for c in bc])
     f = {
-        "n": n, "na": na, "nb": nb, "nc": nc,
+        "n": n,
+        "na": na,
+        "nb": nb,
+        "nc": nc,
         "a_rate": pct(na, n),
         "ts": time.strftime("%Y-%m-%d %H:%M"),
         "first_ts": min((c["ts"] for c in cases if c["ts"]), default="—"),
@@ -86,40 +90,66 @@ def learn_fields(cases):
         "d3": str(sum(1 for d in days if d > 30)) if days else "—",
         "trig_a": "%.1f" % trig_a if trig_a is not None else "—",
         "trig_bc": "%.1f" % trig_bc if trig_bc is not None else "—",
-        "ex_fix": fix, "ex_tagged": len(tags),
-        "fix_a": fix_a, "tag_a": len(a_tags),
-        "ntrig_avg": "%.1f" % _avg([c["ntrig"] for c in cases])
-        if cases else "0",
+        "ex_fix": fix,
+        "ex_tagged": len(tags),
+        "fix_a": fix_a,
+        "tag_a": len(a_tags),
+        "ntrig_avg": "%.1f" % _avg([c["ntrig"] for c in cases]) if cases else "0",
         "gate": "已达标" if n >= MIN_N else "积累中",
     }
     # 经验条目：n>=5 出规律（每条自带样本量），否则样本积累提示
     if n >= MIN_N:
-        L = ["剧本兑现：A %s/%s（%s）——A=预判命中，B/C=改判（n=%s）"
-             % (na, n, f["a_rate"], n)]
+        L = [
+            "剧本兑现：A %s/%s（%s）——A=预判命中，B/C=改判（n=%s）"
+            % (na, n, f["a_rate"], n)
+        ]
         if days:
-            L.append("跟踪时长：均 %s 天（%s~%s）｜≤2 周 %s｜半月-月 %s｜"
-                     ">1 月 %s（可用样本 %s）"
-                     % (f["dur_avg"], f["dur_min"], f["dur_max"],
-                        f["d1"], f["d2"], f["d3"], f["ndays"]))
-        L.append("触发密度：A 类均 %s 次 vs B/C 类均 %s 次（n=%s）"
-                 % (f["trig_a"], f["trig_bc"], n))
+            L.append(
+                "跟踪时长：均 %s 天（%s~%s）｜≤2 周 %s｜半月-月 %s｜"
+                ">1 月 %s（可用样本 %s）"
+                % (
+                    f["dur_avg"],
+                    f["dur_min"],
+                    f["dur_max"],
+                    f["d1"],
+                    f["d2"],
+                    f["d3"],
+                    f["ndays"],
+                )
+            )
+        L.append(
+            "触发密度：A 类均 %s 次 vs B/C 类均 %s 次（n=%s）"
+            % (f["trig_a"], f["trig_bc"], n)
+        )
         if len(hi) >= 3:
-            L.append("高频触发（≥2 次）%d 例中 %d 例 B/C（%s）——"
-                     "触发频繁多改判，首次触发即复核情景前提（n=%d）"
-                     % (len(hi), hi_bc, pct(hi_bc, len(hi)), len(hi)))
-        L.append("超额修复：%s/%s 收敛或转正（A 类 %s/%s）（n=%s）"
-                 % (fix, len(tags), fix_a, len(a_tags), n))
+            L.append(
+                "高频触发（≥2 次）%d 例中 %d 例 B/C（%s）——"
+                "触发频繁多改判，首次触发即复核情景前提（n=%d）"
+                % (len(hi), hi_bc, pct(hi_bc, len(hi)), len(hi))
+            )
+        L.append(
+            "超额修复：%s/%s 收敛或转正（A 类 %s/%s）（n=%s）"
+            % (fix, len(tags), fix_a, len(a_tags), n)
+        )
     else:
-        L = ["样本积累中：n=%s（门槛 %d），暂不下规律结论——"
-             "§9 每结一案自动沉淀" % (n, MIN_N)]
+        L = [
+            "样本积累中：n=%s（门槛 %d），暂不下规律结论——"
+            "§9 每结一案自动沉淀" % (n, MIN_N)
+        ]
     f["lessons"] = "\n".join("- " + x for x in L)
     f["detail"] = "\n".join(
-        "- %s %s %s %s（%s，触发 %d 次）" % (
-            c["code"], c.get("name") or "", c.get("type", "?"),
+        "- %s %s %s %s（%s，触发 %d 次）"
+        % (
+            c["code"],
+            c.get("name") or "",
+            c.get("type", "?"),
             ("%+.1f%%" % c["chg"]) if c["chg"] is not None else "—",
-            c.get("exd") or "—", c["ntrig"])
-        for c in cases[-5:])       # 明细最多 5 行（最新在后）——赋值语句
-                                   # 尾逗号会变 tuple（dict 字面量里才是分隔符）
+            c.get("exd") or "—",
+            c["ntrig"],
+        )
+        for c in cases[-5:]
+    )  # 明细最多 5 行（最新在后）——赋值语句
+    # 尾逗号会变 tuple（dict 字面量里才是分隔符）
     return f
 
 
@@ -127,29 +157,32 @@ def build_learn(f):
     """学习层字段 → 文本文案（外置模板，坏模板回退内置）。"""
     if os.path.isfile(TPL):
         try:
-            text = "".join(l for l in
-                           open(TPL, encoding="utf-8").read().splitlines(True)
-                           if not l.lstrip().startswith("#"))
+            text = "".join(
+                l
+                for l in open(TPL, encoding="utf-8").read().splitlines(True)
+                if not l.lstrip().startswith("#")
+            )
             return text.format(**f).rstrip("\n")
         except (KeyError, IndexError, ValueError):
             pass
-    return ("🧠 [WEAK LEARN] 案例库复盘学习（§11）\n"
-            "样本：{n} 例（{first_ts} ~ {last_ts}）｜规律门槛 {gate}\n"
-            "经验条目：\n{lessons}\n"
-            "明细（最新 5 条）：\n{detail}").format(**f)
+    return (
+        "🧠 [WEAK LEARN] 案例库复盘学习（§11）\n"
+        "样本：{n} 例（{first_ts} ~ {last_ts}）｜规律门槛 {gate}\n"
+        "经验条目：\n{lessons}\n"
+        "明细（最新 5 条）：\n{detail}"
+    ).format(**f)
 
 
 def main():
     ap = argparse.ArgumentParser(description="§11 案例库复盘学习层推送")
-    ap.add_argument("--send", action="store_true",
-                    help="执行推送（默认仅预览）")
-    ap.add_argument("--text", action="store_true",
-                    help="文本版推送（默认飞书卡片）")
+    ap.add_argument("--send", action="store_true", help="执行推送（默认仅预览）")
+    ap.add_argument("--text", action="store_true", help="文本版推送（默认飞书卡片）")
     a = ap.parse_args()
     cases = wts.parse_cases()
     if not cases:
-        print("暂无已结案案例（%s 下无 weak_close_*.md）——"
-              "§9 结案后本节才有数据" % CASES)
+        print(
+            "暂无已结案案例（%s 下无 weak_close_*.md）——§9 结案后本节才有数据" % CASES
+        )
         return 0
     f = learn_fields(cases)
     msg = build_learn(f)
@@ -158,22 +191,26 @@ def main():
         print("\n（预览模式：加 --send 执行推送）")
         if not a.text:
             import weak_track_card as wcard
+
             print("\n（卡片版预览，--text 可回退文本）")
-            print(json.dumps(wcard.learn_card(f),
-                             ensure_ascii=False, indent=1))
+            print(json.dumps(wcard.learn_card(f), ensure_ascii=False, indent=1))
         return 0
     if not a.text:
         import weak_track_card as wcard
+
         print("\n推送(卡片)：" + wcard.send_card(wcard.learn_card(f)))
     else:
-        tmp = os.path.join(NEWS_DIR, "outbox",
-                           "pending_alert_weak_learn.txt")
+        tmp = os.path.join(NEWS_DIR, "outbox", "pending_alert_weak_learn.txt")
         os.makedirs(os.path.dirname(tmp), exist_ok=True)
         with open(tmp, "w", encoding="utf-8") as fo:
             fo.write(msg)
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         print("\n推送：" + ((r.stdout or "").strip()[:60] or "sent"))
     return 0
 

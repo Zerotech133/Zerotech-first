@@ -21,6 +21,7 @@ K-STOCK-267b · v6b 学院方案对齐重构(部署修复)（量子双刀框架 
 数据口径：hfq(263a) + seen-ever(263b)；对照 v5-B5(-7.83%/-10.98%) 与买入持有。
 ⚠️ 如实声明：池为 2026-10-12 快照，2023-2024 段存在宇宙前视（待按日快照池重刷）。
 """
+
 import sys
 import os
 import json
@@ -34,27 +35,27 @@ OUT = os.path.join(BASE, "quant_backtest", "chanlun_rotation_v6b_result.json")
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
 
-D0 = "20231010"            # 3 年回测（数据自 2023-04，预热 6 个月）
+D0 = "20231010"  # 3 年回测（数据自 2023-04，预热 6 个月）
 WARMUP = 250
 MAX_POS = 10
 COST = 0.0015
 SELL_TYPES = {"1卖", "2卖", "3卖"}
 BUY_TYPES = {"1买", "2买", "3买"}
 # R1 限价入场
-ENTRY_WINDOW = 10          # v6b: 5→10 日
-LIMIT_BUF = 1.03           # v6b: 限价=信号价×1.03（缓冲）
-STALE_GUARD = 1.10         # v6b: 挂单时现价>限价×1.10 → 信号过期不追
-SLOT_FRAC = 0.15           # v6b: 每标的全槽 = equity×cap×15%
+ENTRY_WINDOW = 10  # v6b: 5→10 日
+LIMIT_BUF = 1.03  # v6b: 限价=信号价×1.03（缓冲）
+STALE_GUARD = 1.10  # v6b: 挂单时现价>限价×1.10 → 信号过期不追
+SLOT_FRAC = 0.15  # v6b: 每标的全槽 = equity×cap×15%
 # R2 5:3:2
 T1, T2, T3 = 0.5, 0.3, 0.2
 # R3 止盈止损
-STOP_PCT = -0.08           # 结构止损
-TP1_PCT = 0.15             # 分批止盈触发
-TRAIL_PCT = 0.08           # 余仓移动止盈（高点回撤）
-MAX_HOLD = 120             # 交易日
+STOP_PCT = -0.08  # 结构止损
+TP1_PCT = 0.15  # 分批止盈触发
+TRAIL_PCT = 0.08  # 余仓移动止盈（高点回撤）
+MAX_HOLD = 120  # 交易日
 # R4 regime 调总仓位
 CAP_HIGH, CAP_MID, CAP_LOW = 0.80, 0.50, 0.30
-AMT_MIN = 1e5              # 流动性门槛（沿用）
+AMT_MIN = 1e5  # 流动性门槛（沿用）
 
 # ---------- 数据装载 + hfq ----------
 pool = json.load(open(POOL_SRC, encoding="utf-8"))
@@ -89,6 +90,8 @@ idx = pd.Series(idx_ret).sort_index()
 idx_nav = (1 + idx).cumprod()
 ma20 = idx_nav.rolling(20).mean()
 ma60 = idx_nav.rolling(60).mean()
+
+
 def regime_cap(day):
     # PIT：用 D-1 收盘的指数状态定 D 日额度（限价单盘中成交，不能用当日收盘）
     i = idx_nav.index.get_loc(day)
@@ -104,6 +107,7 @@ def regime_cap(day):
         return CAP_MID
     return CAP_LOW
 
+
 # ---------- 信号流（hfq + seen-ever）----------
 def run_day(day):
     out = {}
@@ -111,11 +115,20 @@ def run_day(day):
         seg = b[b.trade_date <= day]
         if len(seg) < WARMUP // 2:
             continue
-        bars = [{"dt": int(r.trade_date), "o": float(r.adj_open), "h": float(r.adj_high),
-                 "l": float(r.adj_low), "c": float(r.adj_close)} for r in seg.tail(WARMUP).itertuples()]
-        for sg in ((chan_analyze(bars) or {}).get("signals") or []):
+        bars = [
+            {
+                "dt": int(r.trade_date),
+                "o": float(r.adj_open),
+                "h": float(r.adj_high),
+                "l": float(r.adj_low),
+                "c": float(r.adj_close),
+            }
+            for r in seg.tail(WARMUP).itertuples()
+        ]
+        for sg in (chan_analyze(bars) or {}).get("signals") or []:
             out[(s, sg["type"])] = int(sg["dt"])
     return out
+
 
 def amt20(day, s):
     b = books[s]
@@ -123,6 +136,7 @@ def amt20(day, s):
     if len(seg) < 20:
         return None
     return float(seg["amount"].tail(20).mean())
+
 
 t0 = time.time()
 prev = run_day("20231009")
@@ -136,7 +150,7 @@ for day in cal:
     seen_ever |= set(cur)
     prev = cur
     evs = []
-    for (s, tp) in fresh:
+    for s, tp in fresh:
         dt = cur[(s, tp)]
         p_sig = adj_close[s].get(str(dt))
         if p_sig is None or pd.isna(p_sig):
@@ -145,8 +159,12 @@ for day in cal:
         n_fresh += 1
     events_by_day[day] = evs
     if (day := day) and len(events_by_day) % 120 == 0:
-        print(f"  …{len(events_by_day)}/{len(cal)}（{round(time.time()-t0)}s）", flush=True)
-print(f"信号流 {round(time.time()-t0)}s；fresh 事件 {n_fresh} 个", flush=True)
+        print(
+            f"  …{len(events_by_day)}/{len(cal)}（{round(time.time() - t0)}s）",
+            flush=True,
+        )
+print(f"信号流 {round(time.time() - t0)}s；fresh 事件 {n_fresh} 个", flush=True)
+
 
 # ---------- 组合模拟 v6 ----------
 def simulate(use_regime=True):
@@ -154,14 +172,14 @@ def simulate(use_regime=True):
     equity, trades, inv_hist = [], [], []
     # 待成交限价单：{stock: {limit, expire_di, tp, sig_dt}}
     pend_orders = {}
-    nav_peak = {}           # stock -> 持仓期 adj 收盘高点（移动止盈）
+    nav_peak = {}  # stock -> 持仓期 adj 收盘高点（移动止盈）
     for di, day in enumerate(cal):
         # 1) 持仓逐日收益（pct_chg 官方复权）
         for s in pos:
             r = rets[s].get(day)
             if r is not None and not pd.isna(r):
                 for t in pos[s]["tr"]:
-                    t["val"] *= (1 + r)
+                    t["val"] *= 1 + r
         eqv = cash + sum(t["val"] for p in pos.values() for t in p["tr"])
         # 2) R3 出场检查（用 adj 收盘）
         for s in list(pos):
@@ -174,7 +192,9 @@ def simulate(use_regime=True):
             basis = cost
             price_ret = val / cost - 1 if cost else 0
             exit_how = None
-            if any(e[0] == s and e[1] in SELL_TYPES for e in events_by_day.get(day, [])):
+            if any(
+                e[0] == s and e[1] in SELL_TYPES for e in events_by_day.get(day, [])
+            ):
                 exit_how = "sell_signal"
             elif price_ret <= STOP_PCT:
                 exit_how = "stop"
@@ -185,17 +205,39 @@ def simulate(use_regime=True):
                 kept = val - half
                 scale = kept / val
                 for t in p["tr"]:
-                    t["val"] *= scale; t["cost"] *= scale
-                trades.append({"stock": s, "exit_day": day, "pnl": TP1_PCT, "entry_day": p["entry_day"], "how": "tp1_half"})
+                    t["val"] *= scale
+                    t["cost"] *= scale
+                trades.append(
+                    {
+                        "stock": s,
+                        "exit_day": day,
+                        "pnl": TP1_PCT,
+                        "entry_day": p["entry_day"],
+                        "how": "tp1_half",
+                    }
+                )
                 p["tp1_done"] = True
-            elif p["tp1_done"] and nav_peak[s] > 0 and float(ac or 0) <= nav_peak[s] * (1 - TRAIL_PCT):
+            elif (
+                p["tp1_done"]
+                and nav_peak[s] > 0
+                and float(ac or 0) <= nav_peak[s] * (1 - TRAIL_PCT)
+            ):
                 exit_how = "trail"
             elif di - cal.index(p["entry_day"]) >= MAX_HOLD:
                 exit_how = "max_hold"
             if exit_how:
                 cash += val * (1 - COST)
-                trades.append({"stock": s, "exit_day": day, "pnl": price_ret, "entry_day": p["entry_day"], "how": exit_how})
-                del pos[s]; nav_peak.pop(s, None)
+                trades.append(
+                    {
+                        "stock": s,
+                        "exit_day": day,
+                        "pnl": price_ret,
+                        "entry_day": p["entry_day"],
+                        "how": exit_how,
+                    }
+                )
+                del pos[s]
+                nav_peak.pop(s, None)
         eqv = cash + sum(t["val"] for p in pos.values() for t in p["tr"])
         cap = regime_cap(day) if use_regime else CAP_HIGH
         deployed = eqv - cash
@@ -203,7 +245,9 @@ def simulate(use_regime=True):
         for s in list(pos):
             p = pos[s]
             slot0 = p["slot"]
-            fresh_buy = [e for e in events_by_day.get(day, []) if e[0] == s and e[1] in BUY_TYPES]
+            fresh_buy = [
+                e for e in events_by_day.get(day, []) if e[0] == s and e[1] in BUY_TYPES
+            ]
             if len(p["tr"]) == 1 and fresh_buy and p["adds"] == 0:
                 amt = min(cash, slot0 * T2)
                 if amt > 0.005 and deployed + amt <= eqv * cap:
@@ -212,21 +256,26 @@ def simulate(use_regime=True):
                     p["adds"] = 1
                     deployed += amt
             elif p["adds"] == 1:
-                val = sum(t["val"] for t in p["tr"]); cost = sum(t["cost"] for t in p["tr"])
+                val = sum(t["val"] for t in p["tr"])
+                cost = sum(t["cost"] for t in p["tr"])
                 if val / cost - 1 >= 0.05:
                     amt = min(cash, slot0 * T3)
                     if amt > 0.005 and deployed + amt <= eqv * cap:
                         cash -= amt
-                        p["tr"].append({"val": amt * (1 - COST), "cost": amt * (1 - COST)})
+                        p["tr"].append(
+                            {"val": amt * (1 - COST), "cost": amt * (1 - COST)}
+                        )
                         p["adds"] = 2
                         deployed += amt
         # 4) R1 限价单成交检查
         for s in list(pend_orders):
             o = pend_orders[s]
             if di > o["expire_di"]:
-                del pend_orders[s]; continue
+                del pend_orders[s]
+                continue
             if s in pos:
-                del pend_orders[s]; continue
+                del pend_orders[s]
+                continue
             b = books[s]
             row = b[b.trade_date == day]
             if row.empty:
@@ -238,49 +287,84 @@ def simulate(use_regime=True):
                 amt = min(cash, slot * T1)
                 if amt > 0.005 and deployed + amt <= eqv * cap:
                     cash -= amt
-                    pos[s] = {"tr": [{"val": amt * (1 - COST), "cost": amt * (1 - COST)}],
-                              "entry_day": day, "slot": slot, "adds": 0, "tp1_done": False,
-                              "type": o["tp"], "sig_dt": o["sig_dt"]}
+                    pos[s] = {
+                        "tr": [{"val": amt * (1 - COST), "cost": amt * (1 - COST)}],
+                        "entry_day": day,
+                        "slot": slot,
+                        "adds": 0,
+                        "tp1_done": False,
+                        "type": o["tp"],
+                        "sig_dt": o["sig_dt"],
+                    }
                     nav_peak[s] = fill_px
-                    trades.append({"stock": s, "exit_day": None, "entry_day": day, "how": "open", "pnl": None})
+                    trades.append(
+                        {
+                            "stock": s,
+                            "exit_day": None,
+                            "entry_day": day,
+                            "how": "open",
+                            "pnl": None,
+                        }
+                    )
                     deployed += amt
                 del pend_orders[s]
         # 5) 新信号 → 挂限价单（R1：限价=信号日收盘价）
-        for (s, tp, dt, p_sig) in events_by_day.get(day, []):
+        for s, tp, dt, p_sig in events_by_day.get(day, []):
             if tp in BUY_TYPES and s not in pos and s not in pend_orders:
                 if amt20(day, s) is None or amt20(day, s) < AMT_MIN:
                     continue
                 limit = p_sig * LIMIT_BUF
                 p_now = adj_close[s].get(day)
-                if p_now is not None and not pd.isna(p_now) and float(p_now) > limit * STALE_GUARD:
-                    continue                      # v6b: 确认时已跑飞，不追
-                pend_orders[s] = {"limit": limit, "expire_di": di + ENTRY_WINDOW, "tp": tp, "sig_dt": dt}
+                if (
+                    p_now is not None
+                    and not pd.isna(p_now)
+                    and float(p_now) > limit * STALE_GUARD
+                ):
+                    continue  # v6b: 确认时已跑飞，不追
+                pend_orders[s] = {
+                    "limit": limit,
+                    "expire_di": di + ENTRY_WINDOW,
+                    "tp": tp,
+                    "sig_dt": dt,
+                }
         eqv = cash + sum(t["val"] for p in pos.values() for t in p["tr"])
-        equity.append({"day": day, "equity": eqv, "inv": (eqv - cash) / eqv if eqv else 0})
+        equity.append(
+            {"day": day, "equity": eqv, "inv": (eqv - cash) / eqv if eqv else 0}
+        )
         inv_hist.append((eqv - cash) / eqv if eqv else 0)
     return equity, trades, inv_hist
+
 
 def stats(equity, trades, inv, label):
     eq = pd.Series({e["day"]: e["equity"] for e in equity})
     total = eq.iloc[-1] - 1
     ann = eq.iloc[-1] ** (245 / len(eq)) - 1
     mdd = ((eq / eq.cummax()) - 1).min()
-    closed = [t for t in trades if t["exit_day"] is not None and t["how"] not in ("tp1_half",)]
+    closed = [
+        t for t in trades if t["exit_day"] is not None and t["how"] not in ("tp1_half",)
+    ]
     wins = [t for t in closed if t["pnl"] > 0]
     losses = [t for t in closed if t["pnl"] <= 0]
-    gp = sum(t["pnl"] for t in wins); gl = -sum(t["pnl"] for t in losses)
+    gp = sum(t["pnl"] for t in wins)
+    gl = -sum(t["pnl"] for t in losses)
     hold = []
     for t in closed:
         try:
             hold.append(cal.index(t["exit_day"]) - cal.index(t["entry_day"]))
         except ValueError:
             pass
-    r = {"label": label, "total_return_pct": round(total * 100, 2), "annualized_pct": round(ann * 100, 2),
-         "max_drawdown_pct": round(mdd * 100, 2), "calmar": round(ann / abs(mdd), 2) if mdd else None,
-         "n_closed": len(closed), "win_rate_pct": round(len(wins) / len(closed) * 100, 1) if closed else None,
-         "profit_factor": round(gp / gl, 2) if gl > 0 else None,
-         "avg_holding_days": round(sum(hold) / len(hold), 1) if hold else None,
-         "avg_invested_pct": round(sum(inv) / len(inv) * 100, 1)}
+    r = {
+        "label": label,
+        "total_return_pct": round(total * 100, 2),
+        "annualized_pct": round(ann * 100, 2),
+        "max_drawdown_pct": round(mdd * 100, 2),
+        "calmar": round(ann / abs(mdd), 2) if mdd else None,
+        "n_closed": len(closed),
+        "win_rate_pct": round(len(wins) / len(closed) * 100, 1) if closed else None,
+        "profit_factor": round(gp / gl, 2) if gl > 0 else None,
+        "avg_holding_days": round(sum(hold) / len(hold), 1) if hold else None,
+        "avg_invested_pct": round(sum(inv) / len(inv) * 100, 1),
+    }
     hows = {}
     for t in closed:
         hows[t["how"]] = hows.get(t["how"], 0) + 1
@@ -289,23 +373,49 @@ def stats(equity, trades, inv, label):
     print(label, json.dumps(r, ensure_ascii=False), flush=True)
     return r
 
+
 print("V6 主臂：学院方案全要素（regime 调仓位）…", flush=True)
-eV, tV, iV = simulate(use_regime=True);  sV = stats(eV, tV, iV, "V6_学院方案")
+eV, tV, iV = simulate(use_regime=True)
+sV = stats(eV, tV, iV, "V6_学院方案")
 print("V6 对照：无 regime（恒 80% 额度）…", flush=True)
-eN, tN, iN = simulate(use_regime=False); sN = stats(eN, tN, iN, "V6_无regime对照")
+eN, tN, iN = simulate(use_regime=False)
+sN = stats(eN, tN, iN, "V6_无regime对照")
 
 # 买入持有对照（首日等权全池）
-dr = pd.Series({d: sum(x for x in [rets[s].get(d) for s in books] if x is not None and not pd.isna(x)) / max(1, len(books)) for d in cal})
+dr = pd.Series(
+    {
+        d: sum(
+            x
+            for x in [rets[s].get(d) for s in books]
+            if x is not None and not pd.isna(x)
+        )
+        / max(1, len(books))
+        for d in cal
+    }
+)
 nav_bh = (1 + dr).cumprod()
 bh_total = (nav_bh.iloc[-1] - 1) * 100
 bh_mdd = ((nav_bh / nav_bh.cummax()) - 1).min() * 100
 print(f"对照_池等权买入持有: total={bh_total:.2f}% mdd={bh_mdd:.2f}%", flush=True)
 
-out = {"meta": {"D0": D0, "exec": "R1限价回踩(5日有效,min(open,limit))", "cost_bps": 15,
-                "tranche": [T1, T2, T3], "stop": STOP_PCT, "tp1": TP1_PCT, "trail": TRAIL_PCT,
-                "max_hold": MAX_HOLD, "caps": [CAP_HIGH, CAP_MID, CAP_LOW],
-                "kline": "hfq+seen-ever", "universe_caveat": "池=2026-10-12快照,2023-2025段宇宙前视"},
-       "V6": sV, "V6_noregime": sN, "buyhold": {"total_pct": round(bh_total, 2), "mdd_pct": round(bh_mdd, 2)},
-       "equity_V6": {e["day"]: round(e["equity"], 6) for e in eV}}
+out = {
+    "meta": {
+        "D0": D0,
+        "exec": "R1限价回踩(5日有效,min(open,limit))",
+        "cost_bps": 15,
+        "tranche": [T1, T2, T3],
+        "stop": STOP_PCT,
+        "tp1": TP1_PCT,
+        "trail": TRAIL_PCT,
+        "max_hold": MAX_HOLD,
+        "caps": [CAP_HIGH, CAP_MID, CAP_LOW],
+        "kline": "hfq+seen-ever",
+        "universe_caveat": "池=2026-10-12快照,2023-2025段宇宙前视",
+    },
+    "V6": sV,
+    "V6_noregime": sN,
+    "buyhold": {"total_pct": round(bh_total, 2), "mdd_pct": round(bh_mdd, 2)},
+    "equity_V6": {e["day"]: round(e["equity"], 6) for e in eV},
+}
 json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("JSON:", OUT, flush=True)

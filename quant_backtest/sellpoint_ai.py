@@ -27,6 +27,7 @@ chanlun_bi 已产出）。研判卡只做信息层——不拦截、不改信号
   python sellpoint_ai.py --limit 40        # 提高本次上限（首播回填用）
   python sellpoint_ai.py --status          # 只看影子统计（不动 LLM）
 """
+
 import argparse
 import io
 import json
@@ -54,11 +55,11 @@ PUSHED = os.path.join(DATA, "sellpoint_pushed.json")
 CONFIG = os.path.join(HERE, "config.json")
 
 OLLAMA = "http://127.0.0.1:11434/api/chat"
-MODEL = "qwen3.5:9b"          # 本地 Ollama（与 research_agent/news_ai 同源）
-TIMEOUT = 120                  # 9b 单卡 20-60s，留余量
-FRESH_DAYS = 7                 # fresh 窗口（自然日，跨周末/假期）
-MAX_CARDS = 12                 # 单次运行默认上限（防 LLM 排队过久）
-LLM_FAIL_ABORT = 3             # 连续 N 次 LLM 失败则中止本轮（防白烧）
+MODEL = "qwen3.5:9b"  # 本地 Ollama（与 research_agent/news_ai 同源）
+TIMEOUT = 120  # 9b 单卡 20-60s，留余量
+FRESH_DAYS = 7  # fresh 窗口（自然日，跨周末/假期）
+MAX_CARDS = 12  # 单次运行默认上限（防 LLM 排队过久）
+LLM_FAIL_ABORT = 3  # 连续 N 次 LLM 失败则中止本轮（防白烧）
 
 SELL_TYPES = ("1卖", "2卖", "3卖")
 TYPE_NOTE = {"1卖": "趋势背驰", "2卖": "次高点", "3卖": "中枢破坏"}
@@ -74,27 +75,35 @@ DISCLAIMER = "影子信息层·不构成交易依据"
 AGENTS = {
     "cons_1sell": {
         "method": "保守·趋势背驰派",
-        "focus": "1卖",                       # 主抓趋势背驰（tbe 确认）
+        "focus": "1卖",  # 主抓趋势背驰（tbe 确认）
         "actions": ["卖出", "清仓", "止盈", "观望", "持有"],  # 偏保守动作集
-        "timing": "检出日收盘一次性清仓",       # 择时规则快照
-        "persona": ("你是保守派缠论卖点研判。风格：宁可错过不追卖，只有确认趋势"
-                    "背驰(tbe)且结构充分(中枢≥2)才给强信号；未确认前降到观望。"),
+        "timing": "检出日收盘一次性清仓",  # 择时规则快照
+        "persona": (
+            "你是保守派缠论卖点研判。风格：宁可错过不追卖，只有确认趋势"
+            "背驰(tbe)且结构充分(中枢≥2)才给强信号；未确认前降到观望。"
+        ),
     },
     "aggr_3sell": {
         "method": "激进·盘整/次高派",
-        "focus": "2卖/3卖",                   # 主抓次高点与中枢破坏
+        "focus": "2卖/3卖",  # 主抓次高点与中枢破坏
         "actions": ["卖出", "减仓", "止盈", "离场", "回避", "观望", "持有"],
         "timing": "持有至信号确认+分批止盈",
-        "persona": ("你是激进派缠论卖点研判。风格：次高点(2卖)/中枢破坏(3卖)只要"
-                    "结构出现就给偏强信号，倾向分批止盈锁利而非一次性清仓；"
-                    "看重大盘环境与浮盈。"),
+        "persona": (
+            "你是激进派缠论卖点研判。风格：次高点(2卖)/中枢破坏(3卖)只要"
+            "结构出现就给偏强信号，倾向分批止盈锁利而非一次性清仓；"
+            "看重大盘环境与浮盈。"
+        ),
     },
 }
 DEFAULT_AGENT = "cons_1sell"
-LEGACY_AGENT = "legacy_cons"   # 历史 67 卡标注用（schema 兼容）
+LEGACY_AGENT = "legacy_cons"  # 历史 67 卡标注用（schema 兼容）
+
 
 def _agent(an):
-    return (AGENTS.get(an or DEFAULT_AGENT) or AGENTS[DEFAULT_AGENT]) | {"name": an or DEFAULT_AGENT}
+    return (AGENTS.get(an or DEFAULT_AGENT) or AGENTS[DEFAULT_AGENT]) | {
+        "name": an or DEFAULT_AGENT
+    }
+
 
 def _agent_prompt(agent):
     """按 agent 生成的研判 prompt（学原 PROMPT，注入 persona + focus）。"""
@@ -109,7 +118,12 @@ def _agent_prompt(agent):
 建议: <动作>。一句理由，必须引用上面事实中的具体数字
 风险: 一句风险提示（确认滞后/分批/大盘环境）
 要求：建议动作必须且只能从 {actions} 中选一个；未持仓时倾向 观望。
-""".format(persona=agent["persona"], focus=agent["focus"], facts="{facts}", actions="{actions}")
+""".format(
+        persona=agent["persona"],
+        focus=agent["focus"],
+        facts="{facts}",
+        actions="{actions}",
+    )
 
 
 # ── 基础工具 ──────────────────────────────────────────────
@@ -194,9 +208,12 @@ def _priority(r):
     held = 1 if r.get("_held") else 0
     tbe = 1 if (r.get("type") == "1卖" and r.get("tbe") is True) else 0
     trank = {"1卖": 0, "2卖": 1, "3卖": 2}.get(r.get("type"), 9)
-    return (0 if (held and tbe) else (1 if tbe else (2 if held else 3)),
-            trank, 0 if held else 0,
-            -int(str(r.get("detect_date") or "0").replace("-", "") or 0))
+    return (
+        0 if (held and tbe) else (1 if tbe else (2 if held else 3)),
+        trank,
+        0 if held else 0,
+        -int(str(r.get("detect_date") or "0").replace("-", "") or 0),
+    )
 
 
 def candidates(limit=MAX_CARDS, include_all=False):
@@ -227,14 +244,22 @@ def candidates(limit=MAX_CARDS, include_all=False):
         if base is None:
             if str(r.get("first_seen") or "")[:10] < cutoff:
                 continue
-            base = {"market": r.get("market", "CN"), "code": r.get("code"),
-                    "name": r.get("name", ""), "type": "1卖", "dt": r.get("dt"),
-                    "price": r.get("price"), "detect_date":
-                        str(r.get("first_seen") or "")[:10],
-                    "lag": r.get("lag"), "entry_px": r.get("entry_px"),
-                    "tbe": r.get("tbe"), "npv": r.get("npv"),
-                    "reg": None, "tradable": None,
-                    "_held": r.get("code") in paper}
+            base = {
+                "market": r.get("market", "CN"),
+                "code": r.get("code"),
+                "name": r.get("name", ""),
+                "type": "1卖",
+                "dt": r.get("dt"),
+                "price": r.get("price"),
+                "detect_date": str(r.get("first_seen") or "")[:10],
+                "lag": r.get("lag"),
+                "entry_px": r.get("entry_px"),
+                "tbe": r.get("tbe"),
+                "npv": r.get("npv"),
+                "reg": None,
+                "tradable": None,
+                "_held": r.get("code") in paper,
+            }
             merged[key] = base
         else:
             if base.get("entry_px") is None and r.get("entry_px") is not None:
@@ -256,46 +281,59 @@ def candidates(limit=MAX_CARDS, include_all=False):
 # ── 组装：事实快照（纯代码，不编造） ─────────────────────
 def _fmt_reg(reg):
     if reg in ("up", "down", "flat"):
-        return {"up": "up（顺风）", "down": "down（逆风）",
-                "flat": "flat（震荡）"}[reg]
+        return {"up": "up（顺风）", "down": "down（逆风）", "flat": "flat（震荡）"}[reg]
     return "未知"
 
 
 def _facts(r, paper_row, agent):
     """按 agent 组装事实快照（纯代码，不编造）。加 focus 侧重行提示。"""
     npv = r.get("npv")
-    npv_note = ("未知" if npv is None else
-                "%s（%s）" % (npv, "0-1 尚早" if npv < 2 else
-                              "2 中段" if npv == 2 else "3+ 后段"))
+    npv_note = (
+        "未知"
+        if npv is None
+        else "%s（%s）"
+        % (npv, "0-1 尚早" if npv < 2 else "2 中段" if npv == 2 else "3+ 后段")
+    )
     tbe = r.get("tbe")
     type_note = TYPE_NOTE.get(r["type"], "")
     if r["type"] == "1卖":
-        type_note += "(tbe=%s)" % ("True 趋势背驰确认" if tbe is True else
-                                   "False 盘整背驰" if tbe is False else "未知")
+        type_note += "(tbe=%s)" % (
+            "True 趋势背驰确认"
+            if tbe is True
+            else "False 盘整背驰"
+            if tbe is False
+            else "未知"
+        )
     lines = [
         "代码: %s %s" % (r.get("code"), r.get("name") or ""),
         "卖点类型: %s · %s" % (r["type"], type_note),
-        "信号日: %s（检出 %s，确认滞后 %s 日）" % (
-            r.get("dt"), r.get("detect_date") or "—",
-            r.get("lag") if r.get("lag") is not None else "—"),
-        "价格: 信号收盘 %s / 可成交参考 %s" % (
-            r.get("price"), r.get("entry_px")),
+        "信号日: %s（检出 %s，确认滞后 %s 日）"
+        % (
+            r.get("dt"),
+            r.get("detect_date") or "—",
+            r.get("lag") if r.get("lag") is not None else "—",
+        ),
+        "价格: 信号收盘 %s / 可成交参考 %s" % (r.get("price"), r.get("entry_px")),
         "结构: 已完成中枢数 %s" % npv_note,
         "大盘环境: %s" % _fmt_reg(r.get("reg")),
         # 按 agent 侧重提示（信息层，不改变事实）
         "研判侧重: %s 派关注 %s" % (agent["method"], agent["focus"]),
     ]
     tr = r.get("tradable")
-    lines.append("可成交: %s" % ("True" if tr else
-                                 "False（检出日涨停不可成交）" if tr is False
-                                 else "未知"))
+    lines.append(
+        "可成交: %s"
+        % ("True" if tr else "False（检出日涨停不可成交）" if tr is False else "未知")
+    )
     if paper_row:
         pnl = paper_row.get("pnl")
-        lines.append("模拟持仓: 持有中 · 模拟入场 %s · 已持 %s 日 · 浮动 %s"
-                     % (paper_row.get("entry_px"),
-                        paper_row.get("days_held"),
-                        ("%+.1f%%" % (pnl * 100)) if isinstance(pnl, (int, float))
-                        else "—"))
+        lines.append(
+            "模拟持仓: 持有中 · 模拟入场 %s · 已持 %s 日 · 浮动 %s"
+            % (
+                paper_row.get("entry_px"),
+                paper_row.get("days_held"),
+                ("%+.1f%%" % (pnl * 100)) if isinstance(pnl, (int, float)) else "—",
+            )
+        )
     else:
         lines.append("模拟持仓: 无（仅观察）")
     return "\n".join(lines)
@@ -303,14 +341,21 @@ def _facts(r, paper_row, agent):
 
 # ── 研判：Ollama 一卡三行（专辑台独立；同源信号多 agent 并行） ──
 def _llm(prompt):
-    body = {"model": MODEL, "stream": False, "think": False,
-            # think:False 对齐 news_ai 范式——qwen3.5 思考模型不关思考时
-            # token 全进 thinking，content 恒空（077h 实测坑）
-            "messages": [{"role": "user", "content": prompt}],
-            "options": {"temperature": 0}}
+    body = {
+        "model": MODEL,
+        "stream": False,
+        "think": False,
+        # think:False 对齐 news_ai 范式——qwen3.5 思考模型不关思考时
+        # token 全进 thinking，content 恒空（077h 实测坑）
+        "messages": [{"role": "user", "content": prompt}],
+        "options": {"temperature": 0},
+    }
     req = urllib.request.Request(
-        OLLAMA, data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json"}, method="POST")
+        OLLAMA,
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         return json.loads(resp.read()).get("message", {}).get("content", "")
 
@@ -342,8 +387,9 @@ def make_card(r, paper_row, agent):
     """单卡研判（某 agent 视角）：组装 → LLM → 校验（缺动词重试 1 次）→ 卡片 dict。
     卡片带 agent_name/method/focus/timing，供锦标赛对照。"""
     facts = _facts(r, paper_row, agent)
-    prompt = (_agent_prompt(agent)
-              .format(facts=facts, actions="/".join(agent["actions"])))
+    prompt = _agent_prompt(agent).format(
+        facts=facts, actions="/".join(agent["actions"])
+    )
     t0 = time.time()
     try:
         out = _llm(prompt)
@@ -353,29 +399,46 @@ def make_card(r, paper_row, agent):
     strength, action, reason, risk, ok = _parse(out, agent["actions"])
     if not ok:
         try:  # 重试一次（缺白名单动词）；仍失败保留首轮解析降级
-            out = _llm(prompt + "\n注意：必须以「建议: <动作>。」开头，"
-                             "动作从白名单选。")
+            out = _llm(
+                prompt + "\n注意：必须以「建议: <动作>。」开头，动作从白名单选。"
+            )
             gen_ms += int((time.time() - t0) * 1000)
             strength, action, reason, risk, ok = _parse(out, agent["actions"])
         except Exception:
             pass
-    card = {"market": r.get("market", "CN"), "code": r.get("code"),
-            "name": r.get("name", ""), "type": r["type"],
-            "tbe": r.get("tbe"), "dt": r.get("dt"),
-            "detect_date": r.get("detect_date"), "lag": r.get("lag"),
-            "price": r.get("price"), "entry_px": r.get("entry_px"),
-            "npv": r.get("npv"), "reg": r.get("reg"),
-            "trend": r.get("trend"), "tradable": r.get("tradable"),
-            "held": bool(paper_row),
-            "paper_pnl": (paper_row or {}).get("pnl"),
-            "paper_days": (paper_row or {}).get("days_held"),
-            # 多 agent 维度（schema 扩展，向上兼容历史 67 卡缺省 legacy_cons）
-            "agent_name": agent["name"], "method": agent["method"],
-            "focus": agent["focus"], "timing": agent["timing"],
-            "strength": strength, "action": action or "观望",
-            "reason": reason, "risk": risk,
-            "parse_ok": ok, "model": MODEL, "gen_ms": gen_ms,
-            "source": "sellpoint_ai", "ts": _now_iso()}
+    card = {
+        "market": r.get("market", "CN"),
+        "code": r.get("code"),
+        "name": r.get("name", ""),
+        "type": r["type"],
+        "tbe": r.get("tbe"),
+        "dt": r.get("dt"),
+        "detect_date": r.get("detect_date"),
+        "lag": r.get("lag"),
+        "price": r.get("price"),
+        "entry_px": r.get("entry_px"),
+        "npv": r.get("npv"),
+        "reg": r.get("reg"),
+        "trend": r.get("trend"),
+        "tradable": r.get("tradable"),
+        "held": bool(paper_row),
+        "paper_pnl": (paper_row or {}).get("pnl"),
+        "paper_days": (paper_row or {}).get("days_held"),
+        # 多 agent 维度（schema 扩展，向上兼容历史 67 卡缺省 legacy_cons）
+        "agent_name": agent["name"],
+        "method": agent["method"],
+        "focus": agent["focus"],
+        "timing": agent["timing"],
+        "strength": strength,
+        "action": action or "观望",
+        "reason": reason,
+        "risk": risk,
+        "parse_ok": ok,
+        "model": MODEL,
+        "gen_ms": gen_ms,
+        "source": "sellpoint_ai",
+        "ts": _now_iso(),
+    }
     if not ok:
         card["raw"] = (out or "")[:400]  # 降级留存原文（research_agent 惯例）
     return card
@@ -383,8 +446,12 @@ def make_card(r, paper_row, agent):
 
 # ── 落盘 / 幂等（key 含 agent_name：(agent, code, type, dt)） ──
 def _card_key(c):
-    return [c.get("agent_name") or "legacy_cons",
-            c.get("code"), c.get("type"), c.get("dt")]
+    return [
+        c.get("agent_name") or "legacy_cons",
+        c.get("code"),
+        c.get("type"),
+        c.get("dt"),
+    ]
 
 
 def append_cards(new_cards):
@@ -392,7 +459,7 @@ def append_cards(new_cards):
     have = {(_k(r)) for r in rows}
     added = 0
     for c in new_cards:
-        k = (_k(c))
+        k = _k(c)
         if k in have:
             continue
         rows.append(c)
@@ -407,15 +474,25 @@ def mark_seen(cards):
     seen = _load_json(SEEN, [])
     s = {tuple(x) for x in seen}
     for c in cards:
-        s.add((c.get("agent_name") or "legacy_cons",
-               c.get("code"), c.get("type"), c.get("dt")))
+        s.add(
+            (
+                c.get("agent_name") or "legacy_cons",
+                c.get("code"),
+                c.get("type"),
+                c.get("dt"),
+            )
+        )
     _atomic_json(SEEN, sorted([list(x) for x in s]))
 
 
 def _k(c):
     """状态字段缺失时兜底 agent 名（历史行 legacy_cons）。"""
-    return (c.get("agent_name") or "legacy_cons",
-            c.get("code"), c.get("type"), c.get("dt"))
+    return (
+        c.get("agent_name") or "legacy_cons",
+        c.get("code"),
+        c.get("type"),
+        c.get("dt"),
+    )
 
 
 # ── 推送（影子默认关；config sellpoint.push 才发） ────────
@@ -435,19 +512,28 @@ def push_cards(cards):
         print("sellpoint push: news_collector missing")
         return 0
     pushed = _pushed_keys()
-    fresh = [c for c in cards
-             if c.get("parse_ok")
-             and (c.get("code"), c.get("dt")) not in pushed]
+    fresh = [
+        c
+        for c in cards
+        if c.get("parse_ok") and (c.get("code"), c.get("dt")) not in pushed
+    ]
     if not fresh:
         return 0
     lines = ["🎯 SellPoint 研判卡 · %d 条（%s）" % (len(fresh), _today()), ""]
     for c in fresh:
-        lines.append("· %s %s %s%s" % (
-            c.get("code"), c.get("name") or "—", c.get("type"),
-            "(tbe)" if c.get("tbe") is True else ""))
-        lines.append("  强度 %s ｜ 建议 %s ｜ %s" % (
-            c.get("strength"), c.get("action"),
-            (c.get("risk") or "")[:40]))
+        lines.append(
+            "· %s %s %s%s"
+            % (
+                c.get("code"),
+                c.get("name") or "—",
+                c.get("type"),
+                "(tbe)" if c.get("tbe") is True else "",
+            )
+        )
+        lines.append(
+            "  强度 %s ｜ 建议 %s ｜ %s"
+            % (c.get("strength"), c.get("action"), (c.get("risk") or "")[:40])
+        )
     portal = (cfg.get("report") or {}).get("portal_url") or ""
     lines.append("")
     lines.append(DISCLAIMER)
@@ -460,7 +546,11 @@ def push_cards(cards):
     try:
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         if (r.stdout or "").strip().startswith("SEND_OK"):
             for c in fresh:
                 pushed.add((c.get("code"), c.get("dt")))
@@ -482,8 +572,10 @@ def run_once(limit=MAX_CARDS):
     if not cands:
         print("sellpoint_ai: no fresh candidates")
         return []
-    print("sellpoint_ai: %d signals, agents=%s (limit=%d, include_all=%s)"
-          % (len(cands), list(agents), limit, include_all))
+    print(
+        "sellpoint_ai: %d signals, agents=%s (limit=%d, include_all=%s)"
+        % (len(cands), list(agents), limit, include_all)
+    )
     paper = _paper_index()
     ok_cards, fails = [], 0
     total = sum(len(r["_pending_agents"]) for r in cands)
@@ -492,26 +584,37 @@ def run_once(limit=MAX_CARDS):
         for an in r["_pending_agents"]:
             idx += 1
             agent = agents[an]
-            print("  [%d/%d] %s %s %s  ⇒ %s(%s) tbe=%s held=%s ..."
-                  % (idx, total, r.get("code"), r.get("name"), r["type"],
-                     an, agent["method"], r.get("tbe"), r.get("_held")))
+            print(
+                "  [%d/%d] %s %s %s  ⇒ %s(%s) tbe=%s held=%s ..."
+                % (
+                    idx,
+                    total,
+                    r.get("code"),
+                    r.get("name"),
+                    r["type"],
+                    an,
+                    agent["method"],
+                    r.get("tbe"),
+                    r.get("_held"),
+                )
+            )
             try:
                 card = make_card(r, paper.get(r.get("code")), agent)
                 ok_cards.append(card)
-                print("      强度=%s 建议=%s (%.1fs)"
-                      % (card["strength"], card["action"], card["gen_ms"] / 1000))
+                print(
+                    "      强度=%s 建议=%s (%.1fs)"
+                    % (card["strength"], card["action"], card["gen_ms"] / 1000)
+                )
             except RuntimeError as e:
                 fails += 1
                 print("      SKIP %s" % e)
                 if fails >= LLM_FAIL_ABORT:
-                    print("sellpoint_ai: %d consecutive LLM fails, abort run"
-                          % fails)
+                    print("sellpoint_ai: %d consecutive LLM fails, abort run" % fails)
                     return ok_cards
     if ok_cards:
         n = append_cards(ok_cards)
         mark_seen(ok_cards)  # 失败行不记 seen → 次日自动重试
-        print("sellpoint_ai: %d cards appended (file +%d)"
-              % (len(ok_cards), n))
+        print("sellpoint_ai: %d cards appended (file +%d)" % (len(ok_cards), n))
         push_cards(ok_cards)
     return ok_cards
 
@@ -522,21 +625,39 @@ def status():
         print("sellpoint_cards: 0（先跑 python sellpoint_ai.py --once）")
         return
     from collections import Counter
+
     by_agent = Counter(c.get("agent_name") or "legacy_cons" for c in cards)
     print("cards=%d  by_agent=%s" % (len(cards), dict(by_agent)))
-    print("       by_type=%s  by_strength=%s"
-          % (dict(Counter(c.get("type") for c in cards)),
-             dict(Counter(c.get("strength") for c in cards))))
-    print("held=%d  parse_ok=%d  last=%s"
-          % (sum(1 for c in cards if c.get("held")),
-             sum(1 for c in cards if c.get("parse_ok")),
-             cards[-1].get("ts")))
+    print(
+        "       by_type=%s  by_strength=%s"
+        % (
+            dict(Counter(c.get("type") for c in cards)),
+            dict(Counter(c.get("strength") for c in cards)),
+        )
+    )
+    print(
+        "held=%d  parse_ok=%d  last=%s"
+        % (
+            sum(1 for c in cards if c.get("held")),
+            sum(1 for c in cards if c.get("parse_ok")),
+            cards[-1].get("ts"),
+        )
+    )
     for c in cards[-6:]:
-        print("  %s %s %s[%s] %s%s → %s/%s  %s"
-              % (c.get("code"), c.get("name"), c.get("type"),
-                 c.get("agent_name") or "legacy_cons", c.get("dt"),
-                 "(tbe)" if c.get("tbe") is True else "",
-                 c.get("strength"), c.get("action"), c.get("ts")))
+        print(
+            "  %s %s %s[%s] %s%s → %s/%s  %s"
+            % (
+                c.get("code"),
+                c.get("name"),
+                c.get("type"),
+                c.get("agent_name") or "legacy_cons",
+                c.get("dt"),
+                "(tbe)" if c.get("tbe") is True else "",
+                c.get("strength"),
+                c.get("action"),
+                c.get("ts"),
+            )
+        )
 
 
 def main():

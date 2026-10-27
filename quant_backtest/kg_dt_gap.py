@@ -33,6 +33,7 @@
   python kg_dt_gap.py            # 全量重算入图
   python kg_dt_gap.py --dryrun   # 只算不写
 """
+
 import argparse
 import json
 import os
@@ -53,9 +54,11 @@ QUANT_SEATS = (
     r"^国信证券股份有限公司浙江互联网分公司$",
     r"^东亚前海证券有限责任公司上海分公司$",
 )
-ORG_PAT = ("机构专用|沪股通|深股通|总部|高盛|瑞银|摩根大通|"
-           "中国国际金融股份有限公司上海分公司|"
-           "中信证券股份有限公司上海分公司")
+ORG_PAT = (
+    "机构专用|沪股通|深股通|总部|高盛|瑞银|摩根大通|"
+    "中国国际金融股份有限公司上海分公司|"
+    "中信证券股份有限公司上海分公司"
+)
 NATURES = ("youzi", "quant", "org", "retail", "other")
 
 # ── CH-07 tushare 兜底接线（WO-QT-20261020-067；根因 WO-021 CH-06/CH-07）──
@@ -69,18 +72,29 @@ NATURES = ("youzi", "quant", "org", "retail", "other")
 # TUSHARE_TOKEN（缺省回落仓内 .env.local XT_DATA_KEY，tushare_sync 同通道）
 # 内存读取，不打印不落盘；无凭据/日历时显式降级 fallback_unavailable
 # （缺日本实留在产物日期上，H5 照常可见），绝不假绿。
-TS_FALLBACK_ENV = "KG_DT_GAP_TS_FALLBACK"       # 兜底开关（默认关）
-TS_FALLBACK_N_ENV = "KG_DT_GAP_TS_FALLBACK_N"   # 锚断阈值 N（交易日）
-TS_FALLBACK_TOKEN_ENV = "TUSHARE_TOKEN"         # 凭据（环境变量优先）
-TS_FALLBACK_SRC = "tushare_fallback"            # 兜底产物来源标注
-TS_FALLBACK_STALE_N = 1     # 锚断 >N 交易日才补位（默认 1：落后 ≥2 交易日即补）
-TS_FALLBACK_SLEEP = 0.35    # 每日一拉间隔（沿 tushare_sync.SLEEP 口径）
-TS_FALLBACK_MAX_DAYS = 7    # 单次补位缺日上限（对齐步骤4b 近 7 天窗口）
-TS_TOP_COLS = ["ts_code", "trade_date", "name", "close", "pct_change",
-               "net_amount", "l_buy", "l_sell", "amount", "reason"]
+TS_FALLBACK_ENV = "KG_DT_GAP_TS_FALLBACK"  # 兜底开关（默认关）
+TS_FALLBACK_N_ENV = "KG_DT_GAP_TS_FALLBACK_N"  # 锚断阈值 N（交易日）
+TS_FALLBACK_TOKEN_ENV = "TUSHARE_TOKEN"  # 凭据（环境变量优先）
+TS_FALLBACK_SRC = "tushare_fallback"  # 兜底产物来源标注
+TS_FALLBACK_STALE_N = 1  # 锚断 >N 交易日才补位（默认 1：落后 ≥2 交易日即补）
+TS_FALLBACK_SLEEP = 0.35  # 每日一拉间隔（沿 tushare_sync.SLEEP 口径）
+TS_FALLBACK_MAX_DAYS = 7  # 单次补位缺日上限（对齐步骤4b 近 7 天窗口）
+TS_TOP_COLS = [
+    "ts_code",
+    "trade_date",
+    "name",
+    "close",
+    "pct_change",
+    "net_amount",
+    "l_buy",
+    "l_sell",
+    "amount",
+    "reason",
+]
 TS_API = "https://api.tushare.pro"
-TS_TOP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "data", "tushare", "top_list")
+TS_TOP_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "data", "tushare", "top_list"
+)
 
 
 def _now():
@@ -102,6 +116,7 @@ def _int(v):
 def _nature_map(seats):
     """席位名列表 → {席位: 性质}。优先级 youzi > quant > org > other。"""
     from kg_build_cl1 import YOUZI
+
     yz = [(re.compile(p), kind) for _, pats, kind in YOUZI for p in pats]
     rx_q = re.compile("|".join(QUANT_SEATS))
     rx_o = re.compile(ORG_PAT)
@@ -113,8 +128,7 @@ def _nature_map(seats):
                 nat = "retail" if kind == "retail_cluster" else "youzi"
                 break
         if nat is None:
-            nat = "quant" if rx_q.search(s) else (
-                "org" if rx_o.search(s) else "other")
+            nat = "quant" if rx_q.search(s) else ("org" if rx_o.search(s) else "other")
         out[s] = nat
     return out
 
@@ -129,8 +143,9 @@ def ts_fallback_enabled(env=None, cfg_path=None):
     e = os.environ if env is None else env
     if str(e.get(TS_FALLBACK_ENV, "")).strip().lower() in ("1", "true", "on"):
         return True
-    p = cfg_path or os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                 "config.json")
+    p = cfg_path or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "config.json"
+    )
     try:
         with open(p, encoding="utf-8") as f:
             cfg = json.load(f)
@@ -169,9 +184,12 @@ def _ts_token(env=None):
 def _default_post(api, params, token, timeout):
     """生产默认 HTTP 出口（懒加载，import 时不触网）。"""
     import requests
-    return requests.post(TS_API, json={"api_name": api, "token": token,
-                                       "params": params, "fields": ""},
-                         timeout=timeout)
+
+    return requests.post(
+        TS_API,
+        json={"api_name": api, "token": token, "params": params, "fields": ""},
+        timeout=timeout,
+    )
 
 
 def _ts_call(api, params, token, post, retry=4, timeout=60, _sleep=None):
@@ -183,7 +201,7 @@ def _ts_call(api, params, token, post, retry=4, timeout=60, _sleep=None):
     for i in range(retry):
         try:
             d = post(api, params, token, timeout).json()
-        except Exception as e:                                 # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             last = str(e)[:80]
             sleep(2 * (i + 1))
             continue
@@ -212,8 +230,9 @@ def fetch_remote_top_list(dates, token, _post=None, _sleep=None):
             sleep(TS_FALLBACK_SLEEP)
         rows, fields, off = [], None, 0
         while True:
-            data = _ts_call("top_list", {"trade_date": d, "offset": off},
-                            token, post, _sleep=sleep)
+            data = _ts_call(
+                "top_list", {"trade_date": d, "offset": off}, token, post, _sleep=sleep
+            )
             if fields is None:
                 fields = data.get("fields") or []
             items = data.get("items") or []
@@ -225,11 +244,11 @@ def fetch_remote_top_list(dates, token, _post=None, _sleep=None):
                 break
             sleep(TS_FALLBACK_SLEEP)
         if rows and fields:
-            dfs.append(pd.DataFrame(rows, columns=fields)
-                       .reindex(columns=TS_TOP_COLS))
+            dfs.append(pd.DataFrame(rows, columns=fields).reindex(columns=TS_TOP_COLS))
             got.append(d)
-    return (pd.concat(dfs, ignore_index=True) if dfs
-            else pd.DataFrame(columns=TS_TOP_COLS)), got
+    return (
+        pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame(columns=TS_TOP_COLS)
+    ), got
 
 
 def load_local_top_list(dates, root=None):
@@ -243,14 +262,15 @@ def load_local_top_list(dates, root=None):
             continue
         try:
             df = pd.read_parquet(f)
-        except Exception:                                      # noqa: BLE001
+        except Exception:  # noqa: BLE001
             continue
         if df.empty:
             continue
         dfs.append(df.reindex(columns=TS_TOP_COLS))
         got.append(d)
-    return (pd.concat(dfs, ignore_index=True) if dfs
-            else pd.DataFrame(columns=TS_TOP_COLS)), got
+    return (
+        pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame(columns=TS_TOP_COLS)
+    ), got
 
 
 def _local_calendar(root=None):
@@ -261,9 +281,11 @@ def _local_calendar(root=None):
         fs = os.listdir(root)
     except OSError:
         return []
-    return sorted(f[2:10] for f in fs
-                  if (f.startswith("d_") and f.endswith(".parquet")
-                      and f[2:10].isdigit()))
+    return sorted(
+        f[2:10]
+        for f in fs
+        if (f.startswith("d_") and f.endswith(".parquet") and f[2:10].isdigit())
+    )
 
 
 def missing_anchor_dates(tdx_dates, calendar, stale_n=TS_FALLBACK_STALE_N):
@@ -273,13 +295,19 @@ def missing_anchor_dates(tdx_dates, calendar, stale_n=TS_FALLBACK_STALE_N):
     cal = sorted(str(d) for d in calendar)
     tmax = max((str(d) for d in tdx_dates), default=None)
     missing = [d for d in cal if tmax is None or d > tmax]
-    return (missing, len(missing)) if len(missing) > stale_n \
-        else ([], len(missing))
+    return (missing, len(missing)) if len(missing) > stale_n else ([], len(missing))
 
 
-def apply_tushare_fallback(tl, verbose=True, env=None, stale_n=None,
-                           _local=None, _fetch=None, _calendar=None,
-                           _token=None):
+def apply_tushare_fallback(
+    tl,
+    verbose=True,
+    env=None,
+    stale_n=None,
+    _local=None,
+    _fetch=None,
+    _calendar=None,
+    _token=None,
+):
     """板块锚断 >N 交易日 → 经 tushare 补位缺日（本地 parquet 优先，
     缺口经 API 拉取）。返回 (tl, fb_keys, status)：
       fb_keys  兜底行 (ts_code, trade_date) 集合 → 事件/边显式标
@@ -294,17 +322,22 @@ def apply_tushare_fallback(tl, verbose=True, env=None, stale_n=None,
     calendar = (_calendar or _local_calendar)()
     if not calendar:
         if verbose:
-            print("  [ts_fallback] fallback_unavailable：交易日历缺失"
-                  "（data/tushare/top_list/d_*.parquet 无件，先跑 tushare_sync）")
+            print(
+                "  [ts_fallback] fallback_unavailable：交易日历缺失"
+                "（data/tushare/top_list/d_*.parquet 无件，先跑 tushare_sync）"
+            )
         return tl, set(), "fallback_unavailable"
     missing, stale = missing_anchor_dates(
-        set(tl["trade_date"].astype(str)), calendar, n)
+        set(tl["trade_date"].astype(str)), calendar, n
+    )
     if not missing:
         return tl, set(), "fresh"
-    missing = missing[-TS_FALLBACK_MAX_DAYS:]   # 单次补位上限（近 7 日窗）
+    missing = missing[-TS_FALLBACK_MAX_DAYS:]  # 单次补位上限（近 7 日窗）
     if verbose:
-        print("  [ts_fallback] 锚断 %d 交易日（>%d）→ 缺日 %s"
-              % (stale, n, ",".join(missing)))
+        print(
+            "  [ts_fallback] 锚断 %d 交易日（>%d）→ 缺日 %s"
+            % (stale, n, ",".join(missing))
+        )
     # TDX 与 tushare trade_date 混拼前统一 str，防 min/max 混型
     tl = tl.copy()
     tl["trade_date"] = tl["trade_date"].astype(str)
@@ -315,16 +348,17 @@ def apply_tushare_fallback(tl, verbose=True, env=None, stale_n=None,
         token = (_token or _ts_token)(env)
         if not token:
             if verbose:
-                print("  [ts_fallback] fallback_unavailable：缺 %s 且无凭据"
-                      "（TUSHARE_TOKEN / .env.local XT_DATA_KEY 均未配置）"
-                      % ",".join(rest))
+                print(
+                    "  [ts_fallback] fallback_unavailable：缺 %s 且无凭据"
+                    "（TUSHARE_TOKEN / .env.local XT_DATA_KEY 均未配置）"
+                    % ",".join(rest)
+                )
             return tl, set(), "fallback_unavailable"
         try:
             rdf, rgot = (_fetch or fetch_remote_top_list)(rest, token)
-        except Exception as e:                                 # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             if verbose:
-                print("  [ts_fallback] 远端拉取失败（%s），缺日保留断口"
-                      % str(e)[:100])
+                print("  [ts_fallback] 远端拉取失败（%s），缺日保留断口" % str(e)[:100])
             rdf, rgot = pd.DataFrame(columns=TS_TOP_COLS), []
         if len(rdf):
             fb = pd.concat([fb, rdf], ignore_index=True) if len(fb) else rdf
@@ -333,8 +367,10 @@ def apply_tushare_fallback(tl, verbose=True, env=None, stale_n=None,
         return tl, set(), "fallback_unavailable"
     fb_keys = set(zip(fb["ts_code"], fb["trade_date"].astype(str)))
     if verbose:
-        print("  [ts_fallback] 补位 %d 日 %d 行（source=%s）"
-              % (len(got), len(fb), TS_FALLBACK_SRC))
+        print(
+            "  [ts_fallback] 补位 %d 日 %d 行（source=%s）"
+            % (len(got), len(fb), TS_FALLBACK_SRC)
+        )
     return pd.concat([tl, fb], ignore_index=True), fb_keys, "ok"
 
 
@@ -349,19 +385,25 @@ def calc(verbose=True):
         raise SystemExit(
             "ts_top_list 为空且 tushare 兜底未补齐（status=%s）："
             "先跑 TdxSync，或 KG_DT_GAP_TS_FALLBACK=1 显式开启兜底"
-            "（WO-021 CH-07）" % fb_status)
-    ti = tdxr.read_range("ts_top_inst", columns=[
-        "ts_code", "trade_date", "exalter", "net_buy"])
+            "（WO-021 CH-07）" % fb_status
+        )
+    ti = tdxr.read_range(
+        "ts_top_inst", columns=["ts_code", "trade_date", "exalter", "net_buy"]
+    )
     if verbose:
-        print("  ts_top_list %d 行（%s~%s）· ts_top_inst %d 行"
-              % (len(tl), tl["trade_date"].min(), tl["trade_date"].max(),
-                 len(ti)))
+        print(
+            "  ts_top_list %d 行（%s~%s）· ts_top_inst %d 行"
+            % (len(tl), tl["trade_date"].min(), tl["trade_date"].max(), len(ti))
+        )
 
     # ── 席位性质分类 + (票,日) 五类净额 ──
     nmap = _nature_map(sorted(ti["exalter"].unique()))
     ti["nat"] = ti["exalter"].map(nmap)
-    agg = ti.groupby(["ts_code", "trade_date", "nat"])["net_buy"].sum() \
-            .unstack("nat", fill_value=0.0)
+    agg = (
+        ti.groupby(["ts_code", "trade_date", "nat"])["net_buy"]
+        .sum()
+        .unstack("nat", fill_value=0.0)
+    )
     for c in NATURES:
         if c not in agg.columns:
             agg[c] = 0.0
@@ -380,27 +422,37 @@ def calc(verbose=True):
     m["quant_ratio"] = (m["quant"] / m["gap"].abs()).where(m["gap"] != 0)
 
     # ── 次日穿透（ts_daily，K14 同口径）──
-    dd = tdxr.read_range("ts_daily", codes=set(tl["ts_code"]),
-                         columns=["ts_code", "trade_date", "close", "open"])
+    dd = tdxr.read_range(
+        "ts_daily",
+        codes=set(tl["ts_code"]),
+        columns=["ts_code", "trade_date", "close", "open"],
+    )
     dd["trade_date"] = dd["trade_date"].astype(str)
     dd = dd.sort_values(["ts_code", "trade_date"])
     g = dd.groupby("ts_code")
     dd["ret1"] = g["close"].shift(-1) / dd["close"] - 1.0
     dd["oret1"] = g["open"].shift(-1) / dd["close"] - 1.0
-    m = m.merge(dd[["ts_code", "trade_date", "ret1", "oret1"]],
-                on=["ts_code", "trade_date"], how="left")
+    m = m.merge(
+        dd[["ts_code", "trade_date", "ret1", "oret1"]],
+        on=["ts_code", "trade_date"],
+        how="left",
+    )
     ok = m["ret1"].notna() & m["gap"].notna() & (m["gap"] != 0)
     m["pen"] = None
-    m.loc[ok, "pen"] = ((m.loc[ok, "gap"] > 0)
-                        == (m.loc[ok, "ret1"] > 0)).astype(int)
+    m.loc[ok, "pen"] = ((m.loc[ok, "gap"] > 0) == (m.loc[ok, "ret1"] > 0)).astype(int)
     if verbose:
         v = m[ok]
         hi = v[v["gap_ratio"] >= v["gap_ratio"].quantile(0.75)]
-        print("  穿透：有效 %d 笔 · pen 胜率 %.1f%% · gap_ratio 前25%%组 "
-              "%.1f%% · 主导分布 %s"
-              % (len(v), 100.0 * v["pen"].astype(float).mean(),
-                 100.0 * hi["pen"].astype(float).mean(),
-                 v["dom_nature"].value_counts().head(4).to_dict()))
+        print(
+            "  穿透：有效 %d 笔 · pen 胜率 %.1f%% · gap_ratio 前25%%组 "
+            "%.1f%% · 主导分布 %s"
+            % (
+                len(v),
+                100.0 * v["pen"].astype(float).mean(),
+                100.0 * hi["pen"].astype(float).mean(),
+                v["dom_nature"].value_counts().head(4).to_dict(),
+            )
+        )
 
     # ── 事件行（to_dict 防止 itertuples 改名列陷阱，kg_bclass 判例）──
     # CH-07：兜底行显式标 source=tushare_fallback，不冒充真锚
@@ -411,39 +463,64 @@ def calc(verbose=True):
         src = TS_FALLBACK_SRC if (tc, d) in fb_keys else "ts_top_list"
         eid = "%s:topgap:%s" % (tc, d)
         reason = (r.get("reason") or "").strip()
-        evs.append({
-            "evt_id": eid, "kind": "topgap", "date": d,
-            "name": r.get("name"), "close": _r2(r.get("close")),
-            "pct_chg": _r2(r.get("pct_change")), "amount": _r2(r.get("amount")),
-            "gap": _r2(r.get("gap")), "l_buy": _r2(r.get("l_buy")),
-            "l_sell": _r2(r.get("l_sell")),
-            "gap_ratio": _r4(r.get("gap_ratio")),
-            "reason": reason[:64] if reason else None,
-            "yz_net": _r2(r.get("youzi")), "qt_net": _r2(r.get("quant")),
-            "og_net": _r2(r.get("org")), "rt_net": _r2(r.get("retail")),
-            "ot_net": _r2(r.get("other")),
-            "dom_nature": r.get("dom_nature"),
-            "quant_ratio": _r4(r.get("quant_ratio")),
-            "ret1": _r4(r.get("ret1")), "oret1": _r4(r.get("oret1")),
-            "pen": _int(r.get("pen")),
-            "source": src, "updated_at": ts})
-        edges.append({"src": tc, "dst": eid, "validStart": d,
-                      "validEnd": S.VALID_END_OPEN, "source": src,
-                      "updated_at": ts})
+        evs.append(
+            {
+                "evt_id": eid,
+                "kind": "topgap",
+                "date": d,
+                "name": r.get("name"),
+                "close": _r2(r.get("close")),
+                "pct_chg": _r2(r.get("pct_change")),
+                "amount": _r2(r.get("amount")),
+                "gap": _r2(r.get("gap")),
+                "l_buy": _r2(r.get("l_buy")),
+                "l_sell": _r2(r.get("l_sell")),
+                "gap_ratio": _r4(r.get("gap_ratio")),
+                "reason": reason[:64] if reason else None,
+                "yz_net": _r2(r.get("youzi")),
+                "qt_net": _r2(r.get("quant")),
+                "og_net": _r2(r.get("org")),
+                "rt_net": _r2(r.get("retail")),
+                "ot_net": _r2(r.get("other")),
+                "dom_nature": r.get("dom_nature"),
+                "quant_ratio": _r4(r.get("quant_ratio")),
+                "ret1": _r4(r.get("ret1")),
+                "oret1": _r4(r.get("oret1")),
+                "pen": _int(r.get("pen")),
+                "source": src,
+                "updated_at": ts,
+            }
+        )
+        edges.append(
+            {
+                "src": tc,
+                "dst": eid,
+                "validStart": d,
+                "validEnd": S.VALID_END_OPEN,
+                "source": src,
+                "updated_at": ts,
+            }
+        )
 
     v = m[ok]
     hi = v[v["gap_ratio"] >= v["gap_ratio"].quantile(0.75)]
-    stats = ("topgap %d 事件/边（%s~%s）· 性质覆盖 %.1f%% · pen 有效 %d "
-             "胜率 %.1f%% · gap_ratio 前25%%组 %.1f%% · 量化主导 %d 笔"
-             % (len(evs), tl["trade_date"].min(), tl["trade_date"].max(),
-                100.0 * m["dom_nature"].notna().mean(), len(v),
-                100.0 * v["pen"].astype(float).mean(),
-                100.0 * hi["pen"].astype(float).mean(),
-                int((v["dom_nature"] == "quant").sum())))
+    stats = (
+        "topgap %d 事件/边（%s~%s）· 性质覆盖 %.1f%% · pen 有效 %d "
+        "胜率 %.1f%% · gap_ratio 前25%%组 %.1f%% · 量化主导 %d 笔"
+        % (
+            len(evs),
+            tl["trade_date"].min(),
+            tl["trade_date"].max(),
+            100.0 * m["dom_nature"].notna().mean(),
+            len(v),
+            100.0 * v["pen"].astype(float).mean(),
+            100.0 * hi["pen"].astype(float).mean(),
+            int((v["dom_nature"] == "quant").sum()),
+        )
+    )
     # CH-07：兜底情况入 stats（fallback_unavailable 显式可见，不假绿）
     if fb_keys:
-        stats += " · tushare兜底 %d 行 source=%s" % (len(fb_keys),
-                                                    TS_FALLBACK_SRC)
+        stats += " · tushare兜底 %d 行 source=%s" % (len(fb_keys), TS_FALLBACK_SRC)
     elif fb_status == "fallback_unavailable":
         stats += " · tushare兜底 fallback_unavailable（缺日未补，断口可见）"
     return evs, edges, stats
@@ -469,24 +546,33 @@ def main():
         # （消费端 kg_portal/sector_flow 均经 Security 关联，缺边事件
         # 本就不可见，过滤不丢信息；次新在 Security 补建后随窗口补入）。
         with cli._session() as s:
-            have = set(x["c"] for x in s.run(
-                "MATCH (sec:Security) RETURN sec.ts_code AS c").data())
+            have = set(
+                x["c"]
+                for x in s.run("MATCH (sec:Security) RETURN sec.ts_code AS c").data()
+            )
         n0 = len(evs)
         evs = [e for e in evs if e["evt_id"].split(":")[0] in have]
         edges = [e for e in edges if e["src"] in have]
         if n0 - len(evs):
-            print("  过滤非 Security 标的 %d 条（转债/B股/北交所/次新）"
-                  % (n0 - len(evs)))
+            print(
+                "  过滤非 Security 标的 %d 条（转债/B股/北交所/次新）" % (n0 - len(evs))
+            )
         n1 = cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
-        n2 = cli.upsert_edge(S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT,
-                             "evt_id", S.REL_HAS_TOPGAP, edges)
+        n2 = cli.upsert_edge(
+            S.LBL_SECURITY,
+            "ts_code",
+            S.LBL_MARKET_EVENT,
+            "evt_id",
+            S.REL_HAS_TOPGAP,
+            edges,
+        )
         with cli._session() as s:
-            n = s.run("MATCH ()-[r:%s]->() RETURN count(r) AS c"
-                      % S.REL_HAS_TOPGAP).single()["c"]
+            n = s.run(
+                "MATCH ()-[r:%s]->() RETURN count(r) AS c" % S.REL_HAS_TOPGAP
+            ).single()["c"]
     finally:
         cli.close()
-    print("  写入 MarketEvent %d / HAS_TOPGAP 边 %d（图内现存 %d）"
-          % (n1, n2, n))
+    print("  写入 MarketEvent %d / HAS_TOPGAP 边 %d（图内现存 %d）" % (n1, n2, n))
     print("  " + stats)
     # X3 血缘：榜后差额穿透 → HAS_TOPGAP 边
     _jr.edge("neo4j:HAS_TOPGAP", "parquet:ts_top_list", transform="penetration")  # X3

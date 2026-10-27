@@ -9,13 +9,14 @@
 
 用法：python kg_migration.py <hotmoney_name> [days=60] [--min-amt 3000000]
 """
+
 import os
 import sys
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from kg_client import KgClient               # noqa: E402
+from kg_client import KgClient  # noqa: E402
 
 
 def _next_td(s, d, k=2):
@@ -23,8 +24,11 @@ def _next_td(s, d, k=2):
     out = []
     cur = d
     for _ in range(k):
-        r = s.run("MATCH (a:TradeDate {date:$d})-[:NEXT_TRADE_DAY]->(b) "
-                  "RETURN b.date AS nd LIMIT 1", d=cur).single()
+        r = s.run(
+            "MATCH (a:TradeDate {date:$d})-[:NEXT_TRADE_DAY]->(b) "
+            "RETURN b.date AS nd LIMIT 1",
+            d=cur,
+        ).single()
         if not r or not r["nd"]:
             break
         cur = r["nd"]
@@ -34,9 +38,13 @@ def _next_td(s, d, k=2):
 
 def hotmoney_seats(s, hm_name):
     """HotMoney → OCCUPIES → 席位名集。"""
-    return [r["n"] for r in s.run(
-        "MATCH (h:HotMoney {name:$n})-[:OCCUPIES]->(s:Seat) "
-        "RETURN s.name AS n", n=hm_name).data()]
+    return [
+        r["n"]
+        for r in s.run(
+            "MATCH (h:HotMoney {name:$n})-[:OCCUPIES]->(s:Seat) RETURN s.name AS n",
+            n=hm_name,
+        ).data()
+    ]
 
 
 def seat_flows(s, seat, d0, d1):
@@ -46,7 +54,10 @@ def seat_flows(s, seat, d0, d1):
         "WHERE t.validStart >= $d0 AND t.validStart <= $d1 "
         "RETURN t.validStart AS d, sec.ts_code AS code, sec.name AS name, "
         "t.net_buy AS nb, t.buy AS b, t.sell AS sl ORDER BY d",
-        n=seat, d0=d0, d1=d1).data()
+        n=seat,
+        d0=d0,
+        d1=d1,
+    ).data()
 
 
 def derive_migrations(flows, min_amt, next_td):
@@ -62,31 +73,44 @@ def derive_migrations(flows, min_amt, next_td):
     window = set([d for d in dates] + [x for c in nxt.values() for x in c])
     out = []
     for d in dates:
-        sells = [(r["code"], r["name"], -r["nb"]) for r in by_date[d]
-                 if r["nb"] is not None and r["nb"] <= -min_amt]
+        sells = [
+            (r["code"], r["name"], -r["nb"])
+            for r in by_date[d]
+            if r["nb"] is not None and r["nb"] <= -min_amt
+        ]
         if not sells:
             continue
         buy_days = [x for x in [d] + nxt.get(d, []) if x in by_date]
-        buys = [(r["code"], r["name"], r["nb"], dd) for dd in buy_days
-                for r in by_date[dd]
-                if r["nb"] is not None and r["nb"] >= min_amt]
+        buys = [
+            (r["code"], r["name"], r["nb"], dd)
+            for dd in buy_days
+            for r in by_date[dd]
+            if r["nb"] is not None and r["nb"] >= min_amt
+        ]
         for sc, sn, amt in sells:
             for bc, bn, b, dd in buys:
                 if bc == sc:
                     continue
-                out.append({"date": d, "sell_code": sc, "sell_name": sn,
-                            "sell_amt": amt, "buy_date": dd,
-                            "buy_code": bc, "buy_name": bn, "buy_amt": b,
-                            "lag": (int(dd) - int(d)) if dd.isdigit() else None})
+                out.append(
+                    {
+                        "date": d,
+                        "sell_code": sc,
+                        "sell_name": sn,
+                        "sell_amt": amt,
+                        "buy_date": dd,
+                        "buy_code": bc,
+                        "buy_name": bn,
+                        "buy_amt": b,
+                        "lag": (int(dd) - int(d)) if dd.isdigit() else None,
+                    }
+                )
     return out
 
 
 def conservation(flows, min_amt):
     """窗口守恒：Σ净卖出 vs Σ净买入（同票对冲剔除），差比 → 置信度。"""
-    sell = sum(-r["nb"] for r in flows
-               if r["nb"] is not None and r["nb"] <= -min_amt)
-    buy = sum(r["nb"] for r in flows
-              if r["nb"] is not None and r["nb"] >= min_amt)
+    sell = sum(-r["nb"] for r in flows if r["nb"] is not None and r["nb"] <= -min_amt)
+    buy = sum(r["nb"] for r in flows if r["nb"] is not None and r["nb"] >= min_amt)
     if sell <= 0:
         return None
     ratio = min(buy, sell) / max(buy, sell) if max(buy, sell) else 0.0
@@ -104,7 +128,11 @@ def community_relay(s, seat, d0, d1, min_amt):
         "RETURN s1.name AS seat, c.name AS grp, sec.ts_code AS code, "
         "sec.name AS name, t.net_buy AS nb, t.validStart AS d "
         "ORDER BY nb DESC LIMIT 12",
-        seat=seat, d0=d0, d1=d1, amt=min_amt).data()
+        seat=seat,
+        d0=d0,
+        d1=d1,
+        amt=min_amt,
+    ).data()
 
 
 def main():
@@ -121,42 +149,58 @@ def main():
         if not seats:
             print("（无 OCCUPIES 席位——HotMoney 层未挂接）")
             return
-        d0 = (s.run("MATCH (:Seat)-[t:TRADED_ON]->() RETURN "
-                    "max(t.validStart) AS mx").single()["mx"])
+        d0 = s.run(
+            "MATCH (:Seat)-[t:TRADED_ON]->() RETURN max(t.validStart) AS mx"
+        ).single()["mx"]
         from datetime import timedelta
-        d0 = (datetime.strptime(d1, "%Y%m%d")
-              - timedelta(days=days)).strftime("%Y%m%d")
+
+        d0 = (datetime.strptime(d1, "%Y%m%d") - timedelta(days=days)).strftime("%Y%m%d")
         all_mig, cons = [], []
         for st in seats:
             flows = seat_flows(s, st, d0, d1)
             if not flows:
                 continue
-            migs = derive_migrations(
-                flows, min_amt,
-                lambda d, s=s: _next_td(s, d))
+            migs = derive_migrations(flows, min_amt, lambda d, s=s: _next_td(s, d))
             c = conservation(flows, min_amt)
             if c:
                 cons.append((st, c))
             all_mig += [dict(m, seat=st) for m in migs]
         all_mig.sort(key=lambda m: -(min(m["sell_amt"], m["buy_amt"])))
-        print("== 迁徙候选（|净买卖|≥%.0f 万，top 15）=="
-              % (min_amt / 1e4))
+        print("== 迁徙候选（|净买卖|≥%.0f 万，top 15）==" % (min_amt / 1e4))
         for m in all_mig[:15]:
-            print("  %s %s → %s %s  卖 %.0f万 / 买 %.0f万  (lag %s, %s)"
-                  % (m["date"], m["sell_code"], m["buy_code"],
-                     (m["buy_name"] or "")[:8], m["sell_amt"] / 1e4,
-                     m["buy_amt"] / 1e4, m["lag"], m["seat"][:24]))
+            print(
+                "  %s %s → %s %s  卖 %.0f万 / 买 %.0f万  (lag %s, %s)"
+                % (
+                    m["date"],
+                    m["sell_code"],
+                    m["buy_code"],
+                    (m["buy_name"] or "")[:8],
+                    m["sell_amt"] / 1e4,
+                    m["buy_amt"] / 1e4,
+                    m["lag"],
+                    m["seat"][:24],
+                )
+            )
         print("== 席位守恒（窗口 %d 天）==" % days)
         for st, c in cons[:8]:
-            print("  %s: sell %.0f万 buy %.0f万 ratio=%.3f"
-                  % (st[:36], c["sell"] / 1e4, c["buy"] / 1e4, c["ratio"]))
+            print(
+                "  %s: sell %.0f万 buy %.0f万 ratio=%.3f"
+                % (st[:36], c["sell"] / 1e4, c["buy"] / 1e4, c["ratio"])
+            )
         print("== 社区接力（同集团同向净买，top 8）==")
         for st in seats[:3]:
             for r in community_relay(s, st, d0, d1, min_amt):
-                print("  [%s] %s → %s %s  %.0f万 (%s)"
-                      % ((r["grp"] or "")[:12], st[:20], r["code"],
-                         (r["name"] or "")[:8], (r["nb"] or 0) / 1e4,
-                         r["d"]))
+                print(
+                    "  [%s] %s → %s %s  %.0f万 (%s)"
+                    % (
+                        (r["grp"] or "")[:12],
+                        st[:20],
+                        r["code"],
+                        (r["name"] or "")[:8],
+                        (r["nb"] or 0) / 1e4,
+                        r["d"],
+                    )
+                )
 
 
 if __name__ == "__main__":

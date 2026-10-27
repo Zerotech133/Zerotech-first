@@ -9,6 +9,7 @@
   引擎错误或样本不足（n_trades<5）→ inconclusive（留 pending_manual 防误杀，可重跑）。
 - 并发：进程内 _LOCK 串行多单；store bt2_result.running 标记防跨进程重复。
 """
+
 import os
 import sys
 import time
@@ -31,10 +32,12 @@ def _selfheal_base():
     base = os.path.dirname(_HERE)  # 站根 c:\项目\老田的AI助手
     eng.BASE = base
     eng.DATA = os.path.join(base, "quant_backtest", "data", "ashare")
-    eng.POOL_SRC = os.path.join(base, "k_stock", "data",
-                                "poc_adapter_chanlun_20261012.json")
-    eng.LEDGER = os.path.join(base, "quant_backtest", "data", "daily_ledger",
-                              "ledger_20251013_20261012.json")
+    eng.POOL_SRC = os.path.join(
+        base, "k_stock", "data", "poc_adapter_chanlun_20261012.json"
+    )
+    eng.LEDGER = os.path.join(
+        base, "quant_backtest", "data", "daily_ledger", "ledger_20251013_20261012.json"
+    )
     eng.OUT_DIR = os.path.join(base, "quant_backtest", "data", "bt2")
     return True
 
@@ -44,21 +47,40 @@ _SELFHEALED = _selfheal_base()
 # ── 规则模板（intent → 参数覆盖；*_delta=相对 baseline 加减，其余=绝对值） ──
 RULE_TEMPLATES = {
     "chanlun": {"top_n_delta": 2, "slot_pct_delta": 0.02, "cap_high_delta": 0.05},
-    "risk": {"stop_pct": 0.05, "trail_activate": 0.05,
-             "trail_drawdown": 0.035, "fail_buffer": 0.03},
+    "risk": {
+        "stop_pct": 0.05,
+        "trail_activate": 0.05,
+        "trail_drawdown": 0.035,
+        "fail_buffer": 0.03,
+    },
     "param": {"sig_expiry": 3, "gate_mode": "weak", "min_score": 40},
 }
 TUNE_BT_INTENTS = tuple(RULE_TEMPLATES)  # freq/opinion 无模板不自动跑
 
 # 达标判据（可调）
-RETURN_LIFT = 1.10     # override 总收益 ≥ baseline×1.10
+RETURN_LIFT = 1.10  # override 总收益 ≥ baseline×1.10
 DRAWDOWN_WORSE = 1.20  # 且 override 最大回撤 ≤ baseline×1.20
 
 # 引擎键集合：vip_overrides 中含这些键时视为"上次部署配置"参与 baseline
-_ENGINE_KEYS = ("strategy", "d0", "d1", "top_n", "slot_pct", "cap_mode",
-                "cap_high", "cap_mid", "cap_low", "stop_pct", "trail_activate",
-                "trail_drawdown", "gate_mode", "min_score", "sig_expiry",
-                "buy_filter", "universe")
+_ENGINE_KEYS = (
+    "strategy",
+    "d0",
+    "d1",
+    "top_n",
+    "slot_pct",
+    "cap_mode",
+    "cap_high",
+    "cap_mid",
+    "cap_low",
+    "stop_pct",
+    "trail_activate",
+    "trail_drawdown",
+    "gate_mode",
+    "min_score",
+    "sig_expiry",
+    "buy_filter",
+    "universe",
+)
 
 
 def _apply_template(base, tpl):
@@ -93,7 +115,7 @@ def run_compare(req_id, doc, vip=None):
     intent = (doc or {}).get("intent") or "opinion"
     if intent not in TUNE_BT_INTENTS:
         return {"verdict": "inconclusive", "reason": "intent 无规则模板（%s）" % intent}
-    draft = ((doc or {}).get("draft") or {})
+    draft = (doc or {}).get("draft") or {}
     override_hint = draft.get("bt2_params_override") or {}
     symbols = draft.get("symbols") or []
 
@@ -124,22 +146,32 @@ def run_compare(req_id, doc, vip=None):
         elapsed = round(time.time() - t0)
 
         if be or oe:
-            return {"verdict": "inconclusive",
-                    "reason": "引擎错误 base=%s over=%s" % (str(be)[:100], str(oe)[:100]),
-                    "job_ids": [bj if not be else None, oj if not oe else None],
-                    "elapsed": elapsed}
+            return {
+                "verdict": "inconclusive",
+                "reason": "引擎错误 base=%s over=%s" % (str(be)[:100], str(oe)[:100]),
+                "job_ids": [bj if not be else None, oj if not oe else None],
+                "elapsed": elapsed,
+            }
         ntr = (os_ or {}).get("n_trades") or 0
         if not bs or not os_ or ntr < 5:
-            return {"verdict": "inconclusive",
-                    "reason": "样本不足或指标缺失（n_trades=%s）" % ntr,
-                    "baseline_summary": bs, "override_summary": os_,
-                    "job_ids": [bj, oj], "elapsed": elapsed}
+            return {
+                "verdict": "inconclusive",
+                "reason": "样本不足或指标缺失（n_trades=%s）" % ntr,
+                "baseline_summary": bs,
+                "override_summary": os_,
+                "job_ids": [bj, oj],
+                "elapsed": elapsed,
+            }
         bret = bs.get("total_return_pct") or 0
         oret = os_.get("total_return_pct") or 0
         bdd = bs.get("max_drawdown_pct") or 0
         odd = os_.get("max_drawdown_pct") or 0
         hit = oret >= bret * RETURN_LIFT and odd <= bdd * DRAWDOWN_WORSE
-        return {"verdict": "pass" if hit else "fail",
-                "reason": "收益 %.2f%%→%.2f%% 回撤 %.2f%%→%.2f%%" % (bret, oret, bdd, odd),
-                "baseline_summary": bs, "override_summary": os_,
-                "job_ids": [bj, oj], "elapsed": elapsed}
+        return {
+            "verdict": "pass" if hit else "fail",
+            "reason": "收益 %.2f%%→%.2f%% 回撤 %.2f%%→%.2f%%" % (bret, oret, bdd, odd),
+            "baseline_summary": bs,
+            "override_summary": os_,
+            "job_ids": [bj, oj],
+            "elapsed": elapsed,
+        }

@@ -5,6 +5,7 @@
 save/load 持久化往返、坏配置容错、掩码、init_ball 池优先与失效
 换号（RESEARCH_MEDIACRAWLER §E P1-4）。pytest 与 unittest 双兼容。
 """
+
 import json
 import os
 import sys
@@ -22,10 +23,12 @@ import xueqiu_sync as S
 import xq_tokens as T
 
 
-def _entry(name="tok-1", token="a" * 40, last_used=0.0, fails=0,
-           cd=0.0) -> T.TokenEntry:
-    return T.TokenEntry(name=name, token=token, last_used=last_used,
-                        fail_count=fails, cooldown_until=cd)
+def _entry(
+    name="tok-1", token="a" * 40, last_used=0.0, fails=0, cd=0.0
+) -> T.TokenEntry:
+    return T.TokenEntry(
+        name=name, token=token, last_used=last_used, fail_count=fails, cooldown_until=cd
+    )
 
 
 def _fake_ball(**attrs) -> types.ModuleType:
@@ -53,12 +56,12 @@ class TestTokenPool(unittest.TestCase):
         old = _entry("old", last_used=100.0)
         never = _entry("never", last_used=0.0)
         recent = _entry("recent", last_used=900.0)
-        self.assertEqual(T.TokenPool([recent, old, never]).pick().name,
-                         "never")
+        self.assertEqual(T.TokenPool([recent, old, never]).pick().name, "never")
 
     def test_pick_all_cooldown_returns_none(self):
-        p = T.TokenPool([_entry("a", cd=time.time() + 600),
-                         _entry("b", cd=time.time() + 600)])
+        p = T.TokenPool(
+            [_entry("a", cd=time.time() + 600), _entry("b", cd=time.time() + 600)]
+        )
         self.assertIsNone(p.pick())
 
     def test_mark_fail_cooldowns(self):
@@ -87,7 +90,7 @@ class TestTokenPool(unittest.TestCase):
         by = {e.name: e for e in p2.entries}
         self.assertEqual(by["t1"].last_used, 111.0)
         self.assertEqual(by["t1"].fail_count, 1)
-        self.assertFalse(by["t2"].healthy())        # 冷却状态持久化
+        self.assertFalse(by["t2"].healthy())  # 冷却状态持久化
         self.assertEqual(by["t2"].token, "b" * 40)
 
     def test_load_bad_json_empty(self):
@@ -106,10 +109,15 @@ class TestTokenPool(unittest.TestCase):
         d = tempfile.mkdtemp()
         path = os.path.join(d, "x.json")
         with open(path, "w", encoding="utf-8") as f:
-            json.dump([{"name": "ok-1", "token": "c" * 40},
-                       {"name": "no-token"},
-                       {"token": "d" * 40},
-                       "not-a-dict"], f)
+            json.dump(
+                [
+                    {"name": "ok-1", "token": "c" * 40},
+                    {"name": "no-token"},
+                    {"token": "d" * 40},
+                    "not-a-dict",
+                ],
+                f,
+            )
         pool = T.load_tokens(path)
         self.assertEqual(len(pool.entries), 1)
         self.assertEqual(pool.entries[0].name, "ok-1")
@@ -147,18 +155,24 @@ class TestInitBallPoolWiring(unittest.TestCase):
         pool = T.TokenPool([e], os.path.join(self._tmp, "t.json"))
         fake = _fake_ball(set_token=lambda t: None)
         mf = self._mf()
-        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
-                mock.patch("xq_tokens.get_pool", return_value=pool), \
-                mock.patch.object(X, "quotec_probe",
-                                  return_value=_PROBE_OK), \
-                mock.patch.object(X, "token_probe",
-                                  return_value={"ok": True,
-                                                "valid": True,
-                                                "latency_ms": 1,
-                                                "ts": "x", "err": ""}), \
-                mock.patch.object(X, "load_token",
-                                  return_value=""), \
-                mock.patch.object(X, "jitter_sleep", lambda *a: None):
+        with (
+            mock.patch.dict(sys.modules, {"pysnowball": fake}),
+            mock.patch("xq_tokens.get_pool", return_value=pool),
+            mock.patch.object(X, "quotec_probe", return_value=_PROBE_OK),
+            mock.patch.object(
+                X,
+                "token_probe",
+                return_value={
+                    "ok": True,
+                    "valid": True,
+                    "latency_ms": 1,
+                    "ts": "x",
+                    "err": "",
+                },
+            ),
+            mock.patch.object(X, "load_token", return_value=""),
+            mock.patch.object(X, "jitter_sleep", lambda *a: None),
+        ):
             ctx = S.init_ball(mf)
         self.assertEqual(ctx["token"], "p" * 40)
         self.assertEqual(e.fail_count, 0)
@@ -171,20 +185,23 @@ class TestInitBallPoolWiring(unittest.TestCase):
         e2 = _entry("alive", "v" * 40)
         pool = T.TokenPool([e1, e2], os.path.join(self._tmp, "t.json"))
         fake = _fake_ball(set_token=lambda t: None)
-        dead = {"ok": True, "valid": False, "latency_ms": 1, "ts": "x",
-                "err": "error_code=400016 token 失效"}
-        alive = {"ok": True, "valid": True, "latency_ms": 1, "ts": "x",
-                 "err": ""}
+        dead = {
+            "ok": True,
+            "valid": False,
+            "latency_ms": 1,
+            "ts": "x",
+            "err": "error_code=400016 token 失效",
+        }
+        alive = {"ok": True, "valid": True, "latency_ms": 1, "ts": "x", "err": ""}
         mf = self._mf()
-        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
-                mock.patch("xq_tokens.get_pool", return_value=pool), \
-                mock.patch.object(X, "quotec_probe",
-                                  return_value=_PROBE_OK), \
-                mock.patch.object(X, "token_probe",
-                                  side_effect=[dead, alive]), \
-                mock.patch.object(X, "load_token",
-                                  return_value=""), \
-                mock.patch.object(X, "jitter_sleep", lambda *a: None):
+        with (
+            mock.patch.dict(sys.modules, {"pysnowball": fake}),
+            mock.patch("xq_tokens.get_pool", return_value=pool),
+            mock.patch.object(X, "quotec_probe", return_value=_PROBE_OK),
+            mock.patch.object(X, "token_probe", side_effect=[dead, alive]),
+            mock.patch.object(X, "load_token", return_value=""),
+            mock.patch.object(X, "jitter_sleep", lambda *a: None),
+        ):
             ctx = S.init_ball(mf)
         self.assertEqual(ctx["token"], "v" * 40)
         self.assertEqual(e1.fail_count, 1)
@@ -198,19 +215,23 @@ class TestInitBallPoolWiring(unittest.TestCase):
         e2 = _entry("d2", "2" * 40)
         pool = T.TokenPool([e1, e2], os.path.join(self._tmp, "t.json"))
         fake = _fake_ball(set_token=lambda t: None)
-        dead = {"ok": True, "valid": False, "latency_ms": 1, "ts": "x",
-                "err": "error_code=400016"}
-        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
-                mock.patch("xq_tokens.get_pool", return_value=pool), \
-                mock.patch.object(X, "quotec_probe",
-                                  return_value=_PROBE_OK), \
-                mock.patch.object(X, "token_probe",
-                                  return_value=dead), \
-                mock.patch.object(X, "load_token",
-                                  return_value=""), \
-                mock.patch.object(X, "jitter_sleep", lambda *a: None):
+        dead = {
+            "ok": True,
+            "valid": False,
+            "latency_ms": 1,
+            "ts": "x",
+            "err": "error_code=400016",
+        }
+        with (
+            mock.patch.dict(sys.modules, {"pysnowball": fake}),
+            mock.patch("xq_tokens.get_pool", return_value=pool),
+            mock.patch.object(X, "quotec_probe", return_value=_PROBE_OK),
+            mock.patch.object(X, "token_probe", return_value=dead),
+            mock.patch.object(X, "load_token", return_value=""),
+            mock.patch.object(X, "jitter_sleep", lambda *a: None),
+        ):
             ctx = S.init_ball(self._mf())
-        self.assertTrue(ctx["token_probe"]["ok"])   # ok+非valid → 跳批
+        self.assertTrue(ctx["token_probe"]["ok"])  # ok+非valid → 跳批
         self.assertFalse(ctx["token_probe"]["valid"])
         self.assertEqual(e1.fail_count, 1)
         self.assertEqual(e2.fail_count, 1)
@@ -220,18 +241,24 @@ class TestInitBallPoolWiring(unittest.TestCase):
         pool = T.TokenPool([], os.path.join(self._tmp, "t.json"))
         fake = _fake_ball(set_token=lambda t: None)
         mf = self._mf()
-        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
-                mock.patch("xq_tokens.get_pool", return_value=pool), \
-                mock.patch.object(X, "quotec_probe",
-                                  return_value=_PROBE_OK), \
-                mock.patch.object(X, "load_token",
-                                  return_value="c" * 40), \
-                mock.patch.object(X, "token_probe",
-                                  return_value={"ok": True,
-                                                "valid": True,
-                                                "latency_ms": 1,
-                                                "ts": "x", "err": ""}), \
-                mock.patch.object(X, "jitter_sleep", lambda *a: None):
+        with (
+            mock.patch.dict(sys.modules, {"pysnowball": fake}),
+            mock.patch("xq_tokens.get_pool", return_value=pool),
+            mock.patch.object(X, "quotec_probe", return_value=_PROBE_OK),
+            mock.patch.object(X, "load_token", return_value="c" * 40),
+            mock.patch.object(
+                X,
+                "token_probe",
+                return_value={
+                    "ok": True,
+                    "valid": True,
+                    "latency_ms": 1,
+                    "ts": "x",
+                    "err": "",
+                },
+            ),
+            mock.patch.object(X, "jitter_sleep", lambda *a: None),
+        ):
             ctx = S.init_ball(mf)
         self.assertEqual(ctx["token"], "c" * 40)
         self.assertEqual(mf.health().get("token_name"), "chain")
@@ -240,19 +267,23 @@ class TestInitBallPoolWiring(unittest.TestCase):
         """三级链单 token 失效 → 无替代者，probe 结果如实返回（不换）。"""
         pool = T.TokenPool([], os.path.join(self._tmp, "t.json"))
         fake = _fake_ball(set_token=lambda t: None)
-        dead = {"ok": True, "valid": False, "latency_ms": 1, "ts": "x",
-                "err": "error_code=400016"}
-        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
-                mock.patch("xq_tokens.get_pool", return_value=pool), \
-                mock.patch.object(X, "quotec_probe",
-                                  return_value=_PROBE_OK), \
-                mock.patch.object(X, "token_probe",
-                                  return_value=dead), \
-                mock.patch.object(X, "load_token",
-                                  return_value="c" * 40), \
-                mock.patch.object(X, "jitter_sleep", lambda *a: None):
+        dead = {
+            "ok": True,
+            "valid": False,
+            "latency_ms": 1,
+            "ts": "x",
+            "err": "error_code=400016",
+        }
+        with (
+            mock.patch.dict(sys.modules, {"pysnowball": fake}),
+            mock.patch("xq_tokens.get_pool", return_value=pool),
+            mock.patch.object(X, "quotec_probe", return_value=_PROBE_OK),
+            mock.patch.object(X, "token_probe", return_value=dead),
+            mock.patch.object(X, "load_token", return_value="c" * 40),
+            mock.patch.object(X, "jitter_sleep", lambda *a: None),
+        ):
             ctx = S.init_ball(self._mf())
-        self.assertEqual(ctx["token"], "c" * 40)    # 原样返回
+        self.assertEqual(ctx["token"], "c" * 40)  # 原样返回
         self.assertFalse(ctx["token_probe"]["valid"])
 
 

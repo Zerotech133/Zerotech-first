@@ -12,6 +12,7 @@
   python _build_spatial.py --dryrun      # 只算规模不入图
   python _build_spatial.py               # 全量入图（幂等）
 """
+
 import argparse
 import hashlib
 import os
@@ -60,14 +61,18 @@ def build_trade_actions(df, seat2hm=None):
         seat2hm = {}
 
     # Location 节点（全量唯一席位名 → 地理锚点）
-    loc_nodes, loc_hit, loc_total = sl.build_location_nodes(df["exalter"].dropna().unique())
-    loc_key_map = {n["seat_name"]: n for n in loc_nodes}  # seat_name → Location 节点属性
+    loc_nodes, loc_hit, loc_total = sl.build_location_nodes(
+        df["exalter"].dropna().unique()
+    )
+    loc_key_map = {
+        n["seat_name"]: n for n in loc_nodes
+    }  # seat_name → Location 节点属性
 
     ta_nodes = []
-    executed_by = []   # TradeAction → Seat
-    targets = []       # TradeAction → Security
-    occupied_by = []   # TradeAction → HotMoney（经 seat2hm 投影）
-    located_at = []    # TradeAction → Location（仅可识别地理的席位）
+    executed_by = []  # TradeAction → Seat
+    targets = []  # TradeAction → Security
+    occupied_by = []  # TradeAction → HotMoney（经 seat2hm 投影）
+    located_at = []  # TradeAction → Location（仅可识别地理的席位）
     seat_loc_edges = []  # Seat → Location（同一席位可复用）
     trade_dates_set = set()
 
@@ -86,15 +91,17 @@ def build_trade_actions(df, seat2hm=None):
         # TradeAction 唯一 ID
         ta_id = _ta_id(seat_name, ts_code, trade_date, side)
 
-        ta_nodes.append({
-            "id": ta_id,
-            "trade_date": trade_date,
-            "side": side,                  # 0=净买 / 1=净卖
-            "amount": amount,
-            "source": "ts_top_inst",
-            "knowledge_time": _now(),
-            "updated_at": _now(),
-        })
+        ta_nodes.append(
+            {
+                "id": ta_id,
+                "trade_date": trade_date,
+                "side": side,  # 0=净买 / 1=净卖
+                "amount": amount,
+                "source": "ts_top_inst",
+                "knowledge_time": _now(),
+                "updated_at": _now(),
+            }
+        )
 
         vstart = trade_date
         executed_by.append({"src": ta_id, "dst": seat_name, "validStart": vstart})
@@ -102,12 +109,16 @@ def build_trade_actions(df, seat2hm=None):
 
         # OCCUPIED_BY 直挂（仅 seat2hm 有映射时）
         if seat_name in seat2hm:
-            occupied_by.append({
-                "src": ta_id, "dst": seat2hm[seat_name],
-                "validStart": vstart,
-                "confidence": 0.9, "source": "youzi_registry_v1",
-                "updated_at": _now(),
-            })
+            occupied_by.append(
+                {
+                    "src": ta_id,
+                    "dst": seat2hm[seat_name],
+                    "validStart": vstart,
+                    "confidence": 0.9,
+                    "source": "youzi_registry_v1",
+                    "updated_at": _now(),
+                }
+            )
 
         # LOCATED_AT（仅地理可识别席位）
         loc = loc_key_map.get(seat_name)
@@ -117,13 +128,16 @@ def build_trade_actions(df, seat2hm=None):
             # Seat → Location 时空锚点（去重写一次）
             if seat_name not in seat_loc_written:
                 seat_loc_written.add(seat_name)
-                seat_loc_edges.append({
-                    "src": seat_name, "dst": loc["key"],
-                    "validStart": trade_date,
-                    "validEnd": S.VALID_END_OPEN,
-                    "source": "seat_locator_v1",
-                    "updated_at": _now(),
-                })
+                seat_loc_edges.append(
+                    {
+                        "src": seat_name,
+                        "dst": loc["key"],
+                        "validStart": trade_date,
+                        "validEnd": S.VALID_END_OPEN,
+                        "source": "seat_locator_v1",
+                        "updated_at": _now(),
+                    }
+                )
 
         trade_dates_set.add(trade_date)
 
@@ -159,8 +173,9 @@ def build_trade_actions(df, seat2hm=None):
         "n_seats": df["exalter"].nunique(),
         "n_unique_ta": len(ta_nodes),
         "n_loc_nodes": len(loc_nodes),
-        "loc_hit": loc_hit, "loc_total": loc_total,
-        "loc_rate": f"{loc_hit/loc_total*100:.1f}%" if loc_total else "n/a",
+        "loc_hit": loc_hit,
+        "loc_total": loc_total,
+        "loc_rate": f"{loc_hit / loc_total * 100:.1f}%" if loc_total else "n/a",
         "n_dates": len(trade_dates_set),
         "n_executed_by": len(executed_by),
         "n_targets": len(targets),
@@ -179,12 +194,15 @@ def run(dryrun=False):
     print("[1/3] 读取 ts_top_inst 原始数据…")
     df = tdxr.read_range("ts_top_inst")
     df["trade_date"] = df["trade_date"].astype(str).str[:8]
-    print(f"  原始行: {len(df)}  日期: {df['trade_date'].min()} ~ {df['trade_date'].max()}")
+    print(
+        f"  原始行: {len(df)}  日期: {df['trade_date'].min()} ~ {df['trade_date'].max()}"
+    )
 
     # 游资词表（用于 OCCUPIED_BY 投影）
     print("[2/3] 游资词表匹配 + TradeAction 构建…")
     sys.path.insert(0, HERE)
     import kg_build_cl1  # noqa: E402 —— 复用游资词表
+
     seat2hm = {}
     for name, pats, _ in kg_build_cl1.YOUZI:
         rx = re.compile("|".join(pats))
@@ -195,7 +213,9 @@ def run(dryrun=False):
     ta_nodes, edges, loc_nodes, _, trade_dates, stats = build_trade_actions(df, seat2hm)
 
     print("  TradeAction 节点: %d" % stats["n_unique_ta"])
-    print("  Location 节点: %d（命中率 %s）" % (stats["n_loc_nodes"], stats["loc_rate"]))
+    print(
+        "  Location 节点: %d（命中率 %s）" % (stats["n_loc_nodes"], stats["loc_rate"])
+    )
     print("  TradeDate 补建: %d" % stats["n_dates"])
     print("  EXECUTED_BY: %d" % stats["n_executed_by"])
     print("  TARGETS: %d" % stats["n_targets"])
@@ -211,6 +231,7 @@ def run(dryrun=False):
     # 入图
     print("[3/3] 入图（幂等 MERGE）…")
     from kg_client import KgClient
+
     cli = KgClient()
     cli.ensure_schema()
 
@@ -228,38 +249,74 @@ def run(dryrun=False):
 
     # 新边族（6 类）
     # Seat 节点确保存在（EXECUTED_BY 源端）
-    cli.upsert_nodes(S.LBL_SEAT, ["name"], [
-        {"name": s} for s in df["exalter"].dropna().unique()
-    ])
+    cli.upsert_nodes(
+        S.LBL_SEAT, ["name"], [{"name": s} for s in df["exalter"].dropna().unique()]
+    )
 
     # EXECUTED_BY：TradeAction → Seat（注意方向！src=ta_id, dst=seat_name）
     # upsert_edge 签名是 (src_label, src_key, dst_label, dst_key, rel, props_list)
-    cli.upsert_edge(S.LBL_TRADE_ACTION, "id", S.LBL_SEAT, "name",
-                    S.REL_EXECUTED_BY, edges[S.REL_EXECUTED_BY])
+    cli.upsert_edge(
+        S.LBL_TRADE_ACTION,
+        "id",
+        S.LBL_SEAT,
+        "name",
+        S.REL_EXECUTED_BY,
+        edges[S.REL_EXECUTED_BY],
+    )
     print("  EXECUTED_BY: %d" % len(edges[S.REL_EXECUTED_BY]))
 
-    cli.upsert_edge(S.LBL_TRADE_ACTION, "id", S.LBL_SECURITY, "ts_code",
-                    S.REL_TARGETS, edges[S.REL_TARGETS])
+    cli.upsert_edge(
+        S.LBL_TRADE_ACTION,
+        "id",
+        S.LBL_SECURITY,
+        "ts_code",
+        S.REL_TARGETS,
+        edges[S.REL_TARGETS],
+    )
     print("  TARGETS: %d" % len(edges[S.REL_TARGETS]))
 
     if edges[S.REL_OCCUPIED_BY]:
-        cli.upsert_edge(S.LBL_TRADE_ACTION, "id", S.LBL_HOTMONEY, "name",
-                        S.REL_OCCUPIED_BY, edges[S.REL_OCCUPIED_BY])
+        cli.upsert_edge(
+            S.LBL_TRADE_ACTION,
+            "id",
+            S.LBL_HOTMONEY,
+            "name",
+            S.REL_OCCUPIED_BY,
+            edges[S.REL_OCCUPIED_BY],
+        )
         print("  OCCUPIED_BY: %d" % len(edges[S.REL_OCCUPIED_BY]))
 
     if edges[S.REL_LOCATED_AT]:
-        cli.upsert_edge(S.LBL_TRADE_ACTION, "id", S.LBL_LOCATION, "key",
-                        S.REL_LOCATED_AT, edges[S.REL_LOCATED_AT])
+        cli.upsert_edge(
+            S.LBL_TRADE_ACTION,
+            "id",
+            S.LBL_LOCATION,
+            "key",
+            S.REL_LOCATED_AT,
+            edges[S.REL_LOCATED_AT],
+        )
         print("  LOCATED_AT: %d" % len(edges[S.REL_LOCATED_AT]))
 
     if edges[S.REL_SEAT_LOCATED_AT]:
-        cli.upsert_edge(S.LBL_SEAT, "name", S.LBL_LOCATION, "key",
-                        S.REL_SEAT_LOCATED_AT, edges[S.REL_SEAT_LOCATED_AT])
+        cli.upsert_edge(
+            S.LBL_SEAT,
+            "name",
+            S.LBL_LOCATION,
+            "key",
+            S.REL_SEAT_LOCATED_AT,
+            edges[S.REL_SEAT_LOCATED_AT],
+        )
         print("  SEAT_LOCATED_AT: %d" % len(edges[S.REL_SEAT_LOCATED_AT]))
 
     if edges[S.REL_HAS_TRADED]:
-        cli.upsert_edge(S.LBL_TRADE_DATE, "date", S.LBL_TRADE_ACTION, "id",
-                        S.REL_HAS_TRADED, edges[S.REL_HAS_TRADED])
+        cli.upsert_edge(
+            S.LBL_TRADE_DATE,
+            "date",
+            S.LBL_TRADE_ACTION,
+            "id",
+            S.REL_HAS_TRADED,
+            edges[S.REL_HAS_TRADED],
+        )
         print("  HAS_TRADED: %d" % len(edges[S.REL_HAS_TRADED]))
 
     cli.close()

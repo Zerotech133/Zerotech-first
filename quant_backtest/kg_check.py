@@ -17,6 +17,7 @@
   python kg_check.py            # 跑检查并落盘
   python kg_check.py --json     # 仅打印 JSON
 """
+
 import argparse
 import json
 import os
@@ -34,14 +35,22 @@ LATEST = os.path.join(STATE_DIR, "latest.json")
 
 # 覆盖域：边型 -> 日期取值（边日期在 validStart，事件日期在 m.date）
 COVERAGE_EDGES = [
-    "HAS_VOL_EVENT", "HAS_STRUCTURE", "HAS_CANDLE",
-    "DRIVE", "TRADED_ON", "INVOLVES", "SERVES_AS",
+    "HAS_VOL_EVENT",
+    "HAS_STRUCTURE",
+    "HAS_CANDLE",
+    "DRIVE",
+    "TRADED_ON",
+    "INVOLVES",
+    "SERVES_AS",
 ]
 
 INTRADAY_NOTE = {
-    "HAS_VOL_EVENT": "盘面量能", "HAS_STRUCTURE": "缠论结构",
-    "HAS_CANDLE": "盘口事件", "DRIVE": "DRIVE 传导",
-    "TRADED_ON": "龙虎榜席位", "INVOLVES": "公告事件",
+    "HAS_VOL_EVENT": "盘面量能",
+    "HAS_STRUCTURE": "缠论结构",
+    "HAS_CANDLE": "盘口事件",
+    "DRIVE": "DRIVE 传导",
+    "TRADED_ON": "龙虎榜席位",
+    "INVOLVES": "公告事件",
     "SERVES_AS": "高管任职",
 }
 
@@ -59,45 +68,50 @@ def run():
             "MATCH ()-[r]->() WHERE r.validStart IS NOT NULL "
             "AND r.validEnd IS NOT NULL AND r.validStart > r.validEnd "
             "AND r.validEnd <> '9999-12-31' "
-            "RETURN type(r) AS t, count(*) AS n").data()
+            "RETURN type(r) AS t, count(*) AS n"
+        ).data()
         bad = [x for x in r if x["n"]]
         issues["inverted"] = {
             "ok": not bad,
-            "detail": ["%s: %d" % (x["t"], x["n"]) for x in bad]}
+            "detail": ["%s: %d" % (x["t"], x["n"]) for x in bad],
+        }
 
         # ② 挂空事件节点（指数信号豁免：MarketIndex 缠论信号无出边属
         #    架构已知残留，保留节点价值；evt_id 前缀=指数 ts_code）
-        idx = set(x["c"] for x in s.run(
-            "MATCH (i:MarketIndex) RETURN i.code AS c").data())
+        idx = set(
+            x["c"] for x in s.run("MATCH (i:MarketIndex) RETURN i.code AS c").data()
+        )
         orph = s.run(
-            "MATCH (m:MarketEvent) WHERE NOT ( ()-->(m) ) "
-            "RETURN m.evt_id AS eid").data()
-        real = [o["eid"] for o in orph
-                if (o["eid"] or "?").split(":")[0] not in idx]
+            "MATCH (m:MarketEvent) WHERE NOT ( ()-->(m) ) RETURN m.evt_id AS eid"
+        ).data()
+        real = [o["eid"] for o in orph if (o["eid"] or "?").split(":")[0] not in idx]
         issues["orphan_evt"] = {
             "ok": not real,
-            "detail": {"real": real,
-                       "idx_exempt": len(orph) - len(real)}}
+            "detail": {"real": real, "idx_exempt": len(orph) - len(real)},
+        }
 
         # ③ 事件日期格式
         n = s.run(
             "MATCH (m:MarketEvent) WHERE m.date IS NOT NULL "
             "AND (size(toString(m.date)) <> 8 OR NOT toString(m.date) =~ "
-            "'[0-9]{8}') RETURN count(*) AS n").data()[0]["n"]
+            "'[0-9]{8}') RETURN count(*) AS n"
+        ).data()[0]["n"]
         issues["bad_date"] = {"ok": n == 0, "detail": n}
 
         # ④ evt_id 唯一约束存在
         cons = s.run("SHOW CONSTRAINTS YIELD name RETURN name").data()
         issues["constraint"] = {
             "ok": any("evt_id" in (c.get("name") or "") for c in cons),
-            "detail": [c.get("name") for c in cons]}
+            "detail": [c.get("name") for c in cons],
+        }
 
         # ⑤ 边型×端点组合快照 + drift
         snap = {}
         for x in s.run(
-                "MATCH (a)-[r]->(b) "
-                "RETURN type(r) AS rt, labels(a)[0] AS la, "
-                "labels(b)[0] AS lb, count(*) AS n").data():
+            "MATCH (a)-[r]->(b) "
+            "RETURN type(r) AS rt, labels(a)[0] AS la, "
+            "labels(b)[0] AS lb, count(*) AS n"
+        ).data():
             snap["%s|%s>%s" % (x["rt"], x["la"], x["lb"])] = x["n"]
         prev = {}
         if os.path.isfile(LATEST):
@@ -109,13 +123,15 @@ def run():
         new_keys = sorted(set(snap) - set(prev))
         issues["drift"] = {
             "ok": not new_keys or not prev,  # 首跑基线不算
-            "detail": new_keys}
+            "detail": new_keys,
+        }
 
         # ⑥ 覆盖域最大日期
         cov = {}
         for t in COVERAGE_EDGES:
-            d = s.run("MATCH ()-[r:%s]->() RETURN max(r.validStart) AS d"
-                      % t).data()[0]["d"]
+            d = s.run("MATCH ()-[r:%s]->() RETURN max(r.validStart) AS d" % t).data()[
+                0
+            ]["d"]
             cov[t] = {"max": d, "cn": INTRADAY_NOTE.get(t, t)}
 
         # ⑥a-2 雪球帖提及边水位（跨仓工单 2026-10-19，雪球帖入图接线）：
@@ -126,7 +142,8 @@ def run():
         d = s.run(
             "MATCH (n:IntelItem)-[r:MENTIONS]->() "
             "WHERE n.data_source STARTS WITH 'xueqiu' "
-            "RETURN max(r.validStart) AS d").data()[0]["d"]
+            "RETURN max(r.validStart) AS d"
+        ).data()[0]["d"]
         cov["XQ_STATUS_MENTIONS"] = {"max": d, "cn": "雪球帖提及"}
 
         # ⑥b 滞后告警（OPS-0930b：HAS_STRUCTURE 断 13 天而检查器
@@ -149,38 +166,41 @@ def run():
             if t == "SERVES_AS" or not c["max"]:
                 continue
             try:
-                nat = (datetime.now()
-                       - datetime.strptime(c["max"], "%Y%m%d")).days
+                nat = (datetime.now() - datetime.strptime(c["max"], "%Y%m%d")).days
             except ValueError:
-                continue          # 非常规日期格式（如 ISO）跳过
+                continue  # 非常规日期格式（如 ISO）跳过
             lag = _tdlag(c["max"]) if _tdlag else None
             basis = "tradeday" if lag is not None else "natural"
             if lag is None:
                 lag = nat
             if lag > LAG_BUDGET.get(t, 4):
-                lag_bad.append("%s %s 距今 %dd(%s)"
-                               % (c["cn"], c["max"], lag, basis))
+                lag_bad.append("%s %s 距今 %dd(%s)" % (c["cn"], c["max"], lag, basis))
         issues["coverage_lag"] = {"ok": not lag_bad, "detail": lag_bad}
     cli.close()
 
     # ⑦ 数据源断流（G7 Admiralty 动态面：catalog freshness 超语义档 +
     #    catalog 自身过期元检查；纯本地计算，顺带刷新 rating JSON）
     from kg_source_rating import build as rating_build, save as rating_save
+
     rt = rating_build()
     rating_save(rt)
-    sf_detail = ["%s: lag=%sd budget=%sd (%s)" % (
-        r["table"], r["lag_days"], r["budget"], r["source"])
-        for r in rt["staleness"]["stale_tables"]]
+    sf_detail = [
+        "%s: lag=%sd budget=%sd (%s)"
+        % (r["table"], r["lag_days"], r["budget"], r["source"])
+        for r in rt["staleness"]["stale_tables"]
+    ]
     if rt["staleness"]["catalog_stale"]:
-        sf_detail.insert(0, "catalog 自身过期 %sd（须跑 build_catalog.py，"
-                            "否则 freshness 全表失真）"
-                         % rt["staleness"]["catalog_age_days"])
+        sf_detail.insert(
+            0,
+            "catalog 自身过期 %sd（须跑 build_catalog.py，"
+            "否则 freshness 全表失真）" % rt["staleness"]["catalog_age_days"],
+        )
     issues["source_fresh"] = {"ok": rt["ok"], "detail": sf_detail}
 
     out = {
         "ts": datetime.now().isoformat(timespec="seconds"),
         "ok": all(v["ok"] for k, v in issues.items() if k != "drift")
-              and issues["drift"]["ok"],
+        and issues["drift"]["ok"],
         "issues": issues,
         "coverage": cov,
         "snapshot": snap,
@@ -219,15 +239,20 @@ def main():
     # 检查器"有判定、无告警"等于采集不判定。
     if not out["ok"]:
         try:
-            bad = ["%s: %s" % (k, v["detail"]) for k, v
-                   in out["issues"].items() if not v["ok"]]
+            bad = [
+                "%s: %s" % (k, v["detail"])
+                for k, v in out["issues"].items()
+                if not v["ok"]
+            ]
             fd, tp = tempfile.mkstemp(suffix=".txt")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write("\n".join(bad)[:500])
-            wrapper = os.path.abspath(os.path.join(
-                HERE, "..", "news_collector", "alert_fail_wrap.py"))
-            subprocess.run([sys.executable, wrapper, "kg_check", "1", tp],
-                           timeout=120, check=False)
+            wrapper = os.path.abspath(
+                os.path.join(HERE, "..", "news_collector", "alert_fail_wrap.py")
+            )
+            subprocess.run(
+                [sys.executable, wrapper, "kg_check", "1", tp], timeout=120, check=False
+            )
             os.remove(tp)
         except Exception:
             pass
@@ -236,4 +261,5 @@ def main():
 
 if __name__ == "__main__":
     from linreg import run_with_lineage
+
     run_with_lineage("kg_daily_sync", "graph_check", lambda: sys.exit(main()))

@@ -7,6 +7,7 @@
   3. collector 仍收 ⑤（展示隐藏不影响留档）
   4. 开关缺省 = 旧行为（无配置文件 → 全开）
 """
+
 import os
 import sys
 
@@ -15,7 +16,7 @@ import pytest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import linkage_signals as LS   # noqa: E402
+import linkage_signals as LS  # noqa: E402
 import linkage_collector as LC  # noqa: E402
 
 N = 150
@@ -28,8 +29,7 @@ def _mk(stock_end, idx_block_end, step=0.1):
     up = idx_block_end > 50
     base = 100 if up else 50
     ib = [base + (idx_block_end - base) * i / (N - 1) for i in range(N)]
-    return {"ok": True, "stock": list(stock),
-            "index": list(ib), "block": list(ib)}
+    return {"ok": True, "stock": list(stock), "index": list(ib), "block": list(ib)}
 
 
 def _r4():
@@ -64,12 +64,12 @@ def test_sig4_disabled_zero_output():
 # ── 路径2：⑤ 判定在但不展示 ─────────────────────────────────────
 def test_sig5_judged_but_hidden():
     res = _res(_r5())
-    assert "5" in _tags(res)                    # 判定保留
+    assert "5" in _tags(res)  # 判定保留
     txt = LS.report(res, "600000.SH", cfg={"sig5_display_only": False})
-    assert "信号5" not in txt                   # 展示隐藏
-    assert "已隐藏" in txt                      # 操作者可见提示
+    assert "信号5" not in txt  # 展示隐藏
+    assert "已隐藏" in txt  # 操作者可见提示
     txt_old = LS.report(res, "600000.SH", cfg={})
-    assert "信号5" in txt_old                   # 旧行为照常展示
+    assert "信号5" in txt_old  # 旧行为照常展示
 
 
 # ── 路径3：collector 仍收 ⑤ ─────────────────────────────────────
@@ -79,9 +79,14 @@ def test_collector_still_records_sig5(tmp_path, monkeypatch):
     monkeypatch.setattr(LC, "LOCK", str(shadow) + ".lock")
     monkeypatch.setattr(LC, "_seen", None)
     monkeypatch.setattr(LC, "_block_cache", {"600000.SH": None})
-    res = {"1d": {"signals": [{"tag": "5", "name": "三共振", "note": "x"}],
-                  "ctx": {}, "last_pct": {},
-                  "stock_last_dt": "2026-10-13 15:00:00"}}
+    res = {
+        "1d": {
+            "signals": [{"tag": "5", "name": "三共振", "note": "x"}],
+            "ctx": {},
+            "last_pct": {},
+            "stock_last_dt": "2026-10-13 15:00:00",
+        }
+    }
     recs = LC.collect("600000.SH", res, source="test")
     assert len(recs) == 1 and recs[0]["signal"] == "5"
     assert shadow.exists()

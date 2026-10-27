@@ -17,6 +17,7 @@
   python kg_ths_concepts.py            # dry-run：统计 + 抽样 20 条，不写库
   python kg_ths_concepts.py --commit   # 实写入 Neo4j
 """
+
 import random
 import re
 import sys
@@ -31,7 +32,7 @@ EXCLUDE_PAT = re.compile(
     r"同花顺|陆股通|港股通|全A|全收益|A股指数|情绪"
 )
 
-VALID_START = "20260924"   # ths 数据同步日
+VALID_START = "20260924"  # ths 数据同步日
 EDGE_SOURCE = "ths_member_v1"
 
 
@@ -60,23 +61,30 @@ def main():
 
     kg = KgClient()
     with kg._session() as s:
-        sec_codes = {r["ts"] for r in s.run(
-            "MATCH (s:Security) RETURN s.ts_code AS ts")}
-        con_names = {r["n"] for r in s.run(
-            "MATCH (c:Concept) RETURN c.name AS n")}
+        sec_codes = {
+            r["ts"] for r in s.run("MATCH (s:Security) RETURN s.ts_code AS ts")
+        }
+        con_names = {r["n"] for r in s.run("MATCH (c:Concept) RETURN c.name AS n")}
     print(f"[3] graph Security={len(sec_codes)} Concept={len(con_names)}")
 
     # 对齐：只挂图谱已有 Security
-    pairs = [(themes[r.ts_code], r.con_code)
-             for r in mem.itertuples() if r.con_code in sec_codes]
+    pairs = [
+        (themes[r.ts_code], r.con_code)
+        for r in mem.itertuples()
+        if r.con_code in sec_codes
+    ]
     hit = len({p[1] for p in pairs})
-    print(f"[4] matched pairs={len(pairs)} hit_stocks={hit} "
-          f"({100.0 * hit / max(1, mem['con_code'].nunique()):.1f}% of member stocks)")
+    print(
+        f"[4] matched pairs={len(pairs)} hit_stocks={hit} "
+        f"({100.0 * hit / max(1, mem['con_code'].nunique()):.1f}% of member stocks)"
+    )
     concept_set = {p[0] for p in pairs}
     new_concepts = concept_set - con_names
     overlap = concept_set & con_names
-    print(f"[5] concepts to write: {len(concept_set)} "
-          f"(new {len(new_concepts)}, overlap-extend {len(overlap)})")
+    print(
+        f"[5] concepts to write: {len(concept_set)} "
+        f"(new {len(new_concepts)}, overlap-extend {len(overlap)})"
+    )
 
     # 抽样 20 条影子核对
     random.seed(42)
@@ -91,14 +99,26 @@ def main():
 
     # 写入：Concept 节点 MERGE（SET += 不动 is_root/level）
     n1 = kg.upsert_nodes(
-        "Concept", ["name"],
-        [{"name": n, "ths_code": t, "source": "ths_index"}
-         for t, n in themes.items() if n in concept_set])
+        "Concept",
+        ["name"],
+        [
+            {"name": n, "ths_code": t, "source": "ths_index"}
+            for t, n in themes.items()
+            if n in concept_set
+        ],
+    )
     # 边：validStart=数据日（与 m4 链路平行、按 source 回滚）
     n2 = kg.upsert_edge(
-        "Security", "ts_code", "Concept", "name", "MAPS_TO",
-        [{"src": s, "dst": c, "validStart": VALID_START,
-          "source": EDGE_SOURCE} for c, s in pairs])
+        "Security",
+        "ts_code",
+        "Concept",
+        "name",
+        "MAPS_TO",
+        [
+            {"src": s, "dst": c, "validStart": VALID_START, "source": EDGE_SOURCE}
+            for c, s in pairs
+        ],
+    )
     print(f"[6] COMMITTED nodes={n1} edges={n2}")
     print("rollback: MATCH ()-[r:MAPS_TO {source:'ths_member_v1'}]->() DELETE r")
 

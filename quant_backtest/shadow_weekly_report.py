@@ -33,6 +33,7 @@
   · 缺数据 fail-open：标"暂无数据"，不炸报告。
   · 输出：reports/shadow_weekly_report.md（人读）+ reports/shadow_weekly_report_data.json（机器读）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,38 +63,53 @@ P_JEV_STATUS = os.path.join(JEV, "review_data", "graduation_status_v2.json")
 P_JEV_STATUS_PY = os.path.join(JEV, "jev_graduation_status.py")
 
 # [20261014_m metrics-dev] P1 判据度量批新增路径（全部只读）
-P_ND_HIST = os.path.join(QT, "data", "nine_dim_history.jsonl")   # k33 警报池影子库
-P_STRONG = os.path.join(QT, "reports", "strong_latest.json")     # strong 快照
-P_ASHARE = os.path.join(QT, "data", "ashare")                    # 湖个股日线
+P_ND_HIST = os.path.join(QT, "data", "nine_dim_history.jsonl")  # k33 警报池影子库
+P_STRONG = os.path.join(QT, "reports", "strong_latest.json")  # strong 快照
+P_ASHARE = os.path.join(QT, "data", "ashare")  # 湖个股日线
 P_BC_STATE = os.path.join(QT, "data", "breadth_cross_state.json")  # 穿越监测状态
 P_BC_EVENTS = os.path.join(QT, "data", "breadth_cross_events.jsonl")
-K33_N_TH = 30               # k33 对账样本门槛（checklist B2 同口径）
+K33_N_TH = 30  # k33 对账样本门槛（checklist B2 同口径）
 NINEDIM_ZERO_MISS_DAYS = 20  # ninedim 零漏报观察窗（交易日）
-G3_TIMER_DAYS = 60          # G3 统一计时窗（交易日）
-STRONG_COV_TH = 0.9         # strong coverage 判据
-LINKAGE_HIT_TH = 0.55       # linkage 命中率判据
-LINKAGE_HIT_N = 30          # linkage 命中率样本门槛
+G3_TIMER_DAYS = 60  # G3 统一计时窗（交易日）
+STRONG_COV_TH = 0.9  # strong coverage 判据
+LINKAGE_HIT_TH = 0.55  # linkage 命中率判据
+LINKAGE_HIT_N = 30  # linkage 命中率样本门槛
 # G3 统一进度表起算日（注记式：日期可在下方 dict 直接改，不影响其他逻辑）
 G3_ANCHORS = [
-    {"name": "双刀注记（θ50 观察）", "date": "20261014",
-     "src": "注记批上线日 20261014（knife-dev 批；注记式可改）"},
-    {"name": "jev 影子冲刺", "date": "20260922",
-     "src": "triples 首条 ts=2026-09-22（自动推导兜底值）"},
-    {"name": "k33 警报池影子", "date": "20261002",
-     "src": "K33 定稿日 2026-10-02（k33_shadow_report_001）"},
-    {"name": "linkage 影子采集", "date": "20261014",
-     "src": "linkage_shadow.jsonl 首行 ts（自动推导兜底值）"},
-    {"name": "三档对照（G3）", "date": "20261014",
-     "src": "gate_shadow_3tier.jsonl 首行 ts（自动推导兜底值）"},
+    {
+        "name": "双刀注记（θ50 观察）",
+        "date": "20261014",
+        "src": "注记批上线日 20261014（knife-dev 批；注记式可改）",
+    },
+    {
+        "name": "jev 影子冲刺",
+        "date": "20260922",
+        "src": "triples 首条 ts=2026-09-22（自动推导兜底值）",
+    },
+    {
+        "name": "k33 警报池影子",
+        "date": "20261002",
+        "src": "K33 定稿日 2026-10-02（k33_shadow_report_001）",
+    },
+    {
+        "name": "linkage 影子采集",
+        "date": "20261014",
+        "src": "linkage_shadow.jsonl 首行 ts（自动推导兜底值）",
+    },
+    {
+        "name": "三档对照（G3）",
+        "date": "20261014",
+        "src": "gate_shadow_3tier.jsonl 首行 ts（自动推导兜底值）",
+    },
 ]
 
 OUT_MD = os.path.join(QT, "reports", "shadow_weekly_report.md")
 OUT_JSON = os.path.join(QT, "reports", "shadow_weekly_report_data.json")
 
-LINKAGE_POOL_N = 25          # 观察池约定规模（K35 三线联动）
-JEV_GRAD_N = 300             # jev 毕业样本门槛
-JEV_GRAD_MEAN = 0.01         # jev 毕业：FOCUS 前向均值 > +1pp
-REVIEW_BUCKET_N = 30         # 双刀单 bucket 样本满 30 → 提醒门控假说中期检验
+LINKAGE_POOL_N = 25  # 观察池约定规模（K35 三线联动）
+JEV_GRAD_N = 300  # jev 毕业样本门槛
+JEV_GRAD_MEAN = 0.01  # jev 毕业：FOCUS 前向均值 > +1pp
+REVIEW_BUCKET_N = 30  # 双刀单 bucket 样本满 30 → 提醒门控假说中期检验
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -198,7 +214,9 @@ def line_knife(monday, today):
     r["data"]["signals_annotated"] = len(annotated)
 
     # 本周信号与 bucket 分布（注记字段优先，退回 cache 级 breadth_note）
-    buckets = Counter(s.get("breadth_bucket") for s in annotated if s.get("breadth_bucket"))
+    buckets = Counter(
+        s.get("breadth_bucket") for s in annotated if s.get("breadth_bucket")
+    )
     gate_hits = sum(1 for s in annotated if s.get("gate_would_block"))
     if not annotated and isinstance(note, dict):
         b = note.get("bucket")
@@ -206,7 +224,9 @@ def line_knife(monday, today):
             buckets[b] += len(sigs)
         if note.get("breadth") is not None and gate_would_block(note["breadth"]):
             gate_hits = len(sigs)
-        r["data"]["note_cache"] = {k: note.get(k) for k in ("breadth", "bucket", "breadth_ref")}
+        r["data"]["note_cache"] = {
+            k: note.get(k) for k in ("breadth", "bucket", "breadth_ref")
+        }
     r["data"]["bucket_dist"] = dict(buckets)
     r["data"]["gate_would_block_hits"] = gate_hits
 
@@ -216,8 +236,13 @@ def line_knife(monday, today):
     if isinstance(bs, dict) and bs.get("dates"):
         for d, v in zip(bs["dates"], bs.get("breadth") or []):
             if in_week(d, monday, today):
-                weekly_breadth.append({"date": d, "breadth": round(v * 100, 1),
-                                       "bucket": bucket_of(v * 100)})
+                weekly_breadth.append(
+                    {
+                        "date": d,
+                        "breadth": round(v * 100, 1),
+                        "bucket": bucket_of(v * 100),
+                    }
+                )
         r["data"]["breadth_series_week"] = weekly_breadth
         r["data"]["breadth_series_ts"] = bs.get("ts")
         r["data"]["breadth_series_last"] = (weekly_breadth or [None])[-1]
@@ -226,12 +251,15 @@ def line_knife(monday, today):
     if os.path.isdir(P_QD_DAILY_DIR):
         r["data"]["history_backcalc"] = "存档目录存在（回算逻辑后续版本接入）"
     else:
-        r["data"]["history_backcalc"] = ("暂无历史留存：qd_scanner 产物为单文件覆写"
-                                        "（portal/qd_scan_cache.json），bucket×前向收益"
-                                        "（T+5/10/20，湖后复权、CN 15bps，复用 qd_backtest_1445 "
-                                        "口径）待注记产物逐日落档后回算")
-    r["data"]["review_trigger"] = ("bucket 样本满 %d 个即提醒 θ50 门控假说中期检验"
-                                   % REVIEW_BUCKET_N)
+        r["data"]["history_backcalc"] = (
+            "暂无历史留存：qd_scanner 产物为单文件覆写"
+            "（portal/qd_scan_cache.json），bucket×前向收益"
+            "（T+5/10/20，湖后复权、CN 15bps，复用 qd_backtest_1445 "
+            "口径）待注记产物逐日落档后回算"
+        )
+    r["data"]["review_trigger"] = (
+        "bucket 样本满 %d 个即提醒 θ50 门控假说中期检验" % REVIEW_BUCKET_N
+    )
 
     # 判定
     if cache is None:
@@ -242,9 +270,13 @@ def line_knife(monday, today):
         r["notes"].append("qd_breadth_note 开关未开，注记未生效")
     elif not annotated and not isinstance(note, dict):
         r["status"] = "yellow"
-        r["notes"].append("开关已开但最新扫描产物无 breadth 注记（待 14:40 下次扫描落档）")
+        r["notes"].append(
+            "开关已开但最新扫描产物无 breadth 注记（待 14:40 下次扫描落档）"
+        )
     elif any(b == ">=50" and n >= REVIEW_BUCKET_N for b, n in buckets.items()):
-        r["notes"].append("触发评审提醒：bucket 样本满 %d，建议做门控假说中期检验" % REVIEW_BUCKET_N)
+        r["notes"].append(
+            "触发评审提醒：bucket 样本满 %d，建议做门控假说中期检验" % REVIEW_BUCKET_N
+        )
     else:
         r["notes"].append("注记链路正常，样本积累中")
     return r
@@ -264,11 +296,14 @@ def line_chanlun(monday, today):
     fwd = {}
     for h in ("H5", "H10", "H20"):
         e = res.get(h) or {}
-        fwd[h] = {"diff_pp": e.get("diff_pp"),
-                  "n_beichi": e.get("n_beichi"), "n_none": e.get("n_none"),
-                  "mean_beichi_pct": e.get("mean_beichi_pct"),
-                  "mean_none_pct": e.get("mean_none_pct"),
-                  "verdict": e.get("verdict")}
+        fwd[h] = {
+            "diff_pp": e.get("diff_pp"),
+            "n_beichi": e.get("n_beichi"),
+            "n_none": e.get("n_none"),
+            "mean_beichi_pct": e.get("mean_beichi_pct"),
+            "mean_none_pct": e.get("mean_none_pct"),
+            "verdict": e.get("verdict"),
+        }
     r["data"]["grid_d_end"] = meta.get("D_END")
     r["data"]["grid_mtime"] = mt_date(P_GRID)
     r["data"]["p5_ratio1.0"] = fwd
@@ -282,8 +317,10 @@ def line_chanlun(monday, today):
         pass
     r["data"]["grid_cache_stale_for_week"] = stale
     if stale:
-        r["notes"].append("网格缓存截至 %s，未覆盖本周（前向收益差为缓存口径，过期需重跑 grid）"
-                          % meta.get("D_END"))
+        r["notes"].append(
+            "网格缓存截至 %s，未覆盖本周（前向收益差为缓存口径，过期需重跑 grid）"
+            % meta.get("D_END")
+        )
 
     # 本周新 3 买（stream cache 事件流，bei 标注计数）；前向收益未到期不计
     ev_in_week = {"3buy_total": 0, "3buy_bei": 0, "3buy_nobei": 0}
@@ -292,7 +329,7 @@ def line_chanlun(monday, today):
         for k, evs in (sc.get("buy_ev") or {}).items():
             if not in_week(k, monday, today):
                 continue
-            for (_code, tp, bei) in evs or []:
+            for _code, tp, bei in evs or []:
                 if tp == "3买":
                     ev_in_week["3buy_total"] += 1
                     ev_in_week["3buy_bei" if bei else "3buy_nobei"] += 1
@@ -301,13 +338,18 @@ def line_chanlun(monday, today):
         r["notes"].append("本周无新 3 买信号（本周增量前向收益未到期，不计算）")
 
     # 反向观察跟踪：任一 hold 的 diff<=-1pp（标注组更差）视为反向观察仍在位
-    diffs = {h: v.get("diff_pp") for h, v in fwd.items()
-             if isinstance(v.get("diff_pp"), (int, float))}
+    diffs = {
+        h: v.get("diff_pp")
+        for h, v in fwd.items()
+        if isinstance(v.get("diff_pp"), (int, float))
+    }
     neg = {h: d for h, d in diffs.items() if d <= -1.0}
     if neg:
         r["status"] = "yellow"
-        r["notes"].append("反向观察项仍在位：%s 标注组前向收益更差（%s pp）——周报固定字段持续跟踪"
-                          % ("/".join(neg), ", ".join("%s=%.2f" % (h, v) for h, v in neg.items())))
+        r["notes"].append(
+            "反向观察项仍在位：%s 标注组前向收益更差（%s pp）——周报固定字段持续跟踪"
+            % ("/".join(neg), ", ".join("%s=%.2f" % (h, v) for h, v in neg.items()))
+        )
     else:
         r["notes"].append("反向观察信号减弱（无 hold 的 diff<=-1pp），维持仅标注")
     return r
@@ -331,7 +373,7 @@ def line_linkage(monday, today):
     r["data"]["signal_dist_total"] = dict(sig_all)
     r["data"]["signal_dist_week"] = dict(sig_wk)
     r["data"]["pool_cover_week"] = "%d/%d" % (len(codes_wk), LINKAGE_POOL_N)
-    r["data"]["signal2_total"] = sig_all.get("2", 0)   # 信号②滞涨累计样本
+    r["data"]["signal2_total"] = sig_all.get("2", 0)  # 信号②滞涨累计样本
     r["data"]["signal2_week"] = sig_wk.get("2", 0)
 
     if len(wk) == 0:
@@ -339,7 +381,9 @@ def line_linkage(monday, today):
         r["notes"].append("本周无增量行（collector 未落档？）")
     elif sig_all.get("2", 0) < 30:
         r["status"] = "yellow"
-        r["notes"].append("采集正常，但信号②滞涨累计样本 %d 条（<30，继续攒）" % sig_all.get("2", 0))
+        r["notes"].append(
+            "采集正常，但信号②滞涨累计样本 %d 条（<30，继续攒）" % sig_all.get("2", 0)
+        )
     else:
         r["notes"].append("采集正常，信号②样本已满 30")
     return r
@@ -355,9 +399,14 @@ def jev_v2_status():
     st = read_json(P_JEV_STATUS)
     if not (isinstance(st, dict) and st.get("adopted") == "v2" and st.get("domains")):
         import subprocess
+
         out = subprocess.run(
             [r"C:/Program Files/Python311/python.exe", P_JEV_STATUS_PY, "--json"],
-            capture_output=True, text=True, encoding="utf-8", timeout=120)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=120,
+        )
         if out.returncode != 0:
             raise RuntimeError("状态脚本退出码 %d" % out.returncode)
         st = json.loads(out.stdout)
@@ -374,10 +423,16 @@ def line_jev(monday, today):
     try:
         with open(P_JEV_LOG, encoding="utf-8", errors="replace") as f:
             for line in f:
-                m = re.search(r"(\d{4}-\d{2}-\d{2})T.*回填覆盖率 (\d+)/(\d+) = ([\d.]+)%", line)
+                m = re.search(
+                    r"(\d{4}-\d{2}-\d{2})T.*回填覆盖率 (\d+)/(\d+) = ([\d.]+)%", line
+                )
                 if m:
-                    cov = {"ts": m.group(1), "filled": int(m.group(2)),
-                           "total": int(m.group(3)), "pct": float(m.group(4))}
+                    cov = {
+                        "ts": m.group(1),
+                        "filled": int(m.group(2)),
+                        "total": int(m.group(3)),
+                        "pct": float(m.group(4)),
+                    }
     except Exception:
         pass
     r["data"]["coverage_latest"] = cov
@@ -390,7 +445,9 @@ def line_jev(monday, today):
         v2 = jev_v2_status()
     except Exception as e:
         r["data"]["grad_v2_error"] = "%s: %s" % (type(e).__name__, e)
-        r["notes"].append("v2 状态获取失败（%s），本次回退 v1 口径" % r["data"]["grad_v2_error"])
+        r["notes"].append(
+            "v2 状态获取失败（%s），本次回退 v1 口径" % r["data"]["grad_v2_error"]
+        )
 
     # FOCUS 前向收益（triples.jsonl outcome 已回填部分；v1 口径保留作对照/回退）
     n_focus = n_out = n_gt1 = 0
@@ -421,16 +478,29 @@ def line_jev(monday, today):
     if v2 is not None:
         # ── v2 正式口径 ──
         doms = v2["domains"]
-        r["data"]["grad_v2"] = {"adopted": v2.get("adopted"),
-                                "computed_at": v2.get("computed_at"),
-                                "sample_window": (v2.get("sample") or {}).get("window"),
-                                "light": v2.get("light"),
-                                "domains": {m: {k: d.get(k) for k in
-                                                ("n_eff", "cluster_mean_pp", "focus_pass_gap_pp",
-                                                 "pass", "state")}
-                                            for m, d in doms.items()}}
-        r["data"]["grad_rule"] = ("v2（2026-10-14 采纳）：每域独立，n_eff≥30 且 FOCUS 聚类均值>+1pp；"
-                                  "辅助 FOCUS−PASS>0；CN 入口缺位单列；CRYPTO 过渡期剔除单独监控")
+        r["data"]["grad_v2"] = {
+            "adopted": v2.get("adopted"),
+            "computed_at": v2.get("computed_at"),
+            "sample_window": (v2.get("sample") or {}).get("window"),
+            "light": v2.get("light"),
+            "domains": {
+                m: {
+                    k: d.get(k)
+                    for k in (
+                        "n_eff",
+                        "cluster_mean_pp",
+                        "focus_pass_gap_pp",
+                        "pass",
+                        "state",
+                    )
+                }
+                for m, d in doms.items()
+            },
+        }
+        r["data"]["grad_rule"] = (
+            "v2（2026-10-14 采纳）：每域独立，n_eff≥30 且 FOCUS 聚类均值>+1pp；"
+            "辅助 FOCUS−PASS>0；CN 入口缺位单列；CRYPTO 过渡期剔除单独监控"
+        )
         passed = [m for m, d in doms.items() if d.get("pass")]
         if cov and cov.get("pct", 0) < 50:
             r["status"] = "red"
@@ -438,14 +508,18 @@ def line_jev(monday, today):
         if passed:
             r["notes"].append("v2 毕业条件达成：%s 达标" % "、".join(passed))
         else:
-            gaps = ["%s FOCUS−PASS %+.2fpp" % (m, d["focus_pass_gap_pp"])
-                    for m, d in doms.items()
-                    if d.get("focus_pass_gap_pp") is not None and d["focus_pass_gap_pp"] > 0]
+            gaps = [
+                "%s FOCUS−PASS %+.2fpp" % (m, d["focus_pass_gap_pp"])
+                for m, d in doms.items()
+                if d.get("focus_pass_gap_pp") is not None and d["focus_pass_gap_pp"] > 0
+            ]
             light = v2.get("light")
             if r["status"] != "red" and light == "yellow":
                 r["status"] = "yellow"
-                r["notes"].append("v2 无域达标，但有正 FOCUS−PASS 的域（%s）——regime 敏感型未过线，继续冲刺"
-                                  % "；".join(gaps))
+                r["notes"].append(
+                    "v2 无域达标，但有正 FOCUS−PASS 的域（%s）——regime 敏感型未过线，继续冲刺"
+                    % "；".join(gaps)
+                )
             else:
                 r["status"] = "red"
                 r["notes"].append("v2 全域未达标且 FOCUS−PASS 全负")
@@ -453,8 +527,10 @@ def line_jev(monday, today):
         return r
 
     # ── v1 口径（回退路径 / 对照） ──
-    r["data"]["grad_rule"] = ("毕业=FOCUS 前向均值>+1pp 且 n≥%d（n 走 hourly backfill 积累，"
-                              "本脚本只读不跑 backfill）" % JEV_GRAD_N)
+    r["data"]["grad_rule"] = (
+        "毕业=FOCUS 前向均值>+1pp 且 n≥%d（n 走 hourly backfill 积累，"
+        "本脚本只读不跑 backfill）" % JEV_GRAD_N
+    )
     if cov and cov.get("pct", 0) < 50:
         r["status"] = "red"
         r["notes"].append("回填覆盖率 %.1f%% 低于 50%% 阈值" % cov["pct"])
@@ -462,13 +538,20 @@ def line_jev(monday, today):
         r["notes"].append("毕业条件达成：n=%d，均值 %.2fpp" % (n_out, mean_ret * 100))
     elif n_out >= JEV_GRAD_N:
         r["status"] = "yellow"
-        r["notes"].append("n=%d 已达标，但 FOCUS 前向均值 %.2fpp 未过 +1pp，冲刺中"
-                          % (n_out, (mean_ret or 0) * 100))
+        r["notes"].append(
+            "n=%d 已达标，但 FOCUS 前向均值 %.2fpp 未过 +1pp，冲刺中"
+            % (n_out, (mean_ret or 0) * 100)
+        )
     else:
         r["status"] = "yellow"
-        r["notes"].append("样本 n=%d/%d，继续积累（当前均值 %s）"
-                          % (n_out, JEV_GRAD_N,
-                             "%.2fpp" % (mean_ret * 100) if mean_ret is not None else "暂无"))
+        r["notes"].append(
+            "样本 n=%d/%d，继续积累（当前均值 %s）"
+            % (
+                n_out,
+                JEV_GRAD_N,
+                "%.2fpp" % (mean_ret * 100) if mean_ret is not None else "暂无",
+            )
+        )
     return r
 
 
@@ -477,16 +560,23 @@ def line_gate3(monday, today):
     r = {"line": "闸门三档对照", "status": "green", "notes": [], "data": {}}
     if not os.path.exists(P_GATE3):
         r["status"] = "gray"
-        r["notes"].append("data/gate_shadow_3tier.jsonl 不存在（gate_shadow_collect.py "
-                          "另一代理并行在建）→ 待首采，不报错")
+        r["notes"].append(
+            "data/gate_shadow_3tier.jsonl 不存在（gate_shadow_collect.py "
+            "另一代理并行在建）→ 待首采，不报错"
+        )
         r["data"]["pending_first_collect"] = True
         return r
     rows = read_jsonl(P_GATE3)
     wk = [x for x in rows if in_week(x.get("ts") or x.get("date"), monday, today)]
     per = Counter()
     for x in wk:
-        per["%s|%s" % (x.get("strategy") or x.get("gate") or "?",
-                       x.get("tier") or x.get("bucket") or "?")] += 1
+        per[
+            "%s|%s"
+            % (
+                x.get("strategy") or x.get("gate") or "?",
+                x.get("tier") or x.get("bucket") or "?",
+            )
+        ] += 1
     r["data"]["rows_total"] = len(rows)
     r["data"]["rows_week"] = len(wk)
     r["data"]["strategy_tier_week"] = dict(per)
@@ -503,6 +593,7 @@ def line_gate3(monday, today):
 # 原则：全部只读；每项独立 try/except，单线失败标 error 不炸周报；
 #       缺数据如实标"待首采/样本不足"；核心计算抽成可单测的纯函数。
 # ======================================================================
+
 
 def load_calendar():
     """交易日历：qd_breadth_series.json dates（20230103 起，每日覆写）。
@@ -522,6 +613,7 @@ def trading_days_between(start8, end8, calendar):
 def lake_close(code, ashare_dir=P_ASHARE):
     """湖个股日线 → 升序 [(d8, close)]；缺失/坏数据 → []。"""
     import pandas as pd
+
     p = os.path.join(ashare_dir, str(code).replace(".", "_") + ".parquet")
     if not os.path.exists(p):
         return []
@@ -529,8 +621,7 @@ def lake_close(code, ashare_dir=P_ASHARE):
         df = pd.read_parquet(p, columns=["trade_date", "close"])
         df = df.drop_duplicates("trade_date", keep="last")
         df = df.sort_values("trade_date")
-        return [(str(int(d)), float(c)) for d, c in
-                zip(df["trade_date"], df["close"])]
+        return [(str(int(d)), float(c)) for d, c in zip(df["trade_date"], df["close"])]
     except Exception:
         return []
 
@@ -546,8 +637,7 @@ def _close_at(bars, d8, stale_days=7):
     return best
 
 
-def calc_linkage_hitrate(rows, calendar, close_fn, block_fn=None,
-                         horizons=(5, 10)):
+def calc_linkage_hitrate(rows, calendar, close_fn, block_fn=None, horizons=(5, 10)):
     """linkage 滚动命中率（纯函数，可单测）。
 
     口径（linkage_hitrate_backtest 同判例，T+k=信号日收盘→T+k 收盘）：
@@ -566,19 +656,23 @@ def calc_linkage_hitrate(rows, calendar, close_fn, block_fn=None,
         rd = str(x.get("ref_date") or "").replace("-", "")
         if len(rd) != 8:
             continue
-        sig_by_code.setdefault(
-            (str(x.get("code")), str(x.get("signal"))), []).append(rd)
+        sig_by_code.setdefault((str(x.get("code")), str(x.get("signal"))), []).append(
+            rd
+        )
     for h in horizons:
-        seen_last = {}                      # episode 去重：上次触发日
+        seen_last = {}  # episode 去重：上次触发日
         n = episodes = matured = pending = hits_abs = hits_ex = 0
-        ex_n = 0                            # 有板块对照的成熟样本数
+        ex_n = 0  # 有板块对照的成熟样本数
         for (code, sig), dates in sorted(sig_by_code.items()):
-            bars = close_fn(code)           # 逐 code 缓存交给 close_fn 外层
-            bbars = block_fn(str((rows and _row_block(rows, code, sig)) or "")) \
-                if block_fn else None
+            bars = close_fn(code)  # 逐 code 缓存交给 close_fn 外层
+            bbars = (
+                block_fn(str((rows and _row_block(rows, code, sig)) or ""))
+                if block_fn
+                else None
+            )
             for rd in sorted(dates):
                 i = cal_idx.get(rd)
-                if i is None:               # 非交易日锚：取其后首个交易日
+                if i is None:  # 非交易日锚：取其后首个交易日
                     later = [j for j, d in enumerate(calendar) if d >= rd]
                     if not later:
                         pending += 1
@@ -591,14 +685,14 @@ def calc_linkage_hitrate(rows, calendar, close_fn, block_fn=None,
                 seen_last[key] = i
                 if i + h >= len(calendar):
                     episodes += 1
-                    pending += 1            # 前向窗口未走完
+                    pending += 1  # 前向窗口未走完
                     continue
                 tgt = calendar[i + h]
                 c0 = _close_at(bars, calendar[i])
                 c1 = _close_at(bars, tgt)
                 episodes += 1
                 if not (c0 and c1 and c1[0] > c0[0]):
-                    pending += 1            # 行情不可得/未更新到目标日
+                    pending += 1  # 行情不可得/未更新到目标日
                     continue
                 matured += 1
                 n += 1
@@ -612,10 +706,13 @@ def calc_linkage_hitrate(rows, calendar, close_fn, block_fn=None,
                         if r_s - (b1[1] / b0[1] - 1) > 0:
                             hits_ex += 1
         out["h%d" % h] = {
-            "episodes": episodes, "matured": matured, "pending": pending,
+            "episodes": episodes,
+            "matured": matured,
+            "pending": pending,
             "hits_abs": hits_abs,
             "rate_abs": round(hits_abs / matured, 4) if matured else None,
-            "ex_n": ex_n, "hits_ex": hits_ex,
+            "ex_n": ex_n,
+            "hits_ex": hits_ex,
             "rate_ex": round(hits_ex / ex_n, 4) if ex_n else None,
         }
     return out
@@ -641,25 +738,38 @@ def crit_k33_recon(hist_path=P_ND_HIST):
         return r
     rows = read_jsonl(hist_path)
     alerts = [x for x in rows if x.get("pool_type") == "alert"]
-    first = min((str(x.get("dt") or "")[:10] for x in alerts if x.get("dt")),
-                default=None)
+    first = min(
+        (str(x.get("dt") or "")[:10] for x in alerts if x.get("dt")), default=None
+    )
     # 字段形态检查（含 zg/zd 漂移检查——样本库出现 zg/zd 即标注）
     need = {"dt", "code", "pool_type"}
     miss = sum(1 for x in alerts if not need.issubset(x.keys()))
     zg_zd = sum(1 for x in alerts if "zg" in x or "zd" in x)
-    r.update({"n": len(alerts), "rows_total": len(rows),
-              "first_alert_date": first, "field_missing_rows": miss,
-              "zg_zd_rows": zg_zd})
+    r.update(
+        {
+            "n": len(alerts),
+            "rows_total": len(rows),
+            "first_alert_date": first,
+            "field_missing_rows": miss,
+            "zg_zd_rows": zg_zd,
+        }
+    )
     if zg_zd:
-        r["note"] = "样本库出现 zg/zd 字段 %d 行（字段漂移，按留痕文档口径核对后再计）" % zg_zd
+        r["note"] = (
+            "样本库出现 zg/zd 字段 %d 行（字段漂移，按留痕文档口径核对后再计）" % zg_zd
+        )
     if len(alerts) >= K33_N_TH:
         r["state"] = "已达标"
-        r["note"] = "对账样本 n=%d ≥%d（thinned 等效以 k33_shadow_check 例行 B 流程为准）" % (
-            len(alerts), K33_N_TH)
+        r["note"] = (
+            "对账样本 n=%d ≥%d（thinned 等效以 k33_shadow_check 例行 B 流程为准）"
+            % (len(alerts), K33_N_TH)
+        )
     else:
         r["state"] = "样本不足"
         r["note"] = "对账样本 n=%d/%d，继续攒（低频属预期，勿调 ALERT_TH）" % (
-            len(alerts), K33_N_TH)
+            len(alerts),
+            K33_N_TH,
+        )
     return r
 
 
@@ -667,12 +777,18 @@ def crit_linkage_hitrate(monday, today):
     """判据2：linkage 命中率≥55% —— 前向收益回填滚动命中率。"""
     rows = read_jsonl(P_LINKAGE)
     if not rows:
-        return {"metric": "linkage_hitrate", "state": "待首采",
-                "note": "linkage_shadow.jsonl 缺失或为空"}
+        return {
+            "metric": "linkage_hitrate",
+            "state": "待首采",
+            "note": "linkage_shadow.jsonl 缺失或为空",
+        }
     cal = load_calendar()
     if not cal:
-        return {"metric": "linkage_hitrate", "state": "error",
-                "note": "交易日历（qd_breadth_series）不可得"}
+        return {
+            "metric": "linkage_hitrate",
+            "state": "error",
+            "note": "交易日历（qd_breadth_series）不可得",
+        }
     cache = {}
 
     def close_fn(code):
@@ -688,33 +804,49 @@ def crit_linkage_hitrate(monday, today):
             return None
         try:
             import linkage
+
             bars = linkage.block_bars(bcode, "1d", limit=260)
             return [(str(b["dt"]).replace("-", ""), b["close"]) for b in bars]
         except Exception:
             return None
 
     hr = calc_linkage_hitrate(rows, cal, close_fn, block_fn, horizons=(5, 10))
-    r = {"metric": "linkage_hitrate", "th": LINKAGE_HIT_TH, "n_th": LINKAGE_HIT_N,
-         "caliber": "A 绝对(个股T+k收盘/T+k前收-1>0)；B 跑赢板块(超额>0)",
-         "horizons": hr}
+    r = {
+        "metric": "linkage_hitrate",
+        "th": LINKAGE_HIT_TH,
+        "n_th": LINKAGE_HIT_N,
+        "caliber": "A 绝对(个股T+k收盘/T+k前收-1>0)；B 跑赢板块(超额>0)",
+        "horizons": hr,
+    }
     m5 = hr["h5"]["matured"]
     rate5 = hr["h5"]["rate_abs"]
     if not m5:
         r["state"] = "样本不足"
-        r["note"] = "T+5 成熟样本 0（首采 %s 起，前向窗口未走完），待后续周报滚动出数" % (
-            str(rows[0].get("ref_date") or rows[0].get("ts"))[:10])
+        r["note"] = (
+            "T+5 成熟样本 0（首采 %s 起，前向窗口未走完），待后续周报滚动出数"
+            % (str(rows[0].get("ref_date") or rows[0].get("ts"))[:10])
+        )
     elif m5 < LINKAGE_HIT_N:
         r["state"] = "样本不足"
         r["note"] = "T+5 成熟样本 %d/%d，当前命中率 %s（未达评审样本量）" % (
-            m5, LINKAGE_HIT_N, "%.1f%%" % (rate5 * 100) if rate5 is not None else "-")
+            m5,
+            LINKAGE_HIT_N,
+            "%.1f%%" % (rate5 * 100) if rate5 is not None else "-",
+        )
     elif rate5 is not None and rate5 >= LINKAGE_HIT_TH:
         r["state"] = "已达标"
         r["note"] = "T+5 命中率 %.1f%% ≥%.0f%%（n=%d）——达到挂账评审线" % (
-            rate5 * 100, LINKAGE_HIT_TH * 100, m5)
+            rate5 * 100,
+            LINKAGE_HIT_TH * 100,
+            m5,
+        )
     else:
         r["state"] = "未达标"
         r["note"] = "T+5 命中率 %.1f%% <%.0f%%（n=%d），继续观察" % (
-            rate5 * 100, LINKAGE_HIT_TH * 100, m5)
+            rate5 * 100,
+            LINKAGE_HIT_TH * 100,
+            m5,
+        )
     return r
 
 
@@ -722,57 +854,86 @@ def crit_strong_coverage(strong_path=P_STRONG):
     """判据3：strong coverage≥0.9 —— 快照 member_coverage/full_scan 趋势。"""
     s = read_json(strong_path)
     if not isinstance(s, dict):
-        return {"metric": "strong_coverage", "state": "待首采",
-                "note": "reports/strong_latest.json 缺失"}
+        return {
+            "metric": "strong_coverage",
+            "state": "待首采",
+            "note": "reports/strong_latest.json 缺失",
+        }
     cov = s.get("member_coverage")
     full = s.get("full_scan")
-    r = {"metric": "strong_coverage", "th": STRONG_COV_TH,
-         "snapshot_date": s.get("date"), "member_coverage": cov,
-         "full_scan": full}
+    r = {
+        "metric": "strong_coverage",
+        "th": STRONG_COV_TH,
+        "snapshot_date": s.get("date"),
+        "member_coverage": cov,
+        "full_scan": full,
+    }
     if full is None:
-        r["note_extra"] = "full_scan 字段未落（旧版快照），strong_scan 产出含该字段后开始记录趋势"
+        r["note_extra"] = (
+            "full_scan 字段未落（旧版快照），strong_scan 产出含该字段后开始记录趋势"
+        )
     if isinstance(cov, (int, float)) and cov >= STRONG_COV_TH:
         r["state"] = "已达标"
         r["note"] = "member_coverage=%.3f ≥%.1f" % (cov, STRONG_COV_TH)
     else:
         r["state"] = "未达标"
-        r["note"] = "member_coverage=%s <%.1f（--full 未常态化，coverage_note: 每板块仅评前 20 成员）" % (
-            cov, STRONG_COV_TH)
+        r["note"] = (
+            "member_coverage=%s <%.1f（--full 未常态化，coverage_note: 每板块仅评前 20 成员）"
+            % (cov, STRONG_COV_TH)
+        )
     return r
 
 
 def crit_ninedim_timer(hist_path=P_ND_HIST, calendar=None):
     """判据4：ninedim 零漏报 20 日 —— 警报池首条日期起算计时。"""
     if not os.path.exists(hist_path):
-        return {"metric": "ninedim_zero_miss_timer", "state": "未启动",
-                "note": "警报池空（history 不存在），零漏报计时未启动"}
+        return {
+            "metric": "ninedim_zero_miss_timer",
+            "state": "未启动",
+            "note": "警报池空（history 不存在），零漏报计时未启动",
+        }
     rows = [x for x in read_jsonl(hist_path) if x.get("pool_type") == "alert"]
     if not rows:
-        return {"metric": "ninedim_zero_miss_timer", "state": "未启动",
-                "note": "警报池空（0 条 alert），零漏报计时未启动"}
-    first = min(str(x.get("dt") or "").replace("-", "")[:8]
-                for x in rows if x.get("dt"))
+        return {
+            "metric": "ninedim_zero_miss_timer",
+            "state": "未启动",
+            "note": "警报池空（0 条 alert），零漏报计时未启动",
+        }
+    first = min(
+        str(x.get("dt") or "").replace("-", "")[:8] for x in rows if x.get("dt")
+    )
     if not calendar:
         calendar = load_calendar() or []
     today8 = date.today().strftime("%Y%m%d")
     day = trading_days_between(first, today8, calendar)
     if day <= 0:
-        day = 1                                  # 首日即计 day 1
-    return {"metric": "ninedim_zero_miss_timer", "first_alert_date": first,
-            "state": "计时中", "day": day, "window": NINEDIM_ZERO_MISS_DAYS,
-            "note": "警报池首条 %s，零漏报计时中 day %d/%d（交易日）" % (
-                first, day, NINEDIM_ZERO_MISS_DAYS)}
+        day = 1  # 首日即计 day 1
+    return {
+        "metric": "ninedim_zero_miss_timer",
+        "first_alert_date": first,
+        "state": "计时中",
+        "day": day,
+        "window": NINEDIM_ZERO_MISS_DAYS,
+        "note": "警报池首条 %s，零漏报计时中 day %d/%d（交易日）"
+        % (first, day, NINEDIM_ZERO_MISS_DAYS),
+    }
 
 
 def crit_qpzm_gate_counts(gate3_path=P_GATE3):
     """判据5：qpzm 错杀 30 日运行 —— 三档影子各策略各档累计行数。"""
     if not os.path.exists(gate3_path):
-        return {"metric": "qpzm_gate_shadow_counts", "state": "待首采",
-                "note": "gate_shadow_3tier.jsonl 不存在（待 gate_shadow_collect 首采）"}
+        return {
+            "metric": "qpzm_gate_shadow_counts",
+            "state": "待首采",
+            "note": "gate_shadow_3tier.jsonl 不存在（待 gate_shadow_collect 首采）",
+        }
     rows = read_jsonl(gate3_path)
     if not rows:
-        return {"metric": "qpzm_gate_shadow_counts", "state": "待首采",
-                "note": "gate_shadow_3tier.jsonl 为空"}
+        return {
+            "metric": "qpzm_gate_shadow_counts",
+            "state": "待首采",
+            "note": "gate_shadow_3tier.jsonl 为空",
+        }
     per, ok_per = {}, {}
     dates = []
     for x in rows:
@@ -783,14 +944,22 @@ def crit_qpzm_gate_counts(gate3_path=P_GATE3):
         d = str(x.get("date") or "")
         if len(d) == 8:
             dates.append(d)
-    return {"metric": "qpzm_gate_shadow_counts", "state": "采集中",
-            "rows_total": len(rows), "per_strategy_theta": per,
-            "per_strategy_theta_ok": ok_per,
-            "date_min": min(dates) if dates else None,
-            "date_max": max(dates) if dates else None,
-            "note": "累计 %d 行（ok %d 行），日期跨 %s~%s——W8 评审以 ok 行为准" % (
-                len(rows), sum(ok_per.values()),
-                min(dates) if dates else "-", max(dates) if dates else "-")}
+    return {
+        "metric": "qpzm_gate_shadow_counts",
+        "state": "采集中",
+        "rows_total": len(rows),
+        "per_strategy_theta": per,
+        "per_strategy_theta_ok": ok_per,
+        "date_min": min(dates) if dates else None,
+        "date_max": max(dates) if dates else None,
+        "note": "累计 %d 行（ok %d 行），日期跨 %s~%s——W8 评审以 ok 行为准"
+        % (
+            len(rows),
+            sum(ok_per.values()),
+            min(dates) if dates else "-",
+            max(dates) if dates else "-",
+        ),
+    }
 
 
 def crit_g3_progress(calendar=None, anchors=None):
@@ -798,22 +967,34 @@ def crit_g3_progress(calendar=None, anchors=None):
     if calendar is None:
         calendar = load_calendar()
     if not calendar:
-        return {"metric": "g3_progress", "state": "error",
-                "note": "交易日历不可得（qd_breadth_series 缺 dates）"}
+        return {
+            "metric": "g3_progress",
+            "state": "error",
+            "note": "交易日历不可得（qd_breadth_series 缺 dates）",
+        }
     anchors = G3_ANCHORS if anchors is None else anchors
     today8 = date.today().strftime("%Y%m%d")
     table = []
     for a in anchors:
         d8 = str(a.get("date") or "").replace("-", "")
         days = trading_days_between(d8, today8, calendar)
-        table.append({"name": a.get("name"), "start": d8, "trading_days": days,
-                      "pct_of_%d" % G3_TIMER_DAYS:
-                          round(days / G3_TIMER_DAYS * 100, 1),
-                      "src": a.get("src")})
-    return {"metric": "g3_progress", "state": "计时中",
-            "window": G3_TIMER_DAYS, "calendar_last": calendar[-1],
-            "table": table,
-            "note": "G3 统一进度表：60 交易日计时窗，各线已积累天数如上（注记式起算日，可改）"}
+        table.append(
+            {
+                "name": a.get("name"),
+                "start": d8,
+                "trading_days": days,
+                "pct_of_%d" % G3_TIMER_DAYS: round(days / G3_TIMER_DAYS * 100, 1),
+                "src": a.get("src"),
+            }
+        )
+    return {
+        "metric": "g3_progress",
+        "state": "计时中",
+        "window": G3_TIMER_DAYS,
+        "calendar_last": calendar[-1],
+        "table": table,
+        "note": "G3 统一进度表：60 交易日计时窗，各线已积累天数如上（注记式起算日，可改）",
+    }
 
 
 def metrics_criteria(monday, today):
@@ -831,8 +1012,11 @@ def metrics_criteria(monday, today):
         try:
             crit[key] = fn()
         except Exception as e:
-            crit[key] = {"metric": key, "state": "error",
-                         "note": "%s: %s" % (type(e).__name__, e)}
+            crit[key] = {
+                "metric": key,
+                "state": "error",
+                "note": "%s: %s" % (type(e).__name__, e),
+            }
     return crit
 
 
@@ -841,7 +1025,7 @@ def render_criteria_md(crit):
     L = []
     L.append("## 五、上线判据度量（P1 判据度量批 20261014_m）")
     L.append("")
-    L.append("W8 评审判据周度读数（缺数据如实标\"待首采/样本不足\"）：")
+    L.append('W8 评审判据周度读数（缺数据如实标"待首采/样本不足"）：')
     L.append("")
     L.append("| 判据 | 读数 | 状态 |")
     L.append("|---|---|---|")
@@ -853,19 +1037,31 @@ def render_criteria_md(crit):
         elif m == "linkage_hitrate":
             h5 = (c.get("horizons") or {}).get("h5") or {}
             read = "T+5 命中率 %s（成熟 n=%s）" % (
-                ("%.1f%%" % (h5["rate_abs"] * 100)) if h5.get("rate_abs") is not None else "-",
-                h5.get("matured", 0))
+                ("%.1f%%" % (h5["rate_abs"] * 100))
+                if h5.get("rate_abs") is not None
+                else "-",
+                h5.get("matured", 0),
+            )
         elif m == "strong_coverage":
             read = "member_coverage=%s" % c.get("member_coverage", "-")
         elif m == "ninedim_zero_miss_timer":
-            read = ("计时中 day %s/%s（首条 %s）" % (c.get("day"), c.get("window"), c.get("first_alert_date"))
-                    if c.get("state") == "计时中" else "未启动（警报池空）")
+            read = (
+                "计时中 day %s/%s（首条 %s）"
+                % (c.get("day"), c.get("window"), c.get("first_alert_date"))
+                if c.get("state") == "计时中"
+                else "未启动（警报池空）"
+            )
         elif m == "qpzm_gate_shadow_counts":
-            read = "累计 %s 行（ok %s）" % (c.get("rows_total", "-"),
-                                           sum((c.get("per_strategy_theta_ok") or {}).values()) or 0)
+            read = "累计 %s 行（ok %s）" % (
+                c.get("rows_total", "-"),
+                sum((c.get("per_strategy_theta_ok") or {}).values()) or 0,
+            )
         elif m == "g3_progress":
-            t = (c.get("table") or [])
-            read = "；".join("%s %sd/%s" % (x.get("name"), x.get("trading_days"), c.get("window")) for x in t[:6])
+            t = c.get("table") or []
+            read = "；".join(
+                "%s %sd/%s" % (x.get("name"), x.get("trading_days"), c.get("window"))
+                for x in t[:6]
+            )
         else:
             read = note[:60]
         L.append("| %s | %s | %s |" % (m, read, c.get("state", "-")))
@@ -887,9 +1083,11 @@ CROSS_TH = 0.45
 FAKE_TH = 0.40
 # 复盘静态参照（出处：历史数据全景复盘与当前正确路径_2026-10-14，156 周
 # regime_timeline 实测，非本周动态计算，仅供决策参照）
-_REGIME_REF = ("<50% 区间的历史参照（复盘 2026-10-14）：同款宽度状态后 20 日"
-               "均值 +3.9%、胜率 67.4%；<35%→45% 穿越确认后 20 日均值 "
-               "+6.4%（23 次）；口径=不抄底、等穿越确认。")
+_REGIME_REF = (
+    "<50% 区间的历史参照（复盘 2026-10-14）：同款宽度状态后 20 日"
+    "均值 +3.9%、胜率 67.4%；<35%→45% 穿越确认后 20 日均值 "
+    "+6.4%（23 次）；口径=不抄底、等穿越确认。"
+)
 
 
 def market_path_status():
@@ -901,9 +1099,11 @@ def market_path_status():
     """
     with open(P_QD_BREADTH, encoding="utf-8") as f:
         d = json.load(f)
-    pairs = [(str(a), float(b)) for a, b in zip(d.get("dates") or [],
-                                                d.get("breadth") or [])
-             if b is not None]
+    pairs = [
+        (str(a), float(b))
+        for a, b in zip(d.get("dates") or [], d.get("breadth") or [])
+        if b is not None
+    ]
     if not pairs:
         raise ValueError("宽度序列为空")
     date, br = pairs[-1]
@@ -925,27 +1125,38 @@ def market_path_status():
     hmm = {}
     try:
         import hmm_shadow as _hsh
+
         hmm = _hsh.compute_shadow()
     except Exception as e:
         hmm = {"error": "%s: %s" % (type(e).__name__, str(e)[:100])}
     pending = mon.get("pending")
     if pending:
-        guide = ("穿越观察窗第 %s 日（%s 穿越）：窗内跌破 40%% 将告警撤回，"
-                 "满 5 日告警确认保持" % (pending.get("days_since", 0) + 1,
-                                          pending.get("cross_date", "?")))
+        guide = (
+            "穿越观察窗第 %s 日（%s 穿越）：窗内跌破 40%% 将告警撤回，"
+            "满 5 日告警确认保持"
+            % (pending.get("days_since", 0) + 1, pending.get("cross_date", "?"))
+        )
     elif br >= CROSS_TH:
         guide = "宽度 ≥45%：穿越态，按信号驱动入场、宽度仅作环境背景"
     elif br < FAKE_TH:
-        guide = ("深度弱势（<40%）：总闸纪律优先，不抄底；等上穿 45% 穿越确认"
-                 "（届时飞书告警）")
+        guide = (
+            "深度弱势（<40%）：总闸纪律优先，不抄底；等上穿 45% 穿越确认"
+            "（届时飞书告警）"
+        )
     else:
-        guide = ("40~45% 观察带：不抄底；关注能否站上 45%（穿越确认线），"
-                 "站稳 5 日才算确认")
+        guide = (
+            "40~45% 观察带：不抄底；关注能否站上 45%（穿越确认线），站稳 5 日才算确认"
+        )
     return {
-        "breadth": round(br, 4), "breadth_pct": "%.2f%%" % (br * 100),
-        "as_of": date, "dist_to_cross_pp": round((CROSS_TH - br) * 100, 2),
-        "days_below_45_streak": streak, "low20": round(lo20, 4),
-        "monitor": mon, "guide": guide, "regime_ref": _REGIME_REF,
+        "breadth": round(br, 4),
+        "breadth_pct": "%.2f%%" % (br * 100),
+        "as_of": date,
+        "dist_to_cross_pp": round((CROSS_TH - br) * 100, 2),
+        "days_below_45_streak": streak,
+        "low20": round(lo20, 4),
+        "monitor": mon,
+        "guide": guide,
+        "regime_ref": _REGIME_REF,
         "hmm": hmm,
     }
 
@@ -955,11 +1166,14 @@ def render_market_path_md(st):
     L = []
     L.append("## 六、市况·正确路径（复盘 2026-10-14）")
     L.append("")
-    L.append("- 最新宽度：**%s**（锚 %s；距穿越线 45%% 还差 %.2fpp）"
-             % (st["breadth_pct"], st["as_of"], st["dist_to_cross_pp"]))
-    L.append("- 已连续 %d 个交易日 <45%%；近 20 日最低宽度 %s"
-             % (st["days_below_45_streak"],
-                "%.2f%%" % (st["low20"] * 100)))
+    L.append(
+        "- 最新宽度：**%s**（锚 %s；距穿越线 45%% 还差 %.2fpp）"
+        % (st["breadth_pct"], st["as_of"], st["dist_to_cross_pp"])
+    )
+    L.append(
+        "- 已连续 %d 个交易日 <45%%；近 20 日最低宽度 %s"
+        % (st["days_below_45_streak"], "%.2f%%" % (st["low20"] * 100))
+    )
     L.append("- 穿越监测器：%s" % json.dumps(st["monitor"], ensure_ascii=False))
     L.append("- 指引：%s" % st["guide"])
     L.append("- %s" % st["regime_ref"])
@@ -968,29 +1182,42 @@ def render_market_path_md(st):
     if hmm.get("error"):
         L.append("- HMM 影子：不可用（%s）" % hmm["error"])
     else:
-        L.append("- HMM 影子（研究口径，非交易信号）：K=%d（窗 %d 日）"
-                 "风险态后验=%.2f%%、迟滞门 %s；硬阈值线 45%%/40%% 并列"
-                 "——两口径背离即 W8 议题二核心观察点"
-                 % (hmm.get("K", 0), hmm.get("window_days", 0),
-                    hmm.get("p_risk_filtered", 0.0) * 100,
-                    "ON" if hmm.get("hysteresis_on") else "off"))
+        L.append(
+            "- HMM 影子（研究口径，非交易信号）：K=%d（窗 %d 日）"
+            "风险态后验=%.2f%%、迟滞门 %s；硬阈值线 45%%/40%% 并列"
+            "——两口径背离即 W8 议题二核心观察点"
+            % (
+                hmm.get("K", 0),
+                hmm.get("window_days", 0),
+                hmm.get("p_risk_filtered", 0.0) * 100,
+                "ON" if hmm.get("hysteresis_on") else "off",
+            )
+        )
     L.append("")
     return "\n".join(L)
 
 
 # ---------- 渲染 ----------
 def status_mark(s):
-    return {"green": "🟢 绿灯", "yellow": "🟡 黄灯", "red": "🔴 红灯",
-            "gray": "⚪ 待首采"}.get(s, s)
+    return {
+        "green": "🟢 绿灯",
+        "yellow": "🟡 黄灯",
+        "red": "🔴 红灯",
+        "gray": "⚪ 待首采",
+    }.get(s, s)
 
 
 def render_md(week_label, monday, today, lines, issues, risks):
     L = []
     L.append("# 影子对账周报（W5 影子积累期）")
     L.append("")
-    L.append("- 周区间：%s（%s ~ %s）" % (week_label, monday.isoformat(), today.isoformat()))
+    L.append(
+        "- 周区间：%s（%s ~ %s）" % (week_label, monday.isoformat(), today.isoformat())
+    )
     L.append("- 生成时间：%s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    L.append("- 生成器：quant_backtest/shadow_weekly_report.py（只读，零产线改动；可幂等重跑）")
+    L.append(
+        "- 生成器：quant_backtest/shadow_weekly_report.py（只读，零产线改动；可幂等重跑）"
+    )
     L.append("")
     L.append("## 一、五线状态总表")
     L.append("")
@@ -1000,24 +1227,42 @@ def render_md(week_label, monday, today, lines, issues, risks):
         d = ln["data"]
         if ln["line"] == "双刀注记观察":
             wk = "%s 个信号（注记覆盖 %s），gate_would_block 触发 %s" % (
-                d.get("signals_total", "-"), d.get("signals_annotated", "-"),
-                d.get("gate_would_block_hits", "-"))
+                d.get("signals_total", "-"),
+                d.get("signals_annotated", "-"),
+                d.get("gate_would_block_hits", "-"),
+            )
             acc = "宽度序列 %s 个交易日" % len(d.get("breadth_series_week") or [])
         elif ln["line"] == "chanlun P5 反向观察":
             nb = d.get("week_new_3buy") or {}
             wk = "新 3 买 %d（bei %d / 无 %d）" % (
-                nb.get("3buy_total", 0), nb.get("3buy_bei", 0), nb.get("3buy_nobei", 0))
-            acc = "P5 样本 %s（缓存截至 %s）" % (d.get("p5_3buy_sample", "-"), d.get("grid_d_end", "-"))
+                nb.get("3buy_total", 0),
+                nb.get("3buy_bei", 0),
+                nb.get("3buy_nobei", 0),
+            )
+            acc = "P5 样本 %s（缓存截至 %s）" % (
+                d.get("p5_3buy_sample", "-"),
+                d.get("grid_d_end", "-"),
+            )
         elif ln["line"] == "linkage 影子":
             wk = "%d 行（信号② %d）" % (d.get("rows_week", 0), d.get("signal2_week", 0))
             acc = "%d 行；观察池覆盖 %s；信号②累计 %d" % (
-                d.get("rows_total", 0), d.get("pool_cover_week", "-"), d.get("signal2_total", 0))
+                d.get("rows_total", 0),
+                d.get("pool_cover_week", "-"),
+                d.get("signal2_total", 0),
+            )
         elif ln["line"] == "jev 毕业冲刺":
             cov = d.get("coverage_latest")
-            cov_s = ("%.1f%%（%s）" % (cov["pct"], cov["ts"])) if isinstance(cov, dict) else str(cov)
+            cov_s = (
+                ("%.1f%%（%s）" % (cov["pct"], cov["ts"]))
+                if isinstance(cov, dict)
+                else str(cov)
+            )
             wk = "FOCUS %d 条" % d.get("focus_week", 0)
             acc = "FOCUS %d，有 outcome %d，覆盖率 %s" % (
-                d.get("focus_total", 0), d.get("focus_with_outcome", 0), cov_s)
+                d.get("focus_total", 0),
+                d.get("focus_with_outcome", 0),
+                cov_s,
+            )
             gv = d.get("grad_v2")
             if gv:
                 parts = []
@@ -1029,19 +1274,30 @@ def render_md(week_label, monday, today, lines, issues, risks):
                         parts.append("%s 入口缺位" % m)
                     elif dd.get("state") == "过渡期剔除":
                         cm = dd.get("cluster_mean_pp")
-                        parts.append("%s 过渡监控 %s" % (m, "%+.2fpp" % cm if cm is not None else "无值"))
+                        parts.append(
+                            "%s 过渡监控 %s"
+                            % (m, "%+.2fpp" % cm if cm is not None else "无值")
+                        )
                     else:
-                        parts.append("%s n_eff%s/%spp%s" % (
-                            m, dd.get("n_eff", "-"),
-                            "%+.2f" % dd["cluster_mean_pp"] if dd.get("cluster_mean_pp") is not None else "-",
-                            "✓" if dd.get("pass") else "✗"))
+                        parts.append(
+                            "%s n_eff%s/%spp%s"
+                            % (
+                                m,
+                                dd.get("n_eff", "-"),
+                                "%+.2f" % dd["cluster_mean_pp"]
+                                if dd.get("cluster_mean_pp") is not None
+                                else "-",
+                                "✓" if dd.get("pass") else "✗",
+                            )
+                        )
                 acc += "；v2 口径：" + "，".join(parts)
         else:
             wk = "%s 条" % d.get("rows_week", 0)
             acc = "%s 条" % d.get("rows_total", 0)
-        L.append("| %s | %s | %s | %s | %s |" % (
-            ln["line"], wk, acc, status_mark(ln["status"]),
-            (ln["notes"] or [""])[0]))
+        L.append(
+            "| %s | %s | %s | %s | %s |"
+            % (ln["line"], wk, acc, status_mark(ln["status"]), (ln["notes"] or [""])[0])
+        )
     L.append("")
     L.append("## 二、各线明细")
     L.append("")
@@ -1066,22 +1322,32 @@ def render_md(week_label, monday, today, lines, issues, risks):
     L.append("")
     L.append("## 五、触发评审的条件提醒")
     L.append("")
-    L.append("- 双刀：任一 bucket（重点 >=50 档）样本满 %d 个 → 提醒做 θ50 门控假说中期检验。" % REVIEW_BUCKET_N)
-    L.append("- chanlun P5：反向观察（标注 3 买更差）在 |diff|>=1pp 期间持续跟踪；两周连续减弱可申请撤项。")
+    L.append(
+        "- 双刀：任一 bucket（重点 >=50 档）样本满 %d 个 → 提醒做 θ50 门控假说中期检验。"
+        % REVIEW_BUCKET_N
+    )
+    L.append(
+        "- chanlun P5：反向观察（标注 3 买更差）在 |diff|>=1pp 期间持续跟踪；两周连续减弱可申请撤项。"
+    )
     L.append("- linkage：信号②滞涨样本满 30 → 可做首次分层统计。")
-    L.append("- jev：v2 口径（2026-10-14 采纳）任一 live 域达标（n_eff≥30 且 FOCUS 聚类均值>+1pp）"
-             "→ 提交毕业评审；CRYPTO 过渡期剔除仅监控，CN 入口缺位单列。"
-             "（v1 对照口径：n≥%d 且 FOCUS 前向均值>+1pp。）" % JEV_GRAD_N)
-    L.append("- 三档对照：首采落地后首次周报自动解除\"待首采\"。")
+    L.append(
+        "- jev：v2 口径（2026-10-14 采纳）任一 live 域达标（n_eff≥30 且 FOCUS 聚类均值>+1pp）"
+        "→ 提交毕业评审；CRYPTO 过渡期剔除仅监控，CN 入口缺位单列。"
+        "（v1 对照口径：n≥%d 且 FOCUS 前向均值>+1pp。）" % JEV_GRAD_N
+    )
+    L.append('- 三档对照：首采落地后首次周报自动解除"待首采"。')
     L.append("")
     return "\n".join(L)
 
 
 def main():
     ap = argparse.ArgumentParser(description="影子对账周报生成器（只读）")
-    ap.add_argument("--week", default=None,
-                    help="周锚点 YYYY-MM-DD（取所在周），默认本周")
-    ap.add_argument("--json-only", action="store_true", help="只写 JSON 与 MD 数据文件，不打印全文")
+    ap.add_argument(
+        "--week", default=None, help="周锚点 YYYY-MM-DD（取所在周），默认本周"
+    )
+    ap.add_argument(
+        "--json-only", action="store_true", help="只写 JSON 与 MD 数据文件，不打印全文"
+    )
     args = ap.parse_args()
 
     monday, today = week_range(args.week)
@@ -1104,29 +1370,39 @@ def main():
         elif ln["status"] == "gray":
             risks.append("%s：待首采 —— %s" % (ln["line"], "；".join(ln["notes"])))
     # 结构性遗留风险（首跑已知）
-    risks.append("双刀线无逐日产物存档（portal/qd_scan_cache.json 为覆写单文件），"
-                 "bucket×前向收益回算只能从存档建立之日起算。")
-    risks.append("chanlun 网格缓存截至其 D_END，跨周未重跑时前向收益差为缓存口径（报告中已标注）。")
+    risks.append(
+        "双刀线无逐日产物存档（portal/qd_scan_cache.json 为覆写单文件），"
+        "bucket×前向收益回算只能从存档建立之日起算。"
+    )
+    risks.append(
+        "chanlun 网格缓存截至其 D_END，跨周未重跑时前向收益差为缓存口径（报告中已标注）。"
+    )
     risks.append("jev 覆盖率行依赖 review.log 存在；若日志轮转会丢失历史覆盖率序列。")
 
     # [20261014_m] P1 判据度量（逐项 try/except，单线失败不炸周报）
     try:
         criteria = metrics_criteria(monday, today)
     except Exception as e:
-        criteria = {"error": {"state": "error",
-                              "note": "%s: %s" % (type(e).__name__, e)}}
+        criteria = {
+            "error": {"state": "error", "note": "%s: %s" % (type(e).__name__, e)}
+        }
 
     # [20261014_bm] 市况·正确路径（复盘落地联动 breadth-mon，只读）
     try:
         market_path = market_path_status()
     except Exception as e:
-        market_path = {"state": "error",
-                       "note": "%s: %s" % (type(e).__name__, e)}
+        market_path = {"state": "error", "note": "%s: %s" % (type(e).__name__, e)}
 
-    payload = {"week_label": week_label, "monday": monday.isoformat(),
-               "generated_at": datetime.now().isoformat(timespec="seconds"),
-               "lines": lines, "issues": issues, "risks": risks,
-               "criteria": criteria, "market_path": market_path}
+    payload = {
+        "week_label": week_label,
+        "monday": monday.isoformat(),
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "lines": lines,
+        "issues": issues,
+        "risks": risks,
+        "criteria": criteria,
+        "market_path": market_path,
+    }
     os.makedirs(os.path.dirname(OUT_JSON), exist_ok=True)
     with open(OUT_JSON, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1)
@@ -1140,8 +1416,7 @@ def main():
     except Exception:
         path_md = "## 六、市况·正确路径（复盘 2026-10-14）\n\n- 本节生成失败（见 JSON market_path.error）\n"
     if marker in md:
-        md = md.replace(marker, crit_md + "\n" + path_md
-                        + "## 七、触发评审的条件提醒")
+        md = md.replace(marker, crit_md + "\n" + path_md + "## 七、触发评审的条件提醒")
     else:
         md += "\n" + crit_md
     with open(OUT_MD, "w", encoding="utf-8") as f:

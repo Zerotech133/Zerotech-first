@@ -16,6 +16,7 @@
 配置文件含 token 明文（凭证），仅本机使用；日志绝不打印 token 值，
 只打 name 与 4 位掩码。
 """
+
 import json
 import os
 import time
@@ -38,11 +39,12 @@ def mask(tok: str) -> str:
 @dataclass
 class TokenEntry:
     """池内单条 token。name 为人工可读标识（日志/运维）。"""
+
     name: str
     token: str
-    last_used: float = 0.0        # time.time() 纪元；0=从未使用
+    last_used: float = 0.0  # time.time() 纪元；0=从未使用
     fail_count: int = 0
-    cooldown_until: float = 0.0   # time.time() 纪元；0=不在冷却
+    cooldown_until: float = 0.0  # time.time() 纪元；0=不在冷却
 
     def healthy(self) -> bool:
         return time.time() >= self.cooldown_until
@@ -51,8 +53,9 @@ class TokenEntry:
 class TokenPool:
     """token 池：冷却过滤 + 最早使用优先轮换 + JSON 持久化。"""
 
-    def __init__(self, entries: list[TokenEntry] | None = None,
-                 path: str | None = None) -> None:
+    def __init__(
+        self, entries: list[TokenEntry] | None = None, path: str | None = None
+    ) -> None:
         self.entries: list[TokenEntry] = list(entries or [])
         self.path = path or CONFIG_PATH
 
@@ -67,21 +70,22 @@ class TokenPool:
         cands = [e for e in self.entries if e.healthy()]
         if not cands:
             if self.entries:
-                print("[tokens] 全部 %d 条 token 冷却中 → 降级三级链"
-                      % len(self.entries))
+                print(
+                    "[tokens] 全部 %d 条 token 冷却中 → 降级三级链" % len(self.entries)
+                )
             return None
         return min(cands, key=lambda e: e.last_used)
 
     def mark_used(self, e: TokenEntry) -> None:
         e.last_used = time.time()
 
-    def mark_fail(self, e: TokenEntry,
-                  cooldown: int = TOKEN_COOLDOWN_SEC) -> None:
+    def mark_fail(self, e: TokenEntry, cooldown: int = TOKEN_COOLDOWN_SEC) -> None:
         """400016 类明确失效：fail_count+1 并冷却（其余批次跳过它）。"""
         e.fail_count += 1
         e.cooldown_until = time.time() + max(1, cooldown)
-        print("[tokens] %s 失效进冷却 %ds（fail=%d）"
-              % (e.name, cooldown, e.fail_count))
+        print(
+            "[tokens] %s 失效进冷却 %ds（fail=%d）" % (e.name, cooldown, e.fail_count)
+        )
 
     def mark_ok(self, e: TokenEntry) -> None:
         """探测通过：fail_count 清零、解除冷却。"""
@@ -95,10 +99,16 @@ class TokenPool:
             return
         try:
             os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
-            data = [{"name": e.name, "token": e.token,
-                     "last_used": e.last_used, "fail_count": e.fail_count,
-                     "cooldown_until": e.cooldown_until}
-                    for e in self.entries]
+            data = [
+                {
+                    "name": e.name,
+                    "token": e.token,
+                    "last_used": e.last_used,
+                    "fail_count": e.fail_count,
+                    "cooldown_until": e.cooldown_until,
+                }
+                for e in self.entries
+            ]
             tmp = self.path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=1)
@@ -119,21 +129,24 @@ def load_tokens(path: str | None = None) -> TokenPool:
                 data = json.load(f)
             if isinstance(data, list):
                 for it in data:
-                    if isinstance(it, dict) and it.get("name") \
-                            and it.get("token"):
-                        entries.append(TokenEntry(
-                            name=str(it["name"]), token=str(it["token"]),
-                            last_used=float(it.get("last_used") or 0.0),
-                            fail_count=int(it.get("fail_count") or 0),
-                            cooldown_until=float(
-                                it.get("cooldown_until") or 0.0)))
+                    if isinstance(it, dict) and it.get("name") and it.get("token"):
+                        entries.append(
+                            TokenEntry(
+                                name=str(it["name"]),
+                                token=str(it["token"]),
+                                last_used=float(it.get("last_used") or 0.0),
+                                fail_count=int(it.get("fail_count") or 0),
+                                cooldown_until=float(it.get("cooldown_until") or 0.0),
+                            )
+                        )
         except Exception:
             entries = []
     if entries:
         healthy_n = sum(1 for e in entries if e.healthy())
-        print("[tokens] token 池已启用：%d 条（健康 %d，%s）"
-              % (len(entries), healthy_n,
-                 ",".join(e.name for e in entries)))
+        print(
+            "[tokens] token 池已启用：%d 条（健康 %d，%s）"
+            % (len(entries), healthy_n, ",".join(e.name for e in entries))
+        )
     return TokenPool(entries, path)
 
 

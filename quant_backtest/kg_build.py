@@ -18,6 +18,7 @@ Phase 2 后续：人物/产品/事件/产业链/跨市场实体。
   python kg_build.py --dryrun        # 只打印不落库
   python kg_build.py --sample 688411.SH   # 抽检某标的子图
 """
+
 import argparse
 import os
 import sys
@@ -29,7 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import kg_schema as S
-import datamart as dm        # 复用统一读层（已识别 stock_basic 等表）
+import datamart as dm  # 复用统一读层（已识别 stock_basic 等表）
 
 
 def _now():
@@ -38,8 +39,11 @@ def _now():
 
 def _clean_props(d):
     """过滤 None / NaN 值（保留给 MERGE key 校验用）。"""
-    return {k: v for k, v in d.items()
-            if v is not None and not (isinstance(v, float) and pd.isna(v))}
+    return {
+        k: v
+        for k, v in d.items()
+        if v is not None and not (isinstance(v, float) and pd.isna(v))
+    }
 
 
 def _safe_str(v):
@@ -62,9 +66,8 @@ def extract_security_and_lookup(df_basic):
     """
     sec_rows, ind_set, reg_set = [], set(), set()
     for _, r in df_basic.iterrows():
-        sec = {col: _safe_str(r.get(src)) for src, col in
-               S.SECURITY_PROPS.items()}
-        if not sec.get("ts_code"):    # MERGE key 必须
+        sec = {col: _safe_str(r.get(src)) for src, col in S.SECURITY_PROPS.items()}
+        if not sec.get("ts_code"):  # MERGE key 必须
             continue
         sec_rows.append(sec)
         if sec.get("industry"):
@@ -82,9 +85,8 @@ def extract_company(df_company):
     """stock_company → Company 节点（com_id 唯一键）。"""
     rows = []
     for _, r in df_company.iterrows():
-        c = {col: _safe_str(r.get(src)) for src, col in
-             S.COMPANY_PROPS.items()}
-        if not c.get("com_id"):       # MERGE key 必须
+        c = {col: _safe_str(r.get(src)) for src, col in S.COMPANY_PROPS.items()}
+        if not c.get("com_id"):  # MERGE key 必须
             continue
         rows.append(c)
     return rows
@@ -95,13 +97,17 @@ def extract_sw_l1(df_sw):
     """sw_classify_l1 → SwL1Industry 节点（index_code 唯一键）。"""
     rows = []
     for _, r in df_sw.iterrows():
-        rows.append(_clean_props({
-            "index_code": _safe_str(r.get("index_code")),
-            "industry_name": _safe_str(r.get("industry_name")),
-            "level": _safe_str(r.get("level")),
-            "industry_code": _safe_str(r.get("industry_code")),
-            "src": _safe_str(r.get("src")),
-        }))
+        rows.append(
+            _clean_props(
+                {
+                    "index_code": _safe_str(r.get("index_code")),
+                    "industry_name": _safe_str(r.get("industry_name")),
+                    "level": _safe_str(r.get("level")),
+                    "industry_code": _safe_str(r.get("industry_code")),
+                    "src": _safe_str(r.get("src")),
+                }
+            )
+        )
     return [r for r in rows if r.get("index_code")]
 
 
@@ -121,28 +127,41 @@ def build_edges(df_basic):
         area = _safe_str(r.get("area"))
 
         # OF_COMPANY: Security -> Company（通过 ts_code 关联）
-        of_co.append({
-            "src": ts_code, "dst": ts_code,  # Company.ts_code 字段
-            "validStart": list_date, "validEnd": S.VALID_END_OPEN,
-            "source": S.SOURCE_SEED, "updated_at": now,
-        })
+        of_co.append(
+            {
+                "src": ts_code,
+                "dst": ts_code,  # Company.ts_code 字段
+                "validStart": list_date,
+                "validEnd": S.VALID_END_OPEN,
+                "source": S.SOURCE_SEED,
+                "updated_at": now,
+            }
+        )
         # INDUSTRY_OF: Security -> Industry（industry 字段对应 Industry.name）
         if industry:
-            ind_of.append({
-                "src": ts_code, "dst": industry,
-                "validStart": list_date, "validEnd": S.VALID_END_OPEN,
-                "source": S.SOURCE_SEED, "updated_at": now,
-            })
+            ind_of.append(
+                {
+                    "src": ts_code,
+                    "dst": industry,
+                    "validStart": list_date,
+                    "validEnd": S.VALID_END_OPEN,
+                    "source": S.SOURCE_SEED,
+                    "updated_at": now,
+                }
+            )
         # AREA_OF: Security -> Region
         if area:
-            area_of.append({
-                "src": ts_code, "dst": area,
-                "validStart": list_date, "validEnd": S.VALID_END_OPEN,
-                "source": S.SOURCE_SEED, "updated_at": now,
-            })
-    return {S.REL_OF_COMPANY: of_co,
-            S.REL_INDUSTRY_OF: ind_of,
-            S.REL_AREA_OF: area_of}
+            area_of.append(
+                {
+                    "src": ts_code,
+                    "dst": area,
+                    "validStart": list_date,
+                    "validEnd": S.VALID_END_OPEN,
+                    "source": S.SOURCE_SEED,
+                    "updated_at": now,
+                }
+            )
+    return {S.REL_OF_COMPANY: of_co, S.REL_INDUSTRY_OF: ind_of, S.REL_AREA_OF: area_of}
 
 
 # ── 5) 主流程 ─────────────────────────────────────────────────
@@ -155,16 +174,22 @@ def build(dryrun=False):
     # 恒为空，4 字段从未补上（2026-10-16 收编时发现的存量 bug）。
     # 改为 NaN 填充：真源有值保留，缺失从 tushare 物理表补。
     df_tu = dm.read_physical("stock_basic")
-    extra = [c for c in ("market", "cnspell", "act_name", "act_ent_type")
-             if c in df_tu.columns]
+    extra = [
+        c
+        for c in ("market", "cnspell", "act_name", "act_ent_type")
+        if c in df_tu.columns
+    ]
     if extra:
-        tu_idx = (df_tu.drop_duplicates("ts_code", keep="first")
-                  .set_index("ts_code")[extra])
+        tu_idx = df_tu.drop_duplicates("ts_code", keep="first").set_index("ts_code")[
+            extra
+        ]
         for c in extra:
-            cur = (df_basic[c] if c in df_basic.columns else
-                   pd.Series(pd.NA, index=df_basic.index))
-            df_basic[c] = cur.where(cur.notna(),
-                                    df_basic["ts_code"].map(tu_idx[c]))
+            cur = (
+                df_basic[c]
+                if c in df_basic.columns
+                else pd.Series(pd.NA, index=df_basic.index)
+            )
+            df_basic[c] = cur.where(cur.notna(), df_basic["ts_code"].map(tu_idx[c]))
         print("  补 tushare 字段(NaN 填充): %s" % extra)
     df_company = dm.read("stock_company")
     df_sw = dm.read("sw_classify_l1")
@@ -177,9 +202,10 @@ def build(dryrun=False):
     sec_rows, ind_rows, reg_rows = extract_security_and_lookup(df_basic)
     co_rows = extract_company(df_company)
     sw_rows = extract_sw_l1(df_sw)
-    print("  Security: %d  Company: %d  Industry: %d  Region: %d  SwL1: %d"
-          % (len(sec_rows), len(co_rows), len(ind_rows),
-             len(reg_rows), len(sw_rows)))
+    print(
+        "  Security: %d  Company: %d  Industry: %d  Region: %d  SwL1: %d"
+        % (len(sec_rows), len(co_rows), len(ind_rows), len(reg_rows), len(sw_rows))
+    )
 
     # 3) 抽取边
     print("[3/5] 抽取时序关系边…")
@@ -194,6 +220,7 @@ def build(dryrun=False):
     # 4) 落库
     print("[4/5] 连接 Neo4j 并落库…")
     from kg_client import KgClient
+
     cli = KgClient()
     cli.ensure_schema()
 
@@ -212,16 +239,31 @@ def build(dryrun=False):
     # 注意：Company 节点的 key 是 com_id 不是 ts_code，需要先按 ts_code 索引
     # 这里通过 MATCH Company {ts_code: row.dst} 来匹配
     n_e1 = cli.upsert_edge(
-        S.LBL_SECURITY, "ts_code", S.LBL_COMPANY, "ts_code",
-        S.REL_OF_COMPANY, edges[S.REL_OF_COMPANY])
+        S.LBL_SECURITY,
+        "ts_code",
+        S.LBL_COMPANY,
+        "ts_code",
+        S.REL_OF_COMPANY,
+        edges[S.REL_OF_COMPANY],
+    )
     print("  OF_COMPANY upsert: %d" % n_e1)
     n_e2 = cli.upsert_edge(
-        S.LBL_SECURITY, "ts_code", S.LBL_INDUSTRY, "name",
-        S.REL_INDUSTRY_OF, edges[S.REL_INDUSTRY_OF])
+        S.LBL_SECURITY,
+        "ts_code",
+        S.LBL_INDUSTRY,
+        "name",
+        S.REL_INDUSTRY_OF,
+        edges[S.REL_INDUSTRY_OF],
+    )
     print("  INDUSTRY_OF upsert: %d" % n_e2)
     n_e3 = cli.upsert_edge(
-        S.LBL_SECURITY, "ts_code", S.LBL_REGION, "name",
-        S.REL_AREA_OF, edges[S.REL_AREA_OF])
+        S.LBL_SECURITY,
+        "ts_code",
+        S.LBL_REGION,
+        "name",
+        S.REL_AREA_OF,
+        edges[S.REL_AREA_OF],
+    )
     print("  AREA_OF upsert: %d" % n_e3)
 
     # 5) 统计 + 抽检
@@ -233,13 +275,13 @@ def build(dryrun=False):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dryrun", action="store_true",
-                    help="只打印不连接 Neo4j")
+    ap.add_argument("--dryrun", action="store_true", help="只打印不连接 Neo4j")
     ap.add_argument("--sample", help="抽检某 ts_code 子图")
     args = ap.parse_args()
 
     if args.sample:
         from kg_client import KgClient
+
         cli = KgClient()
         cli.sample_subgraph(args.sample)
         cli.close()

@@ -4,6 +4,7 @@
 本模块只登记冻结快照与停轮指令; 不删除任何数据, 不触任何采集进程配置
 (停轮以本登记为准, 采集侧引用此常量).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,21 +38,35 @@ def freeze_snapshot(repo_root: str | Path) -> dict:
     manifest = xq_dir / "_manifest.json"
     if manifest.exists():
         import json
+
         try:
             m = json.loads(manifest.read_text(encoding="utf-8"))
             rows = m.get("total") or m.get("rows") or m.get("count")
         except Exception:
             rows = None
     records = [
-        FreezeRecord("xueqiu", FROZEN_AT, BASIS, rows,
-                     "存量冻结只读; 增量停轮; 转合规源后可另行解冻(需书面许可)"),
-        FreezeRecord("guba", FROZEN_AT, BASIS, None,
-                     "公开页+cookie 混合采集痕迹; 同口径冻结; 存量并入舆情库只读"),
+        FreezeRecord(
+            "xueqiu",
+            FROZEN_AT,
+            BASIS,
+            rows,
+            "存量冻结只读; 增量停轮; 转合规源后可另行解冻(需书面许可)",
+        ),
+        FreezeRecord(
+            "guba",
+            FROZEN_AT,
+            BASIS,
+            None,
+            "公开页+cookie 混合采集痕迹; 同口径冻结; 存量并入舆情库只读",
+        ),
     ]
-    return {"frozen_at": FROZEN_AT, "frozen_by": FROZEN_BY,
-            "records": [r.as_dict() for r in records],
-            "allowed_active": list(ALLOWED_ACTIVE_SOURCES),
-            "policy": "增量采集禁用; 只读查询不受限; 解冻须书面许可+老田批准"}
+    return {
+        "frozen_at": FROZEN_AT,
+        "frozen_by": FROZEN_BY,
+        "records": [r.as_dict() for r in records],
+        "allowed_active": list(ALLOWED_ACTIVE_SOURCES),
+        "policy": "增量采集禁用; 只读查询不受限; 解冻须书面许可+老田批准",
+    }
 
 
 def assert_source_active(source_id: str) -> None:
@@ -59,4 +74,5 @@ def assert_source_active(source_id: str) -> None:
     if source_id in FROZEN_SOURCES:
         raise PermissionError(
             f"SOURCE_FROZEN: {source_id} 存量冻结/增量停用 @ {FROZEN_AT} ({BASIS}); "
-            f"活跃源={ALLOWED_ACTIVE_SOURCES}; 解冻须书面许可+老田批准")
+            f"活跃源={ALLOWED_ACTIVE_SOURCES}; 解冻须书面许可+老田批准"
+        )

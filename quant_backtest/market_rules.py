@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """统一、可审计的市场交易规则判定。"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -44,7 +45,9 @@ class RuleDecision:
             reason = "ALLOWED" if self.allowed else "BLOCKED"
         object.__setattr__(self, "reason", str(reason).upper())
         object.__setattr__(self, "snapshot", _json_value(dict(self.snapshot)))
-        object.__setattr__(self, "source_trace", tuple(str(x) for x in self.source_trace))
+        object.__setattr__(
+            self, "source_trace", tuple(str(x) for x in self.source_trace)
+        )
 
     @property
     def reason_code(self) -> str:
@@ -59,12 +62,17 @@ class MarketRuleProvider:
     registered policy explicitly has no price limits.
     """
 
-    def __init__(self, *, status_provider: Optional[Provider] = None,
-                 limit_provider: Optional[Provider] = None,
-                 listing_provider: Optional[Provider] = None,
-                 market: Optional[str] = None,
-                 rule_ref: str = RULE_REF, rule_version: str = RULE_VERSION,
-                 source_trace: Tuple[str, ...] = ()):
+    def __init__(
+        self,
+        *,
+        status_provider: Optional[Provider] = None,
+        limit_provider: Optional[Provider] = None,
+        listing_provider: Optional[Provider] = None,
+        market: Optional[str] = None,
+        rule_ref: str = RULE_REF,
+        rule_version: str = RULE_VERSION,
+        source_trace: Tuple[str, ...] = (),
+    ):
         self.status_provider = status_provider
         self.limit_provider = limit_provider
         self.listing_provider = listing_provider
@@ -80,9 +88,14 @@ class MarketRuleProvider:
             signature = inspect.signature(provider)
         except (TypeError, ValueError):
             return provider(symbol, dt, bar)
-        positional = [p for p in signature.parameters.values()
-                      if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
-        accepts_varargs = any(p.kind == p.VAR_POSITIONAL for p in signature.parameters.values())
+        positional = [
+            p
+            for p in signature.parameters.values()
+            if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+        ]
+        accepts_varargs = any(
+            p.kind == p.VAR_POSITIONAL for p in signature.parameters.values()
+        )
         if accepts_varargs or len(positional) >= 3:
             return provider(symbol, dt, bar)
         return provider(symbol, dt)
@@ -145,15 +158,35 @@ class MarketRuleProvider:
                 return "LIMIT_DOWN"
             return None
         if isinstance(value, (int, float)):
-            return ("LIMIT_UP" if side == "BUY" and price >= float(value)
-                    else "LIMIT_DOWN" if side == "SELL" and price <= float(value) else None)
+            return (
+                "LIMIT_UP"
+                if side == "BUY" and price >= float(value)
+                else "LIMIT_DOWN"
+                if side == "SELL" and price <= float(value)
+                else None
+            )
         return "LIMIT_UNKNOWN"
 
-    def _decision(self, allowed: bool, reason: str, snapshot: Mapping[str, Any]) -> RuleDecision:
-        return RuleDecision(allowed, reason, self.rule_ref, self.rule_version, snapshot, self.source_trace)
+    def _decision(
+        self, allowed: bool, reason: str, snapshot: Mapping[str, Any]
+    ) -> RuleDecision:
+        return RuleDecision(
+            allowed,
+            reason,
+            self.rule_ref,
+            self.rule_version,
+            snapshot,
+            self.source_trace,
+        )
 
-    def _evaluate(self, symbol: str, dt: Any, bar: Any, side: str, price: float) -> RuleDecision:
-        status = self._call(self.status_provider, symbol, dt, bar) if self.status_provider else None
+    def _evaluate(
+        self, symbol: str, dt: Any, bar: Any, side: str, price: float
+    ) -> RuleDecision:
+        status = (
+            self._call(self.status_provider, symbol, dt, bar)
+            if self.status_provider
+            else None
+        )
         snapshot = {"status": status}
         if self.listing_provider is not None:
             listing = self._call(self.listing_provider, symbol, dt, bar)
@@ -167,6 +200,7 @@ class MarketRuleProvider:
         has_limits = False
         try:
             from market_policy import get_policy
+
             market = self.market or str(getattr(bar, "market", ""))
             has_limits = get_policy(market).provider_capability == "limit_up_down"
         except Exception:
@@ -182,7 +216,9 @@ class MarketRuleProvider:
             return self._decision(False, limit_reason, snapshot)
         return self._decision(True, "ALLOWED", snapshot)
 
-    def decide(self, symbol: str, dt: Any, bar: Any, side: str, price: float) -> RuleDecision:
+    def decide(
+        self, symbol: str, dt: Any, bar: Any, side: str, price: float
+    ) -> RuleDecision:
         return self._evaluate(symbol, dt, bar, side, price)
 
     def evaluate(self, *args: Any, **kwargs: Any) -> RuleDecision:

@@ -24,6 +24,7 @@
   python kg_factor_review.py --horizon 5 10 20 --to-csv C:/Temp/kg_factor_review.csv
   python kg_factor_review.py --selftest      # 管线自检（合成数据，不进正式判定）
 """
+
 import argparse
 import glob
 import os
@@ -39,14 +40,22 @@ sys.path.insert(0, HERE)
 import tdx_read as tdxr
 
 HIST_DIR = os.path.join(HERE, "data", "features", "kg_features_hist")
-FACTORS = ["deg_total", "deg_product", "peer_industry", "peer_sw_l1",
-           "peer_region", "person_shared", "peer_shared_prod", "n_persons"]
-MIN_MONTHS = 3          # 触发条件：历史截面积累 >= 3 个月
-GATE_ABS_IC = 0.02      # 门槛：|mIC| >= 0.02
-GATE_T = 2.0            # 门槛：|t| >= 2
-GATE_SAME_SIGN = 0.7    # 方向一致：同号月占比
-MIN_SAMPLE = 30         # 单截面 Spearman 最小有效对数（同首轮）
-MV_RISK = 0.5           # |ICmv| 超过则提示市值代理风险
+FACTORS = [
+    "deg_total",
+    "deg_product",
+    "peer_industry",
+    "peer_sw_l1",
+    "peer_region",
+    "person_shared",
+    "peer_shared_prod",
+    "n_persons",
+]
+MIN_MONTHS = 3  # 触发条件：历史截面积累 >= 3 个月
+GATE_ABS_IC = 0.02  # 门槛：|mIC| >= 0.02
+GATE_T = 2.0  # 门槛：|t| >= 2
+GATE_SAME_SIGN = 0.7  # 方向一致：同号月占比
+MIN_SAMPLE = 30  # 单截面 Spearman 最小有效对数（同首轮）
+MV_RISK = 0.5  # |ICmv| 超过则提示市值代理风险
 
 
 def load_snapshots():
@@ -65,8 +74,9 @@ def load_snapshots():
 
 def price_wide(start):
     """ts_daily close 宽表：index=trade_date 升序，columns=ts_code。"""
-    day = tdxr.read_range("ts_daily", start=start,
-                          columns=["ts_code", "trade_date", "close"])
+    day = tdxr.read_range(
+        "ts_daily", start=start, columns=["ts_code", "trade_date", "close"]
+    )
     day = day[day["ts_code"].str.match(r"^\d{6}\.(SH|SZ|BJ)$")]
     pv = day.pivot_table(index="trade_date", columns="ts_code", values="close")
     return pv.sort_index()
@@ -74,8 +84,9 @@ def price_wide(start):
 
 def logmv_wide(start):
     """ts_daily_basic total_mv → log 宽表（市值代理体检）。"""
-    mv = tdxr.read_range("ts_daily_basic", start=start,
-                         columns=["ts_code", "trade_date", "total_mv"])
+    mv = tdxr.read_range(
+        "ts_daily_basic", start=start, columns=["ts_code", "trade_date", "total_mv"]
+    )
     mv = mv[mv["total_mv"] > 0]
     w = mv.pivot_table(index="trade_date", columns="ts_code", values="total_mv")
     return np.log(w).sort_index()
@@ -112,14 +123,22 @@ def review(horizons, to_csv):
     trading_days = list(pv.index)
     bmap = map_base(snap["snap_date"].unique(), trading_days)
     snap["base"] = snap["snap_date"].map(bmap)
-    print("归档 %d 个截面日 / %d 行 → 去重后唯一 base 截面 %d 个（%s ~ %s）"
-          % (snap["snap_date"].nunique(), len(snap),
-             snap.dropna(subset=["base"])["base"].nunique(),
-             snap.dropna(subset=["base"])["base"].min(),
-             snap.dropna(subset=["base"])["base"].max()))
-    snap = (snap.dropna(subset=["base"])
-                .sort_values("snap_date")
-                .groupby("base", as_index=False).tail(1))  # 每 base 保留最新截面
+    print(
+        "归档 %d 个截面日 / %d 行 → 去重后唯一 base 截面 %d 个（%s ~ %s）"
+        % (
+            snap["snap_date"].nunique(),
+            len(snap),
+            snap.dropna(subset=["base"])["base"].nunique(),
+            snap.dropna(subset=["base"])["base"].min(),
+            snap.dropna(subset=["base"])["base"].max(),
+        )
+    )
+    snap = (
+        snap.dropna(subset=["base"])
+        .sort_values("snap_date")
+        .groupby("base", as_index=False)
+        .tail(1)
+    )  # 每 base 保留最新截面
     print("最新交易日: %s" % trading_days[-1])
 
     rows = []
@@ -140,21 +159,37 @@ def review(horizons, to_csv):
                 y = valid["r"]
                 ic = spearmanr(x, y).statistic
                 cov = float((x.notna() & (x > 0)).mean())
-                icmv = (spearmanr(x, lmrow.reindex(valid.index).dropna())
-                        .statistic if len(lmrow.dropna()) > MIN_SAMPLE else np.nan)
+                icmv = (
+                    spearmanr(x, lmrow.reindex(valid.index).dropna()).statistic
+                    if len(lmrow.dropna()) > MIN_SAMPLE
+                    else np.nan
+                )
                 # 分位收益 spread：x 五分位 → 各组 y 均值，Q5-Q1
                 spread = np.nan
                 if x.nunique() >= 5:
                     q = pd.qcut(x.rank(method="first"), 5, labels=False)
                     grp = y.groupby(q).mean()
                     spread = float(grp.get(4, np.nan) - grp.get(0, np.nan))
-                rows.append(dict(snap_date=srow["snap_date"], base=base,
-                                 ym=base[:6], factor=fac, horizon=h,
-                                 ic=ic, icmv=icmv, cov=cov, spread=spread))
+                rows.append(
+                    dict(
+                        snap_date=srow["snap_date"],
+                        base=base,
+                        ym=base[:6],
+                        factor=fac,
+                        horizon=h,
+                        ic=ic,
+                        icmv=icmv,
+                        cov=cov,
+                        spread=spread,
+                    )
+                )
     if not rows:
         print("\n暂无可用前向截面（首个归档 2026-10-09，收益窗口未走满）。")
         for h in horizons:
-            print("  r%-2d 首个截面预计 %s 完成" % (h, project_weekdays(trading_days[-1], h)))
+            print(
+                "  r%-2d 首个截面预计 %s 完成"
+                % (h, project_weekdays(trading_days[-1], h))
+            )
         return
 
     df = pd.DataFrame(rows)
@@ -164,16 +199,30 @@ def review(horizons, to_csv):
     for (fac, h), g in df.groupby(["factor", "horizon"]):
         m = g.groupby("ym")["ic"].agg(["mean", "count"])
         mIC = float(m["mean"].mean())
-        t = (float(m["mean"].mean() / m["mean"].std() * np.sqrt(len(m)))
-             if len(m) > 1 else np.nan)
+        t = (
+            float(m["mean"].mean() / m["mean"].std() * np.sqrt(len(m)))
+            if len(m) > 1
+            else np.nan
+        )
         months = len(m)
         same = float((np.sign(m["mean"]) == np.sign(mIC)).mean())
         icmv = float(g["icmv"].mean())
         cov = float(g["cov"].mean())
         spread = float(g["spread"].dropna().mean())
-        agg.append(dict(factor=fac, horizon=h, snapshots=g["base"].nunique(),
-                        months=months, mIC=mIC, t=t, same=same,
-                        icmv=icmv, cov=cov, spread=spread))
+        agg.append(
+            dict(
+                factor=fac,
+                horizon=h,
+                snapshots=g["base"].nunique(),
+                months=months,
+                mIC=mIC,
+                t=t,
+                same=same,
+                icmv=icmv,
+                cov=cov,
+                spread=spread,
+            )
+        )
     res = pd.DataFrame(agg)
 
     # ── 门槛判定 ──
@@ -181,9 +230,12 @@ def review(horizons, to_csv):
     for _, r in res.iterrows():
         if r["months"] < MIN_MONTHS:
             v = "积累中(%d/%d月)" % (r["months"], MIN_MONTHS)
-        elif (abs(r["mIC"]) >= GATE_ABS_IC and abs(r["t"]) >= GATE_T
-              and r["same"] >= GATE_SAME_SIGN
-              and np.sign(r["spread"]) == np.sign(r["mIC"])):
+        elif (
+            abs(r["mIC"]) >= GATE_ABS_IC
+            and abs(r["t"]) >= GATE_T
+            and r["same"] >= GATE_SAME_SIGN
+            and np.sign(r["spread"]) == np.sign(r["mIC"])
+        ):
             v = "PASS"
         else:
             v = "未过"
@@ -197,8 +249,10 @@ def review(horizons, to_csv):
         show[c] = show[c].astype(float).round(3)
     show["same"] = (show["same"] * 100).round(0).astype(str) + "%"
     show["cov"] = (show["cov"] * 100).round(1)
-    print("\n%s  判定门槛：月数>=%d | |mIC|>=%.2f | |t|>=%.1f | 同号月>=%.0f%%"
-          % ("=" * 40, MIN_MONTHS, GATE_ABS_IC, GATE_T, GATE_SAME_SIGN * 100))
+    print(
+        "\n%s  判定门槛：月数>=%d | |mIC|>=%.2f | |t|>=%.1f | 同号月>=%.0f%%"
+        % ("=" * 40, MIN_MONTHS, GATE_ABS_IC, GATE_T, GATE_SAME_SIGN * 100)
+    )
     print(show.to_string(index=False))
     if to_csv:
         res.to_csv(to_csv, index=False, encoding="utf-8-sig")
@@ -213,10 +267,11 @@ def selftest():
     tds = list(pv.index)
     bmap = map_base(snap["snap_date"].unique(), tds)
     snap["base"] = snap["snap_date"].map(bmap)
-    ded = (snap.dropna(subset=["base"]).sort_values("snap_date")
-               .groupby("base").tail(1))
-    print("[A] 归档 %d 个截面日 / %d 行 → 唯一 base %d 个"
-          % (snap["snap_date"].nunique(), len(snap), ded["base"].nunique()))
+    ded = snap.dropna(subset=["base"]).sort_values("snap_date").groupby("base").tail(1)
+    print(
+        "[A] 归档 %d 个截面日 / %d 行 → 唯一 base %d 个"
+        % (snap["snap_date"].nunique(), len(snap), ded["base"].nunique())
+    )
 
     X = pd.DataFrame(np.arange(1.0, 21.0).reshape(5, 4))
     r2 = X.shift(-2) / X - 1
@@ -224,23 +279,29 @@ def selftest():
     if np.allclose(r2.iloc[0].values, manual.values):
         print("[B] 前向收益 r_h = close[t+h]/close[t]-1 与手动一致 ✅")
     else:
-        print("[B] 前向收益数学不一致 ❌"); ok = False
+        print("[B] 前向收益数学不一致 ❌")
+        ok = False
 
     f = -r2.iloc[0].values
     ic = spearmanr(f, r2.iloc[0].values).statistic
     if abs(ic - (-1.0)) < 1e-9:
         print("[C] 单截面 IC 机制：合成因子 IC=%.3f（期望 -1.000）✅" % ic)
     else:
-        print("[C] IC 机制异常：%.3f ❌" % ic); ok = False
+        print("[C] IC 机制异常：%.3f ❌" % ic)
+        ok = False
 
     # D. 月度聚合与门槛（3 个月合成 IC 序列）
     rng = np.random.default_rng(7)
-    mics = rng.normal(0.05, 0.01, 4)   # 4 个月均值 0.05，显著同向
+    mics = rng.normal(0.05, 0.01, 4)  # 4 个月均值 0.05，显著同向
     tval = mics.mean() / mics.std() * np.sqrt(len(mics))
     if abs(mics.mean()) >= GATE_ABS_IC and abs(tval) >= GATE_T:
-        print("[D] 门槛判定逻辑：合成 mIC=%.3f t=%.2f → PASS 分支 ✅" % (mics.mean(), tval))
+        print(
+            "[D] 门槛判定逻辑：合成 mIC=%.3f t=%.2f → PASS 分支 ✅"
+            % (mics.mean(), tval)
+        )
     else:
-        print("[D] 门槛判定逻辑异常 ❌"); ok = False
+        print("[D] 门槛判定逻辑异常 ❌")
+        ok = False
     print("\n自检%s" % ("全部通过 ✅" if ok else "存在失败 ❌"))
     return ok
 

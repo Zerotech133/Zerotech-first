@@ -9,6 +9,7 @@
 口径说明：回填只碰 bias=None 未命中行，规则误报与回填无关；
 分歧人工抽检正确率 = 直接度量 LLM 对未命中行的判定质量。
 """
+
 import argparse
 import csv
 import os
@@ -22,6 +23,7 @@ OUT_CSV = os.path.join(HERE, "data", "semantica", "k260_audit.csv")
 def main():
     import pandas as pd
     from kg_notice_llm import TAG_BIAS
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=30)
     ap.add_argument("--seed", type=int, default=11)
@@ -39,10 +41,17 @@ def main():
 
     rows = []
     for _, r in sub.iterrows():
-        rows.append({"text": r["text"][:110], "tag_rule": r["tag_rule"],
-                     "tag_llm": r["tag"], "conf": r["conf"],
-                     "bias_rule": r["bias_rule"], "bias_llm": r["bias"],
-                     "判定": ""})
+        rows.append(
+            {
+                "text": r["text"][:110],
+                "tag_rule": r["tag_rule"],
+                "tag_llm": r["tag"],
+                "conf": r["conf"],
+                "bias_rule": r["bias_rule"],
+                "bias_llm": r["bias"],
+                "判定": "",
+            }
+        )
     with open(OUT_CSV, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         w.writeheader()

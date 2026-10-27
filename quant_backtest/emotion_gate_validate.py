@@ -15,6 +15,7 @@ B 方案要做成其他策略的前置闸门，必须先证明它**真的有区�
 
 纪律：只读，不写任何生产表；输出仅 stdout。
 """
+
 from __future__ import annotations
 
 import glob
@@ -47,17 +48,17 @@ def tier_of(s: pd.Series) -> pd.Series:
 
 def main() -> int:
     emo = emotion()
-    emo["档"] = (tier_of(pd.to_numeric(emo["涨停家数"], errors="coerce"))
-                 + tier_of(pd.to_numeric(emo["封板率"], errors="coerce"))
-                 + tier_of(pd.to_numeric(emo["晋级率"], errors="coerce"))
-                 + tier_of(pd.to_numeric(emo["最高连板"], errors="coerce")))
-    emo["档名"] = pd.cut(emo["档"], bins=[-1, 3, 6, 8],
-                        labels=["冰点", "中性", "亢奋"])
+    emo["档"] = (
+        tier_of(pd.to_numeric(emo["涨停家数"], errors="coerce"))
+        + tier_of(pd.to_numeric(emo["封板率"], errors="coerce"))
+        + tier_of(pd.to_numeric(emo["晋级率"], errors="coerce"))
+        + tier_of(pd.to_numeric(emo["最高连板"], errors="coerce"))
+    )
+    emo["档名"] = pd.cut(emo["档"], bins=[-1, 3, 6, 8], labels=["冰点", "中性", "亢奋"])
     emo = emo.sort_values("trade_date").reset_index(drop=True)
 
     print("=" * 92)
-    print("B 方案可行性验证 · H1 全市场涨跌（%d 交易日）"
-          % len(emo))
+    print("B 方案可行性验证 · H1 全市场涨跌（%d 交易日）" % len(emo))
     print("=" * 92)
 
     # ── H1：全市场当日涨跌 ────────────────────────────────
@@ -69,13 +70,18 @@ def main() -> int:
     df = pd.concat([pd.read_parquet(p, columns=cols) for p in parts], ignore_index=True)
     df["trade_date"] = df["trade_date"].astype(str)
     df["pct_chg"] = pd.to_numeric(df["pct_chg"], errors="coerce")
-    print("ts_daily: %d 行 / %d 交易日 / %d 只" % (len(df), df["trade_date"].nunique(),
-                                           df["ts_code"].nunique()))
+    print(
+        "ts_daily: %d 行 / %d 交易日 / %d 只"
+        % (len(df), df["trade_date"].nunique(), df["ts_code"].nunique())
+    )
 
     mkt = df.groupby("trade_date")["pct_chg"].mean().rename("全市场均涨")
     mkt_med = df.groupby("trade_date")["pct_chg"].median().rename("全市场中位")
-    up_ratio = df.groupby("trade_date")["pct_chg"].apply(
-        lambda s: round(float((s > 0).mean()) * 100, 2)).rename("上涨占比%")
+    up_ratio = (
+        df.groupby("trade_date")["pct_chg"]
+        .apply(lambda s: round(float((s > 0).mean()) * 100, 2))
+        .rename("上涨占比%")
+    )
     j = emo.set_index("trade_date").join([mkt, mkt_med, up_ratio])
 
     print("\n【H1】各情绪档的全市场表现")
@@ -90,14 +96,22 @@ def main() -> int:
 
     # t 检验（冰点 vs 其他）
     from statistics import mean, stdev
+
     ice = j[j["档名"] == "冰点"]["全市场均涨"].dropna()
     oth = j[j["档名"] != "冰点"]["全市场均涨"].dropna()
     diff = mean(ice) - mean(oth)
     se = np.sqrt(stdev(ice) ** 2 / len(ice) + stdev(oth) ** 2 / len(oth))
     t = diff / se if se else 0
-    print("\n冰点(%d日) vs 非冰点(%d日): 均涨差 %+.4f pp, t=%.2f ⇒ %s"
-          % (len(ice), len(oth), diff, t,
-             "有显著差异" if abs(t) > 1.96 else "★无显著差异（H1 不成立）"))
+    print(
+        "\n冰点(%d日) vs 非冰点(%d日): 均涨差 %+.4f pp, t=%.2f ⇒ %s"
+        % (
+            len(ice),
+            len(oth),
+            diff,
+            t,
+            "有显著差异" if abs(t) > 1.96 else "★无显著差异（H1 不成立）",
+        )
+    )
 
     # ── H3：次日预测力 ───────────────────────────────────
     print("\n" + "=" * 92)
@@ -106,19 +120,21 @@ def main() -> int:
     j["次日均涨"] = j["全市场均涨"].shift(-1)
     # 跳过休市造成的非相邻日：只有日期间隔 ≤4 天的才算「次日」
     dates = sorted(j.index)
-    adj = [True] + [(pd.to_datetime(dates[i + 1]) -
-                     pd.to_datetime(dates[i])).days <= 4
-                    for i in range(len(dates) - 1)]
-    j["相邻"] = adj          # 长度 = len(dates)，与j.index 等长
+    adj = [True] + [
+        (pd.to_datetime(dates[i + 1]) - pd.to_datetime(dates[i])).days <= 4
+        for i in range(len(dates) - 1)
+    ]
+    j["相邻"] = adj  # 长度 = len(dates)，与j.index 等长
     nx = j[j["相邻"] & j["次日均涨"].notna()]
     gg = nx.groupby("档名", observed=True).agg(
-        样本=("次日均涨", "size"), 次日均涨=("次日均涨", lambda s: round(float(s.mean()), 4)))
+        样本=("次日均涨", "size"),
+        次日均涨=("次日均涨", lambda s: round(float(s.mean()), 4)),
+    )
     print(gg.to_string())
     for name in ("冰点", "中性", "亢奋"):
         s = nx[nx["档名"] == name]["次日均涨"].dropna()
         if len(s) > 2:
-            print("  %s 档：次日均涨 std=%.4f（越大越无预测力）"
-                  % (name, stdev(s)))
+            print("  %s 档：次日均涨 std=%.4f（越大越无预测力）" % (name, stdev(s)))
 
     print("\n" + "=" * 92)
     print("结论要点")
@@ -127,7 +143,9 @@ def main() -> int:
         print("✅ H1 成立：冰点日全市场表现显著更差 ⇒ **情绪档位可作风控闸门**")
     else:
         print("⚠️ H1 不显著：情绪档位与全市场涨跌**无稳定区分度** ⇒ B 方案闸门价值存疑")
-    print("⚠️ H3 若各档次日 std 相近，说明情绪是**同步描述量**（当日即反映），无跨日预测力")
+    print(
+        "⚠️ H3 若各档次日 std 相近，说明情绪是**同步描述量**（当日即反映），无跨日预测力"
+    )
     print("⇒ 即使 H1 成立，闸门也只能在**当日盘中实时用**，不能用于次日开盘决策")
     return 0
 

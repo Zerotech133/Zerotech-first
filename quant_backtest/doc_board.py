@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """详情看板镜像（飞书云文档）：卡片「📄 详情文档」按钮直达。
 
-  手机飞书内原生打开，不依赖家里网络/Tailscale —— 解决移动端
-  「按钮点不开、看不到详情」。每次异动提醒与 16:00 收盘记账后
-  整体 overwrite 刷新；文档 URL 走 config_local（env/私有覆盖），
-  真值不存 tracked config（2026-10-25 SEC 收口 / EXEC-R16）。
+手机飞书内原生打开，不依赖家里网络/Tailscale —— 解决移动端
+「按钮点不开、看不到详情」。每次异动提醒与 16:00 收盘记账后
+整体 overwrite 刷新；文档 URL 走 config_local（env/私有覆盖），
+真值不存 tracked config（2026-10-25 SEC 收口 / EXEC-R16）。
 """
+
 import os
 import subprocess
 
@@ -36,16 +37,24 @@ def build_md(led, alerts_md=None):
     lines = [
         "# 量化实战·详情看板",
         "",
-        "> 更新：%s（北京）· 盘中异动即时刷新 · 16:00 收盘记账整体刷新 · 纸面模拟，不构成投资建议" % now,
+        "> 更新：%s（北京）· 盘中异动即时刷新 · 16:00 收盘记账整体刷新 · 纸面模拟，不构成投资建议"
+        % now,
         "",
         "## 待买入（pending %d）" % len(led.get("pending") or []),
         "",
         "| 标的 | 市场 | 策略 | 信号日 |",
         "| --- | --- | --- | --- |",
     ]
-    lines += ["| %s | %s | %s | %s |" % (
-        e.get("name"), e.get("market"), _sname(e.get("strategy")),
-        e.get("sig_date", "")) for e in (led.get("pending") or [])]
+    lines += [
+        "| %s | %s | %s | %s |"
+        % (
+            e.get("name"),
+            e.get("market"),
+            _sname(e.get("strategy")),
+            e.get("sig_date", ""),
+        )
+        for e in (led.get("pending") or [])
+    ]
     lines += [
         "",
         "## 持仓中（open %d）" % len(led.get("open") or []),
@@ -53,11 +62,20 @@ def build_md(led, alerts_md=None):
         "| 标的 | 市场 | 策略 | 买入日 | 买价 | 最新 | 盈亏 | 天数 |",
         "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
-    lines += ["| %s | %s | %s | %s | %s | %s | %s | %d |" % (
-        e.get("name"), e.get("market"), _sname(e.get("strategy")),
-        e.get("entry_date", ""), _fmt(e.get("entry_px")),
-        _fmt(e.get("last_px")), _pct(e.get("pnl", 0)),
-        e.get("days", 0)) for e in (led.get("open") or [])]
+    lines += [
+        "| %s | %s | %s | %s | %s | %s | %s | %d |"
+        % (
+            e.get("name"),
+            e.get("market"),
+            _sname(e.get("strategy")),
+            e.get("entry_date", ""),
+            _fmt(e.get("entry_px")),
+            _fmt(e.get("last_px")),
+            _pct(e.get("pnl", 0)),
+            e.get("days", 0),
+        )
+        for e in (led.get("open") or [])
+    ]
     closed = (led.get("closed") or [])[-10:][::-1]
     lines += [
         "",
@@ -66,17 +84,28 @@ def build_md(led, alerts_md=None):
         "| 标的 | 市场 | 策略 | 买入日 | 卖出日 | 买价 | 卖价 | 盈亏 | 天数 |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
-    lines += ["| %s | %s | %s | %s | %s | %s | %s | %s | %d |" % (
-        e.get("name"), e.get("market"), _sname(e.get("strategy")),
-        e.get("entry_date", ""), e.get("exit_date", ""),
-        _fmt(e.get("entry_px")), _fmt(e.get("exit_px")),
-        _pct(e.get("pnl", 0)), e.get("days", 0)) for e in closed]
+    lines += [
+        "| %s | %s | %s | %s | %s | %s | %s | %s | %d |"
+        % (
+            e.get("name"),
+            e.get("market"),
+            _sname(e.get("strategy")),
+            e.get("entry_date", ""),
+            e.get("exit_date", ""),
+            _fmt(e.get("entry_px")),
+            _fmt(e.get("exit_px")),
+            _pct(e.get("pnl", 0)),
+            e.get("days", 0),
+        )
+        for e in closed
+    ]
     if alerts_md:
         lines += ["", "## 最新异动提醒", ""] + list(alerts_md)
     lines += [
         "",
         "---",
-        "触发阈值：浮盈/浮亏 ±%.0f%%（pos_alert_pct 可调）· 盘中每 30 分钟检查 · 同票同方向 %d 分钟冷却" % (th, cd),
+        "触发阈值：浮盈/浮亏 ±%.0f%%（pos_alert_pct 可调）· 盘中每 30 分钟检查 · 同票同方向 %d 分钟冷却"
+        % (th, cd),
     ]
     return "\n".join(lines)
 
@@ -84,6 +113,7 @@ def build_md(led, alerts_md=None):
 def _sname(s):
     try:
         import report_page
+
         return report_page.OPT_HEAD.get(s, s)
     except Exception:
         return s
@@ -99,11 +129,29 @@ def refresh(alerts_md=None):
         f.write(build_md(runner._load_ledger(), alerts_md))
     try:
         r = subprocess.run(
-            ["lark-cli", "docs", "+update", "--as", "user", "--doc", doc,
-             "--command", "overwrite", "--doc-format", "markdown",
-             "--content", "@./_board_tmp.md", "--format", "json"],
-            capture_output=True, text=True, timeout=120, cwd=HERE)
-        out = (r.stdout or "")
+            [
+                "lark-cli",
+                "docs",
+                "+update",
+                "--as",
+                "user",
+                "--doc",
+                doc,
+                "--command",
+                "overwrite",
+                "--doc-format",
+                "markdown",
+                "--content",
+                "@./_board_tmp.md",
+                "--format",
+                "json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=HERE,
+        )
+        out = r.stdout or ""
         return '"ok": true' in out or '"ok":true' in out
     except Exception:
         return False
@@ -116,5 +164,6 @@ def refresh(alerts_md=None):
 
 if __name__ == "__main__":
     import sys
+
     print("REFRESH", "OK" if refresh() else "FAIL")
     sys.exit(0)

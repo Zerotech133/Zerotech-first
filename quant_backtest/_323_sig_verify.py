@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """323 信号层验证：双刀全市场 14:45 快照（8-10~9-01，17 交易日）。"""
+
 import sys
 import time
 
@@ -14,11 +15,16 @@ def progress(phase, pct, note):
 
 
 t0 = time.time()
-sig, sig_sell, meta, err = E.calc_dknife_signals_market("20260810", "20260901", progress, hist_st=True)
+sig, sig_sell, meta, err = E.calc_dknife_signals_market(
+    "20260810", "20260901", progress, hist_st=True
+)
 if err:
     print("ERR:", err)
     sys.exit(1)
-print("耗时 %.0fs | 信号日数 %d | 信号总次 %d" % (time.time() - t0, len(sig), sum(len(v) for v in sig.values())))
+print(
+    "耗时 %.0fs | 信号日数 %d | 信号总次 %d"
+    % (time.time() - t0, len(sig), sum(len(v) for v in sig.values()))
+)
 print("meta:", {k: meta[k] for k in ("universe", "hist_st", "source")})
 print("hist_st 生效证据:", meta["hist_st"])
 per = {d: len(v) for d, v in sorted(sig.items())}

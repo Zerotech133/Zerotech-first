@@ -37,6 +37,7 @@
 纪律：产线零改动、不推飞书、不注册任务；解释器
       "C:/Program Files/Python311/python.exe"。
 """
+
 import argparse
 import json
 import os
@@ -54,15 +55,17 @@ LOG_FP = "C:/Temp/portfolio_sim.log"
 REPORTS = os.path.join(HERE, "reports")
 SIG_CACHE = os.path.join(HERE, "data", "portfolio_sim_signals_20261014.json")
 
-GATE_TH = 0.45          # 环境总闸：宽度 >= 45% 才开新仓
-COST = 0.0015           # 单边成本 15bps
-MAX_POS = 20            # 最多同时持仓
+GATE_TH = 0.45  # 环境总闸：宽度 >= 45% 才开新仓
+COST = 0.0015  # 单边成本 15bps
+MAX_POS = 20  # 最多同时持仓
 HOLDS = {"qd": 20, "cross": 10, "qpzm": 5}
 MODULE_HOLD = [("qd", "a"), ("cross", "b"), ("qpzm", "c")]  # 优先级 a>b>c
 SIM_D0, SIM_D1 = "20231009", "20261013"
-CROSS_D0, CROSS_D1 = "20240902", "20260918"   # nine_dim 锚覆盖窗（验证窗）
+CROSS_D0, CROSS_D1 = "20240902", "20260918"  # nine_dim 锚覆盖窗（验证窗）
 
 _logf = None
+
+
 def log(msg):
     global _logf
     line = "%s %s" % (time.strftime("%H:%M:%S"), msg)
@@ -75,30 +78,30 @@ def log(msg):
 
 # ── 宽度总闸 ────────────────────────────────────────────────
 def load_breadth():
-    d = json.load(open(os.path.join(REPORTS, "qd_breadth_series.json"),
-                       encoding="utf-8"))
-    return {str(dd): b for dd, b in zip(d["dates"], d["breadth"])
-            if b is not None}
+    d = json.load(
+        open(os.path.join(REPORTS, "qd_breadth_series.json"), encoding="utf-8")
+    )
+    return {str(dd): b for dd, b in zip(d["dates"], d["breadth"]) if b is not None}
 
 
 # ── a) 双刀信号 ─────────────────────────────────────────────
 def build_signals_qd():
-    d = json.load(open(os.path.join(REPORTS, "qd_details_hfq.json"),
-                       encoding="utf-8"))
+    d = json.load(open(os.path.join(REPORTS, "qd_details_hfq.json"), encoding="utf-8"))
     out = {}
     n_all = n_tu = n_noret = 0
     for r in d["records"]:
         n_all += 1
         if r.get("regime") != "trend_up":
             continue
-        if r.get("r20") is None:      # 尾部信号前向窗不足
+        if r.get("r20") is None:  # 尾部信号前向窗不足
             n_noret += 1
             continue
         n_tu += 1
-        out.setdefault(str(r["date"]), []).append(
-            [r["code"], float(r["r20"])])
-    log("qd 双刀信号：全量 %d，trend_up %d（缺 r20 跳过 %d，%d 个信号日）"
-        % (n_all, n_tu, n_noret, len(out)))
+        out.setdefault(str(r["date"]), []).append([r["code"], float(r["r20"])])
+    log(
+        "qd 双刀信号：全量 %d，trend_up %d（缺 r20 跳过 %d，%d 个信号日）"
+        % (n_all, n_tu, n_noret, len(out))
+    )
     return out
 
 
@@ -111,30 +114,29 @@ def _shift1(v):
 
 def build_signals_cross():
     import scipy.stats  # noqa: F401  确认依赖
-    cache = os.path.join(os.environ.get("TEMP", "/tmp"),
-                         "cross_grid_cache_npz.npz")
+
+    cache = os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid_cache_npz.npz")
     z = np.load(cache, allow_pickle=True)
     cal = [str(x) for x in z["cal"]]
     close, open_ = z["close"], z["open"]
-    if close.shape[0] != len(cal):        # 兼容 (股票,日期) 旧存法
+    if close.shape[0] != len(cal):  # 兼容 (股票,日期) 旧存法
         close = np.ascontiguousarray(close.T)
         open_ = np.ascontiguousarray(open_.T)
     codes = [str(x) for x in z["codes"]]
     n_d, n_s = len(cal), len(codes)
     code2idx = {c: j for j, c in enumerate(codes)}
-    log("cross 行情缓存命中：%d 日 × %d 只（%s~%s）"
-        % (n_d, n_s, cal[0], cal[-1]))
+    log("cross 行情缓存命中：%d 日 × %d 只（%s~%s）" % (n_d, n_s, cal[0], cal[-1]))
 
     # 以下四源票复刻 cross_grid_backtest.run()（tools/research/，
     # nine=down0.5 / k=3 / P75 / raw / TopN10）
     # 1) qpzm 近端票（RPS mix 50:0.4/120:0.3/250:0.3）
     from scipy.stats import rankdata
+
     qp_raw = np.zeros_like(close, dtype=np.float32)
     wsum = np.zeros(n_d, dtype=np.float32)
     for n, w in ((50, 0.4), (120, 0.3), (250, 0.3)):
         with np.errstate(invalid="ignore", divide="ignore"):
-            r = close / np.vstack([np.full((n, n_s), np.nan),
-                                   close[:-n]]) - 1.0
+            r = close / np.vstack([np.full((n, n_s), np.nan), close[:-n]]) - 1.0
         for i in range(n_d):
             col = r[i]
             m = ~np.isnan(col)
@@ -168,13 +170,15 @@ def build_signals_cross():
     mid = w.rolling(20, min_periods=1).mean()
     sd = w.rolling(20, min_periods=1).std()
     p_bb = (w > mid + 2 * sd).fillna(False).astype(int)
-    pos4 = np.stack([p_ma.values, p_tf.values, p_rr.values, p_bb.values]
-                    ).astype(np.int8)
+    pos4 = np.stack([p_ma.values, p_tf.values, p_rr.values, p_bb.values]).astype(
+        np.int8
+    )
     v_s4 = _shift1((pos4.sum(axis=0) >= 3).astype(np.int8))
 
     # 3) 缠论票（v3 seen-ever，近 20 交易日 fresh，冲突取更近方向）
-    fp = os.path.join(HERE, "data", "sig_events",
-                      "sig_events_market_v3_20231010_20261013.json")
+    fp = os.path.join(
+        HERE, "data", "sig_events", "sig_events_market_v3_20231010_20261013.json"
+    )
     d = json.load(open(fp, encoding="utf-8"))
     d2i = {dd: i for i, dd in enumerate(cal)}
     ev_long = np.zeros((n_d, n_s), dtype=np.int8)
@@ -194,9 +198,11 @@ def build_signals_cross():
     for k in range(20):
         wt = 20 - k
         if k:
-            sh = np.zeros_like(ev_long); sh[:, k:] = ev_long[:, :-k]
+            sh = np.zeros_like(ev_long)
+            sh[:, k:] = ev_long[:, :-k]
             acc += wt * sh
-            sh = np.zeros_like(ev_short); sh[:, k:] = ev_short[:, :-k]
+            sh = np.zeros_like(ev_short)
+            sh[:, k:] = ev_short[:, :-k]
             acc -= wt * sh
         else:
             acc += wt * ev_long - wt * ev_short
@@ -205,14 +211,17 @@ def build_signals_cross():
 
     # 4) 9dim 周锚（as-of t-1）
     anchors = defaultdict(dict)
-    for line in open(os.path.join(HERE, "data", "nine_dim_replay.jsonl"),
-                     encoding="utf-8"):
+    for line in open(
+        os.path.join(HERE, "data", "nine_dim_replay.jsonl"), encoding="utf-8"
+    ):
         try:
             r = json.loads(line)
         except Exception:
             continue
         anchors[str(r.get("anchor"))][r.get("code")] = (
-            r.get("score"), r.get("cov") or 0.0)
+            r.get("score"),
+            r.get("cov") or 0.0,
+        )
     a_idx, a_sc, a_cv = [], [], []
     for a in sorted(anchors):
         i = d2i.get(a)
@@ -235,9 +244,11 @@ def build_signals_cross():
 
     ts = [i for i, dd in enumerate(cal) if CROSS_D0 <= dd <= CROSS_D1]
     qp_ts, s4_ts, ch_ts = v_qp[ts], v_s4[ts], v_ch[ts]
-    n_src_base = ((qp_ts != 0).astype(np.int8)
-                  + (s4_ts != 0).astype(np.int8)
-                  + (ch_ts != 0).astype(np.int8))
+    n_src_base = (
+        (qp_ts != 0).astype(np.int8)
+        + (s4_ts != 0).astype(np.int8)
+        + (ch_ts != 0).astype(np.int8)
+    )
     v9_high = np.zeros((len(ts), n_s), dtype=bool)
     for ti, t in enumerate(ts):
         cut = t - 1
@@ -245,11 +256,15 @@ def build_signals_cross():
         if k < 0 or a_sc_m is None:
             continue
         v9_high[ti] = (a_sc_m[k] >= 75) & (a_cv_m[k] >= 0.75)
-    n_src = n_src_base + v9_high.astype(np.int8)      # down0.5 计入源数
+    n_src = n_src_base + v9_high.astype(np.int8)  # down0.5 计入源数
     mask_k = n_src >= 3
-    v9l = v9_high.astype(np.float32) * 0.5            # down0.5
-    raw = ((qp_ts > 0).astype(np.float32) + (s4_ts > 0).astype(np.float32)
-           + (ch_ts > 0).astype(np.float32) + v9l)
+    v9l = v9_high.astype(np.float32) * 0.5  # down0.5
+    raw = (
+        (qp_ts > 0).astype(np.float32)
+        + (s4_ts > 0).astype(np.float32)
+        + (ch_ts > 0).astype(np.float32)
+        + v9l
+    )
     raw = np.where(mask_k, raw, np.nan)
 
     # 每日 TopN=10（P75 阈值，排序 raw 降序）——逐信号明细输出
@@ -258,18 +273,19 @@ def build_signals_cross():
     for ti, t in enumerate(ts):
         row = raw[ti]
         cand = np.where(mask_k[ti] & ~np.isnan(row))[0]
-        if len(cand) < 5:                              # MIN_CAND_DAY
+        if len(cand) < 5:  # MIN_CAND_DAY
             continue
         th = np.nanpercentile(row[cand], 75)
         sel = cand[row[cand] >= th]
         if len(sel) == 0:
             continue
         srt = sel[np.lexsort((sel, -row[sel]))][:10]
-        out.setdefault(cal[t], []).extend(
-            [codes[j], float(row[j])] for j in srt)
+        out.setdefault(cal[t], []).extend([codes[j], float(row[j])] for j in srt)
         n_days_pick += 1
-    log("cross 信号：%d 个信号日、%d 条 TopN 明细（窗 %s~%s）"
-        % (n_days_pick, sum(len(v) for v in out.values()), CROSS_D0, CROSS_D1))
+    log(
+        "cross 信号：%d 个信号日、%d 条 TopN 明细（窗 %s~%s）"
+        % (n_days_pick, sum(len(v) for v in out.values()), CROSS_D0, CROSS_D1)
+    )
 
     # 自校验：同口径重算 pf5/pf10，应复现 envgate_check FULL（pf5≈1.2653）
     fwd = {}
@@ -301,9 +317,14 @@ def build_signals_cross():
         if not len(a) or not (a < 0).any():
             return 0.0
         return float(a[a > 0].sum() / abs(a[a < 0].sum()))
-    chk = {"n_gate40": int(r5.__len__()), "pf5_replay": round(_pf(r5), 4),
-           "pf10_replay": round(_pf(r10), 4),
-           "expected_pf5": 1.2653, "expected_pf10": 1.2691}
+
+    chk = {
+        "n_gate40": int(r5.__len__()),
+        "pf5_replay": round(_pf(r5), 4),
+        "pf10_replay": round(_pf(r10), 4),
+        "expected_pf5": 1.2653,
+        "expected_pf10": 1.2691,
+    }
     log("cross 自校验（40%%闸门档）：%s" % json.dumps(chk))
     return out
 
@@ -311,14 +332,21 @@ def build_signals_cross():
 # ── c) qpzm 信号（复用 qpzm_backtest 现行口径 + TopN 明细化） ──
 def build_signals_qpzm():
     import qpzm_backtest as qb
+
     wide = qb.load_wide(os.path.join(HERE, "data", "ashare"))
     env_df = qb.env_gate(wide["above20"], wide["ret20"])
-    mix, _ = qb.cross_rps({p: wide["chg%d" % p] for p in qb.PERIODS},
-                          qb.RPS_W_CUR)
+    mix, _ = qb.cross_rps({p: wide["chg%d" % p] for p in qb.PERIODS}, qb.RPS_W_CUR)
     tech_w = qb.tech_score(wide["longs"], wide["above20"])
     score, buy, _obs = qb.combine_score(
-        tech_w, mix, env_df, buy_th=75.0, obs_th=50.0, gate_on=True,
-        eligible=wide["eligible"], jev_mode="missing")
+        tech_w,
+        mix,
+        env_df,
+        buy_th=75.0,
+        obs_th=50.0,
+        gate_on=True,
+        eligible=wide["eligible"],
+        jev_mode="missing",
+    )
     # 校验锚：20251009 breadth 应=0.45（report env_daily[0]）
     try:
         b_chk = float(env_df.loc[np.int64(20251009), "breadth"])
@@ -338,11 +366,12 @@ def build_signals_qpzm():
         if len(cols) == 0:
             continue
         order = cols[np.lexsort((cols, -sc_np[i, cols]))][:10]
-        out.setdefault(dd, []).extend(
-            [codes[j], float(sc_np[i, j])] for j in order)
+        out.setdefault(dd, []).extend([codes[j], float(sc_np[i, j])] for j in order)
         n_sig += len(order)
-    log("qpzm 信号：%d 个信号日、%d 条 TopN 明细（%s~%s）"
-        % (len(out), n_sig, SIM_D0, SIM_D1))
+    log(
+        "qpzm 信号：%d 个信号日、%d 条 TopN 明细（%s~%s）"
+        % (len(out), n_sig, SIM_D0, SIM_D1)
+    )
     return out, wide, env_df
 
 
@@ -395,17 +424,33 @@ def make_trades(signals, eng, hold, module):
                 n_drop_nobar += 1
                 continue
             ret = (x * (1 - COST)) / (o * (1 + COST)) - 1.0
-            trades.append({
-                "module": module, "sig_date": dd, "code": code,
-                "entry_date": eng["dates"][ie], "exit_date": eng["dates"][ix],
-                "entry_idx": ie, "exit_idx": ix, "col": j,
-                "ret": float(ret), "score": float(item[1]),
-            })
-    log("[%s] 信号 %d → 可交易 %d（T+1 无bar %d / 一字板 %d / 尾窗不足 %d），"
+            trades.append(
+                {
+                    "module": module,
+                    "sig_date": dd,
+                    "code": code,
+                    "entry_date": eng["dates"][ie],
+                    "exit_date": eng["dates"][ix],
+                    "entry_idx": ie,
+                    "exit_idx": ix,
+                    "col": j,
+                    "ret": float(ret),
+                    "score": float(item[1]),
+                }
+            )
+    log(
+        "[%s] 信号 %d → 可交易 %d（T+1 无bar %d / 一字板 %d / 尾窗不足 %d），"
         "净收益均值 %.4f"
-        % (module, sum(len(v) for v in signals.values()), len(trades),
-           n_drop_nobar, n_drop_unfill, n_drop_tail,
-           float(np.mean([t["ret"] for t in trades])) if trades else 0.0))
+        % (
+            module,
+            sum(len(v) for v in signals.values()),
+            len(trades),
+            n_drop_nobar,
+            n_drop_unfill,
+            n_drop_tail,
+            float(np.mean([t["ret"] for t in trades])) if trades else 0.0,
+        )
+    )
     return trades
 
 
@@ -432,7 +477,7 @@ def simulate(trades_by_module, breadth, eng, active_modules, label):
 
     cash = 1.0
     eq_prev = 1.0
-    positions = []          # dict(trade, shares, alloc)
+    positions = []  # dict(trade, shares, alloc)
     equity = np.ones(i1 - i0 + 1)
     exec_trades = []
     skip_dup = skip_cash = 0
@@ -453,8 +498,9 @@ def simulate(trades_by_module, breadth, eng, active_modules, label):
             o = eng["open"][t["entry_idx"], t["col"]]
             shares = alloc / (o * (1 + COST))
             cash -= alloc
-            positions.append({"trade": t, "shares": float(shares),
-                              "alloc": float(alloc)})
+            positions.append(
+                {"trade": t, "shares": float(shares), "alloc": float(alloc)}
+            )
             exec_trades.append(t)
         # 2) 收盘：到期平仓（停牌 ffill 结算）
         done = []
@@ -466,21 +512,36 @@ def simulate(trades_by_module, breadth, eng, active_modules, label):
         for p in done:
             positions.remove(p)
         # 3) 收盘净值
-        v = cash + sum(p["shares"] * eng["close_ff"][i, p["trade"]["col"]]
-                       for p in positions)
+        v = cash + sum(
+            p["shares"] * eng["close_ff"][i, p["trade"]["col"]] for p in positions
+        )
         equity[i - i0] = v
         exposure[i - i0] = len(positions)
         eq_prev = v
     # 期末未平仓按最后可得价虚拟结算（仅估值口径，不计为已实现）
-    log("[sim %s] 执行 %d 笔（跳过：同票 %d / 现金不足 %d），总闸拦截 %s，"
+    log(
+        "[sim %s] 执行 %d 笔（跳过：同票 %d / 现金不足 %d），总闸拦截 %s，"
         "期末净值 %.4f，期末在仓 %d"
-        % (label, len(exec_trades), skip_dup, skip_cash,
-           {m: len(v) for m, v in blocked.items()} or 0,
-           equity[-1], len(positions)))
-    return {"equity": equity, "exec_trades": exec_trades,
-            "blocked": dict(blocked), "exposure": exposure,
-            "skip_dup": skip_dup, "skip_cash": skip_cash,
-            "i0": i0, "i1": i1}
+        % (
+            label,
+            len(exec_trades),
+            skip_dup,
+            skip_cash,
+            {m: len(v) for m, v in blocked.items()} or 0,
+            equity[-1],
+            len(positions),
+        )
+    )
+    return {
+        "equity": equity,
+        "exec_trades": exec_trades,
+        "blocked": dict(blocked),
+        "exposure": exposure,
+        "skip_dup": skip_dup,
+        "skip_cash": skip_cash,
+        "i0": i0,
+        "i1": i1,
+    }
 
 
 # ── 指标 ────────────────────────────────────────────────────
@@ -502,33 +563,33 @@ def metrics(sim, eng, bench_ew_daily=None):
     cagr = float((eq[-1] / eq[0]) ** (252 / max(n_days, 1)) - 1)
     peak = np.maximum.accumulate(eq)
     mdd = float((eq / peak - 1).min())
-    sharpe = float(daily.mean() / daily.std() * np.sqrt(252)) \
-        if daily.std() > 0 else None
+    sharpe = (
+        float(daily.mean() / daily.std() * np.sqrt(252)) if daily.std() > 0 else None
+    )
     # 月度胜率
-    dates = eng["dates"][sim["i0"]:sim["i1"] + 1]
+    dates = eng["dates"][sim["i0"] : sim["i1"] + 1]
     s = pd.Series(eq, index=pd.to_datetime(dates, format="%Y%m%d"))
     mret = s.resample("ME").last().pct_change().dropna()
     mret.iloc[0] = s.resample("ME").last().iloc[0] / 1.0 - 1
     win_m = float((mret > 0).mean())
     out = {
-        "total_return": round(total, 4), "cagr": round(cagr, 4),
-        "max_drawdown": round(mdd, 4), "sharpe": round(sharpe, 3)
-        if sharpe is not None else None,
-        "pf": pf_of(rets_all), "n_trades": int(len(tr)),
-        "win_rate": round(float((rets_all > 0).mean()), 4)
-        if len(rets_all) else None,
+        "total_return": round(total, 4),
+        "cagr": round(cagr, 4),
+        "max_drawdown": round(mdd, 4),
+        "sharpe": round(sharpe, 3) if sharpe is not None else None,
+        "pf": pf_of(rets_all),
+        "n_trades": int(len(tr)),
+        "win_rate": round(float((rets_all > 0).mean()), 4) if len(rets_all) else None,
         "monthly_win_rate": round(win_m, 4),
         "avg_exposure": round(float(sim["exposure"].mean()), 2),
-        "trade_mean": round(float(rets_all.mean()), 5)
-        if len(rets_all) else None,
+        "trade_mean": round(float(rets_all.mean()), 5) if len(rets_all) else None,
     }
     return out, mret
 
 
 def yearly_table(sim, eng):
-    dates = eng["dates"][sim["i0"]:sim["i1"] + 1]
-    s = pd.Series(sim["equity"],
-                  index=pd.to_datetime(dates, format="%Y%m%d"))
+    dates = eng["dates"][sim["i0"] : sim["i1"] + 1]
+    s = pd.Series(sim["equity"], index=pd.to_datetime(dates, format="%Y%m%d"))
     rows = []
     tr = sim["exec_trades"]
     for y, g in s.groupby(s.index.year):
@@ -537,19 +598,23 @@ def yearly_table(sim, eng):
         peak = eq_y.cummax()
         mdd = float((eq_y / peak - 1).min())
         yt = [t for t in tr if str(t["entry_date"]).startswith(str(y))]
-        rows.append({"year": int(y), "return": round(total, 4),
-                     "mdd": round(mdd, 4), "n_trades": len(yt),
-                     "pf": pf_of([t["ret"] for t in yt])})
+        rows.append(
+            {
+                "year": int(y),
+                "return": round(total, 4),
+                "mdd": round(mdd, 4),
+                "n_trades": len(yt),
+                "pf": pf_of([t["ret"] for t in yt]),
+            }
+        )
     return rows
 
 
 def weekly_curve(sim, eng):
-    dates = eng["dates"][sim["i0"]:sim["i1"] + 1]
-    s = pd.Series(sim["equity"],
-                  index=pd.to_datetime(dates, format="%Y%m%d"))
+    dates = eng["dates"][sim["i0"] : sim["i1"] + 1]
+    s = pd.Series(sim["equity"], index=pd.to_datetime(dates, format="%Y%m%d"))
     wk = s.resample("W").last().dropna()
-    return [[k.strftime("%Y-%m-%d"), round(float(v), 4)]
-            for k, v in wk.items()]
+    return [[k.strftime("%Y-%m-%d"), round(float(v), 4)] for k, v in wk.items()]
 
 
 # ── 主流程 ──────────────────────────────────────────────────
@@ -566,28 +631,29 @@ def main():
     # 信号（带缓存；qpzm/cross 提取重，缓存后秒级重跑）
     if not args.force and os.path.exists(SIG_CACHE):
         sig = json.load(open(SIG_CACHE, encoding="utf-8"))
-        log("信号缓存命中 %s（qd %d 日 / cross %d 日 / qpzm %d 日）"
-            % (SIG_CACHE, len(sig["qd"]), len(sig["cross"]), len(sig["qpzm"])))
+        log(
+            "信号缓存命中 %s（qd %d 日 / cross %d 日 / qpzm %d 日）"
+            % (SIG_CACHE, len(sig["qd"]), len(sig["cross"]), len(sig["qpzm"]))
+        )
         import qpzm_backtest as qb
+
         wide = qb.load_wide(os.path.join(HERE, "data", "ashare"))
     else:
         sig = {"qd": build_signals_qd(), "cross": build_signals_cross()}
         sig_qpzm, wide, _env = build_signals_qpzm()
         sig["qpzm"] = sig_qpzm
-        json.dump(sig, open(SIG_CACHE, "w", encoding="utf-8"),
-                  ensure_ascii=False)
+        json.dump(sig, open(SIG_CACHE, "w", encoding="utf-8"), ensure_ascii=False)
         log("信号缓存已写 %s" % SIG_CACHE)
 
     eng = build_price_engine(wide)
     del wide
     import gc
+
     gc.collect()
     trades_by_module = {}
     trades_by_module["qd"] = make_trades(sig["qd"], eng, HOLDS["qd"], "qd")
-    trades_by_module["cross"] = make_trades(sig["cross"], eng,
-                                            HOLDS["cross"], "cross")
-    trades_by_module["qpzm"] = make_trades(sig["qpzm"], eng,
-                                           HOLDS["qpzm"], "qpzm")
+    trades_by_module["cross"] = make_trades(sig["cross"], eng, HOLDS["cross"], "cross")
+    trades_by_module["qpzm"] = make_trades(sig["qpzm"], eng, HOLDS["qpzm"], "qpzm")
 
     # 基准：全市场等权买入持有 + 等权日频再平衡参照
     i0, i1 = eng["d2i"][SIM_D0], eng["d2i"][SIM_D1]
@@ -595,23 +661,35 @@ def main():
     v0, v1 = cf[i0], cf[i1]
     ok = (~np.isnan(v0)) & (~np.isnan(v1)) & (v0 > 0)
     bench_bh = float(np.mean(v1[ok] / v0[ok]) - 1)
-    dr = cf[i0 + 1:i1 + 1] / cf[i0:i1] - 1.0
+    dr = cf[i0 + 1 : i1 + 1] / cf[i0:i1] - 1.0
     ew_daily = np.nanmean(dr, axis=1)
     ew_curve = np.cumprod(1 + np.nan_to_num(ew_daily))
     # 基准日频净值（等权 B&H 逐日标记）与回撤
-    bh_curve = np.nanmean(cf[i0:i1 + 1] / cf[i0], axis=1)
+    bh_curve = np.nanmean(cf[i0 : i1 + 1] / cf[i0], axis=1)
     bh_peak = np.maximum.accumulate(np.nan_to_num(bh_curve, nan=1.0))
     bh_mdd = float((np.nan_to_num(bh_curve, nan=1.0) / bh_peak - 1).min())
     ew_peak = np.maximum.accumulate(np.nan_to_num(ew_curve, nan=1.0))
     ew_mdd = float((np.nan_to_num(ew_curve, nan=1.0) / ew_peak - 1).min())
     bh_cagr = float((bh_curve[-1]) ** (252 / (i1 - i0)) - 1)
-    log("基准：等权买入持有 %+.2f%%（%d 只有效，MDD %.2f%%）；等权日频参照 %+.2f%%（MDD %.2f%%）"
-        % (bench_bh * 100, int(ok.sum()), bh_mdd * 100,
-           (ew_curve[-1] - 1) * 100, ew_mdd * 100))
+    log(
+        "基准：等权买入持有 %+.2f%%（%d 只有效，MDD %.2f%%）；等权日频参照 %+.2f%%（MDD %.2f%%）"
+        % (
+            bench_bh * 100,
+            int(ok.sum()),
+            bh_mdd * 100,
+            (ew_curve[-1] - 1) * 100,
+            ew_mdd * 100,
+        )
+    )
 
     # 三个开关组合 + 单模块（a / b / c / a+b / a+b+c）
-    combos = {"a": ["qd"], "b": ["cross"], "c": ["qpzm"],
-              "a+b": ["qd", "cross"], "a+b+c": ["qd", "cross", "qpzm"]}
+    combos = {
+        "a": ["qd"],
+        "b": ["cross"],
+        "c": ["qpzm"],
+        "a+b": ["qd", "cross"],
+        "a+b+c": ["qd", "cross", "qpzm"],
+    }
     results = {}
     for label, mods in combos.items():
         sim = simulate(trades_by_module, breadth, eng, mods, label)
@@ -624,30 +702,38 @@ def main():
             bl = sim["blocked"].get(mod, [])
             attr[mod] = {
                 "executed": len(et),
-                "contribution_simple": round(
-                    sum(t["ret"] for t in et) / MAX_POS, 4),
+                "contribution_simple": round(sum(t["ret"] for t in et) / MAX_POS, 4),
                 "trade_pf": pf_of([t["ret"] for t in et]),
                 "trade_mean": round(float(np.mean([t["ret"] for t in et])), 5)
-                if et else None,
+                if et
+                else None,
                 "blocked_by_gate": len(bl),
-                "blocked_mean_ret": round(float(np.mean(
-                    [t["ret"] for t in bl])), 5) if bl else None,
-                "blocked_pnl_sum": round(float(np.sum(
-                    [t["ret"] for t in bl])) / MAX_POS, 4) if bl else None,
+                "blocked_mean_ret": round(float(np.mean([t["ret"] for t in bl])), 5)
+                if bl
+                else None,
+                "blocked_pnl_sum": round(
+                    float(np.sum([t["ret"] for t in bl])) / MAX_POS, 4
+                )
+                if bl
+                else None,
             }
         m["attribution"] = attr
         m["weekly_equity"] = weekly_curve(sim, eng)
         results[label] = m
 
     # 总闸空仓期归因：闸关日等权基准累计（负=避损为正贡献）
-    gate_off_mask = np.array([
-        (breadth.get(d) is None or breadth[d] < GATE_TH)
-        for d in eng["dates"][i0 + 1:i1 + 1]])
-    gate_off_cum = float(np.prod(
-        1 + np.where(gate_off_mask, ew_daily, 0.0)) - 1)
+    gate_off_mask = np.array(
+        [
+            (breadth.get(d) is None or breadth[d] < GATE_TH)
+            for d in eng["dates"][i0 + 1 : i1 + 1]
+        ]
+    )
+    gate_off_cum = float(np.prod(1 + np.where(gate_off_mask, ew_daily, 0.0)) - 1)
     n_off = int(gate_off_mask.sum())
-    log("总闸空仓期：%d 个交易日（占 %.0f%%），等权基准区间 %+.2f%%"
-        % (n_off, 100 * n_off / len(gate_off_mask), gate_off_cum * 100))
+    log(
+        "总闸空仓期：%d 个交易日（占 %.0f%%），等权基准区间 %+.2f%%"
+        % (n_off, 100 * n_off / len(gate_off_mask), gate_off_cum * 100)
+    )
 
     payload = {
         "meta": {
@@ -656,7 +742,7 @@ def main():
             "gate": "breadth >= 0.45（qd_breadth_series 口径，信号日判定）",
             "cost": "15bps 单边（往返 30bps）",
             "sizing": "每仓固定 1/20 权益，最多 20 仓，同票不重复加仓，"
-                      "优先级 a双刀>b cross>c qpzm，模块内按分数降序",
+            "优先级 a双刀>b cross>c qpzm，模块内按分数降序",
             "holds": HOLDS,
             "price": "K254 后复权（qpzm_backtest.load_wide）",
             "benchmark_bh": round(bench_bh, 4),
@@ -670,12 +756,12 @@ def main():
             "caliber_notes": {
                 "qd": "qd_details_hfq regime==trend_up（验证锚 PF 1.293）",
                 "cross": "复刻 cross_grid_backtest down0.5|k=3|P75|raw|TopN10，"
-                         "信号窗受 nine_dim 锚限制 20240902~20260918"
-                         "（验证锚带闸门 pf5 1.265）",
+                "信号窗受 nine_dim 锚限制 20240902~20260918"
+                "（验证锚带闸门 pf5 1.265）",
                 "qpzm": "qpzm_backtest w_cur/th7550/gate_on/missing TopN10，"
-                        "验证窗 20251001+，窗前为外推（验证锚 hold5 +0.27%）",
+                "验证窗 20251001+，窗前为外推（验证锚 hold5 +0.27%）",
                 "unified": "验证回测多为 15bps 往返 + 各源自有复权口径；"
-                           "本模拟统一 K254 后复权 + 30bps 往返，更保守",
+                "本模拟统一 K254 后复权 + 30bps 往返，更保守",
             },
         },
         "combos": results,
@@ -683,8 +769,7 @@ def main():
     os.makedirs(REPORTS, exist_ok=True)
     fp_json = os.path.join(REPORTS, "portfolio_sim_20261014.json")
     tmp = fp_json + ".tmp"
-    json.dump(payload, open(tmp, "w", encoding="utf-8"), ensure_ascii=False,
-              indent=1)
+    json.dump(payload, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     os.replace(tmp, fp_json)
     log("产物 %s（耗时 %.0fs）" % (fp_json, time.time() - t0))
 
@@ -706,77 +791,132 @@ def render_md(payload):
     combos = payload["combos"]
     L = []
     L.append("# 20261014 合成组合历史模拟\n")
-    L.append("- 窗口：%s ~ %s；总闸：宽度≥45%%（信号日判定）；成本 15bps 单边；"
-             "每仓 1/20 权益、最多 20 仓、同票不重、T+1 开盘成交" % tuple(meta["window"]))
-    L.append("- 基准：全市场等权买入持有 %s（等权日频参照 %s）"
-             % (_fmt(meta["benchmark_bh"]), _fmt(meta["benchmark_ew_daily"])))
-    L.append("- 总闸空仓期：%d 个交易日，期间等权基准 %s（负值=空仓避损为正贡献）\n"
-             % (meta["gate_off_days"], _fmt(meta["gate_off_bench_cum"])))
+    L.append(
+        "- 窗口：%s ~ %s；总闸：宽度≥45%%（信号日判定）；成本 15bps 单边；"
+        "每仓 1/20 权益、最多 20 仓、同票不重、T+1 开盘成交" % tuple(meta["window"])
+    )
+    L.append(
+        "- 基准：全市场等权买入持有 %s（等权日频参照 %s）"
+        % (_fmt(meta["benchmark_bh"]), _fmt(meta["benchmark_ew_daily"]))
+    )
+    L.append(
+        "- 总闸空仓期：%d 个交易日，期间等权基准 %s（负值=空仓避损为正贡献）\n"
+        % (meta["gate_off_days"], _fmt(meta["gate_off_bench_cum"]))
+    )
 
     L.append("## 三组合对照\n")
-    L.append("| 组合 | 总收益 | 年化 | 最大回撤 | 夏普 | PF | 笔数 | 胜率 | 月度胜率 | 平均在仓 |")
+    L.append(
+        "| 组合 | 总收益 | 年化 | 最大回撤 | 夏普 | PF | 笔数 | 胜率 | 月度胜率 | 平均在仓 |"
+    )
     L.append("|---|---|---|---|---|---|---|---|---|---|")
     order = ["a", "b", "c", "a+b", "a+b+c"]
     for k in order:
         m = combos[k]
-        L.append("| %s | %s | %s | %s | %s | %s | %d | %s | %s | %.1f |"
-                 % (k, _fmt(m["total_return"]), _fmt(m["cagr"]),
-                    _fmt(m["max_drawdown"]), m["sharpe"], m["pf"],
-                    m["n_trades"], _fmt(m["win_rate"]),
-                    _fmt(m["monthly_win_rate"]), m["avg_exposure"]))
-    L.append("| 基准(B&H) | %s | %s | %s | — | — | — | — | — | — |"
-             % (_fmt(meta["benchmark_bh"]), _fmt(meta["benchmark_bh_cagr"]),
-                _fmt(meta["benchmark_bh_mdd"])))
-    L.append("| 基准(等权日频) | %s | — | %s | — | — | — | — | — | — |"
-             % (_fmt(meta["benchmark_ew_daily"]),
-                _fmt(meta["benchmark_ew_mdd"])))
+        L.append(
+            "| %s | %s | %s | %s | %s | %s | %d | %s | %s | %.1f |"
+            % (
+                k,
+                _fmt(m["total_return"]),
+                _fmt(m["cagr"]),
+                _fmt(m["max_drawdown"]),
+                m["sharpe"],
+                m["pf"],
+                m["n_trades"],
+                _fmt(m["win_rate"]),
+                _fmt(m["monthly_win_rate"]),
+                m["avg_exposure"],
+            )
+        )
+    L.append(
+        "| 基准(B&H) | %s | %s | %s | — | — | — | — | — | — |"
+        % (
+            _fmt(meta["benchmark_bh"]),
+            _fmt(meta["benchmark_bh_cagr"]),
+            _fmt(meta["benchmark_bh_mdd"]),
+        )
+    )
+    L.append(
+        "| 基准(等权日频) | %s | — | %s | — | — | — | — | — | — |"
+        % (_fmt(meta["benchmark_ew_daily"]), _fmt(meta["benchmark_ew_mdd"]))
+    )
 
     L.append("\n## 分年度（总收益 / 最大回撤 / PF）\n")
-    L.append("| 组合 | " + " | ".join(
-        str(y["year"]) for y in combos["a+b+c"]["yearly"]) + " |")
+    L.append(
+        "| 组合 | "
+        + " | ".join(str(y["year"]) for y in combos["a+b+c"]["yearly"])
+        + " |"
+    )
     L.append("|---|" + "---|" * len(combos["a+b+c"]["yearly"]))
     for k in order:
-        cells = ["%s / %s / PF%s" % (_fmt(y["return"]), _fmt(y["mdd"]),
-                                     y["pf"] if y["pf"] is not None else "—")
-                 for y in combos[k]["yearly"]]
+        cells = [
+            "%s / %s / PF%s"
+            % (
+                _fmt(y["return"]),
+                _fmt(y["mdd"]),
+                y["pf"] if y["pf"] is not None else "—",
+            )
+            for y in combos[k]["yearly"]
+        ]
         L.append("| %s | %s |" % (k, " | ".join(cells)))
 
     L.append("\n## 分模块归因（a+b+c 组合内，贡献=Σ笔收益×1/20 简单加总口径）\n")
-    L.append("| 模块 | 执行笔数 | 被总闸拦截 | 拦截笔均收益（避损） | "
-             "组合内简单贡献 | 笔均收益 | PF |")
+    L.append(
+        "| 模块 | 执行笔数 | 被总闸拦截 | 拦截笔均收益（避损） | "
+        "组合内简单贡献 | 笔均收益 | PF |"
+    )
     L.append("|---|---|---|---|---|---|---|")
-    name = {"qd": "a 双刀(20日)", "cross": "b cross(10日)",
-            "qpzm": "c qpzm(5日)"}
+    name = {"qd": "a 双刀(20日)", "cross": "b cross(10日)", "qpzm": "c qpzm(5日)"}
     abc = combos["a+b+c"]["attribution"]
     for mod in ("qd", "cross", "qpzm"):
         v = abc[mod]
-        L.append("| %s | %d | %d | %s | %s | %s | %s |"
-                 % (name[mod], v["executed"], v["blocked_by_gate"],
-                    _fmt(v["blocked_mean_ret"]),
-                    _fmt(v["contribution_simple"]), _fmt(v["trade_mean"]),
-                    v["trade_pf"]))
+        L.append(
+            "| %s | %d | %d | %s | %s | %s | %s |"
+            % (
+                name[mod],
+                v["executed"],
+                v["blocked_by_gate"],
+                _fmt(v["blocked_mean_ret"]),
+                _fmt(v["contribution_simple"]),
+                _fmt(v["trade_mean"]),
+                v["trade_pf"],
+            )
+        )
 
     L.append("\n## 单模块对照（各自独立跑盘，同组合规则）\n")
     L.append("| 组合 | 总收益 | 年化 | 最大回撤 | PF | 笔数 |")
     L.append("|---|---|---|---|---|---|")
     for k in ("a", "b", "c"):
         m = combos[k]
-        L.append("| %s | %s | %s | %s | %s | %d |"
-                 % (k, _fmt(m["total_return"]), _fmt(m["cagr"]),
-                    _fmt(m["max_drawdown"]), m["pf"], m["n_trades"]))
+        L.append(
+            "| %s | %s | %s | %s | %s | %d |"
+            % (
+                k,
+                _fmt(m["total_return"]),
+                _fmt(m["cagr"]),
+                _fmt(m["max_drawdown"]),
+                m["pf"],
+                m["n_trades"],
+            )
+        )
 
     L.append("\n## 口径与局限\n")
-    L.append("**一句话结论**：按今日验证规则组合跑盘，a+b（双刀+cross）三年 "
-             "+58.5%，显著跑赢全市场等权买入持有（+34.9%）且回撤结构更优；"
-             "qpzm（c）在组合内为负贡献（外推期 2023-2024 尤弱），"
-             "总闸空仓 357 日避开了等权基准 -73% 的下跌段。\n")
+    L.append(
+        "**一句话结论**：按今日验证规则组合跑盘，a+b（双刀+cross）三年 "
+        "+58.5%，显著跑赢全市场等权买入持有（+34.9%）且回撤结构更优；"
+        "qpzm（c）在组合内为负贡献（外推期 2023-2024 尤弱），"
+        "总闸空仓 357 日避开了等权基准 -73% 的下跌段。\n"
+    )
     for k, v in meta["caliber_notes"].items():
         L.append("- **%s**：%s" % (k, v))
     L.append("- 贡献归因为简单加总口径（未复利分摊）；单模块独立跑盘见上表。")
-    L.append("- cross 信号依赖 9dim 周锚（20240902 起），此前时段 cross 模块"
-             "天然空转；qpzm 在 20251001（验证窗起点）前为口径外推。")
-    L.append("- 事件驱动简化：入场按昨日收盘权益定仓、现金不足跳过"
-             "（跳过数见 json），未模拟部分成交/滑点。")
+    L.append(
+        "- cross 信号依赖 9dim 周锚（20240902 起），此前时段 cross 模块"
+        "天然空转；qpzm 在 20251001（验证窗起点）前为口径外推。"
+    )
+    L.append(
+        "- 事件驱动简化：入场按昨日收盘权益定仓、现金不足跳过"
+        "（跳过数见 json），未模拟部分成交/滑点。"
+    )
     return "\n".join(L) + "\n"
 
 

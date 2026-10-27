@@ -22,10 +22,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-import hmm_gate_research as hgr   # noqa: E402  纯 numpy，无新增依赖
+import hmm_gate_research as hgr  # noqa: E402  纯 numpy，无新增依赖
 
 SERIES_FP = hgr.BREADTH_JSON
-WINDOW = 504          # 滚动两年（W8 口径"滚动拟合攒影子"）
+WINDOW = 504  # 滚动两年（W8 口径"滚动拟合攒影子"）
 
 
 def load_series(fp=SERIES_FP):
@@ -33,8 +33,9 @@ def load_series(fp=SERIES_FP):
     with open(fp, encoding="utf-8") as f:
         d = json.load(f)
     dates, brs = d.get("dates") or [], d.get("breadth") or []
-    pairs = [(str(a), float(b)) for a, b in zip(dates, brs)
-             if isinstance(b, (int, float))]
+    pairs = [
+        (str(a), float(b)) for a, b in zip(dates, brs) if isinstance(b, (int, float))
+    ]
     if len(pairs) < 60:
         raise ValueError("breadth series too short: %d" % len(pairs))
     return [p[0] for p in pairs], np.array([p[1] for p in pairs])
@@ -43,7 +44,8 @@ def load_series(fp=SERIES_FP):
 def _features(b):
     """研究同款特征 [宽度水平, 5 日动量] + 标准化。返回 (Xz, mu, sd)。"""
     X_raw = np.column_stack(
-        [b, np.r_[np.full(hgr.MOM_LAG, np.nan), np.diff(b, n=hgr.MOM_LAG)]])
+        [b, np.r_[np.full(hgr.MOM_LAG, np.nan), np.diff(b, n=hgr.MOM_LAG)]]
+    )
     valid = ~np.isnan(X_raw).any(axis=1)
     Xv = X_raw[valid]
     mu, sd = Xv.mean(axis=0), Xv.std(axis=0)
@@ -53,7 +55,7 @@ def _features(b):
 def compute_shadow(series_fp=SERIES_FP, window=WINDOW):
     dates, b = load_series(series_fp)
     if window and len(b) > window + hgr.MOM_LAG:
-        b, dates = b[-(window + hgr.MOM_LAG):], dates[-(window + hgr.MOM_LAG):]
+        b, dates = b[-(window + hgr.MOM_LAG) :], dates[-(window + hgr.MOM_LAG) :]
     Xz, valid = _features(b)
     vd = [d for d, v in zip(dates, valid) if v]
 
@@ -69,8 +71,7 @@ def compute_shadow(series_fp=SERIES_FP, window=WINDOW):
 
     # 风险态 = 标准化宽度均值最低的状态（研究同款标注）
     gamma = best.predict_proba(Xz, smoothed=True)
-    state_breadth = [float(Xz[gamma[:, k] > 0.5, 0].mean())
-                     for k in range(best.K)]
+    state_breadth = [float(Xz[gamma[:, k] > 0.5, 0].mean()) for k in range(best.K)]
     risk_label = int(np.argsort(state_breadth)[0])
 
     # filtered 后验（无未来函数）+ 迟滞门（研究参数 0.6/0.4）
@@ -89,7 +90,7 @@ def compute_shadow(series_fp=SERIES_FP, window=WINDOW):
         "hysteresis": {"hi": hgr.HYST_HI, "lo": hgr.HYST_LO},
         "hard_line": {"cross": 0.45, "fake": 0.40},
         "note": "研究口径·影子：风险态标签含全窗信息，非可交易信号；"
-                "filtered 后验与迟滞门无未来函数。",
+        "filtered 后验与迟滞门无未来函数。",
     }
 
 

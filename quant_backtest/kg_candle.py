@@ -27,6 +27,7 @@
   python kg_candle.py sync [20260929]            # 增量保鲜（每日链；无参=
                                                 # 仓内最近 5 个实际交易日）
 """
+
 import os
 import sys
 import math
@@ -51,58 +52,95 @@ LATE_MOVE, LATE_VOL_MIN = 0.02, 0.15  # 尾盘异动阈值：±2% 且量占比�
 # 监管映射为静态人工维护表，参照沪深交易所《证券异常交易实时监控细则》
 # 拉抬/打压类条款（描述性关联，非处罚认定）——reg_tag 空串=无异常关联。
 TECHNIQUES = {
-    "early_seal": {"cn": "早盘封板", "reg_tag": "",
-                   "reg_rule": "常规强势特征，无监管异常关联"},
-    "seal": {"cn": "午间封板", "reg_tag": "",
-             "reg_rule": "常规封板，无监管异常关联"},
-    "late_seal": {"cn": "尾盘封板",
-                  "reg_tag": "尾盘维持涨幅限制价格",
-                  "reg_rule": "尾盘阶段拉抬/维持涨停价——《证券异常交易"
-                              "实时监控细则》拉抬类观察情形（尾盘段）"},
-    "broken": {"cn": "炸板（盘中拉抬未遂）",
-               "reg_tag": "盘中拉抬股价",
-               "reg_rule": "触及涨停后回落——拉抬类行为的未遂形态，"
-                           "配合 n_touch/量能观察"},
-    "late_surge": {"cn": "尾盘抢筹", "reg_tag": "尾盘拉抬股价",
-                   "reg_rule": "细则明确列举的尾盘拉抬类异常交易情形"
-                               "（收盘阶段显著抬升价格）"},
-    "late_dump": {"cn": "尾盘砸盘", "reg_tag": "尾盘打压股价",
-                  "reg_rule": "细则明确列举的尾盘打压类异常交易情形"
-                              "（收盘阶段显著压低价格）"},
+    "early_seal": {
+        "cn": "早盘封板",
+        "reg_tag": "",
+        "reg_rule": "常规强势特征，无监管异常关联",
+    },
+    "seal": {"cn": "午间封板", "reg_tag": "", "reg_rule": "常规封板，无监管异常关联"},
+    "late_seal": {
+        "cn": "尾盘封板",
+        "reg_tag": "尾盘维持涨幅限制价格",
+        "reg_rule": "尾盘阶段拉抬/维持涨停价——《证券异常交易"
+        "实时监控细则》拉抬类观察情形（尾盘段）",
+    },
+    "broken": {
+        "cn": "炸板（盘中拉抬未遂）",
+        "reg_tag": "盘中拉抬股价",
+        "reg_rule": "触及涨停后回落——拉抬类行为的未遂形态，配合 n_touch/量能观察",
+    },
+    "late_surge": {
+        "cn": "尾盘抢筹",
+        "reg_tag": "尾盘拉抬股价",
+        "reg_rule": "细则明确列举的尾盘拉抬类异常交易情形（收盘阶段显著抬升价格）",
+    },
+    "late_dump": {
+        "cn": "尾盘砸盘",
+        "reg_tag": "尾盘打压股价",
+        "reg_rule": "细则明确列举的尾盘打压类异常交易情形（收盘阶段显著压低价格）",
+    },
 }
 
 
 def _tech_nodes():
     """Technique 节点行（name=中文名，code=英文 type）。"""
-    return [{"name": v["cn"], "code": k, "reg_tag": v["reg_tag"],
-             "reg_rule": v["reg_rule"],
-             "updated_at": _now()}
-            for k, v in TECHNIQUES.items()]
+    return [
+        {
+            "name": v["cn"],
+            "code": k,
+            "reg_tag": v["reg_tag"],
+            "reg_rule": v["reg_rule"],
+            "updated_at": _now(),
+        }
+        for k, v in TECHNIQUES.items()
+    ]
 
 
 def _tech_edges(evs):
     """candle 事件 → USES_TECH 边（dst=中文名，validStart=事件日）。"""
-    return [{"src": e["evt_id"], "dst": TECHNIQUES[e["type"]]["cn"],
-             "validStart": e["date"], "validEnd": S.VALID_END_OPEN,
-             "source": "stk_mins", "updated_at": _now()}
-            for e in evs if e["type"] in TECHNIQUES]
+    return [
+        {
+            "src": e["evt_id"],
+            "dst": TECHNIQUES[e["type"]]["cn"],
+            "validStart": e["date"],
+            "validEnd": S.VALID_END_OPEN,
+            "source": "stk_mins",
+            "updated_at": _now(),
+        }
+        for e in evs
+        if e["type"] in TECHNIQUES
+    ]
 
 
 def sync_techniques(cli):
     """P3-b 存量回填：Technique 节点 + 图内既有 candle 事件 USES_TECH 边。"""
     cli.upsert_nodes(S.LBL_TECHNIQUE, ["name"], _tech_nodes())
-    rows = cli._session().run(
-        "MATCH (m:MarketEvent {kind:'candle'}) "
-        "WHERE NOT (m)-[:USES_TECH]->() "
-        "RETURN m.evt_id AS id, m.type AS t, m.date AS d").data()
-    evs = [{"evt_id": r["id"], "type": r["t"], "date": r["d"]}
-           for r in rows if r["t"] in TECHNIQUES]
+    rows = (
+        cli._session()
+        .run(
+            "MATCH (m:MarketEvent {kind:'candle'}) "
+            "WHERE NOT (m)-[:USES_TECH]->() "
+            "RETURN m.evt_id AS id, m.type AS t, m.date AS d"
+        )
+        .data()
+    )
+    evs = [
+        {"evt_id": r["id"], "type": r["t"], "date": r["d"]}
+        for r in rows
+        if r["t"] in TECHNIQUES
+    ]
     n = 0
     if evs:
         edges = _tech_edges(evs)
         n = len(edges)
-        cli.upsert_edge(S.LBL_MARKET_EVENT, "evt_id", S.LBL_TECHNIQUE,
-                        "name", S.REL_USES_TECH, edges)
+        cli.upsert_edge(
+            S.LBL_MARKET_EVENT,
+            "evt_id",
+            S.LBL_TECHNIQUE,
+            "name",
+            S.REL_USES_TECH,
+            edges,
+        )
     print("technique 回填：节点 %d + USES_TECH 边 %d" % (len(TECHNIQUES), n))
 
 
@@ -127,8 +165,7 @@ def limit_ratio(code, name):
 
 
 def mins_file(tc, ym):
-    return os.path.join(MINS_DIR, "%s_%s.parquet"
-                        % (tc.replace(".", "_"), ym))
+    return os.path.join(MINS_DIR, "%s_%s.parquet" % (tc.replace(".", "_"), ym))
 
 
 def detect_day(day, pre_close, code, name):
@@ -143,18 +180,31 @@ def detect_day(day, pre_close, code, name):
 
     def base(t, **kw):
         d = day["trade_time"].iloc[0].strftime("%Y%m%d")
-        return {"evt_id": "%s:candle:%s:%s" % (code, t, d),
-                "kind": "candle", "type": t, "date": d,
-                "mtime": day.loc[touch, "trade_time"].iloc[0]
-                        .strftime("%H%M") if touch.any() else None,
-                "pct": round(pct, 4), "lim": ratio,
-                "source": "stk_mins", "updated_at": _now(), **kw}
+        return {
+            "evt_id": "%s:candle:%s:%s" % (code, t, d),
+            "kind": "candle",
+            "type": t,
+            "date": d,
+            "mtime": day.loc[touch, "trade_time"].iloc[0].strftime("%H%M")
+            if touch.any()
+            else None,
+            "pct": round(pct, 4),
+            "lim": ratio,
+            "source": "stk_mins",
+            "updated_at": _now(),
+            **kw,
+        }
 
     sealed = day["close"].iloc[-1] >= lim - 1e-6
     if touch.any() and sealed:
         t0 = day.loc[touch, "trade_time"].iloc[0].strftime("%H:%M")
-        typ = ("early_seal" if t0 <= EARLY_CUT else
-               "late_seal" if t0 >= LATE_CUT else "seal")
+        typ = (
+            "early_seal"
+            if t0 <= EARLY_CUT
+            else "late_seal"
+            if t0 >= LATE_CUT
+            else "seal"
+        )
         evs.append(base(typ, n_touch=int(touch.sum())))
     elif touch.any():
         evs.append(base("broken", n_touch=int(touch.sum())))
@@ -167,8 +217,7 @@ def detect_day(day, pre_close, code, name):
             vshare = tail["amount"].sum() / max(day["amount"].sum(), 1)
             if vshare >= LATE_VOL_MIN and abs(mv) >= LATE_MOVE:
                 t = "late_surge" if mv > 0 else "late_dump"
-                evs.append(base(t, n_touch=int(touch.sum()),
-                                tail_vol=round(vshare, 3)))
+                evs.append(base(t, n_touch=int(touch.sum()), tail_vol=round(vshare, 3)))
     return evs
 
 
@@ -188,34 +237,57 @@ def scan_month(tc, ym, pre_map, name_map):
         pre = pre_map.get((tc, d))
         for e in detect_day(day, pre, tc, name):
             evs.append(e)
-            edges.append({"src": tc, "dst": e["evt_id"], "validStart": d,
-                          "validEnd": S.VALID_END_OPEN,
-                          "source": "stk_mins", "updated_at": _now()})
+            edges.append(
+                {
+                    "src": tc,
+                    "dst": e["evt_id"],
+                    "validStart": d,
+                    "validEnd": S.VALID_END_OPEN,
+                    "source": "stk_mins",
+                    "updated_at": _now(),
+                }
+            )
     return evs, edges
 
 
 def _names(cli):
-    return {r["tc"]: r["nm"] for r in cli._session().run(
-        "MATCH (s:Security) RETURN s.ts_code AS tc, s.name AS nm")}
+    return {
+        r["tc"]: r["nm"]
+        for r in cli._session().run(
+            "MATCH (s:Security) RETURN s.ts_code AS tc, s.name AS nm"
+        )
+    }
 
 
 def _pres(start):
     """日线池前收映射 {(tc, yyyymmdd): pre_close}。"""
-    df = tdxr.read_range("ts_daily", start=start,
-                         columns=["ts_code", "trade_date", "pre_close"])
+    df = tdxr.read_range(
+        "ts_daily", start=start, columns=["ts_code", "trade_date", "pre_close"]
+    )
     df["trade_date"] = df["trade_date"].astype(str).str[:8]
     return {(r.ts_code, r.trade_date): r.pre_close for r in df.itertuples()}
 
 
 def build(cli, ym=None, dryrun=False):
-    yms = [ym] if ym else sorted({f.rsplit("_", 1)[1][:6]
-                                  for f in os.listdir(MINS_DIR)
-                                  if f.endswith(".parquet")})
-    tcs = sorted({f.split("_")[0] + "." + f.split("_")[1]
-                  for f in os.listdir(MINS_DIR)
-                  if f.endswith(".parquet")})
-    print("分钟库：%d 标的 × %d 个月（%s~%s）"
-          % (len(tcs), len(yms), yms[0], yms[-1]))
+    yms = (
+        [ym]
+        if ym
+        else sorted(
+            {
+                f.rsplit("_", 1)[1][:6]
+                for f in os.listdir(MINS_DIR)
+                if f.endswith(".parquet")
+            }
+        )
+    )
+    tcs = sorted(
+        {
+            f.split("_")[0] + "." + f.split("_")[1]
+            for f in os.listdir(MINS_DIR)
+            if f.endswith(".parquet")
+        }
+    )
+    print("分钟库：%d 标的 × %d 个月（%s~%s）" % (len(tcs), len(yms), yms[0], yms[-1]))
     name_map = _names(cli)
     pre_map = _pres(yms[0][:4] + yms[0][4:] + "01")
     tot_e = tot_ed = 0
@@ -233,17 +305,31 @@ def build(cli, ym=None, dryrun=False):
         print("  %s: 事件 %d 条 %s" % (y, len(evs), by))
         if not dryrun and evs:
             cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
-            cli.upsert_edge(S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT,
-                            "evt_id", "HAS_CANDLE", edges)
+            cli.upsert_edge(
+                S.LBL_SECURITY,
+                "ts_code",
+                S.LBL_MARKET_EVENT,
+                "evt_id",
+                "HAS_CANDLE",
+                edges,
+            )
             # P3-b：手法对象化（Technique 节点幂等 upsert + USES_TECH 边）
             cli.upsert_nodes(S.LBL_TECHNIQUE, ["name"], _tech_nodes())
-            cli.upsert_edge(S.LBL_MARKET_EVENT, "evt_id", S.LBL_TECHNIQUE,
-                            "name", S.REL_USES_TECH, _tech_edges(evs))
-    print("合计：%s事件 %d / 边 %d" % ("（dryrun）" if dryrun else "",
-                                    tot_e, tot_ed))
+            cli.upsert_edge(
+                S.LBL_MARKET_EVENT,
+                "evt_id",
+                S.LBL_TECHNIQUE,
+                "name",
+                S.REL_USES_TECH,
+                _tech_edges(evs),
+            )
+    print("合计：%s事件 %d / 边 %d" % ("（dryrun）" if dryrun else "", tot_e, tot_ed))
     if not dryrun:
-        n = cli._session().run(
-            "MATCH ()-[r:HAS_CANDLE]->() RETURN count(r) AS c").single()["c"]
+        n = (
+            cli._session()
+            .run("MATCH ()-[r:HAS_CANDLE]->() RETURN count(r) AS c")
+            .single()["c"]
+        )
         print("图谱 HAS_CANDLE 总边数：%d" % n)
 
 
@@ -258,8 +344,7 @@ def probe(cli, tc, date):
         return
     df = pd.read_parquet(f)
     df["trade_time"] = pd.to_datetime(df["trade_time"])
-    day = df[df["trade_time"].dt.strftime("%Y%m%d") == date] \
-        .sort_values("trade_time")
+    day = df[df["trade_time"].dt.strftime("%Y%m%d") == date].sort_values("trade_time")
     if day.empty:
         print("%s %s 无分钟数据" % (tc, date))
         return
@@ -269,21 +354,36 @@ def probe(cli, tc, date):
     lim = _r2(pre * (1 + ratio)) if pre else None
     print("=== %s %s（%s）===" % (tc, date, name))
     print("  前收 %.2f × (1+%.0f%%) → 涨停价 %.2f" % (pre, ratio * 100, lim))
-    print("  日内 high=%.2f close=%.2f（首根 %s ~ 末根 %s，%d 根）"
-          % (day["high"].max(), day["close"].iloc[-1],
-             day["trade_time"].iloc[0].strftime("%H:%M"),
-             day["trade_time"].iloc[-1].strftime("%H:%M"), len(day)))
+    print(
+        "  日内 high=%.2f close=%.2f（首根 %s ~ 末根 %s，%d 根）"
+        % (
+            day["high"].max(),
+            day["close"].iloc[-1],
+            day["trade_time"].iloc[0].strftime("%H:%M"),
+            day["trade_time"].iloc[-1].strftime("%H:%M"),
+            len(day),
+        )
+    )
     for e in detect_day(day, pre, tc, name):
-        print("  → 事件 %s mtime=%s pct=%.2f%% n_touch=%s %s"
-              % (e["type"], e["mtime"], e["pct"] * 100, e.get("n_touch"),
-                 e.get("tail_vol", "")))
+        print(
+            "  → 事件 %s mtime=%s pct=%.2f%% n_touch=%s %s"
+            % (
+                e["type"],
+                e["mtime"],
+                e["pct"] * 100,
+                e.get("n_touch"),
+                e.get("tail_vol", ""),
+            )
+        )
 
 
 def _cur_prev_ym():
     """当月+上月（YYYYMM 集合）——对齐 TushareSync 增量重拉窗口。"""
     now = datetime.now()
-    return {now.strftime("%Y%m"),
-            (now.replace(day=1) - timedelta(days=1)).strftime("%Y%m")}
+    return {
+        now.strftime("%Y%m"),
+        (now.replace(day=1) - timedelta(days=1)).strftime("%Y%m"),
+    }
 
 
 def _recent_dates(n=5):
@@ -297,11 +397,11 @@ def _recent_dates(n=5):
     for f in os.listdir(MINS_DIR):
         if not f.endswith(".parquet") or f.rsplit("_", 1)[1][:6] not in yms:
             continue
-        df = pd.read_parquet(os.path.join(MINS_DIR, f),
-                             columns=["trade_time"])
+        df = pd.read_parquet(os.path.join(MINS_DIR, f), columns=["trade_time"])
         if not df.empty:
-            dates.update(pd.to_datetime(df["trade_time"])
-                         .dt.strftime("%Y%m%d").unique())
+            dates.update(
+                pd.to_datetime(df["trade_time"]).dt.strftime("%Y%m%d").unique()
+            )
     return sorted(dates)[-n:]
 
 
@@ -320,42 +420,61 @@ def sync(cli, date=None, lookback=5):
     name_map = _names(cli)
     pre_map = _pres(min(dates)[:6] + "01")
     want, yms = set(dates), sorted({d[:6] for d in dates})
-    tcs = sorted({f.split("_")[0] + "." + f.split("_")[1]
-                  for f in os.listdir(MINS_DIR)
-                  if f.endswith(".parquet")})
+    tcs = sorted(
+        {
+            f.split("_")[0] + "." + f.split("_")[1]
+            for f in os.listdir(MINS_DIR)
+            if f.endswith(".parquet")
+        }
+    )
     evs, edges = [], []
     for tc in tcs:
         for ym in yms:
             f = mins_file(tc, ym)
             if not os.path.exists(f):
                 continue
-            df = pd.read_parquet(f, columns=["trade_time", "close", "high",
-                                             "amount"])
+            df = pd.read_parquet(f, columns=["trade_time", "close", "high", "amount"])
             df["trade_time"] = pd.to_datetime(df["trade_time"])
             df = df[df["trade_time"].dt.strftime("%Y%m%d").isin(want)]
             for d, day in df.groupby(df["trade_time"].dt.strftime("%Y%m%d")):
                 day = day.sort_values("trade_time")
-                for e in detect_day(day, pre_map.get((tc, d)), tc,
-                                    name_map.get(tc, "")):
+                for e in detect_day(
+                    day, pre_map.get((tc, d)), tc, name_map.get(tc, "")
+                ):
                     evs.append(e)
-                    edges.append({"src": tc, "dst": e["evt_id"],
-                                  "validStart": d,
-                                  "validEnd": S.VALID_END_OPEN,
-                                  "source": "stk_mins", "updated_at": _now()})
+                    edges.append(
+                        {
+                            "src": tc,
+                            "dst": e["evt_id"],
+                            "validStart": d,
+                            "validEnd": S.VALID_END_OPEN,
+                            "source": "stk_mins",
+                            "updated_at": _now(),
+                        }
+                    )
     by = {}
     for e in evs:
         by[e["type"]] = by.get(e["type"], 0) + 1
     print("sync %s~%s：事件 %d %s" % (dates[0], dates[-1], len(evs), by))
     if evs:
         cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
-        cli.upsert_edge(S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT,
-                        "evt_id", "HAS_CANDLE", edges)
+        cli.upsert_edge(
+            S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT, "evt_id", "HAS_CANDLE", edges
+        )
         # P3-b：手法对象化（每日增量同步顺带写）
         cli.upsert_nodes(S.LBL_TECHNIQUE, ["name"], _tech_nodes())
-        cli.upsert_edge(S.LBL_MARKET_EVENT, "evt_id", S.LBL_TECHNIQUE,
-                        "name", S.REL_USES_TECH, _tech_edges(evs))
+        cli.upsert_edge(
+            S.LBL_MARKET_EVENT,
+            "evt_id",
+            S.LBL_TECHNIQUE,
+            "name",
+            S.REL_USES_TECH,
+            _tech_edges(evs),
+        )
         # X3 血缘：输入分钟库 → 输出盘口事件/手法边
-        _jr.edge("neo4j:HAS_CANDLE", "parquet:stk_mins", transform="candle_detect")  # X3
+        _jr.edge(
+            "neo4j:HAS_CANDLE", "parquet:stk_mins", transform="candle_detect"
+        )  # X3
         _jr.edge("neo4j:Technique", "parquet:stk_mins")  # X3
         _jr.rows_written = len(evs) + len(edges)  # X3
     _jr.finish("ok")  # X3 血缘（显式收尾，异常路径靠 __del__ 记 lost）

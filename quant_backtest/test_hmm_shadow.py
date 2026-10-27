@@ -28,9 +28,10 @@ def _synthetic_series(n_a=220, n_b=90):
 def _mk_series_fp(tmp, dates, brs):
     fp = os.path.join(tmp, "series.json")
     with open(fp, "w", encoding="utf-8") as f:
-        json.dump({"dates": dates,
-                   "breadth": [None if x is None else float(x)
-                               for x in brs]}, f)
+        json.dump(
+            {"dates": dates, "breadth": [None if x is None else float(x) for x in brs]},
+            f,
+        )
     return fp
 
 
@@ -42,7 +43,7 @@ def test_compute_shadow_shape_and_keys():
     assert st["K"] in (2, 3)
     assert 0.0 <= st["p_risk_filtered"] <= 1.0
     assert isinstance(st["hysteresis_on"], bool)
-    assert abs(st["breadth"] - brs[-1]) < 1e-4   # 输出按 4 位小数舍入
+    assert abs(st["breadth"] - brs[-1]) < 1e-4  # 输出按 4 位小数舍入
     assert len(st["state_breadth_mean"]) == st["K"]
 
 
@@ -61,7 +62,7 @@ def test_null_anchors_skipped_and_short_series_raises():
     with tempfile.TemporaryDirectory() as tmp:
         fp = _mk_series_fp(tmp, dates2, brs2)
         st = hs.compute_shadow(fp)
-        assert st["date"] == dates[-1]          # null 尾锚已跳过
+        assert st["date"] == dates[-1]  # null 尾锚已跳过
         with open(fp, "w", encoding="utf-8") as f:
             json.dump({"dates": ["a", "b", "c"], "breadth": [0.3, 0.3, 0.3]}, f)
         try:
@@ -69,4 +70,4 @@ def test_null_anchors_skipped_and_short_series_raises():
             raised = False
         except ValueError:
             raised = True
-        assert raised                            # <60 锚拒绝拟合
+        assert raised  # <60 锚拒绝拟合
