@@ -26,7 +26,7 @@ def test_run_pass_and_fail(tmp_path):
 
 
 def test_default_has_thirteen_deterministic_tasks():
-    assert len(E.load_tasks()) == 17
+    assert len(E.load_tasks()) == 18
 
 
 def test_quality_score_parse():
@@ -38,4 +38,4 @@ def test_quality_score_parse():
 def test_default_gate_includes_quality():
     tasks = E.load_tasks()
     quality = E.load_tasks(E.QUALITY) if E.QUALITY.exists() else []
-    assert len(tasks) == 17 and isinstance(quality, list)
+    assert len(tasks) == 18 and isinstance(quality, list)
