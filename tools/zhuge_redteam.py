@@ -166,8 +166,12 @@ def main(argv=None) -> int:
                     help="离线模式：JSON {case_id: answer} 文件")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--limit", type=int, default=0, help="只跑前 N 例（live 抽样）")
+    ap.add_argument("--only", default="", help="逗号分隔 case_id 过滤")
     args = ap.parse_args(argv)
     cases = load_cases(Path(args.cases))
+    if args.only:
+        only = {x.strip() for x in args.only.split(',') if x.strip()}
+        cases = [c for c in cases if c['id'] in only]
     if args.limit and args.limit > 0:
         cases = cases[:args.limit]
     if args.live:
