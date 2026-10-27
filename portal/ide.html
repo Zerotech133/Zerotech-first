@@ -277,7 +277,8 @@
     </div>
     <div class="inputbar">
       <div class="at-menu" id="atmenu"></div>
-      <textarea id="q" placeholder="给该 Agent 发一条测试消息…输入 @ 引用 Agent 或代码文件"></textarea>
+      <textarea id="q" placeholder="给该 Agent 发一条测试消息…输入 @ 引用 Agent 或代码文件（🎙️ 本地语音）"></textarea>
+      <button class="send" id="mic" title="本地语音输入（Windows 离线识别，不上传云端）" style="background:#1f2b3a;border:1px solid #33506f;border-radius:8px;padding:0 10px;color:#dbe8f5;cursor:pointer;margin-right:6px">🎙️</button>
       <button class="send" id="send" onclick="send()" disabled>发送</button>
     </div>
     <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · 9b 约 10-60s · 此调试不发工单不落记忆 · 每Agent独立会话切人保留历史</div>
@@ -903,6 +904,42 @@ function sessClear(id, ev){
   if(DBGCUR && DBGCUR.id===id) document.getElementById("chat").innerHTML = "";
   renderSess();
 }
+
+let _micRec=null, _micChunks=[];
+async function toggleMic(){
+  const btn=document.getElementById("mic");
+  if(_micRec && _micRec.state==="recording"){
+    btn.textContent="⏳"; _micRec.stop(); return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    _micChunks=[];
+    const rec=new MediaRecorder(stream);
+    _micRec=rec;
+    rec.ondataavailable=e=>{if(e.data&&e.data.size)_micChunks.push(e.data)};
+    rec.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      _micRec=null; btn.textContent="🎙️";
+      try{
+        const blob=new Blob(_micChunks,{type:rec.mimeType||"audio/webm"});
+        const b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob)});
+        const r=await fetch("http://127.0.0.1:8796/api/stt",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({audio_b64:String(b64).split(",")[1]||"",mime:blob.type||"audio/webm"})});
+        const d=await r.json();
+        if(d.ok && (d.text||"").trim()){
+          const q=document.getElementById("q");
+          q.value=(q.value?q.value+" ":"")+d.text.trim(); q.focus();
+          addLog("🎙️ 本地语音："+d.text.trim(),"lg-g");
+        }else{
+          addLog("🎙️ 本地识别为空/失败："+((d&&d.error)||"unknown"),"lg-r");
+        }
+      }catch(e){ addLog("🎙️ 语音上传失败："+e.message,"lg-r"); }
+    };
+    rec.start();
+    btn.textContent="⏹ 录音中";
+  }catch(e){ alert("无法访问麦克风："+e.message); }
+}
+document.getElementById("mic").onclick=toggleMic;
+
 function model(){ return document.getElementById("model").value; }
 document.getElementById("model").addEventListener("change", ()=>{
   if(DBGCUR) dbgSelect(DBGCUR.id);

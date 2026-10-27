@@ -24,6 +24,7 @@ import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import pathlib
 from urllib.parse import urlparse
 
 _PLATFORM = Path(__file__).resolve().parents[1]
@@ -1181,6 +1182,54 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "vk_action_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
                 return
+        if path == "/api/stt":
+            try:
+                import base64
+                import tempfile
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 20 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "audio_too_large"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                audio_b64 = str(req.get("audio_b64") or "")
+                mime = str(req.get("mime") or "audio/webm")
+                if not audio_b64:
+                    self._send_json({"ok": False, "error": "empty_audio"}, 400)
+                    return
+                raw = base64.b64decode(audio_b64)
+                ext = ".webm" if "webm" in mime else (".ogg" if "ogg" in mime else ".wav")
+                repo = _PLATFORM.parent
+                ffmpeg = repo / "tools" / "ffmpeg" / "bin" / "ffmpeg.exe"
+                script = repo / "tools" / "stt_sapi.ps1"
+                if not ffmpeg.exists() or not script.exists():
+                    self._send_json({"ok": False, "error": "stt_engine_missing"}, 500)
+                    return
+                t0 = time.time()
+                with tempfile.TemporaryDirectory(prefix="dsh_stt_") as td:
+                    src = pathlib.Path(td) / ("audio" + ext)
+                    wav = pathlib.Path(td) / "audio16k.wav"
+                    src.write_bytes(raw)
+                    conv = subprocess.run(
+                        [str(ffmpeg), "-y", "-i", str(src), "-ar", "16000",
+                         "-ac", "1", "-f", "wav", str(wav)],
+                        capture_output=True, text=True, timeout=60)
+                    if conv.returncode != 0 or not wav.exists():
+                        self._send_json({"ok": False, "error": "audio_convert_failed",
+                                         "detail": (conv.stderr or "")[-300:]}, 500)
+                        return
+                    pr = subprocess.run(
+                        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                         "-File", str(script), "-Wav", str(wav)],
+                        capture_output=True, text=True, encoding="utf-8",
+                        errors="replace", timeout=90)
+                    text = (pr.stdout or "").strip()
+                self._send_json({"ok": True, "text": text, "engine": "windows-sapi-zh-CN",
+                                 "seconds": round(time.time() - t0, 2)})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "stt_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/model/prefs":
         if path == "/api/model/prefs":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
