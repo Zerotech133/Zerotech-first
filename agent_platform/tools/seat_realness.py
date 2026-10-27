@@ -258,7 +258,7 @@ def main(argv=None) -> int:
     ap.add_argument("--limit", type=int, default=20)
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--with-eval", action="store_true",
-                    help="追加第 6 维评测（黄金集通过率≥80%；默认关）")
+                    help="追加第 6 维评测（黄金集通过率≥80%%；默认关）")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     root = Path(args.root)

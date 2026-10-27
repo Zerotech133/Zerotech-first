@@ -157,6 +157,18 @@ def add(
         else:
             # 旧版本进 history（append-only：原文保留，不覆盖；valid_to=now）
             old = dict(row)
+            tags_s = ",".join(tags or [])
+            if (old.get("cue") == cue and old.get("content") == content
+                    and (old.get("source") or "") == source
+                    and float(old.get("confidence") or 0) == float(confidence)
+                    and (old.get("tags") or "") == tags_s
+                    and (old.get("episode_id") or None) == ep
+                    and int(old.get("ttl_days") or 365) == int(ttl_days)
+                    and (old.get("layer") or layer) == layer):
+                return {"ok": True, "id": mid, "layer": old.get("layer") or layer,
+                        "version": int(old.get("version") or 1),
+                        "namespace": old.get("namespace") or ns,
+                        "episode_id": old.get("episode_id"), "unchanged": True}
             conn.execute(
                 "INSERT INTO memory_history(id,layer,namespace,scope,cue,content,source,"
                 "confidence,tags,created_at,valid_from,valid_to,version,episode_id,"

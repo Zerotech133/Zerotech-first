@@ -25,7 +25,6 @@ import argparse
 import datetime as dt
 import json
 import os
-import sys
 from pathlib import Path
 from typing import NoReturn
 

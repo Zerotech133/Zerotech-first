@@ -26,8 +26,6 @@ import argparse
 import datetime as dt
 import hashlib
 import json
-import os
-import sys
 from pathlib import Path
 from typing import NoReturn
 
@@ -70,6 +68,10 @@ def _dataset(ref) -> dict:
 
 
 def _sha256_path(path: Path) -> str:
+    """文件=全文 sha256；目录=有界指纹（相对路径+大小+前/后 64KB 样本）。
+
+    避免对 21GB 数据目录全量读；指纹变化足以发现目录内容/文件大小变化。
+    """
     h = hashlib.sha256()
     if path.is_file():
         with path.open("rb") as f:
@@ -77,10 +79,18 @@ def _sha256_path(path: Path) -> str:
                 h.update(chunk)
     elif path.is_dir():
         for p in sorted(path.rglob("*")):
-            if p.is_file():
-                h.update(str(p.relative_to(path)).encode("utf-8"))
-                h.update(b"\0")
-                h.update(p.read_bytes())
+            if not p.is_file():
+                continue
+            st = p.stat()
+            h.update(str(p.relative_to(path)).replace("\\", "/").encode("utf-8"))
+            h.update(b"\0")
+            h.update(str(st.st_size).encode("ascii"))
+            with p.open("rb") as f:
+                h.update(f.read(65536))
+                if st.st_size > 65536:
+                    f.seek(-65536, 2)
+                    h.update(f.read(65536))
+            h.update(b"\n")
     else:
         return ""
     return h.hexdigest()

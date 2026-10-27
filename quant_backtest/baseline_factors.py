@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 
@@ -124,7 +123,6 @@ def compute_factors(df: pd.DataFrame, turnover_source: str = "proxy_amount20") -
     """输入长表（含 adj_close/adj_open/vol/amount[/turnover_rate]），返回加因子的表。"""
     df = df.sort_values(["ts_code", "trade_date"]).copy()
     g = df.groupby("ts_code", sort=False)
-    c = df["adj_close"]
     for n in (5, 10, 20, 60):
         df["MOM%d" % n] = g["adj_close"].transform(lambda s, n=n: s / s.shift(n) - 1)
     df["MA_DEV20"] = g["adj_close"].transform(lambda s: s / s.rolling(20, min_periods=20).mean() - 1)
