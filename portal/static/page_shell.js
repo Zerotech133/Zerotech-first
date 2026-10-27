@@ -112,6 +112,10 @@
     if (modern) document.body.setAttribute(SHELL_ATTR, 'v1');
     if (document.querySelector('.wb-crumb')) return null;
     var info = navMatch();
+    if (!info.item && isAdopted()) {
+      var tt = (document.title || '').split('·')[0].split('｜')[0].trim();
+      if (tt) info.item = tt;
+    }
     var el = document.createElement('nav');
     el.className = 'wb-crumb';
     el.setAttribute('aria-label', '面包屑');
