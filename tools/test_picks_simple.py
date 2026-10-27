@@ -30,8 +30,18 @@ def test_picks_simple_behavior():
 def test_filter_memory_contract():
     s = JS.read_text(encoding="utf-8")
     assert "localStorage" in s
-    assert "zero.picks.filters.v1" in s
+    assert "zero.picks.filters.v2:" in s
     assert "restoreState" in s
     assert "resetState" in s
     assert "p2-reset" in s
     assert "advanced" in s and "showAll" in s
+
+
+def test_memory_page_and_date_scope():
+    s = JS.read_text(encoding="utf-8")
+    assert "pageKey" in s
+    assert "STORE_PREFIX" in s
+    assert "dataDate" in s
+    assert "stale" in s
+    assert "日期变化，已重置" in s
+    assert "重置本页筛选" in s
