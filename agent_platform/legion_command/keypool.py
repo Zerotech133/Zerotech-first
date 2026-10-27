@@ -254,6 +254,29 @@ def auto_switch(d: dict, seat: str, reason: str) -> dict:
     return {"ok": True, "active_key_id": new, "from": old, "reason": reason}
 
 
+def _seat_summary(keys: list) -> dict:
+    """统一四态：available / throttled / invalid / unconfigured。"""
+    total = len(keys)
+    available = sum(1 for k in keys if k.get("status") == "healthy")
+    invalid = sum(1 for k in keys if k.get("status") == "invalid")
+    if total == 0:
+        status = "unconfigured"
+    elif available:
+        status = "available"
+    elif invalid == total:
+        status = "invalid"
+    else:
+        status = "throttled"
+    tested = [str(k.get("last_checked")) for k in keys if k.get("last_checked")]
+    return {
+        "status": status,
+        "available_count": available,
+        "total_count": total,
+        "partial": bool(available and available < total),
+        "last_tested_at": max(tested) if tested else None,
+    }
+
+
 def state() -> dict:
     d = _load()
     out = {
@@ -284,6 +307,7 @@ def state() -> dict:
                     "last_error": k.get("last_error"),
                 }
             )
+        summary = _seat_summary(keys)
         out["seats"][sid] = {
             "cn": meta["cn"],
             "provider": meta["provider"],
@@ -291,6 +315,11 @@ def state() -> dict:
             "auto_switch": bool(s.get("auto_switch", True)),
             "active_key_id": s.get("active_key_id"),
             "degraded": bool(s.get("degraded")),
+            "status": summary["status"],
+            "available_count": summary["available_count"],
+            "total_count": summary["total_count"],
+            "partial": summary["partial"],
+            "last_tested_at": summary["last_tested_at"],
             "keys": keys,
             "extra": sid not in SEATS,
         }
