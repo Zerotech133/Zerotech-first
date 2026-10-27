@@ -493,6 +493,47 @@ class Handler(BaseHTTPRequestHandler):
                     500,
                 )
             return
+        if path == "/api/auto/status":
+            out = {"ok": True, "mode": "smart", "routing": {
+                "auto": "平台中转站优先 → 强模型 → 本地兜底",
+                "strong": "仅云端强模型，不降级本地",
+                "local": "仅本地 qwen3.5:9b",
+                "gpt6": "平台中转站 GPT-6"}}
+            try:
+                from legion_command import keypool
+                st = keypool.state()
+                relay = (st.get("seats") or {}).get("relay") or {}
+                rk = relay.get("keys") or []
+                healthy = sum(1 for k in rk if k.get("status") == "healthy")
+                total_keys = sum(len((v.get("keys") or [])) for v in (st.get("seats") or {}).values())
+                out["upstream"] = {"relay_configured": bool(rk),
+                                   "relay_keys": [{"masked": k.get("masked"),
+                                                   "status": k.get("status"),
+                                                   "model": k.get("model")} for k in rk],
+                                   "healthy": healthy}
+                out["keys_total"] = total_keys
+                if not rk:
+                    out["mode"] = "needs_admin_key"
+            except Exception as e:  # noqa: BLE001
+                out["upstream"] = {"relay_configured": False,
+                                   "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
+            try:
+                import urllib.request as _u
+                with _u.urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
+                    tags = json.loads(r.read().decode("utf-8", "replace"))
+                names = [m.get("name", "") for m in (tags.get("models") or [])]
+                out["local"] = {"online": True,
+                                "present": any(n.startswith("qwen3.5:9b") for n in names)}
+            except Exception:  # noqa: BLE001
+                out["local"] = {"online": False, "present": False}
+            try:
+                import json as _json
+                reg = _json.loads((REPO / "config" / "ai_registry.json").read_text(encoding="utf-8"))
+                out["agents"] = {"count": len(reg or [])}
+            except Exception:  # noqa: BLE001
+                out["agents"] = {"count": 0}
+            self._send_json(out)
+            return
         if path == "/api/models/status":
             out = {"ok": True, "local": {}, "relay_gpt6": {}}
             try:
