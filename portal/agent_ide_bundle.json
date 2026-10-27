@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:28",
+ "generated": "2026-10-27 23:29",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -230,15 +230,6 @@
    "project": "portal"
   },
   {
-   "id": "WO-LEGION-SIMPLE-P0-20261027",
-   "desc": "P0 /paper 首屏减法：4 KPI、去重页面快捷导航、折叠服务/进门路线/AI 值班、保留全部功能；无业务逻辑/无 L2",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-SIMPLE-P0-20261027",
-   "created": "2026-10-27 23:27:54",
-   "project": "general"
-  },
-  {
    "id": "WO-INFRA-2WK-20261027",
    "desc": "工程基建2周项：日志轮转工具+测试失败基线+testpaths实测记录",
    "status": "doing",
@@ -246,6 +237,15 @@
    "branch": "task/WO-INFRA-2WK-20261027",
    "created": "2026-10-27 23:28:16",
    "project": "general"
+  },
+  {
+   "id": "WO-LCS1-A4A6-20261027",
+   "desc": "P0⑤ 全量前置（L1）：baseline_manifest.py——产物 sha256/size 清单 + --verify 复算（A4）；全量执行与 A6 对比验收清单（DATA1 READY + harness 后一键执行）；测试。不跑全量、不改数据。",
+   "status": "doing",
+   "owner": "BACK1",
+   "branch": "task/WO-LCS1-A4A6-20261027",
+   "created": "2026-10-27 23:29:02",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -1614,6 +1614,11 @@
     {
      "id": "WO-LCS1-HARNESS-20261027",
      "desc": "LCS-1 回测 harness（ARCH1 派单，需求单 WO-LEGION-LCS1-HARNESS-REQ-20261027）：实现 quant_backtest/lcs1_backtest.py——复用 tools/chart_hypothesis.operators（禁复制阈值）、as-of 截断、成本读冻结回执、--dry-run 零写、产物按 BACK1 回测执行清单 §5；验收 A1-A8（20票五算子一致/未来函数单测/成本口径/12项产物/S3对账接口/pytest/merge守卫）；BACK1 主责实现、DEV4 复核、ARCH1 终审。非目标：不做产品化/交易接入/不改数据根。回滚：git revert merge-commit。",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LCS1-A4A6-20261027",
+     "desc": "P0⑤ 全量前置（L1）：baseline_manifest.py——产物 sha256/size 清单 + --verify 复算（A4）；全量执行与 A6 对比验收清单（DATA1 READY + harness 后一键执行）；测试。不跑全量、不改数据。",
      "status": "doing"
     }
    ]
@@ -6802,11 +6807,6 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-SIMPLE-P0-20261027",
-     "desc": "P0 /paper 首屏减法：4 KPI、去重页面快捷导航、折叠服务/进门路线/AI 值班、保留全部功能；无业务逻辑/无 L2",
-     "status": "doing"
     },
     {
      "id": "WO-INFRA-2WK-20261027",
