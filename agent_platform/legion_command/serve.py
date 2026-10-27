@@ -1230,7 +1230,6 @@ class Handler(BaseHTTPRequestHandler):
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path == "/api/model/prefs":
-        if path == "/api/model/prefs":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 16 * 1024:
