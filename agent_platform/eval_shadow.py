@@ -21,6 +21,7 @@ import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
+import logging
 
 try:  # Windows 管道输出统一 UTF-8（子进程测试/工具捕获防 cp936 解码失败）
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -32,7 +33,6 @@ BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
 from tools import quote_snapshot, kline_daily  # noqa: E402
-import logging
 
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"
