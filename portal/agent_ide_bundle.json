@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 19,
+  "workorders_doing": 18,
   "workorders_review": 2
  },
  "workorders": [
@@ -183,15 +183,6 @@
    "branch": "task/WO-AGENT-SANDBOX-20261027",
    "created": "2026-10-27 15:53:31",
    "project": "quant"
-  },
-  {
-   "id": "WO-O5B-E2E-BOT-20261027",
-   "desc": "O5 补 E2E-08/09：bot 存活/心跳检查 + 飞书私聊命令 mock 回环（handle_cmd+send_text mock，不发真实消息）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O5B-E2E-BOT-20261027",
-   "created": "2026-10-27 16:25:53",
-   "project": "portal"
   },
   {
    "id": "WO-GUANYU-HKALIGN-20261027",
