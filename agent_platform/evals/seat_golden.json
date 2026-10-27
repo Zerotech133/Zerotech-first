@@ -1,0 +1,106 @@
+{
+  "_note": "席位评测黄金集 v1（P0① WO-EVAL-SEATS-20261027）。每条=确定性检查（命令 rc/stdout 或文件存在/包含），零 LLM 调用、零副作用；先建基线，通过率稳定后再接入 seat_realness 第 6 维。",
+  "schema": "seat_golden/v1",
+  "updated": "2026-10-27",
+  "seats": {
+    "ACAD1": {
+      "label": "研究院院长·司马徽",
+      "cases": [
+        {
+          "id": "acad1-review-dry-run",
+          "kind": "cmd",
+          "args": ["agent_platform/tools/academy_ops.py", "review", "--dry-run", "--no-emit"],
+          "expect_rc": 0,
+          "contains": ["dry_run", "review"]
+        },
+        {
+          "id": "acad1-weekly-dry-run",
+          "kind": "cmd",
+          "args": ["agent_platform/tools/academy_ops.py", "weekly", "--dry-run", "--no-emit"],
+          "expect_rc": 0,
+          "contains": ["weekly", "dry_run"]
+        },
+        {
+          "id": "acad1-ops-tool",
+          "kind": "file",
+          "path": "agent_platform/tools/academy_ops.py",
+          "contains": "研究院"
+        }
+      ]
+    },
+    "STRAT1": {
+      "label": "策略研究员·周瑜",
+      "cases": [
+        {
+          "id": "strat1-brief-dry-run",
+          "kind": "cmd",
+          "args": ["agent_platform/tools/research_seat_ops.py", "strat1", "--dry-run", "--no-emit"],
+          "expect_rc": 0,
+          "contains": ["strat1"]
+        },
+        {
+          "id": "strat1-weekly-dry-run",
+          "kind": "cmd",
+          "args": ["agent_platform/tools/research_seat_ops.py", "weekly", "--dry-run", "--no-emit"],
+          "expect_rc": 0,
+          "contains": ["weekly"]
+        },
+        {
+          "id": "strat1-lcs1-standard",
+          "kind": "file",
+          "path": "docs/standards/LCS-1_军团看股标准_v1.md",
+          "contains": "LCS-1"
+        }
+      ]
+    },
+    "BACK1": {
+      "label": "回测研究员·陆逊",
+      "cases": [
+        {
+          "id": "back1-brief-dry-run",
+          "kind": "cmd",
+          "args": ["agent_platform/tools/research_seat_ops.py", "back1", "--dry-run", "--no-emit"],
+          "expect_rc": 0,
+          "contains": ["back1"]
+        },
+        {
+          "id": "back1-weekly-dry-run",
+          "kind": "cmd",
+          "args": ["agent_platform/tools/research_seat_ops.py", "weekly", "--dry-run", "--no-emit"],
+          "expect_rc": 0,
+          "contains": ["weekly"]
+        },
+        {
+          "id": "back1-freeze-interface",
+          "kind": "file",
+          "path": "agent_platform/tools/research_seat_ops.py",
+          "contains": "READY"
+        }
+      ]
+    },
+    "ARCH1": {
+      "label": "研发部主官/架构师·曹操",
+      "cases": [
+        {
+          "id": "arch1-patrol-dry-run",
+          "kind": "cmd",
+          "args": ["agent_platform/tools/arch1_ops.py", "weekly", "--dry-run", "--skip-gates", "--no-emit"],
+          "expect_rc": 0,
+          "contains": ["weekly", "dry_run"]
+        },
+        {
+          "id": "arch1-adr-003",
+          "kind": "file",
+          "path": "docs/adr/ADR-003-dev-routing-tool-matrix.md",
+          "contains": "ARCH1"
+        },
+        {
+          "id": "arch1-policy-tool",
+          "kind": "file",
+          "path": "agent_platform/tools/policy_check.py",
+          "contains": "policy"
+        }
+      ]
+    }
+  }
+}
