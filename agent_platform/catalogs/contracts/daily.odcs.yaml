@@ -1,0 +1,76 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.daily
+name: daily
+version: 1.0.0
+status: draft
+description:
+  purpose: A股日线深历史（tushare 按日，1990→2023-07）
+  limitations: catalog 基线 v12；schema 取自 store 抽样 parquet footer
+domain: quant
+dataProduct: zerobond-datawarehouse
+team:
+- username: data1@open-metadata.org
+  name: DATA1 张松
+  role: data steward
+servers:
+- server: local-datawarehouse
+  type: local
+  path: tushare/daily
+  format: parquet
+schema:
+- name: daily
+  physicalName: tushare/daily
+  logicalType: object
+  properties:
+  - name: ts_code
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 标的代码列
+  - name: trade_date
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 业务日期列（event date）
+  - name: open
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: high
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: low
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: close
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: pre_close
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: change
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: pct_chg
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: vol
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: amount
+    logicalType: number
+    physicalType: number
+    required: false
+slaProperties:
+- property: frequency
+  value: D

@@ -1,0 +1,72 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.margin_detail
+name: margin_detail
+version: 1.0.0
+status: draft
+description:
+  purpose: 数据仓核心表 margin_detail（来源 tushare，频率 D）
+  limitations: catalog 基线 v12；schema 取自 store 抽样 parquet footer
+domain: quant
+dataProduct: zerobond-datawarehouse
+team:
+- username: data1@open-metadata.org
+  name: DATA1 张松
+  role: data steward
+servers:
+- server: local-datawarehouse
+  type: local
+  path: tushare/margin_detail
+  format: parquet
+schema:
+- name: margin_detail
+  physicalName: tushare/margin_detail
+  logicalType: object
+  properties:
+  - name: trade_date
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 业务日期列（event date）
+  - name: ts_code
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+    description: 标的代码列
+  - name: rzye
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: rqye
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: rzmre
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: rqyl
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: rzche
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: rqchl
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: rqmcl
+    logicalType: number
+    physicalType: number
+    required: false
+  - name: rzrqye
+    logicalType: number
+    physicalType: number
+    required: false
+slaProperties:
+- property: frequency
+  value: D
