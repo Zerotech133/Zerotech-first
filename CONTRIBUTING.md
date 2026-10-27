@@ -30,6 +30,14 @@ cd C:\项目\老田的AI助手; python tools/devtask.py merge <TID>
 - 套件基线/命令见 `docs/testing.md`；worktree 无数据根导致的假红需在**主仓**复跑确认。
 - 提交前至少：受影响文件 `py_compile` + 定向 pytest。
 
+### 验收独立性（O4，2026-10-27 起）
+
+- dev 单必须在 desc 标注 `验收人=<席位>`（如 `验收人=QA1`），**验收人不得是实现者/owner**；
+- 实现者不得在本 PR 修改验证资产：`tools/*_check.py`、审计基线（`tools/test_baseline.json`）、`verify-*`、验收脚本；如需修改，单独"验证资产 PR"并说明理由；
+- 自测允许但不得作为唯一验收；合并前至少一条非实现者验收记录；
+- 审计：`python -X utf8 tools/dev_acceptance_audit.py`（观察期 warn，2 周后评估接 devtask warn）。
+- 细则：`docs/standards/2026-10-27_实现与验收分离_v1.md`。
+
 ## 三、L2 与红线
 
 - L2 = 重启/停服、改计划任务、动凭据区/备份链、宿主机级配置、上线发布 → **先出五要素包（命令全文/影响面/不可逆点/替代方案/回滚预案），老田批准后执行**；沉默≠同意。
