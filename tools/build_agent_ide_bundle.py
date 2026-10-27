@@ -437,7 +437,7 @@ def main():
         "grade_note": "profile 角色，不占 org.json 编制（D5-C）",
         "charter": "治理面：扫描/收口/健康卡/AI 归纳建议/判例沉淀；只产建议与证据，"
                    "不裁决、不自动执行、不持私钥。",
-        "llm": "deepseek/deepseek-flash（DSH 会话载体）",
+        "llm": "deepseek/deepseek-v4-pro（DSH 会话载体）",
         "tools": [],
         "grants_read": [],
         "grants_write": [],
