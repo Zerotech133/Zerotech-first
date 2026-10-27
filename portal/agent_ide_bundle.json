@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 15,
+  "workorders_doing": 14,
   "workorders_review": 1
  },
  "workorders": [
@@ -137,15 +137,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-ZHUGE-P1-8-20261027",
    "created": "2026-10-27 14:42:22",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-OSLINK-20261027",
-   "desc": "建议卡 linkFor 加 decision_id：portal/os_entry_v9_prod.html 的 linkFor/briefCard 在有 decision_id 时拼接 query（encodeURIComponent），无值行为不变；配套静态测试；不新增 POST/执行面；无 L2",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-OSLINK-20261027",
-   "created": "2026-10-27 14:51:03",
    "project": "general"
   },
   {
@@ -6324,11 +6315,6 @@
     {
      "id": "WO-ZHUGE-P1-8-20261027",
      "desc": "P1-8 红队对抗演练：注入/越狱/幻觉用例集+判定器+报告",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-OSLINK-20261027",
-     "desc": "建议卡 linkFor 加 decision_id：portal/os_entry_v9_prod.html 的 linkFor/briefCard 在有 decision_id 时拼接 query（encodeURIComponent），无值行为不变；配套静态测试；不新增 POST/执行面；无 L2",
      "status": "doing"
     }
    ]
