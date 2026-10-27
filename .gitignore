@@ -309,3 +309,8 @@ _vault/secrets.enc/
 # tools/secrets/README.md「机器可读记录…同样未入 git」）；.exe 已由 bin/*.exe 忽略，
 # 此为 bin/ 内唯一剩余未跟踪文件，补齐后 git status 不再出现 ?? bin/。
 bin/SECVAULT-TOOLS.json
+
+# 研究台账与报告（证据资产，2026-10-28 WO-RESEARCH-FIX；覆盖 *.db 与 reports/ 通配）
+!research/hypotheses.db
+!research/reports/
+!research/reports/**
