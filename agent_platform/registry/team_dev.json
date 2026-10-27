@@ -73,7 +73,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G1",
+   "org_role": "G1组长",
+   "report_to": "ARCH1"
   },
   {
    "agent_id": "DEV2",
@@ -147,7 +150,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G1",
+   "org_role": "G1组员",
+   "report_to": "DEV1"
   },
   {
    "agent_id": "DEV3",
@@ -219,7 +225,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G2",
+   "org_role": "G2组员",
+   "report_to": "DEV5"
   },
   {
    "agent_id": "DEV4",
@@ -293,7 +302,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G2",
+   "org_role": "G2组员",
+   "report_to": "DEV5"
   },
   {
    "agent_id": "DEV5",
@@ -363,7 +375,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G2",
+   "org_role": "G2组长",
+   "report_to": "ARCH1"
   },
   {
    "agent_id": "ARCH1",
@@ -440,7 +455,10 @@
      "enabled": true
     }
    ],
-   "tools_note": "2026-10-27 A0 L1 批：ARCH1 四工具授权 codebase_intel/sandbox_verify/eval_harness/trace_log（实现 tools/<name>.py）"
+   "tools_note": "2026-10-27 A0 L1 批：ARCH1 四工具授权 codebase_intel/sandbox_verify/eval_harness/trace_log（实现 tools/<name>.py）",
+   "group": "",
+   "org_role": "研发部主官/架构师",
+   "report_to": "A0"
   },
   {
    "agent_id": "OPS1",
@@ -509,7 +527,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G1",
+   "org_role": "G1组员",
+   "report_to": "DEV1"
   },
   {
    "agent_id": "DOC1",
@@ -575,7 +596,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G2",
+   "org_role": "G2组员",
+   "report_to": "DEV5"
   },
   {
    "agent_id": "DEV6",
@@ -644,7 +668,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G1",
+   "org_role": "G1组员",
+   "report_to": "DEV1"
   },
   {
    "agent_id": "DEV7",
@@ -713,7 +740,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G1",
+   "org_role": "G1组员",
+   "report_to": "DEV1"
   },
   {
    "agent_id": "DEV8",
@@ -782,7 +812,10 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "group": "G2",
+   "org_role": "G2组员",
+   "report_to": "DEV5"
   }
  ]
 }

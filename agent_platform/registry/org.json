@@ -421,7 +421,10 @@
       }
      ],
      "discipline": "backend",
-     "role_title": "后端工程师 · G1 组长"
+     "role_title": "后端工程师 · G1 组长",
+     "group": "G1",
+     "org_role": "G1组长",
+     "report_to": "ARCH1"
     },
     {
      "agent_id": "DEV6",
@@ -474,7 +477,10 @@
       }
      },
      "discipline": "backend",
-     "role_title": "后端工程师"
+     "role_title": "后端工程师",
+     "group": "G1",
+     "org_role": "G1组员",
+     "report_to": "DEV1"
     },
     {
      "agent_id": "DEV7",
@@ -527,7 +533,10 @@
       }
      },
      "discipline": "backend",
-     "role_title": "后端工程师（标准化交付）"
+     "role_title": "后端工程师（标准化交付）",
+     "group": "G1",
+     "org_role": "G1组员",
+     "report_to": "DEV1"
     },
     {
      "agent_id": "DEV2",
@@ -601,7 +610,10 @@
       }
      ],
      "discipline": "ai",
-     "role_title": "AI/模型工程师"
+     "role_title": "AI/模型工程师",
+     "group": "G1",
+     "org_role": "G1组员",
+     "report_to": "DEV1"
     },
     {
      "agent_id": "DEV3",
@@ -675,7 +687,10 @@
       }
      ],
      "discipline": "quant",
-     "role_title": "量化策略工程师"
+     "role_title": "量化策略工程师",
+     "group": "G2",
+     "org_role": "G2组员",
+     "report_to": "DEV5"
     },
     {
      "agent_id": "DEV4",
@@ -749,7 +764,10 @@
       }
      ],
      "discipline": "quant",
-     "role_title": "回测/风控工程师"
+     "role_title": "回测/风控工程师",
+     "group": "G2",
+     "org_role": "G2组员",
+     "report_to": "DEV5"
     },
     {
      "agent_id": "DEV5",
@@ -808,7 +826,10 @@
       }
      },
      "discipline": "frontend",
-     "role_title": "前端工程师 · G2 组长"
+     "role_title": "前端工程师 · G2 组长",
+     "group": "G2",
+     "org_role": "G2组长",
+     "report_to": "ARCH1"
     },
     {
      "agent_id": "DEV8",
@@ -861,7 +882,10 @@
       }
      },
      "discipline": "frontend",
-     "role_title": "前端工程师"
+     "role_title": "前端工程师",
+     "group": "G2",
+     "org_role": "G2组员",
+     "report_to": "DEV5"
     },
     {
      "agent_id": "ARCH1",
@@ -1018,7 +1042,10 @@
       "revocation": "触发 charter red_lines 任一条 -> L0_only，A0 24h 复核，老田决定恢复"
      },
      "discipline": "architecture",
-     "role_title": "研发主官 · 架构师"
+     "role_title": "研发主官 · 架构师",
+     "group": "",
+     "org_role": "研发部主官/架构师",
+     "report_to": "A0"
     },
     {
      "agent_id": "OPS1",
@@ -1075,7 +1102,10 @@
       }
      },
      "discipline": "devops",
-     "role_title": "运维/SRE 工程师"
+     "role_title": "运维/SRE 工程师",
+     "group": "G1",
+     "org_role": "G1组员",
+     "report_to": "DEV1"
     },
     {
      "agent_id": "DOC1",
@@ -1125,7 +1155,10 @@
       }
      },
      "discipline": "docs",
-     "role_title": "技术文档工程师"
+     "role_title": "技术文档工程师",
+     "group": "G2",
+     "org_role": "G2组员",
+     "report_to": "DEV5"
     }
    ],
    "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）",
@@ -3002,7 +3035,9 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "org_role": "交付协调（0.5）",
+     "report_to": "ARCH1"
     }
    ],
    "teams": [],

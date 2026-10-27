@@ -289,6 +289,10 @@ def main():
                     # 2026-10-27 WO-ROLE-GROUP-MODEL：角色分工（工程域/中文岗位名）
                     "discipline": a.get("discipline", ""),
                     "role_title": a.get("role_title", ""),
+                    # 2026-10-27 WO-ORG-CHART：组织架构显式字段
+                    "group": a.get("group", ""),
+                    "org_role": a.get("org_role", ""),
+                    "report_to": a.get("report_to", ""),
                 }
         else:
             for aid in ids:
@@ -328,6 +332,9 @@ def main():
                 "entry_source": "org_profiles",  # 与 team 文件落卡区分（排查用）
                 "discipline": prof.get("discipline", ""),
                 "role_title": prof.get("role_title", ""),
+                "group": prof.get("group", ""),
+                "org_role": prof.get("org_role", ""),
+                "report_to": prof.get("report_to", ""),
             }
             new_ids.append(aid)
         if new_ids:
@@ -386,6 +393,10 @@ def main():
             card["role_title"] = prof.get("role_title", "")
         if card.get("role_title"):
             card["role_cn"] = card["role_title"]
+        # 组织架构字段（A0A 等非 team_dev 席也补齐）
+        for _k in ("group", "org_role", "report_to"):
+            if not card.get(_k):
+                card[_k] = prof.get(_k, "")
         if aid == "A0":
             card["role_cn"] = "产品经理+研发（全在性）"
         card["capabilities"] = list(caps)
